@@ -21,7 +21,6 @@
     <div class="container">
         <header>
             <h1>site-u2023's Portal Page</h1>
-            <!-- 単一のテーマ切り替えボタンはここに配置しません -->
         </header>
         <main>
             <nav>
@@ -41,17 +40,22 @@
                 </section>
             </nav>
         </main>
-        <footer>
-            <p>&copy; <span id="current-year"></span> site-u2023</p>
-            <div class="footer-controls">
-                <div class="theme-selector">
-                    <button id="theme-auto" aria-label="システムテーマ" data-theme-preference="auto">🌗</button>
-                    <button id="theme-dark" aria-label="ダークテーマ" data-theme-preference="dark">🌙</button>
-                    <button id="theme-light" aria-label="ライトテーマ" data-theme-preference="light">☀️</button>
-                </div>
+        <!-- フッターエリアの構造を変更 -->
+    </div><!-- .container をここで閉じる -->
+
+    <div class="page-footer-area">
+        <div class="theme-controls-bar">
+            <div class="theme-selector">
+                <button id="theme-auto" aria-label="システムテーマ" data-theme-preference="auto">🌗</button>
+                <button id="theme-dark" aria-label="ダークテーマ" data-theme-preference="dark">🌙</button>
+                <button id="theme-light" aria-label="ライトテーマ" data-theme-preference="light">☀️</button>
             </div>
+        </div>
+        <footer class="copyright-footer">
+            <p>&copy; <span id="current-year"></span> site-u2023</p>
         </footer>
     </div>
+
     <script>
         document.getElementById('current-year').textContent = new Date().getFullYear();
     </script>
