@@ -1,195 +1,177 @@
-/* ユーザー様の元ソース (ライトテーマの基礎) */
+/* ライトテーマの基本スタイル */
 body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     margin: 0;
-    padding: 0; /* ユーザー様の指定通り */
+    padding: 0;
     line-height: 1.6;
-    background-color: #f4f7f6; /* ライトテーマの背景色 */
-    color: #333;               /* ライトテーマの文字色 */
-    transition: background-color 0.3s ease, color 0.3s ease; /* 追加: テーマ切り替え用トランジション */
+    background-color: #f4f7f6;
+    color: #333;
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 .container {
     max-width: 800px;
     margin: 2em auto;
-    background: #fff;          /* ライトテーマのコンテナ背景 */
+    background: #fff;
     padding: 1.5em 2em;
     border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1); /* ライトテーマの影 */
-    transition: margin 0.3s ease, padding 0.3s ease, border-radius 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease; /* 更新: background-color, box-shadow, border-color をトランジションに追加 */
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    transition: margin 0.3s ease, padding 0.3s ease, border-radius 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+    padding-bottom: 6em; /* 固定フッターのためのスペース */
 }
-
-/* --- header スタイルの変更箇所 --- */
 header {
-    display: flex; /* 追加: flexboxレイアウト */
-    justify-content: space-between; /* 追加: 양쪽 정렬 */
-    align-items: center; /* 追加: 수직 중앙 정렬 */
-    border-bottom: 2px solid #4a90e2; /* ライトテーマのヘッダー下線 */
+    border-bottom: 2px solid #4a90e2;
     margin-bottom: 1.5em;
-    padding-bottom: 0.8em; /* このpaddingはh1とボタンの上下の余白にも影響します */
-    /* padding-right: 20px; /* ボタンと右端の間にスペースが必要な場合など */
-    transition: border-color 0.3s ease; /* 追加: テーマ切り替え用トランジション */
+    padding-bottom: 0.8em;
+    transition: border-color 0.3s ease;
 }
-/* --- header スタイルの変更箇所ここまで --- */
-
 header h1 {
-    color: #333; /* ライトテーマのH1文字色 */
-    margin: 0; /* h1自身のマージンは0のまま */
+    color: #333;
+    margin: 0;
     font-size: 1.8em;
-    transition: font-size 0.3s ease, color 0.3s ease; /* 更新: color をトランジションに追加 */
+    transition: font-size 0.3s ease, color 0.3s ease;
 }
 nav h2 {
     margin-top: 1.5em;
     margin-bottom: 0.8em;
-    color: #4a90e2; /* ライトテーマのnav H2文字色 */
+    color: #4a90e2;
     font-size: 1.3em;
-    border-bottom: 1px solid #e0e0e0; /* ライトテーマのnav H2下線 */
+    border-bottom: 1px solid #e0e0e0;
     padding-bottom: 0.3em;
-    transition: font-size 0.3s ease, color 0.3s ease, border-color 0.3s ease; /* 更新: color, border-color をトランジションに追加 */
+    transition: font-size 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
-nav ul {
-    list-style: none;
-    padding: 0;
-}
-nav li {
-    margin-bottom: 0.6em;
-}
+nav ul { list-style: none; padding: 0; }
+nav li { margin-bottom: 0.6em; }
 nav a {
     text-decoration: none;
-    color: #007bff;            /* ライトテーマのリンク文字色 */
+    color: #007bff;
     font-weight: normal;
     padding: 0.6em 0.9em;
     display: block;
     border-radius: 5px;
-    background-color: #f8f9fa; /* ライトテーマのリンク背景色 */
-    border: 1px solid #dee2e6;   /* ライトテーマのリンクボーダー色 */
-    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, padding 0.3s ease, border-color 0.2s ease-in-out; /* 更新: border-color をトランジションに追加 */
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, padding 0.3s ease, border-color 0.2s ease-in-out;
 }
 nav a:hover {
-    background-color: #007bff; /* ライトテーマのリンクホバー背景色 */
-    color: white;              /* ライトテーマのリンクホバー文字色 */
+    background-color: #007bff;
+    color: white;
     text-decoration: none;
 }
-nav a .repo-name {
-    font-weight: bold;
-    /* .repo-name の色は nav a の color を継承します */
-}
+nav a .repo-name { font-weight: bold; }
+
+/* フッターとテーマコントロールのスタイル */
 footer {
-    margin-top: 2.5em;
-    padding-top: 1em;
-    border-top: 1px solid #e0e0e0; /* ライトテーマのフッター上線 */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1em 2em;
+    border-top: 1px solid #e0e0e0;
+    position: fixed;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    background-color: #f4f7f6; /* ライトテーマ時のフッター背景 */
+    box-sizing: border-box;
+    z-index: 100;
+    transition: background-color 0.3s ease, border-color 0.3s ease; /* テーマ切り替え用トランジション */
+}
+footer p {
+    margin: 0;
     font-size: 0.9em;
-    color: #6c757d;                /* ライトテーマのフッター文字色 */
+    color: #6c757d; /* ライトテーマ時のフッター文字色 */
+    transition: color 0.3s ease;
+}
+.footer-controls {
+    display: flex;
+    align-items: center;
+}
+.theme-selector {
+    display: flex;
+    gap: 8px;
+}
+.theme-selector button {
+    background-color: transparent;
+    border: 1px solid transparent;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    font-size: 1.2em;
+    line-height: 36px;
     text-align: center;
-    transition: border-color 0.3s ease, color 0.3s ease; /* 追加: テーマ切り替え用トランジション */
+    cursor: pointer;
+    color: #6c757d; /* ライトテーマ時のアイコン通常色 */
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+    user-select: none;
+}
+.theme-selector button:hover {
+    background-color: rgba(0,0,0,0.05);
+}
+.theme-selector button.selected {
+    background-color: #67B279; /* AdGuard風の選択色 */
+    color: white;
+    border-color: transparent;
+}
+.theme-selector button.selected:hover {
+    background-color: #58a069;
 }
 
-/* ユーザー様の元ソースのレスポンシブ調整 */
+/* レスポンシブ調整 */
 @media (max-width: 600px) {
-    body {
-        -webkit-text-size-adjust: 100%;
-    }
+    body { -webkit-text-size-adjust: 100%; }
     .container {
         margin: 1em;
         padding: 1em 1.2em;
         border-radius: 0;
         box-shadow: none;
+        padding-bottom: 7em; /* スマホではフッターが縦積みになるため、より多くのスペース確保 */
     }
-    header h1 {
-        font-size: 1.6em;
-    }
-    nav h2 {
-        font-size: 1.15em;
-    }
-    nav a {
-        padding: 0.8em 0.7em;
-        font-size: 0.95em;
-    }
+    header h1 { font-size: 1.6em; }
+    nav h2 { font-size: 1.15em; }
+    nav a { padding: 0.8em 0.7em; font-size: 0.95em; }
     footer {
-        font-size: 0.85em;
+        padding: 0.8em 1em;
+        flex-direction: column-reverse;
+        align-items: center;
+        text-align: center;
     }
-    /* レスポンシブ時のヘッダー内ボタンの調整が必要な場合があります */
-    header {
-        /* padding-right: 10px; /* スマホ表示でボタンが端に寄りすぎないように調整する例 */
+    footer p {
+        margin-top: 0.8em;
+    }
+    .theme-selector button {
+        width: 32px;
+        height: 32px;
+        line-height: 32px;
+        font-size: 1.1em;
     }
 }
 
-/* --- ここからダークテーマ用のスタイル追加 --- */
-
+/* ダークテーマ用のスタイル */
 body[data-theme="dark"] {
-    background-color: #121212; /* ダークテーマの背景色 */
-    color: #e0e0e0;           /* ダークテーマの文字色 */
+    background-color: #121212;
+    color: #e0e0e0;
 }
 body[data-theme="dark"] .container {
-    background: #1e1e1e;      /* ダークテーマのコンテナ背景 */
-    box-shadow: 0 4px 12px rgba(0,0,0,0.4); /* ダークテーマの影 (少し強調) */
+    background: #1e1e1e;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
 }
-body[data-theme="dark"] header {
-    border-bottom-color: #3a7bc8; /* ダークテーマのヘッダー下線 (少し明るめ) */
-}
-body[data-theme="dark"] header h1 {
-    color: #f5f5f5; /* ダークテーマのH1文字色 */
-}
-body[data-theme="dark"] nav h2 {
-    color: #58a6ff; /* ダークテーマのnav H2文字色 (明るい青) */
-    border-bottom-color: #30363d; /* ダークテーマのnav H2下線 */
-}
-body[data-theme="dark"] nav a {
-    color: #58a6ff;            /* ダークテーマのリンク文字色 */
-    background-color: #21262d; /* ダークテーマのリンク背景色 */
-    border-color: #30363d;       /* ダークテーマのリンクボーダー色 */
-}
-body[data-theme="dark"] nav a:hover {
-    background-color: #303f50; /* ダークテーマのリンクホバー背景色 */
-    color: #c9d1d9;              /* ダークテーマのリンクホバー文字色 */
-}
+body[data-theme="dark"] header { border-bottom-color: #3a7bc8; }
+body[data-theme="dark"] header h1 { color: #f5f5f5; }
+body[data-theme="dark"] nav h2 { color: #58a6ff; border-bottom-color: #30363d; }
+body[data-theme="dark"] nav a { color: #58a6ff; background-color: #21262d; border-color: #30363d; }
+body[data-theme="dark"] nav a:hover { background-color: #303f50; color: #c9d1d9; }
+
 body[data-theme="dark"] footer {
-    border-top-color: #30363d; /* ダークテーマのフッター上線 */
-    color: #8b949e;            /* ダークテーマのフッター文字色 */
+    background-color: #1e1e1e; /* ダークテーマ時のフッター背景 */
+    border-top-color: #30363d;
 }
-
-@media (max-width: 600px) {
-    body[data-theme="dark"] .container {
-        /* 特段の変更なし */
-    }
+body[data-theme="dark"] footer p {
+    color: #8b949e; /* ダークテーマ時のフッター文字色 */
 }
-
-/* --- ここからテーマ切り替えボタンのスタイル追加 --- */
-#theme-toggle {
-    padding: 8px 14px;
-    font-size: 1.1em;
-    line-height: 1;
-    border-radius: 6px;
-    cursor: pointer;
-    background-color: transparent;
-    border: 1px solid; /* 色はテーマ依存 */
-    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
-    user-select: none;
-    /* ヘッダーの padding-bottom とボタンの align-items: center により垂直位置は調整されます */
-    /* 必要に応じてマージン等で微調整してください 例: margin-left: 10px; */
+body[data-theme="dark"] .theme-selector button {
+    color: #8b949e; /* ダークテーマ時のアイコン通常色 */
 }
-
-/* ライトテーマ時のボタンスタイル */
-body[data-theme="light"] #theme-toggle {
-    color: #4A5568;
-    border-color: #CBD5E0;
+body[data-theme="dark"] .theme-selector button:hover {
+    background-color: rgba(255,255,255,0.1);
 }
-body[data-theme="light"] #theme-toggle:hover {
-    background-color: #E2E8F0;
-    border-color: #A0AEC0;
-}
-body[data-theme="light"] #theme-toggle:active {
-    background-color: #CBD5E0;
-}
-
-/* ダークテーマ時のボタンスタイル */
-body[data-theme="dark"] #theme-toggle {
-    color: #E2E8F0;
-    border-color: #4A5568;
-}
-body[data-theme="dark"] #theme-toggle:hover {
-    background-color: #2D3748;
-    border-color: #718096;
-}
-body[data-theme="dark"] #theme-toggle:active {
-    background-color: #4A5568;
-}
+/* 選択されたボタンのスタイルは共通の .selected を使用 */
