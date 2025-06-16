@@ -1,106 +1,151 @@
-body { 
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; 
-    margin: 0; 
-    padding: 0;
-    line-height: 1.6; 
-    background-color: #f4f7f6; 
-    color: #333; 
+/* ユーザー様の元ソース (ライトテーマの基礎) */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    margin: 0;
+    padding: 0; /* ユーザー様の指定通り */
+    line-height: 1.6;
+    background-color: #f4f7f6; /* ライトテーマの背景色 */
+    color: #333;               /* ライトテーマの文字色 */
+    transition: background-color 0.3s ease, color 0.3s ease; /* 追加: テーマ切り替え用トランジション */
 }
-.container { 
-    max-width: 800px; 
-    margin: 2em auto; 
-    background: #fff; 
-    padding: 1.5em 2em; 
-    border-radius: 8px; 
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1); 
-    /* Added for smoother transition if container properties change */
-    transition: margin 0.3s ease, padding 0.3s ease, border-radius 0.3s ease;
+.container {
+    max-width: 800px;
+    margin: 2em auto;
+    background: #fff;          /* ライトテーマのコンテナ背景 */
+    padding: 1.5em 2em;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1); /* ライトテーマの影 */
+    transition: margin 0.3s ease, padding 0.3s ease, border-radius 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease; /* 更新: background-color, box-shadow, border-color をトランジションに追加 */
 }
-header { 
-    border-bottom: 2px solid #4a90e2; 
-    margin-bottom: 1.5em; 
-    padding-bottom: 0.8em; 
+header {
+    border-bottom: 2px solid #4a90e2; /* ライトテーマのヘッダー下線 */
+    margin-bottom: 1.5em;
+    padding-bottom: 0.8em;
+    transition: border-color 0.3s ease; /* 追加: テーマ切り替え用トランジション */
 }
-header h1 { 
-    color: #333; 
-    margin: 0; 
+header h1 {
+    color: #333; /* ライトテーマのH1文字色 */
+    margin: 0;
     font-size: 1.8em;
-    /* Added for smoother transition if font-size changes */
-    transition: font-size 0.3s ease;
+    transition: font-size 0.3s ease, color 0.3s ease; /* 更新: color をトランジションに追加 */
 }
-nav h2 { 
-    margin-top: 1.5em; 
-    margin-bottom: 0.8em; 
-    color: #4a90e2; 
+nav h2 {
+    margin-top: 1.5em;
+    margin-bottom: 0.8em;
+    color: #4a90e2; /* ライトテーマのnav H2文字色 */
     font-size: 1.3em;
-    border-bottom: 1px solid #e0e0e0;
+    border-bottom: 1px solid #e0e0e0; /* ライトテーマのnav H2下線 */
     padding-bottom: 0.3em;
-    /* Added for smoother transition if font-size changes */
-    transition: font-size 0.3s ease;
+    transition: font-size 0.3s ease, color 0.3s ease, border-color 0.3s ease; /* 更新: color, border-color をトランジションに追加 */
 }
-nav ul { 
-    list-style: none; 
-    padding: 0; 
+nav ul {
+    list-style: none;
+    padding: 0;
 }
-nav li { 
-    margin-bottom: 0.6em; 
+nav li {
+    margin-bottom: 0.6em;
 }
-nav a { 
-    text-decoration: none; 
-    color: #007bff;
-    font-weight: normal; 
-    padding: 0.6em 0.9em; 
-    display: block; 
-    border-radius: 5px; 
-    background-color: #f8f9fa; 
-    border: 1px solid #dee2e6; 
-    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, padding 0.3s ease;
+nav a {
+    text-decoration: none;
+    color: #007bff;            /* ライトテーマのリンク文字色 */
+    font-weight: normal;
+    padding: 0.6em 0.9em;
+    display: block;
+    border-radius: 5px;
+    background-color: #f8f9fa; /* ライトテーマのリンク背景色 */
+    border: 1px solid #dee2e6;   /* ライトテーマのリンクボーダー色 */
+    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, padding 0.3s ease, border-color 0.2s ease-in-out; /* 更新: border-color をトランジションに追加 */
 }
-nav a:hover { 
-    background-color: #007bff; 
-    color: white; 
-    text-decoration: none; 
+nav a:hover {
+    background-color: #007bff; /* ライトテーマのリンクホバー背景色 */
+    color: white;              /* ライトテーマのリンクホバー文字色 */
+    text-decoration: none;
 }
 nav a .repo-name {
     font-weight: bold;
+    /* .repo-name の色は nav a の color を継承します */
 }
-footer { 
-    margin-top: 2.5em; 
-    padding-top: 1em; 
-    border-top: 1px solid #e0e0e0; 
-    font-size: 0.9em; 
-    color: #6c757d; 
-    text-align: center; 
+footer {
+    margin-top: 2.5em;
+    padding-top: 1em;
+    border-top: 1px solid #e0e0e0; /* ライトテーマのフッター上線 */
+    font-size: 0.9em;
+    color: #6c757d;                /* ライトテーマのフッター文字色 */
+    text-align: center;
+    transition: border-color 0.3s ease, color 0.3s ease; /* 追加: テーマ切り替え用トランジション */
 }
 
-/* Responsive adjustments for smaller screens (e.g., smartphones) */
+/* ユーザー様の元ソースのレスポンシブ調整 */
 @media (max-width: 600px) {
     body {
-        /* Ensure body takes full width without unexpected overflow on mobile */
-        -webkit-text-size-adjust: 100%; /* Prevent iOS font scaling */
+        -webkit-text-size-adjust: 100%;
     }
     .container {
-        margin: 1em; /* Reduce top/bottom and side margins */
-        padding: 1em 1.2em; /* Reduce container padding, slightly more horizontal than vertical */
-        border-radius: 0; /* Optional: full width feel for container edges */
-        box-shadow: none; /* Optional: simpler look, remove shadow on mobile */
+        margin: 1em;
+        padding: 1em 1.2em;
+        border-radius: 0;
+        box-shadow: none;
     }
-
     header h1 {
-        font-size: 1.6em; /* Slightly smaller main heading */
+        font-size: 1.6em;
     }
-
     nav h2 {
-        font-size: 1.15em; /* Slightly smaller section subheading */
+        font-size: 1.15em;
     }
-
     nav a {
-        padding: 0.8em 0.7em; /* Adjust padding for tap targets and text flow */
-        font-size: 0.95em; /* Slightly adjust font size for links if needed */
+        padding: 0.8em 0.7em;
+        font-size: 0.95em;
     }
-    
-    /* Adjust footer for smaller screens */
     footer {
         font-size: 0.85em;
+    }
+}
+
+/* --- ここからダークテーマ用のスタイル追加 --- */
+
+body[data-theme="dark"] {
+    background-color: #121212; /* ダークテーマの背景色 */
+    color: #e0e0e0;           /* ダークテーマの文字色 */
+}
+body[data-theme="dark"] .container {
+    background: #1e1e1e;      /* ダークテーマのコンテナ背景 */
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4); /* ダークテーマの影 (少し強調) */
+    /* border-radius や padding は基本スタイルを継承 */
+}
+body[data-theme="dark"] header {
+    border-bottom-color: #3a7bc8; /* ダークテーマのヘッダー下線 (少し明るめ) */
+}
+body[data-theme="dark"] header h1 {
+    color: #f5f5f5; /* ダークテーマのH1文字色 */
+}
+body[data-theme="dark"] nav h2 {
+    color: #58a6ff; /* ダークテーマのnav H2文字色 (明るい青) */
+    border-bottom-color: #30363d; /* ダークテーマのnav H2下線 */
+}
+body[data-theme="dark"] nav a {
+    color: #58a6ff;            /* ダークテーマのリンク文字色 */
+    background-color: #21262d; /* ダークテーマのリンク背景色 */
+    border-color: #30363d;       /* ダークテーマのリンクボーダー色 */
+}
+body[data-theme="dark"] nav a:hover {
+    background-color: #303f50; /* ダークテーマのリンクホバー背景色 */
+    color: #c9d1d9;              /* ダークテーマのリンクホバー文字色 */
+}
+/* nav a .repo-name は nav a の color を継承 */
+
+body[data-theme="dark"] footer {
+    border-top-color: #30363d; /* ダークテーマのフッター上線 */
+    color: #8b949e;            /* ダークテーマのフッター文字色 */
+}
+
+/* ダークテーマ時のレスポンシブ調整 */
+/* 基本的に上記のダークテーマスタイルが適用され、レイアウトは既存のレスポンシブ設定に従います。 */
+/* もしダークテーマ特有のレスポンシブ調整が必要な場合はここに追加します。 */
+/* 例えば、 .container の box-shadow は元々レスポンシブで none になるので、ダークテーマでもそれに従います。 */
+@media (max-width: 600px) {
+    body[data-theme="dark"] .container {
+        /* box-shadow: none; は基本のレスポンシブCSSで既に設定されているため、ダークテーマでも適用されます。 */
+        /* border-radius: 0; も同様です。 */
+        /* もしダークテーマでこれらの値を上書きしたい場合のみ記述します。現状は不要と判断します。 */
     }
 }
