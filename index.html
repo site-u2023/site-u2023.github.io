@@ -11,7 +11,6 @@
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
-
       gtag('config', 'G-M9YV28TG0V');
     </script>
     <!-- End Google Analytics -->
@@ -22,6 +21,7 @@
     <div class="container">
         <header>
             <h1>site-u2023's Portal Page</h1>
+            <button id="theme-toggle" aria-label="テーマを切り替える">🌙</button> {/* 追加: テーマ切り替えボタン */}
         </header>
         <main>
             <nav>
@@ -48,14 +48,45 @@
     <script>
         document.getElementById('current-year').textContent = new Date().getFullYear();
     </script>
-    <script>(function() {
-        var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-        var currentTheme = prefersDark ? 'dark' : 'light';
-        document.body.dataset.theme = currentTheme;
-        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
-            var newTheme = event.matches ? 'dark' : 'light';
-            document.body.dataset.theme = newTheme;
+    <script>
+    (function() {
+        const themeToggle = document.getElementById('theme-toggle');
+        const body = document.body;
+        const prefersDarkScheme = window.matchMedia('(prefers-color-scheme: dark)');
+
+        function applyTheme(theme) {
+            body.dataset.theme = theme;
+            if (themeToggle) {
+                themeToggle.textContent = theme === 'dark' ? '☀️' : '🌙';
+            }
+            localStorage.setItem('theme', theme);
+        }
+
+        function getInitialTheme() {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                return savedTheme;
+            }
+            return prefersDarkScheme.matches ? 'dark' : 'light';
+        }
+
+        const initialTheme = getInitialTheme();
+        applyTheme(initialTheme);
+
+        if (themeToggle) {
+            themeToggle.addEventListener('click', () => {
+                const newTheme = body.dataset.theme === 'dark' ? 'light' : 'dark';
+                applyTheme(newTheme);
+            });
+        }
+
+        prefersDarkScheme.addEventListener('change', (event) => {
+            // Only change if no theme is manually set in localStorage
+            if (!localStorage.getItem('theme')) {
+                applyTheme(event.matches ? 'dark' : 'light');
+            }
         });
-    })();</script>
+    })();
+    </script>
 </body>
 </html>
