@@ -1,0 +1,106 @@
+body { 
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; 
+    margin: 0; 
+    padding: 0;
+    line-height: 1.6; 
+    background-color: #f4f7f6; 
+    color: #333; 
+}
+.container { 
+    max-width: 800px; 
+    margin: 2em auto; 
+    background: #fff; 
+    padding: 1.5em 2em; 
+    border-radius: 8px; 
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1); 
+    /* Added for smoother transition if container properties change */
+    transition: margin 0.3s ease, padding 0.3s ease, border-radius 0.3s ease;
+}
+header { 
+    border-bottom: 2px solid #4a90e2; 
+    margin-bottom: 1.5em; 
+    padding-bottom: 0.8em; 
+}
+header h1 { 
+    color: #333; 
+    margin: 0; 
+    font-size: 1.8em;
+    /* Added for smoother transition if font-size changes */
+    transition: font-size 0.3s ease;
+}
+nav h2 { 
+    margin-top: 1.5em; 
+    margin-bottom: 0.8em; 
+    color: #4a90e2; 
+    font-size: 1.3em;
+    border-bottom: 1px solid #e0e0e0;
+    padding-bottom: 0.3em;
+    /* Added for smoother transition if font-size changes */
+    transition: font-size 0.3s ease;
+}
+nav ul { 
+    list-style: none; 
+    padding: 0; 
+}
+nav li { 
+    margin-bottom: 0.6em; 
+}
+nav a { 
+    text-decoration: none; 
+    color: #007bff;
+    font-weight: normal; 
+    padding: 0.6em 0.9em; 
+    display: block; 
+    border-radius: 5px; 
+    background-color: #f8f9fa; 
+    border: 1px solid #dee2e6; 
+    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, padding 0.3s ease;
+}
+nav a:hover { 
+    background-color: #007bff; 
+    color: white; 
+    text-decoration: none; 
+}
+nav a .repo-name {
+    font-weight: bold;
+}
+footer { 
+    margin-top: 2.5em; 
+    padding-top: 1em; 
+    border-top: 1px solid #e0e0e0; 
+    font-size: 0.9em; 
+    color: #6c757d; 
+    text-align: center; 
+}
+
+/* Responsive adjustments for smaller screens (e.g., smartphones) */
+@media (max-width: 600px) {
+    body {
+        /* Ensure body takes full width without unexpected overflow on mobile */
+        -webkit-text-size-adjust: 100%; /* Prevent iOS font scaling */
+    }
+    .container {
+        margin: 1em; /* Reduce top/bottom and side margins */
+        padding: 1em 1.2em; /* Reduce container padding, slightly more horizontal than vertical */
+        border-radius: 0; /* Optional: full width feel for container edges */
+        box-shadow: none; /* Optional: simpler look, remove shadow on mobile */
+    }
+
+    header h1 {
+        font-size: 1.6em; /* Slightly smaller main heading */
+    }
+
+    nav h2 {
+        font-size: 1.15em; /* Slightly smaller section subheading */
+    }
+
+    nav a {
+        padding: 0.8em 0.7em; /* Adjust padding for tap targets and text flow */
+        font-size: 0.95em; /* Slightly adjust font size for links if needed */
+    }
+    
+    /* Adjust footer for smaller screens */
+    footer {
+        font-size: 0.85em;
+    }
+}
