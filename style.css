@@ -17,15 +17,23 @@ body {
     box-shadow: 0 4px 8px rgba(0,0,0,0.1); /* ライトテーマの影 */
     transition: margin 0.3s ease, padding 0.3s ease, border-radius 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease; /* 更新: background-color, box-shadow, border-color をトランジションに追加 */
 }
+
+/* --- header スタイルの変更箇所 --- */
 header {
+    display: flex; /* 追加: flexboxレイアウト */
+    justify-content: space-between; /* 追加: 양쪽 정렬 */
+    align-items: center; /* 追加: 수직 중앙 정렬 */
     border-bottom: 2px solid #4a90e2; /* ライトテーマのヘッダー下線 */
     margin-bottom: 1.5em;
-    padding-bottom: 0.8em;
+    padding-bottom: 0.8em; /* このpaddingはh1とボタンの上下の余白にも影響します */
+    /* padding-right: 20px; /* ボタンと右端の間にスペースが必要な場合など */
     transition: border-color 0.3s ease; /* 追加: テーマ切り替え用トランジション */
 }
+/* --- header スタイルの変更箇所ここまで --- */
+
 header h1 {
     color: #333; /* ライトテーマのH1文字色 */
-    margin: 0;
+    margin: 0; /* h1自身のマージンは0のまま */
     font-size: 1.8em;
     transition: font-size 0.3s ease, color 0.3s ease; /* 更新: color をトランジションに追加 */
 }
@@ -99,6 +107,10 @@ footer {
     footer {
         font-size: 0.85em;
     }
+    /* レスポンシブ時のヘッダー内ボタンの調整が必要な場合があります */
+    header {
+        /* padding-right: 10px; /* スマホ表示でボタンが端に寄りすぎないように調整する例 */
+    }
 }
 
 /* --- ここからダークテーマ用のスタイル追加 --- */
@@ -110,7 +122,6 @@ body[data-theme="dark"] {
 body[data-theme="dark"] .container {
     background: #1e1e1e;      /* ダークテーマのコンテナ背景 */
     box-shadow: 0 4px 12px rgba(0,0,0,0.4); /* ダークテーマの影 (少し強調) */
-    /* border-radius や padding は基本スタイルを継承 */
 }
 body[data-theme="dark"] header {
     border-bottom-color: #3a7bc8; /* ダークテーマのヘッダー下線 (少し明るめ) */
@@ -131,21 +142,54 @@ body[data-theme="dark"] nav a:hover {
     background-color: #303f50; /* ダークテーマのリンクホバー背景色 */
     color: #c9d1d9;              /* ダークテーマのリンクホバー文字色 */
 }
-/* nav a .repo-name は nav a の color を継承 */
-
 body[data-theme="dark"] footer {
     border-top-color: #30363d; /* ダークテーマのフッター上線 */
     color: #8b949e;            /* ダークテーマのフッター文字色 */
 }
 
-/* ダークテーマ時のレスポンシブ調整 */
-/* 基本的に上記のダークテーマスタイルが適用され、レイアウトは既存のレスポンシブ設定に従います。 */
-/* もしダークテーマ特有のレスポンシブ調整が必要な場合はここに追加します。 */
-/* 例えば、 .container の box-shadow は元々レスポンシブで none になるので、ダークテーマでもそれに従います。 */
 @media (max-width: 600px) {
     body[data-theme="dark"] .container {
-        /* box-shadow: none; は基本のレスポンシブCSSで既に設定されているため、ダークテーマでも適用されます。 */
-        /* border-radius: 0; も同様です。 */
-        /* もしダークテーマでこれらの値を上書きしたい場合のみ記述します。現状は不要と判断します。 */
+        /* 特段の変更なし */
     }
+}
+
+/* --- ここからテーマ切り替えボタンのスタイル追加 --- */
+#theme-toggle {
+    padding: 8px 14px;
+    font-size: 1.1em;
+    line-height: 1;
+    border-radius: 6px;
+    cursor: pointer;
+    background-color: transparent;
+    border: 1px solid; /* 色はテーマ依存 */
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    user-select: none;
+    /* ヘッダーの padding-bottom とボタンの align-items: center により垂直位置は調整されます */
+    /* 必要に応じてマージン等で微調整してください 例: margin-left: 10px; */
+}
+
+/* ライトテーマ時のボタンスタイル */
+body[data-theme="light"] #theme-toggle {
+    color: #4A5568;
+    border-color: #CBD5E0;
+}
+body[data-theme="light"] #theme-toggle:hover {
+    background-color: #E2E8F0;
+    border-color: #A0AEC0;
+}
+body[data-theme="light"] #theme-toggle:active {
+    background-color: #CBD5E0;
+}
+
+/* ダークテーマ時のボタンスタイル */
+body[data-theme="dark"] #theme-toggle {
+    color: #E2E8F0;
+    border-color: #4A5568;
+}
+body[data-theme="dark"] #theme-toggle:hover {
+    background-color: #2D3748;
+    border-color: #718096;
+}
+body[data-theme="dark"] #theme-toggle:active {
+    background-color: #4A5568;
 }
