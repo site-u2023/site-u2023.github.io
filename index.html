@@ -3,23 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>site-u2023's Pages</title>
-    <style>
-        body { font-family: sans-serif; margin: 2em; }
-        h1 { border-bottom: 1px solid #ccc; padding-bottom: 0.5em; }
-        ul { list-style: none; padding-left: 0; }
-        li { margin-bottom: 0.5em; }
-        a { text-decoration: none; color: #0366d6; }
-        a:hover { text-decoration: underline; }
-    </style>
+    <title>site-u2023's Portal</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>site-u2023's GitHub Pages</h1>
-    <p>Welcome to my GitHub Pages site. Here are some of my projects:</p>
-    <ul>
-        <li><a href="https://site-u2023.github.io/aios/">aios Project</a> - [ここにaiosプロジェクトの簡単な説明を追加]</li>
-        <li><a href="https://site-u2023.github.io/config-software/docs/">(旧版) config-software (旧版)</a> - config-software（旧版）</li>
-        <!-- 他のプロジェクトサイトへのリンクもここに追加できます -->
-    </ul>
+    <header>
+        <h1>site-u2023's Portal Page</h1>
+    </header>
+    <main>
+        <nav>
+            <section id="project-sites">
+                <h2>プロジェクトサイト</h2>
+                <ul>
+                    <li><a href="https://site-u2023.github.io/aios/"><span class="repo-name">aios</span> プロジェクトページ</a></li>
+                    <li><a href="https://site-u2023.github.io/config-software/docs/"><span class="repo-name">config-software</span> (旧版)</a></li>
+                </ul>
+            </section>
+            <section id="local-services">
+                <h2>ローカルネットワークサービス</h2>
+                <ul>
+                    <li><a href="http://192.168.1.1" target="_blank" rel="noopener noreferrer"><span class="repo-name">LuCI</span> (ルーター管理画面)</a></li>
+                </ul>
+            </section>
+        </nav>
+    </main>
+    <footer>
+        <p>&copy; <span id="current-year"></span> site-u2023</p>
+    </footer>
+    <script>
+        document.getElementById('current-year').textContent = new Date().getFullYear();
+    </script>
 </body>
 </html>
