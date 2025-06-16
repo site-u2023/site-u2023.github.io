@@ -4,32 +4,35 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>site-u2023's Portal</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css"> {/* ユーザー様がご用意されている既存のstyle.cssを読み込みます */}
 </head>
 <body>
-    <header>
-        <h1>site-u2023's Portal Page</h1>
-    </header>
-    <main>
-        <nav>
-            <section id="project-sites">
-                <h2>プロジェクトサイト</h2>
-                <ul>
-                    <li><a href="https://site-u2023.github.io/aios/"><span class="repo-name">aios</span> プロジェクトページ</a></li>
-                    <li><a href="https://site-u2023.github.io/config-software/docs/"><span class="repo-name">config-software</span> (旧版)</a></li>
-                </ul>
-            </section>
-            <section id="local-services">
-                <h2>ローカルネットワークサービス</h2>
-                <ul>
-                    <li><a href="http://192.168.1.1" target="_blank" rel="noopener noreferrer"><span class="repo-name">LuCI</span> (ルーター管理画面)</a></li>
-                </ul>
-            </section>
-        </nav>
-    </main>
-    <footer>
-        <p>&copy; <span id="current-year"></span> site-u2023</p>
-    </footer>
+    <div class="container"> {/* 全体を囲むコンテナ（これが「枠」の役割を担う想定） */}
+        <header>
+            <h1>site-u2023's Portal Page</h1>
+        </header>
+        <main>
+            <nav>
+                <section id="project-sites">
+                    <h2>プロジェクトサイト</h2>
+                    <ul>
+                        <li><a href="https://site-u2023.github.io/aios/"><span class="repo-name">aios</span> プロジェクトページ</a></li>
+                        <li><a href="https://site-u2023.github.io/config-software/docs/"><span class="repo-name">config-software</span> (旧版)</a></li> {/* 今回追加するリンク */}
+                    </ul>
+                </section>
+                <section id="local-services">
+                    <h2>ローカルネットワークサービス</h2>
+                    <ul>
+                        <li><a href="http://192.168.1.1" target="_blank" rel="noopener noreferrer"><span class="repo-name">LuCI</span> (ルーター管理画面)</a></li>
+                        {/* 他のローカルサービスへのリンクはここに追加できます */}
+                    </ul>
+                </section>
+            </nav>
+        </main>
+        <footer>
+            <p>&copy; <span id="current-year"></span> site-u2023</p>
+        </footer>
+    </div> {/* .container の閉じタグ */}
     <script>
         document.getElementById('current-year').textContent = new Date().getFullYear();
     </script>
