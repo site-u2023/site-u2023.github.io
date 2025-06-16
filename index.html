@@ -21,13 +21,36 @@
     <div class="container">
         <header>
             <h1>site-u2023's Portal Page</h1>
-            <button id="theme-toggle" aria-label="テーマを切り替える">🌙</button> {/* ← この行のコメントを修正または削除 */}
+            <!-- 以前のテーマ切り替えボタンは削除 -->
         </header>
         <main>
-            {/* ... mainタグ内の既存のコンテンツ ... */}
+            <nav>
+                <section id="project-sites">
+                    <h2>プロジェクトサイト</h2>
+                    <ul>
+                        <li><a href="https://site-u2023.github.io/aios/"><span class="repo-name">aios</span> プロジェクトページ</a></li>
+                        <li><a href="https://site-u2023.github.io/config-software/"><span class="repo-name">config-software</span> (旧版)</a></li>
+                    </ul>
+                </section>
+                <section id="local-services">
+                    <h2>ローカルネットワークサービス</h2>
+                    <ul>
+                        <li><a href="http://192.168.1.1" target="_blank" rel="noopener noreferrer"><span class="repo-name">LuCI</span> (ルーター管理画面)</a></li>
+                        <li><a href="http://192.168.1.1:7681/" target="_blank" rel="noopener noreferrer"><span class="repo-name">ttyd</span> (Webターミナル)</a></li>
+                    </ul>
+                </section>
+            </nav>
         </main>
         <footer>
             <p>&copy; <span id="current-year"></span> site-u2023</p>
+            <div class="footer-controls">
+                <!-- 追加: AdGuard Home風テーマ切り替えコントロール -->
+                <div class="theme-selector">
+                    <button id="theme-auto" aria-label="システムテーマ" data-theme-preference="auto">🌗</button>
+                    <button id="theme-dark" aria-label="ダークテーマ" data-theme-preference="dark">🌙</button>
+                    <button id="theme-light" aria-label="ライトテーマ" data-theme-preference="light">☀️</button>
+                </div>
+            </div>
         </footer>
     </div>
     <script>
@@ -35,42 +58,55 @@
     </script>
     <script>
     (function() {
-        const themeToggle = document.getElementById('theme-toggle');
+        const themeButtons = [
+            document.getElementById('theme-auto'),
+            document.getElementById('theme-light'),
+            document.getElementById('theme-dark')
+        ];
         const body = document.body;
         const prefersDarkScheme = window.matchMedia('(prefers-color-scheme: dark)');
 
-        function applyTheme(theme) {
-            body.dataset.theme = theme;
-            if (themeToggle) {
-                // 初期テーマに応じてボタンのアイコンも設定
-                themeToggle.textContent = theme === 'dark' ? '☀️' : '🌙';
+        function applyThemePreference(preference) {
+            localStorage.setItem('themePreference', preference);
+            let actualTheme;
+
+            if (preference === 'auto') {
+                actualTheme = prefersDarkScheme.matches ? 'dark' : 'light';
+            } else {
+                actualTheme = preference;
             }
-            localStorage.setItem('theme', theme);
-        }
+            body.dataset.theme = actualTheme; // 'light' または 'dark' を設定
 
-        function getInitialTheme() {
-            const savedTheme = localStorage.getItem('theme');
-            if (savedTheme) {
-                return savedTheme;
-            }
-            return prefersDarkScheme.matches ? 'dark' : 'light';
-        }
-
-        const initialTheme = getInitialTheme();
-        applyTheme(initialTheme); // 初期テーマ適用時にボタンのアイコンも更新されるように
-
-        if (themeToggle) {
-            themeToggle.addEventListener('click', () => {
-                const newTheme = body.dataset.theme === 'dark' ? 'light' : 'dark';
-                applyTheme(newTheme);
+            // ボタンの選択状態を更新
+            themeButtons.forEach(button => {
+                if (button) { // ボタンが存在するか確認
+                    if (button.dataset.themePreference === preference) {
+                        button.classList.add('selected');
+                    } else {
+                        button.classList.remove('selected');
+                    }
+                }
             });
         }
 
-        prefersDarkScheme.addEventListener('change', (event) => {
-            if (!localStorage.getItem('theme')) {
-                applyTheme(event.matches ? 'dark' : 'light');
+        themeButtons.forEach(button => {
+            if (button) { // ボタンが存在するか確認
+                button.addEventListener('click', () => {
+                    applyThemePreference(button.dataset.themePreference);
+                });
             }
         });
+
+        prefersDarkScheme.addEventListener('change', (event) => {
+            const currentPreference = localStorage.getItem('themePreference') || 'auto';
+            if (currentPreference === 'auto') {
+                applyThemePreference('auto'); // OS変更時に再適用
+            }
+        });
+
+        // 初期テーマ設定
+        const initialPreference = localStorage.getItem('themePreference') || 'auto';
+        applyThemePreference(initialPreference);
     })();
     </script>
 </body>
