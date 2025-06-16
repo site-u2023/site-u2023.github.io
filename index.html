@@ -4,6 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>site-u2023's Portal</title>
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-M9YV28TG0V"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-M9YV28TG0V');
+    </script>
+    <!-- End Google Analytics -->
+
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -40,6 +52,10 @@
         var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
         var currentTheme = prefersDark ? 'dark' : 'light';
         document.body.dataset.theme = currentTheme;
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+            var newTheme = event.matches ? 'dark' : 'light';
+            document.body.dataset.theme = newTheme;
+        });
     })();</script>
 </body>
 </html>
