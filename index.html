@@ -21,7 +21,7 @@
     <div class="container">
         <header>
             <h1>site-u2023's Portal Page</h1>
-            <!-- 以前のテーマ切り替えボタンは削除 -->
+            <!-- 単一のテーマ切り替えボタンはここに配置しません -->
         </header>
         <main>
             <nav>
@@ -44,7 +44,6 @@
         <footer>
             <p>&copy; <span id="current-year"></span> site-u2023</p>
             <div class="footer-controls">
-                <!-- 追加: AdGuard Home風テーマ切り替えコントロール -->
                 <div class="theme-selector">
                     <button id="theme-auto" aria-label="システムテーマ" data-theme-preference="auto">🌗</button>
                     <button id="theme-dark" aria-label="ダークテーマ" data-theme-preference="dark">🌙</button>
@@ -75,11 +74,10 @@
             } else {
                 actualTheme = preference;
             }
-            body.dataset.theme = actualTheme; // 'light' または 'dark' を設定
+            body.dataset.theme = actualTheme;
 
-            // ボタンの選択状態を更新
             themeButtons.forEach(button => {
-                if (button) { // ボタンが存在するか確認
+                if (button) {
                     if (button.dataset.themePreference === preference) {
                         button.classList.add('selected');
                     } else {
@@ -90,7 +88,7 @@
         }
 
         themeButtons.forEach(button => {
-            if (button) { // ボタンが存在するか確認
+            if (button) {
                 button.addEventListener('click', () => {
                     applyThemePreference(button.dataset.themePreference);
                 });
@@ -100,11 +98,10 @@
         prefersDarkScheme.addEventListener('change', (event) => {
             const currentPreference = localStorage.getItem('themePreference') || 'auto';
             if (currentPreference === 'auto') {
-                applyThemePreference('auto'); // OS変更時に再適用
+                applyThemePreference('auto');
             }
         });
 
-        // 初期テーマ設定
         const initialPreference = localStorage.getItem('themePreference') || 'auto';
         applyThemePreference(initialPreference);
     })();
