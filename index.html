@@ -21,25 +21,10 @@
     <div class="container">
         <header>
             <h1>site-u2023's Portal Page</h1>
-            <button id="theme-toggle" aria-label="テーマを切り替える">🌙</button> {/* 追加: テーマ切り替えボタン */}
+            <button id="theme-toggle" aria-label="テーマを切り替える">🌙</button> {/* ← この行のコメントを修正または削除 */}
         </header>
         <main>
-            <nav>
-                <section id="project-sites">
-                    <h2>プロジェクトサイト</h2>
-                    <ul>
-                        <li><a href="https://site-u2023.github.io/aios/"><span class="repo-name">aios</span> プロジェクトページ</a></li>
-                        <li><a href="https://site-u2023.github.io/config-software/"><span class="repo-name">config-software</span> (旧版)</a></li>
-                    </ul>
-                </section>
-                <section id="local-services">
-                    <h2>ローカルネットワークサービス</h2>
-                    <ul>
-                        <li><a href="http://192.168.1.1" target="_blank" rel="noopener noreferrer"><span class="repo-name">LuCI</span> (ルーター管理画面)</a></li>
-                        <li><a href="http://192.168.1.1:7681/" target="_blank" rel="noopener noreferrer"><span class="repo-name">ttyd</span> (Webターミナル)</a></li>
-                    </ul>
-                </section>
-            </nav>
+            {/* ... mainタグ内の既存のコンテンツ ... */}
         </main>
         <footer>
             <p>&copy; <span id="current-year"></span> site-u2023</p>
@@ -57,6 +42,7 @@
         function applyTheme(theme) {
             body.dataset.theme = theme;
             if (themeToggle) {
+                // 初期テーマに応じてボタンのアイコンも設定
                 themeToggle.textContent = theme === 'dark' ? '☀️' : '🌙';
             }
             localStorage.setItem('theme', theme);
@@ -71,7 +57,7 @@
         }
 
         const initialTheme = getInitialTheme();
-        applyTheme(initialTheme);
+        applyTheme(initialTheme); // 初期テーマ適用時にボタンのアイコンも更新されるように
 
         if (themeToggle) {
             themeToggle.addEventListener('click', () => {
@@ -81,7 +67,6 @@
         }
 
         prefersDarkScheme.addEventListener('change', (event) => {
-            // Only change if no theme is manually set in localStorage
             if (!localStorage.getItem('theme')) {
                 applyTheme(event.matches ? 'dark' : 'light');
             }
