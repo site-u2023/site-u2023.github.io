@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OpenWrt</title>
+    <title>OpenWrt: A Beginner’s Notebook</title>
     
     <!-- SEO メタタグ -->
     <meta name="description" content="OpenWrt">
@@ -77,8 +77,26 @@
                 <section id="local-services">
                     <h2>ローカルネットワーク</h2>
                     <ul>
-                        <li><a href="http://192.168.1.1" target="_blank" rel="noopener noreferrer"><span class="repo-name">LuCI</span> (管理画面)</a></li>
-                        <li><a href="http://192.168.1.1:7681/" target="_blank" rel="noopener noreferrer"><span class="repo-name">ttyd</span> (Webターミナル)</a></li>
+                        <li>
+                            <a href="http://192.168.1.1" target="_blank" rel="noopener noreferrer">
+                                <span class="repo-name">LuCI</span> (管理画面)
+                            </a>
+                        </li>
+                        <li>
+                            <a href="http://192.168.1.1:7681/" target="_blank" rel="noopener noreferrer">
+                                <span class="repo-name">ttyd</span> (Webターミナル)
+                            </a>
+                        </li>
+                        <li>
+                            <a href="powershell:Start-Process 'powershell.exe' -ArgumentList '-NoExit','ssh root@192.168.1.1' -Verb RunAs">
+                                PowerShell で SSH 接続
+                            </a>
+                        </li>
+                        <li>
+                            <a href="powershell:Start-Process 'cmd.exe' -ArgumentList '/k ssh root@192.168.1.1' -Verb RunAs">
+                                コマンドプロンプトで SSH 接続
+                            </a>
+                        </li>
                     </ul>
                 </section>
             </nav>
