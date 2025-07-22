@@ -5,7 +5,7 @@ Windows Registry Editor Version 5.00
 "URL Protocol"=""
 
 [HKEY_CLASSES_ROOT\sshps\DefaultIcon]
-@="C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe,0"
+@="%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe,0"
 
 [HKEY_CLASSES_ROOT\sshps\shell\open\command]
-@="cmd.exe /C \"if exist \\\"%LOCALAPPDATA%\\Microsoft\\WindowsApps\\pwsh.exe\\\" (\\\"%LOCALAPPDATA%\\Microsoft\\WindowsApps\\pwsh.exe\\\" -NoExit -Command \\\"$uri=[Uri]::new('%1'); ssh root@$($uri.Host)\\\") else if exist \\\"%ProgramFiles%\\PowerShell\\7\\pwsh.exe\\\" (\\\"%ProgramFiles%\\PowerShell\\7\\pwsh.exe\\\" -NoExit -Command \\\"$uri=[Uri]::new('%1'); ssh root@$($uri.Host)\\\") else (where pwsh >nul 2>&1 && (pwsh -NoExit -Command \\\"$uri=[Uri]::new('%1'); ssh root@$($uri.Host)\\\") || (powershell -NoExit -Command \\\"$uri=[Uri]::new('%1'); ssh root@$($uri.Host)\\\"))\""
+@="cmd.exe /C \"%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe\" -NoExit -NoLogo -Command \"if (Get-Command pwsh -ErrorAction SilentlyContinue) { pwsh -NoExit -NoLogo -Command \\\"$u=[Uri]::New('%1'); ssh root@$($u.Host)\\\" } else { $u=[Uri]::New('%1'); ssh root@$($u.Host) }\""
