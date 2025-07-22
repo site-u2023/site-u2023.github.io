@@ -1,24 +1,20 @@
 /* ── テーマ変数 ── */
 body[data-theme="light"] {
-  --block-bg:       #fff;
-  --block-border:   #ddd;
-  --text-color:     #000;
-  --link-color:     #0078d4;
-  --summary-bg:     #f3f3f3;
-  --summary-border: #ccc;
-  --qr-dark:        var(--link-color);
-  --qr-light:       var(--block-bg);
+  --block-bg:      #fff;
+  --block-border:  #ddd;
+  --text-color:    #000;
+  --link-color:    #0078d4;
+  --qr-dark:       var(--link-color);
+  --qr-light:      var(--block-bg);
 }
 
 body[data-theme="dark"] {
-  --block-bg:       #1a1a1a;
-  --block-border:   #333;
-  --text-color:     #eee;
-  --link-color:     #66aaff;
-  --summary-bg:     #2a2a2a;
-  --summary-border: #444;
-  --qr-dark:        var(--link-color);
-  --qr-light:       var(--block-bg);
+  --block-bg:      #1a1a1a;
+  --block-border:  #333;
+  --text-color:    #eee;
+  --link-color:    #66aaff;
+  --qr-dark:       var(--link-color);
+  --qr-light:      var(--block-bg);
 }
 
 /* ── ベース ── */
@@ -26,14 +22,14 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
                "Helvetica Neue", Arial, sans-serif;
   margin: 0;
-  padding: 0 0 80px;   /* フッター領域を確保 */
+  padding: 0 0 80px;
   background-color: var(--block-bg);
   color: var(--text-color);
   transition: background-color 0.3s ease,
               color 0.3s ease;
 }
 
-/* ── リセット：リストマーカー消去 ── */
+/* ── リストマーカー消去 ── */
 ul {
   list-style: none;
   margin: 0;
@@ -66,7 +62,7 @@ header h1 {
               box-shadow 0.3s ease;
 }
 
-/* ── ナビゲーション共通 ── */
+/* ── nav 共通 ── */
 nav section {
   background-color: var(--block-bg);
   border: 1px solid var(--block-border);
@@ -85,13 +81,13 @@ nav li {
   margin-bottom: 0.6em;
 }
 nav a {
-  display: block;
   text-decoration: none;
   color: var(--link-color);
   padding: 0.6em 0.9em;
+  display: block;
+  border-radius: 5px;
   background-color: var(--block-bg);
   border: 1px solid var(--block-border);
-  border-radius: 5px;
   transition: background-color 0.2s ease,
               color 0.2s ease,
               border-color 0.2s ease;
@@ -102,13 +98,10 @@ nav a:hover {
 }
 
 /* ── Device IP セクション ── */
+/* セクション枠を消し、間隔のみ維持 */
 #device-ip {
-  border: none;          /* セクション枠を消す */
+  border: none;
   margin-bottom: 16px;
-  padding: 10px;         /* nav section と同じ */
-}
-#device-ip h2 {
-  margin-bottom: 0.5em;  /* 見出しと入力部の隙間を狭く */
 }
 #device-ip .connection {
   width: 100%;
@@ -118,10 +111,11 @@ nav a:hover {
 #device-ip .ip-address {
   display: flex;
   align-items: center;
-  margin: 0;             /* 余分なマージンを削除 */
+  margin-bottom: 1em;
 }
 #device-ip .ip-address span {
-  display: none;         /* 「IP:」ラベルを非表示 */
+  margin-right: 0.5em;
+  color: var(--link-color);
 }
 #global-ip-input,
 #global-ip-update {
@@ -139,16 +133,16 @@ nav a:hover {
   flex: 1;
 }
 #global-ip-update {
-  flex: 0;
+  flex: 0 auto;
   cursor: pointer;
 }
 
 /* ── QRコード部分 ── */
 .qr-code {
-  margin-top: 0;         /* 不要な隙間を消去 */
-  padding: 0.5em;        /* 軽めの内側余白 */
+  margin-top: 1em;
+  padding: 1em;
   background-color: var(--block-bg);
-  border: none !important; /* 枠を完全に削除 */
+  border: none !important;
   border-radius: 6px;
   text-align: center;
 }
@@ -161,8 +155,8 @@ nav a:hover {
 /* ── フッター／テーマ切替エリア ── */
 .page-footer-area {
   position: fixed;
-  bottom: 0;
   left: 0;
+  bottom: 0;
   width: 100%;
   background-color: var(--block-bg);
   border-top: 1px solid var(--block-border);
