@@ -181,15 +181,15 @@ footer.copyright-footer {
   border: 1px solid transparent;
   width: 32px;
   height: 32px;
-  display: flex; /* Flexbox を有効にする */
-  justify-content: center; /* 水平方向中央揃え */
-  align-items: center; /* 垂直方向中央揃え */
+  display: flex; /* 追加 */
+  justify-content: center; /* 追加 */
+  align-items: center; /* 追加 */
   border-radius: 50%;
   cursor: pointer;
   transition: background-color 0.2s ease,
               color 0.2s ease;
   font-size: 20px;
-  line-height: normal;
+  line-height: normal; /* 変更 */
 }
 .theme-selector button:hover {
   background-color: rgba(0, 0, 0, 0.05);
