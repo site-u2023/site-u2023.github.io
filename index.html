@@ -45,12 +45,12 @@
           <h2>ローカルネットワーク</h2>
           <ul>
             <li>
-              <a class="link-ip" data-ip-template="http://${ip}" target="_blank" rel="noopener noreferrer">
+              <a class="link-ip" data-ip-template="http://${ip}" href="#" target="_blank" rel="noopener">
                 LuCI (管理画面)
               </a>
             </li>
             <li>
-              <a class="link-ip" data-ip-template="http://${ip}:7681/" target="_blank" rel="noopener noreferrer">
+              <a class="link-ip" data-ip-template="http://${ip}:7681/" href="#" target="_blank" rel="noopener">
                 ttyd (Webターミナル)
               </a>
             </li>
@@ -67,7 +67,12 @@
               </a>
             </li>
             <li>
-              <a id="ssh-link" data-ip-template="sshps://root@${ip}">
+              <a id="ssh-link"
+                 class="link-ip"
+                 data-ip-template="sshps://root@${ip}"
+                 href="#"
+                 target="_blank"
+                 rel="noopener">
                 SSH 接続 (root@<span id="ssh-ip">192.168.1.1</span>)
               </a>
             </li>
@@ -100,9 +105,10 @@
 
   <!-- スクリプト -->
   <script>
+    // 年表示
     document.getElementById('current-year').textContent = new Date().getFullYear();
-  </script>
-  <script>
+
+    // テーマ切替
     (function(){
       const buttons = [...document.querySelectorAll('.theme-selector button')];
       const body = document.body;
@@ -133,8 +139,76 @@
 
       applyTheme(localStorage.getItem('themePreference') || 'auto');
     })();
+
+    // 全角 → 半角変換
+    function toHalfWidth(str) {
+      return str.replace(/[\uFF01-\uFF5E]/g, ch =>
+        String.fromCharCode(ch.charCodeAt(0) - 0xFEE0)
+      ).replace(/\u3000/g, ' ');
+    }
+
+    // IP更新 ＋ QR描画 ＋ リンク反映
+    function updateAll() {
+      const input = document.getElementById('global-ip-input');
+      const ip    = input.value.trim() || input.placeholder;
+
+      const style      = getComputedStyle(document.body);
+      const darkColor  = style.getPropertyValue('--qr-dark').trim();
+      const lightColor = style.getPropertyValue('--qr-light').trim();
+
+      // QRメイン
+      const qrMain = document.getElementById('qrcode-main');
+      if (qrMain) {
+        QRCode.toCanvas(qrMain, `http://${ip}`, {
+          color: { dark: darkColor, light: lightColor }
+        });
+      }
+
+      // QR詳細（SSH）
+      const qrDetail = document.getElementById('qrcode-detail');
+      if (qrDetail) {
+        QRCode.toCanvas(qrDetail, `sshps://root@${ip}`, {
+          color: { dark: darkColor, light: lightColor }
+        });
+      }
+
+      // リンク反映
+      document.querySelectorAll('.link-ip').forEach(link => {
+        const template = link.dataset.ipTemplate;
+        if (template && template.includes('${ip}')) {
+          const url = template.replace('${ip}', ip);
+          link.href = url;
+          link.textContent = url;
+        }
+      });
+
+      // 表示IP更新
+      const sshText = document.getElementById('ssh-ip');
+      if (sshText) sshText.textContent = ip;
+    }
+
+    // 入力欄全体に半角変換＋即反映
+    document.querySelectorAll('input[type="text"]').forEach(input => {
+      input.addEventListener('input', () => {
+        const caret     = input.selectionStart;
+        const converted = toHalfWidth(input.value);
+        if (input.value !== converted) {
+          input.value = converted;
+          input.setSelectionRange(caret, caret);
+        }
+        updateAll();
+      });
+    });
+
+    // イベント
+    document.getElementById('global-ip-update')?.addEventListener('click', updateAll);
+    document.getElementById('global-ip-input')?.addEventListener('keydown', e => {
+      if (e.key === 'Enter') updateAll();
+    });
+
+    // 初期描画
+    updateAll();
   </script>
   <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
-  <script src="script.js"></script>
 </body>
 </html>
