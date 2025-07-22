@@ -2,53 +2,25 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>ワンクリックSSH接続</title>
+  <title>ワンクリックSSH</title>
+  <style>
+    body { font-family: Meiryo; }
+    a.button {
+      display: inline-block;
+      padding: .8em 1.6em;
+      background: #0078d4;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 4px;
+    }
+  </style>
 </head>
 <body>
-  <a href="#" id="oneclick"
-     style="display:inline-block;
-            padding:1em 2em;
-            background:#0078d4;
-            color:#fff;
-            text-decoration:none;
-            border-radius:4px;">
-    SSH接続（デフォルトゲートウェイへ）
-  </a>
-
-  <script>
-  document.getElementById('oneclick').addEventListener('click', e => {
-    e.preventDefault();
-
-    // ① レジストリ登録用 .reg の中身
-    const reg = `
-Windows Registry Editor Version 5.00
-
-[HKEY_CLASSES_ROOT\\\\sshps]
-@="URL:SSHPS Protocol"
-"URL Protocol"=""
-
-[HKEY_CLASSES_ROOT\\\\sshps\\\\shell\\\\open\\\\command]
-@="\\"%SystemRoot%\\\\System32\\\\WindowsPowerShell\\\\v1.0\\\\powershell.exe\\" -NoProfile -WindowStyle Hidden -Command ^
-  \\"$gw=(Get-NetIPConfiguration | Where-Object {$_.IPv4DefaultGateway}).IPv4DefaultGateway.NextHop; ^
-    Start-Process ssh -ArgumentList 'root@$gw' -NoNewWindow;\\""
-`.trim();
-
-    // ② Blob化＋ダウンロード
-    const blob = new Blob([reg], { type: 'application/octet-stream' });
-    const dl   = document.createElement('a');
-    dl.href    = URL.createObjectURL(blob);
-    dl.download= 'sshps-register-gateway.reg';
-    document.body.appendChild(dl);
-    dl.click();
-    document.body.removeChild(dl);
-
-    // ③ 同一ユーザージェスチャでプロトコル呼び出し
-    //     dummyではなく空ホストにする（引数は無視される）
-    setTimeout(() => {
-      window.location.href = 'sshps://';
-      URL.revokeObjectURL(dl.href);
-    }, 200);
-  });
-  </script>
+  <h1>SSH接続（デフォルトゲートウェイ）</h1>
+  <p>
+    下のボタンをクリックすると、Powershell が立ち上がって
+    デフォルトゲートウェイを自動取得→SSH接続します。
+  </p>
+  <a href="sshps://" class="button">SSHを一発起動</a>
 </body>
 </html>
