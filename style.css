@@ -86,7 +86,9 @@ nav a {
   border-radius: 5px;
   background-color: var(--block-bg);
   border: 1px solid var(--block-border);
-  transition: background-color 0.2s ease,color 0.2s ease,border-color 0.2s ease;
+  transition: background-color 0.2s ease,
+              color 0.2s ease,
+              border-color 0.2s ease;
 }
 nav a:hover {
   background-color: var(--link-color);
@@ -112,13 +114,21 @@ nav a:hover {
   flex: 1;
   margin-bottom: 1em;
 }
-#device-ip .ip-address span {
-  margin-right: 0.5em;
-  color: var(--link-color);
-}
-#global-ip-input,
+
+/* IP入力欄 */
+#global-ip-input {
   flex: 1;
+  padding: 0.6em 0.9em;
+  background-color: var(--block-bg);
+  color: var(--link-color);
+  border: 1px solid var(--block-border);
+  border-radius: 5px;
+  font-size: 1em;
+  line-height: 1.2;
+  box-sizing: border-box;
 }
+
+/* 更新ボタン */
 #global-ip-update {
   padding: 0.6em 0.9em;
   margin-left: auto;
@@ -129,13 +139,6 @@ nav a:hover {
   font-size: 1em;
   line-height: 1.2;
   box-sizing: border-box;
-  cursor: pointer;
-}
-#global-ip-input {
-  flex: 1;
-}
-#global-ip-update {
-  flex: 0 auto;
   cursor: pointer;
 }
 
