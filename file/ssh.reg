@@ -7,5 +7,9 @@ Windows Registry Editor Version 5.00
 [HKEY_CLASSES_ROOT\ssh\DefaultIcon]
 @="C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
 
+[HKEY_CLASSES_ROOT\ssh\shell]
+
+[HKEY_CLASSES_ROOT\ssh\shell\open]
+
 [HKEY_CLASSES_ROOT\ssh\shell\open\command]
-@="\"%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe\" -NoExit -Command \"ssh root@(($args[0] -split '://')[1])\" \"%1\""
+@="\"%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe\" -NoExit -Command \"ssh root@((New-Object System.Uri '%1').Host)\""
