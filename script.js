@@ -55,7 +55,7 @@ function updateAll() {
   // QRコード（詳細）
   const qrDetail = document.getElementById('qrcode-detail');
   if (qrDetail) {
-    QRCode.toCanvas(qrDetail, `sshps://root@${ip}`, {
+    QRCode.toCanvas(qrDetail, `ssh://root@${ip}`, {
       color: { dark: darkColor, light: lightColor }
     });
   }
