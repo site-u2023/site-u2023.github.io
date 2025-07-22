@@ -65,7 +65,7 @@ header h1 {
 /* ── nav 共通 ── */
 nav section {
   background-color: var(--block-bg);
-  border: 1px solid var(--block-border);
+  border: none;
   padding: 10px;
   margin-bottom: 16px;
 }
@@ -74,8 +74,6 @@ nav h2 {
   margin-bottom: 0.8em;
   color: var(--link-color);
   font-size: 1.3em;
-  border-bottom: 1px solid var(--block-border);
-  padding-bottom: 0.3em;
 }
 nav li {
   margin-bottom: 0.6em;
@@ -260,10 +258,6 @@ body[data-theme="dark"] nav h2 {
 body[data-theme="dark"] nav a {
   background-color: var(--block-bg);
   border-color: var(--block-border);
-}
-body[data-theme="dark"] nav a:hover {
-  background-color: var(--link-color);
-  color: var(--block-bg);
 }
 body[data-theme="dark"] .page-footer-area {
   border-top-color: var(--block-border);
