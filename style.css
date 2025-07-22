@@ -6,6 +6,9 @@ body[data-theme="light"] {
   --text-color:    var(--link-color);
   --hover-bg:      var(--link-color);
   --hover-color:   var(--block-bg);
+  /* QRコードの色を追加 */
+  --qr-dark:       #000;
+  --qr-light:      #fff;
 }
 
 body[data-theme="dark"] {
@@ -15,6 +18,9 @@ body[data-theme="dark"] {
   --text-color:    var(--link-color);
   --hover-bg:      var(--link-color);
   --hover-color:   var(--block-bg);
+  /* QRコードの色を追加 */
+  --qr-dark:       #fff;
+  --qr-light:      #1a1a1a;
 }
 
 /* ── ベース ── */
@@ -66,15 +72,15 @@ header h1 {
 input,
 button,
 a {
-  color:            inherit;                /* 文字色は --text-color */
-  background-color: inherit;                /* 背景は --block-bg */
+  color:            inherit;             /* 文字色は --text-color */
+  background-color: inherit;             /* 背景は --block-bg */
   border:           1px solid var(--block-border);
   border-radius:    5px;
   padding:          0.6em 0.9em;
   box-sizing:       border-box;
   transition:       background-color 0.2s ease,
                     color 0.2s ease;
-  text-decoration:  none;                   /* 下線を消す */
+  text-decoration:  none;                /* 下線を消す */
 }
 
 /* ── ナビゲーション ── */
