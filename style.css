@@ -262,6 +262,7 @@ body[data-theme="dark"] nav a {
   border-color: var(--block-border);
 }
 body[data-theme="dark"] nav a:hover {
+  background-color: var(--link-color);
   color: var(--block-bg);
 }
 body[data-theme="dark"] .page-footer-area {
