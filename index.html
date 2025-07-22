@@ -28,28 +28,22 @@
       --qr-light:        #1a1a1a;
     }
 
+    /* 共通スタイル（元のCSSに依存） */
     body {
       background: var(--block-bg);
       color: var(--text-color);
       margin: 0;
       font-family: sans-serif;
     }
-    a {
-      color: var(--link-color);
-      text-decoration: none;
-    }
-    .link-ip,
-    #ssh-link {
+    a, .link-ip, #ssh-link {
       color: var(--link-color);
     }
-
     nav section {
       background: var(--block-bg);
       border: 1px solid var(--block-border);
       padding: 10px;
       margin-bottom: 16px;
     }
-
     summary {
       cursor: pointer;
       padding: 6px;
@@ -59,30 +53,23 @@
       margin-top: 10px;
       color: var(--text-color);
     }
-
-    label, button {
-      margin-right: 6px;
+    label, button, input[type="text"] {
       color: var(--text-color);
-    }
-
-    input[type="text"] {
       background: var(--block-bg);
       border: 1px solid var(--block-border);
-      color: var(--text-color);
+    }
+    input[type="text"] {
       padding: 2px 4px;
     }
-
     #qrcode {
       margin-top: 10px;
       padding: 10px;
       background: var(--block-bg);
       border: 1px solid var(--block-border);
     }
-
     #qrcode canvas {
       background-color: var(--qr-light);
     }
-
     .theme-selector button {
       background: none;
       border: none;
