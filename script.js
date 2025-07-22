@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
   // テーマ切替（auto / light / dark）
   (function(){
-    const html    = document.documentElement;
+    const html    = document.documentElement; // html要素を取得
     const buttons = document.querySelectorAll('.theme-selector button');
     const stored  = localStorage.getItem('site-u-theme') || 'auto';
 
@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const theme = pref === 'auto'
         ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
         : pref;
-      html.setAttribute('data-theme', theme);
+      html.setAttribute('data-theme', theme); // html要素にdata-theme属性を設定
       buttons.forEach(btn => {
         btn.classList.toggle('selected', btn.dataset.themePreference === pref);
       });
@@ -21,7 +21,15 @@ document.addEventListener('DOMContentLoaded', () => {
       btn.addEventListener('click', () => applyTheme(btn.dataset.themePreference));
     });
 
+    // 初回適用
     applyTheme(stored);
+
+    // システムテーマの変更を監視
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+      if ((localStorage.getItem('site-u-theme') || 'auto') === 'auto') {
+        applyTheme('auto');
+      }
+    });
   })();
 
   // 年表示
@@ -39,6 +47,43 @@ document.addEventListener('DOMContentLoaded', () => {
       .replace(/\u3000/g, ' ');
   }
 
+  /**
+   * 指定されたコンテナ要素内にQRコードを生成して描画するヘルパー関数
+   * @param {string} containerId QRコードを表示するdiv要素のID
+   * @param {string} data QRコードにエンコードするデータ
+   * @param {object} options QRCode.toCanvasに渡すオプション
+   */
+  function createAndDrawQrCode(containerId, data, options) {
+    const container = document.getElementById(containerId);
+    if (!container) {
+      console.warn(`QRコードコンテナが見つかりません: #${containerId}`);
+      return;
+    }
+
+    // 既存のcanvas要素があれば削除して再生成
+    let canvas = container.querySelector('canvas');
+    if (canvas) {
+      // スタイルを維持するために、canvasの内容をクリア
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+    } else {
+      canvas = document.createElement('canvas');
+      container.appendChild(canvas);
+      // CSSで設定されたサイズを適用するために、QRコードのCSSクラスを付与
+      canvas.classList.add('qr-code-canvas-inner'); // 新しいクラスを追加
+    }
+
+    if (window.QRCode) {
+      QRCode.toCanvas(canvas, data, options, function (error) {
+        if (error) console.error(`QRコード生成エラー (${containerId}):`, error);
+      });
+    } else {
+      console.warn('QRCodeライブラリがロードされていません。');
+    }
+  }
+
   // IP更新＋QR描画＋リンク反映
   function updateAll() {
     const input = document.getElementById('global-ip-input');
@@ -50,20 +95,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const lightColor = style.getPropertyValue('--qr-light').trim();
 
     // QRコード（メイン）
-    const qrMain = document.getElementById('qrcode-main');
-    if (qrMain && window.QRCode) {
-      QRCode.toCanvas(qrMain, `http://${ip}`, {
-        color: { dark: darkColor, light: lightColor }
-      });
-    }
+    createAndDrawQrCode('qrcode-main', `http://${ip}`, {
+      color: { dark: darkColor, light: lightColor }
+    });
 
     // QRコード（詳細）
-    const qrDetail = document.getElementById('qrcode-detail');
-    if (qrDetail && window.QRCode) {
-      QRCode.toCanvas(qrDetail, `ssh://root@${ip}`, {
-        color: { dark: darkColor, light: lightColor }
-      });
-    }
+    createAndDrawQrCode('qrcode-detail', `ssh://root@${ip}`, {
+      color: { dark: darkColor, light: lightColor }
+    });
 
     // IPベースのリンクを更新
     document.querySelectorAll('.link-ip').forEach(link => {
@@ -71,7 +110,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (template && template.includes('${ip}')) {
         const url = template.replace('${ip}', ip);
         link.href = url;
-        link.textContent = url;
+        link.textContent = url; // リンクのテキストもURLに更新
       }
     });
 
@@ -98,7 +137,10 @@ document.addEventListener('DOMContentLoaded', () => {
   // 更新ボタン・Enter で updateAll
   document.getElementById('global-ip-update')?.addEventListener('click', updateAll);
   document.getElementById('global-ip-input')?.addEventListener('keydown', e => {
-    if (e.key === 'Enter') updateAll();
+    if (e.key === 'Enter') {
+      updateAll();
+      e.preventDefault(); // Enterキーによるフォーム送信を防止
+    }
   });
 
   // 初期描画
