@@ -83,6 +83,11 @@ a {
   text-decoration:  none;                /* 下線を消す */
 }
 
+a:hover {
+  background-color: var(--hover-bg);
+  color:            var(--hover-color);
+}
+
 /* ── ナビゲーション ── */
 nav section {
   background-color: var(--block-bg);
