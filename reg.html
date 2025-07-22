@@ -6,44 +6,53 @@
 </head>
 <body>
   <input id="host" type="text" placeholder="ホスト名（例: myrouter.local）">
-  <button id="reg-btn">ワンクリックでSSH起動セットアップ</button>
+  <button id="reg-btn">ワンクリックSSHセットアップ</button>
 
   <script>
-  document.getElementById('reg-btn').addEventListener('click', () => {
-    const host = document.getElementById('host').value.trim();
+  const hostInput = document.getElementById('host');
+  const btn       = document.getElementById('reg-btn');
+
+  // ① ページ読み込み時に保存済みホストを復元
+  const saved = localStorage.getItem('sshpsHost');
+  if (saved) hostInput.value = saved;
+
+  // ② ホスト名が変わったらストレージに保存
+  hostInput.addEventListener('change', () => {
+    localStorage.setItem('sshpsHost', hostInput.value.trim());
+  });
+
+  btn.addEventListener('click', () => {
+    const host = hostInput.value.trim();
     if (!host) return alert('ホスト名を入力してください');
 
-    // 1) .reg の内容を組み立て
+    // ③ .reg を自動生成＆ダウンロード
     const reg = `
 Windows Registry Editor Version 5.00
 
-[HKEY_CLASSES_ROOT\\sshps]
+[HKEY_CLASSES_ROOT\\\\sshps]
 @="URL:SSHPS Protocol"
 "URL Protocol"=""
 
-[HKEY_CLASSES_ROOT\\sshps\\shell]
+[HKEY_CLASSES_ROOT\\\\sshps\\\\shell]
 @="open"
 
-[HKEY_CLASSES_ROOT\\sshps\\shell\\open\\command]
+[HKEY_CLASSES_ROOT\\\\sshps\\\\shell\\\\open\\\\command]
 @="\\"C:\\\\Windows\\\\System32\\\\WindowsPowerShell\\\\v1.0\\\\powershell.exe\\" -NoProfile -Command ^
   "$dns = (Get-DnsClientServerAddress -AddressFamily IPv4)[0].ServerAddresses[0]; ^
    $ip  = (Resolve-DnsName -Name '${host}' -Server $dns -ErrorAction Stop).IPAddress; ^
-   ssh root@$ip;\""
-`.trim();
+   Start-Process ssh -ArgumentList 'root@$ip';\""`.trim();
 
-    // 2) Blob 化してダウンロード
     const blob = new Blob([reg], { type: 'application/octet-stream' });
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
-    a.href     = url;
-    a.download = `sshps-register-${host}.reg`;
+    a.href        = url;
+    a.download    = `sshps-register-${host}.reg`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
 
-    // 3) 少し待ってプロトコルハンドラを呼び出し
+    // ④ 少し待ってプロトコルハンドラを呼び出し
     setTimeout(() => {
-      // ここでブラウザに「外部アプリを開きますか？」と聞かせる
       window.location.href = `sshps://${host}`;
       URL.revokeObjectURL(url);
     }, 500);
