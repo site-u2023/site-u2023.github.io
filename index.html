@@ -27,22 +27,18 @@
       --qr-dark:         #fff;
       --qr-light:        #1a1a1a;
     }
-
     body {
       color: var(--text-color);
     }
     a {
       color: var(--link-color);
     }
-
     nav section {
       background: var(--block-bg);
       border: 1px solid var(--block-border);
       padding: 10px;
       margin-bottom: 16px;
     }
-
-    /* summary styling */
     summary {
       cursor: pointer;
       padding: 6px;
@@ -52,25 +48,22 @@
       margin-top: 10px;
       color: var(--text-color);
     }
-
     label, button {
       margin-right: 6px;
       color: var(--text-color);
     }
-
     input[type="text"] {
       background: var(--block-bg);
       border: 1px solid var(--block-border);
       color: var(--text-color);
+      padding: 2px 4px;
     }
-
     #qrcode {
       margin-top: 10px;
       padding: 10px;
       background: var(--block-bg);
       border: 1px solid var(--block-border);
     }
-
     #qrcode canvas {
       background-color: var(--qr-light);
     }
@@ -107,8 +100,12 @@
         <section id="local-services">
           <h2>ローカルネットワーク</h2>
           <ul>
-            <li><a class="link-ip" data-ip-template="http://${ip}" target="_blank">LuCI (管理画面)</a></li>
-            <li><a class="link-ip" data-ip-template="http://${ip}:7681/" target="_blank">ttyd (Webターミナル)</a></li>
+            <li><a class="link-ip"
+                   data-ip-template="http://${ip}"
+                   target="_blank">LuCI (管理画面)</a></li>
+            <li><a class="link-ip"
+                   data-ip-template="http://${ip}:7681/"
+                   target="_blank">ttyd (Webターミナル)</a></li>
           </ul>
         </section>
 
@@ -116,8 +113,11 @@
         <section id="terminal">
           <h2>ターミナル</h2>
           <ul>
-            <li><a href="file/ssh.reg" download>SSH 用プロトコル登録 (ssh://) (.reg)</a></li>
-            <li><a id="ssh-link" data-ip-template="ssh://root@${ip}">SSH 接続 (root@<span id="ssh-ip">192.168.1.1</span>)</a></li>
+            <li><a href="file/shps.reg" download>SSH 用プロトコル登録 (sshps://) (.reg)</a></li>
+            <li><a id="ssh-link"
+                   data-ip-template="sshps://root@${ip}">
+                SSH 接続 (root@<span id="ssh-ip">192.168.1.1</span>)
+            </a></li>
             <li>
               <details>
                 <summary>QRコードを表示</summary>
@@ -153,6 +153,7 @@
       const style = getComputedStyle(document.body);
       const dark = style.getPropertyValue('--qr-dark').trim();
       const light = style.getPropertyValue('--qr-light').trim();
+
       QRCode.toCanvas(qrBox, uri, { color: { dark: dark, light: light } });
     }
 
@@ -161,8 +162,6 @@
       document.getElementById('global-ip-update').addEventListener('click', updateAll);
       updateAll();
     });
-
-    // テーマ切り替えは既存ロジックに任せます
   </script>
 </body>
 </html>
