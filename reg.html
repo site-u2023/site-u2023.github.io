@@ -1,26 +1,54 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <title>ワンクリックSSH</title>
+  <meta charset="utf-8">
+  <title>ワンクリックSSH起動</title>
   <style>
-    body { font-family: Meiryo; }
-    a.button {
-      display: inline-block;
-      padding: .8em 1.6em;
-      background: #0078d4;
-      color: #fff;
-      text-decoration: none;
-      border-radius: 4px;
-    }
+    body { font-family: Meiryo; padding: 2em; }
+    button { padding: .8em 1.6em; font-size: 1em; }
   </style>
 </head>
 <body>
-  <h1>SSH接続（デフォルトゲートウェイ）</h1>
-  <p>
-    下のボタンをクリックすると、Powershell が立ち上がって
-    デフォルトゲートウェイを自動取得→SSH接続します。
-  </p>
-  <a href="sshps://" class="button">SSHを一発起動</a>
+  <h1>SSHをワンクリックで起動</h1>
+  <button id="sshBtn">SSH 起動</button>
+
+  <script>
+  document.getElementById('sshBtn').addEventListener('click', e => {
+    e.preventDefault();
+
+    // ── HTML に埋め込んだ Reg ファイル内容 ──
+    const regText = `
+Windows Registry Editor Version 5.00
+
+[HKEY_CLASSES_ROOT\\\\sshps]
+@="URL:SSHPS Protocol"
+"URL Protocol"=""
+
+[HKEY_CLASSES_ROOT\\\\sshps\\\\shell\\\\open\\\\command]
+@="\\"%SystemRoot%\\\\System32\\\\WindowsPowerShell\\\\v1.0\\\\powershell.exe\\" -NoProfile -WindowStyle Hidden -Command ^
+  \\"$dns=(Get-DnsClientServerAddress -AddressFamily IPv4)[0].ServerAddresses[0]; ^
+    $gw=(Get-NetIPConfiguration | Where-Object { $_.IPv4DefaultGateway }).IPv4DefaultGateway.NextHop; ^
+    $ip=(Resolve-DnsName -Name $gw -Server $dns -ErrorAction Stop).IPAddress; ^
+    Start-Process ssh -ArgumentList 'root@$ip' -NoNewWindow;\\""
+`.trim();
+
+    // 1) Blob 化して Reg ファイルを自動生成＆ダウンロード
+    const blob = new Blob([regText], { type: 'application/octet-stream' });
+    const dl   = document.createElement('a');
+    dl.href    = URL.createObjectURL(blob);
+    dl.download= 'sshps-setup.reg';
+    dl.style.display = 'none';
+    document.body.appendChild(dl);
+    dl.click();
+    document.body.removeChild(dl);
+
+    // 2) 同一ジェスチャーでプロトコルハンドラを呼び出し
+    //    「開く」を選ぶとレジストリに登録され、即 PowerShell→SSH が動きます。
+    setTimeout(() => {
+      window.location.href = 'sshps://';
+      URL.revokeObjectURL(dl.href);
+    }, 300);
+  });
+  </script>
 </body>
 </html>
