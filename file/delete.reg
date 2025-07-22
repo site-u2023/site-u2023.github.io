@@ -1,4 +1,17 @@
 Windows Registry Editor Version 5.00
 
-; sshps スキーム用のキーをまるごと削除
+; カスタム sshps スキームを削除
 [-HKEY_CLASSES_ROOT\sshps]
+[-HKEY_CURRENT_USER\Software\Classes\sshps]
+
+; カスタム ssh スキーム（以前の ssh.reg）を削除
+[-HKEY_CLASSES_ROOT\ssh]
+[-HKEY_CURRENT_USER\Software\Classes\ssh]
+
+; カスタム cmd スキームを削除（もし登録していれば）
+[-HKEY_CLASSES_ROOT\cmd]
+[-HKEY_CURRENT_USER\Software\Classes\cmd]
+
+; カスタム wt スキームを削除（もし登録していれば）
+[-HKEY_CLASSES_ROOT\wt]
+[-HKEY_CURRENT_USER\Software\Classes\wt]
