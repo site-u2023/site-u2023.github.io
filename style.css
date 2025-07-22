@@ -100,14 +100,16 @@ nav a:hover {
   margin-bottom: 16px;
 }
 #device-ip .connection {
-  width: 100%;
   padding: 0;
   text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
 }
 #device-ip .ip-address {
   display: flex;
   align-items: center;
-  width: 100%;
+  flex: 1;
   margin-bottom: 1em;
 }
 #device-ip .ip-address span {
@@ -115,9 +117,11 @@ nav a:hover {
   color: var(--link-color);
 }
 #global-ip-input,
+  flex: 1;
+}
 #global-ip-update {
   padding: 0.6em 0.9em;
-  margin-right: 0.5em;
+  margin-left: auto;
   background-color: var(--block-bg);
   color: var(--link-color);
   border: 1px solid var(--block-border);
@@ -125,6 +129,7 @@ nav a:hover {
   font-size: 1em;
   line-height: 1.2;
   box-sizing: border-box;
+  cursor: pointer;
 }
 #global-ip-input {
   flex: 1;
