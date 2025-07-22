@@ -8,4 +8,4 @@ Windows Registry Editor Version 5.00
 @="C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe,0"
 
 [HKEY_CLASSES_ROOT\sshps\shell\open\command]
-@="\"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe\" -NoExit -Command \"$uri=[Uri]::new('%1'); ssh root@$($uri.Host)\""
+@="cmd.exe /C \"if exist \"%ProgramFiles%\\PowerShell\\7\\pwsh.exe\" (\"%ProgramFiles%\\PowerShell\\7\\pwsh.exe\" -NoExit -Command \"$uri=[Uri]::new('%1'); ssh root@$($uri.Host)\") else (\"%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe\" -NoExit -Command \"$uri=[Uri]::new('%1'); ssh root@$($uri.Host)\")\""
