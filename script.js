@@ -34,11 +34,14 @@ function updateAll() {
   const lightColor = style.getPropertyValue('--qr-light').trim();
   const target = document.getElementById('qrcode-main');
 
-  target.innerHTML = '';
-  QRCode.toCanvas(target, `http://${ip}`, {
-    width: 180,
-    color: { dark: darkColor, light: lightColor }
-  });
+  QRCode.toCanvas(el, `http://${ip}`, {
+  color: {
+    dark:  getComputedStyle(document.body)
+               .getPropertyValue('--link-color').trim(),
+    light: getComputedStyle(document.body)
+               .getPropertyValue('--block-bg').trim()
+  }
+});
 }
 
 document.getElementById('global-ip-update')
