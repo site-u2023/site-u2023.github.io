@@ -110,21 +110,22 @@ nav a:hover {
   gap: 1rem;
 }
 
+/* IP入力欄＋ボタンを同一行にしつつ 幅だけ調整 */
 #device-ip .ip-address {
-  display: flex;
-  align-items: center;
-  flex: 1;
-  overflow: hidden;
+  position: relative;
 }
 
-/* ── IP入力欄 ＋ 更新ボタン整列 ── */
+/* 入力欄の幅＝100%−ボタン幅 */
 #global-ip-input {
-  width: calc(100% - 80px);
+  width: calc(100% - 5em);     /* 5em は「更新」ボタンの幅＋余白相当。実測値に合わせて調整 */
+  box-sizing: border-box;      /* padding や border を含めて幅を計算 */
 }
 
+/* ボタンは入力欄の内側右端に重ねる */
 #global-ip-update {
-  margin-left: auto;
-  flex: 0 0 auto;
+  position: absolute;
+  top: 0;
+  right: 0;
 }
 
 /* ── QRコード部分 ── */
