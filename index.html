@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>OpenWrt: A Beginner’s Notebook</title>
 
-  <!-- SEO, Open Graph, Twitter, etc. -->
+  <!-- SEO, Open Graph, Twitter... -->
   <meta name="description" content="OpenWrt">
   <meta name="keywords"    content="OpenWrt">
   <meta name="author"      content="site-u2023">
@@ -49,42 +49,22 @@
 
   <link rel="stylesheet" href="style.css">
   <style>
-    /* Theme variables */
-    body[data-theme="light"] {
-      --summary-bg:     #eee;
-      --summary-border: #ccc;
-      --qr-dark:        #000;
-      --qr-light:       #fff;
-    }
-    body[data-theme="dark"] {
-      --summary-bg:     #444;
-      --summary-border: #666;
-      --qr-dark:        #fff;
-      --qr-light:       #000;
-    }
-
-    /* summary styling */
     summary {
       cursor: pointer;
       padding: 6px;
-      background: var(--summary-bg);
-      border: 1px solid var(--summary-border);
+      background: #eee;
+      border: 1px solid #ccc;
       margin-top: 10px;
       display: inline-block;
     }
-
     label, button {
       margin-right: 6px;
     }
-
-    /* QR container spacing */
     #qrcode {
       margin-top: 10px;
     }
-
-    /* QR canvas: background follows theme */
     #qrcode canvas {
-      background-color: var(--qr-light);
+      background-color: #fff;
     }
   </style>
 </head>
@@ -95,15 +75,18 @@
     </header>
     <main>
       <nav>
+
         <!-- 1) デバイスIP入力セクション -->
         <section id="device-ip">
           <h2>デバイス IP アドレス</h2>
           <label>
             IP:
-            <input type="text"
-                   id="global-ip-input"
-                   value="192.168.1.1"
-                   placeholder="例: 192.168.0.1">
+            <input
+              type="text"
+              id="global-ip-input"
+              value="192.168.1.1"
+              placeholder="例: 192.168.0.1"
+            >
           </label>
           <button id="global-ip-update" type="button">更新</button>
         </section>
@@ -130,18 +113,22 @@
           <h2>ローカルネットワーク</h2>
           <ul>
             <li>
-              <a class="link-ip"
-                 data-ip-template="http://${ip}"
-                 target="_blank"
-                 rel="noopener noreferrer">
+              <a
+                class="link-ip"
+                data-ip-template="http://${ip}"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 <span class="repo-name">LuCI</span> (管理画面)
               </a>
             </li>
             <li>
-              <a class="link-ip"
-                 data-ip-template="http://${ip}:7681/"
-                 target="_blank"
-                 rel="noopener noreferrer">
+              <a
+                class="link-ip"
+                data-ip-template="http://${ip}:7681/"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 <span class="repo-name">ttyd</span> (Webターミナル)
               </a>
             </li>
@@ -153,14 +140,16 @@
           <h2>ターミナル</h2>
           <ul>
             <li>
-              <a href="file/ssh.reg" download>
-                SSH 用プロトコル登録 (ssh://) (.reg)
+              <a href="file/cmd.reg" download>
+                SSH 用プロトコル登録 (cmd://) (.reg)
               </a>
             </li>
             <li>
-              <a id="ssh-link"
-                 data-ip-template="ssh://${ip}">
-                SSH 接続 (ssh://<span id="ssh-ip">192.168.1.1</span>)
+              <a
+                id="ssh-link"
+                data-ip-template="cmd://${ip}"
+              >
+                SSH 接続 (root@<span id="ssh-ip">192.168.1.1</span>)
               </a>
             </li>
             <li>
@@ -171,6 +160,7 @@
             </li>
           </ul>
         </section>
+
       </nav>
     </main>
   </div><!-- .container -->
@@ -178,15 +168,21 @@
   <div class="page-footer-area">
     <div class="theme-controls-bar">
       <div class="theme-selector">
-        <button id="theme-auto"
-                aria-label="システムテーマ"
-                data-theme-preference="auto">🌗</button>
-        <button id="theme-dark"
-                aria-label="ダークテーマ"
-                data-theme-preference="dark">🌙</button>
-        <button id="theme-light"
-                aria-label="ライトテーマ"
-                data-theme-preference="light">☀️</button>
+        <button
+          id="theme-auto"
+          aria-label="システムテーマ"
+          data-theme-preference="auto"
+        >🌗</button>
+        <button
+          id="theme-dark"
+          aria-label="ダークテーマ"
+          data-theme-preference="dark"
+        >🌙</button>
+        <button
+          id="theme-light"
+          aria-label="ライトテーマ"
+          data-theme-preference="light"
+        >☀️</button>
       </div>
     </div>
     <footer class="copyright-footer">
@@ -201,75 +197,92 @@
   </script>
 
   <script>
-  (function(){
-    // テーマ切り替えロジック
-    const buttons     = [
-      document.getElementById('theme-auto'),
-      document.getElementById('theme-light'),
-      document.getElementById('theme-dark')
-    ];
-    const body        = document.body;
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
+    // テーマ切り替え（従来通り）
+    (function(){
+      const buttons = [
+        document.getElementById('theme-auto'),
+        document.getElementById('theme-light'),
+        document.getElementById('theme-dark')
+      ];
+      const body = document.body;
+      const mq = window.matchMedia('(prefers-color-scheme: dark)');
 
-    function applyTheme(pref) {
-      localStorage.setItem('themePreference', pref);
-      const actual = pref === 'auto'
-        ? (prefersDark.matches ? 'dark' : 'light')
-        : pref;
-      body.dataset.theme = actual;
-      updateAll();  // QRを再生成
-    }
-
-    buttons.forEach(b => {
-      if (b) b.addEventListener('click', () =>
-        applyTheme(b.dataset.themePreference)
-      );
-    });
-    prefersDark.addEventListener('change', () => {
-      if ((localStorage.getItem('themePreference') || 'auto') === 'auto') {
-        applyTheme('auto');
+      function apply(pref){
+        localStorage.setItem('themePreference', pref);
+        const actual = pref === 'auto'
+          ? (mq.matches ? 'dark' : 'light')
+          : pref;
+        body.dataset.theme = actual;
       }
-    });
-    applyTheme(localStorage.getItem('themePreference') || 'auto');
-  })();
+
+      buttons.forEach(b => {
+        if (b) b.addEventListener('click', () =>
+          apply(b.dataset.themePreference)
+        );
+      });
+      mq.addEventListener('change', () => {
+        if ((localStorage.getItem('themePreference') || 'auto') === 'auto') {
+          apply('auto');
+        }
+      });
+      apply(localStorage.getItem('themePreference') || 'auto');
+    })();
   </script>
 
   <!-- QRCode.js -->
   <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
   <script>
     function updateAll() {
-      const ip = document.getElementById('global-ip-input')
-                     .value.trim() || '192.168.1.1';
+      const ip = document
+        .getElementById('global-ip-input')
+        .value.trim() || '192.168.1.1';
 
-      // 1) ローカルサービスリンク更新
+      // ローカルサービスリンクを更新
       document.querySelectorAll('.link-ip').forEach(el => {
         el.href = el.dataset.ipTemplate.replace(/\$\{ip\}/g, ip);
       });
 
-      // 2) SSHリンク更新
-      const linkEl = document.getElementById('ssh-link');
-      const tpl    = linkEl.dataset.ipTemplate;
-      const uri    = tpl.replace(/\$\{ip\}/g, ip);
-      linkEl.href           = uri;
+      // SSHリンク更新（cmd:// かつ root固定）
+      const sshTpl = document
+        .getElementById('ssh-link')
+        .dataset.ipTemplate;
+      const uri = sshTpl.replace(/\$\{ip\}/g, ip);
+
+      const link = document.getElementById('ssh-link');
+      link.href = uri;
       document.getElementById('ssh-ip').textContent = ip;
 
-      // 3) QRコード生成（テーマ対応色で）
+      // QRコード生成（即反映＆テーマ対応）
       const qrBox = document.getElementById('qrcode');
       qrBox.innerHTML = '';
 
-      const style = getComputedStyle(document.body);
-      const dark  = style.getPropertyValue('--qr-dark').trim();
-      const light = style.getPropertyValue('--qr-light').trim();
+      const canvasDark = getComputedStyle(document.body)
+        .getPropertyValue('--qr-dark')
+        .trim() || '#000';
+      const canvasLight = getComputedStyle(document.body)
+        .getPropertyValue('--qr-light')
+        .trim() || '#fff';
 
-      QRCode.toCanvas(qrBox, uri, {
-        color: { dark: dark, light: light }
-      }, err => err && console.error(err));
+      QRCode.toCanvas(
+        qrBox,
+        uri,
+        { color: { dark: canvasDark, light: canvasLight } },
+        err => err && console.error(err)
+      );
     }
 
     window.addEventListener('DOMContentLoaded', () => {
-      document.getElementById('global-ip-update')
-              .addEventListener('click', updateAll);
-      updateAll();
+      // 自動反映：入力変更で即更新
+      document
+        .getElementById('global-ip-input')
+        .addEventListener('input', updateAll);
+
+      // 従来の更新ボタンも残す
+      document
+        .getElementById('global-ip-update')
+        .addEventListener('click', updateAll);
+
+      updateAll(); // 初期描画
     });
   </script>
 </body>
