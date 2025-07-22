@@ -6,8 +6,8 @@ body[data-theme="light"] {
   --link-color:    #0078d4;
   --summary-bg:    #f3f3f3;
   --summary-border:#ccc;
-  --qr-dark:       #000;
-  --qr-light:      #fff;
+  --qr-dark:      var(--link-color);
+  --qr-light:     var(--block-bg);
 }
 
 body[data-theme="dark"] {
@@ -17,8 +17,8 @@ body[data-theme="dark"] {
   --link-color:    #66aaff;
   --summary-bg:    #2a2a2a;
   --summary-border:#444;
-  --qr-dark:       #fff;
-  --qr-light:      #1a1a1a;
+  --qr-dark:      var(--link-color); 
+  --qr-light:     var(--block-bg);
 }
 
 /* ── ベース ── */
