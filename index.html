@@ -27,18 +27,29 @@
       --qr-dark:         #fff;
       --qr-light:        #1a1a1a;
     }
+
     body {
+      background: var(--block-bg);
       color: var(--text-color);
+      margin: 0;
+      font-family: sans-serif;
     }
     a {
       color: var(--link-color);
+      text-decoration: none;
     }
+    .link-ip,
+    #ssh-link {
+      color: var(--link-color);
+    }
+
     nav section {
       background: var(--block-bg);
       border: 1px solid var(--block-border);
       padding: 10px;
       margin-bottom: 16px;
     }
+
     summary {
       cursor: pointer;
       padding: 6px;
@@ -48,46 +59,66 @@
       margin-top: 10px;
       color: var(--text-color);
     }
+
     label, button {
       margin-right: 6px;
       color: var(--text-color);
     }
+
     input[type="text"] {
       background: var(--block-bg);
       border: 1px solid var(--block-border);
       color: var(--text-color);
       padding: 2px 4px;
     }
+
     #qrcode {
       margin-top: 10px;
       padding: 10px;
       background: var(--block-bg);
       border: 1px solid var(--block-border);
     }
+
     #qrcode canvas {
       background-color: var(--qr-light);
+    }
+
+    .theme-selector button {
+      background: none;
+      border: none;
+      font-size: 1.2rem;
+      cursor: pointer;
+      margin-right: 4px;
+      color: var(--text-color);
+    }
+    .theme-selector button.selected {
+      font-weight: bold;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <header><h1>OpenWrt: A Beginner’s Notebook</h1></header>
+    <header>
+      <h1>OpenWrt: A Beginner’s Notebook</h1>
+    </header>
     <main>
       <nav>
-        <!-- デバイス IP セクション -->
+        <!-- 1) デバイス IP セクション -->
         <section id="device-ip">
           <h2>デバイス IP アドレス</h2>
           <label>
             IP:
-            <input type="text"
-                   id="global-ip-input"
-                   value="192.168.1.1"
-                   placeholder="例: 192.168.0.1">
+            <input
+              type="text"
+              id="global-ip-input"
+              value="192.168.1.1"
+              placeholder="例: 192.168.0.1"
+            >
           </label>
-          <button id="global-ip-update">更新</button>
+          <button id="global-ip-update" type="button">更新</button>
         </section>
 
-        <!-- プロジェクト -->
+        <!-- 2) プロジェクト -->
         <section id="project">
           <h2>プロジェクト</h2>
           <ul>
@@ -96,28 +127,44 @@
           </ul>
         </section>
 
-        <!-- ローカルサービス -->
+        <!-- 3) ローカルサービス -->
         <section id="local-services">
           <h2>ローカルネットワーク</h2>
           <ul>
-            <li><a class="link-ip"
-                   data-ip-template="http://${ip}"
-                   target="_blank">LuCI (管理画面)</a></li>
-            <li><a class="link-ip"
-                   data-ip-template="http://${ip}:7681/"
-                   target="_blank">ttyd (Webターミナル)</a></li>
+            <li>
+              <a
+                class="link-ip"
+                data-ip-template="http://${ip}"
+                target="_blank"
+                rel="noopener noreferrer"
+              >LuCI (管理画面)</a>
+            </li>
+            <li>
+              <a
+                class="link-ip"
+                data-ip-template="http://${ip}:7681/"
+                target="_blank"
+                rel="noopener noreferrer"
+              >ttyd (Webターミナル)</a>
+            </li>
           </ul>
         </section>
 
-        <!-- ターミナル -->
+        <!-- 4) ターミナル -->
         <section id="terminal">
           <h2>ターミナル</h2>
           <ul>
-            <li><a href="file/shps.reg" download>SSH 用プロトコル登録 (sshps://) (.reg)</a></li>
-            <li><a id="ssh-link"
-                   data-ip-template="sshps://root@${ip}">
-                SSH 接続 (root@<span id="ssh-ip">192.168.1.1</span>)
-            </a></li>
+            <li>
+              <a href="file/shps.reg" download>
+                SSH 用プロトコル登録 (sshps://) (.reg)
+              </a>
+            </li>
+            <li>
+              <a
+                id="ssh-link"
+                data-ip-template="sshps://root@${ip}"
+              >SSH 接続 (root@<span id="ssh-ip">192.168.1.1</span>)</a>
+            </li>
             <li>
               <details>
                 <summary>QRコードを表示</summary>
@@ -131,35 +178,105 @@
   </div>
 
   <div class="page-footer-area">
-    <!-- 省略 -->
+    <div class="theme-controls-bar">
+      <div class="theme-selector">
+        <button
+          id="theme-auto"
+          aria-label="システムテーマ"
+          data-theme-preference="auto"
+        >🌗</button>
+        <button
+          id="theme-light"
+          aria-label="ライトテーマ"
+          data-theme-preference="light"
+        >☀️</button>
+        <button
+          id="theme-dark"
+          aria-label="ダークテーマ"
+          data-theme-preference="dark"
+        >🌙</button>
+      </div>
+    </div>
+    <footer>
+      <p>&copy; <span id="current-year"></span> site-u</p>
+    </footer>
   </div>
 
+  <script>
+    // フッター年
+    document.getElementById('current-year').textContent =
+      new Date().getFullYear();
+  </script>
+  <script>
+  (function(){
+    const buttons   = [...document.querySelectorAll('.theme-selector button')];
+    const body      = document.body;
+    const mqDark    = window.matchMedia('(prefers-color-scheme: dark)');
+
+    function applyTheme(pref) {
+      localStorage.setItem('themePreference', pref);
+      const actual = pref === 'auto'
+        ? (mqDark.matches ? 'dark' : 'light')
+        : pref;
+      body.dataset.theme = actual;
+      buttons.forEach(b =>
+        b.classList.toggle('selected',
+          b.dataset.themePreference === pref)
+      );
+      updateAll();
+    }
+
+    buttons.forEach(b =>
+      b.addEventListener('click', () =>
+        applyTheme(b.dataset.themePreference)
+      )
+    );
+    mqDark.addEventListener('change', () => {
+      if ((localStorage.getItem('themePreference')||'auto') === 'auto') {
+        applyTheme('auto');
+      }
+    });
+
+    applyTheme(localStorage.getItem('themePreference')||'auto');
+  })();
+  </script>
   <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
   <script>
     function updateAll() {
-      const ip = document.getElementById('global-ip-input').value.trim() || '192.168.1.1';
+      const ip = document
+        .getElementById('global-ip-input')
+        .value.trim() || '192.168.1.1';
 
+      // ローカルサービス
       document.querySelectorAll('.link-ip').forEach(el => {
         el.href = el.dataset.ipTemplate.replace(/\$\{ip\}/g, ip);
       });
 
-      const linkEl = document.getElementById('ssh-link');
-      const uri = linkEl.dataset.ipTemplate.replace(/\$\{ip\}/g, ip);
-      linkEl.href = uri;
+      // SSHリンク
+      const sshLink = document.getElementById('ssh-link');
+      const uri     = sshLink.dataset.ipTemplate.replace(/\$\{ip\}/g, ip);
+      sshLink.href           = uri;
       document.getElementById('ssh-ip').textContent = ip;
 
+      // QRコード
       const qrBox = document.getElementById('qrcode');
       qrBox.innerHTML = '';
       const style = getComputedStyle(document.body);
-      const dark = style.getPropertyValue('--qr-dark').trim();
+      const dark  = style.getPropertyValue('--qr-dark').trim();
       const light = style.getPropertyValue('--qr-light').trim();
 
-      QRCode.toCanvas(qrBox, uri, { color: { dark: dark, light: light } });
+      QRCode.toCanvas(qrBox, uri, {
+        color: { dark, light }
+      });
     }
 
     window.addEventListener('DOMContentLoaded', () => {
-      document.getElementById('global-ip-input').addEventListener('input', updateAll);
-      document.getElementById('global-ip-update').addEventListener('click', updateAll);
+      document
+        .getElementById('global-ip-input')
+        .addEventListener('input', updateAll);
+      document
+        .getElementById('global-ip-update')
+        .addEventListener('click', updateAll);
       updateAll();
     });
   </script>
