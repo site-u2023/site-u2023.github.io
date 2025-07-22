@@ -4,37 +4,35 @@ body {
     margin: 0;
     padding: 0 0 80px 0; /* フッター2段分を確保 */
     line-height: 1.6;
-    background-color: #f4f7f6;
-    color: #333;
+    background-color: var(--block-bg);
+    color: var(--text-color);
     transition: background-color 0.3s ease, color 0.3s ease;
 }
 
+/* コンテナ */
 .container {
     max-width: 800px;
     margin: 2em auto;
-    background: #fff;
+    background: var(--block-bg);
     padding: 1.5em 2em;
     border-radius: 8px;
     box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    transition: margin 0.3s ease, padding 0.3s ease, border-radius 0.3s ease,
-                background-color 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
+/* ヘッダー */
 header {
     border-bottom: 2px solid #4a90e2;
     margin-bottom: 1.5em;
     padding-bottom: 0.8em;
-    transition: border-color 0.3s ease;
 }
-
 header h1 {
-    color: #333;
     margin: 0;
     font-size: 1.8em;
     text-align: center;
-    transition: font-size 0.3s ease, color 0.3s ease;
 }
 
+/* ナビゲーション小見出し */
 nav h2 {
     margin-top: 1.5em;
     margin-bottom: 0.8em;
@@ -42,39 +40,34 @@ nav h2 {
     font-size: 1.3em;
     border-bottom: 1px solid #e0e0e0;
     padding-bottom: 0.3em;
-    transition: font-size 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 
+/* リスト・リンク */
 nav ul {
     list-style: none;
     padding: 0;
 }
-
 nav li {
     margin-bottom: 0.6em;
 }
-
 nav a {
     text-decoration: none;
-    color: #007bff;
-    font-weight: normal;
+    color: var(--link-color);
     padding: 0.6em 0.9em;
     display: block;
     border-radius: 5px;
-    background-color: #f8f9fa;
-    border: 1px solid #dee2e6;
-    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out,
-                padding 0.3s ease, border-color 0.2s ease-in-out;
+    background-color: var(--block-bg);
+    border: 1px solid var(--block-border);
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
-
 nav a:hover {
-    background-color: #007bff;
-    color: white;
+    background-color: var(--link-color);
+    color: var(--block-bg);
 }
 
-/* ── ここから接続情報（IP入力＋QR）まわり ── */
+/* ── 接続情報セクション（IP＋QR） ── */
 
-/* セクション枠はそのまま残し、内部だけ左寄せ */
+/* セクション枠はそのままに、中身だけ左寄せ */
 #device-ip .connection {
     display: block;
     width: 100%;
@@ -83,113 +76,101 @@ nav a:hover {
     text-align: left;
 }
 
-/* IP 入力＋更新ボタンを横並びに */
+/* IP 入力部を小項目リンクと同じ見た目に */
 #device-ip .ip-address {
     display: flex;
     align-items: center;
     margin-bottom: 1em;
 }
-
 #device-ip .ip-address span {
-    font-weight: bold;
     margin-right: 0.5em;
+    color: var(--text-color);
 }
 
-#global-ip-input {
-    font-size: 1.6rem;
-    color: #444;
-    background-color: #e8f0f5;
-    padding: 0.8em 1em;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    max-width: 200px;
+/* input と button を nav a ライクに */
+#device-ip .ip-address input,
+#device-ip .ip-address button {
+    padding: 0.6em 0.9em;
     margin-right: 0.5em;
+    background-color: var(--block-bg);
+    color: var(--text-color);
+    border: 1px solid var(--block-border);
+    border-radius: 5px;
+    font-size: 1em;
+    line-height: 1;
     box-sizing: border-box;
 }
-
-#global-ip-update {
-    font-size: 1rem;
-    padding: 0.8em 1em;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    background-color: #fff;
+#device-ip .ip-address input {
+    flex: 1;
+}
+#device-ip .ip-address button {
+    flex: 0 auto;
     cursor: pointer;
 }
 
-/* QRコード表示：枠（border）を削除 */
+/* QRコード部分 */
 .qr-code {
     margin-top: 1em;
     padding: 1em;
     background-color: var(--block-bg);
-    border: none;          /* ← 不要な枠を消す */
+    border: none;           /* 不要な枠を削除 */
     border-radius: 6px;
     text-align: center;
 }
 
-/* canvas 版 QR コードのサイズ固定 */
+/* canvas 版 QR コードのサイズを固定 */
 .qr-code canvas {
     width: 180px !important;
     height: 180px !important;
     display: inline-block;
 }
 
-/* ── ここまで接続情報 ── */
-
-/* 新しいフッターエリアのスタイル */
+/* ── フッター／テーマ切替エリア ── */
 .page-footer-area {
     position: fixed;
     left: 0;
     bottom: 0;
     width: 100%;
-    background-color: #f4f7f6;
-    border-top: 1px solid #e0e0e0;
+    background-color: var(--block-bg);
+    border-top: 1px solid var(--block-border);
     z-index: 100;
     display: flex;
     flex-direction: column;
     transition: background-color 0.3s ease, border-color 0.3s ease;
 }
-
 .theme-controls-bar {
     display: flex;
     justify-content: center;
     align-items: center;
     padding: 0.5em 2em;
 }
-
 .theme-selector {
     display: flex;
     gap: 8px;
 }
-
 .theme-selector button {
     background-color: transparent;
     border: 1px solid transparent;
     border-radius: 50%;
     width: 32px;
     height: 32px;
-    padding: 0;
     font-size: 1.1em;
     line-height: 32px;
     text-align: center;
     cursor: pointer;
-    color: #6c757d;
-    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
-    user-select: none;
+    color: var(--text-color);
+    transition: background-color 0.2s ease, color 0.2s ease;
 }
-
 .theme-selector button:hover {
     background-color: rgba(0,0,0,0.05);
 }
-
 .theme-selector button.selected {
     background-color: #67B279;
-    color: white;
+    color: #fff;
 }
-
 .theme-selector button.selected:hover {
     background-color: #58a069;
 }
-
 footer.copyright-footer {
     display: flex;
     justify-content: center;
@@ -197,15 +178,13 @@ footer.copyright-footer {
     padding: 0.5em 2em;
     background-color: inherit;
 }
-
 footer.copyright-footer p {
     margin: 0;
     font-size: 0.85em;
-    color: #6c757d;
-    transition: color 0.3s ease;
+    color: var(--text-color);
 }
 
-/* レスポンシブ調整 */
+/* レスポンシブ */
 @media (max-width: 600px) {
     body {
         -webkit-text-size-adjust: 100%;
@@ -217,75 +196,31 @@ footer.copyright-footer p {
         border-radius: 0;
         box-shadow: none;
     }
-    header h1 {
-        font-size: 1.6em;
-    }
-    nav h2 {
-        font-size: 1.15em;
-    }
-    nav a {
-        padding: 0.8em 0.7em;
-        font-size: 0.95em;
-    }
-    .theme-controls-bar {
-        padding: 0.6em 1em;
-    }
-    footer.copyright-footer {
-        padding: 0.6em 1em;
-    }
-    footer.copyright-footer p {
-        font-size: 0.8em;
-    }
+    header h1 { font-size: 1.6em; }
+    nav h2 { font-size: 1.15em; }
+    nav a { padding: 0.8em 0.7em; font-size: 0.95em; }
+    .theme-controls-bar, footer.copyright-footer { padding: 0.6em 1em; }
+    footer.copyright-footer p { font-size: 0.8em; }
 }
 
-/* ダークテーマ用スタイル */
+/* ダークテーマ用 */
 body[data-theme="dark"] {
-    background-color: #121212;
-    color: #e0e0e0;
+    background-color: var(--block-bg);
+    color: var(--text-color);
 }
-
 body[data-theme="dark"] .container {
-    background: #1e1e1e;
     box-shadow: 0 4px 12px rgba(0,0,0,0.4);
 }
-
-body[data-theme="dark"] header {
-    border-bottom-color: #3a7bc8;
-}
-
-body[data-theme="dark"] header h1 {
-    color: #f5f5f5;
-}
-
 body[data-theme="dark"] nav h2 {
-    color: #58a6ff;
     border-bottom-color: #30363d;
 }
-
 body[data-theme="dark"] nav a {
-    color: #58a6ff;
-    background-color: #21262d;
-    border-color: #30363d;
+    background-color: var(--block-bg);
+    border-color: var(--block-border);
 }
-
 body[data-theme="dark"] nav a:hover {
-    background-color: #303f50;
-    color: #c9d1d9;
+    color: var(--block-bg);
 }
-
 body[data-theme="dark"] .page-footer-area {
-    background-color: #1e1e1e;
-    border-top-color: #30363d;
-}
-
-body[data-theme="dark"] .theme-selector button {
-    color: #8b949e;
-}
-
-body[data-theme="dark"] .theme-selector button:hover {
-    background-color: rgba(255,255,255,0.1);
-}
-
-body[data-theme="dark"] footer.copyright-footer p {
-    color: #8b949e;
+    border-top-color: var(--block-border);
 }
