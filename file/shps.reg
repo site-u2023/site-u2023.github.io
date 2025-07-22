@@ -5,7 +5,7 @@ Windows Registry Editor Version 5.00
 "URL Protocol"=""
 
 [HKEY_CLASSES_ROOT\sshps\DefaultIcon]
-@="%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe,0"
+@="C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe,0"
 
 [HKEY_CLASSES_ROOT\sshps\shell\open\command]
-@="\"%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe\" -NoExit -Command \"$u=[Uri]::New('%1'); ssh root@$($u.Host)\""
+@="\"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe\" -NoExit -Command \"$uri=[Uri]::new('%1'); ssh root@$($uri.Host)\""
