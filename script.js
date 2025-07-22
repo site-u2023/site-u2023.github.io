@@ -94,15 +94,38 @@ document.addEventListener('DOMContentLoaded', () => {
     const darkColor  = style.getPropertyValue('--qr-dark').trim();
     const lightColor = style.getPropertyValue('--qr-light').trim();
 
-    // QRコード（メイン）
-    createAndDrawQrCode('qrcode-main', `http://${ip}`, {
-      color: { dark: darkColor, light: lightColor }
-    });
+    // QRコード（メイン）- IPアドレスの右横には描画しないようにコメントアウト
+    // createAndDrawQrCode('qrcode-main', `http://${ip}`, {
+    //   color: { dark: darkColor, light: lightColor }
+    // });
+    // もし #qrcode-main に以前のQRコードが残っている可能性があれば、以下の行でクリア
+    const qrMainContainer = document.getElementById('qrcode-main');
+    if (qrMainContainer) {
+      const existingCanvas = qrMainContainer.querySelector('canvas');
+      if (existingCanvas) {
+        qrMainContainer.removeChild(existingCanvas);
+      }
+    }
 
-    // QRコード（詳細）
-    createAndDrawQrCode('qrcode-detail', `ssh://root@${ip}`, {
-      color: { dark: darkColor, light: lightColor }
-    });
+
+    // QRコード（詳細）- ここにのみ描画
+    // details要素が開いている場合のみ描画するロジックを追加
+    const detailElement = document.querySelector('#terminal details');
+    if (detailElement && detailElement.open) {
+      createAndDrawQrCode('qrcode-detail', `ssh://root@${ip}`, {
+        color: { dark: darkColor, light: lightColor }
+      });
+    } else {
+      // detailsが閉じている場合はQRコードを非表示（canvas要素を削除）
+      const qrDetailContainer = document.getElementById('qrcode-detail');
+      if (qrDetailContainer) {
+        const existingCanvas = qrDetailContainer.querySelector('canvas');
+        if (existingCanvas) {
+          qrDetailContainer.removeChild(existingCanvas);
+        }
+      }
+    }
+
 
     // IPベースのリンクを更新
     document.querySelectorAll('.link-ip').forEach(link => {
@@ -142,6 +165,9 @@ document.addEventListener('DOMContentLoaded', () => {
       e.preventDefault(); // Enterキーによるフォーム送信を防止
     }
   });
+
+  // details要素の開閉イベントを監視してQRコードを再描画
+  document.querySelector('#terminal details')?.addEventListener('toggle', updateAll);
 
   // 初期描画
   updateAll();
