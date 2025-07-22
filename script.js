@@ -21,6 +21,13 @@ document.addEventListener('DOMContentLoaded', () => {
       btn.addEventListener('click', () => applyTheme(btn.dataset.themePreference));
     });
 
+    // システムテーマ変更を監視（追加）
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+      if ((localStorage.getItem('site-u-theme') || 'auto') === 'auto') {
+        applyTheme('auto'); // auto設定ならシステムテーマに合わせて更新
+      }
+    });
+
     applyTheme(stored);
   })();
 
@@ -39,31 +46,71 @@ document.addEventListener('DOMContentLoaded', () => {
       .replace(/\u3000/g, ' ');
   }
 
+  // QRコード描画ヘルパー関数（再生成ロジックを追加）
+  function drawQRCode(elementId, text) {
+    const qrContainer = document.getElementById(elementId);
+    if (!qrContainer || !window.QRCode) {
+      // console.error(`QR Code container ${elementId} not found or QRCode library not loaded.`);
+      return;
+    }
+
+    // 既存のコンテンツを全てクリアし、新しいcanvas要素を作成
+    qrContainer.innerHTML = '';
+    const canvas = document.createElement('canvas');
+    qrContainer.appendChild(canvas);
+
+    const style      = getComputedStyle(document.body);
+    const darkColor  = style.getPropertyValue('--qr-dark').trim();
+    const lightColor = style.getPropertyValue('--qr-light').trim();
+
+    QRCode.toCanvas(canvas, text, {
+      color: { dark: darkColor, light: lightColor }
+    })
+    .catch(err => {
+      console.error(`Error drawing QR Code for ${elementId}:`, err);
+    });
+  }
+
   // IP更新＋QR描画＋リンク反映
   function updateAll() {
     const input = document.getElementById('global-ip-input');
     if (!input) return;
     const ip = input.value.trim() || input.placeholder;
 
-    const style      = getComputedStyle(document.body);
-    const darkColor  = style.getPropertyValue('--qr-dark').trim();
-    const lightColor = style.getPropertyValue('--qr-light').trim();
+    // QRコード（メイン）- 削除済みなので、ここでは何もしません
+    // const qrMain = document.getElementById('qrcode-main');
+    // if (qrMain && window.QRCode) {
+    //   QRCode.toCanvas(qrMain, `http://${ip}`, {
+    //     color: { dark: darkColor, light: lightColor }
+    //   });
+    // }
 
-    // QRコード（メイン）
-    const qrMain = document.getElementById('qrcode-main');
-    if (qrMain && window.QRCode) {
-      QRCode.toCanvas(qrMain, `http://${ip}`, {
-        color: { dark: darkColor, light: lightColor }
-      });
+    // QRコード（詳細）- detailsタグが開かれたときにのみ描画する
+    const detailContainer = document.getElementById('qrcode-detail-container'); // index.htmlにIDを追加します
+    if (detailContainer) {
+        // detailsが開かれたときに描画し、閉じたらクリア
+        // toggleイベントは開閉両方で発火するので、openプロパティで判断
+        detailContainer.removeEventListener('toggle', handleDetailToggle); // 既存のリスナーを一度削除
+        detailContainer.addEventListener('toggle', handleDetailToggle); // 新しいリスナーを追加
+
+        // ページロード時に既に開かれている場合も描画
+        if (detailContainer.open) {
+            drawQRCode('qrcode-detail', `ssh://root@${ip}`);
+        }
     }
 
-    // QRコード（詳細）
-    const qrDetail = document.getElementById('qrcode-detail');
-    if (qrDetail && window.QRCode) {
-      QRCode.toCanvas(qrDetail, `ssh://root@${ip}`, {
-        color: { dark: darkColor, light: lightColor }
-      });
+    // detailsの開閉をハンドリングする関数
+    function handleDetailToggle() {
+        if (this.open) { // detailsが開かれたら
+            drawQRCode('qrcode-detail', `ssh://root@${ip}`);
+        } else { // detailsが閉じたら、QRコードをクリア
+            const qrDetail = document.getElementById('qrcode-detail');
+            if (qrDetail) {
+                qrDetail.innerHTML = ''; // 中身を空にする
+            }
+        }
     }
+
 
     // IPベースのリンクを更新
     document.querySelectorAll('.link-ip').forEach(link => {
@@ -85,8 +132,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // 入力欄全体に半角変換適用＋updateAll連動
   document.querySelectorAll('input[type="text"]').forEach(input => {
     input.addEventListener('input', () => {
-      const caret     = input.selectionStart;
-      const converted = toHalfWidth(input.value);
+      const caret       = input.selectionStart;
+      const converted   = toHalfWidth(input.value);
       if (input.value !== converted) {
         input.value = converted;
         input.setSelectionRange(caret, caret); // カーソル保持
@@ -98,7 +145,10 @@ document.addEventListener('DOMContentLoaded', () => {
   // 更新ボタン・Enter で updateAll
   document.getElementById('global-ip-update')?.addEventListener('click', updateAll);
   document.getElementById('global-ip-input')?.addEventListener('keydown', e => {
-    if (e.key === 'Enter') updateAll();
+    if (e.key === 'Enter') {
+        e.preventDefault(); // Enterキーによるフォーム送信を防止
+        updateAll();
+    }
   });
 
   // 初期描画
