@@ -33,19 +33,25 @@ body {
               color 0.3s ease;
 }
 
-/* リストマーカー消去 */
+/* ── リストマーカー消去 ── */
 ul {
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
-/* ヘッダータイトル色をテーマ変数で制御 */
+/* ── ヘッダー ── */
+header {
+  border-bottom: 2px solid var(--link-color);
+  margin-bottom: 1.5em;
+  padding-bottom: 0.8em;
+}
 header h1 {
-  color: var(--text-color) !important;
+  color: var(--link-color) !important;
   margin: 0;
   font-size: 1.8em;
   text-align: center;
+  transition: color 0.3s ease;
 }
 
 /* ── コンテナ ── */
@@ -67,8 +73,6 @@ nav section {
   padding: 10px;
   margin-bottom: 16px;
 }
-
-/* nav 小見出し */
 nav h2 {
   margin-top: 1.5em;
   margin-bottom: 0.8em;
@@ -77,13 +81,9 @@ nav h2 {
   border-bottom: 1px solid var(--block-border);
   padding-bottom: 0.3em;
 }
-
-/* nav リストアイテム */
 nav li {
   margin-bottom: 0.6em;
 }
-
-/* nav リンク */
 nav a {
   text-decoration: none;
   color: var(--link-color);
@@ -96,39 +96,31 @@ nav a {
               color 0.2s ease,
               border-color 0.2s ease;
 }
-
 nav a:hover {
   background-color: var(--link-color);
   color: var(--block-bg);
 }
 
 /* ── Device IP セクション ── */
-/* セクション枠を消して上下のマージンのみ維持 */
+/* セクション枠を消し、間隔のみ維持 */
 #device-ip {
   border: none;
   margin-bottom: 16px;
 }
-
-/* 内部レイアウト */
 #device-ip .connection {
   width: 100%;
   padding: 0;
   text-align: left;
 }
-
-/* IP入力部 */
 #device-ip .ip-address {
   display: flex;
   align-items: center;
   margin-bottom: 1em;
 }
-
 #device-ip .ip-address span {
   margin-right: 0.5em;
   color: var(--link-color);
 }
-
-/* 入力欄とボタンを nav a ライクに */
 #global-ip-input,
 #global-ip-update {
   padding: 0.6em 0.9em;
@@ -141,18 +133,15 @@ nav a:hover {
   line-height: 1.2;
   box-sizing: border-box;
 }
-
 #global-ip-input {
   flex: 1;
 }
-
 #global-ip-update {
   flex: 0 auto;
   cursor: pointer;
 }
 
 /* ── QRコード部分 ── */
-/* 不要な枠を完全に消し、背景はテーマ変数 */
 .qr-code {
   margin-top: 1em;
   padding: 1em;
@@ -161,8 +150,6 @@ nav a:hover {
   border-radius: 6px;
   text-align: center;
 }
-
-/* canvas 版 QR コードのサイズ固定 */
 .qr-code canvas {
   width: 180px !important;
   height: 180px !important;
@@ -183,19 +170,16 @@ nav a:hover {
   transition: background-color 0.3s ease,
               border-color 0.3s ease;
 }
-
 .theme-controls-bar {
   display: flex;
   justify-content: center;
   align-items: center;
   padding: 0.5em 2em;
 }
-
 .theme-selector {
   display: flex;
   gap: 8px;
 }
-
 .theme-selector button {
   background-color: transparent;
   border: 1px solid transparent;
@@ -211,20 +195,16 @@ nav a:hover {
   transition: background-color 0.2s ease,
               color 0.2s ease;
 }
-
 .theme-selector button:hover {
   background-color: rgba(0,0,0,0.05);
 }
-
 .theme-selector button.selected {
   background-color: #67B279;
   color: #fff;
 }
-
 .theme-selector button.selected:hover {
   background-color: #58a069;
 }
-
 footer.copyright-footer {
   display: flex;
   justify-content: center;
@@ -232,7 +212,6 @@ footer.copyright-footer {
   padding: 0.5em 2em;
   background-color: inherit;
 }
-
 footer.copyright-footer p {
   margin: 0;
   font-size: 0.85em;
@@ -271,29 +250,28 @@ footer.copyright-footer p {
   }
 }
 
-/* ── ダークテーマ用 ── */
+/* ── ダークテーマ用オーバーライド ── */
 body[data-theme="dark"] {
   background-color: var(--block-bg);
   color: var(--text-color);
 }
-
 body[data-theme="dark"] .container {
   box-shadow: 0 4px 12px rgba(0,0,0,0.4);
 }
-
 body[data-theme="dark"] nav h2 {
   border-bottom-color: var(--block-border);
 }
-
 body[data-theme="dark"] nav a {
   background-color: var(--block-bg);
   border-color: var(--block-border);
 }
-
 body[data-theme="dark"] nav a:hover {
   color: var(--block-bg);
 }
-
 body[data-theme="dark"] .page-footer-area {
   border-top-color: var(--block-border);
+}
+/* ── タイトル色ダーク時オーバーライド ── */
+body[data-theme="dark"] header h1 {
+  color: var(--text-color) !important;
 }
