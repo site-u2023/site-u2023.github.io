@@ -16,10 +16,9 @@
 
         <!-- デバイス IP セクション -->
         <section id="device-ip">
-          <h2>デバイス IP アドレス</h2>
+          <h2>IPアドレス</h2>
           <div class="connection">
             <div class="ip-address">
-              <span>IP:</span>
               <input
                 type="text"
                 id="global-ip-input"
@@ -136,48 +135,6 @@
     })();
   </script>
   <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
-  <script>
-    function updateAll() {
-      const ip = document.getElementById('global-ip-input').value.trim() || '192.168.1.1';
-
-      document.querySelectorAll('.link-ip').forEach(el => {
-        el.href = el.dataset.ipTemplate.replace(/\$\{ip\}/g, ip);
-      });
-
-      const sshLink = document.getElementById('ssh-link');
-      const uri = sshLink.dataset.ipTemplate.replace(/\$\{ip\}/g, ip);
-      sshLink.href = uri;
-      document.getElementById('ssh-ip').textContent = ip;
-
-      document.querySelectorAll('.qr-code').forEach(el => {
-        el.innerHTML = '';
-        const style = getComputedStyle(document.body);
-        const dark = style.getPropertyValue('--qr-dark').trim();
-        const light = style.getPropertyValue('--qr-light').trim();
-        QRCode.toCanvas(el, `http://${ip}`, {
-          color: { dark, light }
-        }, err => {
-          if (err) console.error(err);
-        });
-      });
-    }
-
-    document.getElementById('global-ip-update').addEventListener('click', updateAll);
-    updateAll();
-
-    // 全角→半角自動変換＋即時 updateAll
-    (function(){
-      const ipInput = document.getElementById('global-ip-input');
-      ipInput.addEventListener('input', e => {
-        // NFKC で全角数字・ドットなどを半角に
-        const normalized = e.target.value.normalize('NFKC');
-        if (e.target.value !== normalized) {
-          e.target.value = normalized;
-        }
-        // すぐにリンクやQRを更新したい場合
-        updateAll();
-      });
-    })();
-  </script>
+  <script src="script.js"></script>
 </body>
 </html>
