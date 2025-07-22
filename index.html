@@ -59,19 +59,22 @@
       padding: 2px 4px;
     }
 
-    /* 追加部分 */
+    /* QRコード共通 */
     .qr-code {
       margin-top: 1em;
       padding: 1em;
-      background-color: #fff;
-      border: 1px solid #ccc;
+      background-color: var(--block-bg);
+      border: 1px solid var(--block-border);
       border-radius: 6px;
       text-align: center;
     }
     .qr-code canvas {
-      width: 180px;
-      height: 180px;
+      width: 180px !important;
+      height: 180px !important;
+      display: inline-block;
     }
+
+    /* テーマ選択ボタン */
     .theme-selector button {
       background: none;
       border: none;
@@ -92,17 +95,26 @@
     </header>
     <main>
       <nav>
+
+        <!-- デバイス IP セクション -->
         <section id="device-ip">
           <h2>デバイス IP アドレス</h2>
-          <label>
-            IP:
-            <input type="text" id="global-ip-input" value="192.168.1.1" placeholder="例: 192.168.0.1">
-          </label>
-          <button id="global-ip-update" type="button">更新</button>
-
-          <div class="qr-code" id="qrcode"></div>
+          <div class="connection">
+            <div class="ip-address">
+              <span>IP:</span>
+              <input
+                type="text"
+                id="global-ip-input"
+                value="192.168.1.1"
+                placeholder="例: 192.168.0.1"
+              >
+              <button id="global-ip-update" type="button">更新</button>
+            </div>
+            <div class="qr-code" id="qrcode-main"></div>
+          </div>
         </section>
 
+        <!-- プロジェクトリンク -->
         <section id="project">
           <h2>プロジェクト</h2>
           <ul>
@@ -111,6 +123,7 @@
           </ul>
         </section>
 
+        <!-- ローカルネットワークサービス -->
         <section id="local-services">
           <h2>ローカルネットワーク</h2>
           <ul>
@@ -127,6 +140,7 @@
           </ul>
         </section>
 
+        <!-- ターミナル -->
         <section id="terminal">
           <h2>ターミナル</h2>
           <ul>
@@ -143,15 +157,17 @@
             <li>
               <details>
                 <summary>QRコードを表示</summary>
-                <div class="qr-code" id="qrcode"></div>
+                <div class="qr-code" id="qrcode-detail"></div>
               </details>
             </li>
           </ul>
         </section>
+
       </nav>
     </main>
   </div>
 
+  <!-- フッター・テーマ切替エリア -->
   <div class="page-footer-area">
     <div class="theme-controls-bar">
       <div class="theme-selector">
@@ -160,11 +176,12 @@
         <button id="theme-dark" aria-label="ダークテーマ" data-theme-preference="dark">🌙</button>
       </div>
     </div>
-    <footer>
+    <footer class="copyright-footer">
       <p>&copy; <span id="current-year"></span> site-u</p>
     </footer>
   </div>
 
+  <!-- スクリプト -->
   <script>
     document.getElementById('current-year').textContent = new Date().getFullYear();
   </script>
@@ -214,19 +231,16 @@
       sshLink.href = uri;
       document.getElementById('ssh-ip').textContent = ip;
 
-      const qrBox = document.getElementById('qrcode');
-      qrBox.innerHTML = '';
-      const style = getComputedStyle(document.body);
-      const dark = style.getPropertyValue('--qr-dark').trim();
-      const light = style.getPropertyValue('--qr-light').trim();
-      
-      QRCode.toCanvas(qrBox, `http://${ip}`, {
-        color: {
-          dark: dark,
-          light: light
-        }
-      }, err => {
-        if (err) console.error(err);
+      document.querySelectorAll('.qr-code').forEach(el => {
+        el.innerHTML = '';
+        const style = getComputedStyle(document.body);
+        const dark = style.getPropertyValue('--qr-dark').trim();
+        const light = style.getPropertyValue('--qr-light').trim();
+        QRCode.toCanvas(el, `http://${ip}`, {
+          color: { dark, light }
+        }, err => {
+          if (err) console.error(err);
+        });
       });
     }
 
