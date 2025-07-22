@@ -1,23 +1,23 @@
 /* ── テーマ変数 ── */
 body[data-theme="light"] {
-  --block-bg: #fff;
-  --block-border: #ddd;
-  --link-color: #0078d4;
-  --text-color: var(--link-color);
-  --hover-bg: var(--link-color);
-  --hover-color: var(--block-bg);
+  --block-bg:      #fff;
+  --block-border:  #ddd;
+  --link-color:    #0078d4;
+  --text-color:    var(--link-color);
+  --hover-bg:      var(--link-color);
+  --hover-color:   var(--block-bg);
 }
 
 body[data-theme="dark"] {
-  --block-bg: #1a1a1a;
-  --block-border: #333;
-  --link-color: #66aaff;
-  --text-color: var(--link-color);
-  --hover-bg: var(--link-color);
-  --hover-color: var(--block-bg);
+  --block-bg:      #1a1a1a;
+  --block-border:  #333;
+  --link-color:    #66aaff;
+  --text-color:    var(--link-color);
+  --hover-bg:      var(--link-color);
+  --hover-color:   var(--block-bg);
 }
 
-/* ベース */
+/* ── ベース ── */
 body {
   margin: 0;
   padding: 0 0 80px;
@@ -29,14 +29,12 @@ body {
               color 0.3s ease;
 }
 
-/* リストマーカー消去 */
 ul {
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
-/* ヘッダー */
 header {
   border-bottom: 2px solid var(--link-color);
   margin-bottom: 1.5em;
@@ -50,7 +48,6 @@ header h1 {
   transition: color 0.3s ease;
 }
 
-/* コンテナ */
 .container {
   max-width: 800px;
   margin: 2em auto;
@@ -62,7 +59,7 @@ header h1 {
               box-shadow 0.3s ease;
 }
 
-/* nav 共通 */
+/* ── ナビゲーション ── */
 nav section {
   background-color: var(--block-bg);
   border: none;
@@ -91,64 +88,55 @@ nav a:hover {
   color: var(--block-bg);
 }
 
-/* Device IP セクション */
+/* ── フォームコントロールをベースカラー継承 ── */
+input,
+button {
+  color:            inherit;
+  background-color: inherit;
+  border:           1px solid var(--block-border);
+  border-radius:    5px;
+  padding:          0.6em 0.9em;
+  box-sizing:       border-box;
+  transition:       background-color 0.2s ease,
+                    color 0.2s ease;
+}
+
+/* ── Device IP セクション ── */
 #device-ip {
   margin-bottom: 16px;
   border: none;
 }
+
 #device-ip .connection {
   display: flex;
   align-items: center;
   gap: 1rem;
 }
+
 #device-ip .ip-address {
   display: flex;
   flex: 1;
   overflow: hidden;
 }
 
-/* 入力欄 */
 #global-ip-input {
-  background-color: var(--block-bg);
-  color: var(--text-color);
-  border: 1px solid var(--block-border);
-  border-radius: 5px;
-  padding: 0.6em 0.9em;
-  box-sizing: border-box;
+  flex:      1;
+  min-width: 0;
 }
 
-/* 更新ボタン */
 #global-ip-update {
-  margin-left: auto;
   flex:        0 0 auto;
-  background-color: var(--block-bg);
-  color:            var(--text-color);
-  border:           1px solid var(--block-border);
-  border-radius:    5px;
-  padding:          0.6em 0.9em;
-  cursor:           pointer;
-  box-sizing:       border-box;
+  margin-left: auto;
+  cursor:      pointer;
 }
 
-/* ボタンホバー時 */
-#global-ip-update {
-  margin-left: auto;
-  flex:        0 0 auto;
-  background-color: var(--block-bg);
-  color:            var(--text-color);
-  border:           1px solid var(--block-border);
-  border-radius:    5px;
-  padding:          0.6em 0.9em;
-  cursor:           pointer;
-  box-sizing:       border-box;
-}
-
+/* ── 更新ボタンホバー ── */
 #global-ip-update:hover {
-  background-color: var(--link-color);
-  color:            var(--block-bg);
+  background-color: var(--hover-bg);
+  color:            var(--hover-color);
 }
 
-/* QRコード部分 */
+/* ── QRコード部分 ── */
 .qr-code {
   margin-top: 1em;
   padding: 1em;
@@ -162,7 +150,7 @@ nav a:hover {
   display: inline-block;
 }
 
-/* フッター／テーマ切替エリア */
+/* ── フッター／テーマ切替エリア ── */
 .page-footer-area {
   position: fixed;
   bottom: 0;
@@ -195,7 +183,6 @@ footer.copyright-footer {
   text-align: center;
   border-radius: 50%;
   cursor: pointer;
-  color: var(--text-color);
   transition: background-color 0.2s ease,
               color 0.2s ease;
 }
@@ -210,7 +197,7 @@ footer.copyright-footer {
   background-color: #58a069;
 }
 
-/* レスポンシブ */
+/* ── レスポンシブ ── */
 @media (max-width: 600px) {
   body {
     -webkit-text-size-adjust: 100%;
@@ -238,7 +225,7 @@ footer.copyright-footer {
   }
 }
 
-/* ダークテーマ用オーバーライド */
+/* ── ダークテーマオーバーライド ── */
 body[data-theme="dark"] .container {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
