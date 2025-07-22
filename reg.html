@@ -2,25 +2,25 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>ワンクリック SSH</title>
+  <title>ワンクリックSSH</title>
   <style>
-    .btn {
+    body { font-family: Meiryo; padding: 2em; }
+    a.btn {
       display:inline-block;
       padding:1em 2em;
-      background:#0078d4;
+      background:#28a745;
       color:#fff;
       text-decoration:none;
       border-radius:4px;
-      font-family:Meiryo;
     }
   </style>
 </head>
 <body>
-  <h1>SSHを一発起動</h1>
-  <!-- クリックすると PowerShell が DNS→ゲートウェイ取得→SSH を自動実行 -->
+  <h1>SSH接続（デフォルトゲートウェイへ）</h1>
+  <p>ボタンをクリックすると自動で SSH が立ち上がります。</p>
   <a class="btn"
-     href="runps://%24dns%3D%28Get-DnsClientServerAddress%20-AddressFamily%20IPv4%29%5B0%5D.ServerAddresses%5B0%5D%3B%24gw%3D%28Get-NetIPConfiguration%7CWhere%7B%24_.IPv4DefaultGateway%7D%29.IPv4DefaultGateway.NextHop%3B%24ip%3D%28Resolve-DnsName%20-Name%20%24gw%20-Server%20%24dns%20-ErrorAction%20Stop%29.IPAddress%3Bssh%20root%40%24ip">
-    SSH 接続（デフォルトゲートウェイ）
+     href="sshps://%24dns%3D%28Get-DnsClientServerAddress%20-AddressFamily%20IPv4%29%5B0%5D.ServerAddresses%5B0%5D%3B%24gw%3D%28Get-NetIPConfiguration%7CWhere%7B%24_.IPv4DefaultGateway%7D%29.IPv4DefaultGateway.NextHop%3B%24ip%3D%28Resolve-DnsName%20-Name%20%24gw%20-Server%20%24dns%20-ErrorAction%20Stop%29.IPAddress%3Bssh%20root%40%24ip">
+    SSHを一発起動
   </a>
 </body>
 </html>
