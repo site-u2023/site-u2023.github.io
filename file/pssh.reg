@@ -1,0 +1,14 @@
+Windows Registry Editor Version 5.00
+
+; “pssh” スキームを登録
+[HKEY_CLASSES_ROOT\pssh]
+@="URL:PSSH Protocol"
+"URL Protocol"=""
+
+; クリック時に起動されるコマンドを指定
+[HKEY_CLASSES_ROOT\pssh\shell\open\command]
+@="\"%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe\" -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -Command ^
+  \"$dns=(Get-DnsClientServerAddress -AddressFamily IPv4)[0].ServerAddresses[0]; ^
+   $next=(Get-NetIPConfiguration | Where-Object {$_.IPv4DefaultGateway}).IPv4DefaultGateway.NextHop; ^
+   $ip=(Resolve-DnsName -Name $next -Server $dns -ErrorAction Stop).IPAddress; ^
+   Start-Process ssh -ArgumentList \\\"root@$ip\\\" -NoNewWindow;\""
