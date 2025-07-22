@@ -110,36 +110,20 @@ nav a:hover {
 }
 #device-ip .ip-address {
   display: flex;
-  align-items: center;
   flex: 1;
-  margin-bottom: 1em;
+  overflow: hidden;
 }
 
 /* IP入力欄 */
 #global-ip-input {
   flex: 1;
-  padding: 0.6em 0.9em;
-  background-color: var(--block-bg);
-  color: var(--link-color);
-  border: 1px solid var(--block-border);
-  border-radius: 5px;
-  font-size: 1em;
-  line-height: 1.2;
-  box-sizing: border-box;
+  min-width: 0;
 }
 
 /* 更新ボタン */
 #global-ip-update {
-  padding: 0.6em 0.9em;
   margin-left: auto;
-  background-color: var(--block-bg);
-  color: var(--link-color);
-  border: 1px solid var(--block-border);
-  border-radius: 5px;
-  font-size: 1em;
-  line-height: 1.2;
-  box-sizing: border-box;
-  cursor: pointer;
+  flex: 0 0 auto;
 }
 
 /* ── QRコード部分 ── */
