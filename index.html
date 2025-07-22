@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>OpenWrt: A Beginner’s Notebook</title>
+  <title>OpenWrt: A Beginner's Notebook</title>
   <link rel="stylesheet" href="style.css">
   <style>
     body[data-theme="light"] {
@@ -60,15 +60,6 @@
     }
 
     /* 追加部分 */
-    .ip-address {
-      font-size: 1.3em;
-      background-color: #e8f0f5;
-      padding: 0.6em 1em;
-      border-radius: 6px;
-      margin-top: 1em;
-      display: inline-block;
-      color: #333;
-    }
     .qr-code {
       margin-top: 1em;
       padding: 1em;
@@ -97,7 +88,7 @@
 <body>
   <div class="container">
     <header>
-      <h1>OpenWrt: A Beginner’s Notebook</h1>
+      <h1>OpenWrt: A Beginner's Notebook</h1>
     </header>
     <main>
       <nav>
@@ -109,7 +100,6 @@
           </label>
           <button id="global-ip-update" type="button">更新</button>
 
-          <div class="ip-address">現在のIP: <span id="ip-display">192.168.1.1</span></div>
           <div class="qr-code" id="qrcode"></div>
         </section>
 
@@ -223,9 +213,25 @@
       const uri = sshLink.dataset.ipTemplate.replace(/\$\{ip\}/g, ip);
       sshLink.href = uri;
       document.getElementById('ssh-ip').textContent = ip;
-      document.getElementById('ip-display').textContent = ip;
 
       const qrBox = document.getElementById('qrcode');
       qrBox.innerHTML = '';
       const style = getComputedStyle(document.body);
-      const dark = style.getPropertyValue('--qr-dark').
+      const dark = style.getPropertyValue('--qr-dark').trim();
+      const light = style.getPropertyValue('--qr-light').trim();
+      
+      QRCode.toCanvas(qrBox, `http://${ip}`, {
+        color: {
+          dark: dark,
+          light: light
+        }
+      }, err => {
+        if (err) console.error(err);
+      });
+    }
+
+    document.getElementById('global-ip-update').addEventListener('click', updateAll);
+    updateAll();
+  </script>
+</body>
+</html>
