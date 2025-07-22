@@ -72,21 +72,21 @@ nav a:hover {
     color: white;
 }
 
-nav a .repo-name {
-    font-weight: bold;
+/* ── ここから接続情報（IP入力＋QR）まわり ── */
+
+/* セクション枠はそのまま残し、内部だけ左寄せ */
+#device-ip .connection {
+    display: block;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    text-align: left;
 }
 
-/* 接続情報セクション */
-.connection {
-    margin: 2em 0;
-    text-align: center;
-}
-
-/* IPアドレス表示 */
+/* IP 入力＋更新ボタンを横並びに */
 #device-ip .ip-address {
-    display: inline-flex;
+    display: flex;
     align-items: center;
-    text-align: center;
     margin-bottom: 1em;
 }
 
@@ -116,29 +116,24 @@ nav a .repo-name {
     cursor: pointer;
 }
 
-/* QRコード表示 */
+/* QRコード表示：枠（border）を削除 */
 .qr-code {
     margin-top: 1em;
     padding: 1em;
-    background-color: #fff;
-    border: 1px solid #ccc;
+    background-color: var(--block-bg);
+    border: none;          /* ← 不要な枠を消す */
     border-radius: 6px;
     text-align: center;
 }
 
-.qr-code img {
-    width: 200px;
-    max-width: 100%;
-    height: auto;
-    border: 1px solid #ccc;
-    border-radius: 0.5em;
-}
-
+/* canvas 版 QR コードのサイズ固定 */
 .qr-code canvas {
     width: 180px !important;
     height: 180px !important;
     display: inline-block;
 }
+
+/* ── ここまで接続情報 ── */
 
 /* 新しいフッターエリアのスタイル */
 .page-footer-area {
@@ -294,4 +289,3 @@ body[data-theme="dark"] .theme-selector button:hover {
 body[data-theme="dark"] footer.copyright-footer p {
     color: #8b949e;
 }
-```
