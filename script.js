@@ -70,9 +70,13 @@ function updateAll() {
 
 // イベント
 document.getElementById('global-ip-update')?.addEventListener('click', updateAll);
+
 document.getElementById('global-ip-input')?.addEventListener('keydown', e => {
   if (e.key === 'Enter') updateAll();
 });
+
+document.getElementById('global-ip-input')?.addEventListener('input', updateAll);
+
 
 // 初期描画
 updateAll();
