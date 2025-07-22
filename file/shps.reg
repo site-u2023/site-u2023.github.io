@@ -8,11 +8,10 @@ Windows Registry Editor Version 5.00
 @="%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
 
 [HKEY_CLASSES_ROOT\sshps\shell\open\command]
-@="cmd.exe /C \"^
-if exist \\\"%ProgramFiles%\\PowerShell\\7\\pwsh.exe\\\" (^
- \\\"%ProgramFiles%\\PowerShell\\7\\pwsh.exe\\\" -NoExit -Command ^\\\"$uri = [System.Uri]::new('%1'); ssh root@$($uri.Host)^\\\"^
-) else if exist \\\"%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe\\\" (^
- \\\"%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe\\\" -NoExit -Command ^\\\"$uri = [System.Uri]::new('%1'); ssh root@$($uri.Host)^\\\"^
-) else (^
- ssh root@((New-Object System.Uri '%1').Host)^
+@="cmd.exe /C \"if exist \"%ProgramFiles%\\PowerShell\\7\\pwsh.exe\" (
+  \"%ProgramFiles%\\PowerShell\\7\\pwsh.exe\" -NoExit -Command \"$uri = [System.Uri]::new('%1'); ssh root@$($uri.Host)\"
+) else if exist \"%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe\" (
+  \"%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe\" -NoExit -Command \"$uri = [System.Uri]::new('%1'); ssh root@$($uri.Host)\"
+) else (
+  ssh root@((New-Object System.Uri '%1').Host)
 )\""
