@@ -121,13 +121,18 @@
                             </a>
                         </li>
                         <li>
-                            <a href="wt://open?command=ssh%20root@192.168.1.1">
+                            <a id="terminal-link" href="wt://open?command=ssh%20root@192.168.1.1">
                                 Windows Terminal で SSH 接続
                             </a>
                         </li>
                         <li>
                             <details>
                                 <summary>QRコードを表示</summary>
+                                <label>
+                                    管理IP:
+                                    <input type="text" id="ipInput" value="192.168.1.1" placeholder="例: 192.168.0.1">
+                                </label>
+                                <button onclick="generateQR()">QR更新</button>
                                 <div id="qrcode"></div>
                             </details>
                         </li>
@@ -208,11 +213,22 @@
 
     <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
     <script>
-        const ip = "192.168.1.1"; // IPを動的に設定可能
-        const sshCommand = `wt://open?command=ssh%20root@${ip}`;
-        QRCode.toCanvas(document.getElementById('qrcode'), sshCommand, function (error) {
-            if (error) console.error(error);
-        });
+        function generateQR() {
+            const ip = document.getElementById('ipInput').value.trim();
+            if (!ip) return;
+
+            const uri = `wt://open?command=ssh%20root@${ip}`;
+            const qrTarget = document.getElementById('qrcode');
+            qrTarget.innerHTML = '';
+
+            QRCode.toCanvas(qrTarget, uri, function (error) {
+                if (error) console.error(error);
+            });
+
+            document.getElementById('terminal-link').href = uri;
+        }
+
+        window.addEventListener('DOMContentLoaded', generateQR);
     </script>
 </body>
 </html>
