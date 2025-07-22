@@ -2,7 +2,7 @@
 body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     margin: 0;
-    padding: 0 0 80px 0; /* フッター2段分の高さとして80pxを予約 */
+    padding: 0 0 80px 0; /* フッター2段分を確保 */
     line-height: 1.6;
     background-color: #f4f7f6;
     color: #333;
@@ -16,7 +16,8 @@ body {
     padding: 1.5em 2em;
     border-radius: 8px;
     box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    transition: margin 0.3s ease, padding 0.3s ease, border-radius 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+    transition: margin 0.3s ease, padding 0.3s ease, border-radius 0.3s ease,
+                background-color 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
 }
 
 header {
@@ -30,7 +31,7 @@ header h1 {
     color: #333;
     margin: 0;
     font-size: 1.8em;
-    text-align: center; /* ヘッダータイトルも中央揃えに */
+    text-align: center;
     transition: font-size 0.3s ease, color 0.3s ease;
 }
 
@@ -62,13 +63,13 @@ nav a {
     border-radius: 5px;
     background-color: #f8f9fa;
     border: 1px solid #dee2e6;
-    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, padding 0.3s ease, border-color 0.2s ease-in-out;
+    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out,
+                padding 0.3s ease, border-color 0.2s ease-in-out;
 }
 
 nav a:hover {
     background-color: #007bff;
     color: white;
-    text-decoration: none;
 }
 
 nav a .repo-name {
@@ -82,27 +83,61 @@ nav a .repo-name {
 }
 
 /* IPアドレス表示 */
-.ip-address {
+#device-ip .ip-address {
+    display: inline-flex;
+    align-items: center;
+    text-align: center;
+    margin-bottom: 1em;
+}
+
+#device-ip .ip-address span {
+    font-weight: bold;
+    margin-right: 0.5em;
+}
+
+#global-ip-input {
     font-size: 1.6rem;
     color: #444;
-    background: #e8f0f5;
+    background-color: #e8f0f5;
     padding: 0.8em 1em;
+    border: 1px solid #ccc;
     border-radius: 6px;
-    display: inline-block;
-    margin-bottom: 1em;
+    max-width: 200px;
+    margin-right: 0.5em;
+    box-sizing: border-box;
+}
+
+#global-ip-update {
+    font-size: 1rem;
+    padding: 0.8em 1em;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    background-color: #fff;
+    cursor: pointer;
 }
 
 /* QRコード表示 */
 .qr-code {
     margin-top: 1em;
+    padding: 1em;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    text-align: center;
 }
 
 .qr-code img {
-    width: 200px;       /* 必要に応じて調整 */
+    width: 200px;
     max-width: 100%;
     height: auto;
     border: 1px solid #ccc;
     border-radius: 0.5em;
+}
+
+.qr-code canvas {
+    width: 180px !important;
+    height: 180px !important;
+    display: inline-block;
 }
 
 /* 新しいフッターエリアのスタイル */
@@ -111,8 +146,8 @@ nav a .repo-name {
     left: 0;
     bottom: 0;
     width: 100%;
-    background-color: #f4f7f6; /* ライトテーマ時の背景 */
-    border-top: 1px solid #e0e0e0; /* 上境界線 */
+    background-color: #f4f7f6;
+    border-top: 1px solid #e0e0e0;
     z-index: 100;
     display: flex;
     flex-direction: column;
@@ -121,7 +156,7 @@ nav a .repo-name {
 
 .theme-controls-bar {
     display: flex;
-    justify-content: center; /* PCでも中央寄せに変更 */
+    justify-content: center;
     align-items: center;
     padding: 0.5em 2em;
 }
@@ -154,7 +189,6 @@ nav a .repo-name {
 .theme-selector button.selected {
     background-color: #67B279;
     color: white;
-    border-color: transparent;
 }
 
 .theme-selector button.selected:hover {
@@ -163,7 +197,7 @@ nav a .repo-name {
 
 footer.copyright-footer {
     display: flex;
-    justify-content: center; /* PCでも中央寄せに変更 */
+    justify-content: center;
     align-items: center;
     padding: 0.5em 2em;
     background-color: inherit;
@@ -176,7 +210,7 @@ footer.copyright-footer p {
     transition: color 0.3s ease;
 }
 
-/* レスポンシブ調整 (スマホ表示では元々中央揃えなので変更なし) */
+/* レスポンシブ調整 */
 @media (max-width: 600px) {
     body {
         -webkit-text-size-adjust: 100%;
@@ -189,7 +223,7 @@ footer.copyright-footer p {
         box-shadow: none;
     }
     header h1 {
-        font-size: 1.6em; /* 中央揃えは維持 */
+        font-size: 1.6em;
     }
     nav h2 {
         font-size: 1.15em;
@@ -198,13 +232,10 @@ footer.copyright-footer p {
         padding: 0.8em 0.7em;
         font-size: 0.95em;
     }
-
     .theme-controls-bar {
-        /* justify-content: center; はデフォルトで継承される */
         padding: 0.6em 1em;
     }
     footer.copyright-footer {
-        /* justify-content: center; はデフォルトで継承される */
         padding: 0.6em 1em;
     }
     footer.copyright-footer p {
@@ -212,7 +243,7 @@ footer.copyright-footer p {
     }
 }
 
-/* ダークテーマ用のスタイル */
+/* ダークテーマ用スタイル */
 body[data-theme="dark"] {
     background-color: #121212;
     color: #e0e0e0;
@@ -228,7 +259,7 @@ body[data-theme="dark"] header {
 }
 
 body[data-theme="dark"] header h1 {
-    color: #f5f5f5; /* 中央揃えは維持 */
+    color: #f5f5f5;
 }
 
 body[data-theme="dark"] nav h2 {
@@ -263,3 +294,4 @@ body[data-theme="dark"] .theme-selector button:hover {
 body[data-theme="dark"] footer.copyright-footer p {
     color: #8b949e;
 }
+```
