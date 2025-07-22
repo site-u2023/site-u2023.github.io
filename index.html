@@ -51,23 +51,19 @@
   <style>
     /* Theme variables */
     body[data-theme="light"] {
-      --block-bg:        #f9f9f9;
-      --block-border:    #ddd;
       --summary-bg:      #eee;
       --summary-border:  #ccc;
       --qr-dark:         #000;
       --qr-light:        #fff;
     }
     body[data-theme="dark"] {
-      --block-bg:        #333;
-      --block-border:    #555;
       --summary-bg:      #444;
       --summary-border:  #666;
       --qr-dark:         #fff;
       --qr-light:        #000;
     }
 
-    /* Details summary styling */
+    /* summary styling */
     summary {
       cursor: pointer;
       padding: 6px;
@@ -77,21 +73,16 @@
       display: inline-block;
     }
 
-    section#device-ip {
-      margin-bottom: 20px;
-      padding: 10px;
-      border: 1px solid var(--block-border);
-      background: var(--block-bg);
-    }
-
     label, button {
       margin-right: 6px;
     }
 
+    /* QR container spacing */
     #qrcode {
       margin-top: 10px;
     }
-    /* Ensure QR canvas bg follows theme */
+
+    /* QR canvas bg follows theme */
     #qrcode canvas {
       background-color: var(--qr-light);
     }
@@ -120,12 +111,16 @@
         <section id="project">
           <h2>プロジェクト</h2>
           <ul>
-            <li><a href="https://site-u2023.github.io/aios/">
+            <li>
+              <a href="https://site-u2023.github.io/aios/">
                 <span class="repo-name">all in one script</span>
-            </a></li>
-            <li><a href="https://site-u2023.github.io/config-software/">
+              </a>
+            </li>
+            <li>
+              <a href="https://site-u2023.github.io/config-software/">
                 <span class="repo-name">config-software</span> (旧版)
-            </a></li>
+              </a>
+            </li>
           </ul>
         </section>
 
@@ -133,16 +128,20 @@
         <section id="local-services">
           <h2>ローカルネットワーク</h2>
           <ul>
-            <li><a class="link-ip"
-                   data-ip-template="http://${ip}"
-                   target="_blank" rel="noopener noreferrer">
+            <li>
+              <a class="link-ip"
+                 data-ip-template="http://${ip}"
+                 target="_blank" rel="noopener noreferrer">
                 <span class="repo-name">LuCI</span> (管理画面)
-            </a></li>
-            <li><a class="link-ip"
-                   data-ip-template="http://${ip}:7681/"
-                   target="_blank" rel="noopener noreferrer">
+              </a>
+            </li>
+            <li>
+              <a class="link-ip"
+                 data-ip-template="http://${ip}:7681/"
+                 target="_blank" rel="noopener noreferrer">
                 <span class="repo-name">ttyd</span> (Webターミナル)
-            </a></li>
+              </a>
+            </li>
           </ul>
         </section>
 
@@ -150,13 +149,17 @@
         <section id="terminal">
           <h2>ターミナル</h2>
           <ul>
-            <li><a href="file/ssh.reg" download>
+            <li>
+              <a href="file/ssh.reg" download>
                 SSH 用プロトコル登録 (ssh://) (.reg)
-            </a></li>
-            <li><a id="ssh-link"
-                   data-ip-template="ssh://${ip}">
+              </a>
+            </li>
+            <li>
+              <a id="ssh-link"
+                 data-ip-template="ssh://${ip}">
                 SSH 接続 (ssh://<span id="ssh-ip">192.168.1.1</span>)
-            </a></li>
+              </a>
+            </li>
             <li>
               <details>
                 <summary>QRコードを表示</summary>
@@ -169,7 +172,6 @@
     </main>
   </div><!-- .container -->
 
-  <!-- Footer & theme controls -->
   <div class="page-footer-area">
     <div class="theme-controls-bar">
       <div class="theme-selector">
@@ -194,7 +196,7 @@
 
   <script>
   (function(){
-    // Theme switcher logic
+    // Theme switcher
     const buttons    = [
       document.getElementById('theme-auto'),
       document.getElementById('theme-light'),
@@ -205,33 +207,21 @@
 
     function applyTheme(pref) {
       localStorage.setItem('themePreference', pref);
-      let actual = pref === 'auto'
+      const actual = pref === 'auto'
         ? (prefersDark.matches ? 'dark' : 'light')
         : pref;
       body.dataset.theme = actual;
-      buttons.forEach(b =>
-        b.classList.toggle('selected',
-          b.dataset.themePreference === pref)
-      );
     }
 
-    // wire theme buttons
-    buttons.forEach(b => {
-      b && b.addEventListener('click', () => {
-        applyTheme(b.dataset.themePreference);
-        updateAll(); // re-generate QR on theme change
-      });
+    buttons.forEach(b=>{
+      if(b) b.addEventListener('click', ()=>applyTheme(b.dataset.themePreference));
     });
-
-    // re-generate on system theme change if auto
-    prefersDark.addEventListener('change', () => {
-      if ((localStorage.getItem('themePreference') || 'auto') === 'auto') {
+    prefersDark.addEventListener('change', ()=> {
+      if((localStorage.getItem('themePreference')||'auto') === 'auto') {
         applyTheme('auto');
-        updateAll();
       }
     });
-
-    applyTheme(localStorage.getItem('themePreference') || 'auto');
+    applyTheme(localStorage.getItem('themePreference')||'auto');
   })();
   </script>
 
@@ -239,27 +229,25 @@
   <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
   <script>
     function updateAll() {
-      const ip   = document.getElementById('global-ip-input')
-                        .value.trim() || '192.168.1.1';
+      const ip = document.getElementById('global-ip-input')
+                     .value.trim() || '192.168.1.1';
 
-      // 1) Local service links
+      // Update local service links
       document.querySelectorAll('.link-ip')
-        .forEach(el => {
-          el.href = el.dataset.ipTemplate.replace(/\$\{ip\}/g, ip);
-        });
+        .forEach(el => el.href = el.dataset.ipTemplate.replace(/\$\{ip\}/g, ip));
 
-      // 2) SSH link
+      // Update SSH link
       const linkEl = document.getElementById('ssh-link');
       const tpl    = linkEl.dataset.ipTemplate;
       const uri    = tpl.replace(/\$\{ip\}/g, ip);
       linkEl.href           = uri;
       document.getElementById('ssh-ip').textContent = ip;
 
-      // 3) QR code with theme‐aware colors
+      // Generate QR code
       const qrBox = document.getElementById('qrcode');
       qrBox.innerHTML = '';
 
-      // read CSS vars for QR colors
+      // Read theme‐specific colors
       const style = getComputedStyle(document.body);
       const dark  = style.getPropertyValue('--qr-dark').trim();
       const light = style.getPropertyValue('--qr-light').trim();
@@ -271,7 +259,7 @@
       );
     }
 
-    window.addEventListener('DOMContentLoaded', () => {
+    window.addEventListener('DOMContentLoaded', ()=> {
       document.getElementById('global-ip-update')
               .addEventListener('click', updateAll);
       updateAll();
