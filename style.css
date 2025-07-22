@@ -101,29 +101,20 @@ nav a:hover {
   border: none;
   margin-bottom: 16px;
 }
+
 #device-ip .connection {
-  padding: 0;
-  text-align: left;
   display: flex;
   align-items: center;
+  padding: 0;
+  text-align: left;
   gap: 1rem;
 }
+
 #device-ip .ip-address {
   display: flex;
+  align-items: center;
   flex: 1;
   overflow: hidden;
-}
-
-/* IP入力欄 */
-#global-ip-input {
-  flex: 1;
-  min-width: 0;
-}
-
-/* 更新ボタン */
-#global-ip-update {
-  margin-left: auto;
-  flex: 0 0 auto;
 }
 
 /* ── QRコード部分 ── */
