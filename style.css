@@ -114,26 +114,38 @@ nav a:hover {
   border: 1px solid var(--block-border);
   border-radius: 5px;
   padding: 0.6em 0.9em;
-  flex: 1;
-  min-width: 0;
   box-sizing: border-box;
 }
 
 /* 更新ボタン */
 #global-ip-update {
-  background-color: var(--block-bg);
-  color: var(--text-color);
-  border: 1px solid var(--block-border);
-  border-radius: 5px;
-  padding: 0.6em 0.9em;
   margin-left: auto;
-  flex: 0 0 auto;
-  cursor: pointer;
-  box-sizing: border-box;
+  flex:        0 0 auto;
+  background-color: var(--block-bg);
+  color:            var(--text-color);
+  border:           1px solid var(--block-border);
+  border-radius:    5px;
+  padding:          0.6em 0.9em;
+  cursor:           pointer;
+  box-sizing:       border-box;
 }
+
+/* ボタンホバー時 */
+#global-ip-update {
+  margin-left: auto;
+  flex:        0 0 auto;
+  background-color: var(--block-bg);
+  color:            var(--text-color);
+  border:           1px solid var(--block-border);
+  border-radius:    5px;
+  padding:          0.6em 0.9em;
+  cursor:           pointer;
+  box-sizing:       border-box;
+}
+
 #global-ip-update:hover {
-  background-color: var(--hover-bg);
-  color: var(--hover-color);
+  background-color: var(--link-color);
+  color:            var(--block-bg);
 }
 
 /* QRコード部分 */
