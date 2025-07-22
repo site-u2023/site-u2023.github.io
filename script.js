@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.classList.toggle('selected', btn.dataset.themePreference === pref);
       });
       localStorage.setItem('site-u-theme', pref);
-      updateAll(); // テーマ変更に伴い再描画
+      updateAll(); // テーマ変更に伴いQRコードの色も更新されるように再描画を促す
     }
 
     buttons.forEach(btn => {
@@ -60,25 +60,28 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // 既存のcanvas要素があれば削除して再生成
+    // 既存のcanvas要素があれば削除
+    // QRCode.toCanvasは既存のcanvas要素を再利用するよりも、
+    // 新しいcanvas要素に描画する方が確実な場合があるため、一旦削除して再生成
     let canvas = container.querySelector('canvas');
     if (canvas) {
-      // スタイルを維持するために、canvasの内容をクリア
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-      }
-    } else {
-      canvas = document.createElement('canvas');
-      container.appendChild(canvas);
-      // CSSで設定されたサイズを適用するために、QRコードのCSSクラスを付与
-      canvas.classList.add('qr-code-canvas-inner'); // 新しいクラスを追加
+      container.removeChild(canvas);
     }
+    
+    // 新しいcanvas要素を生成して追加
+    canvas = document.createElement('canvas');
+    container.appendChild(canvas);
+    // CSSで設定されたサイズを適用するために、QRコードのCSSクラスを付与
+    canvas.classList.add('qr-code-canvas-inner');
 
     if (window.QRCode) {
-      QRCode.toCanvas(canvas, data, options, function (error) {
-        if (error) console.error(`QRコード生成エラー (${containerId}):`, error);
-      });
+      QRCode.toCanvas(canvas, data, options)
+        .then(() => {
+          // 成功時の処理（必要であれば）
+        })
+        .catch(error => {
+          console.error(`QRコード生成エラー (${containerId}):`, error);
+        });
     } else {
       console.warn('QRCodeライブラリがロードされていません。');
     }
@@ -94,30 +97,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const darkColor  = style.getPropertyValue('--qr-dark').trim();
     const lightColor = style.getPropertyValue('--qr-light').trim();
 
-    // QRコード（メイン）- IPアドレスの右横には描画しないようにコメントアウト
-    // createAndDrawQrCode('qrcode-main', `http://${ip}`, {
-    //   color: { dark: darkColor, light: lightColor }
-    // });
-    // もし #qrcode-main に以前のQRコードが残っている可能性があれば、以下の行でクリア
+    // #qrcode-main (IPアドレスの右横) からQRコードを削除/生成しない
     const qrMainContainer = document.getElementById('qrcode-main');
     if (qrMainContainer) {
       const existingCanvas = qrMainContainer.querySelector('canvas');
       if (existingCanvas) {
-        qrMainContainer.removeChild(existingCanvas);
+        qrMainContainer.removeChild(existingCanvas); // 存在すれば削除
       }
     }
 
-
-    // QRコード（詳細）- ここにのみ描画
-    // details要素が開いている場合のみ描画するロジックを追加
+    // QRコード（詳細）- details要素が開いている場合のみ描画
     const detailElement = document.querySelector('#terminal details');
+    const qrDetailContainer = document.getElementById('qrcode-detail');
+
     if (detailElement && detailElement.open) {
       createAndDrawQrCode('qrcode-detail', `ssh://root@${ip}`, {
         color: { dark: darkColor, light: lightColor }
       });
     } else {
       // detailsが閉じている場合はQRコードを非表示（canvas要素を削除）
-      const qrDetailContainer = document.getElementById('qrcode-detail');
       if (qrDetailContainer) {
         const existingCanvas = qrDetailContainer.querySelector('canvas');
         if (existingCanvas) {
@@ -125,7 +123,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
     }
-
 
     // IPベースのリンクを更新
     document.querySelectorAll('.link-ip').forEach(link => {
@@ -166,7 +163,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // details要素の開閉イベントを監視してQRコードを再描画
+  // details要素の開閉イベントを監視してQRコードを再描画/削除
   document.querySelector('#terminal details')?.addEventListener('toggle', updateAll);
 
   // 初期描画
