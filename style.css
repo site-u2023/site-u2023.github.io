@@ -110,21 +110,18 @@ nav a:hover {
 
 #device-ip .ip-address {
   display: flex;
-  width: 100%;
+  flex: 1;
+  overflow: hidden;
 }
 
 #global-ip-input {
   flex: 1;
-  min-width: 0;      /* 子要素の折り返し防止 */
-  padding: 0.6em;
-  box-sizing: border-box;
+  min-width: 0;
 }
 
 #global-ip-update {
-  flex: 0 0 auto;    /* 自身の幅だけ確保 */
-  margin-left: 0.5em;
-  padding: 0.6em;
-  cursor: pointer;
+  margin-left: auto;
+  flex: 0 0 auto;
 }
 
 /* ── QRコード部分 ── */
