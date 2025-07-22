@@ -2,48 +2,41 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>ワンクリックSSHセットアップ</title>
+  <title>ワンクリックSSH接続</title>
 </head>
 <body>
-  <input id="host" type="text" placeholder="ホスト名（例: myrouter.local）">
-  <button id="oneclick">ワンクリックSSHセットアップ</button>
+  <button id="oneclick">ワンクリックSSH接続</button>
 
   <script>
   document.getElementById('oneclick').addEventListener('click', () => {
-    const host = document.getElementById('host').value.trim();
-    if (!host) return alert('ホスト名を入力してください');
-
-    //─── ① .reg の中身を組み立て ───
+    // ─── ① .reg 内容を組み立て ───
     const regContent = `
 Windows Registry Editor Version 5.00
 
-[HKEY_CLASSES_ROOT\\sshps]
+[HKEY_CLASSES_ROOT\\\\sshps]
 @="URL:SSHPS Protocol"
 "URL Protocol"=""
 
-[HKEY_CLASSES_ROOT\\sshps\\shell]
+[HKEY_CLASSES_ROOT\\\\sshps\\\\shell]
 @="open"
 
-[HKEY_CLASSES_ROOT\\sshps\\shell\\open\\command]
-@="\\"C:\\\\Windows\\\\System32\\\\WindowsPowerShell\\\\v1.0\\\\powershell.exe\\" -NoProfile -Command ^
-  "$dns = (Get-DnsClientServerAddress -AddressFamily IPv4)[0].ServerAddresses[0]; ^
-   $ip  = (Resolve-DnsName -Name '${host}' -Server $dns -ErrorAction Stop).IPAddress; ^
-   ssh root@$ip;\""
+[HKEY_CLASSES_ROOT\\\\sshps\\\\shell\\\\open\\\\command]
+@="\\"C:\\\\Windows\\\\System32\\\\WindowsPowerShell\\\\v1.0\\\\powershell.exe\\" -NoProfile -WindowStyle Hidden -Command ^
+  \\"$gw=(Get-NetIPConfiguration | Where-Object { $_.IPv4DefaultGateway }).IPv4DefaultGateway.NextHop; ssh root@$gw;\\""
 `.trim();
 
-    //─── ② Blob化してダウンロードリンクを自動クリック ───
+    // ─── ② Blob化して自動ダウンロード ───
     const blob = new Blob([regContent], { type: 'application/octet-stream' });
     const a1   = document.createElement('a');
     a1.href    = URL.createObjectURL(blob);
-    a1.download= `sshps-register-${host}.reg`;
+    a1.download= 'sshps-register-gateway.reg';
     document.body.appendChild(a1);
     a1.click();
     document.body.removeChild(a1);
 
-    //─── ③ 同じクリックでプロトコルハンドラを呼び出し ───
-    //     こちらも programmatic click で user gesture 扱い
+    // ─── ③ 同一ジェスチャーでプロトコルハンドラ呼び出し ───
     const a2 = document.createElement('a');
-    a2.href  = `sshps://${host}`;
+    a2.href  = 'sshps://ignore';
     document.body.appendChild(a2);
     a2.click();
     document.body.removeChild(a2);
