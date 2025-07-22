@@ -8,6 +8,7 @@ body {
     color: #333;
     transition: background-color 0.3s ease, color 0.3s ease;
 }
+
 .container {
     max-width: 800px;
     margin: 2em auto;
@@ -17,12 +18,14 @@ body {
     box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     transition: margin 0.3s ease, padding 0.3s ease, border-radius 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
 }
+
 header {
     border-bottom: 2px solid #4a90e2;
     margin-bottom: 1.5em;
     padding-bottom: 0.8em;
     transition: border-color 0.3s ease;
 }
+
 header h1 {
     color: #333;
     margin: 0;
@@ -30,6 +33,7 @@ header h1 {
     text-align: center; /* ヘッダータイトルも中央揃えに */
     transition: font-size 0.3s ease, color 0.3s ease;
 }
+
 nav h2 {
     margin-top: 1.5em;
     margin-bottom: 0.8em;
@@ -39,8 +43,16 @@ nav h2 {
     padding-bottom: 0.3em;
     transition: font-size 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
-nav ul { list-style: none; padding: 0; }
-nav li { margin-bottom: 0.6em; }
+
+nav ul {
+    list-style: none;
+    padding: 0;
+}
+
+nav li {
+    margin-bottom: 0.6em;
+}
+
 nav a {
     text-decoration: none;
     color: #007bff;
@@ -52,12 +64,46 @@ nav a {
     border: 1px solid #dee2e6;
     transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, padding 0.3s ease, border-color 0.2s ease-in-out;
 }
+
 nav a:hover {
     background-color: #007bff;
     color: white;
     text-decoration: none;
 }
-nav a .repo-name { font-weight: bold; }
+
+nav a .repo-name {
+    font-weight: bold;
+}
+
+/* 接続情報セクション */
+.connection {
+    margin: 2em 0;
+    text-align: center;
+}
+
+/* IPアドレス表示 */
+.ip-address {
+    font-size: 1.6rem;
+    color: #444;
+    background: #e8f0f5;
+    padding: 0.8em 1em;
+    border-radius: 6px;
+    display: inline-block;
+    margin-bottom: 1em;
+}
+
+/* QRコード表示 */
+.qr-code {
+    margin-top: 1em;
+}
+
+.qr-code img {
+    width: 200px;       /* 必要に応じて調整 */
+    max-width: 100%;
+    height: auto;
+    border: 1px solid #ccc;
+    border-radius: 0.5em;
+}
 
 /* 新しいフッターエリアのスタイル */
 .page-footer-area {
@@ -84,6 +130,7 @@ nav a .repo-name { font-weight: bold; }
     display: flex;
     gap: 8px;
 }
+
 .theme-selector button {
     background-color: transparent;
     border: 1px solid transparent;
@@ -99,14 +146,17 @@ nav a .repo-name { font-weight: bold; }
     transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
     user-select: none;
 }
+
 .theme-selector button:hover {
     background-color: rgba(0,0,0,0.05);
 }
+
 .theme-selector button.selected {
     background-color: #67B279;
     color: white;
     border-color: transparent;
 }
+
 .theme-selector button.selected:hover {
     background-color: #58a069;
 }
@@ -118,6 +168,7 @@ footer.copyright-footer {
     padding: 0.5em 2em;
     background-color: inherit;
 }
+
 footer.copyright-footer p {
     margin: 0;
     font-size: 0.85em;
@@ -137,9 +188,16 @@ footer.copyright-footer p {
         border-radius: 0;
         box-shadow: none;
     }
-    header h1 { font-size: 1.6em; } /* 中央揃えは維持 */
-    nav h2 { font-size: 1.15em; }
-    nav a { padding: 0.8em 0.7em; font-size: 0.95em; }
+    header h1 {
+        font-size: 1.6em; /* 中央揃えは維持 */
+    }
+    nav h2 {
+        font-size: 1.15em;
+    }
+    nav a {
+        padding: 0.8em 0.7em;
+        font-size: 0.95em;
+    }
 
     .theme-controls-bar {
         /* justify-content: center; はデフォルトで継承される */
@@ -159,26 +217,49 @@ body[data-theme="dark"] {
     background-color: #121212;
     color: #e0e0e0;
 }
+
 body[data-theme="dark"] .container {
     background: #1e1e1e;
     box-shadow: 0 4px 12px rgba(0,0,0,0.4);
 }
-body[data-theme="dark"] header { border-bottom-color: #3a7bc8; }
-body[data-theme="dark"] header h1 { color: #f5f5f5; } /* 中央揃えは維持 */
-body[data-theme="dark"] nav h2 { color: #58a6ff; border-bottom-color: #30363d; }
-body[data-theme="dark"] nav a { color: #58a6ff; background-color: #21262d; border-color: #30363d; }
-body[data-theme="dark"] nav a:hover { background-color: #303f50; color: #c9d1d9; }
+
+body[data-theme="dark"] header {
+    border-bottom-color: #3a7bc8;
+}
+
+body[data-theme="dark"] header h1 {
+    color: #f5f5f5; /* 中央揃えは維持 */
+}
+
+body[data-theme="dark"] nav h2 {
+    color: #58a6ff;
+    border-bottom-color: #30363d;
+}
+
+body[data-theme="dark"] nav a {
+    color: #58a6ff;
+    background-color: #21262d;
+    border-color: #30363d;
+}
+
+body[data-theme="dark"] nav a:hover {
+    background-color: #303f50;
+    color: #c9d1d9;
+}
 
 body[data-theme="dark"] .page-footer-area {
     background-color: #1e1e1e;
     border-top-color: #30363d;
 }
+
 body[data-theme="dark"] .theme-selector button {
     color: #8b949e;
 }
+
 body[data-theme="dark"] .theme-selector button:hover {
     background-color: rgba(255,255,255,0.1);
 }
+
 body[data-theme="dark"] footer.copyright-footer p {
     color: #8b949e;
 }
