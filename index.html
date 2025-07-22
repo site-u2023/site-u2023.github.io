@@ -60,11 +60,12 @@
 
   <link rel="stylesheet" href="style.css">
   <style>
+    /* 折りたたみsummary */
     summary {
       cursor: pointer;
       padding: 6px;
-      background: #eee;
-      border: 1px solid #ccc;
+      background: var(--summary-bg, #eee);
+      border: 1px solid var(--summary-border, #ccc);
       margin-top: 10px;
       display: inline-block;
     }
@@ -74,11 +75,12 @@
     label, button {
       margin-right: 6px;
     }
+    /* デバイスIPセクションをテーマ変数化 */
     section#device-ip {
       margin-bottom: 20px;
       padding: 10px;
-      border: 1px solid #ddd;
-      background: #f9f9f9;
+      border: 1px solid var(--block-border, #ddd);
+      background-color: var(--block-bg, #f9f9f9);
     }
   </style>
 </head>
@@ -89,7 +91,7 @@
     </header>
     <main>
       <nav>
-        <!-- デバイスIP入力セクション -->
+        <!-- ① デバイスIP入力セクション（nav内最上部） -->
         <section id="device-ip">
           <h2>デバイス IP アドレス</h2>
           <label>
@@ -102,6 +104,7 @@
           <button id="global-ip-update" type="button">更新</button>
         </section>
 
+        <!-- ② プロジェクト -->
         <section id="project">
           <h2>プロジェクト</h2>
           <ul>
@@ -118,6 +121,7 @@
           </ul>
         </section>
 
+        <!-- ③ ローカルネットワーク -->
         <section id="local-services">
           <h2>ローカルネットワーク</h2>
           <ul>
@@ -140,18 +144,19 @@
           </ul>
         </section>
 
+        <!-- ④ ターミナル -->
         <section id="terminal">
           <h2>ターミナル</h2>
           <ul>
             <li>
-              <a href="file/cmd.reg" download>
-                SSH 用プロトコル登録 (cmd://) (.reg)
+              <a href="file/ssh.reg" download>
+                SSH 用プロトコル登録 (ssh://) (.reg)
               </a>
             </li>
             <li>
               <a id="ssh-link"
-                 data-ip-template="cmd://${ip}">
-                SSH 接続 (cmd://<span id="ssh-ip">192.168.1.1</span>)
+                 data-ip-template="ssh://${ip}">
+                SSH 接続 (ssh://<span id="ssh-ip">192.168.1.1</span>)
               </a>
             </li>
             <li>
@@ -162,6 +167,7 @@
             </li>
           </ul>
         </section>
+
       </nav>
     </main>
   </div><!-- .container -->
@@ -186,14 +192,14 @@
   </div>
 
   <script>
-    // フッター年を自動更新
+    // フッター年を更新
     document.getElementById('current-year')
             .textContent = new Date().getFullYear();
   </script>
 
   <script>
   (function(){
-    // テーマスイッチャー（既存ロジック）
+    // テーマ切り替えロジック（既存）
     const themeButtons = [
       document.getElementById('theme-auto'),
       document.getElementById('theme-light'),
@@ -214,17 +220,17 @@
       );
     }
 
-    themeButtons.forEach(b => {
-      if (b) b.addEventListener('click', () =>
-        applyTheme(b.dataset.themePreference)
-      );
+    themeButtons.forEach(b=>{
+      b && b.addEventListener('click', ()=>{
+        applyTheme(b.dataset.themePreference);
+      });
     });
-    prefersDark.addEventListener('change', () => {
-      if ((localStorage.getItem('themePreference') || 'auto') === 'auto') {
+    prefersDark.addEventListener('change', ()=>{
+      if((localStorage.getItem('themePreference')||'auto') === 'auto'){
         applyTheme('auto');
       }
     });
-    applyTheme(localStorage.getItem('themePreference') || 'auto');
+    applyTheme(localStorage.getItem('themePreference')||'auto');
   })();
   </script>
 
@@ -235,27 +241,25 @@
       const ip = document.getElementById('global-ip-input')
                      .value.trim() || '192.168.1.1';
 
-      // 1) ローカルリンク更新
-      document.querySelectorAll('.link-ip').forEach(el => {
-        const tpl = el.dataset.ipTemplate;
-        el.href = tpl.replace(/\$\{ip\}/g, ip);
+      // ローカルサービスリンクを更新
+      document.querySelectorAll('.link-ip').forEach(el=>{
+        el.href = el.dataset.ipTemplate.replace(/\$\{ip\}/g, ip);
       });
 
-      // 2) SSHリンク更新
-      const sshTpl = document.getElementById('ssh-link')
-                         .dataset.ipTemplate;
+      // SSHリンク＆表示IPを更新
+      const sshTpl = document.getElementById('ssh-link').dataset.ipTemplate;
       const sshUri = sshTpl.replace(/\$\{ip\}/g, ip);
       document.getElementById('ssh-link').href = sshUri;
       document.getElementById('ssh-ip').textContent = ip;
 
-      // 3) QRコード更新
+      // QRコードを更新
       const qrBox = document.getElementById('qrcode');
       qrBox.innerHTML = '';
-      QRCode.toCanvas(qrBox, sshUri, err => err && console.error(err));
+      QRCode.toCanvas(qrBox, sshUri, err=> err && console.error(err));
     }
 
-    // 初期化＆ボタンクリックで更新
-    window.addEventListener('DOMContentLoaded', () => {
+    // ページ読み込み時＆更新ボタンで実行
+    window.addEventListener('DOMContentLoaded', ()=>{
       document.getElementById('global-ip-update')
               .addEventListener('click', updateAll);
       updateAll();
