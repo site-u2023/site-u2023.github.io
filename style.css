@@ -29,26 +29,11 @@ body {
               color 0.3s ease;
 }
 
-/* フォームコントロール共通 */
-input, button {
-  background-color: var(--block-bg);
-  color: var(--text-color);
-  border: 1px solid var(--block-border);
-  border-radius: 5px;
-  padding: 0.6em 0.9em;
-  box-sizing: border-box;
-  transition: background-color 0.2s ease,
-              color 0.2s ease;
-}
-
-/* リンク共通 */
-a {
-  color: var(--link-color);
-  text-decoration: none;
-}
-a:hover {
-  background-color: var(--hover-bg);
-  color: var(--hover-color);
+/* ── リストマーカー消去 ── */
+ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
 /* ── ヘッダー ── */
@@ -101,6 +86,10 @@ nav a {
   transition: background-color 0.2s ease,
               color 0.2s ease;
 }
+nav a:hover {
+  background-color: var(--link-color);
+  color: var(--block-bg);
+}
 
 /* ── Device IP セクション ── */
 #device-ip {
@@ -118,19 +107,37 @@ nav a {
   overflow: hidden;
 }
 
+/* 入力欄＆ボタン共通 */
+#global-ip-input,
+#global-ip-update {
+  background-color: var(--block-bg);
+  color:            var(--link-color);
+  border:           1px solid var(--block-border);
+  border-radius:    5px;
+  padding:          0.6em 0.9em;
+  box-sizing:       border-box;
+  transition:       background-color 0.2s ease,
+                    color 0.2s ease;
+}
+
+/* 入力欄 */
 #global-ip-input {
-  flex: 1;
+  flex:      1;
   min-width: 0;
 }
 
+/* 更新ボタン */
 #global-ip-update {
+  flex:        0 0 auto;
   margin-left: auto;
-  flex: 0 0 auto;
-  cursor: pointer;
+  cursor:      pointer;
 }
+
+/* ホバー時 */
+#global-ip-input:hover,
 #global-ip-update:hover {
   background-color: var(--hover-bg);
-  color: var(--hover-color);
+  color:            var(--hover-color);
 }
 
 /* ── QRコード部分 ── */
