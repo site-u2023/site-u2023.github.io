@@ -29,11 +29,27 @@ body {
               color 0.3s ease;
 }
 
-/* ── リストマーカー消去 ── */
-ul {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+/* フォームコントロール共通 */
+input,
+button {
+  background-color: var(--block-bg);
+  color: var(--text-color);
+  border: 1px solid var(--block-border);
+  border-radius: 5px;
+  padding: 0.6em 0.9em;
+  box-sizing: border-box;
+  transition: background-color 0.2s ease,
+              color 0.2s ease;
+}
+
+/* リンク共通 */
+a {
+  color: var(--link-color);
+  text-decoration: none;
+}
+a:hover {
+  background-color: var(--hover-bg);
+  color: var(--hover-color);
 }
 
 /* ── ヘッダー ── */
@@ -57,7 +73,7 @@ header h1 {
   background: var(--block-bg);
   padding: 1.5em 2em;
   border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   transition: background-color 0.3s ease,
               box-shadow 0.3s ease;
 }
@@ -107,37 +123,32 @@ nav a:hover {
   overflow: hidden;
 }
 
-/* 入力欄＆ボタン共通 */
-#global-ip-input,
+#global-ip-input {
+  background-color: var(--block-bg);
+  color: var(--text-color);
+  border: 1px solid var(--block-border);
+  border-radius: 5px;
+  padding: 0.6em 0.9em;
+  flex: 1;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
 #global-ip-update {
   background-color: var(--block-bg);
-  color:            var(--link-color);
-  border:           1px solid var(--block-border);
-  border-radius:    5px;
-  padding:          0.6em 0.9em;
-  box-sizing:       border-box;
-  transition:       background-color 0.2s ease,
-                    color 0.2s ease;
-}
-
-/* 入力欄 */
-#global-ip-input {
-  flex:      1;
-  min-width: 0;
-}
-
-/* 更新ボタン */
-#global-ip-update {
-  flex:        0 0 auto;
+  color: var(--text-color);
+  border: 1px solid var(--block-border);
+  border-radius: 5px;
+  padding: 0.6em 0.9em;
   margin-left: auto;
-  cursor:      pointer;
+  flex: 0 0 auto;
+  cursor: pointer;
+  box-sizing: border-box;
 }
 
-/* ホバー時 */
-#global-ip-input:hover,
 #global-ip-update:hover {
   background-color: var(--hover-bg);
-  color:            var(--hover-color);
+  color: var(--hover-color);
 }
 
 /* ── QRコード部分 ── */
@@ -192,7 +203,7 @@ footer.copyright-footer {
               color 0.2s ease;
 }
 .theme-selector button:hover {
-  background-color: rgba(0,0,0,0.05);
+  background-color: rgba(0, 0, 0, 0.05);
 }
 .theme-selector button.selected {
   background-color: #67B279;
@@ -235,7 +246,7 @@ footer.copyright-footer {
 
 /* ── ダークテーマ用オーバーライド ── */
 body[data-theme="dark"] .container {
-  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 body[data-theme="dark"] nav h2 {
   border-bottom-color: var(--block-border);
