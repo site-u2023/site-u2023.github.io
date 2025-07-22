@@ -94,7 +94,8 @@
           <h2>デバイス IP アドレス</h2>
           <label>
             IP:
-            <input type="text" id="global-ip-input"
+            <input type="text"
+                   id="global-ip-input"
                    value="192.168.1.1"
                    placeholder="例: 192.168.0.1">
           </label>
@@ -123,14 +124,16 @@
             <li>
               <a class="link-ip"
                  data-ip-template="http://${ip}"
-                 target="_blank" rel="noopener noreferrer">
+                 target="_blank"
+                 rel="noopener noreferrer">
                 <span class="repo-name">LuCI</span> (管理画面)
               </a>
             </li>
             <li>
               <a class="link-ip"
                  data-ip-template="http://${ip}:7681/"
-                 target="_blank" rel="noopener noreferrer">
+                 target="_blank"
+                 rel="noopener noreferrer">
                 <span class="repo-name">ttyd</span> (Webターミナル)
               </a>
             </li>
@@ -166,9 +169,15 @@
   <div class="page-footer-area">
     <div class="theme-controls-bar">
       <div class="theme-selector">
-        <button id="theme-auto"  aria-label="システムテーマ" data-theme-preference="auto">🌗</button>
-        <button id="theme-dark"  aria-label="ダークテーマ"   data-theme-preference="dark">🌙</button>
-        <button id="theme-light" aria-label="ライトテーマ"   data-theme-preference="light">☀️</button>
+        <button id="theme-auto"
+                aria-label="システムテーマ"
+                data-theme-preference="auto">🌗</button>
+        <button id="theme-dark"
+                aria-label="ダークテーマ"
+                data-theme-preference="dark">🌙</button>
+        <button id="theme-light"
+                aria-label="ライトテーマ"
+                data-theme-preference="light">☀️</button>
       </div>
     </div>
     <footer class="copyright-footer">
@@ -200,19 +209,22 @@
         : pref;
       body.dataset.theme = actual;
       themeButtons.forEach(b =>
-        b.classList.toggle('selected', b.dataset.themePreference === pref)
+        b.classList.toggle('selected',
+          b.dataset.themePreference === pref)
       );
     }
 
-    themeButtons.forEach(b=>{
-      if(b) b.addEventListener('click', ()=>applyTheme(b.dataset.themePreference));
+    themeButtons.forEach(b => {
+      if (b) b.addEventListener('click', () =>
+        applyTheme(b.dataset.themePreference)
+      );
     });
-    prefersDark.addEventListener('change', ()=> {
-      if((localStorage.getItem('themePreference')||'auto') === 'auto') {
+    prefersDark.addEventListener('change', () => {
+      if ((localStorage.getItem('themePreference') || 'auto') === 'auto') {
         applyTheme('auto');
       }
     });
-    applyTheme(localStorage.getItem('themePreference')||'auto');
+    applyTheme(localStorage.getItem('themePreference') || 'auto');
   })();
   </script>
 
@@ -221,10 +233,10 @@
   <script>
     function updateAll() {
       const ip = document.getElementById('global-ip-input')
-                    .value.trim() || '192.168.1.1';
+                     .value.trim() || '192.168.1.1';
 
       // 1) ローカルリンク更新
-      document.querySelectorAll('.link-ip').forEach(el=>{
+      document.querySelectorAll('.link-ip').forEach(el => {
         const tpl = el.dataset.ipTemplate;
         el.href = tpl.replace(/\$\{ip\}/g, ip);
       });
@@ -239,11 +251,11 @@
       // 3) QRコード更新
       const qrBox = document.getElementById('qrcode');
       qrBox.innerHTML = '';
-      QRCode.toCanvas(qrBox, sshUri, err=> err && console.error(err));
+      QRCode.toCanvas(qrBox, sshUri, err => err && console.error(err));
     }
 
     // 初期化＆ボタンクリックで更新
-    window.addEventListener('DOMContentLoaded', ()=>{
+    window.addEventListener('DOMContentLoaded', () => {
       document.getElementById('global-ip-update')
               .addEventListener('click', updateAll);
       updateAll();
