@@ -13,7 +13,6 @@
     </header>
     <main>
       <nav>
-
         <!-- デバイス IP セクション -->
         <section id="device-ip">
           <h2>IPアドレス</h2>
@@ -45,12 +44,24 @@
           <h2>ローカルネットワーク</h2>
           <ul>
             <li>
-              <a class="link-ip" data-ip-template="http://${ip}" href="#" target="_blank" rel="noopener">
+              <a
+                class="link-ip"
+                data-ip-template="http://${ip}/cgi-bin/luci"
+                href="#"
+                target="_blank"
+                rel="noopener"
+              >
                 LuCI (管理画面)
               </a>
             </li>
             <li>
-              <a class="link-ip" data-ip-template="http://${ip}:7681/" href="#" target="_blank" rel="noopener">
+              <a
+                class="link-ip"
+                data-ip-template="http://${ip}:7681/"
+                href="#"
+                target="_blank"
+                rel="noopener"
+              >
                 ttyd (Webターミナル)
               </a>
             </li>
@@ -67,12 +78,14 @@
               </a>
             </li>
             <li>
-              <a id="ssh-link"
-                 class="link-ip"
-                 data-ip-template="sshps://root@${ip}"
-                 href="#"
-                 target="_blank"
-                 rel="noopener">
+              <a
+                id="ssh-link"
+                class="link-ip"
+                data-ip-template="ssh://root@${ip}"
+                href="#"
+                target="_blank"
+                rel="noopener"
+              >
                 SSH 接続 (root@<span id="ssh-ip">192.168.1.1</span>)
               </a>
             </li>
@@ -84,7 +97,6 @@
             </li>
           </ul>
         </section>
-
       </nav>
     </main>
   </div>
@@ -102,6 +114,9 @@
       <p>&copy; <span id="current-year"></span> site-u</p>
     </footer>
   </div>
+
+  <!-- QRコードライブラリ -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
 
   <!-- スクリプト -->
   <script>
@@ -131,6 +146,7 @@
           applyTheme(b.dataset.themePreference)
         )
       );
+
       mqDark.addEventListener('change', () => {
         if ((localStorage.getItem('themePreference') || 'auto') === 'auto') {
           applyTheme('auto');
@@ -158,57 +174,5 @@
 
       // QRメイン
       const qrMain = document.getElementById('qrcode-main');
-      if (qrMain) {
-        QRCode.toCanvas(qrMain, `http://${ip}`, {
-          color: { dark: darkColor, light: lightColor }
-        });
-      }
-
-      // QR詳細（SSH）
-      const qrDetail = document.getElementById('qrcode-detail');
-      if (qrDetail) {
-        QRCode.toCanvas(qrDetail, `sshps://root@${ip}`, {
-          color: { dark: darkColor, light: lightColor }
-        });
-      }
-
-      // リンク反映
-      document.querySelectorAll('.link-ip').forEach(link => {
-        const template = link.dataset.ipTemplate;
-        if (template && template.includes('${ip}')) {
-          const url = template.replace('${ip}', ip);
-          link.href = url;
-          link.textContent = url;
-        }
-      });
-
-      // 表示IP更新
-      const sshText = document.getElementById('ssh-ip');
-      if (sshText) sshText.textContent = ip;
-    }
-
-    // 入力欄全体に半角変換＋即反映
-    document.querySelectorAll('input[type="text"]').forEach(input => {
-      input.addEventListener('input', () => {
-        const caret     = input.selectionStart;
-        const converted = toHalfWidth(input.value);
-        if (input.value !== converted) {
-          input.value = converted;
-          input.setSelectionRange(caret, caret);
-        }
-        updateAll();
-      });
-    });
-
-    // イベント
-    document.getElementById('global-ip-update')?.addEventListener('click', updateAll);
-    document.getElementById('global-ip-input')?.addEventListener('keydown', e => {
-      if (e.key === 'Enter') updateAll();
-    });
-
-    // 初期描画
-    updateAll();
-  </script>
-  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
-</body>
-</html>
+      if (qrMain && window.QRCode) {
+        QRCode.toCanvas(qrMain, `http://${
