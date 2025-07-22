@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
       btn.addEventListener('click', () => applyTheme(btn.dataset.themePreference));
     });
 
-    // システムテーマ変更を監視（追加）
+    // システムテーマ変更を監視
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
       if ((localStorage.getItem('site-u-theme') || 'auto') === 'auto') {
         applyTheme('auto'); // auto設定ならシステムテーマに合わせて更新
@@ -77,37 +77,28 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!input) return;
     const ip = input.value.trim() || input.placeholder;
 
-    // QRコード（メイン）- 削除済みなので、ここでは何もしません
-    // const qrMain = document.getElementById('qrcode-main');
-    // if (qrMain && window.QRCode) {
-    //   QRCode.toCanvas(qrMain, `http://${ip}`, {
-    //     color: { dark: darkColor, light: lightColor }
-    //   });
-    // }
-
-    // QRコード（詳細）- detailsタグが開かれたときにのみ描画する
-    const detailContainer = document.getElementById('qrcode-detail-container'); // index.htmlにIDを追加します
+    // 「QRコードを表示」のdetailsタグ内のQRコードを更新
+    const detailContainer = document.getElementById('qrcode-detail-container');
     if (detailContainer) {
-        // detailsが開かれたときに描画し、閉じたらクリア
-        // toggleイベントは開閉両方で発火するので、openプロパティで判断
-        detailContainer.removeEventListener('toggle', handleDetailToggle); // 既存のリスナーを一度削除
-        detailContainer.addEventListener('toggle', handleDetailToggle); // 新しいリスナーを追加
-
-        // ページロード時に既に開かれている場合も描画
+        // detailsが開かれている場合は常にQRコードを再描画
         if (detailContainer.open) {
             drawQRCode('qrcode-detail', `ssh://root@${ip}`);
         }
-    }
-
-    // detailsの開閉をハンドリングする関数
-    function handleDetailToggle() {
-        if (this.open) { // detailsが開かれたら
-            drawQRCode('qrcode-detail', `ssh://root@${ip}`);
-        } else { // detailsが閉じたら、QRコードをクリア
-            const qrDetail = document.getElementById('qrcode-detail');
-            if (qrDetail) {
-                qrDetail.innerHTML = ''; // 中身を空にする
-            }
+        // detailsの開閉をハンドリングする関数
+        // toggleイベントは開閉両方で発火するので、openプロパティで判断
+        // イベントリスナーは一度だけ追加する
+        if (!detailContainer.dataset.toggleListenerAdded) { // リスナーがまだ追加されていない場合のみ
+            detailContainer.addEventListener('toggle', function handleDetailToggle() {
+                if (this.open) { // detailsが開かれたら
+                    drawQRCode('qrcode-detail', `ssh://root@${ip}`);
+                } else { // detailsが閉じたら、QRコードをクリア
+                    const qrDetail = document.getElementById('qrcode-detail');
+                    if (qrDetail) {
+                        qrDetail.innerHTML = ''; // 中身を空にする
+                    }
+                }
+            });
+            detailContainer.dataset.toggleListenerAdded = 'true'; // リスナーが追加されたことをマーク
         }
     }
 
