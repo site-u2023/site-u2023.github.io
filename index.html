@@ -6,7 +6,6 @@
   <title>OpenWrt: A Beginner’s Notebook</title>
   <link rel="stylesheet" href="style.css">
   <style>
-    /* テーマ変数 */
     body[data-theme="light"] {
       --block-bg:        #fff;
       --block-border:    #ddd;
@@ -27,8 +26,6 @@
       --qr-dark:         #fff;
       --qr-light:        #1a1a1a;
     }
-
-    /* 共通スタイル（元のCSSに依存） */
     body {
       background: var(--block-bg);
       color: var(--text-color);
@@ -90,22 +87,15 @@
     </header>
     <main>
       <nav>
-        <!-- 1) デバイス IP セクション -->
         <section id="device-ip">
           <h2>デバイス IP アドレス</h2>
           <label>
             IP:
-            <input
-              type="text"
-              id="global-ip-input"
-              value="192.168.1.1"
-              placeholder="例: 192.168.0.1"
-            >
+            <input type="text" id="global-ip-input" value="192.168.1.1" placeholder="例: 192.168.0.1">
           </label>
           <button id="global-ip-update" type="button">更新</button>
         </section>
 
-        <!-- 2) プロジェクト -->
         <section id="project">
           <h2>プロジェクト</h2>
           <ul>
@@ -114,30 +104,22 @@
           </ul>
         </section>
 
-        <!-- 3) ローカルサービス -->
         <section id="local-services">
           <h2>ローカルネットワーク</h2>
           <ul>
             <li>
-              <a
-                class="link-ip"
-                data-ip-template="http://${ip}"
-                target="_blank"
-                rel="noopener noreferrer"
-              >LuCI (管理画面)</a>
+              <a class="link-ip" data-ip-template="http://${ip}" target="_blank" rel="noopener noreferrer">
+                LuCI (管理画面)
+              </a>
             </li>
             <li>
-              <a
-                class="link-ip"
-                data-ip-template="http://${ip}:7681/"
-                target="_blank"
-                rel="noopener noreferrer"
-              >ttyd (Webターミナル)</a>
+              <a class="link-ip" data-ip-template="http://${ip}:7681/" target="_blank" rel="noopener noreferrer">
+                ttyd (Webターミナル)
+              </a>
             </li>
           </ul>
         </section>
 
-        <!-- 4) ターミナル -->
         <section id="terminal">
           <h2>ターミナル</h2>
           <ul>
@@ -147,10 +129,9 @@
               </a>
             </li>
             <li>
-              <a
-                id="ssh-link"
-                data-ip-template="sshps://root@${ip}"
-              >SSH 接続 (root@<span id="ssh-ip">192.168.1.1</span>)</a>
+              <a id="ssh-link" data-ip-template="sshps://root@${ip}">
+                SSH 接続 (root@<span id="ssh-ip">192.168.1.1</span>)
+              </a>
             </li>
             <li>
               <details>
@@ -167,21 +148,9 @@
   <div class="page-footer-area">
     <div class="theme-controls-bar">
       <div class="theme-selector">
-        <button
-          id="theme-auto"
-          aria-label="システムテーマ"
-          data-theme-preference="auto"
-        >🌗</button>
-        <button
-          id="theme-light"
-          aria-label="ライトテーマ"
-          data-theme-preference="light"
-        >☀️</button>
-        <button
-          id="theme-dark"
-          aria-label="ダークテーマ"
-          data-theme-preference="dark"
-        >🌙</button>
+        <button id="theme-auto" aria-label="システムテーマ" data-theme-preference="auto">🌗</button>
+        <button id="theme-light" aria-label="ライトテーマ" data-theme-preference="light">☀️</button>
+        <button id="theme-dark" aria-label="ダークテーマ" data-theme-preference="dark">🌙</button>
       </div>
     </div>
     <footer>
@@ -190,66 +159,58 @@
   </div>
 
   <script>
-    // フッター年
-    document.getElementById('current-year').textContent =
-      new Date().getFullYear();
+    document.getElementById('current-year').textContent = new Date().getFullYear();
   </script>
   <script>
-  (function(){
-    const buttons   = [...document.querySelectorAll('.theme-selector button')];
-    const body      = document.body;
-    const mqDark    = window.matchMedia('(prefers-color-scheme: dark)');
+    (function(){
+      const buttons = [...document.querySelectorAll('.theme-selector button')];
+      const body = document.body;
+      const mqDark = window.matchMedia('(prefers-color-scheme: dark)');
 
-    function applyTheme(pref) {
-      localStorage.setItem('themePreference', pref);
-      const actual = pref === 'auto'
-        ? (mqDark.matches ? 'dark' : 'light')
-        : pref;
-      body.dataset.theme = actual;
-      buttons.forEach(b =>
-        b.classList.toggle('selected',
-          b.dataset.themePreference === pref)
-      );
-      updateAll();
-    }
-
-    buttons.forEach(b =>
-      b.addEventListener('click', () =>
-        applyTheme(b.dataset.themePreference)
-      )
-    );
-    mqDark.addEventListener('change', () => {
-      if ((localStorage.getItem('themePreference')||'auto') === 'auto') {
-        applyTheme('auto');
+      function applyTheme(pref) {
+        localStorage.setItem('themePreference', pref);
+        const actual = pref === 'auto'
+          ? (mqDark.matches ? 'dark' : 'light')
+          : pref;
+        body.dataset.theme = actual;
+        buttons.forEach(b =>
+          b.classList.toggle('selected', b.dataset.themePreference === pref)
+        );
+        updateAll();
       }
-    });
 
-    applyTheme(localStorage.getItem('themePreference')||'auto');
-  })();
+      buttons.forEach(b =>
+        b.addEventListener('click', () =>
+          applyTheme(b.dataset.themePreference)
+        )
+      );
+      mqDark.addEventListener('change', () => {
+        if ((localStorage.getItem('themePreference') || 'auto') === 'auto') {
+          applyTheme('auto');
+        }
+      });
+
+      applyTheme(localStorage.getItem('themePreference') || 'auto');
+    })();
   </script>
   <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
   <script>
     function updateAll() {
-      const ip = document
-        .getElementById('global-ip-input')
-        .value.trim() || '192.168.1.1';
+      const ip = document.getElementById('global-ip-input').value.trim() || '192.168.1.1';
 
-      // ローカルサービス
       document.querySelectorAll('.link-ip').forEach(el => {
         el.href = el.dataset.ipTemplate.replace(/\$\{ip\}/g, ip);
       });
 
-      // SSHリンク
       const sshLink = document.getElementById('ssh-link');
-      const uri     = sshLink.dataset.ipTemplate.replace(/\$\{ip\}/g, ip);
-      sshLink.href           = uri;
+      const uri = sshLink.dataset.ipTemplate.replace(/\$\{ip\}/g, ip);
+      sshLink.href = uri;
       document.getElementById('ssh-ip').textContent = ip;
 
-      // QRコード
       const qrBox = document.getElementById('qrcode');
       qrBox.innerHTML = '';
       const style = getComputedStyle(document.body);
-      const dark  = style.getPropertyValue('--qr-dark').trim();
+      const dark = style.getPropertyValue('--qr-dark').trim();
       const light = style.getPropertyValue('--qr-light').trim();
 
       QRCode.toCanvas(qrBox, uri, {
@@ -258,12 +219,8 @@
     }
 
     window.addEventListener('DOMContentLoaded', () => {
-      document
-        .getElementById('global-ip-input')
-        .addEventListener('input', updateAll);
-      document
-        .getElementById('global-ip-update')
-        .addEventListener('click', updateAll);
+      document.getElementById('global-ip-input').addEventListener('input', updateAll);
+      document.getElementById('global-ip-update').addEventListener('click', updateAll);
       updateAll();
     });
   </script>
