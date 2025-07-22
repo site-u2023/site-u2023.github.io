@@ -96,32 +96,52 @@ nav a:hover {
 }
 
 /* ── Device IP セクション ── */
-/* セクション枠を消し、間隔のみ維持 */
 #device-ip {
   border: none;
   margin-bottom: 16px;
 }
-
 #device-ip .connection {
   display: flex;
   align-items: center;
   gap: 1rem;
 }
-
 #device-ip .ip-address {
   display: flex;
   flex: 1;
   overflow: hidden;
 }
 
+/* IP入力欄 */
 #global-ip-input {
   flex: 1;
   min-width: 0;
+  background-color: inherit;
+  color: inherit;
+  border: 1px solid var(--block-border);
+  border-radius: 5px;
+  padding: 0.6em 0.9em;
+  box-sizing: border-box;
+}
+#global-ip-input::placeholder {
+  color: var(--block-border);
+  opacity: 0.6;
 }
 
+/* 更新ボタン */
 #global-ip-update {
   margin-left: auto;
   flex: 0 0 auto;
+  background-color: inherit;
+  color: var(--link-color);
+  border: 1px solid var(--block-border);
+  border-radius: 5px;
+  padding: 0.6em 0.9em;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+#global-ip-update:hover {
+  background-color: var(--link-color);
+  color: var(--block-bg);
 }
 
 /* ── QRコード部分 ── */
