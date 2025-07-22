@@ -141,7 +141,10 @@ nav a {
   border-radius: 6px;
   text-align: center;
 }
-.qr-code canvas {
+/* .qr-code の中に動的に生成される canvas 要素にスタイルを適用 */
+/* qr-code-canvas-inner クラスも追加 */
+.qr-code canvas,
+.qr-code .qr-code-canvas-inner {
   width: 180px !important;
   height: 180px !important;
   display: inline-block;
