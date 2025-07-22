@@ -4,35 +4,35 @@
   <meta charset="UTF-8">
   <title>ワンクリックSSH</title>
   <style>
-    body { font-family: Meiryo; padding:2em; }
-    a.btn {
+    .btn {
       display:inline-block;
       padding:1em 2em;
       background:#0078d4;
       color:#fff;
       text-decoration:none;
       border-radius:4px;
-      font-size:1rem;
+      font-family:Meiryo;
     }
   </style>
 </head>
 <body>
-  <h1>SSH を一発起動</h1>
-  <p>以下のボタンをクリックするだけで、自動的に PowerShell → DNSゲートウェイ解決 → SSH が始まります。</p>
-  <a id="sshBtn" class="btn" href="sshps://">SSH 起動</a>
+  <h1>SSHを一発起動</h1>
+  <a id="sshBtn" class="btn" href="#">SSH 起動</a>
 
   <script>
-    // 実行したい PowerShell コード（改行なしで一行）
+    // 1) 実行したい PowerShell コマンドを一行スクリプトとして用意
     const ps = [
-      '$dns=(Get-DnsClientServerAddress -AddressFamily IPv4)[0].ServerAddresses[0]',
-      '$gw=(Get-NetIPConfiguration | Where{$_.IPv4DefaultGateway}).IPv4DefaultGateway.NextHop',
-      '$ip=(Resolve-DnsName -Name $gw -Server $dns -ErrorAction Stop).IPAddress',
-      'ssh root@$ip'
-    ].join(';');
+      "$dns=(Get-DnsClientServerAddress -AddressFamily IPv4)[0].ServerAddresses[0]",
+      "$gw=(Get-NetIPConfiguration | Where{$_.IPv4DefaultGateway}).IPv4DefaultGateway.NextHop",
+      "$ip=(Resolve-DnsName -Name $gw -Server $dns -ErrorAction Stop).IPAddress",
+      "ssh root@$ip"
+    ].join(";");
 
-    // URL エンコードしてリンクを書き換え
+    // 2) 完全にURLエンコード
     const encoded = encodeURIComponent(ps);
-    document.getElementById('sshBtn').href = 'sshps://' + encoded;
+
+    // 3) sshps:// + エンコード文字列 を link にセット
+    document.getElementById("sshBtn").href = "sshps://" + encoded;
   </script>
 </body>
 </html>
