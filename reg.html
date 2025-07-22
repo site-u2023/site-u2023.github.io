@@ -2,11 +2,11 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>SSHPS プロトコル登録</title>
+  <title>SSHPS プロトコル登録＆起動</title>
 </head>
 <body>
-  <input id="host" type="text" placeholder="ホスト名 or ドメイン（例: myrouter.local）">
-  <button id="reg-btn">SSHPS プロトコルを登録</button>
+  <input id="host" type="text" placeholder="ホスト名（例: myrouter.local）">
+  <button id="reg-btn">ワンクリックでSSH起動セットアップ</button>
 
   <script>
   document.getElementById('reg-btn').addEventListener('click', () => {
@@ -14,7 +14,7 @@
     if (!host) return alert('ホスト名を入力してください');
 
     // 1) .reg の内容を組み立て
-    const regContent = `
+    const reg = `
 Windows Registry Editor Version 5.00
 
 [HKEY_CLASSES_ROOT\\sshps]
@@ -25,30 +25,28 @@ Windows Registry Editor Version 5.00
 @="open"
 
 [HKEY_CLASSES_ROOT\\sshps\\shell\\open\\command]
-@="\\"C:\\\\Windows\\\\System32\\\\WindowsPowerShell\\\\v1.0\\\\powershell.exe\\" -NoProfile -WindowStyle Hidden -Command ^
+@="\\"C:\\\\Windows\\\\System32\\\\WindowsPowerShell\\\\v1.0\\\\powershell.exe\\" -NoProfile -Command ^
   "$dns = (Get-DnsClientServerAddress -AddressFamily IPv4)[0].ServerAddresses[0]; ^
-   $ip  = (Resolve-DnsName -Name '${host}' -Server $dns).IPAddress; ^
-   Start-Process ssh -ArgumentList 'root@' + $ip;""
+   $ip  = (Resolve-DnsName -Name '${host}' -Server $dns -ErrorAction Stop).IPAddress; ^
+   ssh root@$ip;\""
 `.trim();
 
-    // 2) Blob を作成して a タグを生成
-    const blob = new Blob([regContent], { type: 'application/octet-stream' });
+    // 2) Blob 化してダウンロード
+    const blob = new Blob([reg], { type: 'application/octet-stream' });
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
-
-    a.href        = url;
-    a.download    = `sshps-register-${host}.reg`;  // ファイル名を設定
-    a.style.display = 'none';
+    a.href     = url;
+    a.download = `sshps-register-${host}.reg`;
     document.body.appendChild(a);
-
-    // 3) 自動クリックで「名前を付けて保存 or 開く」ダイアログを出す
     a.click();
+    document.body.removeChild(a);
 
-    // 4) 後片付け
+    // 3) 少し待ってプロトコルハンドラを呼び出し
     setTimeout(() => {
+      // ここでブラウザに「外部アプリを開きますか？」と聞かせる
+      window.location.href = `sshps://${host}`;
       URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-    }, 1000);
+    }, 500);
   });
   </script>
 </body>
