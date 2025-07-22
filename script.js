@@ -32,16 +32,14 @@ function updateAll() {
   const style = getComputedStyle(document.body);
   const darkColor  = style.getPropertyValue('--qr-dark').trim();
   const lightColor = style.getPropertyValue('--qr-light').trim();
-  const target = document.getElementById('qrcode-main');
+  const target     = document.getElementById('qrcode-main');
 
-  QRCode.toCanvas(el, `http://${ip}`, {
-  color: {
-    dark:  getComputedStyle(document.body)
-               .getPropertyValue('--link-color').trim(),
-    light: getComputedStyle(document.body)
-               .getPropertyValue('--block-bg').trim()
-  }
-});
+  QRCode.toCanvas(target, `http://${ip}`, {
+    color: {
+      dark:  darkColor,
+      light: lightColor
+    }
+  });
 }
 
 document.getElementById('global-ip-update')
