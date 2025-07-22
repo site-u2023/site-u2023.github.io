@@ -119,8 +119,7 @@ nav a:hover {
 
 /* ── IP入力欄 ＋ 更新ボタン整列 ── */
 #global-ip-input {
-  flex: 1;
-  min-width: 0;
+  width: calc(100% - 80px);
 }
 
 #global-ip-update {
