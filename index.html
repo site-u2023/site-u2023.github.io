@@ -175,4 +175,55 @@
       // QRメイン
       const qrMain = document.getElementById('qrcode-main');
       if (qrMain && window.QRCode) {
-        QRCode.toCanvas(qrMain, `http://${
+        QRCode.toCanvas(qrMain, `http://${ip}`, {
+          color: { dark: darkColor, light: lightColor }
+        });
+      }
+
+      // QR詳細（SSH）
+      const qrDetail = document.getElementById('qrcode-detail');
+      if (qrDetail && window.QRCode) {
+        QRCode.toCanvas(qrDetail, `ssh://root@${ip}`, {
+          color: { dark: darkColor, light: lightColor }
+        });
+      }
+
+      // リンク反映
+      document.querySelectorAll('.link-ip').forEach(link => {
+        const template = link.dataset.ipTemplate;
+        if (template && template.includes('${ip}')) {
+          const url = template.replace('${ip}', ip);
+          link.href = url;
+          link.textContent = url;
+        }
+      });
+
+      // 表示IP更新
+      const sshText = document.getElementById('ssh-ip');
+      if (sshText) sshText.textContent = ip;
+    }
+
+    // 入力欄全体に半角変換＋即反映
+    document.querySelectorAll('input[type="text"]').forEach(input => {
+      input.addEventListener('input', () => {
+        const caret     = input.selectionStart;
+        const converted = toHalfWidth(input.value);
+        if (input.value !== converted) {
+          input.value = converted;
+          input.setSelectionRange(caret, caret);
+        }
+        updateAll();
+      });
+    });
+
+    // イベント登録
+    document.getElementById('global-ip-update')?.addEventListener('click', updateAll);
+    document.getElementById('global-ip-input')?.addEventListener('keydown', e => {
+      if (e.key === 'Enter') updateAll();
+    });
+
+    // 初期描画
+    updateAll();
+  </script>
+</body>
+</html>
