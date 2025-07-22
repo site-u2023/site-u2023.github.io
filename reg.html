@@ -2,60 +2,51 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>SSHPS プロトコル登録＆起動</title>
+  <title>ワンクリックSSHセットアップ</title>
 </head>
 <body>
   <input id="host" type="text" placeholder="ホスト名（例: myrouter.local）">
-  <button id="reg-btn">ワンクリックSSHセットアップ</button>
+  <button id="oneclick">ワンクリックSSHセットアップ</button>
 
   <script>
-  const hostInput = document.getElementById('host');
-  const btn       = document.getElementById('reg-btn');
-
-  // ① ページ読み込み時に保存済みホストを復元
-  const saved = localStorage.getItem('sshpsHost');
-  if (saved) hostInput.value = saved;
-
-  // ② ホスト名が変わったらストレージに保存
-  hostInput.addEventListener('change', () => {
-    localStorage.setItem('sshpsHost', hostInput.value.trim());
-  });
-
-  btn.addEventListener('click', () => {
-    const host = hostInput.value.trim();
+  document.getElementById('oneclick').addEventListener('click', () => {
+    const host = document.getElementById('host').value.trim();
     if (!host) return alert('ホスト名を入力してください');
 
-    // ③ .reg を自動生成＆ダウンロード
-    const reg = `
+    //─── ① .reg の中身を組み立て ───
+    const regContent = `
 Windows Registry Editor Version 5.00
 
-[HKEY_CLASSES_ROOT\\\\sshps]
+[HKEY_CLASSES_ROOT\\sshps]
 @="URL:SSHPS Protocol"
 "URL Protocol"=""
 
-[HKEY_CLASSES_ROOT\\\\sshps\\\\shell]
+[HKEY_CLASSES_ROOT\\sshps\\shell]
 @="open"
 
-[HKEY_CLASSES_ROOT\\\\sshps\\\\shell\\\\open\\\\command]
+[HKEY_CLASSES_ROOT\\sshps\\shell\\open\\command]
 @="\\"C:\\\\Windows\\\\System32\\\\WindowsPowerShell\\\\v1.0\\\\powershell.exe\\" -NoProfile -Command ^
   "$dns = (Get-DnsClientServerAddress -AddressFamily IPv4)[0].ServerAddresses[0]; ^
    $ip  = (Resolve-DnsName -Name '${host}' -Server $dns -ErrorAction Stop).IPAddress; ^
-   Start-Process ssh -ArgumentList 'root@$ip';\""`.trim();
+   ssh root@$ip;\""
+`.trim();
 
-    const blob = new Blob([reg], { type: 'application/octet-stream' });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    a.href        = url;
-    a.download    = `sshps-register-${host}.reg`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    //─── ② Blob化してダウンロードリンクを自動クリック ───
+    const blob = new Blob([regContent], { type: 'application/octet-stream' });
+    const a1   = document.createElement('a');
+    a1.href    = URL.createObjectURL(blob);
+    a1.download= `sshps-register-${host}.reg`;
+    document.body.appendChild(a1);
+    a1.click();
+    document.body.removeChild(a1);
 
-    // ④ 少し待ってプロトコルハンドラを呼び出し
-    setTimeout(() => {
-      window.location.href = `sshps://${host}`;
-      URL.revokeObjectURL(url);
-    }, 500);
+    //─── ③ 同じクリックでプロトコルハンドラを呼び出し ───
+    //     こちらも programmatic click で user gesture 扱い
+    const a2 = document.createElement('a');
+    a2.href  = `sshps://${host}`;
+    document.body.appendChild(a2);
+    a2.click();
+    document.body.removeChild(a2);
   });
   </script>
 </body>
