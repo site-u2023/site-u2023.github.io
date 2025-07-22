@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const theme = pref === 'auto'
         ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
         : pref;
-      html.setAttribute('data-theme', theme); // html要素にdata-theme属性を設定
+      html.setAttribute('data-theme', theme); // html要素にdata-theme属性を確実に設定
       buttons.forEach(btn => {
         btn.classList.toggle('selected', btn.dataset.themePreference === pref);
       });
@@ -60,15 +60,13 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // 既存のcanvas要素があれば削除
-    // QRCode.toCanvasは既存のcanvas要素を再利用するよりも、
-    // 新しいcanvas要素に描画する方が確実な場合があるため、一旦削除して再生成
+    // 既存のcanvas要素があれば削除し、常に新しいcanvas要素を生成
+    // これにより "o.getContext is not a function" エラーを回避
     let canvas = container.querySelector('canvas');
     if (canvas) {
       container.removeChild(canvas);
     }
     
-    // 新しいcanvas要素を生成して追加
     canvas = document.createElement('canvas');
     container.appendChild(canvas);
     // CSSで設定されたサイズを適用するために、QRコードのCSSクラスを付与
@@ -93,11 +91,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!input) return;
     const ip = input.value.trim() || input.placeholder;
 
+    // 現在のテーマからQRコードの色を取得
     const style      = getComputedStyle(document.body);
     const darkColor  = style.getPropertyValue('--qr-dark').trim();
     const lightColor = style.getPropertyValue('--qr-light').trim();
 
-    // #qrcode-main (IPアドレスの右横) からQRコードを削除/生成しない
+    // #qrcode-main (IPアドレスの右横) からQRコードを削除/生成しないことを徹底
     const qrMainContainer = document.getElementById('qrcode-main');
     if (qrMainContainer) {
       const existingCanvas = qrMainContainer.querySelector('canvas');
@@ -111,6 +110,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const qrDetailContainer = document.getElementById('qrcode-detail');
 
     if (detailElement && detailElement.open) {
+      // detailsが開いている場合のみQRコードを生成
       createAndDrawQrCode('qrcode-detail', `ssh://root@${ip}`, {
         color: { dark: darkColor, light: lightColor }
       });
