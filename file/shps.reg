@@ -1,16 +1,11 @@
 Windows Registry Editor Version 5.00
 
-; 既存のユーザー設定をクリア（必要に応じて実行）
-[-HKEY_CURRENT_USER\Software\Classes\sshps]
-[-HKEY_CURRENT_USER\Software\Microsoft\Windows\Shell\Associations\UrlAssociations\sshps\UserChoice]
-
-; プロトコルハンドラをユーザーレベルに登録
-[HKEY_CURRENT_USER\Software\Classes\sshps]
+[HKEY_CLASSES_ROOT\sshps]
 @="URL:PowerShell SSH Protocol"
 "URL Protocol"=""
 
-[HKEY_CURRENT_USER\Software\Classes\sshps\DefaultIcon]
+[HKEY_CLASSES_ROOT\sshps\DefaultIcon]
 @="C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe,0"
 
-[HKEY_CURRENT_USER\Software\Classes\sshps\shell\open\command]
-@="cmd.exe /C \"where pwsh >nul 2>&1 && (pwsh -NoExit -NoLogo -Command \\\"& { & 'C:\\Windows\\System32\\OpenSSH\\ssh.exe' root@((New-Object System.Uri '%1').Host) }\\\" ) || (powershell -NoExit -NoLogo -Command \\\"& { & 'C:\\Windows\\System32\\OpenSSH\\ssh.exe' root@((New-Object System.Uri '%1').Host) }\\\" )\""
+[HKEY_CLASSES_ROOT\sshps\shell\open\command]
+@="cmd.exe /C \"where pwsh >nul 2>&1 && (start \"\" /WAIT pwsh -NoProfile -NoLogo -Command \\\"ssh root@((New-Object System.Uri '%1').Host)\\\") || (start \"\" /WAIT powershell -NoProfile -NoLogo -Command \\\"ssh root@((New-Object System.Uri '%1').Host)\\\")\""
