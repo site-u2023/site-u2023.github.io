@@ -59,6 +59,19 @@
     <!-- End Google Analytics -->
 
     <link rel="stylesheet" href="style.css">
+    <style>
+        summary {
+            cursor: pointer;
+            padding: 6px;
+            background: #eee;
+            border: 1px solid #ccc;
+            margin-top: 10px;
+            display: inline-block;
+        }
+        #qrcode {
+            margin-top: 10px;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -111,6 +124,12 @@
                             <a href="wt://open?command=ssh%20root@192.168.1.1">
                                 Windows Terminal で SSH 接続
                             </a>
+                        </li>
+                        <li>
+                            <details>
+                                <summary>QRコードを表示</summary>
+                                <div id="qrcode"></div>
+                            </details>
                         </li>
                     </ul>
                 </section>
@@ -185,6 +204,15 @@
         const initialPreference = localStorage.getItem('themePreference') || 'auto';
         applyThemePreference(initialPreference);
     })();
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+    <script>
+        const ip = "192.168.1.1"; // IPを動的に設定可能
+        const sshCommand = `wt://open?command=ssh%20root@${ip}`;
+        QRCode.toCanvas(document.getElementById('qrcode'), sshCommand, function (error) {
+            if (error) console.error(error);
+        });
     </script>
 </body>
 </html>
