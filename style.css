@@ -117,6 +117,17 @@ nav a:hover {
   overflow: hidden;
 }
 
+/* ── IP入力欄 ＋ 更新ボタン整列 ── */
+#global-ip-input {
+  flex: 1;
+  min-width: 0;
+}
+
+#global-ip-update {
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+
 /* ── QRコード部分 ── */
 .qr-code {
   margin-top: 1em;
