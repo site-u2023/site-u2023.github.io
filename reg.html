@@ -16,23 +16,8 @@
   </style>
 </head>
 <body>
-  <h1>SSHを一発起動</h1>
-  <a id="sshBtn" class="btn" href="#">SSH 起動</a>
-
-  <script>
-    // 1) 実行したい PowerShell コマンドを一行スクリプトとして用意
-    const ps = [
-      "$dns=(Get-DnsClientServerAddress -AddressFamily IPv4)[0].ServerAddresses[0]",
-      "$gw=(Get-NetIPConfiguration | Where{$_.IPv4DefaultGateway}).IPv4DefaultGateway.NextHop",
-      "$ip=(Resolve-DnsName -Name $gw -Server $dns -ErrorAction Stop).IPAddress",
-      "ssh root@$ip"
-    ].join(";");
-
-    // 2) 完全にURLエンコード
-    const encoded = encodeURIComponent(ps);
-
-    // 3) sshps:// + エンコード文字列 を link にセット
-    document.getElementById("sshBtn").href = "sshps://" + encoded;
-  </script>
+  <h1>SSH接続（ローカルDNS→GW→SSH）</h1>
+  <p>以下のボタンをクリックするだけで、自動的にPowerShell→SSHが立ち上がります。</p>
+  <a href="pssh://" class="btn">SSH 起動</a>
 </body>
 </html>
