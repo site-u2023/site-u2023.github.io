@@ -4,33 +4,33 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OpenWrt: A Beginner’s Notebook</title>
-    
+
     <!-- SEO メタタグ -->
     <meta name="description" content="OpenWrt">
     <meta name="keywords" content="OpenWrt">
     <meta name="author" content="site-u2023">
     <meta name="robots" content="index, follow">
-    
+
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://site-u2023.github.io/">
     <meta property="og:title" content="OpenWrt">
     <meta property="og:description" content="OpenWrt">
     <meta property="og:locale" content="ja_JP">
-    
+
     <!-- Twitter -->
     <meta property="twitter:card" content="summary">
     <meta property="twitter:url" content="https://site-u2023.github.io/">
     <meta property="twitter:title" content="OpenWrt">
     <meta property="twitter:description" content="OpenWrt">
-    
+
     <!-- DNS プリフェッチ / プリコネクト -->
     <link rel="preconnect" href="https://www.googletagmanager.com">
     <link rel="dns-prefetch" href="//www.googletagmanager.com">
-    
+
     <!-- Canonical URL -->
     <link rel="canonical" href="https://site-u2023.github.io/">
-    
+
     <!-- 構造化データ -->
     <script type="application/ld+json">
     {
@@ -48,7 +48,7 @@
     }
     </script>
 
-    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <!-- Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-M9YV28TG0V"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
@@ -63,7 +63,7 @@
 <body>
     <div class="container">
         <header>
-            <h1>OpenWrt 初心者備忘録</h1>
+            <h1>OpenWrt: A Beginner’s Notebook</h1>
         </header>
         <main>
             <nav>
@@ -82,6 +82,7 @@
                         </li>
                     </ul>
                 </section>
+
                 <section id="local-services">
                     <h2>ローカルネットワーク</h2>
                     <ul>
@@ -95,6 +96,12 @@
                                 <span class="repo-name">ttyd</span> (Webターミナル)
                             </a>
                         </li>
+                    </ul>
+                </section>
+
+                <section id="terminal">
+                    <h2>ターミナル</h2>
+                    <ul>
                         <li>
                             <a href="powershell:Start-Process 'powershell.exe' -ArgumentList '-NoExit','ssh root@192.168.1.1' -Verb RunAs">
                                 PowerShell で SSH 接続
@@ -108,6 +115,22 @@
                         <li>
                             <a href="wt://open?command=ssh%20root@192.168.1.1">
                                 Windows Terminal で SSH 接続
+                            </a>
+                        </li>
+                    </ul>
+                </section>
+
+                <section id="registry">
+                    <h2>レジストリ</h2>
+                    <ul>
+                        <li>
+                            <a href="file/powershell.reg" download>
+                                PowerShell スキーム登録 (.reg)
+                            </a>
+                        </li>
+                        <li>
+                            <a href="file/cmd.reg" download>
+                                CMD スキーム登録 (.reg)
                             </a>
                         </li>
                     </ul>
