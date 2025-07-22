@@ -9,7 +9,7 @@
 
   <script>
   document.getElementById('oneclick').addEventListener('click', () => {
-    // ─── ① .reg の内容を組み立て ───
+    // ─── .reg の内容を組み立て ───
     const regContent = `
 Windows Registry Editor Version 5.00
 
@@ -22,10 +22,11 @@ Windows Registry Editor Version 5.00
 
 [HKEY_CLASSES_ROOT\\\\sshps\\\\shell\\\\open\\\\command]
 @="\\"C:\\\\Windows\\\\System32\\\\WindowsPowerShell\\\\v1.0\\\\powershell.exe\\" -NoProfile -WindowStyle Hidden -Command ^
-  \\"$gw=(Get-NetIPConfiguration | Where-Object { $_.IPv4DefaultGateway }).IPv4DefaultGateway.NextHop; ssh root@$gw;\\""
+  \\"$gw=(Get-NetIPConfiguration | Where-Object { $_.IPv4DefaultGateway }).IPv4DefaultGateway.NextHop; ^
+    Start-Process ssh -ArgumentList 'root@$gw' -NoNewWindow;\\""
 `.trim();
 
-    // ─── ② Blob化してダウンロード ───
+    // ─── Blob化してダウンロード ───
     const blob = new Blob([regContent], { type: 'application/octet-stream' });
     const a1   = document.createElement('a');
     a1.href    = URL.createObjectURL(blob);
@@ -34,7 +35,7 @@ Windows Registry Editor Version 5.00
     a1.click();
     document.body.removeChild(a1);
 
-    // ─── ③ 同一クリックでプロトコル呼び出し ───
+    // ─── 同一ジェスチャーでプロトコル呼び出し ───
     const a2 = document.createElement('a');
     a2.href  = 'sshps://ignore';
     document.body.appendChild(a2);
