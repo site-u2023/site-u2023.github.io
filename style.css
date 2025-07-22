@@ -102,21 +102,25 @@ nav a {
   border: none;
 }
 #device-ip .connection {
-  display:        flex;
-  align-items:    center;
-  gap:            1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
 }
 #device-ip .ip-address {
   display: flex;
+  flex: 1;
+  min-width: 0;
   align-items: center;
+  overflow: hidden;
 }
 #global-ip-input {
-  flex: 1 1 auto;
+  flex: 1;
   min-width: 0;
 }
 #global-ip-update {
   margin-left: auto;
   flex: 0 0 auto;
+  cursor: pointer;
 }
 #global-ip-update:hover {
   background-color: var(--hover-bg);
