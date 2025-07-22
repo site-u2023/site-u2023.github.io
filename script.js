@@ -28,6 +28,13 @@
 // 年表示
 document.getElementById('current-year').textContent = new Date().getFullYear();
 
+// 全角 → 半角変換ユーティリティ
+function toHalfWidth(str) {
+  return str.replace(/[\uFF01-\uFF5E]/g, ch =>
+    String.fromCharCode(ch.charCodeAt(0) - 0xFEE0)
+  ).replace(/\u3000/g, ' ');
+}
+
 // IP更新＋QR描画＋リンク反映
 function updateAll() {
   const input = document.getElementById('global-ip-input');
@@ -68,15 +75,24 @@ function updateAll() {
   if (sshText) sshText.textContent = ip;
 }
 
+// 入力欄全体に半角変換適用＋updateAll連動
+document.querySelectorAll('input[type="text"]').forEach(input => {
+  input.addEventListener('input', () => {
+    const caret     = input.selectionStart;
+    const converted = toHalfWidth(input.value);
+    if (input.value !== converted) {
+      input.value = converted;
+      input.setSelectionRange(caret, caret); // カーソル保持
+    }
+    updateAll(); // 即時反映
+  });
+});
+
 // イベント
 document.getElementById('global-ip-update')?.addEventListener('click', updateAll);
-
 document.getElementById('global-ip-input')?.addEventListener('keydown', e => {
   if (e.key === 'Enter') updateAll();
 });
-
-document.getElementById('global-ip-input')?.addEventListener('input', updateAll);
-
 
 // 初期描画
 updateAll();
