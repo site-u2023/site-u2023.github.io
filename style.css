@@ -107,18 +107,16 @@ nav a {
   gap:            1rem;
 }
 #device-ip .ip-address {
-  display:        flex;
-  flex:           1;
-  overflow:       hidden;
+  display: flex;
+  align-items: center;
 }
 #global-ip-input {
-  flex:      1;
+  flex: 1 1 auto;
   min-width: 0;
 }
 #global-ip-update {
-  flex:        0 0 auto;
   margin-left: auto;
-  cursor:      pointer;
+  flex: 0 0 auto;
 }
 #global-ip-update:hover {
   background-color: var(--hover-bg);
