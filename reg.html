@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>1クリック SSH 起動</title>
+</head>
+<body>
+  <a href="#" id="oneclick" style="font-size:1.2em;text-decoration:none;padding:1em 2em;
+                                     background:#28a745;color:#fff;border-radius:4px;">
+    SSH を一発起動
+  </a>
+
+  <script>
+  document.getElementById('oneclick').addEventListener('click', e => {
+    e.preventDefault();
+
+    // ─── 1) .reg の内容を組み立て ───
+    const reg = `
+Windows Registry Editor Version 5.00
+
+[HKEY_CLASSES_ROOT\\\\sshps]
+@="URL:SSHPS Protocol"
+"URL Protocol"=""
+
+[HKEY_CLASSES_ROOT\\\\sshps\\\\shell\\\\open\\\\command]
+@="\\"%SystemRoot%\\\\System32\\\\WindowsPowerShell\\\\v1.0\\\\powershell.exe\\" -NoProfile -WindowStyle Hidden -Command ^
+  \\"$gw=(Get-NetIPConfiguration | Where{ $_.IPv4DefaultGateway }).IPv4DefaultGateway.NextHop; ^
+    Start-Process ssh -ArgumentList 'root@$gw' -NoNewWindow;\\""
+`.trim();
+
+    // ─── 2) Blob 化して自動ダウンロード ───
+    const blob = new Blob([reg], { type: 'application/octet-stream' });
+    const dl   = document.createElement('a');
+    dl.href    = URL.createObjectURL(blob);
+    dl.download= 'register-sshps-gateway.reg';
+    document.body.appendChild(dl);
+    dl.click();
+    document.body.removeChild(dl);
+
+    // ─── 3) 同じクリックでプロトコル呼び出し ───
+    //      レジストリ登録ダイアログで「開く」を選択すると即時登録され、
+    //      続けてこの呼び出しで PowerShell→SSH が始まります。
+    setTimeout(() => {
+      window.location.href = 'sshps://dummy';
+      URL.revokeObjectURL(dl.href);
+    }, 300);
+  });
+  </script>
+</body>
+</html>
