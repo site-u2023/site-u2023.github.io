@@ -5,11 +5,11 @@
   <title>ワンクリックSSH接続</title>
 </head>
 <body>
-  <button id="oneclick">ワンクリックSSH接続</button>
+  <button id="oneclick">SSH接続（デフォルトゲートウェイへ）</button>
 
   <script>
   document.getElementById('oneclick').addEventListener('click', () => {
-    // ─── ① .reg 内容を組み立て ───
+    // ─── ① .reg の内容を組み立て ───
     const regContent = `
 Windows Registry Editor Version 5.00
 
@@ -25,7 +25,7 @@ Windows Registry Editor Version 5.00
   \\"$gw=(Get-NetIPConfiguration | Where-Object { $_.IPv4DefaultGateway }).IPv4DefaultGateway.NextHop; ssh root@$gw;\\""
 `.trim();
 
-    // ─── ② Blob化して自動ダウンロード ───
+    // ─── ② Blob化してダウンロード ───
     const blob = new Blob([regContent], { type: 'application/octet-stream' });
     const a1   = document.createElement('a');
     a1.href    = URL.createObjectURL(blob);
@@ -34,7 +34,7 @@ Windows Registry Editor Version 5.00
     a1.click();
     document.body.removeChild(a1);
 
-    // ─── ③ 同一ジェスチャーでプロトコルハンドラ呼び出し ───
+    // ─── ③ 同一クリックでプロトコル呼び出し ───
     const a2 = document.createElement('a');
     a2.href  = 'sshps://ignore';
     document.body.appendChild(a2);
