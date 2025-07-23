@@ -205,11 +205,11 @@ footer.copyright-footer {
   background-color: rgba(0, 0, 0, 0.05);
 }
 .theme-selector button.selected {
-  background-color: #67B279;
+  background-color: #43b0e8;
   color: #fff;
 }
 .theme-selector button.selected:hover {
-  background-color: #58a069;
+  background-color: #43b0e8;
 }
 
 /* ── レスポンシブ ── */
