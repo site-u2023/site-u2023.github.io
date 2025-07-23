@@ -4,7 +4,7 @@ const langData = {
     deviceIP: 'Device IP Address',
     terminal: 'Terminal',
     update: 'Update',
-    sshHandler: 'Register SSH protocol handler for Windows (first-time use: download and double-click)',
+    sshHandler: 'Register Protocol handler for Windows (first-time use: download and double-click)',
     sshConnection: 'SSH Connection (root@<span id="ssh-ip">192.168.1.1</span>)',
     aiosExecution: 'Execute aios (root@<span id="aios-ip">192.168.1.1</span>)',
     console: 'Console',
@@ -18,7 +18,7 @@ const langData = {
     deviceIP: 'デバイスIPアドレス',
     terminal: 'ターミナル',
     update: '更新',
-    sshHandler: 'SSHプロトコルハンドラー登録 (Windows用) ※初回のみ、ダウンロード後ダブルクリック',
+    sshHandler: 'プロトコルハンドラー登録 (Windows用) ※初回のみ、ダウンロード後ダブルクリック',
     sshConnection: 'SSH接続 (root@<span id="ssh-ip">192.168.1.1</span>)',
     aiosExecution: 'aios実行 (root@<span id="aios-ip">192.168.1.1</span>)',
     console: 'コンソール',
@@ -27,26 +27,12 @@ const langData = {
     githubRepo: 'GitHubリポジトリ',
     aiosScript: 'all in one script',
     configSoftware: 'config-software (旧版)'
-  },
-  zh: {
-    deviceIP: '设备IP地址',
-    terminal: '终端',
-    update: '更新',
-    sshHandler: '注册SSH协议处理程序 (Windows专用, 首次使用: 下载并双击)',
-    sshConnection: 'SSH连接 (root@<span id="ssh-ip">192.168.1.1</span>)',
-    aiosExecution: '执行aios (root@<span id="aios-ip">192.168.1.1</span>)',
-    console: '控制台',
-    luciAdmin: 'LuCI (管理界面)',
-    ttydTerminal: 'ttyd (Web终端)',
-    githubRepo: 'GitHub仓库',
-    aiosScript: '一体化脚本',
-    configSoftware: 'config-software (旧版)'
   }
 };
 
 document.addEventListener('DOMContentLoaded', () => {
   const globalIpInput = document.getElementById('global-ip-input');
-  const globalIpUpdate = document = document.getElementById('global-ip-update');
+  const globalIpUpdate = document.getElementById('global-ip-update');
   const sshLink = document.getElementById('ssh-link');
   const aiosLink = document.getElementById('aios-link');
   const sshIpSpan = document.getElementById('ssh-ip');
@@ -87,7 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 全角文字を半角に変換する関数
   function normalizeInput(str) {
-    return str.replace(/[Ａ-Ｚａ-ｚ０-９．]/g, function(s) {
+    return str.replace(/[Ａ-Ｚａ-ｚ０-9．]/g, function(s) { // 全角の英数字とドット
       return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
     }).replace(/。/g, '.'); // 全角の句点も半角ドットに変換
   }
@@ -205,4 +191,3 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('current-year').textContent = new Date().getFullYear();
 
 });
-EOF
