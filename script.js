@@ -7,6 +7,56 @@ document.addEventListener('DOMContentLoaded', () => {
   ].join(' && ');
   const sshCmdEncoded = encodeURIComponent(sshCommands);
 
+  // ── 言語切替機能追加 ──
+  const langData = {
+    en: {
+      deviceIP: 'Device IP Address',
+      terminal: 'Terminal',
+      update: 'Update',
+      sshHandler: 'Register SSH protocol handler (Windows only)',
+      sshConnection: 'SSH Connection (root@<span id="ssh-ip">192.168.1.1</span>)',
+      aiosExecution: 'Execute aios (root@<span id="aios-ip">192.168.1.1</span>)',
+      console: 'Console',
+      luciAdmin: 'LuCI (Admin Interface)',
+      ttydTerminal: 'ttyd (Web Terminal)',
+      githubRepo: 'GitHub Repository',
+      aiosScript: 'all in one script',
+      configSoftware: 'config-software (legacy)'
+    },
+    ja: {
+      deviceIP: 'デバイスIPアドレス',
+      terminal: 'ターミナル',
+      update: '更新',
+      sshHandler: 'SSH用プロトコルハンドラー登録 (Windows用)',
+      sshConnection: 'SSH接続 (root@<span id="ssh-ip">192.168.1.1</span>)',
+      aiosExecution: 'aios実行 (root@<span id="aios-ip">192.168.1.1</span>)',
+      console: 'コンソール',
+      luciAdmin: 'LuCI (管理画面)',
+      ttydTerminal: 'ttyd (Webターミナル)',
+      githubRepo: 'GitHubリポジトリ',
+      aiosScript: 'all in one script',
+      configSoftware: 'config-software (旧版)'
+    }
+  };
+
+  function applyLanguage(lang) {
+    const elements = document.querySelectorAll('[data-i18n]');
+    elements.forEach(el => {
+      const key = el.getAttribute('data-i18n');
+      if (langData[lang][key]) {
+        el.innerHTML = langData[lang][key];
+      }
+    });
+  }
+
+  document.querySelectorAll('.language-selector button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const lang = btn.dataset.lang;
+      document.querySelectorAll('.language-selector button').forEach(b => b.classList.toggle('selected', b.dataset.lang === lang));
+      applyLanguage(lang);
+    });
+  });
+
   // ── テーマ切替（auto/light/dark）──
   (function(){
     const html    = document.documentElement;
