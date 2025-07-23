@@ -4,7 +4,7 @@ const langData = {
     deviceIP: 'Device IP Address',
     terminal: 'Terminal',
     update: 'Update',
-    sshHandler: 'Register Protocol handler for Windows (first-time use: download and double-click)',
+    sshHandler: 'Register SSH protocol handler for Windows (first-time use: download and double-click)',
     sshConnection: 'SSH Connection (root@<span id="ssh-ip">192.168.1.1</span>)',
     aiosExecution: 'Execute aios (root@<span id="aios-ip">192.168.1.1</span>)',
     console: 'Console',
@@ -18,7 +18,7 @@ const langData = {
     deviceIP: 'デバイスIPアドレス',
     terminal: 'ターミナル',
     update: '更新',
-    sshHandler: 'プロトコルハンドラー登録 (Windows用) ※初回のみ、ダウンロード後ダブルクリック',
+    sshHandler: 'SSHプロトコルハンドラー登録 (Windows用) ※初回のみ、ダウンロード後ダブルクリック',
     sshConnection: 'SSH接続 (root@<span id="ssh-ip">192.168.1.1</span>)',
     aiosExecution: 'aios実行 (root@<span id="aios-ip">192.168.1.1</span>)',
     console: 'コンソール',
@@ -46,7 +46,7 @@ const langData = {
 
 document.addEventListener('DOMContentLoaded', () => {
   const globalIpInput = document.getElementById('global-ip-input');
-  const globalIpUpdate = document.getElementById('global-ip-update');
+  const globalIpUpdate = document = document.getElementById('global-ip-update');
   const sshLink = document.getElementById('ssh-link');
   const aiosLink = document.getElementById('aios-link');
   const sshIpSpan = document.getElementById('ssh-ip');
@@ -57,23 +57,35 @@ document.addEventListener('DOMContentLoaded', () => {
   // Load saved IP or use default
   const savedIp = localStorage.getItem('globalIp') || '192.168.1.1';
   globalIpInput.value = savedIp;
-  updateLinks(savedIp);
+  updateLinks(savedIp); // 初期表示時はリンクも更新
 
-  // ★IPアドレスの変更を即時反映するためのイベントリスナーを追加
+  // IPアドレスの入力変更時: テキストボックスの表示のみを更新（正規化）
   globalIpInput.addEventListener('input', () => {
-    // 全角文字を半角に変換（正規化）
     const normalizedIp = normalizeInput(globalIpInput.value);
-    globalIpInput.value = normalizedIp; // 入力フィールドの表示も更新
-    updateLinks(normalizedIp); // リンクも即時更新
+    globalIpInput.value = normalizedIp; // テキストボックスの表示のみを更新
+  });
+
+  // IPアドレス入力フィールドからフォーカスが外れた時、またはEnterキーが押された時にリンクを更新
+  globalIpInput.addEventListener('blur', () => {
+    const newIp = globalIpInput.value;
+    localStorage.setItem('globalIp', newIp); // localStorageに保存
+    updateLinks(newIp); // リンクを更新
+  });
+
+  globalIpInput.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      globalIpInput.blur(); // Enterキーでblurイベントをトリガー
+      event.preventDefault(); // デフォルトのEnter動作（フォーム送信など）を防止
+    }
   });
 
   globalIpUpdate.addEventListener('click', () => {
     const newIp = globalIpInput.value;
     localStorage.setItem('globalIp', newIp);
-    updateLinks(newIp);
+    updateLinks(newIp); // 「更新」ボタンが押された時もリンクを更新
   });
 
-  // ★全角文字を半角に変換する関数
+  // 全角文字を半角に変換する関数
   function normalizeInput(str) {
     return str.replace(/[Ａ-Ｚａ-ｚ０-９．]/g, function(s) {
       return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
@@ -193,3 +205,4 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('current-year').textContent = new Date().getFullYear();
 
 });
+EOF
