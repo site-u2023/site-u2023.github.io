@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const theme = pref === 'auto'
         ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
         : pref;
+
       html.setAttribute('data-theme', theme);
       buttons.forEach(btn =>
         btn.classList.toggle('selected', btn.dataset.themePreference === pref)
@@ -20,9 +21,10 @@ document.addEventListener('DOMContentLoaded', () => {
     buttons.forEach(btn =>
       btn.addEventListener('click', () => applyTheme(btn.dataset.themePreference))
     );
+
     window.matchMedia('(prefers-color-scheme: dark)')
       .addEventListener('change', () => {
-        if ((localStorage.getItem('site-u-theme')||'auto')==='auto') {
+        if ((localStorage.getItem('site-u-theme') || 'auto') === 'auto') {
           applyTheme('auto');
         }
       });
@@ -53,9 +55,11 @@ document.addEventListener('DOMContentLoaded', () => {
     el.innerHTML = '';
     const canvas = document.createElement('canvas');
     el.appendChild(canvas);
+
     const style      = getComputedStyle(document.body);
     const darkColor  = style.getPropertyValue('--qr-dark').trim();
     const lightColor = style.getPropertyValue('--qr-light').trim();
+
     QRCode.toCanvas(canvas, text, {
       color: { dark: darkColor, light: lightColor }
     }).catch(console.error);
@@ -77,35 +81,39 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!input) return;
     const ip = input.value.trim() || input.placeholder;
 
-    // QRコード再描画（省略）…
+    // ── QRコード再描画 ──
     const detail = document.getElementById('qrcode-detail-container');
     if (detail) {
-      if (detail.open) drawQRCode('qrcode-detail', `ssh://root@${ip}`);
+      if (detail.open) {
+        drawQRCode('qrcode-detail', `ssh://root@${ip}`);
+      }
       if (!detail.dataset.toggleListenerAdded) {
-        detail.addEventListener('toggle', function(){
-          this.open
-            ? drawQRCode('qrcode-detail', `ssh://root@${ip}`)
-            : (document.getElementById('qrcode-detail').innerHTML = '');
+        detail.addEventListener('toggle', function() {
+          if (this.open) {
+            drawQRCode('qrcode-detail', `ssh://root@${ip}`);
+          } else {
+            document.getElementById('qrcode-detail').innerHTML = '';
+          }
         });
         detail.dataset.toggleListenerAdded = 'true';
       }
     }
 
-    // ◆ SSHリンクだけ href を更新
-    //    data-ip-template="sshcmd://root@${ip}/${cmd}" が必要
+    // ── SSHリンクだけ href を更新（${ip} と ${cmd} を置換） ──
     const sshLink = document.getElementById('ssh-link');
     if (sshLink) {
       const tpl = sshLink.getAttribute('data-ip-template');
       const url = tpl
         .replace(/\$\{ip\}/g,  ip)
         .replace(/\$\{cmd\}/g, sshCmdEncoded);
+
       sshLink.href = url;
-      // 表示テキスト内の IP 部分だけ更新
+      // テキスト中の IP 部分だけ更新
       const span = sshLink.querySelector('#ssh-ip');
       if (span) span.textContent = ip;
     }
 
-    // ◆ その他の link-ip は href のみ更新
+    // ── その他の .link-ip は href のみ更新 ──
     document.querySelectorAll('.link-ip').forEach(link => {
       if (link.id === 'ssh-link') return;
       const tpl = link.getAttribute('data-ip-template');
@@ -128,6 +136,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+
   // ── 更新ボタン・Enterキーで updateAll ──
   document.getElementById('global-ip-update')
     .addEventListener('click', updateAll);
@@ -138,6 +147,7 @@ document.addEventListener('DOMContentLoaded', () => {
         updateAll();
       }
     });
+
 
   // ── 初回描画 ──
   updateAll();
