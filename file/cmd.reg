@@ -1,12 +1,24 @@
 Windows Registry Editor Version 5.00
 
-[HKEY_CLASSES_ROOT\cmd]
-@="URL:Command Prompt SSH"
+; プロトコルハンドラ sshps:// を PowerShell 経由で処理
+[HKEY_CLASSES_ROOT\sshps]
+@="URL:PowerShell SSH Protocol"
 "URL Protocol"=""
 
-[HKEY_CLASSES_ROOT\cmd\shell]
+; アイコン（任意）
+[HKEY_CLASSES_ROOT\sshps\DefaultIcon]
+@="C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe,0"
 
-[HKEY_CLASSES_ROOT\cmd\shell\open]
-
-[HKEY_CLASSES_ROOT\cmd\shell\open\command]
-@="\"%SystemRoot%\\System32\\cmd.exe\" /k ssh root@%1"
+; ハンドラ本体
+[HKEY_CLASSES_ROOT\sshps\shell\open\command]
+@="\"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe\" -NoExit -Command \
+\"$uri = [Uri]::new('%1'); \
+$host = $uri.Host; \
+# パス部を取り出し、先頭の '/' を削除して URL デコード
+$cmd  = [Uri]::UnescapeDataString($uri.AbsolutePath.TrimStart('/')); \
+# -t で強制 TTY 割当、コマンド実行後に対話シェルへ遷移
+if ([string]::IsNullOrEmpty($cmd)) { \
+  ssh -t root@$host; \
+} else { \
+  ssh -t root@$host $cmd; \
+}\""
