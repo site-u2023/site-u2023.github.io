@@ -26,7 +26,8 @@ html[data-theme="dark"] {
 /* ── ベース ── */
 body {
   margin: 0;
-  padding: 0 0 80px; /* フッターの高さに合わせて調整 */
+  /* フッターの高さに合わせて調整（em単位に変更） */
+  padding: 0 0 5em; /* 例: フッターの高さが約5emの場合 */
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
                "Helvetica Neue", Arial, sans-serif;
   background-color: var(--block-bg);
@@ -45,7 +46,7 @@ ul {
 /* ── ヘッダー ── */
 header {
   position: relative;
-  border-bottom: 1px solid var(--block-border);
+  border-bottom: 0.05em solid var(--block-border);
 }
 
 /* header-inner: ロゴを中央に配置 */
@@ -64,7 +65,6 @@ header .logo {
 
 header .logo img {
   width: 80%; /* 親要素（.logo）に対して80%の幅 */
-  /* max-widthの設定を削除しました */
   height: auto;
   display: block; /* 中央寄せのためにブロック要素にする */
   margin: 0 auto; /* ロゴを中央寄せにする */
@@ -73,18 +73,18 @@ header .logo img {
 .language-selector {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 0.25em; /* 4pxを相対値に */
   flex-shrink: 0;
 }
 
 /* ── コンテナ ── */
 .container {
-  max-width: 800px;
+  max-width: 50em; /* 800pxをemに変換 */
   margin: 2em auto;
   background: var(--block-bg);
   padding: 1.5em 2em;
-  border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 0.5em; /* 8pxを相対値に */
+  box-shadow: 0 0.25em 0.5em rgba(0, 0, 0, 0.1); /* 4px 8pxを相対値に */
   transition: background-color 0.3s ease,
               box-shadow 0.3s ease;
 }
@@ -95,8 +95,8 @@ button,
 a {
   color:            inherit;
   background-color: inherit;
-  border:           1px solid var(--block-border);
-  border-radius:    5px;
+  border:           0.05em solid var(--block-border);
+  border-radius:    0.3em;
   padding:          0.6em 0.9em;
   box-sizing:       border-box;
   transition:       background-color 0.2s ease,
@@ -113,8 +113,8 @@ a:hover {
 nav section {
   background-color: var(--block-bg);
   border: none;
-  padding: 10px;
-  margin-bottom: 16px;
+  padding: 0.625em; /* 10pxを相対値に */
+  margin-bottom: 1em; /* 16pxを相対値に */
 }
 nav h2 {
   margin: 1.5em 0 0.8em;
@@ -130,7 +130,7 @@ nav a {
 
 /* ── Device IP セクション ── */
 #device-ip {
-  margin-bottom: 16px;
+  margin-bottom: 1em; /* 16pxを相対値に */
   border: none;
 }
 #device-ip .connection {
@@ -164,12 +164,12 @@ nav a {
   margin-top: 1em;
   padding: 1em;
   background-color: var(--block-bg);
-  border-radius: 6px;
+  border-radius: 0.375em; /* 6pxを相対値に */
   text-align: center;
 }
 .qr-code canvas {
-  width: 180px !important;
-  height: 180px !important;
+  width: 11.25em !important; /* 180pxを相対値に */
+  height: 11.25em !important; /* 180pxを相対値に */
   display: inline-block;
 }
 
@@ -180,7 +180,7 @@ nav a {
   left: 0;
   width: 100%;
   background-color: var(--block-bg);
-  border-top: 1px solid var(--block-border);
+  border-top: 0.05em solid var(--block-border); /* 1pxを相対値に */
   transition: background-color 0.3s ease,
               border-color 0.3s ease;
 }
@@ -226,13 +226,13 @@ footer.copyright-footer p {
 
 .theme-selector {
   display: flex;
-  gap: 8px;
+  gap: 0.5em; /* 8pxを相対値に */
 }
 .theme-selector button {
   background: transparent;
-  border: 1px solid transparent;
-  width: 32px;
-  height: 32px;
+  border: 0.05em solid transparent; /* 1pxを相対値に */
+  /* width と height を削除し、paddingとline-heightで調整 */
+  padding: 0.25em; /* アイコンを囲むようにパディングを追加 */
   display: flex;
   justify-content: center;
   align-items: center;
@@ -240,8 +240,8 @@ footer.copyright-footer p {
   cursor: pointer;
   transition: background-color 0.2s ease,
               color 0.2s ease;
-  font-size: 20px;
-  line-height: normal;
+  font-size: 1.25em; /* アイコンのサイズを調整 */
+  line-height: 1; /* アイコンの垂直中央揃えを改善 */
 }
 .theme-selector button:hover {
   background-color: rgba(0, 0, 0, 0.05);
@@ -254,11 +254,43 @@ footer.copyright-footer p {
   background-color: #43b0e8;
 }
 
+/* 言語ボタンのスタイル調整 */
+/* theme-selector button のスタイルと揃える */
+.language-selector button {
+  background: transparent;
+  border: 0.05em solid transparent;
+  padding: 0.25em 0.5em; /* 言語ボタンのパディングを調整 */
+  border-radius: 0.3em; /* 角を丸くする */
+  cursor: pointer;
+  transition: background-color 0.2s ease,
+              color 0.2s ease;
+  font-size: 1em; /* デフォルトのフォントサイズを基準に */
+  line-height: 1;
+  display: flex; /* Flexboxアイテムとして中央揃えしやすく */
+  align-items: center;
+  justify-content: center;
+}
+.language-selector button:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+.language-selector button.selected {
+  background-color: #43b0e8;
+  color: #fff;
+}
+.language-selector button.selected:hover {
+  background-color: #43b0e8;
+}
+.language-selector .separator {
+  margin: 0 0.1em; /* セパレータの間隔を調整 */
+  color: inherit;
+}
+
+
 /* ── レスポンシブ ── */
-@media (max-width: 600px) {
+@media (max-width: 37.5em) { /* 600pxをemに変換 */
   body {
     -webkit-text-size-adjust: 100%;
-    padding-bottom: 100px;
+    padding-bottom: 6.25em; /* 100pxを相対値に */
     padding-top: 0;
   }
   .container {
@@ -282,7 +314,7 @@ footer.copyright-footer p {
     flex-direction: column; /* モバイルでは縦並びにする */
     align-items: center;
     padding: 0.6em 1em;
-    gap: 10px;
+    gap: 0.625em; /* 10pxを相対値に */
   }
   .footer-left-controls,
   .footer-right-controls,
@@ -291,11 +323,16 @@ footer.copyright-footer p {
     justify-content: center;
     text-align: center;
   }
+  /* モバイルでのボタンのパディング調整 */
+  .theme-selector button,
+  .language-selector button {
+    padding: 0.35em; /* モバイルでは少しパディングを増やすなど調整 */
+  }
 }
 
 /* ── ダークテーマ用オーバーライド ── */
 body[data-theme="dark"] .container {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 0.25em 0.75em rgba(0, 0, 0, 0.4);
 }
 body[data-theme="dark"] nav h2 {
   border-bottom-color: var(--block-border);
