@@ -133,7 +133,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // ── デバッグ版：ローカルIP取得処理 ──
+  // ── より確実なローカルIP取得処理 ──
   function detectLocalIP(callback) {
     console.log('Starting local IP detection...');
     
@@ -143,75 +143,96 @@ document.addEventListener('DOMContentLoaded', () => {
       return callback(null);
     }
 
-    const rtc = new RTCPeerConnection({ 
-      iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
-    });
-    
+    // 複数の方法を試す
+    const methods = [
+      // 方法1: Google STUN
+      { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] },
+      // 方法2: STUNなし（ローカルのみ）
+      { iceServers: [] },
+      // 方法3: 複数のSTUNサーバー
+      { 
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' }
+        ] 
+      }
+    ];
+
+    let methodIndex = 0;
     let candidateFound = false;
-    let candidateCount = 0;
-    
-    rtc.createDataChannel('test');
-    
-    rtc.onicecandidate = event => {
-      candidateCount++;
-      console.log(`ICE candidate #${candidateCount}:`, event);
+
+    function tryMethod(config) {
+      if (candidateFound || methodIndex >= methods.length) {
+        if (!candidateFound) {
+          console.log('❌ All methods failed');
+          callback(null);
+        }
+        return;
+      }
+
+      console.log(`Trying method ${methodIndex + 1}:`, config);
       
-      if (candidateFound) return;
+      const rtc = new RTCPeerConnection(config);
+      let candidateCount = 0;
       
-      if (event && event.candidate && event.candidate.candidate) {
-        const candidateStr = event.candidate.candidate;
-        console.log('Candidate string:', candidateStr);
+      rtc.createDataChannel('test', { ordered: false, maxRetransmits: 0 });
+      
+      rtc.onicecandidate = event => {
+        candidateCount++;
         
-        const ipMatches = candidateStr.match(/\b(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\b/g);
-        console.log('IP matches found:', ipMatches);
+        if (candidateFound) return;
         
-        if (ipMatches) {
-          for (const ip of ipMatches) {
-            console.log('Checking IP:', ip, 'Is private:', isPrivateIP(ip));
-            if (isPrivateIP(ip)) {
-              console.log('✓ Found valid private IP:', ip);
-              candidateFound = true;
-              rtc.close();
-              callback(ip);
-              return;
+        if (event && event.candidate && event.candidate.candidate) {
+          const candidateStr = event.candidate.candidate;
+          console.log(`Method ${methodIndex + 1} - Candidate:`, candidateStr);
+          
+          // より広い範囲でIPを検索
+          const ipMatches = candidateStr.match(/\b(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\b/g);
+          
+          if (ipMatches) {
+            for (const ip of ipMatches) {
+              console.log('Found IP:', ip, 'Is private:', isPrivateIP(ip));
+              if (isPrivateIP(ip)) {
+                console.log('✓ Found valid private IP:', ip);
+                candidateFound = true;
+                rtc.close();
+                callback(ip);
+                return;
+              }
             }
           }
+        } else if (event && event.candidate === null) {
+          console.log(`Method ${methodIndex + 1} - ICE gathering completed, candidates: ${candidateCount}`);
+          rtc.close();
+          
+          // 次の方法を試す
+          methodIndex++;
+          setTimeout(() => tryMethod(methods[methodIndex]), 100);
         }
-      } else if (event && event.candidate === null) {
-        console.log('ICE gathering completed');
-      }
-    };
+      };
 
-    rtc.onicegatheringstatechange = () => {
-      console.log('ICE gathering state:', rtc.iceGatheringState);
-    };
+      rtc.createOffer()
+        .then(offer => rtc.setLocalDescription(offer))
+        .catch(error => {
+          console.log(`Method ${methodIndex + 1} - Error:`, error);
+          rtc.close();
+          methodIndex++;
+          setTimeout(() => tryMethod(methods[methodIndex]), 100);
+        });
 
-    rtc.oniceconnectionstatechange = () => {
-      console.log('ICE connection state:', rtc.iceConnectionState);
-    };
+      // 各方法に2秒のタイムアウト
+      setTimeout(() => {
+        if (!candidateFound) {
+          console.log(`Method ${methodIndex + 1} - Timeout`);
+          rtc.close();
+          methodIndex++;
+          tryMethod(methods[methodIndex]);
+        }
+      }, 2000);
+    }
 
-    rtc.createOffer()
-      .then(offer => {
-        console.log('Offer created successfully');
-        return rtc.setLocalDescription(offer);
-      })
-      .then(() => {
-        console.log('Local description set successfully');
-      })
-      .catch(error => {
-        console.log('Error in offer/answer:', error);
-        callback(null);
-      });
-
-    // タイムアウト処理（3秒に延長）
-    setTimeout(() => {
-      if (!candidateFound) {
-        console.log('❌ Timeout: No private IP found after 3 seconds');
-        console.log(`Total candidates received: ${candidateCount}`);
-        rtc.close();
-        callback(null);
-      }
-    }, 3000);
+    // 最初の方法を開始
+    tryMethod(methods[0]);
   }
 
   function isPrivateIP(ip) {
