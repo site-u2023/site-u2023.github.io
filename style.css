@@ -64,7 +64,7 @@ header .logo {
 
 header .logo img {
   width: 80%; /* 親要素（.logo）に対して80%の幅 */
-  max-width: 400px; /* ★ここを修正: ロゴの最大幅を広げる */
+  /* max-widthの設定を削除しました */
   height: auto;
   display: block; /* 中央寄せのためにブロック要素にする */
   margin: 0 auto; /* ロゴを中央寄せにする */
@@ -194,7 +194,7 @@ nav a {
 }
 
 /* フッター左側のコントロール (言語ボタン) */
-.footer-left-controls { /* クラス名を変更、 justify-contentをflex-startに */
+.footer-left-controls {
   display: flex;
   align-items: center;
   flex-grow: 1;
@@ -202,7 +202,7 @@ nav a {
 }
 
 /* フッター右側のコントロール (昼夜ボタン) */
-.footer-right-controls { /* クラス名を変更、 justify-contentをflex-endに */
+.footer-right-controls {
   display: flex;
   align-items: center;
   flex-grow: 1;
@@ -284,7 +284,7 @@ footer.copyright-footer p {
     padding: 0.6em 1em;
     gap: 10px;
   }
-  .footer-left-controls, /* モバイルでは左寄せ・右寄せを解除し中央寄せに */
+  .footer-left-controls,
   .footer-right-controls,
   footer.copyright-footer {
     width: 100%;
