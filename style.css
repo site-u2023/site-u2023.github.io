@@ -8,7 +8,7 @@ html[data-theme="light"] {
   --hover-color:   var(--block-bg);
   /* QRコードの色を追加 */
   --qr-dark:       #000;
-  --qr-light:      #fff;
+  --qr-light:      #f1f1f1;
 }
 
 html[data-theme="dark"] {
