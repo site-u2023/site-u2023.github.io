@@ -183,6 +183,10 @@ nav a {
   border-top: 0.05em solid var(--block-border); /* 1pxを相対値に */
   transition: background-color 0.3s ease,
               border-color 0.3s ease;
+
+  /* ★追加: フッターのコンテンツを中央に寄せるためのスタイル */
+  display: flex;
+  justify-content: center; /* 中央寄せ */
 }
 
 /* 新しいフッター内部のFlexコンテナ */
@@ -191,6 +195,9 @@ nav a {
   justify-content: space-between; /* 要素を左右に均等に配置 */
   align-items: center; /* 垂直方向中央揃え */
   padding: 0.5em 2em; /* フッターの上下パディングを調整して薄く */
+  /* ★追加: ボディと同じ最大幅を設定 */
+  max-width: 50em; /* .containerと同じ値 */
+  width: 100%; /* max-widthが適用されるように */
 }
 
 /* フッター左側のコントロール (言語ボタン) */
@@ -231,7 +238,6 @@ footer.copyright-footer p {
 .theme-selector button {
   background: transparent;
   border: 0.05em solid transparent; /* 1pxを相対値に */
-  /* width と height を削除し、paddingとline-heightで調整 */
   padding: 0.25em; /* アイコンを囲むようにパディングを追加 */
   display: flex;
   justify-content: center;
