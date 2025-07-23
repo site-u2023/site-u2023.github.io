@@ -30,25 +30,26 @@ const langData = {
   }
 };
 
-document.addEventListener('DOMContentLoaded', () => {
-  // ── SSHコマンド列（aios用）──
-  const sshCommands = [
-    'wget -O /usr/bin/aios https://raw.githubusercontent.com/site-u2023/aios/main/aios',
-    'chmod +x /usr/bin/aios',
-    'sh /usr/bin/aios'
-  ].join(' && ');
-  const sshCmdEncoded = encodeURIComponent(sshCommands);
+// グローバルスコープで要素を定義（DOM構築後に値が設定される）
+let html;
+let themeButtons;
+let logoElement;
+let globalIpInput; // ここで宣言しておきます
 
-  // ── テーマ切替（auto/light/dark）──
-  // 以前の即時関数を削除し、グローバル関数として定義してDOMContentLoaded内で呼び出す
-  const html = document.documentElement;
-  const themeButtons = document.querySelectorAll('.theme-selector button');
-  const logoElement = document.getElementById('site-logo'); // ロゴ要素を取得
+// applyTheme関数をDOMContentLoadedの外で定義
+function applyTheme(pref) {
+    // DOM要素が利用可能かチェック
+    if (!html || !themeButtons || !logoElement) {
+        // DOMがまだロードされていない場合は、DOMContentLoadedリスナー内で再試行
+        // または、初期ロード時にはDOM要素の存在を前提としないようにする
+        // 今回はDOMContentLoaded内で初期呼び出しを行うため、この分岐は不要になりますが念のため
+        return;
+    }
 
-  function applyTheme(pref) {
     const mode = pref === 'auto'
-      ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
-      : pref;
+        ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+        : pref;
+    
     html.setAttribute('data-theme', mode);
     
     // ロゴの切り替え
@@ -63,7 +64,36 @@ document.addEventListener('DOMContentLoaded', () => {
     themeButtons.forEach(b => b.classList.toggle('selected', b.dataset.themePreference === pref));
     localStorage.setItem('site-u-theme', pref);
     // updateAll(); // テーマ変更時にも全リンクを更新 (ロゴ切り替えで不要な場合あり、必要に応じて残す)
-  }
+}
+
+
+document.addEventListener('DOMContentLoaded', () => {
+  // DOM要素の参照を初期化
+  html = document.documentElement;
+  themeButtons = document.querySelectorAll('.theme-selector button');
+  logoElement = document.getElementById('site-logo');
+  globalIpInput = document.getElementById('global-ip-input');
+
+
+  // ── SSHコマンド列（aios用）──
+  const sshCommands = [
+    'wget -O /usr/bin/aios https://raw.githubusercontent.com/site-u2023/aios/main/aios',
+    'chmod +x /usr/bin/aios',
+    'sh /usr/bin/aios'
+  ].join(' && ');
+  const sshCmdEncoded = encodeURIComponent(sshCommands);
+
+  // ── テーマ切替（auto/light/dark）──
+  // ボタンへのイベントリスナーをここで設定
+  themeButtons.forEach(b => b.addEventListener('click', () => applyTheme(b.dataset.themePreference)));
+  
+  // システムテーマ変更時のリスナー
+  window.matchMedia('(prefers-color-scheme: dark)')
+    .addEventListener('change', () => {
+      if ((localStorage.getItem('site-u-theme') || 'auto') === 'auto') {
+        applyTheme('auto');
+      }
+    });
 
   // 年表示
   const yearEl = document.getElementById('current-year');
@@ -95,11 +125,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 全リンク更新処理
   function updateAll() {
-    const input = document.getElementById('global-ip-input');
-    if (!input) return;
+    // globalIpInput がここで確実に初期化されている
+    if (!globalIpInput) return;
 
     // IPアドレスのplaceholderも考慮し、正規化した値を取得
-    const ip = toHalfWidth(input.value.trim()) || input.placeholder;
+    const ip = toHalfWidth(globalIpInput.value.trim()) || globalIpInput.placeholder;
     localStorage.setItem('site-u-ip', ip);
 
     // QRコード（details開閉時も再描画）
@@ -166,7 +196,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 更新ボタン・Enterキーで updateAll
   document.getElementById('global-ip-update')?.addEventListener('click', updateAll);
-  const globalIpInput = document.getElementById('global-ip-input'); // DOMContentLoaded内で定義
   globalIpInput?.addEventListener('keydown', e => {
     if (e.key === 'Enter') {
       e.preventDefault();
@@ -214,12 +243,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // 初回描画（テーマとIPの初期適用）
-  // テーマの初期適用
   const storedTheme = localStorage.getItem('site-u-theme') || 'auto';
-  window.matchMedia('(prefers-color-scheme: dark)')
-    .addEventListener('change', () => {
-      if ((localStorage.getItem('site-u-theme')||'auto') === 'auto') applyTheme('auto');
-    });
   applyTheme(storedTheme); // IP読み込み前にテーマを適用してロゴをセット
 
   // IPの初期ロード
