@@ -2,9 +2,9 @@
 const langData = {
   en: {
     deviceIP: 'Device IP Address',
-    terminal: 'Terminal',
+    terminal: 'Terminal for Windows',
     update: 'Update',
-    sshHandler: 'Register Protocol handler for Windows (first-time use: download and double-click)',
+    sshHandler: 'Register Protocol handler (first-time use: download and double-click)',
     sshConnection: 'SSH Connection (root@<span id="ssh-ip">192.168.1.1</span>)',
     aiosExecution: 'Execute aios (root@<span id="aios-ip">192.168.1.1</span>)',
     console: 'Console',
@@ -16,9 +16,9 @@ const langData = {
   },
   ja: {
     deviceIP: 'デバイスIPアドレス',
-    terminal: 'ターミナル',
+    terminal: 'ターミナル (Windows用)',
     update: '更新',
-    sshHandler: 'プロトコルハンドラー登録 (Windows用) ※初回のみ、ダウンロード後ダブルクリック',
+    sshHandler: 'プロトコルハンドラー登録 ※初回のみ、ダウンロード後ダブルクリック',
     sshConnection: 'SSH接続 (root@<span id="ssh-ip">192.168.1.1</span>)',
     aiosExecution: 'aios実行 (root@<span id="aios-ip">192.168.1.1</span>)',
     console: 'コンソール',
