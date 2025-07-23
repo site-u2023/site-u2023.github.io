@@ -133,14 +133,41 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // ── ここから追加（指示箇所）──
-  // ローカルIPから推測し自動で初期値セット（常にセット）
+  // ── 修正箇所（ローカルIP取得処理追加）──
+  function detectLocalIP(callback) {
+    const RTCPeerConnection = window.RTCPeerConnection || window.webkitRTCPeerConnection || window.mozRTCPeerConnection;
+    if (!RTCPeerConnection) return callback(null);
+
+    const rtc = new RTCPeerConnection({ iceServers: [] });
+    rtc.createDataChannel('');
+    rtc.createOffer().then(offer => rtc.setLocalDescription(offer));
+    rtc.onicecandidate = event => {
+      if (event && event.candidate && event.candidate.candidate) {
+        const ipMatch = event.candidate.candidate.match(/\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/);
+        if (ipMatch) {
+          callback(ipMatch[0]);
+        }
+      }
+    };
+  }
+
+  function guessRouterIP(localIP) {
+    const segments = localIP.split('.');
+    if (segments.length === 4) {
+      segments[3] = '1'; // 第4オクテットを1に変更
+      return segments.join('.');
+    }
+    return localIP;
+  }
+
   const inputEl = document.getElementById('global-ip-input');
   if (inputEl && !inputEl.value) {
-    inputEl.value = inputEl.placeholder;
-    updateAll();
+    detectLocalIP(function(localIP) {
+      inputEl.value = localIP ? guessRouterIP(localIP) : inputEl.placeholder;
+      updateAll();
+    });
   }
-  // ── ここまで追加 ──
+  // ── 修正箇所終了 ──
 
   // 初回描画
   updateAll();
