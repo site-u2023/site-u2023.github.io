@@ -35,7 +35,7 @@
           <h2 data-i18n="terminal">ターミナル</h2>
           <ul>
             <li>
-              <a href="file/sshcmd.reg" download data-i18n="sshHandler">
+              <a href="file/sshcmd.reg" download data-i18n="sshHandler" target="_blank" rel="noopener">
                 SSH用プロトコルハンドラー登録 (Windows用) ※初回のみ利用 (DL後ダブルクリック)
               </a>
             </li>
@@ -107,18 +107,22 @@
     </main>
   </div>
   <div class="page-footer-area">
-    <div class="footer-inner-flex"> <div class="footer-left-controls"> <div class="theme-selector">
-          <button id="theme-auto" aria-label="システムテーマ" data-theme-preference="auto">🌗</button>
-          <button id="theme-light" aria-label="ライトテーマ" data-theme-preference="light">☀️</button>
-          <button id="theme-dark" aria-label="ダークテーマ" data-theme-preference="dark">🌙</button>
-        </div>
-      </div>
-      <footer class="copyright-footer"> <p>&copy; <span id="current-year"></span> site-u</p>
-      </footer>
-      <div class="footer-right-controls"> <div class="language-selector">
+    <div class="footer-inner-flex">
+      <div class="footer-left-controls">
+        <div class="language-selector">
           <button id="lang-en" data-lang="en">EN</button>
           <span class="separator">|</span>
           <button id="lang-ja" data-lang="ja" class="selected">JA</button>
+        </div>
+      </div>
+      <footer class="copyright-footer">
+        <p><a href="https://qiita.com/site_u/items/39fbac482c06c98b229b" target="_blank" rel="noopener">OpenWrt初心者備忘録</a> &copy; <span id="current-year"></span> site-u</p>
+      </footer>
+      <div class="footer-right-controls">
+        <div class="theme-selector">
+          <button id="theme-auto" aria-label="システムテーマ" data-theme-preference="auto">🌗</button>
+          <button id="theme-light" aria-label="ライトテーマ" data-theme-preference="light">☀️</button>
+          <button id="theme-dark" aria-label="ダークテーマ" data-theme-preference="dark">🌙</button>
         </div>
       </div>
     </div>
