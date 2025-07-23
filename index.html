@@ -31,43 +31,6 @@
             </div>
           </div>
         </section>
-
-        <section id="project">
-          <h2>GitHubリポジトリ</h2>
-          <ul>
-            <li><a href="https://github.com/site-u2023/aios/blob/main/README.md">all in one script</a></li>
-            <li><a href="https://github.com/site-u2023/config-software/blob/main/README.md">config-software (旧版)</a></li>
-          </ul>
-        </section>
-
-        <section id="local-services">
-          <h2>コンソール</h2>
-          <ul>
-            <li>
-              <a
-                class="link-ip"
-                data-ip-template="http://${ip}/cgi-bin/luci"
-                href="#"
-                target="_blank"
-                rel="noopener"
-              >
-                LuCI (管理画面)
-              </a>
-            </li>
-            <li>
-              <a
-                class="link-ip"
-                data-ip-template="http://${ip}:7681/"
-                href="#"
-                target="_blank"
-                rel="noopener"
-              >
-                ttyd (Webターミナル)
-              </a>
-            </li>
-          </ul>
-        </section>
-
         <section id="terminal">
           <h2>ターミナル</h2>
           <ul>
@@ -102,10 +65,43 @@
             </li>
           </ul>
         </section>
+        <section id="local-services">
+          <h2>コンソール</h2>
+          <ul>
+            <li>
+              <a
+                class="link-ip"
+                data-ip-template="http://${ip}/cgi-bin/luci"
+                href="#"
+                target="_blank"
+                rel="noopener"
+              >
+                LuCI (管理画面)
+              </a>
+            </li>
+            <li>
+              <a
+                class="link-ip"
+                data-ip-template="http://${ip}:7681/"
+                href="#"
+                target="_blank"
+                rel="noopener"
+              >
+                ttyd (Webターミナル)
+              </a>
+            </li>
+          </ul>
+        </section>
+        <section id="project">
+          <h2>GitHubリポジトリ</h2>
+          <ul>
+            <li><a href="https://github.com/site-u2023/aios/blob/main/README.md" target="_blank" rel="noopener">all in one script</a></li>
+            <li><a href="https://github.com/site-u2023/config-software/blob/main/README.md" target="_blank" rel="noopener">config-software (旧版)</a></li>
+          </ul>
+        </section>
       </nav>
     </main>
   </div>
-
   <div class="page-footer-area">
     <div class="theme-controls-bar">
       <div class="theme-selector">
@@ -118,8 +114,6 @@
       <p>&copy; <span id="current-year"></span> site-u</p>
     </footer>
   </div>
-
-  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
