@@ -2,7 +2,7 @@
 html[data-theme="light"] {
   --block-bg:      #fff;
   --block-border:  #ddd;
-  --link-color:    #0078d4;
+  --link-color:    #43b0e8;
   --text-color:    var(--link-color);
   --hover-bg:      var(--link-color);
   --hover-color:   var(--block-bg);
@@ -14,7 +14,7 @@ html[data-theme="light"] {
 html[data-theme="dark"] {
   --block-bg:      #1a1a1a;
   --block-border:  #333;
-  --link-color:    #66aaff;
+  --link-color:    #43b0e8;
   --text-color:    var(--link-color);
   --hover-bg:      var(--link-color);
   --hover-color:   var(--block-bg);
