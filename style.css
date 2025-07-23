@@ -55,11 +55,15 @@ header h1 {
   color: var(--link-color) !important;
   transition: color 0.3s ease;
 }
+header .logo {
+  width: 100%;
+  max-width: none;
+}
 header .logo img {
-  max-width: 100%; /* レスポンシブ対応 */
-  height: auto;    /* 高さを自動調整 */
-  display: block;  /* ブロック要素として扱い */
-  margin: 0 auto;  /* 中央揃え */
+  width: 100%;
+  height: auto;
+  display: block;
+  margin: 0 auto;
 }
 
 /* ── コンテナ ── */
