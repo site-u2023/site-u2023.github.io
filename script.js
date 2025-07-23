@@ -7,37 +7,37 @@ document.addEventListener('DOMContentLoaded', () => {
   ].join(' && ');
   const sshCmdEncoded = encodeURIComponent(sshCommands);
 
-  // ── 言語切替機能追加 ──
-  const langData = {
-    en: {
-      deviceIP: 'Device IP Address',
-      terminal: 'Terminal',
-      update: 'Update',
-      sshHandler: 'Register SSH protocol handler (Windows only)',
-      sshConnection: 'SSH Connection (root@<span id="ssh-ip">192.168.1.1</span>)',
-      aiosExecution: 'Execute aios (root@<span id="aios-ip">192.168.1.1</span>)',
-      console: 'Console',
-      luciAdmin: 'LuCI (Admin Interface)',
-      ttydTerminal: 'ttyd (Web Terminal)',
-      githubRepo: 'GitHub Repository',
-      aiosScript: 'all in one script',
-      configSoftware: 'config-software (legacy)'
-    },
-    ja: {
-      deviceIP: 'デバイスIPアドレス',
-      terminal: 'ターミナル',
-      update: '更新',
-      sshHandler: 'SSH用プロトコルハンドラー登録 (Windows用)',
-      sshConnection: 'SSH接続 (root@<span id="ssh-ip">192.168.1.1</span>)',
-      aiosExecution: 'aios実行 (root@<span id="aios-ip">192.168.1.1</span>)',
-      console: 'コンソール',
-      luciAdmin: 'LuCI (管理画面)',
-      ttydTerminal: 'ttyd (Webターミナル)',
-      githubRepo: 'GitHubリポジトリ',
-      aiosScript: 'all in one script',
-      configSoftware: 'config-software (旧版)'
-    }
-  };
+// ── 言語切替機能追加 ──
+const langData = {
+  en: {
+    deviceIP: 'Device IP Address',
+    terminal: 'Terminal',
+    update: 'Update',
+    sshHandler: 'Register SSH protocol handler for Windows (first-time use: download and double-click)',
+    sshConnection: 'SSH Connection (root@<span id="ssh-ip">192.168.1.1</span>)',
+    aiosExecution: 'Execute aios (root@<span id="aios-ip">192.168.1.1</span>)',
+    console: 'Console',
+    luciAdmin: 'LuCI (Admin Interface)',
+    ttydTerminal: 'ttyd (Web Terminal)',
+    githubRepo: 'GitHub Repository',
+    aiosScript: 'all in one script',
+    configSoftware: 'config-software (legacy)'
+  },
+  ja: {
+    deviceIP: 'デバイスIPアドレス',
+    terminal: 'ターミナル',
+    update: '更新',
+    sshHandler: 'SSHプロトコルハンドラー登録 (Windows用) ※初回のみ、ダウンロード後ダブルクリック',
+    sshConnection: 'SSH接続 (root@<span id="ssh-ip">192.168.1.1</span>)',
+    aiosExecution: 'aios実行 (root@<span id="aios-ip">192.168.1.1</span>)',
+    console: 'コンソール',
+    luciAdmin: 'LuCI (管理画面)',
+    ttydTerminal: 'ttyd (Webターミナル)',
+    githubRepo: 'GitHubリポジトリ',
+    aiosScript: 'all in one script',
+    configSoftware: 'config-software (旧版)'
+  }
+};
 
   function applyLanguage(lang) {
     const elements = document.querySelectorAll('[data-i18n]');
