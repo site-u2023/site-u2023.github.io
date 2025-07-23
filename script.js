@@ -49,6 +49,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // 初期表示は日本語
+  applyLanguage('ja');
+  
   document.querySelectorAll('.language-selector button').forEach(btn => {
     btn.addEventListener('click', () => {
       const lang = btn.dataset.lang;
