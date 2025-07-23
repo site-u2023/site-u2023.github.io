@@ -133,10 +133,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // ── 修正版：ローカルIP取得処理 ──
+  // ── デバッグ版：ローカルIP取得処理 ──
   function detectLocalIP(callback) {
+    console.log('Starting local IP detection...');
+    
     const RTCPeerConnection = window.RTCPeerConnection || window.webkitRTCPeerConnection || window.mozRTCPeerConnection;
     if (!RTCPeerConnection) {
+      console.log('WebRTC not supported');
       return callback(null);
     }
 
@@ -145,19 +148,28 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     let candidateFound = false;
+    let candidateCount = 0;
     
     rtc.createDataChannel('test');
     
     rtc.onicecandidate = event => {
+      candidateCount++;
+      console.log(`ICE candidate #${candidateCount}:`, event);
+      
       if (candidateFound) return;
       
       if (event && event.candidate && event.candidate.candidate) {
         const candidateStr = event.candidate.candidate;
+        console.log('Candidate string:', candidateStr);
+        
         const ipMatches = candidateStr.match(/\b(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\b/g);
+        console.log('IP matches found:', ipMatches);
         
         if (ipMatches) {
           for (const ip of ipMatches) {
+            console.log('Checking IP:', ip, 'Is private:', isPrivateIP(ip));
             if (isPrivateIP(ip)) {
+              console.log('✓ Found valid private IP:', ip);
               candidateFound = true;
               rtc.close();
               callback(ip);
@@ -165,20 +177,41 @@ document.addEventListener('DOMContentLoaded', () => {
             }
           }
         }
+      } else if (event && event.candidate === null) {
+        console.log('ICE gathering completed');
       }
     };
 
-    rtc.createOffer()
-      .then(offer => rtc.setLocalDescription(offer))
-      .catch(() => callback(null));
+    rtc.onicegatheringstatechange = () => {
+      console.log('ICE gathering state:', rtc.iceGatheringState);
+    };
 
-    // タイムアウト処理（2秒）
+    rtc.oniceconnectionstatechange = () => {
+      console.log('ICE connection state:', rtc.iceConnectionState);
+    };
+
+    rtc.createOffer()
+      .then(offer => {
+        console.log('Offer created successfully');
+        return rtc.setLocalDescription(offer);
+      })
+      .then(() => {
+        console.log('Local description set successfully');
+      })
+      .catch(error => {
+        console.log('Error in offer/answer:', error);
+        callback(null);
+      });
+
+    // タイムアウト処理（3秒に延長）
     setTimeout(() => {
       if (!candidateFound) {
+        console.log('❌ Timeout: No private IP found after 3 seconds');
+        console.log(`Total candidates received: ${candidateCount}`);
         rtc.close();
         callback(null);
       }
-    }, 2000);
+    }, 3000);
   }
 
   function isPrivateIP(ip) {
