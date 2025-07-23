@@ -47,25 +47,27 @@ header {
   /* border-bottom: 2px solid var(--link-color); */
   position: relative; 
 }
+
+/* header-innerを追加してFlexboxで配置 */
 header .header-inner {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
+  justify-content: space-between; /* タイトルと言語セレクタを両端に配置 */
+  align-items: center; /* 垂直方向中央揃え */
+  padding: 1em 2em; /* 適切なパディングを追加 */
 }
+
 header h1 {
   margin: 0;
-  font-size: 5vw;
-  text-align: center;
+  font-size: 2em; /* 適切なフォントサイズに調整 */
   color: var(--link-color) !important;
   transition: color 0.3s ease;
 }
-header .logo {
+header .logo { /* このスタイルは現状使われていませんが残しておきます */
   width: 100%;
   max-width: none;
   position: relative;
 }
-header .logo img {
+header .logo img { /* このスタイルも現状使われていませんが残しておきます */
   width: 80%;
   height: auto;
   display: block;
@@ -238,6 +240,10 @@ footer.copyright-footer {
   }
   header h1 {
     font-size: 1.6em;
+  }
+  /* ヘッダーのpaddingを調整 */
+  header .header-inner {
+    padding: 1em 1.2em;
   }
   nav h2 {
     font-size: 1.15em;
