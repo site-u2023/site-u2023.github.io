@@ -25,8 +25,8 @@ const langData = {
     luciAdmin: 'LuCI (管理画面)',
     ttydTerminal: 'ttyd (Webターミナル)',
     githubRepo: 'GitHubリポジトリ',
-    aiosScript: 'all in one script',
-    configSoftware: 'config-software (旧版)'
+    aiosScript: 'オールインワンスクリプト',
+    configSoftware: 'コンフォグソフトウェア (旧版)'
   }
 };
 
