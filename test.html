@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>OpenWrt: A Beginner's Notebook</title>
   <link rel="stylesheet" href="style.css">
 </head>
@@ -17,6 +17,7 @@
     </header>
     <main>
       <nav>
+        <!-- IP入力部はそのまま -->
         <section id="device-ip">
           <h2>デバイスIPアドレス</h2>
           <div class="connection">
@@ -30,37 +31,28 @@
               <button id="global-ip-update" type="button">更新</button>
             </div>
           </div>
-          </section>
-
-        <section id="project">
-          <h2>GitHubリポジトリ</h2>
-          <ul>
-            <li><a href="https://site-u2023.github.io/aios/">all in one script</a></li>
-            <li><a href="https://site-u2023.github.io/config-software/">config-software (旧版)</a></li>
-          </ul>
         </section>
 
+        <!-- ローカルサービス部もそのまま -->
         <section id="local-services">
           <h2>ローカルネットワーク</h2>
           <ul>
             <li>
-              <a
-                class="link-ip"
-                data-ip-template="http://${ip}/cgi-bin/luci"
-                href="#"
-                target="_blank"
-                rel="noopener"
+              <a class="link-ip"
+                 data-ip-template="http://${ip}/cgi-bin/luci"
+                 href="#"
+                 target="_blank"
+                 rel="noopener"
               >
                 LuCI (管理画面)
               </a>
             </li>
             <li>
-              <a
-                class="link-ip"
-                data-ip-template="http://${ip}:7681/"
-                href="#"
-                target="_blank"
-                rel="noopener"
+              <a class="link-ip"
+                 data-ip-template="http://${ip}:7681/"
+                 href="#"
+                 target="_blank"
+                 rel="noopener"
               >
                 ttyd (Webターミナル)
               </a>
@@ -68,12 +60,13 @@
           </ul>
         </section>
 
+        <!-- ここだけ data-ip-template を変更 -->
         <section id="terminal">
           <h2>ターミナル</h2>
           <ul>
             <li>
-              <a href="file/sshcmd.reg" download>
-                SSH用プロトコル登録 (sshcmd://) (.reg)
+              <a href="file/cmd.reg" download>
+                SSH用プロトコル登録 (.reg)
               </a>
             </li>
             <li>
@@ -89,7 +82,8 @@
               </a>
             </li>
             <li>
-              <details id="qrcode-detail-container"> <summary>QRコードを表示</summary>
+              <details id="qrcode-detail-container">
+                <summary>QRコードを表示</summary>
                 <div class="qr-code" id="qrcode-detail"></div>
               </details>
             </li>
@@ -101,10 +95,11 @@
 
   <div class="page-footer-area">
     <div class="theme-controls-bar">
+      <!-- テーマ切替ボタン群 -->
       <div class="theme-selector">
-        <button id="theme-auto" aria-label="システムテーマ" data-theme-preference="auto">🌗</button>
-        <button id="theme-light" aria-label="ライトテーマ" data-theme-preference="light">☀️</button>
-        <button id="theme-dark" aria-label="ダークテーマ" data-theme-preference="dark">🌙</button>
+        <button id="theme-auto"  data-theme-preference="auto">🌗</button>
+        <button id="theme-light" data-theme-preference="light">☀️</button>
+        <button id="theme-dark"  data-theme-preference="dark">🌙</button>
       </div>
     </div>
     <footer class="copyright-footer">
@@ -113,7 +108,6 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
-
-  <script src="test.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
