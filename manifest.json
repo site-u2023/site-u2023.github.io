@@ -1,7 +1,7 @@
 {
   "name": "OpenWrt A Beginner's Notebook",
   "short_name": "OpenWrt Note",
-  "description": "OpenWrt初心者向けの備忘録・設定ツール",
+  "description": "OpenWrt初心者備忘録",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#2a2a2a",
