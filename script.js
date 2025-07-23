@@ -136,12 +136,10 @@ document.addEventListener('DOMContentLoaded', () => {
   // ── ここから追加（指示箇所）──
   // ローカルIPから推測し自動で初期値セット（常にセット）
   const inputEl = document.getElementById('global-ip-input');
-  if (inputEl) {
-    detectLocalIP(function(localIP){
-      if(localIP){
-        inputEl.value = guessRouterIP(localIP);
-        updateAll();
-      }
+  if (inputEl && !inputEl.value) {
+    inputEl.value = inputEl.placeholder;
+    updateAll();
+  }   
     });
   }
   // ── ここまで追加 ──
