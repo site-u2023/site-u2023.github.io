@@ -47,6 +47,7 @@ header {
   /* border-bottom: 2px solid var(--link-color); */
   margin-bottom: 1.5em;
   padding-bottom: 0.8em;
+  position: relative; 
 }
 header h1 {
   margin: 0;
@@ -58,12 +59,26 @@ header h1 {
 header .logo {
   width: 100%;
   max-width: none;
+  position: relative;
 }
 header .logo img {
   width: 80;
   height: auto;
   display: block;
   margin: 0 auto;
+}
+
+/* 言語切替ボタンを右寄せ */
+.language-selector {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  z-index: 1;
+  margin-top: 8px; /* 高さ調整（必要なら変更可） */
+  margin-right: 8px; /* 右端の余白（必要なら変更可） */
 }
 
 /* ── コンテナ ── */
