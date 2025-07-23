@@ -1,22 +1,11 @@
 Windows Registry Editor Version 5.00
 
-; 例：sshcmd:// という独自プロトコルを登録
 [HKEY_CLASSES_ROOT\sshcmd]
 @="URL:SSH Command Protocol"
 "URL Protocol"=""
 
-; アイコン（お好みで）
 [HKEY_CLASSES_ROOT\sshcmd\DefaultIcon]
 @="C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe,0"
 
-; プロトコルハンドラ本体
 [HKEY_CLASSES_ROOT\sshcmd\shell\open\command]
-@="\"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe\" -NoExit -Command ^
-  \"$uri = [Uri]::new('%1'); ^
-    $host = $uri.Host; ^
-    $cmd  = [Uri]::UnescapeDataString($uri.AbsolutePath.TrimStart('/')); ^
-    if ([string]::IsNullOrEmpty($cmd)) { ^
-      ssh -t root@$host; ^
-    } else { ^
-      ssh -t root@$host $cmd; ^
-    }\""
+@="\"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe\" -NoExit -Command \"$uri=[Uri]::new('%1'); $host=$uri.Host; $cmd=[Uri]::UnescapeDataString($uri.AbsolutePath.TrimStart('/')); if ([string]::IsNullOrEmpty($cmd)) { ssh -t root@$host } else { ssh -t root@$host $cmd }\""
