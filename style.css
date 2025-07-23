@@ -68,17 +68,15 @@ header .logo img {
   margin: 0 auto;
 }
 
-/* 言語切替ボタンを右寄せ */
+/* 言語切替ボタンはロゴ枠外右下・独立表示 */
 .language-selector {
   position: absolute;
-  top: 0;
   right: 0;
+  bottom: -34px; /* 枠外にするためマイナス値。必要により調整可 */
   display: flex;
-  align-items: center;
   gap: 4px;
-  z-index: 1;
-  margin-top: 8px; /* 高さ調整（必要なら変更可） */
-  margin-right: 8px; /* 右端の余白（必要なら変更可） */
+  z-index: 2;
+  margin-right: 8px;
 }
 
 /* ── コンテナ ── */
