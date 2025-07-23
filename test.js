@@ -31,13 +31,11 @@ document.addEventListener('DOMContentLoaded', () => {
     applyTheme(stored);
   })();
 
-
   // --- 年表示 ---
   const yearEl = document.getElementById('current-year');
   if (yearEl) {
     yearEl.textContent = new Date().getFullYear();
   }
-
 
   // --- 全角 → 半角変換ユーティリティ ---
   function toHalfWidth(str) {
@@ -47,7 +45,6 @@ document.addEventListener('DOMContentLoaded', () => {
       )
       .replace(/\u3000/g, ' ');
   }
-
 
   // --- QRコード描画ヘルパー ---
   function drawQRCode(elementId, text) {
@@ -68,7 +65,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-
   // --- SSHで実行したいコマンドをまとめて URL エンコード ---
   const sshCommands = [
     'wget -O /usr/bin/aios https://raw.githubusercontent.com/site-u2023/aios/main/aios',
@@ -76,7 +72,6 @@ document.addEventListener('DOMContentLoaded', () => {
     'sh /usr/bin/aios'
   ].join(' && ');
   const sshCmdEncoded = encodeURIComponent(sshCommands);
-
 
   // --- IP更新＋QR描画＋リンク反映 ---
   function updateAll() {
@@ -102,32 +97,29 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    // SSHリンク (#ssh-link) にコマンド付きURLを埋め込む
+    // SSHリンク (#ssh-link) の href を更新し、表示は <span id="ssh-ip"> に委ねる
     const sshLink = document.getElementById('ssh-link');
     if (sshLink) {
-      const template = sshLink.dataset.ipTemplate;                  // 例: "sshcmd://root@${ip}/${cmd}"
-      const base     = template.replace('${ip}', ip);
-      const url      = base.replace('${cmd}', sshCmdEncoded);
-      sshLink.href        = url;
-      sshLink.textContent = url;
+      const template = sshLink.dataset.ipTemplate; // 例: "sshcmd://root@${ip}/${cmd}"
+      const url      = template
+        .replace('${ip}',  ip)
+        .replace('${cmd}', sshCmdEncoded);
+      sshLink.href = url;
+
+      const sshIpSpan = sshLink.querySelector('#ssh-ip');
+      if (sshIpSpan) {
+        sshIpSpan.textContent = ip;
+      }
     }
 
-    // その他の .link-ip を更新
+    // その他の .link-ip は href のみ更新（テキストはそのまま）
     document.querySelectorAll('.link-ip').forEach(link => {
       if (link.id === 'ssh-link') return;
       const tpl = link.dataset.ipTemplate;
       if (!tpl) return;
-      link.href        = tpl.replace('${ip}', ip);
-      link.textContent = link.href;
+      link.href = tpl.replace('${ip}', ip);
     });
-
-    // SSHリンク表示IPの更新
-    const sshText = document.getElementById('ssh-ip');
-    if (sshText) {
-      sshText.textContent = ip;
-    }
   }
-
 
   // --- 入力欄全体に全角→半角変換＋updateAll連動 ---
   document.querySelectorAll('input[type="text"]').forEach(input => {
@@ -142,18 +134,16 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-
   // --- 更新ボタン／Enterキー で updateAll ---
   document.getElementById('global-ip-update')
-    ?.addEventListener('click', updateAll);
+    .addEventListener('click', updateAll);
   document.getElementById('global-ip-input')
-    ?.addEventListener('keydown', e => {
+    .addEventListener('keydown', e => {
       if (e.key === 'Enter') {
         e.preventDefault();
         updateAll();
       }
     });
-
 
   // --- 初期描画 ---
   updateAll();
