@@ -1,348 +1,180 @@
-/* ── テーマ変数 ── */
-html[data-theme="light"] {
-  --block-bg:      #fff;
-  --block-border:  #ddd;
-  --link-color:    #43b0e8;
-  --text-color:    var(--link-color);
-  --hover-bg:      var(--link-color);
-  --hover-color:   var(--block-bg);
-  /* QRコードの色を追加 */
-  --qr-dark:       #000;
-  --qr-light:      #fff;
-}
-
-html[data-theme="dark"] {
-  --block-bg:      #1a1a1a;
-  --block-border:  #333;
-  --link-color:    #43b0e8;
-  --text-color:    var(--link-color);
-  --hover-bg:      var(--link-color);
-  --hover-color:   var(--block-bg);
-  /* QRコードの色を追加 */
-  --qr-dark:       #fff;
-  --qr-light:      #1a1a1a;
-}
-
-/* ── ベース ── */
-body {
-  margin: 0;
-  /* フッターの高さに合わせて調整（em単位に変更） */
-  padding: 0 0 5em; /* 例: フッターの高さが約5emの場合 */
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-               "Helvetica Neue", Arial, sans-serif;
-  background-color: var(--block-bg);
-  color: var(--text-color);
-  transition: background-color 0.3s ease,
-              color 0.3s ease;
-}
-
-/* リストマーカー消去 */
-ul {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-/* ── ヘッダー ── */
-header {
-  position: relative;
-  border-bottom: 0.05em solid var(--block-border);
-}
-
-/* header-inner: ロゴを中央に配置 */
-header .header-inner {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 0 2em; /* ★上下のパディングを0に修正しました */
-}
-
-/* ロゴのスタイル */
-header .logo {
-  text-align: center;
-  width: 100%; /* 親要素の幅いっぱいに広げる */
-}
-
-header .logo img {
-  width: 100%;
-  height: auto;
-  display: block; /* 中央寄せのためにブロック要素にする */
-  margin: 0 auto; /* ロゴを中央寄せにする */
-}
-
-.language-selector {
-  display: flex;
-  align-items: center;
-  gap: 0.25em; /* 4pxを相対値に */
-  flex-shrink: 0;
-}
-
-/* ── コンテナ ── */
-.container {
-  max-width: 50em; /* 800pxをemに変換 */
-  margin: 2em auto;
-  background: var(--block-bg);
-  padding: 1.5em 2em;
-  border-radius: 0.5em; /* 8pxを相対値に */
-  box-shadow: 0 0.25em 0.5em rgba(0, 0, 0, 0.1); /* 4px 8pxを相対値に */
-  transition: background-color 0.3s ease,
-              box-shadow 0.3s ease;
-}
-
-/* ── フォーム＆リンクをベースカラー継承 ── */
-input,
-button,
-a {
-  color:            inherit;
-  background-color: inherit;
-  border:           0.05em solid var(--block-border);
-  border-radius:    0.3em;
-  padding:          0.6em 0.9em;
-  box-sizing:       border-box;
-  transition:       background-color 0.2s ease,
-                    color 0.2s ease;
-  text-decoration:  none;
-}
-
-a:hover {
-  background-color: var(--hover-bg);
-  color:            var(--hover-color);
-}
-
-/* ── ナビゲーション ── */
-nav section {
-  background-color: var(--block-bg);
-  border: none;
-  padding: 0.625em; /* 10pxを相対値に */
-  margin-bottom: 1em; /* 16pxを相対値に */
-}
-nav h2 {
-  margin: 1.5em 0 0.8em;
-  color: var(--link-color);
-  font-size: 1.3em;
-}
-nav li {
-  margin-bottom: 0.6em;
-}
-nav a {
-  display: block;
-}
-
-/* ── Device IP セクション ── */
-#device-ip {
-  margin-bottom: 1em; /* 16pxを相対値に */
-  border: none;
-}
-#device-ip .connection {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-#device-ip .ip-address {
-  display: flex;
-  flex: 1;
-  min-width: 0;
-  align-items: center;
-  overflow: hidden;
-}
-#global-ip-input {
-  flex: 1;
-  min-width: 0;
-}
-#global-ip-update {
-  margin-left: auto;
-  flex: 0 0 auto;
-  cursor: pointer;
-}
-#global-ip-update:hover {
-  background-color: var(--hover-bg);
-  color:            var(--hover-color);
-}
-
-/* ── QRコード部分 ── */
-.qr-code {
-  margin-top: 1em;
-  padding: 1em;
-  background-color: var(--block-bg);
-  border-radius: 0.375em; /* 6pxを相対値に */
-  text-align: center;
-}
-.qr-code canvas {
-  width: 11.25em !important; /* 180pxを相対値に */
-  height: 11.25em !important; /* 180pxを相対値に */
-  display: inline-block;
-}
-
-/* ── フッター／テーマ切替エリア ── */
-.page-footer-area {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  background-color: var(--block-bg);
-  border-top: 0.05em solid var(--block-border); /* 1pxを相対値に */
-  transition: background-color 0.3s ease,
-              border-color 0.3s ease;
-
-  /* ★追加: フッターのコンテンツを中央に寄せるためのスタイル */
-  display: flex;
-  justify-content: center; /* 中央寄せ */
-}
-
-/* 新しいフッター内部のFlexコンテナ */
-.footer-inner-flex {
-  display: flex;
-  justify-content: space-between; /* 要素を左右に均等に配置 */
-  align-items: center; /* 垂直方向中央揃え */
-  padding: 0.5em 2em; /* フッターの上下パディングを調整して薄く */
-  /* ★追加: ボディと同じ最大幅を設定 */
-  max-width: 50em; /* .containerと同じ値 */
-  width: 100%; /* max-widthが適用されるように */
-}
-
-/* フッター左側のコントロール (言語ボタン) */
-.footer-left-controls {
-  display: flex;
-  align-items: center;
-  flex-grow: 1;
-  justify-content: flex-start; /* 左寄せ */
-}
-
-/* フッター右側のコントロール (昼夜ボタン) */
-.footer-right-controls {
-  display: flex;
-  align-items: center;
-  flex-grow: 1;
-  justify-content: flex-end; /* 右寄せ */
-}
-
-/* 著作権表示のスタイル */
-footer.copyright-footer {
-  padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center; /* 中央寄せ */
-  flex-grow: 1; /* 残りのスペースを均等に埋める */
-  text-align: center; /* pタグの中身を中央寄せ */
-}
-footer.copyright-footer p {
-  margin: 0;
-  font-size: 0.9em;
-  color: var(--text-color);
-}
-
-.theme-selector {
-  display: flex;
-  gap: 0.5em; /* 8pxを相対値に */
-}
-.theme-selector button {
-  background: transparent;
-  border: 0.05em solid transparent; /* 1pxを相対値に */
-  padding: 0.25em; /* アイコンを囲むようにパディングを追加 */
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  border-radius: 50%;
-  cursor: pointer;
-  transition: background-color 0.2s ease,
-              color 0.2s ease;
-  font-size: 1.25em; /* アイコンのサイズを調整 */
-  line-height: 1; /* アイコンの垂直中央揃えを改善 */
-}
-.theme-selector button:hover {
-  background-color: rgba(0, 0, 0, 0.05);
-}
-.theme-selector button.selected {
-  background-color: #43b0e8;
-  color: #fff;
-}
-.theme-selector button.selected:hover {
-  background-color: #43b0e8;
-}
-
-/* 言語ボタンのスタイル調整 */
-/* theme-selector button のスタイルと揃える */
-.language-selector button {
-  background: transparent;
-  border: 0.05em solid transparent;
-  padding: 0.25em 0.5em; /* 言語ボタンのパディングを調整 */
-  border-radius: 0.3em; /* 角を丸くする */
-  cursor: pointer;
-  transition: background-color 0.2s ease,
-              color 0.2s ease;
-  font-size: 1em; /* デフォルトのフォントサイズを基準に */
-  line-height: 1;
-  display: flex; /* Flexboxアイテムとして中央揃えしやすく */
-  align-items: center;
-  justify-content: center;
-}
-.language-selector button:hover {
-  background-color: rgba(0, 0, 0, 0.05);
-}
-.language-selector button.selected {
-  background-color: #43b0e8;
-  color: #fff;
-}
-.language-selector button.selected:hover {
-  background-color: #43b0e8;
-}
-.language-selector .separator {
-  margin: 0 0.1em; /* セパレータの間隔を調整 */
-  color: inherit;
-}
-
-
-/* ── レスポンシブ ── */
-@media (max-width: 37.5em) { /* 600pxをemに変換 */
-  body {
-    -webkit-text-size-adjust: 100%;
-    padding-bottom: 6.25em; /* 100pxを相対値に */
-    padding-top: 0;
+// ── 言語切替機能追加 ──
+const langData = {
+  en: {
+    deviceIP: 'Device IP Address',
+    terminal: 'Terminal',
+    update: 'Update',
+    sshHandler: 'Register SSH protocol handler for Windows (first-time use: download and double-click)',
+    sshConnection: 'SSH Connection (root@<span id="ssh-ip">192.168.1.1</span>)',
+    aiosExecution: 'Execute aios (root@<span id="aios-ip">192.168.1.1</span>)',
+    console: 'Console',
+    luciAdmin: 'LuCI (Admin Interface)',
+    ttydTerminal: 'ttyd (Web Terminal)',
+    githubRepo: 'GitHub Repository',
+    aiosScript: 'all in one script',
+    configSoftware: 'config-software (legacy)'
+  },
+  ja: {
+    deviceIP: 'デバイスIPアドレス',
+    terminal: 'ターミナル',
+    update: '更新',
+    sshHandler: 'SSHプロトコルハンドラー登録 (Windows用) ※初回のみ、ダウンロード後ダブルクリック',
+    sshConnection: 'SSH接続 (root@<span id="ssh-ip">192.168.1.1</span>)',
+    aiosExecution: 'aios実行 (root@<span id="aios-ip">192.168.1.1</span>)',
+    console: 'コンソール',
+    luciAdmin: 'LuCI (管理画面)',
+    ttydTerminal: 'ttyd (Webターミナル)',
+    githubRepo: 'GitHubリポジトリ',
+    aiosScript: 'all in one script',
+    configSoftware: 'config-software (旧版)'
+  },
+  zh: {
+    deviceIP: '设备IP地址',
+    terminal: '终端',
+    update: '更新',
+    sshHandler: '注册SSH协议处理程序 (Windows专用, 首次使用: 下载并双击)',
+    sshConnection: 'SSH连接 (root@<span id="ssh-ip">192.168.1.1</span>)',
+    aiosExecution: '执行aios (root@<span id="aios-ip">192.168.1.1</span>)',
+    console: '控制台',
+    luciAdmin: 'LuCI (管理界面)',
+    ttydTerminal: 'ttyd (Web终端)',
+    githubRepo: 'GitHub仓库',
+    aiosScript: '一体化脚本',
+    configSoftware: 'config-software (旧版)'
   }
-  .container {
-    margin: 1em;
-    padding: 1em 1.2em;
-    border-radius: 0;
-    box-shadow: none;
-  }
-  header .header-inner {
-    padding: 1em 1.2em;
-  }
-  nav h2 {
-    font-size: 1.15em;
-  }
-  nav a {
-    padding: 0.8em 0.7em;
-    font-size: 0.95em;
-  }
-  /* フッターのレスポンシブ調整 */
-  .footer-inner-flex {
-    flex-direction: column; /* モバイルでは縦並びにする */
-    align-items: center;
-    padding: 0.6em 1em;
-    gap: 0.625em; /* 10pxを相対値に */
-  }
-  .footer-left-controls,
-  .footer-right-controls,
-  footer.copyright-footer {
-    width: 100%;
-    justify-content: center;
-    text-align: center;
-  }
-  /* モバイルでのボタンのパディング調整 */
-  .theme-selector button,
-  .language-selector button {
-    padding: 0.35em; /* モバイルでは少しパディングを増やすなど調整 */
-  }
-}
+};
 
-/* ── ダークテーマ用オーバーライド ── */
-body[data-theme="dark"] .container {
-  box-shadow: 0 0.25em 0.75em rgba(0, 0, 0, 0.4);
-}
-body[data-theme="dark"] nav h2 {
-  border-bottom-color: var(--block-border);
-}
-body[data-theme="dark"] .page-footer-area {
-  border-top-color: var(--block-border);
-}
+document.addEventListener('DOMContentLoaded', () => {
+  const globalIpInput = document.getElementById('global-ip-input');
+  const globalIpUpdate = document.getElementById('global-ip-update');
+  const sshLink = document.getElementById('ssh-link');
+  const aiosLink = document.getElementById('aios-link');
+  const sshIpSpan = document.getElementById('ssh-ip');
+  const aiosIpSpan = document.getElementById('aios-ip');
+  const luciLink = document.querySelector('a[data-i18n="luciAdmin"]');
+  const ttydLink = document.querySelector('a[data-i18n="ttydTerminal"]');
+
+  // Load saved IP or use default
+  const savedIp = localStorage.getItem('globalIp') || '192.168.1.1';
+  globalIpInput.value = savedIp;
+  updateLinks(savedIp);
+
+  globalIpUpdate.addEventListener('click', () => {
+    const newIp = globalIpInput.value;
+    localStorage.setItem('globalIp', newIp);
+    updateLinks(newIp);
+  });
+
+  function updateLinks(ip) {
+    // SSH Connection Link
+    const sshTemplate = sshLink.getAttribute('data-ip-template');
+    sshLink.href = sshTemplate.replace('${ip}', ip);
+    sshIpSpan.textContent = ip;
+
+    // AIOS Execution Link
+    const aiosTemplate = aiosLink.getAttribute('data-ip-template');
+    const aiosCmd = 'aios'; // You can change this if the command varies
+    aiosLink.href = aiosTemplate.replace('${ip}', ip).replace('${cmd}', aiosCmd);
+    aiosIpSpan.textContent = ip;
+
+    // LuCI Admin Link
+    const luciTemplate = luciLink.getAttribute('data-ip-template');
+    luciLink.href = luciTemplate.replace('${ip}', ip);
+
+    // ttyd Terminal Link
+    const ttydTemplate = ttydLink.getAttribute('data-ip-template');
+    ttydLink.href = ttydTemplate.replace('${ip}', ip);
+  }
+
+  // --- Theme Switching ---
+  const themeButtons = document.querySelectorAll('.theme-selector button');
+  const htmlElement = document.documentElement;
+
+  // Load saved theme preference
+  let savedTheme = localStorage.getItem('theme-preference');
+  if (!savedTheme) {
+      // If no preference, set based on system
+      savedTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      localStorage.setItem('theme-preference', savedTheme);
+  }
+
+  // Apply saved theme
+  applyTheme(savedTheme);
+
+  themeButtons.forEach(button => {
+    button.addEventListener('click', () => {
+      const themePreference = button.dataset.themePreference;
+      localStorage.setItem('theme-preference', themePreference);
+      applyTheme(themePreference);
+    });
+  });
+
+  function applyTheme(preference) {
+    let themeToApply = preference;
+    if (preference === 'auto') {
+      themeToApply = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    htmlElement.setAttribute('data-theme', themeToApply);
+
+    // Update active button visual
+    themeButtons.forEach(button => {
+      if (button.dataset.themePreference === preference) {
+        button.classList.add('selected');
+      } else {
+        button.classList.remove('selected');
+      }
+    });
+  }
+
+  // Listen for system theme changes if 'auto' is selected
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+    if (localStorage.getItem('theme-preference') === 'auto') {
+      applyTheme('auto'); // Re-apply 'auto' to pick up new system preference
+    }
+  });
+
+
+  // --- Language Switching ---
+  const langButtons = document.querySelectorAll('.language-selector button');
+  const currentLang = localStorage.getItem('lang-preference') || 'ja'; // デフォルトは日本語
+
+  applyLanguage(currentLang);
+
+  langButtons.forEach(button => {
+    button.addEventListener('click', () => {
+      const newLang = button.dataset.lang;
+      localStorage.setItem('lang-preference', newLang);
+      applyLanguage(newLang);
+    });
+  });
+
+  function applyLanguage(lang) {
+    // Update active button visual
+    langButtons.forEach(button => {
+      if (button.dataset.lang === lang) {
+        button.classList.add('selected');
+      } else {
+        button.classList.remove('selected');
+      }
+    });
+
+    // Apply translations
+    document.querySelectorAll('[data-i18n]').forEach(element => {
+      const key = element.getAttribute('data-i18n');
+      if (langData[lang] && langData[lang][key]) {
+        // preserve existing span for IP address in SSH/AIOS links
+        if (key === 'sshConnection' || key === 'aiosExecution') {
+          const ipSpanId = key === 'sshConnection' ? 'ssh-ip' : 'aios-ip';
+          const currentIp = document.getElementById(ipSpanId).textContent;
+          element.innerHTML = langData[lang][key].replace(/<span id="ssh-ip">.*?<\/span>/, `<span id="${ipSpanId}">${currentIp}</span>`);
+        } else {
+          element.textContent = langData[lang][key];
+        }
+      }
+    });
+  }
+
+  // Set current year for copyright
+  document.getElementById('current-year').textContent = new Date().getFullYear();
+
+});
