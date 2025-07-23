@@ -1,0 +1,11 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_CLASSES_ROOT\sshcmd]
+@="URL:SSH Command Protocol"
+"URL Protocol"=""
+
+[HKEY_CLASSES_ROOT\sshcmd\DefaultIcon]
+@="C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe,0"
+
+[HKEY_CLASSES_ROOT\sshcmd\shell\open\command]
+@="\"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe\" -NoExit -Command \"$u=[Uri]::new('%1');$h=$u.Host;$c=[Uri]::UnescapeDataString($u.AbsolutePath.TrimStart('/'));if([string]::IsNullOrEmpty($c)){ssh -t root@$h}else{ssh -t root@$h $c}\""
