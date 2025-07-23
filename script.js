@@ -37,7 +37,9 @@ document.addEventListener('DOMContentLoaded', () => {
   function toHalfWidth(str) {
     return str
       .replace(/[\uFF01-\uFF5E]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0))
-      .replace(/\u3000/g, ' ');
+      .replace(/\u3000/g, ' ')
+      .replace(/、/g, ',')  // 全角カンマ→半角カンマ
+      .replace(/。/g, '.');  // 全角ピリオド→半角ピリオド
   }
 
   // QRコード描画
