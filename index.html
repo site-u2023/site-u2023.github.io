@@ -17,7 +17,56 @@
     </header>
     <main>
       <nav>
-        <!-- デバイスIP入力など省略 -->
+        <section id="device-ip">
+          <h2>デバイスIPアドレス</h2>
+          <div class="connection">
+            <div class="ip-address">
+              <input
+                type="text"
+                id="global-ip-input"
+                value="192.168.1.1"
+                placeholder="192.168.0.1"
+              >
+              <button id="global-ip-update" type="button">更新</button>
+            </div>
+          </div>
+        </section>
+
+        <section id="project">
+          <h2>GitHubリポジトリ</h2>
+          <ul>
+            <li><a href="https://site-u2023.github.io/aios/">all in one script</a></li>
+            <li><a href="https://site-u2023.github.io/config-software/">config-software (旧版)</a></li>
+          </ul>
+        </section>
+
+        <section id="local-services">
+          <h2>コンソール</h2>
+          <ul>
+            <li>
+              <a
+                class="link-ip"
+                data-ip-template="http://${ip}/cgi-bin/luci"
+                href="#"
+                target="_blank"
+                rel="noopener"
+              >
+                LuCI (管理画面)
+              </a>
+            </li>
+            <li>
+              <a
+                class="link-ip"
+                data-ip-template="http://${ip}:7681/"
+                href="#"
+                target="_blank"
+                rel="noopener"
+              >
+                ttyd (Webターミナル)
+              </a>
+            </li>
+          </ul>
+        </section>
 
         <section id="terminal">
           <h2>ターミナル</h2>
@@ -52,7 +101,8 @@
               </a>
             </li>
             <li>
-              <details id="qrcode-detail-container"> <summary>QRコードを表示</summary>
+              <details id="qrcode-detail-container">
+                <summary>QRコードを表示</summary>
                 <div class="qr-code" id="qrcode-detail"></div>
               </details>
             </li>
@@ -61,7 +111,19 @@
       </nav>
     </main>
   </div>
-  <!-- フッター等省略 -->
+
+  <div class="page-footer-area">
+    <div class="theme-controls-bar">
+      <div class="theme-selector">
+        <button id="theme-auto" aria-label="システムテーマ" data-theme-preference="auto">🌗</button>
+        <button id="theme-light" aria-label="ライトテーマ" data-theme-preference="light">☀️</button>
+        <button id="theme-dark" aria-label="ダークテーマ" data-theme-preference="dark">🌙</button>
+      </div>
+    </div>
+    <footer class="copyright-footer">
+      <p>&copy; <span id="current-year"></span> site-u</p>
+    </footer>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
   <script src="test.js"></script>
