@@ -40,29 +40,30 @@ document.addEventListener('DOMContentLoaded', () => {
   const sshCmdEncoded = encodeURIComponent(sshCommands);
 
   // ── テーマ切替（auto/light/dark）──
-  (function(){
-    const html    = document.documentElement;
-    const btns    = document.querySelectorAll('.theme-selector button');
-    // ★修正: localStorageのキー名を統一
-    const stored  = localStorage.getItem('site-u-theme') || 'auto';
-    function applyTheme(pref) {
-      const mode = pref === 'auto'
-        ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
-        : pref;
-      html.setAttribute('data-theme', mode);
-      btns.forEach(b => b.classList.toggle('selected', b.dataset.themePreference === pref));
-      // ★修正: localStorageのキー名を統一
-      localStorage.setItem('site-u-theme', pref);
-      updateAll(); // テーマ変更時にも全リンクを更新
+  // 以前の即時関数を削除し、グローバル関数として定義してDOMContentLoaded内で呼び出す
+  const html = document.documentElement;
+  const themeButtons = document.querySelectorAll('.theme-selector button');
+  const logoElement = document.getElementById('site-logo'); // ロゴ要素を取得
+
+  function applyTheme(pref) {
+    const mode = pref === 'auto'
+      ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+      : pref;
+    html.setAttribute('data-theme', mode);
+    
+    // ロゴの切り替え
+    if (logoElement) {
+        if (mode === 'dark') {
+            logoElement.src = 'img/openwrt_text_white_and_blue.svg'; // ダークテーマ用のロゴ
+        } else {
+            logoElement.src = 'img/openwrt_text_blue_and_dark_blue.svg'; // ライトテーマ用のロゴ
+        }
     }
-    btns.forEach(b => b.addEventListener('click', () => applyTheme(b.dataset.themePreference)));
-    window.matchMedia('(prefers-color-scheme: dark)')
-      .addEventListener('change', () => {
-        // ★修正: localStorageのキー名を統一
-        if ((localStorage.getItem('site-u-theme')||'auto') === 'auto') applyTheme('auto');
-      });
-    applyTheme(stored);
-  })();
+
+    themeButtons.forEach(b => b.classList.toggle('selected', b.dataset.themePreference === pref));
+    localStorage.setItem('site-u-theme', pref);
+    // updateAll(); // テーマ変更時にも全リンクを更新 (ロゴ切り替えで不要な場合あり、必要に応じて残す)
+  }
 
   // 年表示
   const yearEl = document.getElementById('current-year');
@@ -83,8 +84,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const canvas = document.createElement('canvas');
     qrContainer.appendChild(canvas);
 
-    const style    = getComputedStyle(document.body);
-    const darkColor  = style.getPropertyValue('--qr-dark').trim();
+    const style = getComputedStyle(document.body);
+    const darkColor = style.getPropertyValue('--qr-dark').trim();
     const lightColor = style.getPropertyValue('--qr-light').trim();
 
     QRCode.toCanvas(canvas, text, {
@@ -97,11 +98,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const input = document.getElementById('global-ip-input');
     if (!input) return;
 
-    // ★修正: IPアドレスのplaceholderも考慮し、正規化した値を取得
+    // IPアドレスのplaceholderも考慮し、正規化した値を取得
     const ip = toHalfWidth(input.value.trim()) || input.placeholder;
-    // ★修正: localStorageに保存するキー名を統一
     localStorage.setItem('site-u-ip', ip);
-
 
     // QRコード（details開閉時も再描画）
     const detailContainer = document.getElementById('qrcode-detail-container');
@@ -155,19 +154,20 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('input[type="text"]').forEach(inp => {
     inp.addEventListener('input', () => {
       const pos = inp.selectionStart;
-      const v   = toHalfWidth(inp.value);
+      const v = toHalfWidth(inp.value);
       if (v !== inp.value) {
         inp.value = v;
         inp.setSelectionRange(pos, pos);
       }
-      // 入力中に即座に反映 (以前のコードの動作)
+      // 入力中に即座に反映
       updateAll();
     });
   });
 
   // 更新ボタン・Enterキーで updateAll
   document.getElementById('global-ip-update')?.addEventListener('click', updateAll);
-  document.getElementById('global-ip-input')?.addEventListener('keydown', e => {
+  const globalIpInput = document.getElementById('global-ip-input'); // DOMContentLoaded内で定義
+  globalIpInput?.addEventListener('keydown', e => {
     if (e.key === 'Enter') {
       e.preventDefault();
       updateAll();
@@ -176,7 +176,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 言語切替機能
   const langButtons = document.querySelectorAll('.language-selector button');
-  // ★修正: localStorageのキー名を統一
   const currentLang = localStorage.getItem('lang-preference') || 'ja'; // デフォルトは日本語
 
   applyLanguage(currentLang);
@@ -184,7 +183,6 @@ document.addEventListener('DOMContentLoaded', () => {
   langButtons.forEach(button => {
     button.addEventListener('click', () => {
       const newLang = button.dataset.lang;
-      // ★修正: localStorageのキー名を統一
       localStorage.setItem('lang-preference', newLang);
       applyLanguage(newLang);
     });
@@ -207,8 +205,6 @@ document.addEventListener('DOMContentLoaded', () => {
         // preserve existing span for IP address in SSH/AIOS links
         if (key === 'sshConnection' || key === 'aiosExecution') {
           const ipSpanId = key === 'sshConnection' ? 'ssh-ip' : 'aios-ip';
-          // ★修正: updateAllからIPを取得するため、spansのテキストは変更しない
-          // element.innerHTML = langData[lang][key].replace(/<span id="ssh-ip">.*?<\/span>/, `<span id="${ipSpanId}">${currentIp}</span>`);
           element.innerHTML = langData[lang][key].replace(/<span id="(ssh|aios)-ip">.*?<\/span>/, `<span id="${ipSpanId}">${document.getElementById(ipSpanId).textContent}</span>`);
         } else {
           element.textContent = langData[lang][key];
@@ -217,9 +213,17 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 初回描画
-  // ★修正: ページロード時にlocalStorageからIPを読み込み、updateAllを呼び出す
+  // 初回描画（テーマとIPの初期適用）
+  // テーマの初期適用
+  const storedTheme = localStorage.getItem('site-u-theme') || 'auto';
+  window.matchMedia('(prefers-color-scheme: dark)')
+    .addEventListener('change', () => {
+      if ((localStorage.getItem('site-u-theme')||'auto') === 'auto') applyTheme('auto');
+    });
+  applyTheme(storedTheme); // IP読み込み前にテーマを適用してロゴをセット
+
+  // IPの初期ロード
   const initialIp = localStorage.getItem('site-u-ip') || globalIpInput.placeholder;
   globalIpInput.value = initialIp;
-  updateAll();
+  updateAll(); // IPの初期値で全リンクを更新
 });
