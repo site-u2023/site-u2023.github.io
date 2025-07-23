@@ -1,3 +1,36 @@
+cat <<'EOF' > script.js
+// ── 言語切替機能追加 ──
+const langData = {
+  en: {
+    deviceIP: 'Device IP Address',
+    terminal: 'Terminal',
+    update: 'Update',
+    sshHandler: 'Register SSH protocol handler for Windows (first-time use: download and double-click)',
+    sshConnection: 'SSH Connection (root@<span id="ssh-ip">192.168.1.1</span>)',
+    aiosExecution: 'Execute aios (root@<span id="aios-ip">192.168.1.1</span>)',
+    console: 'Console',
+    luciAdmin: 'LuCI (Admin Interface)',
+    ttydTerminal: 'ttyd (Web Terminal)',
+    githubRepo: 'GitHub Repository',
+    aiosScript: 'all in one script',
+    configSoftware: 'config-software (legacy)'
+  },
+  ja: {
+    deviceIP: 'デバイスIPアドレス',
+    terminal: 'ターミナル',
+    update: '更新',
+    sshHandler: 'SSHプロトコルハンドラー登録 (Windows用) ※初回のみ、ダウンロード後ダブルクリック',
+    sshConnection: 'SSH接続 (root@<span id="ssh-ip">192.168.1.1</span>)',
+    aiosExecution: 'aios実行 (root@<span id="aios-ip">192.168.1.1</span>)',
+    console: 'コンソール',
+    luciAdmin: 'LuCI (管理画面)',
+    ttydTerminal: 'ttyd (Webターミナル)',
+    githubRepo: 'GitHubリポジトリ',
+    aiosScript: 'all in one script',
+    configSoftware: 'config-software (旧版)'
+  }
+};
+
 document.addEventListener('DOMContentLoaded', () => {
   // ── SSHコマンド列（aios用）──
   const sshCommands = [
@@ -11,6 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
   (function(){
     const html    = document.documentElement;
     const btns    = document.querySelectorAll('.theme-selector button');
+    // ★修正: localStorageのキー名を統一
     const stored  = localStorage.getItem('site-u-theme') || 'auto';
     function applyTheme(pref) {
       const mode = pref === 'auto'
@@ -18,12 +52,14 @@ document.addEventListener('DOMContentLoaded', () => {
         : pref;
       html.setAttribute('data-theme', mode);
       btns.forEach(b => b.classList.toggle('selected', b.dataset.themePreference === pref));
+      // ★修正: localStorageのキー名を統一
       localStorage.setItem('site-u-theme', pref);
-      updateAll();
+      updateAll(); // テーマ変更時にも全リンクを更新
     }
     btns.forEach(b => b.addEventListener('click', () => applyTheme(b.dataset.themePreference)));
     window.matchMedia('(prefers-color-scheme: dark)')
       .addEventListener('change', () => {
+        // ★修正: localStorageのキー名を統一
         if ((localStorage.getItem('site-u-theme')||'auto') === 'auto') applyTheme('auto');
       });
     applyTheme(stored);
@@ -37,18 +73,18 @@ document.addEventListener('DOMContentLoaded', () => {
   function toHalfWidth(str) {
     return str
       .replace(/[\uFF01-\uFF5E]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0))
-      .replace(/\u3000/g, ' ');
+      .replace(/\u3000/g, ' '); // 全角スペースを半角スペースに
   }
 
   // QRコード描画
   function drawQRCode(elementId, text) {
     const qrContainer = document.getElementById(elementId);
-    if (!qrContainer || !window.QRCode) return;
+    if (!qrContainer || !window.QRCode) return; // QRCodeライブラリがあるか確認
     qrContainer.innerHTML = '';
     const canvas = document.createElement('canvas');
     qrContainer.appendChild(canvas);
 
-    const style      = getComputedStyle(document.body);
+    const style    = getComputedStyle(document.body);
     const darkColor  = style.getPropertyValue('--qr-dark').trim();
     const lightColor = style.getPropertyValue('--qr-light').trim();
 
@@ -61,7 +97,12 @@ document.addEventListener('DOMContentLoaded', () => {
   function updateAll() {
     const input = document.getElementById('global-ip-input');
     if (!input) return;
-    const ip = input.value.trim() || input.placeholder;
+
+    // ★修正: IPアドレスのplaceholderも考慮し、正規化した値を取得
+    const ip = toHalfWidth(input.value.trim()) || input.placeholder;
+    // ★修正: localStorageに保存するキー名を統一
+    localStorage.setItem('site-u-ip', ip);
+
 
     // QRコード（details開閉時も再描画）
     const detailContainer = document.getElementById('qrcode-detail-container');
@@ -120,6 +161,7 @@ document.addEventListener('DOMContentLoaded', () => {
         inp.value = v;
         inp.setSelectionRange(pos, pos);
       }
+      // 入力中に即座に反映 (以前のコードの動作)
       updateAll();
     });
   });
@@ -133,6 +175,53 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  // 言語切替機能
+  const langButtons = document.querySelectorAll('.language-selector button');
+  // ★修正: localStorageのキー名を統一
+  const currentLang = localStorage.getItem('lang-preference') || 'ja'; // デフォルトは日本語
+
+  applyLanguage(currentLang);
+
+  langButtons.forEach(button => {
+    button.addEventListener('click', () => {
+      const newLang = button.dataset.lang;
+      // ★修正: localStorageのキー名を統一
+      localStorage.setItem('lang-preference', newLang);
+      applyLanguage(newLang);
+    });
+  });
+
+  function applyLanguage(lang) {
+    // Update active button visual
+    langButtons.forEach(button => {
+      if (button.dataset.lang === lang) {
+        button.classList.add('selected');
+      } else {
+        button.classList.remove('selected');
+      }
+    });
+
+    // Apply translations
+    document.querySelectorAll('[data-i18n]').forEach(element => {
+      const key = element.getAttribute('data-i18n');
+      if (langData[lang] && langData[lang][key]) {
+        // preserve existing span for IP address in SSH/AIOS links
+        if (key === 'sshConnection' || key === 'aiosExecution') {
+          const ipSpanId = key === 'sshConnection' ? 'ssh-ip' : 'aios-ip';
+          // ★修正: updateAllからIPを取得するため、spansのテキストは変更しない
+          // element.innerHTML = langData[lang][key].replace(/<span id="ssh-ip">.*?<\/span>/, `<span id="${ipSpanId}">${currentIp}</span>`);
+          element.innerHTML = langData[lang][key].replace(/<span id="(ssh|aios)-ip">.*?<\/span>/, `<span id="${ipSpanId}">${document.getElementById(ipSpanId).textContent}</span>`);
+        } else {
+          element.textContent = langData[lang][key];
+        }
+      }
+    });
+  }
+
   // 初回描画
+  // ★修正: ページロード時にlocalStorageからIPを読み込み、updateAllを呼び出す
+  const initialIp = localStorage.getItem('site-u-ip') || globalIpInput.placeholder;
+  globalIpInput.value = initialIp;
   updateAll();
 });
+EOF
