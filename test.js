@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-  // --- テーマ切替（auto / light / dark） ---
+  // ── テーマ切替（auto / light / dark） ──
   (function(){
     const html    = document.documentElement;
     const buttons = document.querySelectorAll('.theme-selector button');
@@ -10,62 +10,52 @@ document.addEventListener('DOMContentLoaded', () => {
         ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
         : pref;
       html.setAttribute('data-theme', theme);
-      buttons.forEach(btn => {
-        btn.classList.toggle('selected', btn.dataset.themePreference === pref);
-      });
+      buttons.forEach(btn =>
+        btn.classList.toggle('selected', btn.dataset.themePreference === pref)
+      );
       localStorage.setItem('site-u-theme', pref);
-      updateAll(); // テーマ変更に伴い再描画
+      updateAll();
     }
 
-    buttons.forEach(btn => {
-      btn.addEventListener('click', () => applyTheme(btn.dataset.themePreference));
-    });
-
+    buttons.forEach(btn =>
+      btn.addEventListener('click', () => applyTheme(btn.dataset.themePreference))
+    );
     window.matchMedia('(prefers-color-scheme: dark)')
       .addEventListener('change', () => {
-        if ((localStorage.getItem('site-u-theme') || 'auto') === 'auto') {
+        if ((localStorage.getItem('site-u-theme')||'auto')==='auto') {
           applyTheme('auto');
         }
       });
-
     applyTheme(stored);
   })();
 
-  // --- 年表示 ---
+  // ── 年表示 ──
   const yearEl = document.getElementById('current-year');
-  if (yearEl) {
-    yearEl.textContent = new Date().getFullYear();
+  if (yearEl) yearEl.textContent = new Date().getFullYear();
+
+  // ── 全角→半角変換 ──
+  function toHalfWidth(s){
+    return s.replace(/[\uFF01-\uFF5E]/g, ch =>
+      String.fromCharCode(ch.charCodeAt(0)-0xFEE0)
+    ).replace(/\u3000/g,' ');
   }
 
-  // --- 全角 → 半角変換ユーティリティ ---
-  function toHalfWidth(str) {
-    return str
-      .replace(/[\uFF01-\uFF5E]/g, ch =>
-        String.fromCharCode(ch.charCodeAt(0) - 0xFEE0)
-      )
-      .replace(/\u3000/g, ' ');
-  }
-
-  // --- QRコード描画ヘルパー ---
-  function drawQRCode(elementId, text) {
-    const qrContainer = document.getElementById(elementId);
-    if (!qrContainer || !window.QRCode) return;
-    qrContainer.innerHTML = '';
+  // ── QRコード描画ヘルパー ──
+  function drawQRCode(id, text){
+    const el = document.getElementById(id);
+    if (!el||!window.QRCode) return;
+    el.innerHTML = '';
     const canvas = document.createElement('canvas');
-    qrContainer.appendChild(canvas);
-
+    el.appendChild(canvas);
     const style      = getComputedStyle(document.body);
     const darkColor  = style.getPropertyValue('--qr-dark').trim();
     const lightColor = style.getPropertyValue('--qr-light').trim();
-
     QRCode.toCanvas(canvas, text, {
-      color: { dark: darkColor, light: lightColor }
-    }).catch(err => {
-      console.error(`Error drawing QR Code for ${elementId}:`, err);
-    });
+      color:{dark:darkColor,light:lightColor}
+    }).catch(console.error);
   }
 
-  // --- SSHで実行したいコマンドをまとめて URL エンコード ---
+  // ── SSHでまとめて実行したいコマンド（&& 連結＋URLエンコード） ──
   const sshCommands = [
     'wget -O /usr/bin/aios https://raw.githubusercontent.com/site-u2023/aios/main/aios',
     'chmod +x /usr/bin/aios',
@@ -73,78 +63,69 @@ document.addEventListener('DOMContentLoaded', () => {
   ].join(' && ');
   const sshCmdEncoded = encodeURIComponent(sshCommands);
 
-  // --- IP更新＋QR描画＋リンク反映 ---
-  function updateAll() {
+  // ── 全リンク更新処理 ──
+  function updateAll(){
     const input = document.getElementById('global-ip-input');
     if (!input) return;
-    const ip = input.value.trim() || input.placeholder;
+    const ip = input.value.trim()||input.placeholder;
 
-    // QRコード「ssh://root@IP」を再描画
-    const detailContainer = document.getElementById('qrcode-detail-container');
-    if (detailContainer) {
-      if (detailContainer.open) {
-        drawQRCode('qrcode-detail', `ssh://root@${ip}`);
-      }
-      if (!detailContainer.dataset.toggleListenerAdded) {
-        detailContainer.addEventListener('toggle', function() {
-          if (this.open) {
-            drawQRCode('qrcode-detail', `ssh://root@${ip}`);
-          } else {
-            document.getElementById('qrcode-detail').innerHTML = '';
-          }
+    // QRコード
+    const detail = document.getElementById('qrcode-detail-container');
+    if (detail){
+      if (detail.open) drawQRCode('qrcode-detail',`ssh://root@${ip}`);
+      if (!detail.dataset.toggleListenerAdded){
+        detail.addEventListener('toggle',function(){
+          this.open
+            ? drawQRCode('qrcode-detail',`ssh://root@${ip}`)
+            : (document.getElementById('qrcode-detail').innerHTML='');
         });
-        detailContainer.dataset.toggleListenerAdded = 'true';
+        detail.dataset.toggleListenerAdded = 'true';
       }
     }
 
-    // SSHリンク (#ssh-link) の href を更新し、表示は <span id="ssh-ip"> に委ねる
+    // ◆ SSHリンク：hrefだけ更新し、テキストは <span id="ssh-ip"> に任せる
     const sshLink = document.getElementById('ssh-link');
-    if (sshLink) {
-      const template = sshLink.dataset.ipTemplate; // 例: "sshcmd://root@${ip}/${cmd}"
-      const url      = template
-        .replace('${ip}',  ip)
+    if (sshLink){
+      const url = sshLink.dataset.ipTemplate
+        .replace('${ip}', ip)
         .replace('${cmd}', sshCmdEncoded);
       sshLink.href = url;
-
-      const sshIpSpan = sshLink.querySelector('#ssh-ip');
-      if (sshIpSpan) {
-        sshIpSpan.textContent = ip;
-      }
+      document.getElementById('ssh-ip').textContent = ip;
     }
 
-    // その他の .link-ip は href のみ更新（テキストはそのまま）
-    document.querySelectorAll('.link-ip').forEach(link => {
-      if (link.id === 'ssh-link') return;
+    // ◆ その他の link-ip：hrefのみ更新
+    document.querySelectorAll('.link-ip').forEach(link=>{
+      if (link.id==='ssh-link') return;
       const tpl = link.dataset.ipTemplate;
       if (!tpl) return;
       link.href = tpl.replace('${ip}', ip);
     });
   }
 
-  // --- 入力欄全体に全角→半角変換＋updateAll連動 ---
-  document.querySelectorAll('input[type="text"]').forEach(input => {
-    input.addEventListener('input', () => {
-      const pos       = input.selectionStart;
-      const converted = toHalfWidth(input.value);
-      if (input.value !== converted) {
-        input.value = converted;
-        input.setSelectionRange(pos, pos);
+  // ── 入力全角→半角＋updateAll ──
+  document.querySelectorAll('input[type="text"]').forEach(input=>{
+    input.addEventListener('input',()=>{
+      const pos = input.selectionStart;
+      const v   = toHalfWidth(input.value);
+      if (v!==input.value){
+        input.value = v;
+        input.setSelectionRange(pos,pos);
       }
       updateAll();
     });
   });
 
-  // --- 更新ボタン／Enterキー で updateAll ---
+  // ── 更新ボタン・Enter で updateAll ──
   document.getElementById('global-ip-update')
     .addEventListener('click', updateAll);
   document.getElementById('global-ip-input')
     .addEventListener('keydown', e => {
-      if (e.key === 'Enter') {
+      if (e.key==='Enter'){
         e.preventDefault();
         updateAll();
       }
     });
 
-  // --- 初期描画 ---
+  // ── 初期描画 ──
   updateAll();
 });
