@@ -45,8 +45,6 @@ ul {
 /* ── ヘッダー ── */
 header {
   /* border-bottom: 2px solid var(--link-color); */
-  margin-bottom: 1.5em;
-  padding-bottom: 0.8em;
   position: relative; 
 }
 header .header-inner {
