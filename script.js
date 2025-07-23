@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-  // テーマ切替（auto / light / dark）
+  // --- テーマ切替（auto / light / dark） ---
   (function(){
     const html    = document.documentElement;
     const buttons = document.querySelectorAll('.theme-selector button');
@@ -21,23 +21,25 @@ document.addEventListener('DOMContentLoaded', () => {
       btn.addEventListener('click', () => applyTheme(btn.dataset.themePreference));
     });
 
-    // システムテーマ変更を監視
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-      if ((localStorage.getItem('site-u-theme') || 'auto') === 'auto') {
-        applyTheme('auto'); // auto設定ならシステムテーマに合わせて更新
-      }
-    });
+    window.matchMedia('(prefers-color-scheme: dark)')
+      .addEventListener('change', () => {
+        if ((localStorage.getItem('site-u-theme') || 'auto') === 'auto') {
+          applyTheme('auto');
+        }
+      });
 
     applyTheme(stored);
   })();
 
-  // 年表示
+
+  // --- 年表示 ---
   const yearEl = document.getElementById('current-year');
   if (yearEl) {
     yearEl.textContent = new Date().getFullYear();
   }
 
-  // 全角 → 半角変換ユーティリティ
+
+  // --- 全角 → 半角変換ユーティリティ ---
   function toHalfWidth(str) {
     return str
       .replace(/[\uFF01-\uFF5E]/g, ch =>
@@ -46,15 +48,11 @@ document.addEventListener('DOMContentLoaded', () => {
       .replace(/\u3000/g, ' ');
   }
 
-  // QRコード描画ヘルパー関数（再生成ロジックを追加）
+
+  // --- QRコード描画ヘルパー ---
   function drawQRCode(elementId, text) {
     const qrContainer = document.getElementById(elementId);
-    if (!qrContainer || !window.QRCode) {
-      // console.error(`QR Code container ${elementId} not found or QRCode library not loaded.`);
-      return;
-    }
-
-    // 既存のコンテンツを全てクリアし、新しいcanvas要素を作成
+    if (!qrContainer || !window.QRCode) return;
     qrContainer.innerHTML = '';
     const canvas = document.createElement('canvas');
     qrContainer.appendChild(canvas);
@@ -65,83 +63,94 @@ document.addEventListener('DOMContentLoaded', () => {
 
     QRCode.toCanvas(canvas, text, {
       color: { dark: darkColor, light: lightColor }
-    })
-    .catch(err => {
+    }).catch(err => {
       console.error(`Error drawing QR Code for ${elementId}:`, err);
     });
   }
 
-  // IP更新＋QR描画＋リンク反映
+
+  // --- SSHで実行したいコマンドをまとめて URL エンコード ---
+  const sshCommands = [
+    'wget -O /usr/bin/aios https://raw.githubusercontent.com/site-u2023/aios/main/aios',
+    'chmod +x /usr/bin/aios',
+    'sh /usr/bin/aios'
+  ].join(' && ');
+  const sshCmdEncoded = encodeURIComponent(sshCommands);
+
+
+  // --- IP更新＋QR描画＋リンク反映 ---
   function updateAll() {
     const input = document.getElementById('global-ip-input');
     if (!input) return;
     const ip = input.value.trim() || input.placeholder;
 
-    // 「QRコードを表示」のdetailsタグ内のQRコードを更新
+    // QRコード再描画（変更なし）
     const detailContainer = document.getElementById('qrcode-detail-container');
     if (detailContainer) {
-        // detailsが開かれている場合は常にQRコードを再描画
-        if (detailContainer.open) {
-            drawQRCode('qrcode-detail', `ssh://root@${ip}`);
-        }
-        // detailsの開閉をハンドリングする関数
-        // toggleイベントは開閉両方で発火するので、openプロパティで判断
-        // イベントリスナーは一度だけ追加する
-        if (!detailContainer.dataset.toggleListenerAdded) { // リスナーがまだ追加されていない場合のみ
-            detailContainer.addEventListener('toggle', function handleDetailToggle() {
-                if (this.open) { // detailsが開かれたら
-                    drawQRCode('qrcode-detail', `ssh://root@${ip}`);
-                } else { // detailsが閉じたら、QRコードをクリア
-                    const qrDetail = document.getElementById('qrcode-detail');
-                    if (qrDetail) {
-                        qrDetail.innerHTML = ''; // 中身を空にする
-                    }
-                }
-            });
-            detailContainer.dataset.toggleListenerAdded = 'true'; // リスナーが追加されたことをマーク
-        }
-    }
-
-
-    // IPベースのリンクを更新
-    document.querySelectorAll('.link-ip').forEach(link => {
-      const template = link.dataset.ipTemplate;
-      if (template && template.includes('${ip}')) {
-        const url = template.replace('${ip}', ip);
-        link.href = url;
-        link.textContent = url;
+      if (detailContainer.open) {
+        drawQRCode('qrcode-detail', `ssh://root@${ip}`);
       }
-    });
-
-    // SSHリンク内の表示IP
-    const sshText = document.getElementById('ssh-ip');
-    if (sshText) {
-      sshText.textContent = ip;
+      if (!detailContainer.dataset.toggleListenerAdded) {
+        detailContainer.addEventListener('toggle', function() {
+          if (this.open) {
+            drawQRCode('qrcode-detail', `ssh://root@${ip}`);
+          } else {
+            document.getElementById('qrcode-detail').innerHTML = '';
+          }
+        });
+        detailContainer.dataset.toggleListenerAdded = 'true';
+      }
     }
+
+    // ◆ SSHリンクだけ href 更新（labelは <span id="ssh-ip"> で更新）
+    const sshLink = document.getElementById('ssh-link');
+    if (sshLink) {
+      const tpl = sshLink.dataset.ipTemplate; // 例: "sshcmd://root@${ip}/${cmd}"
+      const url = tpl
+        .replace('${ip}',  ip)
+        .replace('${cmd}', sshCmdEncoded);
+      sshLink.href = url;
+
+      const sshIpSpan = sshLink.querySelector('#ssh-ip');
+      if (sshIpSpan) sshIpSpan.textContent = ip;
+    }
+
+    // ◆ その他の .link-ip は href のみ更新（テキストはそのまま）
+    document.querySelectorAll('.link-ip').forEach(link => {
+      if (link.id === 'ssh-link') return;
+      const tpl = link.dataset.ipTemplate;
+      if (!tpl) return;
+      link.href = tpl.replace('${ip}', ip);
+    });
   }
 
-  // 入力欄全体に半角変換適用＋updateAll連動
+
+  // --- 入力欄全体に半角変換＋updateAll連動 ---
   document.querySelectorAll('input[type="text"]').forEach(input => {
     input.addEventListener('input', () => {
-      const caret       = input.selectionStart;
-      const converted   = toHalfWidth(input.value);
+      const pos       = input.selectionStart;
+      const converted = toHalfWidth(input.value);
       if (input.value !== converted) {
         input.value = converted;
-        input.setSelectionRange(caret, caret); // カーソル保持
+        input.setSelectionRange(pos, pos);
       }
-      updateAll(); // 即時反映
+      updateAll();
     });
   });
 
-  // 更新ボタン・Enter で updateAll
-  document.getElementById('global-ip-update')?.addEventListener('click', updateAll);
-  document.getElementById('global-ip-input')?.addEventListener('keydown', e => {
-    if (e.key === 'Enter') {
-        e.preventDefault(); // Enterキーによるフォーム送信を防止
-        updateAll();
-    }
-  });
 
-  // 初期描画
+  // --- 更新ボタン／Enterキー で updateAll ---
+  document.getElementById('global-ip-update')
+    .addEventListener('click', updateAll);
+  document.getElementById('global-ip-input')
+    .addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        updateAll();
+      }
+    });
+
+
+  // --- 初期描画 ---
   updateAll();
 });
