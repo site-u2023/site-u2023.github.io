@@ -11,6 +11,11 @@
     <header>
       <div class="logo">
         <img src="file/OpenWrt_Logo.svg" alt="OpenWrt Logo" class="logo">
+        <div class="language-selector">
+          <button id="lang-en" data-lang="en">EN</button>
+          <span class="separator">|</span>
+          <button id="lang-ja" data-lang="ja" class="selected">JA</button>
+        </div>
       </div>
       <h1>
       </h1>
@@ -18,7 +23,7 @@
     <main>
       <nav>
         <section id="device-ip">
-          <h2>デバイスIPアドレス</h2>
+          <h2 data-i18n="deviceIP">デバイスIPアドレス</h2>
           <div class="connection">
             <div class="ip-address">
               <input
@@ -27,15 +32,15 @@
                 value="192.168.1.1"
                 placeholder="192.168.0.1"
               >
-              <button id="global-ip-update" type="button">更新</button>
+              <button id="global-ip-update" type="button" data-i18n="update">更新</button>
             </div>
           </div>
         </section>
         <section id="terminal">
-          <h2>ターミナル</h2>
+          <h2 data-i18n="terminal">ターミナル</h2>
           <ul>
             <li>
-              <a href="file/sshcmd.reg" download>
+              <a href="file/sshcmd.reg" download data-i18n="sshHandler">
                 SSH用プロトコルハンドラー登録 (Windows用) ※初回のみ利用 (DL後ダブルクリック)
               </a>
             </li>
@@ -47,6 +52,7 @@
                 href="#"
                 target="_blank"
                 rel="noopener"
+                data-i18n="sshConnection"
               >
                 SSH接続 (root@<span id="ssh-ip">192.168.1.1</span>)
               </a>
@@ -59,6 +65,7 @@
                 href="#"
                 target="_blank"
                 rel="noopener"
+                data-i18n="aiosExecution"
               >
                 aios実行 (root@<span id="aios-ip">192.168.1.1</span>)
               </a>
@@ -66,7 +73,7 @@
           </ul>
         </section>
         <section id="local-services">
-          <h2>コンソール</h2>
+          <h2 data-i18n="console">コンソール</h2>
           <ul>
             <li>
               <a
@@ -75,6 +82,7 @@
                 href="#"
                 target="_blank"
                 rel="noopener"
+                data-i18n="luciAdmin"
               >
                 LuCI (管理画面)
               </a>
@@ -86,6 +94,7 @@
                 href="#"
                 target="_blank"
                 rel="noopener"
+                data-i18n="ttydTerminal"
               >
                 ttyd (Webターミナル)
               </a>
@@ -93,10 +102,10 @@
           </ul>
         </section>
         <section id="project">
-          <h2>GitHubリポジトリ</h2>
+          <h2 data-i18n="githubRepo">GitHubリポジトリ</h2>
           <ul>
-            <li><a href="https://github.com/site-u2023/aios/blob/main/README.md" target="_blank" rel="noopener">all in one script</a></li>
-            <li><a href="https://github.com/site-u2023/config-software/blob/main/README.md" target="_blank" rel="noopener">config-software (旧版)</a></li>
+            <li><a href="https://github.com/site-u2023/aios/blob/main/README.md" target="_blank" rel="noopener" data-i18n="aiosScript">all in one script</a></li>
+            <li><a href="https://github.com/site-u2023/config-software/blob/main/README.md" target="_blank" rel="noopener" data-i18n="configSoftware">config-software (旧版)</a></li>
           </ul>
         </section>
       </nav>
