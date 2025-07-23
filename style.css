@@ -49,6 +49,12 @@ header {
   padding-bottom: 0.8em;
   position: relative; 
 }
+header .header-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
 header h1 {
   margin: 0;
   font-size: 5vw;
@@ -68,15 +74,10 @@ header .logo img {
   margin: 0 auto;
 }
 
-/* 言語切替ボタンはロゴ枠外右下・独立表示 */
 .language-selector {
-  position: absolute;
-  right: 0;
-  bottom: -34px; /* 枠外にするためマイナス値。必要により調整可 */
   display: flex;
+  align-items: center;
   gap: 4px;
-  z-index: 2;
-  margin-right: 8px;
 }
 
 /* ── コンテナ ── */
