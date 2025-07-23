@@ -1,4 +1,3 @@
-cat <<'EOF' > script.js
 // ── 言語切替機能追加 ──
 const langData = {
   en: {
@@ -224,4 +223,3 @@ document.addEventListener('DOMContentLoaded', () => {
   globalIpInput.value = initialIp;
   updateAll();
 });
-EOF
