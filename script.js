@@ -139,8 +139,6 @@ document.addEventListener('DOMContentLoaded', () => {
   if (inputEl && !inputEl.value) {
     inputEl.value = inputEl.placeholder;
     updateAll();
-  }   
-    });
   }
   // ── ここまで追加 ──
 
