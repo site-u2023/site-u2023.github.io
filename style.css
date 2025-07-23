@@ -62,7 +62,7 @@ header .logo {
   position: relative;
 }
 header .logo img {
-  width: 80;
+  width: 80%;
   height: auto;
   display: block;
   margin: 0 auto;
