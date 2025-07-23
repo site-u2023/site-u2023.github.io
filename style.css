@@ -64,7 +64,7 @@ header .logo {
 }
 
 header .logo img {
-  width: 80%; /* 親要素（.logo）に対して80%の幅 */
+  width: 100%;
   height: auto;
   display: block; /* 中央寄せのためにブロック要素にする */
   margin: 0 auto; /* ロゴを中央寄せにする */
