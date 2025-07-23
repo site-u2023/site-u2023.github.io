@@ -59,11 +59,26 @@ document.addEventListener('DOMContentLoaded', () => {
   globalIpInput.value = savedIp;
   updateLinks(savedIp);
 
+  // ★IPアドレスの変更を即時反映するためのイベントリスナーを追加
+  globalIpInput.addEventListener('input', () => {
+    // 全角文字を半角に変換（正規化）
+    const normalizedIp = normalizeInput(globalIpInput.value);
+    globalIpInput.value = normalizedIp; // 入力フィールドの表示も更新
+    updateLinks(normalizedIp); // リンクも即時更新
+  });
+
   globalIpUpdate.addEventListener('click', () => {
     const newIp = globalIpInput.value;
     localStorage.setItem('globalIp', newIp);
     updateLinks(newIp);
   });
+
+  // ★全角文字を半角に変換する関数
+  function normalizeInput(str) {
+    return str.replace(/[Ａ-Ｚａ-ｚ０-９．]/g, function(s) {
+      return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
+    }).replace(/。/g, '.'); // 全角の句点も半角ドットに変換
+  }
 
   function updateLinks(ip) {
     // SSH Connection Link
