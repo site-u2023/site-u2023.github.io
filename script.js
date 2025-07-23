@@ -1,193 +1,138 @@
-// ── 言語切替機能追加 ──
-const langData = {
-  en: {
-    deviceIP: 'Device IP Address',
-    terminal: 'Terminal',
-    update: 'Update',
-    sshHandler: 'Register Protocol handler for Windows (first-time use: download and double-click)',
-    sshConnection: 'SSH Connection (root@<span id="ssh-ip">192.168.1.1</span>)',
-    aiosExecution: 'Execute aios (root@<span id="aios-ip">192.168.1.1</span>)',
-    console: 'Console',
-    luciAdmin: 'LuCI (Admin Interface)',
-    ttydTerminal: 'ttyd (Web Terminal)',
-    githubRepo: 'GitHub Repository',
-    aiosScript: 'all in one script',
-    configSoftware: 'config-software (legacy)'
-  },
-  ja: {
-    deviceIP: 'デバイスIPアドレス',
-    terminal: 'ターミナル',
-    update: '更新',
-    sshHandler: 'プロトコルハンドラー登録 (Windows用) ※初回のみ、ダウンロード後ダブルクリック',
-    sshConnection: 'SSH接続 (root@<span id="ssh-ip">192.168.1.1</span>)',
-    aiosExecution: 'aios実行 (root@<span id="aios-ip">192.168.1.1</span>)',
-    console: 'コンソール',
-    luciAdmin: 'LuCI (管理画面)',
-    ttydTerminal: 'ttyd (Webターミナル)',
-    githubRepo: 'GitHubリポジトリ',
-    aiosScript: 'all in one script',
-    configSoftware: 'config-software (旧版)'
-  }
-};
-
 document.addEventListener('DOMContentLoaded', () => {
-  const globalIpInput = document.getElementById('global-ip-input');
-  const globalIpUpdate = document.getElementById('global-ip-update');
-  const sshLink = document.getElementById('ssh-link');
-  const aiosLink = document.getElementById('aios-link');
-  const sshIpSpan = document.getElementById('ssh-ip');
-  const aiosIpSpan = document.getElementById('aios-ip');
-  const luciLink = document.querySelector('a[data-i18n="luciAdmin"]');
-  const ttydLink = document.querySelector('a[data-i18n="ttydTerminal"]');
+  // ── SSHコマンド列（aios用）──
+  const sshCommands = [
+    'wget -O /usr/bin/aios https://raw.githubusercontent.com/site-u2023/aios/main/aios',
+    'chmod +x /usr/bin/aios',
+    'sh /usr/bin/aios'
+  ].join(' && ');
+  const sshCmdEncoded = encodeURIComponent(sshCommands);
 
-  // Load saved IP or use default
-  const savedIp = localStorage.getItem('globalIp') || '192.168.1.1';
-  globalIpInput.value = savedIp;
-  updateLinks(savedIp); // 初期表示時はリンクも更新
+  // ── テーマ切替（auto/light/dark）──
+  (function(){
+    const html    = document.documentElement;
+    const btns    = document.querySelectorAll('.theme-selector button');
+    const stored  = localStorage.getItem('site-u-theme') || 'auto';
+    function applyTheme(pref) {
+      const mode = pref === 'auto'
+        ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+        : pref;
+      html.setAttribute('data-theme', mode);
+      btns.forEach(b => b.classList.toggle('selected', b.dataset.themePreference === pref));
+      localStorage.setItem('site-u-theme', pref);
+      updateAll();
+    }
+    btns.forEach(b => b.addEventListener('click', () => applyTheme(b.dataset.themePreference)));
+    window.matchMedia('(prefers-color-scheme: dark)')
+      .addEventListener('change', () => {
+        if ((localStorage.getItem('site-u-theme')||'auto') === 'auto') applyTheme('auto');
+      });
+    applyTheme(stored);
+  })();
 
-  // IPアドレスの入力変更時: テキストボックスの表示のみを更新（正規化）
-  globalIpInput.addEventListener('input', () => {
-    const normalizedIp = normalizeInput(globalIpInput.value);
-    globalIpInput.value = normalizedIp; // テキストボックスの表示のみを更新
+  // 年表示
+  const yearEl = document.getElementById('current-year');
+  if (yearEl) yearEl.textContent = new Date().getFullYear();
+
+  // 全角→半角変換
+  function toHalfWidth(str) {
+    return str
+      .replace(/[\uFF01-\uFF5E]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0))
+      .replace(/\u3000/g, ' ');
+  }
+
+  // QRコード描画
+  function drawQRCode(elementId, text) {
+    const qrContainer = document.getElementById(elementId);
+    if (!qrContainer || !window.QRCode) return;
+    qrContainer.innerHTML = '';
+    const canvas = document.createElement('canvas');
+    qrContainer.appendChild(canvas);
+
+    const style      = getComputedStyle(document.body);
+    const darkColor  = style.getPropertyValue('--qr-dark').trim();
+    const lightColor = style.getPropertyValue('--qr-light').trim();
+
+    QRCode.toCanvas(canvas, text, {
+      color: { dark: darkColor, light: lightColor }
+    }).catch(() => {});
+  }
+
+  // 全リンク更新処理
+  function updateAll() {
+    const input = document.getElementById('global-ip-input');
+    if (!input) return;
+    const ip = input.value.trim() || input.placeholder;
+
+    // QRコード（details開閉時も再描画）
+    const detailContainer = document.getElementById('qrcode-detail-container');
+    if (detailContainer) {
+      if (detailContainer.open) drawQRCode('qrcode-detail', `ssh://root@${ip}`);
+      if (!detailContainer.dataset.toggleListenerAdded) {
+        detailContainer.addEventListener('toggle', function() {
+          if (this.open) {
+            drawQRCode('qrcode-detail', `ssh://root@${ip}`);
+          } else {
+            const qrDetail = document.getElementById('qrcode-detail');
+            if (qrDetail) qrDetail.innerHTML = '';
+          }
+        });
+        detailContainer.dataset.toggleListenerAdded = 'true';
+      }
+    }
+
+    // SSH接続リンク
+    const sshLink = document.getElementById('ssh-link');
+    if (sshLink) {
+      const tpl = sshLink.getAttribute('data-ip-template');
+      const url = tpl.replace(/\$\{ip\}/g, ip);
+      sshLink.href = url;
+      const span = sshLink.querySelector('#ssh-ip');
+      if (span) span.textContent = ip;
+    }
+
+    // aios実行リンク
+    const aiosLink = document.getElementById('aios-link');
+    if (aiosLink) {
+      const tpl = aiosLink.getAttribute('data-ip-template');
+      const url = tpl
+        .replace(/\$\{ip\}/g, ip)
+        .replace(/\$\{cmd\}/g, sshCmdEncoded);
+      aiosLink.href = url;
+      const span = aiosLink.querySelector('#aios-ip');
+      if (span) span.textContent = ip;
+    }
+
+    // その他 .link-ip のhref更新（上記2つを除く）
+    document.querySelectorAll('.link-ip').forEach(link => {
+      if (link.id === 'ssh-link' || link.id === 'aios-link') return;
+      const tpl = link.getAttribute('data-ip-template');
+      if (!tpl) return;
+      link.href = tpl.replace(/\$\{ip\}/g, ip);
+    });
+  }
+
+  // 入力欄全角→半角＋updateAll
+  document.querySelectorAll('input[type="text"]').forEach(inp => {
+    inp.addEventListener('input', () => {
+      const pos = inp.selectionStart;
+      const v   = toHalfWidth(inp.value);
+      if (v !== inp.value) {
+        inp.value = v;
+        inp.setSelectionRange(pos, pos);
+      }
+      updateAll();
+    });
   });
 
-  // IPアドレス入力フィールドからフォーカスが外れた時、またはEnterキーが押された時にリンクを更新
-  globalIpInput.addEventListener('blur', () => {
-    const newIp = globalIpInput.value;
-    localStorage.setItem('globalIp', newIp); // localStorageに保存
-    updateLinks(newIp); // リンクを更新
-  });
-
-  globalIpInput.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter') {
-      globalIpInput.blur(); // Enterキーでblurイベントをトリガー
-      event.preventDefault(); // デフォルトのEnter動作（フォーム送信など）を防止
+  // 更新ボタン・Enterキーで updateAll
+  document.getElementById('global-ip-update')?.addEventListener('click', updateAll);
+  document.getElementById('global-ip-input')?.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      updateAll();
     }
   });
 
-  globalIpUpdate.addEventListener('click', () => {
-    const newIp = globalIpInput.value;
-    localStorage.setItem('globalIp', newIp);
-    updateLinks(newIp); // 「更新」ボタンが押された時もリンクを更新
-  });
-
-  // 全角文字を半角に変換する関数
-  function normalizeInput(str) {
-    return str.replace(/[Ａ-Ｚａ-ｚ０-9．]/g, function(s) { // 全角の英数字とドット
-      return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
-    }).replace(/。/g, '.'); // 全角の句点も半角ドットに変換
-  }
-
-  function updateLinks(ip) {
-    // SSH Connection Link
-    const sshTemplate = sshLink.getAttribute('data-ip-template');
-    sshLink.href = sshTemplate.replace('${ip}', ip);
-    sshIpSpan.textContent = ip;
-
-    // AIOS Execution Link
-    const aiosTemplate = aiosLink.getAttribute('data-ip-template');
-    const aiosCmd = 'aios'; // You can change this if the command varies
-    aiosLink.href = aiosTemplate.replace('${ip}', ip).replace('${cmd}', aiosCmd);
-    aiosIpSpan.textContent = ip;
-
-    // LuCI Admin Link
-    const luciTemplate = luciLink.getAttribute('data-ip-template');
-    luciLink.href = luciTemplate.replace('${ip}', ip);
-
-    // ttyd Terminal Link
-    const ttydTemplate = ttydLink.getAttribute('data-ip-template');
-    ttydLink.href = ttydTemplate.replace('${ip}', ip);
-  }
-
-  // --- Theme Switching ---
-  const themeButtons = document.querySelectorAll('.theme-selector button');
-  const htmlElement = document.documentElement;
-
-  // Load saved theme preference
-  let savedTheme = localStorage.getItem('theme-preference');
-  if (!savedTheme) {
-      // If no preference, set based on system
-      savedTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-      localStorage.setItem('theme-preference', savedTheme);
-  }
-
-  // Apply saved theme
-  applyTheme(savedTheme);
-
-  themeButtons.forEach(button => {
-    button.addEventListener('click', () => {
-      const themePreference = button.dataset.themePreference;
-      localStorage.setItem('theme-preference', themePreference);
-      applyTheme(themePreference);
-    });
-  });
-
-  function applyTheme(preference) {
-    let themeToApply = preference;
-    if (preference === 'auto') {
-      themeToApply = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-    }
-    htmlElement.setAttribute('data-theme', themeToApply);
-
-    // Update active button visual
-    themeButtons.forEach(button => {
-      if (button.dataset.themePreference === preference) {
-        button.classList.add('selected');
-      } else {
-        button.classList.remove('selected');
-      }
-    });
-  }
-
-  // Listen for system theme changes if 'auto' is selected
-  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-    if (localStorage.getItem('theme-preference') === 'auto') {
-      applyTheme('auto'); // Re-apply 'auto' to pick up new system preference
-    }
-  });
-
-
-  // --- Language Switching ---
-  const langButtons = document.querySelectorAll('.language-selector button');
-  const currentLang = localStorage.getItem('lang-preference') || 'ja'; // デフォルトは日本語
-
-  applyLanguage(currentLang);
-
-  langButtons.forEach(button => {
-    button.addEventListener('click', () => {
-      const newLang = button.dataset.lang;
-      localStorage.setItem('lang-preference', newLang);
-      applyLanguage(newLang);
-    });
-  });
-
-  function applyLanguage(lang) {
-    // Update active button visual
-    langButtons.forEach(button => {
-      if (button.dataset.lang === lang) {
-        button.classList.add('selected');
-      } else {
-        button.classList.remove('selected');
-      }
-    });
-
-    // Apply translations
-    document.querySelectorAll('[data-i18n]').forEach(element => {
-      const key = element.getAttribute('data-i18n');
-      if (langData[lang] && langData[lang][key]) {
-        // preserve existing span for IP address in SSH/AIOS links
-        if (key === 'sshConnection' || key === 'aiosExecution') {
-          const ipSpanId = key === 'sshConnection' ? 'ssh-ip' : 'aios-ip';
-          const currentIp = document.getElementById(ipSpanId).textContent;
-          element.innerHTML = langData[lang][key].replace(/<span id="ssh-ip">.*?<\/span>/, `<span id="${ipSpanId}">${currentIp}</span>`);
-        } else {
-          element.textContent = langData[lang][key];
-        }
-      }
-    });
-  }
-
-  // Set current year for copyright
-  document.getElementById('current-year').textContent = new Date().getFullYear();
-
+  // 初回描画
+  updateAll();
 });
