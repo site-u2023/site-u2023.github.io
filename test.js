@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-  // テーマ切替（auto / light / dark）
+  // --- テーマ切替（auto / light / dark） ---
   (function(){
     const html    = document.documentElement;
     const buttons = document.querySelectorAll('.theme-selector button');
@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     window.matchMedia('(prefers-color-scheme: dark)')
-      .addEventListener('change', (e) => {
+      .addEventListener('change', () => {
         if ((localStorage.getItem('site-u-theme') || 'auto') === 'auto') {
           applyTheme('auto');
         }
@@ -31,13 +31,15 @@ document.addEventListener('DOMContentLoaded', () => {
     applyTheme(stored);
   })();
 
-  // 年表示
+
+  // --- 年表示 ---
   const yearEl = document.getElementById('current-year');
   if (yearEl) {
     yearEl.textContent = new Date().getFullYear();
   }
 
-  // 全角 → 半角変換ユーティリティ
+
+  // --- 全角 → 半角変換ユーティリティ ---
   function toHalfWidth(str) {
     return str
       .replace(/[\uFF01-\uFF5E]/g, ch =>
@@ -46,7 +48,8 @@ document.addEventListener('DOMContentLoaded', () => {
       .replace(/\u3000/g, ' ');
   }
 
-  // QRコード描画ヘルパー
+
+  // --- QRコード描画ヘルパー ---
   function drawQRCode(elementId, text) {
     const qrContainer = document.getElementById(elementId);
     if (!qrContainer || !window.QRCode) return;
@@ -65,21 +68,23 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // SSHで実行したいコマンドをまとめて URL エンコード
+
+  // --- SSHで実行したいコマンドをまとめて URL エンコード ---
   const sshCommands = [
-    'wget -O /usr/bin/aios https://raw.githubusercontent.com/site-u2023/aios/HEAD/aios',
+    'wget -O /usr/bin/aios https://raw.githubusercontent.com/site-u2023/aios/main/aios',
     'chmod +x /usr/bin/aios',
     'sh /usr/bin/aios'
   ].join(' && ');
   const sshCmdEncoded = encodeURIComponent(sshCommands);
 
-  // IP更新＋QR描画＋リンク反映
+
+  // --- IP更新＋QR描画＋リンク反映 ---
   function updateAll() {
     const input = document.getElementById('global-ip-input');
     if (!input) return;
     const ip = input.value.trim() || input.placeholder;
 
-    // 「QRコードを表示」内の描画
+    // QRコード「ssh://root@IP」を再描画
     const detailContainer = document.getElementById('qrcode-detail-container');
     if (detailContainer) {
       if (detailContainer.open) {
@@ -100,30 +105,31 @@ document.addEventListener('DOMContentLoaded', () => {
     // SSHリンク (#ssh-link) にコマンド付きURLを埋め込む
     const sshLink = document.getElementById('ssh-link');
     if (sshLink) {
-      const base = sshLink.dataset.ipTemplate.replace('${ip}', ip);
-      const url  = `${base}/${sshCmdEncoded}`;
+      const template = sshLink.dataset.ipTemplate;                  // 例: "sshcmd://root@${ip}/${cmd}"
+      const base     = template.replace('${ip}', ip);
+      const url      = base.replace('${cmd}', sshCmdEncoded);
       sshLink.href        = url;
       sshLink.textContent = url;
     }
 
-    // 他の .link-ip
+    // その他の .link-ip を更新
     document.querySelectorAll('.link-ip').forEach(link => {
       if (link.id === 'ssh-link') return;
-      const template = link.dataset.ipTemplate;
-      if (!template) return;
-      const url = template.replace('${ip}', ip);
-      link.href        = url;
-      link.textContent = url;
+      const tpl = link.dataset.ipTemplate;
+      if (!tpl) return;
+      link.href        = tpl.replace('${ip}', ip);
+      link.textContent = link.href;
     });
 
-    // SSHリンク内の表示IP（必要に応じて）
+    // SSHリンク表示IPの更新
     const sshText = document.getElementById('ssh-ip');
     if (sshText) {
       sshText.textContent = ip;
     }
   }
 
-  // 入力欄全体に半角変換＋updateAll連動
+
+  // --- 入力欄全体に全角→半角変換＋updateAll連動 ---
   document.querySelectorAll('input[type="text"]').forEach(input => {
     input.addEventListener('input', () => {
       const pos       = input.selectionStart;
@@ -136,7 +142,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // 更新ボタン・Enterキーで updateAll
+
+  // --- 更新ボタン／Enterキー で updateAll ---
   document.getElementById('global-ip-update')
     ?.addEventListener('click', updateAll);
   document.getElementById('global-ip-input')
@@ -147,6 +154,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
-  // 初期描画
+
+  // --- 初期描画 ---
   updateAll();
 });
