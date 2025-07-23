@@ -30,49 +30,59 @@ const langData = {
   }
 };
 
-// グローバルスコープで要素を定義（DOM構築後に値が設定される）
-let html;
-let themeButtons;
-let logoElement;
-let globalIpInput; // ここで宣言しておきます
+// グローバルスコープで要素を宣言（DOMContentLoadedで初期化する）
+let htmlElement; // html変数と被らないように名称変更
+let themeToggleButtons; // themeButtonsと被らないように名称変更
+let siteLogoElement; // logoElementと被らないように名称変更
+let ipInputControl; // globalIpInputと被らないように名称変更
 
-// applyTheme関数をDOMContentLoadedの外で定義
+// テーマ切り替えボタンの表示を更新する関数
+function updateThemeToggleButtons(currentThemePreference) {
+    if (!themeToggleButtons) return; 
+    themeToggleButtons.forEach(button => {
+        if (button.dataset.themePreference === currentThemePreference) {
+            button.classList.add('selected');
+        } else {
+            button.classList.remove('selected');
+        }
+    });
+}
+
+// テーマを適用する関数
 function applyTheme(pref) {
-    // DOM要素が利用可能かチェック
-    if (!html || !themeButtons || !logoElement) {
-        // DOMがまだロードされていない場合は、DOMContentLoadedリスナー内で再試行
-        // または、初期ロード時にはDOM要素の存在を前提としないようにする
-        // 今回はDOMContentLoaded内で初期呼び出しを行うため、この分岐は不要になりますが念のため
-        return;
+    // 要素がDOMContentLoadedで確実に初期化されていることを前提とする
+    if (!htmlElement || !themeToggleButtons || !siteLogoElement) {
+        // もしDOMContentLoadedより前に呼ばれることがあれば、ここで要素がnullの場合のハンドリングが必要だが、
+        // 今回のフローではDOMContentLoaded内で初期化してから呼ぶため、このチェックは主に早期終了のため
+        return; 
     }
 
     const mode = pref === 'auto'
         ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
         : pref;
     
-    html.setAttribute('data-theme', mode);
+    htmlElement.setAttribute('data-theme', mode);
     
     // ロゴの切り替え
-    if (logoElement) {
-        if (mode === 'dark') {
-            logoElement.src = 'img/openwrt_text_white_and_blue.svg'; // ダークテーマ用のロゴ
-        } else {
-            logoElement.src = 'img/openwrt_text_blue_and_dark_blue.svg'; // ライトテーマ用のロゴ
-        }
+    if (mode === 'dark') {
+        siteLogoElement.src = 'img/openwrt_text_white_and_blue.svg'; // ダークテーマ用のロゴ
+    } else {
+        siteLogoElement.src = 'img/openwrt_text_blue_and_dark_blue.svg'; // ライトテーマ用のロゴ
     }
 
-    themeButtons.forEach(b => b.classList.toggle('selected', b.dataset.themePreference === pref));
+    // ボタンの見た目を更新
+    updateThemeToggleButtons(pref);
+
     localStorage.setItem('site-u-theme', pref);
-    // updateAll(); // テーマ変更時にも全リンクを更新 (ロゴ切り替えで不要な場合あり、必要に応じて残す)
 }
 
 
 document.addEventListener('DOMContentLoaded', () => {
-  // DOM要素の参照を初期化
-  html = document.documentElement;
-  themeButtons = document.querySelectorAll('.theme-selector button');
-  logoElement = document.getElementById('site-logo');
-  globalIpInput = document.getElementById('global-ip-input');
+  // DOM要素の参照をDOMContentLoadedイベント内で確実に初期化する
+  htmlElement = document.documentElement;
+  themeToggleButtons = document.querySelectorAll('.theme-selector button');
+  siteLogoElement = document.getElementById('site-logo');
+  ipInputControl = document.getElementById('global-ip-input');
 
 
   // ── SSHコマンド列（aios用）──
@@ -84,8 +94,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const sshCmdEncoded = encodeURIComponent(sshCommands);
 
   // ── テーマ切替（auto/light/dark）──
-  // ボタンへのイベントリスナーをここで設定
-  themeButtons.forEach(b => b.addEventListener('click', () => applyTheme(b.dataset.themePreference)));
+  // ボタンへのイベントリスナーをDOMContentLoaded内で設定
+  themeToggleButtons.forEach(b => b.addEventListener('click', () => applyTheme(b.dataset.themePreference)));
   
   // システムテーマ変更時のリスナー
   window.matchMedia('(prefers-color-scheme: dark)')
@@ -125,11 +135,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 全リンク更新処理
   function updateAll() {
-    // globalIpInput がここで確実に初期化されている
-    if (!globalIpInput) return;
+    // ipInputControl がここで確実に初期化されている
+    if (!ipInputControl) return;
 
     // IPアドレスのplaceholderも考慮し、正規化した値を取得
-    const ip = toHalfWidth(globalIpInput.value.trim()) || globalIpInput.placeholder;
+    const ip = toHalfWidth(ipInputControl.value.trim()) || ipInputControl.placeholder;
     localStorage.setItem('site-u-ip', ip);
 
     // QRコード（details開閉時も再描画）
@@ -196,7 +206,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 更新ボタン・Enterキーで updateAll
   document.getElementById('global-ip-update')?.addEventListener('click', updateAll);
-  globalIpInput?.addEventListener('keydown', e => {
+  ipInputControl?.addEventListener('keydown', e => {
     if (e.key === 'Enter') {
       e.preventDefault();
       updateAll();
@@ -244,10 +254,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 初回描画（テーマとIPの初期適用）
   const storedTheme = localStorage.getItem('site-u-theme') || 'auto';
-  applyTheme(storedTheme); // IP読み込み前にテーマを適用してロゴをセット
+  applyTheme(storedTheme); // IP読み込み前にテーマとロゴを適用
 
   // IPの初期ロード
-  const initialIp = localStorage.getItem('site-u-ip') || globalIpInput.placeholder;
-  globalIpInput.value = initialIp;
+  const initialIp = localStorage.getItem('site-u-ip') || ipInputControl.placeholder;
+  ipInputControl.value = initialIp;
   updateAll(); // IPの初期値で全リンクを更新
 });
