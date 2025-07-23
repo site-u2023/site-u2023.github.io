@@ -26,8 +26,7 @@ html[data-theme="dark"] {
 /* ── ベース ── */
 body {
   margin: 0;
-  /* ヘッダーは固定しないため、padding-topは不要 */
-  padding: 0 0 80px; /* フッター分のパディングは維持 */
+  padding: 0 0 80px; /* フッターの高さに合わせて調整 */
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
                "Helvetica Neue", Arial, sans-serif;
   background-color: var(--block-bg);
@@ -45,41 +44,37 @@ ul {
 
 /* ── ヘッダー ── */
 header {
-  /* position: fixed; を削除し、通常のフローに戻す */
-  position: relative; /* 要素の重ね合わせのために必要であれば残す */
-  border-bottom: 1px solid var(--block-border); /* 必要であればボーダーを残す */
+  position: relative;
+  border-bottom: 1px solid var(--block-border);
 }
 
 /* header-inner: ロゴを中央に配置 */
 header .header-inner {
   display: flex;
-  justify-content: center; /* ロゴを中央に配置 */
+  justify-content: center;
   align-items: center;
-  padding: 1em 2em; /* 通常のパディングに戻す */
+  padding: 1em 2em;
 }
 
 /* ロゴのスタイル */
 header .logo {
-  /* ロゴのコンテナ。flex-growは不要（中央寄せのため） */
-  text-align: center; /* imgを中央寄せにするために追加 */
-  width: 100%; /* 親の幅いっぱいに広げる */
+  text-align: center;
+  width: 100%;
 }
 
 header .logo img {
-  width: 80%; /* 親要素（.logo）に対して80%の幅 */
-  max-width: 250px; /* 必要に応じてロゴの最大幅を設定 */
+  width: 80%;
+  max-width: 250px;
   height: auto;
-  display: block; /* 中央寄せのためにブロック要素にする */
-  margin: 0 auto; /* ロゴを中央寄せにする */
+  display: block;
+  margin: 0 auto;
 }
-
-/* .language-selectorに関するヘッダー内のスタイルは全て不要 */
 
 .language-selector {
   display: flex;
   align-items: center;
   gap: 4px;
-  flex-shrink: 0; /* 言語セレクタが縮まないように */
+  flex-shrink: 0;
 }
 
 /* ── コンテナ ── */
@@ -98,15 +93,15 @@ header .logo img {
 input,
 button,
 a {
-  color:            inherit;             /* 文字色は --text-color */
-  background-color: inherit;             /* 背景は --block-bg */
+  color:            inherit;
+  background-color: inherit;
   border:           1px solid var(--block-border);
   border-radius:    5px;
   padding:          0.6em 0.9em;
   box-sizing:       border-box;
   transition:       background-color 0.2s ease,
                     color 0.2s ease;
-  text-decoration:  none;                /* 下線を消す */
+  text-decoration:  none;
 }
 
 a:hover {
@@ -186,23 +181,51 @@ nav a {
   width: 100%;
   background-color: var(--block-bg);
   border-top: 1px solid var(--block-border);
-  display: flex;
-  flex-direction: column; /* これにより、テーマセレクタと言語セレクタのバーと著作権表示が縦に並ぶ */
   transition: background-color 0.3s ease,
               border-color 0.3s ease;
+  /* フッター自体はflex-direction: column; で上下に並べる必要がなくなりました */
 }
-.theme-controls-bar {
-  padding: 0.5em 2em;
+
+/* 新しいフッター内部のFlexコンテナ */
+.footer-inner-flex {
   display: flex;
-  justify-content: space-between; /* テーマセレクタと言語セレクタを両端に配置 */
-  align-items: center;
+  justify-content: space-between; /* 要素を左右に均等に配置 */
+  align-items: center; /* 垂直方向中央揃え */
+  padding: 0.5em 2em; /* フッターの上下パディングを調整して薄く */
 }
+
+/* フッター左側のコントロール (昼夜ボタン) */
+.footer-left-controls {
+  display: flex;
+  align-items: center;
+  flex-grow: 1; /* 残りのスペースを均等に埋める */
+  justify-content: flex-start; /* 左寄せ */
+}
+
+/* フッター右側のコントロール (言語ボタン) */
+.footer-right-controls {
+  display: flex;
+  align-items: center;
+  flex-grow: 1; /* 残りのスペースを均等に埋める */
+  justify-content: flex-end; /* 右寄せ */
+}
+
+/* 著作権表示のスタイル */
 footer.copyright-footer {
-  padding: 0.5em 2em;
+  padding: 0;
   display: flex;
-  justify-content: center;
   align-items: center;
+  justify-content: center; /* 中央寄せ */
+  flex-grow: 1; /* 残りのスペースを均等に埋める */
+  text-align: center; /* pタグの中身を中央寄せ */
 }
+footer.copyright-footer p {
+  margin: 0; /* pタグのデフォルトマージンを削除 */
+  font-size: 0.9em;
+  color: var(--text-color);
+}
+
+
 .theme-selector {
   display: flex;
   gap: 8px;
@@ -212,15 +235,15 @@ footer.copyright-footer {
   border: 1px solid transparent;
   width: 32px;
   height: 32px;
-  display: flex; /* 追加 */
-  justify-content: center; /* 追加 */
-  align-items: center; /* 追加 */
+  display: flex;
+  justify-content: center;
+  align-items: center;
   border-radius: 50%;
   cursor: pointer;
   transition: background-color 0.2s ease,
               color 0.2s ease;
   font-size: 20px;
-  line-height: normal; /* 変更 */
+  line-height: normal;
 }
 .theme-selector button:hover {
   background-color: rgba(0, 0, 0, 0.05);
@@ -237,8 +260,8 @@ footer.copyright-footer {
 @media (max-width: 600px) {
   body {
     -webkit-text-size-adjust: 100%;
-    padding-bottom: 100px; /* フッターの高さに合わせて調整 */
-    padding-top: 0; /* ヘッダーが固定されないため、padding-topは不要 */
+    padding-bottom: 100px;
+    padding-top: 0;
   }
   .container {
     margin: 1em;
@@ -246,10 +269,8 @@ footer.copyright-footer {
     border-radius: 0;
     box-shadow: none;
   }
-  /* header h1 のスタイルは不要 */
-  /* ヘッダーのpaddingを調整 */
   header .header-inner {
-    padding: 1em 1.2em; /* モバイル時のヘッダーのパディング */
+    padding: 1em 1.2em;
   }
   nav h2 {
     font-size: 1.15em;
@@ -258,9 +279,19 @@ footer.copyright-footer {
     padding: 0.8em 0.7em;
     font-size: 0.95em;
   }
-  .theme-controls-bar,
-  footer.copyright-footer {
+  /* フッターのレスポンシブ調整 */
+  .footer-inner-flex {
+    flex-direction: column; /* モバイルでは縦並びにする */
+    align-items: center;
     padding: 0.6em 1em;
+    gap: 10px; /* 要素間の隙間 */
+  }
+  .footer-left-controls,
+  .footer-right-controls,
+  footer.copyright-footer {
+    width: 100%; /* モバイルでは幅をいっぱいに */
+    justify-content: center; /* 中央寄せ */
+    text-align: center; /* テキストも中央寄せ */
   }
 }
 
