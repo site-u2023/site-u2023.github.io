@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OpenWrt: A Beginner's Notebook</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>
+        OpenWrt<br>
+        A Beginner's Notebook<br>
+        初心者備忘録
+      </h1>
+    </header>
+    <main>
+      <nav>
+        <!-- デバイスIP入力など省略 -->
+
+        <section id="terminal">
+          <h2>ターミナル</h2>
+          <ul>
+            <li>
+              <a href="file/sshcmd.reg" download>
+                SSH用プロトコル登録 (sshcmd://) (.reg)
+              </a>
+            </li>
+            <li>
+              <a
+                id="ssh-link"
+                class="link-ip"
+                data-ip-template="sshcmd://root@${ip}/"
+                href="#"
+                target="_blank"
+                rel="noopener"
+              >
+                SSH接続 (root@<span id="ssh-ip">192.168.1.1</span>)
+              </a>
+            </li>
+            <li>
+              <a
+                id="aios-link"
+                class="link-ip"
+                data-ip-template="sshcmd://root@${ip}/${cmd}"
+                href="#"
+                target="_blank"
+                rel="noopener"
+              >
+                aios実行 (root@<span id="aios-ip">192.168.1.1</span>)
+              </a>
+            </li>
+            <li>
+              <details id="qrcode-detail-container"> <summary>QRコードを表示</summary>
+                <div class="qr-code" id="qrcode-detail"></div>
+              </details>
+            </li>
+          </ul>
+        </section>
+      </nav>
+    </main>
+  </div>
+  <!-- フッター等省略 -->
+
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+  <script src="test.js"></script>
+</body>
+</html>
