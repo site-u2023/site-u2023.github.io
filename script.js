@@ -57,35 +57,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }).catch(() => {});
   }
 
-  // ローカルIPからルーターIP推測
-  function guessRouterIP(localIP) {
-    const parts = localIP.trim().split('.');
-    if (parts.length === 4) {
-      parts[3] = '1';
-      return parts.join('.');
-    }
-    return '';
-  }
-
-  // WebRTCでローカルIP取得
-  function detectLocalIP(callback) {
-    let ipFound = false;
-    const RTCPeerConnection = window.RTCPeerConnection || window.webkitRTCPeerConnection || window.mozRTCPeerConnection;
-    if (!RTCPeerConnection) return callback('');
-    const pc = new RTCPeerConnection({iceServers: []});
-    pc.createDataChannel('');
-    pc.onicecandidate = function(e) {
-      if (!e || !e.candidate) return;
-      const ipMatch = e.candidate.candidate.match(/([0-9]{1,3}(\.[0-9]{1,3}){3})/);
-      if (ipMatch && ipMatch[1] && !ipFound) {
-        ipFound = true;
-        callback(ipMatch[1]);
-        pc.close();
-      }
-    };
-    pc.createOffer().then(sdp => pc.setLocalDescription(sdp));
-  }
-
   // 全リンク更新処理
   function updateAll() {
     const input = document.getElementById('global-ip-input');
@@ -162,9 +133,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // ローカルIP自動取得 → input初期値にセット（上書き自由）
+  // ── ここから追加（指示箇所）──
+  // ローカルIPから推測し自動で初期値セット（常にセット）
   const inputEl = document.getElementById('global-ip-input');
-  if (inputEl && !inputEl.value) {
+  if (inputEl) {
     detectLocalIP(function(localIP){
       if(localIP){
         inputEl.value = guessRouterIP(localIP);
@@ -172,6 +144,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
+  // ── ここまで追加 ──
 
   // 初回描画
   updateAll();
