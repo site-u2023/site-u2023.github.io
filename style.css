@@ -99,7 +99,7 @@ a {
   box-sizing: border-box;
   transition: background-color 0.2s ease,
               color 0.2s ease,
-              border-color 0.2s ease; /* ボーダー色の変化もスムーズに */
+              border-color 0.2s ease;
   text-decoration: none;
 }
 
@@ -111,6 +111,22 @@ a:hover {
   background-color: var(--hover-bg);
   color: var(--hover-color);
 }
+
+/* プレースホルダーのスタイル */
+input::placeholder {
+  color: var(--text-color); /* ベースのテキスト色を継承 */
+  opacity: 0.7; /* 少し透明度をつけて、入力テキストと区別する */
+}
+
+/* より見やすい色を直接指定したい場合は、以下のコメントアウトを外して使用 */
+/*
+html[data-theme="light"] input::placeholder {
+  color: #888; // ライトテーマでは少し暗めのグレー
+}
+html[data-theme="dark"] input::placeholder {
+  color: #bbb; // ダークテーマでは少し明るめのグレー
+}
+*/
 
 /* ── ナビゲーション ── */
 nav section {
