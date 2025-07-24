@@ -2,7 +2,7 @@
 html[data-theme="light"] {
     --block-bg: #fff; /* 背景色、主要コンテンツの背景 */
     --block-border: #ddd; /* ボーダー色、セクションの区切りなど */
-    --link-color: #43b0e8; /* リンクのデフォルト色 (水色) */
+    --link-color: #43b0e8; /* リンクのホバー色 (水色) */
     --text-color: #333; /* 一般的なテキスト色 (濃いグレー) */
     --qr-dark: #000; /* QRコードの暗い部分の色 */
     --qr-light: #f1f1f1; /* QRコードの明るい部分の色 */
@@ -12,7 +12,7 @@ html[data-theme="light"] {
 html[data-theme="dark"] {
     --block-bg: #2a2a2a; /* ダークテーマ時の背景色 */
     --block-border: #333; /* ダークテーマ時のボーダー色 */
-    --link-color: #43b0e8; /* リンクのデフォルト色 (水色) */
+    --link-color: #43b0e8; /* リンクのホバー色 (水色) */
     --text-color: #f1f1f1; /* 一般的なテキスト色 (明るいグレー) */
     --qr-dark: #fff; /* QRコードの暗い部分の色 */
     --qr-light: #2a2a2a; /* QRコードの明るい部分の色 */
@@ -76,12 +76,21 @@ ul {
     width: 100%; /* 親要素の幅いっぱいに広げる */
 }
 
-/* ロゴのリンクに背景色を適用（固有の調整） */
+/* ロゴのリンクには特別なデフォルトスタイル (背景透明、文字色をテーマのテキスト色に) */
+/* ホバー時も共通リンクスタイルを継承しない */
 .main-header .logo-container a {
-    background-color: var(--block-bg); /* 背景色を親（--block-bg）と同じにする */
-    border: none; /* a{}のボーダーを削除 */
-    padding: 0; /* a{}のパディングを削除 */
+    background-color: transparent; /* 背景色を透明に */
+    border: none; /* ボーダーなし */
+    padding: 0; /* パディングなし */
     display: inline-block; /* リンクとして動作させるために必要 */
+    color: var(--text-color); /* 文字色をテーマのテキスト色に */
+    text-decoration: none; /* 下線なし */
+}
+
+.main-header .logo-container a:hover {
+    background-color: transparent; /* ホバー時も背景透明 */
+    color: var(--link-color); /* ホバー時のみリンクカラー(水色)に */
+    text-decoration: none; /* ホバー時も下線なし */
 }
 
 .main-header .logo-container .site-logo { /* imgタグに適用したクラス */
@@ -104,7 +113,7 @@ ul {
 }
 
 /* ── フォーム要素、ボタン、リンクのベーススタイル (継承と最低限の調整) ── */
-/* input, button, a, summaryの共通ベーススタイル */
+/* input, button, summaryの共通ベーススタイル */
 input[type="text"], /* input要素のtypeを明確に */
 button,
 summary { /* detailsタグのsummaryもベーススタイルを継承 */
@@ -125,47 +134,56 @@ input::placeholder {
     opacity: 0.7;
 }
 
-/* リンク特有のスタイル（全てのaタグを「背景青、文字白」にする） */
+/* 全てのaタグに適用されるデフォルトのリンクスタイル */
+/* デフォルトは背景透明、文字色をテーマのテキスト色に、下線なし */
 a {
-    background-color: var(--link-color); /* 背景色を水色に */
-    color: #fff; /* 文字色を白に */
+    background-color: transparent; /* デフォルトの背景色を透明に */
+    color: var(--text-color); /* デフォルトの文字色をテーマのテキスト色に */
     text-decoration: none; /* デフォルトで下線なし */
-    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease; /* スムーズな変化 */
-    padding: 0.6em 0.9em; /* ボタンと合わせる */
-    border-radius: 0.3em; /* 角丸 */
-    display: inline-block; /* 適切な表示形式 (リンクがブロック化される場合あり) */
-    border: 0.05em solid var(--link-color); /* ボーダーも青に */
-    box-sizing: border-box;
+    transition: background-color 0.2s ease, color 0.2s ease; /* ホバー時の変化をスムーズに */
+    border: none; /* ボーダーなし */
+    padding: 0; /* パディングなし */
+    display: inline; /* インライン要素として振る舞う */
+    cursor: pointer; /* クリック可能な要素にはカーソル変更 */
 }
 
+/* 全てのaタグに適用されるホバー時のリンクスタイル */
+/* ホバー時は背景水色、文字白、下線なし */
 a:hover {
-    background-color: var(--link-color); /* ホバー時もベースのリンク色を維持 */
-    color: #fff; /* ホバー時も文字色は白を維持 */
-    text-decoration: underline; /* ホバー時は下線を出す */
-    border-color: var(--link-color); /* ホバー時もベースのリンク色を維持 */
+    background-color: var(--link-color); /* ホバー時の背景色を水色に */
+    color: #fff; /* ホバー時の文字色を白に */
+    text-decoration: none; /* ホバー時も下線なし */
 }
 
 /* REGのDLなど、個別に調整が必要なリンクのスタイル (文字色だけyellow) */
+/* これはダウンロードリンクのような特殊なaタグにのみ適用 */
 a.download-link {
     color: yellow; /* 文字色をyellowにする */
-    /* 背景色とボーダーはa{}で定義されたものを継承 */
+    background-color: transparent; /* デフォルト背景は透明 */
+    border: none; /* ボーダーなし */
+    padding: 0; /* パディングなし */
 }
 
 a.download-link:hover {
-    color: yellow; /* ホバー時も文字色はyellowを維持 */
-    /* 背景色やボーダーのホバー効果はa:hover{}で定義されたものを継承 */
+    background-color: var(--link-color); /* ホバー時はベースリンクと同じ水色背景 */
+    color: #fff; /* ホバー時はベースリンクと同じ白文字 */
+    text-decoration: none; /* ホバー時も下線なし */
 }
 
 /* buttonに特有のスタイル（input, aのベースを上書き） */
 button.primary-button { /* 更新ボタンなど、プライマリーアクションのボタン */
     background-color: var(--link-color); /* 背景色を水色に */
     color: #fff; /* 文字色を白に */
-    border-color: var(--link-color);
+    border-color: var(--link-color); /* ボーダーも水色に */
     cursor: pointer;
+    padding: 0.6em 0.9em; /* パディングを統一 */
+    border-radius: 0.3em; /* 角丸を統一 */
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
 
 button.primary-button:hover {
     background-color: var(--link-color); /* ホバー時もベースのリンク色を維持 */
+    color: #fff; /* ホバー時も文字色は白を維持 */
     border-color: var(--link-color); /* ホバー時もベースのリンク色を維持 */
 }
 
@@ -177,17 +195,19 @@ button.primary-button:hover {
     padding: 0.25em 0.5em;
     border-radius: 0.3em;
     cursor: pointer;
-    transition: color 0.2s ease, border-color 0.2s ease;
+    transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
     font-size: 1em;
     line-height: 1;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--link-color); /* デフォルトは水色 */
+    color: var(--text-color); /* デフォルトはテーマのテキスト色 */
 }
 
 .lang-button:hover,
 .theme-button:hover {
+    background-color: var(--link-color); /* ホバーで水色背景 */
+    color: #fff; /* ホバーで白文字 */
     border-color: var(--link-color); /* ホバーで水色のボーダー */
 }
 
@@ -203,6 +223,7 @@ button.primary-button:hover {
     background-color: var(--link-color); /* 選択時のホバーもベースのリンク色を維持 */
     border-color: var(--link-color); /* 選択時のホバーもベースのリンク色を維持 */
 }
+
 
 /* ── メインコンテンツ共通スタイル ── */
 .main-content {
@@ -257,9 +278,25 @@ button.primary-button:hover {
     margin-bottom: 1em; /* 段落の下マージン */
 }
 
-/* h3タグ内のa要素の下線を削除（固有の調整） */
+/* h3タグ内のリンクに固有のスタイルを適用 */
 h3 a {
-    text-decoration: none; /* 下線を削除 */
+    display: block; /* 枠いっぱいに広げる */
+    width: 100%; /* 親要素の幅いっぱいに広げる */
+    box-sizing: border-box; /* paddingとborderを幅に含める */
+    text-decoration: none; /* 下線なし */
+    background-color: transparent; /* 背景色を透明にする */
+    color: var(--text-color); /* 文字色を親の--text-colorにする */
+    padding: 0; /* パディングを削除して、テキストがh3のマージンに合わせる */
+    border-radius: 0; /* 角丸もなし */
+    border: none; /* ボーダーもなし */
+    transition: background-color 0.2s ease, color 0.2s ease; /* ホバー時の変化をスムーズに */
+}
+
+/* h3タグ内のリンクのホバー時のスタイル (すべてのリンク共通のホバー状態に合わせる) */
+h3 a:hover {
+    background-color: var(--link-color); /* ホバーで背景を水色に */
+    color: #fff; /* ホバーで文字を白に */
+    text-decoration: none; /* ホバー時も下線なし */
 }
 
 /* ── リンクリスト ── */
@@ -271,7 +308,6 @@ h3 a {
     margin-bottom: 0.8em; /* 各リストアイテム間のマージン */
 }
 
-/* a.link-item のルールは削除されました。全てのaタグはa{}で定義されたベーススタイルに従います。 */
 /* .link-item .link-text, .link-item .link-note, .link-item .ip-display は、aタグに継承され、必要に応じて上書きされます。 */
 
 .link-item .link-text {
@@ -492,15 +528,16 @@ h3 a {
 .copyright-text .footer-link { /* フッター内のa.footer-link */
     white-space: nowrap;
     /* padding, border, border-radius はa{}から継承 */
-    color: var(--link-color); /* 常に水色（a{}から継承） */
-    text-decoration: none; /* a{}から継承 */
-    background-color: transparent; /* a{}のbackground-colorを上書きして透明に */
-    border: none; /* a{}のborderを上書きしてなしに */
+    background-color: transparent; /* 背景を透明に */
+    color: var(--text-color); /* 文字色をテーマのテキスト色に */
+    text-decoration: none; /* 下線なし */
+    border: none; /* ボーダーなし */
 }
 
 .copyright-text .footer-link:hover {
-    text-decoration: underline; /* ホバーで下線 */
-    /* background-color, border-color はa:hover{}から継承 (この場合は透明・なし) */
+    background-color: var(--link-color); /* ホバー時は水色BG */
+    color: #fff; /* ホバー時は白文字 */
+    text-decoration: none; /* ホバー時も下線なし */
 }
 
 
@@ -530,10 +567,8 @@ h3 a {
     .section-title {
         font-size: 1.15em;
     }
-    a.link-item { /* a{}でスタイルが決定されるため、このブロックは削除されます */
-        /* padding: 0.8em 0.7em; */
-        /* font-size: 0.95em; */
-    }
+    /* モバイルでのaタグのスタイル調整はa{}でまとめて処理されるため、ここでの個別記述は不要に */
+
     .link-item .link-text {
         font-size: 1em; /* モバイルではベースサイズに戻す */
     }
