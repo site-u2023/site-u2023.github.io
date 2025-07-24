@@ -364,13 +364,22 @@ h3.bordered-element {
 .page-footer-area .footer-link {
     color: var(--text-color);
     text-decoration: none;
-    transition: color 0.2s ease;
+    /* ここを修正しました: ボタンと同様の表示にするためのスタイル */
+    display: inline-flex; /* flexboxを適用し、paddingとalign-itemsを有効にする */
+    align-items: center; /* 垂直方向の中央揃え */
+    justify-content: center; /* 水平方向の中央揃え */
+    padding: 0.25em 0.5em; /* ボタンと同様のパディング */
+    border: 0.05em solid transparent; /* 初期は透明なボーダー */
+    border-radius: 0.3em; /* 角丸 */
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+    box-sizing: border-box; /* パディングとボーダーを幅に含める */
+    white-space: nowrap; /* テキストの折り返しを防ぐ */
 }
 
 .page-footer-area .footer-link:hover {
-    background-color: var(--hover-bg);
-    color: var(--hover-text);
-    border-color: var(--hover-bg);
+    background-color: var(--hover-bg); /* 水色背景 */
+    color: var(--hover-text); /* 白文字 */
+    border-color: var(--hover-bg); /* 背景と同色 */
 }
 
 .page-footer-area .separator {
