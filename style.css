@@ -18,6 +18,8 @@ html[data-theme="light"] {
     --main-color: #43b0e8; /* 主要な文字色、リンク色、QRコード色など、水色 */
     --text-color: var(--main-color); /* 全ての文字色を主要色に統一 */
     --link-color: var(--main-color); /* 全てのリンク色を主要色に統一 */
+    --hover-bg: var(--link-color); /* ホバー時の背景色 (水色) */
+    --hover-text: #f1f1f1; /* ホバー時の文字色 (白) */
 }
 
 html[data-theme="dark"] {
@@ -25,6 +27,8 @@ html[data-theme="dark"] {
     --main-color: #43b0e8; /* 主要な文字色、リンク色、QRコード色など、水色 */
     --text-color: var(--main-color); /* 全ての文字色を主要色に統一 */
     --link-color: var(--main-color); /* 全てのリンク色を主要色に統一 */
+    --hover-bg: var(--link-color); /* ホバー時の背景色 (水色) */
+    --hover-text: #f1f1f1; /* ホバー時の文字色 (白) */
 }
 
 html {
@@ -158,8 +162,8 @@ a {
 /* 全てのaタグに適用されるホバー時のリンクスタイル */
 /* ただし、個別の「枠」として機能するリンクは、.button-linkで上書きされる */
 a:hover {
-    background-color: var(--link-color); /* ホバー時の背景色を水色に */
-    color: #f1f1f1; /* ホバー時の文字色を白に修正 */
+    background-color: var(--hover-bg); /* ホバー時の背景色を水色に */
+    color: var(--hover-text); /* ホバー時の文字色を白に修正 */
     text-decoration: none; /* ホバー時も下線なし */
 }
 
@@ -167,7 +171,7 @@ a:hover {
 .button-link {
     display: block; /* ブロック要素として表示し、幅いっぱいに広がるようにする */
     width: 100%;
-    background-color: var(--block-bg); /* デフォルトの背景色 */
+    background-color: transparent; /* 背景は透明 */
     color: var(--text-color); /* デフォルトの文字色 */
     border: 0.05em solid var(--text-color); /* 枠線 */
     border-radius: 0.3em; /* 角丸 */
@@ -180,16 +184,16 @@ a:hover {
 }
 
 .button-link:hover {
-    background-color: var(--link-color); /* ホバーで背景を水色に */
-    color: #f1f1f1; /* ホバーで文字を白に */
-    border-color: var(--link-color); /* ホバーでボーダーも水色に */
+    background-color: var(--hover-bg); /* ホバーで背景を水色に */
+    color: var(--hover-text); /* ホバーで文字を白に */
+    border-color: var(--hover-bg); /* ホバーでボーダーも水色に */
 }
 
 
 /* buttonに特有のスタイル（input, aのベースを上書き） */
 button.primary-button { /* 更新ボタンなど、プライマリーアクションのボタン */
     background-color: var(--link-color); /* 背景色を水色に */
-    color: #f1f1f1; /* 文字色を白に */
+    color: var(--hover-text); /* 文字色を白に */
     border-color: var(--link-color); /* ボーダーも水色に */
     cursor: pointer;
     padding: 0.6em 0.9em; /* パディングを統一 */
@@ -199,7 +203,7 @@ button.primary-button { /* 更新ボタンなど、プライマリーアクシ�
 
 button.primary-button:hover {
     background-color: var(--link-color); /* ホバー時もベースのリンク色を維持 */
-    color: #f1f1f1; /* ホバー時も文字色は白を維持 */
+    color: var(--hover-text); /* ホバー時も文字色は白を維持 */
     border-color: var(--link-color); /* ホバー時もベースのリンク色を維持 */
 }
 
@@ -222,22 +226,22 @@ button.primary-button:hover {
 
 .lang-button:hover,
 .theme-button:hover {
-    background-color: var(--link-color); /* ホバーで水色背景 */
-    color: #f1f1f1; /* ホバーで白文字 */
-    border-color: var(--link-color); /* ホバーで水色のボーダー */
+    background-color: var(--hover-bg); /* ホバーで水色背景 */
+    color: var(--hover-text); /* ホバーで白文字 */
+    border-color: var(--hover-bg); /* ホバーで水色のボーダー */
 }
 
 .lang-button.selected,
 .theme-button.selected {
-    background-color: var(--link-color); /* 選択時は水色背景 */
-    color: #f1f1f1; /* 選択時は白文字 */
-    border-color: var(--link-color);
+    background-color: var(--hover-bg); /* 選択時は水色背景 */
+    color: var(--hover-text); /* 選択時は白文字 */
+    border-color: var(--hover-bg);
 }
 
 .lang-button.selected:hover,
 .theme-button.selected:hover {
-    background-color: var(--link-color); /* 選択時のホバーもベースのリンク色を維持 */
-    border-color: var(--link-color); /* 選択時のホバーもベースのリンク色を維持 */
+    background-color: var(--hover-bg); /* 選択時のホバーもベースのリンク色を維持 */
+    border-color: var(--hover-bg); /* 選択時のホバーもベースのリンク色を維持 */
 }
 
 
@@ -265,7 +269,7 @@ button.primary-button:hover {
 /* ── 各コンテンツセクション ── */
 .content-section {
     background-color: var(--block-bg); /* メインコンテンツの背景色を継承 */
-    border: 0.0625em solid var(--text-color); /* ボーダー色もテキスト色に統一 */
+    /* border: 0.0625em solid var(--text-color); */ /* セクション自体のボーダーは画像にないので削除 */
     border-radius: 0.3125em;
     padding: 1em;
     margin-bottom: 1em; /* 各セクション間の余白 */
@@ -280,14 +284,13 @@ button.primary-button:hover {
     margin: 0 0 1em; /* 上下マージンのみ */
     color: var(--text-color); /* テキスト色を継承 */
     font-size: 1.3em;
-    /* border-bottom: 0.05em solid var(--text-color); */ /* 下線を削除 */
-    /* padding-bottom: 0.5em; */ /* 下線とテキストの隙間も削除 */
-    background-color: var(--block-bg); /* 背景色 */
+    background-color: transparent; /* 背景は透明 */
     border: 0.05em solid var(--text-color); /* 枠線 */
     border-radius: 0.3em; /* 角丸 */
     padding: 0.5em 1em; /* パディング */
     box-sizing: border-box;
     display: inline-block; /* 内容に合わせて幅を調整 */
+    line-height: 1; /* 枠内の行の高さを調整 */
 }
 
 .section-subtitle { /* h2内のspan.section-subtitle */
@@ -392,7 +395,7 @@ h3 a:hover {
     border-left: 0.05em solid var(--text-color); /* 更新ボタンの左側に区切り線もテキスト色に統一 */
     border-radius: 0 0.3em 0.3em 0; /* 右側だけ角丸 */
     background-color: var(--link-color); /* 背景色を水色に */
-    color: #f1f1f1; /* 文字色を白に */
+    color: var(--hover-text); /* 文字色を白に */
     padding: 0.6em 1em; /* パディング調整 */
 }
 #global-ip-update:hover {
@@ -403,16 +406,32 @@ h3 a:hover {
 .qr-code-section { /* .qr-codeを.qr-code-sectionに修正 */
     margin-top: 1em; /* 上部マージン */
     padding: 1em;
-    background-color: var(--block-bg);
+    background-color: transparent; /* 背景は透明 */
     border-radius: 0.375em;
     text-align: center;
     border: 0.05em solid var(--text-color); /* ボーダー色もテキスト色に統一 */
     box-sizing: border-box;
+    transition: background-color 0.2s ease, border-color 0.2s ease; /* ホバー時の変化をスムーズに */
 }
+
+/* QRコードセクション全体がホバーされたときに背景と文字色を変える */
+.qr-code-section:hover {
+    background-color: var(--hover-bg); /* ホバーで水色背景 */
+    border-color: var(--hover-bg); /* ホバーでボーダーも水色に */
+}
+
+/* ホバーに連動して文字色を変える要素 */
+.qr-code-section:hover .qr-code-summary,
+.qr-code-section:hover .qr-code-summary:before,
+.qr-code-section:hover .qr-code-canvas canvas {
+    color: var(--hover-text); /* ホバーで文字を白に */
+}
+
+
 .qr-code-section .qr-code-summary { /* summaryタグのクラス */
     text-align: left; /* 左寄せに戻す */
     cursor: pointer;
-    color: var(--text-color); /* テキスト色を継承 */
+    color: inherit; /* 親から色を継承 */
     padding: 0.5em 0; /* 開閉領域のパディング */
     list-style: none; /* デフォルトのマーカーを削除 */
 }
@@ -424,8 +443,8 @@ h3 a:hover {
     content: "►"; /* 閉じた状態の矢印 */
     display: inline-block;
     margin-right: 0.5em;
-    transition: transform 0.2s ease;
-    color: var(--text-color); /* 矢印もテキスト色に統一 */
+    transition: transform 0.2s ease, color 0.2s ease;
+    color: inherit; /* 親から色を継承 */
 }
 .qr-code-section[open] .qr-code-summary:before {
     content: "▼"; /* 開いた状態の矢印 */
@@ -435,11 +454,13 @@ h3 a:hover {
     margin-top: 1em;
 }
 .qr-code-section .qr-code-canvas canvas {
-    background-color: var(--block-bg); /* QRコードの背景もブロック背景に */
+    background-color: transparent; /* QRコードの背景も透明に */
+    /* QRコードの前景色（暗い部分）もテキスト色に */
     color: var(--text-color);
     width: 11.25em !important;
     height: 11.25em !important;
     display: inline-block;
+    transition: color 0.2s ease; /* ホバー時の色の変化をスムーズに */
 }
 
 /* ── プロトコルハンドラー登録セクション ── */
@@ -447,15 +468,16 @@ h3 a:hover {
     margin-bottom: 0.8em; /* リストアイテム間のマージン */
     border: 0.05em solid var(--text-color); /* ボーダー色もテキスト色に統一 */
     border-radius: 0.3em;
-    background-color: var(--block-bg);
+    background-color: transparent; /* 背景は透明 */
     box-sizing: border-box;
     transition: background-color 0.2s ease, border-color 0.2s ease; /* ホバー時の変化をスムーズに */
+    padding: 0; /* summaryとリンクに個別にパディングを設定するため、親は0に */
 }
 
 /* details全体がホバーされたときに背景と文字色を変える */
 .handler-register-section:hover {
-    background-color: var(--link-color); /* ホバーで水色背景 */
-    border-color: var(--link-color); /* ホバーでボーダーも水色に */
+    background-color: var(--hover-bg); /* ホバーで水色背景 */
+    border-color: var(--hover-bg); /* ホバーでボーダーも水色に */
 }
 
 /* detailsの中のsummaryとリンクの文字色もホバーに連動 */
@@ -463,16 +485,17 @@ h3 a:hover {
 .handler-register-section:hover .handler-register-summary:before,
 .handler-register-section:hover .handler-register-link,
 .handler-register-section:hover .handler-register-link .link-note {
-    color: #f1f1f1; /* ホバーで文字を白に */
+    color: var(--hover-text); /* ホバーで文字を白に */
 }
 
 
 .handler-register-section .handler-register-summary { /* summaryタグのクラス */
     text-align: left; /* 左寄せ */
     cursor: pointer;
-    color: var(--text-color); /* テキスト色を継承 */
+    color: inherit; /* 親から色を継承 */
     padding: 0.8em 1em; /* パディング調整 */
     list-style: none; /* デフォルトのマーカーを削除 */
+    transition: color 0.2s ease; /* ホバー時の色の変化をスムーズに */
 }
 .handler-register-section .handler-register-summary::-webkit-details-marker,
 .handler-register-section .handler-register-summary::marker {
@@ -483,7 +506,7 @@ h3 a:hover {
     display: inline-block;
     margin-right: 0.5em;
     transition: transform 0.2s ease, color 0.2s ease;
-    color: var(--text-color); /* 矢印もテキスト色に統一 */
+    color: inherit; /* 親から色を継承 */
 }
 .handler-register-section[open] .handler-register-summary:before {
     content: "▼"; /* 開いた状態の矢印 */
@@ -497,7 +520,18 @@ h3 a:hover {
     /* display, width, box-sizing, text-decoration, background-color, color, border, padding, border-radius, transition は .button-link に任せる */
     margin-top: 0; /* .button-linkのmargin-bottomを打ち消すため */
     margin-bottom: 0.8em; /* details内の各リンク間のマージン */
+    border: none; /* 親のdetailsが枠を持つので、子要素のbutton-linkの枠は削除 */
+    background-color: transparent; /* 背景も透明に */
+    padding-left: 1em; /* 親のパディングに合わせる */
+    padding-right: 1em;
 }
+
+.handler-register-section .handler-register-link:hover {
+    background-color: transparent; /* details全体でホバーするので、aタグ自体は背景を変えない */
+    color: var(--hover-text); /* 文字色は変わる */
+    border-color: transparent; /* ボーダーも変えない */
+}
+
 
 .handler-register-section .handler-register-link .link-note {
     display: block; /* 改行 */
