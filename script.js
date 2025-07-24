@@ -50,7 +50,6 @@ function drawQRCode(elementId, text) {
     const qrContainer = document.getElementById(elementId);
     if (!qrContainer || typeof QRious === 'undefined') {
         console.error(`QR code container #${elementId} not found or QRious library not loaded.`);
-        // QRコード表示エリアにテキストを挿入
         if (qrContainer) {
             qrContainer.innerHTML = '<div style="width: 180px; height: 180px; background: var(--text-color); margin: 0 auto; display: flex; align-items: center; justify-content: center; color: var(--block-bg); font-size: 12px;">QRコード表示エリア</div>';
             qrContainer.querySelector('div').setAttribute('data-text', 'QRiousライブラリがロードされていません');
@@ -62,8 +61,8 @@ function drawQRCode(elementId, text) {
     qrContainer.appendChild(canvas);
 
     const style = getComputedStyle(document.body);
-    const darkColor = style.getPropertyValue('--qr-dark').trim(); // CSS変数から取得
-    const lightColor = style.getPropertyValue('--qr-light').trim(); // CSS変数から取得
+    const darkColor = style.getPropertyValue('--qr-dark').trim();
+    const lightColor = style.getPropertyValue('--qr-light').trim();
 
     new QRious({
         element: canvas,
@@ -82,13 +81,11 @@ function updateAll() {
     const ip = toHalfWidth(input.value.trim()) || input.placeholder;
     localStorage.setItem('site-u-ip', ip);
 
-    // SSH/AIOSリンクのIP表示更新 (index.html内)
     const sshIpSpan = document.getElementById('ssh-ip');
     const aiosIpSpan = document.getElementById('aios-ip');
     if (sshIpSpan) sshIpSpan.textContent = ip;
     if (aiosIpSpan) aiosIpSpan.textContent = ip;
 
-    // data-ip-templateを持つすべてのリンクを更新
     document.querySelectorAll('.link-item[data-ip-template]').forEach(link => {
         const template = link.dataset.ipTemplate;
         if (template) {
@@ -99,7 +96,6 @@ function updateAll() {
         }
     });
 
-    // QRコードの表示/非表示と更新
     const qrDetailContainer = document.getElementById('qrcode-detail-container');
     if (qrDetailContainer && qrDetailContainer.open) {
         drawQRCode('qrcode-detail', `ssh://root@${ip}`);
@@ -152,23 +148,27 @@ function applyLanguage(lang) {
     });
 }
 
-// ── ロゴ表示切替（2画像方式） ──
+// ── ロゴ表示切替 ──
 function updateLogoDisplay() {
     const theme = document.documentElement.getAttribute('data-theme') || 'dark';
     const siteLogo = document.getElementById('site-logo');
+
     if (siteLogo) {
         if (theme === 'dark') {
-            siteLogo.src = 'img/openwrt_text_blue_and_dark_blue.svg'; // Blue
+            siteLogo.src = 'img/openwrt_text_blue_and_dark_blue.svg'; // Blue (Dark Theme)
         } else {
-            siteLogo.src = 'img/openwrt_text_black_and_white.svg'; // Black
+            siteLogo.src = 'img/openwrt_text_black_and_white.svg'; // Black (Light Theme)
         }
+        // console.log("Logo updated to:", siteLogo.src, "Theme:", theme); // デバッグ用
+    } else {
+        // console.warn("Logo element with ID 'site-logo' not found for update."); // デバッグ用
     }
 }
 
-// ── ヘッダー読み込み関数を追加 ──
+// ── ヘッダー読み込み関数 ──
 async function loadHeader() {
     try {
-        const response = await fetch('header.html'); // header.htmlのパス
+        const response = await fetch('header.html');
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -179,7 +179,7 @@ async function loadHeader() {
         // bodyの先頭に挿入
         document.body.prepend(headerElement.firstElementChild);
 
-        // ヘッダー読み込み後にロゴ表示を更新
+        // ヘッダー読み込み直後にロゴ表示を更新
         updateLogoDisplay();
 
     } catch (error) {
@@ -190,7 +190,7 @@ async function loadHeader() {
 // ── フッター読み込み関数 ──
 async function loadFooter() {
     try {
-        const response = await fetch('footer.html'); // footer.htmlのパス
+        const response = await fetch('footer.html');
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -201,12 +201,9 @@ async function loadFooter() {
         // bodyの最後に挿入
         document.body.appendChild(footerElement.firstElementChild);
 
-        // 年表示を更新（フッター読み込み後に改めて実行）
+        // 年表示を更新
         const yearEl = document.getElementById('current-year');
         if (yearEl) yearEl.textContent = new Date().getFullYear();
-
-        // フッター内の言語・テーマボタンにイベントリスナーを再設定
-        initializeThemeAndLanguageSelectors();
 
     } catch (error) {
         console.error("Failed to load footer.html:", error);
@@ -215,10 +212,10 @@ async function loadFooter() {
 
 // ── テーマ・言語セレクターの初期化処理を関数化 ──
 function initializeThemeAndLanguageSelectors() {
-    // テーマ切替
     const html = document.documentElement;
     const themeBtns = document.querySelectorAll('.theme-selector button');
     const storedTheme = localStorage.getItem('site-u-theme') || 'auto';
+
     function applyTheme(pref) {
         const mode = pref === 'auto'
             ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
@@ -229,25 +226,39 @@ function initializeThemeAndLanguageSelectors() {
         updateLogoDisplay(); // ロゴ更新
         updateAll(); // QRコードの色を再適用するため
     }
+
     if (themeBtns.length > 0) {
-        themeBtns.forEach(b => b.addEventListener('click', () => applyTheme(b.dataset.themePreference)));
-        window.matchMedia('(prefers-color-scheme: dark)')
-            .addEventListener('change', () => {
-                if ((localStorage.getItem('site-u-theme')||'auto') === 'auto') applyTheme('auto');
-            });
-        applyTheme(storedTheme);
+        themeBtns.forEach(b => {
+            // イベントリスナーの重複登録を避けるために一度削除してから追加
+            b.removeEventListener('click', () => applyTheme(b.dataset.themePreference));
+            b.addEventListener('click', () => applyTheme(b.dataset.themePreference));
+        });
+        window.matchMedia('(prefers-color-scheme: dark)').removeEventListener('change', () => {
+            if ((localStorage.getItem('site-u-theme')||'auto') === 'auto') applyTheme('auto');
+        });
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+            if ((localStorage.getItem('site-u-theme')||'auto') === 'auto') applyTheme('auto');
+        });
+        applyTheme(storedTheme); // 初期テーマ適用
     } else {
+        // テーマボタンがない場合でも、テーマ属性に基づきロゴとQRコードは更新できるようにする
         applyTheme(storedTheme);
     }
-    updateLogoDisplay();
-    const observer = new MutationObserver(updateLogoDisplay);
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 
-    // 言語切替
+    // data-theme属性の変更を監視してロゴを更新 (念のため、重複登録回避)
+    // このobserverは一度だけ登録されるべきです
+    if (!html.dataset.themeObserverRegistered) {
+        const observer = new MutationObserver(updateLogoDisplay);
+        observer.observe(html, { attributes: true, attributeFilter: ['data-theme'] });
+        html.dataset.themeObserverRegistered = 'true';
+    }
+
+
     const langButtons = document.querySelectorAll('.language-selector button');
     const currentLang = localStorage.getItem('lang-preference') || 'ja';
     if (langButtons.length > 0) {
         langButtons.forEach(button => {
+            button.removeEventListener('click', () => applyLanguage(button.dataset.lang));
             button.addEventListener('click', () => {
                 const newLang = button.dataset.lang;
                 localStorage.setItem('lang-preference', newLang);
@@ -258,16 +269,16 @@ function initializeThemeAndLanguageSelectors() {
     applyLanguage(currentLang);
 }
 
-
 // ── DOMContentLoaded ──
 document.addEventListener('DOMContentLoaded', async () => {
-    // ヘッダーを最初に読み込む
+    // ヘッダーとフッターの読み込みを確実に待つ
     await loadHeader();
-
-    // フッターを読み込む
     await loadFooter();
 
-    // ── IPアドレス関連初期化 ──
+    // 外部ファイルが全て読み込まれ、DOMに挿入された後に初期化関数を呼び出す
+    initializeThemeAndLanguageSelectors();
+
+    // IPアドレス関連初期化
     const globalIpInput = document.getElementById('global-ip-input');
     const globalIpUpdateBtn = document.getElementById('global-ip-update');
     if (globalIpInput) {
@@ -293,7 +304,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         globalIpUpdateBtn.addEventListener('click', updateAll);
     }
 
-    // ── QRコードdetails要素イベントリスナー ──
+    // QRコードdetails要素イベントリスナー
     const qrDetailContainer = document.getElementById('qrcode-detail-container');
     if (qrDetailContainer && !qrDetailContainer.dataset.toggleListenerAdded) {
         qrDetailContainer.addEventListener('toggle', function() {
@@ -307,7 +318,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     qrCanvasContainer.innerHTML = '<div style="width: 180px; height: 180px; background: var(--text-color); margin: 0 auto; display: flex; align-items: center; justify-content: center; color: var(--block-bg); font-size: 12px;">QRコード表示エリア</div>';
                     const dummyDiv = qrCanvasContainer.querySelector('div');
                     if (dummyDiv) {
-                        dummyDiv.setAttribute('data-text', 'QRコード表示エリア');
+                        dummyDiv.setAttribute('data-text', 'QRiousライブラリがロードされていません');
                     }
                 }
             }
