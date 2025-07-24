@@ -271,48 +271,76 @@ nav a {
 
 /* 各リンクアイテムのスタイル */
 .page-footer-area p a {
-    white-space: nowrap; /* リンク内のテキストは折り返さない */
-    padding: 0.2em 0.4em; /* リンクのクリックエリアを広げつつ、コンパクトに */
-    border: none; /* リンクのボーダーを削除（デザインによる） */
-    border-radius: 0.2em; /* 必要であれば角を丸くする */
-    color: var(--text-color); /* フッターのリンク色もテキスト色に合わせる */
+    white-space: nowrap;
+    padding: 0.2em 0.4em;
+    border: none;
+    border-radius: 0.2em;
+    color: var(--text-color);
 }
 .page-footer-area p a:hover {
-    background-color: var(--hover-bg); /* テーマ変数に合わせる */
-    color: var(--hover-color);         /* テーマ変数に合わせる */
+    background-color: var(--hover-bg);
+    color: var(--link-color);
 }
 
 /* 言語ボタンのスタイル調整 */
 .language-selector button {
-  background: transparent;
-  border: 0.05em solid transparent;
-  padding: 0.25em 0.5em; /* 言語ボタンのパディングを調整 */
-  border-radius: 0.3em; /* 角を丸くする */
-  cursor: pointer;
-  transition: background-color 0.2s ease,
-              color 0.2s ease;
-  font-size: 1em; /* デフォルトのフォントサイズを基準に */
-  line-height: 1;
-  display: flex; /* Flexboxアイテムとして中央揃えしやすく */
-  align-items: center;
-  justify-content: center;
-  color: var(--text-color); /* 言語ボタンのテキスト色もテーマに合わせる */
+  background: transparent;
+  border: 0.05em solid transparent;
+  padding: 0.25em 0.5em;
+  border-radius: 0.3em;
+  cursor: pointer;
+  transition: background-color 0.2s ease,
+              color 0.2s ease;
+  font-size: 1em;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-color);
 }
 .language-selector button:hover {
-  background-color: rgba(0, 0, 0, 0.05);
+  background-color: rgba(0, 0, 0, 0.05);
 }
 .language-selector button.selected {
-  background-color: #43b0e8;
-  color: #fff;
+  background-color: #43b0e8;
+  color: #fff;
 }
 .language-selector button.selected:hover {
-  background-color: #43b0e8;
+  background-color: #43b0e8;
 }
 .language-selector .separator {
-  margin: 0 0.1em; /* セパレータの間隔を調整 */
-  color: inherit;
+  margin: 0 0.1em;
+  color: inherit;
 }
 
+/* テーマ切り替えボタンのスタイル */
+.theme-selector button {
+  background: transparent;
+  border: 0.05em solid transparent; /* 言語ボタンと同様に透明なボーダーを設定 */
+  padding: 0.25em 0.5em; /* 言語ボタンと同様のパディング */
+  border-radius: 0.3em; /* 角を丸くする */
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease; /* transitionを追加 */
+  font-size: 1em; /* アイコンが文字の場合のサイズ調整、言語ボタンと合わせる */
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-color); /* アイコンの色をテーマテキスト色に合わせる */
+}
+
+.theme-selector button:hover {
+  background-color: rgba(0, 0, 0, 0.05); /* ホバー時の背景色を少し暗く */
+  /* color: var(--link-color); // 必要であればホバー時の色も変更 */
+}
+
+.theme-selector button.selected {
+  background-color: #43b0e8; /* 選択時の背景色 */
+  color: #fff; /* 選択時の文字色 */
+}
+.theme-selector button.selected:hover {
+  background-color: #43b0e8; /* 選択時のホバーは同じ背景色 */
+}
 
 /* ── レスポンシブ ── */
 @media (max-width: 37.5em) { /* 600pxをemに変換 */
