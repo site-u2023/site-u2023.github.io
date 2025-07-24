@@ -125,7 +125,7 @@ ul {
 }
 
 .section-subtitle {
-    font-size: 1em;
+    font-size: 0.8em;
     color: inherit;
     font-weight: normal;
     margin-left: 0.5em;
@@ -282,15 +282,12 @@ h3.bordered-element {
 }
 
 .handler-register-section .handler-register-link {
-    margin-top: 1em;
-    margin-bottom: 0;
+    margin-top: 0;
+    margin-bottom: 0.8em;
     border: none;
     background-color: transparent;
-    padding: 0.8em 1em;
-}
-
-.handler-register-section .handler-register-content {
-    padding: 0 1em 1em 1em;
+    padding-left: 1em;
+    padding-right: 1em;
 }
 
 .handler-register-section .handler-register-link:hover {
@@ -474,7 +471,7 @@ h3.bordered-element {
 }
 
 .link-item .link-note {
-    font-size: 1em;
+    font-size: 0.85em;
     color: inherit;
     display: inline;
     margin-left: 0.5em;
