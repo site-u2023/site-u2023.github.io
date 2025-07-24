@@ -176,6 +176,7 @@ nav a {
   border-top: 1px solid var(--block-border);
   display: flex;
   flex-direction: column;
+  align-items: center;
   transition: background-color 0.3s ease,
               border-color 0.3s ease;
 }
@@ -189,6 +190,7 @@ footer.copyright-footer {
 .theme-selector {
   display: flex;
   gap: 8px;
+  text-align: center;
 }
 .theme-selector button {
   background: transparent;
