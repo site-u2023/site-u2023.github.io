@@ -20,6 +20,8 @@ html[data-theme="light"] {
     --link-color: var(--main-color);
     --hover-bg: var(--link-color);
     --hover-text: #f1f1f1;
+    --qr-dark: #111; /* QRコードの色変数 */
+    --qr-light: #fff; /* QRコードの背景色変数 */
 }
 
 html[data-theme="dark"] {
@@ -29,6 +31,8 @@ html[data-theme="dark"] {
     --link-color: var(--main-color);
     --hover-bg: var(--link-color);
     --hover-text: #f1f1f1;
+    --qr-dark: #fff; /* ダークテーマ時のQRコード色 */
+    --qr-light: #111; /* ダークテーマ時のQRコード背景色 */
 }
 
 html {
@@ -57,28 +61,30 @@ ul {
 }
 
 /* ── メインコンテンツのコンテナ ── */
+/* .container は全体を中央に配置し、中身が縦に並ぶように */
 .container {
     flex-grow: 1;
     width: 100%;
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: center; /* main-content を中央に寄せる */
     box-sizing: border-box;
     transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 /* ── メインコンテンツ共通スタイル ── */
+/* 実際にコンテンツが入るブロック */
 .main-content {
     flex-grow: 1;
-    max-width: 50em;
-    width: 100%;
-    margin: 2em auto;
+    max-width: 50em; /* デスクトップなど広い画面での最大幅 */
+    width: 100%; /* 親要素 (container) の幅を100%利用 */
+    margin: 2em auto; /* 上下の余白と左右中央寄せ */
     background: var(--block-bg);
     padding: 1.5em 2em;
     border-radius: 0.5em;
     box-shadow: 0 0.25em 0.5em rgba(0, 0, 0, 0.1);
     box-sizing: border-box;
-    min-width: 0;
+    min-width: 0; /* flexアイテムとして必要 */
 }
 
 /* ── 新しい「枠付き要素」の汎用スタイル ── */
@@ -151,7 +157,7 @@ h3.bordered-element {
 
 #device-ip .ip-address-display {
     flex: 1;
-    min-width: 0;
+    min-width: 0; /* これが重要 */
     display: flex;
     align-items: center;
     overflow: hidden;
@@ -161,12 +167,13 @@ h3.bordered-element {
 
 #global-ip-input {
     flex: 1;
-    min-width: 0;
+    min-width: 0; /* flexアイテムとして必要 */
     border: none;
     padding: 0.6em 0.9em;
     background-color: transparent;
     color: inherit;
     border-radius: 0;
+    box-sizing: border-box; /* paddingがwidthに含まれるように */
 }
 
 #global-ip-update {
@@ -179,10 +186,11 @@ h3.bordered-element {
     background-color: var(--link-color);
     color: var(--hover-text);
     padding: 0.6em 1em;
+    box-sizing: border-box; /* paddingがwidthに含まれるように */
 }
 
 #global-ip-update:hover {
-    background-color: var(--link-color);
+    background-color: var(--link-color); /* ホバー時の背景は変わらない */
 }
 
 /* ── QRコード部分 (detailsタグ) のスタイル修正 ── */
@@ -234,74 +242,37 @@ h3.bordered-element {
     padding-left: 1em;
     padding-right: 1em;
     padding-bottom: 1em;
+    text-align: center; /* QRコードを中央寄せ */
+}
+
+.qr-code-section .qr-code-canvas canvas {
+    display: block; /* インライン要素からブロック要素に変更 */
+    margin: 0 auto; /* 中央寄せ */
 }
 
 /* ── プロトコルハンドラー登録セクション (detailsタグ) のスタイル修正 ── */
-.handler-register-section {
-    margin-bottom: 0.8em;
-    padding: 0;
+/* HTMLにはdetailsタグがないので、.link-list li > a に適用される形に */
+/* 変更されたHTMLに合わせて調整 */
+.handler-register-link {
+    display: flex; /* flexboxを追加 */
+    flex-wrap: wrap; /* 小さい画面で折り返す */
+    align-items: center;
+    justify-content: space-between; /* リンクテキストとノートを両端に寄せる */
 }
 
-.handler-register-section:hover {
-    background-color: var(--hover-bg);
-    border-color: var(--hover-bg);
+.handler-register-link .link-text {
+    flex-basis: auto; /* 必要に応じて幅を調整 */
+    flex-grow: 1;
+    margin-right: 0.5em; /* ノートとの間隔 */
 }
 
-.handler-register-section:hover .handler-register-summary,
-.handler-register-section:hover .handler-register-summary:before,
-.handler-register-section:hover .handler-register-link,
-.handler-register-section:hover .handler-register-link .link-note {
-    color: var(--hover-text);
-}
-
-.handler-register-section .handler-register-summary {
-    text-align: left;
-    cursor: pointer;
-    color: inherit;
-    padding: 0.8em 1em;
-    list-style: none;
-    transition: color 0.2s ease;
-}
-
-.handler-register-section .handler-register-summary::-webkit-details-marker,
-.handler-register-section .handler-register-summary::marker {
-    display: none;
-}
-
-.handler-register-section .handler-register-summary:before {
-    content: "►";
-    display: inline-block;
-    margin-right: 0.5em;
-    transition: transform 0.2s ease, color 0.2s ease;
-    color: inherit;
-}
-
-.handler-register-section[open] .handler-register-summary:before {
-    content: "▼";
-    transform: rotate(0deg);
-}
-
-.handler-register-section .handler-register-link {
-    margin-top: 0;
-    margin-bottom: 0.8em;
-    border: none;
-    background-color: transparent;
-    padding-left: 1em;
-    padding-right: 1em;
-}
-
-.handler-register-section .handler-register-link:hover {
-    background-color: transparent;
-    color: var(--hover-text);
-    border-color: transparent;
-}
-
-.handler-register-section .handler-register-link .link-note {
-    display: block;
+.handler-register-link .link-note {
+    flex-basis: 100%; /* 小さい画面で改行 */
     font-size: 0.8em;
     color: inherit;
     margin-top: 0.2em;
     line-height: 1.3;
+    text-align: left; /* 左寄せ */
 }
 
 /* ── ヘッダー ── */
@@ -316,7 +287,8 @@ h3.bordered-element {
 }
 
 .main-header .header-inner {
-    max-width: 50em;
+    max-width: 50em; /* main-contentと幅を合わせる */
+    width: 100%;
     margin: 0 auto;
     padding: 1.5em 2em;
     display: flex;
@@ -352,7 +324,7 @@ h3.bordered-element {
     height: auto;
     display: block;
     margin: 0 auto;
-    max-width: 300px;
+    max-width: 300px; /* ロゴの最大幅 */
 }
 
 /* ── フッター ── */
@@ -375,12 +347,12 @@ h3.bordered-element {
 }
 
 .page-footer-area .footer-inner-flex {
-    max-width: 50em;
+    max-width: 50em; /* main-contentと幅を合わせる */
     width: 100%;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    flex-wrap: wrap;
+    flex-wrap: wrap; /* 小さい画面で折り返す */
     gap: 1em;
 }
 
@@ -461,7 +433,7 @@ h3.bordered-element {
 .link-item {
     display: flex;
     align-items: center;
-    flex-wrap: nowrap;
+    flex-wrap: nowrap; /* デフォルトでは折り返さない */
 }
 
 .link-item .link-text {
@@ -485,3 +457,123 @@ h3.bordered-element {
     white-space: nowrap;
     flex-shrink: 0;
 }
+
+/* ── レスポンシブ ── */
+@media (max-width: 600px) {
+    body {
+        -webkit-text-size-adjust: 100%;
+        padding-bottom: 100px; /* フッターの高さに合わせる */
+    }
+
+    /* .container のパディングを調整 */
+    .container {
+        padding: 0 1em; /* 左右に少し余白 */
+    }
+
+    /* main-content の幅と余白を調整 */
+    .main-content {
+        margin: 1em 0; /* 上下は余白、左右は0 */
+        padding: 1em 1.2em; /* パディングを小さく */
+        border-radius: 0; /* 角丸をなくす */
+        box-shadow: none; /* シャドウをなくす */
+        max-width: 100%; /* 画面幅いっぱいに広がるように */
+    }
+
+    /* ヘッダーの調整 */
+    .main-header .header-inner {
+        padding: 1em 1.2em; /* パディングを小さく */
+        max-width: 100%; /* 画面幅いっぱいに広がるように */
+    }
+    .main-header .logo-container .site-logo {
+        max-width: 200px; /* ロゴを小さく */
+    }
+
+    /* フッターの調整 */
+    .page-footer-area {
+        padding: 0.6em 1em;
+        height: auto; /* コンテンツに合わせて高さを調整 */
+    }
+    .page-footer-area .footer-inner-flex {
+        flex-direction: column; /* 縦並びにする */
+        align-items: center;
+        max-width: 100%;
+        gap: 0.5em;
+    }
+    .page-footer-area .copyright-info {
+        order: 3; /* 著作権表示を最後に */
+    }
+    .page-footer-area .footer-controls {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+    }
+
+    /* フォーム要素の調整 */
+    #device-ip .input-group {
+        flex-direction: column; /* 縦並びにする */
+        gap: 0.5em;
+    }
+    #device-ip .ip-address-display {
+        width: 100%; /* 幅を100%に */
+        border-radius: 0.3em;
+    }
+    #global-ip-update {
+        width: 100%; /* 幅を100%に */
+        border-left: none;
+        border-top: 0.05em solid var(--text-color); /* 上にボーダー */
+        border-radius: 0.3em; /* 角丸を元に戻す */
+    }
+
+    /* QRコードのダミー表示を調整 */
+    .qr-code-canvas > div {
+        width: 100% !important; /* ダミー表示の幅 */
+        height: auto !important; /* 高さを自動調整 */
+        padding-top: 100%; /* 正方形を維持 */
+        position: relative;
+    }
+    .qr-code-canvas > div::before {
+        content: attr(data-text);
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 12px;
+        white-space: normal;
+        text-align: center;
+    }
+    .qr-code-canvas canvas {
+        width: 100% !important;
+        height: auto !important;
+    }
+
+    /* link-item の折り返し */
+    .link-item {
+        flex-wrap: wrap; /* 小さい画面では折り返す */
+        align-items: flex-start; /* 上揃え */
+    }
+    .link-item .link-text {
+        flex-basis: 100%; /* テキストが1行を占める */
+        margin-right: 0;
+    }
+    .link-item .link-note,
+    .link-item .ip-display {
+        flex-basis: 100%; /* ノートとIP表示も1行を占める */
+        margin-left: 0;
+        margin-top: 0.2em; /* 上の要素との間隔 */
+    }
+}
+
+/* ── ダークテーマ用オーバーライド ── */
+body[data-theme="dark"] .container {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+body[data-theme="dark"] .main-content {
+    box-shadow: 0 0.25em 0.75em rgba(0, 0, 0, 0.5); /* ダークテーマ用のシャドウを強める */
+}
+body[data-theme="dark"] .main-header {
+    border-color: var(--link-color); /* ダークテーマ時のヘッダーボーダー */
+}
+body[data-theme="dark"] .page-footer-area {
+    border-color: var(--link-color); /* ダークテーマ時のフッターボーダー */
+}
+body[data-theme="dark"]
