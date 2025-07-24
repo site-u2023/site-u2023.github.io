@@ -147,7 +147,6 @@ input::placeholder {
 }
 
 /* 全てのaタグに適用されるデフォルトのリンクスタイル */
-/* ただし、個別の「枠」として機能するリンクは、.bordered-elementで上書きされる */
 a {
     background-color: transparent; /* デフォルトの背景色を透明に */
     color: var(--text-color); /* デフォルトの文字色をテーマのテキスト色に */
@@ -160,7 +159,6 @@ a {
 }
 
 /* 全てのaタグに適用されるホバー時のリンクスタイル */
-/* ただし、個別の「枠」として機能するリンクは、.bordered-elementで上書きされる */
 a:hover {
     background-color: var(--hover-bg); /* ホバー時の背景色を水色に */
     color: var(--hover-text); /* ホバー時の文字色を白に修正 */
@@ -182,6 +180,7 @@ a:hover {
     text-decoration: none; /* 下線なし */
     transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
     margin-bottom: 0.8em; /* 項目間の下マージン */
+    cursor: pointer; /* クリック可能な要素にはカーソル変更 */
 }
 
 /* 枠付き要素のホバー時のスタイル */
@@ -245,7 +244,6 @@ button.primary-button:hover {
     border-color: var(--hover-bg); /* 選択時のホバーもベースのリンク色を維持 */
 }
 
-
 /* ── メインコンテンツ共通スタイル ── */
 .main-content {
     flex-grow: 1; /* container の子要素として、残りのスペースを全て占める */
@@ -270,7 +268,6 @@ button.primary-button:hover {
 /* ── 各コンテンツセクション ── */
 .content-section {
     background-color: var(--block-bg); /* メインコンテンツの背景色を継承 */
-    /* border: 0.0625em solid var(--text-color); */ /* セクション自体のボーダーは画像にないので削除 */
     border-radius: 0.3125em;
     padding: 1em;
     margin-bottom: 1em; /* 各セクション間の余白 */
@@ -294,11 +291,6 @@ button.primary-button:hover {
     margin-left: 0.5em; /* タイトルとの間隔 */
 }
 
-.section-paragraph { /* p.section-paragraph */
-    margin-bottom: 1em; /* 段落の下マージン */
-    color: var(--text-color); /* 親からテキスト色を継承 */
-}
-
 /* h3 も .bordered-element を適用する */
 h3.bordered-element { /* h3要素にもbordered-elementクラスを適用 */
     margin: 1em 0 0.8em; /* 上マージンを少し増やし、下マージンをbordered-elementの標準に */
@@ -307,16 +299,6 @@ h3.bordered-element { /* h3要素にもbordered-elementクラスを適用 */
     font-weight: bold; /* boldにする */
     line-height: 1.2; /* 行の高さ調整 */
     padding: 0.8em 1em; /* bordered-elementのパディングを適用 */
-}
-/* h3内のaタグは、bordered-elementとして振る舞うため個別のスタイルは不要 */
-h3.bordered-element a {
-    color: inherit; /* 親のh3から色を継承 */
-    text-decoration: none;
-    display: block; /* h3全体をリンクにするなら必要 */
-}
-h3.bordered-element a:hover {
-    color: inherit; /* 親のh3から色を継承 */
-    background-color: transparent; /* 親のh3が背景を持つため透明 */
 }
 
 
@@ -328,28 +310,30 @@ h3.bordered-element a:hover {
 
 .link-list li {
     margin-bottom: 0.8em; /* 各リストアイテム間のマージン */
-    /* li自体は枠を持たず、内包するaタグ(.bordered-element)が枠を持つ */
 }
 
-/* .link-list li a は、.bordered-element を適用することで個別の枠とホバーを持つ */
-/* HTML側で <a class="bordered-element">...</a> のようにクラスを追加してください */
-.link-list li a {
-    /* .bordered-element がこれらのスタイルをカバー */
-    /* display, width, box-sizing, text-decoration, background-color, color, border, padding, border-radius, transition, margin-bottom は .bordered-element に任せる */
+/* .link-list li a は、.bordered-element を適用 */
+.link-list li a.bordered-element {
+    display: flex; /* link-itemのdisplay: flex; と競合しないよう調整 */
+    align-items: center; /* 垂直方向中央揃え */
+    flex-wrap: nowrap; /* テキストが折り返さないように */
+    justify-content: space-between; /* テキストとIPを両端に寄せる */
+    text-align: left; /* 左寄せ */
 }
 
-/* .link-item内の要素は、親の.bordered-elementがホバーされたときに色が変わるようにする */
+/* リンク内の要素スタイル */
 .link-item .link-text {
     font-weight: bold; /* メインテキストを太字に */
     color: inherit; /* 親の.bordered-elementから色を継承（ホバーで白になる） */
+    white-space: nowrap; /* 改行しない */
 }
 
 .link-item .link-note { /* (Windows用) ※初回のみ利用 (DL後ダブルクリック) など */
     font-size: 0.85em; /* 小さく */
     color: inherit; /* 親の.bordered-elementから色を継承（ホバーで白になる） */
-    display: block; /* 改行して表示 */
-    margin-top: 0.2em;
-    line-height: 1.3;
+    display: inline; /* インライン要素として表示 */
+    margin-left: 0.5em; /* テキストとの間隔 */
+    white-space: nowrap; /* 改行しない */
 }
 
 .link-item .ip-display { /* (root@192.168.1.1) など */
@@ -361,13 +345,13 @@ h3.bordered-element a:hover {
 }
 
 /* ── Device IP セクション内の微調整 ── */
-#device-ip .input-group { /* .connectionを.input-groupに修正 */
+#device-ip .input-group { /* .connectionはHTMLにないので削除 */
     display: flex;
     align-items: center;
     gap: 1rem;
     margin-bottom: 1em; /* QRコードとの間隔 */
 }
-#device-ip .ip-address-display { /* .ip-addressを.ip-address-displayに修正 */
+#device-ip .ip-address-display {
     flex: 1;
     min-width: 0;
     display: flex;
@@ -401,12 +385,10 @@ h3.bordered-element a:hover {
 }
 
 /* ── QRコード部分 (detailsタグ) のスタイル修正 - 「SSH QRコード表示」にも適用 */
-/* .bordered-element を適用 */
 .qr-code-section { /* .qr-codeを.qr-code-sectionに修正 */
-    /* .bordered-element が以下のスタイルをカバー */
-    /* display, width, background-color, color, border, border-radius, padding, box-sizing, text-align, text-decoration, transition, margin-bottom */
     margin-top: 1em; /* 上部マージンのみ調整 */
     padding: 0; /* summaryとcanvasに個別にパディングを設定するため、親は0に */
+    /* .bordered-element が既に適用されているため、これ以上は不要 */
 }
 
 /* QRコードセクション全体がホバーされたときに背景と文字色を変える */
@@ -417,9 +399,12 @@ h3.bordered-element a:hover {
 
 /* ホバーに連動して文字色を変える要素 */
 .qr-code-section:hover .qr-code-summary,
-.qr-code-section:hover .qr-code-summary:before,
-.qr-code-section:hover .qr-code-canvas canvas {
+.qr-code-section:hover .qr-code-summary:before {
     color: var(--hover-text); /* ホバーで文字を白に */
+}
+.qr-code-section:hover .qr-code-canvas > div { /* QRコードのプレースホルダーのテキストと背景色もホバーに連動 */
+    background-color: var(--hover-text) !important; /* QRコードの背景を白に */
+    color: var(--hover-bg) !important; /* QRコードのテキストを水色に */
 }
 
 
@@ -452,23 +437,25 @@ h3.bordered-element a:hover {
     padding-right: 1em;
     padding-bottom: 1em; /* 下部のパディング */
 }
-.qr-code-section .qr-code-canvas canvas {
-    background-color: transparent; /* QRコードの背景も透明に */
-    /* QRコードの前景色（暗い部分）もテキスト色に */
-    color: var(--text-color);
+.qr-code-section .qr-code-canvas > div { /* QRコードのプレースホルダーdiv */
+    background: var(--text-color); /* デフォルトのQRコード背景色（暗い部分）をテキスト色に */
+    color: var(--block-bg); /* デフォルトのQRコードテキスト色（明るい部分）をブロック背景色に */
+    transition: background-color 0.2s ease, color 0.2s ease;
     width: 11.25em !important;
     height: 11.25em !important;
-    display: inline-block;
-    transition: color 0.2s ease; /* ホバー時の色の変化をスムーズに */
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
 }
 
+
 /* ── プロトコルハンドラー登録セクション (detailsタグ) のスタイル修正 - 「SSH用プロトコルハンドラー登録」に適用 */
-/* .bordered-element を適用 */
 .handler-register-section { /* detailsタグのクラス */
-    /* .bordered-element が以下のスタイルをカバー */
-    /* display, width, background-color, color, border, border-radius, padding, box-sizing, text-align, text-decoration, transition, margin-bottom */
     margin-bottom: 0.8em; /* 項目間のマージンのみ調整 */
     padding: 0; /* summaryとリンクに個別にパディングを設定するため、親は0に */
+    /* .bordered-element が既に適用されているため、これ以上は不要 */
 }
 
 /* details全体がホバーされたときに背景と文字色を変える */
@@ -480,7 +467,7 @@ h3.bordered-element a:hover {
 /* detailsの中のsummaryとリンクの文字色もホバーに連動 */
 .handler-register-section:hover .handler-register-summary,
 .handler-register-section:hover .handler-register-summary:before,
-.handler-register-section:hover .handler-register-link,
+.handler-register-section:hover .handler-register-link .link-text,
 .handler-register-section:hover .handler-register-link .link-note {
     color: var(--hover-text); /* ホバーで文字を白に */
 }
@@ -511,40 +498,35 @@ h3.bordered-element a:hover {
 }
 
 /* .handler-register-link は .bordered-element のスタイルを適用する */
-/* HTML側で <a class="bordered-element handler-register-link">...</a> のようにクラスを追加してください */
-.handler-register-section .handler-register-link {
+.handler-register-section .handler-register-link.bordered-element {
     /* .bordered-element がこれらのスタイルをカバー */
     /* display, width, box-sizing, text-decoration, background-color, color, border, padding, border-radius, transition, margin-bottom は .bordered-element に任せる */
-    margin-top: 0; /* .bordered-elementのmargin-bottomを打ち消すため */
-    margin-bottom: 0.8em; /* details内の各リンク間のマージン */
+    /* details内のリンクは、親のdetailsが枠を持つので、リンク自体は枠を持たせない */
     border: none; /* 親のdetailsが枠を持つので、子要素のaタグの枠は削除 */
     background-color: transparent; /* 背景も透明に */
     padding-left: 1em; /* 親のパディングに合わせる */
     padding-right: 1em;
+    padding-top: 0; /* 上下のパディングは不要 */
+    padding-bottom: 0;
+    margin-top: 1em; /* summaryからのマージン */
+    margin-bottom: 0; /* link-list liにmargin-bottomがあるのでここでは不要 */
 }
 
-.handler-register-section .handler-register-link:hover {
+.handler-register-section .handler-register-link.bordered-element:hover {
     background-color: transparent; /* details全体でホバーするので、aタグ自体は背景を変えない */
     color: var(--hover-text); /* 文字色は変わる */
     border-color: transparent; /* ボーダーも変えない */
 }
 
-
-.handler-register-section .handler-register-link .link-note {
-    display: block; /* 改行 */
-    font-size: 0.8em;
-    color: inherit; /* 親のaタグから色を継承 */
-    margin-top: 0.2em;
-    line-height: 1.3;
+.handler-register-section .handler-register-content {
+    padding: 0 1em 1em 1em;
 }
 
 
 /* ── コンソールセクションのリンクにも.bordered-elementを適用 ── */
-/* HTML側で <a class="bordered-element">...</a> のようにクラスを追加してください */
-.console-section .bordered-element {
+.console-section .bordered-element { /* .content-sectionの外にある可能性も考慮してこのセレクタを残す */
     margin-bottom: 0.8em; /* 項目間のマージン */
 }
-
 
 /* ── フッター ── */
 .page-footer-area { /* footerタグに適用したクラス */
@@ -561,7 +543,7 @@ h3.bordered-element a:hover {
     z-index: 100; /* 他のコンテンツの上に表示 */
 }
 
-.page-footer-area .footer-content {
+.page-footer-area .footer-inner-flex { /* .footer-contentから名称変更 */
     max-width: 50em;
     width: 100%;
     display: flex;
@@ -587,11 +569,16 @@ h3.bordered-element a:hover {
     background-color: transparent; /* 背景は透明 */
 }
 
+.page-footer-area .separator {
+    color: var(--text-color); /* 区切り線の色もテキスト色に統一 */
+    margin: 0 0.3em;
+}
+
 /* ── レスポンシブデザインの調整 ── */
 @media (max-width: 48em) { /* 768px以下 */
     .main-header .header-inner,
     .main-content,
-    .page-footer-area .footer-content {
+    .page-footer-area .footer-inner-flex { /* .footer-contentから名称変更 */
         padding-left: 1em;
         padding-right: 1em;
     }
@@ -613,7 +600,7 @@ h3.bordered-element a:hover {
     }
 
     /* フッターの要素を中央に寄せる */
-    .page-footer-area .footer-content {
+    .page-footer-area .footer-inner-flex { /* .footer-contentから名称変更 */
         flex-direction: column;
         text-align: center;
     }
