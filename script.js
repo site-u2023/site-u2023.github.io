@@ -109,7 +109,7 @@ function updateAll() {
             qrCanvasContainer.innerHTML = '<div style="width: 180px; height: 180px; background: var(--text-color); margin: 0 auto; display: flex; align-items: center; justify-content: center; color: var(--block-bg); font-size: 12px;">QRコード表示エリア</div>';
             const dummyDiv = qrCanvasContainer.querySelector('div');
             if (dummyDiv) {
-                dummyDiv.setAttribute('data-text', 'QRコード表示エリア');
+                dummyDiv.setAttribute('data-text', 'QRiousライブラリがロードされていません');
             }
         }
     }
@@ -158,14 +158,36 @@ function updateLogoDisplay() {
     const siteLogo = document.getElementById('site-logo');
     if (siteLogo) {
         if (theme === 'dark') {
-            siteLogo.src = 'img/openwrt_text_blue_and_dark_blue.svg';
+            siteLogo.src = 'img/openwrt_text_blue_and_dark_blue.svg'; // Blue
         } else {
-            siteLogo.src = 'img/openwrt_text_black_and_white.svg';
+            siteLogo.src = 'img/openwrt_text_black_and_white.svg'; // Black
         }
     }
 }
 
-// ── フッター読み込み関数を追加 ──
+// ── ヘッダー読み込み関数を追加 ──
+async function loadHeader() {
+    try {
+        const response = await fetch('header.html'); // header.htmlのパス
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const headerHtml = await response.text();
+        const headerElement = document.createElement('div');
+        headerElement.innerHTML = headerHtml;
+
+        // bodyの先頭に挿入
+        document.body.prepend(headerElement.firstElementChild);
+
+        // ヘッダー読み込み後にロゴ表示を更新
+        updateLogoDisplay();
+
+    } catch (error) {
+        console.error("Failed to load header.html:", error);
+    }
+}
+
+// ── フッター読み込み関数 ──
 async function loadFooter() {
     try {
         const response = await fetch('footer.html'); // footer.htmlのパス
@@ -176,8 +198,7 @@ async function loadFooter() {
         const footerElement = document.createElement('div');
         footerElement.innerHTML = footerHtml;
 
-        // bodyの直前に挿入 (または特定のIDを持つ要素に挿入)
-        // 今回はbody直下としています。footer.htmlが<footer class="page-footer-area">...</footer>を持つと仮定
+        // bodyの最後に挿入
         document.body.appendChild(footerElement.firstElementChild);
 
         // 年表示を更新（フッター読み込み後に改めて実行）
@@ -185,7 +206,6 @@ async function loadFooter() {
         if (yearEl) yearEl.textContent = new Date().getFullYear();
 
         // フッター内の言語・テーマボタンにイベントリスナーを再設定
-        // DOMContentLoadedブロック内のテーマ・言語初期化処理を関数化またはここで呼び出す
         initializeThemeAndLanguageSelectors();
 
     } catch (error) {
@@ -206,7 +226,7 @@ function initializeThemeAndLanguageSelectors() {
         html.setAttribute('data-theme', mode);
         themeBtns.forEach(b => b.classList.toggle('selected', b.dataset.themePreference === pref));
         localStorage.setItem('site-u-theme', pref);
-        updateLogoDisplay();
+        updateLogoDisplay(); // ロゴ更新
         updateAll(); // QRコードの色を再適用するため
     }
     if (themeBtns.length > 0) {
@@ -240,19 +260,12 @@ function initializeThemeAndLanguageSelectors() {
 
 
 // ── DOMContentLoaded ──
-document.addEventListener('DOMContentLoaded', () => {
-    // ── フッターを読み込む ──
-    loadFooter().then(() => {
-        // フッターが読み込まれた後に、各種イベントリスナーを設定・再適用
-        // 特に、テーマ/言語セレクターがフッター内にある場合、ここで改めて初期化関数を呼び出す
-        // initializeThemeAndLanguageSelectors() はloadFooter内で呼び出されるため、ここでは不要だが、念のため記載
-        // initializeThemeAndLanguageSelectors(); // 重複する可能性があるので注意
+document.addEventListener('DOMContentLoaded', async () => {
+    // ヘッダーを最初に読み込む
+    await loadHeader();
 
-        // 年表示（footer.htmlが読み込まれた後でないと要素が存在しないため）
-        const yearEl = document.getElementById('current-year');
-        if (yearEl) yearEl.textContent = new Date().getFullYear();
-    });
-
+    // フッターを読み込む
+    await loadFooter();
 
     // ── IPアドレス関連初期化 ──
     const globalIpInput = document.getElementById('global-ip-input');
