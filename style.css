@@ -11,13 +11,7 @@
  *
  * その他: 上記以外は全て継承し、余計な個別指定は行わない。
  */
-<!DOCTYPE html>
-<html lang="ja" data-theme="dark">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>OpenWrt A Beginner's Notebook</title>
-    <style>
+
 /* ── テーマ変数 ── */
 html[data-theme="light"] {
     --block-bg: #f1f1f1;
