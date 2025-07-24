@@ -1,48 +1,111 @@
-<section id="terminal" class="content-section">
-    <h2 class="section-title bordered-element" data-i18n="terminal">ターミナル (Windows用)</h2>
-    
-    <details id="protocol-handler-section" class="handler-register-section bordered-element">
-        <summary class="handler-register-summary">SSH用プロトコルハンドラー登録</summary>
-        <div class="handler-register-content">
-            <a href="file/sshcmd.reg" download data-i18n="sshHandler" target="_blank" rel="noopener" class="handler-register-link">
-                <span class="link-text">プロトコルハンドラー登録</span>
-                <span class="link-note">※初回のみ、ダウンロード後ダブルクリック</span>
-            </a>
-            <p class="link-note">※初回のみ登録が必要です。登録後、下記SSH接続リンクが利用可能になります。</p>
+<!DOCTYPE html>
+<html lang="ja" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>OpenWrt A Beginner's Notebook</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header class="main-header">
+        <div class="header-inner">
+            <div class="logo-container">
+                <a href="https://openwrt.org/" target="_blank" rel="noopener noreferrer" class="logo-link">
+                    <img id="site-logo-light" src="img/openwrt_text_blue_and_dark_blue.svg" alt="OpenWrt Logo (ライトテーマ)" class="site-logo">
+                    <img id="site-logo-dark" src="img/openwrt_text_white_and_blue.svg" alt="OpenWrt Logo (ダークテーマ)" class="site-logo">
+                </a>
+            </div>
         </div>
-    </details>
-
-    <details id="ssh-connection-section" class="ssh-connection-section bordered-element">
-        <summary class="ssh-connection-summary">SSH接続</summary>
-        <ul class="link-list">
-            <li>
-                <a
-                    id="ssh-link"
-                    class="link-item bordered-element"
-                    data-ip-template="sshcmd://root@${ip}/"
-                    href="#"
-                    target="_blank"
-                    rel="noopener"
-                    data-i18n="sshConnection"
-                >
-                    <span class="link-text">SSH接続</span>
-                    <span class="ip-display">(root@<span id="ssh-ip">192.168.1.1</span>)</span>
-                </a>
-            </li>
-            <li>
-                <a
-                    id="aios-link"
-                    class="link-item bordered-element"
-                    data-ip-template="sshcmd://root@${ip}/${cmd}"
-                    href="#"
-                    target="_blank" rel="noopener"
-                    data-i18n="aiosExecution"
-                >
-                    <span class="link-text">aios実行</span>
-                    <span class="ip-display">(root@<span id="aios-ip">192.168.1.1</span>)</span>
-                </a>
-            </li>
-        </ul>
-        <p class="link-note">※プロトコルハンドラー登録済みの場合のみ有効です。</p>
-    </details>
-</section>
+    </header>
+    <main class="container">
+        <section id="device-ip" class="content-section">
+            <h2 class="section-title bordered-element" data-i18n="deviceIP">デバイスIPアドレス</h2>
+            <div class="input-group">
+                <div class="ip-address-display">
+                    <input id="global-ip-input" type="text" placeholder="192.168.1.1">
+                </div>
+                <button id="global-ip-update" class="bordered-element" data-i18n="update">更新</button>
+            </div>
+        </section>
+        <details id="qr-code-section" class="qr-code-section bordered-element">
+            <summary class="qr-code-summary" data-i18n="sshQRCode">SSH QRコード表示</summary>
+            <div id="qrcode-detail" class="qr-code-canvas"></div>
+        </details>
+        <section id="terminal" class="content-section">
+            <h2 class="section-title bordered-element" data-i18n="terminal">ターミナル (Windows用)</h2>
+            <details id="protocol-handler-section" class="handler-register-section bordered-element">
+                <summary class="handler-register-summary">SSH用プロトコルハンドラー登録</summary>
+                <div class="handler-register-content">
+                    <a href="file/sshcmd.reg" download data-i18n="sshHandler" target="_blank" rel="noopener" class="handler-register-link">
+                        <span class="link-text">プロトコルハンドラー登録</span>
+                        <span class="link-note">※初回のみ、ダウンロード後ダブルクリック</span>
+                    </a>
+                    <p class="link-note">※初回のみ登録が必要です。登録後、下記SSH接続リンクが利用可能になります。</p>
+                </div>
+            </details>
+            <details id="ssh-connection-section" class="ssh-connection-section bordered-element">
+                <summary class="ssh-connection-summary">SSH接続</summary>
+                <ul class="link-list">
+                    <li>
+                        <a
+                            id="ssh-link"
+                            class="link-item bordered-element"
+                            data-ip-template="sshcmd://root@${ip}/"
+                            href="#"
+                            target="_blank"
+                            rel="noopener"
+                            data-i18n="sshConnection"
+                        >
+                            <span class="link-text">SSH接続</span>
+                            <span class="ip-display">(root@<span id="ssh-ip">192.168.1.1</span>)</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a
+                            id="aios-link"
+                            class="link-item bordered-element"
+                            data-ip-template="sshcmd://root@${ip}/${cmd}"
+                            href="#"
+                            target="_blank"
+                            rel="noopener"
+                            data-i18n="aiosExecution"
+                        >
+                            <span class="link-text">aios実行</span>
+                            <span class="ip-display">(root@<span id="aios-ip">192.168.1.1</span>)</span>
+                        </a>
+                    </li>
+                </ul>
+                <p class="link-note">※プロトコルハンドラー登録済みの場合のみ有効です。</p>
+            </details>
+        </section>
+    </main>
+    <footer class="page-footer-area">
+        <div class="footer-inner-flex">
+            <div class="footer-controls footer-left-controls">
+                <div class="language-selector">
+                    <button id="lang-en" data-lang="en" class="lang-button">EN</button>
+                    <span class="separator">|</span>
+                    <button id="lang-ja" data-lang="ja" class="selected lang-button">JA</button>
+                </div>
+            </div>
+            <div class="copyright-info">
+                <p class="copyright-text">
+                    <a href="https://qiita.com/site-u/items/39fbac482c06c98b229b" target="_blank" rel="noopener" class="footer-link">OpenWrt初心者備忘録</a>
+                    <span class="separator"> | </span>
+                    <a href="https://github.com/site-u2023" target="_blank" rel="noopener noreferrer" class="footer-link">&copy; <span id="current-year">2025</span> site-u</a>
+                    <span class="separator"> | </span>
+                    <a href="disclaimer.html" target="_blank" rel="noopener noreferrer" class="footer-link">免責事項</a>
+                </p>
+            </div>
+            <div class="footer-controls footer-right-controls">
+                <div class="theme-selector">
+                    <button id="theme-auto" aria-label="システムテーマ" data-theme-preference="auto" class="theme-button">🌗</button>
+                    <button id="theme-light" aria-label="ライトテーマ" data-theme-preference="light" class="theme-button">☀️</button>
+                    <button id="theme-dark" aria-label="ダークテーマ" data-theme-preference="dark" class="theme-button selected">🌙</button>
+                </div>
+            </div>
+        </div>
+    </footer>
+    <script src="script.js"></script>
+</body>
+</html>
