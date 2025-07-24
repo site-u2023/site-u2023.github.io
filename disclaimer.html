@@ -1,39 +1,42 @@
 <!DOCTYPE html>
-<html lang="ja">
-<head>
+<html lang="ja" data-theme="light"> <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>免責事項 - site-u</title>
-    <link rel="stylesheet" href="style.css">
-    </head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>免責事項 - OpenWrt A Beginner's Notebook</title> <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json"> <link rel="icon" type="image/png" href="img/favicon-32x32.png"> </head>
 <body>
-    <header>
+    <div class="container"> <header>
+            <div class="header-inner">
+                <div class="logo">
+                    <a href="https://openwrt.org/" target="_blank" rel="noopener noreferrer">
+                        <img id="site-logo" src="img/openwrt_text_blue_and_dark_blue.svg" alt="OpenWrt Logo">
+                    </a>
+                </div>
+            </div>
         </header>
 
-    <main>
-        <h1>免責事項</h1>
+        <main>
+            <h1>免責事項</h1>
 
-        <section>
-            <h2>site-u（当サイト）に関する免責事項</h2>
-            <p>
-                当サイトで公開されているコンテンツ（ウェブサイト、スクリプト、その他の著作物を含む）は全てオープンであり、自由にご利用いただけます。
-                しかしながら、これらのコンテンツの利用によって生じたいかなる損害についても、当サイトの運営者は一切の責任を負いません。
-                利用者の皆様の責任においてご利用くださいますようお願いいたします。
-            </p>
-        </section>
+            <section>
+                <h2>site-u（当サイト）に関する免責事項</h2>
+                <p>
+                    当サイトで公開されているコンテンツ（ウェブサイト、スクリプト、その他の著作物を含む）は全てオープンであり、自由にご利用いただけます。
+                    しかしながら、これらのコンテンツの利用によって生じたいかなる損害についても、当サイトの運営者は一切の責任を負いません。
+                    利用者の皆様の責任においてご利用くださいますようお願いいたします。
+                </p>
+            </section>
 
-        <section>
-            <h2>OpenWrtに関する免責事項</h2>
-            <p>
-                OpenWrtはSoftware Freedom Conservancyの登録商標です。
-                当サイトはOpenWrtプロジェクトとは提携しておらず、また推奨もされていません。
-                OpenWrtに関する公式情報やサポートについては、<a href="https://openwrt.org/" target="_blank" rel="noopener noreferrer">OpenWrt公式サイト</a>をご参照ください。
-            </p>
-        </section>
-    </main>
-
-<footer>
-    <div class="page-footer-area">
+            <section>
+                <h2>OpenWrtに関する免責事項</h2>
+                <p>
+                    OpenWrtはSoftware Freedom Conservancyの登録商標です。
+                    当サイトはOpenWrtプロジェクトとは提携しておらず、また推奨もされていません。
+                    OpenWrtに関する公式情報やサポートについては、<a href="https://openwrt.org/" target="_blank" rel="noopener noreferrer">OpenWrt公式サイト</a>をご参照ください。
+                </p>
+            </section>
+        </main>
+    </div> <div class="page-footer-area">
         <div class="footer-inner-flex">
             <div class="footer-left-controls">
                 <div class="language-selector">
@@ -60,6 +63,5 @@
             </div>
         </div>
     </div>
-</footer>
-</body>
+    <script src="script.js"></script> </body>
 </html>
