@@ -72,6 +72,7 @@ ul {
 
 /* ── コンテナ ── */
 .container {
+  width: 100%; 
   max-width: 800px;
   margin: 2em auto;
   background: var(--block-bg);
