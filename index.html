@@ -297,7 +297,150 @@ h3.bordered-element {
     line-height: 1.3;
 }
 
-/* ── リンクリスト ── */
+/* ── ヘッダー ── */
+.main-header {
+    position: relative;
+    border-bottom: 0.05em solid var(--text-color);
+    background-color: var(--block-bg);
+    border-color: var(--text-color);
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+    flex-shrink: 0;
+    width: 100%;
+}
+
+.main-header .header-inner {
+    max-width: 50em;
+    margin: 0 auto;
+    padding: 1.5em 2em;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1em;
+    box-sizing: border-box;
+}
+
+.main-header .logo-container {
+    text-align: center;
+    width: 100%;
+}
+
+.main-header .logo-container a {
+    background-color: transparent;
+    border: none;
+    padding: 0;
+    display: inline-block;
+    color: var(--text-color);
+    text-decoration: none;
+    transition: none;
+}
+
+.main-header .logo-container a:hover {
+    background-color: transparent;
+    color: var(--text-color);
+    text-decoration: none;
+}
+
+.main-header .logo-container .site-logo {
+    width: 100%;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+    max-width: 300px;
+}
+
+/* ── フッター ── */
+.page-footer-area {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    padding: 1em 2em;
+    background-color: var(--block-bg);
+    border-top: 0.05em solid var(--text-color);
+    border-color: var(--text-color);
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+    flex-shrink: 0;
+    box-sizing: border-box;
+    z-index: 100;
+}
+
+.page-footer-area .footer-inner-flex {
+    max-width: 50em;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1em;
+}
+
+.page-footer-area .copyright-text {
+    font-size: 0.85em;
+    color: var(--text-color);
+}
+
+.page-footer-area .footer-link {
+    color: var(--text-color);
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.page-footer-area .footer-link:hover {
+    color: var(--link-color);
+    background-color: transparent;
+}
+
+.page-footer-area .separator {
+    color: var(--text-color);
+    margin: 0 0.3em;
+}
+
+/* 言語・テーマボタンの共通スタイル */
+.lang-button,
+.theme-button {
+    background: transparent;
+    border: 0.05em solid transparent;
+    padding: 0.25em 0.5em;
+    border-radius: 0.3em;
+    cursor: pointer;
+    transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+    font-size: 1em;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-color);
+}
+
+.lang-button:hover,
+.theme-button:hover {
+    background-color: var(--hover-bg);
+    color: var(--hover-text);
+    border-color: var(--hover-bg);
+}
+
+.lang-button.selected,
+.theme-button.selected {
+    background-color: var(--hover-bg);
+    color: var(--hover-text);
+    border-color: var(--hover-bg);
+}
+
+.lang-button.selected:hover,
+.theme-button.selected:hover {
+    background-color: var(--hover-bg);
+    border-color: var(--hover-bg);
+}
+
+.language-selector,
+.theme-selector {
+    display: flex;
+    align-items: center;
+    gap: 0.3em;
+}
 .link-list {
     margin-top: 1em;
     padding: 0;
@@ -331,6 +474,17 @@ h3.bordered-element {
     </style>
 </head>
 <body>
+    <!-- ヘッダー -->
+    <header class="main-header">
+        <div class="header-inner">
+            <div class="logo-container">
+                <a href="https://openwrt.org/" target="_blank" rel="noopener noreferrer" class="logo-link">
+                    <img id="site-logo" src="img/openwrt_text_blue_and_dark_blue.svg" alt="OpenWrt Logo" class="site-logo">
+                </a>
+            </div>
+        </div>
+    </header>
+
     <div class="container">
         <main class="main-content">
             <nav class="main-nav">
@@ -442,19 +596,71 @@ h3.bordered-element {
         </main>
     </div>
 
+    <!-- フッター -->
+    <footer class="page-footer-area">
+        <div class="footer-inner-flex">
+            <div class="footer-controls footer-left-controls">
+                <div class="language-selector">
+                    <button id="lang-en" data-lang="en" class="lang-button">EN</button>
+                    <span class="separator">|</span>
+                    <button id="lang-ja" data-lang="ja" class="selected lang-button">JA</button>
+                </div>
+            </div>
+            <div class="copyright-info">
+                <p class="copyright-text">
+                    <a href="https://qiita.com/site-u/items/39fbac482c06c98b229b" target="_blank" rel="noopener" class="footer-link">OpenWrt初心者備忘録</a>
+                    <span class="separator"> | </span>
+                    <a href="https://github.com/site-u2023" target="_blank" rel="noopener noreferrer" class="footer-link">&copy; <span id="current-year">2025</span> site-u</a>
+                    <span class="separator"> | </span>
+                    <a href="disclaimer.html" target="_blank" rel="noopener noreferrer" class="footer-link">免責事項</a>
+                </p>
+            </div>
+            <div class="footer-controls footer-right-controls">
+                <div class="theme-selector">
+                    <button id="theme-auto" aria-label="システムテーマ" data-theme-preference="auto" class="theme-button">🌗</button>
+                    <button id="theme-light" aria-label="ライトテーマ" data-theme-preference="light" class="theme-button">☀️</button>
+                    <button id="theme-dark" aria-label="ダークテーマ" data-theme-preference="dark" class="theme-button selected">🌙</button>
+                </div>
+            </div>
+        </div>
+    </footer>
+
     <script>
-        // テーマ切り替え機能（デモ用）
+        // テーマ切り替え機能
         document.addEventListener('DOMContentLoaded', function() {
             const html = document.documentElement;
-            let isDark = true;
+            const themeButtons = document.querySelectorAll('.theme-button');
+            const langButtons = document.querySelectorAll('.lang-button');
             
-            // クリックでテーマ切り替え（デモ用）
-            document.addEventListener('click', function(e) {
-                if (e.ctrlKey) { // Ctrlキーを押しながらクリックでテーマ切り替え
-                    isDark = !isDark;
-                    html.setAttribute('data-theme', isDark ? 'dark' : 'light');
-                }
+            // テーマ切り替え
+            themeButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const theme = this.getAttribute('data-theme-preference');
+                    
+                    // 選択状態を更新
+                    themeButtons.forEach(btn => btn.classList.remove('selected'));
+                    this.classList.add('selected');
+                    
+                    // テーマを適用
+                    if (theme === 'auto') {
+                        // システム設定に従う（ここではダークを仮適用）
+                        html.setAttribute('data-theme', 'dark');
+                    } else {
+                        html.setAttribute('data-theme', theme);
+                    }
+                });
             });
+            
+            // 言語切り替え（見た目のみ）
+            langButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    langButtons.forEach(btn => btn.classList.remove('selected'));
+                    this.classList.add('selected');
+                });
+            });
+            
+            // 年を設定
+            document.getElementById('current-year').textContent = new Date().getFullYear();
         });
     </script>
 </body>
