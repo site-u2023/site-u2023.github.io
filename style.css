@@ -2,10 +2,8 @@
 html[data-theme="light"] {
   --block-bg: #fff;
   --block-border: #ddd;
-  --link-color: #43b0e8;
-  --text-color: #333;
-  --hover-bg: rgba(0, 0, 0, 0.05); /* ★変更: ホバー背景色を共通の薄いグレーに */
-  /* --hover-color: var(--text-color); を削除 */
+  --link-color: #43b0e8; /* リンクのデフォルト色 */
+  --text-color: #333; /* 一般的なテキスト色 */
   --qr-dark: #000;
   --qr-light: #f1f1f1;
 }
@@ -13,71 +11,214 @@ html[data-theme="light"] {
 html[data-theme="dark"] {
   --block-bg: #2a2a2a;
   --block-border: #333;
-  --link-color: #43b0e8;
-  --text-color: #f1f1f1;
-  --hover-bg: rgba(255, 255, 255, 0.05); /* ★変更: ホバー背景色を共通の薄いグレーに */
-  /* --hover-color: var(--text-color); を削除 */
+  --link-color: #43b0e8; /* リンクのデフォルト色 */
+  --text-color: #f1f1f1; /* 一般的なテキスト色 */
   --qr-dark: #fff;
   --qr-light: #2a2a2a;
 }
 
 /* ── ベース ── */
-/* ... (変更なし) ... */
+body {
+  margin: 0;
+  padding: 0 0 5em;
+  font-family: 'Galano Grotesque SemiBold', 'Galano Grotesque', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans JP", "Noto Sans CJK JP", "DejaVu Sans", sans-serif;
+  background-color: var(--block-bg);
+  color: var(--text-color); /* ベースのテキスト色 */
+  transition: background-color 0.3s ease, color 0.3s ease;
+  line-height: 1.5;
+}
+
+/* リストマーカー消去 */
+ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
 
 /* ── ヘッダー ── */
-/* ... (変更なし) ... */
+header {
+  position: relative;
+  border-bottom: 0.05em solid var(--block-border);
+}
 
-/* .language-selector は flex のままでOK */
+/* header-inner: ロゴを中央に配置 */
+header .header-inner {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 1em 2em;
+}
+
+/* ロゴのスタイル */
+header .logo {
+  text-align: center;
+  width: 100%;
+}
+
+header .logo img {
+  width: 100%;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+  max-width: 300px;
+}
+
+/* 言語セレクターのコンテナ */
 .language-selector {
   display: flex;
   align-items: center;
-  gap: 0.25em; /* 4pxを相対値に */
+  gap: 0.25em;
   flex-shrink: 0;
 }
 
 /* ── コンテナ ── */
-/* ... (変更なし) ... */
+.container {
+  max-width: 50em;
+  margin: 2em auto;
+  background: var(--block-bg);
+  padding: 1.5em 2em;
+  border-radius: 0.5em;
+  box-shadow: 0 0.25em 0.5em rgba(0, 0, 0, 0.1);
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+}
 
-/* ── フォーム＆リンクをベースカラー継承 ── */
+/* ── フォーム＆リンクのベーススタイル ── */
 input,
 button,
 a {
-  color: inherit; /* 親からテキスト色を継承 */
-  background-color: inherit; /* 親から背景色を継承 */
+  color: inherit; /* 親からテキスト色を継承 (bodyの--text-colorが適用される) */
+  background-color: inherit; /* 親から背景色を継承 (bodyの--block-bgが適用される) */
   border: 0.05em solid var(--block-border);
   border-radius: 0.3em;
   padding: 0.6em 0.9em;
   box-sizing: border-box;
-  transition: background-color 0.2s ease,
-              color 0.2s ease,
-              border-color 0.2s ease;
+  transition: color 0.2s ease, border-color 0.2s ease; /* 背景色変化は除外 */
   text-decoration: none;
 }
 
 a {
-  color: var(--link-color); /* ★変更なし: リンクは常に水色 */
+  color: var(--link-color); /* リンクの文字色は常に水色 */
 }
 
 a:hover {
-  background-color: var(--hover-bg); /* ホバー背景色を適用 */
-  color: var(--link-color); /* ★変更: ホバー時も文字色は水色に固定 */
+  background-color: transparent; /* ホバー時の背景色を透明に固定 */
+  color: var(--link-color); /* ホバー時もリンクカラー(水色)を維持 */
 }
 
-/* ... (中略) ... */
+/* プレースホルダーのスタイル */
+input::placeholder {
+  color: var(--text-color);
+  opacity: 0.7;
+}
+
+/* ── ナビゲーション ── */
+nav section {
+  background-color: var(--block-bg);
+  border: 0.05em solid var(--block-border);
+  border-radius: 0.5em;
+  padding: 0.625em;
+  margin-bottom: 1em;
+  box-sizing: border-box;
+}
+
+nav h2 {
+  margin: 1.5em 0 0.8em;
+  color: var(--link-color);
+  font-size: 1.3em;
+}
+nav li {
+  margin-bottom: 0.6em;
+}
+nav a {
+  display: block;
+}
+
+/* ── Device IP セクション内の微調整 ── */
+#device-ip .connection {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+#device-ip .ip-address {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+#global-ip-input {
+  flex: 1;
+  min-width: 0;
+}
+#global-ip-update {
+  margin-left: auto;
+  flex: 0 0 auto;
+  cursor: pointer;
+}
+#global-ip-update:hover {
+  background-color: transparent; /* ホバー時の背景色を透明に */
+  color: var(--link-color); /* ホバー時もリンクカラーに */
+}
+
+/* ── QRコード部分 ── */
+.qr-code {
+  margin-top: 1em;
+  padding: 1em;
+  background-color: var(--block-bg);
+  border-radius: 0.375em;
+  text-align: center;
+  border: 0.05em solid var(--block-border);
+  box-sizing: border-box;
+}
+.qr-code canvas {
+  width: 11.25em !important;
+  height: 11.25em !important;
+  display: inline-block;
+}
 
 /* ── フッター／テーマ切替エリア ── */
-/* ... (変更なし) ... */
+.page-footer-area {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background-color: var(--block-bg);
+  border-top: 0.05em solid var(--block-border);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+}
 
 /* フッター内部のFlexコンテナ */
-/* ... (変更なし) ... */
+.footer-inner-flex {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5em 2em;
+  max-width: 50em;
+  width: 100%;
+  box-sizing: border-box;
+}
 
 /* フッター左側のコントロール (言語ボタンの親) */
-/* ... (変更なし) ... */
+.footer-left-controls {
+  display: flex;
+  align-items: center;
+  flex-grow: 1;
+  justify-content: flex-start;
+}
 
 /* フッター右側のコントロール (昼夜ボタンの親) */
-/* ... (変更なし) ... */
+.footer-right-controls {
+  display: flex;
+  align-items: center;
+  flex-grow: 1;
+  justify-content: flex-end;
+}
 
-/* 著作権表示のスタイル (変更なし) */
+/* 著作権表示のスタイル */
 .page-footer-area p {
     margin: 0;
     font-size: 0.9em;
@@ -94,95 +235,94 @@ a:hover {
 /* セパレーターのスタイル */
 .page-footer-area p .separator {
     white-space: nowrap;
-    color: var(--text-color); /* ★変更: セパレーターはテキストカラー */
+    color: var(--text-color); /* セパレーターはテキストカラー */
 }
 
 /* 各リンクアイテムのスタイル (フッターのaタグ) */
 .page-footer-area p a {
     white-space: nowrap;
     padding: 0.2em 0.4em;
-    border: none;
+    border: none; /* フッターリンクはボーダーなし */
     border-radius: 0.2em;
-    color: var(--link-color); /* ★変更: 通常時もリンクカラー(水色)に固定 */
+    color: var(--link-color); /* 常に水色 */
 }
 .page-footer-area p a:hover {
-    background-color: var(--hover-bg);
-    color: var(--link-color); /* ★変更なし: ホバー時もリンクカラー(水色) */
+    background-color: transparent; /* ホバー時の背景色を透明に固定 */
+    color: var(--link-color); /* ホバー時もリンクカラー(水色) */
 }
 
 /* 言語ボタンのスタイル調整 */
 .language-selector button {
-  background: transparent;
-  border: 0.05em solid transparent; /* input, buttonのborderを上書きして透明に */
+  background: transparent; /* 背景は常に透明 */
+  border: 0.05em solid transparent; /* ボーダーも常に透明 (input, buttonの共通ボーダーを上書き) */
   padding: 0.25em 0.5em;
   border-radius: 0.3em;
   cursor: pointer;
-  transition: background-color 0.2s ease,
-              color 0.2s ease,
-              border-color 0.2s ease;
+  transition: color 0.2s ease, border-color 0.2s ease; /* 背景色変化は除外 */
   font-size: 1em;
   line-height: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--link-color); /* ★変更: 言語ボタンは水色に固定 */
+  color: var(--link-color); /* 言語ボタンは常に水色 */
 }
 .language-selector button:hover {
-  background-color: rgba(0, 0, 0, 0.05); /* 薄いホバー背景色 */
-  box-shadow: 0 0 0.5em rgba(0, 0, 0, 0.1); /* ホバー時の影 */
+  background-color: transparent; /* ホバー時も背景は透明 */
+  box-shadow: none; /* ホバー時の影もなし */
+  /* colorは指定しない (var(--link-color)を維持) */
 }
 .language-selector button.selected {
-  background-color: #43b0e8;
-  color: #fff;
+  background-color: #43b0e8; /* 選択時は水色背景 */
+  color: #fff; /* 選択時は白文字 */
 }
 .language-selector button.selected:hover {
-  background-color: #43b0e8;
-  box-shadow: 0 0 0.5em rgba(0, 0, 0, 0.2);
+  background-color: #43b0e8; /* 選択時のホバーは同じ背景色 */
+  box-shadow: none; /* 選択時のホバーの影もなし */
 }
 
-/* テーマ切り替えボタンのコンテナ (新しく追加) */
+/* テーマ切り替えボタンのコンテナ (横並びにするためのFlex設定) */
 .theme-selector {
-  display: flex; /* ★追加: ボタンを横並びにするためにflexを設定 */
+  display: flex;
   align-items: center;
-  gap: 0.25em; /* ボタン間の間隔を設定 */
+  gap: 0.25em;
 }
 
 /* テーマ切り替えボタンのスタイル */
 .theme-selector button {
-  background: transparent;
-  border: 0.05em solid transparent; /* input, buttonのborderを上書きして透明に */
+  background: transparent; /* 背景は常に透明 */
+  border: 0.05em solid transparent; /* ボーダーも常に透明 */
   padding: 0.25em 0.5em;
   border-radius: 0.3em;
   cursor: pointer;
-  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  transition: color 0.2s ease, border-color 0.2s ease; /* 背景色変化は除外 */
   font-size: 1em;
   line-height: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--link-color); /* ★変更: テーマボタンは水色に固定 */
+  color: var(--link-color); /* テーマボタンは常に水色 */
 }
 
 .theme-selector button:hover {
-  background-color: rgba(0, 0, 0, 0.05); /* ホバー時の背景色を少し暗く */
-  box-shadow: 0 0 0.5em rgba(0, 0, 0, 0.1);
-  color: var(--link-color); /* ★変更なし: ホバー時もリンクカラー */
+  background-color: transparent; /* ホバー時も背景は透明 */
+  box-shadow: none; /* ホバー時の影もなし */
+  /* colorは指定しない (var(--link-color)を維持) */
 }
 
 .theme-selector button.selected {
-  background-color: #43b0e8;
-  color: #fff;
+  background-color: #43b0e8; /* 選択時は水色背景 */
+  color: #fff; /* 選択時は白文字 */
 }
 .theme-selector button.selected:hover {
-  background-color: #43b0e8;
-  box-shadow: 0 0 0.5em rgba(0, 0, 0, 0.2);
+  background-color: #43b0e8; /* 選択時のホバーは同じ背景色 */
+  box-shadow: none; /* 選択時のホバーの影もなし */
 }
 
 /* ── レスポンシブ ── */
 @media (max-width: 37.5em) { /* 600pxをemに変換 */
   body {
     -webkit-text-size-adjust: 100%;
-    padding-bottom: 7.5em; /* フッターの高さに合わせて調整 (少し余裕を持たせる) */
+    padding-bottom: 7.5em;
     padding-top: 0;
   }
   .container {
@@ -206,23 +346,32 @@ a:hover {
     flex-direction: column; /* モバイルでは縦並びにする */
     align-items: center;
     padding: 0.6em 1em;
-    gap: 0.8em; /* 縦並びになった時の要素間の間隔 */
+    gap: 0.8em;
   }
   .footer-left-controls,
   .footer-right-controls,
-  .page-footer-area p { /* モバイルでのpタグの配置調整 */
+  .page-footer-area p {
     width: 100%;
     justify-content: center;
     text-align: center;
   }
-  /* モバイルでのボタンのパディング調整 */
-  /* ここでinput, button, aの共通パディングを上書きする */
-  input, button, a { /* ★変更なし: そのまま */
+  /* モバイルでのボタンのパディング調整 (変更なし) */
+  input, button, a {
     padding: 0.6em 0.9em;
   }
   .language-selector button,
   .theme-selector button {
     padding: 0.35em;
-    border: 0.05em solid transparent; /* ★変更なし: モバイルでボタンのボーダーを透明に */
+    border: 0.05em solid transparent;
   }
+}
+/* ── ダークテーマ用オーバーライド ── */
+html[data-theme="dark"] .container {
+  box-shadow: 0 0.25em 0.75em rgba(0, 0, 0, 0.4);
+}
+html[data-theme="dark"] nav h2 {
+  border-bottom-color: var(--block-border);
+}
+html[data-theme="dark"] .page-footer-area {
+  border-top-color: var(--block-border);
 }
