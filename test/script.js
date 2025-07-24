@@ -75,24 +75,32 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ── SSHリンクだけ href 更新 ──
-    // HTML側で data-ip-template="sshcmd://root@${ip}/${cmd}" としてください
     const sshLink = document.getElementById('ssh-link');
     if (sshLink) {
-      // ① 必ず getAttribute で「生のテンプレート」を取得
       const tpl = sshLink.getAttribute('data-ip-template');
-      // ② ${ip}→IP, ${cmd}→URLエンコード済コマンド　を全置換
       const url = tpl
-        .replace(/\$\{ip\}/g,  ip)
+        .replace(/\$\{ip\}/g, ip)
         .replace(/\$\{cmd\}/g, sshCmdEncoded);
       sshLink.href = url;
-      // 表示用スパン内のIPも更新
       const span = sshLink.querySelector('#ssh-ip');
+      if (span) span.textContent = ip;
+    }
+
+    // ── aiosリンクの表示と href 更新 ──
+    const aiosLink = document.getElementById('aios-link');
+    if (aiosLink) {
+      const tpl = aiosLink.getAttribute('data-ip-template');
+      const url = tpl
+        .replace(/\$\{ip\}/g, ip)
+        .replace(/\$\{cmd\}/g, sshCmdEncoded);
+      aiosLink.href = url;
+      const span = aiosLink.querySelector('#aios-ip');
       if (span) span.textContent = ip;
     }
 
     // ── その他の .link-ip は href のみ更新 ──
     document.querySelectorAll('.link-ip').forEach(link => {
-      if (link.id === 'ssh-link') return;
+      if (link.id === 'ssh-link' || link.id === 'aios-link') return;
       const tpl = link.getAttribute('data-ip-template');
       if (!tpl) return;
       link.href = tpl.replace(/\$\{ip\}/g, ip);
