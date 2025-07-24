@@ -12,26 +12,25 @@
         <div id="header-placeholder"></div>
 
         <main>
-            <section id="device-ip">
-                <h2 data-i18n="deviceIP">デバイスIPアドレス</h2>
-                <div class="connection">
-                    <div class="ip-address">
-                        <input
-                            type="text"
-                            id="global-ip-input"
-                            value="192.168.1.1"
-                            placeholder="192.168.0.1"
-                        >
-                        <button id="global-ip-update" type="button" data-i18n="update">更新</button>
+            <nav>
+                <section id="device-ip">
+                    <h2 data-i18n="deviceIP">デバイスIPアドレス</h2>
+                    <div class="connection">
+                        <div class="ip-address">
+                            <input
+                                type="text"
+                                id="global-ip-input"
+                                value="192.168.1.1"
+                                placeholder="192.168.0.1"
+                            >
+                            <button id="global-ip-update" type="button" data-i18n="update">更新</button>
+                        </div>
                     </div>
-                </div>
                 <details id="qrcode-detail-container" class="qr-code">
                     <summary>SSH QRコード表示</summary>
                     <div id="qrcode-detail"></div>
                 </details>
             </section>
-
-            <nav>
                 <section id="terminal">
                     <h2 data-i18n="terminal">ターミナル</h2>
                     <ul>
