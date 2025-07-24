@@ -1,62 +1,38 @@
-/*
- * 基本デザイン要件:
- * 1. テーマに応じた背景色 (--block-bg):
- * - ライトテーマ: #f1f1f1 (白)
- * - ダークテーマ: #2a2a2a (黒)
- * 2. 全ての文字色 (--text-color):
- * - ライトテーマ、ダークテーマに関わらず、常に #43b0e8 (水色)
- * 3. 全てのリンク（ロゴを含む）や、枠として機能する要素のホバー時の挙動:
- * - ホバー時以外: 背景透明、文字色を水色 (--text-color) から継承、水色の枠線
- * - ホバー時のみ: 背景 #43b0e8 (水色)、文字 #f1f1f1 (白)、水色の枠線（背景と同色）
- *
- * その他: 上記以外は全て継承し、余計な個別指定は行わない。
- */
-
 /* ── テーマ変数 ── */
 html[data-theme="light"] {
-    --block-bg: #f1f1f1; /* 背景色、主要コンテンツの背景 (白) */
-    --main-color: #43b0e8; /* 主要な文字色、リンク色、QRコード色など、水色 */
-    --text-color: var(--main-color); /* 全ての文字色を主要色に統一 */
-    --link-color: var(--main-color); /* 全てのリンク色を主要色に統一 */
-    --hover-bg: var(--link-color); /* ホバー時の背景色 (水色) */
-    --hover-text: #f1f1f1; /* ホバー時の文字色 (白) */
+    --block-bg: #f1f1f1;
+    --main-color: #43b0e8;
+    --text-color: var(--main-color);
+    --link-color: var(--main-color);
+    --hover-bg: var(--link-color);
+    --hover-text: #f1f1f1;
 }
 
 html[data-theme="dark"] {
-    --block-bg: #2a2a2a; /* ダークテーマ時の背景色 (黒) */
-    --main-color: #43b0e8; /* 主要な文字色、リンク色、QRコード色など、水色 */
-    --text-color: var(--main-color); /* 全ての文字色を主要色に統一 */
-    --link-color: var(--main-color); /* 全てのリンク色を主要色に統一 */
-    --hover-bg: var(--link-color); /* ホバー時の背景色 (水色) */
-    --hover-text: #f1f1f1; /* ホバー時の文字色 (白) */
+    --block-bg: #2a2a2a;
+    --main-color: #43b0e8;
+    --text-color: var(--main-color);
+    --link-color: var(--main-color);
+    --hover-bg: var(--link-color);
+    --hover-text: #f1f1f1;
 }
 
 html {
-    font-size: 16px; /* 1em = 16px とする基準を設定 */
+    font-size: 16px;
 }
 
 /* ── ベーススタイル ── */
 body {
     margin: 0;
-    padding: 0 0 5em; /* フッター分の余白 */
+    padding: 0 0 5em;
     font-family: 'Galano Grotesque SemiBold', 'Galano Grotesque', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans JP", "Noto Sans CJK JP", "DejaVu Sans", sans-serif;
-    background-color: var(--block-bg); /* 全体の背景色 (テーマで白/黒) */
-    color: var(--text-color); /* 全体のデフォルトテキスト色 (常に水色) */
-    transition: background-color 0.3s ease, color 0.3s ease; /* テーマ切り替え時のスムーズな変化 */
-    line-height: 1.6; /* 行の高さを少し広げ読みやすく */
-    min-height: 100vh; /* フッターを下に固定するための高さ確保 */
-    display: flex; /* フッターを最下部に固定するためにFlexboxを使用 */
-    flex-direction: column; /* 縦方向に要素を並べる */
-}
-
-/* .container の外に配置されるヘッダーとフッター用のスタイル */
-.main-header,
-.page-footer-area {
     background-color: var(--block-bg);
-    border-color: var(--text-color); /* border-colorもテキスト色に統一 */
-    transition: background-color 0.3s ease, border-color 0.3s ease;
-    flex-shrink: 0;
-    width: 100%;
+    color: var(--text-color);
+    transition: background-color 0.3s ease, color 0.3s ease;
+    line-height: 1.6;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
 }
 
 /* リストマーカーの削除 */
@@ -66,209 +42,61 @@ ul {
     padding: 0;
 }
 
-/* ── ヘッダー ── */
-.main-header { /* headerタグに適用したクラス */
-    position: relative;
-    border-bottom: 0.05em solid var(--text-color); /* border-colorもテキスト色に統一 */
-}
-
-.main-header .header-inner {
-    max-width: 50em; /* コンテナと同じ幅 */
-    margin: 0 auto;
-    padding: 1.5em 2em; /* 左右のパディング */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 1em;
-    box-sizing: border-box;
-}
-
-.main-header .logo-container { /* ロゴを囲むdiv */
-    text-align: center;
-    width: 100%; /* 親要素の幅いっぱいに広げる */
-}
-
-/* ロゴのリンクには特別なデフォルトスタイル (背景透明、文字色をテーマのテキスト色に) */
-/* ホバー時も共通リンクスタイルを継承しない */
-.main-header .logo-container a {
-    background-color: transparent; /* 背景色を透明に */
-    border: none; /* ボーダーなし */
-    padding: 0; /* パディングなし */
-    display: inline-block; /* リンクとして動作させるために必要 */
-    color: var(--text-color); /* 文字色をテーマのテキスト色に */
-    text-decoration: none; /* 下線なし */
-    transition: none;
-}
-
-.main-header .logo-container a:hover {
-    background-color: transparent; /* ホバー時も背景透明 */
-    color: var(--text-color); /* ホバー時もテキスト色を維持 */
-    text-decoration: none; /* ホバー時も下線なし */
-}
-
-.main-header .logo-container .site-logo { /* imgタグに適用したクラス */
-    width: 100%;
-    height: auto;
-    display: block;
-    margin: 0 auto;
-    max-width: 300px; /* 最大幅を設定 */
-}
-
 /* ── メインコンテンツのコンテナ ── */
 .container {
-    flex-grow: 1; /* body の子要素として、残りのスペースを全て占める */
-    width: 100%; /* 親要素（body）に対して100%の幅を取る */
-    display: flex; /* container 内のアイテム (header-placeholder, main-content) を Flex で制御 */
-    flex-direction: column; /* 縦方向に並べる */
-    align-items: center; /* 子要素を中央に寄せる */
-    box-sizing: border-box; /* paddingが幅に含まれるように */
-    transition: background-color 0.3s ease, box-shadow 0.3s ease; /* transitionは残す */
-}
-
-/* ── フォーム要素、ボタン、リンクのベーススタイル (継承と最低限の調整) ── */
-/* input, buttonの共通ベーススタイル */
-input[type="text"], /* input要素のtypeを明確に */
-button {
-    color: inherit; /* 親要素からテキスト色を継承 (基本はbodyの--text-color) */
-    background-color: transparent; /* 背景は透明 */
-    border: 0.05em solid var(--text-color); /* ボーダー色もテキスト色に統一 */
-    border-radius: 0.3em; /* 角丸 */
-    padding: 0.6em 0.9em; /* パディング */
-    box-sizing: border-box;
-    transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease; /* 全ての状態変化をスムーズに */
-    text-decoration: none; /* 下線なし */
-    cursor: pointer; /* クリック可能な要素にはカーソル変更 */
-}
-
-/* input要素のプレースホルダーのスタイル */
-input::placeholder {
-    color: var(--text-color); /* テキスト色を継承 */
-    opacity: 0.7;
-}
-
-/* 全てのaタグに適用されるデフォルトのリンクスタイル */
-a {
-    background-color: transparent; /* デフォルトの背景色を透明に */
-    color: var(--text-color); /* デフォルトの文字色をテーマのテキスト色に */
-    text-decoration: none; /* デフォルトで下線なし */
-    transition: background-color 0.2s ease, color 0.2s ease; /* ホバー時の変化をスムーズに */
-    border: none; /* ボーダーなし */
-    padding: 0; /* パディングなし */
-    display: inline; /* インライン要素として振る舞う */
-    cursor: pointer; /* クリック可能な要素にはカーソル変更 */
-}
-
-/* 全てのaタグに適用されるホバー時のリンクスタイル */
-a:hover {
-    background-color: var(--hover-bg); /* ホバー時の背景色を水色に */
-    color: var(--hover-text); /* ホバー時の文字色を白に修正 */
-    text-decoration: none; /* ホバー時も下線なし */
-}
-
-/* 新しい「枠付き要素」の汎用スタイル - h2, h3, details, 個別の枠を持つaタグに適用 */
-/* 画像の全ての枠付き要素に適用される共通のスタイル */
-.bordered-element {
-    display: block; /* ブロック要素として表示し、幅いっぱいに広がるようにする */
+    flex-grow: 1;
     width: 100%;
-    background-color: transparent; /* 背景は透明 */
-    color: var(--text-color); /* デフォルトの文字色 */
-    border: 0.05em solid var(--text-color); /* 枠線 */
-    border-radius: 0.3em; /* 角丸 */
-    padding: 0.8em 1em; /* パディング */
-    box-sizing: border-box;
-    text-align: left; /* 左寄せ */
-    text-decoration: none; /* 下線なし */
-    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
-    margin-bottom: 0.8em; /* 項目間の下マージン */
-    cursor: pointer; /* クリック可能な要素にはカーソル変更 */
-}
-
-/* 枠付き要素のホバー時のスタイル */
-.bordered-element:hover {
-    background-color: var(--hover-bg); /* ホバーで背景を水色に */
-    color: var(--hover-text); /* ホバーで文字を白に */
-    border-color: var(--hover-bg); /* ホバーでボーダーも水色に */
-}
-
-/* buttonに特有のスタイル（input, aのベースを上書き） */
-button.primary-button { /* 更新ボタンなど、プライマリーアクションのボタン */
-    background-color: var(--link-color); /* 背景色を水色に */
-    color: var(--hover-text); /* 文字色を白に */
-    border-color: var(--link-color); /* ボーダーも水色に */
-    cursor: pointer;
-    padding: 0.6em 0.9em; /* パディングを統一 */
-    border-radius: 0.3em; /* 角丸を統一 */
-    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
-}
-
-button.primary-button:hover {
-    background-color: var(--link-color); /* ホバー時もベースのリンク色を維持 */
-    color: var(--hover-text); /* ホバー時も文字色は白を維持 */
-    border-color: var(--link-color); /* ホバー時もベースのリンク色を維持 */
-}
-
-/* 言語・テーマボタンの共通スタイル */
-.lang-button,
-.theme-button {
-    background: transparent; /* 背景は常に透明 */
-    border: 0.05em solid transparent; /* ボーダーも常に透明 */
-    padding: 0.25em 0.5em;
-    border-radius: 0.3em;
-    cursor: pointer;
-    transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
-    font-size: 1em;
-    line-height: 1;
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    color: var(--text-color); /* デフォルトはテーマのテキスト色 */
-}
-
-.lang-button:hover,
-.theme-button:hover {
-    background-color: var(--hover-bg); /* ホバーで水色背景 */
-    color: var(--hover-text); /* ホバーで白文字 */
-    border-color: var(--hover-bg); /* ホバーで水色のボーダー */
-}
-
-.lang-button.selected,
-.theme-button.selected {
-    background-color: var(--hover-bg); /* 選択時は水色背景 */
-    color: var(--hover-text); /* 選択時は白文字 */
-    border-color: var(--hover-bg);
-}
-
-.lang-button.selected:hover,
-.theme-button.selected:hover {
-    background-color: var(--hover-bg); /* 選択時のホバーもベースのリンク色を維持 */
-    border-color: var(--hover-bg); /* 選択時のホバーもベースのリンク色を維持 */
+    box-sizing: border-box;
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 /* ── メインコンテンツ共通スタイル ── */
 .main-content {
-    flex-grow: 1; /* container の子要素として、残りのスペースを全て占める */
-    max-width: 50em; /* PC表示時の最大幅 (800px相当) を適用 */
-    width: 100%; /* 親要素に対して100%幅を取り、max-widthで制限される */
-    margin: 2em auto; /* 中央揃えと上下マージン */
-    background: var(--block-bg); /* 背景色 */
+    flex-grow: 1;
+    max-width: 50em;
+    width: 100%;
+    margin: 2em auto;
+    background: var(--block-bg);
     padding: 1.5em 2em;
-    border-radius: 0.5em; /* 角丸 */
-    box-shadow: 0 0.25em 0.5em rgba(0, 0, 0, 0.1); /* 影 */
-    box-sizing: border-box; /* paddingが幅に含まれるように */
-    min-width: 0; /* Flexアイテムの最小幅を設定 */
+    border-radius: 0.5em;
+    box-shadow: 0 0.25em 0.5em rgba(0, 0, 0, 0.1);
+    box-sizing: border-box;
+    min-width: 0;
 }
 
-.page-title { /* h1.page-title */
-    font-size: 2em;
-    margin-bottom: 1em;
-    text-align: center;
-    color: var(--text-color); /* テキスト色を継承 */
+/* ── 新しい「枠付き要素」の汎用スタイル ── */
+/* 個別のリンクやdetails、h3などに枠を適用する場合 */
+.bordered-element {
+    display: block;
+    width: 100%;
+    background-color: transparent;
+    color: var(--text-color);
+    border: 0.05em solid var(--text-color);
+    border-radius: 0.3em;
+    padding: 0.8em 1em;
+    box-sizing: border-box;
+    text-align: left;
+    text-decoration: none;
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+    margin-bottom: 0.8em;
+    cursor: pointer;
 }
 
-/* ── 各コンテンツセクション ── */
+/* 枠付き要素のホバー時のスタイル */
+.bordered-element:hover {
+    background-color: var(--hover-bg);
+    color: var(--hover-text);
+    border-color: var(--hover-bg);
+}
+
+/* ── 各コンテンツセクション (大枠) ── */
 .content-section {
-    background-color: var(--block-bg); /* メインコンテンツの背景色を継承 */
-    border-radius: 0.3125em;
+    background-color: transparent; /* セクション自体の背景は透明 */
+    border: 0.05em solid var(--text-color); /* セクション全体に枠線 */
+    border-radius: 0.5em; /* セクションの角丸を少し大きく */
     padding: 1em;
     margin-bottom: 1em; /* 各セクション間の余白 */
     box-shadow: 0 0.125em 0.25em rgba(0, 0, 0, 0.05);
@@ -277,165 +105,165 @@ button.primary-button:hover {
     width: 100%; /* 親要素 (main-content) の幅いっぱいに広がる */
 }
 
-/* h2 (section-title) は .bordered-element を適用する */
-.section-title { /* h2.section-title */
+/* content-section がホバーされたときのスタイル (大枠のホバー) */
+.content-section:hover {
+    background-color: var(--hover-bg); /* ホバーで背景を水色に */
+    border-color: var(--hover-bg); /* ホバーでボーダーも水色に */
+}
+
+/* content-section の中の文字色をホバー時に白にする */
+/* h3 も .bordered-element を持つため、個別指定は不要になりましたが、念のため残しておきます */
+.content-section:hover h2,
+.content-section:hover h3, /* h3もこの影響を受ける */
+.content-section:hover .link-item .link-text,
+.content-section:hover .link-item .link-note,
+.content-section:hover .link-item .ip-display,
+.content-section:hover #global-ip-input,
+.content-section:hover #global-ip-update {
+    color: var(--hover-text) !important; /* 強制的に白に */
+}
+
+/* content-section の中の border-color をホバー時に白にする (input groupなど) */
+/* h3 も bordered-element で枠を持っているので、content-section:hover h3 にborder-color: var(--hover-text) !important; を追加しても良いですが、
+   h3のホバー効果で既にborder-colorが白に変わるので、ここでは追加しません。 */
+.content-section:hover #device-ip .ip-address-display,
+.content-section:hover #global-ip-update {
+    border-color: var(--hover-text) !important;
+}
+
+/* h2 (section-title) は枠を持たない、大枠の一部 */
+.section-title {
     margin: 0 0 1em; /* 上下マージンのみ */
     font-size: 1.3em;
-    line-height: 1; /* 枠内の行の高さを調整 */
+    line-height: 1.2;
+    color: var(--text-color); /* デフォルトの文字色 */
+    transition: color 0.2s ease; /* ホバー時の色の変化をスムーズに */
 }
 
-.section-subtitle { /* h2内のspan.section-subtitle */
-    font-size: 0.8em; /* 小さく */
-    color: inherit; /* 親からテキスト色を継承 */
-    font-weight: normal; /* 太さを通常に */
-    margin-left: 0.5em; /* タイトルとの間隔 */
+.section-subtitle {
+    font-size: 1em;
+    color: inherit;
+    font-weight: normal;
+    margin-left: 0.5em;
 }
 
-/* h3 も .bordered-element を適用する */
-h3.bordered-element { /* h3要素にもbordered-elementクラスを適用 */
-    margin: 1em 0 0.8em; /* 上マージンを少し増やし、下マージンをbordered-elementの標準に */
-    color: inherit; /* 親から色を継承 */
+/* h3 は.bordered-elementとして枠を持つ */
+h3.bordered-element { /* h3 に .bordered-element を適用 */
+    margin-top: 1em; /* 上マージンを少し増やす */
+    margin-bottom: 0.8em; /* 下マージンをbordered-elementの標準に */
+    color: var(--text-color); /* デフォルトの文字色 */
     font-size: 1em; /* デフォルトのフォントサイズ */
     font-weight: bold; /* boldにする */
     line-height: 1.2; /* 行の高さ調整 */
-    padding: 0.8em 1em; /* bordered-elementのパディングを適用 */
+    padding: 0.8em 1em; /* bordered-elementのパディングを維持 */
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+    cursor: default; /* クリック可能要素ではないのでカーソルはデフォルト */
 }
 
+/* h3 のホバー時のスタイル（bordered-elementが適用されるため、個別の指定は不要） */
+/* h3.bordered-element:hover は .bordered-element:hover で定義済み */
 
-/* ── リンクリスト ── */
-.link-list { /* ul.link-list */
-    margin-top: 1em;
-    padding: 0; /* ulのデフォルトpaddingをリセット */
-}
-
-.link-list li {
-    margin-bottom: 0.8em; /* 各リストアイテム間のマージン */
-}
-
-/* .link-list li a は、.bordered-element を適用 */
-.link-list li a.bordered-element {
-    display: flex; /* link-itemのdisplay: flex; と競合しないよう調整 */
-    align-items: center; /* 垂直方向中央揃え */
-    flex-wrap: nowrap; /* テキストが折り返さないように */
-    justify-content: space-between; /* テキストとIPを両端に寄せる */
-    text-align: left; /* 左寄せ */
-}
-
-/* リンク内の要素スタイル */
-.link-item .link-text {
-    font-weight: bold; /* メインテキストを太字に */
-    color: inherit; /* 親の.bordered-elementから色を継承（ホバーで白になる） */
-    white-space: nowrap; /* 改行しない */
-}
-
-.link-item .link-note { /* (Windows用) ※初回のみ利用 (DL後ダブルクリック) など */
-    font-size: 0.85em; /* 小さく */
-    color: inherit; /* 親の.bordered-elementから色を継承（ホバーで白になる） */
-    display: inline; /* インライン要素として表示 */
-    margin-left: 0.5em; /* テキストとの間隔 */
-    white-space: nowrap; /* 改行しない */
-}
-
-.link-item .ip-display { /* (root@192.168.1.1) など */
-    font-size: 0.9em; /* 少し小さく */
-    color: inherit; /* 親の.bordered-elementから色を継承（ホバーで白になる） */
-    margin-left: 0.5em; /* テキストとの間隔 */
-    white-space: nowrap; /* 改行しない */
-    flex-shrink: 0; /* 縮小しない */
-}
 
 /* ── Device IP セクション内の微調整 ── */
-#device-ip .input-group { /* .connectionはHTMLにないので削除 */
+#device-ip .input-group {
     display: flex;
     align-items: center;
     gap: 1rem;
-    margin-bottom: 1em; /* QRコードとの間隔 */
+    margin-bottom: 1em;
 }
+
 #device-ip .ip-address-display {
     flex: 1;
     min-width: 0;
     display: flex;
     align-items: center;
     overflow: hidden;
-    border: 0.05em solid var(--text-color); /* inputとbuttonを囲むボーダーもテキスト色に統一 */
+    border: 0.05em solid var(--text-color); /* inputとbuttonを囲むボーダー */
     border-radius: 0.3em;
+    transition: border-color 0.2s ease; /* ホバー時の色の変化をスムーズに */
 }
+
 #global-ip-input {
     flex: 1;
     min-width: 0;
-    border: none; /* 親のボーダーを継承するため自身のボーダーを削除 */
-    padding: 0.6em 0.9em; /* パディングは維持 */
-    background-color: transparent; /* 背景も透明に */
-    color: inherit; /* テキスト色を継承 */
-    border-radius: 0; /* 角丸は親に任せる */
+    border: none;
+    padding: 0.6em 0.9em;
+    background-color: transparent;
+    color: inherit;
+    border-radius: 0;
 }
+
 #global-ip-update {
     margin-left: auto;
     flex: 0 0 auto;
     cursor: pointer;
-    border: none; /* 親のボーダーを継承するため自身のボーダーを削除 */
-    border-left: 0.05em solid var(--text-color); /* 更新ボタンの左側に区切り線もテキスト色に統一 */
-    border-radius: 0 0.3em 0.3em 0; /* 右側だけ角丸 */
-    background-color: var(--link-color); /* 背景色を水色に */
-    color: var(--hover-text); /* 文字色を白に */
-    padding: 0.6em 1em; /* パディング調整 */
+    border: none;
+    border-left: 0.05em solid var(--text-color); /* 更新ボタンの左側に区切り線 */
+    border-radius: 0 0.3em 0.3em 0;
+    background-color: var(--link-color); /* 背景色を水色 */
+    color: var(--hover-text); /* 文字色を白 */
+    padding: 0.6em 1em;
+    transition: background-color 0.2s ease, border-color 0.2s ease; /* ホバー時の色の変化をスムーズに */
 }
+
 #global-ip-update:hover {
     background-color: var(--link-color); /* ホバー時もベースのリンク色を維持 */
 }
 
-/* ── QRコード部分 (detailsタグ) のスタイル修正 - 「SSH QRコード表示」にも適用 */
-.qr-code-section { /* .qr-codeを.qr-code-sectionに修正 */
-    margin-top: 1em; /* 上部マージンのみ調整 */
+/* ── QRコード部分 (detailsタグ) のスタイル修正 ── */
+/* QRコードとプロトコルハンドラー登録は個別の枠を持つ */
+.qr-code-section.bordered-element { /* .bordered-element を維持 */
+    margin-top: 1em;
     padding: 0; /* summaryとcanvasに個別にパディングを設定するため、親は0に */
-    /* .bordered-element が既に適用されているため、これ以上は不要 */
 }
 
-/* QRコードセクション全体がホバーされたときに背景と文字色を変える */
-.qr-code-section:hover {
+/* detailsセクション全体がホバーされたときに背景と文字色を変える */
+/* content-sectionのホバーとは独立して動作 */
+.qr-code-section.bordered-element:hover {
     background-color: var(--hover-bg); /* ホバーで水色背景 */
     border-color: var(--hover-bg); /* ホバーでボーダーも水色に */
+    color: var(--hover-text); /* details自体の文字色も白に */
 }
 
-/* ホバーに連動して文字色を変える要素 */
-.qr-code-section:hover .qr-code-summary,
-.qr-code-section:hover .qr-code-summary:before {
+/* ホバーに連動して文字色を変える要素 (qr-code-section内) */
+.qr-code-section.bordered-element:hover .qr-code-summary,
+.qr-code-section.bordered-element:hover .qr-code-summary:before {
     color: var(--hover-text); /* ホバーで文字を白に */
 }
-.qr-code-section:hover .qr-code-canvas > div { /* QRコードのプレースホルダーのテキストと背景色もホバーに連動 */
+.qr-code-section.bordered-element:hover .qr-code-canvas > div { /* QRコードのプレースホルダーのテキストと背景色もホバーに連動 */
     background-color: var(--hover-text) !important; /* QRコードの背景を白に */
     color: var(--hover-bg) !important; /* QRコードのテキストを水色に */
 }
 
 
-.qr-code-section .qr-code-summary { /* summaryタグのクラス */
-    text-align: left; /* 左寄せに戻す */
+.qr-code-section .qr-code-summary {
+    text-align: left;
     cursor: pointer;
     color: inherit; /* 親から色を継承 */
-    padding: 0.8em 1em; /* 開閉領域のパディングをhandler-register-sectionと統一 */
-    list-style: none; /* デフォルトのマーカーを削除 */
-    transition: color 0.2s ease; /* ホバー時の色の変化をスムーズに */
+    padding: 0.8em 1em;
+    list-style: none;
+    transition: color 0.2s ease;
 }
 .qr-code-section .qr-code-summary::-webkit-details-marker,
 .qr-code-section .qr-code-summary::marker {
-    display: none; /* デフォルトの開閉マーカーを完全に削除 */
+    display: none;
 }
-.qr-code-section .qr-code-summary:before { /* カスタムの開閉マーカー */
-    content: "►"; /* 閉じた状態の矢印 */
+.qr-code-section .qr-code-summary:before {
+    content: "►";
     display: inline-block;
     margin-right: 0.5em;
     transition: transform 0.2s ease, color 0.2s ease;
-    color: inherit; /* 親から色を継承 */
+    color: inherit;
 }
 .qr-code-section[open] .qr-code-summary:before {
-    content: "▼"; /* 開いた状態の矢印 */
-    transform: rotate(0deg); /* アニメーションは不要 */
+    content: "▼";
+    transform: rotate(0deg);
 }
-.qr-code-section .qr-code-canvas { /* QRコードキャンバス表示エリア */
+.qr-code-section .qr-code-canvas {
     margin-top: 1em;
-    padding-left: 1em; /* 親のpaddingと合わせる */
+    padding-left: 1em;
     padding-right: 1em;
-    padding-bottom: 1em; /* 下部のパディング */
+    padding-bottom: 1em;
 }
 .qr-code-section .qr-code-canvas > div { /* QRコードのプレースホルダーdiv */
     background: var(--text-color); /* デフォルトのQRコード背景色（暗い部分）をテキスト色に */
@@ -450,66 +278,68 @@ h3.bordered-element { /* h3要素にもbordered-elementクラスを適用 */
     font-size: 12px;
 }
 
-
-/* ── プロトコルハンドラー登録セクション (detailsタグ) のスタイル修正 - 「SSH用プロトコルハンドラー登録」に適用 */
-.handler-register-section { /* detailsタグのクラス */
-    margin-bottom: 0.8em; /* 項目間のマージンのみ調整 */
+/* ── プロトコルハンドラー登録セクション (detailsタグ) のスタイル修正 ── */
+/* details が bordered-element を持つ場合 */
+.handler-register-section.bordered-element { /* .bordered-element を維持 */
+    margin-bottom: 0.8em;
     padding: 0; /* summaryとリンクに個別にパディングを設定するため、親は0に */
-    /* .bordered-element が既に適用されているため、これ以上は不要 */
 }
 
-/* details全体がホバーされたときに背景と文字色を変える */
-.handler-register-section:hover {
-    background-color: var(--hover-bg); /* ホバーで水色背景 */
-    border-color: var(--hover-bg); /* ホバーでボーダーも水色に */
+/* detailsセクション全体がホバーされたときに背景と文字色を変える */
+/* content-sectionのホバーとは独立して動作 */
+.handler-register-section.bordered-element:hover {
+    background-color: var(--hover-bg);
+    border-color: var(--hover-bg);
+    color: var(--hover-text); /* details自体の文字色も白に */
 }
 
 /* detailsの中のsummaryとリンクの文字色もホバーに連動 */
-.handler-register-section:hover .handler-register-summary,
-.handler-register-section:hover .handler-register-summary:before,
-.handler-register-section:hover .handler-register-link .link-text,
-.handler-register-section:hover .handler-register-link .link-note {
+.handler-register-section.bordered-element:hover .handler-register-summary,
+.handler-register-section.bordered-element:hover .handler-register-summary:before,
+.handler-register-section.bordered-element:hover .handler-register-link .link-text,
+.handler-register-section.bordered-element:hover .handler-register-link .link-note,
+.handler-register-section.bordered-element:hover .handler-register-link .ip-display {
     color: var(--hover-text); /* ホバーで文字を白に */
 }
 
 
-.handler-register-section .handler-register-summary { /* summaryタグのクラス */
-    text-align: left; /* 左寄せ */
+.handler-register-section .handler-register-summary {
+    text-align: left;
     cursor: pointer;
     color: inherit; /* 親から色を継承 */
-    padding: 0.8em 1em; /* パディング調整 */
-    list-style: none; /* デフォルトのマーカーを削除 */
-    transition: color 0.2s ease; /* ホバー時の色の変化をスムーズに */
+    padding: 0.8em 1em;
+    list-style: none;
+    transition: color 0.2s ease;
 }
 .handler-register-section .handler-register-summary::-webkit-details-marker,
 .handler-register-section .handler-register-summary::marker {
-    display: none; /* デフォルトの開閉マーカーを完全に削除 */
+    display: none;
 }
-.handler-register-section .handler-register-summary:before { /* カスタムの開閉マーカー */
-    content: "►"; /* 閉じた状態の矢印 */
+.handler-register-section .handler-register-summary:before {
+    content: "►";
     display: inline-block;
     margin-right: 0.5em;
     transition: transform 0.2s ease, color 0.2s ease;
-    color: inherit; /* 親から色を継承 */
+    color: inherit;
 }
 .handler-register-section[open] .handler-register-summary:before {
-    content: "▼"; /* 開いた状態の矢印 */
+    content: "▼";
     transform: rotate(0deg);
 }
 
-/* .handler-register-link は .bordered-element のスタイルを適用する */
+/* handler-register-section 内のリンクは、親のdetailsが枠を持つため、aタグ自体は枠を持たない */
+/* こちらのリンクは、detailsタグがbordered-elementを持つため、aタグ自体は枠が不要 */
 .handler-register-section .handler-register-link.bordered-element {
-    /* .bordered-element がこれらのスタイルをカバー */
-    /* display, width, box-sizing, text-decoration, background-color, color, border, padding, border-radius, transition, margin-bottom は .bordered-element に任せる */
-    /* details内のリンクは、親のdetailsが枠を持つので、リンク自体は枠を持たせない */
-    border: none; /* 親のdetailsが枠を持つので、子要素のaタグの枠は削除 */
+    border: none; /* 親のdetailsが枠を持つので、aタグの枠は削除 */
     background-color: transparent; /* 背景も透明に */
-    padding-left: 1em; /* 親のパディングに合わせる */
-    padding-right: 1em;
-    padding-top: 0; /* 上下のパディングは不要 */
-    padding-bottom: 0;
+    padding: 0.8em 1em; /* aタグのパディングは維持 */
     margin-top: 1em; /* summaryからのマージン */
     margin-bottom: 0; /* link-list liにmargin-bottomがあるのでここでは不要 */
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    text-align: left;
 }
 
 .handler-register-section .handler-register-link.bordered-element:hover {
@@ -518,77 +348,212 @@ h3.bordered-element { /* h3要素にもbordered-elementクラスを適用 */
     border-color: transparent; /* ボーダーも変えない */
 }
 
+
 .handler-register-section .handler-register-content {
     padding: 0 1em 1em 1em;
 }
 
 
-/* ── コンソールセクションのリンクにも.bordered-elementを適用 ── */
-.console-section .bordered-element { /* .content-sectionの外にある可能性も考慮してこのセレクタを残す */
-    margin-bottom: 0.8em; /* 項目間のマージン */
+/* ── リンクリスト ── */
+.link-list {
+    margin-top: 1em;
+    padding: 0;
+}
+
+.link-list li {
+    margin-bottom: 0.8em;
+}
+
+/* リンク内の要素スタイル */
+.link-list li .link-item.bordered-element { /* li内のa.link-item.bordered-element に適用 */
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+}
+
+.link-item .link-text {
+    font-weight: bold;
+    color: inherit; /* 親の.bordered-elementから色を継承（ホバーで白になる） */
+    white-space: nowrap;
+}
+
+.link-item .link-note {
+    font-size: 0.85em; /* QRコードセクション内のノートと同じサイズに */
+    color: inherit;
+    display: inline;
+    margin-left: 0.5em;
+    white-space: nowrap;
+}
+
+.link-item .ip-display {
+    font-size: 0.9em;
+    color: inherit;
+    margin-left: 0.5em;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* ── ヘッダー ── */
+.main-header {
+    position: relative;
+    border-bottom: 0.05em solid var(--text-color);
+    background-color: var(--block-bg);
+    border-color: var(--text-color);
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+    flex-shrink: 0;
+    width: 100%;
+}
+
+.main-header .header-inner {
+    max-width: 50em;
+    margin: 0 auto;
+    padding: 1.5em 2em;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1em;
+    box-sizing: border-box;
+}
+
+.main-header .logo-container {
+    text-align: center;
+    width: 100%;
+}
+
+.main-header .logo-container a {
+    background-color: transparent;
+    border: none;
+    padding: 0;
+    display: inline-block;
+    color: var(--text-color);
+    text-decoration: none;
+    transition: none;
+}
+
+.main-header .logo-container a:hover {
+    background-color: transparent;
+    color: var(--text-color);
+    text-decoration: none;
+}
+
+.main-header .logo-container .site-logo {
+    width: 100%;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+    max-width: 300px;
 }
 
 /* ── フッター ── */
-.page-footer-area { /* footerタグに適用したクラス */
-    position: fixed; /* 画面下部に固定 */
+.page-footer-area {
+    position: fixed;
     bottom: 0;
     left: 0;
     width: 100%;
-    display: flex; /* 中央揃えのためのFlexbox */
+    display: flex;
     justify-content: center;
-    align-items: flex-end; /* 下部に寄せる */
-    padding: 1em 2em; /* パディング */
-    border-top: 0.05em solid var(--text-color); /* 上線色もテキスト色に統一 */
+    align-items: flex-end;
+    padding: 1em 2em;
+    background-color: var(--block-bg);
+    border-top: 0.05em solid var(--text-color);
+    border-color: var(--text-color);
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+    flex-shrink: 0;
     box-sizing: border-box;
-    z-index: 100; /* 他のコンテンツの上に表示 */
+    z-index: 100;
 }
 
-.page-footer-area .footer-inner-flex { /* .footer-contentから名称変更 */
+.page-footer-area .footer-inner-flex {
     max-width: 50em;
     width: 100%;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    flex-wrap: wrap; /* 小さい画面で折り返す */
-    gap: 1em; /* 要素間の隙間 */
+    flex-wrap: wrap;
+    gap: 1em;
 }
 
-.page-footer-area .copyright-text { /* span.copyright-text */
+.page-footer-area .copyright-text {
     font-size: 0.85em;
-    color: var(--text-color); /* テキスト色を継承 */
+    color: var(--text-color);
 }
 
-.page-footer-area .footer-link { /* a.footer-link */
-    color: var(--text-color); /* テキスト色を継承 */
+.page-footer-area .footer-link {
+    color: var(--text-color);
     text-decoration: none;
     transition: color 0.2s ease;
 }
 
 .page-footer-area .footer-link:hover {
-    color: var(--link-color); /* ホバー時の文字色は水色（通常リンクのホバー時と合わせる） */
-    background-color: transparent; /* 背景は透明 */
+    color: var(--link-color);
+    background-color: transparent;
 }
 
 .page-footer-area .separator {
-    color: var(--text-color); /* 区切り線の色もテキスト色に統一 */
+    color: var(--text-color);
     margin: 0 0.3em;
+}
+
+/* 言語・テーマボタンの共通スタイル */
+.lang-button,
+.theme-button {
+    background: transparent;
+    border: 0.05em solid transparent;
+    padding: 0.25em 0.5em;
+    border-radius: 0.3em;
+    cursor: pointer;
+    transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+    font-size: 1em;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-color);
+}
+
+.lang-button:hover,
+.theme-button:hover {
+    background-color: var(--hover-bg);
+    color: var(--hover-text);
+    border-color: var(--hover-bg);
+}
+
+.lang-button.selected,
+.theme-button.selected {
+    background-color: var(--hover-bg);
+    color: var(--hover-text);
+    border-color: var(--hover-bg);
+}
+
+.lang-button.selected:hover,
+.theme-button.selected:hover {
+    background-color: var(--hover-bg);
+    border-color: var(--hover-bg);
+}
+
+.language-selector,
+.theme-selector {
+    display: flex;
+    align-items: center;
+    gap: 0.3em;
 }
 
 /* ── レスポンシブデザインの調整 ── */
 @media (max-width: 48em) { /* 768px以下 */
     .main-header .header-inner,
     .main-content,
-    .page-footer-area .footer-inner-flex { /* .footer-contentから名称変更 */
+    .page-footer-area .footer-inner-flex {
         padding-left: 1em;
         padding-right: 1em;
     }
 
     .main-header .logo-container {
-        width: auto; /* ロゴが中央に寄るように調整 */
+        width: auto;
     }
 
     .main-header .logo-container .site-logo {
-        max-width: 200px; /* 小さい画面でのロゴサイズ調整 */
+        max-width: 200px;
     }
 
     .page-title {
@@ -600,7 +565,7 @@ h3.bordered-element { /* h3要素にもbordered-elementクラスを適用 */
     }
 
     /* フッターの要素を中央に寄せる */
-    .page-footer-area .footer-inner-flex { /* .footer-contentから名称変更 */
+    .page-footer-area .footer-inner-flex {
         flex-direction: column;
         text-align: center;
     }
