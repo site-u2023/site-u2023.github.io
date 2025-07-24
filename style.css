@@ -85,11 +85,12 @@ ul {
     display: inline-block; /* リンクとして動作させるために必要 */
     color: var(--text-color); /* 文字色をテーマのテキスト色に */
     text-decoration: none; /* 下線なし */
+    transition: none; 
 }
 
 .main-header .logo-container a:hover {
     background-color: transparent; /* ホバー時も背景透明 */
-    color: var(--link-color); /* ホバー時のみリンクカラー(水色)に */
+    color: var(--text-color);
     text-decoration: none; /* ホバー時も下線なし */
 }
 
