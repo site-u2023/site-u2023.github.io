@@ -146,27 +146,62 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // 全リンク更新処理
-    function updateAll() {
-        const input = document.getElementById('global-ip-input');
-        if (!input) return;
+        function updateAll() {
+            const input = document.getElementById('global-ip-input');
+            if (!input) return;
 
-        const ip = toHalfWidth(input.value.trim()) || input.placeholder;
-        localStorage.setItem('site-u-ip', ip);
+            // updateAllが呼び出された時点で、最新のIPアドレスを取得
+            const ip = toHalfWidth(input.value.trim()) || input.placeholder;
+            localStorage.setItem('site-u-ip', ip);
 
-        // QRコード（details開閉時も再描画）
-        const detailContainer = document.getElementById('qrcode-detail-container');
-        if (detailContainer) {
-            if (detailContainer.open) drawQRCode('qrcode-detail', `ssh://root@${ip}`);
-            if (!detailContainer.dataset.toggleListenerAdded) {
-                detailContainer.addEventListener('toggle', function() {
-                    if (this.open) {
-                        drawQRCode('qrcode-detail', `ssh://root@${ip}`);
-                    } else {
-                        const qrDetail = document.getElementById('qrcode-detail');
-                        if (qrDetail) qrDetail.innerHTML = '';
+            // IPアドレス表示部分の更新 (もしあれば)
+            const sshIpSpan = document.getElementById('ssh-ip');
+            const aiosIpSpan = document.getElementById('aios-ip');
+            if (sshIpSpan) sshIpSpan.textContent = ip;
+            if (aiosIpSpan) aiosIpSpan.textContent = ip;
+        
+            // 各リンクの更新（以前のコードに準ずる）
+            document.querySelectorAll('.link-ip').forEach(link => {
+                const template = link.dataset.ipTemplate;
+                if (template) {
+                    let newHref = template.replace(/\${ip}/g, ip);
+                    if (link.id === 'aios-link') {
+                        // ここはAIOSのコマンドリストを保持する
+                        const sshCommands = [
+                            'echo "OpenWrt is awesome!"',
+                            'logread | tail -n 20'
+                        ];
+                        const sshCmdEncoded = encodeURIComponent(sshCommands.join('; '));
+                        newHref = newHref.replace(/\${cmd}/g, sshCmdEncoded);
                     }
-                });
-                detailContainer.dataset.toggleListenerAdded = 'true';
+                    link.href = newHref;
+                }
+            });
+
+            // QRコード（details開閉時も再描画）
+            const detailContainer = document.getElementById('qrcode-detail-container');
+            if (detailContainer) {
+                // updateAllが呼ばれた時点でdetailsが開いていれば、現在のIPで描画
+                if (detailContainer.open) {
+                    // ここでdrawQRCodeに渡すIPも、常に最新のものを取得するようにする
+                    drawQRCode('qrcode-detail', `ssh://root@${ip}`);
+                }
+
+                // toggleイベントリスナーの登録（一度だけ）
+                if (!detailContainer.dataset.toggleListenerAdded) {
+                    detailContainer.addEventListener('toggle', function() {
+                        // ★重要★ ここでも、常に最新のIPアドレスをinputから取得する
+                        const currentIpForQr = toHalfWidth(input.value.trim()) || input.placeholder;
+
+                        if (this.open) {
+                            drawQRCode('qrcode-detail', `ssh://root@${currentIpForQr}`);
+                        } else {
+                            const qrDetail = document.getElementById('qrcode-detail');
+                            if (qrDetail) qrDetail.innerHTML = '';
+                        }
+                    });
+                    detailContainer.dataset.toggleListenerAdded = 'true';
+                }
             }
         }
 
