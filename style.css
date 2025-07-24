@@ -19,6 +19,10 @@ html[data-theme="dark"] {
     --highlight-color: #ffd700; /* プロトコルハンドラー登録の見出し色 (少し明るい黄色) */
 }
 
+html {
+    font-size: 16px; /* 1em = 16px とする基準を設定 */
+}
+
 /* ── ベーススタイル ── */
 body {
     margin: 0;
@@ -31,6 +35,8 @@ body {
     min-height: 100vh; /* フッターを下に固定するための高さ確保 */
     display: flex; /* フッターを最下部に固定するためにFlexboxを使用 */
     flex-direction: column; /* 縦方向に要素を並べる */
+    /* width: 100%; がデフォルトで適用されるため不要 */
+    /* min-width: 800px; は不要。max-widthとmargin: autoで制御する */
 }
 
 /* .container の外に配置されるヘッダーとフッター用のスタイル */
@@ -40,6 +46,7 @@ body {
     border-color: var(--block-border); /* border-top/bottomに適用される */
     transition: background-color 0.3s ease, border-color 0.3s ease;
     flex-shrink: 0; /* 縮小させない */
+    width: 100%; /* 明示的に幅100%を指定 */
 }
 
 /* リストマーカーの削除 */
@@ -78,13 +85,14 @@ ul {
 /* ── メインコンテンツのコンテナ ── */
 .container {
     flex-grow: 1; /* 残りのスペースを全て占めることでフッターを下に押し出す */
-    max-width: 50em; /* 最大幅 */
+    max-width: 50em; /* 最大幅を維持 (800px相当) */
     margin: 2em auto; /* 中央揃えと上下マージン */
     background: var(--block-bg); /* 背景色 */
     padding: 1.5em 2em;
     border-radius: 0.5em; /* 角丸 */
     box-shadow: 0 0.25em 0.5em rgba(0, 0, 0, 0.1); /* 影 */
     transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    box-sizing: border-box; /* paddingが幅に含まれるように */
 }
 
 /* ── フォーム要素、ボタン、リンクのベーススタイル (継承と最低限の調整) ── */
@@ -406,31 +414,37 @@ html[data-theme="dark"] a.link-item:hover {
     justify-content: space-between; /* 両端揃え */
     align-items: center;
     padding: 0 2em; /* 左右のパディング */
-    max-width: 50em;
-    width: 100%;
+    max-width: 50em; /* containerと同じ最大幅 */
+    width: 100%; /* 親要素(page-footer-area)のpadding内での幅100% */
     box-sizing: border-box;
+    /* align-self: flex-end; を削除。親がalign-items: flex-end;を持っているので不要 */
 }
 
-.footer-controls { /* footer-left-controlsとfooter-right-controlsの共通スタイル */
+.footer-controls {
     display: flex;
     align-items: center;
-    flex-grow: 0; /* 縮まないようにする */
+    /* flex-growは必要に応じて調整。今回は固定サイズ要素が多いため0で良い場合が多い */
+    flex-shrink: 0; /* 縮まない */
+    white-space: nowrap; /* ボタンが改行しないように */
 }
 
 .footer-left-controls {
     justify-content: flex-start;
+    /* flex-basis: content; または適切な固定幅を設定するとより安定する可能性もある */
 }
 
 .footer-right-controls {
     justify-content: flex-end;
+    /* flex-basis: content; */
 }
 
-.copyright-info { /* 著作権情報部分のdiv */
+.copyright-info {
     flex-grow: 1; /* 残りのスペースを埋める */
     text-align: center;
-    display: flex; /* pタグ内のリンクをflexで並べるため */
+    display: flex;
     justify-content: center;
     align-items: center;
+    padding: 0 1em; /* 左右のコントロールとの間に少しパディングを追加 */
 }
 
 .copyright-text { /* p.copyright-text */
@@ -464,17 +478,18 @@ html[data-theme="dark"] a.link-item:hover {
 }
 
 
-/* ── レスポンシブデザイン ── */
-@media (max-width: 37.5em) { /* 600pxをemに変換 */
+/* ── レスポンシブ ── */
+@media (max-width: 37.5em) { /* 600pxをemに変換 (16px * 37.5 = 600px) */
     body {
         padding-bottom: 7.5em; /* モバイルフッターの高さ分 */
         padding-top: 0;
     }
     .container {
-        margin: 1em;
+        margin: 1em 0; /* 左右マージンを0に */
         padding: 1em 1.2em;
         border-radius: 0;
         box-shadow: none;
+        width: auto; /* 幅を自動調整 */
     }
     .main-header .header-inner {
         padding: 1em 1.2em;
@@ -516,6 +531,7 @@ html[data-theme="dark"] a.link-item:hover {
     .copyright-info {
         width: 100%; /* モバイルでは幅100%にする */
         justify-content: center; /* 中央揃え */
+        margin-bottom: 0; /* 各コントロール間の余分なマージンを削除 */
     }
     .copyright-text {
         font-size: 0.8em; /* モバイルでさらに小さく */
