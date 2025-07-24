@@ -155,9 +155,9 @@ function updateLogoDisplay() {
 
     if (siteLogo) {
         if (theme === 'dark') {
-            siteLogo.src = 'img/openwrt_text_blue_and_dark_blue.svg'; // Blue (Dark Theme)
+            siteLogo.src = 'img/openwrt_text_white_and_blue.svg'; // Blue (Dark Theme)
         } else {
-            siteLogo.src = 'img/openwrt_text_white_and_blue.svg'; // Black (Light Theme)
+            siteLogo.src = 'img/openwrt_text_blue_and_dark_blue.svg'; // Black (Light Theme)
         }
         // console.log("Logo updated to:", siteLogo.src, "Theme:", theme); // デバッグ用
     } else {
