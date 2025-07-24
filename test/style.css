@@ -20,6 +20,7 @@ html[data-theme="light"] {
     --link-color: var(--main-color);
     --hover-bg: var(--link-color);
     --hover-text: #f1f1f1;
+    --block-border: #43b0e8;
 }
 
 html[data-theme="dark"] {
@@ -29,6 +30,7 @@ html[data-theme="dark"] {
     --link-color: var(--main-color);
     --hover-bg: var(--link-color);
     --hover-text: #f1f1f1;
+    --block-border: #43b0e8;
 }
 
 /* ── ベース ── */
@@ -108,7 +110,7 @@ a {
 
 a:hover {
   background-color: var(--hover-bg);
-  color:            var(--hover-color);
+  color: var(--hover-text);
 }
 
 /* ── ナビゲーション ── */
@@ -158,7 +160,7 @@ nav a {
 }
 #global-ip-update:hover {
   background-color: var(--hover-bg);
-  color:            var(--hover-color);
+  color: var(--hover-text);
 }
 
 /* ── QRコード部分 ── */
