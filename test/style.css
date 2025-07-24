@@ -72,7 +72,7 @@ ul {
 
 /* ── コンテナ ── */
 .container {
-  min-width: 0;
+  width: 100%; 
   max-width: 800px;
   margin: 2em auto;
   background: var(--block-bg);
@@ -230,6 +230,7 @@ footer.copyright-footer {
     padding: 1em 1.2em;
     border-radius: 0;
     box-shadow: none;
+    max-width: 100%; /* ここを追加しました */
   }
   header h1 {
     font-size: 1.6em;
