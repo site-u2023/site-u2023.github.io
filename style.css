@@ -1,3 +1,4 @@
+cat << 'EOF' > style.css
 /*
  * 基本デザイン要件:
  * 1. テーマに応じた背景色 (--block-bg):
@@ -5,7 +6,7 @@
  * - ダークテーマ: #2a2a2a (黒)
  * 2. 全ての文字色 (--text-color):
  * - ライトテーマ、ダークテーマに関わらず、常に #43b0e8 (水色)
- * 3. 全てのリンク（ロゴを含む）のホバー時の挙動:
+ * 3. 全てのリンク（ロゴを含む）や、枠として機能する要素のホバー時の挙動:
  * - ホバー時以外: 背景透明、文字色を水色 (--text-color) から継承
  * - ホバー時のみ: 背景 #43b0e8 (水色)、文字 #f1f1f1 (白)
  *
@@ -18,7 +19,6 @@ html[data-theme="light"] {
     --main-color: #43b0e8; /* 主要な文字色、リンク色、QRコード色など、水色 */
     --text-color: var(--main-color); /* 全ての文字色を主要色に統一 */
     --link-color: var(--main-color); /* 全てのリンク色を主要色に統一 */
-    /* 不要な --block-border, --qr-dark, --qr-light, --highlight-color は削除 */
 }
 
 html[data-theme="dark"] {
@@ -26,7 +26,6 @@ html[data-theme="dark"] {
     --main-color: #43b0e8; /* 主要な文字色、リンク色、QRコード色など、水色 */
     --text-color: var(--main-color); /* 全ての文字色を主要色に統一 */
     --link-color: var(--main-color); /* 全てのリンク色を主要色に統一 */
-    /* 不要な --block-border, --qr-dark, --qr-light, --highlight-color は削除 */
 }
 
 html {
@@ -126,8 +125,7 @@ ul {
 /* ── フォーム要素、ボタン、リンクのベーススタイル (継承と最低限の調整) ── */
 /* input, button, summaryの共通ベーススタイル */
 input[type="text"], /* input要素のtypeを明確に */
-button,
-summary { /* detailsタグのsummaryもベーススタイルを継承 */
+button {
     color: inherit; /* 親要素からテキスト色を継承 (基本はbodyの--text-color) */
     background-color: inherit; /* 親要素から背景色を継承 (基本はbodyの--block-bg) */
     border: 0.05em solid var(--text-color); /* ボーダー色もテキスト色に統一 */
@@ -146,7 +144,7 @@ input::placeholder {
 }
 
 /* 全てのaタグに適用されるデフォルトのリンクスタイル */
-/* デフォルトは背景透明、文字色をテーマのテキスト色に、下線なし */
+/* ただし、個別の「枠」として機能するリンクは、.button-linkで上書きされる */
 a {
     background-color: transparent; /* デフォルトの背景色を透明に */
     color: var(--text-color); /* デフォルトの文字色をテーマのテキスト色に */
@@ -159,27 +157,35 @@ a {
 }
 
 /* 全てのaタグに適用されるホバー時のリンクスタイル */
-/* ホバー時は背景水色、文字白、下線なし */
+/* ただし、個別の「枠」として機能するリンクは、.button-linkで上書きされる */
 a:hover {
     background-color: var(--link-color); /* ホバー時の背景色を水色に */
     color: #f1f1f1; /* ホバー時の文字色を白に修正 */
     text-decoration: none; /* ホバー時も下線なし */
 }
 
-/* REGのDLなど、個別に調整が必要なリンクのスタイル */
-/* download-linkも主要色と背景色、ホバー時の白で表現 */
-a.download-link {
-    color: var(--text-color); /* テキスト色を継承 */
-    background-color: transparent; /* デフォルト背景は透明 */
-    border: none; /* ボーダーなし */
-    padding: 0; /* パディングなし */
+/* 新しい「枠付きリンク」の汎用スタイル */
+.button-link {
+    display: block; /* ブロック要素として表示し、幅いっぱいに広がるようにする */
+    width: 100%;
+    background-color: var(--block-bg); /* デフォルトの背景色 */
+    color: var(--text-color); /* デフォルトの文字色 */
+    border: 0.05em solid var(--text-color); /* 枠線 */
+    border-radius: 0.3em; /* 角丸 */
+    padding: 0.8em 1em; /* パディング */
+    box-sizing: border-box;
+    text-align: left; /* 左寄せ */
+    text-decoration: none; /* 下線なし */
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+    margin-bottom: 0.8em; /* 項目間の下マージン */
 }
 
-a.download-link:hover {
-    background-color: var(--link-color); /* ホバー時はベースリンクと同じ水色背景 */
-    color: #f1f1f1; /* ホバー時はベースリンクと同じ白文字 */
-    text-decoration: none; /* ホバー時も下線なし */
+.button-link:hover {
+    background-color: var(--link-color); /* ホバーで背景を水色に */
+    color: #f1f1f1; /* ホバーで文字を白に */
+    border-color: var(--link-color); /* ホバーでボーダーも水色に */
 }
+
 
 /* buttonに特有のスタイル（input, aのベースを上書き） */
 button.primary-button { /* 更新ボタンなど、プライマリーアクションのボタン */
@@ -270,12 +276,19 @@ button.primary-button:hover {
     width: 100%; /* 親要素 (main-content) の幅いっぱいに広がる */
 }
 
+/* h2 (section-title) を枠で囲むスタイルに修正 */
 .section-title { /* h2.section-title */
     margin: 0 0 1em; /* 上下マージンのみ */
     color: var(--text-color); /* テキスト色を継承 */
     font-size: 1.3em;
-    border-bottom: 0.05em solid var(--text-color); /* 下線色もテキスト色に統一 */
-    padding-bottom: 0.5em; /* 下線とテキストの隙間 */
+    /* border-bottom: 0.05em solid var(--text-color); */ /* 下線を削除 */
+    /* padding-bottom: 0.5em; */ /* 下線とテキストの隙間も削除 */
+    background-color: var(--block-bg); /* 背景色 */
+    border: 0.05em solid var(--text-color); /* 枠線 */
+    border-radius: 0.3em; /* 角丸 */
+    padding: 0.5em 1em; /* パディング */
+    box-sizing: border-box;
+    display: inline-block; /* 内容に合わせて幅を調整 */
 }
 
 .section-subtitle { /* h2内のspan.section-subtitle */
@@ -290,46 +303,50 @@ button.primary-button:hover {
     color: var(--text-color); /* 親からテキスト色を継承 */
 }
 
-/* h3タグ内のリンクに固有のスタイルを適用 */
+/* h3タグのスタイルは画像を見る限り、通常のテキストで良いと判断し、枠を削除 */
+h3 {
+    margin: 1em 0 0.5em; /* 上下のマージンを調整 */
+    color: var(--text-color); /* デフォルトの文字色 */
+}
+/* h3内のaタグは通常のリンクスタイルに戻すか、必要に応じて.button-linkを適用 */
 h3 a {
-    display: block; /* 枠いっぱいに広げる */
-    width: 100%; /* 親要素の幅いっぱいに広げる */
-    box-sizing: border-box; /* paddingとborderを幅に含める */
-    text-decoration: none; /* 下線なし */
-    background-color: transparent; /* 背景色を透明にする */
-    color: var(--text-color); /* 文字色を親の--text-colorにする */
-    padding: 0; /* パディングを削除して、テキストがh3のマージンに合わせる */
-    border-radius: 0; /* 角丸もなし */
-    border: none; /* ボーダーもなし */
-    transition: background-color 0.2s ease, color 0.2s ease; /* ホバー時の変化をスムーズに */
+    color: var(--text-color); /* 通常のリンク色 */
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+h3 a:hover {
+    color: var(--link-color); /* ホバーで水色 */
+    background-color: transparent; /* 背景は透明 */
 }
 
-/* h3タグ内のリンクのホバー時のスタイル (すべてのリンク共通のホバー状態に合わせる) */
-h3 a:hover {
-    background-color: var(--link-color); /* ホバーで背景を水色に */
-    color: #f1f1f1; /* ホバーで文字を白に */
-    text-decoration: none; /* ホバー時も下線なし */
-}
 
 /* ── リンクリスト ── */
 .link-list { /* ul.link-list */
     margin-top: 1em;
+    padding: 0; /* ulのデフォルトpaddingをリセット */
 }
 
 .link-list li {
     margin-bottom: 0.8em; /* 各リストアイテム間のマージン */
+    /* li自体は枠を持たず、内包するaタグ(.button-link)が枠を持つ */
 }
 
-/* .link-item .link-text, .link-item .link-note, .link-item .ip-display は、aタグに継承され、必要に応じて上書きされます。 */
+/* .link-list li a は、.button-link を適用することで個別の枠とホバーを持つ */
+/* HTML側で <a class="button-link">...</a> のようにクラスを追加してください */
+.link-list li a {
+    /* .button-link がこれらのスタイルをカバー */
+    /* display, width, box-sizing, text-decoration, background-color, color, border, padding, border-radius, transition は .button-link に任せる */
+}
 
+/* .link-item内の要素は、親の.button-linkがホバーされたときに色が変わるようにする */
 .link-item .link-text {
     font-weight: bold; /* メインテキストを太字に */
-    color: var(--text-color); /* テキスト色を継承 */
+    color: inherit; /* 親の.button-linkから色を継承（ホバーで白になる） */
 }
 
 .link-item .link-note { /* (Windows用) ※初回のみ利用 (DL後ダブルクリック) など */
     font-size: 0.85em; /* 小さく */
-    color: var(--text-color); /* 親からテキスト色を継承 */
+    color: inherit; /* 親の.button-linkから色を継承（ホバーで白になる） */
     display: block; /* 改行して表示 */
     margin-top: 0.2em;
     line-height: 1.3;
@@ -337,9 +354,10 @@ h3 a:hover {
 
 .link-item .ip-display { /* (root@192.168.1.1) など */
     font-size: 0.9em; /* 少し小さく */
-    color: var(--text-color); /* 親からテキスト色を継承 */
+    color: inherit; /* 親の.button-linkから色を継承（ホバーで白になる） */
     margin-left: 0.5em; /* テキストとの間隔 */
     white-space: nowrap; /* 改行しない */
+    flex-shrink: 0; /* 縮小しない */
 }
 
 /* ── Device IP セクション内の微調整 ── */
@@ -418,11 +436,8 @@ h3 a:hover {
     margin-top: 1em;
 }
 .qr-code-section .qr-code-canvas canvas {
-    /* QRコードの色はここで直接canvasに描画されるため、CSSでは色の指定は不要か、
-       ライブラリのオプションで--text-colorを使用するように調整 */
-    /* ただし、ここではCSSでできる範囲で、QRコードの要素に色を適用する */
     background-color: var(--block-bg); /* QRコードの背景もブロック背景に */
-    color: var(--text-color); /* QRコードの前景色（暗い部分）もテキスト色に */
+    color: var(--text-color);
     width: 11.25em !important;
     height: 11.25em !important;
     display: inline-block;
@@ -435,7 +450,23 @@ h3 a:hover {
     border-radius: 0.3em;
     background-color: var(--block-bg);
     box-sizing: border-box;
+    transition: background-color 0.2s ease, border-color 0.2s ease; /* ホバー時の変化をスムーズに */
 }
+
+/* details全体がホバーされたときに背景と文字色を変える */
+.handler-register-section:hover {
+    background-color: var(--link-color); /* ホバーで水色背景 */
+    border-color: var(--link-color); /* ホバーでボーダーも水色に */
+}
+
+/* detailsの中のsummaryとリンクの文字色もホバーに連動 */
+.handler-register-section:hover .handler-register-summary,
+.handler-register-section:hover .handler-register-summary:before,
+.handler-register-section:hover .handler-register-link,
+.handler-register-section:hover .handler-register-link .link-note {
+    color: #f1f1f1; /* ホバーで文字を白に */
+}
+
 
 .handler-register-section .handler-register-summary { /* summaryタグのクラス */
     text-align: left; /* 左寄せ */
@@ -452,7 +483,7 @@ h3 a:hover {
     content: "►"; /* 閉じた状態の矢印 */
     display: inline-block;
     margin-right: 0.5em;
-    transition: transform 0.2s ease;
+    transition: transform 0.2s ease, color 0.2s ease;
     color: var(--text-color); /* 矢印もテキスト色に統一 */
 }
 .handler-register-section[open] .handler-register-summary:before {
@@ -460,18 +491,30 @@ h3 a:hover {
     transform: rotate(0deg);
 }
 
-/* handler-register-link は a.download-link でスタイルが決定されるため、固有の記述は不要にしました */
-/* 以前はここで border: none; など余計な指定がありましたが、a{}から継承されるように削除しました */
-/* a.handler-register-link も a.download-link のルールに集約されます */
-
+/* .handler-register-link は .button-link のスタイルを適用する */
+/* HTML側で <a class="button-link handler-register-link">...</a> のようにクラスを追加してください */
+.handler-register-section .handler-register-link {
+    /* .button-link がこれらのスタイルをカバー */
+    /* display, width, box-sizing, text-decoration, background-color, color, border, padding, border-radius, transition は .button-link に任せる */
+    margin-top: 0; /* .button-linkのmargin-bottomを打ち消すため */
+    margin-bottom: 0.8em; /* details内の各リンク間のマージン */
+}
 
 .handler-register-section .handler-register-link .link-note {
     display: block; /* 改行 */
     font-size: 0.8em;
-    color: var(--text-color); /* テキスト色を継承 */
+    color: inherit; /* 親の.button-linkから色を継承 */
     margin-top: 0.2em;
     line-height: 1.3;
 }
+
+
+/* ── コンソールセクションのリンクにも.button-linkを適用 ── */
+/* HTML側で <a class="button-link">...</a> のようにクラスを追加してください */
+.console-section .button-link {
+    margin-bottom: 0.8em; /* 項目間のマージン */
+}
+
 
 /* ── フッター ── */
 .page-footer-area { /* footerタグに適用したクラス */
@@ -482,155 +525,67 @@ h3 a:hover {
     display: flex; /* 中央揃えのためのFlexbox */
     justify-content: center;
     align-items: flex-end; /* 下部に寄せる */
-    padding: 0.5em 0; /* 上下のパディングを追加 */
+    padding: 1em 2em; /* パディング */
+    border-top: 0.05em solid var(--text-color); /* 上線色もテキスト色に統一 */
     box-sizing: border-box;
-    background-color: var(--block-bg); /* フッターの背景色をテーマ変数から取得 */
-    border-top: 0.0625em solid var(--text-color); /* 上部にボーダーもテキスト色に統一 */
-    text-align: center;
-    font-size: 0.9em;
-    color: var(--text-color); /* テキスト色を継承 */
-    box-shadow: 0 -0.125em 0.25em rgba(0, 0, 0, 0.1); /* 上部に影 */
-    z-index: 1000; /* 他のコンテンツの上に表示 */
+    z-index: 100; /* 他のコンテンツの上に表示 */
 }
 
-.footer-inner-flex {
+.page-footer-area .footer-content {
+    max-width: 50em;
+    width: 100%;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0 2em;
-    max-width: 50em; /* containerと同じ最大幅 */
-    width: 100%;
-    box-sizing: border-box;
+    flex-wrap: wrap; /* 小さい画面で折り返す */
+    gap: 1em; /* 要素間の隙間 */
 }
 
-.footer-controls {
-    display: flex;
-    align-items: center;
-    flex-shrink: 0; /* 縮まない */
-    white-space: nowrap; /* ボタンが改行しないように */
-}
-
-.footer-left-controls {
-    justify-content: flex-start;
-}
-
-.footer-right-controls {
-    justify-content: flex-end;
-}
-
-.copyright-info {
-    flex-grow: 1; /* 残りのスペースを埋める */
-    text-align: center;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 0 1em; /* 左右のコントロールとの間に少しパディングを追加 */
-}
-
-.copyright-text { /* p.copyright-text */
-    margin: 0;
-    font-size: 0.85em; /* 小さめに */
-    color: var(--text-color); /* テキスト色を継承 */
-    line-height: 1.5;
-    display: flex;
-    flex-wrap: wrap; /* 小さな画面で折り返す */
-    justify-content: center;
-    align-items: center;
-    gap: 0.5em 0.8em; /* アイテム間の隙間 */
-}
-
-.copyright-text .separator {
-    white-space: nowrap;
+.page-footer-area .copyright-text { /* span.copyright-text */
+    font-size: 0.85em;
     color: var(--text-color); /* テキスト色を継承 */
 }
 
-/* フッターリンクもa{}のベーススタイルが適用されるため、.footer-linkの個別のスタイルは最小限に */
-.copyright-text .footer-link { /* フッター内のa.footer-link */
-    white-space: nowrap;
-    /* padding, border, border-radius はa{}から継承 */
-    background-color: transparent; /* 背景を透明に */
-    color: var(--text-color); /* 文字色をテーマのテキスト色に */
-    text-decoration: none; /* 下線なし */
-    border: none; /* ボーダーなし */
+.page-footer-area .footer-link { /* a.footer-link */
+    color: var(--text-color); /* テキスト色を継承 */
+    text-decoration: none;
+    transition: color 0.2s ease;
 }
 
-.copyright-text .footer-link:hover {
-    background-color: var(--link-color); /* ホバー時は水色BG */
-    color: #f1f1f1; /* ホバー時は白文字 */
-    text-decoration: none; /* ホバー時も下線なし */
+.page-footer-area .footer-link:hover {
+    color: var(--link-color); /* ホバー時の文字色は水色（通常リンクのホバー時と合わせる） */
+    background-color: transparent; /* 背景は透明 */
 }
 
+/* ── レスポンシブデザインの調整 ── */
+@media (max-width: 48em) { /* 768px以下 */
+    .main-header .header-inner,
+    .main-content,
+    .page-footer-area .footer-content {
+        padding-left: 1em;
+        padding-right: 1em;
+    }
 
-/* ── レスポンシブ ── */
-@media (max-width: 37.5em) { /* 600pxをemに変換 (16px * 37.5 = 600px) */
-    body {
-        padding-bottom: 7.5em; /* モバイルフッターの高さ分 */
-        padding-top: 0;
+    .main-header .logo-container {
+        width: auto; /* ロゴが中央に寄るように調整 */
     }
-    .container {
-        /* モバイルでは幅に関する特別な調整は不要 */
+
+    .main-header .logo-container .site-logo {
+        max-width: 200px; /* 小さい画面でのロゴサイズ調整 */
     }
-    .main-content { /* モバイルではマージンとパディングを調整 */
-        margin: 1em 0; /* 左右マージンを0に */
-        padding: 1em 1.2em;
-        border-radius: 0;
-        box-shadow: none;
-        width: auto; /* 幅を自動調整 (親のcontainerが100%なので実質100%) */
-        max-width: none; /* モバイルでは最大幅の制限を解除 */
-    }
-    .main-header .header-inner {
-        padding: 1em 1.2em;
-    }
+
     .page-title {
-        font-size: 1.8em;
+        font-size: 1.7em;
     }
+
     .section-title {
-        font-size: 1.15em;
-    }
-    /* モバイルでのaタグのスタイル調整はa{}でまとめて処理されるため、ここでの個別記述は不要に */
-
-    .link-item .link-text {
-        font-size: 1em; /* モバイルではベースサイズに戻す */
-    }
-    .link-item .link-note,
-    .link-item .ip-display {
-        font-size: 0.8em; /* モバイルで小さく */
+        font-size: 1.1em;
     }
 
-    /* フッターのレスポンシブ調整 */
-    .page-footer-area {
-        padding: 0.6em 0;
-    }
-    .footer-inner-flex {
+    /* フッターの要素を中央に寄せる */
+    .page-footer-area .footer-content {
         flex-direction: column;
-        align-items: center;
-        padding: 0.6em 1em;
-        gap: 0.8em;
-    }
-    .footer-controls,
-    .copyright-info {
-        width: 100%;
-        justify-content: center;
-        margin-bottom: 0;
-    }
-    .copyright-text {
-        font-size: 0.8em;
         text-align: center;
-        justify-content: center;
-        gap: 0.3em 0.6em;
-    }
-    .lang-button,
-    .theme-button {
-        padding: 0.35em;
-        border: 0.05em solid transparent;
-        font-size: 0.9em;
     }
 }
-
-/* ── ダークテーマ用オーバーライド ── */
-html[data-theme="dark"] .container {
-    box-shadow: 0 0.25em 0.75em rgba(0, 0, 0, 0.4);
-}
-html[data-theme="dark"] .section-title {
-    border-bottom-color: var(--text-color); /* 下線色もテキスト色に統一 */
-}
+EOF
