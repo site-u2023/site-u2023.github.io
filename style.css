@@ -76,6 +76,14 @@ ul {
     width: 100%; /* 親要素の幅いっぱいに広げる */
 }
 
+/* ロゴのリンクに背景色を適用（固有の調整） */
+.main-header .logo-container a {
+    background-color: var(--block-bg); /* 背景色を親（--block-bg）と同じにする */
+    border: none; /* a{}のボーダーを削除 */
+    padding: 0; /* a{}のパディングを削除 */
+    display: inline-block; /* リンクとして動作させるために必要 */
+}
+
 .main-header .logo-container .site-logo { /* imgタグに適用したクラス */
     width: 100%;
     height: auto;
@@ -232,7 +240,7 @@ button.primary-button:hover {
 
 .section-title { /* h2.section-title */
     margin: 0 0 1em; /* 上下マージンのみ */
-    color: var(--text-color); /* テキスト色に修正 */
+    color: var(--link-color); /* テキスト色を水色に修正 */
     font-size: 1.3em;
     border-bottom: 0.05em solid var(--block-border); /* 下線 */
     padding-bottom: 0.5em; /* 下線とテキストの隙間 */
@@ -247,6 +255,11 @@ button.primary-button:hover {
 
 .section-paragraph { /* p.section-paragraph */
     margin-bottom: 1em; /* 段落の下マージン */
+}
+
+/* h3タグ内のa要素の下線を削除（固有の調整） */
+h3 a {
+    text-decoration: none; /* 下線を削除 */
 }
 
 /* ── リンクリスト ── */
