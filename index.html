@@ -114,11 +114,11 @@ ul {
 .section-title {
     margin: 0 0 1em;
     font-size: 1.3em;
-    line-height: 1;
+    line-height: 1.2;
 }
 
 .section-subtitle {
-    font-size: 0.8em;
+    font-size: 1em;
     color: inherit;
     font-weight: normal;
     margin-left: 0.5em;
@@ -275,12 +275,15 @@ h3.bordered-element {
 }
 
 .handler-register-section .handler-register-link {
-    margin-top: 0;
-    margin-bottom: 0.8em;
+    margin-top: 1em;
+    margin-bottom: 0;
     border: none;
     background-color: transparent;
-    padding-left: 1em;
-    padding-right: 1em;
+    padding: 0.8em 1em;
+}
+
+.handler-register-section .handler-register-content {
+    padding: 0 1em 1em 1em;
 }
 
 .handler-register-section .handler-register-link:hover {
@@ -451,17 +454,24 @@ h3.bordered-element {
 }
 
 /* リンク内の要素スタイル */
+.link-item {
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+}
+
 .link-item .link-text {
     font-weight: bold;
     color: inherit;
+    white-space: nowrap;
 }
 
 .link-item .link-note {
-    font-size: 0.85em;
+    font-size: 1em;
     color: inherit;
-    display: block;
-    margin-top: 0.2em;
-    line-height: 1.3;
+    display: inline;
+    margin-left: 0.5em;
+    white-space: nowrap;
 }
 
 .link-item .ip-display {
