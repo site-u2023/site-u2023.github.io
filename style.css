@@ -6,8 +6,8 @@
  * 2. 全ての文字色 (--text-color):
  * - ライトテーマ、ダークテーマに関わらず、常に #43b0e8 (水色)
  * 3. 全てのリンク（ロゴを含む）や、枠として機能する要素のホバー時の挙動:
- * - ホバー時以外: 背景透明、文字色を水色 (--text-color) から継承
- * - ホバー時のみ: 背景 #43b0e8 (水色)、文字 #f1f1f1 (白)
+ * - ホバー時以外: 背景透明、文字色を水色 (--text-color) から継承、水色の枠線
+ * - ホバー時のみ: 背景 #43b0e8 (水色)、文字 #f1f1f1 (白)、水色の枠線（背景と同色）
  *
  * その他: 上記以外は全て継承し、余計な個別指定は行わない。
  */
@@ -126,11 +126,11 @@ ul {
 }
 
 /* ── フォーム要素、ボタン、リンクのベーススタイル (継承と最低限の調整) ── */
-/* input, button, summaryの共通ベーススタイル */
+/* input, buttonの共通ベーススタイル */
 input[type="text"], /* input要素のtypeを明確に */
 button {
     color: inherit; /* 親要素からテキスト色を継承 (基本はbodyの--text-color) */
-    background-color: inherit; /* 親要素から背景色を継承 (基本はbodyの--block-bg) */
+    background-color: transparent; /* 背景は透明 */
     border: 0.05em solid var(--text-color); /* ボーダー色もテキスト色に統一 */
     border-radius: 0.3em; /* 角丸 */
     padding: 0.6em 0.9em; /* パディング */
@@ -167,7 +167,7 @@ a:hover {
     text-decoration: none; /* ホバー時も下線なし */
 }
 
-/* 新しい「枠付きリンク」の汎用スタイル */
+/* 新しい「枠付きリンク」の汎用スタイル - 画像のSSH接続など、個別の枠を持つリンクに適用 */
 .button-link {
     display: block; /* ブロック要素として表示し、幅いっぱいに広がるようにする */
     width: 100%;
@@ -333,13 +333,6 @@ h3 a:hover {
     /* li自体は枠を持たず、内包するaタグ(.button-link)が枠を持つ */
 }
 
-/* .link-list li a は、.button-link を適用することで個別の枠とホバーを持つ */
-/* HTML側で <a class="button-link">...</a> のようにクラスを追加してください */
-.link-list li a {
-    /* .button-link がこれらのスタイルをカバー */
-    /* display, width, box-sizing, text-decoration, background-color, color, border, padding, border-radius, transition は .button-link に任せる */
-}
-
 /* .link-item内の要素は、親の.button-linkがホバーされたときに色が変わるようにする */
 .link-item .link-text {
     font-weight: bold; /* メインテキストを太字に */
@@ -402,10 +395,10 @@ h3 a:hover {
     background-color: var(--link-color); /* ホバー時もベースのリンク色を維持 */
 }
 
-/* ── QRコード部分 ── */
+/* ── QRコード部分 (detailsタグ) のスタイル修正 - 「SSH QRコード表示」にも適用 */
 .qr-code-section { /* .qr-codeを.qr-code-sectionに修正 */
     margin-top: 1em; /* 上部マージン */
-    padding: 1em;
+    padding: 0; /* summaryとcanvasに個別にパディングを設定するため、親は0に */
     background-color: transparent; /* 背景は透明 */
     border-radius: 0.375em;
     text-align: center;
@@ -432,8 +425,9 @@ h3 a:hover {
     text-align: left; /* 左寄せに戻す */
     cursor: pointer;
     color: inherit; /* 親から色を継承 */
-    padding: 0.5em 0; /* 開閉領域のパディング */
+    padding: 0.8em 1em; /* 開閉領域のパディングをhandler-register-sectionと統一 */
     list-style: none; /* デフォルトのマーカーを削除 */
+    transition: color 0.2s ease; /* ホバー時の色の変化をスムーズに */
 }
 .qr-code-section .qr-code-summary::-webkit-details-marker,
 .qr-code-section .qr-code-summary::marker {
@@ -452,6 +446,9 @@ h3 a:hover {
 }
 .qr-code-section .qr-code-canvas { /* QRコードキャンバス表示エリア */
     margin-top: 1em;
+    padding-left: 1em; /* 親のpaddingと合わせる */
+    padding-right: 1em;
+    padding-bottom: 1em; /* 下部のパディング */
 }
 .qr-code-section .qr-code-canvas canvas {
     background-color: transparent; /* QRコードの背景も透明に */
@@ -463,7 +460,7 @@ h3 a:hover {
     transition: color 0.2s ease; /* ホバー時の色の変化をスムーズに */
 }
 
-/* ── プロトコルハンドラー登録セクション ── */
+/* ── プロトコルハンドラー登録セクション (detailsタグ) のスタイル修正 - 「SSH用プロトコルハンドラー登録」に適用 */
 .handler-register-section { /* detailsタグのクラス */
     margin-bottom: 0.8em; /* リストアイテム間のマージン */
     border: 0.05em solid var(--text-color); /* ボーダー色もテキスト色に統一 */
