@@ -252,8 +252,8 @@ nav a {
     color: var(--text-color); /* フッターのリンク色もテキスト色に合わせる */
 }
 .page-footer-area p a:hover {
-    background-color: rgba(0,0,0,0.05); /* フッターリンクのホバー背景色を少し透明にする */
-    color: var(--link-color); /* ホバー時の色をリンク色に */
+    background-color: var(--hover-bg); /* テーマ変数に合わせる */
+    color: var(--hover-color);         /* テーマ変数に合わせる */
 }
 
 /* 言語ボタンのスタイル調整 */
