@@ -118,16 +118,36 @@ input::placeholder {
     opacity: 0.7;
 }
 
-/* リンク特有のスタイル（a.link-itemのベースを上書き） */
+/* リンク特有のスタイル（全てのaタグを「背景青、文字白」にする） */
 a {
-    color: var(--link-color); /* リンクは常に水色 */
+    background-color: var(--link-color); /* 背景色を水色に */
+    color: #fff; /* 文字色を白に */
     text-decoration: none; /* デフォルトで下線なし */
-    transition: color 0.2s ease;
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease; /* スムーズな変化 */
+    padding: 0.6em 0.9em; /* ボタンと合わせる */
+    border-radius: 0.3em; /* 角丸 */
+    display: inline-block; /* 適切な表示形式 (リンクがブロック化される場合あり) */
+    border: 0.05em solid var(--link-color); /* ボーダーも青に */
+    box-sizing: border-box;
 }
 
 a:hover {
-    color: var(--link-color); /* ホバー時もリンクカラーを維持 */
-    text-decoration: underline; /* ホバー時は下線を出す */
+    background-color: var(--link-color); /* ホバー時もベースのリンク色を維持 */
+    color: #fff; /* ホバー時も文字色は白を維持 */
+    text-decoration: underline; /* ホバー時は下線を出す (お客様のご指示通り維持) */
+    border-color: var(--link-color); /* ホバー時もベースのリンク色を維持 */
+}
+
+/* REGのDLなど、個別に調整が必要なリンクのスタイル (文字色だけyellow) */
+a.download-link {
+    color: yellow; /* 文字色をyellowにする */
+    /* background-color, border, padding, border-radius, display, box-sizing はa{}から継承 */
+    /* text-decoration もa{}から継承 (none) */
+}
+
+a.download-link:hover {
+    color: yellow; /* ホバー時も文字色はyellowを維持 */
+    /* background-color, border-color, text-decoration はa:hover{}から継承 */
 }
 
 /* buttonに特有のスタイル（input, aのベースを上書き） */
@@ -215,7 +235,7 @@ button.primary-button:hover {
 
 .section-title { /* h2.section-title */
     margin: 0 0 1em; /* 上下マージンのみ */
-    color: var(--link-color); /* セクションタイトルはリンク色に */
+    color: var(--text-color);
     font-size: 1.3em;
     border-bottom: 0.05em solid var(--block-border); /* 下線 */
     padding-bottom: 0.5em; /* 下線とテキストの隙間 */
