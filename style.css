@@ -117,7 +117,6 @@ input::placeholder {
   color: var(--text-color); /* ベースのテキスト色を継承 */
   opacity: 0.7; /* 少し透明度をつけて、入力テキストと区別する */
 }
-
 /* より見やすい色を直接指定したい場合は、以下のコメントアウトを外して使用 */
 /*
 html[data-theme="light"] input::placeholder {
@@ -131,10 +130,18 @@ html[data-theme="dark"] input::placeholder {
 /* ── ナビゲーション ── */
 nav section {
   background-color: var(--block-bg);
-  border: none;
+  border: 0.05em solid var(--block-border); /* sectionにもボーダーを追加して統一感を出す */
+  border-radius: 0.5em; /* コンテナに合わせた角丸 */
   padding: 0.625em; /* 10pxを相対値に */
   margin-bottom: 1em; /* 16pxを相対値に */
+  box-sizing: border-box; /* パディングを幅に含める */
 }
+
+/* Device IP セクションは nav section のスタイルを継承するため、固有のボーダー設定は不要に */
+/* #device-ip {
+  border: none;
+} */ /* このセレクタは不要になります */
+
 nav h2 {
   margin: 1.5em 0 0.8em;
   color: var(--link-color);
@@ -147,26 +154,25 @@ nav a {
   display: block;
 }
 
-/* ── Device IP セクション ── */
-#device-ip {
-  margin-bottom: 1em; /* 16pxを相対値に */
-  border: none;
-}
+/* ── Device IP セクション内の微調整 ── */
+/* input要素とボタンが並ぶ場所の調整 */
 #device-ip .connection {
   display: flex;
   align-items: center;
   gap: 1rem;
+  /* input, button, a にすでにpaddingがあるので、ここでは調整しない */
 }
 #device-ip .ip-address {
-  display: flex;
   flex: 1;
   min-width: 0;
+  display: flex; /* input と button の親要素なのでflexにする */
   align-items: center;
   overflow: hidden;
 }
 #global-ip-input {
   flex: 1;
   min-width: 0;
+  /* input, button, a の共通スタイルを適用 */
 }
 #global-ip-update {
   margin-left: auto;
@@ -179,12 +185,16 @@ nav a {
 }
 
 /* ── QRコード部分 ── */
+/* qr-codeはdetailsタグに直接クラスがついているので、
+   #device-ip セクション内の見た目とは別に管理 */
 .qr-code {
   margin-top: 1em;
   padding: 1em;
-  background-color: var(--block-bg);
+  background-color: var(--block-bg); /* .qr-codeの背景色は、sectionの背景色と同じでよいはず */
   border-radius: 0.375em; /* 6pxを相対値に */
   text-align: center;
+  border: 0.05em solid var(--block-border); /* QRコード部分にも枠線を追加 */
+  box-sizing: border-box; /* パディングを幅に含める */
 }
 .qr-code canvas {
   width: 11.25em !important; /* 180pxを相対値に */
