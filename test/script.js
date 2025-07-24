@@ -1,4 +1,3 @@
-<script>
 document.addEventListener('DOMContentLoaded', () => {
   // ── ヘッダー／フッターの外部読み込み ──
   function loadFragment(id, url) {
@@ -152,4 +151,3 @@ document.addEventListener('DOMContentLoaded', () => {
   // ── 初回描画 ──
   updateAll();
 });
-</script>
