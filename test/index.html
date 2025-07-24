@@ -116,7 +116,18 @@
   <!-- QRコード用ライブラリ -->
   <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
   <!-- header.html, footer.html を動的に読み込むスクリプト -->
+  <script>
+    // シンプルなfetchによるヘッダー/フッター読み込み
+    window.addEventListener('DOMContentLoaded', function() {
+      fetch('header.html')
+        .then(r => r.ok ? r.text() : '')
+        .then(html => { document.getElementById('header-container').innerHTML = html; });
 
+      fetch('footer.html')
+        .then(r => r.ok ? r.text() : '')
+        .then(html => { document.getElementById('footer-container').innerHTML = html; });
+    });
+  </script>
   <!-- 既存スクリプト -->
   <script src="script.js"></script>
 </body>
