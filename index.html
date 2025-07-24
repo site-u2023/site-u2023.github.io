@@ -1,6 +1,29 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>OpenWrt A Beginner's Notebook</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- ヘッダー -->
+    <header class="main-header">
+        <div class="header-inner">
+            <div class="logo-container">
+                <a href="https://openwrt.org/" target="_blank" rel="noopener noreferrer" class="logo-link">
+                    <img id="site-logo" src="img/openwrt_text_blue_and_dark_blue.svg" alt="OpenWrt Logo" class="site-logo">
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- メインコンテンツ -->
     <div class="container">
         <main class="main-content">
             <nav class="main-nav">
+
+                <!-- デバイスIPアドレスセクション -->
                 <section id="device-ip" class="content-section">
                     <h2 class="section-title bordered-element" data-i18n="deviceIP">デバイスIPアドレス</h2>
                     <div class="input-group connection">
@@ -23,9 +46,11 @@
                     </details>
                 </section>
 
+                <!-- ターミナルセクション -->
                 <section id="terminal" class="content-section">
                     <h2 class="section-title bordered-element" data-i18n="terminal">ターミナル <span class="section-subtitle">(Windows用)</span></h2>
                     
+                    <!-- SSHプロトコルハンドラー登録 -->
                     <h3 class="bordered-element">SSH用プロトコルハンドラー登録</h3>
                     <ul class="link-list">
                         <li>
@@ -35,7 +60,11 @@
                             </a>
                         </li>
                     </ul>
+                    <div class="handler-register-content">
+                        <span class="link-note">※初回のみ登録が必要です。登録後、下記SSH接続リンクが利用可能になります。</span>
+                    </div>
 
+                    <!-- SSH接続 -->
                     <h3 class="bordered-element">SSH接続</h3>
                     <ul class="link-list">
                         <li>
@@ -50,6 +79,7 @@
                             >
                                 <span class="link-text">SSH接続</span> <span class="ip-display">(root@<span id="ssh-ip">192.168.1.1</span>)</span>
                             </a>
+                            <span class="link-note">※プロトコルハンドラー登録済みの場合のみ有効です。</span>
                         </li>
                         <li>
                             <a
@@ -66,6 +96,7 @@
                     </ul>
                 </section>
 
+                <!-- ローカルサービスセクション -->
                 <section id="local-services" class="content-section">
                     <h2 class="section-title bordered-element" data-i18n="console">コンソール</h2>
                     <ul class="link-list">
@@ -94,6 +125,7 @@
                     </ul>
                 </section>
 
+                <!-- プロジェクトセクション -->
                 <section id="project" class="content-section">
                     <h2 class="section-title bordered-element" data-i18n="githubRepo">GitHubリポジトリ</h2>
                     <ul class="link-list">
@@ -108,3 +140,35 @@
             </nav>
         </main>
     </div>
+
+    <!-- フッター -->
+    <footer class="page-footer-area">
+        <div class="footer-inner-flex">
+            <div class="footer-controls footer-left-controls">
+                <div class="language-selector">
+                    <button id="lang-en" data-lang="en" class="lang-button">EN</button>
+                    <span class="separator">|</span>
+                    <button id="lang-ja" data-lang="ja" class="selected lang-button">JA</button>
+                </div>
+            </div>
+            <div class="copyright-info">
+                <p class="copyright-text">
+                    <a href="https://qiita.com/site-u/items/39fbac482c06c98b229b" target="_blank" rel="noopener" class="footer-link">OpenWrt初心者備忘録</a>
+                    <span class="separator"> | </span>
+                    <a href="https://github.com/site-u2023" target="_blank" rel="noopener noreferrer" class="footer-link">&copy; <span id="current-year">2025</span> site-u</a>
+                    <span class="separator"> | </span>
+                    <a href="disclaimer.html" target="_blank" rel="noopener noreferrer" class="footer-link">免責事項</a>
+                </p>
+            </div>
+            <div class="footer-controls footer-right-controls">
+                <div class="theme-selector">
+                    <button id="theme-auto" aria-label="システムテーマ" data-theme-preference="auto" class="theme-button">🌗</button>
+                    <button id="theme-light" aria-label="ライトテーマ" data-theme-preference="light" class="theme-button">☀️</button>
+                    <button id="theme-dark" aria-label="ダークテーマ" data-theme-preference="dark" class="theme-button selected">🌙</button>
+                </div>
+            </div>
+        </div>
+    </footer>
+    <script src="script.js"></script>
+</body>
+</html>
