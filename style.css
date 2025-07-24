@@ -1,22 +1,32 @@
+/*
+ * 基本デザイン要件:
+ * 1. テーマに応じた背景色 (--block-bg):
+ * - ライトテーマ: #f1f1f1 (白)
+ * - ダークテーマ: #2a2a2a (黒)
+ * 2. 全ての文字色 (--text-color):
+ * - ライトテーマ、ダークテーマに関わらず、常に #43b0e8 (水色)
+ * 3. 全てのリンク（ロゴを含む）のホバー時の挙動:
+ * - ホバー時以外: 背景透明、文字色を水色 (--text-color) から継承
+ * - ホバー時のみ: 背景 #43b0e8 (水色)、文字 #f1f1f1 (白)
+ *
+ * その他: 上記以外は全て継承し、余計な個別指定は行わない。
+ */
+
 /* ── テーマ変数 ── */
 html[data-theme="light"] {
-    --block-bg: #fff; /* 背景色、主要コンテンツの背景 */
-    --block-border: #ddd; /* ボーダー色、セクションの区切りなど */
-    --link-color: #43b0e8; /* リンクのホバー色 (水色) */
-    --text-color: #333; /* 一般的なテキスト色 (濃いグレー) */
-    --qr-dark: #000; /* QRコードの暗い部分の色 */
-    --qr-light: #f1f1f1; /* QRコードの明るい部分の色 */
-    --highlight-color: #ffcc00; /* プロトコルハンドラー登録の見出し色 (黄色) */
+    --block-bg: #f1f1f1; /* 背景色、主要コンテンツの背景 (白) */
+    --main-color: #43b0e8; /* 主要な文字色、リンク色、QRコード色など、水色 */
+    --text-color: var(--main-color); /* 全ての文字色を主要色に統一 */
+    --link-color: var(--main-color); /* 全てのリンク色を主要色に統一 */
+    /* 不要な --block-border, --qr-dark, --qr-light, --highlight-color は削除 */
 }
 
 html[data-theme="dark"] {
-    --block-bg: #2a2a2a; /* ダークテーマ時の背景色 */
-    --block-border: #333; /* ダークテーマ時のボーダー色 */
-    --link-color: #43b0e8; /* リンクのホバー色 (水色) */
-    --text-color: #f1f1f1; /* 一般的なテキスト色 (明るいグレー) */
-    --qr-dark: #fff; /* QRコードの暗い部分の色 */
-    --qr-light: #2a2a2a; /* QRコードの明るい部分の色 */
-    --highlight-color: #ffd700; /* プロトコルハンドラー登録の見出し色 (少し明るい黄色) */
+    --block-bg: #2a2a2a; /* ダークテーマ時の背景色 (黒) */
+    --main-color: #43b0e8; /* 主要な文字色、リンク色、QRコード色など、水色 */
+    --text-color: var(--main-color); /* 全ての文字色を主要色に統一 */
+    --link-color: var(--main-color); /* 全てのリンク色を主要色に統一 */
+    /* 不要な --block-border, --qr-dark, --qr-light, --highlight-color は削除 */
 }
 
 html {
@@ -28,8 +38,8 @@ body {
     margin: 0;
     padding: 0 0 5em; /* フッター分の余白 */
     font-family: 'Galano Grotesque SemiBold', 'Galano Grotesque', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans JP", "Noto Sans CJK JP", "DejaVu Sans", sans-serif;
-    background-color: var(--block-bg); /* 全体の背景色 */
-    color: var(--text-color); /* 全体のデフォルトテキスト色 */
+    background-color: var(--block-bg); /* 全体の背景色 (テーマで白/黒) */
+    color: var(--text-color); /* 全体のデフォルトテキスト色 (常に水色) */
     transition: background-color 0.3s ease, color 0.3s ease; /* テーマ切り替え時のスムーズな変化 */
     line-height: 1.6; /* 行の高さを少し広げ読みやすく */
     min-height: 100vh; /* フッターを下に固定するための高さ確保 */
@@ -41,7 +51,7 @@ body {
 .main-header,
 .page-footer-area {
     background-color: var(--block-bg);
-    border-color: var(--block-border);
+    border-color: var(--text-color); /* border-colorもテキスト色に統一 */
     transition: background-color 0.3s ease, border-color 0.3s ease;
     flex-shrink: 0;
     width: 100%;
@@ -57,7 +67,7 @@ ul {
 /* ── ヘッダー ── */
 .main-header { /* headerタグに適用したクラス */
     position: relative;
-    border-bottom: 0.05em solid var(--block-border);
+    border-bottom: 0.05em solid var(--text-color); /* border-colorもテキスト色に統一 */
 }
 
 .main-header .header-inner {
@@ -85,12 +95,12 @@ ul {
     display: inline-block; /* リンクとして動作させるために必要 */
     color: var(--text-color); /* 文字色をテーマのテキスト色に */
     text-decoration: none; /* 下線なし */
-    transition: none; 
+    transition: none;
 }
 
 .main-header .logo-container a:hover {
     background-color: transparent; /* ホバー時も背景透明 */
-    color: var(--text-color);
+    color: var(--text-color); /* ホバー時もテキスト色を維持 */
     text-decoration: none; /* ホバー時も下線なし */
 }
 
@@ -120,7 +130,7 @@ button,
 summary { /* detailsタグのsummaryもベーススタイルを継承 */
     color: inherit; /* 親要素からテキスト色を継承 (基本はbodyの--text-color) */
     background-color: inherit; /* 親要素から背景色を継承 (基本はbodyの--block-bg) */
-    border: 0.05em solid var(--block-border); /* ボーダー色 */
+    border: 0.05em solid var(--text-color); /* ボーダー色もテキスト色に統一 */
     border-radius: 0.3em; /* 角丸 */
     padding: 0.6em 0.9em; /* パディング */
     box-sizing: border-box;
@@ -131,7 +141,7 @@ summary { /* detailsタグのsummaryもベーススタイルを継承 */
 
 /* input要素のプレースホルダーのスタイル */
 input::placeholder {
-    color: var(--text-color);
+    color: var(--text-color); /* テキスト色を継承 */
     opacity: 0.7;
 }
 
@@ -152,14 +162,14 @@ a {
 /* ホバー時は背景水色、文字白、下線なし */
 a:hover {
     background-color: var(--link-color); /* ホバー時の背景色を水色に */
-    color: #fff; /* ホバー時の文字色を白に */
+    color: #f1f1f1; /* ホバー時の文字色を白に修正 */
     text-decoration: none; /* ホバー時も下線なし */
 }
 
-/* REGのDLなど、個別に調整が必要なリンクのスタイル (文字色だけyellow) */
-/* これはダウンロードリンクのような特殊なaタグにのみ適用 */
+/* REGのDLなど、個別に調整が必要なリンクのスタイル */
+/* download-linkも主要色と背景色、ホバー時の白で表現 */
 a.download-link {
-    color: yellow; /* 文字色をyellowにする */
+    color: var(--text-color); /* テキスト色を継承 */
     background-color: transparent; /* デフォルト背景は透明 */
     border: none; /* ボーダーなし */
     padding: 0; /* パディングなし */
@@ -167,14 +177,14 @@ a.download-link {
 
 a.download-link:hover {
     background-color: var(--link-color); /* ホバー時はベースリンクと同じ水色背景 */
-    color: #fff; /* ホバー時はベースリンクと同じ白文字 */
+    color: #f1f1f1; /* ホバー時はベースリンクと同じ白文字 */
     text-decoration: none; /* ホバー時も下線なし */
 }
 
 /* buttonに特有のスタイル（input, aのベースを上書き） */
 button.primary-button { /* 更新ボタンなど、プライマリーアクションのボタン */
     background-color: var(--link-color); /* 背景色を水色に */
-    color: #fff; /* 文字色を白に */
+    color: #f1f1f1; /* 文字色を白に */
     border-color: var(--link-color); /* ボーダーも水色に */
     cursor: pointer;
     padding: 0.6em 0.9em; /* パディングを統一 */
@@ -184,7 +194,7 @@ button.primary-button { /* 更新ボタンなど、プライマリーアクシ�
 
 button.primary-button:hover {
     background-color: var(--link-color); /* ホバー時もベースのリンク色を維持 */
-    color: #fff; /* ホバー時も文字色は白を維持 */
+    color: #f1f1f1; /* ホバー時も文字色は白を維持 */
     border-color: var(--link-color); /* ホバー時もベースのリンク色を維持 */
 }
 
@@ -208,14 +218,14 @@ button.primary-button:hover {
 .lang-button:hover,
 .theme-button:hover {
     background-color: var(--link-color); /* ホバーで水色背景 */
-    color: #fff; /* ホバーで白文字 */
+    color: #f1f1f1; /* ホバーで白文字 */
     border-color: var(--link-color); /* ホバーで水色のボーダー */
 }
 
 .lang-button.selected,
 .theme-button.selected {
     background-color: var(--link-color); /* 選択時は水色背景 */
-    color: #fff; /* 選択時は白文字 */
+    color: #f1f1f1; /* 選択時は白文字 */
     border-color: var(--link-color);
 }
 
@@ -244,13 +254,13 @@ button.primary-button:hover {
     font-size: 2em;
     margin-bottom: 1em;
     text-align: center;
-    color: var(--text-color);
+    color: var(--text-color); /* テキスト色を継承 */
 }
 
 /* ── 各コンテンツセクション ── */
 .content-section {
     background-color: var(--block-bg); /* メインコンテンツの背景色を継承 */
-    border: 0.0625em solid var(--block-border);
+    border: 0.0625em solid var(--text-color); /* ボーダー色もテキスト色に統一 */
     border-radius: 0.3125em;
     padding: 1em;
     margin-bottom: 1em; /* 各セクション間の余白 */
@@ -262,9 +272,9 @@ button.primary-button:hover {
 
 .section-title { /* h2.section-title */
     margin: 0 0 1em; /* 上下マージンのみ */
-    color: var(--link-color); /* テキスト色を水色に修正 */
+    color: var(--text-color); /* テキスト色を継承 */
     font-size: 1.3em;
-    border-bottom: 0.05em solid var(--block-border); /* 下線 */
+    border-bottom: 0.05em solid var(--text-color); /* 下線色もテキスト色に統一 */
     padding-bottom: 0.5em; /* 下線とテキストの隙間 */
 }
 
@@ -277,6 +287,7 @@ button.primary-button:hover {
 
 .section-paragraph { /* p.section-paragraph */
     margin-bottom: 1em; /* 段落の下マージン */
+    color: var(--text-color); /* 親からテキスト色を継承 */
 }
 
 /* h3タグ内のリンクに固有のスタイルを適用 */
@@ -296,7 +307,7 @@ h3 a {
 /* h3タグ内のリンクのホバー時のスタイル (すべてのリンク共通のホバー状態に合わせる) */
 h3 a:hover {
     background-color: var(--link-color); /* ホバーで背景を水色に */
-    color: #fff; /* ホバーで文字を白に */
+    color: #f1f1f1; /* ホバーで文字を白に */
     text-decoration: none; /* ホバー時も下線なし */
 }
 
@@ -313,6 +324,7 @@ h3 a:hover {
 
 .link-item .link-text {
     font-weight: bold; /* メインテキストを太字に */
+    color: var(--text-color); /* テキスト色を継承 */
 }
 
 .link-item .link-note { /* (Windows用) ※初回のみ利用 (DL後ダブルクリック) など */
@@ -343,7 +355,7 @@ h3 a:hover {
     display: flex;
     align-items: center;
     overflow: hidden;
-    border: 0.05em solid var(--block-border); /* inputとbuttonを囲むボーダー */
+    border: 0.05em solid var(--text-color); /* inputとbuttonを囲むボーダーもテキスト色に統一 */
     border-radius: 0.3em;
 }
 #global-ip-input {
@@ -352,7 +364,7 @@ h3 a:hover {
     border: none; /* 親のボーダーを継承するため自身のボーダーを削除 */
     padding: 0.6em 0.9em; /* パディングは維持 */
     background-color: transparent; /* 背景も透明に */
-    color: inherit;
+    color: inherit; /* テキスト色を継承 */
     border-radius: 0; /* 角丸は親に任せる */
 }
 #global-ip-update {
@@ -360,10 +372,10 @@ h3 a:hover {
     flex: 0 0 auto;
     cursor: pointer;
     border: none; /* 親のボーダーを継承するため自身のボーダーを削除 */
-    border-left: 0.05em solid var(--block-border); /* 更新ボタンの左側に区切り線 */
+    border-left: 0.05em solid var(--text-color); /* 更新ボタンの左側に区切り線もテキスト色に統一 */
     border-radius: 0 0.3em 0.3em 0; /* 右側だけ角丸 */
     background-color: var(--link-color); /* 背景色を水色に */
-    color: #fff; /* 文字色を白に */
+    color: #f1f1f1; /* 文字色を白に */
     padding: 0.6em 1em; /* パディング調整 */
 }
 #global-ip-update:hover {
@@ -377,13 +389,13 @@ h3 a:hover {
     background-color: var(--block-bg);
     border-radius: 0.375em;
     text-align: center;
-    border: 0.05em solid var(--block-border);
+    border: 0.05em solid var(--text-color); /* ボーダー色もテキスト色に統一 */
     box-sizing: border-box;
 }
 .qr-code-section .qr-code-summary { /* summaryタグのクラス */
     text-align: left; /* 左寄せに戻す */
     cursor: pointer;
-    color: var(--link-color); /* 基本はリンク色 */
+    color: var(--text-color); /* テキスト色を継承 */
     padding: 0.5em 0; /* 開閉領域のパディング */
     list-style: none; /* デフォルトのマーカーを削除 */
 }
@@ -396,6 +408,7 @@ h3 a:hover {
     display: inline-block;
     margin-right: 0.5em;
     transition: transform 0.2s ease;
+    color: var(--text-color); /* 矢印もテキスト色に統一 */
 }
 .qr-code-section[open] .qr-code-summary:before {
     content: "▼"; /* 開いた状態の矢印 */
@@ -405,6 +418,11 @@ h3 a:hover {
     margin-top: 1em;
 }
 .qr-code-section .qr-code-canvas canvas {
+    /* QRコードの色はここで直接canvasに描画されるため、CSSでは色の指定は不要か、
+       ライブラリのオプションで--text-colorを使用するように調整 */
+    /* ただし、ここではCSSでできる範囲で、QRコードの要素に色を適用する */
+    background-color: var(--block-bg); /* QRコードの背景もブロック背景に */
+    color: var(--text-color); /* QRコードの前景色（暗い部分）もテキスト色に */
     width: 11.25em !important;
     height: 11.25em !important;
     display: inline-block;
@@ -413,7 +431,7 @@ h3 a:hover {
 /* ── プロトコルハンドラー登録セクション ── */
 .handler-register-section { /* detailsタグのクラス */
     margin-bottom: 0.8em; /* リストアイテム間のマージン */
-    border: 0.05em solid var(--block-border);
+    border: 0.05em solid var(--text-color); /* ボーダー色もテキスト色に統一 */
     border-radius: 0.3em;
     background-color: var(--block-bg);
     box-sizing: border-box;
@@ -422,7 +440,7 @@ h3 a:hover {
 .handler-register-section .handler-register-summary { /* summaryタグのクラス */
     text-align: left; /* 左寄せ */
     cursor: pointer;
-    color: var(--highlight-color); /* 要望通り黄色に */
+    color: var(--text-color); /* テキスト色を継承 */
     padding: 0.8em 1em; /* パディング調整 */
     list-style: none; /* デフォルトのマーカーを削除 */
 }
@@ -435,6 +453,7 @@ h3 a:hover {
     display: inline-block;
     margin-right: 0.5em;
     transition: transform 0.2s ease;
+    color: var(--text-color); /* 矢印もテキスト色に統一 */
 }
 .handler-register-section[open] .handler-register-summary:before {
     content: "▼"; /* 開いた状態の矢印 */
@@ -449,7 +468,7 @@ h3 a:hover {
 .handler-register-section .handler-register-link .link-note {
     display: block; /* 改行 */
     font-size: 0.8em;
-    color: var(--text-color);
+    color: var(--text-color); /* テキスト色を継承 */
     margin-top: 0.2em;
     line-height: 1.3;
 }
@@ -466,10 +485,10 @@ h3 a:hover {
     padding: 0.5em 0; /* 上下のパディングを追加 */
     box-sizing: border-box;
     background-color: var(--block-bg); /* フッターの背景色をテーマ変数から取得 */
-    border-top: 0.0625em solid var(--block-border); /* 上部にボーダー */
+    border-top: 0.0625em solid var(--text-color); /* 上部にボーダーもテキスト色に統一 */
     text-align: center;
     font-size: 0.9em;
-    color: var(--text-color);
+    color: var(--text-color); /* テキスト色を継承 */
     box-shadow: 0 -0.125em 0.25em rgba(0, 0, 0, 0.1); /* 上部に影 */
     z-index: 1000; /* 他のコンテンツの上に表示 */
 }
@@ -511,7 +530,7 @@ h3 a:hover {
 .copyright-text { /* p.copyright-text */
     margin: 0;
     font-size: 0.85em; /* 小さめに */
-    color: var(--text-color);
+    color: var(--text-color); /* テキスト色を継承 */
     line-height: 1.5;
     display: flex;
     flex-wrap: wrap; /* 小さな画面で折り返す */
@@ -522,7 +541,7 @@ h3 a:hover {
 
 .copyright-text .separator {
     white-space: nowrap;
-    color: var(--text-color);
+    color: var(--text-color); /* テキスト色を継承 */
 }
 
 /* フッターリンクもa{}のベーススタイルが適用されるため、.footer-linkの個別のスタイルは最小限に */
@@ -537,7 +556,7 @@ h3 a:hover {
 
 .copyright-text .footer-link:hover {
     background-color: var(--link-color); /* ホバー時は水色BG */
-    color: #fff; /* ホバー時は白文字 */
+    color: #f1f1f1; /* ホバー時は白文字 */
     text-decoration: none; /* ホバー時も下線なし */
 }
 
@@ -613,5 +632,5 @@ html[data-theme="dark"] .container {
     box-shadow: 0 0.25em 0.75em rgba(0, 0, 0, 0.4);
 }
 html[data-theme="dark"] .section-title {
-    border-bottom-color: var(--block-border);
+    border-bottom-color: var(--text-color); /* 下線色もテキスト色に統一 */
 }
