@@ -63,7 +63,7 @@ header .logo img {
   max-width: 300px;
 }
 
-/* 言語セレクターのコンテナ */
+/* 言語セレクターのコンテナ - 配置調整のみ */
 .language-selector {
   display: flex;
   align-items: center;
@@ -82,12 +82,12 @@ header .logo img {
   transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
-/* ── フォーム＆リンクのベーススタイル ── */
+/* ── フォーム＆リンクのベーススタイル (継承中心) ── */
 input,
 button,
 a {
-  color: inherit; /* 親からテキスト色を継承 (bodyの--text-colorが適用される) */
-  background-color: inherit; /* 親から背景色を継承 (bodyの--block-bgが適用される) */
+  color: inherit; /* 親からテキスト色を継承 (bodyの--text-colorが基本) */
+  background-color: inherit; /* 親から背景色を継承 (bodyの--block-bgが基本) */
   border: 0.05em solid var(--block-border);
   border-radius: 0.3em;
   padding: 0.6em 0.9em;
@@ -97,12 +97,12 @@ a {
 }
 
 a {
-  color: var(--link-color); /* リンクの文字色は常に水色 */
+  color: var(--link-color); /* リンクは水色 */
 }
 
 a:hover {
-  background-color: transparent; /* ホバー時の背景色を透明に固定 */
-  color: var(--link-color); /* ホバー時もリンクカラー(水色)を維持 */
+  /* ホバー時の背景色、文字色は一切指定しない (親から継承した transparent と var(--link-color) を維持) */
+  /* 視覚的なフィードバックが全くない場合、opacity: 0.8; なども検討できるが、今回は「一切不要」を優先 */
 }
 
 /* プレースホルダーのスタイル */
@@ -123,14 +123,14 @@ nav section {
 
 nav h2 {
   margin: 1.5em 0 0.8em;
-  color: var(--link-color);
+  color: var(--link-color); /* H2はリンク色に */
   font-size: 1.3em;
 }
 nav li {
   margin-bottom: 0.6em;
 }
 nav a {
-  display: block;
+  display: block; /* リンクをブロック要素化してクリックしやすくする */
 }
 
 /* ── Device IP セクション内の微調整 ── */
@@ -154,10 +154,7 @@ nav a {
   margin-left: auto;
   flex: 0 0 auto;
   cursor: pointer;
-}
-#global-ip-update:hover {
-  background-color: transparent; /* ホバー時の背景色を透明に */
-  color: var(--link-color); /* ホバー時もリンクカラーに */
+  /* ホバー時のスタイルもベースから継承されるため、個別指定は不要 */
 }
 
 /* ── QRコード部分 ── */
@@ -222,7 +219,7 @@ nav a {
 .page-footer-area p {
     margin: 0;
     font-size: 0.9em;
-    color: var(--text-color); /* 通常時はテキストカラー */
+    color: var(--text-color); /* 親からテキストカラー継承 */
     line-height: 1.5;
     text-align: center;
     display: flex;
@@ -235,7 +232,7 @@ nav a {
 /* セパレーターのスタイル */
 .page-footer-area p .separator {
     white-space: nowrap;
-    color: var(--text-color); /* セパレーターはテキストカラー */
+    color: var(--text-color); /* 親からテキストカラー継承 */
 }
 
 /* 各リンクアイテムのスタイル (フッターのaタグ) */
@@ -245,10 +242,7 @@ nav a {
     border: none; /* フッターリンクはボーダーなし */
     border-radius: 0.2em;
     color: var(--link-color); /* 常に水色 */
-}
-.page-footer-area p a:hover {
-    background-color: transparent; /* ホバー時の背景色を透明に固定 */
-    color: var(--link-color); /* ホバー時もリンクカラー(水色) */
+    /* ホバー時のスタイルは a:hover でカバーされるので個別指定は不要 */
 }
 
 /* 言語ボタンのスタイル調整 */
@@ -264,23 +258,20 @@ nav a {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--link-color); /* 言語ボタンは常に水色 */
+  color: var(--link-color); /* 言語ボタンは常に水色 (明確に指定) */
 }
 .language-selector button:hover {
-  background-color: transparent; /* ホバー時も背景は透明 */
-  box-shadow: none; /* ホバー時の影もなし */
-  /* colorは指定しない (var(--link-color)を維持) */
+  /* ホバー時のスタイルは継承されるため、個別指定は不要 */
 }
 .language-selector button.selected {
   background-color: #43b0e8; /* 選択時は水色背景 */
   color: #fff; /* 選択時は白文字 */
 }
 .language-selector button.selected:hover {
-  background-color: #43b0e8; /* 選択時のホバーは同じ背景色 */
-  box-shadow: none; /* 選択時のホバーの影もなし */
+  /* 選択時のホバーはベースから継承されるため、個別指定は不要 */
 }
 
-/* テーマ切り替えボタンのコンテナ (横並びにするためのFlex設定) */
+/* テーマ切り替えボタンのコンテナ (横並びにするためのFlex設定のみ) */
 .theme-selector {
   display: flex;
   align-items: center;
@@ -300,13 +291,11 @@ nav a {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--link-color); /* テーマボタンは常に水色 */
+  color: var(--link-color); /* テーマボタンは常に水色 (明確に指定) */
 }
 
 .theme-selector button:hover {
-  background-color: transparent; /* ホバー時も背景は透明 */
-  box-shadow: none; /* ホバー時の影もなし */
-  /* colorは指定しない (var(--link-color)を維持) */
+  /* ホバー時のスタイルは継承されるため、個別指定は不要 */
 }
 
 .theme-selector button.selected {
@@ -314,8 +303,7 @@ nav a {
   color: #fff; /* 選択時は白文字 */
 }
 .theme-selector button.selected:hover {
-  background-color: #43b0e8; /* 選択時のホバーは同じ背景色 */
-  box-shadow: none; /* 選択時のホバーの影もなし */
+  /* 選択時のホバーはベースから継承されるため、個別指定は不要 */
 }
 
 /* ── レスポンシブ ── */
@@ -343,7 +331,7 @@ nav a {
   }
   /* フッターのレスポンシブ調整 */
   .footer-inner-flex {
-    flex-direction: column; /* モバイルでは縦並びにする */
+    flex-direction: column;
     align-items: center;
     padding: 0.6em 1em;
     gap: 0.8em;
