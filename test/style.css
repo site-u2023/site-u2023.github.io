@@ -59,21 +59,10 @@ ul {
   border-bottom: 2px solid var(--link-color);
   margin-bottom: 1.5em;
   padding-bottom: 0.8em;
+  width: 100%;
+  text-align: center;
 }
 .main-header h1 {
-  margin: 0;
-  font-size: 1.8em;
-  text-align: center;
-  color: var(--link-color) !important;
-  transition: color 0.3s ease;
-}
-
-header {
-  border-bottom: 2px solid var(--link-color);
-  margin-bottom: 1.5em;
-  padding-bottom: 0.8em;
-}
-header h1 {
   margin: 0;
   font-size: 1.8em;
   text-align: center;
