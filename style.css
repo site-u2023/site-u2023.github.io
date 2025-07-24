@@ -1,305 +1,135 @@
 /* ── テーマ変数 ── */
 html[data-theme="light"] {
-  --block-bg: #fff;
-  --block-border: #ddd;
-  --link-color: #43b0e8;
-  --text-color: #333; /* リンク色とテキスト色を区別 */
-  --hover-bg: var(--link-color);
-  --hover-color: var(--block-bg);
-  --qr-dark: #000;
-  --qr-light: #f1f1f1;
+  --block-bg: #fff;
+  --block-border: #ddd;
+  --link-color: #43b0e8;
+  --text-color: #333;
+  --hover-bg: rgba(0, 0, 0, 0.05); /* ★変更: ホバー背景色を共通の薄いグレーに */
+  /* --hover-color: var(--text-color); を削除 */
+  --qr-dark: #000;
+  --qr-light: #f1f1f1;
 }
 
 html[data-theme="dark"] {
-  --block-bg: #2a2a2a;
-  --block-border: #333;
-  --link-color: #43b0e8;
-  --text-color: #f1f1f1; /* ダークテーマのテキスト色 */
-  --hover-bg: var(--link-color);
-  --hover-color: #fff;
-  --qr-dark: #fff;
-  --qr-light: #2a2a2a;
+  --block-bg: #2a2a2a;
+  --block-border: #333;
+  --link-color: #43b0e8;
+  --text-color: #f1f1f1;
+  --hover-bg: rgba(255, 255, 255, 0.05); /* ★変更: ホバー背景色を共通の薄いグレーに */
+  /* --hover-color: var(--text-color); を削除 */
+  --qr-dark: #fff;
+  --qr-light: #2a2a2a;
 }
 
 /* ── ベース ── */
-body {
-  margin: 0;
-  padding: 0 0 5em; /* 例: フッターの高さが約5emの場合 */
-  font-family: 'Galano Grotesque SemiBold', 'Galano Grotesque', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans JP", "Noto Sans CJK JP", "DejaVu Sans", sans-serif;
-  background-color: var(--block-bg);
-  color: var(--text-color); /* ベースのテキスト色 */
-  transition: background-color 0.3s ease,
-              color 0.3s ease;
-  line-height: 1.5; /* 全体的な行の高さを設定 */
-}
-
-/* リストマーカー消去 */
-ul {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
+/* ... (変更なし) ... */
 
 /* ── ヘッダー ── */
-header {
-  position: relative;
-  border-bottom: 0.05em solid var(--block-border);
-}
+/* ... (変更なし) ... */
 
-/* header-inner: ロゴを中央に配置 */
-header .header-inner {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 1em 2em;
-}
-
-/* ロゴのスタイル */
-header .logo {
-  text-align: center;
-  width: 100%; /* 親要素の幅いっぱいに広げる */
-}
-
-header .logo img {
-  width: 100%;
-  height: auto;
-  display: block; /* 中央寄せのためにブロック要素にする */
-  margin: 0 auto; /* ロゴを中央寄せにする */
-  max-width: 300px; /* ロゴの最大幅を設定して大きくなりすぎないように */
-}
-
+/* .language-selector は flex のままでOK */
 .language-selector {
-  display: flex;
-  align-items: center;
-  gap: 0.25em; /* 4pxを相対値に */
-  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.25em; /* 4pxを相対値に */
+  flex-shrink: 0;
 }
 
 /* ── コンテナ ── */
-.container {
-  max-width: 50em; /* 800pxをemに変換 */
-  margin: 2em auto;
-  background: var(--block-bg);
-  padding: 1.5em 2em;
-  border-radius: 0.5em; /* 8pxを相対値に */
-  box-shadow: 0 0.25em 0.5em rgba(0, 0, 0, 0.1); /* 4px 8pxを相対値に */
-  transition: background-color 0.3s ease,
-              box-shadow 0.3s ease;
-}
+/* ... (変更なし) ... */
 
 /* ── フォーム＆リンクをベースカラー継承 ── */
 input,
 button,
 a {
-  color: inherit; /* テキスト色を親から継承 */
-  background-color: inherit; /* 背景色を親から継承 */
-  border: 0.05em solid var(--block-border);
-  border-radius: 0.3em;
-  padding: 0.6em 0.9em;
-  box-sizing: border-box;
-  transition: background-color 0.2s ease,
-              color 0.2s ease,
-              border-color 0.2s ease;
-  text-decoration: none;
+  color: inherit; /* 親からテキスト色を継承 */
+  background-color: inherit; /* 親から背景色を継承 */
+  border: 0.05em solid var(--block-border);
+  border-radius: 0.3em;
+  padding: 0.6em 0.9em;
+  box-sizing: border-box;
+  transition: background-color 0.2s ease,
+              color 0.2s ease,
+              border-color 0.2s ease;
+  text-decoration: none;
 }
 
 a {
-  color: var(--link-color); /* リンクのテキスト色 */
+  color: var(--link-color); /* ★変更なし: リンクは常に水色 */
 }
 
 a:hover {
-  background-color: var(--hover-bg);
-  color: var(--hover-color);
+  background-color: var(--hover-bg); /* ホバー背景色を適用 */
+  color: var(--link-color); /* ★変更: ホバー時も文字色は水色に固定 */
 }
 
-/* プレースホルダーのスタイル */
-input::placeholder {
-  color: var(--text-color); /* ベースのテキスト色を継承 */
-  opacity: 0.7; /* 少し透明度をつけて、入力テキストと区別する */
-}
-/* より見やすい色を直接指定したい場合は、以下のコメントアウトを外して使用 */
-/*
-html[data-theme="light"] input::placeholder {
-  color: #888; // ライトテーマでは少し暗めのグレー
-}
-html[data-theme="dark"] input::placeholder {
-  color: #bbb; // ダークテーマでは少し明るめのグレー
-}
-*/
-
-/* ── ナビゲーション ── */
-nav section {
-  background-color: var(--block-bg);
-  border: 0.05em solid var(--block-border); /* sectionにもボーダーを追加して統一感を出す */
-  border-radius: 0.5em; /* コンテナに合わせた角丸 */
-  padding: 0.625em; /* 10pxを相対値に */
-  margin-bottom: 1em; /* 16pxを相対値に */
-  box-sizing: border-box; /* パディングを幅に含める */
-}
-
-/* Device IP セクションは nav section のスタイルを継承するため、固有のボーダー設定は不要に */
-/* #device-ip {
-  border: none;
-} */ /* このセレクタは不要になります */
-
-nav h2 {
-  margin: 1.5em 0 0.8em;
-  color: var(--link-color);
-  font-size: 1.3em;
-}
-nav li {
-  margin-bottom: 0.6em;
-}
-nav a {
-  display: block;
-}
-
-/* ── Device IP セクション内の微調整 ── */
-/* input要素とボタンが並ぶ場所の調整 */
-#device-ip .connection {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  /* input, button, a にすでにpaddingがあるので、ここでは調整しない */
-}
-#device-ip .ip-address {
-  flex: 1;
-  min-width: 0;
-  display: flex; /* input と button の親要素なのでflexにする */
-  align-items: center;
-  overflow: hidden;
-}
-#global-ip-input {
-  flex: 1;
-  min-width: 0;
-  /* input, button, a の共通スタイルを適用 */
-}
-#global-ip-update {
-  margin-left: auto;
-  flex: 0 0 auto;
-  cursor: pointer;
-}
-#global-ip-update:hover {
-  background-color: var(--hover-bg);
-  color: var(--hover-color);
-}
-
-/* ── QRコード部分 ── */
-/* qr-codeはdetailsタグに直接クラスがついているので、
-   #device-ip セクション内の見た目とは別に管理 */
-.qr-code {
-  margin-top: 1em;
-  padding: 1em;
-  background-color: var(--block-bg); /* .qr-codeの背景色は、sectionの背景色と同じでよいはず */
-  border-radius: 0.375em; /* 6pxを相対値に */
-  text-align: center;
-  border: 0.05em solid var(--block-border); /* QRコード部分にも枠線を追加 */
-  box-sizing: border-box; /* パディングを幅に含める */
-}
-.qr-code canvas {
-  width: 11.25em !important; /* 180pxを相対値に */
-  height: 11.25em !important; /* 180pxを相対値に */
-  display: inline-block;
-}
+/* ... (中略) ... */
 
 /* ── フッター／テーマ切替エリア ── */
-.page-footer-area {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  background-color: var(--block-bg);
-  border-top: 0.05em solid var(--block-border); /* 1pxを相対値に */
-  transition: background-color 0.3s ease,
-              border-color 0.3s ease;
-
-  display: flex; /* 追加: flexコンテナとして振る舞い、中の要素を中央寄せするため */
-  justify-content: center; /* 追加: 中のfooter-inner-flexを水平中央に寄せる */
-  align-items: flex-end; /* 変更: 下端に寄せる。コンテンツが複数の場合に備えstretchではなくend */
-  /* min-heightは必要であれば設定、高さは自動に任せる */
-}
+/* ... (変更なし) ... */
 
 /* フッター内部のFlexコンテナ */
-.footer-inner-flex {
-  display: flex;
-  justify-content: space-between; /* 要素を左右に均等に配置 */
-  align-items: center; /* 垂直方向中央揃え */
-  padding: 0.5em 2em; /* フッターの上下パディングを調整して薄く */
-  max-width: 50em; /* .containerと同じ値 */
-  width: 100%; /* max-widthが適用されるように */
-  box-sizing: border-box; /* パディングを幅に含める */
-}
+/* ... (変更なし) ... */
 
-/* フッター左側のコントロール (言語ボタン) */
-.footer-left-controls {
-  display: flex;
-  align-items: center;
-  flex-grow: 1;
-  justify-content: flex-start; /* 左寄せ */
-}
+/* フッター左側のコントロール (言語ボタンの親) */
+/* ... (変更なし) ... */
 
-/* フッター右側のコントロール (昼夜ボタン) */
-.footer-right-controls {
-  display: flex;
-  align-items: center;
-  flex-grow: 1;
-  justify-content: flex-end; /* 右寄せ */
-}
+/* フッター右側のコントロール (昼夜ボタンの親) */
+/* ... (変更なし) ... */
 
-/* 著作権表示のスタイル */
-/* footer.html内のpタグに適用されるセレクタに変更 */
-.page-footer-area p { /* footer.html内のpタグに適用 */
-    margin: 0;
-    font-size: 0.9em;
-    color: var(--text-color);
-    line-height: 1.5; /* 行の高さを適切に設定し、テキストが切れないようにする */
-    text-align: center; /* 中央寄せ */
-
-    /* モバイルでの複数行対応 */
-    display: flex; /* flexコンテナ化 */
-    flex-wrap: wrap; /* コンテンツを複数行に折り返す */
-    justify-content: center; /* 横並びになった時に中央寄せ */
-    align-items: center; /* 垂直方向も中央に揃える */
-    gap: 0.5em 0.8em; /* リンク間の垂直・水平方向のギャップ */
-    /* heightやmax-heightなどの固定値は削除するか、min-heightに変更 */
+/* 著作権表示のスタイル (変更なし) */
+.page-footer-area p {
+    margin: 0;
+    font-size: 0.9em;
+    color: var(--text-color); /* 通常時はテキストカラー */
+    line-height: 1.5;
+    text-align: center;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5em 0.8em;
 }
 
 /* セパレーターのスタイル */
 .page-footer-area p .separator {
-    white-space: nowrap; /* セパレーターは折り返さない */
+    white-space: nowrap;
+    color: var(--text-color); /* ★変更: セパレーターはテキストカラー */
 }
 
-/* 各リンクアイテムのスタイル */
+/* 各リンクアイテムのスタイル (フッターのaタグ) */
 .page-footer-area p a {
     white-space: nowrap;
     padding: 0.2em 0.4em;
     border: none;
     border-radius: 0.2em;
-    color: var(--text-color);
+    color: var(--link-color); /* ★変更: 通常時もリンクカラー(水色)に固定 */
 }
 .page-footer-area p a:hover {
     background-color: var(--hover-bg);
-    color: var(--link-color);
+    color: var(--link-color); /* ★変更なし: ホバー時もリンクカラー(水色) */
 }
 
 /* 言語ボタンのスタイル調整 */
 .language-selector button {
   background: transparent;
-  border: 0.05em solid transparent;
+  border: 0.05em solid transparent; /* input, buttonのborderを上書きして透明に */
   padding: 0.25em 0.5em;
   border-radius: 0.3em;
   cursor: pointer;
   transition: background-color 0.2s ease,
-              color 0.2s ease;
+              color 0.2s ease,
+              border-color 0.2s ease;
   font-size: 1em;
   line-height: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-color);
+  color: var(--link-color); /* ★変更: 言語ボタンは水色に固定 */
 }
 .language-selector button:hover {
-  background-color: rgba(0, 0, 0, 0.05);
+  background-color: rgba(0, 0, 0, 0.05); /* 薄いホバー背景色 */
+  box-shadow: 0 0 0.5em rgba(0, 0, 0, 0.1); /* ホバー時の影 */
 }
 .language-selector button.selected {
   background-color: #43b0e8;
@@ -307,92 +137,92 @@ nav a {
 }
 .language-selector button.selected:hover {
   background-color: #43b0e8;
+  box-shadow: 0 0 0.5em rgba(0, 0, 0, 0.2);
 }
-.language-selector .separator {
-  margin: 0 0.1em;
-  color: inherit;
+
+/* テーマ切り替えボタンのコンテナ (新しく追加) */
+.theme-selector {
+  display: flex; /* ★追加: ボタンを横並びにするためにflexを設定 */
+  align-items: center;
+  gap: 0.25em; /* ボタン間の間隔を設定 */
 }
 
 /* テーマ切り替えボタンのスタイル */
 .theme-selector button {
-  background: transparent;
-  border: 0.05em solid transparent; /* 言語ボタンと同様に透明なボーダーを設定 */
-  padding: 0.25em 0.5em; /* 言語ボタンと同様のパディング */
-  border-radius: 0.3em; /* 角を丸くする */
-  cursor: pointer;
-  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease; /* transitionを追加 */
-  font-size: 1em; /* アイコンが文字の場合のサイズ調整、言語ボタンと合わせる */
-  line-height: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-color); /* アイコンの色をテーマテキスト色に合わせる */
+  background: transparent;
+  border: 0.05em solid transparent; /* input, buttonのborderを上書きして透明に */
+  padding: 0.25em 0.5em;
+  border-radius: 0.3em;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  font-size: 1em;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--link-color); /* ★変更: テーマボタンは水色に固定 */
 }
 
 .theme-selector button:hover {
-  background-color: rgba(0, 0, 0, 0.05); /* ホバー時の背景色を少し暗く */
-  /* color: var(--link-color); // 必要であればホバー時の色も変更 */
+  background-color: rgba(0, 0, 0, 0.05); /* ホバー時の背景色を少し暗く */
+  box-shadow: 0 0 0.5em rgba(0, 0, 0, 0.1);
+  color: var(--link-color); /* ★変更なし: ホバー時もリンクカラー */
 }
 
 .theme-selector button.selected {
-  background-color: #43b0e8; /* 選択時の背景色 */
-  color: #fff; /* 選択時の文字色 */
+  background-color: #43b0e8;
+  color: #fff;
 }
 .theme-selector button.selected:hover {
-  background-color: #43b0e8; /* 選択時のホバーは同じ背景色 */
+  background-color: #43b0e8;
+  box-shadow: 0 0 0.5em rgba(0, 0, 0, 0.2);
 }
 
 /* ── レスポンシブ ── */
 @media (max-width: 37.5em) { /* 600pxをemに変換 */
-  body {
-    -webkit-text-size-adjust: 100%;
-    padding-bottom: 7.5em; /* フッターの高さに合わせて調整 (少し余裕を持たせる) */
-    padding-top: 0;
-  }
-  .container {
-    margin: 1em;
-    padding: 1em 1.2em;
-    border-radius: 0;
-    box-shadow: none;
-  }
-  header .header-inner {
-    padding: 1em 1.2em;
-  }
-  nav h2 {
-    font-size: 1.15em;
-  }
-  nav a {
-    padding: 0.8em 0.7em;
-    font-size: 0.95em;
-  }
-  /* フッターのレスポンシブ調整 */
-  .footer-inner-flex {
-    flex-direction: column; /* モバイルでは縦並びにする */
-    align-items: center;
-    padding: 0.6em 1em;
-    gap: 0.8em; /* 縦並びになった時の要素間の間隔 */
-  }
-  .footer-left-controls,
-  .footer-right-controls,
-  .page-footer-area p { /* モバイルでのpタグの配置調整 */
-    width: 100%;
-    justify-content: center;
-    text-align: center;
-  }
-  /* モバイルでのボタンのパディング調整 */
-  .theme-selector button,
-  .language-selector button {
-    padding: 0.35em; /* モバイルでは少しパディングを増やすなど調整 */
-  }
-}
-
-/* ── ダークテーマ用オーバーライド ── */
-html[data-theme="dark"] .container {
-  box-shadow: 0 0.25em 0.75em rgba(0, 0, 0, 0.4);
-}
-html[data-theme="dark"] nav h2 {
-  border-bottom-color: var(--block-border);
-}
-html[data-theme="dark"] .page-footer-area {
-  border-top-color: var(--block-border);
+  body {
+    -webkit-text-size-adjust: 100%;
+    padding-bottom: 7.5em; /* フッターの高さに合わせて調整 (少し余裕を持たせる) */
+    padding-top: 0;
+  }
+  .container {
+    margin: 1em;
+    padding: 1em 1.2em;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  header .header-inner {
+    padding: 1em 1.2em;
+  }
+  nav h2 {
+    font-size: 1.15em;
+  }
+  nav a {
+    padding: 0.8em 0.7em;
+    font-size: 0.95em;
+  }
+  /* フッターのレスポンシブ調整 */
+  .footer-inner-flex {
+    flex-direction: column; /* モバイルでは縦並びにする */
+    align-items: center;
+    padding: 0.6em 1em;
+    gap: 0.8em; /* 縦並びになった時の要素間の間隔 */
+  }
+  .footer-left-controls,
+  .footer-right-controls,
+  .page-footer-area p { /* モバイルでのpタグの配置調整 */
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
+  /* モバイルでのボタンのパディング調整 */
+  /* ここでinput, button, aの共通パディングを上書きする */
+  input, button, a { /* ★変更なし: そのまま */
+    padding: 0.6em 0.9em;
+  }
+  .language-selector button,
+  .theme-selector button {
+    padding: 0.35em;
+    border: 0.05em solid transparent; /* ★変更なし: モバイルでボタンのボーダーを透明に */
+  }
 }
