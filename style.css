@@ -1,26 +1,24 @@
 /* ── テーマ変数 ── */
 html[data-theme="light"] {
-  --block-bg:      #fff;
-  --block-border:  #ddd;
-  --link-color:    #43b0e8;
-  --text-color:    var(--link-color);
-  --hover-bg:      var(--link-color);
-  --hover-color:   var(--block-bg);
-  /* QRコードの色を追加 */
-  --qr-dark:       #000;
-  --qr-light:      #f1f1f1;
+  --block-bg: #fff;
+  --block-border: #ddd;
+  --link-color: #43b0e8;
+  --text-color: #333; /* リンク色とテキスト色を区別 */
+  --hover-bg: var(--link-color);
+  --hover-color: var(--block-bg);
+  --qr-dark: #000;
+  --qr-light: #f1f1f1;
 }
 
 html[data-theme="dark"] {
-  --block-bg:      #2a2a2a;
-  --block-border:  #333;
-  --link-color:    #43b0e8;
-  --text-color:    var(--link-color);
-  --hover-bg:      var(--link-color);
-  --hover-color:   #fff;
-  /* QRコードの色を追加 */
-  --qr-dark:       #fff;
-  --qr-light:      #2a2a2a;
+  --block-bg: #2a2a2a;
+  --block-border: #333;
+  --link-color: #43b0e8;
+  --text-color: #f1f1f1; /* ダークテーマのテキスト色 */
+  --hover-bg: var(--link-color);
+  --hover-color: #fff;
+  --qr-dark: #fff;
+  --qr-light: #2a2a2a;
 }
 
 /* ── ベース ── */
@@ -29,9 +27,10 @@ body {
   padding: 0 0 5em; /* 例: フッターの高さが約5emの場合 */
   font-family: 'Galano Grotesque SemiBold', 'Galano Grotesque', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans JP", "Noto Sans CJK JP", "DejaVu Sans", sans-serif;
   background-color: var(--block-bg);
-  color: var(--text-color);
+  color: var(--text-color); /* ベースのテキスト色 */
   transition: background-color 0.3s ease,
               color 0.3s ease;
+  line-height: 1.5; /* 全体的な行の高さを設定 */
 }
 
 /* リストマーカー消去 */
@@ -66,6 +65,7 @@ header .logo img {
   height: auto;
   display: block; /* 中央寄せのためにブロック要素にする */
   margin: 0 auto; /* ロゴを中央寄せにする */
+  max-width: 300px; /* ロゴの最大幅を設定して大きくなりすぎないように */
 }
 
 .language-selector {
@@ -91,20 +91,25 @@ header .logo img {
 input,
 button,
 a {
-  color:            inherit;
-  background-color: inherit;
-  border:           0.05em solid var(--block-border);
-  border-radius:    0.3em;
-  padding:          0.6em 0.9em;
-  box-sizing:       border-box;
-  transition:       background-color 0.2s ease,
-                    color 0.2s ease;
-  text-decoration:  none;
+  color: inherit; /* テキスト色を親から継承 */
+  background-color: inherit; /* 背景色を親から継承 */
+  border: 0.05em solid var(--block-border);
+  border-radius: 0.3em;
+  padding: 0.6em 0.9em;
+  box-sizing: border-box;
+  transition: background-color 0.2s ease,
+              color 0.2s ease,
+              border-color 0.2s ease; /* ボーダー色の変化もスムーズに */
+  text-decoration: none;
+}
+
+a {
+  color: var(--link-color); /* リンクのテキスト色 */
 }
 
 a:hover {
   background-color: var(--hover-bg);
-  color:            var(--hover-color);
+  color: var(--hover-color);
 }
 
 /* ── ナビゲーション ── */
@@ -154,7 +159,7 @@ nav a {
 }
 #global-ip-update:hover {
   background-color: var(--hover-bg);
-  color:            var(--hover-color);
+  color: var(--hover-color);
 }
 
 /* ── QRコード部分 ── */
@@ -182,20 +187,21 @@ nav a {
   transition: background-color 0.3s ease,
               border-color 0.3s ease;
 
-  /* ★追加: フッターのコンテンツを中央に寄せるためのスタイル */
-  display: flex;
-  justify-content: center; /* 中央寄せ */
+  display: flex; /* 追加: flexコンテナとして振る舞い、中の要素を中央寄せするため */
+  justify-content: center; /* 追加: 中のfooter-inner-flexを水平中央に寄せる */
+  align-items: flex-end; /* 変更: 下端に寄せる。コンテンツが複数の場合に備えstretchではなくend */
+  /* min-heightは必要であれば設定、高さは自動に任せる */
 }
 
-/* 新しいフッター内部のFlexコンテナ */
+/* フッター内部のFlexコンテナ */
 .footer-inner-flex {
   display: flex;
   justify-content: space-between; /* 要素を左右に均等に配置 */
   align-items: center; /* 垂直方向中央揃え */
   padding: 0.5em 2em; /* フッターの上下パディングを調整して薄く */
-  /* ★追加: ボディと同じ最大幅を設定 */
   max-width: 50em; /* .containerと同じ値 */
   width: 100%; /* max-widthが適用されるように */
+  box-sizing: border-box; /* パディングを幅に含める */
 }
 
 /* フッター左側のコントロール (言語ボタン) */
@@ -215,51 +221,42 @@ nav a {
 }
 
 /* 著作権表示のスタイル */
-footer.copyright-footer {
-  padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center; /* 中央寄せ */
-  flex-grow: 1; /* 残りのスペースを均等に埋める */
-  text-align: center; /* pタグの中身を中央寄せ */
-}
-footer.copyright-footer p {
-  margin: 0;
-  font-size: 0.9em;
-  color: var(--text-color);
+/* footer.html内のpタグに適用されるセレクタに変更 */
+.page-footer-area p { /* footer.html内のpタグに適用 */
+    margin: 0;
+    font-size: 0.9em;
+    color: var(--text-color);
+    line-height: 1.5; /* 行の高さを適切に設定し、テキストが切れないようにする */
+    text-align: center; /* 中央寄せ */
+
+    /* モバイルでの複数行対応 */
+    display: flex; /* flexコンテナ化 */
+    flex-wrap: wrap; /* コンテンツを複数行に折り返す */
+    justify-content: center; /* 横並びになった時に中央寄せ */
+    align-items: center; /* 垂直方向も中央に揃える */
+    gap: 0.5em 0.8em; /* リンク間の垂直・水平方向のギャップ */
+    /* heightやmax-heightなどの固定値は削除するか、min-heightに変更 */
 }
 
-.theme-selector {
-  display: flex;
-  gap: 0.5em; /* 8pxを相対値に */
+/* セパレーターのスタイル */
+.page-footer-area p .separator {
+    white-space: nowrap; /* セパレーターは折り返さない */
 }
-.theme-selector button {
-  background: transparent;
-  border: 0.05em solid transparent; /* 1pxを相対値に */
-  padding: 0.25em; /* アイコンを囲むようにパディングを追加 */
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  border-radius: 50%;
-  cursor: pointer;
-  transition: background-color 0.2s ease,
-              color 0.2s ease;
-  font-size: 1.25em; /* アイコンのサイズを調整 */
-  line-height: 1; /* アイコンの垂直中央揃えを改善 */
+
+/* 各リンクアイテムのスタイル */
+.page-footer-area p a {
+    white-space: nowrap; /* リンク内のテキストは折り返さない */
+    padding: 0.2em 0.4em; /* リンクのクリックエリアを広げつつ、コンパクトに */
+    border: none; /* リンクのボーダーを削除（デザインによる） */
+    border-radius: 0.2em; /* 必要であれば角を丸くする */
+    color: var(--text-color); /* フッターのリンク色もテキスト色に合わせる */
 }
-.theme-selector button:hover {
-  background-color: rgba(0, 0, 0, 0.05);
-}
-.theme-selector button.selected {
-  background-color: #43b0e8;
-  color: #fff;
-}
-.theme-selector button.selected:hover {
-  background-color: #43b0e8;
+.page-footer-area p a:hover {
+    background-color: rgba(0,0,0,0.05); /* フッターリンクのホバー背景色を少し透明にする */
+    color: var(--link-color); /* ホバー時の色をリンク色に */
 }
 
 /* 言語ボタンのスタイル調整 */
-/* theme-selector button のスタイルと揃える */
 .language-selector button {
   background: transparent;
   border: 0.05em solid transparent;
@@ -273,6 +270,7 @@ footer.copyright-footer p {
   display: flex; /* Flexboxアイテムとして中央揃えしやすく */
   align-items: center;
   justify-content: center;
+  color: var(--text-color); /* 言語ボタンのテキスト色もテーマに合わせる */
 }
 .language-selector button:hover {
   background-color: rgba(0, 0, 0, 0.05);
@@ -294,7 +292,7 @@ footer.copyright-footer p {
 @media (max-width: 37.5em) { /* 600pxをemに変換 */
   body {
     -webkit-text-size-adjust: 100%;
-    padding-bottom: 6.25em; /* 100pxを相対値に */
+    padding-bottom: 7.5em; /* フッターの高さに合わせて調整 (少し余裕を持たせる) */
     padding-top: 0;
   }
   .container {
@@ -318,11 +316,11 @@ footer.copyright-footer p {
     flex-direction: column; /* モバイルでは縦並びにする */
     align-items: center;
     padding: 0.6em 1em;
-    gap: 0.625em; /* 10pxを相対値に */
+    gap: 0.8em; /* 縦並びになった時の要素間の間隔 */
   }
   .footer-left-controls,
   .footer-right-controls,
-  footer.copyright-footer {
+  .page-footer-area p { /* モバイルでのpタグの配置調整 */
     width: 100%;
     justify-content: center;
     text-align: center;
@@ -335,12 +333,12 @@ footer.copyright-footer p {
 }
 
 /* ── ダークテーマ用オーバーライド ── */
-body[data-theme="dark"] .container {
+html[data-theme="dark"] .container {
   box-shadow: 0 0.25em 0.75em rgba(0, 0, 0, 0.4);
 }
-body[data-theme="dark"] nav h2 {
+html[data-theme="dark"] nav h2 {
   border-bottom-color: var(--block-border);
 }
-body[data-theme="dark"] .page-footer-area {
+html[data-theme="dark"] .page-footer-area {
   border-top-color: var(--block-border);
 }
