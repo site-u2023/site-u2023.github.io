@@ -86,7 +86,6 @@ ul {
 
 /* ── メインコンテンツのコンテナ ── */
 .container {
-    /* **ここを変更** -- bodyのflex-growは維持し、main-contentに幅を任せる */
     flex-grow: 1; /* body の子要素として、残りのスペースを全て占める */
     width: 100%; /* 親要素（body）に対して100%の幅を取る */
     display: flex; /* container 内のアイテム (header-placeholder, main-content) を Flex で制御 */
@@ -97,9 +96,9 @@ ul {
 }
 
 /* ── フォーム要素、ボタン、リンクのベーススタイル (継承と最低限の調整) ── */
+/* input, button, a, summaryの共通ベーススタイル */
 input[type="text"], /* input要素のtypeを明確に */
 button,
-a.link-item, /* メインコンテンツ内のリンクアイテム */
 summary { /* detailsタグのsummaryもベーススタイルを継承 */
     color: inherit; /* 親要素からテキスト色を継承 (基本はbodyの--text-color) */
     background-color: inherit; /* 親要素から背景色を継承 (基本はbodyの--block-bg) */
@@ -134,20 +133,19 @@ a {
 a:hover {
     background-color: var(--link-color); /* ホバー時もベースのリンク色を維持 */
     color: #fff; /* ホバー時も文字色は白を維持 */
-    text-decoration: underline; /* ホバー時は下線を出す (お客様のご指示通り維持) */
+    text-decoration: underline; /* ホバー時は下線を出す */
     border-color: var(--link-color); /* ホバー時もベースのリンク色を維持 */
 }
 
 /* REGのDLなど、個別に調整が必要なリンクのスタイル (文字色だけyellow) */
 a.download-link {
     color: yellow; /* 文字色をyellowにする */
-    /* background-color, border, padding, border-radius, display, box-sizing はa{}から継承 */
-    /* text-decoration もa{}から継承 (none) */
+    /* 背景色とボーダーはa{}で定義されたものを継承 */
 }
 
 a.download-link:hover {
     color: yellow; /* ホバー時も文字色はyellowを維持 */
-    /* background-color, border-color, text-decoration はa:hover{}から継承 */
+    /* 背景色やボーダーのホバー効果はa:hover{}で定義されたものを継承 */
 }
 
 /* buttonに特有のスタイル（input, aのベースを上書き） */
@@ -159,8 +157,8 @@ button.primary-button { /* 更新ボタンなど、プライマリーアクシ�
 }
 
 button.primary-button:hover {
-    background-color: #389cd4; /* ホバー時に少し暗い水色に */
-    border-color: #389cd4;
+    background-color: var(--link-color); /* ホバー時もベースのリンク色を維持 */
+    border-color: var(--link-color); /* ホバー時もベースのリンク色を維持 */
 }
 
 /* 言語・テーマボタンの共通スタイル */
@@ -194,13 +192,12 @@ button.primary-button:hover {
 
 .lang-button.selected:hover,
 .theme-button.selected:hover {
-    background-color: #389cd4; /* 選択時のホバーは少し暗い水色 */
-    border-color: #389cd4;
+    background-color: var(--link-color); /* 選択時のホバーもベースのリンク色を維持 */
+    border-color: var(--link-color); /* 選択時のホバーもベースのリンク色を維持 */
 }
 
 /* ── メインコンテンツ共通スタイル ── */
 .main-content {
-    /* **ここを修正** -- メインコンテンツの幅を制御 */
     flex-grow: 1; /* container の子要素として、残りのスペースを全て占める */
     max-width: 50em; /* PC表示時の最大幅 (800px相当) を適用 */
     width: 100%; /* 親要素に対して100%幅を取り、max-widthで制限される */
@@ -235,7 +232,7 @@ button.primary-button:hover {
 
 .section-title { /* h2.section-title */
     margin: 0 0 1em; /* 上下マージンのみ */
-    color: var(--text-color);
+    color: var(--text-color); /* テキスト色に修正 */
     font-size: 1.3em;
     border-bottom: 0.05em solid var(--block-border); /* 下線 */
     padding-bottom: 0.5em; /* 下線とテキストの隙間 */
@@ -261,24 +258,8 @@ button.primary-button:hover {
     margin-bottom: 0.8em; /* 各リストアイテム間のマージン */
 }
 
-a.link-item { /* li内のa.link-item */
-    display: block; /* ブロック要素化してクリック領域を広げる */
-    padding: 0.8em 1em; /* クリックしやすいようにパディングを調整 */
-    border: 0.05em solid var(--block-border);
-    border-radius: 0.3em;
-    background-color: var(--block-bg); /* 背景色を統一 */
-    box-shadow: none; /* 影はつけない */
-}
-
-a.link-item:hover {
-    background-color: #f0f0f0; /* ホバー時にわずかに背景色を変更 */
-    border-color: var(--link-color); /* ホバー時にボーダー色を水色に */
-    color: var(--link-color); /* ホバー時もリンク色を維持 */
-}
-
-html[data-theme="dark"] a.link-item:hover {
-    background-color: #3a3a3a; /* ダークテーマ時のホバー背景色 */
-}
+/* a.link-item のルールは削除されました。全てのaタグはa{}で定義されたベーススタイルに従います。 */
+/* .link-item .link-text, .link-item .link-note, .link-item .ip-display は、aタグに継承され、必要に応じて上書きされます。 */
 
 .link-item .link-text {
     font-weight: bold; /* メインテキストを太字に */
@@ -336,7 +317,7 @@ html[data-theme="dark"] a.link-item:hover {
     padding: 0.6em 1em; /* パディング調整 */
 }
 #global-ip-update:hover {
-    background-color: #389cd4; /* ホバー時に少し暗い水色に */
+    background-color: var(--link-color); /* ホバー時もベースのリンク色を維持 */
 }
 
 /* ── QRコード部分 ── */
@@ -391,7 +372,7 @@ html[data-theme="dark"] a.link-item:hover {
 .handler-register-section .handler-register-summary { /* summaryタグのクラス */
     text-align: left; /* 左寄せ */
     cursor: pointer;
-    color: var(--highlight-color); /* **要望通り黄色に** */
+    color: var(--highlight-color); /* 要望通り黄色に */
     padding: 0.8em 1em; /* パディング調整 */
     list-style: none; /* デフォルトのマーカーを削除 */
 }
@@ -410,14 +391,10 @@ html[data-theme="dark"] a.link-item:hover {
     transform: rotate(0deg);
 }
 
-.handler-register-section .handler-register-link { /* a.download-link .handler-register-link */
-    display: block;
-    padding: 0.5em 1em 0.8em; /* テキストと下部パディング */
-    border: none; /* 親のボーダーを使用 */
-    background-color: transparent; /* 背景は親から継承 */
-    color: var(--link-color); /* リンク色 */
-    text-decoration: underline; /* リンクであることを明確に */
-}
+/* handler-register-link は a.download-link でスタイルが決定されるため、固有の記述は不要にしました */
+/* 以前はここで border: none; など余計な指定がありましたが、a{}から継承されるように削除しました */
+/* a.handler-register-link も a.download-link のルールに集約されます */
+
 
 .handler-register-section .handler-register-link .link-note {
     display: block; /* 改行 */
@@ -498,17 +475,19 @@ html[data-theme="dark"] a.link-item:hover {
     color: var(--text-color);
 }
 
+/* フッターリンクもa{}のベーススタイルが適用されるため、.footer-linkの個別のスタイルは最小限に */
 .copyright-text .footer-link { /* フッター内のa.footer-link */
     white-space: nowrap;
-    padding: 0.2em 0.4em;
-    border: none; /* ボーダーなし */
-    border-radius: 0.2em;
-    color: var(--link-color); /* 常に水色 */
-    text-decoration: none;
+    /* padding, border, border-radius はa{}から継承 */
+    color: var(--link-color); /* 常に水色（a{}から継承） */
+    text-decoration: none; /* a{}から継承 */
+    background-color: transparent; /* a{}のbackground-colorを上書きして透明に */
+    border: none; /* a{}のborderを上書きしてなしに */
 }
 
 .copyright-text .footer-link:hover {
     text-decoration: underline; /* ホバーで下線 */
+    /* background-color, border-color はa:hover{}から継承 (この場合は透明・なし) */
 }
 
 
@@ -538,9 +517,9 @@ html[data-theme="dark"] a.link-item:hover {
     .section-title {
         font-size: 1.15em;
     }
-    a.link-item {
-        padding: 0.8em 0.7em;
-        font-size: 0.95em;
+    a.link-item { /* a{}でスタイルが決定されるため、このブロックは削除されます */
+        /* padding: 0.8em 0.7em; */
+        /* font-size: 0.95em; */
     }
     .link-item .link-text {
         font-size: 1em; /* モバイルではベースサイズに戻す */
