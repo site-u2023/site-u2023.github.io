@@ -86,13 +86,14 @@ ul {
 
 /* ── メインコンテンツのコンテナ ── */
 .container {
-    transition: background-color 0.3s ease, box-shadow 0.3s ease; /* containerにはtransitionのみ残す */
-    box-sizing: border-box; /* paddingが幅に含まれるように */
-    width: 100%; /* 親要素（body）に対して100%の幅を取り、max-widthで制限されるように */
+    /* **ここを変更** -- bodyのflex-growは維持し、main-contentに幅を任せる */
     flex-grow: 1; /* body の子要素として、残りのスペースを全て占める */
+    width: 100%; /* 親要素（body）に対して100%の幅を取る */
     display: flex; /* container 内のアイテム (header-placeholder, main-content) を Flex で制御 */
     flex-direction: column; /* 縦方向に並べる */
-    align-items: center; /* 中央に寄せる */
+    align-items: center; /* 子要素を中央に寄せる */
+    box-sizing: border-box; /* paddingが幅に含まれるように */
+    transition: background-color 0.3s ease, box-shadow 0.3s ease; /* transitionは残す */
 }
 
 /* ── フォーム要素、ボタン、リンクのベーススタイル (継承と最低限の調整) ── */
@@ -179,9 +180,10 @@ button.primary-button:hover {
 
 /* ── メインコンテンツ共通スタイル ── */
 .main-content {
+    /* **ここを修正** -- メインコンテンツの幅を制御 */
     flex-grow: 1; /* container の子要素として、残りのスペースを全て占める */
-    max-width: 50em; /* メインコンテンツの最大幅 (800px相当) */
-    width: 100%; /* 親要素に対して100%幅を取り、max-widthで制限 */
+    max-width: 50em; /* PC表示時の最大幅 (800px相当) を適用 */
+    width: 100%; /* 親要素に対して100%幅を取り、max-widthで制限される */
     margin: 2em auto; /* 中央揃えと上下マージン */
     background: var(--block-bg); /* 背景色 */
     padding: 1.5em 2em;
@@ -416,6 +418,13 @@ html[data-theme="dark"] a.link-item:hover {
     align-items: flex-end; /* 下部に寄せる */
     padding: 0.5em 0; /* 上下のパディングを追加 */
     box-sizing: border-box;
+    background-color: var(--block-bg); /* フッターの背景色をテーマ変数から取得 */
+    border-top: 0.0625em solid var(--block-border); /* 上部にボーダー */
+    text-align: center;
+    font-size: 0.9em;
+    color: var(--text-color);
+    box-shadow: 0 -0.125em 0.25em rgba(0, 0, 0, 0.1); /* 上部に影 */
+    z-index: 1000; /* 他のコンテンツの上に表示 */
 }
 
 .footer-inner-flex {
@@ -431,19 +440,16 @@ html[data-theme="dark"] a.link-item:hover {
 .footer-controls {
     display: flex;
     align-items: center;
-    /* flex-growは必要に応じて調整。今回は固定サイズ要素が多いため0で良い場合が多い */
     flex-shrink: 0; /* 縮まない */
     white-space: nowrap; /* ボタンが改行しないように */
 }
 
 .footer-left-controls {
     justify-content: flex-start;
-    /* flex-basis: content; または適切な固定幅を設定するとより安定する可能性もある */
 }
 
 .footer-right-controls {
     justify-content: flex-end;
-    /* flex-basis: content; */
 }
 
 .copyright-info {
@@ -493,8 +499,7 @@ html[data-theme="dark"] a.link-item:hover {
         padding-top: 0;
     }
     .container {
-        /* モバイルではflex-directionやalign-itemsはbodyが制御しているため不要 */
-        /* width: auto; max-width: none; も不要 */
+        /* モバイルでは幅に関する特別な調整は不要 */
     }
     .main-content { /* モバイルではマージンとパディングを調整 */
         margin: 1em 0; /* 左右マージンを0に */
@@ -562,4 +567,3 @@ html[data-theme="dark"] .container {
 html[data-theme="dark"] .section-title {
     border-bottom-color: var(--block-border);
 }
-/* ヘッダーとフッターのボーダーは共通スタイルで定義済み */
