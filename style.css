@@ -147,7 +147,7 @@ input::placeholder {
 }
 
 /* 全てのaタグに適用されるデフォルトのリンクスタイル */
-/* ただし、個別の「枠」として機能するリンクは、.button-linkで上書きされる */
+/* ただし、個別の「枠」として機能するリンクは、.bordered-elementで上書きされる */
 a {
     background-color: transparent; /* デフォルトの背景色を透明に */
     color: var(--text-color); /* デフォルトの文字色をテーマのテキスト色に */
@@ -160,15 +160,16 @@ a {
 }
 
 /* 全てのaタグに適用されるホバー時のリンクスタイル */
-/* ただし、個別の「枠」として機能するリンクは、.button-linkで上書きされる */
+/* ただし、個別の「枠」として機能するリンクは、.bordered-elementで上書きされる */
 a:hover {
     background-color: var(--hover-bg); /* ホバー時の背景色を水色に */
     color: var(--hover-text); /* ホバー時の文字色を白に修正 */
     text-decoration: none; /* ホバー時も下線なし */
 }
 
-/* 新しい「枠付きリンク」の汎用スタイル - 画像のSSH接続など、個別の枠を持つリンクに適用 */
-.button-link {
+/* 新しい「枠付き要素」の汎用スタイル - h2, h3, details, 個別の枠を持つaタグに適用 */
+/* 画像の全ての枠付き要素に適用される共通のスタイル */
+.bordered-element {
     display: block; /* ブロック要素として表示し、幅いっぱいに広がるようにする */
     width: 100%;
     background-color: transparent; /* 背景は透明 */
@@ -183,12 +184,12 @@ a:hover {
     margin-bottom: 0.8em; /* 項目間の下マージン */
 }
 
-.button-link:hover {
+/* 枠付き要素のホバー時のスタイル */
+.bordered-element:hover {
     background-color: var(--hover-bg); /* ホバーで背景を水色に */
     color: var(--hover-text); /* ホバーで文字を白に */
     border-color: var(--hover-bg); /* ホバーでボーダーも水色に */
 }
-
 
 /* buttonに特有のスタイル（input, aのベースを上書き） */
 button.primary-button { /* 更新ボタンなど、プライマリーアクションのボタン */
@@ -279,23 +280,16 @@ button.primary-button:hover {
     width: 100%; /* 親要素 (main-content) の幅いっぱいに広がる */
 }
 
-/* h2 (section-title) を枠で囲むスタイルに修正 */
+/* h2 (section-title) は .bordered-element を適用する */
 .section-title { /* h2.section-title */
     margin: 0 0 1em; /* 上下マージンのみ */
-    color: var(--text-color); /* テキスト色を継承 */
     font-size: 1.3em;
-    background-color: transparent; /* 背景は透明 */
-    border: 0.05em solid var(--text-color); /* 枠線 */
-    border-radius: 0.3em; /* 角丸 */
-    padding: 0.5em 1em; /* パディング */
-    box-sizing: border-box;
-    display: inline-block; /* 内容に合わせて幅を調整 */
     line-height: 1; /* 枠内の行の高さを調整 */
 }
 
 .section-subtitle { /* h2内のspan.section-subtitle */
     font-size: 0.8em; /* 小さく */
-    color: var(--text-color); /* 親からテキスト色を継承 */
+    color: inherit; /* 親からテキスト色を継承 */
     font-weight: normal; /* 太さを通常に */
     margin-left: 0.5em; /* タイトルとの間隔 */
 }
@@ -305,20 +299,24 @@ button.primary-button:hover {
     color: var(--text-color); /* 親からテキスト色を継承 */
 }
 
-/* h3タグのスタイルは画像を見る限り、通常のテキストで良いと判断し、枠を削除 */
-h3 {
-    margin: 1em 0 0.5em; /* 上下のマージンを調整 */
-    color: var(--text-color); /* デフォルトの文字色 */
+/* h3 も .bordered-element を適用する */
+h3.bordered-element { /* h3要素にもbordered-elementクラスを適用 */
+    margin: 1em 0 0.8em; /* 上マージンを少し増やし、下マージンをbordered-elementの標準に */
+    color: inherit; /* 親から色を継承 */
+    font-size: 1em; /* デフォルトのフォントサイズ */
+    font-weight: bold; /* boldにする */
+    line-height: 1.2; /* 行の高さ調整 */
+    padding: 0.8em 1em; /* bordered-elementのパディングを適用 */
 }
-/* h3内のaタグは通常のリンクスタイルに戻すか、必要に応じて.button-linkを適用 */
-h3 a {
-    color: var(--text-color); /* 通常のリンク色 */
+/* h3内のaタグは、bordered-elementとして振る舞うため個別のスタイルは不要 */
+h3.bordered-element a {
+    color: inherit; /* 親のh3から色を継承 */
     text-decoration: none;
-    transition: color 0.2s ease;
+    display: block; /* h3全体をリンクにするなら必要 */
 }
-h3 a:hover {
-    color: var(--link-color); /* ホバーで水色 */
-    background-color: transparent; /* 背景は透明 */
+h3.bordered-element a:hover {
+    color: inherit; /* 親のh3から色を継承 */
+    background-color: transparent; /* 親のh3が背景を持つため透明 */
 }
 
 
@@ -330,18 +328,25 @@ h3 a:hover {
 
 .link-list li {
     margin-bottom: 0.8em; /* 各リストアイテム間のマージン */
-    /* li自体は枠を持たず、内包するaタグ(.button-link)が枠を持つ */
+    /* li自体は枠を持たず、内包するaタグ(.bordered-element)が枠を持つ */
 }
 
-/* .link-item内の要素は、親の.button-linkがホバーされたときに色が変わるようにする */
+/* .link-list li a は、.bordered-element を適用することで個別の枠とホバーを持つ */
+/* HTML側で <a class="bordered-element">...</a> のようにクラスを追加してください */
+.link-list li a {
+    /* .bordered-element がこれらのスタイルをカバー */
+    /* display, width, box-sizing, text-decoration, background-color, color, border, padding, border-radius, transition, margin-bottom は .bordered-element に任せる */
+}
+
+/* .link-item内の要素は、親の.bordered-elementがホバーされたときに色が変わるようにする */
 .link-item .link-text {
     font-weight: bold; /* メインテキストを太字に */
-    color: inherit; /* 親の.button-linkから色を継承（ホバーで白になる） */
+    color: inherit; /* 親の.bordered-elementから色を継承（ホバーで白になる） */
 }
 
 .link-item .link-note { /* (Windows用) ※初回のみ利用 (DL後ダブルクリック) など */
     font-size: 0.85em; /* 小さく */
-    color: inherit; /* 親の.button-linkから色を継承（ホバーで白になる） */
+    color: inherit; /* 親の.bordered-elementから色を継承（ホバーで白になる） */
     display: block; /* 改行して表示 */
     margin-top: 0.2em;
     line-height: 1.3;
@@ -349,7 +354,7 @@ h3 a:hover {
 
 .link-item .ip-display { /* (root@192.168.1.1) など */
     font-size: 0.9em; /* 少し小さく */
-    color: inherit; /* 親の.button-linkから色を継承（ホバーで白になる） */
+    color: inherit; /* 親の.bordered-elementから色を継承（ホバーで白になる） */
     margin-left: 0.5em; /* テキストとの間隔 */
     white-space: nowrap; /* 改行しない */
     flex-shrink: 0; /* 縮小しない */
@@ -396,15 +401,12 @@ h3 a:hover {
 }
 
 /* ── QRコード部分 (detailsタグ) のスタイル修正 - 「SSH QRコード表示」にも適用 */
+/* .bordered-element を適用 */
 .qr-code-section { /* .qr-codeを.qr-code-sectionに修正 */
-    margin-top: 1em; /* 上部マージン */
+    /* .bordered-element が以下のスタイルをカバー */
+    /* display, width, background-color, color, border, border-radius, padding, box-sizing, text-align, text-decoration, transition, margin-bottom */
+    margin-top: 1em; /* 上部マージンのみ調整 */
     padding: 0; /* summaryとcanvasに個別にパディングを設定するため、親は0に */
-    background-color: transparent; /* 背景は透明 */
-    border-radius: 0.375em;
-    text-align: center;
-    border: 0.05em solid var(--text-color); /* ボーダー色もテキスト色に統一 */
-    box-sizing: border-box;
-    transition: background-color 0.2s ease, border-color 0.2s ease; /* ホバー時の変化をスムーズに */
 }
 
 /* QRコードセクション全体がホバーされたときに背景と文字色を変える */
@@ -461,13 +463,11 @@ h3 a:hover {
 }
 
 /* ── プロトコルハンドラー登録セクション (detailsタグ) のスタイル修正 - 「SSH用プロトコルハンドラー登録」に適用 */
+/* .bordered-element を適用 */
 .handler-register-section { /* detailsタグのクラス */
-    margin-bottom: 0.8em; /* リストアイテム間のマージン */
-    border: 0.05em solid var(--text-color); /* ボーダー色もテキスト色に統一 */
-    border-radius: 0.3em;
-    background-color: transparent; /* 背景は透明 */
-    box-sizing: border-box;
-    transition: background-color 0.2s ease, border-color 0.2s ease; /* ホバー時の変化をスムーズに */
+    /* .bordered-element が以下のスタイルをカバー */
+    /* display, width, background-color, color, border, border-radius, padding, box-sizing, text-align, text-decoration, transition, margin-bottom */
+    margin-bottom: 0.8em; /* 項目間のマージンのみ調整 */
     padding: 0; /* summaryとリンクに個別にパディングを設定するため、親は0に */
 }
 
@@ -510,14 +510,14 @@ h3 a:hover {
     transform: rotate(0deg);
 }
 
-/* .handler-register-link は .button-link のスタイルを適用する */
-/* HTML側で <a class="button-link handler-register-link">...</a> のようにクラスを追加してください */
+/* .handler-register-link は .bordered-element のスタイルを適用する */
+/* HTML側で <a class="bordered-element handler-register-link">...</a> のようにクラスを追加してください */
 .handler-register-section .handler-register-link {
-    /* .button-link がこれらのスタイルをカバー */
-    /* display, width, box-sizing, text-decoration, background-color, color, border, padding, border-radius, transition は .button-link に任せる */
-    margin-top: 0; /* .button-linkのmargin-bottomを打ち消すため */
+    /* .bordered-element がこれらのスタイルをカバー */
+    /* display, width, box-sizing, text-decoration, background-color, color, border, padding, border-radius, transition, margin-bottom は .bordered-element に任せる */
+    margin-top: 0; /* .bordered-elementのmargin-bottomを打ち消すため */
     margin-bottom: 0.8em; /* details内の各リンク間のマージン */
-    border: none; /* 親のdetailsが枠を持つので、子要素のbutton-linkの枠は削除 */
+    border: none; /* 親のdetailsが枠を持つので、子要素のaタグの枠は削除 */
     background-color: transparent; /* 背景も透明に */
     padding-left: 1em; /* 親のパディングに合わせる */
     padding-right: 1em;
@@ -533,15 +533,15 @@ h3 a:hover {
 .handler-register-section .handler-register-link .link-note {
     display: block; /* 改行 */
     font-size: 0.8em;
-    color: inherit; /* 親の.button-linkから色を継承 */
+    color: inherit; /* 親のaタグから色を継承 */
     margin-top: 0.2em;
     line-height: 1.3;
 }
 
 
-/* ── コンソールセクションのリンクにも.button-linkを適用 ── */
-/* HTML側で <a class="button-link">...</a> のようにクラスを追加してください */
-.console-section .button-link {
+/* ── コンソールセクションのリンクにも.bordered-elementを適用 ── */
+/* HTML側で <a class="bordered-element">...</a> のようにクラスを追加してください */
+.console-section .bordered-element {
     margin-bottom: 0.8em; /* 項目間のマージン */
 }
 
