@@ -357,7 +357,8 @@ h3.bordered-element {
 }
 
 .page-footer-area .copyright-text {
-    font-size: 0.85em;
+    font-size: 0.85em; /* 既存のフォントサイズを維持 */
+    line-height: 1; /* ここを修正: 子要素の垂直方向のスペースを制御 */
     color: var(--text-color);
 }
 
@@ -368,12 +369,15 @@ h3.bordered-element {
     display: inline-flex; /* flexboxを適用し、paddingとalign-itemsを有効にする */
     align-items: center; /* 垂直方向の中央揃え */
     justify-content: center; /* 水平方向の中央揃え */
+    font-size: 1em; /* ここを修正: ボタンのフォントサイズと統一 */
+    line-height: 1; /* ここを修正: ボタンのラインハイトと統一 */
     padding: 0.25em 0.5em; /* ボタンと同様のパディング */
     border: 0.05em solid transparent; /* 初期は透明なボーダー */
     border-radius: 0.3em; /* 角丸 */
     transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
     box-sizing: border-box; /* パディングとボーダーを幅に含める */
     white-space: nowrap; /* テキストの折り返しを防ぐ */
+    vertical-align: middle; /* ここを修正: インライン要素の垂直アライメント調整 */
 }
 
 .page-footer-area .footer-link:hover {
@@ -385,6 +389,9 @@ h3.bordered-element {
 .page-footer-area .separator {
     color: var(--text-color);
     margin: 0 0.3em;
+    font-size: 1em; /* ここを修正: リンク/ボタンのフォントサイズと統一 */
+    line-height: 1; /* ここを修正: リンク/ボタンのラインハイトと統一 */
+    vertical-align: middle; /* ここを修正: インライン要素の垂直アライメント調整 */
 }
 
 /* 言語・テーマボタンの共通スタイル */
