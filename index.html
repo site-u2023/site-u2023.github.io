@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html lang="ja" data-theme="light"> <head>
+<html lang="ja" data-theme="light">
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>OpenWrt A Beginner's Notebook</title>
@@ -12,17 +13,47 @@
         <div id="header-placeholder"></div>
 
         <main>
-            </main>
+            <nav>
+                <section>
+                    <h2 data-i18n="console">コンソール</h2>
+                    <ul>
+                        <li><a href="ssh://root@${ip}" id="ssh-link" data-ip-template="ssh://root@${ip}" target="_blank" rel="noopener noreferrer" data-i18n="sshConnection">SSH接続 (root@<span id="ssh-ip">192.168.1.1</span>)</a></li>
+                        <li><a href="ssh://root@${ip}?command=${cmd}" id="aios-link" data-ip-template="ssh://root@${ip}?command=${cmd}" target="_blank" rel="noopener noreferrer" data-i18n="aiosExecution">aios実行 (root@<span id="aios-ip">192.168.1.1</span>)</a></li>
+                        <li><a href="https://openwrt.org/docs/guide-user/start" target="_blank" rel="noopener noreferrer" data-i18n="console">コンソール</a></li>
+                        <li><a href="http://${ip}/cgi-bin/luci/" class="link-ip" data-ip-template="http://${ip}/cgi-bin/luci/" target="_blank" rel="noopener noreferrer" data-i18n="luciAdmin">LuCI (管理画面)</a></li>
+                        <li><a href="http://${ip}:7681" class="link-ip" data-ip-template="http://${ip}:7681" target="_blank" rel="noopener noreferrer" data-i18n="ttydTerminal">ttyd (Webターミナル)</a></li>
+                    </ul>
+                </section>
+
+                <section>
+                    <h2 data-i18n="githubRepo">その他</h2>
+                    <ul>
+                        <li><a href="https://github.com/site-u2023/site-u2023.github.io/" target="_blank" rel="noopener noreferrer" data-i18n="githubRepo">GitHubリポジトリ</a></li>
+                        <li><a href="https://github.com/site-u2023/aios/" target="_blank" rel="noopener noreferrer" data-i18n="aiosScript">オールインワンスクリプト</a></li>
+                        <li><a href="https://github.com/site-u2023/config-software/" target="_blank" rel="noopener noreferrer" data-i18n="configSoftware">コンフォグソフトウェア (旧版)</a></li>
+                    </ul>
+                </section>
+            </nav>
+
+            <section id="device-ip">
+                <h2><span data-i18n="deviceIP">デバイスIPアドレス</span></h2>
+                <div class="connection">
+                    <div class="ip-address">
+                        <input type="text" id="global-ip-input" placeholder="192.168.1.1" value="192.168.1.1">
+                    </div>
+                    <button id="global-ip-update" data-i18n="update">更新</button>
+                </div>
+            </section>
+
+            <details id="qrcode-detail-container" class="qr-code">
+                <summary>SSH QRコード表示</summary>
+                <div id="qrcode-detail"></div>
+            </details>
+        </main>
     </div>
 
     <div id="footer-placeholder"></div>
 
     <script src="script.js"></script>
-    <script>
-        // DOMContentLoadedを待ってから共通部分を読み込む関数を呼び出す
-        document.addEventListener('DOMContentLoaded', () => {
-            loadCommonElements();
-        });
-    </script>
-</body>
+    </body>
 </html>
