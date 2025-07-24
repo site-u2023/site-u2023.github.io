@@ -1,4 +1,3 @@
-cat <<'EOF' > script.js
 // ── グローバル定数（再定義不要なもの）──
 const SSH_COMMANDS_AIOS = [
     'wget -O /usr/bin/aios https://raw.githubusercontent.com/site-u2023/aios/main/aios',
@@ -308,4 +307,3 @@ document.addEventListener('DOMContentLoaded', () => {
         updateAll();
     }
 });
-EOF
