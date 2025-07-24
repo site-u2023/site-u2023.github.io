@@ -35,18 +35,16 @@ body {
     min-height: 100vh; /* フッターを下に固定するための高さ確保 */
     display: flex; /* フッターを最下部に固定するためにFlexboxを使用 */
     flex-direction: column; /* 縦方向に要素を並べる */
-    /* width: 100%; がデフォルトで適用されるため不要 */
-    /* min-width: 800px; は不要。max-widthとmargin: autoで制御する */
 }
 
 /* .container の外に配置されるヘッダーとフッター用のスタイル */
 .main-header,
 .page-footer-area {
     background-color: var(--block-bg);
-    border-color: var(--block-border); /* border-top/bottomに適用される */
+    border-color: var(--block-border);
     transition: background-color 0.3s ease, border-color 0.3s ease;
-    flex-shrink: 0; /* 縮小させない */
-    width: 100%; /* 明示的に幅100%を指定 */
+    flex-shrink: 0;
+    width: 100%;
 }
 
 /* リストマーカーの削除 */
@@ -63,10 +61,14 @@ ul {
 }
 
 .main-header .header-inner {
+    max-width: 50em; /* コンテナと同じ幅 */
+    margin: 0 auto;
+    padding: 1.5em 2em; /* 左右のパディング */
     display: flex;
-    justify-content: center; /* 水平方向中央揃え */
-    align-items: center; /* 垂直方向中央揃え */
-    padding: 1em 2em;
+    justify-content: center;
+    align-items: center;
+    gap: 1em;
+    box-sizing: border-box;
 }
 
 .main-header .logo-container { /* ロゴを囲むdiv */
@@ -84,15 +86,13 @@ ul {
 
 /* ── メインコンテンツのコンテナ ── */
 .container {
-    flex-grow: 1; /* 残りのスペースを全て占めることでフッターを下に押し出す */
-    max-width: 50em; /* 最大幅を維持 (800px相当) */
-    margin: 2em auto; /* 中央揃えと上下マージン */
-    background: var(--block-bg); /* 背景色 */
-    padding: 1.5em 2em;
-    border-radius: 0.5em; /* 角丸 */
-    box-shadow: 0 0.25em 0.5em rgba(0, 0, 0, 0.1); /* 影 */
-    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    transition: background-color 0.3s ease, box-shadow 0.3s ease; /* containerにはtransitionのみ残す */
     box-sizing: border-box; /* paddingが幅に含まれるように */
+    width: 100%; /* 親要素（body）に対して100%の幅を取り、max-widthで制限されるように */
+    flex-grow: 1; /* body の子要素として、残りのスペースを全て占める */
+    display: flex; /* container 内のアイテム (header-placeholder, main-content) を Flex で制御 */
+    flex-direction: column; /* 縦方向に並べる */
+    align-items: center; /* 中央に寄せる */
 }
 
 /* ── フォーム要素、ボタン、リンクのベーススタイル (継承と最低限の調整) ── */
@@ -178,8 +178,17 @@ button.primary-button:hover {
 }
 
 /* ── メインコンテンツ共通スタイル ── */
-.main-content { /* mainタグに適用したクラス */
-    /* .containerが主なスタイルを持つため、ここでは追加のレイアウト調整のみ */
+.main-content {
+    flex-grow: 1; /* container の子要素として、残りのスペースを全て占める */
+    max-width: 50em; /* メインコンテンツの最大幅 (800px相当) */
+    width: 100%; /* 親要素に対して100%幅を取り、max-widthで制限 */
+    margin: 2em auto; /* 中央揃えと上下マージン */
+    background: var(--block-bg); /* 背景色 */
+    padding: 1.5em 2em;
+    border-radius: 0.5em; /* 角丸 */
+    box-shadow: 0 0.25em 0.5em rgba(0, 0, 0, 0.1); /* 影 */
+    box-sizing: border-box; /* paddingが幅に含まれるように */
+    min-width: 0; /* Flexアイテムの最小幅を設定 */
 }
 
 .page-title { /* h1.page-title */
@@ -190,13 +199,16 @@ button.primary-button:hover {
 }
 
 /* ── 各コンテンツセクション ── */
-.content-section { /* sectionタグに適用したクラス */
-    background-color: var(--block-bg);
-    border: 0.05em solid var(--block-border);
-    border-radius: 0.5em;
-    padding: 1.2em 1.5em; /* パディングを統一 */
-    margin-bottom: 1.5em; /* 各セクション間のマージン */
+.content-section {
+    background-color: var(--block-bg); /* メインコンテンツの背景色を継承 */
+    border: 0.0625em solid var(--block-border);
+    border-radius: 0.3125em;
+    padding: 1em;
+    margin-bottom: 1em; /* 各セクション間の余白 */
+    box-shadow: 0 0.125em 0.25em rgba(0, 0, 0, 0.05);
+    transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
     box-sizing: border-box;
+    width: 100%; /* 親要素 (main-content) の幅いっぱいに広がる */
 }
 
 .section-title { /* h2.section-title */
@@ -399,9 +411,6 @@ html[data-theme="dark"] a.link-item:hover {
     bottom: 0;
     left: 0;
     width: 100%;
-    /* background-colorとborder-topは .main-header, .page-footer-area の共通スタイルで定義済み */
-    /* transitionも共通スタイルで定義済み */
-
     display: flex; /* 中央揃えのためのFlexbox */
     justify-content: center;
     align-items: flex-end; /* 下部に寄せる */
@@ -411,13 +420,12 @@ html[data-theme="dark"] a.link-item:hover {
 
 .footer-inner-flex {
     display: flex;
-    justify-content: space-between; /* 両端揃え */
+    justify-content: space-between;
     align-items: center;
-    padding: 0 2em; /* 左右のパディング */
+    padding: 0 2em;
     max-width: 50em; /* containerと同じ最大幅 */
-    width: 100%; /* 親要素(page-footer-area)のpadding内での幅100% */
+    width: 100%;
     box-sizing: border-box;
-    /* align-self: flex-end; を削除。親がalign-items: flex-end;を持っているので不要 */
 }
 
 .footer-controls {
@@ -485,22 +493,22 @@ html[data-theme="dark"] a.link-item:hover {
         padding-top: 0;
     }
     .container {
+        /* モバイルではflex-directionやalign-itemsはbodyが制御しているため不要 */
+        /* width: auto; max-width: none; も不要 */
+    }
+    .main-content { /* モバイルではマージンとパディングを調整 */
         margin: 1em 0; /* 左右マージンを0に */
         padding: 1em 1.2em;
         border-radius: 0;
         box-shadow: none;
-        width: auto; /* 幅を自動調整 */
+        width: auto; /* 幅を自動調整 (親のcontainerが100%なので実質100%) */
+        max-width: none; /* モバイルでは最大幅の制限を解除 */
     }
     .main-header .header-inner {
         padding: 1em 1.2em;
     }
     .page-title {
         font-size: 1.8em;
-    }
-    .content-section {
-        padding: 1em 1.2em; /* モバイルでのパディングを調整 */
-        border-radius: 0; /* モバイルでは角丸なし */
-        box-shadow: none; /* モバイルでは影なし */
     }
     .section-title {
         font-size: 1.15em;
@@ -519,29 +527,29 @@ html[data-theme="dark"] a.link-item:hover {
 
     /* フッターのレスポンシブ調整 */
     .page-footer-area {
-        padding: 0.6em 0; /* モバイルフッターの上下パディング */
+        padding: 0.6em 0;
     }
     .footer-inner-flex {
-        flex-direction: column; /* モバイルでは縦並びにする */
+        flex-direction: column;
         align-items: center;
         padding: 0.6em 1em;
-        gap: 0.8em; /* アイテム間の縦方向の隙間 */
+        gap: 0.8em;
     }
     .footer-controls,
     .copyright-info {
-        width: 100%; /* モバイルでは幅100%にする */
-        justify-content: center; /* 中央揃え */
-        margin-bottom: 0; /* 各コントロール間の余分なマージンを削除 */
+        width: 100%;
+        justify-content: center;
+        margin-bottom: 0;
     }
     .copyright-text {
-        font-size: 0.8em; /* モバイルでさらに小さく */
+        font-size: 0.8em;
         text-align: center;
         justify-content: center;
-        gap: 0.3em 0.6em; /* アイテム間の隙間を小さく */
+        gap: 0.3em 0.6em;
     }
     .lang-button,
     .theme-button {
-        padding: 0.35em; /* モバイルでボタンを小さく */
+        padding: 0.35em;
         border: 0.05em solid transparent;
         font-size: 0.9em;
     }
