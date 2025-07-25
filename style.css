@@ -176,6 +176,9 @@ h3.bordered-element {
 }
 
 #global-ip-update {
+    display: flex;
+    align-items: center;
+    justify-content: center;
     width: auto;        /* 通常時も内容分の幅 */
     min-width: 64px;    /* 必要なら最小幅を設定 */
     height: 2.5rem;
@@ -357,7 +360,7 @@ h3.bordered-element {
     height: auto;
     display: block;
     margin: 0 auto;
-    max-width: 800px; /* ロゴの最大幅 */
+    max-width: clamp(160px, 80vw, 800px);
 }
 
 /* ── フッター ── */
@@ -538,7 +541,6 @@ h3.bordered-element {
         max-width: 100%; /* 画面幅いっぱいに広がるように */
     }
     .main-header .logo-container .site-logo {
-        max-width: 200px; /* ロゴを小さく */
     }
 
     /* フッターの調整 */
