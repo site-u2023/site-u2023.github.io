@@ -111,6 +111,27 @@ ul {
     border-color: var(--hover-bg);
 }
 
+/* 展開されていない時のみホバー効果を適用（bordered-elementを明示的に指定し、詳細度を上げる） */
+.qr-code-section.bordered-element:not([open]):hover {
+    background-color: var(--hover-bg);
+    border-color: var(--hover-bg); /* 背景色と同じにすることで、境界が見えなくなる */
+}
+
+/* .qr-code-summaryとその::before擬似要素の文字色をホバー時に変更 */
+/* 上記のルールとセットで記述してください */
+.qr-code-section.bordered-element:not([open]):hover .qr-code-summary,
+.qr-code-section.bordered-element:not([open]):hover .qr-code-summary::before {
+    color: var(--hover-text); /* ホバー時の文字色 */
+}
+
+/* 展開されている時のsummaryのスタイルをリセット（必要であれば） */
+/* これにより、detailsがopenのときにホバーしても色が変化しないことを保証 */
+.qr-code-section.bordered-element[open]:hover .qr-code-summary,
+.qr-code-section.bordered-element[open]:hover .qr-code-summary::before {
+    color: var(--text-color); /* 通常のテキストカラーに戻す */
+    background-color: transparent; /* 背景色も透明にリセット */
+}
+
 /* ── 各コンテンツセクション ── */
 .content-section {
     background-color: var(--block-bg);
