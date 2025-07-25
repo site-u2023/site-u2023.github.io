@@ -19,8 +19,8 @@ const langData = {
         sshConnection: 'SSH Connection (root@<span id="ssh-ip">192.168.1.1</span>)',
         aiosExecution: 'Execute aios (root@<span id="aios-ip">192.168.1.1</span>)',
         console: 'Console',
-        luciAdmin: 'LuCI (Admin Interface)',
-        ttydTerminal: 'ttyd (Web Terminal)',
+        luciAdmin: 'LuCI',
+        ttydTerminal: 'ttyd',
         githubRepo: 'GitHub Repository',
         aiosScript: 'all in one script',
         configSoftware: 'config-software (legacy)'
@@ -36,8 +36,8 @@ const langData = {
         sshConnection: 'SSH接続 (root@<span id="ssh-ip">192.168.1.1</span>)',
         aiosExecution: 'aios実行 (root@<span id="aios-ip">192.168.1.1</span>)',
         console: 'コンソール',
-        luciAdmin: 'LuCI (管理画面)',
-        ttydTerminal: 'ttyd (Webターミナル)',
+        luciAdmin: 'LuCI',
+        ttydTerminal: 'ttyd',
         githubRepo: 'GitHubリポジトリ',
         aiosScript: 'オールインワンスクリプト',
         configSoftware: 'コンフォグソフトウェア (旧版)'
