@@ -567,10 +567,13 @@ h3.bordered-element {
         border-radius: 0.3em;
     }
     #global-ip-update {
-        width: 100%;
-        min-width: unset; /* min-width解除（必要なら） */
-        height: 2.5rem;
-        padding: 0.8em 1em;
+        width: auto;         /* 横幅は内容分のみ（全幅をやめる） */
+        min-width: 64px;     /* 最小幅を確保（任意、好みで調整可） */
+        height: 2.5rem;      /* 高さは維持 */
+        padding: 0 1em;      /* 上下padding不要、左右のみ */
+        box-sizing: border-box;
+        display: block;      /* ブロック表示（flex内でもOK） */
+        margin-left: 0.5em;  /* 必要なら左余白（inputと間隔調整、任意） */
     }
 
     /* QRコードのダミー表示を調整 */
