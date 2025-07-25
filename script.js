@@ -99,7 +99,7 @@ function updateAll() {
     const luciIpSpan = document.getElementById('luci-ip');
     const ttydIpSpan = document.getElementById('ttyd-ip');
     if (luciIpSpan) luciIpSpan.textContent = ip;
-    if (ttydIpSpan) ttydIpSpan.textContent = ip + ':7681';
+    if (ttydIpSpan) ttydIpSpan.textContent = ip;
 
     document.querySelectorAll('.link-item[data-ip-template]').forEach(link => {
         const template = link.dataset.ipTemplate;
