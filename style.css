@@ -92,6 +92,8 @@ ul {
     display: block;
     background-color: transparent;
     color: var(--text-color);
+
+    border: none !important;
     border: 0.05em solid var(--text-color);
     border-radius: 0.3em;
     padding: 0.8em 1em;
@@ -318,6 +320,8 @@ h3.bordered-element {
 /* ── ヘッダー ── */
 .main-header {
     position: relative;
+    
+    border-bottom: none !important;
     border-bottom: 0.05em solid var(--text-color);
     background-color: var(--block-bg);
     border-color: var(--text-color);
@@ -378,6 +382,8 @@ h3.bordered-element {
     align-items: flex-end;
     padding: 1em 2em;
     background-color: var(--block-bg);
+    
+    border-top: none !important;
     border-top: 0.05em solid var(--text-color);
     border-color: var(--text-color);
     transition: background-color 0.3s ease, border-color 0.3s ease;
