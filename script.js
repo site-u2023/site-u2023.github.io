@@ -115,7 +115,7 @@ function updateAll() {
     }
 }
 
-// ── 言語適用関数 ──
+// ── 言語適用関数（修正版） ──
 function applyLanguage(lang) {
     const langButtons = document.querySelectorAll('.language-selector button');
     langButtons.forEach(button => {
@@ -124,16 +124,31 @@ function applyLanguage(lang) {
     document.querySelectorAll('[data-i18n]').forEach(element => {
         const key = element.getAttribute('data-i18n');
         if (langData[lang] && langData[lang][key]) {
-            if (element.classList.contains('section-title') || element.classList.contains('link-text') || element.classList.contains('link-note') || element.id === 'global-ip-update') {
-                if (key === 'sshConnection' || key === 'aiosExecution') {
-                    const ipSpanId = key === 'sshConnection' ? 'ssh-ip' : 'aios-ip';
-                    const currentIpHtml = element.querySelector(`#${ipSpanId}`) ? element.querySelector(`#${ipSpanId}`).outerHTML : '';
-                    let newHtml = langData[lang][key];
-                    if (currentIpHtml) {
-                        newHtml = newHtml.replace(/<span id="(ssh|aios)-ip">.*?<\/span>/, currentIpHtml);
+            if (key === 'sshConnection' || key === 'aiosExecution') {
+                // innerHTMLを使わず、span部だけを維持しテキスト部のみを切替
+                const ipSpanId = key === 'sshConnection' ? 'ssh-ip' : 'aios-ip';
+                const ipSpan = element.querySelector(`#${ipSpanId}`);
+                if (ipSpan) {
+                    const ip = ipSpan.textContent;
+                    element.innerHTML = ""; // いったんクリア
+                    if (key === 'sshConnection') {
+                        element.append("SSH接続 (root@");
+                        const newSpan = document.createElement("span");
+                        newSpan.id = "ssh-ip";
+                        newSpan.textContent = ip;
+                        element.appendChild(newSpan);
+                        element.append(")");
+                    } else {
+                        element.append("aios実行 (root@");
+                        const newSpan = document.createElement("span");
+                        newSpan.id = "aios-ip";
+                        newSpan.textContent = ip;
+                        element.appendChild(newSpan);
+                        element.append(")");
                     }
-                    element.innerHTML = newHtml;
-                } else if (key === 'sshHandler') {
+                }
+            } else if (element.classList.contains('section-title') || element.classList.contains('link-text') || element.classList.contains('link-note') || element.id === 'global-ip-update') {
+                if (key === 'sshHandler') {
                     const linkTextSpan = element.querySelector('.link-text');
                     const linkNoteSpan = element.querySelector('.link-note');
                     if (linkTextSpan) {
@@ -163,9 +178,6 @@ function updateLogoDisplay() {
         } else {
             siteLogo.src = 'img/openwrt_text_blue_and_dark_blue.svg'; // Black (Light Theme)
         }
-        // console.log("Logo updated to:", siteLogo.src, "Theme:", theme); // デバッグ用
-    } else {
-        // console.warn("Logo element with ID 'site-logo' not found for update."); // デバッグ用
     }
 }
 
@@ -179,13 +191,8 @@ async function loadHeader() {
         const headerHtml = await response.text();
         const headerElement = document.createElement('div');
         headerElement.innerHTML = headerHtml;
-
-        // bodyの先頭に挿入
         document.body.prepend(headerElement.firstElementChild);
-
-        // ヘッダー読み込み直後にロゴ表示を更新
         updateLogoDisplay();
-
     } catch (error) {
         console.error("Failed to load header.html:", error);
     }
@@ -201,14 +208,9 @@ async function loadFooter() {
         const footerHtml = await response.text();
         const footerElement = document.createElement('div');
         footerElement.innerHTML = footerHtml;
-
-        // bodyの最後に挿入
         document.body.appendChild(footerElement.firstElementChild);
-
-        // 年表示を更新
         const yearEl = document.getElementById('current-year');
         if (yearEl) yearEl.textContent = new Date().getFullYear();
-
     } catch (error) {
         console.error("Failed to load footer.html:", error);
     }
@@ -227,13 +229,12 @@ function initializeThemeAndLanguageSelectors() {
         html.setAttribute('data-theme', mode);
         themeBtns.forEach(b => b.classList.toggle('selected', b.dataset.themePreference === pref));
         localStorage.setItem('site-u-theme', pref);
-        updateLogoDisplay(); // ロゴ更新
-        updateAll(); // QRコードの色を再適用するため
+        updateLogoDisplay();
+        updateAll();
     }
 
     if (themeBtns.length > 0) {
         themeBtns.forEach(b => {
-            // イベントリスナーの重複登録を避けるために一度削除してから追加
             b.removeEventListener('click', () => applyTheme(b.dataset.themePreference));
             b.addEventListener('click', () => applyTheme(b.dataset.themePreference));
         });
@@ -243,20 +244,16 @@ function initializeThemeAndLanguageSelectors() {
         window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
             if ((localStorage.getItem('site-u-theme')||'auto') === 'auto') applyTheme('auto');
         });
-        applyTheme(storedTheme); // 初期テーマ適用
+        applyTheme(storedTheme);
     } else {
-        // テーマボタンがない場合でも、テーマ属性に基づきロゴとQRコードは更新できるようにする
         applyTheme(storedTheme);
     }
 
-    // data-theme属性の変更を監視してロゴを更新 (念のため、重複登録回避)
-    // このobserverは一度だけ登録されるべきです
     if (!html.dataset.themeObserverRegistered) {
         const observer = new MutationObserver(updateLogoDisplay);
         observer.observe(html, { attributes: true, attributeFilter: ['data-theme'] });
         html.dataset.themeObserverRegistered = 'true';
     }
-
 
     const langButtons = document.querySelectorAll('.language-selector button');
     const currentLang = localStorage.getItem('lang-preference') || 'ja';
@@ -275,14 +272,10 @@ function initializeThemeAndLanguageSelectors() {
 
 // ── DOMContentLoaded ──
 document.addEventListener('DOMContentLoaded', async () => {
-    // ヘッダーとフッターの読み込みを確実に待つ
     await loadHeader();
     await loadFooter();
-
-    // 外部ファイルが全て読み込まれ、DOMに挿入された後に初期化関数を呼び出す
     initializeThemeAndLanguageSelectors();
 
-    // IPアドレス関連初期化
     const globalIpInput = document.getElementById('global-ip-input');
     const globalIpUpdateBtn = document.getElementById('global-ip-update');
     if (globalIpInput) {
@@ -308,7 +301,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         globalIpUpdateBtn.addEventListener('click', updateAll);
     }
 
-    // QRコードdetails要素イベントリスナー
     const qrDetailContainer = document.getElementById('qrcode-detail-container');
     if (qrDetailContainer && !qrDetailContainer.dataset.toggleListenerAdded) {
         qrDetailContainer.addEventListener('toggle', function() {
@@ -330,7 +322,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         qrDetailContainer.dataset.toggleListenerAdded = 'true';
     }
 
-    // ページロード時の初期更新
     if (globalIpInput) {
         updateAll();
     }
