@@ -89,10 +89,17 @@ function updateAll() {
     const ip = toHalfWidth(input.value.trim()) || input.placeholder;
     localStorage.setItem('site-u-ip', ip);
 
+    // SSH接続とaios実行のIPアドレス表示を更新
     const sshIpSpan = document.getElementById('ssh-ip');
     const aiosIpSpan = document.getElementById('aios-ip');
     if (sshIpSpan) sshIpSpan.textContent = ip;
     if (aiosIpSpan) aiosIpSpan.textContent = ip;
+
+    // LuCIとttydのIPアドレス表示を更新
+    const luciIpSpan = document.getElementById('luci-ip');
+    const ttydIpSpan = document.getElementById('ttyd-ip');
+    if (luciIpSpan) luciIpSpan.textContent = ip;
+    if (ttydIpSpan) ttydIpSpan.textContent = ip + ':7681';
 
     document.querySelectorAll('.link-item[data-ip-template]').forEach(link => {
         const template = link.dataset.ipTemplate;
