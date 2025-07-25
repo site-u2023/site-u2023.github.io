@@ -186,9 +186,10 @@ h3.bordered-element {
     background-color: var(--link-color);
     color: var(--hover-text);
     box-sizing: border-box;
-
-    padding: 0.6em 1.5em;
+    
     height: 2.5rem;
+    min-width: 8em;
+    padding: 0.8em 1em;
     flex-shrink: 0;
     white-space: nowrap;
     text-align: center;
@@ -574,10 +575,10 @@ h3.bordered-element {
         border-radius: 0.3em;
     }
     #global-ip-update {
-        width: 100%; /* 幅を100%に */
-        border-left: none;
-        border-top: 0.05em solid var(--text-color); /* 上にボーダー */
-        border-radius: 0.3em; /* 角丸を元に戻す */
+        width: 100%;
+        min-width: unset; /* min-width解除（必要なら） */
+        height: 2.5rem;
+        padding: 0.8em 1em;
     }
 
     /* QRコードのダミー表示を調整 */
