@@ -147,11 +147,11 @@ h3.bordered-element {
     padding: 0.8em 1em;
 }
 
-/* ── Device IP セクション内の微調整 ── */
+/* ── Device IP セクション内の修正 ── */
 #device-ip .input-group {
     display: flex;
-    align-items: center;
-    gap: 1rem;
+    align-items: stretch; /* 高さを合わせる */
+    gap: 0.5rem; /* ギャップを少し小さく */
     margin-bottom: 1em;
 }
 
@@ -159,7 +159,7 @@ h3.bordered-element {
     flex: 1;
     min-width: 0; /* これが重要 */
     display: flex;
-    align-items: center;
+    align-items: stretch; /* 高さを合わせる */
     overflow: hidden;
     border: 0.05em solid var(--text-color);
     border-radius: 0.3em;
@@ -177,12 +177,13 @@ h3.bordered-element {
 }
 
 #global-ip-update {
-    margin-left: auto;
-    flex: 0 0 auto;
+    flex: 0 0 auto; /* サイズを内容に合わせる */
+    min-width: auto; /* 最小幅を自動に */
+    white-space: nowrap; /* テキストを折り返さない */
     cursor: pointer;
     background-color: transparent;
     color: inherit;
-    border: 0.05em solid transparent; /* ダークテーマで透明ボーダーを初期設定 */
+    border: 0.05em solid var(--text-color);
     border-radius: 0.3em;
     padding: 0.8em 1em;
     transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
