@@ -210,6 +210,17 @@ h3.bordered-element {
     color: var(--hover-text);
 }
 
+/* 展開時のホバー効果を無効化 */
+.qr-code-section[open]:hover {
+    background-color: transparent;
+    border-color: var(--text-color);
+}
+
+.qr-code-section[open]:hover .qr-code-summary,
+.qr-code-section[open]:hover .qr-code-summary:before {
+    color: var(--text-color);
+}
+
 .qr-code-section .qr-code-summary {
     text-align: left;
     cursor: pointer;
