@@ -125,7 +125,7 @@ ul {
 
 /* h2 (section-title) は .bordered-element を適用する */
 .section-title {
-    margin: 0;
+    margin: 0 0 1em;
     font-size: 1.3em;
     line-height: 1.2;
 }
