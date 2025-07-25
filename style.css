@@ -111,13 +111,6 @@ ul {
     border-color: var(--hover-bg);
 }
 
-/* details要素からbordered-elementのホバー効果を解除 */
-details.bordered-element:hover {
-    background-color: transparent !important; /* ホバー時の背景色を透明に */
-    border-color: var(--text-color) !important; /* ホバー時の枠線の色を通常時に戻す */
-    cursor: default !important; /* カーソルを通常の矢印に戻す */
-}
-
 /* ── 各コンテンツセクション ── */
 .content-section {
     background-color: var(--block-bg);
