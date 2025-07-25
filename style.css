@@ -197,6 +197,7 @@ h3.bordered-element {
     min-width: 70px;
     vertical-align: middle;
     box-sizing: border-box;
+    height: auto;
 }
 
 #global-ip-update:hover {
