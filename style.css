@@ -184,7 +184,9 @@ h3.bordered-element {
     height: 2.5rem;
     padding: 0 1em;
     box-sizing: border-box;
-    
+    padding-top: 0;
+    padding-bottom: 0;
+
     flex: 0 0 auto; /* サイズを内容に合わせる */
     white-space: nowrap; /* テキストを折り返さない */
     cursor: pointer;
