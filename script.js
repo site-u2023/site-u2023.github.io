@@ -115,7 +115,6 @@ function updateAll() {
     }
 }
 
-// ── 言語適用関数（修正版） ──
 function applyLanguage(lang) {
     const langButtons = document.querySelectorAll('.language-selector button');
     langButtons.forEach(button => {
@@ -130,7 +129,7 @@ function applyLanguage(lang) {
                 const ipSpan = element.querySelector(`#${ipSpanId}`);
                 if (ipSpan) {
                     const ip = ipSpan.textContent;
-                    element.innerHTML = ""; // いったんクリア
+                    element.innerHTML = "";
                     if (key === 'sshConnection') {
                         element.append("SSH接続 (root@");
                         const newSpan = document.createElement("span");
