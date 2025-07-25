@@ -177,14 +177,21 @@ h3.bordered-element {
 }
 
 #global-ip-update {
-  margin-left: auto;
-  flex: 0 0 auto;
-  cursor: pointer;
+    margin-left: auto;
+    flex: 0 0 auto;
+    cursor: pointer;
+    background-color: transparent;
+    color: inherit;
+    border: 0.05em solid transparent; /* ダークテーマで透明ボーダーを初期設定 */
+    border-radius: 0.3em;
+    padding: 0.8em 1em;
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
 
 #global-ip-update:hover {
-    background-color: var(--link-color); /* ホバー時の背景は変わらない */
+    background-color: var(--hover-bg);
     color: var(--hover-text);
+    border-color: var(--hover-bg);
 }
 
 /* ── QRコード部分 (detailsタグ) のスタイル修正 ── */
