@@ -627,3 +627,13 @@ body[data-theme="dark"] .main-header {
 body[data-theme="dark"] .page-footer-area {
     border-color: var(--link-color);
 }
+
+/* ボタン専用: .bordered-elementのdisplayやwidthを上書き */
+#global-ip-update.bordered-element {
+    display: inline-block;
+    width: auto;
+    min-width: 70px;
+    vertical-align: middle;
+    box-sizing: border-box;
+    /* ほかのbordered-elementの装飾は継承 */
+}
