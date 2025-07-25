@@ -169,13 +169,11 @@ h3.bordered-element {
     flex: 1;
     min-width: 0; /* flexアイテムとして必要 */
     border: none;
-    padding: 0.6em 0.9em;
+    padding: 0.8em 1em; 
     background-color: transparent;
     color: inherit;
     border-radius: 0;
     box-sizing: border-box; /* paddingがwidthに含まれるように */
-    height: 2.5rem;
-    line-height: 1.4;
 }
 
 #global-ip-update {
