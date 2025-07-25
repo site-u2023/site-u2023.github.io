@@ -164,40 +164,54 @@ h3.bordered-element {
     border-radius: 0.3em;
 }
 
+/* ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
+   更新ボタンとテキストボックスの高さ・padding・フォントを統一
+   ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼ */
+#global-ip-input,
+#global-ip-update {
+    height: 2.8em;
+    font-size: 1em;
+    line-height: 1.2;
+    box-sizing: border-box;
+    vertical-align: middle;
+    padding: 0 1em;
+}
+
+/* inputのデフォルトpaddingを上書き（既存との整合性に注意） */
 #global-ip-input {
-    flex: 1 1 120px;
-    min-width: 80px;
-    max-width: 100%;
     border: none;
-    padding: 0.8em 1em; 
     background-color: transparent;
     color: inherit;
     border-radius: 0;
-    box-sizing: border-box;
+    flex: 1 1 120px;
+    min-width: 80px;
+    max-width: 100%;
     z-index: 1;
 }
 
+/* ボタンのスタイルをinputと揃える */
 #global-ip-update {
-    flex: 0 0 auto; /* サイズを内容に合わせる */
-    min-width: auto; /* 最小幅を自動に */
-    white-space: nowrap; /* テキストを折り返さない */
-    cursor: pointer;
+    border: 0.05em solid var(--text-color);
     background-color: transparent;
     color: inherit;
-    border: 0.05em solid var(--text-color);
     border-radius: 0.3em;
-    padding: 0.8em 1em;
+    cursor: pointer;
+    min-width: 70px;
+    flex: 0 0 auto;
+    white-space: nowrap;
     transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+    display: inline-block;
+    width: auto;
 }
 
-/* 追加：ボタン専用で.bordered-elementのdisplay/widthを上書き */
+/* ボタンの.bordered-element上書き */
 #global-ip-update.bordered-element {
     display: inline-block;
     width: auto;
     min-width: 70px;
     vertical-align: middle;
     box-sizing: border-box;
-    height: auto;
+    height: 2.8em;
 }
 
 #global-ip-update:hover {
@@ -205,6 +219,9 @@ h3.bordered-element {
     color: var(--hover-text);
     border-color: var(--hover-bg);
 }
+/* ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
+   ここまで高さ統一修正
+   ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ */
 
 /* ── QRコード部分 (detailsタグ) のスタイル修正 ── */
 .qr-code-section {
