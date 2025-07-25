@@ -176,7 +176,7 @@ h3.bordered-element {
 }
 
 #global-ip-update {
-    display: flex;
+    display: none !important;
     align-items: center;
     justify-content: center;
     width: auto;        /* 通常時も内容分の幅 */
