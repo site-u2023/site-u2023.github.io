@@ -245,6 +245,23 @@ h3.bordered-element {
     text-align: center; /* QRコードを中央寄せ */
 }
 
+/* SSH用プロトコルハンドラーのdetails展開時のコンテンツスタイル */
+/* index.htmlでssh-handler-details-container内の.details-contentに適用 */
+.handler-details-section .details-content {
+    padding-left: 1em;
+    padding-right: 1em;
+    padding-bottom: 1em; /* 下部にパディングを追加 */
+}
+
+/* SSHプロトコルハンドラー詳細セクション内のテキストスタイル */
+.handler-details-section .details-content p {
+    margin-top: 1em;
+    margin-bottom: 1em;
+    font-size: 0.9em; /* 少し小さめの文字サイズ */
+    line-height: 1.4;
+    color: inherit;
+}
+
 .qr-code-section .qr-code-canvas canvas {
     display: block; /* インライン要素からブロック要素に変更 */
     margin: 0 auto; /* 中央寄せ */
