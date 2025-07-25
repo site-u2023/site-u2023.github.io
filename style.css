@@ -162,56 +162,56 @@ h3.bordered-element {
     align-items: stretch; /* 高さを合わせる */
     border: 0.05em solid var(--text-color);
     border-radius: 0.3em;
+    overflow: hidden; /* 入力欄とボタンの上下角丸＆はみ出し防止 */
 }
 
 /* ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
-   更新ボタンとテキストボックスの高さ・padding・フォントを統一
+   修正版: input/ボタンを親と高さ完全一致させる
    ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼ */
 #global-ip-input,
 #global-ip-update {
-    height: 2.8em;
+    height: 100%;
     font-size: 1em;
     line-height: 1.2;
     box-sizing: border-box;
     vertical-align: middle;
     padding: 0 1em;
+    border: none;
+    border-radius: 0;
 }
 
-/* inputのデフォルトpaddingを上書き（既存との整合性に注意） */
+/* input固有 */
 #global-ip-input {
-    border: none;
-    background-color: transparent;
-    color: inherit;
-    border-radius: 0;
     flex: 1 1 120px;
     min-width: 80px;
     max-width: 100%;
-    z-index: 1;
-}
-
-/* ボタンのスタイルをinputと揃える */
-#global-ip-update {
-    border: 0.05em solid var(--text-color);
     background-color: transparent;
     color: inherit;
-    border-radius: 0.3em;
-    cursor: pointer;
-    min-width: 70px;
+    outline: none;
+}
+
+/* ボタン固有 */
+#global-ip-update {
     flex: 0 0 auto;
+    min-width: 70px;
+    background-color: transparent;
+    color: inherit;
+    border-left: 0.05em solid var(--text-color); /* 左だけ */
+    border-radius: 0;
+    transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+    cursor: pointer;
     white-space: nowrap;
-    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
     display: inline-block;
     width: auto;
 }
 
-/* ボタンの.bordered-element上書き */
 #global-ip-update.bordered-element {
     display: inline-block;
     width: auto;
     min-width: 70px;
     vertical-align: middle;
     box-sizing: border-box;
-    height: 2.8em;
+    height: 100%;
 }
 
 #global-ip-update:hover {
@@ -219,8 +219,14 @@ h3.bordered-element {
     color: var(--hover-text);
     border-color: var(--hover-bg);
 }
+
+/* input:focusの見やすいアウトライン */
+#global-ip-input:focus {
+    outline: 1.5px solid var(--main-color);
+    background-color: rgba(67,176,232,0.05);
+}
 /* ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
-   ここまで高さ統一修正
+   ここまで高さ完全一致修正
    ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ */
 
 /* ── QRコード部分 (detailsタグ) のスタイル修正 ── */
