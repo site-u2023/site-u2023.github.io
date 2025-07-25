@@ -14,6 +14,7 @@ const langData = {
         update: 'Update',
         qrCodeDisplay: 'SSH QR Code Display',
         qrCodeArea: 'QR Code Display Area',
+        downloadHandlerButton: 'Download', // <-- この行を追加
         sshHandler: 'Protocol handler registration (first-time use: download and double-click)',
         sshConnection: 'SSH Connection (root@<span id="ssh-ip">192.168.1.1</span>)',
         aiosExecution: 'Execute aios (root@<span id="aios-ip">192.168.1.1</span>)',
@@ -29,7 +30,8 @@ const langData = {
         terminal: 'ターミナル (Windows用)',
         update: '更新',
         qrCodeDisplay: 'SSH QRコード表示',
-        qrCodeArea: 'QRコード表示エリア',  
+        qrCodeArea: 'QRコード表示エリア', 
+        downloadHandlerButton: 'ダウンロード', // <-- この行を追加
         sshHandler: 'プロトコルハンドラー登録 ※初回のみ、ダウンロード後ダブルクリック',
         sshConnection: 'SSH接続 (root@<span id="ssh-ip">192.168.1.1</span>)',
         aiosExecution: 'aios実行 (root@<span id="aios-ip">192.168.1.1</span>)',
@@ -55,8 +57,10 @@ function drawQRCode(elementId, text) {
     if (!qrContainer || typeof QRious === 'undefined') {
         console.error(`QR code container #${elementId} not found or QRious library not loaded.`);
         if (qrContainer) {
-            qrContainer.innerHTML = '<div style="width: 180px; height: 180px; background: var(--text-color); margin: 0 auto; display: flex; align-items: center; justify-content: center; color: var(--block-bg); font-size: 12px;">QRコード表示エリア</div>';
-            qrContainer.querySelector('div').setAttribute('data-text', 'QRiousライブラリがロードされていません');
+            // ここでinnerHTMLを設定する際に、言語が適用されるように修正
+            // applyLanguageで更新されるように、data-i18nを持つspanを内部に持つ
+            qrContainer.innerHTML = `<div style="width: 180px; height: 180px; background: var(--text-color); margin: 0 auto; display: flex; align-items: center; justify-content: center; color: var(--block-bg); font-size: 12px;"><span data-i18n="qrCodeArea">${langData[localStorage.getItem('lang-preference') || 'ja'].qrCodeArea}</span></div>`;
+            qrContainer.querySelector('div span').setAttribute('data-text', 'QRiousライブラリがロードされていません'); // data-textは特に言語切り替えとは関係ないですが、元のコードに倣って維持
         }
         return;
     }
@@ -106,10 +110,12 @@ function updateAll() {
     } else if (qrDetailContainer) {
         const qrCanvasContainer = document.getElementById('qrcode-detail');
         if (qrCanvasContainer) {
-            qrCanvasContainer.innerHTML = '<div style="width: 180px; height: 180px; background: var(--text-color); margin: 0 auto; display: flex; align-items: center; justify-content: center; color: var(--block-bg); font-size: 12px;">QRコード表示エリア</div>';
-            const dummyDiv = qrCanvasContainer.querySelector('div');
-            if (dummyDiv) {
-                dummyDiv.setAttribute('data-text', 'QRiousライブラリがロードされていません');
+            // ダミー表示のHTMLも言語設定を考慮するように変更
+            const currentLang = localStorage.getItem('lang-preference') || 'ja';
+            qrCanvasContainer.innerHTML = `<div style="width: 180px; height: 180px; background: var(--text-color); margin: 0 auto; display: flex; align-items: center; justify-content: center; color: var(--block-bg); font-size: 12px;"><span data-i18n="qrCodeArea">${langData[currentLang].qrCodeArea}</span></div>`;
+            const dummyDivSpan = qrCanvasContainer.querySelector('div span');
+            if (dummyDivSpan) {
+                dummyDivSpan.setAttribute('data-text', 'QRiousライブラリがロードされていません');
             }
         }
     }
@@ -124,46 +130,42 @@ function applyLanguage(lang) {
         const key = element.getAttribute('data-i18n');
         if (langData[lang] && langData[lang][key]) {
             if (key === 'sshConnection' || key === 'aiosExecution') {
-                // innerHTMLを使わず、span部だけを維持しテキスト部のみを切替
                 const ipSpanId = key === 'sshConnection' ? 'ssh-ip' : 'aios-ip';
                 const ipSpan = element.querySelector(`#${ipSpanId}`);
                 if (ipSpan) {
                     const ip = ipSpan.textContent;
-                    element.innerHTML = "";
-                    if (key === 'sshConnection') {
-                        element.append("SSH接続 (root@");
-                        const newSpan = document.createElement("span");
-                        newSpan.id = "ssh-ip";
-                        newSpan.textContent = ip;
-                        element.appendChild(newSpan);
-                        element.append(")");
-                    } else {
-                        element.append("aios実行 (root@");
-                        const newSpan = document.createElement("span");
-                        newSpan.id = "aios-ip";
-                        newSpan.textContent = ip;
-                        element.appendChild(newSpan);
-                        element.append(")");
-                    }
+                    // HTML構造が複雑なため、innerHTMLを直接設定する代わりに、部分的にDOMを操作
+                    const newText = langData[lang][key]; // 例: "SSH接続 (root@<span id="ssh-ip">192.168.1.1</span>)"
+                    
+                    // innerHTMLを直接書き換えることで、IPアドレスのspanを再生成
+                    // ただし、IDは同じままなので、これでも動作します。
+                    element.innerHTML = newText.replace(/<span id="(ssh-ip|aios-ip)">.*?<\/span>/, `<span id="${ipSpanId}">${ip}</span>`);
                 }
-            } else if (element.classList.contains('section-title') || element.classList.contains('link-text') || element.classList.contains('link-note') || element.id === 'global-ip-update') {
-                if (key === 'sshHandler') {
-                    const linkTextSpan = element.querySelector('.link-text');
-                    const linkNoteSpan = element.querySelector('.link-note');
-                    if (linkTextSpan) {
-                         linkTextSpan.textContent = langData[lang][key].split(' ※')[0];
-                    }
-                    if (linkNoteSpan) {
-                         linkNoteSpan.textContent = langData[lang][key].split('※')[1] ? '※' + langData[lang][key].split('※')[1] : '';
-                    }
-                } else {
-                    element.textContent = langData[lang][key];
+            } else if (key === 'sshHandler') {
+                const linkTextSpan = element.querySelector('.link-text');
+                const linkNoteSpan = element.querySelector('.link-note');
+                // langData[lang][key]が「プロトコルハンドラー登録 ※初回のみ...」のような形式なので、
+                // link-textとlink-noteに分けて設定
+                const parts = langData[lang][key].split('※');
+                if (linkTextSpan) {
+                     linkTextSpan.textContent = parts[0].trim();
                 }
+                if (linkNoteSpan) {
+                     linkNoteSpan.textContent = parts[1] ? '※' + parts[1].trim() : '';
+                }
+            } else if (element.tagName === 'SPAN' && element.parentElement.classList.contains('qr-code-canvas')) {
+                // QRコード表示エリアのダミーテキスト用の特別な処理
+                element.textContent = langData[lang][key];
             } else {
+                // その他の単純なテキストを持つ要素 (qrCodeDisplay, downloadHandlerButton, deviceIPなど)
                 element.textContent = langData[lang][key];
             }
         }
     });
+
+    // 言語切り替え後、QRコード表示も更新されるようにupdateAllを呼び出す
+    // これにより、QRコードが展開されている場合は再描画、閉じている場合はダミーテキストが更新される。
+    updateAll();
 }
 
 // ── ロゴ表示切替 ──
@@ -229,12 +231,12 @@ function initializeThemeAndLanguageSelectors() {
         themeBtns.forEach(b => b.classList.toggle('selected', b.dataset.themePreference === pref));
         localStorage.setItem('site-u-theme', pref);
         updateLogoDisplay();
-        updateAll();
+        updateAll(); // テーマ変更時にもIPアドレスとQRコードを更新
     }
 
     if (themeBtns.length > 0) {
         themeBtns.forEach(b => {
-            b.removeEventListener('click', () => applyTheme(b.dataset.themePreference));
+            b.removeEventListener('click', () => applyTheme(b.dataset.themePreference)); // 既存のリスナーを削除（重複防止）
             b.addEventListener('click', () => applyTheme(b.dataset.themePreference));
         });
         window.matchMedia('(prefers-color-scheme: dark)').removeEventListener('change', () => {
@@ -258,7 +260,7 @@ function initializeThemeAndLanguageSelectors() {
     const currentLang = localStorage.getItem('lang-preference') || 'ja';
     if (langButtons.length > 0) {
         langButtons.forEach(button => {
-            button.removeEventListener('click', () => applyLanguage(button.dataset.lang));
+            button.removeEventListener('click', () => applyLanguage(button.dataset.lang)); // 既存のリスナーを削除（重複防止）
             button.addEventListener('click', () => {
                 const newLang = button.dataset.lang;
                 localStorage.setItem('lang-preference', newLang);
@@ -276,7 +278,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     initializeThemeAndLanguageSelectors();
 
     const globalIpInput = document.getElementById('global-ip-input');
-    const globalIpUpdateBtn = document.getElementById('global-ip-update');
+    const globalIpUpdateBtn = document.getElementById('global-ip-update'); // 現在HTMLでコメントアウトされていますが、残しておきます
     if (globalIpInput) {
         const storedIp = localStorage.getItem('site-u-ip');
         globalIpInput.value = storedIp || globalIpInput.placeholder || '192.168.1.1';
@@ -287,15 +289,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                 globalIpInput.value = v;
                 globalIpInput.setSelectionRange(pos, pos);
             }
-            updateAll();
+            updateAll(); // 入力時にも更新
         });
         globalIpInput.addEventListener('keydown', e => {
             if (e.key === 'Enter') {
                 e.preventDefault();
-                updateAll();
+                updateAll(); // Enterキーでも更新
             }
         });
     }
+    // global-ip-update ボタンがHTMLにないため、このブロックは現在無効
     if (globalIpUpdateBtn) {
         globalIpUpdateBtn.addEventListener('click', updateAll);
     }
@@ -310,10 +313,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             } else {
                 const qrCanvasContainer = document.getElementById('qrcode-detail');
                 if (qrCanvasContainer) {
-                    qrCanvasContainer.innerHTML = '<div style="width: 180px; height: 180px; background: var(--text-color); margin: 0 auto; display: flex; align-items: center; justify-content: center; color: var(--block-bg); font-size: 12px;">QRコード表示エリア</div>';
-                    const dummyDiv = qrCanvasContainer.querySelector('div');
-                    if (dummyDiv) {
-                        dummyDiv.setAttribute('data-text', 'QRiousライブラリがロードされていません');
+                    // QRコードが閉じた時のダミー表示も言語設定を考慮するように変更
+                    const currentLang = localStorage.getItem('lang-preference') || 'ja';
+                    qrCanvasContainer.innerHTML = `<div style="width: 180px; height: 180px; background: var(--text-color); margin: 0 auto; display: flex; align-items: center; justify-content: center; color: var(--block-bg); font-size: 12px;"><span data-i18n="qrCodeArea">${langData[currentLang].qrCodeArea}</span></div>`;
+                    const dummyDivSpan = qrCanvasContainer.querySelector('div span');
+                    if (dummyDivSpan) {
+                        dummyDivSpan.setAttribute('data-text', 'QRiousライブラリがロードされていません');
                     }
                 }
             }
@@ -322,6 +327,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     if (globalIpInput) {
-        updateAll();
+        updateAll(); // 初期表示時にも更新
     }
 });
