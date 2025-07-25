@@ -179,7 +179,6 @@ h3.bordered-element {
 /* 入力欄・ボタンを枠の高さに100%フィットさせる */
 #global-ip-input,
 #global-ip-update {
-    height: 100%;
     font-size: 1em;
     line-height: 1.2;
     box-sizing: border-box;
@@ -190,6 +189,7 @@ h3.bordered-element {
     background: transparent;
     color: inherit;
     margin: 0;
+    /* height: 100%; ←不要なので削除 */
 }
 
 /* input固有 */
@@ -206,7 +206,7 @@ h3.bordered-element {
 #global-ip-update {
     flex: 0 0 auto;
     min-width: 70px;
-    border-left: 0.05em solid var(--text-color);
+    /* border-left: 0.05em solid var(--text-color); ←不要なので削除 */
     transition: background-color 0.2s, color 0.2s, border-color 0.2s;
     cursor: pointer;
     white-space: nowrap;
