@@ -177,29 +177,14 @@ h3.bordered-element {
 }
 
 #global-ip-update {
-    margin-left: auto;
-    flex: 0 0 auto;
-    cursor: pointer;
-    border: none;
-    border-left: 0.05em solid var(--text-color);
-    border-radius: 0 0.3em 0.3em 0;
-    background-color: var(--link-color);
-    color: var(--hover-text);
-    box-sizing: border-box;
-    
-    height: 2.5rem;
-    min-width: 8em;
-    padding: 0.8em 1em;
-    flex-shrink: 0;
-    white-space: nowrap;
-    text-align: center;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  margin-left: auto;
+  flex: 0 0 auto;
+  cursor: pointer;
 }
 
 #global-ip-update:hover {
     background-color: var(--link-color); /* ホバー時の背景は変わらない */
+    color: var(--hover-text);
 }
 
 /* ── QRコード部分 (detailsタグ) のスタイル修正 ── */
