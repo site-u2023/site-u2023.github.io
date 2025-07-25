@@ -90,7 +90,6 @@ ul {
 /* ── 新しい「枠付き要素」の汎用スタイル ── */
 .bordered-element {
     display: block;
-    width: 100%;
     background-color: transparent;
     color: var(--text-color);
     border: 0.05em solid var(--text-color);
