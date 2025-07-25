@@ -577,7 +577,8 @@ h3.bordered-element {
         padding: 0 1em;      /* 上下padding不要、左右のみ */
         box-sizing: border-box;
         display: block;      /* ブロック表示（flex内でもOK） */
-        margin-left: 0.5em;  /* 必要なら左余白（inputと間隔調整、任意） */
+        margin-left: 0;      /* ← これ重要 */
+        border-radius: 0;    /* inputと合わせたい場合 */
     }
 
     /* QRコードのダミー表示を調整 */
