@@ -14,8 +14,8 @@ const langData = {
         update: 'Update',
         qrCodeDisplay: 'SSH QR Code Display',
         qrCodeArea: 'QR Code Display Area',
-        downloadHandlerButton: 'Download', // <-- この行を追加
-        sshHandler: 'Protocol handler registration (first-time use: download and double-click)',
+        downloadHandlerButton: 'Download (double-click)',
+        sshHandler: 'Protocol handler registration (first-time use)',
         sshConnection: 'SSH Connection (root@<span id="ssh-ip">192.168.1.1</span>)',
         aiosExecution: 'Execute aios (root@<span id="aios-ip">192.168.1.1</span>)',
         console: 'Console',
@@ -31,8 +31,8 @@ const langData = {
         update: '更新',
         qrCodeDisplay: 'SSH QRコード表示',
         qrCodeArea: 'QRコード表示エリア', 
-        downloadHandlerButton: 'ダウンロード', // <-- この行を追加
-        sshHandler: 'プロトコルハンドラー登録 ※初回のみ、ダウンロード後ダブルクリック',
+        downloadHandlerButton: 'ダウンロード (ダブルクリック)',
+        sshHandler: 'プロトコルハンドラー登録 (初回のみ)',
         sshConnection: 'SSH接続 (root@<span id="ssh-ip">192.168.1.1</span>)',
         aiosExecution: 'aios実行 (root@<span id="aios-ip">192.168.1.1</span>)',
         console: 'コンソール',
