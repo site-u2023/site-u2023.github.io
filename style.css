@@ -173,6 +173,8 @@ h3.bordered-element {
     color: inherit;
     border-radius: 0;
     box-sizing: border-box; /* paddingがwidthに含まれるように */
+    height: 2.5em;
+    box-sizing: border-box;
 }
 
 #global-ip-update {
