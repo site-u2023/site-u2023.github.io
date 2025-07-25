@@ -189,6 +189,10 @@ h3.bordered-element {
     color: var(--hover-text);
     padding: 0.6em 1em;
     box-sizing: border-box; /* paddingがwidthに含まれるように */
+    flex-shrink: 0; /* ボタンが縮まないようにする */
+    min-width: 60px; /* 最小幅を設定 */
+    max-width: 80px; /* 最大幅を制限 */
+    white-space: nowrap; /* テキストを折り返さない */
 }
 
 #global-ip-update:hover {
