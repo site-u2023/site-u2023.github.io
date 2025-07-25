@@ -353,7 +353,7 @@ h3.bordered-element {
     height: auto;
     display: block;
     margin: 0 auto;
-    max-width: 300px; /* ロゴの最大幅 */
+    max-width: 800px; /* ロゴの最大幅 */
 }
 
 /* ── フッター ── */
