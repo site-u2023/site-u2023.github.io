@@ -166,14 +166,16 @@ h3.bordered-element {
 }
 
 #global-ip-input {
-    flex: 1;
-    min-width: 0; /* flexアイテムとして必要 */
+    flex: 1 1 120px;
+    min-width: 80px;
+    max-width: 100%;
     border: none;
     padding: 0.8em 1em; 
     background-color: transparent;
     color: inherit;
     border-radius: 0;
-    box-sizing: border-box; /* paddingがwidthに含まれるように */
+    box-sizing: border-box;
+    z-index: 1;
 }
 
 #global-ip-update {
