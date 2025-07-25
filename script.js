@@ -136,29 +136,16 @@ function applyLanguage(lang) {
     document.querySelectorAll('[data-i18n]').forEach(element => {
         const key = element.getAttribute('data-i18n');
         if (langData[lang] && langData[lang][key]) {
-            if (key === 'sshConnection' || key === 'aiosExecution') {
-                const ipSpanId = key === 'sshConnection' ? 'ssh-ip' : 'aios-ip';
-                const ipSpan = element.querySelector(`#${ipSpanId}`);
-                if (ipSpan) {
-                    const ip = ipSpan.textContent;
-                    // HTML構造が複雑なため、innerHTMLを直接設定する代わりに、部分的にDOMを操作
-                    const newText = langData[lang][key]; // 例: "SSH接続"
-                    
-                    // link-textとip-displayを個別に更新
-                    const linkTextSpan = element.querySelector('.link-text');
-                    if (linkTextSpan) {
-                        linkTextSpan.textContent = newText;
-                    }
-                }
-            } else if (key === 'luciAdmin' || key === 'ttydTerminal') {
-                const ipSpanId = key === 'luciAdmin' ? 'luci-ip' : 'ttyd-ip';
-                const ipSpan = element.querySelector(`#${ipSpanId}`);
-                if (ipSpan) {
-                    const ip = ipSpan.textContent;
-                    // link-textを更新
-                    const linkTextSpan = element.querySelector('.link-text');
-                    if (linkTextSpan) {
-                        linkTextSpan.textContent = langData[lang][key].split(' ')[0]; // "LuCI"または"ttyd"
+            if (key === 'sshConnection' || key === 'aiosExecution' || key === 'luciAdmin' || key === 'ttydTerminal') {
+                // SSH接続、aios実行、LuCI、ttydのリンクテキストのみ更新
+                const linkTextSpan = element.querySelector('.link-text');
+                if (linkTextSpan) {
+                    if (key === 'luciAdmin') {
+                        linkTextSpan.textContent = 'LuCI';
+                    } else if (key === 'ttydTerminal') {
+                        linkTextSpan.textContent = 'ttyd';
+                    } else {
+                        linkTextSpan.textContent = langData[lang][key];
                     }
                 }
             } else if (key === 'sshHandler') {
