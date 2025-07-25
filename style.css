@@ -157,77 +157,42 @@ h3.bordered-element {
 
 #device-ip .ip-address-display {
     flex: 1;
-    min-width: 0;
+    min-width: 0; /* これが重要 */
     display: flex;
-    align-items: stretch;
-    /* .bordered-elementと完全同じpadding・枠・角丸で高さ揃え */
+    align-items: stretch; /* 高さを合わせる */
+    overflow: hidden;
+    border: 0.05em solid var(--text-color);
+    border-radius: 0.3em;
+}
+
+#global-ip-input {
+    flex: 1;
+    min-width: 0; /* flexアイテムとして必要 */
+    border: none;
+    padding: 0.8em 1em; 
     background-color: transparent;
-    color: var(--text-color);
+    color: inherit;
+    border-radius: 0;
+    box-sizing: border-box; /* paddingがwidthに含まれるように */
+}
+
+#global-ip-update {
+    flex: 0 0 auto; /* サイズを内容に合わせる */
+    min-width: auto; /* 最小幅を自動に */
+    white-space: nowrap; /* テキストを折り返さない */
+    cursor: pointer;
+    background-color: transparent;
+    color: inherit;
     border: 0.05em solid var(--text-color);
     border-radius: 0.3em;
     padding: 0.8em 1em;
-    box-sizing: border-box;
-    text-align: left;
-    text-decoration: none;
-    transition: background-color 0.2s, color 0.2s, border-color 0.2s;
-    margin-bottom: 0.8em;
-    cursor: pointer;
-    min-height: unset;
-    overflow: visible;
-}
-
-/* 入力欄・ボタンを枠の高さに100%フィットさせる */
-#global-ip-input,
-#global-ip-update {
-    font-size: 1em;
-    line-height: 1.2;
-    box-sizing: border-box;
-    vertical-align: middle;
-    padding: 0;
-    border: none;
-    border-radius: 0;
-    background: transparent;
-    color: inherit;
-    margin: 0;
-    /* height: 100%; ←不要なので削除 */
-}
-
-/* input固有 */
-#global-ip-input {
-    flex: 1 1 120px;
-    border: none;
-    background: transparent;
-    color: inherit;
-    padding: 0;
-    margin: 0;
-    font-size: 1em;
-    outline: none;
-}
-
-/* ボタン固有 */
-#global-ip-update {
-    flex: 0 0 auto;
-    min-width: 70px;
-    /* border-left: 0.05em solid var(--text-color); ←不要なので削除 */
-    transition: background-color 0.2s, color 0.2s, border-color 0.2s;
-    cursor: pointer;
-    white-space: nowrap;
-    display: inline-block;
-    width: auto;
-    padding-left: 1em;
-    padding-right: 1em;
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
 
 #global-ip-update:hover {
     background-color: var(--hover-bg);
     color: var(--hover-text);
     border-color: var(--hover-bg);
-}
-
-/* input:focusの見やすいアウトライン */
-#global-ip-input:focus {
-    outline: 1.5px solid var(--main-color);
-    background-color: rgba(67,176,232,0.05);
 }
 
 /* ── QRコード部分 (detailsタグ) のスタイル修正 ── */
