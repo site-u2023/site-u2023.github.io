@@ -1,3 +1,69 @@
+Skip to content
+Navigation Menu
+Copilot
+
+Workbench
+
+index.html
+Press Delete to close.
+
+Preview
+
+Code
+127 lines · 7 KB
+
+index.html file contents
+  1
+  2
+  3
+  4
+  5
+  6
+  7
+  8
+  9
+ 10
+ 11
+ 12
+ 13
+ 14
+ 15
+ 16
+ 17
+ 18
+ 19
+ 20
+ 21
+ 22
+ 23
+ 24
+ 25
+ 26
+ 27
+ 28
+ 29
+ 30
+ 31
+ 32
+ 33
+ 34
+ 35
+ 36
+ 37
+ 38
+ 39
+ 40
+ 41
+ 42
+ 43
+ 44
+ 45
+ 46
+ 47
+ 48
+ 49
+ 50
+ 51
 <!DOCTYPE html>
 <html lang="ja" data-theme="dark">
 <head>
@@ -49,76 +115,4 @@
                         </li>
                     </ul>
                     <ul class="link-list">
-                        <li>
-                            <a
-                                id="ssh-link"
-                                class="link-item bordered-element"
-                                data-ip-template="sshcmd://root@${ip}/"
-                                href="#"
-                                target="_blank"
-                                rel="noopener"
-                                data-i18n="sshConnection"
-                            >
-                                <span class="link-text">SSH接続</span>
-                                <span class="ip-display">(root@<span id="ssh-ip">192.168.1.1</span>)</span>
-                            <a
-                                id="aios-link"
-                                class="link-item bordered-element"
-                                data-ip-template="sshcmd://root@${ip}/${cmd}"
-                                href="#"
-                                target="_blank" rel="noopener"
-                                data-i18n="aiosExecution"
-                            >
-                                <span class="link-text">aios実行</span>
-                                <span class="ip-display">(root@<span id="aios-ip">192.168.1.1</span>)</span>
-                            </a>
-                        </li>
-                    </ul>
-                </section>
-
-                <section id="local-services" class="content-section">
-                    <h2 class="section-title" data-i18n="console">コンソール</h2>
-                    <ul class="link-list">
-                        <li>
-                            <a
-                                class="link-item bordered-element"
-                                data-ip-template="http://${ip}/cgi-bin/luci"
-                                href="#"
-                                target="_blank" rel="noopener"
-                                data-i18n="luciAdmin"
-                            >
-                                <span class="link-text">LuCI</span> <span class="link-note">(管理画面)</span>
-                            </a>
-                        </li>
-                        <li>
-                            <a
-                                class="link-item bordered-element"
-                                data-ip-template="http://${ip}:7681/"
-                                href="#"
-                                target="_blank" rel="noopener"
-                                data-i18n="ttydTerminal"
-                            >
-                                <span class="link-text">ttyd</span> <span class="link-note">(Webターミナル)</span>
-                            </a>
-                        </li>
-                    </ul>
-                </section>
-
-                <section id="project" class="content-section">
-                    <h2 class="section-title" data-i18n="githubRepo">GitHubリポジトリ</h2>
-                    <ul class="link-list">
-                        <li><a href="https://github.com/site-u2023/aios/blob/main/README.md" target="_blank" rel="noopener" data-i18n="aiosScript" class="link-item bordered-element">
-                            <span class="link-text">all in one script</span>
-                        </a></li>
-                        <li><a href="https://github.com/site-u2023/config-software/blob/main/README.md" target="_blank" rel="noopener" data-i18n="configSoftware" class="link-item bordered-element">
-                            <span class="link-text">config-software</span> <span class="link-note">(旧版)</span>
-                        </a></li>
-                    </ul>
-                </section>
-            </nav>
-        </main>
-    </div>
-    <script src="script.js"></script>
-    <script src="https://cdn.rawgit.com/neocotic/qrious/v4.0.2/dist/qrious.min.js"></script>
-</body>
-</html>
+Copilot said: ```html name=index.html <!DOCTYPE html> <html lang="ja" data-theme="dark"> <head> index.html <!DOCTYPE html> <html lang="ja" data-theme="dark"> <head> <meta charset="UTF-8"> <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no"> <title>OpenWrt A Beginner's Notebook</title> 変更点（修正内容） ターミナル（Windows用）セクションのリンクリスト部分 <ul class="link-list"> 内に <li><a ...>SSH接続 ... </a></li> <li><a ...>aios実行 ... </a></li> に分割・ネストエラーを全面修正 <span class="ip-display">...</span> の中に (root@<span ...>IP</span>) 形式を保持 本修正版でHTML構文エラー・表示崩壊は必ず解消します。 CSSやJS側に問題があれば、追加で該当部分のみご指示ください。
