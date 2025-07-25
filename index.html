@@ -83,6 +83,7 @@
                     <ul class="link-list">
                         <li>
                             <a
+                                id="luci-link"
                                 class="link-item bordered-element"
                                 data-ip-template="http://${ip}/cgi-bin/luci"
                                 href="#"
@@ -90,10 +91,12 @@
                                 data-i18n="luciAdmin"
                             >
                                 <span class="link-text">LuCI</span> <span class="link-note">(管理画面)</span>
+                                <span class="ip-display">(<span id="luci-ip">192.168.1.1</span>)</span>
                             </a>
                         </li>
                         <li>
                             <a
+                                id="ttyd-link"
                                 class="link-item bordered-element"
                                 data-ip-template="http://${ip}:7681/"
                                 href="#"
@@ -101,6 +104,7 @@
                                 data-i18n="ttydTerminal"
                             >
                                 <span class="link-text">ttyd</span> <span class="link-note">(Webターミナル)</span>
+                                <span class="ip-display">(<span id="ttyd-ip">192.168.1.1</span>:7681)</span>
                             </a>
                         </li>
                     </ul>
