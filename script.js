@@ -141,9 +141,9 @@ function applyLanguage(lang) {
                 const linkTextSpan = element.querySelector('.link-text');
                 if (linkTextSpan) {
                     if (key === 'luciAdmin') {
-                        linkTextSpan.textContent = 'LuCI';
+                        linkTextSpan.textContent = langData[lang][key];
                     } else if (key === 'ttydTerminal') {
-                        linkTextSpan.textContent = 'ttyd';
+                        linkTextSpan.textContent = langData[lang][key];
                     } else {
                         linkTextSpan.textContent = langData[lang][key];
                     }
