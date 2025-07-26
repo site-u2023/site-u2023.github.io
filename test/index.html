@@ -1,134 +1,131 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="ja" data-theme="dark">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
-  <title>OpenWrt: A Beginner's Notebook</title>
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
+    <title>OpenWrt A Beginner's Notebook</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <!-- ヘッダー読み込み -->
-  <div id="header-container"></div>
+    <div class="container">
+        <main class="main-content">
+            <nav class="main-nav">
+                <section id="device-ip" class="content-section">
+                    <h2 class="section-title" data-i18n="deviceIP">デバイスIPアドレス</h2>
+                    <div class="input-group connection">
+                        <div class="ip-address-display">
+                            <input
+                                type="text"
+                                id="global-ip-input"
+                                value="192.168.1.1"
+                                placeholder="192.168.0.1"
+                                class="text-input"
+                            >
+                            </div>
+                            <button id="global-ip-update" class="update-button" data-i18n="update">更新</button>
+                    </div>
+                    <details id="qrcode-detail-container" class="qr-code-section bordered-element">
+                        <summary class="qr-code-summary" data-i18n="qrCodeDisplay">SSH QRコード表示</summary>
+                        <div id="qrcode-detail" class="qr-code-canvas">
+                            <div style="width: 180px; height: 180px; background: var(--text-color); margin: 0 auto; display: flex; align-items: center; justify-content: center; color: var(--block-bg); font-size: 12px;"><span data-i18n="qrCodeArea">QRコード表示エリア</span></div>
+                        </div>
+                    </details>
+                </section>         
+                <section id="terminal" class="content-section">
+                    <h2 class="section-title" data-i18n="terminal">ターミナル<span class="section-subtitle">(Windows用)</span></h2>
+                    <ul class="link-list">
+                        <li>
+                            <details id="ssh-handler-details-container" class="qr-code-section handler-details-section bordered-element">
+                                <summary class="qr-code-summary handler-summary" data-i18n="sshHandler">
+                                    <span class="link-text">SSH用プロトコルハンドラー登録</span>
+                                    <span class="link-note">(Windows用) ※初回のみ利用 (DL後ダブルクリック)</span>
+                                </summary>
+                                <div class="details-content">
+                                    <a id="ssh-handler-download-link" href="file/sshcmd.reg" download class="bordered-element" data-i18n="downloadHandlerButton">
+                                        ダウンロード
+                                    </a>
+                                </div>
+                            </details>
+                        </li>
+                    </ul>
+                    <ul class="link-list">
+                        <li>
+                            <a
+                                id="ssh-link"
+                                class="link-item bordered-element"
+                                data-ip-template="sshcmd://root@${ip}/"
+                                href="#"
+                                target="_blank"
+                                rel="noopener"
+                                data-i18n="sshConnection"
+                            >
+                                <span class="link-text">SSH接続: </span>
+                                <span class="ip-display">ssh root@<span id="ssh-ip">192.168.1.1</span></span>
+                            </a>
+                        </li>
+                        <li>
+                            <a
+                                id="aios-link"
+                                class="link-item bordered-element"
+                                data-ip-template="sshcmd://root@${ip}/${cmd}"
+                                href="#"
+                                target="_blank" rel="noopener"
+                                data-i18n="aiosExecution"
+                            >
+                                <span class="link-text">aios実行: </span>
+                                <span class="ip-display">ssh root@<span id="aios-ip">192.168.1.1</span> ; aios</span>
+                            </a>
+                        </li>
+                    </ul>
+                </section>
 
-  <div class="container">
-    <main>
-      <nav>
-        <section id="device-ip">
-          <h2>デバイスIPアドレス</h2>
-          <div class="connection">
-            <div class="ip-address">
-              <input
-                type="text"
-                id="global-ip-input"
-                value="192.168.1.1"
-                placeholder="192.168.0.1"
-              >
-              <button id="global-ip-update" type="button">更新</button>
-            </div>
-          </div>
-        </section>
+                <section id="local-services" class="content-section">
+                    <h2 class="section-title" data-i18n="console">コンソール</h2>
+                    <ul class="link-list">
+                        <li>
+                            <a
+                                id="luci-link"
+                                class="link-item bordered-element"
+                                data-ip-template="http://${ip}/cgi-bin/luci"
+                                href="#"
+                                target="_blank" rel="noopener"
+                                data-i18n="luciAdmin"
+                            >
+                                <span class="link-text">LuCI: </span>
+                                <span class="ip-display">http://<span id="luci-ip">192.168.1.1</span></span>
+                            </a>
+                        </li>
+                        <li>
+                            <a
+                                id="ttyd-link"
+                                class="link-item bordered-element"
+                                data-ip-template="http://${ip}:7681/"
+                                href="#"
+                                target="_blank" rel="noopener"
+                                data-i18n="ttydTerminal"
+                            >
+                                <span class="link-text">ttyd: </span>
+                                <span class="ip-display">http://<span id="ttyd-ip">192.168.1.1</span>:7681</span>
+                            </a>
+                        </li>
+                    </ul>
+                </section>
 
-        <section id="project">
-          <h2>GitHubリポジトリ</h2>
-          <ul>
-            <li><a href="https://site-u2023.github.io/aios/">all in one script</a></li>
-            <li><a href="https://site-u2023.github.io/config-software/">config-software (旧版)</a></li>
-          </ul>
-        </section>
-
-        <section id="local-services">
-          <h2>コンソール</h2>
-          <ul>
-            <li>
-              <a
-                class="link-ip"
-                data-ip-template="http://${ip}/cgi-bin/luci"
-                href="#"
-                target="_blank"
-                rel="noopener"
-              >
-                LuCI (管理画面)
-              </a>
-            </li>
-            <li>
-              <a
-                class="link-ip"
-                data-ip-template="http://${ip}:7681/"
-                href="#"
-                target="_blank"
-                rel="noopener"
-              >
-                ttyd (Webターミナル)
-              </a>
-            </li>
-          </ul>
-        </section>
-
-        <section id="terminal">
-          <h2>ターミナル</h2>
-          <ul>
-            <li>
-              <a href="file/sshps.reg" download>
-                SSH用プロトコル登録 (sshps://) (.reg)
-              </a>
-            </li>
-            <li>
-              <a
-                id="ssh-link"
-                class="link-ip"
-                data-ip-template="sshcmd://root@${ip}/${cmd}"
-                href="#"
-                target="_blank"
-                rel="noopener"
-              >
-                SSH接続 (root@<span id="ssh-ip">192.168.1.1</span>)
-              </a>
-            </li>
-            <li>
-              <a
-                id="aios-link"
-                class="link-ip"
-                data-ip-template="sshcmd://root@${ip}/${cmd}"
-                href="#"
-                target="_blank"
-                rel="noopener"
-                data-i18n="aiosExecution"
-              >
-                <span class="link-text">aios実行</span>
-                <span class="ip-display">(root@<span id="aios-ip">192.168.1.1</span>)</span>
-              </a>
-            </li>
-            <li>
-              <details id="qrcode-detail-container">
-                <summary>QRコードを表示</summary>
-                <div class="qr-code" id="qrcode-detail"></div>
-              </details>
-            </li>
-          </ul>
-        </section>
-      </nav>
-    </main>
-  </div>
-
-  <!-- フッター読み込み -->
-  <div id="footer-container"></div>
-
-  <!-- QRコード用ライブラリ -->
-  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
-  <!-- header.html, footer.html を動的に読み込むスクリプト -->
-  <script>
-    // シンプルなfetchによるヘッダー/フッター読み込み
-    window.addEventListener('DOMContentLoaded', function() {
-      fetch('header.html')
-        .then(r => r.ok ? r.text() : '')
-        .then(html => { document.getElementById('header-container').innerHTML = html; });
-
-      fetch('footer.html')
-        .then(r => r.ok ? r.text() : '')
-        .then(html => { document.getElementById('footer-container').innerHTML = html; });
-    });
-  </script>
-  <!-- 既存スクリプト -->
-  <script src="script.js"></script>
+                <section id="project" class="content-section">
+                    <h2 class="section-title" data-i18n="githubRepo">GitHubリポジトリ</h2>
+                    <ul class="link-list">
+                        <li><a href="https://github.com/site-u2023/aios/blob/main/README.md" target="_blank" rel="noopener" data-i18n="aiosScript" class="link-item bordered-element">
+                            <span class="link-text">all in one script</span>
+                        </a></li>
+                        <li><a href="https://github.com/site-u2023/config-software/blob/main/README.md" target="_blank" rel="noopener" data-i18n="configSoftware" class="link-item bordered-element">
+                            <span class="link-text">config-software</span> <span class="link-note">(旧版)</span>
+                        </a></li>
+                    </ul>
+                </section>
+            </nav>
+        </main>
+    </div>
+    <script src="script.js"></script>
+    <script src="https://cdn.rawgit.com/neocotic/qrious/v4.0.2/dist/qrious.min.js"></script>
 </body>
 </html>
