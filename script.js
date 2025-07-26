@@ -23,7 +23,10 @@ const langData = {
         ttydTerminal: 'ttyd: ',
         githubRepo: 'GitHub Repository',
         aiosScript: 'all in one script',
-        configSoftware: 'config software (legacy)'
+        configSoftware: 'config software (legacy)',
+        footerMemo: 'OpenWrt Beginner\'s Memorandum',
+        footerSiteU: 'site-u',
+        footerDisclaimer: 'Disclaimer'
     },
     ja: {
         deviceIP: 'デバイスIPアドレス',
@@ -40,7 +43,10 @@ const langData = {
         ttydTerminal: 'ttyd: ',
         githubRepo: 'GitHubリポジトリ',
         aiosScript: 'オールインワンスクリプト',
-        configSoftware: 'コンフォグソフトウェア (旧版)'
+        configSoftware: 'コンフォグソフトウェア (旧版)',
+        footerMemo: 'OpenWrt初心者備忘録',
+        footerSiteU: 'site-u',
+        footerDisclaimer: '免責事項'
     }
 };
 
