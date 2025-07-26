@@ -160,7 +160,7 @@ h3.bordered-element {
     flex: 1;
     min-width: 0; /* これが重要 */
     display: flex;
-    align-items: stretch; /* 高さを合わせる */
+    align-items: center;
     overflow: hidden;
     border: 0.05em solid var(--text-color);
     border-radius: 0.3em;
@@ -184,7 +184,6 @@ h3.bordered-element {
     height: 3.7em;
     transition: color 0.2s ease;
     font-weight: bold;
-    vertical-align: middle;
 }
 
 #global-ip-input:focus {
