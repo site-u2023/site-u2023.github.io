@@ -141,6 +141,7 @@ function updateAll() {
     }
 }
 
+// ── applyLanguage 関数 ──
 function applyLanguage(lang) {
     const langButtons = document.querySelectorAll('.language-selector button');
     langButtons.forEach(button => {
@@ -168,6 +169,7 @@ function applyLanguage(lang) {
             } else if (element.tagName === 'SPAN' && element.parentElement.classList.contains('qr-code-canvas')) {
                 element.textContent = langData[lang][key];
             } else {
+                // disclaimerOpenWrtParagraphPart1, disclaimerOpenWrtLinkText, disclaimerOpenWrtParagraphPart2
                 element.textContent = langData[lang][key];
             }
         }
