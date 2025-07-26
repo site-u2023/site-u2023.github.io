@@ -92,7 +92,7 @@ function updateAll() {
     const input = document.getElementById('global-ip-input');
     if (!input) return;
 
-    // 入力値が存在すればそれを、なければplaceholderを、どちらもなければデフォルト値を使用
+    // inputの現在の値を使用し、空の場合は input.placeholder を、それもなければ '192.168.1.1' をフォールバックとして使用
     const ip = toHalfWidth(input.value.trim()) || input.placeholder || '192.168.1.1';
     localStorage.setItem('site-u-ip', ip);
 
@@ -298,8 +298,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 globalIpInput.value = v;
                 globalIpInput.setSelectionRange(pos, pos);
             }
-            // 入力時はリアルタイムに更新（ただし、inputが空の場合はplaceholderやデフォルトIPを適用）
-            updateAll(); 
+            updateAll(); // 入力時にも更新
         });
         globalIpInput.addEventListener('keydown', e => {
             if (e.key === 'Enter') {
@@ -322,8 +321,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }
                 } catch (err) {
                     console.warn('Failed to read from clipboard:', err);
-                    // クリップボード読み取り失敗時、または権限がない場合でもupdateAllを呼び出す
-                    // この場合、inputが空のままなので、updateAll内でplaceholderかデフォルトIPが使用される
                 }
             }
             updateAll(); // クリップボードからの取得の有無にかかわらず、最終的に更新処理を実行
@@ -354,6 +351,5 @@ document.addEventListener('DOMContentLoaded', async () => {
         qrDetailContainer.dataset.toggleListenerAdded = 'true';
     }
 
-    // DOMContentLoaded時に一度更新処理を実行
-    updateAll();
+    updateAll(); // DOMContentLoaded時に一度更新処理を実行
 });
