@@ -24,7 +24,7 @@ const langData = {
         githubRepo: 'GitHub Repository',
         aiosScript: 'all in one script',
         configSoftware: 'config software (legacy)',
-        footerMemo: 'OpenWrt Beginner\'s Notebook',
+        footerMemo: 'OpenWrt A Beginner\'s Notebook',
         footerSiteU: 'site-u',
         footerDisclaimer: 'Disclaimer'
     },
