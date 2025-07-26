@@ -396,7 +396,7 @@ h3.bordered-element {
     max-width: 50em; /* main-contentと幅を合わせる */
     width: 100%;
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
     flex-wrap: wrap; /* 小さい画面で折り返す */
     gap: 1em;
