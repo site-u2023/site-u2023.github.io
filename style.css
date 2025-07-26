@@ -181,7 +181,7 @@ h3.bordered-element {
     color: inherit;
     border-radius: 0;
     box-sizing: border-box; /* paddingがwidthに含まれるように */
-    height: 3.5em;
+    height: 3.6em;
     transition: color 0.2s ease;
 }
 
@@ -196,7 +196,7 @@ h3.bordered-element {
     justify-content: center;
     width: auto;        /* 通常時も内容分の幅 */
     min-width: 64px;    /* 必要なら最小幅を設定 */
-    height: 3.5rem;
+    height: 3.6rem;
     padding: 0 1em;
     box-sizing: border-box;
     padding-top: 0;
