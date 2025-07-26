@@ -183,6 +183,7 @@ h3.bordered-element {
     box-sizing: border-box; /* paddingがwidthに含まれるように */
     height: 3.7em;
     transition: color 0.2s ease;
+    font-weight: bold;
 }
 
 #global-ip-input:focus {
