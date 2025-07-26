@@ -164,6 +164,12 @@ h3.bordered-element {
     overflow: hidden;
     border: 0.05em solid var(--text-color);
     border-radius: 0.3em;
+    transition: background-color 0.2s ease, border-color 0.2s ease;    
+}
+
+#device-ip .ip-address-display:focus-within {
+    background-color: var(--hover-bg); 
+    border-color: var(--hover-bg); 
 }
 
 #global-ip-input {
@@ -176,7 +182,12 @@ h3.bordered-element {
     border-radius: 0;
     box-sizing: border-box; /* paddingがwidthに含まれるように */
     height: 3.5em;
-    box-sizing: border-box;
+    transition: color 0.2s ease;
+}
+
+#global-ip-input:focus {
+    outline: none; 
+    color: var(--hover-text); 
 }
 
 #global-ip-update {
