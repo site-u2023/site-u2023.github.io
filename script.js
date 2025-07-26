@@ -114,22 +114,16 @@ function updateAll() {
             if (link.id === 'aios-link')
                 newHref = newHref.replace(/\${cmd}/g, SSH_CMD_ENCODED_AIOS);
             link.href = newHref;
-            
-            // 【新規追加】SSH関連リンクに特別なクリックハンドラーを追加
-            if (link.id === 'ssh-link' || link.id === 'aios-link') {
-                link.removeEventListener('click', handleSSHClick);
-                link.addEventListener('click', handleSSHClick);
-            }
         }
     });
 
-    // 既存のQRコード処理...（変更なし）
     const qrDetailContainer = document.getElementById('qrcode-detail-container');
     if (qrDetailContainer && qrDetailContainer.open) {
         drawQRCode('qrcode-detail', `http://${ip}`);
     } else if (qrDetailContainer) {
         const qrCanvasContainer = document.getElementById('qrcode-detail');
         if (qrCanvasContainer) {
+            // ダミー表示のHTMLも言語設定を考慮するように変更
             const currentLang = localStorage.getItem('lang-preference') || 'ja';
             qrCanvasContainer.innerHTML = `<div style="width: 180px; height: 180px; background: var(--text-color); margin: 0 auto; display: flex; align-items: center; justify-content: center; color: var(--block-bg); font-size: 12px;"><span data-i18n="qrCodeArea">${langData[currentLang].qrCodeArea}</span></div>`;
             const dummyDivSpan = qrCanvasContainer.querySelector('div span');
@@ -343,97 +337,3 @@ document.addEventListener('DOMContentLoaded', async () => {
         updateAll(); // 初期表示時にも更新
     }
 });
-// ── SSH クリック処理関数 ──
-function handleSSHClick(e) {
-    e.preventDefault();
-    
-    const link = e.currentTarget;
-    const url = link.href;
-    
-    // PWA環境かどうかを判定
-    const isPWA = window.navigator.standalone || 
-                  window.matchMedia('(display-mode: standalone)').matches ||
-                  window.location.protocol === 'file:';
-    
-    if (isPWA) {
-        // PWA環境では特別な処理
-        executeSSHInPWA(url, link);
-    } else {
-        // 通常のブラウザでは従来通り
-        window.open(url, '_blank', 'noopener');
-    }
-}
-
-// ── PWA環境でのSSH実行 ──
-function executeSSHInPWA(url, linkElement) {
-    // 実行状態の視覚的フィードバック
-    const originalText = linkElement.innerHTML;
-    linkElement.style.opacity = '0.7';
-    linkElement.innerHTML = originalText.replace(/SSH接続:|aios実行:/, match => 
-        match + ' <span style="color: #ff6b6b;">実行中...</span>');
-    
-    // 非表示のiframeで実行（痕跡を残さない方法）
-    const iframe = document.createElement('iframe');
-    iframe.style.cssText = 'position:absolute;width:1px;height:1px;top:-10px;left:-10px;visibility:hidden;opacity:0;';
-    iframe.src = url;
-    document.body.appendChild(iframe);
-    
-    // 成功通知
-    setTimeout(() => {
-        // 元のスタイルに戻す
-        linkElement.style.opacity = '1';
-        linkElement.innerHTML = originalText;
-        
-        // iframeを削除
-        if (iframe.parentNode) {
-            document.body.removeChild(iframe);
-        }
-        
-        // 成功メッセージを表示
-        showToast('SSH接続を開始しました', 'success');
-        
-    }, 1500);
-}
-
-// ── トースト通知関数 ──
-function showToast(message, type = 'info') {
-    const toast = document.createElement('div');
-    toast.textContent = message;
-    
-    const bgColor = type === 'success' ? '#43b0e8' : '#ff6b6b';
-    toast.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: ${bgColor};
-        color: #f1f1f1;
-        padding: 12px 20px;
-        border-radius: 8px;
-        font-size: 14px;
-        font-weight: bold;
-        z-index: 10000;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        transform: translateX(100%);
-        transition: transform 0.3s ease, opacity 0.3s ease;
-        max-width: 300px;
-        word-wrap: break-word;
-    `;
-    
-    document.body.appendChild(toast);
-    
-    // アニメーション: スライドイン
-    setTimeout(() => {
-        toast.style.transform = 'translateX(0)';
-    }, 10);
-    
-    // 自動削除
-    setTimeout(() => {
-        toast.style.transform = 'translateX(100%)';
-        toast.style.opacity = '0';
-        setTimeout(() => {
-            if (toast.parentNode) {
-                document.body.removeChild(toast);
-            }
-        }, 300);
-    }, 3000);
-}
