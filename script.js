@@ -73,8 +73,6 @@ function drawQRCode(elementId, text) {
     if (!qrContainer || typeof QRious === 'undefined') {
         console.error(`QR code container #${elementId} not found or QRious library not loaded.`);
         if (qrContainer) {
-            // ここでinnerHTMLを設定する際に、言語が適用されるように修正
-            // applyLanguageで更新されるように、data-i18nを持つspanを内部に持つ
             qrContainer.innerHTML = `<div style="width: 180px; height: 180px; background: var(--text-color); margin: 0 auto; display: flex; align-items: center; justify-content: center; color: var(--block-bg); font-size: 12px;"><span data-i18n="qrCodeArea">${langData[localStorage.getItem('lang-preference') || 'ja'].qrCodeArea}</span></div>`;
             qrContainer.querySelector('div span').setAttribute('data-text', 'QRiousライブラリがロードされていません'); // data-textは特に言語切り替えとは関係ないですが、元のコードに倣って維持
         }
@@ -105,13 +103,11 @@ function updateAll() {
     const ip = toHalfWidth(input.value.trim()) || input.placeholder;
     localStorage.setItem('site-u-ip', ip);
 
-    // SSH接続とaios実行のIPアドレス表示を更新
     const sshIpSpan = document.getElementById('ssh-ip');
     const aiosIpSpan = document.getElementById('aios-ip');
     if (sshIpSpan) sshIpSpan.textContent = ip;
     if (aiosIpSpan) aiosIpSpan.textContent = ip;
 
-    // LuCIとttydのIPアドレス表示を更新
     const luciIpSpan = document.getElementById('luci-ip');
     const ttydIpSpan = document.getElementById('ttyd-ip');
     if (luciIpSpan) luciIpSpan.textContent = ip;
@@ -133,7 +129,6 @@ function updateAll() {
     } else if (qrDetailContainer) {
         const qrCanvasContainer = document.getElementById('qrcode-detail');
         if (qrCanvasContainer) {
-            // ダミー表示のHTMLも言語設定を考慮するように変更
             const currentLang = localStorage.getItem('lang-preference') || 'ja';
             qrCanvasContainer.innerHTML = `<div style="width: 180px; height: 180px; background: var(--text-color); margin: 0 auto; display: flex; align-items: center; justify-content: center; color: var(--block-bg); font-size: 12px;"><span data-i18n="qrCodeArea">${langData[currentLang].qrCodeArea}</span></div>`;
             const dummyDivSpan = qrCanvasContainer.querySelector('div span');
@@ -153,7 +148,6 @@ function applyLanguage(lang) {
         const key = element.getAttribute('data-i18n');
         if (langData[lang] && langData[lang][key]) {
             if (key === 'sshConnection' || key === 'aiosExecution' || key === 'luciAdmin' || key === 'ttydTerminal') {
-                // SSH接続、aios実行、LuCI、ttydのリンクテキストのみ更新
                 const linkTextSpan = element.querySelector('.link-text');
                 if (linkTextSpan) {
                     if (key === 'luciAdmin') {
