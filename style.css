@@ -184,6 +184,7 @@ h3.bordered-element {
     height: 3.7em;
     transition: color 0.2s ease;
     font-weight: bold;
+    vertical-align: middle;
 }
 
 #global-ip-input:focus {
