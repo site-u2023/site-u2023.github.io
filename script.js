@@ -113,7 +113,7 @@ function updateAll() {
 
     const qrDetailContainer = document.getElementById('qrcode-detail-container');
     if (qrDetailContainer && qrDetailContainer.open) {
-        drawQRCode('qrcode-detail', `ssh://root@${ip}`);
+        drawQRCode('qrcode-detail', `http://${ip}`);
     } else if (qrDetailContainer) {
         const qrCanvasContainer = document.getElementById('qrcode-detail');
         if (qrCanvasContainer) {
