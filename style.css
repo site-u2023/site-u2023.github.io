@@ -358,7 +358,7 @@ h3.bordered-element {
 }
 
 .main-header .logo-container a:hover {
-    background-color: transparent;
+    background-color: var(--hover-bg);
     color: var(--text-color);
     text-decoration: none;
 }
