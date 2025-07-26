@@ -316,7 +316,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const input = document.getElementById('global-ip-input');
             const currentIpForQr = input ? (toHalfWidth(input.value.trim()) || input.placeholder) : '192.168.1.1';
             if (this.open) {
-                drawQRCode('qrcode-detail', `ssh://root@${currentIpForQr}`);
+                drawQRCode('qrcode-detail', `http://${currentIpForQr}`);
             } else {
                 const qrCanvasContainer = document.getElementById('qrcode-detail');
                 if (qrCanvasContainer) {
