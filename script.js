@@ -144,29 +144,24 @@ function applyLanguage(lang) {
     langButtons.forEach(button => {
         button.classList.toggle('selected', button.dataset.lang === lang);
     });
+
     document.querySelectorAll('[data-i18n]').forEach(element => {
         const key = element.getAttribute('data-i18n');
-        if (langData[lang] && langData[lang][key]) {
-            if (key === 'sshConnection' || key === 'aiosExecution' || key === 'luciAdmin' || key === 'ttydTerminal') {
+        if (langData[lang] && langData[lang][key] !== undefined) {
+            if (['sshConnection', 'aiosExecution', 'luciAdmin', 'ttydTerminal'].includes(key)) {
                 const linkTextSpan = element.querySelector('.link-text');
                 if (linkTextSpan) {
-                    if (key === 'luciAdmin') {
-                        linkTextSpan.textContent = langData[lang][key];
-                    } else if (key === 'ttydTerminal') {
-                        linkTextSpan.textContent = langData[lang][key];
-                    } else {
-                        linkTextSpan.textContent = langData[lang][key];
-                    }
+                    linkTextSpan.textContent = langData[lang][key];
                 }
             } else if (key === 'sshHandler') {
                 const linkTextSpan = element.querySelector('.link-text');
                 const linkNoteSpan = element.querySelector('.link-note');
                 const parts = langData[lang][key].split('※');
                 if (linkTextSpan) {
-                     linkTextSpan.textContent = parts[0].trim();
+                    linkTextSpan.textContent = parts[0].trim();
                 }
                 if (linkNoteSpan) {
-                     linkNoteSpan.textContent = parts[1] ? '※' + parts[1].trim() : '';
+                    linkNoteSpan.textContent = parts[1] ? '※' + parts[1].trim() : '';
                 }
             } else if (element.tagName === 'SPAN' && element.parentElement.classList.contains('qr-code-canvas')) {
                 element.textContent = langData[lang][key];
