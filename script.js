@@ -152,6 +152,9 @@ function applyLanguage(lang) {
     const langButtons = document.querySelectorAll('.language-selector button');
     langButtons.forEach(button => {
         button.classList.toggle('selected', button.dataset.lang === lang);
+        if (langData[lang]['lang' + button.dataset.lang.toUpperCase()]) { // 'langEN' または 'langJA' を動的に生成
+             button.textContent = langData[lang]['lang' + button.dataset.lang.toUpperCase()];
+        }
     });
 
     document.querySelectorAll('[data-i18n]').forEach(element => {
