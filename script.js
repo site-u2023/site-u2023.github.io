@@ -92,7 +92,8 @@ function updateAll() {
     const input = document.getElementById('global-ip-input');
     if (!input) return;
 
-    const ip = toHalfWidth(input.value.trim()) || input.placeholder;
+    // 入力値が存在すればそれを、なければplaceholderを、どちらもなければデフォルト値を使用
+    const ip = toHalfWidth(input.value.trim()) || input.placeholder || '192.168.1.1';
     localStorage.setItem('site-u-ip', ip);
 
     // SSH接続とaios実行のIPアドレス表示を更新
@@ -285,10 +286,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     initializeThemeAndLanguageSelectors();
 
     const globalIpInput = document.getElementById('global-ip-input');
-    const globalIpUpdateBtn = document.getElementById('global-ip-update'); // 現在HTMLでコメントアウトされていますが、残しておきます
+    const globalIpUpdateBtn = document.getElementById('global-ip-update');
+    
+    // 初期表示時にinputに保存されたIPを設定（なければ空）
     if (globalIpInput) {
-        const storedIp = localStorage.getItem('site-u-ip');
-        globalIpInput.value = storedIp || globalIpInput.placeholder || '192.168.1.1';
+        globalIpInput.value = localStorage.getItem('site-u-ip') || '';
         globalIpInput.addEventListener('input', () => {
             const pos = globalIpInput.selectionStart;
             const v = toHalfWidth(globalIpInput.value);
@@ -296,7 +298,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 globalIpInput.value = v;
                 globalIpInput.setSelectionRange(pos, pos);
             }
-            updateAll(); // 入力時にも更新
+            // 入力時はリアルタイムに更新（ただし、inputが空の場合はplaceholderやデフォルトIPを適用）
+            updateAll(); 
         });
         globalIpInput.addEventListener('keydown', e => {
             if (e.key === 'Enter') {
@@ -305,16 +308,34 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
     }
-    // global-ip-update ボタンがHTMLにないため、このブロックは現在無効
+
     if (globalIpUpdateBtn) {
-        globalIpUpdateBtn.addEventListener('click', updateAll);
+        globalIpUpdateBtn.addEventListener('click', async () => {
+            const input = document.getElementById('global-ip-input');
+            if (input && input.value.trim() === '') {
+                try {
+                    const text = await navigator.clipboard.readText();
+                    if (text.trim() !== '') {
+                        input.value = text.trim();
+                        // クリップボードから取得した場合もローカルストレージに保存
+                        localStorage.setItem('site-u-ip', text.trim());
+                    }
+                } catch (err) {
+                    console.warn('Failed to read from clipboard:', err);
+                    // クリップボード読み取り失敗時、または権限がない場合でもupdateAllを呼び出す
+                    // この場合、inputが空のままなので、updateAll内でplaceholderかデフォルトIPが使用される
+                }
+            }
+            updateAll(); // クリップボードからの取得の有無にかかわらず、最終的に更新処理を実行
+        });
     }
 
     const qrDetailContainer = document.getElementById('qrcode-detail-container');
     if (qrDetailContainer && !qrDetailContainer.dataset.toggleListenerAdded) {
         qrDetailContainer.addEventListener('toggle', function() {
             const input = document.getElementById('global-ip-input');
-            const currentIpForQr = input ? (toHalfWidth(input.value.trim()) || input.placeholder) : '192.168.1.1';
+            // QRコード表示時もinputの現在の値か、なければplaceholder、またはデフォルトIPを使用
+            const currentIpForQr = input ? (toHalfWidth(input.value.trim()) || input.placeholder || '192.168.1.1') : '192.168.1.1';
             if (this.open) {
                 drawQRCode('qrcode-detail', `http://${currentIpForQr}`);
             } else {
@@ -333,7 +354,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         qrDetailContainer.dataset.toggleListenerAdded = 'true';
     }
 
-    if (globalIpInput) {
-        updateAll(); // 初期表示時にも更新
-    }
+    // DOMContentLoaded時に一度更新処理を実行
+    updateAll();
 });
