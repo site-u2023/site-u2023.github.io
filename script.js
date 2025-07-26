@@ -23,7 +23,7 @@ const langData = {
         ttydTerminal: 'ttyd: ',
         githubRepo: 'GitHub Repository',
         aiosScript: 'all in one script',
-        configSoftware: 'config-software (legacy)'
+        configSoftware: 'config software (legacy)'
     },
     ja: {
         deviceIP: 'デバイスIPアドレス',
