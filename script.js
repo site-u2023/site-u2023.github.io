@@ -31,7 +31,8 @@ const langData = {
         disclaimerSiteUTitle: 'Disclaimer regarding site-u (this site)',
         disclaimerSiteUParagraph: 'All content (including websites, scripts, and other works) published on this site is open and freely available for use. However, the operators of this site assume no responsibility for any damages incurred through the use of this content. Please use it at your own risk.',
         disclaimerOpenWrtTitle: 'Disclaimer regarding OpenWrt',
-        disclaimerOpenWrtParagraph: 'OpenWrt is a registered trademark of Software Freedom Conservancy. This site is not affiliated with or endorsed by the OpenWrt project. For official information and support regarding OpenWrt, please refer to the '
+        disclaimerOpenWrtParagraph: 'OpenWrt is a registered trademark of Software Freedom Conservancy. This site is not affiliated with or endorsed by the OpenWrt project. For official information and support regarding OpenWrt, please refer to the ',
+        openWrtOfficialSite: 'OpenWrt official website'
     },
     ja: {
         deviceIP: 'デバイスIPアドレス',
@@ -56,7 +57,8 @@ const langData = {
         disclaimerSiteUTitle: 'site-u（当サイト）に関する免責事項',
         disclaimerSiteUParagraph: '当サイトで公開されているコンテンツ（ウェブサイト、スクリプト、その他の著作物を含む）は全てオープンであり、自由にご利用いただけます。しかしながら、これらのコンテンツの利用によって生じたいかなる損害についても、当サイトの運営者は一切の責任を負いません。利用者の皆様の責任においてご利用くださいますようお願いいたします。',
         disclaimerOpenWrtTitle: 'OpenWrtに関する免責事項',
-        disclaimerOpenWrtParagraph: 'OpenWrtはSoftware Freedom Conservancyの登録商標です。当サイトはOpenWrtプロジェクトとは提携しておらず、また推奨もされていません。OpenWrtに関する公式情報やサポートについては、'
+        disclaimerOpenWrtParagraph: 'OpenWrtはSoftware Freedom Conservancyの登録商標です。当サイトはOpenWrtプロジェクトとは提携しておらず、また推奨もされていません。OpenWrtに関する公式情報やサポートについては、',
+        openWrtOfficialSite: 'OpenWrt公式サイト'
     }
 };
 
