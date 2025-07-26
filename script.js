@@ -34,8 +34,8 @@ const langData = {
         disclaimerOpenWrtParagraph: 'OpenWrt is a registered trademark of Software Freedom Conservancy. This site is not affiliated with or endorsed by the OpenWrt project. For official information and support regarding OpenWrt, please refer to the ',
         openWrtOfficialSite: 'OpenWrt official website',
         disclaimerOpenWrtSuffix: '.',
-        langEn: 'EN',
-        langJa: 'JA'        
+        langEn: '🇺🇸',
+        langJa: '🇯🇵'       
     },
     ja: {
         deviceIP: 'デバイスIPアドレス',
@@ -63,8 +63,8 @@ const langData = {
         disclaimerOpenWrtParagraph: 'OpenWrtはSoftware Freedom Conservancyの登録商標です。当サイトはOpenWrtプロジェクトとは提携しておらず、また推奨もされていません。OpenWrtに関する公式情報やサポートについては、',
         openWrtOfficialSite: 'OpenWrt公式サイト',
         disclaimerOpenWrtSuffix: 'をご参照ください。',
-        langEn: '英語',
-        langJa: '日本語'
+        langEn: '🇺🇸',
+        langJa: '🇯🇵'
     }
 };
 
