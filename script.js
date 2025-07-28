@@ -21,6 +21,7 @@ const langData = {
         console: 'Console',
         luciAdmin: 'LuCI: ',
         ttydTerminal: 'ttyd: ',
+        filebrowserService: 'filebrowser: ',
         githubRepo: 'GitHub Repository',
         aiosScript: 'all in one script',
         configSoftware: 'config software (legacy)',
@@ -50,6 +51,7 @@ const langData = {
         console: 'コンソール',
         luciAdmin: 'LuCI: ',
         ttydTerminal: 'ttyd: ',
+        filebrowserService: 'filebrowser: ',
         githubRepo: 'GitHubリポジトリ',
         aiosScript: 'オールインワンスクリプト',
         configSoftware: 'コンフォグソフトウェア (旧版)',
@@ -118,8 +120,10 @@ function updateAll() {
 
     const luciIpSpan = document.getElementById('luci-ip');
     const ttydIpSpan = document.getElementById('ttyd-ip');
+    const filebrowserIpSpan = document.getElementById('filebrowser-ip');
     if (luciIpSpan) luciIpSpan.textContent = ip;
     if (ttydIpSpan) ttydIpSpan.textContent = ip;
+    if (filebrowserIpSpan) filebrowserIpSpan.textContent = ip;
 
     document.querySelectorAll('.link-item[data-ip-template]').forEach(link => {
         const template = link.dataset.ipTemplate;
