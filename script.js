@@ -164,7 +164,7 @@ function applyLanguage(lang) {
     document.querySelectorAll('[data-i18n]').forEach(element => {
         const key = element.getAttribute('data-i18n');
         if (langData[lang] && langData[lang][key] !== undefined) {
-            if (['sshConnection', 'aiosExecution', 'luciAdmin', 'ttydTerminal'].includes(key)) {
+            if (['sshConnection', 'aiosExecution', 'luciAdmin', 'ttydTerminal', 'filebrowserService'].includes(key)) {
                 const linkTextSpan = element.querySelector('.link-text');
                 if (linkTextSpan) {
                     linkTextSpan.textContent = langData[lang][key];
