@@ -25,7 +25,7 @@ html[data-theme="light"] {
 }
 
 html[data-theme="dark"] {
-    --block-bg: #2a2a2a;
+    --block-bg: #003756;
     --main-color: #43b0e8;
     --text-color: var(--main-color);
     --link-color: var(--main-color);
