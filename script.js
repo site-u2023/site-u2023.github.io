@@ -302,15 +302,13 @@ function initializeThemeAndLanguageSelectors() {
 
 // ── DOMContentLoaded ──
 document.addEventListener('DOMContentLoaded', async () => {
-    await loadHeader();
-    await loadFooter();
-    initializeThemeAndLanguageSelectors();
-
+    // ★ IPアドレス関連の処理を最初に実行
     const globalIpInput = document.getElementById('global-ip-input');
-    const globalIpUpdateBtn = document.getElementById('global-ip-update'); // 現在HTMLでコメントアウトされていますが、残しておきます
     if (globalIpInput) {
         const storedIp = localStorage.getItem('site-u-ip');
+        console.log('読み込んだIP:', storedIp); // デバッグ用
         globalIpInput.value = storedIp || globalIpInput.placeholder || '192.168.1.1';
+        
         globalIpInput.addEventListener('input', () => {
             const pos = globalIpInput.selectionStart;
             const v = toHalfWidth(globalIpInput.value);
@@ -318,20 +316,34 @@ document.addEventListener('DOMContentLoaded', async () => {
                 globalIpInput.value = v;
                 globalIpInput.setSelectionRange(pos, pos);
             }
-            updateAll(); // 入力時にも更新
+            updateAll(); // 入力時に更新
         });
+        
         globalIpInput.addEventListener('keydown', e => {
             if (e.key === 'Enter') {
                 e.preventDefault();
                 updateAll(); // Enterキーでも更新
             }
         });
+        
+        // 初期表示時にも更新
+        updateAll();
     }
-    // global-ip-update ボタンがHTMLにないため、このブロックは現在無効
+
+    // ヘッダー・フッター読み込み
+    await loadHeader();
+    await loadFooter();
+    
+    // テーマ・言語セレクターの初期化
+    initializeThemeAndLanguageSelectors();
+
+    // global-ip-update ボタン（現在HTMLにないため無効）
+    const globalIpUpdateBtn = document.getElementById('global-ip-update');
     if (globalIpUpdateBtn) {
         globalIpUpdateBtn.addEventListener('click', updateAll);
     }
 
+    // QRコード関連
     const qrDetailContainer = document.getElementById('qrcode-detail-container');
     if (qrDetailContainer && !qrDetailContainer.dataset.toggleListenerAdded) {
         qrDetailContainer.addEventListener('toggle', function() {
@@ -342,7 +354,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             } else {
                 const qrCanvasContainer = document.getElementById('qrcode-detail');
                 if (qrCanvasContainer) {
-                    // QRコードが閉じた時のダミー表示も言語設定を考慮するように変更
                     const currentLang = localStorage.getItem('lang-preference') || 'ja';
                     qrCanvasContainer.innerHTML = `<div style="width: 180px; height: 180px; background: var(--text-color); margin: 0 auto; display: flex; align-items: center; justify-content: center; color: var(--block-bg); font-size: 12px;"><span data-i18n="qrCodeArea">${langData[currentLang].qrCodeArea}</span></div>`;
                     const dummyDivSpan = qrCanvasContainer.querySelector('div span');
@@ -353,9 +364,5 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
         qrDetailContainer.dataset.toggleListenerAdded = 'true';
-    }
-
-    if (globalIpInput) {
-        updateAll(); // 初期表示時にも更新
     }
 });
