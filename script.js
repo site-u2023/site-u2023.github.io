@@ -9,13 +9,13 @@ const SSH_CMD_ENCODED_AIOS = encodeURIComponent(SSH_COMMANDS_AIOS);
 // ── 言語切替機能データ ──
 const langData = {
     en: {
-        deviceIP: 'Device IP Address',
-        terminal: 'Terminal for Windows',
+        deviceIP: 'Device Settings',
         update: 'Update',
         qrCodeDisplay: 'LuCi QR Code',
         qrCodeArea: 'QR Code Display Area',
-        downloadHandlerButton: 'Download: sshcmd.reg',
+        terminal: 'Terminal (for Windows)',
         sshHandler: 'Protocol handler registration (first-time use)',
+        downloadHandlerButton: 'Download (Double-click the downloaded file to install)',
         sshConnection: 'SSH Connection: ',
         aiosExecution: 'Execute aios: ',
         console: 'Web Console',
@@ -39,13 +39,13 @@ const langData = {
         langJa: '日本語'       
     },
     ja: {
-        deviceIP: 'デバイスIPアドレス',
-        terminal: 'ターミナル (Windows用)',
+        deviceIP: 'デバイス設定',
         update: '更新',
         qrCodeDisplay: 'LuCi QRコード',
         qrCodeArea: 'QRコード表示エリア', 
-        downloadHandlerButton: 'ダウンロード: sshcmd.reg',
+        terminal: 'ターミナル (Windows用)',
         sshHandler: 'プロトコルハンドラー登録 (初回のみ)',
+        downloadHandlerButton: 'ダウンロード (ダウンロードしたファイルをダブルクリックしてインストールしてください)',
         sshConnection: 'SSH接続: ',
         aiosExecution: 'aios実行: ',
         console: 'Webコンソール',
