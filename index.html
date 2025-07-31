@@ -11,7 +11,7 @@
         <main class="main-content">
             <nav class="main-nav">
                 <section id="device-ip" class="content-section">
-                    <h2 class="section-title" data-i18n="deviceIP">デバイス設定</h2>
+                    <h2 class="section-title" data-i18n="deviceIP">Device Settings</h2>
                     <div class="input-group connection">
                         <div class="input-container ip-container">
                             <div class="input-label">IP Address</div>
@@ -43,27 +43,27 @@
                                 class="input-field"
                             >
                         </div>
-                        <button id="global-ip-update" class="update-button" data-i18n="update">更新</button>
+                        <button id="global-ip-update" class="update-button" data-i18n="update">Update</button>
                     </div>
                     <details id="qrcode-detail-container" class="qr-code-section bordered-element">
-                        <summary class="qr-code-summary" data-i18n="qrCodeDisplay">SSH QRコード表示</summary>
+                        <summary class="qr-code-summary" data-i18n="qrCodeDisplay">LuCi QR Code</summary>
                         <div id="qrcode-detail" class="qr-code-canvas">
                             <div style="width: 180px; height: 180px; background: var(--text-color); margin: 0 auto; display: flex; align-items: center; justify-content: center; color: var(--block-bg); font-size: 12px;"><span data-i18n="qrCodeArea">QRコード表示エリア</span></div>
                         </div>
                     </details>
                 </section>         
                 <section id="terminal" class="content-section">
-                    <h2 class="section-title" data-i18n="terminal">ターミナル<span class="section-subtitle">(Windows用)</span></h2>
+                    <h2 class="section-title" data-i18n="terminal">Terminal<span class="section-subtitle">(for Windows)</span></h2>
                     <ul class="link-list">
                         <li>
                             <details id="ssh-handler-details-container" class="qr-code-section handler-details-section bordered-element">
                                 <summary class="qr-code-summary handler-summary" data-i18n="sshHandler">
-                                    <span class="link-text">SSH用プロトコルハンドラー登録</span>
-                                    <span class="link-note">(Windows用) ※初回のみ利用 (DL後ダブルクリック)</span>
+                                    <span class="link-text">Protocol handler registration (first-time use)</span>
+                                    <span class="link-note">Download (Double-click the downloaded file to install)</span>
                                 </summary>
                                 <div class="details-content">
                                     <a id="ssh-handler-download-link" href="file/sshcmd.reg" download class="bordered-element" data-i18n="downloadHandlerButton">
-                                        ダウンロード
+                                        Download
                                     </a>
                                 </div>
                             </details>
@@ -80,7 +80,7 @@
                                 rel="noopener"
                                 data-i18n="sshConnection"
                             >
-                                <span class="link-text">SSH接続: </span>
+                                <span class="link-text">SSH Connection: </span>
                                 <span class="ip-display">ssh root@<span id="ssh-ip">192.168.1.1</span></span>
                             </a>
                         </li>
@@ -93,7 +93,7 @@
                                 target="_blank" rel="noopener"
                                 data-i18n="aiosExecution"
                             >
-                                <span class="link-text">aios実行: </span>
+                                <span class="link-text">Execute aios: </span>
                                 <span class="ip-display">ssh root@<span id="aios-ip">192.168.1.1</span> ; aios</span>
                             </a>
                         </li>
@@ -101,7 +101,7 @@
                 </section>
 
                 <section id="local-services" class="content-section">
-                    <h2 class="section-title" data-i18n="console">Webコンソール</h2>
+                    <h2 class="section-title" data-i18n="console">Web Console</h2>
                     <ul class="link-list">
                         <li>
                             <a
@@ -146,13 +146,13 @@
                 </section>
 
                 <section id="project" class="content-section">
-                    <h2 class="section-title" data-i18n="githubRepo">GitHubリポジトリ</h2>
+                    <h2 class="section-title" data-i18n="githubRepo">GitHub Repository</h2>
                     <ul class="link-list">
                         <li><a href="https://github.com/site-u2023/aios/blob/main/README.md" target="_blank" rel="noopener" data-i18n="aiosScript" class="link-item bordered-element">
                             <span class="link-text">all in one script</span>
                         </a></li>
                         <li><a href="https://github.com/site-u2023/config-software/blob/main/README.md" target="_blank" rel="noopener" data-i18n="configSoftware" class="link-item bordered-element">
-                            <span class="link-text">config-software</span> <span class="link-note">(旧版)</span>
+                            <span class="link-text">config-software</span> <span class="link-note">(legacy)</span>
                         </a></li>
                     </ul>
                 </section>
