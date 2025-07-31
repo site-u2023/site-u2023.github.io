@@ -208,12 +208,12 @@ h3.bordered-element {
 
 /* IPアドレス用（幅広） */
 .ip-container {
-    min-width: 16ch;
+    min-width: 12ch;
 }
 
 /* ポート用（幅狭） */
 .port-container {
-    min-width: 5ch;
+    min-width: 4ch;
 }
 
 #global-ip-update {
