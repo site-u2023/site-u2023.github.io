@@ -207,8 +207,6 @@ function applyLanguage(lang) {
         }
     });
 
-    localStorage.setItem('lang-preference', lang);
-
     updateAll();
 }
 
