@@ -2,7 +2,7 @@
  * 基本デザイン要件:
  * 1. テーマに応じた背景色 (--block-bg):
  * - ライトテーマ: #f1f1f1 (白)
- * - ダークテーマ: #2a2a2a (黒)
+ * - ダークテーマ: #003756 (黒)
  * 2. 全ての文字色 (--text-color):
  * - ライトテーマ、ダークテーマに関わらず、常に #43b0e8 (水色)
  * 3. 全てのリンク（ロゴを含む）や、枠として機能する要素のホバー時の挙動:
@@ -148,62 +148,86 @@ h3.bordered-element {
     padding: 0.8em 1em;
 }
 
-/* ── Device IP セクション内の修正 ── */
+/* ── Device IP セクション内の修正（3つのインプットボックス対応） ── */
 #device-ip .input-group {
     display: flex;
-    align-items: stretch; /* 高さを合わせる */
-    gap: 0.5rem; /* ギャップを少し小さく */
+    align-items: stretch;
+    gap: 0.5rem;
     margin-bottom: 1em;
 }
 
-#device-ip .ip-address-display {
-    flex: 1;
-    min-width: 0; /* これが重要 */
-    display: flex;
-    align-items: center;
-    overflow: hidden;
+/* 二重枠構造の外側 */
+.input-container {
+    position: relative;
     border: 0.05em solid var(--text-color);
     border-radius: 0.3em;
-    transition: background-color 0.2s ease, border-color 0.2s ease;    
+    padding: 0.3em 0.5em 0.5em 0.5em; /* 上側にラベル用のスペース確保 */
+    transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
-#device-ip .ip-address-display:focus-within {
+.input-container:focus-within {
     background-color: var(--hover-bg); 
     border-color: var(--hover-bg); 
 }
 
-#global-ip-input {
-    flex: 1;
-    min-width: 0; /* flexアイテムとして必要 */
+/* ラベル（枠と枠の間に配置） */
+.input-label {
+    position: absolute;
+    top: 0.2em;
+    left: 0.5em;
+    font-size: 0.7em;
+    color: inherit;
+    font-weight: normal;
+    opacity: 0.8;
+    pointer-events: none;
+    transition: color 0.2s ease;
+}
+
+.input-container:focus-within .input-label {
+    color: var(--hover-text);
+}
+
+/* 内側のインプットボックス */
+.input-field {
+    width: 100%;
     border: none;
-    padding: 0.8em 1em; 
+    padding: 0.5em;
     background-color: transparent;
     color: inherit;
     border-radius: 0;
-    box-sizing: border-box; /* paddingがwidthに含まれるように */
-    height: 3.3em;
+    box-sizing: border-box;
     transition: color 0.2s ease;
     font-weight: bold;
+    font-size: 0.9em;
 }
 
-#global-ip-input:focus {
+.input-field:focus {
     outline: none; 
     color: var(--hover-text); 
+}
+
+/* IPアドレス用（幅広） */
+.ip-container {
+    flex: 2;
+    min-width: 8em;
+}
+
+/* ポート用（幅狭） */
+.port-container {
+    flex: 1;
+    min-width: 4em;
 }
 
 #global-ip-update {
     align-items: center;
     justify-content: center;
-    width: auto;        /* 通常時も内容分の幅 */
-    min-width: 64px;    /* 必要なら最小幅を設定 */
+    width: auto;
+    min-width: 64px;
     height: 3.3rem;
     padding: 0 1em;
     box-sizing: border-box;
-    padding-top: 0;
-    padding-bottom: 0;
-
-    flex: 0 0 auto; /* サイズを内容に合わせる */
-    white-space: nowrap; /* テキストを折り返さない */
+    flex: 0 0 auto;
+    white-space: nowrap;
     cursor: pointer;
     background-color: transparent;
     color: inherit;
