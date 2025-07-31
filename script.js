@@ -315,6 +315,10 @@ function initializeThemeAndLanguageSelectors() {
 
 // ── DOMContentLoaded ──
 document.addEventListener('DOMContentLoaded', () => {
+    // ★★★ ヘッダーとフッターを読み込み ★★★
+    loadHeader();
+    loadFooter();
+    
     // 保存された値を読み込み
     const ipInput = document.getElementById('ip-input');
     const ttydInput = document.getElementById('ttyd-input');
