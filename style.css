@@ -211,7 +211,7 @@ h3.bordered-element {
 
 /* IPアドレス用（幅広） */
 .ip-container {
-    flex: 3;
+    flex: 2;
     min-width: 11ch;
 }
 
