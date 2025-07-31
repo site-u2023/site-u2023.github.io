@@ -343,31 +343,46 @@ document.addEventListener('DOMContentLoaded', () => {
         if (storedFb) fbInput.value = storedFb;
     }
 
-    // 各インプットボックスにイベントリスナーを追加
-    [ipInput, ttydInput, fbInput].forEach(input => {
-        if (input) {
-            input.addEventListener('input', () => {
-                const prevValue = input.value;
-                const pos = input.selectionStart;
-                const halfValue = toHalfWidth(prevValue);
-                if (halfValue !== prevValue) {
-                    input.value = halfValue;
-                    // 入力位置補正: 差分分カーソルを左に戻す
-                    const diff = prevValue.length - halfValue.length;
-                    const newPos = Math.max(0, pos - diff);
-                    input.setSelectionRange(newPos, newPos);
-                }
-                updateAll(); // 入力時に即座に更新
-            });
+let isComposing = false;
 
-            input.addEventListener('keydown', e => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    updateAll(); // Enterキーでも更新
-                }
-            });
+// 各インプットボックスにイベントリスナーを追加
+[ipInput, ttydInput, fbInput].forEach(input => {
+    if (!input) return;
+
+    input.addEventListener('compositionstart', () => {
+        isComposing = true;
+    });
+
+    input.addEventListener('compositionend', () => {
+        isComposing = false;
+        // IME確定後に一括更新
+        updateAll();
+    });
+
+    input.addEventListener('input', () => {
+        if (isComposing) return; // 変換中はスキップ
+
+        const prevValue = input.value;
+        const pos = input.selectionStart;
+        const halfValue = toHalfWidth(prevValue);
+
+        if (halfValue !== prevValue) {
+            input.value = halfValue;
+            const diff = prevValue.length - halfValue.length;
+            const newPos = Math.max(0, pos - diff);
+            input.setSelectionRange(newPos, newPos);
+        }
+
+        updateAll(); // 通常入力時の更新
+    });
+
+    input.addEventListener('keydown', e => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            updateAll(); // Enterキーでも更新
         }
     });
+});
 
     // 初期表示時にも更新
     updateAll();
