@@ -70,15 +70,6 @@ const langData = {
     }
 };
 
-// ── toHalfWidth 関数 ──
-function toHalfWidth(str) {
-    return str
-        .replace(/[\uFF01-\uFF5E]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0))
-        .replace(/\u3000/g, ' ')
-        .replace(/\u3001/g, ',')
-        .replace(/\u3002/g, '.');
-}
-
 // ── drawQRCode 関数 ──
 function drawQRCode(elementId, text) {
     const qrContainer = document.getElementById(elementId);
@@ -115,9 +106,9 @@ function updateAll() {
     
     if (!ipInput || !ttydInput || !fbInput) return;
 
-    const ip = toHalfWidth(ipInput.value.trim()) || ipInput.placeholder;
-    const ttydPort = toHalfWidth(ttydInput.value.trim()) || ttydInput.placeholder;
-    const fbPort = toHalfWidth(fbInput.value.trim()) || fbInput.placeholder;
+    const ip = ipInput.value.trim() || ipInput.placeholder;
+    const ttydPort = ttydInput.value.trim() || ttydInput.placeholder;
+    const fbPort = fbInput.value.trim() || fbInput.placeholder;
     
     // localStorageに保存
     localStorage.setItem('site-u-ip', ip);
@@ -345,41 +336,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
 let isComposing = false;
 
-// 各インプットボックスにイベントリスナーを追加
 [ipInput, ttydInput, fbInput].forEach(input => {
     if (!input) return;
 
-    input.addEventListener('compositionstart', () => {
-        isComposing = true;
-    });
-
-    input.addEventListener('compositionend', () => {
-        isComposing = false;
-        // IME確定後に一括更新
-        updateAll();
-    });
-
     input.addEventListener('input', () => {
-        if (isComposing) return; // 変換中はスキップ
-
-        const prevValue = input.value;
-        const pos = input.selectionStart;
-        const halfValue = toHalfWidth(prevValue);
-
-        if (halfValue !== prevValue) {
-            input.value = halfValue;
-            const diff = prevValue.length - halfValue.length;
-            const newPos = Math.max(0, pos - diff);
-            input.setSelectionRange(newPos, newPos);
-        }
-
-        updateAll(); // 通常入力時の更新
+        updateAll(); // IMEオフ前提で処理最小化
     });
 
     input.addEventListener('keydown', e => {
         if (e.key === 'Enter') {
             e.preventDefault();
-            updateAll(); // Enterキーでも更新
+            updateAll(); // 手動確定でも更新
         }
     });
 });
@@ -398,7 +365,7 @@ let isComposing = false;
     if (qrDetailContainer && !qrDetailContainer.dataset.toggleListenerAdded) {
         qrDetailContainer.addEventListener('toggle', function() {
             const ipInput = document.getElementById('ip-input');
-            const currentIp = ipInput ? (toHalfWidth(ipInput.value.trim()) || ipInput.placeholder) : '192.168.1.1';
+            const currentIp = ipInput ? (ipInput.value.trim() || ipInput.placeholder) : '192.168.1.1';
 
             if (this.open) {
                 drawQRCode('qrcode-detail', `http://${currentIp}`);
