@@ -191,19 +191,13 @@ h3.bordered-element {
 .input-field {
     width: 100%;
     border: none;
-    height: 2.2em;
-    line-height: 2.2em;
-    padding-top: 0;
-    padding-bottom: 0;
-    padding-left: 0.5em;
-    padding-right: 0.5em;
     background-color: transparent;
     color: inherit;
-    border-radius: 0;
-    box-sizing: border-box;
-    transition: color 0.2s ease;
     font-weight: bold;
     font-size: 0.9em;
+    box-sizing: border-box;
+    padding-left: 0.5em;
+    padding-right: 0.5em;    
 }
 
 .input-field:focus {
@@ -213,14 +207,10 @@ h3.bordered-element {
 
 /* IPアドレス用（幅広） */
 .ip-container {
-    flex: 2;
-    min-width: 8em;
 }
 
 /* ポート用（幅狭） */
 .port-container {
-    flex: 1;
-    min-width: 4em;
 }
 
 #global-ip-update {
