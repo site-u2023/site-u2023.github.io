@@ -301,7 +301,7 @@ function initializeThemeAndLanguageSelectors() {
     }
 
     const langButtons = document.querySelectorAll('.language-selector button');
-    const currentLang = localStorage.getItem('lang-preference') || 'ja';
+    const currentLang = localStorage.getItem('lang-preference') || 'en';
     if (langButtons.length > 0) {
         langButtons.forEach(button => {
             button.removeEventListener('click', () => applyLanguage(button.dataset.lang)); // 既存のリスナーを削除（重複防止）
