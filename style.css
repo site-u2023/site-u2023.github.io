@@ -151,7 +151,7 @@ h3.bordered-element {
 /* ── Device IP セクション内の修正（3つのインプットボックス対応） ── */
 #device-ip .input-group {
     display: flex;
-    align-items: stretch;
+    align-items: center;
     gap: 0.5rem;
     margin-bottom: 1em;
 }
@@ -166,6 +166,9 @@ h3.bordered-element {
     padding: 0 0.5em;
     box-sizing: border-box;
     transition: background-color 0.2s, border-color 0.2s;
+    flex-grow: 0;
+    flex-shrink: 1;
+    flex-basis: auto;
 }
 
 .input-container:focus-within {
@@ -216,6 +219,7 @@ h3.bordered-element {
 /* ポート用（幅狭） */
 .port-container {
     min-width: 4ch;
+    flex-grow: 0;
 }
 
 #global-ip-update {
