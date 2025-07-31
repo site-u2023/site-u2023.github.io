@@ -339,17 +339,28 @@ let isComposing = false;
 [ipInput, ttydInput, fbInput].forEach(input => {
     if (!input) return;
 
-    input.addEventListener('input', () => {
-        updateAll(); // IMEオフ前提で処理最小化
+    input.addEventListener('compositionstart', e => {
+        e.preventDefault();
     });
 
     input.addEventListener('keydown', e => {
+        const code = e.key.charCodeAt(0);
+        const allowed =
+              (code >= 0x20 && code <= 0x7E) ||
+              ['Backspace','Delete','ArrowLeft','ArrowRight','Tab','Enter'].includes(e.key);
+        if (!allowed) {
+            e.preventDefault();
+        }
+
         if (e.key === 'Enter') {
             e.preventDefault();
-            updateAll(); // 手動確定でも更新
+            updateAll();
         }
     });
+
+    input.addEventListener('input', updateAll);
 });
+
 
     // 初期表示時にも更新
     updateAll();
