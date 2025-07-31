@@ -107,47 +107,60 @@ function drawQRCode(elementId, text) {
 
 // ── 全リンク更新処理 ──
 function updateAll() {
-    const input = document.getElementById('global-ip-input');
-    if (!input) return;
+    const ipInput = document.getElementById('ip-input');
+    const ttydInput = document.getElementById('ttyd-input');
+    const fbInput = document.getElementById('fb-input');
+    
+    if (!ipInput || !ttydInput || !fbInput) return;
 
-    const ip = toHalfWidth(input.value.trim()) || input.placeholder;
+    const ip = toHalfWidth(ipInput.value.trim()) || ipInput.placeholder;
+    const ttydPort = toHalfWidth(ttydInput.value.trim()) || ttydInput.placeholder;
+    const fbPort = toHalfWidth(fbInput.value.trim()) || fbInput.placeholder;
+    
+    // localStorageに保存
     localStorage.setItem('site-u-ip', ip);
+    localStorage.setItem('site-u-ttyd', ttydPort);
+    localStorage.setItem('site-u-fb', fbPort);
 
+    // SSH関連のIP表示を更新
     const sshIpSpan = document.getElementById('ssh-ip');
     const aiosIpSpan = document.getElementById('aios-ip');
     if (sshIpSpan) sshIpSpan.textContent = ip;
     if (aiosIpSpan) aiosIpSpan.textContent = ip;
 
+    // Webコンソール関連の表示を更新
     const luciIpSpan = document.getElementById('luci-ip');
     const ttydIpSpan = document.getElementById('ttyd-ip');
+    const ttydPortSpan = document.getElementById('ttyd-port');
     const filebrowserIpSpan = document.getElementById('filebrowser-ip');
+    const filebrowserPortSpan = document.getElementById('filebrowser-port');
+    
     if (luciIpSpan) luciIpSpan.textContent = ip;
     if (ttydIpSpan) ttydIpSpan.textContent = ip;
+    if (ttydPortSpan) ttydPortSpan.textContent = ttydPort;
     if (filebrowserIpSpan) filebrowserIpSpan.textContent = ip;
+    if (filebrowserPortSpan) filebrowserPortSpan.textContent = fbPort;
 
+    // リンクのhrefを更新
     document.querySelectorAll('.link-item[data-ip-template]').forEach(link => {
         const template = link.dataset.ipTemplate;
         if (template) {
-            let newHref = template.replace(/\${ip}/g, ip);
-            if (link.id === 'aios-link')
+            let newHref = template
+                .replace(/\${ip}/g, ip)
+                .replace(/\${ttyd}/g, ttydPort)
+                .replace(/\${fb}/g, fbPort);
+                
+            if (link.id === 'aios-link') {
                 newHref = newHref.replace(/\${cmd}/g, SSH_CMD_ENCODED_AIOS);
+            }
             link.href = newHref;
         }
     });
 
+    // QRコード更新
     const qrDetailContainer = document.getElementById('qrcode-detail-container');
     if (qrDetailContainer && qrDetailContainer.open) {
         drawQRCode('qrcode-detail', `http://${ip}`);
-    } else if (qrDetailContainer) {
-        const qrCanvasContainer = document.getElementById('qrcode-detail');
-        if (qrCanvasContainer) {
-            const currentLang = localStorage.getItem('lang-preference') || 'ja';
-            qrCanvasContainer.innerHTML = `<div style="width: 180px; height: 180px; background: var(--text-color); margin: 0 auto; display: flex; align-items: center; justify-content: center; color: var(--block-bg); font-size: 12px;"><span data-i18n="qrCodeArea">${langData[currentLang].qrCodeArea}</span></div>`;
-            const dummyDivSpan = qrCanvasContainer.querySelector('div span');
-            if (dummyDivSpan) {
-                dummyDivSpan.setAttribute('data-text', 'QRiousライブラリがロードされていません');
-            }
-        }
     }
 }
 
@@ -301,43 +314,53 @@ function initializeThemeAndLanguageSelectors() {
 }
 
 // ── DOMContentLoaded ──
-document.addEventListener('DOMContentLoaded', async () => {
-    // ★ IPアドレス関連の処理を最初に実行
-    const globalIpInput = document.getElementById('global-ip-input');
-    if (globalIpInput) {
+document.addEventListener('DOMContentLoaded', () => {
+    // 保存された値を読み込み
+    const ipInput = document.getElementById('ip-input');
+    const ttydInput = document.getElementById('ttyd-input');
+    const fbInput = document.getElementById('fb-input');
+    
+    if (ipInput) {
         const storedIp = localStorage.getItem('site-u-ip');
-        console.log('読み込んだIP:', storedIp); // デバッグ用
-        globalIpInput.value = storedIp || globalIpInput.placeholder || '192.168.1.1';
-        
-        globalIpInput.addEventListener('input', () => {
-            const pos = globalIpInput.selectionStart;
-            const v = toHalfWidth(globalIpInput.value);
-            if (v !== globalIpInput.value) {
-                globalIpInput.value = v;
-                globalIpInput.setSelectionRange(pos, pos);
-            }
-            updateAll(); // 入力時に更新
-        });
-        
-        globalIpInput.addEventListener('keydown', e => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                updateAll(); // Enterキーでも更新
-            }
-        });
-        
-        // 初期表示時にも更新
-        updateAll();
+        if (storedIp) ipInput.value = storedIp;
+    }
+    
+    if (ttydInput) {
+        const storedTtyd = localStorage.getItem('site-u-ttyd');
+        if (storedTtyd) ttydInput.value = storedTtyd;
+    }
+    
+    if (fbInput) {
+        const storedFb = localStorage.getItem('site-u-fb');
+        if (storedFb) fbInput.value = storedFb;
     }
 
-    // ヘッダー・フッター読み込み
-    await loadHeader();
-    await loadFooter();
+    // 各インプットボックスにイベントリスナーを追加
+    [ipInput, ttydInput, fbInput].forEach(input => {
+        if (input) {
+            input.addEventListener('input', () => {
+                const pos = input.selectionStart;
+                const v = toHalfWidth(input.value);
+                if (v !== input.value) {
+                    input.value = v;
+                    input.setSelectionRange(pos, pos);
+                }
+                updateAll(); // 入力時に即座に更新
+            });
+            
+            input.addEventListener('keydown', e => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    updateAll(); // Enterキーでも更新
+                }
+            });
+        }
+    });
     
-    // テーマ・言語セレクターの初期化
-    initializeThemeAndLanguageSelectors();
+    // 初期表示時にも更新
+    updateAll();
 
-    // global-ip-update ボタン（現在HTMLにないため無効）
+    // global-ip-update ボタン
     const globalIpUpdateBtn = document.getElementById('global-ip-update');
     if (globalIpUpdateBtn) {
         globalIpUpdateBtn.addEventListener('click', updateAll);
@@ -347,19 +370,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     const qrDetailContainer = document.getElementById('qrcode-detail-container');
     if (qrDetailContainer && !qrDetailContainer.dataset.toggleListenerAdded) {
         qrDetailContainer.addEventListener('toggle', function() {
-            const input = document.getElementById('global-ip-input');
-            const currentIpForQr = input ? (toHalfWidth(input.value.trim()) || input.placeholder) : '192.168.1.1';
+            const ipInput = document.getElementById('ip-input');
+            const currentIp = ipInput ? (toHalfWidth(ipInput.value.trim()) || ipInput.placeholder) : '192.168.1.1';
+            
             if (this.open) {
-                drawQRCode('qrcode-detail', `http://${currentIpForQr}`);
+                drawQRCode('qrcode-detail', `http://${currentIp}`);
             } else {
                 const qrCanvasContainer = document.getElementById('qrcode-detail');
                 if (qrCanvasContainer) {
-                    const currentLang = localStorage.getItem('lang-preference') || 'ja';
-                    qrCanvasContainer.innerHTML = `<div style="width: 180px; height: 180px; background: var(--text-color); margin: 0 auto; display: flex; align-items: center; justify-content: center; color: var(--block-bg); font-size: 12px;"><span data-i18n="qrCodeArea">${langData[currentLang].qrCodeArea}</span></div>`;
-                    const dummyDivSpan = qrCanvasContainer.querySelector('div span');
-                    if (dummyDivSpan) {
-                        dummyDivSpan.setAttribute('data-text', 'QRiousライブラリがロードされていません');
-                    }
+                    qrCanvasContainer.innerHTML = `<div style="width: 180px; height: 180px; background: var(--text-color); margin: 0 auto; display: flex; align-items: center; justify-content: center; color: var(--block-bg); font-size: 12px;"><span>QRコード表示エリア</span></div>`;
                 }
             }
         });
