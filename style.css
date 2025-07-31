@@ -211,8 +211,8 @@ h3.bordered-element {
 
 /* IPアドレス用（幅広） */
 .ip-container {
-    flex: 2; /* 他のコンテナの2倍の幅 */
-    min-width: 9ch;
+    flex: 3; /* 他のコンテナの2倍の幅 */
+    min-width: 8ch;
 }
 
 /* ポート用（幅狭） */
