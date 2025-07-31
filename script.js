@@ -74,7 +74,9 @@ const langData = {
 function toHalfWidth(str) {
     return str
         .replace(/[\uFF01-\uFF5E]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0))
-        .replace(/\u3000/g, ' ');
+        .replace(/\u3000/g, ' ')
+        .replace(/\u3001/g, ',')
+        .replace(/\u3002/g, '.');
 }
 
 // ── drawQRCode 関数 ──
