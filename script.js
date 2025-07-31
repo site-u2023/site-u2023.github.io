@@ -15,7 +15,7 @@ const langData = {
         qrCodeArea: 'QR Code Display Area',
         terminal: 'Terminal (for Windows)',
         sshHandler: 'Protocol handler registration (first-time use)',
-        downloadHandlerButton: 'Download (Double-click the downloaded sshcmd.reg to install)',
+        downloadHandlerButton: 'Download (Double-click sshcmd.reg to install)',
         sshConnection: 'SSH Connection: ',
         aiosExecution: 'Execute aios: ',
         console: 'Web Console',
