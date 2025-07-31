@@ -198,6 +198,7 @@ h3.bordered-element {
     font-weight: bold;
     font-size: 0.9em;
     box-sizing: border-box;
+    padding: 0.4em 0.5em;
     padding-left: 0.5em;
     padding-right: 0.5em;    
 }
