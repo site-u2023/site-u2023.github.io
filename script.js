@@ -254,6 +254,8 @@ async function loadFooter() {
         document.body.appendChild(footerElement.firstElementChild);
         const yearEl = document.getElementById('current-year');
         if (yearEl) yearEl.textContent = new Date().getFullYear();
+        
+        initializeThemeAndLanguageSelectors();
     } catch (error) {
         console.error("Failed to load footer.html:", error);
     }
