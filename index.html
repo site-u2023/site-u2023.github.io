@@ -11,18 +11,39 @@
         <main class="main-content">
             <nav class="main-nav">
                 <section id="device-ip" class="content-section">
-                    <h2 class="section-title" data-i18n="deviceIP">デバイスIPアドレス</h2>
+                    <h2 class="section-title" data-i18n="deviceIP">デバイス設定</h2>
                     <div class="input-group connection">
-                        <div class="ip-address-display">
+                        <div class="input-container ip-container">
+                            <div class="input-label">IP Address</div>
                             <input
                                 type="text"
-                                id="global-ip-input"
+                                id="ip-input"
                                 value="192.168.1.1"
-                                placeholder="openwrt.lan"
-                                class="text-input"
+                                placeholder="192.168.1.1"
+                                class="input-field"
                             >
-                            </div>
-                            <button id="global-ip-update" class="update-button" data-i18n="update">更新</button>
+                        </div>
+                        <div class="input-container port-container">
+                            <div class="input-label">ttyd</div>
+                            <input
+                                type="text"
+                                id="ttyd-input"
+                                value="7681"
+                                placeholder="7681"
+                                class="input-field"
+                            >
+                        </div>
+                        <div class="input-container port-container">
+                            <div class="input-label">filebrowser</div>
+                            <input
+                                type="text"
+                                id="fb-input"
+                                value="8080"
+                                placeholder="8080"
+                                class="input-field"
+                            >
+                        </div>
+                        <button id="global-ip-update" class="update-button" data-i18n="update">更新</button>
                     </div>
                     <details id="qrcode-detail-container" class="qr-code-section bordered-element">
                         <summary class="qr-code-summary" data-i18n="qrCodeDisplay">SSH QRコード表示</summary>
