@@ -273,12 +273,12 @@ function initializeThemeAndLanguageSelectors() {
         themeBtns.forEach(b => b.classList.toggle('selected', b.dataset.themePreference === pref));
         localStorage.setItem('site-u-theme', pref);
         updateLogoDisplay();
-        updateAll(); // テーマ変更時にもIPアドレスとQRコードを更新
+        updateAll();
     }
 
     if (themeBtns.length > 0) {
         themeBtns.forEach(b => {
-            b.removeEventListener('click', () => applyTheme(b.dataset.themePreference)); // 既存のリスナーを削除（重複防止）
+            b.removeEventListener('click', () => applyTheme(b.dataset.themePreference));
             b.addEventListener('click', () => applyTheme(b.dataset.themePreference));
         });
         window.matchMedia('(prefers-color-scheme: dark)').removeEventListener('change', () => {
@@ -302,7 +302,7 @@ function initializeThemeAndLanguageSelectors() {
     const currentLang = localStorage.getItem('lang-preference') || 'ja';
     if (langButtons.length > 0) {
         langButtons.forEach(button => {
-            button.removeEventListener('click', () => applyLanguage(button.dataset.lang)); // 既存のリスナーを削除（重複防止）
+            button.removeEventListener('click', () => applyLanguage(button.dataset.lang));
             button.addEventListener('click', () => {
                 const newLang = button.dataset.lang;
                 localStorage.setItem('lang-preference', newLang);
