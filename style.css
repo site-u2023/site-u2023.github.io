@@ -218,7 +218,7 @@ h3.bordered-element {
 /* ポート用（幅狭） */
 .port-container {
     flex: 1;
-    min-width: 5ch;
+    min-width: 4ch;
 }
 
 #global-ip-update {
