@@ -202,6 +202,7 @@ h3.bordered-element {
     font-weight: bold;
     font-size: 0.9em;
     box-sizing: border-box;
+    padding: 0;
 }
 .input-field:focus {
     outline: none;
