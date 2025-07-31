@@ -212,7 +212,7 @@ h3.bordered-element {
 /* IPアドレス用（幅広） */
 .ip-container {
     flex: 2;
-    min-width: 10ch;
+    min-width: 9ch;
 }
 
 /* ポート用（幅狭） */
