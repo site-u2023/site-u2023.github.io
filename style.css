@@ -207,10 +207,12 @@ h3.bordered-element {
 
 /* IPアドレス用（幅広） */
 .ip-container {
+    min-width: 16ch;
 }
 
 /* ポート用（幅狭） */
 .port-container {
+    min-width: 5ch;
 }
 
 #global-ip-update {
