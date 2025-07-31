@@ -310,11 +310,9 @@ function initializeThemeAndLanguageSelectors() {
 
 // ── DOMContentLoaded ──
 document.addEventListener('DOMContentLoaded', () => {
-    // ★★★ ヘッダーとフッターを読み込み ★★★
     loadHeader();
     loadFooter();
 
-    // 保存された値を読み込み
     const ipInput = document.getElementById('ip-input');
     const ttydInput = document.getElementById('ttyd-input');
     const fbInput = document.getElementById('fb-input');
@@ -339,17 +337,20 @@ let isComposing = false;
 [ipInput, ttydInput, fbInput].forEach(input => {
     if (!input) return;
 
-    input.addEventListener('compositionstart', e => {
-        e.preventDefault();
-    });
+    input.addEventListener('compositionstart', e => e.preventDefault());
 
     input.addEventListener('keydown', e => {
-        const code = e.key.charCodeAt(0);
-        const allowed =
-              (code >= 0x20 && code <= 0x7E) ||
-              ['Backspace','Delete','ArrowLeft','ArrowRight','Tab','Enter'].includes(e.key);
-        if (!allowed) {
+        const isVisibleASCII =
+            e.key.length === 1 &&
+            e.key.charCodeAt(0) >= 0x20 &&
+            e.key.charCodeAt(0) <= 0x7E;
+
+        const isCtrlKey =
+            ['Backspace','Delete','ArrowLeft','ArrowRight','Tab','Enter'].includes(e.key);
+
+        if (!isVisibleASCII && !isCtrlKey) {
             e.preventDefault();
+            return;
         }
 
         if (e.key === 'Enter') {
@@ -360,7 +361,6 @@ let isComposing = false;
 
     input.addEventListener('input', updateAll);
 });
-
 
     // 初期表示時にも更新
     updateAll();
