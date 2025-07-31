@@ -334,21 +334,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
 let isComposing = false;
 
-[ipInput, ttydInput, fbInput].forEach(input => {
-    if (!input) return;
-
-    input.addEventListener('compositionstart', e => e.preventDefault());
-
-    input.addEventListener('keydown', e => {
-        const isVisibleASCII =
-            e.key.length === 1 &&
-            e.key.charCodeAt(0) >= 0x20 &&
-            e.key.charCodeAt(0) <= 0x7E;
-
-        const isCtrlKey =
+// 修正後のコード
+// IPアドレス入力フィールドの処理（ピリオドを許可）
+if (ipInput) {
+    ipInput.addEventListener('keydown', e => {
+        const isIPAllowedChar =
+            (e.key.length === 1 && /[0-9.]/.test(e.key)) || // 数字とピリオドを許可
             ['Backspace','Delete','ArrowLeft','ArrowRight','Tab','Enter'].includes(e.key);
 
-        if (!isVisibleASCII && !isCtrlKey) {
+        if (!isIPAllowedChar) {
             e.preventDefault();
             return;
         }
@@ -358,8 +352,27 @@ let isComposing = false;
             updateAll();
         }
     });
+}
 
-    input.addEventListener('input', updateAll);
+// ポート番号入力フィールドの処理（数字のみ）
+[ttydInput, fbInput].forEach(input => {
+    if (!input) return;
+    
+    input.addEventListener('keydown', e => {
+        const isNumericAllowedChar =
+            (e.key.length === 1 && /[0-9]/.test(e.key)) || // 数字のみを許可
+            ['Backspace','Delete','ArrowLeft','ArrowRight','Tab','Enter'].includes(e.key);
+
+        if (!isNumericAllowedChar) {
+            e.preventDefault();
+            return;
+        }
+
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            updateAll();
+        }
+    });
 });
 
     // 初期表示時にも更新
