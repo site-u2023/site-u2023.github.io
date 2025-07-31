@@ -45,7 +45,7 @@ const langData = {
         qrCodeArea: 'QRコード表示エリア', 
         terminal: 'ターミナル (Windows用)',
         sshHandler: 'プロトコルハンドラー登録 (初回のみ)',
-        downloadHandlerButton: 'ダウンロード (ダウンロードしたsshcmd.regをダブルクリックしてインストール)',
+        downloadHandlerButton: 'ダウンロード (sshcmd.reg をダブルクリックしてインストールしてください)',
         sshConnection: 'SSH接続: ',
         aiosExecution: 'aios実行: ',
         console: 'Webコンソール',
