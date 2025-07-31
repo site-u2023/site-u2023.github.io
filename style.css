@@ -208,7 +208,7 @@ h3.bordered-element {
 
 /* IPアドレス用（幅広） */
 .ip-container {
-    min-width: 14ch;
+    min-width: 13ch;
 }
 
 /* ポート用（幅狭） */
