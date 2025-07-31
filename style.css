@@ -220,9 +220,9 @@ h3.bordered-element {
     align-items: center;
     justify-content: center;
     width: auto;
-    min-width: 64px;
+    min-width: unset;
     height: 3.3rem;
-    padding: 0 1em;
+    padding: 0 0.5em;
     box-sizing: border-box;
     flex: 0 0 auto;
     white-space: nowrap;
