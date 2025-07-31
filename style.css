@@ -151,7 +151,7 @@ h3.bordered-element {
 /* ── Device IP セクション内の修正（3つのインプットボックス対応） ── */
 #device-ip .input-group {
     display: flex;
-    align-items: center;
+    align-items: stretch;
     gap: 0.5rem;
     margin-bottom: 1em;
 }
@@ -166,14 +166,11 @@ h3.bordered-element {
     padding: 0 0.5em;
     box-sizing: border-box;
     transition: background-color 0.2s, border-color 0.2s;
-    flex-grow: 0;
-    flex-shrink: 1;
-    flex-basis: auto;
 }
 
 .input-container:focus-within {
-    background-color: var(--hover-bg); 
-    border-color: var(--hover-bg); 
+    background-color: var(--hover-bg);
+    border-color: var(--hover-bg);
 }
 
 /* ラベル（枠と枠の間に配置） */
@@ -204,11 +201,13 @@ h3.bordered-element {
     font-weight: bold;
     font-size: 0.9em;
     box-sizing: border-box;
-    padding: 0;
+    padding: 0 0.5em;
+    padding-left: 0.5em;
+    padding-right: 0.5em;
 }
 .input-field:focus {
-    outline: none; 
-    color: var(--hover-text); 
+    outline: none;
+    color: var(--hover-text);
 }
 
 /* IPアドレス用（幅広） */
@@ -219,7 +218,6 @@ h3.bordered-element {
 /* ポート用（幅狭） */
 .port-container {
     min-width: 4ch;
-    flex-grow: 0;
 }
 
 #global-ip-update {
@@ -359,7 +357,7 @@ h3.bordered-element {
 /* ── ヘッダー ── */
 .main-header {
     position: relative;
-    
+
     border-bottom: none !important;
     border-bottom: 0.05em solid var(--text-color);
     background-color: var(--block-bg);
@@ -421,7 +419,7 @@ h3.bordered-element {
     align-items: flex-end;
     padding: 1em 2em;
     background-color: var(--block-bg);
-    
+
     border-top: none !important;
     border-top: 0.05em solid var(--text-color);
     border-color: var(--text-color);
@@ -565,7 +563,7 @@ h3.bordered-element {
 
 /* ── ダークテーマ用オーバーライド ── */
 body[data-theme="dark"] .container {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 body[data-theme="dark"] .main-content {
     box-shadow: 0 0.25em 0.75em rgba(0, 0, 0, 0.5);
