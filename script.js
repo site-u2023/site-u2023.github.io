@@ -320,22 +320,22 @@ document.addEventListener('DOMContentLoaded', () => {
     // ★★★ ヘッダーとフッターを読み込み ★★★
     loadHeader();
     loadFooter();
-    
+
     // 保存された値を読み込み
     const ipInput = document.getElementById('ip-input');
     const ttydInput = document.getElementById('ttyd-input');
     const fbInput = document.getElementById('fb-input');
-    
+
     if (ipInput) {
         const storedIp = localStorage.getItem('site-u-ip');
         if (storedIp) ipInput.value = storedIp;
     }
-    
+
     if (ttydInput) {
         const storedTtyd = localStorage.getItem('site-u-ttyd');
         if (storedTtyd) ttydInput.value = storedTtyd;
     }
-    
+
     if (fbInput) {
         const storedFb = localStorage.getItem('site-u-fb');
         if (storedFb) fbInput.value = storedFb;
@@ -345,15 +345,19 @@ document.addEventListener('DOMContentLoaded', () => {
     [ipInput, ttydInput, fbInput].forEach(input => {
         if (input) {
             input.addEventListener('input', () => {
+                const prevValue = input.value;
                 const pos = input.selectionStart;
-                const v = toHalfWidth(input.value);
-                if (v !== input.value) {
-                    input.value = v;
-                    input.setSelectionRange(pos, pos);
+                const halfValue = toHalfWidth(prevValue);
+                if (halfValue !== prevValue) {
+                    input.value = halfValue;
+                    // 入力位置補正: 差分分カーソルを左に戻す
+                    const diff = prevValue.length - halfValue.length;
+                    const newPos = Math.max(0, pos - diff);
+                    input.setSelectionRange(newPos, newPos);
                 }
                 updateAll(); // 入力時に即座に更新
             });
-            
+
             input.addEventListener('keydown', e => {
                 if (e.key === 'Enter') {
                     e.preventDefault();
@@ -362,7 +366,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
     });
-    
+
     // 初期表示時にも更新
     updateAll();
 
@@ -378,7 +382,7 @@ document.addEventListener('DOMContentLoaded', () => {
         qrDetailContainer.addEventListener('toggle', function() {
             const ipInput = document.getElementById('ip-input');
             const currentIp = ipInput ? (toHalfWidth(ipInput.value.trim()) || ipInput.placeholder) : '192.168.1.1';
-            
+
             if (this.open) {
                 drawQRCode('qrcode-detail', `http://${currentIp}`);
             } else {
