@@ -233,6 +233,8 @@ function updateTerminalCommand() {
         if (config) {
             if (selectedType === 'aios') {
                 commandInput.value = `root@${currentIP}/${SSH_CMD_ENCODED_AIOS}`;
+            } else if (selectedType === 'ssh') {
+                commandInput.value = `root@${currentIP}/`;
             } else if (config.command) {
                 commandInput.value = config.command.replace('{ip}', currentIP);
             } else {
@@ -242,10 +244,6 @@ function updateTerminalCommand() {
         
         updateTerminalDisplay();
     }
-}
-
-function updateTerminalDisplay() {
-    // ターミナル表示の更新（必要に応じて実装）
 }
 
 function generateTerminalURL() {
@@ -259,7 +257,7 @@ function generateTerminalURL() {
         return 'sshcmd://';
     }
     
-    return `sshcmd://${encodeURIComponent(command)}`;
+    return `sshcmd://${command}`;
 }
 
 // ==================================================
