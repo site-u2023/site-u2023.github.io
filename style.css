@@ -316,12 +316,11 @@ h3.bordered-element {
     background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f1f1f1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e") !important;
 }
 
-/* ── ポートフィールド（サービス選択内） ── */
+/* ── ポートフィールド（縦線を疑似要素で実装） ── */
 .port-field {
     flex: 1;
-    min-width: 4ch; /* Port用最小幅 */
-    border: none;
-    border-left: 0.05em solid var(--text-color);
+    min-width: 4ch;
+    border: none; /* border-leftを削除 */
     background-color: transparent;
     color: inherit;
     font-weight: bold;
@@ -329,6 +328,22 @@ h3.bordered-element {
     box-sizing: border-box;
     padding: 1.2em 0.5em 1.2em 0.5em;
     margin: 0;
+    position: relative;
+}
+
+.port-field::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.2em;
+    bottom: 0.2em;
+    width: 0.05em;
+    background-color: var(--text-color);
+    transition: background-color 0.2s ease;
+}
+
+.service-container:focus-within .port-field::before {
+    background-color: var(--hover-bg);
 }
 
 .port-field:focus {
