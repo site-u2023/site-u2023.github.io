@@ -49,7 +49,7 @@ const SERVICES = {
 const langData = {
     en: {
         deviceIP: 'Device Settings',
-        update: 'Update',
+        apply: 'Apply',
         open: 'Open',
         webLinks: 'Web Links',
         qrCodeDisplay: 'QR Code',
@@ -83,7 +83,7 @@ const langData = {
     },
     ja: {
         deviceIP: 'デバイス設定',
-        update: '更新',
+        apply: '適用',
         open: '開く',
         webLinks: 'Webリンク',
         qrCodeDisplay: 'QRコード',
