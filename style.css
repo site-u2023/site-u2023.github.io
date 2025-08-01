@@ -150,7 +150,7 @@ h3.bordered-element {
 /* ── IPアドレス入力コンテナ ── */
 .ip-container-full {
     flex: 1;
-    min-width: 10ch; /* IPアドレス用最小幅 */
+    min-width: 9ch; /* IPアドレス用最小幅 */
     display: flex;
     align-items: stretch;
     position: relative;
