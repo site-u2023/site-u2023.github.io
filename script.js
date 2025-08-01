@@ -199,13 +199,20 @@ function handleServiceChange() {
     const selectedService = SERVICES[serviceSelector.value];
     if (!selectedService) return;
     
-    // Customでない場合はポートを自動設定
+    // ユーザーが入力したポート値を保持
+    const currentPortValue = portInput.value.trim();
+    
+    // Customでない場合で、かつポートが空の場合のみデフォルト設定
     if (serviceSelector.value !== 'custom' && selectedService.port !== null) {
-        portInput.value = selectedService.port;
-        portInput.disabled = false; // ユーザーが変更可能
+        if (!currentPortValue) {
+            portInput.value = selectedService.port;
+        }
+        portInput.disabled = false;
     } else if (serviceSelector.value === 'custom') {
         portInput.disabled = false;
-        portInput.placeholder = 'Enter port';
+        if (!currentPortValue) {
+            portInput.placeholder = 'Enter port';
+        }
     }
     
     // ローカルストレージに保存
