@@ -653,8 +653,9 @@ h3.bordered-element {
 .page-footer-area {
     position: fixed;
     bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
     max-width: 50em; /* 最大幅800px */
-    margin: 0 auto; /* 中央揃え */
     width: 100%; /* ← 横∞を消す */
     display: flex;
     justify-content: center;
