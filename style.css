@@ -78,6 +78,7 @@ ul {
     align-items: center;
     box-sizing: border-box;
     transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    box-shadow: 0 0.25em 0.5em rgba(0, 0, 0, 0.1); /* ライト・ダーク共通 */
 }
 
 .main-content {
@@ -88,9 +89,9 @@ ul {
     background: var(--block-bg);
     padding: 1.5em 1em;
     border-radius: 0.5em;
-    box-shadow: 0 0.25em 0.5em rgba(0, 0, 0, 0.1);
     box-sizing: border-box;
     min-width: 0;
+    box-shadow: 0 0.25em 0.5em rgba(0, 0, 0, 0.1); /* ライト・ダーク共通 */
 }
 
 /* ── 新しい「枠付き要素」の汎用スタイル ── */
@@ -548,6 +549,7 @@ h3.bordered-element {
     margin: 0 auto; /* 中央揃え */
     width: 100%;
     box-shadow: 0 0.25em 0.5em rgba(0, 0, 0, 0.1); /* 影を統一 */
+    border-color: transparent;
     box-sizing: border-box;
 }
 
@@ -606,6 +608,7 @@ h3.bordered-element {
     padding: 1em;
     background-color: var(--block-bg);
     box-shadow: 0 0.25em 0.5em rgba(0, 0, 0, 0.1); /* 影を統一 */
+    border-color: transparent;
     box-sizing: border-box;
     z-index: 100;
 }
@@ -699,18 +702,4 @@ h3.bordered-element {
     display: flex;
     align-items: center;
     gap: 0.3em;
-}
-
-/* ── ダークテーマ用オーバーライド ── */
-body[data-theme="dark"] .container {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-}
-body[data-theme="dark"] .main-content {
-    box-shadow: 0 0.25em 0.75em rgba(0, 0, 0, 0.5);
-}
-body[data-theme="dark"] .main-header {
-    border-color: var(--link-color);
-}
-body[data-theme="dark"] .page-footer-area {
-    border-color: var(--link-color);
 }
