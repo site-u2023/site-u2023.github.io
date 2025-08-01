@@ -238,6 +238,24 @@ h3.bordered-element {
     color: var(--hover-text);
 }
 
+/* ── ポートラベル ── */
+.port-label {
+    position: absolute;
+    top: 0.2em;
+    left: 0.5em;
+    font-size: 0.7em;
+    color: inherit;
+    font-weight: normal;
+    opacity: 0.8;
+    pointer-events: none;
+    transition: color 0.2s ease;
+    z-index: 2;
+}
+
+.service-container:focus-within .port-label {
+    color: var(--hover-text);
+}
+
 /* ── サービスセレクター ── */
 .service-select {
     flex: 1;
@@ -269,35 +287,12 @@ h3.bordered-element {
     color: var(--text-color);
 }
 
-/* ── ポートコンテナ用ラベル対応 ── */
-.port-container-with-label {
-    flex: 1;
-    position: relative;
-    border-left: 0.05em solid var(--text-color);
-    min-width: 4ch;
-}
-
-.port-label {
-    position: absolute;
-    top: 0.2em;
-    left: 0.5em;
-    font-size: 0.7em;
-    color: inherit;
-    font-weight: normal;
-    opacity: 0.8;
-    pointer-events: none;
-    transition: color 0.2s ease;
-    z-index: 2;
-}
-
-.service-container:focus-within .port-label {
-    color: var(--hover-text);
-}
-
 /* ── ポートフィールド（サービス選択内） ── */
 .port-field {
-    width: 100%;
+    flex: 1;
+    min-width: 4ch;
     border: none;
+    border-left: 0.05em solid var(--text-color);
     background-color: transparent;
     color: inherit;
     font-weight: bold;
