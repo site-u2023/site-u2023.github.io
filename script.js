@@ -41,7 +41,17 @@ const translations = {
         downloadHandlerButton: 'ダウンロード',
         githubRepo: 'GitHubリポジトリ',
         aiosScript: 'オールインワンスクリプト',
-        configSoftware: 'コンフォグソフトウェア'
+        configSoftware: 'コンフィグソフトウェア',
+        disclaimerPageTitle: '免責事項',
+        disclaimerSiteUTitle: 'site-u（当サイト）に関する免責事項',
+        disclaimerOpenWrtTitle: 'OpenWrtに関する免責事項',
+        disclaimerSiteUParagraph: '当サイトで公開されているコンテンツ（ウェブサイト、スクリプト、その他の著作物を含む）は全てオープンであり、自由にご利用いただけます。しかしながら、これらのコンテンツの利用によって生じたいかなる損害についても、当サイトの運営者は一切の責任を負いません。利用者の皆様の責任においてご利用くださいますようお願いいたします。',
+        disclaimerOpenWrtParagraph: 'OpenWrtはSoftware Freedom Conservancyの登録商標です。当サイトはOpenWrtプロジェクトとは提携しておらず、また推奨もされていません。OpenWrtに関する公式情報やサポートについては、OpenWrt公式サイトをご参照ください。',
+        footerMemo: 'OpenWrt初心者備忘録',
+        footerCopyright: '© site-u',
+        footerDisclaimer: '免責事項',
+        langEn: 'English',
+        langJa: '日本語'
     },
     en: {
         address: 'Address',
@@ -55,7 +65,17 @@ const translations = {
         downloadHandlerButton: 'Download',
         githubRepo: 'GitHub Repository',
         aiosScript: 'All-in-One Script',
-        configSoftware: 'Config Software'
+        configSoftware: 'Config Software',
+        disclaimerPageTitle: 'Disclaimer',
+        disclaimerSiteUTitle: 'Disclaimer regarding site-u (this site)',
+        disclaimerOpenWrtTitle: 'Disclaimer regarding OpenWrt',
+        disclaimerSiteUParagraph: 'All content published on this site (including websites, scripts, and other works) is open and available for free use. However, the site operator assumes no responsibility for any damages arising from the use of this content. Please use at your own risk.',
+        disclaimerOpenWrtParagraph: 'OpenWrt is a registered trademark of Software Freedom Conservancy. This site is not affiliated with or endorsed by the OpenWrt project. For official information and support regarding OpenWrt, please refer to the official OpenWrt website.',
+        footerMemo: 'OpenWrt A Beginner\'s Notebook',
+        footerCopyright: '© site-u',
+        footerDisclaimer: 'Disclaimer',
+        langEn: 'English',
+        langJa: '日本語'
     }
 };
 
