@@ -141,13 +141,13 @@ function drawQRCode(elementId, text) {
     });
 }
 
-// ── 動的リンク生成関数 ──
-function generateDynamicLinks() {
-    const dynamicLinksContainer = document.getElementById('dynamic-links');
-    if (!dynamicLinksContainer) return;
+// ── 選択中サービスリンク生成関数 ──
+function generateSelectedServiceLink() {
+    const selectedServiceContainer = document.getElementById('selected-service-link');
+    if (!selectedServiceContainer) return;
 
     // 既存のリンクをクリア
-    dynamicLinksContainer.innerHTML = '';
+    selectedServiceContainer.innerHTML = '';
 
     const ipInput = document.getElementById('ip-input');
     const serviceSelector = document.getElementById('service-selector');
@@ -156,45 +156,35 @@ function generateDynamicLinks() {
     if (!ipInput || !serviceSelector || !portInput) return;
 
     const ip = ipInput.value.trim() || ipInput.placeholder;
-    const selectedService = serviceSelector.value;
+    const selectedServiceKey = serviceSelector.value;
     const port = portInput.value.trim() || portInput.placeholder;
     const currentLang = localStorage.getItem('lang-preference') || 'en';
 
-    // 選択されたサービス以外のすべてのサービスのリンクを生成
-    Object.keys(SERVICES).forEach(serviceKey => {
-        const service = SERVICES[serviceKey];
-        
-        // Customは除外（動的サービスではないため）
-        if (serviceKey === 'custom') return;
-        
-        // 現在選択されているサービスの場合は、入力されたポートを使用
-        const servicePort = serviceKey === selectedService ? port : service.port;
-        const url = `${service.protocol}://${ip}:${servicePort}${service.path}`;
-        
-        // リンク要素を作成
-        const li = document.createElement('li');
-        const a = document.createElement('a');
-        
-        a.href = url;
-        a.target = '_blank';
-        a.rel = 'noopener';
-        a.className = 'link-item bordered-element';
-        a.setAttribute('data-service', serviceKey);
-        
-        // リンクテキストとIPディスプレイを作成
-        const linkText = document.createElement('span');
-        linkText.className = 'link-text';
-        linkText.textContent = langData[currentLang][service.i18nKey] || `${service.name}: `;
-        
-        const ipDisplay = document.createElement('span');
-        ipDisplay.className = 'ip-display';
-        ipDisplay.innerHTML = `${service.protocol}://<span class="service-ip">${ip}</span>:<span class="service-port">${servicePort}</span>`;
-        
-        a.appendChild(linkText);
-        a.appendChild(ipDisplay);
-        li.appendChild(a);
-        dynamicLinksContainer.appendChild(li);
-    });
+    const service = SERVICES[selectedServiceKey];
+    if (!service) return;
+
+    const url = `${service.protocol}://${ip}:${port}${service.path}`;
+    
+    // リンク要素を作成
+    const a = document.createElement('a');
+    a.href = url;
+    a.target = '_blank';
+    a.rel = 'noopener';
+    a.className = 'link-item bordered-element';
+    a.setAttribute('data-service', selectedServiceKey);
+    
+    // リンクテキストとIPディスプレイを作成
+    const linkText = document.createElement('span');
+    linkText.className = 'link-text';
+    linkText.textContent = langData[currentLang][service.i18nKey] || `${service.name}: `;
+    
+    const ipDisplay = document.createElement('span');
+    ipDisplay.className = 'ip-display';
+    ipDisplay.innerHTML = `${service.protocol}://<span class="service-ip">${ip}</span>:<span class="service-port">${port}</span>`;
+    
+    a.appendChild(linkText);
+    a.appendChild(ipDisplay);
+    selectedServiceContainer.appendChild(a);
 }
 
 // ── サービス選択変更処理 ──
@@ -220,8 +210,8 @@ function handleServiceChange() {
     localStorage.setItem('site-u-service', serviceSelector.value);
     localStorage.setItem('site-u-port', portInput.value);
     
-    // リンクを更新
-    generateDynamicLinks();
+    // 選択されたサービスのリンクを更新
+    generateSelectedServiceLink();
 }
 
 // ── 全リンク更新処理（更新版） ──
@@ -247,8 +237,8 @@ function updateAll() {
     if (sshIpSpan) sshIpSpan.textContent = ip;
     if (aiosIpSpan) aiosIpSpan.textContent = ip;
 
-    // 動的リンクを更新
-    generateDynamicLinks();
+    // 選択されたサービスのリンクを更新
+    generateSelectedServiceLink();
 
     // 既存のSSHリンクを更新
     document.querySelectorAll('a[data-ip-template]').forEach(link => {
@@ -427,19 +417,20 @@ function applyLanguage(lang) {
         }
     });
 
-    // 動的サービスリンクの言語切り替え
-    document.querySelectorAll('a[data-service]').forEach(link => {
-        const serviceKey = link.getAttribute('data-service');
+    // 選択されたサービスリンクの言語切り替え
+    const selectedServiceLink = document.querySelector('#selected-service-link a[data-service]');
+    if (selectedServiceLink) {
+        const serviceKey = selectedServiceLink.getAttribute('data-service');
         const service = SERVICES[serviceKey];
         if (service && langData[lang][service.i18nKey]) {
-            const linkTextSpan = link.querySelector('.link-text');
+            const linkTextSpan = selectedServiceLink.querySelector('.link-text');
             if (linkTextSpan) {
                 linkTextSpan.textContent = langData[lang][service.i18nKey];
             }
         }
-    });
+    }
 
-    // 全体を更新（動的リンクの再生成も含む）
+    // 全体を更新（選択されたサービスリンクの再生成も含む）
     updateAll();
 }
 
