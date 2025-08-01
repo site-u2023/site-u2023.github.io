@@ -156,13 +156,15 @@ function generateSelectedServiceLink() {
 
     const ip = ipInput.value.trim() || ipInput.placeholder;
     const selectedServiceKey = serviceSelector.value;
-    const port = portInput.value.trim() || portInput.placeholder;
+    const port = portInput.value.trim();
     const currentLang = localStorage.getItem('lang-preference') || 'en';
 
     const service = SERVICES[selectedServiceKey];
     if (!service) return;
 
-    const url = `${service.protocol}://${ip}:${port}${service.path}`;
+    const url = port && selectedServiceKey !== 'luci'
+        ? `${service.protocol}://${ip}:${port}${service.path}`
+        : `${service.protocol}://${ip}${service.path}`;
     
     const a = document.createElement('a');
     a.href = url;
@@ -194,10 +196,13 @@ function handleServiceChange() {
     const selectedService = SERVICES[serviceSelector.value];
     if (!selectedService) return;
     
-    if (serviceSelector.value !== 'custom' && selectedService.port !== null) {
+    if (serviceSelector.value === 'luci') {
+        portInput.value = '';
+        portInput.disabled = false;
+    } else if (selectedService.port !== null) {
         portInput.value = selectedService.port;
         portInput.disabled = false;
-    } else if (serviceSelector.value === 'custom') {
+    } else {
         portInput.disabled = false;
         portInput.placeholder = 'Enter port';
     }
@@ -206,6 +211,28 @@ function handleServiceChange() {
     localStorage.setItem('site-u-port', portInput.value);
     
     generateSelectedServiceLink();
+    updateQRCode();
+}
+
+function updateQRCode() {
+    const qrDetailContainer = document.getElementById('qrcode-detail-container');
+    if (!qrDetailContainer || !qrDetailContainer.open) return;
+
+    const ipInput = document.getElementById('ip-input');
+    const serviceSelector = document.getElementById('service-selector');
+    const portInput = document.getElementById('port-input');
+    
+    const ip = ipInput ? (ipInput.value.trim() || ipInput.placeholder) : '192.168.1.1';
+    const port = portInput ? portInput.value.trim() : '';
+    const selectedService = serviceSelector ? serviceSelector.value : 'luci';
+    const service = SERVICES[selectedService];
+    
+    if (service) {
+        const serviceUrl = port && selectedService !== 'luci'
+            ? `${service.protocol}://${ip}:${port}${service.path}`
+            : `${service.protocol}://${ip}${service.path}`;
+        drawQRCode('qrcode-detail', serviceUrl);
+    }
 }
 
 // ── 全リンク更新処理 ──
@@ -218,7 +245,7 @@ function updateAll() {
 
     const ip = ipInput.value.trim() || ipInput.placeholder;
     const selectedService = serviceSelector.value;
-    const port = portInput.value.trim() || portInput.placeholder;
+    const port = portInput.value.trim();
     
     localStorage.setItem('site-u-ip', ip);
     localStorage.setItem('site-u-service', selectedService);
@@ -230,6 +257,7 @@ function updateAll() {
     if (aiosIpSpan) aiosIpSpan.textContent = ip;
 
     generateSelectedServiceLink();
+    updateQRCode();
 
     document.querySelectorAll('a[data-ip-template]').forEach(link => {
         const template = link.dataset.ipTemplate;
