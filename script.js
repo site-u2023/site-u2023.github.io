@@ -236,9 +236,10 @@ function updateTerminalCommand() {
         
         if (config) {
             if (selectedType === 'aios') {
-                commandInput.value = `root@${currentIP}/${SSH_CMD_ENCODED_AIOS}`;
+                // OpenWrtが期待するURI形式を修正
+                commandInput.value = `sshcmd://root@${currentIP}/${SSH_CMD_ENCODED_AIOS}`;
             } else if (config.command) {
-                commandInput.value = config.command.replace('{ip}', currentIP);
+                commandInput.value = `sshcmd://${config.command.replace('{ip}', currentIP)}`;
             } else {
                 commandInput.value = '';
             }
@@ -260,10 +261,10 @@ function generateTerminalURL() {
     const command = commandInput.value;
     
     if (!command) {
-        return 'sshcmd://';
+        return null;
     }
     
-    return `sshcmd://${encodeURIComponent(command)}`;
+    return command;
 }
 
 // ==================================================
