@@ -300,6 +300,15 @@ h3.bordered-element {
     color: var(--text-color);
 }
 
+/* ── モバイルブラウザのデフォルトスタイル無効化 ── */
+.input-field,
+.service-select,
+.port-field {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
+
 /* サービスセレクターのホバー時スタイル - より高い詳細度で適用 */
 .service-container .service-select:hover {
     background-color: var(--hover-bg) !important;
