@@ -360,8 +360,8 @@ function updateLanguage(lang) {
     const elements = document.querySelectorAll('[data-i18n]');
     elements.forEach(element => {
         const key = element.getAttribute('data-i18n');
-        if (langData[lang] && langData[lang][key]) {  // translations → langData
-            element.textContent = langData[lang][key];
+        if (translations[lang] && translations[lang][key]) {
+            element.textContent = translations[lang][key];
         }
     });
 }
