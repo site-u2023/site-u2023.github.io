@@ -168,7 +168,7 @@ h3.bordered-element {
     padding: 0;
     box-sizing: border-box;
     transition: background-color 0.2s, border-color 0.2s;
-    min-height: 3.6em;
+    min-height: 3.4em;
 }
 
 .ip-container-full:focus-within {
@@ -222,7 +222,7 @@ h3.bordered-element {
     padding: 0;
     box-sizing: border-box;
     transition: background-color 0.2s, border-color 0.2s;
-    min-height: 3.6em;
+    min-height: 3.4em;
 }
 
 .service-container:focus-within {
@@ -356,7 +356,7 @@ h3.bordered-element {
     font-size: 0.9em;
     white-space: nowrap;
     box-sizing: border-box;
-    min-height: 3.6em;
+    min-height: 3.4em;
 }
 
 .update-button-standalone:hover {
