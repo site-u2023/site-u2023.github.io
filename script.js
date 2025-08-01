@@ -50,6 +50,7 @@ const langData = {
     en: {
         deviceIP: 'Device Settings',
         update: 'Update',
+        open: 'Open',
         webLinks: 'Web Links',
         qrCodeDisplay: 'QR Code',
         qrCodeArea: 'QR Code Display Area',
@@ -83,6 +84,7 @@ const langData = {
     ja: {
         deviceIP: 'デバイス設定',
         update: '更新',
+        open: '開く',
         webLinks: 'Webリンク',
         qrCodeDisplay: 'QRコード',
         qrCodeArea: 'QRコード表示エリア', 
@@ -114,6 +116,32 @@ const langData = {
         langJa: '日本語'
     }
 };
+
+// ── 現在のサービスURLを取得する関数 ──
+function getCurrentUrl() {
+    const ipInput = document.getElementById('ip-input');
+    const serviceSelector = document.getElementById('service-selector');
+    const portInput = document.getElementById('port-input');
+    
+    if (!ipInput || !serviceSelector || !portInput) return null;
+    
+    const ip = ipInput.value.trim() || ipInput.placeholder;
+    const selectedServiceKey = serviceSelector.value;
+    const port = portInput.value.trim() || portInput.placeholder;
+    
+    const service = SERVICES[selectedServiceKey];
+    if (!service) return null;
+    
+    return `${service.protocol}://${ip}:${port}${service.path}`;
+}
+
+// ── 現在のURLを新しいタブで開く関数 ──
+function openCurrentUrl() {
+    const url = getCurrentUrl();
+    if (url) {
+        window.open(url, '_blank');
+    }
+}
 
 // ── drawQRCode 関数（修正版：選択されたサービスのURLを使用） ──
 function drawQRCode(elementId, url) {
@@ -277,45 +305,6 @@ function updateAll() {
     }
 }
 
-// ── 現在のサービスURLを取得する関数 ──
-function getCurrentUrl() {
-    const ipInput = document.getElementById('ip-input');
-    const serviceSelector = document.getElementById('service-selector');
-    const portInput = document.getElementById('port-input');
-    
-    if (!ipInput || !serviceSelector || !portInput) return null;
-    
-    const ip = ipInput.value.trim() || ipInput.placeholder;
-    const selectedServiceKey = serviceSelector.value;
-    const port = portInput.value.trim() || portInput.placeholder;
-    
-    const service = SERVICES[selectedServiceKey];
-    if (!service) return null;
-    
-    return `${service.protocol}://${ip}:${port}${service.path}`;
-}
-
-// ── 現在のURLを新しいタブで開く関数 ──
-function openCurrentUrl() {
-    const url = getCurrentUrl();
-    if (url) {
-        window.open(url, '_blank');
-    }
-}
-
-// ── DOMContentLoaded内に追加（既存のglobal-ip-updateボタンの後に追加） ──
-// global-ip-update ボタン
-const globalIpUpdateBtn = document.getElementById('global-ip-update');
-if (globalIpUpdateBtn) {
-    globalIpUpdateBtn.addEventListener('click', updateAll);
-}
-
-// open-current-url ボタン
-const openCurrentUrlBtn = document.getElementById('open-current-url');
-if (openCurrentUrlBtn) {
-    openCurrentUrlBtn.addEventListener('click', openCurrentUrl);
-}
-
 // ── DOMContentLoaded（更新版） ──
 document.addEventListener('DOMContentLoaded', () => {
     loadHeader();
@@ -413,6 +402,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const globalIpUpdateBtn = document.getElementById('global-ip-update');
     if (globalIpUpdateBtn) {
         globalIpUpdateBtn.addEventListener('click', updateAll);
+    }
+
+    // open-current-url ボタン
+    const openCurrentUrlBtn = document.getElementById('open-current-url');
+    if (openCurrentUrlBtn) {
+        openCurrentUrlBtn.addEventListener('click', openCurrentUrl);
     }
 
     // QRコード関連（修正版：選択されたサービスのURLを使用）
