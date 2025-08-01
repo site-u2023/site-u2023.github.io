@@ -662,7 +662,7 @@ h3.bordered-element {
     align-items: flex-end;
     padding: 1em;
     background-color: var(--block-bg);
-    /* box-shadow: 0 0.25em 0.5em rgba(0, 0, 0, 0.1); */
+    box-shadow: 0 0.25em 0.5em rgba(0, 0, 0, 0.1); /* 影を統一 */
     border-color: transparent;
     box-sizing: border-box;
     z-index: 100;
@@ -671,14 +671,11 @@ h3.bordered-element {
 .page-footer-area .footer-inner-flex {
     max-width: 50em;
     width: 100%;
-    margin: 0 auto;
-    padding: 1em;  /* ヘッダーと同様の構造 */
     display: flex;
     justify-content: center;
     align-items: center;
     flex-wrap: wrap;
     gap: 1em;
-    box-sizing: border-box;
 }
 
 .page-footer-area .copyright-text {
