@@ -28,8 +28,8 @@
                             >
                         </div>
                         
-                        <!-- Service Selector and Port Input -->
-                        <div class="input-container service-container">
+                        <!-- Service Selector (独立) -->
+                        <div class="input-container service-container-only">
                             <div class="input-label">Service</div>
                             <select id="service-selector" class="service-select">
                                 <option value="luci">LuCI</option>
@@ -38,20 +38,22 @@
                                 <option value="adguard">AdGuard</option>
                                 <option value="custom">Custom</option>
                             </select>
-                            <div class="port-container">
-                                <div class="port-label">Port</div>
-                                <input
-                                    type="text"
-                                    id="port-input"
-                                    inputmode="numeric"
-                                    pattern="[0-9]*"
-                                    lang="en"
-                                    autocomplete="off"
-                                    value=""
-                                    placeholder="80"
-                                    class="input-field port-field"
-                                >
-                            </div>
+                        </div>
+
+                        <!-- Port Input (独立) -->
+                        <div class="input-container port-container-only">
+                            <div class="port-label">Port</div>
+                            <input
+                                type="text"
+                                id="port-input"
+                                inputmode="numeric"
+                                pattern="[0-9]*"
+                                lang="en"
+                                autocomplete="off"
+                                value=""
+                                placeholder="80"
+                                class="input-field port-field"
+                            >
                         </div>
                         
                         <!-- Update Button -->
