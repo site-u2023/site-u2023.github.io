@@ -16,7 +16,6 @@ const SERVICE_CONFIGS = {
 
 // ターミナルタイプ設定
 const TERMINAL_CONFIGS = {
-    powershell: { command: '' },
     ssh: { command: 'root@{ip}' },
     aios: { command: 'root@{ip}' },
     custom: { command: '' }
@@ -254,23 +253,17 @@ function updateTerminalDisplay() {
 }
 
 function generateTerminalURL() {
-    const terminalSelector = document.getElementById('terminal-selector');
     const commandInput = document.getElementById('command-input');
     
-    if (!terminalSelector || !commandInput) return null;
+    if (!commandInput) return null;
     
-    const selectedType = terminalSelector.value;
     const command = commandInput.value;
     
     if (!command) {
         return 'sshcmd://';
     }
     
-    if (selectedType === 'aios') {
-        return `sshcmd://${command}/${SSH_CMD_ENCODED_AIOS}`;
-    } else {
-        return `sshcmd://${command}`;
-    }
+    return `sshcmd://${encodeURIComponent(command)}`;
 }
 
 // ==================================================
