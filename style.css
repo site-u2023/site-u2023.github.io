@@ -241,8 +241,10 @@ h3.bordered-element {
 /* ── ポートラベル ── */
 .port-container {
     position: relative;
-    flex: 1;
+    flex: 1;  /* サービス選択と1:1の比率にする */
     min-width: 4ch;
+    display: flex;
+    align-items: center;  /* 縦方向中央配置 */
 }
 
 .port-label {
