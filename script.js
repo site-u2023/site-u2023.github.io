@@ -222,6 +222,7 @@ function generateBrowserURL() {
 // ==================================================
 // ターミナル関連機能
 // ==================================================
+// ── updateTerminalCommand 関数（修正版） ──
 function updateTerminalCommand() {
     const terminalSelector = document.getElementById('terminal-selector');
     const commandInput = document.getElementById('command-input');
@@ -234,15 +235,18 @@ function updateTerminalCommand() {
         if (selectedType === 'powershell') {
             commandInput.value = '';
         } else if (selectedType === 'ssh') {
-            commandInput.value = `root@${currentIp}`;
+            commandInput.value = `root@${currentIp}/`;
         } else if (selectedType === 'aios') {
             commandInput.value = `root@${currentIp}/${SSH_CMD_ENCODED_AIOS}`;
         } else if (selectedType === 'custom') {
             commandInput.value = '';
         }
+        
+        updateTerminalDisplay();
     }
 }
 
+// ── generateTerminalURL 関数（修正版） ──
 function generateTerminalURL() {
     const terminalSelector = document.getElementById('terminal-selector');
     const commandInput = document.getElementById('command-input');
