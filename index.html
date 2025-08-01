@@ -13,7 +13,8 @@
                 <section id="device-ip" class="content-section">
                     <h2 class="section-title" data-i18n="deviceIP">Device Settings</h2>
                     <div class="input-group connection">
-                        <div class="input-container ip-container">
+                        <!-- IP Address Input with Update Button -->
+                        <div class="input-container ip-container-full">
                             <div class="input-label">IP Address</div>
                             <input
                                 type="text"
@@ -25,36 +26,32 @@
                                 placeholder="openwrt.lan"
                                 class="input-field"
                             >
+                            <button id="global-ip-update" class="update-button-inline" data-i18n="update">Update</button>
                         </div>
-                        <div class="input-container port-container">
-                            <div class="input-label">ttyd</div>
+                        
+                        <!-- Service Selector and Port Input -->
+                        <div class="input-container service-container">
+                            <div class="input-label">Service</div>
+                            <select id="service-selector" class="service-select">
+                                <option value="luci">LuCI</option>
+                                <option value="ttyd" selected>ttyd</option>
+                                <option value="filebrowser">filebrowser</option>
+                                <option value="adguard">AdGuard</option>
+                                <option value="pihole">Pi-hole</option>
+                                <option value="custom">Custom</option>
+                            </select>
                             <input
                                 type="text"
-                                id="ttyd-input"
+                                id="port-input"
                                 inputmode="numeric"
                                 pattern="[0-9]*"
                                 lang="en"
-                                autocomplete="off"  
+                                autocomplete="off"
                                 value="7681"
                                 placeholder="7681"
-                                class="input-field"
+                                class="input-field port-field"
                             >
                         </div>
-                        <div class="input-container port-container">
-                            <div class="input-label">fb</div>
-                            <input
-                                type="text"
-                                id="fb-input"
-                                inputmode="numeric"
-                                pattern="[0-9]*"
-                                lang="en"
-                                autocomplete="off"  
-                                value="8080"
-                                placeholder="8080"
-                                class="input-field"
-                            >
-                        </div>
-                        <button id="global-ip-update" class="update-button" data-i18n="update">Update</button>
                     </div>
                     <details id="qrcode-detail-container" class="qr-code-section bordered-element">
                         <summary class="qr-code-summary" data-i18n="qrCodeDisplay">LuCi QR Code</summary>
@@ -113,46 +110,8 @@
 
                 <section id="local-services" class="content-section">
                     <h2 class="section-title" data-i18n="console">Web Console</h2>
-                    <ul class="link-list">
-                        <li>
-                            <a
-                                id="luci-link"
-                                class="link-item bordered-element"
-                                data-ip-template="http://${ip}/cgi-bin/luci"
-                                href="#"
-                                target="_blank" rel="noopener"
-                                data-i18n="luciAdmin"
-                            >
-                                <span class="link-text">LuCI: </span>
-                                <span class="ip-display">http://<span id="luci-ip">192.168.1.1</span></span>
-                            </a>
-                        </li>
-                        <li>
-                            <a
-                                id="ttyd-link"
-                                class="link-item bordered-element"
-                                data-ip-template="http://${ip}:7681/"
-                                href="#"
-                                target="_blank" rel="noopener"
-                                data-i18n="ttydTerminal"
-                            >
-                                <span class="link-text">ttyd: </span>
-                                <span class="ip-display">http://<span id="ttyd-ip">192.168.1.1</span>:<span id="ttyd-port">7681</span></span>
-                            </a>
-                        </li>
-                        <li>
-                            <a
-                                id="filebrowser-link"
-                                class="link-item bordered-element"
-                                data-ip-template="http://${ip}:8080/"
-                                href="#"
-                                target="_blank" rel="noopener"
-                                data-i18n="filebrowserService"
-                            >
-                                <span class="link-text">filebrowser: </span>
-                                <span class="ip-display">http://<span id="filebrowser-ip">192.168.1.1</span>:<span id="filebrowser-port">8080</span></span>
-                            </a>
-                        </li>
+                    <ul id="dynamic-links" class="link-list">
+                        <!-- 動的に生成されるリンクがここに挿入される -->
                     </ul>
                 </section>
 
