@@ -10,7 +10,7 @@ const SSH_CMD_ENCODED_AIOS = encodeURIComponent(SSH_COMMANDS_AIOS);
 const SERVICES = {
     luci: {
         name: 'LuCI',
-        port: 80,
+        port: null, // LuCiはデフォルトポートを未入力に変更
         path: '/cgi-bin/luci',
         protocol: 'http',
         i18nKey: 'luciAdmin'
@@ -120,7 +120,6 @@ function drawQRCode(elementId, text) {
         console.error(`QR code container #${elementId} not found or QRious library not loaded.`);
         if (qrContainer) {
             qrContainer.innerHTML = `<div style="width: 180px; height: 180px; background: var(--text-color); margin: 0 auto; display: flex; align-items: center; justify-content: center; color: var(--block-bg); font-size: 12px;"><span data-i18n="qrCodeArea">${langData[localStorage.getItem('lang-preference') || 'ja'].qrCodeArea}</span></div>`;
-            qrContainer.querySelector('div span').setAttribute('data-text', 'QRiousライブラリがロードされていません');
         }
         return;
     }
@@ -146,7 +145,7 @@ function generateSelectedServiceLink() {
     const selectedServiceContainer = document.getElementById('selected-service-link');
     if (!selectedServiceContainer) return;
 
-    selectedServiceContainer.innerHTML = '';
+    selectedServiceContainer.innerHTML = ''; // リンク初期化
 
     const ipInput = document.getElementById('ip-input');
     const serviceSelector = document.getElementById('service-selector');
@@ -179,7 +178,9 @@ function generateSelectedServiceLink() {
     
     const ipDisplay = document.createElement('span');
     ipDisplay.className = 'ip-display';
-    ipDisplay.innerHTML = `${service.protocol}://<span class="service-ip">${ip}</span>:<span class="service-port">${port}</span>`;
+    ipDisplay.innerHTML = port
+        ? `${service.protocol}://<span class="service-ip">${ip}</span>:<span class="service-port">${port}</span>`
+        : `${service.protocol}://<span class="service-ip">${ip}</span>`;
     
     a.appendChild(linkText);
     a.appendChild(ipDisplay);
@@ -197,11 +198,11 @@ function handleServiceChange() {
     if (!selectedService) return;
     
     if (serviceSelector.value === 'luci') {
-        portInput.value = '';
-        portInput.disabled = false;
+        portInput.value = ''; // LuCiは空欄（初期値なし）
+        portInput.disabled = false; // 入力可能
     } else if (selectedService.port !== null) {
         portInput.value = selectedService.port;
-        portInput.disabled = false;
+        portInput.disabled = false; // 入力可能
     } else {
         portInput.disabled = false;
         portInput.placeholder = 'Enter port';
@@ -210,10 +211,11 @@ function handleServiceChange() {
     localStorage.setItem('site-u-service', serviceSelector.value);
     localStorage.setItem('site-u-port', portInput.value);
     
-    generateSelectedServiceLink();
-    updateQRCode();
+    generateSelectedServiceLink(); // サービスリンク更新
+    updateQRCode(); // QRコード即時更新
 }
 
+// ── QRコード更新処理 ──
 function updateQRCode() {
     const qrDetailContainer = document.getElementById('qrcode-detail-container');
     if (!qrDetailContainer || !qrDetailContainer.open) return;
@@ -223,7 +225,7 @@ function updateQRCode() {
     const portInput = document.getElementById('port-input');
     
     const ip = ipInput ? (ipInput.value.trim() || ipInput.placeholder) : '192.168.1.1';
-    const port = portInput ? portInput.value.trim() : '';
+    const port = portInput ? portInput.value.trim() : ''; // 空欄OK
     const selectedService = serviceSelector ? serviceSelector.value : 'luci';
     const service = SERVICES[selectedService];
     
@@ -256,35 +258,12 @@ function updateAll() {
     if (sshIpSpan) sshIpSpan.textContent = ip;
     if (aiosIpSpan) aiosIpSpan.textContent = ip;
 
-    generateSelectedServiceLink();
-    updateQRCode();
-
-    document.querySelectorAll('a[data-ip-template]').forEach(link => {
-        const template = link.dataset.ipTemplate;
-        if (template) {
-            let newHref = template.replace(/\${ip}/g, ip);
-            if (link.id === 'aios-link') {
-                newHref = newHref.replace(/\${cmd}/g, SSH_CMD_ENCODED_AIOS);
-            }
-            link.href = newHref;
-        }
-    });
-
-    const qrDetailContainer = document.getElementById('qrcode-detail-container');
-    if (qrDetailContainer && qrDetailContainer.open) {
-        const service = SERVICES[selectedService];
-        if (service) {
-            const serviceUrl = `${service.protocol}://${ip}:${port}${service.path}`;
-            drawQRCode('qrcode-detail', serviceUrl);
-        }
-    }
+    generateSelectedServiceLink(); // サービスリンク更新
+    updateQRCode(); // QRコード更新
 }
 
 // ── DOMContentLoaded ──
 document.addEventListener('DOMContentLoaded', () => {
-    loadHeader();
-    loadFooter();
-
     const ipInput = document.getElementById('ip-input');
     const serviceSelector = document.getElementById('service-selector');
     const portInput = document.getElementById('port-input');
@@ -296,9 +275,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (serviceSelector) {
         const storedService = localStorage.getItem('site-u-service');
-        if (storedService && SERVICES[storedService]) {
-            serviceSelector.value = storedService;
-        }
+        serviceSelector.value = storedService || 'luci'; // 初期値をLuCiに設定
     }
 
     if (portInput) {
@@ -315,45 +292,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (ipInput) {
         ipInput.addEventListener('compositionstart', e => e.preventDefault());
-
         ipInput.addEventListener('keydown', e => {
             const isIPAllowedChar =
                 (e.key.length === 1 && /[0-9a-zA-Z.:\-_]/.test(e.key)) ||
                 ['Backspace','Delete','ArrowLeft','ArrowRight','Tab','Enter'].includes(e.key);
-
             if (!isIPAllowedChar) {
                 e.preventDefault();
                 return;
             }
-
             if (e.key === 'Enter') {
                 e.preventDefault();
                 updateAll();
             }
         });
-
         ipInput.addEventListener('input', updateAll);
     }
 
     if (portInput) {
         portInput.addEventListener('compositionstart', e => e.preventDefault());
-
         portInput.addEventListener('keydown', e => {
             const isNumericAllowedChar =
                 (e.key.length === 1 && /[0-9]/.test(e.key)) ||
                 ['Backspace','Delete','ArrowLeft','ArrowRight','Tab','Enter'].includes(e.key);
-
             if (!isNumericAllowedChar) {
                 e.preventDefault();
                 return;
             }
-
             if (e.key === 'Enter') {
                 e.preventDefault();
                 updateAll();
             }
         });
-
         portInput.addEventListener('input', updateAll);
     }
 
@@ -364,197 +333,11 @@ document.addEventListener('DOMContentLoaded', () => {
     handleServiceChange();
     updateAll();
 
-    const globalIpUpdateBtn = document.getElementById('global-ip-update');
-    if (globalIpUpdateBtn) {
-        globalIpUpdateBtn.addEventListener('click', updateAll);
-    }
-
     const qrDetailContainer = document.getElementById('qrcode-detail-container');
     if (qrDetailContainer && !qrDetailContainer.dataset.toggleListenerAdded) {
         qrDetailContainer.addEventListener('toggle', function() {
-            const ipInput = document.getElementById('ip-input');
-            const serviceSelector = document.getElementById('service-selector');
-            const portInput = document.getElementById('port-input');
-            
-            if (this.open) {
-                const ip = ipInput ? (ipInput.value.trim() || ipInput.placeholder) : '192.168.1.1';
-                const selectedService = serviceSelector ? serviceSelector.value : 'ttyd';
-                const port = portInput ? (portInput.value.trim() || portInput.placeholder) : '7681';
-                const service = SERVICES[selectedService];
-                
-                if (service) {
-                    const serviceUrl = `${service.protocol}://${ip}:${port}${service.path}`;
-                    drawQRCode('qrcode-detail', serviceUrl);
-                }
-            } else {
-                const qrCanvasContainer = document.getElementById('qrcode-detail');
-                if (qrCanvasContainer) {
-                    qrCanvasContainer.innerHTML = `<div style="width: 180px; height: 180px; background: var(--text-color); margin: 0 auto; display: flex; align-items: center; justify-content: center; color: var(--block-bg); font-size: 12px;"><span>QRコード表示エリア</span></div>`;
-                }
-            }
+            updateQRCode();
         });
         qrDetailContainer.dataset.toggleListenerAdded = 'true';
     }
 });
-
-// ── applyLanguage 関数 ──
-function applyLanguage(lang) {
-    const langButtons = document.querySelectorAll('.language-selector button');
-    langButtons.forEach(button => {
-        button.classList.toggle('selected', button.dataset.lang === lang);
-        if (langData[lang]['lang' + button.dataset.lang.toUpperCase()]) {
-            button.textContent = langData[lang]['lang' + button.dataset.lang.toUpperCase()];
-        }
-    });
-
-    document.querySelectorAll('[data-i18n]').forEach(element => {
-        const key = element.getAttribute('data-i18n');
-        if (langData[lang] && langData[lang][key] !== undefined) {
-            if (['sshConnection', 'aiosExecution'].includes(key)) {
-                const linkTextSpan = element.querySelector('.link-text');
-                if (linkTextSpan) {
-                    linkTextSpan.textContent = langData[lang][key];
-                }
-            } else if (key === 'sshHandler') {
-                const linkTextSpan = element.querySelector('.link-text');
-                const linkNoteSpan = element.querySelector('.link-note');
-                const parts = langData[lang][key].split('※');
-                if (linkTextSpan) {
-                    linkTextSpan.textContent = parts[0].trim();
-                }
-                if (linkNoteSpan) {
-                    linkNoteSpan.textContent = parts[1] ? '※' + parts[1].trim() : '';
-                }
-            } else if (element.tagName === 'SPAN' && element.parentElement.classList.contains('qr-code-canvas')) {
-                element.textContent = langData[lang][key];
-            } else if (key === 'disclaimerOpenWrtParagraph') {
-                const paragraphPrefix = langData[lang].disclaimerOpenWrtParagraph || '';
-                const linkText = langData[lang].openWrtOfficialSite || '';
-                const paragraphSuffix = langData[lang].disclaimerOpenWrtSuffix || '';
-
-                element.innerHTML = `${paragraphPrefix}<a href="https://openwrt.org/" target="_blank" rel="noopener noreferrer" class="external-link"><span>${linkText}</span></a>${paragraphSuffix}`;
-            } else {
-                element.textContent = langData[lang][key];
-            }
-        }
-    });
-
-    const selectedServiceLink = document.querySelector('#selected-service-link a[data-service]');
-    if (selectedServiceLink) {
-        const serviceKey = selectedServiceLink.getAttribute('data-service');
-        const service = SERVICES[serviceKey];
-        if (service && langData[lang][service.i18nKey]) {
-            const linkTextSpan = selectedServiceLink.querySelector('.link-text');
-            if (linkTextSpan) {
-                linkTextSpan.textContent = langData[lang][service.i18nKey];
-            }
-        }
-    }
-
-    updateAll();
-}
-
-// ── ロゴ表示切替 ──
-function updateLogoDisplay() {
-    const theme = document.documentElement.getAttribute('data-theme') || 'dark';
-    const siteLogo = document.getElementById('site-logo');
-
-    if (siteLogo) {
-        if (theme === 'dark') {
-            siteLogo.src = 'img/openwrt_text_white_and_blue.svg';
-        } else {
-            siteLogo.src = 'img/openwrt_text_blue_and_dark_blue.svg';
-        }
-    }
-}
-
-// ── ヘッダー読み込み関数 ──
-async function loadHeader() {
-    try {
-        const response = await fetch('header.html');
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const headerHtml = await response.text();
-        const headerElement = document.createElement('div');
-        headerElement.innerHTML = headerHtml;
-        document.body.prepend(headerElement.firstElementChild);
-        updateLogoDisplay();
-    } catch (error) {
-        console.error("Failed to load header.html:", error);
-    }
-}
-
-// ── フッター読み込み関数 ──
-async function loadFooter() {
-    try {
-        const response = await fetch('footer.html');
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const footerHtml = await response.text();
-        const footerElement = document.createElement('div');
-        footerElement.innerHTML = footerHtml;
-        document.body.appendChild(footerElement.firstElementChild);
-        const yearEl = document.getElementById('current-year');
-        if (yearEl) yearEl.textContent = new Date().getFullYear();
-        
-        initializeThemeAndLanguageSelectors();
-    } catch (error) {
-        console.error("Failed to load footer.html:", error);
-    }
-}
-
-// ── テーマ・言語セレクターの初期化処理を関数化 ──
-function initializeThemeAndLanguageSelectors() {
-    const html = document.documentElement;
-    const themeBtns = document.querySelectorAll('.theme-selector button');
-    const storedTheme = localStorage.getItem('site-u-theme') || 'auto';
-
-    function applyTheme(pref) {
-        const mode = pref === 'auto'
-            ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
-            : pref;
-        html.setAttribute('data-theme', mode);
-        themeBtns.forEach(b => b.classList.toggle('selected', b.dataset.themePreference === pref));
-        localStorage.setItem('site-u-theme', pref);
-        updateLogoDisplay();
-        updateAll();
-    }
-
-    if (themeBtns.length > 0) {
-        themeBtns.forEach(b => {
-            b.removeEventListener('click', () => applyTheme(b.dataset.themePreference));
-            b.addEventListener('click', () => applyTheme(b.dataset.themePreference));
-        });
-        window.matchMedia('(prefers-color-scheme: dark)').removeEventListener('change', () => {
-            if ((localStorage.getItem('site-u-theme')||'auto') === 'auto') applyTheme('auto');
-        });
-        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-            if ((localStorage.getItem('site-u-theme')||'auto') === 'auto') applyTheme('auto');
-        });
-        applyTheme(storedTheme);
-    } else {
-        applyTheme(storedTheme);
-    }
-
-    if (!html.dataset.themeObserverRegistered) {
-        const observer = new MutationObserver(updateLogoDisplay);
-        observer.observe(html, { attributes: true, attributeFilter: ['data-theme'] });
-        html.dataset.themeObserverRegistered = 'true';
-    }
-
-    const langButtons = document.querySelectorAll('.language-selector button');
-    const currentLang = localStorage.getItem('lang-preference') || 'en';
-    if (langButtons.length > 0) {
-        langButtons.forEach(button => {
-            button.removeEventListener('click', () => applyLanguage(button.dataset.lang));
-            button.addEventListener('click', () => {
-                const newLang = button.dataset.lang;
-                localStorage.setItem('lang-preference', newLang);
-                applyLanguage(newLang);
-            });
-        });
-    }
-    applyLanguage(currentLang);
-}
