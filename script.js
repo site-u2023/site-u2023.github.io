@@ -1,335 +1,146 @@
-// ── グローバル定数（再定義不要なもの）──
-const SSH_COMMANDS_AIOS = [
-    'wget -O /usr/bin/aios https://raw.githubusercontent.com/site-u2023/aios/main/aios',
-    'chmod +x /usr/bin/aios',
-    'sh /usr/bin/aios'
-].join(' && ');
-const SSH_CMD_ENCODED_AIOS = encodeURIComponent(SSH_COMMANDS_AIOS);
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
+    <title>OpenWrt A Beginner's Notebook</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <main class="main-content">
+            <nav class="main-nav">
+                <section id="device-ip" class="content-section">
+                    <h2 class="section-title" data-i18n="deviceIP">Device Settings</h2>
+                    <div class="input-group connection">
+                        <!-- IP Address Input -->
+                        <div class="input-container ip-container-full">
+                            <div class="input-label">IP Address</div>
+                            <input
+                                type="text"
+                                id="ip-input"
+                                inputmode="text"
+                                lang="en"
+                                autocomplete="off"
+                                value="192.168.1.1"
+                                placeholder="openwrt.lan"
+                                class="input-field"
+                            >
+                        </div>
+                        
+                        <!-- Service Selector and Port Input -->
+                        <div class="input-container service-container">
+                            <div class="input-label">Service</div>
+                            <select id="service-selector" class="service-select">
+                                <option value="luci">LuCI</option>
+                                <option value="ttyd" selected>ttyd</option>
+                                <option value="filebrowser">filebrowser</option>
+                                <option value="adguard">AdGuard</option>
+                                <option value="custom">Custom</option>
+                            </select>
+                            <div class="port-container">
+                                <div class="port-label">Port</div>
+                                <input
+                                    type="text"
+                                    id="port-input"
+                                    inputmode="numeric"
+                                    pattern="[0-9]*"
+                                    lang="en"
+                                    autocomplete="off"
+                                    value="7681"
+                                    placeholder="7681"
+                                    class="input-field port-field"
+                                >
+                            </div>
+                        </div>
+                        
+                        <!-- Update Button -->
+                        <button id="global-ip-update" class="update-button-standalone" data-i18n="update">Update</button>
+                    </div>
+                    
+                    <!-- Selected Service Link -->
+                    <div id="selected-service-link" class="link-list">
+                        <!-- 選択されたサービスのリンクがここに挿入される -->
+                    </div>
+                    
+                    <details id="qrcode-detail-container" class="qr-code-section bordered-element">
+                        <summary class="qr-code-summary" data-i18n="qrCodeDisplay">LuCi QR Code</summary>
+                        <div id="qrcode-detail" class="qr-code-canvas">
+                            <div style="width: 180px; height: 180px; background: var(--text-color); margin: 0 auto; display: flex; align-items: center; justify-content: center; color: var(--block-bg); font-size: 12px;"><span data-i18n="qrCodeArea">QRコード表示エリア</span></div>
+                        </div>
+                    </details>
+                </section>         
+                <section id="terminal" class="content-section">
+                    <h2 class="section-title" data-i18n="terminal">Terminal<span class="section-subtitle">(for Windows)</span></h2>
+                    <ul class="link-list">
+                        <li>
+                            <details id="ssh-handler-details-container" class="qr-code-section handler-details-section bordered-element">
+                                <summary class="qr-code-summary handler-summary" data-i18n="sshHandler">
+                                    <span class="link-text">Protocol handler registration (first-time use)</span>
+                                    <span class="link-note">Download (Double-click sshcmd.reg to install)</span>
+                                </summary>
+                                <div class="details-content">
+                                    <a id="ssh-handler-download-link" href="file/sshcmd.reg" download class="bordered-element" data-i18n="downloadHandlerButton">
+                                        Download
+                                    </a>
+                                </div>
+                            </details>
+                        </li>
+                    </ul>
+                    <ul class="link-list">
+                        <li>
+                            <a
+                                id="ssh-link"
+                                class="link-item bordered-element"
+                                data-ip-template="sshcmd://root@${ip}/"
+                                href="#"
+                                target="_blank"
+                                rel="noopener"
+                                data-i18n="sshConnection"
+                            >
+                                <span class="link-text">SSH Connection: </span>
+                                <span class="ip-display">ssh root@<span id="ssh-ip">192.168.1.1</span></span>
+                            </a>
+                        </li>
+                        <li>
+                            <a
+                                id="aios-link"
+                                class="link-item bordered-element"
+                                data-ip-template="sshcmd://root@${ip}/${cmd}"
+                                href="#"
+                                target="_blank" rel="noopener"
+                                data-i18n="aiosExecution"
+                            >
+                                <span class="link-text">Execute aios: </span>
+                                <span class="ip-display">ssh root@<span id="aios-ip">192.168.1.1</span> ; aios</span>
+                            </a>
+                        </li>
+                    </ul>
+                </section>
 
-// ── サービス定義データベース ──
-const SERVICES = {
-    luci: {
-        name: 'LuCI',
-        port: 80, // LuCiのデフォルトポートを80に指定
-        path: '/cgi-bin/luci',
-        protocol: 'http',
-        i18nKey: 'luciAdmin'
-    },
-    ttyd: {
-        name: 'ttyd',
-        port: 7681,
-        path: '/',
-        protocol: 'http',
-        i18nKey: 'ttydTerminal'
-    },
-    filebrowser: {
-        name: 'filebrowser',
-        port: 8080,
-        path: '/',
-        protocol: 'http',
-        i18nKey: 'filebrowserService'
-    },
-    adguard: {
-        name: 'AdGuard Home',
-        port: 3000,
-        path: '/',
-        protocol: 'http',
-        i18nKey: 'adguardService'
-    },
-    custom: {
-        name: 'Custom',
-        port: null,
-        path: '/',
-        protocol: 'http',
-        i18nKey: 'customService'
-    }
-};
+                <section id="project" class="content-section">
+                    <h2 class="section-title" data-i18n="githubRepo">GitHub Repository</h2>
+                    <ul class="link-list">
+                        <li><a href="https://github.com/site-u2023/aios/blob/main/README.md" target="_blank" rel="noopener" data-i18n="aiosScript" class="link-item bordered-element">
+                            <span class="link-text">all in one script</span>
+                        </a></li>
+                        <li><a href="https://github.com/site-u2023/config-software/blob/main/README.md" target="_blank" rel="noopener" data-i18n="configSoftware" class="link-item bordered-element">
+                            <span class="link-text">config-software</span> <span class="link-note">(legacy)</span>
+                        </a></li>
+                    </ul>
+                </section>
+            </nav>
+        </main>
+    </div>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-M9YV28TG0V"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
 
-// ── 言語切替機能データ（サービス追加） ──
-const langData = {
-    en: {
-        deviceIP: 'Device Settings',
-        update: 'Update',
-        qrCodeDisplay: 'QR Code',
-        qrCodeArea: 'QR Code Display Area',
-        terminal: 'Terminal (for Windows)',
-        sshHandler: 'Protocol handler registration (first-time use)',
-        downloadHandlerButton: 'Download (Double-click sshcmd.reg to install)',
-        sshConnection: 'SSH Connection: ',
-        aiosExecution: 'Execute aios: ',
-        console: 'Web Console',
-        luciAdmin: 'LuCI: ',
-        ttydTerminal: 'ttyd: ',
-        filebrowserService: 'filebrowser: ',
-        adguardService: 'AdGuard Home: ',
-        customService: 'Custom: ',
-        githubRepo: 'GitHub Repository',
-        aiosScript: 'all in one script',
-        configSoftware: 'config software (legacy)',
-        footerMemo: 'OpenWrt A Beginner\'s Notebook',
-        footerSiteU: 'site-u',
-        footerDisclaimer: 'Disclaimer',
-        disclaimerPageTitle: 'Disclaimer',
-        disclaimerSiteUTitle: 'Disclaimer regarding site-u (this site)',
-        disclaimerSiteUParagraph: 'All content (including websites, scripts, and other works) published on this site is open and freely available for use. However, the operators of this site assume no responsibility for any damages incurred through the use of this content. Please use it at your own risk.',
-        disclaimerOpenWrtTitle: 'Disclaimer regarding OpenWrt',
-        disclaimerOpenWrtParagraph: 'OpenWrt is a registered trademark of Software Freedom Conservancy. This site is not affiliated with or endorsed by the OpenWrt project. For official information and support regarding OpenWrt, please refer to the ',
-        openWrtOfficialSite: 'OpenWrt official website',
-        disclaimerOpenWrtSuffix: '.',
-        langEn: 'English',
-        langJa: '日本語'       
-    },
-    ja: {
-        deviceIP: 'デバイス設定',
-        update: '更新',
-        qrCodeDisplay: 'QRコード',
-        qrCodeArea: 'QRコード表示エリア', 
-        terminal: 'ターミナル (Windows用)',
-        sshHandler: 'プロトコルハンドラー登録 (初回のみ)',
-        downloadHandlerButton: 'ダウンロード (sshcmd.reg をダブルクリックしてインストールしてください)',
-        sshConnection: 'SSH接続: ',
-        aiosExecution: 'aios実行: ',
-        console: 'Webコンソール',
-        luciAdmin: 'LuCI: ',
-        ttydTerminal: 'ttyd: ',
-        filebrowserService: 'filebrowser: ',
-        adguardService: 'AdGuard Home: ',
-        customService: 'カスタム: ',
-        githubRepo: 'GitHubリポジトリ',
-        aiosScript: 'オールインワンスクリプト',
-        configSoftware: 'コンフォグソフトウェア (旧版)',
-        footerMemo: 'OpenWrt初心者備忘録',
-        footerSiteU: 'site-u',
-        footerDisclaimer: '免責事項',
-        disclaimerPageTitle: '免責事項',
-        disclaimerSiteUTitle: 'site-u（当サイト）に関する免責事項',
-        disclaimerSiteUParagraph: '当サイトで公開されているコンテンツ（ウェブサイト、スクリプト、その他の著作物を含む）は全てオープンであり、自由にご利用いただけます。しかしながら、これらのコンテンツの利用によって生じたいかなる損害についても、当サイトの運営者は一切の責任を負いません。利用者の皆様の責任においてご利用くださいますようお願いいたします。',
-        disclaimerOpenWrtTitle: 'OpenWrtに関する免責事項',
-        disclaimerOpenWrtParagraph: 'OpenWrtはSoftware Freedom Conservancyの登録商標です。当サイトはOpenWrtプロジェクトとは提携しておらず、また推奨もされていません。OpenWrtに関する公式情報やサポートについては、',
-        openWrtOfficialSite: 'OpenWrt公式サイト',
-        disclaimerOpenWrtSuffix: 'をご参照ください。',
-        langEn: 'English',
-        langJa: '日本語'
-    }
-};
-
-// ── drawQRCode 関数 ──
-function drawQRCode(elementId, text) {
-    const qrContainer = document.getElementById(elementId);
-    if (!qrContainer || typeof QRious === 'undefined') {
-        console.error(`QR code container #${elementId} not found or QRious library not loaded.`);
-        if (qrContainer) {
-            qrContainer.innerHTML = `<div style="width: 180px; height: 180px; background: var(--text-color); margin: 0 auto; display: flex; align-items: center; justify-content: center; color: var(--block-bg); font-size: 12px;"><span data-i18n="qrCodeArea">${langData[localStorage.getItem('lang-preference') || 'ja'].qrCodeArea}</span></div>`;
-        }
-        return;
-    }
-    qrContainer.innerHTML = '';
-    const canvas = document.createElement('canvas');
-    qrContainer.appendChild(canvas);
-
-    const style = getComputedStyle(document.body);
-    const darkColor = style.getPropertyValue('--qr-dark').trim();
-    const lightColor = style.getPropertyValue('--qr-light').trim();
-
-    new QRious({
-        element: canvas,
-        value: text,
-        size: 180,
-        foreground: darkColor,
-        background: lightColor
-    });
-}
-
-// ── 選択中サービスリンク生成関数 ──
-function generateSelectedServiceLink() {
-    const selectedServiceContainer = document.getElementById('selected-service-link');
-    if (!selectedServiceContainer) return;
-
-    selectedServiceContainer.innerHTML = ''; // リンク初期化
-
-    const ipInput = document.getElementById('ip-input');
-    const serviceSelector = document.getElementById('service-selector');
-    const portInput = document.getElementById('port-input');
-    
-    if (!ipInput || !serviceSelector || !portInput) return;
-
-    const ip = ipInput.value.trim() || ipInput.placeholder;
-    const selectedServiceKey = serviceSelector.value;
-    const port = portInput.value.trim();
-    const currentLang = localStorage.getItem('lang-preference') || 'en';
-
-    const service = SERVICES[selectedServiceKey];
-    if (!service) return;
-
-    const url = port
-        ? `${service.protocol}://${ip}:${port}${service.path}`
-        : `${service.protocol}://${ip}${service.path}`;
-    
-    const a = document.createElement('a');
-    a.href = url;
-    a.target = '_blank';
-    a.rel = 'noopener';
-    a.className = 'link-item bordered-element';
-    a.setAttribute('data-service', selectedServiceKey);
-    
-    const linkText = document.createElement('span');
-    linkText.className = 'link-text';
-    linkText.textContent = langData[currentLang][service.i18nKey] || `${service.name}: `;
-    
-    const ipDisplay = document.createElement('span');
-    ipDisplay.className = 'ip-display';
-    ipDisplay.innerHTML = port
-        ? `${service.protocol}://<span class="service-ip">${ip}</span>:<span class="service-port">${port}</span>`
-        : `${service.protocol}://<span class="service-ip">${ip}</span>`;
-    
-    a.appendChild(linkText);
-    a.appendChild(ipDisplay);
-    selectedServiceContainer.appendChild(a);
-}
-
-// ── サービス選択変更処理 ──
-function handleServiceChange() {
-    const serviceSelector = document.getElementById('service-selector');
-    const portInput = document.getElementById('port-input');
-    
-    if (!serviceSelector || !portInput) return;
-    
-    const selectedService = SERVICES[serviceSelector.value];
-    if (!selectedService) return;
-    
-    portInput.value = selectedService.port || ''; // 選択されたサービスのポートを設定
-    portInput.disabled = false; // 入力可能
-
-    localStorage.setItem('site-u-service', serviceSelector.value);
-    localStorage.setItem('site-u-port', portInput.value);
-    
-    generateSelectedServiceLink(); // サービスリンク更新
-    updateQRCode(); // QRコード即時更新
-}
-
-// ── QRコード更新処理 ──
-function updateQRCode() {
-    const qrDetailContainer = document.getElementById('qrcode-detail-container');
-    if (!qrDetailContainer || !qrDetailContainer.open) return;
-
-    const ipInput = document.getElementById('ip-input');
-    const serviceSelector = document.getElementById('service-selector');
-    const portInput = document.getElementById('port-input');
-    
-    const ip = ipInput ? (ipInput.value.trim() || ipInput.placeholder) : '192.168.1.1';
-    const port = portInput ? portInput.value.trim() : ''; // 空欄OK
-    const selectedService = serviceSelector ? serviceSelector.value : 'luci';
-    const service = SERVICES[selectedService];
-    
-    if (service) {
-        const serviceUrl = port
-            ? `${service.protocol}://${ip}:${port}${service.path}`
-            : `${service.protocol}://${ip}${service.path}`;
-        drawQRCode('qrcode-detail', serviceUrl);
-    }
-}
-
-// ── 全リンク更新処理 ──
-function updateAll() {
-    const ipInput = document.getElementById('ip-input');
-    const serviceSelector = document.getElementById('service-selector');
-    const portInput = document.getElementById('port-input');
-    
-    if (!ipInput || !serviceSelector || !portInput) return;
-
-    const ip = ipInput.value.trim() || ipInput.placeholder;
-    const selectedService = serviceSelector.value;
-    const port = portInput.value.trim();
-    
-    localStorage.setItem('site-u-ip', ip);
-    localStorage.setItem('site-u-service', selectedService);
-    localStorage.setItem('site-u-port', port);
-
-    const sshIpSpan = document.getElementById('ssh-ip');
-    const aiosIpSpan = document.getElementById('aios-ip');
-    if (sshIpSpan) sshIpSpan.textContent = ip;
-    if (aiosIpSpan) aiosIpSpan.textContent = ip;
-
-    generateSelectedServiceLink(); // サービスリンク更新
-    updateQRCode(); // QRコード更新
-}
-
-// ── DOMContentLoaded ──
-document.addEventListener('DOMContentLoaded', () => {
-    const ipInput = document.getElementById('ip-input');
-    const serviceSelector = document.getElementById('service-selector');
-    const portInput = document.getElementById('port-input');
-
-    if (ipInput) {
-        const storedIp = localStorage.getItem('site-u-ip');
-        if (storedIp) ipInput.value = storedIp;
-    }
-
-    if (serviceSelector) {
-        const storedService = localStorage.getItem('site-u-service');
-        serviceSelector.value = storedService || 'luci'; // 初期値をLuCiに設定
-    }
-
-    if (portInput) {
-        const storedPort = localStorage.getItem('site-u-port');
-        if (storedPort) {
-            portInput.value = storedPort;
-        } else {
-            const selectedService = SERVICES[serviceSelector?.value];
-            if (selectedService && selectedService.port !== null) {
-                portInput.value = selectedService.port;
-            }
-        }
-    }
-
-    if (ipInput) {
-        ipInput.addEventListener('compositionstart', e => e.preventDefault());
-        ipInput.addEventListener('keydown', e => {
-            const isIPAllowedChar =
-                (e.key.length === 1 && /[0-9a-zA-Z.:\-_]/.test(e.key)) ||
-                ['Backspace','Delete','ArrowLeft','ArrowRight','Tab','Enter'].includes(e.key);
-            if (!isIPAllowedChar) {
-                e.preventDefault();
-                return;
-            }
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                updateAll();
-            }
-        });
-        ipInput.addEventListener('input', updateAll);
-    }
-
-    if (portInput) {
-        portInput.addEventListener('compositionstart', e => e.preventDefault());
-        portInput.addEventListener('keydown', e => {
-            const isNumericAllowedChar =
-                (e.key.length === 1 && /[0-9]/.test(e.key)) ||
-                ['Backspace','Delete','ArrowLeft','ArrowRight','Tab','Enter'].includes(e.key);
-            if (!isNumericAllowedChar) {
-                e.preventDefault();
-                return;
-            }
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                updateAll();
-            }
-        });
-        portInput.addEventListener('input', updateAll);
-    }
-
-    if (serviceSelector) {
-        serviceSelector.addEventListener('change', handleServiceChange);
-    }
-
-    handleServiceChange();
-    updateAll();
-
-    const qrDetailContainer = document.getElementById('qrcode-detail-container');
-    if (qrDetailContainer && !qrDetailContainer.dataset.toggleListenerAdded) {
-        qrDetailContainer.addEventListener('toggle', function() {
-            updateQRCode();
-        });
-        qrDetailContainer.dataset.toggleListenerAdded = 'true';
-    }
-});
+      gtag('config', 'G-M9YV28TG0V');
+    </script>
+    <script src="script.js"></script>
+    <script src="https://cdn.rawgit.com/neocotic/qrious/v4.0.2/dist/qrious.min.js"></script>
+</body>
+</html>
