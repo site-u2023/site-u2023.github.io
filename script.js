@@ -228,18 +228,15 @@ function updateTerminalCommand() {
     
     if (terminalSelector && commandInput) {
         const selectedType = terminalSelector.value;
-        const config = TERMINAL_CONFIGS[selectedType];
         
-        if (config) {
-            if (selectedType === 'aios') {
-                commandInput.value = `root@${currentIP}/${SSH_CMD_ENCODED_AIOS}`;
-            } else if (selectedType === 'ssh') {
-                commandInput.value = `root@${currentIP}/`;
-            } else if (config.command) {
-                commandInput.value = config.command.replace('{ip}', currentIP);
-            } else {
-                commandInput.value = '';
-            }
+        if (selectedType === 'powershell') {
+            commandInput.value = '';
+        } else if (selectedType === 'ssh') {
+            commandInput.value = `root@${currentIP}/`;
+        } else if (selectedType === 'aios') {
+            commandInput.value = `root@${currentIP}/${SSH_CMD_ENCODED_AIOS}`;
+        } else if (selectedType === 'custom') {
+            commandInput.value = '';
         }
         
         updateTerminalDisplay();
@@ -251,7 +248,7 @@ function generateTerminalURL() {
     
     if (!commandInput) return null;
     
-    const command = commandInput.value;
+    const command = commandInput.value.trim();
     
     if (!command) {
         return 'sshcmd://';
