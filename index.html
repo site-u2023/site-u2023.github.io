@@ -36,22 +36,24 @@
                                 <option value="ttyd" selected>ttyd</option>
                                 <option value="filebrowser">filebrowser</option>
                                 <option value="adguard">AdGuard</option>
-                                <option value="pihole">Pi-hole</option>
                                 <option value="custom">Custom</option>
                             </select>
-                            <input
-                                type="text"
-                                id="port-input"
-                                inputmode="numeric"
-                                pattern="[0-9]*"
-                                lang="en"
-                                autocomplete="off"
-                                value="7681"
-                                placeholder="7681"
-                                class="input-field port-field"
-                            >
+                            <div class="port-container">
+                                <div class="port-label">Port</div>
+                                <input
+                                    type="text"
+                                    id="port-input"
+                                    inputmode="numeric"
+                                    pattern="[0-9]*"
+                                    lang="en"
+                                    autocomplete="off"
+                                    value="7681"
+                                    placeholder="7681"
+                                    class="input-field port-field"
+                                >
+                            </div>
                         </div>
-
+                        
                         <!-- Update Button -->
                         <button id="global-ip-update" class="update-button-standalone" data-i18n="update">Update</button>
                     </div>
