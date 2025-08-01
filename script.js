@@ -50,7 +50,8 @@ const langData = {
     en: {
         deviceIP: 'Device Settings',
         update: 'Update',
-        qrCodeDisplay: 'LuCi QR Code',
+        webLinks: 'Web Links',
+        qrCodeDisplay: 'Service QR Code',
         qrCodeArea: 'QR Code Display Area',
         terminal: 'Terminal (for Windows)',
         sshHandler: 'Protocol handler registration (first-time use)',
@@ -82,7 +83,8 @@ const langData = {
     ja: {
         deviceIP: 'デバイス設定',
         update: '更新',
-        qrCodeDisplay: 'LuCi QRコード',
+        webLinks: 'Webリンク',
+        qrCodeDisplay: 'サービス QRコード',
         qrCodeArea: 'QRコード表示エリア', 
         terminal: 'ターミナル (Windows用)',
         sshHandler: 'プロトコルハンドラー登録 (初回のみ)',
@@ -113,14 +115,14 @@ const langData = {
     }
 };
 
-// ── drawQRCode 関数 ──
-function drawQRCode(elementId, text) {
+// ── drawQRCode 関数（修正版：選択されたサービスのURLを使用） ──
+function drawQRCode(elementId, url) {
     const qrContainer = document.getElementById(elementId);
     if (!qrContainer || typeof QRious === 'undefined') {
         console.error(`QR code container #${elementId} not found or QRious library not loaded.`);
         if (qrContainer) {
             qrContainer.innerHTML = `<div style="width: 180px; height: 180px; background: var(--text-color); margin: 0 auto; display: flex; align-items: center; justify-content: center; color: var(--block-bg); font-size: 12px;"><span data-i18n="qrCodeArea">${langData[localStorage.getItem('lang-preference') || 'ja'].qrCodeArea}</span></div>`;
-            qrContainer.querySelector('div span').setAttribute('data-text', 'QRiousライブラリがロードされていません'); // data-textは特に言語切り替えとは関係ないですが、元のコードに倣って維持
+            qrContainer.querySelector('div span').setAttribute('data-text', 'QRiousライブラリがロードされていません');
         }
         return;
     }
@@ -134,7 +136,7 @@ function drawQRCode(elementId, text) {
 
     new QRious({
         element: canvas,
-        value: text,
+        value: url,
         size: 180,
         foreground: darkColor,
         background: lightColor
@@ -252,10 +254,14 @@ function updateAll() {
         }
     });
 
-    // QRコード更新
+    // QRコード更新（選択されたサービスのURLを使用）
     const qrDetailContainer = document.getElementById('qrcode-detail-container');
     if (qrDetailContainer && qrDetailContainer.open) {
-        drawQRCode('qrcode-detail', `http://${ip}`);
+        const service = SERVICES[selectedService];
+        if (service) {
+            const serviceUrl = `${service.protocol}://${ip}:${port}${service.path}`;
+            drawQRCode('qrcode-detail', serviceUrl);
+        }
     }
 }
 
@@ -357,15 +363,24 @@ document.addEventListener('DOMContentLoaded', () => {
         globalIpUpdateBtn.addEventListener('click', updateAll);
     }
 
-    // QRコード関連
+    // QRコード関連（修正版：選択されたサービスのURLを使用）
     const qrDetailContainer = document.getElementById('qrcode-detail-container');
     if (qrDetailContainer && !qrDetailContainer.dataset.toggleListenerAdded) {
         qrDetailContainer.addEventListener('toggle', function() {
             const ipInput = document.getElementById('ip-input');
+            const serviceSelector = document.getElementById('service-selector');
+            const portInput = document.getElementById('port-input');
+            
             const currentIp = ipInput ? (ipInput.value.trim() || ipInput.placeholder) : '192.168.1.1';
+            const selectedService = serviceSelector ? serviceSelector.value : 'luci';
+            const currentPort = portInput ? (portInput.value.trim() || portInput.placeholder) : '80';
 
             if (this.open) {
-                drawQRCode('qrcode-detail', `http://${currentIp}`);
+                const service = SERVICES[selectedService];
+                if (service) {
+                    const serviceUrl = `${service.protocol}://${currentIp}:${currentPort}${service.path}`;
+                    drawQRCode('qrcode-detail', serviceUrl);
+                }
             } else {
                 const qrCanvasContainer = document.getElementById('qrcode-detail');
                 if (qrCanvasContainer) {
