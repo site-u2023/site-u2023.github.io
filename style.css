@@ -198,7 +198,7 @@ h3.bordered-element {
     border: none;
     background-color: transparent;
     color: inherit;
-    font-weight: bold;
+    font-weight: normal;
     font-size: 0.9em;
     box-sizing: border-box;
     padding: 1.2em 0.5em 1.2em 0.5em;
@@ -267,7 +267,7 @@ h3.bordered-element {
     border-radius: 0;
     background-color: transparent;
     color: inherit;
-    font-weight: bold;
+    font-weight: normal;
     font-size: 0.9em;
     box-sizing: border-box;
     padding: 1.2em 1.5em 1.2em 0.5em;
@@ -339,7 +339,7 @@ h3.bordered-element {
     border-radius: 0;
     background-color: transparent;
     color: inherit;
-    font-weight: bold;
+    font-weight: normal;
     font-size: 0.9em;
     box-sizing: border-box;
     padding: 1.2em 0.5em 1.2em 0.5em;
