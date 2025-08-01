@@ -363,7 +363,7 @@ function loadHeaderFooter() {
     fetch('header.html')
         .then(response => response.text())
         .then(html => {
-            const headerContainer = document.querySelector('.main-header');
+            const headerContainer = document.querySelector('#header-placeholder');
             if (headerContainer) {
                 headerContainer.innerHTML = html;
                 bindHeaderEvents();
@@ -375,7 +375,7 @@ function loadHeaderFooter() {
     fetch('footer.html')
         .then(response => response.text())
         .then(html => {
-            const footerContainer = document.querySelector('.page-footer-area');
+            const footerContainer = document.querySelector('#footer-placeholder');
             if (footerContainer) {
                 footerContainer.innerHTML = html;
                 bindFooterEvents();
@@ -405,7 +405,7 @@ function bindFooterEvents() {
     const themeButtons = document.querySelectorAll('.theme-button');
     themeButtons.forEach(button => {
         button.addEventListener('click', function() {
-            const theme = this.getAttribute('data-theme-preference'); // 修正: data-theme → data-theme-preference
+            const theme = this.getAttribute('data-theme-preference');
             if (theme) {
                 applyTheme(theme);
                 updateThemeButtons();
@@ -432,7 +432,7 @@ function updateLanguageButtons() {
 function updateThemeButtons() {
     const themeButtons = document.querySelectorAll('.theme-button');
     themeButtons.forEach(button => {
-        const theme = button.getAttribute('data-theme-preference'); // 修正: data-theme → data-theme-preference
+        const theme = button.getAttribute('data-theme-preference');
         if (theme === currentTheme) {
             button.classList.add('selected');
         } else {
@@ -450,8 +450,8 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', fun
 
 // ヘッダー・フッターが存在する場合は動的読み込みを実行
 document.addEventListener('DOMContentLoaded', function() {
-    const headerExists = document.querySelector('.main-header');
-    const footerExists = document.querySelector('.page-footer-area');
+    const headerExists = document.querySelector('#header-placeholder');
+    const footerExists = document.querySelector('#footer-placeholder');
     
     if (headerExists || footerExists) {
         loadHeaderFooter();
