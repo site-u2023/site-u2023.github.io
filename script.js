@@ -36,13 +36,6 @@ const SERVICES = {
         protocol: 'http',
         i18nKey: 'adguardService'
     },
-    pihole: {
-        name: 'Pi-hole',
-        port: 8080,
-        path: '/admin',
-        protocol: 'http',
-        i18nKey: 'piholeService'
-    },
     custom: {
         name: 'Custom',
         port: null,
@@ -69,7 +62,6 @@ const langData = {
         ttydTerminal: 'ttyd: ',
         filebrowserService: 'filebrowser: ',
         adguardService: 'AdGuard Home: ',
-        piholeService: 'Pi-hole: ',
         customService: 'Custom: ',
         githubRepo: 'GitHub Repository',
         aiosScript: 'all in one script',
@@ -102,7 +94,6 @@ const langData = {
         ttydTerminal: 'ttyd: ',
         filebrowserService: 'filebrowser: ',
         adguardService: 'AdGuard Home: ',
-        piholeService: 'Pi-hole: ',
         customService: 'カスタム: ',
         githubRepo: 'GitHubリポジトリ',
         aiosScript: 'オールインワンスクリプト',
