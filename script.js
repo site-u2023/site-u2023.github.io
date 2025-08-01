@@ -10,7 +10,7 @@ const SSH_CMD_ENCODED_AIOS = encodeURIComponent(SSH_COMMANDS_AIOS);
 const SERVICES = {
     luci: {
         name: 'LuCI',
-        port: null,
+        port: 80,
         path: '/cgi-bin/luci',
         protocol: 'http',
         i18nKey: 'luciAdmin'
