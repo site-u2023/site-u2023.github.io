@@ -79,7 +79,7 @@ function initializeSettings() {
     // IPアドレスの復元
     const savedIP = localStorage.getItem('currentIP') || '192.168.1.1';
     currentIP = savedIP;
-    const ipInput = document.getElementById('ip-input');
+    const ipInput = document.getElementById('global-ip-input');
     if (ipInput) {
         ipInput.value = currentIP;
     }
@@ -101,7 +101,7 @@ function initializeSettings() {
 
 function bindEvents() {
     // IPアドレス関連
-    const ipInput = document.getElementById('ip-input');
+    const ipInput = document.getElementById('global-ip-input');
     const globalIpUpdate = document.getElementById('global-ip-update');
     
     if (ipInput) {
