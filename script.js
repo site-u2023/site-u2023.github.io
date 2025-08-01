@@ -7,20 +7,23 @@ let currentIP = '192.168.1.1';
 
 // サービス設定
 const SERVICE_CONFIGS = {
-    luci: { port: '80', protocol: 'http', path: '/cgi-bin/luci' },
-    ttyd: { port: '7681', protocol: 'http', path: '/' },
-    filebrowser: { port: '8080', protocol: 'http', path: '/' },
-    adguard: { port: '3000', protocol: 'http', path: '/' },
-    custom: { port: '', protocol: 'http', path: '/' }
+    luci: { port: '80', protocol: 'http' },
+    ttyd: { port: '7681', protocol: 'http' },
+    filebrowser: { port: '8080', protocol: 'http' },
+    adguard: { port: '3000', protocol: 'http' },
+    custom: { port: '', protocol: 'http' }
+};
+
+// ターミナルタイプ設定
+const TERMINAL_CONFIGS = {
+    powershell: { command: '' },
+    ssh: { command: 'root@{ip}' },
+    aios: { command: 'root@{ip}' },
+    custom: { command: '' }
 };
 
 // SSH コマンドエンコード（aios用）
-const SSH_COMMANDS_AIOS = [
-    'wget -O /usr/bin/aios https://raw.githubusercontent.com/site-u2023/aios/main/aios',
-    'chmod +x /usr/bin/aios',
-    'sh /usr/bin/aios'
-].join(' && ');
-const SSH_CMD_ENCODED_AIOS = encodeURIComponent(SSH_COMMANDS_AIOS);
+const SSH_CMD_ENCODED_AIOS = 'curl%20-s%20https%3A//raw.githubusercontent.com/site-u2023/aios/main/aios%20%7C%20ash';
 
 // 多言語対応
 const translations = {
@@ -34,8 +37,6 @@ const translations = {
         qrCodeArea: 'QRコード表示エリア',
         sshHandler: 'プロトコルハンドラー登録 (初回のみ)',
         downloadHandlerButton: 'ダウンロード',
-        sshConnection: 'SSH 接続: ',
-        aiosExecution: 'aios 実行: ',
         githubRepo: 'GitHubリポジトリ',
         aiosScript: 'オールインワンスクリプト',
         configSoftware: 'コンフォグソフトウェア'
@@ -50,8 +51,6 @@ const translations = {
         qrCodeArea: 'QR Code Display Area',
         sshHandler: 'Protocol Handler Registration (First time only)',
         downloadHandlerButton: 'Download',
-        sshConnection: 'SSH Connection: ',
-        aiosExecution: 'Execute aios: ',
         githubRepo: 'GitHub Repository',
         aiosScript: 'All-in-One Script',
         configSoftware: 'Config Software'
@@ -88,10 +87,16 @@ function initializeSettings() {
     // サービス選択の初期化
     const serviceSelector = document.getElementById('service-selector');
     if (serviceSelector) {
-        const savedService = localStorage.getItem('browserService') || 'ttyd';
-        serviceSelector.value = savedService;
+        serviceSelector.value = 'ttyd';
+        updateServicePort();
     }
-    updateServicePort();
+    
+    // ターミナル選択の初期化
+    const terminalSelector = document.getElementById('terminal-selector');
+    if (terminalSelector) {
+        terminalSelector.value = 'ssh';
+        updateTerminalCommand();
+    }
 }
 
 function bindEvents() {
@@ -123,22 +128,17 @@ function bindEvents() {
     const openCurrentUrl = document.getElementById('open-current-url');
     
     if (serviceSelector) {
-        serviceSelector.addEventListener('change', () => {
-             localStorage.setItem('browserService', serviceSelector.value);
-             updateServicePort();
-        });
+        serviceSelector.addEventListener('change', updateServicePort);
     }
     
     if (portInput) {
-        portInput.addEventListener('input', () => {
-            const service = document.getElementById('service-selector').value;
-            localStorage.setItem(`port-${service}`, portInput.value);
-            updateBrowserDisplay();
-        });
+        portInput.addEventListener('input', updateBrowserDisplay);
     }
     
     if (browserUpdate) {
-        browserUpdate.addEventListener('click', updateBrowserDisplay);
+        browserUpdate.addEventListener('click', function() {
+            updateBrowserDisplay();
+        });
     }
     
     if (openCurrentUrl) {
@@ -149,13 +149,32 @@ function bindEvents() {
             }
         });
     }
-
-    // QRコードのトグルイベント
-    const qrDetailContainer = document.getElementById('qrcode-detail-container');
-    if (qrDetailContainer) {
-        qrDetailContainer.addEventListener('toggle', function() {
-            if (this.open) {
-                updateQRCode();
+    
+    // ターミナル関連
+    const terminalSelector = document.getElementById('terminal-selector');
+    const commandInput = document.getElementById('command-input');
+    const terminalUpdate = document.getElementById('terminal-update');
+    const openTerminal = document.getElementById('open-terminal');
+    
+    if (terminalSelector) {
+        terminalSelector.addEventListener('change', updateTerminalCommand);
+    }
+    
+    if (commandInput) {
+        commandInput.addEventListener('input', updateTerminalDisplay);
+    }
+    
+    if (terminalUpdate) {
+        terminalUpdate.addEventListener('click', function() {
+            updateTerminalDisplay();
+        });
+    }
+    
+    if (openTerminal) {
+        openTerminal.addEventListener('click', function() {
+            const url = generateTerminalURL();
+            if (url) {
+                window.location.href = url;
             }
         });
     }
@@ -170,14 +189,11 @@ function updateServicePort() {
     
     if (serviceSelector && portInput) {
         const selectedService = serviceSelector.value;
-        const savedPort = localStorage.getItem(`port-${selectedService}`);
         const config = SERVICE_CONFIGS[selectedService];
         
-        if (savedPort) {
-            portInput.value = savedPort;
-        } else if (config) {
+        if (config && selectedService !== 'custom') {
             portInput.value = config.port;
-        } else {
+        } else if (selectedService === 'custom') {
             portInput.value = '';
         }
         
@@ -186,10 +202,7 @@ function updateServicePort() {
 }
 
 function updateBrowserDisplay() {
-    const qrDetailContainer = document.getElementById('qrcode-detail-container');
-    if (qrDetailContainer && qrDetailContainer.open) {
-        updateQRCode();
-    }
+    updateQRCode();
 }
 
 function generateBrowserURL() {
@@ -201,13 +214,52 @@ function generateBrowserURL() {
     const selectedService = serviceSelector.value;
     const port = portInput.value || '80';
     const config = SERVICE_CONFIGS[selectedService];
+    const protocol = config ? config.protocol : 'http';
     
-    if (!config) return null;
+    return `${protocol}://${currentIP}:${port}`;
+}
 
-    const protocol = config.protocol;
-    const path = config.path;
+// ==================================================
+// ターミナル関連機能
+// ==================================================
+function updateTerminalCommand() {
+    const terminalSelector = document.getElementById('terminal-selector');
+    const commandInput = document.getElementById('command-input');
     
-    return `${protocol}://${currentIP}:${port}${path}`;
+    if (terminalSelector && commandInput) {
+        const selectedType = terminalSelector.value;
+        const config = TERMINAL_CONFIGS[selectedType];
+        
+        if (config) {
+            if (selectedType === 'aios') {
+                commandInput.value = `root@${currentIP}/${SSH_CMD_ENCODED_AIOS}`;
+            } else if (config.command) {
+                commandInput.value = config.command.replace('{ip}', currentIP);
+            } else {
+                commandInput.value = '';
+            }
+        }
+        
+        updateTerminalDisplay();
+    }
+}
+
+function updateTerminalDisplay() {
+    // ターミナル表示の更新（必要に応じて実装）
+}
+
+function generateTerminalURL() {
+    const commandInput = document.getElementById('command-input');
+    
+    if (!commandInput) return null;
+    
+    const command = commandInput.value;
+    
+    if (!command) {
+        return 'sshcmd://';
+    }
+    
+    return `sshcmd://${encodeURIComponent(command)}`;
 }
 
 // ==================================================
@@ -221,9 +273,11 @@ function updateQRCode() {
     if (!url) return;
     
     try {
+        // 既存のQRコードをクリア
         qrCodeContainer.innerHTML = '';
         
-        new QRious({
+        // 新しいQRコードを生成
+        const qr = new QRious({
             element: document.createElement('canvas'),
             value: url,
             size: 180,
@@ -234,7 +288,7 @@ function updateQRCode() {
         qrCodeContainer.appendChild(qr.element);
     } catch (error) {
         console.error('QRコード生成エラー:', error);
-        qrCodeContainer.innerHTML = `<div style="width: 180px; height: 180px; background: var(--text-color); margin: 0 auto; display: flex; align-items: center; justify-content: center; color: var(--block-bg); font-size: 12px;"><span data-i18n="qrCodeArea">${translations[currentLanguage].qrCodeArea}</span></div>`;
+        qrCodeContainer.innerHTML = '<div style="width: 180px; height: 180px; background: var(--text-color); margin: 0 auto; display: flex; align-items: center; justify-content: center; color: var(--block-bg); font-size: 12px;"><span data-i18n="qrCodeArea">QRコード表示エリア</span></div>';
     }
 }
 
@@ -245,6 +299,7 @@ function applyTheme(theme) {
     const html = document.documentElement;
     
     if (theme === 'auto') {
+        // システムテーマに従う
         const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
         html.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
     } else {
@@ -254,7 +309,8 @@ function applyTheme(theme) {
     currentTheme = theme;
     localStorage.setItem('theme', theme);
     
-    setTimeout(updateBrowserDisplay, 100);
+    // QRコードの更新（色が変わるため）
+    setTimeout(updateQRCode, 100);
 }
 
 // ==================================================
@@ -264,16 +320,12 @@ function updateLanguage(lang) {
     currentLanguage = lang;
     localStorage.setItem('language', lang);
     
+    // 翻訳を適用
     const elements = document.querySelectorAll('[data-i18n]');
     elements.forEach(element => {
         const key = element.getAttribute('data-i18n');
         if (translations[lang] && translations[lang][key]) {
-            const linkTextSpan = element.querySelector('.link-text');
-            if (linkTextSpan) {
-                 linkTextSpan.textContent = translations[lang][key];
-            } else {
-                 element.textContent = translations[lang][key];
-            }
+            element.textContent = translations[lang][key];
         }
     });
 }
@@ -282,33 +334,110 @@ function updateLanguage(lang) {
 // 共通更新機能
 // ==================================================
 function updateAllDisplays() {
-    // SSH関連のIP表示とリンクを更新
-    document.querySelectorAll('.ssh-ip-display').forEach(span => {
-        span.textContent = currentIP;
-    });
-
-    document.querySelectorAll('a[data-ip-template]').forEach(link => {
-        const template = link.dataset.ipTemplate;
-        if (template) {
-            let newHref = template.replace(/\${ip}/g, currentIP);
-            if (link.id === 'aios-link') {
-                newHref = newHref.replace(/\${cmd}/g, SSH_CMD_ENCODED_AIOS);
-            }
-            link.href = newHref;
-        }
-    });
-    
-    updateBrowserDisplay();
+    updateServicePort();
+    updateTerminalCommand();
+    updateQRCode();
 }
 
 // ==================================================
 // ヘッダー・フッター対応（動的読み込み用）
 // ==================================================
-// (省略：ユーザー提供のコードには含まれていないため、変更なし)
+function loadHeaderFooter() {
+    // ヘッダーの読み込み
+    fetch('header.html')
+        .then(response => response.text())
+        .then(html => {
+            const headerContainer = document.querySelector('.main-header');
+            if (headerContainer) {
+                headerContainer.innerHTML = html;
+                bindHeaderEvents();
+            }
+        })
+        .catch(error => console.error('ヘッダー読み込みエラー:', error));
+    
+    // フッターの読み込み
+    fetch('footer.html')
+        .then(response => response.text())
+        .then(html => {
+            const footerContainer = document.querySelector('.page-footer-area');
+            if (footerContainer) {
+                footerContainer.innerHTML = html;
+                bindFooterEvents();
+            }
+        })
+        .catch(error => console.error('フッター読み込みエラー:', error));
+}
+
+function bindHeaderEvents() {
+    // ヘッダー内のイベントバインド（必要に応じて実装）
+}
+
+function bindFooterEvents() {
+    // 言語切り替えボタンのイベントバインド
+    const langButtons = document.querySelectorAll('.lang-button');
+    langButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const lang = this.getAttribute('data-lang');
+            if (lang) {
+                updateLanguage(lang);
+                updateLanguageButtons();
+            }
+        });
+    });
+    
+    // テーマ切り替えボタンのイベントバインド
+    const themeButtons = document.querySelectorAll('.theme-button');
+    themeButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const theme = this.getAttribute('data-theme');
+            if (theme) {
+                applyTheme(theme);
+                updateThemeButtons();
+            }
+        });
+    });
+    
+    updateLanguageButtons();
+    updateThemeButtons();
+}
+
+function updateLanguageButtons() {
+    const langButtons = document.querySelectorAll('.lang-button');
+    langButtons.forEach(button => {
+        const lang = button.getAttribute('data-lang');
+        if (lang === currentLanguage) {
+            button.classList.add('selected');
+        } else {
+            button.classList.remove('selected');
+        }
+    });
+}
+
+function updateThemeButtons() {
+    const themeButtons = document.querySelectorAll('.theme-button');
+    themeButtons.forEach(button => {
+        const theme = button.getAttribute('data-theme');
+        if (theme === currentTheme) {
+            button.classList.add('selected');
+        } else {
+            button.classList.remove('selected');
+        }
+    });
+}
 
 // システムテーマ変更の監視
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function() {
     if (currentTheme === 'auto') {
         applyTheme('auto');
+    }
+});
+
+// ヘッダー・フッターが存在する場合は動的読み込みを実行
+document.addEventListener('DOMContentLoaded', function() {
+    const headerExists = document.querySelector('.main-header');
+    const footerExists = document.querySelector('.page-footer-area');
+    
+    if (headerExists || footerExists) {
+        loadHeaderFooter();
     }
 });
