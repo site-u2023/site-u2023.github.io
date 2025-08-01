@@ -35,6 +35,15 @@ html[data-theme="dark"] {
     --qr-light: #111;
 }
 
+/* ── モバイルブラウザのデフォルトスタイル無効化 ── */
+.input-field,
+.service-select,
+.port-field {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
+
 html {
     font-size: 16px;
 }
@@ -298,15 +307,6 @@ h3.bordered-element {
 .service-select option {
     background-color: var(--block-bg);
     color: var(--text-color);
-}
-
-/* ── モバイルブラウザのデフォルトスタイル無効化 ── */
-.input-field,
-.service-select,
-.port-field {
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    appearance: none;
 }
 
 /* サービスセレクターのホバー時スタイル - より高い詳細度で適用 */
