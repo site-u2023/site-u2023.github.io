@@ -435,6 +435,17 @@ h3.bordered-element {
 .link-item .service-ip,
 .link-item .service-port {
     font-weight: bold;
+    color: inherit;
+    transition: color 0.2s ease;
+}
+
+/* ── ホバー時の色反転スタイル（動的リンク要素内のすべての要素） ── */
+.bordered-element:hover .service-ip,
+.bordered-element:hover .service-port,
+.bordered-element:hover .link-text,
+.bordered-element:hover .link-note,
+.bordered-element:hover .ip-display {
+    color: var(--hover-text);
 }
 
 /* ── ヘッダー ── */
