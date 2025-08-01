@@ -334,12 +334,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
 let isComposing = false;
 
-// 修正後のコード
-// IPアドレス入力フィールドの処理（ピリオドを許可）
+// IPアドレス入力フィールドの処理（IPv4/IPv6/ホスト名対応）
 if (ipInput) {
     ipInput.addEventListener('keydown', e => {
         const isIPAllowedChar =
-            (e.key.length === 1 && /[0-9.]/.test(e.key)) || // 数字とピリオドを許可
+            (e.key.length === 1 && /[0-9a-zA-Z.:\-_]/.test(e.key)) ||
             ['Backspace','Delete','ArrowLeft','ArrowRight','Tab','Enter'].includes(e.key);
 
         if (!isIPAllowedChar) {
