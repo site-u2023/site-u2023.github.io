@@ -324,7 +324,7 @@ h3.bordered-element {
     min-width: 4ch;
     border: none;
     border-left: 0.05em solid var(--text-color);
-    border-radius: 0; /* 追加：角丸無効化 */
+    border-radius: 0;
     background-color: transparent;
     color: inherit;
     font-weight: bold;
@@ -332,17 +332,6 @@ h3.bordered-element {
     box-sizing: border-box;
     padding: 1.2em 0.5em 1.2em 0.5em;
     margin: 0;
-}
-
-.port-field::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0.2em;
-    bottom: 0.2em;
-    width: 0.05em;
-    background-color: var(--text-color);
-    transition: background-color 0.2s ease;
 }
 
 .port-field:focus {
