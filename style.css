@@ -651,15 +651,20 @@ h3.bordered-element {
 
 /* ── フッター ── */
 .page-footer-area {
-    position: relative;  /* ← fixedからrelativeに変更 */
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(50em, 100vw);
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    padding: 1em;
     background-color: var(--block-bg);
-    max-width: 50em; /* 最大幅800px */
-    margin: 0 auto; /* 中央揃え */
-    width: 100%;
-    box-shadow: 0 0.25em 0.5em rgba(0, 0, 0, 0.1); /* 影を統一 */
+    box-shadow: 0 0.25em 0.5em rgba(0, 0, 0, 0.1);
     border-color: transparent;
     box-sizing: border-box;
-    /* z-index: 100; ← 不要になるので削除 */
+    z-index: 100;
 }
 
 .page-footer-area .footer-inner-flex {
