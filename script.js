@@ -237,7 +237,7 @@ function updateTerminalCommand() {
         
         if (config) {
             if (selectedType === 'aios') {
-                commandInput.value = `root@${currentIP}/${SSH_CMD_ENCODED_AIOS}`;
+                commandInput.value = `root@${currentIP}`;
             } else if (config.command) {
                 commandInput.value = config.command.replace('{ip}', currentIP);
             } else {
@@ -254,17 +254,23 @@ function updateTerminalDisplay() {
 }
 
 function generateTerminalURL() {
+    const terminalSelector = document.getElementById('terminal-selector');
     const commandInput = document.getElementById('command-input');
     
-    if (!commandInput) return null;
+    if (!terminalSelector || !commandInput) return null;
     
+    const selectedType = terminalSelector.value;
     const command = commandInput.value;
     
     if (!command) {
         return 'sshcmd://';
     }
     
-    return `sshcmd://${encodeURIComponent(command)}`;
+    if (selectedType === 'aios') {
+        return `sshcmd://${command}/${SSH_CMD_ENCODED_AIOS}`;
+    } else {
+        return `sshcmd://${command}`;
+    }
 }
 
 // ==================================================
