@@ -278,6 +278,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const storedService = localStorage.getItem('site-u-service');
         if (storedService && SERVICES[storedService]) {
             serviceSelector.value = storedService;
+        } else {
+            serviceSelector.value = 'luci';
         }
     }
 
