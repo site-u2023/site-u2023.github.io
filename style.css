@@ -150,7 +150,7 @@ h3.bordered-element {
 
 /* ── IPアドレス入力コンテナ ── */
 .ip-container-full {
-    flex: 2;
+    flex: 1;
     display: flex;
     align-items: stretch;
     position: relative;
@@ -159,6 +159,7 @@ h3.bordered-element {
     padding: 0;
     box-sizing: border-box;
     transition: background-color 0.2s, border-color 0.2s;
+    min-height: 3.6em;
 }
 
 .ip-container-full:focus-within {
@@ -202,7 +203,7 @@ h3.bordered-element {
 
 /* ── サービス選択コンテナ ── */
 .service-container {
-    flex: 3;
+    flex: 1;
     display: flex;
     align-items: stretch;
     position: relative;
@@ -211,6 +212,7 @@ h3.bordered-element {
     padding: 0;
     box-sizing: border-box;
     transition: background-color 0.2s, border-color 0.2s;
+    min-height: 3.6em;
 }
 
 .service-container:focus-within {
@@ -237,7 +239,7 @@ h3.bordered-element {
 
 /* ── サービスセレクター ── */
 .service-select {
-    flex: 2;
+    flex: 1;
     border: none;
     background-color: transparent;
     color: inherit;
@@ -291,7 +293,7 @@ h3.bordered-element {
 
 /* ── 更新ボタン（独立） ── */
 .update-button-standalone {
-    flex: 1;
+    flex: 0 0 auto;
     background-color: transparent;
     color: var(--text-color);
     border: 0.05em solid var(--text-color);
@@ -302,6 +304,7 @@ h3.bordered-element {
     font-size: 0.9em;
     white-space: nowrap;
     box-sizing: border-box;
+    min-height: 3.6em;
 }
 
 .update-button-standalone:hover {
