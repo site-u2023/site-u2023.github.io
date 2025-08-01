@@ -315,6 +315,21 @@ h3.bordered-element {
     color: var(--text-color);
 }
 
+/* ── ポートフィールドのフォーカス時にサービスコンテナを水色にする ── */
+.service-container:has(.port-field:focus) {
+    background-color: var(--hover-bg);
+    border-color: var(--hover-bg);
+}
+
+.service-container:has(.port-field:focus) .input-label,
+.service-container:has(.port-field:focus) .port-label {
+    color: var(--hover-text);
+}
+
+.service-container:has(.port-field:focus) .port-field {
+    border-color: var(--hover-bg);
+}
+
 .service-container:focus-within .service-select {
     background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f1f1f1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
 }
