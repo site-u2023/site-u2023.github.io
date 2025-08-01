@@ -210,10 +210,10 @@ h3.bordered-element {
     color: var(--hover-text);
 }
 
-/* ── サービス選択コンテナ ── */
-.service-container {
+/* ── サービス選択コンテナ（独立） ── */
+.service-container-only {
     flex: 1;
-    min-width: 9ch; /* Service+Port用最小幅 */
+    min-width: 9ch;
     display: flex;
     align-items: stretch;
     position: relative;
@@ -225,7 +225,12 @@ h3.bordered-element {
     min-height: 3.4em;
 }
 
-.service-container .input-label {
+.service-container-only:focus-within {
+    background-color: var(--hover-bg);
+    border-color: var(--hover-bg);
+}
+
+.service-container-only .input-label {
     position: absolute;
     top: 0.2em;
     left: 0.5em;
@@ -238,40 +243,12 @@ h3.bordered-element {
     z-index: 2;
 }
 
-.service-container:focus-within .input-label {
+.service-container-only:focus-within .input-label {
     color: var(--hover-text);
 }
 
-/* ── ポートラベル ── */
-.port-container {
-    position: relative;
-    flex: 1;  /* サービス選択と1:1の比率にする */
-    min-width: 4ch;
-    display: flex;
-    align-items: center;  /* 縦方向中央配置 */
-}
-
-.port-label {
-    position: absolute;
-    top: 0.2em;
-    left: 0.5em;
-    font-size: 0.7em;
-    color: inherit;
-    font-weight: normal;
-    opacity: 0.8;
-    pointer-events: none;
-    transition: color 0.2s ease;
-    z-index: 2;
-}
-
-.service-container:focus-within .port-label {
-    color: var(--hover-text);
-}
-
-/* ── サービスセレクター ── */
-.service-select {
-    flex: 1;
-    min-width: 4ch;
+.service-container-only .service-select {
+    width: 100%;
     border: none;
     border-radius: 0;
     background-color: transparent;
@@ -279,7 +256,7 @@ h3.bordered-element {
     font-weight: bold;
     font-size: 0.9em;
     box-sizing: border-box;
-    padding: 1.2em 0.5em 1.2em 0.5em;
+    padding: 1.2em 1.5em 1.2em 0.5em;
     margin: 0;
     cursor: pointer;
     -webkit-appearance: none;
@@ -289,48 +266,20 @@ h3.bordered-element {
     background-repeat: no-repeat;
     background-position: right 0.3em center;
     background-size: 1em;
-    padding-right: 0.2em;
 }
 
-.service-select:focus {
+.service-container-only .service-select:focus {
     outline: none;
-    color: var(--text-color);
-    background-color: transparent;
+    color: var(--hover-text);
 }
 
-.service-select:hover {
-    background-color: var(--hover-bg);
-    color: var(--hover-text);
+.service-container-only:focus-within .service-select {
     background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f1f1f1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
 }
 
-/* サービスコンテナのfocus-within時の背景を無効化 */
-.service-container:focus-within {
-    background-color: transparent;
-    border-color: var(--text-color);
-}
-
-.service-container:focus-within .input-label,
-.service-container:focus-within .port-label {
-    color: var(--text-color);
-}
-
-/* ── ポートフィールドのフォーカス時にサービスコンテナを水色にする ── */
-.service-container:has(.port-field:focus) {
+.service-container-only .service-select:hover {
     background-color: var(--hover-bg);
-    border-color: var(--hover-bg);
-}
-
-.service-container:has(.port-field:focus) .input-label,
-.service-container:has(.port-field:focus) .port-label {
     color: var(--hover-text);
-}
-
-.service-container:has(.port-field:focus) .port-field {
-    border-color: var(--hover-bg);
-}
-
-.service-container:focus-within .service-select {
     background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f1f1f1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
 }
 
@@ -339,19 +288,46 @@ h3.bordered-element {
     color: var(--text-color);
 }
 
-/* サービスセレクターのホバー時スタイル - より高い詳細度で適用 */
-.service-container .service-select:hover {
-    background-color: var(--hover-bg) !important;
-    color: var(--hover-text) !important;
-    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f1f1f1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e") !important;
-}
-
-/* ── ポートフィールド（サービス選択内） ── */
-.port-field {
+/* ── ポート入力コンテナ（独立） ── */
+.port-container-only {
     flex: 1;
     min-width: 4ch;
+    display: flex;
+    align-items: stretch;
+    position: relative;
+    border: 0.05em solid var(--text-color);
+    border-radius: 0.3em;
+    padding: 0;
+    box-sizing: border-box;
+    transition: background-color 0.2s, border-color 0.2s;
+    min-height: 3.4em;
+}
+
+.port-container-only:focus-within {
+    background-color: var(--hover-bg);
+    border-color: var(--hover-bg);
+}
+
+.port-container-only .port-label {
+    position: absolute;
+    top: 0.2em;
+    left: 0.5em;
+    font-size: 0.7em;
+    color: inherit;
+    font-weight: normal;
+    opacity: 0.8;
+    pointer-events: none;
+    transition: color 0.2s ease;
+    z-index: 2;
+}
+
+.port-container-only:focus-within .port-label {
+    color: var(--hover-text);
+}
+
+.port-container-only .port-field {
+    width: 100%;
     border: none;
-    border-left: 0.05em solid var(--text-color);
     border-radius: 0;
     background-color: transparent;
     color: inherit;
@@ -362,13 +338,9 @@ h3.bordered-element {
     margin: 0;
 }
 
-.port-field:focus {
+.port-container-only .port-field:focus {
     outline: none;
     color: var(--hover-text);
-}
-
-.service-container:focus-within .port-field {
-    border-color: var(--hover-bg);
 }
 
 /* ── 更新ボタン（独立） ── */
