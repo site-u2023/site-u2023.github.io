@@ -1,7 +1,7 @@
 // ==================================================
 // グローバル変数と定数
 // ==================================================
-let currentLanguage = 'ja';
+let currentLanguage = 'en';
 let currentTheme = 'auto';
 let currentIP = '192.168.1.1';
 
@@ -70,7 +70,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function initializeSettings() {
     // 言語設定の復元
-    const savedLanguage = localStorage.getItem('language') || 'ja';
+    const savedLanguage = localStorage.getItem('language') || 'en';
     currentLanguage = savedLanguage;
     
     // テーマ設定の復元
