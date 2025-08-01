@@ -81,47 +81,56 @@
 
                 <section id="terminal" class="content-section">
                     <h2 class="section-title" data-i18n="terminal">ターミナル<span class="section-subtitle">(for Windows)</span></h2>
-                    <ul class="link-list">
-                        <li>
-                            <details id="ssh-handler-details-container" class="qr-code-section handler-details-section bordered-element">
-                                <summary class="qr-code-summary handler-summary" data-i18n="sshHandler">
-                                    <span class="link-text">プロトコルハンドラー登録 (初回のみ)</span>
-                                </summary>
-                                <div class="details-content">
-                                    <a id="ssh-handler-download-link" href="file/sshcmd.reg" download class="bordered-element" data-i18n="downloadHandlerButton">
-                                        ダウンロード
-                                    </a>
-                                </div>
-                            </details>
-                        </li>
-                        <li>
-                            <a
-                                id="ssh-link"
-                                class="link-item bordered-element"
-                                data-ip-template="sshcmd://root@${ip}/"
-                                href="#"
-                                target="_blank"
-                                rel="noopener"
-                                data-i18n="sshConnection"
-                            >
-                                <span class="link-text">SSH 接続: </span>
-                                <span class="ip-display">ssh root@<span class="ssh-ip-display">192.168.1.1</span></span>
+                    
+                    <!-- SSH Handler Registration -->
+                    <details id="ssh-handler-details-container" class="qr-code-section handler-details-section bordered-element">
+                        <summary class="qr-code-summary handler-summary" data-i18n="sshHandler">
+                            <span class="link-text">プロトコルハンドラー登録 (初回のみ)</span>
+                            <span class="link-note">ダウンロード (sshcmd.reg をダブルクリックしてインストールしてください)</span>
+                        </summary>
+                        <div class="details-content">
+                            <a id="ssh-handler-download-link" href="file/sshcmd.reg" download class="bordered-element" data-i18n="downloadHandlerButton">
+                                ダウンロード
                             </a>
-                        </li>
-                        <li>
-                            <a
-                                id="aios-link"
-                                class="link-item bordered-element"
-                                data-ip-template="sshcmd://root@${ip}/${cmd}"
-                                href="#"
-                                target="_blank" rel="noopener"
-                                data-i18n="aiosExecution"
+                        </div>
+                    </details>
+
+                    <!-- Terminal Controls -->
+                    <div class="terminal-controls-group">
+                        <div class="input-group connection">
+                            <!-- Terminal Type Selector -->
+                            <div class="input-container service-container-only">
+                                <div class="input-label">Type</div>
+                                <select id="terminal-selector" class="service-select">
+                                    <option value="powershell">PowerShell</option>
+                                    <option value="ssh" selected>SSH</option>
+                                    <option value="aios">aios</option>
+                                    <option value="custom">Custom</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Apply Button -->
+                            <button id="terminal-update" class="update-button-standalone" data-i18n="apply">適用</button>
+                            
+                            <!-- Open Button -->
+                            <button id="open-terminal" class="open-button-standalone" data-i18n="open">開く</button>
+                        </div>
+
+                        <!-- Command Input (Wide) -->
+                        <div class="command-input-container">
+                            <div class="input-label">Command</div>
+                            <input
+                                type="text"
+                                id="command-input"
+                                inputmode="text"
+                                lang="en"
+                                autocomplete="off"
+                                value=""
+                                placeholder=""
+                                class="input-field command-field"
                             >
-                                <span class="link-text">aios 実行: </span>
-                                <span class="ip-display">ssh root@<span class="ssh-ip-display">192.168.1.1</span> ; aios</span>
-                            </a>
-                        </li>
-                    </ul>
+                        </div>
+                    </div>
                 </section>
 
                 <section id="project" class="content-section">
