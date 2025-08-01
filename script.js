@@ -6,7 +6,53 @@ const SSH_COMMANDS_AIOS = [
 ].join(' && ');
 const SSH_CMD_ENCODED_AIOS = encodeURIComponent(SSH_COMMANDS_AIOS);
 
-// ── 言語切替機能データ ──
+// ── サービス定義データベース ──
+const SERVICES = {
+    luci: {
+        name: 'LuCI',
+        port: 80,
+        path: '/cgi-bin/luci',
+        protocol: 'http',
+        i18nKey: 'luciAdmin'
+    },
+    ttyd: {
+        name: 'ttyd',
+        port: 7681,
+        path: '/',
+        protocol: 'http',
+        i18nKey: 'ttydTerminal'
+    },
+    filebrowser: {
+        name: 'filebrowser',
+        port: 8080,
+        path: '/',
+        protocol: 'http',
+        i18nKey: 'filebrowserService'
+    },
+    adguard: {
+        name: 'AdGuard Home',
+        port: 3000,
+        path: '/',
+        protocol: 'http',
+        i18nKey: 'adguardService'
+    },
+    pihole: {
+        name: 'Pi-hole',
+        port: 8080,
+        path: '/admin',
+        protocol: 'http',
+        i18nKey: 'piholeService'
+    },
+    custom: {
+        name: 'Custom',
+        port: null,
+        path: '/',
+        protocol: 'http',
+        i18nKey: 'customService'
+    }
+};
+
+// ── 言語切替機能データ（サービス追加） ──
 const langData = {
     en: {
         deviceIP: 'Device Settings',
@@ -20,8 +66,11 @@ const langData = {
         aiosExecution: 'Execute aios: ',
         console: 'Web Console',
         luciAdmin: 'LuCI: ',
-        ttydTerminal: 'Ttyd: ',
-        filebrowserService: 'Filebrowser: ',
+        ttydTerminal: 'ttyd: ',
+        filebrowserService: 'filebrowser: ',
+        adguardService: 'AdGuard Home: ',
+        piholeService: 'Pi-hole: ',
+        customService: 'Custom: ',
         githubRepo: 'GitHub Repository',
         aiosScript: 'all in one script',
         configSoftware: 'config software (legacy)',
@@ -50,8 +99,11 @@ const langData = {
         aiosExecution: 'aios実行: ',
         console: 'Webコンソール',
         luciAdmin: 'LuCI: ',
-        ttydTerminal: 'Ttyd: ',
-        filebrowserService: 'Filebrowser: ',
+        ttydTerminal: 'ttyd: ',
+        filebrowserService: 'filebrowser: ',
+        adguardService: 'AdGuard Home: ',
+        piholeService: 'Pi-hole: ',
+        customService: 'カスタム: ',
         githubRepo: 'GitHubリポジトリ',
         aiosScript: 'オールインワンスクリプト',
         configSoftware: 'コンフォグソフトウェア (旧版)',
@@ -98,22 +150,105 @@ function drawQRCode(elementId, text) {
     });
 }
 
-// ── 全リンク更新処理 ──
-function updateAll() {
+// ── 動的リンク生成関数 ──
+function generateDynamicLinks() {
+    const dynamicLinksContainer = document.getElementById('dynamic-links');
+    if (!dynamicLinksContainer) return;
+
+    // 既存のリンクをクリア
+    dynamicLinksContainer.innerHTML = '';
+
     const ipInput = document.getElementById('ip-input');
-    const ttydInput = document.getElementById('ttyd-input');
-    const fbInput = document.getElementById('fb-input');
+    const serviceSelector = document.getElementById('service-selector');
+    const portInput = document.getElementById('port-input');
     
-    if (!ipInput || !ttydInput || !fbInput) return;
+    if (!ipInput || !serviceSelector || !portInput) return;
 
     const ip = ipInput.value.trim() || ipInput.placeholder;
-    const ttydPort = ttydInput.value.trim() || ttydInput.placeholder;
-    const fbPort = fbInput.value.trim() || fbInput.placeholder;
+    const selectedService = serviceSelector.value;
+    const port = portInput.value.trim() || portInput.placeholder;
+    const currentLang = localStorage.getItem('lang-preference') || 'en';
+
+    // 選択されたサービス以外のすべてのサービスのリンクを生成
+    Object.keys(SERVICES).forEach(serviceKey => {
+        const service = SERVICES[serviceKey];
+        
+        // Customは除外（動的サービスではないため）
+        if (serviceKey === 'custom') return;
+        
+        // 現在選択されているサービスの場合は、入力されたポートを使用
+        const servicePort = serviceKey === selectedService ? port : service.port;
+        const url = `${service.protocol}://${ip}:${servicePort}${service.path}`;
+        
+        // リンク要素を作成
+        const li = document.createElement('li');
+        const a = document.createElement('a');
+        
+        a.href = url;
+        a.target = '_blank';
+        a.rel = 'noopener';
+        a.className = 'link-item bordered-element';
+        a.setAttribute('data-service', serviceKey);
+        
+        // リンクテキストとIPディスプレイを作成
+        const linkText = document.createElement('span');
+        linkText.className = 'link-text';
+        linkText.textContent = langData[currentLang][service.i18nKey] || `${service.name}: `;
+        
+        const ipDisplay = document.createElement('span');
+        ipDisplay.className = 'ip-display';
+        ipDisplay.innerHTML = `${service.protocol}://<span class="service-ip">${ip}</span>:<span class="service-port">${servicePort}</span>`;
+        
+        a.appendChild(linkText);
+        a.appendChild(ipDisplay);
+        li.appendChild(a);
+        dynamicLinksContainer.appendChild(li);
+    });
+}
+
+// ── サービス選択変更処理 ──
+function handleServiceChange() {
+    const serviceSelector = document.getElementById('service-selector');
+    const portInput = document.getElementById('port-input');
+    
+    if (!serviceSelector || !portInput) return;
+    
+    const selectedService = SERVICES[serviceSelector.value];
+    if (!selectedService) return;
+    
+    // Customでない場合はポートを自動設定
+    if (serviceSelector.value !== 'custom' && selectedService.port !== null) {
+        portInput.value = selectedService.port;
+        portInput.disabled = false; // ユーザーが変更可能
+    } else if (serviceSelector.value === 'custom') {
+        portInput.disabled = false;
+        portInput.placeholder = 'Enter port';
+    }
+    
+    // ローカルストレージに保存
+    localStorage.setItem('site-u-service', serviceSelector.value);
+    localStorage.setItem('site-u-port', portInput.value);
+    
+    // リンクを更新
+    generateDynamicLinks();
+}
+
+// ── 全リンク更新処理（更新版） ──
+function updateAll() {
+    const ipInput = document.getElementById('ip-input');
+    const serviceSelector = document.getElementById('service-selector');
+    const portInput = document.getElementById('port-input');
+    
+    if (!ipInput || !serviceSelector || !portInput) return;
+
+    const ip = ipInput.value.trim() || ipInput.placeholder;
+    const selectedService = serviceSelector.value;
+    const port = portInput.value.trim() || portInput.placeholder;
     
     // localStorageに保存
     localStorage.setItem('site-u-ip', ip);
-    localStorage.setItem('site-u-ttyd', ttydPort);
-    localStorage.setItem('site-u-fb', fbPort);
+    localStorage.setItem('site-u-service', selectedService);
+    localStorage.setItem('site-u-port', port);
 
     // SSH関連のIP表示を更新
     const sshIpSpan = document.getElementById('ssh-ip');
@@ -121,28 +256,14 @@ function updateAll() {
     if (sshIpSpan) sshIpSpan.textContent = ip;
     if (aiosIpSpan) aiosIpSpan.textContent = ip;
 
-    // Webコンソール関連の表示を更新
-    const luciIpSpan = document.getElementById('luci-ip');
-    const ttydIpSpan = document.getElementById('ttyd-ip');
-    const ttydPortSpan = document.getElementById('ttyd-port');
-    const filebrowserIpSpan = document.getElementById('filebrowser-ip');
-    const filebrowserPortSpan = document.getElementById('filebrowser-port');
-    
-    if (luciIpSpan) luciIpSpan.textContent = ip;
-    if (ttydIpSpan) ttydIpSpan.textContent = ip;
-    if (ttydPortSpan) ttydPortSpan.textContent = ttydPort;
-    if (filebrowserIpSpan) filebrowserIpSpan.textContent = ip;
-    if (filebrowserPortSpan) filebrowserPortSpan.textContent = fbPort;
+    // 動的リンクを更新
+    generateDynamicLinks();
 
-    // リンクのhrefを更新
-    document.querySelectorAll('.link-item[data-ip-template]').forEach(link => {
+    // 既存のSSHリンクを更新
+    document.querySelectorAll('a[data-ip-template]').forEach(link => {
         const template = link.dataset.ipTemplate;
         if (template) {
-            let newHref = template
-                .replace(/\${ip}/g, ip)
-                .replace(/\${ttyd}/g, ttydPort)
-                .replace(/\${fb}/g, fbPort);
-                
+            let newHref = template.replace(/\${ip}/g, ip);
             if (link.id === 'aios-link') {
                 newHref = newHref.replace(/\${cmd}/g, SSH_CMD_ENCODED_AIOS);
             }
@@ -157,20 +278,136 @@ function updateAll() {
     }
 }
 
-// ── applyLanguage 関数 ──
+// ── DOMContentLoaded（更新版） ──
+document.addEventListener('DOMContentLoaded', () => {
+    loadHeader();
+    loadFooter();
+
+    const ipInput = document.getElementById('ip-input');
+    const serviceSelector = document.getElementById('service-selector');
+    const portInput = document.getElementById('port-input');
+
+    // 保存された値を復元
+    if (ipInput) {
+        const storedIp = localStorage.getItem('site-u-ip');
+        if (storedIp) ipInput.value = storedIp;
+    }
+
+    if (serviceSelector) {
+        const storedService = localStorage.getItem('site-u-service');
+        if (storedService && SERVICES[storedService]) {
+            serviceSelector.value = storedService;
+        }
+    }
+
+    if (portInput) {
+        const storedPort = localStorage.getItem('site-u-port');
+        if (storedPort) {
+            portInput.value = storedPort;
+        } else {
+            // サービス選択に基づいてデフォルトポートを設定
+            const selectedService = SERVICES[serviceSelector?.value];
+            if (selectedService && selectedService.port !== null) {
+                portInput.value = selectedService.port;
+            }
+        }
+    }
+
+    // IPアドレス入力フィールドの処理（IPv4/IPv6/ホスト名対応）
+    if (ipInput) {
+        ipInput.addEventListener('compositionstart', e => e.preventDefault());
+
+        ipInput.addEventListener('keydown', e => {
+            const isIPAllowedChar =
+                (e.key.length === 1 && /[0-9a-zA-Z.:\-_]/.test(e.key)) || // IPv4/IPv6/ホスト名に必要な文字
+                ['Backspace','Delete','ArrowLeft','ArrowRight','Tab','Enter'].includes(e.key);
+
+            if (!isIPAllowedChar) {
+                e.preventDefault();
+                return;
+            }
+
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                updateAll();
+            }
+        });
+
+        ipInput.addEventListener('input', updateAll);
+    }
+
+    // ポート番号入力フィールドの処理（数字のみ）
+    if (portInput) {
+        portInput.addEventListener('compositionstart', e => e.preventDefault());
+
+        portInput.addEventListener('keydown', e => {
+            const isNumericAllowedChar =
+                (e.key.length === 1 && /[0-9]/.test(e.key)) || // 数字のみを許可
+                ['Backspace','Delete','ArrowLeft','ArrowRight','Tab','Enter'].includes(e.key);
+
+            if (!isNumericAllowedChar) {
+                e.preventDefault();
+                return;
+            }
+
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                updateAll();
+            }
+        });
+
+        portInput.addEventListener('input', updateAll);
+    }
+
+    // サービスセレクターの処理
+    if (serviceSelector) {
+        serviceSelector.addEventListener('change', handleServiceChange);
+    }
+
+    // 初期表示時にサービス設定とリンク生成
+    handleServiceChange();
+    updateAll();
+
+    // global-ip-update ボタン
+    const globalIpUpdateBtn = document.getElementById('global-ip-update');
+    if (globalIpUpdateBtn) {
+        globalIpUpdateBtn.addEventListener('click', updateAll);
+    }
+
+    // QRコード関連
+    const qrDetailContainer = document.getElementById('qrcode-detail-container');
+    if (qrDetailContainer && !qrDetailContainer.dataset.toggleListenerAdded) {
+        qrDetailContainer.addEventListener('toggle', function() {
+            const ipInput = document.getElementById('ip-input');
+            const currentIp = ipInput ? (ipInput.value.trim() || ipInput.placeholder) : '192.168.1.1';
+
+            if (this.open) {
+                drawQRCode('qrcode-detail', `http://${currentIp}`);
+            } else {
+                const qrCanvasContainer = document.getElementById('qrcode-detail');
+                if (qrCanvasContainer) {
+                    qrCanvasContainer.innerHTML = `<div style="width: 180px; height: 180px; background: var(--text-color); margin: 0 auto; display: flex; align-items: center; justify-content: center; color: var(--block-bg); font-size: 12px;"><span>QRコード表示エリア</span></div>`;
+                }
+            }
+        });
+        qrDetailContainer.dataset.toggleListenerAdded = 'true';
+    }
+});
+
+// ── applyLanguage 関数（サービスリンク対応版） ──
 function applyLanguage(lang) {
     const langButtons = document.querySelectorAll('.language-selector button');
     langButtons.forEach(button => {
         button.classList.toggle('selected', button.dataset.lang === lang);
-        if (langData[lang]['lang' + button.dataset.lang.toUpperCase()]) { // 'langEN' または 'langJA' を動的に生成
-             button.textContent = langData[lang]['lang' + button.dataset.lang.toUpperCase()];
+        if (langData[lang]['lang' + button.dataset.lang.toUpperCase()]) {
+            button.textContent = langData[lang]['lang' + button.dataset.lang.toUpperCase()];
         }
     });
 
     document.querySelectorAll('[data-i18n]').forEach(element => {
         const key = element.getAttribute('data-i18n');
         if (langData[lang] && langData[lang][key] !== undefined) {
-            if (['sshConnection', 'aiosExecution', 'luciAdmin', 'ttydTerminal', 'filebrowserService'].includes(key)) {
+            if (['sshConnection', 'aiosExecution'].includes(key)) {
                 const linkTextSpan = element.querySelector('.link-text');
                 if (linkTextSpan) {
                     linkTextSpan.textContent = langData[lang][key];
@@ -190,16 +427,28 @@ function applyLanguage(lang) {
             } else if (key === 'disclaimerOpenWrtParagraph') {
                 const paragraphPrefix = langData[lang].disclaimerOpenWrtParagraph || '';
                 const linkText = langData[lang].openWrtOfficialSite || '';
-                const paragraphSuffix = langData[lang].disclaimerOpenWrtSuffix || ''; // 新しく追加したキーを使用
+                const paragraphSuffix = langData[lang].disclaimerOpenWrtSuffix || '';
 
                 element.innerHTML = `${paragraphPrefix}<a href="https://openwrt.org/" target="_blank" rel="noopener noreferrer" class="external-link"><span>${linkText}</span></a>${paragraphSuffix}`;
-            }
-            else {
-                 element.textContent = langData[lang][key];
+            } else {
+                element.textContent = langData[lang][key];
             }
         }
     });
 
+    // 動的サービスリンクの言語切り替え
+    document.querySelectorAll('a[data-service]').forEach(link => {
+        const serviceKey = link.getAttribute('data-service');
+        const service = SERVICES[serviceKey];
+        if (service && langData[lang][service.i18nKey]) {
+            const linkTextSpan = link.querySelector('.link-text');
+            if (linkTextSpan) {
+                linkTextSpan.textContent = langData[lang][service.i18nKey];
+            }
+        }
+    });
+
+    // 全体を更新（動的リンクの再生成も含む）
     updateAll();
 }
 
@@ -308,97 +557,6 @@ function initializeThemeAndLanguageSelectors() {
     applyLanguage(currentLang);
 }
 
-// ── DOMContentLoaded ──
-document.addEventListener('DOMContentLoaded', () => {
-    loadHeader();
-    loadFooter();
-
-    const ipInput = document.getElementById('ip-input');
-    const ttydInput = document.getElementById('ttyd-input');
-    const fbInput = document.getElementById('fb-input');
-
-    if (ipInput) {
-        const storedIp = localStorage.getItem('site-u-ip');
-        if (storedIp) ipInput.value = storedIp;
-    }
-
-    if (ttydInput) {
-        const storedTtyd = localStorage.getItem('site-u-ttyd');
-        if (storedTtyd) ttydInput.value = storedTtyd;
-    }
-
-    if (fbInput) {
-        const storedFb = localStorage.getItem('site-u-fb');
-        if (storedFb) fbInput.value = storedFb;
-    }
-
-let isComposing = false;
-
-// IPアドレス入力フィールドの処理（IPv4/IPv6/ホスト名対応）
-if (ipInput) {
-    ipInput.addEventListener('keydown', e => {
-        const isIPAllowedChar =
-            (e.key.length === 1 && /[0-9a-zA-Z.:\-_]/.test(e.key)) ||
-            ['Backspace','Delete','ArrowLeft','ArrowRight','Tab','Enter'].includes(e.key);
-
-        if (!isIPAllowedChar) {
-            e.preventDefault();
-            return;
-        }
-
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            updateAll();
-        }
-    });
-}
-
-// ポート番号入力フィールドの処理（数字のみ）
-[ttydInput, fbInput].forEach(input => {
-    if (!input) return;
-    
-    input.addEventListener('keydown', e => {
-        const isNumericAllowedChar =
-            (e.key.length === 1 && /[0-9]/.test(e.key)) || // 数字のみを許可
-            ['Backspace','Delete','ArrowLeft','ArrowRight','Tab','Enter'].includes(e.key);
-
-        if (!isNumericAllowedChar) {
-            e.preventDefault();
-            return;
-        }
-
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            updateAll();
-        }
-    });
-});
-
-    // 初期表示時にも更新
-    updateAll();
-
-    // global-ip-update ボタン
-    const globalIpUpdateBtn = document.getElementById('global-ip-update');
-    if (globalIpUpdateBtn) {
-        globalIpUpdateBtn.addEventListener('click', updateAll);
-    }
-
-    // QRコード関連
-    const qrDetailContainer = document.getElementById('qrcode-detail-container');
-    if (qrDetailContainer && !qrDetailContainer.dataset.toggleListenerAdded) {
-        qrDetailContainer.addEventListener('toggle', function() {
-            const ipInput = document.getElementById('ip-input');
-            const currentIp = ipInput ? (ipInput.value.trim() || ipInput.placeholder) : '192.168.1.1';
-
-            if (this.open) {
-                drawQRCode('qrcode-detail', `http://${currentIp}`);
-            } else {
-                const qrCanvasContainer = document.getElementById('qrcode-detail');
-                if (qrCanvasContainer) {
-                    qrCanvasContainer.innerHTML = `<div style="width: 180px; height: 180px; background: var(--text-color); margin: 0 auto; display: flex; align-items: center; justify-content: center; color: var(--block-bg); font-size: 12px;"><span>QRコード表示エリア</span></div>`;
-                }
-            }
-        });
-        qrDetailContainer.dataset.toggleListenerAdded = 'true';
-    }
-});
+// ── その他の既存関数は変更なし ──
+// drawQRCode、updateLogoDisplay、loadHeader、loadFooter、initializeThemeAndLanguageSelectors
+// これらの関数は元のコードのまま使用
