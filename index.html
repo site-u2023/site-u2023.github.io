@@ -10,8 +10,8 @@
     <div class="container">
         <main class="main-content">
             <nav class="main-nav">
-                <section id="device-ip" class="content-section">
-                    <h2 class="section-title" data-i18n="deviceIP">Browser</h2>
+                <section id="address" class="content-section">
+                    <h2 class="section-title" data-i18n="address">アドレス</h2>
                     <div class="input-group connection">
                         <!-- IP Address Input -->
                         <div class="input-container ip-container-full">
@@ -28,7 +28,15 @@
                             >
                         </div>
                         
-                        <!-- Service Selector (独立) -->
+                        <!-- Apply Button -->
+                        <button id="global-ip-update" class="update-button-standalone" data-i18n="apply">適用</button>
+                    </div>
+                </section>
+
+                <section id="browser" class="content-section">
+                    <h2 class="section-title" data-i18n="browser">ブラウザ</h2>
+                    <div class="input-group connection">
+                        <!-- Service Selector -->
                         <div class="input-container service-container-only">
                             <div class="input-label">Service</div>
                             <select id="service-selector" class="service-select">
@@ -40,7 +48,7 @@
                             </select>
                         </div>
 
-                        <!-- Port Input (独立) -->
+                        <!-- Port Input -->
                         <div class="input-container port-container-only">
                             <div class="port-label">Port</div>
                             <input
@@ -56,32 +64,43 @@
                             >
                         </div>
                         
-                        <!-- Update Button -->
-                        <button id="global-ip-update" class="update-button-standalone" data-i18n="apply">Apply</button>
+                        <!-- Apply Button -->
+                        <button id="browser-update" class="update-button-standalone" data-i18n="apply">適用</button>
                         
                         <!-- Open Button -->
-                        <button id="open-current-url" class="open-button-standalone" data-i18n="open">Open</button>
+                        <button id="open-current-url" class="open-button-standalone" data-i18n="open">開く</button>
                     </div>
                     
-                    <!-- 選択されたサービスのリンク表示エリア -->
-                    <div id="selected-service-link" class="selected-service-container"></div>
-                    
                     <details id="qrcode-detail-container" class="qr-code-section bordered-element">
-                        <summary class="qr-code-summary" data-i18n="qrCodeDisplay">QR Code</summary>
+                        <summary class="qr-code-summary" data-i18n="qrCodeDisplay">QRコード</summary>
                         <div id="qrcode-detail" class="qr-code-canvas">
                             <div style="width: 180px; height: 180px; background: var(--text-color); margin: 0 auto; display: flex; align-items: center; justify-content: center; color: var(--block-bg); font-size: 12px;"><span data-i18n="qrCodeArea">QRコード表示エリア</span></div>
                         </div>
                     </details>
                 </section>         
+
                 <section id="terminal" class="content-section">
-                    <h2 class="section-title" data-i18n="terminal">Terminal<span class="section-subtitle">(for Windows)</span></h2>
+                    <h2 class="section-title" data-i18n="terminal">ターミナル<span class="section-subtitle">(for Windows)</span></h2>
                     
-                    <!-- ターミナル選択コントロール -->
+                    <!-- SSH Handler Registration -->
+                    <details id="ssh-handler-details-container" class="qr-code-section handler-details-section bordered-element">
+                        <summary class="qr-code-summary handler-summary" data-i18n="sshHandler">
+                            <span class="link-text">プロトコルハンドラー登録 (初回のみ)</span>
+                            <span class="link-note">ダウンロード (sshcmd.reg をダブルクリックしてインストールしてください)</span>
+                        </summary>
+                        <div class="details-content">
+                            <a id="ssh-handler-download-link" href="file/sshcmd.reg" download class="bordered-element" data-i18n="downloadHandlerButton">
+                                ダウンロード
+                            </a>
+                        </div>
+                    </details>
+
+                    <!-- Terminal Controls -->
                     <div class="terminal-controls-group">
-                        <div class="input-group">
+                        <div class="input-group connection">
                             <!-- Terminal Type Selector -->
                             <div class="input-container service-container-only">
-                                <div class="input-label">Terminal Type</div>
+                                <div class="input-label">Type</div>
                                 <select id="terminal-selector" class="service-select">
                                     <option value="powershell">PowerShell</option>
                                     <option value="ssh" selected>SSH</option>
@@ -89,80 +108,39 @@
                                     <option value="custom">Custom</option>
                                 </select>
                             </div>
+                            
+                            <!-- Apply Button -->
+                            <button id="terminal-update" class="update-button-standalone" data-i18n="apply">適用</button>
+                            
+                            <!-- Open Button -->
+                            <button id="open-terminal" class="open-button-standalone" data-i18n="open">開く</button>
                         </div>
-                        
-                        <!-- Command Input -->
+
+                        <!-- Command Input (Wide) -->
                         <div class="command-input-container">
                             <div class="input-label">Command</div>
                             <input
                                 type="text"
                                 id="command-input"
-                                class="command-field"
-                                readonly
+                                inputmode="text"
+                                lang="en"
+                                autocomplete="off"
+                                value=""
+                                placeholder=""
+                                class="input-field command-field"
                             >
-                        </div>
-                        
-                        <!-- Terminal Update and Open Buttons -->
-                        <div class="input-group">
-                            <button id="terminal-update" class="update-button-standalone" data-i18n="apply">Apply</button>
-                            <button id="open-terminal" class="open-button-standalone" data-i18n="open">Open</button>
                         </div>
                     </div>
-
-                    <ul class="link-list">
-                        <li>
-                            <details id="ssh-handler-details-container" class="qr-code-section handler-details-section bordered-element">
-                                <summary class="qr-code-summary handler-summary" data-i18n="sshHandler">
-                                    <span class="link-text">Protocol handler registration (first-time use)</span>
-                                    <span class="link-note">Download (Double-click sshcmd.reg to install)</span>
-                                </summary>
-                                <div class="details-content">
-                                    <a id="ssh-handler-download-link" href="file/sshcmd.reg" download class="bordered-element" data-i18n="downloadHandlerButton">
-                                        Download
-                                    </a>
-                                </div>
-                            </details>
-                        </li>
-                    </ul>
-                    <ul class="link-list">
-                        <li>
-                            <a
-                                id="ssh-link"
-                                class="link-item bordered-element"
-                                data-ip-template="sshcmd://root@${ip}/"
-                                href="#"
-                                target="_blank"
-                                rel="noopener"
-                                data-i18n="sshConnection"
-                            >
-                                <span class="link-text">SSH Connection: </span>
-                                <span class="ip-display">ssh root@<span id="ssh-ip">192.168.1.1</span></span>
-                            </a>
-                        </li>
-                        <li>
-                            <a
-                                id="aios-link"
-                                class="link-item bordered-element"
-                                data-ip-template="sshcmd://root@${ip}/${cmd}"
-                                href="#"
-                                target="_blank" rel="noopener"
-                                data-i18n="aiosExecution"
-                            >
-                                <span class="link-text">Execute aios: </span>
-                                <span class="ip-display">ssh root@<span id="aios-ip">192.168.1.1</span> ; aios</span>
-                            </a>
-                        </li>
-                    </ul>
                 </section>
 
                 <section id="project" class="content-section">
-                    <h2 class="section-title" data-i18n="githubRepo">GitHub Repository</h2>
+                    <h2 class="section-title" data-i18n="githubRepo">GitHubリポジトリ</h2>
                     <ul class="link-list">
                         <li><a href="https://github.com/site-u2023/aios/blob/main/README.md" target="_blank" rel="noopener" data-i18n="aiosScript" class="link-item bordered-element">
-                            <span class="link-text">all in one script</span>
+                            <span class="link-text">オールインワンスクリプト</span>
                         </a></li>
                         <li><a href="https://github.com/site-u2023/config-software/blob/main/README.md" target="_blank" rel="noopener" data-i18n="configSoftware" class="link-item bordered-element">
-                            <span class="link-text">config-software</span> <span class="link-note">(legacy)</span>
+                            <span class="link-text">コンフォグソフトウェア</span> <span class="link-note">(旧版)</span>
                         </a></li>
                     </ul>
                 </section>
