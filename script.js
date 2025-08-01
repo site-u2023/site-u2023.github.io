@@ -1,443 +1,604 @@
-// ==================================================
-// グローバル変数と定数
-// ==================================================
-let currentLanguage = 'ja';
-let currentTheme = 'auto';
-let currentIP = '192.168.1.1';
+// ── グローバル定数（再定義不要なもの）──
+const SSH_COMMANDS_AIOS = [
+    'wget -O /usr/bin/aios https://raw.githubusercontent.com/site-u2023/aios/main/aios',
+    'chmod +x /usr/bin/aios',
+    'sh /usr/bin/aios'
+].join(' && ');
+const SSH_CMD_ENCODED_AIOS = encodeURIComponent(SSH_COMMANDS_AIOS);
 
-// サービス設定
-const SERVICE_CONFIGS = {
-    luci: { port: '80', protocol: 'http' },
-    ttyd: { port: '7681', protocol: 'http' },
-    filebrowser: { port: '8080', protocol: 'http' },
-    adguard: { port: '3000', protocol: 'http' },
-    custom: { port: '', protocol: 'http' }
-};
-
-// ターミナルタイプ設定
-const TERMINAL_CONFIGS = {
-    powershell: { command: '' },
-    ssh: { command: 'root@{ip}' },
-    aios: { command: 'root@{ip}' },
-    custom: { command: '' }
-};
-
-// SSH コマンドエンコード（aios用）
-const SSH_CMD_ENCODED_AIOS = 'curl%20-s%20https%3A//raw.githubusercontent.com/site-u2023/aios/main/aios%20%7C%20ash';
-
-// 多言語対応
-const translations = {
-    ja: {
-        address: 'アドレス',
-        browser: 'ブラウザ',
-        terminal: 'ターミナル',
-        apply: '適用',
-        open: '開く',
-        qrCodeDisplay: 'QRコード',
-        qrCodeArea: 'QRコード表示エリア',
-        sshHandler: 'プロトコルハンドラー登録 (初回のみ)',
-        downloadHandlerButton: 'ダウンロード',
-        githubRepo: 'GitHubリポジトリ',
-        aiosScript: 'オールインワンスクリプト',
-        configSoftware: 'コンフォグソフトウェア'
+// ── サービス定義データベース ──
+const SERVICES = {
+    luci: {
+        name: 'LuCI',
+        port: 80,
+        path: '/cgi-bin/luci',
+        protocol: 'http',
+        i18nKey: 'luciAdmin'
     },
+    ttyd: {
+        name: 'ttyd',
+        port: 7681,
+        path: '/',
+        protocol: 'http',
+        i18nKey: 'ttydTerminal'
+    },
+    filebrowser: {
+        name: 'filebrowser',
+        port: 8080,
+        path: '/',
+        protocol: 'http',
+        i18nKey: 'filebrowserService'
+    },
+    adguard: {
+        name: 'AdGuard Home',
+        port: 3000,
+        path: '/',
+        protocol: 'http',
+        i18nKey: 'adguardService'
+    },
+    custom: {
+        name: 'Custom',
+        port: null,
+        path: '/',
+        protocol: 'http',
+        i18nKey: 'customService'
+    }
+};
+
+// ── 言語切替機能データ（サービス追加） ──
+const langData = {
     en: {
-        address: 'Address',
-        browser: 'Browser',
-        terminal: 'Terminal',
+        deviceIP: 'Browser',
         apply: 'Apply',
         open: 'Open',
+        webLinks: 'Web Links',
         qrCodeDisplay: 'QR Code',
         qrCodeArea: 'QR Code Display Area',
-        sshHandler: 'Protocol Handler Registration (First time only)',
-        downloadHandlerButton: 'Download',
+        terminal: 'Terminal (for Windows)',
+        sshHandler: 'Protocol handler registration (first-time use)',
+        downloadHandlerButton: 'Download (Double-click sshcmd.reg to install)',
+        sshConnection: 'SSH Connection: ',
+        aiosExecution: 'Execute aios: ',
+        console: 'Web Console',
+        luciAdmin: 'LuCI: ',
+        ttydTerminal: 'ttyd: ',
+        filebrowserService: 'filebrowser: ',
+        adguardService: 'AdGuard Home: ',
+        customService: 'Custom: ',
         githubRepo: 'GitHub Repository',
-        aiosScript: 'All-in-One Script',
-        configSoftware: 'Config Software'
+        aiosScript: 'all in one script',
+        configSoftware: 'config software (legacy)',
+        footerMemo: 'OpenWrt A Beginner\'s Notebook',
+        footerSiteU: 'site-u',
+        footerDisclaimer: 'Disclaimer',
+        disclaimerPageTitle: 'Disclaimer',
+        disclaimerSiteUTitle: 'Disclaimer regarding site-u (this site)',
+        disclaimerSiteUParagraph: 'All content (including websites, scripts, and other works) published on this site is open and freely available for use. However, the operators of this site assume no responsibility for any damages incurred through the use of this content. Please use it at your own risk.',
+        disclaimerOpenWrtTitle: 'Disclaimer regarding OpenWrt',
+        disclaimerOpenWrtParagraph: 'OpenWrt is a registered trademark of Software Freedom Conservancy. This site is not affiliated with or endorsed by the OpenWrt project. For official information and support regarding OpenWrt, please refer to the ',
+        openWrtOfficialSite: 'OpenWrt official website',
+        disclaimerOpenWrtSuffix: '.',
+        langEn: 'English',
+        langJa: '日本語'       
+    },
+    ja: {
+        deviceIP: 'ブラウザ',
+        apply: '適用',
+        open: '開く',
+        webLinks: 'Webリンク',
+        qrCodeDisplay: 'QRコード',
+        qrCodeArea: 'QRコード表示エリア', 
+        terminal: 'ターミナル (Windows用)',
+        sshHandler: 'プロトコルハンドラー登録 (初回のみ)',
+        downloadHandlerButton: 'ダウンロード (sshcmd.reg をダブルクリックしてインストールしてください)',
+        sshConnection: 'SSH接続: ',
+        aiosExecution: 'aios実行: ',
+        console: 'Webコンソール',
+        luciAdmin: 'LuCI: ',
+        ttydTerminal: 'ttyd: ',
+        filebrowserService: 'filebrowser: ',
+        adguardService: 'AdGuard Home: ',
+        customService: 'カスタム: ',
+        githubRepo: 'GitHubリポジトリ',
+        aiosScript: 'オールインワンスクリプト',
+        configSoftware: 'コンフォグソフトウェア (旧版)',
+        footerMemo: 'OpenWrt初心者備忘録',
+        footerSiteU: 'site-u',
+        footerDisclaimer: '免責事項',
+        disclaimerPageTitle: '免責事項',
+        disclaimerSiteUTitle: 'site-u（当サイト）に関する免責事項',
+        disclaimerSiteUParagraph: '当サイトで公開されているコンテンツ（ウェブサイト、スクリプト、その他の著作物を含む）は全てオープンであり、自由にご利用いただけます。しかしながら、これらのコンテンツの利用によって生じたいかなる損害についても、当サイトの運営者は一切の責任を負いません。利用者の皆様の責任においてご利用くださいますようお願いいたします。',
+        disclaimerOpenWrtTitle: 'OpenWrtに関する免責事項',
+        disclaimerOpenWrtParagraph: 'OpenWrtはSoftware Freedom Conservancyの登録商標です。当サイトはOpenWrtプロジェクトとは提携しておらず、また推奨もされていません。OpenWrtに関する公式情報やサポートについては、',
+        openWrtOfficialSite: 'OpenWrt公式サイト',
+        disclaimerOpenWrtSuffix: 'をご参照ください。',
+        langEn: 'English',
+        langJa: '日本語'
     }
 };
 
-// ==================================================
-// 初期化
-// ==================================================
-document.addEventListener('DOMContentLoaded', function() {
-    initializeSettings();
-    bindEvents();
-    updateAllDisplays();
-});
-
-function initializeSettings() {
-    // 言語設定の復元
-    const savedLanguage = localStorage.getItem('language') || 'ja';
-    currentLanguage = savedLanguage;
-    
-    // テーマ設定の復元
-    const savedTheme = localStorage.getItem('theme') || 'auto';
-    currentTheme = savedTheme;
-    applyTheme(currentTheme);
-    
-    // IPアドレスの復元
-    const savedIP = localStorage.getItem('currentIP') || '192.168.1.1';
-    currentIP = savedIP;
+// ── 現在のサービスURLを取得する関数 ──
+function getCurrentUrl() {
     const ipInput = document.getElementById('ip-input');
-    if (ipInput) {
-        ipInput.value = currentIP;
-    }
-    
-    // サービス選択の初期化
     const serviceSelector = document.getElementById('service-selector');
-    if (serviceSelector) {
-        serviceSelector.value = 'ttyd';
-        updateServicePort();
-    }
+    const portInput = document.getElementById('port-input');
     
-    // ターミナル選択の初期化
-    const terminalSelector = document.getElementById('terminal-selector');
-    if (terminalSelector) {
-        terminalSelector.value = 'ssh';
-        updateTerminalCommand();
+    if (!ipInput || !serviceSelector || !portInput) return null;
+    
+    const ip = ipInput.value.trim() || ipInput.placeholder;
+    const selectedServiceKey = serviceSelector.value;
+    const port = portInput.value.trim() || portInput.placeholder;
+    
+    const service = SERVICES[selectedServiceKey];
+    if (!service) return null;
+    
+    return `${service.protocol}://${ip}:${port}${service.path}`;
+}
+
+// ── 現在のURLを新しいタブで開く関数 ──
+function openCurrentUrl() {
+    const url = getCurrentUrl();
+    if (url) {
+        window.open(url, '_blank');
     }
 }
 
-function bindEvents() {
-    // IPアドレス関連
+// ── drawQRCode 関数（修正版：選択されたサービスのURLを使用） ──
+function drawQRCode(elementId, url) {
+    const qrContainer = document.getElementById(elementId);
+    if (!qrContainer || typeof QRious === 'undefined') {
+        console.error(`QR code container #${elementId} not found or QRious library not loaded.`);
+        if (qrContainer) {
+            qrContainer.innerHTML = `<div style="width: 180px; height: 180px; background: var(--text-color); margin: 0 auto; display: flex; align-items: center; justify-content: center; color: var(--block-bg); font-size: 12px;"><span data-i18n="qrCodeArea">${langData[localStorage.getItem('lang-preference') || 'ja'].qrCodeArea}</span></div>`;
+            qrContainer.querySelector('div span').setAttribute('data-text', 'QRiousライブラリがロードされていません');
+        }
+        return;
+    }
+    qrContainer.innerHTML = '';
+    const canvas = document.createElement('canvas');
+    qrContainer.appendChild(canvas);
+
+    const style = getComputedStyle(document.body);
+    const darkColor = style.getPropertyValue('--qr-dark').trim();
+    const lightColor = style.getPropertyValue('--qr-light').trim();
+
+    new QRious({
+        element: canvas,
+        value: url,
+        size: 180,
+        foreground: darkColor,
+        background: lightColor
+    });
+}
+
+// ── 選択中サービスリンク生成関数 ──
+function generateSelectedServiceLink() {
+    const selectedServiceContainer = document.getElementById('selected-service-link');
+    if (!selectedServiceContainer) return;
+
+    // 既存のリンクをクリア
+    selectedServiceContainer.innerHTML = '';
+
     const ipInput = document.getElementById('ip-input');
-    const globalIpUpdate = document.getElementById('global-ip-update');
-    
-    if (ipInput) {
-        ipInput.addEventListener('input', function() {
-            currentIP = this.value;
-            updateAllDisplays();
-        });
-    }
-    
-    if (globalIpUpdate) {
-        globalIpUpdate.addEventListener('click', function() {
-            if (ipInput) {
-                currentIP = ipInput.value;
-                localStorage.setItem('currentIP', currentIP);
-                updateAllDisplays();
-            }
-        });
-    }
-    
-    // ブラウザ関連
-    const serviceSelector = document.getElementById('service-selector');
-    const portInput = document.getElementById('port-input');
-    const browserUpdate = document.getElementById('browser-update');
-    const openCurrentUrl = document.getElementById('open-current-url');
-    
-    if (serviceSelector) {
-        serviceSelector.addEventListener('change', updateServicePort);
-    }
-    
-    if (portInput) {
-        portInput.addEventListener('input', updateBrowserDisplay);
-    }
-    
-    if (browserUpdate) {
-        browserUpdate.addEventListener('click', function() {
-            updateBrowserDisplay();
-        });
-    }
-    
-    if (openCurrentUrl) {
-        openCurrentUrl.addEventListener('click', function() {
-            const url = generateBrowserURL();
-            if (url) {
-                window.open(url, '_blank');
-            }
-        });
-    }
-    
-    // ターミナル関連
-    const terminalSelector = document.getElementById('terminal-selector');
-    const commandInput = document.getElementById('command-input');
-    const terminalUpdate = document.getElementById('terminal-update');
-    const openTerminal = document.getElementById('open-terminal');
-    
-    if (terminalSelector) {
-        terminalSelector.addEventListener('change', updateTerminalCommand);
-    }
-    
-    if (commandInput) {
-        commandInput.addEventListener('input', updateTerminalDisplay);
-    }
-    
-    if (terminalUpdate) {
-        terminalUpdate.addEventListener('click', function() {
-            updateTerminalDisplay();
-        });
-    }
-    
-    if (openTerminal) {
-        openTerminal.addEventListener('click', function() {
-            const url = generateTerminalURL();
-            if (url) {
-                window.location.href = url;
-            }
-        });
-    }
-}
-
-// ==================================================
-// ブラウザ関連機能
-// ==================================================
-function updateServicePort() {
     const serviceSelector = document.getElementById('service-selector');
     const portInput = document.getElementById('port-input');
     
-    if (serviceSelector && portInput) {
-        const selectedService = serviceSelector.value;
-        const config = SERVICE_CONFIGS[selectedService];
-        
-        if (config && selectedService !== 'custom') {
-            portInput.value = config.port;
-        } else if (selectedService === 'custom') {
-            portInput.value = '';
-        }
-        
-        updateBrowserDisplay();
-    }
+    if (!ipInput || !serviceSelector || !portInput) return;
+
+    const ip = ipInput.value.trim() || ipInput.placeholder;
+    const selectedServiceKey = serviceSelector.value;
+    const port = portInput.value.trim() || portInput.placeholder;
+    const currentLang = localStorage.getItem('lang-preference') || 'en';
+
+    const service = SERVICES[selectedServiceKey];
+    if (!service) return;
+
+    const url = `${service.protocol}://${ip}:${port}${service.path}`;
+    
+    // リンク要素を作成
+    const a = document.createElement('a');
+    a.href = url;
+    a.target = '_blank';
+    a.rel = 'noopener';
+    a.className = 'link-item bordered-element';
+    a.setAttribute('data-service', selectedServiceKey);
+    
+    // リンクテキストとIPディスプレイを作成
+    const linkText = document.createElement('span');
+    linkText.className = 'link-text';
+    linkText.textContent = langData[currentLang][service.i18nKey] || `${service.name}: `;
+    
+    const ipDisplay = document.createElement('span');
+    ipDisplay.className = 'ip-display';
+    ipDisplay.innerHTML = `${service.protocol}://<span class="service-ip">${ip}</span>:<span class="service-port">${port}</span>`;
+    
+    a.appendChild(linkText);
+    a.appendChild(ipDisplay);
+    selectedServiceContainer.appendChild(a);
 }
 
-function updateBrowserDisplay() {
-    updateQRCode();
-}
-
-function generateBrowserURL() {
+// ── サービス選択変更処理 ──
+function handleServiceChange() {
     const serviceSelector = document.getElementById('service-selector');
     const portInput = document.getElementById('port-input');
     
-    if (!serviceSelector || !portInput) return null;
+    if (!serviceSelector || !portInput) return;
     
-    const selectedService = serviceSelector.value;
-    const port = portInput.value || '80';
-    const config = SERVICE_CONFIGS[selectedService];
-    const protocol = config ? config.protocol : 'http';
-    
-    return `${protocol}://${currentIP}:${port}`;
-}
-
-// ==================================================
-// ターミナル関連機能
-// ==================================================
-function updateTerminalCommand() {
-    const terminalSelector = document.getElementById('terminal-selector');
-    const commandInput = document.getElementById('command-input');
-    
-    if (terminalSelector && commandInput) {
-        const selectedType = terminalSelector.value;
-        const config = TERMINAL_CONFIGS[selectedType];
-        
-        if (config) {
-            if (selectedType === 'aios') {
-                commandInput.value = `root@${currentIP}/${SSH_CMD_ENCODED_AIOS}`;
-            } else if (config.command) {
-                commandInput.value = config.command.replace('{ip}', currentIP);
-            } else {
-                commandInput.value = '';
-            }
-        }
-        
-        updateTerminalDisplay();
-    }
-}
-
-function updateTerminalDisplay() {
-    // ターミナル表示の更新（必要に応じて実装）
-}
-
-function generateTerminalURL() {
-    const commandInput = document.getElementById('command-input');
-    
-    if (!commandInput) return null;
-    
-    const command = commandInput.value;
-    
-    if (!command) {
-        return 'sshcmd://';
+    // 現在のサービスのポート値を保存（サービス変更前に）
+    const previousService = localStorage.getItem('site-u-service');
+    if (previousService && portInput.value.trim()) {
+        localStorage.setItem(`site-u-port-${previousService}`, portInput.value.trim());
     }
     
-    return `sshcmd://${encodeURIComponent(command)}`;
-}
-
-// ==================================================
-// QRコード機能
-// ==================================================
-function updateQRCode() {
-    const qrCodeContainer = document.getElementById('qrcode-detail');
-    if (!qrCodeContainer) return;
+    const selectedService = SERVICES[serviceSelector.value];
+    if (!selectedService) return;
     
-    const url = generateBrowserURL();
-    if (!url) return;
+    // 新しいサービスの保存済みポート値を復元
+    const savedPort = localStorage.getItem(`site-u-port-${serviceSelector.value}`);
     
-    try {
-        // 既存のQRコードをクリア
-        qrCodeContainer.innerHTML = '';
-        
-        // 新しいQRコードを生成
-        const qr = new QRious({
-            element: document.createElement('canvas'),
-            value: url,
-            size: 180,
-            foreground: getComputedStyle(document.documentElement).getPropertyValue('--qr-dark').trim(),
-            background: getComputedStyle(document.documentElement).getPropertyValue('--qr-light').trim()
-        });
-        
-        qrCodeContainer.appendChild(qr.element);
-    } catch (error) {
-        console.error('QRコード生成エラー:', error);
-        qrCodeContainer.innerHTML = '<div style="width: 180px; height: 180px; background: var(--text-color); margin: 0 auto; display: flex; align-items: center; justify-content: center; color: var(--block-bg); font-size: 12px;"><span data-i18n="qrCodeArea">QRコード表示エリア</span></div>';
-    }
-}
-
-// ==================================================
-// テーマ切り替え機能
-// ==================================================
-function applyTheme(theme) {
-    const html = document.documentElement;
-    
-    if (theme === 'auto') {
-        // システムテーマに従う
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        html.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+    if (savedPort) {
+        portInput.value = savedPort;
+    } else if (selectedService.port !== null) {
+        portInput.value = selectedService.port;
     } else {
-        html.setAttribute('data-theme', theme);
+        portInput.value = '';
+        portInput.placeholder = 'Enter port';
     }
     
-    currentTheme = theme;
-    localStorage.setItem('theme', theme);
+    portInput.disabled = false;
     
-    // QRコードの更新（色が変わるため）
-    setTimeout(updateQRCode, 100);
+    // サービス選択を保存
+    localStorage.setItem('site-u-service', serviceSelector.value);
+    
+    // リアルタイム反映
+    updateAll();
 }
 
-// ==================================================
-// 多言語対応機能
-// ==================================================
-function updateLanguage(lang) {
-    currentLanguage = lang;
-    localStorage.setItem('language', lang);
+// ── 全リンク更新処理（更新版） ──
+function updateAll() {
+    const ipInput = document.getElementById('ip-input');
+    const serviceSelector = document.getElementById('service-selector');
+    const portInput = document.getElementById('port-input');
     
-    // 翻訳を適用
-    const elements = document.querySelectorAll('[data-i18n]');
-    elements.forEach(element => {
+    if (!ipInput || !serviceSelector || !portInput) return;
+
+    const ip = ipInput.value.trim() || ipInput.placeholder;
+    const selectedService = serviceSelector.value;
+    const port = portInput.value.trim() || portInput.placeholder;
+    
+    // localStorageに保存（サービス別ポート保存）
+    localStorage.setItem('site-u-ip', ip);
+    localStorage.setItem('site-u-service', selectedService);
+    if (port) {
+        localStorage.setItem(`site-u-port-${selectedService}`, port);
+    }
+
+    // SSH関連のIP表示を更新
+    const sshIpSpan = document.getElementById('ssh-ip');
+    const aiosIpSpan = document.getElementById('aios-ip');
+    if (sshIpSpan) sshIpSpan.textContent = ip;
+    if (aiosIpSpan) aiosIpSpan.textContent = ip;
+
+    // 選択されたサービスのリンクを更新
+    generateSelectedServiceLink();
+
+    // 既存のSSHリンクを更新
+    document.querySelectorAll('a[data-ip-template]').forEach(link => {
+        const template = link.dataset.ipTemplate;
+        if (template) {
+            let newHref = template.replace(/\${ip}/g, ip);
+            if (link.id === 'aios-link') {
+                newHref = newHref.replace(/\${cmd}/g, SSH_CMD_ENCODED_AIOS);
+            }
+            link.href = newHref;
+        }
+    });
+
+    // QRコード更新（選択されたサービスのURLを使用）
+    const qrDetailContainer = document.getElementById('qrcode-detail-container');
+    if (qrDetailContainer && qrDetailContainer.open) {
+        const service = SERVICES[selectedService];
+        if (service) {
+            const serviceUrl = `${service.protocol}://${ip}:${port}${service.path}`;
+            drawQRCode('qrcode-detail', serviceUrl);
+        }
+    }
+}
+
+// ── DOMContentLoaded（更新版） ──
+document.addEventListener('DOMContentLoaded', () => {
+    loadHeader();
+    loadFooter();
+
+    const ipInput = document.getElementById('ip-input');
+    const serviceSelector = document.getElementById('service-selector');
+    const portInput = document.getElementById('port-input');
+
+    // 保存された値を復元
+    if (ipInput) {
+        const storedIp = localStorage.getItem('site-u-ip');
+        if (storedIp) ipInput.value = storedIp;
+    }
+
+    if (serviceSelector) {
+        const storedService = localStorage.getItem('site-u-service');
+        if (storedService && SERVICES[storedService]) {
+            serviceSelector.value = storedService;
+        } else {
+            serviceSelector.value = 'luci';
+        }
+    }
+
+    if (portInput) {
+        const storedService = serviceSelector?.value || 'luci';
+        const storedPort = localStorage.getItem(`site-u-port-${storedService}`);
+        
+        if (storedPort) {
+            portInput.value = storedPort;
+        } else {
+            const selectedService = SERVICES[storedService];
+            if (selectedService && selectedService.port !== null) {
+                portInput.value = selectedService.port;
+            }
+        }
+    }
+
+    // IPアドレス入力フィールドの処理（IPv4/IPv6/ホスト名対応）
+    if (ipInput) {
+        ipInput.addEventListener('compositionstart', e => e.preventDefault());
+
+        ipInput.addEventListener('keydown', e => {
+            const isIPAllowedChar =
+                (e.key.length === 1 && /[0-9a-zA-Z.:\-_]/.test(e.key)) || // IPv4/IPv6/ホスト名に必要な文字
+                ['Backspace','Delete','ArrowLeft','ArrowRight','Tab','Enter'].includes(e.key);
+
+            if (!isIPAllowedChar) {
+                e.preventDefault();
+                return;
+            }
+
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                updateAll();
+            }
+        });
+
+        ipInput.addEventListener('input', updateAll);
+    }
+
+    // ポート番号入力フィールドの処理（数字のみ）
+    if (portInput) {
+        portInput.addEventListener('compositionstart', e => e.preventDefault());
+
+        portInput.addEventListener('keydown', e => {
+            const isNumericAllowedChar =
+                (e.key.length === 1 && /[0-9]/.test(e.key)) || // 数字のみを許可
+                ['Backspace','Delete','ArrowLeft','ArrowRight','Tab','Enter'].includes(e.key);
+
+            if (!isNumericAllowedChar) {
+                e.preventDefault();
+                return;
+            }
+
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                updateAll();
+            }
+        });
+
+        portInput.addEventListener('input', updateAll);
+    }
+
+    // サービスセレクターの処理
+    if (serviceSelector) {
+        serviceSelector.addEventListener('change', handleServiceChange);
+    }
+
+    // 初期表示時にサービス設定とリンク生成
+    handleServiceChange();
+    updateAll();
+
+    // global-ip-update ボタン
+    const globalIpUpdateBtn = document.getElementById('global-ip-update');
+    if (globalIpUpdateBtn) {
+        globalIpUpdateBtn.addEventListener('click', updateAll);
+    }
+
+    // open-current-url ボタン
+    const openCurrentUrlBtn = document.getElementById('open-current-url');
+    if (openCurrentUrlBtn) {
+        openCurrentUrlBtn.addEventListener('click', openCurrentUrl);
+    }
+
+    // QRコード関連（修正版：選択されたサービスのURLを使用）
+    const qrDetailContainer = document.getElementById('qrcode-detail-container');
+    if (qrDetailContainer && !qrDetailContainer.dataset.toggleListenerAdded) {
+        qrDetailContainer.addEventListener('toggle', function() {
+            const ipInput = document.getElementById('ip-input');
+            const serviceSelector = document.getElementById('service-selector');
+            const portInput = document.getElementById('port-input');
+            
+            const currentIp = ipInput ? (ipInput.value.trim() || ipInput.placeholder) : '192.168.1.1';
+            const selectedService = serviceSelector ? serviceSelector.value : 'luci';
+            const currentPort = portInput ? (portInput.value.trim() || portInput.placeholder) : '80';
+
+            if (this.open) {
+                const service = SERVICES[selectedService];
+                if (service) {
+                    const serviceUrl = `${service.protocol}://${currentIp}:${currentPort}${service.path}`;
+                    drawQRCode('qrcode-detail', serviceUrl);
+                }
+            } else {
+                const qrCanvasContainer = document.getElementById('qrcode-detail');
+                if (qrCanvasContainer) {
+                    qrCanvasContainer.innerHTML = `<div style="width: 180px; height: 180px; background: var(--text-color); margin: 0 auto; display: flex; align-items: center; justify-content: center; color: var(--block-bg); font-size: 12px;"><span>QRコード表示エリア</span></div>`;
+                }
+            }
+        });
+        qrDetailContainer.dataset.toggleListenerAdded = 'true';
+    }
+});
+
+// ── applyLanguage 関数（サービスリンク対応版） ──
+function applyLanguage(lang) {
+    const langButtons = document.querySelectorAll('.language-selector button');
+    langButtons.forEach(button => {
+        button.classList.toggle('selected', button.dataset.lang === lang);
+        if (langData[lang]['lang' + button.dataset.lang.toUpperCase()]) {
+            button.textContent = langData[lang]['lang' + button.dataset.lang.toUpperCase()];
+        }
+    });
+
+    document.querySelectorAll('[data-i18n]').forEach(element => {
         const key = element.getAttribute('data-i18n');
-        if (translations[lang] && translations[lang][key]) {
-            element.textContent = translations[lang][key];
+        if (langData[lang] && langData[lang][key] !== undefined) {
+            if (['sshConnection', 'aiosExecution'].includes(key)) {
+                const linkTextSpan = element.querySelector('.link-text');
+                if (linkTextSpan) {
+                    linkTextSpan.textContent = langData[lang][key];
+                }
+            } else if (key === 'sshHandler') {
+                const linkTextSpan = element.querySelector('.link-text');
+                const linkNoteSpan = element.querySelector('.link-note');
+                const parts = langData[lang][key].split('※');
+                if (linkTextSpan) {
+                    linkTextSpan.textContent = parts[0].trim();
+                }
+                if (linkNoteSpan) {
+                    linkNoteSpan.textContent = parts[1] ? '※' + parts[1].trim() : '';
+                }
+            } else if (element.tagName === 'SPAN' && element.parentElement.classList.contains('qr-code-canvas')) {
+                element.textContent = langData[lang][key];
+            } else if (key === 'disclaimerOpenWrtParagraph') {
+                const paragraphPrefix = langData[lang].disclaimerOpenWrtParagraph || '';
+                const linkText = langData[lang].openWrtOfficialSite || '';
+                const paragraphSuffix = langData[lang].disclaimerOpenWrtSuffix || '';
+
+                element.innerHTML = `${paragraphPrefix}<a href="https://openwrt.org/" target="_blank" rel="noopener noreferrer" class="external-link"><span>${linkText}</span></a>${paragraphSuffix}`;
+            } else {
+                element.textContent = langData[lang][key];
+            }
         }
     });
-}
 
-// ==================================================
-// 共通更新機能
-// ==================================================
-function updateAllDisplays() {
-    updateServicePort();
-    updateTerminalCommand();
-    updateQRCode();
-}
-
-// ==================================================
-// ヘッダー・フッター対応（動的読み込み用）
-// ==================================================
-function loadHeaderFooter() {
-    // ヘッダーの読み込み
-    fetch('header.html')
-        .then(response => response.text())
-        .then(html => {
-            const headerContainer = document.querySelector('.main-header');
-            if (headerContainer) {
-                headerContainer.innerHTML = html;
-                bindHeaderEvents();
+    // 選択されたサービスリンクの言語切り替え
+    const selectedServiceLink = document.querySelector('#selected-service-link a[data-service]');
+    if (selectedServiceLink) {
+        const serviceKey = selectedServiceLink.getAttribute('data-service');
+        const service = SERVICES[serviceKey];
+        if (service && langData[lang][service.i18nKey]) {
+            const linkTextSpan = selectedServiceLink.querySelector('.link-text');
+            if (linkTextSpan) {
+                linkTextSpan.textContent = langData[lang][service.i18nKey];
             }
-        })
-        .catch(error => console.error('ヘッダー読み込みエラー:', error));
-    
-    // フッターの読み込み
-    fetch('footer.html')
-        .then(response => response.text())
-        .then(html => {
-            const footerContainer = document.querySelector('.page-footer-area');
-            if (footerContainer) {
-                footerContainer.innerHTML = html;
-                bindFooterEvents();
-            }
-        })
-        .catch(error => console.error('フッター読み込みエラー:', error));
-}
-
-function bindHeaderEvents() {
-    // ヘッダー内のイベントバインド（必要に応じて実装）
-}
-
-function bindFooterEvents() {
-    // 言語切り替えボタンのイベントバインド
-    const langButtons = document.querySelectorAll('.lang-button');
-    langButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const lang = this.getAttribute('data-lang');
-            if (lang) {
-                updateLanguage(lang);
-                updateLanguageButtons();
-            }
-        });
-    });
-    
-    // テーマ切り替えボタンのイベントバインド
-    const themeButtons = document.querySelectorAll('.theme-button');
-    themeButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const theme = this.getAttribute('data-theme');
-            if (theme) {
-                applyTheme(theme);
-                updateThemeButtons();
-            }
-        });
-    });
-    
-    updateLanguageButtons();
-    updateThemeButtons();
-}
-
-function updateLanguageButtons() {
-    const langButtons = document.querySelectorAll('.lang-button');
-    langButtons.forEach(button => {
-        const lang = button.getAttribute('data-lang');
-        if (lang === currentLanguage) {
-            button.classList.add('selected');
-        } else {
-            button.classList.remove('selected');
         }
-    });
-}
-
-function updateThemeButtons() {
-    const themeButtons = document.querySelectorAll('.theme-button');
-    themeButtons.forEach(button => {
-        const theme = button.getAttribute('data-theme');
-        if (theme === currentTheme) {
-            button.classList.add('selected');
-        } else {
-            button.classList.remove('selected');
-        }
-    });
-}
-
-// システムテーマ変更の監視
-window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function() {
-    if (currentTheme === 'auto') {
-        applyTheme('auto');
     }
-});
 
-// ヘッダー・フッターが存在する場合は動的読み込みを実行
-document.addEventListener('DOMContentLoaded', function() {
-    const headerExists = document.querySelector('.main-header');
-    const footerExists = document.querySelector('.page-footer-area');
-    
-    if (headerExists || footerExists) {
-        loadHeaderFooter();
+    // 全体を更新（選択されたサービスリンクの再生成も含む）
+    updateAll();
+}
+
+// ── ロゴ表示切替 ──
+function updateLogoDisplay() {
+    const theme = document.documentElement.getAttribute('data-theme') || 'dark';
+    const siteLogo = document.getElementById('site-logo');
+
+    if (siteLogo) {
+        if (theme === 'dark') {
+            siteLogo.src = 'img/openwrt_text_white_and_blue.svg'; // Blue (Dark Theme)
+        } else {
+            siteLogo.src = 'img/openwrt_text_blue_and_dark_blue.svg'; // Black (Light Theme)
+        }
     }
-});
+}
+
+// ── ヘッダー読み込み関数 ──
+async function loadHeader() {
+    try {
+        const response = await fetch('header.html');
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const headerHtml = await response.text();
+        const headerElement = document.createElement('div');
+        headerElement.innerHTML = headerHtml;
+        document.body.prepend(headerElement.firstElementChild);
+        updateLogoDisplay();
+    } catch (error) {
+        console.error("Failed to load header.html:", error);
+    }
+}
+
+// ── フッター読み込み関数 ──
+async function loadFooter() {
+    try {
+        const response = await fetch('footer.html');
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const footerHtml = await response.text();
+        const footerElement = document.createElement('div');
+        footerElement.innerHTML = footerHtml;
+        document.body.appendChild(footerElement.firstElementChild);
+        const yearEl = document.getElementById('current-year');
+        if (yearEl) yearEl.textContent = new Date().getFullYear();
+        
+        initializeThemeAndLanguageSelectors();
+    } catch (error) {
+        console.error("Failed to load footer.html:", error);
+    }
+}
+
+// ── テーマ・言語セレクターの初期化処理を関数化 ──
+function initializeThemeAndLanguageSelectors() {
+    const html = document.documentElement;
+    const themeBtns = document.querySelectorAll('.theme-selector button');
+    const storedTheme = localStorage.getItem('site-u-theme') || 'auto';
+
+    function applyTheme(pref) {
+        const mode = pref === 'auto'
+            ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+            : pref;
+        html.setAttribute('data-theme', mode);
+        themeBtns.forEach(b => b.classList.toggle('selected', b.dataset.themePreference === pref));
+        localStorage.setItem('site-u-theme', pref);
+        updateLogoDisplay();
+        updateAll(); // テーマ変更時にもIPアドレスとQRコードを更新
+    }
+
+    if (themeBtns.length > 0) {
+        themeBtns.forEach(b => {
+            b.removeEventListener('click', () => applyTheme(b.dataset.themePreference)); // 既存のリスナーを削除（重複防止）
+            b.addEventListener('click', () => applyTheme(b.dataset.themePreference));
+        });
+        window.matchMedia('(prefers-color-scheme: dark)').removeEventListener('change', () => {
+            if ((localStorage.getItem('site-u-theme')||'auto') === 'auto') applyTheme('auto');
+        });
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+            if ((localStorage.getItem('site-u-theme')||'auto') === 'auto') applyTheme('auto');
+        });
+        applyTheme(storedTheme);
+    } else {
+        applyTheme(storedTheme);
+    }
+
+    if (!html.dataset.themeObserverRegistered) {
+        const observer = new MutationObserver(updateLogoDisplay);
+        observer.observe(html, { attributes: true, attributeFilter: ['data-theme'] });
+        html.dataset.themeObserverRegistered = 'true';
+    }
+
+    const langButtons = document.querySelectorAll('.language-selector button');
+    const currentLang = localStorage.getItem('lang-preference') || 'en';
+    if (langButtons.length > 0) {
+        langButtons.forEach(button => {
+            button.removeEventListener('click', () => applyLanguage(button.dataset.lang)); // 既存のリスナーを削除（重複防止）
+            button.addEventListener('click', () => {
+                const newLang = button.dataset.lang;
+                localStorage.setItem('lang-preference', newLang);
+                applyLanguage(newLang);
+            });
+        });
+    }
+    applyLanguage(currentLang);
+}
