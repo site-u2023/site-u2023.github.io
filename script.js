@@ -394,7 +394,7 @@ function bindFooterEvents() {
     const themeButtons = document.querySelectorAll('.theme-button');
     themeButtons.forEach(button => {
         button.addEventListener('click', function() {
-            const theme = this.getAttribute('data-theme');
+            const theme = this.getAttribute('data-theme-preference'); // 修正: data-theme → data-theme-preference
             if (theme) {
                 applyTheme(theme);
                 updateThemeButtons();
@@ -421,7 +421,7 @@ function updateLanguageButtons() {
 function updateThemeButtons() {
     const themeButtons = document.querySelectorAll('.theme-button');
     themeButtons.forEach(button => {
-        const theme = button.getAttribute('data-theme');
+        const theme = button.getAttribute('data-theme-preference'); // 修正: data-theme → data-theme-preference
         if (theme === currentTheme) {
             button.classList.add('selected');
         } else {
