@@ -656,7 +656,7 @@ h3.bordered-element {
     left: 50%;
     transform: translateX(-50%);
     max-width: 50em; /* 最大幅800px */
-    width: 100%; /* ← 横∞を消す */
+    width: 100%;
     display: flex;
     justify-content: center;
     align-items: flex-end;
