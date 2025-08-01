@@ -10,7 +10,7 @@ const SSH_CMD_ENCODED_AIOS = encodeURIComponent(SSH_COMMANDS_AIOS);
 const SERVICES = {
     luci: {
         name: 'LuCI',
-        port: null, // LuCiはデフォルトポートを未入力に変更
+        port: 80, // LuCiのデフォルトポートを80に指定
         path: '/cgi-bin/luci',
         protocol: 'http',
         i18nKey: 'luciAdmin'
@@ -161,7 +161,7 @@ function generateSelectedServiceLink() {
     const service = SERVICES[selectedServiceKey];
     if (!service) return;
 
-    const url = port && selectedServiceKey !== 'luci'
+    const url = port
         ? `${service.protocol}://${ip}:${port}${service.path}`
         : `${service.protocol}://${ip}${service.path}`;
     
@@ -197,17 +197,9 @@ function handleServiceChange() {
     const selectedService = SERVICES[serviceSelector.value];
     if (!selectedService) return;
     
-    if (serviceSelector.value === 'luci') {
-        portInput.value = ''; // LuCiは空欄（初期値なし）
-        portInput.disabled = false; // 入力可能
-    } else if (selectedService.port !== null) {
-        portInput.value = selectedService.port;
-        portInput.disabled = false; // 入力可能
-    } else {
-        portInput.disabled = false;
-        portInput.placeholder = 'Enter port';
-    }
-    
+    portInput.value = selectedService.port || ''; // 選択されたサービスのポートを設定
+    portInput.disabled = false; // 入力可能
+
     localStorage.setItem('site-u-service', serviceSelector.value);
     localStorage.setItem('site-u-port', portInput.value);
     
@@ -230,7 +222,7 @@ function updateQRCode() {
     const service = SERVICES[selectedService];
     
     if (service) {
-        const serviceUrl = port && selectedService !== 'luci'
+        const serviceUrl = port
             ? `${service.protocol}://${ip}:${port}${service.path}`
             : `${service.protocol}://${ip}${service.path}`;
         drawQRCode('qrcode-detail', serviceUrl);
