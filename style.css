@@ -282,7 +282,7 @@ h3.bordered-element {
     background-repeat: no-repeat;
     background-position: right 0.5em center;
     background-size: 1em;
-    padding-right: 2em;
+    padding-right: 0.5em;
 }
 
 .service-select:focus {
