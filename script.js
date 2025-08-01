@@ -134,7 +134,15 @@ function bindEvents() {
     }
     
     if (portInput) {
-        portInput.addEventListener('input', updateBrowserDisplay);
+        portInput.addEventListener('input', function() {
+            const serviceSelector = document.getElementById('service-selector');
+            if (serviceSelector) {
+                const selectedService = serviceSelector.value;
+                const portKey = `port_${selectedService}`;
+                localStorage.setItem(portKey, this.value);
+            }
+            updateBrowserDisplay();
+        });
     }
     
     if (browserUpdate) {
@@ -193,10 +201,15 @@ function updateServicePort() {
         const selectedService = serviceSelector.value;
         const config = SERVICE_CONFIGS[selectedService];
         
+        // カスタムポート値の保存キーを生成
+        const portKey = `port_${selectedService}`;
+        const savedPort = localStorage.getItem(portKey);
+        
         if (config && selectedService !== 'custom') {
-            portInput.value = config.port;
+            // 保存された値があればそれを使用、なければデフォルト値
+            portInput.value = savedPort || config.port;
         } else if (selectedService === 'custom') {
-            portInput.value = '';
+            portInput.value = savedPort || '';
         }
         
         updateBrowserDisplay();
