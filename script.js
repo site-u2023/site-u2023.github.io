@@ -199,27 +199,27 @@ function handleServiceChange() {
     const selectedService = SERVICES[serviceSelector.value];
     if (!selectedService) return;
     
-    // ユーザーが入力したポート値を保持
-    const currentPortValue = portInput.value.trim();
+    // サービス別保存キー
+    const portStorageKey = `site-u-port-${serviceSelector.value}`;
     
-    // Customでない場合で、かつポートが空の場合のみデフォルト設定
-    if (serviceSelector.value !== 'custom' && selectedService.port !== null) {
-        if (!currentPortValue) {
-            portInput.value = selectedService.port;
-        }
-        portInput.disabled = false;
-    } else if (serviceSelector.value === 'custom') {
-        portInput.disabled = false;
-        if (!currentPortValue) {
-            portInput.placeholder = 'Enter port';
-        }
+    // 保存済みポート値を取得、なければデフォルト値
+    const savedPort = localStorage.getItem(portStorageKey);
+    
+    if (savedPort) {
+        portInput.value = savedPort;
+    } else if (selectedService.port !== null) {
+        portInput.value = selectedService.port;
+    } else {
+        portInput.value = '';
+        portInput.placeholder = 'Enter port';
     }
     
-    // ローカルストレージに保存
-    localStorage.setItem('site-u-service', serviceSelector.value);
-    localStorage.setItem('site-u-port', portInput.value);
+    portInput.disabled = false;
     
-    // ★ リアルタイム反映のためupdateAll()を呼び出し
+    // サービス選択を保存
+    localStorage.setItem('site-u-service', serviceSelector.value);
+    
+    // リアルタイム反映
     updateAll();
 }
 
