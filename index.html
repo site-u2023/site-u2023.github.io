@@ -13,7 +13,7 @@
                 <section id="device-ip" class="content-section">
                     <h2 class="section-title" data-i18n="deviceIP">Device Settings</h2>
                     <div class="input-group connection">
-                        <!-- IP Address Input with Update Button -->
+                        <!-- IP Address Input -->
                         <div class="input-container ip-container-full">
                             <div class="input-label">IP Address</div>
                             <input
@@ -26,7 +26,6 @@
                                 placeholder="openwrt.lan"
                                 class="input-field"
                             >
-                            <button id="global-ip-update" class="update-button-inline" data-i18n="update">Update</button>
                         </div>
                         
                         <!-- Service Selector and Port Input -->
@@ -52,6 +51,9 @@
                                 class="input-field port-field"
                             >
                         </div>
+
+                        <!-- Update Button -->
+                        <button id="global-ip-update" class="update-button-standalone" data-i18n="update">Update</button>
                     </div>
                     <details id="qrcode-detail-container" class="qr-code-section bordered-element">
                         <summary class="qr-code-summary" data-i18n="qrCodeDisplay">LuCi QR Code</summary>
