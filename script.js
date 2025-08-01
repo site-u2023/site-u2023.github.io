@@ -228,38 +228,39 @@ function updateTerminalCommand() {
     
     if (terminalSelector && commandInput) {
         const selectedType = terminalSelector.value;
-        const config = TERMINAL_CONFIGS[selectedType];
+        const ipInput = document.getElementById('ip-input');
+        const currentIp = ipInput ? (ipInput.value.trim() || ipInput.placeholder) : '192.168.1.1';
         
-        if (config) {
-            if (selectedType === 'aios') {
-                commandInput.value = `root@${currentIP}/${SSH_CMD_ENCODED_AIOS}`;
-            } else if (config.command) {
-                commandInput.value = config.command.replace('{ip}', currentIP);
-            } else {
-                commandInput.value = '';
-            }
+        if (selectedType === 'powershell') {
+            commandInput.value = '';
+        } else if (selectedType === 'ssh') {
+            commandInput.value = `root@${currentIp}`;
+        } else if (selectedType === 'aios') {
+            commandInput.value = `root@${currentIp}/${SSH_CMD_ENCODED_AIOS}`;
+        } else if (selectedType === 'custom') {
+            commandInput.value = '';
         }
-        
-        updateTerminalDisplay();
     }
 }
 
-function updateTerminalDisplay() {
-    // ターミナル表示の更新（必要に応じて実装）
-}
-
 function generateTerminalURL() {
+    const terminalSelector = document.getElementById('terminal-selector');
     const commandInput = document.getElementById('command-input');
     
-    if (!commandInput) return null;
+    if (!terminalSelector || !commandInput) return null;
     
-    const command = commandInput.value;
+    const selectedType = terminalSelector.value;
+    const command = commandInput.value.trim();
+    
+    if (selectedType === 'powershell') {
+        return 'sshcmd://';
+    }
     
     if (!command) {
         return 'sshcmd://';
     }
     
-    return `sshcmd://${encodeURIComponent(command)}`;
+    return `sshcmd://${command}`;
 }
 
 // ==================================================
