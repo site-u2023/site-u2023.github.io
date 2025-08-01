@@ -479,7 +479,7 @@ h3.bordered-element {
 /* ── ヘッダー ── */
 .main-header {
     position: relative;
-    border-bottom: 0.05em solid var(--text-color);
+    border-bottom: none;
     background-color: var(--block-bg);
     border-color: var(--text-color);
     transition: background-color 0.3s ease, border-color 0.3s ease;
@@ -539,7 +539,7 @@ h3.bordered-element {
     align-items: flex-end;
     padding: 1em;
     background-color: var(--block-bg);
-    border-top: 0.05em solid var(--text-color);
+    border-top: none;
     border-color: var(--text-color);
     transition: background-color 0.3s ease, border-color 0.3s ease;
     flex-shrink: 0;
