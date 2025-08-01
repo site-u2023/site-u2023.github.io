@@ -213,7 +213,8 @@ function handleServiceChange() {
     localStorage.setItem('site-u-port', portInput.value);
     
     // 選択されたサービスのリンクを更新
-    generateSelectedServiceLink();
+    // generateSelectedServiceLink();
+    updateAll();
 }
 
 // ── 全リンク更新処理（更新版） ──
