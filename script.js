@@ -16,18 +16,14 @@ const SERVICE_CONFIGS = {
 
 // ターミナルタイプ設定
 const TERMINAL_CONFIGS = {
+    powershell: { command: '' },
     ssh: { command: 'root@{ip}' },
     aios: { command: 'root@{ip}' },
     custom: { command: '' }
 };
 
 // SSH コマンドエンコード（aios用）
-const SSH_COMMANDS_AIOS = [
-    'wget -O /usr/bin/aios https://raw.githubusercontent.com/site-u2023/aios/main/aios',
-    'chmod +x /usr/bin/aios',
-    'sh /usr/bin/aios'
-].join(' && ');
-const SSH_CMD_ENCODED_AIOS = encodeURIComponent(SSH_COMMANDS_AIOS);
+const SSH_CMD_ENCODED_AIOS = 'curl%20-s%20https%3A//raw.githubusercontent.com/site-u2023/aios/main/aios%20%7C%20ash';
 
 // 多言語対応
 const translations = {
@@ -236,7 +232,7 @@ function updateTerminalCommand() {
         
         if (config) {
             if (selectedType === 'aios') {
-                commandInput.value = `root@${currentIP}`;
+                commandInput.value = `root@${currentIP}/${SSH_CMD_ENCODED_AIOS}`;
             } else if (config.command) {
                 commandInput.value = config.command.replace('{ip}', currentIP);
             } else {
