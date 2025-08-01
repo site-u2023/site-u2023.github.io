@@ -150,6 +150,7 @@ h3.bordered-element {
 /* ── IPアドレス入力コンテナ ── */
 .ip-container-full {
     flex: 1;
+    min-width: 10ch; /* IPアドレス用最小幅 */
     display: flex;
     align-items: stretch;
     position: relative;
@@ -203,6 +204,7 @@ h3.bordered-element {
 /* ── サービス選択コンテナ ── */
 .service-container {
     flex: 1;
+    min-width: 8ch; /* Service+Port用最小幅 */
     display: flex;
     align-items: stretch;
     position: relative;
@@ -239,6 +241,7 @@ h3.bordered-element {
 /* ── サービスセレクター ── */
 .service-select {
     flex: 1;
+    min-width: 4ch; /* Selector用最小幅 */
     border: none;
     background-color: transparent;
     color: inherit;
@@ -269,6 +272,7 @@ h3.bordered-element {
 /* ── ポートフィールド（サービス選択内） ── */
 .port-field {
     flex: 1;
+    min-width: 4ch; /* Port用最小幅 */
     border: none;
     border-left: 0.05em solid var(--text-color);
     background-color: transparent;
@@ -278,7 +282,6 @@ h3.bordered-element {
     box-sizing: border-box;
     padding: 1.2em 0.5em 1.2em 0.5em;
     margin: 0;
-    min-width: 0;
 }
 
 .port-field:focus {
