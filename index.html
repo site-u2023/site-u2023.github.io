@@ -57,6 +57,12 @@
                         <!-- Update Button -->
                         <button id="global-ip-update" class="update-button-standalone" data-i18n="update">Update</button>
                     </div>
+                    
+                    <!-- Selected Service Link -->
+                    <div id="selected-service-link" class="link-list">
+                        <!-- 選択されたサービスのリンクがここに挿入される -->
+                    </div>
+                    
                     <details id="qrcode-detail-container" class="qr-code-section bordered-element">
                         <summary class="qr-code-summary" data-i18n="qrCodeDisplay">LuCi QR Code</summary>
                         <div id="qrcode-detail" class="qr-code-canvas">
@@ -109,13 +115,6 @@
                                 <span class="ip-display">ssh root@<span id="aios-ip">192.168.1.1</span> ; aios</span>
                             </a>
                         </li>
-                    </ul>
-                </section>
-
-                <section id="local-services" class="content-section">
-                    <h2 class="section-title" data-i18n="console">Web Console</h2>
-                    <ul id="dynamic-links" class="link-list">
-                        <!-- 動的に生成されるリンクがここに挿入される -->
                     </ul>
                 </section>
 
