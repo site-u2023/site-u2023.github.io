@@ -156,10 +156,10 @@ h3.bordered-element {
     margin-bottom: 1em;
 }
 
-/* ── IPアドレス入力コンテナ ── */
+/* ── IPアドレス入力コンテナ（2倍幅） ── */
 .ip-container-full {
-    flex: 1;
-    min-width: 9ch; /* IPアドレス用最小幅 */
+    flex: 2;
+    min-width: 9ch;
     display: flex;
     align-items: stretch;
     position: relative;
@@ -210,10 +210,10 @@ h3.bordered-element {
     color: var(--hover-text);
 }
 
-/* ── サービス選択コンテナ（独立） ── */
+/* ── サービス選択コンテナ（独立・1倍幅） ── */
 .service-container-only {
     flex: 1;
-    min-width: 9ch;
+    min-width: 6ch;
     display: flex;
     align-items: stretch;
     position: relative;
@@ -225,9 +225,27 @@ h3.bordered-element {
     min-height: 3.4em;
 }
 
+.service-container-only:hover {
+    background-color: var(--hover-bg);
+    border-color: var(--hover-bg);
+}
+
+.service-container-only:hover .input-label {
+    color: var(--hover-text);
+}
+
+.service-container-only:hover .service-select {
+    color: var(--hover-text);
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f1f1f1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+}
+
 .service-container-only:focus-within {
     background-color: var(--hover-bg);
     border-color: var(--hover-bg);
+}
+
+.service-container-only:focus-within .input-label {
+    color: var(--hover-text);
 }
 
 .service-container-only .input-label {
@@ -241,10 +259,6 @@ h3.bordered-element {
     pointer-events: none;
     transition: color 0.2s ease;
     z-index: 2;
-}
-
-.service-container-only:focus-within .input-label {
-    color: var(--hover-text);
 }
 
 .service-container-only .service-select {
@@ -277,18 +291,12 @@ h3.bordered-element {
     background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f1f1f1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
 }
 
-.service-container-only .service-select:hover {
-    background-color: var(--hover-bg);
-    color: var(--hover-text);
-    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f1f1f1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
-}
-
 .service-select option {
     background-color: var(--block-bg);
     color: var(--text-color);
 }
 
-/* ── ポート入力コンテナ（独立） ── */
+/* ── ポート入力コンテナ（独立・1倍幅） ── */
 .port-container-only {
     flex: 1;
     min-width: 4ch;
