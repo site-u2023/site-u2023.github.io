@@ -373,6 +373,28 @@ h3.bordered-element {
     border-color: var(--hover-bg);
 }
 
+/* ── Openボタン（独立） ── */
+.open-button-standalone {
+    flex: 0 0 auto;
+    background-color: transparent;
+    color: var(--text-color);
+    border: 0.05em solid var(--text-color);
+    border-radius: 0.3em;
+    padding: 1.2em 0.5em;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+    font-size: 0.9em;
+    white-space: nowrap;
+    box-sizing: border-box;
+    min-height: 3.4em;
+}
+
+.open-button-standalone:hover {
+    background-color: var(--hover-bg);
+    color: var(--hover-text);
+    border-color: var(--hover-bg);
+}
+
 /* ── Web Links見出し ── */
 .web-links-title {
     margin: 1.5em 0 0.8em;
