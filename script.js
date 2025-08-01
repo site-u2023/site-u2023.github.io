@@ -229,15 +229,13 @@ function updateTerminalCommand() {
     
     if (terminalSelector && commandInput) {
         const selectedType = terminalSelector.value;
-        const ipInput = document.getElementById('ip-input');
-        const currentIp = ipInput ? (ipInput.value.trim() || ipInput.placeholder) : '192.168.1.1';
         
         if (selectedType === 'powershell') {
             commandInput.value = '';
         } else if (selectedType === 'ssh') {
-            commandInput.value = `root@${currentIp}/`;
+            commandInput.value = `root@${currentIP}/`;
         } else if (selectedType === 'aios') {
-            commandInput.value = `root@${currentIp}/${SSH_CMD_ENCODED_AIOS}`;
+            commandInput.value = `root@${currentIP}/${SSH_CMD_ENCODED_AIOS}`;
         } else if (selectedType === 'custom') {
             commandInput.value = '';
         }
