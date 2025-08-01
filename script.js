@@ -23,11 +23,9 @@ const TERMINAL_CONFIGS = {
 
 // ── グローバル定数（再定義不要なもの）──
 const SSH_COMMANDS_AIOS = [
-    'wget -O /usr/bin/aios https://raw.githubusercontent.com/site-u2023/aios/main/aios',
-    'chmod +x /usr/bin/aios',
-    'sh /usr/bin/aios'
-].join(' && ');
-const SSH_CMD_ENCODED_AIOS = encodeURIComponent(SSH_COMMANDS_AIOS);
+    'if [ -f /usr/bin/aios ]; then /usr/bin/aios; else wget -O /usr/bin/aios https://raw.githubusercontent.com/site-u2023/aios/main/aios && chmod +x /usr/bin/aios && /usr/bin/aios; fi'
+];
+const SSH_CMD_ENCODED_AIOS = encodeURIComponent(SSH_COMMANDS_AIOS.join(''));
 
 // 多言語対応
 const translations = {
