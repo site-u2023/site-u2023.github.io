@@ -363,7 +363,7 @@ function loadHeaderFooter() {
     fetch('header.html')
         .then(response => response.text())
         .then(html => {
-            const headerContainer = document.querySelector('#header-placeholder');
+            const headerContainer = document.querySelector('.main-header');
             if (headerContainer) {
                 headerContainer.innerHTML = html;
                 bindHeaderEvents();
@@ -375,7 +375,7 @@ function loadHeaderFooter() {
     fetch('footer.html')
         .then(response => response.text())
         .then(html => {
-            const footerContainer = document.querySelector('#footer-placeholder');
+            const footerContainer = document.querySelector('.page-footer-area');
             if (footerContainer) {
                 footerContainer.innerHTML = html;
                 bindFooterEvents();
@@ -450,8 +450,8 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', fun
 
 // ヘッダー・フッターが存在する場合は動的読み込みを実行
 document.addEventListener('DOMContentLoaded', function() {
-    const headerExists = document.querySelector('#header-placeholder');
-    const footerExists = document.querySelector('#footer-placeholder');
+    const headerExists = document.querySelector('.main-header');
+    const footerExists = document.querySelector('.page-footer-area');
     
     if (headerExists || footerExists) {
         loadHeaderFooter();
