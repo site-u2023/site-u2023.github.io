@@ -16,7 +16,6 @@ const SERVICE_CONFIGS = {
 
 // ターミナルタイプ設定
 const TERMINAL_CONFIGS = {
-    powershell: { command: '' },
     ssh: { command: 'root@{ip}' },
     aios: { command: 'root@{ip}' },
     custom: { command: '' }
