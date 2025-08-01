@@ -109,14 +109,14 @@ function initializeSettings() {
     // サービス選択の初期化
     const serviceSelector = document.getElementById('service-selector');
     if (serviceSelector) {
-        serviceSelector.value = 'ttyd';
+        serviceSelector.value = 'LuCi';
         updateServicePort();
     }
     
     // ターミナル選択の初期化
     const terminalSelector = document.getElementById('terminal-selector');
     if (terminalSelector) {
-        terminalSelector.value = 'ssh';
+        terminalSelector.value = 'aios';
         updateTerminalCommand();
     }
 }
