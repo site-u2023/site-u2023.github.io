@@ -238,6 +238,24 @@ h3.bordered-element {
     color: var(--hover-text);
 }
 
+/* ── ポートラベル ── */
+.port-label {
+    position: absolute;
+    top: 0.2em;
+    left: 0.5em;
+    font-size: 0.7em;
+    color: inherit;
+    font-weight: normal;
+    opacity: 0.8;
+    pointer-events: none;
+    transition: color 0.2s ease;
+    z-index: 2;
+}
+
+.service-container:focus-within .port-label {
+    color: var(--hover-text);
+}
+
 /* ── サービスセレクター ── */
 .service-select {
     flex: 1;
