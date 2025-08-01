@@ -212,8 +212,7 @@ function handleServiceChange() {
     localStorage.setItem('site-u-service', serviceSelector.value);
     localStorage.setItem('site-u-port', portInput.value);
     
-    // 選択されたサービスのリンクを更新
-    // generateSelectedServiceLink();
+    // ★ リアルタイム反映のためupdateAll()を呼び出し
     updateAll();
 }
 
