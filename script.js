@@ -196,14 +196,17 @@ function handleServiceChange() {
     
     if (!serviceSelector || !portInput) return;
     
+    // 現在のサービスのポート値を保存（サービス変更前に）
+    const previousService = localStorage.getItem('site-u-service');
+    if (previousService && portInput.value.trim()) {
+        localStorage.setItem(`site-u-port-${previousService}`, portInput.value.trim());
+    }
+    
     const selectedService = SERVICES[serviceSelector.value];
     if (!selectedService) return;
     
-    // サービス別保存キー
-    const portStorageKey = `site-u-port-${serviceSelector.value}`;
-    
-    // 保存済みポート値を取得、なければデフォルト値
-    const savedPort = localStorage.getItem(portStorageKey);
+    // 新しいサービスの保存済みポート値を復元
+    const savedPort = localStorage.getItem(`site-u-port-${serviceSelector.value}`);
     
     if (savedPort) {
         portInput.value = savedPort;
@@ -235,10 +238,12 @@ function updateAll() {
     const selectedService = serviceSelector.value;
     const port = portInput.value.trim() || portInput.placeholder;
     
-    // localStorageに保存
+    // localStorageに保存（サービス別ポート保存）
     localStorage.setItem('site-u-ip', ip);
     localStorage.setItem('site-u-service', selectedService);
-    localStorage.setItem('site-u-port', port);
+    if (port) {
+        localStorage.setItem(`site-u-port-${selectedService}`, port);
+    }
 
     // SSH関連のIP表示を更新
     const sshIpSpan = document.getElementById('ssh-ip');
@@ -297,12 +302,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (portInput) {
-        const storedPort = localStorage.getItem('site-u-port');
+        const storedService = serviceSelector?.value || 'luci';
+        const storedPort = localStorage.getItem(`site-u-port-${storedService}`);
+        
         if (storedPort) {
             portInput.value = storedPort;
         } else {
-            // サービス選択に基づいてデフォルトポートを設定
-            const selectedService = SERVICES[serviceSelector?.value];
+            const selectedService = SERVICES[storedService];
             if (selectedService && selectedService.port !== null) {
                 portInput.value = selectedService.port;
             }
