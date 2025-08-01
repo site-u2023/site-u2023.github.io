@@ -23,7 +23,12 @@ const TERMINAL_CONFIGS = {
 };
 
 // SSH コマンドエンコード（aios用）
-const SSH_CMD_ENCODED_AIOS = 'curl%20-s%20https%3A//raw.githubusercontent.com/site-u2023/aios/main/aios%20%7C%20ash';
+const SSH_COMMANDS_AIOS = [
+    'wget -O /usr/bin/aios https://raw.githubusercontent.com/site-u2023/aios/main/aios',
+    'chmod +x /usr/bin/aios',
+    'sh /usr/bin/aios'
+].join(' && ');
+const SSH_CMD_ENCODED_AIOS = encodeURIComponent(SSH_COMMANDS_AIOS);
 
 // 多言語対応
 const translations = {
