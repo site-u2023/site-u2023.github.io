@@ -228,19 +228,24 @@ function updateTerminalCommand() {
     
     if (terminalSelector && commandInput) {
         const selectedType = terminalSelector.value;
+        const config = TERMINAL_CONFIGS[selectedType];
         
-        if (selectedType === 'powershell') {
-            commandInput.value = '';
-        } else if (selectedType === 'ssh') {
-            commandInput.value = `root@${currentIP}/`;
-        } else if (selectedType === 'aios') {
-            commandInput.value = `root@${currentIP}/${SSH_CMD_ENCODED_AIOS}`;
-        } else if (selectedType === 'custom') {
-            commandInput.value = '';
+        if (config) {
+            if (selectedType === 'aios') {
+                commandInput.value = `root@${currentIP}/${SSH_CMD_ENCODED_AIOS}`;
+            } else if (config.command) {
+                commandInput.value = config.command.replace('{ip}', currentIP);
+            } else {
+                commandInput.value = '';
+            }
         }
         
         updateTerminalDisplay();
     }
+}
+
+function updateTerminalDisplay() {
+    // ターミナル表示の更新（必要に応じて実装）
 }
 
 function generateTerminalURL() {
@@ -248,13 +253,13 @@ function generateTerminalURL() {
     
     if (!commandInput) return null;
     
-    const command = commandInput.value.trim();
+    const command = commandInput.value;
     
     if (!command) {
         return 'sshcmd://';
     }
     
-    return `sshcmd://${command}`;
+    return `sshcmd://${encodeURIComponent(command)}`;
 }
 
 // ==================================================
