@@ -556,7 +556,3 @@ function initializeThemeAndLanguageSelectors() {
     }
     applyLanguage(currentLang);
 }
-
-// ── その他の既存関数は変更なし ──
-// drawQRCode、updateLogoDisplay、loadHeader、loadFooter、initializeThemeAndLanguageSelectors
-// これらの関数は元のコードのまま使用
