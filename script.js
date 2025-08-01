@@ -48,7 +48,7 @@ const SERVICES = {
 // ── 言語切替機能データ（サービス追加） ──
 const langData = {
     en: {
-        deviceIP: 'Device Settings',
+        deviceIP: 'Web',
         apply: 'Apply',
         open: 'Open',
         webLinks: 'Web Links',
@@ -82,7 +82,7 @@ const langData = {
         langJa: '日本語'       
     },
     ja: {
-        deviceIP: 'デバイス設定',
+        deviceIP: 'Web',
         apply: '適用',
         open: '開く',
         webLinks: 'Webリンク',
