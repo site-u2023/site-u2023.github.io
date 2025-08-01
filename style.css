@@ -213,7 +213,7 @@ h3.bordered-element {
 /* ── サービス選択コンテナ（独立・1倍幅） ── */
 .service-container-only {
     flex: 1;
-    min-width: 6ch;
+    min-width: 4ch;
     display: flex;
     align-items: stretch;
     position: relative;
