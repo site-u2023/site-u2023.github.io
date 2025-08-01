@@ -159,7 +159,7 @@ h3.bordered-element {
 /* ── IPアドレス入力コンテナ（2倍幅） ── */
 .ip-container-full {
     flex: 2;
-    min-width: 9ch;
+    min-width: 8ch;
     display: flex;
     align-items: stretch;
     position: relative;
