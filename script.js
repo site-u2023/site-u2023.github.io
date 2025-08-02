@@ -333,30 +333,18 @@ function generateTerminalURL() {
     const commandInput = document.getElementById('command-input');
     const terminalSelector = document.getElementById('terminal-selector');
     const ipInput = document.getElementById('global-ip-input');
-    
     if (!commandInput || !terminalSelector || !ipInput) return null;
-    
-    const selectedType = terminalSelector.value;
+
     const command = commandInput.value.trim();
     const currentInputIP = ipInput.value.trim() || currentIP;
-    
-    // 基本のSSH接続URL
     let baseURL = `sshcmd://root@${currentInputIP}`;
-    
-    if (selectedType === 'ssh') {
-        // SSH接続のみ
-        return baseURL;
-    } else if (selectedType === 'aios') {
-        // aiosコマンドを自動エンコードして追加
-        const encodedCommand = encodeURIComponent(SSH_COMMANDS_AIOS[0]);
-        return `${baseURL}/${encodedCommand}`;
-    } else if (selectedType === 'custom' && command) {
-        // カスタムコマンドをURLエンコードして追加
-        const encodedCommand = encodeURIComponent(command);
-        return `${baseURL}/${encodedCommand}`;
-    }
-    
-    return baseURL;
+
+    // コマンド欄が空なら純粋なSSH接続
+    if (!command) return baseURL;
+
+    // コマンド欄に値があれば、それをencodeして付与
+    const encodedCommand = encodeURIComponent(command);
+    return `${baseURL}/${encodedCommand}`;
 }
 
 // ==================================================
