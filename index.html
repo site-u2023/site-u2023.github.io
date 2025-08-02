@@ -96,29 +96,20 @@
                         </div>
                     </details>
 
-                    <!-- Terminal Controls -->
-                    <div class="terminal-controls-group">
-                        <div class="input-group connection">
-                            <!-- Terminal Type Selector -->
-                            <div class="input-container service-container-only">
-                                <div class="input-label">Type</div>
-                                <select id="terminal-selector" class="service-select">
-                                    <option value="ssh" selected>SSH</option>
-                                    <option value="aios">aios</option>
-                                    <option value="custom">Custom</option>
-                                </select>
-                            </div>
-                            
-                            <!-- Apply Button -->
-                            <button id="terminal-update" class="update-button-standalone" data-i18n="apply">Apply</button>
-                            
-                            <!-- Open Button -->
-                            <button id="open-terminal" class="open-button-standalone" data-i18n="open">Open</button>
+                    <div class="input-group connection">
+                        <!-- Terminal Type Selector -->
+                        <div class="input-container service-container-only">
+                            <div class="input-label">Type</div>
+                            <select id="terminal-selector" class="service-select">
+                                <option value="ssh" selected>SSH</option>
+                                <option value="aios">aios</option>
+                                <option value="custom">Custom</option>
+                            </select>
                         </div>
 
-                        <!-- Command Input (Wide) -->
-                        <div class="command-input-container">
-                            <div class="input-label">Command</div>
+                        <!-- Command Input -->
+                        <div class="input-container command-container-only">
+                            <div class="command-label">Command</div>
                             <input
                                 type="text"
                                 id="command-input"
@@ -127,9 +118,15 @@
                                 autocomplete="off"
                                 value=""
                                 placeholder=""
-                                class="input-field command-field"
+                                class="input-field command-field-terminal"
                             >
                         </div>
+                        
+                        <!-- Apply Button -->
+                        <button id="terminal-update" class="update-button-standalone" data-i18n="apply">Apply</button>
+                        
+                        <!-- Open Button -->
+                        <button id="open-terminal" class="open-button-standalone" data-i18n="open">Open</button>
                     </div>
                 </section>
 
