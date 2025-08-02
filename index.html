@@ -41,7 +41,7 @@
                         <div class="input-container service-container-only">
                             <div class="input-label">Service</div>
                             <select id="service-selector" class="service-select">
-                                <option value="luci" selected>LuCI</option>
+                                <option value="luci"selected>LuCI</option>
                                 <option value="ttyd">ttyd</option>
                                 <option value="filebrowser">filebrowser</option>
                                 <option value="adguard">AdGuard</option>
@@ -59,7 +59,7 @@
                                 pattern="[0-9]*"
                                 lang="en"
                                 autocomplete="off"
-                                value="80"
+                                value=""
                                 placeholder="80"
                                 class="input-field port-field"
                             >
@@ -82,27 +82,14 @@
 
                 <section id="terminal" class="content-section">
                     <h2 class="section-title" data-i18n="terminal">Terminal<span class="section-subtitle">(for Windows)</span></h2>
-                    
-                    <!-- SSH Handler Registration -->
-                    <details id="ssh-handler-details-container" class="qr-code-section handler-details-section bordered-element">
-                        <summary class="qr-code-summary handler-summary" data-i18n="sshHandler">
-                            <span class="link-text">Protocol handler registration (first-time use)</span>
-                            <span class="link-note">Download (Double-click sshcmd.reg to install)</span>
-                        </summary>
-                        <div class="details-content">
-                            <a id="ssh-handler-download-link" href="file/sshcmd.reg" download class="bordered-element" data-i18n="downloadHandlerButton">
-                                Download
-                            </a>
-                        </div>
-                    </details>
 
                     <div class="input-group connection">
                         <!-- Terminal Type Selector -->
                         <div class="input-container service-container-only">
                             <div class="input-label">Type</div>
                             <select id="terminal-selector" class="service-select">
-                                <option value="ssh">SSH</option>
-                                <option value="aios" selected>aios</option>
+                                <option value="ssh" selected>SSH</option>
+                                <option value="aios">aios</option>
                                 <option value="custom">Custom</option>
                             </select>
                         </div>
@@ -128,6 +115,19 @@
                         <!-- Open Button -->
                         <button id="open-terminal" class="open-button-standalone" data-i18n="open">Open</button>
                     </div>
+
+                    <!-- SSH Handler Registration -->
+                    <details id="ssh-handler-details-container" class="qr-code-section handler-details-section bordered-element">
+                        <summary class="qr-code-summary handler-summary" data-i18n="sshHandler">
+                            <span class="link-text">Protocol handler registration (first-time use)</span>
+                            <span class="link-note">Download (Double-click sshcmd.reg to install)</span>
+                        </summary>
+                        <div class="details-content">
+                            <a id="ssh-handler-download-link" href="file/sshcmd.reg" download class="bordered-element" data-i18n="downloadHandlerButton">
+                                Download
+                            </a>
+                        </div>
+                    </details>
                 </section>
 
                 <section id="project" class="content-section">
