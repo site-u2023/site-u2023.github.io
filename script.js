@@ -204,6 +204,11 @@ function bindEvents() {
                 const selectedType = terminalSelector.value;
                 const commandKey = `command_${selectedType}`;
                 localStorage.setItem(commandKey, this.value);
+                
+                // カスタムコマンドの場合、プレビューを表示
+                if (selectedType === 'custom') {
+                    updateTerminalPreview();
+                }
             }
             updateTerminalDisplay();
         });
