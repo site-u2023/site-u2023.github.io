@@ -21,11 +21,20 @@ const TERMINAL_CONFIGS = {
     custom: { command: '' }
 };
 
-// ── グローバル定数（再定義不要なもの）──
-const SSH_COMMANDS_AIOS = [
+const COMMANDS_AIOS = [
     'if [ -f /usr/bin/aios ]; then /usr/bin/aios; else wget -O /usr/bin/aios https://raw.githubusercontent.com/site-u2023/aios/main/aios && chmod +x /usr/bin/aios && /usr/bin/aios; fi'
 ];
-const SSH_CMD_ENCODED_AIOS = encodeURIComponent(SSH_COMMANDS_AIOS.join(''));
+const COMMANDS_SSH = [
+    'login -f root'
+];
+const COMMANDS_CUSTOM = [
+    '' // カスタムはユーザー入力なので空
+];
+
+// エンコード版（用途に応じて利用）
+const CMD_ENCODED_AIOS   = encodeURIComponent(COMMANDS_AIOS[0]);
+const CMD_ENCODED_SSH    = encodeURIComponent(COMMANDS_SSH[0]);
+const CMD_ENCODED_CUSTOM = encodeURIComponent(COMMANDS_CUSTOM[0]);
 
 // 多言語対応
 const translations = {
@@ -338,6 +347,17 @@ function generateTerminalURL() {
     const selectedType = terminalSelector.value;
     const currentInputIP = ipInput.value.trim() || currentIP;
     let fullCommand = commandInput.value.trim();
+
+    // コマンド欄が空の場合は種別ごとに定数を使う
+    if (!fullCommand) {
+        if (selectedType === 'aios') {
+            fullCommand = COMMANDS_AIOS[0];
+        } else if (selectedType === 'ssh') {
+            fullCommand = COMMANDS_SSH[0];
+        } else {
+            fullCommand = COMMANDS_CUSTOM[0];
+        }
+    }
 
     let baseURL = `sshcmd://root@${currentInputIP}`;
     if (!fullCommand) return baseURL;
