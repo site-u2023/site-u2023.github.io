@@ -346,6 +346,21 @@ function updateQRCode() {
 // ==================================================
 // テーマ切り替え機能
 // ==================================================
+function updateLogo() {
+    const logoImg = document.getElementById('site-logo');
+    if (!logoImg) return;
+    
+    const currentThemeAttr = document.documentElement.getAttribute('data-theme');
+    
+    if (currentThemeAttr === 'dark') {
+        // ダークモード用のロゴ
+        logoImg.src = 'img/openwrt_text_white_and_blue.svg';
+    } else {
+        // ライトモード用のロゴ
+        logoImg.src = 'img/openwrt_text_blue_and_dark_blue.svg';
+    }
+}
+
 function applyTheme(theme) {
     const html = document.documentElement;
     
@@ -359,6 +374,9 @@ function applyTheme(theme) {
     
     currentTheme = theme;
     localStorage.setItem('theme', theme);
+    
+    // ロゴの更新
+    updateLogo();
     
     // QRコードの更新（色が変わるため）
     setTimeout(updateQRCode, 100);
@@ -424,6 +442,8 @@ function loadHeaderFooter() {
 
 function bindHeaderEvents() {
     // ヘッダー内のイベントバインド（必要に応じて実装）
+    // ヘッダーが動的に読み込まれた場合のロゴ設定
+    updateLogo();
 }
 
 function bindFooterEvents() {
@@ -494,4 +514,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (headerExists || footerExists) {
         loadHeaderFooter();
     }
+    
+    // 初期ロゴ設定（ヘッダーが静的に存在する場合）
+    updateLogo();
 });
