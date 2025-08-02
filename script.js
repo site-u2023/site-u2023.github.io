@@ -337,20 +337,9 @@ function generateTerminalURL() {
 
     const selectedType = terminalSelector.value;
     const currentInputIP = ipInput.value.trim() || currentIP;
+    let fullCommand = commandInput.value.trim();
+
     let baseURL = `sshcmd://root@${currentInputIP}`;
-    let fullCommand = '';
-
-    if (selectedType === 'ssh') {
-        // SSHモード：login -f root を常に実行
-        fullCommand = 'login -f root';
-    } else if (selectedType === 'aios') {
-        // aiosモード：コマンド欄は表示だけ、コマンドは送信しない（空送信）
-        fullCommand = '';
-    } else if (selectedType === 'custom') {
-        // customモード：コマンド欄の入力値をそのまま実行
-        fullCommand = commandInput.value.trim();
-    }
-
     if (!fullCommand) return baseURL;
     const encodedCommand = encodeURIComponent(fullCommand);
     return `${baseURL}/${encodedCommand}`;
