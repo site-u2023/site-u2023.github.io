@@ -734,6 +734,12 @@ h3.bordered-element {
     gap: 1em;
 }
 
+/* 各子要素を行ごとセンターに押し込む */
+.page-footer-area .footer-inner-flex > * {
+    margin-left: auto;
+    margin-right: auto;
+}
+
 .page-footer-area .copyright-text {
     font-size: 1em;
     line-height: 1;
