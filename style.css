@@ -39,7 +39,8 @@ html[data-theme="dark"] {
 .input-field,
 .service-select,
 .port-field,
-.command-field {
+.command-field,
+.command-field-terminal {
     -webkit-appearance: none;
     -moz-appearance: none;
     appearance: none;
@@ -154,7 +155,7 @@ h3.bordered-element {
 /* ── 新しい入力グループスタイル ── */
 #address .input-group,
 #browser .input-group,
-.terminal-controls-group .input-group {
+#terminal .input-group {
     display: flex;
     gap: 0.3rem;
     margin-bottom: 1em;
@@ -351,6 +352,61 @@ h3.bordered-element {
 }
 
 .port-container-only .port-field:focus {
+    outline: none;
+    color: var(--hover-text);
+}
+
+/* ── ターミナル用コマンド入力コンテナ（ポートと同じ1倍幅） ── */
+.command-container-only {
+    flex: 1;
+    min-width: 4ch;
+    display: flex;
+    align-items: stretch;
+    position: relative;
+    border: 0.05em solid var(--text-color);
+    border-radius: 0.3em;
+    padding: 0;
+    box-sizing: border-box;
+    transition: background-color 0.2s, border-color 0.2s;
+    min-height: 3.4em;
+}
+
+.command-container-only:focus-within {
+    background-color: var(--hover-bg);
+    border-color: var(--hover-bg);
+}
+
+.command-container-only .command-label {
+    position: absolute;
+    top: 0.2em;
+    left: 0.5em;
+    font-size: 0.7em;
+    color: inherit;
+    font-weight: normal;
+    opacity: 0.8;
+    pointer-events: none;
+    transition: color 0.2s ease;
+    z-index: 2;
+}
+
+.command-container-only:focus-within .command-label {
+    color: var(--hover-text);
+}
+
+.command-container-only .command-field-terminal {
+    width: 100%;
+    border: none;
+    border-radius: 0;
+    background-color: transparent;
+    color: inherit;
+    font-weight: normal;
+    font-size: 0.9em;
+    box-sizing: border-box;
+    padding: 1.2em 0.5em 1.2em 0.5em;
+    margin: 0;
+}
+
+.command-container-only .command-field-terminal:focus {
     outline: none;
     color: var(--hover-text);
 }
