@@ -115,14 +115,14 @@ function initializeSettings() {
     // サービス選択の初期化
     const serviceSelector = document.getElementById('service-selector');
     if (serviceSelector) {
-        serviceSelector.value = 'luci';  // 修正: 'LuCi' -> 'luci'
+        serviceSelector.value = 'luci';
         updateServicePort();
     }
     
     // ターミナル選択の初期化
     const terminalSelector = document.getElementById('terminal-selector');
     if (terminalSelector) {
-        terminalSelector.value = 'aios';  // aiosをデフォルトに戻す
+        terminalSelector.value = 'aios';
         updateTerminalCommand();
     }
 }
@@ -272,7 +272,7 @@ function generateBrowserURL() {
     const config = SERVICE_CONFIGS[selectedService];
     const protocol = config ? config.protocol : 'http';
     
-    // 修正: 現在の入力フィールドの値を使用
+    // 現在の入力フィールドの値を使用
     const currentInputIP = ipInput.value.trim() || currentIP;
     
     return `${protocol}://${currentInputIP}:${port}`;
@@ -288,26 +288,20 @@ function updateTerminalCommand() {
     
     if (terminalSelector && commandInput) {
         const selectedType = terminalSelector.value;
-        const config = TERMINAL_CONFIGS[selectedType];
-        
-        // 修正: 現在の入力フィールドの値を使用
-        const currentInputIP = ipInput ? (ipInput.value.trim() || currentIP) : currentIP;
         
         // カスタムコマンドの保存キーを生成
         const commandKey = `command_${selectedType}`;
         const savedCommand = localStorage.getItem(commandKey);
         
-        if (config) {
-            if (selectedType === 'aios') {
-                // aiosコマンドの表示（参考用・生コマンド）
-                commandInput.value = SSH_COMMANDS_AIOS.join('');
-            } else if (selectedType === 'ssh') {
-                // SSHのみ（コマンドなし）
-                commandInput.value = '';
-            } else if (selectedType === 'custom') {
-                // カスタムの場合は保存された値を使用（コマンド部分のみ）
-                commandInput.value = savedCommand || '';
-            }
+        if (selectedType === 'aios') {
+            // aiosコマンドの表示（生コマンド）
+            commandInput.value = SSH_COMMANDS_AIOS[0];
+        } else if (selectedType === 'ssh') {
+            // SSHのみ（コマンドなし）
+            commandInput.value = '';
+        } else if (selectedType === 'custom') {
+            // カスタムの場合は保存された値を使用
+            commandInput.value = savedCommand || '';
         }
         
         updateTerminalDisplay();
@@ -327,13 +321,11 @@ function updateTerminalPreview() {
     
     const selectedType = terminalSelector.value;
     
-    // プレビュー要素があれば更新（今後のUI拡張用）
-    if (selectedType === 'custom') {
-        const previewElement = document.getElementById('command-preview');
-        if (previewElement) {
-            const generatedURL = generateTerminalURL();
-            previewElement.textContent = generatedURL || '';
-        }
+    // プレビュー要素があれば更新
+    const previewElement = document.getElementById('command-preview');
+    if (previewElement) {
+        const generatedURL = generateTerminalURL();
+        previewElement.textContent = generatedURL || '';
     }
 }
 
@@ -355,8 +347,9 @@ function generateTerminalURL() {
         // SSH接続のみ
         return baseURL;
     } else if (selectedType === 'aios') {
-        // aiosコマンドを追加
-        return `${baseURL}/${SSH_CMD_ENCODED_AIOS}`;
+        // aiosコマンドを自動エンコードして追加
+        const encodedCommand = encodeURIComponent(SSH_COMMANDS_AIOS[0]);
+        return `${baseURL}/${encodedCommand}`;
     } else if (selectedType === 'custom' && command) {
         // カスタムコマンドをURLエンコードして追加
         const encodedCommand = encodeURIComponent(command);
@@ -380,7 +373,7 @@ function updateQRCode() {
         // 既存のQRコードをクリア
         qrCodeContainer.innerHTML = '';
         
-        // 新しいQRコードを生成
+        // 新しいQRCodeを生成
         const qr = new QRious({
             element: document.createElement('canvas'),
             value: url,
