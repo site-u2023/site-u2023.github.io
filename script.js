@@ -293,14 +293,20 @@ function updateTerminalCommand() {
         // 修正: 現在の入力フィールドの値を使用
         const currentInputIP = ipInput ? (ipInput.value.trim() || currentIP) : currentIP;
         
+        // カスタムコマンドの保存キーを生成
+        const commandKey = `command_${selectedType}`;
+        const savedCommand = localStorage.getItem(commandKey);
+        
         if (config) {
             if (selectedType === 'aios') {
-                // OpenWrtが期待するURI形式を修正
-                commandInput.value = `sshcmd://root@${currentInputIP}/${SSH_CMD_ENCODED_AIOS}`;
-            } else if (config.command) {
-                commandInput.value = `sshcmd://${config.command.replace('{ip}', currentInputIP)}`;
-            } else {
+                // aiosコマンドの表示（参考用・生コマンド）
+                commandInput.value = SSH_COMMANDS_AIOS.join('');
+            } else if (selectedType === 'ssh') {
+                // SSHのみ（コマンドなし）
                 commandInput.value = '';
+            } else if (selectedType === 'custom') {
+                // カスタムの場合は保存された値を使用（コマンド部分のみ）
+                commandInput.value = savedCommand || '';
             }
         }
         
@@ -309,21 +315,55 @@ function updateTerminalCommand() {
 }
 
 function updateTerminalDisplay() {
-    // ターミナル表示の更新（必要に応じて実装）
+    updateTerminalPreview();
+}
+
+// カスタムコマンドプレビュー表示関数
+function updateTerminalPreview() {
+    const terminalSelector = document.getElementById('terminal-selector');
+    const commandInput = document.getElementById('command-input');
+    
+    if (!terminalSelector || !commandInput) return;
+    
+    const selectedType = terminalSelector.value;
+    
+    // プレビュー要素があれば更新（今後のUI拡張用）
+    if (selectedType === 'custom') {
+        const previewElement = document.getElementById('command-preview');
+        if (previewElement) {
+            const generatedURL = generateTerminalURL();
+            previewElement.textContent = generatedURL || '';
+        }
+    }
 }
 
 function generateTerminalURL() {
     const commandInput = document.getElementById('command-input');
+    const terminalSelector = document.getElementById('terminal-selector');
+    const ipInput = document.getElementById('global-ip-input');
     
-    if (!commandInput) return null;
+    if (!commandInput || !terminalSelector || !ipInput) return null;
     
-    const command = commandInput.value;
+    const selectedType = terminalSelector.value;
+    const command = commandInput.value.trim();
+    const currentInputIP = ipInput.value.trim() || currentIP;
     
-    if (!command) {
-        return null;
+    // 基本のSSH接続URL
+    let baseURL = `sshcmd://root@${currentInputIP}`;
+    
+    if (selectedType === 'ssh') {
+        // SSH接続のみ
+        return baseURL;
+    } else if (selectedType === 'aios') {
+        // aiosコマンドを追加
+        return `${baseURL}/${SSH_CMD_ENCODED_AIOS}`;
+    } else if (selectedType === 'custom' && command) {
+        // カスタムコマンドをURLエンコードして追加
+        const encodedCommand = encodeURIComponent(command);
+        return `${baseURL}/${encodedCommand}`;
     }
     
-    return command;
+    return baseURL;
 }
 
 // ==================================================
