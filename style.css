@@ -740,6 +740,16 @@ h3.bordered-element {
     color: var(--text-color);
 }
 
+.page-footer-area .copyright-info,
+.page-footer-area .copyright-text {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
 .page-footer-area .footer-link {
     color: var(--text-color);
     text-decoration: none;
