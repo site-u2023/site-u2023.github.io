@@ -1,29 +1,9 @@
 // ==================================================
-// 初期値設定（一括管理）
-// ==================================================
-const DEFAULT_VALUES = {
-    // IPアドレス関連
-    ip: '192.168.1.1',
-    ipPlaceholder: 'openwrt.lan',
-    
-    // ブラウザ関連
-    service: 'luci',        // LuCI
-    port: '80',             // LuCIのデフォルトポート
-    
-    // ターミナル関連
-    terminalType: 'aios',   // aios
-    
-    // その他
-    language: 'en',
-    theme: 'auto'
-};
-
-// ==================================================
 // グローバル変数と定数
 // ==================================================
-let currentLanguage = DEFAULT_VALUES.language;
-let currentTheme = DEFAULT_VALUES.theme;
-let currentIP = DEFAULT_VALUES.ip;
+let currentLanguage = 'en';
+let currentTheme = 'auto';
+let currentIP = '192.168.1.1';
 
 // サービス設定
 const SERVICE_CONFIGS = {
@@ -58,7 +38,7 @@ const translations = {
         qrCodeDisplay: 'QRコード',
         qrCodeArea: 'QRコード表示エリア',
         sshHandler: 'プロトコルハンドラー登録 (初回のみ)',
-        downloadHandlerButton: 'ダウンロード (ダウンロードしたsshcmd.regファイルをダブルクリックしてインストールして下さい。)',
+        downloadHandlerButton: 'ダウンロード',
         githubRepo: 'GitHubリポジトリ',
         aiosScript: 'オールインワンスクリプト',
         configSoftware: 'コンフィグソフトウェア',
@@ -81,8 +61,8 @@ const translations = {
         open: 'Open',
         qrCodeDisplay: 'QR Code',
         qrCodeArea: 'QR Code Display Area',
-        sshHandler: 'Protocol handler registration (first-time use)',
-        downloadHandlerButton: 'Download (Double-click the downloaded sshcmd.reg file to install it.)',
+        sshHandler: 'Protocol Handler Registration (First time only)',
+        downloadHandlerButton: 'Download',
         githubRepo: 'GitHub Repository',
         aiosScript: 'All-in-One Script',
         configSoftware: 'Config Software',
@@ -110,33 +90,36 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function initializeSettings() {
     // 言語設定の復元
-    const savedLanguage = localStorage.getItem('language') || DEFAULT_VALUES.language;
+    const savedLanguage = localStorage.getItem('language') || 'en';
     currentLanguage = savedLanguage;
     
     // テーマ設定の復元
-    const savedTheme = localStorage.getItem('theme') || DEFAULT_VALUES.theme;
+    const savedTheme = localStorage.getItem('theme') || 'auto';
     currentTheme = savedTheme;
     applyTheme(currentTheme);
     
     // IPアドレスの復元と設定
-    const savedIP = localStorage.getItem('currentIP') || DEFAULT_VALUES.ip;
-    currentIP = savedIP;
+    const savedIP = localStorage.getItem('currentIP');
+    if (savedIP) {
+        currentIP = savedIP;
+    }
+    
     const ipInput = document.getElementById('global-ip-input');
     if (ipInput) {
         ipInput.value = currentIP;
     }
     
-    // サービス選択の初期化（デフォルト値に統一）
+    // サービス選択の初期化
     const serviceSelector = document.getElementById('service-selector');
     if (serviceSelector) {
-        serviceSelector.value = DEFAULT_VALUES.service;
+        serviceSelector.value = 'luci';  // 修正: 'LuCi' -> 'luci'
         updateServicePort();
     }
     
-    // ターミナル選択の初期化（デフォルト値に統一）
+    // ターミナル選択の初期化
     const terminalSelector = document.getElementById('terminal-selector');
     if (terminalSelector) {
-        terminalSelector.value = DEFAULT_VALUES.terminalType;
+        terminalSelector.value = 'ssh';  // 修正: 'aios' -> 'ssh' (デフォルト値に合わせる)
         updateTerminalCommand();
     }
 }
@@ -149,6 +132,7 @@ function bindEvents() {
     if (ipInput) {
         ipInput.addEventListener('input', function() {
             currentIP = this.value;
+            localStorage.setItem('currentIP', currentIP);
             updateAllDisplays();
         });
     }
@@ -156,7 +140,7 @@ function bindEvents() {
     if (globalIpUpdate) {
         globalIpUpdate.addEventListener('click', function() {
             if (ipInput) {
-                currentIP = ipInput.value;
+                currentIP = ipInput.value.trim();
                 localStorage.setItem('currentIP', currentIP);
                 updateAllDisplays();
             }
@@ -263,15 +247,19 @@ function updateBrowserDisplay() {
 function generateBrowserURL() {
     const serviceSelector = document.getElementById('service-selector');
     const portInput = document.getElementById('port-input');
+    const ipInput = document.getElementById('global-ip-input');
     
-    if (!serviceSelector || !portInput) return null;
+    if (!serviceSelector || !portInput || !ipInput) return null;
     
     const selectedService = serviceSelector.value;
-    const port = portInput.value || DEFAULT_VALUES.port;
+    const port = portInput.value || '80';
     const config = SERVICE_CONFIGS[selectedService];
     const protocol = config ? config.protocol : 'http';
     
-    return `${protocol}://${currentIP}:${port}`;
+    // 修正: 現在の入力フィールドの値を使用
+    const currentInputIP = ipInput.value.trim() || currentIP;
+    
+    return `${protocol}://${currentInputIP}:${port}`;
 }
 
 // ==================================================
@@ -280,17 +268,21 @@ function generateBrowserURL() {
 function updateTerminalCommand() {
     const terminalSelector = document.getElementById('terminal-selector');
     const commandInput = document.getElementById('command-input');
+    const ipInput = document.getElementById('global-ip-input');
     
     if (terminalSelector && commandInput) {
         const selectedType = terminalSelector.value;
         const config = TERMINAL_CONFIGS[selectedType];
         
+        // 修正: 現在の入力フィールドの値を使用
+        const currentInputIP = ipInput ? (ipInput.value.trim() || currentIP) : currentIP;
+        
         if (config) {
             if (selectedType === 'aios') {
                 // OpenWrtが期待するURI形式を修正
-                commandInput.value = `sshcmd://root@${currentIP}/${SSH_CMD_ENCODED_AIOS}`;
+                commandInput.value = `sshcmd://root@${currentInputIP}/${SSH_CMD_ENCODED_AIOS}`;
             } else if (config.command) {
-                commandInput.value = `sshcmd://${config.command.replace('{ip}', currentIP)}`;
+                commandInput.value = `sshcmd://${config.command.replace('{ip}', currentInputIP)}`;
             } else {
                 commandInput.value = '';
             }
