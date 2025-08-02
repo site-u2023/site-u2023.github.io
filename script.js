@@ -122,7 +122,7 @@ function initializeSettings() {
     // ターミナル選択の初期化
     const terminalSelector = document.getElementById('terminal-selector');
     if (terminalSelector) {
-        terminalSelector.value = 'ssh';  // 修正: 'aios' -> 'ssh' (デフォルト値に合わせる)
+        terminalSelector.value = 'aios';  // aiosをデフォルトに戻す
         updateTerminalCommand();
     }
 }
