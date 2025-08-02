@@ -93,6 +93,9 @@ function initializeSettings() {
     const savedLanguage = localStorage.getItem('language') || 'en';
     currentLanguage = savedLanguage;
     
+    // 翻訳を適用
+    updateLanguageDisplay();
+    
     // テーマ設定の復元
     const savedTheme = localStorage.getItem('theme') || 'auto';
     currentTheme = savedTheme;
@@ -364,18 +367,21 @@ function applyTheme(theme) {
 // ==================================================
 // 多言語対応機能
 // ==================================================
-function updateLanguage(lang) {
-    currentLanguage = lang;
-    localStorage.setItem('language', lang);
-    
+function updateLanguageDisplay() {
     // 翻訳を適用
     const elements = document.querySelectorAll('[data-i18n]');
     elements.forEach(element => {
         const key = element.getAttribute('data-i18n');
-        if (translations[lang] && translations[lang][key]) {
-            element.textContent = translations[lang][key];
+        if (translations[currentLanguage] && translations[currentLanguage][key]) {
+            element.textContent = translations[currentLanguage][key];
         }
     });
+}
+
+function updateLanguage(lang) {
+    currentLanguage = lang;
+    localStorage.setItem('language', lang);
+    updateLanguageDisplay();
 }
 
 // ==================================================
