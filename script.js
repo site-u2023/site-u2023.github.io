@@ -16,25 +16,20 @@ const SERVICE_CONFIGS = {
 
 // ターミナルタイプ設定
 const TERMINAL_CONFIGS = {
-    ssh: { command: 'root@{ip}' },
-    aios: { command: 'root@{ip}' },
-    custom: { command: '' }
+    ssh:    { command: '' },
+    aios:   { command: 'root@{ip}' },
 };
 
+// デフォルトコマンド
 const COMMANDS_AIOS = [
     'if [ -f /usr/bin/aios ]; then /usr/bin/aios; else wget -O /usr/bin/aios https://raw.githubusercontent.com/site-u2023/aios/main/aios && chmod +x /usr/bin/aios && /usr/bin/aios; fi'
 ];
-const COMMANDS_SSH = [
-    'login -f root'
-];
-const COMMANDS_CUSTOM = [
-    '' // カスタムはユーザー入力なので空
-];
+const COMMANDS_SSH = [''];     // SSH はコマンドなし
 
-// エンコード版（用途に応じて利用）
+// エンコード版
 const CMD_ENCODED_AIOS   = encodeURIComponent(COMMANDS_AIOS[0]);
-const CMD_ENCODED_SSH    = encodeURIComponent(COMMANDS_SSH[0]);
-const CMD_ENCODED_CUSTOM = encodeURIComponent(COMMANDS_CUSTOM[0]);
+const CMD_ENCODED_SSH    = '';
+
 
 // 多言語対応
 const translations = {
@@ -294,31 +289,24 @@ function generateBrowserURL() {
 // ==================================================
 // ターミナル関連機能
 // ==================================================
-function updateTerminalCommand() {
+function updateTerminalCommand () {
     const terminalSelector = document.getElementById('terminal-selector');
-    const commandInput = document.getElementById('command-input');
-    
-    if (terminalSelector && commandInput) {
-        const selectedType = terminalSelector.value;
-        
-        // カスタムコマンドの保存キーを生成
-        const commandKey = `command_${selectedType}`;
-        const savedCommand = localStorage.getItem(commandKey);
-        
-        if (selectedType === 'aios') {
-            // aiosコマンドの表示（保存された値があればそれを使用、なければデフォルト）
-            commandInput.value = savedCommand || COMMANDS_AIOS[0];
-        } else if (selectedType === 'ssh') {
-            // SSHの場合（保存された値があればそれを使用、なければデフォルト）
-            commandInput.value = savedCommand || COMMANDS_SSH[0];
-        } else if (selectedType === 'custom') {
-            // カスタムの場合は保存された値を使用
-            commandInput.value = savedCommand || '';
-        }
-        
-        updateTerminalDisplay();
+    const commandInput     = document.getElementById('command-input');
+    if (!terminalSelector || !commandInput) return;
+
+    const type       = terminalSelector.value;
+    const key        = `command_${type}`;
+    const saved      = localStorage.getItem(key);
+
+    if (type === 'aios') {
+        commandInput.value = saved ?? COMMANDS_AIOS[0];
+    } else { // ssh
+        commandInput.value = saved ?? '';
     }
+
+    updateTerminalDisplay();
 }
+
 
 function updateTerminalDisplay() {
     updateTerminalPreview();
@@ -350,8 +338,6 @@ function generateTerminalURL() {
             fullCommand = COMMANDS_AIOS[0];
         } else if (selectedType === 'ssh') {
             fullCommand = COMMANDS_SSH[0];
-        } else {
-            fullCommand = COMMANDS_CUSTOM[0];
         }
     }
 
