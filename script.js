@@ -335,15 +335,24 @@ function generateTerminalURL() {
     const ipInput = document.getElementById('global-ip-input');
     if (!commandInput || !terminalSelector || !ipInput) return null;
 
-    const command = commandInput.value.trim();
+    const selectedType = terminalSelector.value;
     const currentInputIP = ipInput.value.trim() || currentIP;
     let baseURL = `sshcmd://root@${currentInputIP}`;
+    let fullCommand = '';
 
-    // コマンド欄が空なら純粋なSSH接続
-    if (!command) return baseURL;
+    if (selectedType === 'ssh') {
+        // SSHモード：login -f root を常に実行
+        fullCommand = 'login -f root';
+    } else if (selectedType === 'aios') {
+        // aiosモード：コマンド欄は表示だけ、コマンドは送信しない（空送信）
+        fullCommand = '';
+    } else if (selectedType === 'custom') {
+        // customモード：コマンド欄の入力値をそのまま実行
+        fullCommand = commandInput.value.trim();
+    }
 
-    // コマンド欄に値があれば、そのままencodeして付与
-    const encodedCommand = encodeURIComponent(command);
+    if (!fullCommand) return baseURL;
+    const encodedCommand = encodeURIComponent(fullCommand);
     return `${baseURL}/${encodedCommand}`;
 }
 
