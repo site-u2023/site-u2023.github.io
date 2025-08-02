@@ -339,9 +339,11 @@ function generateTerminalURL() {
     const currentInputIP = ipInput.value.trim() || currentIP;
     let baseURL = `sshcmd://root@${currentInputIP}`;
 
-    // 全モードでexec login -f root;を必ず先頭付与
-    const fullCommand = 'exec login -f root;' + (command ? ' ' + command : '');
-    const encodedCommand = encodeURIComponent(fullCommand);
+    // コマンド欄が空なら純粋なSSH接続
+    if (!command) return baseURL;
+
+    // コマンド欄に値があれば、そのままencodeして付与
+    const encodedCommand = encodeURIComponent(command);
     return `${baseURL}/${encodedCommand}`;
 }
 
