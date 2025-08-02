@@ -738,12 +738,6 @@ h3.bordered-element {
     font-size: 1em;
     line-height: 1;
     color: var(--text-color);
-    width: 100%;
-    text-align: center;
-}
-
-.page-footer-area .copyright-info {
-    flex: 1 1 100%;
 }
 
 .page-footer-area .footer-link {
