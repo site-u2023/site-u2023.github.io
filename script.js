@@ -196,7 +196,7 @@ function bindEvents() {
         });
     }
     
-    // ターミナル関連
+    // ターミナル関連（修正版）
     const terminalSelector = document.getElementById('terminal-selector');
     const commandInput = document.getElementById('command-input');
     const terminalUpdate = document.getElementById('terminal-update');
@@ -213,13 +213,16 @@ function bindEvents() {
                 const selectedType = terminalSelector.value;
                 const commandKey = `command_${selectedType}`;
                 localStorage.setItem(commandKey, this.value);
-                
-                // カスタムコマンドの場合、プレビューを表示
-                if (selectedType === 'custom') {
-                    updateTerminalPreview();
-                }
             }
-            updateTerminalDisplay();
+            // 常にプレビューを更新
+            updateTerminalPreview();
+        });
+        
+        // Enterキーでも更新
+        commandInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                updateTerminalDisplay();
+            }
         });
     }
     
@@ -233,6 +236,7 @@ function bindEvents() {
         openTerminal.addEventListener('click', function() {
             const url = generateTerminalURL();
             if (url) {
+                console.log('Generated Terminal URL:', url); // デバッグ用
                 window.location.href = url;
             }
         });
@@ -293,7 +297,6 @@ function generateBrowserURL() {
 function updateTerminalCommand() {
     const terminalSelector = document.getElementById('terminal-selector');
     const commandInput = document.getElementById('command-input');
-    const ipInput = document.getElementById('global-ip-input');
     
     if (terminalSelector && commandInput) {
         const selectedType = terminalSelector.value;
@@ -303,11 +306,11 @@ function updateTerminalCommand() {
         const savedCommand = localStorage.getItem(commandKey);
         
         if (selectedType === 'aios') {
-            // aiosコマンドの表示（生コマンド）
-            commandInput.value = SSH_COMMANDS_AIOS[0];
+            // aiosコマンドの表示（保存された値があればそれを使用、なければデフォルト）
+            commandInput.value = savedCommand || COMMANDS_AIOS[0];
         } else if (selectedType === 'ssh') {
-            // SSHのみ（コマンドなし）
-            commandInput.value = '';
+            // SSHの場合（保存された値があればそれを使用、なければデフォルト）
+            commandInput.value = savedCommand || COMMANDS_SSH[0];
         } else if (selectedType === 'custom') {
             // カスタムの場合は保存された値を使用
             commandInput.value = savedCommand || '';
@@ -323,14 +326,6 @@ function updateTerminalDisplay() {
 
 // カスタムコマンドプレビュー表示関数
 function updateTerminalPreview() {
-    const terminalSelector = document.getElementById('terminal-selector');
-    const commandInput = document.getElementById('command-input');
-    
-    if (!terminalSelector || !commandInput) return;
-    
-    const selectedType = terminalSelector.value;
-    
-    // プレビュー要素があれば更新
     const previewElement = document.getElementById('command-preview');
     if (previewElement) {
         const generatedURL = generateTerminalURL();
@@ -342,6 +337,7 @@ function generateTerminalURL() {
     const commandInput = document.getElementById('command-input');
     const terminalSelector = document.getElementById('terminal-selector');
     const ipInput = document.getElementById('global-ip-input');
+    
     if (!commandInput || !terminalSelector || !ipInput) return null;
 
     const selectedType = terminalSelector.value;
@@ -361,8 +357,23 @@ function generateTerminalURL() {
 
     let baseURL = `sshcmd://root@${currentInputIP}`;
     if (!fullCommand) return baseURL;
+    
     const encodedCommand = encodeURIComponent(fullCommand);
     return `${baseURL}/${encodedCommand}`;
+}
+
+// デバッグ用関数
+function debugTerminalState() {
+    const terminalSelector = document.getElementById('terminal-selector');
+    const commandInput = document.getElementById('command-input');
+    const ipInput = document.getElementById('global-ip-input');
+    
+    console.log('=== Terminal Debug Info ===');
+    console.log('Selected Type:', terminalSelector?.value);
+    console.log('Command Input:', commandInput?.value);
+    console.log('IP Input:', ipInput?.value);
+    console.log('Generated URL:', generateTerminalURL());
+    console.log('==========================');
 }
 
 // ==================================================
