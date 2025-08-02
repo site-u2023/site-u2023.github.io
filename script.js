@@ -198,7 +198,15 @@ function bindEvents() {
     }
     
     if (commandInput) {
-        commandInput.addEventListener('input', updateTerminalDisplay);
+        commandInput.addEventListener('input', function() {
+            const terminalSelector = document.getElementById('terminal-selector');
+            if (terminalSelector) {
+                const selectedType = terminalSelector.value;
+                const commandKey = `command_${selectedType}`;
+                localStorage.setItem(commandKey, this.value);
+            }
+            updateTerminalDisplay();
+        });
     }
     
     if (terminalUpdate) {
