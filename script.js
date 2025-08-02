@@ -81,7 +81,7 @@ const translations = {
         open: 'Open',
         qrCodeDisplay: 'QR Code',
         qrCodeArea: 'QR Code Display Area',
-        sshHandler: 'Protocol Handler Registration (First time only)',
+        sshHandler: 'Protocol handler registration (first-time use)',
         downloadHandlerButton: 'Download (Double-click the downloaded sshcmd.reg file to install it.)',
         githubRepo: 'GitHub Repository',
         aiosScript: 'All-in-One Script',
