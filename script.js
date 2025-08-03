@@ -29,7 +29,7 @@ const DEFAULT_TERMINALS = {
     },
     aios_clear_hosts: {
         name: 'aios (clear hosts)',
-        command: '-y -y -t "if [ -f /usr/bin/aios ]; then /usr/bin/aios; else wget -O /usr/bin/aios https://raw.githubusercontent.com/site-u2023/aios/main/aios && chmod +x /usr/bin/aios && /usr/bin/aios; fi"'
+        command: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -t "if [ -f /usr/bin/aios ]; then /usr/bin/aios; else wget -O /usr/bin/aios https://raw.githubusercontent.com/site-u2023/aios/main/aios && chmod +x /usr/bin/aios && /usr/bin/aios; fi"'
     },
     ssh: {
         name: 'SSH',
@@ -37,7 +37,7 @@ const DEFAULT_TERMINALS = {
     },
     ssh_clear_hosts: {
         name: 'SSH (clear hosts)',
-        command: '-y -y'
+        command: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
     }
 };
 
