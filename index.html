@@ -14,19 +14,15 @@
                 <section id="address" class="content-section">
                     <h2 class="section-title" data-i18n="address">Address</h2>
                     <div class="input-group connection">
-                        <!-- IP Address Input -->
+                        <!-- IP Address Selector -->
                         <div class="input-container ip-container-full">
                             <div class="input-label">IP Address</div>
-                            <input
-                                type="text"
+                            <select
                                 id="global-ip-input"
-                                inputmode="text"
-                                lang="en"
-                                autocomplete="off"
-                                value="192.168.1.1"
-                                placeholder="openwrt.lan"
-                                class="input-field"
+                                class="input-field ip-select"
                             >
+                                <option value="192.168.1.1">192.168.1.1</option>
+                            </select>
                         </div>
                         
                         <!-- Add/Remove Buttons -->
@@ -44,7 +40,7 @@
                     <h2 class="section-title" data-i18n="browser">Browser</h2>
                     <div class="input-group connection">
                         <!-- Service Selector -->
-                        <div class="input-container service-container-only">
+                        <div class="input-container service-container-half">
                             <div class="input-label">Service</div>
                             <select id="service-selector" class="service-select">
                                 <option value="luci" selected>LuCI</option>
@@ -61,7 +57,7 @@
                         </div>
 
                         <!-- Port Input -->
-                        <div class="input-container port-container-only">
+                        <div class="input-container port-container-half">
                             <div class="port-label">Port</div>
                             <input
                                 type="text"
@@ -96,7 +92,7 @@
 
                     <div class="input-group connection">
                         <!-- Terminal Type Selector -->
-                        <div class="input-container service-container-only">
+                        <div class="input-container service-container-half">
                             <div class="input-label">Type</div>
                             <select id="terminal-selector" class="service-select">
                                 <option value="aios" selected>aios</option>
@@ -111,7 +107,7 @@
                         </div>
 
                         <!-- Command Input -->
-                        <div class="input-container command-container-only">
+                        <div class="input-container command-container-half">
                             <div class="command-label">Command</div>
                             <input
                                 type="text"
