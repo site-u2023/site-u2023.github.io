@@ -25,9 +25,9 @@ const DEFAULT_TERMINALS = {
 
 // プロンプト用デフォルト値（一元管理）
 const PROMPT_DEFAULTS = {
-    newAddress: '192.168.1.2',
+    newAddress: '192.168.0.1',
     serviceName: 'custom',
-    portNumber: '8080',
+    portNumber: '10000',
     protocol: 'http',
     terminalName: 'custom',
     defaultCommand: ''
