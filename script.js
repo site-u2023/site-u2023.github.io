@@ -7,6 +7,8 @@ let currentTheme = 'auto';
 // デフォルト設定（キャッシュクリア時の復元用）
 const DEFAULT_ADDRESSES = [
     '192.168.1.1',
+    '192.168.0.1',
+    '192.168.10.1',
     'openwrt.lan',
     '10.0.0.1'
 ];
@@ -15,17 +17,23 @@ const DEFAULT_SERVICES = {
     luci: { name: 'LuCI', port: '80', protocol: 'http' },
     ttyd: { name: 'ttyd', port: '7681', protocol: 'http' },
     filebrowser: { name: 'filebrowser', port: '8080', protocol: 'http' },
-    adguard: { name: 'AdGuard', port: '3000', protocol: 'http' }
+    adguard: { name: 'AdGuard Home', port: '3000', protocol: 'http' }
 };
 
 const DEFAULT_TERMINALS = {
-    ssh: { name: 'SSH', command: '' },
-    aios: { name: 'aios', command: 'if [ -f /usr/bin/aios ]; then /usr/bin/aios; else wget -O /usr/bin/aios https://raw.githubusercontent.com/site-u2023/aios/main/aios && chmod +x /usr/bin/aios && /usr/bin/aios; fi' }
+    ssh: { 
+        name: 'SSH', 
+        command: 'ssh -o StrictHostKeyChecking=no -o HostKeyAlgorithms=+ssh-rsa' 
+    },
+    aios: { 
+        name: 'aios', 
+        command: 'ssh -o StrictHostKeyChecking=no -o HostKeyAlgorithms=+ssh-rsa root@IP -t "if [ -f /usr/bin/aios ]; then /usr/bin/aios; else wget -q -O /usr/bin/aios https://raw.githubusercontent.com/site-u2023/aios/main/aios && chmod +x /usr/bin/aios && /usr/bin/aios; fi"' 
+    }
 };
 
 // プロンプト用デフォルト値（一元管理）
 const PROMPT_DEFAULTS = {
-    newAddress: '192.168.0.1',
+    newAddress: '192.168.1.2',
     serviceName: 'custom',
     portNumber: '10000',
     protocol: 'http',
@@ -38,6 +46,8 @@ let currentAddresses = [];
 let currentServices = {};
 let currentTerminals = {};
 let currentIP = '192.168.1.1';
+let currentSelectedService = 'luci';
+let currentSelectedTerminal = 'aios';
 
 // 多言語対応
 const translations = {
@@ -161,10 +171,26 @@ function initializeSettings() {
     
     // 現在のIPアドレスの復元
     const savedIP = localStorage.getItem('currentIP');
-    if (savedIP) {
+    if (savedIP && currentAddresses.includes(savedIP)) {
         currentIP = savedIP;
     } else {
         currentIP = currentAddresses[0] || '192.168.1.1';
+    }
+    
+    // 現在選択中のサービスの復元
+    const savedService = localStorage.getItem('currentSelectedService');
+    if (savedService && currentServices[savedService]) {
+        currentSelectedService = savedService;
+    } else {
+        currentSelectedService = Object.keys(currentServices)[0] || 'luci';
+    }
+    
+    // 現在選択中のターミナルの復元
+    const savedTerminal = localStorage.getItem('currentSelectedTerminal');
+    if (savedTerminal && currentTerminals[savedTerminal]) {
+        currentSelectedTerminal = savedTerminal;
+    } else {
+        currentSelectedTerminal = Object.keys(currentTerminals)[0] || 'aios';
     }
     
     // UI要素の初期化
@@ -175,6 +201,16 @@ function initializeSettings() {
     const ipSelector = document.getElementById('global-ip-input');
     if (ipSelector) {
         ipSelector.value = currentIP;
+    }
+    
+    const serviceSelector = document.getElementById('service-selector');
+    if (serviceSelector) {
+        serviceSelector.value = currentSelectedService;
+    }
+    
+    const terminalSelector = document.getElementById('terminal-selector');
+    if (terminalSelector) {
+        terminalSelector.value = currentSelectedTerminal;
     }
 }
 
@@ -251,7 +287,11 @@ function bindEvents() {
     const serviceRemove = document.getElementById('service-remove');
     
     if (serviceSelector) {
-        serviceSelector.addEventListener('change', updateServicePort);
+        serviceSelector.addEventListener('change', function() {
+            currentSelectedService = this.value;
+            localStorage.setItem('currentSelectedService', currentSelectedService);
+            updateServicePort();
+        });
     }
     
     if (portInput) {
@@ -334,7 +374,11 @@ function bindEvents() {
     const terminalRemove = document.getElementById('terminal-remove');
     
     if (terminalSelector) {
-        terminalSelector.addEventListener('change', updateTerminalCommand);
+        terminalSelector.addEventListener('change', function() {
+            currentSelectedTerminal = this.value;
+            localStorage.setItem('currentSelectedTerminal', currentSelectedTerminal);
+            updateTerminalCommand();
+        });
     }
     
     if (commandInput) {
@@ -472,10 +516,14 @@ function updateServiceSelector() {
     // 可能であれば以前の選択を復元、そうでなければ最初の項目を選択
     if (currentSelection && currentServices[currentSelection]) {
         serviceSelector.value = currentSelection;
+        currentSelectedService = currentSelection;
     } else if (Object.keys(currentServices).length > 0) {
-        serviceSelector.value = Object.keys(currentServices)[0];
+        const firstService = Object.keys(currentServices)[0];
+        serviceSelector.value = firstService;
+        currentSelectedService = firstService;
     }
     
+    localStorage.setItem('currentSelectedService', currentSelectedService);
     updateServicePort();
 }
 
@@ -538,10 +586,14 @@ function updateTerminalSelector() {
     // 可能であれば以前の選択を復元、そうでなければ最初の項目を選択
     if (currentSelection && currentTerminals[currentSelection]) {
         terminalSelector.value = currentSelection;
+        currentSelectedTerminal = currentSelection;
     } else if (Object.keys(currentTerminals).length > 0) {
-        terminalSelector.value = Object.keys(currentTerminals)[0];
+        const firstTerminal = Object.keys(currentTerminals)[0];
+        terminalSelector.value = firstTerminal;
+        currentSelectedTerminal = firstTerminal;
     }
     
+    localStorage.setItem('currentSelectedTerminal', currentSelectedTerminal);
     updateTerminalCommand();
 }
 
