@@ -3,33 +3,31 @@
 // ==================================================
 let currentLanguage = 'en';
 let currentTheme = 'auto';
-let currentIP = '192.168.1.1';
 
-// サービス設定
-const SERVICE_CONFIGS = {
-    luci: { port: '80', protocol: 'http' },
-    ttyd: { port: '7681', protocol: 'http' },
-    filebrowser: { port: '8080', protocol: 'http' },
-    adguard: { port: '3000', protocol: 'http' },
-    custom: { port: '10000', protocol: 'http' }
-};
-
-// ターミナルタイプ設定
-const TERMINAL_CONFIGS = {
-    ssh:    { command: '' },
-    aios:   { command: 'root@{ip}' },
-};
-
-// デフォルトコマンド
-const COMMANDS_AIOS = [
-    'if [ -f /usr/bin/aios ]; then /usr/bin/aios; else wget -O /usr/bin/aios https://raw.githubusercontent.com/site-u2023/aios/main/aios && chmod +x /usr/bin/aios && /usr/bin/aios; fi'
+// デフォルト設定（キャッシュクリア時の復元用）
+const DEFAULT_ADDRESSES = [
+    '192.168.1.1',
+    'openwrt.lan',
+    '10.0.0.1'
 ];
-const COMMANDS_SSH = [''];     // SSH はコマンドなし
 
-// エンコード版
-const CMD_ENCODED_AIOS   = encodeURIComponent(COMMANDS_AIOS[0]);
-const CMD_ENCODED_SSH    = '';
+const DEFAULT_SERVICES = {
+    luci: { name: 'LuCI', port: '80', protocol: 'http' },
+    ttyd: { name: 'ttyd', port: '7681', protocol: 'http' },
+    filebrowser: { name: 'filebrowser', port: '8080', protocol: 'http' },
+    adguard: { name: 'AdGuard', port: '3000', protocol: 'http' }
+};
 
+const DEFAULT_TERMINALS = {
+    ssh: { name: 'SSH', command: '' },
+    aios: { name: 'aios', command: 'if [ -f /usr/bin/aios ]; then /usr/bin/aios; else wget -O /usr/bin/aios https://raw.githubusercontent.com/site-u2023/aios/main/aios && chmod +x /usr/bin/aios && /usr/bin/aios; fi' }
+};
+
+// 現在の設定（localStorage と DEFAULT をマージして使用）
+let currentAddresses = [];
+let currentServices = {};
+let currentTerminals = {};
+let currentIP = '192.168.1.1';
 
 // 多言語対応
 const translations = {
@@ -105,29 +103,34 @@ function initializeSettings() {
     currentTheme = savedTheme;
     applyTheme(currentTheme);
     
-    // IPアドレスの復元と設定
+    // アドレス設定の復元
+    const savedAddresses = localStorage.getItem('addresses');
+    currentAddresses = savedAddresses ? JSON.parse(savedAddresses) : [...DEFAULT_ADDRESSES];
+    
+    // サービス設定の復元
+    const savedServices = localStorage.getItem('services');
+    currentServices = savedServices ? JSON.parse(savedServices) : {...DEFAULT_SERVICES};
+    
+    // ターミナル設定の復元
+    const savedTerminals = localStorage.getItem('terminals');
+    currentTerminals = savedTerminals ? JSON.parse(savedTerminals) : {...DEFAULT_TERMINALS};
+    
+    // 現在のIPアドレスの復元
     const savedIP = localStorage.getItem('currentIP');
     if (savedIP) {
         currentIP = savedIP;
+    } else {
+        currentIP = currentAddresses[0] || '192.168.1.1';
     }
+    
+    // UI要素の初期化
+    updateAddressSelector();
+    updateServiceSelector();
+    updateTerminalSelector();
     
     const ipInput = document.getElementById('global-ip-input');
     if (ipInput) {
         ipInput.value = currentIP;
-    }
-    
-    // サービス選択の初期化
-    const serviceSelector = document.getElementById('service-selector');
-    if (serviceSelector) {
-        serviceSelector.value = 'luci';
-        updateServicePort();
-    }
-    
-    // ターミナル選択の初期化
-    const terminalSelector = document.getElementById('terminal-selector');
-    if (terminalSelector) {
-        terminalSelector.value = 'aios';
-        updateTerminalCommand();
     }
 }
 
@@ -159,35 +162,9 @@ function bindEvents() {
     const portInput = document.getElementById('port-input');
     const browserUpdate = document.getElementById('browser-update');
     const openCurrentUrl = document.getElementById('open-current-url');
-    const customServiceName = document.getElementById('custom-service-name');
     
     if (serviceSelector) {
-        serviceSelector.addEventListener('change', function() {
-            // カスタム名入力フィールドの表示制御
-            const customContainer = document.getElementById('custom-name-container');
-            if (this.value === 'custom') {
-                customContainer.style.display = 'block';
-            } else {
-                customContainer.style.display = 'none';
-            }
-            updateServicePort();
-        });
-    }
-    
-    if (customServiceName) {
-        customServiceName.addEventListener('input', function() {
-            const customName = this.value.trim();
-            localStorage.setItem('custom_service_name', customName);
-            
-            // プルダウンのテキストも更新
-            const serviceSelector = document.getElementById('service-selector');
-            if (serviceSelector) {
-                const customOption = serviceSelector.querySelector('option[value="custom"]');
-                if (customOption) {
-                    customOption.textContent = customName || 'Custom';
-                }
-            }
-        });
+        serviceSelector.addEventListener('change', updateServicePort);
     }
     
     if (portInput) {
@@ -195,8 +172,10 @@ function bindEvents() {
             const serviceSelector = document.getElementById('service-selector');
             if (serviceSelector) {
                 const selectedService = serviceSelector.value;
-                const portKey = `port_${selectedService}`;
-                localStorage.setItem(portKey, this.value);
+                if (currentServices[selectedService]) {
+                    currentServices[selectedService].port = this.value;
+                    localStorage.setItem('services', JSON.stringify(currentServices));
+                }
             }
             updateBrowserDisplay();
         });
@@ -217,7 +196,7 @@ function bindEvents() {
         });
     }
     
-    // ターミナル関連（修正版）
+    // ターミナル関連
     const terminalSelector = document.getElementById('terminal-selector');
     const commandInput = document.getElementById('command-input');
     const terminalUpdate = document.getElementById('terminal-update');
@@ -232,14 +211,14 @@ function bindEvents() {
             const terminalSelector = document.getElementById('terminal-selector');
             if (terminalSelector) {
                 const selectedType = terminalSelector.value;
-                const commandKey = `command_${selectedType}`;
-                localStorage.setItem(commandKey, this.value);
+                if (currentTerminals[selectedType]) {
+                    currentTerminals[selectedType].command = this.value;
+                    localStorage.setItem('terminals', JSON.stringify(currentTerminals));
+                }
             }
-            // 常にプレビューを更新
             updateTerminalPreview();
         });
         
-        // Enterキーでも更新
         commandInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 updateTerminalDisplay();
@@ -257,7 +236,7 @@ function bindEvents() {
         openTerminal.addEventListener('click', function() {
             const url = generateTerminalURL();
             if (url) {
-                console.log('Generated Terminal URL:', url); // デバッグ用
+                console.log('Generated Terminal URL:', url);
                 window.location.href = url;
             }
         });
@@ -265,25 +244,48 @@ function bindEvents() {
 }
 
 // ==================================================
-// ブラウザ関連機能
+// アドレス管理機能
 // ==================================================
+function updateAddressSelector() {
+    // 実装予定：アドレスセレクタの更新
+}
+
+// ==================================================
+// サービス管理機能
+// ==================================================
+function updateServiceSelector() {
+    const serviceSelector = document.getElementById('service-selector');
+    if (!serviceSelector) return;
+    
+    // セレクタをクリア
+    serviceSelector.innerHTML = '';
+    
+    // サービス一覧を追加
+    Object.keys(currentServices).forEach(key => {
+        const service = currentServices[key];
+        const option = document.createElement('option');
+        option.value = key;
+        option.textContent = service.name;
+        serviceSelector.appendChild(option);
+    });
+    
+    // 最初の項目を選択
+    if (Object.keys(currentServices).length > 0) {
+        serviceSelector.value = Object.keys(currentServices)[0];
+        updateServicePort();
+    }
+}
+
 function updateServicePort() {
     const serviceSelector = document.getElementById('service-selector');
     const portInput = document.getElementById('port-input');
     
     if (serviceSelector && portInput) {
         const selectedService = serviceSelector.value;
-        const config = SERVICE_CONFIGS[selectedService];
+        const service = currentServices[selectedService];
         
-        // カスタムポート値の保存キーを生成
-        const portKey = `port_${selectedService}`;
-        const savedPort = localStorage.getItem(portKey);
-        
-        if (config && selectedService !== 'custom') {
-            // 保存された値があればそれを使用、なければデフォルト値
-            portInput.value = savedPort || config.port;
-        } else if (selectedService === 'custom') {
-            portInput.value = savedPort || '';
+        if (service) {
+            portInput.value = service.port;
         }
         
         updateBrowserDisplay();
@@ -297,48 +299,62 @@ function updateBrowserDisplay() {
 function generateBrowserURL() {
     const serviceSelector = document.getElementById('service-selector');
     const portInput = document.getElementById('port-input');
-    const ipInput = document.getElementById('global-ip-input');
     
-    if (!serviceSelector || !portInput || !ipInput) return null;
+    if (!serviceSelector || !portInput) return null;
     
     const selectedService = serviceSelector.value;
+    const service = currentServices[selectedService];
     const port = portInput.value || '80';
-    const config = SERVICE_CONFIGS[selectedService];
-    const protocol = config ? config.protocol : 'http';
+    const protocol = service ? service.protocol : 'http';
     
-    // 現在の入力フィールドの値を使用
-    const currentInputIP = ipInput.value.trim() || currentIP;
-    
-    return `${protocol}://${currentInputIP}:${port}`;
+    return `${protocol}://${currentIP}:${port}`;
 }
 
 // ==================================================
-// ターミナル関連機能
+// ターミナル管理機能
 // ==================================================
-function updateTerminalCommand () {
+function updateTerminalSelector() {
     const terminalSelector = document.getElementById('terminal-selector');
-    const commandInput     = document.getElementById('command-input');
+    if (!terminalSelector) return;
+    
+    // セレクタをクリア
+    terminalSelector.innerHTML = '';
+    
+    // ターミナル一覧を追加
+    Object.keys(currentTerminals).forEach(key => {
+        const terminal = currentTerminals[key];
+        const option = document.createElement('option');
+        option.value = key;
+        option.textContent = terminal.name;
+        terminalSelector.appendChild(option);
+    });
+    
+    // 最初の項目を選択
+    if (Object.keys(currentTerminals).length > 0) {
+        terminalSelector.value = Object.keys(currentTerminals)[0];
+        updateTerminalCommand();
+    }
+}
+
+function updateTerminalCommand() {
+    const terminalSelector = document.getElementById('terminal-selector');
+    const commandInput = document.getElementById('command-input');
     if (!terminalSelector || !commandInput) return;
 
-    const type       = terminalSelector.value;
-    const key        = `command_${type}`;
-    const saved      = localStorage.getItem(key);
+    const type = terminalSelector.value;
+    const terminal = currentTerminals[type];
 
-    if (type === 'aios') {
-        commandInput.value = saved ?? COMMANDS_AIOS[0];
-    } else { // ssh
-        commandInput.value = saved ?? '';
+    if (terminal) {
+        commandInput.value = terminal.command;
     }
 
     updateTerminalDisplay();
 }
 
-
 function updateTerminalDisplay() {
     updateTerminalPreview();
 }
 
-// カスタムコマンドプレビュー表示関数
 function updateTerminalPreview() {
     const previewElement = document.getElementById('command-preview');
     if (previewElement) {
@@ -350,42 +366,23 @@ function updateTerminalPreview() {
 function generateTerminalURL() {
     const commandInput = document.getElementById('command-input');
     const terminalSelector = document.getElementById('terminal-selector');
-    const ipInput = document.getElementById('global-ip-input');
     
-    if (!commandInput || !terminalSelector || !ipInput) return null;
+    if (!commandInput || !terminalSelector) return null;
 
     const selectedType = terminalSelector.value;
-    const currentInputIP = ipInput.value.trim() || currentIP;
+    const terminal = currentTerminals[selectedType];
     let fullCommand = commandInput.value.trim();
 
-    // コマンド欄が空の場合は種別ごとに定数を使う
-    if (!fullCommand) {
-        if (selectedType === 'aios') {
-            fullCommand = COMMANDS_AIOS[0];
-        } else if (selectedType === 'ssh') {
-            fullCommand = COMMANDS_SSH[0];
-        }
+    // コマンド欄が空の場合はデフォルトを使用
+    if (!fullCommand && terminal) {
+        fullCommand = terminal.command;
     }
 
-    let baseURL = `sshcmd://root@${currentInputIP}`;
+    let baseURL = `sshcmd://root@${currentIP}`;
     if (!fullCommand) return baseURL;
     
     const encodedCommand = encodeURIComponent(fullCommand);
     return `${baseURL}/${encodedCommand}`;
-}
-
-// デバッグ用関数
-function debugTerminalState() {
-    const terminalSelector = document.getElementById('terminal-selector');
-    const commandInput = document.getElementById('command-input');
-    const ipInput = document.getElementById('global-ip-input');
-    
-    console.log('=== Terminal Debug Info ===');
-    console.log('Selected Type:', terminalSelector?.value);
-    console.log('Command Input:', commandInput?.value);
-    console.log('IP Input:', ipInput?.value);
-    console.log('Generated URL:', generateTerminalURL());
-    console.log('==========================');
 }
 
 // ==================================================
@@ -399,10 +396,8 @@ function updateQRCode() {
     if (!url) return;
     
     try {
-        // 既存のQRコードをクリア
         qrCodeContainer.innerHTML = '';
         
-        // 新しいQRCodeを生成
         const qr = new QRious({
             element: document.createElement('canvas'),
             value: url,
@@ -428,10 +423,8 @@ function updateLogo() {
     const currentThemeAttr = document.documentElement.getAttribute('data-theme');
     
     if (currentThemeAttr === 'dark') {
-        // ダークモード用のロゴ
         logoImg.src = 'img/openwrt_text_white_and_blue.svg';
     } else {
-        // ライトモード用のロゴ
         logoImg.src = 'img/openwrt_text_blue_and_dark_blue.svg';
     }
 }
@@ -440,7 +433,6 @@ function applyTheme(theme) {
     const html = document.documentElement;
     
     if (theme === 'auto') {
-        // システムテーマに従う
         const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
         html.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
     } else {
@@ -450,10 +442,7 @@ function applyTheme(theme) {
     currentTheme = theme;
     localStorage.setItem('theme', theme);
     
-    // ロゴの更新
     updateLogo();
-    
-    // QRコードの更新（色が変わるため）
     setTimeout(updateQRCode, 100);
 }
 
@@ -461,7 +450,6 @@ function applyTheme(theme) {
 // 多言語対応機能
 // ==================================================
 function updateLanguageDisplay() {
-    // 翻訳を適用
     const elements = document.querySelectorAll('[data-i18n]');
     elements.forEach(element => {
         const key = element.getAttribute('data-i18n');
@@ -516,13 +504,10 @@ function loadHeaderFooter() {
 }
 
 function bindHeaderEvents() {
-    // ヘッダー内のイベントバインド（必要に応じて実装）
-    // ヘッダーが動的に読み込まれた場合のロゴ設定
     updateLogo();
 }
 
 function bindFooterEvents() {
-    // 言語切り替えボタンのイベントバインド
     const langButtons = document.querySelectorAll('.lang-button');
     langButtons.forEach(button => {
         button.addEventListener('click', function() {
@@ -534,7 +519,6 @@ function bindFooterEvents() {
         });
     });
     
-    // テーマ切り替えボタンのイベントバインド
     const themeButtons = document.querySelectorAll('.theme-button');
     themeButtons.forEach(button => {
         button.addEventListener('click', function() {
@@ -590,6 +574,5 @@ document.addEventListener('DOMContentLoaded', function() {
         loadHeaderFooter();
     }
     
-    // 初期ロゴ設定（ヘッダーが静的に存在する場合）
     updateLogo();
 });
