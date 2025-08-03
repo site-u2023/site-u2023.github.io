@@ -159,9 +159,35 @@ function bindEvents() {
     const portInput = document.getElementById('port-input');
     const browserUpdate = document.getElementById('browser-update');
     const openCurrentUrl = document.getElementById('open-current-url');
+    const customServiceName = document.getElementById('custom-service-name');
     
     if (serviceSelector) {
-        serviceSelector.addEventListener('change', updateServicePort);
+        serviceSelector.addEventListener('change', function() {
+            // カスタム名入力フィールドの表示制御
+            const customContainer = document.getElementById('custom-name-container');
+            if (this.value === 'custom') {
+                customContainer.style.display = 'block';
+            } else {
+                customContainer.style.display = 'none';
+            }
+            updateServicePort();
+        });
+    }
+    
+    if (customServiceName) {
+        customServiceName.addEventListener('input', function() {
+            const customName = this.value.trim();
+            localStorage.setItem('custom_service_name', customName);
+            
+            // プルダウンのテキストも更新
+            const serviceSelector = document.getElementById('service-selector');
+            if (serviceSelector) {
+                const customOption = serviceSelector.querySelector('option[value="custom"]');
+                if (customOption) {
+                    customOption.textContent = customName || 'Custom';
+                }
+            }
+        });
     }
     
     if (portInput) {
