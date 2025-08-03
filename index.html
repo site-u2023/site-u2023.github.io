@@ -28,20 +28,11 @@
                                 class="input-field"
                             >
                         </div>
-
-                        <!-- Custom Service Name Input (カスタム選択時のみ表示) -->
-                        <div class="input-container service-name-container" id="custom-name-container" style="display: none;">
-                            <div class="input-label">Name</div>
-                            <input
-                                type="text"
-                                id="custom-service-name"
-                                inputmode="text"
-                                lang="en"
-                                autocomplete="off"
-                                value=""
-                                placeholder="Custom"
-                                class="input-field"
-                            >
+                        
+                        <!-- Add/Remove Buttons -->
+                        <div class="add-remove-container">
+                            <button id="address-add" class="add-item-btn">+</button>
+                            <button id="address-remove" class="remove-item-btn">-</button>
                         </div>
                         
                         <!-- Apply Button -->
@@ -56,12 +47,17 @@
                         <div class="input-container service-container-only">
                             <div class="input-label">Service</div>
                             <select id="service-selector" class="service-select">
-                                <option value="luci"selected>LuCI</option>
+                                <option value="luci" selected>LuCI</option>
                                 <option value="ttyd">ttyd</option>
                                 <option value="filebrowser">filebrowser</option>
                                 <option value="adguard">AdGuard</option>
-                                <option value="custom">Custom</option>
                             </select>
+                        </div>
+
+                        <!-- Add/Remove Buttons -->
+                        <div class="add-remove-container">
+                            <button id="service-add" class="add-item-btn">+</button>
+                            <button id="service-remove" class="remove-item-btn">-</button>
                         </div>
 
                         <!-- Port Input -->
@@ -106,6 +102,12 @@
                                 <option value="aios" selected>aios</option>
                                 <option value="ssh">SSH</option>
                             </select>
+                        </div>
+
+                        <!-- Add/Remove Buttons -->
+                        <div class="add-remove-container">
+                            <button id="terminal-add" class="add-item-btn">+</button>
+                            <button id="terminal-remove" class="remove-item-btn">-</button>
                         </div>
 
                         <!-- Command Input -->
