@@ -23,6 +23,16 @@ const DEFAULT_TERMINALS = {
     aios: { name: 'aios', command: 'if [ -f /usr/bin/aios ]; then /usr/bin/aios; else wget -O /usr/bin/aios https://raw.githubusercontent.com/site-u2023/aios/main/aios && chmod +x /usr/bin/aios && /usr/bin/aios; fi' }
 };
 
+// プロンプト用デフォルト値（一元管理）
+const PROMPT_DEFAULTS = {
+    newAddress: '192.168.1.2',
+    serviceName: 'custom',
+    portNumber: '8080',
+    protocol: 'http',
+    terminalName: 'custom',
+    defaultCommand: ''
+};
+
 // 現在の設定（localStorage と DEFAULT をマージして使用）
 let currentAddresses = [];
 let currentServices = {};
@@ -53,7 +63,19 @@ const translations = {
         footerCopyright: '© site-u',
         footerDisclaimer: '免責事項',
         langEn: 'English',
-        langJa: '日本語'
+        langJa: '日本語',
+        // ダイアログメッセージを追加
+        promptNewAddress: '新しいIPアドレスまたはホスト名を入力してください:',
+        alertMinimumAddress: '最低1つのアドレスは必要です。',
+        promptServiceName: 'サービス名を入力してください:',
+        promptPortNumber: 'ポート番号を入力してください:',
+        promptProtocol: 'プロトコルを入力してください (http/https):',
+        alertMinimumService: '最低1つのサービスは必要です。',
+        confirmDeleteService: 'サービス "{0}" を削除しますか？',
+        promptTerminalName: 'ターミナルタイプ名を入力してください:',
+        promptDefaultCommand: 'デフォルトコマンドを入力してください (空欄可):',
+        alertMinimumTerminal: '最低1つのターミナルタイプは必要です。',
+        confirmDeleteTerminal: 'ターミナルタイプ "{0}" を削除しますか？'
     },
     en: {
         address: 'Address',
@@ -77,9 +99,31 @@ const translations = {
         footerCopyright: '© site-u',
         footerDisclaimer: 'Disclaimer',
         langEn: 'English',
-        langJa: '日本語'
+        langJa: '日本語',
+        // ダイアログメッセージを追加
+        promptNewAddress: 'Enter new IP address or hostname:',
+        alertMinimumAddress: 'At least one address is required.',
+        promptServiceName: 'Enter service name:',
+        promptPortNumber: 'Enter port number:',
+        promptProtocol: 'Enter protocol (http/https):',
+        alertMinimumService: 'At least one service is required.',
+        confirmDeleteService: 'Delete service "{0}"?',
+        promptTerminalName: 'Enter terminal type name:',
+        promptDefaultCommand: 'Enter default command (optional):',
+        alertMinimumTerminal: 'At least one terminal type is required.',
+        confirmDeleteTerminal: 'Delete terminal type "{0}"?'
     }
 };
+
+// 翻訳テキスト取得関数
+function getText(key, ...args) {
+    let text = translations[currentLanguage][key] || translations['en'][key] || key;
+    // {0}, {1} などのプレースホルダーを置換
+    args.forEach((arg, index) => {
+        text = text.replace(`{${index}}`, arg);
+    });
+    return text;
+}
 
 // ==================================================
 // 初期化
@@ -161,7 +205,7 @@ function bindEvents() {
     
     if (addressAdd) {
         addressAdd.addEventListener('click', function() {
-            const newAddress = prompt('新しいIPアドレスまたはホスト名を入力してください:', '192.168.1.2');
+            const newAddress = prompt(getText('promptNewAddress'), PROMPT_DEFAULTS.newAddress);
             if (newAddress && newAddress.trim()) {
                 currentAddresses.push(newAddress.trim());
                 localStorage.setItem('addresses', JSON.stringify(currentAddresses));
@@ -193,7 +237,7 @@ function bindEvents() {
                     updateAllDisplays();
                 }
             } else {
-                alert('最低1つのアドレスは必要です。');
+                alert(getText('alertMinimumAddress'));
             }
         });
     }
@@ -241,11 +285,11 @@ function bindEvents() {
     
     if (serviceAdd) {
         serviceAdd.addEventListener('click', function() {
-            const serviceName = prompt('サービス名を入力してください:', 'custom');
+            const serviceName = prompt(getText('promptServiceName'), PROMPT_DEFAULTS.serviceName);
             if (serviceName && serviceName.trim()) {
                 const serviceKey = serviceName.toLowerCase().replace(/[^a-z0-9]/g, '');
-                const port = prompt('ポート番号を入力してください:', '8080');
-                const protocol = prompt('プロトコルを入力してください (http/https):', 'http');
+                const port = prompt(getText('promptPortNumber'), PROMPT_DEFAULTS.portNumber);
+                const protocol = prompt(getText('promptProtocol'), PROMPT_DEFAULTS.protocol);
                 
                 if (serviceKey && port) {
                     currentServices[serviceKey] = {
@@ -270,13 +314,13 @@ function bindEvents() {
         serviceRemove.addEventListener('click', function() {
             const selectedService = serviceSelector ? serviceSelector.value : null;
             if (selectedService && Object.keys(currentServices).length > 1) {
-                if (confirm(`サービス "${currentServices[selectedService].name}" を削除しますか？`)) {
+                if (confirm(getText('confirmDeleteService', currentServices[selectedService].name))) {
                     delete currentServices[selectedService];
                     localStorage.setItem('services', JSON.stringify(currentServices));
                     updateServiceSelector();
                 }
             } else if (Object.keys(currentServices).length <= 1) {
-                alert('最低1つのサービスは必要です。');
+                alert(getText('alertMinimumService'));
             }
         });
     }
@@ -331,10 +375,10 @@ function bindEvents() {
     
     if (terminalAdd) {
         terminalAdd.addEventListener('click', function() {
-            const terminalName = prompt('ターミナルタイプ名を入力してください:', 'custom');
+            const terminalName = prompt(getText('promptTerminalName'), PROMPT_DEFAULTS.terminalName);
             if (terminalName && terminalName.trim()) {
                 const terminalKey = terminalName.toLowerCase().replace(/[^a-z0-9]/g, '');
-                const command = prompt('デフォルトコマンドを入力してください (空欄可):', '');
+                const command = prompt(getText('promptDefaultCommand'), PROMPT_DEFAULTS.defaultCommand);
                 
                 if (terminalKey) {
                     currentTerminals[terminalKey] = {
@@ -358,13 +402,13 @@ function bindEvents() {
         terminalRemove.addEventListener('click', function() {
             const selectedTerminal = terminalSelector ? terminalSelector.value : null;
             if (selectedTerminal && Object.keys(currentTerminals).length > 1) {
-                if (confirm(`ターミナルタイプ "${currentTerminals[selectedTerminal].name}" を削除しますか？`)) {
+                if (confirm(getText('confirmDeleteTerminal', currentTerminals[selectedTerminal].name))) {
                     delete currentTerminals[selectedTerminal];
                     localStorage.setItem('terminals', JSON.stringify(currentTerminals));
                     updateTerminalSelector();
                 }
             } else if (Object.keys(currentTerminals).length <= 1) {
-                alert('最低1つのターミナルタイプは必要です。');
+                alert(getText('alertMinimumTerminal'));
             }
         });
     }
