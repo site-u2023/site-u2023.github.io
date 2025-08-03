@@ -138,13 +138,29 @@ function bindEvents() {
     // IPアドレス関連
     const ipInput = document.getElementById('global-ip-input');
     const globalIpUpdate = document.getElementById('global-ip-update');
+    const addressSelector = document.getElementById('address-selector');
     const addressAdd = document.getElementById('address-add');
     const addressRemove = document.getElementById('address-remove');
+    
+    if (addressSelector) {
+        addressSelector.addEventListener('change', function() {
+            currentIP = this.value;
+            localStorage.setItem('currentIP', currentIP);
+            if (ipInput) {
+                ipInput.value = currentIP;
+            }
+            updateAllDisplays();
+        });
+    }
     
     if (ipInput) {
         ipInput.addEventListener('input', function() {
             currentIP = this.value;
             localStorage.setItem('currentIP', currentIP);
+            // アドレスセレクターの選択も更新
+            if (addressSelector && currentAddresses.includes(currentIP)) {
+                addressSelector.value = currentIP;
+            }
             updateAllDisplays();
         });
     }
@@ -154,6 +170,10 @@ function bindEvents() {
             if (ipInput) {
                 currentIP = ipInput.value.trim();
                 localStorage.setItem('currentIP', currentIP);
+                // アドレスセレクターの選択も更新
+                if (addressSelector && currentAddresses.includes(currentIP)) {
+                    addressSelector.value = currentIP;
+                }
                 updateAllDisplays();
             }
         });
@@ -163,26 +183,42 @@ function bindEvents() {
         addressAdd.addEventListener('click', function() {
             const newAddress = prompt('新しいIPアドレスまたはホスト名を入力してください:', '192.168.1.2');
             if (newAddress && newAddress.trim()) {
-                currentAddresses.push(newAddress.trim());
-                localStorage.setItem('addresses', JSON.stringify(currentAddresses));
-                updateAddressSelector();
+                const trimmedAddress = newAddress.trim();
+                if (!currentAddresses.includes(trimmedAddress)) {
+                    currentAddresses.push(trimmedAddress);
+                    localStorage.setItem('addresses', JSON.stringify(currentAddresses));
+                    updateAddressSelector();
+                    
+                    // 新しく追加したアドレスを選択
+                    if (addressSelector) {
+                        addressSelector.value = trimmedAddress;
+                        currentIP = trimmedAddress;
+                        localStorage.setItem('currentIP', currentIP);
+                        if (ipInput) ipInput.value = currentIP;
+                        updateAllDisplays();
+                    }
+                } else {
+                    alert('このアドレスは既に存在します。');
+                }
             }
         });
     }
     
     if (addressRemove) {
         addressRemove.addEventListener('click', function() {
+            const selectedAddress = addressSelector ? addressSelector.value : currentIP;
             if (currentAddresses.length > 1) {
-                const currentValue = ipInput ? ipInput.value : currentIP;
-                const index = currentAddresses.indexOf(currentValue);
-                if (index > -1) {
-                    currentAddresses.splice(index, 1);
-                    localStorage.setItem('addresses', JSON.stringify(currentAddresses));
-                    currentIP = currentAddresses[0];
-                    localStorage.setItem('currentIP', currentIP);
-                    if (ipInput) ipInput.value = currentIP;
-                    updateAddressSelector();
-                    updateAllDisplays();
+                if (confirm(`アドレス "${selectedAddress}" を削除しますか？`)) {
+                    const index = currentAddresses.indexOf(selectedAddress);
+                    if (index > -1) {
+                        currentAddresses.splice(index, 1);
+                        localStorage.setItem('addresses', JSON.stringify(currentAddresses));
+                        currentIP = currentAddresses[0];
+                        localStorage.setItem('currentIP', currentIP);
+                        updateAddressSelector();
+                        if (ipInput) ipInput.value = currentIP;
+                        updateAllDisplays();
+                    }
                 }
             } else {
                 alert('最低1つのアドレスは必要です。');
@@ -366,15 +402,38 @@ function bindEvents() {
 // アドレス管理機能
 // ==================================================
 function updateAddressSelector() {
-    // アドレスセレクタは現在HTMLに存在しないため、
-    // 将来的にドロップダウン形式にする場合の準備
-    // 現在は入力フィールドのみ使用
+    const addressSelector = document.getElementById('address-selector');
+    if (!addressSelector) return;
     
-    // IPアドレス入力フィールドが現在のアドレスリストに含まれていない場合は追加
+    // 現在の選択を保存
+    const currentSelection = addressSelector.value;
+    
+    // セレクタをクリア
+    addressSelector.innerHTML = '';
+    
+    // アドレス一覧を追加
+    currentAddresses.forEach(address => {
+        const option = document.createElement('option');
+        option.value = address;
+        option.textContent = address;
+        addressSelector.appendChild(option);
+    });
+    
+    // 可能であれば以前の選択を復元、そうでなければ現在のIPアドレスを選択
+    if (currentSelection && currentAddresses.includes(currentSelection)) {
+        addressSelector.value = currentSelection;
+    } else if (currentAddresses.includes(currentIP)) {
+        addressSelector.value = currentIP;
+    } else if (currentAddresses.length > 0) {
+        addressSelector.value = currentAddresses[0];
+        currentIP = currentAddresses[0];
+        localStorage.setItem('currentIP', currentIP);
+    }
+    
+    // IPアドレス入力フィールドも更新
     const ipInput = document.getElementById('global-ip-input');
-    if (ipInput && currentIP && !currentAddresses.includes(currentIP)) {
-        currentAddresses.push(currentIP);
-        localStorage.setItem('addresses', JSON.stringify(currentAddresses));
+    if (ipInput) {
+        ipInput.value = currentIP;
     }
 }
 
