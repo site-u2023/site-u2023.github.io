@@ -128,21 +128,21 @@ function initializeSettings() {
     updateServiceSelector();
     updateTerminalSelector();
     
-    const ipInput = document.getElementById('global-ip-input');
-    if (ipInput) {
-        ipInput.value = currentIP;
+    const ipSelector = document.getElementById('global-ip-input');
+    if (ipSelector) {
+        ipSelector.value = currentIP;
     }
 }
 
 function bindEvents() {
     // IPアドレス関連
-    const ipInput = document.getElementById('global-ip-input');
+    const ipSelector = document.getElementById('global-ip-input');
     const globalIpUpdate = document.getElementById('global-ip-update');
     const addressAdd = document.getElementById('address-add');
     const addressRemove = document.getElementById('address-remove');
     
-    if (ipInput) {
-        ipInput.addEventListener('input', function() {
+    if (ipSelector) {
+        ipSelector.addEventListener('change', function() {
             currentIP = this.value;
             localStorage.setItem('currentIP', currentIP);
             updateAllDisplays();
@@ -151,8 +151,8 @@ function bindEvents() {
     
     if (globalIpUpdate) {
         globalIpUpdate.addEventListener('click', function() {
-            if (ipInput) {
-                currentIP = ipInput.value.trim();
+            if (ipSelector) {
+                currentIP = ipSelector.value;
                 localStorage.setItem('currentIP', currentIP);
                 updateAllDisplays();
             }
@@ -166,6 +166,14 @@ function bindEvents() {
                 currentAddresses.push(newAddress.trim());
                 localStorage.setItem('addresses', JSON.stringify(currentAddresses));
                 updateAddressSelector();
+                
+                // 新しく追加したアドレスを選択
+                if (ipSelector) {
+                    ipSelector.value = newAddress.trim();
+                    currentIP = newAddress.trim();
+                    localStorage.setItem('currentIP', currentIP);
+                    updateAllDisplays();
+                }
             }
         });
     }
@@ -173,14 +181,14 @@ function bindEvents() {
     if (addressRemove) {
         addressRemove.addEventListener('click', function() {
             if (currentAddresses.length > 1) {
-                const currentValue = ipInput ? ipInput.value : currentIP;
+                const currentValue = ipSelector ? ipSelector.value : currentIP;
                 const index = currentAddresses.indexOf(currentValue);
                 if (index > -1) {
                     currentAddresses.splice(index, 1);
                     localStorage.setItem('addresses', JSON.stringify(currentAddresses));
                     currentIP = currentAddresses[0];
                     localStorage.setItem('currentIP', currentIP);
-                    if (ipInput) ipInput.value = currentIP;
+                    if (ipSelector) ipSelector.value = currentIP;
                     updateAddressSelector();
                     updateAllDisplays();
                 }
@@ -366,16 +374,33 @@ function bindEvents() {
 // アドレス管理機能
 // ==================================================
 function updateAddressSelector() {
-    // アドレスセレクタは現在HTMLに存在しないため、
-    // 将来的にドロップダウン形式にする場合の準備
-    // 現在は入力フィールドのみ使用
+    const ipSelector = document.getElementById('global-ip-input');
+    if (!ipSelector) return;
     
-    // IPアドレス入力フィールドが現在のアドレスリストに含まれていない場合は追加
-    const ipInput = document.getElementById('global-ip-input');
-    if (ipInput && currentIP && !currentAddresses.includes(currentIP)) {
-        currentAddresses.push(currentIP);
-        localStorage.setItem('addresses', JSON.stringify(currentAddresses));
+    // 現在の選択を保存
+    const currentSelection = ipSelector.value;
+    
+    // セレクタをクリア
+    ipSelector.innerHTML = '';
+    
+    // アドレス一覧を追加
+    currentAddresses.forEach(address => {
+        const option = document.createElement('option');
+        option.value = address;
+        option.textContent = address;
+        ipSelector.appendChild(option);
+    });
+    
+    // 可能であれば以前の選択を復元、そうでなければ最初の項目を選択
+    if (currentSelection && currentAddresses.includes(currentSelection)) {
+        ipSelector.value = currentSelection;
+        currentIP = currentSelection;
+    } else if (currentAddresses.length > 0) {
+        ipSelector.value = currentAddresses[0];
+        currentIP = currentAddresses[0];
     }
+    
+    localStorage.setItem('currentIP', currentIP);
 }
 
 // ==================================================
