@@ -25,19 +25,19 @@ const DEFAULT_SERVICES = {
 const DEFAULT_TERMINALS = {
     aios: {
         name: 'aios',
-        command: 'ssh root@IP -t "if [ -f /usr/bin/aios ]; then /usr/bin/aios; else wget -q -O /usr/bin/aios https://raw.githubusercontent.com/site-u2023/aios/main/aios && chmod +x /usr/bin/aios && /usr/bin/aios; fi"'
+        command: 'if [ -f /usr/bin/aios ]; then /usr/bin/aios; else wget -q -O /usr/bin/aios https://raw.githubusercontent.com/site-u2023/aios/main/aios && chmod +x /usr/bin/aios && /usr/bin/aios; fi'
     },
     aios_clear_hosts: {
         name: 'aios (clear hosts)',
-        command: 'ssh -o StrictHostKeyChecking=no root@IP -t "if [ -f /usr/bin/aios ]; then /usr/bin/aios; else wget -q -O /usr/bin/aios https://raw.githubusercontent.com/site-u2023/aios/main/aios && chmod +x /usr/bin/aios && /usr/bin/aios; fi"'
+        command: '-o StrictHostKeyChecking=no -t "if [ -f /usr/bin/aios ]; then /usr/bin/aios; else wget -q -O /usr/bin/aios https://raw.githubusercontent.com/site-u2023/aios/main/aios && chmod +x /usr/bin/aios && /usr/bin/aios; fi"'
     },
-    ssh: {
-        name: 'SSH',
-        command: 'ssh'
+    ssh: { 
+        name: 'SSH', 
+        command: '' 
     },
     ssh_clear_hosts: {
         name: 'SSH (clear hosts)',
-        command: 'ssh -o StrictHostKeyChecking=no'
+        command: '-o StrictHostKeyChecking=no'
     }
 };
 
