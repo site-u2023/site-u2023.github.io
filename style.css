@@ -161,6 +161,48 @@ h3.bordered-element {
     margin-bottom: 1em;
 }
 
+/* ── Add/Remove ボタンコンテナ ── */
+.add-remove-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    flex: 0 0 auto;
+}
+
+.add-item-btn, .remove-item-btn {
+    width: 2em;
+    height: 1.7em;
+    background-color: transparent;
+    color: var(--text-color);
+    border: 0.05em solid var(--text-color);
+    border-radius: 0.3em;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+    font-size: 1em;
+    font-weight: bold;
+    white-space: nowrap;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.add-item-btn:hover, .remove-item-btn:hover {
+    background-color: var(--hover-bg);
+    color: var(--hover-text);
+    border-color: var(--hover-bg);
+}
+
+.add-item-btn {
+    border-bottom: none;
+    border-radius: 0.3em 0.3em 0 0;
+}
+
+.remove-item-btn {
+    border-top: none;
+    border-radius: 0 0 0.3em 0.3em;
+}
+
 /* ── IPアドレス入力コンテナ（2倍幅） ── */
 .ip-container-full {
     flex: 2;
@@ -281,7 +323,7 @@ h3.bordered-element {
     -webkit-appearance: none;
     -moz-appearance: none;
     appearance: none;
-    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2343b0e8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2343b0e8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline%20points='6,9%2012,15%2018,9'%3e%3c/polyline%3e%3c/svg%3e");
     background-repeat: no-repeat;
     background-position: right 0.3em bottom;
     background-size: 1em;
