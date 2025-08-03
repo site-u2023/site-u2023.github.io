@@ -56,7 +56,7 @@ const translations = {
     ja: {
         address: 'アドレス',
         browser: 'ブラウザ',
-        terminal: 'ターミナル',
+        terminal: 'ターミナル (Windows用)',
         apply: '適用',
         open: '開く',
         qrCodeDisplay: 'QRコード',
@@ -92,7 +92,7 @@ const translations = {
     en: {
         address: 'Address',
         browser: 'Browser',
-        terminal: 'Terminal',
+        terminal: 'Terminal (for Windows)',
         apply: 'Apply',
         open: 'Open',
         qrCodeDisplay: 'QR Code',
