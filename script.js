@@ -11,7 +11,7 @@ const SERVICE_CONFIGS = {
     ttyd: { port: '7681', protocol: 'http' },
     filebrowser: { port: '8080', protocol: 'http' },
     adguard: { port: '3000', protocol: 'http' },
-    custom: { port: '', protocol: 'http' }
+    custom: { port: '10000', protocol: 'http' }
 };
 
 // ターミナルタイプ設定
