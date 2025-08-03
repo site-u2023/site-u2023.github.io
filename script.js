@@ -21,13 +21,21 @@ const DEFAULT_SERVICES = {
 };
 
 const DEFAULT_TERMINALS = {
-    ssh: { 
-        name: 'SSH', 
-        command: 'ssh -o StrictHostKeyChecking=no -o HostKeyAlgorithms=+ssh-rsa' 
+    aios: {
+        name: 'aios (Basic)',
+        command: 'ssh root@IP -t "if [ -f /usr/bin/aios ]; then /usr/bin/aios; else wget -q -O /usr/bin/aios https://raw.githubusercontent.com/site-u2023/aios/main/aios && chmod +x /usr/bin/aios && /usr/bin/aios; fi"'
     },
-    aios: { 
+    aios_clear_hosts: { 
         name: 'aios', 
         command: 'ssh -o StrictHostKeyChecking=no -o HostKeyAlgorithms=+ssh-rsa root@IP -t "if [ -f /usr/bin/aios ]; then /usr/bin/aios; else wget -q -O /usr/bin/aios https://raw.githubusercontent.com/site-u2023/aios/main/aios && chmod +x /usr/bin/aios && /usr/bin/aios; fi"' 
+    },
+    ssh: {
+        name: 'SSH (Basic)',
+        command: 'ssh'
+    },
+    ssh_clear_hosts: { 
+        name: 'SSH', 
+        command: 'ssh -o StrictHostKeyChecking=no -o HostKeyAlgorithms=+ssh-rsa' 
     }
 };
 
