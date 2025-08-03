@@ -138,29 +138,11 @@ function bindEvents() {
     // IPアドレス関連
     const ipInput = document.getElementById('global-ip-input');
     const globalIpUpdate = document.getElementById('global-ip-update');
-    const addressSelector = document.getElementById('address-selector');
-    const addressAdd = document.getElementById('address-add');
-    const addressRemove = document.getElementById('address-remove');
-    
-    if (addressSelector) {
-        addressSelector.addEventListener('change', function() {
-            currentIP = this.value;
-            localStorage.setItem('currentIP', currentIP);
-            if (ipInput) {
-                ipInput.value = currentIP;
-            }
-            updateAllDisplays();
-        });
-    }
     
     if (ipInput) {
         ipInput.addEventListener('input', function() {
             currentIP = this.value;
             localStorage.setItem('currentIP', currentIP);
-            // アドレスセレクターの選択も更新
-            if (addressSelector && currentAddresses.includes(currentIP)) {
-                addressSelector.value = currentIP;
-            }
             updateAllDisplays();
         });
     }
@@ -170,58 +152,7 @@ function bindEvents() {
             if (ipInput) {
                 currentIP = ipInput.value.trim();
                 localStorage.setItem('currentIP', currentIP);
-                // アドレスセレクターの選択も更新
-                if (addressSelector && currentAddresses.includes(currentIP)) {
-                    addressSelector.value = currentIP;
-                }
                 updateAllDisplays();
-            }
-        });
-    }
-    
-    if (addressAdd) {
-        addressAdd.addEventListener('click', function() {
-            const newAddress = prompt('新しいIPアドレスまたはホスト名を入力してください:', '192.168.1.2');
-            if (newAddress && newAddress.trim()) {
-                const trimmedAddress = newAddress.trim();
-                if (!currentAddresses.includes(trimmedAddress)) {
-                    currentAddresses.push(trimmedAddress);
-                    localStorage.setItem('addresses', JSON.stringify(currentAddresses));
-                    updateAddressSelector();
-                    
-                    // 新しく追加したアドレスを選択
-                    if (addressSelector) {
-                        addressSelector.value = trimmedAddress;
-                        currentIP = trimmedAddress;
-                        localStorage.setItem('currentIP', currentIP);
-                        if (ipInput) ipInput.value = currentIP;
-                        updateAllDisplays();
-                    }
-                } else {
-                    alert('このアドレスは既に存在します。');
-                }
-            }
-        });
-    }
-    
-    if (addressRemove) {
-        addressRemove.addEventListener('click', function() {
-            const selectedAddress = addressSelector ? addressSelector.value : currentIP;
-            if (currentAddresses.length > 1) {
-                if (confirm(`アドレス "${selectedAddress}" を削除しますか？`)) {
-                    const index = currentAddresses.indexOf(selectedAddress);
-                    if (index > -1) {
-                        currentAddresses.splice(index, 1);
-                        localStorage.setItem('addresses', JSON.stringify(currentAddresses));
-                        currentIP = currentAddresses[0];
-                        localStorage.setItem('currentIP', currentIP);
-                        updateAddressSelector();
-                        if (ipInput) ipInput.value = currentIP;
-                        updateAllDisplays();
-                    }
-                }
-            } else {
-                alert('最低1つのアドレスは必要です。');
             }
         });
     }
@@ -231,8 +162,6 @@ function bindEvents() {
     const portInput = document.getElementById('port-input');
     const browserUpdate = document.getElementById('browser-update');
     const openCurrentUrl = document.getElementById('open-current-url');
-    const serviceAdd = document.getElementById('service-add');
-    const serviceRemove = document.getElementById('service-remove');
     
     if (serviceSelector) {
         serviceSelector.addEventListener('change', updateServicePort);
@@ -267,55 +196,11 @@ function bindEvents() {
         });
     }
     
-    if (serviceAdd) {
-        serviceAdd.addEventListener('click', function() {
-            const serviceName = prompt('サービス名を入力してください:', 'custom');
-            if (serviceName && serviceName.trim()) {
-                const serviceKey = serviceName.toLowerCase().replace(/[^a-z0-9]/g, '');
-                const port = prompt('ポート番号を入力してください:', '8080');
-                const protocol = prompt('プロトコルを入力してください (http/https):', 'http');
-                
-                if (serviceKey && port) {
-                    currentServices[serviceKey] = {
-                        name: serviceName.trim(),
-                        port: port.trim(),
-                        protocol: protocol.trim()
-                    };
-                    localStorage.setItem('services', JSON.stringify(currentServices));
-                    updateServiceSelector();
-                    
-                    // 新しく追加したサービスを選択
-                    if (serviceSelector) {
-                        serviceSelector.value = serviceKey;
-                        updateServicePort();
-                    }
-                }
-            }
-        });
-    }
-    
-    if (serviceRemove) {
-        serviceRemove.addEventListener('click', function() {
-            const selectedService = serviceSelector ? serviceSelector.value : null;
-            if (selectedService && Object.keys(currentServices).length > 1) {
-                if (confirm(`サービス "${currentServices[selectedService].name}" を削除しますか？`)) {
-                    delete currentServices[selectedService];
-                    localStorage.setItem('services', JSON.stringify(currentServices));
-                    updateServiceSelector();
-                }
-            } else if (Object.keys(currentServices).length <= 1) {
-                alert('最低1つのサービスは必要です。');
-            }
-        });
-    }
-    
     // ターミナル関連
     const terminalSelector = document.getElementById('terminal-selector');
     const commandInput = document.getElementById('command-input');
     const terminalUpdate = document.getElementById('terminal-update');
     const openTerminal = document.getElementById('open-terminal');
-    const terminalAdd = document.getElementById('terminal-add');
-    const terminalRemove = document.getElementById('terminal-remove');
     
     if (terminalSelector) {
         terminalSelector.addEventListener('change', updateTerminalCommand);
@@ -356,154 +241,13 @@ function bindEvents() {
             }
         });
     }
-    
-    if (terminalAdd) {
-        terminalAdd.addEventListener('click', function() {
-            const terminalName = prompt('ターミナルタイプ名を入力してください:', 'custom');
-            if (terminalName && terminalName.trim()) {
-                const terminalKey = terminalName.toLowerCase().replace(/[^a-z0-9]/g, '');
-                const command = prompt('デフォルトコマンドを入力してください (空欄可):', '');
-                
-                if (terminalKey) {
-                    currentTerminals[terminalKey] = {
-                        name: terminalName.trim(),
-                        command: command ? command.trim() : ''
-                    };
-                    localStorage.setItem('terminals', JSON.stringify(currentTerminals));
-                    updateTerminalSelector();
-                    
-                    // 新しく追加したターミナルを選択
-                    if (terminalSelector) {
-                        terminalSelector.value = terminalKey;
-                        updateTerminalCommand();
-                    }
-                }
-            }
-        });
-    }
-    
-    if (terminalRemove) {
-        terminalRemove.addEventListener('click', function() {
-            const selectedTerminal = terminalSelector ? terminalSelector.value : null;
-            if (selectedTerminal && Object.keys(currentTerminals).length > 1) {
-                if (confirm(`ターミナルタイプ "${currentTerminals[selectedTerminal].name}" を削除しますか？`)) {
-                    delete currentTerminals[selectedTerminal];
-                    localStorage.setItem('terminals', JSON.stringify(currentTerminals));
-                    updateTerminalSelector();
-                }
-            } else if (Object.keys(currentTerminals).length <= 1) {
-                alert('最低1つのターミナルタイプは必要です。');
-            }
-        });
-    }
 }
 
 // ==================================================
 // アドレス管理機能
 // ==================================================
 function updateAddressSelector() {
-    const addressSelector = document.getElementById('address-selector');
-    const addressInput = document.getElementById('address-input');
-    if (!addressSelector || !addressInput) return;
-
-    // 現在の選択を保存
-    const currentSelection = addressSelector.value;
-
-    // セレクタをクリア
-    addressSelector.innerHTML = '';
-
-    // アドレス一覧を追加
-    currentAddresses.forEach(address => {
-        const option = document.createElement('option');
-        option.value = address;
-        option.textContent = address;
-        addressSelector.appendChild(option);
-    });
-
-    // 可能であれば以前の選択を復元、そうでなければ現在のIPアドレスを選択
-    if (currentSelection && currentAddresses.includes(currentSelection)) {
-        addressSelector.value = currentSelection;
-    } else if (currentAddresses.includes(currentIP)) {
-        addressSelector.value = currentIP;
-    } else if (currentAddresses.length > 0) {
-        addressSelector.value = currentAddresses[0];
-        currentIP = currentAddresses[0];
-        localStorage.setItem('currentIP', currentIP);
-    }
-
-    // IPアドレス入力フィールドも更新
-    addressInput.value = currentIP;
-}
-
-function bindEvents() {
-    const addressInput = document.getElementById('address-input');
-    const addressSelector = document.getElementById('address-selector');
-    const globalIpUpdate = document.getElementById('global-ip-update');
-    const addressAdd = document.getElementById('address-add');
-    const addressRemove = document.getElementById('address-remove');
-
-    if (addressSelector) {
-        addressSelector.addEventListener('change', function() {
-            currentIP = this.value;
-            localStorage.setItem('currentIP', currentIP);
-            if (addressInput) {
-                addressInput.value = currentIP;
-            }
-            updateAllDisplays();
-        });
-    }
-
-    if (addressInput) {
-        addressInput.addEventListener('input', function() {
-            currentIP = this.value;
-            localStorage.setItem('currentIP', currentIP);
-            updateAllDisplays();
-        });
-    }
-
-    if (globalIpUpdate) {
-        globalIpUpdate.addEventListener('click', function() {
-            currentIP = addressInput.value.trim();
-            localStorage.setItem('currentIP', currentIP);
-            updateAllDisplays();
-        });
-    }
-
-    if (addressAdd) {
-        addressAdd.addEventListener('click', function() {
-            const newAddress = prompt('新しいIPアドレスまたはホスト名を入力してください:', '192.168.1.2');
-            if (newAddress && newAddress.trim()) {
-                const trimmedAddress = newAddress.trim();
-                if (!currentAddresses.includes(trimmedAddress)) {
-                    currentAddresses.push(trimmedAddress);
-                    localStorage.setItem('addresses', JSON.stringify(currentAddresses));
-                    updateAddressSelector();
-                } else {
-                    alert('このアドレスは既に存在します。');
-                }
-            }
-        });
-    }
-
-    if (addressRemove) {
-        addressRemove.addEventListener('click', function() {
-            const selectedAddress = addressSelector ? addressSelector.value : currentIP;
-            if (currentAddresses.length > 1) {
-                if (confirm(`アドレス "${selectedAddress}" を削除しますか？`)) {
-                    const index = currentAddresses.indexOf(selectedAddress);
-                    if (index > -1) {
-                        currentAddresses.splice(index, 1);
-                        localStorage.setItem('addresses', JSON.stringify(currentAddresses));
-                        currentIP = currentAddresses[0];
-                        localStorage.setItem('currentIP', currentIP);
-                        updateAddressSelector();
-                    }
-                }
-            } else {
-                alert('最低1つのアドレスは必要です。');
-            }
-        });
-    }
+    // 実装予定：アドレスセレクタの更新
 }
 
 // ==================================================
@@ -512,9 +256,6 @@ function bindEvents() {
 function updateServiceSelector() {
     const serviceSelector = document.getElementById('service-selector');
     if (!serviceSelector) return;
-    
-    // 現在の選択を保存
-    const currentSelection = serviceSelector.value;
     
     // セレクタをクリア
     serviceSelector.innerHTML = '';
@@ -528,14 +269,11 @@ function updateServiceSelector() {
         serviceSelector.appendChild(option);
     });
     
-    // 可能であれば以前の選択を復元、そうでなければ最初の項目を選択
-    if (currentSelection && currentServices[currentSelection]) {
-        serviceSelector.value = currentSelection;
-    } else if (Object.keys(currentServices).length > 0) {
+    // 最初の項目を選択
+    if (Object.keys(currentServices).length > 0) {
         serviceSelector.value = Object.keys(currentServices)[0];
+        updateServicePort();
     }
-    
-    updateServicePort();
 }
 
 function updateServicePort() {
@@ -579,9 +317,6 @@ function updateTerminalSelector() {
     const terminalSelector = document.getElementById('terminal-selector');
     if (!terminalSelector) return;
     
-    // 現在の選択を保存
-    const currentSelection = terminalSelector.value;
-    
     // セレクタをクリア
     terminalSelector.innerHTML = '';
     
@@ -594,14 +329,11 @@ function updateTerminalSelector() {
         terminalSelector.appendChild(option);
     });
     
-    // 可能であれば以前の選択を復元、そうでなければ最初の項目を選択
-    if (currentSelection && currentTerminals[currentSelection]) {
-        terminalSelector.value = currentSelection;
-    } else if (Object.keys(currentTerminals).length > 0) {
+    // 最初の項目を選択
+    if (Object.keys(currentTerminals).length > 0) {
         terminalSelector.value = Object.keys(currentTerminals)[0];
+        updateTerminalCommand();
     }
-    
-    updateTerminalCommand();
 }
 
 function updateTerminalCommand() {
