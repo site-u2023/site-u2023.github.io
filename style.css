@@ -1,858 +1,174 @@
-/*
- * 基本デザイン要件:
- * 1. テーマに応じた背景色 (--block-bg):
- * - ライトテーマ: #f1f1f1 (白)
- * - ダークテーマ: #003756 (黒)
- * 2. 全ての文字色 (--text-color):
- * - ライトテーマ、ダークテーマに関わらず、常に #43b0e8 (水色)
- * 3. 全てのリンク（ロゴを含む）や、枠として機能する要素のホバー時の挙動:
- * - ホバー時以外: 背景透明、文字色を水色 (--text-color) から継承、水色の枠線
- * - ホバー時のみ: 背景 #43b0e8 (水色)、文字 #f1f1f1 (白)、水色の枠線（背景と同色）
- *
- * その他: 上記以外は全て継承し、余計な個別指定は行わない。
- */
-
-/* ── テーマ変数 ── */
-html[data-theme="light"] {
-    --block-bg: #f1f1f1;
-    --main-color: #43b0e8;
-    --text-color: var(--main-color);
-    --link-color: var(--main-color);
-    --hover-bg: var(--link-color);
-    --hover-text: #f1f1f1;
-    --qr-dark: #111;
-    --qr-light: #fff;
-}
-
-html[data-theme="dark"] {
-    --block-bg: #003756;
-    --main-color: #43b0e8;
-    --text-color: var(--main-color);
-    --link-color: var(--main-color);
-    --hover-bg: var(--link-color);
-    --hover-text: #f1f1f1;
-    --qr-dark: #fff;
-    --qr-light: #111;
-}
-
-/* ── モバイルブラウザのデフォルトスタイル無効化 ── */
-.input-field,
-.service-select,
-.port-field,
-.command-field,
-.command-field-terminal {
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    appearance: none;
-}
-
-html {
-    font-size: 16px;
-}
-
-/* ── ベーススタイル ── */
-body {
-    margin: 0;
-    padding: 0 0 5em;
-    font-family: 'Galano Grotesque SemiBold', 'Galano Grotesque', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans JP", "Noto Sans CJK JP", "DejaVu Sans", sans-serif;
-    background-color: var(--block-bg);
-    color: var(--text-color);
-    transition: background-color 0.3s ease, color 0.3s ease;
-    line-height: 1.6;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-}
-
-/* リストマーカーの削除 */
-ul {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-}
-
-/* ── メインコンテンツのコンテナ ── */
-.container {
-    flex-grow: 1;
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    box-sizing: border-box;
-    transition: background-color 0.3s ease, box-shadow 0.3s ease;
-    /* box-shadow: 0 0.25em 0.5em rgba(0, 0, 0, 0.1); */
-}
-
-.main-content {
-    flex-grow: 1;
-    max-width: 50em;
-    width: 100%;
-    margin: 2em auto;
-    background: var(--block-bg);
-    padding: 1.5em 1em;
-    border-radius: 0.5em;
-    box-sizing: border-box;
-    min-width: 0;
-    box-shadow: 0 0.25em 0.5em rgba(0, 0, 0, 0.1); /* ライト・ダーク共通 */
-}
-
-/* ── 新しい「枠付き要素」の汎用スタイル ── */
-.bordered-element {
-    display: block;
-    background-color: transparent;
-    color: var(--text-color);
-    border: none;
-    border-radius: 0.3em;
-    padding: 0.8em 1em;
-    box-sizing: border-box;
-    text-align: left;
-    text-decoration: none;
-    transition: background-color 0.2s ease, color 0.2s ease;
-    margin-bottom: 0.8em;
-    cursor: pointer;
-}
-
-.bordered-element:hover {
-    background-color: var(--hover-bg);
-    color: var(--hover-text);
-}
-
-/* ── 各コンテンツセクション ── */
-.content-section {
-    background-color: var(--block-bg);
-    border-radius: 0.3125em;
-    padding: 1em;
-    margin-bottom: 1em;
-    box-shadow: 0 0.125em 0.25em rgba(0, 0, 0, 0.05);
-    transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
-    box-sizing: border-box;
-    width: 100%;
-}
-
-.section-title {
-    margin: 0 0 1em;
-    font-size: 1.3em;
-    line-height: 1.2;
-    color: var(--text-color);
-}
-
-.section-subtitle {
-    font-size: 0.8em;
-    color: inherit;
-    font-weight: normal;
-    margin-left: 0.5em;
-}
-
-h3.bordered-element {
-    margin: 1em 0 0.8em;
-    color: inherit;
-    font-size: 1em;
-    font-weight: bold;
-    line-height: 1.2;
-    padding: 0.8em 1em;
-}
-
-/* ── 新しい入力グループスタイル ── */
-#address .input-group,
-#browser .input-group,
-#terminal .input-group {
-    display: flex;
-    gap: 0.3rem;
-    margin-bottom: 1em;
-}
-
-/* ── Add/Remove ボタンコンテナ ── */
-.add-remove-container {
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-    flex: 0 0 auto;
-}
-
-.add-item-btn, .remove-item-btn {
-    width: 2em;
-    height: 1.7em;
-    background-color: transparent;
-    color: var(--text-color);
-    border: 0.05em solid var(--text-color);
-    border-radius: 0.3em;
-    cursor: pointer;
-    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
-    font-size: 1em;
-    font-weight: bold;
-    white-space: nowrap;
-    box-sizing: border-box;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.add-item-btn:hover, .remove-item-btn:hover {
-    background-color: var(--hover-bg);
-    color: var(--hover-text);
-    border-color: var(--hover-bg);
-}
-
-.add-item-btn {
-    border-bottom: none;
-    border-radius: 0.3em 0.3em 0 0;
-}
-
-.remove-item-btn {
-    border-top: none;
-    border-radius: 0 0 0.3em 0.3em;
-}
-
-/* ── IPアドレス入力コンテナ（2倍幅） ── */
-.ip-container-full {
-    flex: 2;
-    min-width: 8ch;
-    display: flex;
-    align-items: stretch;
-    position: relative;
-    border: 0.05em solid var(--text-color);
-    border-radius: 0.3em;
-    padding: 0;
-    box-sizing: border-box;
-    transition: background-color 0.2s, border-color 0.2s;
-    min-height: 3.4em;
-}
-
-.ip-container-full:focus-within {
-    background-color: var(--hover-bg);
-    border-color: var(--hover-bg);
-}
-
-.ip-container-full .input-label {
-    position: absolute;
-    top: 0.2em;
-    left: 0.5em;
-    font-size: 0.7em;
-    color: inherit;
-    font-weight: normal;
-    opacity: 0.8;
-    pointer-events: none;
-    transition: color 0.2s ease;
-    z-index: 2;
-}
-
-.ip-container-full:focus-within .input-label {
-    color: var(--hover-text);
-}
-
-.ip-container-full .input-field {
-    width: 100%;
-    border: none;
-    background-color: transparent;
-    color: inherit;
-    font-weight: normal;
-    font-size: 0.9em;
-    box-sizing: border-box;
-    padding: 1.2em 0.5em 1.2em 0.5em;
-    margin: 0;
-}
-
-.ip-container-full .input-field:focus {
-    outline: none;
-    color: var(--hover-text);
-}
-
-/* ── サービス選択コンテナ（独立・1倍幅） ── */
-.service-container-only {
-    flex: 1;
-    min-width: 4ch;
-    display: flex;
-    align-items: stretch;
-    position: relative;
-    border: 0.05em solid var(--text-color);
-    border-radius: 0.3em;
-    padding: 0;
-    box-sizing: border-box;
-    transition: background-color 0.2s, border-color 0.2s;
-    min-height: 3.4em;
-}
-
-.service-container-only:hover {
-    background-color: var(--hover-bg);
-    border-color: var(--hover-bg);
-}
-
-.service-container-only:hover .input-label {
-    color: var(--hover-text);
-}
-
-.service-container-only:hover .service-select {
-    color: var(--hover-text);
-    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f1f1f1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
-}
-
-.service-container-only:focus-within {
-    background-color: var(--hover-bg);
-    border-color: var(--hover-bg);
-}
-
-.service-container-only:focus-within .input-label {
-    color: var(--hover-text);
-}
-
-.service-container-only .input-label {
-    position: absolute;
-    top: 0.2em;
-    left: 0.5em;
-    font-size: 0.7em;
-    color: inherit;
-    font-weight: normal;
-    opacity: 0.8;
-    pointer-events: none;
-    transition: color 0.2s ease;
-    z-index: 2;
-}
-
-.service-container-only .service-select {
-    width: 100%;
-    border: none;
-    border-radius: 0;
-    background-color: transparent;
-    color: inherit;
-    font-weight: normal;
-    font-size: 0.9em;
-    box-sizing: border-box;
-    padding: 1.2em 0.5em 1.2em 0.5em;
-    margin: 0;
-    cursor: pointer;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    appearance: none;
-    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2343b0e8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline%20points='6,9%2012,15%2018,9'%3e%3c/polyline%3e%3c/svg%3e");
-    background-repeat: no-repeat;
-    background-position: right 0.3em bottom;
-    background-size: 1em;
-}
-
-.service-container-only .service-select:focus {
-    outline: none;
-    color: var(--hover-text);
-}
-
-.service-container-only:focus-within .service-select {
-    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f1f1f1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
-}
-
-.service-select option {
-    background-color: var(--block-bg);
-    color: var(--text-color);
-}
-
-/* ── ポート入力コンテナ（独立・1倍幅） ── */
-.port-container-only {
-    flex: 1;
-    min-width: 4ch;
-    display: flex;
-    align-items: stretch;
-    position: relative;
-    border: 0.05em solid var(--text-color);
-    border-radius: 0.3em;
-    padding: 0;
-    box-sizing: border-box;
-    transition: background-color 0.2s, border-color 0.2s;
-    min-height: 3.4em;
-}
-
-.port-container-only:focus-within {
-    background-color: var(--hover-bg);
-    border-color: var(--hover-bg);
-}
-
-.port-container-only .port-label {
-    position: absolute;
-    top: 0.2em;
-    left: 0.5em;
-    font-size: 0.7em;
-    color: inherit;
-    font-weight: normal;
-    opacity: 0.8;
-    pointer-events: none;
-    transition: color 0.2s ease;
-    z-index: 2;
-}
-
-.port-container-only:focus-within .port-label {
-    color: var(--hover-text);
-}
-
-.port-container-only .port-field {
-    width: 100%;
-    border: none;
-    border-radius: 0;
-    background-color: transparent;
-    color: inherit;
-    font-weight: normal;
-    font-size: 0.9em;
-    box-sizing: border-box;
-    padding: 1.2em 0.5em 1.2em 0.5em;
-    margin: 0;
-}
-
-.port-container-only .port-field:focus {
-    outline: none;
-    color: var(--hover-text);
-}
-
-/* ── ターミナル用コマンド入力コンテナ（ポートと同じ1倍幅） ── */
-.command-container-only {
-    flex: 1;
-    min-width: 4ch;
-    display: flex;
-    align-items: stretch;
-    position: relative;
-    border: 0.05em solid var(--text-color);
-    border-radius: 0.3em;
-    padding: 0;
-    box-sizing: border-box;
-    transition: background-color 0.2s, border-color 0.2s;
-    min-height: 3.4em;
-}
-
-.command-container-only:focus-within {
-    background-color: var(--hover-bg);
-    border-color: var(--hover-bg);
-}
-
-.command-container-only .command-label {
-    position: absolute;
-    top: 0.2em;
-    left: 0.5em;
-    font-size: 0.7em;
-    color: inherit;
-    font-weight: normal;
-    opacity: 0.8;
-    pointer-events: none;
-    transition: color 0.2s ease;
-    z-index: 2;
-}
-
-.command-container-only:focus-within .command-label {
-    color: var(--hover-text);
-}
-
-.command-container-only .command-field-terminal {
-    width: 100%;
-    border: none;
-    border-radius: 0;
-    background-color: transparent;
-    color: inherit;
-    font-weight: normal;
-    font-size: 0.9em;
-    box-sizing: border-box;
-    padding: 1.2em 0.5em 1.2em 0.5em;
-    margin: 0;
-}
-
-.command-container-only .command-field-terminal:focus {
-    outline: none;
-    color: var(--hover-text);
-}
-
-/* ── コマンド入力コンテナ（ワイド） ── */
-.command-input-container {
-    width: 100%;
-    display: flex;
-    align-items: stretch;
-    position: relative;
-    border: 0.05em solid var(--text-color);
-    border-radius: 0.3em;
-    padding: 0;
-    box-sizing: border-box;
-    transition: background-color 0.2s, border-color 0.2s;
-    min-height: 3.4em;
-    margin-bottom: 1em;
-}
-
-.command-input-container:focus-within {
-    background-color: var(--hover-bg);
-    border-color: var(--hover-bg);
-}
-
-.command-input-container .input-label {
-    position: absolute;
-    top: 0.2em;
-    left: 0.5em;
-    font-size: 0.7em;
-    color: inherit;
-    font-weight: normal;
-    opacity: 0.8;
-    pointer-events: none;
-    transition: color 0.2s ease;
-    z-index: 2;
-}
-
-.command-input-container:focus-within .input-label {
-    color: var(--hover-text);
-}
-
-.command-input-container .command-field {
-    width: 100%;
-    border: none;
-    border-radius: 0;
-    background-color: transparent;
-    color: inherit;
-    font-weight: normal;
-    font-size: 0.9em;
-    box-sizing: border-box;
-    padding: 1.2em 0.5em 1.2em 0.5em;
-    margin: 0;
-}
-
-.command-input-container .command-field:focus {
-    outline: none;
-    color: var(--hover-text);
-}
-
-/* ── 更新ボタン（独立） ── */
-.update-button-standalone {
-    flex: 0 0 auto;
-    background-color: transparent;
-    color: var(--text-color);
-    border: 0.05em solid var(--text-color);
-    border-radius: 0.3em;
-    padding: 1.2em 0.5em;
-    cursor: pointer;
-    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
-    font-size: 0.9em;
-    white-space: nowrap;
-    box-sizing: border-box;
-    min-height: 3.4em;
-}
-
-.update-button-standalone:hover {
-    background-color: var(--hover-bg);
-    color: var(--hover-text);
-    border-color: var(--hover-bg);
-}
-
-/* ── Openボタン（独立） ── */
-.open-button-standalone {
-    flex: 0 0 auto;
-    background-color: transparent;
-    color: var(--text-color);
-    border: 0.05em solid var(--text-color);
-    margin-left: 0;
-    margin-right: 0;
-    border-radius: 0.3em;
-    padding: 1.2em 0.3em;
-    cursor: pointer;
-    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
-    font-size: 0.9em;
-    white-space: nowrap;
-    box-sizing: border-box;
-    min-height: 3.4em;
-}
-
-.open-button-standalone:hover {
-    background-color: var(--hover-bg);
-    color: var(--hover-text);
-    border-color: var(--hover-bg);
-}
-
-/* ── ターミナルコントロールグループ ── */
-.terminal-controls-group {
-    margin-bottom: 1.5em;
-}
-
-/* ── QRコード部分 ── */
-.qr-code-section {
-    margin-top: 1em;
-    padding: 0;
-}
-
-.qr-code-section:not([open]):hover {
-    background-color: var(--hover-bg);
-    border-color: var(--hover-bg);
-}
-
-.qr-code-section:not([open]):hover .qr-code-summary,
-.qr-code-section:not([open]):hover .qr-code-summary:before {
-    color: var(--hover-text);
-}
-
-.qr-code-section[open]:hover {
-    background-color: transparent;
-    border-color: var(--text-color);
-}
-
-.qr-code-section[open]:hover .qr-code-summary,
-.qr-code-section[open]:hover .qr-code-summary:before {
-    color: var(--text-color);
-}
-
-.qr-code-section .qr-code-summary {
-    text-align: left;
-    cursor: pointer;
-    color: inherit;
-    padding: 0.8em 1em;
-    list-style: none;
-    transition: color 0.2s ease;
-}
-
-.qr-code-section .qr-code-summary::-webkit-details-marker,
-.qr-code-section .qr-code-summary::marker {
-    display: none;
-}
-
-.qr-code-section .qr-code-summary:before {
-    content: "►";
-    display: inline-block;
-    margin-right: 0.5em;
-    transition: transform 0.2s ease, color 0.2s ease;
-    color: inherit;
-}
-
-.qr-code-section[open] .qr-code-summary:before {
-    content: "▼";
-    transform: rotate(0deg);
-}
-
-.qr-code-section .qr-code-canvas {
-    margin-top: 1em;
-    padding-left: 1em;
-    padding-right: 1em;
-    padding-bottom: 1em;
-    text-align: center;
-}
-
-.handler-details-section .details-content {
-    padding-left: 1em;
-    padding-right: 1em;
-    padding-bottom: 1em;
-}
-
-.handler-details-section .details-content p {
-    margin-top: 1em;
-    margin-bottom: 1em;
-    font-size: 0.9em;
-    line-height: 1.4;
-    color: inherit;
-}
-
-.qr-code-section .qr-code-canvas canvas {
-    display: block;
-    margin: 0 auto;
-}
-
-/* ── リンクリスト ── */
-.link-list {
-    margin-top: 0;
-    padding: 0;
-}
-
-.link-list li {
-    margin-bottom: 0.8em;
-}
-
-.link-item {
-    display: flex;
-    align-items: center;
-    flex-wrap: nowrap;
-}
-
-.link-item .link-text {
-    font-weight: bold;
-    color: inherit;
-    white-space: nowrap;
-}
-
-.link-item .link-note {
-    font-size: 0.85em;
-    color: inherit;
-    display: inline;
-    margin-left: 0.5em;
-    white-space: nowrap;
-}
-
-.link-item .ip-display {
-    font-size: 0.9em;
-    color: inherit;
-    margin-left: 0.5em;
-    white-space: nowrap;
-    flex-shrink: 0;
-}
-
-/* ── 動的サービスリンクの特別なスタイル ── */
-.link-item .service-ip,
-.link-item .service-port {
-    font-weight: bold;
-    color: inherit;
-    transition: color 0.2s ease;
-}
-
-/* ── ホバー時の色反転スタイル（動的リンク要素内のすべての要素） ── */
-.bordered-element:hover .service-ip,
-.bordered-element:hover .service-port,
-.bordered-element:hover .link-text,
-.bordered-element:hover .link-note,
-.bordered-element:hover .ip-display {
-    color: var(--hover-text);
-}
-
-/* ── ヘッダー ── */
-.main-header {
-    position: relative;
-    background-color: var(--block-bg);
-    max-width: 50em; /* 最大幅800px */
-    margin: 0 auto; /* 中央揃え */
-    width: 100%;
-    box-shadow: 0 0.25em 0.5em rgba(0, 0, 0, 0.1); /* 影を統一 */
-    border-color: transparent;
-    box-sizing: border-box;
-}
-
-.main-header .header-inner {
-    max-width: 50em;
-    width: 100%;
-    margin: 0 auto;
-    padding: 1.5em 1em;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 1em;   
-    box-sizing: border-box;
-}
-
-.main-header .logo-container {
-    text-align: center;
-    width: 100%;
-}
-
-.main-header .logo-container a {
-    background-color: transparent;
-    border: none;
-    padding: 0;
-    display: inline-block;
-    color: var(--text-color);
-    text-decoration: none;
-    transition: none;
-}
-
-.main-header .logo-container a:hover {
-    background-color: var(--hover-bg);
-    color: var(--text-color);
-    text-decoration: none;
-}
-
-.main-header .logo-container .site-logo {
-    width: 100%;
-    height: auto;
-    display: block;
-    margin: 0 auto;
-    max-width: clamp(160px, 80vw, 800px);
-}
-
-/* ── フッター ── */
-.page-footer-area {
-    position: fixed;
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    max-width: 50em; /* 最大幅800px */
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: flex-end;
-    padding: 1em;
-    background-color: var(--block-bg);
-    box-shadow: 0 0.25em 0.5em rgba(0, 0, 0, 0.1); /* 影を統一 */
-    border-color: transparent;
-    box-sizing: border-box;
-    z-index: 100;
-}
-
-.page-footer-area .footer-inner-flex {
-    max-width: 50em;
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 1em;
-}
-
-.page-footer-area .copyright-text {
-    font-size: 1em;
-    line-height: 1;
-    color: var(--text-color);
-}
-
-.page-footer-area .footer-link {
-    color: var(--text-color);
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1em;
-    line-height: 1;
-    padding: 0.25em 0.5em;
-    border: 0.05em solid transparent;
-    border-radius: 0.3em;
-    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
-    box-sizing: border-box;
-    white-space: nowrap;
-    vertical-align: middle;
-}
-
-.page-footer-area .footer-link:hover {
-    background-color: var(--hover-bg);
-    color: var(--hover-text);
-    border-color: var(--hover-bg);
-}
-
-.page-footer-area .separator {
-    color: var(--text-color);
-    margin: 0 0.3em;
-    font-size: 1em;
-    line-height: 1;
-    vertical-align: middle;
-}
-
-/* 言語・テーマボタンの共通スタイル */
-.lang-button,
-.theme-button {
-    background: transparent;
-    border: 0.05em solid transparent;
-    padding: 0.25em 0.5em;
-    border-radius: 0.3em;
-    cursor: pointer;
-    transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
-    font-size: 1em;
-    line-height: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--text-color);
-}
-
-.lang-button:hover,
-.theme-button:hover {
-    background-color: var(--hover-bg);
-    color: var(--hover-text);
-    border-color: var(--hover-bg);
-}
-
-.lang-button.selected,
-.theme-button.selected {
-    background-color: var(--hover-bg);
-    color: var(--hover-text);
-    border-color: var(--hover-bg);
-}
-
-.lang-button.selected:hover,
-.theme-button.selected:hover {
-    background-color: var(--hover-bg);
-    border-color: var(--hover-bg);
-}
-
-.language-selector,
-.theme-selector {
-    display: flex;
-    align-items: center;
-    gap: 0.3em;
-}
+<!DOCTYPE html>
+<html lang="en" data-theme="auto">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
+    <title>OpenWrt A Beginner's Notebook</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="main-header"></header>
+    <div class="container">
+        <main class="main-content">
+            <nav class="main-nav">
+                <section id="address" class="content-section">
+                    <h2 class="section-title" data-i18n="address">Address</h2>
+                    <div class="input-group connection">
+                        <!-- IP Address Input -->
+                        <div class="input-container ip-container-full">
+                            <div class="input-label">IP Address</div>
+                            <input
+                                type="text"
+                                id="global-ip-input"
+                                inputmode="text"
+                                lang="en"
+                                autocomplete="off"
+                                value="192.168.1.1"
+                                placeholder="openwrt.lan"
+                                class="input-field"
+                            >
+                        </div>
+                        
+                        <!-- Add/Remove Buttons -->
+                        <div class="add-remove-container">
+                            <button id="address-add" class="add-item-btn">+</button>
+                            <button id="address-remove" class="remove-item-btn">-</button>
+                        </div>
+                        
+                        <!-- Apply Button -->
+                        <button id="global-ip-update" class="update-button-standalone" data-i18n="apply">Apply</button>
+                    </div>
+                </section>
+
+                <section id="browser" class="content-section">
+                    <h2 class="section-title" data-i18n="browser">Browser</h2>
+                    <div class="input-group connection">
+                        <!-- Service Selector -->
+                        <div class="input-container service-container-only">
+                            <div class="input-label">Service</div>
+                            <select id="service-selector" class="service-select">
+                                <option value="luci" selected>LuCI</option>
+                                <option value="ttyd">ttyd</option>
+                                <option value="filebrowser">filebrowser</option>
+                                <option value="adguard">AdGuard</option>
+                            </select>
+                        </div>
+
+                        <!-- Add/Remove Buttons -->
+                        <div class="add-remove-container">
+                            <button id="service-add" class="add-item-btn">+</button>
+                            <button id="service-remove" class="remove-item-btn">-</button>
+                        </div>
+
+                        <!-- Port Input -->
+                        <div class="input-container port-container-only">
+                            <div class="port-label">Port</div>
+                            <input
+                                type="text"
+                                id="port-input"
+                                inputmode="numeric"
+                                pattern="[0-9]*"
+                                lang="en"
+                                autocomplete="off"
+                                value=""
+                                placeholder="80"
+                                class="input-field port-field"
+                            >
+                        </div>
+                        
+                        <!-- Apply Button -->
+                        <button id="browser-update" class="update-button-standalone" data-i18n="apply">Apply</button>
+                        
+                        <!-- Open Button -->
+                        <button id="open-current-url" class="open-button-standalone" data-i18n="open">Open</button>
+                    </div>
+                    
+                    <details id="qrcode-detail-container" class="qr-code-section bordered-element">
+                        <summary class="qr-code-summary" data-i18n="qrCodeDisplay">QR Code</summary>
+                        <div id="qrcode-detail" class="qr-code-canvas">
+                            <div style="width: 180px; height: 180px; background: var(--text-color); margin: 0 auto; display: flex; align-items: center; justify-content: center; color: var(--block-bg); font-size: 12px;"><span data-i18n="qrCodeArea">QR Code Display Area</span></div>
+                        </div>
+                    </details>
+                </section>         
+
+                <section id="terminal" class="content-section">
+                    <h2 class="section-title" data-i18n="terminal">Terminal<span class="section-subtitle">(for Windows)</span></h2>
+
+                    <div class="input-group connection">
+                        <!-- Terminal Type Selector -->
+                        <div class="input-container service-container-only">
+                            <div class="input-label">Type</div>
+                            <select id="terminal-selector" class="service-select">
+                                <option value="aios" selected>aios</option>
+                                <option value="ssh">SSH</option>
+                            </select>
+                        </div>
+
+                        <!-- Add/Remove Buttons -->
+                        <div class="add-remove-container">
+                            <button id="terminal-add" class="add-item-btn">+</button>
+                            <button id="terminal-remove" class="remove-item-btn">-</button>
+                        </div>
+
+                        <!-- Command Input -->
+                        <div class="input-container command-container-only">
+                            <div class="command-label">Command</div>
+                            <input
+                                type="text"
+                                id="command-input"
+                                inputmode="text"
+                                lang="en"
+                                autocomplete="off"
+                                value=""
+                                placeholder=""
+                                class="input-field command-field-terminal"
+                            >
+                        </div>
+                        
+                        <!-- Apply Button -->
+                        <button id="terminal-update" class="update-button-standalone" data-i18n="apply">Apply</button>
+                        
+                        <!-- Open Button -->
+                        <button id="open-terminal" class="open-button-standalone" data-i18n="open">Open</button>
+                    </div>
+
+                    <!-- SSH Handler Registration -->
+                    <details id="ssh-handler-details-container" class="qr-code-section handler-details-section bordered-element">
+                        <summary class="qr-code-summary handler-summary" data-i18n="sshHandler">
+                            <span class="link-text">Protocol handler registration (first-time use)</span>
+                        </summary>
+                        <div class="details-content">
+                            <a id="ssh-handler-download-link" href="file/sshcmd.reg" download class="bordered-element" data-i18n="downloadHandlerButton">
+                                Download (Double-click the downloaded sshcmd.reg to install it)
+                            </a>
+                        </div>
+                    </details>
+                </section>
+
+                <section id="project" class="content-section">
+                    <h2 class="section-title" data-i18n="githubRepo">GitHub Repository</h2>
+                    <ul class="link-list">
+                        <li><a href="https://github.com/site-u2023/aios/blob/main/README.md" target="_blank" rel="noopener" data-i18n="aiosScript" class="link-item bordered-element">
+                            <span class="link-text">all in one script</span>
+                        </a></li>
+                        <li><a href="https://github.com/site-u2023/config-software/blob/main/README.md" target="_blank" rel="noopener" data-i18n="configSoftware" class="link-item bordered-element">
+                            <span class="link-text">config software</span> <span class="link-note">(legacy)</span>
+                        </a></li>
+                    </ul>
+                </section>
+            </nav>
+        </main>
+    </div>
+    <footer class="page-footer-area"></footer>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-M9YV28TG0V"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-M9YV28TG0V');
+    </script>
+    <script src="script.js"></script>
+    <script src="https://cdn.rawgit.com/neocotic/qrious/v4.0.2/dist/qrious.min.js"></script>
+</body>
+</html>
