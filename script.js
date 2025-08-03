@@ -12,6 +12,7 @@ const DEFAULT_ADDRESSES = [
     '192.168.100.1',
     'openwrt.lan',
     '10.0.0.1'
+    '172.16.0.1'
 ];
 
 const DEFAULT_SERVICES = {
