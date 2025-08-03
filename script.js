@@ -37,7 +37,7 @@ const DEFAULT_TERMINALS = {
     },
     ssh_clear_hosts: {
         name: 'SSH (clear hosts)',
-        command: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+        command: '-o StrictHostKeyChecking=no'
     }
 };
 
