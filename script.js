@@ -17,7 +17,7 @@ const DEFAULT_SERVICES = {
     luci: { name: 'LuCI', port: '80', protocol: 'http' },
     ttyd: { name: 'ttyd', port: '7681', protocol: 'http' },
     filebrowser: { name: 'filebrowser', port: '8080', protocol: 'http' },
-    adguard: { name: 'AdGuard Home', port: '3000', protocol: 'http' }
+    adguard: { name: 'AdGuardHome', port: '3000', protocol: 'http' }
 };
 
 const DEFAULT_TERMINALS = {
