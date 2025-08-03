@@ -172,7 +172,7 @@ h3.bordered-element {
 
 .add-item-btn, .remove-item-btn {
     width: 2em;
-    height: 1.4em;
+    height: 1.6em;
     background-color: transparent;
     color: var(--text-color);
     border: 0.05em solid var(--text-color);
