@@ -1,4 +1,76 @@
 // ==================================================
+// 初期化
+// ==================================================
+function initializeSettings() {
+    // INI方式が読み込まれていればINI優先
+    if (typeof autoINIManager !== "undefined" && autoINIManager && typeof autoINIManager.initialize === "function") {
+        autoINIManager.initialize();
+    } else {
+        // 旧キャッシュ(localStorage)方式
+        // 言語設定の復元
+        const savedLanguage = localStorage.getItem('language') || 'en';
+        currentLanguage = savedLanguage;
+        
+        // 翻訳を適用
+        updateLanguageDisplay();
+        
+        // テーマ設定の復元
+        const savedTheme = localStorage.getItem('theme') || 'auto';
+        currentTheme = savedTheme;
+        applyTheme(currentTheme);
+        
+        // アドレス設定の復元
+        const savedAddresses = localStorage.getItem('addresses');
+        currentAddresses = savedAddresses ? JSON.parse(savedAddresses) : [...DEFAULT_ADDRESSES];
+        
+        // サービス設定の復元
+        const savedServices = localStorage.getItem('services');
+        currentServices = savedServices ? JSON.parse(savedServices) : {...DEFAULT_SERVICES};
+        
+        // ターミナル設定の復元
+        const savedTerminals = localStorage.getItem('terminals');
+        currentTerminals = savedTerminals ? JSON.parse(savedTerminals) : {...DEFAULT_TERMINALS};
+        
+        // **修正: 保存された現在のIPアドレスを確実に復元**
+        const savedIP = localStorage.getItem('currentIP');
+        if (savedIP && savedIP.trim()) {
+            currentIP = savedIP;
+            if (!currentAddresses.includes(currentIP)) {
+                currentAddresses.unshift(currentIP);
+                localStorage.setItem('addresses', JSON.stringify(currentAddresses));
+            }
+        } else {
+            currentIP = currentAddresses[0] || '192.168.1.1';
+        }
+        
+        // **修正: 保存された現在選択中のサービスを確実に復元**
+        const savedService = localStorage.getItem('currentSelectedService');
+        if (savedService && currentServices[savedService]) {
+            currentSelectedService = savedService;
+        } else {
+            currentSelectedService = Object.keys(currentServices)[0] || 'luci';
+        }
+        
+        // **修正: 保存された現在選択中のターミナルを確実に復元**
+        const savedTerminal = localStorage.getItem('currentSelectedTerminal');
+        if (savedTerminal && currentTerminals[savedTerminal]) {
+            currentSelectedTerminal = savedTerminal;
+        } else {
+            currentSelectedTerminal = Object.keys(currentTerminals)[0] || 'aios';
+        }
+        
+        // UI要素の初期化
+        updateAddressSelector();
+        updateServiceSelector();
+        updateTerminalSelector();
+        
+        setTimeout(() => {
+            restoreUIValues();
+        }, 10);
+    }
+}
+
+// ==================================================
 // グローバル変数と定数
 // ==================================================
 let currentLanguage = 'en';
