@@ -11,33 +11,16 @@ const INI_CONFIG = {
     filename: 'aios.ini'
 };
 
-// デフォルト設定（INIクリア時の復元用）
-const DEFAULT_ADDRESSES = [
-    '192.168.1.1',
-    '192.168.0.1',
-    '192.168.10.1',
-    '192.168.100.1',
-    'openwrt.lan',
-    '10.0.0.1',
-    '172.16.0.1'
-];
-
-const DEFAULT_SERVICES = {
-    luci: { name: 'LuCI', port: '80', protocol: 'http' },
-    ttyd: { name: 'ttyd', port: '7681', protocol: 'http' },
-    filebrowser: { name: 'filebrowser', port: '8080', protocol: 'http' },
-    adguard: { name: 'AdGuardHome', port: '3000', protocol: 'http' }
-};
-
-const DEFAULT_TERMINALS = {
-    aios: {
-        name: 'aios',
-        command: 'if [ -f /usr/bin/aios ]; then /usr/bin/aios; else wget -O /usr/bin/aios https://raw.githubusercontent.com/site-u2023/aios/main/aios && chmod +x /usr/bin/aios && /usr/bin/aios; fi'
-    },
-    ssh: {
-        name: 'SSH',
-        command: ''
-    }
+// 最小限のフォールバック設定（INI取得失敗時のみ）
+const MINIMAL_FALLBACK = {
+    addresses: ['192.168.1.1'],
+    services: { luci: { name: 'LuCI', port: '80', protocol: 'http' } },
+    terminals: { aios: { name: 'aios', command: '' } },
+    currentIP: '192.168.1.1',
+    currentSelectedService: 'luci',
+    currentSelectedTerminal: 'aios',
+    language: 'en',
+    theme: 'auto'
 };
 
 // プロンプト用デフォルト値（一元管理）
@@ -50,7 +33,7 @@ const PROMPT_DEFAULTS = {
     defaultCommand: ''
 };
 
-// 現在の設定（INI と DEFAULT をマージして使用）
+// 現在の設定（INIから読み込み）
 let currentAddresses = [];
 let currentServices = {};
 let currentTerminals = {};
@@ -324,22 +307,11 @@ class AutoINIManager {
     }
 
     /**
-     * デフォルト設定にフォールバック
+     * 最小限のフォールバック設定
      */
     fallbackToDefaults() {
-        const defaultSettings = {
-            addresses: [...DEFAULT_ADDRESSES],
-            services: {...DEFAULT_SERVICES},
-            terminals: {...DEFAULT_TERMINALS},
-            currentIP: '192.168.1.1',
-            currentSelectedService: 'luci',
-            currentSelectedTerminal: 'aios',
-            language: 'en',
-            theme: 'auto'
-        };
-        
-        this.applySettings(defaultSettings);
-        console.log('Using default settings');
+        console.log('Applying minimal fallback settings');
+        this.applySettings(MINIMAL_FALLBACK);
     }
 
     /**
@@ -425,9 +397,9 @@ class AutoINIManager {
      * 設定適用
      */
     applySettings(settings) {
-        currentAddresses = settings.addresses.length > 0 ? settings.addresses : [...DEFAULT_ADDRESSES];
-        currentServices = Object.keys(settings.services).length > 0 ? settings.services : {...DEFAULT_SERVICES};
-        currentTerminals = Object.keys(settings.terminals).length > 0 ? settings.terminals : {...DEFAULT_TERMINALS};
+        currentAddresses = settings.addresses.length > 0 ? settings.addresses : MINIMAL_FALLBACK.addresses;
+        currentServices = Object.keys(settings.services).length > 0 ? settings.services : MINIMAL_FALLBACK.services;
+        currentTerminals = Object.keys(settings.terminals).length > 0 ? settings.terminals : MINIMAL_FALLBACK.terminals;
         
         currentIP = settings.currentIP || currentAddresses[0];
         currentSelectedService = settings.currentSelectedService || Object.keys(currentServices)[0];
