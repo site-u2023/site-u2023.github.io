@@ -1,11 +1,49 @@
 // ==================================================
-// aios Configuration Manager
-// すべての設定はaios.iniファイルから読み込まれます
-// INIファイルが利用できない場合は最小限の設定で動作します
+// グローバル変数と定数
 // ==================================================
-// すべての設定はINIファイルから読み込む
 let currentLanguage = 'en';
 let currentTheme = 'auto';
+
+// デフォルト設定（キャッシュクリア時の復元用）
+const DEFAULT_ADDRESSES = [
+    '192.168.1.1',
+    '192.168.0.1',
+    '192.168.10.1',
+    '192.168.100.1',
+    'openwrt.lan',
+    '10.0.0.1',
+    '172.16.0.1'
+];
+
+const DEFAULT_SERVICES = {
+    luci: { name: 'LuCI', port: '80', protocol: 'http' },
+    ttyd: { name: 'ttyd', port: '7681', protocol: 'http' },
+    filebrowser: { name: 'filebrowser', port: '8080', protocol: 'http' },
+    adguard: { name: 'AdGuardHome', port: '3000', protocol: 'http' }
+};
+
+const DEFAULT_TERMINALS = {
+    aios: {
+        name: 'aios',
+        command: 'if [ -f /usr/bin/aios ]; then /usr/bin/aios; else wget -O /usr/bin/aios https://raw.githubusercontent.com/site-u2023/aios/main/aios && chmod +x /usr/bin/aios && /usr/bin/aios; fi'
+    },
+    ssh: {
+        name: 'SSH',
+        command: ''
+    }
+};
+
+// プロンプト用デフォルト値（一元管理）
+const PROMPT_DEFAULTS = {
+    newAddress: '192.168.1.2',
+    serviceName: 'custom',
+    portNumber: '10000',
+    protocol: 'http',
+    terminalName: 'custom',
+    defaultCommand: ''
+};
+
+// 現在の設定（localStorage と DEFAULT をマージして使用）
 let currentAddresses = [];
 let currentServices = {};
 let currentTerminals = {};
@@ -13,19 +51,86 @@ let currentIP = '192.168.1.1';
 let currentSelectedService = 'luci';
 let currentSelectedTerminal = 'aios';
 
-// INIファイルから読み込まれる
-let PROMPT_DEFAULTS = {};
-let translations = { ja: {}, en: {} };
+// 多言語対応
+const translations = {
+    ja: {
+        address: 'アドレス',
+        browser: 'ブラウザ',
+        terminal: 'ターミナル',
+        apply: '適用',
+        open: '開く',
+        qrCodeDisplay: 'QRコード',
+        qrCodeArea: 'QRコード表示エリア',
+        sshHandler: 'プロトコルハンドラー登録 (初回のみ)',
+        downloadHandlerButton: 'ダウンロード（ダウンロードしたsshcmd.regをダブルクリックしてインストールして下さい）',
+        githubRepo: 'GitHubリポジトリ',
+        aiosScript: 'オールインワンスクリプト',
+        configSoftware: 'コンフィグソフトウェア',
+        disclaimerPageTitle: '免責事項',
+        disclaimerSiteUTitle: 'site-u（当サイト）に関する免責事項',
+        disclaimerOpenWrtTitle: 'OpenWrtに関する免責事項',
+        disclaimerSiteUParagraph: '当サイトで公開されているコンテンツ（ウェブサイト、スクリプト、その他の著作物を含む）は全てオープンであり、自由にご利用いただけます。しかしながら、これらのコンテンツの利用によって生じたいかなる損害についても、当サイトの運営者は一切の責任を負いません。利用者の皆様の責任においてご利用くださいますようお願いいたします。',
+        disclaimerOpenWrtParagraph: 'OpenWrtはSoftware Freedom Conservancyの登録商標です。当サイトはOpenWrtプロジェクトとは提携しておらず、また推奨もされていません。OpenWrtに関する公式情報やサポートについては、OpenWrt公式サイトをご参照ください。',
+        footerMemo: 'OpenWrt初心者備忘録',
+        footerCopyright: '© site-u',
+        footerDisclaimer: '免責事項',
+        langEn: 'English',
+        langJa: '日本語',
+        // ダイアログメッセージを追加
+        promptNewAddress: '新しいIPアドレスまたはホスト名を入力してください:',
+        alertMinimumAddress: '最低1つのアドレスは必要です。',
+        promptServiceName: 'サービス名を入力してください:',
+        promptPortNumber: 'ポート番号を入力してください:',
+        promptProtocol: 'プロトコルを入力してください (http/https):',
+        alertMinimumService: '最低1つのサービスは必要です。',
+        confirmDeleteService: 'サービス "{0}" を削除しますか？',
+        promptTerminalName: 'ターミナルタイプ名を入力してください:',
+        promptDefaultCommand: 'デフォルトコマンドを入力してください (空欄可):',
+        alertMinimumTerminal: '最低1つのターミナルタイプは必要です。',
+        confirmDeleteTerminal: 'ターミナルタイプ "{0}" を削除しますか？'
+    },
+    en: {
+        address: 'Address',
+        browser: 'Browser',
+        terminal: 'Terminal',
+        apply: 'Apply',
+        open: 'Open',
+        qrCodeDisplay: 'QR Code',
+        qrCodeArea: 'QR Code Display Area',
+        sshHandler: 'Protocol Handler Registration (First time only)',
+        downloadHandlerButton: 'Download (Double-click the downloaded sshcmd.reg to install it)',
+        githubRepo: 'GitHub Repository',
+        aiosScript: 'All-in-One Script',
+        configSoftware: 'Config Software',
+        disclaimerPageTitle: 'Disclaimer',
+        disclaimerSiteUTitle: 'Disclaimer regarding site-u (this site)',
+        disclaimerOpenWrtTitle: 'Disclaimer regarding OpenWrt',
+        disclaimerSiteUParagraph: 'All content published on this site (including websites, scripts, and other works) is open and available for free use. However, the site operator assumes no responsibility for any damages arising from the use of this content. Please use at your own risk.',
+        disclaimerOpenWrtParagraph: 'OpenWrt is a registered trademark of Software Freedom Conservancy. This site is not affiliated with or endorsed by the OpenWrt project. For official information and support regarding OpenWrt, please refer to the official OpenWrt website.',
+        footerMemo: 'OpenWrt A Beginner\'s Notebook',
+        footerCopyright: '© site-u',
+        footerDisclaimer: 'Disclaimer',
+        langEn: 'English',
+        langJa: '日本語',
+        // ダイアログメッセージを追加
+        promptNewAddress: 'Enter new IP address or hostname:',
+        alertMinimumAddress: 'At least one address is required.',
+        promptServiceName: 'Enter service name:',
+        promptPortNumber: 'Enter port number:',
+        promptProtocol: 'Enter protocol (http/https):',
+        alertMinimumService: 'At least one service is required.',
+        confirmDeleteService: 'Delete service "{0}"?',
+        promptTerminalName: 'Enter terminal type name:',
+        promptDefaultCommand: 'Enter default command (optional):',
+        alertMinimumTerminal: 'At least one terminal type is required.',
+        confirmDeleteTerminal: 'Delete terminal type "{0}"?'
+    }
+};
 
 // 翻訳テキスト取得関数
 function getText(key, ...args) {
-    // INIファイルから読み込まれた翻訳があればそれを使用
-    // なければキーをそのまま返す（HTMLのデフォルト表示）
-    let text = (translations[currentLanguage] && translations[currentLanguage][key]) || 
-               (translations['en'] && translations['en'][key]) || 
-               key;
-    
-    // プレースホルダーの置換
+    let text = translations[currentLanguage][key] || translations['en'][key] || key;
+    // {0}, {1} などのプレースホルダーを置換
     args.forEach((arg, index) => {
         text = text.replace(`{${index}}`, arg);
     });
@@ -33,459 +138,103 @@ function getText(key, ...args) {
 }
 
 // ==================================================
-// INI管理システム
-// ==================================================
-
-const INI_CONFIG = {
-    githubINIUrl: 'https://raw.githubusercontent.com/site-u2023/site-u2023.github.io/refs/heads/main/aios.ini',
-    localPath: 'C:\\aios\\aios.ini',
-    filename: 'aios.ini'
-};
-
-class AutoINIManager {
-    constructor() {
-        this.isInitialized = false;
-    }
-
-    async initialize() {
-        if (this.isInitialized) return;
-        
-        console.log('=== Auto INI Manager Starting ===');
-        
-        // まずHTMLから現在の値を取得
-        getCurrentValuesFromHTML();
-        
-        try {
-            const hasLocalINI = this.checkLocalINIExists();
-            
-            if (hasLocalINI) {
-                console.log('Local INI exists, attempting auto-load...');
-                await this.autoLoadLocalINI();
-            } else {
-                console.log('Local INI not found, downloading from GitHub...');
-                await this.downloadAndApplyINI();
-            }
-            
-        } catch (error) {
-            console.error('INI initialization error:', error);
-            // エラー時はHTMLのデフォルト値をそのまま使用
-            console.log('Using HTML default values');
-        }
-        
-        this.isInitialized = true;
-    }
-
-    checkLocalINIExists() {
-        return localStorage.getItem('hasLocalINI') === 'true';
-    }
-
-    async autoLoadLocalINI() {
-        if ('showOpenFilePicker' in window) {
-            await this.promptQuickLoad();
-        } else {
-            const lastINIContent = localStorage.getItem('lastINIContent');
-            if (lastINIContent) {
-                this.applyINIContent(lastINIContent);
-                console.log('Applied cached INI content');
-            } else {
-                console.log('No cached content, downloading from GitHub...');
-                await this.downloadAndApplyINI();
-            }
-        }
-    }
-
-    async promptQuickLoad() {
-        try {
-            const [fileHandle] = await window.showOpenFilePicker({
-                types: [{
-                    description: 'INI files',
-                    accept: { 'text/plain': ['.ini', '.txt'] }
-                }],
-                startIn: 'documents'
-            });
-
-            const file = await fileHandle.getFile();
-            const content = await file.text();
-            
-            this.applyINIContent(content);
-            
-            localStorage.setItem('lastINIContent', content);
-            iniFileHandle = fileHandle;
-            
-            console.log('Local INI loaded successfully');
-            
-        } catch (error) {
-            if (error.name === 'AbortError') {
-                console.log('File selection cancelled, downloading from GitHub...');
-                await this.downloadAndApplyINI();
-            } else {
-                console.error('File loading error:', error);
-                // エラー時はHTMLのデフォルト値を維持
-                console.log('Keeping HTML default values');
-            }
-        }
-    }
-
-    async downloadAndApplyINI() {
-        try {
-            console.log(`Downloading from: ${INI_CONFIG.githubINIUrl}`);
-            
-            const response = await fetch(INI_CONFIG.githubINIUrl);
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
-            }
-            
-            const iniContent = await response.text();
-            console.log('INI downloaded successfully');
-            
-            this.silentDownload(iniContent);
-            
-            this.applyINIContent(iniContent);
-            
-            localStorage.setItem('lastINIContent', iniContent);
-            localStorage.setItem('hasLocalINI', 'true');
-            localStorage.setItem('lastAutoDownload', new Date().toISOString());
-            
-            console.log('INI applied automatically');
-            
-        } catch (error) {
-            console.error('GitHub download failed:', error);
-            // エラー時はHTMLのデフォルト値を維持
-            console.log('Keeping HTML default values');
-        }
-    }
-
-    silentDownload(content) {
-        try {
-            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
-            
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = INI_CONFIG.filename;
-            a.style.display = 'none';
-            
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            
-            URL.revokeObjectURL(url);
-            console.log('Backup INI downloaded silently');
-        } catch (error) {
-            console.log('Silent download failed:', error.message);
-        }
-    }
-
-    applyINIContent(iniContent) {
-        try {
-            const settings = this.parseINI(iniContent);
-            this.applySettings(settings);
-            console.log('INI settings applied');
-        } catch (error) {
-            console.error('INI parsing error:', error);
-            // エラー時はHTMLのデフォルト値を維持
-            console.log('Keeping HTML default values');
-        }
-    }
-
-    fallbackToDefaults() {
-        // INIファイルが読めない場合の最小限の設定
-        // HTMLのデフォルト表示をそのまま使用
-        console.log('INI file not available, using minimal defaults');
-        
-        // 最小限の動作保証のための設定
-        currentAddresses = ['192.168.1.1'];
-        currentServices = { luci: { name: 'LuCI', port: '80', protocol: 'http' } };
-        currentTerminals = { aios: { name: 'aios', command: '' } };
-        currentIP = '192.168.1.1';
-        currentSelectedService = 'luci';
-        currentSelectedTerminal = 'aios';
-        currentLanguage = 'en';
-        currentTheme = 'auto';
-        
-        // プロンプトのデフォルト値も最小限に
-        PROMPT_DEFAULTS = {
-            newAddress: '192.168.1.2',
-            serviceName: 'custom',
-            portNumber: '10000',
-            protocol: 'http',
-            terminalName: 'custom',
-            defaultCommand: ''
-        };
-        
-        this.updateUI();
-    }
-
-    parseINI(content) {
-        const lines = content.split('\n');
-        const settings = {
-            addresses: [],
-            services: {},
-            terminals: {},
-            currentIP: '192.168.1.1',
-            currentSelectedService: 'luci',
-            currentSelectedTerminal: 'aios',
-            language: 'en',
-            theme: 'auto'
-        };
-        
-        let currentSection = '';
-        let currentServiceKey = '';
-        let currentTerminalKey = '';
-        
-        for (let line of lines) {
-            line = line.trim();
-            
-            if (!line || line.startsWith(';') || line.startsWith('#')) continue;
-            
-            if (line.startsWith('[') && line.endsWith(']')) {
-                currentSection = line.slice(1, -1);
-                
-                if (currentSection.startsWith('service_')) {
-                    currentServiceKey = currentSection.replace('service_', '');
-                    settings.services[currentServiceKey] = {};
-                }
-                
-                if (currentSection.startsWith('terminal_')) {
-                    currentTerminalKey = currentSection.replace('terminal_', '');
-                    settings.terminals[currentTerminalKey] = {};
-                }
-                
-                continue;
-            }
-            
-            const equalIndex = line.indexOf('=');
-            if (equalIndex === -1) continue;
-            
-            const key = line.substring(0, equalIndex).trim();
-            const value = line.substring(equalIndex + 1).trim();
-            
-            switch (currentSection) {
-                case 'general':
-                    if (['currentIP', 'currentSelectedService', 'currentSelectedTerminal', 'language', 'theme'].includes(key)) {
-                        settings[key] = value;
-                    }
-                    break;
-                    
-                case 'addresses':
-                    if (key.startsWith('address') && value) {
-                        settings.addresses.push(value);
-                    }
-                    break;
-                    
-                case 'translations_ja':
-                    if (!translations.ja) translations.ja = {};
-                    translations.ja[key] = value;
-                    break;
-                    
-                case 'translations_en':
-                    if (!translations.en) translations.en = {};
-                    translations.en[key] = value;
-                    break;
-                    
-                case 'prompt_defaults':
-                    if (!PROMPT_DEFAULTS) PROMPT_DEFAULTS = {};
-                    PROMPT_DEFAULTS[key] = value;
-                    break;
-                    
-                default:
-                    if (currentSection.startsWith('service_') && currentServiceKey) {
-                        if (['name', 'port', 'protocol'].includes(key)) {
-                            settings.services[currentServiceKey][key] = value;
-                        }
-                    }
-                    
-                    if (currentSection.startsWith('terminal_') && currentTerminalKey) {
-                        if (['name', 'command'].includes(key)) {
-                            settings.terminals[currentTerminalKey][key] = value;
-                        }
-                    }
-                    break;
-            }
-        }
-        
-        return settings;
-    }
-
-    applySettings(settings) {
-        currentAddresses = settings.addresses.length > 0 ? settings.addresses : [...DEFAULT_ADDRESSES];
-        currentServices = Object.keys(settings.services).length > 0 ? settings.services : {...DEFAULT_SERVICES};
-        currentTerminals = Object.keys(settings.terminals).length > 0 ? settings.terminals : {...DEFAULT_TERMINALS};
-        
-        currentIP = settings.currentIP || currentAddresses[0];
-        currentSelectedService = settings.currentSelectedService || Object.keys(currentServices)[0];
-        currentSelectedTerminal = settings.currentSelectedTerminal || Object.keys(currentTerminals)[0];
-        currentLanguage = settings.language || 'en';
-        currentTheme = settings.theme || 'auto';
-        
-        this.updateUI();
-    }
-
-    updateUI() {
-        setTimeout(() => {
-            updateAllSelectors();
-            updateAllDisplays();
-            updateLanguageDisplay();
-            applyTheme(currentTheme);
-            
-            const ipSelector = document.getElementById('global-ip-input');
-            if (ipSelector) ipSelector.value = currentIP;
-            
-            const serviceSelector = document.getElementById('service-selector');
-            if (serviceSelector) serviceSelector.value = currentSelectedService;
-            
-            const terminalSelector = document.getElementById('terminal-selector');
-            if (terminalSelector) terminalSelector.value = currentSelectedTerminal;
-        }, 100);
-    }
-
-    async saveSettings() {
-        const settings = {
-            addresses: currentAddresses,
-            services: currentServices,
-            terminals: currentTerminals,
-            currentIP: currentIP,
-            currentSelectedService: currentSelectedService,
-            currentSelectedTerminal: currentSelectedTerminal,
-            language: currentLanguage,
-            theme: currentTheme
-        };
-
-        const iniContent = this.generateINI(settings);
-        
-        localStorage.setItem('lastINIContent', iniContent);
-        
-        if (iniFileHandle && 'createWritable' in iniFileHandle) {
-            try {
-                const writable = await iniFileHandle.createWritable();
-                await writable.write(iniContent);
-                await writable.close();
-                
-                localStorage.setItem('lastSaveTime', new Date().toISOString());
-                console.log('INI file updated successfully');
-                
-                return true;
-            } catch (error) {
-                console.error('INI save error:', error);
-            }
-        }
-        
-        this.silentDownload(iniContent);
-        console.log('Settings cached, backup downloaded');
-        
-        return false;
-    }
-
-    generateINI(settings) {
-        let ini = `;
-; aios Configuration File
-; Generated: ${new Date().toISOString()}
-; Recommended Path: ${INI_CONFIG.localPath}
-; GitHub Repository: https://github.com/site-u2023/site-u2023.github.io
-;
-
-[general]
-currentIP=${settings.currentIP}
-currentSelectedService=${settings.currentSelectedService}
-currentSelectedTerminal=${settings.currentSelectedTerminal}
-language=${settings.language}
-theme=${settings.theme}
-
-[addresses]
-`;
-        
-        settings.addresses.forEach((address, index) => {
-            ini += `address${index + 1}=${address}\n`;
-        });
-        
-        ini += '\n';
-        
-        Object.keys(settings.services).forEach(key => {
-            const service = settings.services[key];
-            ini += `[service_${key}]\n`;
-            ini += `name=${service.name}\n`;
-            ini += `port=${service.port}\n`;
-            ini += `protocol=${service.protocol}\n\n`;
-        });
-        
-        Object.keys(settings.terminals).forEach(key => {
-            const terminal = settings.terminals[key];
-            ini += `[terminal_${key}]\n`;
-            ini += `name=${terminal.name}\n`;
-            ini += `command=${terminal.command}\n\n`;
-        });
-        
-        // 翻訳セクションを追加（現在読み込まれているものを保持）
-        if (translations.ja && Object.keys(translations.ja).length > 5) {
-            ini += `[translations_ja]\n`;
-            Object.entries(translations.ja).forEach(([key, value]) => {
-                ini += `${key}=${value}\n`;
-            });
-        }
-        
-        if (translations.en && Object.keys(translations.en).length > 5) {
-            ini += `\n[translations_en]\n`;
-            Object.entries(translations.en).forEach(([key, value]) => {
-                ini += `${key}=${value}\n`;
-            });
-        }
-        
-        // プロンプトデフォルトも保持
-        ini += `\n[prompt_defaults]\n`;
-        Object.entries(PROMPT_DEFAULTS).forEach(([key, value]) => {
-            ini += `${key}=${value}\n`;
-        });
-        
-        return ini;
-    }
-}
-
-// グローバルインスタンス
-const autoINIManager = new AutoINIManager();
-let iniFileHandle = null;
-
-// 設定変更時の自動保存
-function saveCurrentSettings() {
-    autoINIManager.saveSettings();
-}
-
-// すべてのセレクタを更新する関数
-function updateAllSelectors() {
-    updateAddressSelector();
-    updateServiceSelector();
-    updateTerminalSelector();
-}
-
-// ==================================================
 // 初期化
 // ==================================================
 document.addEventListener('DOMContentLoaded', function() {
-    // ヘッダー・フッターを読み込む
-    const headerExists = document.querySelector('.main-header');
-    const footerExists = document.querySelector('.page-footer-area');
+    initializeSettings();
+    bindEvents();
+    updateAllDisplays();
+});
+
+function initializeSettings() {
+    // 言語設定の復元
+    const savedLanguage = localStorage.getItem('language') || 'en';
+    currentLanguage = savedLanguage;
     
-    if (headerExists || footerExists) {
-        loadHeaderFooter();
+    // 翻訳を適用
+    updateLanguageDisplay();
+    
+    // テーマ設定の復元
+    const savedTheme = localStorage.getItem('theme') || 'auto';
+    currentTheme = savedTheme;
+    applyTheme(currentTheme);
+    
+    // アドレス設定の復元
+    const savedAddresses = localStorage.getItem('addresses');
+    currentAddresses = savedAddresses ? JSON.parse(savedAddresses) : [...DEFAULT_ADDRESSES];
+    
+    // サービス設定の復元
+    const savedServices = localStorage.getItem('services');
+    currentServices = savedServices ? JSON.parse(savedServices) : {...DEFAULT_SERVICES};
+    
+    // ターミナル設定の復元
+    const savedTerminals = localStorage.getItem('terminals');
+    currentTerminals = savedTerminals ? JSON.parse(savedTerminals) : {...DEFAULT_TERMINALS};
+    
+    // **修正: 保存された現在のIPアドレスを確実に復元**
+    const savedIP = localStorage.getItem('currentIP');
+    if (savedIP && savedIP.trim()) {
+        currentIP = savedIP;
+        // 保存されたIPが現在のアドレス一覧にない場合は追加
+        if (!currentAddresses.includes(currentIP)) {
+            currentAddresses.unshift(currentIP);
+            localStorage.setItem('addresses', JSON.stringify(currentAddresses));
+        }
+    } else {
+        currentIP = currentAddresses[0] || '192.168.1.1';
     }
     
-    // ヘッダー・フッターの読み込み後にINI管理を初期化
+    // **修正: 保存された現在選択中のサービスを確実に復元**
+    const savedService = localStorage.getItem('currentSelectedService');
+    if (savedService && currentServices[savedService]) {
+        currentSelectedService = savedService;
+    } else {
+        currentSelectedService = Object.keys(currentServices)[0] || 'luci';
+    }
+    
+    // **修正: 保存された現在選択中のターミナルを確実に復元**
+    const savedTerminal = localStorage.getItem('currentSelectedTerminal');
+    if (savedTerminal && currentTerminals[savedTerminal]) {
+        currentSelectedTerminal = savedTerminal;
+    } else {
+        currentSelectedTerminal = Object.keys(currentTerminals)[0] || 'aios';
+    }
+    
+    // UI要素の初期化
+    updateAddressSelector();
+    updateServiceSelector();
+    updateTerminalSelector();
+    
+    // **修正: より確実な値の設定**
     setTimeout(() => {
-        // INI管理の初期化を実行
-        autoINIManager.initialize()
-            .then(() => {
-                console.log('INI configuration loaded successfully');
-            })
-            .catch((error) => {
-                console.warn('INI loading failed, using HTML defaults:', error);
-            })
-            .finally(() => {
-                // INIの読み込み成功/失敗に関わらず実行
-                bindEvents();
-                updateAllDisplays();
-                updateLogo();
-            });
-    }, 100); // ヘッダー・フッターの読み込みを待つ
-});
+        restoreUIValues();
+    }, 10);
+}
+
+// **新規追加: UI要素の値を確実に復元する関数**
+function restoreUIValues() {
+    const ipSelector = document.getElementById('global-ip-input');
+    if (ipSelector) {
+        ipSelector.value = currentIP;
+        console.log('IP selector restored to:', currentIP);
+    }
+    
+    const serviceSelector = document.getElementById('service-selector');
+    if (serviceSelector) {
+        serviceSelector.value = currentSelectedService;
+        console.log('Service selector restored to:', currentSelectedService);
+    }
+    
+    const terminalSelector = document.getElementById('terminal-selector');
+    if (terminalSelector) {
+        terminalSelector.value = currentSelectedTerminal;
+        console.log('Terminal selector restored to:', currentSelectedTerminal);
+    }
+    
+    // 各要素の表示を更新
+    updateServicePort();
+    updateTerminalCommand();
+}
 
 function bindEvents() {
     // IPアドレス関連
@@ -497,9 +246,9 @@ function bindEvents() {
     if (ipSelector) {
         ipSelector.addEventListener('change', function() {
             currentIP = this.value;
+            localStorage.setItem('currentIP', currentIP);
             console.log('IP changed to:', currentIP);
             updateAllDisplays();
-            saveCurrentSettings();
         });
     }
     
@@ -507,30 +256,34 @@ function bindEvents() {
         globalIpUpdate.addEventListener('click', function() {
             if (ipSelector) {
                 currentIP = ipSelector.value;
+                localStorage.setItem('currentIP', currentIP);
                 console.log('IP updated to:', currentIP);
                 updateAllDisplays();
-                saveCurrentSettings();
             }
         });
     }
     
     if (addressAdd) {
         addressAdd.addEventListener('click', function() {
-            const newAddress = prompt(getText('promptNewAddress'), PROMPT_DEFAULTS.newAddress || '192.168.1.2');
+            const newAddress = prompt(getText('promptNewAddress'), PROMPT_DEFAULTS.newAddress);
             if (newAddress && newAddress.trim()) {
                 const trimmedAddress = newAddress.trim();
                 if (!currentAddresses.includes(trimmedAddress)) {
                     currentAddresses.push(trimmedAddress);
+                    localStorage.setItem('addresses', JSON.stringify(currentAddresses));
+                    
+                    // 新しく追加したアドレスを選択
                     currentIP = trimmedAddress;
+                    localStorage.setItem('currentIP', currentIP);
                     
                     updateAddressSelector();
                     
+                    // セレクタの値を確実に設定
                     setTimeout(() => {
                         if (ipSelector) {
                             ipSelector.value = currentIP;
                         }
                         updateAllDisplays();
-                        saveCurrentSettings();
                     }, 10);
                 }
             }
@@ -544,16 +297,20 @@ function bindEvents() {
                 const index = currentAddresses.indexOf(currentValue);
                 if (index > -1) {
                     currentAddresses.splice(index, 1);
+                    localStorage.setItem('addresses', JSON.stringify(currentAddresses));
+                    
+                    // 削除後の新しい選択値を設定
                     currentIP = currentAddresses[0];
+                    localStorage.setItem('currentIP', currentIP);
                     
                     updateAddressSelector();
                     
+                    // セレクタの値を確実に設定
                     setTimeout(() => {
                         if (ipSelector) {
                             ipSelector.value = currentIP;
                         }
                         updateAllDisplays();
-                        saveCurrentSettings();
                     }, 10);
                 }
             } else {
@@ -573,9 +330,9 @@ function bindEvents() {
     if (serviceSelector) {
         serviceSelector.addEventListener('change', function() {
             currentSelectedService = this.value;
+            localStorage.setItem('currentSelectedService', currentSelectedService);
             console.log('Service changed to:', currentSelectedService);
             updateServicePort();
-            saveCurrentSettings();
         });
     }
     
@@ -586,7 +343,7 @@ function bindEvents() {
                 const selectedService = serviceSelector.value;
                 if (currentServices[selectedService]) {
                     currentServices[selectedService].port = this.value;
-                    saveCurrentSettings();
+                    localStorage.setItem('services', JSON.stringify(currentServices));
                 }
             }
             updateBrowserDisplay();
@@ -610,11 +367,11 @@ function bindEvents() {
     
     if (serviceAdd) {
         serviceAdd.addEventListener('click', function() {
-            const serviceName = prompt(getText('promptServiceName'), PROMPT_DEFAULTS.serviceName || 'custom');
+            const serviceName = prompt(getText('promptServiceName'), PROMPT_DEFAULTS.serviceName);
             if (serviceName && serviceName.trim()) {
                 const serviceKey = serviceName.toLowerCase().replace(/[^a-z0-9]/g, '');
-                const port = prompt(getText('promptPortNumber'), PROMPT_DEFAULTS.portNumber || '10000');
-                const protocol = prompt(getText('promptProtocol'), PROMPT_DEFAULTS.protocol || 'http');
+                const port = prompt(getText('promptPortNumber'), PROMPT_DEFAULTS.portNumber);
+                const protocol = prompt(getText('promptProtocol'), PROMPT_DEFAULTS.protocol);
                 
                 if (serviceKey && port && !currentServices[serviceKey]) {
                     currentServices[serviceKey] = {
@@ -622,16 +379,20 @@ function bindEvents() {
                         port: port.trim(),
                         protocol: protocol.trim() || 'http'
                     };
+                    localStorage.setItem('services', JSON.stringify(currentServices));
+                    
+                    // 新しく追加したサービスを選択
                     currentSelectedService = serviceKey;
+                    localStorage.setItem('currentSelectedService', currentSelectedService);
                     
                     updateServiceSelector();
                     
+                    // セレクタの値を確実に設定
                     setTimeout(() => {
                         if (serviceSelector) {
                             serviceSelector.value = currentSelectedService;
                         }
                         updateServicePort();
-                        saveCurrentSettings();
                     }, 10);
                 }
             }
@@ -644,16 +405,20 @@ function bindEvents() {
             if (selectedService && Object.keys(currentServices).length > 1) {
                 if (confirm(getText('confirmDeleteService', currentServices[selectedService].name))) {
                     delete currentServices[selectedService];
+                    localStorage.setItem('services', JSON.stringify(currentServices));
+                    
+                    // 削除後の新しい選択値を設定
                     currentSelectedService = Object.keys(currentServices)[0];
+                    localStorage.setItem('currentSelectedService', currentSelectedService);
                     
                     updateServiceSelector();
                     
+                    // セレクタの値を確実に設定
                     setTimeout(() => {
                         if (serviceSelector) {
                             serviceSelector.value = currentSelectedService;
                         }
                         updateServicePort();
-                        saveCurrentSettings();
                     }, 10);
                 }
             } else if (Object.keys(currentServices).length <= 1) {
@@ -673,9 +438,9 @@ function bindEvents() {
     if (terminalSelector) {
         terminalSelector.addEventListener('change', function() {
             currentSelectedTerminal = this.value;
+            localStorage.setItem('currentSelectedTerminal', currentSelectedTerminal);
             console.log('Terminal changed to:', currentSelectedTerminal);
             updateTerminalCommand();
-            saveCurrentSettings();
         });
     }
     
@@ -686,7 +451,7 @@ function bindEvents() {
                 const selectedType = terminalSelector.value;
                 if (currentTerminals[selectedType]) {
                     currentTerminals[selectedType].command = this.value;
-                    saveCurrentSettings();
+                    localStorage.setItem('terminals', JSON.stringify(currentTerminals));
                 }
             }
             updateTerminalPreview();
@@ -717,26 +482,30 @@ function bindEvents() {
     
     if (terminalAdd) {
         terminalAdd.addEventListener('click', function() {
-            const terminalName = prompt(getText('promptTerminalName'), PROMPT_DEFAULTS.terminalName || 'custom');
+            const terminalName = prompt(getText('promptTerminalName'), PROMPT_DEFAULTS.terminalName);
             if (terminalName && terminalName.trim()) {
                 const terminalKey = terminalName.toLowerCase().replace(/[^a-z0-9]/g, '');
-                const command = prompt(getText('promptDefaultCommand'), PROMPT_DEFAULTS.defaultCommand || '');
+                const command = prompt(getText('promptDefaultCommand'), PROMPT_DEFAULTS.defaultCommand);
                 
                 if (terminalKey && !currentTerminals[terminalKey]) {
                     currentTerminals[terminalKey] = {
                         name: terminalName.trim(),
                         command: command ? command.trim() : ''
                     };
+                    localStorage.setItem('terminals', JSON.stringify(currentTerminals));
+                    
+                    // 新しく追加したターミナルを選択
                     currentSelectedTerminal = terminalKey;
+                    localStorage.setItem('currentSelectedTerminal', currentSelectedTerminal);
                     
                     updateTerminalSelector();
                     
+                    // セレクタの値を確実に設定
                     setTimeout(() => {
                         if (terminalSelector) {
                             terminalSelector.value = currentSelectedTerminal;
                         }
                         updateTerminalCommand();
-                        saveCurrentSettings();
                     }, 10);
                 }
             }
@@ -749,16 +518,20 @@ function bindEvents() {
             if (selectedTerminal && Object.keys(currentTerminals).length > 1) {
                 if (confirm(getText('confirmDeleteTerminal', currentTerminals[selectedTerminal].name))) {
                     delete currentTerminals[selectedTerminal];
+                    localStorage.setItem('terminals', JSON.stringify(currentTerminals));
+                    
+                    // 削除後の新しい選択値を設定
                     currentSelectedTerminal = Object.keys(currentTerminals)[0];
+                    localStorage.setItem('currentSelectedTerminal', currentSelectedTerminal);
                     
                     updateTerminalSelector();
                     
+                    // セレクタの値を確実に設定
                     setTimeout(() => {
                         if (terminalSelector) {
                             terminalSelector.value = currentSelectedTerminal;
                         }
                         updateTerminalCommand();
-                        saveCurrentSettings();
                     }, 10);
                 }
             } else if (Object.keys(currentTerminals).length <= 1) {
@@ -775,8 +548,10 @@ function updateAddressSelector() {
     const ipSelector = document.getElementById('global-ip-input');
     if (!ipSelector) return;
     
+    // セレクタをクリア
     ipSelector.innerHTML = '';
     
+    // アドレス一覧を追加
     currentAddresses.forEach(address => {
         const option = document.createElement('option');
         option.value = address;
@@ -784,11 +559,14 @@ function updateAddressSelector() {
         ipSelector.appendChild(option);
     });
     
+    // **修正: 現在のIPが確実に選択されるように**
     if (currentAddresses.includes(currentIP)) {
         ipSelector.value = currentIP;
     } else {
+        // 現在のIPがリストにない場合は最初のアドレスを使用
         currentIP = currentAddresses[0] || '192.168.1.1';
         ipSelector.value = currentIP;
+        localStorage.setItem('currentIP', currentIP);
     }
 }
 
@@ -799,8 +577,10 @@ function updateServiceSelector() {
     const serviceSelector = document.getElementById('service-selector');
     if (!serviceSelector) return;
     
+    // セレクタをクリア
     serviceSelector.innerHTML = '';
     
+    // サービス一覧を追加
     Object.keys(currentServices).forEach(key => {
         const service = currentServices[key];
         const option = document.createElement('option');
@@ -809,11 +589,14 @@ function updateServiceSelector() {
         serviceSelector.appendChild(option);
     });
     
+    // **修正: 現在選択中のサービスが確実に選択されるように**
     if (currentServices[currentSelectedService]) {
         serviceSelector.value = currentSelectedService;
     } else {
+        // 現在選択中のサービスが存在しない場合は最初のサービスを使用
         currentSelectedService = Object.keys(currentServices)[0] || 'luci';
         serviceSelector.value = currentSelectedService;
+        localStorage.setItem('currentSelectedService', currentSelectedService);
     }
 }
 
@@ -856,8 +639,10 @@ function updateTerminalSelector() {
     const terminalSelector = document.getElementById('terminal-selector');
     if (!terminalSelector) return;
     
+    // セレクタをクリア
     terminalSelector.innerHTML = '';
     
+    // ターミナル一覧を追加
     Object.keys(currentTerminals).forEach(key => {
         const terminal = currentTerminals[key];
         const option = document.createElement('option');
@@ -866,11 +651,14 @@ function updateTerminalSelector() {
         terminalSelector.appendChild(option);
     });
     
+    // **修正: 現在選択中のターミナルが確実に選択されるように**
     if (currentTerminals[currentSelectedTerminal]) {
         terminalSelector.value = currentSelectedTerminal;
     } else {
+        // 現在選択中のターミナルが存在しない場合は最初のターミナルを使用
         currentSelectedTerminal = Object.keys(currentTerminals)[0] || 'aios';
         terminalSelector.value = currentSelectedTerminal;
+        localStorage.setItem('currentSelectedTerminal', currentSelectedTerminal);
     }
 }
 
@@ -909,6 +697,7 @@ function generateTerminalURL() {
     const terminal = currentTerminals[selectedType];
     let fullCommand = commandInput ? commandInput.value.trim() : '';
 
+    // コマンド欄が空の場合はデフォルトを使用
     if (!fullCommand && terminal) {
         fullCommand = terminal.command;
     }
@@ -975,6 +764,7 @@ function applyTheme(theme) {
     }
     
     currentTheme = theme;
+    localStorage.setItem('theme', theme);
     
     updateLogo();
     setTimeout(updateQRCode, 100);
@@ -984,12 +774,6 @@ function applyTheme(theme) {
 // 多言語対応機能
 // ==================================================
 function updateLanguageDisplay() {
-    // 翻訳データが読み込まれていない場合は何もしない
-    // （HTMLのデフォルト表示をそのまま使用）
-    if (!translations[currentLanguage] || Object.keys(translations[currentLanguage]).length === 0) {
-        return;
-    }
-    
     const elements = document.querySelectorAll('[data-i18n]');
     elements.forEach(element => {
         const key = element.getAttribute('data-i18n');
@@ -1001,8 +785,8 @@ function updateLanguageDisplay() {
 
 function updateLanguage(lang) {
     currentLanguage = lang;
+    localStorage.setItem('language', lang);
     updateLanguageDisplay();
-    saveCurrentSettings();
 }
 
 // ==================================================
@@ -1018,6 +802,7 @@ function updateAllDisplays() {
 // ヘッダー・フッター対応（動的読み込み用）
 // ==================================================
 function loadHeaderFooter() {
+    // ヘッダーの読み込み
     fetch('header.html')
         .then(response => response.text())
         .then(html => {
@@ -1029,6 +814,7 @@ function loadHeaderFooter() {
         })
         .catch(error => console.error('ヘッダー読み込みエラー:', error));
     
+    // フッターの読み込み
     fetch('footer.html')
         .then(response => response.text())
         .then(html => {
@@ -1064,7 +850,6 @@ function bindFooterEvents() {
             if (theme) {
                 applyTheme(theme);
                 updateThemeButtons();
-                saveCurrentSettings();
             }
         });
     });
@@ -1104,20 +889,14 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', fun
     }
 });
 
-// デバッグ用
-function debugAutoINI() {
-    console.log('=== Auto INI Debug ===');
-    console.log('Has Local INI:', localStorage.getItem('hasLocalINI'));
-    console.log('Last Download:', localStorage.getItem('lastAutoDownload'));
-    console.log('Last Save:', localStorage.getItem('lastSaveTime'));
-    console.log('GitHub URL:', INI_CONFIG.githubINIUrl);
-    console.log('--- Current Values ---');
-    console.log('Language:', currentLanguage);
-    console.log('Theme:', currentTheme);
-    console.log('IP:', currentIP);
-    console.log('Service:', currentSelectedService);
-    console.log('Terminal:', currentSelectedTerminal);
-    console.log('Addresses:', currentAddresses);
-    console.log('Services:', currentServices);
-    console.log('Terminals:', currentTerminals);
-}
+// ヘッダー・フッターが存在する場合は動的読み込みを実行
+document.addEventListener('DOMContentLoaded', function() {
+    const headerExists = document.querySelector('.main-header');
+    const footerExists = document.querySelector('.page-footer-area');
+    
+    if (headerExists || footerExists) {
+        loadHeaderFooter();
+    }
+    
+    updateLogo();
+});
