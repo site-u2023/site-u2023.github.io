@@ -4,7 +4,14 @@
 let currentLanguage = 'en';
 let currentTheme = 'auto';
 
-// デフォルト設定（キャッシュクリア時の復元用）
+// INI設定
+const INI_CONFIG = {
+    githubINIUrl: 'https://raw.githubusercontent.com/site-u2023/site-u2023.github.io/refs/heads/main/aios.ini',
+    localPath: 'C:\\aios\\aios.ini',
+    filename: 'aios.ini'
+};
+
+// デフォルト設定（INIクリア時の復元用）
 const DEFAULT_ADDRESSES = [
     '192.168.1.1',
     '192.168.0.1',
@@ -43,13 +50,17 @@ const PROMPT_DEFAULTS = {
     defaultCommand: ''
 };
 
-// 現在の設定（localStorage と DEFAULT をマージして使用）
+// 現在の設定（INI と DEFAULT をマージして使用）
 let currentAddresses = [];
 let currentServices = {};
 let currentTerminals = {};
 let currentIP = '192.168.1.1';
 let currentSelectedService = 'luci';
 let currentSelectedTerminal = 'aios';
+
+// INI管理用グローバル変数
+let iniFileHandle = null;
+let autoINIManager = null;
 
 // 多言語対応
 const translations = {
@@ -138,6 +149,407 @@ function getText(key, ...args) {
 }
 
 // ==================================================
+// INI管理システム
+// ==================================================
+class AutoINIManager {
+    constructor() {
+        this.isInitialized = false;
+    }
+
+    /**
+     * 起動時の完全自動処理
+     * 1. ローカルINI存在確認
+     * 2. あれば自動読み込み
+     * 3. なければGitHubから自動DL→自動適用
+     */
+    async initialize() {
+        if (this.isInitialized) return;
+        
+        console.log('=== Auto INI Manager Starting ===');
+        
+        try {
+            const hasLocalINI = this.checkLocalINIExists();
+            
+            if (hasLocalINI) {
+                console.log('Local INI exists, attempting auto-load...');
+                await this.autoLoadLocalINI();
+            } else {
+                console.log('Local INI not found, downloading from GitHub...');
+                await this.downloadAndApplyINI();
+            }
+            
+        } catch (error) {
+            console.error('INI initialization error:', error);
+            this.fallbackToDefaults();
+        }
+        
+        this.isInitialized = true;
+    }
+
+    /**
+     * ローカルINI存在確認（LocalStorageのフラグで判定）
+     */
+    checkLocalINIExists() {
+        return localStorage.getItem('hasLocalINI') === 'true';
+    }
+
+    /**
+     * ローカルINIの自動読み込み
+     */
+    async autoLoadLocalINI() {
+        // File System Access API対応ブラウザの場合
+        if ('showOpenFilePicker' in window) {
+            // 自動読み込みはセキュリティ制限で不可能なため、
+            // ユーザーに読み込みを促すが、これは一度設定すれば記憶される
+            await this.promptQuickLoad();
+        } else {
+            // 代替: 前回保存した内容があれば使用
+            const lastINIContent = localStorage.getItem('lastINIContent');
+            if (lastINIContent) {
+                this.applyINIContent(lastINIContent);
+                console.log('Applied cached INI content');
+            } else {
+                console.log('No cached content, downloading from GitHub...');
+                await this.downloadAndApplyINI();
+            }
+        }
+    }
+
+    /**
+     * クイック読み込み促進
+     */
+    async promptQuickLoad() {
+        try {
+            // File System Access APIで自動的にファイル選択を開く
+            const [fileHandle] = await window.showOpenFilePicker({
+                types: [{
+                    description: 'INI files',
+                    accept: { 'text/plain': ['.ini', '.txt'] }
+                }],
+                startIn: 'documents'
+            });
+
+            const file = await fileHandle.getFile();
+            const content = await file.text();
+            
+            this.applyINIContent(content);
+            
+            // 次回用にキャッシュ（LocalStorageを継続使用）
+            localStorage.setItem('lastINIContent', content);
+            iniFileHandle = fileHandle;
+            
+            console.log('Local INI loaded successfully');
+            
+        } catch (error) {
+            if (error.name === 'AbortError') {
+                console.log('File selection cancelled, downloading from GitHub...');
+                await this.downloadAndApplyINI();
+            } else {
+                console.error('File loading error:', error);
+                this.fallbackToDefaults();
+            }
+        }
+    }
+
+    /**
+     * GitHubからINIダウンロード＆自動適用
+     */
+    async downloadAndApplyINI() {
+        try {
+            console.log(`Downloading from: ${INI_CONFIG.githubINIUrl}`);
+            
+            const response = await fetch(INI_CONFIG.githubINIUrl);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            
+            const iniContent = await response.text();
+            console.log('INI downloaded successfully');
+            
+            // 自動ダウンロード（バックアップ用）
+            this.silentDownload(iniContent);
+            
+            // 内容を即座に適用
+            this.applyINIContent(iniContent);
+            
+            // キャッシュとフラグ保存（LocalStorageを継続使用）
+            localStorage.setItem('lastINIContent', iniContent);
+            localStorage.setItem('hasLocalINI', 'true');
+            localStorage.setItem('lastAutoDownload', new Date().toISOString());
+            
+            console.log('INI applied automatically');
+            
+        } catch (error) {
+            console.error('GitHub download failed:', error);
+            this.fallbackToDefaults();
+        }
+    }
+
+    /**
+     * サイレントダウンロード（バックアップ用）
+     */
+    silentDownload(content) {
+        try {
+            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = INI_CONFIG.filename;
+            a.style.display = 'none';
+            
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            
+            URL.revokeObjectURL(url);
+            console.log('Backup INI downloaded silently');
+        } catch (error) {
+            console.log('Silent download failed:', error.message);
+        }
+    }
+
+    /**
+     * INI内容を設定として適用
+     */
+    applyINIContent(iniContent) {
+        try {
+            const settings = this.parseINI(iniContent);
+            this.applySettings(settings);
+            console.log('INI settings applied');
+        } catch (error) {
+            console.error('INI parsing error:', error);
+            this.fallbackToDefaults();
+        }
+    }
+
+    /**
+     * デフォルト設定にフォールバック
+     */
+    fallbackToDefaults() {
+        const defaultSettings = {
+            addresses: [...DEFAULT_ADDRESSES],
+            services: {...DEFAULT_SERVICES},
+            terminals: {...DEFAULT_TERMINALS},
+            currentIP: '192.168.1.1',
+            currentSelectedService: 'luci',
+            currentSelectedTerminal: 'aios',
+            language: 'en',
+            theme: 'auto'
+        };
+        
+        this.applySettings(defaultSettings);
+        console.log('Using default settings');
+    }
+
+    /**
+     * INI解析
+     */
+    parseINI(content) {
+        const lines = content.split('\n');
+        const settings = {
+            addresses: [],
+            services: {},
+            terminals: {},
+            currentIP: '192.168.1.1',
+            currentSelectedService: 'luci',
+            currentSelectedTerminal: 'aios',
+            language: 'en',
+            theme: 'auto'
+        };
+        
+        let currentSection = '';
+        let currentServiceKey = '';
+        let currentTerminalKey = '';
+        
+        for (let line of lines) {
+            line = line.trim();
+            
+            if (!line || line.startsWith(';') || line.startsWith('#')) continue;
+            
+            if (line.startsWith('[') && line.endsWith(']')) {
+                currentSection = line.slice(1, -1);
+                
+                if (currentSection.startsWith('service_')) {
+                    currentServiceKey = currentSection.replace('service_', '');
+                    settings.services[currentServiceKey] = {};
+                }
+                
+                if (currentSection.startsWith('terminal_')) {
+                    currentTerminalKey = currentSection.replace('terminal_', '');
+                    settings.terminals[currentTerminalKey] = {};
+                }
+                
+                continue;
+            }
+            
+            const equalIndex = line.indexOf('=');
+            if (equalIndex === -1) continue;
+            
+            const key = line.substring(0, equalIndex).trim();
+            const value = line.substring(equalIndex + 1).trim();
+            
+            switch (currentSection) {
+                case 'general':
+                    if (['currentIP', 'currentSelectedService', 'currentSelectedTerminal', 'language', 'theme'].includes(key)) {
+                        settings[key] = value;
+                    }
+                    break;
+                    
+                case 'addresses':
+                    if (key.startsWith('address') && value) {
+                        settings.addresses.push(value);
+                    }
+                    break;
+                    
+                default:
+                    if (currentSection.startsWith('service_') && currentServiceKey) {
+                        if (['name', 'port', 'protocol'].includes(key)) {
+                            settings.services[currentServiceKey][key] = value;
+                        }
+                    }
+                    
+                    if (currentSection.startsWith('terminal_') && currentTerminalKey) {
+                        if (['name', 'command'].includes(key)) {
+                            settings.terminals[currentTerminalKey][key] = value;
+                        }
+                    }
+                    break;
+            }
+        }
+        
+        return settings;
+    }
+
+    /**
+     * 設定適用
+     */
+    applySettings(settings) {
+        currentAddresses = settings.addresses.length > 0 ? settings.addresses : [...DEFAULT_ADDRESSES];
+        currentServices = Object.keys(settings.services).length > 0 ? settings.services : {...DEFAULT_SERVICES};
+        currentTerminals = Object.keys(settings.terminals).length > 0 ? settings.terminals : {...DEFAULT_TERMINALS};
+        
+        currentIP = settings.currentIP || currentAddresses[0];
+        currentSelectedService = settings.currentSelectedService || Object.keys(currentServices)[0];
+        currentSelectedTerminal = settings.currentSelectedTerminal || Object.keys(currentTerminals)[0];
+        currentLanguage = settings.language || 'en';
+        currentTheme = settings.theme || 'auto';
+        
+        this.updateUI();
+    }
+
+    /**
+     * UI更新
+     */
+    updateUI() {
+        setTimeout(() => {
+            updateAddressSelector();
+            updateServiceSelector();
+            updateTerminalSelector();
+            updateAllDisplays();
+            updateLanguageDisplay();
+            applyTheme(currentTheme);
+            
+            const ipSelector = document.getElementById('global-ip-input');
+            if (ipSelector) ipSelector.value = currentIP;
+            
+            const serviceSelector = document.getElementById('service-selector');
+            if (serviceSelector) serviceSelector.value = currentSelectedService;
+            
+            const terminalSelector = document.getElementById('terminal-selector');
+            if (terminalSelector) terminalSelector.value = currentSelectedTerminal;
+        }, 100);
+    }
+
+    /**
+     * 設定保存（INI更新）
+     */
+    async saveSettings() {
+        const settings = {
+            addresses: currentAddresses,
+            services: currentServices,
+            terminals: currentTerminals,
+            currentIP: currentIP,
+            currentSelectedService: currentSelectedService,
+            currentSelectedTerminal: currentSelectedTerminal,
+            language: currentLanguage,
+            theme: currentTheme
+        };
+
+        const iniContent = this.generateINI(settings);
+        
+        // キャッシュ更新（LocalStorageを継続使用）
+        localStorage.setItem('lastINIContent', iniContent);
+        
+        // File System Access APIが使用可能で、ファイルハンドルがある場合
+        if (iniFileHandle && 'createWritable' in iniFileHandle) {
+            try {
+                const writable = await iniFileHandle.createWritable();
+                await writable.write(iniContent);
+                await writable.close();
+                
+                localStorage.setItem('lastSaveTime', new Date().toISOString());
+                console.log('INI file updated successfully');
+                
+                return true;
+            } catch (error) {
+                console.error('INI save error:', error);
+            }
+        }
+        
+        // フォールバック: サイレントダウンロード
+        this.silentDownload(iniContent);
+        console.log('Settings cached, backup downloaded');
+        
+        return false;
+    }
+
+    /**
+     * INI生成
+     */
+    generateINI(settings) {
+        let ini = `;
+; aios Configuration File
+; Generated: ${new Date().toISOString()}
+; Path: ${INI_CONFIG.localPath}
+;
+
+[general]
+currentIP=${settings.currentIP}
+currentSelectedService=${settings.currentSelectedService}
+currentSelectedTerminal=${settings.currentSelectedTerminal}
+language=${settings.language}
+theme=${settings.theme}
+
+[addresses]
+`;
+        
+        settings.addresses.forEach((address, index) => {
+            ini += `address${index + 1}=${address}\n`;
+        });
+        
+        ini += '\n';
+        
+        Object.keys(settings.services).forEach(key => {
+            const service = settings.services[key];
+            ini += `[service_${key}]\n`;
+            ini += `name=${service.name}\n`;
+            ini += `port=${service.port}\n`;
+            ini += `protocol=${service.protocol}\n\n`;
+        });
+        
+        Object.keys(settings.terminals).forEach(key => {
+            const terminal = settings.terminals[key];
+            ini += `[terminal_${key}]\n`;
+            ini += `name=${terminal.name}\n`;
+            ini += `command=${terminal.command}\n\n`;
+        });
+        
+        return ini;
+    }
+}
+
+// ==================================================
 // 初期化
 // ==================================================
 document.addEventListener('DOMContentLoaded', function() {
@@ -147,71 +559,38 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function initializeSettings() {
-    // 言語設定の復元
+    // INI管理システムの初期化
+    autoINIManager = new AutoINIManager();
+    
+    // 言語設定の復元（LocalStorageから暫定取得、INIで上書きされる）
     const savedLanguage = localStorage.getItem('language') || 'en';
     currentLanguage = savedLanguage;
     
     // 翻訳を適用
     updateLanguageDisplay();
     
-    // テーマ設定の復元
+    // テーマ設定の復元（LocalStorageから暫定取得、INIで上書きされる）
     const savedTheme = localStorage.getItem('theme') || 'auto';
     currentTheme = savedTheme;
     applyTheme(currentTheme);
     
-    // アドレス設定の復元
-    const savedAddresses = localStorage.getItem('addresses');
-    currentAddresses = savedAddresses ? JSON.parse(savedAddresses) : [...DEFAULT_ADDRESSES];
-    
-    // サービス設定の復元
-    const savedServices = localStorage.getItem('services');
-    currentServices = savedServices ? JSON.parse(savedServices) : {...DEFAULT_SERVICES};
-    
-    // ターミナル設定の復元
-    const savedTerminals = localStorage.getItem('terminals');
-    currentTerminals = savedTerminals ? JSON.parse(savedTerminals) : {...DEFAULT_TERMINALS};
-    
-    // **修正: 保存された現在のIPアドレスを確実に復元**
-    const savedIP = localStorage.getItem('currentIP');
-    if (savedIP && savedIP.trim()) {
-        currentIP = savedIP;
-        // 保存されたIPが現在のアドレス一覧にない場合は追加
-        if (!currentAddresses.includes(currentIP)) {
-            currentAddresses.unshift(currentIP);
-            localStorage.setItem('addresses', JSON.stringify(currentAddresses));
-        }
-    } else {
-        currentIP = currentAddresses[0] || '192.168.1.1';
-    }
-    
-    // **修正: 保存された現在選択中のサービスを確実に復元**
-    const savedService = localStorage.getItem('currentSelectedService');
-    if (savedService && currentServices[savedService]) {
-        currentSelectedService = savedService;
-    } else {
-        currentSelectedService = Object.keys(currentServices)[0] || 'luci';
-    }
-    
-    // **修正: 保存された現在選択中のターミナルを確実に復元**
-    const savedTerminal = localStorage.getItem('currentSelectedTerminal');
-    if (savedTerminal && currentTerminals[savedTerminal]) {
-        currentSelectedTerminal = savedTerminal;
-    } else {
-        currentSelectedTerminal = Object.keys(currentTerminals)[0] || 'aios';
-    }
+    // INI設定の自動初期化（非同期）
+    setTimeout(() => {
+        autoINIManager.initialize();
+    }, 500);
     
     // UI要素の初期化
     updateAddressSelector();
     updateServiceSelector();
     updateTerminalSelector();
     
-    // **修正: より確実な値の設定**
+    // UI要素の値を確実に復元
     setTimeout(() => {
         restoreUIValues();
     }, 10);
 }
 
-// **新規追加: UI要素の値を確実に復元する関数**
+// UI要素の値を確実に復元する関数
 function restoreUIValues() {
     const ipSelector = document.getElementById('global-ip-input');
     if (ipSelector) {
@@ -236,6 +615,13 @@ function restoreUIValues() {
     updateTerminalCommand();
 }
 
+// INI設定保存のヘルパー関数
+function saveCurrentSettings() {
+    if (autoINIManager) {
+        autoINIManager.saveSettings();
+    }
+}
+
 function bindEvents() {
     // IPアドレス関連
     const ipSelector = document.getElementById('global-ip-input');
@@ -246,9 +632,9 @@ function bindEvents() {
     if (ipSelector) {
         ipSelector.addEventListener('change', function() {
             currentIP = this.value;
-            localStorage.setItem('currentIP', currentIP);
             console.log('IP changed to:', currentIP);
             updateAllDisplays();
+            saveCurrentSettings(); // INI保存
         });
     }
     
@@ -256,9 +642,9 @@ function bindEvents() {
         globalIpUpdate.addEventListener('click', function() {
             if (ipSelector) {
                 currentIP = ipSelector.value;
-                localStorage.setItem('currentIP', currentIP);
                 console.log('IP updated to:', currentIP);
                 updateAllDisplays();
+                saveCurrentSettings(); // INI保存
             }
         });
     }
@@ -270,11 +656,9 @@ function bindEvents() {
                 const trimmedAddress = newAddress.trim();
                 if (!currentAddresses.includes(trimmedAddress)) {
                     currentAddresses.push(trimmedAddress);
-                    localStorage.setItem('addresses', JSON.stringify(currentAddresses));
                     
                     // 新しく追加したアドレスを選択
                     currentIP = trimmedAddress;
-                    localStorage.setItem('currentIP', currentIP);
                     
                     updateAddressSelector();
                     
@@ -284,6 +668,7 @@ function bindEvents() {
                             ipSelector.value = currentIP;
                         }
                         updateAllDisplays();
+                        saveCurrentSettings(); // INI保存
                     }, 10);
                 }
             }
@@ -297,11 +682,9 @@ function bindEvents() {
                 const index = currentAddresses.indexOf(currentValue);
                 if (index > -1) {
                     currentAddresses.splice(index, 1);
-                    localStorage.setItem('addresses', JSON.stringify(currentAddresses));
                     
                     // 削除後の新しい選択値を設定
                     currentIP = currentAddresses[0];
-                    localStorage.setItem('currentIP', currentIP);
                     
                     updateAddressSelector();
                     
@@ -311,6 +694,7 @@ function bindEvents() {
                             ipSelector.value = currentIP;
                         }
                         updateAllDisplays();
+                        saveCurrentSettings(); // INI保存
                     }, 10);
                 }
             } else {
@@ -330,9 +714,9 @@ function bindEvents() {
     if (serviceSelector) {
         serviceSelector.addEventListener('change', function() {
             currentSelectedService = this.value;
-            localStorage.setItem('currentSelectedService', currentSelectedService);
             console.log('Service changed to:', currentSelectedService);
             updateServicePort();
+            saveCurrentSettings(); // INI保存
         });
     }
     
@@ -343,7 +727,7 @@ function bindEvents() {
                 const selectedService = serviceSelector.value;
                 if (currentServices[selectedService]) {
                     currentServices[selectedService].port = this.value;
-                    localStorage.setItem('services', JSON.stringify(currentServices));
+                    saveCurrentSettings(); // INI保存
                 }
             }
             updateBrowserDisplay();
@@ -379,11 +763,9 @@ function bindEvents() {
                         port: port.trim(),
                         protocol: protocol.trim() || 'http'
                     };
-                    localStorage.setItem('services', JSON.stringify(currentServices));
                     
                     // 新しく追加したサービスを選択
                     currentSelectedService = serviceKey;
-                    localStorage.setItem('currentSelectedService', currentSelectedService);
                     
                     updateServiceSelector();
                     
@@ -393,6 +775,7 @@ function bindEvents() {
                             serviceSelector.value = currentSelectedService;
                         }
                         updateServicePort();
+                        saveCurrentSettings(); // INI保存
                     }, 10);
                 }
             }
@@ -405,11 +788,9 @@ function bindEvents() {
             if (selectedService && Object.keys(currentServices).length > 1) {
                 if (confirm(getText('confirmDeleteService', currentServices[selectedService].name))) {
                     delete currentServices[selectedService];
-                    localStorage.setItem('services', JSON.stringify(currentServices));
                     
                     // 削除後の新しい選択値を設定
                     currentSelectedService = Object.keys(currentServices)[0];
-                    localStorage.setItem('currentSelectedService', currentSelectedService);
                     
                     updateServiceSelector();
                     
@@ -419,6 +800,7 @@ function bindEvents() {
                             serviceSelector.value = currentSelectedService;
                         }
                         updateServicePort();
+                        saveCurrentSettings(); // INI保存
                     }, 10);
                 }
             } else if (Object.keys(currentServices).length <= 1) {
@@ -438,9 +820,9 @@ function bindEvents() {
     if (terminalSelector) {
         terminalSelector.addEventListener('change', function() {
             currentSelectedTerminal = this.value;
-            localStorage.setItem('currentSelectedTerminal', currentSelectedTerminal);
             console.log('Terminal changed to:', currentSelectedTerminal);
             updateTerminalCommand();
+            saveCurrentSettings(); // INI保存
         });
     }
     
@@ -451,7 +833,7 @@ function bindEvents() {
                 const selectedType = terminalSelector.value;
                 if (currentTerminals[selectedType]) {
                     currentTerminals[selectedType].command = this.value;
-                    localStorage.setItem('terminals', JSON.stringify(currentTerminals));
+                    saveCurrentSettings(); // INI保存
                 }
             }
             updateTerminalPreview();
@@ -492,11 +874,9 @@ function bindEvents() {
                         name: terminalName.trim(),
                         command: command ? command.trim() : ''
                     };
-                    localStorage.setItem('terminals', JSON.stringify(currentTerminals));
                     
                     // 新しく追加したターミナルを選択
                     currentSelectedTerminal = terminalKey;
-                    localStorage.setItem('currentSelectedTerminal', currentSelectedTerminal);
                     
                     updateTerminalSelector();
                     
@@ -506,6 +886,7 @@ function bindEvents() {
                             terminalSelector.value = currentSelectedTerminal;
                         }
                         updateTerminalCommand();
+                        saveCurrentSettings(); // INI保存
                     }, 10);
                 }
             }
@@ -518,11 +899,9 @@ function bindEvents() {
             if (selectedTerminal && Object.keys(currentTerminals).length > 1) {
                 if (confirm(getText('confirmDeleteTerminal', currentTerminals[selectedTerminal].name))) {
                     delete currentTerminals[selectedTerminal];
-                    localStorage.setItem('terminals', JSON.stringify(currentTerminals));
                     
                     // 削除後の新しい選択値を設定
                     currentSelectedTerminal = Object.keys(currentTerminals)[0];
-                    localStorage.setItem('currentSelectedTerminal', currentSelectedTerminal);
                     
                     updateTerminalSelector();
                     
@@ -532,6 +911,7 @@ function bindEvents() {
                             terminalSelector.value = currentSelectedTerminal;
                         }
                         updateTerminalCommand();
+                        saveCurrentSettings(); // INI保存
                     }, 10);
                 }
             } else if (Object.keys(currentTerminals).length <= 1) {
@@ -559,14 +939,14 @@ function updateAddressSelector() {
         ipSelector.appendChild(option);
     });
     
-    // **修正: 現在のIPが確実に選択されるように**
+    // 現在のIPが確実に選択されるように
     if (currentAddresses.includes(currentIP)) {
         ipSelector.value = currentIP;
     } else {
         // 現在のIPがリストにない場合は最初のアドレスを使用
         currentIP = currentAddresses[0] || '192.168.1.1';
         ipSelector.value = currentIP;
-        localStorage.setItem('currentIP', currentIP);
+        saveCurrentSettings(); // INI保存
     }
 }
 
@@ -589,14 +969,14 @@ function updateServiceSelector() {
         serviceSelector.appendChild(option);
     });
     
-    // **修正: 現在選択中のサービスが確実に選択されるように**
+    // 現在選択中のサービスが確実に選択されるように
     if (currentServices[currentSelectedService]) {
         serviceSelector.value = currentSelectedService;
     } else {
         // 現在選択中のサービスが存在しない場合は最初のサービスを使用
         currentSelectedService = Object.keys(currentServices)[0] || 'luci';
         serviceSelector.value = currentSelectedService;
-        localStorage.setItem('currentSelectedService', currentSelectedService);
+        saveCurrentSettings(); // INI保存
     }
 }
 
@@ -651,14 +1031,14 @@ function updateTerminalSelector() {
         terminalSelector.appendChild(option);
     });
     
-    // **修正: 現在選択中のターミナルが確実に選択されるように**
+    // 現在選択中のターミナルが確実に選択されるように
     if (currentTerminals[currentSelectedTerminal]) {
         terminalSelector.value = currentSelectedTerminal;
     } else {
         // 現在選択中のターミナルが存在しない場合は最初のターミナルを使用
         currentSelectedTerminal = Object.keys(currentTerminals)[0] || 'aios';
         terminalSelector.value = currentSelectedTerminal;
-        localStorage.setItem('currentSelectedTerminal', currentSelectedTerminal);
+        saveCurrentSettings(); // INI保存
     }
 }
 
@@ -764,7 +1144,7 @@ function applyTheme(theme) {
     }
     
     currentTheme = theme;
-    localStorage.setItem('theme', theme);
+    saveCurrentSettings(); // INI保存
     
     updateLogo();
     setTimeout(updateQRCode, 100);
@@ -785,8 +1165,8 @@ function updateLanguageDisplay() {
 
 function updateLanguage(lang) {
     currentLanguage = lang;
-    localStorage.setItem('language', lang);
     updateLanguageDisplay();
+    saveCurrentSettings(); // INI保存
 }
 
 // ==================================================
@@ -900,3 +1280,24 @@ document.addEventListener('DOMContentLoaded', function() {
     
     updateLogo();
 });
+
+// ==================================================
+// デバッグ用関数
+// ==================================================
+function debugAutoINI() {
+    console.log('=== Auto INI Debug ===');
+    console.log('Has Local INI:', localStorage.getItem('hasLocalINI'));
+    console.log('Last Download:', localStorage.getItem('lastAutoDownload'));
+    console.log('Last Save:', localStorage.getItem('lastSaveTime'));
+    console.log('GitHub URL:', INI_CONFIG.githubINIUrl);
+    console.log('Current Settings:', {
+        addresses: currentAddresses,
+        services: currentServices,
+        terminals: currentTerminals,
+        currentIP: currentIP,
+        currentSelectedService: currentSelectedService,
+        currentSelectedTerminal: currentSelectedTerminal,
+        language: currentLanguage,
+        theme: currentTheme
+    });
+}
