@@ -37,7 +37,6 @@ const DEFAULT_TERMINALS = {
   }
 };
 
-
 // プロンプト用デフォルト値（一元管理）
 const PROMPT_DEFAULTS = {
     newAddress: '192.168.1.2',
