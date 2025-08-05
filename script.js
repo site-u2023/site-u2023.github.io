@@ -24,17 +24,19 @@ const DEFAULT_SERVICES = {
 
 const AIOS_URL = 'https://raw.githubusercontent.com/site-u2023/aios/main/aios';
 const PROXY_URL = 'https://proxy.site-u.workers.dev/proxy?url=';
+const AIOS_PATH = '/usr/bin/aios';
 
 const DEFAULT_TERMINALS = {
-    aios: {
-        name: 'aios',
-        command: `if [ -f /usr/bin/aios ]; then /usr/bin/aios; else wget -O /usr/bin/aios ${AIOS_URL} || wget -O /usr/bin/aios "${PROXY_URL}${AIOS_URL}" && chmod +x /usr/bin/aios && /usr/bin/aios; fi`
-    },
-    ssh: {
-        name: 'SSH',
-        command: ''
-    }
+  aios: {
+    name: 'aios',
+    command: `if [ -f ${AIOS_PATH} ]; then ${AIOS_PATH}; else wget -O ${AIOS_PATH} ${AIOS_URL} || wget -O ${AIOS_PATH} "${PROXY_URL}${AIOS_URL}" && chmod +x ${AIOS_PATH} && ${AIOS_PATH}; fi`
+  },
+  ssh: {
+    name: 'SSH',
+    command: ''
+  }
 };
+
 
 // プロンプト用デフォルト値（一元管理）
 const PROMPT_DEFAULTS = {
