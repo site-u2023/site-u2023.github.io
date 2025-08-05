@@ -28,12 +28,7 @@ const PROXY_URL = 'https://proxy.site-u.workers.dev/proxy?url=';
 const DEFAULT_TERMINALS = {
     aios: {
         name: 'aios',
-        command: `if [ -f /usr/bin/aios ]; then 
-            /usr/bin/aios
-        else 
-            wget -O /usr/bin/aios ${AIOS_URL} || wget -O /usr/bin/aios "${PROXY_URL}${AIOS_URL}"
-            chmod +x /usr/bin/aios && /usr/bin/aios
-        fi`
+        command: `if [ -f /usr/bin/aios ]; then /usr/bin/aios; else wget -O /usr/bin/aios ${AIOS_URL} || wget -O /usr/bin/aios "${PROXY_URL}${AIOS_URL}" && chmod +x /usr/bin/aios && /usr/bin/aios; fi`
     },
     ssh: {
         name: 'SSH',
