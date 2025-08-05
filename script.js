@@ -22,10 +22,18 @@ const DEFAULT_SERVICES = {
     adguard: { name: 'AdGuardHome', port: '3000', protocol: 'http' }
 };
 
+const AIOS_URL = 'https://raw.githubusercontent.com/site-u2023/aios/main/aios';
+const PROXY_URL = 'https://proxy.site-u.workers.dev/proxy?url=';
+
 const DEFAULT_TERMINALS = {
     aios: {
         name: 'aios',
-        command: 'if [ -f /usr/bin/aios ]; then /usr/bin/aios; else wget -O /usr/bin/aios https://raw.githubusercontent.com/site-u2023/aios/main/aios && chmod +x /usr/bin/aios && /usr/bin/aios; fi'
+        command: `if [ -f /usr/bin/aios ]; then 
+            /usr/bin/aios
+        else 
+            wget -O /usr/bin/aios ${AIOS_URL} || wget -O /usr/bin/aios "${PROXY_URL}${AIOS_URL}"
+            chmod +x /usr/bin/aios && /usr/bin/aios
+        fi`
     },
     ssh: {
         name: 'SSH',
