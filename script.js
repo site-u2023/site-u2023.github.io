@@ -564,6 +564,7 @@ function bindEvents() {
 // ==================================================
 function updateAddressSelector() {
     const ipSelector = document.getElementById('global-ip-input');
+	const datalist = document.getElementById('ip-datalist');
     if (!ipSelector) return;
     
     // セレクタをクリア
@@ -573,8 +574,7 @@ function updateAddressSelector() {
     currentAddresses.forEach(address => {
         const option = document.createElement('option');
         option.value = address;
-        option.textContent = address;
-        ipSelector.appendChild(option);
+        datalist.appendChild(option);
     });
     
     // **修正: 現在のIPが確実に選択されるように**
@@ -602,9 +602,8 @@ function updateServiceSelector() {
     Object.keys(currentServices).forEach(key => {
         const service = currentServices[key];
         const option = document.createElement('option');
-        option.value = key;
-        option.textContent = service.name;
-        serviceSelector.appendChild(option);
+        option.value = service.name;
+        datalist.appendChild(option);
     });
     
     // **修正: 現在選択中のサービスが確実に選択されるように**
@@ -664,9 +663,8 @@ function updateTerminalSelector() {
     Object.keys(currentTerminals).forEach(key => {
         const terminal = currentTerminals[key];
         const option = document.createElement('option');
-        option.value = key;
-        option.textContent = terminal.name;
-        terminalSelector.appendChild(option);
+        option.value = terminal.name;
+        datalist.appendChild(option);
     });
     
     // **修正: 現在選択中のターミナルが確実に選択されるように**
