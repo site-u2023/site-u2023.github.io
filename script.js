@@ -574,7 +574,8 @@ function updateAddressSelector() {
     currentAddresses.forEach(address => {
         const option = document.createElement('option');
         option.value = address;
-        datalist.appendChild(option);
+        const datalist = document.getElementById('ip-datalist');
+	datalist.appendChild(option);
     });
     
     // **修正: 現在のIPが確実に選択されるように**
@@ -603,6 +604,7 @@ function updateServiceSelector() {
         const service = currentServices[key];
         const option = document.createElement('option');
         option.value = service.name;
+	const datalist = document.getElementById('ip-datalist');
         datalist.appendChild(option);
     });
     
@@ -664,6 +666,7 @@ function updateTerminalSelector() {
         const terminal = currentTerminals[key];
         const option = document.createElement('option');
         option.value = terminal.name;
+	const datalist = document.getElementById('ip-datalist');
         datalist.appendChild(option);
     });
     
