@@ -19,23 +19,8 @@
                         <!-- IP Address Input with datalist -->
                         <div class="input-container ip-container-full">
                             <div class="input-label">IP Address</div>
-                            <input
-                                type="text"
-                                id="global-ip-input"
-                                class="input-field"
-                                value="192.168.1.1"
-                                autocomplete="off"
-                                list="ip-datalist"
-                            >
-                            <datalist id="ip-datalist">
-                                <option value="192.168.1.1">
-                                <option value="192.168.0.1">
-                                <option value="192.168.10.1">
-                                <option value="192.168.100.1">
-                                <option value="openwrt.lan">
-                                <option value="10.0.0.1">
-                                <option value="172.16.0.1">
-                            </datalist>
+                            <input type="text" id="global-ip-input" value="192.168.1.1" list="ip-datalist">
+                            <datalist id="ip-datalist"></datalist>
                         </div>
                         
                         <!-- Add/Remove Buttons -->
@@ -55,20 +40,8 @@
                         <!-- Service Input with datalist -->
                         <div class="input-container service-container-half">
                             <div class="input-label">Service</div>
-                            <input
-                                type="text"
-                                id="service-selector"
-                                class="input-field"
-                                value="LuCI"
-                                autocomplete="off"
-                                list="service-datalist"
-                            >
-                            <datalist id="service-datalist">
-                                <option value="LuCI">
-                                <option value="ttyd">
-                                <option value="filebrowser">
-                                <option value="AdGuard">
-                            </datalist>
+                            <input type="text" id="service-selector" value="LuCI" list="service-datalist">
+                            <datalist id="service-datalist"></datalist>
                         </div>
 
                         <!-- Add/Remove Buttons -->
@@ -80,15 +53,7 @@
                         <!-- Port Input -->
                         <div class="input-container port-container-half">
                             <div class="port-label">Port</div>
-                            <input
-                                type="text"
-                                id="port-input"
-                                class="input-field"
-                                value="80"
-                                autocomplete="off"
-                                inputmode="numeric"
-                                pattern="[0-9]*"
-                            >
+                            <input type="text" id="port-input" value="">
                         </div>
                         
                         <!-- Apply Button -->
@@ -113,18 +78,8 @@
                         <!-- Terminal Type Input with datalist -->
                         <div class="input-container service-container-half">
                             <div class="input-label">Type</div>
-                            <input
-                                type="text"
-                                id="terminal-selector"
-                                class="input-field"
-                                value="aios"
-                                autocomplete="off"
-                                list="terminal-datalist"
-                            >
-                            <datalist id="terminal-datalist">
-                                <option value="aios">
-                                <option value="SSH">
-                            </datalist>
+                            <input type="text" id="terminal-selector" value="aios" list="terminal-datalist">
+                            <datalist id="terminal-datalist"></datalist>
                         </div>
 
                         <!-- Add/Remove Buttons -->
@@ -136,13 +91,7 @@
                         <!-- Command Input -->
                         <div class="input-container command-container-half">
                             <div class="command-label">Command</div>
-                            <input
-                                type="text"
-                                id="command-input"
-                                class="input-field"
-                                value="if [ -f /usr/bin/aios ]; then /usr/bin/aios; else wget -O /usr/bin/aios https://raw.githubusercontent.com/site-u2023/aios/main/aios || wget -O /usr/bin/aios &quot;https://proxy.site-u.workers.dev/proxy?url=https://raw.githubusercontent.com/site-u2023/aios/main/aios&quot; &amp;&amp; chmod +x /usr/bin/aios &amp;&amp; /usr/bin/aios; fi"
-                                autocomplete="off"
-                            >
+                            <input type="text" id="command-input" value="">
                         </div>
                         
                         <!-- Apply Button -->
