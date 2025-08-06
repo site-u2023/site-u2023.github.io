@@ -25,7 +25,6 @@ const DEFAULT_SERVICES = {
 const AIOS_URL = 'https://raw.githubusercontent.com/site-u2023/aios/main/aios';
 const PROXY_URL = 'https://proxy.site-u.workers.dev/proxy?url=';
 const AIOS_PATH = '/usr/bin/aios';
-const SSHCMD_REG_URL = 'https://raw.githubusercontent.com/site-u2023/openwrt-note/main/file/sshcmd.reg';
 
 const DEFAULT_TERMINALS = {
   aios: {
@@ -70,6 +69,9 @@ const translations = {
         downloadHandlerButton: 'ダウンロード（ダウンロードしたsshcmd.regをダブルクリックしてインストールして下さい）',
         openwrtOfficial: 'OpenWrt (公式)',
         firmwareDownload: 'デバイス用のOpenWrtファームウェアをダウンロード',
+        githubRepo: 'GitHubリポジトリ',
+        aiosScript: 'オールインワンスクリプト',
+        configSoftware: 'コンフィグソフトウェア',
         githubRepo: 'GitHubリポジトリ',
         aiosScript: 'オールインワンスクリプト',
         configSoftware: 'コンフィグソフトウェア',
@@ -548,15 +550,6 @@ function bindEvents() {
             }
         });
     }
-    
-    // SSH Handler ダウンロードリンク
-    const sshHandlerDownloadLink = document.getElementById('ssh-handler-download-link');
-    if (sshHandlerDownloadLink) {
-        sshHandlerDownloadLink.addEventListener('click', function(e) {
-            e.preventDefault();
-            downloadSSHHandler();
-        });
-    }
 }
 
 // ==================================================
@@ -573,7 +566,8 @@ function updateAddressSelector() {
     currentAddresses.forEach(address => {
         const option = document.createElement('option');
         option.value = address;
-        datalist.appendChild(option);
+        option.textContent = address;
+        ipSelector.appendChild(option);
     });
     
     // **修正: 現在のIPが確実に選択されるように**
@@ -601,8 +595,9 @@ function updateServiceSelector() {
     Object.keys(currentServices).forEach(key => {
         const service = currentServices[key];
         const option = document.createElement('option');
-        option.value = service.name;
-        datalist.appendChild(option);
+        option.value = key;
+        option.textContent = service.name;
+        serviceSelector.appendChild(option);
     });
     
     // **修正: 現在選択中のサービスが確実に選択されるように**
@@ -662,8 +657,9 @@ function updateTerminalSelector() {
     Object.keys(currentTerminals).forEach(key => {
         const terminal = currentTerminals[key];
         const option = document.createElement('option');
-        option.value = terminal.name;
-        datalist.appendChild(option);
+        option.value = key;
+        option.textContent = terminal.name;
+        terminalSelector.appendChild(option);
     });
     
     // **修正: 現在選択中のターミナルが確実に選択されるように**
@@ -722,52 +718,6 @@ function generateTerminalURL() {
     
     const encodedCommand = encodeURIComponent(fullCommand);
     return `${baseURL}/${encodedCommand}`;
-}
-
-// ==================================================
-// SSH Handler ダウンロード機能
-// ==================================================
-async function downloadSSHHandler() {
-    try {
-        console.log('SSH Handler のダウンロードを開始...');
-        
-        // まず直接ダウンロードを試す
-        let response;
-        try {
-            response = await fetch(SSHCMD_REG_URL);
-            if (!response.ok) {
-                throw new Error(`Direct download failed: ${response.status}`);
-            }
-            console.log('直接ダウンロード成功');
-        } catch (error) {
-            console.log('直接ダウンロード失敗、プロキシ経由で試行中...', error.message);
-            // プロキシ経由でダウンロードを試す
-            response = await fetch(PROXY_URL + encodeURIComponent(SSHCMD_REG_URL));
-            if (!response.ok) {
-                throw new Error(`Proxy download failed: ${response.status}`);
-            }
-            console.log('プロキシ経由でのダウンロード成功');
-        }
-        
-        // レスポンスをBlobとして取得
-        const blob = await response.blob();
-        
-        // ダウンロードリンクを作成
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'sshcmd.reg';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
-        
-        console.log('sshcmd.reg のダウンロードが完了しました');
-        
-    } catch (error) {
-        console.error('SSH Handler のダウンロードに失敗しました:', error);
-        alert('ダウンロードに失敗しました。しばらく後に再試行してください。');
-    }
 }
 
 // ==================================================
