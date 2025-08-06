@@ -180,7 +180,7 @@ function initializeSettings() {
     const savedTerminals = localStorage.getItem('terminals');
     currentTerminals = savedTerminals ? JSON.parse(savedTerminals) : {...DEFAULT_TERMINALS};
     
-    // **修正: 保存された現在のIPアドレスを確実に復元**
+    // 保存された現在のIPアドレスを復元
     const savedIP = localStorage.getItem('currentIP');
     if (savedIP && savedIP.trim()) {
         currentIP = savedIP;
@@ -193,31 +193,52 @@ function initializeSettings() {
         currentIP = currentAddresses[0];
     }
     
-    // **修正: 保存された現在選択中のサービスを確実に復元**
+    // 保存された現在選択中のサービスを復元
     const savedService = localStorage.getItem('currentSelectedService');
     if (savedService && currentServices[savedService]) {
         currentSelectedService = savedService;
     } else {
-        currentSelectedService = Object.keys(currentServices)[0] || 'luci';
+        currentSelectedService = Object.keys(currentServices)[0];
     }
     
-    // **修正: 保存された現在選択中のターミナルを確実に復元**
+    // 保存された現在選択中のターミナルを復元
     const savedTerminal = localStorage.getItem('currentSelectedTerminal');
     if (savedTerminal && currentTerminals[savedTerminal]) {
         currentSelectedTerminal = savedTerminal;
     } else {
-        currentSelectedTerminal = Object.keys(currentTerminals)[0] || 'aios';
+        currentSelectedTerminal = Object.keys(currentTerminals)[0];
     }
     
-    // UI要素の初期化
+    // HTML要素に初期値を設定（一元管理）
+    const ipInput = document.getElementById('global-ip-input');
+    if (ipInput) {
+        ipInput.value = currentIP;
+    }
+    
+    const serviceInput = document.getElementById('service-selector');
+    if (serviceInput && currentServices[currentSelectedService]) {
+        serviceInput.value = currentServices[currentSelectedService].name;
+    }
+    
+    const portInput = document.getElementById('port-input');
+    if (portInput && currentServices[currentSelectedService]) {
+        portInput.value = currentServices[currentSelectedService].port;
+    }
+    
+    const terminalInput = document.getElementById('terminal-selector');
+    if (terminalInput && currentTerminals[currentSelectedTerminal]) {
+        terminalInput.value = currentTerminals[currentSelectedTerminal].name;
+    }
+    
+    const commandInput = document.getElementById('command-input');
+    if (commandInput && currentTerminals[currentSelectedTerminal]) {
+        commandInput.value = currentTerminals[currentSelectedTerminal].command;
+    }
+    
+    // datalistの初期化
     updateAddressSelector();
     updateServiceSelector();
     updateTerminalSelector();
-    
-    // **修正: より確実な値の設定**
-    setTimeout(() => {
-        restoreUIValues();
-    }, 10);
 }
 
 // **新規追加: UI要素の値を確実に復元する関数**
