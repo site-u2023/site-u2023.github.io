@@ -16,7 +16,7 @@
                 <section id="address" class="content-section">
                     <h2 class="section-title" data-i18n="address">Address</h2>
                     <div class="input-group connection">
-                        <!-- IP Address Input -->
+                        <!-- IP Address Input with datalist -->
                         <div class="input-container ip-container-full">
                             <div class="input-label">IP Address</div>
                             <input
@@ -25,7 +25,17 @@
                                 class="input-field"
                                 value="192.168.1.1"
                                 autocomplete="off"
+                                list="ip-datalist"
                             >
+                            <datalist id="ip-datalist">
+                                <option value="192.168.1.1">
+                                <option value="192.168.0.1">
+                                <option value="192.168.10.1">
+                                <option value="192.168.100.1">
+                                <option value="openwrt.lan">
+                                <option value="10.0.0.1">
+                                <option value="172.16.0.1">
+                            </datalist>
                         </div>
                         
                         <!-- Add/Remove Buttons -->
@@ -42,7 +52,7 @@
                 <section id="browser" class="content-section">
                     <h2 class="section-title" data-i18n="browser">Browser</h2>
                     <div class="input-group connection">
-                        <!-- Service Input -->
+                        <!-- Service Input with datalist -->
                         <div class="input-container service-container-half">
                             <div class="input-label">Service</div>
                             <input
@@ -51,7 +61,14 @@
                                 class="input-field"
                                 value="LuCI"
                                 autocomplete="off"
+                                list="service-datalist"
                             >
+                            <datalist id="service-datalist">
+                                <option value="LuCI">
+                                <option value="ttyd">
+                                <option value="filebrowser">
+                                <option value="AdGuard">
+                            </datalist>
                         </div>
 
                         <!-- Add/Remove Buttons -->
@@ -93,7 +110,7 @@
                     <h2 class="section-title" data-i18n="terminal">Terminal<span class="section-subtitle">(for Windows)</span></h2>
 
                     <div class="input-group connection">
-                        <!-- Terminal Type Input -->
+                        <!-- Terminal Type Input with datalist -->
                         <div class="input-container service-container-half">
                             <div class="input-label">Type</div>
                             <input
@@ -102,7 +119,12 @@
                                 class="input-field"
                                 value="aios"
                                 autocomplete="off"
+                                list="terminal-datalist"
                             >
+                            <datalist id="terminal-datalist">
+                                <option value="aios">
+                                <option value="SSH">
+                            </datalist>
                         </div>
 
                         <!-- Add/Remove Buttons -->
