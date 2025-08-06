@@ -16,27 +16,17 @@
                 <section id="address" class="content-section">
                     <h2 class="section-title" data-i18n="address">Address</h2>
                     <div class="input-group connection">
-                        <!-- IP Address Selector -->
                         <div class="input-container ip-container-full">
                             <div class="input-label">IP Address</div>
-                            <select id="global-ip-input" class="input-field ip-select">
-                                <option value="192.168.1.1" selected>192.168.1.1</option>
-                                <option value="192.168.0.1">192.168.0.1</option>
-                                <option value="192.168.10.1">192.168.10.1</option>
-                                <option value="192.168.100.1">192.168.100.1</option>
-                                <option value="openwrt.lan">openwrt.lan</option>
-                                <option value="10.0.0.1">10.0.0.1</option>
-                                <option value="172.16.0.1">172.16.0.1</option>      
-                            </select>
+                            <input type="text" id="global-ip-input" class="input-field" value="" list="ip-datalist" autocomplete="off">
+                            <datalist id="ip-datalist"></datalist>
                         </div>
                         
-                        <!-- Add/Remove Buttons -->
                         <div class="add-remove-container">
                             <button id="address-add" class="add-item-btn">+</button>
                             <button id="address-remove" class="remove-item-btn">-</button>
                         </div>
                         
-                        <!-- Apply Button -->
                         <button id="global-ip-update" class="update-button-standalone" data-i18n="apply">Apply</button>
                     </div>
                 </section>
@@ -44,51 +34,29 @@
                 <section id="browser" class="content-section">
                     <h2 class="section-title" data-i18n="browser">Browser</h2>
                     <div class="input-group connection">
-                        <!-- Service Selector -->
                         <div class="input-container service-container-half">
                             <div class="input-label">Service</div>
-                            <select id="service-selector" class="service-select">
-                                <option value="luci" selected>LuCI</option>
-                                <option value="ttyd">ttyd</option>
-                                <option value="filebrowser">filebrowser</option>
-                                <option value="adguard">AdGuard</option>
-                            </select>
+                            <input type="text" id="service-selector" class="input-field" value="" list="service-datalist" autocomplete="off">
+                            <datalist id="service-datalist"></datalist>
                         </div>
 
-                        <!-- Add/Remove Buttons -->
                         <div class="add-remove-container">
                             <button id="service-add" class="add-item-btn">+</button>
                             <button id="service-remove" class="remove-item-btn">-</button>
                         </div>
 
-                        <!-- Port Input -->
                         <div class="input-container port-container-half">
                             <div class="port-label">Port</div>
-                            <input
-                                type="text"
-                                id="port-input"
-                                inputmode="numeric"
-                                pattern="[0-9]*"
-                                lang="en"
-                                autocomplete="off"
-                                value=""
-                                placeholder="80"
-                                class="input-field port-field"
-                            >
+                            <input type="text" id="port-input" class="input-field" value="" autocomplete="off" inputmode="numeric" pattern="[0-9]*">
                         </div>
                         
-                        <!-- Apply Button -->
                         <button id="browser-update" class="update-button-standalone" data-i18n="apply">Apply</button>
-                        
-                        <!-- Open Button -->
                         <button id="open-current-url" class="open-button-standalone" data-i18n="open">Open</button>
                     </div>
                     
                     <details id="qrcode-detail-container" class="qr-code-section bordered-element">
                         <summary class="qr-code-summary" data-i18n="qrCodeDisplay">QR Code</summary>
-                        <div id="qrcode-detail" class="qr-code-canvas">
-                            <div style="width: 180px; height: 180px; background: var(--text-color); margin: 0 auto; display: flex; align-items: center; justify-content: center; color: var(--block-bg); font-size: 12px;"><span data-i18n="qrCodeArea">QR Code Display Area</span></div>
-                        </div>
+                        <div id="qrcode-detail" class="qr-code-canvas"></div>
                     </details>
                 </section>         
 
@@ -96,50 +64,32 @@
                     <h2 class="section-title" data-i18n="terminal">Terminal<span class="section-subtitle">(for Windows)</span></h2>
 
                     <div class="input-group connection">
-                        <!-- Terminal Type Selector -->
                         <div class="input-container service-container-half">
                             <div class="input-label">Type</div>
-                            <select id="terminal-selector" class="service-select">
-                                <option value="aios" selected>aios</option>
-                                <option value="ssh">SSH</option>
-                            </select>
+                            <input type="text" id="terminal-selector" class="input-field" value="" list="terminal-datalist" autocomplete="off">
+                            <datalist id="terminal-datalist"></datalist>
                         </div>
 
-                        <!-- Add/Remove Buttons -->
                         <div class="add-remove-container">
                             <button id="terminal-add" class="add-item-btn">+</button>
                             <button id="terminal-remove" class="remove-item-btn">-</button>
                         </div>
 
-                        <!-- Command Input -->
                         <div class="input-container command-container-half">
                             <div class="command-label">Command</div>
-                            <input
-                                type="text"
-                                id="command-input"
-                                inputmode="text"
-                                lang="en"
-                                autocomplete="off"
-                                value=""
-                                placeholder=""
-                                class="input-field command-field-terminal"
-                            >
+                            <input type="text" id="command-input" class="input-field" value="" autocomplete="off">
                         </div>
                         
-                        <!-- Apply Button -->
                         <button id="terminal-update" class="update-button-standalone" data-i18n="apply">Apply</button>
-                        
-                        <!-- Open Button -->
                         <button id="open-terminal" class="open-button-standalone" data-i18n="open">Open</button>
                     </div>
 
-                    <!-- SSH Handler Registration -->
                     <details id="ssh-handler-details-container" class="qr-code-section handler-details-section bordered-element">
                         <summary class="qr-code-summary handler-summary" data-i18n="sshHandler">
                             <span class="link-text">Protocol handler registration (first-time use)</span>
                         </summary>
                         <div class="details-content">
-                            <a id="ssh-handler-download-link" href="file/sshcmd.reg" download class="bordered-element" data-i18n="downloadHandlerButton">
+                            <a id="ssh-handler-download-link" href="#" class="bordered-element" data-i18n="downloadHandlerButton">
                                 Download (Double-click the downloaded sshcmd.reg to install it)
                             </a>
                         </div>
@@ -175,7 +125,6 @@
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
-
       gtag('config', 'G-M9YV28TG0V');
     </script>
     <script src="script.js"></script>
