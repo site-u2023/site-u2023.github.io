@@ -16,11 +16,18 @@
                 <section id="address" class="content-section">
                     <h2 class="section-title" data-i18n="address">Address</h2>
                     <div class="input-group connection">
-                        <!-- IP Address Input with datalist -->
+                        <!-- IP Address Selector -->
                         <div class="input-container ip-container-full">
                             <div class="input-label">IP Address</div>
-                            <input type="text" id="global-ip-input" value="192.168.1.1" list="ip-datalist">
-                            <datalist id="ip-datalist"></datalist>
+                            <select id="global-ip-input" class="input-field ip-select">
+                                <option value="192.168.1.1" selected>192.168.1.1</option>
+                                <option value="192.168.0.1">192.168.0.1</option>
+                                <option value="192.168.10.1">192.168.10.1</option>
+                                <option value="192.168.100.1">192.168.100.1</option>
+                                <option value="openwrt.lan">openwrt.lan</option>
+                                <option value="10.0.0.1">10.0.0.1</option>
+                                <option value="172.16.0.1">172.16.0.1</option>      
+                            </select>
                         </div>
                         
                         <!-- Add/Remove Buttons -->
@@ -37,11 +44,15 @@
                 <section id="browser" class="content-section">
                     <h2 class="section-title" data-i18n="browser">Browser</h2>
                     <div class="input-group connection">
-                        <!-- Service Input with datalist -->
+                        <!-- Service Selector -->
                         <div class="input-container service-container-half">
                             <div class="input-label">Service</div>
-                            <input type="text" id="service-selector" value="LuCI" list="service-datalist">
-                            <datalist id="service-datalist"></datalist>
+                            <select id="service-selector" class="service-select">
+                                <option value="luci" selected>LuCI</option>
+                                <option value="ttyd">ttyd</option>
+                                <option value="filebrowser">filebrowser</option>
+                                <option value="adguard">AdGuard</option>
+                            </select>
                         </div>
 
                         <!-- Add/Remove Buttons -->
@@ -53,7 +64,17 @@
                         <!-- Port Input -->
                         <div class="input-container port-container-half">
                             <div class="port-label">Port</div>
-                            <input type="text" id="port-input" value="">
+                            <input
+                                type="text"
+                                id="port-input"
+                                inputmode="numeric"
+                                pattern="[0-9]*"
+                                lang="en"
+                                autocomplete="off"
+                                value=""
+                                placeholder="80"
+                                class="input-field port-field"
+                            >
                         </div>
                         
                         <!-- Apply Button -->
@@ -75,11 +96,13 @@
                     <h2 class="section-title" data-i18n="terminal">Terminal<span class="section-subtitle">(for Windows)</span></h2>
 
                     <div class="input-group connection">
-                        <!-- Terminal Type Input with datalist -->
+                        <!-- Terminal Type Selector -->
                         <div class="input-container service-container-half">
                             <div class="input-label">Type</div>
-                            <input type="text" id="terminal-selector" value="aios" list="terminal-datalist">
-                            <datalist id="terminal-datalist"></datalist>
+                            <select id="terminal-selector" class="service-select">
+                                <option value="aios" selected>aios</option>
+                                <option value="ssh">SSH</option>
+                            </select>
                         </div>
 
                         <!-- Add/Remove Buttons -->
@@ -91,7 +114,16 @@
                         <!-- Command Input -->
                         <div class="input-container command-container-half">
                             <div class="command-label">Command</div>
-                            <input type="text" id="command-input" value="">
+                            <input
+                                type="text"
+                                id="command-input"
+                                inputmode="text"
+                                lang="en"
+                                autocomplete="off"
+                                value=""
+                                placeholder=""
+                                class="input-field command-field-terminal"
+                            >
                         </div>
                         
                         <!-- Apply Button -->
