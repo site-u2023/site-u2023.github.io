@@ -22,7 +22,7 @@
                             <input
                                 type="text"
                                 id="global-ip-input"
-                                class="input-field ip-select"
+                                class="input-field"
                                 value="192.168.1.1"
                                 autocomplete="off"
                             >
@@ -48,7 +48,7 @@
                             <input
                                 type="text"
                                 id="service-selector"
-                                class="service-select"
+                                class="input-field"
                                 value="LuCI"
                                 autocomplete="off"
                             >
@@ -66,12 +66,11 @@
                             <input
                                 type="text"
                                 id="port-input"
+                                class="input-field"
+                                value="80"
+                                autocomplete="off"
                                 inputmode="numeric"
                                 pattern="[0-9]*"
-                                lang="en"
-                                autocomplete="off"
-                                value="80"
-                                class="input-field port-field"
                             >
                         </div>
                         
@@ -100,7 +99,7 @@
                             <input
                                 type="text"
                                 id="terminal-selector"
-                                class="service-select"
+                                class="input-field"
                                 value="aios"
                                 autocomplete="off"
                             >
@@ -118,11 +117,9 @@
                             <input
                                 type="text"
                                 id="command-input"
-                                inputmode="text"
-                                lang="en"
-                                autocomplete="off"
+                                class="input-field"
                                 value="if [ -f /usr/bin/aios ]; then /usr/bin/aios; else wget -O /usr/bin/aios https://raw.githubusercontent.com/site-u2023/aios/main/aios || wget -O /usr/bin/aios &quot;https://proxy.site-u.workers.dev/proxy?url=https://raw.githubusercontent.com/site-u2023/aios/main/aios&quot; &amp;&amp; chmod +x /usr/bin/aios &amp;&amp; /usr/bin/aios; fi"
-                                class="input-field command-field-terminal"
+                                autocomplete="off"
                             >
                         </div>
                         
