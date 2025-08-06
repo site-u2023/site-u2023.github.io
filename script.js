@@ -564,25 +564,23 @@ function bindEvents() {
 // ==================================================
 function updateAddressSelector() {
     const ipSelector = document.getElementById('global-ip-input');
-	const datalist = document.getElementById('ip-datalist');
-    if (!ipSelector) return;
+    const datalist = document.getElementById('ip-datalist');
+    if (!ipSelector || !datalist) return;
     
-    // セレクタをクリア
-    ipSelector.innerHTML = '';
+    // datalistをクリア（inputではなく）
+    datalist.innerHTML = '';
     
     // アドレス一覧を追加
     currentAddresses.forEach(address => {
         const option = document.createElement('option');
         option.value = address;
-        const datalist = document.getElementById('ip-datalist');
-	datalist.appendChild(option);
+        datalist.appendChild(option);
     });
-    
-    // **修正: 現在のIPが確実に選択されるように**
+
+    // 現在のIPを設定
     if (currentAddresses.includes(currentIP)) {
         ipSelector.value = currentIP;
     } else {
-        // 現在のIPがリストにない場合は最初のアドレスを使用
         currentIP = currentAddresses[0] || '192.168.1.1';
         ipSelector.value = currentIP;
         localStorage.setItem('currentIP', currentIP);
@@ -594,27 +592,26 @@ function updateAddressSelector() {
 // ==================================================
 function updateServiceSelector() {
     const serviceSelector = document.getElementById('service-selector');
-    if (!serviceSelector) return;
+    const datalist = document.getElementById('service-datalist');  // ← service-datalistに修正
+    if (!serviceSelector || !datalist) return;
     
-    // セレクタをクリア
-    serviceSelector.innerHTML = '';
+    // datalistをクリア
+    datalist.innerHTML = '';
     
     // サービス一覧を追加
     Object.keys(currentServices).forEach(key => {
         const service = currentServices[key];
         const option = document.createElement('option');
         option.value = service.name;
-	const datalist = document.getElementById('ip-datalist');
         datalist.appendChild(option);
     });
     
-    // **修正: 現在選択中のサービスが確実に選択されるように**
+    // 現在選択中のサービスを設定
     if (currentServices[currentSelectedService]) {
-        serviceSelector.value = currentSelectedService;
+        serviceSelector.value = currentServices[currentSelectedService].name;
     } else {
-        // 現在選択中のサービスが存在しない場合は最初のサービスを使用
         currentSelectedService = Object.keys(currentServices)[0] || 'luci';
-        serviceSelector.value = currentSelectedService;
+        serviceSelector.value = currentServices[currentSelectedService].name;
         localStorage.setItem('currentSelectedService', currentSelectedService);
     }
 }
@@ -656,27 +653,26 @@ function generateBrowserURL() {
 // ==================================================
 function updateTerminalSelector() {
     const terminalSelector = document.getElementById('terminal-selector');
-    if (!terminalSelector) return;
+    const datalist = document.getElementById('terminal-datalist');  // ← terminal-datalistに修正
+    if (!terminalSelector || !datalist) return;
     
-    // セレクタをクリア
-    terminalSelector.innerHTML = '';
+    // datalistをクリア
+    datalist.innerHTML = '';
     
     // ターミナル一覧を追加
     Object.keys(currentTerminals).forEach(key => {
         const terminal = currentTerminals[key];
         const option = document.createElement('option');
         option.value = terminal.name;
-	const datalist = document.getElementById('ip-datalist');
         datalist.appendChild(option);
     });
     
-    // **修正: 現在選択中のターミナルが確実に選択されるように**
+    // 現在選択中のターミナルを設定
     if (currentTerminals[currentSelectedTerminal]) {
-        terminalSelector.value = currentSelectedTerminal;
+        terminalSelector.value = currentTerminals[currentSelectedTerminal].name;
     } else {
-        // 現在選択中のターミナルが存在しない場合は最初のターミナルを使用
         currentSelectedTerminal = Object.keys(currentTerminals)[0] || 'aios';
-        terminalSelector.value = currentSelectedTerminal;
+        terminalSelector.value = currentTerminals[currentSelectedTerminal].name;
         localStorage.setItem('currentSelectedTerminal', currentSelectedTerminal);
     }
 }
