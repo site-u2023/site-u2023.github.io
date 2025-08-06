@@ -180,7 +180,7 @@ function initializeSettings() {
     const savedTerminals = localStorage.getItem('terminals');
     currentTerminals = savedTerminals ? JSON.parse(savedTerminals) : {...DEFAULT_TERMINALS};
     
-    // 保存された現在のIPアドレスを復元
+    // **修正: 保存された現在のIPアドレスを確実に復元**
     const savedIP = localStorage.getItem('currentIP');
     if (savedIP && savedIP.trim()) {
         currentIP = savedIP;
@@ -190,55 +190,34 @@ function initializeSettings() {
             localStorage.setItem('addresses', JSON.stringify(currentAddresses));
         }
     } else {
-        currentIP = currentAddresses[0];
+        currentIP = currentAddresses[0] || '192.168.1.1';
     }
     
-    // 保存された現在選択中のサービスを復元
+    // **修正: 保存された現在選択中のサービスを確実に復元**
     const savedService = localStorage.getItem('currentSelectedService');
     if (savedService && currentServices[savedService]) {
         currentSelectedService = savedService;
     } else {
-        currentSelectedService = Object.keys(currentServices)[0];
+        currentSelectedService = Object.keys(currentServices)[0] || 'luci';
     }
     
-    // 保存された現在選択中のターミナルを復元
+    // **修正: 保存された現在選択中のターミナルを確実に復元**
     const savedTerminal = localStorage.getItem('currentSelectedTerminal');
     if (savedTerminal && currentTerminals[savedTerminal]) {
         currentSelectedTerminal = savedTerminal;
     } else {
-        currentSelectedTerminal = Object.keys(currentTerminals)[0];
+        currentSelectedTerminal = Object.keys(currentTerminals)[0] || 'aios';
     }
     
-    // HTML要素に初期値を設定（一元管理）
-    const ipInput = document.getElementById('global-ip-input');
-    if (ipInput) {
-        ipInput.value = currentIP;
-    }
-    
-    const serviceInput = document.getElementById('service-selector');
-    if (serviceInput && currentServices[currentSelectedService]) {
-        serviceInput.value = currentServices[currentSelectedService].name;
-    }
-    
-    const portInput = document.getElementById('port-input');
-    if (portInput && currentServices[currentSelectedService]) {
-        portInput.value = currentServices[currentSelectedService].port;
-    }
-    
-    const terminalInput = document.getElementById('terminal-selector');
-    if (terminalInput && currentTerminals[currentSelectedTerminal]) {
-        terminalInput.value = currentTerminals[currentSelectedTerminal].name;
-    }
-    
-    const commandInput = document.getElementById('command-input');
-    if (commandInput && currentTerminals[currentSelectedTerminal]) {
-        commandInput.value = currentTerminals[currentSelectedTerminal].command;
-    }
-    
-    // datalistの初期化
+    // UI要素の初期化
     updateAddressSelector();
     updateServiceSelector();
     updateTerminalSelector();
+    
+    // **修正: より確実な値の設定**
+    setTimeout(() => {
+        restoreUIValues();
+    }, 10);
 }
 
 // **新規追加: UI要素の値を確実に復元する関数**
@@ -249,17 +228,16 @@ function restoreUIValues() {
         console.log('IP selector restored to:', currentIP);
     }
     
-    // 正しいコード
     const serviceSelector = document.getElementById('service-selector');
-    if (serviceSelector && currentServices[currentSelectedService]) {
-        serviceSelector.value = currentServices[currentSelectedService].name;  // ← 名前を設定
-        console.log('Service selector restored to:', currentServices[currentSelectedService].name);
+    if (serviceSelector) {
+        serviceSelector.value = currentSelectedService;
+        console.log('Service selector restored to:', currentSelectedService);
     }
-
+    
     const terminalSelector = document.getElementById('terminal-selector');
-    if (terminalSelector && currentTerminals[currentSelectedTerminal]) {
-        terminalSelector.value = currentTerminals[currentSelectedTerminal].name;  // ← 名前を設定
-        console.log('Terminal selector restored to:', currentTerminals[currentSelectedTerminal].name);
+    if (terminalSelector) {
+        terminalSelector.value = currentSelectedTerminal;
+        console.log('Terminal selector restored to:', currentSelectedTerminal);
     }
     
     // 各要素の表示を更新
@@ -586,24 +564,25 @@ function bindEvents() {
 // ==================================================
 function updateAddressSelector() {
     const ipSelector = document.getElementById('global-ip-input');
-    const datalist = document.getElementById('ip-datalist');
-    if (!ipSelector || !datalist) return;
+    if (!ipSelector) return;
     
-    // datalistをクリア（inputではなく）
-    datalist.innerHTML = '';
+    // セレクタをクリア
+    ipSelector.innerHTML = '';
     
     // アドレス一覧を追加
     currentAddresses.forEach(address => {
         const option = document.createElement('option');
         option.value = address;
-        datalist.appendChild(option);
+        option.textContent = address;
+        ipSelector.appendChild(option);
     });
-
-    // 現在のIPを設定
+    
+    // **修正: 現在のIPが確実に選択されるように**
     if (currentAddresses.includes(currentIP)) {
         ipSelector.value = currentIP;
     } else {
-        currentIP = currentAddresses[0];
+        // 現在のIPがリストにない場合は最初のアドレスを使用
+        currentIP = currentAddresses[0] || '192.168.1.1';
         ipSelector.value = currentIP;
         localStorage.setItem('currentIP', currentIP);
     }
@@ -614,26 +593,27 @@ function updateAddressSelector() {
 // ==================================================
 function updateServiceSelector() {
     const serviceSelector = document.getElementById('service-selector');
-    const datalist = document.getElementById('service-datalist');  // ← service-datalistに修正
-    if (!serviceSelector || !datalist) return;
+    if (!serviceSelector) return;
     
-    // datalistをクリア
-    datalist.innerHTML = '';
+    // セレクタをクリア
+    serviceSelector.innerHTML = '';
     
     // サービス一覧を追加
     Object.keys(currentServices).forEach(key => {
         const service = currentServices[key];
         const option = document.createElement('option');
-        option.value = service.name;
-        datalist.appendChild(option);
+        option.value = key;
+        option.textContent = service.name;
+        serviceSelector.appendChild(option);
     });
     
-    // 現在選択中のサービスを設定
+    // **修正: 現在選択中のサービスが確実に選択されるように**
     if (currentServices[currentSelectedService]) {
-        serviceSelector.value = currentServices[currentSelectedService].name;
+        serviceSelector.value = currentSelectedService;
     } else {
+        // 現在選択中のサービスが存在しない場合は最初のサービスを使用
         currentSelectedService = Object.keys(currentServices)[0] || 'luci';
-        serviceSelector.value = currentServices[currentSelectedService].name;
+        serviceSelector.value = currentSelectedService;
         localStorage.setItem('currentSelectedService', currentSelectedService);
     }
 }
@@ -675,26 +655,27 @@ function generateBrowserURL() {
 // ==================================================
 function updateTerminalSelector() {
     const terminalSelector = document.getElementById('terminal-selector');
-    const datalist = document.getElementById('terminal-datalist');  // ← terminal-datalistに修正
-    if (!terminalSelector || !datalist) return;
+    if (!terminalSelector) return;
     
-    // datalistをクリア
-    datalist.innerHTML = '';
+    // セレクタをクリア
+    terminalSelector.innerHTML = '';
     
     // ターミナル一覧を追加
     Object.keys(currentTerminals).forEach(key => {
         const terminal = currentTerminals[key];
         const option = document.createElement('option');
-        option.value = terminal.name;
-        datalist.appendChild(option);
+        option.value = key;
+        option.textContent = terminal.name;
+        terminalSelector.appendChild(option);
     });
     
-    // 現在選択中のターミナルを設定
+    // **修正: 現在選択中のターミナルが確実に選択されるように**
     if (currentTerminals[currentSelectedTerminal]) {
-        terminalSelector.value = currentTerminals[currentSelectedTerminal].name;
+        terminalSelector.value = currentSelectedTerminal;
     } else {
+        // 現在選択中のターミナルが存在しない場合は最初のターミナルを使用
         currentSelectedTerminal = Object.keys(currentTerminals)[0] || 'aios';
-        terminalSelector.value = currentTerminals[currentSelectedTerminal].name;
+        terminalSelector.value = currentSelectedTerminal;
         localStorage.setItem('currentSelectedTerminal', currentSelectedTerminal);
     }
 }
