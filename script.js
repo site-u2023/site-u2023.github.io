@@ -205,7 +205,12 @@ function initializeSettings() {
         currentSelectedTerminal = Object.keys(currentTerminals)[0];
     }
     
-    // HTML要素に初期値を設定（一元管理）
+    // 先にdatalistを更新（選択肢を生成）
+    updateAddressDatalist();
+    updateServiceDatalist();
+    updateTerminalDatalist();
+    
+    // その後で値を設定
     const ipInput = document.getElementById('global-ip-input');
     if (ipInput) {
         ipInput.value = currentIP;
@@ -230,11 +235,6 @@ function initializeSettings() {
     if (commandInput && currentTerminals[currentSelectedTerminal]) {
         commandInput.value = currentTerminals[currentSelectedTerminal].command;
     }
-    
-    // datalistの初期化
-    updateAddressSelector();
-    updateServiceSelector();
-    updateTerminalSelector();
 }
 
 function bindEvents() {
