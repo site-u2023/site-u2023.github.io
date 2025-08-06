@@ -190,7 +190,7 @@ function initializeSettings() {
             localStorage.setItem('addresses', JSON.stringify(currentAddresses));
         }
     } else {
-        currentIP = currentAddresses[0] || '192.168.1.1';
+        currentIP = currentAddresses[0];
     }
     
     // **修正: 保存された現在選択中のサービスを確実に復元**
@@ -228,16 +228,17 @@ function restoreUIValues() {
         console.log('IP selector restored to:', currentIP);
     }
     
+    // 正しいコード
     const serviceSelector = document.getElementById('service-selector');
-    if (serviceSelector) {
-        serviceSelector.value = currentSelectedService;
-        console.log('Service selector restored to:', currentSelectedService);
+    if (serviceSelector && currentServices[currentSelectedService]) {
+        serviceSelector.value = currentServices[currentSelectedService].name;  // ← 名前を設定
+        console.log('Service selector restored to:', currentServices[currentSelectedService].name);
     }
-    
+
     const terminalSelector = document.getElementById('terminal-selector');
-    if (terminalSelector) {
-        terminalSelector.value = currentSelectedTerminal;
-        console.log('Terminal selector restored to:', currentSelectedTerminal);
+    if (terminalSelector && currentTerminals[currentSelectedTerminal]) {
+        terminalSelector.value = currentTerminals[currentSelectedTerminal].name;  // ← 名前を設定
+        console.log('Terminal selector restored to:', currentTerminals[currentSelectedTerminal].name);
     }
     
     // 各要素の表示を更新
@@ -581,7 +582,7 @@ function updateAddressSelector() {
     if (currentAddresses.includes(currentIP)) {
         ipSelector.value = currentIP;
     } else {
-        currentIP = currentAddresses[0] || '192.168.1.1';
+        currentIP = currentAddresses[0];
         ipSelector.value = currentIP;
         localStorage.setItem('currentIP', currentIP);
     }
