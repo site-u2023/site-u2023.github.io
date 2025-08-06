@@ -16,20 +16,17 @@
                 <section id="address" class="content-section">
                     <h2 class="section-title" data-i18n="address">Address</h2>
                     <div class="input-group connection">
-                        <!-- IP Address Input with datalist -->
                         <div class="input-container ip-container-full">
                             <div class="input-label">IP Address</div>
                             <input type="text" id="global-ip-input" class="input-field" value="" list="ip-datalist" autocomplete="off">
                             <datalist id="ip-datalist"></datalist>
                         </div>
                         
-                        <!-- Add/Remove Buttons -->
                         <div class="add-remove-container">
                             <button id="address-add" class="add-item-btn">+</button>
                             <button id="address-remove" class="remove-item-btn">-</button>
                         </div>
                         
-                        <!-- Apply Button -->
                         <button id="global-ip-update" class="update-button-standalone" data-i18n="apply">Apply</button>
                     </div>
                 </section>
@@ -37,29 +34,23 @@
                 <section id="browser" class="content-section">
                     <h2 class="section-title" data-i18n="browser">Browser</h2>
                     <div class="input-group connection">
-                        <!-- Service Input with datalist -->
                         <div class="input-container service-container-half">
                             <div class="input-label">Service</div>
                             <input type="text" id="service-selector" class="input-field" value="" list="service-datalist" autocomplete="off">
                             <datalist id="service-datalist"></datalist>
                         </div>
 
-                        <!-- Add/Remove Buttons -->
                         <div class="add-remove-container">
                             <button id="service-add" class="add-item-btn">+</button>
                             <button id="service-remove" class="remove-item-btn">-</button>
                         </div>
 
-                        <!-- Port Input -->
                         <div class="input-container port-container-half">
                             <div class="port-label">Port</div>
                             <input type="text" id="port-input" class="input-field" value="" autocomplete="off" inputmode="numeric" pattern="[0-9]*">
                         </div>
                         
-                        <!-- Apply Button -->
                         <button id="browser-update" class="update-button-standalone" data-i18n="apply">Apply</button>
-                        
-                        <!-- Open Button -->
                         <button id="open-current-url" class="open-button-standalone" data-i18n="open">Open</button>
                     </div>
                     
@@ -73,33 +64,26 @@
                     <h2 class="section-title" data-i18n="terminal">Terminal<span class="section-subtitle">(for Windows)</span></h2>
 
                     <div class="input-group connection">
-                        <!-- Terminal Type Input with datalist -->
                         <div class="input-container service-container-half">
                             <div class="input-label">Type</div>
                             <input type="text" id="terminal-selector" class="input-field" value="" list="terminal-datalist" autocomplete="off">
                             <datalist id="terminal-datalist"></datalist>
                         </div>
 
-                        <!-- Add/Remove Buttons -->
                         <div class="add-remove-container">
                             <button id="terminal-add" class="add-item-btn">+</button>
                             <button id="terminal-remove" class="remove-item-btn">-</button>
                         </div>
 
-                        <!-- Command Input -->
                         <div class="input-container command-container-half">
                             <div class="command-label">Command</div>
                             <input type="text" id="command-input" class="input-field" value="" autocomplete="off">
                         </div>
                         
-                        <!-- Apply Button -->
                         <button id="terminal-update" class="update-button-standalone" data-i18n="apply">Apply</button>
-                        
-                        <!-- Open Button -->
                         <button id="open-terminal" class="open-button-standalone" data-i18n="open">Open</button>
                     </div>
 
-                    <!-- SSH Handler Registration -->
                     <details id="ssh-handler-details-container" class="qr-code-section handler-details-section bordered-element">
                         <summary class="qr-code-summary handler-summary" data-i18n="sshHandler">
                             <span class="link-text">Protocol handler registration (first-time use)</span>
