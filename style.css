@@ -1,4 +1,18 @@
-/* テーマ変数 */
+/*
+ * 基本デザイン要件:
+ * 1. テーマに応じた背景色 (--block-bg):
+ * - ライトテーマ: #f1f1f1 (白)
+ * - ダークテーマ: #003756 (黒)
+ * 2. 全ての文字色 (--text-color):
+ * - ライトテーマ、ダークテーマに関わらず、常に #43b0e8 (水色)
+ * 3. 全てのリンク（ロゴを含む）や、枠として機能する要素のホバー時の挙動:
+ * - ホバー時以外: 背景透明、文字色を水色 (--text-color) から継承、水色の枠線
+ * - ホバー時のみ: 背景 #43b0e8 (水色)、文字 #f1f1f1 (白)、水色の枠線（背景と同色）
+ *
+ * その他: 上記以外は全て継承し、余計な個別指定は行わない。
+ */
+
+/* ── テーマ変数 ── */
 html[data-theme="light"] {
     --block-bg: #f1f1f1;
     --main-color: #43b0e8;
@@ -21,11 +35,23 @@ html[data-theme="dark"] {
     --qr-light: #111;
 }
 
+/* ── モバイルブラウザのデフォルトスタイル無効化 ── */
+.input-field,
+.service-select,
+.port-field,
+.command-field,
+.command-field-terminal,
+.ip-select {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
+
 html {
     font-size: 16px;
 }
 
-/* ベーススタイル */
+/* ── ベーススタイル ── */
 body {
     margin: 0;
     padding: 0 0 5em;
@@ -39,13 +65,14 @@ body {
     flex-direction: column;
 }
 
+/* リストマーカーの削除 */
 ul {
     list-style: none;
     margin: 0;
     padding: 0;
 }
 
-/* メインコンテンツのコンテナ */
+/* ── メインコンテンツのコンテナ ── */
 .container {
     flex-grow: 1;
     width: 100%;
@@ -54,6 +81,7 @@ ul {
     align-items: center;
     box-sizing: border-box;
     transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    /* box-shadow: 0 0.25em 0.5em rgba(0, 0, 0, 0.1); */
 }
 
 .main-content {
@@ -66,10 +94,10 @@ ul {
     border-radius: 0.5em;
     box-sizing: border-box;
     min-width: 0;
-    box-shadow: 0 0.25em 0.5em rgba(0, 0, 0, 0.1);
+    box-shadow: 0 0.25em 0.5em rgba(0, 0, 0, 0.1); /* ライト・ダーク共通 */
 }
 
-/* 枠付き要素の汎用スタイル */
+/* ── 新しい「枠付き要素」の汎用スタイル ── */
 .bordered-element {
     display: block;
     background-color: transparent;
@@ -90,7 +118,7 @@ ul {
     color: var(--hover-text);
 }
 
-/* 各コンテンツセクション */
+/* ── 各コンテンツセクション ── */
 .content-section {
     background-color: var(--block-bg);
     border-radius: 0.3125em;
@@ -125,7 +153,7 @@ h3.bordered-element {
     padding: 0.8em 1em;
 }
 
-/* 入力グループスタイル */
+/* ── 新しい入力グループスタイル ── */
 #address .input-group,
 #browser .input-group,
 #terminal .input-group {
@@ -134,7 +162,7 @@ h3.bordered-element {
     margin-bottom: 1em;
 }
 
-/* Add/Remove ボタンコンテナ */
+/* ── Add/Remove ボタンコンテナ ── */
 .add-remove-container {
     display: flex;
     flex-direction: column;
@@ -176,7 +204,7 @@ h3.bordered-element {
     border-radius: 0 0 0.3em 0.3em;
 }
 
-/* IPアドレス入力コンテナ（2倍幅） */
+/* ── IPアドレス入力コンテナ（2倍幅） ── */
 .ip-container-full {
     flex: 2;
     min-width: 8ch;
@@ -188,7 +216,7 @@ h3.bordered-element {
     padding: 0;
     box-sizing: border-box;
     transition: background-color 0.2s, border-color 0.2s;
-    min-height: 2.8em;
+    min-height: 2.8em; /* 修正: 3.4em → 2.8em */
 }
 
 .ip-container-full:hover {
@@ -200,8 +228,9 @@ h3.bordered-element {
     color: var(--hover-text);
 }
 
-.ip-container-full:hover .input-field {
+.ip-container-full:hover .ip-select {
     color: var(--hover-text);
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f1f1f1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
 }
 
 .ip-container-full:focus-within {
@@ -226,7 +255,42 @@ h3.bordered-element {
     z-index: 2;
 }
 
-/* サービス選択コンテナ（1:1比率・半分幅） */
+.ip-container-full .input-field,
+.ip-container-full .ip-select {
+    width: 100%;
+    border: none;
+    background-color: transparent;
+    color: inherit;
+    font-weight: normal;
+    font-size: 0.9em;
+    box-sizing: border-box;
+    padding: 1em 0.5em 1em 0.5em; /* 修正: パディングを調整 */
+    margin: 0;
+    cursor: pointer;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2343b0e8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline%20points='6,9%2012,15%2018,9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 0.3em bottom;
+    background-size: 1em;
+}
+
+.ip-container-full .ip-select:focus {
+    outline: none;
+    color: var(--hover-text);
+}
+
+.ip-container-full:focus-within .ip-select {
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f1f1f1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+}
+
+.ip-select option {
+    background-color: var(--block-bg);
+    color: var(--text-color);
+}
+
+/* ── サービス選択コンテナ（1:1比率・半分幅） ── */
 .service-container-half {
     flex: 1;
     min-width: 4ch;
@@ -238,7 +302,7 @@ h3.bordered-element {
     padding: 0;
     box-sizing: border-box;
     transition: background-color 0.2s, border-color 0.2s;
-    min-height: 2.8em;
+    min-height: 2.8em; /* 修正: 3.4em → 2.8em */
 }
 
 .service-container-half:hover {
@@ -250,8 +314,9 @@ h3.bordered-element {
     color: var(--hover-text);
 }
 
-.service-container-half:hover .input-field {
+.service-container-half:hover .service-select {
     color: var(--hover-text);
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f1f1f1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
 }
 
 .service-container-half:focus-within {
@@ -276,7 +341,42 @@ h3.bordered-element {
     z-index: 2;
 }
 
-/* ポート入力コンテナ（1:1比率・半分幅） */
+.service-container-half .service-select {
+    width: 100%;
+    border: none;
+    border-radius: 0;
+    background-color: transparent;
+    color: inherit;
+    font-weight: normal;
+    font-size: 0.9em;
+    box-sizing: border-box;
+    padding: 1em 0.5em 1em 0.5em; /* 修正: パディングを調整 */
+    margin: 0;
+    cursor: pointer;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2343b0e8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline%20points='6,9%2012,15%2018,9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 0.3em bottom;
+    background-size: 1em;
+}
+
+.service-container-half .service-select:focus {
+    outline: none;
+    color: var(--hover-text);
+}
+
+.service-container-half:focus-within .service-select {
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f1f1f1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+}
+
+.service-select option {
+    background-color: var(--block-bg);
+    color: var(--text-color);
+}
+
+/* ── ポート入力コンテナ（1:1比率・半分幅） ── */
 .port-container-half {
     flex: 1;
     min-width: 4ch;
@@ -288,7 +388,7 @@ h3.bordered-element {
     padding: 0;
     box-sizing: border-box;
     transition: background-color 0.2s, border-color 0.2s;
-    min-height: 2.8em;
+    min-height: 2.8em; /* 修正: 3.4em → 2.8em */
 }
 
 .port-container-half:focus-within {
@@ -313,7 +413,25 @@ h3.bordered-element {
     color: var(--hover-text);
 }
 
-/* ターミナル用コマンド入力コンテナ（1:1比率・半分幅） */
+.port-container-half .port-field {
+    width: 100%;
+    border: none;
+    border-radius: 0;
+    background-color: transparent;
+    color: inherit;
+    font-weight: normal;
+    font-size: 0.9em;
+    box-sizing: border-box;
+    padding: 1em 0.5em 1em 0.5em; /* 修正: パディングを調整 */
+    margin: 0;
+}
+
+.port-container-half .port-field:focus {
+    outline: none;
+    color: var(--hover-text);
+}
+
+/* ── ターミナル用コマンド入力コンテナ（1:1比率・半分幅） ── */
 .command-container-half {
     flex: 1;
     min-width: 4ch;
@@ -325,7 +443,7 @@ h3.bordered-element {
     padding: 0;
     box-sizing: border-box;
     transition: background-color 0.2s, border-color 0.2s;
-    min-height: 2.8em;
+    min-height: 2.8em; /* 修正: 3.4em → 2.8em */
 }
 
 .command-container-half:focus-within {
@@ -350,44 +468,93 @@ h3.bordered-element {
     color: var(--hover-text);
 }
 
-/* inputフィールドのスタイル（最優先） */
-input.input-field {
+.command-container-half .command-field-terminal {
     width: 100%;
-    border: none !important;
-    background-color: transparent !important;
-    background: transparent !important;
-    color: inherit !important;
+    border: none;
+    border-radius: 0;
+    background-color: transparent;
+    color: inherit;
     font-weight: normal;
     font-size: 0.9em;
     box-sizing: border-box;
-    padding: 1em 0.5em;
+    padding: 1em 0.5em 1em 0.5em; /* 修正: パディングを調整 */
     margin: 0;
-    cursor: text;
-    -webkit-appearance: none !important;
-    -moz-appearance: none !important;
-    appearance: none !important;
 }
 
-input.input-field:focus {
-    outline: none !important;
-    background-color: transparent !important;
-    color: var(--hover-text) !important;
+.command-container-half .command-field-terminal:focus {
+    outline: none;
+    color: var(--hover-text);
 }
 
-/* 更新ボタン（独立） */
+/* ── コマンド入力コンテナ（ワイド） ── */
+.command-input-container {
+    width: 100%;
+    display: flex;
+    align-items: stretch;
+    position: relative;
+    border: 0.05em solid var(--text-color);
+    border-radius: 0.3em;
+    padding: 0;
+    box-sizing: border-box;
+    transition: background-color 0.2s, border-color 0.2s;
+    min-height: 2.8em; /* 修正: 3.4em → 2.8em */
+    margin-bottom: 1em;
+}
+
+.command-input-container:focus-within {
+    background-color: var(--hover-bg);
+    border-color: var(--hover-bg);
+}
+
+.command-input-container .input-label {
+    position: absolute;
+    top: 0.2em;
+    left: 0.5em;
+    font-size: 0.7em;
+    color: inherit;
+    font-weight: normal;
+    opacity: 0.8;
+    pointer-events: none;
+    transition: color 0.2s ease;
+    z-index: 2;
+}
+
+.command-input-container:focus-within .input-label {
+    color: var(--hover-text);
+}
+
+.command-input-container .command-field {
+    width: 100%;
+    border: none;
+    border-radius: 0;
+    background-color: transparent;
+    color: inherit;
+    font-weight: normal;
+    font-size: 0.9em;
+    box-sizing: border-box;
+    padding: 1em 0.5em 1em 0.5em; /* 修正: パディングを調整 */
+    margin: 0;
+}
+
+.command-input-container .command-field:focus {
+    outline: none;
+    color: var(--hover-text);
+}
+
+/* ── 更新ボタン（独立） ── */
 .update-button-standalone {
     flex: 0 0 auto;
     background-color: transparent;
     color: var(--text-color);
     border: 0.05em solid var(--text-color);
     border-radius: 0.3em;
-    padding: 1em 0.5em;
+    padding: 1em 0.5em; /* 修正: パディングを調整 */
     cursor: pointer;
     transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
     font-size: 0.9em;
     white-space: nowrap;
     box-sizing: border-box;
-    min-height: 2.8em;
+    min-height: 2.8em; /* 修正: 3.4em → 2.8em */
 }
 
 .update-button-standalone:hover {
@@ -396,7 +563,7 @@ input.input-field:focus {
     border-color: var(--hover-bg);
 }
 
-/* Openボタン（独立） */
+/* ── Openボタン（独立） ── */
 .open-button-standalone {
     flex: 0 0 auto;
     background-color: transparent;
@@ -405,13 +572,13 @@ input.input-field:focus {
     margin-left: 0;
     margin-right: 0;
     border-radius: 0.3em;
-    padding: 1em 0.3em;
+    padding: 1em 0.3em; /* 修正: パディングを調整 */
     cursor: pointer;
     transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
     font-size: 0.9em;
     white-space: nowrap;
     box-sizing: border-box;
-    min-height: 2.8em;
+    min-height: 2.8em; /* 修正: 3.4em → 2.8em */
 }
 
 .open-button-standalone:hover {
@@ -420,7 +587,12 @@ input.input-field:focus {
     border-color: var(--hover-bg);
 }
 
-/* QRコード部分 */
+/* ── ターミナルコントロールグループ ── */
+.terminal-controls-group {
+    margin-bottom: 1.5em;
+}
+
+/* ── QRコード部分 ── */
 .qr-code-section {
     margin-top: 1em;
     padding: 0;
@@ -500,7 +672,7 @@ input.input-field:focus {
     margin: 0 auto;
 }
 
-/* リンクリスト */
+/* ── リンクリスト ── */
 .link-list {
     margin-top: 0;
     padding: 0;
@@ -538,7 +710,7 @@ input.input-field:focus {
     flex-shrink: 0;
 }
 
-/* 動的サービスリンクの特別なスタイル */
+/* ── 動的サービスリンクの特別なスタイル ── */
 .link-item .service-ip,
 .link-item .service-port {
     font-weight: bold;
@@ -546,7 +718,7 @@ input.input-field:focus {
     transition: color 0.2s ease;
 }
 
-/* ホバー時の色反転スタイル（動的リンク要素内のすべての要素） */
+/* ── ホバー時の色反転スタイル（動的リンク要素内のすべての要素） ── */
 .bordered-element:hover .service-ip,
 .bordered-element:hover .service-port,
 .bordered-element:hover .link-text,
@@ -555,14 +727,14 @@ input.input-field:focus {
     color: var(--hover-text);
 }
 
-/* ヘッダー */
+/* ── ヘッダー ── */
 .main-header {
     position: relative;
     background-color: var(--block-bg);
-    max-width: 50em;
-    margin: 0 auto;
+    max-width: 50em; /* 最大幅800px */
+    margin: 0 auto; /* 中央揃え */
     width: 100%;
-    box-shadow: 0 0.25em 0.5em rgba(0, 0, 0, 0.1);
+    box-shadow: 0 0.25em 0.5em rgba(0, 0, 0, 0.1); /* 影を統一 */
     border-color: transparent;
     box-sizing: border-box;
 }
@@ -608,20 +780,20 @@ input.input-field:focus {
     max-width: clamp(160px, 80vw, 800px);
 }
 
-/* フッター */
+/* ── フッター ── */
 .page-footer-area {
     position: fixed;
     bottom: 0;
     left: 50%;
     transform: translateX(-50%);
-    max-width: 50em;
+    max-width: 50em; /* 最大幅800px */
     width: 100%;
     display: flex;
     justify-content: center;
     align-items: flex-end;
     padding: 1em;
     background-color: var(--block-bg);
-    box-shadow: 0 0.25em 0.5em rgba(0, 0, 0, 0.1);
+    box-shadow: 0 0.25em 0.5em rgba(0, 0, 0, 0.1); /* 影を統一 */
     border-color: transparent;
     box-sizing: border-box;
     z-index: 100;
