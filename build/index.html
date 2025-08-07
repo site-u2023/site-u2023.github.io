@@ -41,19 +41,28 @@
                 const customPackages = document.getElementById('custom_packages').value;
                 const packages = customPackages ? customPackages.split(/\s+/).filter(p => p.trim()) : [];
                 
+                // デバイス情報をもう一度確認
+                if (!current_device.target) {
+                    throw new Error('デバイスのターゲット情報が不足しています');
+                }
+                
                 const buildRequest = {
                     profile: current_device.id,
                     target: current_device.target,
-                    version: current_device.version,
+                    version: current_device.version || '24.10.2',
                     packages: packages,
                     defaults: script,
-                    diff_packages: true
+                    diff_packages: true,
+                    client: "enhanced-firmware-selector"
                 };
+                
+                console.log('Build request:', buildRequest);
                 
                 buildMessage.textContent = 'サーバーにリクエストを送信中...';
                 progressBar.value = 20;
                 
-                const response = await fetch('https://sysupgrade.openwrt.org/api/v1/build', {
+                // 正しいASU APIのURL（v1なし）
+                const response = await fetch('https://sysupgrade.openwrt.org/api/build', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -61,11 +70,13 @@
                     body: JSON.stringify(buildRequest)
                 });
                 
+                console.log('Response status:', response.status);
                 progressBar.value = 40;
                 
                 if (response.status === 200) {
                     // ビルド完了
                     const result = await response.json();
+                    console.log('Build result:', result);
                     buildStatus.style.backgroundColor = '#d4edda';
                     buildMessage.innerHTML = `
                         ✅ ビルド完了！<br>
@@ -77,22 +88,37 @@
                 } else if (response.status === 202) {
                     // ビルド進行中
                     const result = await response.json();
+                    console.log('Build queued:', result);
                     buildMessage.textContent = 'ビルド中です。しばらくお待ちください...';
                     progressBar.value = 60;
                     
                     // ポーリングでビルド状況をチェック
-                    checkBuildStatus(result.request_hash);
+                    if (result.request_hash) {
+                        checkBuildStatus(result.request_hash);
+                    } else {
+                        throw new Error('ビルドリクエストハッシュが取得できませんでした');
+                    }
                     
                 } else {
                     // エラー
-                    const error = await response.json();
-                    throw new Error(error.detail || 'ビルドに失敗しました');
+                    const errorText = await response.text();
+                    console.error('Build error response:', errorText);
+                    let errorMessage = 'ビルドに失敗しました';
+                    
+                    try {
+                        const errorJson = JSON.parse(errorText);
+                        errorMessage = errorJson.detail || errorJson.message || errorMessage;
+                    } catch (e) {
+                        errorMessage = `HTTP ${response.status}: ${errorText}`;
+                    }
+                    
+                    throw new Error(errorMessage);
                 }
                 
             } catch (error) {
                 console.error('Build error:', error);
                 buildStatus.style.backgroundColor = '#f8d7da';
-                buildMessage.textContent = `❌ エラー: ${error.message}`;
+                buildMessage.innerHTML = `❌ エラー: ${error.message}<br><small>コンソールで詳細を確認してください</small>`;
                 progressBar.value = 0;
             } finally {
                 buildBtn.disabled = false;
@@ -106,11 +132,13 @@
             const buildStatus = document.getElementById('build-status');
             
             try {
-                const response = await fetch(`https://sysupgrade.openwrt.org/api/v1/build/${requestHash}`);
+                console.log('Checking build status for hash:', requestHash);
+                const response = await fetch(`https://sysupgrade.openwrt.org/api/build/${requestHash}`);
                 
                 if (response.status === 200) {
                     // ビルド完了
                     const result = await response.json();
+                    console.log('Build completed:', result);
                     buildStatus.style.backgroundColor = '#d4edda';
                     buildMessage.innerHTML = `
                         ✅ ビルド完了！<br>
@@ -122,16 +150,19 @@
                 } else if (response.status === 202) {
                     // まだビルド中
                     const result = await response.json();
-                    buildMessage.textContent = `ビルド中: ${result.imagebuilder_status || '処理中'}...`;
-                    progressBar.value = Math.min(90, progressBar.value + 10);
+                    console.log('Build in progress:', result);
+                    const status = result.imagebuilder_status || result.queue_position || '処理中';
+                    buildMessage.textContent = `ビルド中: ${status}...`;
+                    progressBar.value = Math.min(90, progressBar.value + 5);
                     
                     // 5秒後に再チェック
                     setTimeout(() => checkBuildStatus(requestHash), 5000);
                     
                 } else {
                     // エラー
-                    const error = await response.json();
-                    throw new Error(error.detail || 'ビルドに失敗しました');
+                    const errorText = await response.text();
+                    console.error('Build status error:', errorText);
+                    throw new Error(`ステータス確認エラー: ${response.status}`);
                 }
                 
             } catch (error) {
