@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenWrt Enhanced Firmware Selector</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: #0056b3;
+            color: white;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 1.8em;
+        }
+        
+        .language-select {
+            padding: 8px;
+            border: none;
+            border-radius: 4px;
+            background: rgba(255,255,255,0.2);
+            color: white;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .form-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            background: #f8f9fa;
+        }
+        
+        .form-section h3 {
+            margin-top: 0;
+            color: #495057;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+        }
+        
+        textarea.form-control {
+            min-height: 120px;
+            resize: vertical;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        .form-row-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+        }
+        
+        .radio-group {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-top: 5px;
+        }
+        
+        .radio-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .checkbox-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .wifi-interface {
+            border: 2px solid #ecf0f1;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+            background: white;
+        }
+        
+        .wifi-interface h4 {
+            margin: 0 0 15px 0;
+            color: #2c3e50;
+            font-size: 1.1em;
+        }
+        
+        .device-features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px;
+            background: white;
+            border-radius: 4px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .build-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.3s;
+            width: 100%;
+        }
+        
+        .build-btn:hover {
+            background: #218838;
+        }
+        
+        .build-btn-secondary {
+            background: #007bff;
+        }
+        
+        .build-btn-secondary:hover {
+            background: #0056b3;
+        }
+        
+        .build-section {
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .preview {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 15px;
+        }
+        
+        @media (max-width: 768px) {
+            .form-row, .form-row-3 {
+                grid-template-columns: 1fr;
+            }
+            
+            .radio-group {
+                flex-direction: column;
+            }
+            
+            .button-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 OpenWrt Enhanced Firmware Selector</h1>
+            <select class="language-select" id="language-select">
+                <option value="ja">日本語</option>
+                <option value="en">English</option>
+            </select>
+        </div>
+        
+        <div class="content">
+            <!-- 公式ビルダー統合 -->
+            <div class="form-section">
+                <h3>📡 OpenWrt公式ビルダー</h3>
+                <iframe src="https://firmware-selector.openwrt.org/" 
+                        style="width: 100%; height: 600px; border: 1px solid #dee2e6; border-radius: 4px;">
+                </iframe>
+            </div>
+
+            <!-- デバイス機能選択 -->
+            <div class="form-section">
+                <h3>🔧 デバイス機能</h3>
+                <div class="device-features">
+                    <div class="feature-item">
+                        <input type="checkbox" id="has_usb" checked>
+                        <label for="has_usb">USB対応</label>
+                    </div>
+                    <div class="feature-item">
+                        <input type="checkbox" id="has_sata">
+                        <label for="has_sata">SATA対応</label>
+                    </div>
+                    <div class="feature-item">
+                        <input type="checkbox" id="has_pcie">
+                        <label for="has_pcie">PCIe対応</label>
+                    </div>
+                    <div class="feature-item">
+                        <input type="checkbox" id="has_5g" checked>
+                        <label for="has_5g">5G Wi-Fi対応</label>
+                    </div>
+                    <div class="feature-item">
+                        <input type="checkbox" id="has_6g">
+                        <label for="has_6g">6G Wi-Fi対応</label>
+                    </div>
+                    <div class="feature-item">
+                        <input type="checkbox" id="has_mesh">
+                        <label for="has_mesh">Mesh対応</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- インターネット接続設定 -->
+            <div class="form-section">
+                <h3>🌐 インターネット接続設定</h3>
+                <div class="form-group">
+                    <label>接続方式</label>
+                    <div class="radio-group">
+                        <div class="radio-item">
+                            <input type="radio" id="isp_mape" name="isp_type" value="mape" checked>
+                            <label for="isp_mape">MAP-E自動設定</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="isp_pppoe" name="isp_type" value="pppoe">
+                            <label for="isp_pppoe">PPPoE接続</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="isp_none" name="isp_type" value="none">
+                            <label for="isp_none">設定しない</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="pppoe_settings" style="display: none;">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="pppoe_username">PPPoE ユーザー名</label>
+                            <input type="text" id="pppoe_username" class="form-control" placeholder="ISPのユーザー名">
+                        </div>
+                        <div class="form-group">
+                            <label for="pppoe_password">PPPoE パスワード</label>
+                            <input type="password" id="pppoe_password" class="form-control" placeholder="ISPのパスワード">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- デバイス基本設定 -->
+            <div class="form-section">
+                <h3>⚙️ デバイス基本設定</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="root_password">管理者パスワード</label>
+                        <input type="password" id="root_password" class="form-control" placeholder="ルーター管理用パスワード">
+                    </div>
+                    <div class="form-group">
+                        <label for="lan_ip">LAN IPアドレス</label>
+                        <input type="text" id="lan_ip" class="form-control" value="192.168.1.1">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Wi-Fi設定 -->
+            <div class="form-section">
+                <h3>📶 Wi-Fi設定</h3>
+                <div class="form-group">
+                    <label>Wi-Fi構成方式</label>
+                    <div class="radio-group">
+                        <div class="radio-item">
+                            <input type="radio" id="wifi_standard" name="wifi_mode" value="standard" checked>
+                            <label for="wifi_standard">標準設定</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="wifi_usteer" name="wifi_mode" value="usteer">
+                            <label for="wifi_usteer">usteer（バンドステアリング）</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Wi-Fi Interface 1 -->
+                <div class="wifi-interface">
+                    <h4>📡 Wi-Fi Interface 1</h4>
+                    <div class="form-row-3">
+                        <div class="form-group">
+                            <label for="wifi1_ssid">SSID</label>
+                            <input type="text" id="wifi1_ssid" class="form-control" placeholder="MyWiFi">
+                        </div>
+                        <div class="form-group">
+                            <label for="wifi1_password">パスワード</label>
+                            <input type="password" id="wifi1_password" class="form-control" placeholder="8文字以上">
+                        </div>
+                        <div class="form-group">
+                            <label for="wifi1_band">帯域</label>
+                            <select id="wifi1_band" class="form-control">
+                                <option value="">使用しない</option>
+                                <option value="2.4G">2.4GHz</option>
+                                <option value="5G">5GHz</option>
+                                <option value="6G">6GHz</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Wi-Fi Interface 2 -->
+                <div class="wifi-interface">
+                    <h4>📡 Wi-Fi Interface 2</h4>
+                    <div class="form-row-3">
+                        <div class="form-group">
+                            <label for="wifi2_ssid">SSID</label>
+                            <input type="text" id="wifi2_ssid" class="form-control" placeholder="MyWiFi_5G">
+                        </div>
+                        <div class="form-group">
+                            <label for="wifi2_password">パスワード</label>
+                            <input type="password" id="wifi2_password" class="form-control" placeholder="8文字以上">
+                        </div>
+                        <div class="form-group">
+                            <label for="wifi2_band">帯域</label>
+                            <select id="wifi2_band" class="form-control">
+                                <option value="">使用しない</option>
+                                <option value="2.4G">2.4GHz</option>
+                                <option value="5G" selected>5GHz</option>
+                                <option value="6G">6GHz</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Wi-Fi Interface 3 -->
+                <div class="wifi-interface">
+                    <h4>📡 Wi-Fi Interface 3</h4>
+                    <div class="form-row-3">
+                        <div class="form-group">
+                            <label for="wifi3_ssid">SSID</label>
+                            <input type="text" id="wifi3_ssid" class="form-control" placeholder="MyWiFi_6G">
+                        </div>
+                        <div class="form-group">
+                            <label for="wifi3_password">パスワード</label>
+                            <input type="password" id="wifi3_password" class="form-control" placeholder="8文字以上">
+                        </div>
+                        <div class="form-group">
+                            <label for="wifi3_band">帯域</label>
+                            <select id="wifi3_band" class="form-control">
+                                <option value="">使用しない</option>
+                                <option value="2.4G">2.4GHz</option>
+                                <option value="5G">5GHz</option>
+                                <option value="6G">6GHz</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- パッケージ設定 -->
+            <div class="form-section">
+                <h3>📦 パッケージ設定</h3>
+                <div class="checkbox-group">
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="pkg_basic" checked>
+                        <label for="pkg_basic">基本セット</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="pkg_mape">
+                        <label for="pkg_mape">MAP-E対応</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="pkg_vpn">
+                        <label for="pkg_vpn">VPN</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="pkg_usb">
+                        <label for="pkg_usb">USB対応</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="pkg_monitoring">
+                        <label for="pkg_monitoring">監視・統計</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="pkg_docker">
+                        <label for="pkg_docker">Docker</label>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="custom_packages">カスタムパッケージ</label>
+                    <textarea id="custom_packages" class="form-control" placeholder="パッケージ名を入力（スペース区切り）"></textarea>
+                </div>
+            </div>
+
+            <!-- スクリプト生成・プレビュー -->
+            <div class="form-section">
+                <h3>📝 uci-defaultsスクリプト</h3>
+                <div class="button-group">
+                    <button class="build-btn build-btn-secondary" onclick="generateScript()">スクリプト生成</button>
+                    <button class="build-btn build-btn-secondary" onclick="copyToClipboard()">クリップボードにコピー</button>
+                </div>
+                
+                <div class="preview" id="scriptPreview" style="display: none;">
+                    <!-- 生成されたスクリプトがここに表示されます -->
+                </div>
+            </div>
+
+            <div class="build-section">
+                <p>上記で生成されたスクリプトを公式ビルダーの「初回起動時に実行されるスクリプト (uci-defaults)」欄にコピー&ペーストしてください。</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // パッケージ定義
+        const packageSets = {
+            basic: ['luci-i18n-base-ja', 'luci-i18n-firewall-ja', 'luci-i18n-opkg-ja'],
+            mape: ['map-e', 'kmod-map-e', 'jsonfilter'],
+            vpn: ['luci-app-openvpn', 'openvpn-openssl', 'luci-app-wireguard', 'wireguard-tools'],
+            usb: ['kmod-usb-storage', 'kmod-fs-ext4', 'kmod-fs-vfat', 'usbutils'],
+            monitoring: ['collectd', 'luci-app-statistics', 'iftop', 'htop'],
+            docker: ['dockerd', 'docker-compose', 'luci-app-dockerman']
+        };
+        
+        // ISP選択の変更処理
+        document.querySelectorAll('input[name="isp_type"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                const pppoeSettings = document.getElementById('pppoe_settings');
+                if (this.value === 'pppoe') {
+                    pppoeSettings.style.display = 'block';
+                } else {
+                    pppoeSettings.style.display = 'none';
+                }
+            });
+        });
+        
+        // パッケージ選択の変更処理
+        document.querySelectorAll('input[type="checkbox"][id^="pkg_"]').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                updateCustomPackages();
+            });
+        });
+        
+        // カスタムパッケージの更新
+        function updateCustomPackages() {
+            const customPackagesTextarea = document.getElementById('custom_packages');
+            let packages = [];
+            
+            // デバイス機能チェック
+            const hasUsb = document.getElementById('has_usb').checked;
+            const hasSata = document.getElementById('has_sata').checked;
+            
+            // 選択されたパッケージセットを追加
+            Object.keys(packageSets).forEach(key => {
+                if (document.getElementById(`pkg_${key}`).checked) {
+                    // USB機能がないデバイスでUSBパッケージが選択された場合はスキップ
+                    if (key === 'usb' && !hasUsb) {
+                        console.log('USB packages skipped: device has no USB support');
+                        return;
+                    }
+                    packages = packages.concat(packageSets[key]);
+                }
+            });
+            
+            customPackagesTextarea.value = packages.join(' ');
+        }
+        
+        // スクリプト生成
+        async function generateScript() {
+            try {
+                // build-tools.shを読み込み
+                const response = await fetch('./build-tools.sh');
+                if (!response.ok) {
+                    throw new Error('build-tools.sh not found');
+                }
+                const baseScript = await response.text();
+                
+                // ユーザー設定を取得
+                const ispType = document.querySelector('input[name="isp_type"]:checked').value;
+                const wifiMode = document.querySelector('input[name="wifi_mode"]:checked').value;
+                const rootPassword = document.getElementById('root_password').value;
+                const lanIp = document.getElementById('lan_ip').value;
+                const pppoeUsername = document.getElementById('pppoe_username').value;
+                const pppoePassword = document.getElementById('pppoe_password').value;
+                
+                // カスタマイズされた変数セクションを生成
+                let customVariables = '';
+                
+                // デバイス基本設定
+                if (rootPassword) customVariables += `ROOT_PASSWORD="${rootPassword}"\n`;
+                if (lanIp && lanIp !== '192.168.1.1') customVariables += `LAN_IP_ADDRESS="${lanIp}"\n`;
+                
+                // PPPoE設定
+                if (ispType === 'pppoe' && pppoeUsername && pppoePassword) {
+                    customVariables += `PPPOE_USERNAME="${pppoeUsername}"\n`;
+                    customVariables += `PPPOE_PASSWORD="${pppoePassword}"\n`;
+                }
+                
+                // Wi-Fi設定
+                for (let i = 1; i <= 3; i++) {
+                    const ssid = document.getElementById(`wifi${i}_ssid`).value;
+                    const password = document.getElementById(`wifi${i}_password`).value;
+                    const band = document.getElementById(`wifi${i}_band`).value;
+                    if (ssid && password && band) {
+                        customVariables += `WLAN_NAME_${i}="${ssid}"\n`;
+                        customVariables += `WLAN_PASSWORD_${i}="${password}"\n`;
+                        customVariables += `WLAN_BAND_${i}="${band}"\n`;
+                    }
+                }
+                
+                // メイン実行部分を決定
+                let mainExecution = '';
+                if (ispType === 'mape') {
+                    mainExecution = 'openwrt_main';
+                } else if (ispType === 'pppoe') {
+                    mainExecution = 'openwrt_pppoe_main';
+                } else {
+                    mainExecution = `# No ISP configuration selected
+set_device_basic_config
+set_wifi_config
+
+uci commit system >/dev/null 2>&1
+uci commit wireless >/dev/null 2>&1
+uci commit network
+echo "Basic configuration done!"`;
+                }
+                
+                // コメント行から変数定義行を探して置き換え
+                let modifiedScript = baseScript;
+                
+                // コメントアウトされた変数定義を実際の値に置き換え
+                const variableLines = customVariables.split('\n').filter(line => line.trim());
+                variableLines.forEach(line => {
+                    if (line.includes('=')) {
+                        const [varName] = line.split('=');
+                        const commentedPattern = new RegExp(`# ${varName}=""`, 'g');
+                        modifiedScript = modifiedScript.replace(commentedPattern, line);
+                    }
+                });
+                
+                // デフォルトのメイン実行を置き換え
+                modifiedScript = modifiedScript.replace('openwrt_main', mainExecution);
+                
+                // Wi-Fi設定に関する追加カスタマイズ
+                if (wifiMode === 'usteer') {
+                    modifiedScript += `
+
+# usteer band steering configuration
+setup_usteer() {
+    logger -t mape-setup "Setting up usteer band steering"
+    opkg update && opkg install usteer >/dev/null 2>&1
+    
+    uci set usteer.@usteer[0]=usteer
+    uci set usteer.@usteer[0].enabled='1'
+    uci set usteer.@usteer[0].debug_level='2'
+    uci commit usteer
+    
+    /etc/init.d/usteer enable
+    /etc/init.d/usteer start
+}
+
+# Call usteer setup
+setup_usteer`;
+                }
+                
+                document.getElementById('scriptPreview').textContent = modifiedScript;
+                document.getElementById('scriptPreview').style.display = 'block';
+                
+            } catch (error) {
+                console.error('Error generating script:', error);
+                document.getElementById('scriptPreview').textContent = `# Error: Could not load build-tools.sh
+# Make sure build-tools.sh is in the same directory as this HTML file
+# Error details: ${error.message}
+
+#!/bin/sh
+# Fallback basic script
+echo "Script generation failed. Please check build-tools.sh file."
+exit 1`;
+                document.getElementById('scriptPreview').style.display = 'block';
+            }
+        }
+        
+        // クリップボードにコピー
+        function copyToClipboard() {
+            const script = document.getElementById('scriptPreview').textContent;
+            if (!script || script.includes('生成されたスクリプトがここに表示されます')) {
+                alert('先にスクリプトを生成してください');
+                return;
+            }
+            
+            navigator.clipboard.writeText(script).then(() => {
+                alert('スクリプトをクリップボードにコピーしました！');
+            }).catch(() => {
+                alert('コピーに失敗しました。手動で選択してコピーしてください。');
+            });
+        }
+        
+        // 初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            updateCustomPackages();
+        });
+    </script>
+</body>
+</html>
