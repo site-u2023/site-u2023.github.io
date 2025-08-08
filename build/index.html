@@ -14,31 +14,62 @@
         
         // 直接ファームウェアビルド機能（プロキシWorker経由）
         async function buildFirmwareDirectly() {
-            console.log('buildFirmwareDirectly() called');
+            console.log('=== buildFirmwareDirectly() called ===');
+            console.log('Function start time:', new Date().toISOString());
+            console.log('current_device object:', JSON.stringify(current_device, null, 2));
             
-            if (!current_device.id) {
-                alert('まずデバイスを選択してください');
-                console.log('No device selected, current_device:', current_device);
+            // デバイス選択チェック
+            if (!current_device || !current_device.id) {
+                console.log('Device check failed - no device selected');
+                alert('まずデバイスを選択してください\n\nデバイス状態: ' + JSON.stringify(current_device));
                 return;
             }
+            console.log('✅ Device check passed');
             
-            const script = document.getElementById('scriptPreview').textContent;
+            // スクリプト確認
+            const scriptElement = document.getElementById('scriptPreview');
+            console.log('Script element:', scriptElement);
+            
+            const script = scriptElement ? scriptElement.textContent : '';
+            console.log('Script content length:', script.length);
+            console.log('Script preview:', script.substring(0, 200) + '...');
+            
             if (!script || script.includes('Error:')) {
-                alert('まずスクリプトを生成してください');
-                console.log('No script generated');
+                console.log('Script check failed');
+                alert('まずスクリプトを生成してください\n\nスクリプト状態: ' + (script ? 'エラー含む' : '未生成'));
                 return;
             }
+            console.log('✅ Script check passed');
             
+            // DOM要素取得
             const buildBtn = document.getElementById('direct-build-btn');
             const buildStatus = document.getElementById('build-status');
             const buildMessage = document.getElementById('build-message');
             const progressBar = document.getElementById('build-progress-bar');
             
+            console.log('DOM elements:', {
+                buildBtn: !!buildBtn,
+                buildStatus: !!buildStatus,
+                buildMessage: !!buildMessage,
+                progressBar: !!progressBar
+            });
+            
+            if (!buildBtn || !buildStatus || !buildMessage || !progressBar) {
+                console.error('Some DOM elements are missing');
+                alert('画面要素が見つかりません。ページを再読み込みしてください。');
+                return;
+            }
+            
+            console.log('✅ DOM elements check passed');
+            
+            // UI更新
             buildBtn.disabled = true;
             buildStatus.style.display = 'block';
             buildStatus.style.backgroundColor = '#d1ecf1';
             buildMessage.textContent = 'ビルドを開始しています...';
             progressBar.value = 10;
+            
+            console.log('✅ UI updated, starting build process...');
             
             try {
                 // 選択されたパッケージを取得
@@ -696,6 +727,9 @@
                     <button class="build-btn" id="proxy-test-btn" style="background: #ffc107; color: #212529;">
                         🔍 プロキシテスト
                     </button>
+                    <button class="build-btn" id="debug-info-btn" style="background: #6c757d;">
+                        🔧 デバッグ情報
+                    </button>
                     <button class="build-btn" id="direct-build-btn">
                         🚀 ファームウェアを直接ビルド
                     </button>
@@ -708,18 +742,19 @@
                     </div>
                 </div>
                 
-                <div style="margin-top: 15px; padding: 15px; background: #fff3cd; border-radius: 4px; font-size: 14px;">
-                    <strong>⚠️ 設定が必要:</strong><br>
-                    プロキシWorkerを <code>openwrt-proxy.site-u.workers.dev</code> にデプロイしてください。<br>
-                    または、HTMLの <code>PROXY_URL</code> を実際のWorkerのURLに変更してください。
+                <div style="margin-top: 15px; padding: 15px; background: #d4edda; border-radius: 4px; font-size: 14px;">
+                    <strong>✅ 設定完了:</strong><br>
+                    プロキシWorkerが <code>openwrt-builder-proxy.site-u.workers.dev</code> にデプロイ済みです。<br>
+                    「🔍 プロキシテスト」でテスト後、「🚀 ファームウェアを直接ビルド」をお試しください。
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        // プロキシWorkerのURL
+        // プロキシWorkerのURL（デプロイ済み）
         const PROXY_URL = 'https://openwrt-builder-proxy.site-u.workers.dev';
+        
         // OpenWrt公式ファームウェアセレクターの機能を統合
         const config = {
             image_url: "https://downloads.openwrt.org",
@@ -1206,7 +1241,28 @@ exit 1`;
         
         // 初期化処理
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('DOM loaded, initializing...');
+            console.log('=== DOM loaded, initializing... ===');
+            console.log('Page URL:', window.location.href);
+            console.log('PROXY_URL:', PROXY_URL);
+            
+            // 重要なDOM要素の存在確認
+            const importantElements = [
+                'direct-build-btn',
+                'test-btn', 
+                'proxy-test-btn',
+                'scriptPreview',
+                'build-status',
+                'build-message',
+                'build-progress-bar'
+            ];
+            
+            importantElements.forEach(id => {
+                const element = document.getElementById(id);
+                console.log(`Element ${id}:`, !!element);
+                if (!element) {
+                    console.warn(`⚠️ Missing element: ${id}`);
+                }
+            });
             
             // テスト関数を先に設定
             setupEventListeners();
@@ -1214,9 +1270,9 @@ exit 1`;
             try {
                 updateCustomPackages();
                 initOpenWrtData(); // OpenWrt公式データの初期化
-                console.log('Initialization completed');
+                console.log('✅ Initialization completed successfully');
             } catch (error) {
-                console.error('Initialization error:', error);
+                console.error('❌ Initialization error:', error);
                 alert('初期化エラー: ' + error.message);
             }
         });
@@ -1254,6 +1310,26 @@ exit 1`;
                 console.log('API test button listener added');
             }
             
+            // デバッグ情報ボタン
+            const debugBtn = document.getElementById('debug-info-btn');
+            if (debugBtn) {
+                debugBtn.addEventListener('click', function() {
+                    const info = {
+                        current_device: current_device,
+                        script_length: document.getElementById('scriptPreview')?.textContent?.length || 0,
+                        proxy_url: PROXY_URL,
+                        functions_available: {
+                            buildFirmwareDirectly: typeof buildFirmwareDirectly,
+                            generateScript: typeof generateScript,
+                            initOpenWrtData: typeof initOpenWrtData
+                        }
+                    };
+                    console.log('=== DEBUG INFO ===', info);
+                    alert('デバッグ情報をコンソールに出力しました\n\nF12 → Console タブで確認してください');
+                });
+                console.log('Debug button listener added');
+            }
+            
             // プロキシテストボタン
             const proxyTestBtn = document.getElementById('proxy-test-btn');
             if (proxyTestBtn) {
@@ -1264,7 +1340,11 @@ exit 1`;
                             method: 'OPTIONS'
                         });
                         console.log('Proxy OPTIONS response:', response.status);
-                        alert(`プロキシ接続テスト結果: ${response.status} ${response.statusText}`);
+                        alert(`プロキシ接続テスト結果: ${response.status} ${response.statusText || 'Success'}`);
+                        
+                        // 詳細情報もログ出力
+                        console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+                        console.log('Response ok:', response.ok);
                     } catch (error) {
                         console.error('Proxy test error:', error);
                         alert('プロキシ接続エラー: ' + error.message + '\n\nプロキシWorkerがデプロイされているか確認してください。');
@@ -1277,10 +1357,20 @@ exit 1`;
             const buildBtn = document.getElementById('direct-build-btn');
             if (buildBtn) {
                 buildBtn.addEventListener('click', function() {
-                    console.log('Build button clicked');
-                    buildFirmwareDirectly();
+                    console.log('=== Build button clicked ===');
+                    console.log('Button element:', buildBtn);
+                    console.log('Current device:', current_device);
+                    
+                    try {
+                        buildFirmwareDirectly();
+                    } catch (error) {
+                        console.error('Error calling buildFirmwareDirectly:', error);
+                        alert('ビルド関数呼び出しエラー: ' + error.message);
+                    }
                 });
-                console.log('Build button listener added');
+                console.log('Build button listener added successfully');
+            } else {
+                console.error('Build button not found!');
             }
             
             // リダイレクトボタンは削除
