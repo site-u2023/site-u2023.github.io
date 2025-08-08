@@ -500,7 +500,6 @@ openwrt_config_main() {
     # IPv6接続が利用可能になるまで待機
     if ! get_address; then
         logger -t auto-config "IPv6 address not available, fallback to DHCP only LAN setup"
-        # DHCPのみのシンプルなLAN設定（必要なら追加）
         uci commit network
         uci commit dhcp
         uci commit firewall
@@ -518,11 +517,14 @@ openwrt_config_main() {
         return 0
     fi
 
-    # ISP優先判定
-    local isp_mode
-    isp_mode=$(detect_isp_mode)
-
-    logger -t auto-config "Detected ISP mode: $isp_mode"
+    # ISP接続方式判定（引数優先、なければ自動判定）
+    local isp_mode="$1"
+    if [ -z "$isp_mode" ]; then
+        isp_mode=$(detect_isp_mode)
+        logger -t auto-config "Auto-detected ISP mode: $isp_mode"
+    else
+        logger -t auto-config "Manual ISP mode: $isp_mode"
+    fi
 
     # タイムゾーン＆国コード設定
     set_country
@@ -542,7 +544,12 @@ openwrt_config_main() {
             fetch_mape_info && set_mape_config
             ;;
         "dhcp")
-            # DHCPのみのシンプルなLAN設定（必要なら追加）
+            ;;
+        "none"|"clear")
+            logger -t auto-config "No network configuration applied (forced)"
+            ;;
+        *)
+            logger -t auto-config "Unknown ISP mode: $isp_mode, fallback to DHCP"
             ;;
     esac
 
