@@ -29,13 +29,16 @@ while true; do
     break
   fi
 
-  if [ "$pass1" = "$pass2" ]; then
-    ROOT_PASSWORD="$pass1"
-    break
-  fi
-
-  printf "\033[31mPasswords do not match. Try again.\033[0m\n"
-
+    if [ "$pass1" = "$pass2" ]; then
+        if [ ${#pass1} -ge 8 ]; then
+            ROOT_PASSWORD="$pass1"
+            break
+        else
+            printf "\033[31mPassword must be at least 8 characters.\033[0m\n"
+        fi
+    else
+        printf "\033[31mPasswords do not match. Try again.\033[0m\n"
+    fi
 done
 
 # --- device name ---
