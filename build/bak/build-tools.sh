@@ -14,7 +14,13 @@
 # PPPOE_USERNAME="your_isp_username"
 # PPPOE_PASSWORD="your_isp_password"
 
-API_URL="https://mape-auto.site-u.workers.dev/"
+LANGUAGE=""
+
+GUA_ADDR=""
+PD_ADDR=""
+AFTER_ADDR=""
+
+API_URL="https://auto-config.site-u.workers.dev/"
 WAN_DEF="wan"
 WAN6_NAME="wanmap6"
 WANMAP_NAME="wanmap"
@@ -41,7 +47,7 @@ TIMEZONE=""
 OS_VERSION=""
 
 # Function 1: OpenWrtネットワークAPIでIPv6アドレス取得を待機
-wait_for_ipv6() {
+OK_wait_for_ipv6() {
     local timeout=60
     local count=0
     local ipv6_addr=""
@@ -71,6 +77,47 @@ wait_for_ipv6() {
         count=$((count + 2))
     done
     
+    logger -t mape-setup "IPv6 address not available after ${timeout}s"
+    return 1
+}
+
+# Function 1: OpenWrtネットワークAPIでIPv6アドレス取得を待機
+wait_for_ipv6() {
+    local timeout=60
+    local count=0
+    local ipv6_addr=""
+    local ipv6_prefix=""
+
+    logger -t mape-setup "Waiting for IPv6 address..."
+
+    # ネットワーク関数をロード
+    . /lib/functions.sh
+    . /lib/functions/network.sh
+
+    while [ $count -lt $timeout ]; do
+        network_flush_cache
+        network_find_wan6 wan6_iface
+
+        if [ -n "$wan6_iface" ]; then
+            # GUA（グローバルIPv6アドレス）取得
+            if network_get_ipaddr6 ipv6_addr "$wan6_iface" && [ -n "$ipv6_addr" ]; then
+                GUA_ADDR="$ipv6_addr"
+            fi
+            # PD（委譲プレフィックス）取得
+            if network_get_prefix6 ipv6_prefix "$wan6_iface" && [ -n "$ipv6_prefix" ]; then
+                PD_ADDR="$ipv6_prefix"
+            fi
+            # どちらか取得できたら成功
+            if [ -n "$GUA_ADDR" ] || [ -n "$PD_ADDR" ]; then
+                logger -t mape-setup "IPv6 address or prefix obtained: $GUA_ADDR $PD_ADDR"
+                return 0
+            fi
+        fi
+
+        sleep 2
+        count=$((count + 2))
+    done
+
     logger -t mape-setup "IPv6 address not available after ${timeout}s"
     return 1
 }
@@ -117,6 +164,38 @@ fetch_cloudflare_info() {
     return 0
 }
 
+# Function 7: デバイス基本設定（パスワード、IP、Wi-Fi名）
+set_device_basic_config() {
+    logger -t mape-setup "Setting device basic configuration..."
+    
+    # ログ出力設定（公式フォーマットに準拠）
+    exec >/tmp/setup.log 2>&1
+    
+    # rootパスワード設定
+    if [ -n "$ROOT_PASSWORD" ]; then
+        logger -t mape-setup "Setting root password"
+        (echo "$ROOT_PASSWORD"; sleep 1; echo "$ROOT_PASSWORD") | passwd > /dev/null
+    fi
+    
+    # LAN IPアドレス設定
+    if [ -n "$LAN_IP_ADDRESS" ]; then
+        logger -t mape-setup "Setting LAN IP address to $LAN_IP_ADDRESS"
+        uci set network.lan.ipaddr="$LAN_IP_ADDRESS"
+    fi
+    
+    # WLAN設定（SSID & パスワード）
+    if [ -n "$WLAN_NAME" ] && [ -n "$WLAN_PASSWORD" ] && [ ${#WLAN_PASSWORD} -ge 8 ]; then
+        logger -t mape-setup "Setting WLAN: $WLAN_NAME"
+        uci set wireless.@wifi-device[0].disabled='0'
+        uci set wireless.@wifi-iface[0].disabled='0'
+        uci set wireless.@wifi-iface[0].encryption='psk2'
+        uci set wireless.@wifi-iface[0].ssid="$WLAN_NAME"
+        uci set wireless.@wifi-iface[0].key="$WLAN_PASSWORD"
+    fi
+    
+    return 0
+}
+
 # Function 3: タイムゾーン＆国コード設定
 set_timezone_country() {
     logger -t mape-setup "Setting timezone and country..."
@@ -130,23 +209,95 @@ set_timezone_country() {
     return 0
 }
 
-# Function 4: Wi-Fi設定（国コード）
-set_wifi_config() {
-    logger -t mape-setup "Setting WiFi configuration..."
-    
-    # 国コード設定関数
-    set_country_code() {
-        local device="$1"
-        uci set wireless.${device}.country="$COUNTRY" >/dev/null 2>&1
-    }
+# ISP接続方式の判別ルーチン
+# 戻り値: "pppoe" / "dslite" / "mape" / "dhcp"
+detect_isp_mode() {
+    # 1. PPPoE判定（ID/PASSが両方セットされていれば最優先）
+    if [ -n "$PPPOE_USERNAME" ] && [ -n "$PPPOE_PASSWORD" ]; then
+        echo "pppoe"
+        return 0
+    fi
 
-    # ワイヤレス設定（国コード）
-    if [ -n "$COUNTRY" ]; then
-        # 全ての無線デバイスに国コードを設定
-        . /lib/functions.sh
-        config_load wireless
-        config_foreach set_country_code wifi-device
-        logger -t mape-setup "Set country code to $COUNTRY"
+    # 2. DS-Lite判定（APIレスポンスにAFTR種別またはAFTR IPv6アドレスがあれば）
+    local aftr_type=""
+    if [ -n "$API_RESPONSE" ]; then
+        aftr_type=$(echo "$API_RESPONSE" | jsonfilter -e '@.rule.aftrType' 2>/dev/null)
+        local aftr_addr=$(echo "$API_RESPONSE" | jsonfilter -e '@.rule.aftrIpv6Address' 2>/dev/null)
+        if [ "$aftr_type" = "transix" ] || [ "$aftr_type" = "xpass" ] || [ "$aftr_type" = "v6option" ] || [ -n "$aftr_addr" ]; then
+            echo "dslite"
+            return 0
+        fi
+    fi
+
+    # 3. MAP-E判定（APIレスポンスにMAP-Eルールがあれば）
+    if [ -n "$API_RESPONSE" ]; then
+        local rule_exists=$(echo "$API_RESPONSE" | jsonfilter -e '@.rule' 2>/dev/null)
+        if [ -n "$rule_exists" ] && [ "$rule_exists" != "null" ]; then
+            echo "mape"
+            return 0
+        fi
+    fi
+
+    # 4. DHCP（上記すべて該当なし）
+    echo "dhcp"
+    return 0
+}
+
+# Function 6: PPPoE設定
+set_pppoe_config() {
+    logger -t mape-setup "Setting PPPoE configuration..."
+    
+    # PPPoE設定（公式フォーマットに準拠）
+    if [ -n "$PPPOE_USERNAME" ] && [ -n "$PPPOE_PASSWORD" ]; then
+        logger -t mape-setup "Configuring PPPoE with username: $PPPOE_USERNAME"
+        uci set network.wan.proto='pppoe'
+        uci set network.wan.username="$PPPOE_USERNAME"
+        uci set network.wan.password="$PPPOE_PASSWORD"
+        
+        # WAN6も無効化（PPPoE使用時）
+        uci set network.wan6.disabled='1' >/dev/null 2>&1
+        uci set network.wan6.auto='0' >/dev/null 2>&1
+        
+        # MAP-E関連インターフェースを削除（競合回避）
+        uci delete network.${WAN6_NAME} >/dev/null 2>&1
+        uci delete network.${WANMAP_NAME} >/dev/null 2>&1
+        uci delete dhcp.${WAN6_NAME} >/dev/null 2>&1
+        
+        logger -t mape-setup "PPPoE configuration completed"
+    else
+        logger -t mape-setup "PPPoE username or password not set, skipping PPPoE configuration"
+    fi
+    
+    return 0
+}
+
+set_dslite_config() {
+    logger -t mape-setup "Start DS-LITE detection and configuration"
+
+    # ローカルIPv6アドレスはグローバル変数GUA_ADDRを参照
+    if [ -n "$GUA_ADDR" ]; then
+        logger -t mape-setup "Local IPv6 address: $GUA_ADDR"
+    else
+        logger -t mape-setup "Failed to get local IPv6 address"
+        return 1
+    fi
+
+    # APIからAFTR種別情報取得
+    local aftr_type=$(echo "$API_RESPONSE" | jsonfilter -e '@.rule.aftrType' 2>/dev/null)
+    if [ -z "$aftr_type" ] || [ "$aftr_type" = "null" ]; then
+        logger -t mape-setup "No AFTR type information"
+        return 1
+    fi
+
+    # DS-LITE判定（aftrType: transix/xpass/v6optionならYES）
+    if [ "$aftr_type" = "transix" ] || [ "$aftr_type" = "xpass" ] || [ "$aftr_type" = "v6option" ]; then
+        logger -t mape-setup "DS-LITE detected: YES ($aftr_type)"
+        # ここでDS-LITE用UCI設定を追加
+        # uci set network.dslite=interface
+        # ...（必要な設定を記載）
+    else
+        logger -t mape-setup "DS-LITE detected: NO ($aftr_type)"
+        # DS-LITE以外の場合の処理
     fi
 
     return 0
@@ -230,66 +381,53 @@ set_mape_config() {
     return 0
 }
 
-# Function 6: PPPoE設定
-set_pppoe_config() {
-    logger -t mape-setup "Setting PPPoE configuration..."
+# Function 4: Wi-Fi設定（国コード）
+set_wifi_config() {
+    logger -t mape-setup "Setting WiFi configuration..."
     
-    # PPPoE設定（公式フォーマットに準拠）
-    if [ -n "$PPPOE_USERNAME" ] && [ -n "$PPPOE_PASSWORD" ]; then
-        logger -t mape-setup "Configuring PPPoE with username: $PPPOE_USERNAME"
-        uci set network.wan.proto='pppoe'
-        uci set network.wan.username="$PPPOE_USERNAME"
-        uci set network.wan.password="$PPPOE_PASSWORD"
-        
-        # WAN6も無効化（PPPoE使用時）
-        uci set network.wan6.disabled='1' >/dev/null 2>&1
-        uci set network.wan6.auto='0' >/dev/null 2>&1
-        
-        # MAP-E関連インターフェースを削除（競合回避）
-        uci delete network.${WAN6_NAME} >/dev/null 2>&1
-        uci delete network.${WANMAP_NAME} >/dev/null 2>&1
-        uci delete dhcp.${WAN6_NAME} >/dev/null 2>&1
-        
-        logger -t mape-setup "PPPoE configuration completed"
-    else
-        logger -t mape-setup "PPPoE username or password not set, skipping PPPoE configuration"
+    # 国コード設定関数
+    set_country_code() {
+        local device="$1"
+        uci set wireless.${device}.country="$COUNTRY" >/dev/null 2>&1
+    }
+
+    # ワイヤレス設定（国コード）
+    if [ -n "$COUNTRY" ]; then
+        # 全ての無線デバイスに国コードを設定
+        . /lib/functions.sh
+        config_load wireless
+        config_foreach set_country_code wifi-device
+        logger -t mape-setup "Set country code to $COUNTRY"
     fi
-    
+
     return 0
 }
 
-# Function 7: デバイス基本設定（パスワード、IP、Wi-Fi名）
-set_device_basic_config() {
-    logger -t mape-setup "Setting device basic configuration..."
+# Function 9: PPPoE専用メイン実行関数
+openwrt_pppoe_main() {
+    logger -t mape-setup "Starting OpenWrt PPPoE configuration..."
     
-    # ログ出力設定（公式フォーマットに準拠）
-    exec >/tmp/setup.log 2>&1
+    # PPPoEの場合はIPv6待機不要、直接設定開始
     
-    # rootパスワード設定
-    if [ -n "$ROOT_PASSWORD" ]; then
-        logger -t mape-setup "Setting root password"
-        (echo "$ROOT_PASSWORD"; sleep 1; echo "$ROOT_PASSWORD") | passwd > /dev/null
-    fi
+    # 1. デバイス基本設定
+    set_device_basic_config
     
-    # LAN IPアドレス設定
-    if [ -n "$LAN_IP_ADDRESS" ]; then
-        logger -t mape-setup "Setting LAN IP address to $LAN_IP_ADDRESS"
-        uci set network.lan.ipaddr="$LAN_IP_ADDRESS"
-    fi
+    # 2. PPPoE設定
+    set_pppoe_config
     
-    # WLAN設定（SSID & パスワード）
-    if [ -n "$WLAN_NAME" ] && [ -n "$WLAN_PASSWORD" ] && [ ${#WLAN_PASSWORD} -ge 8 ]; then
-        logger -t mape-setup "Setting WLAN: $WLAN_NAME"
-        uci set wireless.@wifi-device[0].disabled='0'
-        uci set wireless.@wifi-iface[0].disabled='0'
-        uci set wireless.@wifi-iface[0].encryption='psk2'
-        uci set wireless.@wifi-iface[0].ssid="$WLAN_NAME"
-        uci set wireless.@wifi-iface[0].key="$WLAN_PASSWORD"
-    fi
-    
+    # 3. 設定をコミット
+    uci commit system >/dev/null 2>&1
+    uci commit wireless >/dev/null 2>&1
+    uci commit network
+    uci commit dhcp  
+    uci commit firewall
+
+    logger -t mape-setup "OpenWrt PPPoE configuration completed successfully"
+    echo "All done!"
     return 0
 }
-openwrt_main() {
+
+openwrt_config_main() {
     logger -t mape-setup "Starting OpenWrt auto configuration..."
     
     # 1. IPv6接続が利用可能になるまで待機
@@ -325,33 +463,9 @@ openwrt_main() {
     return 0
 }
 
-# Function 9: PPPoE専用メイン実行関数
-openwrt_pppoe_main() {
-    logger -t mape-setup "Starting OpenWrt PPPoE configuration..."
-    
-    # PPPoEの場合はIPv6待機不要、直接設定開始
-    
-    # 1. デバイス基本設定
-    set_device_basic_config
-    
-    # 2. PPPoE設定
-    set_pppoe_config
-    
-    # 3. 設定をコミット
-    uci commit system >/dev/null 2>&1
-    uci commit wireless >/dev/null 2>&1
-    uci commit network
-    uci commit dhcp  
-    uci commit firewall
-
-    logger -t mape-setup "OpenWrt PPPoE configuration completed successfully"
-    echo "All done!"
-    return 0
-}
-
 # Execute main function (choose one)
 # For MAP-E auto setup:
-openwrt_main
+openwrt_config_main
 
 # For PPPoE setup (uncomment this and comment out openwrt_main):
 # openwrt_pppoe_main
