@@ -12,208 +12,6 @@
             background-color: #f8f9fa;
         }
         
-        // グローバル関数として定義（ホイスティング対応）
-        function buildFirmwareDirectly() {
-            console.log('=== buildFirmwareDirectly() called ===');
-            console.log('Function start time:', new Date().toISOString());
-            console.log('current_device object:', JSON.stringify(current_device, null, 2));
-            
-            // デバイス選択チェック
-            if (!current_device || !current_device.id) {
-                console.log('Device check failed - no device selected');
-                alert('まずデバイスを選択してください\n\nデバイス状態: ' + JSON.stringify(current_device));
-                return;
-            }
-            console.log('✅ Device check passed');
-            
-            // スクリプト確認
-            const scriptElement = document.getElementById('scriptPreview');
-            console.log('Script element:', scriptElement);
-            
-            const script = scriptElement ? scriptElement.textContent : '';
-            console.log('Script content length:', script.length);
-            console.log('Script preview:', script.substring(0, 200) + '...');
-            
-            if (!script || script.includes('Error:')) {
-                console.log('Script check failed');
-                alert('まずスクリプトを生成してください\n\nスクリプト状態: ' + (script ? 'エラー含む' : '未生成'));
-                return;
-            }
-            console.log('✅ Script check passed');
-            
-            // DOM要素取得
-            const buildBtn = document.getElementById('direct-build-btn');
-            const buildStatus = document.getElementById('build-status');
-            const buildMessage = document.getElementById('build-message');
-            const progressBar = document.getElementById('build-progress-bar');
-            
-            console.log('DOM elements:', {
-                buildBtn: !!buildBtn,
-                buildStatus: !!buildStatus,
-                buildMessage: !!buildMessage,
-                progressBar: !!progressBar
-            });
-            
-            if (!buildBtn || !buildStatus || !buildMessage || !progressBar) {
-                console.error('Some DOM elements are missing');
-                alert('画面要素が見つかりません。ページを再読み込みしてください。');
-                return;
-            }
-            
-            console.log('✅ DOM elements check passed');
-            
-            // UI更新
-            buildBtn.disabled = true;
-            buildStatus.style.display = 'block';
-            buildStatus.style.backgroundColor = '#d1ecf1';
-            buildMessage.textContent = 'ビルドを開始しています...';
-            progressBar.value = 10;
-            
-            console.log('✅ UI updated, starting build process...');
-            
-            // 非同期処理を開始
-            performBuild(script, buildBtn, buildStatus, buildMessage, progressBar);
-        }
-        
-        // ビルド実行の非同期関数
-        async function performBuild(script, buildBtn, buildStatus, buildMessage, progressBar) {
-            try {
-                // 選択されたパッケージを取得
-                const customPackages = document.getElementById('custom_packages').value;
-                const packages = customPackages ? customPackages.split(/\s+/).filter(p => p.trim()) : [];
-                
-                // デバイス情報をもう一度確認
-                if (!current_device.target) {
-                    throw new Error('デバイスのターゲット情報が不足しています');
-                }
-                
-                const buildRequest = {
-                    profile: current_device.id,
-                    target: current_device.target,
-                    version: current_device.version || '24.10.2',
-                    packages: packages,
-                    defaults: script,
-                    diff_packages: true,
-                    client: "enhanced-firmware-selector"
-                };
-                
-                console.log('Build request:', buildRequest);
-                
-                buildMessage.textContent = 'プロキシサーバー経由でリクエスト送信中...';
-                progressBar.value = 20;
-                
-                // プロキシWorker経由でASU APIを呼び出し
-                const response = await fetch(`${PROXY_URL}/api/build`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(buildRequest)
-                });
-                
-                console.log('Response status:', response.status);
-                progressBar.value = 40;
-                
-                if (response.status === 200) {
-                    // ビルド完了
-                    const result = await response.json();
-                    console.log('Build result:', result);
-                    buildStatus.style.backgroundColor = '#d4edda';
-                    buildMessage.innerHTML = `
-                        ✅ ビルド完了！<br>
-                        <a href="${PROXY_URL}/store/${result.bin_dir}" target="_blank" 
-                           style="color: #155724; font-weight: bold;">📥 ファームウェアをダウンロード</a>
-                    `;
-                    progressBar.value = 100;
-                    
-                } else if (response.status === 202) {
-                    // ビルド進行中
-                    const result = await response.json();
-                    console.log('Build queued:', result);
-                    buildMessage.textContent = 'ビルド中です。しばらくお待ちください...';
-                    progressBar.value = 60;
-                    
-                    // ポーリングでビルド状況をチェック
-                    if (result.request_hash) {
-                        checkBuildStatus(result.request_hash);
-                    } else {
-                        throw new Error('ビルドリクエストハッシュが取得できませんでした');
-                    }
-                    
-                } else {
-                    // エラー
-                    const errorText = await response.text();
-                    console.error('Build error response:', errorText);
-                    let errorMessage = 'ビルドに失敗しました';
-                    
-                    try {
-                        const errorJson = JSON.parse(errorText);
-                        errorMessage = errorJson.detail || errorJson.message || errorMessage;
-                    } catch (e) {
-                        errorMessage = `HTTP ${response.status}: ${errorText}`;
-                    }
-                    
-                    throw new Error(errorMessage);
-                }
-                
-            } catch (error) {
-                console.error('Build error:', error);
-                buildStatus.style.backgroundColor = '#f8d7da';
-                buildMessage.innerHTML = `❌ エラー: ${error.message}<br><small>プロキシWorkerがデプロイされているか確認してください</small>`;
-                progressBar.value = 0;
-            } finally {
-                buildBtn.disabled = false;
-            }
-        }
-        
-        // ビルド状況をポーリングでチェック（プロキシ経由）
-        async function checkBuildStatus(requestHash) {
-            const buildMessage = document.getElementById('build-message');
-            const progressBar = document.getElementById('build-progress-bar');
-            const buildStatus = document.getElementById('build-status');
-            
-            try {
-                console.log('Checking build status for hash:', requestHash);
-                const response = await fetch(`${PROXY_URL}/api/build/${requestHash}`);
-                
-                if (response.status === 200) {
-                    // ビルド完了
-                    const result = await response.json();
-                    console.log('Build completed:', result);
-                    buildStatus.style.backgroundColor = '#d4edda';
-                    buildMessage.innerHTML = `
-                        ✅ ビルド完了！<br>
-                        <a href="${PROXY_URL}/store/${result.bin_dir}" target="_blank" 
-                           style="color: #155724; font-weight: bold;">📥 ファームウェアをダウンロード</a>
-                    `;
-                    progressBar.value = 100;
-                    
-                } else if (response.status === 202) {
-                    // まだビルド中
-                    const result = await response.json();
-                    console.log('Build in progress:', result);
-                    const status = result.imagebuilder_status || result.queue_position || '処理中';
-                    buildMessage.textContent = `ビルド中: ${status}...`;
-                    progressBar.value = Math.min(90, progressBar.value + 5);
-                    
-                    // 5秒後に再チェック
-                    setTimeout(() => checkBuildStatus(requestHash), 5000);
-                    
-                } else {
-                    // エラー
-                    const errorText = await response.text();
-                    console.error('Build status error:', errorText);
-                    throw new Error(`ステータス確認エラー: ${response.status}`);
-                }
-                
-            } catch (error) {
-                console.error('Build status check error:', error);
-                buildStatus.style.backgroundColor = '#f8d7da';
-                buildMessage.textContent = `❌ エラー: ${error.message}`;
-                progressBar.value = 0;
-            }
-        }
-        
         .container {
             max-width: 1200px;
             margin: 0 auto;
@@ -929,14 +727,30 @@
             }
         }
         
-        // デバイスモデルの変更処理
+        // デバイスモデルの変更処理（プロキシ経由に修正）
         function changeModel(version, overview, title) {
+            console.log('=== デバイス変更処理 ===', { version, title });
+            
             const entry = overview.profiles[title];
             if (entry) {
-                const base_url = `${config.image_url}/releases/${version}`;
-                fetch(`${base_url}/targets/${entry.target}/profiles.json`)
-                    .then(response => response.json())
+                console.log('デバイス情報:', entry);
+                
+                // プロキシ経由でプロファイル詳細を取得
+                const base_url = `${PROXY_URL}/releases/${version}`;
+                const profileUrl = `${base_url}/targets/${entry.target}/profiles.json`;
+                
+                console.log('プロファイル詳細取得中:', profileUrl);
+                
+                fetch(profileUrl)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`プロファイル取得エラー: ${response.status}`);
+                        }
+                        return response.json();
+                    })
                     .then(mobj => {
+                        console.log('プロファイル詳細取得成功');
+                        
                         const device = {
                             id: entry.id,
                             target: entry.target,
@@ -949,9 +763,40 @@
                         
                         current_device = device;
                         updateDeviceInfo(device);
+                        
+                        console.log('✅ デバイス設定完了:', device);
                     })
-                    .catch(err => console.error('Error fetching device info:', err));
+                    .catch(err => {
+                        console.error('プロファイル取得エラー:', err);
+                        
+                        // 基本情報のみでデバイスを設定
+                        const device = {
+                            id: entry.id,
+                            target: entry.target,
+                            version: version,
+                            model: title,
+                            images: [],
+                            default_packages: [],
+                            device_packages: []
+                        };
+                        
+                        current_device = device;
+                        updateDeviceInfo(device);
+                        
+                        console.log('⚠️ 基本情報のみでデバイス設定:', device);
+                    });
             } else {
+                console.error('デバイスが見つかりません:', title);
+                console.log('利用可能なデバイス一覧:');
+                Object.keys(overview.profiles).forEach((key, index) => {
+                    if (index < 10) { // 最初の10件のみ表示
+                        console.log(`  ${index + 1}. ${key}`);
+                    }
+                });
+                if (Object.keys(overview.profiles).length > 10) {
+                    console.log(`  ... 他 ${Object.keys(overview.profiles).length - 10} 件`);
+                }
+                
                 current_device = {};
                 hideDeviceInfo();
             }
@@ -970,14 +815,26 @@
             document.getElementById('device-info').style.display = 'none';
         }
         
-        // OpenWrt公式APIから版本とデバイス情報を取得
+        // OpenWrt公式APIから版本とデバイス情報を取得（プロキシ経由に修正）
         async function initOpenWrtData() {
             try {
-                // バージョン情報を取得
-                const versionsResponse = await fetch(`${config.image_url}/.versions.json`);
-                const versionsData = await versionsResponse.json();
+                console.log('=== OpenWrt データ初期化開始 ===');
+                console.log('プロキシURL:', PROXY_URL);
                 
-                // サポートされているバージョンのみフィルタ
+                // プロキシ経由でバージョン情報を取得
+                const versionsUrl = `${PROXY_URL}/.versions.json`;
+                console.log('バージョン情報取得中:', versionsUrl);
+                
+                const versionsResponse = await fetch(versionsUrl);
+                
+                if (!versionsResponse.ok) {
+                    throw new Error(`バージョン取得エラー: ${versionsResponse.status}`);
+                }
+                
+                const versionsData = await versionsResponse.json();
+                console.log('バージョンデータ取得成功:', versionsData);
+                
+                // サポートされているバージョンのみフィルタ（元のロジック維持）
                 const unsupported_versions_re = /^(19\.07\.\d|18\.06\.\d|17\.01\.\d)$/;
                 const versions = versionsData.versions_list.filter(
                     version => !unsupported_versions_re.test(version)
@@ -987,31 +844,56 @@
                 config.versions = versions;
                 config.default_version = versionsData.stable_version || "24.10.2";
                 
-                // バージョン選択をセットアップ
+                console.log('利用可能バージョン:', versions);
+                
+                // バージョン選択をセットアップ（元のロジック維持）
                 setupSelectList(document.getElementById('versions'), versions, (version) => {
                     loadDevicesForVersion(version);
                 });
                 
+                console.log('✅ OpenWrt データ初期化完了');
+                
             } catch (error) {
-                console.error('Error initializing OpenWrt data:', error);
-                // フォールバック
-                config.versions = ["24.10.2", "SNAPSHOT"];
-                setupSelectList(document.getElementById('versions'), config.versions, (version) => {
+                console.error('OpenWrt データ初期化エラー:', error);
+                
+                // エラー時のフォールバック - 手動でバージョンを設定
+                console.log('フォールバックモードに切り替え');
+                const fallbackVersions = ["24.10.2", "23.05.5", "SNAPSHOT"];
+                config.versions = fallbackVersions;
+                config.default_version = "24.10.2";
+                
+                setupSelectList(document.getElementById('versions'), fallbackVersions, (version) => {
                     loadDevicesForVersion(version);
                 });
+                
+                // ユーザーに状況を通知
+                showNetworkError('バージョン情報の取得に失敗しました。フォールバックモードで動作します。');
             }
         }
         
-        // 指定されたバージョンのデバイス一覧を読み込み
+        // 指定されたバージョンのデバイス一覧を読み込み（プロキシ経由に修正）
         function loadDevicesForVersion(version) {
+            console.log(`=== デバイス読み込み開始: ${version} ===`);
+            
+            // プロキシ経由でoverview.jsonを取得
             const overview_url = version === "SNAPSHOT" 
-                ? `${config.image_url}/snapshots/.overview.json`
-                : `${config.image_url}/releases/${version}/.overview.json`;
+                ? `${PROXY_URL}/snapshots/.overview.json`
+                : `${PROXY_URL}/releases/${version}/.overview.json`;
                 
+            console.log('デバイス情報取得中:', overview_url);
+            
             fetch(overview_url)
-                .then(response => response.json())
+                .then(response => {
+                    console.log('デバイス情報レスポンス:', response.status);
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    return response.json();
+                })
                 .then(obj => {
-                    // デバイスタイトルを生成
+                    console.log('デバイス情報取得成功:', obj);
+                    
+                    // デバイスタイトルを生成（元のロジック維持）
                     const profiles = {};
                     for (const profile of obj.profiles) {
                         const titles = getModelTitles(profile.titles);
@@ -1027,16 +909,22 @@
                     }
                     
                     current_overview = { profiles };
+                    console.log('利用可能デバイス数:', Object.keys(profiles).length);
                     
-                    // オートコンプリートをセットアップ
+                    // オートコンプリートをセットアップ（元のロジック維持）
                     setupAutocompleteList(
                         document.getElementById('models'),
                         Object.keys(profiles),
                         () => hideDeviceInfo(),
                         (input) => changeModel(version, current_overview, input.value)
                     );
+                    
+                    console.log('✅ デバイス読み込み完了');
                 })
-                .catch(err => console.error('Error loading devices:', err));
+                .catch(err => {
+                    console.error('デバイス読み込みエラー:', err);
+                    showNetworkError(`デバイス情報の取得に失敗しました: ${err.message}`);
+                });
         }
         
         // モデルタイトル生成（公式と同じロジック）
@@ -1050,6 +938,43 @@
                     ).trim();
                 }
             });
+        }
+        
+        // エラー表示関数
+        function showNetworkError(message) {
+            console.warn('ネットワークエラー:', message);
+            
+            const errorDiv = document.createElement('div');
+            errorDiv.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: #fff3cd;
+                border: 1px solid #ffeaa7;
+                color: #856404;
+                padding: 15px;
+                border-radius: 4px;
+                max-width: 400px;
+                z-index: 10000;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                font-size: 14px;
+            `;
+            
+            errorDiv.innerHTML = `
+                <strong>⚠️ ネットワークエラー</strong><br>
+                ${message}<br>
+                <small>プロキシサーバーの状態を確認してください。</small>
+                <button onclick="this.parentNode.remove()" style="float: right; background: none; border: none; font-size: 18px; cursor: pointer; margin-top: -5px;">×</button>
+            `;
+            
+            document.body.appendChild(errorDiv);
+            
+            // 10秒後に自動削除
+            setTimeout(() => {
+                if (errorDiv.parentNode) {
+                    errorDiv.parentNode.removeChild(errorDiv);
+                }
+            }, 10000);
         }
         
         // パッケージ定義
@@ -1245,6 +1170,208 @@ exit 1`;
             });
         }
         
+        // ビルド実行の非同期関数
+        async function performBuild(script, buildBtn, buildStatus, buildMessage, progressBar) {
+            try {
+                // 選択されたパッケージを取得
+                const customPackages = document.getElementById('custom_packages').value;
+                const packages = customPackages ? customPackages.split(/\s+/).filter(p => p.trim()) : [];
+                
+                // デバイス情報をもう一度確認
+                if (!current_device.target) {
+                    throw new Error('デバイスのターゲット情報が不足しています');
+                }
+                
+                const buildRequest = {
+                    profile: current_device.id,
+                    target: current_device.target,
+                    version: current_device.version || '24.10.2',
+                    packages: packages,
+                    defaults: script,
+                    diff_packages: true,
+                    client: "enhanced-firmware-selector"
+                };
+                
+                console.log('Build request:', buildRequest);
+                
+                buildMessage.textContent = 'プロキシサーバー経由でリクエスト送信中...';
+                progressBar.value = 20;
+                
+                // プロキシWorker経由でASU APIを呼び出し
+                const response = await fetch(`${PROXY_URL}/api/build`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(buildRequest)
+                });
+                
+                console.log('Response status:', response.status);
+                progressBar.value = 40;
+                
+                if (response.status === 200) {
+                    // ビルド完了
+                    const result = await response.json();
+                    console.log('Build result:', result);
+                    buildStatus.style.backgroundColor = '#d4edda';
+                    buildMessage.innerHTML = `
+                        ✅ ビルド完了！<br>
+                        <a href="${PROXY_URL}/store/${result.bin_dir}" target="_blank" 
+                           style="color: #155724; font-weight: bold;">📥 ファームウェアをダウンロード</a>
+                    `;
+                    progressBar.value = 100;
+                    
+                } else if (response.status === 202) {
+                    // ビルド進行中
+                    const result = await response.json();
+                    console.log('Build queued:', result);
+                    buildMessage.textContent = 'ビルド中です。しばらくお待ちください...';
+                    progressBar.value = 60;
+                    
+                    // ポーリングでビルド状況をチェック
+                    if (result.request_hash) {
+                        checkBuildStatus(result.request_hash);
+                    } else {
+                        throw new Error('ビルドリクエストハッシュが取得できませんでした');
+                    }
+                    
+                } else {
+                    // エラー
+                    const errorText = await response.text();
+                    console.error('Build error response:', errorText);
+                    let errorMessage = 'ビルドに失敗しました';
+                    
+                    try {
+                        const errorJson = JSON.parse(errorText);
+                        errorMessage = errorJson.detail || errorJson.message || errorMessage;
+                    } catch (e) {
+                        errorMessage = `HTTP ${response.status}: ${errorText}`;
+                    }
+                    
+                    throw new Error(errorMessage);
+                }
+                
+            } catch (error) {
+                console.error('Build error:', error);
+                buildStatus.style.backgroundColor = '#f8d7da';
+                buildMessage.innerHTML = `❌ エラー: ${error.message}<br><small>プロキシWorkerがデプロイされているか確認してください</small>`;
+                progressBar.value = 0;
+            } finally {
+                buildBtn.disabled = false;
+            }
+        }
+        
+        // ビルド状況をポーリングでチェック（プロキシ経由）
+        async function checkBuildStatus(requestHash) {
+            const buildMessage = document.getElementById('build-message');
+            const progressBar = document.getElementById('build-progress-bar');
+            const buildStatus = document.getElementById('build-status');
+            
+            try {
+                console.log('Checking build status for hash:', requestHash);
+                const response = await fetch(`${PROXY_URL}/api/build/${requestHash}`);
+                
+                if (response.status === 200) {
+                    // ビルド完了
+                    const result = await response.json();
+                    console.log('Build completed:', result);
+                    buildStatus.style.backgroundColor = '#d4edda';
+                    buildMessage.innerHTML = `
+                        ✅ ビルド完了！<br>
+                        <a href="${PROXY_URL}/store/${result.bin_dir}" target="_blank" 
+                           style="color: #155724; font-weight: bold;">📥 ファームウェアをダウンロード</a>
+                    `;
+                    progressBar.value = 100;
+                    
+                } else if (response.status === 202) {
+                    // まだビルド中
+                    const result = await response.json();
+                    console.log('Build in progress:', result);
+                    const status = result.imagebuilder_status || result.queue_position || '処理中';
+                    buildMessage.textContent = `ビルド中: ${status}...`;
+                    progressBar.value = Math.min(90, progressBar.value + 5);
+                    
+                    // 5秒後に再チェック
+                    setTimeout(() => checkBuildStatus(requestHash), 5000);
+                    
+                } else {
+                    // エラー
+                    const errorText = await response.text();
+                    console.error('Build status error:', errorText);
+                    throw new Error(`ステータス確認エラー: ${response.status}`);
+                }
+                
+            } catch (error) {
+                console.error('Build status check error:', error);
+                buildStatus.style.backgroundColor = '#f8d7da';
+                buildMessage.textContent = `❌ エラー: ${error.message}`;
+                progressBar.value = 0;
+            }
+        }
+        
+        // グローバル関数として定義（ホイスティング対応）
+        function buildFirmwareDirectly() {
+            console.log('=== buildFirmwareDirectly() called ===');
+            console.log('Function start time:', new Date().toISOString());
+            console.log('current_device object:', JSON.stringify(current_device, null, 2));
+            
+            // デバイス選択チェック
+            if (!current_device || !current_device.id) {
+                console.log('Device check failed - no device selected');
+                alert('まずデバイスを選択してください\n\nデバイス状態: ' + JSON.stringify(current_device));
+                return;
+            }
+            console.log('✅ Device check passed');
+            
+            // スクリプト確認
+            const scriptElement = document.getElementById('scriptPreview');
+            console.log('Script element:', scriptElement);
+            
+            const script = scriptElement ? scriptElement.textContent : '';
+            console.log('Script content length:', script.length);
+            console.log('Script preview:', script.substring(0, 200) + '...');
+            
+            if (!script || script.includes('Error:')) {
+                console.log('Script check failed');
+                alert('まずスクリプトを生成してください\n\nスクリプト状態: ' + (script ? 'エラー含む' : '未生成'));
+                return;
+            }
+            console.log('✅ Script check passed');
+            
+            // DOM要素取得
+            const buildBtn = document.getElementById('direct-build-btn');
+            const buildStatus = document.getElementById('build-status');
+            const buildMessage = document.getElementById('build-message');
+            const progressBar = document.getElementById('build-progress-bar');
+            
+            console.log('DOM elements:', {
+                buildBtn: !!buildBtn,
+                buildStatus: !!buildStatus,
+                buildMessage: !!buildMessage,
+                progressBar: !!progressBar
+            });
+            
+            if (!buildBtn || !buildStatus || !buildMessage || !progressBar) {
+                console.error('Some DOM elements are missing');
+                alert('画面要素が見つかりません。ページを再読み込みしてください。');
+                return;
+            }
+            
+            console.log('✅ DOM elements check passed');
+            
+            // UI更新
+            buildBtn.disabled = true;
+            buildStatus.style.display = 'block';
+            buildStatus.style.backgroundColor = '#d1ecf1';
+            buildMessage.textContent = 'ビルドを開始しています...';
+            progressBar.value = 10;
+            
+            console.log('✅ UI updated, starting build process...');
+            
+            // 非同期処理を開始
+            performBuild(script, buildBtn, buildStatus, buildMessage, progressBar);
+        }
+        
         // 初期化処理
         document.addEventListener('DOMContentLoaded', function() {
             console.log('=== DOM loaded, initializing... ===');
@@ -1275,7 +1402,7 @@ exit 1`;
             
             try {
                 updateCustomPackages();
-                initOpenWrtData(); // OpenWrt公式データの初期化
+                initOpenWrtData(); // OpenWrt公式データの初期化（プロキシ経由）
                 console.log('✅ Initialization completed successfully');
             } catch (error) {
                 console.error('❌ Initialization error:', error);
@@ -1295,25 +1422,6 @@ exit 1`;
                     console.log('Test button clicked');
                 });
                 console.log('Test button listener added');
-            }
-            
-            // API テストボタン
-            const apiTestBtn = document.getElementById('api-test-btn');
-            if (apiTestBtn) {
-                apiTestBtn.addEventListener('click', async function() {
-                    console.log('Testing API connection...');
-                    try {
-                        const response = await fetch('https://sysupgrade.openwrt.org/api/build', {
-                            method: 'OPTIONS'
-                        });
-                        console.log('API OPTIONS response:', response.status);
-                        alert(`API接続テスト結果: ${response.status} ${response.statusText}`);
-                    } catch (error) {
-                        console.error('API test error:', error);
-                        alert('API接続エラー: ' + error.message);
-                    }
-                });
-                console.log('API test button listener added');
             }
             
             // デバッグ情報ボタン
@@ -1362,179 +1470,11 @@ exit 1`;
             // ビルドボタン
             const buildBtn = document.getElementById('direct-build-btn');
             if (buildBtn) {
-                buildBtn.addEventListener('click', async function() {
-                    console.log('=== Build button clicked ===');
-                    console.log('Button element:', buildBtn);
-                    console.log('Current device:', current_device);
-                    
-                    try {
-                        // 直接ここでビルド処理を実行
-                        console.log('=== Starting build process inline ===');
-                        console.log('Function start time:', new Date().toISOString());
-                        console.log('current_device object:', JSON.stringify(current_device, null, 2));
-                        
-                        // デバイス選択チェック
-                        if (!current_device || !current_device.id) {
-                            console.log('Device check failed - no device selected');
-                            alert('まずデバイスを選択してください\n\nデバイス状態: ' + JSON.stringify(current_device));
-                            return;
-                        }
-                        console.log('✅ Device check passed');
-                        
-                        // スクリプト確認
-                        const scriptElement = document.getElementById('scriptPreview');
-                        console.log('Script element:', scriptElement);
-                        
-                        const script = scriptElement ? scriptElement.textContent : '';
-                        console.log('Script content length:', script.length);
-                        console.log('Script preview:', script.substring(0, 200) + '...');
-                        
-                        if (!script || script.includes('Error:')) {
-                            console.log('Script check failed');
-                            alert('まずスクリプトを生成してください\n\nスクリプト状態: ' + (script ? 'エラー含む' : '未生成'));
-                            return;
-                        }
-                        console.log('✅ Script check passed');
-                        
-                        // DOM要素取得
-                        const buildStatus = document.getElementById('build-status');
-                        const buildMessage = document.getElementById('build-message');
-                        const progressBar = document.getElementById('build-progress-bar');
-                        
-                        console.log('DOM elements:', {
-                            buildBtn: !!buildBtn,
-                            buildStatus: !!buildStatus,
-                            buildMessage: !!buildMessage,
-                            progressBar: !!progressBar
-                        });
-                        
-                        if (!buildStatus || !buildMessage || !progressBar) {
-                            console.error('Some DOM elements are missing');
-                            alert('画面要素が見つかりません。ページを再読み込みしてください。');
-                            return;
-                        }
-                        
-                        console.log('✅ DOM elements check passed');
-                        
-                        // UI更新
-                        buildBtn.disabled = true;
-                        buildStatus.style.display = 'block';
-                        buildStatus.style.backgroundColor = '#d1ecf1';
-                        buildMessage.textContent = 'ビルドを開始しています...';
-                        progressBar.value = 10;
-                        
-                        console.log('✅ UI updated, starting API call...');
-                        
-                        // 選択されたパッケージを取得
-                        const customPackages = document.getElementById('custom_packages').value;
-                        const packages = customPackages ? customPackages.split(/\s+/).filter(p => p.trim()) : [];
-                        
-                        // デバイス情報をもう一度確認
-                        if (!current_device.target) {
-                            throw new Error('デバイスのターゲット情報が不足しています');
-                        }
-                        
-                        const buildRequest = {
-                            profile: current_device.id,
-                            target: current_device.target,
-                            version: current_device.version || '24.10.2',
-                            packages: packages,
-                            defaults: script,
-                            diff_packages: true,
-                            client: "enhanced-firmware-selector"
-                        };
-                        
-                        console.log('Build request:', buildRequest);
-                        
-                        buildMessage.textContent = 'プロキシサーバー経由でリクエスト送信中...';
-                        progressBar.value = 20;
-                        
-                        // プロキシWorker経由でASU APIを呼び出し
-                        const response = await fetch(`${PROXY_URL}/api/build`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify(buildRequest)
-                        });
-                        
-                        console.log('Response status:', response.status);
-                        console.log('Response headers:', Object.fromEntries(response.headers.entries()));
-                        progressBar.value = 40;
-                        
-                        if (response.status === 200) {
-                            // ビルド完了
-                            const result = await response.json();
-                            console.log('Build result:', result);
-                            buildStatus.style.backgroundColor = '#d4edda';
-                            buildMessage.innerHTML = `
-                                ✅ ビルド完了！<br>
-                                <a href="${PROXY_URL}/store/${result.bin_dir}" target="_blank" 
-                                   style="color: #155724; font-weight: bold;">📥 ファームウェアをダウンロード</a>
-                            `;
-                            progressBar.value = 100;
-                            
-                        } else if (response.status === 202) {
-                            // ビルド進行中
-                            const result = await response.json();
-                            console.log('Build queued:', result);
-                            buildMessage.textContent = 'ビルド中です。しばらくお待ちください...';
-                            progressBar.value = 60;
-                            
-                            // ポーリングでビルド状況をチェック（簡略版）
-                            if (result.request_hash) {
-                                buildMessage.textContent = `ビルド中です（ID: ${result.request_hash}）...`;
-                                // 実際のポーリングは省略（まずは基本動作確認）
-                            }
-                            
-                        } else {
-                            // エラー
-                            const errorText = await response.text();
-                            console.error('Build error response:', errorText);
-                            let errorMessage = 'ビルドに失敗しました';
-                            
-                            try {
-                                const errorJson = JSON.parse(errorText);
-                                errorMessage = errorJson.detail || errorJson.message || errorMessage;
-                            } catch (e) {
-                                errorMessage = `HTTP ${response.status}: ${errorText}`;
-                            }
-                            
-                            throw new Error(errorMessage);
-                        }
-                        
-                    } catch (error) {
-                        console.error('Build error:', error);
-                        const buildStatus = document.getElementById('build-status');
-                        const buildMessage = document.getElementById('build-message');
-                        const progressBar = document.getElementById('build-progress-bar');
-                        
-                        if (buildStatus && buildMessage && progressBar) {
-                            buildStatus.style.display = 'block';
-                            buildStatus.style.backgroundColor = '#f8d7da';
-                            buildMessage.innerHTML = `❌ エラー: ${error.message}<br><small>詳細はコンソールを確認してください</small>`;
-                            progressBar.value = 0;
-                        }
-                    } finally {
-                        buildBtn.disabled = false;
-                    }
-                });
+                buildBtn.addEventListener('click', buildFirmwareDirectly);
                 console.log('Build button listener added successfully');
             } else {
                 console.error('Build button not found!');
             }
-            
-            // リダイレクトボタンは削除
-            /*
-            const redirectBtn = document.getElementById('redirect-btn');
-            if (redirectBtn) {
-                redirectBtn.addEventListener('click', function() {
-                    console.log('Redirect button clicked');
-                    redirectToOfficialBuilder();
-                });
-                console.log('Redirect button listener added');
-            }
-            */
             
             // スクリプト生成ボタン
             const generateBtn = document.getElementById('generate-btn');
