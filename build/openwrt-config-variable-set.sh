@@ -1,9 +1,10 @@
 #!/bin/sh
 
-wget -O /tmp/openwrt-config.sh https://site-u.pages.dev/build/build/openwrt-config.sh
-chmod +x /tmp/openwrt-config.sh
+CONFIG_SCRIPT="/tmp/openwrt-config.sh"
 
-CONFIG_SCRIPT="tmp/openwrt-config.sh"
+wget -O "$CONFIG_SCRIPT" https://site-u.pages.dev/build/build/openwrt-config.sh
+chmod +x "$CONFIG_SCRIPT"
+
 [ -x "$CONFIG_SCRIPT" ] || { printf "\033[31m$CONFIG_SCRIPT not found or not executable.\033[0m\n"; exit 1; }
 
 printf "\033[33mNotes: Blank to skip\033[0m\n"
@@ -78,7 +79,3 @@ esac
 export ROOT_PASSWORD PPPOE_USERNAME PPPOE_PASSWORD DEVICE_NAME WLAN_NAME WLAN_PASSWORD
 
 exec sh "$CONFIG_SCRIPT" ${isp_mode:+$isp_mode}
-
-exit 0
-
-sh /tmp/openwrt-config-set.sh
