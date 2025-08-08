@@ -14,7 +14,7 @@
 # PPPOE_USERNAME="your_isp_username"
 # PPPOE_PASSWORD="your_isp_password"
 
-LANGUAGE=""
+LANGUAGE="${LANGUAGE:-en}"
 
 GUA_ADDR=""
 PD_ADDR=""
@@ -172,9 +172,6 @@ set_device_basic_config() {
     [ -n "$WLAN_NAME" ] && cp /etc/config/wireless /etc/config/wireless.basic.bak 2>/dev/null
     
     logger -t auto-config "Setting device basic configuration..."
-    
-    # ログ出力設定（公式フォーマットに準拠）
-    exec >/tmp/setup.log 2>&1
     
     # rootパスワード設定
     if [ -n "$ROOT_PASSWORD" ]; then
@@ -490,6 +487,9 @@ set_wifi_config() {
 }
 
 openwrt_config_main() {
+    # ログ出力設定（公式フォーマットに準拠）
+    exec >/tmp/setup.log 2>&1
+    
     logger -t auto-config "Starting OpenWrt auto configuration..."
 
     # デバイス基本設定（パスワード、IP、Wi-Fi名）
@@ -514,7 +514,7 @@ openwrt_config_main() {
         uci commit dhcp
         uci commit firewall
         echo "DHCP only LAN setup completed."
-        return 0
+        
     fi
 
     # ISP接続方式判定（引数優先、なければ自動判定）
