@@ -933,7 +933,7 @@
         function changeModel(version, overview, title) {
             const entry = overview.profiles[title];
             if (entry) {
-                const base_url = `${config.image_url}/releases/${version}`;
+                const base_url = `${PROXY_URL}/releases/${version}`;
                 fetch(`${base_url}/targets/${entry.target}/profiles.json`)
                     .then(response => response.json())
                     .then(mobj => {
@@ -974,7 +974,7 @@
         async function initOpenWrtData() {
             try {
                 // バージョン情報を取得
-                const versionsResponse = await fetch(`${config.image_url}/.versions.json`);
+                const versionsResponse = await fetch(`${PROXY_URL}/.versions.json`);
                 const versionsData = await versionsResponse.json();
                 
                 // サポートされているバージョンのみフィルタ
@@ -1005,8 +1005,8 @@
         // 指定されたバージョンのデバイス一覧を読み込み
         function loadDevicesForVersion(version) {
             const overview_url = version === "SNAPSHOT" 
-                ? `${config.image_url}/snapshots/.overview.json`
-                : `${config.image_url}/releases/${version}/.overview.json`;
+                ? `${PROXY_URL}/snapshots/.overview.json`
+                : `${PROXY_URL}/releases/${version}/.overview.json`;
                 
             fetch(overview_url)
                 .then(response => response.json())
