@@ -108,6 +108,13 @@ install_packages() {
     command -v apk >/dev/null 2>&1 && apk update >/dev/null 2>&1 && apk add $pkgs >/dev/null 2>&1
 }
 
+get_release() {
+    # OpenWrtバージョンを取得
+    if [ -f "/etc/openwrt_release" ]; then
+        OS_VERSION=$(grep "DISTRIB_RELEASE" /etc/openwrt_release | cut -d"'" -f2 2>/dev/null)
+    fi
+}
+
 fetch_country_info() {
     logger -t auto-config "Fetching configuration from Cloudflare Worker..."
     
@@ -220,13 +227,13 @@ set_country() {
 # ISP接続方式の判別ルーチン
 # 戻り値: "pppoe" / "dslite" / "mape" / "dhcp"
 detect_isp_mode() {
-    # 1. PPPoE判定（ID/PASSが両方セットされていれば最優先）
+    # PPPoE判定（ID/PASSが両方セットされていれば最優先）
     if [ -n "$PPPOE_USERNAME" ] && [ -n "$PPPOE_PASSWORD" ]; then
         echo "pppoe"
         return 0
     fi
 
-    # 2. DS-Lite判定（APIレスポンスにAFTR種別またはAFTR IPv6アドレスがあれば）
+    # DS-Lite判定（APIレスポンスにAFTR種別またはAFTR IPv6アドレスがあれば）
     if [ -n "$API_RESPONSE" ]; then
         local aftr_type=$(echo "$API_RESPONSE" | jsonfilter -e '@.rule.aftrType' 2>/dev/null)
         local aftr_addr=$(echo "$API_RESPONSE" | jsonfilter -e '@.rule.aftrIpv6Address' 2>/dev/null)
@@ -236,7 +243,7 @@ detect_isp_mode() {
         fi
     fi
 
-    # 3. MAP-E判定（APIレスポンスにMAP-Eルールがあれば）
+    # MAP-E判定（APIレスポンスにMAP-Eルールがあれば）
     if [ -n "$API_RESPONSE" ]; then
         local rule_exists=$(echo "$API_RESPONSE" | jsonfilter -e '@.rule' 2>/dev/null)
         if [ -n "$rule_exists" ] && [ "$rule_exists" != "null" ]; then
@@ -245,7 +252,7 @@ detect_isp_mode() {
         fi
     fi
 
-    # 4. DHCP（上記すべて該当なし）
+    # DHCP（上記すべて該当なし）
     echo "dhcp"
     return 0
 }
@@ -256,26 +263,14 @@ set_pppoe_config() {
 
     logger -t auto-config "Setting PPPoE configuration..."
     
-    # PPPoE設定（公式フォーマットに準拠）
     if [ -n "$PPPOE_USERNAME" ] && [ -n "$PPPOE_PASSWORD" ]; then
         logger -t auto-config "Configuring PPPoE with username: $PPPOE_USERNAME"
+        
         uci set network.wan.proto='pppoe'
         uci set network.wan.username="$PPPOE_USERNAME"
         uci set network.wan.password="$PPPOE_PASSWORD"
         
-        # WAN6も無効化（PPPoE使用時）
-        uci set network.wan6.disabled='1' >/dev/null 2>&1
-        uci set network.wan6.auto='0' >/dev/null 2>&1
-        
-        # MAP-E/DS-Lite関連インターフェースを削除（競合回避）
-        uci delete network.${WAN6_NAME} >/dev/null 2>&1
-        uci delete network.${WANMAP_NAME} >/dev/null 2>&1
-        uci delete network.${DSLITE_NAME} >/dev/null 2>&1
-        uci delete dhcp.${WAN6_NAME} >/dev/null 2>&1
-        
         logger -t auto-config "PPPoE configuration completed"
-    else
-        logger -t auto-config "PPPoE username or password not set, skipping PPPoE configuration"
     fi
     
     return 0
@@ -287,94 +282,67 @@ set_dslite_config() {
     cp /etc/config/dhcp /etc/config/dhcp.dslite.bak 2>/dev/null
     cp /etc/config/firewall /etc/config/firewall.dslite.bak 2>/dev/null
 
+    install_packages "ds-lite"
+
     logger -t auto-config "Start DS-LITE detection and configuration"
 
-    install_packages "ds-lite"
-    
-    # ローカルIPv6アドレス確認
-    if [ -n "$GUA_ADDR" ]; then
-        logger -t auto-config "Local IPv6 address: $GUA_ADDR"
-    else
+    if [ -z "$GUA_ADDR" ]; then
         logger -t auto-config "Failed to get local IPv6 address"
         return 1
     fi
 
-    # DS-Lite情報取得
-    if ! fetch_dslite_info; then
-        logger -t auto-config "Failed to fetch DS-Lite information"
+    AFTR_TYPE=$(echo "$API_RESPONSE" | jsonfilter -e '@.rule.aftrType' 2>/dev/null)
+    AFTER_ADDR=$(echo "$API_RESPONSE" | jsonfilter -e '@.rule.aftrIpv6Address' 2>/dev/null)
+
+    if [ -z "$AFTR_TYPE" ] || [ "$AFTR_TYPE" = "null" ]; then
+        logger -t auto-config "No AFTR type information"
         return 1
     fi
 
-    # IPv6アドレスから直接NTT東西判定
     case "$GUA_ADDR" in
-        # NTT東日本フレッツ網
-        "2400:4050:"*|"2400:4051:"*|"2400:4052:"*)
+        "2400:4050:"*|"2400:4051:"*|"2400:4052:"*|"2001:380:a0"*|"2001:380:a1"*|"2001:380:a2"*|"2001:380:a3"*)
             REGION="east" ;;
-        "2001:380:a0"*|"2001:380:a1"*|"2001:380:a2"*|"2001:380:a3"*)
+        "2400:4150:"*|"2400:4151:"*|"2400:4152:"*|"2001:380:b0"*|"2001:380:b1"*|"2001:380:b2"*|"2001:380:b3"*)
+            REGION="west" ;;
+        *)
             REGION="east" ;;
-            
-        # NTT西日本フレッツ網  
-        "2400:4150:"*|"2400:4151:"*|"2400:4152:"*)
-            REGION="west" ;;
-        "2001:380:b0"*|"2001:380:b1"*|"2001:380:b2"*|"2001:380:b3"*)
-            REGION="west" ;;
-            
-        *) 
-            REGION="east" ;;  # デフォルト
     esac
     
-    logger -t auto-config "Detected: NTT $REGION Japan (IPv6: $GUA_ADDR)"
-
-    # AFTR IPv6アドレスの決定
     local aftr_addr="$AFTER_ADDR"
-    
-    # AFTRアドレスが指定されていない場合は、種別と東西で決定
     if [ -z "$aftr_addr" ] || [ "$aftr_addr" = "null" ]; then
         case "$AFTR_TYPE" in
             "transix")
-                if [ "$REGION" = "east" ]; then
-                    aftr_addr="2404:8e00::feed:100"
-                else
-                    aftr_addr="2404:8e01::feed:100"
-                fi
-                ;;
+                aftr_addr=$([ "$REGION" = "east" ] && echo "2404:8e00::feed:100" || echo "2404:8e01::feed:100") ;;
             "xpass")
-                if [ "$REGION" = "east" ]; then
-                    aftr_addr="2001:e30:1c1e:1::1"
-                else
-                    aftr_addr="2001:e30:1c1f:1::1"
-                fi
-                ;;
+                aftr_addr=$([ "$REGION" = "east" ] && echo "2001:e30:1c1e:1::1" || echo "2001:e30:1c1f:1::1") ;;
             "v6option")
-                if [ "$REGION" = "east" ]; then
-                    aftr_addr="2404:8e00::feed:101"
-                else
-                    aftr_addr="2404:8e01::feed:101"
-                fi
-                ;;
+                aftr_addr=$([ "$REGION" = "east" ] && echo "2404:8e00::feed:101" || echo "2404:8e01::feed:101") ;;
             *)
                 logger -t auto-config "Unknown AFTR type: $AFTR_TYPE"
-                return 1
-                ;;
+                return 1 ;;
         esac
     fi
 
-    logger -t auto-config "DS-LITE configuration: Type=$AFTR_TYPE, AFTR=$aftr_addr, Region=$REGION"
+    logger -t auto-config "DS-LITE: Type=$AFTR_TYPE, AFTR=$aftr_addr, Region=$REGION"
 
-    # 既存のWAN設定を無効化
-    uci set network.wan.disabled='1' >/dev/null 2>&1
-    uci set network.wan.auto='0' >/dev/null 2>&1
-
-    # IPv6インターフェース設定（DHCPv6）
     uci delete network.${DSLITE6_NAME} >/dev/null 2>&1
+    uci delete network.${DSLITE_NAME} >/dev/null 2>&1
+    uci delete dhcp.${DSLITE6_NAME} >/dev/null 2>&1
+    uci del_list firewall.@zone[1].network="${DSLITE_NAME}" >/dev/null 2>&1
+    uci del_list firewall.@zone[1].network="${DSLITE6_NAME}" >/dev/null 2>&1
+
+    # WAN無効化
+    uci set network.wan.disabled='1'
+    uci set network.wan.auto='0'
+
+    # DS-Lite IPv6インターフェース
     uci set network.${DSLITE6_NAME}=interface
     uci set network.${DSLITE6_NAME}.proto='dhcpv6'
     uci set network.${DSLITE6_NAME}.device="${WAN_DEF}"
     uci set network.${DSLITE6_NAME}.reqaddress='try'
     uci set network.${DSLITE6_NAME}.reqprefix='auto'
 
-    # DS-Liteインターフェース設定
-    uci delete network.${DSLITE_NAME} >/dev/null 2>&1
+    # DS-Liteインターフェース
     uci set network.${DSLITE_NAME}=interface
     uci set network.${DSLITE_NAME}.proto='dslite'
     uci set network.${DSLITE_NAME}.peeraddr="$aftr_addr"
@@ -383,7 +351,6 @@ set_dslite_config() {
     uci set network.${DSLITE_NAME}.encaplimit='ignore'
 
     # DHCP設定
-    uci delete dhcp.${DSLITE6_NAME} >/dev/null 2>&1
     uci set dhcp.${DSLITE6_NAME}=dhcp
     uci set dhcp.${DSLITE6_NAME}.interface="${DSLITE6_NAME}"
     uci set dhcp.${DSLITE6_NAME}.master='1'
@@ -392,19 +359,19 @@ set_dslite_config() {
     uci set dhcp.${DSLITE6_NAME}.ndp='relay'
     uci set dhcp.${DSLITE6_NAME}.ignore='1'
 
-    # LANでIPv6リレー有効化
-    uci set dhcp.lan.ra='relay' >/dev/null 2>&1
-    uci set dhcp.lan.dhcpv6='relay' >/dev/null 2>&1
-    uci set dhcp.lan.ndp='relay' >/dev/null 2>&1
-    uci set dhcp.lan.force='1' >/dev/null 2>&1
+    # LAN IPv6リレー
+    uci set dhcp.lan.ra='relay'
+    uci set dhcp.lan.dhcpv6='relay'
+    uci set dhcp.lan.ndp='relay'
+    uci set dhcp.lan.force='1'
 
-    # ファイアウォール設定
-    uci add_list firewall.@zone[1].network="${DSLITE_NAME}" >/dev/null 2>&1
-    uci add_list firewall.@zone[1].network="${DSLITE6_NAME}" >/dev/null 2>&1
-    uci set firewall.@zone[1].masq='1' >/dev/null 2>&1
-    uci set firewall.@zone[1].mtu_fix='1' >/dev/null 2>&1
+    # ファイアウォール
+    uci add_list firewall.@zone[1].network="${DSLITE_NAME}"
+    uci add_list firewall.@zone[1].network="${DSLITE6_NAME}"
+    uci set firewall.@zone[1].masq='1'
+    uci set firewall.@zone[1].mtu_fix='1'
 
-    logger -t auto-config "DS-Lite configuration completed (Type: $AFTR_TYPE, AFTR: $aftr_addr)"
+    logger -t auto-config "DS-Lite configuration completed"
     return 0
 }
 
@@ -414,30 +381,30 @@ set_mape_config() {
     cp /etc/config/dhcp /etc/config/dhcp.mape.bak 2>/dev/null
     cp /etc/config/firewall /etc/config/firewall.mape.bak 2>/dev/null
 
-    logger -t auto-config "Configuring MAP-E..."
-
     install_packages "map"
     
-    # OpenWrtバージョンを取得
-    if [ -f "/etc/openwrt_release" ]; then
-        OS_VERSION=$(grep "DISTRIB_RELEASE" /etc/openwrt_release | cut -d"'" -f2 2>/dev/null)
-    fi
+    logger -t auto-config "Configuring MAP-E..."
 
-    # 既存のWAN/WAN6を無効化
-    uci set network.wan.disabled='1' >/dev/null 2>&1
-    uci set network.wan.auto='0' >/dev/null 2>&1
-    uci set network.wan6.disabled='1' >/dev/null 2>&1
-    uci set network.wan6.auto='0' >/dev/null 2>&1
-
-    # IPv6インターフェース設定（DHCPv6）
     uci delete network.${MAP6_NAME} >/dev/null 2>&1
+    uci delete network.${MAP_NAME} >/dev/null 2>&1
+    uci delete dhcp.${MAP6_NAME} >/dev/null 2>&1
+    uci del_list firewall.@zone[1].network="${MAP_NAME}" >/dev/null 2>&1
+    uci del_list firewall.@zone[1].network="${MAP6_NAME}" >/dev/null 2>&1
+
+    # WAN/WAN6無効化
+    uci set network.wan.disabled='1'
+    uci set network.wan.auto='0'
+    uci set network.wan6.disabled='1'
+    uci set network.wan6.auto='0'
+
+    # MAP-E IPv6インターフェース
     uci set network.${MAP6_NAME}=interface
     uci set network.${MAP6_NAME}.proto='dhcpv6'
     uci set network.${MAP6_NAME}.device="${WAN_DEF}"
     uci set network.${MAP6_NAME}.reqaddress='try'
     uci set network.${MAP6_NAME}.reqprefix='auto'
 
-    # GUA/PDアドレスが取得できている場合はプレフィックスを設定
+    # GUA/PDプレフィックス設定
     if [ -n "$PD_ADDR" ]; then
         uci set network.${MAP6_NAME}.ip6prefix="$PD_ADDR"
     elif [ -n "$GUA_ADDR" ]; then
@@ -445,8 +412,7 @@ set_mape_config() {
         uci set network.${MAP6_NAME}.ip6prefix="$wan6_prefix"
     fi
 
-    # MAP-Eインターフェース設定
-    uci delete network.${MAP_NAME} >/dev/null 2>&1
+    # MAP-Eインターフェース
     uci set network.${MAP_NAME}=interface
     uci set network.${MAP_NAME}.proto='map'
     uci set network.${MAP_NAME}.maptype='map-e'
@@ -471,7 +437,6 @@ set_mape_config() {
     fi
 
     # DHCP設定
-    uci delete dhcp.${MAP6_NAME} >/dev/null 2>&1
     uci set dhcp.${MAP6_NAME}=dhcp
     uci set dhcp.${MAP6_NAME}.interface="${MAP6_NAME}"
     uci set dhcp.${MAP6_NAME}.master='1'
@@ -484,19 +449,19 @@ set_mape_config() {
         uci set dhcp.${MAP6_NAME}.ignore='1'
     fi
 
-    # LANでIPv6リレー有効化
-    uci set dhcp.lan.ra='relay' >/dev/null 2>&1
-    uci set dhcp.lan.dhcpv6='relay' >/dev/null 2>&1
-    uci set dhcp.lan.ndp='relay' >/dev/null 2>&1
-    uci set dhcp.lan.force='1' >/dev/null 2>&1
+    # LAN IPv6リレー
+    uci set dhcp.lan.ra='relay'
+    uci set dhcp.lan.dhcpv6='relay'
+    uci set dhcp.lan.ndp='relay'
+    uci set dhcp.lan.force='1'
 
-    # ファイアウォール設定
-    uci add_list firewall.@zone[1].network="${MAP_NAME}" >/dev/null 2>&1
-    uci add_list firewall.@zone[1].network="${MAP6_NAME}" >/dev/null 2>&1
-    uci set firewall.@zone[1].masq='1' >/dev/null 2>&1
-    uci set firewall.@zone[1].mtu_fix='1' >/dev/null 2>&1
+    # ファイアウォール
+    uci add_list firewall.@zone[1].network="${MAP_NAME}"
+    uci add_list firewall.@zone[1].network="${MAP6_NAME}"
+    uci set firewall.@zone[1].masq='1'
+    uci set firewall.@zone[1].mtu_fix='1'
 
-    logger -t auto-config "MAP-E configuration completed (OpenWrt: $OS_VERSION)"
+    logger -t auto-config "MAP-E configuration completed"
     return 0
 }
 
@@ -509,7 +474,7 @@ set_wifi_config() {
     # 国コード設定関数
     set_country_code() {
         local device="$1"
-        uci set wireless.${device}.country="$COUNTRY" >/dev/null 2>&1
+        uci set wireless.${device}.country="$COUNTRY"
     }
 
     # ワイヤレス設定（国コード）
@@ -527,10 +492,12 @@ set_wifi_config() {
 openwrt_config_main() {
     logger -t auto-config "Starting OpenWrt auto configuration..."
 
-    # 1. デバイス基本設定（パスワード、IP、Wi-Fi名）
+    # デバイス基本設定（パスワード、IP、Wi-Fi名）
     set_device_basic_config
 
-    # 2. IPv6接続が利用可能になるまで待機
+    get_release
+    
+    # IPv6接続が利用可能になるまで待機
     if ! get_address; then
         logger -t auto-config "IPv6 address not available, fallback to DHCP only LAN setup"
         # DHCPのみのシンプルなLAN設定（必要なら追加）
@@ -541,7 +508,7 @@ openwrt_config_main() {
         return 0
     fi
 
-    # 3. Cloudflareワーカーから情報取得
+    # Cloudflareワーカーから情報取得
     if ! fetch_country_info; then
         logger -t auto-config "Failed to fetch API country info, fallback to DHCP only LAN setup"
         uci commit network
@@ -551,19 +518,19 @@ openwrt_config_main() {
         return 0
     fi
 
-    # 4. ISP優先判定
+    # ISP優先判定
     local isp_mode
     isp_mode=$(detect_isp_mode)
 
     logger -t auto-config "Detected ISP mode: $isp_mode"
 
-    # 5. タイムゾーン＆国コード設定
+    # タイムゾーン＆国コード設定
     set_country
 
-    # 6. Wi-Fi設定
+    # Wi-Fi設定
     set_wifi_config
 
-    # 7. 各方式ごとの設定
+    # 各方式ごとの設定
     case "$isp_mode" in
         "pppoe")
             set_pppoe_config
@@ -579,7 +546,7 @@ openwrt_config_main() {
             ;;
     esac
 
-    # 8. 設定をコミット
+    # 設定をコミット
     uci commit system >/dev/null 2>&1
     uci commit wireless >/dev/null 2>&1
     uci commit network
