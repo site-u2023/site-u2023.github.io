@@ -2,10 +2,17 @@
 
 CONFIG_SCRIPT="/tmp/openwrt-config.sh"
 
-wget -O "$CONFIG_SCRIPT" https://site-u.pages.dev/build/build/openwrt-config.sh
-chmod +x "$CONFIG_SCRIPT"
+wget -O "$CONFIG_SCRIPT" "https://site-u.pages.dev/build/openwrt-config.sh" 2>/dev/null
+if [ ! -f "$CONFIG_SCRIPT" ]; then
+    printf "\033[31mError: Failed to download main config script\033[0m\n"
+    exit 1
+fi
 
-[ -x "$CONFIG_SCRIPT" ] || { printf "\033[31m$CONFIG_SCRIPT not found or not executable.\033[0m\n"; exit 1; }
+chmod +x "$CONFIG_SCRIPT"
+if [ ! -x "$CONFIG_SCRIPT" ]; then
+    printf "\033[31mError: $CONFIG_SCRIPT not found or not executable.\033[0m\n" 
+    exit 1
+fi
 
 printf "\033[33mNotes: Blank to skip\033[0m\n"
 
