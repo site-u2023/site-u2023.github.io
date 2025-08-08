@@ -461,9 +461,9 @@ replace_map() {
     local wget_rc
 
     if echo "$OS_VERSION" | grep -q "^19"; then
-        source_url="https://site-u.pages.dev/build/map.sh.19"
+        source_url="https://site-u.pages.dev/build/scripts/map.sh.19"
     else
-        source_url="https://site-u.pages.dev/build/map.sh.new"
+        source_url="https://site-u.pages.dev/build/scripts/map.sh.new"
     fi
     
     if [ -f "$proto_script_path" ]; then
