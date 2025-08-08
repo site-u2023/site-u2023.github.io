@@ -279,7 +279,10 @@ set_dslite_config() {
     cp /etc/config/dhcp /etc/config/dhcp.dslite.bak 2>/dev/null
     cp /etc/config/firewall /etc/config/firewall.dslite.bak 2>/dev/null
 
-    install_packages "ds-lite"
+    # パッケージインストール（エラーハンドリング付き）
+    if ! install_packages "ds-lite"; then
+        logger -t auto-config "Warning: Failed to install ds-lite package, continuing anyway"
+    fi
 
     logger -t auto-config "Start DS-LITE detection and configuration"
 
@@ -296,15 +299,17 @@ set_dslite_config() {
         return 1
     fi
 
+    # リージョン判定
     case "$GUA_ADDR" in
-        "2400:4050:"*|"2400:4051:"*|"2400:4052:"*|"2001:380:a0"*|"2001:380:a1"*|"2001:380:a2"*|"2001:380:a3"*)
+        2400:4050:*|2400:4051:*|2400:4052:*|2001:380:a0*|2001:380:a1*|2001:380:a2*|2001:380:a3*)
             REGION="east" ;;
-        "2400:4150:"*|"2400:4151:"*|"2400:4152:"*|"2001:380:b0"*|"2001:380:b1"*|"2001:380:b2"*|"2001:380:b3"*)
+        2400:4150:*|2400:4151:*|2400:4152:*|2001:380:b0*|2001:380:b1*|2001:380:b2*|2001:380:b3*)
             REGION="west" ;;
         *)
             REGION="east" ;;
     esac
     
+    # AFTRアドレス決定
     local aftr_addr="$AFTR_ADDR"
     if [ -z "$aftr_addr" ] || [ "$aftr_addr" = "null" ]; then
         case "$AFTR_TYPE" in
@@ -322,6 +327,7 @@ set_dslite_config() {
 
     logger -t auto-config "DS-LITE: Type=$AFTR_TYPE, AFTR=$aftr_addr, Region=$REGION"
 
+    # 既存設定のクリーンアップ
     uci delete network.${DSLITE6_NAME} >/dev/null 2>&1
     uci delete network.${DSLITE_NAME} >/dev/null 2>&1
     uci delete dhcp.${DSLITE6_NAME} >/dev/null 2>&1
