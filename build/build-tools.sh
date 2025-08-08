@@ -468,6 +468,39 @@ set_mape_config() {
     return 0
 }
 
+replace_map() {
+    local proto_script_path="/lib/netifd/proto/map.sh"
+    local backup_script_path="${proto_script_path}.bak"
+    local source_url=""
+    local wget_rc
+
+    if echo "$OS_VERSION" | grep -q "^19"; then
+        source_url="https://site-u.pages.dev/build/map.sh.19"
+    else
+        source_url="https://site-u.pages.dev/build/map.sh.new"
+    fi
+    
+    if [ -f "$proto_script_path" ]; then
+        if command cp "$proto_script_path" "$backup_script_path"; then
+            :
+        else
+            :
+        fi
+    fi
+
+    command wget -6 -q -O "$proto_script_path" --timeout=10 --no-check-certificate "$source_url"
+    wget_rc=$?
+    if [ "$wget_rc" -eq 0 ]; then
+        if [ -s "$proto_script_path" ]; then
+            if command chmod +x "$proto_script_path"; then
+                return 0
+            fi
+        fi
+    fi
+    
+    return 1
+}
+
 # Wi-Fi設定（国コード）
 set_wifi_config() {
     cp /etc/config/wireless /etc/config/wireless.country.bak 2>/dev/null
@@ -547,7 +580,7 @@ openwrt_config_main() {
             set_dslite_config
             ;;
         "mape")
-            fetch_mape_info && set_mape_config
+            fetch_mape_info && set_mape_config && replace_map
             ;;
         "dhcp")
             ;;
