@@ -164,6 +164,9 @@ fetch_dslite_info() {
 
 # デバイス基本設定（パスワード、IP、Wi-Fi名）
 set_device_basic_config() {
+    [ -n "$LAN_IP_ADDRESS" ] && cp /etc/config/network /etc/config/network.basic.bak 2>/dev/null
+    [ -n "$WLAN_NAME" ] && cp /etc/config/wireless /etc/config/wireless.basic.bak 2>/dev/null
+    
     logger -t auto-config "Setting device basic configuration..."
     
     # ログ出力設定（公式フォーマットに準拠）
@@ -196,6 +199,8 @@ set_device_basic_config() {
 
 # 言語コード及びタイムゾーン設定
 set_country() {
+    cp /etc/config/system /etc/config/system.country.bak 2>/dev/null
+
     logger -t auto-config "Setting language..."
     
     # システム設定（言語）
@@ -250,6 +255,8 @@ detect_isp_mode() {
 
 # PPPoE設定
 set_pppoe_config() {
+    cp /etc/config/network /etc/config/network.pppoe.bak 2>/dev/null
+
     logger -t auto-config "Setting PPPoE configuration..."
     
     # PPPoE設定（公式フォーマットに準拠）
@@ -279,6 +286,10 @@ set_pppoe_config() {
 
 # DS-Lite設定関数
 set_dslite_config() {
+    cp /etc/config/network /etc/config/network.dslite.bak 2>/dev/null
+    cp /etc/config/dhcp /etc/config/dhcp.dslite.bak 2>/dev/null
+    cp /etc/config/firewall /etc/config/firewall.dslite.bak 2>/dev/null
+
     logger -t auto-config "Start DS-LITE detection and configuration"
 
     # ローカルIPv6アドレスはグローバル変数GUA_ADDRを参照
@@ -389,6 +400,10 @@ set_dslite_config() {
 
 # MAP-E設定
 set_mape_config() {
+    cp /etc/config/network /etc/config/network.mape.bak 2>/dev/null
+    cp /etc/config/dhcp /etc/config/dhcp.mape.bak 2>/dev/null
+    cp /etc/config/firewall /etc/config/firewall.mape.bak 2>/dev/null
+
     logger -t auto-config "Configuring MAP-E..."
     
     # OpenWrtバージョンを取得
@@ -475,6 +490,8 @@ set_mape_config() {
 
 # Wi-Fi設定（国コード）
 set_wifi_config() {
+    cp /etc/config/wireless /etc/config/wireless.country.bak 2>/dev/null
+    
     logger -t auto-config "Setting WiFi configuration..."
     
     # 国コード設定関数
