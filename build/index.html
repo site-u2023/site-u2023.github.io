@@ -12,58 +12,170 @@
             background-color: #f8f9fa;
         }
         
-        // 公式ビルダーへリダイレクト
-        function redirectToOfficialBuilder() {
-            console.log('Redirecting to official builder...');
+        // 直接ファームウェアビルド機能（プロキシWorker経由）
+        async function buildFirmwareDirectly() {
+            console.log('buildFirmwareDirectly() called');
             
             if (!current_device.id) {
                 alert('まずデバイスを選択してください');
+                console.log('No device selected, current_device:', current_device);
                 return;
             }
             
             const script = document.getElementById('scriptPreview').textContent;
             if (!script || script.includes('Error:')) {
-                const proceed = confirm('スクリプトが生成されていませんが、公式ビルダーを開きますか？');
-                if (!proceed) return;
+                alert('まずスクリプトを生成してください');
+                console.log('No script generated');
+                return;
             }
             
-            // 公式ビルダーのURLを構築
-            const params = new URLSearchParams({
-                version: current_device.version || '24.10.2',
-                target: current_device.target || '',
-                id: current_device.id || ''
-            });
+            const buildBtn = document.getElementById('direct-build-btn');
+            const buildStatus = document.getElementById('build-status');
+            const buildMessage = document.getElementById('build-message');
+            const progressBar = document.getElementById('build-progress-bar');
             
-            const officialUrl = `https://firmware-selector.openwrt.org/?${params.toString()}`;
-            console.log('Opening official builder with URL:', officialUrl);
+            buildBtn.disabled = true;
+            buildStatus.style.display = 'block';
+            buildStatus.style.backgroundColor = '#d1ecf1';
+            buildMessage.textContent = 'ビルドを開始しています...';
+            progressBar.value = 10;
             
-            // 新しいタブで公式ビルダーを開く
-            window.open(officialUrl, '_blank');
-            
-            // スクリプトがある場合はクリップボードにコピー
-            if (script && !script.includes('Error:')) {
-                try {
-                    navigator.clipboard.writeText(script).then(() => {
-                        alert('✅ 公式ビルダーを開きました！\n📋 スクリプトもクリップボードにコピーしました。\n\n公式サイトの「uci-defaults」欄に貼り付けてください。');
-                    }).catch(() => {
-                        alert('✅ 公式ビルダーを開きました！\n\n⚠️ 自動コピーに失敗したため、手動でスクリプトをコピーしてください。');
-                    });
-                } catch (error) {
-                    alert('✅ 公式ビルダーを開きました！\n\n⚠️ 手動でスクリプトをコピーして公式サイトに貼り付けてください。');
+            try {
+                // 選択されたパッケージを取得
+                const customPackages = document.getElementById('custom_packages').value;
+                const packages = customPackages ? customPackages.split(/\s+/).filter(p => p.trim()) : [];
+                
+                // デバイス情報をもう一度確認
+                if (!current_device.target) {
+                    throw new Error('デバイスのターゲット情報が不足しています');
                 }
-            } else {
-                alert('✅ 公式ビルダーを開きました！\n\nデバイスが自動選択されています。');
+                
+                const buildRequest = {
+                    profile: current_device.id,
+                    target: current_device.target,
+                    version: current_device.version || '24.10.2',
+                    packages: packages,
+                    defaults: script,
+                    diff_packages: true,
+                    client: "enhanced-firmware-selector"
+                };
+                
+                console.log('Build request:', buildRequest);
+                
+                buildMessage.textContent = 'プロキシサーバー経由でリクエスト送信中...';
+                progressBar.value = 20;
+                
+                // プロキシWorker経由でASU APIを呼び出し
+                const response = await fetch(`${PROXY_URL}/api/build`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(buildRequest)
+                });
+                
+                console.log('Response status:', response.status);
+                progressBar.value = 40;
+                
+                if (response.status === 200) {
+                    // ビルド完了
+                    const result = await response.json();
+                    console.log('Build result:', result);
+                    buildStatus.style.backgroundColor = '#d4edda';
+                    buildMessage.innerHTML = `
+                        ✅ ビルド完了！<br>
+                        <a href="${PROXY_URL}/store/${result.bin_dir}" target="_blank" 
+                           style="color: #155724; font-weight: bold;">📥 ファームウェアをダウンロード</a>
+                    `;
+                    progressBar.value = 100;
+                    
+                } else if (response.status === 202) {
+                    // ビルド進行中
+                    const result = await response.json();
+                    console.log('Build queued:', result);
+                    buildMessage.textContent = 'ビルド中です。しばらくお待ちください...';
+                    progressBar.value = 60;
+                    
+                    // ポーリングでビルド状況をチェック
+                    if (result.request_hash) {
+                        checkBuildStatus(result.request_hash);
+                    } else {
+                        throw new Error('ビルドリクエストハッシュが取得できませんでした');
+                    }
+                    
+                } else {
+                    // エラー
+                    const errorText = await response.text();
+                    console.error('Build error response:', errorText);
+                    let errorMessage = 'ビルドに失敗しました';
+                    
+                    try {
+                        const errorJson = JSON.parse(errorText);
+                        errorMessage = errorJson.detail || errorJson.message || errorMessage;
+                    } catch (e) {
+                        errorMessage = `HTTP ${response.status}: ${errorText}`;
+                    }
+                    
+                    throw new Error(errorMessage);
+                }
+                
+            } catch (error) {
+                console.error('Build error:', error);
+                buildStatus.style.backgroundColor = '#f8d7da';
+                buildMessage.innerHTML = `❌ エラー: ${error.message}<br><small>プロキシWorkerがデプロイされているか確認してください</small>`;
+                progressBar.value = 0;
+            } finally {
+                buildBtn.disabled = false;
             }
         }
         
-        // 直接ファームウェアビルド機能（CORS制限のため使用不可）
-        /*
-        async function buildFirmwareDirectly() {
-            // CORS制限により、ブラウザから直接ASU APIは呼び出せません
-            // 代わりに公式ビルダーへのリダイレクト機能を使用してください
-            alert('⚠️ CORS制限により直接ビルドはできません。\n「🔗 公式ビルダーで開く」ボタンを使用してください。');
+        // ビルド状況をポーリングでチェック（プロキシ経由）
+        async function checkBuildStatus(requestHash) {
+            const buildMessage = document.getElementById('build-message');
+            const progressBar = document.getElementById('build-progress-bar');
+            const buildStatus = document.getElementById('build-status');
+            
+            try {
+                console.log('Checking build status for hash:', requestHash);
+                const response = await fetch(`${PROXY_URL}/api/build/${requestHash}`);
+                
+                if (response.status === 200) {
+                    // ビルド完了
+                    const result = await response.json();
+                    console.log('Build completed:', result);
+                    buildStatus.style.backgroundColor = '#d4edda';
+                    buildMessage.innerHTML = `
+                        ✅ ビルド完了！<br>
+                        <a href="${PROXY_URL}/store/${result.bin_dir}" target="_blank" 
+                           style="color: #155724; font-weight: bold;">📥 ファームウェアをダウンロード</a>
+                    `;
+                    progressBar.value = 100;
+                    
+                } else if (response.status === 202) {
+                    // まだビルド中
+                    const result = await response.json();
+                    console.log('Build in progress:', result);
+                    const status = result.imagebuilder_status || result.queue_position || '処理中';
+                    buildMessage.textContent = `ビルド中: ${status}...`;
+                    progressBar.value = Math.min(90, progressBar.value + 5);
+                    
+                    // 5秒後に再チェック
+                    setTimeout(() => checkBuildStatus(requestHash), 5000);
+                    
+                } else {
+                    // エラー
+                    const errorText = await response.text();
+                    console.error('Build status error:', errorText);
+                    throw new Error(`ステータス確認エラー: ${response.status}`);
+                }
+                
+            } catch (error) {
+                console.error('Build status check error:', error);
+                buildStatus.style.backgroundColor = '#f8d7da';
+                buildMessage.textContent = `❌ エラー: ${error.message}`;
+                progressBar.value = 0;
+            }
         }
-        */
         
         .container {
             max-width: 1200px;
@@ -575,35 +687,39 @@
             </div>
 
             <div class="build-section">
-                <p>生成されたスクリプトを公式ビルダーで使用してください。</p>
+                <p>デバイスを選択してスクリプトを生成後、ファームウェアを直接ビルドできます。</p>
                 
                 <div class="button-group">
                     <button class="build-btn" id="test-btn">
                         🧪 テスト（クリック確認）
                     </button>
-                    <button class="build-btn" id="redirect-btn" style="background: #28a745;">
-                        🔗 公式ビルダーで開く
+                    <button class="build-btn" id="proxy-test-btn" style="background: #ffc107; color: #212529;">
+                        🔍 プロキシテスト
                     </button>
-                    <button class="build-btn" id="api-test-btn" style="background: #ffc107; color: #212529;">
-                        🔍 API接続テスト
+                    <button class="build-btn" id="direct-build-btn">
+                        🚀 ファームウェアを直接ビルド
                     </button>
                 </div>
                 
                 <div id="build-status" style="display: none; margin-top: 15px; padding: 15px; border-radius: 4px;">
                     <div id="build-message"></div>
+                    <div id="build-progress" style="margin-top: 10px;">
+                        <progress id="build-progress-bar" style="width: 100%;" max="100" value="0"></progress>
+                    </div>
                 </div>
                 
-                <div style="margin-top: 15px; padding: 15px; background: #e3f2fd; border-radius: 4px; font-size: 14px;">
-                    <strong>💡 使用方法:</strong><br>
-                    1. デバイスを選択してスクリプトを生成<br>
-                    2. 「🔗 公式ビルダーで開く」をクリック<br>
-                    3. 公式サイトでスクリプトを貼り付けてビルド
+                <div style="margin-top: 15px; padding: 15px; background: #fff3cd; border-radius: 4px; font-size: 14px;">
+                    <strong>⚠️ 設定が必要:</strong><br>
+                    プロキシWorkerを <code>openwrt-proxy.site-u.workers.dev</code> にデプロイしてください。<br>
+                    または、HTMLの <code>PROXY_URL</code> を実際のWorkerのURLに変更してください。
                 </div>
             </div>
         </div>
     </div>
 
     <script>
+        // プロキシWorkerのURL
+        const PROXY_URL = 'https://openwrt-builder-proxy.site-u.workers.dev';
         // OpenWrt公式ファームウェアセレクターの機能を統合
         const config = {
             image_url: "https://downloads.openwrt.org",
@@ -1138,18 +1254,26 @@ exit 1`;
                 console.log('API test button listener added');
             }
             
-            // リダイレクトボタン
-            const redirectBtn = document.getElementById('redirect-btn');
-            if (redirectBtn) {
-                redirectBtn.addEventListener('click', function() {
-                    console.log('Redirect button clicked');
-                    redirectToOfficialBuilder();
+            // プロキシテストボタン
+            const proxyTestBtn = document.getElementById('proxy-test-btn');
+            if (proxyTestBtn) {
+                proxyTestBtn.addEventListener('click', async function() {
+                    console.log('Testing proxy connection...');
+                    try {
+                        const response = await fetch(`${PROXY_URL}/api/build`, {
+                            method: 'OPTIONS'
+                        });
+                        console.log('Proxy OPTIONS response:', response.status);
+                        alert(`プロキシ接続テスト結果: ${response.status} ${response.statusText}`);
+                    } catch (error) {
+                        console.error('Proxy test error:', error);
+                        alert('プロキシ接続エラー: ' + error.message + '\n\nプロキシWorkerがデプロイされているか確認してください。');
+                    }
                 });
-                console.log('Redirect button listener added');
+                console.log('Proxy test button listener added');
             }
             
-            // ビルドボタンは削除
-            /*
+            // ビルドボタン
             const buildBtn = document.getElementById('direct-build-btn');
             if (buildBtn) {
                 buildBtn.addEventListener('click', function() {
@@ -1157,6 +1281,17 @@ exit 1`;
                     buildFirmwareDirectly();
                 });
                 console.log('Build button listener added');
+            }
+            
+            // リダイレクトボタンは削除
+            /*
+            const redirectBtn = document.getElementById('redirect-btn');
+            if (redirectBtn) {
+                redirectBtn.addEventListener('click', function() {
+                    console.log('Redirect button clicked');
+                    redirectToOfficialBuilder();
+                });
+                console.log('Redirect button listener added');
             }
             */
             
