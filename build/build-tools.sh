@@ -579,6 +579,6 @@ openwrt_config_main() {
     return 0
 }
 
-openwrt_config_main
+openwrt_config_main "$@"
 
 exit 0
