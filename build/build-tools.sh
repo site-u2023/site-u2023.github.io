@@ -61,9 +61,9 @@ get_address() {
     local count=0
     local ipv6_addr=""
     local ipv6_prefix=""
-
+    
     logger -t auto-config "Waiting for IPv6 address..."
-
+    
     # ネットワーク関数をロード
     . /lib/functions.sh
     . /lib/functions/network.sh
@@ -73,17 +73,21 @@ get_address() {
         network_find_wan6 wan6_iface
 
         if [ -n "$wan6_iface" ]; then
-            # GUA（グローバルIPv6アドレス）取得
+            # GUA（グローバルIPv6アドレス）取得 - MAP-E/DS-Lite優先
             if network_get_ipaddr6 ipv6_addr "$wan6_iface" && [ -n "$ipv6_addr" ]; then
                 GUA_ADDR="$ipv6_addr"
+                logger -t auto-config "GUA address obtained: $GUA_ADDR"
+                
+                # GUAがあれば基本的に設定可能
+                return 0
             fi
-            # PD（委譲プレフィックス）取得
+            
+            # PD（委譲プレフィックス）取得 - フォールバック（主に10Gコース）
             if network_get_prefix6 ipv6_prefix "$wan6_iface" && [ -n "$ipv6_prefix" ]; then
                 PD_ADDR="$ipv6_prefix"
-            fi
-            # どちらか取得できたら成功
-            if [ -n "$GUA_ADDR" ] || [ -n "$PD_ADDR" ]; then
-                logger -t auto-config "IPv6 address or prefix obtained: $GUA_ADDR $PD_ADDR"
+                logger -t auto-config "PD prefix obtained: $PD_ADDR"
+                
+                # PDのみでも動作可能
                 return 0
             fi
         fi
