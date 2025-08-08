@@ -1,5 +1,8 @@
 #!/bin/sh
 
+wget -O /tmp/openwrt-config.sh https://site-u.pages.dev/build/build/openwrt-config.sh
+chmod +x /tmp/openwrt-config.sh
+
 CONFIG_SCRIPT="tmp/openwrt-config.sh"
 [ -x "$CONFIG_SCRIPT" ] || { printf "\033[31m$CONFIG_SCRIPT not found or not executable.\033[0m\n"; exit 1; }
 
