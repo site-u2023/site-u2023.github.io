@@ -2,7 +2,7 @@
 
 CONFIG_SCRIPT="/tmp/openwrt-config.sh"
 
-wget -O "$CONFIG_SCRIPT" "https://site-u.pages.dev/build/openwrt-config.sh" 2>/dev/null
+wget -O "$CONFIG_SCRIPT" "https://site-u.pages.dev/build/scripts/openwrt-config.sh" 2>/dev/null
 if [ ! -f "$CONFIG_SCRIPT" ]; then
     printf "\033[31mError: Failed to download main config script\033[0m\n"
     exit 1
