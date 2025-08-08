@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# uci-defaults MAP-E Auto Setup for OpenWrt (Modular Version)
+# uci-defaults MAP-E/DS-Lite Auto Setup for OpenWrt (Enhanced Version)
 # Place this file in firmware at: /etc/uci-defaults/99-auto-config
 
 # Beware! This script will be in /rom/etc/uci-defaults/ as part of the image.
@@ -24,6 +24,7 @@ API_URL="https://auto-config.site-u.workers.dev/"
 WAN_DEF="wan"
 WAN6_NAME="wanmap6"
 WANMAP_NAME="wanmap"
+DSLITE_NAME="dslite"
 
 # Global variables for device configuration (uncomment to use)
 # ROOT_PASSWORD=""
@@ -44,7 +45,15 @@ IPV6_PREFIXLEN=""
 PSID_OFFSET=""
 COUNTRY=""
 TIMEZONE=""
+REGION_NAME=""
+REGION_CODE=""
+ISP=""
 OS_VERSION=""
+
+# DS-Lite関連変数
+AFTR_TYPE=""
+AFTR_IPV6_ADDR=""
+IS_EAST_JAPAN=""
 
 # OpenWrtネットワークAPIでIPv6アドレス取得後待機
 get_address() {
@@ -102,8 +111,11 @@ fetch_country_info() {
     LANGUAGE=$(echo "$LANGUAGE" 2>/dev/null)
     COUNTRY=$(echo "$API_RESPONSE" | jsonfilter -e '@.country' 2>/dev/null)
     TIMEZONE=$(echo "$API_RESPONSE" | jsonfilter -e '@.timezone' 2>/dev/null)
+    REGION_NAME=$(echo "$API_RESPONSE" | jsonfilter -e '@.regionName' 2>/dev/null)
+    REGION_CODE=$(echo "$API_RESPONSE" | jsonfilter -e '@.region' 2>/dev/null)
+    ISP=$(echo "$API_RESPONSE" | jsonfilter -e '@.isp' 2>/dev/null)
     
-    logger -t auto-config "Configuration fetched successfully (Country: $COUNTRY, Language: $LANGUAGE, TZ: $TIMEZONE)"
+    logger -t auto-config "Configuration fetched successfully (Country: $COUNTRY, Region: $REGION_NAME[$REGION_CODE], ISP: $ISP, TZ: $TIMEZONE)"
     return 0
 }
 
@@ -132,6 +144,21 @@ fetch_mape_info() {
     fi
 
     logger -t auto-config "Configuration fetched successfully (BR: $BR)"
+    return 0
+}
+
+# DS-Lite情報取得
+fetch_dslite_info() {
+    # APIからAFTR種別情報取得
+    AFTR_TYPE=$(echo "$API_RESPONSE" | jsonfilter -e '@.rule.aftrType' 2>/dev/null)
+    AFTR_IPV6_ADDR=$(echo "$API_RESPONSE" | jsonfilter -e '@.rule.aftrIpv6Address' 2>/dev/null)
+    
+    if [ -z "$AFTR_TYPE" ] || [ "$AFTR_TYPE" = "null" ]; then
+        logger -t auto-config "No AFTR type information"
+        return 1
+    fi
+
+    logger -t auto-config "DS-Lite AFTR Type: $AFTR_TYPE, AFTR Address: $AFTR_IPV6_ADDR"
     return 0
 }
 
@@ -166,14 +193,15 @@ set_device_basic_config() {
     
     return 0
 }
+
 # 言語コード及びタイムゾーン設定
 set_country() {
     logger -t auto-config "Setting language..."
     
     # システム設定（言語）
     if [ -n "$LANGUAGE" ]; then
-        uci set system.@system[0].language=="$LANGUAGE" >/dev/null 2>&1      
-        logger -t auto-config "Set timezone to $LANGUAGE"
+        uci set system.@system[0].language="$LANGUAGE" >/dev/null 2>&1      
+        logger -t auto-config "Set language to $LANGUAGE"
     fi
     
     logger -t auto-config "Setting timezone..."
@@ -197,9 +225,8 @@ detect_isp_mode() {
     fi
 
     # 2. DS-Lite判定（APIレスポンスにAFTR種別またはAFTR IPv6アドレスがあれば）
-    local aftr_type=""
     if [ -n "$API_RESPONSE" ]; then
-        aftr_type=$(echo "$API_RESPONSE" | jsonfilter -e '@.rule.aftrType' 2>/dev/null)
+        local aftr_type=$(echo "$API_RESPONSE" | jsonfilter -e '@.rule.aftrType' 2>/dev/null)
         local aftr_addr=$(echo "$API_RESPONSE" | jsonfilter -e '@.rule.aftrIpv6Address' 2>/dev/null)
         if [ "$aftr_type" = "transix" ] || [ "$aftr_type" = "xpass" ] || [ "$aftr_type" = "v6option" ] || [ -n "$aftr_addr" ]; then
             echo "dslite"
@@ -236,9 +263,10 @@ set_pppoe_config() {
         uci set network.wan6.disabled='1' >/dev/null 2>&1
         uci set network.wan6.auto='0' >/dev/null 2>&1
         
-        # MAP-E関連インターフェースを削除（競合回避）
+        # MAP-E/DS-Lite関連インターフェースを削除（競合回避）
         uci delete network.${WAN6_NAME} >/dev/null 2>&1
         uci delete network.${WANMAP_NAME} >/dev/null 2>&1
+        uci delete network.${DSLITE_NAME} >/dev/null 2>&1
         uci delete dhcp.${WAN6_NAME} >/dev/null 2>&1
         
         logger -t auto-config "PPPoE configuration completed"
@@ -249,6 +277,7 @@ set_pppoe_config() {
     return 0
 }
 
+# DS-Lite設定関数
 set_dslite_config() {
     logger -t auto-config "Start DS-LITE detection and configuration"
 
@@ -260,24 +289,101 @@ set_dslite_config() {
         return 1
     fi
 
-    # APIからAFTR種別情報取得
-    local aftr_type=$(echo "$API_RESPONSE" | jsonfilter -e '@.rule.aftrType' 2>/dev/null)
-    if [ -z "$aftr_type" ] || [ "$aftr_type" = "null" ]; then
-        logger -t auto-config "No AFTR type information"
+    # DS-Lite情報取得
+    if ! fetch_dslite_info; then
+        logger -t auto-config "Failed to fetch DS-Lite information"
         return 1
     fi
 
-    # DS-LITE判定（aftrType: transix/xpass/v6optionならYES）
-    if [ "$aftr_type" = "transix" ] || [ "$aftr_type" = "xpass" ] || [ "$aftr_type" = "v6option" ]; then
-        logger -t auto-config "DS-LITE detected: YES ($aftr_type)"
-        # ここでDS-LITE用UCI設定を追加
-        # uci set network.dslite=interface
-        # ...（必要な設定を記載）
+    # NTT東西判定（DS-Lite専用）
+    if [ "$REGION_CODE" -le 15 ] || [ "$REGION_CODE" -eq 19 ] || [ "$REGION_CODE" -eq 20 ]; then
+        IS_EAST_JAPAN="1"
+        logger -t auto-config "Detected: NTT East Japan (Region: $REGION_NAME[$REGION_CODE])"
     else
-        logger -t auto-config "DS-LITE detected: NO ($aftr_type)"
-        # DS-LITE以外の場合の処理
+        IS_EAST_JAPAN="0"
+        logger -t auto-config "Detected: NTT West Japan (Region: $REGION_NAME[$REGION_CODE])"
     fi
 
+    # AFTR IPv6アドレスの決定
+    local aftr_addr="$AFTR_IPV6_ADDR"
+    
+    # AFTRアドレスが指定されていない場合は、種別と東西で決定
+    if [ -z "$aftr_addr" ] || [ "$aftr_addr" = "null" ]; then
+        case "$AFTR_TYPE" in
+            "transix")
+                if [ "$IS_EAST_JAPAN" = "1" ]; then
+                    aftr_addr="2404:8e00::feed:100"
+                else
+                    aftr_addr="2404:8e01::feed:100"
+                fi
+                ;;
+            "xpass")
+                if [ "$IS_EAST_JAPAN" = "1" ]; then
+                    aftr_addr="2001:e30:1c1e:1::1"
+                else
+                    aftr_addr="2001:e30:1c1f:1::1"
+                fi
+                ;;
+            "v6option")
+                if [ "$IS_EAST_JAPAN" = "1" ]; then
+                    aftr_addr="2404:8e00::feed:101"
+                else
+                    aftr_addr="2404:8e01::feed:101"
+                fi
+                ;;
+            *)
+                logger -t auto-config "Unknown AFTR type: $AFTR_TYPE"
+                return 1
+                ;;
+        esac
+    fi
+
+    logger -t auto-config "DS-LITE configuration: Type=$AFTR_TYPE, AFTR=$aftr_addr, East Japan=$IS_EAST_JAPAN"
+
+    # 既存のWAN設定を無効化
+    uci set network.wan.disabled='1' >/dev/null 2>&1
+    uci set network.wan.auto='0' >/dev/null 2>&1
+
+    # WAN6インターフェース設定（DHCPv6）
+    uci delete network.${WAN6_NAME} >/dev/null 2>&1
+    uci set network.${WAN6_NAME}=interface
+    uci set network.${WAN6_NAME}.proto='dhcpv6'
+    uci set network.${WAN6_NAME}.device="${WAN_DEF}"
+    uci set network.${WAN6_NAME}.reqaddress='try'
+    uci set network.${WAN6_NAME}.reqprefix='auto'
+
+    # DS-Liteインターフェース設定
+    uci delete network.${DSLITE_NAME} >/dev/null 2>&1
+    uci set network.${DSLITE_NAME}=interface
+    uci set network.${DSLITE_NAME}.proto='dslite'
+    uci set network.${DSLITE_NAME}.peeraddr="$aftr_addr"
+    uci set network.${DSLITE_NAME}.tunlink="${WAN6_NAME}"
+    uci set network.${DSLITE_NAME}.mtu='1460'
+    uci set network.${DSLITE_NAME}.encaplimit='ignore'
+
+    # DHCP設定
+    uci delete dhcp.${WAN6_NAME} >/dev/null 2>&1
+    uci set dhcp.${WAN6_NAME}=dhcp
+    uci set dhcp.${WAN6_NAME}.interface="${WAN6_NAME}"
+    uci set dhcp.${WAN6_NAME}.master='1'
+    uci set dhcp.${WAN6_NAME}.ra='relay'
+    uci set dhcp.${WAN6_NAME}.dhcpv6='relay'
+    uci set dhcp.${WAN6_NAME}.ndp='relay'
+    uci set dhcp.${WAN6_NAME}.ignore='1'
+
+    # LANでIPv6リレー有効化
+    uci set dhcp.lan.ra='relay' >/dev/null 2>&1
+    uci set dhcp.lan.dhcpv6='relay' >/dev/null 2>&1
+    uci set dhcp.lan.ndp='relay' >/dev/null 2>&1
+    uci set dhcp.lan.force='1' >/dev/null 2>&1
+
+    # ファイアウォール設定
+    uci add_list firewall.@zone[1].network="${DSLITE_NAME}" >/dev/null 2>&1
+    uci add_list firewall.@zone[1].network="${WAN6_NAME}" >/dev/null 2>&1
+    uci set firewall.@zone[1].masq='1' >/dev/null 2>&1
+    uci set firewall.@zone[1].mtu_fix='1' >/dev/null 2>&1
+
+    logger -t auto-config "DS-Lite configuration completed (Type: $AFTR_TYPE, AFTR: $aftr_addr)"
     return 0
 }
 
@@ -303,6 +409,14 @@ set_mape_config() {
     uci set network.${WAN6_NAME}.device="${WAN_DEF}"
     uci set network.${WAN6_NAME}.reqaddress='try'
     uci set network.${WAN6_NAME}.reqprefix='auto'
+
+    # GUA/PDアドレスが取得できている場合はプレフィックスを設定
+    if [ -n "$PD_ADDR" ]; then
+        uci set network.${WAN6_NAME}.ip6prefix="$PD_ADDR"
+    elif [ -n "$GUA_ADDR" ]; then
+        local wan6_prefix=$(echo "$GUA_ADDR" | sed 's/:[^:]*$/::/')
+        uci set network.${WAN6_NAME}.ip6prefix="$wan6_prefix"
+    fi
 
     # MAP-Eインターフェース設定
     uci delete network.${WANMAP_NAME} >/dev/null 2>&1
@@ -443,7 +557,7 @@ openwrt_config_main() {
     uci commit dhcp  
     uci commit firewall
 
-    logger -t auto-config "OpenWrt auto configuration completed successfully (ISP mode: $isp_mode, Country: $COUNTRY, Timezone: $TIMEZONE)"
+    logger -t auto-config "OpenWrt auto configuration completed successfully (ISP mode: $isp_mode, Region: $REGION_NAME[$REGION_CODE], Country: $COUNTRY, Timezone: $TIMEZONE)"
     echo "All done!"
     return 0
 }
