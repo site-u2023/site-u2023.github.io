@@ -12,33 +12,6 @@
             background-color: #f8f9fa;
         }
         
-        // APIテスト関数
-        async function testAPI() {
-            console.log('Testing API connection...');
-            try {
-                const response = await fetch('https://sysupgrade.openwrt.org/api/build', {
-                    method: 'OPTIONS'
-                });
-                console.log('API OPTIONS response:', response.status);
-                alert(`API接続テスト結果: ${response.status} ${response.statusText}`);
-            } catch (error) {
-                console.error('API test error:', error);
-                alert('API接続エラー: ' + error.message);
-            }
-        }
-        
-        // テスト関数（デバッグ用）
-        function testButton() {
-            alert('JavaScript は動作しています！');
-            console.log('Test button clicked');
-            console.log('Current device:', current_device);
-            console.log('All functions loaded:', {
-                generateScript: typeof generateScript,
-                buildFirmwareDirectly: typeof buildFirmwareDirectly,
-                initOpenWrtData: typeof initOpenWrtData
-            });
-        }
-        
         // 直接ファームウェアビルド機能（ASU API使用）
         async function buildFirmwareDirectly() {
             console.log('buildFirmwareDirectly() called');
@@ -705,8 +678,8 @@
             <div class="form-section">
                 <h3>📝 uci-defaultsスクリプト</h3>
                 <div class="button-group">
-                    <button class="build-btn build-btn-secondary" onclick="generateScript()">スクリプト生成</button>
-                    <button class="build-btn build-btn-secondary" onclick="copyToClipboard()">クリップボードにコピー</button>
+                    <button class="build-btn build-btn-secondary" id="generate-btn">スクリプト生成</button>
+                    <button class="build-btn build-btn-secondary" id="copy-btn">クリップボードにコピー</button>
                 </div>
                 
                 <div class="preview" id="scriptPreview" style="display: none;">
@@ -718,13 +691,13 @@
                 <p>上記で生成されたスクリプトを公式ビルダーの「初回起動時に実行されるスクリプト (uci-defaults)」欄にコピー&ペーストするか、下のボタンで直接ビルドしてください。</p>
                 
                 <div class="button-group">
-                    <button class="build-btn" onclick="testButton()" id="test-btn">
+                    <button class="build-btn" id="test-btn">
                         🧪 テスト（クリック確認）
                     </button>
-                    <button class="build-btn" onclick="testAPI()" id="api-test-btn" style="background: #ffc107; color: #212529;">
+                    <button class="build-btn" id="api-test-btn" style="background: #ffc107; color: #212529;">
                         🔍 API接続テスト
                     </button>
-                    <button class="build-btn" onclick="buildFirmwareDirectly()" id="direct-build-btn">
+                    <button class="build-btn" id="direct-build-btn">
                         🚀 ファームウェアを直接ビルド
                     </button>
                 </div>
@@ -1227,6 +1200,10 @@ exit 1`;
         // 初期化処理
         document.addEventListener('DOMContentLoaded', function() {
             console.log('DOM loaded, initializing...');
+            
+            // テスト関数を先に設定
+            setupEventListeners();
+            
             try {
                 updateCustomPackages();
                 initOpenWrtData(); // OpenWrt公式データの初期化
@@ -1236,6 +1213,70 @@ exit 1`;
                 alert('初期化エラー: ' + error.message);
             }
         });
+        
+        // イベントリスナー設定
+        function setupEventListeners() {
+            console.log('Setting up event listeners...');
+            
+            // テストボタン
+            const testBtn = document.getElementById('test-btn');
+            if (testBtn) {
+                testBtn.addEventListener('click', function() {
+                    alert('JavaScript は動作しています！');
+                    console.log('Test button clicked');
+                });
+                console.log('Test button listener added');
+            }
+            
+            // API テストボタン
+            const apiTestBtn = document.getElementById('api-test-btn');
+            if (apiTestBtn) {
+                apiTestBtn.addEventListener('click', async function() {
+                    console.log('Testing API connection...');
+                    try {
+                        const response = await fetch('https://sysupgrade.openwrt.org/api/build', {
+                            method: 'OPTIONS'
+                        });
+                        console.log('API OPTIONS response:', response.status);
+                        alert(`API接続テスト結果: ${response.status} ${response.statusText}`);
+                    } catch (error) {
+                        console.error('API test error:', error);
+                        alert('API接続エラー: ' + error.message);
+                    }
+                });
+                console.log('API test button listener added');
+            }
+            
+            // ビルドボタン
+            const buildBtn = document.getElementById('direct-build-btn');
+            if (buildBtn) {
+                buildBtn.addEventListener('click', function() {
+                    console.log('Build button clicked');
+                    buildFirmwareDirectly();
+                });
+                console.log('Build button listener added');
+            }
+            
+            // スクリプト生成ボタン
+            const generateBtn = document.getElementById('generate-btn');
+            if (generateBtn) {
+                generateBtn.addEventListener('click', function() {
+                    console.log('Generate script button clicked');
+                    generateScript();
+                });
+                console.log('Generate script button listener added');
+            }
+            
+            // コピーボタン
+            const copyBtn = document.getElementById('copy-btn');
+            if (copyBtn) {
+                copyBtn.addEventListener('click', function() {
+                    console.log('Copy button clicked');
+                    copyToClipboard();
+                });
+                console.log('Copy button listener added');
+            }
+        }
         
         // エラーハンドリング
         window.addEventListener('error', function(e) {
