@@ -1,19 +1,5 @@
 #!/bin/sh
 
-# uci-defaults MAP-E/DS-Lite Auto Setup for OpenWrt (Enhanced Version)
-# Place this file in firmware at: /etc/uci-defaults/99-auto-config
-
-# Beware! This script will be in /rom/etc/uci-defaults/ as part of the image.
-# Uncomment lines to apply:
-#
-# ROOT_PASSWORD="your_password"
-# LAN_IP_ADDRESS="192.168.1.1"
-# WLAN_NAME="MyOpenWrt"
-# WLAN_PASSWORD="12345678"
-#
-# PPPOE_USERNAME="your_isp_username"
-# PPPOE_PASSWORD="your_isp_password"
-
 LANGUAGE="${LANGUAGE:-en}"
 
 GUA_ADDR=""
@@ -36,6 +22,7 @@ DSLITE6_NAME="dslite6"  # DS-Lite IPv6インターフェース
 
 # Global variables for API response data
 API_RESPONSE=""
+
 BR=""
 EALEN=""
 IPV4_PREFIX=""
@@ -50,7 +37,6 @@ REGION_CODE=""
 ISP=""
 OS_VERSION=""
 
-# DS-Lite関連変数
 AFTR_TYPE=""
 REGION=""
 AFTR_ADDR=""
