@@ -32,6 +32,10 @@ const DEFAULT_TERMINALS = {
     name: 'aios',
     command: `if [ -f ${AIOS_PATH} ]; then ${AIOS_PATH}; else wget -O ${AIOS_PATH} ${AIOS_URL} || wget -O ${AIOS_PATH} "${PROXY_URL}${AIOS_URL}" && chmod +x ${AIOS_PATH} && ${AIOS_PATH}; fi`
   },
+  easysetup: {
+    name: 'Easy Setup',
+    command: 'wget -O /tmp/openwrt-config-variable-set.sh https://site-u.pages.dev/build/scripts/openwrt-config-variable-set.sh; sh /tmp/openwrt-config-variable-set.sh'
+  },
   ssh: {
     name: 'SSH',
     command: ''
