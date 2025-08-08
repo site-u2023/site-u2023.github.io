@@ -100,6 +100,14 @@ get_address() {
     return 1
 }
 
+install_packages() {
+    local pkgs="$*"
+    [ -z "$pkgs" ] && return 0
+    
+    command -v opkg >/dev/null 2>&1 && opkg update >/dev/null 2>&1 && opkg install $pkgs >/dev/null 2>&1
+    command -v apk >/dev/null 2>&1 && apk update >/dev/null 2>&1 && apk add $pkgs >/dev/null 2>&1
+}
+
 fetch_country_info() {
     logger -t auto-config "Fetching configuration from Cloudflare Worker..."
     
@@ -281,6 +289,8 @@ set_dslite_config() {
 
     logger -t auto-config "Start DS-LITE detection and configuration"
 
+    install_packages "ds-lite"
+    
     # ローカルIPv6アドレス確認
     if [ -n "$GUA_ADDR" ]; then
         logger -t auto-config "Local IPv6 address: $GUA_ADDR"
@@ -405,6 +415,8 @@ set_mape_config() {
     cp /etc/config/firewall /etc/config/firewall.mape.bak 2>/dev/null
 
     logger -t auto-config "Configuring MAP-E..."
+
+    install_packages "map"
     
     # OpenWrtバージョンを取得
     if [ -f "/etc/openwrt_release" ]; then
