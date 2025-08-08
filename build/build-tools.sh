@@ -53,7 +53,7 @@ OS_VERSION=""
 # DS-Lite関連変数
 AFTR_TYPE=""
 REGION=""
-AFTER_ADDR=""
+AFTR_ADDR=""
 
 # OpenWrtネットワークAPIでIPv6アドレス取得後待機
 get_address() {
@@ -292,7 +292,7 @@ set_dslite_config() {
     fi
 
     AFTR_TYPE=$(echo "$API_RESPONSE" | jsonfilter -e '@.rule.aftrType' 2>/dev/null)
-    AFTER_ADDR=$(echo "$API_RESPONSE" | jsonfilter -e '@.rule.aftrIpv6Address' 2>/dev/null)
+    AFTR_ADDR=$(echo "$API_RESPONSE" | jsonfilter -e '@.rule.aftrIpv6Address' 2>/dev/null)
 
     if [ -z "$AFTR_TYPE" ] || [ "$AFTR_TYPE" = "null" ]; then
         logger -t auto-config "No AFTR type information"
@@ -308,7 +308,7 @@ set_dslite_config() {
             REGION="east" ;;
     esac
     
-    local aftr_addr="$AFTER_ADDR"
+    local aftr_addr="$AFTR_ADDR"
     if [ -z "$aftr_addr" ] || [ "$aftr_addr" = "null" ]; then
         case "$AFTR_TYPE" in
             "transix")
