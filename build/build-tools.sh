@@ -151,21 +151,6 @@ fetch_mape_info() {
     return 0
 }
 
-# DS-Lite情報取得
-fetch_dslite_info() {
-    # APIからAFTR種別情報取得
-    AFTR_TYPE=$(echo "$API_RESPONSE" | jsonfilter -e '@.rule.aftrType' 2>/dev/null)
-    AFTER_ADDR=$(echo "$API_RESPONSE" | jsonfilter -e '@.rule.aftrIpv6Address' 2>/dev/null)
-    
-    if [ -z "$AFTR_TYPE" ] || [ "$AFTR_TYPE" = "null" ]; then
-        logger -t auto-config "No AFTR type information"
-        return 1
-    fi
-
-    logger -t auto-config "DS-Lite AFTR Type: $AFTR_TYPE, AFTR Address: $AFTER_ADDR"
-    return 0
-}
-
 # デバイス基本設定（パスワード、IP、Wi-Fi名）
 set_device_basic_config() {
     [ -n "$LAN_IP_ADDRESS" ] && cp /etc/config/network /etc/config/network.basic.bak 2>/dev/null
@@ -310,14 +295,25 @@ set_dslite_config() {
         return 1
     fi
 
-    # NTT東西判定
-    if [ "$REGION_CODE" -le 15 ] || [ "$REGION_CODE" -eq 19 ] || [ "$REGION_CODE" -eq 20 ]; then
-        REGION="east"
-        logger -t auto-config "Detected: NTT East Japan (Region: $REGION_NAME[$REGION_CODE])"
-    else
-        REGION="west"
-        logger -t auto-config "Detected: NTT West Japan (Region: $REGION_NAME[$REGION_CODE])"
-    fi
+    # IPv6アドレスから直接NTT東西判定
+    case "$GUA_ADDR" in
+        # NTT東日本フレッツ網
+        "2400:4050:"*|"2400:4051:"*|"2400:4052:"*)
+            REGION="east" ;;
+        "2001:380:a0"*|"2001:380:a1"*|"2001:380:a2"*|"2001:380:a3"*)
+            REGION="east" ;;
+            
+        # NTT西日本フレッツ網  
+        "2400:4150:"*|"2400:4151:"*|"2400:4152:"*)
+            REGION="west" ;;
+        "2001:380:b0"*|"2001:380:b1"*|"2001:380:b2"*|"2001:380:b3"*)
+            REGION="west" ;;
+            
+        *) 
+            REGION="east" ;;  # デフォルト
+    esac
+    
+    logger -t auto-config "Detected: NTT $REGION Japan (IPv6: $GUA_ADDR)"
 
     # AFTR IPv6アドレスの決定
     local aftr_addr="$AFTER_ADDR"
