@@ -18,13 +18,13 @@ LANGUAGE=""
 
 GUA_ADDR=""
 PD_ADDR=""
-AFTER_ADDR=""
 
 API_URL="https://auto-config.site-u.workers.dev/"
 WAN_DEF="wan"
-WAN6_NAME="wanmap6"
-WANMAP_NAME="wanmap"
-DSLITE_NAME="dslite"
+MAP_NAME="map"          # MAP-E IPv4インターフェース
+MAP6_NAME="map6"        # MAP-E IPv6インターフェース
+DSLITE_NAME="dslite"    # DS-Lite IPv4インターフェース
+DSLITE6_NAME="dslite6"  # DS-Lite IPv6インターフェース
 
 # Global variables for device configuration (uncomment to use)
 # ROOT_PASSWORD=""
@@ -52,8 +52,8 @@ OS_VERSION=""
 
 # DS-Lite関連変数
 AFTR_TYPE=""
-AFTR_IPV6_ADDR=""
-IS_EAST_JAPAN=""
+REGION=""
+AFTER_ADDR=""
 
 # OpenWrtネットワークAPIでIPv6アドレス取得後待機
 get_address() {
@@ -155,14 +155,14 @@ fetch_mape_info() {
 fetch_dslite_info() {
     # APIからAFTR種別情報取得
     AFTR_TYPE=$(echo "$API_RESPONSE" | jsonfilter -e '@.rule.aftrType' 2>/dev/null)
-    AFTR_IPV6_ADDR=$(echo "$API_RESPONSE" | jsonfilter -e '@.rule.aftrIpv6Address' 2>/dev/null)
+    AFTER_ADDR=$(echo "$API_RESPONSE" | jsonfilter -e '@.rule.aftrIpv6Address' 2>/dev/null)
     
     if [ -z "$AFTR_TYPE" ] || [ "$AFTR_TYPE" = "null" ]; then
         logger -t auto-config "No AFTR type information"
         return 1
     fi
 
-    logger -t auto-config "DS-Lite AFTR Type: $AFTR_TYPE, AFTR Address: $AFTR_IPV6_ADDR"
+    logger -t auto-config "DS-Lite AFTR Type: $AFTR_TYPE, AFTR Address: $AFTER_ADDR"
     return 0
 }
 
@@ -296,7 +296,7 @@ set_dslite_config() {
 
     logger -t auto-config "Start DS-LITE detection and configuration"
 
-    # ローカルIPv6アドレスはグローバル変数GUA_ADDRを参照
+    # ローカルIPv6アドレス確認
     if [ -n "$GUA_ADDR" ]; then
         logger -t auto-config "Local IPv6 address: $GUA_ADDR"
     else
@@ -310,37 +310,37 @@ set_dslite_config() {
         return 1
     fi
 
-    # NTT東西判定（DS-Lite専用）
+    # NTT東西判定
     if [ "$REGION_CODE" -le 15 ] || [ "$REGION_CODE" -eq 19 ] || [ "$REGION_CODE" -eq 20 ]; then
-        IS_EAST_JAPAN="1"
+        REGION="east"
         logger -t auto-config "Detected: NTT East Japan (Region: $REGION_NAME[$REGION_CODE])"
     else
-        IS_EAST_JAPAN="0"
+        REGION="west"
         logger -t auto-config "Detected: NTT West Japan (Region: $REGION_NAME[$REGION_CODE])"
     fi
 
     # AFTR IPv6アドレスの決定
-    local aftr_addr="$AFTR_IPV6_ADDR"
+    local aftr_addr="$AFTER_ADDR"
     
     # AFTRアドレスが指定されていない場合は、種別と東西で決定
     if [ -z "$aftr_addr" ] || [ "$aftr_addr" = "null" ]; then
         case "$AFTR_TYPE" in
             "transix")
-                if [ "$IS_EAST_JAPAN" = "1" ]; then
+                if [ "$REGION" = "east" ]; then
                     aftr_addr="2404:8e00::feed:100"
                 else
                     aftr_addr="2404:8e01::feed:100"
                 fi
                 ;;
             "xpass")
-                if [ "$IS_EAST_JAPAN" = "1" ]; then
+                if [ "$REGION" = "east" ]; then
                     aftr_addr="2001:e30:1c1e:1::1"
                 else
                     aftr_addr="2001:e30:1c1f:1::1"
                 fi
                 ;;
             "v6option")
-                if [ "$IS_EAST_JAPAN" = "1" ]; then
+                if [ "$REGION" = "east" ]; then
                     aftr_addr="2404:8e00::feed:101"
                 else
                     aftr_addr="2404:8e01::feed:101"
@@ -353,38 +353,38 @@ set_dslite_config() {
         esac
     fi
 
-    logger -t auto-config "DS-LITE configuration: Type=$AFTR_TYPE, AFTR=$aftr_addr, East Japan=$IS_EAST_JAPAN"
+    logger -t auto-config "DS-LITE configuration: Type=$AFTR_TYPE, AFTR=$aftr_addr, Region=$REGION"
 
     # 既存のWAN設定を無効化
     uci set network.wan.disabled='1' >/dev/null 2>&1
     uci set network.wan.auto='0' >/dev/null 2>&1
 
-    # WAN6インターフェース設定（DHCPv6）
-    uci delete network.${WAN6_NAME} >/dev/null 2>&1
-    uci set network.${WAN6_NAME}=interface
-    uci set network.${WAN6_NAME}.proto='dhcpv6'
-    uci set network.${WAN6_NAME}.device="${WAN_DEF}"
-    uci set network.${WAN6_NAME}.reqaddress='try'
-    uci set network.${WAN6_NAME}.reqprefix='auto'
+    # IPv6インターフェース設定（DHCPv6）
+    uci delete network.${DSLITE6_NAME} >/dev/null 2>&1
+    uci set network.${DSLITE6_NAME}=interface
+    uci set network.${DSLITE6_NAME}.proto='dhcpv6'
+    uci set network.${DSLITE6_NAME}.device="${WAN_DEF}"
+    uci set network.${DSLITE6_NAME}.reqaddress='try'
+    uci set network.${DSLITE6_NAME}.reqprefix='auto'
 
     # DS-Liteインターフェース設定
     uci delete network.${DSLITE_NAME} >/dev/null 2>&1
     uci set network.${DSLITE_NAME}=interface
     uci set network.${DSLITE_NAME}.proto='dslite'
     uci set network.${DSLITE_NAME}.peeraddr="$aftr_addr"
-    uci set network.${DSLITE_NAME}.tunlink="${WAN6_NAME}"
+    uci set network.${DSLITE_NAME}.tunlink="${DSLITE6_NAME}"
     uci set network.${DSLITE_NAME}.mtu='1460'
     uci set network.${DSLITE_NAME}.encaplimit='ignore'
 
     # DHCP設定
-    uci delete dhcp.${WAN6_NAME} >/dev/null 2>&1
-    uci set dhcp.${WAN6_NAME}=dhcp
-    uci set dhcp.${WAN6_NAME}.interface="${WAN6_NAME}"
-    uci set dhcp.${WAN6_NAME}.master='1'
-    uci set dhcp.${WAN6_NAME}.ra='relay'
-    uci set dhcp.${WAN6_NAME}.dhcpv6='relay'
-    uci set dhcp.${WAN6_NAME}.ndp='relay'
-    uci set dhcp.${WAN6_NAME}.ignore='1'
+    uci delete dhcp.${DSLITE6_NAME} >/dev/null 2>&1
+    uci set dhcp.${DSLITE6_NAME}=dhcp
+    uci set dhcp.${DSLITE6_NAME}.interface="${DSLITE6_NAME}"
+    uci set dhcp.${DSLITE6_NAME}.master='1'
+    uci set dhcp.${DSLITE6_NAME}.ra='relay'
+    uci set dhcp.${DSLITE6_NAME}.dhcpv6='relay'
+    uci set dhcp.${DSLITE6_NAME}.ndp='relay'
+    uci set dhcp.${DSLITE6_NAME}.ignore='1'
 
     # LANでIPv6リレー有効化
     uci set dhcp.lan.ra='relay' >/dev/null 2>&1
@@ -394,7 +394,7 @@ set_dslite_config() {
 
     # ファイアウォール設定
     uci add_list firewall.@zone[1].network="${DSLITE_NAME}" >/dev/null 2>&1
-    uci add_list firewall.@zone[1].network="${WAN6_NAME}" >/dev/null 2>&1
+    uci add_list firewall.@zone[1].network="${DSLITE6_NAME}" >/dev/null 2>&1
     uci set firewall.@zone[1].masq='1' >/dev/null 2>&1
     uci set firewall.@zone[1].mtu_fix='1' >/dev/null 2>&1
 
@@ -421,59 +421,59 @@ set_mape_config() {
     uci set network.wan6.disabled='1' >/dev/null 2>&1
     uci set network.wan6.auto='0' >/dev/null 2>&1
 
-    # WAN6インターフェース設定（DHCPv6）
-    uci delete network.${WAN6_NAME} >/dev/null 2>&1
-    uci set network.${WAN6_NAME}=interface
-    uci set network.${WAN6_NAME}.proto='dhcpv6'
-    uci set network.${WAN6_NAME}.device="${WAN_DEF}"
-    uci set network.${WAN6_NAME}.reqaddress='try'
-    uci set network.${WAN6_NAME}.reqprefix='auto'
+    # IPv6インターフェース設定（DHCPv6）
+    uci delete network.${MAP6_NAME} >/dev/null 2>&1
+    uci set network.${MAP6_NAME}=interface
+    uci set network.${MAP6_NAME}.proto='dhcpv6'
+    uci set network.${MAP6_NAME}.device="${WAN_DEF}"
+    uci set network.${MAP6_NAME}.reqaddress='try'
+    uci set network.${MAP6_NAME}.reqprefix='auto'
 
     # GUA/PDアドレスが取得できている場合はプレフィックスを設定
     if [ -n "$PD_ADDR" ]; then
-        uci set network.${WAN6_NAME}.ip6prefix="$PD_ADDR"
+        uci set network.${MAP6_NAME}.ip6prefix="$PD_ADDR"
     elif [ -n "$GUA_ADDR" ]; then
         local wan6_prefix=$(echo "$GUA_ADDR" | sed 's/:[^:]*$/::/')
-        uci set network.${WAN6_NAME}.ip6prefix="$wan6_prefix"
+        uci set network.${MAP6_NAME}.ip6prefix="$wan6_prefix"
     fi
 
     # MAP-Eインターフェース設定
-    uci delete network.${WANMAP_NAME} >/dev/null 2>&1
-    uci set network.${WANMAP_NAME}=interface
-    uci set network.${WANMAP_NAME}.proto='map'
-    uci set network.${WANMAP_NAME}.maptype='map-e'
-    uci set network.${WANMAP_NAME}.peeraddr="${BR}"
-    uci set network.${WANMAP_NAME}.ipaddr="${IPV4_PREFIX}"
-    uci set network.${WANMAP_NAME}.ip4prefixlen="${IPV4_PREFIXLEN}"
-    uci set network.${WANMAP_NAME}.ip6prefix="${IPV6_PREFIX}"
-    uci set network.${WANMAP_NAME}.ip6prefixlen="${IPV6_PREFIXLEN}"
-    uci set network.${WANMAP_NAME}.ealen="${EALEN}"
-    uci set network.${WANMAP_NAME}.offset="${PSID_OFFSET}"
-    uci set network.${WANMAP_NAME}.mtu='1460'
-    uci set network.${WANMAP_NAME}.encaplimit='ignore'
+    uci delete network.${MAP_NAME} >/dev/null 2>&1
+    uci set network.${MAP_NAME}=interface
+    uci set network.${MAP_NAME}.proto='map'
+    uci set network.${MAP_NAME}.maptype='map-e'
+    uci set network.${MAP_NAME}.peeraddr="${BR}"
+    uci set network.${MAP_NAME}.ipaddr="${IPV4_PREFIX}"
+    uci set network.${MAP_NAME}.ip4prefixlen="${IPV4_PREFIXLEN}"
+    uci set network.${MAP_NAME}.ip6prefix="${IPV6_PREFIX}"
+    uci set network.${MAP_NAME}.ip6prefixlen="${IPV6_PREFIXLEN}"
+    uci set network.${MAP_NAME}.ealen="${EALEN}"
+    uci set network.${MAP_NAME}.offset="${PSID_OFFSET}"
+    uci set network.${MAP_NAME}.mtu='1460'
+    uci set network.${MAP_NAME}.encaplimit='ignore'
 
     # OpenWrt バージョン別設定
     if echo "$OS_VERSION" | grep -q "^19"; then
-        uci delete network.${WANMAP_NAME}.legacymap >/dev/null 2>&1
-        uci delete network.${WANMAP_NAME}.tunlink >/dev/null 2>&1
-        uci add_list network.${WANMAP_NAME}.tunlink="${WAN6_NAME}"
+        uci delete network.${MAP_NAME}.legacymap >/dev/null 2>&1
+        uci delete network.${MAP_NAME}.tunlink >/dev/null 2>&1
+        uci add_list network.${MAP_NAME}.tunlink="${MAP6_NAME}"
     else
-        uci set network.${WANMAP_NAME}.legacymap='1'
-        uci set network.${WANMAP_NAME}.tunlink="${WAN6_NAME}"
+        uci set network.${MAP_NAME}.legacymap='1'
+        uci set network.${MAP_NAME}.tunlink="${MAP6_NAME}"
     fi
 
     # DHCP設定
-    uci delete dhcp.${WAN6_NAME} >/dev/null 2>&1
-    uci set dhcp.${WAN6_NAME}=dhcp
-    uci set dhcp.${WAN6_NAME}.interface="${WAN6_NAME}"
-    uci set dhcp.${WAN6_NAME}.master='1'
-    uci set dhcp.${WAN6_NAME}.ra='relay'
-    uci set dhcp.${WAN6_NAME}.dhcpv6='relay'
-    uci set dhcp.${WAN6_NAME}.ndp='relay'
+    uci delete dhcp.${MAP6_NAME} >/dev/null 2>&1
+    uci set dhcp.${MAP6_NAME}=dhcp
+    uci set dhcp.${MAP6_NAME}.interface="${MAP6_NAME}"
+    uci set dhcp.${MAP6_NAME}.master='1'
+    uci set dhcp.${MAP6_NAME}.ra='relay'
+    uci set dhcp.${MAP6_NAME}.dhcpv6='relay'
+    uci set dhcp.${MAP6_NAME}.ndp='relay'
 
     # OpenWrt 21.02+のみでignore設定
     if ! echo "$OS_VERSION" | grep -q "^19"; then
-        uci set dhcp.${WAN6_NAME}.ignore='1'
+        uci set dhcp.${MAP6_NAME}.ignore='1'
     fi
 
     # LANでIPv6リレー有効化
@@ -483,8 +483,8 @@ set_mape_config() {
     uci set dhcp.lan.force='1' >/dev/null 2>&1
 
     # ファイアウォール設定
-    uci add_list firewall.@zone[1].network="${WANMAP_NAME}" >/dev/null 2>&1
-    uci add_list firewall.@zone[1].network="${WAN6_NAME}" >/dev/null 2>&1
+    uci add_list firewall.@zone[1].network="${MAP_NAME}" >/dev/null 2>&1
+    uci add_list firewall.@zone[1].network="${MAP6_NAME}" >/dev/null 2>&1
     uci set firewall.@zone[1].masq='1' >/dev/null 2>&1
     uci set firewall.@zone[1].mtu_fix='1' >/dev/null 2>&1
 
