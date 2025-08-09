@@ -28,7 +28,7 @@ const PROXY_URL = 'https://proxy.site-u.workers.dev/proxy?url=';
 const BASE_DIR = '/tmp/aios';
 const AIOS_PATH = `${BASE_DIR}/aios`;
 const AIOS_LIGHT_PATH = `${BASE_DIR}/aios-light`;
-const SSHCMD_REG_URL = 'https://raw.githubusercontent.com/site-u2023/openwrt-note/main/file/sshcmd.reg';
+const SSHCMD_REG_URL = 'https://site-u.pages.dev/build/scripts/sshcmd.reg';
 
 const DEFAULT_TERMINALS = {
   aios: {
