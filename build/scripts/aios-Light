@@ -1,6 +1,6 @@
 #!/bin/sh
 
-CONFIG_SCRIPT="/tmp/openwrt-config.sh"
+CONFIG_SCRIPT="/tmp/aios-light.sh"
 
 wget -O "$CONFIG_SCRIPT" "https://site-u.pages.dev/build/scripts/openwrt-config.sh" 2>/dev/null
 if [ ! -f "$CONFIG_SCRIPT" ]; then
