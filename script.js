@@ -648,6 +648,16 @@ function bindEvents() {
     }
 }
 
+const openSetup = document.getElementById('open-setup');
+if (openSetup) {
+    openSetup.addEventListener('click', function() {
+        const linkInput = document.getElementById('setup-link-input');
+        if (linkInput && linkInput.value) {
+            openSetupLink(linkInput.value);
+        }
+    });
+}
+
 // ==================================================
 // アドレス管理機能
 // ==================================================
