@@ -188,33 +188,25 @@
                         <button id="open-setup" class="open-button-standalone" data-i18n="open">Open</button>
                     </div>
 
-                    <!-- Setup Details (Dynamic Content) -->
+                    <!-- Setup Details (Explanation) -->
                     <details id="setup-details-container" class="qr-code-section handler-details-section bordered-element">
-                        <summary class="qr-code-summary handler-summary" data-i18n="sshHandler">
-                            <span class="link-text">Protocol handler registration (first-time use)</span>
+                        <summary class="qr-code-summary handler-summary" data-i18n="setupExplanation">
+                            <span class="link-text">Explanation</span>
                         </summary>
                         <div class="details-content">
-                            <!-- Windows用コンテンツ (デフォルト) -->
-                            <div id="setup-content-windows">
-                                <a id="setup-download-link" href="file/sshcmd.reg" download class="bordered-element" data-i18n="downloadHandlerButton">
-                                    Download (Double-click the downloaded sshcmd.reg to install it)
-                                </a>
+                            <!-- Windows Explanation (Default) -->
+                            <div id="setup-explanation-windows">
+                                <p data-i18n="windowsExplanation">Download and install the protocol handler. After installation, SSH connection will be available.</p>
                             </div>
                             
-                            <!-- iPhone用コンテンツ -->
-                            <div id="setup-content-iphone" style="display: none;">
-                                <a href="https://apps.apple.com/app/termius/id549039908" target="_blank" class="bordered-element">
-                                    <span class="link-text" data-i18n="termius">Termius (SSH)</span>
-                                </a>
-                                <p><span data-i18n="connectNote">ダウンロード後、設定したIPアドレスでSSH接続してください</span></p>
+                            <!-- iPhone Explanation -->
+                            <div id="setup-explanation-iphone" style="display: none;">
+                                <p data-i18n="iphoneExplanation">Download Termius app from App Store. After installation, connect via SSH using your configured IP address.</p>
                             </div>
                             
-                            <!-- Android用コンテンツ -->
-                            <div id="setup-content-android" style="display: none;">
-                                <a href="https://play.google.com/store/apps/details?id=com.sonelli.juicessh" target="_blank" class="bordered-element">
-                                    <span class="link-text" data-i18n="juiceSSH">JuiceSSH</span>
-                                </a>
-                                <p><span data-i18n="connectNote">ダウンロード後、設定したIPアドレスでSSH接続してください</span></p>
+                            <!-- Android Explanation -->
+                            <div id="setup-explanation-android" style="display: none;">
+                                <p data-i18n="androidExplanation">Download JuiceSSH app from Google Play. After installation, connect via SSH using your configured IP address.</p>
                             </div>
                         </div>
                     </details>
