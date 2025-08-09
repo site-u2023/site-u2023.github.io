@@ -142,11 +142,14 @@ fetch_mape_info() {
     IPV4_PREFIXLEN=$(echo "$API_RESPONSE" | jsonfilter -e '@.rule.ipv4PrefixLength' 2>/dev/null)
     IPV6_PREFIX=$(echo "$API_RESPONSE" | jsonfilter -e '@.rule.ipv6Prefix' 2>/dev/null)
     IPV6_PREFIXLEN=$(echo "$API_RESPONSE" | jsonfilter -e '@.rule.ipv6PrefixLength' 2>/dev/null)
-    PSID_OFFSET=$(echo "$API_RESPONSE" | jsonfilter -e '@.rule.psIdOffset' 2>/dev/null)
+    OFFSET=$(echo "$API_RESPONSE" | jsonfilter -e '@.rule.psIdOffset' 2>/dev/null)
     
     # PSIDLENの値を抽出
+    PSID_OFFSET=$(( 32 - IPV4_PREFIXLEN ))
     PSIDLEN=$((EALEN - PSID_OFFSET))
-    
+    [ "$PSIDLEN" -lt 0 ] && PSIDLEN=0
+    [ "$PSIDLEN" -gt 16 ] && exit 1
+
     # 必須パラメータのチェック
     if [ -z "$BR" ] || [ -z "$EALEN" ] || [ -z "$IPV4_PREFIX" ] || [ -z "$IPV4_PREFIXLEN" ] || [ -z "$IPV6_PREFIX" ] || [ -z "$IPV6_PREFIXLEN" ] || [ -z "$PSID_OFFSET" ]; then
         logger -t auto-config "Missing required MAP-E parameters"
@@ -416,7 +419,7 @@ set_mape_config() {
     uci set network.${MAP_NAME}.ip6prefixlen="${IPV6_PREFIXLEN}"
     uci set network.${MAP_NAME}.ealen="${EALEN}"
     uci set network.${MAP_NAME}.psidlen="${PSIDLEN}"
-    uci set network.${MAP_NAME}.offset="${PSID_OFFSET}"
+    uci set network.${MAP_NAME}.offset="${OFFSET}"
     uci set network.${MAP_NAME}.mtu='1460'
     uci set network.${MAP_NAME}.encaplimit='ignore'
 
