@@ -16,6 +16,11 @@ fi
 
 printf "\033[33mNotes: Blank to skip\033[0m\n"
 
+# --- Language setting ---
+printf "Language [en]: "
+printf "Language (e.g., en, ja): "
+read -r LANGUAGE
+
 # --- password ---
 while true; do
   printf "New password [with 8]: "
@@ -86,6 +91,7 @@ case "$choice" in
   *) isp_mode="" ;;
 esac
 
-export ROOT_PASSWORD PPPOE_USERNAME PPPOE_PASSWORD DEVICE_NAME WLAN_NAME WLAN_PASSWORD
+export LANGUAGE ROOT_PASSWORD PPPOE_USERNAME PPPOE_PASSWORD DEVICE_NAME WLAN_NAME WLAN_PASSWORD
+export ISP_MODE
 
-exec sh "$CONFIG_SCRIPT" ${isp_mode:+$isp_mode}
+exec sh "$CONFIG_SCRIPT"
