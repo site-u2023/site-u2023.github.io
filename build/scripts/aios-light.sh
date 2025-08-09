@@ -160,10 +160,9 @@ fetch_mape_info() {
     return 0
 }
 
-# デバイス基本設定（パスワード、IP、Wi-Fi名）
+# デバイス基本設定（パスワード、IP）
 set_device_basic_config() {
     [ -n "$LAN_IP_ADDRESS" ] && cp /etc/config/network /etc/config/network.basic.bak 2>/dev/null
-    [ -n "$WLAN_NAME" ] && cp /etc/config/wireless /etc/config/wireless.basic.bak 2>/dev/null
     
     logger -t auto-config "Setting device basic configuration..."
     
@@ -179,14 +178,10 @@ set_device_basic_config() {
         uci set network.lan.ipaddr="$LAN_IP_ADDRESS"
     fi
     
-    # WLAN設定（SSID & パスワード）
-    if [ -n "$WLAN_NAME" ] && [ -n "$WLAN_PASSWORD" ] && [ ${#WLAN_PASSWORD} -ge 8 ]; then
-        logger -t auto-config "Setting WLAN: $WLAN_NAME"
-        uci set wireless.@wifi-device[0].disabled='0'
-        uci set wireless.@wifi-iface[0].disabled='0'
-        uci set wireless.@wifi-iface[0].encryption='sae-mixed'
-        uci set wireless.@wifi-iface[0].ssid="$WLAN_NAME"
-        uci set wireless.@wifi-iface[0].key="$WLAN_PASSWORD"
+    # デバイス名設定
+    if [ -n "$DEVICE_NAME" ]; then
+        logger -t auto-config "Setting device name to $DEVICE_NAME"
+        uci set system.@system[0].hostname="$DEVICE_NAME"
     fi
     
     return 0
@@ -495,25 +490,34 @@ replace_map() {
     return 1
 }
 
-# Wi-Fi設定（国コード）
+# Wi-Fi設定
 set_wifi_config() {
-    cp /etc/config/wireless /etc/config/wireless.country.bak 2>/dev/null
+    cp /etc/config/wireless /etc/config/wireless.bak 2>/dev/null
     
     logger -t auto-config "Setting WiFi configuration..."
     
     # 国コード設定関数
     set_country_code() {
         local device="$1"
-        uci set wireless.${device}.country="$COUNTRY"
+        [ -n "$COUNTRY" ] && uci set wireless.${device}.country="$COUNTRY"
     }
 
     # ワイヤレス設定（国コード）
     if [ -n "$COUNTRY" ]; then
-        # 全ての無線デバイスに国コードを設定
         . /lib/functions.sh
         config_load wireless
         config_foreach set_country_code wifi-device
         logger -t auto-config "Set country code to $COUNTRY"
+    fi
+
+    # WLAN設定（SSID & パスワード）
+    if [ -n "$WLAN_NAME" ] && [ -n "$WLAN_PASSWORD" ] && [ ${#WLAN_PASSWORD} -ge 8 ]; then
+        logger -t auto-config "Setting WLAN: $WLAN_NAME"
+        uci set wireless.@wifi-device[0].disabled='0'
+        uci set wireless.@wifi-iface[0].disabled='0'
+        uci set wireless.@wifi-iface[0].encryption='sae-mixed'
+        uci set wireless.@wifi-iface[0].ssid="$WLAN_NAME"
+        uci set wireless.@wifi-iface[0].key="$WLAN_PASSWORD"
     fi
 
     return 0
