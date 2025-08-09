@@ -523,19 +523,23 @@ set_wifi_config() {
     return 0
 }
 
-openwrt_config_main() {
-    # ログ出力設定（公式フォーマットに準拠）
-    exec >/tmp/setup.log 2>&1
+aios_light_main() {
+    # ログファイルとコンソール両方に出力
+    exec > >(tee /tmp/setup.log) 2>&1
     
+    echo "=== OpenWrt Auto Configuration Started ==="
     logger -t auto-config "Starting OpenWrt auto configuration..."
 
     # デバイス基本設定（パスワード、IP、Wi-Fi名）
+    echo "Setting basic device configuration..."
     set_device_basic_config
 
     get_release
     
     # IPv6接続が利用可能になるまで待機
+    echo "Checking IPv6 connectivity..."
     if ! get_address; then
+        echo "IPv6 address not available, fallback to DHCP only LAN setup"
         logger -t auto-config "IPv6 address not available, fallback to DHCP only LAN setup"
         uci commit network
         uci commit dhcp
@@ -543,9 +547,12 @@ openwrt_config_main() {
         echo "DHCP only LAN setup completed."
         return 0
     fi
+    echo "IPv6 connectivity confirmed"
 
     # Cloudflareワーカーから情報取得
+    echo "Fetching ISP configuration from API..."
     if ! fetch_country_info; then
+        echo "Failed to fetch API country info, fallback to DHCP only LAN setup"
         logger -t auto-config "Failed to fetch API country info, fallback to DHCP only LAN setup"
         uci commit network
         uci commit dhcp
@@ -553,44 +560,56 @@ openwrt_config_main() {
         echo "DHCP only LAN setup completed."
         return 0
     fi
+    echo "API configuration fetched successfully"
 
-    # ISP接続方式判定（引数優先、なければ自動判定）
+    # ISP接続方式判定（環境変数優先、なければ引数、なければ自動判定）
     ISP_MODE="${ISP_MODE:-$1}" 
     if [ -z "$ISP_MODE" ]; then
         ISP_MODE=$(detect_isp_mode)
+        echo "Auto-detected ISP mode: $ISP_MODE"
         logger -t auto-config "Auto-detected ISP mode: $ISP_MODE"
     else
+        echo "Manual ISP mode: $ISP_MODE"
         logger -t auto-config "Manual ISP mode: $ISP_MODE"
     fi
 
     # タイムゾーン＆国コード設定
+    echo "Setting timezone and country code..."
     set_country
 
     # Wi-Fi設定
+    echo "Configuring WiFi..."
     set_wifi_config
 
     # 各方式ごとの設定
     case "$ISP_MODE" in
         "pppoe")
+            echo "Configuring PPPoE connection..."
             set_pppoe_config
             ;;
         "dslite")
+            echo "Configuring DS-Lite connection..."
             set_dslite_config
             ;;
         "mape")
+            echo "Configuring MAP-E connection..."
             fetch_mape_info && set_mape_config && replace_map
             ;;
         "dhcp")
+            echo "Using DHCP configuration..."
             ;;
         "none"|"clear")
+            echo "No network configuration applied (forced)"
             logger -t auto-config "No network configuration applied (forced)"
             ;;
         *)
+            echo "Unknown ISP mode: $ISP_MODE, fallback to DHCP"
             logger -t auto-config "Unknown ISP mode: $ISP_MODE, fallback to DHCP"
             ;;
     esac
 
     # 設定をコミット
+    echo "Applying configuration changes..."
     uci commit system >/dev/null 2>&1
     uci commit wireless >/dev/null 2>&1
     uci commit network
@@ -598,10 +617,17 @@ openwrt_config_main() {
     uci commit firewall
 
     logger -t auto-config "OpenWrt auto configuration completed successfully (ISP mode: $ISP_MODE, Region: $REGION_NAME[$REGION_CODE], Country: $COUNTRY, Timezone: $TIMEZONE)"
-    echo "All done!"
+    echo "=== Configuration completed successfully! ==="
+    echo "ISP Mode: $ISP_MODE"
+    echo "Region: $REGION_NAME[$REGION_CODE]"
+    echo "Country: $COUNTRY"
+    echo "Timezone: $TIMEZONE"
+    echo ""
+    echo "Configuration details saved to: /tmp/setup.log"
+    echo "Please reboot your device to apply all changes."
     return 0
 }
 
-openwrt_config_main "$@"
+aios_light_main "$@"
 
 exit 0
