@@ -116,6 +116,13 @@ ul {
     color: var(--hover-text);
 }
 
+.bordered-element p {
+    margin: 0;
+    font-size: 0.9em;
+    line-height: 1.4;
+    color: inherit;
+}
+
 /* ── 各コンテンツセクション ── */
 .content-section {
     background-color: var(--block-bg);
