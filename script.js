@@ -97,9 +97,9 @@ const translations = {
         googlePlay: 'Google Playで開く',
         // Setup Explanations
         setupExplanation: '説明',
-        windowsExplanation: 'プロトコルハンドラーをダウンロードしてインストールしてください。インストール後、SSH接続が可能になります。',
-        iphoneExplanation: 'App StoreからTermiusアプリをダウンロードしてください。インストール後、設定したIPアドレスでSSH接続してください。',
-        androidExplanation: 'Google PlayからJuiceSSHアプリをダウンロードしてください。インストール後、設定したIPアドレスでSSH接続してください。',
+        windowsExplanation: 'プロトコルハンドラーのレジストリファイルをダウンロードし、ダブルクリックしてインストールしてください。',
+        iphoneExplanation: 'App StoreからTermiusアプリをダウンロードし、設定したIPアドレスでSSH接続してください。',
+        androidExplanation: 'Google PlayからJuiceSSHアプリをダウンロードし、設定したIPアドレスでSSH接続してください。',
         // Generic Dialog Messages
         promptNewAddress: '新しいIPアドレスまたはホスト名を入力してください:',
         alertMinimumAddress: '最低1つのアドレスは必要です。',
@@ -143,9 +143,9 @@ const translations = {
         googlePlay: 'Open in Google Play',
         // Setup Explanations
         setupExplanation: 'Explanation',
-        windowsExplanation: 'Download and install the protocol handler. After installation, SSH connection will be available.',
-        iphoneExplanation: 'Download Termius app from App Store. After installation, connect via SSH using your configured IP address.',
-        androidExplanation: 'Download JuiceSSH app from Google Play. After installation, connect via SSH using your configured IP address.',
+        windowsExplanation: 'Download the protocol handler registry file and double-click to install it.',
+        iphoneExplanation: 'Download Termius app from App Store and connect via SSH using your configured IP address.',
+        androidExplanation: 'Download JuiceSSH app from Google Play and connect via SSH using your configured IP address.',
         // Generic Dialog Messages
         promptNewAddress: 'Enter new IP address or hostname:',
         alertMinimumAddress: 'At least one address is required.',
