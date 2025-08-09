@@ -107,7 +107,7 @@ fetch_country_info() {
     logger -t auto-config "Fetching configuration from Cloudflare Worker..."
     
     # APIから設定情報を取得
-    API_RESPONSE=$(wget -6 -q -O - --timeout=30 "$API_URL" 2>/dev/null)
+    API_RESPONSE=$(wget -6 --no-check-certificate -q -O - --timeout=30 "$API_URL" 2>/dev/null)
 
     if [ -z "$API_RESPONSE" ]; then
         logger -t auto-config "Failed to fetch API response"
@@ -477,7 +477,7 @@ replace_map() {
         fi
     fi
 
-    command wget -6 -q -O "$proto_script_path" --timeout=10 --no-check-certificate "$source_url"
+    command wget -6 --no-check-certificate -q -O "$proto_script_path" --timeout=10 "$source_url"
     wget_rc=$?
     if [ "$wget_rc" -eq 0 ]; then
         if [ -s "$proto_script_path" ]; then
