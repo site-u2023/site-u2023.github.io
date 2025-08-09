@@ -1074,7 +1074,6 @@ function loadHeaderFooter() {
             const headerContainer = document.querySelector('.main-header');
             if (headerContainer) {
                 headerContainer.innerHTML = html;
-                bindHeaderEvents();
             }
         })
         .catch(error => console.error('ヘッダー読み込みエラー:', error));
