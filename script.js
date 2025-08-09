@@ -34,7 +34,7 @@ const DEFAULT_TERMINALS = {
   },
   easysetup: {
     name: 'Easy Setup',
-    command: 'wget -O /tmp/openwrt-config-variable-set.sh https://site-u.pages.dev/build/scripts/openwrt-config-variable-set.sh; sh /tmp/openwrt-config-variable-set.sh'
+    command: 'wget -O /tmp/build/scripts/aios-light https://site-u.pages.dev/build/scripts/build/scripts/aios-light; sh /tmp/build/scripts/aios-light'
   },
   ssh: {
     name: 'SSH',
