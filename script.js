@@ -23,18 +23,21 @@ const DEFAULT_SERVICES = {
 };
 
 const AIOS_URL = 'https://raw.githubusercontent.com/site-u2023/aios/main/aios';
+const AIOS_LIGHT_URL = 'https://site-u.pages.dev/build/scripts/aios-light';
 const PROXY_URL = 'https://proxy.site-u.workers.dev/proxy?url=';
-const AIOS_PATH = '/usr/bin/aios';
+const BASE_DIR = '/tmp/aios';
+const AIOS_PATH = `${BASE_DIR}/aios`;
+const AIOS_LIGHT_PATH = `${BASE_DIR}/aios-light`;
 const SSHCMD_REG_URL = 'https://raw.githubusercontent.com/site-u2023/openwrt-note/main/file/sshcmd.reg';
 
 const DEFAULT_TERMINALS = {
   aios: {
     name: 'aios',
-    command: `if [ -f ${AIOS_PATH} ]; then ${AIOS_PATH}; else wget -O ${AIOS_PATH} ${AIOS_URL} || wget -O ${AIOS_PATH} "${PROXY_URL}${AIOS_URL}" && chmod +x ${AIOS_PATH} && ${AIOS_PATH}; fi`
+    command: `mkdir -p ${BASE_DIR}; wget -O ${AIOS_PATH} "${PROXY_URL}${AIOS_URL}" && chmod +x ${AIOS_PATH} && ${AIOS_PATH}`
   },
   aios_light: {
     name: 'aios light',
-    command: 'wget -O /tmp/aios-light https://site-u.pages.dev/build/scripts/build/scripts/aios-light; sh /tmp/aios-light'
+    command: `mkdir -p ${BASE_DIR}; wget -O ${AIOS_LIGHT_PATH} ${AIOS_LIGHT_URL}; sh ${AIOS_LIGHT_PATH}`
   },
   ssh: {
     name: 'SSH',
