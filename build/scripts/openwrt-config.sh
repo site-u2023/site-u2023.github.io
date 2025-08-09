@@ -141,7 +141,10 @@ fetch_mape_info() {
     IPV6_PREFIX=$(echo "$API_RESPONSE" | jsonfilter -e '@.rule.ipv6Prefix' 2>/dev/null)
     IPV6_PREFIXLEN=$(echo "$API_RESPONSE" | jsonfilter -e '@.rule.ipv6PrefixLength' 2>/dev/null)
     PSID_OFFSET=$(echo "$API_RESPONSE" | jsonfilter -e '@.rule.psIdOffset' 2>/dev/null)
-
+    
+    # PSIDLENの値を抽出
+    PSIDLEN=$((EALEN - PSID_OFFSET))
+    
     # 必須パラメータのチェック
     if [ -z "$BR" ] || [ -z "$EALEN" ] || [ -z "$IPV4_PREFIX" ] || [ -z "$IPV4_PREFIXLEN" ] || [ -z "$IPV6_PREFIX" ] || [ -z "$IPV6_PREFIXLEN" ] || [ -z "$PSID_OFFSET" ]; then
         logger -t auto-config "Missing required MAP-E parameters"
@@ -393,12 +396,12 @@ set_mape_config() {
     uci set network.${MAP6_NAME}.reqaddress='try'
     uci set network.${MAP6_NAME}.reqprefix='auto'
 
-    # GUA/PDプレフィックス設定
-    if [ -n "$PD_ADDR" ]; then
-        uci set network.${MAP6_NAME}.ip6prefix="$PD_ADDR"
-    elif [ -n "$GUA_ADDR" ]; then
-        local wan6_prefix=$(echo "$GUA_ADDR" | sed 's/:[^:]*$/::/')
+    # GUA/PDプレフィックス設定（インデント完全修正）
+    if [ -n "$GUA_ADDR" ]; then
+        local wan6_prefix=$(echo "$GUA_ADDR" | awk -F':' '{printf "%s:%s:%s:%s::/64", $1, $2, $3, $4}')
         uci set network.${MAP6_NAME}.ip6prefix="$wan6_prefix"
+    elif [ -n "$PD_ADDR" ]; then
+        uci set network.${MAP6_NAME}.ip6prefix="$PD_ADDR"
     fi
 
     # MAP-Eインターフェース
@@ -411,6 +414,7 @@ set_mape_config() {
     uci set network.${MAP_NAME}.ip6prefix="${IPV6_PREFIX}"
     uci set network.${MAP_NAME}.ip6prefixlen="${IPV6_PREFIXLEN}"
     uci set network.${MAP_NAME}.ealen="${EALEN}"
+    uci set network.${MAP_NAME}.psidlen="${PSIDLEN}"
     uci set network.${MAP_NAME}.offset="${PSID_OFFSET}"
     uci set network.${MAP_NAME}.mtu='1460'
     uci set network.${MAP_NAME}.encaplimit='ignore'
