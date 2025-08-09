@@ -17,9 +17,9 @@
                     <h2 class="section-title" data-i18n="address">Address</h2>
                     <div class="input-group connection">
                         <!-- IP Address Selector -->
-                        <div class="ip-container-full">
+                        <div class="input-container ip-container-full">
                             <div class="input-label">IP Address</div>
-                            <select id="global-ip-input" class="ip-select">
+                            <select id="global-ip-input" class="input-field ip-select">
                                 <option value="192.168.1.1" selected>192.168.1.1</option>
                                 <option value="192.168.0.1">192.168.0.1</option>
                                 <option value="192.168.10.1">192.168.10.1</option>
@@ -45,7 +45,7 @@
                     <h2 class="section-title" data-i18n="browser">Browser</h2>
                     <div class="input-group connection">
                         <!-- Service Selector -->
-                        <div class="service-container-half">
+                        <div class="input-container service-container-half">
                             <div class="input-label">Service</div>
                             <select id="service-selector" class="service-select">
                                 <option value="luci" selected>LuCI</option>
@@ -62,7 +62,7 @@
                         </div>
 
                         <!-- Port Input -->
-                        <div class="port-container-half">
+                        <div class="input-container port-container-half">
                             <div class="port-label">Port</div>
                             <input
                                 type="text"
@@ -73,7 +73,7 @@
                                 autocomplete="off"
                                 value=""
                                 placeholder="80"
-                                class="port-field"
+                                class="input-field port-field"
                             >
                         </div>
                         
@@ -97,7 +97,7 @@
 
                     <div class="input-group connection">
                         <!-- Terminal Type Selector -->
-                        <div class="service-container-half">
+                        <div class="input-container service-container-half">
                             <div class="input-label">Type</div>
                             <select id="terminal-selector" class="service-select">
                                 <option value="aios" selected>aios</option>
@@ -112,7 +112,7 @@
                         </div>
 
                         <!-- Command Input -->
-                        <div class="command-container-half">
+                        <div class="input-container command-container-half">
                             <div class="command-label">Command</div>
                             <input
                                 type="text"
@@ -122,7 +122,7 @@
                                 autocomplete="off"
                                 value=""
                                 placeholder=""
-                                class="command-field-terminal"
+                                class="input-field command-field-terminal"
                             >
                         </div>
                         
@@ -133,30 +133,28 @@
                         <button id="open-terminal" class="open-button-standalone" data-i18n="open">Open</button>
                     </div>
 
-                    <!-- SSH Handler Registration -->
+                    <!-- Terminal Explanation -->
                     <details id="ssh-handler-details-container" class="qr-code-section handler-details-section bordered-element">
-                        <summary class="qr-code-summary handler-summary" data-i18n="setupExplanation">
+                        <summary class="qr-code-summary handler-summary" data-i18n="explanation">
                             <span class="link-text">Explanation</span>
                         </summary>
                         <div class="details-content">
-                            <a id="ssh-handler-download-link" href="file/sshcmd.reg" download class="bordered-element" data-i18n="downloadHandlerButton">
-                                Download (Double-click the downloaded sshcmd.reg to install it)
-                            </a>
+                            <p id="terminal-explanation-text" data-i18n="aiosExplanation">Menu-based configuration script for OpenWrt initial setup.</p>
                         </div>
                     </details>
                 </section>
 
                 <section id="initial-setup" class="content-section">
-                    <h2 class="section-title" data-i18n="initialSetup">初期設定</h2>
+                    <h2 class="section-title" data-i18n="initialSetup">Initial Setup</h2>
 
                     <div class="input-group connection">
                         <!-- Platform Type Selector -->
-                        <div class="service-container-half">
+                        <div class="input-container service-container-half">
                             <div class="input-label">Type</div>
                             <select id="setup-selector" class="service-select">
-                                <option value="windows" selected>Windows用</option>
-                                <option value="iphone">iPhone用</option>
-                                <option value="android">Android用</option>
+                                <option value="windows" selected>Windows</option>
+                                <option value="iphone">iPhone</option>
+                                <option value="android">Android</option>
                             </select>
                         </div>
 
@@ -166,18 +164,18 @@
                             <button id="setup-remove" class="remove-item-btn">-</button>
                         </div>
 
-                        <!-- Command Input -->
-                        <div class="command-container-half">
-                            <div class="command-label">Command</div>
+                        <!-- Link Input -->
+                        <div class="input-container command-container-half">
+                            <div class="command-label">Link</div>
                             <input
                                 type="text"
-                                id="setup-command-input"
+                                id="setup-link-input"
                                 inputmode="text"
                                 lang="en"
                                 autocomplete="off"
                                 value="file/sshcmd.reg"
                                 placeholder=""
-                                class="command-field-terminal"
+                                class="input-field command-field-terminal"
                             >
                         </div>
                         
@@ -188,13 +186,13 @@
                         <button id="open-setup" class="open-button-standalone" data-i18n="open">Open</button>
                     </div>
 
-                    <!-- Setup Details (Explanation) -->
+                    <!-- Setup Explanation -->
                     <details id="setup-details-container" class="qr-code-section handler-details-section bordered-element">
-                        <summary class="qr-code-summary handler-summary" data-i18n="setupExplanation">
+                        <summary class="qr-code-summary handler-summary" data-i18n="explanation">
                             <span class="link-text">Explanation</span>
                         </summary>
                         <div class="details-content">
-                            <p id="setup-explanation-text" data-i18n="windowsExplanation">Download the protocol handler registry file and double-click to install it.</p>
+                            <p id="setup-explanation-text" data-i18n="windowsSetupExplanation">Download the protocol handler registry file and double-click to install it.</p>
                         </div>
                     </details>
                 </section>
