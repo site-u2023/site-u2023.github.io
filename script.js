@@ -60,7 +60,7 @@ let currentIP = '192.168.1.1';
 let currentSelectedService = 'luci';
 let currentSelectedTerminal = 'aios';
 
-// 多言語対応
+// Multi-language Support
 const translations = {
     ja: {
         address: 'アドレス',
@@ -88,14 +88,19 @@ const translations = {
         footerDisclaimer: '免責事項',
         langEn: 'English',
         langJa: '日本語',
-        // iPhone用
+        // iPhone
         termius: 'Termius (SSH)',
         appStore: 'App Storeで開く',
         connectNote: 'ダウンロード後、設定したIPアドレスでSSH接続してください',
-        // Android用
+        // Android
         juiceSSH: 'JuiceSSH',
         googlePlay: 'Google Playで開く',
-        // 汎用ダイアログメッセージ
+        // Setup Explanations
+        setupExplanation: '説明',
+        windowsExplanation: 'プロトコルハンドラーをダウンロードしてインストールしてください。インストール後、SSH接続が可能になります。',
+        iphoneExplanation: 'App StoreからTermiusアプリをダウンロードしてください。インストール後、設定したIPアドレスでSSH接続してください。',
+        androidExplanation: 'Google PlayからJuiceSSHアプリをダウンロードしてください。インストール後、設定したIPアドレスでSSH接続してください。',
+        // Generic Dialog Messages
         promptNewAddress: '新しいIPアドレスまたはホスト名を入力してください:',
         alertMinimumAddress: '最低1つのアドレスは必要です。',
         promptItemName: '項目名を入力してください:',
@@ -129,14 +134,19 @@ const translations = {
         footerDisclaimer: 'Disclaimer',
         langEn: 'English',
         langJa: '日本語',
-        // iPhone用
+        // iPhone
         termius: 'Termius (SSH)',
         appStore: 'Open in App Store',
         connectNote: 'After download, connect via SSH using your configured IP address',
-        // Android用
+        // Android
         juiceSSH: 'JuiceSSH',
         googlePlay: 'Open in Google Play',
-        // 汎用ダイアログメッセージ
+        // Setup Explanations
+        setupExplanation: 'Explanation',
+        windowsExplanation: 'Download and install the protocol handler. After installation, SSH connection will be available.',
+        iphoneExplanation: 'Download Termius app from App Store. After installation, connect via SSH using your configured IP address.',
+        androidExplanation: 'Download JuiceSSH app from Google Play. After installation, connect via SSH using your configured IP address.',
+        // Generic Dialog Messages
         promptNewAddress: 'Enter new IP address or hostname:',
         alertMinimumAddress: 'At least one address is required.',
         promptItemName: 'Enter item name:',
