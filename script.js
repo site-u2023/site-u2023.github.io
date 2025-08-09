@@ -42,6 +42,12 @@ const DEFAULT_TERMINALS = {
   }
 };
 
+const DEFAULT_SETUP_LINKS = {
+    windows: 'file/sshcmd.reg',
+    iphone: 'https://apps.apple.com/app/termius/id549039908',
+    android: 'https://play.google.com/store/apps/details?id=com.sonelli.juicessh'
+};
+
 // プロンプト用デフォルト値（一元管理）
 const PROMPT_DEFAULTS = {
     newAddress: '192.168.1.2',
@@ -59,6 +65,7 @@ let currentTerminals = {};
 let currentIP = '192.168.1.1';
 let currentSelectedService = 'luci';
 let currentSelectedTerminal = 'aios';
+let currentSelectedSetup = 'windows';
 
 // Multi-language Support
 const translations = {
@@ -71,6 +78,7 @@ const translations = {
         open: '開く',
         qrCodeDisplay: 'QRコード',
         qrCodeArea: 'QRコード表示エリア',
+        explanation: '説明',
         sshHandler: 'プロトコルハンドラー登録 (初回のみ)',
         downloadHandlerButton: 'ダウンロード（ダウンロードしたsshcmd.regをダブルクリックしてインストールして下さい）',
         openwrtOfficial: 'OpenWrt (公式)',
@@ -88,6 +96,9 @@ const translations = {
         footerDisclaimer: '免責事項',
         langEn: 'English',
         langJa: '日本語',
+        // Terminal Explanations
+        aiosExplanation: 'OpenWrt初期設定用のメニュー形式設定スクリプトです。',
+        sshExplanation: 'OpenWrtデバイスに直接SSHログインします。',
         // iPhone
         termius: 'Termius (SSH)',
         appStore: 'App Storeで開く',
@@ -97,9 +108,9 @@ const translations = {
         googlePlay: 'Google Playで開く',
         // Setup Explanations
         setupExplanation: '説明',
-        windowsExplanation: 'プロトコルハンドラーのレジストリファイルをダウンロードし、ダブルクリックしてインストールしてください。',
-        iphoneExplanation: 'App StoreからTermiusアプリをダウンロードし、設定したIPアドレスでSSH接続してください。',
-        androidExplanation: 'Google PlayからJuiceSSHアプリをダウンロードし、設定したIPアドレスでSSH接続してください。',
+        windowsSetupExplanation: 'プロトコルハンドラーのレジストリファイルをダウンロードし、ダブルクリックしてインストールしてください。',
+        iphoneSetupExplanation: 'App StoreからTermiusアプリをダウンロードし、設定したIPアドレスでSSH接続してください。',
+        androidSetupExplanation: 'Google PlayからJuiceSSHアプリをダウンロードし、設定したIPアドレスでSSH接続してください。',
         // Generic Dialog Messages
         promptNewAddress: '新しいIPアドレスまたはホスト名を入力してください:',
         alertMinimumAddress: '最低1つのアドレスは必要です。',
@@ -117,6 +128,7 @@ const translations = {
         open: 'Open',
         qrCodeDisplay: 'QR Code',
         qrCodeArea: 'QR Code Display Area',
+        explanation: 'Explanation',
         sshHandler: 'Protocol Handler Registration (First time only)',
         downloadHandlerButton: 'Download (Double-click the downloaded sshcmd.reg to install it)',
         openwrtOfficial: 'OpenWrt (Official)',
@@ -134,6 +146,9 @@ const translations = {
         footerDisclaimer: 'Disclaimer',
         langEn: 'English',
         langJa: '日本語',
+        // Terminal Explanations
+        aiosExplanation: 'Menu-based configuration script for OpenWrt initial setup.',
+        sshExplanation: 'Direct SSH login to OpenWrt device.',
         // iPhone
         termius: 'Termius (SSH)',
         appStore: 'Open in App Store',
@@ -143,9 +158,9 @@ const translations = {
         googlePlay: 'Open in Google Play',
         // Setup Explanations
         setupExplanation: 'Explanation',
-        windowsExplanation: 'Download the protocol handler registry file and double-click to install it.',
-        iphoneExplanation: 'Download Termius app from App Store and connect via SSH using your configured IP address.',
-        androidExplanation: 'Download JuiceSSH app from Google Play and connect via SSH using your configured IP address.',
+        windowsSetupExplanation: 'Download the protocol handler registry file and double-click to install it.',
+        iphoneSetupExplanation: 'Download Termius app from App Store and connect via SSH using your configured IP address.',
+        androidSetupExplanation: 'Download JuiceSSH app from Google Play and connect via SSH using your configured IP address.',
         // Generic Dialog Messages
         promptNewAddress: 'Enter new IP address or hostname:',
         alertMinimumAddress: 'At least one address is required.',
@@ -229,6 +244,14 @@ function initializeSettings() {
         currentSelectedTerminal = Object.keys(currentTerminals)[0] || 'aios';
     }
     
+    // 初期設定セクションの復元
+    const savedSetup = localStorage.getItem('currentSelectedSetup');
+    if (savedSetup && DEFAULT_SETUP_LINKS[savedSetup]) {
+        currentSelectedSetup = savedSetup;
+    } else {
+        currentSelectedSetup = 'windows';
+    }
+    
     // UI要素の初期化
     updateAddressSelector();
     updateServiceSelector();
@@ -260,9 +283,17 @@ function restoreUIValues() {
         console.log('Terminal selector restored to:', currentSelectedTerminal);
     }
     
+    const setupSelector = document.getElementById('setup-selector');
+    if (setupSelector) {
+        setupSelector.value = currentSelectedSetup;
+        console.log('Setup selector restored to:', currentSelectedSetup);
+    }
+    
     // 各要素の表示を更新
     updateServicePort();
     updateTerminalCommand();
+    updateSetupContent();
+    updateTerminalExplanation();
 }
 
 function bindEvents() {
@@ -569,6 +600,44 @@ function bindEvents() {
         });
     }
     
+    // 初期設定関連のイベントリスナー
+    const setupSelector = document.getElementById('setup-selector');
+    const setupLinkInput = document.getElementById('setup-link-input');
+    const setupUpdate = document.getElementById('setup-update');
+    const openSetup = document.getElementById('open-setup');
+    const setupAdd = document.getElementById('setup-add');
+    const setupRemove = document.getElementById('setup-remove');
+    
+    if (setupSelector) {
+        setupSelector.addEventListener('change', function() {
+            currentSelectedSetup = this.value;
+            localStorage.setItem('currentSelectedSetup', currentSelectedSetup);
+            console.log('Setup changed to:', currentSelectedSetup);
+            updateSetupContent();
+        });
+    }
+    
+    if (setupLinkInput) {
+        setupLinkInput.addEventListener('input', function() {
+            // リンク入力の変更を保存する場合はここに実装
+        });
+    }
+    
+    if (setupUpdate) {
+        setupUpdate.addEventListener('click', function() {
+            updateSetupContent();
+        });
+    }
+    
+    if (openSetup) {
+        openSetup.addEventListener('click', function() {
+            const linkInput = document.getElementById('setup-link-input');
+            if (linkInput && linkInput.value) {
+                openSetupLink(linkInput.value);
+            }
+        });
+    }
+    
     // SSH Handler ダウンロードリンク
     const sshHandlerDownloadLink = document.getElementById('ssh-handler-download-link');
     if (sshHandlerDownloadLink) {
@@ -713,6 +782,9 @@ function updateTerminalCommand() {
     }
 
     updateTerminalDisplay();
+    
+    // 説明文も更新
+    updateTerminalExplanation();
 }
 
 function updateTerminalDisplay() {
@@ -745,6 +817,100 @@ function generateTerminalURL() {
     
     const encodedCommand = encodeURIComponent(fullCommand);
     return `${baseURL}/${encodedCommand}`;
+}
+
+// ターミナル説明文更新機能
+function updateTerminalExplanation() {
+    const terminalSelector = document.getElementById('terminal-selector');
+    const explanationText = document.getElementById('terminal-explanation-text');
+    
+    if (!terminalSelector || !explanationText) return;
+    
+    const selectedType = terminalSelector.value || currentSelectedTerminal;
+    
+    let explanationKey;
+    switch(selectedType) {
+        case 'aios':
+            explanationKey = 'aiosExplanation';
+            break;
+        case 'easysetup':
+            explanationKey = 'aiosExplanation'; // Easy Setupも同様の説明
+            break;
+        case 'ssh':
+            explanationKey = 'sshExplanation';
+            break;
+        default:
+            explanationKey = 'aiosExplanation';
+    }
+    
+    explanationText.setAttribute('data-i18n', explanationKey);
+    explanationText.textContent = getText(explanationKey);
+}
+
+// ==================================================
+// 初期設定管理機能
+// ==================================================
+
+// 初期設定コンテンツ更新機能
+function updateSetupContent() {
+    const setupSelector = document.getElementById('setup-selector');
+    const linkInput = document.getElementById('setup-link-input');
+    const explanationText = document.getElementById('setup-explanation-text');
+    
+    if (!setupSelector || !linkInput || !explanationText) return;
+    
+    const selectedType = setupSelector.value || currentSelectedSetup;
+    
+    // リンク入力フィールドの更新
+    if (DEFAULT_SETUP_LINKS[selectedType]) {
+        linkInput.value = DEFAULT_SETUP_LINKS[selectedType];
+    }
+    
+    // 説明文の更新
+    let explanationKey;
+    switch(selectedType) {
+        case 'windows':
+            explanationKey = 'windowsSetupExplanation';
+            break;
+        case 'iphone':
+            explanationKey = 'iphoneSetupExplanation';
+            break;
+        case 'android':
+            explanationKey = 'androidSetupExplanation';
+            break;
+        default:
+            explanationKey = 'windowsSetupExplanation';
+    }
+    
+    explanationText.setAttribute('data-i18n', explanationKey);
+    explanationText.textContent = getText(explanationKey);
+}
+
+// 初期設定リンクを開く機能
+function openSetupLink(url) {
+    if (!url) return;
+    
+    console.log('Opening setup link:', url);
+    
+    try {
+        if (url.startsWith('file/')) {
+            // ローカルファイルの場合はダウンロード
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = url.split('/').pop();
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            console.log('File download initiated:', url);
+        } else {
+            // 外部URLの場合は新しいタブで開く
+            window.open(url, '_blank');
+            console.log('External URL opened:', url);
+        }
+    } catch (error) {
+        console.error('Failed to open setup link:', error);
+        alert('リンクを開くことができませんでした。');
+    }
 }
 
 // ==================================================
@@ -865,6 +1031,10 @@ function updateLanguageDisplay() {
             element.textContent = translations[currentLanguage][key];
         }
     });
+    
+    // 動的コンテンツも更新
+    updateTerminalExplanation();
+    updateSetupContent();
 }
 
 function updateLanguage(lang) {
@@ -879,6 +1049,7 @@ function updateLanguage(lang) {
 function updateAllDisplays() {
     updateServicePort();
     updateTerminalCommand();
+    updateSetupContent();
     updateQRCode();
 }
 
