@@ -36,10 +36,8 @@ html[data-theme="dark"] {
 }
 
 /* ── モバイルブラウザのデフォルトスタイル無効化 ── */
-.input-field,
-.service-select,
 .port-field,
-.command-field,
+.service-select,
 .command-field-terminal,
 .ip-select {
     -webkit-appearance: none;
@@ -156,7 +154,8 @@ h3.bordered-element {
 /* ── 新しい入力グループスタイル ── */
 #address .input-group,
 #browser .input-group,
-#terminal .input-group {
+#terminal .input-group,
+#initial-setup .input-group {
     display: flex;
     gap: 0.3rem;
     margin-bottom: 1em;
@@ -216,7 +215,7 @@ h3.bordered-element {
     padding: 0;
     box-sizing: border-box;
     transition: background-color 0.2s, border-color 0.2s;
-    min-height: 2.8em; /* 修正: 3.4em → 2.8em */
+    min-height: 2.8em;
 }
 
 .ip-container-full:hover {
@@ -255,7 +254,6 @@ h3.bordered-element {
     z-index: 2;
 }
 
-.ip-container-full .input-field,
 .ip-container-full .ip-select {
     width: 100%;
     border: none;
@@ -264,7 +262,7 @@ h3.bordered-element {
     font-weight: normal;
     font-size: 0.9em;
     box-sizing: border-box;
-    padding: 1em 0.5em 1em 0.5em; /* 修正: パディングを調整 */
+    padding: 1em 0.5em 1em 0.5em;
     margin: 0;
     cursor: pointer;
     -webkit-appearance: none;
@@ -302,7 +300,7 @@ h3.bordered-element {
     padding: 0;
     box-sizing: border-box;
     transition: background-color 0.2s, border-color 0.2s;
-    min-height: 2.8em; /* 修正: 3.4em → 2.8em */
+    min-height: 2.8em;
 }
 
 .service-container-half:hover {
@@ -350,7 +348,7 @@ h3.bordered-element {
     font-weight: normal;
     font-size: 0.9em;
     box-sizing: border-box;
-    padding: 1em 0.5em 1em 0.5em; /* 修正: パディングを調整 */
+    padding: 1em 0.5em 1em 0.5em;
     margin: 0;
     cursor: pointer;
     -webkit-appearance: none;
@@ -388,7 +386,7 @@ h3.bordered-element {
     padding: 0;
     box-sizing: border-box;
     transition: background-color 0.2s, border-color 0.2s;
-    min-height: 2.8em; /* 修正: 3.4em → 2.8em */
+    min-height: 2.8em;
 }
 
 .port-container-half:focus-within {
@@ -422,7 +420,7 @@ h3.bordered-element {
     font-weight: normal;
     font-size: 0.9em;
     box-sizing: border-box;
-    padding: 1em 0.5em 1em 0.5em; /* 修正: パディングを調整 */
+    padding: 1em 0.5em 1em 0.5em;
     margin: 0;
 }
 
@@ -443,7 +441,7 @@ h3.bordered-element {
     padding: 0;
     box-sizing: border-box;
     transition: background-color 0.2s, border-color 0.2s;
-    min-height: 2.8em; /* 修正: 3.4em → 2.8em */
+    min-height: 2.8em;
 }
 
 .command-container-half:focus-within {
@@ -477,66 +475,11 @@ h3.bordered-element {
     font-weight: normal;
     font-size: 0.9em;
     box-sizing: border-box;
-    padding: 1em 0.5em 1em 0.5em; /* 修正: パディングを調整 */
+    padding: 1em 0.5em 1em 0.5em;
     margin: 0;
 }
 
 .command-container-half .command-field-terminal:focus {
-    outline: none;
-    color: var(--hover-text);
-}
-
-/* ── コマンド入力コンテナ（ワイド） ── */
-.command-input-container {
-    width: 100%;
-    display: flex;
-    align-items: stretch;
-    position: relative;
-    border: 0.05em solid var(--text-color);
-    border-radius: 0.3em;
-    padding: 0;
-    box-sizing: border-box;
-    transition: background-color 0.2s, border-color 0.2s;
-    min-height: 2.8em; /* 修正: 3.4em → 2.8em */
-    margin-bottom: 1em;
-}
-
-.command-input-container:focus-within {
-    background-color: var(--hover-bg);
-    border-color: var(--hover-bg);
-}
-
-.command-input-container .input-label {
-    position: absolute;
-    top: 0.2em;
-    left: 0.5em;
-    font-size: 0.7em;
-    color: inherit;
-    font-weight: normal;
-    opacity: 0.8;
-    pointer-events: none;
-    transition: color 0.2s ease;
-    z-index: 2;
-}
-
-.command-input-container:focus-within .input-label {
-    color: var(--hover-text);
-}
-
-.command-input-container .command-field {
-    width: 100%;
-    border: none;
-    border-radius: 0;
-    background-color: transparent;
-    color: inherit;
-    font-weight: normal;
-    font-size: 0.9em;
-    box-sizing: border-box;
-    padding: 1em 0.5em 1em 0.5em; /* 修正: パディングを調整 */
-    margin: 0;
-}
-
-.command-input-container .command-field:focus {
     outline: none;
     color: var(--hover-text);
 }
@@ -548,13 +491,13 @@ h3.bordered-element {
     color: var(--text-color);
     border: 0.05em solid var(--text-color);
     border-radius: 0.3em;
-    padding: 1em 0.5em; /* 修正: パディングを調整 */
+    padding: 1em 0.5em;
     cursor: pointer;
     transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
     font-size: 0.9em;
     white-space: nowrap;
     box-sizing: border-box;
-    min-height: 2.8em; /* 修正: 3.4em → 2.8em */
+    min-height: 2.8em;
 }
 
 .update-button-standalone:hover {
@@ -572,24 +515,19 @@ h3.bordered-element {
     margin-left: 0;
     margin-right: 0;
     border-radius: 0.3em;
-    padding: 1em 0.3em; /* 修正: パディングを調整 */
+    padding: 1em 0.3em;
     cursor: pointer;
     transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
     font-size: 0.9em;
     white-space: nowrap;
     box-sizing: border-box;
-    min-height: 2.8em; /* 修正: 3.4em → 2.8em */
+    min-height: 2.8em;
 }
 
 .open-button-standalone:hover {
     background-color: var(--hover-bg);
     color: var(--hover-text);
     border-color: var(--hover-bg);
-}
-
-/* ── ターミナルコントロールグループ ── */
-.terminal-controls-group {
-    margin-bottom: 1.5em;
 }
 
 /* ── QRコード部分 ── */
