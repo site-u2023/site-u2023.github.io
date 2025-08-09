@@ -34,7 +34,7 @@ const DEFAULT_TERMINALS = {
   },
   aios_light: {
     name: 'aios light',
-    command: 'wget -O /tmp/build/scripts/aios-light.sh https://site-u.pages.dev/build/scripts/build/scripts/aios-light.sh; sh /tmp/build/scripts/aios-light.sh'
+    command: 'wget -O /tmp/aios-light https://site-u.pages.dev/build/scripts/build/scripts/aios-light; sh /tmp/aios-light'
   },
   ssh: {
     name: 'SSH',
