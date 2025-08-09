@@ -6,7 +6,7 @@ GUA_ADDR=""
 PD_ADDR=""
 WAN6_PREFIX=""
 
-API_URL="https://auto-config.site-u.workers.dev/"
+API_URL="https://aios-light.site-u.workers.dev/"
 WAN_DEF="wan"
 MAP_NAME="map"          # MAP-E IPv4インターフェース
 MAP6_NAME="map6"        # MAP-E IPv6インターフェース
@@ -49,7 +49,7 @@ get_address() {
     local ipv6_addr=""
     local ipv6_prefix=""
     
-    logger -t auto-config "Waiting for IPv6 address..."
+    logger -t aios-light "Waiting for IPv6 address..."
     
     # ネットワーク関数をロード
     . /lib/functions.sh
@@ -64,7 +64,7 @@ get_address() {
             if network_get_ipaddr6 ipv6_addr "$wan6_iface" && [ -n "$ipv6_addr" ]; then
                 GUA_ADDR="$ipv6_addr"
                 WAN6_PREFIX=$(echo "$GUA_ADDR" | awk -F':' '{printf "%s:%s:%s:%s::/64", $1, $2, $3, $4}')
-                logger -t auto-config "GUA address obtained: $GUA_ADDR"
+                logger -t aios-light "GUA address obtained: $GUA_ADDR"
                 
                 # GUAがあれば基本的に設定可能
                 return 0
@@ -73,7 +73,7 @@ get_address() {
             # PD（委譲プレフィックス）取得 - フォールバック（主に10Gコース）
             if network_get_prefix6 ipv6_prefix "$wan6_iface" && [ -n "$ipv6_prefix" ]; then
                 PD_ADDR="$ipv6_prefix"
-                logger -t auto-config "PD prefix obtained: $PD_ADDR"
+                logger -t aios-light "PD prefix obtained: $PD_ADDR"
                 
                 # PDのみでも動作可能
                 return 0
@@ -84,7 +84,7 @@ get_address() {
         count=$((count + 2))
     done
 
-    logger -t auto-config "IPv6 address not available after ${timeout}s"
+    logger -t aios-light "IPv6 address not available after ${timeout}s"
     return 1
 }
 
@@ -104,13 +104,13 @@ get_release() {
 }
 
 fetch_country_info() {
-    logger -t auto-config "Fetching configuration from Cloudflare Worker..."
+    logger -t aios-light "Fetching configuration from Cloudflare Worker..."
     
     # APIから設定情報を取得
     API_RESPONSE=$(wget -6 --no-check-certificate -q -O - --timeout=30 "$API_URL" 2>/dev/null)
 
     if [ -z "$API_RESPONSE" ]; then
-        logger -t auto-config "Failed to fetch API response"
+        logger -t aios-light "Failed to fetch API response"
         return 1
     fi
     
@@ -122,7 +122,7 @@ fetch_country_info() {
     REGION_CODE=$(echo "$API_RESPONSE" | jsonfilter -e '@.region' 2>/dev/null)
     ISP=$(echo "$API_RESPONSE" | jsonfilter -e '@.isp' 2>/dev/null)
     
-    logger -t auto-config "Configuration fetched successfully (Country: $COUNTRY, Region: $REGION_NAME[$REGION_CODE], ISP: $ISP, TZ: $TIMEZONE)"
+    logger -t aios-light "Configuration fetched successfully (Country: $COUNTRY, Region: $REGION_NAME[$REGION_CODE], ISP: $ISP, TZ: $TIMEZONE)"
     return 0
 }
 
@@ -131,7 +131,7 @@ fetch_mape_info() {
     # MAP-Eルールが見つかったかチェック
     local rule_exists=$(echo "$API_RESPONSE" | jsonfilter -e '@.rule' 2>/dev/null)
     if [ -z "$rule_exists" ] || [ "$rule_exists" = "null" ]; then
-        logger -t auto-config "No MAP-E rule found for this IPv6 address"
+        logger -t aios-light "No MAP-E rule found for this IPv6 address"
         return 1
     fi
 
@@ -152,11 +152,11 @@ fetch_mape_info() {
 
     # 必須パラメータのチェック
     if [ -z "$BR" ] || [ -z "$EALEN" ] || [ -z "$IPV4_PREFIX" ] || [ -z "$IPV4_PREFIXLEN" ] || [ -z "$IPV6_PREFIX" ] || [ -z "$IPV6_PREFIXLEN" ] || [ -z "$PSID_OFFSET" ]; then
-        logger -t auto-config "Missing required MAP-E parameters"
+        logger -t aios-light "Missing required MAP-E parameters"
         return 1
     fi
 
-    logger -t auto-config "Configuration fetched successfully (BR: $BR)"
+    logger -t aios-light "Configuration fetched successfully (BR: $BR)"
     return 0
 }
 
@@ -164,23 +164,23 @@ fetch_mape_info() {
 set_device_basic_config() {
     [ -n "$LAN_IP_ADDRESS" ] && cp /etc/config/network /etc/config/network.basic.bak 2>/dev/null
     
-    logger -t auto-config "Setting device basic configuration..."
+    logger -t aios-light "Setting device basic configuration..."
     
     # rootパスワード設定
     if [ -n "$ROOT_PASSWORD" ]; then
-        logger -t auto-config "Setting root password"
+        logger -t aios-light "Setting root password"
         (echo "$ROOT_PASSWORD"; sleep 1; echo "$ROOT_PASSWORD") | passwd > /dev/null
     fi
     
     # LAN IPアドレス設定
     if [ -n "$LAN_IP_ADDRESS" ]; then
-        logger -t auto-config "Setting LAN IP address to $LAN_IP_ADDRESS"
+        logger -t aios-light "Setting LAN IP address to $LAN_IP_ADDRESS"
         uci set network.lan.ipaddr="$LAN_IP_ADDRESS"
     fi
     
     # デバイス名設定
     if [ -n "$DEVICE_NAME" ]; then
-        logger -t auto-config "Setting device name to $DEVICE_NAME"
+        logger -t aios-light "Setting device name to $DEVICE_NAME"
         uci set system.@system[0].hostname="$DEVICE_NAME"
     fi
     
@@ -191,20 +191,20 @@ set_device_basic_config() {
 set_country() {
     cp /etc/config/system /etc/config/system.country.bak 2>/dev/null
 
-    logger -t auto-config "Setting language..."
+    logger -t aios-light "Setting language..."
     
     # システム設定（言語）
     if [ -n "$LANGUAGE" ]; then
         uci set system.@system[0].language="$LANGUAGE" >/dev/null 2>&1      
-        logger -t auto-config "Set language to $LANGUAGE"
+        logger -t aios-light "Set language to $LANGUAGE"
     fi
     
-    logger -t auto-config "Setting timezone..."
+    logger -t aios-light "Setting timezone..."
     
     # システム設定（タイムゾーン）
     if [ -n "$TIMEZONE" ]; then
         uci set system.@system[0].timezone="$TIMEZONE" >/dev/null 2>&1
-        logger -t auto-config "Set timezone to $TIMEZONE"
+        logger -t aios-light "Set timezone to $TIMEZONE"
     fi
 
     return 0
@@ -247,16 +247,16 @@ detect_isp_mode() {
 set_pppoe_config() {
     cp /etc/config/network /etc/config/network.pppoe.bak 2>/dev/null
 
-    logger -t auto-config "Setting PPPoE configuration..."
+    logger -t aios-light "Setting PPPoE configuration..."
     
     if [ -n "$PPPOE_USERNAME" ] && [ -n "$PPPOE_PASSWORD" ]; then
-        logger -t auto-config "Configuring PPPoE with username: $PPPOE_USERNAME"
+        logger -t aios-light "Configuring PPPoE with username: $PPPOE_USERNAME"
         
         uci set network.wan.proto='pppoe'
         uci set network.wan.username="$PPPOE_USERNAME"
         uci set network.wan.password="$PPPOE_PASSWORD"
         
-        logger -t auto-config "PPPoE configuration completed"
+        logger -t aios-light "PPPoE configuration completed"
     fi
     
     return 0
@@ -270,13 +270,13 @@ set_dslite_config() {
 
     # パッケージインストール（エラーハンドリング付き）
     if ! install_packages "ds-lite"; then
-        logger -t auto-config "Warning: Failed to install ds-lite package, continuing anyway"
+        logger -t aios-light "Warning: Failed to install ds-lite package, continuing anyway"
     fi
 
-    logger -t auto-config "Start DS-LITE detection and configuration"
+    logger -t aios-light "Start DS-LITE detection and configuration"
 
     if [ -z "$GUA_ADDR" ]; then
-        logger -t auto-config "Failed to get local IPv6 address"
+        logger -t aios-light "Failed to get local IPv6 address"
         return 1
     fi
 
@@ -284,7 +284,7 @@ set_dslite_config() {
     AFTR_ADDR=$(echo "$API_RESPONSE" | jsonfilter -e '@.rule.aftrIpv6Address' 2>/dev/null)
 
     if [ -z "$AFTR_TYPE" ] || [ "$AFTR_TYPE" = "null" ]; then
-        logger -t auto-config "No AFTR type information"
+        logger -t aios-light "No AFTR type information"
         return 1
     fi
 
@@ -309,12 +309,12 @@ set_dslite_config() {
             "v6option")
                 aftr_addr=$([ "$REGION" = "east" ] && echo "2404:8e00::feed:101" || echo "2404:8e01::feed:101") ;;
             *)
-                logger -t auto-config "Unknown AFTR type: $AFTR_TYPE"
+                logger -t aios-light "Unknown AFTR type: $AFTR_TYPE"
                 return 1 ;;
         esac
     fi
 
-    logger -t auto-config "DS-LITE: Type=$AFTR_TYPE, AFTR=$aftr_addr, Region=$REGION"
+    logger -t aios-light "DS-LITE: Type=$AFTR_TYPE, AFTR=$aftr_addr, Region=$REGION"
 
     # 既存設定のクリーンアップ
     uci delete network.${DSLITE6_NAME} >/dev/null 2>&1
@@ -363,19 +363,29 @@ set_dslite_config() {
     uci set firewall.@zone[1].masq='1'
     uci set firewall.@zone[1].mtu_fix='1'
 
-    logger -t auto-config "DS-Lite configuration completed"
+    logger -t aios-light "DS-Lite configuration completed"
     return 0
 }
 
 # MAP-E設定
 set_mape_config() {
+
+    install_packages "map"
+
+    local map_url=""
+    if echo "$OS_VERSION" | grep -q "^19"; then
+        map_url="https://site-u.pages.dev/build/scripts/map.sh.19"
+    else
+        map_url="https://site-u.pages.dev/build/scripts/map.sh.new"
+    fi
+    wget -6 --no-check-certificate -q -O /tmp/map.sh.new "$"
+    
     cp /etc/config/network /etc/config/network.mape.bak 2>/dev/null
     cp /etc/config/dhcp /etc/config/dhcp.mape.bak 2>/dev/null
     cp /etc/config/firewall /etc/config/firewall.mape.bak 2>/dev/null
-
-    install_packages "map"
+    cp /lib/netifd/proto/map.sh /lib/netifd/proto/map.sh.bak 2>/dev/null
     
-    logger -t auto-config "Configuring MAP-E..."
+    logger -t aios-light "Configuring MAP-E..."
 
     uci delete network.${MAP6_NAME} >/dev/null 2>&1
     uci delete network.${MAP_NAME} >/dev/null 2>&1
@@ -453,40 +463,19 @@ set_mape_config() {
     uci set firewall.@zone[1].masq='1'
     uci set firewall.@zone[1].mtu_fix='1'
 
-    logger -t auto-config "MAP-E configuration completed"
+    logger -t aios-light "MAP-E configuration completed"
     return 0
 }
 
 replace_map() {
     local proto_script_path="/lib/netifd/proto/map.sh"
-    local backup_script_path="${proto_script_path}.bak"
-    local source_url=""
-    local wget_rc
-
-    if echo "$OS_VERSION" | grep -q "^19"; then
-        source_url="https://site-u.pages.dev/build/scripts/map.sh.19"
-    else
-        source_url="https://site-u.pages.dev/build/scripts/map.sh.new"
-    fi
     
-    if [ -f "$proto_script_path" ]; then
-        if command cp "$proto_script_path" "$backup_script_path"; then
-            :
-        else
-            :
-        fi
+    if [ -f "/tmp/map.sh.new" ]; then
+        command cp "/tmp/map.sh.new" "$proto_script_path"
+        chmod +x "$proto_script_path"
+        logger -t aios-light "map.sh configuration completed"
+        return 0
     fi
-
-    command wget -6 --no-check-certificate -q -O "$proto_script_path" --timeout=10 "$source_url"
-    wget_rc=$?
-    if [ "$wget_rc" -eq 0 ]; then
-        if [ -s "$proto_script_path" ]; then
-            if command chmod +x "$proto_script_path"; then
-                return 0
-            fi
-        fi
-    fi
-    
     return 1
 }
 
@@ -494,7 +483,7 @@ replace_map() {
 set_wifi_config() {
     cp /etc/config/wireless /etc/config/wireless.bak 2>/dev/null
     
-    logger -t auto-config "Setting WiFi configuration..."
+    logger -t aios-light "Setting WiFi configuration..."
     
     # 国コード設定関数
     set_country_code() {
@@ -507,12 +496,12 @@ set_wifi_config() {
         . /lib/functions.sh
         config_load wireless
         config_foreach set_country_code wifi-device
-        logger -t auto-config "Set country code to $COUNTRY"
+        logger -t aios-light "Set country code to $COUNTRY"
     fi
 
     # WLAN設定（SSID & パスワード）
     if [ -n "$WLAN_NAME" ] && [ -n "$WLAN_PASSWORD" ] && [ ${#WLAN_PASSWORD} -ge 8 ]; then
-        logger -t auto-config "Setting WLAN: $WLAN_NAME"
+        logger -t aios-light "Setting WLAN: $WLAN_NAME"
         uci set wireless.@wifi-device[0].disabled='0'
         uci set wireless.@wifi-iface[0].disabled='0'
         uci set wireless.@wifi-iface[0].encryption='sae-mixed'
@@ -528,7 +517,7 @@ aios_light_main() {
     exec > >(tee /tmp/setup.log) 2>&1
     
     echo "=== OpenWrt Auto Configuration Started ==="
-    logger -t auto-config "Starting OpenWrt auto configuration..."
+    logger -t aios-light "Starting OpenWrt auto configuration..."
 
     # デバイス基本設定（パスワード、IP、Wi-Fi名）
     echo "Setting basic device configuration..."
@@ -540,7 +529,7 @@ aios_light_main() {
     echo "Checking IPv6 connectivity..."
     if ! get_address; then
         echo "IPv6 address not available, fallback to DHCP only LAN setup"
-        logger -t auto-config "IPv6 address not available, fallback to DHCP only LAN setup"
+        logger -t aios-light "IPv6 address not available, fallback to DHCP only LAN setup"
         uci commit network
         uci commit dhcp
         uci commit firewall
@@ -553,7 +542,7 @@ aios_light_main() {
     echo "Fetching ISP configuration from API..."
     if ! fetch_country_info; then
         echo "Failed to fetch API country info, fallback to DHCP only LAN setup"
-        logger -t auto-config "Failed to fetch API country info, fallback to DHCP only LAN setup"
+        logger -t aios-light "Failed to fetch API country info, fallback to DHCP only LAN setup"
         uci commit network
         uci commit dhcp
         uci commit firewall
@@ -567,10 +556,10 @@ aios_light_main() {
     if [ -z "$ISP_MODE" ]; then
         ISP_MODE=$(detect_isp_mode)
         echo "Auto-detected ISP mode: $ISP_MODE"
-        logger -t auto-config "Auto-detected ISP mode: $ISP_MODE"
+        logger -t aios-light "Auto-detected ISP mode: $ISP_MODE"
     else
         echo "Manual ISP mode: $ISP_MODE"
-        logger -t auto-config "Manual ISP mode: $ISP_MODE"
+        logger -t aios-light "Manual ISP mode: $ISP_MODE"
     fi
 
     # タイムゾーン＆国コード設定
@@ -600,11 +589,11 @@ aios_light_main() {
             ;;
         "none"|"clear")
             echo "No network configuration applied (forced)"
-            logger -t auto-config "No network configuration applied (forced)"
+            logger -t aios-light "No network configuration applied (forced)"
             ;;
         *)
             echo "Unknown ISP mode: $ISP_MODE, fallback to DHCP"
-            logger -t auto-config "Unknown ISP mode: $ISP_MODE, fallback to DHCP"
+            logger -t aios-light "Unknown ISP mode: $ISP_MODE, fallback to DHCP"
             ;;
     esac
 
@@ -616,7 +605,7 @@ aios_light_main() {
     uci commit dhcp  
     uci commit firewall
 
-    logger -t auto-config "OpenWrt auto configuration completed successfully (ISP mode: $ISP_MODE, Region: $REGION_NAME[$REGION_CODE], Country: $COUNTRY, Timezone: $TIMEZONE)"
+    logger -t aios-light "OpenWrt auto configuration completed successfully (ISP mode: $ISP_MODE, Region: $REGION_NAME[$REGION_CODE], Country: $COUNTRY, Timezone: $TIMEZONE)"
     echo "=== Configuration completed successfully! ==="
     echo "ISP Mode: $ISP_MODE"
     echo "Region: $REGION_NAME[$REGION_CODE]"
