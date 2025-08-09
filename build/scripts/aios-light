@@ -1,5 +1,5 @@
 #!/bin/sh
-CONFIG_SCRIPT="/tmp/aios-light.sh"
+CONFIG_SCRIPT="/tmp/aios/aios-light.sh"
 
 wget --no-check-certificate -O "$CONFIG_SCRIPT" "https://site-u.pages.dev/build/scripts/aios-light.sh" 2>/dev/null
 
