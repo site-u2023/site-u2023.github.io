@@ -378,7 +378,7 @@ set_mape_config() {
     else
         map_url="https://site-u.pages.dev/build/scripts/map.sh.new"
     fi
-    wget -6 --no-check-certificate -q -O /tmp/map.sh.new "$"
+    wget -6 --no-check-certificate -q -O /tmp/map.sh.new "$map_url"
     
     cp /etc/config/network /etc/config/network.mape.bak 2>/dev/null
     cp /etc/config/dhcp /etc/config/dhcp.mape.bak 2>/dev/null
