@@ -188,15 +188,34 @@
                         <button id="open-setup" class="open-button-standalone" data-i18n="open">Open</button>
                     </div>
 
-                    <!-- Setup Details -->
+                    <!-- Setup Details (Dynamic Content) -->
                     <details id="setup-details-container" class="qr-code-section handler-details-section bordered-element">
-                        <summary class="qr-code-summary handler-summary" data-i18n="setupDetails">
-                            <span class="link-text">プロトコルハンドラー登録 (初回のみ)</span>
+                        <summary class="qr-code-summary handler-summary" data-i18n="sshHandler">
+                            <span class="link-text">Protocol handler registration (first-time use)</span>
                         </summary>
                         <div class="details-content">
-                            <a id="setup-download-link" href="file/sshcmd.reg" download class="bordered-element" data-i18n="downloadSetupButton">
-                                ダウンロード (ダウンロードしたsshcmd.regをダブルクリックしてインストールして下さい)
-                            </a>
+                            <!-- Windows用コンテンツ (デフォルト) -->
+                            <div id="setup-content-windows">
+                                <a id="setup-download-link" href="file/sshcmd.reg" download class="bordered-element" data-i18n="downloadHandlerButton">
+                                    Download (Double-click the downloaded sshcmd.reg to install it)
+                                </a>
+                            </div>
+                            
+                            <!-- iPhone用コンテンツ -->
+                            <div id="setup-content-iphone" style="display: none;">
+                                <a href="https://apps.apple.com/app/termius/id549039908" target="_blank" class="bordered-element">
+                                    <span class="link-text" data-i18n="termius">Termius (SSH)</span>
+                                </a>
+                                <p><span data-i18n="connectNote">ダウンロード後、設定したIPアドレスでSSH接続してください</span></p>
+                            </div>
+                            
+                            <!-- Android用コンテンツ -->
+                            <div id="setup-content-android" style="display: none;">
+                                <a href="https://play.google.com/store/apps/details?id=com.sonelli.juicessh" target="_blank" class="bordered-element">
+                                    <span class="link-text" data-i18n="juiceSSH">JuiceSSH</span>
+                                </a>
+                                <p><span data-i18n="connectNote">ダウンロード後、設定したIPアドレスでSSH接続してください</span></p>
+                            </div>
                         </div>
                     </details>
                 </section>
