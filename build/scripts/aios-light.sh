@@ -371,19 +371,10 @@ set_dslite_config() {
 set_mape_config() {
 
     install_packages "map"
-
-    local map_url=""
-    if echo "$OS_VERSION" | grep -q "^19"; then
-        map_url="https://site-u.pages.dev/build/scripts/map.sh.19"
-    else
-        map_url="https://site-u.pages.dev/build/scripts/map.sh.new"
-    fi
-    wget -6 --no-check-certificate -q -O /tmp/map.sh.new "$map_url"
     
     cp /etc/config/network /etc/config/network.mape.bak 2>/dev/null
     cp /etc/config/dhcp /etc/config/dhcp.mape.bak 2>/dev/null
     cp /etc/config/firewall /etc/config/firewall.mape.bak 2>/dev/null
-    cp /lib/netifd/proto/map.sh /lib/netifd/proto/map.sh.bak 2>/dev/null
     
     logger -t aios-light "Configuring MAP-E..."
 
@@ -468,15 +459,18 @@ set_mape_config() {
 }
 
 replace_map() {
-    local proto_script_path="/lib/netifd/proto/map.sh"
-    
-    if [ -f "/tmp/map.sh.new" ]; then
-        command cp "/tmp/map.sh.new" "$proto_script_path"
-        chmod +x "$proto_script_path"
-        logger -t aios-light "map.sh configuration completed"
-        return 0
+    cp /lib/netifd/proto/map.sh /lib/netifd/proto/map.sh.bak 2>/dev/null
+
+    local map_url=""
+    local map_path="/lib/netifd/proto/map.sh"
+    if echo "$OS_VERSION" | grep -q "^19"; then
+        map_url="https://site-u.pages.dev/build/scripts/map.sh.19"
+    else
+        map_url="https://site-u.pages.dev/build/scripts/map.sh.new"
     fi
-    return 1
+    wget -6 --no-check-certificate -q -O "$map_path" "$map_url"
+    
+    return 0
 }
 
 # Wi-Fi設定
