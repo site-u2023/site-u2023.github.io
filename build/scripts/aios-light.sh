@@ -6,7 +6,7 @@ GUA_ADDR=""
 PD_ADDR=""
 WAN6_PREFIX=""
 
-API_URL="https://aios-light.site-u.workers.dev/"
+API_URL="https://auto-config.site-u.workers.dev/"
 WAN_DEF="wan"
 MAP_NAME="map"          # MAP-E IPv4インターフェース
 MAP6_NAME="map6"        # MAP-E IPv6インターフェース
