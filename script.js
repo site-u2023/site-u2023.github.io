@@ -66,6 +66,7 @@ const translations = {
         address: 'アドレス',
         browser: 'ブラウザ',
         terminal: 'ターミナル',
+        initialSetup: '初期設定',
         apply: '適用',
         open: '開く',
         qrCodeDisplay: 'QRコード',
@@ -87,23 +88,26 @@ const translations = {
         footerDisclaimer: '免責事項',
         langEn: 'English',
         langJa: '日本語',
-        // ダイアログメッセージを追加
+        // iPhone用
+        termius: 'Termius (SSH)',
+        appStore: 'App Storeで開く',
+        connectNote: 'ダウンロード後、設定したIPアドレスでSSH接続してください',
+        // Android用
+        juiceSSH: 'JuiceSSH',
+        googlePlay: 'Google Playで開く',
+        // 汎用ダイアログメッセージ
         promptNewAddress: '新しいIPアドレスまたはホスト名を入力してください:',
         alertMinimumAddress: '最低1つのアドレスは必要です。',
-        promptServiceName: 'サービス名を入力してください:',
-        promptPortNumber: 'ポート番号を入力してください:',
-        promptProtocol: 'プロトコルを入力してください (http/https):',
-        alertMinimumService: '最低1つのサービスは必要です。',
-        confirmDeleteService: 'サービス "{0}" を削除しますか？',
-        promptTerminalName: 'ターミナルタイプ名を入力してください:',
-        promptDefaultCommand: 'デフォルトコマンドを入力してください (空欄可):',
-        alertMinimumTerminal: '最低1つのターミナルタイプは必要です。',
-        confirmDeleteTerminal: 'ターミナルタイプ "{0}" を削除しますか？'
+        promptItemName: '項目名を入力してください:',
+        promptValue: '値を入力してください:',
+        alertMinimumItem: '最低1つの項目は必要です。',
+        confirmDeleteItem: '項目 "{0}" を削除しますか？'
     },
     en: {
         address: 'Address',
         browser: 'Browser',
         terminal: 'Terminal',
+        initialSetup: 'Initial Setup',
         apply: 'Apply',
         open: 'Open',
         qrCodeDisplay: 'QR Code',
@@ -125,18 +129,20 @@ const translations = {
         footerDisclaimer: 'Disclaimer',
         langEn: 'English',
         langJa: '日本語',
-        // ダイアログメッセージを追加
+        // iPhone用
+        termius: 'Termius (SSH)',
+        appStore: 'Open in App Store',
+        connectNote: 'After download, connect via SSH using your configured IP address',
+        // Android用
+        juiceSSH: 'JuiceSSH',
+        googlePlay: 'Open in Google Play',
+        // 汎用ダイアログメッセージ
         promptNewAddress: 'Enter new IP address or hostname:',
         alertMinimumAddress: 'At least one address is required.',
-        promptServiceName: 'Enter service name:',
-        promptPortNumber: 'Enter port number:',
-        promptProtocol: 'Enter protocol (http/https):',
-        alertMinimumService: 'At least one service is required.',
-        confirmDeleteService: 'Delete service "{0}"?',
-        promptTerminalName: 'Enter terminal type name:',
-        promptDefaultCommand: 'Enter default command (optional):',
-        alertMinimumTerminal: 'At least one terminal type is required.',
-        confirmDeleteTerminal: 'Delete terminal type "{0}"?'
+        promptItemName: 'Enter item name:',
+        promptValue: 'Enter value:',
+        alertMinimumItem: 'At least one item is required.',
+        confirmDeleteItem: 'Delete item "{0}"?'
     }
 };
 
