@@ -56,28 +56,29 @@ while :; do
     [1-6]) break ;;
   esac
 done
-isp_mode=""
+ISP_MODE=""
 PPPOE_USERNAME=""
 PPPOE_PASSWORD=""
 case "$choice" in
-  1) isp_mode="" ;;
-  2) isp_mode="dhcp" ;;
+  1) ISP_MODE="" ;;
+  2) ISP_MODE="dhcp" ;;
   3)
     printf "PPPoE username: "
     read -r PPPOE_USERNAME
     printf "PPPoE password: "
     read -r PPPOE_PASSWORD
     if [ -n "$PPPOE_USERNAME" ] && [ -n "$PPPOE_PASSWORD" ]; then
-      isp_mode="pppoe"
+      ISP_MODE="pppoe"
     else
-      isp_mode=""
+      ISP_MODE=""
     fi
     ;;
-  4) isp_mode="dslite" ;;
-  5) isp_mode="mape" ;;
-  6) isp_mode="none" ;;
-  *) isp_mode="" ;;
+  4) ISP_MODE="dslite" ;;
+  5) ISP_MODE="mape" ;;
+  6) ISP_MODE="none" ;;
+  *) ISP_MODE="" ;;
 esac
+
 export LANGUAGE ROOT_PASSWORD PPPOE_USERNAME PPPOE_PASSWORD DEVICE_NAME WLAN_NAME WLAN_PASSWORD
-export ISP_MODE="$isp_mode"
+export ISP_MODE
 exec sh "$CONFIG_SCRIPT"
