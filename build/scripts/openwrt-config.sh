@@ -551,12 +551,12 @@ openwrt_config_main() {
     fi
 
     # ISP接続方式判定（引数優先、なければ自動判定）
-    local isp_mode="$1"
-    if [ -z "$isp_mode" ]; then
-        isp_mode=$(detect_isp_mode)
-        logger -t auto-config "Auto-detected ISP mode: $isp_mode"
+    ISP_MODE="$1"
+    if [ -z "$ISP_MODE" ]; then
+        ISP_MODE=$(detect_isp_mode)
+        logger -t auto-config "Auto-detected ISP mode: $ISP_MODE"
     else
-        logger -t auto-config "Manual ISP mode: $isp_mode"
+        logger -t auto-config "Manual ISP mode: $ISP_MODE"
     fi
 
     # タイムゾーン＆国コード設定
@@ -566,7 +566,7 @@ openwrt_config_main() {
     set_wifi_config
 
     # 各方式ごとの設定
-    case "$isp_mode" in
+    case "$ISP_MODE" in
         "pppoe")
             set_pppoe_config
             ;;
@@ -582,7 +582,7 @@ openwrt_config_main() {
             logger -t auto-config "No network configuration applied (forced)"
             ;;
         *)
-            logger -t auto-config "Unknown ISP mode: $isp_mode, fallback to DHCP"
+            logger -t auto-config "Unknown ISP mode: $ISP_MODE, fallback to DHCP"
             ;;
     esac
 
@@ -593,7 +593,7 @@ openwrt_config_main() {
     uci commit dhcp  
     uci commit firewall
 
-    logger -t auto-config "OpenWrt auto configuration completed successfully (ISP mode: $isp_mode, Region: $REGION_NAME[$REGION_CODE], Country: $COUNTRY, Timezone: $TIMEZONE)"
+    logger -t auto-config "OpenWrt auto configuration completed successfully (ISP mode: $ISP_MODE, Region: $REGION_NAME[$REGION_CODE], Country: $COUNTRY, Timezone: $TIMEZONE)"
     echo "All done!"
     return 0
 }
