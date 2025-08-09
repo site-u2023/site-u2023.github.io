@@ -4,6 +4,7 @@ LANGUAGE="${LANGUAGE:-en}"
 
 GUA_ADDR=""
 PD_ADDR=""
+WAN6_PREFIX=""
 
 API_URL="https://auto-config.site-u.workers.dev/"
 WAN_DEF="wan"
@@ -62,6 +63,7 @@ get_address() {
             # GUA（グローバルIPv6アドレス）取得 - MAP-E/DS-Lite優先
             if network_get_ipaddr6 ipv6_addr "$wan6_iface" && [ -n "$ipv6_addr" ]; then
                 GUA_ADDR="$ipv6_addr"
+                WAN6_PREFIX=$(echo "$GUA_ADDR" | awk -F':' '{printf "%s:%s:%s:%s::/64", $1, $2, $3, $4}')
                 logger -t auto-config "GUA address obtained: $GUA_ADDR"
                 
                 # GUAがあれば基本的に設定可能
@@ -396,10 +398,9 @@ set_mape_config() {
     uci set network.${MAP6_NAME}.reqaddress='try'
     uci set network.${MAP6_NAME}.reqprefix='auto'
 
-    # GUA/PDプレフィックス設定（インデント完全修正）
+    # GUA/PDプレフィックス設定
     if [ -n "$GUA_ADDR" ]; then
-        local wan6_prefix=$(echo "$GUA_ADDR" | awk -F':' '{printf "%s:%s:%s:%s::/64", $1, $2, $3, $4}')
-        uci set network.${MAP6_NAME}.ip6prefix="$wan6_prefix"
+        uci set network.${MAP6_NAME}.ip6prefix="$WAN6_PREFIX"
     elif [ -n "$PD_ADDR" ]; then
         uci set network.${MAP6_NAME}.ip6prefix="$PD_ADDR"
     fi
