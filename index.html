@@ -146,6 +146,61 @@
                     </details>
                 </section>
 
+                <section id="initial-setup" class="content-section">
+                    <h2 class="section-title" data-i18n="initialSetup">初期設定</h2>
+
+                    <div class="input-group connection">
+                        <!-- Platform Type Selector -->
+                        <div class="input-container service-container-half">
+                            <div class="input-label">Type</div>
+                            <select id="setup-selector" class="service-select">
+                                <option value="windows" selected>Windows用</option>
+                                <option value="iphone">iPhone用</option>
+                                <option value="android">Android用</option>
+                            </select>
+                        </div>
+
+                        <!-- Add/Remove Buttons -->
+                        <div class="add-remove-container">
+                            <button id="setup-add" class="add-item-btn">+</button>
+                            <button id="setup-remove" class="remove-item-btn">-</button>
+                        </div>
+
+                        <!-- Command Input -->
+                        <div class="input-container command-container-half">
+                            <div class="command-label">Command</div>
+                            <input
+                                type="text"
+                                id="setup-command-input"
+                                inputmode="text"
+                                lang="en"
+                                autocomplete="off"
+                                value=""
+                                placeholder=""
+                                class="input-field command-field-terminal"
+                            >
+                        </div>
+                        
+                        <!-- Apply Button -->
+                        <button id="setup-update" class="update-button-standalone" data-i18n="apply">Apply</button>
+                        
+                        <!-- Open Button -->
+                        <button id="open-setup" class="open-button-standalone" data-i18n="open">Open</button>
+                    </div>
+
+                    <!-- Setup Details -->
+                    <details id="setup-details-container" class="qr-code-section handler-details-section bordered-element">
+                        <summary class="qr-code-summary handler-summary" data-i18n="setupDetails">
+                            <span class="link-text">プロトコルハンドラー登録 (初回のみ)</span>
+                        </summary>
+                        <div class="details-content">
+                            <a id="setup-download-link" href="file/sshcmd.reg" download class="bordered-element" data-i18n="downloadSetupButton">
+                                ダウンロード (ダウンロードしたsshcmd.regをダブルクリックしてインストールして下さい)
+                            </a>
+                        </div>
+                    </details>
+                </section>
+
                 <section id="openwrt-official" class="content-section">
                     <h2 class="section-title" data-i18n="openwrtOfficial">OpenWrt (Official)</h2>
                     <ul class="link-list">
