@@ -551,11 +551,11 @@ openwrt_config_main() {
         uci commit dhcp
         uci commit firewall
         echo "DHCP only LAN setup completed."
-        
+        return 0
     fi
 
     # ISP接続方式判定（引数優先、なければ自動判定）
-    ISP_MODE="$1"
+    ISP_MODE="${ISP_MODE:-$1}" 
     if [ -z "$ISP_MODE" ]; then
         ISP_MODE=$(detect_isp_mode)
         logger -t auto-config "Auto-detected ISP mode: $ISP_MODE"
