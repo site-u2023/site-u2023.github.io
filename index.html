@@ -135,8 +135,8 @@
 
                     <!-- SSH Handler Registration -->
                     <details id="ssh-handler-details-container" class="qr-code-section handler-details-section bordered-element">
-                        <summary class="qr-code-summary handler-summary" data-i18n="sshHandler">
-                            <span class="link-text">Protocol handler registration (first-time use)</span>
+                        <summary class="qr-code-summary handler-summary" data-i18n="setupExplanation">
+                            <span class="link-text">Explanation</span>
                         </summary>
                         <div class="details-content">
                             <a id="ssh-handler-download-link" href="file/sshcmd.reg" download class="bordered-element" data-i18n="downloadHandlerButton">
@@ -175,7 +175,7 @@
                                 inputmode="text"
                                 lang="en"
                                 autocomplete="off"
-                                value=""
+                                value="file/sshcmd.reg"
                                 placeholder=""
                                 class="command-field-terminal"
                             >
@@ -194,20 +194,7 @@
                             <span class="link-text">Explanation</span>
                         </summary>
                         <div class="details-content">
-                            <!-- Windows Explanation (Default) -->
-                            <div id="setup-explanation-windows">
-                                <p data-i18n="windowsExplanation">Download and install the protocol handler. After installation, SSH connection will be available.</p>
-                            </div>
-                            
-                            <!-- iPhone Explanation -->
-                            <div id="setup-explanation-iphone" style="display: none;">
-                                <p data-i18n="iphoneExplanation">Download Termius app from App Store. After installation, connect via SSH using your configured IP address.</p>
-                            </div>
-                            
-                            <!-- Android Explanation -->
-                            <div id="setup-explanation-android" style="display: none;">
-                                <p data-i18n="androidExplanation">Download JuiceSSH app from Google Play. After installation, connect via SSH using your configured IP address.</p>
-                            </div>
+                            <p id="setup-explanation-text" data-i18n="windowsExplanation">Download the protocol handler registry file and double-click to install it.</p>
                         </div>
                     </details>
                 </section>
