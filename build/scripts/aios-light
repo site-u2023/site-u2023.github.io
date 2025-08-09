@@ -1,14 +1,10 @@
 #!/bin/sh
-
 CONFIG_SCRIPT="/tmp/aios-light.sh"
-
 wget -O "$CONFIG_SCRIPT" "https://site-u.pages.dev/build/scripts/aios-light.sh" 2>/dev/null
-
 if [ ! -f "$CONFIG_SCRIPT" ]; then
     printf "\033[31mFailed to download main config script\033[0m\n"
     exit 1
 fi
-
 chmod +x "$CONFIG_SCRIPT"
 if [ ! -x "$CONFIG_SCRIPT" ]; then
     printf "\033[31m$CONFIG_SCRIPT not found or not executable.\033[0m\n" 
@@ -17,47 +13,44 @@ fi
 
 printf "\033[33mNotes: Blank to skip\033[0m\n"
 
-# --- Language setting ---
+# Language setting
 printf "Language [en]: "
-printf "Language (e.g., en, ja): "
 read -r LANGUAGE
 
-# --- password ---
+# Password setting
 while true; do
-  printf "New password [with 8]: "
+  printf "New password [blank to skip, min 8 chars]: "
   read -rs pass1
   printf "\nRetype new password: "
   read -rs pass2
   printf "\n"
-
   if [ -z "$pass1" ] && [ -z "$pass2" ]; then
     ROOT_PASSWORD=""
     break
   fi
-
-    if [ "$pass1" = "$pass2" ]; then
-        if [ ${#pass1} -ge 8 ]; then
-            ROOT_PASSWORD="$pass1"
-            break
-        else
-            printf "\033[31mPassword must be at least 8 characters.\033[0m\n"
-        fi
+  if [ "$pass1" = "$pass2" ]; then
+    if [ ${#pass1} -ge 8 ]; then
+      ROOT_PASSWORD="$pass1"
+      break
     else
-        printf "\033[31mPasswords do not match. Try again.\033[0m\n"
+      printf "\033[31mPassword must be at least 8 characters.\033[0m\n"
     fi
+  else
+    printf "\033[31mPasswords do not match. Try again.\033[0m\n"
+  fi
 done
 
-# --- device name ---
+# Device name
 printf "Device name: "
 read -r DEVICE_NAME
 
-# --- Wi-Fi SSID and password ---
+# Wi-Fi settings
 printf "Wi-Fi SSID: "
 read -r WLAN_NAME
 printf "Wi-Fi password: "
 read -r WLAN_PASSWORD
 
-# --- ISP mode ---
+# ISP mode selection
 while :; do
   echo "Connection Type: [1] Auto  [2] DHCP  [3] PPPoE  [4] DS-Lite  [5] MAP-E  [6] None"
   printf "Choice [1]: "
@@ -65,13 +58,13 @@ while :; do
   [ -z "$choice" ] && choice=1
   case "$choice" in
     [1-6]) break ;;
+    *) printf "\033[31mInvalid choice. Please select 1-6.\033[0m\n" ;;
   esac
 done
 
 isp_mode=""
 PPPOE_USERNAME=""
 PPPOE_PASSWORD=""
-
 case "$choice" in
   1) isp_mode="" ;;
   2) isp_mode="dhcp" ;;
@@ -92,7 +85,5 @@ case "$choice" in
   *) isp_mode="" ;;
 esac
 
-export LANGUAGE ROOT_PASSWORD PPPOE_USERNAME PPPOE_PASSWORD DEVICE_NAME WLAN_NAME WLAN_PASSWORD
-export ISP_MODE
-
+export LANGUAGE ROOT_PASSWORD PPPOE_USERNAME PPPOE_PASSWORD DEVICE_NAME WLAN_NAME WLAN_PASSWORD ISP_MODE="$isp_mode"
 exec sh "$CONFIG_SCRIPT"
