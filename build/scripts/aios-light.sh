@@ -184,7 +184,7 @@ set_device_basic_config() {
         logger -t auto-config "Setting WLAN: $WLAN_NAME"
         uci set wireless.@wifi-device[0].disabled='0'
         uci set wireless.@wifi-iface[0].disabled='0'
-        uci set wireless.@wifi-iface[0].encryption='psk2'
+        uci set wireless.@wifi-iface[0].encryption='sae-mixed'
         uci set wireless.@wifi-iface[0].ssid="$WLAN_NAME"
         uci set wireless.@wifi-iface[0].key="$WLAN_PASSWORD"
     fi
