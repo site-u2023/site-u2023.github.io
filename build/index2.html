@@ -577,11 +577,86 @@
             document.getElementById('models-autocomplete-list').style.display = 'none';
         }
 
-        function selectDevice(device) {
+        // ここを async にして、選択時に自動で profile -> packages を取得して textarea に入れる
+        async function selectDevice(device) {
             app.selectedDevice = device;
             document.getElementById('models').value = getDeviceTitle(device);
             hideAutocomplete();
             showDeviceInfo();
+
+            // 公式と同じ挙動：targets/<target>/profiles.json などを参照して
+            // インストール予定パッケージを取得できれば textarea に **空白区切り1行**でセットする
+            await fetchProfilePackagesAndPopulate(device);
+        }
+
+        // 公式と同じ情報源（targets/<target>/profiles.json または個別 profile json）を順に試して packages を取得する
+        async function fetchProfilePackagesAndPopulate(device) {
+            if (!device || !device.target || !device.id) return;
+
+            const version = app.selectedVersion || 'snapshots';
+            const target = device.target;
+            const profileId = device.id;
+
+            const candidates = [];
+            if (version && version !== 'snapshots') {
+                candidates.push(`https://downloads.openwrt.org/releases/${version}/targets/${target}/profiles.json`);
+                candidates.push(`https://downloads.openwrt.org/releases/${version}/targets/${target}/profiles/${profileId}.json`);
+            }
+            candidates.push(`https://downloads.openwrt.org/snapshots/targets/${target}/profiles.json`);
+            candidates.push(`https://downloads.openwrt.org/snapshots/targets/${target}/profiles/${profileId}.json`);
+
+            for (const url of candidates) {
+                try {
+                    const res = await fetch(url);
+                    if (!res.ok) {
+                        // 存在しない URL なら次へ
+                        continue;
+                    }
+                    const json = await res.json();
+
+                    // profiles.json の配列形式なら探す
+                    if (Array.isArray(json.profiles)) {
+                        const found = json.profiles.find(p =>
+                            p.id === profileId || p.profile === profileId || p.name === profileId || p.model === profileId
+                        );
+                        if (found) {
+                            const pkgs = normalizePackagesField(found.packages || found.package || found.defaults || found.default_packages || found['installed-packages']);
+                            if (pkgs.length) {
+                                // 公式と同じ「空白区切り1行」でセット
+                                document.getElementById('packages-custom').value = pkgs.join(' ');
+                                return;
+                            }
+                        }
+                    }
+
+                    // 個別 profile JSON 形式や top-level の packages を試す
+                    const direct = json.packages || json.defaults || json.default_packages || json.installed || (json.profile && (json.profile.packages || json.profile.defaults));
+                    if (direct) {
+                        const pkgs = normalizePackagesField(direct);
+                        if (pkgs.length) {
+                            document.getElementById('packages-custom').value = pkgs.join(' ');
+                            return;
+                        }
+                    }
+                } catch (e) {
+                    // fetch / parse エラーは続行（CORS 等で弾かれるとここに来る可能性あり）
+                    console.error('fetchProfilePackagesAndPopulate error for', url, e);
+                    continue;
+                }
+            }
+
+            // 見つからなかった場合は処理を行わない（既存 textarea の内容を変更しない）
+        }
+
+        function normalizePackagesField(raw) {
+            if (!raw) return [];
+            if (Array.isArray(raw)) return raw.map(String).map(s => s.trim()).filter(Boolean);
+            if (typeof raw === 'string') return raw.split(/\s+/).map(s => s.trim()).filter(Boolean);
+            try {
+                return Object.values(raw).map(String).map(s => s.trim()).filter(Boolean);
+            } catch (e) {
+                return [];
+            }
         }
 
         function showDeviceInfo() {
