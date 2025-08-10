@@ -1,370 +1,414 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <title>OpenWrt Firmware Selector</title>
     <style>
-        * {
-            box-sizing: border-box;
-        }
-        
+        /* 公式サイトのスタイルを再現 */
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
             line-height: 1.5;
-            color: #333;
-            background-color: #f8f9fa;
+            color: #212529;
+            background-color: #fff;
             margin: 0;
             padding: 20px;
         }
-        
+
         .container {
-            max-width: 800px;
+            max-width: 720px;
             margin: 0 auto;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            padding: 30px;
+            padding: 0 15px;
         }
-        
+
         h1 {
-            color: #007bff;
-            margin-bottom: 30px;
+            font-size: 2.5rem;
+            font-weight: 300;
             text-align: center;
+            margin-bottom: 1rem;
+            color: #007bff;
         }
-        
+
+        .lead {
+            font-size: 1.25rem;
+            font-weight: 300;
+            text-align: center;
+            margin-bottom: 2rem;
+            color: #6c757d;
+        }
+
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 1rem;
         }
-        
+
         label {
-            display: block;
-            margin-bottom: 5px;
+            display: inline-block;
+            margin-bottom: 0.5rem;
             font-weight: 500;
         }
-        
+
         .form-control {
+            display: block;
             width: 100%;
-            padding: 10px;
+            padding: 0.375rem 0.75rem;
+            font-size: 1rem;
+            font-weight: 400;
+            line-height: 1.5;
+            color: #495057;
+            background-color: #fff;
+            background-clip: padding-box;
             border: 1px solid #ced4da;
-            border-radius: 4px;
-            font-size: 14px;
+            border-radius: 0.25rem;
+            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
         }
-        
+
         .form-control:focus {
-            outline: none;
-            border-color: #007bff;
-            box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+            color: #495057;
+            background-color: #fff;
+            border-color: #80bdff;
+            outline: 0;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
         }
-        
+
         .autocomplete {
             position: relative;
         }
-        
-        .suggestions {
+
+        .autocomplete-items {
             position: absolute;
+            border: 1px solid #d4edda;
+            border-bottom: none;
+            border-top: none;
+            z-index: 99;
             top: 100%;
             left: 0;
             right: 0;
-            background: white;
-            border: 1px solid #ced4da;
-            border-top: none;
-            max-height: 200px;
+            max-height: 300px;
             overflow-y: auto;
-            z-index: 1000;
-            display: none;
+            background-color: #fff;
         }
-        
-        .suggestion {
+
+        .autocomplete-items div {
             padding: 10px;
             cursor: pointer;
-            border-bottom: 1px solid #e9ecef;
+            background-color: #fff;
+            border-bottom: 1px solid #d4edda;
         }
-        
-        .suggestion:hover {
-            background-color: #f8f9fa;
+
+        .autocomplete-items div:hover {
+            background-color: #e9ecef;
         }
-        
-        .device-info {
-            background: #e7f3ff;
-            border: 1px solid #b8daff;
-            border-radius: 4px;
-            padding: 15px;
-            margin: 20px 0;
+
+        .autocomplete-active {
+            background-color: #007bff !important;
+            color: #ffffff;
         }
-        
+
+        .info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+            padding: 0.75rem 1.25rem;
+            margin-bottom: 1rem;
+            border-radius: 0.25rem;
+        }
+
+        .info h5 {
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
         .packages {
-            margin: 20px 0;
+            margin: 1.5rem 0;
         }
-        
+
+        .packages h4 {
+            margin-bottom: 1rem;
+            font-weight: 500;
+        }
+
+        .btn {
+            display: inline-block;
+            font-weight: 400;
+            color: #212529;
+            text-align: center;
+            vertical-align: middle;
+            cursor: pointer;
+            background-color: transparent;
+            border: 1px solid transparent;
+            padding: 0.375rem 0.75rem;
+            font-size: 1rem;
+            line-height: 1.5;
+            border-radius: 0.25rem;
+            transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            color: #fff;
+            background-color: #007bff;
+            border-color: #007bff;
+        }
+
+        .btn-primary:hover {
+            color: #fff;
+            background-color: #0069d9;
+            border-color: #0062cc;
+        }
+
+        .btn-primary:disabled {
+            color: #fff;
+            background-color: #007bff;
+            border-color: #007bff;
+            opacity: 0.65;
+        }
+
+        .images {
+            margin: 1.5rem 0;
+        }
+
+        .download-link {
+            display: inline-block;
+            margin: 0.25rem 0.5rem 0.25rem 0;
+            padding: 0.5rem 1rem;
+            background-color: #28a745;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 0.25rem;
+        }
+
+        .download-link:hover {
+            background-color: #218838;
+            color: #fff;
+            text-decoration: none;
+        }
+
+        /* aios-light.sh設定専用スタイル */
         .aios-section {
-            background: #f8f9fa;
+            margin: 1.5rem 0;
+            padding: 1rem;
+            background-color: #f8f9fa;
             border: 1px solid #dee2e6;
-            border-radius: 4px;
-            padding: 20px;
-            margin: 20px 0;
+            border-radius: 0.25rem;
         }
-        
+
         .aios-config {
-            margin-top: 15px;
+            margin-top: 1rem;
             display: none;
         }
-        
+
         .form-row {
             display: flex;
-            gap: 15px;
-            margin-bottom: 15px;
+            flex-wrap: wrap;
+            margin-right: -5px;
+            margin-left: -5px;
         }
-        
-        .form-row .form-group {
+
+        .form-row > .form-group {
+            padding-right: 5px;
+            padding-left: 5px;
             flex: 1;
-            margin-bottom: 0;
         }
-        
+
         .radio-group {
             display: flex;
             flex-wrap: wrap;
-            gap: 15px;
-            margin-top: 5px;
+            gap: 1rem;
         }
-        
-        .radio-item {
-            display: flex;
-            align-items: center;
+
+        .form-check {
+            position: relative;
+            display: block;
+            padding-left: 1.25rem;
         }
-        
-        .radio-item input {
-            margin-right: 5px;
+
+        .form-check-input {
+            position: absolute;
+            margin-top: 0.3rem;
+            margin-left: -1.25rem;
         }
-        
-        .conditional-fields {
-            margin-top: 15px;
-            padding: 15px;
-            background: #fff3cd;
+
+        .form-check-label {
+            margin-bottom: 0;
+        }
+
+        .conditional-section {
+            margin-top: 1rem;
+            padding: 1rem;
+            background-color: #fff3cd;
             border: 1px solid #ffeaa7;
-            border-radius: 4px;
+            border-radius: 0.25rem;
             display: none;
         }
-        
-        .btn {
-            background: #007bff;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-            margin-top: 10px;
+
+        .text-muted {
+            color: #6c757d;
         }
-        
-        .btn:hover {
-            background: #0056b3;
+
+        .small {
+            font-size: 0.875em;
         }
-        
-        .btn:disabled {
-            background: #6c757d;
-            cursor: not-allowed;
-        }
-        
-        .btn-success {
-            background: #28a745;
-        }
-        
-        .btn-success:hover {
-            background: #218838;
-        }
-        
-        .build-status {
-            margin-top: 20px;
-            padding: 15px;
-            border-radius: 4px;
-            display: none;
-        }
-        
-        .build-status.building {
-            background: #fff3cd;
-            border: 1px solid #ffeaa7;
-            display: block;
-        }
-        
-        .build-status.success {
-            background: #d4edda;
-            border: 1px solid #c3e6cb;
-            display: block;
-        }
-        
-        .build-status.error {
-            background: #f8d7da;
-            border: 1px solid #f5c6cb;
-            display: block;
-        }
-        
-        .download-links a {
-            display: inline-block;
-            margin: 5px 10px 5px 0;
-            padding: 8px 16px;
-            background: #28a745;
-            color: white;
-            text-decoration: none;
-            border-radius: 4px;
-        }
-        
-        .download-links a:hover {
-            background: #218838;
-        }
-        
-        @media (max-width: 768px) {
+
+        @media (max-width: 576px) {
             .form-row {
                 flex-direction: column;
             }
             
             .radio-group {
                 flex-direction: column;
-                gap: 10px;
+                gap: 0.5rem;
             }
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <h1>OpenWrt Firmware Selector</h1>
-        
+        <p class="lead">Type the name or model of your device, then select a stable build or the nightly "snapshot" build.</p>
+
         <div class="form-group">
-            <label for="version-select">Version:</label>
-            <select id="version-select" class="form-control">
-                <option value="">Loading versions...</option>
+            <label for="versions">Version</label>
+            <select id="versions" class="form-control">
+                <option value="" disabled selected>Loading versions...</option>
             </select>
         </div>
-        
+
         <div class="form-group">
-            <label for="device-search">Device Model:</label>
             <div class="autocomplete">
-                <input type="text" id="device-search" class="form-control" placeholder="Type device model (e.g. 'TP-Link Archer C7')" autocomplete="off">
-                <div id="suggestions" class="suggestions"></div>
+                <input type="text" id="models" class="form-control" placeholder="Type device model" autocomplete="off">
+                <div id="models-autocomplete-list" class="autocomplete-items"></div>
             </div>
         </div>
-        
-        <div id="device-info" class="device-info" style="display: none;">
-            <h4 id="device-title"></h4>
-            <p id="device-details"></p>
+
+        <div id="info" class="info" style="display: none;">
+            <h5 id="device-title"></h5>
+            <div id="device-details"></div>
         </div>
-        
-        <div id="packages-section" style="display: none;">
-            <div class="packages">
-                <div class="form-group">
-                    <label for="packages-input">Additional packages (one per line, prefix with '-' to remove):</label>
-                    <textarea id="packages-input" class="form-control" rows="3" placeholder="-wpad-basic-wolfssl&#10;wpad-wolfssl&#10;luci-ssl"></textarea>
-                </div>
-            </div>
+
+        <div id="images" class="images" style="display: none;">
+            <!-- Device images will be shown here -->
         </div>
-        
-        <div id="aios-section" class="aios-section" style="display: none;">
+
+        <div id="packages" class="packages" style="display: none;">
+            <h4>Customize installed packages and/or first boot script</h4>
             <div class="form-group">
-                <label>
-                    <input type="checkbox" id="use-aios"> Use aios-light.sh configuration
-                </label>
+                <label for="packages-custom">Packages to add/remove (one per line, prefix with '-' to remove):</label>
+                <textarea id="packages-custom" class="form-control" rows="3" placeholder="-wpad-basic-wolfssl&#10;wpad-wolfssl&#10;luci-ssl"></textarea>
             </div>
-            
-            <div id="aios-config" class="aios-config">
-                <h5>Basic Configuration</h5>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="aios-language">Language:</label>
-                        <select id="aios-language" class="form-control">
-                            <option value="en">English</option>
-                            <option value="ja">Japanese</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="aios-device-name">Device name:</label>
-                        <input type="text" id="aios-device-name" class="form-control" placeholder="OpenWrt-Router">
-                    </div>
+
+            <!-- aios-light.sh設定セクション -->
+            <div class="aios-section">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="use-aios-config">
+                    <label class="form-check-label" for="use-aios-config">
+                        Use aios-light.sh configuration wizard
+                    </label>
                 </div>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="aios-root-password">Root password:</label>
-                        <input type="password" id="aios-root-password" class="form-control" placeholder="8+ characters">
-                    </div>
-                    <div class="form-group">
-                        <label for="aios-confirm-password">Confirm password:</label>
-                        <input type="password" id="aios-confirm-password" class="form-control" placeholder="Confirm password">
-                    </div>
-                </div>
-                
-                <h5>Wi-Fi Configuration</h5>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="aios-wifi-ssid">Wi-Fi SSID:</label>
-                        <input type="text" id="aios-wifi-ssid" class="form-control" placeholder="MyOpenWrt">
-                    </div>
-                    <div class="form-group">
-                        <label for="aios-wifi-password">Wi-Fi password:</label>
-                        <input type="password" id="aios-wifi-password" class="form-control" placeholder="8+ characters">
-                    </div>
-                </div>
-                
-                <h5>Internet Connection</h5>
-                <div class="form-group">
-                    <label>Connection type:</label>
-                    <div class="radio-group">
-                        <label class="radio-item">
-                            <input type="radio" name="connectionType" value="auto" checked>
-                            Auto-detect
-                        </label>
-                        <label class="radio-item">
-                            <input type="radio" name="connectionType" value="dhcp">
-                            DHCP
-                        </label>
-                        <label class="radio-item">
-                            <input type="radio" name="connectionType" value="pppoe">
-                            PPPoE
-                        </label>
-                        <label class="radio-item">
-                            <input type="radio" name="connectionType" value="dslite">
-                            DS-Lite
-                        </label>
-                        <label class="radio-item">
-                            <input type="radio" name="connectionType" value="mape">
-                            MAP-E
-                        </label>
-                        <label class="radio-item">
-                            <input type="radio" name="connectionType" value="none">
-                            None
-                        </label>
-                    </div>
-                </div>
-                
-                <div id="pppoe-fields" class="conditional-fields">
+
+                <div id="aios-config" class="aios-config">
+                    <h5>Basic Configuration</h5>
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="pppoe-username">PPPoE username:</label>
-                            <input type="text" id="pppoe-username" class="form-control" placeholder="From ISP">
+                            <label for="aios-language">Language</label>
+                            <select id="aios-language" class="form-control">
+                                <option value="en">English</option>
+                                <option value="ja">Japanese</option>
+                            </select>
                         </div>
                         <div class="form-group">
-                            <label for="pppoe-password">PPPoE password:</label>
-                            <input type="password" id="pppoe-password" class="form-control" placeholder="From ISP">
+                            <label for="aios-device-name">Device name</label>
+                            <input type="text" id="aios-device-name" class="form-control" placeholder="OpenWrt-Router">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="aios-root-password">Root password</label>
+                            <input type="password" id="aios-root-password" class="form-control" placeholder="8+ characters">
+                            <small class="form-text text-muted">Leave empty to disable password authentication</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="aios-confirm-password">Confirm password</label>
+                            <input type="password" id="aios-confirm-password" class="form-control" placeholder="Confirm password">
+                        </div>
+                    </div>
+
+                    <h5>Wi-Fi Configuration</h5>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="aios-wifi-ssid">Wi-Fi SSID</label>
+                            <input type="text" id="aios-wifi-ssid" class="form-control" placeholder="MyOpenWrt">
+                        </div>
+                        <div class="form-group">
+                            <label for="aios-wifi-password">Wi-Fi password</label>
+                            <input type="password" id="aios-wifi-password" class="form-control" placeholder="8+ characters">
+                        </div>
+                    </div>
+
+                    <h5>Internet Connection</h5>
+                    <div class="form-group">
+                        <label>Connection type</label>
+                        <div class="radio-group">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="connectionType" id="conn-auto" value="auto" checked>
+                                <label class="form-check-label" for="conn-auto">Auto-detect</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="connectionType" id="conn-dhcp" value="dhcp">
+                                <label class="form-check-label" for="conn-dhcp">DHCP</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="connectionType" id="conn-pppoe" value="pppoe">
+                                <label class="form-check-label" for="conn-pppoe">PPPoE</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="connectionType" id="conn-dslite" value="dslite">
+                                <label class="form-check-label" for="conn-dslite">DS-Lite</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="connectionType" id="conn-mape" value="mape">
+                                <label class="form-check-label" for="conn-mape">MAP-E</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="connectionType" id="conn-none" value="none">
+                                <label class="form-check-label" for="conn-none">None</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="pppoe-section" class="conditional-section">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="pppoe-username">PPPoE username</label>
+                                <input type="text" id="pppoe-username" class="form-control" placeholder="Username from ISP">
+                            </div>
+                            <div class="form-group">
+                                <label for="pppoe-password">PPPoE password</label>
+                                <input type="password" id="pppoe-password" class="form-control" placeholder="Password from ISP">
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-            
+
             <div class="form-group">
-                <label for="script-input">Script to run on first boot (uci-defaults):</label>
-                <textarea id="script-input" class="form-control" rows="8" placeholder="#!/bin/sh&#10;&#10;# Your script here"></textarea>
+                <label for="script">Script to run on first boot (uci-defaults):</label>
+                <textarea id="script" class="form-control" rows="8" placeholder="#!/bin/sh&#10;&#10;# Your script here"></textarea>
             </div>
+
+            <button id="request-build" class="btn btn-primary" style="display: none;">REQUEST BUILD</button>
         </div>
-        
-        <div id="build-section" style="display: none;">
-            <button id="build-button" class="btn btn-success">REQUEST BUILD</button>
-            
-            <div id="build-status" class="build-status">
-                <div id="build-message"></div>
-                <div id="download-links" class="download-links"></div>
-            </div>
+
+        <div id="build-spinner" style="display: none;">
+            <p>Building image...</p>
         </div>
+
+        <div id="download-links"></div>
     </div>
-    
+
     <script>
         let app = {
             versions: [],
@@ -372,61 +416,59 @@
             selectedDevice: null,
             selectedVersion: ''
         };
-        
-        // Initialize
+
         document.addEventListener('DOMContentLoaded', init);
-        
+
         async function init() {
             try {
                 await loadVersions();
                 bindEvents();
             } catch (error) {
-                console.error('Initialization failed:', error);
+                console.error('Failed to initialize:', error);
             }
         }
-        
+
         function bindEvents() {
-            document.getElementById('version-select').addEventListener('change', handleVersionChange);
-            document.getElementById('device-search').addEventListener('input', handleDeviceSearch);
-            document.getElementById('device-search').addEventListener('focus', showSuggestions);
-            document.getElementById('use-aios').addEventListener('change', handleAiosToggle);
-            document.getElementById('build-button').addEventListener('click', handleBuild);
-            
+            document.getElementById('versions').addEventListener('change', handleVersionChange);
+            document.getElementById('models').addEventListener('input', handleDeviceSearch);
+            document.getElementById('use-aios-config').addEventListener('change', toggleAiosConfig);
+            document.getElementById('request-build').addEventListener('click', requestBuild);
+
             // Connection type change
             document.querySelectorAll('input[name="connectionType"]').forEach(radio => {
                 radio.addEventListener('change', handleConnectionTypeChange);
             });
-            
-            // Auto-generate script on aios config change
+
+            // Auto-generate script when aios config changes
             document.getElementById('aios-config').addEventListener('input', generateAiosScript);
-            
-            // Hide suggestions when clicking outside
+
+            // Hide autocomplete when clicking outside
             document.addEventListener('click', function(e) {
                 if (!e.target.closest('.autocomplete')) {
-                    hideSuggestions();
+                    hideAutocomplete();
                 }
             });
         }
-        
+
         async function loadVersions() {
             try {
                 const response = await fetch('https://downloads.openwrt.org/.versions.json');
                 const data = await response.json();
-                
+
                 app.versions = data.versions_list || [];
                 app.selectedVersion = data.stable_version || app.versions[0];
-                
+
                 updateVersionSelect();
                 await loadDevices();
             } catch (error) {
                 console.error('Failed to load versions:', error);
             }
         }
-        
+
         function updateVersionSelect() {
-            const select = document.getElementById('version-select');
+            const select = document.getElementById('versions');
             select.innerHTML = '';
-            
+
             app.versions.forEach(version => {
                 const option = document.createElement('option');
                 option.value = version;
@@ -437,123 +479,105 @@
                 select.appendChild(option);
             });
         }
-        
+
         async function loadDevices() {
             if (!app.selectedVersion) return;
-            
+
             try {
                 const url = `https://downloads.openwrt.org/releases/${app.selectedVersion}/.overview.json`;
                 const response = await fetch(url);
                 const data = await response.json();
-                
+
                 app.devices = data.profiles || [];
             } catch (error) {
                 console.error('Failed to load devices:', error);
                 app.devices = [];
             }
         }
-        
+
         async function handleVersionChange(e) {
             app.selectedVersion = e.target.value;
             app.selectedDevice = null;
-            
             hideDeviceInfo();
             await loadDevices();
         }
-        
+
         function handleDeviceSearch(e) {
             const query = e.target.value.toLowerCase();
-            
+
             if (query.length < 2) {
-                hideSuggestions();
+                hideAutocomplete();
                 return;
             }
-            
+
             const matches = app.devices.filter(device => {
                 const title = getDeviceTitle(device).toLowerCase();
-                const id = device.id.toLowerCase();
-                return title.includes(query) || id.includes(query);
+                return title.includes(query) || device.id.toLowerCase().includes(query);
             }).slice(0, 10);
-            
-            showSuggestionsList(matches);
+
+            showAutocomplete(matches);
         }
-        
+
         function getDeviceTitle(device) {
             if (device.titles && device.titles.length > 0) {
                 return device.titles[0].title || device.id;
             }
             return device.id;
         }
-        
-        function showSuggestionsList(devices) {
-            const container = document.getElementById('suggestions');
+
+        function showAutocomplete(devices) {
+            const container = document.getElementById('models-autocomplete-list');
             container.innerHTML = '';
-            
+
             if (devices.length === 0) {
-                hideSuggestions();
+                hideAutocomplete();
                 return;
             }
-            
+
             devices.forEach(device => {
                 const div = document.createElement('div');
-                div.className = 'suggestion';
-                div.innerHTML = `
-                    <strong>${getDeviceTitle(device)}</strong><br>
-                    <small>Target: ${device.target} | ID: ${device.id}</small>
-                `;
+                div.innerHTML = `<strong>${getDeviceTitle(device)}</strong><br><small>Target: ${device.target}</small>`;
                 div.addEventListener('click', () => selectDevice(device));
                 container.appendChild(div);
             });
-            
+
             container.style.display = 'block';
         }
-        
-        function showSuggestions() {
-            const query = document.getElementById('device-search').value;
-            if (query.length >= 2) {
-                handleDeviceSearch({ target: { value: query } });
-            }
+
+        function hideAutocomplete() {
+            document.getElementById('models-autocomplete-list').style.display = 'none';
         }
-        
-        function hideSuggestions() {
-            document.getElementById('suggestions').style.display = 'none';
-        }
-        
+
         function selectDevice(device) {
             app.selectedDevice = device;
-            
-            document.getElementById('device-search').value = getDeviceTitle(device);
-            hideSuggestions();
+            document.getElementById('models').value = getDeviceTitle(device);
+            hideAutocomplete();
             showDeviceInfo();
         }
-        
+
         function showDeviceInfo() {
             if (!app.selectedDevice) return;
-            
+
             const device = app.selectedDevice;
-            
+
             document.getElementById('device-title').textContent = getDeviceTitle(device);
-            document.getElementById('device-details').innerHTML = `
-                Target: ${device.target} | Version: ${app.selectedVersion} | ID: ${device.id}
-            `;
-            
-            document.getElementById('device-info').style.display = 'block';
-            document.getElementById('packages-section').style.display = 'block';
-            document.getElementById('aios-section').style.display = 'block';
-            document.getElementById('build-section').style.display = 'block';
+            document.getElementById('device-details').innerHTML = `Target: ${device.target}<br>Version: ${app.selectedVersion}`;
+
+            document.getElementById('info').style.display = 'block';
+            document.getElementById('packages').style.display = 'block';
+            document.getElementById('request-build').style.display = 'inline-block';
         }
-        
+
         function hideDeviceInfo() {
-            document.getElementById('device-info').style.display = 'none';
-            document.getElementById('packages-section').style.display = 'none';
-            document.getElementById('aios-section').style.display = 'none';
-            document.getElementById('build-section').style.display = 'none';
+            document.getElementById('info').style.display = 'none';
+            document.getElementById('packages').style.display = 'none';
+            document.getElementById('request-build').style.display = 'none';
         }
-        
-        function handleAiosToggle(e) {
+
+        function toggleAiosConfig(e) {
             const config = document.getElementById('aios-config');
-            const script = document.getElementById('script-input');
-            
+            const script = document.getElementById('script');
+
             if (e.target.checked) {
                 config.style.display = 'block';
                 generateAiosScript();
@@ -562,29 +586,29 @@
                 script.value = '';
             }
         }
-        
+
         function handleConnectionTypeChange(e) {
-            const pppoeFields = document.getElementById('pppoe-fields');
-            
+            const pppoeSection = document.getElementById('pppoe-section');
+
             if (e.target.value === 'pppoe') {
-                pppoeFields.style.display = 'block';
+                pppoeSection.style.display = 'block';
             } else {
-                pppoeFields.style.display = 'none';
+                pppoeSection.style.display = 'none';
             }
-            
-            if (document.getElementById('use-aios').checked) {
+
+            if (document.getElementById('use-aios-config').checked) {
                 generateAiosScript();
             }
         }
-        
+
         function generateAiosScript() {
-            if (!document.getElementById('use-aios').checked) return;
-            
+            if (!document.getElementById('use-aios-config').checked) return;
+
             const config = getAiosConfig();
             const script = buildAiosScript(config);
-            document.getElementById('script-input').value = script;
+            document.getElementById('script').value = script;
         }
-        
+
         function getAiosConfig() {
             return {
                 language: document.getElementById('aios-language').value,
@@ -597,46 +621,46 @@
                 pppoePassword: document.getElementById('pppoe-password').value
             };
         }
-        
+
         function buildAiosScript(config) {
             let script = '#!/bin/sh\n\n';
             script += '# OpenWrt Auto Configuration Script\n';
             script += '# Generated by aios-light.sh configuration\n\n';
-            
+
             script += 'CONFIG_SCRIPT="/tmp/aios/aios-light.sh"\n';
             script += 'mkdir -p /tmp/aios\n\n';
-            
+
             script += 'wget --no-check-certificate -O "$CONFIG_SCRIPT" "https://site-u.pages.dev/build/scripts/aios-light.sh" 2>/dev/null\n\n';
-            
+
             script += 'if [ ! -f "$CONFIG_SCRIPT" ]; then\n';
             script += '    logger -t aios-config "Failed to download aios-light.sh"\n';
             script += '    exit 1\n';
             script += 'fi\n\n';
-            
+
             script += 'chmod +x "$CONFIG_SCRIPT"\n\n';
-            
+
             script += '# Configuration Variables\n';
-            
+
             if (config.language) {
                 script += `export LANGUAGE="${config.language}"\n`;
             }
-            
+
             if (config.deviceName) {
                 script += `export DEVICE_NAME="${config.deviceName}"\n`;
             }
-            
+
             if (config.rootPassword) {
                 script += `export ROOT_PASSWORD="${config.rootPassword}"\n`;
             }
-            
+
             if (config.wifiSSID) {
                 script += `export WLAN_NAME="${config.wifiSSID}"\n`;
             }
-            
+
             if (config.wifiPassword) {
                 script += `export WLAN_PASSWORD="${config.wifiPassword}"\n`;
             }
-            
+
             if (config.connectionType === 'auto') {
                 script += 'export ISP_MODE=""\n';
             } else if (config.connectionType === 'pppoe') {
@@ -650,33 +674,33 @@
             } else {
                 script += `export ISP_MODE="${config.connectionType}"\n`;
             }
-            
+
             script += '\n# Execute configuration script\n';
             script += 'exec sh "$CONFIG_SCRIPT" "$ISP_MODE"\n';
-            
+
             return script;
         }
-        
-        async function handleBuild() {
+
+        async function requestBuild() {
             if (!app.selectedDevice) {
                 alert('Please select a device first');
                 return;
             }
-            
+
             const packages = getPackages();
-            const script = document.getElementById('script-input').value;
-            
+            const script = document.getElementById('script').value;
+
             const buildData = {
                 target: app.selectedDevice.target,
                 profile: app.selectedDevice.id,
                 packages: packages,
                 script: script
             };
-            
+
             try {
-                setBuildStatus('building', 'Building firmware...');
-                document.getElementById('build-button').disabled = true;
-                
+                document.getElementById('request-build').disabled = true;
+                document.getElementById('build-spinner').style.display = 'block';
+
                 const response = await fetch('https://sysupgrade.openwrt.org/api/v1/build', {
                     method: 'POST',
                     headers: {
@@ -684,93 +708,77 @@
                     },
                     body: JSON.stringify(buildData)
                 });
-                
+
                 if (!response.ok) {
-                    throw new Error(`Build failed: ${response.status} ${response.statusText}`);
+                    throw new Error(`Build failed: ${response.status}`);
                 }
-                
+
                 const result = await response.json();
-                
+
                 if (result.request_id) {
                     await pollBuildStatus(result.request_id);
                 } else if (result.images) {
                     showDownloadLinks(result.images);
-                } else {
-                    throw new Error('Invalid response from build server');
                 }
-                
+
             } catch (error) {
                 console.error('Build error:', error);
-                setBuildStatus('error', `Build failed: ${error.message}`);
+                alert('Build failed: ' + error.message);
             } finally {
-                document.getElementById('build-button').disabled = false;
+                document.getElementById('request-build').disabled = false;
+                document.getElementById('build-spinner').style.display = 'none';
             }
         }
-        
+
         function getPackages() {
-            const input = document.getElementById('packages-input').value;
+            const input = document.getElementById('packages-custom').value;
             return input.split('\n').map(pkg => pkg.trim()).filter(pkg => pkg);
         }
-        
+
         async function pollBuildStatus(requestId) {
-            const maxAttempts = 60; // 5 minutes with 5-second intervals
+            const maxAttempts = 60;
             let attempts = 0;
-            
+
             while (attempts < maxAttempts) {
                 try {
                     const response = await fetch(`https://sysupgrade.openwrt.org/api/v1/build/${requestId}`);
                     const status = await response.json();
-                    
+
                     if (status.status === 'done' || status.status === 'success') {
                         showDownloadLinks(status.images);
                         return;
                     } else if (status.status === 'failed') {
                         throw new Error('Build failed on server');
                     }
-                    
-                    // Still building, wait and try again
+
                     await new Promise(resolve => setTimeout(resolve, 5000));
                     attempts++;
-                    
+
                 } catch (error) {
                     console.error('Status check error:', error);
                     throw error;
                 }
             }
-            
+
             throw new Error('Build timeout');
         }
-        
-        function setBuildStatus(type, message) {
-            const status = document.getElementById('build-status');
-            const messageEl = document.getElementById('build-message');
-            
-            status.className = `build-status ${type}`;
-            messageEl.textContent = message;
-            
-            if (type !== 'success') {
-                document.getElementById('download-links').innerHTML = '';
-            }
-        }
-        
+
         function showDownloadLinks(images) {
-            setBuildStatus('success', 'Build completed successfully!');
-            
             const container = document.getElementById('download-links');
-            container.innerHTML = '';
-            
+            container.innerHTML = '<h4>Download</h4>';
+
             if (images && images.length > 0) {
                 images.forEach(image => {
                     const link = document.createElement('a');
                     link.href = image.url;
+                    link.className = 'download-link';
                     link.textContent = image.name || 'Download';
                     link.target = '_blank';
                     container.appendChild(link);
                 });
-            } else {
-                container.innerHTML = '<p>No download links available</p>';
             }
         }
     </script>
 </body>
+
 </html>
