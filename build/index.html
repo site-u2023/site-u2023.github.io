@@ -861,12 +861,16 @@
                                    status.files ||
                                    [];
                         
+                        // request_hashも取得
+                        let requestHash = status.request_hash || status.request?.request_hash;
+                        
                         console.log('Found images data:', images);
+                        console.log('Request hash:', requestHash);
                         
                         showProgress('Build completed!', 100);
                         setTimeout(() => {
                             hideProgress();
-                            showDownloadLinks(images, status);
+                            showDownloadLinks(images, status, requestHash);
                         }, 500);
                         return;
                     } else if (status.status === 'failed' || status.status === 'failure' || 
@@ -913,10 +917,10 @@
             document.getElementById('build-progress').style.display = 'none';
         }
 
-        function showDownloadLinks(images, fullStatus) {
+        function showDownloadLinks(images, fullStatus, requestHash) {
             console.log('showDownloadLinks called with:');
             console.log('- images:', images);
-            console.log('- fullStatus:', fullStatus);
+            console.log('- requestHash:', requestHash);
             
             const container = document.getElementById('download-links');
             container.innerHTML = '<h4>Download</h4>';
@@ -924,89 +928,65 @@
             if (images && images.length > 0) {
                 console.log(`Processing ${images.length} images...`);
                 
-                // まず画面にデバッグ情報を表示
-                const debugDiv = document.createElement('div');
-                debugDiv.style.background = '#f0f0f0';
-                debugDiv.style.padding = '10px';
-                debugDiv.style.marginTop = '10px';
-                debugDiv.style.fontSize = '12px';
-                debugDiv.style.maxHeight = '200px';
-                debugDiv.style.overflow = 'auto';
-                debugDiv.innerHTML = '<strong>Debug - First Image Object:</strong><br>' + JSON.stringify(images[0], null, 2);
-                container.appendChild(debugDiv);
-                
                 images.forEach((image, index) => {
                     console.log(`Processing image ${index}:`, image);
-                    console.log(`Image keys:`, Object.keys(image));
                     
                     const link = document.createElement('a');
-                    
-                    // より多くのプロパティを確認
                     let imageUrl = '';
                     let fileName = '';
                     
-                    // 考えられるURLプロパティをすべて確認
-                    const possibleUrlProps = ['url', 'path', 'download_url', 'file_url', 'location', 'href', 'link'];
-                    const possibleNameProps = ['name', 'filename', 'file_name', 'title', 'basename'];
-                    
-                    console.log(`Image ${index} properties:`, Object.keys(image));
-                    
-                    for (let prop of possibleUrlProps) {
-                        if (image[prop]) {
-                            imageUrl = image[prop];
-                            console.log(`Found URL in ${prop}:`, imageUrl);
-                            break;
-                        }
-                    }
-                    
-                    for (let prop of possibleNameProps) {
-                        if (image[prop]) {
-                            fileName = image[prop];
-                            console.log(`Found name in ${prop}:`, fileName);
-                            break;
-                        }
-                    }
-                    
-                    // まだURLが見つからない場合、オブジェクト全体をチェック
-                    if (!imageUrl) {
-                        console.log(`No URL found, full object:`, image);
-                        // 最後の手段：すべてのプロパティを確認
-                        for (let key in image) {
-                            if (typeof image[key] === 'string' && 
-                                (image[key].includes('http') || image[key].includes('/'))) {
-                                imageUrl = image[key];
-                                console.log(`Found potential URL in ${key}:`, imageUrl);
-                                break;
+                    // ASU API形式: https://sysupgrade.openwrt.org/store/[request_hash]/[filename]
+                    if (image.name && requestHash) {
+                        imageUrl = `https://sysupgrade.openwrt.org/store/${requestHash}/${image.name}`;
+                        fileName = image.name;
+                        
+                        // ファイルタイプに基づいて表示名を改善
+                        let displayName = fileName;
+                        if (image.type) {
+                            if (image.type.includes('sysupgrade')) {
+                                displayName = `🔄 Sysupgrade (${image.type})`;
+                            } else if (image.type.includes('factory')) {
+                                displayName = `🏭 Factory (${image.type})`;
+                            } else if (image.type.includes('sdcard')) {
+                                displayName = `💾 SD Card (${image.type})`;
+                            } else {
+                                displayName = `📦 ${image.type}`;
                             }
-                        }
-                    }
-                    
-                    if (imageUrl) {
-                        // URLが相対パスの場合は完全URLに変換
-                        if (!imageUrl.startsWith('http')) {
-                            imageUrl = `https://sysupgrade.openwrt.org${imageUrl}`;
                         }
                         
                         link.href = imageUrl;
                         link.className = 'download-link';
-                        link.textContent = fileName || `Download ${index + 1}`;
+                        link.textContent = displayName;
                         link.target = '_blank';
-                        link.download = fileName || '';
+                        link.download = fileName;
+                        link.title = fileName; // ツールチップで完全なファイル名を表示
                         
-                        console.log('Created download link:', imageUrl, fileName);
+                        console.log('Created ASU download link:', imageUrl, displayName);
                         container.appendChild(link);
                         container.appendChild(document.createElement('br'));
-                    } else {
-                        console.warn('No URL found for image:', image);
                         
-                        // URLが見つからない場合も画面に情報表示
+                    } else {
+                        console.warn('Missing name or requestHash for image:', image);
+                        
+                        // エラー情報を表示
                         const errorDiv = document.createElement('div');
                         errorDiv.style.color = 'red';
                         errorDiv.style.margin = '5px 0';
-                        errorDiv.innerHTML = `❌ Image ${index}: No URL found<br><small>${JSON.stringify(image)}</small>`;
+                        errorDiv.innerHTML = `❌ Image ${index}: Missing data (name: ${!!image.name}, hash: ${!!requestHash})`;
                         container.appendChild(errorDiv);
                     }
                 });
+                
+                // 成功時にもデバッグ情報を表示（小さく）
+                const debugDiv = document.createElement('div');
+                debugDiv.style.background = '#f9f9f9';
+                debugDiv.style.padding = '5px';
+                debugDiv.style.marginTop = '10px';
+                debugDiv.style.fontSize = '11px';
+                debugDiv.style.color = '#666';
+                debugDiv.innerHTML = `<strong>Debug:</strong> Found ${images.length} images, Request Hash: ${requestHash?.substring(0, 16)}...`;
+                container.appendChild(debugDiv);
+                
             } else {
                 container.innerHTML = '<h4>Download</h4><p>No images available</p>';
                 console.warn('No images provided to showDownloadLinks');
