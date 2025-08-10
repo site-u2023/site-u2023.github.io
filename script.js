@@ -75,15 +75,12 @@ const translations = {
     ja: {
         address: 'アドレス',
         browser: 'ブラウザ',
-        terminal: 'ターミナル',
-        initialSetup: '初期設定',
+        terminal: 'ターミナル (スクリプト)',
+        initialSetup: '初期設定 (ターミナル)',
         apply: '適用',
         open: '開く',
         qrCodeDisplay: 'QRコード',
         qrCodeArea: 'QRコード表示エリア',
-        explanation: '説明',
-        sshHandler: 'プロトコルハンドラー登録 (初回のみ)',
-        downloadHandlerButton: 'ダウンロード（ダウンロードしたsshcmd.regをダブルクリックしてインストールして下さい）',
         openwrtOfficial: 'OpenWrt (公式)',
         firmwareDownload: 'デバイス用のOpenWrtファームウェアをダウンロード',
         githubRepo: 'GitHubリポジトリ',
@@ -100,8 +97,9 @@ const translations = {
         langEn: 'English',
         langJa: '日本語',
         // Terminal Explanations
-        aiosExplanation: 'OpenWrt初期設定用のメニュー形式設定スクリプトです。',
-        sshExplanation: 'OpenWrtデバイスに直接SSHログインします。',
+        aiosExplanation: 'メニュー形式スクリプト',
+        aioslightExplanation: '対話形式簡易版スクリプト',
+        sshExplanation: 'SSHログイン',
         // iPhone
         termius: 'Termius (SSH)',
         appStore: 'App Storeで開く',
@@ -110,10 +108,9 @@ const translations = {
         juiceSSH: 'JuiceSSH',
         googlePlay: 'Google Playで開く',
         // Setup Explanations
-        setupExplanation: '説明',
-        windowsSetupExplanation: 'プロトコルハンドラーのレジストリファイルをダウンロードし、ダブルクリックしてインストールしてください。',
-        iphoneSetupExplanation: 'App StoreからTermiusアプリをダウンロードし、設定したIPアドレスでSSH接続してください。',
-        androidSetupExplanation: 'Google PlayからJuiceSSHアプリをダウンロードし、設定したIPアドレスでSSH接続してください。',
+        windowsSetupExplanation: 'プロトコルハンドラー登録 (レジストリファイルをダウンロードし、ダブルクリックしてインストールしてください)',
+        iphoneSetupExplanation: 'Termiusインストール (App StoreからTermiusをダウンロードし、インストールしてください)',
+        androidSetupExplanation: 'JuiceSSHインストール (Google PlayからJuiceSSHをダウンロードし、インストールしてください)',
         // Generic Dialog Messages
         promptNewAddress: '新しいIPアドレスまたはホスト名を入力してください:',
         alertMinimumAddress: '最低1つのアドレスは必要です。',
@@ -132,8 +129,6 @@ const translations = {
         qrCodeDisplay: 'QR Code',
         qrCodeArea: 'QR Code Display Area',
         explanation: 'Explanation',
-        sshHandler: 'Protocol Handler Registration (First time only)',
-        downloadHandlerButton: 'Download (Double-click the downloaded sshcmd.reg to install it)',
         openwrtOfficial: 'OpenWrt (Official)',
         firmwareDownload: 'Download OpenWrt firmware for your device',
         githubRepo: 'GitHub Repository',
@@ -151,6 +146,7 @@ const translations = {
         langJa: '日本語',
         // Terminal Explanations
         aiosExplanation: 'Menu-based configuration script for OpenWrt initial setup.',
+        aioslightExplanation: '対話形式簡易版スクリプト',
         sshExplanation: 'Direct SSH login to OpenWrt device.',
         // iPhone
         termius: 'Termius (SSH)',
@@ -837,7 +833,7 @@ function updateTerminalExplanation() {
             explanationKey = 'aiosExplanation';
             break;
         case 'aios_light':
-            explanationKey = 'aiosExplanation'; // Easy Setupも同様の説明
+            explanationKey = 'aioslightExplanation';
             break;
         case 'ssh':
             explanationKey = 'sshExplanation';
