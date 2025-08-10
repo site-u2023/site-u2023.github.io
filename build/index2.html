@@ -1,3 +1,48 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>OpenWrt ASU Builder</title>
+<style>
+  body { font-family: sans-serif; }
+  select, textarea, button {
+    width: 100%;
+    margin: 5px 0;
+  }
+  textarea {
+    height: 150px;
+  }
+  .section {
+    border: 1px solid #ccc;
+    padding: 10px;
+    margin-bottom: 15px;
+  }
+</style>
+</head>
+<body>
+
+<h2>OpenWrt ASU カスタムビルダー</h2>
+
+<div class="section">
+  <label for="target-select">Target（SoC/Platform）</label>
+  <select id="target-select"></select>
+</div>
+
+<div class="section">
+  <label for="profile-select">Profile（Device）</label>
+  <select id="profile-select"></select>
+</div>
+
+<div class="section">
+  <h4>Installed Packages</h4>
+  <textarea id="asu-packages" autocomplete="off" spellcheck="false" autocapitalize="off"></textarea>
+</div>
+
+<div class="section">
+  <button id="build-btn">REQUEST BUILD</button>
+</div>
+
+<script>
 async function loadProfiles() {
   const targetSelect = document.getElementById('target-select');
   targetSelect.innerHTML = '';
@@ -16,6 +61,12 @@ async function loadProfiles() {
     targetSelect.addEventListener('change', () => {
       loadProfilesForTarget(targetSelect.value);
     });
+
+    // 初回ロード時に最初のターゲットを選択
+    if (targetSelect.options.length > 0) {
+      targetSelect.selectedIndex = 0;
+      loadProfilesForTarget(targetSelect.value);
+    }
 
   } catch (err) {
     console.error('targets.json の取得に失敗しました:', err);
@@ -60,10 +111,11 @@ async function buildAsuRequest() {
   const target = document.getElementById('target-select').value;
   const profile = document.getElementById('profile-select').value;
 
+  // パッケージを配列化（422回避）
   const pkgList = document.getElementById('asu-packages').value
     .trim()
-    .split(/\s+/)  // 空白や改行で分割
-    .filter(Boolean); // 空要素除去
+    .split(/\s+/)
+    .filter(Boolean);
 
   const body = {
     target: target,
@@ -85,10 +137,19 @@ async function buildAsuRequest() {
 
     const data = await res.json();
     console.log('ビルド成功:', data);
+    alert('ビルド要求が送信されました');
 
   } catch (err) {
     console.error('ビルドリクエストエラー:', err);
+    alert('ビルドエラー: ' + err.message);
   }
 }
 
-document.addEventListener('DOMContentLoaded', loadProfiles);
+document.addEventListener('DOMContentLoaded', () => {
+  loadProfiles();
+  document.getElementById('build-btn').addEventListener('click', buildAsuRequest);
+});
+</script>
+
+</body>
+</html>
