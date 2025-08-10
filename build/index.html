@@ -3,457 +3,242 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OpenWrt Enhanced Firmware Selector</title>
+    <title>OpenWrt カスタムファームウェアビルダー</title>
     <style>
+        :root {
+            --primary-color: #1e90ff;
+            --secondary-color: #f0f8ff;
+            --border-color: #ddd;
+            --text-color: #333;
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
         }
-        
-        // グローバル関数として定義（ホイスティング対応）
-        function buildFirmwareDirectly() {
-            console.log('=== buildFirmwareDirectly() called ===');
-            console.log('Function start time:', new Date().toISOString());
-            console.log('current_device object:', JSON.stringify(current_device, null, 2));
-            
-            // デバイス選択チェック
-            if (!current_device || !current_device.id) {
-                console.log('Device check failed - no device selected');
-                alert('まずデバイスを選択してください\n\nデバイス状態: ' + JSON.stringify(current_device));
-                return;
-            }
-            console.log('✅ Device check passed');
-            
-            // スクリプト確認
-            const scriptElement = document.getElementById('scriptPreview');
-            console.log('Script element:', scriptElement);
-            
-            const script = scriptElement ? scriptElement.textContent : '';
-            console.log('Script content length:', script.length);
-            console.log('Script preview:', script.substring(0, 200) + '...');
-            
-            if (!script || script.includes('Error:')) {
-                console.log('Script check failed');
-                alert('まずスクリプトを生成してください\n\nスクリプト状態: ' + (script ? 'エラー含む' : '未生成'));
-                return;
-            }
-            console.log('✅ Script check passed');
-            
-            // DOM要素取得
-            const buildBtn = document.getElementById('direct-build-btn');
-            const buildStatus = document.getElementById('build-status');
-            const buildMessage = document.getElementById('build-message');
-            const progressBar = document.getElementById('build-progress-bar');
-            
-            console.log('DOM elements:', {
-                buildBtn: !!buildBtn,
-                buildStatus: !!buildStatus,
-                buildMessage: !!buildMessage,
-                progressBar: !!progressBar
-            });
-            
-            if (!buildBtn || !buildStatus || !buildMessage || !progressBar) {
-                console.error('Some DOM elements are missing');
-                alert('画面要素が見つかりません。ページを再読み込みしてください。');
-                return;
-            }
-            
-            console.log('✅ DOM elements check passed');
-            
-            // UI更新
-            buildBtn.disabled = true;
-            buildStatus.style.display = 'block';
-            buildStatus.style.backgroundColor = '#d1ecf1';
-            buildMessage.textContent = 'ビルドを開始しています...';
-            progressBar.value = 10;
-            
-            console.log('✅ UI updated, starting build process...');
-            
-            // 非同期処理を開始
-            performBuild(script, buildBtn, buildStatus, buildMessage, progressBar);
-        }
-        
-        // ビルド実行の非同期関数
-        async function performBuild(script, buildBtn, buildStatus, buildMessage, progressBar) {
-            try {
-                // 選択されたパッケージを取得
-                const customPackages = document.getElementById('custom_packages').value;
-                const packages = customPackages ? customPackages.split(/\s+/).filter(p => p.trim()) : [];
-                
-                // デバイス情報をもう一度確認
-                if (!current_device.target) {
-                    throw new Error('デバイスのターゲット情報が不足しています');
-                }
-                
-                const buildRequest = {
-                    profile: current_device.id,
-                    target: current_device.target,
-                    version: current_device.version || '24.10.2',
-                    packages: packages,
-                    defaults: script,
-                    diff_packages: true,
-                    client: "enhanced-firmware-selector"
-                };
-                
-                console.log('Build request:', buildRequest);
-                
-                buildMessage.textContent = 'プロキシサーバー経由でリクエスト送信中...';
-                progressBar.value = 20;
-                
-                // プロキシWorker経由でASU APIを呼び出し
-                const response = await fetch(`${PROXY_URL}/api/build`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(buildRequest)
-                });
-                
-                console.log('Response status:', response.status);
-                progressBar.value = 40;
-                
-                if (response.status === 200) {
-                    // ビルド完了
-                    const result = await response.json();
-                    console.log('Build result:', result);
-                    buildStatus.style.backgroundColor = '#d4edda';
-                    buildMessage.innerHTML = `
-                        ✅ ビルド完了！<br>
-                        <a href="${PROXY_URL}/store/${result.bin_dir}" target="_blank" 
-                           style="color: #155724; font-weight: bold;">📥 ファームウェアをダウンロード</a>
-                    `;
-                    progressBar.value = 100;
-                    
-                } else if (response.status === 202) {
-                    // ビルド進行中
-                    const result = await response.json();
-                    console.log('Build queued:', result);
-                    buildMessage.textContent = 'ビルド中です。しばらくお待ちください...';
-                    progressBar.value = 60;
-                    
-                    // ポーリングでビルド状況をチェック
-                    if (result.request_hash) {
-                        checkBuildStatus(result.request_hash);
-                    } else {
-                        throw new Error('ビルドリクエストハッシュが取得できませんでした');
-                    }
-                    
-                } else {
-                    // エラー
-                    const errorText = await response.text();
-                    console.error('Build error response:', errorText);
-                    let errorMessage = 'ビルドに失敗しました';
-                    
-                    try {
-                        const errorJson = JSON.parse(errorText);
-                        errorMessage = errorJson.detail || errorJson.message || errorMessage;
-                    } catch (e) {
-                        errorMessage = `HTTP ${response.status}: ${errorText}`;
-                    }
-                    
-                    throw new Error(errorMessage);
-                }
-                
-            } catch (error) {
-                console.error('Build error:', error);
-                buildStatus.style.backgroundColor = '#f8d7da';
-                buildMessage.innerHTML = `❌ エラー: ${error.message}<br><small>プロキシWorkerがデプロイされているか確認してください</small>`;
-                progressBar.value = 0;
-            } finally {
-                buildBtn.disabled = false;
-            }
-        }
-        
-        // ビルド状況をポーリングでチェック（プロキシ経由）
-        async function checkBuildStatus(requestHash) {
-            const buildMessage = document.getElementById('build-message');
-            const progressBar = document.getElementById('build-progress-bar');
-            const buildStatus = document.getElementById('build-status');
-            
-            try {
-                console.log('Checking build status for hash:', requestHash);
-                const response = await fetch(`${PROXY_URL}/api/build/${requestHash}`);
-                
-                if (response.status === 200) {
-                    // ビルド完了
-                    const result = await response.json();
-                    console.log('Build completed:', result);
-                    buildStatus.style.backgroundColor = '#d4edda';
-                    buildMessage.innerHTML = `
-                        ✅ ビルド完了！<br>
-                        <a href="${PROXY_URL}/store/${result.bin_dir}" target="_blank" 
-                           style="color: #155724; font-weight: bold;">📥 ファームウェアをダウンロード</a>
-                    `;
-                    progressBar.value = 100;
-                    
-                } else if (response.status === 202) {
-                    // まだビルド中
-                    const result = await response.json();
-                    console.log('Build in progress:', result);
-                    const status = result.imagebuilder_status || result.queue_position || '処理中';
-                    buildMessage.textContent = `ビルド中: ${status}...`;
-                    progressBar.value = Math.min(90, progressBar.value + 5);
-                    
-                    // 5秒後に再チェック
-                    setTimeout(() => checkBuildStatus(requestHash), 5000);
-                    
-                } else {
-                    // エラー
-                    const errorText = await response.text();
-                    console.error('Build status error:', errorText);
-                    throw new Error(`ステータス確認エラー: ${response.status}`);
-                }
-                
-            } catch (error) {
-                console.error('Build status check error:', error);
-                buildStatus.style.backgroundColor = '#f8d7da';
-                buildMessage.textContent = `❌ エラー: ${error.message}`;
-                progressBar.value = 0;
-            }
-        }
-        
+
         .container {
-            max-width: 1200px;
+            max-width: 800px;
             margin: 0 auto;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            overflow: hidden;
-        }
-        
-        .header {
-            background: #0056b3;
-            color: white;
             padding: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
         }
-        
-        .header h1 {
-            margin: 0;
-            font-size: 1.8em;
-        }
-        
-        .language-select {
-            padding: 8px;
-            border: none;
-            border-radius: 4px;
-            background: rgba(255,255,255,0.2);
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
             color: white;
         }
-        
-        .content {
-            padding: 30px;
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
         }
-        
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            padding: 30px;
+            margin-bottom: 20px;
+        }
+
         .form-section {
             margin-bottom: 30px;
-            padding: 20px;
-            border: 1px solid #dee2e6;
-            border-radius: 8px;
-            background: #f8f9fa;
         }
-        
+
         .form-section h3 {
-            margin-top: 0;
-            color: #495057;
-            border-bottom: 2px solid #007bff;
-            padding-bottom: 10px;
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--secondary-color);
+            font-size: 1.3em;
         }
-        
+
         .form-group {
             margin-bottom: 20px;
         }
-        
+
         .form-group label {
             display: block;
             margin-bottom: 5px;
             font-weight: 600;
-            color: #495057;
+            color: var(--text-color);
         }
-        
+
         .form-control {
             width: 100%;
-            padding: 10px;
-            border: 1px solid #ced4da;
-            border-radius: 4px;
+            padding: 12px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
             font-size: 14px;
-            box-sizing: border-box;
+            transition: all 0.3s ease;
         }
-        
+
         .form-control:focus {
             outline: none;
-            border-color: #007bff;
-            box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(30, 144, 255, 0.1);
         }
-        
-        textarea.form-control {
-            min-height: 120px;
-            resize: vertical;
-            font-family: 'Courier New', monospace;
-        }
-        
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-        
-        .form-row-3 {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 20px;
-        }
-        
+
         .radio-group {
             display: flex;
-            gap: 20px;
             flex-wrap: wrap;
-            margin-top: 5px;
+            gap: 15px;
+            margin-top: 10px;
         }
-        
+
         .radio-item {
             display: flex;
             align-items: center;
-            gap: 8px;
-        }
-        
-        .checkbox-group {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 10px;
-            margin-top: 10px;
-        }
-        
-        .checkbox-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .wifi-interface {
-            border: 2px solid #ecf0f1;
+            padding: 10px 15px;
+            border: 2px solid var(--border-color);
             border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 15px;
-            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 120px;
         }
-        
-        .wifi-interface h4 {
-            margin: 0 0 15px 0;
-            color: #2c3e50;
-            font-size: 1.1em;
+
+        .radio-item:hover {
+            border-color: var(--primary-color);
+            background-color: var(--secondary-color);
         }
-        
-        .device-features {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px;
+
+        .radio-item input[type="radio"] {
+            margin-right: 8px;
+        }
+
+        .radio-item input[type="radio"]:checked + span {
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        .conditional-fields {
             margin-top: 15px;
+            padding: 15px;
+            background-color: var(--secondary-color);
+            border-radius: 8px;
+            border-left: 4px solid var(--primary-color);
         }
-        
-        .feature-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px;
-            background: white;
-            border-radius: 4px;
-            border: 1px solid #dee2e6;
+
+        .password-requirements {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
         }
-        
-        .build-btn {
-            background: #28a745;
+
+        .btn {
+            background: linear-gradient(135deg, var(--primary-color), #4169e1);
             color: white;
             border: none;
             padding: 15px 30px;
-            font-size: 16px;
-            border-radius: 6px;
+            border-radius: 8px;
             cursor: pointer;
-            transition: background 0.3s;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
             width: 100%;
-        }
-        
-        .build-btn:hover {
-            background: #218838;
-        }
-        
-        .build-btn-secondary {
-            background: #007bff;
-        }
-        
-        .build-btn-secondary:hover {
-            background: #0056b3;
-        }
-        
-        .build-section {
-            text-align: center;
-            padding: 20px;
-        }
-        
-        .button-group {
-            display: flex;
-            gap: 10px;
             margin-top: 20px;
         }
-        
-        .preview {
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(30, 144, 255, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .output-section {
+            margin-top: 30px;
+        }
+
+        .script-output {
             background: #2d3748;
             color: #e2e8f0;
-            padding: 15px;
-            border-radius: 6px;
+            padding: 20px;
+            border-radius: 8px;
             font-family: 'Courier New', monospace;
-            font-size: 12px;
             white-space: pre-wrap;
             max-height: 400px;
             overflow-y: auto;
-            margin-top: 15px;
+            border: 1px solid #4a5568;
         }
-        
-        .autocomplete {
-            position: relative;
-        }
-        
-        .autocomplete-items {
-            position: absolute;
-            border: 1px solid #d4d4d4;
-            border-bottom: none;
-            border-top: none;
-            z-index: 99;
-            top: 100%;
-            left: 0;
-            right: 0;
-            background: white;
-            max-height: 200px;
-            overflow-y: auto;
-        }
-        
-        .autocomplete-items div {
-            padding: 10px;
-            cursor: pointer;
-            border-bottom: 1px solid #d4d4d4;
-        }
-        
-        .autocomplete-items div:hover,
-        .autocomplete-active {
-            background-color: #007bff;
+
+        .copy-btn {
+            background: var(--success-color);
             color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+            font-size: 14px;
         }
-        
+
+        .copy-btn:hover {
+            background: #218838;
+        }
+
+        .instructions {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .instructions h4 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+
+        .instructions ol {
+            margin-left: 20px;
+        }
+
+        .instructions li {
+            margin-bottom: 8px;
+            color: #856404;
+        }
+
+        .hidden {
+            display: none;
+        }
+
         @media (max-width: 768px) {
-            .form-row, .form-row-3 {
-                grid-template-columns: 1fr;
+            .container {
+                padding: 10px;
+            }
+            
+            .card {
+                padding: 20px;
             }
             
             .radio-group {
                 flex-direction: column;
             }
             
-            .button-group {
-                flex-direction: column;
+            .radio-item {
+                min-width: auto;
             }
         }
     </style>
@@ -461,1112 +246,288 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🚀 OpenWrt Enhanced Firmware Selector</h1>
-            <select class="language-select" id="language-select">
-                <option value="ja">日本語</option>
-                <option value="en">English</option>
-            </select>
+            <h1>🚀 OpenWrt ファームウェアビルダー</h1>
+            <p>カスタム設定を組み込んだOpenWrtファームウェアを生成</p>
         </div>
-        
-        <div class="content">
-            <!-- 公式ビルダー統合 -->
-            <div class="form-section">
-                <h3>📡 デバイス選択</h3>
-                
-                <!-- 公式と同じデバイス検索UI -->
-                <div class="form-row">
+
+        <div class="card">
+            <form id="configForm">
+                <!-- 基本設定 -->
+                <div class="form-section">
+                    <h3>🌐 基本設定</h3>
+                    
                     <div class="form-group">
-                        <label for="models">デバイス名検索</label>
-                        <div id="models-autocomplete" class="autocomplete" style="position: relative;">
-                            <input id="models" type="text" class="form-control" 
-                                   placeholder="デバイス名・型番を入力 (例: BPI-R4, Archer C7)" 
-                                   spellcheck="false" autocapitalize="off" autofocus>
-                        </div>
+                        <label for="language">言語設定</label>
+                        <select id="language" class="form-control">
+                            <option value="en">English</option>
+                            <option value="ja" selected>日本語</option>
+                        </select>
                     </div>
+
                     <div class="form-group">
-                        <label for="versions">OpenWrtバージョン</label>
-                        <select id="versions" class="form-control"></select>
+                        <label for="deviceName">デバイス名</label>
+                        <input type="text" id="deviceName" class="form-control" placeholder="例: OpenWrt-Router">
                     </div>
                 </div>
-                
-                <!-- デバイス情報表示 -->
-                <div id="device-info" style="display: none; margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 4px;">
-                    <h4>選択されたデバイス</h4>
-                    <div style="display: grid; grid-template-columns: 120px 1fr; gap: 10px; font-size: 14px;">
-                        <div><strong>モデル:</strong></div>
-                        <div id="device-model">-</div>
-                        <div><strong>ターゲット:</strong></div>
-                        <div id="device-target">-</div>
-                        <div><strong>バージョン:</strong></div>
-                        <div id="device-version">-</div>
-                    </div>
-                </div>
-            </div>
 
-            <!-- デバイス機能選択 -->
-            <div class="form-section">
-                <h3>🔧 デバイス機能</h3>
-                <div class="device-features">
-                    <div class="feature-item">
-                        <input type="checkbox" id="has_usb" checked>
-                        <label for="has_usb">USB対応</label>
-                    </div>
-                    <div class="feature-item">
-                        <input type="checkbox" id="has_sata">
-                        <label for="has_sata">SATA対応</label>
-                    </div>
-                    <div class="feature-item">
-                        <input type="checkbox" id="has_pcie">
-                        <label for="has_pcie">PCIe対応</label>
-                    </div>
-                    <div class="feature-item">
-                        <input type="checkbox" id="has_5g" checked>
-                        <label for="has_5g">5G Wi-Fi対応</label>
-                    </div>
-                    <div class="feature-item">
-                        <input type="checkbox" id="has_6g">
-                        <label for="has_6g">6G Wi-Fi対応</label>
-                    </div>
-                    <div class="feature-item">
-                        <input type="checkbox" id="has_mesh">
-                        <label for="has_mesh">Mesh対応</label>
-                    </div>
-                </div>
-            </div>
-
-            <!-- インターネット接続設定 -->
-            <div class="form-section">
-                <h3>🌐 インターネット接続設定</h3>
-                <div class="form-group">
-                    <label>接続方式</label>
-                    <div class="radio-group">
-                        <div class="radio-item">
-                            <input type="radio" id="isp_mape" name="isp_type" value="mape" checked>
-                            <label for="isp_mape">MAP-E自動設定</label>
-                        </div>
-                        <div class="radio-item">
-                            <input type="radio" id="isp_pppoe" name="isp_type" value="pppoe">
-                            <label for="isp_pppoe">PPPoE接続</label>
-                        </div>
-                        <div class="radio-item">
-                            <input type="radio" id="isp_none" name="isp_type" value="none">
-                            <label for="isp_none">設定しない</label>
-                        </div>
-                    </div>
-                </div>
-                
-                <div id="pppoe_settings" style="display: none;">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="pppoe_username">PPPoE ユーザー名</label>
-                            <input type="text" id="pppoe_username" class="form-control" placeholder="ISPのユーザー名">
-                        </div>
-                        <div class="form-group">
-                            <label for="pppoe_password">PPPoE パスワード</label>
-                            <input type="password" id="pppoe_password" class="form-control" placeholder="ISPのパスワード">
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- デバイス基本設定 -->
-            <div class="form-section">
-                <h3>⚙️ デバイス基本設定</h3>
-                <div class="form-row">
+                <!-- セキュリティ設定 -->
+                <div class="form-section">
+                    <h3>🔐 セキュリティ設定</h3>
+                    
                     <div class="form-group">
-                        <label for="root_password">管理者パスワード</label>
-                        <input type="password" id="root_password" class="form-control" placeholder="ルーター管理用パスワード">
+                        <label for="rootPassword">Rootパスワード</label>
+                        <input type="password" id="rootPassword" class="form-control" placeholder="8文字以上">
+                        <div class="password-requirements">
+                            ※ 8文字以上で設定してください。空欄の場合はパスワード未設定となります。
+                        </div>
                     </div>
+
                     <div class="form-group">
-                        <label for="lan_ip">LAN IPアドレス</label>
-                        <input type="text" id="lan_ip" class="form-control" value="192.168.1.1">
-                    </div>
-                </div>
-            </div>
-
-            <!-- Wi-Fi設定 -->
-            <div class="form-section">
-                <h3>📶 Wi-Fi設定</h3>
-                <div class="form-group">
-                    <label>Wi-Fi構成方式</label>
-                    <div class="radio-group">
-                        <div class="radio-item">
-                            <input type="radio" id="wifi_standard" name="wifi_mode" value="standard" checked>
-                            <label for="wifi_standard">標準設定</label>
-                        </div>
-                        <div class="radio-item">
-                            <input type="radio" id="wifi_usteer" name="wifi_mode" value="usteer">
-                            <label for="wifi_usteer">usteer（バンドステアリング）</label>
-                        </div>
+                        <label for="confirmPassword">パスワード確認</label>
+                        <input type="password" id="confirmPassword" class="form-control" placeholder="パスワードを再入力">
                     </div>
                 </div>
 
-                <!-- Wi-Fi Interface 1 -->
-                <div class="wifi-interface">
-                    <h4>📡 Wi-Fi Interface 1</h4>
-                    <div class="form-row-3">
-                        <div class="form-group">
-                            <label for="wifi1_ssid">SSID</label>
-                            <input type="text" id="wifi1_ssid" class="form-control" placeholder="MyWiFi">
-                        </div>
-                        <div class="form-group">
-                            <label for="wifi1_password">パスワード</label>
-                            <input type="password" id="wifi1_password" class="form-control" placeholder="8文字以上">
-                        </div>
-                        <div class="form-group">
-                            <label for="wifi1_band">帯域</label>
-                            <select id="wifi1_band" class="form-control">
-                                <option value="">使用しない</option>
-                                <option value="2.4G">2.4GHz</option>
-                                <option value="5G">5GHz</option>
-                                <option value="6G">6GHz</option>
-                            </select>
-                        </div>
+                <!-- Wi-Fi設定 -->
+                <div class="form-section">
+                    <h3>📶 Wi-Fi設定</h3>
+                    
+                    <div class="form-group">
+                        <label for="wifiSSID">Wi-Fi SSID</label>
+                        <input type="text" id="wifiSSID" class="form-control" placeholder="例: MyOpenWrt">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="wifiPassword">Wi-Fi パスワード</label>
+                        <input type="password" id="wifiPassword" class="form-control" placeholder="8文字以上">
                     </div>
                 </div>
 
-                <!-- Wi-Fi Interface 2 -->
-                <div class="wifi-interface">
-                    <h4>📡 Wi-Fi Interface 2</h4>
-                    <div class="form-row-3">
+                <!-- 接続設定 -->
+                <div class="form-section">
+                    <h3>🌍 インターネット接続設定</h3>
+                    
+                    <div class="form-group">
+                        <label>接続タイプ</label>
+                        <div class="radio-group">
+                            <div class="radio-item">
+                                <input type="radio" id="connAuto" name="connectionType" value="auto" checked>
+                                <span>自動検出</span>
+                            </div>
+                            <div class="radio-item">
+                                <input type="radio" id="connDHCP" name="connectionType" value="dhcp">
+                                <span>DHCP</span>
+                            </div>
+                            <div class="radio-item">
+                                <input type="radio" id="connPPPoE" name="connectionType" value="pppoe">
+                                <span>PPPoE</span>
+                            </div>
+                            <div class="radio-item">
+                                <input type="radio" id="connDSLite" name="connectionType" value="dslite">
+                                <span>DS-Lite</span>
+                            </div>
+                            <div class="radio-item">
+                                <input type="radio" id="connMAPE" name="connectionType" value="mape">
+                                <span>MAP-E</span>
+                            </div>
+                            <div class="radio-item">
+                                <input type="radio" id="connNone" name="connectionType" value="none">
+                                <span>設定なし</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- PPPoE設定 -->
+                    <div id="pppoeFields" class="conditional-fields hidden">
                         <div class="form-group">
-                            <label for="wifi2_ssid">SSID</label>
-                            <input type="text" id="wifi2_ssid" class="form-control" placeholder="MyWiFi_5G">
+                            <label for="pppoeUsername">PPPoE ユーザー名</label>
+                            <input type="text" id="pppoeUsername" class="form-control" placeholder="プロバイダから提供されたユーザー名">
                         </div>
                         <div class="form-group">
-                            <label for="wifi2_password">パスワード</label>
-                            <input type="password" id="wifi2_password" class="form-control" placeholder="8文字以上">
-                        </div>
-                        <div class="form-group">
-                            <label for="wifi2_band">帯域</label>
-                            <select id="wifi2_band" class="form-control">
-                                <option value="">使用しない</option>
-                                <option value="2.4G">2.4GHz</option>
-                                <option value="5G" selected>5GHz</option>
-                                <option value="6G">6GHz</option>
-                            </select>
+                            <label for="pppoePassword">PPPoE パスワード</label>
+                            <input type="password" id="pppoePassword" class="form-control" placeholder="プロバイダから提供されたパスワード">
                         </div>
                     </div>
                 </div>
 
-                <!-- Wi-Fi Interface 3 -->
-                <div class="wifi-interface">
-                    <h4>📡 Wi-Fi Interface 3</h4>
-                    <div class="form-row-3">
-                        <div class="form-group">
-                            <label for="wifi3_ssid">SSID</label>
-                            <input type="text" id="wifi3_ssid" class="form-control" placeholder="MyWiFi_6G">
-                        </div>
-                        <div class="form-group">
-                            <label for="wifi3_password">パスワード</label>
-                            <input type="password" id="wifi3_password" class="form-control" placeholder="8文字以上">
-                        </div>
-                        <div class="form-group">
-                            <label for="wifi3_band">帯域</label>
-                            <select id="wifi3_band" class="form-control">
-                                <option value="">使用しない</option>
-                                <option value="2.4G">2.4GHz</option>
-                                <option value="5G">5GHz</option>
-                                <option value="6G">6GHz</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                <button type="submit" class="btn">📋 スクリプトを生成</button>
+            </form>
+        </div>
 
-            <!-- パッケージ設定 -->
-            <div class="form-section">
-                <h3>📦 パッケージ設定</h3>
-                <div class="checkbox-group">
-                    <div class="checkbox-item">
-                        <input type="checkbox" id="pkg_basic" checked>
-                        <label for="pkg_basic">基本セット</label>
-                    </div>
-                    <div class="checkbox-item">
-                        <input type="checkbox" id="pkg_mape">
-                        <label for="pkg_mape">MAP-E対応</label>
-                    </div>
-                    <div class="checkbox-item">
-                        <input type="checkbox" id="pkg_vpn">
-                        <label for="pkg_vpn">VPN</label>
-                    </div>
-                    <div class="checkbox-item">
-                        <input type="checkbox" id="pkg_usb">
-                        <label for="pkg_usb">USB対応</label>
-                    </div>
-                    <div class="checkbox-item">
-                        <input type="checkbox" id="pkg_monitoring">
-                        <label for="pkg_monitoring">監視・統計</label>
-                    </div>
-                    <div class="checkbox-item">
-                        <input type="checkbox" id="pkg_docker">
-                        <label for="pkg_docker">Docker</label>
-                    </div>
-                </div>
-                
-                <div class="form-group">
-                    <label for="custom_packages">カスタムパッケージ</label>
-                    <textarea id="custom_packages" class="form-control" placeholder="パッケージ名を入力（スペース区切り）"></textarea>
-                </div>
-            </div>
-
-            <!-- スクリプト生成・プレビュー -->
-            <div class="form-section">
-                <h3>📝 uci-defaultsスクリプト</h3>
-                <div class="button-group">
-                    <button class="build-btn build-btn-secondary" id="generate-btn">スクリプト生成</button>
-                    <button class="build-btn build-btn-secondary" id="copy-btn">クリップボードにコピー</button>
-                </div>
-                
-                <div class="preview" id="scriptPreview" style="display: none;">
-                    <!-- 生成されたスクリプトがここに表示されます -->
-                </div>
-            </div>
-
-            <div class="build-section">
-                <p>デバイスを選択してスクリプトを生成後、ファームウェアを直接ビルドできます。</p>
-                
-                <div class="button-group">
-                    <button class="build-btn" id="test-btn">
-                        🧪 テスト（クリック確認）
-                    </button>
-                    <button class="build-btn" id="proxy-test-btn" style="background: #ffc107; color: #212529;">
-                        🔍 プロキシテスト
-                    </button>
-                    <button class="build-btn" id="debug-info-btn" style="background: #6c757d;">
-                        🔧 デバッグ情報
-                    </button>
-                    <button class="build-btn" id="direct-build-btn">
-                        🚀 ファームウェアを直接ビルド
-                    </button>
-                </div>
-                
-                <div id="build-status" style="display: none; margin-top: 15px; padding: 15px; border-radius: 4px;">
-                    <div id="build-message"></div>
-                    <div id="build-progress" style="margin-top: 10px;">
-                        <progress id="build-progress-bar" style="width: 100%;" max="100" value="0"></progress>
-                    </div>
-                </div>
-                
-                <div style="margin-top: 15px; padding: 15px; background: #d4edda; border-radius: 4px; font-size: 14px;">
-                    <strong>✅ 設定完了:</strong><br>
-                    プロキシWorkerが <code>openwrt-builder-proxy.site-u.workers.dev</code> にデプロイ済みです。<br>
-                    「🔍 プロキシテスト」でテスト後、「🚀 ファームウェアを直接ビルド」をお試しください。
-                </div>
+        <!-- 生成されたスクリプト表示 -->
+        <div id="outputSection" class="card output-section hidden">
+            <h3>🎯 生成されたスクリプト</h3>
+            <div class="script-output" id="scriptOutput"></div>
+            <button type="button" class="copy-btn" onclick="copyScript()">📋 スクリプトをコピー</button>
+            
+            <div class="instructions">
+                <h4>📝 使用方法</h4>
+                <ol>
+                    <li><a href="https://firmware-selector.openwrt.org/" target="_blank">OpenWrt Firmware Selector</a> にアクセス</li>
+                    <li>お使いのデバイスを検索して選択</li>
+                    <li>「CUSTOMIZE INSTALLED PACKAGES AND/OR FIRST BOOT SCRIPT」をクリック</li>
+                    <li>「Script to run on first boot (uci-defaults)」に上記スクリプトをペースト</li>
+                    <li>「REQUEST BUILD」をクリックしてファームウェアをビルド</li>
+                    <li>生成されたファームウェアをダウンロードしてインストール</li>
+                </ol>
             </div>
         </div>
     </div>
 
     <script>
-        // プロキシWorkerのURL（デプロイ済み）
-        const PROXY_URL = 'https://openwrt-builder-proxy.site-u.workers.dev';
-        
-        // OpenWrt公式ファームウェアセレクターの機能を統合
-        const config = {
-            image_url: "https://downloads.openwrt.org",
-            versions: [], // 動的に取得
-            default_version: "24.10.2"
-        };
-        
-        let current_device = {};
-        let current_overview = {};
-        
-        // 公式と同じオートコンプリート機能
-        function setupAutocompleteList(input, items, onbegin, onend) {
-            let currentFocus = -1;
-            
-            const collator = new Intl.Collator(undefined, {
-                numeric: true,
-                sensitivity: "base",
-            });
-            items.sort(collator.compare);
-            
-            input.oninput = function () {
-                onbegin();
-                
-                let pattern = this.value;
-                closeAllLists();
-                
-                if (pattern.length === 0) {
-                    return false;
-                }
-                
-                if (items.includes(pattern)) {
-                    closeAllLists();
-                    onend(input);
-                    return false;
-                }
-                
-                const list = document.createElement("DIV");
-                list.setAttribute("id", this.id + "-autocomplete-list");
-                list.setAttribute("class", "autocomplete-items");
-                this.parentNode.appendChild(list);
-                
-                const patterns = pattern.toUpperCase().split(/\s+/).filter(p => p.length > 0);
-                let count = 0;
-                
-                for (const item of items) {
-                    const matches = matchPatterns(item, patterns);
-                    if (matches.length === 0) continue;
-                    
-                    count += 1;
-                    if (count >= 15) {
-                        let div = document.createElement("DIV");
-                        div.innerText = "...";
-                        list.appendChild(div);
-                        break;
-                    } else {
-                        let div = document.createElement("DIV");
-                        div.innerHTML = highlightMatches(item, matches) + `<input type="hidden" value="${item}">`;
-                        
-                        div.addEventListener("click", function () {
-                            input.value = this.getElementsByTagName("input")[0].value;
-                            closeAllLists();
-                            onend(input);
-                        });
-                        
-                        list.appendChild(div);
-                    }
-                }
-            };
-            
-            input.onkeydown = function (e) {
-                let x = document.getElementById(this.id + "-autocomplete-list");
-                if (x) x = x.getElementsByTagName("div");
-                if (e.keyCode === 40) {
-                    currentFocus += 1;
-                    setActive(x);
-                } else if (e.keyCode === 38) {
-                    currentFocus -= 1;
-                    setActive(x);
-                } else if (e.keyCode === 13) {
-                    e.preventDefault();
-                    if (currentFocus > -1 && x) x[currentFocus].click();
-                }
-            };
-            
-            input.onkeyup = function (e) {
-                if (e && (e.key === "Enter" || e.keyCode === 13)) {
-                    onend(input);
-                }
-            };
-            
-            function setActive(xs) {
-                if (!xs) return false;
-                for (const x of xs) {
-                    x.classList.remove("autocomplete-active");
-                }
-                if (currentFocus >= xs.length) currentFocus = 0;
-                if (currentFocus < 0) currentFocus = xs.length - 1;
-                xs[currentFocus].classList.add("autocomplete-active");
-            }
-            
-            function closeAllLists(elmnt) {
-                const items = document.querySelectorAll(".autocomplete-items");
-                for (const x of items) {
-                    if (elmnt !== x && elmnt !== input) {
-                        x.parentNode.removeChild(x);
-                    }
-                }
-            }
-            
-            document.addEventListener("click", (e) => {
-                closeAllLists(e.target);
-            });
-        }
-        
-        // パターンマッチング関数
-        function matchPatterns(value, patterns) {
-            const item = value.toUpperCase();
-            let matches = [];
-            for (const p of patterns) {
-                const i = item.indexOf(p);
-                if (i === -1) return [];
-                matches.push({ begin: i, length: p.length });
-            }
-            return matches.sort((a, b) => a.begin - b.begin);
-        }
-        
-        // ハイライト表示
-        function highlightMatches(item, matches) {
-            let prev = 0;
-            let html = "";
-            for (const m of matches) {
-                html += item.substr(prev, m.begin - prev);
-                html += `<strong>${item.substr(m.begin, m.length)}</strong>`;
-                prev = m.begin + m.length;
-            }
-            html += item.substr(prev);
-            return html;
-        }
-        
-        // バージョン選択セットアップ
-        function setupSelectList(select, items, onselection) {
-            items.sort((b, a) =>
-                (a + (a.indexOf("-") < 0 ? "-Z" : "")).localeCompare(
-                    b + (b.indexOf("-") < 0 ? "-Z" : ""),
-                    undefined,
-                    { numeric: true }
-                )
-            );
-            
-            // 既存のオプションをクリア
-            select.innerHTML = '';
-            
-            for (const item of items) {
-                const option = document.createElement("OPTION");
-                option.innerText = item;
-                option.value = item;
-                select.appendChild(option);
-            }
-            
-            select.addEventListener("change", () => {
-                onselection(items[select.selectedIndex]);
-            });
-            
-            if (select.selectedIndex >= 0) {
-                onselection(items[select.selectedIndex]);
-            }
-        }
-        
-        // デバイスモデルの変更処理
-        function changeModel(version, overview, title) {
-            const entry = overview.profiles[title];
-            if (entry) {
-                const base_url = `${PROXY_URL}/releases/${version}`;
-                fetch(`${base_url}/targets/${entry.target}/profiles.json`)
-                    .then(response => response.json())
-                    .then(mobj => {
-                        const device = {
-                            id: entry.id,
-                            target: entry.target,
-                            version: version,
-                            model: title,
-                            images: mobj.profiles[entry.id]?.images || [],
-                            default_packages: mobj.default_packages || [],
-                            device_packages: mobj.profiles[entry.id]?.device_packages || []
-                        };
-                        
-                        current_device = device;
-                        updateDeviceInfo(device);
-                    })
-                    .catch(err => console.error('Error fetching device info:', err));
-            } else {
-                current_device = {};
-                hideDeviceInfo();
-            }
-        }
-        
-        // デバイス情報表示更新
-        function updateDeviceInfo(device) {
-            document.getElementById('device-model').textContent = device.model;
-            document.getElementById('device-target').textContent = device.target;
-            document.getElementById('device-version').textContent = device.version;
-            document.getElementById('device-info').style.display = 'block';
-        }
-        
-        // デバイス情報非表示
-        function hideDeviceInfo() {
-            document.getElementById('device-info').style.display = 'none';
-        }
-        
-        // OpenWrt公式APIから版本とデバイス情報を取得
-        async function initOpenWrtData() {
-            try {
-                // バージョン情報を取得
-                const versionsResponse = await fetch(`${PROXY_URL}/.versions.json`);
-                const versionsData = await versionsResponse.json();
-                
-                // サポートされているバージョンのみフィルタ
-                const unsupported_versions_re = /^(19\.07\.\d|18\.06\.\d|17\.01\.\d)$/;
-                const versions = versionsData.versions_list.filter(
-                    version => !unsupported_versions_re.test(version)
-                );
-                versions.push("SNAPSHOT");
-                
-                config.versions = versions;
-                config.default_version = versionsData.stable_version || "24.10.2";
-                
-                // バージョン選択をセットアップ
-                setupSelectList(document.getElementById('versions'), versions, (version) => {
-                    loadDevicesForVersion(version);
-                });
-                
-            } catch (error) {
-                console.error('Error initializing OpenWrt data:', error);
-                // フォールバック
-                config.versions = ["24.10.2", "SNAPSHOT"];
-                setupSelectList(document.getElementById('versions'), config.versions, (version) => {
-                    loadDevicesForVersion(version);
-                });
-            }
-        }
-        
-        // 指定されたバージョンのデバイス一覧を読み込み
-        function loadDevicesForVersion(version) {
-            const overview_url = version === "SNAPSHOT" 
-                ? `${PROXY_URL}/snapshots/.overview.json`
-                : `${PROXY_URL}/releases/${version}/.overview.json`;
-                
-            fetch(overview_url)
-                .then(response => response.json())
-                .then(obj => {
-                    // デバイスタイトルを生成
-                    const profiles = {};
-                    for (const profile of obj.profiles) {
-                        const titles = getModelTitles(profile.titles);
-                        for (const title of titles) {
-                            if (title.length > 0) {
-                                profiles[title] = {
-                                    id: profile.id,
-                                    target: profile.target,
-                                    title: title
-                                };
-                            }
-                        }
-                    }
-                    
-                    current_overview = { profiles };
-                    
-                    // オートコンプリートをセットアップ
-                    setupAutocompleteList(
-                        document.getElementById('models'),
-                        Object.keys(profiles),
-                        () => hideDeviceInfo(),
-                        (input) => changeModel(version, current_overview, input.value)
-                    );
-                })
-                .catch(err => console.error('Error loading devices:', err));
-        }
-        
-        // モデルタイトル生成（公式と同じロジック）
-        function getModelTitles(titles) {
-            return titles.map((e) => {
-                if (e.title) {
-                    return e.title;
-                } else {
-                    return (
-                        (e.vendor || "") + " " + (e.model || "") + " " + (e.variant || "")
-                    ).trim();
-                }
-            });
-        }
-        
-        // パッケージ定義
-        const packageSets = {
-            basic: ['luci-i18n-base-ja', 'luci-i18n-firewall-ja', 'luci-i18n-opkg-ja'],
-            mape: ['map-e', 'kmod-map-e', 'jsonfilter'],
-            vpn: ['luci-app-openvpn', 'openvpn-openssl', 'luci-app-wireguard', 'wireguard-tools'],
-            usb: ['kmod-usb-storage', 'kmod-fs-ext4', 'kmod-fs-vfat', 'usbutils'],
-            monitoring: ['collectd', 'luci-app-statistics', 'iftop', 'htop'],
-            docker: ['dockerd', 'docker-compose', 'luci-app-dockerman']
-        };
-        
-        // ISP選択の変更処理
-        document.querySelectorAll('input[name="isp_type"]').forEach(radio => {
+        const form = document.getElementById('configForm');
+        const outputSection = document.getElementById('outputSection');
+        const scriptOutput = document.getElementById('scriptOutput');
+        const pppoeFields = document.getElementById('pppoeFields');
+
+        // 接続タイプの変更時にPPPoEフィールドの表示/非表示を切り替え
+        document.querySelectorAll('input[name="connectionType"]').forEach(radio => {
             radio.addEventListener('change', function() {
-                const pppoeSettings = document.getElementById('pppoe_settings');
                 if (this.value === 'pppoe') {
-                    pppoeSettings.style.display = 'block';
+                    pppoeFields.classList.remove('hidden');
                 } else {
-                    pppoeSettings.style.display = 'none';
+                    pppoeFields.classList.add('hidden');
                 }
             });
         });
-        
-        // パッケージ選択の変更処理
-        document.querySelectorAll('input[type="checkbox"][id^="pkg_"]').forEach(checkbox => {
-            checkbox.addEventListener('change', function() {
-                updateCustomPackages();
-            });
-        });
-        
-        // カスタムパッケージの更新
-        function updateCustomPackages() {
-            const customPackagesTextarea = document.getElementById('custom_packages');
-            let packages = [];
+
+        // フォーム送信処理
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
             
-            // デバイス機能チェック
-            const hasUsb = document.getElementById('has_usb').checked;
-            const hasSata = document.getElementById('has_sata').checked;
-            
-            // 選択されたパッケージセットを追加
-            Object.keys(packageSets).forEach(key => {
-                if (document.getElementById(`pkg_${key}`).checked) {
-                    // USB機能がないデバイスでUSBパッケージが選択された場合はスキップ
-                    if (key === 'usb' && !hasUsb) {
-                        console.log('USB packages skipped: device has no USB support');
-                        return;
-                    }
-                    packages = packages.concat(packageSets[key]);
-                }
-            });
-            
-            customPackagesTextarea.value = packages.join(' ');
-        }
-        
-        // スクリプト生成
-        async function generateScript() {
-            try {
-                // build-tools.shを読み込み
-                const response = await fetch('./build-tools.sh');
-                if (!response.ok) {
-                    throw new Error('build-tools.sh not found');
-                }
-                const baseScript = await response.text();
-                
-                // ユーザー設定とデバイス情報を取得
-                const ispType = document.querySelector('input[name="isp_type"]:checked').value;
-                const wifiMode = document.querySelector('input[name="wifi_mode"]:checked').value;
-                const rootPassword = document.getElementById('root_password').value;
-                const lanIp = document.getElementById('lan_ip').value;
-                const pppoeUsername = document.getElementById('pppoe_username').value;
-                const pppoePassword = document.getElementById('pppoe_password').value;
-                
-                // カスタマイズされた変数セクションを生成
-                let customVariables = `# Generated for device: ${current_device.model || 'Unknown'}\n`;
-                customVariables += `# Target: ${current_device.target || 'Unknown'}\n`;
-                customVariables += `# Version: ${current_device.version || 'Unknown'}\n\n`;
-                
-                // デバイス基本設定
-                if (rootPassword) customVariables += `ROOT_PASSWORD="${rootPassword}"\n`;
-                if (lanIp && lanIp !== '192.168.1.1') customVariables += `LAN_IP_ADDRESS="${lanIp}"\n`;
-                
-                // PPPoE設定
-                if (ispType === 'pppoe' && pppoeUsername && pppoePassword) {
-                    customVariables += `PPPOE_USERNAME="${pppoeUsername}"\n`;
-                    customVariables += `PPPOE_PASSWORD="${pppoePassword}"\n`;
-                }
-                
-                // Wi-Fi設定
-                for (let i = 1; i <= 3; i++) {
-                    const ssid = document.getElementById(`wifi${i}_ssid`).value;
-                    const password = document.getElementById(`wifi${i}_password`).value;
-                    const band = document.getElementById(`wifi${i}_band`).value;
-                    if (ssid && password && band) {
-                        customVariables += `WLAN_NAME_${i}="${ssid}"\n`;
-                        customVariables += `WLAN_PASSWORD_${i}="${password}"\n`;
-                        customVariables += `WLAN_BAND_${i}="${band}"\n`;
-                    }
-                }
-                
-                // メイン実行部分を決定
-                let mainExecution = '';
-                if (ispType === 'mape') {
-                    mainExecution = 'openwrt_main';
-                } else if (ispType === 'pppoe') {
-                    mainExecution = 'openwrt_pppoe_main';
-                } else {
-                    mainExecution = `# No ISP configuration selected
-set_device_basic_config
-set_wifi_config
+            // フォームデータを取得
+            const formData = new FormData(form);
+            const config = {
+                language: document.getElementById('language').value,
+                deviceName: document.getElementById('deviceName').value,
+                rootPassword: document.getElementById('rootPassword').value,
+                confirmPassword: document.getElementById('confirmPassword').value,
+                wifiSSID: document.getElementById('wifiSSID').value,
+                wifiPassword: document.getElementById('wifiPassword').value,
+                connectionType: formData.get('connectionType'),
+                pppoeUsername: document.getElementById('pppoeUsername').value,
+                pppoePassword: document.getElementById('pppoePassword').value
+            };
 
-uci commit system >/dev/null 2>&1
-uci commit wireless >/dev/null 2>&1
-uci commit network
-echo "Basic configuration done!"`;
-                }
-                
-                // コメント行から変数定義行を探して置き換え
-                let modifiedScript = baseScript;
-                
-                // コメントアウトされた変数定義を実際の値に置き換え
-                const variableLines = customVariables.split('\n').filter(line => line.trim() && !line.startsWith('#'));
-                variableLines.forEach(line => {
-                    if (line.includes('=')) {
-                        const [varName] = line.split('=');
-                        const commentedPattern = new RegExp(`# ${varName}=""`, 'g');
-                        modifiedScript = modifiedScript.replace(commentedPattern, line);
-                    }
-                });
-                
-                // デフォルトのメイン実行を置き換え
-                modifiedScript = modifiedScript.replace('openwrt_main', mainExecution);
-                
-                // Wi-Fi設定に関する追加カスタマイズ
-                if (wifiMode === 'usteer') {
-                    modifiedScript += `
-
-# usteer band steering configuration
-setup_usteer() {
-    logger -t mape-setup "Setting up usteer band steering"
-    opkg update && opkg install usteer >/dev/null 2>&1
-    
-    uci set usteer.@usteer[0]=usteer
-    uci set usteer.@usteer[0].enabled='1'
-    uci set usteer.@usteer[0].debug_level='2'
-    uci commit usteer
-    
-    /etc/init.d/usteer enable
-    /etc/init.d/usteer start
-}
-
-# Call usteer setup
-setup_usteer`;
-                }
-                
-                // 最終的なスクリプトにヘッダー情報を追加
-                const finalScript = customVariables + '\n' + modifiedScript;
-                
-                document.getElementById('scriptPreview').textContent = finalScript;
-                document.getElementById('scriptPreview').style.display = 'block';
-                
-            } catch (error) {
-                console.error('Error generating script:', error);
-                document.getElementById('scriptPreview').textContent = `# Error: Could not load build-tools.sh
-# Make sure build-tools.sh is in the same directory as this HTML file
-# Error details: ${error.message}
-
-# Device Information:
-# Model: ${current_device.model || 'Not selected'}
-# Target: ${current_device.target || 'Not selected'}
-# Version: ${current_device.version || 'Not selected'}
-
-#!/bin/sh
-# Fallback basic script
-echo "Script generation failed. Please check build-tools.sh file."
-exit 1`;
-                document.getElementById('scriptPreview').style.display = 'block';
-            }
-        }
-        
-        // クリップボードにコピー
-        function copyToClipboard() {
-            const script = document.getElementById('scriptPreview').textContent;
-            if (!script || script.includes('生成されたスクリプトがここに表示されます')) {
-                alert('先にスクリプトを生成してください');
+            // バリデーション
+            if (!validateForm(config)) {
                 return;
             }
-            
-            navigator.clipboard.writeText(script).then(() => {
-                alert('スクリプトをクリップボードにコピーしました！');
-            }).catch(() => {
-                alert('コピーに失敗しました。手動で選択してコピーしてください。');
-            });
-        }
-        
-        // 初期化処理
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('=== DOM loaded, initializing... ===');
-            console.log('Page URL:', window.location.href);
-            console.log('PROXY_URL:', PROXY_URL);
-            
-            // 重要なDOM要素の存在確認
-            const importantElements = [
-                'direct-build-btn',
-                'test-btn', 
-                'proxy-test-btn',
-                'scriptPreview',
-                'build-status',
-                'build-message',
-                'build-progress-bar'
-            ];
-            
-            importantElements.forEach(id => {
-                const element = document.getElementById(id);
-                console.log(`Element ${id}:`, !!element);
-                if (!element) {
-                    console.warn(`⚠️ Missing element: ${id}`);
+
+            // スクリプト生成
+            const script = generateScript(config);
+            scriptOutput.textContent = script;
+            outputSection.classList.remove('hidden');
+            outputSection.scrollIntoView({ behavior: 'smooth' });
+        });
+
+        function validateForm(config) {
+            // パスワード確認
+            if (config.rootPassword && config.rootPassword !== config.confirmPassword) {
+                alert('パスワードが一致しません。');
+                return false;
+            }
+
+            // パスワード長確認
+            if (config.rootPassword && config.rootPassword.length < 8) {
+                alert('Rootパスワードは8文字以上で設定してください。');
+                return false;
+            }
+
+            // Wi-Fiパスワード長確認
+            if (config.wifiPassword && config.wifiPassword.length < 8) {
+                alert('Wi-Fiパスワードは8文字以上で設定してください。');
+                return false;
+            }
+
+            // PPPoE設定確認
+            if (config.connectionType === 'pppoe') {
+                if (!config.pppoeUsername || !config.pppoePassword) {
+                    alert('PPPoEのユーザー名とパスワードを入力してください。');
+                    return false;
                 }
-            });
-            
-            // テスト関数を先に設定
-            setupEventListeners();
-            
-            try {
-                updateCustomPackages();
-                initOpenWrtData(); // OpenWrt公式データの初期化
-                console.log('✅ Initialization completed successfully');
-            } catch (error) {
-                console.error('❌ Initialization error:', error);
-                alert('初期化エラー: ' + error.message);
             }
-        });
-        
-        // イベントリスナー設定
-        function setupEventListeners() {
-            console.log('Setting up event listeners...');
-            
-            // テストボタン
-            const testBtn = document.getElementById('test-btn');
-            if (testBtn) {
-                testBtn.addEventListener('click', function() {
-                    alert('JavaScript は動作しています！');
-                    console.log('Test button clicked');
-                });
-                console.log('Test button listener added');
-            }
-            
-            // API テストボタン
-            const apiTestBtn = document.getElementById('api-test-btn');
-            if (apiTestBtn) {
-                apiTestBtn.addEventListener('click', async function() {
-                    console.log('Testing API connection...');
-                    try {
-                        const response = await fetch('https://sysupgrade.openwrt.org/api/build', {
-                            method: 'OPTIONS'
-                        });
-                        console.log('API OPTIONS response:', response.status);
-                        alert(`API接続テスト結果: ${response.status} ${response.statusText}`);
-                    } catch (error) {
-                        console.error('API test error:', error);
-                        alert('API接続エラー: ' + error.message);
-                    }
-                });
-                console.log('API test button listener added');
-            }
-            
-            // デバッグ情報ボタン
-            const debugBtn = document.getElementById('debug-info-btn');
-            if (debugBtn) {
-                debugBtn.addEventListener('click', function() {
-                    const info = {
-                        current_device: current_device,
-                        script_length: document.getElementById('scriptPreview')?.textContent?.length || 0,
-                        proxy_url: PROXY_URL,
-                        functions_available: {
-                            buildFirmwareDirectly: typeof buildFirmwareDirectly,
-                            generateScript: typeof generateScript,
-                            initOpenWrtData: typeof initOpenWrtData
-                        }
-                    };
-                    console.log('=== DEBUG INFO ===', info);
-                    alert('デバッグ情報をコンソールに出力しました\n\nF12 → Console タブで確認してください');
-                });
-                console.log('Debug button listener added');
-            }
-            
-            // プロキシテストボタン
-            const proxyTestBtn = document.getElementById('proxy-test-btn');
-            if (proxyTestBtn) {
-                proxyTestBtn.addEventListener('click', async function() {
-                    console.log('Testing proxy connection...');
-                    try {
-                        const response = await fetch(`${PROXY_URL}/api/build`, {
-                            method: 'OPTIONS'
-                        });
-                        console.log('Proxy OPTIONS response:', response.status);
-                        alert(`プロキシ接続テスト結果: ${response.status} ${response.statusText || 'Success'}`);
-                        
-                        // 詳細情報もログ出力
-                        console.log('Response headers:', Object.fromEntries(response.headers.entries()));
-                        console.log('Response ok:', response.ok);
-                    } catch (error) {
-                        console.error('Proxy test error:', error);
-                        alert('プロキシ接続エラー: ' + error.message + '\n\nプロキシWorkerがデプロイされているか確認してください。');
-                    }
-                });
-                console.log('Proxy test button listener added');
-            }
-            
-            // ビルドボタン
-            const buildBtn = document.getElementById('direct-build-btn');
-            if (buildBtn) {
-                buildBtn.addEventListener('click', async function() {
-                    console.log('=== Build button clicked ===');
-                    console.log('Button element:', buildBtn);
-                    console.log('Current device:', current_device);
-                    
-                    try {
-                        // 直接ここでビルド処理を実行
-                        console.log('=== Starting build process inline ===');
-                        console.log('Function start time:', new Date().toISOString());
-                        console.log('current_device object:', JSON.stringify(current_device, null, 2));
-                        
-                        // デバイス選択チェック
-                        if (!current_device || !current_device.id) {
-                            console.log('Device check failed - no device selected');
-                            alert('まずデバイスを選択してください\n\nデバイス状態: ' + JSON.stringify(current_device));
-                            return;
-                        }
-                        console.log('✅ Device check passed');
-                        
-                        // スクリプト確認
-                        const scriptElement = document.getElementById('scriptPreview');
-                        console.log('Script element:', scriptElement);
-                        
-                        const script = scriptElement ? scriptElement.textContent : '';
-                        console.log('Script content length:', script.length);
-                        console.log('Script preview:', script.substring(0, 200) + '...');
-                        
-                        if (!script || script.includes('Error:')) {
-                            console.log('Script check failed');
-                            alert('まずスクリプトを生成してください\n\nスクリプト状態: ' + (script ? 'エラー含む' : '未生成'));
-                            return;
-                        }
-                        console.log('✅ Script check passed');
-                        
-                        // DOM要素取得
-                        const buildStatus = document.getElementById('build-status');
-                        const buildMessage = document.getElementById('build-message');
-                        const progressBar = document.getElementById('build-progress-bar');
-                        
-                        console.log('DOM elements:', {
-                            buildBtn: !!buildBtn,
-                            buildStatus: !!buildStatus,
-                            buildMessage: !!buildMessage,
-                            progressBar: !!progressBar
-                        });
-                        
-                        if (!buildStatus || !buildMessage || !progressBar) {
-                            console.error('Some DOM elements are missing');
-                            alert('画面要素が見つかりません。ページを再読み込みしてください。');
-                            return;
-                        }
-                        
-                        console.log('✅ DOM elements check passed');
-                        
-                        // UI更新
-                        buildBtn.disabled = true;
-                        buildStatus.style.display = 'block';
-                        buildStatus.style.backgroundColor = '#d1ecf1';
-                        buildMessage.textContent = 'ビルドを開始しています...';
-                        progressBar.value = 10;
-                        
-                        console.log('✅ UI updated, starting API call...');
-                        
-                        // 選択されたパッケージを取得
-                        const customPackages = document.getElementById('custom_packages').value;
-                        const packages = customPackages ? customPackages.split(/\s+/).filter(p => p.trim()) : [];
-                        
-                        // デバイス情報をもう一度確認
-                        if (!current_device.target) {
-                            throw new Error('デバイスのターゲット情報が不足しています');
-                        }
-                        
-                        const buildRequest = {
-                            profile: current_device.id,
-                            target: current_device.target,
-                            version: current_device.version || '24.10.2',
-                            packages: packages,
-                            defaults: script,
-                            diff_packages: true,
-                            client: "enhanced-firmware-selector"
-                        };
-                        
-                        console.log('Build request:', buildRequest);
-                        
-                        buildMessage.textContent = 'プロキシサーバー経由でリクエスト送信中...';
-                        progressBar.value = 20;
-                        
-                        // プロキシWorker経由でASU APIを呼び出し
-                        const response = await fetch(`${PROXY_URL}/api/build`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify(buildRequest)
-                        });
-                        
-                        console.log('Response status:', response.status);
-                        console.log('Response headers:', Object.fromEntries(response.headers.entries()));
-                        progressBar.value = 40;
-                        
-                        if (response.status === 200) {
-                            // ビルド完了
-                            const result = await response.json();
-                            console.log('Build result:', result);
-                            buildStatus.style.backgroundColor = '#d4edda';
-                            buildMessage.innerHTML = `
-                                ✅ ビルド完了！<br>
-                                <a href="${PROXY_URL}/store/${result.bin_dir}" target="_blank" 
-                                   style="color: #155724; font-weight: bold;">📥 ファームウェアをダウンロード</a>
-                            `;
-                            progressBar.value = 100;
-                            
-                        } else if (response.status === 202) {
-                            // ビルド進行中
-                            const result = await response.json();
-                            console.log('Build queued:', result);
-                            buildMessage.textContent = 'ビルド中です。しばらくお待ちください...';
-                            progressBar.value = 60;
-                            
-                            // ポーリングでビルド状況をチェック（簡略版）
-                            if (result.request_hash) {
-                                buildMessage.textContent = `ビルド中です（ID: ${result.request_hash}）...`;
-                                // 実際のポーリングは省略（まずは基本動作確認）
-                            }
-                            
-                        } else {
-                            // エラー
-                            const errorText = await response.text();
-                            console.error('Build error response:', errorText);
-                            let errorMessage = 'ビルドに失敗しました';
-                            
-                            try {
-                                const errorJson = JSON.parse(errorText);
-                                errorMessage = errorJson.detail || errorJson.message || errorMessage;
-                            } catch (e) {
-                                errorMessage = `HTTP ${response.status}: ${errorText}`;
-                            }
-                            
-                            throw new Error(errorMessage);
-                        }
-                        
-                    } catch (error) {
-                        console.error('Build error:', error);
-                        const buildStatus = document.getElementById('build-status');
-                        const buildMessage = document.getElementById('build-message');
-                        const progressBar = document.getElementById('build-progress-bar');
-                        
-                        if (buildStatus && buildMessage && progressBar) {
-                            buildStatus.style.display = 'block';
-                            buildStatus.style.backgroundColor = '#f8d7da';
-                            buildMessage.innerHTML = `❌ エラー: ${error.message}<br><small>詳細はコンソールを確認してください</small>`;
-                            progressBar.value = 0;
-                        }
-                    } finally {
-                        buildBtn.disabled = false;
-                    }
-                });
-                console.log('Build button listener added successfully');
-            } else {
-                console.error('Build button not found!');
-            }
-            
-            // リダイレクトボタンは削除
-            /*
-            const redirectBtn = document.getElementById('redirect-btn');
-            if (redirectBtn) {
-                redirectBtn.addEventListener('click', function() {
-                    console.log('Redirect button clicked');
-                    redirectToOfficialBuilder();
-                });
-                console.log('Redirect button listener added');
-            }
-            */
-            
-            // スクリプト生成ボタン
-            const generateBtn = document.getElementById('generate-btn');
-            if (generateBtn) {
-                generateBtn.addEventListener('click', function() {
-                    console.log('Generate script button clicked');
-                    generateScript();
-                });
-                console.log('Generate script button listener added');
-            }
-            
-            // コピーボタン
-            const copyBtn = document.getElementById('copy-btn');
-            if (copyBtn) {
-                copyBtn.addEventListener('click', function() {
-                    console.log('Copy button clicked');
-                    copyToClipboard();
-                });
-                console.log('Copy button listener added');
-            }
+
+            return true;
         }
-        
-        // エラーハンドリング
-        window.addEventListener('error', function(e) {
-            console.error('Global error:', e.error);
-            console.error('Error details:', {
-                message: e.message,
-                filename: e.filename,
-                lineno: e.lineno,
-                colno: e.colno
+
+        function generateScript(config) {
+            let script = '#!/bin/sh\n\n';
+            script += '# OpenWrt Auto Configuration Script\n';
+            script += '# Generated by OpenWrt Firmware Builder\n\n';
+            
+            script += 'CONFIG_SCRIPT="/tmp/aios/aios-light.sh"\n';
+            script += 'mkdir -p /tmp/aios\n\n';
+
+            script += 'wget --no-check-certificate -O "$CONFIG_SCRIPT" "https://site-u.pages.dev/build/scripts/aios-light.sh" 2>/dev/null\n\n';
+
+            script += 'if [ ! -f "$CONFIG_SCRIPT" ]; then\n';
+            script += '    logger -t firmware-builder "Failed to download aios-light.sh"\n';
+            script += '    exit 1\n';
+            script += 'fi\n\n';
+
+            script += 'chmod +x "$CONFIG_SCRIPT"\n\n';
+
+            // 環境変数の設定
+            script += '# Configuration Variables\n';
+            
+            if (config.language) {
+                script += `export LANGUAGE="${config.language}"\n`;
+            }
+            
+            if (config.deviceName) {
+                script += `export DEVICE_NAME="${config.deviceName}"\n`;
+            }
+            
+            if (config.rootPassword) {
+                script += `export ROOT_PASSWORD="${config.rootPassword}"\n`;
+            }
+            
+            if (config.wifiSSID) {
+                script += `export WLAN_NAME="${config.wifiSSID}"\n`;
+            }
+            
+            if (config.wifiPassword) {
+                script += `export WLAN_PASSWORD="${config.wifiPassword}"\n`;
+            }
+
+            // 接続タイプの設定
+            if (config.connectionType === 'auto') {
+                script += 'export ISP_MODE=""\n';
+            } else if (config.connectionType === 'pppoe') {
+                script += 'export ISP_MODE="pppoe"\n';
+                if (config.pppoeUsername) {
+                    script += `export PPPOE_USERNAME="${config.pppoeUsername}"\n`;
+                }
+                if (config.pppoePassword) {
+                    script += `export PPPOE_PASSWORD="${config.pppoePassword}"\n`;
+                }
+            } else {
+                script += `export ISP_MODE="${config.connectionType}"\n`;
+            }
+
+            script += '\n# Execute configuration script\n';
+            script += 'exec sh "$CONFIG_SCRIPT" "$ISP_MODE"\n';
+
+            return script;
+        }
+
+        function copyScript() {
+            const script = scriptOutput.textContent;
+            navigator.clipboard.writeText(script).then(function() {
+                const btn = event.target;
+                const originalText = btn.textContent;
+                btn.textContent = '✅ コピー完了！';
+                btn.style.background = '#28a745';
+                
+                setTimeout(function() {
+                    btn.textContent = originalText;
+                    btn.style.background = '#28a745';
+                }, 2000);
+            }).catch(function(err) {
+                alert('コピーに失敗しました。手動でコピーしてください。');
             });
-        });
+        }
     </script>
 </body>
 </html>
