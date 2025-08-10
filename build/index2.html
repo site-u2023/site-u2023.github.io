@@ -798,6 +798,11 @@
                 const packages = getPackages();
                 const script = document.getElementById('script').value;
 
+                const pkgList = document.getElementById('asu-packages').value
+                  .trim()
+                  .split(/\s+/) // 空白や改行で分割
+                  .filter(Boolean); // 空要素除去
+                
                 // ASU API仕様に従った正しいリクエスト形式
                 const requestBody = {
                     target: app.selectedDevice.target,
