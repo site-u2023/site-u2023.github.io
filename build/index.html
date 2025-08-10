@@ -623,16 +623,26 @@
             }
 
             async pollBuildStatus() {
-                const maxAttempts = 60;
+                const maxAttempts = 120; // 最大4分間
                 let attempts = 0;
+                const startTime = Date.now();
 
                 while (attempts < maxAttempts) {
                     try {
-                        this.showProgress(`ビルド状況確認中... (${attempts + 1}/${maxAttempts})`, 20 + (attempts * 60 / maxAttempts));
+                        const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+                        this.showProgress(`ビルド中... ${elapsedSeconds}秒経過`, Math.min(20 + (attempts * 2), 95));
 
                         const response = await fetch(`${this.ASU_BASE_URL}/api/v1/build/${this.buildRequestId}`);
                         
                         if (!response.ok) {
+                            if (response.status === 404) {
+                                // ビルドが見つからない場合は少し長めに待つ
+                                if (attempts < 10) {
+                                    await new Promise(resolve => setTimeout(resolve, 2000));
+                                    attempts++;
+                                    continue;
+                                }
+                            }
                             throw new Error(`状況確認に失敗: ${response.status}`);
                         }
 
@@ -640,25 +650,31 @@
                         console.log('Build status:', status);
 
                         if (status.status === 'done' || status.status === 'success') {
-                            this.showDownloadLinks(status.images);
+                            this.showProgress('ビルド完了！', 100);
+                            setTimeout(() => this.showDownloadLinks(status.images), 500);
                             return;
                         } else if (status.status === 'failure' || status.status === 'failed') {
-                            throw new Error('サーバー側でビルドが失敗しました');
+                            throw new Error(`ビルドが失敗しました: ${status.detail || '詳細不明'}`);
+                        } else if (status.status === 'queued') {
+                            this.showProgress('キューで待機中...', 10 + (attempts * 0.5));
                         } else if (status.status === 'building') {
-                            this.showProgress('ビルド中...', 40 + (attempts * 40 / maxAttempts));
+                            this.showProgress('ビルド中...', 30 + (attempts * 1.5));
                         }
 
-                        await new Promise(resolve => setTimeout(resolve, 5000));
+                        // 動的に待機時間を調整
+                        let waitTime = 2000; // 基本2秒
+                        if (attempts < 5) waitTime = 1000;  // 最初の5回は1秒
+                        else if (attempts > 30) waitTime = 3000; // 30回以降は3秒
+
+                        await new Promise(resolve => setTimeout(resolve, waitTime));
                         attempts++;
 
                     } catch (error) {
                         console.error('Status check error:', error);
-                        throw error;
-                    }
-                }
-
-                throw new Error('ビルドがタイムアウトしました');
-            }
+                        if (attempts > 10) { // 10回以上試行してエラーなら停止
+                            throw error;
+                        }
+                        // 初期のエラーは無
 
             showProgress(message, percentage) {
                 document.getElementById('build-message').textContent = message;
