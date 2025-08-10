@@ -716,42 +716,73 @@
                 return;
             }
 
-            const packages = getPackages();
-            const script = document.getElementById('script').value;
-
-            const buildData = {
-                target: app.selectedDevice.target,
-                profile: app.selectedDevice.id,
-                packages: packages,
-                defaults: script  // 正しいAPIパラメータ名に修正
-            };
-
             try {
                 document.getElementById('request-build').disabled = true;
                 showProgress('Sending build request...', 10);
+
+                const packages = getPackages();
+                const script = document.getElementById('script').value;
+
+                // ASU API仕様に従った正しいリクエスト形式
+                const requestBody = {
+                    target: app.selectedDevice.target,
+                    profile: app.selectedDevice.id,
+                    packages: packages
+                };
+
+                // バージョンが指定されている場合のみ追加
+                if (app.selectedVersion && app.selectedVersion !== 'SNAPSHOT') {
+                    requestBody.version = app.selectedVersion;
+                }
+
+                // スクリプトがある場合のみ追加
+                if (script && script.trim()) {
+                    requestBody.defaults = script;
+                }
+
+                console.log('Sending build request:', requestBody);
 
                 const response = await fetch('https://sysupgrade.openwrt.org/api/v1/build', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'Accept': 'application/json'
                     },
-                    body: JSON.stringify(buildData)
+                    body: JSON.stringify(requestBody)
                 });
 
+                console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers);
+
+                const responseText = await response.text();
+                console.log('Response text:', responseText);
+
                 if (!response.ok) {
-                    throw new Error(`Build failed: ${response.status}`);
+                    throw new Error(`HTTP ${response.status}: ${responseText}`);
                 }
 
-                const result = await response.json();
+                let result;
+                try {
+                    result = JSON.parse(responseText);
+                } catch (e) {
+                    throw new Error('Invalid JSON response: ' + responseText);
+                }
+
+                console.log('Parsed result:', result);
 
                 if (result.request_hash) {
+                    console.log('Starting to poll build status for:', result.request_hash);
                     await pollBuildStatus(result.request_hash);
-                } else if (result.images) {
+                } else if (result.images && result.images.length > 0) {
+                    console.log('Images available immediately:', result.images);
+                    hideProgress();
                     showDownloadLinks(result.images);
+                } else {
+                    throw new Error('No request hash or images in response');
                 }
 
             } catch (error) {
-                console.error('Build error:', error);
+                console.error('Build request failed:', error);
                 alert('Build failed: ' + error.message);
                 hideProgress();
             } finally {
@@ -764,7 +795,8 @@
             return input.split('\n').map(pkg => pkg.trim()).filter(pkg => pkg);
         }
 
-        async function pollBuildStatus(requestId) {
+        async function pollBuildStatus(requestHash) {
+            console.log('Starting to poll build status for hash:', requestHash);
             const maxAttempts = 120; // 10分間
             let attempts = 0;
             const startTime = Date.now();
@@ -776,13 +808,46 @@
                     const seconds = elapsedSeconds % 60;
                     const timeStr = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
                     
+                    const statusUrl = `https://sysupgrade.openwrt.org/api/v1/build/${requestHash}`;
+                    console.log(`Polling attempt ${attempts + 1}/${maxAttempts}, URL: ${statusUrl}`);
+
+                    const response = await fetch(statusUrl, {
+                        method: 'GET',
+                        headers: {
+                            'Accept': 'application/json'
+                        }
+                    });
+
+                    console.log('Poll response status:', response.status);
+
+                    if (!response.ok) {
+                        if (response.status === 404 && attempts < 5) {
+                            console.log('Build not found yet, will retry...');
+                            showProgress(`Waiting for build to start... ${timeStr}`, 10);
+                            await new Promise(resolve => setTimeout(resolve, 5000));
+                            attempts++;
+                            continue;
+                        }
+                        throw new Error(`Status check failed: HTTP ${response.status}`);
+                    }
+
+                    const statusText = await response.text();
+                    console.log('Status response text:', statusText);
+
+                    let status;
+                    try {
+                        status = JSON.parse(statusText);
+                    } catch (e) {
+                        throw new Error('Invalid JSON in status response: ' + statusText);
+                    }
+
+                    console.log('Build status object:', status);
+                    
                     // プログレス計算（10分で95%）
                     const progressPercent = Math.min((elapsedSeconds / 600) * 85 + 10, 95);
 
-                    const response = await fetch(`https://sysupgrade.openwrt.org/api/v1/build/${requestId}`);
-                    const status = await response.json();
-
                     if (status.status === 'done' || status.status === 'success') {
+                        console.log('Build completed successfully!');
                         showProgress('Build completed!', 100);
                         setTimeout(() => {
                             hideProgress();
@@ -790,31 +855,36 @@
                         }, 500);
                         return;
                     } else if (status.status === 'failed' || status.status === 'failure') {
-                        throw new Error('Build failed on server');
+                        console.error('Build failed on server:', status);
+                        throw new Error(`Build failed: ${status.detail || status.stdout || 'Unknown error'}`);
                     } else if (status.status === 'queued') {
-                        showProgress(`Queued... ${timeStr}`, progressPercent);
+                        showProgress(`Queued for build... ${timeStr}`, Math.max(progressPercent * 0.3, 10));
                     } else if (status.status === 'building') {
-                        showProgress(`Building... ${timeStr}`, progressPercent);
+                        showProgress(`Building image... ${timeStr}`, Math.max(progressPercent * 0.8, 30));
                     } else {
                         showProgress(`Processing (${status.status})... ${timeStr}`, progressPercent);
                     }
 
-                    // 5秒間隔でポーリング（公式推奨）
+                    // 5秒間隔でポーリング
                     await new Promise(resolve => setTimeout(resolve, 5000));
                     attempts++;
 
                 } catch (error) {
-                    console.error('Status check error:', error);
-                    if (attempts > 5) {
+                    console.error(`Polling error on attempt ${attempts + 1}:`, error);
+                    
+                    if (attempts >= 5) {
                         throw error;
                     }
+                    
                     // エラー時は5秒待ってリトライ
+                    const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+                    showProgress(`Connection error, retrying... ${elapsedSeconds}s`, 5);
                     await new Promise(resolve => setTimeout(resolve, 5000));
                     attempts++;
                 }
             }
 
-            throw new Error('Build timeout (10 minutes)');
+            throw new Error('Build timeout after 10 minutes');
         }
 
         function showProgress(message, percentage) {
@@ -828,18 +898,38 @@
         }
 
         function showDownloadLinks(images) {
+            console.log('Showing download links for images:', images);
+            
             const container = document.getElementById('download-links');
             container.innerHTML = '<h4>Download</h4>';
 
             if (images && images.length > 0) {
-                images.forEach(image => {
+                images.forEach((image, index) => {
+                    console.log(`Processing image ${index}:`, image);
+                    
                     const link = document.createElement('a');
-                    link.href = image.url || image.path;
+                    
+                    // URLの設定（複数の形式に対応）
+                    if (image.url) {
+                        link.href = image.url;
+                    } else if (image.path) {
+                        link.href = `https://sysupgrade.openwrt.org${image.path}`;
+                    } else {
+                        console.warn('No URL or path found for image:', image);
+                        return;
+                    }
+                    
                     link.className = 'download-link';
-                    link.textContent = image.name || 'Download';
+                    link.textContent = image.name || `Download ${index + 1}`;
                     link.target = '_blank';
+                    link.download = image.name || '';
+                    
+                    console.log('Created download link:', link.href, link.textContent);
                     container.appendChild(link);
                 });
+            } else {
+                container.innerHTML = '<h4>Download</h4><p>No images available</p>';
+                console.warn('No images provided to showDownloadLinks');
             }
         }
     </script>
