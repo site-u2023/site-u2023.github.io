@@ -321,7 +321,7 @@
             <h4>Customize installed packages and/or first boot script</h4>
             <div class="form-group">
                 <label for="packages-custom">Packages to add/remove (one per line, prefix with '-' to remove):</label>
-                <textarea id="packages-custom" class="form-control" rows="3" placeholder="luci&#10;luci-ssl&#10;wpad-wolfssl&#10;-wpad-basic-wolfssl"></textarea>
+                <textarea id="packages-custom" class="form-control" rows="3" placeholder="luci&#10;luci-ssl&#10;-wpad-basic-wolfssl&#10;wpad-wolfssl"></textarea>
             </div>
 
             <!-- setup.sh設定セクション -->
@@ -529,8 +529,16 @@
                 const response = await fetch('https://downloads.openwrt.org/.versions.json');
                 const data = await response.json();
 
-                app.versions = data.versions_list || [];
-                app.selectedVersion = data.stable_version || app.versions[0];
+                // 公式と同じ: SNAPSHOTを最初に追加
+                app.versions = ['SNAPSHOT'];
+                
+                // 安定版を追加
+                if (data.versions_list) {
+                    app.versions = app.versions.concat(data.versions_list);
+                }
+
+                // デフォルト選択: 公式と同じくSNAPSHOT
+                app.selectedVersion = 'SNAPSHOT';
 
                 updateVersionSelect();
                 await loadDevices();
@@ -558,7 +566,15 @@
             if (!app.selectedVersion) return;
 
             try {
-                const url = `https://downloads.openwrt.org/releases/${app.selectedVersion}/.overview.json`;
+                let url;
+                if (app.selectedVersion === 'SNAPSHOT') {
+                    // SNAPSHOTの場合
+                    url = 'https://downloads.openwrt.org/snapshots/.overview.json';
+                } else {
+                    // 安定版の場合
+                    url = `https://downloads.openwrt.org/releases/${app.selectedVersion}/.overview.json`;
+                }
+                
                 const response = await fetch(url);
                 const data = await response.json();
 
@@ -631,21 +647,25 @@
             await fetchProfilePackagesAndPopulate(device);
         }
 
-        // 追加: profiles.json / 個別 profile JSON から default packages を取得し、公式と同じ方式で表示
+        // 公式と同じ方式: profiles.json から default packages を取得
         async function fetchProfilePackagesAndPopulate(device) {
             if (!device || !device.target || !device.id) return;
 
-            const version = app.selectedVersion || 'snapshots';
+            const version = app.selectedVersion;
             const target = device.target;
             const profileId = device.id;
 
             const candidates = [];
-            if (version && version !== 'snapshots') {
+            
+            if (version === 'SNAPSHOT') {
+                // SNAPSHOT用パス
+                candidates.push(`https://downloads.openwrt.org/snapshots/targets/${target}/profiles.json`);
+                candidates.push(`https://downloads.openwrt.org/snapshots/targets/${target}/profiles/${profileId}.json`);
+            } else {
+                // 安定版用パス
                 candidates.push(`https://downloads.openwrt.org/releases/${version}/targets/${target}/profiles.json`);
                 candidates.push(`https://downloads.openwrt.org/releases/${version}/targets/${target}/profiles/${profileId}.json`);
             }
-            candidates.push(`https://downloads.openwrt.org/snapshots/targets/${target}/profiles.json`);
-            candidates.push(`https://downloads.openwrt.org/snapshots/targets/${target}/profiles/${profileId}.json`);
 
             for (const url of candidates) {
                 try {
@@ -660,7 +680,8 @@
                         if (found) {
                             const pkgs = normalizePackagesField(found.packages || found.package || found.defaults || found.default_packages || found['installed-packages']);
                             if (pkgs.length) {
-                                document.getElementById('packages-custom').value = pkgs.join('\n');
+                                // 公式と同じ形式: スペース区切り
+                                document.getElementById('packages-custom').value = pkgs.join(' ');
                                 return;
                             }
                         }
@@ -670,7 +691,8 @@
                     if (direct) {
                         const pkgs = normalizePackagesField(direct);
                         if (pkgs.length) {
-                            document.getElementById('packages-custom').value = pkgs.join('\n');
+                            // 公式と同じ形式: スペース区切り
+                            document.getElementById('packages-custom').value = pkgs.join(' ');
                             return;
                         }
                     }
@@ -684,7 +706,7 @@
         function normalizePackagesField(raw) {
             if (!raw) return [];
             if (Array.isArray(raw)) return raw.map(String).map(s => s.trim()).filter(Boolean);
-            if (typeof raw === 'string') return raw.split(/\s+/).map(s => s.trim()).filter(Boolean);
+            if (typeof raw === 'string') return raw.split(/[\s\n]+/).map(s => s.trim()).filter(Boolean);
             try {
                 return Object.values(raw).map(String).map(s => s.trim()).filter(Boolean);
             } catch (e) {
@@ -805,11 +827,11 @@
             }
         }
 
-        // 必要パッケージの自動追加
+        // 必要パッケージの自動追加（公式準拠）
         function updateRequiredPackages() {
             const config = getAiosConfig();
             const packagesTextarea = document.getElementById('packages-custom');
-            let currentPackages = packagesTextarea.value.split('\n').map(pkg => pkg.trim()).filter(pkg => pkg);
+            let currentPackages = packagesTextarea.value.split(/\s+/).map(pkg => pkg.trim()).filter(pkg => pkg);
             
             // 既存のaios関連パッケージを削除
             currentPackages = currentPackages.filter(pkg => pkg !== 'map' && pkg !== 'ds-lite');
@@ -828,7 +850,8 @@
                     break;
             }
             
-            packagesTextarea.value = currentPackages.join('\n');
+            // 公式と同じ形式: スペース区切り
+            packagesTextarea.value = currentPackages.join(' ');
         }
 
         function getAiosConfig() {
@@ -914,7 +937,8 @@
 
         function getPackages() {
             const input = document.getElementById('packages-custom').value;
-            return input.split('\n').map(pkg => pkg.trim()).filter(pkg => pkg);
+            // 公式と同じ: スペースまたは改行で分割
+            return input.split(/[\s\n]+/).map(pkg => pkg.trim()).filter(pkg => pkg);
         }
 
         async function pollBuildStatus(requestHash) {
