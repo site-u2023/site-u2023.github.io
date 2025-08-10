@@ -537,8 +537,8 @@
                     app.versions = app.versions.concat(data.versions_list);
                 }
 
-                // デフォルト選択: 公式と同じくSNAPSHOT
-                app.selectedVersion = 'SNAPSHOT';
+                // デフォルト選択: 公式と同じく最新リリース版（2番目）
+                app.selectedVersion = data.stable_version || (data.versions_list ? data.versions_list[0] : 'SNAPSHOT');
 
                 updateVersionSelect();
                 await loadDevices();
@@ -647,7 +647,7 @@
             await fetchProfilePackagesAndPopulate(device);
         }
 
-        // 公式と同じ方式: profiles.json から default packages を取得
+        // 公式と同じ方式: profiles.json から default packages を取得（デバッグ強化版）
         async function fetchProfilePackagesAndPopulate(device) {
             if (!device || !device.target || !device.id) return;
 
@@ -655,52 +655,66 @@
             const target = device.target;
             const profileId = device.id;
 
+            console.log(`DEBUG: Fetching packages for device ${profileId}, target ${target}, version ${version}`);
+
             const candidates = [];
             
             if (version === 'SNAPSHOT') {
                 // SNAPSHOT用パス
                 candidates.push(`https://downloads.openwrt.org/snapshots/targets/${target}/profiles.json`);
-                candidates.push(`https://downloads.openwrt.org/snapshots/targets/${target}/profiles/${profileId}.json`);
             } else {
                 // 安定版用パス
                 candidates.push(`https://downloads.openwrt.org/releases/${version}/targets/${target}/profiles.json`);
-                candidates.push(`https://downloads.openwrt.org/releases/${version}/targets/${target}/profiles/${profileId}.json`);
             }
 
             for (const url of candidates) {
                 try {
+                    console.log(`DEBUG: Trying URL: ${url}`);
                     const res = await fetch(url);
-                    if (!res.ok) continue;
+                    if (!res.ok) {
+                        console.log(`DEBUG: Failed to fetch ${url}, status: ${res.status}`);
+                        continue;
+                    }
                     const json = await res.json();
+                    
+                    console.log(`DEBUG: Successfully fetched profiles.json from ${url}`);
+                    console.log(`DEBUG: Number of profiles found: ${json.profiles ? json.profiles.length : 'N/A'}`);
 
                     if (Array.isArray(json.profiles)) {
-                        const found = json.profiles.find(p =>
-                            p.id === profileId || p.profile === profileId || p.name === profileId || p.model === profileId
-                        );
+                        const found = json.profiles.find(p => {
+                            // より詳細な検索ロジック
+                            return p.id === profileId || 
+                                   p.profile === profileId || 
+                                   p.name === profileId || 
+                                   p.model === profileId ||
+                                   (p.titles && p.titles.some(title => title.title === profileId));
+                        });
+                        
                         if (found) {
-                            const pkgs = normalizePackagesField(found.packages || found.package || found.defaults || found.default_packages || found['installed-packages']);
+                            console.log(`DEBUG: Found matching profile:`, found);
+                            console.log(`DEBUG: Profile packages field:`, found.packages);
+                            
+                            const pkgs = normalizePackagesField(found.packages);
+                            console.log(`DEBUG: Normalized packages:`, pkgs);
+                            
                             if (pkgs.length) {
                                 // 公式と同じ形式: スペース区切り
                                 document.getElementById('packages-custom').value = pkgs.join(' ');
+                                console.log(`DEBUG: Set packages: ${pkgs.join(' ')}`);
                                 return;
                             }
-                        }
-                    }
-
-                    const direct = json.packages || json.defaults || json.default_packages || json.installed || (json.profile && (json.profile.packages || json.profile.defaults));
-                    if (direct) {
-                        const pkgs = normalizePackagesField(direct);
-                        if (pkgs.length) {
-                            // 公式と同じ形式: スペース区切り
-                            document.getElementById('packages-custom').value = pkgs.join(' ');
-                            return;
+                        } else {
+                            console.log(`DEBUG: No matching profile found for ID: ${profileId}`);
+                            console.log(`DEBUG: Available profile IDs:`, json.profiles.map(p => p.id || p.profile || p.name).slice(0, 10));
                         }
                     }
                 } catch (e) {
-                    console.error('fetchProfilePackagesAndPopulate error for', url, e);
+                    console.error('DEBUG: fetchProfilePackagesAndPopulate error for', url, e);
                     continue;
                 }
             }
+            
+            console.log(`DEBUG: No packages found for device ${profileId}`);
         }
 
         function normalizePackagesField(raw) {
