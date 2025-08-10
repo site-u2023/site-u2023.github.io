@@ -1,634 +1,246 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <title>OpenWrt Firmware Selector</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <style>
-        body {
-            background-color: #f8f9fa;
-        }
-        .container {
-            max-width: 800px;
-            margin-top: 2rem;
-        }
-        .autocomplete {
-            position: relative;
-        }
-        .autocomplete-items {
-            position: absolute;
-            border: 1px solid #d4edda;
-            border-bottom: none;
-            border-top: none;
-            z-index: 99;
-            top: 100%;
-            left: 0;
-            right: 0;
-            max-height: 300px;
-            overflow-y: auto;
-        }
-        .autocomplete-items div {
-            padding: 10px;
-            cursor: pointer;
-            background-color: #fff;
-            border-bottom: 1px solid #d4edda;
-        }
-        .autocomplete-items div:hover {
-            background-color: #e9ecef;
-        }
-        .autocomplete-active {
-            background-color: #007bff !important;
-            color: #ffffff;
-        }
-        .aios-config-section {
-            background-color: #e9ecef;
-            border: 1px solid #dee2e6;
-            border-radius: 0.25rem;
-            padding: 1rem;
-            margin-bottom: 1rem;
-        }
-        .aios-form {
-            display: none;
-            margin-top: 1rem;
-        }
-        .pppoe-section {
-            display: none;
-            margin-top: 1rem;
-            padding: 1rem;
-            background-color: #fff3cd;
-            border: 1px solid #ffeaa7;
-            border-radius: 0.25rem;
-        }
-        .device-info {
-            background-color: #d1ecf1;
-            border: 1px solid #bee5eb;
-            color: #0c5460;
-            padding: 0.75rem 1.25rem;
-            margin-bottom: 1rem;
-            border-radius: 0.25rem;
-        }
-        .connection-types {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 1rem;
-        }
-        @media (max-width: 768px) {
-            .connection-types {
-                flex-direction: column;
-                gap: 0.5rem;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="text-center mb-4">
-            <h1 class="display-4 text-primary">OpenWrt Firmware Selector</h1>
-            <p class="lead">Type the name or model of your device, then select a stable build or the nightly "snapshot" build.</p>
-        </div>
-
-        <div class="card">
-            <div class="card-body">
-                <div class="form-group">
-                    <label for="versions">Version</label>
-                    <select id="versions" class="form-control">
-                        <option value="" disabled selected>Loading versions...</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="models">Device Model</label>
-                    <div class="autocomplete">
-                        <input type="text" id="models" class="form-control" placeholder="Type device model" autocomplete="off">
-                        <div id="models-autocomplete-list" class="autocomplete-items"></div>
-                    </div>
-                </div>
-
-                <div id="device-info" class="device-info" style="display: none;">
-                    <h5 id="device-title"></h5>
-                    <div id="device-details"></div>
-                </div>
-
-                <div id="packages-section" style="display: none;">
-                    <h4>Customize installed packages and/or first boot script</h4>
-                    
-                    <div class="form-group">
-                        <label for="packages-custom">Packages to add/remove (one per line, prefix with '-' to remove):</label>
-                        <textarea id="packages-custom" class="form-control" rows="3" placeholder="-wpad-basic-wolfssl&#10;wpad-wolfssl&#10;luci-ssl"></textarea>
-                    </div>
-
-                    <!-- aios-light.sh設定セクション -->
-                    <div class="aios-config-section">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="use-aios-config">
-                            <label class="form-check-label" for="use-aios-config">
-                                Use aios-light.sh configuration wizard
-                            </label>
-                        </div>
-                        
-                        <div id="aios-form" class="aios-form">
-                            <h6>Basic Configuration</h6>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="aios-language">Language</label>
-                                        <select id="aios-language" class="form-control">
-                                            <option value="en">English</option>
-                                            <option value="ja">Japanese</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="aios-device-name">Device name</label>
-                                        <input type="text" id="aios-device-name" class="form-control" placeholder="OpenWrt-Router">
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="aios-root-password">Root password</label>
-                                        <input type="password" id="aios-root-password" class="form-control" placeholder="8+ characters">
-                                        <small class="form-text text-muted">Leave empty to disable password authentication</small>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="aios-confirm-password">Confirm password</label>
-                                        <input type="password" id="aios-confirm-password" class="form-control" placeholder="Confirm password">
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <h6>Wi-Fi Configuration</h6>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="aios-wifi-ssid">Wi-Fi SSID</label>
-                                        <input type="text" id="aios-wifi-ssid" class="form-control" placeholder="MyOpenWrt">
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="aios-wifi-password">Wi-Fi password</label>
-                                        <input type="password" id="aios-wifi-password" class="form-control" placeholder="8+ characters">
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <h6>Internet Connection</h6>
-                            <div class="form-group">
-                                <label>Connection type</label>
-                                <div class="connection-types">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="connectionType" id="conn-auto" value="auto" checked>
-                                        <label class="form-check-label" for="conn-auto">Auto-detect</label>
-                                    </div>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="connectionType" id="conn-dhcp" value="dhcp">
-                                        <label class="form-check-label" for="conn-dhcp">DHCP</label>
-                                    </div>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="connectionType" id="conn-pppoe" value="pppoe">
-                                        <label class="form-check-label" for="conn-pppoe">PPPoE</label>
-                                    </div>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="connectionType" id="conn-dslite" value="dslite">
-                                        <label class="form-check-label" for="conn-dslite">DS-Lite</label>
-                                    </div>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="connectionType" id="conn-mape" value="mape">
-                                        <label class="form-check-label" for="conn-mape">MAP-E</label>
-                                    </div>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="connectionType" id="conn-none" value="none">
-                                        <label class="form-check-label" for="conn-none">None</label>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div id="pppoe-section" class="pppoe-section">
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label for="pppoe-username">PPPoE username</label>
-                                            <input type="text" id="pppoe-username" class="form-control" placeholder="Username from ISP">
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label for="pppoe-password">PPPoE password</label>
-                                            <input type="password" id="pppoe-password" class="form-control" placeholder="Password from ISP">
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="script">Script to run on first boot (uci-defaults):</label>
-                        <textarea id="script" class="form-control" rows="8" placeholder="#!/bin/sh&#10;&#10;# Your script here"></textarea>
-                    </div>
-
-                    <button id="request-build" class="btn btn-primary btn-lg btn-block" style="display: none;">REQUEST BUILD</button>
-                </div>
-
-                <div id="build-status" style="display: none;">
-                    <div class="alert alert-info">
-                        <div id="build-message">Building image...</div>
-                        <div class="progress mt-2">
-                            <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 100%"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="download-section" style="display: none;">
-                    <div class="alert alert-success">
-                        <h5>Download</h5>
-                        <div id="download-links"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        let app = {
-            versions: [],
-            devices: [],
-            selectedDevice: null,
-            selectedVersion: ''
-        };
-
-        document.addEventListener('DOMContentLoaded', init);
-
-        async function init() {
-            try {
-                await loadVersions();
-                bindEvents();
-            } catch (error) {
-                console.error('Failed to initialize:', error);
-            }
-        }
-
-        function bindEvents() {
-            document.getElementById('versions').addEventListener('change', handleVersionChange);
-            document.getElementById('models').addEventListener('input', handleDeviceSearch);
-            document.getElementById('use-aios-config').addEventListener('change', toggleAiosConfig);
-            document.getElementById('request-build').addEventListener('click', requestBuild);
-
-            // Connection type change
-            document.querySelectorAll('input[name="connectionType"]').forEach(radio => {
-                radio.addEventListener('change', handleConnectionTypeChange);
-            });
-
-            // Auto-generate script when aios config changes
-            document.getElementById('aios-form').addEventListener('input', generateAiosScript);
-
-            // Hide autocomplete when clicking outside
-            document.addEventListener('click', function(e) {
-                if (!e.target.closest('.autocomplete')) {
-                    hideAutocomplete();
-                }
-            });
-        }
-
-        async function loadVersions() {
-            try {
-                const response = await fetch('https://downloads.openwrt.org/.versions.json');
-                const data = await response.json();
-
-                app.versions = data.versions_list || [];
-                app.selectedVersion = data.stable_version || app.versions[0];
-
-                updateVersionSelect();
-                await loadDevices();
-            } catch (error) {
-                console.error('Failed to load versions:', error);
-            }
-        }
-
-        function updateVersionSelect() {
-            const select = document.getElementById('versions');
-            select.innerHTML = '';
-
-            app.versions.forEach(version => {
-                const option = document.createElement('option');
-                option.value = version;
-                option.textContent = version;
-                if (version === app.selectedVersion) {
-                    option.selected = true;
-                }
-                select.appendChild(option);
-            });
-        }
-
-        async function loadDevices() {
-            if (!app.selectedVersion) return;
-
-            try {
-                const url = `https://downloads.openwrt.org/releases/${app.selectedVersion}/.overview.json`;
-                const response = await fetch(url);
-                const data = await response.json();
-
-                app.devices = data.profiles || [];
-            } catch (error) {
-                console.error('Failed to load devices:', error);
-                app.devices = [];
-            }
-        }
-
-        async function handleVersionChange(e) {
-            app.selectedVersion = e.target.value;
-            app.selectedDevice = null;
-            hideDeviceInfo();
-            await loadDevices();
-        }
-
-        function handleDeviceSearch(e) {
-            const query = e.target.value.toLowerCase();
-
-            if (query.length < 2) {
-                hideAutocomplete();
-                return;
-            }
-
-            const matches = app.devices.filter(device => {
-                const title = getDeviceTitle(device).toLowerCase();
-                return title.includes(query) || device.id.toLowerCase().includes(query);
-            }).slice(0, 10);
-
-            showAutocomplete(matches);
-        }
-
-        function getDeviceTitle(device) {
-            if (device.titles && device.titles.length > 0) {
-                return device.titles[0].title || device.id;
-            }
-            return device.id;
-        }
-
-        function showAutocomplete(devices) {
-            const container = document.getElementById('models-autocomplete-list');
-            container.innerHTML = '';
-
-            if (devices.length === 0) {
-                hideAutocomplete();
-                return;
-            }
-
-            devices.forEach(device => {
-                const div = document.createElement('div');
-                div.innerHTML = `<strong>${getDeviceTitle(device)}</strong><br><small>Target: ${device.target}</small>`;
-                div.addEventListener('click', () => selectDevice(device));
-                container.appendChild(div);
-            });
-
-            container.style.display = 'block';
-        }
-
-        function hideAutocomplete() {
-            document.getElementById('models-autocomplete-list').style.display = 'none';
-        }
-
-        function selectDevice(device) {
-            app.selectedDevice = device;
-            document.getElementById('models').value = getDeviceTitle(device);
-            hideAutocomplete();
-            showDeviceInfo();
-        }
-
-        function showDeviceInfo() {
-            if (!app.selectedDevice) return;
-
-            const device = app.selectedDevice;
-
-            document.getElementById('device-title').textContent = getDeviceTitle(device);
-            document.getElementById('device-details').innerHTML = `Target: ${device.target}<br>Version: ${app.selectedVersion}`;
-
-            document.getElementById('device-info').style.display = 'block';
-            document.getElementById('packages-section').style.display = 'block';
-            document.getElementById('request-build').style.display = 'block';
-        }
-
-        function hideDeviceInfo() {
-            document.getElementById('device-info').style.display = 'none';
-            document.getElementById('packages-section').style.display = 'none';
-            document.getElementById('request-build').style.display = 'none';
-        }
-
-        function toggleAiosConfig(e) {
-            const form = document.getElementById('aios-form');
-            const script = document.getElementById('script');
-
-            if (e.target.checked) {
-                form.style.display = 'block';
-                generateAiosScript();
-            } else {
-                form.style.display = 'none';
-                script.value = '';
-            }
-        }
-
-        function handleConnectionTypeChange(e) {
-            const pppoeSection = document.getElementById('pppoe-section');
-
-            if (e.target.value === 'pppoe') {
-                pppoeSection.style.display = 'block';
-            } else {
-                pppoeSection.style.display = 'none';
-            }
-
-            if (document.getElementById('use-aios-config').checked) {
-                generateAiosScript();
-            }
-        }
-
-        function generateAiosScript() {
-            if (!document.getElementById('use-aios-config').checked) return;
-
-            const config = getAiosConfig();
-            const script = buildAiosScript(config);
-            document.getElementById('script').value = script;
-        }
-
-        function getAiosConfig() {
-            return {
-                language: document.getElementById('aios-language').value,
-                deviceName: document.getElementById('aios-device-name').value,
-                rootPassword: document.getElementById('aios-root-password').value,
-                wifiSSID: document.getElementById('aios-wifi-ssid').value,
-                wifiPassword: document.getElementById('aios-wifi-password').value,
-                connectionType: document.querySelector('input[name="connectionType"]:checked').value,
-                pppoeUsername: document.getElementById('pppoe-username').value,
-                pppoePassword: document.getElementById('pppoe-password').value
-            };
-        }
-
-        function buildAiosScript(config) {
-            let script = '#!/bin/sh\n\n';
-            script += '# OpenWrt Auto Configuration Script\n';
-            script += '# Generated by aios-light.sh configuration\n\n';
-
-            script += 'CONFIG_SCRIPT="/tmp/aios/aios-light.sh"\n';
-            script += 'mkdir -p /tmp/aios\n\n';
-
-            script += 'wget --no-check-certificate -O "$CONFIG_SCRIPT" "https://site-u.pages.dev/build/scripts/aios-light.sh" 2>/dev/null\n\n';
-
-            script += 'if [ ! -f "$CONFIG_SCRIPT" ]; then\n';
-            script += '    logger -t aios-config "Failed to download aios-light.sh"\n';
-            script += '    exit 1\n';
-            script += 'fi\n\n';
-
-            script += 'chmod +x "$CONFIG_SCRIPT"\n\n';
-
-            script += '# Configuration Variables\n';
-
-            if (config.language) {
-                script += `export LANGUAGE="${config.language}"\n`;
-            }
-
-            if (config.deviceName) {
-                script += `export DEVICE_NAME="${config.deviceName}"\n`;
-            }
-
-            if (config.rootPassword) {
-                script += `export ROOT_PASSWORD="${config.rootPassword}"\n`;
-            }
-
-            if (config.wifiSSID) {
-                script += `export WLAN_NAME="${config.wifiSSID}"\n`;
-            }
-
-            if (config.wifiPassword) {
-                script += `export WLAN_PASSWORD="${config.wifiPassword}"\n`;
-            }
-
-            if (config.connectionType === 'auto') {
-                script += 'export ISP_MODE=""\n';
-            } else if (config.connectionType === 'pppoe') {
-                script += 'export ISP_MODE="pppoe"\n';
-                if (config.pppoeUsername) {
-                    script += `export PPPOE_USERNAME="${config.pppoeUsername}"\n`;
-                }
-                if (config.pppoePassword) {
-                    script += `export PPPOE_PASSWORD="${config.pppoePassword}"\n`;
-                }
-            } else {
-                script += `export ISP_MODE="${config.connectionType}"\n`;
-            }
-
-            script += '\n# Execute configuration script\n';
-            script += 'exec sh "$CONFIG_SCRIPT" "$ISP_MODE"\n';
-
-            return script;
-        }
-
-        async function requestBuild() {
-            if (!app.selectedDevice) {
-                alert('Please select a device first');
-                return;
-            }
-
-            const packages = getPackages();
-            const script = document.getElementById('script').value;
-
-            const buildData = {
-                target: app.selectedDevice.target,
-                profile: app.selectedDevice.id,
-                packages: packages,
-                script: script
-            };
-
-            try {
-                document.getElementById('request-build').disabled = true;
-                document.getElementById('build-status').style.display = 'block';
-
-                const response = await fetch('https://sysupgrade.openwrt.org/api/v1/build', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(buildData)
-                });
-
-                if (!response.ok) {
-                    throw new Error(`Build failed: ${response.status}`);
-                }
-
-                const result = await response.json();
-
-                if (result.request_id) {
-                    await pollBuildStatus(result.request_id);
-                } else if (result.images) {
-                    showDownloadLinks(result.images);
-                }
-
-            } catch (error) {
-                console.error('Build error:', error);
-                alert('Build failed: ' + error.message);
-            } finally {
-                document.getElementById('request-build').disabled = false;
-                document.getElementById('build-status').style.display = 'none';
-            }
-        }
-
-        function getPackages() {
-            const input = document.getElementById('packages-custom').value;
-            return input.split('\n').map(pkg => pkg.trim()).filter(pkg => pkg);
-        }
-
-        async function pollBuildStatus(requestId) {
-            const maxAttempts = 60;
-            let attempts = 0;
-
-            while (attempts < maxAttempts) {
-                try {
-                    const response = await fetch(`https://sysupgrade.openwrt.org/api/v1/build/${requestId}`);
-                    const status = await response.json();
-
-                    if (status.status === 'done' || status.status === 'success') {
-                        showDownloadLinks(status.images);
-                        return;
-                    } else if (status.status === 'failed') {
-                        throw new Error('Build failed on server');
-                    }
-
-                    await new Promise(resolve => setTimeout(resolve, 5000));
-                    attempts++;
-
-                } catch (error) {
-                    console.error('Status check error:', error);
-                    throw error;
-                }
-            }
-
-            throw new Error('Build timeout');
-        }
-
-        function showDownloadLinks(images) {
-            document.getElementById('build-status').style.display = 'none';
-            
-            const container = document.getElementById('download-links');
-            container.innerHTML = '';
-
-            if (images && images.length > 0) {
-                images.forEach(image => {
-                    const link = document.createElement('a');
-                    link.href = image.url;
-                    link.className = 'btn btn-success mr-2 mb-2';
-                    link.textContent = image.name || 'Download';
-                    link.target = '_blank';
-                    container.appendChild(link);
-                });
-            }
-            
-            document.getElementById('download-section').style.display = 'block';
-        }
-    </script>
-</body>
-</html>
+#!/bin/ash
+#
+# OpenWrt 初期設定スクリプト (aios-light.sh代替版)
+# OpenWrt ash シェル対応
+#
+
+# 設定変数 (必要に応じて変更してください)
+DEVICE_NAME="${DEVICE_NAME:-OpenWrt-Router}"
+ROOT_PASSWORD="${ROOT_PASSWORD:-}"
+WLAN_NAME="${WLAN_NAME:-MyOpenWrt}"
+WLAN_PASSWORD="${WLAN_PASSWORD:-}"
+ISP_MODE="${ISP_MODE:-auto}"
+PPPOE_USERNAME="${PPPOE_USERNAME:-}"
+PPPOE_PASSWORD="${PPPOE_PASSWORD:-}"
+LANGUAGE="${LANGUAGE:-en}"
+
+# ログ出力関数
+log() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] $1" | tee -a /var/log/openwrt-setup.log
+}
+
+log_error() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') [ERROR] $1" | tee -a /var/log/openwrt-setup.log >&2
+}
+
+# UCI設定のバックアップ
+backup_config() {
+    log "設定のバックアップを作成中..."
+    cp -r /etc/config /etc/config.backup.$(date +%Y%m%d_%H%M%S)
+}
+
+# ホスト名設定
+setup_hostname() {
+    if [ -n "$DEVICE_NAME" ]; then
+        log "ホスト名を設定中: $DEVICE_NAME"
+        uci set system.@system[0].hostname="$DEVICE_NAME"
+        uci commit system
+    fi
+}
+
+# rootパスワード設定
+setup_root_password() {
+    if [ -n "$ROOT_PASSWORD" ]; then
+        log "rootパスワードを設定中..."
+        echo "root:$ROOT_PASSWORD" | chpasswd
+    else
+        log "パスワード認証を無効化中..."
+        passwd -d root
+    fi
+}
+
+# WiFi設定
+setup_wifi() {
+    if [ -n "$WLAN_NAME" ]; then
+        log "WiFi設定を開始..."
+        
+        # WiFiデバイスを有効化
+        uci set wireless.radio0.disabled=0
+        uci set wireless.radio1.disabled=0 2>/dev/null || true
+        
+        # SSID設定
+        uci set wireless.default_radio0.ssid="$WLAN_NAME"
+        uci set wireless.default_radio1.ssid="${WLAN_NAME}_5G" 2>/dev/null || true
+        
+        # WiFiパスワード設定
+        if [ -n "$WLAN_PASSWORD" ]; then
+            log "WiFiパスワードを設定中..."
+            uci set wireless.default_radio0.encryption='psk2'
+            uci set wireless.default_radio0.key="$WLAN_PASSWORD"
+            uci set wireless.default_radio1.encryption='psk2' 2>/dev/null || true
+            uci set wireless.default_radio1.key="$WLAN_PASSWORD" 2>/dev/null || true
+        else
+            log "オープンWiFiを設定中..."
+            uci set wireless.default_radio0.encryption='none'
+            uci set wireless.default_radio1.encryption='none' 2>/dev/null || true
+        fi
+        
+        uci commit wireless
+        wifi reload
+    fi
+}
+
+# インターネット接続設定
+setup_internet() {
+    log "インターネット接続設定: $ISP_MODE"
+    
+    case "$ISP_MODE" in
+        "pppoe")
+            setup_pppoe
+            ;;
+        "dhcp")
+            setup_dhcp
+            ;;
+        "dslite")
+            setup_dslite
+            ;;
+        "mape")
+            setup_mape
+            ;;
+        "none")
+            log "インターネット接続設定をスキップ"
+            ;;
+        *)
+            log "自動検出モード - DHCP設定を適用"
+            setup_dhcp
+            ;;
+    esac
+}
+
+# DHCP設定
+setup_dhcp() {
+    log "DHCP接続を設定中..."
+    uci set network.wan.proto='dhcp'
+    uci commit network
+}
+
+# PPPoE設定
+setup_pppoe() {
+    if [ -n "$PPPOE_USERNAME" ] && [ -n "$PPPOE_PASSWORD" ]; then
+        log "PPPoE接続を設定中..."
+        uci set network.wan.proto='pppoe'
+        uci set network.wan.username="$PPPOE_USERNAME"
+        uci set network.wan.password="$PPPOE_PASSWORD"
+        uci commit network
+    else
+        log_error "PPPoEユーザー名またはパスワードが未設定"
+    fi
+}
+
+# DS-Lite設定
+setup_dslite() {
+    log "DS-Lite接続を設定中..."
+    
+    # IPv6 WAN設定
+    uci set network.wan6=interface
+    uci set network.wan6.ifname='@wan'
+    uci set network.wan6.proto='dhcpv6'
+    uci set network.wan6.reqaddress='try'
+    uci set network.wan6.reqprefix='auto'
+    
+    # DS-Liteトンネル設定
+    uci set network.dslite=interface
+    uci set network.dslite.proto='dslite'
+    uci set network.dslite.peeraddr='aftr.ipv6.ocn.ne.jp'  # OCN例
+    
+    uci commit network
+}
+
+# MAP-E設定
+setup_mape() {
+    log "MAP-E接続を設定中..."
+    
+    # IPv6 WAN設定
+    uci set network.wan6=interface
+    uci set network.wan6.ifname='@wan'
+    uci set network.wan6.proto='dhcpv6'
+    uci set network.wan6.reqaddress='try'
+    uci set network.wan6.reqprefix='auto'
+    
+    # MAP-Eトンネル設定
+    uci set network.map=interface
+    uci set network.map.proto='map'
+    uci set network.map.maptype='map-e'
+    uci set network.map.peeraddr='auto'
+    uci set network.map.ipaddr='auto'
+    uci set network.map.ip4prefixlen='auto'
+    uci set network.map.ip6prefix='auto'
+    uci set network.map.ip6prefixlen='auto'
+    uci set network.map.ealen='auto'
+    uci set network.map.psidlen='auto'
+    uci set network.map.offset='auto'
+    
+    uci commit network
+}
+
+# 言語設定 (LuCIが利用可能な場合)
+setup_language() {
+    if [ "$LANGUAGE" = "ja" ]; then
+        log "日本語設定を適用中..."
+        uci set luci.main.lang='ja' 2>/dev/null || true
+        uci commit luci 2>/dev/null || true
+    fi
+}
+
+# ファイアウォール設定
+setup_firewall() {
+    log "ファイアウォール設定を適用中..."
+    
+    # SSH許可 (デフォルトで有効だが明示的に設定)
+    uci set firewall.@rule[0].target='ACCEPT'
+    uci set firewall.@rule[0].src='wan'
+    uci set firewall.@rule[0].proto='tcp'
+    uci set firewall.@rule[0].dest_port='22'
+    uci set firewall.@rule[0].name='Allow-SSH'
+    
+    uci commit firewall
+}
+
+# パッケージ更新
+update_packages() {
+    log "パッケージリストを更新中..."
+    opkg update
+    
+    # 基本的な追加パッケージをインストール
+    log "基本パッケージをインストール中..."
+    opkg install luci-ssl luci-i18n-base-ja luci-i18n-firewall-ja 2>/dev/null || true
+}
+
+# サービス再起動
+restart_services() {
+    log "サービスを再起動中..."
+    /etc/init.d/network restart
+    /etc/init.d/firewall restart
+    /etc/init.d/dropbear restart
+}
+
+# メイン実行部分
+main() {
+    log "OpenWrt設定スクリプトを開始..."
+    
+    # 設定内容をログに記録
+    log "設定内容:"
+    log "  デバイス名: $DEVICE_NAME"
+    log "  WiFi SSID: $WLAN_NAME"
+    log "  接続方式: $ISP_MODE"
+    log "  言語: $LANGUAGE"
+    
+    backup_config
+    setup_hostname
+    setup_root_password
+    setup_wifi
+    setup_internet
+    setup_language
+    setup_firewall
+    
+    # パッケージ更新は時間がかかるため最後に実行
+    update_packages
+    
+    restart_services
+    
+    log "設定完了！"
+    log "設定を有効にするために再起動を推奨します: reboot"
+}
+
+# スクリプト実行
+main "$@"
