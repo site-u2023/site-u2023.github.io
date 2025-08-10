@@ -20,7 +20,7 @@
         .autocomplete-items div:hover, .autocomplete-active { background-color: #e9ecef; }
         .info { background-color: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; padding: 0.75rem 1.25rem; margin-bottom: 1rem; border-radius: 0.25rem; }
         .info h5 { margin-top: 0; margin-bottom: 0.5rem; font-weight: 500; }
-        .images, .packages, .asu-controls { margin: 1.5rem 0; }
+        .images, .packages { margin: 1.5rem 0; }
         .images h4, .packages h4 { margin-bottom: 1rem; font-weight: 500; }
         .btn { display: inline-block; font-weight: 400; color: #212529; text-align: center; vertical-align: middle; cursor: pointer; background-color: transparent; border: 1px solid transparent; padding: 0.375rem 0.75rem; font-size: 1rem; line-height: 1.5; border-radius: 0.25rem; transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out; text-decoration: none; }
         .btn-primary { color: #fff; background-color: #007bff; border-color: #007bff; }
@@ -68,43 +68,17 @@
             <div id="device-details"></div>
         </div>
 
-        <div class="asu-controls" style="display: none;">
-            <h4>Customize Firmware with ASU</h4>
-            <p>You can customize the firmware by selecting a profile and changing the package list. Please note that this will generate a custom image, which may take some time.</p>
-
-            <div class="form-group">
-                <label for="target-select">Target</label>
-                <select id="target-select" class="form-control">
-                    <option value="" disabled selected>Loading...</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label for="profile-select">Profile</label>
-                <select id="profile-select" class="form-control">
-                    <option value="" disabled selected>Select a device first...</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label for="asu-packages">Packages to add/remove (one per line, prefix with '-' to remove):</label>
-                <textarea id="asu-packages" class="form-control" rows="3" placeholder="-wpad-basic-wolfssl&#10;wpad-wolfssl&#10;luci-ssl"></textarea>
-            </div>
-
-            <button id="request-build" class="btn btn-primary" disabled>REQUEST BUILD</button>
-        </div>
         <div id="images" class="images" style="display: none;">
             </div>
 
         <div id="packages" class="packages" style="display: none;">
-            <h4>Installed Packages</h4>
-            <div id="packages-default"></div>
-            <h4>Additional Packages</h4>
+            <h4>Customize installed packages and/or first boot script</h4>
             <div class="form-group">
-                <label for="packages-custom">Add additional packages (one per line):</label>
-                <textarea id="packages-custom" class="form-control" rows="3"></textarea>
+                <label for="asu-packages">Packages to add/remove (one per line, prefix with '-' to remove):</label>
+                <textarea id="asu-packages" class="form-control" rows="8" placeholder="device-specific default packages...&#10;-wpad-basic-wolfssl&#10;wpad-wolfssl&#10;luci-ssl"></textarea>
             </div>
-            <button id="get-image" class="btn btn-primary">REQUEST IMAGE</button>
+            
+            <button id="request-build" class="btn btn-primary" disabled>REQUEST BUILD</button>
         </div>
 
         <div id="build-progress" class="build-progress">
@@ -136,22 +110,10 @@
         document.getElementById('models').addEventListener('input', handleDeviceSearch);
         document.getElementById('models').addEventListener('keydown', handleKeydown);
         document.getElementById('versions').addEventListener('change', handleVersionChange);
-        document.getElementById('get-image').addEventListener('click', requestImage);
         document.addEventListener('click', hideAutocomplete);
         
         // 新しいASU関連のイベント
         document.getElementById('request-build').addEventListener('click', buildAsuRequest);
-        document.getElementById('target-select').addEventListener('change', () => {
-            const target = document.getElementById('target-select').value;
-            loadProfilesForTarget(target);
-        });
-        document.getElementById('profile-select').addEventListener('change', () => {
-            const profileSelect = document.getElementById('profile-select');
-            const selectedOption = profileSelect.options[profileSelect.selectedIndex];
-            const pkgTextarea = document.getElementById('asu-packages');
-            pkgTextarea.value = selectedOption.dataset.packages || '';
-            document.getElementById('request-build').disabled = false;
-        });
     }
 
     async function loadVersions() {
@@ -231,11 +193,12 @@
         showDeviceInfo(device);
 
         // ASU機能の表示と自動入力
-        document.getElementById('asu-controls').style.display = 'block';
-        document.getElementById('packages').style.display = 'none';
-
-        // ASU用のターゲットとプロファイルを自動でロード
-        await loadAsuProfiles(device.target, device.profile);
+        document.getElementById('packages').style.display = 'block';
+        document.getElementById('request-build').disabled = false;
+        
+        // デフォルトパッケージをASU入力欄に設定
+        const defaultPackages = (device.packages || []).join('\n');
+        document.getElementById('asu-packages').value = defaultPackages;
     }
     
     function showDeviceInfo(device) {
@@ -249,68 +212,19 @@
             <strong>Profile:</strong> ${device.profile}
         `;
         infoDiv.style.display = 'block';
-
-        const packagesDiv = document.getElementById('packages');
-        packagesDiv.style.display = 'block';
-        document.getElementById('packages-default').textContent = (device.packages || []).join(' ');
         
         const imagesDiv = document.getElementById('images');
         imagesDiv.style.display = 'none';
-        
     }
 
     function hideDeviceInfo() {
         document.getElementById('info').style.display = 'none';
         document.getElementById('packages').style.display = 'none';
         document.getElementById('images').style.display = 'none';
-        document.getElementById('asu-controls').style.display = 'none';
     }
 
     function hideAutocomplete() {
         document.getElementById('autocomplete-list').innerHTML = '';
-    }
-    
-    async function requestImage() {
-        if (!selectedDevice) return;
-        
-        const body = {
-            version: currentVersion,
-            target: selectedDevice.target,
-            profile: selectedDevice.profile,
-            packages: (document.getElementById('packages-custom').value.trim().split(/\s+/) || []).concat(selectedDevice.packages || []).filter(Boolean)
-        };
-        
-        try {
-            document.getElementById('get-image').disabled = true;
-            showProgress('ビルドリクエストを送信中...', 10);
-
-            const res = await fetch('https://firmware-selector.openwrt.org/api/images', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body)
-            });
-
-            if (!res.ok) {
-                const errData = await res.json();
-                throw new Error(`Build failed: HTTP ${res.status}: ${JSON.stringify(errData)}`);
-            }
-
-            const data = await res.json();
-            console.log('ビルド成功:', data);
-
-            if (data.images) {
-                hideProgress();
-                showDownloadLinks(data.images);
-            } else {
-                throw new Error('No images in response');
-            }
-        } catch (err) {
-            console.error('ビルドリクエストエラー:', err);
-            alert('ビルドに失敗しました: ' + err.message);
-            hideProgress();
-        } finally {
-            document.getElementById('get-image').disabled = false;
-        }
     }
     
     function handleKeydown(e) {
@@ -320,83 +234,14 @@
     // ----------------------------------------
     // ユーザー提供のASU関連JavaScript
     // ----------------------------------------
-    async function loadAsuProfiles(initialTarget, initialProfile) {
-        const targetSelect = document.getElementById('target-select');
-        targetSelect.innerHTML = '<option value="" disabled selected>Loading targets...</option>';
-        const profileSelect = document.getElementById('profile-select');
-        profileSelect.innerHTML = '<option value="" disabled selected>Select a target first...</option>';
-        document.getElementById('asu-packages').value = '';
-
-        try {
-            const res = await fetch('https://sysupgrade.openwrt.org/targets.json');
-            const targets = await res.json();
-            
-            targetSelect.innerHTML = '';
-            let targetFound = false;
-            Object.keys(targets).forEach(target => {
-                const opt = document.createElement('option');
-                opt.value = target;
-                opt.textContent = target;
-                if (target === initialTarget) {
-                    opt.selected = true;
-                    targetFound = true;
-                }
-                targetSelect.appendChild(opt);
-            });
-            
-            if (targetFound) {
-                loadProfilesForTarget(initialTarget, initialProfile);
-            } else {
-                 loadProfilesForTarget(targetSelect.value);
-            }
-        } catch (err) {
-            console.error('targets.json の取得に失敗しました:', err);
-            targetSelect.innerHTML = '<option value="" disabled selected>Error loading targets</option>';
-        }
-    }
-
-    async function loadProfilesForTarget(target, initialProfile = null) {
-        const profileSelect = document.getElementById('profile-select');
-        profileSelect.innerHTML = '<option value="" disabled selected>Loading profiles...</option>';
-
-        try {
-            const res = await fetch(`https://sysupgrade.openwrt.org/${target}/profiles.json`);
-            const profiles = await res.json();
-
-            profileSelect.innerHTML = '';
-            let profileFound = false;
-            Object.entries(profiles).forEach(([name, data]) => {
-                const opt = document.createElement('option');
-                opt.value = name;
-                opt.textContent = `${name} - ${data.title}`;
-                opt.dataset.packages = data.packages || '';
-                if (name === initialProfile) {
-                    opt.selected = true;
-                    profileFound = true;
-                }
-                profileSelect.appendChild(opt);
-            });
-            
-            // デフォルトで最初のプロファイルを選択＆パッケージ自動入力
-            if (profileSelect.options.length > 0) {
-                const selected = profileFound ? profileSelect.options[profileSelect.selectedIndex] : profileSelect.options[0];
-                document.getElementById('asu-packages').value = selected.dataset.packages || '';
-                document.getElementById('request-build').disabled = false;
-            } else {
-                 document.getElementById('request-build').disabled = true;
-            }
-
-        } catch (err) {
-            console.error('profiles.json の取得に失敗しました:', err);
-            profileSelect.innerHTML = '<option value="" disabled selected>Error loading profiles</option>';
-            document.getElementById('asu-packages').value = '';
-            document.getElementById('request-build').disabled = true;
-        }
-    }
-
     async function buildAsuRequest() {
-        const target = document.getElementById('target-select').value;
-        const profile = document.getElementById('profile-select').value;
+        if (!selectedDevice) {
+            alert('デバイスを選択してください。');
+            return;
+        }
+
+        const target = selectedDevice.target;
+        const profile = selectedDevice.profile;
 
         const pkgList = document.getElementById('asu-packages').value
             .trim()
