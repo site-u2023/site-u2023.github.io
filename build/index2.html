@@ -612,7 +612,7 @@
                         if (found) {
                             const pkgs = normalizePackagesField(found.packages || found.package || found.defaults || found.default_packages || found['installed-packages']);
                             if (pkgs.length) {
-                                document.getElementById('packages-custom').value = pkgs.join('\n');
+                                document.getElementById('packages-custom').value = pkgs.join(' ');
                                 return;
                             }
                         }
