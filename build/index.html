@@ -671,7 +671,7 @@
         // テンプレート読み込み + カスタマイズ
         async function loadAiosTemplate() {
             try {
-                const response = await fetch('uci-defaults/setup.sh');
+                const response = await fetch('scripts/setup.sh');
                 if (!response.ok) {
                     throw new Error('Failed to load setup.sh template');
                 }
@@ -686,7 +686,7 @@
                 document.getElementById('script').value = content;
             } catch (error) {
                 console.error('Template loading error:', error);
-                document.getElementById('script').value = '#!/bin/sh\n\n# Failed to load setup.sh template\n# Please check if uci-defaults/setup.sh exists';
+                document.getElementById('script').value = '#!/bin/sh\n\n# Failed to load setup.sh template\n# Please check if scripts/setup.sh exists';
             }
         }
 
