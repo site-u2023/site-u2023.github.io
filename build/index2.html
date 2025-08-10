@@ -593,22 +593,33 @@
         }
 
         function toggleAiosConfig(e) {
-            const config = document.getElementById('aios-config');
-            const script = document.getElementById('script');
-            const packagesCustom = document.getElementById('packages-custom');
+            const configDiv = document.getElementById('aios-config');
+            const scriptTextarea = document.getElementById('script');
+            const packagesTextarea = document.getElementById('packages-custom');
 
             if (e.target.checked) {
-                config.style.display = 'block';
+                configDiv.style.display = 'block';
+
+                // パッケージリストの更新
+                const aiosPackages = "wpad-wolfssl luci-ssl-nginx";
+                const packagesToRemove = ["wpad-basic-wolfssl", "luci-ssl"];
+
+                const currentPackages = packagesTextarea.value.split(/\s+/).filter(Boolean);
+                let newPackagesSet = new Set(currentPackages);
+
+                packagesToRemove.forEach(pkg => newPackagesSet.delete(pkg));
+                aiosPackages.split(/\s+/).filter(Boolean).forEach(pkg => newPackagesSet.add(pkg));
+                
+                packagesTextarea.value = [...newPackagesSet].join(' ');
+
+                // スクリプトの生成も実行
                 generateAiosScript();
-                // aios-light.shを使用する場合、デフォルトパッケージに加えて専用パッケージを追加
-                const currentPackages = packagesCustom.value.split('\n').map(p => p.trim()).filter(p => p && p !== 'aios-light-packages');
-                packagesCustom.value = currentPackages.concat(['aios-light-packages']).join('\n');
             } else {
-                config.style.display = 'none';
-                script.value = '';
-                // チェックを外したらaios-light-packagesを削除してデフォルトに戻す
-                const currentPackages = packagesCustom.value.split('\n').map(p => p.trim()).filter(p => p && p !== 'aios-light-packages');
-                packagesCustom.value = currentPackages.join('\n');
+                configDiv.style.display = 'none';
+                scriptTextarea.value = '';
+                
+                // パッケージリストを元の状態に戻したい場合は、ここで元のリストを再取得・再設定する処理を追加
+                // 現状は変更しない（ユーザーが手動で元に戻す）
             }
         }
 
