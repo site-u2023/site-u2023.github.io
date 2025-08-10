@@ -75,8 +75,8 @@ const translations = {
     ja: {
         address: 'アドレス',
         browser: 'ブラウザ',
-        terminal: 'ターミナル (スクリプト)',
-        initialSetup: '初期設定 (ターミナル)',
+        terminal: 'ターミナル (Windows用)',
+        initialSetup: '初期設定 (ターミナル用)',
         apply: '適用',
         open: '開く',
         qrCodeDisplay: 'QRコード',
@@ -103,27 +103,27 @@ const translations = {
         // iPhone
         termius: 'Termius (SSH)',
         appStore: 'App Storeで開く',
-        connectNote: 'ダウンロード後、設定したIPアドレスでSSH接続してください',
+        connectNote: 'ダウンロード後、設定したIPアドレスでSSH接続して下さい',
         // Android
         juiceSSH: 'JuiceSSH',
         googlePlay: 'Google Playで開く',
         // Setup Explanations
-        windowsSetupExplanation: 'プロトコルハンドラー登録 (レジストリファイルをダウンロードし、ダブルクリックしてインストールしてください)',
-        iphoneSetupExplanation: 'Termiusインストール (App StoreからTermiusをダウンロードし、インストールしてください)',
-        androidSetupExplanation: 'JuiceSSHインストール (Google PlayからJuiceSSHをダウンロードし、インストールしてください)',
+        windowsSetupExplanation: 'プロトコルハンドラー登録 (レジストリファイルをダウンロードし、ダブルクリックしてインストールして下さい)',
+        iphoneSetupExplanation: 'Termiusインストール (App StoreからTermiusをインストールし、設定したIPアドレスでSSH接続して下さい)',
+        androidSetupExplanation: 'JuiceSSHインストール (Google PlayからJuiceSSHをインストールし、設定したIPアドレスでSSH接続して下さい)',
         // Generic Dialog Messages
-        promptNewAddress: '新しいIPアドレスまたはホスト名を入力してください:',
-        alertMinimumAddress: '最低1つのアドレスは必要です。',
+        promptNewAddress: '新しいIPアドレスまたはホスト名を入力して下さい:',
+        alertMinimumAddress: '最低1つのアドレスは必要です',
         promptItemName: '項目名を入力してください:',
         promptValue: '値を入力してください:',
-        alertMinimumItem: '最低1つの項目は必要です。',
-        confirmDeleteItem: '項目 "{0}" を削除しますか？'
+        alertMinimumItem: '最低1つの項目は必要です',
+        confirmDeleteItem: '項目 "{0}" を削除します'
     },
     en: {
         address: 'Address',
         browser: 'Browser',
-        terminal: 'Terminal',
-        initialSetup: 'Initial Setup',
+        terminal: 'Terminal (for Windows)',
+        initialSetup: 'Initial Setup (for Terminal)',
         apply: 'Apply',
         open: 'Open',
         qrCodeDisplay: 'QR Code',
@@ -145,28 +145,28 @@ const translations = {
         langEn: 'English',
         langJa: '日本語',
         // Terminal Explanations
-        aiosExplanation: 'Menu-based configuration script for OpenWrt initial setup.',
-        aioslightExplanation: '対話形式簡易版スクリプト',
-        sshExplanation: 'Direct SSH login to OpenWrt device.',
+        aiosExplanation: 'Menu-based script',
+        aioslightExplanation: 'Interactive simplified script',
+        sshExplanation: 'SSH login',
         // iPhone
         termius: 'Termius (SSH)',
         appStore: 'Open in App Store',
-        connectNote: 'After download, connect via SSH using your configured IP address',
+        connectNote: 'After download, please connect via SSH using your configured IP address',
         // Android
         juiceSSH: 'JuiceSSH',
         googlePlay: 'Open in Google Play',
         // Setup Explanations
         setupExplanation: 'Explanation',
-        windowsSetupExplanation: 'Download the protocol handler registry file and double-click to install it.',
-        iphoneSetupExplanation: 'Download Termius app from App Store and connect via SSH using your configured IP address.',
-        androidSetupExplanation: 'Download JuiceSSH app from Google Play and connect via SSH using your configured IP address.',
+        windowsSetupExplanation: 'Protocol handler registration (Please download the registry file and double-click to install)',
+        iphoneSetupExplanation: 'Termius installation (Please install Termius from App Store and connect via SSH using your configured IP address)',
+        androidSetupExplanation: 'JuiceSSH installation (Please install JuiceSSH from Google Play and connect via SSH using your configured IP address)',
         // Generic Dialog Messages
-        promptNewAddress: 'Enter new IP address or hostname:',
-        alertMinimumAddress: 'At least one address is required.',
-        promptItemName: 'Enter item name:',
-        promptValue: 'Enter value:',
-        alertMinimumItem: 'At least one item is required.',
-        confirmDeleteItem: 'Delete item "{0}"?'
+        promptNewAddress: 'Please enter a new IP address or hostname:',
+        alertMinimumAddress: 'At least one address is required',
+        promptItemName: 'Please enter item name:',
+        promptValue: 'Please enter value:',
+        alertMinimumItem: 'At least one item is required',
+        confirmDeleteItem: 'Deleting item "{0}"'
     }
 };
 
