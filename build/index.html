@@ -631,7 +631,7 @@
             await fetchProfilePackagesAndPopulate(device);
         }
 
-        // 追加: profiles.json / 個別 profile JSON から default packages を取得し、重要パッケージを追加
+        // 追加: profiles.json / 個別 profile JSON から default packages を取得し、公式と同じ方式で表示
         async function fetchProfilePackagesAndPopulate(device) {
             if (!device || !device.target || !device.id) return;
 
@@ -647,8 +647,6 @@
             candidates.push(`https://downloads.openwrt.org/snapshots/targets/${target}/profiles.json`);
             candidates.push(`https://downloads.openwrt.org/snapshots/targets/${target}/profiles/${profileId}.json`);
 
-            let foundPackages = [];
-
             for (const url of candidates) {
                 try {
                     const res = await fetch(url);
@@ -662,8 +660,8 @@
                         if (found) {
                             const pkgs = normalizePackagesField(found.packages || found.package || found.defaults || found.default_packages || found['installed-packages']);
                             if (pkgs.length) {
-                                foundPackages = pkgs;
-                                break;
+                                document.getElementById('packages-custom').value = pkgs.join('\n');
+                                return;
                             }
                         }
                     }
@@ -672,8 +670,8 @@
                     if (direct) {
                         const pkgs = normalizePackagesField(direct);
                         if (pkgs.length) {
-                            foundPackages = pkgs;
-                            break;
+                            document.getElementById('packages-custom').value = pkgs.join('\n');
+                            return;
                         }
                     }
                 } catch (e) {
@@ -681,26 +679,6 @@
                     continue;
                 }
             }
-
-            // 重要なパッケージを追加（不足している場合）
-            const essentialPackages = [
-                'luci',
-                'luci-ssl', 
-                'wpad-wolfssl',
-                '-wpad-basic-wolfssl'
-            ];
-
-            // 既存パッケージと重要パッケージをマージ
-            let allPackages = [...foundPackages];
-            
-            essentialPackages.forEach(pkg => {
-                if (!allPackages.includes(pkg)) {
-                    allPackages.push(pkg);
-                }
-            });
-
-            // パッケージを設定
-            document.getElementById('packages-custom').value = allPackages.join('\n');
         }
 
         function normalizePackagesField(raw) {
