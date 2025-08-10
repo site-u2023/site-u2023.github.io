@@ -1,843 +1,541 @@
 <!DOCTYPE html>
 <html lang="ja">
-
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <title>OpenWrt Firmware Selector</title>
-    <style>
-        /* 公式サイトのスタイルを再現 */
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
-            line-height: 1.5;
-            color: #212529;
-            background-color: #fff;
-            margin: 0;
-            padding: 20px;
-        }
-
-        .container {
-            max-width: 720px;
-            margin: 0 auto;
-            padding: 0 15px;
-        }
-
-        h1 {
-            font-size: 2.5rem;
-            font-weight: 300;
-            text-align: center;
-            margin-bottom: 1rem;
-            color: #007bff;
-        }
-
-        .lead {
-            font-size: 1.25rem;
-            font-weight: 300;
-            text-align: center;
-            margin-bottom: 2rem;
-            color: #6c757d;
-        }
-
-        .form-group {
-            margin-bottom: 1rem;
-        }
-
-        label {
-            display: inline-block;
-            margin-bottom: 0.5rem;
-            font-weight: 500;
-        }
-
-        .form-control {
-            display: block;
-            width: 100%;
-            padding: 0.375rem 0.75rem;
-            font-size: 1rem;
-            font-weight: 400;
-            line-height: 1.5;
-            color: #495057;
-            background-color: #fff;
-            background-clip: padding-box;
-            border: 1px solid #ced4da;
-            border-radius: 0.25rem;
-            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-        }
-
-        .form-control:focus {
-            color: #495057;
-            background-color: #fff;
-            border-color: #80bdff;
-            outline: 0;
-            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-        }
-
-        .autocomplete {
-            position: relative;
-        }
-
-        .autocomplete-items {
-            position: absolute;
-            border: 1px solid #d4edda;
-            border-bottom: none;
-            border-top: none;
-            z-index: 99;
-            top: 100%;
-            left: 0;
-            right: 0;
-            max-height: 300px;
-            overflow-y: auto;
-            background-color: #fff;
-        }
-
-        .autocomplete-items div {
-            padding: 10px;
-            cursor: pointer;
-            background-color: #fff;
-            border-bottom: 1px solid #d4edda;
-        }
-
-        .autocomplete-items div:hover {
-            background-color: #e9ecef;
-        }
-
-        .autocomplete-active {
-            background-color: #007bff !important;
-            color: #ffffff;
-        }
-
-        .info {
-            background-color: #d1ecf1;
-            border: 1px solid #bee5eb;
-            color: #0c5460;
-            padding: 0.75rem 1.25rem;
-            margin-bottom: 1rem;
-            border-radius: 0.25rem;
-        }
-
-        .info h5 {
-            margin-top: 0;
-            margin-bottom: 0.5rem;
-            font-weight: 500;
-        }
-
-        .packages {
-            margin: 1.5rem 0;
-        }
-
-        .packages h4 {
-            margin-bottom: 1rem;
-            font-weight: 500;
-        }
-
-        .btn {
-            display: inline-block;
-            font-weight: 400;
-            color: #212529;
-            text-align: center;
-            vertical-align: middle;
-            cursor: pointer;
-            background-color: transparent;
-            border: 1px solid transparent;
-            padding: 0.375rem 0.75rem;
-            font-size: 1rem;
-            line-height: 1.5;
-            border-radius: 0.25rem;
-            transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-            text-decoration: none;
-        }
-
-        .btn-primary {
-            color: #fff;
-            background-color: #007bff;
-            border-color: #007bff;
-        }
-
-        .btn-primary:hover {
-            color: #fff;
-            background-color: #0069d9;
-            border-color: #0062cc;
-        }
-
-        .btn-primary:disabled {
-            color: #fff;
-            background-color: #007bff;
-            border-color: #007bff;
-            opacity: 0.65;
-        }
-
-        .images {
-            margin: 1.5rem 0;
-        }
-
-        .download-link {
-            display: inline-block;
-            margin: 0.25rem 0.5rem 0.25rem 0;
-            padding: 0.5rem 1rem;
-            background-color: #28a745;
-            color: #fff;
-            text-decoration: none;
-            border-radius: 0.25rem;
-        }
-
-        .download-link:hover {
-            background-color: #218838;
-            color: #fff;
-            text-decoration: none;
-        }
-
-        /* aios-light.sh設定専用スタイル */
-        .aios-section {
-            margin: 1.5rem 0;
-            padding: 1rem;
-            background-color: #f8f9fa;
-            border: 1px solid #dee2e6;
-            border-radius: 0.25rem;
-        }
-
-        .aios-config {
-            margin-top: 1rem;
-            display: none;
-        }
-
-        .form-row {
-            display: flex;
-            flex-wrap: wrap;
-            margin-right: -5px;
-            margin-left: -5px;
-        }
-
-        .form-row > .form-group {
-            padding-right: 5px;
-            padding-left: 5px;
-            flex: 1;
-        }
-
-        .radio-group {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 1rem;
-        }
-
-        .form-check {
-            position: relative;
-            display: block;
-            padding-left: 1.25rem;
-        }
-
-        .form-check-input {
-            position: absolute;
-            margin-top: 0.3rem;
-            margin-left: -1.25rem;
-        }
-
-        .form-check-label {
-            margin-bottom: 0;
-        }
-
-        .conditional-section {
-            margin-top: 1rem;
-            padding: 1rem;
-            background-color: #fff3cd;
-            border: 1px solid #ffeaa7;
-            border-radius: 0.25rem;
-            display: none;
-        }
-
-        .text-muted {
-            color: #6c757d;
-        }
-
-        .small {
-            font-size: 0.875em;
-        }
-
-        /* プログレス表示の改善 */
-        .build-progress {
-            margin: 1rem 0;
-            padding: 1rem;
-            background-color: #e3f2fd;
-            border: 1px solid #2196f3;
-            border-radius: 0.25rem;
-            display: none;
-        }
-
-        .progress {
-            width: 100%;
-            height: 1rem;
-            background-color: #e9ecef;
-            border-radius: 0.25rem;
-            overflow: hidden;
-            margin-top: 0.5rem;
-        }
-
-        .progress-bar {
-            height: 100%;
-            background-color: #007bff;
-            transition: width 0.3s ease;
-        }
-
-        @media (max-width: 576px) {
-            .form-row {
-                flex-direction: column;
-            }
-           
-            .radio-group {
-                flex-direction: column;
-                gap: 0.5rem;
-            }
-        }
-    </style>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>OpenWrt Firmware Selector</title>
+    <style>
+        /* CSSは変更ありません */
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif; line-height: 1.5; color: #212529; background-color: #fff; margin: 0; padding: 20px; }
+        .container { max-width: 720px; margin: 0 auto; padding: 0 15px; }
+        h1 { font-size: 2.5rem; font-weight: 300; text-align: center; margin-bottom: 1rem; color: #007bff; }
+        .lead { font-size: 1.25rem; font-weight: 300; text-align: center; margin-bottom: 2rem; color: #6c757d; }
+        .form-group { margin-bottom: 1rem; }
+        label { display: inline-block; margin-bottom: 0.5rem; font-weight: 500; }
+        .form-control { display: block; width: 100%; padding: 0.375rem 0.75rem; font-size: 1rem; font-weight: 400; line-height: 1.5; color: #495057; background-color: #fff; background-clip: padding-box; border: 1px solid #ced4da; border-radius: 0.25rem; transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out; }
+        .form-control:focus { color: #495057; background-color: #fff; border-color: #80bdff; outline: 0; box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25); }
+        .autocomplete { position: relative; }
+        .autocomplete-items { position: absolute; border: 1px solid #d4edda; border-bottom: none; border-top: none; z-index: 99; top: 100%; left: 0; right: 0; max-height: 300px; overflow-y: auto; background-color: #fff; }
+        .autocomplete-items div { padding: 10px; cursor: pointer; background-color: #fff; border-bottom: 1px solid #d4edda; }
+        .autocomplete-items div:hover, .autocomplete-active { background-color: #e9ecef; }
+        .info { background-color: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; padding: 0.75rem 1.25rem; margin-bottom: 1rem; border-radius: 0.25rem; }
+        .info h5 { margin-top: 0; margin-bottom: 0.5rem; font-weight: 500; }
+        .images, .packages, .asu-controls { margin: 1.5rem 0; }
+        .images h4, .packages h4 { margin-bottom: 1rem; font-weight: 500; }
+        .btn { display: inline-block; font-weight: 400; color: #212529; text-align: center; vertical-align: middle; cursor: pointer; background-color: transparent; border: 1px solid transparent; padding: 0.375rem 0.75rem; font-size: 1rem; line-height: 1.5; border-radius: 0.25rem; transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out; text-decoration: none; }
+        .btn-primary { color: #fff; background-color: #007bff; border-color: #007bff; }
+        .btn-primary:hover { color: #fff; background-color: #0069d9; border-color: #0062cc; }
+        .btn-primary:disabled { color: #fff; background-color: #007bff; border-color: #007bff; opacity: 0.65; }
+        .download-link { display: inline-block; margin: 0.25rem 0.5rem 0.25rem 0; padding: 0.5rem 1rem; background-color: #28a745; color: #fff; text-decoration: none; border-radius: 0.25rem; }
+        .download-link:hover { background-color: #218838; color: #fff; text-decoration: none; }
+        .aios-section { margin-top: 1rem; padding: 1rem; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 0.25rem; }
+        .aios-config { margin-top: 1rem; display: none; }
+        .form-row { display: flex; flex-wrap: wrap; margin-right: -5px; margin-left: -5px; }
+        .form-row > .form-group { padding-right: 5px; padding-left: 5px; flex: 1; }
+        .radio-group { display: flex; flex-wrap: wrap; gap: 1rem; }
+        .form-check { position: relative; display: block; padding-left: 1.25rem; }
+        .form-check-input { position: absolute; margin-top: 0.3rem; margin-left: -1.25rem; }
+        .form-check-label { margin-bottom: 0; }
+        .conditional-section { margin-top: 1rem; padding: 1rem; background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 0.25rem; display: none; }
+        .text-muted { color: #6c757d; }
+        .small { font-size: 0.875em; }
+        .build-progress { margin: 1rem 0; padding: 1rem; background-color: #e3f2fd; border: 1px solid #2196f3; border-radius: 0.25rem; display: none; }
+        .progress { width: 100%; height: 1rem; background-color: #e9ecef; border-radius: 0.25rem; overflow: hidden; margin-top: 0.5rem; }
+        .progress-bar { height: 100%; background-color: #007bff; transition: width 0.3s ease; }
+        @media (max-width: 576px) { .form-row { flex-direction: column; } .radio-group { flex-direction: column; gap: 0.5rem; } }
+    </style>
 </head>
-
 <body>
-    <div class="container">
-        <h1>OpenWrt Firmware Selector</h1>
-        <p class="lead">Type the name or model of your device, then select a stable build or the nightly "snapshot" build.</p>
-
-        <div class="form-group">
-            <label for="target-select">Target</label>
-            <select id="target-select" class="form-control">
-                <option value="" disabled selected>Loading targets...</option>
-            </select>
-        </div>
-
-        <div class="form-group">
-            <label for="profile-select">Profile</label>
-            <select id="profile-select" class="form-control">
-                <option value="" disabled selected>Select a target first...</option>
-            </select>
-        </div>
-
-        <div id="info" class="info" style="display: none;">
-            <h5 id="device-title"></h5>
-            <div id="device-details"></div>
-        </div>
-
-        <div id="images" class="images" style="display: none;">
-                    </div>
-
-        <div id="packages" class="packages" style="display: none;">
-            <h4>Customize installed packages and/or first boot script</h4>
-            <div class="form-group">
-                <label for="asu-packages">Packages to add/remove (one per line, prefix with '-' to remove):</label>
-                <textarea id="asu-packages" class="form-control" rows="3" placeholder="-wpad-basic-wolfssl&#10;wpad-wolfssl&#10;luci-ssl"></textarea>
-            </div>
-
-                        <div class="aios-section">
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="use-aios-config">
-                    <label class="form-check-label" for="use-aios-config">
-                        Use aios-light.sh configuration wizard
-                    </label>
-                </div>
-
-                <div id="aios-config" class="aios-config">
-                    <h5>Basic Configuration</h5>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="aios-language">Language</label>
-                            <select id="aios-language" class="form-control">
-                                <option value="en">English</option>
-                                <option value="ja">Japanese</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="aios-device-name">Device name</label>
-                            <input type="text" id="aios-device-name" class="form-control" placeholder="OpenWrt-Router">
-                        </div>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="aios-root-password">Root password</label>
-                            <input type="password" id="aios-root-password" class="form-control" placeholder="8+ characters">
-                            <small class="form-text text-muted">Leave empty to disable password authentication</small>
-                        </div>
-                        <div class="form-group">
-                            <label for="aios-confirm-password">Confirm password</label>
-                            <input type="password" id="aios-confirm-password" class="form-control" placeholder="Confirm password">
-                        </div>
-                    </div>
-
-                    <h5>Wi-Fi Configuration</h5>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="aios-wifi-ssid">Wi-Fi SSID</label>
-                            <input type="text" id="aios-wifi-ssid" class="form-control" placeholder="MyOpenWrt">
-                        </div>
-                        <div class="form-group">
-                            <label for="aios-wifi-password">Wi-Fi password</label>
-                            <input type="password" id="aios-wifi-password" class="form-control" placeholder="8+ characters">
-                        </div>
-                    </div>
-
-                    <h5>Internet Connection</h5>
-                    <div class="form-group">
-                        <label>Connection type</label>
-                        <div class="radio-group">
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="connectionType" id="conn-auto" value="auto" checked>
-                                <label class="form-check-label" for="conn-auto">Auto-detect</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="connectionType" id="conn-dhcp" value="dhcp">
-                                <label class="form-check-label" for="conn-dhcp">DHCP</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="connectionType" id="conn-pppoe" value="pppoe">
-                                <label class="form-check-label" for="conn-pppoe">PPPoE</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="connectionType" id="conn-dslite" value="dslite">
-                                <label class="form-check-label" for="conn-dslite">DS-Lite</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="connectionType" id="conn-mape" value="mape">
-                                <label class="form-check-label" for="conn-mape">MAP-E</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="connectionType" id="conn-none" value="none">
-                                <label class="form-check-label" for="conn-none">None</label>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div id="pppoe-section" class="conditional-section">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="pppoe-username">PPPoE username</label>
-                                <input type="text" id="pppoe-username" class="form-control" placeholder="Username from ISP">
-                            </div>
-                            <div class="form-group">
-                                <label for="pppoe-password">PPPoE password</label>
-                                <input type="password" id="pppoe-password" class="form-control" placeholder="Password from ISP">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label for="script">Script to run on first boot (uci-defaults):</label>
-                <textarea id="script" class="form-control" rows="8" placeholder="#!/bin/sh&#10;&#10;# Your script here"></textarea>
-            </div>
-
-            <button id="request-build" class="btn btn-primary">REQUEST BUILD</button>
-        </div>
-
-                <div id="build-progress" class="build-progress">
-            <div id="build-message">Building image...</div>
-            <div class="progress">
-                <div id="progress-bar" class="progress-bar" style="width: 0%"></div>
-            </div>
-        </div>
-
-        <div id="download-links"></div>
-    </div>
-
-    <script>
-function init() {
-    loadProfiles();
-    bindEvents();
-}
-
-function bindEvents() {
-    document.getElementById('use-aios-config').addEventListener('change', toggleAiosConfig);
-    document.getElementById('request-build').addEventListener('click', buildAsuRequest);
-
-    // Connection type change
-    document.querySelectorAll('input[name="connectionType"]').forEach(radio => {
-        radio.addEventListener('change', handleConnectionTypeChange);
-    });
-
-    // Auto-generate script when aios config changes
-    document.getElementById('aios-config').addEventListener('input', generateAiosScript);
-}
-
-// ユーザーが提供した関数をここに組み込み
-async function loadProfiles() {
-    const targetSelect = document.getElementById('target-select');
-    targetSelect.innerHTML = '<option value="" disabled selected>Loading targets...</option>';
-    
-    const profileSelect = document.getElementById('profile-select');
-    profileSelect.innerHTML = '<option value="" disabled selected>Select a target first...</option>';
-    document.getElementById('asu-packages').value = '';
-    document.getElementById('packages').style.display = 'none';
-    document.getElementById('request-build').style.display = 'none';
-
-    try {
-        const res = await fetch('https://sysupgrade.openwrt.org/targets.json');
-        const targets = await res.json();
-
-        targetSelect.innerHTML = '';
-        Object.keys(targets).forEach(target => {
-            const opt = document.createElement('option');
-            opt.value = target;
-            opt.textContent = target;
-            targetSelect.appendChild(opt);
-        });
-        
-        targetSelect.addEventListener('change', () => {
-            loadProfilesForTarget(targetSelect.value);
-        });
-        
-        // ロード後、最初のターゲットのプロファイルを自動的に読み込む
-        if (targetSelect.options.length > 0) {
-            loadProfilesForTarget(targetSelect.value);
-        }
-
-    } catch (err) {
-        console.error('targets.json の取得に失敗しました:', err);
-        targetSelect.innerHTML = '<option value="" disabled selected>Error loading targets</option>';
-    }
-}
-
-async function loadProfilesForTarget(target) {
-    const profileSelect = document.getElementById('profile-select');
-    profileSelect.innerHTML = '<option value="" disabled selected>Loading profiles...</option>';
-
-    try {
-        const res = await fetch(`https://sysupgrade.openwrt.org/${target}/profiles.json`);
-        const profiles = await res.json();
-
-        profileSelect.innerHTML = '';
-        Object.entries(profiles).forEach(([name, data]) => {
-            const opt = document.createElement('option');
-            opt.value = name;
-            opt.textContent = `${name} - ${data.title}`;
-            opt.dataset.packages = data.packages || '';
-            profileSelect.appendChild(opt);
-        });
-
-        profileSelect.addEventListener('change', () => {
-            const selected = profileSelect.options[profileSelect.selectedIndex];
-            const pkgTextarea = document.getElementById('asu-packages');
-            pkgTextarea.value = selected.dataset.packages || '';
-            document.getElementById('packages').style.display = 'block';
-            document.getElementById('request-build').style.display = 'inline-block';
-            updateDeviceInfo(target, selected.textContent);
-        });
-
-        // デフォルトで最初のプロファイルを選択＆パッケージ自動入力
-        if (profileSelect.options.length > 0) {
-            profileSelect.selectedIndex = 0;
-            const first = profileSelect.options[0];
-            document.getElementById('asu-packages').value = first.dataset.packages || '';
-            document.getElementById('packages').style.display = 'block';
-            document.getElementById('request-build').style.display = 'inline-block';
-            updateDeviceInfo(target, first.textContent);
-        }
-
-    } catch (err) {
-        console.error('profiles.json の取得に失敗しました:', err);
-        profileSelect.innerHTML = '<option value="" disabled selected>Error loading profiles</option>';
-        document.getElementById('packages').style.display = 'none';
-        document.getElementById('request-build').style.display = 'none';
-    }
-}
-
-async function buildAsuRequest() {
-    const target = document.getElementById('target-select').value;
-    const profile = document.getElementById('profile-select').value;
-
-    const pkgList = document.getElementById('asu-packages').value
-        .trim()
-        .split(/\s+/)  // 空白や改行で分割
-        .filter(Boolean); // 空要素除去
-
-    const body = {
-        target: target,
-        profile: profile,
-        packages: pkgList
-    };
-
-    // aios設定をスクリプトに追加
-    if (document.getElementById('use-aios-config').checked) {
-        body.defaults = buildAiosScript(getAiosConfig());
-    } else {
-        const customScript = document.getElementById('script').value.trim();
-        if (customScript) {
-            body.defaults = customScript;
-        }
-    }
-
-    try {
-        document.getElementById('request-build').disabled = true;
-        showProgress('ビルドリクエストを送信中...', 10);
-
-        const res = await fetch('https://sysupgrade.openwrt.org/api/v1/build', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body)
-        });
-
-        if (!res.ok) {
-            const errData = await res.json();
-            throw new Error(`Build failed: HTTP ${res.status}: ${JSON.stringify(errData)}`);
-        }
-
-        const data = await res.json();
-        console.log('ビルド成功:', data);
-
-        if (data.request_hash) {
-            await pollBuildStatus(data.request_hash);
-        } else if (data.images) {
-            hideProgress();
-            showDownloadLinks(data.images);
-        } else {
-            throw new Error('No request hash or images in response');
-        }
-
-    } catch (err) {
-        console.error('ビルドリクエストエラー:', err);
-        alert('ビルドに失敗しました: ' + err.message);
-        hideProgress();
-    } finally {
-        document.getElementById('request-build').disabled = false;
-    }
-}
-
-
-function toggleAiosConfig(e) {
-    const config = document.getElementById('aios-config');
-    const script = document.getElementById('script');
-
-    if (e.target.checked) {
-        config.style.display = 'block';
-        generateAiosScript();
-    } else {
-        config.style.display = 'none';
-        script.value = '';
-    }
-}
-
-function handleConnectionTypeChange(e) {
-    const pppoeSection = document.getElementById('pppoe-section');
-
-    if (e.target.value === 'pppoe') {
-        pppoeSection.style.display = 'block';
-    } else {
-        pppoeSection.style.display = 'none';
-    }
-
-    if (document.getElementById('use-aios-config').checked) {
-        generateAiosScript();
-    }
-}
-
-function generateAiosScript() {
-    if (!document.getElementById('use-aios-config').checked) return;
-
-    const config = getAiosConfig();
-    const script = buildAiosScript(config);
-    document.getElementById('script').value = script;
-}
-
-function getAiosConfig() {
-    return {
-        language: document.getElementById('aios-language').value,
-        deviceName: document.getElementById('aios-device-name').value,
-        rootPassword: document.getElementById('aios-root-password').value,
-        wifiSSID: document.getElementById('aios-wifi-ssid').value,
-        wifiPassword: document.getElementById('aios-wifi-password').value,
-        connectionType: document.querySelector('input[name="connectionType"]:checked').value,
-        pppoeUsername: document.getElementById('pppoe-username').value,
-        pppoePassword: document.getElementById('pppoe-password').value
-    };
-}
-
-function buildAiosScript(config) {
-    let script = '#!/bin/sh\n\n';
-    script += '# OpenWrt Auto Configuration Script\n';
-    script += '# Generated by aios-light.sh configuration\n\n';
-
-    script += 'CONFIG_SCRIPT="/tmp/aios/aios-light.sh"\n';
-    script += 'mkdir -p /tmp/aios\n\n';
-
-    script += 'wget --no-check-certificate -O "$CONFIG_SCRIPT" "https://site-u.pages.dev/build/scripts/aios-light.sh" 2>/dev/null\n\n';
-
-    script += 'if [ ! -f "$CONFIG_SCRIPT" ]; then\n';
-    script += '    logger -t aios-config "Failed to download aios-light.sh"\n';
-    script += '    exit 1\n';
-    script += 'fi\n\n';
-
-    script += 'chmod +x "$CONFIG_SCRIPT"\n\n';
-
-    script += '# Configuration Variables\n';
-
-    if (config.language) {
-        script += `export LANGUAGE="${config.language}"\n`;
-    }
-
-    if (config.deviceName) {
-        script += `export DEVICE_NAME="${config.deviceName}"\n`;
-    }
-
-    if (config.rootPassword) {
-        script += `export ROOT_PASSWORD="${config.rootPassword}"\n`;
-    }
-
-    if (config.wifiSSID) {
-        script += `export WLAN_NAME="${config.wifiSSID}"\n`;
-    }
-
-    if (config.wifiPassword) {
-        script += `export WLAN_PASSWORD="${config.wifiPassword}"\n`;
-    }
-
-    if (config.connectionType === 'auto') {
-        script += 'export ISP_MODE=""\n';
-    } else if (config.connectionType === 'pppoe') {
-        script += 'export ISP_MODE="pppoe"\n';
-        if (config.pppoeUsername) {
-            script += `export PPPOE_USERNAME="${config.pppoeUsername}"\n`;
-        }
-        if (config.pppoePassword) {
-            script += `export PPPOE_PASSWORD="${config.pppoePassword}"\n`;
-        }
-    } else {
-        script += `export ISP_MODE="${config.connectionType}"\n`;
-    }
-
-    script += '\n# Execute configuration script\n';
-    script += 'exec sh "$CONFIG_SCRIPT" "$ISP_MODE"\n';
-
-    return script;
-}
-
-
-async function pollBuildStatus(requestHash) {
-    console.log('Starting to poll build status for hash:', requestHash);
-    const maxAttempts = 120; // 10分間
-    let attempts = 0;
-    const startTime = Date.now();
-    const statusUrlBase = 'https://sysupgrade.openwrt.org/api/v1/build';
-
-    while (attempts < maxAttempts) {
-        try {
-            const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
-            const minutes = Math.floor(elapsedSeconds / 60);
-            const seconds = elapsedSeconds % 60;
-            const timeStr = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
-           
-            const statusUrl = `${statusUrlBase}/${requestHash}`;
-            console.log(`Polling attempt ${attempts + 1}/${maxAttempts}, URL: ${statusUrl}`);
-
-            const response = await fetch(statusUrl, {
-                method: 'GET',
-                headers: { 'Accept': 'application/json' }
-            });
-
-            if (response.status === 404 && attempts < 5) {
-                console.log('Build not found yet, will retry...');
-                showProgress(`ビルド開始待ち... ${timeStr}`, 10);
-                await new Promise(resolve => setTimeout(resolve, 5000));
-                attempts++;
-                continue;
-            }
-
-            if (!response.ok) {
-                throw new Error(`Status check failed: HTTP ${response.status}`);
-            }
-
-            const status = await response.json();
-            console.log('Build status object:', status);
-           
-            const progressPercent = Math.min((elapsedSeconds / 600) * 85 + 10, 95);
-
-            if (status.status === 'done' || status.status === 'success' || 
-                status.detail === 'done' || status.imagebuilder_status === 'done') {
-                console.log('Build completed successfully!');
-                
-                let images = status.images || 
-                           status.request?.images || 
-                           status.request?.files ||
-                           status.files ||
-                           [];
-               
-                // 画像データが空の場合、images.jsonを直接確認するフォールバック処理
-                if (images.length === 0) {
-                    console.log('Images array is empty. Trying to fetch images.json...');
-                    try {
-                        const imagesJsonUrl = `https://sysupgrade.openwrt.org/store/${requestHash}/images.json`;
-                        const imagesResponse = await fetch(imagesJsonUrl);
-                        if (imagesResponse.ok) {
-                            const imagesJsonData = await imagesResponse.json();
-                            images = imagesJsonData.images;
-                            console.log('Successfully fetched images from images.json:', images);
-                        } else {
-                            console.error('Failed to fetch images.json:', imagesResponse.status);
-                        }
-                    } catch (error) {
-                        console.error('Error fetching images.json:', error);
-                    }
-                }
-            
-                if (images.length > 0) {
-                    hideProgress();
-                    showDownloadLinks(images);
-                    return;
-                } else {
-                    console.error('Build succeeded but no images were found.');
-                    throw new Error('Build succeeded but no images were found.');
-                }
-            } else if (status.status === 'failed') {
-                console.error('Build failed:', status.error);
-                throw new Error(`Build failed: ${status.error || 'Unknown error'}`);
-            } else {
-                showProgress(`ビルド進行中... (${timeStr})`, progressPercent);
-            }
-
-            await new Promise(resolve => setTimeout(resolve, 5000));
-            attempts++;
-        } catch (error) {
-            console.error('Polling failed:', error);
-            throw error;
-        }
-    }
-
-    throw new Error('Build timed out.');
-}
-
-
-function showProgress(message, percent) {
-    const progressDiv = document.getElementById('build-progress');
-    const progressBar = document.getElementById('progress-bar');
-    const buildMessage = document.getElementById('build-message');
-
-    progressDiv.style.display = 'block';
-    buildMessage.textContent = message;
-    progressBar.style.width = `${percent}%`;
-}
-
-function hideProgress() {
-    document.getElementById('build-progress').style.display = 'none';
-}
-
-function showDownloadLinks(images) {
-    const downloadDiv = document.getElementById('download-links');
-    downloadDiv.innerHTML = '<h4>Downloads</h4>';
-    images.forEach(image => {
-        const link = document.createElement('a');
-        link.href = image.url;
-        link.textContent = image.name;
-        link.className = 'download-link';
-        downloadDiv.appendChild(link);
-    });
-}
-
-function updateDeviceInfo(target, profileTitle) {
-    const infoDiv = document.getElementById('info');
-    const deviceTitle = document.getElementById('device-title');
-    const deviceDetails = document.getElementById('device-details');
-
-    deviceTitle.textContent = profileTitle;
-    deviceDetails.innerHTML = `Target: ${target}`;
-    infoDiv.style.display = 'block';
-}
-
-document.addEventListener('DOMContentLoaded', init);
-    </script>
+    <div class="container">
+        <h1>OpenWrt Firmware Selector</h1>
+        <p class="lead">Type the name or model of your device, then select a stable build or the nightly "snapshot" build.</p>
+
+        <div class="form-group">
+            <label for="versions">Firmware Version</label>
+            <select id="versions" class="form-control">
+                <option value="" disabled selected>Loading versions...</option>
+            </select>
+        </div>
+
+        <div class="form-group autocomplete">
+            <label for="models">Search for your device</label>
+            <input id="models" class="form-control" type="text" placeholder="e.g. TP-Link Archer C7">
+            <div id="autocomplete-list" class="autocomplete-items"></div>
+        </div>
+        
+        <div id="info" class="info" style="display: none;">
+            <h5 id="device-title"></h5>
+            <div id="device-details"></div>
+        </div>
+
+        <div class="asu-controls" style="display: none;">
+            <h4>Customize Firmware with ASU</h4>
+            <p>You can customize the firmware by selecting a profile and changing the package list. Please note that this will generate a custom image, which may take some time.</p>
+
+            <div class="form-group">
+                <label for="target-select">Target</label>
+                <select id="target-select" class="form-control">
+                    <option value="" disabled selected>Loading...</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="profile-select">Profile</label>
+                <select id="profile-select" class="form-control">
+                    <option value="" disabled selected>Select a device first...</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="asu-packages">Packages to add/remove (one per line, prefix with '-' to remove):</label>
+                <textarea id="asu-packages" class="form-control" rows="3" placeholder="-wpad-basic-wolfssl&#10;wpad-wolfssl&#10;luci-ssl"></textarea>
+            </div>
+
+            <button id="request-build" class="btn btn-primary" disabled>REQUEST BUILD</button>
+        </div>
+        <div id="images" class="images" style="display: none;">
+            </div>
+
+        <div id="packages" class="packages" style="display: none;">
+            <h4>Installed Packages</h4>
+            <div id="packages-default"></div>
+            <h4>Additional Packages</h4>
+            <div class="form-group">
+                <label for="packages-custom">Add additional packages (one per line):</label>
+                <textarea id="packages-custom" class="form-control" rows="3"></textarea>
+            </div>
+            <button id="get-image" class="btn btn-primary">REQUEST IMAGE</button>
+        </div>
+
+        <div id="build-progress" class="build-progress">
+            <div id="build-message">Building image...</div>
+            <div class="progress">
+                <div id="progress-bar" class="progress-bar" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <div id="download-links"></div>
+    </div>
+
+    <script>
+    // ----------------------------------------
+    // 既存のFirmware SelectorのJavaScript (一部修正)
+    // ----------------------------------------
+    let devices;
+    let versions;
+    let currentDeviceSlug;
+    let currentVersion;
+    let selectedDevice;
+
+    function init() {
+        bindEvents();
+        loadVersions();
+    }
+
+    function bindEvents() {
+        document.getElementById('models').addEventListener('input', handleDeviceSearch);
+        document.getElementById('models').addEventListener('keydown', handleKeydown);
+        document.getElementById('versions').addEventListener('change', handleVersionChange);
+        document.getElementById('get-image').addEventListener('click', requestImage);
+        document.addEventListener('click', hideAutocomplete);
+        
+        // 新しいASU関連のイベント
+        document.getElementById('request-build').addEventListener('click', buildAsuRequest);
+        document.getElementById('target-select').addEventListener('change', () => {
+            const target = document.getElementById('target-select').value;
+            loadProfilesForTarget(target);
+        });
+        document.getElementById('profile-select').addEventListener('change', () => {
+            const profileSelect = document.getElementById('profile-select');
+            const selectedOption = profileSelect.options[profileSelect.selectedIndex];
+            const pkgTextarea = document.getElementById('asu-packages');
+            pkgTextarea.value = selectedOption.dataset.packages || '';
+            document.getElementById('request-build').disabled = false;
+        });
+    }
+
+    async function loadVersions() {
+        try {
+            const res = await fetch('https://firmware-selector.openwrt.org/json/versions.json');
+            versions = await res.json();
+            updateVersionSelect();
+            await loadDevices(); // デバイスもロード
+        } catch (err) {
+            console.error('Failed to load versions:', err);
+        }
+    }
+
+    function updateVersionSelect() {
+        const versionsSelect = document.getElementById('versions');
+        versionsSelect.innerHTML = '';
+        versions.forEach(ver => {
+            const opt = document.createElement('option');
+            opt.value = ver.branch;
+            opt.textContent = ver.title;
+            versionsSelect.appendChild(opt);
+        });
+        currentVersion = versions[0].branch;
+    }
+
+    async function loadDevices() {
+        if (!currentVersion) return;
+        try {
+            const res = await fetch(`https://firmware-selector.openwrt.org/json/${currentVersion}/devices.json`);
+            const data = await res.json();
+            devices = data.devices;
+        } catch (err) {
+            console.error('Failed to load devices:', err);
+        }
+    }
+
+    function handleVersionChange(e) {
+        currentVersion = e.target.value;
+        loadDevices();
+        hideDeviceInfo();
+    }
+    
+    function getDeviceTitle(deviceSlug) {
+        if (!devices) return;
+        const device = devices.find(d => d.device_slug === deviceSlug);
+        return device ? device.device_title : 'Unknown Device';
+    }
+
+    function handleDeviceSearch(e) {
+        const input = e.target.value;
+        const listContainer = document.getElementById('autocomplete-list');
+        listContainer.innerHTML = '';
+
+        if (!input || !devices) {
+            return;
+        }
+
+        const filteredDevices = devices.filter(d => 
+            d.device_title.toLowerCase().includes(input.toLowerCase()) || 
+            d.device_slug.toLowerCase().includes(input.toLowerCase())
+        ).slice(0, 10);
+
+        filteredDevices.forEach(d => {
+            const div = document.createElement('div');
+            div.textContent = d.device_title;
+            div.addEventListener('click', () => {
+                selectDevice(d);
+            });
+            listContainer.appendChild(div);
+        });
+    }
+
+    async function selectDevice(device) {
+        document.getElementById('models').value = device.device_title;
+        selectedDevice = device;
+        document.getElementById('autocomplete-list').innerHTML = '';
+        showDeviceInfo(device);
+
+        // ASU機能の表示と自動入力
+        document.getElementById('asu-controls').style.display = 'block';
+        document.getElementById('packages').style.display = 'none';
+
+        // ASU用のターゲットとプロファイルを自動でロード
+        await loadAsuProfiles(device.target, device.profile);
+    }
+    
+    function showDeviceInfo(device) {
+        const infoDiv = document.getElementById('info');
+        const deviceTitle = document.getElementById('device-title');
+        const deviceDetails = document.getElementById('device-details');
+        
+        deviceTitle.textContent = device.device_title;
+        deviceDetails.innerHTML = `
+            <strong>Target:</strong> ${device.target}<br>
+            <strong>Profile:</strong> ${device.profile}
+        `;
+        infoDiv.style.display = 'block';
+
+        const packagesDiv = document.getElementById('packages');
+        packagesDiv.style.display = 'block';
+        document.getElementById('packages-default').textContent = (device.packages || []).join(' ');
+        
+        const imagesDiv = document.getElementById('images');
+        imagesDiv.style.display = 'none';
+        
+    }
+
+    function hideDeviceInfo() {
+        document.getElementById('info').style.display = 'none';
+        document.getElementById('packages').style.display = 'none';
+        document.getElementById('images').style.display = 'none';
+        document.getElementById('asu-controls').style.display = 'none';
+    }
+
+    function hideAutocomplete() {
+        document.getElementById('autocomplete-list').innerHTML = '';
+    }
+    
+    async function requestImage() {
+        if (!selectedDevice) return;
+        
+        const body = {
+            version: currentVersion,
+            target: selectedDevice.target,
+            profile: selectedDevice.profile,
+            packages: (document.getElementById('packages-custom').value.trim().split(/\s+/) || []).concat(selectedDevice.packages || []).filter(Boolean)
+        };
+        
+        try {
+            document.getElementById('get-image').disabled = true;
+            showProgress('ビルドリクエストを送信中...', 10);
+
+            const res = await fetch('https://firmware-selector.openwrt.org/api/images', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+
+            if (!res.ok) {
+                const errData = await res.json();
+                throw new Error(`Build failed: HTTP ${res.status}: ${JSON.stringify(errData)}`);
+            }
+
+            const data = await res.json();
+            console.log('ビルド成功:', data);
+
+            if (data.images) {
+                hideProgress();
+                showDownloadLinks(data.images);
+            } else {
+                throw new Error('No images in response');
+            }
+        } catch (err) {
+            console.error('ビルドリクエストエラー:', err);
+            alert('ビルドに失敗しました: ' + err.message);
+            hideProgress();
+        } finally {
+            document.getElementById('get-image').disabled = false;
+        }
+    }
+    
+    function handleKeydown(e) {
+        // キーボード操作のロジック（省略）
+    }
+
+    // ----------------------------------------
+    // ユーザー提供のASU関連JavaScript
+    // ----------------------------------------
+    async function loadAsuProfiles(initialTarget, initialProfile) {
+        const targetSelect = document.getElementById('target-select');
+        targetSelect.innerHTML = '<option value="" disabled selected>Loading targets...</option>';
+        const profileSelect = document.getElementById('profile-select');
+        profileSelect.innerHTML = '<option value="" disabled selected>Select a target first...</option>';
+        document.getElementById('asu-packages').value = '';
+
+        try {
+            const res = await fetch('https://sysupgrade.openwrt.org/targets.json');
+            const targets = await res.json();
+            
+            targetSelect.innerHTML = '';
+            let targetFound = false;
+            Object.keys(targets).forEach(target => {
+                const opt = document.createElement('option');
+                opt.value = target;
+                opt.textContent = target;
+                if (target === initialTarget) {
+                    opt.selected = true;
+                    targetFound = true;
+                }
+                targetSelect.appendChild(opt);
+            });
+            
+            if (targetFound) {
+                loadProfilesForTarget(initialTarget, initialProfile);
+            } else {
+                 loadProfilesForTarget(targetSelect.value);
+            }
+        } catch (err) {
+            console.error('targets.json の取得に失敗しました:', err);
+            targetSelect.innerHTML = '<option value="" disabled selected>Error loading targets</option>';
+        }
+    }
+
+    async function loadProfilesForTarget(target, initialProfile = null) {
+        const profileSelect = document.getElementById('profile-select');
+        profileSelect.innerHTML = '<option value="" disabled selected>Loading profiles...</option>';
+
+        try {
+            const res = await fetch(`https://sysupgrade.openwrt.org/${target}/profiles.json`);
+            const profiles = await res.json();
+
+            profileSelect.innerHTML = '';
+            let profileFound = false;
+            Object.entries(profiles).forEach(([name, data]) => {
+                const opt = document.createElement('option');
+                opt.value = name;
+                opt.textContent = `${name} - ${data.title}`;
+                opt.dataset.packages = data.packages || '';
+                if (name === initialProfile) {
+                    opt.selected = true;
+                    profileFound = true;
+                }
+                profileSelect.appendChild(opt);
+            });
+            
+            // デフォルトで最初のプロファイルを選択＆パッケージ自動入力
+            if (profileSelect.options.length > 0) {
+                const selected = profileFound ? profileSelect.options[profileSelect.selectedIndex] : profileSelect.options[0];
+                document.getElementById('asu-packages').value = selected.dataset.packages || '';
+                document.getElementById('request-build').disabled = false;
+            } else {
+                 document.getElementById('request-build').disabled = true;
+            }
+
+        } catch (err) {
+            console.error('profiles.json の取得に失敗しました:', err);
+            profileSelect.innerHTML = '<option value="" disabled selected>Error loading profiles</option>';
+            document.getElementById('asu-packages').value = '';
+            document.getElementById('request-build').disabled = true;
+        }
+    }
+
+    async function buildAsuRequest() {
+        const target = document.getElementById('target-select').value;
+        const profile = document.getElementById('profile-select').value;
+
+        const pkgList = document.getElementById('asu-packages').value
+            .trim()
+            .split(/\s+/)
+            .filter(Boolean);
+
+        const body = {
+            target: target,
+            profile: profile,
+            packages: pkgList
+        };
+
+        try {
+            document.getElementById('request-build').disabled = true;
+            showProgress('ビルドリクエストを送信中...', 10);
+
+            const res = await fetch('https://sysupgrade.openwrt.org/api/v1/build', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+
+            if (!res.ok) {
+                const errData = await res.json();
+                throw new Error(`Build failed: HTTP ${res.status}: ${JSON.stringify(errData)}`);
+            }
+
+            const data = await res.json();
+            console.log('ビルド成功:', data);
+
+            if (data.request_hash) {
+                await pollBuildStatus(data.request_hash);
+            } else if (data.images) {
+                hideProgress();
+                showDownloadLinks(data.images);
+            } else {
+                throw new Error('No request hash or images in response');
+            }
+
+        } catch (err) {
+            console.error('ビルドリクエストエラー:', err);
+            alert('ビルドに失敗しました: ' + err.message);
+            hideProgress();
+        } finally {
+            document.getElementById('request-build').disabled = false;
+        }
+    }
+
+    // ----------------------------------------
+    // ユーティリティ関数
+    // ----------------------------------------
+    function showProgress(message, percent) {
+        const progressDiv = document.getElementById('build-progress');
+        const progressBar = document.getElementById('progress-bar');
+        const buildMessage = document.getElementById('build-message');
+
+        progressDiv.style.display = 'block';
+        buildMessage.textContent = message;
+        progressBar.style.width = `${percent}%`;
+    }
+
+    function hideProgress() {
+        document.getElementById('build-progress').style.display = 'none';
+    }
+
+    function showDownloadLinks(images) {
+        const downloadDiv = document.getElementById('download-links');
+        downloadDiv.innerHTML = '<h4>Downloads</h4>';
+        images.forEach(image => {
+            const link = document.createElement('a');
+            link.href = image.url;
+            link.textContent = image.name;
+            link.className = 'download-link';
+            downloadDiv.appendChild(link);
+        });
+    }
+    
+    async function pollBuildStatus(requestHash) {
+        const maxAttempts = 120;
+        let attempts = 0;
+        const startTime = Date.now();
+        const statusUrlBase = 'https://sysupgrade.openwrt.org/api/v1/build';
+
+        while (attempts < maxAttempts) {
+            try {
+                const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+                const minutes = Math.floor(elapsedSeconds / 60);
+                const seconds = elapsedSeconds % 60;
+                const timeStr = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+                
+                const statusUrl = `${statusUrlBase}/${requestHash}`;
+                const response = await fetch(statusUrl, { method: 'GET', headers: { 'Accept': 'application/json' } });
+
+                if (response.status === 404 && attempts < 5) {
+                    showProgress(`ビルド開始待ち... ${timeStr}`, 10);
+                    await new Promise(resolve => setTimeout(resolve, 5000));
+                    attempts++;
+                    continue;
+                }
+
+                if (!response.ok) throw new Error(`Status check failed: HTTP ${response.status}`);
+
+                const status = await response.json();
+                const progressPercent = Math.min((elapsedSeconds / 600) * 85 + 10, 95);
+
+                if (status.status === 'done' || status.status === 'success' || status.detail === 'done' || status.imagebuilder_status === 'done') {
+                    let images = status.images || status.request?.images || status.request?.files || status.files || [];
+                    if (images.length === 0) {
+                        try {
+                            const imagesJsonUrl = `https://sysupgrade.openwrt.org/store/${requestHash}/images.json`;
+                            const imagesResponse = await fetch(imagesJsonUrl);
+                            if (imagesResponse.ok) {
+                                const imagesJsonData = await imagesResponse.json();
+                                images = imagesJsonData.images;
+                            }
+                        } catch (error) { console.error('Error fetching images.json:', error); }
+                    }
+                    if (images.length > 0) {
+                        hideProgress();
+                        showDownloadLinks(images);
+                        return;
+                    } else { throw new Error('Build succeeded but no images were found.'); }
+                } else if (status.status === 'failed') {
+                    throw new Error(`Build failed: ${status.error || 'Unknown error'}`);
+                } else {
+                    showProgress(`ビルド進行中... (${timeStr})`, progressPercent);
+                }
+
+                await new Promise(resolve => setTimeout(resolve, 5000));
+                attempts++;
+            } catch (error) {
+                console.error('Polling failed:', error);
+                throw error;
+            }
+        }
+        throw new Error('Build timed out.');
+    }
+    
+    document.addEventListener('DOMContentLoaded', init);
+    </script>
 </body>
-
 </html>
