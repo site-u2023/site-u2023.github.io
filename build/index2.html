@@ -538,6 +538,7 @@
             document.getElementById('models').value = getDeviceTitle(device);
             hideAutocomplete();
             showDeviceInfo();
+            loadDefaultPackages(); // デバイス選択時にデフォルトパッケージを読み込む
         }
 
         function showDeviceInfo() {
@@ -559,16 +560,55 @@
             document.getElementById('request-build').style.display = 'none';
         }
 
+        // デフォルトパッケージを読み込む関数を追加
+        async function loadDefaultPackages() {
+            if (!app.selectedDevice || !app.selectedVersion) return;
+
+            try {
+                // デフォルトのファームウェア生成リクエストをシミュレート
+                const requestBody = {
+                    target: app.selectedDevice.target,
+                    profile: app.selectedDevice.id,
+                    version: app.selectedVersion === 'SNAPSHOT' ? undefined : app.selectedVersion,
+                    packages: [] // パッケージを指定しないことでデフォルトを取得
+                };
+
+                const response = await fetch('https://sysupgrade.openwrt.org/api/v1/build', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestBody)
+                });
+                const result = await response.json();
+
+                if (result.request && result.request.packages) {
+                    const defaultPackages = result.request.packages;
+                    document.getElementById('packages-custom').value = defaultPackages.join('\n');
+                } else {
+                    document.getElementById('packages-custom').value = '';
+                }
+            } catch (error) {
+                console.error('Failed to load default packages:', error);
+                document.getElementById('packages-custom').value = '';
+            }
+        }
+
         function toggleAiosConfig(e) {
             const config = document.getElementById('aios-config');
             const script = document.getElementById('script');
+            const packagesCustom = document.getElementById('packages-custom');
 
             if (e.target.checked) {
                 config.style.display = 'block';
                 generateAiosScript();
+                // aios-light.shを使用する場合、デフォルトパッケージに加えて専用パッケージを追加
+                const currentPackages = packagesCustom.value.split('\n').map(p => p.trim()).filter(p => p && p !== 'aios-light-packages');
+                packagesCustom.value = currentPackages.concat(['aios-light-packages']).join('\n');
             } else {
                 config.style.display = 'none';
                 script.value = '';
+                // チェックを外したらaios-light-packagesを削除してデフォルトに戻す
+                const currentPackages = packagesCustom.value.split('\n').map(p => p.trim()).filter(p => p && p !== 'aios-light-packages');
+                packagesCustom.value = currentPackages.join('\n');
             }
         }
 
@@ -720,9 +760,8 @@
 
         function getPackages() {
             const input = document.getElementById('packages-custom').value;
-            const aiosPackages = document.getElementById('use-aios-config').checked ? ['aios-light-packages'] : [];
             const customPackages = input.split('\n').map(pkg => pkg.trim()).filter(pkg => pkg);
-            return aiosPackages.concat(customPackages);
+            return customPackages;
         }
 
         async function pollBuildStatus(requestHash) {
