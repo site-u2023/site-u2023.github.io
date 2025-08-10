@@ -58,13 +58,16 @@ const PROMPT_DEFAULTS = {
     portNumber: '10000',
     protocol: 'http',
     terminalName: 'custom',
-    defaultCommand: ''
+    defaultCommand: '',
+    setupName: 'custom',
+    setupLink: 'https://example.com'
 };
 
 // 現在の設定（localStorage と DEFAULT をマージして使用）
 let currentAddresses = [];
 let currentServices = {};
 let currentTerminals = {};
+let currentSetupLinks = {};
 let currentIP = '192.168.1.1';
 let currentSelectedService = 'luci';
 let currentSelectedTerminal = 'aios';
@@ -111,9 +114,22 @@ const translations = {
         windowsSetupExplanation: 'プロトコルハンドラー登録 (レジストリファイルをダウンロードし、ダブルクリックしてインストールして下さい)',
         iphoneSetupExplanation: 'Termiusインストール (App StoreからTermiusをインストールし、設定したIPアドレスでSSH接続して下さい)',
         androidSetupExplanation: 'JuiceSSHインストール (Google PlayからJuiceSSHをインストールし、設定したIPアドレスでSSH接続して下さい)',
-        // Generic Dialog Messages
+        // Dialog Messages - 日本語追加
         promptNewAddress: '新しいIPアドレスまたはホスト名を入力して下さい:',
         alertMinimumAddress: '最低1つのアドレスは必要です',
+        promptServiceName: 'サービス名を入力してください:',
+        promptPortNumber: 'ポート番号を入力してください:',
+        promptProtocol: 'プロトコル（http/https）を入力してください:',
+        confirmDeleteService: 'サービス "{0}" を削除しますか？',
+        alertMinimumService: '最低1つのサービスは必要です',
+        promptTerminalName: 'ターミナル名を入力してください:',
+        promptDefaultCommand: 'デフォルトコマンドを入力してください:',
+        confirmDeleteTerminal: 'ターミナル "{0}" を削除しますか？',
+        alertMinimumTerminal: '最低1つのターミナルは必要です',
+        promptSetupName: '初期設定名を入力してください:',
+        promptSetupLink: 'リンクまたはファイルパスを入力してください:',
+        confirmDeleteSetup: '初期設定 "{0}" を削除しますか？',
+        alertMinimumSetup: '最低1つの初期設定は必要です',
         promptItemName: '項目名を入力してください:',
         promptValue: '値を入力してください:',
         alertMinimumItem: '最低1つの項目は必要です',
@@ -160,9 +176,22 @@ const translations = {
         windowsSetupExplanation: 'Protocol handler registration (Please download the registry file and double-click to install)',
         iphoneSetupExplanation: 'Termius installation (Please install Termius from App Store and connect via SSH using your configured IP address)',
         androidSetupExplanation: 'JuiceSSH installation (Please install JuiceSSH from Google Play and connect via SSH using your configured IP address)',
-        // Generic Dialog Messages
+        // Dialog Messages
         promptNewAddress: 'Please enter a new IP address or hostname:',
         alertMinimumAddress: 'At least one address is required',
+        promptServiceName: 'Please enter service name:',
+        promptPortNumber: 'Please enter port number:',
+        promptProtocol: 'Please enter protocol (http/https):',
+        confirmDeleteService: 'Delete service "{0}"?',
+        alertMinimumService: 'At least one service is required',
+        promptTerminalName: 'Please enter terminal name:',
+        promptDefaultCommand: 'Please enter default command:',
+        confirmDeleteTerminal: 'Delete terminal "{0}"?',
+        alertMinimumTerminal: 'At least one terminal is required',
+        promptSetupName: 'Please enter setup name:',
+        promptSetupLink: 'Please enter link or file path:',
+        confirmDeleteSetup: 'Delete setup "{0}"?',
+        alertMinimumSetup: 'At least one setup is required',
         promptItemName: 'Please enter item name:',
         promptValue: 'Please enter value:',
         alertMinimumItem: 'At least one item is required',
@@ -214,6 +243,10 @@ function initializeSettings() {
     const savedTerminals = localStorage.getItem('terminals');
     currentTerminals = savedTerminals ? JSON.parse(savedTerminals) : {...DEFAULT_TERMINALS};
     
+    // 初期設定リンクの復元
+    const savedSetupLinks = localStorage.getItem('setupLinks');
+    currentSetupLinks = savedSetupLinks ? JSON.parse(savedSetupLinks) : {...DEFAULT_SETUP_LINKS};
+    
     // **修正: 保存された現在のIPアドレスを確実に復元**
     const savedIP = localStorage.getItem('currentIP');
     if (savedIP && savedIP.trim()) {
@@ -245,16 +278,17 @@ function initializeSettings() {
     
     // 初期設定セクションの復元
     const savedSetup = localStorage.getItem('currentSelectedSetup');
-    if (savedSetup && DEFAULT_SETUP_LINKS[savedSetup]) {
+    if (savedSetup && currentSetupLinks[savedSetup]) {
         currentSelectedSetup = savedSetup;
     } else {
-        currentSelectedSetup = 'windows';
+        currentSelectedSetup = Object.keys(currentSetupLinks)[0] || 'windows';
     }
     
     // UI要素の初期化
     updateAddressSelector();
     updateServiceSelector();
     updateTerminalSelector();
+    updateSetupSelector();
     
     // **修正: より確実な値の設定**
     setTimeout(() => {
@@ -599,7 +633,7 @@ function bindEvents() {
         });
     }
     
-    // 初期設定関連のイベントリスナー
+    // 初期設定関連のイベントリスナー（修正：実装を追加）
     const setupSelector = document.getElementById('setup-selector');
     const setupLinkInput = document.getElementById('setup-link-input');
     const setupUpdate = document.getElementById('setup-update');
@@ -618,7 +652,14 @@ function bindEvents() {
     
     if (setupLinkInput) {
         setupLinkInput.addEventListener('input', function() {
-            // リンク入力の変更を保存する場合はここに実装
+            const setupSelector = document.getElementById('setup-selector');
+            if (setupSelector) {
+                const selectedSetup = setupSelector.value;
+                if (currentSetupLinks[selectedSetup]) {
+                    currentSetupLinks[selectedSetup] = this.value;
+                    localStorage.setItem('setupLinks', JSON.stringify(currentSetupLinks));
+                }
+            }
         });
     }
     
@@ -633,6 +674,65 @@ function bindEvents() {
             const linkInput = document.getElementById('setup-link-input');
             if (linkInput && linkInput.value) {
                 openSetupLink(linkInput.value);
+            }
+        });
+    }
+    
+    // 修正：初期設定の追加機能
+    if (setupAdd) {
+        setupAdd.addEventListener('click', function() {
+            const setupName = prompt(getText('promptSetupName'), PROMPT_DEFAULTS.setupName);
+            if (setupName && setupName.trim()) {
+                const setupKey = setupName.toLowerCase().replace(/[^a-z0-9]/g, '');
+                const setupLink = prompt(getText('promptSetupLink'), PROMPT_DEFAULTS.setupLink);
+                
+                if (setupKey && setupLink && !currentSetupLinks[setupKey]) {
+                    currentSetupLinks[setupKey] = setupLink.trim();
+                    localStorage.setItem('setupLinks', JSON.stringify(currentSetupLinks));
+                    
+                    // 新しく追加した初期設定を選択
+                    currentSelectedSetup = setupKey;
+                    localStorage.setItem('currentSelectedSetup', currentSelectedSetup);
+                    
+                    updateSetupSelector();
+                    
+                    // セレクタの値を確実に設定
+                    setTimeout(() => {
+                        if (setupSelector) {
+                            setupSelector.value = currentSelectedSetup;
+                        }
+                        updateSetupContent();
+                    }, 10);
+                }
+            }
+        });
+    }
+    
+    // 修正：初期設定の削除機能
+    if (setupRemove) {
+        setupRemove.addEventListener('click', function() {
+            const selectedSetup = setupSelector ? setupSelector.value : currentSelectedSetup;
+            if (selectedSetup && Object.keys(currentSetupLinks).length > 1) {
+                if (confirm(getText('confirmDeleteSetup', selectedSetup))) {
+                    delete currentSetupLinks[selectedSetup];
+                    localStorage.setItem('setupLinks', JSON.stringify(currentSetupLinks));
+                    
+                    // 削除後の新しい選択値を設定
+                    currentSelectedSetup = Object.keys(currentSetupLinks)[0];
+                    localStorage.setItem('currentSelectedSetup', currentSelectedSetup);
+                    
+                    updateSetupSelector();
+                    
+                    // セレクタの値を確実に設定
+                    setTimeout(() => {
+                        if (setupSelector) {
+                            setupSelector.value = currentSelectedSetup;
+                        }
+                        updateSetupContent();
+                    }, 10);
+                }
+            } else if (Object.keys(currentSetupLinks).length <= 1) {
+                alert(getText('alertMinimumSetup'));
             }
         });
     }
@@ -850,6 +950,33 @@ function updateTerminalExplanation() {
 // 初期設定管理機能
 // ==================================================
 
+// 修正：初期設定セレクター更新機能を追加
+function updateSetupSelector() {
+    const setupSelector = document.getElementById('setup-selector');
+    if (!setupSelector) return;
+    
+    // セレクタをクリア
+    setupSelector.innerHTML = '';
+    
+    // 初期設定一覧を追加
+    Object.keys(currentSetupLinks).forEach(key => {
+        const option = document.createElement('option');
+        option.value = key;
+        option.textContent = key.charAt(0).toUpperCase() + key.slice(1); // 先頭文字を大文字に
+        setupSelector.appendChild(option);
+    });
+    
+    // 現在選択中の初期設定が確実に選択されるように
+    if (currentSetupLinks[currentSelectedSetup]) {
+        setupSelector.value = currentSelectedSetup;
+    } else {
+        // 現在選択中の初期設定が存在しない場合は最初の初期設定を使用
+        currentSelectedSetup = Object.keys(currentSetupLinks)[0] || 'windows';
+        setupSelector.value = currentSelectedSetup;
+        localStorage.setItem('currentSelectedSetup', currentSelectedSetup);
+    }
+}
+
 // 初期設定コンテンツ更新機能
 function updateSetupContent() {
     const setupSelector = document.getElementById('setup-selector');
@@ -861,8 +988,8 @@ function updateSetupContent() {
     const selectedType = setupSelector.value || currentSelectedSetup;
     
     // リンク入力フィールドの更新
-    if (DEFAULT_SETUP_LINKS[selectedType]) {
-        linkInput.value = DEFAULT_SETUP_LINKS[selectedType];
+    if (currentSetupLinks[selectedType]) {
+        linkInput.value = currentSetupLinks[selectedType];
     }
     
     // 説明文の更新
