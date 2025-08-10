@@ -846,15 +846,17 @@
                     // プログレス計算（10分で95%）
                     const progressPercent = Math.min((elapsedSeconds / 600) * 85 + 10, 95);
 
-                    if (status.status === 'done' || status.status === 'success') {
+                    if (status.status === 'done' || status.status === 'success' || 
+                        status.detail === 'done' || status.imagebuilder_status === 'done') {
                         console.log('Build completed successfully!');
                         showProgress('Build completed!', 100);
                         setTimeout(() => {
                             hideProgress();
-                            showDownloadLinks(status.images);
+                            showDownloadLinks(status.images || status.request?.images);
                         }, 500);
                         return;
-                    } else if (status.status === 'failed' || status.status === 'failure') {
+                    } else if (status.status === 'failed' || status.status === 'failure' || 
+                              status.detail === 'failed' || status.imagebuilder_status === 'failed') {
                         console.error('Build failed on server:', status);
                         throw new Error(`Build failed: ${status.detail || status.stdout || 'Unknown error'}`);
                     } else if (status.status === 'queued') {
