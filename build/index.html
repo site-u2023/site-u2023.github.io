@@ -321,7 +321,7 @@
             <h4>Customize installed packages and/or first boot script</h4>
             <div class="form-group">
                 <label for="packages-custom">Packages to add/remove (one per line, prefix with '-' to remove):</label>
-                <textarea id="packages-custom" class="form-control" rows="3" placeholder="-wpad-basic-wolfssl&#10;wpad-wolfssl&#10;luci-ssl"></textarea>
+                <textarea id="packages-custom" class="form-control" rows="3" placeholder="luci&#10;luci-ssl&#10;wpad-wolfssl&#10;-wpad-basic-wolfssl"></textarea>
             </div>
 
             <!-- setup.sh設定セクション -->
@@ -340,7 +340,50 @@
                             <label for="aios-language">Language</label>
                             <select id="aios-language" class="form-control">
                                 <option value="en">English</option>
-                                <option value="ja">Japanese</option>
+                                <option value="ar">العربية (Arabic)</option>
+                                <option value="bg">Български (Bulgarian)</option>
+                                <option value="ca">Català (Catalan)</option>
+                                <option value="cs">Čeština (Czech)</option>
+                                <option value="da">Dansk (Danish)</option>
+                                <option value="de">Deutsch (German)</option>
+                                <option value="el">Ελληνικά (Greek)</option>
+                                <option value="es">Español (Spanish)</option>
+                                <option value="et">Eesti (Estonian)</option>
+                                <option value="eu">Euskera (Basque)</option>
+                                <option value="fi">Suomi (Finnish)</option>
+                                <option value="fr">Français (French)</option>
+                                <option value="gl">Galego (Galician)</option>
+                                <option value="he">עברית (Hebrew)</option>
+                                <option value="hr">Hrvatski (Croatian)</option>
+                                <option value="hu">Magyar (Hungarian)</option>
+                                <option value="id">Bahasa Indonesia (Indonesian)</option>
+                                <option value="is">Íslenska (Icelandic)</option>
+                                <option value="it">Italiano (Italian)</option>
+                                <option value="ja">日本語 (Japanese)</option>
+                                <option value="ko">한국어 (Korean)</option>
+                                <option value="lt">Lietuvių (Lithuanian)</option>
+                                <option value="lv">Latviešu (Latvian)</option>
+                                <option value="mk">Македонски (Macedonian)</option>
+                                <option value="ms">Bahasa Melayu (Malay)</option>
+                                <option value="mt">Malti (Maltese)</option>
+                                <option value="nl">Nederlands (Dutch)</option>
+                                <option value="no">Norsk (Norwegian)</option>
+                                <option value="pl">Polski (Polish)</option>
+                                <option value="pt">Português (Portuguese)</option>
+                                <option value="pt_br">Português do Brasil (Portuguese Brazil)</option>
+                                <option value="ro">Română (Romanian)</option>
+                                <option value="ru">Русский (Russian)</option>
+                                <option value="sk">Slovenčina (Slovak)</option>
+                                <option value="sl">Slovenščina (Slovenian)</option>
+                                <option value="sq">Shqipe (Albanian)</option>
+                                <option value="sr">Српски (Serbian)</option>
+                                <option value="sv">Svenska (Swedish)</option>
+                                <option value="th">ไทย (Thai)</option>
+                                <option value="tr">Türkçe (Turkish)</option>
+                                <option value="uk">Українська (Ukrainian)</option>
+                                <option value="vi">Tiếng Việt (Vietnamese)</option>
+                                <option value="zh_cn">简体中文 (Chinese Simplified)</option>
+                                <option value="zh_tw">繁體中文 (Chinese Traditional)</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -588,7 +631,7 @@
             await fetchProfilePackagesAndPopulate(device);
         }
 
-        // 追加: profiles.json / 個別 profile JSON から default packages を取得し、互換のため改行区切りで投入
+        // 追加: profiles.json / 個別 profile JSON から default packages を取得し、重要パッケージを追加
         async function fetchProfilePackagesAndPopulate(device) {
             if (!device || !device.target || !device.id) return;
 
@@ -604,6 +647,8 @@
             candidates.push(`https://downloads.openwrt.org/snapshots/targets/${target}/profiles.json`);
             candidates.push(`https://downloads.openwrt.org/snapshots/targets/${target}/profiles/${profileId}.json`);
 
+            let foundPackages = [];
+
             for (const url of candidates) {
                 try {
                     const res = await fetch(url);
@@ -617,8 +662,8 @@
                         if (found) {
                             const pkgs = normalizePackagesField(found.packages || found.package || found.defaults || found.default_packages || found['installed-packages']);
                             if (pkgs.length) {
-                                document.getElementById('packages-custom').value = pkgs.join(' ');
-                                return;
+                                foundPackages = pkgs;
+                                break;
                             }
                         }
                     }
@@ -627,8 +672,8 @@
                     if (direct) {
                         const pkgs = normalizePackagesField(direct);
                         if (pkgs.length) {
-                            document.getElementById('packages-custom').value = pkgs.join('\n');
-                            return;
+                            foundPackages = pkgs;
+                            break;
                         }
                     }
                 } catch (e) {
@@ -636,6 +681,26 @@
                     continue;
                 }
             }
+
+            // 重要なパッケージを追加（不足している場合）
+            const essentialPackages = [
+                'luci',
+                'luci-ssl', 
+                'wpad-wolfssl',
+                '-wpad-basic-wolfssl'
+            ];
+
+            // 既存パッケージと重要パッケージをマージ
+            let allPackages = [...foundPackages];
+            
+            essentialPackages.forEach(pkg => {
+                if (!allPackages.includes(pkg)) {
+                    allPackages.push(pkg);
+                }
+            });
+
+            // パッケージを設定
+            document.getElementById('packages-custom').value = allPackages.join('\n');
         }
 
         function normalizePackagesField(raw) {
@@ -707,8 +772,8 @@
                 customized = customized.replace('# DEVICE_NAME=""', `DEVICE_NAME="${config.deviceName}"`);
             }
             
-            // rootパスワード
-            if (config.rootPassword) {
+            // rootパスワード（両方一致する場合のみ）
+            if (config.rootPassword && config.confirmPassword && config.rootPassword === config.confirmPassword) {
                 customized = customized.replace('# ROOT_PASSWORD=""', `ROOT_PASSWORD="${config.rootPassword}"`);
             }
             
@@ -793,6 +858,7 @@
                 language: document.getElementById('aios-language').value,
                 deviceName: document.getElementById('aios-device-name').value,
                 rootPassword: document.getElementById('aios-root-password').value,
+                confirmPassword: document.getElementById('aios-confirm-password').value,
                 wifiSSID: document.getElementById('aios-wifi-ssid').value,
                 wifiPassword: document.getElementById('aios-wifi-password').value,
                 connectionType: document.querySelector('input[name="connectionType"]:checked').value,
