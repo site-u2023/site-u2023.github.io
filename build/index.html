@@ -1325,166 +1325,137 @@ exit 0`;
             }
         }
 
-        // 修正版スクリプトカスタマイズ関数 - 完全な値の反映
-        function customizeSetupScript(content, config, apiInfo) {
-            let customized = content;
-            
-            console.log('Customizing script with config:', config);
-            
-            // OpenWrtバージョン別フラグ設定
-            if (app.selectedVersion && app.selectedVersion.startsWith('19')) {
-                customized = customized.replace(/^# openwrt_19=""$/m, `openwrt_19="1"`);
-                customized = customized.replace(/^# openwrt_21=""$/m, `# openwrt_21=""`);
-            } else {
-                customized = customized.replace(/^# openwrt_19=""$/m, `# openwrt_19=""`);
-                customized = customized.replace(/^# openwrt_21=""$/m, `openwrt_21="1"`);
-            }
-            
-            // 言語設定 - 選択値を正しく反映
-            if (config.language) {
-                customized = customized.replace(/^# language=".*"$/m, `language="${config.language}"`);
-                if (config.language === 'ja') {
-                    customized = customized.replace(/^# country=".*"$/m, `country="JP"`);
-                    customized = customized.replace(/^# timezone=".*"$/m, `timezone="JST-9"`);
-                }
-            }
-            
-            // デバイス名設定（完全な値を反映）
-            if (config.deviceName && config.deviceName.trim()) {
-                customized = customized.replace(/^# device_name=""$/m, `device_name="${config.deviceName}"`);
-            }
-            
-            // LAN IP設定
-            if (config.lanIp) {
-                customized = customized.replace(/^# lan_ip_address=".*"$/m, `lan_ip_address="${config.lanIp}"`);
-                customized = customized.replace(/^lan_ip_address=".*"$/m, `lan_ip_address="${config.lanIp}"`);
-            }
-            
-            // ルートパスワード設定（完全な値を反映）
-            if (config.rootPassword && config.confirmPassword && 
-                config.rootPassword === config.confirmPassword && 
-                config.rootPassword.length >= 8) {
-                customized = customized.replace(/^# root_password=""$/m, `root_password="${config.rootPassword}"`);
-            }
-            
-            // Wi-Fi設定（完全な値を反映）
-            if (config.wifiSSID && config.wifiSSID.trim()) {
-                customized = customized.replace(/^# wlan_name=".*"$/m, `wlan_name="${config.wifiSSID}"`);
-            }
-            if (config.wifiPassword && config.wifiPassword.length >= 8) {
-                customized = customized.replace(/^# wlan_password=".*"$/m, `wlan_password="${config.wifiPassword}"`);
-            }
-            
-            // 接続方式別設定
-            if (config.connectionMode === 'manual') {
-                switch(config.connectionType) {
-                    case 'pppoe':
-                        // PPPoE設定（完全な値を反映）
-                        if (config.pppoeUsername && config.pppoeUsername.trim()) {
-                            customized = customized.replace(/^# pppoe_username=""$/m, `pppoe_username="${config.pppoeUsername}"`);
-                        }
-                        if (config.pppoePassword && config.pppoePassword.trim()) {
-                            customized = customized.replace(/^# pppoe_password=""$/m, `pppoe_password="${config.pppoePassword}"`);
-                        }
-                        break;
-                        
-                    case 'dslite':
-                        if (config.dsliteAftrAddress && config.dsliteAftrAddress.trim()) {
-                            customized = customized.replace(/^# dslite_aftr_address=""$/m, `dslite_aftr_address="${config.dsliteAftrAddress}"`);
-                        }
-                        break;
-                        
-                    case 'mape':
-                        // MAP-E手動設定
-                        const mapeBr = config.mapeBr || document.getElementById('mape-br').value;
-                        const mapeEalen = config.mapeEalen || document.getElementById('mape-ealen').value;
-                        const mapeIpv4Prefix = config.mapeIpv4Prefix || document.getElementById('mape-ipv4-prefix').value;
-                        const mapeIpv4Prefixlen = config.mapeIpv4Prefixlen || document.getElementById('mape-ipv4-prefixlen').value;
-                        const mapeIpv6Prefix = config.mapeIpv6Prefix || document.getElementById('mape-ipv6-prefix').value;
-                        const mapeIpv6Prefixlen = config.mapeIpv6Prefixlen || document.getElementById('mape-ipv6-prefixlen').value;
-                        const mapePsidOffset = config.mapePsidOffset || document.getElementById('mape-psid-offset').value;
-                        
-                        if (mapeBr && mapeBr.trim()) {
-                            customized = customized.replace(/^# mape_br=""$/m, `mape_br="${mapeBr}"`);
-                        }
-                        if (mapeEalen && mapeEalen.trim()) {
-                            customized = customized.replace(/^# mape_ealen=""$/m, `mape_ealen="${mapeEalen}"`);
-                            
-                            // PSID計算
-                            const ealen = parseInt(mapeEalen);
-                            const ipv4Prefixlen = parseInt(mapeIpv4Prefixlen) || 24;
-                            const psidOffset = parseInt(mapePsidOffset) || 6;
-                            const psidlen = Math.max(0, Math.min(16, ealen - psidOffset));
-                            
-                            customized = customized.replace(/^# mape_psidlen=""$/m, `mape_psidlen="${psidlen}"`);
-                            customized = customized.replace(/^# mape_psid_offset=""$/m, `mape_psid_offset="${psidOffset}"`);
-                        }
-                        if (mapeIpv4Prefix && mapeIpv4Prefix.trim()) {
-                            customized = customized.replace(/^# mape_ipv4_prefix=""$/m, `mape_ipv4_prefix="${mapeIpv4Prefix}"`);
-                        }
-                        if (mapeIpv4Prefixlen && mapeIpv4Prefixlen.trim()) {
-                            customized = customized.replace(/^# mape_ipv4_prefixlen=""$/m, `mape_ipv4_prefixlen="${mapeIpv4Prefixlen}"`);
-                        }
-                        if (mapeIpv6Prefix && mapeIpv6Prefix.trim()) {
-                            customized = customized.replace(/^# mape_ipv6_prefix=""$/m, `mape_ipv6_prefix="${mapeIpv6Prefix}"`);
-                        }
-                        if (mapeIpv6Prefixlen && mapeIpv6Prefixlen.trim()) {
-                            customized = customized.replace(/^# mape_ipv6_prefixlen=""$/m, `mape_ipv6_prefixlen="${mapeIpv6Prefixlen}"`);
-                        }
-                        
-                        // GUA/PD設定
-                        if ((config.mapeType === 'gua' || config.mapeType === 'auto') && mapeIpv6Prefix) {
-                            const ipv6Base = mapeIpv6Prefix.split(':').slice(0, 4).join(':');
-                            const guaPrefix = `${ipv6Base}::/64`;
-                            customized = customized.replace(/^# mape_gua_mode=""$/m, `mape_gua_mode="1"`);
-                            customized = customized.replace(/^# mape_gua_prefix=""$/m, `mape_gua_prefix="${guaPrefix}"`);
-                        }
-                        
-                        customized = loadMapShContentSync(customized, app.selectedVersion);
-                        break;
-                }
-            } else {
-                // AUTO選択時：API情報から設定
-                if (apiInfo) {
-                    if (apiInfo.country) {
-                        customized = customized.replace(/^# country=".*"$/m, `country="${apiInfo.country}"`);
-                    }
-                    if (apiInfo.timezone) {
-                        customized = customized.replace(/^# timezone=".*"$/m, `timezone="${apiInfo.timezone}"`);
-                    }
-                    
-                    if (apiInfo.rule && apiInfo.rule.aftrType) {
-                        customized = customized.replace(/^# dslite_aftr_address=""$/m, `dslite_aftr_address="${apiInfo.rule.aftrIpv6Address}"`);
-                    }
-                    else if (apiInfo.rule && apiInfo.rule.brIpv6Address) {
-                        customized = customized.replace(/^# mape_br=""$/m, `mape_br="${apiInfo.rule.brIpv6Address}"`);
-                        customized = customized.replace(/^# mape_ealen=""$/m, `mape_ealen="${apiInfo.rule.eaBitLength}"`);
-                        customized = customized.replace(/^# mape_ipv4_prefix=""$/m, `mape_ipv4_prefix="${apiInfo.rule.ipv4Prefix}"`);
-                        customized = customized.replace(/^# mape_ipv4_prefixlen=""$/m, `mape_ipv4_prefixlen="${apiInfo.rule.ipv4PrefixLength}"`);
-                        customized = customized.replace(/^# mape_ipv6_prefix=""$/m, `mape_ipv6_prefix="${apiInfo.rule.ipv6Prefix}"`);
-                        customized = customized.replace(/^# mape_ipv6_prefixlen=""$/m, `mape_ipv6_prefixlen="${apiInfo.rule.ipv6PrefixLength}"`);
-                        
-                        const ealen = parseInt(apiInfo.rule.eaBitLength);
-                        const ipv4Prefixlen = parseInt(apiInfo.rule.ipv4PrefixLength);
-                        const psidOffset = parseInt(apiInfo.rule.psIdOffset) || (32 - ipv4Prefixlen);
-                        const psidlen = Math.max(0, Math.min(16, ealen - psidOffset));
-                        
-                        customized = customized.replace(/^# mape_psidlen=""$/m, `mape_psidlen="${psidlen}"`);
-                        customized = customized.replace(/^# mape_psid_offset=""$/m, `mape_psid_offset="${psidOffset}"`);
-                        
-                        const ipv6Base = apiInfo.rule.ipv6Prefix.split(':').slice(0, 4).join(':');
-                        const guaPrefix = `${ipv6Base}::/64`;
-                        customized = customized.replace(/^# mape_gua_mode=""$/m, `mape_gua_mode="1"`);
-                        customized = customized.replace(/^# mape_gua_prefix=""$/m, `mape_gua_prefix="${guaPrefix}"`);
-                        
-                        customized = loadMapShContentSync(customized, app.selectedVersion);
-                    }
-                }
-            }
-            
-            console.log('Script customization completed');
-            return customized;
+// 修正版スクリプトカスタマイズ関数 - コメント有無どちらも置換対象
+function customizeSetupScript(content, config, apiInfo) {
+    let customized = content;
+
+    console.log('Customizing script with config:', config);
+
+    // OpenWrtバージョン別フラグ設定
+    if (app.selectedVersion && app.selectedVersion.startsWith('19')) {
+        customized = customized.replace(/^(# )?openwrt_19=".*"$/m, `openwrt_19="1"`);
+        customized = customized.replace(/^(# )?openwrt_21=".*"$/m, `# openwrt_21=""`);
+    } else {
+        customized = customized.replace(/^(# )?openwrt_19=".*"$/m, `# openwrt_19=""`);
+        customized = customized.replace(/^(# )?openwrt_21=".*"$/m, `openwrt_21="1"`);
+    }
+
+    // 言語設定
+    if (config.language) {
+        customized = customized.replace(/^(# )?language=".*"$/m, `language="${config.language}"`);
+        if (config.language === 'ja') {
+            customized = customized.replace(/^(# )?country=".*"$/m, `country="JP"`);
+            customized = customized.replace(/^(# )?timezone=".*"$/m, `timezone="JST-9"`);
         }
+    }
+
+    // デバイス名
+    if (config.deviceName && config.deviceName.trim()) {
+        customized = customized.replace(/^(# )?device_name=".*"$/m, `device_name="${config.deviceName}"`);
+    }
+
+    // LAN IP
+    if (config.lanIp) {
+        customized = customized.replace(/^(# )?lan_ip_address=".*"$/m, `lan_ip_address="${config.lanIp}"`);
+    }
+
+    // ルートパスワード
+    if (config.rootPassword && config.confirmPassword &&
+        config.rootPassword === config.confirmPassword &&
+        config.rootPassword.length >= 8) {
+        customized = customized.replace(/^(# )?root_password=".*"$/m, `root_password="${config.rootPassword}"`);
+    }
+
+    // Wi-Fi設定
+    if (config.wifiSSID && config.wifiSSID.trim()) {
+        customized = customized.replace(/^(# )?wlan_name=".*"$/m, `wlan_name="${config.wifiSSID}"`);
+    }
+    if (config.wifiPassword && config.wifiPassword.length >= 8) {
+        customized = customized.replace(/^(# )?wlan_password=".*"$/m, `wlan_password="${config.wifiPassword}"`);
+    }
+
+    // 接続方式
+    if (config.connectionMode === 'manual') {
+        switch (config.connectionType) {
+            case 'pppoe':
+                if (config.pppoeUsername && config.pppoeUsername.trim()) {
+                    customized = customized.replace(/^(# )?pppoe_username=".*"$/m, `pppoe_username="${config.pppoeUsername}"`);
+                }
+                if (config.pppoePassword && config.pppoePassword.trim()) {
+                    customized = customized.replace(/^(# )?pppoe_password=".*"$/m, `pppoe_password="${config.pppoePassword}"`);
+                }
+                break;
+
+            case 'dslite':
+                if (config.dsliteAftrAddress && config.dsliteAftrAddress.trim()) {
+                    customized = customized.replace(/^(# )?dslite_aftr_address=".*"$/m, `dslite_aftr_address="${config.dsliteAftrAddress}"`);
+                }
+                break;
+
+            case 'mape':
+                const mapeBr = config.mapeBr || document.getElementById('mape-br').value;
+                const mapeEalen = config.mapeEalen || document.getElementById('mape-ealen').value;
+                const mapeIpv4Prefix = config.mapeIpv4Prefix || document.getElementById('mape-ipv4-prefix').value;
+                const mapeIpv4Prefixlen = config.mapeIpv4Prefixlen || document.getElementById('mape-ipv4-prefixlen').value;
+                const mapeIpv6Prefix = config.mapeIpv6Prefix || document.getElementById('mape-ipv6-prefix').value;
+                const mapeIpv6Prefixlen = config.mapeIpv6Prefixlen || document.getElementById('mape-ipv6-prefixlen').value;
+                const mapePsidOffset = config.mapePsidOffset || document.getElementById('mape-psid-offset').value;
+
+                if (mapeBr) customized = customized.replace(/^(# )?mape_br=".*"$/m, `mape_br="${mapeBr}"`);
+                if (mapeEalen) {
+                    customized = customized.replace(/^(# )?mape_ealen=".*"$/m, `mape_ealen="${mapeEalen}"`);
+                    const ealen = parseInt(mapeEalen);
+                    const ipv4Prefixlen = parseInt(mapeIpv4Prefixlen) || 24;
+                    const psidOffset = parseInt(mapePsidOffset) || 6;
+                    const psidlen = Math.max(0, Math.min(16, ealen - psidOffset));
+                    customized = customized.replace(/^(# )?mape_psidlen=".*"$/m, `mape_psidlen="${psidlen}"`);
+                    customized = customized.replace(/^(# )?mape_psid_offset=".*"$/m, `mape_psid_offset="${psidOffset}"`);
+                }
+                if (mapeIpv4Prefix) customized = customized.replace(/^(# )?mape_ipv4_prefix=".*"$/m, `mape_ipv4_prefix="${mapeIpv4Prefix}"`);
+                if (mapeIpv4Prefixlen) customized = customized.replace(/^(# )?mape_ipv4_prefixlen=".*"$/m, `mape_ipv4_prefixlen="${mapeIpv4Prefixlen}"`);
+                if (mapeIpv6Prefix) customized = customized.replace(/^(# )?mape_ipv6_prefix=".*"$/m, `mape_ipv6_prefix="${mapeIpv6Prefix}"`);
+                if (mapeIpv6Prefixlen) customized = customized.replace(/^(# )?mape_ipv6_prefixlen=".*"$/m, `mape_ipv6_prefixlen="${mapeIpv6Prefixlen}"`);
+
+                if ((config.mapeType === 'gua' || config.mapeType === 'auto') && mapeIpv6Prefix) {
+                    const ipv6Base = mapeIpv6Prefix.split(':').slice(0, 4).join(':');
+                    const guaPrefix = `${ipv6Base}::/64`;
+                    customized = customized.replace(/^(# )?mape_gua_mode=".*"$/m, `mape_gua_mode="1"`);
+                    customized = customized.replace(/^(# )?mape_gua_prefix=".*"$/m, `mape_gua_prefix="${guaPrefix}"`);
+                }
+                customized = loadMapShContentSync(customized, app.selectedVersion);
+                break;
+        }
+    } else {
+        if (apiInfo) {
+            if (apiInfo.country) customized = customized.replace(/^(# )?country=".*"$/m, `country="${apiInfo.country}"`);
+            if (apiInfo.timezone) customized = customized.replace(/^(# )?timezone=".*"$/m, `timezone="${apiInfo.timezone}"`);
+            if (apiInfo.rule && apiInfo.rule.aftrType) {
+                customized = customized.replace(/^(# )?dslite_aftr_address=".*"$/m, `dslite_aftr_address="${apiInfo.rule.aftrIpv6Address}"`);
+            } else if (apiInfo.rule && apiInfo.rule.brIpv6Address) {
+                customized = customized.replace(/^(# )?mape_br=".*"$/m, `mape_br="${apiInfo.rule.brIpv6Address}"`);
+                customized = customized.replace(/^(# )?mape_ealen=".*"$/m, `mape_ealen="${apiInfo.rule.eaBitLength}"`);
+                customized = customized.replace(/^(# )?mape_ipv4_prefix=".*"$/m, `mape_ipv4_prefix="${apiInfo.rule.ipv4Prefix}"`);
+                customized = customized.replace(/^(# )?mape_ipv4_prefixlen=".*"$/m, `mape_ipv4_prefixlen="${apiInfo.rule.ipv4PrefixLength}"`);
+                customized = customized.replace(/^(# )?mape_ipv6_prefix=".*"$/m, `mape_ipv6_prefix="${apiInfo.rule.ipv6Prefix}"`);
+                customized = customized.replace(/^(# )?mape_ipv6_prefixlen=".*"$/m, `mape_ipv6_prefixlen="${apiInfo.rule.ipv6PrefixLength}"`);
+                const ealen = parseInt(apiInfo.rule.eaBitLength);
+                const ipv4Prefixlen = parseInt(apiInfo.rule.ipv4PrefixLength);
+                const psidOffset = parseInt(apiInfo.rule.psIdOffset) || (32 - ipv4Prefixlen);
+                const psidlen = Math.max(0, Math.min(16, ealen - psidOffset));
+                customized = customized.replace(/^(# )?mape_psidlen=".*"$/m, `mape_psidlen="${psidlen}"`);
+                customized = customized.replace(/^(# )?mape_psid_offset=".*"$/m, `mape_psid_offset="${psidOffset}"`);
+                const ipv6Base = apiInfo.rule.ipv6Prefix.split(':').slice(0, 4).join(':');
+                const guaPrefix = `${ipv6Base}::/64`;
+                customized = customized.replace(/^(# )?mape_gua_mode=".*"$/m, `mape_gua_mode="1"`);
+                customized = customized.replace(/^(# )?mape_gua_prefix=".*"$/m, `mape_gua_prefix="${guaPrefix}"`);
+                customized = loadMapShContentSync(customized, app.selectedVersion);
+            }
+        }
+    }
+
+    return customized;
+}
+
 
         function loadMapShContentSync(content, osVersion) {
             if (!content.includes('${map_sh_content}')) {
