@@ -495,8 +495,8 @@
                             </div>
                             <div class="form-group">
                                 <label for="dslite-aftr-address">AFTR IPv6 Address</label>
-                                <input type="text" id="dslite-aftr-address" class="form-control" placeholder="2404:8e00::feed:100" value="2404:8e00::feed:100">
-                                <small class="form-text text-muted">Default addresses: transix(East): 2404:8e00::feed:100, xpass(East): 2001:e30:1c1e:1::1, v6option(East): 2404:8e00::feed:101</small>
+                                <input type="text" id="dslite-aftr-address" class="form-control" placeholder="2001:db8::1" value="">
+                                <small class="form-text text-muted">Example addresses - Replace with your ISP's actual AFTR address</small>
                             </div>
                         </div>
 
@@ -617,19 +617,19 @@
 # pppoe_password=""
 #
 # DS-Lite settings (from API or manual)
-# dslite_aftr_address="2404:8e00::feed:100"
+# dslite_aftr_address=""
 #
 # MAP-E settings (from API or manual - all values pre-calculated)
-# mape_br="2001:380:a120::9"
-# mape_ealen="18"
-# mape_ipv4_prefix="153.187.0.0"
-# mape_ipv4_prefixlen="20"
-# mape_ipv6_prefix="2400:4151:8000::"
-# mape_ipv6_prefixlen="38"
-# mape_psidlen="12"
-# mape_psid_offset="6"
+# mape_br=""
+# mape_ealen=""
+# mape_ipv4_prefix=""
+# mape_ipv4_prefixlen=""
+# mape_ipv6_prefix=""
+# mape_ipv6_prefixlen=""
+# mape_psidlen=""
+# mape_psid_offset=""
 # mape_gua_mode=""
-# mape_gua_prefix="2400:4151:8000::/64"
+# mape_gua_prefix=""
 #
 # OpenWrt version flags (one will be set by web)
 # openwrt_19=""
@@ -841,7 +841,7 @@ exit 0`;
             devices: [],
             selectedDevice: null,
             selectedVersion: '',
-            templateLoaded: false  // テンプレート読み込み状態の管理
+            templateLoaded: false
         };
 
         document.addEventListener('DOMContentLoaded', init);
@@ -879,58 +879,9 @@ exit 0`;
                 radio.addEventListener('change', handleMapeTypeChange);
             });
 
-            // DS-Lite AFTR Type変更監視を後で追加（DOM要素ができてから）
-            setTimeout(() => {
-                const dsliteSelect = document.getElementById('dslite-aftr-type');
-                const dsliteAddress = document.getElementById('dslite-aftr-address');
-                if (dsliteSelect) {
-                    dsliteSelect.addEventListener('change', handleDsliteAftrTypeChange);
-                    dsliteSelect.addEventListener('change', function() {
-                        if (document.getElementById('use-aios-config').checked) {
-                            updateConfiguredTemplate();
-                            updateRequiredPackages();
-                        }
-                    });
-                }
-                if (dsliteAddress) {
-                    dsliteAddress.addEventListener('input', function() {
-                        if (document.getElementById('use-aios-config').checked) {
-                            updateConfiguredTemplate();
-                            updateRequiredPackages();
-                        }
-                    });
-                }
-                
-                // MAP-E入力フィールドのイベントリスナー
-                ['mape-br', 'mape-ealen', 'mape-ipv4-prefix', 'mape-ipv4-prefixlen', 
-                 'mape-ipv6-prefix', 'mape-ipv6-prefixlen', 'mape-psid-offset'].forEach(id => {
-                    const element = document.getElementById(id);
-                    if (element) {
-                        element.addEventListener('input', function() {
-                            if (document.getElementById('use-aios-config').checked) {
-                                updateConfiguredTemplate();
-                                updateRequiredPackages();
-                            }
-                        });
-                    }
-                });
-
-                // LAN IP入力フィールドのイベントリスナー
-                const lanIpElement = document.getElementById('aios-lan-ip');
-                if (lanIpElement) {
-                    lanIpElement.addEventListener('input', function() {
-                        if (document.getElementById('use-aios-config').checked) {
-                            updateConfiguredTemplate();
-                            updateRequiredPackages();
-                        }
-                    });
-                }
-            }, 100);
-
             // aios-config内の全ての入力フィールドに非同期リスナーを追加
             document.getElementById('aios-config').addEventListener('input', function(e) {
                 if (document.getElementById('use-aios-config').checked) {
-                    // Promise処理を適切に実行
                     updateConfiguredTemplate().catch(error => {
                         console.error('Failed to update template:', error);
                     });
@@ -940,7 +891,6 @@ exit 0`;
 
             document.getElementById('aios-config').addEventListener('change', function(e) {
                 if (document.getElementById('use-aios-config').checked) {
-                    // Promise処理を適切に実行
                     updateConfiguredTemplate().catch(error => {
                         console.error('Failed to update template:', error);
                     });
@@ -969,34 +919,6 @@ exit 0`;
                 manualSection.style.display = 'block';
             } else {
                 manualSection.style.display = 'none';
-            }
-
-            if (document.getElementById('use-aios-config').checked) {
-                updateConfiguredTemplate().catch(error => {
-                    console.error('Failed to update template:', error);
-                });
-                updateRequiredPackages();
-            }
-        }
-
-        // DS-Lite AFTR Type変更時のデフォルトアドレス設定
-        function handleDsliteAftrTypeChange(e) {
-            const aftrAddressInput = document.getElementById('dslite-aftr-address');
-            const aftrType = e.target.value;
-            
-            console.log('DS-Lite AFTR type changed to:', aftrType);
-            
-            // デフォルトアドレス設定（東日本）
-            switch(aftrType) {
-                case 'transix':
-                    aftrAddressInput.value = '2404:8e00::feed:100';
-                    break;
-                case 'xpass':
-                    aftrAddressInput.value = '2001:e30:1c1e:1::1';
-                    break;
-                case 'v6option':
-                    aftrAddressInput.value = '2404:8e00::feed:101';
-                    break;
             }
 
             if (document.getElementById('use-aios-config').checked) {
@@ -1051,10 +973,8 @@ exit 0`;
             try {
                 let url;
                 if (app.selectedVersion === 'SNAPSHOT') {
-                    // SNAPSHOTの場合
                     url = 'https://downloads.openwrt.org/snapshots/.overview.json';
                 } else {
-                    // 安定版の場合
                     url = `https://downloads.openwrt.org/releases/${app.selectedVersion}/.overview.json`;
                 }
                 
@@ -1121,7 +1041,6 @@ exit 0`;
             document.getElementById('models-autocomplete-list').style.display = 'none';
         }
 
-        // 公式準拠のデバイス選択処理
         function selectDevice(device) {
             app.selectedDevice = device;
             document.getElementById('models').value = getDeviceTitle(device);
@@ -1129,7 +1048,6 @@ exit 0`;
             loadDeviceProfile(device);
         }
 
-        // 公式と同じ方式: profiles.json からデバイス情報とパッケージを取得
         async function loadDeviceProfile(device) {
             if (!device || !device.target || !device.id) return;
 
@@ -1154,15 +1072,12 @@ exit 0`;
                 const profilesData = await response.json();
                 console.log(`Loaded profiles data:`, profilesData);
 
-                // 公式と同じ方式: profiles.json の構造からデバイス情報を取得
                 if (profilesData.profiles && profilesData.profiles[profileId]) {
                     const profile = profilesData.profiles[profileId];
                     console.log(`Found profile for ${profileId}:`, profile);
                     
-                    // パッケージリストを構築（公式と同じ方式）
                     const defaultPackages = profilesData.default_packages || [];
                     const devicePackages = profile.device_packages || [];
-                    // ASU用の追加パッケージ（公式準拠）
                     const asuExtraPackages = ['luci'];
                     const allPackages = defaultPackages.concat(devicePackages).concat(asuExtraPackages);
                     
@@ -1207,23 +1122,19 @@ exit 0`;
             document.getElementById('request-build').style.display = 'none';
         }
 
-        // 公式準拠のユーティリティ関数
         function split(str) {
             return str.match(/[^\s,]+/g) || [];
         }
 
-        // 手動選択時の接続方式詳細制御
         function handleConnectionTypeChange(e) {
             const pppoeSection = document.getElementById('pppoe-section');
             const dsliteSection = document.getElementById('dslite-section');
             const mapeManualSection = document.getElementById('mape-manual-section');
 
-            // 全詳細セクションを非表示
             pppoeSection.style.display = 'none';
             dsliteSection.style.display = 'none';
             mapeManualSection.style.display = 'none';
 
-            // 選択に応じて詳細セクション表示
             if (e.target.value === 'pppoe') {
                 pppoeSection.style.display = 'block';
             } else if (e.target.value === 'dslite') {
@@ -1233,17 +1144,16 @@ exit 0`;
             }
 
             if (document.getElementById('use-aios-config').checked) {
-                updateRequiredPackages(); // パッケージのみ更新、スクリプトは触らない
+                updateRequiredPackages();
             }
         }
 
         function handleMapeTypeChange(e) {
             if (document.getElementById('use-aios-config').checked) {
-                updateRequiredPackages(); // パッケージのみ更新、スクリプトは触らない
+                updateRequiredPackages();
             }
         }
 
-        // ISP情報の取得と表示更新
         async function fetchApiInfoAndUpdate() {
             try {
                 updateIspDisplay('Fetching', 'Retrieving ISP information...');
@@ -1252,13 +1162,12 @@ exit 0`;
                 const apiInfo = await fetchApiInfo();
                 console.log('fetchApiInfo returned:', apiInfo);
                 
-                window.cachedApiInfo = apiInfo; // キャッシュ
+                window.cachedApiInfo = apiInfo;
 
                 if (apiInfo) {
                     let statusText = 'Auto-detection successful';
                     let details = '';
                     
-                    // ISP情報
                     if (apiInfo.isp) {
                         details += `ISP: ${apiInfo.isp}\n`;
                     }
@@ -1273,7 +1182,6 @@ exit 0`;
                         details += `Timezone: ${apiInfo.timezone}\n`;
                     }
                     
-                    // 接続方式判定
                     if (apiInfo.rule) {
                         if (apiInfo.rule.aftrType) {
                             statusText += ' - DS-Lite support detected';
@@ -1291,7 +1199,6 @@ exit 0`;
                             details += `IPv6 Prefix: ${apiInfo.rule.ipv6Prefix}/${apiInfo.rule.ipv6PrefixLength}\n`;
                             details += `PSID Offset: ${apiInfo.rule.psIdOffset}\n`;
                             
-                            // 推奨方式があれば表示
                             if (apiInfo.recommendedMapeType) {
                                 details += `Recommended Mode: ${apiInfo.recommendedMapeType}\n`;
                             }
@@ -1306,21 +1213,35 @@ exit 0`;
                     
                     updateIspDisplay(statusText, details);
                     
-                    // 取得した値をMAP-E入力ボックスに自動設定
+                    // 取得した値をMAP-E入力ボックスに自動設定（初期値のみ）
                     if (apiInfo.rule && apiInfo.rule.brIpv6Address) {
-                        document.getElementById('mape-br').value = apiInfo.rule.brIpv6Address;
-                        document.getElementById('mape-ealen').value = apiInfo.rule.eaBitLength || '';
-                        document.getElementById('mape-ipv4-prefix').value = apiInfo.rule.ipv4Prefix || '';
-                        document.getElementById('mape-ipv4-prefixlen').value = apiInfo.rule.ipv4PrefixLength || '';
-                        document.getElementById('mape-ipv6-prefix').value = apiInfo.rule.ipv6Prefix || '';
-                        document.getElementById('mape-ipv6-prefixlen').value = apiInfo.rule.ipv6PrefixLength || '';
-                        document.getElementById('mape-psid-offset').value = apiInfo.rule.psIdOffset || '';
+                        if (!document.getElementById('mape-br').value) {
+                            document.getElementById('mape-br').value = apiInfo.rule.brIpv6Address;
+                        }
+                        if (!document.getElementById('mape-ealen').value) {
+                            document.getElementById('mape-ealen').value = apiInfo.rule.eaBitLength || '';
+                        }
+                        if (!document.getElementById('mape-ipv4-prefix').value) {
+                            document.getElementById('mape-ipv4-prefix').value = apiInfo.rule.ipv4Prefix || '';
+                        }
+                        if (!document.getElementById('mape-ipv4-prefixlen').value) {
+                            document.getElementById('mape-ipv4-prefixlen').value = apiInfo.rule.ipv4PrefixLength || '';
+                        }
+                        if (!document.getElementById('mape-ipv6-prefix').value) {
+                            document.getElementById('mape-ipv6-prefix').value = apiInfo.rule.ipv6Prefix || '';
+                        }
+                        if (!document.getElementById('mape-ipv6-prefixlen').value) {
+                            document.getElementById('mape-ipv6-prefixlen').value = apiInfo.rule.ipv6PrefixLength || '';
+                        }
+                        if (!document.getElementById('mape-psid-offset').value) {
+                            document.getElementById('mape-psid-offset').value = apiInfo.rule.psIdOffset || '';
+                        }
                     }
                     
-                    // DS-Lite情報があれば設定
+                    // DS-Lite情報があれば設定（初期値のみ）
                     if (apiInfo.rule && apiInfo.rule.aftrType) {
                         document.getElementById('dslite-aftr-type').value = apiInfo.rule.aftrType;
-                        if (apiInfo.rule.aftrIpv6Address) {
+                        if (apiInfo.rule.aftrIpv6Address && !document.getElementById('dslite-aftr-address').value) {
                             document.getElementById('dslite-aftr-address').value = apiInfo.rule.aftrIpv6Address;
                         }
                     }
@@ -1334,7 +1255,6 @@ exit 0`;
             }
         }
 
-        // ISP情報表示の更新
         function updateIspDisplay(status, details) {
             const statusMessage = document.getElementById('isp-status-message');
             const technicalInfo = document.getElementById('isp-technical-info');
@@ -1349,23 +1269,19 @@ exit 0`;
             }
         }
 
-        // 修正版：テンプレートの設定更新（外部ファイル読み込み不要）
+        // 修正版テンプレート更新関数 - 完全な値の反映
         async function updateConfiguredTemplate() {
             try {
-                // 現在のテンプレート内容を取得（既存の内容を保持）
                 let content = document.getElementById('uci-defaults-content').value;
                 
-                // 初期テンプレートが設定されていない場合のみ設定
                 if (!content || content.trim() === '' || content.includes('Failed to load setup.sh template')) {
                     content = SETUP_SH_TEMPLATE;
                     app.templateLoaded = true;
                 }
                 
-                // 設定ウィザードの値を取得
                 if (document.getElementById('use-aios-config').checked) {
                     const config = getAiosConfig();
                     
-                    // キャッシュされたAPI情報を使用、なければ新規取得
                     let apiInfo = window.cachedApiInfo;
                     if (!apiInfo && (config.connectionMode === 'auto' || config.connectionType === 'mape')) {
                         apiInfo = await fetchApiInfo();
@@ -1378,11 +1294,9 @@ exit 0`;
                 document.getElementById('uci-defaults-content').value = content;
             } catch (error) {
                 console.error('Template update error:', error);
-                // エラーが発生しても既存の内容は保持する
             }
         }
 
-        // API情報を事前取得（ビルド時）
         async function fetchApiInfo() {
             try {
                 console.log('Fetching API info from auto-config.site-u.workers.dev...');
@@ -1411,187 +1325,172 @@ exit 0`;
             }
         }
 
-// 修正版 customizeSetupScript関数
-function customizeSetupScript(content, config, apiInfo) {
-    let customized = content;
-    
-    console.log('Customizing script with config:', config);
-    
-    // OpenWrtバージョン別フラグ設定
-    if (app.selectedVersion && app.selectedVersion.startsWith('19')) {
-        customized = customized.replace(/^# openwrt_19=".*?"$/m, `openwrt_19="1"`);
-        customized = customized.replace(/^# openwrt_21=".*?"$/m, `# openwrt_21=""`);
-    } else {
-        customized = customized.replace(/^# openwrt_19=".*?"$/m, `# openwrt_19=""`);
-        customized = customized.replace(/^# openwrt_21=".*?"$/m, `openwrt_21="1"`);
-    }
-    
-    // 言語設定 - 選択値をコードに変換
-    if (config.language) {
-        let langCode = config.language;
-        if (config.language === 'ja') {
-            // 日本語の場合は国とタイムゾーンも設定
-            customized = customized.replace(/^# language=".*?"$/m, `language="ja"`);
-            customized = customized.replace(/^# country=".*?"$/m, `country="JP"`);
-            customized = customized.replace(/^# timezone=".*?"$/m, `timezone="JST-9"`);
-        } else {
-            customized = customized.replace(/^# language=".*?"$/m, `language="${langCode}"`);
-        }
-    }
-    
-    // デバイス名設定
-    if (config.deviceName && config.deviceName.trim()) {
-        customized = customized.replace(/^# device_name=".*?"$/m, `device_name="${config.deviceName}"`);
-    }
-    
-    // LAN IP設定（コメントアウトされている場合も含めて置換）
-    if (config.lanIp) {
-        // コメントアウトされている場合
-        customized = customized.replace(/^# lan_ip_address=".*?"$/m, `lan_ip_address="${config.lanIp}"`);
-        // 既にアンコメントされている場合
-        customized = customized.replace(/^lan_ip_address=".*?"$/m, `lan_ip_address="${config.lanIp}"`);
-    }
-    
-    // ルートパスワード設定
-    if (config.rootPassword && config.confirmPassword && config.rootPassword === config.confirmPassword && config.rootPassword.length >= 8) {
-        customized = customized.replace(/^# root_password=".*?"$/m, `root_password="${config.rootPassword}"`);
-    }
-    
-    // Wi-Fi設定
-    if (config.wifiSSID && config.wifiSSID.trim()) {
-        customized = customized.replace(/^# wlan_name=".*?"$/m, `wlan_name="${config.wifiSSID}"`);
-    }
-    if (config.wifiPassword && config.wifiPassword.length >= 8) {
-        customized = customized.replace(/^# wlan_password=".*?"$/m, `wlan_password="${config.wifiPassword}"`);
-    }
-    
-    // 接続方式別設定
-    if (config.connectionMode === 'manual') {
-        // 手動選択時
-        switch(config.connectionType) {
-            case 'pppoe':
-                if (config.pppoeUsername && config.pppoeUsername.trim()) {
-                    customized = customized.replace(/^# pppoe_username=".*?"$/m, `pppoe_username="${config.pppoeUsername}"`);
-                }
-                if (config.pppoePassword && config.pppoePassword.trim()) {
-                    customized = customized.replace(/^# pppoe_password=".*?"$/m, `pppoe_password="${config.pppoePassword}"`);
-                }
-                break;
-                
-            case 'dslite':
-                if (config.dsliteAftrAddress && config.dsliteAftrAddress.trim()) {
-                    customized = customized.replace(/^# dslite_aftr_address=".*?"$/m, `dslite_aftr_address="${config.dsliteAftrAddress}"`);
-                }
-                break;
-                
-            case 'mape':
-                // MAP-E手動設定 - フォームに入力された値、またはISP情報表示窓の値を使用
-                const mapeBr = config.mapeBr || document.getElementById('mape-br').value;
-                const mapeEalen = config.mapeEalen || document.getElementById('mape-ealen').value;
-                const mapeIpv4Prefix = config.mapeIpv4Prefix || document.getElementById('mape-ipv4-prefix').value;
-                const mapeIpv4Prefixlen = config.mapeIpv4Prefixlen || document.getElementById('mape-ipv4-prefixlen').value;
-                const mapeIpv6Prefix = config.mapeIpv6Prefix || document.getElementById('mape-ipv6-prefix').value;
-                const mapeIpv6Prefixlen = config.mapeIpv6Prefixlen || document.getElementById('mape-ipv6-prefixlen').value;
-                const mapePsidOffset = config.mapePsidOffset || document.getElementById('mape-psid-offset').value;
-                
-                if (mapeBr && mapeBr.trim()) {
-                    customized = customized.replace(/^# mape_br=".*?"$/m, `mape_br="${mapeBr}"`);
-                }
-                if (mapeEalen && mapeEalen.trim()) {
-                    customized = customized.replace(/^# mape_ealen=".*?"$/m, `mape_ealen="${mapeEalen}"`);
-                    
-                    // PSID計算
-                    const ealen = parseInt(mapeEalen);
-                    const ipv4Prefixlen = parseInt(mapeIpv4Prefixlen) || 24;
-                    const psidOffset = parseInt(mapePsidOffset) || 6;
-                    const psidlen = Math.max(0, Math.min(16, ealen - psidOffset));
-                    
-                    customized = customized.replace(/^# mape_psidlen=".*?"$/m, `mape_psidlen="${psidlen}"`);
-                    customized = customized.replace(/^# mape_psid_offset=".*?"$/m, `mape_psid_offset="${psidOffset}"`);
-                }
-                if (mapeIpv4Prefix && mapeIpv4Prefix.trim()) {
-                    customized = customized.replace(/^# mape_ipv4_prefix=".*?"$/m, `mape_ipv4_prefix="${mapeIpv4Prefix}"`);
-                }
-                if (mapeIpv4Prefixlen && mapeIpv4Prefixlen.trim()) {
-                    customized = customized.replace(/^# mape_ipv4_prefixlen=".*?"$/m, `mape_ipv4_prefixlen="${mapeIpv4Prefixlen}"`);
-                }
-                if (mapeIpv6Prefix && mapeIpv6Prefix.trim()) {
-                    customized = customized.replace(/^# mape_ipv6_prefix=".*?"$/m, `mape_ipv6_prefix="${mapeIpv6Prefix}"`);
-                }
-                if (mapeIpv6Prefixlen && mapeIpv6Prefixlen.trim()) {
-                    customized = customized.replace(/^# mape_ipv6_prefixlen=".*?"$/m, `mape_ipv6_prefixlen="${mapeIpv6Prefixlen}"`);
-                }
-                
-                // GUA/PD設定（デフォルトでGUAモードを有効化）
-                if (config.mapeType === 'gua' || config.mapeType === 'auto') {
-                    const ipv6Base = (mapeIpv6Prefix || '2400:4151:8000::').split(':').slice(0, 4).join(':');
-                    const guaPrefix = `${ipv6Base}::/64`;
-                    customized = customized.replace(/^# mape_gua_mode=".*?"$/m, `mape_gua_mode="1"`);
-                    customized = customized.replace(/^# mape_gua_prefix=".*?"$/m, `mape_gua_prefix="${guaPrefix}"`);
-                }
-                
-                // map.sh内容を設定（同期的に処理）
-                customized = loadMapShContentSync(customized, app.selectedVersion);
-                break;
-        }
-    } else {
-        // AUTO選択時：API情報から設定
-        if (apiInfo) {
-            // 位置情報
-            if (apiInfo.country) {
-                customized = customized.replace(/^# country=".*?"$/m, `country="${apiInfo.country}"`);
-            }
-            if (apiInfo.timezone) {
-                customized = customized.replace(/^# timezone=".*?"$/m, `timezone="${apiInfo.timezone}"`);
+        // 修正版スクリプトカスタマイズ関数 - 完全な値の反映
+        function customizeSetupScript(content, config, apiInfo) {
+            let customized = content;
+            
+            console.log('Customizing script with config:', config);
+            
+            // OpenWrtバージョン別フラグ設定
+            if (app.selectedVersion && app.selectedVersion.startsWith('19')) {
+                customized = customized.replace(/^# openwrt_19=""$/m, `openwrt_19="1"`);
+                customized = customized.replace(/^# openwrt_21=""$/m, `# openwrt_21=""`);
+            } else {
+                customized = customized.replace(/^# openwrt_19=""$/m, `# openwrt_19=""`);
+                customized = customized.replace(/^# openwrt_21=""$/m, `openwrt_21="1"`);
             }
             
-            // DS-Lite判定
-            if (apiInfo.rule && apiInfo.rule.aftrType) {
-                customized = customized.replace(/^# dslite_aftr_address=".*?"$/m, `dslite_aftr_address="${apiInfo.rule.aftrIpv6Address}"`);
+            // 言語設定 - 選択値を正しく反映
+            if (config.language) {
+                customized = customized.replace(/^# language=".*"$/m, `language="${config.language}"`);
+                if (config.language === 'ja') {
+                    customized = customized.replace(/^# country=".*"$/m, `country="JP"`);
+                    customized = customized.replace(/^# timezone=".*"$/m, `timezone="JST-9"`);
+                }
             }
-            // MAP-E判定
-            else if (apiInfo.rule && apiInfo.rule.brIpv6Address) {
-                customized = customized.replace(/^# mape_br=".*?"$/m, `mape_br="${apiInfo.rule.brIpv6Address}"`);
-                customized = customized.replace(/^# mape_ealen=".*?"$/m, `mape_ealen="${apiInfo.rule.eaBitLength}"`);
-                customized = customized.replace(/^# mape_ipv4_prefix=".*?"$/m, `mape_ipv4_prefix="${apiInfo.rule.ipv4Prefix}"`);
-                customized = customized.replace(/^# mape_ipv4_prefixlen=".*?"$/m, `mape_ipv4_prefixlen="${apiInfo.rule.ipv4PrefixLength}"`);
-                customized = customized.replace(/^# mape_ipv6_prefix=".*?"$/m, `mape_ipv6_prefix="${apiInfo.rule.ipv6Prefix}"`);
-                customized = customized.replace(/^# mape_ipv6_prefixlen=".*?"$/m, `mape_ipv6_prefixlen="${apiInfo.rule.ipv6PrefixLength}"`);
-                
-                // PSID計算
-                const ealen = parseInt(apiInfo.rule.eaBitLength);
-                const ipv4Prefixlen = parseInt(apiInfo.rule.ipv4PrefixLength);
-                const psidOffset = parseInt(apiInfo.rule.psIdOffset) || (32 - ipv4Prefixlen);
-                const psidlen = Math.max(0, Math.min(16, ealen - psidOffset));
-                
-                customized = customized.replace(/^# mape_psidlen=".*?"$/m, `mape_psidlen="${psidlen}"`);
-                customized = customized.replace(/^# mape_psid_offset=".*?"$/m, `mape_psid_offset="${psidOffset}"`);
-                
-                // GUA設定（デフォルト）
-                const ipv6Base = apiInfo.rule.ipv6Prefix.split(':').slice(0, 4).join(':');
-                const guaPrefix = `${ipv6Base}::/64`;
-                customized = customized.replace(/^# mape_gua_mode=".*?"$/m, `mape_gua_mode="1"`);
-                customized = customized.replace(/^# mape_gua_prefix=".*?"$/m, `mape_gua_prefix="${guaPrefix}"`);
-                
-                // map.sh内容を設定（同期的に処理）
-                customized = loadMapShContentSync(customized, app.selectedVersion);
+            
+            // デバイス名設定（完全な値を反映）
+            if (config.deviceName && config.deviceName.trim()) {
+                customized = customized.replace(/^# device_name=""$/m, `device_name="${config.deviceName}"`);
             }
+            
+            // LAN IP設定
+            if (config.lanIp) {
+                customized = customized.replace(/^# lan_ip_address=".*"$/m, `lan_ip_address="${config.lanIp}"`);
+                customized = customized.replace(/^lan_ip_address=".*"$/m, `lan_ip_address="${config.lanIp}"`);
+            }
+            
+            // ルートパスワード設定（完全な値を反映）
+            if (config.rootPassword && config.confirmPassword && 
+                config.rootPassword === config.confirmPassword && 
+                config.rootPassword.length >= 8) {
+                customized = customized.replace(/^# root_password=""$/m, `root_password="${config.rootPassword}"`);
+            }
+            
+            // Wi-Fi設定（完全な値を反映）
+            if (config.wifiSSID && config.wifiSSID.trim()) {
+                customized = customized.replace(/^# wlan_name=".*"$/m, `wlan_name="${config.wifiSSID}"`);
+            }
+            if (config.wifiPassword && config.wifiPassword.length >= 8) {
+                customized = customized.replace(/^# wlan_password=".*"$/m, `wlan_password="${config.wifiPassword}"`);
+            }
+            
+            // 接続方式別設定
+            if (config.connectionMode === 'manual') {
+                switch(config.connectionType) {
+                    case 'pppoe':
+                        // PPPoE設定（完全な値を反映）
+                        if (config.pppoeUsername && config.pppoeUsername.trim()) {
+                            customized = customized.replace(/^# pppoe_username=""$/m, `pppoe_username="${config.pppoeUsername}"`);
+                        }
+                        if (config.pppoePassword && config.pppoePassword.trim()) {
+                            customized = customized.replace(/^# pppoe_password=""$/m, `pppoe_password="${config.pppoePassword}"`);
+                        }
+                        break;
+                        
+                    case 'dslite':
+                        if (config.dsliteAftrAddress && config.dsliteAftrAddress.trim()) {
+                            customized = customized.replace(/^# dslite_aftr_address=""$/m, `dslite_aftr_address="${config.dsliteAftrAddress}"`);
+                        }
+                        break;
+                        
+                    case 'mape':
+                        // MAP-E手動設定
+                        const mapeBr = config.mapeBr || document.getElementById('mape-br').value;
+                        const mapeEalen = config.mapeEalen || document.getElementById('mape-ealen').value;
+                        const mapeIpv4Prefix = config.mapeIpv4Prefix || document.getElementById('mape-ipv4-prefix').value;
+                        const mapeIpv4Prefixlen = config.mapeIpv4Prefixlen || document.getElementById('mape-ipv4-prefixlen').value;
+                        const mapeIpv6Prefix = config.mapeIpv6Prefix || document.getElementById('mape-ipv6-prefix').value;
+                        const mapeIpv6Prefixlen = config.mapeIpv6Prefixlen || document.getElementById('mape-ipv6-prefixlen').value;
+                        const mapePsidOffset = config.mapePsidOffset || document.getElementById('mape-psid-offset').value;
+                        
+                        if (mapeBr && mapeBr.trim()) {
+                            customized = customized.replace(/^# mape_br=""$/m, `mape_br="${mapeBr}"`);
+                        }
+                        if (mapeEalen && mapeEalen.trim()) {
+                            customized = customized.replace(/^# mape_ealen=""$/m, `mape_ealen="${mapeEalen}"`);
+                            
+                            // PSID計算
+                            const ealen = parseInt(mapeEalen);
+                            const ipv4Prefixlen = parseInt(mapeIpv4Prefixlen) || 24;
+                            const psidOffset = parseInt(mapePsidOffset) || 6;
+                            const psidlen = Math.max(0, Math.min(16, ealen - psidOffset));
+                            
+                            customized = customized.replace(/^# mape_psidlen=""$/m, `mape_psidlen="${psidlen}"`);
+                            customized = customized.replace(/^# mape_psid_offset=""$/m, `mape_psid_offset="${psidOffset}"`);
+                        }
+                        if (mapeIpv4Prefix && mapeIpv4Prefix.trim()) {
+                            customized = customized.replace(/^# mape_ipv4_prefix=""$/m, `mape_ipv4_prefix="${mapeIpv4Prefix}"`);
+                        }
+                        if (mapeIpv4Prefixlen && mapeIpv4Prefixlen.trim()) {
+                            customized = customized.replace(/^# mape_ipv4_prefixlen=""$/m, `mape_ipv4_prefixlen="${mapeIpv4Prefixlen}"`);
+                        }
+                        if (mapeIpv6Prefix && mapeIpv6Prefix.trim()) {
+                            customized = customized.replace(/^# mape_ipv6_prefix=""$/m, `mape_ipv6_prefix="${mapeIpv6Prefix}"`);
+                        }
+                        if (mapeIpv6Prefixlen && mapeIpv6Prefixlen.trim()) {
+                            customized = customized.replace(/^# mape_ipv6_prefixlen=""$/m, `mape_ipv6_prefixlen="${mapeIpv6Prefixlen}"`);
+                        }
+                        
+                        // GUA/PD設定
+                        if ((config.mapeType === 'gua' || config.mapeType === 'auto') && mapeIpv6Prefix) {
+                            const ipv6Base = mapeIpv6Prefix.split(':').slice(0, 4).join(':');
+                            const guaPrefix = `${ipv6Base}::/64`;
+                            customized = customized.replace(/^# mape_gua_mode=""$/m, `mape_gua_mode="1"`);
+                            customized = customized.replace(/^# mape_gua_prefix=""$/m, `mape_gua_prefix="${guaPrefix}"`);
+                        }
+                        
+                        customized = loadMapShContentSync(customized, app.selectedVersion);
+                        break;
+                }
+            } else {
+                // AUTO選択時：API情報から設定
+                if (apiInfo) {
+                    if (apiInfo.country) {
+                        customized = customized.replace(/^# country=".*"$/m, `country="${apiInfo.country}"`);
+                    }
+                    if (apiInfo.timezone) {
+                        customized = customized.replace(/^# timezone=".*"$/m, `timezone="${apiInfo.timezone}"`);
+                    }
+                    
+                    if (apiInfo.rule && apiInfo.rule.aftrType) {
+                        customized = customized.replace(/^# dslite_aftr_address=""$/m, `dslite_aftr_address="${apiInfo.rule.aftrIpv6Address}"`);
+                    }
+                    else if (apiInfo.rule && apiInfo.rule.brIpv6Address) {
+                        customized = customized.replace(/^# mape_br=""$/m, `mape_br="${apiInfo.rule.brIpv6Address}"`);
+                        customized = customized.replace(/^# mape_ealen=""$/m, `mape_ealen="${apiInfo.rule.eaBitLength}"`);
+                        customized = customized.replace(/^# mape_ipv4_prefix=""$/m, `mape_ipv4_prefix="${apiInfo.rule.ipv4Prefix}"`);
+                        customized = customized.replace(/^# mape_ipv4_prefixlen=""$/m, `mape_ipv4_prefixlen="${apiInfo.rule.ipv4PrefixLength}"`);
+                        customized = customized.replace(/^# mape_ipv6_prefix=""$/m, `mape_ipv6_prefix="${apiInfo.rule.ipv6Prefix}"`);
+                        customized = customized.replace(/^# mape_ipv6_prefixlen=""$/m, `mape_ipv6_prefixlen="${apiInfo.rule.ipv6PrefixLength}"`);
+                        
+                        const ealen = parseInt(apiInfo.rule.eaBitLength);
+                        const ipv4Prefixlen = parseInt(apiInfo.rule.ipv4PrefixLength);
+                        const psidOffset = parseInt(apiInfo.rule.psIdOffset) || (32 - ipv4Prefixlen);
+                        const psidlen = Math.max(0, Math.min(16, ealen - psidOffset));
+                        
+                        customized = customized.replace(/^# mape_psidlen=""$/m, `mape_psidlen="${psidlen}"`);
+                        customized = customized.replace(/^# mape_psid_offset=""$/m, `mape_psid_offset="${psidOffset}"`);
+                        
+                        const ipv6Base = apiInfo.rule.ipv6Prefix.split(':').slice(0, 4).join(':');
+                        const guaPrefix = `${ipv6Base}::/64`;
+                        customized = customized.replace(/^# mape_gua_mode=""$/m, `mape_gua_mode="1"`);
+                        customized = customized.replace(/^# mape_gua_prefix=""$/m, `mape_gua_prefix="${guaPrefix}"`);
+                        
+                        customized = loadMapShContentSync(customized, app.selectedVersion);
+                    }
+                }
+            }
+            
+            console.log('Script customization completed');
+            return customized;
         }
-    }
-    
-    console.log('Script customization completed');
-    return customized;
-}
 
-        // map.sh内容取得・プレースホルダー置換（同期版）
         function loadMapShContentSync(content, osVersion) {
-            // プレースホルダーがない場合は何もしない
             if (!content.includes('${map_sh_content}')) {
                 return content;
             }
 
-            // map.shの内容を非同期で取得してキャッシュする仕組みを後で実装
-            // 今回は一時的にプレースホルダーのみ置換
             const placeholder = '#!/bin/sh\n# MAP-E script will be loaded dynamically';
             return content.replace('${map_sh_content}', placeholder);
         }
@@ -1601,7 +1500,6 @@ function customizeSetupScript(content, config, apiInfo) {
 
             if (e.target.checked) {
                 config.style.display = 'block';
-                // Promise処理を適切に実行
                 updateConfiguredTemplate().catch(error => {
                     console.error('Failed to update template:', error);
                 });
@@ -1615,7 +1513,6 @@ function customizeSetupScript(content, config, apiInfo) {
             const connectionMode = document.querySelector('input[name="connectionMode"]:checked').value;
             let effectiveConnectionType = 'auto';
             
-            // AUTO選択時は 'auto'、OFF選択時は選択された接続方式
             if (connectionMode === 'manual') {
                 effectiveConnectionType = document.querySelector('input[name="connectionType"]:checked')?.value || 'dhcp';
             }
@@ -1633,10 +1530,8 @@ function customizeSetupScript(content, config, apiInfo) {
                 mapeType: document.querySelector('input[name="mapeType"]:checked')?.value || 'auto',
                 pppoeUsername: document.getElementById('pppoe-username').value,
                 pppoePassword: document.getElementById('pppoe-password').value,
-                // DS-Lite manual settings
                 dsliteAftrType: document.getElementById('dslite-aftr-type').value,
                 dsliteAftrAddress: document.getElementById('dslite-aftr-address').value,
-                // MAP-E manual settings
                 mapeBr: document.getElementById('mape-br').value,
                 mapeEalen: document.getElementById('mape-ealen').value,
                 mapeIpv4Prefix: document.getElementById('mape-ipv4-prefix').value,
@@ -1650,33 +1545,26 @@ function customizeSetupScript(content, config, apiInfo) {
             return config;
         }
 
-        // 必要パッケージの自動追加（公式準拠）
         function updateRequiredPackages() {
             const config = getAiosConfig();
             const packagesTextarea = document.getElementById('asu-packages');
             let currentPackages = split(packagesTextarea.value);
             
-            // 既存のaios関連パッケージを削除
             currentPackages = currentPackages.filter(pkg => pkg !== 'map' && pkg !== 'ds-lite');
             
-            // 接続タイプに応じてパッケージ追加（AUTO時はAPI情報で判定、手動時は選択値）
             if (config.connectionMode === 'auto') {
-                // AUTO時はキャッシュされたAPI情報で判定
                 if (window.cachedApiInfo && window.cachedApiInfo.rule) {
                     if (window.cachedApiInfo.rule.aftrType) {
-                        // DS-Lite
                         if (!currentPackages.includes('ds-lite')) {
                             currentPackages.push('ds-lite');
                         }
                     } else if (window.cachedApiInfo.rule.brIpv6Address) {
-                        // MAP-E
                         if (!currentPackages.includes('map')) {
                             currentPackages.push('map');
                         }
                     }
                 }
             } else {
-                // 手動選択時
                 switch(config.connectionType) {
                     case 'mape':
                         if (!currentPackages.includes('map')) {
@@ -1691,11 +1579,9 @@ function customizeSetupScript(content, config, apiInfo) {
                 }
             }
             
-            // 公式と同じ形式: スペース区切り
             packagesTextarea.value = currentPackages.join(' ');
         }
 
-        // 公式準拠のビルドリクエスト関数
         async function buildAsuRequest() {
             if (!app.selectedDevice) {
                 alert('Please select a device first');
@@ -1764,7 +1650,7 @@ function customizeSetupScript(content, config, apiInfo) {
         }
 
         async function pollBuildStatus(requestHash) {
-            const maxAttempts = 120; // 10分間
+            const maxAttempts = 120;
             let attempts = 0;
             const startTime = Date.now();
 
