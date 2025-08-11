@@ -1499,41 +1499,46 @@ function loadMapShContentSync(content, osVersion) {
             }
         }
 
-        function getAiosConfig() {
-            const connectionMode = document.querySelector('input[name="connectionMode"]:checked').value;
-            let effectiveConnectionType = 'auto';
-            
-            if (connectionMode === 'manual') {
-                effectiveConnectionType = document.querySelector('input[name="connectionType"]:checked')?.value || 'dhcp';
-            }
-            
-            const config = {
-                language: document.getElementById('aios-language').value,
-                deviceName: document.getElementById('aios-device-name').value,
-                lanIp: document.getElementById('aios-lan-ip').value,
-                rootPassword: document.getElementById('aios-root-password').value,
-                confirmPassword: document.getElementById('aios-confirm-password').value,
-                wifiSSID: document.getElementById('aios-wifi-ssid').value,
-                wifiPassword: document.getElementById('aios-wifi-password').value,
-                connectionMode: connectionMode,
-                connectionType: effectiveConnectionType,
-                mapeType: document.querySelector('input[name="mapeType"]:checked')?.value || 'auto',
-                pppoeUsername: document.getElementById('pppoe-username').value,
-                pppoePassword: document.getElementById('pppoe-password').value,
-                dsliteAftrType: document.getElementById('dslite-aftr-type').value,
-                dsliteAftrAddress: document.getElementById('dslite-aftr-address').value,
-                mapeBr: document.getElementById('mape-br').value,
-                mapeEalen: document.getElementById('mape-ealen').value,
-                mapeIpv4Prefix: document.getElementById('mape-ipv4-prefix').value,
-                mapeIpv4Prefixlen: document.getElementById('mape-ipv4-prefixlen').value,
-                mapeIpv6Prefix: document.getElementById('mape-ipv6-prefix').value,
-                mapeIpv6Prefixlen: document.getElementById('mape-ipv6-prefixlen').value,
-                mapePsidOffset: document.getElementById('mape-psid-offset').value
-            };
-            
-            console.log('getAiosConfig() result:', config);
-            return config;
+function getAiosConfig() {
+    const parseOrEmpty = (id, type = 'string') => {
+        const val = document.getElementById(id)?.value?.trim();
+        if (!val) return '';
+        if (type === 'int') {
+            const num = parseInt(val);
+            return isNaN(num) ? '' : num;
         }
+        return val;
+    };
+
+    const config = {
+        language: parseOrEmpty('aios-language'),
+        deviceName: parseOrEmpty('aios-device-name'),
+        lanIp: parseOrEmpty('aios-lan-ip'),
+        rootPassword: parseOrEmpty('aios-root-password'),
+        confirmPassword: parseOrEmpty('aios-confirm-password'),
+        wifiSSID: parseOrEmpty('aios-wifi-ssid'),
+        wifiPassword: parseOrEmpty('aios-wifi-password'),
+
+        connectionMode: document.querySelector('input[name="connectionMode"]:checked')?.value || 'auto',
+        connectionType: document.querySelector('input[name="connectionType"]:checked')?.value || 'dhcp',
+        mapeType: document.querySelector('input[name="mapeType"]:checked')?.value || 'auto',
+
+        pppoeUsername: parseOrEmpty('pppoe-username'),
+        pppoePassword: parseOrEmpty('pppoe-password'),
+
+        dsliteAftrAddress: parseOrEmpty('dslite-aftr-address'),
+
+        mapeBr: parseOrEmpty('mape-br'),
+        mapeEalen: parseOrEmpty('mape-ealen', 'int'),
+        mapeIpv4Prefix: parseOrEmpty('mape-ipv4-prefix'),
+        mapeIpv4Prefixlen: parseOrEmpty('mape-ipv4-prefixlen', 'int'),
+        mapeIpv6Prefix: parseOrEmpty('mape-ipv6-prefix'),
+        mapeIpv6Prefixlen: parseOrEmpty('mape-ipv6-prefixlen', 'int'),
+        mapePsidOffset: parseOrEmpty('mape-psid-offset', 'int')
+    };
+
+    return config;
+}
 
         function updateRequiredPackages() {
             const config = getAiosConfig();
