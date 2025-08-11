@@ -680,14 +680,14 @@
                 }
             }, 100);
 
-            document.getElementById('aios-config').addEventListener('input', function() {
+            document.getElementById('aios-config').addEventListener('input', function(e) {
                 if (document.getElementById('use-aios-config').checked) {
                     loadAiosTemplate();
                     updateRequiredPackages();
                 }
             });
 
-            document.getElementById('aios-config').addEventListener('change', function() {
+            document.getElementById('aios-config').addEventListener('change', function(e) {
                 if (document.getElementById('use-aios-config').checked) {
                     loadAiosTemplate();
                     updateRequiredPackages();
