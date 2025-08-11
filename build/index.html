@@ -1503,8 +1503,20 @@ function customizeSetupScript(content, config, apiInfo) {
         psid: config.mapePsidlen || (apiHasMape ? api.psidlen : '')
     };
 
-    // GUAプレフィックス（MAP-E）
+    // GUAプレフィックス（MAP-E）- 実際のIPv6アドレスから計算
     const guaPrefix = (() => {
+        // APIから実際のIPv6アドレスを取得
+        if (apiInfo && apiInfo.ipv6) {
+            // 実際のIPv6アドレス（例: 2400:4151:80e2:7500:c490:e19a:5098:a584）
+            // から /64 プレフィックスを抽出（最初の4セグメント）
+            const segments = apiInfo.ipv6.split(':');
+            if (segments.length >= 4) {
+                const prefix = segments.slice(0, 4).join(':');
+                return `${prefix}::/64`;
+            }
+        }
+        
+        // フォールバック: API の技術仕様プレフィックスを使用
         const prefix = (mapeVals.v6p || '').split(':').slice(0, 4).join(':');
         return prefix ? `${prefix}::/64` : '';
     })();
