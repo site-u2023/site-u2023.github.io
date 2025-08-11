@@ -1154,106 +1154,117 @@ exit 0`;
             }
         }
 
-        async function fetchApiInfoAndUpdate() {
-            try {
-                updateIspDisplay('Fetching', 'Retrieving ISP information...');
-                console.log('Starting fetchApiInfoAndUpdate...');
-                
-                const apiInfo = await fetchApiInfo();
-                console.log('fetchApiInfo returned:', apiInfo);
-                
-                window.cachedApiInfo = apiInfo;
+async function fetchApiInfoAndUpdate() {
+    try {
+        updateIspDisplay('Fetching', 'Retrieving ISP information...');
+        console.log('Starting fetchApiInfoAndUpdate...');
 
-                if (apiInfo) {
-                    let statusText = 'Auto-detection successful';
-                    let details = '';
-                    
-                    if (apiInfo.isp) {
-                        details += `ISP: ${apiInfo.isp}\n`;
-                    }
-                    if (apiInfo.country) {
-                        details += `Country/Region: ${apiInfo.country}`;
-                        if (apiInfo.regionName) {
-                            details += ` (${apiInfo.regionName})`;
-                        }
-                        details += '\n';
-                    }
-                    if (apiInfo.timezone) {
-                        details += `Timezone: ${apiInfo.timezone}\n`;
-                    }
-                    
-                    if (apiInfo.rule) {
-                        if (apiInfo.rule.aftrType) {
-                            statusText += ' - DS-Lite support detected';
-                            details += `\n[DS-Lite Configuration]\n`;
-                            details += `AFTR Type: ${apiInfo.rule.aftrType}\n`;
-                            if (apiInfo.rule.aftrIpv6Address) {
-                                details += `AFTR Address: ${apiInfo.rule.aftrIpv6Address}\n`;
-                            }
-                        } else if (apiInfo.rule.brIpv6Address) {
-                            statusText += ' - MAP-E support detected';
-                            details += `\n[MAP-E Configuration]\n`;
-                            details += `BR: ${apiInfo.rule.brIpv6Address}\n`;
-                            details += `EA-len: ${apiInfo.rule.eaBitLength}\n`;
-                            details += `IPv4 Prefix: ${apiInfo.rule.ipv4Prefix}/${apiInfo.rule.ipv4PrefixLength}\n`;
-                            details += `IPv6 Prefix: ${apiInfo.rule.ipv6Prefix}/${apiInfo.rule.ipv6PrefixLength}\n`;
-                            details += `PSID Offset: ${apiInfo.rule.psIdOffset}\n`;
-                            
-                            if (apiInfo.recommendedMapeType) {
-                                details += `Recommended Mode: ${apiInfo.recommendedMapeType}\n`;
-                            }
-                            if (apiInfo.lineType) {
-                                details += `Line Type: ${apiInfo.lineType}\n`;
-                            }
-                        }
-                    } else {
-                        statusText += ' - DHCP/PPPoE environment';
-                        details += '\nStandard DHCP or PPPoE connection environment detected.';
-                    }
-                    
-                    updateIspDisplay(statusText, details);
-                    
-                    // 取得した値をMAP-E入力ボックスに自動設定（初期値のみ）
-                    if (apiInfo.rule && apiInfo.rule.brIpv6Address) {
-                        if (!document.getElementById('mape-br').value) {
-                            document.getElementById('mape-br').value = apiInfo.rule.brIpv6Address;
-                        }
-                        if (!document.getElementById('mape-ealen').value) {
-                            document.getElementById('mape-ealen').value = apiInfo.rule.eaBitLength || '';
-                        }
-                        if (!document.getElementById('mape-ipv4-prefix').value) {
-                            document.getElementById('mape-ipv4-prefix').value = apiInfo.rule.ipv4Prefix || '';
-                        }
-                        if (!document.getElementById('mape-ipv4-prefixlen').value) {
-                            document.getElementById('mape-ipv4-prefixlen').value = apiInfo.rule.ipv4PrefixLength || '';
-                        }
-                        if (!document.getElementById('mape-ipv6-prefix').value) {
-                            document.getElementById('mape-ipv6-prefix').value = apiInfo.rule.ipv6Prefix || '';
-                        }
-                        if (!document.getElementById('mape-ipv6-prefixlen').value) {
-                            document.getElementById('mape-ipv6-prefixlen').value = apiInfo.rule.ipv6PrefixLength || '';
-                        }
-                        if (!document.getElementById('mape-psid-offset').value) {
-                            document.getElementById('mape-psid-offset').value = apiInfo.rule.psIdOffset || '';
-                        }
-                    }
-                    
-                    // DS-Lite情報があれば設定（初期値のみ）
-                    if (apiInfo.rule && apiInfo.rule.aftrType) {
-                        document.getElementById('dslite-aftr-type').value = apiInfo.rule.aftrType;
-                        if (apiInfo.rule.aftrIpv6Address && !document.getElementById('dslite-aftr-address').value) {
-                            document.getElementById('dslite-aftr-address').value = apiInfo.rule.aftrIpv6Address;
-                        }
-                    }
-                } else {
-                    updateIspDisplay('Auto-detection failed', 'API connection error or unsupported ISP\nManual configuration required.');
-                }
-                
-            } catch (error) {
-                console.error('ISP info fetch error:', error);
-                updateIspDisplay('Fetch error', 'API connection failed.\nPlease use manual configuration for offline environments.');
+        const apiInfo = await fetchApiInfo();
+        console.log('fetchApiInfo returned:', apiInfo);
+
+        window.cachedApiInfo = apiInfo;
+
+        if (apiInfo) {
+            let statusText = 'Auto-detection successful';
+            let details = '';
+
+            if (apiInfo.isp) {
+                details += `ISP: ${apiInfo.isp}\n`;
             }
+            if (apiInfo.country) {
+                details += `Country/Region: ${apiInfo.country}`;
+                if (apiInfo.regionName) {
+                    details += ` (${apiInfo.regionName})`;
+                }
+                details += '\n';
+            }
+            if (apiInfo.timezone) {
+                details += `Timezone: ${apiInfo.timezone}\n`;
+            }
+
+            if (apiInfo.rule) {
+                if (apiInfo.rule.aftrType) {
+                    statusText += ' - DS-Lite support detected';
+                    details += `\n[DS-Lite Configuration]\n`;
+                    details += `AFTR Type: ${apiInfo.rule.aftrType}\n`;
+                    if (apiInfo.rule.aftrIpv6Address) {
+                        details += `AFTR Address: ${apiInfo.rule.aftrIpv6Address}\n`;
+                    }
+                } else if (apiInfo.rule.brIpv6Address) {
+                    statusText += ' - MAP-E support detected';
+                    details += `\n[MAP-E Configuration]\n`;
+                    details += `BR: ${apiInfo.rule.brIpv6Address}\n`;
+                    details += `EA-len: ${apiInfo.rule.eaBitLength}\n`;
+                    details += `IPv4 Prefix: ${apiInfo.rule.ipv4Prefix}/${apiInfo.rule.ipv4PrefixLength}\n`;
+                    details += `IPv6 Prefix: ${apiInfo.rule.ipv6Prefix}/${apiInfo.rule.ipv6PrefixLength}\n`;
+                    details += `PSID Offset: ${apiInfo.rule.psIdOffset}\n`;
+
+                    if (apiInfo.recommendedMapeType) {
+                        details += `Recommended Mode: ${apiInfo.recommendedMapeType}\n`;
+                    }
+                    if (apiInfo.lineType) {
+                        details += `Line Type: ${apiInfo.lineType}\n`;
+                    }
+                }
+            } else {
+                statusText += ' - DHCP/PPPoE environment';
+                details += '\nStandard DHCP or PPPoE connection environment detected.';
+            }
+
+            // ISP情報パネルのみ更新（チェック状態関係なく表示）
+            updateIspDisplay(statusText, details);
+
+            // 「Use setup.sh configuration wizard」がONのときだけフォームに反映
+            if (document.getElementById('use-aios-config').checked) {
+                // MAP-E情報
+                if (apiInfo.rule && apiInfo.rule.brIpv6Address) {
+                    if (!document.getElementById('mape-br').value) {
+                        document.getElementById('mape-br').value = apiInfo.rule.brIpv6Address;
+                    }
+                    if (!document.getElementById('mape-ealen').value) {
+                        document.getElementById('mape-ealen').value = apiInfo.rule.eaBitLength || '';
+                    }
+                    if (!document.getElementById('mape-ipv4-prefix').value) {
+                        document.getElementById('mape-ipv4-prefix').value = apiInfo.rule.ipv4Prefix || '';
+                    }
+                    if (!document.getElementById('mape-ipv4-prefixlen').value) {
+                        document.getElementById('mape-ipv4-prefixlen').value = apiInfo.rule.ipv4PrefixLength || '';
+                    }
+                    if (!document.getElementById('mape-ipv6-prefix').value) {
+                        document.getElementById('mape-ipv6-prefix').value = apiInfo.rule.ipv6Prefix || '';
+                    }
+                    if (!document.getElementById('mape-ipv6-prefixlen').value) {
+                        document.getElementById('mape-ipv6-prefixlen').value = apiInfo.rule.ipv6PrefixLength || '';
+                    }
+                    if (!document.getElementById('mape-psid-offset').value) {
+                        document.getElementById('mape-psid-offset').value = apiInfo.rule.psIdOffset || '';
+                    }
+                }
+
+                // DS-Lite情報
+                if (apiInfo.rule && apiInfo.rule.aftrType) {
+                    document.getElementById('dslite-aftr-type').value = apiInfo.rule.aftrType;
+                    if (apiInfo.rule.aftrIpv6Address && !document.getElementById('dslite-aftr-address').value) {
+                        document.getElementById('dslite-aftr-address').value = apiInfo.rule.aftrIpv6Address;
+                    }
+                }
+            }
+
+        } else {
+            updateIspDisplay(
+                'Auto-detection failed',
+                'API connection error or unsupported ISP\nManual configuration required.'
+            );
         }
+
+    } catch (error) {
+        console.error('ISP info fetch error:', error);
+        updateIspDisplay(
+            'Fetch error',
+            'API connection failed.\nPlease use manual configuration for offline environments.'
+        );
+    }
+}
 
         function updateIspDisplay(status, details) {
             const statusMessage = document.getElementById('isp-status-message');
@@ -1325,8 +1336,11 @@ exit 0`;
             }
         }
 
-// 修正版スクリプトカスタマイズ関数 - コメント有無どちらも置換対象
 function customizeSetupScript(content, config, apiInfo) {
+    if (!document.getElementById('use-aios-config').checked) {
+        return content;
+    }
+
     let customized = content;
 
     console.log('Customizing script with config:', config);
