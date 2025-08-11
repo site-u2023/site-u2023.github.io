@@ -520,39 +520,39 @@
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="mape-br">BR (Border Relay)</label>
-                                    <input type="text" id="mape-br" class="form-control" placeholder="2001:380:a120::9">
+                                    <input type="text" id="mape-br" class="form-control" placeholder="2001:db8::1">
                                 </div>
                                 <div class="form-group">
                                     <label for="mape-ealen">EA-len</label>
-                                    <input type="number" id="mape-ealen" class="form-control" placeholder="18" min="0" max="48">
+                                    <input type="number" id="mape-ealen" class="form-control" placeholder="16" min="0" max="48">
                                 </div>
                             </div>
                             
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="mape-ipv4-prefix">IPv4 Prefix</label>
-                                    <input type="text" id="mape-ipv4-prefix" class="form-control" placeholder="153.187.0.0">
+                                    <input type="text" id="mape-ipv4-prefix" class="form-control" placeholder="192.0.2.0">
                                 </div>
                                 <div class="form-group">
                                     <label for="mape-ipv4-prefixlen">IPv4 Prefix Length</label>
-                                    <input type="number" id="mape-ipv4-prefixlen" class="form-control" placeholder="20" min="1" max="32">
+                                    <input type="number" id="mape-ipv4-prefixlen" class="form-control" placeholder="24" min="1" max="32">
                                 </div>
                             </div>
                             
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="mape-ipv6-prefix">IPv6 Prefix</label>
-                                    <input type="text" id="mape-ipv6-prefix" class="form-control" placeholder="2400:4151:8000::">
+                                    <input type="text" id="mape-ipv6-prefix" class="form-control" placeholder="2001:db8:8000::">
                                 </div>
                                 <div class="form-group">
                                     <label for="mape-ipv6-prefixlen">IPv6 Prefix Length</label>
-                                    <input type="number" id="mape-ipv6-prefixlen" class="form-control" placeholder="38" min="1" max="128">
+                                    <input type="number" id="mape-ipv6-prefixlen" class="form-control" placeholder="32" min="1" max="128">
                                 </div>
                             </div>
                             
                             <div class="form-group">
                                 <label for="mape-psid-offset">PSID Offset</label>
-                                <input type="number" id="mape-psid-offset" class="form-control" placeholder="6" min="0" max="16">
+                                <input type="number" id="mape-psid-offset" class="form-control" placeholder="4" min="0" max="16">
                             </div>
                         </div>
                     </div>
@@ -603,9 +603,11 @@
                 await loadVersions();
                 bindEvents();
                 // ISP情報を初期取得（常時表示のため）
-                fetchApiInfoAndUpdate();
+                console.log('Starting ISP info fetch...');
+                await fetchApiInfoAndUpdate();
             } catch (error) {
                 console.error('Failed to initialize:', error);
+                updateIspDisplay('Initialization error', 'Failed to initialize application: ' + error.message);
             }
         }
 
@@ -905,8 +907,11 @@
         async function fetchApiInfoAndUpdate() {
             try {
                 updateIspDisplay('Fetching', 'Retrieving ISP information...');
+                console.log('Starting fetchApiInfoAndUpdate...');
                 
                 const apiInfo = await fetchApiInfo();
+                console.log('fetchApiInfo returned:', apiInfo);
+                
                 window.cachedApiInfo = apiInfo; // キャッシュ
 
                 if (apiInfo) {
@@ -960,6 +965,25 @@
                     }
                     
                     updateIspDisplay(statusText, details);
+                    
+                    // 取得した値をMAP-E入力ボックスに自動設定
+                    if (apiInfo.rule && apiInfo.rule.brIpv6Address) {
+                        document.getElementById('mape-br').value = apiInfo.rule.brIpv6Address;
+                        document.getElementById('mape-ealen').value = apiInfo.rule.eaBitLength || '';
+                        document.getElementById('mape-ipv4-prefix').value = apiInfo.rule.ipv4Prefix || '';
+                        document.getElementById('mape-ipv4-prefixlen').value = apiInfo.rule.ipv4PrefixLength || '';
+                        document.getElementById('mape-ipv6-prefix').value = apiInfo.rule.ipv6Prefix || '';
+                        document.getElementById('mape-ipv6-prefixlen').value = apiInfo.rule.ipv6PrefixLength || '';
+                        document.getElementById('mape-psid-offset').value = apiInfo.rule.psIdOffset || '';
+                    }
+                    
+                    // DS-Lite情報があれば設定
+                    if (apiInfo.rule && apiInfo.rule.aftrType) {
+                        document.getElementById('dslite-aftr-type').value = apiInfo.rule.aftrType;
+                        if (apiInfo.rule.aftrIpv6Address) {
+                            document.getElementById('dslite-aftr-address').value = apiInfo.rule.aftrIpv6Address;
+                        }
+                    }
                 } else {
                     updateIspDisplay('Auto-detection failed', 'API connection error or unsupported ISP\nManual configuration required.');
                 }
@@ -1053,6 +1077,8 @@
         // API情報を事前取得（ビルド時）
         async function fetchApiInfo() {
             try {
+                console.log('Fetching API info from auto-config.site-u.workers.dev...');
+                
                 const response = await fetch('https://auto-config.site-u.workers.dev/', {
                     method: 'GET',
                     headers: {
@@ -1060,16 +1086,15 @@
                     }
                 });
                 
+                console.log('API response status:', response.status);
+                
                 if (!response.ok) {
-                    console.warn('API access failed, using fallback settings');
+                    console.warn('API access failed with status:', response.status);
                     return null;
                 }
                 
                 const data = await response.json();
-                console.log('API Info fetched:', data);
-                
-                // 注意: APIからは1G/10G回線の判別は不可能
-                // 同じOCNバーチャルコネクトでも物理回線速度は区別できない
+                console.log('API Info fetched successfully:', data);
                 
                 return data;
             } catch (error) {
