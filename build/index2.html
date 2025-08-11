@@ -514,7 +514,7 @@
 
             <div class="form-group">
                 <label for="uci-defaults-content">Script to run on first boot (uci-defaults):</label>
-                <textarea id="uci-defaults-content" class="form-control" rows="8" placeholder="#!/bin/sh&#10;&#10;# Your custom script here&#10;# This area is for manual editing - configuration wizard will not overwrite your changes"></textarea>
+                <textarea id="uci-defaults-content" class="form-control" rows="8" placeholder="#!/bin/sh&#10;&#10;# Your script here"></textarea>
                 <span id="uci-defaults-template" data-link="scripts/setup.sh" style="cursor: pointer; color: #007bff; text-decoration: underline;">Load setup.sh template</span>
             </div>
 
@@ -575,13 +575,15 @@
 
             document.getElementById('aios-config').addEventListener('input', function() {
                 if (document.getElementById('use-aios-config').checked) {
-                    updateRequiredPackages(); // パッケージのみ更新、スクリプトは触らない
+                    loadAiosTemplate();
+                    updateRequiredPackages();
                 }
             });
 
             document.getElementById('aios-config').addEventListener('change', function() {
                 if (document.getElementById('use-aios-config').checked) {
-                    updateRequiredPackages(); // パッケージのみ更新、スクリプトは触らない
+                    loadAiosTemplate();
+                    updateRequiredPackages();
                 }
             });
 
@@ -806,7 +808,8 @@
             }
 
             if (document.getElementById('use-aios-config').checked) {
-                updateRequiredPackages(); // パッケージのみ更新、スクリプトは触らない
+                loadAiosTemplate();
+                updateRequiredPackages();
             }
         }
 
@@ -827,13 +830,15 @@
             }
 
             if (document.getElementById('use-aios-config').checked) {
-                updateRequiredPackages(); // パッケージのみ更新、スクリプトは触らない
+                loadAiosTemplate();
+                updateRequiredPackages();
             }
         }
 
         function handleMapeTypeChange(e) {
             if (document.getElementById('use-aios-config').checked) {
-                updateRequiredPackages(); // パッケージのみ更新、スクリプトは触らない
+                loadAiosTemplate();
+                updateRequiredPackages();
             }
         }
 
@@ -924,20 +929,6 @@
         // API情報を事前取得してスクリプトカスタマイズ
         async function loadAiosTemplate() {
             try {
-                const scriptElement = document.getElementById('uci-defaults-content');
-                
-                // 手動入力された内容がある場合は、デフォルトテンプレート以外は保護
-                const currentContent = scriptElement.value.trim();
-                const isDefaultOrEmpty = !currentContent || 
-                    currentContent.startsWith('#!/bin/sh\n\n# Your script here') ||
-                    currentContent.startsWith('#!/bin/sh\n\n# Failed to load');
-                
-                if (currentContent && !isDefaultOrEmpty) {
-                    // 手動で編集されたコンテンツがある場合は何もしない
-                    console.log('Manual script content detected, preserving user input');
-                    return;
-                }
-                
                 const response = await fetch('scripts/setup.sh');
                 if (!response.ok) {
                     throw new Error('Failed to load setup.sh template');
@@ -957,7 +948,7 @@
                     content = customizeSetupScript(content, config, apiInfo);
                 }
                 
-                scriptElement.value = content;
+                document.getElementById('uci-defaults-content').value = content;
             } catch (error) {
                 console.error('Template loading error:', error);
                 document.getElementById('uci-defaults-content').value = '#!/bin/sh\n\n# Failed to load setup.sh template\n# Please check if scripts/setup.sh exists';
@@ -966,23 +957,16 @@
 
         // 公式と同じシンプルなテンプレート読み込み
         async function loadSetupTemplate() {
-            const script = document.getElementById('uci-defaults-content');
-            
-            // 手動入力がある場合は確認
-            if (script.value.trim() && !confirm('既存のスクリプト内容を上書きしますか？\n\n現在の内容は失われます。')) {
-                return; // ユーザーがキャンセルした場合は何もしない
-            }
-            
             try {
                 const response = await fetch('scripts/setup.sh');
                 if (!response.ok) {
                     throw new Error('Failed to load setup.sh template');
                 }
                 const content = await response.text();
-                script.value = content;
+                document.getElementById('uci-defaults-content').value = content;
             } catch (error) {
                 console.error('Template loading error:', error);
-                script.value = '#!/bin/sh\n\n# Failed to load setup.sh template';
+                document.getElementById('uci-defaults-content').value = '#!/bin/sh\n\n# Failed to load setup.sh template';
             }
         }
 
@@ -1121,15 +1105,11 @@
 
             if (e.target.checked) {
                 config.style.display = 'block';
-                
-                // 手動入力がある場合は保護、空の場合のみテンプレート読み込み
-                if (!script.value.trim()) {
-                    loadAiosTemplate();
-                }
+                loadAiosTemplate();
                 updateRequiredPackages();
             } else {
                 config.style.display = 'none';
-                // チェックボックスOFFでもスクリプト内容は保持（ユーザーの手動入力を尊重）
+                script.value = '';
             }
         }
 
