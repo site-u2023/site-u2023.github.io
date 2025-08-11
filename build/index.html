@@ -1,4 +1,5 @@
-<!DOCTYPE html>
+// AUTO/OFF モード切り替え
+        function handleConnectionModeChange(<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -475,28 +476,83 @@
                             </div>
                         </div>
 
+                        <div id="dslite-section" class="conditional-section" style="background-color: #fff3e0;">
+                            <h6>DS-Lite Configuration</h6>
+                            <div class="form-group">
+                                <label for="dslite-aftr-type">AFTR Type</label>
+                                <select id="dslite-aftr-type" class="form-control">
+                                    <option value="transix">transix</option>
+                                    <option value="xpass">xpass</option>
+                                    <option value="v6option">v6option</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="dslite-aftr-address">AFTR IPv6 Address</label>
+                                <input type="text" id="dslite-aftr-address" class="form-control" placeholder="2404:8e00::feed:100" value="2404:8e00::feed:100">
+                                <small class="form-text text-muted">Default addresses: transix(East): 2404:8e00::feed:100, xpass(East): 2001:e30:1c1e:1::1, v6option(East): 2404:8e00::feed:101</small>
+                            </div>
+                        </div>
+
                         <div id="mape-manual-section" class="conditional-section" style="background-color: #e8f5e8;">
                             <h6>MAP-E Configuration</h6>
                             <div class="form-group">
-                                <label>MAP-E接続方式</label>
+                                <label>MAP-E Connection Mode</label>
                                 <div class="radio-group">
                                     <div class="form-check">
                                         <input class="form-check-input" type="radio" name="mapeType" id="mape-auto" value="auto" checked>
-                                        <label class="form-check-label" for="mape-auto">Auto-detect（推奨）</label>
+                                        <label class="form-check-label" for="mape-auto">Auto-detect (Recommended)</label>
                                     </div>
                                     <div class="form-check">
                                         <input class="form-check-input" type="radio" name="mapeType" id="mape-gua" value="gua">
-                                        <label class="form-check-label" for="mape-gua">GUA方式（手動）</label>
+                                        <label class="form-check-label" for="mape-gua">GUA Mode (Manual)</label>
                                     </div>
                                     <div class="form-check">
                                         <input class="form-check-input" type="radio" name="mapeType" id="mape-pd" value="pd">
-                                        <label class="form-check-label" for="mape-pd">PD方式（手動）</label>
+                                        <label class="form-check-label" for="mape-pd">PD Mode (Manual)</label>
                                     </div>
                                 </div>
                                 <small class="text-muted">
-                                    <strong>Auto-detect</strong>: MAP-E技術情報を自動取得し、GUA方式で設定（1G/10G両対応）<br>
-                                    <strong>手動選択</strong>: トラブル時や特定の要件がある場合のみ
+                                    <strong>Auto-detect</strong>: Automatically retrieve MAP-E technical information and configure with GUA mode (1G/10G compatible)<br>
+                                    <strong>Manual selection</strong>: For troubleshooting or specific requirements only
                                 </small>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="mape-br">BR (Border Relay)</label>
+                                    <input type="text" id="mape-br" class="form-control" placeholder="2001:380:a120::9">
+                                </div>
+                                <div class="form-group">
+                                    <label for="mape-ealen">EA-len</label>
+                                    <input type="number" id="mape-ealen" class="form-control" placeholder="18" min="0" max="48">
+                                </div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="mape-ipv4-prefix">IPv4 Prefix</label>
+                                    <input type="text" id="mape-ipv4-prefix" class="form-control" placeholder="153.187.0.0">
+                                </div>
+                                <div class="form-group">
+                                    <label for="mape-ipv4-prefixlen">IPv4 Prefix Length</label>
+                                    <input type="number" id="mape-ipv4-prefixlen" class="form-control" placeholder="20" min="1" max="32">
+                                </div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="mape-ipv6-prefix">IPv6 Prefix</label>
+                                    <input type="text" id="mape-ipv6-prefix" class="form-control" placeholder="2400:4151:8000::">
+                                </div>
+                                <div class="form-group">
+                                    <label for="mape-ipv6-prefixlen">IPv6 Prefix Length</label>
+                                    <input type="number" id="mape-ipv6-prefixlen" class="form-control" placeholder="38" min="1" max="128">
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="mape-psid-offset">PSID Offset</label>
+                                <input type="number" id="mape-psid-offset" class="form-control" placeholder="6" min="0" max="16">
                             </div>
                         </div>
                     </div>
@@ -573,6 +629,9 @@
                 radio.addEventListener('change', handleMapeTypeChange);
             });
 
+            // DS-Lite AFTR Type変更監視
+            document.getElementById('dslite-aftr-type').addEventListener('change', handleDsliteAftrTypeChange);
+
             document.getElementById('aios-config').addEventListener('input', function() {
                 if (document.getElementById('use-aios-config').checked) {
                     loadAiosTemplate();
@@ -598,6 +657,9 @@
 
             // 初期状態設定：手動接続セクションを非表示
             document.getElementById('manual-connection-section').style.display = 'none';
+            document.getElementById('pppoe-section').style.display = 'none';
+            document.getElementById('dslite-section').style.display = 'none';
+            document.getElementById('mape-manual-section').style.display = 'none';
         }
 
         async function loadVersions() {
@@ -1060,6 +1122,44 @@
                 }
             }
             
+            // 手動DS-Lite設定
+            if (config.connectionType === 'dslite') {
+                if (config.dsliteAftrType) {
+                    customized = customized.replace('AFTR_TYPE=""', `AFTR_TYPE="${config.dsliteAftrType}"`);
+                }
+                if (config.dsliteAftrAddress) {
+                    customized = customized.replace('AFTR_ADDR=""', `AFTR_ADDR="${config.dsliteAftrAddress}"`);
+                }
+            }
+            
+            // 手動MAP-E設定
+            if (config.connectionType === 'mape') {
+                if (config.mapeBr) {
+                    customized = customized.replace('BR=""', `BR="${config.mapeBr}"`);
+                }
+                if (config.mapeEalen) {
+                    customized = customized.replace('EALEN=""', `EALEN="${config.mapeEalen}"`);
+                }
+                if (config.mapeIpv4Prefix) {
+                    customized = customized.replace('IPV4_PREFIX=""', `IPV4_PREFIX="${config.mapeIpv4Prefix}"`);
+                }
+                if (config.mapeIpv4Prefixlen) {
+                    customized = customized.replace('IPV4_PREFIXLEN=""', `IPV4_PREFIXLEN="${config.mapeIpv4Prefixlen}"`);
+                }
+                if (config.mapeIpv6Prefix) {
+                    customized = customized.replace('IPV6_PREFIX=""', `IPV6_PREFIX="${config.mapeIpv6Prefix}"`);
+                }
+                if (config.mapeIpv6Prefixlen) {
+                    customized = customized.replace('IPV6_PREFIXLEN=""', `IPV6_PREFIXLEN="${config.mapeIpv6Prefixlen}"`);
+                }
+                if (config.mapePsidOffset) {
+                    customized = customized.replace('PSID_OFFSET=""', `PSID_OFFSET="${config.mapePsidOffset}"`);
+                }
+                if (config.mapeType !== 'auto') {
+                    customized = customized.replace('MAPE_TYPE=""', `MAPE_TYPE="${config.mapeType}"`);
+                }
+            }
+            
             // API情報が取得できた場合の事前設定
             if (apiInfo) {
                 // 国情報とタイムゾーン
@@ -1155,7 +1255,18 @@
                 connectionType: effectiveConnectionType,
                 mapeType: document.querySelector('input[name="mapeType"]:checked')?.value || 'auto',
                 pppoeUsername: document.getElementById('pppoe-username').value,
-                pppoePassword: document.getElementById('pppoe-password').value
+                pppoePassword: document.getElementById('pppoe-password').value,
+                // DS-Lite manual settings
+                dsliteAftrType: document.getElementById('dslite-aftr-type').value,
+                dsliteAftrAddress: document.getElementById('dslite-aftr-address').value,
+                // MAP-E manual settings
+                mapeBr: document.getElementById('mape-br').value,
+                mapeEalen: document.getElementById('mape-ealen').value,
+                mapeIpv4Prefix: document.getElementById('mape-ipv4-prefix').value,
+                mapeIpv4Prefixlen: document.getElementById('mape-ipv4-prefixlen').value,
+                mapeIpv6Prefix: document.getElementById('mape-ipv6-prefix').value,
+                mapeIpv6Prefixlen: document.getElementById('mape-ipv6-prefixlen').value,
+                mapePsidOffset: document.getElementById('mape-psid-offset').value
             };
         }
 
