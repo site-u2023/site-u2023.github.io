@@ -448,25 +448,38 @@
                     </div>
 
                     <div id="mape-section" class="conditional-section">
+                        <h5>MAP-E Configuration</h5>
+                        
+                        <!-- 接続方式選択 -->
                         <div class="form-group">
                             <label>MAP-E接続方式</label>
                             <div class="radio-group">
                                 <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="mapeType" id="mape-gua" value="gua" checked>
-                                    <label class="form-check-label" for="mape-gua">GUA方式</label>
+                                    <input class="form-check-input" type="radio" name="mapeType" id="mape-auto" value="auto" checked>
+                                    <label class="form-check-label" for="mape-auto">Auto-detect（推奨）</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="mapeType" id="mape-gua" value="gua">
+                                    <label class="form-check-label" for="mape-gua">GUA方式（手動）</label>
                                 </div>
                                 <div class="form-check">
                                     <input class="form-check-input" type="radio" name="mapeType" id="mape-pd" value="pd">
-                                    <label class="form-check-label" for="mape-pd">PD方式</label>
+                                    <label class="form-check-label" for="mape-pd">PD方式（手動）</label>
                                 </div>
                             </div>
                             <small class="text-muted">
-                                <strong>選択方法:</strong><br>
-                                • <strong>1Gbps回線</strong>: 通常はGUA方式<br>
-                                • <strong>10Gbps回線</strong>: PD方式<br>
-                                • <strong>不明な場合</strong>: GUA方式（安全）<br>
-                                ※契約内容をご確認ください
+                                <strong>Auto-detect</strong>: MAP-E技術情報を自動取得し、GUA方式で設定（1G/10G両対応）<br>
+                                <strong>手動選択</strong>: トラブル時や特定の要件がある場合のみ
                             </small>
+                        </div>
+
+                        <!-- 情報表示ボックス（デバイス選択風） -->
+                        <div class="form-group">
+                            <label>MAP-E Configuration Status</label>
+                            <div id="mape-info-display" class="info" style="margin-bottom: 0;">
+                                <div id="mape-status-message">MAP-E情報を取得中...</div>
+                                <div id="mape-technical-info" style="font-family: monospace; font-size: 0.9em; margin-top: 0.5rem; display: none;"></div>
+                            </div>
                         </div>
                     </div>
 
@@ -534,7 +547,18 @@
                 radio.addEventListener('change', handleConnectionTypeChange);
             });
 
+            document.querySelectorAll('input[name="mapeType"]').forEach(radio => {
+                radio.addEventListener('change', handleMapeTypeChange);
+            });
+
             document.getElementById('aios-config').addEventListener('input', function() {
+                if (document.getElementById('use-aios-config').checked) {
+                    loadAiosTemplate();
+                    updateRequiredPackages();
+                }
+            });
+
+            document.getElementById('aios-config').addEventListener('change', function() {
                 if (document.getElementById('use-aios-config').checked) {
                     loadAiosTemplate();
                     updateRequiredPackages();
@@ -761,8 +785,11 @@
                 if (document.getElementById('use-aios-config').checked) {
                     const config = getAiosConfig();
                     
-                    // 事前にAPI情報を取得
-                    const apiInfo = await fetchApiInfo();
+                    // キャッシュされたAPI情報を使用、なければ新規取得
+                    let apiInfo = window.cachedApiInfo;
+                    if (!apiInfo && config.connectionType === 'mape') {
+                        apiInfo = await fetchApiInfoAndUpdate();
+                    }
                     
                     content = customizeSetupScript(content, config, apiInfo);
                 }
@@ -926,12 +953,59 @@
                 config.style.display = 'block';
                 loadAiosTemplate();
                 updateRequiredPackages();
+                // MAP-E選択時は初期表示更新
+                const selectedConnection = document.querySelector('input[name="connectionType"]:checked')?.value;
+                if (selectedConnection === 'mape') {
+                    updateMapeDisplay('auto'); // デフォルト表示
+                }
             } else {
                 config.style.display = 'none';
                 script.value = '';
             }
         }
 
+        function handleMapeTypeChange(e) {
+            updateMapeDisplay(e.target.value);
+            
+            if (document.getElementById('use-aios-config').checked) {
+                loadAiosTemplate();
+                updateRequiredPackages();
+            }
+        }
+
+        // MAP-E情報表示の更新
+        function updateMapeDisplay(selectedType) {
+            const statusMessage = document.getElementById('mape-status-message');
+            const technicalInfo = document.getElementById('mape-technical-info');
+            
+            switch(selectedType) {
+                case 'auto':
+                    statusMessage.innerHTML = '🔄 Auto-detect: MAP-E技術情報を自動取得してGUA方式で設定';
+                    // API情報があれば表示
+                    if (window.cachedApiInfo && window.cachedApiInfo.rule) {
+                        displayTechnicalInfo(window.cachedApiInfo);
+                    } else {
+                        technicalInfo.style.display = 'none';
+                    }
+                    break;
+                    
+                case 'gua':
+                    statusMessage.innerHTML = '⚙️ GUA方式: IPv6アドレスから/64プレフィックスを手動設定';
+                    if (window.cachedApiInfo && window.cachedApiInfo.rule) {
+                        displayTechnicalInfo(window.cachedApiInfo);
+                    }
+                    break;
+                    
+                case 'pd':
+                    statusMessage.innerHTML = '📡 PD方式: DHCPv6-PDによるプレフィックス委譲（設定不要）';
+                    if (window.cachedApiInfo && window.cachedApiInfo.rule) {
+                        displayTechnicalInfo(window.cachedApiInfo);
+                    }
+                    break;
+            }
+        }
+
+        // 技術情報の表示
         function handleConnectionTypeChange(e) {
             const pppoeSection = document.getElementById('pppoe-section');
             const mapeSection = document.getElementById('mape-section');
@@ -945,6 +1019,8 @@
                 pppoeSection.style.display = 'block';
             } else if (e.target.value === 'mape') {
                 mapeSection.style.display = 'block';
+                // MAP-E選択時にAPI情報を取得・表示
+                fetchApiInfoAndUpdate();
             }
 
             if (document.getElementById('use-aios-config').checked) {
@@ -989,7 +1065,7 @@
                 wifiSSID: document.getElementById('aios-wifi-ssid').value,
                 wifiPassword: document.getElementById('aios-wifi-password').value,
                 connectionType: document.querySelector('input[name="connectionType"]:checked').value,
-                mapeType: document.querySelector('input[name="mapeType"]:checked')?.value || 'gua',
+                mapeType: document.querySelector('input[name="mapeType"]:checked')?.value || 'auto',
                 pppoeUsername: document.getElementById('pppoe-username').value,
                 pppoePassword: document.getElementById('pppoe-password').value
             };
