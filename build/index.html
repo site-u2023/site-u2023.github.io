@@ -1,5 +1,4 @@
-// AUTO/OFF モード切り替え
-        function handleConnectionModeChange(<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -631,8 +630,42 @@
                 radio.addEventListener('change', handleMapeTypeChange);
             });
 
-            // DS-Lite AFTR Type変更監視
-            document.getElementById('dslite-aftr-type').addEventListener('change', handleDsliteAftrTypeChange);
+            // DS-Lite AFTR Type変更監視を後で追加（DOM要素ができてから）
+            setTimeout(() => {
+                const dsliteSelect = document.getElementById('dslite-aftr-type');
+                const dsliteAddress = document.getElementById('dslite-aftr-address');
+                if (dsliteSelect) {
+                    dsliteSelect.addEventListener('change', handleDsliteAftrTypeChange);
+                    dsliteSelect.addEventListener('change', function() {
+                        if (document.getElementById('use-aios-config').checked) {
+                            loadAiosTemplate();
+                            updateRequiredPackages();
+                        }
+                    });
+                }
+                if (dsliteAddress) {
+                    dsliteAddress.addEventListener('input', function() {
+                        if (document.getElementById('use-aios-config').checked) {
+                            loadAiosTemplate();
+                            updateRequiredPackages();
+                        }
+                    });
+                }
+                
+                // MAP-E入力フィールドのイベントリスナー
+                ['mape-br', 'mape-ealen', 'mape-ipv4-prefix', 'mape-ipv4-prefixlen', 
+                 'mape-ipv6-prefix', 'mape-ipv6-prefixlen', 'mape-psid-offset'].forEach(id => {
+                    const element = document.getElementById(id);
+                    if (element) {
+                        element.addEventListener('input', function() {
+                            if (document.getElementById('use-aios-config').checked) {
+                                loadAiosTemplate();
+                                updateRequiredPackages();
+                            }
+                        });
+                    }
+                });
+            }, 100);
 
             document.getElementById('aios-config').addEventListener('input', function() {
                 if (document.getElementById('use-aios-config').checked) {
@@ -872,7 +905,34 @@
             }
 
             if (document.getElementById('use-aios-config').checked) {
-                updateRequiredPackages(); // パッケージのみ更新、スクリプトは触らない
+                loadAiosTemplate();
+                updateRequiredPackages();
+            }
+        }
+
+        // DS-Lite AFTR Type変更時のデフォルトアドレス設定
+        function handleDsliteAftrTypeChange(e) {
+            const aftrAddressInput = document.getElementById('dslite-aftr-address');
+            const aftrType = e.target.value;
+            
+            console.log('DS-Lite AFTR type changed to:', aftrType);
+            
+            // デフォルトアドレス設定（東日本）
+            switch(aftrType) {
+                case 'transix':
+                    aftrAddressInput.value = '2404:8e00::feed:100';
+                    break;
+                case 'xpass':
+                    aftrAddressInput.value = '2001:e30:1c1e:1::1';
+                    break;
+                case 'v6option':
+                    aftrAddressInput.value = '2404:8e00::feed:101';
+                    break;
+            }
+
+            if (document.getElementById('use-aios-config').checked) {
+                loadAiosTemplate();
+                updateRequiredPackages();
             }
         }
 
@@ -1147,8 +1207,11 @@
                 }
             }
             
-            // 手動DS-Lite設定
+            // 手動DS-Lite設定（手動選択時は強制書き込み）
             if (config.connectionType === 'dslite') {
+                // 手動選択時は入力値を強制的に設定
+                customized = customized.replace('ISP_MODE="${ISP_MODE:-auto}"', 'ISP_MODE="dslite"');
+                
                 if (config.dsliteAftrType) {
                     customized = customized.replace('AFTR_TYPE=""', `AFTR_TYPE="${config.dsliteAftrType}"`);
                 }
@@ -1157,8 +1220,11 @@
                 }
             }
             
-            // 手動MAP-E設定
+            // 手動MAP-E設定（手動選択時は強制書き込み）
             if (config.connectionType === 'mape') {
+                // 手動選択時は入力値を強制的に設定
+                customized = customized.replace('ISP_MODE="${ISP_MODE:-auto}"', 'ISP_MODE="mape"');
+                
                 if (config.mapeBr) {
                     customized = customized.replace('BR=""', `BR="${config.mapeBr}"`);
                 }
