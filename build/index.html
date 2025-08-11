@@ -570,7 +570,6 @@
             <div class="form-group">
                 <label for="uci-defaults-content">Script to run on first boot (uci-defaults):</label>
                 <textarea id="uci-defaults-content" class="form-control" rows="8" placeholder="#!/bin/sh&#10;&#10;# Your custom script here&#10;# This area is for manual editing - configuration wizard will not overwrite your changes"></textarea>
-                <span id="uci-defaults-template" data-link="scripts/setup.sh" style="cursor: pointer; color: #007bff; text-decoration: underline;">Load setup.sh template</span>
             </div>
 
             <button id="request-build" class="btn btn-primary" style="display: none;">REQUEST BUILD</button>
@@ -601,8 +600,6 @@
             try {
                 await loadVersions();
                 bindEvents();
-                // 初期テンプレートロード
-                await loadSetupTemplate();
                 // ISP情報を初期取得（常時表示のため）
                 console.log('Starting ISP info fetch...');
                 await fetchApiInfoAndUpdate();
@@ -694,8 +691,7 @@
                 }
             });
 
-            // 公式と同じテンプレートリンク
-            document.getElementById('uci-defaults-template').addEventListener('click', loadSetupTemplate);
+            // 公式と同じテンプレートリンク（削除済み）
 
             document.addEventListener('click', function(e) {
                 if (!e.target.closest('.autocomplete')) {
@@ -1112,21 +1108,6 @@
             } catch (error) {
                 console.error('Template loading error:', error);
                 document.getElementById('uci-defaults-content').value = '#!/bin/sh\n\n# Failed to load setup.sh template\n# Please check if scripts/setup.sh exists';
-            }
-        }
-
-        // 公式と同じシンプルなテンプレート読み込み
-        async function loadSetupTemplate() {
-            try {
-                const response = await fetch('scripts/setup.sh');
-                if (!response.ok) {
-                    throw new Error('Failed to load setup.sh template');
-                }
-                const content = await response.text();
-                document.getElementById('uci-defaults-content').value = content;
-            } catch (error) {
-                console.error('Template loading error:', error);
-                document.getElementById('uci-defaults-content').value = '#!/bin/sh\n\n# Failed to load setup.sh template';
             }
         }
 
