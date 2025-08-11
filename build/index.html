@@ -1520,8 +1520,7 @@ function getAiosConfig() {
 function applyInitialsFromApi(type) {
   if (type === 'dslite') {
     const aftr = document.getElementById('dslite-aftr-address');
-    const areaSelect = document.getElementById('dslite-area');
-    const area = areaSelect?.value || 'auto';
+    const area = document.getElementById('dslite-area')?.value || 'auto';
 
     const aftrMap = {
       east: 'aftr-east.v6.ntt.net',
@@ -1529,8 +1528,8 @@ function applyInitialsFromApi(type) {
       auto: 'aftr.v6.ntt.net'
     };
 
-    if (aftr && !aftr.value) {
-      aftr.value = aftrMap[area] || aftrMap['auto'];
+    if (aftr) {
+      aftr.value = aftrMap[area] || aftrMap['auto'];  // 🔥 空欄判定不要、常に上書き
     }
   }
 
@@ -1541,7 +1540,7 @@ function applyInitialsFromApi(type) {
     const s = apiInfo.rule;
     const safeSet = (id, val) => {
       const el = document.getElementById(id);
-      if (el && !el.value && (val || val === 0)) el.value = val;
+      if (el && (val || val === 0)) el.value = val;
     };
     safeSet('mape-br', s.brIpv6Address);
     safeSet('mape-ealen', s.eaBitLength);
