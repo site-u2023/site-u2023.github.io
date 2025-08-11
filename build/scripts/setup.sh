@@ -153,10 +153,9 @@ if [ -n "$mape_br" ] && [ -n "$mape_ealen" ]; then
     
     # Install map.sh (WEB side embeds content here)
     cat > /lib/netifd/proto/map.sh << 'MAP_SH_EOF'
-#!/bin/sh
-# MAP-E script will be loaded dynamically
+\${map_sh_content}
 MAP_SH_EOF
-    
+
     # Disable WAN/WAN6
     uci set network.wan.disabled='1'
     uci set network.wan.auto='0'
