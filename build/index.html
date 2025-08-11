@@ -561,6 +561,10 @@
                                 <label for="mape-psid-offset">PSID Offset</label>
                                 <input type="number" id="mape-psid-offset" class="form-control" placeholder="4" min="0" max="16">
                             </div>
+                            <div class="form-group">
+                                <label for="mape-psidlen">PSID Length</label>
+                                <input type="number" id="mape-psidlen" class="form-control" placeholder="6" min="0" max="16">
+                            </div>  
                         </div>
                     </div>
 
@@ -1216,31 +1220,34 @@ async function fetchApiInfoAndUpdate() {
 
             // 「Use setup.sh configuration wizard」がONのときだけフォームに反映
             if (document.getElementById('use-aios-config').checked) {
-                // MAP-E情報
-                if (apiInfo.rule && apiInfo.rule.brIpv6Address) {
-                    if (!document.getElementById('mape-br').value) {
-                        document.getElementById('mape-br').value = apiInfo.rule.brIpv6Address;
-                    }
-                    if (!document.getElementById('mape-ealen').value) {
-                        document.getElementById('mape-ealen').value = apiInfo.rule.eaBitLength || '';
-                    }
-                    if (!document.getElementById('mape-ipv4-prefix').value) {
-                        document.getElementById('mape-ipv4-prefix').value = apiInfo.rule.ipv4Prefix || '';
-                    }
-                    if (!document.getElementById('mape-ipv4-prefixlen').value) {
-                        document.getElementById('mape-ipv4-prefixlen').value = apiInfo.rule.ipv4PrefixLength || '';
-                    }
-                    if (!document.getElementById('mape-ipv6-prefix').value) {
-                        document.getElementById('mape-ipv6-prefix').value = apiInfo.rule.ipv6Prefix || '';
-                    }
-                    if (!document.getElementById('mape-ipv6-prefixlen').value) {
-                        document.getElementById('mape-ipv6-prefixlen').value = apiInfo.rule.ipv6PrefixLength || '';
-                    }
-                    if (!document.getElementById('mape-psid-offset').value) {
-                        document.getElementById('mape-psid-offset').value = apiInfo.rule.psIdOffset || '';
-                    }
-                }
-
+// MAP-E情報
+if (apiInfo.rule && apiInfo.rule.brIpv6Address) {
+    if (!document.getElementById('mape-br').value) {
+        document.getElementById('mape-br').value = apiInfo.rule.brIpv6Address;
+    }
+    if (!document.getElementById('mape-ealen').value) {
+        document.getElementById('mape-ealen').value = apiInfo.rule.eaBitLength || '';
+    }
+    if (!document.getElementById('mape-ipv4-prefix').value) {
+        document.getElementById('mape-ipv4-prefix').value = apiInfo.rule.ipv4Prefix || '';
+    }
+    if (!document.getElementById('mape-ipv4-prefixlen').value) {
+        document.getElementById('mape-ipv4-prefixlen').value = apiInfo.rule.ipv4PrefixLength || '';
+    }
+    if (!document.getElementById('mape-ipv6-prefix').value) {
+        document.getElementById('mape-ipv6-prefix').value = apiInfo.rule.ipv6Prefix || '';
+    }
+    if (!document.getElementById('mape-ipv6-prefixlen').value) {
+        document.getElementById('mape-ipv6-prefixlen').value = apiInfo.rule.ipv6PrefixLength || '';
+    }
+    if (!document.getElementById('mape-psid-offset').value) {
+        document.getElementById('mape-psid-offset').value = apiInfo.rule.psIdOffset || '';
+    }
+    if (!document.getElementById('mape-psidlen').value) {
+        document.getElementById('mape-psidlen').value = apiInfo.rule.psidlen || '';
+    }
+}
+                
                 // DS-Lite情報
                 if (apiInfo.rule && apiInfo.rule.aftrType) {
                     document.getElementById('dslite-aftr-type').value = apiInfo.rule.aftrType;
@@ -1348,17 +1355,16 @@ function customizeSetupScript(content, config, apiInfo) {
         customized = customized.replace(/^# openwrt_21=""/m, `openwrt_21="1"`);
     }
 
-    // Helper to update or reset value
     function setVar(key, value, minLength = 0) {
         const re = new RegExp(`^.*${key}=.*$`, 'm');
-        if (value && value.trim().length >= minLength) {
-            customized = customized.replace(re, `${key}="${value.trim()}"`);
+        if (value !== '' && String(value).trim().length >= minLength) {
+            customized = customized.replace(re, `${key}="${String(value).trim()}"`);
         } else {
             customized = customized.replace(re, `# ${key}=""`);
         }
     }
 
-    // Basic fields
+    // Basic
     setVar('device_name', config.deviceName);
     setVar('lan_ip_address', config.lanIp);
     setVar('root_password', (config.rootPassword === config.confirmPassword) ? config.rootPassword : '');
@@ -1375,14 +1381,13 @@ function customizeSetupScript(content, config, apiInfo) {
     setVar('wlan_name', config.wifiSSID);
     setVar('wlan_password', config.wifiPassword, 8);
 
-    // Protocol-specific
     const proto = config.connectionMode === 'manual' ? config.connectionType : '';
 
     // PPPoE
     if (proto === 'pppoe') {
         setVar('pppoe_username', config.pppoeUsername);
         setVar('pppoe_password', config.pppoePassword);
-        // Reset DS-Lite & MAP-E
+        // reset others
         setVar('dslite_aftr_address', '');
         setVar('mape_br', '');
         setVar('mape_ealen', '');
@@ -1399,7 +1404,7 @@ function customizeSetupScript(content, config, apiInfo) {
     // DS-Lite
     if (proto === 'dslite') {
         setVar('dslite_aftr_address', config.dsliteAftrAddress);
-        // Reset PPPoE & MAP-E
+        // reset others
         setVar('pppoe_username', '');
         setVar('pppoe_password', '');
         setVar('mape_br', '');
@@ -1414,41 +1419,49 @@ function customizeSetupScript(content, config, apiInfo) {
         setVar('mape_gua_prefix', '');
     }
 
-// MAP-E
-if (proto === 'mape') {
-    setVar('mape_br', config.mapeBr);
-    setVar('mape_ealen', config.mapeEalen);
-    setVar('mape_psid_offset', config.mapePsidOffset);
+    // MAP-E (manual)
+    if (proto === 'mape') {
+        setVar('mape_br', config.mapeBr);
+        setVar('mape_ealen', config.mapeEalen);
+        setVar('mape_psid_offset', config.mapePsidOffset);
+        setVar('mape_psidlen', config.mapePsidlen);
 
-    // 💡 psidlen は Worker が返す値をそのまま使用
-    setVar('mape_psidlen', config.mapePsidlen);
+        setVar('mape_ipv4_prefix', config.mapeIpv4Prefix);
+        setVar('mape_ipv4_prefixlen', config.mapeIpv4Prefixlen);
+        setVar('mape_ipv6_prefix', config.mapeIpv6Prefix);
+        setVar('mape_ipv6_prefixlen', config.mapeIpv6Prefixlen);
 
-    setVar('mape_ipv4_prefix', config.mapeIpv4Prefix);
-    setVar('mape_ipv4_prefixlen', config.mapeIpv4Prefixlen);
-    setVar('mape_ipv6_prefix', config.mapeIpv6Prefix);
-    setVar('mape_ipv6_prefixlen', config.mapeIpv6Prefixlen);
+        const prefix = config.mapeIpv6Prefix?.split(':').slice(0, 4).join(':');
+        const guaPrefix = prefix ? `${prefix}::/64` : '';
+        if (config.mapeType === 'gua' || config.mapeType === 'auto') {
+            setVar('mape_gua_mode', '1');
+            setVar('mape_gua_prefix', guaPrefix);
+        } else {
+            setVar('mape_gua_mode', '');
+            setVar('mape_gua_prefix', '');
+        }
 
-    const prefix = config.mapeIpv6Prefix?.split(':').slice(0, 4).join(':');
-    const guaPrefix = prefix ? `${prefix}::/64` : '';
-    if (config.mapeType === 'gua' || config.mapeType === 'auto') {
-        setVar('mape_gua_mode', '1');
-        setVar('mape_gua_prefix', guaPrefix);
-    } else {
-        setVar('mape_gua_mode', '');
-        setVar('mape_gua_prefix', '');
+        // reset others
+        setVar('pppoe_username', '');
+        setVar('pppoe_password', '');
+        setVar('dslite_aftr_address', '');
     }
 
-    // Reset others
-    setVar('pppoe_username', '');
-    setVar('pppoe_password', '');
-    setVar('dslite_aftr_address', '');
-}
-
-    // AUTOモード時はAPI情報使用（それ以外は使わない）
+    // AUTO: APIの値をそのまま使用
     if (config.connectionMode === 'auto' && apiInfo?.rule) {
         if (apiInfo.rule.aftrIpv6Address) {
             setVar('dslite_aftr_address', apiInfo.rule.aftrIpv6Address);
+            // reset MAP-E
             setVar('mape_br', '');
+            setVar('mape_ealen', '');
+            setVar('mape_ipv4_prefix', '');
+            setVar('mape_ipv4_prefixlen', '');
+            setVar('mape_ipv6_prefix', '');
+            setVar('mape_ipv6_prefixlen', '');
+            setVar('mape_psidlen', '');
+            setVar('mape_psid_offset', '');
+            setVar('mape_gua_mode', '');
+            setVar('mape_gua_prefix', '');
         } else if (apiInfo.rule.brIpv6Address) {
             setVar('mape_br', apiInfo.rule.brIpv6Address);
             setVar('mape_ealen', apiInfo.rule.eaBitLength);
@@ -1456,12 +1469,8 @@ if (proto === 'mape') {
             setVar('mape_ipv4_prefixlen', apiInfo.rule.ipv4PrefixLength);
             setVar('mape_ipv6_prefix', apiInfo.rule.ipv6Prefix);
             setVar('mape_ipv6_prefixlen', apiInfo.rule.ipv6PrefixLength);
-
-            const ealen = parseInt(apiInfo.rule.eaBitLength);
-            const offset = parseInt(apiInfo.rule.psIdOffset);
-            const psidlen = (ealen > offset) ? ealen - offset : '';
             setVar('mape_psid_offset', apiInfo.rule.psIdOffset);
-            setVar('mape_psidlen', psidlen);
+            setVar('mape_psidlen', apiInfo.rule.psidlen ?? '');
 
             const prefix = apiInfo.rule.ipv6Prefix?.split(':').slice(0, 4).join(':');
             const guaPrefix = prefix ? `${prefix}::/64` : '';
@@ -1502,40 +1511,39 @@ function getAiosConfig() {
         const val = document.getElementById(id)?.value?.trim();
         if (!val) return '';
         if (type === 'int') {
-            const num = parseInt(val);
+            const num = parseInt(val, 10);
             return isNaN(num) ? '' : num;
         }
         return val;
     };
 
-const config = {
-    language: parseOrEmpty('aios-language'),
-    deviceName: parseOrEmpty('aios-device-name'),
-    lanIp: parseOrEmpty('aios-lan-ip'),
-    rootPassword: parseOrEmpty('aios-root-password'),
-    confirmPassword: parseOrEmpty('aios-confirm-password'),
-    wifiSSID: parseOrEmpty('aios-wifi-ssid'),
-    wifiPassword: parseOrEmpty('aios-wifi-password'),
+    const config = {
+        language: parseOrEmpty('aios-language'),
+        deviceName: parseOrEmpty('aios-device-name'),
+        lanIp: parseOrEmpty('aios-lan-ip'),
+        rootPassword: parseOrEmpty('aios-root-password'),
+        confirmPassword: parseOrEmpty('aios-confirm-password'),
+        wifiSSID: parseOrEmpty('aios-wifi-ssid'),
+        wifiPassword: parseOrEmpty('aios-wifi-password'),
 
-    connectionMode: document.querySelector('input[name="connectionMode"]:checked')?.value || 'auto',
-    connectionType: document.querySelector('input[name="connectionType"]:checked')?.value || 'dhcp',
-    mapeType: document.querySelector('input[name="mapeType"]:checked')?.value || 'auto',
+        connectionMode: document.querySelector('input[name="connectionMode"]:checked')?.value || 'auto',
+        connectionType: document.querySelector('input[name="connectionType"]:checked')?.value || 'dhcp',
+        mapeType: document.querySelector('input[name="mapeType"]:checked')?.value || 'auto',
 
-    pppoeUsername: parseOrEmpty('pppoe-username'),
-    pppoePassword: parseOrEmpty('pppoe-password'),
+        pppoeUsername: parseOrEmpty('pppoe-username'),
+        pppoePassword: parseOrEmpty('pppoe-password'),
 
-    dsliteAftrAddress: parseOrEmpty('dslite-aftr-address'),
+        dsliteAftrAddress: parseOrEmpty('dslite-aftr-address'),
 
-    mapeBr: parseOrEmpty('mape-br'),
-    mapeEalen: parseOrEmpty('mape-ealen', 'int'),
-    mapeIpv4Prefix: parseOrEmpty('mape-ipv4-prefix'),
-    mapeIpv4Prefixlen: parseOrEmpty('mape-ipv4-prefixlen', 'int'),
-    mapeIpv6Prefix: parseOrEmpty('mape-ipv6-prefix'),
-    mapeIpv6Prefixlen: parseOrEmpty('mape-ipv6-prefixlen', 'int'),
-    mapePsidOffset: parseOrEmpty('mape-psid-offset', 'int'),
-
-    mapePsidlen: parseOrEmpty('mape-psidlen', 'int')
-};
+        mapeBr: parseOrEmpty('mape-br'),
+        mapeEalen: parseOrEmpty('mape-ealen', 'int'),
+        mapeIpv4Prefix: parseOrEmpty('mape-ipv4-prefix'),
+        mapeIpv4Prefixlen: parseOrEmpty('mape-ipv4-prefixlen', 'int'),
+        mapeIpv6Prefix: parseOrEmpty('mape-ipv6-prefix'),
+        mapeIpv6Prefixlen: parseOrEmpty('mape-ipv6-prefixlen', 'int'),
+        mapePsidOffset: parseOrEmpty('mape-psid-offset', 'int'),
+        mapePsidlen: parseOrEmpty('mape-psidlen', 'int')
+    };
 
     return config;
 }
