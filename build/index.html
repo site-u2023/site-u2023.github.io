@@ -1518,13 +1518,24 @@ function getAiosConfig() {
 }
 
 function applyInitialsFromApi(type) {
+  if (type === 'dslite') {
+    const aftr = document.getElementById('dslite-aftr-address');
+    const areaSelect = document.getElementById('dslite-area');
+    const area = areaSelect?.value || 'auto';
+
+    const aftrMap = {
+      east: 'aftr-east.v6.ntt.net',
+      west: 'aftr-west.v6.ntt.net',
+      auto: 'aftr.v6.ntt.net'
+    };
+
+    if (aftr && !aftr.value) {
+      aftr.value = aftrMap[area] || aftrMap['auto'];
+    }
+  }
+
   const apiInfo = window.cachedApiInfo;
   if (!apiInfo || !apiInfo.rule) return;
-
-  if (type === 'dslite' && apiInfo.rule.aftrIpv6Address) {
-    const aftr = document.getElementById('dslite-aftr-address');
-    if (aftr && !aftr.value) aftr.value = apiInfo.rule.aftrIpv6Address;
-  }
 
   if (type === 'mape' && apiInfo.rule.brIpv6Address) {
     const s = apiInfo.rule;
