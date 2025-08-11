@@ -642,93 +642,60 @@
             document.getElementById('models-autocomplete-list').style.display = 'none';
         }
 
-        // 変更点: selectDevice を async にし、profile からパッケージ初期値を取得して textarea に反映
-        async function selectDevice(device) {
+        // 公式準拠のデバイス選択処理
+        function selectDevice(device) {
             app.selectedDevice = device;
             document.getElementById('models').value = getDeviceTitle(device);
             hideAutocomplete();
-            showDeviceInfo();
-            await fetchProfilePackagesAndPopulate(device);
+            loadDeviceProfile(device);
         }
 
-        // 公式と同じ方式: profiles.json から default packages を取得（デバッグ強化版）
-        async function fetchProfilePackagesAndPopulate(device) {
+        // 公式と同じ方式: profiles.json からデバイス情報とパッケージを取得
+        async function loadDeviceProfile(device) {
             if (!device || !device.target || !device.id) return;
 
             const version = app.selectedVersion;
             const target = device.target;
             const profileId = device.id;
 
-            console.log(`DEBUG: Fetching packages for device ${profileId}, target ${target}, version ${version}`);
-
-            const candidates = [];
-            
+            let profilesUrl;
             if (version === 'SNAPSHOT') {
-                // SNAPSHOT用パス
-                candidates.push(`https://downloads.openwrt.org/snapshots/targets/${target}/profiles.json`);
+                profilesUrl = `https://downloads.openwrt.org/snapshots/targets/${target}/profiles.json`;
             } else {
-                // 安定版用パス
-                candidates.push(`https://downloads.openwrt.org/releases/${version}/targets/${target}/profiles.json`);
+                profilesUrl = `https://downloads.openwrt.org/releases/${version}/targets/${target}/profiles.json`;
             }
 
-            for (const url of candidates) {
-                try {
-                    console.log(`DEBUG: Trying URL: ${url}`);
-                    const res = await fetch(url);
-                    if (!res.ok) {
-                        console.log(`DEBUG: Failed to fetch ${url}, status: ${res.status}`);
-                        continue;
-                    }
-                    const json = await res.json();
-                    
-                    console.log(`DEBUG: Successfully fetched profiles.json from ${url}`);
-                    console.log(`DEBUG: Number of profiles found: ${json.profiles ? json.profiles.length : 'N/A'}`);
-
-                    if (Array.isArray(json.profiles)) {
-                        const found = json.profiles.find(p => {
-                            // より詳細な検索ロジック
-                            return p.id === profileId || 
-                                   p.profile === profileId || 
-                                   p.name === profileId || 
-                                   p.model === profileId ||
-                                   (p.titles && p.titles.some(title => title.title === profileId));
-                        });
-                        
-                        if (found) {
-                            console.log(`DEBUG: Found matching profile:`, found);
-                            console.log(`DEBUG: Profile packages field:`, found.packages);
-                            
-                            const pkgs = normalizePackagesField(found.packages);
-                            console.log(`DEBUG: Normalized packages:`, pkgs);
-                            
-                            if (pkgs.length) {
-                                // 公式と同じ形式: スペース区切り
-                                document.getElementById('asu-packages').value = pkgs.join(' ');
-                                console.log(`DEBUG: Set packages: ${pkgs.join(' ')}`);
-                                return;
-                            }
-                        } else {
-                            console.log(`DEBUG: No matching profile found for ID: ${profileId}`);
-                            console.log(`DEBUG: Available profile IDs:`, json.profiles.map(p => p.id || p.profile || p.name).slice(0, 10));
-                        }
-                    }
-                } catch (e) {
-                    console.error('DEBUG: fetchProfilePackagesAndPopulate error for', url, e);
-                    continue;
-                }
-            }
-            
-            console.log(`DEBUG: No packages found for device ${profileId}`);
-        }
-
-        function normalizePackagesField(raw) {
-            if (!raw) return [];
-            if (Array.isArray(raw)) return raw.map(String).map(s => s.trim()).filter(Boolean);
-            if (typeof raw === 'string') return raw.split(/[\s\n]+/).map(s => s.trim()).filter(Boolean);
             try {
-                return Object.values(raw).map(String).map(s => s.trim()).filter(Boolean);
-            } catch (e) {
-                return [];
+                console.log(`Loading profile from: ${profilesUrl}`);
+                const response = await fetch(profilesUrl, { cache: 'no-cache' });
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch profiles.json: ${response.status}`);
+                }
+                
+                const profilesData = await response.json();
+                console.log(`Loaded profiles data:`, profilesData);
+
+                // 公式と同じ方式: profiles.json の構造からデバイス情報を取得
+                if (profilesData.profiles && profilesData.profiles[profileId]) {
+                    const profile = profilesData.profiles[profileId];
+                    console.log(`Found profile for ${profileId}:`, profile);
+                    
+                    // パッケージリストを構築（公式と同じ方式）
+                    const defaultPackages = profilesData.default_packages || [];
+                    const devicePackages = profile.device_packages || [];
+                    const allPackages = defaultPackages.concat(devicePackages);
+                    
+                    console.log(`Setting packages: ${allPackages.join(' ')}`);
+                    document.getElementById('asu-packages').value = allPackages.join(' ');
+                    
+                    showDeviceInfo();
+                } else {
+                    console.error(`Profile ${profileId} not found in profiles.json`);
+                    showDeviceInfo();
+                }
+            } catch (error) {
+                console.error('Failed to load device profile:', error);
+                showDeviceInfo();
             }
         }
 
@@ -749,6 +716,11 @@
             document.getElementById('info').style.display = 'none';
             document.getElementById('packages').style.display = 'none';
             document.getElementById('request-build').style.display = 'none';
+        }
+
+        // 公式準拠のユーティリティ関数
+        function split(str) {
+            return str.match(/[^\s,]+/g) || [];
         }
 
         // テンプレート読み込み + カスタマイズ
@@ -864,7 +836,7 @@
         function updateRequiredPackages() {
             const config = getAiosConfig();
             const packagesTextarea = document.getElementById('asu-packages');
-            let currentPackages = packagesTextarea.value.split(/\s+/).map(pkg => pkg.trim()).filter(pkg => pkg);
+            let currentPackages = split(packagesTextarea.value);
             
             // 既存のaios関連パッケージを削除
             currentPackages = currentPackages.filter(pkg => pkg !== 'map' && pkg !== 'ds-lite');
@@ -912,7 +884,7 @@
                 document.getElementById('request-build').disabled = true;
                 showProgress('Sending build request...', 10);
 
-                const packages = getPackages();
+                const packages = split(document.getElementById('asu-packages').value);
                 const script = document.getElementById('uci-defaults-content').value;
 
                 const requestBody = {
@@ -967,12 +939,6 @@
             } finally {
                 document.getElementById('request-build').disabled = false;
             }
-        }
-
-        function getPackages() {
-            const input = document.getElementById('asu-packages').value;
-            // 公式と同じ: スペースまたは改行で分割
-            return input.split(/[\s\n]+/).map(pkg => pkg.trim()).filter(pkg => pkg);
         }
 
         async function pollBuildStatus(requestHash) {
