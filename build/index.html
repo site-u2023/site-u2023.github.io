@@ -1216,7 +1216,11 @@ async function fetchApiInfoAndUpdate() {
             }
 
             // ISP情報パネルのみ更新（チェック状態関係なく表示）
-            updateIspDisplay(statusText, details);
+            const formatted = details
+              .split('\n')
+              .map(line => `<div>${line}</div>`)
+              .join('');
+            updateIspDisplay(statusText, formatted);
 
             // 「Use setup.sh configuration wizard」がONのときだけフォームに反映
             if (document.getElementById('use-aios-config').checked) {
@@ -1280,7 +1284,7 @@ if (apiInfo.rule && apiInfo.rule.brIpv6Address) {
             statusMessage.textContent = status;
             
             if (details) {
-                technicalInfo.textContent = details;
+                technicalInfo.innerHTML = details;
                 technicalInfo.style.display = 'block';
             } else {
                 technicalInfo.style.display = 'none';
