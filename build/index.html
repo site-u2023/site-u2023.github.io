@@ -601,6 +601,8 @@
             try {
                 await loadVersions();
                 bindEvents();
+                // 初期テンプレートロード
+                await loadSetupTemplate();
                 // ISP情報を初期取得（常時表示のため）
                 console.log('Starting ISP info fetch...');
                 await fetchApiInfoAndUpdate();
@@ -665,6 +667,17 @@
                         });
                     }
                 });
+
+                // LAN IP入力フィールドのイベントリスナー
+                const lanIpElement = document.getElementById('aios-lan-ip');
+                if (lanIpElement) {
+                    lanIpElement.addEventListener('input', function() {
+                        if (document.getElementById('use-aios-config').checked) {
+                            loadAiosTemplate();
+                            updateRequiredPackages();
+                        }
+                    });
+                }
             }, 100);
 
             document.getElementById('aios-config').addEventListener('input', function() {
