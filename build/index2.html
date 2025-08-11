@@ -514,7 +514,7 @@
 
             <div class="form-group">
                 <label for="uci-defaults-content">Script to run on first boot (uci-defaults):</label>
-                <textarea id="uci-defaults-content" class="form-control" rows="8" placeholder="#!/bin/sh&#10;&#10;# Your script here"></textarea>
+                <textarea id="uci-defaults-content" class="form-control" rows="8" placeholder="#!/bin/sh&#10;&#10;# Your custom script here&#10;# This area is for manual editing - configuration wizard will not overwrite your changes"></textarea>
                 <span id="uci-defaults-template" data-link="scripts/setup.sh" style="cursor: pointer; color: #007bff; text-decoration: underline;">Load setup.sh template</span>
             </div>
 
@@ -808,8 +808,7 @@
             }
 
             if (document.getElementById('use-aios-config').checked) {
-                loadAiosTemplate();
-                updateRequiredPackages();
+                updateRequiredPackages(); // パッケージのみ更新、スクリプトは触らない
             }
         }
 
@@ -830,28 +829,26 @@
             }
 
             if (document.getElementById('use-aios-config').checked) {
-                loadAiosTemplate();
-                updateRequiredPackages();
+                updateRequiredPackages(); // パッケージのみ更新、スクリプトは触らない
             }
         }
 
         function handleMapeTypeChange(e) {
             if (document.getElementById('use-aios-config').checked) {
-                loadAiosTemplate();
-                updateRequiredPackages();
+                updateRequiredPackages(); // パッケージのみ更新、スクリプトは触らない
             }
         }
 
         // ISP情報の取得と表示更新
         async function fetchApiInfoAndUpdate() {
             try {
-                updateIspDisplay('取得中', 'ISP情報を取得しています...');
+                updateIspDisplay('Fetching', 'Retrieving ISP information...');
                 
                 const apiInfo = await fetchApiInfo();
                 window.cachedApiInfo = apiInfo; // キャッシュ
 
                 if (apiInfo) {
-                    let statusText = '✅ 自動検出成功';
+                    let statusText = 'Auto-detection successful';
                     let details = '';
                     
                     // ISP情報
@@ -859,28 +856,28 @@
                         details += `ISP: ${apiInfo.isp}\n`;
                     }
                     if (apiInfo.country) {
-                        details += `国/地域: ${apiInfo.country}`;
+                        details += `Country/Region: ${apiInfo.country}`;
                         if (apiInfo.regionName) {
                             details += ` (${apiInfo.regionName})`;
                         }
                         details += '\n';
                     }
                     if (apiInfo.timezone) {
-                        details += `タイムゾーン: ${apiInfo.timezone}\n`;
+                        details += `Timezone: ${apiInfo.timezone}\n`;
                     }
                     
                     // 接続方式判定
                     if (apiInfo.rule) {
                         if (apiInfo.rule.aftrType) {
-                            statusText += ' - DS-Lite対応検出';
-                            details += `\n[DS-Lite設定]\n`;
-                            details += `AFTR方式: ${apiInfo.rule.aftrType}\n`;
+                            statusText += ' - DS-Lite support detected';
+                            details += `\n[DS-Lite Configuration]\n`;
+                            details += `AFTR Type: ${apiInfo.rule.aftrType}\n`;
                             if (apiInfo.rule.aftrIpv6Address) {
-                                details += `AFTRアドレス: ${apiInfo.rule.aftrIpv6Address}\n`;
+                                details += `AFTR Address: ${apiInfo.rule.aftrIpv6Address}\n`;
                             }
                         } else if (apiInfo.rule.brIpv6Address) {
-                            statusText += ' - MAP-E対応検出';
-                            details += `\n[MAP-E設定]\n`;
+                            statusText += ' - MAP-E support detected';
+                            details += `\n[MAP-E Configuration]\n`;
                             details += `BR: ${apiInfo.rule.brIpv6Address}\n`;
                             details += `EA-len: ${apiInfo.rule.eaBitLength}\n`;
                             details += `IPv4 Prefix: ${apiInfo.rule.ipv4Prefix}/${apiInfo.rule.ipv4PrefixLength}\n`;
@@ -889,25 +886,25 @@
                             
                             // 推奨方式があれば表示
                             if (apiInfo.recommendedMapeType) {
-                                details += `推奨方式: ${apiInfo.recommendedMapeType}方式\n`;
+                                details += `Recommended Mode: ${apiInfo.recommendedMapeType}\n`;
                             }
                             if (apiInfo.lineType) {
-                                details += `回線タイプ: ${apiInfo.lineType}\n`;
+                                details += `Line Type: ${apiInfo.lineType}\n`;
                             }
                         }
                     } else {
-                        statusText += ' - DHCP/PPPoE環境';
-                        details += '\n標準的なDHCPまたはPPPoE接続環境です。';
+                        statusText += ' - DHCP/PPPoE environment';
+                        details += '\nStandard DHCP or PPPoE connection environment detected.';
                     }
                     
                     updateIspDisplay(statusText, details);
                 } else {
-                    updateIspDisplay('⚠️ 自動検出失敗', 'API接続エラーまたは対応外ISP\n手動設定が必要です。');
+                    updateIspDisplay('Auto-detection failed', 'API connection error or unsupported ISP\nManual configuration required.');
                 }
                 
             } catch (error) {
                 console.error('ISP info fetch error:', error);
-                updateIspDisplay('❌ 取得エラー', 'API接続に失敗しました。\nオフライン環境では手動設定をご利用ください。');
+                updateIspDisplay('Fetch error', 'API connection failed.\nPlease use manual configuration for offline environments.');
             }
         }
 
@@ -929,6 +926,20 @@
         // API情報を事前取得してスクリプトカスタマイズ
         async function loadAiosTemplate() {
             try {
+                const scriptElement = document.getElementById('uci-defaults-content');
+                
+                // 手動入力された内容がある場合は、デフォルトテンプレート以外は保護
+                const currentContent = scriptElement.value.trim();
+                const isDefaultOrEmpty = !currentContent || 
+                    currentContent.startsWith('#!/bin/sh\n\n# Your script here') ||
+                    currentContent.startsWith('#!/bin/sh\n\n# Failed to load');
+                
+                if (currentContent && !isDefaultOrEmpty) {
+                    // 手動で編集されたコンテンツがある場合は何もしない
+                    console.log('Manual script content detected, preserving user input');
+                    return;
+                }
+                
                 const response = await fetch('scripts/setup.sh');
                 if (!response.ok) {
                     throw new Error('Failed to load setup.sh template');
@@ -948,7 +959,7 @@
                     content = customizeSetupScript(content, config, apiInfo);
                 }
                 
-                document.getElementById('uci-defaults-content').value = content;
+                scriptElement.value = content;
             } catch (error) {
                 console.error('Template loading error:', error);
                 document.getElementById('uci-defaults-content').value = '#!/bin/sh\n\n# Failed to load setup.sh template\n# Please check if scripts/setup.sh exists';
@@ -957,16 +968,23 @@
 
         // 公式と同じシンプルなテンプレート読み込み
         async function loadSetupTemplate() {
+            const script = document.getElementById('uci-defaults-content');
+            
+            // 手動入力がある場合は確認
+            if (script.value.trim() && !confirm('既存のスクリプト内容を上書きしますか？\n\n現在の内容は失われます。')) {
+                return; // ユーザーがキャンセルした場合は何もしない
+            }
+            
             try {
                 const response = await fetch('scripts/setup.sh');
                 if (!response.ok) {
                     throw new Error('Failed to load setup.sh template');
                 }
                 const content = await response.text();
-                document.getElementById('uci-defaults-content').value = content;
+                script.value = content;
             } catch (error) {
                 console.error('Template loading error:', error);
-                document.getElementById('uci-defaults-content').value = '#!/bin/sh\n\n# Failed to load setup.sh template';
+                script.value = '#!/bin/sh\n\n# Failed to load setup.sh template';
             }
         }
 
@@ -1105,11 +1123,15 @@
 
             if (e.target.checked) {
                 config.style.display = 'block';
-                loadAiosTemplate();
+                
+                // 手動入力がある場合は保護、空の場合のみテンプレート読み込み
+                if (!script.value.trim()) {
+                    loadAiosTemplate();
+                }
                 updateRequiredPackages();
             } else {
                 config.style.display = 'none';
-                script.value = '';
+                // チェックボックスOFFでもスクリプト内容は保持（ユーザーの手動入力を尊重）
             }
         }
 
