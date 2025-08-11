@@ -1414,37 +1414,35 @@ function customizeSetupScript(content, config, apiInfo) {
         setVar('mape_gua_prefix', '');
     }
 
-    // MAP-E
-    if (proto === 'mape') {
-        setVar('mape_br', config.mapeBr);
-        setVar('mape_ealen', config.mapeEalen);
+// MAP-E
+if (proto === 'mape') {
+    setVar('mape_br', config.mapeBr);
+    setVar('mape_ealen', config.mapeEalen);
+    setVar('mape_psid_offset', config.mapePsidOffset);
 
-        const ealen = parseInt(config.mapeEalen);
-        const offset = parseInt(config.mapePsidOffset);
-        const psidlen = (ealen > offset) ? ealen - offset : '';
-        setVar('mape_psid_offset', config.mapePsidOffset);
-        setVar('mape_psidlen', psidlen);
+    // 💡 psidlen は Worker が返す値をそのまま使用
+    setVar('mape_psidlen', config.mapePsidlen);
 
-        setVar('mape_ipv4_prefix', config.mapeIpv4Prefix);
-        setVar('mape_ipv4_prefixlen', config.mapeIpv4Prefixlen);
-        setVar('mape_ipv6_prefix', config.mapeIpv6Prefix);
-        setVar('mape_ipv6_prefixlen', config.mapeIpv6Prefixlen);
+    setVar('mape_ipv4_prefix', config.mapeIpv4Prefix);
+    setVar('mape_ipv4_prefixlen', config.mapeIpv4Prefixlen);
+    setVar('mape_ipv6_prefix', config.mapeIpv6Prefix);
+    setVar('mape_ipv6_prefixlen', config.mapeIpv6Prefixlen);
 
-        const prefix = config.mapeIpv6Prefix?.split(':').slice(0, 4).join(':');
-        const guaPrefix = prefix ? `${prefix}::/64` : '';
-        if (config.mapeType === 'gua' || config.mapeType === 'auto') {
-            setVar('mape_gua_mode', '1');
-            setVar('mape_gua_prefix', guaPrefix);
-        } else {
-            setVar('mape_gua_mode', '');
-            setVar('mape_gua_prefix', '');
-        }
-
-        // Reset others
-        setVar('pppoe_username', '');
-        setVar('pppoe_password', '');
-        setVar('dslite_aftr_address', '');
+    const prefix = config.mapeIpv6Prefix?.split(':').slice(0, 4).join(':');
+    const guaPrefix = prefix ? `${prefix}::/64` : '';
+    if (config.mapeType === 'gua' || config.mapeType === 'auto') {
+        setVar('mape_gua_mode', '1');
+        setVar('mape_gua_prefix', guaPrefix);
+    } else {
+        setVar('mape_gua_mode', '');
+        setVar('mape_gua_prefix', '');
     }
+
+    // Reset others
+    setVar('pppoe_username', '');
+    setVar('pppoe_password', '');
+    setVar('dslite_aftr_address', '');
+}
 
     // AUTOモード時はAPI情報使用（それ以外は使わない）
     if (config.connectionMode === 'auto' && apiInfo?.rule) {
@@ -1535,6 +1533,8 @@ function getAiosConfig() {
         mapeIpv6Prefix: parseOrEmpty('mape-ipv6-prefix'),
         mapeIpv6Prefixlen: parseOrEmpty('mape-ipv6-prefixlen', 'int'),
         mapePsidOffset: parseOrEmpty('mape-psid-offset', 'int')
+
+        mapePsidlen: parseOrEmpty('mape-psidlen', 'int'),
     };
 
     return config;
