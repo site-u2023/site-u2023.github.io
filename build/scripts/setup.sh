@@ -50,12 +50,10 @@ OS_VERSION=""
 # log potential errors
 exec >/tmp/setup.log 2>&1
 
-# デバイス基本設定（OSバージョン取得含む）
+# デバイス基本設定
 set_device_basic_config() {
-    # OpenWrt バージョン取得・加工
-    if [ -f "/etc/openwrt_release" ]; then
-        OS_VERSION=$(grep "DISTRIB_RELEASE" /etc/openwrt_release | cut -d"'" -f2 2>/dev/null)
-    fi
+    # WEB選択OSバージョンの加工
+    OS_VERSION=$(echo "$OS_VERSION" | cut -d"'" -f2 2>/dev/null)
     
     # rootパスワード設定
     if [ -n "$ROOT_PASSWORD" ]; then
@@ -98,31 +96,6 @@ set_pppoe_config() {
         uci set network.wan.password="$PPPOE_PASSWORD"
     fi
     
-    return 0
-}
-
-# ISP接続方式自動判定
-detect_isp_mode() {
-    # PPPoE判定（手動設定優先）
-    if [ -n "$PPPOE_USERNAME" ] && [ -n "$PPPOE_PASSWORD" ]; then
-        echo "pppoe"
-        return 0
-    fi
-
-    # DS-Lite判定（API情報から）
-    if [ -n "$AFTR_TYPE" ]; then
-        echo "dslite"
-        return 0
-    fi
-
-    # MAP-E判定（API情報から）
-    if [ -n "$BR" ] && [ -n "$EALEN" ]; then
-        echo "mape"
-        return 0
-    fi
-
-    # DHCP（上記すべて該当なし）
-    echo "dhcp"
     return 0
 }
 
@@ -185,33 +158,6 @@ set_dslite_config() {
     return 0
 }
 
-# MAP-E用map.sh埋め込み設定
-embed_map_sh() {
-    # MAP-E用map.shの内容を埋め込み（バージョン別）
-    local map_path="/lib/netifd/proto/map.sh"
-    
-    # バックアップ作成
-    cp "$map_path" "${map_path}.bak" 2>/dev/null
-    
-    # OpenWrt バージョン別のmap.sh内容埋め込み
-    if echo "$OS_VERSION" | grep -q "^19"; then
-        # OpenWrt 19.x用map.sh内容
-        cat > "$map_path" << 'MAP_SH_19_EOF'
-# MAP-E protocol script for OpenWrt 19.x (embedded)
-# [map.sh content for 19.x would be embedded here]
-MAP_SH_19_EOF
-    else
-        # OpenWrt 21.02+用map.sh内容
-        cat > "$map_path" << 'MAP_SH_NEW_EOF'
-# MAP-E protocol script for OpenWrt 21.02+ (embedded)
-# [map.sh content for 21.02+ would be embedded here]
-MAP_SH_NEW_EOF
-    fi
-    
-    echo "MAP-E: Updated map.sh for OpenWrt $OS_VERSION"
-    return 0
-}
-
 # MAP-E設定（API情報使用）
 set_mape_config() {
     if [ -z "$BR" ] || [ -z "$EALEN" ] || [ -z "$IPV4_PREFIX" ] || [ -z "$IPV4_PREFIXLEN" ] || [ -z "$IPV6_PREFIX" ] || [ -z "$IPV6_PREFIXLEN" ]; then
@@ -230,8 +176,27 @@ set_mape_config() {
 
     echo "MAP-E: Configuring with mode=${MAPE_TYPE:-gua}, BR=$BR, EA-len=$EALEN"
 
-    # map.sh埋め込み
-    embed_map_sh
+    # MAP-E用map.sh作成（バージョン別）
+    local map_path="/lib/netifd/proto/map.sh"
+    cp "$map_path" "${map_path}.bak" 2>/dev/null
+    
+    if echo "$OS_VERSION" | grep -q "^19"; then
+        # OpenWrt 19.x用map.sh内容
+        cat > "$map_path" << 'MAP_SH_19_EOF'
+#!/bin/sh
+# MAP-E protocol script for OpenWrt 19.x (embedded)
+# [map.sh content for 19.x would be embedded here]
+MAP_SH_19_EOF
+    else
+        # OpenWrt 21.02+用map.sh内容
+        cat > "$map_path" << 'MAP_SH_NEW_EOF'
+#!/bin/sh  
+# MAP-E protocol script for OpenWrt 21.02+ (embedded)
+# [map.sh content for 21.02+ would be embedded here]
+MAP_SH_NEW_EOF
+    fi
+    
+    echo "MAP-E: Updated map.sh for OpenWrt $OS_VERSION"
 
     # 既存設定のクリーンアップ
     uci delete network.${MAP6_NAME} >/dev/null 2>&1
@@ -351,18 +316,11 @@ set_wifi_config() {
 # メイン処理
 main() {
     echo "Starting OpenWrt initial configuration..."
+    echo "ISP_MODE: $ISP_MODE"
     
     # システム情報取得・基本設定
     set_device_basic_config
     echo "OpenWrt Version: $OS_VERSION"
-    
-    # 自動判定実行（auto時のみ）
-    if [ "$ISP_MODE" = "auto" ]; then
-        ISP_MODE=$(detect_isp_mode)
-        echo "Auto-detected ISP mode: $ISP_MODE"
-    fi
-    
-    echo "ISP_MODE: $ISP_MODE"
     
     # タイムゾーン＆国コード設定
     set_country
