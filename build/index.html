@@ -1517,6 +1517,32 @@ function getAiosConfig() {
     return config;
 }
 
+function applyInitialsFromApi(type) {
+  const apiInfo = window.cachedApiInfo;
+  if (!apiInfo || !apiInfo.rule) return;
+
+  if (type === 'dslite' && apiInfo.rule.aftrIpv6Address) {
+    const aftr = document.getElementById('dslite-aftr-address');
+    if (aftr && !aftr.value) aftr.value = apiInfo.rule.aftrIpv6Address;
+  }
+
+  if (type === 'mape' && apiInfo.rule.brIpv6Address) {
+    const s = apiInfo.rule;
+    const safeSet = (id, val) => {
+      const el = document.getElementById(id);
+      if (el && !el.value && (val || val === 0)) el.value = val;
+    };
+    safeSet('mape-br', s.brIpv6Address);
+    safeSet('mape-ealen', s.eaBitLength);
+    safeSet('mape-ipv4-prefix', s.ipv4Prefix);
+    safeSet('mape-ipv4-prefixlen', s.ipv4PrefixLength);
+    safeSet('mape-ipv6-prefix', s.ipv6Prefix);
+    safeSet('mape-ipv6-prefixlen', s.ipv6PrefixLength);
+    safeSet('mape-psid-offset', s.psIdOffset);
+    safeSet('mape-psidlen', s.psidlen);
+  }
+}
+        
         function updateRequiredPackages() {
             const config = getAiosConfig();
             const packagesTextarea = document.getElementById('asu-packages');
