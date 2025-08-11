@@ -1280,33 +1280,33 @@ async function fetchApiInfoAndUpdate() {
             }
         }
 
-        // 修正版テンプレート更新関数 - 完全な値の反映
-        async function updateConfiguredTemplate() {
-            try {
-                let content = document.getElementById('uci-defaults-content').value;
-                
-                if (!content || content.trim() === '' || content.includes('Failed to load setup.sh template')) {
-                    content = SETUP_SH_TEMPLATE;
-                    app.templateLoaded = true;
-                }
-                
-                if (document.getElementById('use-aios-config').checked) {
-                    const config = getAiosConfig();
-                    
-                    let apiInfo = window.cachedApiInfo;
-                    if (!apiInfo && (config.connectionMode === 'auto' || config.connectionType === 'mape')) {
-                        apiInfo = await fetchApiInfo();
-                        window.cachedApiInfo = apiInfo;
-                    }
-                    
-                    content = customizeSetupScript(content, config, apiInfo);
-                }
-                
-                document.getElementById('uci-defaults-content').value = content;
-            } catch (error) {
-                console.error('Template update error:', error);
-            }
+async function updateConfiguredTemplate() {
+    try {
+        let content = document.getElementById('uci-defaults-content').value;
+
+        if (!content || content.trim() === '' || content.includes('Failed to load setup.sh template')) {
+            content = SETUP_SH_TEMPLATE;
+            app.templateLoaded = true;
         }
+
+        const config = getAiosConfig();
+
+        let apiInfo = window.cachedApiInfo;
+        if (config.connectionMode === 'auto') {
+            if (!apiInfo) {
+                apiInfo = await fetchApiInfo();
+                window.cachedApiInfo = apiInfo;
+            }
+        } else {
+            apiInfo = null; // manualモードではAPI情報を無視
+        }
+
+        const customized = customizeSetupScript(content, config, apiInfo);
+        document.getElementById('uci-defaults-content').value = customized;
+    } catch (error) {
+        console.error('Template update error:', error);
+    }
+}
 
         async function fetchApiInfo() {
             try {
@@ -1476,14 +1476,15 @@ function customizeSetupScript(content, config, apiInfo) {
     return customized;
 }
         
-        function loadMapShContentSync(content, osVersion) {
-            if (!content.includes('${map_sh_content}')) {
-                return content;
-            }
+function loadMapShContentSync(content, osVersion) {
+    if (!content.includes('${map_sh_content}')) return content;
 
-            const placeholder = '#!/bin/sh\n# MAP-E script will be loaded dynamically';
-            return content.replace('${map_sh_content}', placeholder);
-        }
+    const placeholder = `#!/bin/sh
+# MAP-E script will be loaded dynamically
+# Placeholder only. Actual logic will be injected by server build tools.`;
+
+    return content.replace('${map_sh_content}', placeholder);
+}
 
         function toggleAiosConfig(e) {
             const configSection = document.getElementById('aios-config');
