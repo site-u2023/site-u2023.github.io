@@ -1467,16 +1467,15 @@ function customizeSetupScript(content, config, apiInfo) {
         }
 
         function toggleAiosConfig(e) {
-            const config = document.getElementById('aios-config');
-
+            const configSection = document.getElementById('aios-config');
             if (e.target.checked) {
-                config.style.display = 'block';
-                updateConfiguredTemplate().catch(error => {
-                    console.error('Failed to update template:', error);
-                });
-                updateRequiredPackages();
+                configSection.style.display = 'block';
+                updateConfiguredTemplate();
             } else {
-                config.style.display = 'none';
+                configSection.style.display = 'none';
+
+                document.getElementById('uci-defaults-content').value = SETUP_SH_TEMPLATE;
+                app.templateLoaded = true;
             }
         }
 
