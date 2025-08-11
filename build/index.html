@@ -850,328 +850,414 @@ echo "Configuration completed successfully!"
 echo "All done!"
 exit 0`;
 
-        let app = {
-            versions: [],
-            devices: [],
-            selectedDevice: null,
-            selectedVersion: '',
-            templateLoaded: false
-        };
+// グローバル変数
+let app = {
+    versions: [],
+    devices: [],
+    selectedDevice: null,
+    selectedVersion: '',
+    templateLoaded: false
+};
 
-        document.addEventListener('DOMContentLoaded', init);
+// map.shのキャッシュ
+let mapShCache = {
+    'new': null,
+    '19': null
+};
 
-        async function init() {
-            try {
-                await loadVersions();
-                bindEvents();
-                // ISP情報を初期取得（常時表示のため）
-                console.log('Starting ISP info fetch...');
-                await fetchApiInfoAndUpdate();
-            } catch (error) {
-                console.error('Failed to initialize:', error);
-                updateIspDisplay('Initialization error', 'Failed to initialize application: ' + error.message);
-            }
-        }
+// DOMContentLoaded時の初期化
+document.addEventListener('DOMContentLoaded', init);
 
-        function bindEvents() {
-            document.getElementById('versions').addEventListener('change', handleVersionChange);
-            document.getElementById('models').addEventListener('input', handleDeviceSearch);
-            document.getElementById('use-aios-config').addEventListener('change', toggleAiosConfig);
-            document.getElementById('request-build').addEventListener('click', buildAsuRequest);
+// ==================== 初期化関数 ====================
+async function init() {
+    try {
+        await loadVersions();
+        bindEvents();
+        
+        // map.shを事前ロード
+        await loadMapShScripts();
+        
+        // ISP情報を初期取得（常時表示のため）
+        console.log('Starting ISP info fetch...');
+        await fetchApiInfoAndUpdate();
+    } catch (error) {
+        console.error('Failed to initialize:', error);
+        updateIspDisplay('Initialization error', 'Failed to initialize application: ' + error.message);
+    }
+}
 
-            // Connection mode (AUTO/OFF) の監視
-            document.querySelectorAll('input[name="connectionMode"]').forEach(radio => {
-                radio.addEventListener('change', handleConnectionModeChange);
-            });
-
-            // Connection type (DHCP/PPPoE/DS-Lite/MAP-E/None) の監視
-            document.querySelectorAll('input[name="connectionType"]').forEach(radio => {
-                radio.addEventListener('change', handleConnectionTypeChange);
-            });
-
-            document.querySelectorAll('input[name="mapeType"]').forEach(radio => {
-                radio.addEventListener('change', handleMapeTypeChange);
-            });
-
-            // aios-config内の全ての入力フィールドに非同期リスナーを追加
-            document.getElementById('aios-config').addEventListener('input', function(e) {
-                if (document.getElementById('use-aios-config').checked) {
-                    updateConfiguredTemplate().catch(error => {
-                        console.error('Failed to update template:', error);
-                    });
-                    updateRequiredPackages();
-                }
-            });
-
-            document.getElementById('aios-config').addEventListener('change', function(e) {
-                if (document.getElementById('use-aios-config').checked) {
-                    updateConfiguredTemplate().catch(error => {
-                        console.error('Failed to update template:', error);
-                    });
-                    updateRequiredPackages();
-                }
-            });
-
-            document.addEventListener('click', function(e) {
-                if (!e.target.closest('.autocomplete')) {
-                    hideAutocomplete();
-                }
-            });
-
-            // 初期状態設定：手動接続セクションを非表示
-            document.getElementById('manual-connection-section').style.display = 'none';
-            document.getElementById('pppoe-section').style.display = 'none';
-            document.getElementById('dslite-section').style.display = 'none';
-            document.getElementById('mape-manual-section').style.display = 'none';
-        }
-
-        // AUTO/OFF モード切り替え
-        function handleConnectionModeChange(e) {
-            const manualSection = document.getElementById('manual-connection-section');
-            
-            if (e.target.value === 'manual') {
-                manualSection.style.display = 'block';
+// ==================== map.sh関連 ====================
+async function loadMapShScripts() {
+    try {
+        // OpenWrt 21.02以降用
+        if (!mapShCache['new']) {
+            const responseNew = await fetch('https://site-u.pages.dev/build/scripts/map.sh.new');
+            if (responseNew.ok) {
+                mapShCache['new'] = await responseNew.text();
+                console.log('Loaded map.sh.new successfully');
             } else {
-                manualSection.style.display = 'none';
-            }
-            applyInitialsFromApi(document.querySelector('input[name="connectionType"]:checked')?.value || '');
-
-            if (document.getElementById('use-aios-config').checked) {
-                updateConfiguredTemplate().catch(error => {
-                    console.error('Failed to update template:', error);
-                });
-                updateRequiredPackages();
+                console.error('Failed to load map.sh.new');
             }
         }
-
-        async function loadVersions() {
-            try {
-                const response = await fetch('https://downloads.openwrt.org/.versions.json');
-                const data = await response.json();
-
-                // 公式と同じ: SNAPSHOTを最初に追加
-                app.versions = ['SNAPSHOT'];
-                
-                // 安定版を追加
-                if (data.versions_list) {
-                    app.versions = app.versions.concat(data.versions_list);
-                }
-
-                // デフォルト選択: 公式と同じく最新リリース版（2番目）
-                app.selectedVersion = data.stable_version || (data.versions_list ? data.versions_list[0] : 'SNAPSHOT');
-
-                updateVersionSelect();
-                await loadDevices();
-            } catch (error) {
-                console.error('Failed to load versions:', error);
+        
+        // OpenWrt 19.x用
+        if (!mapShCache['19']) {
+            const response19 = await fetch('https://site-u.pages.dev/build/scripts/map.sh.19');
+            if (response19.ok) {
+                mapShCache['19'] = await response19.text();
+                console.log('Loaded map.sh.19 successfully');
+            } else {
+                console.error('Failed to load map.sh.19');
             }
         }
+    } catch (error) {
+        console.error('Failed to load map.sh scripts:', error);
+    }
+}
 
-        function updateVersionSelect() {
-            const select = document.getElementById('versions');
-            select.innerHTML = '';
+// map.sh内容を埋め込む（同期版 - キャッシュから取得）
+function loadMapShContentSync(content, osVersion) {
+    // ${map_sh_content}プレースホルダーがない場合は何もしない
+    if (!content.includes('${map_sh_content}')) {
+        return content;
+    }
 
-            app.versions.forEach(version => {
-                const option = document.createElement('option');
-                option.value = version;
-                option.textContent = version;
-                if (version === app.selectedVersion) {
-                    option.selected = true;
-                }
-                select.appendChild(option);
+    let mapShContent = '';
+    
+    // OSバージョンに応じて適切なmap.shを選択
+    if (osVersion && osVersion.startsWith('19')) {
+        mapShContent = mapShCache['19'] || '';
+        console.log('Using map.sh.19 for OpenWrt 19.x');
+    } else {
+        mapShContent = mapShCache['new'] || '';
+        console.log('Using map.sh.new for OpenWrt 21.02+');
+    }
+    
+    // map.shが取得できていない場合の警告
+    if (!mapShContent) {
+        console.warn('map.sh content not available, using fallback');
+        mapShContent = `#!/bin/sh
+# MAP-E script not loaded - network download required
+# This is a fallback placeholder. The actual script should be downloaded from:
+# https://site-u.pages.dev/build/scripts/map.sh.new or map.sh.19
+echo "ERROR: map.sh was not properly embedded during build" >&2
+exit 1`;
+    }
+    
+    // ${map_sh_content}を実際の内容で置換
+    return content.replace('${map_sh_content}', mapShContent);
+}
+
+// ==================== イベントバインディング ====================
+function bindEvents() {
+    document.getElementById('versions').addEventListener('change', handleVersionChange);
+    document.getElementById('models').addEventListener('input', handleDeviceSearch);
+    document.getElementById('use-aios-config').addEventListener('change', toggleAiosConfig);
+    document.getElementById('request-build').addEventListener('click', buildAsuRequest);
+
+    // Connection mode (AUTO/OFF) の監視
+    document.querySelectorAll('input[name="connectionMode"]').forEach(radio => {
+        radio.addEventListener('change', handleConnectionModeChange);
+    });
+
+    // Connection type (DHCP/PPPoE/DS-Lite/MAP-E/None) の監視
+    document.querySelectorAll('input[name="connectionType"]').forEach(radio => {
+        radio.addEventListener('change', handleConnectionTypeChange);
+    });
+
+    document.querySelectorAll('input[name="mapeType"]').forEach(radio => {
+        radio.addEventListener('change', handleMapeTypeChange);
+    });
+
+    // aios-config内の全ての入力フィールドに非同期リスナーを追加
+    document.getElementById('aios-config').addEventListener('input', function(e) {
+        if (document.getElementById('use-aios-config').checked) {
+            updateConfiguredTemplate().catch(error => {
+                console.error('Failed to update template:', error);
             });
+            updateRequiredPackages();
         }
+    });
 
-        async function loadDevices() {
-            if (!app.selectedVersion) return;
-
-            try {
-                let url;
-                if (app.selectedVersion === 'SNAPSHOT') {
-                    url = 'https://downloads.openwrt.org/snapshots/.overview.json';
-                } else {
-                    url = `https://downloads.openwrt.org/releases/${app.selectedVersion}/.overview.json`;
-                }
-                
-                const response = await fetch(url);
-                const data = await response.json();
-
-                app.devices = data.profiles || [];
-            } catch (error) {
-                console.error('Failed to load devices:', error);
-                app.devices = [];
-            }
-        }
-
-        async function handleVersionChange(e) {
-            app.selectedVersion = e.target.value;
-            app.selectedDevice = null;
-            hideDeviceInfo();
-            await loadDevices();
-        }
-
-        function handleDeviceSearch(e) {
-            const query = e.target.value.toLowerCase();
-
-            if (query.length < 2) {
-                hideAutocomplete();
-                return;
-            }
-
-            const matches = app.devices.filter(device => {
-                const title = getDeviceTitle(device).toLowerCase();
-                return title.includes(query) || device.id.toLowerCase().includes(query);
-            }).slice(0, 10);
-
-            showAutocomplete(matches);
-        }
-
-        function getDeviceTitle(device) {
-            if (device.titles && device.titles.length > 0) {
-                return device.titles[0].title || device.id;
-            }
-            return device.id;
-        }
-
-        function showAutocomplete(devices) {
-            const container = document.getElementById('models-autocomplete-list');
-            container.innerHTML = '';
-
-            if (devices.length === 0) {
-                hideAutocomplete();
-                return;
-            }
-
-            devices.forEach(device => {
-                const div = document.createElement('div');
-                div.innerHTML = `<strong>${getDeviceTitle(device)}</strong><br><small>Target: ${device.target}</small>`;
-                div.addEventListener('click', () => selectDevice(device));
-                container.appendChild(div);
+    document.getElementById('aios-config').addEventListener('change', function(e) {
+        if (document.getElementById('use-aios-config').checked) {
+            updateConfiguredTemplate().catch(error => {
+                console.error('Failed to update template:', error);
             });
-
-            container.style.display = 'block';
+            updateRequiredPackages();
         }
+    });
 
-        function hideAutocomplete() {
-            document.getElementById('models-autocomplete-list').style.display = 'none';
-        }
-
-        function selectDevice(device) {
-            app.selectedDevice = device;
-            document.getElementById('models').value = getDeviceTitle(device);
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.autocomplete')) {
             hideAutocomplete();
-            loadDeviceProfile(device);
+        }
+    });
+
+    // 初期状態設定：手動接続セクションを非表示
+    document.getElementById('manual-connection-section').style.display = 'none';
+    document.getElementById('pppoe-section').style.display = 'none';
+    document.getElementById('dslite-section').style.display = 'none';
+    document.getElementById('mape-manual-section').style.display = 'none';
+}
+
+// ==================== バージョン管理 ====================
+async function loadVersions() {
+    try {
+        const response = await fetch('https://downloads.openwrt.org/.versions.json');
+        const data = await response.json();
+
+        // 公式と同じ: SNAPSHOTを最初に追加
+        app.versions = ['SNAPSHOT'];
+        
+        // 安定版を追加
+        if (data.versions_list) {
+            app.versions = app.versions.concat(data.versions_list);
         }
 
-        async function loadDeviceProfile(device) {
-            if (!device || !device.target || !device.id) return;
+        // デフォルト選択: 公式と同じく最新リリース版（2番目）
+        app.selectedVersion = data.stable_version || (data.versions_list ? data.versions_list[0] : 'SNAPSHOT');
 
-            const version = app.selectedVersion;
-            const target = device.target;
-            const profileId = device.id;
+        updateVersionSelect();
+        await loadDevices();
+    } catch (error) {
+        console.error('Failed to load versions:', error);
+    }
+}
 
-            let profilesUrl;
-            if (version === 'SNAPSHOT') {
-                profilesUrl = `https://downloads.openwrt.org/snapshots/targets/${target}/profiles.json`;
-            } else {
-                profilesUrl = `https://downloads.openwrt.org/releases/${version}/targets/${target}/profiles.json`;
-            }
+function updateVersionSelect() {
+    const select = document.getElementById('versions');
+    select.innerHTML = '';
 
-            try {
-                console.log(`Loading profile from: ${profilesUrl}`);
-                const response = await fetch(profilesUrl, { cache: 'no-cache' });
-                if (!response.ok) {
-                    throw new Error(`Failed to fetch profiles.json: ${response.status}`);
+    app.versions.forEach(version => {
+        const option = document.createElement('option');
+        option.value = version;
+        option.textContent = version;
+        if (version === app.selectedVersion) {
+            option.selected = true;
+        }
+        select.appendChild(option);
+    });
+}
+
+async function handleVersionChange(e) {
+    app.selectedVersion = e.target.value;
+    app.selectedDevice = null;
+    hideDeviceInfo();
+    await loadDevices();
+}
+
+// ==================== デバイス管理 ====================
+async function loadDevices() {
+    if (!app.selectedVersion) return;
+
+    try {
+        let url;
+        if (app.selectedVersion === 'SNAPSHOT') {
+            url = 'https://downloads.openwrt.org/snapshots/.overview.json';
+        } else {
+            url = `https://downloads.openwrt.org/releases/${app.selectedVersion}/.overview.json`;
+        }
+        
+        const response = await fetch(url);
+        const data = await response.json();
+
+        app.devices = data.profiles || [];
+    } catch (error) {
+        console.error('Failed to load devices:', error);
+        app.devices = [];
+    }
+}
+
+function handleDeviceSearch(e) {
+    const query = e.target.value.toLowerCase();
+
+    if (query.length < 2) {
+        hideAutocomplete();
+        return;
+    }
+
+    const matches = app.devices.filter(device => {
+        const title = getDeviceTitle(device).toLowerCase();
+        return title.includes(query) || device.id.toLowerCase().includes(query);
+    }).slice(0, 10);
+
+    showAutocomplete(matches);
+}
+
+function getDeviceTitle(device) {
+    if (device.titles && device.titles.length > 0) {
+        return device.titles[0].title || device.id;
+    }
+    return device.id;
+}
+
+function showAutocomplete(devices) {
+    const container = document.getElementById('models-autocomplete-list');
+    container.innerHTML = '';
+
+    if (devices.length === 0) {
+        hideAutocomplete();
+        return;
+    }
+
+    devices.forEach(device => {
+        const div = document.createElement('div');
+        div.innerHTML = `<strong>${getDeviceTitle(device)}</strong><br><small>Target: ${device.target}</small>`;
+        div.addEventListener('click', () => selectDevice(device));
+        container.appendChild(div);
+    });
+
+    container.style.display = 'block';
+}
+
+function hideAutocomplete() {
+    document.getElementById('models-autocomplete-list').style.display = 'none';
+}
+
+function selectDevice(device) {
+    app.selectedDevice = device;
+    document.getElementById('models').value = getDeviceTitle(device);
+    hideAutocomplete();
+    loadDeviceProfile(device);
+}
+
+async function loadDeviceProfile(device) {
+    if (!device || !device.target || !device.id) return;
+
+    const version = app.selectedVersion;
+    const target = device.target;
+    const profileId = device.id;
+
+    let profilesUrl;
+    if (version === 'SNAPSHOT') {
+        profilesUrl = `https://downloads.openwrt.org/snapshots/targets/${target}/profiles.json`;
+    } else {
+        profilesUrl = `https://downloads.openwrt.org/releases/${version}/targets/${target}/profiles.json`;
+    }
+
+    try {
+        console.log(`Loading profile from: ${profilesUrl}`);
+        const response = await fetch(profilesUrl, { cache: 'no-cache' });
+        if (!response.ok) {
+            throw new Error(`Failed to fetch profiles.json: ${response.status}`);
+        }
+        
+        const profilesData = await response.json();
+        console.log(`Loaded profiles data:`, profilesData);
+
+        if (profilesData.profiles && profilesData.profiles[profileId]) {
+            const profile = profilesData.profiles[profileId];
+            console.log(`Found profile for ${profileId}:`, profile);
+            
+            const defaultPackages = profilesData.default_packages || [];
+            const devicePackages = profile.device_packages || [];
+            const asuExtraPackages = ['luci'];
+            const allPackages = defaultPackages.concat(devicePackages).concat(asuExtraPackages);
+            
+            console.log(`Setting packages: ${allPackages.join(' ')}`);
+            document.getElementById('asu-packages').value = allPackages.join(' ');
+            
+            showDeviceInfo();
+        } else {
+            console.error(`Profile ${profileId} not found in profiles.json`);
+            showDeviceInfo();
+        }
+    } catch (error) {
+        console.error('Failed to load device profile:', error);
+        showDeviceInfo();
+    }
+}
+
+function showDeviceInfo() {
+    if (!app.selectedDevice) return;
+
+    const device = app.selectedDevice;
+
+    document.getElementById('device-title').textContent = getDeviceTitle(device);
+    document.getElementById('device-details').innerHTML = `Target: ${device.target}<br>Version: ${app.selectedVersion}`;
+
+    document.getElementById('info').style.display = 'block';
+    document.getElementById('packages').style.display = 'block';
+    document.getElementById('request-build').style.display = 'inline-block';
+
+    // テンプレートを最初に設定（まだ設定されていない場合のみ）
+    const textarea = document.getElementById('uci-defaults-content');
+    if (!app.templateLoaded && (!textarea.value || textarea.value.trim() === '')) {
+        textarea.value = SETUP_SH_TEMPLATE;
+        app.templateLoaded = true;
+        console.log('Template loaded for the first time');
+    }
+}
+
+function hideDeviceInfo() {
+    document.getElementById('info').style.display = 'none';
+    document.getElementById('packages').style.display = 'none';
+    document.getElementById('request-build').style.display = 'none';
+}
+
+// ==================== 接続設定ハンドラー ====================
+function handleConnectionModeChange(e) {
+    const manualSection = document.getElementById('manual-connection-section');
+    
+    if (e.target.value === 'manual') {
+        manualSection.style.display = 'block';
+    } else {
+        manualSection.style.display = 'none';
+    }
+    
+    applyInitialsFromApi(document.querySelector('input[name="connectionType"]:checked')?.value || '');
+
+    if (document.getElementById('use-aios-config').checked) {
+        updateConfiguredTemplate().catch(error => {
+            console.error('Failed to update template:', error);
+        });
+        updateRequiredPackages();
+    }
+}
+
+function handleConnectionTypeChange(e) {
+    const pppoeSection = document.getElementById('pppoe-section');
+    const dsliteSection = document.getElementById('dslite-section');
+    const mapeManualSection = document.getElementById('mape-manual-section');
+
+    pppoeSection.style.display = 'none';
+    dsliteSection.style.display = 'none';
+    mapeManualSection.style.display = 'none';
+
+    if (e.target.value === 'pppoe') {
+        pppoeSection.style.display = 'block';
+    } else if (e.target.value === 'dslite') {
+        dsliteSection.style.display = 'block';
+    } else if (e.target.value === 'mape') {
+        mapeManualSection.style.display = 'block';
+        
+        // MAP-E選択時、map.shが未ロードなら再度ロード試行
+        if (!mapShCache['new'] && !mapShCache['19']) {
+            loadMapShScripts().then(() => {
+                if (document.getElementById('use-aios-config').checked) {
+                    updateConfiguredTemplate().catch(console.error);
                 }
-                
-                const profilesData = await response.json();
-                console.log(`Loaded profiles data:`, profilesData);
-
-                if (profilesData.profiles && profilesData.profiles[profileId]) {
-                    const profile = profilesData.profiles[profileId];
-                    console.log(`Found profile for ${profileId}:`, profile);
-                    
-                    const defaultPackages = profilesData.default_packages || [];
-                    const devicePackages = profile.device_packages || [];
-                    const asuExtraPackages = ['luci'];
-                    const allPackages = defaultPackages.concat(devicePackages).concat(asuExtraPackages);
-                    
-                    console.log(`Setting packages: ${allPackages.join(' ')}`);
-                    document.getElementById('asu-packages').value = allPackages.join(' ');
-                    
-                    showDeviceInfo();
-                } else {
-                    console.error(`Profile ${profileId} not found in profiles.json`);
-                    showDeviceInfo();
-                }
-            } catch (error) {
-                console.error('Failed to load device profile:', error);
-                showDeviceInfo();
-            }
+            });
         }
+    }
+    
+    // 取得値を初期値として注入（空のときのみ上書き）
+    applyInitialsFromApi(e.target.value);
 
-        function showDeviceInfo() {
-            if (!app.selectedDevice) return;
+    if (document.getElementById('use-aios-config').checked) {
+        updateConfiguredTemplate().catch(console.error);
+        updateRequiredPackages();
+    }
+}
 
-            const device = app.selectedDevice;
+function handleMapeTypeChange(e) {
+    if (document.getElementById('use-aios-config').checked) {
+        updateRequiredPackages();
+    }
+}
 
-            document.getElementById('device-title').textContent = getDeviceTitle(device);
-            document.getElementById('device-details').innerHTML = `Target: ${device.target}<br>Version: ${app.selectedVersion}`;
-
-            document.getElementById('info').style.display = 'block';
-            document.getElementById('packages').style.display = 'block';
-            document.getElementById('request-build').style.display = 'inline-block';
-
-            // テンプレートを最初に設定（まだ設定されていない場合のみ）
-            const textarea = document.getElementById('uci-defaults-content');
-            if (!app.templateLoaded && (!textarea.value || textarea.value.trim() === '')) {
-                textarea.value = SETUP_SH_TEMPLATE;
-                app.templateLoaded = true;
-                console.log('Template loaded for the first time');
-            }
-        }
-
-        function hideDeviceInfo() {
-            document.getElementById('info').style.display = 'none';
-            document.getElementById('packages').style.display = 'none';
-            document.getElementById('request-build').style.display = 'none';
-        }
-
-        function split(str) {
-            return str.match(/[^\s,]+/g) || [];
-        }
-
-        function handleConnectionTypeChange(e) {
-            const pppoeSection = document.getElementById('pppoe-section');
-            const dsliteSection = document.getElementById('dslite-section');
-            const mapeManualSection = document.getElementById('mape-manual-section');
-
-            pppoeSection.style.display = 'none';
-            dsliteSection.style.display = 'none';
-            mapeManualSection.style.display = 'none';
-
-            if (e.target.value === 'pppoe') {
-                pppoeSection.style.display = 'block';
-            } else if (e.target.value === 'dslite') {
-                dsliteSection.style.display = 'block';
-            } else if (e.target.value === 'mape') {
-                mapeManualSection.style.display = 'block';
-            }
-            // 取得値を初期値として注入（空のときのみ上書き）
-            applyInitialsFromApi(e.target.value);
-
-            if (document.getElementById('use-aios-config').checked) {
-                updateConfiguredTemplate().catch(console.error);
-                updateRequiredPackages();
-            }
-        }
-
-        function handleMapeTypeChange(e) {
-            if (document.getElementById('use-aios-config').checked) {
-                updateRequiredPackages();
-            }
-        }
-
+// ==================== ISP情報関連 ====================
 async function fetchApiInfoAndUpdate() {
     try {
         updateIspDisplay('Fetching', 'Retrieving ISP information...');
@@ -1231,9 +1317,9 @@ async function fetchApiInfoAndUpdate() {
 
             // ISP情報パネルのみ更新（チェック状態関係なく表示）
             const formatted = details
-              .split('\n')
-              .map(line => `<div>${line}</div>`)
-              .join('');
+                .split('\n')
+                .map(line => `<div>${line}</div>`)
+                .join('');
             updateIspDisplay(statusText, formatted);
 
             // ウィザードのON/OFFに関係なく、空欄には初期値を注入（上書きはしない）
@@ -1264,7 +1350,7 @@ async function fetchApiInfoAndUpdate() {
                     document.getElementById('mape-psidlen').value = apiInfo.rule.psidlen || '';
                 }
             }
-                
+            
             // DS-Lite情報
             if (apiInfo.rule && apiInfo.rule.aftrType) {
                 document.getElementById('dslite-aftr-type').value = apiInfo.rule.aftrType;
@@ -1273,217 +1359,212 @@ async function fetchApiInfoAndUpdate() {
                 }
             }
 
-            } else {
-                updateIspDisplay(
-                    'Auto-detection failed',
-                    'API connection error or unsupported ISP\nManual configuration required.'
-                );
-            }
-
-        } catch (error) {
-            console.error('ISP info fetch error:', error);
+        } else {
             updateIspDisplay(
-                'Fetch error',
-                'API connection failed.\nPlease use manual configuration for offline environments.'
+                'Auto-detection failed',
+                'API connection error or unsupported ISP\nManual configuration required.'
             );
         }
+
+    } catch (error) {
+        console.error('ISP info fetch error:', error);
+        updateIspDisplay(
+            'Fetch error',
+            'API connection failed.\nPlease use manual configuration for offline environments.'
+        );
     }
+}
 
-            function updateIspDisplay(status, details) {
-                const statusMessage = document.getElementById('isp-status-message');
-                const technicalInfo = document.getElementById('isp-technical-info');
-            
-                statusMessage.textContent = status;
-            
-                if (details) {
-                    technicalInfo.innerHTML = details;
-                    technicalInfo.style.display = 'block';
-                } else {
-                    technicalInfo.style.display = 'none';
-                }
-            }
+function updateIspDisplay(status, details) {
+    const statusMessage = document.getElementById('isp-status-message');
+    const technicalInfo = document.getElementById('isp-technical-info');
 
-    async function updateConfiguredTemplate() {
-        try {
-            let content = document.getElementById('uci-defaults-content').value;
+    statusMessage.textContent = status;
 
-            if (!content || content.trim() === '' || content.includes('Failed to load setup.sh template')) {
-                content = SETUP_SH_TEMPLATE;
-                app.templateLoaded = true;
-            }
-
-            const config = getAiosConfig();
-
-            let apiInfo = window.cachedApiInfo;
-            if (!apiInfo) {
-                apiInfo = await fetchApiInfo();
-                window.cachedApiInfo = apiInfo;
-            }
-
-            const customized = customizeSetupScript(content, config, apiInfo);
-            document.getElementById('uci-defaults-content').value = customized;
-        } catch (error) {
-            console.error('Template update error:', error);
-        }
+    if (details) {
+        technicalInfo.innerHTML = details;
+        technicalInfo.style.display = 'block';
+    } else {
+        technicalInfo.style.display = 'none';
     }
+}
 
-        async function fetchApiInfo() {
-            try {
-                console.log('Fetching API info from auto-config.site-u.workers.dev...');
-                
-                const response = await fetch('https://auto-config.site-u.workers.dev/', {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json'
-                    }
-                });
-                
-                console.log('API response status:', response.status);
-                
-                if (!response.ok) {
-                    console.warn('API access failed with status:', response.status);
-                    return null;
-                }
-                
-                const data = await response.json();
-                console.log('API Info fetched successfully:', data);
-                
-                return data;
-            } catch (error) {
-                console.error('Failed to fetch API info:', error);
-                return null;
+async function fetchApiInfo() {
+    try {
+        console.log('Fetching API info from auto-config.site-u.workers.dev...');
+        
+        const response = await fetch('https://auto-config.site-u.workers.dev/', {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json'
             }
+        });
+        
+        console.log('API response status:', response.status);
+        
+        if (!response.ok) {
+            console.warn('API access failed with status:', response.status);
+            return null;
         }
+        
+        const data = await response.json();
+        console.log('API Info fetched successfully:', data);
+        
+        return data;
+    } catch (error) {
+        console.error('Failed to fetch API info:', error);
+        return null;
+    }
+}
+
+// ==================== テンプレート設定 ====================
+async function updateConfiguredTemplate() {
+    try {
+        let content = document.getElementById('uci-defaults-content').value;
+
+        if (!content || content.trim() === '' || content.includes('Failed to load setup.sh template')) {
+            content = SETUP_SH_TEMPLATE;
+            app.templateLoaded = true;
+        }
+
+        const config = getAiosConfig();
+
+        let apiInfo = window.cachedApiInfo;
+        if (!apiInfo) {
+            apiInfo = await fetchApiInfo();
+            window.cachedApiInfo = apiInfo;
+        }
+
+        const customized = customizeSetupScript(content, config, apiInfo);
+        document.getElementById('uci-defaults-content').value = customized;
+    } catch (error) {
+        console.error('Template update error:', error);
+    }
+}
 
 function customizeSetupScript(content, config, apiInfo) {
-  let customized = SETUP_SH_TEMPLATE;
+    let customized = SETUP_SH_TEMPLATE;
 
-  // OpenWrt version flags
-  if (app.selectedVersion && app.selectedVersion.startsWith('19')) {
-    customized = customized.replace(/^# openwrt_19=""/m, `openwrt_19="1"`);
-    customized = customized.replace(/^# openwrt_21=""/m, `# openwrt_21=""`);
-  } else {
-    customized = customized.replace(/^# openwrt_19=""/m, `# openwrt_19=""`);
-    customized = customized.replace(/^# openwrt_21=""/m, `openwrt_21="1"`);
-  }
+    // OpenWrt version flags
+    if (app.selectedVersion && app.selectedVersion.startsWith('19')) {
+        customized = customized.replace(/^# openwrt_19=""/m, `openwrt_19="1"`);
+        customized = customized.replace(/^# openwrt_21=""/m, `# openwrt_21=""`);
+    } else {
+        customized = customized.replace(/^# openwrt_19=""/m, `# openwrt_19=""`);
+        customized = customized.replace(/^# openwrt_21=""/m, `openwrt_21="1"`);
+    }
 
-  // 置換ヘルパー: 値は常に埋める。activeでコメント解除、falseでコメント行に値を保持
-  const writeVar = (key, value, active) => {
-    const safe = (v) => (v === undefined || v === null) ? '' : String(v).trim();
-    const val = safe(value);
-    const re = new RegExp(`^#?\\s*${key}=".*"$`, 'm');
-    const line = active ? `${key}="${val}"` : `# ${key}="${val}"`;
-    customized = customized.replace(re, line);
-  };
+    // 置換ヘルパー: 値は常に埋める。activeでコメント解除、falseでコメント行に値を保持
+    const writeVar = (key, value, active) => {
+        const safe = (v) => (v === undefined || v === null) ? '' : String(v).trim();
+        const val = safe(value);
+        const re = new RegExp(`^#?\\s*${key}=".*"$`, 'm');
+        const line = active ? `${key}="${val}"` : `# ${key}="${val}"`;
+        customized = customized.replace(re, line);
+    };
 
-  // Basic
-  const samePw = (config.rootPassword === config.confirmPassword) ? config.rootPassword : '';
-  writeVar('device_name', config.deviceName, !!config.deviceName);
-  writeVar('lan_ip_address', config.lanIp, !!config.lanIp);
-  writeVar('root_password', samePw, !!samePw);
-  writeVar('language', config.language, !!config.language);
+    // Basic
+    const samePw = (config.rootPassword === config.confirmPassword) ? config.rootPassword : '';
+    writeVar('device_name', config.deviceName, !!config.deviceName);
+    writeVar('lan_ip_address', config.lanIp, !!config.lanIp);
+    writeVar('root_password', samePw, !!samePw);
+    writeVar('language', config.language, !!config.language);
 
-  if (config.language === 'ja') {
-    writeVar('country', 'JP', true);
-    writeVar('timezone', 'JST-9', true);
-  } else {
-    writeVar('country', '', false);
-    writeVar('timezone', '', false);
-  }
+    if (config.language === 'ja') {
+        writeVar('country', 'JP', true);
+        writeVar('timezone', 'JST-9', true);
+    } else {
+        writeVar('country', '', false);
+        writeVar('timezone', '', false);
+    }
 
-  // Wi-Fi
-  const wifiActive = !!(config.wifiSSID && config.wifiPassword && String(config.wifiPassword).length >= 8);
-  writeVar('wlan_name', config.wifiSSID, wifiActive);
-  writeVar('wlan_password', config.wifiPassword, wifiActive);
+    // Wi-Fi
+    const wifiActive = !!(config.wifiSSID && config.wifiPassword && String(config.wifiPassword).length >= 8);
+    writeVar('wlan_name', config.wifiSSID, wifiActive);
+    writeVar('wlan_password', config.wifiPassword, wifiActive);
 
-  // APIベースの推奨値（常時、コメント状態に関係なく値を埋める）
-  const api = apiInfo?.rule || {};
-  const apiHasDslite = !!api.aftrIpv6Address;
-  const apiHasMape = !!api.brIpv6Address;
+    // APIベースの推奨値（常時、コメント状態に関係なく値を埋める）
+    const api = apiInfo?.rule || {};
+    const apiHasDslite = !!api.aftrIpv6Address;
+    const apiHasMape = !!api.brIpv6Address;
 
-  // DS-Lite 候補値
-  const dsliteVal = config.dsliteAftrAddress || (apiHasDslite ? api.aftrIpv6Address : '');
-  // MAP-E 候補値
-  const mapeVals = {
-    br: config.mapeBr || (apiHasMape ? api.brIpv6Address : ''),
-    ealen: config.mapeEalen || (apiHasMape ? api.eaBitLength : ''),
-    v4p: config.mapeIpv4Prefix || (apiHasMape ? api.ipv4Prefix : ''),
-    v4l: config.mapeIpv4Prefixlen || (apiHasMape ? api.ipv4PrefixLength : ''),
-    v6p: config.mapeIpv6Prefix || (apiHasMape ? api.ipv6Prefix : ''),
-    v6l: config.mapeIpv6Prefixlen || (apiHasMape ? api.ipv6PrefixLength : ''),
-    off: config.mapePsidOffset || (apiHasMape ? api.psIdOffset : ''),
-    psid: config.mapePsidlen || (apiHasMape ? api.psidlen : '')
-  };
+    // DS-Lite 候補値
+    const dsliteVal = config.dsliteAftrAddress || (apiHasDslite ? api.aftrIpv6Address : '');
+    
+    // MAP-E 候補値
+    const mapeVals = {
+        br: config.mapeBr || (apiHasMape ? api.brIpv6Address : ''),
+        ealen: config.mapeEalen || (apiHasMape ? api.eaBitLength : ''),
+        v4p: config.mapeIpv4Prefix || (apiHasMape ? api.ipv4Prefix : ''),
+        v4l: config.mapeIpv4Prefixlen || (apiHasMape ? api.ipv4PrefixLength : ''),
+        v6p: config.mapeIpv6Prefix || (apiHasMape ? api.ipv6Prefix : ''),
+        v6l: config.mapeIpv6Prefixlen || (apiHasMape ? api.ipv6PrefixLength : ''),
+        off: config.mapePsidOffset || (apiHasMape ? api.psIdOffset : ''),
+        psid: config.mapePsidlen || (apiHasMape ? api.psidlen : '')
+    };
 
-  // GUAプレフィックス（MAP-E）
-  const guaPrefix = (() => {
-    const prefix = (mapeVals.v6p || '').split(':').slice(0, 4).join(':');
-    return prefix ? `${prefix}::/64` : '';
-  })();
+    // GUAプレフィックス（MAP-E）
+    const guaPrefix = (() => {
+        const prefix = (mapeVals.v6p || '').split(':').slice(0, 4).join(':');
+        return prefix ? `${prefix}::/64` : '';
+    })();
 
-  // 選択プロトコル（manual時はラジオ、auto時はAPI検出）
-  const manual = (config.connectionMode === 'manual');
-  let activeProto = '';
+    // 選択プロトコル（manual時はラジオ、auto時はAPI検出）
+    const manual = (config.connectionMode === 'manual');
+    let activeProto = '';
 
-  if (manual) {
-    activeProto = config.connectionType; // 'dhcp' | 'pppoe' | 'dslite' | 'mape' | 'none'
-  } else {
-    if (apiHasDslite) activeProto = 'dslite';
-    else if (apiHasMape) activeProto = 'mape';
-    else activeProto = 'dhcp';
-  }
+    if (manual) {
+        activeProto = config.connectionType; // 'dhcp' | 'pppoe' | 'dslite' | 'mape' | 'none'
+    } else {
+        if (apiHasDslite) activeProto = 'dslite';
+        else if (apiHasMape) activeProto = 'mape';
+        else activeProto = 'dhcp';
+    }
 
-  // PPPoE
-  const pppoeActive = (activeProto === 'pppoe');
-  writeVar('pppoe_username', config.pppoeUsername || '', pppoeActive);
-  writeVar('pppoe_password', config.pppoePassword || '', pppoeActive);
+    // PPPoE
+    const pppoeActive = (activeProto === 'pppoe');
+    writeVar('pppoe_username', config.pppoeUsername || '', pppoeActive);
+    writeVar('pppoe_password', config.pppoePassword || '', pppoeActive);
 
-  // DS-Lite
-  const dsliteActive = (activeProto === 'dslite');
-  writeVar('dslite_aftr_address', dsliteVal || '', dsliteActive);
+    // DS-Lite
+    const dsliteActive = (activeProto === 'dslite');
+    writeVar('dslite_aftr_address', dsliteVal || '', dsliteActive);
 
-  // MAP-E
-  const mapeActive = (activeProto === 'mape');
-  writeVar('mape_br', mapeVals.br || '', mapeActive);
-  writeVar('mape_ealen', mapeVals.ealen || '', mapeActive);
-  writeVar('mape_ipv4_prefix', mapeVals.v4p || '', mapeActive);
-  writeVar('mape_ipv4_prefixlen', mapeVals.v4l || '', mapeActive);
-  writeVar('mape_ipv6_prefix', mapeVals.v6p || '', mapeActive);
-  writeVar('mape_ipv6_prefixlen', mapeVals.v6l || '', mapeActive);
-  writeVar('mape_psid_offset', mapeVals.off || '', mapeActive);
-  writeVar('mape_psidlen', mapeVals.psid || '', mapeActive);
+    // MAP-E
+    const mapeActive = (activeProto === 'mape');
+    writeVar('mape_br', mapeVals.br || '', mapeActive);
+    writeVar('mape_ealen', mapeVals.ealen || '', mapeActive);
+    writeVar('mape_ipv4_prefix', mapeVals.v4p || '', mapeActive);
+    writeVar('mape_ipv4_prefixlen', mapeVals.v4l || '', mapeActive);
+    writeVar('mape_ipv6_prefix', mapeVals.v6p || '', mapeActive);
+    writeVar('mape_ipv6_prefixlen', mapeVals.v6l || '', mapeActive);
+    writeVar('mape_psid_offset', mapeVals.off || '', mapeActive);
+    writeVar('mape_psidlen', mapeVals.psid || '', mapeActive);
 
-  // MAP-E GUA
-  const guaActive = mapeActive && (config.mapeType === 'gua' || config.mapeType === 'auto');
-  writeVar('mape_gua_mode', guaActive ? '1' : '', guaActive);
-  writeVar('mape_gua_prefix', guaActive ? guaPrefix : '', guaActive);
+    // MAP-E GUA
+    const guaActive = mapeActive && (config.mapeType === 'gua' || config.mapeType === 'auto');
+    writeVar('mape_gua_mode', guaActive ? '1' : '', guaActive);
+    writeVar('mape_gua_prefix', guaActive ? guaPrefix : '', guaActive);
 
-  customized = loadMapShContentSync(customized, app.selectedVersion);
-  return customized;
-}
-        
-function loadMapShContentSync(content, osVersion) {
-    if (!content.includes('${map_sh_content}')) return content;
-
-    const placeholder = `#!/bin/sh
-# MAP-E script will be loaded dynamically
-# Placeholder only. Actual logic will be injected by server build tools.`;
-
-    return content.replace('${map_sh_content}', placeholder);
+    // MAP-E選択時のみmap.shを埋め込む
+    if (mapeActive) {
+        customized = loadMapShContentSync(customized, app.selectedVersion);
+    }
+    
+    return customized;
 }
 
-        function toggleAiosConfig(e) {
-            const configSection = document.getElementById('aios-config');
-            if (e.target.checked) {
-                configSection.style.display = 'block';
-                updateConfiguredTemplate();
-            } else {
-                configSection.style.display = 'none';
-
-                document.getElementById('uci-defaults-content').value = SETUP_SH_TEMPLATE;
-                app.templateLoaded = true;
-            }
-        }
+function toggleAiosConfig(e) {
+    const configSection = document.getElementById('aios-config');
+    if (e.target.checked) {
+        configSection.style.display = 'block';
+        updateConfiguredTemplate();
+    } else {
+        configSection.style.display = 'none';
+        document.getElementById('uci-defaults-content').value = SETUP_SH_TEMPLATE;
+        app.templateLoaded = true;
+    }
+}
 
 function getAiosConfig() {
     const parseOrEmpty = (id, type = 'string') => {
@@ -1528,319 +1609,325 @@ function getAiosConfig() {
 }
 
 function applyInitialsFromApi(type) {
-  // DS-Lite: 初期値は無条件に上書き（手動変更はユーザー操作に委ねる）
-  if (type === 'dslite') {
-    const aftrInput = document.getElementById('dslite-aftr-address');
-    const areaSel = document.getElementById('dslite-area');
-    const typeSel = document.getElementById('dslite-aftr-type');
+    // DS-Lite: 初期値は無条件に上書き（手動変更はユーザー操作に委ねる）
+    if (type === 'dslite') {
+        const aftrInput = document.getElementById('dslite-aftr-address');
+        const areaSel = document.getElementById('dslite-area');
+        const typeSel = document.getElementById('dslite-aftr-type');
 
-    const area = areaSel?.value || 'east'; // UI未選択時のデフォルトは東日本
-    const aftrType = typeSel?.value || 'transix';
+        const area = areaSel?.value || 'east'; // UI未選択時のデフォルトは東日本
+        const aftrType = typeSel?.value || 'transix';
 
-    const aftrMap = {
-      transix: {
-        east: '2404:8e00::feed:100',
-        west: '2404:8e01::feed:100'
-      },
-      xpass: {
-        east: '2001:e30:1c1e:1::1',
-        west: '2001:e30:1c1f:1::1'
-      },
-      v6option: {
-        east: '2404:8e00::feed:101',
-        west: '2404:8e01::feed:101'
-      }
-    };
+        const aftrMap = {
+            transix: {
+                east: '2404:8e00::feed:100',
+                west: '2404:8e01::feed:100'
+            },
+            xpass: {
+                east: '2001:e30:1c1e:1::1',
+                west: '2001:e30:1c1f:1::1'
+            },
+            v6option: {
+                east: '2404:8e00::feed:101',
+                west: '2404:8e01::feed:101'
+            }
+        };
 
-    if (aftrInput) {
-      const regionKey = area === 'west' ? 'west' : 'east';
-      aftrInput.value = aftrMap[aftrType]?.[regionKey] || '';
+        if (aftrInput) {
+            const regionKey = area === 'west' ? 'west' : 'east';
+            aftrInput.value = aftrMap[aftrType]?.[regionKey] || '';
+        }
     }
-  }
 
-  // MAP-E: APIの初期値をそのまま流し込む（初期化は無条件に上書き）
-  if (type === 'mape') {
-    const s = (window.cachedApiInfo && window.cachedApiInfo.rule) ? window.cachedApiInfo.rule : null;
+    // MAP-E: APIの初期値をそのまま流し込む（初期化は無条件に上書き）
+    if (type === 'mape') {
+        const s = (window.cachedApiInfo && window.cachedApiInfo.rule) ? window.cachedApiInfo.rule : null;
 
-    // 既知のキーが無い場合でも無条件初期化のポリシーに従い、値があるものは上書き
-    const set = (id, val) => {
-      const el = document.getElementById(id);
-      if (!el) return;
-      if (val !== undefined && val !== null) el.value = val;
-    };
+        // 既知のキーが無い場合でも無条件初期化のポリシーに従い、値があるものは上書き
+        const set = (id, val) => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            if (val !== undefined && val !== null) el.value = val;
+        };
 
-    if (s) {
-      set('mape-br', s.brIpv6Address);
-      set('mape-ealen', s.eaBitLength);
-      set('mape-ipv4-prefix', s.ipv4Prefix);
-      set('mape-ipv4-prefixlen', s.ipv4PrefixLength);
-      set('mape-ipv6-prefix', s.ipv6Prefix);
-      set('mape-ipv6-prefixlen', s.ipv6PrefixLength);
-      set('mape-psid-offset', s.psIdOffset);
-      set('mape-psidlen', s.psidlen);
+        if (s) {
+            set('mape-br', s.brIpv6Address);
+            set('mape-ealen', s.eaBitLength);
+            set('mape-ipv4-prefix', s.ipv4Prefix);
+            set('mape-ipv4-prefixlen', s.ipv4PrefixLength);
+            set('mape-ipv6-prefix', s.ipv6Prefix);
+            set('mape-ipv6-prefixlen', s.ipv6PrefixLength);
+            set('mape-psid-offset', s.psIdOffset);
+            set('mape-psidlen', s.psidlen);
+        }
     }
-  }
 }
-        
-        function updateRequiredPackages() {
-            const config = getAiosConfig();
-            const packagesTextarea = document.getElementById('asu-packages');
-            let currentPackages = split(packagesTextarea.value);
-            
-            currentPackages = currentPackages.filter(pkg => pkg !== 'map' && pkg !== 'ds-lite');
-            
-            if (config.connectionMode === 'auto') {
-                if (window.cachedApiInfo && window.cachedApiInfo.rule) {
-                    if (window.cachedApiInfo.rule.aftrType) {
-                        if (!currentPackages.includes('ds-lite')) {
-                            currentPackages.push('ds-lite');
-                        }
-                    } else if (window.cachedApiInfo.rule.brIpv6Address) {
-                        if (!currentPackages.includes('map')) {
-                            currentPackages.push('map');
-                        }
-                    }
+
+// ==================== パッケージ管理 ====================
+function split(str) {
+    return str.match(/[^\s,]+/g) || [];
+}
+
+function updateRequiredPackages() {
+    const config = getAiosConfig();
+    const packagesTextarea = document.getElementById('asu-packages');
+    let currentPackages = split(packagesTextarea.value);
+    
+    currentPackages = currentPackages.filter(pkg => pkg !== 'map' && pkg !== 'ds-lite');
+    
+    if (config.connectionMode === 'auto') {
+        if (window.cachedApiInfo && window.cachedApiInfo.rule) {
+            if (window.cachedApiInfo.rule.aftrType) {
+                if (!currentPackages.includes('ds-lite')) {
+                    currentPackages.push('ds-lite');
                 }
-            } else {
-                switch(config.connectionType) {
-                    case 'mape':
-                        if (!currentPackages.includes('map')) {
-                            currentPackages.push('map');
-                        }
-                        break;
-                    case 'dslite':
-                        if (!currentPackages.includes('ds-lite')) {
-                            currentPackages.push('ds-lite');
-                        }
-                        break;
+            } else if (window.cachedApiInfo.rule.brIpv6Address) {
+                if (!currentPackages.includes('map')) {
+                    currentPackages.push('map');
                 }
             }
-            
-            packagesTextarea.value = currentPackages.join(' ');
+        }
+    } else {
+        switch(config.connectionType) {
+            case 'mape':
+                if (!currentPackages.includes('map')) {
+                    currentPackages.push('map');
+                }
+                break;
+            case 'dslite':
+                if (!currentPackages.includes('ds-lite')) {
+                    currentPackages.push('ds-lite');
+                }
+                break;
+        }
+    }
+    
+    packagesTextarea.value = currentPackages.join(' ');
+}
+
+// ==================== ビルド処理 ====================
+async function buildAsuRequest() {
+    if (!app.selectedDevice) {
+        alert('Please select a device first');
+        return;
+    }
+
+    try {
+        document.getElementById('request-build').disabled = true;
+        showProgress('Sending build request...', 10);
+
+        const packages = split(document.getElementById('asu-packages').value);
+        const script = document.getElementById('uci-defaults-content').value;
+
+        const requestBody = {
+            target: app.selectedDevice.target,
+            profile: app.selectedDevice.id,
+            packages: packages
+        };
+
+        if (app.selectedVersion && app.selectedVersion !== 'SNAPSHOT') {
+            requestBody.version = app.selectedVersion;
         }
 
-        async function buildAsuRequest() {
-            if (!app.selectedDevice) {
-                alert('Please select a device first');
-                return;
+        if (script && script.trim()) {
+            requestBody.defaults = script;
+        }
+
+        const response = await fetch('https://sysupgrade.openwrt.org/api/v1/build', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(requestBody)
+        });
+
+        const responseText = await response.text();
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${responseText}`);
+        }
+
+        let result;
+        try {
+            result = JSON.parse(responseText);
+        } catch (e) {
+            throw new Error('Invalid JSON response: ' + responseText);
+        }
+
+        if (result.request_hash) {
+            await pollBuildStatus(result.request_hash);
+        } else if (result.images && result.images.length > 0) {
+            hideProgress();
+            showDownloadLinks(result.images);
+        } else {
+            throw new Error('No request hash or images in response');
+        }
+
+    } catch (error) {
+        console.error('Build request failed:', error);
+        alert('Build failed: ' + error.message);
+        hideProgress();
+    } finally {
+        document.getElementById('request-build').disabled = false;
+    }
+}
+
+async function pollBuildStatus(requestHash) {
+    const maxAttempts = 120;
+    let attempts = 0;
+    const startTime = Date.now();
+
+    while (attempts < maxAttempts) {
+        try {
+            const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+            const minutes = Math.floor(elapsedSeconds / 60);
+            const seconds = elapsedSeconds % 60;
+            const timeStr = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+            
+            const statusUrl = `https://sysupgrade.openwrt.org/api/v1/build/${requestHash}`;
+
+            const response = await fetch(statusUrl, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                if (response.status === 404 && attempts < 5) {
+                    showProgress(`Waiting for build to start... ${timeStr}`, 10);
+                    await new Promise(resolve => setTimeout(resolve, 5000));
+                    attempts++;
+                    continue;
+                }
+                throw new Error(`Status check failed: HTTP ${response.status}`);
             }
 
+            const statusText = await response.text();
+
+            let status;
             try {
-                document.getElementById('request-build').disabled = true;
-                showProgress('Sending build request...', 10);
-
-                const packages = split(document.getElementById('asu-packages').value);
-                const script = document.getElementById('uci-defaults-content').value;
-
-                const requestBody = {
-                    target: app.selectedDevice.target,
-                    profile: app.selectedDevice.id,
-                    packages: packages
-                };
-
-                if (app.selectedVersion && app.selectedVersion !== 'SNAPSHOT') {
-                    requestBody.version = app.selectedVersion;
-                }
-
-                if (script && script.trim()) {
-                    requestBody.defaults = script;
-                }
-
-                const response = await fetch('https://sysupgrade.openwrt.org/api/v1/build', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify(requestBody)
-                });
-
-                const responseText = await response.text();
-
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${responseText}`);
-                }
-
-                let result;
-                try {
-                    result = JSON.parse(responseText);
-                } catch (e) {
-                    throw new Error('Invalid JSON response: ' + responseText);
-                }
-
-                if (result.request_hash) {
-                    await pollBuildStatus(result.request_hash);
-                } else if (result.images && result.images.length > 0) {
-                    hideProgress();
-                    showDownloadLinks(result.images);
-                } else {
-                    throw new Error('No request hash or images in response');
-                }
-
-            } catch (error) {
-                console.error('Build request failed:', error);
-                alert('Build failed: ' + error.message);
-                hideProgress();
-            } finally {
-                document.getElementById('request-build').disabled = false;
+                status = JSON.parse(statusText);
+            } catch (e) {
+                throw new Error('Invalid JSON in status response: ' + statusText);
             }
-        }
+            
+            const progressPercent = Math.min((elapsedSeconds / 600) * 85 + 10, 95);
 
-        async function pollBuildStatus(requestHash) {
-            const maxAttempts = 120;
-            let attempts = 0;
-            const startTime = Date.now();
-
-            while (attempts < maxAttempts) {
-                try {
-                    const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
-                    const minutes = Math.floor(elapsedSeconds / 60);
-                    const seconds = elapsedSeconds % 60;
-                    const timeStr = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
-                    
-                    const statusUrl = `https://sysupgrade.openwrt.org/api/v1/build/${requestHash}`;
-
-                    const response = await fetch(statusUrl, {
-                        method: 'GET',
-                        headers: {
-                            'Accept': 'application/json'
-                        }
-                    });
-
-                    if (!response.ok) {
-                        if (response.status === 404 && attempts < 5) {
-                            showProgress(`Waiting for build to start... ${timeStr}`, 10);
-                            await new Promise(resolve => setTimeout(resolve, 5000));
-                            attempts++;
-                            continue;
-                        }
-                        throw new Error(`Status check failed: HTTP ${response.status}`);
-                    }
-
-                    const statusText = await response.text();
-
-                    let status;
-                    try {
-                        status = JSON.parse(statusText);
-                    } catch (e) {
-                        throw new Error('Invalid JSON in status response: ' + statusText);
-                    }
-                    
-                    const progressPercent = Math.min((elapsedSeconds / 600) * 85 + 10, 95);
-
-                    if (status.status === 'done' || status.status === 'success' || 
-                        status.detail === 'done' || status.imagebuilder_status === 'done') {
-                        let images = status.images || 
-                                   status.request?.images || 
-                                   status.request?.files ||
-                                   status.files ||
-                                   [];
-                        
-                        let rh = status.request_hash || status.request?.request_hash;
-                        
-                        showProgress('Build completed!', 100);
-                        setTimeout(() => {
-                            hideProgress();
-                            showDownloadLinks(images, status, rh);
-                        }, 500);
-                        return;
-                    } else if (status.status === 'failed' || status.status === 'failure' || 
-                              status.detail === 'failed' || status.imagebuilder_status === 'failed') {
-                        throw new Error(`Build failed: ${status.detail || status.stdout || 'Unknown error'}`);
-                    } else if (status.status === 'queued') {
-                        showProgress(`Queued for build... ${timeStr}`, Math.max(progressPercent * 0.3, 10));
-                    } else if (status.status === 'building') {
-                        showProgress(`Building image... ${timeStr}`, Math.max(progressPercent * 0.8, 30));
-                    } else {
-                        showProgress(`Processing (${status.status})... ${timeStr}`, progressPercent);
-                    }
-
-                    await new Promise(resolve => setTimeout(resolve, 5000));
-                    attempts++;
-
-                } catch (error) {
-                    if (attempts >= 5) {
-                        throw error;
-                    }
-                    const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
-                    showProgress(`Connection error, retrying... ${elapsedSeconds}s`, 5);
-                    await new Promise(resolve => setTimeout(resolve, 5000));
-                    attempts++;
-                }
-            }
-
-            throw new Error('Build timeout after 10 minutes');
-        }
-
-        function showProgress(message, percentage) {
-            document.getElementById('build-message').textContent = message;
-            document.getElementById('progress-bar').style.width = `${percentage}%`;
-            document.getElementById('build-progress').style.display = 'block';
-        }
-
-        function hideProgress() {
-            document.getElementById('build-progress').style.display = 'none';
-        }
-
-        function showDownloadLinks(images, fullStatus, requestHash) {
-            const container = document.getElementById('download-links');
-            container.innerHTML = '<h4>Download</h4>';
-
-            if (images && images.length > 0) {
-                images.forEach((image, index) => {
-                    const link = document.createElement('a');
-                    let imageUrl = '';
-                    let fileName = '';
-                    
-                    if (image.name && requestHash) {
-                        imageUrl = `https://sysupgrade.openwrt.org/store/${requestHash}/${image.name}`;
-                        fileName = image.name;
-                        
-                        let displayName = fileName;
-                        if (image.type) {
-                            if (image.type.includes('sysupgrade')) {
-                                displayName = `🔄 Sysupgrade (${image.type})`;
-                            } else if (image.type.includes('factory')) {
-                                displayName = `🏭 Factory (${image.type})`;
-                            } else if (image.type.includes('sdcard')) {
-                                displayName = `💾 SD Card (${image.type})`;
-                            } else {
-                                displayName = `📦 ${image.type}`;
-                            }
-                        }
-                        
-                        link.href = imageUrl;
-                        link.className = 'download-link';
-                        link.textContent = displayName;
-                        link.target = '_blank';
-                        link.download = fileName;
-                        link.title = fileName;
-                        
-                        container.appendChild(link);
-                        container.appendChild(document.createElement('br'));
-                        
-                    } else {
-                        const errorDiv = document.createElement('div');
-                        errorDiv.style.color = 'red';
-                        errorDiv.style.margin = '5px 0';
-                        errorDiv.innerHTML = `❌ Image ${index}: Missing data (name: ${!!image.name}, hash: ${!!requestHash})`;
-                        container.appendChild(errorDiv);
-                    }
-                });
+            if (status.status === 'done' || status.status === 'success' || 
+                status.detail === 'done' || status.imagebuilder_status === 'done') {
+                let images = status.images || 
+                           status.request?.images || 
+                           status.request?.files ||
+                           status.files ||
+                           [];
                 
-                const debugDiv = document.createElement('div');
-                debugDiv.style.background = '#f9f9f9';
-                debugDiv.style.padding = '5px';
-                debugDiv.style.marginTop = '10px';
-                debugDiv.style.fontSize = '11px';
-                debugDiv.style.color = '#666';
-                debugDiv.innerHTML = `<strong>Debug:</strong> Found ${images.length} images, Request Hash: ${requestHash?.substring(0, 16)}...`;
-                container.appendChild(debugDiv);
+                let rh = status.request_hash || status.request?.request_hash;
+                
+                showProgress('Build completed!', 100);
+                setTimeout(() => {
+                    hideProgress();
+                    showDownloadLinks(images, status, rh);
+                }, 500);
+                return;
+            } else if (status.status === 'failed' || status.status === 'failure' || 
+                      status.detail === 'failed' || status.imagebuilder_status === 'failed') {
+                throw new Error(`Build failed: ${status.detail || status.stdout || 'Unknown error'}`);
+            } else if (status.status === 'queued') {
+                showProgress(`Queued for build... ${timeStr}`, Math.max(progressPercent * 0.3, 10));
+            } else if (status.status === 'building') {
+                showProgress(`Building image... ${timeStr}`, Math.max(progressPercent * 0.8, 30));
+            } else {
+                showProgress(`Processing (${status.status})... ${timeStr}`, progressPercent);
+            }
+
+            await new Promise(resolve => setTimeout(resolve, 5000));
+            attempts++;
+
+        } catch (error) {
+            if (attempts >= 5) {
+                throw error;
+            }
+            const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+            showProgress(`Connection error, retrying... ${elapsedSeconds}s`, 5);
+            await new Promise(resolve => setTimeout(resolve, 5000));
+            attempts++;
+        }
+    }
+
+    throw new Error('Build timeout after 10 minutes');
+}
+
+function showProgress(message, percentage) {
+    document.getElementById('build-message').textContent = message;
+    document.getElementById('progress-bar').style.width = `${percentage}%`;
+    document.getElementById('build-progress').style.display = 'block';
+}
+
+function hideProgress() {
+    document.getElementById('build-progress').style.display = 'none';
+}
+
+function showDownloadLinks(images, fullStatus, requestHash) {
+    const container = document.getElementById('download-links');
+    container.innerHTML = '<h4>Download</h4>';
+
+    if (images && images.length > 0) {
+        images.forEach((image, index) => {
+            const link = document.createElement('a');
+            let imageUrl = '';
+            let fileName = '';
+            
+            if (image.name && requestHash) {
+                imageUrl = `https://sysupgrade.openwrt.org/store/${requestHash}/${image.name}`;
+                fileName = image.name;
+                
+                let displayName = fileName;
+                if (image.type) {
+                    if (image.type.includes('sysupgrade')) {
+                        displayName = `🔄 Sysupgrade (${image.type})`;
+                    } else if (image.type.includes('factory')) {
+                        displayName = `🏭 Factory (${image.type})`;
+                    } else if (image.type.includes('sdcard')) {
+                        displayName = `💾 SD Card (${image.type})`;
+                    } else {
+                        displayName = `📦 ${image.type}`;
+                    }
+                }
+                
+                link.href = imageUrl;
+                link.className = 'download-link';
+                link.textContent = displayName;
+                link.target = '_blank';
+                link.download = fileName;
+                link.title = fileName;
+                
+                container.appendChild(link);
+                container.appendChild(document.createElement('br'));
                 
             } else {
-                container.innerHTML = '<h4>Download</h4><p>No images available</p>';
+                const errorDiv = document.createElement('div');
+                errorDiv.style.color = 'red';
+                errorDiv.style.margin = '5px 0';
+                errorDiv.innerHTML = `❌ Image ${index}: Missing data (name: ${!!image.name}, hash: ${!!requestHash})`;
+                container.appendChild(errorDiv);
             }
-        }
+        });
+        
+        const debugDiv = document.createElement('div');
+        debugDiv.style.background = '#f9f9f9';
+        debugDiv.style.padding = '5px';
+        debugDiv.style.marginTop = '10px';
+        debugDiv.style.fontSize = '11px';
+        debugDiv.style.color = '#666';
+        debugDiv.innerHTML = `<strong>Debug:</strong> Found ${images.length} images, Request Hash: ${requestHash?.substring(0, 16)}...`;
+        container.appendChild(debugDiv);
+        
+    } else {
+        container.innerHTML = '<h4>Download</h4><p>No images available</p>';
+    }
+}
     </script>
 </body>
 
