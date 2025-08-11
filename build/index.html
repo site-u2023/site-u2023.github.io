@@ -447,6 +447,27 @@
                         </div>
                     </div>
 
+                    <div id="mape-section" class="conditional-section">
+                        <div class="form-group">
+                            <label>MAP-E接続方式</label>
+                            <div class="radio-group">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="mapeType" id="mape-gua" value="gua" checked>
+                                    <label class="form-check-label" for="mape-gua">GUA方式（一般的、1Gbps等）</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="mapeType" id="mape-pd" value="pd">
+                                    <label class="form-check-label" for="mape-pd">PD方式（10Gbps、NURO等）</label>
+                                </div>
+                            </div>
+                            <small class="text-muted">
+                                ※OCNバーチャルコネクト: 1Gbps→GUA、10Gbps→PD<br>
+                                ※NURO光: PD方式<br>
+                                ※不明な場合はGUA方式を選択
+                            </small>
+                        </div>
+                    </div>
+
                     <div id="pppoe-section" class="conditional-section">
                         <div class="form-row">
                             <div class="form-group">
@@ -783,6 +804,7 @@
                 
                 const data = await response.json();
                 console.log('API Info fetched:', data);
+                
                 return data;
             } catch (error) {
                 console.error('Failed to fetch API info:', error);
@@ -799,8 +821,17 @@
                 customized = customized.replace('LANGUAGE="${LANGUAGE:-en}"', `LANGUAGE="${config.language}"`);
             }
             
-            customized = customized.replace('ISP_MODE="${ISP_MODE:-auto}"', `ISP_MODE="${config.connectionType}"`);
-            
+            // 接続方式の手動設定
+            if (config.connectionType && config.connectionType !== 'auto') {
+                customized = customized.replace('ISP_MODE="${ISP_MODE:-auto}"', `ISP_MODE="${config.connectionType}"`);
+                
+                // MAP-E手動選択時の処理
+                if (config.connectionType === 'mape' && config.mapeType !== 'auto') {
+                    customized = customized.replace('MAPE_TYPE=""', `MAPE_TYPE="${config.mapeType}"`);
+                }
+            } else {
+                customized = customized.replace('ISP_MODE="${ISP_MODE:-auto}"', `ISP_MODE="${config.connectionType}"`);
+            }
             if (config.deviceName) {
                 customized = customized.replace('# DEVICE_NAME=""', `DEVICE_NAME="${config.deviceName}"`);
             }
@@ -860,6 +891,10 @@
                         customized = customized.replace('IPV6_PREFIX=""', `IPV6_PREFIX="${apiInfo.rule.ipv6Prefix}"`);
                         customized = customized.replace('IPV6_PREFIXLEN=""', `IPV6_PREFIXLEN="${apiInfo.rule.ipv6PrefixLength}"`);
                         customized = customized.replace('PSID_OFFSET=""', `PSID_OFFSET="${apiInfo.rule.psIdOffset}"`);
+                        
+                        // MAP-E方式（GUA/PD）をユーザー選択に基づいて設定
+                        const mapeType = config.connectionType === 'mape' ? config.mapeType : 'gua';
+                        customized = customized.replace('MAPE_TYPE=""', `MAPE_TYPE="${mapeType}"`);
                     }
                 }
             }
@@ -883,11 +918,17 @@
 
         function handleConnectionTypeChange(e) {
             const pppoeSection = document.getElementById('pppoe-section');
+            const mapeSection = document.getElementById('mape-section');
 
+            // 全セクションを非表示
+            pppoeSection.style.display = 'none';
+            mapeSection.style.display = 'none';
+
+            // 選択に応じてセクション表示
             if (e.target.value === 'pppoe') {
                 pppoeSection.style.display = 'block';
-            } else {
-                pppoeSection.style.display = 'none';
+            } else if (e.target.value === 'mape') {
+                mapeSection.style.display = 'block';
             }
 
             if (document.getElementById('use-aios-config').checked) {
@@ -932,6 +973,7 @@
                 wifiSSID: document.getElementById('aios-wifi-ssid').value,
                 wifiPassword: document.getElementById('aios-wifi-password').value,
                 connectionType: document.querySelector('input[name="connectionType"]:checked').value,
+                mapeType: document.querySelector('input[name="mapeType"]:checked')?.value || 'gua',
                 pppoeUsername: document.getElementById('pppoe-username').value,
                 pppoePassword: document.getElementById('pppoe-password').value
             };
