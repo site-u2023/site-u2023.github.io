@@ -483,23 +483,33 @@
                             </div>
                         </div>
 
-                        <div id="dslite-section" class="conditional-section" style="background-color: #fff3e0;">
-                            <h6>DS-Lite Configuration</h6>
-                            <div class="form-group">
-                                <label for="dslite-aftr-type">AFTR Type</label>
-                                <select id="dslite-aftr-type" class="form-control">
-                                    <option value="transix">transix</option>
-                                    <option value="xpass">xpass</option>
-                                    <option value="v6option">v6option</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label for="dslite-aftr-address">AFTR IPv6 Address</label>
-                                <input type="text" id="dslite-aftr-address" class="form-control" placeholder="2001:db8::1" value="">
-                                <small class="form-text text-muted">Example addresses - Replace with your ISP's actual AFTR address</small>
-                            </div>
-                        </div>
+                <div id="dslite-section" class="conditional-section" style="background-color: #fff3e0;">
+                <h6>DS-Lite Configuration</h6>
 
+                <div class="form-group">
+                    <label for="dslite-aftr-type">AFTR Type</label>
+                    <select id="dslite-aftr-type" class="form-control">
+                        <option value="transix">transix</option>
+                        <option value="xpass">xpass</option>
+                        <option value="v6option">v6option</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="dslite-area">Region</label>
+                    <select id="dslite-area" class="form-control">
+                        <option value="east">東日本</option>
+                        <option value="west">西日本</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="dslite-aftr-address">AFTR IPv6 Address</label>
+                    <input type="text" id="dslite-aftr-address" class="form-control" placeholder="2001:db8::1" value="">
+                    <small class="form-text text-muted">Example addresses - Replace with your ISP's actual AFTR address</small>
+                </div>
+                </div>
+                        
                         <div id="mape-manual-section" class="conditional-section" style="background-color: #e8f5e8;">
                             <h6>MAP-E Configuration</h6>
                             <div class="form-group">
@@ -1518,38 +1528,57 @@ function getAiosConfig() {
 }
 
 function applyInitialsFromApi(type) {
+  // DS-Lite: 初期値は無条件に上書き（手動変更はユーザー操作に委ねる）
   if (type === 'dslite') {
-    const aftr = document.getElementById('dslite-aftr-address');
-    const area = document.getElementById('dslite-area')?.value || 'auto';
+    const aftrInput = document.getElementById('dslite-aftr-address');
+    const areaSel = document.getElementById('dslite-area');
+    const typeSel = document.getElementById('dslite-aftr-type');
+
+    const area = areaSel?.value || 'east'; // UI未選択時のデフォルトは東日本
+    const aftrType = typeSel?.value || 'transix';
 
     const aftrMap = {
-      east: 'aftr-east.v6.ntt.net',
-      west: 'aftr-west.v6.ntt.net',
-      auto: 'aftr.v6.ntt.net'
+      transix: {
+        east: '2404:8e00::feed:100',
+        west: '2404:8e01::feed:100'
+      },
+      xpass: {
+        east: '2001:e30:1c1e:1::1',
+        west: '2001:e30:1c1f:1::1'
+      },
+      v6option: {
+        east: '2404:8e00::feed:101',
+        west: '2404:8e01::feed:101'
+      }
     };
 
-    if (aftr) {
-      aftr.value = aftrMap[area] || aftrMap['auto'];  // 🔥 空欄判定不要、常に上書き
+    if (aftrInput) {
+      const regionKey = area === 'west' ? 'west' : 'east';
+      aftrInput.value = aftrMap[aftrType]?.[regionKey] || '';
     }
   }
 
-  const apiInfo = window.cachedApiInfo;
-  if (!apiInfo || !apiInfo.rule) return;
+  // MAP-E: APIの初期値をそのまま流し込む（初期化は無条件に上書き）
+  if (type === 'mape') {
+    const s = (window.cachedApiInfo && window.cachedApiInfo.rule) ? window.cachedApiInfo.rule : null;
 
-  if (type === 'mape' && apiInfo.rule.brIpv6Address) {
-    const s = apiInfo.rule;
-    const safeSet = (id, val) => {
+    // 既知のキーが無い場合でも無条件初期化のポリシーに従い、値があるものは上書き
+    const set = (id, val) => {
       const el = document.getElementById(id);
-      if (el && (val || val === 0)) el.value = val;
+      if (!el) return;
+      if (val !== undefined && val !== null) el.value = val;
     };
-    safeSet('mape-br', s.brIpv6Address);
-    safeSet('mape-ealen', s.eaBitLength);
-    safeSet('mape-ipv4-prefix', s.ipv4Prefix);
-    safeSet('mape-ipv4-prefixlen', s.ipv4PrefixLength);
-    safeSet('mape-ipv6-prefix', s.ipv6Prefix);
-    safeSet('mape-ipv6-prefixlen', s.ipv6PrefixLength);
-    safeSet('mape-psid-offset', s.psIdOffset);
-    safeSet('mape-psidlen', s.psidlen);
+
+    if (s) {
+      set('mape-br', s.brIpv6Address);
+      set('mape-ealen', s.eaBitLength);
+      set('mape-ipv4-prefix', s.ipv4Prefix);
+      set('mape-ipv4-prefixlen', s.ipv4PrefixLength);
+      set('mape-ipv6-prefix', s.ipv6Prefix);
+      set('mape-ipv6-prefixlen', s.ipv6PrefixLength);
+      set('mape-psid-offset', s.psIdOffset);
+      set('mape-psidlen', s.psidlen);
+    }
   }
 }
         
