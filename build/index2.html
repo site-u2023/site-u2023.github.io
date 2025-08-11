@@ -143,7 +143,7 @@
             line-height: 1.5;
             border-radius: 0.25rem;
             transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-            text-decoration: none.
+            text-decoration: none;
         }
 
         .btn-primary {
@@ -335,56 +335,64 @@
 
                 <div id="aios-config" class="aios-config">
                     <h5>Basic Configuration</h5>
+                    
+                    <!-- Language を単独行に配置 -->
+                    <div class="form-group">
+                        <label for="aios-language">Language</label>
+                        <select id="aios-language" class="form-control">
+                            <option value="en">English</option>
+                            <option value="ar">العربية (Arabic)</option>
+                            <option value="bg">Български (Bulgarian)</option>
+                            <option value="ca">Català (Catalan)</option>
+                            <option value="cs">Čeština (Czech)</option>
+                            <option value="da">Dansk (Danish)</option>
+                            <option value="de">Deutsch (German)</option>
+                            <option value="el">Ελληνικά (Greek)</option>
+                            <option value="es">Español (Spanish)</option>
+                            <option value="et">Eesti (Estonian)</option>
+                            <option value="eu">Euskera (Basque)</option>
+                            <option value="fi">Suomi (Finnish)</option>
+                            <option value="fr">Français (French)</option>
+                            <option value="gl">Galego (Galician)</option>
+                            <option value="he">עברית (Hebrew)</option>
+                            <option value="hr">Hrvatski (Croatian)</option>
+                            <option value="hu">Magyar (Hungarian)</option>
+                            <option value="id">Bahasa Indonesia (Indonesian)</option>
+                            <option value="is">Íslenska (Icelandic)</option>
+                            <option value="it">Italiano (Italian)</option>
+                            <option value="ja">日本語 (Japanese)</option>
+                            <option value="ko">한국어 (Korean)</option>
+                            <option value="lt">Lietuvių (Lithuanian)</option>
+                            <option value="lv">Latviešu (Latvian)</option>
+                            <option value="mk">Македонски (Macedonian)</option>
+                            <option value="ms">Bahasa Melayu (Malay)</option>
+                            <option value="mt">Malti (Maltese)</option>
+                            <option value="nl">Nederlands (Dutch)</option>
+                            <option value="no">Norsk (Norwegian)</option>
+                            <option value="pl">Polski (Polish)</option>
+                            <option value="pt">Português (Portuguese)</option>
+                            <option value="pt_br">Português do Brasil (Portuguese Brazil)</option>
+                            <option value="ro">Română (Romanian)</option>
+                            <option value="ru">Русский (Russian)</option>
+                            <option value="sk">Slovenčina (Slovak)</option>
+                            <option value="sl">Slovenščina (Slovenian)</option>
+                            <option value="sq">Shqipe (Albanian)</option>
+                            <option value="sr">Српски (Serbian)</option>
+                            <option value="sv">Svenska (Swedish)</option>
+                            <option value="th">ไทย (Thai)</option>
+                            <option value="tr">Türkçe (Turkish)</option>
+                            <option value="uk">Українська (Ukrainian)</option>
+                            <option value="vi">Tiếng Việt (Vietnamese)</option>
+                            <option value="zh_cn">简体中文 (Chinese Simplified)</option>
+                            <option value="zh_tw">繁體中文 (Chinese Traditional)</option>
+                        </select>
+                    </div>
+
+                    <!-- IPアドレスとDevice name を横並びに配置 -->
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="aios-language">Language</label>
-                            <select id="aios-language" class="form-control">
-                                <option value="en">English</option>
-                                <option value="ar">العربية (Arabic)</option>
-                                <option value="bg">Български (Bulgarian)</option>
-                                <option value="ca">Català (Catalan)</option>
-                                <option value="cs">Čeština (Czech)</option>
-                                <option value="da">Dansk (Danish)</option>
-                                <option value="de">Deutsch (German)</option>
-                                <option value="el">Ελληνικά (Greek)</option>
-                                <option value="es">Español (Spanish)</option>
-                                <option value="et">Eesti (Estonian)</option>
-                                <option value="eu">Euskera (Basque)</option>
-                                <option value="fi">Suomi (Finnish)</option>
-                                <option value="fr">Français (French)</option>
-                                <option value="gl">Galego (Galician)</option>
-                                <option value="he">עברית (Hebrew)</option>
-                                <option value="hr">Hrvatski (Croatian)</option>
-                                <option value="hu">Magyar (Hungarian)</option>
-                                <option value="id">Bahasa Indonesia (Indonesian)</option>
-                                <option value="is">Íslenska (Icelandic)</option>
-                                <option value="it">Italiano (Italian)</option>
-                                <option value="ja">日本語 (Japanese)</option>
-                                <option value="ko">한국어 (Korean)</option>
-                                <option value="lt">Lietuvių (Lithuanian)</option>
-                                <option value="lv">Latviešu (Latvian)</option>
-                                <option value="mk">Македонски (Macedonian)</option>
-                                <option value="ms">Bahasa Melayu (Malay)</option>
-                                <option value="mt">Malti (Maltese)</option>
-                                <option value="nl">Nederlands (Dutch)</option>
-                                <option value="no">Norsk (Norwegian)</option>
-                                <option value="pl">Polski (Polish)</option>
-                                <option value="pt">Português (Portuguese)</option>
-                                <option value="pt_br">Português do Brasil (Portuguese Brazil)</option>
-                                <option value="ro">Română (Romanian)</option>
-                                <option value="ru">Русский (Russian)</option>
-                                <option value="sk">Slovenčina (Slovak)</option>
-                                <option value="sl">Slovenščina (Slovenian)</option>
-                                <option value="sq">Shqipe (Albanian)</option>
-                                <option value="sr">Српски (Serbian)</option>
-                                <option value="sv">Svenska (Swedish)</option>
-                                <option value="th">ไทย (Thai)</option>
-                                <option value="tr">Türkçe (Turkish)</option>
-                                <option value="uk">Українська (Ukrainian)</option>
-                                <option value="vi">Tiếng Việt (Vietnamese)</option>
-                                <option value="zh_cn">简体中文 (Chinese Simplified)</option>
-                                <option value="zh_tw">繁體中文 (Chinese Traditional)</option>
-                            </select>
+                            <label for="aios-lan-ip">LAN IP Address</label>
+                            <input type="text" id="aios-lan-ip" class="form-control" placeholder="192.168.1.1" value="192.168.1.1">
                         </div>
                         <div class="form-group">
                             <label for="aios-device-name">Device name</label>
@@ -475,28 +483,83 @@
                             </div>
                         </div>
 
+                        <div id="dslite-section" class="conditional-section" style="background-color: #fff3e0;">
+                            <h6>DS-Lite Configuration</h6>
+                            <div class="form-group">
+                                <label for="dslite-aftr-type">AFTR Type</label>
+                                <select id="dslite-aftr-type" class="form-control">
+                                    <option value="transix">transix</option>
+                                    <option value="xpass">xpass</option>
+                                    <option value="v6option">v6option</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="dslite-aftr-address">AFTR IPv6 Address</label>
+                                <input type="text" id="dslite-aftr-address" class="form-control" placeholder="2404:8e00::feed:100" value="2404:8e00::feed:100">
+                                <small class="form-text text-muted">Default addresses: transix(East): 2404:8e00::feed:100, xpass(East): 2001:e30:1c1e:1::1, v6option(East): 2404:8e00::feed:101</small>
+                            </div>
+                        </div>
+
                         <div id="mape-manual-section" class="conditional-section" style="background-color: #e8f5e8;">
                             <h6>MAP-E Configuration</h6>
                             <div class="form-group">
-                                <label>MAP-E接続方式</label>
+                                <label>MAP-E Connection Mode</label>
                                 <div class="radio-group">
                                     <div class="form-check">
                                         <input class="form-check-input" type="radio" name="mapeType" id="mape-auto" value="auto" checked>
-                                        <label class="form-check-label" for="mape-auto">Auto-detect（推奨）</label>
+                                        <label class="form-check-label" for="mape-auto">Auto-detect (Recommended)</label>
                                     </div>
                                     <div class="form-check">
                                         <input class="form-check-input" type="radio" name="mapeType" id="mape-gua" value="gua">
-                                        <label class="form-check-label" for="mape-gua">GUA方式（手動）</label>
+                                        <label class="form-check-label" for="mape-gua">GUA Mode (Manual)</label>
                                     </div>
                                     <div class="form-check">
                                         <input class="form-check-input" type="radio" name="mapeType" id="mape-pd" value="pd">
-                                        <label class="form-check-label" for="mape-pd">PD方式（手動）</label>
+                                        <label class="form-check-label" for="mape-pd">PD Mode (Manual)</label>
                                     </div>
                                 </div>
                                 <small class="text-muted">
-                                    <strong>Auto-detect</strong>: MAP-E技術情報を自動取得し、GUA方式で設定（1G/10G両対応）<br>
-                                    <strong>手動選択</strong>: トラブル時や特定の要件がある場合のみ
+                                    <strong>Auto-detect</strong>: Automatically retrieve MAP-E technical information and configure with GUA mode (1G/10G compatible)<br>
+                                    <strong>Manual selection</strong>: For troubleshooting or specific requirements only
                                 </small>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="mape-br">BR (Border Relay)</label>
+                                    <input type="text" id="mape-br" class="form-control" placeholder="2001:db8::1">
+                                </div>
+                                <div class="form-group">
+                                    <label for="mape-ealen">EA-len</label>
+                                    <input type="number" id="mape-ealen" class="form-control" placeholder="16" min="0" max="48">
+                                </div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="mape-ipv4-prefix">IPv4 Prefix</label>
+                                    <input type="text" id="mape-ipv4-prefix" class="form-control" placeholder="192.0.2.0">
+                                </div>
+                                <div class="form-group">
+                                    <label for="mape-ipv4-prefixlen">IPv4 Prefix Length</label>
+                                    <input type="number" id="mape-ipv4-prefixlen" class="form-control" placeholder="24" min="1" max="32">
+                                </div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="mape-ipv6-prefix">IPv6 Prefix</label>
+                                    <input type="text" id="mape-ipv6-prefix" class="form-control" placeholder="2001:db8:8000::">
+                                </div>
+                                <div class="form-group">
+                                    <label for="mape-ipv6-prefixlen">IPv6 Prefix Length</label>
+                                    <input type="number" id="mape-ipv6-prefixlen" class="form-control" placeholder="32" min="1" max="128">
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="mape-psid-offset">PSID Offset</label>
+                                <input type="number" id="mape-psid-offset" class="form-control" placeholder="4" min="0" max="16">
                             </div>
                         </div>
                     </div>
@@ -515,7 +578,6 @@
             <div class="form-group">
                 <label for="uci-defaults-content">Script to run on first boot (uci-defaults):</label>
                 <textarea id="uci-defaults-content" class="form-control" rows="8" placeholder="#!/bin/sh&#10;&#10;# Your custom script here&#10;# This area is for manual editing - configuration wizard will not overwrite your changes"></textarea>
-                <span id="uci-defaults-template" data-link="scripts/setup.sh" style="cursor: pointer; color: #007bff; text-decoration: underline;">Load setup.sh template</span>
             </div>
 
             <button id="request-build" class="btn btn-primary" style="display: none;">REQUEST BUILD</button>
@@ -547,9 +609,11 @@
                 await loadVersions();
                 bindEvents();
                 // ISP情報を初期取得（常時表示のため）
-                fetchApiInfoAndUpdate();
+                console.log('Starting ISP info fetch...');
+                await fetchApiInfoAndUpdate();
             } catch (error) {
                 console.error('Failed to initialize:', error);
+                updateIspDisplay('Initialization error', 'Failed to initialize application: ' + error.message);
             }
         }
 
@@ -573,22 +637,69 @@
                 radio.addEventListener('change', handleMapeTypeChange);
             });
 
-            document.getElementById('aios-config').addEventListener('input', function() {
+            // DS-Lite AFTR Type変更監視を後で追加（DOM要素ができてから）
+            setTimeout(() => {
+                const dsliteSelect = document.getElementById('dslite-aftr-type');
+                const dsliteAddress = document.getElementById('dslite-aftr-address');
+                if (dsliteSelect) {
+                    dsliteSelect.addEventListener('change', handleDsliteAftrTypeChange);
+                    dsliteSelect.addEventListener('change', function() {
+                        if (document.getElementById('use-aios-config').checked) {
+                            loadAiosTemplate();
+                            updateRequiredPackages();
+                        }
+                    });
+                }
+                if (dsliteAddress) {
+                    dsliteAddress.addEventListener('input', function() {
+                        if (document.getElementById('use-aios-config').checked) {
+                            loadAiosTemplate();
+                            updateRequiredPackages();
+                        }
+                    });
+                }
+                
+                // MAP-E入力フィールドのイベントリスナー
+                ['mape-br', 'mape-ealen', 'mape-ipv4-prefix', 'mape-ipv4-prefixlen', 
+                 'mape-ipv6-prefix', 'mape-ipv6-prefixlen', 'mape-psid-offset'].forEach(id => {
+                    const element = document.getElementById(id);
+                    if (element) {
+                        element.addEventListener('input', function() {
+                            if (document.getElementById('use-aios-config').checked) {
+                                loadAiosTemplate();
+                                updateRequiredPackages();
+                            }
+                        });
+                    }
+                });
+
+                // LAN IP入力フィールドのイベントリスナー
+                const lanIpElement = document.getElementById('aios-lan-ip');
+                if (lanIpElement) {
+                    lanIpElement.addEventListener('input', function() {
+                        if (document.getElementById('use-aios-config').checked) {
+                            loadAiosTemplate();
+                            updateRequiredPackages();
+                        }
+                    });
+                }
+            }, 100);
+
+            document.getElementById('aios-config').addEventListener('input', function(e) {
                 if (document.getElementById('use-aios-config').checked) {
                     loadAiosTemplate();
                     updateRequiredPackages();
                 }
             });
 
-            document.getElementById('aios-config').addEventListener('change', function() {
+            document.getElementById('aios-config').addEventListener('change', function(e) {
                 if (document.getElementById('use-aios-config').checked) {
                     loadAiosTemplate();
                     updateRequiredPackages();
                 }
             });
 
-            // 公式と同じテンプレートリンク
-            document.getElementById('uci-defaults-template').addEventListener('click', loadSetupTemplate);
+            // 公式と同じテンプレートリンク（削除済み）
 
             document.addEventListener('click', function(e) {
                 if (!e.target.closest('.autocomplete')) {
@@ -598,6 +709,51 @@
 
             // 初期状態設定：手動接続セクションを非表示
             document.getElementById('manual-connection-section').style.display = 'none';
+            document.getElementById('pppoe-section').style.display = 'none';
+            document.getElementById('dslite-section').style.display = 'none';
+            document.getElementById('mape-manual-section').style.display = 'none';
+        }
+
+        // AUTO/OFF モード切り替え
+        function handleConnectionModeChange(e) {
+            const manualSection = document.getElementById('manual-connection-section');
+            
+            if (e.target.value === 'manual') {
+                manualSection.style.display = 'block';
+            } else {
+                manualSection.style.display = 'none';
+            }
+
+            if (document.getElementById('use-aios-config').checked) {
+                loadAiosTemplate();
+                updateRequiredPackages();
+            }
+        }
+
+        // DS-Lite AFTR Type変更時のデフォルトアドレス設定
+        function handleDsliteAftrTypeChange(e) {
+            const aftrAddressInput = document.getElementById('dslite-aftr-address');
+            const aftrType = e.target.value;
+            
+            console.log('DS-Lite AFTR type changed to:', aftrType);
+            
+            // デフォルトアドレス設定（東日本）
+            switch(aftrType) {
+                case 'transix':
+                    aftrAddressInput.value = '2404:8e00::feed:100';
+                    break;
+                case 'xpass':
+                    aftrAddressInput.value = '2001:e30:1c1e:1::1';
+                    break;
+                case 'v6option':
+                    aftrAddressInput.value = '2404:8e00::feed:101';
+                    break;
+            }
+
+            if (document.getElementById('use-aios-config').checked) {
+                loadAiosTemplate();
+                updateRequiredPackages();
+            }
         }
 
         async function loadVersions() {
@@ -797,33 +953,22 @@
             return str.match(/[^\s,]+/g) || [];
         }
 
-        // AUTO/OFF モード切り替え
-        function handleConnectionModeChange(e) {
-            const manualSection = document.getElementById('manual-connection-section');
-            
-            if (e.target.value === 'manual') {
-                manualSection.style.display = 'block';
-            } else {
-                manualSection.style.display = 'none';
-            }
-
-            if (document.getElementById('use-aios-config').checked) {
-                updateRequiredPackages(); // パッケージのみ更新、スクリプトは触らない
-            }
-        }
-
         // 手動選択時の接続方式詳細制御
         function handleConnectionTypeChange(e) {
             const pppoeSection = document.getElementById('pppoe-section');
+            const dsliteSection = document.getElementById('dslite-section');
             const mapeManualSection = document.getElementById('mape-manual-section');
 
             // 全詳細セクションを非表示
             pppoeSection.style.display = 'none';
+            dsliteSection.style.display = 'none';
             mapeManualSection.style.display = 'none';
 
             // 選択に応じて詳細セクション表示
             if (e.target.value === 'pppoe') {
                 pppoeSection.style.display = 'block';
+            } else if (e.target.value === 'dslite') {
+                dsliteSection.style.display = 'block';
             } else if (e.target.value === 'mape') {
                 mapeManualSection.style.display = 'block';
             }
@@ -843,8 +988,11 @@
         async function fetchApiInfoAndUpdate() {
             try {
                 updateIspDisplay('Fetching', 'Retrieving ISP information...');
+                console.log('Starting fetchApiInfoAndUpdate...');
                 
                 const apiInfo = await fetchApiInfo();
+                console.log('fetchApiInfo returned:', apiInfo);
+                
                 window.cachedApiInfo = apiInfo; // キャッシュ
 
                 if (apiInfo) {
@@ -898,6 +1046,25 @@
                     }
                     
                     updateIspDisplay(statusText, details);
+                    
+                    // 取得した値をMAP-E入力ボックスに自動設定
+                    if (apiInfo.rule && apiInfo.rule.brIpv6Address) {
+                        document.getElementById('mape-br').value = apiInfo.rule.brIpv6Address;
+                        document.getElementById('mape-ealen').value = apiInfo.rule.eaBitLength || '';
+                        document.getElementById('mape-ipv4-prefix').value = apiInfo.rule.ipv4Prefix || '';
+                        document.getElementById('mape-ipv4-prefixlen').value = apiInfo.rule.ipv4PrefixLength || '';
+                        document.getElementById('mape-ipv6-prefix').value = apiInfo.rule.ipv6Prefix || '';
+                        document.getElementById('mape-ipv6-prefixlen').value = apiInfo.rule.ipv6PrefixLength || '';
+                        document.getElementById('mape-psid-offset').value = apiInfo.rule.psIdOffset || '';
+                    }
+                    
+                    // DS-Lite情報があれば設定
+                    if (apiInfo.rule && apiInfo.rule.aftrType) {
+                        document.getElementById('dslite-aftr-type').value = apiInfo.rule.aftrType;
+                        if (apiInfo.rule.aftrIpv6Address) {
+                            document.getElementById('dslite-aftr-address').value = apiInfo.rule.aftrIpv6Address;
+                        }
+                    }
                 } else {
                     updateIspDisplay('Auto-detection failed', 'API connection error or unsupported ISP\nManual configuration required.');
                 }
@@ -926,20 +1093,6 @@
         // API情報を事前取得してスクリプトカスタマイズ
         async function loadAiosTemplate() {
             try {
-                const scriptElement = document.getElementById('uci-defaults-content');
-                
-                // 手動入力された内容がある場合は、デフォルトテンプレート以外は保護
-                const currentContent = scriptElement.value.trim();
-                const isDefaultOrEmpty = !currentContent || 
-                    currentContent.startsWith('#!/bin/sh\n\n# Your script here') ||
-                    currentContent.startsWith('#!/bin/sh\n\n# Failed to load');
-                
-                if (currentContent && !isDefaultOrEmpty) {
-                    // 手動で編集されたコンテンツがある場合は何もしない
-                    console.log('Manual script content detected, preserving user input');
-                    return;
-                }
-                
                 const response = await fetch('scripts/setup.sh');
                 if (!response.ok) {
                     throw new Error('Failed to load setup.sh template');
@@ -959,38 +1112,18 @@
                     content = customizeSetupScript(content, config, apiInfo);
                 }
                 
-                scriptElement.value = content;
+                document.getElementById('uci-defaults-content').value = content;
             } catch (error) {
                 console.error('Template loading error:', error);
                 document.getElementById('uci-defaults-content').value = '#!/bin/sh\n\n# Failed to load setup.sh template\n# Please check if scripts/setup.sh exists';
             }
         }
 
-        // 公式と同じシンプルなテンプレート読み込み
-        async function loadSetupTemplate() {
-            const script = document.getElementById('uci-defaults-content');
-            
-            // 手動入力がある場合は確認
-            if (script.value.trim() && !confirm('既存のスクリプト内容を上書きしますか？\n\n現在の内容は失われます。')) {
-                return; // ユーザーがキャンセルした場合は何もしない
-            }
-            
-            try {
-                const response = await fetch('scripts/setup.sh');
-                if (!response.ok) {
-                    throw new Error('Failed to load setup.sh template');
-                }
-                const content = await response.text();
-                script.value = content;
-            } catch (error) {
-                console.error('Template loading error:', error);
-                script.value = '#!/bin/sh\n\n# Failed to load setup.sh template';
-            }
-        }
-
         // API情報を事前取得（ビルド時）
         async function fetchApiInfo() {
             try {
+                console.log('Fetching API info from auto-config.site-u.workers.dev...');
+                
                 const response = await fetch('https://auto-config.site-u.workers.dev/', {
                     method: 'GET',
                     headers: {
@@ -998,16 +1131,15 @@
                     }
                 });
                 
+                console.log('API response status:', response.status);
+                
                 if (!response.ok) {
-                    console.warn('API access failed, using fallback settings');
+                    console.warn('API access failed with status:', response.status);
                     return null;
                 }
                 
                 const data = await response.json();
-                console.log('API Info fetched:', data);
-                
-                // 注意: APIからは1G/10G回線の判別は不可能
-                // 同じOCNバーチャルコネクトでも物理回線速度は区別できない
+                console.log('API Info fetched successfully:', data);
                 
                 return data;
             } catch (error) {
@@ -1016,122 +1148,192 @@
             }
         }
 
-        // setup.shスクリプトのカスタマイズ（API情報込み）
-        function customizeSetupScript(content, config, apiInfo) {
+        // setup.shスクリプトのカスタマイズ（新しい変数構造対応）
+        async function customizeSetupScript(content, config, apiInfo) {
             let customized = content;
+            
+            // OSバージョン設定
+            customized = customized.replace('# os_version=""', `os_version="${app.selectedVersion}"`);
+            
+            // OpenWrtバージョン別フラグ設定
+            if (app.selectedVersion && app.selectedVersion.startsWith('19')) {
+                customized = customized.replace('# openwrt_19=""', `openwrt_19="1"`);
+            } else {
+                customized = customized.replace('# openwrt_21=""', `openwrt_21="1"`);
+            }
             
             // 基本設定
             if (config.language) {
-                customized = customized.replace('LANGUAGE="${LANGUAGE:-en}"', `LANGUAGE="${config.language}"`);
+                customized = customized.replace('# language=""', `language="${config.language}"`);
             }
             
-            // 接続方式の手動設定
-            if (config.connectionType && config.connectionType !== 'auto') {
-                customized = customized.replace('ISP_MODE="${ISP_MODE:-auto}"', `ISP_MODE="${config.connectionType}"`);
-                
-                // MAP-E手動選択時の処理
-                if (config.connectionType === 'mape' && config.mapeType !== 'auto') {
-                    customized = customized.replace('MAPE_TYPE=""', `MAPE_TYPE="${config.mapeType}"`);
-                }
-            } else {
-                customized = customized.replace('ISP_MODE="${ISP_MODE:-auto}"', `ISP_MODE="${config.connectionType}"`);
-            }
             if (config.deviceName) {
-                customized = customized.replace('# DEVICE_NAME=""', `DEVICE_NAME="${config.deviceName}"`);
+                customized = customized.replace('# device_name=""', `device_name="${config.deviceName}"`);
+            }
+            
+            if (config.lanIp) {
+                customized = customized.replace('# lan_ip_address="192.168.1.1"', `lan_ip_address="${config.lanIp}"`);
             }
             
             if (config.rootPassword && config.confirmPassword && config.rootPassword === config.confirmPassword) {
-                customized = customized.replace('# ROOT_PASSWORD=""', `ROOT_PASSWORD="${config.rootPassword}"`);
+                customized = customized.replace('# root_password=""', `root_password="${config.rootPassword}"`);
             }
             
+            // Wi-Fi設定
             if (config.wifiSSID) {
-                customized = customized.replace('# WLAN_NAME=""', `WLAN_NAME="${config.wifiSSID}"`);
+                customized = customized.replace('# wlan_name=""', `wlan_name="${config.wifiSSID}"`);
             }
             if (config.wifiPassword) {
-                customized = customized.replace('# WLAN_PASSWORD=""', `WLAN_PASSWORD="${config.wifiPassword}"`);
+                customized = customized.replace('# wlan_password=""', `wlan_password="${config.wifiPassword}"`);
             }
             
-            if (config.connectionType === 'pppoe') {
-                if (config.pppoeUsername) {
-                    customized = customized.replace('# PPPOE_USERNAME=""', `PPPOE_USERNAME="${config.pppoeUsername}"`);
-                }
-                if (config.pppoePassword) {
-                    customized = customized.replace('# PPPOE_PASSWORD=""', `PPPOE_PASSWORD="${config.pppoePassword}"`);
-                }
-            }
-            
-            // API情報が取得できた場合の事前設定
-            if (apiInfo) {
-                // 国情報とタイムゾーン
-                if (apiInfo.country) {
-                    customized = customized.replace('COUNTRY=""', `COUNTRY="${apiInfo.country}"`);
-                }
-                if (apiInfo.timezone) {
-                    customized = customized.replace('TIMEZONE=""', `TIMEZONE="${apiInfo.timezone}"`);
-                }
-                if (apiInfo.regionName) {
-                    customized = customized.replace('REGION_NAME=""', `REGION_NAME="${apiInfo.regionName}"`);
-                }
-                if (apiInfo.isp) {
-                    customized = customized.replace('ISP=""', `ISP="${apiInfo.isp}"`);
-                }
-                
-                // MAP-E/DS-Lite設定の事前決定
-                if (apiInfo.rule && config.connectionType === 'auto') {
-                    if (apiInfo.rule.aftrType) {
-                        // DS-Lite自動設定
-                        customized = customized.replace('ISP_MODE="${ISP_MODE:-auto}"', 'ISP_MODE="dslite"');
-                        customized = customized.replace('AFTR_TYPE=""', `AFTR_TYPE="${apiInfo.rule.aftrType}"`);
-                        if (apiInfo.rule.aftrIpv6Address) {
-                            customized = customized.replace('AFTR_ADDR=""', `AFTR_ADDR="${apiInfo.rule.aftrIpv6Address}"`);
+            // 接続方式別設定
+            if (config.connectionMode === 'manual') {
+                // 手動選択時
+                switch(config.connectionType) {
+                    case 'pppoe':
+                        if (config.pppoeUsername) {
+                            customized = customized.replace('# pppoe_username=""', `pppoe_username="${config.pppoeUsername}"`);
                         }
-                    } else if (apiInfo.rule.brIpv6Address) {
-                        // MAP-E自動設定
-                        customized = customized.replace('ISP_MODE="${ISP_MODE:-auto}"', 'ISP_MODE="mape"');
-                        customized = customized.replace('BR=""', `BR="${apiInfo.rule.brIpv6Address}"`);
-                        customized = customized.replace('EALEN=""', `EALEN="${apiInfo.rule.eaBitLength}"`);
-                        customized = customized.replace('IPV4_PREFIX=""', `IPV4_PREFIX="${apiInfo.rule.ipv4Prefix}"`);
-                        customized = customized.replace('IPV4_PREFIXLEN=""', `IPV4_PREFIXLEN="${apiInfo.rule.ipv4PrefixLength}"`);
-                        customized = customized.replace('IPV6_PREFIX=""', `IPV6_PREFIX="${apiInfo.rule.ipv6Prefix}"`);
-                        customized = customized.replace('IPV6_PREFIXLEN=""', `IPV6_PREFIXLEN="${apiInfo.rule.ipv6PrefixLength}"`);
-                        customized = customized.replace('PSID_OFFSET=""', `PSID_OFFSET="${apiInfo.rule.psIdOffset}"`);
+                        if (config.pppoePassword) {
+                            customized = customized.replace('# pppoe_password=""', `pppoe_password="${config.pppoePassword}"`);
+                        }
+                        break;
                         
-                        // MAP-E方式（GUA/PD）をAPI情報または手動選択で設定
-                        let mapeType = 'gua'; // デフォルト
-                        if (config.connectionType === 'mape') {
-                            mapeType = config.mapeType; // 手動選択
-                        } else if (apiInfo.recommendedMapeType) {
-                            mapeType = apiInfo.recommendedMapeType; // API推奨
+                    case 'dslite':
+                        if (config.dsliteAftrAddress) {
+                            customized = customized.replace('# dslite_aftr_address=""', `dslite_aftr_address="${config.dsliteAftrAddress}"`);
                         }
-                        customized = customized.replace('MAPE_TYPE=""', `MAPE_TYPE="${mapeType}"`);
+                        break;
                         
-                        // 判別情報をコメントとして埋め込み
-                        if (apiInfo.lineType) {
-                            customized = customized.replace('# Pre-configured API response data', 
-                                `# Pre-configured API response data\n# Detected line type: ${apiInfo.lineType} (recommended: ${apiInfo.recommendedMapeType})`);
+                    case 'mape':
+                        // MAP-E手動設定
+                        if (config.mapeBr) {
+                            customized = customized.replace('# mape_br=""', `mape_br="${config.mapeBr}"`);
                         }
+                        if (config.mapeEalen) {
+                            customized = customized.replace('# mape_ealen=""', `mape_ealen="${config.mapeEalen}"`);
+                            
+                            // PSID計算
+                            const ealen = parseInt(config.mapeEalen);
+                            const ipv4Prefixlen = parseInt(config.mapeIpv4Prefixlen) || 32;
+                            const psidOffset = parseInt(config.mapePsidOffset) || (32 - ipv4Prefixlen);
+                            const psidlen = Math.max(0, Math.min(16, ealen - psidOffset));
+                            
+                            customized = customized.replace('# mape_psidlen=""', `mape_psidlen="${psidlen}"`);
+                            customized = customized.replace('# mape_psid_offset=""', `mape_psid_offset="${psidOffset}"`);
+                        }
+                        if (config.mapeIpv4Prefix) {
+                            customized = customized.replace('# mape_ipv4_prefix=""', `mape_ipv4_prefix="${config.mapeIpv4Prefix}"`);
+                        }
+                        if (config.mapeIpv4Prefixlen) {
+                            customized = customized.replace('# mape_ipv4_prefixlen=""', `mape_ipv4_prefixlen="${config.mapeIpv4Prefixlen}"`);
+                        }
+                        if (config.mapeIpv6Prefix) {
+                            customized = customized.replace('# mape_ipv6_prefix=""', `mape_ipv6_prefix="${config.mapeIpv6Prefix}"`);
+                        }
+                        if (config.mapeIpv6Prefixlen) {
+                            customized = customized.replace('# mape_ipv6_prefixlen=""', `mape_ipv6_prefixlen="${config.mapeIpv6Prefixlen}"`);
+                        }
+                        
+                        // GUA/PD設定
+                        if (config.mapeType === 'gua' && config.mapeIpv6Prefix) {
+                            const ipv6Base = config.mapeIpv6Prefix.split(':').slice(0, 4).join(':');
+                            const guaPrefix = `${ipv6Base}::/64`;
+                            customized = customized.replace('# mape_gua_mode=""', `mape_gua_mode="1"`);
+                            customized = customized.replace('# mape_gua_prefix=""', `mape_gua_prefix="${guaPrefix}"`);
+                        }
+                        
+                        // map.sh内容を取得・設定
+                        await loadMapShContent(customized, app.selectedVersion);
+                        break;
+                }
+            } else {
+                // AUTO選択時：API情報から設定
+                if (apiInfo) {
+                    // 位置情報
+                    if (apiInfo.country) {
+                        customized = customized.replace('# country=""', `country="${apiInfo.country}"`);
+                    }
+                    if (apiInfo.timezone) {
+                        customized = customized.replace('# timezone=""', `timezone="${apiInfo.timezone}"`);
+                    }
+                    
+                    // DS-Lite判定
+                    if (apiInfo.aftr) {
+                        customized = customized.replace('# dslite_aftr_address=""', `dslite_aftr_address="${apiInfo.aftr.aftrIpv6Address}"`);
+                    }
+                    // MAP-E判定
+                    else if (apiInfo.rule) {
+                        customized = customized.replace('# mape_br=""', `mape_br="${apiInfo.rule.brIpv6Address}"`);
+                        customized = customized.replace('# mape_ealen=""', `mape_ealen="${apiInfo.rule.eaBitLength}"`);
+                        customized = customized.replace('# mape_ipv4_prefix=""', `mape_ipv4_prefix="${apiInfo.rule.ipv4Prefix}"`);
+                        customized = customized.replace('# mape_ipv4_prefixlen=""', `mape_ipv4_prefixlen="${apiInfo.rule.ipv4PrefixLength}"`);
+                        customized = customized.replace('# mape_ipv6_prefix=""', `mape_ipv6_prefix="${apiInfo.rule.ipv6Prefix}"`);
+                        customized = customized.replace('# mape_ipv6_prefixlen=""', `mape_ipv6_prefixlen="${apiInfo.rule.ipv6PrefixLength}"`);
+                        
+                        // PSID計算
+                        const ealen = parseInt(apiInfo.rule.eaBitLength);
+                        const ipv4Prefixlen = parseInt(apiInfo.rule.ipv4PrefixLength);
+                        const psidOffset = parseInt(apiInfo.rule.psIdOffset) || (32 - ipv4Prefixlen);
+                        const psidlen = Math.max(0, Math.min(16, ealen - psidOffset));
+                        
+                        customized = customized.replace('# mape_psidlen=""', `mape_psidlen="${psidlen}"`);
+                        customized = customized.replace('# mape_psid_offset=""', `mape_psid_offset="${psidOffset}"`);
+                        
+                        // GUA設定（デフォルト）
+                        const ipv6Base = apiInfo.rule.ipv6Prefix.split(':').slice(0, 4).join(':');
+                        const guaPrefix = `${ipv6Base}::/64`;
+                        customized = customized.replace('# mape_gua_mode=""', `mape_gua_mode="1"`);
+                        customized = customized.replace('# mape_gua_prefix=""', `mape_gua_prefix="${guaPrefix}"`);
+                        
+                        // map.sh内容を取得・設定
+                        await loadMapShContent(customized, app.selectedVersion);
                     }
                 }
             }
             
             return customized;
         }
+        
+        // map.sh内容取得・プレースホルダー置換
+        async function loadMapShContent(content, osVersion) {
+            try {
+                let mapShUrl;
+                if (osVersion && osVersion.startsWith('19')) {
+                    mapShUrl = 'https://site-u.pages.dev/build/scripts/map.sh.19';
+                } else {
+                    mapShUrl = 'https://site-u.pages.dev/build/scripts/map.sh.new';
+                }
+                
+                const response = await fetch(mapShUrl);
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch map.sh: ${response.status}`);
+                }
+                
+                const mapShContent = await response.text();
+                // プレースホルダー置換
+                content = content.replace('${map_sh_content}', mapShContent);
+                
+                console.log(`Loaded map.sh for ${osVersion}:`, mapShUrl);
+                return content;
+            } catch (error) {
+                console.error('Failed to load map.sh:', error);
+                // フォールバック
+                content = content.replace('${map_sh_content}', '#!/bin/sh\n# Failed to load map.sh content');
+                return content;
+            }
+        }
 
         function toggleAiosConfig(e) {
             const config = document.getElementById('aios-config');
-            const script = document.getElementById('uci-defaults-content');
 
             if (e.target.checked) {
                 config.style.display = 'block';
-                
-                // 手動入力がある場合は保護、空の場合のみテンプレート読み込み
-                if (!script.value.trim()) {
-                    loadAiosTemplate();
-                }
+                loadAiosTemplate();
                 updateRequiredPackages();
             } else {
                 config.style.display = 'none';
-                // チェックボックスOFFでもスクリプト内容は保持（ユーザーの手動入力を尊重）
             }
         }
 
@@ -1147,6 +1349,7 @@
             return {
                 language: document.getElementById('aios-language').value,
                 deviceName: document.getElementById('aios-device-name').value,
+                lanIp: document.getElementById('aios-lan-ip').value,
                 rootPassword: document.getElementById('aios-root-password').value,
                 confirmPassword: document.getElementById('aios-confirm-password').value,
                 wifiSSID: document.getElementById('aios-wifi-ssid').value,
@@ -1155,7 +1358,18 @@
                 connectionType: effectiveConnectionType,
                 mapeType: document.querySelector('input[name="mapeType"]:checked')?.value || 'auto',
                 pppoeUsername: document.getElementById('pppoe-username').value,
-                pppoePassword: document.getElementById('pppoe-password').value
+                pppoePassword: document.getElementById('pppoe-password').value,
+                // DS-Lite manual settings
+                dsliteAftrType: document.getElementById('dslite-aftr-type').value,
+                dsliteAftrAddress: document.getElementById('dslite-aftr-address').value,
+                // MAP-E manual settings
+                mapeBr: document.getElementById('mape-br').value,
+                mapeEalen: document.getElementById('mape-ealen').value,
+                mapeIpv4Prefix: document.getElementById('mape-ipv4-prefix').value,
+                mapeIpv4Prefixlen: document.getElementById('mape-ipv4-prefixlen').value,
+                mapeIpv6Prefix: document.getElementById('mape-ipv6-prefix').value,
+                mapeIpv6Prefixlen: document.getElementById('mape-ipv6-prefixlen').value,
+                mapePsidOffset: document.getElementById('mape-psid-offset').value
             };
         }
 
