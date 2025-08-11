@@ -1385,18 +1385,18 @@ function customizeSetupScript(content, config, apiInfo) {
 
     // PPPoE
     if (proto === 'pppoe') {
-        setVar('pppoe_username', config.pppoeUsername);
-        setVar('pppoe_password', config.pppoePassword);
-        // reset others
+        setVar('pppoe_username', config.pppoeUsername ?? '');
+        setVar('pppoe_password', config.pppoePassword ?? '');
+        // 他プロトコルはコメント化
         setVar('dslite_aftr_address', '');
         setVar('mape_br', '');
         setVar('mape_ealen', '');
+        setVar('mape_psid_offset', '');
+        setVar('mape_psidlen', '');
         setVar('mape_ipv4_prefix', '');
         setVar('mape_ipv4_prefixlen', '');
         setVar('mape_ipv6_prefix', '');
         setVar('mape_ipv6_prefixlen', '');
-        setVar('mape_psidlen', '');
-        setVar('mape_psid_offset', '');
         setVar('mape_gua_mode', '');
         setVar('mape_gua_prefix', '');
     }
