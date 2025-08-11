@@ -683,7 +683,9 @@
                     // パッケージリストを構築（公式と同じ方式）
                     const defaultPackages = profilesData.default_packages || [];
                     const devicePackages = profile.device_packages || [];
-                    const allPackages = defaultPackages.concat(devicePackages);
+                    // ASU用の追加パッケージ（公式準拠）
+                    const asuExtraPackages = ['luci'];
+                    const allPackages = defaultPackages.concat(devicePackages).concat(asuExtraPackages);
                     
                     console.log(`Setting packages: ${allPackages.join(' ')}`);
                     document.getElementById('asu-packages').value = allPackages.join(' ');
