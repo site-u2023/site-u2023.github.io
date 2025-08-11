@@ -417,82 +417,96 @@
                     </div>
 
                     <h5>Internet Connection</h5>
+                    <!-- 上段: AUTO/OFF選択 -->
                     <div class="form-group">
-                        <label>Connection type</label>
+                        <label>Connection mode</label>
                         <div class="radio-group">
                             <div class="form-check">
-                                <input class="form-check-input" type="radio" name="connectionType" id="conn-auto" value="auto" checked>
-                                <label class="form-check-label" for="conn-auto">Auto-detect</label>
+                                <input class="form-check-input" type="radio" name="connectionMode" id="mode-auto" value="auto" checked>
+                                <label class="form-check-label" for="mode-auto">AUTO</label>
                             </div>
                             <div class="form-check">
-                                <input class="form-check-input" type="radio" name="connectionType" id="conn-dhcp" value="dhcp">
-                                <label class="form-check-label" for="conn-dhcp">DHCP</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="connectionType" id="conn-pppoe" value="pppoe">
-                                <label class="form-check-label" for="conn-pppoe">PPPoE</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="connectionType" id="conn-dslite" value="dslite">
-                                <label class="form-check-label" for="conn-dslite">DS-Lite</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="connectionType" id="conn-mape" value="mape">
-                                <label class="form-check-label" for="conn-mape">MAP-E</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="connectionType" id="conn-none" value="none">
-                                <label class="form-check-label" for="conn-none">None</label>
+                                <input class="form-check-input" type="radio" name="connectionMode" id="mode-manual" value="manual">
+                                <label class="form-check-label" for="mode-manual">OFF</label>
                             </div>
                         </div>
                     </div>
 
-                    <div id="mape-section" class="conditional-section">
-                        <h5>MAP-E Configuration</h5>
-                        
-                        <!-- 接続方式選択 -->
+                    <!-- 中段: 手動選択時の詳細オプション -->
+                    <div id="manual-connection-section" class="conditional-section" style="background-color: #fff3cd; border: 1px solid #ffeaa7;">
                         <div class="form-group">
-                            <label>MAP-E接続方式</label>
+                            <label>Connection type</label>
                             <div class="radio-group">
                                 <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="mapeType" id="mape-auto" value="auto" checked>
-                                    <label class="form-check-label" for="mape-auto">Auto-detect（推奨）</label>
+                                    <input class="form-check-input" type="radio" name="connectionType" id="conn-dhcp" value="dhcp" checked>
+                                    <label class="form-check-label" for="conn-dhcp">DHCP</label>
                                 </div>
                                 <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="mapeType" id="mape-gua" value="gua">
-                                    <label class="form-check-label" for="mape-gua">GUA方式（手動）</label>
+                                    <input class="form-check-input" type="radio" name="connectionType" id="conn-pppoe" value="pppoe">
+                                    <label class="form-check-label" for="conn-pppoe">PPPoE</label>
                                 </div>
                                 <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="mapeType" id="mape-pd" value="pd">
-                                    <label class="form-check-label" for="mape-pd">PD方式（手動）</label>
+                                    <input class="form-check-input" type="radio" name="connectionType" id="conn-dslite" value="dslite">
+                                    <label class="form-check-label" for="conn-dslite">DS-Lite</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="connectionType" id="conn-mape" value="mape">
+                                    <label class="form-check-label" for="conn-mape">MAP-E</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="connectionType" id="conn-none" value="none">
+                                    <label class="form-check-label" for="conn-none">None</label>
                                 </div>
                             </div>
-                            <small class="text-muted">
-                                <strong>Auto-detect</strong>: MAP-E技術情報を自動取得し、GUA方式で設定（1G/10G両対応）<br>
-                                <strong>手動選択</strong>: トラブル時や特定の要件がある場合のみ
-                            </small>
                         </div>
 
-                        <!-- 情報表示ボックス（デバイス選択風） -->
-                        <div class="form-group">
-                            <label>MAP-E Configuration Status</label>
-                            <div id="mape-info-display" class="info" style="margin-bottom: 0;">
-                                <div id="mape-status-message">MAP-E情報を取得中...</div>
-                                <div id="mape-technical-info" style="font-family: monospace; font-size: 0.9em; margin-top: 0.5rem; display: none;"></div>
+                        <!-- 手動選択時の詳細設定 -->
+                        <div id="pppoe-section" class="conditional-section" style="background-color: #e3f2fd;">
+                            <h6>PPPoE Configuration</h6>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="pppoe-username">PPPoE username</label>
+                                    <input type="text" id="pppoe-username" class="form-control" placeholder="Username from ISP">
+                                </div>
+                                <div class="form-group">
+                                    <label for="pppoe-password">PPPoE password</label>
+                                    <input type="password" id="pppoe-password" class="form-control" placeholder="Password from ISP">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="mape-manual-section" class="conditional-section" style="background-color: #e8f5e8;">
+                            <h6>MAP-E Configuration</h6>
+                            <div class="form-group">
+                                <label>MAP-E接続方式</label>
+                                <div class="radio-group">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="mapeType" id="mape-auto" value="auto" checked>
+                                        <label class="form-check-label" for="mape-auto">Auto-detect（推奨）</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="mapeType" id="mape-gua" value="gua">
+                                        <label class="form-check-label" for="mape-gua">GUA方式（手動）</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="mapeType" id="mape-pd" value="pd">
+                                        <label class="form-check-label" for="mape-pd">PD方式（手動）</label>
+                                    </div>
+                                </div>
+                                <small class="text-muted">
+                                    <strong>Auto-detect</strong>: MAP-E技術情報を自動取得し、GUA方式で設定（1G/10G両対応）<br>
+                                    <strong>手動選択</strong>: トラブル時や特定の要件がある場合のみ
+                                </small>
                             </div>
                         </div>
                     </div>
 
-                    <div id="pppoe-section" class="conditional-section">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="pppoe-username">PPPoE username</label>
-                                <input type="text" id="pppoe-username" class="form-control" placeholder="Username from ISP">
-                            </div>
-                            <div class="form-group">
-                                <label for="pppoe-password">PPPoE password</label>
-                                <input type="password" id="pppoe-password" class="form-control" placeholder="Password from ISP">
-                            </div>
+                    <!-- 下段: 情報表示窓（常時表示） -->
+                    <div class="form-group">
+                        <label>ISP Detection Status</label>
+                        <div id="isp-info-display" class="info" style="margin-bottom: 0;">
+                            <div id="isp-status-message">ISP情報を取得中...</div>
+                            <div id="isp-technical-info" style="font-family: monospace; font-size: 0.9em; margin-top: 0.5rem; display: none;"></div>
                         </div>
                     </div>
                 </div>
@@ -500,7 +514,7 @@
 
             <div class="form-group">
                 <label for="uci-defaults-content">Script to run on first boot (uci-defaults):</label>
-                <textarea id="uci-defaults-content" class="form-control" rows="8" placeholder="#!/bin/sh&#10;&#10;# Your script here"></textarea>
+                <textarea id="uci-defaults-content" class="form-control" rows="8" placeholder="#!/bin/sh&#10;&#10;# Your custom script here&#10;# This area is for manual editing - configuration wizard will not overwrite your changes"></textarea>
                 <span id="uci-defaults-template" data-link="scripts/setup.sh" style="cursor: pointer; color: #007bff; text-decoration: underline;">Load setup.sh template</span>
             </div>
 
@@ -532,6 +546,8 @@
             try {
                 await loadVersions();
                 bindEvents();
+                // ISP情報を初期取得（常時表示のため）
+                fetchApiInfoAndUpdate();
             } catch (error) {
                 console.error('Failed to initialize:', error);
             }
@@ -543,6 +559,12 @@
             document.getElementById('use-aios-config').addEventListener('change', toggleAiosConfig);
             document.getElementById('request-build').addEventListener('click', buildAsuRequest);
 
+            // Connection mode (AUTO/OFF) の監視
+            document.querySelectorAll('input[name="connectionMode"]').forEach(radio => {
+                radio.addEventListener('change', handleConnectionModeChange);
+            });
+
+            // Connection type (DHCP/PPPoE/DS-Lite/MAP-E/None) の監視
             document.querySelectorAll('input[name="connectionType"]').forEach(radio => {
                 radio.addEventListener('change', handleConnectionTypeChange);
             });
@@ -553,15 +575,13 @@
 
             document.getElementById('aios-config').addEventListener('input', function() {
                 if (document.getElementById('use-aios-config').checked) {
-                    loadAiosTemplate();
-                    updateRequiredPackages();
+                    updateRequiredPackages(); // パッケージのみ更新、スクリプトは触らない
                 }
             });
 
             document.getElementById('aios-config').addEventListener('change', function() {
                 if (document.getElementById('use-aios-config').checked) {
-                    loadAiosTemplate();
-                    updateRequiredPackages();
+                    updateRequiredPackages(); // パッケージのみ更新、スクリプトは触らない
                 }
             });
 
@@ -573,6 +593,9 @@
                     hideAutocomplete();
                 }
             });
+
+            // 初期状態設定：手動接続セクションを非表示
+            document.getElementById('manual-connection-section').style.display = 'none';
         }
 
         async function loadVersions() {
@@ -772,9 +795,149 @@
             return str.match(/[^\s,]+/g) || [];
         }
 
+        // AUTO/OFF モード切り替え
+        function handleConnectionModeChange(e) {
+            const manualSection = document.getElementById('manual-connection-section');
+            
+            if (e.target.value === 'manual') {
+                manualSection.style.display = 'block';
+            } else {
+                manualSection.style.display = 'none';
+            }
+
+            if (document.getElementById('use-aios-config').checked) {
+                updateRequiredPackages(); // パッケージのみ更新、スクリプトは触らない
+            }
+        }
+
+        // 手動選択時の接続方式詳細制御
+        function handleConnectionTypeChange(e) {
+            const pppoeSection = document.getElementById('pppoe-section');
+            const mapeManualSection = document.getElementById('mape-manual-section');
+
+            // 全詳細セクションを非表示
+            pppoeSection.style.display = 'none';
+            mapeManualSection.style.display = 'none';
+
+            // 選択に応じて詳細セクション表示
+            if (e.target.value === 'pppoe') {
+                pppoeSection.style.display = 'block';
+            } else if (e.target.value === 'mape') {
+                mapeManualSection.style.display = 'block';
+            }
+
+            if (document.getElementById('use-aios-config').checked) {
+                updateRequiredPackages(); // パッケージのみ更新、スクリプトは触らない
+            }
+        }
+
+        function handleMapeTypeChange(e) {
+            if (document.getElementById('use-aios-config').checked) {
+                updateRequiredPackages(); // パッケージのみ更新、スクリプトは触らない
+            }
+        }
+
+        // ISP情報の取得と表示更新
+        async function fetchApiInfoAndUpdate() {
+            try {
+                updateIspDisplay('取得中', 'ISP情報を取得しています...');
+                
+                const apiInfo = await fetchApiInfo();
+                window.cachedApiInfo = apiInfo; // キャッシュ
+
+                if (apiInfo) {
+                    let statusText = '✅ 自動検出成功';
+                    let details = '';
+                    
+                    // ISP情報
+                    if (apiInfo.isp) {
+                        details += `ISP: ${apiInfo.isp}\n`;
+                    }
+                    if (apiInfo.country) {
+                        details += `国/地域: ${apiInfo.country}`;
+                        if (apiInfo.regionName) {
+                            details += ` (${apiInfo.regionName})`;
+                        }
+                        details += '\n';
+                    }
+                    if (apiInfo.timezone) {
+                        details += `タイムゾーン: ${apiInfo.timezone}\n`;
+                    }
+                    
+                    // 接続方式判定
+                    if (apiInfo.rule) {
+                        if (apiInfo.rule.aftrType) {
+                            statusText += ' - DS-Lite対応検出';
+                            details += `\n[DS-Lite設定]\n`;
+                            details += `AFTR方式: ${apiInfo.rule.aftrType}\n`;
+                            if (apiInfo.rule.aftrIpv6Address) {
+                                details += `AFTRアドレス: ${apiInfo.rule.aftrIpv6Address}\n`;
+                            }
+                        } else if (apiInfo.rule.brIpv6Address) {
+                            statusText += ' - MAP-E対応検出';
+                            details += `\n[MAP-E設定]\n`;
+                            details += `BR: ${apiInfo.rule.brIpv6Address}\n`;
+                            details += `EA-len: ${apiInfo.rule.eaBitLength}\n`;
+                            details += `IPv4 Prefix: ${apiInfo.rule.ipv4Prefix}/${apiInfo.rule.ipv4PrefixLength}\n`;
+                            details += `IPv6 Prefix: ${apiInfo.rule.ipv6Prefix}/${apiInfo.rule.ipv6PrefixLength}\n`;
+                            details += `PSID Offset: ${apiInfo.rule.psIdOffset}\n`;
+                            
+                            // 推奨方式があれば表示
+                            if (apiInfo.recommendedMapeType) {
+                                details += `推奨方式: ${apiInfo.recommendedMapeType}方式\n`;
+                            }
+                            if (apiInfo.lineType) {
+                                details += `回線タイプ: ${apiInfo.lineType}\n`;
+                            }
+                        }
+                    } else {
+                        statusText += ' - DHCP/PPPoE環境';
+                        details += '\n標準的なDHCPまたはPPPoE接続環境です。';
+                    }
+                    
+                    updateIspDisplay(statusText, details);
+                } else {
+                    updateIspDisplay('⚠️ 自動検出失敗', 'API接続エラーまたは対応外ISP\n手動設定が必要です。');
+                }
+                
+            } catch (error) {
+                console.error('ISP info fetch error:', error);
+                updateIspDisplay('❌ 取得エラー', 'API接続に失敗しました。\nオフライン環境では手動設定をご利用ください。');
+            }
+        }
+
+        // ISP情報表示の更新
+        function updateIspDisplay(status, details) {
+            const statusMessage = document.getElementById('isp-status-message');
+            const technicalInfo = document.getElementById('isp-technical-info');
+            
+            statusMessage.textContent = status;
+            
+            if (details) {
+                technicalInfo.textContent = details;
+                technicalInfo.style.display = 'block';
+            } else {
+                technicalInfo.style.display = 'none';
+            }
+        }
+
         // API情報を事前取得してスクリプトカスタマイズ
         async function loadAiosTemplate() {
             try {
+                const scriptElement = document.getElementById('uci-defaults-content');
+                
+                // 手動入力された内容がある場合は、デフォルトテンプレート以外は保護
+                const currentContent = scriptElement.value.trim();
+                const isDefaultOrEmpty = !currentContent || 
+                    currentContent.startsWith('#!/bin/sh\n\n# Your script here') ||
+                    currentContent.startsWith('#!/bin/sh\n\n# Failed to load');
+                
+                if (currentContent && !isDefaultOrEmpty) {
+                    // 手動で編集されたコンテンツがある場合は何もしない
+                    console.log('Manual script content detected, preserving user input');
+                    return;
+                }
+                
                 const response = await fetch('scripts/setup.sh');
                 if (!response.ok) {
                     throw new Error('Failed to load setup.sh template');
@@ -794,7 +957,7 @@
                     content = customizeSetupScript(content, config, apiInfo);
                 }
                 
-                document.getElementById('uci-defaults-content').value = content;
+                scriptElement.value = content;
             } catch (error) {
                 console.error('Template loading error:', error);
                 document.getElementById('uci-defaults-content').value = '#!/bin/sh\n\n# Failed to load setup.sh template\n# Please check if scripts/setup.sh exists';
@@ -803,16 +966,23 @@
 
         // 公式と同じシンプルなテンプレート読み込み
         async function loadSetupTemplate() {
+            const script = document.getElementById('uci-defaults-content');
+            
+            // 手動入力がある場合は確認
+            if (script.value.trim() && !confirm('既存のスクリプト内容を上書きしますか？\n\n現在の内容は失われます。')) {
+                return; // ユーザーがキャンセルした場合は何もしない
+            }
+            
             try {
                 const response = await fetch('scripts/setup.sh');
                 if (!response.ok) {
                     throw new Error('Failed to load setup.sh template');
                 }
                 const content = await response.text();
-                document.getElementById('uci-defaults-content').value = content;
+                script.value = content;
             } catch (error) {
                 console.error('Template loading error:', error);
-                document.getElementById('uci-defaults-content').value = '#!/bin/sh\n\n# Failed to load setup.sh template';
+                script.value = '#!/bin/sh\n\n# Failed to load setup.sh template';
             }
         }
 
@@ -951,82 +1121,40 @@
 
             if (e.target.checked) {
                 config.style.display = 'block';
-                loadAiosTemplate();
-                updateRequiredPackages();
-                // MAP-E選択時は初期表示更新
-                const selectedConnection = document.querySelector('input[name="connectionType"]:checked')?.value;
-                if (selectedConnection === 'mape') {
-                    updateMapeDisplay('auto'); // デフォルト表示
+                
+                // 手動入力がある場合は保護、空の場合のみテンプレート読み込み
+                if (!script.value.trim()) {
+                    loadAiosTemplate();
                 }
+                updateRequiredPackages();
             } else {
                 config.style.display = 'none';
-                script.value = '';
+                // チェックボックスOFFでもスクリプト内容は保持（ユーザーの手動入力を尊重）
             }
         }
 
-        function handleMapeTypeChange(e) {
-            updateMapeDisplay(e.target.value);
+        function getAiosConfig() {
+            const connectionMode = document.querySelector('input[name="connectionMode"]:checked').value;
+            let effectiveConnectionType = 'auto';
             
-            if (document.getElementById('use-aios-config').checked) {
-                loadAiosTemplate();
-                updateRequiredPackages();
+            // AUTO選択時は 'auto'、OFF選択時は選択された接続方式
+            if (connectionMode === 'manual') {
+                effectiveConnectionType = document.querySelector('input[name="connectionType"]:checked')?.value || 'dhcp';
             }
-        }
-
-        // MAP-E情報表示の更新
-        function updateMapeDisplay(selectedType) {
-            const statusMessage = document.getElementById('mape-status-message');
-            const technicalInfo = document.getElementById('mape-technical-info');
             
-            switch(selectedType) {
-                case 'auto':
-                    statusMessage.innerHTML = '🔄 Auto-detect: MAP-E技術情報を自動取得してGUA方式で設定';
-                    // API情報があれば表示
-                    if (window.cachedApiInfo && window.cachedApiInfo.rule) {
-                        displayTechnicalInfo(window.cachedApiInfo);
-                    } else {
-                        technicalInfo.style.display = 'none';
-                    }
-                    break;
-                    
-                case 'gua':
-                    statusMessage.innerHTML = '⚙️ GUA方式: IPv6アドレスから/64プレフィックスを手動設定';
-                    if (window.cachedApiInfo && window.cachedApiInfo.rule) {
-                        displayTechnicalInfo(window.cachedApiInfo);
-                    }
-                    break;
-                    
-                case 'pd':
-                    statusMessage.innerHTML = '📡 PD方式: DHCPv6-PDによるプレフィックス委譲（設定不要）';
-                    if (window.cachedApiInfo && window.cachedApiInfo.rule) {
-                        displayTechnicalInfo(window.cachedApiInfo);
-                    }
-                    break;
-            }
-        }
-
-        // 技術情報の表示
-        function handleConnectionTypeChange(e) {
-            const pppoeSection = document.getElementById('pppoe-section');
-            const mapeSection = document.getElementById('mape-section');
-
-            // 全セクションを非表示
-            pppoeSection.style.display = 'none';
-            mapeSection.style.display = 'none';
-
-            // 選択に応じてセクション表示
-            if (e.target.value === 'pppoe') {
-                pppoeSection.style.display = 'block';
-            } else if (e.target.value === 'mape') {
-                mapeSection.style.display = 'block';
-                // MAP-E選択時にAPI情報を取得・表示
-                fetchApiInfoAndUpdate();
-            }
-
-            if (document.getElementById('use-aios-config').checked) {
-                loadAiosTemplate();
-                updateRequiredPackages();
-            }
+            return {
+                language: document.getElementById('aios-language').value,
+                deviceName: document.getElementById('aios-device-name').value,
+                rootPassword: document.getElementById('aios-root-password').value,
+                confirmPassword: document.getElementById('aios-confirm-password').value,
+                wifiSSID: document.getElementById('aios-wifi-ssid').value,
+                wifiPassword: document.getElementById('aios-wifi-password').value,
+                connectionMode: connectionMode,
+                connectionType: effectiveConnectionType,
+                mapeType: document.querySelector('input[name="mapeType"]:checked')?.value || 'auto',
+                pppoeUsername: document.getElementById('pppoe-username').value,
+                pppoePassword: document.getElementById('pppoe-password').value
+            };
         }
 
         // 必要パッケージの自動追加（公式準拠）
@@ -1038,37 +1166,40 @@
             // 既存のaios関連パッケージを削除
             currentPackages = currentPackages.filter(pkg => pkg !== 'map' && pkg !== 'ds-lite');
             
-            // 接続タイプに応じてパッケージ追加
-            switch(config.connectionType) {
-                case 'mape':
-                    if (!currentPackages.includes('map')) {
-                        currentPackages.push('map');
+            // 接続タイプに応じてパッケージ追加（AUTO時はAPI情報で判定、手動時は選択値）
+            if (config.connectionMode === 'auto') {
+                // AUTO時はキャッシュされたAPI情報で判定
+                if (window.cachedApiInfo && window.cachedApiInfo.rule) {
+                    if (window.cachedApiInfo.rule.aftrType) {
+                        // DS-Lite
+                        if (!currentPackages.includes('ds-lite')) {
+                            currentPackages.push('ds-lite');
+                        }
+                    } else if (window.cachedApiInfo.rule.brIpv6Address) {
+                        // MAP-E
+                        if (!currentPackages.includes('map')) {
+                            currentPackages.push('map');
+                        }
                     }
-                    break;
-                case 'dslite':
-                    if (!currentPackages.includes('ds-lite')) {
-                        currentPackages.push('ds-lite');
-                    }
-                    break;
+                }
+            } else {
+                // 手動選択時
+                switch(config.connectionType) {
+                    case 'mape':
+                        if (!currentPackages.includes('map')) {
+                            currentPackages.push('map');
+                        }
+                        break;
+                    case 'dslite':
+                        if (!currentPackages.includes('ds-lite')) {
+                            currentPackages.push('ds-lite');
+                        }
+                        break;
+                }
             }
             
             // 公式と同じ形式: スペース区切り
             packagesTextarea.value = currentPackages.join(' ');
-        }
-
-        function getAiosConfig() {
-            return {
-                language: document.getElementById('aios-language').value,
-                deviceName: document.getElementById('aios-device-name').value,
-                rootPassword: document.getElementById('aios-root-password').value,
-                confirmPassword: document.getElementById('aios-confirm-password').value,
-                wifiSSID: document.getElementById('aios-wifi-ssid').value,
-                wifiPassword: document.getElementById('aios-wifi-password').value,
-                connectionType: document.querySelector('input[name="connectionType"]:checked').value,
-                mapeType: document.querySelector('input[name="mapeType"]:checked')?.value || 'auto',
-                pppoeUsername: document.getElementById('pppoe-username').value,
-                pppoePassword: document.getElementById('pppoe-password').value
-            };
         }
 
         // 公式準拠のビルドリクエスト関数
