@@ -3,16 +3,16 @@
 # Uncomment lines to apply:
 #
 # Basic settings
-# root_password=""
-# device_name=""
-# lan_ip_address="192.168.1.1"
-# language="en"
-# timezone="UTC"
-# country="US"
+root_password="12345678"
+device_name="bpi-r4"
+lan_ip_address="192.168.11.11"
+language="ja"
+timezone="JST-9"
+country="JP"
 #
 # WLAN settings
-# wlan_name="OpenWrt"
-# wlan_password="12345678"
+wlan_name="ばなな"
+wlan_password="12345678"
 #
 # PPPoE settings
 # pppoe_username=""
@@ -22,20 +22,20 @@
 # dslite_aftr_address="2404:8e00::feed:100"
 #
 # MAP-E settings (from API or manual - all values pre-calculated)
-# mape_br="2001:380:a120::9"
-# mape_ealen="18"
-# mape_ipv4_prefix="153.187.0.0"
-# mape_ipv4_prefixlen="20"
-# mape_ipv6_prefix="2400:4151:8000::"
-# mape_ipv6_prefixlen="38"
-# mape_psidlen="12"
-# mape_psid_offset="6"
-# mape_gua_mode=""
-# mape_gua_prefix="2400:4151:8000::/64"
+mape_br="2001:380:a120::9"
+mape_ealen="18"
+mape_ipv4_prefix="153.187.0.0"
+mape_ipv4_prefixlen="20"
+mape_ipv6_prefix="2400:4151:8000::"
+mape_ipv6_prefixlen="38"
+mape_psidlen="12"
+mape_psid_offset="6"
+mape_gua_mode="1"
+mape_gua_prefix="2400:4151:8000::/64"
 #
 # OpenWrt version flags (one will be set by web)
 # openwrt_19=""
-# openwrt_21=""
+openwrt_21="1"
 
 # Network interface names
 WAN_DEF="wan"
@@ -154,7 +154,8 @@ if [ -n "$mape_br" ] && [ -n "$mape_ealen" ]; then
     
     # Install map.sh (WEB side embeds content here)
     cat > /lib/netifd/proto/map.sh << 'MAP_SH_EOF'
-${map_sh_content}
+#!/bin/sh
+# MAP-E script will be loaded dynamically
 MAP_SH_EOF
     
     # Disable WAN/WAN6
