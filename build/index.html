@@ -497,7 +497,23 @@
 
                         <div id="dslite-section" class="conditional-section" style="background-color: #fff3e0;">
                         <h6>DS-Lite Configuration</h6>
+                            
+                        <div class="form-group">
+                            <label>DS-Lite Configuration Mode</label>
+                            <div class="radio-group">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="dsliteMode" id="dslite-auto" value="auto" checked>
+                                    <label class="form-check-label" for="dslite-auto">Auto (Recommended)</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="dsliteMode" id="dslite-manual" value="manual">
+                                    <label class="form-check-label" for="dslite-manual">Manual</label>
+                                </div>
+                            </div>
+                            <small class="text-muted">Auto: Use ISP-detected AFTR address | Manual: Specify AFTR settings manually</small>
+                        </div>
 
+                        <div id="dslite-manual-config" class="conditional-section" style="background-color: #e3f2fd; display: none;">
                         <div class="form-group">
                             <label for="dslite-aftr-type">AFTR Type</label>
                             <select id="dslite-aftr-type" class="form-control" onchange="applyInitialsFromApi('dslite')">
