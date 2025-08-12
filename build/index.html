@@ -1812,8 +1812,22 @@ function updateRequiredPackages() {
     const packagesTextarea = document.getElementById('asu-packages');
     let currentPackages = split(packagesTextarea.value);
     
-    currentPackages = currentPackages.filter(pkg => pkg !== 'map' && pkg !== 'ds-lite');
+    // 既存の自動追加パッケージを削除（map, ds-lite, 言語パッケージ）
+    currentPackages = currentPackages.filter(pkg => 
+        pkg !== 'map' && 
+        pkg !== 'ds-lite' && 
+        !pkg.startsWith('luci-i18n-base-')
+    );
     
+    // 言語パッケージの追加（英語以外の場合）
+    if (config.language && config.language !== 'en') {
+        const languagePackage = `luci-i18n-base-${config.language}`;
+        if (!currentPackages.includes(languagePackage)) {
+            currentPackages.push(languagePackage);
+        }
+    }
+    
+    // 接続方式に応じたパッケージの追加
     if (config.connectionMode === 'auto') {
         if (window.cachedApiInfo && window.cachedApiInfo.rule) {
             if (window.cachedApiInfo.rule.aftrType) {
