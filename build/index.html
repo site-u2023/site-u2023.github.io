@@ -1098,6 +1098,9 @@
 # OpenWrt version flags (one will be set by web)
 # openwrt_19=""
 # openwrt_21=""
+#
+# enable_ttyd=""
+# enable_irqbalance=""
 
 # Network interface names
 WAN_DEF="wan"
@@ -1294,13 +1297,29 @@ if [ -n "$openwrt_21" ]; then
     uci set dhcp.\${MAP6_NAME}.ignore='1'
 fi
 
+# Configure ttyd service 
+if [ -n "$enable_ttyd" ]; then
+    echo "Enabling ttyd service..." 
+    uci set ttyd.@ttyd[0].ttyd.ipv6='1' 
+    uci set ttyd.@ttyd[0].command='/bin/login -f root' 
+    uci commit ttyd
+    /etc/init.d/ttyd enable > /dev/null 2>&1 
+    /etc/init.d/ttyd start > /dev/null 2>&1 
+fi 
+
+# Configure irqbalance service
+if [ -n "$enable_irqbalance" ]; then
+    echo "Enabling irqbalance service..."
+    uci set irqbalance.irqbalance=irqbalance
+    uci set irqbalance.irqbalance.enabled='1'
+    uci commit irqbalance
+    /etc/init.d/irqbalance enable > /dev/null 2>&1
+    /etc/init.d/irqbalance start > /dev/null 2>&1
+fi
+
 # Commit all changes
 echo "Committing UCI configuration..."
-uci commit system 2>/dev/null
-uci commit wireless 2>/dev/null
-uci commit network
-uci commit dhcp
-uci commit firewall
+uci commit 2>/dev/null
 
 echo "Configuration completed successfully!"
 echo "All done!"
