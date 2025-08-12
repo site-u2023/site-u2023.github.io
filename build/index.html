@@ -1376,23 +1376,39 @@ function asuI18nDB(lang) {
 function asuCollectPackages() {
   const lang = document.getElementById('aios-language').value;
   const db = asuI18nDB(lang);
-  const out = [];
+  const textarea = document.getElementById('asu-packages');
+  let current = split(textarea.value);
+
+  const add = (pkg) => {
+    if (pkg && !current.includes(pkg)) current.push(pkg);
+  };
+
+  // 言語の常時追加（base/opkg/firewall）
+  ['base', 'opkg', 'firewall'].forEach(k => (db[k] || []).forEach(add));
+
+  // セレクターで選ばれたキー
+  const keys = new Set();
   document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
     const names = cb.getAttribute('data-package')?.split(/\s+/) || [];
     names.forEach(pkg => {
-      out.push(pkg);
       const m = pkg.match(/^luci-app-(.+)$/);
       const key = m ? m[1] : pkg;
-      const i18n = db[key] || [];
-      i18n.forEach(p => out.push(p));
+      keys.add(key);
     });
   });
-  document.getElementById('asu-packages').value = out.join(' ');
-}
 
-document.getElementById('asu-form').addEventListener('submit', function () {
-  asuCollectPackages();
-});
+  // 現在のパッケージ列からもキー抽出（プロフィール/手入力に対応）
+  current.forEach(pkg => {
+    const m = pkg.match(/^luci-app-(.+)$/);
+    const key = m ? m[1] : pkg;
+    if (db[key]) keys.add(key);
+  });
+
+  // 対象キーに紐づく i18n を追加
+  keys.forEach(k => (db[k] || []).forEach(add));
+
+  textarea.value = current.join(' ');
+}
         
 // ==================== map.sh関連 ====================
 async function loadMapShScripts() {
@@ -1583,6 +1599,7 @@ function updatePackageListFromSelector() {
     });
     
     packagesTextarea.value = currentPackages.join(' ');
+    asuCollectPackages();
 }
 
 // ==================== バージョン管理 ====================
@@ -1741,6 +1758,7 @@ async function loadDeviceProfile(device) {
             
             console.log(`Setting packages: ${allPackages.join(' ')}`);
             document.getElementById('asu-packages').value = allPackages.join(' ');
+            asuCollectPackages(); 
             
             showDeviceInfo();
         } else {
@@ -2411,10 +2429,14 @@ function updateRequiredPackages() {
     
     // 言語パッケージの追加（英語以外の場合）
     if (config.language && config.language !== 'en') {
-        const languagePackage = `luci-i18n-base-${config.language}`;
-        if (!currentPackages.includes(languagePackage)) {
-            currentPackages.push(languagePackage);
-        }
+        const langs = [
+            `luci-i18n-base-${config.language}`,
+            `luci-i18n-opkg-${config.language}`,
+            `luci-i18n-firewall-${config.language}`,
+        ];
+        langs.forEach(p => {
+            if (!currentPackages.includes(p)) currentPackages.push(p);
+        });
     }
     
     // 接続方式に応じたパッケージの追加
