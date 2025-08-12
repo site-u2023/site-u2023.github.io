@@ -1101,6 +1101,7 @@
 #
 # enable_ttyd=""
 # enable_irqbalance=""
+# enable_samba4=""
 
 # Network interface names
 WAN_DEF="wan"
@@ -1297,31 +1298,45 @@ if [ -n "$openwrt_21" ]; then
     uci set dhcp.\${MAP6_NAME}.ignore='1'
 fi
 
-# Configure ttyd service 
+# Configure ttyd
 if [ -n "$enable_ttyd" ]; then
     echo "Enabling ttyd service..." 
     uci set ttyd.@ttyd[0].ttyd.ipv6='1' 
     uci set ttyd.@ttyd[0].command='/bin/login -f root' 
-    uci commit ttyd
-    /etc/init.d/ttyd enable > /dev/null 2>&1 
-    /etc/init.d/ttyd start > /dev/null 2>&1 
 fi 
 
-# Configure irqbalance service
+# Configure irqbalance
 if [ -n "$enable_irqbalance" ]; then
     echo "Enabling irqbalance service..."
     uci set irqbalance.irqbalance=irqbalance
     uci set irqbalance.irqbalance.enabled='1'
-    uci commit irqbalance
-    /etc/init.d/irqbalance enable > /dev/null 2>&1
-    /etc/init.d/irqbalance start > /dev/null 2>&1
+fi
+
+# Configure samba4
+if [ -n "$enable_samba4" ]; then
+    NAS="openwrt"
+    MNT="/mnt/sda"
+    uci set samba4.@samba[0]=samba
+    uci set samba4.@samba[0].workgroup='WORKGROUP'
+    uci set samba4.@samba[0].charset='UTF-8'
+    uci set samba4.@samba[0].description='Samba on OpenWRT'
+    uci set samba4.@samba[0].enable_extra_tuning='1'
+    uci set samba4.@samba[0].interface='lan'
+    uci set samba4.sambashare=sambashare
+    uci set samba4.sambashare.name=${NAS}
+    uci set samba4.sambashare.path=${MNT}
+    uci set samba4.sambashare.read_only='no'
+    uci set samba4.sambashare.force_root='1'
+    uci set samba4.sambashare.guest_ok='yes'
+    uci set samba4.sambashare.inherit_owner='yes'
+    uci set samba4.sambashare.create_mask='0777'
+    uci set samba4.sambashare.dir_mask='0777'
 fi
 
 # Commit all changes
 echo "Committing UCI configuration..."
 uci commit 2>/dev/null
 
-echo "Configuration completed successfully!"
 echo "All done!"
 exit 0`;
 
