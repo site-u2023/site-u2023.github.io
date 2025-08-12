@@ -1,17 +1,13 @@
 #!/bin/sh
 # Beware! This script will be in /rom/etc/uci-defaults/ as part of the image.
-# Uncomment lines to apply:
-#
 # Basic settings
-# root_password=""
-# device_name=""
-# lan_ip_address="192.168.1.1"
 # language="en"
 # country=""
 # timezone="UTC"
 # zonename=""
-#
-# WLAN settings
+# lan_ip_address="192.168.1.1"
+# device_name="OpenWrt"
+# root_password="Password"
 # wlan_name="OpenWrt"
 # wlan_password="12345678"
 #
