@@ -276,6 +276,11 @@
             transition: width 0.3s ease;
         }
 
+        /* GUA prefix入力フィールド用のスタイル */
+        #mape-gua-section {
+            margin-top: 1rem;
+        }
+
         @media (max-width: 576px) {
             .form-row {
                 flex-direction: column;
@@ -336,56 +341,77 @@
                 <div id="aios-config" class="aios-config">
                     <h5>Basic Configuration</h5>
                     
-                    <!-- Language を単独行に配置 -->
-                    <div class="form-group">
-                        <label for="aios-language">Language</label>
-                        <select id="aios-language" class="form-control">
-                            <option value="en">English</option>
-                            <option value="ar">العربية (Arabic)</option>
-                            <option value="bg">Български (Bulgarian)</option>
-                            <option value="ca">Català (Catalan)</option>
-                            <option value="cs">Čeština (Czech)</option>
-                            <option value="da">Dansk (Danish)</option>
-                            <option value="de">Deutsch (German)</option>
-                            <option value="el">Ελληνικά (Greek)</option>
-                            <option value="es">Español (Spanish)</option>
-                            <option value="et">Eesti (Estonian)</option>
-                            <option value="eu">Euskera (Basque)</option>
-                            <option value="fi">Suomi (Finnish)</option>
-                            <option value="fr">Français (French)</option>
-                            <option value="gl">Galego (Galician)</option>
-                            <option value="he">עברית (Hebrew)</option>
-                            <option value="hr">Hrvatski (Croatian)</option>
-                            <option value="hu">Magyar (Hungarian)</option>
-                            <option value="id">Bahasa Indonesia (Indonesian)</option>
-                            <option value="is">Íslenska (Icelandic)</option>
-                            <option value="it">Italiano (Italian)</option>
-                            <option value="ja">日本語 (Japanese)</option>
-                            <option value="ko">한국어 (Korean)</option>
-                            <option value="lt">Lietuvių (Lithuanian)</option>
-                            <option value="lv">Latviešu (Latvian)</option>
-                            <option value="mk">Македонски (Macedonian)</option>
-                            <option value="ms">Bahasa Melayu (Malay)</option>
-                            <option value="mt">Malti (Maltese)</option>
-                            <option value="nl">Nederlands (Dutch)</option>
-                            <option value="no">Norsk (Norwegian)</option>
-                            <option value="pl">Polski (Polish)</option>
-                            <option value="pt">Português (Portuguese)</option>
-                            <option value="pt_br">Português do Brasil (Portuguese Brazil)</option>
-                            <option value="ro">Română (Romanian)</option>
-                            <option value="ru">Русский (Russian)</option>
-                            <option value="sk">Slovenčina (Slovak)</option>
-                            <option value="sl">Slovenščina (Slovenian)</option>
-                            <option value="sq">Shqipe (Albanian)</option>
-                            <option value="sr">Српски (Serbian)</option>
-                            <option value="sv">Svenska (Swedish)</option>
-                            <option value="th">ไทย (Thai)</option>
-                            <option value="tr">Türkçe (Turkish)</option>
-                            <option value="uk">Українська (Ukrainian)</option>
-                            <option value="vi">Tiếng Việt (Vietnamese)</option>
-                            <option value="zh_cn">简体中文 (Chinese Simplified)</option>
-                            <option value="zh_tw">繁體中文 (Chinese Traditional)</option>
-                        </select>
+                    <!-- 1行目: Language と Country -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="aios-language">Language</label>
+                            <select id="aios-language" class="form-control">
+                                <option value="en">English</option>
+                                <option value="ar">العربية (Arabic)</option>
+                                <option value="bg">Български (Bulgarian)</option>
+                                <option value="ca">Català (Catalan)</option>
+                                <option value="cs">Čeština (Czech)</option>
+                                <option value="da">Dansk (Danish)</option>
+                                <option value="de">Deutsch (German)</option>
+                                <option value="el">Ελληνικά (Greek)</option>
+                                <option value="es">Español (Spanish)</option>
+                                <option value="et">Eesti (Estonian)</option>
+                                <option value="eu">Euskera (Basque)</option>
+                                <option value="fi">Suomi (Finnish)</option>
+                                <option value="fr">Français (French)</option>
+                                <option value="gl">Galego (Galician)</option>
+                                <option value="he">עברית (Hebrew)</option>
+                                <option value="hr">Hrvatski (Croatian)</option>
+                                <option value="hu">Magyar (Hungarian)</option>
+                                <option value="id">Bahasa Indonesia (Indonesian)</option>
+                                <option value="is">Íslenska (Icelandic)</option>
+                                <option value="it">Italiano (Italian)</option>
+                                <option value="ja">日本語 (Japanese)</option>
+                                <option value="ko">한국어 (Korean)</option>
+                                <option value="lt">Lietuvių (Lithuanian)</option>
+                                <option value="lv">Latviešu (Latvian)</option>
+                                <option value="mk">Македонски (Macedonian)</option>
+                                <option value="ms">Bahasa Melayu (Malay)</option>
+                                <option value="mt">Malti (Maltese)</option>
+                                <option value="nl">Nederlands (Dutch)</option>
+                                <option value="no">Norsk (Norwegian)</option>
+                                <option value="pl">Polski (Polish)</option>
+                                <option value="pt">Português (Portuguese)</option>
+                                <option value="pt_br">Português do Brasil (Portuguese Brazil)</option>
+                                <option value="ro">Română (Romanian)</option>
+                                <option value="ru">Русский (Russian)</option>
+                                <option value="sk">Slovenčina (Slovak)</option>
+                                <option value="sl">Slovenščina (Slovenian)</option>
+                                <option value="sq">Shqipe (Albanian)</option>
+                                <option value="sr">Српски (Serbian)</option>
+                                <option value="sv">Svenska (Swedish)</option>
+                                <option value="th">ไทย (Thai)</option>
+                                <option value="tr">Türkçe (Turkish)</option>
+                                <option value="uk">Українська (Ukrainian)</option>
+                                <option value="vi">Tiếng Việt (Vietnamese)</option>
+                                <option value="zh_cn">简体中文 (Chinese Simplified)</option>
+                                <option value="zh_tw">繁體中文 (Chinese Traditional)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="aios-country">Country</label>
+                            <input type="text" id="aios-country" class="form-control" placeholder="US" maxlength="2">
+                            <small class="form-text text-muted">2-letter country code (e.g., US, JP, DE)</small>
+                        </div>
+                    </div>
+
+                    <!-- 2行目: Timezone と Zone name -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="aios-timezone">Timezone</label>
+                            <input type="text" id="aios-timezone" class="form-control" placeholder="UTC">
+                            <small class="form-text text-muted">e.g., UTC, JST-9, EST5EDT</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="aios-zonename">Zone name</label>
+                            <input type="text" id="aios-zonename" class="form-control" placeholder="">
+                            <small class="form-text text-muted">Optional: e.g., Asia/Tokyo, America/New_York</small>
+                        </div>
                     </div>
 
                     <!-- IPアドレスとDevice name を横並びに配置 -->
@@ -574,7 +600,14 @@
                             <div class="form-group">
                                 <label for="mape-psidlen">PSID Length</label>
                                 <input type="number" id="mape-psidlen" class="form-control" placeholder="6" min="0" max="16">
-                            </div>  
+                            </div>
+
+                            <!-- GUA Prefix入力フィールド（条件付き表示） -->
+                            <div id="mape-gua-section" class="form-group" style="display: none;">
+                                <label for="mape-gua-prefix">GUA Prefix</label>
+                                <input type="text" id="mape-gua-prefix" class="form-control" placeholder="2400:4151:80e2:7500::/64">
+                                <small class="form-text text-muted">IPv6 Global Unicast Address prefix for 1G/10G line compatibility</small>
+                            </div>
                         </div>
                     </div>
 
@@ -619,8 +652,9 @@
 # device_name=""
 # lan_ip_address="192.168.1.1"
 # language="en"
+# country=""
 # timezone="UTC"
-# country="US"
+# zonename=""
 #
 # WLAN settings
 # wlan_name="OpenWrt"
@@ -685,16 +719,22 @@ if [ -n "$language" ]; then
     uci set system.@system[0].language="$language"
 fi
 
+# Configure country code for wireless
+if [ -n "$country" ]; then
+    echo "Setting country code: $country"
+    uci set wireless.@wifi-device[0].country="$country" 2>/dev/null
+fi
+
 # Configure timezone
 if [ -n "$timezone" ]; then
     echo "Setting timezone: $timezone"
     uci set system.@system[0].timezone="$timezone"
 fi
 
-# Configure country code for wireless
-if [ -n "$country" ]; then
-    echo "Setting country code: $country"
-    uci set wireless.@wifi-device[0].country="$country" 2>/dev/null
+# Configure zone name (optional)
+if [ -n "$zonename" ]; then
+    echo "Setting zone name: $zonename"
+    uci set system.@system[0].zonename="$zonename"
 fi
 
 # Configure WLAN
@@ -965,6 +1005,7 @@ function bindEvents() {
         radio.addEventListener('change', handleConnectionTypeChange);
     });
 
+    // MAP-E type (auto/gua/pd) の監視
     document.querySelectorAll('input[name="mapeType"]').forEach(radio => {
         radio.addEventListener('change', handleMapeTypeChange);
     });
@@ -1204,6 +1245,8 @@ function handleConnectionModeChange(e) {
         manualSection.style.display = 'block';
     } else {
         manualSection.style.display = 'none';
+        // AUTOモード時はGUAセクションの表示を判定
+        updateGuaSectionVisibility();
     }
     
     applyInitialsFromApi(document.querySelector('input[name="connectionType"]:checked')?.value || '');
@@ -1231,6 +1274,7 @@ function handleConnectionTypeChange(e) {
         dsliteSection.style.display = 'block';
     } else if (e.target.value === 'mape') {
         mapeManualSection.style.display = 'block';
+        updateGuaSectionVisibility();
         
         // MAP-E選択時、map.shが未ロードなら再度ロード試行
         if (!mapShCache['new'] && !mapShCache['19']) {
@@ -1252,9 +1296,87 @@ function handleConnectionTypeChange(e) {
 }
 
 function handleMapeTypeChange(e) {
+    updateGuaSectionVisibility();
+    
     if (document.getElementById('use-aios-config').checked) {
+        updateConfiguredTemplate().catch(console.error);
         updateRequiredPackages();
     }
+}
+
+// GUAセクションの表示/非表示を制御
+function updateGuaSectionVisibility() {
+    const guaSection = document.getElementById('mape-gua-section');
+    const mapeType = document.querySelector('input[name="mapeType"]:checked')?.value;
+    const connectionMode = document.querySelector('input[name="connectionMode"]:checked')?.value;
+    const connectionType = document.querySelector('input[name="connectionType"]:checked')?.value;
+    
+    // 表示条件の判定
+    let shouldShow = false;
+    
+    if (connectionMode === 'auto') {
+        // AUTOモード：APIにGUA情報があれば表示
+        if (window.cachedApiInfo && window.cachedApiInfo.ipv6) {
+            shouldShow = true;
+            // 値を設定
+            const guaInput = document.getElementById('mape-gua-prefix');
+            if (!guaInput.value) {
+                const guaPrefix = calculateGuaPrefixFromApi();
+                if (guaPrefix) {
+                    guaInput.value = guaPrefix;
+                }
+            }
+        }
+    } else if (connectionMode === 'manual' && connectionType === 'mape') {
+        // マニュアルモード + MAP-E選択時
+        if (mapeType === 'auto') {
+            // Auto-detectが選択されている場合：GUA情報があれば表示
+            if (window.cachedApiInfo && window.cachedApiInfo.ipv6) {
+                shouldShow = true;
+                const guaInput = document.getElementById('mape-gua-prefix');
+                if (!guaInput.value) {
+                    const guaPrefix = calculateGuaPrefixFromApi();
+                    if (guaPrefix) {
+                        guaInput.value = guaPrefix;
+                    }
+                }
+            }
+        } else if (mapeType === 'gua') {
+            // GUAモードが明示的に選択されている場合：常に表示
+            shouldShow = true;
+            // APIからの値があれば設定（なければ空欄のまま）
+            if (window.cachedApiInfo && window.cachedApiInfo.ipv6) {
+                const guaInput = document.getElementById('mape-gua-prefix');
+                if (!guaInput.value) {
+                    const guaPrefix = calculateGuaPrefixFromApi();
+                    if (guaPrefix) {
+                        guaInput.value = guaPrefix;
+                    }
+                }
+            }
+        } else if (mapeType === 'pd') {
+            // PDモード：非表示
+            shouldShow = false;
+        }
+    }
+    
+    // 表示/非表示を適用
+    if (guaSection) {
+        guaSection.style.display = shouldShow ? 'block' : 'none';
+    }
+}
+
+// APIのIPv6アドレスからGUAプレフィックスを計算
+function calculateGuaPrefixFromApi() {
+    if (window.cachedApiInfo && window.cachedApiInfo.ipv6) {
+        const ipv6 = window.cachedApiInfo.ipv6;
+        const segments = ipv6.split(':');
+        if (segments.length >= 4) {
+            const prefix = segments.slice(0, 4).join(':');
+            return `${prefix}::/64`;
+        }
+    }
+    return '';
 }
 
 // ==================== ISP情報関連 ====================
@@ -1271,6 +1393,16 @@ async function fetchApiInfoAndUpdate() {
         if (apiInfo) {
             let statusText = 'Auto-detection successful';
             let details = '';
+
+            // Country と Timezoneの設定
+            if (apiInfo.country) {
+                document.getElementById('aios-country').value = apiInfo.country;
+            }
+            if (apiInfo.timezone) {
+                // APIから取得したタイムゾーンをOpenWrt形式に変換（必要に応じて）
+                const openWrtTimezone = convertToOpenWrtTimezone(apiInfo.timezone);
+                document.getElementById('aios-timezone').value = openWrtTimezone;
+            }
 
             if (apiInfo.isp) {
                 details += `ISP: ${apiInfo.isp}\n`;
@@ -1321,6 +1453,9 @@ async function fetchApiInfoAndUpdate() {
                 .map(line => `<div>${line}</div>`)
                 .join('');
             updateIspDisplay(statusText, formatted);
+
+            // GUA セクションの表示を更新
+            updateGuaSectionVisibility();
 
             // ウィザードのON/OFFに関係なく、空欄には初期値を注入（上書きはしない）
             // MAP-E情報
@@ -1373,6 +1508,23 @@ async function fetchApiInfoAndUpdate() {
             'API connection failed.\nPlease use manual configuration for offline environments.'
         );
     }
+}
+
+// タイムゾーン変換ヘルパー（必要に応じて実装）
+function convertToOpenWrtTimezone(timezone) {
+    // 一般的なタイムゾーンをOpenWrt形式に変換
+    const timezoneMap = {
+        'Asia/Tokyo': 'JST-9',
+        'America/New_York': 'EST5EDT',
+        'America/Los_Angeles': 'PST8PDT',
+        'Europe/London': 'GMT0BST',
+        'Europe/Berlin': 'CET-1CEST',
+        'Asia/Shanghai': 'CST-8',
+        'Asia/Seoul': 'KST-9',
+        // 他のマッピングを追加
+    };
+    
+    return timezoneMap[timezone] || 'UTC';
 }
 
 function updateIspDisplay(status, details) {
@@ -1463,20 +1615,15 @@ function customizeSetupScript(content, config, apiInfo) {
         customized = customized.replace(re, line);
     };
 
-    // Basic
+    // Basic settings
     const samePw = (config.rootPassword === config.confirmPassword) ? config.rootPassword : '';
     writeVar('device_name', config.deviceName, !!config.deviceName);
     writeVar('lan_ip_address', config.lanIp, !!config.lanIp);
     writeVar('root_password', samePw, !!samePw);
     writeVar('language', config.language, !!config.language);
-
-    if (config.language === 'ja') {
-        writeVar('country', 'JP', true);
-        writeVar('timezone', 'JST-9', true);
-    } else {
-        writeVar('country', '', false);
-        writeVar('timezone', '', false);
-    }
+    writeVar('country', config.country, !!config.country);
+    writeVar('timezone', config.timezone, !!config.timezone);
+    writeVar('zonename', config.zonename, !!config.zonename);
 
     // Wi-Fi
     const wifiActive = !!(config.wifiSSID && config.wifiPassword && String(config.wifiPassword).length >= 8);
@@ -1503,23 +1650,8 @@ function customizeSetupScript(content, config, apiInfo) {
         psid: config.mapePsidlen || (apiHasMape ? api.psidlen : '')
     };
 
-    // GUAプレフィックス（MAP-E）- 実際のIPv6アドレスから計算
-    const guaPrefix = (() => {
-        // APIから実際のIPv6アドレスを取得
-        if (apiInfo && apiInfo.ipv6) {
-            // 実際のIPv6アドレス（例: 2400:4151:80e2:7500:c490:e19a:5098:a584）
-            // から /64 プレフィックスを抽出（最初の4セグメント）
-            const segments = apiInfo.ipv6.split(':');
-            if (segments.length >= 4) {
-                const prefix = segments.slice(0, 4).join(':');
-                return `${prefix}::/64`;
-            }
-        }
-        
-        // フォールバック: API の技術仕様プレフィックスを使用
-        const prefix = (mapeVals.v6p || '').split(':').slice(0, 4).join(':');
-        return prefix ? `${prefix}::/64` : '';
-    })();
+    // GUAプレフィックス
+    const guaPrefix = config.mapeGuaPrefix || calculateGuaPrefixFromApi() || '';
 
     // 選択プロトコル（manual時はラジオ、auto時はAPI検出）
     const manual = (config.connectionMode === 'manual');
@@ -1591,6 +1723,9 @@ function getAiosConfig() {
 
     const config = {
         language: parseOrEmpty('aios-language'),
+        country: parseOrEmpty('aios-country'),
+        timezone: parseOrEmpty('aios-timezone'),
+        zonename: parseOrEmpty('aios-zonename'),
         deviceName: parseOrEmpty('aios-device-name'),
         lanIp: parseOrEmpty('aios-lan-ip'),
         rootPassword: parseOrEmpty('aios-root-password'),
@@ -1614,7 +1749,8 @@ function getAiosConfig() {
         mapeIpv6Prefix: parseOrEmpty('mape-ipv6-prefix'),
         mapeIpv6Prefixlen: parseOrEmpty('mape-ipv6-prefixlen', 'int'),
         mapePsidOffset: parseOrEmpty('mape-psid-offset', 'int'),
-        mapePsidlen: parseOrEmpty('mape-psidlen', 'int')
+        mapePsidlen: parseOrEmpty('mape-psidlen', 'int'),
+        mapeGuaPrefix: parseOrEmpty('mape-gua-prefix')
     };
 
     return config;
@@ -1672,6 +1808,15 @@ function applyInitialsFromApi(type) {
             set('mape-psid-offset', s.psIdOffset);
             set('mape-psidlen', s.psidlen);
         }
+        
+        // GUAプレフィックスも設定
+        const guaPrefix = calculateGuaPrefixFromApi();
+        if (guaPrefix) {
+            set('mape-gua-prefix', guaPrefix);
+        }
+        
+        // GUAセクションの表示を更新
+        updateGuaSectionVisibility();
     }
 }
 
