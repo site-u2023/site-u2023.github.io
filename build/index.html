@@ -2022,18 +2022,20 @@ function showDownloadLinks(images, fullStatus, requestHash) {
                 imageUrl = `https://sysupgrade.openwrt.org/store/${requestHash}/${image.name}`;
                 fileName = image.name;
                 
-                let displayName = fileName;
-                if (image.type) {
-                    if (image.type.includes('sysupgrade')) {
-                        displayName = `🔄 Sysupgrade (${image.type})`;
-                    } else if (image.type.includes('factory')) {
-                        displayName = `🏭 Factory (${image.type})`;
-                    } else if (image.type.includes('sdcard')) {
-                        displayName = `💾 SD Card (${image.type})`;
-                    } else {
-                        displayName = `📦 ${image.type}`;
-                    }
+            let displayName = fileName;
+            if (image.type) {
+                if (image.type.includes('kernel')) {
+                    displayName = `⬇️ KERNEL (${image.type})`;
+                } else if (image.type.includes('sysupgrade')) {
+                    displayName = `⬇️ SYSUPGRADE (${image.type})`;
+                } else if (image.type.includes('factory')) {
+                    displayName = `⬇️ FACTORY (${image.type})`;
+                } else if (image.type.includes('sdcard')) {
+                    displayName = `⬇️ SDCARD.IMG.GZ (${image.type})`;
+                } else {
+                    displayName = `⬇️ ${fileName.toUpperCase()}`;
                 }
+            }
                 
                 link.href = imageUrl;
                 link.className = 'download-link';
