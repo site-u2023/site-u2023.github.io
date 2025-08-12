@@ -1,6 +1,6 @@
 #!/bin/sh
 # Beware! This script will be in /rom/etc/uci-defaults/ as part of the image.
-# Basic settings
+#
 # language="en"
 # country=""
 # timezone="UTC"
