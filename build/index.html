@@ -1862,7 +1862,7 @@ async function buildAsuRequest() {
             target: app.selectedDevice.target,
             profile: app.selectedDevice.id,
             packages: packages,
-            version: (app.selectedVersion && app.selectedVersion.toUpperCase() === 'SNAPSHOT')
+            branch: (app.selectedVersion && app.selectedVersion.toUpperCase() === 'SNAPSHOT')
                 ? 'snapshot'
                 : app.selectedVersion
         };
