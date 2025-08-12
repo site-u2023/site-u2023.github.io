@@ -1374,7 +1374,7 @@ function asuI18nDB(lang) {
 }
 
 function asuCollectPackages() {
-  const lang = document.getElementById('aios-language').value;
+  const lang = document.getElementById('aios-language').value?.trim();
   const db = asuI18nDB(lang);
   const textarea = document.getElementById('asu-packages');
   let current = split(textarea.value);
@@ -1397,15 +1397,24 @@ function asuCollectPackages() {
     });
   });
 
-  // 現在のパッケージ列からもキー抽出（プロフィール/手入力に対応）
+  // 手動/プロフィールによるキー抽出
   current.forEach(pkg => {
     const m = pkg.match(/^luci-app-(.+)$/);
     const key = m ? m[1] : pkg;
     if (db[key]) keys.add(key);
   });
 
-  // 対象キーに紐づく i18n を追加
+  // i18nパッケージ追加（ルール付き）
   keys.forEach(k => (db[k] || []).forEach(add));
+
+  // 言語に応じた opkg / firewall i18n の追記
+  if (lang && !lang.startsWith('auto')) {
+    const suffix = lang.replace(/^luci-i18n-/, '');
+    ['luci-i18n-opkg-', 'luci-i18n-firewall-'].forEach(prefix => {
+      const pkg = `${prefix}${suffix}`;
+      if (!current.includes(pkg)) current.push(pkg);
+    });
+  }
 
   textarea.value = current.join(' ');
 }
