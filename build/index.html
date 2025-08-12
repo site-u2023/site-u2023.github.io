@@ -1397,18 +1397,18 @@ function asuCollectPackages() {
     });
   });
 
-  // 手動/プロフィールによるキー抽出
+  // 現在のパッケージ列からもキー抽出
   current.forEach(pkg => {
     const m = pkg.match(/^luci-app-(.+)$/);
     const key = m ? m[1] : pkg;
     if (db[key]) keys.add(key);
   });
 
-  // i18nパッケージ追加（ルール付き）
+  // 対象キーに紐づく i18n を追加
   keys.forEach(k => (db[k] || []).forEach(add));
 
-  // 言語に応じた opkg / firewall i18n の追記
-  if (lang && !lang.startsWith('auto')) {
+  // 🌐 言語に応じた opkg / firewall i18n の追記（en除外）
+  if (lang && !lang.startsWith('auto') && lang !== 'en') {
     const suffix = lang.replace(/^luci-i18n-/, '');
     ['luci-i18n-opkg-', 'luci-i18n-firewall-'].forEach(prefix => {
       const pkg = `${prefix}${suffix}`;
@@ -1416,6 +1416,7 @@ function asuCollectPackages() {
     });
   }
 
+  // 更新反映
   textarea.value = current.join(' ');
 }
         
