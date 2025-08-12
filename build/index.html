@@ -1324,6 +1324,9 @@ let mapShCache = {
 // DOMContentLoaded時の初期化
 document.addEventListener('DOMContentLoaded', init);
 
+// ★言語変更時にも即反映させる
+document.getElementById('aios-language').addEventListener('change', asuCollectPackages);
+
 // ==================== 初期化関数 ====================
 async function init() {
     try {
@@ -1332,6 +1335,8 @@ async function init() {
         
         // map.shを事前ロード
         await loadMapShScripts();
+
+        asuCollectPackages();
         
         // ISP情報を初期取得（常時表示のため）
         console.log('Starting ISP info fetch...');
@@ -1342,6 +1347,53 @@ async function init() {
     }
 }
 
+// ==================== パッケージ関数 ====================
+function asuI18nDB(lang) {
+  const s = `-${lang}`;
+  return {
+    base: [`luci-i18n-base${s}`],
+    opkg: [`luci-i18n-opkg${s}`],
+    firewall: [`luci-i18n-firewall${s}`],
+    ttyd: [`luci-i18n-ttyd${s}`],
+    commands: [`luci-i18n-commands${s}`],
+    irqbalance: [`luci-i18n-irqbalance${s}`],
+    qos: [`luci-i18n-qos${s}`],
+    sqm: [`luci-i18n-sqm${s}`],
+    statistics: [`luci-i18n-statistics${s}`],
+    nlbwmon: [`luci-i18n-nlbwmon${s}`],
+    wifischedule: [`luci-i18n-wifischedule${s}`],
+    wol: [`luci-i18n-wol${s}`],
+    ddns: [`luci-i18n-ddns${s}`],
+    banip: [`luci-i18n-banip${s}`],
+    watchcat: [`luci-i18n-watchcat${s}`],
+    dashboard: [`luci-i18n-dashboard${s}`],
+    attendedsysupgrade: [`luci-i18n-attendedsysupgrade${s}`],
+    'hd-idle': [`luci-i18n-hd-idle${s}`],
+    samba4: [`luci-i18n-samba4${s}`],
+  };
+}
+
+function asuCollectPackages() {
+  const lang = document.getElementById('aios-language').value;
+  const db = asuI18nDB(lang);
+  const out = [];
+  document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
+    const names = cb.getAttribute('data-package')?.split(/\s+/) || [];
+    names.forEach(pkg => {
+      out.push(pkg);
+      const m = pkg.match(/^luci-app-(.+)$/);
+      const key = m ? m[1] : pkg;
+      const i18n = db[key] || [];
+      i18n.forEach(p => out.push(p));
+    });
+  });
+  document.getElementById('asu-packages').value = out.join(' ');
+}
+
+document.getElementById('asu-form').addEventListener('submit', function () {
+  asuCollectPackages();
+});
+        
 // ==================== map.sh関連 ====================
 async function loadMapShScripts() {
     try {
