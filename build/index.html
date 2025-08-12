@@ -1410,15 +1410,6 @@ function asuCollectPackages() {
   // 対象キーに紐づく i18n を追加
   keys.forEach(k => (db[k] || []).forEach(add));
 
-  // 🌐 言語に応じた opkg / firewall i18n の追記（en除外）
-  if (lang && !lang.startsWith('auto') && lang !== 'en') {
-    const suffix = lang.replace(/^luci-i18n-/, '');
-    ['luci-i18n-opkg-', 'luci-i18n-firewall-'].forEach(prefix => {
-      const pkg = `${prefix}${suffix}`;
-      if (!current.includes(pkg)) current.push(pkg);
-    });
-  }
-
   // 更新反映
   textarea.value = current.join(' ');
 }
@@ -2429,28 +2420,15 @@ function split(str) {
 }
 
 function updateRequiredPackages() {
-    const config = getAiosConfig();
-    const packagesTextarea = document.getElementById('asu-packages');
-    let currentPackages = split(packagesTextarea.value);
-    
-    // 既存の自動追加パッケージを削除（map, ds-lite, 言語パッケージ）
-    currentPackages = currentPackages.filter(pkg => 
-        pkg !== 'map' && 
-        pkg !== 'ds-lite' && 
-        !pkg.startsWith('luci-i18n-base-')
-    );
-    
-    // 言語パッケージの追加（英語以外の場合）
-    if (config.language && config.language !== 'en') {
-        const langs = [
-            `luci-i18n-base-${config.language}`,
-            `luci-i18n-opkg-${config.language}`,
-            `luci-i18n-firewall-${config.language}`,
-        ];
-        langs.forEach(p => {
-            if (!currentPackages.includes(p)) currentPackages.push(p);
-        });
-    }
+  const config = getAiosConfig();
+  const packagesTextarea = document.getElementById('asu-packages');
+  let currentPackages = split(packagesTextarea.value);
+
+  // 自動追加対象を制限（map, ds-lite のみ）
+  currentPackages = currentPackages.filter(pkg =>
+    pkg !== 'map' &&
+    pkg !== 'ds-lite'
+  );
     
     // 接続方式に応じたパッケージの追加
     if (config.connectionMode === 'auto') {
