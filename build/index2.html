@@ -734,6 +734,11 @@
                         </div>
                         <div class="package-description">SMB/CIFS file sharing server</div>
                     </div>
+                    
+                    <div class="form-group" style="margin-top: 1.5rem;">
+                        <label for="asu-packages">Packages to add/remove (one per line, prefix with '-' to remove):</label>
+                        <textarea id="asu-packages" class="form-control" rows="3" placeholder="luci&#10;luci-ssl&#10;-wpad-basic-wolfssl&#10;wpad-wolfssl"></textarea>
+                    </div>
                 </div>
             </div>
 
@@ -1030,17 +1035,12 @@
                             <div id="isp-technical-info" style="font-family: monospace; font-size: 0.9em; margin-top: 0.5rem; display: none;"></div>
                         </div>
                     </div>
+                    
+                    <div class="form-group" style="margin-top: 1.5rem;">
+                        <label for="uci-defaults-content">Script to run on first boot (uci-defaults):</label>
+                        <textarea id="uci-defaults-content" class="form-control" rows="8" placeholder="#!/bin/sh&#10;&#10;# Your custom script here&#10;# This area is for manual editing - configuration wizard will not overwrite your changes"></textarea>
+                    </div>
                 </div>
-            </div>
-
-            <div class="form-group">
-                <label for="asu-packages">Packages to add/remove (one per line, prefix with '-' to remove):</label>
-                <textarea id="asu-packages" class="form-control" rows="3" placeholder="luci&#10;luci-ssl&#10;-wpad-basic-wolfssl&#10;wpad-wolfssl"></textarea>
-            </div>
-
-            <div class="form-group">
-                <label for="uci-defaults-content">Script to run on first boot (uci-defaults):</label>
-                <textarea id="uci-defaults-content" class="form-control" rows="8" placeholder="#!/bin/sh&#10;&#10;# Your custom script here&#10;# This area is for manual editing - configuration wizard will not overwrite your changes"></textarea>
             </div>
 
             <button id="request-build" class="btn btn-primary" style="display: none;">REQUEST BUILD</button>
@@ -1098,6 +1098,9 @@
 # OpenWrt version flags (one will be set by web)
 # openwrt_19=""
 # openwrt_21=""
+#
+# enable_ttyd=""
+# enable_irqbalance=""
 
 # Network interface names
 WAN_DEF="wan"
@@ -1294,13 +1297,29 @@ if [ -n "$openwrt_21" ]; then
     uci set dhcp.\${MAP6_NAME}.ignore='1'
 fi
 
+# Configure ttyd service 
+if [ -n "$enable_ttyd" ]; then
+    echo "Enabling ttyd service..." 
+    uci set ttyd.@ttyd[0].ttyd.ipv6='1' 
+    uci set ttyd.@ttyd[0].command='/bin/login -f root' 
+    uci commit ttyd
+    /etc/init.d/ttyd enable > /dev/null 2>&1 
+    /etc/init.d/ttyd start > /dev/null 2>&1 
+fi 
+
+# Configure irqbalance service
+if [ -n "$enable_irqbalance" ]; then
+    echo "Enabling irqbalance service..."
+    uci set irqbalance.irqbalance=irqbalance
+    uci set irqbalance.irqbalance.enabled='1'
+    uci commit irqbalance
+    /etc/init.d/irqbalance enable > /dev/null 2>&1
+    /etc/init.d/irqbalance start > /dev/null 2>&1
+fi
+
 # Commit all changes
 echo "Committing UCI configuration..."
-uci commit system 2>/dev/null
-uci commit wireless 2>/dev/null
-uci commit network
-uci commit dhcp
-uci commit firewall
+uci commit 2>/dev/null
 
 echo "Configuration completed successfully!"
 echo "All done!"
@@ -1324,6 +1343,9 @@ let mapShCache = {
 // DOMContentLoaded時の初期化
 document.addEventListener('DOMContentLoaded', init);
 
+// ★言語変更時にも即反映させる
+document.getElementById('aios-language').addEventListener('change', asuCollectPackages);
+
 // ==================== 初期化関数 ====================
 async function init() {
     try {
@@ -1332,6 +1354,8 @@ async function init() {
         
         // map.shを事前ロード
         await loadMapShScripts();
+
+        asuCollectPackages();
         
         // ISP情報を初期取得（常時表示のため）
         console.log('Starting ISP info fetch...');
@@ -1342,6 +1366,95 @@ async function init() {
     }
 }
 
+// ==================== パッケージ関数 ====================
+function normalizeLang(lang) {
+  const map = {
+    en: '',       // 英語は i18n パッケージ不要
+    pt_br: 'pt-br',
+    zh_cn: 'zh-cn',
+    zh_tw: 'zh-tw'
+  };
+  return (map[lang] ?? String(lang || '').toLowerCase());
+}
+
+function asuI18nDB(lang) {
+  const norm = normalizeLang(lang);
+  const isEN = !norm;
+  const s = isEN ? '' : `-${norm}`;
+  const make = (key) => (isEN ? [] : [`luci-i18n-${key}${s}`]);
+
+  return {
+    base: make('base'),
+    opkg: make('opkg'),
+    firewall: make('firewall'),
+    ttyd: make('ttyd'),
+    commands: make('commands'),
+    irqbalance: make('irqbalance'),
+    qos: make('qos'),
+    sqm: make('sqm'),
+    statistics: make('statistics'),
+    nlbwmon: make('nlbwmon'),
+    wifischedule: make('wifischedule'),
+    wol: make('wol'),
+    ddns: make('ddns'),
+    banip: make('banip'),
+    watchcat: make('watchcat'),
+    dashboard: make('dashboard'),
+    attendedsysupgrade: make('attendedsysupgrade'),
+    'hd-idle': make('hd-idle'),
+    samba4: make('samba4'),
+  };
+}
+
+function asuCollectPackages() {
+  const lang = document.getElementById('aios-language').value?.trim() || 'en';
+  const norm = normalizeLang(lang);
+  const db = asuI18nDB(lang);
+  const textarea = document.getElementById('asu-packages');
+  let current = split(textarea.value);
+
+  // i18n の整理:
+  // - 英語(norm === '')なら全 i18n を削除
+  // - 非英語なら現在言語サフィックス以外を削除（英語も含めて削除）
+  current = current.filter(pkg => {
+    if (!pkg.startsWith('luci-i18n-')) return true;
+    const m = pkg.match(/^luci-i18n-.+?-([A-Za-z]{2}(?:-[A-Za-z]{2})?)$/);
+    const suffix = (m && m[1]) ? m[1].toLowerCase() : '';
+    if (!norm) return false;     // 英語: i18n 全排除
+    return suffix === norm;      // 現在言語のみ温存
+  });
+
+  const add = (pkg) => {
+    if (pkg && !current.includes(pkg)) current.push(pkg);
+  };
+
+  // 非英語のみ、基本 i18n を追加
+  ['base', 'opkg', 'firewall'].forEach(k => (db[k] || []).forEach(add));
+
+  // i18n 対象キー（セレクターと手打ちの両方から抽出）
+  const keys = new Set();
+
+  document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
+    const names = cb.getAttribute('data-package')?.split(/\s+/) || [];
+    names.forEach(pkg => {
+      const m = pkg.match(/^luci-app-(.+)$/);
+      const key = m ? m[1] : pkg;
+      keys.add(key);
+    });
+  });
+
+  current.forEach(pkg => {
+    const m = pkg.match(/^luci-app-(.+)$/);
+    const key = m ? m[1] : pkg;
+    if (db[key]) keys.add(key);
+  });
+
+  // 現在言語の i18n のみ追加（英語は何も追加しない）
+  keys.forEach(k => (db[k] || []).forEach(add));
+
+  textarea.value = current.join(' ');
+}
+        
 // ==================== map.sh関連 ====================
 async function loadMapShScripts() {
     try {
@@ -1531,6 +1644,7 @@ function updatePackageListFromSelector() {
     });
     
     packagesTextarea.value = currentPackages.join(' ');
+    asuCollectPackages();
 }
 
 // ==================== バージョン管理 ====================
@@ -1689,6 +1803,7 @@ async function loadDeviceProfile(device) {
             
             console.log(`Setting packages: ${allPackages.join(' ')}`);
             document.getElementById('asu-packages').value = allPackages.join(' ');
+            asuCollectPackages(); 
             
             showDeviceInfo();
         } else {
@@ -2346,24 +2461,15 @@ function split(str) {
 }
 
 function updateRequiredPackages() {
-    const config = getAiosConfig();
-    const packagesTextarea = document.getElementById('asu-packages');
-    let currentPackages = split(packagesTextarea.value);
-    
-    // 既存の自動追加パッケージを削除（map, ds-lite, 言語パッケージ）
-    currentPackages = currentPackages.filter(pkg => 
-        pkg !== 'map' && 
-        pkg !== 'ds-lite' && 
-        !pkg.startsWith('luci-i18n-base-')
-    );
-    
-    // 言語パッケージの追加（英語以外の場合）
-    if (config.language && config.language !== 'en') {
-        const languagePackage = `luci-i18n-base-${config.language}`;
-        if (!currentPackages.includes(languagePackage)) {
-            currentPackages.push(languagePackage);
-        }
-    }
+  const config = getAiosConfig();
+  const packagesTextarea = document.getElementById('asu-packages');
+  let currentPackages = split(packagesTextarea.value);
+
+  // 自動追加対象を制限（map, ds-lite のみ）
+  currentPackages = currentPackages.filter(pkg =>
+    pkg !== 'map' &&
+    pkg !== 'ds-lite'
+  );
     
     // 接続方式に応じたパッケージの追加
     if (config.connectionMode === 'auto') {
