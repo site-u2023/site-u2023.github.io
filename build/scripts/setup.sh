@@ -2,9 +2,9 @@
 # Beware! This script will be in /rom/etc/uci-defaults/ as part of the image.
 #
 # language="en"
-# country=""
+# country="US"
 # timezone="UTC"
-# zonename=""
+# zonename="America/New_York"
 # lan_ip_address="192.168.1.1"
 # device_name="OpenWrt"
 # root_password="Password"
