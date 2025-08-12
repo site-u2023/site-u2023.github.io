@@ -1348,49 +1348,73 @@ async function init() {
 }
 
 // ==================== パッケージ関数 ====================
+function normalizeLang(lang) {
+  const map = {
+    en: '',       // 英語は i18n パッケージ不要
+    pt_br: 'pt-br',
+    zh_cn: 'zh-cn',
+    zh_tw: 'zh-tw'
+  };
+  return (map[lang] ?? String(lang || '').toLowerCase());
+}
+
 function asuI18nDB(lang) {
-  const s = `-${lang}`;
-  const isEN = lang === 'en';
-  const make = (key) => isEN ? [] : [`luci-i18n-${key}${s}`];
+  const norm = normalizeLang(lang);
+  const isEN = !norm;
+  const s = isEN ? '' : `-${norm}`;
+  const make = (key) => (isEN ? [] : [`luci-i18n-${key}${s}`]);
 
   return {
-    base: [`luci-i18n-base${s}`],
-    opkg: [`luci-i18n-opkg${s}`],
-    firewall: [`luci-i18n-firewall${s}`],
-    ttyd: [`luci-i18n-ttyd${s}`],
-    commands: [`luci-i18n-commands${s}`],
-    irqbalance: [`luci-i18n-irqbalance${s}`],
-    qos: [`luci-i18n-qos${s}`],
-    sqm: [`luci-i18n-sqm${s}`],
-    statistics: [`luci-i18n-statistics${s}`],
-    nlbwmon: [`luci-i18n-nlbwmon${s}`],
-    wifischedule: [`luci-i18n-wifischedule${s}`],
-    wol: [`luci-i18n-wol${s}`],
-    ddns: [`luci-i18n-ddns${s}`],
-    banip: [`luci-i18n-banip${s}`],
-    watchcat: [`luci-i18n-watchcat${s}`],
-    dashboard: [`luci-i18n-dashboard${s}`],
-    attendedsysupgrade: [`luci-i18n-attendedsysupgrade${s}`],
-    'hd-idle': [`luci-i18n-hd-idle${s}`],
-    samba4: [`luci-i18n-samba4${s}`],
+    base: make('base'),
+    opkg: make('opkg'),
+    firewall: make('firewall'),
+    ttyd: make('ttyd'),
+    commands: make('commands'),
+    irqbalance: make('irqbalance'),
+    qos: make('qos'),
+    sqm: make('sqm'),
+    statistics: make('statistics'),
+    nlbwmon: make('nlbwmon'),
+    wifischedule: make('wifischedule'),
+    wol: make('wol'),
+    ddns: make('ddns'),
+    banip: make('banip'),
+    watchcat: make('watchcat'),
+    dashboard: make('dashboard'),
+    attendedsysupgrade: make('attendedsysupgrade'),
+    'hd-idle': make('hd-idle'),
+    samba4: make('samba4'),
   };
 }
 
 function asuCollectPackages() {
-  const lang = document.getElementById('aios-language').value?.trim();
+  const lang = document.getElementById('aios-language').value?.trim() || 'en';
+  const norm = normalizeLang(lang);
   const db = asuI18nDB(lang);
   const textarea = document.getElementById('asu-packages');
   let current = split(textarea.value);
+
+  // i18n の整理:
+  // - 英語(norm === '')なら全 i18n を削除
+  // - 非英語なら現在言語サフィックス以外を削除（英語も含めて削除）
+  current = current.filter(pkg => {
+    if (!pkg.startsWith('luci-i18n-')) return true;
+    const m = pkg.match(/^luci-i18n-.+?-([A-Za-z]{2}(?:-[A-Za-z]{2})?)$/);
+    const suffix = (m && m[1]) ? m[1].toLowerCase() : '';
+    if (!norm) return false;     // 英語: i18n 全排除
+    return suffix === norm;      // 現在言語のみ温存
+  });
 
   const add = (pkg) => {
     if (pkg && !current.includes(pkg)) current.push(pkg);
   };
 
-  // 言語の常時追加（base/opkg/firewall）
+  // 非英語のみ、基本 i18n を追加
   ['base', 'opkg', 'firewall'].forEach(k => (db[k] || []).forEach(add));
 
-  // セレクターで選ばれたキー
+  // i18n 対象キー（セレクターと手打ちの両方から抽出）
   const keys = new Set();
+
   document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
     const names = cb.getAttribute('data-package')?.split(/\s+/) || [];
     names.forEach(pkg => {
@@ -1400,17 +1424,15 @@ function asuCollectPackages() {
     });
   });
 
-  // 現在のパッケージ列からもキー抽出
   current.forEach(pkg => {
     const m = pkg.match(/^luci-app-(.+)$/);
     const key = m ? m[1] : pkg;
     if (db[key]) keys.add(key);
   });
 
-  // 対象キーに紐づく i18n を追加
+  // 現在言語の i18n のみ追加（英語は何も追加しない）
   keys.forEach(k => (db[k] || []).forEach(add));
 
-  // 更新反映
   textarea.value = current.join(' ');
 }
         
