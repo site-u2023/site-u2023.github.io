@@ -1865,9 +1865,7 @@ async function buildAsuRequest() {
             packages: packages,
             version: isSnapshot ? 'snapshot' : app.selectedVersion
         };
-        if (isSnapshot) {
-            requestBody.branch = 'snapshot';
-        }
+
         if (script && script.trim()) {
             requestBody.defaults = script;
         }
