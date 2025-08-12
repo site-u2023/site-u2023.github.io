@@ -796,7 +796,7 @@
                         <div class="form-group">
                             <label for="aios-country">Country</label>
                             <input type="text" id="aios-country" class="form-control" placeholder="US" maxlength="2">
-                            <small class="form-text text-muted">2-letter country code (e.g., US, JP, DE)</small>
+                            <small class="form-text text-muted">2-letter country code (e.g., US, JP)</small>
                         </div>
                     </div>
 
@@ -808,8 +808,8 @@
                         </div>
                         <div class="form-group">
                             <label for="aios-zonename">Zone name</label>
-                            <input type="text" id="aios-zonename" class="form-control" placeholder="">
-                            <small class="form-text text-muted">Optional: e.g., Asia/Tokyo, America/New_York</small>
+                            <input type="text" id="aios-zonename" class="form-control" placeholder="America/New_York">
+                            <small class="form-text text-muted">Optional: e.g., America/New_York, Asia/Tokyo</small>
                         </div>
                     </div>
 
@@ -821,7 +821,7 @@
                         </div>
                         <div class="form-group">
                             <label for="aios-device-name">Device name</label>
-                            <input type="text" id="aios-device-name" class="form-control" placeholder="OpenWrt-Router">
+                            <input type="text" id="aios-device-name" class="form-control" placeholder="OpenWrt">
                         </div>
                     </div>
 
@@ -841,7 +841,7 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label for="aios-wifi-ssid">Wi-Fi SSID</label>
-                            <input type="text" id="aios-wifi-ssid" class="form-control" placeholder="MyOpenWrt">
+                            <input type="text" id="aios-wifi-ssid" class="form-control" placeholder="OpenWrt">
                         </div>
                         <div class="form-group">
                             <label for="aios-wifi-password">Wi-Fi password</label>
@@ -1063,9 +1063,9 @@
 # Beware! This script will be in /rom/etc/uci-defaults/ as part of the image.
 #
 # language="en"
-# country=""
+# country="US"
 # timezone="UTC"
-# zonename=""
+# zonename="America/New_York"
 # lan_ip_address="192.168.1.1"
 # device_name="OpenWrt"
 # root_password="Password"
