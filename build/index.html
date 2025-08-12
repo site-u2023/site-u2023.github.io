@@ -1916,22 +1916,19 @@ async function pollBuildStatus(requestHash) {
 
     while (attempts < maxAttempts) {
         try {
-            const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
-            const minutes = Math.floor(elapsedSeconds / 60);
-            const seconds = elapsedSeconds % 60;
-            const timeStr = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
-            
             const statusUrl = `https://sysupgrade.openwrt.org/api/v1/build/${requestHash}`;
-
             const response = await fetch(statusUrl, {
                 method: 'GET',
-                headers: {
-                    'Accept': 'application/json'
-                }
+                headers: { 'Accept': 'application/json' }
             });
 
             if (!response.ok) {
                 if (response.status === 404 && attempts < 5) {
+                    const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+                    const minutes = Math.floor(elapsedSeconds / 60);
+                    const seconds = elapsedSeconds % 60;
+                    const timeStr = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+
                     showProgress(`Waiting for build to start... ${timeStr}`, 10);
                     await new Promise(resolve => setTimeout(resolve, 5000));
                     attempts++;
@@ -1941,50 +1938,54 @@ async function pollBuildStatus(requestHash) {
             }
 
             const statusText = await response.text();
-
             let status;
+
             try {
                 status = JSON.parse(statusText);
             } catch (e) {
                 throw new Error('Invalid JSON in status response: ' + statusText);
             }
-            
+
+            const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+            const minutes = Math.floor(elapsedSeconds / 60);
+            const seconds = elapsedSeconds % 60;
+            const timeStr = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+
             const progressPercent = Math.min((elapsedSeconds / 600) * 85 + 10, 95);
+            const progressMsg =
+                status.detail && typeof status.detail === 'string' ? status.detail :
+                status.status && typeof status.status === 'string' ? status.status :
+                'Processing';
 
             if (status.status === 'done' || status.status === 'success' || 
                 status.detail === 'done' || status.imagebuilder_status === 'done') {
-                let images = status.images || 
-                           status.request?.images || 
-                           status.request?.files ||
-                           status.files ||
-                           [];
-                
-                let rh = status.request_hash || status.request?.request_hash;
-                
+                const images = status.images || 
+                               status.request?.images || 
+                               status.request?.files ||
+                               status.files || [];
+
+                const rh = status.request_hash || status.request?.request_hash;
+
                 showProgress('Build completed!', 100);
                 setTimeout(() => {
                     hideProgress();
                     showDownloadLinks(images, status, rh);
                 }, 500);
                 return;
-            } else if (status.status === 'failed' || status.status === 'failure' || 
-                      status.detail === 'failed' || status.imagebuilder_status === 'failed') {
-                throw new Error(`Build failed: ${status.detail || status.stdout || 'Unknown error'}`);
-            } else if (status.status === 'queued') {
-                showProgress(`Queued for build... ${timeStr}`, Math.max(progressPercent * 0.3, 10));
-            } else if (status.status === 'building') {
-                showProgress(`Building image... ${timeStr}`, Math.max(progressPercent * 0.8, 30));
-            } else {
-                showProgress(`Processing (${status.status})... ${timeStr}`, progressPercent);
             }
 
+            if (status.status === 'failed' || status.status === 'failure' || 
+                status.detail === 'failed' || status.imagebuilder_status === 'failed') {
+                throw new Error(`Build failed: ${status.detail || status.stdout || 'Unknown error'}`);
+            }
+
+            showProgress(`${progressMsg}... ${timeStr}`, progressPercent);
             await new Promise(resolve => setTimeout(resolve, 5000));
             attempts++;
 
         } catch (error) {
-            if (attempts >= 5) {
-                throw error;
-            }
+            if (attempts >= 5) throw error;
+
             const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
             showProgress(`Connection error, retrying... ${elapsedSeconds}s`, 5);
             await new Promise(resolve => setTimeout(resolve, 5000));
