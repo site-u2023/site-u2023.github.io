@@ -1850,22 +1850,26 @@ async function buildAsuRequest() {
         alert('Please select a device first');
         return;
     }
+        try {
+            document.getElementById('request-build').disabled = true;
+            showProgress('Sending build request...', 10);
 
-    try {
-        document.getElementById('request-build').disabled = true;
-        showProgress('Sending build request...', 10);
+            const packages = split(document.getElementById('asu-packages').value);
+            const script = document.getElementById('uci-defaults-content').value;
+            const isSnapshot = app.selectedVersion && app.selectedVersion.toUpperCase() === 'SNAPSHOT';
 
-        const packages = split(document.getElementById('asu-packages').value);
-        const script = document.getElementById('uci-defaults-content').value;
-
-        const requestBody = {
-            target: app.selectedDevice.target,
-            profile: app.selectedDevice.id,
-            packages: packages,
-            branch: (app.selectedVersion && app.selectedVersion.toUpperCase() === 'SNAPSHOT')
-                ? 'snapshot'
-                : app.selectedVersion
-        };
+            const requestBody = {
+                target: app.selectedDevice.target,
+                profile: app.selectedDevice.id,
+                packages: packages,
+                version: isSnapshot ? 'snapshot' : app.selectedVersion
+            };
+            if (isSnapshot) {
+                requestBody.branch = 'snapshot';
+            }
+        } catch (e) {
+            console.error(e);
+        }
 
         if (script && script.trim()) {
             requestBody.defaults = script;
