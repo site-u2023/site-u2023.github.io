@@ -1862,9 +1862,7 @@ async function buildAsuRequest() {
             target: app.selectedDevice.target,
             profile: app.selectedDevice.id,
             packages: packages,
-            version: (app.selectedVersion && app.selectedVersion.toUpperCase() === 'SNAPSHOT')
-                ? 'snapshot'
-                : app.selectedVersion
+            version: app.selectedVersion
         };
 
         if (script && script.trim()) {
@@ -2009,63 +2007,124 @@ function hideProgress() {
 
 function showDownloadLinks(images, fullStatus, requestHash) {
     const container = document.getElementById('download-links');
-    container.innerHTML = '<h4>Download</h4>';
-
-    if (images && images.length > 0) {
-        images.forEach((image, index) => {
-            const link = document.createElement('a');
-            let imageUrl = '';
-            let fileName = '';
+    
+    if (!images || images.length === 0) {
+        container.innerHTML = '<h4>Downloads</h4><p>No images available</p>';
+        return;
+    }
+    
+    container.innerHTML = `
+        <div class="images">
+            <h4>Factory Image</h4>
+            <p class="text-muted">The factory image is used for the initial flashing of OpenWrt. This would replace an existing firmware.</p>
+            <div id="factory-images"></div>
             
-            if (image.name && requestHash) {
-                imageUrl = `https://sysupgrade.openwrt.org/store/${requestHash}/${image.name}`;
-                fileName = image.name;
-                
-            let displayName = fileName;
-            if (image.type) {
-                if (image.type.includes('kernel')) {
-                    displayName = `⬇️ KERNEL (${image.type})`;
-                } else if (image.type.includes('sysupgrade')) {
-                    displayName = `⬇️ SYSUPGRADE (${image.type})`;
-                } else if (image.type.includes('factory')) {
-                    displayName = `⬇️ FACTORY (${image.type})`;
-                } else if (image.type.includes('sdcard')) {
-                    displayName = `⬇️ SDCARD.IMG.GZ (${image.type})`;
-                } else {
-                    displayName = `⬇️ ${fileName.toUpperCase()}`;
-                }
-            }
-                
-                link.href = imageUrl;
-                link.className = 'download-link';
+            <h4>Sysupgrade Image</h4>
+            <p class="text-muted">The sysupgrade image is used to upgrade an existing OpenWrt installation.</p>
+            <div id="sysupgrade-images"></div>
+            
+            <div id="other-images" style="display: none;">
+                <h4>Other Images</h4>
+                <div id="other-images-content"></div>
+            </div>
+        </div>
+    `;
+
+    const factoryContainer = document.getElementById('factory-images');
+    const sysupgradeContainer = document.getElementById('sysupgrade-images');
+    const otherContainer = document.getElementById('other-images-content');
+    const otherSection = document.getElementById('other-images');
+    
+    let hasFactory = false;
+    let hasSysupgrade = false;
+    let hasOther = false;
+
+    images.forEach((image) => {
+        if (!image.name || !requestHash) return;
+        
+        const imageUrl = `https://sysupgrade.openwrt.org/store/${requestHash}/${image.name}`;
+        const fileName = image.name;
+        
+        const link = document.createElement('a');
+        link.href = imageUrl;
+        link.className = 'download-link';
+        link.target = '_blank';
+        link.download = fileName;
+        link.title = fileName;
+        
+        // 公式に合わせたファイル名の表示形式
+        let displayName = fileName;
+        
+        // ファイルタイプの判定と振り分け
+        if (image.type) {
+            const type = image.type.toLowerCase();
+            
+            if (type.includes('factory')) {
+                displayName = fileName;
                 link.textContent = displayName;
-                link.target = '_blank';
-                link.download = fileName;
-                link.title = fileName;
-                
-                container.appendChild(link);
-                container.appendChild(document.createElement('br'));
-                
+                factoryContainer.appendChild(link);
+                factoryContainer.appendChild(document.createTextNode(' '));
+                hasFactory = true;
+            } else if (type.includes('sysupgrade')) {
+                displayName = fileName;
+                link.textContent = displayName;
+                sysupgradeContainer.appendChild(link);
+                sysupgradeContainer.appendChild(document.createTextNode(' '));
+                hasSysupgrade = true;
             } else {
-                const errorDiv = document.createElement('div');
-                errorDiv.style.color = 'red';
-                errorDiv.style.margin = '5px 0';
-                errorDiv.innerHTML = `❌ Image ${index}: Missing data (name: ${!!image.name}, hash: ${!!requestHash})`;
-                container.appendChild(errorDiv);
+                displayName = fileName;
+                link.textContent = displayName;
+                otherContainer.appendChild(link);
+                otherContainer.appendChild(document.createTextNode(' '));
+                hasOther = true;
             }
-        });
-        
-        const debugDiv = document.createElement('div');
-        debugDiv.style.background = '#f9f9f9';
-        debugDiv.style.padding = '5px';
-        debugDiv.style.marginTop = '10px';
-        debugDiv.style.fontSize = '11px';
-        debugDiv.style.color = '#666';
-        debugDiv.innerHTML = `<strong>Debug:</strong> Found ${images.length} images, Request Hash: ${requestHash?.substring(0, 16)}...`;
-        container.appendChild(debugDiv);
-        
-    } else {
-        container.innerHTML = '<h4>Download</h4><p>No images available</p>';
+        } else {
+            // typeが不明な場合はファイル名で判定
+            const nameLower = fileName.toLowerCase();
+            if (nameLower.includes('factory')) {
+                link.textContent = displayName;
+                factoryContainer.appendChild(link);
+                factoryContainer.appendChild(document.createTextNode(' '));
+                hasFactory = true;
+            } else if (nameLower.includes('sysupgrade')) {
+                link.textContent = displayName;
+                sysupgradeContainer.appendChild(link);
+                sysupgradeContainer.appendChild(document.createTextNode(' '));
+                hasSysupgrade = true;
+            } else {
+                link.textContent = displayName;
+                otherContainer.appendChild(link);
+                otherContainer.appendChild(document.createTextNode(' '));
+                hasOther = true;
+            }
+        }
+    });
+    
+    // 空のセクションに「利用不可」メッセージを表示
+    if (!hasFactory) {
+        factoryContainer.innerHTML = '<span class="text-muted">No factory image available for this device.</span>';
+    }
+    
+    if (!hasSysupgrade) {
+        sysupgradeContainer.innerHTML = '<span class="text-muted">No sysupgrade image available for this device.</span>';
+    }
+    
+    // その他のイメージがある場合のみセクションを表示
+    if (hasOther) {
+        otherSection.style.display = 'block';
+    }
+    
+    // Build情報を表示（公式スタイル）
+    if (requestHash) {
+        const buildInfo = document.createElement('div');
+        buildInfo.className = 'info';
+        buildInfo.style.marginTop = '1rem';
+        buildInfo.innerHTML = `
+            <h5>Build Information</h5>
+            <div>Request ID: <code>${requestHash}</code></div>
+            <div>Build completed successfully</div>
+        `;
+        container.appendChild(buildInfo);
     }
 }
     </script>
