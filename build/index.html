@@ -1857,13 +1857,12 @@ async function buildAsuRequest() {
 
         const packages = split(document.getElementById('asu-packages').value);
         const script = document.getElementById('uci-defaults-content').value;
-        const isSnapshot = app.selectedVersion && app.selectedVersion.toUpperCase() === 'SNAPSHOT';
 
         const requestBody = {
             target: app.selectedDevice.target,
             profile: app.selectedDevice.id,
             packages: packages,
-            version: isSnapshot ? 'snapshot' : app.selectedVersion
+            version: app.selectedVersion
         };
 
         if (script && script.trim()) {
