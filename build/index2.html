@@ -796,7 +796,7 @@
                         <div class="form-group">
                             <label for="aios-country">Country</label>
                             <input type="text" id="aios-country" class="form-control" placeholder="US" maxlength="2">
-                            <small class="form-text text-muted">2-letter country code (e.g., US, JP, DE)</small>
+                            <small class="form-text text-muted">2-letter country code (e.g., US, JP)</small>
                         </div>
                     </div>
 
@@ -808,8 +808,8 @@
                         </div>
                         <div class="form-group">
                             <label for="aios-zonename">Zone name</label>
-                            <input type="text" id="aios-zonename" class="form-control" placeholder="">
-                            <small class="form-text text-muted">Optional: e.g., Asia/Tokyo, America/New_York</small>
+                            <input type="text" id="aios-zonename" class="form-control" placeholder="America/New_York">
+                            <small class="form-text text-muted">Optional: e.g., America/New_York, Asia/Tokyo</small>
                         </div>
                     </div>
 
@@ -821,7 +821,7 @@
                         </div>
                         <div class="form-group">
                             <label for="aios-device-name">Device name</label>
-                            <input type="text" id="aios-device-name" class="form-control" placeholder="OpenWrt-Router">
+                            <input type="text" id="aios-device-name" class="form-control" placeholder="OpenWrt">
                         </div>
                     </div>
 
@@ -841,7 +841,7 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label for="aios-wifi-ssid">Wi-Fi SSID</label>
-                            <input type="text" id="aios-wifi-ssid" class="form-control" placeholder="MyOpenWrt">
+                            <input type="text" id="aios-wifi-ssid" class="form-control" placeholder="OpenWrt">
                         </div>
                         <div class="form-group">
                             <label for="aios-wifi-password">Wi-Fi password</label>
@@ -1061,18 +1061,14 @@
         // setup.shテンプレートを内蔵（外部ファイル読み込み不要）
         const SETUP_SH_TEMPLATE = `#!/bin/sh
 # Beware! This script will be in /rom/etc/uci-defaults/ as part of the image.
-# Uncomment lines to apply:
 #
-# Basic settings
-# root_password=""
-# device_name=""
-# lan_ip_address="192.168.1.1"
 # language="en"
-# country=""
+# country="US"
 # timezone="UTC"
-# zonename=""
-#
-# WLAN settings
+# zonename="America/New_York"
+# lan_ip_address="192.168.1.1"
+# device_name="OpenWrt"
+# root_password="Password"
 # wlan_name="OpenWrt"
 # wlan_password="12345678"
 #
@@ -1101,6 +1097,7 @@
 #
 # enable_ttyd=""
 # enable_irqbalance=""
+# enable_samba4=""
 
 # Network interface names
 WAN_DEF="wan"
@@ -1297,24 +1294,39 @@ if [ -n "$openwrt_21" ]; then
     uci set dhcp.\${MAP6_NAME}.ignore='1'
 fi
 
-# Configure ttyd service 
+# Configure ttyd
 if [ -n "$enable_ttyd" ]; then
     echo "Enabling ttyd service..." 
     uci set ttyd.@ttyd[0].ttyd.ipv6='1' 
     uci set ttyd.@ttyd[0].command='/bin/login -f root' 
-    uci commit ttyd
-    /etc/init.d/ttyd enable > /dev/null 2>&1 
-    /etc/init.d/ttyd start > /dev/null 2>&1 
 fi 
 
-# Configure irqbalance service
+# Configure irqbalance
 if [ -n "$enable_irqbalance" ]; then
     echo "Enabling irqbalance service..."
     uci set irqbalance.irqbalance=irqbalance
     uci set irqbalance.irqbalance.enabled='1'
-    uci commit irqbalance
-    /etc/init.d/irqbalance enable > /dev/null 2>&1
-    /etc/init.d/irqbalance start > /dev/null 2>&1
+fi
+
+# Configure samba4
+if [ -n "$enable_samba4" ]; then
+    NAS="openwrt"
+    MNT="/mnt/sda"
+    uci set samba4.@samba[0]=samba
+    uci set samba4.@samba[0].workgroup='WORKGROUP'
+    uci set samba4.@samba[0].charset='UTF-8'
+    uci set samba4.@samba[0].description='Samba on OpenWRT'
+    uci set samba4.@samba[0].enable_extra_tuning='1'
+    uci set samba4.@samba[0].interface='lan'
+    uci set samba4.sambashare=sambashare
+    uci set samba4.sambashare.name="\${NAS}"
+    uci set samba4.sambashare.path="\${MNT}"
+    uci set samba4.sambashare.read_only='no'
+    uci set samba4.sambashare.force_root='1'
+    uci set samba4.sambashare.guest_ok='yes'
+    uci set samba4.sambashare.inherit_owner='yes'
+    uci set samba4.sambashare.create_mask='0777'
+    uci set samba4.sambashare.dir_mask='0777'
 fi
 
 # Commit all changes
