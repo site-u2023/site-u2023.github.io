@@ -1861,12 +1861,11 @@ async function buildAsuRequest() {
         const requestBody = {
             target: app.selectedDevice.target,
             profile: app.selectedDevice.id,
-            packages: packages
+            packages: packages,
+            version: (app.selectedVersion && app.selectedVersion.toUpperCase() === 'SNAPSHOT')
+                ? 'snapshot'
+                : app.selectedVersion
         };
-
-        if (app.selectedVersion && app.selectedVersion !== 'SNAPSHOT') {
-            requestBody.version = app.selectedVersion;
-        }
 
         if (script && script.trim()) {
             requestBody.defaults = script;
