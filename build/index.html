@@ -1312,6 +1312,28 @@ function handleMapeTypeChange(e) {
     }
 }
 
+function handleDsliteModeChange(e) {
+    const manualConfig = document.getElementById('dslite-manual-config');
+    const aftrAddressField = document.getElementById('dslite-aftr-address');
+    
+    if (e.target.value === 'manual') {
+        manualConfig.style.display = 'block';
+        applyInitialsFromApi('dslite');
+    } else {
+        manualConfig.style.display = 'none';
+        if (window.cachedApiInfo && window.cachedApiInfo.rule && window.cachedApiInfo.rule.aftrIpv6Address) {
+            aftrAddressField.value = window.cachedApiInfo.rule.aftrIpv6Address;
+        }
+    }
+    
+    if (document.getElementById('use-aios-config').checked) {
+        updateConfiguredTemplate().catch(error => {
+            console.error('Failed to update template:', error);
+        });
+        updateRequiredPackages();
+    }
+}
+        
 // GUAセクションの表示/非表示を制御
 function updateGuaSectionVisibility() {
     const guaSection = document.getElementById('mape-gua-section');
