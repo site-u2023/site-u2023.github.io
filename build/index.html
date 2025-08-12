@@ -734,6 +734,11 @@
                         </div>
                         <div class="package-description">SMB/CIFS file sharing server</div>
                     </div>
+                    
+                    <div class="form-group" style="margin-top: 1.5rem;">
+                        <label for="asu-packages">Packages to add/remove (one per line, prefix with '-' to remove):</label>
+                        <textarea id="asu-packages" class="form-control" rows="3" placeholder="luci&#10;luci-ssl&#10;-wpad-basic-wolfssl&#10;wpad-wolfssl"></textarea>
+                    </div>
                 </div>
             </div>
 
@@ -1030,17 +1035,12 @@
                             <div id="isp-technical-info" style="font-family: monospace; font-size: 0.9em; margin-top: 0.5rem; display: none;"></div>
                         </div>
                     </div>
+                    
+                    <div class="form-group" style="margin-top: 1.5rem;">
+                        <label for="uci-defaults-content">Script to run on first boot (uci-defaults):</label>
+                        <textarea id="uci-defaults-content" class="form-control" rows="8" placeholder="#!/bin/sh&#10;&#10;# Your custom script here&#10;# This area is for manual editing - configuration wizard will not overwrite your changes"></textarea>
+                    </div>
                 </div>
-            </div>
-
-            <div class="form-group">
-                <label for="asu-packages">Packages to add/remove (one per line, prefix with '-' to remove):</label>
-                <textarea id="asu-packages" class="form-control" rows="3" placeholder="luci&#10;luci-ssl&#10;-wpad-basic-wolfssl&#10;wpad-wolfssl"></textarea>
-            </div>
-
-            <div class="form-group">
-                <label for="uci-defaults-content">Script to run on first boot (uci-defaults):</label>
-                <textarea id="uci-defaults-content" class="form-control" rows="8" placeholder="#!/bin/sh&#10;&#10;# Your custom script here&#10;# This area is for manual editing - configuration wizard will not overwrite your changes"></textarea>
             </div>
 
             <button id="request-build" class="btn btn-primary" style="display: none;">REQUEST BUILD</button>
