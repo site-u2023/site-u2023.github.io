@@ -258,8 +258,8 @@ if [ -n "$enable_samba4" ]; then
     uci set samba4.@samba[0].enable_extra_tuning='1'
     uci set samba4.@samba[0].interface='lan'
     uci set samba4.sambashare=sambashare
-    uci set samba4.sambashare.name=${NAS}
-    uci set samba4.sambashare.path=${MNT}
+    uci set samba4.sambashare.name="\${NAS}"
+    uci set samba4.sambashare.path="\${MNT}"
     uci set samba4.sambashare.read_only='no'
     uci set samba4.sambashare.force_root='1'
     uci set samba4.sambashare.guest_ok='yes'
