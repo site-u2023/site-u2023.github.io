@@ -495,9 +495,9 @@
                             </div>
                         </div>
 
-                        <div id="dslite-section" class="conditional-section" style="background-color: #fff3e0;">
+<div id="dslite-section" class="conditional-section" style="background-color: #fff3e0;">
                         <h6>DS-Lite Configuration</h6>
-                            
+                        
                         <div class="form-group">
                             <label>DS-Lite Configuration Mode</label>
                             <div class="radio-group">
@@ -514,27 +514,28 @@
                         </div>
 
                         <div id="dslite-manual-config" class="conditional-section" style="background-color: #e3f2fd; display: none;">
-                        <div class="form-group">
-                            <label for="dslite-aftr-type">AFTR Type</label>
-                            <select id="dslite-aftr-type" class="form-control" onchange="applyInitialsFromApi('dslite')">
-                                <option value="transix">transix</option>
-                                <option value="xpass">xpass</option>
-                                <option value="v6option">v6option</option>
-                            </select>
-                        </div>
+                            <div class="form-group">
+                                <label for="dslite-aftr-type">AFTR Type</label>
+                                <select id="dslite-aftr-type" class="form-control" onchange="applyInitialsFromApi('dslite')">
+                                    <option value="transix">transix</option>
+                                    <option value="xpass">xpass</option>
+                                    <option value="v6option">v6option</option>
+                                </select>
+                            </div>
 
-                        <div class="form-group">
-                            <label for="dslite-area">Region</label>
-                            <select id="dslite-area" class="form-control" onchange="applyInitialsFromApi('dslite')">
-                                <option value="east">East Japan</option>
-                                <option value="west">West Japan</option>
-                            </select>
+                            <div class="form-group">
+                                <label for="dslite-area">Region</label>
+                                <select id="dslite-area" class="form-control" onchange="applyInitialsFromApi('dslite')">
+                                    <option value="east">East Japan</option>
+                                    <option value="west">West Japan</option>
+                                </select>
+                            </div>
                         </div>
 
                         <div class="form-group">
                             <label for="dslite-aftr-address">AFTR IPv6 Address</label>
                             <input type="text" id="dslite-aftr-address" class="form-control" placeholder="2404:8e00::feed:100" value="">
-                            <small class="form-text text-muted">Automatically set based on AFTR type and region. You may override manually if required.</small>
+                            <small class="form-text text-muted">Auto mode: Set from ISP detection | Manual mode: Set based on AFTR type and region</small>
                         </div>
                         </div>
                         
@@ -997,6 +998,11 @@ function bindEvents() {
     document.getElementById('use-aios-config').addEventListener('change', toggleAiosConfig);
     document.getElementById('request-build').addEventListener('click', buildAsuRequest);
 
+    // DS-Lite mode (auto/manual) の監視を追加
+    document.querySelectorAll('input[name="dsliteMode"]').forEach(radio => {
+        radio.addEventListener('change', handleDsliteModeChange);
+    });
+    
     // Connection mode (AUTO/OFF) の監視
     document.querySelectorAll('input[name="connectionMode"]').forEach(radio => {
         radio.addEventListener('change', handleConnectionModeChange);
@@ -1656,8 +1662,17 @@ function customizeSetupScript(content, config, apiInfo) {
     writeVar('pppoe_password', config.pppoePassword || '', pppoeActive);
 
     // DS-Lite
-    const dsliteActive = (activeProto === 'dslite');
-    writeVar('dslite_aftr_address', dsliteVal || '', dsliteActive);
+    let dsliteAddress = '';
+    if (config.dsliteMode === 'auto') {
+        // API検出値を優先
+        dsliteAddress = (apiInfo?.rule?.aftrIpv6Address) || config.dsliteAftrAddress || '';
+    } else {
+        // Manual mode: ユーザー設定値を使用
+        dsliteAddress = config.dsliteAftrAddress || '';
+    }
+    
+    const dsliteActive = (activeProto === 'dslite') && !!dsliteAddress;
+    writeVar('dslite_aftr_address', dsliteAddress, dsliteActive);
 
     // MAP-E
     const mapeActive = (activeProto === 'mape');
@@ -1726,7 +1741,11 @@ function getAiosConfig() {
         pppoePassword: parseOrEmpty('pppoe-password'),
 
         dsliteAftrAddress: parseOrEmpty('dslite-aftr-address'),
-
+        dsliteMode: document.querySelector('input[name="dsliteMode"]:checked')?.value || 'auto',
+        dsliteAftrType: parseOrEmpty('dslite-aftr-type'),
+        dsliteArea: parseOrEmpty('dslite-area'),
+        dsliteAftrAddress: parseOrEmpty('dslite-aftr-address'),
+        
         mapeBr: parseOrEmpty('mape-br'),
         mapeEalen: parseOrEmpty('mape-ealen', 'int'),
         mapeIpv4Prefix: parseOrEmpty('mape-ipv4-prefix'),
@@ -1742,33 +1761,44 @@ function getAiosConfig() {
 }
 
 function applyInitialsFromApi(type) {
-    // DS-Lite: 初期値は無条件に上書き（手動変更はユーザー操作に委ねる）
     if (type === 'dslite') {
         const aftrInput = document.getElementById('dslite-aftr-address');
-        const areaSel = document.getElementById('dslite-area');
-        const typeSel = document.getElementById('dslite-aftr-type');
-
-        const area = areaSel?.value || 'east'; // UI未選択時のデフォルトは東日本
-        const aftrType = typeSel?.value || 'transix';
-
-        const aftrMap = {
-            transix: {
-                east: '2404:8e00::feed:100',
-                west: '2404:8e01::feed:100'
-            },
-            xpass: {
-                east: '2001:e30:1c1e:1::1',
-                west: '2001:e30:1c1f:1::1'
-            },
-            v6option: {
-                east: '2404:8e00::feed:101',
-                west: '2404:8e01::feed:101'
+        const dsliteMode = document.querySelector('input[name="dsliteMode"]:checked')?.value || 'auto';
+        
+        if (dsliteMode === 'auto') {
+            // API検出値を使用
+            if (window.cachedApiInfo && window.cachedApiInfo.rule && window.cachedApiInfo.rule.aftrIpv6Address) {
+                if (aftrInput) {
+                    aftrInput.value = window.cachedApiInfo.rule.aftrIpv6Address;
+                }
             }
-        };
+        } else {
+            // Manual mode: 地域・タイプベースの設定
+            const areaSel = document.getElementById('dslite-area');
+            const typeSel = document.getElementById('dslite-aftr-type');
 
-        if (aftrInput) {
-            const regionKey = area === 'west' ? 'west' : 'east';
-            aftrInput.value = aftrMap[aftrType]?.[regionKey] || '';
+            const area = areaSel?.value || 'east';
+            const aftrType = typeSel?.value || 'transix';
+
+            const aftrMap = {
+                transix: {
+                    east: '2404:8e00::feed:100',
+                    west: '2404:8e01::feed:100'
+                },
+                xpass: {
+                    east: '2001:e30:1c1e:1::1',
+                    west: '2001:e30:1c1f:1::1'
+                },
+                v6option: {
+                    east: '2404:8e00::feed:101',
+                    west: '2404:8e01::feed:101'
+                }
+            };
+
+            if (aftrInput) {
+                const regionKey = area === 'west' ? 'west' : 'east';
+                aftrInput.value = aftrMap[aftrType]?.[regionKey] || '';
+            }
         }
     }
 
