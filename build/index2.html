@@ -355,24 +355,15 @@
                                 <option value="de">Deutsch (German)</option>
                                 <option value="el">Ελληνικά (Greek)</option>
                                 <option value="es">Español (Spanish)</option>
-                                <option value="et">Eesti (Estonian)</option>
-                                <option value="eu">Euskera (Basque)</option>
                                 <option value="fi">Suomi (Finnish)</option>
                                 <option value="fr">Français (French)</option>
-                                <option value="gl">Galego (Galician)</option>
                                 <option value="he">עברית (Hebrew)</option>
-                                <option value="hr">Hrvatski (Croatian)</option>
                                 <option value="hu">Magyar (Hungarian)</option>
-                                <option value="id">Bahasa Indonesia (Indonesian)</option>
-                                <option value="is">Íslenska (Icelandic)</option>
                                 <option value="it">Italiano (Italian)</option>
                                 <option value="ja">日本語 (Japanese)</option>
                                 <option value="ko">한국어 (Korean)</option>
                                 <option value="lt">Lietuvių (Lithuanian)</option>
-                                <option value="lv">Latviešu (Latvian)</option>
-                                <option value="mk">Македонски (Macedonian)</option>
                                 <option value="ms">Bahasa Melayu (Malay)</option>
-                                <option value="mt">Malti (Maltese)</option>
                                 <option value="nl">Nederlands (Dutch)</option>
                                 <option value="no">Norsk (Norwegian)</option>
                                 <option value="pl">Polski (Polish)</option>
@@ -381,11 +372,7 @@
                                 <option value="ro">Română (Romanian)</option>
                                 <option value="ru">Русский (Russian)</option>
                                 <option value="sk">Slovenčina (Slovak)</option>
-                                <option value="sl">Slovenščina (Slovenian)</option>
-                                <option value="sq">Shqipe (Albanian)</option>
-                                <option value="sr">Српски (Serbian)</option>
                                 <option value="sv">Svenska (Swedish)</option>
-                                <option value="th">ไทย (Thai)</option>
                                 <option value="tr">Türkçe (Turkish)</option>
                                 <option value="uk">Українська (Ukrainian)</option>
                                 <option value="vi">Tiếng Việt (Vietnamese)</option>
@@ -450,17 +437,17 @@
                     </div>
 
                     <h5>Internet Connection</h5>
-                    <!-- 上段: AUTO/OFF選択 -->
+                    <!-- 上段: AUTO/MANUAL選択 -->
                     <div class="form-group">
                         <label>Connection mode</label>
                         <div class="radio-group">
                             <div class="form-check">
                                 <input class="form-check-input" type="radio" name="connectionMode" id="mode-auto" value="auto" checked>
-                                <label class="form-check-label" for="mode-auto">AUTO</label>
+                                <label class="form-check-label" for="mode-auto">Auto (Recommended)</label>
                             </div>
                             <div class="form-check">
                                 <input class="form-check-input" type="radio" name="connectionMode" id="mode-manual" value="manual">
-                                <label class="form-check-label" for="mode-manual">OFF</label>
+                                <label class="form-check-label" for="mode-manual">Manual</label>
                             </div>
                         </div>
                     </div>
@@ -510,28 +497,45 @@
 
                         <div id="dslite-section" class="conditional-section" style="background-color: #fff3e0;">
                         <h6>DS-Lite Configuration</h6>
-
+                        
                         <div class="form-group">
-                            <label for="dslite-aftr-type">AFTR Type</label>
-                            <select id="dslite-aftr-type" class="form-control" onchange="applyInitialsFromApi('dslite')">
-                                <option value="transix">transix</option>
-                                <option value="xpass">xpass</option>
-                                <option value="v6option">v6option</option>
-                            </select>
+                            <label>DS-Lite Configuration Mode</label>
+                            <div class="radio-group">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="dsliteMode" id="dslite-auto" value="auto" checked>
+                                    <label class="form-check-label" for="dslite-auto">Auto (Recommended)</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="dsliteMode" id="dslite-manual" value="manual">
+                                    <label class="form-check-label" for="dslite-manual">Manual</label>
+                                </div>
+                            </div>
+                            <small class="text-muted">Auto: Use ISP-detected AFTR address | Manual: Specify AFTR settings manually</small>
                         </div>
 
-                        <div class="form-group">
-                            <label for="dslite-area">Region</label>
-                            <select id="dslite-area" class="form-control" onchange="applyInitialsFromApi('dslite')">
-                                <option value="east">East Japan</option>
-                                <option value="west">West Japan</option>
-                            </select>
+                        <div id="dslite-manual-config" class="conditional-section" style="background-color: #e3f2fd; display: none;">
+                            <div class="form-group">
+                                <label for="dslite-aftr-type">AFTR Type</label>
+                                <select id="dslite-aftr-type" class="form-control" onchange="applyInitialsFromApi('dslite')">
+                                    <option value="transix">transix</option>
+                                    <option value="xpass">xpass</option>
+                                    <option value="v6option">v6option</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="dslite-area">Region</label>
+                                <select id="dslite-area" class="form-control" onchange="applyInitialsFromApi('dslite')">
+                                    <option value="east">East Japan</option>
+                                    <option value="west">West Japan</option>
+                                </select>
+                            </div>
                         </div>
 
                         <div class="form-group">
                             <label for="dslite-aftr-address">AFTR IPv6 Address</label>
                             <input type="text" id="dslite-aftr-address" class="form-control" placeholder="2404:8e00::feed:100" value="">
-                            <small class="form-text text-muted">Automatically set based on AFTR type and region. You may override manually if required.</small>
+                            <small class="form-text text-muted">Auto mode: Set from ISP detection | Manual mode: Set based on AFTR type and region</small>
                         </div>
                         </div>
                         
@@ -542,15 +546,15 @@
                                 <div class="radio-group">
                                     <div class="form-check">
                                         <input class="form-check-input" type="radio" name="mapeType" id="mape-auto" value="auto" checked>
-                                        <label class="form-check-label" for="mape-auto">Auto-detect (Recommended)</label>
+                                        <label class="form-check-label" for="mape-auto">Auto (Recommended)</label>
                                     </div>
                                     <div class="form-check">
                                         <input class="form-check-input" type="radio" name="mapeType" id="mape-gua" value="gua">
-                                        <label class="form-check-label" for="mape-gua">GUA Mode (Manual)</label>
+                                        <label class="form-check-label" for="mape-gua">Manual - GUA</label>
                                     </div>
                                     <div class="form-check">
                                         <input class="form-check-input" type="radio" name="mapeType" id="mape-pd" value="pd">
-                                        <label class="form-check-label" for="mape-pd">PD Mode (Manual)</label>
+                                        <label class="form-check-label" for="mape-pd">Manual - PD</label>
                                     </div>
                                 </div>
                                 <small class="text-muted">
@@ -994,6 +998,11 @@ function bindEvents() {
     document.getElementById('use-aios-config').addEventListener('change', toggleAiosConfig);
     document.getElementById('request-build').addEventListener('click', buildAsuRequest);
 
+    // DS-Lite mode (auto/manual) の監視を追加
+    document.querySelectorAll('input[name="dsliteMode"]').forEach(radio => {
+        radio.addEventListener('change', handleDsliteModeChange);
+    });
+    
     // Connection mode (AUTO/OFF) の監視
     document.querySelectorAll('input[name="connectionMode"]').forEach(radio => {
         radio.addEventListener('change', handleConnectionModeChange);
@@ -1303,6 +1312,28 @@ function handleMapeTypeChange(e) {
     }
 }
 
+function handleDsliteModeChange(e) {
+    const manualConfig = document.getElementById('dslite-manual-config');
+    const aftrAddressField = document.getElementById('dslite-aftr-address');
+    
+    if (e.target.value === 'manual') {
+        manualConfig.style.display = 'block';
+        applyInitialsFromApi('dslite');
+    } else {
+        manualConfig.style.display = 'none';
+        if (window.cachedApiInfo && window.cachedApiInfo.rule && window.cachedApiInfo.rule.aftrIpv6Address) {
+            aftrAddressField.value = window.cachedApiInfo.rule.aftrIpv6Address;
+        }
+    }
+    
+    if (document.getElementById('use-aios-config').checked) {
+        updateConfiguredTemplate().catch(error => {
+            console.error('Failed to update template:', error);
+        });
+        updateRequiredPackages();
+    }
+}
+        
 // GUAセクションの表示/非表示を制御
 function updateGuaSectionVisibility() {
     const guaSection = document.getElementById('mape-gua-section');
@@ -1653,8 +1684,17 @@ function customizeSetupScript(content, config, apiInfo) {
     writeVar('pppoe_password', config.pppoePassword || '', pppoeActive);
 
     // DS-Lite
-    const dsliteActive = (activeProto === 'dslite');
-    writeVar('dslite_aftr_address', dsliteVal || '', dsliteActive);
+    let dsliteAddress = '';
+    if (config.dsliteMode === 'auto') {
+        // API検出値を優先
+        dsliteAddress = (apiInfo?.rule?.aftrIpv6Address) || config.dsliteAftrAddress || '';
+    } else {
+        // Manual mode: ユーザー設定値を使用
+        dsliteAddress = config.dsliteAftrAddress || '';
+    }
+    
+    const dsliteActive = (activeProto === 'dslite') && !!dsliteAddress;
+    writeVar('dslite_aftr_address', dsliteAddress, dsliteActive);
 
     // MAP-E
     const mapeActive = (activeProto === 'mape');
@@ -1723,7 +1763,11 @@ function getAiosConfig() {
         pppoePassword: parseOrEmpty('pppoe-password'),
 
         dsliteAftrAddress: parseOrEmpty('dslite-aftr-address'),
-
+        dsliteMode: document.querySelector('input[name="dsliteMode"]:checked')?.value || 'auto',
+        dsliteAftrType: parseOrEmpty('dslite-aftr-type'),
+        dsliteArea: parseOrEmpty('dslite-area'),
+        dsliteAftrAddress: parseOrEmpty('dslite-aftr-address'),
+        
         mapeBr: parseOrEmpty('mape-br'),
         mapeEalen: parseOrEmpty('mape-ealen', 'int'),
         mapeIpv4Prefix: parseOrEmpty('mape-ipv4-prefix'),
@@ -1739,33 +1783,44 @@ function getAiosConfig() {
 }
 
 function applyInitialsFromApi(type) {
-    // DS-Lite: 初期値は無条件に上書き（手動変更はユーザー操作に委ねる）
     if (type === 'dslite') {
         const aftrInput = document.getElementById('dslite-aftr-address');
-        const areaSel = document.getElementById('dslite-area');
-        const typeSel = document.getElementById('dslite-aftr-type');
-
-        const area = areaSel?.value || 'east'; // UI未選択時のデフォルトは東日本
-        const aftrType = typeSel?.value || 'transix';
-
-        const aftrMap = {
-            transix: {
-                east: '2404:8e00::feed:100',
-                west: '2404:8e01::feed:100'
-            },
-            xpass: {
-                east: '2001:e30:1c1e:1::1',
-                west: '2001:e30:1c1f:1::1'
-            },
-            v6option: {
-                east: '2404:8e00::feed:101',
-                west: '2404:8e01::feed:101'
+        const dsliteMode = document.querySelector('input[name="dsliteMode"]:checked')?.value || 'auto';
+        
+        if (dsliteMode === 'auto') {
+            // API検出値を使用
+            if (window.cachedApiInfo && window.cachedApiInfo.rule && window.cachedApiInfo.rule.aftrIpv6Address) {
+                if (aftrInput) {
+                    aftrInput.value = window.cachedApiInfo.rule.aftrIpv6Address;
+                }
             }
-        };
+        } else {
+            // Manual mode: 地域・タイプベースの設定
+            const areaSel = document.getElementById('dslite-area');
+            const typeSel = document.getElementById('dslite-aftr-type');
 
-        if (aftrInput) {
-            const regionKey = area === 'west' ? 'west' : 'east';
-            aftrInput.value = aftrMap[aftrType]?.[regionKey] || '';
+            const area = areaSel?.value || 'east';
+            const aftrType = typeSel?.value || 'transix';
+
+            const aftrMap = {
+                transix: {
+                    east: '2404:8e00::feed:100',
+                    west: '2404:8e01::feed:100'
+                },
+                xpass: {
+                    east: '2001:e30:1c1e:1::1',
+                    west: '2001:e30:1c1f:1::1'
+                },
+                v6option: {
+                    east: '2404:8e00::feed:101',
+                    west: '2404:8e01::feed:101'
+                }
+            };
+
+            if (aftrInput) {
+                const regionKey = area === 'west' ? 'west' : 'east';
+                aftrInput.value = aftrMap[aftrType]?.[regionKey] || '';
+            }
         }
     }
 
@@ -1812,8 +1867,22 @@ function updateRequiredPackages() {
     const packagesTextarea = document.getElementById('asu-packages');
     let currentPackages = split(packagesTextarea.value);
     
-    currentPackages = currentPackages.filter(pkg => pkg !== 'map' && pkg !== 'ds-lite');
+    // 既存の自動追加パッケージを削除（map, ds-lite, 言語パッケージ）
+    currentPackages = currentPackages.filter(pkg => 
+        pkg !== 'map' && 
+        pkg !== 'ds-lite' && 
+        !pkg.startsWith('luci-i18n-base-')
+    );
     
+    // 言語パッケージの追加（英語以外の場合）
+    if (config.language && config.language !== 'en') {
+        const languagePackage = `luci-i18n-base-${config.language}`;
+        if (!currentPackages.includes(languagePackage)) {
+            currentPackages.push(languagePackage);
+        }
+    }
+    
+    // 接続方式に応じたパッケージの追加
     if (config.connectionMode === 'auto') {
         if (window.cachedApiInfo && window.cachedApiInfo.rule) {
             if (window.cachedApiInfo.rule.aftrType) {
