@@ -392,7 +392,7 @@
                 <div class="form-check">
                     <input class="form-check-input" type="checkbox" id="use-package-selector">
                     <label class="form-check-label" for="use-package-selector">
-                        Installed Packages
+                        Use graphical package selector
                     </label>
                 </div>
 
@@ -736,7 +736,7 @@
                     </div>
                     
                     <div class="form-group" style="margin-top: 1.5rem;">
-                        <label for="asu-packages">Packages</label>
+                        <label for="asu-packages">Packages to add/remove (one per line, prefix with '-' to remove):</label>
                         <textarea id="asu-packages" class="form-control" rows="3" placeholder="luci&#10;luci-ssl&#10;-wpad-basic-wolfssl&#10;wpad-wolfssl"></textarea>
                     </div>
                 </div>
@@ -747,7 +747,7 @@
                 <div class="form-check">
                     <input class="form-check-input" type="checkbox" id="use-aios-config">
                     <label class="form-check-label" for="use-aios-config">
-                        Script to run on first boot (uci-defaults)
+                        Use setup.sh configuration wizard
                     </label>
                 </div>
 
@@ -1037,7 +1037,7 @@
                     </div>
                     
                     <div class="form-group" style="margin-top: 1.5rem;">
-                        <label for="uci-defaults-content">Scripts</label>
+                        <label for="uci-defaults-content">Script to run on first boot (uci-defaults):</label>
                         <textarea id="uci-defaults-content" class="form-control" rows="8" placeholder="#!/bin/sh&#10;&#10;# Your custom script here&#10;# This area is for manual editing - configuration wizard will not overwrite your changes"></textarea>
                     </div>
                 </div>
@@ -1061,18 +1061,14 @@
         // setup.shテンプレートを内蔵（外部ファイル読み込み不要）
         const SETUP_SH_TEMPLATE = `#!/bin/sh
 # Beware! This script will be in /rom/etc/uci-defaults/ as part of the image.
-# Uncomment lines to apply:
-#
-# Basic settings
-# root_password=""
-# device_name=""
-# lan_ip_address="192.168.1.1"
+# 
 # language="en"
 # country=""
 # timezone="UTC"
 # zonename=""
-#
-# WLAN settings
+# lan_ip_address="192.168.1.1"
+# device_name="OpenWrt"
+# root_password="Password"
 # wlan_name="OpenWrt"
 # wlan_password="12345678"
 #
