@@ -1350,6 +1350,9 @@ async function init() {
 // ==================== パッケージ関数 ====================
 function asuI18nDB(lang) {
   const s = `-${lang}`;
+  const isEN = lang === 'en';
+  const make = (key) => isEN ? [] : [`luci-i18n-${key}${s}`];
+
   return {
     base: [`luci-i18n-base${s}`],
     opkg: [`luci-i18n-opkg${s}`],
