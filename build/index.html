@@ -7,7 +7,7 @@
     <title>OpenWrt Firmware Selector</title>
     <style>
         html {
-          color-scheme: light;
+          color-scheme: light dark;
         }
         /* 公式サイトのスタイルを再現 */
         body {
@@ -18,28 +18,41 @@
         }
 
         @media (prefers-color-scheme: dark) {
-          body {
-            background-color: #121212;
-            color: #e0e0e0;
-          }
+            body {
+                background-color: #121212;
+                color: #e0e0e0;
+            }
 
-          input, select, textarea {
-            background-color: #1e1e1e;
-            color: #e0e0e0;
-            border-color: #555;
-          }
+            input, select, textarea {
+                background-color: #1e1e1e;
+                color: #e0e0e0;
+                border-color: #555;
+            }
 
-          .info {
-            background-color: #1b3b3b;
-            color: #cce7e7;
-            border-color: #3a6f6f;
-          }
+            .form-control {
+                background-color: #1e1e1e;
+                color: #e0e0e0;
+                border-color: #555;
+            }
 
-          .btn-primary {
-            background-color: #0069d9;
-            border-color: #0062cc;
-            color: #fff;
-          }
+            .info, .asu-info, .asu-error, .aios-section, .conditional-section, .package-category {
+                background-color: #1b3b3b;
+                color: #cce7e7;
+                border-color: #3a6f6f;
+            }
+
+            .package-link {
+                color: #66bfff;
+            }
+
+            .package-description {
+                color: #cccccc;
+            }
+
+            .download-link {
+                background-color: #28a745;
+                color: #fff;
+            }
         }
     
         .container {
