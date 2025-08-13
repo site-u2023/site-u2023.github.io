@@ -60,12 +60,21 @@
             border-radius: 0.25rem;
             transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
             box-sizing: border-box;
-            height: calc(2.5rem + 2px);  /* padding + border込みの高さ */
             -webkit-appearance: none;
             -moz-appearance: none;
             appearance: none;
         }
+        
+        /* input要素のみに高さを指定（textarea除外） */
+        .form-control:not(textarea) {
+            height: calc(2.5rem + 2px);  /* padding + border込みの高さ */
+        }
 
+        /* textareaは最小の高さのみ指定 */
+        .form-control textarea {
+            min-height: calc(2.5rem + 2px);
+        }
+        
         .form-control:focus {
             color: #495057;
             background-color: #fff;
