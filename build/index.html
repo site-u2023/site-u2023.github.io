@@ -1375,6 +1375,12 @@ const PACKAGE_DB = {
                     name: "luci-app-wireguard", 
                     url: "https://openwrt.org/packages/pkgdata/luci-app-wireguard",
                     dependencies: ["wireguard-tools"]
+                },
+                { 
+                    id: "wireguard-tools", 
+                    name: "wireguard-tools", 
+                    url: "https://openwrt.org/packages/pkgdata/wireguard-tools",
+                    hidden: true
                 }
             ]
         },
@@ -1413,15 +1419,15 @@ const PACKAGE_DB = {
                     url: "https://openwrt.org/packages/pkgdata/libblkid1",
                     hidden: true
                 },
-                { 
-                    id: "gdisk", 
-                    name: "gdisk", 
+                {
+                    id: "gdisk",
+                    name: "gdisk",
                     url: "https://openwrt.org/packages/pkgdata/gdisk",
                     hidden: true
                 },
-                { 
-                    id: "dosfstools", 
-                    name: "dosfstools", 
+                {
+                    id: "dosfstools",
+                    name: "dosfstools",
                     url: "https://openwrt.org/packages/pkgdata/dosfstools",
                     dependencies: ["kmod-fs-vfat"]
                 },
