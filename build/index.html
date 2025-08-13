@@ -1782,30 +1782,30 @@ function togglePackageSelector(e) {
 function generatePackageSelector() {
     const container = document.getElementById('package-categories');
     if (!container) return;
-    
+
     container.innerHTML = '';
-    
+
     PACKAGE_DB.categories.forEach(category => {
         const categoryDiv = document.createElement('div');
         categoryDiv.className = 'package-category';
-        
+
         const categoryTitle = document.createElement('h6');
         categoryTitle.textContent = category.name;
         categoryDiv.appendChild(categoryTitle);
-        
+
         const packageGrid = document.createElement('div');
         packageGrid.className = 'package-grid';
-        
+
         category.packages.forEach(pkg => {
             const packageItem = document.createElement('div');
             packageItem.className = 'package-item';
             if (pkg.hidden) {
                 packageItem.classList.add('package-hidden');
             }
-            
+
             const formCheck = document.createElement('div');
             formCheck.className = 'form-check';
-            
+
             const checkbox = document.createElement('input');
             checkbox.className = 'form-check-input package-selector-checkbox';
             checkbox.type = 'checkbox';
@@ -1814,35 +1814,33 @@ function generatePackageSelector() {
             if (pkg.dependencies) {
                 checkbox.setAttribute('data-dependencies', pkg.dependencies.join(','));
             }
-            if (pkg.hidden) {
-                checkbox.disabled = true;
-            }
+            // hidden でも操作可能（disabled にしない）
             checkbox.addEventListener('change', handlePackageSelection);
-            
+
             const label = document.createElement('label');
             label.className = 'form-check-label';
             label.setAttribute('for', `pkg-${pkg.id}`);
-            
+
             const link = document.createElement('a');
             link.href = pkg.url;
             link.target = '_blank';
             link.className = 'package-link';
             link.textContent = pkg.name;
-            
+
             label.appendChild(link);
             formCheck.appendChild(checkbox);
             formCheck.appendChild(label);
             packageItem.appendChild(formCheck);
             packageGrid.appendChild(packageItem);
         });
-        
+
         categoryDiv.appendChild(packageGrid);
-        
+
         const description = document.createElement('div');
         description.className = 'package-description';
         description.textContent = category.description;
         categoryDiv.appendChild(description);
-        
+
         container.appendChild(categoryDiv);
     });
 }
@@ -1852,27 +1850,27 @@ function handlePackageSelection(e) {
     const packageName = pkg.getAttribute('data-package');
     const isChecked = pkg.checked;
 
-    // ユーザー操作の記録
+    // ユーザー操作の記録（任意上書きOK）
     if (isChecked) {
         pkg.setAttribute('data-user', '1');
     } else {
         pkg.removeAttribute('data-user');
     }
 
-    // 依存パッケージの完全同調（親と同じ状態にする）
-    const dependencies = pkg.getAttribute('data-dependencies');
-    if (dependencies) {
-        const depPackages = dependencies.split(',').map(s => s.trim()).filter(Boolean);
+    // 依存パッケージの完全同調（カンマ/空白の両方に対応）
+    const dependencies = pkg.getAttribute('data-dependencies') || '';
+    const depPackages = dependencies.split(/[\s,]+/).map(s => s.trim()).filter(Boolean);
+
+    if (depPackages.length) {
         depPackages.forEach(dep => {
             const depCheckbox = document.querySelector(`#pkg-${dep}`);
             if (!depCheckbox) return;
-            // 親に完全同調
             depCheckbox.checked = isChecked;
-            // 子のユーザー意思は親操作で消さない（上書きOKポリシー）
+            // 念のため、残存のグレーアウトを排除（将来の回帰にも強く）
+            depCheckbox.disabled = false;
         });
     }
 
-    // パッケージリストを更新（内部で一元反映）
     updatePackageListFromSelector();
 }
         
