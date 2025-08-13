@@ -1578,48 +1578,79 @@ function asuCollectPackages() {
   const textarea = document.getElementById('asu-packages');
   let current = split(textarea.value);
 
-  // i18n の整理:
-  // - 英語(norm === '')なら全 i18n を削除
-  // - 非英語なら現在言語サフィックス以外を削除（英語も含めて削除）
+  // 1) i18n の整理: 英語なら全 i18n を削除、非英語なら現在言語以外を削除
   current = current.filter(pkg => {
     if (!pkg.startsWith('luci-i18n-')) return true;
-    const m = pkg.match(/^luci-i18n-.+?-([A-Za-z]{2}(?:-[A-Za-z]{2})?)$/);
-    const suffix = (m && m[1]) ? m[1].toLowerCase() : '';
-    if (!norm) return false;     // 英語: i18n 全排除
-    return suffix === norm;      // 現在言語のみ温存
+    const m = pkg.match(/^luci-i18n-(.+?)-([A-Za-z]{2}(?:-[A-Za-z]{2})?)$/);
+    const suffix = (m && m[2]) ? m[2].toLowerCase() : '';
+    if (!norm) return false; // 英語: i18n 全排除
+    return suffix === norm;  // 現在言語のみ温存
   });
 
+  // 2) ベースパッケージ集合（セレクター選択＋手動入力の双方）
+  const baseSet = new Set();
+
+  // セレクター選択から
+  document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
+    const names = cb.getAttribute('data-package')?.split(/\s+/) || [];
+    names.forEach(n => baseSet.add(n));
+  });
+
+  // 手動入力から（luci-app- だけでなく素のパッケージ名もベースとして扱う）
+  current.forEach(pkg => {
+    // 除外: i18n 自体はベースではない
+    if (pkg.startsWith('luci-i18n-')) return;
+    baseSet.add(pkg);
+  });
+
+  // 3) 現在言語の i18n でも、対応するベースパッケージがなければ除去（ゴースト除去）
+  current = current.filter(pkg => {
+    if (!pkg.startsWith('luci-i18n-')) return true;
+    const m = pkg.match(/^luci-i18n-(.+?)-([A-Za-z]{2}(?:-[A-Za-z]{2})?)$/);
+    if (!m) return false;
+    const key = m[1]; // luci-i18n-<key>-<lang>
+    // luci-app-<key> がベースになるケースに対応
+    return baseSet.has(`luci-app-${key}`) || baseSet.has(key);
+  });
+
+  // 4) 追加関数
   const add = (pkg) => {
     if (pkg && !current.includes(pkg)) current.push(pkg);
   };
 
-  // 非英語のみ、基本 i18n を追加
+  // 5) 非英語のみ、基本 i18n を追加
   ['base', 'opkg', 'firewall'].forEach(k => (db[k] || []).forEach(add));
 
-  // i18n 対象キー（セレクターと手打ちの両方から抽出）
+  // 6) i18n 対象キー（セレクターと手打ちの両方から抽出）
   const keys = new Set();
 
+  // セレクター選択中のパッケージからキー抽出
   document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
     const names = cb.getAttribute('data-package')?.split(/\s+/) || [];
     names.forEach(pkg => {
       const m = pkg.match(/^luci-app-(.+)$/);
       const key = m ? m[1] : pkg;
-      keys.add(key);
+      if (db[key]) keys.add(key);
     });
   });
 
+  // 手動入力からキー抽出（luci-app- と素の両対応）
   current.forEach(pkg => {
+    if (pkg.startsWith('luci-i18n-')) return;
     const m = pkg.match(/^luci-app-(.+)$/);
     const key = m ? m[1] : pkg;
     if (db[key]) keys.add(key);
   });
 
-  // 現在言語の i18n のみ追加（英語は何も追加しない）
+  // 7) 現在言語の i18n のみ追加（英語は何も追加しない）
   keys.forEach(k => (db[k] || []).forEach(add));
+
+  // 8) 最終重複排除
+  current = Array.from(new Set(current));
 
   textarea.value = current.join(' ');
 }
-        
+            
 // ==================== map.sh関連 ====================
 async function loadMapShScripts() {
     try {
