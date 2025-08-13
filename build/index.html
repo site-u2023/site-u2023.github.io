@@ -1830,8 +1830,14 @@ function handlePackageSelection(e) {
         depPackages.forEach(dep => {
             const depCheckbox = document.querySelector(`#pkg-${dep}`);
             if (depCheckbox) {
-                depCheckbox.checked = isChecked;
-                depCheckbox.disabled = !isChecked;
+                if (isChecked) {
+                    // 元パッケージが有効化されたら依存を強制ON＋ロック
+                    depCheckbox.checked = true;
+                    depCheckbox.disabled = true;
+                } else {
+                    // 元パッケージが無効化されたらロック解除のみ（ユーザーが任意で外せる）
+                    depCheckbox.disabled = false;
+                }
             }
         });
     }
@@ -1839,7 +1845,7 @@ function handlePackageSelection(e) {
     // パッケージリストを更新
     updatePackageListFromSelector();
 }
-
+        
 function updatePackageListFromSelector() {
     const packagesTextarea = document.getElementById('asu-packages');
     let currentPackages = split(packagesTextarea.value);
@@ -1853,21 +1859,24 @@ function updatePackageListFromSelector() {
         }
     });
     
-    // 既存のパッケージから、セレクター管理のものを削除
-    currentPackages = currentPackages.filter(pkg => !selectorPackages.includes(pkg.replace('-', '')));
+    // 既存のパッケージから、セレクター管理のものを「完全一致」で削除（バグ修正）
+    currentPackages = currentPackages.filter(pkg => !selectorPackages.includes(pkg));
     
     // チェックされているパッケージを追加
     document.querySelectorAll('.package-selector-checkbox:checked').forEach(checkbox => {
         const pkgName = checkbox.getAttribute('data-package');
-        if (pkgName && !currentPackages.includes(pkgName)) {
+        if (pkgName) {
             currentPackages.push(pkgName);
         }
     });
+
+    // 重複排除
+    currentPackages = Array.from(new Set(currentPackages));
     
     packagesTextarea.value = currentPackages.join(' ');
     asuCollectPackages();
 }
-
+    
 // ==================== バージョン管理 ====================
 async function loadVersions() {
     try {
@@ -2521,14 +2530,17 @@ async function updateConfiguredTemplate() {
             window.cachedApiInfo = apiInfo;
         }
 
-        const customized = customizeSetupScript(content, config, apiInfo);
+        // 選択済みパッケージの集合を準備（enable_* 反映に使用）
+        const selectedPackages = new Set(split(document.getElementById('asu-packages').value));
+
+        const customized = customizeSetupScript(content, config, apiInfo, selectedPackages);
         document.getElementById('uci-defaults-content').value = customized;
     } catch (error) {
         console.error('Template update error:', error);
     }
 }
 
-function customizeSetupScript(content, config, apiInfo) {
+function customizeSetupScript(content, config, apiInfo, selectedPackages) {
     let customized = SETUP_SH_TEMPLATE;
 
     // OpenWrt version flags
@@ -2633,6 +2645,16 @@ function customizeSetupScript(content, config, apiInfo) {
     writeVar('mape_gua_mode', guaActive ? '1' : '', guaActive);
     writeVar('mape_gua_prefix', guaActive ? guaPrefix : '', guaActive);
 
+    // enable_* フラグ（選択パッケージに応じて有効化）
+    const hasPkg = (name) => !!(selectedPackages && selectedPackages.has(name));
+    const ttydOn = hasPkg('ttyd');
+    const irqOn = hasPkg('irqbalance');
+    const sambaOn = hasPkg('luci-app-samba4');
+
+    writeVar('enable_ttyd', ttydOn ? '1' : '', ttydOn);
+    writeVar('enable_irqbalance', irqOn ? '1' : '', irqOn);
+    writeVar('enable_samba4', sambaOn ? '1' : '', sambaOn);
+
     // MAP-E選択時のみmap.shを埋め込む
     if (mapeActive) {
         customized = loadMapShContentSync(customized, app.selectedVersion);
@@ -2640,7 +2662,7 @@ function customizeSetupScript(content, config, apiInfo) {
     
     return customized;
 }
-
+    
 function toggleAiosConfig(e) {
     const configSection = document.getElementById('aios-config');
     if (e.target.checked) {
