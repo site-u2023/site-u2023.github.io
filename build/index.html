@@ -1842,7 +1842,7 @@ function handlePackageSelection(e) {
         });
     }
     
-    // パッケージリストを更新
+    // 共通反映関数に集約
     updatePackageListFromSelector();
 }
 
@@ -1859,7 +1859,7 @@ function updatePackageListFromSelector() {
         }
     });
     
-    // 既存のパッケージから、セレクター管理のものを削除
+    // 既存のパッケージから、セレクター管理のものを完全一致で削除
     currentPackages = currentPackages.filter(pkg => !selectorPackages.includes(pkg));
     
     // チェックされているパッケージを追加
@@ -1874,12 +1874,9 @@ function updatePackageListFromSelector() {
     currentPackages = Array.from(new Set(currentPackages));
     
     packagesTextarea.value = currentPackages.join(' ');
-    asuCollectPackages();
-
-    // ★追加: パッケージ変更時にもテンプレート反映を即時実行
-    if (document.getElementById('use-aios-config').checked) {
-        updateConfiguredTemplate().catch(console.error);
-    }
+    
+    // 共通反映関数に集約
+    refreshTemplateAndPackages();
 }
 
 // ==================== バージョン管理 ====================
@@ -2802,6 +2799,17 @@ function applyInitialsFromApi(type) {
         
         // GUAセクションの表示を更新
         updateGuaSectionVisibility();
+    }
+}
+
+// ==================== 共通反映関数 ====================
+function refreshTemplateAndPackages() {
+    // パッケージのi18n整理
+    asuCollectPackages();
+
+    // aios-config有効時のみテンプレ更新
+    if (document.getElementById('use-aios-config').checked) {
+        updateConfiguredTemplate().catch(console.error);
     }
 }
 
