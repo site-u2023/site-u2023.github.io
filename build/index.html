@@ -17,14 +17,31 @@
             padding: 20px;
         }
 
-        /* ダークモード専用色 */
         @media (prefers-color-scheme: dark) {
           body {
             background-color: #121212;
             color: #e0e0e0;
           }
+
+          input, select, textarea {
+            background-color: #1e1e1e;
+            color: #e0e0e0;
+            border-color: #555;
+          }
+
+          .info {
+            background-color: #1b3b3b;
+            color: #cce7e7;
+            border-color: #3a6f6f;
+          }
+
+          .btn-primary {
+            background-color: #0069d9;
+            border-color: #0062cc;
+            color: #fff;
+          }
         }
-        
+    
         .container {
             max-width: 720px;
             margin: 0 auto;
