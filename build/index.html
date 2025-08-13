@@ -316,7 +316,8 @@
 
         .package-item {
             display: flex;
-            align-items: center;
+            flex-direction: column;   /* 縦積み */
+            align-items: flex-start;  /* 左寄せ */
             padding: 0.25rem 0;
         }
 
@@ -1829,7 +1830,7 @@ function generatePackageSelector() {
             if (pkg.dependencies) {
                 checkbox.setAttribute('data-dependencies', pkg.dependencies.join(','));
             }
-            // hidden でも操作可能（disabled にしない）
+            // hiddenでもdisableにしない（操作可）
             checkbox.addEventListener('change', handlePackageSelection);
 
             const label = document.createElement('label');
@@ -1859,7 +1860,7 @@ function generatePackageSelector() {
                     }
 
                     const depItem = document.createElement('div');
-                    depItem.className = 'package-dependent';
+                    depItem.className = 'package-dependent'; // 見た目はCSSで制御
 
                     const depCheck = document.createElement('input');
                     depCheck.className = 'form-check-input package-selector-checkbox';
@@ -1885,7 +1886,7 @@ function generatePackageSelector() {
 
                     depItem.appendChild(depCheck);
                     depItem.appendChild(depLabel);
-                    packageGrid.appendChild(depItem);
+                    packageItem.appendChild(depItem);   // 親と同じセル内に子を縦積み
                 });
             }
         });
@@ -1913,7 +1914,7 @@ function handlePackageSelection(e) {
         pkg.removeAttribute('data-user');
     }
 
-    // 依存パッケージの完全同調（カンマ/空白両対応）
+    // 依存パッケージの完全同調（カンマ/空白の両対応）
     const dependencies = pkg.getAttribute('data-dependencies') || '';
     const depPackages = dependencies.split(/[\s,]+/).map(s => s.trim()).filter(Boolean);
 
