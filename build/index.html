@@ -105,6 +105,16 @@
             color: #ffffff;
         }
 
+        .form-row {
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+        }
+
+        .form-row .form-group {
+            margin-bottom: 1rem;
+        }
+        
         .info {
             background-color: #d1ecf1;
             border: 1px solid #bee5eb;
@@ -376,8 +386,7 @@
         </div>
 
         <div id="info" class="info" style="display: none;">
-            <h5 id="device-title"></h5>
-            <div id="device-details"></div>
+            <!-- Content will be dynamically generated -->
         </div>
 
         <div id="images" class="images" style="display: none;">
@@ -1832,10 +1841,35 @@ function showDeviceInfo() {
     if (!app.selectedDevice) return;
 
     const device = app.selectedDevice;
-
-    document.getElementById('device-title').textContent = getDeviceTitle(device);
-    document.getElementById('device-details').innerHTML = `Target: ${device.target}<br>Version: ${app.selectedVersion}`;
-
+    
+    // 公式形式のAbout this buildセクションを構築
+    const infoHtml = `
+        <h5>About this build</h5>
+        <div style="margin-left: 20px;">
+            <div style="margin-bottom: 8px;">
+                <div style="color: #6c757d; font-size: 0.9em;">Model</div>
+                <div style="font-weight: 500;">${getDeviceTitle(device)}</div>
+            </div>
+            <div style="margin-bottom: 8px;">
+                <div style="color: #6c757d; font-size: 0.9em;">Platform</div>
+                <div>${device.target}</div>
+            </div>
+            <div style="margin-bottom: 8px;">
+                <div style="color: #6c757d; font-size: 0.9em;">Version</div>
+                <div>${app.selectedVersion}</div>
+            </div>
+            <div style="margin-bottom: 8px;">
+                <div style="color: #6c757d; font-size: 0.9em;">Links</div>
+                <div>
+                    <a href="#" title="Folder"><i>📁</i></a>
+                    <a href="#" title="Link" style="margin-left: 10px;"><i>🔗</i></a>
+                    <a href="#" title="Copy" style="margin-left: 10px;"><i>📋</i></a>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('info').innerHTML = infoHtml;
     document.getElementById('info').style.display = 'block';
     document.getElementById('packages').style.display = 'block';
     document.getElementById('request-build').style.display = 'inline-block';
