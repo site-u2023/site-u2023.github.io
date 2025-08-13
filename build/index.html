@@ -1390,6 +1390,15 @@ echo "Configuration completed successfully!"
 echo "All done!"
 exit 0`;
 
+// config.js相当の設定
+const config = {
+    show_help: true,
+    image_url: "https://downloads.openwrt.org",
+    info_url: "https://openwrt.org/start?do=search&id=toh&q={title} @toh",
+    asu_url: "https://sysupgrade.openwrt.org",
+    asu_extra_packages: ["luci"]
+};
+
 // グローバル変数
 let app = {
     versions: [],
@@ -1854,15 +1863,15 @@ async function loadDeviceProfile(device) {
             throw new Error(`Failed to fetch profiles.json: ${response.status}`);
         }
         
-        const profilesData = await response.json();
+const profilesData = await response.json();
         console.log(`Loaded profiles data:`, profilesData);
+
+        // version_codeを保存（公式と同じ）
+        app.versionCode = profilesData.version_code || '';
 
         if (profilesData.profiles && profilesData.profiles[profileId]) {
             const profile = profilesData.profiles[profileId];
             console.log(`Found profile for ${profileId}:`, profile);
-            
-            // version_codeを保存
-            app.selectedDevice.version_code = profilesData.version_code || '';
             
             const defaultPackages = profilesData.default_packages || [];
             const devicePackages = profile.device_packages || [];
@@ -1891,9 +1900,22 @@ function showDeviceInfo() {
     
     // バージョン番号の取得（ビルド番号含む）
     let fullVersion = app.selectedVersion;
-    if (app.selectedDevice.version_code) {
-        fullVersion = `${app.selectedVersion} (${app.selectedDevice.version_code})`;
+    if (app.versionCode) {
+        fullVersion = `${app.selectedVersion} (${app.versionCode})`;
     }
+    
+    // URLs生成
+    const imageFolder = app.selectedVersion === 'SNAPSHOT' 
+        ? `https://downloads.openwrt.org/snapshots/targets/${device.target}`
+        : `https://downloads.openwrt.org/releases/${app.selectedVersion}/targets/${device.target}`;
+    
+    const deviceLink = `${window.location.origin}${window.location.pathname}?version=${encodeURIComponent(app.selectedVersion)}&target=${encodeURIComponent(device.target)}&id=${encodeURIComponent(device.id)}`;
+    
+    const infoUrl = (config.info_url || "")
+        .replace("{title}", encodeURI(getDeviceTitle(device)))
+        .replace("{target}", device.target)
+        .replace("{id}", device.id)
+        .replace("{version}", app.selectedVersion);
     
     // 公式形式のAbout this buildセクションを構築
     const infoHtml = `
@@ -1913,9 +1935,9 @@ function showDeviceInfo() {
         <div class="row">
             <span class="col1">Links</span>
             <span class="col2">
-                <a id="image-folder" href="${getImageFolderUrl()}" title="Browse image folder" target="_blank"></a>
-                <a id="image-link" href="#" title="Copy link to this device" onclick="copyDeviceLink(); return false;"></a>
-                <a id="image-info" href="${getDeviceInfoUrl()}" title="Device info" target="_blank"></a>
+                <a id="image-folder" href="${imageFolder}" title="Browse image folder" target="_blank"></a>
+                <a id="image-link" href="#" title="Copy link" onclick="navigator.clipboard.writeText('${deviceLink}').then(() => alert('Link copied!')); return false;"></a>
+                <a id="image-info" href="${infoUrl}" title="Device info" target="_blank"></a>
             </span>
         </div>
     `;
