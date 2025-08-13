@@ -1861,6 +1861,9 @@ async function loadDeviceProfile(device) {
             const profile = profilesData.profiles[profileId];
             console.log(`Found profile for ${profileId}:`, profile);
             
+            // version_codeを保存
+            app.selectedDevice.version_code = profilesData.version_code || '';
+            
             const defaultPackages = profilesData.default_packages || [];
             const devicePackages = profile.device_packages || [];
             const asuExtraPackages = ['luci'];
@@ -1886,7 +1889,13 @@ function showDeviceInfo() {
 
     const device = app.selectedDevice;
     
-    // 公式形式のAbout this buildセクションを構築（横並びレイアウト）
+    // バージョン番号の取得（ビルド番号含む）
+    let fullVersion = app.selectedVersion;
+    if (app.selectedDevice.version_code) {
+        fullVersion = `${app.selectedVersion} (${app.selectedDevice.version_code})`;
+    }
+    
+    // 公式形式のAbout this buildセクションを構築
     const infoHtml = `
         <h5>About this build</h5>
         <div class="row">
@@ -1899,7 +1908,7 @@ function showDeviceInfo() {
         </div>
         <div class="row">
             <span class="col1">Version</span>
-            <span class="col2">${app.selectedVersion}</span>
+            <span class="col2">${fullVersion}</span>
         </div>
         <div class="row">
             <span class="col1">Links</span>
@@ -1923,6 +1932,31 @@ function showDeviceInfo() {
         app.templateLoaded = true;
         console.log('Template loaded for the first time');
     }
+}
+
+// Links用のヘルパー関数
+function getImageFolderUrl() {
+    if (!app.selectedDevice || !app.selectedVersion) return '#';
+    const baseUrl = app.selectedVersion === 'SNAPSHOT' 
+        ? 'https://downloads.openwrt.org/snapshots'
+        : `https://downloads.openwrt.org/releases/${app.selectedVersion}`;
+    return `${baseUrl}/targets/${app.selectedDevice.target}`;
+}
+
+function getDeviceInfoUrl() {
+    // 公式の検索URLフォーマットに準拠
+    if (!app.selectedDevice) return '#';
+    const deviceTitle = getDeviceTitle(app.selectedDevice);
+    return `https://openwrt.org/start?do=search&id=toh&q=${encodeURIComponent(deviceTitle)}%20@toh`;
+}
+
+function copyDeviceLink() {
+    const url = `${window.location.origin}${window.location.pathname}?version=${encodeURIComponent(app.selectedVersion)}&target=${encodeURIComponent(app.selectedDevice.target)}&id=${encodeURIComponent(app.selectedDevice.id)}`;
+    navigator.clipboard.writeText(url).then(() => {
+        alert('Link copied to clipboard!');
+    }).catch(err => {
+        console.error('Failed to copy link:', err);
+    });
 }
 
 // Links用のヘルパー関数を追加
