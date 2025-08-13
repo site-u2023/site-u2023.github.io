@@ -336,8 +336,17 @@
             text-decoration: underline;
         }
 
+        .package-category h6 {
+            font-size: 1.1rem;  /* 文字サイズを大きく */
+            font-weight: 500;
+        }
+
+        .package-link {
+            font-size: 1rem;  /* 通常サイズに変更 */
+        }
+
         .package-description {
-            font-size: 0.8rem;
+            font-size: 0.9rem;  /* 少し大きく */
             color: #6c757d;
             margin-left: 1.25rem;
             margin-top: 0.1rem;
@@ -471,340 +480,8 @@
                 <div id="package-selector-config" class="aios-config">
                     <small class="text-muted">Select additional packages to install. Selected packages will be automatically added to the package list below.</small>
                     
-                    <!-- 基本システム機能 -->
-                    <div class="package-category">
-                        <h6>Basic System Features</h6>
-                        <div class="package-grid">
-                            <div class="package-item">
-                                <div class="form-check">
-                                    <input class="form-check-input package-selector-checkbox" type="checkbox" id="pkg-ttyd" data-package="ttyd">
-                                    <label class="form-check-label" for="pkg-ttyd">
-                                        <a href="https://openwrt.org/packages/pkgdata/ttyd" target="_blank" class="package-link">ttyd</a>
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="package-item">
-                                <div class="form-check">
-                                    <input class="form-check-input package-selector-checkbox" type="checkbox" id="pkg-openssh-sftp-server" data-package="openssh-sftp-server">
-                                    <label class="form-check-label" for="pkg-openssh-sftp-server">
-                                        <a href="https://openwrt.org/packages/pkgdata/openssh-sftp-server" target="_blank" class="package-link">openssh-sftp-server</a>
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="package-item">
-                                <div class="form-check">
-                                    <input class="form-check-input package-selector-checkbox" type="checkbox" id="pkg-luci-app-commands" data-package="luci-app-commands">
-                                    <label class="form-check-label" for="pkg-luci-app-commands">
-                                        <a href="https://openwrt.org/packages/pkgdata/luci-app-commands" target="_blank" class="package-link">luci-app-commands</a>
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="package-description">Terminal access and file transfer tools</div>
-                    </div>
-
-                    <!-- システム管理 -->
-                    <div class="package-category">
-                        <h6>System Management</h6>
-                        <div class="package-grid">
-                            <div class="package-item">
-                                <div class="form-check">
-                                    <input class="form-check-input package-selector-checkbox" type="checkbox" id="pkg-irqbalance" data-package="irqbalance">
-                                    <label class="form-check-label" for="pkg-irqbalance">
-                                        <a href="https://openwrt.org/packages/pkgdata/irqbalance" target="_blank" class="package-link">irqbalance</a>
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="package-description">CPU interrupt balancing for multi-core systems</div>
-                    </div>
-
-                    <!-- ネットワーク管理 -->
-                    <div class="package-category">
-                        <h6>Network Management</h6>
-                        <div class="package-grid">
-                            <div class="package-item">
-                                <div class="form-check">
-                                    <input class="form-check-input package-selector-checkbox" type="checkbox" id="pkg-luci-app-qos" data-package="luci-app-qos">
-                                    <label class="form-check-label" for="pkg-luci-app-qos">
-                                        <a href="https://openwrt.org/packages/pkgdata/luci-app-qos" target="_blank" class="package-link">luci-app-qos</a>
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="package-item">
-                                <div class="form-check">
-                                    <input class="form-check-input package-selector-checkbox" type="checkbox" id="pkg-luci-app-sqm" data-package="luci-app-sqm">
-                                    <label class="form-check-label" for="pkg-luci-app-sqm">
-                                        <a href="https://openwrt.org/packages/pkgdata/luci-app-sqm" target="_blank" class="package-link">luci-app-sqm</a>
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="package-item">
-                                <div class="form-check">
-                                    <input class="form-check-input package-selector-checkbox" type="checkbox" id="pkg-luci-app-statistics" data-package="luci-app-statistics">
-                                    <label class="form-check-label" for="pkg-luci-app-statistics">
-                                        <a href="https://openwrt.org/packages/pkgdata/luci-app-statistics" target="_blank" class="package-link">luci-app-statistics</a>
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="package-item">
-                                <div class="form-check">
-                                    <input class="form-check-input package-selector-checkbox" type="checkbox" id="pkg-nlbwmon" data-package="nlbwmon">
-                                    <label class="form-check-label" for="pkg-nlbwmon">
-                                        <a href="https://openwrt.org/packages/pkgdata/nlbwmon" target="_blank" class="package-link">nlbwmon</a>
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="package-item">
-                                <div class="form-check">
-                                    <input class="form-check-input package-selector-checkbox" type="checkbox" id="pkg-wifischedule" data-package="wifischedule">
-                                    <label class="form-check-label" for="pkg-wifischedule">
-                                        <a href="https://openwrt.org/packages/pkgdata/wifischedule" target="_blank" class="package-link">wifischedule</a>
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="package-item">
-                                <div class="form-check">
-                                    <input class="form-check-input package-selector-checkbox" type="checkbox" id="pkg-luci-app-wol" data-package="luci-app-wol">
-                                    <label class="form-check-label" for="pkg-luci-app-wol">
-                                        <a href="https://openwrt.org/packages/pkgdata/luci-app-wol" target="_blank" class="package-link">luci-app-wol</a>
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="package-item">
-                                <div class="form-check">
-                                    <input class="form-check-input package-selector-checkbox" type="checkbox" id="pkg-luci-app-ddns" data-package="luci-app-ddns">
-                                    <label class="form-check-label" for="pkg-luci-app-ddns">
-                                        <a href="https://openwrt.org/packages/pkgdata/luci-app-ddns" target="_blank" class="package-link">luci-app-ddns</a>
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="package-description">QoS, bandwidth monitoring, Wi-Fi scheduling, and network utilities</div>
-                    </div>
-
-                    <!-- セキュリティツール -->
-                    <div class="package-category">
-                        <h6>Security Tools</h6>
-                        <div class="package-grid">
-                            <div class="package-item">
-                                <div class="form-check">
-                                    <input class="form-check-input package-selector-checkbox" type="checkbox" id="pkg-znc-mod-fail2ban" data-package="znc-mod-fail2ban">
-                                    <label class="form-check-label" for="pkg-znc-mod-fail2ban">
-                                        <a href="https://openwrt.org/packages/pkgdata/znc-mod-fail2ban" target="_blank" class="package-link">znc-mod-fail2ban</a>
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="package-item">
-                                <div class="form-check">
-                                    <input class="form-check-input package-selector-checkbox" type="checkbox" id="pkg-banip" data-package="banip">
-                                    <label class="form-check-label" for="pkg-banip">
-                                        <a href="https://openwrt.org/packages/pkgdata/banip" target="_blank" class="package-link">banip</a>
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="package-description">Intrusion prevention and IP blocking tools</div>
-                    </div>
-
-                    <!-- システム監視 -->
-                    <div class="package-category">
-                        <h6>System Monitoring</h6>
-                        <div class="package-grid">
-                            <div class="package-item">
-                                <div class="form-check">
-                                    <input class="form-check-input package-selector-checkbox" type="checkbox" id="pkg-luci-app-watchcat" data-package="luci-app-watchcat">
-                                    <label class="form-check-label" for="pkg-luci-app-watchcat">
-                                        <a href="https://openwrt.org/packages/pkgdata/luci-app-watchcat" target="_blank" class="package-link">luci-app-watchcat</a>
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="package-description">System watchdog and network monitoring</div>
-                    </div>
-
-                    <!-- ネットワーク診断ツール -->
-                    <div class="package-category">
-                        <h6>Network Diagnostic Tools</h6>
-                        <div class="package-grid">
-                            <div class="package-item">
-                                <div class="form-check">
-                                    <input class="form-check-input package-selector-checkbox" type="checkbox" id="pkg-htop" data-package="htop">
-                                    <label class="form-check-label" for="pkg-htop">
-                                        <a href="https://openwrt.org/packages/pkgdata/htop" target="_blank" class="package-link">htop</a>
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="package-item">
-                                <div class="form-check">
-                                    <input class="form-check-input package-selector-checkbox" type="checkbox" id="pkg-mtr" data-package="mtr">
-                                    <label class="form-check-label" for="pkg-mtr">
-                                        <a href="https://openwrt.org/packages/pkgdata/mtr" target="_blank" class="package-link">mtr</a>
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="package-item">
-                                <div class="form-check">
-                                    <input class="form-check-input package-selector-checkbox" type="checkbox" id="pkg-nmap" data-package="nmap">
-                                    <label class="form-check-label" for="pkg-nmap">
-                                        <a href="https://openwrt.org/packages/pkgdata/nmap" target="_blank" class="package-link">nmap</a>
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="package-item">
-                                <div class="form-check">
-                                    <input class="form-check-input package-selector-checkbox" type="checkbox" id="pkg-tcpdump" data-package="tcpdump">
-                                    <label class="form-check-label" for="pkg-tcpdump">
-                                        <a href="https://openwrt.org/packages/pkgdata/tcpdump" target="_blank" class="package-link">tcpdump</a>
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="package-description">System monitoring and network analysis tools</div>
-                    </div>
-
-                    <!-- テーマおよびダッシュボード -->
-                    <div class="package-category">
-                        <h6>Themes and Dashboard</h6>
-                        <div class="package-grid">
-                            <div class="package-item">
-                                <div class="form-check">
-                                    <input class="form-check-input package-selector-checkbox" type="checkbox" id="pkg-luci-theme-openwrt" data-package="luci-theme-openwrt">
-                                    <label class="form-check-label" for="pkg-luci-theme-openwrt">
-                                        <a href="https://openwrt.org/packages/pkgdata/luci-theme-openwrt" target="_blank" class="package-link">luci-theme-openwrt</a>
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="package-item">
-                                <div class="form-check">
-                                    <input class="form-check-input package-selector-checkbox" type="checkbox" id="pkg-luci-mod-dashboard" data-package="luci-mod-dashboard">
-                                    <label class="form-check-label" for="pkg-luci-mod-dashboard">
-                                        <a href="https://openwrt.org/packages/pkgdata/luci-mod-dashboard" target="_blank" class="package-link">luci-mod-dashboard</a>
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="package-description">UI themes and dashboard improvements</div>
-                    </div>
-
-                    <!-- ユーティリティ -->
-                    <div class="package-category">
-                        <h6>Utilities</h6>
-                        <div class="package-grid">
-                            <div class="package-item">
-                                <div class="form-check">
-                                    <input class="form-check-input package-selector-checkbox" type="checkbox" id="pkg-attendedsysupgrade-common" data-package="attendedsysupgrade-common">
-                                    <label class="form-check-label" for="pkg-attendedsysupgrade-common">
-                                        <a href="https://openwrt.org/packages/pkgdata/attendedsysupgrade-common" target="_blank" class="package-link">attendedsysupgrade-common</a>
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="package-item">
-                                <div class="form-check">
-                                    <input class="form-check-input package-selector-checkbox" type="checkbox" id="pkg-luci-app-filebrowser" data-package="luci-app-filebrowser">
-                                    <label class="form-check-label" for="pkg-luci-app-filebrowser">
-                                        <a href="https://openwrt.org/packages/pkgdata/luci-app-filebrowser" target="_blank" class="package-link">luci-app-filebrowser</a>
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="package-item">
-                                <div class="form-check">
-                                    <input class="form-check-input package-selector-checkbox" type="checkbox" id="pkg-wireguard-tools" data-package="wireguard-tools">
-                                    <label class="form-check-label" for="pkg-wireguard-tools">
-                                        <a href="https://openwrt.org/packages/pkgdata/wireguard-tools" target="_blank" class="package-link">wireguard-tools</a>
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="package-description">System upgrade tools, file browser, and VPN utilities</div>
-                    </div>
-
-                    <!-- USBストレージ -->
-                    <div class="package-category">
-                        <h6>USB Storage Support</h6>
-                        <div class="package-grid">
-                            <div class="package-item">
-                                <div class="form-check">
-                                    <input class="form-check-input package-selector-checkbox" type="checkbox" id="pkg-kmod-usb-storage" data-package="kmod-usb-storage" data-dependencies="dosfstools,e2fsprogs,f2fs-tools,exfat-fsck,ntfs-3g,hfsfsck,hdparm">
-                                    <label class="form-check-label" for="pkg-kmod-usb-storage">
-                                        <a href="https://openwrt.org/packages/pkgdata/kmod-usb-storage" target="_blank" class="package-link">kmod-usb-storage</a>
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="package-item package-hidden">
-                                <div class="form-check">
-                                    <input class="form-check-input package-selector-checkbox" type="checkbox" id="pkg-dosfstools" data-package="dosfstools" disabled>
-                                    <label class="form-check-label" for="pkg-dosfstools">
-                                        <a href="https://openwrt.org/packages/pkgdata/dosfstools" target="_blank" class="package-link">dosfstools</a>
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="package-item package-hidden">
-                                <div class="form-check">
-                                    <input class="form-check-input package-selector-checkbox" type="checkbox" id="pkg-e2fsprogs" data-package="e2fsprogs" disabled>
-                                    <label class="form-check-label" for="pkg-e2fsprogs">
-                                        <a href="https://openwrt.org/packages/pkgdata/e2fsprogs" target="_blank" class="package-link">e2fsprogs</a>
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="package-item package-hidden">
-                                <div class="form-check">
-                                    <input class="form-check-input package-selector-checkbox" type="checkbox" id="pkg-f2fs-tools" data-package="f2fs-tools" disabled>
-                                    <label class="form-check-label" for="pkg-f2fs-tools">
-                                        <a href="https://openwrt.org/packages/pkgdata/f2fs-tools" target="_blank" class="package-link">f2fs-tools</a>
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="package-item package-hidden">
-                                <div class="form-check">
-                                    <input class="form-check-input package-selector-checkbox" type="checkbox" id="pkg-exfat-fsck" data-package="exfat-fsck" disabled>
-                                    <label class="form-check-label" for="pkg-exfat-fsck">
-                                        <a href="https://openwrt.org/packages/pkgdata/exfat-fsck" target="_blank" class="package-link">exfat-fsck</a>
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="package-item package-hidden">
-                                <div class="form-check">
-                                    <input class="form-check-input package-selector-checkbox" type="checkbox" id="pkg-ntfs-3g" data-package="ntfs-3g" disabled>
-                                    <label class="form-check-label" for="pkg-ntfs-3g">
-                                        <a href="https://openwrt.org/packages/pkgdata/ntfs-3g" target="_blank" class="package-link">ntfs-3g</a>
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="package-item package-hidden">
-                                <div class="form-check">
-                                    <input class="form-check-input package-selector-checkbox" type="checkbox" id="pkg-hfsfsck" data-package="hfsfsck" disabled>
-                                    <label class="form-check-label" for="pkg-hfsfsck">
-                                        <a href="https://openwrt.org/packages/pkgdata/hfsfsck" target="_blank" class="package-link">hfsfsck</a>
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="package-item package-hidden">
-                                <div class="form-check">
-                                    <input class="form-check-input package-selector-checkbox" type="checkbox" id="pkg-hdparm" data-package="hdparm" disabled>
-                                    <label class="form-check-label" for="pkg-hdparm">
-                                        <a href="https://openwrt.org/packages/pkgdata/hdparm" target="_blank" class="package-link">hdparm</a>
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="package-description">USB storage kernel module and filesystem tools (hidden packages auto-installed with USB storage)</div>
-                    </div>
-
-                    <!-- ファイル共有 -->
-                    <div class="package-category">
-                        <h6>File Sharing</h6>
-                        <div class="package-grid">
-                            <div class="package-item">
-                                <div class="form-check">
-                                    <input class="form-check-input package-selector-checkbox" type="checkbox" id="pkg-luci-app-samba4" data-package="luci-app-samba4">
-                                    <label class="form-check-label" for="pkg-luci-app-samba4">
-                                        <a href="https://openwrt.org/packages/pkgdata/luci-app-samba4" target="_blank" class="package-link">luci-app-samba4</a>
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="package-description">SMB/CIFS file sharing server</div>
+                    <div id="package-categories">
+                        <!-- カテゴリーとパッケージは動的に生成される -->
                     </div>
                     
                     <div class="form-group" style="margin-top: 1.5rem;">
@@ -893,10 +570,10 @@
                         </div>
                         <div class="form-group">
                             <label for="aios-device-name">Device name</label>
-                            <input type="text" id="models" class="form-control" placeholder="Type device model" autocomplete="off" inputmode="latin" pattern="[\x20-\x7E]*" title="ASCII only">
+                            <input type="text" id="aios-device-name" class="form-control" placeholder="OpenWrt">
                         </div>
                     </div>
-
+                
                     <div class="form-row">
                         <div class="form-group">
                             <label for="aios-root-password">Root password</label>
@@ -1448,9 +1125,383 @@ let mapShCache = {
     '19': null
 };
 
+// パッケージデータベース
+const PACKAGE_DB = {
+    categories: [
+        {
+            id: "basic-system",
+            name: "Basic System Features",
+            description: "Terminal access and file transfer tools",
+            packages: [
+                { 
+                    id: "ttyd", 
+                    name: "ttyd", 
+                    url: "https://openwrt.org/packages/pkgdata/ttyd",
+                    enableVar: "enable_ttyd"
+                },
+                { 
+                    id: "openssh-sftp-server", 
+                    name: "openssh-sftp-server", 
+                    url: "https://openwrt.org/packages/pkgdata/openssh-sftp-server"
+                },
+                { 
+                    id: "luci-app-commands", 
+                    name: "luci-app-commands", 
+                    url: "https://openwrt.org/packages/pkgdata/luci-app-commands"
+                },
+                { 
+                    id: "luci-app-filebrowser", 
+                    name: "luci-app-filebrowser", 
+                    url: "https://openwrt.org/packages/pkgdata/luci-app-filebrowser"
+                }
+            ]
+        },
+        {
+            id: "system-management",
+            name: "System Management",
+            description: "CPU interrupt balancing for multi-core systems",
+            packages: [
+                { 
+                    id: "irqbalance", 
+                    name: "irqbalance", 
+                    url: "https://openwrt.org/packages/pkgdata/irqbalance",
+                    enableVar: "enable_irqbalance"
+                }
+            ]
+        },
+        {
+            id: "network-management",
+            name: "Network Management",
+            description: "QoS, bandwidth monitoring, Wi-Fi scheduling, and network utilities",
+            packages: [
+                { 
+                    id: "luci-app-qos", 
+                    name: "luci-app-qos", 
+                    url: "https://openwrt.org/packages/pkgdata/luci-app-qos"
+                },
+                { 
+                    id: "luci-app-sqm", 
+                    name: "luci-app-sqm", 
+                    url: "https://openwrt.org/packages/pkgdata/luci-app-sqm",
+                    dependencies: ["tc-full"]
+                },
+                { 
+                    id: "tc-full", 
+                    name: "tc-full", 
+                    url: "https://openwrt.org/packages/pkgdata/tc-full",
+                    hidden: true
+                },
+                { 
+                    id: "luci-app-statistics", 
+                    name: "luci-app-statistics", 
+                    url: "https://openwrt.org/packages/pkgdata/luci-app-statistics",
+                    dependencies: ["collectd", "rrdtool1"]
+                },
+                { 
+                    id: "collectd", 
+                    name: "collectd", 
+                    url: "https://openwrt.org/packages/pkgdata/collectd",
+                    hidden: true
+                },
+                { 
+                    id: "rrdtool1", 
+                    name: "rrdtool1", 
+                    url: "https://openwrt.org/packages/pkgdata/rrdtool1",
+                    hidden: true
+                },
+                { 
+                    id: "nlbwmon", 
+                    name: "nlbwmon", 
+                    url: "https://openwrt.org/packages/pkgdata/nlbwmon"
+                },
+                { 
+                    id: "wifischedule", 
+                    name: "wifischedule", 
+                    url: "https://openwrt.org/packages/pkgdata/wifischedule"
+                },
+                { 
+                    id: "luci-app-wol", 
+                    name: "luci-app-wol", 
+                    url: "https://openwrt.org/packages/pkgdata/luci-app-wol"
+                },
+                { 
+                    id: "luci-app-ddns", 
+                    name: "luci-app-ddns", 
+                    url: "https://openwrt.org/packages/pkgdata/luci-app-ddns"
+                }
+            ]
+        },
+        {
+            id: "security-tools",
+            name: "Security Tools",
+            description: "Intrusion prevention and IP blocking tools",
+            packages: [
+                { 
+                    id: "znc-mod-fail2ban", 
+                    name: "znc-mod-fail2ban", 
+                    url: "https://openwrt.org/packages/pkgdata/znc-mod-fail2ban"
+                },
+                { 
+                    id: "banip", 
+                    name: "banip", 
+                    url: "https://openwrt.org/packages/pkgdata/banip"
+                }
+            ]
+        },
+        {
+            id: "system-monitoring",
+            name: "System Monitoring",
+            description: "System watchdog and network monitoring",
+            packages: [
+                { 
+                    id: "luci-app-watchcat", 
+                    name: "luci-app-watchcat", 
+                    url: "https://openwrt.org/packages/pkgdata/luci-app-watchcat"
+                }
+            ]
+        },
+        {
+            id: "diagnostic-tools",
+            name: "Network Diagnostic Tools",
+            description: "System monitoring and network analysis tools",
+            packages: [
+                { 
+                    id: "htop", 
+                    name: "htop", 
+                    url: "https://openwrt.org/packages/pkgdata/htop",
+                    dependencies: ["collectd", "collectd-mod-thermal"]
+                },
+                { 
+                    id: "collectd-mod-thermal", 
+                    name: "collectd-mod-thermal", 
+                    url: "https://openwrt.org/packages/pkgdata/collectd-mod-thermal",
+                    hidden: true
+                },
+                { 
+                    id: "mtr", 
+                    name: "mtr", 
+                    url: "https://openwrt.org/packages/pkgdata/mtr"
+                },
+                { 
+                    id: "nmap", 
+                    name: "nmap", 
+                    url: "https://openwrt.org/packages/pkgdata/nmap"
+                },
+                { 
+                    id: "tcpdump", 
+                    name: "tcpdump", 
+                    url: "https://openwrt.org/packages/pkgdata/tcpdump"
+                }
+            ]
+        },
+        {
+            id: "themes-dashboard",
+            name: "Themes and Dashboard",
+            description: "UI themes and dashboard improvements",
+            packages: [
+                { 
+                    id: "luci-theme-openwrt", 
+                    name: "luci-theme-openwrt", 
+                    url: "https://openwrt.org/packages/pkgdata/luci-theme-openwrt"
+                },
+                { 
+                    id: "luci-theme-material", 
+                    name: "luci-theme-material", 
+                    url: "https://openwrt.org/packages/pkgdata/luci-theme-material"
+                },
+                { 
+                    id: "luci-theme-openwrt-2020", 
+                    name: "luci-theme-openwrt-2020", 
+                    url: "https://openwrt.org/packages/pkgdata/luci-theme-openwrt-2020"
+                },
+                { 
+                    id: "luci-mod-dashboard", 
+                    name: "luci-mod-dashboard", 
+                    url: "https://openwrt.org/packages/pkgdata/luci-mod-dashboard"
+                }
+            ]
+        },
+        {
+            id: "utilities",
+            name: "Utilities",
+            description: "System upgrade tools and VPN utilities",
+            packages: [
+                { 
+                    id: "attendedsysupgrade-common", 
+                    name: "attendedsysupgrade-common", 
+                    url: "https://openwrt.org/packages/pkgdata/attendedsysupgrade-common"
+                },
+                { 
+                    id: "wireguard-tools", 
+                    name: "wireguard-tools", 
+                    url: "https://openwrt.org/packages/pkgdata/wireguard-tools"
+                },
+                { 
+                    id: "luci-app-wireguard", 
+                    name: "luci-app-wireguard", 
+                    url: "https://openwrt.org/packages/pkgdata/luci-app-wireguard"
+                }
+            ]
+        },
+        {
+            id: "usb-storage",
+            name: "USB Storage Support",
+            description: "USB storage kernel module and filesystem tools",
+            packages: [
+                { 
+                    id: "kmod-usb-storage", 
+                    name: "kmod-usb-storage", 
+                    url: "https://openwrt.org/packages/pkgdata/kmod-usb-storage",
+                    dependencies: ["block-mount", "kmod-usb-storage-uas", "usbutils", "libblkid1", "gdisk"]
+                },
+                { 
+                    id: "block-mount", 
+                    name: "block-mount", 
+                    url: "https://openwrt.org/packages/pkgdata/block-mount",
+                    hidden: true
+                },
+                { 
+                    id: "kmod-usb-storage-uas", 
+                    name: "kmod-usb-storage-uas", 
+                    url: "https://openwrt.org/packages/pkgdata/kmod-usb-storage-uas",
+                    hidden: true
+                },
+                { 
+                    id: "usbutils", 
+                    name: "usbutils", 
+                    url: "https://openwrt.org/packages/pkgdata/usbutils",
+                    hidden: true
+                },
+                { 
+                    id: "libblkid1", 
+                    name: "libblkid1", 
+                    url: "https://openwrt.org/packages/pkgdata/libblkid1",
+                    hidden: true
+                },
+                { 
+                    id: "gdisk", 
+                    name: "gdisk", 
+                    url: "https://openwrt.org/packages/pkgdata/gdisk",
+                    hidden: true
+                },
+                { 
+                    id: "dosfstools", 
+                    name: "dosfstools", 
+                    url: "https://openwrt.org/packages/pkgdata/dosfstools",
+                    dependencies: ["kmod-fs-vfat"]
+                },
+                { 
+                    id: "kmod-fs-vfat", 
+                    name: "kmod-fs-vfat", 
+                    url: "https://openwrt.org/packages/pkgdata/kmod-fs-vfat",
+                    hidden: true
+                },
+                { 
+                    id: "e2fsprogs", 
+                    name: "e2fsprogs", 
+                    url: "https://openwrt.org/packages/pkgdata/e2fsprogs",
+                    dependencies: ["kmod-fs-ext4"]
+                },
+                { 
+                    id: "kmod-fs-ext4", 
+                    name: "kmod-fs-ext4", 
+                    url: "https://openwrt.org/packages/pkgdata/kmod-fs-ext4",
+                    hidden: true
+                },
+                { 
+                    id: "f2fs-tools", 
+                    name: "f2fs-tools", 
+                    url: "https://openwrt.org/packages/pkgdata/f2fs-tools",
+                    dependencies: ["kmod-fs-f2fs"]
+                },
+                { 
+                    id: "kmod-fs-f2fs", 
+                    name: "kmod-fs-f2fs", 
+                    url: "https://openwrt.org/packages/pkgdata/kmod-fs-f2fs",
+                    hidden: true
+                },
+                { 
+                    id: "exfat-fsck", 
+                    name: "exfat-fsck", 
+                    url: "https://openwrt.org/packages/pkgdata/exfat-fsck",
+                    dependencies: ["kmod-fs-exfat"]
+                },
+                { 
+                    id: "kmod-fs-exfat", 
+                    name: "kmod-fs-exfat", 
+                    url: "https://openwrt.org/packages/pkgdata/kmod-fs-exfat",
+                    hidden: true
+                },
+                { 
+                    id: "ntfs-3g", 
+                    name: "ntfs-3g", 
+                    url: "https://openwrt.org/packages/pkgdata/ntfs-3g",
+                    dependencies: ["kmod-fs-ntfs3"]
+                },
+                { 
+                    id: "kmod-fs-ntfs3", 
+                    name: "kmod-fs-ntfs3", 
+                    url: "https://openwrt.org/packages/pkgdata/kmod-fs-ntfs3",
+                    hidden: true
+                },
+                { 
+                    id: "hfsfsck", 
+                    name: "hfsfsck", 
+                    url: "https://openwrt.org/packages/pkgdata/hfsfsck",
+                    dependencies: ["kmod-fs-hfs", "kmod-fs-hfsplus"]
+                },
+                { 
+                    id: "kmod-fs-hfs", 
+                    name: "kmod-fs-hfs", 
+                    url: "https://openwrt.org/packages/pkgdata/kmod-fs-hfs",
+                    hidden: true
+                },
+                { 
+                    id: "kmod-fs-hfsplus", 
+                    name: "kmod-fs-hfsplus", 
+                    url: "https://openwrt.org/packages/pkgdata/kmod-fs-hfsplus",
+                    hidden: true
+                },
+                { 
+                    id: "hdparm", 
+                    name: "hdparm", 
+                    url: "https://openwrt.org/packages/pkgdata/hdparm",
+                    dependencies: ["hd-idle"]
+                },
+                { 
+                    id: "hd-idle", 
+                    name: "hd-idle", 
+                    url: "https://openwrt.org/packages/pkgdata/hd-idle",
+                    hidden: true
+                }
+            ]
+        },
+        {
+            id: "file-sharing",
+            name: "File Sharing",
+            description: "SMB/CIFS file sharing server",
+            packages: [
+                { 
+                    id: "luci-app-samba4", 
+                    name: "luci-app-samba4", 
+                    url: "https://openwrt.org/packages/pkgdata/luci-app-samba4",
+                    dependencies: ["wsdd2"],
+                    enableVar: "enable_samba4"
+                },
+                { 
+                    id: "wsdd2", 
+                    name: "wsdd2", 
+                    url: "https://openwrt.org/packages/pkgdata/wsdd2",
+                    hidden: true
+                }
+            ]
+        }
+    ]
+};
+        
 // DOMContentLoaded時の初期化
 document.addEventListener('DOMContentLoaded', init);
-
+    
 // ★言語変更時にも即反映させる
 document.getElementById('aios-language').addEventListener('change', asuCollectPackages);
 
@@ -1463,6 +1514,9 @@ async function init() {
         // map.shを事前ロード
         await loadMapShScripts();
 
+        // パッケージセレクターを動的生成
+        generatePackageSelector();
+        
         asuCollectPackages();
         
         // ISP情報を初期取得（常時表示のため）
@@ -1633,10 +1687,7 @@ function bindEvents() {
     document.getElementById('use-package-selector').addEventListener('change', togglePackageSelector);
     document.getElementById('request-build').addEventListener('click', buildAsuRequest);
 
-    // パッケージ選択チェックボックスのイベント
-    document.querySelectorAll('.package-selector-checkbox').forEach(checkbox => {
-        checkbox.addEventListener('change', handlePackageSelection);
-    });
+    // パッケージ選択チェックボックスのイベントは動的生成時に設定
 
     // DS-Lite mode (auto/manual) の監視を追加
     document.querySelectorAll('input[name="dsliteMode"]').forEach(radio => {
@@ -1700,27 +1751,89 @@ function togglePackageSelector(e) {
     }
 }
 
+function generatePackageSelector() {
+    const container = document.getElementById('package-categories');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    PACKAGE_DB.categories.forEach(category => {
+        const categoryDiv = document.createElement('div');
+        categoryDiv.className = 'package-category';
+        
+        const categoryTitle = document.createElement('h6');
+        categoryTitle.textContent = category.name;
+        categoryDiv.appendChild(categoryTitle);
+        
+        const packageGrid = document.createElement('div');
+        packageGrid.className = 'package-grid';
+        
+        category.packages.forEach(pkg => {
+            const packageItem = document.createElement('div');
+            packageItem.className = 'package-item';
+            if (pkg.hidden) {
+                packageItem.classList.add('package-hidden');
+            }
+            
+            const formCheck = document.createElement('div');
+            formCheck.className = 'form-check';
+            
+            const checkbox = document.createElement('input');
+            checkbox.className = 'form-check-input package-selector-checkbox';
+            checkbox.type = 'checkbox';
+            checkbox.id = `pkg-${pkg.id}`;
+            checkbox.setAttribute('data-package', pkg.name);
+            if (pkg.dependencies) {
+                checkbox.setAttribute('data-dependencies', pkg.dependencies.join(','));
+            }
+            if (pkg.hidden) {
+                checkbox.disabled = true;
+            }
+            checkbox.addEventListener('change', handlePackageSelection);
+            
+            const label = document.createElement('label');
+            label.className = 'form-check-label';
+            label.setAttribute('for', `pkg-${pkg.id}`);
+            
+            const link = document.createElement('a');
+            link.href = pkg.url;
+            link.target = '_blank';
+            link.className = 'package-link';
+            link.textContent = pkg.name;
+            
+            label.appendChild(link);
+            formCheck.appendChild(checkbox);
+            formCheck.appendChild(label);
+            packageItem.appendChild(formCheck);
+            packageGrid.appendChild(packageItem);
+        });
+        
+        categoryDiv.appendChild(packageGrid);
+        
+        const description = document.createElement('div');
+        description.className = 'package-description';
+        description.textContent = category.description;
+        categoryDiv.appendChild(description);
+        
+        container.appendChild(categoryDiv);
+    });
+}
+
 function handlePackageSelection(e) {
     const packageName = e.target.getAttribute('data-package');
     const isChecked = e.target.checked;
     
     // 依存パッケージの処理
-    if (packageName === 'kmod-usb-storage') {
-        const dependencies = e.target.getAttribute('data-dependencies');
-        if (dependencies) {
-            const depPackages = dependencies.split(',');
-            depPackages.forEach(dep => {
-                const depCheckbox = document.querySelector(`#pkg-${dep}`);
-                if (depCheckbox) {
-                    depCheckbox.checked = isChecked;
-                    if (!isChecked) {
-                        depCheckbox.disabled = true;
-                    } else {
-                        depCheckbox.disabled = false;
-                    }
-                }
-            });
-        }
+    const dependencies = e.target.getAttribute('data-dependencies');
+    if (dependencies) {
+        const depPackages = dependencies.split(',');
+        depPackages.forEach(dep => {
+            const depCheckbox = document.querySelector(`#pkg-${dep}`);
+            if (depCheckbox) {
+                depCheckbox.checked = isChecked;
+                depCheckbox.disabled = !isChecked;
+            }
+        });
     }
     
     // パッケージリストを更新
