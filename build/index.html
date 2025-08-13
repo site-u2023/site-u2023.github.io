@@ -393,6 +393,25 @@
             content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='24px' viewBox='0 -2 24 24' width='24px' fill='%23000000'%3E%3Cpath d='M0 0h24v24H0z' fill='none' /%3E%3Cpath d='m 6.3 17.7 c -1.2 -1.2 -1.2 -3.2 0 -4.4 L 9.10 10.5 7.8 9 4.9 12 c -2 2 -2 5 0 7 2 2 5 2 7 0 l 2.8 -2.8 -1.3 -1.3 -2.8 2.8 c -1.2 1.2 -3.2 1.2 -4.4 0 z M 10 15.5 15.5 10 14 8.5 8.5 14 Z M 12 4.9 9.18 7.8 10.5 9.1 13.4 6.3 c 1.21 -1.2 3.2 -1.2 4.4 0 1.2 1.2 1.2 3.2 0 4.4 l -2.8 2.8 1.3 1.3 2.8 -2.8 c 2 -2 2 -5 0 -7 -2 -2 -5 -2 -7 0 z' /%3E%3C/svg%3E");
         }
 
+        /* ASU ビルドステータス */
+        .asu-info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 0.25rem;
+        }
+
+        .asu-error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 0.25rem;
+        }
+
         @media (max-width: 576px) {
             .form-row {
                 flex-direction: column;
@@ -1105,6 +1124,21 @@
             <div class="progress">
                 <div id="progress-bar" class="progress-bar" style="width: 0%"></div>
             </div>
+        </div>
+
+        <div id="asu-buildstatus" class="asu-info" style="display: none;">
+            <span></span>
+        </div>
+
+        <div id="asu-log" style="display: none;">
+            <details>
+                <summary>▶ STDERR</summary>
+                <pre id="asu-stderr" style="background: #f8f8f8; padding: 10px; overflow: auto; max-height: 300px;"></pre>
+            </details>
+            <details>
+                <summary>▶ STDOUT</summary>
+                <pre id="asu-stdout" style="background: #f8f8f8; padding: 10px; overflow: auto; max-height: 300px;"></pre>
+            </details>
         </div>
 
         <div id="download-links"></div>
@@ -1932,6 +1966,12 @@ function showDeviceInfo() {
             <span class="col1">Version</span>
             <span class="col2">${fullVersion}</span>
         </div>
+        ${app.buildDate ? `
+        <div class="row">
+            <span class="col1">Date</span>
+            <span class="col2">${formatDate(app.buildDate)}</span>
+        </div>
+        ` : ''}
         <div class="row">
             <span class="col1">Links</span>
             <span class="col2">
@@ -2794,6 +2834,15 @@ async function pollBuildStatus(requestHash) {
                 showProgress('Build completed!', 100);
                 setTimeout(() => {
                     hideProgress();
+                    showBuildStatus('Build successful', 'info');
+                    
+                    // STDERR/STDOUT の表示
+                    if (status.stderr || status.stdout) {
+                        document.getElementById('asu-stderr').textContent = status.stderr || 'No errors';
+                        document.getElementById('asu-stdout').textContent = status.stdout || 'No output';
+                        document.getElementById('asu-log').style.display = 'block';
+                    }
+                    
                     showDownloadLinks(images, status, rh);
                 }, 500);
                 return;
@@ -2829,6 +2878,27 @@ function showProgress(message, percentage) {
 
 function hideProgress() {
     document.getElementById('build-progress').style.display = 'none';
+}
+
+function showBuildStatus(message, type) {
+    const bs = document.getElementById('asu-buildstatus');
+    
+    if (type === 'error') {
+        bs.classList.remove('asu-info');
+        bs.classList.add('asu-error');
+    } else {
+        bs.classList.remove('asu-error');
+        bs.classList.add('asu-info');
+    }
+    
+    bs.querySelector('span').textContent = message;
+    bs.style.display = 'block';
+}
+
+function formatDate(date) {
+    if (!date) return '';
+    const d = new Date(date);
+    return d.toLocaleString();
 }
 
 function showDownloadLinks(images, fullStatus, requestHash) {
