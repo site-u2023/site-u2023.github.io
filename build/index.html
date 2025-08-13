@@ -336,8 +336,17 @@
             text-decoration: underline;
         }
 
+        .package-category h6 {
+            font-size: 1.1rem;  /* 文字サイズを大きく */
+            font-weight: 500;
+        }
+
+        .package-link {
+            font-size: 1rem;  /* 通常サイズに変更 */
+        }
+
         .package-description {
-            font-size: 0.8rem;
+            font-size: 0.9rem;  /* 少し大きく */
             color: #6c757d;
             margin-left: 1.25rem;
             margin-top: 0.1rem;
@@ -1133,6 +1142,7 @@ const PACKAGE_DB = {
                 { id: "ttyd", name: "ttyd", url: "https://openwrt.org/packages/pkgdata/ttyd" },
                 { id: "openssh-sftp-server", name: "openssh-sftp-server", url: "https://openwrt.org/packages/pkgdata/openssh-sftp-server" },
                 { id: "luci-app-commands", name: "luci-app-commands", url: "https://openwrt.org/packages/pkgdata/luci-app-commands" }
+                 { id: "luci-app-filebrowser", name: "luci-app-filebrowser", url: "https://openwrt.org/packages/pkgdata/luci-app-filebrowser" },
             ]
         },
         {
@@ -1200,7 +1210,6 @@ const PACKAGE_DB = {
             description: "System upgrade tools, file browser, and VPN utilities",
             packages: [
                 { id: "attendedsysupgrade-common", name: "attendedsysupgrade-common", url: "https://openwrt.org/packages/pkgdata/attendedsysupgrade-common" },
-                { id: "luci-app-filebrowser", name: "luci-app-filebrowser", url: "https://openwrt.org/packages/pkgdata/luci-app-filebrowser" },
                 { id: "wireguard-tools", name: "wireguard-tools", url: "https://openwrt.org/packages/pkgdata/wireguard-tools" }
             ]
         },
