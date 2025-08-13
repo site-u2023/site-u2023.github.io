@@ -105,6 +105,16 @@
             color: #ffffff;
         }
 
+        .form-row {
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+        }
+
+        .form-row .form-group {
+            margin-bottom: 1rem;
+        }
+        
         .info {
             background-color: #d1ecf1;
             border: 1px solid #bee5eb;
@@ -339,6 +349,50 @@
             font-style: italic;
         }
 
+/* 公式レイアウト用のスタイル */
+        .row {
+            display: flex;
+            line-height: 1.5;
+            padding-left: 1.5em;
+            overflow: hidden;
+        }
+
+        .col1 {
+            display: inline-block;
+            width: 6em;
+            color: #6c757d;
+        }
+
+        .col1:after {
+            content: ":";
+        }
+
+        .col2 {
+            display: inline-block;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .col2 a {
+            margin-right: 1em;
+        }
+
+        /* Links アイコンのスタイル（公式CSSから） */
+        #image-info {
+            width: 1.25em;
+            content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='48px' viewBox='0 -2 24 24' width='48px' fill='%23000000'%3E%3Cpath d='M0 0h24v24H0z' fill='none'/%3E%3Cpath d='M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z'/%3E%3C/svg%3E");
+        }
+
+        #image-folder {
+            width: 1.25em;
+            content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='48px' viewBox='0 -2 24 24' width='48px' fill='%23000000'%3E%3Cpath d='M0 0h24v24H0z' fill='none'/%3E%3Cpath d='M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z'/%3E%3C/svg%3E");
+        }
+
+        #image-link {
+            width: 1.25em;
+            content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='24px' viewBox='0 -2 24 24' width='24px' fill='%23000000'%3E%3Cpath d='M0 0h24v24H0z' fill='none' /%3E%3Cpath d='m 6.3 17.7 c -1.2 -1.2 -1.2 -3.2 0 -4.4 L 9.10 10.5 7.8 9 4.9 12 c -2 2 -2 5 0 7 2 2 5 2 7 0 l 2.8 -2.8 -1.3 -1.3 -2.8 2.8 c -1.2 1.2 -3.2 1.2 -4.4 0 z M 10 15.5 15.5 10 14 8.5 8.5 14 Z M 12 4.9 9.18 7.8 10.5 9.1 13.4 6.3 c 1.21 -1.2 3.2 -1.2 4.4 0 1.2 1.2 1.2 3.2 0 4.4 l -2.8 2.8 1.3 1.3 2.8 -2.8 c 2 -2 2 -5 0 -7 -2 -2 -5 -2 -7 0 z' /%3E%3C/svg%3E");
+        }
+
         @media (max-width: 576px) {
             .form-row {
                 flex-direction: column;
@@ -361,23 +415,22 @@
         <h1>OpenWrt Firmware Selector</h1>
         <p class="lead">Type the name or model of your device, then select a stable build or the nightly "snapshot" build.</p>
 
-        <div class="form-group">
-            <label for="versions">Version</label>
-            <select id="versions" class="form-control">
-                <option value="" disabled selected>Loading versions...</option>
-            </select>
-        </div>
-
-        <div class="form-group">
-            <div class="autocomplete">
-                <input type="text" id="models" class="form-control" placeholder="Type device model" autocomplete="off">
-                <div id="models-autocomplete-list" class="autocomplete-items"></div>
+        <div class="form-row">
+            <div class="form-group" style="flex: 2; margin-right: 10px;">
+                <div class="autocomplete">
+                    <input type="text" id="models" class="form-control" placeholder="Type device model" autocomplete="off">
+                    <div id="models-autocomplete-list" class="autocomplete-items"></div>
+                </div>
+            </div>
+            <div class="form-group" style="flex: 1;">
+                <select id="versions" class="form-control">
+                    <option value="" disabled selected>Loading versions...</option>
+                </select>
             </div>
         </div>
 
         <div id="info" class="info" style="display: none;">
-            <h5 id="device-title"></h5>
-            <div id="device-details"></div>
+            <!-- Content will be dynamically generated -->
         </div>
 
         <div id="images" class="images" style="display: none;">
@@ -392,7 +445,7 @@
                 <div class="form-check">
                     <input class="form-check-input" type="checkbox" id="use-package-selector">
                     <label class="form-check-label" for="use-package-selector">
-                        Use graphical package selector
+                        Installed Packages
                     </label>
                 </div>
 
@@ -736,7 +789,7 @@
                     </div>
                     
                     <div class="form-group" style="margin-top: 1.5rem;">
-                        <label for="asu-packages">Packages to add/remove (one per line, prefix with '-' to remove):</label>
+                        <label for="asu-packages">Packages</label>
                         <textarea id="asu-packages" class="form-control" rows="3" placeholder="luci&#10;luci-ssl&#10;-wpad-basic-wolfssl&#10;wpad-wolfssl"></textarea>
                     </div>
                 </div>
@@ -747,7 +800,7 @@
                 <div class="form-check">
                     <input class="form-check-input" type="checkbox" id="use-aios-config">
                     <label class="form-check-label" for="use-aios-config">
-                        Use setup.sh configuration wizard
+                        Script to run on first boot (uci-defaults)
                     </label>
                 </div>
 
@@ -1037,7 +1090,7 @@
                     </div>
                     
                     <div class="form-group" style="margin-top: 1.5rem;">
-                        <label for="uci-defaults-content">Script to run on first boot (uci-defaults):</label>
+                        <label for="uci-defaults-content">Scripts</label>
                         <textarea id="uci-defaults-content" class="form-control" rows="8" placeholder="#!/bin/sh&#10;&#10;# Your custom script here&#10;# This area is for manual editing - configuration wizard will not overwrite your changes"></textarea>
                     </div>
                 </div>
@@ -1336,6 +1389,15 @@ uci commit 2>/dev/null
 echo "Configuration completed successfully!"
 echo "All done!"
 exit 0`;
+
+// config.js相当の設定
+const config = {
+    show_help: true,
+    image_url: "https://downloads.openwrt.org",
+    info_url: "https://openwrt.org/start?do=search&id=toh&q={title} @toh",
+    asu_url: "https://sysupgrade.openwrt.org",
+    asu_extra_packages: ["luci"]
+};
 
 // グローバル変数
 let app = {
@@ -1801,8 +1863,11 @@ async function loadDeviceProfile(device) {
             throw new Error(`Failed to fetch profiles.json: ${response.status}`);
         }
         
-        const profilesData = await response.json();
+const profilesData = await response.json();
         console.log(`Loaded profiles data:`, profilesData);
+
+        // version_codeを保存（公式と同じ）
+        app.versionCode = profilesData.version_code || '';
 
         if (profilesData.profiles && profilesData.profiles[profileId]) {
             const profile = profilesData.profiles[profileId];
@@ -1832,10 +1897,52 @@ function showDeviceInfo() {
     if (!app.selectedDevice) return;
 
     const device = app.selectedDevice;
-
-    document.getElementById('device-title').textContent = getDeviceTitle(device);
-    document.getElementById('device-details').innerHTML = `Target: ${device.target}<br>Version: ${app.selectedVersion}`;
-
+    
+    // バージョン番号の取得（ビルド番号含む）
+    let fullVersion = app.selectedVersion;
+    if (app.versionCode) {
+        fullVersion = `${app.selectedVersion} (${app.versionCode})`;
+    }
+    
+    // URLs生成
+    const imageFolder = app.selectedVersion === 'SNAPSHOT' 
+        ? `https://downloads.openwrt.org/snapshots/targets/${device.target}`
+        : `https://downloads.openwrt.org/releases/${app.selectedVersion}/targets/${device.target}`;
+    
+    const deviceLink = `${window.location.origin}${window.location.pathname}?version=${encodeURIComponent(app.selectedVersion)}&target=${encodeURIComponent(device.target)}&id=${encodeURIComponent(device.id)}`;
+    
+    const infoUrl = (config.info_url || "")
+        .replace("{title}", encodeURI(getDeviceTitle(device)))
+        .replace("{target}", device.target)
+        .replace("{id}", device.id)
+        .replace("{version}", app.selectedVersion);
+    
+    // 公式形式のAbout this buildセクションを構築
+    const infoHtml = `
+        <h5>About this build</h5>
+        <div class="row">
+            <span class="col1">Model</span>
+            <span class="col2"><strong>${getDeviceTitle(device)}</strong></span>
+        </div>
+        <div class="row">
+            <span class="col1">Platform</span>
+            <span class="col2">${device.target}</span>
+        </div>
+        <div class="row">
+            <span class="col1">Version</span>
+            <span class="col2">${fullVersion}</span>
+        </div>
+        <div class="row">
+            <span class="col1">Links</span>
+            <span class="col2">
+                <a id="image-folder" href="${imageFolder}" title="Browse image folder" target="_blank"></a>
+                <a id="image-info" href="${infoUrl}" title="Device info" target="_blank"></a>
+                <a id="image-link" href="#" title="Copy link" onclick="navigator.clipboard.writeText('${deviceLink}').then(() => alert('Link copied!')); return false;"></a>
+            </span>
+        </div>
+    `;
+    
+    document.getElementById('info').innerHTML = infoHtml;
     document.getElementById('info').style.display = 'block';
     document.getElementById('packages').style.display = 'block';
     document.getElementById('request-build').style.display = 'inline-block';
@@ -1847,6 +1954,54 @@ function showDeviceInfo() {
         app.templateLoaded = true;
         console.log('Template loaded for the first time');
     }
+}
+
+// Links用のヘルパー関数
+function getImageFolderUrl() {
+    if (!app.selectedDevice || !app.selectedVersion) return '#';
+    const baseUrl = app.selectedVersion === 'SNAPSHOT' 
+        ? 'https://downloads.openwrt.org/snapshots'
+        : `https://downloads.openwrt.org/releases/${app.selectedVersion}`;
+    return `${baseUrl}/targets/${app.selectedDevice.target}`;
+}
+
+function getDeviceInfoUrl() {
+    // 公式の検索URLフォーマットに準拠
+    if (!app.selectedDevice) return '#';
+    const deviceTitle = getDeviceTitle(app.selectedDevice);
+    return `https://openwrt.org/start?do=search&id=toh&q=${encodeURIComponent(deviceTitle)}%20@toh`;
+}
+
+function copyDeviceLink() {
+    const url = `${window.location.origin}${window.location.pathname}?version=${encodeURIComponent(app.selectedVersion)}&target=${encodeURIComponent(app.selectedDevice.target)}&id=${encodeURIComponent(app.selectedDevice.id)}`;
+    navigator.clipboard.writeText(url).then(() => {
+        alert('Link copied to clipboard!');
+    }).catch(err => {
+        console.error('Failed to copy link:', err);
+    });
+}
+
+// Links用のヘルパー関数を追加
+function getImageFolderUrl() {
+    if (!app.selectedDevice || !app.selectedVersion) return '#';
+    const baseUrl = app.selectedVersion === 'SNAPSHOT' 
+        ? 'https://downloads.openwrt.org/snapshots'
+        : `https://downloads.openwrt.org/releases/${app.selectedVersion}`;
+    return `${baseUrl}/targets/${app.selectedDevice.target}`;
+}
+
+function getDeviceInfoUrl() {
+    if (!app.selectedDevice) return '#';
+    return `https://openwrt.org/toh/hwdata/${app.selectedDevice.target}/${app.selectedDevice.id}`;
+}
+
+function copyDeviceLink() {
+    const url = `${window.location.origin}${window.location.pathname}?version=${encodeURIComponent(app.selectedVersion)}&target=${encodeURIComponent(app.selectedDevice.target)}&id=${encodeURIComponent(app.selectedDevice.id)}`;
+    navigator.clipboard.writeText(url).then(() => {
+        alert('Link copied to clipboard!');
+    }).catch(err => {
+        console.error('Failed to copy link:', err);
+    });
 }
 
 function hideDeviceInfo() {
