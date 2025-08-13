@@ -1835,14 +1835,14 @@ function handlePackageSelection(e) {
                     depCheckbox.checked = true;
                     depCheckbox.disabled = true;
                 } else {
-                    // 元パッケージが無効化されたらロック解除のみ（ユーザーが任意で外せる）
+                    // 元パッケージが無効化されたらロック解除のみ
                     depCheckbox.disabled = false;
                 }
             }
         });
     }
     
-    // 共通反映関数に集約
+    // パッケージリストを更新（内部で一元反映）
     updatePackageListFromSelector();
 }
 
@@ -1875,7 +1875,7 @@ function updatePackageListFromSelector() {
     
     packagesTextarea.value = currentPackages.join(' ');
     
-    // 共通反映関数に集約
+    // パッケージとテンプレの一元反映
     refreshTemplateAndPackages();
 }
 
@@ -2184,6 +2184,18 @@ function applyConnectionSettingsChange() {
     refreshTemplateAndPackages();
 }
 
+// ==================== 接続設定変更反映関数 ====================
+function applyConnectionSettingsChange() {
+    // 表示更新
+    updateGuaSectionVisibility();
+    // API値の適用（現在の接続種別を渡す）
+    applyInitialsFromApi(document.querySelector('input[name="connectionType"]:checked')?.value || '');
+    // 必要パッケージの更新
+    updateRequiredPackages();
+    // パッケージとテンプレの一元反映
+    refreshTemplateAndPackages();
+}
+
 // ==================== 接続設定ハンドラー ====================
 function handleConnectionModeChange(e) {
     const manualSection = document.getElementById('manual-connection-section');
@@ -2194,7 +2206,6 @@ function handleConnectionModeChange(e) {
         manualSection.style.display = 'none';
     }
     
-    // 一元管理関数で処理
     applyConnectionSettingsChange();
 }
 
@@ -2213,34 +2224,20 @@ function handleConnectionTypeChange(e) {
         dsliteSection.style.display = 'block';
     } else if (e.target.value === 'mape') {
         mapeManualSection.style.display = 'block';
-        updateGuaSectionVisibility();
-        
-        // MAP-E選択時、map.shが未ロードなら再度ロード試行
+        // map.sh 未ロード時の再ロード試行（必要時のみ）
         if (!mapShCache['new'] && !mapShCache['19']) {
             loadMapShScripts().then(() => {
-                if (document.getElementById('use-aios-config').checked) {
-                    updateConfiguredTemplate().catch(console.error);
-                }
+                applyConnectionSettingsChange();
             });
+            return;
         }
     }
     
-    // 取得値を初期値として注入（空のときのみ上書き）
-    applyInitialsFromApi(e.target.value);
-
-    if (document.getElementById('use-aios-config').checked) {
-        updateConfiguredTemplate().catch(console.error);
-        updateRequiredPackages();
-    }
+    applyConnectionSettingsChange();
 }
 
 function handleMapeTypeChange(e) {
-    updateGuaSectionVisibility();
-    
-    if (document.getElementById('use-aios-config').checked) {
-        updateConfiguredTemplate().catch(console.error);
-        updateRequiredPackages();
-    }
+    applyConnectionSettingsChange();
 }
 
 function handleDsliteModeChange(e) {
@@ -2257,14 +2254,9 @@ function handleDsliteModeChange(e) {
         }
     }
     
-    if (document.getElementById('use-aios-config').checked) {
-        updateConfiguredTemplate().catch(error => {
-            console.error('Failed to update template:', error);
-        });
-        updateRequiredPackages();
-    }
+    applyConnectionSettingsChange();
 }
-        
+
 // GUAセクションの表示/非表示を制御
 function updateGuaSectionVisibility() {
     const guaSection = document.getElementById('mape-gua-section');
@@ -2327,6 +2319,17 @@ function updateGuaSectionVisibility() {
     }
 }
 
+// ==================== プレフィックス計算共通関数 ====================
+function calculatePrefix(ipv6, length = 64) {
+    if (!ipv6) return '';
+    const segments = ipv6.split(':');
+    if (segments.length >= 4) {
+        const prefix = segments.slice(0, 4).join(':');
+        return `${prefix}::/${length}`;
+    }
+    return '';
+}
+
 // APIのIPv6アドレスからGUAプレフィックスを計算
 function calculateGuaPrefixFromApi() {
     if (window.cachedApiInfo && window.cachedApiInfo.ipv6) {
@@ -2348,6 +2351,59 @@ function setIfEmpty(id, value) {
     }
 }
 
+// ==================== ISP情報表示構築共通関数 ====================
+function buildIspStatus(apiInfo) {
+    if (!apiInfo) {
+        return {
+            status: 'Auto-detection failed',
+            details: 'API connection error or unsupported ISP\nManual configuration required.'
+        };
+    }
+
+    let statusText = 'Auto-detection successful';
+    let details = '';
+
+    if (apiInfo.isp) details += `ISP: ${apiInfo.isp}\n`;
+    if (apiInfo.country) {
+        details += `Country/Region: ${apiInfo.country}`;
+        if (apiInfo.regionName) details += ` (${apiInfo.regionName})`;
+        details += '\n';
+    }
+    if (apiInfo.timezone) details += `Timezone: ${apiInfo.timezone}\n`;
+
+    if (apiInfo.rule) {
+        if (apiInfo.rule.aftrType) {
+            statusText += ' - DS-Lite support detected';
+            details += `\n[DS-Lite Configuration]\n`;
+            details += `aftrType: ${apiInfo.rule.aftrType}\n`;
+            if (apiInfo.rule.aftrIpv6Address) {
+                details += `aftrIpv6Address: ${apiInfo.rule.aftrIpv6Address}\n`;
+            }
+        } else if (apiInfo.rule.brIpv6Address) {
+            statusText += ' - MAP-E support detected';
+            details += `\n[MAP-E Configuration]\n`;
+            details += `brIpv6Address: ${apiInfo.rule.brIpv6Address}\n`;
+            details += `eaBitLength: ${apiInfo.rule.eaBitLength}\n`;
+            details += `ipv4Prefix: ${apiInfo.rule.ipv4Prefix}\n`;
+            details += `ipv4PrefixLength: ${apiInfo.rule.ipv4PrefixLength}\n`;
+            details += `ipv6Prefix: ${apiInfo.rule.ipv6Prefix}\n`;
+            details += `ipv6PrefixLength: ${apiInfo.rule.ipv6PrefixLength}\n`;
+            details += `psIdOffset: ${apiInfo.rule.psIdOffset}\n`;
+            details += `psidlen: ${apiInfo.rule.psidlen}\n`;
+        }
+    } else {
+        statusText += ' - DHCP/PPPoE environment';
+        details += '\nStandard DHCP or PPPoE connection environment detected.';
+    }
+
+    const formatted = details
+        .split('\n')
+        .map(line => `<div>${line}</div>`)
+        .join('');
+
+    return { status: statusText, details: formatted };
+}
+      
 // ==================== ISP情報関連 ====================
 async function fetchApiInfoAndUpdate() {
     try {
@@ -2360,66 +2416,13 @@ async function fetchApiInfoAndUpdate() {
         window.cachedApiInfo = apiInfo;
 
         if (apiInfo) {
-            let statusText = 'Auto-detection successful';
-            let details = '';
-
-            // Country と Timezoneの設定（空欄のみ設定）
+            // Country と Timezone（空欄のみ設定）
             setIfEmpty('aios-country', apiInfo.country);
-            // APIの "timezone" はゾーンネーム（例: Asia/Tokyo）
             setIfEmpty('aios-zonename', apiInfo.timezone);
 
-            if (apiInfo.isp) {
-                details += `ISP: ${apiInfo.isp}\n`;
-            }
-            if (apiInfo.country) {
-                details += `Country/Region: ${apiInfo.country}`;
-                if (apiInfo.regionName) {
-                    details += ` (${apiInfo.regionName})`;
-                }
-                details += '\n';
-            }
-            if (apiInfo.timezone) {
-                details += `Timezone: ${apiInfo.timezone}\n`;
-            }
-
-            if (apiInfo.rule) {
-                if (apiInfo.rule.aftrType) {
-                    statusText += ' - DS-Lite support detected';
-                    details += `\n[DS-Lite Configuration]\n`;
-                    details += `aftrType: ${apiInfo.rule.aftrType}\n`;
-                    if (apiInfo.rule.aftrIpv6Address) {
-                        details += `aftrIpv6Address: ${apiInfo.rule.aftrIpv6Address}\n`;
-                    }
-                } else if (apiInfo.rule.brIpv6Address) {
-                    statusText += ' - MAP-E support detected';
-                    details += `\n[MAP-E Configuration]\n`;
-                    details += `brIpv6Address: ${apiInfo.rule.brIpv6Address}\n`;
-                    details += `eaBitLength: ${apiInfo.rule.eaBitLength}\n`;
-                    details += `ipv4Prefix: ${apiInfo.rule.ipv4Prefix}\n`;
-                    details += `ipv4PrefixLength: ${apiInfo.rule.ipv4PrefixLength}\n`;
-                    details += `ipv6Prefix: ${apiInfo.rule.ipv6Prefix}\n`;
-                    details += `ipv6PrefixLength: ${apiInfo.rule.ipv6PrefixLength}\n`;
-                    details += `psIdOffset: ${apiInfo.rule.psIdOffset}\n`;
-                    details += `psidlen: ${apiInfo.rule.psidlen}\n`;
-
-                    if (apiInfo.recommendedMapeType) {
-                        details += `Recommended Mode: ${apiInfo.recommendedMapeType}\n`;
-                    }
-                    if (apiInfo.lineType) {
-                        details += `Line Type: ${apiInfo.lineType}\n`;
-                    }
-                }
-            } else {
-                statusText += ' - DHCP/PPPoE environment';
-                details += '\nStandard DHCP or PPPoE connection environment detected.';
-            }
-
-            // ISP情報パネルのみ更新（チェック状態関係なく表示）
-            const formatted = details
-                .split('\n')
-                .map(line => `<div>${line}</div>`)
-                .join('');
-            updateIspDisplay(statusText, formatted);
+            // ISP表示は共通関数で構築
+            const isp = buildIspStatus(apiInfo);
+            updateIspDisplay(isp.status, isp.details);
 
             // GUA セクションの表示を更新
             updateGuaSectionVisibility();
@@ -2476,7 +2479,7 @@ async function fetchApiInfoAndUpdate() {
         );
     }
 }
-
+        
 function updateIspDisplay(status, details) {
     const statusMessage = document.getElementById('isp-status-message');
     const technicalInfo = document.getElementById('isp-technical-info');
@@ -2519,6 +2522,15 @@ async function fetchApiInfo() {
     }
 }
 
+// ==================== テンプレ文字列の変数設定共通関数 ====================
+function setScriptVar(content, key, value, active) {
+    const safe = (v) => (v === undefined || v === null) ? '' : String(v).trim();
+    const val = safe(value);
+    const re = new RegExp(`^#?\\s*${key}=".*"$`, 'm');
+    const line = active ? `${key}="${val}"` : `# ${key}="${val}"`;
+    return content.replace(re, line);
+}
+
 // ==================== テンプレート設定 ====================
 async function updateConfiguredTemplate() {
     try {
@@ -2537,7 +2549,7 @@ async function updateConfiguredTemplate() {
             window.cachedApiInfo = apiInfo;
         }
 
-        // 選択済みパッケージの集合を準備（enable_* 反映に使用）
+        // 選択済みパッケージ（enable_* 反映用）
         const selectedPackages = new Set(split(document.getElementById('asu-packages').value));
 
         const customized = customizeSetupScript(content, config, apiInfo, selectedPackages);
@@ -2559,38 +2571,27 @@ function customizeSetupScript(content, config, apiInfo, selectedPackages) {
         customized = customized.replace(/^# openwrt_21=""/m, `openwrt_21="1"`);
     }
 
-    // 置換ヘルパー: 値は常に埋める。activeでコメント解除、falseでコメント行に値を保持
-    const writeVar = (key, value, active) => {
-        const safe = (v) => (v === undefined || v === null) ? '' : String(v).trim();
-        const val = safe(value);
-        const re = new RegExp(`^#?\\s*${key}=".*"$`, 'm');
-        const line = active ? `${key}="${val}"` : `# ${key}="${val}"`;
-        customized = customized.replace(re, line);
-    };
-
     // Basic settings
     const samePw = (config.rootPassword === config.confirmPassword) ? config.rootPassword : '';
-    writeVar('device_name', config.deviceName, !!config.deviceName);
-    writeVar('lan_ip_address', config.lanIp, !!config.lanIp);
-    writeVar('root_password', samePw, !!samePw);
-    writeVar('language', config.language, !!config.language);
-    writeVar('country', config.country, !!config.country);
-    writeVar('timezone', config.timezone, !!config.timezone);
-    writeVar('zonename', config.zonename, !!config.zonename);
+    customized = setScriptVar(customized, 'device_name', config.deviceName, !!config.deviceName);
+    customized = setScriptVar(customized, 'lan_ip_address', config.lanIp, !!config.lanIp);
+    customized = setScriptVar(customized, 'root_password', samePw, !!samePw);
+    customized = setScriptVar(customized, 'language', config.language, !!config.language);
+    customized = setScriptVar(customized, 'country', config.country, !!config.country);
+    customized = setScriptVar(customized, 'timezone', config.timezone, !!config.timezone);
+    customized = setScriptVar(customized, 'zonename', config.zonename, !!config.zonename);
 
     // Wi-Fi
     const wifiActive = !!(config.wifiSSID && config.wifiPassword && String(config.wifiPassword).length >= 8);
-    writeVar('wlan_name', config.wifiSSID, wifiActive);
-    writeVar('wlan_password', config.wifiPassword, wifiActive);
+    customized = setScriptVar(customized, 'wlan_name', config.wifiSSID, wifiActive);
+    customized = setScriptVar(customized, 'wlan_password', config.wifiPassword, wifiActive);
 
-    // APIベースの推奨値（常時、コメント状態に関係なく値を埋める）
+    // APIベースの推奨値
     const api = apiInfo?.rule || {};
     const apiHasDslite = !!api.aftrIpv6Address;
     const apiHasMape = !!api.brIpv6Address;
 
-    // DS-Lite 候補値
-    const dsliteVal = config.dsliteAftrAddress || (apiHasDslite ? api.aftrIpv6Address : '');
-    
+    // DS-Lite 候補値（未使用の dsliteVal は削除）
     // MAP-E 候補値
     const mapeVals = {
         br: config.mapeBr || (apiHasMape ? api.brIpv6Address : ''),
@@ -2606,12 +2607,12 @@ function customizeSetupScript(content, config, apiInfo, selectedPackages) {
     // GUAプレフィックス
     const guaPrefix = config.mapeGuaPrefix || calculateGuaPrefixFromApi() || '';
 
-    // 選択プロトコル（manual時はラジオ、auto時はAPI検出）
+    // 選択プロトコル
     const manual = (config.connectionMode === 'manual');
     let activeProto = '';
 
     if (manual) {
-        activeProto = config.connectionType; // 'dhcp' | 'pppoe' | 'dslite' | 'mape' | 'none'
+        activeProto = config.connectionType;
     } else {
         if (apiHasDslite) activeProto = 'dslite';
         else if (apiHasMape) activeProto = 'mape';
@@ -2620,47 +2621,44 @@ function customizeSetupScript(content, config, apiInfo, selectedPackages) {
 
     // PPPoE
     const pppoeActive = (activeProto === 'pppoe');
-    writeVar('pppoe_username', config.pppoeUsername || '', pppoeActive);
-    writeVar('pppoe_password', config.pppoePassword || '', pppoeActive);
+    customized = setScriptVar(customized, 'pppoe_username', config.pppoeUsername || '', pppoeActive);
+    customized = setScriptVar(customized, 'pppoe_password', config.pppoePassword || '', pppoeActive);
 
     // DS-Lite
     let dsliteAddress = '';
     if (config.dsliteMode === 'auto') {
-        // API検出値を優先
         dsliteAddress = (apiInfo?.rule?.aftrIpv6Address) || config.dsliteAftrAddress || '';
     } else {
-        // Manual mode: ユーザー設定値を使用
         dsliteAddress = config.dsliteAftrAddress || '';
     }
-    
     const dsliteActive = (activeProto === 'dslite') && !!dsliteAddress;
-    writeVar('dslite_aftr_address', dsliteAddress, dsliteActive);
+    customized = setScriptVar(customized, 'dslite_aftr_address', dsliteAddress, dsliteActive);
 
     // MAP-E
     const mapeActive = (activeProto === 'mape');
-    writeVar('mape_br', mapeVals.br || '', mapeActive);
-    writeVar('mape_ealen', mapeVals.ealen || '', mapeActive);
-    writeVar('mape_ipv4_prefix', mapeVals.v4p || '', mapeActive);
-    writeVar('mape_ipv4_prefixlen', mapeVals.v4l || '', mapeActive);
-    writeVar('mape_ipv6_prefix', mapeVals.v6p || '', mapeActive);
-    writeVar('mape_ipv6_prefixlen', mapeVals.v6l || '', mapeActive);
-    writeVar('mape_psid_offset', mapeVals.off || '', mapeActive);
-    writeVar('mape_psidlen', mapeVals.psid || '', mapeActive);
+    customized = setScriptVar(customized, 'mape_br', mapeVals.br || '', mapeActive);
+    customized = setScriptVar(customized, 'mape_ealen', mapeVals.ealen || '', mapeActive);
+    customized = setScriptVar(customized, 'mape_ipv4_prefix', mapeVals.v4p || '', mapeActive);
+    customized = setScriptVar(customized, 'mape_ipv4_prefixlen', mapeVals.v4l || '', mapeActive);
+    customized = setScriptVar(customized, 'mape_ipv6_prefix', mapeVals.v6p || '', mapeActive);
+    customized = setScriptVar(customized, 'mape_ipv6_prefixlen', mapeVals.v6l || '', mapeActive);
+    customized = setScriptVar(customized, 'mape_psid_offset', mapeVals.off || '', mapeActive);
+    customized = setScriptVar(customized, 'mape_psidlen', mapeVals.psid || '', mapeActive);
 
     // MAP-E GUA
     const guaActive = mapeActive && (config.mapeType === 'gua' || config.mapeType === 'auto');
-    writeVar('mape_gua_mode', guaActive ? '1' : '', guaActive);
-    writeVar('mape_gua_prefix', guaActive ? guaPrefix : '', guaActive);
+    customized = setScriptVar(customized, 'mape_gua_mode', guaActive ? '1' : '', guaActive);
+    customized = setScriptVar(customized, 'mape_gua_prefix', guaActive ? guaPrefix : '', guaActive);
 
-    // enable_* フラグ（選択パッケージに応じて有効化）
+    // enable_* フラグ（パッケージ選択に応じて有効化）
     const hasPkg = (name) => !!(selectedPackages && selectedPackages.has(name));
     const ttydOn = hasPkg('ttyd');
     const irqOn = hasPkg('irqbalance');
     const sambaOn = hasPkg('luci-app-samba4');
 
-    writeVar('enable_ttyd', ttydOn ? '1' : '', ttydOn);
-    writeVar('enable_irqbalance', irqOn ? '1' : '', irqOn);
-    writeVar('enable_samba4', sambaOn ? '1' : '', sambaOn);
+    customized = setScriptVar(customized, 'enable_ttyd', ttydOn ? '1' : '', ttydOn);
+    customized = setScriptVar(customized, 'enable_irqbalance', irqOn ? '1' : '', irqOn);
+    customized = setScriptVar(customized, 'enable_samba4', sambaOn ? '1' : '', sambaOn);
 
     // MAP-E選択時のみmap.shを埋め込む
     if (mapeActive) {
@@ -2669,7 +2667,7 @@ function customizeSetupScript(content, config, apiInfo, selectedPackages) {
     
     return customized;
 }
-    
+
 function toggleAiosConfig(e) {
     const configSection = document.getElementById('aios-config');
     if (e.target.checked) {
@@ -2809,10 +2807,10 @@ function applyInitialsFromApi(type) {
 
 // ==================== 共通反映関数 ====================
 function refreshTemplateAndPackages() {
-    // パッケージのi18n整理
+    // i18n 整理
     asuCollectPackages();
 
-    // aios-config有効時のみテンプレ更新
+    // aios-config 有効時のみテンプレ更新
     if (document.getElementById('use-aios-config').checked) {
         updateConfiguredTemplate().catch(console.error);
     }
