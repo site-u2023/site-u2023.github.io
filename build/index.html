@@ -1802,6 +1802,16 @@ function generatePackageSelector() {
 
     container.innerHTML = '';
 
+    // 依存パッケージIDの集合を構築
+    const depIds = new Set();
+    PACKAGE_DB.categories.forEach(cat => {
+        cat.packages.forEach(pkg => {
+            if (pkg.dependencies) {
+                pkg.dependencies.forEach(d => depIds.add(d));
+            }
+        });
+    });
+
     PACKAGE_DB.categories.forEach(category => {
         const categoryDiv = document.createElement('div');
         categoryDiv.className = 'package-category';
@@ -1814,6 +1824,9 @@ function generatePackageSelector() {
         packageGrid.className = 'package-grid';
 
         category.packages.forEach(pkg => {
+            // 依存パッケージはトップレベル描画しない
+            if (depIds.has(pkg.id)) return;
+
             // 親行
             const packageItem = document.createElement('div');
             packageItem.className = 'package-item';
@@ -1830,7 +1843,6 @@ function generatePackageSelector() {
             if (pkg.dependencies) {
                 checkbox.setAttribute('data-dependencies', pkg.dependencies.join(','));
             }
-            // hiddenでもdisableにしない（操作可）
             checkbox.addEventListener('change', handlePackageSelection);
 
             const label = document.createElement('label');
@@ -1847,12 +1859,10 @@ function generatePackageSelector() {
             formCheck.appendChild(checkbox);
             formCheck.appendChild(label);
             packageItem.appendChild(formCheck);
-            packageGrid.appendChild(packageItem);
 
-            // 子行（依存パッケージを親直下にネスト表示）
+            // 子行（依存パッケージ）
             if (pkg.dependencies) {
                 pkg.dependencies.forEach(depId => {
-                    // DBから依存パッケージ情報を検索
                     let depPkg;
                     for (const cat of PACKAGE_DB.categories) {
                         depPkg = cat.packages.find(p => p.id === depId);
@@ -1860,7 +1870,7 @@ function generatePackageSelector() {
                     }
 
                     const depItem = document.createElement('div');
-                    depItem.className = 'package-dependent'; // 見た目はCSSで制御
+                    depItem.className = 'package-dependent';
 
                     const depCheck = document.createElement('input');
                     depCheck.className = 'form-check-input package-selector-checkbox';
@@ -1886,9 +1896,11 @@ function generatePackageSelector() {
 
                     depItem.appendChild(depCheck);
                     depItem.appendChild(depLabel);
-                    packageItem.appendChild(depItem);   // 親と同じセル内に子を縦積み
+                    packageItem.appendChild(depItem);
                 });
             }
+
+            packageGrid.appendChild(packageItem);
         });
 
         categoryDiv.appendChild(packageGrid);
