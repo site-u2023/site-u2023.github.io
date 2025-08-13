@@ -2361,30 +2361,14 @@ async function fetchApiInfoAndUpdate() {
             // ウィザードのON/OFFに関係なく、空欄には初期値を注入（上書きはしない）
             // MAP-E情報
             if (apiInfo.rule && apiInfo.rule.brIpv6Address) {
-                if (!document.getElementById('mape-br').value) {
-                    document.getElementById('mape-br').value = apiInfo.rule.brIpv6Address;
-                }
-                if (!document.getElementById('mape-ealen').value) {
-                    document.getElementById('mape-ealen').value = apiInfo.rule.eaBitLength || '';
-                }
-                if (!document.getElementById('mape-ipv4-prefix').value) {
-                    document.getElementById('mape-ipv4-prefix').value = apiInfo.rule.ipv4Prefix || '';
-                }
-                if (!document.getElementById('mape-ipv4-prefixlen').value) {
-                    document.getElementById('mape-ipv4-prefixlen').value = apiInfo.rule.ipv4PrefixLength || '';
-                }
-                if (!document.getElementById('mape-ipv6-prefix').value) {
-                    document.getElementById('mape-ipv6-prefix').value = apiInfo.rule.ipv6Prefix || '';
-                }
-                if (!document.getElementById('mape-ipv6-prefixlen').value) {
-                    document.getElementById('mape-ipv6-prefixlen').value = apiInfo.rule.ipv6PrefixLength || '';
-                }
-                if (!document.getElementById('mape-psid-offset').value) {
-                    document.getElementById('mape-psid-offset').value = apiInfo.rule.psIdOffset || '';
-                }
-                if (!document.getElementById('mape-psidlen').value) {
-                    document.getElementById('mape-psidlen').value = apiInfo.rule.psidlen || '';
-                }
+                setIfEmpty('mape-br', apiInfo.rule.brIpv6Address);
+                setIfEmpty('mape-ealen', apiInfo.rule.eaBitLength || '');
+                setIfEmpty('mape-ipv4-prefix', apiInfo.rule.ipv4Prefix || '');
+                setIfEmpty('mape-ipv4-prefixlen', apiInfo.rule.ipv4PrefixLength || '');
+                setIfEmpty('mape-ipv6-prefix', apiInfo.rule.ipv6Prefix || '');
+                setIfEmpty('mape-ipv6-prefixlen', apiInfo.rule.ipv6PrefixLength || '');
+                setIfEmpty('mape-psid-offset', apiInfo.rule.psIdOffset || '');
+                setIfEmpty('mape-psidlen', apiInfo.rule.psidlen || '');
             }
             
             // DS-Lite情報
@@ -2581,15 +2565,25 @@ function customizeSetupScript(content, config, apiInfo, selectedPackages) {
     customized = setScriptVar(customized, 'mape_gua_mode', guaActive ? '1' : '', guaActive);
     customized = setScriptVar(customized, 'mape_gua_prefix', guaActive ? guaPrefix : '', guaActive);
 
-    // enable_* フラグ（パッケージ選択に応じて有効化）
-    const hasPkg = (name) => !!(selectedPackages && selectedPackages.has(name));
-    const ttydOn = hasPkg('ttyd');
-    const irqOn = hasPkg('irqbalance');
-    const sambaOn = hasPkg('luci-app-samba4');
-
-    customized = setScriptVar(customized, 'enable_ttyd', ttydOn ? '1' : '', ttydOn);
-    customized = setScriptVar(customized, 'enable_irqbalance', irqOn ? '1' : '', irqOn);
-    customized = setScriptVar(customized, 'enable_samba4', sambaOn ? '1' : '', sambaOn);
+    // enable_* フラグ（パッケージ選択に応じて汎用的に有効化）
+    if (selectedPackages) {
+        // PACKAGE_DB から enableVar マップを構築
+        const enableMap = {};
+        PACKAGE_DB.categories.forEach(cat => {
+            (cat.packages || []).forEach(pkg => {
+                if (pkg.enableVar) {
+                    enableMap[pkg.name] = pkg.enableVar;
+                }
+            });
+        });
+        // 選択されているパッケージに対応する enableVar をON
+        selectedPackages.forEach(pkgName => {
+            const varName = enableMap[pkgName];
+            if (varName) {
+                customized = setScriptVar(customized, varName, '1', true);
+            }
+        });
+    }
 
     // MAP-E選択時のみmap.shを埋め込む
     if (mapeActive) {
