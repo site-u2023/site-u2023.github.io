@@ -1390,14 +1390,21 @@ const PACKAGE_DB = {
                     dependencies: ["wireguard-tools"]
                 },
                 { 
+                    id: "docker",
+                    name: "docker",
+                    url: "https://openwrt.org/packages/pkgdata/docker"
+                },
+                { 
                     id: "luci-app-dockerman",
                     name: "luci-app-dockerman",
-                    url: "https://openwrt.org/packages/pkgdata/luci-app-dockerman"
+                    url: "https://openwrt.org/packages/pkgdata/luci-app-dockerman",
+                    dependencies: ["docker"]
                 },
                 { 
                     id: "docker-compose",
                     name: "docker-compose",
-                    url: "https://openwrt.org/packages/pkgdata/docker-compose"
+                    url: "https://openwrt.org/packages/pkgdata/docker-compose",
+                    dependencies: ["docker"]
                 }
             ]
         },
