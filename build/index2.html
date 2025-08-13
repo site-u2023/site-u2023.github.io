@@ -76,10 +76,20 @@
             box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
         }
 
-        /* 無効状態のスタイル */
+        /* 無効状態のスタイル（ライトモード） */
         .form-control:disabled {
             background-color: #e9ecef;
+            color: #495057;
             opacity: 1;
+        }
+
+        /* 無効状態のスタイル（ダークモード） */
+        @media (prefers-color-scheme: dark) {
+            .form-control:disabled {
+                background-color: #313135;
+                color: #d0d0d0;
+                opacity: 1;
+            }
         }
         
         .autocomplete {
