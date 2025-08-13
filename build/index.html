@@ -1371,14 +1371,10 @@ const PACKAGE_DB = {
                     url: "https://openwrt.org/packages/pkgdata/attendedsysupgrade-common"
                 },
                 { 
-                    id: "wireguard-tools", 
-                    name: "wireguard-tools", 
-                    url: "https://openwrt.org/packages/pkgdata/wireguard-tools"
-                },
-                { 
                     id: "luci-app-wireguard", 
                     name: "luci-app-wireguard", 
                     url: "https://openwrt.org/packages/pkgdata/luci-app-wireguard"
+                    dependencies: ["wireguard-tools"]
                 }
             ]
         },
