@@ -1845,7 +1845,7 @@ function handlePackageSelection(e) {
     // パッケージリストを更新
     updatePackageListFromSelector();
 }
-        
+
 function updatePackageListFromSelector() {
     const packagesTextarea = document.getElementById('asu-packages');
     let currentPackages = split(packagesTextarea.value);
@@ -1859,7 +1859,7 @@ function updatePackageListFromSelector() {
         }
     });
     
-    // 既存のパッケージから、セレクター管理のものを「完全一致」で削除（バグ修正）
+    // 既存のパッケージから、セレクター管理のものを削除
     currentPackages = currentPackages.filter(pkg => !selectorPackages.includes(pkg));
     
     // チェックされているパッケージを追加
@@ -1875,8 +1875,13 @@ function updatePackageListFromSelector() {
     
     packagesTextarea.value = currentPackages.join(' ');
     asuCollectPackages();
+
+    // ★追加: パッケージ変更時にもテンプレート反映を即時実行
+    if (document.getElementById('use-aios-config').checked) {
+        updateConfiguredTemplate().catch(console.error);
+    }
 }
-    
+
 // ==================== バージョン管理 ====================
 async function loadVersions() {
     try {
