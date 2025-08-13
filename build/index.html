@@ -1503,7 +1503,9 @@ const PACKAGE_DB = {
 document.addEventListener('DOMContentLoaded', init);
     
 // ★言語変更時にも即反映させる
-document.getElementById('aios-language').addEventListener('change', asuCollectPackages);
+document.getElementById('aios-language').addEventListener('change', function() {
+    refreshTemplateAndPackages();
+});
 
 // ==================== 初期化関数 ====================
 async function init() {
@@ -1712,19 +1714,13 @@ function bindEvents() {
     // aios-config内の全ての入力フィールドに非同期リスナーを追加
     document.getElementById('aios-config').addEventListener('input', function(e) {
         if (document.getElementById('use-aios-config').checked) {
-            updateConfiguredTemplate().catch(error => {
-                console.error('Failed to update template:', error);
-            });
-            updateRequiredPackages();
+            applyConnectionSettingsChange();
         }
     });
 
     document.getElementById('aios-config').addEventListener('change', function(e) {
         if (document.getElementById('use-aios-config').checked) {
-            updateConfiguredTemplate().catch(error => {
-                console.error('Failed to update template:', error);
-            });
-            updateRequiredPackages();
+            applyConnectionSettingsChange();
         }
     });
 
@@ -2120,31 +2116,6 @@ function showDeviceInfo() {
     }
 }
 
-// Links用のヘルパー関数
-function getImageFolderUrl() {
-    if (!app.selectedDevice || !app.selectedVersion) return '#';
-    const baseUrl = app.selectedVersion === 'SNAPSHOT' 
-        ? 'https://downloads.openwrt.org/snapshots'
-        : `https://downloads.openwrt.org/releases/${app.selectedVersion}`;
-    return `${baseUrl}/targets/${app.selectedDevice.target}`;
-}
-
-function getDeviceInfoUrl() {
-    // 公式の検索URLフォーマットに準拠
-    if (!app.selectedDevice) return '#';
-    const deviceTitle = getDeviceTitle(app.selectedDevice);
-    return `https://openwrt.org/start?do=search&id=toh&q=${encodeURIComponent(deviceTitle)}%20@toh`;
-}
-
-function copyDeviceLink() {
-    const url = `${window.location.origin}${window.location.pathname}?version=${encodeURIComponent(app.selectedVersion)}&target=${encodeURIComponent(app.selectedDevice.target)}&id=${encodeURIComponent(app.selectedDevice.id)}`;
-    navigator.clipboard.writeText(url).then(() => {
-        alert('Link copied to clipboard!');
-    }).catch(err => {
-        console.error('Failed to copy link:', err);
-    });
-}
-
 // Links用のヘルパー関数を追加
 function getImageFolderUrl() {
     if (!app.selectedDevice || !app.selectedVersion) return '#';
@@ -2172,16 +2143,6 @@ function hideDeviceInfo() {
     document.getElementById('info').style.display = 'none';
     document.getElementById('packages').style.display = 'none';
     document.getElementById('request-build').style.display = 'none';
-}
-
-// ==================== 接続設定変更反映関数 ====================
-function applyConnectionSettingsChange() {
-    // 表示更新
-    updateGuaSectionVisibility();
-    // API値を必要に応じて適用
-    applyInitialsFromApi(document.querySelector('input[name="connectionType"]:checked')?.value || '');
-    // パッケージとテンプレの更新
-    refreshTemplateAndPackages();
 }
 
 // ==================== 接続設定変更反映関数 ====================
@@ -2332,17 +2293,9 @@ function calculatePrefix(ipv6, length = 64) {
 
 // APIのIPv6アドレスからGUAプレフィックスを計算
 function calculateGuaPrefixFromApi() {
-    if (window.cachedApiInfo && window.cachedApiInfo.ipv6) {
-        const ipv6 = window.cachedApiInfo.ipv6;
-        const segments = ipv6.split(':');
-        if (segments.length >= 4) {
-            const prefix = segments.slice(0, 4).join(':');
-            return `${prefix}::/64`;
-        }
-    }
-    return '';
+    return calculatePrefix(window.cachedApiInfo?.ipv6 || '', 64);
 }
-
+        
 // ==================== フォーム初期値注入共通関数 ====================
 function setIfEmpty(id, value) {
     const el = document.getElementById(id);
@@ -2560,7 +2513,7 @@ async function updateConfiguredTemplate() {
 }
 
 function customizeSetupScript(content, config, apiInfo, selectedPackages) {
-    let customized = SETUP_SH_TEMPLATE;
+    let customized = content;
 
     // OpenWrt version flags
     if (app.selectedVersion && app.selectedVersion.startsWith('19')) {
