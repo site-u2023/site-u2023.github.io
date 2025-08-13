@@ -971,11 +971,11 @@
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="pppoe-username">PPPoE username</label>
-                                    <input type="text" id="pppoe-username" class="form-control" placeholder="Username from ISP">
+                                    <input type="text" id="pppoe-username" class="form-control" placeholder="Username">
                                 </div>
                                 <div class="form-group">
                                     <label for="pppoe-password">PPPoE password</label>
-                                    <input type="password" id="pppoe-password" class="form-control" placeholder="Password from ISP">
+                                    <input type="password" id="pppoe-password" class="form-control" placeholder="Password">
                                 </div>
                             </div>
                         </div>
@@ -2257,18 +2257,21 @@ async function fetchApiInfoAndUpdate() {
                 if (apiInfo.rule.aftrType) {
                     statusText += ' - DS-Lite support detected';
                     details += `\n[DS-Lite Configuration]\n`;
-                    details += `AFTR Type: ${apiInfo.rule.aftrType}\n`;
+                    details += `aftrType: ${apiInfo.rule.aftrType}\n`;
                     if (apiInfo.rule.aftrIpv6Address) {
-                        details += `AFTR Address: ${apiInfo.rule.aftrIpv6Address}\n`;
+                        details += `aftrIpv6Address: ${apiInfo.rule.aftrIpv6Address}\n`;
                     }
                 } else if (apiInfo.rule.brIpv6Address) {
                     statusText += ' - MAP-E support detected';
                     details += `\n[MAP-E Configuration]\n`;
-                    details += `BR: ${apiInfo.rule.brIpv6Address}\n`;
-                    details += `EA-len: ${apiInfo.rule.eaBitLength}\n`;
-                    details += `IPv4 Prefix: ${apiInfo.rule.ipv4Prefix}/${apiInfo.rule.ipv4PrefixLength}\n`;
-                    details += `IPv6 Prefix: ${apiInfo.rule.ipv6Prefix}/${apiInfo.rule.ipv6PrefixLength}\n`;
-                    details += `PSID Offset: ${apiInfo.rule.psIdOffset}\n`;
+                    details += `brIpv6Address: ${apiInfo.rule.brIpv6Address}\n`;
+                    details += `eaBitLength: ${apiInfo.rule.eaBitLength}\n`;
+                    details += `ipv4Prefix: ${apiInfo.rule.ipv4Prefix}\n`;
+                    details += `ipv4PrefixLength: ${apiInfo.rule.ipv4PrefixLength}\n`;
+                    details += `ipv6Prefix: ${apiInfo.rule.ipv6Prefix}\n`;
+                    details += `ipv6PrefixLength: ${apiInfo.rule.ipv6PrefixLength}\n`;
+                    details += `psIdOffset: ${apiInfo.rule.psIdOffset}\n`;
+                    details += `psidlen: ${apiInfo.rule.psidlen}\n`;
 
                     if (apiInfo.recommendedMapeType) {
                         details += `Recommended Mode: ${apiInfo.recommendedMapeType}\n`;
