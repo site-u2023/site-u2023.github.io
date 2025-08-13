@@ -1519,11 +1519,12 @@ async function init() {
         // パッケージセレクターを動的生成
         generatePackageSelector();
         
-        asuCollectPackages();
+        refreshTemplateAndPackages();
         
         // ISP情報を初期取得（常時表示のため）
         console.log('Starting ISP info fetch...');
         await fetchApiInfoAndUpdate();
+
     } catch (error) {
         console.error('Failed to initialize:', error);
         updateIspDisplay('Initialization error', 'Failed to initialize application: ' + error.message);
@@ -2114,29 +2115,6 @@ function showDeviceInfo() {
         app.templateLoaded = true;
         console.log('Template loaded for the first time');
     }
-}
-
-// Links用のヘルパー関数を追加
-function getImageFolderUrl() {
-    if (!app.selectedDevice || !app.selectedVersion) return '#';
-    const baseUrl = app.selectedVersion === 'SNAPSHOT' 
-        ? 'https://downloads.openwrt.org/snapshots'
-        : `https://downloads.openwrt.org/releases/${app.selectedVersion}`;
-    return `${baseUrl}/targets/${app.selectedDevice.target}`;
-}
-
-function getDeviceInfoUrl() {
-    if (!app.selectedDevice) return '#';
-    return `https://openwrt.org/toh/hwdata/${app.selectedDevice.target}/${app.selectedDevice.id}`;
-}
-
-function copyDeviceLink() {
-    const url = `${window.location.origin}${window.location.pathname}?version=${encodeURIComponent(app.selectedVersion)}&target=${encodeURIComponent(app.selectedDevice.target)}&id=${encodeURIComponent(app.selectedDevice.id)}`;
-    navigator.clipboard.writeText(url).then(() => {
-        alert('Link copied to clipboard!');
-    }).catch(err => {
-        console.error('Failed to copy link:', err);
-    });
 }
 
 function hideDeviceInfo() {
@@ -2785,35 +2763,38 @@ function updateRequiredPackages() {
     pkg !== 'ds-lite'
   );
     
-    // 接続方式に応じたパッケージの追加
-    if (config.connectionMode === 'auto') {
-        if (window.cachedApiInfo && window.cachedApiInfo.rule) {
-            if (window.cachedApiInfo.rule.aftrType) {
-                if (!currentPackages.includes('ds-lite')) {
-                    currentPackages.push('ds-lite');
-                }
-            } else if (window.cachedApiInfo.rule.brIpv6Address) {
-                if (!currentPackages.includes('map')) {
-                    currentPackages.push('map');
-                }
-            }
-        }
-    } else {
-        switch(config.connectionType) {
-            case 'mape':
-                if (!currentPackages.includes('map')) {
-                    currentPackages.push('map');
-                }
-                break;
-            case 'dslite':
-                if (!currentPackages.includes('ds-lite')) {
-                    currentPackages.push('ds-lite');
-                }
-                break;
-        }
-    }
+  // 接続方式に応じたパッケージの追加
+  if (config.connectionMode === 'auto') {
+      if (window.cachedApiInfo && window.cachedApiInfo.rule) {
+          if (window.cachedApiInfo.rule.aftrType) {
+              if (!currentPackages.includes('ds-lite')) {
+                  currentPackages.push('ds-lite');
+              }
+          } else if (window.cachedApiInfo.rule.brIpv6Address) {
+              if (!currentPackages.includes('map')) {
+                  currentPackages.push('map');
+              }
+          }
+      }
+  } else {
+      switch(config.connectionType) {
+          case 'mape':
+              if (!currentPackages.includes('map')) {
+                  currentPackages.push('map');
+              }
+              break;
+          case 'dslite':
+              if (!currentPackages.includes('ds-lite')) {
+                  currentPackages.push('ds-lite');
+              }
+              break;
+      }
+  }
+
+  // 最終重複排除（手入力重複などにも強くする）
+  currentPackages = Array.from(new Set(currentPackages));
     
-    packagesTextarea.value = currentPackages.join(' ');
+  packagesTextarea.value = currentPackages.join(' ');
 }
 
 // ==================== ビルド処理 ====================
