@@ -1829,6 +1829,7 @@ function generatePackageSelector() {
             if (pkg.dependencies) {
                 checkbox.setAttribute('data-dependencies', pkg.dependencies.join(','));
             }
+            // hidden でも操作可能（disabled にしない）
             checkbox.addEventListener('change', handlePackageSelection);
 
             const label = document.createElement('label');
@@ -1847,7 +1848,7 @@ function generatePackageSelector() {
             packageItem.appendChild(formCheck);
             packageGrid.appendChild(packageItem);
 
-            // 子行（依存パッケージ）
+            // 子行（依存パッケージを親直下にネスト表示）
             if (pkg.dependencies) {
                 pkg.dependencies.forEach(depId => {
                     // DBから依存パッケージ情報を検索
@@ -1856,6 +1857,7 @@ function generatePackageSelector() {
                         depPkg = cat.packages.find(p => p.id === depId);
                         if (depPkg) break;
                     }
+
                     const depItem = document.createElement('div');
                     depItem.className = 'package-dependent';
 
@@ -1898,36 +1900,33 @@ function generatePackageSelector() {
         container.appendChild(categoryDiv);
     });
 }
-        
+
 function handlePackageSelection(e) {
     const pkg = e.target;
     const packageName = pkg.getAttribute('data-package');
     const isChecked = pkg.checked;
 
-    // ユーザー操作の記録（任意上書きOK）
+    // ユーザー操作の記録
     if (isChecked) {
         pkg.setAttribute('data-user', '1');
     } else {
         pkg.removeAttribute('data-user');
     }
 
-    // 依存パッケージの完全同調（カンマ/空白の両方に対応）
-    const dependencies = pkg.getAttribute('data-dependencies') || '';
-    const depPackages = dependencies.split(/[\s,]+/).map(s => s.trim()).filter(Boolean);
-
-    if (depPackages.length) {
+    // 依存パッケージの完全同調（親と同じ状態にする）
+    const dependencies = pkg.getAttribute('data-dependencies');
+    if (dependencies) {
+        const depPackages = dependencies.split(',').map(s => s.trim()).filter(Boolean);
         depPackages.forEach(dep => {
             const depCheckbox = document.querySelector(`#pkg-${dep}`);
             if (!depCheckbox) return;
             depCheckbox.checked = isChecked;
-            // 念のため、残存のグレーアウトを排除（将来の回帰にも強く）
-            depCheckbox.disabled = false;
         });
     }
 
     updatePackageListFromSelector();
 }
-        
+    
 function updatePackageListFromSelector() {
     const packagesTextarea = document.getElementById('asu-packages');
     let currentPackages = split(packagesTextarea.value);
