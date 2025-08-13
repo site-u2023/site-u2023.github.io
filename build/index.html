@@ -1380,54 +1380,52 @@ const PACKAGE_DB = {
                     url: "https://openwrt.org/packages/pkgdata/attendedsysupgrade-common"
                 },
                 { 
-                    id: "luci-app-wireguard", 
-                    name: "luci-app-wireguard", 
-                    url: "https://openwrt.org/packages/pkgdata/luci-app-wireguard",
-                    dependencies: ["wireguard-tools"]
-                },
-                { 
                     id: "wireguard-tools", 
                     name: "wireguard-tools", 
-                    url: "https://openwrt.org/packages/pkgdata/wireguard-tools",
-                    hidden: true
+                    url: "https://openwrt.org/packages/pkgdata/wireguard-tools"
                 },
-                {
+                { 
+                    id: "luci-app-wireguard", 
+                    name: "luci-app-wireguard", 
+                    url: "https://openwrt.org/packages/pkgdata/luci-app-wireguard"
+                },
+                { 
                     id: "dockerd",
                     name: "dockerd",
                     url: "https://openwrt.org/packages/pkgdata/dockerd",
                     dependencies: ["containerd"]
                 },
-                {
+                { 
                     id: "docker",
                     name: "docker",
                     url: "https://openwrt.org/packages/pkgdata/docker",
                     dependencies: ["dockerd"]
                 },
-                {
+                { 
                     id: "luci-app-dockerman",
                     name: "luci-app-dockerman",
                     url: "https://openwrt.org/packages/pkgdata/luci-app-dockerman",
                     dependencies: ["docker", "luci-lib-docker"]
                 },
-                {
+                { 
                     id: "luci-lib-docker",
                     name: "luci-lib-docker",
                     url: "https://openwrt.org/packages/pkgdata/luci-lib-docker"
                 },
-                {
+                { 
                     id: "docker-compose",
                     name: "docker-compose",
                     url: "https://openwrt.org/packages/pkgdata/docker-compose",
                     dependencies: ["docker"]
                 },
-                {
+                { 
                     id: "containerd",
                     name: "containerd",
                     url: "https://openwrt.org/packages/pkgdata/containerd",
                     dependencies: ["runc"],
                     hidden: true
                 },
-                {
+                { 
                     id: "runc",
                     name: "runc",
                     url: "https://openwrt.org/packages/pkgdata/runc",
