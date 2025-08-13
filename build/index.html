@@ -1848,32 +1848,34 @@ function generatePackageSelector() {
 }
 
 function handlePackageSelection(e) {
-    const packageName = e.target.getAttribute('data-package');
-    const isChecked = e.target.checked;
-    
-    // 依存パッケージの処理
-    const dependencies = e.target.getAttribute('data-dependencies');
+    const pkg = e.target;
+    const packageName = pkg.getAttribute('data-package');
+    const isChecked = pkg.checked;
+
+    // ユーザー操作の記録
+    if (isChecked) {
+        pkg.setAttribute('data-user', '1');
+    } else {
+        pkg.removeAttribute('data-user');
+    }
+
+    // 依存パッケージの完全同調（親と同じ状態にする）
+    const dependencies = pkg.getAttribute('data-dependencies');
     if (dependencies) {
-        const depPackages = dependencies.split(',');
+        const depPackages = dependencies.split(',').map(s => s.trim()).filter(Boolean);
         depPackages.forEach(dep => {
             const depCheckbox = document.querySelector(`#pkg-${dep}`);
-            if (depCheckbox) {
-                if (isChecked) {
-                    // 元パッケージが有効化されたら依存を強制ON＋ロック
-                    depCheckbox.checked = true;
-                    depCheckbox.disabled = true;
-                } else {
-                    // 元パッケージが無効化されたらロック解除のみ
-                    depCheckbox.disabled = false;
-                }
-            }
+            if (!depCheckbox) return;
+            // 親に完全同調
+            depCheckbox.checked = isChecked;
+            // 子のユーザー意思は親操作で消さない（上書きOKポリシー）
         });
     }
-    
+
     // パッケージリストを更新（内部で一元反映）
     updatePackageListFromSelector();
 }
-
+        
 function updatePackageListFromSelector() {
     const packagesTextarea = document.getElementById('asu-packages');
     let currentPackages = split(packagesTextarea.value);
