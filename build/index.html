@@ -312,6 +312,7 @@
           display: flex;
           flex-wrap: wrap;
           gap: 0.5rem 1rem;
+          align-items: flex-start; /* 高さを揃えずに上端で揃える */
         }
 
         .package-item {
@@ -320,6 +321,7 @@
           flex-direction: column;
           align-items: flex-start;
           padding: 0.25rem 0;
+          margin-bottom: 0.5rem; /* 各パッケージブロック間の余白 */
         }
 
         .package-item .form-check {
