@@ -1906,21 +1906,23 @@ function handlePackageSelection(e) {
     const packageName = pkg.getAttribute('data-package');
     const isChecked = pkg.checked;
 
-    // ユーザー操作の記録
+    // ユーザー操作の記録（任意上書きOK）
     if (isChecked) {
         pkg.setAttribute('data-user', '1');
     } else {
         pkg.removeAttribute('data-user');
     }
 
-    // 依存パッケージの完全同調（親と同じ状態にする）
-    const dependencies = pkg.getAttribute('data-dependencies');
-    if (dependencies) {
-        const depPackages = dependencies.split(',').map(s => s.trim()).filter(Boolean);
+    // 依存パッケージの完全同調（カンマ/空白両対応）
+    const dependencies = pkg.getAttribute('data-dependencies') || '';
+    const depPackages = dependencies.split(/[\s,]+/).map(s => s.trim()).filter(Boolean);
+
+    if (depPackages.length) {
         depPackages.forEach(dep => {
             const depCheckbox = document.querySelector(`#pkg-${dep}`);
             if (!depCheckbox) return;
             depCheckbox.checked = isChecked;
+            depCheckbox.disabled = false; // 念のため解除
         });
     }
 
