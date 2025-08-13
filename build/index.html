@@ -2174,6 +2174,16 @@ function hideDeviceInfo() {
     document.getElementById('request-build').style.display = 'none';
 }
 
+// ==================== 接続設定変更反映関数 ====================
+function applyConnectionSettingsChange() {
+    // 表示更新
+    updateGuaSectionVisibility();
+    // API値を必要に応じて適用
+    applyInitialsFromApi(document.querySelector('input[name="connectionType"]:checked')?.value || '');
+    // パッケージとテンプレの更新
+    refreshTemplateAndPackages();
+}
+
 // ==================== 接続設定ハンドラー ====================
 function handleConnectionModeChange(e) {
     const manualSection = document.getElementById('manual-connection-section');
@@ -2182,18 +2192,10 @@ function handleConnectionModeChange(e) {
         manualSection.style.display = 'block';
     } else {
         manualSection.style.display = 'none';
-        // AUTOモード時はGUAセクションの表示を判定
-        updateGuaSectionVisibility();
     }
     
-    applyInitialsFromApi(document.querySelector('input[name="connectionType"]:checked')?.value || '');
-
-    if (document.getElementById('use-aios-config').checked) {
-        updateConfiguredTemplate().catch(error => {
-            console.error('Failed to update template:', error);
-        });
-        updateRequiredPackages();
-    }
+    // 一元管理関数で処理
+    applyConnectionSettingsChange();
 }
 
 function handleConnectionTypeChange(e) {
@@ -2338,6 +2340,14 @@ function calculateGuaPrefixFromApi() {
     return '';
 }
 
+// ==================== フォーム初期値注入共通関数 ====================
+function setIfEmpty(id, value) {
+    const el = document.getElementById(id);
+    if (el && !el.value && value != null && value !== '') {
+        el.value = value;
+    }
+}
+
 // ==================== ISP情報関連 ====================
 async function fetchApiInfoAndUpdate() {
     try {
@@ -2353,16 +2363,11 @@ async function fetchApiInfoAndUpdate() {
             let statusText = 'Auto-detection successful';
             let details = '';
 
-            // Country と Timezoneの設定
-            if (apiInfo.country) {
-                document.getElementById('aios-country').value = apiInfo.country;
-            }
-
+            // Country と Timezoneの設定（空欄のみ設定）
+            setIfEmpty('aios-country', apiInfo.country);
             // APIの "timezone" はゾーンネーム（例: Asia/Tokyo）
-            if (apiInfo.timezone) {
-                document.getElementById('aios-zonename').value = apiInfo.timezone;
-            }
-            
+            setIfEmpty('aios-zonename', apiInfo.timezone);
+
             if (apiInfo.isp) {
                 details += `ISP: ${apiInfo.isp}\n`;
             }
