@@ -361,13 +361,13 @@ function updateMainScript(template) {
     let script = template;
     
     // フォーム値を取得してスクリプトに反映
-    const deviceName = document.getElementById('aios-device-name')?.value;
-    const rootPassword = document.getElementById('aios-root-password')?.value;
-    const lanIp = document.getElementById('aios-lan-ip')?.value;
-    const language = document.getElementById('aios-language')?.value;
-    const country = document.getElementById('aios-country')?.value;
-    const wifiSSID = document.getElementById('aios-wifi-ssid')?.value;
-    const wifiPassword = document.getElementById('aios-wifi-password')?.value;
+    const deviceName = document.getElementById('device-name')?.value;
+    const rootPassword = document.getElementById('root-password')?.value;
+    const lanIp = document.getElementById('lan-ip')?.value;
+    const language = document.getElementById('advanced-language')?.value;
+    const country = document.getElementById('country')?.value;
+    const wifiSSID = document.getElementById('wifi-ssid')?.value;
+    const wifiPassword = document.getElementById('wifi-password')?.value;
     
     if (deviceName) script = updateScriptVariable(script, 'device_name', deviceName);
     if (rootPassword) script = updateScriptVariable(script, 'root_password', rootPassword);
@@ -378,6 +378,12 @@ function updateMainScript(template) {
     if (wifiPassword) script = updateScriptVariable(script, 'wlan_password', wifiPassword);
     
     textarea.value = script;
+}
+
+function updateScriptVariable(script, varName, value) {
+    const regex = new RegExp(`^#?\\s*${varName}="[^"]*"`, 'm'); // #付き・無し両対応
+    const replacement = `${varName}="${value}"`;
+    return script.replace(regex, replacement);
 }
 
 function updateScriptVariable(script, varName, value) {
@@ -393,14 +399,13 @@ function updateScriptVariable(script, varName, value) {
 
 async function populateLanguageSelectorFromGitHub() {
     const url = 'https://api.github.com/repos/openwrt/luci/contents/modules/luci-base/po?ref=master';
-    const select = document.getElementById('aios-language');
+    const select = document.getElementById('advanced-language');
     if (!select) return;
 
     try {
         const res = await fetch(url);
         const data = await res.json();
 
-        // ディレクトリ名（＝言語コード）を取得
         const codes = data
             .filter(entry => entry.type === 'dir')
             .map(entry => entry.name)
@@ -416,4 +421,3 @@ async function populateLanguageSelectorFromGitHub() {
         console.warn('Failed to fetch language list from GitHub:', err);
     }
 }
-
