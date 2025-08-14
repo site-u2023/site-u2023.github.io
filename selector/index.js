@@ -985,7 +985,6 @@ async function init() {
       return (m && m.name) ? m.name : id;
     });
 
-    // 既存の手入力を維持（DBに無い名前はそのまま残す）
     const manualNow = (textarea.value.match(/[^\s,]+/g) || []);
     const knownNames = new Set(Array.from(nameIdx.keys()));
     const keepManual = manualNow.filter(n => !knownNames.has(n));
@@ -994,155 +993,210 @@ async function init() {
     textarea.value = finalNames.join(' ');
   }
 
-function ensurePackageSelectorStyles() {
-  if (document.getElementById('package-selector-styles')) return;
-  const style = document.createElement('style');
-  style.id = 'package-selector-styles';
-  style.textContent = `
-  .pkg-section{margin:8px 0 12px}
-  .pkg-title{font-weight:600;margin:0 0 6px}
-  .pkg-selector{display:grid;gap:8px}
-  .pkg-cat{border:1px solid #e0e0e0;padding:8px;margin:0}
-  .pkg-cat>legend{font-weight:600;padding:0 6px}
-  .pkg-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:6px 12px}
-  .pkg-item{display:flex;align-items:center;gap:6px}
-  .pkg-item.pkg-auto{border:1px dashed #666;background:#fafafa;font-style:italic;padding:4px;border-radius:4px}
-  .pkg-item.pkg-dim{opacity:.7}
-  .pkg-item.pkg-user{font-weight:600}
-  `;
-  document.head.appendChild(style);
-}
+  function ensurePackageSelectorStyles() {
+    if (document.getElementById('package-selector-styles')) return;
+    const style = document.createElement('style');
+    style.id = 'package-selector-styles';
+    style.textContent = `
+    .pkg-section{margin:8px 0 12px}
+    .pkg-title{font-weight:600;margin:0 0 6px}
+    .pkg-selector{display:grid;gap:8px}
+    .pkg-cat{border:1px solid #e0e0e0;padding:8px;margin:0}
+    .pkg-cat>legend{font-weight:600;padding:0 6px}
+    .pkg-group{border:2px solid #4CAF50;border-radius:6px;padding:10px;margin:8px 0;background:#f5f9f5}
+    .pkg-group.no-deps{border:1px solid #e0e0e0;background:#fafafa}
+    .pkg-group-items{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+    .pkg-item{display:flex;align-items:center;gap:6px;padding:4px 8px;border-radius:4px}
+    .pkg-item.primary{font-weight:700;background:#e3f2fd;order:-1}
+    .pkg-item.dependency{font-size:0.9em;opacity:0.85;background:#f5f5f5}
+    .pkg-item.pkg-dim{opacity:.5}
+    `;
+    document.head.appendChild(style);
+  }
 
-function mount() {
-  ensurePackageSelectorStyles();
+  function mount() {
+    ensurePackageSelectorStyles();
 
-  // 同一IDが複数あっても全て処理
-  const textareas = Array.from(document.querySelectorAll('textarea#asu-packages'));
-  if (textareas.length === 0) return;
+    const textareas = Array.from(document.querySelectorAll('textarea#asu-packages'));
+    if (textareas.length === 0) return;
 
-  textareas.forEach(textarea => {
-    const container = document.createElement('div');
-    container.className = 'pkg-section';
+    textareas.forEach(textarea => {
+      const container = document.createElement('div');
+      container.className = 'pkg-section';
 
-    const title = document.createElement('h5');
-    title.className = 'pkg-title';
-    title.textContent = 'packages.json packages';
-    container.appendChild(title);
+      const title = document.createElement('h5');
+      title.className = 'pkg-title';
+      title.textContent = 'packages.json packages';
+      container.appendChild(title);
 
-    const selector = document.createElement('div');
-    selector.className = 'pkg-selector';
-    container.appendChild(selector);
+      const selector = document.createElement('div');
+      selector.className = 'pkg-selector';
+      container.appendChild(selector);
 
-    textarea.parentNode.insertBefore(container, textarea);
+      textarea.parentNode.insertBefore(container, textarea);
 
-    fetch('packages/packages.json', { cache: 'no-cache' })
-      .then(r => r.ok ? r.json() : null)
-      .then(db => {
-        if (!db || !Array.isArray(db.categories)) {
-          selector.textContent = '(no packages found)';
-          return;
-        }
+      fetch('packages/packages.json', { cache: 'no-cache' })
+        .then(r => r.ok ? r.json() : null)
+        .then(db => {
+          if (!db || !Array.isArray(db.categories)) {
+            selector.textContent = '(no packages found)';
+            return;
+          }
 
-        // index 構築
-        const idx = new Map();       // id -> meta
-        const nameIdx = new Map();   // name -> id
-        (db.categories || []).forEach(cat => {
-          (cat.packages || []).forEach(p => {
-            if (!p || typeof p !== 'object') return;
-            idx.set(p.id, p);
-            if (p.name) nameIdx.set(p.name, p.id);
+          // index 構築
+          const idx = new Map();
+          const nameIdx = new Map();
+          const packageGroups = new Map();
+          
+          // 全パッケージをインデックス化
+          db.categories.forEach(cat => {
+            cat.packages.forEach(p => {
+              if (!p || typeof p !== 'object') return;
+              idx.set(p.id, p);
+              if (p.name) nameIdx.set(p.name, p.id);
+            });
           });
-        });
 
-        // 手入力から初期選択（名前→id）
-        const initialTokens = (textarea.value.match(/[^\s,]+/g) || []);
-        const userSelected = new Set(initialTokens.map(n => nameIdx.get(n)).filter(Boolean));
+          // 手入力から初期選択
+          const initialTokens = (textarea.value.match(/[^\s,]+/g) || []);
+          const userSelected = new Set(initialTokens.map(n => nameIdx.get(n)).filter(Boolean));
 
-        // UI 生成
-        (db.categories || []).forEach(cat => {
-          const catWrap = document.createElement('fieldset');
-          catWrap.className = 'pkg-cat';
+          // カテゴリごとに処理
+          db.categories.forEach(cat => {
+            const catWrap = document.createElement('fieldset');
+            catWrap.className = 'pkg-cat';
 
-          const legend = document.createElement('legend');
-          legend.textContent = cat.name || cat.id || 'category';
-          catWrap.appendChild(legend);
+            const legend = document.createElement('legend');
+            legend.textContent = cat.name || cat.id || 'category';
+            catWrap.appendChild(legend);
 
-          const list = document.createElement('div');
-          list.className = 'pkg-list';
+            const processedPkgs = new Set();
 
-          (cat.packages || []).forEach(p => {
-            const id = p.id;
+            // 親子グループを作成
+            cat.packages.forEach(p => {
+              if (p.hidden || processedPkgs.has(p.id)) return;
 
-            const label = document.createElement('label');
-            label.className = 'pkg-item';
+              // このパッケージとその依存関係をグループ化
+              const group = {
+                primary: p,
+                dependencies: []
+              };
 
-            const cb = document.createElement('input');
-            cb.type = 'checkbox';
-            cb.value = id;
-            cb.dataset.pkgId = id;
+              // 依存パッケージを収集
+              if (p.dependencies && p.dependencies.length > 0) {
+                p.dependencies.forEach(depId => {
+                  const dep = cat.packages.find(pkg => pkg.id === depId);
+                  if (dep && !dep.hidden) {
+                    group.dependencies.push(dep);
+                    processedPkgs.add(depId);
+                  }
+                });
+              }
 
-            cb.addEventListener('change', () => {
-              if (cb.checked) userSelected.add(id);
-              else userSelected.delete(id);
+              processedPkgs.add(p.id);
 
-              const closure = computeClosure(userSelected, idx);
+              // グループ用のコンテナ作成
+              const groupDiv = document.createElement('div');
+              groupDiv.className = group.dependencies.length > 0 ? 'pkg-group' : 'pkg-group no-deps';
 
-              // 反映：チェック状態＋枠（auto=枠付き／user=太字／非選択=薄）
-              selector.querySelectorAll('input[type="checkbox"][data-pkg-id]').forEach(el => {
-                const pid = el.dataset.pkgId;
-                const isUser = userSelected.has(pid);
-                const inClosure = closure.has(pid);
-                const lab = el.closest('label');
+              const itemsContainer = document.createElement('div');
+              itemsContainer.className = 'pkg-group-items';
 
-                el.checked = inClosure;
-                lab.classList.toggle('pkg-dim', !inClosure);
-                lab.classList.toggle('pkg-user', isUser);
-                lab.classList.toggle('pkg-auto', inClosure && !isUser);
+              // プライマリパッケージ（親）
+              const primaryLabel = document.createElement('label');
+              primaryLabel.className = 'pkg-item primary';
+
+              const primaryCb = document.createElement('input');
+              primaryCb.type = 'checkbox';
+              primaryCb.value = p.id;
+              primaryCb.dataset.pkgId = p.id;
+              primaryCb.checked = userSelected.has(p.id);
+
+              primaryCb.addEventListener('change', () => {
+                if (primaryCb.checked) {
+                  userSelected.add(p.id);
+                  // 依存パッケージも自動選択
+                  group.dependencies.forEach(dep => {
+                    userSelected.add(dep.id);
+                    const depCb = groupDiv.querySelector(`input[data-pkg-id="${dep.id}"]`);
+                    if (depCb) depCb.checked = true;
+                  });
+                } else {
+                  userSelected.delete(p.id);
+                }
+
+                const closure = computeClosure(userSelected, idx);
+                updateAllCheckboxes(selector, userSelected, closure);
+                updateTextarea(textarea, closure, idx, nameIdx);
               });
 
-              updateTextarea(textarea, closure, idx, nameIdx);
+              primaryLabel.appendChild(primaryCb);
+              primaryLabel.appendChild(document.createTextNode(' ' + (p.name || p.id)));
+              itemsContainer.appendChild(primaryLabel);
+
+              // 依存パッケージ（子）
+              group.dependencies.forEach(dep => {
+                const depLabel = document.createElement('label');
+                depLabel.className = 'pkg-item dependency';
+
+                const depCb = document.createElement('input');
+                depCb.type = 'checkbox';
+                depCb.value = dep.id;
+                depCb.dataset.pkgId = dep.id;
+                depCb.checked = userSelected.has(dep.id);
+
+                depCb.addEventListener('change', () => {
+                  if (depCb.checked) userSelected.add(dep.id);
+                  else userSelected.delete(dep.id);
+
+                  const closure = computeClosure(userSelected, idx);
+                  updateAllCheckboxes(selector, userSelected, closure);
+                  updateTextarea(textarea, closure, idx, nameIdx);
+                });
+
+                depLabel.appendChild(depCb);
+                depLabel.appendChild(document.createTextNode(' ' + (dep.name || dep.id)));
+                itemsContainer.appendChild(depLabel);
+              });
+
+              groupDiv.appendChild(itemsContainer);
+              catWrap.appendChild(groupDiv);
             });
 
-            // 初期チェック（ユーザー選択に合わせる）
-            cb.checked = userSelected.has(id);
-
-            const text = document.createTextNode(' ' + (p.name || p.id));
-            label.appendChild(cb);
-            label.appendChild(text);
-            list.appendChild(label);
+            if (catWrap.children.length > 1) {
+              selector.appendChild(catWrap);
+            }
           });
 
-          catWrap.appendChild(list);
-          selector.appendChild(catWrap);
+          // 初期状態を反映
+          const initialClosure = computeClosure(userSelected, idx);
+          updateAllCheckboxes(selector, userSelected, initialClosure);
+          updateTextarea(textarea, initialClosure, idx, nameIdx);
+        })
+        .catch(() => {
+          selector.textContent = '(failed to load packages.json)';
         });
+    });
+  }
 
-        // 初期状態でも依存を展開して textarea へ反映＋枠付与
-        const initialClosure = computeClosure(userSelected, idx);
-        selector.querySelectorAll('input[type="checkbox"][data-pkg-id]').forEach(el => {
-          const pid = el.dataset.pkgId;
-          const isUser = userSelected.has(pid);
-          const inClosure = initialClosure.has(pid);
-          const lab = el.closest('label');
+  function updateAllCheckboxes(selector, userSelected, closure) {
+    selector.querySelectorAll('input[type="checkbox"][data-pkg-id]').forEach(el => {
+      const pid = el.dataset.pkgId;
+      const isUser = userSelected.has(pid);
+      const inClosure = closure.has(pid);
+      const label = el.closest('label');
 
-          el.checked = inClosure;
-          lab.classList.toggle('pkg-dim', !inClosure);
-          lab.classList.toggle('pkg-user', isUser);
-          lab.classList.toggle('pkg-auto', inClosure && !isUser);
-        });
-        updateTextarea(textarea, initialClosure, idx, nameIdx);
-      })
-      .catch(() => {
-        selector.textContent = '(failed to load packages.json)';
-      });
-  });
-}
+      el.checked = inClosure;
+      label.classList.toggle('pkg-dim', !inClosure);
+    });
+  }
 
-if (document.readyState === 'complete' || document.readyState === 'interactive') {
-  setTimeout(mount, 0);
-} else {
-  document.addEventListener('DOMContentLoaded', mount, { once: true });
-}
-})(); 
+  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    setTimeout(mount, 0);
+  } else {
+    document.addEventListener('DOMContentLoaded', mount, { once: true });
+  }
+})();
 
 (function insertSetupShInputs() {
   function mount(fields) {
