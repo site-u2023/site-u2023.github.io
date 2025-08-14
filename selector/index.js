@@ -993,28 +993,8 @@ async function init() {
     textarea.value = finalNames.join(' ');
   }
 
-  function ensurePackageSelectorStyles() {
-    if (document.getElementById('package-selector-styles')) return;
-    const style = document.createElement('style');
-    style.id = 'package-selector-styles';
-    style.textContent = `
-    .pkg-section{margin:8px 0 12px}
-    .pkg-title{font-weight:600;margin:0 0 6px}
-    .pkg-selector{display:grid;gap:8px}
-    .pkg-cat{border:1px solid;padding:8px;margin:0}
-    .pkg-cat>legend{font-weight:600;padding:0 6px}
-    .pkg-group{border:1px solid;border-radius:4px;padding:10px;margin:8px 0}
-    .pkg-group-items{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-    .pkg-item{display:flex;align-items:center;gap:6px;padding:4px 8px;border-radius:4px}
-    .pkg-item.primary{font-weight:700;order:-1}
-    .pkg-item.dependency{font-size:0.9em}
-    `;
-    document.head.appendChild(style);
-  }
-
   function mount() {
-    ensurePackageSelectorStyles();
-
+  
     const textareas = Array.from(document.querySelectorAll('textarea#asu-packages'));
     if (textareas.length === 0) return;
 
