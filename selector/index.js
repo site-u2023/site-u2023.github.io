@@ -661,15 +661,11 @@ function updateImages(version, mobj) {
       $("#asu").open = false;
       hide("#asu-log");
       hide("#asu-buildstatus");
-      /* ========================= CHANGED START ========================= */
-      // Move pre-select logic out of index.js; store for advanced.js
-      const __pkgs = mobj.default_packages
+      // Pre-select ASU packages.
+      $("#asu-packages").value = mobj.default_packages
         .concat(mobj.device_packages)
         .concat(config.asu_extra_packages || [])
         .join(" ");
-      const __asu = $("#asu");
-      __asu.dataset.pkgs = __pkgs;
-      /* ========================== CHANGED END ========================== */
     }
 
     translate();
@@ -701,6 +697,114 @@ function updateImages(version, mobj) {
   }
 }
 
+// Update model title in search box.
+function setModel(overview, target, id) {
+  if (target && id) {
+    const title = $("#models").value;
+    for (const mobj of Object.values(overview.profiles)) {
+      if ((mobj.target === target && mobj.id === id) || mobj.title === title) {
+        $("#models").value = mobj.title;
+        $("#models").oninput();
+        return;
+      }
+    }
+  }
+}
+
+function changeModel(version, overview, title) {
+  const entry = overview.profiles[title];
+  const base_url = config.image_urls[version];
+  if (entry) {
+    fetch(`${base_url}/targets/${entry.target}/profiles.json`, {
+      cache: "no-cache",
+    })
+      .then((obj) => {
+        if (obj.status != 200) {
+          throw new Error(`Failed to fetch ${obj.url}`);
+        }
+        hideAlert();
+        return obj.json();
+      })
+      .then((mobj) => {
+        mobj["id"] = entry.id;
+        mobj["images"] = mobj["profiles"][entry.id]["images"];
+        mobj["titles"] = mobj["profiles"][entry.id]["titles"];
+        mobj["device_packages"] = mobj["profiles"][entry.id]["device_packages"];
+        updateImages(version, mobj);
+        current_device = {
+          version: version,
+          id: entry.id,
+          target: entry.target,
+        };
+      })
+      .catch((err) => showAlert(err.message));
+  } else {
+    updateImages();
+    current_device = {};
+  }
+}
+
+function initTranslation() {
+  const select = $("#languages-select");
+
+  // set initial language
+  const long = (navigator.language || navigator.userLanguage).toLowerCase();
+  const short = long.split("-")[0];
+  if (select.querySelector(`[value="${long}"]`)) {
+    select.value = long;
+  } else if (select.querySelector(`[value="${short}"]`)) {
+    select.value = short;
+  } else {
+    select.value = current_language;
+  }
+
+  select.onchange = function () {
+    const option = select.options[select.selectedIndex];
+    // set select button text and strip English name
+    $("#languages-button").textContent = option.text.replace(/ \(.*/, "");
+    translate(option.value);
+  };
+
+  // trigger translation
+  select.onchange();
+}
+
+// connect template icon for uci-defaults
+function setup_uci_defaults() {
+  let icon = $("#uci-defaults-template");
+  let link = icon.getAttribute("data-link");
+  let textarea = $("#uci-defaults-content");
+  icon.onclick = function () {
+    fetch(link)
+      .then((obj) => {
+        if (obj.status != 200) {
+          throw new Error(`Failed to fetch ${obj.url}`);
+        }
+        hideAlert();
+        return obj.text();
+      })
+      .then((text) => {
+        // toggle text
+        if (textarea.value.indexOf(text) != -1) {
+          textarea.value = textarea.value.replace(text, "");
+        } else {
+          textarea.value = textarea.value + text;
+        }
+      })
+      .catch((err) => showAlert(err.message));
+  };
+}
+
+function insertSnapshotVersions(versions) {
+  for (const version of versions.slice()) {
+    let branch = version.split(".").slice(0, -1).join(".") + "-SNAPSHOT";
+    if (!versions.includes(branch)) {
+      versions.push(branch);
+    }
+  }
+  versions.push("SNAPSHOT");
+}
+
 async function init() {
   url_params = new URLSearchParams(window.location.search);
 
@@ -711,11 +815,143 @@ async function init() {
     show("#asu");
   }
 
-  // ... 中略（他機能の初期化はそのまま） ...
+  let upstream_config = await fetch(config.image_url + "/.versions.json", {
+    cache: "no-cache",
+  })
+    .then((obj) => {
+      if (obj.status == 200) {
+        return obj.json();
+      } else {
+        // .versions.json is optional
+        return { versions_list: [] };
+      }
+    })
+    .then((obj) => {
+      const unsupported_versions_re = /^(19\.07\.\d|18\.06\.\d|17\.01\.\d)$/;
+      const versions = obj.versions_list.filter(
+        (version) => !unsupported_versions_re.test(version)
+      );
 
-  /* ========================= CHANGED START ========================= */
-  // setup_uci_defaults(); // moved to advanced.js
-  /* ========================== CHANGED END ========================== */
+      if (config.upcoming_version) {
+        versions.push(obj.upcoming_version);
+      }
+
+      if (config.show_snapshots) {
+        insertSnapshotVersions(versions);
+      }
+
+      return {
+        versions: versions,
+        image_url_override: obj.image_url_override,
+        default_version: obj.stable_version,
+      };
+    })
+    .catch((err) => showAlert(err.message));
+
+  if (!upstream_config) {
+    // prevent further errors
+    return;
+  }
+
+  if (!config.versions) {
+    config.versions = upstream_config.versions;
+  }
+  if (!config.default_version) {
+    config.default_version = upstream_config.default_version;
+  }
+  config.overview_urls = {};
+  config.image_urls = {};
+
+  const overview_url = config.image_url;
+  const image_url = upstream_config.image_url_override || config.image_url;
+  for (const version of config.versions) {
+    if (version == "SNAPSHOT") {
+      // openwrt.org oddity
+      config.overview_urls[version] = `${overview_url}/snapshots/`;
+      config.image_urls[version] = `${image_url}/snapshots/`;
+    } else {
+      config.overview_urls[version] = `${overview_url}/releases/${version}`;
+      config.image_urls[version] = `${image_url}/releases/${version}`;
+    }
+  }
+
+  console.log("versions: " + config.versions);
+
+  setupSelectList($("#versions"), config.versions, (version) => {
+    // A new version was selected
+    let overview_url = `${config.overview_urls[version]}/.overview.json`;
+    fetch(overview_url, { cache: "no-cache" })
+      .then((obj) => {
+        if (obj.status != 200) {
+          throw new Error(`Failed to fetch ${obj.url}`);
+        }
+        hideAlert();
+        return obj.json();
+      })
+      .then((obj) => {
+        var dups = {};
+        var profiles = [];
+
+        // Some models exist in multiple targets when
+        // a target is in the process of being renamed.
+        // Appends target in brackets to make title unique.
+        function resolve_duplicate(e) {
+          const tu = e.title.toUpperCase();
+          if (tu in dups) {
+            e.title += ` (${e.target})`;
+            let o = dups[tu];
+            if (o.title.toUpperCase() == tu) {
+              o.title += ` (${o.target})`;
+            }
+          } else {
+            dups[tu] = e;
+          }
+        }
+
+        for (const profile of obj.profiles) {
+          for (let title of getModelTitles(profile.titles)) {
+            if (title.length == 0) {
+              console.warn(
+                `Empty device title for model id: ${profile.target}, ${profile.id}`
+              );
+              continue;
+            }
+
+            const e = Object.assign({ id: profile.id, title: title }, profile);
+            resolve_duplicate(e);
+            profiles.push(e);
+          }
+        }
+
+        // replace profiles
+        obj.profiles = profiles.reduce((d, e) => ((d[e.title] = e), d), {});
+
+        return obj;
+      })
+      .then((obj) => {
+        setupAutocompleteList(
+          $("#models"),
+          Object.keys(obj.profiles),
+          updateImages,
+          (selectList) => {
+            changeModel(version, obj, selectList.value);
+          }
+        );
+
+        // set model when selected version changes
+        setModel(
+          obj,
+          current_device["target"] || url_params.get("target"),
+          current_device["id"] || url_params.get("id")
+        );
+
+        // trigger update of current selected model
+        $("#models").onkeyup();
+      })
+      .catch((err) => showAlert(err.message));
+  });
+
+  setup_uci_defaults();
 
   // hide fields
   updateImages();
