@@ -958,3 +958,57 @@ async function init() {
 
   initTranslation();
 }
+
+(function insertPackageJsonSection() {
+  function renderPackageJson(pkg, pre) {
+    const lines = [];
+    if (pkg && pkg.dependencies && Object.keys(pkg.dependencies).length) {
+      lines.push('Dependencies:');
+      for (const [name, ver] of Object.entries(pkg.dependencies)) {
+        lines.push(`  ${name}: ${ver}`);
+      }
+    }
+    if (pkg && pkg.devDependencies && Object.keys(pkg.devDependencies).length) {
+      if (lines.length) lines.push('');
+      lines.push('DevDependencies:');
+      for (const [name, ver] of Object.entries(pkg.devDependencies)) {
+        lines.push(`  ${name}: ${ver}`);
+      }
+    }
+    pre.textContent = lines.length ? lines.join('\n') : '(no dependencies in package.json)';
+  }
+
+  function mount() {
+    const header = document.querySelector('h4.tr-packages');
+    const textarea = document.getElementById('asu-packages');
+    if (!header || !textarea) return;
+
+    const container = document.createElement('div');
+    container.id = 'package-json-section';
+    container.style.margin = '8px 0 12px';
+
+    const title = document.createElement('h5');
+    title.textContent = 'package.json packages';
+    container.appendChild(title);
+
+    const pre = document.createElement('pre');
+    pre.id = 'package-json-list';
+    pre.style.background = '#f5f5f5';
+    pre.style.padding = '8px';
+    pre.style.whiteSpace = 'pre-wrap';
+    pre.style.wordBreak = 'break-word';
+    container.appendChild(pre);
+
+    textarea.parentNode.insertBefore(container, textarea);
+
+    fetch('package.json')
+      .then(r => r.ok ? r.json() : null)
+      .then(pkg => renderPackageJson(pkg, pre));
+  }
+
+  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    setTimeout(mount, 0);
+  } else {
+    document.addEventListener('DOMContentLoaded', mount, { once: true });
+  }
+})();
