@@ -5,15 +5,7 @@ async function loadSetupShTemplate() {
 }
 
 let SETUP_SH_TEMPLATE = '';
-
-document.addEventListener('DOMContentLoaded', async () => {
-    try {
-        SETUP_SH_TEMPLATE = await loadSetupShTemplate();
-        init();
-    } catch (err) {
-        console.error('setup.sh の読み込みに失敗:', err);
-    }
-});
+let PACKAGE_DB = {};
 
 // config.js相当の設定
 const config = {
@@ -39,8 +31,6 @@ let mapShCache = {
     '19': null
 };
 
-let PACKAGE_DB = {};
-
 async function loadPackageDb() {
     const res = await fetch('scripts/packages.json');
     if (!res.ok) throw new Error('Failed to load packages.json');
@@ -51,11 +41,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
         SETUP_SH_TEMPLATE = await loadSetupShTemplate();
         await loadPackageDb();
-        init();
+        init(); // 元の初期化関数
     } catch (err) {
         console.error('初期読み込みに失敗:', err);
     }
 });
+
 
 // DOMContentLoaded時の初期化
 document.addEventListener('DOMContentLoaded', init);
