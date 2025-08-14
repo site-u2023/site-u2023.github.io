@@ -3,6 +3,64 @@
 let packageSelectorLoaded = false;
 let scriptEditorLoaded = false;
 
+let ADV_PKG_INDEX = { byId: {}, byName: {} };
+let ADV_DEP_REFCOUNT = Object.create(null);
+
+function advParseTokens(str) {
+  return String(str || '')
+    .split(/[\s,]+/)
+    .map(s => s.trim())
+    .filter(Boolean);
+}
+
+function advBuildPackageIndex(packageData) {
+  ADV_PKG_INDEX = { byId: {}, byName: {} };
+  (packageData.categories || []).forEach(cat => {
+    (cat.packages || []).forEach(pkg => {
+      ADV_PKG_INDEX.byId[pkg.id] = pkg;
+      ADV_PKG_INDEX.byName[pkg.name] = pkg;
+    });
+  });
+}
+
+function advResolveDepNames(depIds) {
+  const out = [];
+  (depIds || []).forEach(id => {
+    const dep = ADV_PKG_INDEX.byId[id];
+    if (dep && dep.name) out.push(dep.name);
+  });
+  return out;
+}
+
+function advBumpDepCount(depIds, delta) {
+  (depIds || []).forEach(id => {
+    const cur = ADV_DEP_REFCOUNT[id] || 0;
+    ADV_DEP_REFCOUNT[id] = Math.max(0, cur + delta);
+  });
+}
+
+function advGetDepCheckbox(depId) {
+  return document.querySelector(`#pkg-${depId}`);
+}
+
+function advHandleDependencyToggle(sourceCB) {
+  const isChecked = !!sourceCB.checked;
+  const depIds = advParseTokens(sourceCB.getAttribute('data-dependencies'));
+  if (depIds.length) {
+    advBumpDepCount(depIds, isChecked ? 1 : -1);
+    depIds.forEach(depId => {
+      const depCB = advGetDepCheckbox(depId);
+      if (!depCB) return;
+      if (isChecked) {
+        depCB.checked = true;
+      } else {
+        const cnt = ADV_DEP_REFCOUNT[depId] || 0;
+        if (cnt === 0) depCB.checked = false;
+      }
+    });
+  }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     setTimeout(function() {
         const allDetails = document.querySelectorAll('details');
@@ -56,33 +114,115 @@ async function loadScriptEditor() {
 }
 
 function generatePackageCategories(container, packageData) {
+    // 索引を先に構築
+    advBuildPackageIndex(packageData);
+    ADV_DEP_REFCOUNT = Object.create(null);
+
     let html = '<div id="package-categories">';
-    
+
     packageData.categories.forEach(category => {
         html += `<div class="package-category">`;
         html += `<h6>${category.name}</h6>`;
         html += '<div class="package-grid">';
-        
-        category.packages.forEach(pkg => {
-            if (!pkg.hidden) {
-                html += `<div class="package-item">`;
-                html += `<div class="form-check">`;
-                html += `<input class="form-check-input package-selector-checkbox" type="checkbox" id="pkg-${pkg.id}" data-package="${pkg.name}">`;
-                html += `<label class="form-check-label" for="pkg-${pkg.id}">`;
-                html += `<a href="${pkg.url}" target="_blank" class="package-link">${pkg.name}</a>`;
-                html += `</label></div></div>`;
-            }
+
+        // 依存として参照されるID集合（トップレベル重複を防ぐ用途）
+        const depIdsAll = new Set();
+        (category.packages || []).forEach(pkg => {
+            (pkg.dependencies || []).forEach(d => depIdsAll.add(d));
         });
-        
+
+        (category.packages || []).forEach(pkg => {
+            // トップレベルは hidden を描画しないポリシーは維持
+            if (pkg.hidden) return;
+
+            // 親行
+            html += `<div class="package-item">`;
+            html += `<div class="form-check">`;
+
+            const depIds = pkg.dependencies || [];
+            const depNames = advResolveDepNames(depIds);
+            const depIdsAttr = depIds.join(' ');
+            const depNamesAttr = depNames.join(' ');
+
+            html += `<input class="form-check-input package-selector-checkbox" type="checkbox" id="pkg-${pkg.id}" data-id="${pkg.id}" data-package="${pkg.name}"`;
+            if (depIds.length) {
+                html += ` data-dependencies="${depIdsAttr}" data-dep-names="${depNamesAttr}"`;
+            }
+            html += `>`;
+
+            html += `<label class="form-check-label" for="pkg-${pkg.id}">`;
+            html += `<a href="${pkg.url}" target="_blank" class="package-link">${pkg.name}</a>`;
+            html += `</label></div>`;
+
+            // 子行（依存）
+            if (depIds.length) {
+                depIds.forEach(depId => {
+                    const depPkg = ADV_PKG_INDEX.byId[depId];
+                    const depName = depPkg?.name || depId;
+                    const depUrl = depPkg?.url || '#';
+                    const depHidden = !!depPkg?.hidden;
+
+                    html += `<div class="package-dependent${depHidden ? ' package-hidden' : ''}">`;
+                    html += `<input class="form-check-input package-selector-checkbox" type="checkbox" id="pkg-${depId}" data-id="${depId}" data-package="${depName}">`;
+                    html += `<label class="form-check-label" for="pkg-${depId}">`;
+                    if (depPkg) {
+                        html += `<a href="${depUrl}" target="_blank" class="package-link">${depName}</a>`;
+                    } else {
+                        html += `${depName}`;
+                    }
+                    html += `</label>`;
+                    html += `</div>`;
+                });
+            }
+
+            html += `</div>`;
+        });
+
         html += '</div></div>';
     });
-    
+
     html += '</div>';
     container.innerHTML = html;
-    
+
+    // イベント: 依存伝搬 + パッケージリスト更新
     container.querySelectorAll('.package-selector-checkbox').forEach(checkbox => {
-        checkbox.addEventListener('change', updatePackageList);
+        checkbox.addEventListener('change', function(e) {
+            advHandleDependencyToggle(e.target);
+            updatePackageList();
+        });
     });
+}
+
+function advHandleDependencyToggle(sourceCB) {
+    const isChecked = !!sourceCB.checked;
+    const pkgId = sourceCB.getAttribute('data-id') || '';
+    if (!pkgId) return;
+
+    // 親 → 子（data-dependencies 属性保有時）
+    const depIds = advParseTokens(sourceCB.getAttribute('data-dependencies'));
+    if (depIds.length) {
+        // 参照カウント更新
+        advBumpDepCount(depIds, isChecked ? 1 : -1);
+
+        depIds.forEach(depId => {
+            const depCB = advGetDepCheckbox(depId);
+            if (!depCB) return;
+
+            if (isChecked) {
+                // 親が増えた → 子を ON（カウントは既に加算済み）
+                depCB.checked = true;
+            } else {
+                // 親が減った → カウント0なら子を OFF
+                const cnt = ADV_DEP_REFCOUNT[depId] || 0;
+                if (cnt === 0) depCB.checked = false;
+            }
+        });
+    }
+
+    // 子 → 親（ユーザーが子を直接操作した場合）
+    // 親がこの子を依存に持っている場合、親は「子の状態に同期」しない。
+    // 親は明示操作が優先のため、ここでは親の自動変更は行わない。
+    // （親チェックで子はON、親解除で子は参照カウント0ならOFF。子単独ONは許容。）
 }
 
 function updatePackageList() {
