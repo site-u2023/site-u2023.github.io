@@ -12,6 +12,8 @@
             line-height: 1.5;
             margin: 0;
             padding: 20px;
+            background-color: #f5f5f5;
+            color: #000;
         }
     
         .container {
@@ -143,13 +145,26 @@
             margin-bottom: 1rem;
         }
         
-        .info {
+.info {
             background-color: #d1ecf1;
             border: 1px solid #bee5eb;
             color: #0c5460;
             padding: 0.75rem 1.25rem;
             margin-bottom: 1rem;
             border-radius: 0.25rem;
+        }
+        
+        /* ASU関連のスタイルも統一 */
+        .asu-info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        
+        .asu-error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
         }
 
         .info h5 {
@@ -167,7 +182,7 @@
             font-weight: 500;
         }
 
-        .btn {
+.btn {
             display: inline-block;
             font-weight: 400;
             color: #212529;
@@ -182,12 +197,15 @@
             border-radius: 0.25rem;
             transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
             text-decoration: none;
+            box-shadow: 0em 0.06em 0.3em 0em rgba(0, 0, 0, 0.2),
+                0em 0.125em 0.125em 0em rgba(0, 0, 0, 0.14),
+                0em 0.19em 0.06em -0.125em rgba(0, 0, 0, 0.12);
         }
 
         .btn-primary {
             color: #fff;
-            background-color: #007bff;
-            border-color: #007bff;
+            background-color: #00a3e1;
+            border-color: #00a3e1;
         }
 
         .btn-primary:hover {
@@ -207,18 +225,26 @@
             margin: 1.5rem 0;
         }
 
-        .download-link {
-            display: inline-block;
-            margin: 0.25rem 0.5rem 0.25rem 0;
-            padding: 0.5rem 1rem;
-            background-color: #28a745;
-            color: #fff;
+.download-link {
             text-decoration: none;
-            border-radius: 0.25rem;
+            border-radius: 0.2em;
+            padding: 0.8em;
+            margin: 0.2em;
+            font-size: inherit;
+            cursor: pointer;
+            letter-spacing: 0.05em;
+            display: inline-flex;
+            align-items: center;
+            box-shadow: 0em 0.06em 0.3em 0em rgba(0, 0, 0, 0.2),
+                0em 0.125em 0.125em 0em rgba(0, 0, 0, 0.14),
+                0em 0.19em 0.06em -0.125em rgba(0, 0, 0, 0.12);
+            color: #fff;
+            background-color: #00a3e1;
+            width: max-content;
         }
 
         .download-link:hover {
-            background-color: #218838;
+            background-color: #038fc6;
             color: #fff;
             text-decoration: none;
         }
@@ -453,34 +479,85 @@
             border-radius: 0.25rem;
         }
 
-        @media (max-width: 576px) {
+@media (max-width: 576px) {
             .form-row {
                 flex-direction: column;
             }
+            /* ... */
+        }
+
+        /* ダークモード対応 */
+        @media (prefers-color-scheme: dark) {
+            body {
+                background-color: #18181b;
+                color: #d0d0d0;
+            }
             
-            .radio-group {
-                flex-direction: column;
-                gap: 0.5rem;
+            .container {
+                background-color: #252528;
             }
-
-            .package-item {
-                width: 100%;
+            
+            .form-control {
+                background-color: #313135;
+                color: #d0d0d0;
             }
-        }
-
-        /* 依存パッケージのネスト表示 */
-        .package-dependent {
-            margin-left: 1.5rem;
-            font-size: 0.9em;
-            color: #6c757d;
-            display: flex;
-            align-items: center;
-        }
-        .package-dependent::before {
-            content: "↳";
-            display: inline-block;
-            margin-right: 0.25rem;
-            color: #007bff;
+            
+            .form-control:focus {
+                background-color: #313135;
+                color: #d0d0d0;
+                border-color: #0080b3;
+                box-shadow: 0 0 0 0.2rem rgba(0, 128, 179, 0.25);
+            }
+            
+            .autocomplete-items {
+                background-color: #252528;
+                border-color: #444;
+            }
+            
+            .autocomplete-items div {
+                background-color: #252528;
+                border-color: #444;
+            }
+            
+            .autocomplete-items div:hover,
+            .autocomplete-active {
+                background-color: #0080b3 !important;
+            }
+            
+            .info {
+                background-color: #1d4046;
+                border-color: #2a5a61;
+                color: #d0d0d0;
+            }
+            
+            .asu-info {
+                background-color: #1d4046;
+                color: #d0d0d0;
+            }
+            
+            .asu-error {
+                background-color: #601b21;
+                color: #d0d0d0;
+            }
+            
+            .aios-section {
+                background-color: #313135;
+                border-color: #444;
+            }
+            
+            .package-category {
+                background-color: #252528;
+                border-color: #444;
+            }
+            
+            .package-category h6 {
+                color: #d0d0d0;
+                border-color: #444;
+            }
+            
+            #image-info, #image-folder, #image-link {
+                filter: invert(100%) sepia(9%) saturate(261%) hue-rotate(281deg) brightness(117%) contrast(100%);
+            }
         }
     </style>
 
