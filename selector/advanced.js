@@ -418,7 +418,22 @@ function loadAiosConfig(container, template) {
     </div>`;
     
     container.innerHTML = html;
-    
+
+    populateLanguageSelectorFromGitHub();
+
+    const languageSelect = container.querySelector('#aios-language');
+    if (languageSelect) {
+        languageSelect.addEventListener('change', function() {
+            updateLanguagePackages(this.value);
+            updateMainScript(template);
+        });
+    }
+
+    container.addEventListener('input', function() {
+        updateMainScript(template);
+    });
+}
+  
     // 言語変更時のパッケージ自動追加
     const languageSelect = container.querySelector('#aios-language');
     if (languageSelect) {
@@ -487,5 +502,29 @@ function updateScriptVariable(script, varName, value) {
         return script.replace(regex, replacement);
     } else {
         return script;
+    }
+}
+
+async function populateLanguageSelectorFromGitHub() {
+    const url = 'https://api.github.com/repos/openwrt/luci/contents/modules/luci-base/po';
+    const select = document.getElementById('aios-language');
+    if (!select) return;
+
+    try {
+        const res = await fetch(url);
+        const data = await res.json();
+
+        const codes = data
+            .filter(entry => entry.name.endsWith('.po'))
+            .map(entry => entry.name.replace(/\.po$/, ''));
+
+        codes.sort().forEach(code => {
+            const opt = document.createElement('option');
+            opt.value = code;
+            opt.textContent = code;
+            select.appendChild(opt);
+        });
+    } catch (err) {
+        console.warn('Failed to fetch language list from GitHub:', err);
     }
 }
