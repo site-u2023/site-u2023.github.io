@@ -1038,13 +1038,13 @@ async function init() {
       container.appendChild(input);
     });
 
-    textarea.parentNode.insertBefore(container, textarea.nextSibling);
+    // ここを変更：textarea の「前」に挿入
+    textarea.parentNode.insertBefore(container, textarea);
   }
 
   function parseSetupSh(content) {
     const result = [];
     content.split('\n').forEach(line => {
-      // コメントと空行を除く
       const m = line.match(/^\s*([A-Za-z0-9_\-]+)=/);
       if (m) result.push(m[1]);
     });
