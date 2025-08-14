@@ -1,18 +1,4 @@
-/* Minimal styles for expanded package selector and script editor - using existing CSS classes */
-
-.package-category {
-    margin-bottom: 1rem;
-    padding: 1rem;
-    background-color: #f8f9fa;
-    border: 1px solid #e9ecef;
-    border-radius: 0.25rem;
-}
-
-.package-category h6 {
-    margin-bottom: 0.75rem;
-    font-weight: 500;
-    color: #495057;
-}
+/* Minimal styles using existing CSS classes - no color overrides */
 
 .package-grid {
     display: flex;
@@ -23,22 +9,6 @@
 .package-item {
     width: calc(50% - 0.5rem);
     margin-bottom: 0.5rem;
-}
-
-.package-link {
-    color: #007bff;
-    text-decoration: none;
-}
-
-.package-link:hover {
-    text-decoration: underline;
-}
-
-.aios-config {
-    padding: 1rem;
-    background-color: #f8f9fa;
-    border: 1px solid #dee2e6;
-    border-radius: 0.25rem;
 }
 
 @media (max-width: 576px) {
