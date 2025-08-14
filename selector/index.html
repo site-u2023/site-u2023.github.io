@@ -195,12 +195,56 @@
                     autocapitalize="off"
                   ></textarea>
                 </div>
-                <details style="width: 100%">
+<details style="width: 100%">
                   <summary>
                     <span class="tr-defaults">Script to run on first boot (uci-defaults)</span>
                   </summary>
                   <div id="script-editor-content">
-                    <!-- スクリプト編集の骨格がここに読み込まれる -->
+                    <div class="aios-section">
+                      <h5>Basic Configuration</h5>
+                      
+                      <div class="form-row">
+                        <div class="form-group">
+                          <label for="conf-language">Language</label>
+                          <select id="conf-language" class="form-control">
+                            <option value="">Default</option>
+                            <option value="ja">日本語 (Japanese)</option>
+                            <option value="en">English</option>
+                          </select>
+                        </div>
+                        <div class="form-group">
+                          <label for="conf-country">Country</label>
+                          <input type="text" id="conf-country" class="form-control" placeholder="US" maxlength="2">
+                        </div>
+                      </div>
+
+                      <div class="form-row">
+                        <div class="form-group">
+                          <label for="conf-device-name">Device name</label>
+                          <input type="text" id="conf-device-name" class="form-control" placeholder="OpenWrt">
+                        </div>
+                        <div class="form-group">
+                          <label for="conf-lan-ip">LAN IP Address</label>
+                          <input type="text" id="conf-lan-ip" class="form-control" placeholder="192.168.1.1" value="192.168.1.1">
+                        </div>
+                      </div>
+
+                      <div class="form-row">
+                        <div class="form-group">
+                          <label for="conf-root-password">Root password</label>
+                          <input type="password" id="conf-root-password" class="form-control" placeholder="8+ characters">
+                        </div>
+                        <div class="form-group">
+                          <label for="conf-wifi-ssid">Wi-Fi SSID</label>
+                          <input type="text" id="conf-wifi-ssid" class="form-control" placeholder="OpenWrt">
+                        </div>
+                      </div>
+
+                      <div class="form-group">
+                        <label for="conf-wifi-password">Wi-Fi password</label>
+                        <input type="password" id="conf-wifi-password" class="form-control" placeholder="8+ characters">
+                      </div>
+                    </div>
                   </div>
                 </details>
                 <div id="uci-defaults-group">
