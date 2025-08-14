@@ -397,43 +397,31 @@ function updateScriptVariable(script, varName, value) {
     }
 }
 
-// window.LANG_AVAILABLE に「有効な言語コードの配列 or {code:true,...}」がある前提。
-// ここに存在しない言語は選択時に 'en' へ強制フォールバックします。
-// 言語リストは index.html の <select id="languages-select"> を唯一のソースとして複製します。
 async function populateLanguageSelectorFromGitHub() {
+    const baseUrl = 'https://api.github.com/repos/openwrt/luci/contents/modules/luci-base/po?ref=master';
     const source = document.getElementById('languages-select');
     const target = document.getElementById('advanced-language');
     if (!source || !target) return;
 
-    // GitHubから取得して有効言語セットを作成
-    const baseUrl = 'https://api.github.com/repos/openwrt/luci/contents/modules/luci-base/po?ref=master';
-    let available = new Set();
     try {
         const res = await fetch(baseUrl);
         const dirs = await res.json();
-        for (const entry of dirs) {
-            if (entry.type === 'dir') {
-                available.add(entry.name.toLowerCase());
+        const available = new Set(
+            Array.isArray(dirs)
+                ? dirs.filter(e => e && e.type === 'dir').map(e => String(e.name).toLowerCase())
+                : []
+        );
+
+        target.innerHTML = '';
+        for (const opt of source.options) {
+            if (available.has(String(opt.value).toLowerCase())) {
+                const copy = document.createElement('option');
+                copy.value = opt.value;
+                copy.textContent = opt.textContent;
+                target.appendChild(copy);
             }
         }
     } catch (err) {
-        console.warn('Failed to fetch language list:', err);
-    }
-    if (available.size === 0) available.add('en');
-
-    // ソースの<option>から有効言語のみコピー
-    target.innerHTML = '';
-    for (const opt of source.options) {
-        const code = opt.value.toLowerCase();
-        if (!available.has(code)) continue; // 無効は表示しない
-        const copy = document.createElement('option');
-        copy.value = opt.value;
-        copy.textContent = opt.textContent;
-        target.appendChild(copy);
-    }
-
-    // 初期値を安全に設定（存在しない場合のみ en）
-    if (!available.has((target.value || '').toLowerCase())) {
-        target.value = 'en';
+        console.warn('Failed to fetch language list from GitHub:', err);
     }
 }
