@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="index.css" />
     <script src="config.js"></script>
     <script src="index.js"></script>
+    <script src="advanced.js"></script>
   </head>
   <body onload="init()">
     <!-- header across the whole page -->
@@ -157,16 +158,7 @@
                   </div>
                 </div>
                 <div>
-                  <h4 class="tr-packages">Installed Packages</h4>
-                  <!-- 高度なパッケージ選択リンクを追加 -->
-                  <div style="margin-bottom: 10px;">
-                    <a href="advanced.html" target="_blank" class="custom-link" style="background-color: #28a745; text-decoration: none;">
-                      <span style="width: 20px; height: 20px; margin-right: 10px; margin-top: 0;">
-                        📦
-                      </span>
-                      <span>Advanced Package Selector</span>
-                    </a>
-                  </div>
+                  <h4 class="tr-packages"><a href="javascript:togglePackageSelector()">Installed Packages</a></h4>
                   <textarea
                     rows="10"
                     id="asu-packages"
@@ -174,19 +166,15 @@
                     spellcheck="false"
                     autocapitalize="off"
                   ></textarea>
+                  
+                  <!-- 展開式パッケージセレクター -->
+                  <div id="package-selector-expanded" class="hide" style="margin-top: 15px; border: 1px solid #ddd; padding: 15px; border-radius: 4px;">
+                    <div id="package-selector-content">
+                      <!-- advanced.htmlのパッケージ選択内容がここに読み込まれる -->
+                    </div>
+                  </div>
                 </div>
-                <h4 class="tr-defaults">
-                  Script to run on first boot (uci-defaults)
-                </h4>
-                <!-- 高度なスクリプト編集リンクを追加 -->
-                <div style="margin-bottom: 10px;">
-                  <a href="advanced.html#script-section" target="_blank" class="custom-link" style="background-color: #17a2b8; text-decoration: none;">
-                    <span style="width: 20px; height: 20px; margin-right: 10px; margin-top: 0;">
-                      📝
-                    </span>
-                    <span>Advanced Script Editor</span>
-                  </a>
-                </div>
+                <h4 class="tr-defaults"><a href="javascript:toggleScriptEditor()">Script to run on first boot (uci-defaults)</a></h4>
                 <div id="uci-defaults-group">
                   <textarea
                     rows="10"
@@ -199,6 +187,13 @@
                     id="uci-defaults-template"
                     data-link="uci-defaults/setup.sh"
                   ></span>
+                </div>
+                
+                <!-- 展開式スクリプトエディター -->
+                <div id="script-editor-expanded" class="hide" style="margin-top: 15px; border: 1px solid #ddd; padding: 15px; border-radius: 4px;">
+                  <div id="script-editor-content">
+                    <!-- advanced.htmlのスクリプト編集内容がここに読み込まれる -->
+                  </div>
                 </div>
                 <a href="javascript:buildAsuRequest()" class="custom-link">
                   <span></span
