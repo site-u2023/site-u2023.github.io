@@ -397,31 +397,36 @@ function updateScriptVariable(script, varName, value) {
     }
 }
 
+// GitHubのpoディレクトリに存在する言語コードを取得し、index.htmlの<select id="languages-select">を唯一の
+// ネイティブ名ソースとして<select id="advanced-language">を構成する。
+// index.htmlで現在選択されている言語を初期値にするが、GitHubに存在しない場合は'en'にする。
 async function populateLanguageSelectorFromGitHub() {
     const baseUrl = 'https://api.github.com/repos/openwrt/luci/contents/modules/luci-base/po?ref=master';
     const source = document.getElementById('languages-select');
     const target = document.getElementById('advanced-language');
     if (!source || !target) return;
 
-    try {
-        const res = await fetch(baseUrl);
-        const dirs = await res.json();
-        const available = new Set(
-            Array.isArray(dirs)
-                ? dirs.filter(e => e && e.type === 'dir').map(e => String(e.name).toLowerCase())
-                : []
-        );
+    const res = await fetch(baseUrl);
+    const dirs = await res.json();
+    if (!Array.isArray(dirs)) return;
 
-        target.innerHTML = '';
-        for (const opt of source.options) {
-            if (available.has(String(opt.value).toLowerCase())) {
-                const copy = document.createElement('option');
-                copy.value = opt.value;
-                copy.textContent = opt.textContent;
-                target.appendChild(copy);
-            }
-        }
-    } catch (err) {
-        console.warn('Failed to fetch language list from GitHub:', err);
+    const available = new Set(
+        dirs
+            .filter(e => e && e.type === 'dir' && e.name)
+            .map(e => String(e.name).toLowerCase())
+    );
+
+    target.innerHTML = '';
+    for (const opt of source.options) {
+        const code = String(opt.value).toLowerCase();
+        if (!available.has(code)) continue;
+        const copy = document.createElement('option');
+        copy.value = opt.value;
+        copy.textContent = opt.textContent;
+        target.appendChild(copy);
     }
+
+    // index.html側の現在選択言語を取得
+    const selectedCode = String(source.value || '').toLowerCase();
+    target.value = available.has(selectedCode) ? source.value : 'en';
 }
