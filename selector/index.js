@@ -1017,7 +1017,6 @@ async function init() {
   }
 })();
 
-
 (function insertSetupShInputs() {
   function mount(fields) {
     const textarea = document.getElementById('uci-defaults-content');
