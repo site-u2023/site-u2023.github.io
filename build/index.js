@@ -8,7 +8,7 @@ let SETUP_SH_TEMPLATE = '';
 let PACKAGE_DB = {};
 
 // config.js相当の設定
-const config = {
+const aiosConfig = {
     show_help: true,
     image_url: "https://downloads.openwrt.org",
     info_url: "https://openwrt.org/start?do=search&id=toh&q={title} @toh",
@@ -1095,7 +1095,7 @@ async function updateConfiguredTemplate() {
         // 選択済みパッケージ（enable_* 反映用）
         const selectedPackages = new Set(split(document.getElementById('asu-packages').value));
 
-        const customized = customizeSetupScript(content, config, apiInfo, selectedPackages);
+        const customized = customizeSetupScript(content, aiosConfig, apiInfo, selectedPackages);
         document.getElementById('uci-defaults-content').value = customized;
     } catch (error) {
         console.error('Template update error:', error);
