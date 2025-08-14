@@ -993,23 +993,43 @@ async function init() {
     textarea.value = finalNames.join(' ');
   }
 
-  function mount() {
-    const header = document.querySelector('h4.tr-packages');
-    const textarea = document.getElementById('asu-packages');
-    if (!header || !textarea) return;
+function ensurePackageSelectorStyles() {
+  if (document.getElementById('package-selector-styles')) return;
+  const style = document.createElement('style');
+  style.id = 'package-selector-styles';
+  style.textContent = `
+  .pkg-section{margin:8px 0 12px}
+  .pkg-title{font-weight:600;margin:0 0 6px}
+  .pkg-selector{display:grid;gap:8px}
+  .pkg-cat{border:1px solid #e0e0e0;padding:8px;margin:0}
+  .pkg-cat>legend{font-weight:600;padding:0 6px}
+  .pkg-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:6px 12px}
+  .pkg-item{display:flex;align-items:center;gap:6px}
+  .pkg-item.pkg-auto{border:1px dashed #666;background:#fafafa;font-style:italic;padding:4px;border-radius:4px}
+  .pkg-item.pkg-dim{opacity:.7}
+  .pkg-item.pkg-user{font-weight:600}
+  `;
+  document.head.appendChild(style);
+}
 
+function mount() {
+  ensurePackageSelectorStyles();
+
+  // 同一IDが複数あっても全て処理
+  const textareas = Array.from(document.querySelectorAll('textarea#asu-packages'));
+  if (textareas.length === 0) return;
+
+  textareas.forEach(textarea => {
     const container = document.createElement('div');
-    container.id = 'package-json-section';
-    container.style.margin = '8px 0 12px';
+    container.className = 'pkg-section';
 
     const title = document.createElement('h5');
+    title.className = 'pkg-title';
     title.textContent = 'packages.json packages';
     container.appendChild(title);
 
     const selector = document.createElement('div');
-    selector.id = 'package-selector';
-    selector.style.display = 'grid';
-    selector.style.gap = '8px';
+    selector.className = 'pkg-selector';
     container.appendChild(selector);
 
     textarea.parentNode.insertBefore(container, textarea);
@@ -1040,57 +1060,45 @@ async function init() {
         // UI 生成
         (db.categories || []).forEach(cat => {
           const catWrap = document.createElement('fieldset');
-          catWrap.style.border = '1px solid #e0e0e0';
-          catWrap.style.padding = '8px';
-          catWrap.style.margin = '0';
+          catWrap.className = 'pkg-cat';
 
           const legend = document.createElement('legend');
           legend.textContent = cat.name || cat.id || 'category';
-          legend.style.fontWeight = '600';
-          legend.style.padding = '0 6px';
           catWrap.appendChild(legend);
 
           const list = document.createElement('div');
-          list.style.display = 'grid';
-          list.style.gridTemplateColumns = 'repeat(auto-fit, minmax(220px, 1fr))';
-          list.style.gap = '6px 12px';
+          list.className = 'pkg-list';
 
           (cat.packages || []).forEach(p => {
             const id = p.id;
+
             const label = document.createElement('label');
-            label.style.display = 'flex';
-            label.style.alignItems = 'center';
-            label.style.gap = '6px';
+            label.className = 'pkg-item';
 
             const cb = document.createElement('input');
             cb.type = 'checkbox';
             cb.value = id;
             cb.dataset.pkgId = id;
 
-            // ユーザー選択のトグル用
             cb.addEventListener('change', () => {
-              if (cb.checked) {
-                userSelected.add(id);
-              } else {
-                userSelected.delete(id);
-              }
+              if (cb.checked) userSelected.add(id);
+              else userSelected.delete(id);
 
-              // 再計算（依存の再展開）
               const closure = computeClosure(userSelected, idx);
 
-              // 反映：チェック状態（user=太字/auto=通常）
+              // 反映：チェック状態＋枠（auto=枠付き／user=太字／非選択=薄）
               selector.querySelectorAll('input[type="checkbox"][data-pkg-id]').forEach(el => {
                 const pid = el.dataset.pkgId;
                 const isUser = userSelected.has(pid);
                 const inClosure = closure.has(pid);
+                const lab = el.closest('label');
 
                 el.checked = inClosure;
-                // 視覚ヒント（必須ではない）
-                el.closest('label').style.opacity = inClosure ? '1' : '0.7';
-                el.closest('label').style.fontWeight = isUser ? '600' : '400';
+                lab.classList.toggle('pkg-dim', !inClosure);
+                lab.classList.toggle('pkg-user', isUser);
+                lab.classList.toggle('pkg-auto', inClosure && !isUser);
               });
 
-              // asu-packages を更新（依存も含めた名前＋未知の手入力は維持）
               updateTextarea(textarea, closure, idx, nameIdx);
             });
 
@@ -1107,29 +1115,33 @@ async function init() {
           selector.appendChild(catWrap);
         });
 
-        // 初期状態でも依存を展開して textarea へ反映
+        // 初期状態でも依存を展開して textarea へ反映＋枠付与
         const initialClosure = computeClosure(userSelected, idx);
         selector.querySelectorAll('input[type="checkbox"][data-pkg-id]').forEach(el => {
           const pid = el.dataset.pkgId;
           const isUser = userSelected.has(pid);
           const inClosure = initialClosure.has(pid);
+          const lab = el.closest('label');
+
           el.checked = inClosure;
-          el.closest('label').style.opacity = inClosure ? '1' : '0.7';
-          el.closest('label').style.fontWeight = isUser ? '600' : '400';
+          lab.classList.toggle('pkg-dim', !inClosure);
+          lab.classList.toggle('pkg-user', isUser);
+          lab.classList.toggle('pkg-auto', inClosure && !isUser);
         });
         updateTextarea(textarea, initialClosure, idx, nameIdx);
       })
       .catch(() => {
         selector.textContent = '(failed to load packages.json)';
       });
-  }
+  });
+}
 
-  if (document.readyState === 'complete' || document.readyState === 'interactive') {
-    setTimeout(mount, 0);
-  } else {
-    document.addEventListener('DOMContentLoaded', mount, { once: true });
-  }
-})();
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+  setTimeout(mount, 0);
+} else {
+  document.addEventListener('DOMContentLoaded', mount, { once: true });
+}
+})(); 
 
 (function insertSetupShInputs() {
   function mount(fields) {
