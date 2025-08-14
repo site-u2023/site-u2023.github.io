@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>OpenWrt Firmware Selector</title>
+        <link rel="icon" href="favicon.ico" />
+        <link rel="stylesheet" href="index.css" />
+        <script src="config.js"></script>
+        <script src="index.js"></script>
+    </head>
+    <body onload="init()">
+    <!-- header across the whole page -->
+    <header></header>
+    <div class="container">
+        <h1>OpenWrt Firmware Selector</h1>
+        <p class="lead">Type the name or model of your device, then select a stable build or the nightly "snapshot" build.</p>
+
+        <!-- Align with official structure to ensure full-width input -->
+        <div id="models-autocomplete" class="autocomplete">
+            <input
+                id="models"
+                type="text"
+                class="tr-model"
+                placeholder="Model"
+                spellcheck="false"
+                autocapitalize="off"
+                autofocus
+            />
+            <select id="versions" size="1"></select>
+            <div id="models-autocomplete-list"></div>
+        </div>
+
+        <div id="info" class="info" style="display: none;">
+            <!-- Content will be dynamically generated -->
+        </div>
+
+        <div id="images" class="images" style="display: none;">
+            <!-- Device images will be shown here -->
+        </div>
+
+        <div id="packages" class="packages" style="display: none;">
+            <h4>Customize installed packages and/or first boot script</h4>
+            
+            <!-- パッケージセレクターセクション -->
+            <div class="aios-section">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="use-package-selector">
+                    <label class="form-check-label" for="use-package-selector">
+                        Installed Packages
+                    </label>
+                </div>
+
+                <div id="package-selector-config" class="aios-config">
+                    <small class="text-muted">Select additional packages to install. Selected packages will be automatically added to the package list below.</small>
+                    
+                    <div id="package-categories">
+                        <!-- カテゴリーとパッケージは動的に生成される -->
+                    </div>
+                    
+                    <div class="form-group" style="margin-top: 1.5rem;">
+                        <label for="asu-packages">Packages</label>
+                        <textarea id="asu-packages" class="form-control" rows="6" placeholder="luci&#10;luci-ssl&#10;-wpad-basic-wolfssl&#10;wpad-wolfssl"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- setup.sh設定セクション -->
+            <div class="aios-section">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="use-aios-config">
+                    <label class="form-check-label" for="use-aios-config">
+                        Script to run on first boot (uci-defaults)
+                    </label>
+                </div>
+
+                <div id="aios-config" class="aios-config">
+                    <h5>Basic Configuration</h5>
+                    
+                    <!-- 1行目: Language と Country -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="aios-language">Language</label>
+                            <select id="aios-language" class="form-control">
+                                <option value="en">English</option>
+                                <option value="ar">العربية (Arabic)</option>
+                                <option value="bg">Български (Bulgarian)</option>
+                                <option value="ca">Català (Catalan)</option>
+                                <option value="cs">Čeština (Czech)</option>
+                                <option value="da">Dansk (Danish)</option>
+                                <option value="de">Deutsch (German)</option>
+                                <option value="el">Ελληνικά (Greek)</option>
+                                <option value="es">Español (Spanish)</option>
+                                <option value="fi">Suomi (Finnish)</option>
+                                <option value="fr">Français (French)</option>
+                                <option value="he">עברית (Hebrew)</option>
+                                <option value="hu">Magyar (Hungarian)</option>
+                                <option value="it">Italiano (Italian)</option>
+                                <option value="ja">日本語 (Japanese)</option>
+                                <option value="ko">한국어 (Korean)</option>
+                                <option value="lt">Lietuvių (Lithuanian)</option>
+                                <option value="ms">Bahasa Melayu (Malay)</option>
+                                <option value="nl">Nederlands (Dutch)</option>
+                                <option value="no">Norsk (Norwegian)</option>
+                                <option value="pl">Polski (Polish)</option>
+                                <option value="pt">Português (Portuguese)</option>
+                                <option value="pt_br">Português do Brasil (Portuguese Brazil)</option>
+                                <option value="ro">Română (Romanian)</option>
+                                <option value="ru">Русский (Russian)</option>
+                                <option value="sk">Slovenčina (Slovak)</option>
+                                <option value="sv">Svenska (Swedish)</option>
+                                <option value="tr">Türkçe (Turkish)</option>
+                                <option value="uk">Українська (Ukrainian)</option>
+                                <option value="vi">Tiếng Việt (Vietnamese)</option>
+                                <option value="zh_cn">简体中文 (Chinese Simplified)</option>
+                                <option value="zh_tw">繁體中文 (Chinese Traditional)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="aios-country">Country</label>
+                            <input type="text" id="aios-country" class="form-control" placeholder="US" maxlength="2">
+                            <small class="form-text text-muted">2-letter country code (e.g., US, JP)</small>
+                        </div>
+                    </div>
+
+                    <!-- 2行目: Timezone と Zone name -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="aios-timezone">Timezone</label>
+                            <input type="text" id="aios-timezone" class="form-control" placeholder="UTC">
+                        </div>
+                        <div class="form-group">
+                            <label for="aios-zonename">Zone name</label>
+                            <input type="text" id="aios-zonename" class="form-control" placeholder="America/New_York">
+                            <small class="form-text text-muted">Optional: e.g., America/New_York, Asia/Tokyo</small>
+                        </div>
+                    </div>
+
+                    <!-- IPアドレスとDevice name を横並びに配置 -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="aios-lan-ip">LAN IP Address</label>
+                            <input type="text" id="aios-lan-ip" class="form-control" placeholder="192.168.1.1" value="192.168.1.1">
+                        </div>
+                        <div class="form-group">
+                            <label for="aios-device-name">Device name</label>
+                            <input type="text" id="aios-device-name" class="form-control" placeholder="OpenWrt">
+                        </div>
+                    </div>
+                
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="aios-root-password">Root password</label>
+                            <input type="password" id="aios-root-password" class="form-control" placeholder="8+ characters">
+                            <small class="form-text text-muted">Leave empty to disable password authentication</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="aios-confirm-password">Confirm password</label>
+                            <input type="password" id="aios-confirm-password" class="form-control" placeholder="Confirm password">
+                        </div>
+                    </div>
+
+                    <h5>Wi-Fi Configuration</h5>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="aios-wifi-ssid">Wi-Fi SSID</label>
+                            <input type="text" id="aios-wifi-ssid" class="form-control" placeholder="OpenWrt">
+                        </div>
+                        <div class="form-group">
+                            <label for="aios-wifi-password">Wi-Fi password</label>
+                            <input type="password" id="aios-wifi-password" class="form-control" placeholder="8+ characters">
+                        </div>
+                    </div>
+
+                    <h5>Internet Connection</h5>
+                    <!-- 上段: AUTO/MANUAL選択 -->
+                    <div class="form-group">
+                        <label>Connection mode</label>
+                        <div class="radio-group">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="connectionMode" id="mode-auto" value="auto" checked>
+                                <label class="form-check-label" for="mode-auto">Auto (Recommended)</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="connectionMode" id="mode-manual" value="manual">
+                                <label class="form-check-label" for="mode-manual">Manual</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 中段: 手動選択時の詳細オプション -->
+                    <div id="manual-connection-section" class="conditional-section" style="background-color: #fff3cd; border: 1px solid #ffeaa7;">
+                        <div class="form-group">
+                            <label>Connection type</label>
+                            <div class="radio-group">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="connectionType" id="conn-dhcp" value="dhcp" checked>
+                                    <label class="form-check-label" for="conn-dhcp">DHCP</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="connectionType" id="conn-pppoe" value="pppoe">
+                                    <label class="form-check-label" for="conn-pppoe">PPPoE</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="connectionType" id="conn-dslite" value="dslite">
+                                    <label class="form-check-label" for="conn-dslite">DS-Lite</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="connectionType" id="conn-mape" value="mape">
+                                    <label class="form-check-label" for="conn-mape">MAP-E</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="connectionType" id="conn-none" value="none">
+                                    <label class="form-check-label" for="conn-none">None</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 手動選択時の詳細設定 -->
+                        <div id="pppoe-section" class="conditional-section" style="background-color: #e3f2fd;">
+                            <h6>PPPoE Configuration</h6>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="pppoe-username">PPPoE username</label>
+                                    <input type="text" id="pppoe-username" class="form-control" placeholder="Username">
+                                </div>
+                                <div class="form-group">
+                                    <label for="pppoe-password">PPPoE password</label>
+                                    <input type="password" id="pppoe-password" class="form-control" placeholder="Password">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="dslite-section" class="conditional-section" style="background-color: #fff3e0;">
+                        <h6>DS-Lite Configuration</h6>
+                        
+                        <div class="form-group">
+                            <label>DS-Lite Configuration Mode</label>
+                            <div class="radio-group">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="dsliteMode" id="dslite-auto" value="auto" checked>
+                                    <label class="form-check-label" for="dslite-auto">Auto (Recommended)</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="dsliteMode" id="dslite-manual" value="manual">
+                                    <label class="form-check-label" for="dslite-manual">Manual</label>
+                                </div>
+                            </div>
+                            <small class="text-muted">Auto: Use ISP-detected AFTR address | Manual: Specify AFTR settings manually</small>
+                        </div>
+
+                        <div id="dslite-manual-config" class="conditional-section" style="background-color: #e3f2fd; display: none;">
+                            <div class="form-group">
+                                <label for="dslite-aftr-type">AFTR Type</label>
+                                <select id="dslite-aftr-type" class="form-control" onchange="applyInitialsFromApi('dslite')">
+                                    <option value="transix">transix</option>
+                                    <option value="xpass">xpass</option>
+                                    <option value="v6option">v6option</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="dslite-area">Region</label>
+                                <select id="dslite-area" class="form-control" onchange="applyInitialsFromApi('dslite')">
+                                    <option value="east">East Japan</option>
+                                    <option value="west">West Japan</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="dslite-aftr-address">AFTR IPv6 Address</label>
+                            <input type="text" id="dslite-aftr-address" class="form-control" placeholder="2404:8e00::feed:100" value="">
+                            <small class="form-text text-muted">Auto mode: Set from ISP detection | Manual mode: Set based on AFTR type and region</small>
+                        </div>
+                        </div>
+                        
+                        <div id="mape-manual-section" class="conditional-section" style="background-color: #e8f5e8;">
+                            <h6>MAP-E Configuration</h6>
+                            <div class="form-group">
+                                <label>MAP-E Connection Mode</label>
+                                <div class="radio-group">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="mapeType" id="mape-auto" value="auto" checked>
+                                        <label class="form-check-label" for="mape-auto">Auto (Recommended)</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="mapeType" id="mape-gua" value="gua">
+                                        <label class="form-check-label" for="mape-gua">GUA</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="mapeType" id="mape-pd" value="pd">
+                                        <label class="form-check-label" for="mape-pd">PD</label>
+                                    </div>
+                                </div>
+                                <small class="text-muted">
+                                    <strong>Auto-detect</strong>: Automatically retrieve MAP-E technical information and configure with GUA mode (1G/10G compatible)<br>
+                                    <strong>Manual selection</strong>: For troubleshooting or specific requirements only
+                                </small>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="mape-br">BR (Border Relay)</label>
+                                    <input type="text" id="mape-br" class="form-control" placeholder="2001:db8::1">
+                                </div>
+                                <div class="form-group">
+                                    <label for="mape-ealen">EA-len</label>
+                                    <input type="number" id="mape-ealen" class="form-control" placeholder="16" min="0" max="48">
+                                </div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="mape-ipv4-prefix">IPv4 Prefix</label>
+                                    <input type="text" id="mape-ipv4-prefix" class="form-control" placeholder="192.0.2.0">
+                                </div>
+                                <div class="form-group">
+                                    <label for="mape-ipv4-prefixlen">IPv4 Prefix Length</label>
+                                    <input type="number" id="mape-ipv4-prefixlen" class="form-control" placeholder="24" min="1" max="32">
+                                </div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="mape-ipv6-prefix">IPv6 Prefix</label>
+                                    <input type="text" id="mape-ipv6-prefix" class="form-control" placeholder="2001:db8:8000::">
+                                </div>
+                                <div class="form-group">
+                                    <label for="mape-ipv6-prefixlen">IPv6 Prefix Length</label>
+                                    <input type="number" id="mape-ipv6-prefixlen" class="form-control" placeholder="32" min="1" max="128">
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="mape-psid-offset">PSID Offset</label>
+                                <input type="number" id="mape-psid-offset" class="form-control" placeholder="4" min="0" max="16">
+                            </div>
+                            <div class="form-group">
+                                <label for="mape-psidlen">PSID Length</label>
+                                <input type="number" id="mape-psidlen" class="form-control" placeholder="6" min="0" max="16">
+                            </div>
+
+                            <!-- GUA Prefix入力フィールド（条件付き表示） -->
+                            <div id="mape-gua-section" class="form-group" style="display: none;">
+                                <label for="mape-gua-prefix">GUA Prefix</label>
+                                <input type="text" id="mape-gua-prefix" class="form-control" placeholder="2400:4151:80e2:7500::/64">
+                                <small class="form-text text-muted">IPv6 Global Unicast Address prefix for 1G/10G line compatibility</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 下段: 情報表示窓（常時表示） -->
+                    <div class="form-group">
+                        <label>ISP Detection Status</label>
+                        <div id="isp-info-display" class="info" style="margin-bottom: 0;">
+                            <div id="isp-status-message">ISP情報を取得中...</div>
+                            <div id="isp-technical-info" style="font-family: monospace; font-size: 0.9em; margin-top: 0.5rem; display: none;"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group" style="margin-top: 1.5rem;">
+                        <label for="uci-defaults-content">Scripts</label>
+                        <textarea id="uci-defaults-content" class="form-control" rows="6" placeholder="#!/bin/sh&#10;&#10;# Your custom script here&#10;# This area is for manual editing - configuration wizard will not overwrite your changes"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <button id="request-build" class="btn btn-primary" style="display: none;">REQUEST BUILD</button>
+        </div>
+
+        <!-- 改善されたプログレス表示 -->
+        <div id="build-progress" class="build-progress">
+            <div id="build-message">Building image...</div>
+            <div class="progress">
+                <div id="progress-bar" class="progress-bar" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <div id="asu-buildstatus" class="asu-info" style="display: none;">
+            <span></span>
+        </div>
+
+        <div id="asu-log" style="display: none;">
+            <details>
+                <summary>STDERR</summary>
+                <pre id="asu-stderr" style="background
