@@ -1009,3 +1009,59 @@ async function init() {
 
   initTranslation();
 }
+
+// GitHubから言語リストを動的に取得してconf-languageセレクターを更新
+async function updateConfigLanguageOptions() {
+  const confLanguageSelect = document.getElementById('conf-language');
+  if (!confLanguageSelect) return;
+  
+  try {
+    // GitHubのAPIでpoディレクトリの内容を取得
+    const response = await fetch('https://api.github.com/repos/openwrt/luci/contents/modules/luci-base/po?ref=master');
+    const dirs = await response.json();
+    
+    if (!Array.isArray(dirs)) return;
+    
+    // 既存の言語セレクター（画面右上）から言語名を取得
+    const languagesSelect = document.getElementById('languages-select');
+    const languageNames = {};
+    
+    if (languagesSelect) {
+      for (const option of languagesSelect.options) {
+        languageNames[option.value] = option.textContent;
+      }
+    }
+    
+    // conf-languageセレクターをクリアして再構築
+    confLanguageSelect.innerHTML = '<option value="">Default</option>';
+    
+    // poディレクトリに存在する言語を追加
+    dirs.forEach(item => {
+      if (item.type === 'dir' && item.name) {
+        const langCode = item.name;
+        const langName = languageNames[langCode] || langCode;
+        
+        const option = document.createElement('option');
+        option.value = langCode;
+        option.textContent = langName;
+        confLanguageSelect.appendChild(option);
+      }
+    });
+    
+    // 日本語をデフォルト選択（存在する場合）
+    if (confLanguageSelect.querySelector('option[value="ja"]')) {
+      confLanguageSelect.value = 'ja';
+    }
+    
+  } catch (error) {
+    console.error('Failed to fetch language list from GitHub:', error);
+    // エラー時はハードコードされた基本的な選択肢を設定
+    confLanguageSelect.innerHTML = `
+      <option value="">Default</option>
+      <option value="ja">日本語 (Japanese)</option>
+      <option value="en">English</option>
+      <option value="zh-cn">简体中文 (Chinese Simplified)</option>
+      <option value="ko">한국어 (Korean)</option>
+    `;
+  }
+}
