@@ -86,16 +86,37 @@ function generatePackageCategories(container, packageData) {
 }
 
 function updatePackageList() {
-    const checkboxes = document.querySelectorAll('.package-selector-checkbox:checked');
-    const newPackages = Array.from(checkboxes).map(cb => cb.getAttribute('data-package'));
     const textarea = document.getElementById('asu-packages');
-    
-    if (textarea) {
-        // 既存パッケージを保持して追加
-        const existingPackages = textarea.value.trim().split(/\s+/).filter(p => p);
-        const allPackages = [...new Set([...existingPackages, ...newPackages])];
-        textarea.value = allPackages.join(' ');
-    }
+    if (!textarea) return;
+
+    // 現在の値を配列化
+    let currentPackages = textarea.value.trim().split(/\s+/).filter(Boolean);
+
+    // セレクタ管理下の全トークンを収集
+    const selectorTokens = [];
+    document.querySelectorAll('.package-selector-checkbox').forEach(cb => {
+        String(cb.getAttribute('data-package') || '')
+          .split(/[\s,]+/)
+          .map(s => s.trim())
+          .filter(Boolean)
+          .forEach(t => selectorTokens.push(t));
+    });
+
+    // 入力欄からセレクタ管理のものを全削除
+    const selectorSet = new Set(selectorTokens);
+    currentPackages = currentPackages.filter(tok => !selectorSet.has(tok));
+
+    // チェックされているものを追加
+    document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
+        String(cb.getAttribute('data-package') || '')
+          .split(/[\s,]+/)
+          .map(s => s.trim())
+          .filter(Boolean)
+          .forEach(t => currentPackages.push(t));
+    });
+
+    // 重複排除して反映
+    textarea.value = Array.from(new Set(currentPackages)).join(' ');
 }
 
 function loadAiosConfig(container, template) {
