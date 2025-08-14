@@ -227,5 +227,22 @@
         </div>
       </div>
     </div>
+
+    <!-- ===================================================================== -->
+    <!-- ======================= ADVANCED CONTROL LOADER ====================== -->
+    <!-- ======================== (ADDED / CHANGED HERE) ====================== -->
+    <!-- ===================================================================== -->
+    <script type="module" id="advanced-loader">
+      const det = document.getElementById('asu');
+      det && det.addEventListener('toggle', async () => {
+        if (det.open && !det.dataset.advLoaded) {
+          det.dataset.advLoaded = '1';
+          await import('./advanced.js');
+        }
+      });
+    </script>
+    <!-- ===================================================================== -->
+    <!-- ===================== END ADVANCED CONTROL LOADER ==================== -->
+    <!-- ===================================================================== -->
   </body>
 </html>
