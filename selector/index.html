@@ -158,7 +158,15 @@
                   </div>
                 </div>
                 <div>
-                  <h4 class="tr-packages"><a href="javascript:togglePackageSelector()">Installed Packages</a></h4>
+                  <h4 class="tr-packages">Installed Packages</h4>
+                  <details style="width: 100%">
+                    <summary>
+                      <span>Advanced Package Selector</span>
+                    </summary>
+                    <div id="package-selector-content">
+                      <!-- advanced.htmlのパッケージ選択内容がここに読み込まれる -->
+                    </div>
+                  </details>
                   <textarea
                     rows="10"
                     id="asu-packages"
@@ -166,15 +174,18 @@
                     spellcheck="false"
                     autocapitalize="off"
                   ></textarea>
-                  
-                  <!-- 展開式パッケージセレクター -->
-                  <div id="package-selector-expanded" class="hide" style="margin-top: 15px; border: 1px solid #ddd; padding: 15px; border-radius: 4px;">
-                    <div id="package-selector-content">
-                      <!-- advanced.htmlのパッケージ選択内容がここに読み込まれる -->
-                    </div>
-                  </div>
                 </div>
-                <h4 class="tr-defaults"><a href="javascript:toggleScriptEditor()">Script to run on first boot (uci-defaults)</a></h4>
+                <h4 class="tr-defaults">
+                  Script to run on first boot (uci-defaults)
+                </h4>
+                <details style="width: 100%">
+                  <summary>
+                    <span>Advanced Script Editor</span>
+                  </summary>
+                  <div id="script-editor-content">
+                    <!-- advanced.htmlのスクリプト編集内容がここに読み込まれる -->
+                  </div>
+                </details>
                 <div id="uci-defaults-group">
                   <textarea
                     rows="10"
