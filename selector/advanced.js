@@ -392,17 +392,16 @@ function updateScriptVariable(script, varName, value) {
 }
 
 async function populateLanguageSelectorFromGitHub() {
-    const url = 'https://api.github.com/repos/openwrt/luci/contents/modules/luci-base/po';
+    const url = 'https://api.github.com/repos/openwrt/luci/contents/modules/luci-base/po?ref=master';
     const select = document.getElementById('aios-language');
     if (!select) return;
 
     try {
         const res = await fetch(url);
         const data = await res.json();
-
         const codes = data
-            .filter(entry => entry.name.endsWith('.po'))
-            .map(entry => entry.name.replace(/\.po$/, ''));
+            .filter(entry => entry.type === 'dir')
+            .map(entry => entry.name);
 
         codes.sort().forEach(code => {
             const opt = document.createElement('option');
