@@ -398,26 +398,35 @@ function updateScriptVariable(script, varName, value) {
 }
 
 async function populateLanguageSelectorFromGitHub() {
-    const url = 'https://api.github.com/repos/openwrt/luci/contents/modules/luci-base/po?ref=master';
+    const baseUrl = 'https://api.github.com/repos/openwrt/luci/contents/modules/luci-base/po?ref=master';
     const select = document.getElementById('advanced-language');
     if (!select) return;
 
     try {
-        const res = await fetch(url);
-        const data = await res.json();
+        const res = await fetch(baseUrl);
+        const dirs = await res.json();
 
-        const codes = data
-            .filter(entry => entry.type === 'dir')
-            .map(entry => entry.name)
-            .sort();
+        for (const entry of dirs) {
+            if (entry.type !== 'dir') continue;
+            const langCode = entry.name;
 
-        codes.forEach(code => {
+            // luci.po の Language ヘッダを取得
+            const poUrl = `https://raw.githubusercontent.com/openwrt/luci/master/modules/luci-base/po/${langCode}/luci.po`;
+            let nativeName = langCode;
+            try {
+                const poRes = await fetch(poUrl);
+                const poText = await poRes.text();
+                const match = poText.match(/^"Language:\s*([^"]+)"/m);
+                if (match) nativeName = match[1];
+            } catch { /* フォールバックは langCode */ }
+
             const opt = document.createElement('option');
-            opt.value = code;
-            opt.textContent = code;
+            opt.value = langCode;
+            opt.textContent = nativeName;
             select.appendChild(opt);
-        });
+        }
     } catch (err) {
         console.warn('Failed to fetch language list from GitHub:', err);
     }
 }
+
