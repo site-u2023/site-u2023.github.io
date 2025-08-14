@@ -4,7 +4,6 @@ let packageSelectorLoaded = false;
 let scriptEditorLoaded = false;
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Find details elements by their content divs
     setTimeout(function() {
         const allDetails = document.querySelectorAll('details');
         allDetails.forEach(details => {
@@ -34,7 +33,6 @@ async function loadPackageSelector() {
         const response = await fetch('https://raw.githubusercontent.com/site-u2023/site-u2023.github.io/main/selector/packages/packages.json');
         const packageData = await response.json();
         
-        // Use existing generatePackageSelector from build/index.html
         generatePackageCategories(container, packageData);
         packageSelectorLoaded = true;
     } catch (error) {
@@ -50,7 +48,6 @@ async function loadScriptEditor() {
         const response = await fetch('https://raw.githubusercontent.com/site-u2023/site-u2023.github.io/main/selector/uci-defaults/setup.sh');
         const template = await response.text();
         
-        // Load the existing form from build/index.html
         loadAiosConfig(container, template);
         scriptEditorLoaded = true;
     } catch (error) {
@@ -83,7 +80,6 @@ function generatePackageCategories(container, packageData) {
     html += '</div>';
     container.innerHTML = html;
     
-    // Add event listeners
     container.querySelectorAll('.package-selector-checkbox').forEach(checkbox => {
         checkbox.addEventListener('change', updatePackageList);
     });
@@ -91,17 +87,20 @@ function generatePackageCategories(container, packageData) {
 
 function updatePackageList() {
     const checkboxes = document.querySelectorAll('.package-selector-checkbox:checked');
-    const packages = Array.from(checkboxes).map(cb => cb.getAttribute('data-package'));
+    const newPackages = Array.from(checkboxes).map(cb => cb.getAttribute('data-package'));
     const textarea = document.getElementById('asu-packages');
+    
     if (textarea) {
-        textarea.value = packages.join(' ');
+        // 既存パッケージを保持して追加
+        const existingPackages = textarea.value.trim().split(/\s+/).filter(p => p);
+        const allPackages = [...new Set([...existingPackages, ...newPackages])];
+        textarea.value = allPackages.join(' ');
     }
 }
 
 function loadAiosConfig(container, template) {
-    // Load the exact aios-config from build/index.html
     const html = `
-    <div class="aios-config">
+    <div class="aios-section">
         <h5>Basic Configuration</h5>
         <div class="form-row">
             <div class="form-group">
@@ -109,6 +108,9 @@ function loadAiosConfig(container, template) {
                 <select id="aios-language" class="form-control">
                     <option value="en">English</option>
                     <option value="ja">日本語 (Japanese)</option>
+                    <option value="zh-cn">简体中文 (Chinese Simplified)</option>
+                    <option value="de">Deutsch (German)</option>
+                    <option value="fr">Français (French)</option>
                 </select>
             </div>
             <div class="form-group">
@@ -123,7 +125,7 @@ function loadAiosConfig(container, template) {
             </div>
             <div class="form-group">
                 <label for="aios-lan-ip">LAN IP Address</label>
-                <input type="text" id="aios-lan-ip" class="form-control" placeholder="192.168.1.1">
+                <input type="text" id="aios-lan-ip" class="form-control" placeholder="192.168.1.1" value="192.168.1.1">
             </div>
         </div>
         <div class="form-row">
@@ -138,21 +140,79 @@ function loadAiosConfig(container, template) {
         </div>
         <div class="form-group">
             <label for="aios-wifi-password">Wi-Fi password</label>
-            <input type="password" id="aios-wifi-password" class="form-control">
+            <input type="password" id="aios-wifi-password" class="form-control" placeholder="8+ characters">
         </div>
     </div>`;
     
     container.innerHTML = html;
     
-    // Update main textarea when values change
+    // 言語変更時のパッケージ自動追加
+    const languageSelect = container.querySelector('#aios-language');
+    if (languageSelect) {
+        languageSelect.addEventListener('change', function() {
+            updateLanguagePackages(this.value);
+            updateMainScript(template);
+        });
+    }
+    
     container.addEventListener('input', function() {
         updateMainScript(template);
     });
 }
 
+function updateLanguagePackages(language) {
+    const textarea = document.getElementById('asu-packages');
+    if (!textarea) return;
+    
+    let packages = textarea.value.trim().split(/\s+/).filter(p => p);
+    
+    // 既存の言語パッケージを削除
+    packages = packages.filter(p => !p.startsWith('luci-i18n-'));
+    
+    // 新しい言語パッケージを追加（英語以外）
+    if (language && language !== 'en') {
+        const langCode = language.replace('_', '-');
+        packages.push(`luci-i18n-base-${langCode}`);
+        packages.push(`luci-i18n-opkg-${langCode}`);
+        packages.push(`luci-i18n-firewall-${langCode}`);
+    }
+    
+    textarea.value = packages.join(' ');
+}
+
 function updateMainScript(template) {
     const textarea = document.getElementById('uci-defaults-content');
-    if (textarea) {
-        textarea.value = template;
+    if (!textarea) return;
+    
+    let script = template;
+    
+    // フォーム値を取得してスクリプトに反映
+    const deviceName = document.getElementById('aios-device-name')?.value;
+    const rootPassword = document.getElementById('aios-root-password')?.value;
+    const lanIp = document.getElementById('aios-lan-ip')?.value;
+    const language = document.getElementById('aios-language')?.value;
+    const country = document.getElementById('aios-country')?.value;
+    const wifiSSID = document.getElementById('aios-wifi-ssid')?.value;
+    const wifiPassword = document.getElementById('aios-wifi-password')?.value;
+    
+    if (deviceName) script = updateScriptVariable(script, 'device_name', deviceName);
+    if (rootPassword) script = updateScriptVariable(script, 'root_password', rootPassword);
+    if (lanIp) script = updateScriptVariable(script, 'lan_ip_address', lanIp);
+    if (language) script = updateScriptVariable(script, 'language', language);
+    if (country) script = updateScriptVariable(script, 'country', country);
+    if (wifiSSID) script = updateScriptVariable(script, 'wlan_name', wifiSSID);
+    if (wifiPassword) script = updateScriptVariable(script, 'wlan_password', wifiPassword);
+    
+    textarea.value = script;
+}
+
+function updateScriptVariable(script, varName, value) {
+    const regex = new RegExp(`^#\\s*${varName}="[^"]*"`, 'm');
+    const replacement = `${varName}="${value}"`;
+    
+    if (script.match(regex)) {
+        return script.replace(regex, replacement);
+    } else {
+        return script;
     }
 }
