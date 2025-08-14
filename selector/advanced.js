@@ -1,194 +1,195 @@
-/* Package selector functionality only - no duplicate UI creation */
+// advanced.js
+// Minimal: package links (from packages.json) + setup.sh textarea. No extra UI.
 
-let packageSelectorLoaded = false;
+const PKG_DB_URL = 'selector/packages/packages.json'; // adjust if needed
 
-// Package selector initialization when details opened
-document.addEventListener('DOMContentLoaded', function() {
-    setTimeout(function() {
-        const packageDetails = document.querySelector('details:has(#package-selector-content)');
-        if (packageDetails) {
-            packageDetails.addEventListener('toggle', function() {
-                if (this.open && !packageSelectorLoaded) {
-                    loadPackageSelector();
-                }
-            });
-        }
-    }, 100);
-});
-
-async function loadPackageSelector() {
-    const container = document.getElementById('package-selector-content');
-    if (!container) return;
-    
-    try {
-        const response = await fetch('https://raw.githubusercontent.com/site-u2023/site-u2023.github.io/main/selector/packages/packages.json');
-        const packageData = await response.json();
-        
-        generatePackageCategories(container, packageData);
-        packageSelectorLoaded = true;
-    } catch (error) {
-        container.innerHTML = '<p>Failed to load packages</p>';
-    }
-}
-
-function generatePackageCategories(container, packageData) {
-    let html = '<div id="package-categories">';
-
-    (packageData.categories || []).forEach(category => {
-        html += `<div class="package-category">`;
-        html += `<h6>${category.name}</h6>`;
-        html += '<div class="package-grid">';
-
-        const depIdsAll = new Set();
-        (category.packages || []).forEach(pkg => {
-            (pkg.dependencies || []).forEach(d => depIdsAll.add(d));
-        });
-
-        (category.packages || []).forEach(pkg => {
-            if (pkg.hidden) return;
-
-            html += `<div class="package-item">`;
-            html += `<div class="form-check">`;
-
-            const depIds = pkg.dependencies || [];
-            const depIdsAttr = depIds.join(' ');
-            const pkgUrl = pkg.url || `https://openwrt.org/packages/${encodeURIComponent(pkg.name)}`;
-
-            html += `<input class="form-check-input package-selector-checkbox" type="checkbox" id="pkg-${pkg.id}" data-id="${pkg.id}" data-package="${pkg.name}"`;
-            if (depIds.length) {
-                html += ` data-dependencies="${depIdsAttr}"`;
-            }
-            html += `>`;
-
-            html += `<label class="form-check-label" for="pkg-${pkg.id}">`;
-            html += `<a href="${pkgUrl}" target="_blank" rel="noopener" class="package-link">${pkg.name}</a>`;
-            html += `</label></div>`;
-
-            // Dependencies
-            if (depIds.length) {
-                depIds.forEach(depId => {
-                    const depPkg = findPackageById(packageData, depId);
-                    const depName = depPkg?.name || depId;
-                    const depUrl = (depPkg && depPkg.url) ? depPkg.url : `https://openwrt.org/packages/${encodeURIComponent(depName)}`;
-                    const depHidden = !!depPkg?.hidden;
-
-                    html += `<div class="package-dependent${depHidden ? ' package-hidden' : ''}">`;
-                    html += `<input class="form-check-input package-selector-checkbox" type="checkbox" id="pkg-${depId}" data-id="${depId}" data-package="${depName}">`;
-                    html += `<label class="form-check-label" for="pkg-${depId}">`;
-                    html += `<a href="${depUrl}" target="_blank" rel="noopener" class="package-link">${depName}</a>`;
-                    html += `</label>`;
-                    html += `</div>`;
-                });
-            }
-
-            html += `</div>`;
-        });
-
-        html += '</div></div>';
-    });
-
-    html += '</div>';
-    container.innerHTML = html;
-
-    // Add event listeners for package selection
-    container.querySelectorAll('.package-selector-checkbox').forEach(checkbox => {
-        checkbox.addEventListener('change', function(e) {
-            handlePackageToggle(e.target);
-            updatePackageList();
-        });
-    });
-}
-
-function findPackageById(packageData, id) {
-    for (const cat of packageData.categories || []) {
-        const pkg = (cat.packages || []).find(p => p.id === id);
-        if (pkg) return pkg;
-    }
-    return null;
-}
-
-function handlePackageToggle(checkbox) {
-    const isChecked = checkbox.checked;
-    const depIds = (checkbox.getAttribute('data-dependencies') || '').split(' ').filter(Boolean);
-    
-    if (depIds.length && isChecked) {
-        // Check dependencies when parent is checked
-        depIds.forEach(depId => {
-            const depCheckbox = document.querySelector(`#pkg-${depId}`);
-            if (depCheckbox) {
-                depCheckbox.checked = true;
-            }
-        });
-    }
-}
-
-function updatePackageList() {
-    const textarea = document.getElementById('asu-packages');
-    if (!textarea) return;
-
-    let current = textarea.value.trim().split(/\s+/).filter(Boolean);
-    
-    // Get all managed packages
-    const managedPackages = [];
-    document.querySelectorAll('.package-selector-checkbox').forEach(cb => {
-        const pkgName = cb.getAttribute('data-package');
-        if (pkgName) {
-            managedPackages.push(pkgName);
-        }
-    });
-    
-    // Remove managed packages from current list
-    current = current.filter(pkg => !managedPackages.includes(pkg));
-    
-    // Add checked packages
-    document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
-        const pkgName = cb.getAttribute('data-package');
-        if (pkgName) {
-            current.push(pkgName);
-        }
-    });
-    
-    // Remove duplicates
-    current = Array.from(new Set(current));
-    
-    textarea.value = current.join(' ');
-}
-
-// 言語セレクター初期化
-async function populateLanguageSelectorFromGitHub() {
-    const baseUrl = 'https://api.github.com/repos/openwrt/luci/contents/modules/luci-base/po?ref=master';
-    const source = document.getElementById('languages-select');       // index.html の言語一覧
-    const target = document.getElementById('advanced-language');      // advanced 側のセレクト
-    if (!source || !target) return;
-
-    try {
-        const res = await fetch(baseUrl);
-        const dirs = await res.json();
-        const available = new Set(
-            dirs.filter(e => e && e.type === 'dir' && e.name)
-                .map(e => e.name.toLowerCase())
-        );
-
-        target.innerHTML = '';
-        for (const opt of source.options) {
-            const code = opt.value.toLowerCase();
-            if (!available.has(code)) continue;
-            const copy = document.createElement('option');
-            copy.value = opt.value;
-            copy.textContent = opt.textContent;
-            target.appendChild(copy);
-        }
-
-        // index.html 側で選択されている言語を初期値に
-        const selectedCode = source.value.toLowerCase();
-        target.value = available.has(selectedCode) ? source.value : 'en';
-
-    } catch (err) {
-        console.warn('Failed to populate language selector:', err);
-    }
-}
-
-// 初期化で一度だけ呼び出す（package selectorとは別）
 document.addEventListener('DOMContentLoaded', () => {
-    populateLanguageSelectorFromGitHub();
+  initPackages();
+  bindTextareaSync();
 });
+
+async function initPackages() {
+  const container = document.getElementById('package-categories');
+  if (!container) return;
+
+  try {
+    const res = await fetch(PKG_DB_URL, { cache: 'no-cache' });
+    const data = await res.json();
+
+    // Build dependency id set to avoid rendering deps as top-level items
+    const depIds = new Set();
+    (data.categories || []).forEach(cat => {
+      (cat.packages || []).forEach(pkg => {
+        (pkg.dependencies || []).forEach(d => depIds.add(d));
+      });
+    });
+
+    container.innerHTML = '';
+    (data.categories || []).forEach(category => {
+      const catEl = document.createElement('div');
+      catEl.className = 'package-category';
+
+      const h6 = document.createElement('h6');
+      h6.textContent = category.name || '';
+      catEl.appendChild(h6);
+
+      const grid = document.createElement('div');
+      grid.className = 'package-grid';
+
+      (category.packages || []).forEach(pkg => {
+        if (pkg.hidden) return;
+        if (depIds.has(pkg.id)) return;
+
+        const item = document.createElement('div');
+        item.className = 'package-item';
+
+        const formCheck = document.createElement('div');
+        formCheck.className = 'form-check';
+
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.className = 'form-check-input package-selector-checkbox';
+        cb.id = `pkg-${pkg.id}`;
+        cb.setAttribute('data-package', pkg.name);
+        if (pkg.dependencies && pkg.dependencies.length) {
+          cb.setAttribute('data-dependencies', pkg.dependencies.join(','));
+        }
+
+        const label = document.createElement('label');
+        label.className = 'form-check-label';
+        label.setAttribute('for', cb.id);
+
+        const link = document.createElement('a');
+        link.href = pkg.url || (`https://openwrt.org/packages/${encodeURIComponent(pkg.name)}`);
+        link.target = '_blank';
+        link.rel = 'noopener';
+        link.className = 'package-link';
+        link.textContent = pkg.name;
+
+        label.appendChild(link);
+        formCheck.appendChild(cb);
+        formCheck.appendChild(label);
+        item.appendChild(formCheck);
+
+        // dependencies inline
+        (pkg.dependencies || []).forEach(depId => {
+          const depPkg = findPackageById(data, depId);
+
+          const depDiv = document.createElement('div');
+          depDiv.className = 'package-dependent' + (depPkg && depPkg.hidden ? ' package-hidden' : '');
+
+          const depCb = document.createElement('input');
+          depCb.type = 'checkbox';
+          depCb.className = 'form-check-input package-selector-checkbox';
+          depCb.id = `pkg-${depId}`;
+          depCb.setAttribute('data-package', depPkg ? depPkg.name : depId);
+
+          const depLabel = document.createElement('label');
+          depLabel.className = 'form-check-label';
+          depLabel.setAttribute('for', depCb.id);
+
+          if (depPkg) {
+            const depLink = document.createElement('a');
+            depLink.href = depPkg.url || (`https://openwrt.org/packages/${encodeURIComponent(depPkg.name)}`);
+            depLink.target = '_blank';
+            depLink.rel = 'noopener';
+            depLink.className = 'package-link';
+            depLink.textContent = depPkg.name;
+            depLabel.appendChild(depLink);
+          } else {
+            depLabel.textContent = depId;
+          }
+
+          depDiv.appendChild(depCb);
+          depDiv.appendChild(depLabel);
+          item.appendChild(depDiv);
+        });
+
+        grid.appendChild(item);
+      });
+
+      catEl.appendChild(grid);
+      if (category.description) {
+        const desc = document.createElement('div');
+        desc.className = 'package-description';
+        desc.textContent = category.description;
+        catEl.appendChild(desc);
+      }
+      container.appendChild(catEl);
+    });
+
+    // wire events
+    container.querySelectorAll('.package-selector-checkbox').forEach(cb => {
+      cb.addEventListener('change', onPackageToggle);
+    });
+
+    // hydrate from textarea if pre-filled
+    hydrateCheckboxesFromTextarea();
+
+  } catch (e) {
+    container.innerHTML = '<div class="form-group error">Failed to load packages</div>';
+    // silent fail besides message
+  }
+}
+
+function findPackageById(data, id) {
+  for (const cat of (data.categories || [])) {
+    const hit = (cat.packages || []).find(p => p.id === id);
+    if (hit) return hit;
+  }
+  return null;
+}
+
+function onPackageToggle(e) {
+  const cb = e.target;
+  const checked = cb.checked;
+  const deps = (cb.getAttribute('data-dependencies') || '')
+    .split(/[\s,]+/)
+    .map(s => s.trim())
+    .filter(Boolean);
+
+  if (checked && deps.length) {
+    deps.forEach(depId => {
+      const depCb = document.getElementById(`pkg-${depId}`);
+      if (depCb) depCb.checked = true;
+    });
+  }
+
+  updatePackagesTextarea();
+}
+
+function updatePackagesTextarea() {
+  const ta = document.getElementById('asu-packages');
+  const current = new Set((ta.value || '').trim().split(/\s+/).filter(Boolean));
+
+  // remove all managed names
+  const managed = [];
+  document.querySelectorAll('.package-selector-checkbox').forEach(cb => {
+    const name = cb.getAttribute('data-package');
+    if (name) managed.push(name);
+  });
+  managed.forEach(name => current.delete(name));
+
+  // add all checked
+  document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
+    const name = cb.getAttribute('data-package');
+    if (name) current.add(name);
+  });
+
+  ta.value = Array.from(current).join(' ');
+}
+
+function hydrateCheckboxesFromTextarea() {
+  const ta = document.getElementById('asu-packages');
+  const set = new Set((ta.value || '').split(/\s+/).filter(Boolean));
+  document.querySelectorAll('.package-selector-checkbox').forEach(cb => {
+    const name = cb.getAttribute('data-package');
+    if (name && set.has(name)) cb.checked = true;
+  });
+}
+
+function bindTextareaSync() {
+  const ta = document.getElementById('asu-packages');
+  if (!ta) return;
+  ta.addEventListener('input', hydrateCheckboxesFromTextarea);
+}
