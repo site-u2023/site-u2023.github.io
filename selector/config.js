@@ -1,25 +1,35 @@
 /* exported config */
-
 var config = {
   // Show help text for images
   show_help: true,
-
+  
   // Versions list (optional if provided by .versions.json)
-  versions: ["23.05.4", "19.07.10"],
-
+  // 最新バージョンに更新
+  versions: ["24.10.0", "23.05.5"],
+  
   // Pre-selected version (optional if provided by .versions.json)
-  default_version: "23.05.4",
-
-  // Image download URL (e.g. "https://downloads.openwrt.org")
-  image_url: "../misc",
-
+  default_version: "24.10.0",
+  
+  // Image download URL - OpenWrt公式ダウンロードサイト
+  image_url: "https://downloads.openwrt.org",
+  
   // Insert snapshot versions (optional)
-  //show_snapshots: true,
-
-  // Info link URL (optional)
+  show_snapshots: true,
+  
+  // Show upcoming version (optional)
+  upcoming_version: true,
+  
+  // Info link URL (optional) - OpenWrtのTable of Hardware検索
   info_url: "https://openwrt.org/start?do=search&id=toh&q={title} @toh",
-
+  
   // Attended Sysupgrade Server support (optional)
+  // 公式ASUサーバー
   asu_url: "https://sysupgrade.openwrt.org",
-  asu_extra_packages: ["luci"],
+  
+  // ASU追加パッケージ
+  asu_extra_packages: [
+    "luci",
+    "luci-ssl",
+    "luci-app-opkg"
+  ],
 };
