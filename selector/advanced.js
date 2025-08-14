@@ -43,24 +43,6 @@ function advGetDepCheckbox(depId) {
   return document.querySelector(`#pkg-${depId}`);
 }
 
-function advHandleDependencyToggle(sourceCB) {
-  const isChecked = !!sourceCB.checked;
-  const depIds = advParseTokens(sourceCB.getAttribute('data-dependencies'));
-  if (depIds.length) {
-    advBumpDepCount(depIds, isChecked ? 1 : -1);
-    depIds.forEach(depId => {
-      const depCB = advGetDepCheckbox(depId);
-      if (!depCB) return;
-      if (isChecked) {
-        depCB.checked = true;
-      } else {
-        const cnt = ADV_DEP_REFCOUNT[depId] || 0;
-        if (cnt === 0) depCB.checked = false;
-      }
-    });
-  }
-}
-
 document.addEventListener('DOMContentLoaded', function() {
     setTimeout(function() {
         const allDetails = document.querySelectorAll('details');
@@ -120,7 +102,7 @@ function generatePackageCategories(container, packageData) {
 
     let html = '<div id="package-categories">';
 
-    packageData.categories.forEach(category => {
+    (packageData.categories || []).forEach(category => {
         html += `<div class="package-category">`;
         html += `<h6>${category.name}</h6>`;
         html += '<div class="package-grid">';
@@ -144,6 +126,8 @@ function generatePackageCategories(container, packageData) {
             const depIdsAttr = depIds.join(' ');
             const depNamesAttr = depNames.join(' ');
 
+            const pkgUrl = (pkg && pkg.url) ? pkg.url : `https://openwrt.org/packages/${encodeURIComponent(pkg.name)}`;
+
             html += `<input class="form-check-input package-selector-checkbox" type="checkbox" id="pkg-${pkg.id}" data-id="${pkg.id}" data-package="${pkg.name}"`;
             if (depIds.length) {
                 html += ` data-dependencies="${depIdsAttr}" data-dep-names="${depNamesAttr}"`;
@@ -151,7 +135,7 @@ function generatePackageCategories(container, packageData) {
             html += `>`;
 
             html += `<label class="form-check-label" for="pkg-${pkg.id}">`;
-            html += `<a href="${pkg.url}" target="_blank" class="package-link">${pkg.name}</a>`;
+            html += `<a href="${pkgUrl}" target="_blank" rel="noopener" class="package-link">${pkg.name}</a>`;
             html += `</label></div>`;
 
             // 子行（依存）
@@ -159,17 +143,13 @@ function generatePackageCategories(container, packageData) {
                 depIds.forEach(depId => {
                     const depPkg = ADV_PKG_INDEX.byId[depId];
                     const depName = depPkg?.name || depId;
-                    const depUrl = depPkg?.url || '#';
+                    const depUrl = (depPkg && depPkg.url) ? depPkg.url : `https://openwrt.org/packages/${encodeURIComponent(depName)}`;
                     const depHidden = !!depPkg?.hidden;
 
                     html += `<div class="package-dependent${depHidden ? ' package-hidden' : ''}">`;
                     html += `<input class="form-check-input package-selector-checkbox" type="checkbox" id="pkg-${depId}" data-id="${depId}" data-package="${depName}">`;
                     html += `<label class="form-check-label" for="pkg-${depId}">`;
-                    if (depPkg) {
-                        html += `<a href="${depUrl}" target="_blank" class="package-link">${depName}</a>`;
-                    } else {
-                        html += `${depName}`;
-                    }
+                    html += `<a href="${depUrl}" target="_blank" rel="noopener" class="package-link">${depName}</a>`;
                     html += `</label>`;
                     html += `</div>`;
                 });
@@ -191,69 +171,6 @@ function generatePackageCategories(container, packageData) {
             updatePackageList();
         });
     });
-}
-
-function updatePackageList() {
-    const textarea = document.getElementById('asu-packages');
-    if (!textarea) return;
-
-    let current = textarea.value.trim().split(/\s+/).filter(Boolean);
-    const checkboxes = Array.from(document.querySelectorAll('.package-selector-checkbox'));
-
-    const managedTokens = [];
-    const depMap = new Map();
-
-    checkboxes.forEach(cb => {
-        const selfNames = advParseTokens(cb.getAttribute('data-package'));
-        const depNames = advParseTokens(cb.getAttribute('data-dep-names'));
-        const depsEdges = advParseTokens(cb.getAttribute('data-dependencies'));
-
-        managedTokens.push(...selfNames, ...depNames, ...depsEdges);
-
-        selfNames.forEach(t => {
-            const set = depMap.get(t) || new Set();
-            depsEdges.forEach(d => set.add(d));
-            depMap.set(t, set);
-        });
-    });
-
-    const managedSet = new Set(managedTokens);
-    current = current.filter(tok => !managedSet.has(tok));
-
-    const base = new Set();
-    const checkedDepNames = [];
-    checkboxes.forEach(cb => {
-        if (cb.checked) {
-            advParseTokens(cb.getAttribute('data-package')).forEach(t => base.add(t));
-            const dn = advParseTokens(cb.getAttribute('data-dep-names'));
-            dn.forEach(t => base.add(t));
-            checkedDepNames.push(...dn);
-        }
-    });
-
-    const required = new Set();
-    const queue = [];
-
-    base.forEach(t => {
-        required.add(t);
-        queue.push(t);
-    });
-
-    while (queue.length) {
-        const t = queue.shift();
-        const deps = depMap.get(t);
-        if (!deps) continue;
-        deps.forEach(d => {
-            if (!required.has(d)) {
-                required.add(d);
-                if (depMap.has(d)) queue.push(d);
-            }
-        });
-    }
-
-    checkedDepNames.forEach(t => required.add(t));
-    const out = Array.from(new Set([...current, ...required]));
-    textarea.value = out.join(' ');
 }
 
 function advHandleDependencyToggle(sourceCB) {
@@ -381,22 +298,14 @@ async function loadAdvancedConfig(container, template) {
         return;
     }
 
-    await populateLanguageSelectorFromGitHub();
-
-    const languageSelect = container.querySelector('#advanced-language');
-    if (languageSelect) {
-        languageSelect.addEventListener('change', function() {
-            updateLanguagePackages(this.value);
-            updateMainScript(template);
-        });
+    // uci-defaults の入力ボックスを単一に強制（テンプレートに重複があっても除去）
+    const scriptAreas = container.querySelectorAll('#uci-defaults-content');
+    for (let i = 1; i < scriptAreas.length; i++) {
+        scriptAreas[i].remove();
     }
 
-    container.addEventListener('input', function() {
-        updateMainScript(template);
-    });
-}
-  
-    // 言語変更時のパッケージ自動追加
+    await populateLanguageSelectorFromGitHub();
+
     const languageSelect = container.querySelector('#aios-language');
     if (languageSelect) {
         languageSelect.addEventListener('change', function() {
@@ -404,10 +313,13 @@ async function loadAdvancedConfig(container, template) {
             updateMainScript(template);
         });
     }
-    
+
     container.addEventListener('input', function() {
         updateMainScript(template);
     });
+
+    // 初期反映
+    updateMainScript(template);
 }
 
 function updateLanguagePackages(language) {
