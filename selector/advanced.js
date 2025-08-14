@@ -1,231 +1,44 @@
-// advanced.js
-// Minimal: package links (from packages.json) + setup.sh textarea. No extra UI.
+// advanced.js — ASU inputs controller (loaded on <details id="asu"> toggle)
 
-const PKG_DB_URL = 'selector/packages/packages.json'; // adjust if needed
+(function main() {
+  const asu = document.getElementById('asu');
+  if (!asu) return;
 
-// 言語セレクター初期化
-async function populateLanguageSelectorFromGitHub() {
-    const baseUrl = 'https://api.github.com/repos/openwrt/luci/contents/modules/luci-base/po?ref=master';
-    const source = document.getElementById('languages-select');       // index.html の言語一覧
-    const target = document.getElementById('aios-language');      // advanced 側のセレクト (IDを修正)
-    if (!source || !target) return;
+  const taPkgs = document.getElementById('asu-packages');
+  const taUci  = document.getElementById('uci-defaults-content');
+  const tplBtn = document.getElementById('uci-defaults-template');
 
-    try {
-        const res = await fetch(baseUrl);
-        const dirs = await res.json();
-        const available = new Set(
-            dirs.filter(e => e && e.type === 'dir' && e.name)
-                .map(e => e.name.toLowerCase())
-        );
+  // 1) 初期値（index.js 側で data に供給）を必要時のみ適用
+  if (taPkgs && (!taPkgs.value || taPkgs.value.trim() === '')) {
+    const pkgs = asu.dataset.pkgs || '';
+    taPkgs.value = pkgs;
+  }
 
-        target.innerHTML = '';
-        for (const opt of source.options) {
-            const code = opt.value.toLowerCase();
-            if (!available.has(code)) continue;
-            const copy = document.createElement('option');
-            copy.value = opt.value;
-            copy.textContent = opt.textContent;
-            target.appendChild(copy);
-        }
+  // 2) テンプレートアイコンのバインド（index.js から移管）
+  if (tplBtn && taUci) {
+    const link = tplBtn.getAttribute('data-link');
+    tplBtn.onclick = function () {
+      fetch(link)
+        .then((obj) => {
+          if (obj.status != 200) {
+            throw new Error(`Failed to fetch ${obj.url}`);
+          }
+          return obj.text();
+        })
+        .then((text) => {
+          // toggle text
+          if (taUci.value.indexOf(text) != -1) {
+            taUci.value = taUci.value.replace(text, '');
+          } else {
+            taUci.value = taUci.value + text;
+          }
+        })
+        .catch((err) => {
+          // index.js の showAlert を使わず、控えめに console に退避
+          console.error(err.message);
+        });
+    };
+  }
 
-        // index.html 側で選択されている言語を初期値に
-        const selectedCode = source.value.toLowerCase();
-        target.value = available.has(selectedCode) ? source.value : 'en';
-
-    } catch (err) {
-        console.warn('Failed to populate language selector:', err);
-    }
-}
-
-
-document.addEventListener('DOMContentLoaded', () => {
-    initPackages();
-    bindTextareaSync();
-    populateLanguageSelectorFromGitHub(); // 追加した関数を初期化時に呼び出す
-});
-
-async function initPackages() {
-  const container = document.getElementById('package-categories');
-  if (!container) return;
-
-  try {
-    const res = await fetch(PKG_DB_URL, { cache: 'no-cache' });
-    const data = await res.json();
-
-    // Build dependency id set to avoid rendering deps as top-level items
-    const depIds = new Set();
-    (data.categories || []).forEach(cat => {
-      (cat.packages || []).forEach(pkg => {
-        (pkg.dependencies || []).forEach(d => depIds.add(d));
-      });
-    });
-
-    container.innerHTML = '';
-    (data.categories || []).forEach(category => {
-      const catEl = document.createElement('div');
-      catEl.className = 'package-category';
-
-      const h6 = document.createElement('h6');
-      h6.textContent = category.name || '';
-      catEl.appendChild(h6);
-
-      const grid = document.createElement('div');
-      grid.className = 'package-grid';
-
-      (category.packages || []).forEach(pkg => {
-        if (pkg.hidden) return;
-        if (depIds.has(pkg.id)) return;
-
-        const item = document.createElement('div');
-        item.className = 'package-item';
-
-        const formCheck = document.createElement('div');
-        formCheck.className = 'form-check';
-
-        const cb = document.createElement('input');
-        cb.type = 'checkbox';
-        cb.className = 'form-check-input package-selector-checkbox';
-        cb.id = `pkg-${pkg.id}`;
-        cb.setAttribute('data-package', pkg.name);
-        if (pkg.dependencies && pkg.dependencies.length) {
-          cb.setAttribute('data-dependencies', pkg.dependencies.join(','));
-        }
-
-        const label = document.createElement('label');
-        label.className = 'form-check-label';
-        label.setAttribute('for', cb.id);
-
-        const link = document.createElement('a');
-        link.href = pkg.url || (`https://openwrt.org/packages/${encodeURIComponent(pkg.name)}`);
-        link.target = '_blank';
-        link.rel = 'noopener';
-        link.className = 'package-link';
-        link.textContent = pkg.name;
-
-        label.appendChild(link);
-        formCheck.appendChild(cb);
-        formCheck.appendChild(label);
-        item.appendChild(formCheck);
-
-        // dependencies inline
-        (pkg.dependencies || []).forEach(depId => {
-          const depPkg = findPackageById(data, depId);
-
-          const depDiv = document.createElement('div');
-          depDiv.className = 'package-dependent' + (depPkg && depPkg.hidden ? ' package-hidden' : '');
-
-          const depCb = document.createElement('input');
-          depCb.type = 'checkbox';
-          depCb.className = 'form-check-input package-selector-checkbox';
-          depCb.id = `pkg-${depId}`;
-          depCb.setAttribute('data-package', depPkg ? depPkg.name : depId);
-
-          const depLabel = document.createElement('label');
-          depLabel.className = 'form-check-label';
-          depLabel.setAttribute('for', depCb.id);
-
-          if (depPkg) {
-            const depLink = document.createElement('a');
-            depLink.href = pkg.url || (`https://openwrt.org/packages/${encodeURIComponent(pkg.name)}`);
-            depLink.target = '_blank';
-            depLink.rel = 'noopener';
-            depLink.className = 'package-link';
-            depLink.textContent = depPkg.name;
-
-          } else {
-            depLabel.textContent = depId;
-          }
-
-          depDiv.appendChild(depCb);
-          depDiv.appendChild(depLabel);
-          item.appendChild(depDiv);
-        });
-
-        grid.appendChild(item);
-      });
-
-      catEl.appendChild(grid);
-      if (category.description) {
-        const desc = document.createElement('div');
-        desc.className = 'package-description';
-        desc.textContent = category.description;
-        catEl.appendChild(desc);
-      }
-      container.appendChild(catEl);
-    });
-
-    // wire events
-    container.querySelectorAll('.package-selector-checkbox').forEach(cb => {
-      cb.addEventListener('change', onPackageToggle);
-    });
-
-    // hydrate from textarea if pre-filled
-    hydrateCheckboxesFromTextarea();
-
-  } catch (e) {
-    container.innerHTML = '<div class="form-group error">Failed to load packages</div>';
-    // silent fail besides message
-  }
-}
-
-function findPackageById(data, id) {
-  for (const cat of (data.categories || [])) {
-    const hit = (cat.packages || []).find(p => p.id === id);
-    if (hit) return hit;
-  }
-  return null;
-}
-
-function onPackageToggle(e) {
-  const cb = e.target;
-  const checked = cb.checked;
-  const deps = (cb.getAttribute('data-dependencies') || '')
-    .split(/[\s,]+/)
-    .map(s => s.trim())
-    .filter(Boolean);
-
-  if (checked && deps.length) {
-    deps.forEach(depId => {
-      const depCb = document.getElementById(`pkg-${depId}`);
-      if (depCb) depCb.checked = true;
-    });
-  }
-
-  updatePackagesTextarea();
-}
-
-function updatePackagesTextarea() {
-  const ta = document.getElementById('asu-packages');
-  const current = new Set((ta.value || '').trim().split(/\s+/).filter(Boolean));
-
-  // remove all managed names
-  const managed = [];
-  document.querySelectorAll('.package-selector-checkbox').forEach(cb => {
-    const name = cb.getAttribute('data-package');
-    if (name) managed.push(name);
-  });
-  managed.forEach(name => current.delete(name));
-
-  // add all checked
-  document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
-    const name = cb.getAttribute('data-package');
-    if (name) current.add(name);
-  });
-
-  ta.value = Array.from(current).join(' ');
-}
-
-function hydrateCheckboxesFromTextarea() {
-  const ta = document.getElementById('asu-packages');
-  const set = new Set((ta.value || '').split(/\s+/).filter(Boolean));
-  document.querySelectorAll('.package-selector-checkbox').forEach(cb => {
-    const name = cb.getAttribute('data-package');
-    if (name && set.has(name)) cb.checked = true;
-  });
-}
-
-function bindTextareaSync() {
-  const ta = document.getElementById('asu-packages');
-  if (!ta) return;
-  ta.addEventListener('input', hydrateCheckboxesFromTextarea);
-}
+  // 3) 以降は必要に応じて、追加の独自イベント/検証をここにだけ実装する
+})();
