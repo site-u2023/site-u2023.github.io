@@ -960,23 +960,37 @@ async function init() {
 }
 
 (function insertPackageJsonSection() {
-  function renderPackagesJson(pkg, pre) {
-    const lines = [];
-    if (pkg && Array.isArray(pkg.categories)) {
-      pkg.categories.forEach(cat => {
-        const catName = cat.name || cat.id || 'category';
-        lines.push(`[${catName}]`);
-        if (Array.isArray(cat.packages)) {
-          cat.packages.forEach(p => {
-            if (p && typeof p === 'object') {
-              lines.push(`  ${p.name || p.id}`);
-            }
-          });
+  function computeClosure(userIds, idx) {
+    const res = new Set(userIds);
+    const stack = [...userIds];
+    while (stack.length) {
+      const id = stack.pop();
+      const meta = idx.get(id);
+      if (!meta) continue;
+      const deps = Array.isArray(meta.dependencies) ? meta.dependencies : [];
+      for (const d of deps) {
+        if (!res.has(d)) {
+          res.add(d);
+          stack.push(d);
         }
-        lines.push(''); // カテゴリ区切り
-      });
+      }
     }
-    pre.textContent = lines.length ? lines.join('\n').trim() : '(no packages found)';
+    return res;
+  }
+
+  function updateTextarea(textarea, selectedIds, idx, nameIdx) {
+    const namesFromIds = Array.from(selectedIds).map(id => {
+      const m = idx.get(id);
+      return (m && m.name) ? m.name : id;
+    });
+
+    // 既存の手入力を維持（DBに無い名前はそのまま残す）
+    const manualNow = (textarea.value.match(/[^\s,]+/g) || []);
+    const knownNames = new Set(Array.from(nameIdx.keys()));
+    const keepManual = manualNow.filter(n => !knownNames.has(n));
+
+    const finalNames = Array.from(new Set([...namesFromIds, ...keepManual]));
+    textarea.value = finalNames.join(' ');
   }
 
   function mount() {
@@ -992,21 +1006,121 @@ async function init() {
     title.textContent = 'packages.json packages';
     container.appendChild(title);
 
-    const pre = document.createElement('pre');
-    pre.id = 'package-json-list';
-    pre.style.background = '#f5f5f5';
-    pre.style.padding = '8px';
-    pre.style.whiteSpace = 'pre-wrap';
-    pre.style.wordBreak = 'break-word';
-    container.appendChild(pre);
+    const selector = document.createElement('div');
+    selector.id = 'package-selector';
+    selector.style.display = 'grid';
+    selector.style.gap = '8px';
+    container.appendChild(selector);
 
     textarea.parentNode.insertBefore(container, textarea);
 
-    fetch('packages/packages.json')
-      .then(r => r.ok ? r.json() : {})
-      .then(pkg => renderPackagesJson(pkg, pre))
+    fetch('packages/packages.json', { cache: 'no-cache' })
+      .then(r => r.ok ? r.json() : null)
+      .then(db => {
+        if (!db || !Array.isArray(db.categories)) {
+          selector.textContent = '(no packages found)';
+          return;
+        }
+
+        // index 構築
+        const idx = new Map();       // id -> meta
+        const nameIdx = new Map();   // name -> id
+        (db.categories || []).forEach(cat => {
+          (cat.packages || []).forEach(p => {
+            if (!p || typeof p !== 'object') return;
+            idx.set(p.id, p);
+            if (p.name) nameIdx.set(p.name, p.id);
+          });
+        });
+
+        // 手入力から初期選択（名前→id）
+        const initialTokens = (textarea.value.match(/[^\s,]+/g) || []);
+        const userSelected = new Set(initialTokens.map(n => nameIdx.get(n)).filter(Boolean));
+
+        // UI 生成
+        (db.categories || []).forEach(cat => {
+          const catWrap = document.createElement('fieldset');
+          catWrap.style.border = '1px solid #e0e0e0';
+          catWrap.style.padding = '8px';
+          catWrap.style.margin = '0';
+
+          const legend = document.createElement('legend');
+          legend.textContent = cat.name || cat.id || 'category';
+          legend.style.fontWeight = '600';
+          legend.style.padding = '0 6px';
+          catWrap.appendChild(legend);
+
+          const list = document.createElement('div');
+          list.style.display = 'grid';
+          list.style.gridTemplateColumns = 'repeat(auto-fit, minmax(220px, 1fr))';
+          list.style.gap = '6px 12px';
+
+          (cat.packages || []).forEach(p => {
+            const id = p.id;
+            const label = document.createElement('label');
+            label.style.display = 'flex';
+            label.style.alignItems = 'center';
+            label.style.gap = '6px';
+
+            const cb = document.createElement('input');
+            cb.type = 'checkbox';
+            cb.value = id;
+            cb.dataset.pkgId = id;
+
+            // ユーザー選択のトグル用
+            cb.addEventListener('change', () => {
+              if (cb.checked) {
+                userSelected.add(id);
+              } else {
+                userSelected.delete(id);
+              }
+
+              // 再計算（依存の再展開）
+              const closure = computeClosure(userSelected, idx);
+
+              // 反映：チェック状態（user=太字/auto=通常）
+              selector.querySelectorAll('input[type="checkbox"][data-pkg-id]').forEach(el => {
+                const pid = el.dataset.pkgId;
+                const isUser = userSelected.has(pid);
+                const inClosure = closure.has(pid);
+
+                el.checked = inClosure;
+                // 視覚ヒント（必須ではない）
+                el.closest('label').style.opacity = inClosure ? '1' : '0.7';
+                el.closest('label').style.fontWeight = isUser ? '600' : '400';
+              });
+
+              // asu-packages を更新（依存も含めた名前＋未知の手入力は維持）
+              updateTextarea(textarea, closure, idx, nameIdx);
+            });
+
+            // 初期チェック（ユーザー選択に合わせる）
+            cb.checked = userSelected.has(id);
+
+            const text = document.createTextNode(' ' + (p.name || p.id));
+            label.appendChild(cb);
+            label.appendChild(text);
+            list.appendChild(label);
+          });
+
+          catWrap.appendChild(list);
+          selector.appendChild(catWrap);
+        });
+
+        // 初期状態でも依存を展開して textarea へ反映
+        const initialClosure = computeClosure(userSelected, idx);
+        selector.querySelectorAll('input[type="checkbox"][data-pkg-id]').forEach(el => {
+          const pid = el.dataset.pkgId;
+          const isUser = userSelected.has(pid);
+          const inClosure = initialClosure.has(pid);
+          el.checked = inClosure;
+          el.closest('label').style.opacity = inClosure ? '1' : '0.7';
+          el.closest('label').style.fontWeight = isUser ? '600' : '400';
+        });
+        updateTextarea(textarea, initialClosure, idx, nameIdx);
+      })
       .catch(() => {
-        pre.textContent = '(failed to load packages.json)';
+        selector.textContent = '(failed to load packages.json)';
       });
   }
 
