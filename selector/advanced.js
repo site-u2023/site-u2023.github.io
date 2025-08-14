@@ -197,12 +197,6 @@ function updatePackageList() {
     const textarea = document.getElementById('asu-packages');
     if (!textarea) return;
 
-    const parseTokens = (v) =>
-        String(v || '')
-            .split(/[\s,]+/)
-            .map(s => s.trim())
-            .filter(Boolean);
-
     let current = textarea.value.trim().split(/\s+/).filter(Boolean);
     const checkboxes = Array.from(document.querySelectorAll('.package-selector-checkbox'));
 
@@ -210,9 +204,9 @@ function updatePackageList() {
     const depMap = new Map();
 
     checkboxes.forEach(cb => {
-        const selfNames = parseTokens(cb.getAttribute('data-package'));
-        const depNames = parseTokens(cb.getAttribute('data-dep-names'));
-        const depsEdges = parseTokens(cb.getAttribute('data-dependencies'));
+        const selfNames = advParseTokens(cb.getAttribute('data-package'));
+        const depNames = advParseTokens(cb.getAttribute('data-dep-names'));
+        const depsEdges = advParseTokens(cb.getAttribute('data-dependencies'));
 
         managedTokens.push(...selfNames, ...depNames, ...depsEdges);
 
@@ -230,8 +224,8 @@ function updatePackageList() {
     const checkedDepNames = [];
     checkboxes.forEach(cb => {
         if (cb.checked) {
-            parseTokens(cb.getAttribute('data-package')).forEach(t => base.add(t));
-            const dn = parseTokens(cb.getAttribute('data-dep-names'));
+            advParseTokens(cb.getAttribute('data-package')).forEach(t => base.add(t));
+            const dn = advParseTokens(cb.getAttribute('data-dep-names'));
             dn.forEach(t => base.add(t));
             checkedDepNames.push(...dn);
         }
