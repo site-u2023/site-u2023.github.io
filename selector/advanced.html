@@ -1,1 +1,208 @@
-test
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OpenWrt Advanced Configuration</title>
+    <link rel="icon" href="favicon.ico" />
+    <link rel="stylesheet" href="advanced.css" />
+    <link rel="stylesheet" href="index.css" />
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div>
+            <a href="index.html">
+                <img src="logo.svg" width="180" alt="Logo" />
+            </a>
+            <div style="flex-grow: 1"></div>
+            <h6>Advanced Configuration</h6>
+        </div>
+    </header>
+
+    <div class="container">
+        <div>
+            <h2>OpenWrt Advanced Package Selection & Script Configuration</h2>
+            
+            <!-- ナビゲーションタブ -->
+            <div class="tab-navigation">
+                <button class="tab-button active" onclick="showTab('packages')">
+                    📦 Package Selection
+                </button>
+                <button class="tab-button" onclick="showTab('script')">
+                    📝 Script Configuration
+                </button>
+            </div>
+
+            <!-- パッケージ選択セクション -->
+            <div id="packages-section" class="tab-content active">
+                <h3>Package Selection</h3>
+                <div class="selection-controls">
+                    <button onclick="selectAllPackages()" class="control-btn">Select All</button>
+                    <button onclick="deselectAllPackages()" class="control-btn">Deselect All</button>
+                    <button onclick="resetToDefault()" class="control-btn">Reset to Default</button>
+                </div>
+                
+                <div class="search-container">
+                    <input type="text" id="package-search" placeholder="Search packages..." onkeyup="filterPackages()">
+                </div>
+
+                <div id="package-categories" class="package-grid">
+                    <!-- カテゴリ別パッケージがここに動的に追加される -->
+                </div>
+
+                <div class="selected-packages">
+                    <h4>Selected Packages:</h4>
+                    <div id="selected-packages-list" class="selected-list"></div>
+                    <button onclick="copyPackagesToClipboard()" class="copy-btn">Copy Package List</button>
+                </div>
+            </div>
+
+            <!-- スクリプト設定セクション -->
+            <div id="script-section" class="tab-content">
+                <h3>First Boot Script Configuration (uci-defaults)</h3>
+                
+                <!-- テンプレート選択 -->
+                <div class="template-selection">
+                    <h4>Template Selection:</h4>
+                    <div class="template-buttons">
+                        <button onclick="loadTemplate('basic')" class="template-btn">Basic Setup</button>
+                        <button onclick="loadTemplate('advanced')" class="template-btn">Advanced Setup</button>
+                        <button onclick="loadTemplate('original')" class="template-btn">Original Template</button>
+                        <button onclick="clearScript()" class="template-btn danger">Clear Script</button>
+                    </div>
+                </div>
+
+                <!-- プリセット設定フォーム -->
+                <div class="preset-configuration">
+                    <h4>Quick Configuration:</h4>
+                    <div class="config-grid">
+                        <div class="config-group">
+                            <label for="device-name">Device Name:</label>
+                            <input type="text" id="device-name" placeholder="OpenWrt" onchange="updateScriptVariable('device_name', this.value)">
+                        </div>
+                        
+                        <div class="config-group">
+                            <label for="root-password">Root Password:</label>
+                            <input type="password" id="root-password" placeholder="Enter password" onchange="updateScriptVariable('root_password', this.value)">
+                        </div>
+                        
+                        <div class="config-group">
+                            <label for="lan-ip">LAN IP Address:</label>
+                            <input type="text" id="lan-ip" placeholder="192.168.1.1" onchange="updateScriptVariable('lan_ip_address', this.value)">
+                        </div>
+                        
+                        <div class="config-group">
+                            <label for="wlan-name">WiFi Network Name:</label>
+                            <input type="text" id="wlan-name" placeholder="OpenWrt" onchange="updateScriptVariable('wlan_name', this.value)">
+                        </div>
+                        
+                        <div class="config-group">
+                            <label for="wlan-password">WiFi Password:</label>
+                            <input type="password" id="wlan-password" placeholder="Min 8 characters" onchange="updateScriptVariable('wlan_password', this.value)">
+                        </div>
+                        
+                        <div class="config-group">
+                            <label for="language">Language:</label>
+                            <select id="language" onchange="updateScriptVariable('language', this.value)">
+                                <option value="">Select Language</option>
+                                <option value="en">English</option>
+                                <option value="ja">Japanese</option>
+                                <option value="zh-cn">Chinese (Simplified)</option>
+                                <option value="de">German</option>
+                                <option value="fr">French</option>
+                            </select>
+                        </div>
+                        
+                        <div class="config-group">
+                            <label for="timezone">Timezone:</label>
+                            <select id="timezone" onchange="updateScriptVariable('timezone', this.value)">
+                                <option value="">Select Timezone</option>
+                                <option value="UTC">UTC</option>
+                                <option value="JST-9">Asia/Tokyo</option>
+                                <option value="EST5EDT">America/New_York</option>
+                                <option value="PST8PDT">America/Los_Angeles</option>
+                                <option value="CET-1CEST">Europe/Berlin</option>
+                            </select>
+                        </div>
+                        
+                        <div class="config-group">
+                            <label for="country">Country Code:</label>
+                            <input type="text" id="country" placeholder="US" maxlength="2" onchange="updateScriptVariable('country', this.value.toUpperCase())">
+                        </div>
+                    </div>
+                    
+                    <!-- PPPoE設定 -->
+                    <div class="config-section">
+                        <h5>PPPoE Configuration (Optional):</h5>
+                        <div class="config-row">
+                            <div class="config-group">
+                                <label for="pppoe-username">PPPoE Username:</label>
+                                <input type="text" id="pppoe-username" placeholder="username@provider.com" onchange="updateScriptVariable('pppoe_username', this.value)">
+                            </div>
+                            <div class="config-group">
+                                <label for="pppoe-password">PPPoE Password:</label>
+                                <input type="password" id="pppoe-password" placeholder="password" onchange="updateScriptVariable('pppoe_password', this.value)">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- サービス有効化 -->
+                    <div class="config-section">
+                        <h5>Enable Services:</h5>
+                        <div class="checkbox-group">
+                            <label>
+                                <input type="checkbox" id="enable-ttyd" onchange="updateScriptVariable('enable_ttyd', this.checked ? '1' : '')">
+                                Enable ttyd (Web Terminal)
+                            </label>
+                            <label>
+                                <input type="checkbox" id="enable-irqbalance" onchange="updateScriptVariable('enable_irqbalance', this.checked ? '1' : '')">
+                                Enable irqbalance (Multi-core CPU optimization)
+                            </label>
+                            <label>
+                                <input type="checkbox" id="enable-samba4" onchange="updateScriptVariable('enable_samba4', this.checked ? '1' : '')">
+                                Enable Samba4 (File Sharing)
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- スクリプトエディタ -->
+                <div class="script-editor">
+                    <h4>Script Editor:</h4>
+                    <div class="editor-controls">
+                        <button onclick="formatScript()" class="editor-btn">Format Script</button>
+                        <button onclick="validateScript()" class="editor-btn">Validate Script</button>
+                        <button onclick="copyScriptToClipboard()" class="copy-btn">Copy Script</button>
+                    </div>
+                    <textarea id="script-content" rows="20" placeholder="#!/bin/sh&#10;&#10;# Your custom script here..."></textarea>
+                </div>
+            </div>
+
+            <!-- データ転送ボタン -->
+            <div class="transfer-controls">
+                <button onclick="transferToMainPage()" class="transfer-btn">
+                    Transfer to Main Page
+                </button>
+                <button onclick="downloadConfiguration()" class="download-btn">
+                    Download Configuration
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="advanced.js"></script>
+    <script>
+        // ページロード時の初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            loadPackageCategories();
+            loadTemplate('basic');
+            
+            // URL fragment handling for direct navigation
+            if (window.location.hash === '#script-section') {
+                showTab('script');
+            }
+        });
+    </script>
+</body>
+</html>
