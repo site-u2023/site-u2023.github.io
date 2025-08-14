@@ -41,19 +41,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
         SETUP_SH_TEMPLATE = await loadSetupShTemplate();
         await loadPackageDb();
-        init(); // 元の初期化関数
+
+        // イベントバインド
+        bindEvents();
+        document.getElementById('aios-language').addEventListener('change', refreshTemplateAndPackages);
+
+        init();
     } catch (err) {
         console.error('初期読み込みに失敗:', err);
     }
-});
-
-
-// DOMContentLoaded時の初期化
-document.addEventListener('DOMContentLoaded', init);
-    
-// ★言語変更時にも即反映させる
-document.getElementById('aios-language').addEventListener('change', function() {
-    refreshTemplateAndPackages();
 });
 
 // ==================== 初期化関数 ====================
