@@ -232,27 +232,39 @@ function updatePackageList() {
     // 現在の値を配列化
     let currentPackages = textarea.value.trim().split(/\s+/).filter(Boolean);
 
-    // セレクタ管理下の全トークンを収集
+    // セレクタ管理下の全トークン収集（data-package と data-dep-names）
     const selectorTokens = [];
     document.querySelectorAll('.package-selector-checkbox').forEach(cb => {
         String(cb.getAttribute('data-package') || '')
-          .split(/[\s,]+/)
-          .map(s => s.trim())
-          .filter(Boolean)
-          .forEach(t => selectorTokens.push(t));
+            .split(/[\s,]+/)
+            .map(s => s.trim())
+            .filter(Boolean)
+            .forEach(t => selectorTokens.push(t));
+
+        String(cb.getAttribute('data-dep-names') || '')
+            .split(/[\s,]+/)
+            .map(s => s.trim())
+            .filter(Boolean)
+            .forEach(t => selectorTokens.push(t));
     });
 
-    // 入力欄からセレクタ管理のものを全削除
+    // 入力欄からセレクタ管理トークンを全削除
     const selectorSet = new Set(selectorTokens);
     currentPackages = currentPackages.filter(tok => !selectorSet.has(tok));
 
-    // チェックされているものを追加
+    // チェックされている項目から（自己 + 依存）を追加
     document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
         String(cb.getAttribute('data-package') || '')
-          .split(/[\s,]+/)
-          .map(s => s.trim())
-          .filter(Boolean)
-          .forEach(t => currentPackages.push(t));
+            .split(/[\s,]+/)
+            .map(s => s.trim())
+            .filter(Boolean)
+            .forEach(t => currentPackages.push(t));
+
+        String(cb.getAttribute('data-dep-names') || '')
+            .split(/[\s,]+/)
+            .map(s => s.trim())
+            .filter(Boolean)
+            .forEach(t => currentPackages.push(t));
     });
 
     // 重複排除して反映
