@@ -960,22 +960,14 @@ async function init() {
 }
 
 (function insertPackageJsonSection() {
-  function renderPackageJson(pkg, pre) {
+  function renderPackagesJson(pkg, pre) {
     const lines = [];
-    if (pkg && pkg.dependencies && Object.keys(pkg.dependencies).length) {
-      lines.push('Dependencies:');
-      for (const [name, ver] of Object.entries(pkg.dependencies)) {
-        lines.push(`  ${name}: ${ver}`);
+    if (pkg && typeof pkg === 'object') {
+      for (const [name, ver] of Object.entries(pkg)) {
+        lines.push(`${name}: ${ver}`);
       }
     }
-    if (pkg && pkg.devDependencies && Object.keys(pkg.devDependencies).length) {
-      if (lines.length) lines.push('');
-      lines.push('DevDependencies:');
-      for (const [name, ver] of Object.entries(pkg.devDependencies)) {
-        lines.push(`  ${name}: ${ver}`);
-      }
-    }
-    pre.textContent = lines.length ? lines.join('\n') : '(no dependencies in package.json)';
+    pre.textContent = lines.length ? lines.join('\n') : '(no packages found)';
   }
 
   function mount() {
@@ -988,7 +980,7 @@ async function init() {
     container.style.margin = '8px 0 12px';
 
     const title = document.createElement('h5');
-    title.textContent = 'package.json packages';
+    title.textContent = 'packages.json packages';
     container.appendChild(title);
 
     const pre = document.createElement('pre');
@@ -1002,8 +994,11 @@ async function init() {
     textarea.parentNode.insertBefore(container, textarea);
 
     fetch('packages/packages.json')
-      .then(r => r.ok ? r.json() : null)
-      .then(pkg => renderPackageJson(pkg, pre));
+      .then(r => r.ok ? r.json() : {})
+      .then(pkg => renderPackagesJson(pkg, pre))
+      .catch(() => {
+        pre.textContent = '(failed to load packages.json)';
+      });
   }
 
   if (document.readyState === 'complete' || document.readyState === 'interactive') {
