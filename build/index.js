@@ -597,13 +597,14 @@ function getDeviceTitle(device) {
 
 function showAutocomplete(devices) {
     const container = document.getElementById('models-autocomplete-list');
+    if (!container) return;
     container.innerHTML = '';
 
     if (devices.length === 0) {
         hideAutocomplete();
         return;
     }
-
+    
     devices.forEach(device => {
         const div = document.createElement('div');
         div.innerHTML = `<strong>${getDeviceTitle(device)}</strong><br><small>Target: ${device.target}</small>`;
