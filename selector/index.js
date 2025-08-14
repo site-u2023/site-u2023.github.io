@@ -795,54 +795,6 @@ function setup_uci_defaults() {
   };
 }
 
-// Setup configuration UI listeners for script generation
-function setupConfigurationListeners() {
-  const configs = [
-    'conf-language', 'conf-country', 'conf-device-name', 'conf-lan-ip',
-    'conf-root-password', 'conf-wifi-ssid', 'conf-wifi-password'
-  ];
-  
-  configs.forEach(id => {
-    const element = document.getElementById(id);
-    if (element) {
-      element.addEventListener('input', updateScriptFromConfig);
-      element.addEventListener('change', updateScriptFromConfig);
-    }
-  });
-}
-
-// Update uci-defaults script based on configuration UI
-function updateScriptFromConfig() {
-  const textarea = document.getElementById('uci-defaults-content');
-  if (!textarea || !textarea.value) return;
-  
-  let script = textarea.value;
-  
-  // Get configuration values
-  const configs = {
-    language: document.getElementById('conf-language')?.value || '',
-    country: document.getElementById('conf-country')?.value || '',
-    device_name: document.getElementById('conf-device-name')?.value || '',
-    lan_ip_address: document.getElementById('conf-lan-ip')?.value || '',
-    root_password: document.getElementById('conf-root-password')?.value || '',
-    wlan_name: document.getElementById('conf-wifi-ssid')?.value || '',
-    wlan_password: document.getElementById('conf-wifi-password')?.value || ''
-  };
-  
-  // Update script variables
-  Object.keys(configs).forEach(key => {
-    const value = configs[key];
-    const regex = new RegExp(`^#?\\s*${key}="[^"]*"`, 'm');
-    const replacement = value ? `${key}="${value}"` : `# ${key}=""`;
-    
-    if (script.match(regex)) {
-      script = script.replace(regex, replacement);
-    }
-  });
-  
-  textarea.value = script;
-}
-
 function insertSnapshotVersions(versions) {
   for (const version of versions.slice()) {
     let branch = version.split(".").slice(0, -1).join(".") + "-SNAPSHOT";
@@ -862,9 +814,6 @@ async function init() {
     // show ASU panel
     show("#asu");
   }
-
-  // Setup configuration UI listeners
-  setupConfigurationListeners();
 
   let upstream_config = await fetch(config.image_url + "/.versions.json", {
     cache: "no-cache",
@@ -1008,60 +957,4 @@ async function init() {
   updateImages();
 
   initTranslation();
-}
-
-// GitHubから言語リストを動的に取得してconf-languageセレクターを更新
-async function updateConfigLanguageOptions() {
-  const confLanguageSelect = document.getElementById('conf-language');
-  if (!confLanguageSelect) return;
-  
-  try {
-    // GitHubのAPIでpoディレクトリの内容を取得
-    const response = await fetch('https://api.github.com/repos/openwrt/luci/contents/modules/luci-base/po?ref=master');
-    const dirs = await response.json();
-    
-    if (!Array.isArray(dirs)) return;
-    
-    // 既存の言語セレクター（画面右上）から言語名を取得
-    const languagesSelect = document.getElementById('languages-select');
-    const languageNames = {};
-    
-    if (languagesSelect) {
-      for (const option of languagesSelect.options) {
-        languageNames[option.value] = option.textContent;
-      }
-    }
-    
-    // conf-languageセレクターをクリアして再構築
-    confLanguageSelect.innerHTML = '<option value="">Default</option>';
-    
-    // poディレクトリに存在する言語を追加
-    dirs.forEach(item => {
-      if (item.type === 'dir' && item.name) {
-        const langCode = item.name;
-        const langName = languageNames[langCode] || langCode;
-        
-        const option = document.createElement('option');
-        option.value = langCode;
-        option.textContent = langName;
-        confLanguageSelect.appendChild(option);
-      }
-    });
-    
-    // 日本語をデフォルト選択（存在する場合）
-    if (confLanguageSelect.querySelector('option[value="ja"]')) {
-      confLanguageSelect.value = 'ja';
-    }
-    
-  } catch (error) {
-    console.error('Failed to fetch language list from GitHub:', error);
-    // エラー時はハードコードされた基本的な選択肢を設定
-    confLanguageSelect.innerHTML = `
-      <option value="">Default</option>
-      <option value="ja">日本語 (Japanese)</option>
-      <option value="en">English</option>
-      <option value="zh-cn">简体中文 (Chinese Simplified)</option>
-      <option value="ko">한국어 (Korean)</option>
-    `;
-  }
 }
