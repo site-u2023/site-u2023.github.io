@@ -1,5 +1,4 @@
 #!/bin/sh
-# Beware! This script will be in /rom/etc/uci-defaults/ as part of the image.
 #
 # language="en"
 # country="US"
@@ -272,5 +271,6 @@ fi
 echo "Committing UCI configuration..."
 uci commit 2>/dev/null
 
+echo "Configuration completed successfully!"
 echo "All done!"
 exit 0
