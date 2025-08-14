@@ -1,1 +1,40 @@
+/* advanced.css — Advanced Panel styles */
 
+.adv-panel {
+  padding: 1rem;
+  background-color: #f9fafb;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.adv-panel h4 {
+  margin-top: 1.2rem;
+  font-size: 1rem;
+  border-bottom: 1px solid #ccc;
+  padding-bottom: .3rem;
+}
+
+.adv-panel textarea {
+  width: 100%;
+  font-family: monospace;
+  font-size: .9rem;
+  padding: .4rem;
+  border: 1px solid #bbb;
+  border-radius: 3px;
+  box-sizing: border-box;
+  resize: vertical;
+}
+
+.adv-panel .custom-link {
+  display: inline-block;
+  margin-top: 1rem;
+  padding: .4rem .8rem;
+  background-color: #0069d9;
+  color: #fff;
+  text-decoration: none;
+  border-radius: 3px;
+}
+
+.adv-panel .custom-link:hover {
+  background-color: #0053b3;
+}
