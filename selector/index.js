@@ -993,155 +993,279 @@ async function init() {
     textarea.value = finalNames.join(' ');
   }
 
-function ensurePackageSelectorStyles() {
-  if (document.getElementById('package-selector-styles')) return;
-  const style = document.createElement('style');
-  style.id = 'package-selector-styles';
-  style.textContent = `
-  .pkg-section{margin:8px 0 12px}
-  .pkg-title{font-weight:600;margin:0 0 6px}
-  .pkg-selector{display:grid;gap:8px}
-  .pkg-cat{border:1px solid #e0e0e0;padding:8px;margin:0}
-  .pkg-cat>legend{font-weight:600;padding:0 6px}
-  .pkg-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:6px 12px}
-  .pkg-item{display:flex;align-items:center;gap:6px}
-  .pkg-item.pkg-auto{border:1px dashed #666;background:#fafafa;font-style:italic;padding:4px;border-radius:4px}
-  .pkg-item.pkg-dim{opacity:.7}
-  .pkg-item.pkg-user{font-weight:600}
-  `;
-  document.head.appendChild(style);
-}
+(function () {
+  // スタイル（1回だけ注入）
+  function ensurePackageSelectorStyles() {
+    if (document.getElementById('package-selector-styles')) return;
+    const style = document.createElement('style');
+    style.id = 'package-selector-styles';
+    style.textContent = `
+      .pkg-section{margin:8px 0 12px}
+      .pkg-title{font-weight:600;margin:0 0 6px}
+      .pkg-selector{display:grid;gap:8px}
+      .pkg-cat{border:1px solid #e0e0e0;padding:8px;margin:0}
+      .pkg-cat>legend{font-weight:600;padding:0 6px}
+      .pkg-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:6px 12px}
+      .pkg-item{display:flex;align-items:center;gap:6px}
+      .pkg-item.pkg-dim{opacity:.6}
+      .pkg-item.pkg-user{font-weight:700}
 
-function mount() {
-  ensurePackageSelectorStyles();
+      /* 親子を囲うビュー（親=ボールド、子=点線チップ） */
+      .pkg-groups-title{font-weight:600;margin:8px 0 4px}
+      .pkg-groups{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px 12px;margin:6px 0}
+      .pkg-group{border:1px solid #999;border-radius:6px;padding:8px;background:#fff}
+      .pkg-group-title{font-weight:800;margin:0 0 6px}
+      .pkg-chips{display:flex;flex-wrap:wrap;gap:6px}
+      .pkg-chip{border:1px dashed #666;border-radius:16px;padding:2px 8px;font-size:.92em;background:#fafafa;white-space:nowrap}
+    `;
+    document.head.appendChild(style);
+  }
 
-  // 同一IDが複数あっても全て処理
-  const textareas = Array.from(document.querySelectorAll('textarea#asu-packages'));
-  if (textareas.length === 0) return;
+  // 依存閉包（id集合 → 依存を含めた集合）
+  function computeClosure(userSelected, idx) {
+    const out = new Set();
+    const stack = [...userSelected];
+    while (stack.length) {
+      const id = stack.pop();
+      if (out.has(id)) continue;
+      out.add(id);
+      const meta = idx.get(id);
+      const deps = (meta && Array.isArray(meta.dependencies)) ? meta.dependencies : [];
+      for (const d of deps) {
+        if (idx.has(d) && !out.has(d)) stack.push(d);
+      }
+    }
+    return out;
+  }
 
-  textareas.forEach(textarea => {
-    const container = document.createElement('div');
-    container.className = 'pkg-section';
+  // 親が前・子が後のトポ順（ルートは名前昇順で安定化）
+  function topoFromRoots(roots, depsOf, labelOf) {
+    const res = [];
+    const seen = new Set();
+    const visiting = new Set();
+    const sortedRoots = roots.slice().sort((a,b)=>labelOf(a).localeCompare(labelOf(b)));
 
-    const title = document.createElement('h5');
-    title.className = 'pkg-title';
-    title.textContent = 'packages.json packages';
-    container.appendChild(title);
+    const dfs = (u) => {
+      if (seen.has(u) || visiting.has(u)) return;
+      visiting.add(u);
+      res.push(u); // 親を先に
+      (depsOf(u) || []).forEach(v => dfs(v));
+      visiting.delete(u);
+      seen.add(u);
+    };
 
-    const selector = document.createElement('div');
-    selector.className = 'pkg-selector';
-    container.appendChild(selector);
+    sortedRoots.forEach(r => dfs(r));
+    // 重複を保ったまま親→子の順序を維持（seenで再訪は抑止済）
+    return res;
+  }
 
-    textarea.parentNode.insertBefore(container, textarea);
+  // 親子囲いのビューを描画
+  function renderGroups(target, roots, depsOf, labelOf) {
+    target.textContent = '';
+    const allRoots = new Set(roots);
+    const orderedRoots = roots.slice().sort((a,b)=>labelOf(a).localeCompare(labelOf(b)));
 
-    fetch('packages/packages.json', { cache: 'no-cache' })
-      .then(r => r.ok ? r.json() : null)
-      .then(db => {
-        if (!db || !Array.isArray(db.categories)) {
-          selector.textContent = '(no packages found)';
-          return;
-        }
+    orderedRoots.forEach(root => {
+      // root 直下から辿れる子集合（他の root 自体は子として除外）
+      const kids = new Set();
+      const q = [...(depsOf(root) || [])];
+      while (q.length) {
+        const u = q.shift();
+        if (kids.has(u) || allRoots.has(u)) continue;
+        kids.add(u);
+        (depsOf(u) || []).forEach(w => { if (!kids.has(w)) q.push(w); });
+      }
 
-        // index 構築
-        const idx = new Map();       // id -> meta
-        const nameIdx = new Map();   // name -> id
-        (db.categories || []).forEach(cat => {
-          (cat.packages || []).forEach(p => {
-            if (!p || typeof p !== 'object') return;
-            idx.set(p.id, p);
-            if (p.name) nameIdx.set(p.name, p.id);
+      const box = document.createElement('div');
+      box.className = 'pkg-group';
+
+      const title = document.createElement('div');
+      title.className = 'pkg-group-title';
+      title.textContent = labelOf(root);
+      box.appendChild(title);
+
+      const chips = document.createElement('div');
+      chips.className = 'pkg-chips';
+
+      if (kids.size === 0) {
+        const none = document.createElement('span');
+        none.className = 'pkg-chip';
+        none.textContent = '(no dependencies)';
+        chips.appendChild(none);
+      } else {
+        Array.from(kids)
+          .sort((a,b)=>labelOf(a).localeCompare(labelOf(b)))
+          .forEach(cid => {
+            const chip = document.createElement('span');
+            chip.className = 'pkg-chip';
+            chip.textContent = labelOf(cid);
+            chips.appendChild(chip);
           });
-        });
+      }
 
-        // 手入力から初期選択（名前→id）
-        const initialTokens = (textarea.value.match(/[^\s,]+/g) || []);
-        const userSelected = new Set(initialTokens.map(n => nameIdx.get(n)).filter(Boolean));
+      box.appendChild(chips);
+      target.appendChild(box);
+    });
+  }
 
-        // UI 生成
-        (db.categories || []).forEach(cat => {
-          const catWrap = document.createElement('fieldset');
-          catWrap.className = 'pkg-cat';
+  // テキストエリアへ親→子の順序で書き戻し（未知トークンは末尾維持）
+  function updateTextareaOrdered(textarea, orderedIds, labelOf, unknownTokens) {
+    const seen = new Set();
+    const names = [];
+    orderedIds.forEach(id => {
+      if (seen.has(id)) return;
+      seen.add(id);
+      names.push(labelOf(id));
+    });
+    textarea.value = names.concat(unknownTokens || []).join(' ');
+  }
 
-          const legend = document.createElement('legend');
-          legend.textContent = cat.name || cat.id || 'category';
-          catWrap.appendChild(legend);
+  function mount() {
+    ensurePackageSelectorStyles();
 
-          const list = document.createElement('div');
-          list.className = 'pkg-list';
+    const textareas = Array.from(document.querySelectorAll('textarea#asu-packages'));
+    if (textareas.length === 0) return;
 
-          (cat.packages || []).forEach(p => {
-            const id = p.id;
+    textareas.forEach(textarea => {
+      // セクション
+      const container = document.createElement('div');
+      container.className = 'pkg-section';
 
-            const label = document.createElement('label');
-            label.className = 'pkg-item';
+      const title = document.createElement('h5');
+      title.className = 'pkg-title';
+      title.textContent = 'packages.json packages';
+      container.appendChild(title);
 
-            const cb = document.createElement('input');
-            cb.type = 'checkbox';
-            cb.value = id;
-            cb.dataset.pkgId = id;
+      // 親子囲いビュー（選択結果を常に反映）
+      const groupsTitle = document.createElement('div');
+      groupsTitle.className = 'pkg-groups-title';
+      groupsTitle.textContent = 'Selected (parent groups)';
+      container.appendChild(groupsTitle);
 
-            cb.addEventListener('change', () => {
-              if (cb.checked) userSelected.add(id);
-              else userSelected.delete(id);
+      const groups = document.createElement('div');
+      groups.className = 'pkg-groups';
+      container.appendChild(groups);
 
-              const closure = computeClosure(userSelected, idx);
+      // カテゴリ別セレクタ
+      const selector = document.createElement('div');
+      selector.className = 'pkg-selector';
+      container.appendChild(selector);
 
-              // 反映：チェック状態＋枠（auto=枠付き／user=太字／非選択=薄）
-              selector.querySelectorAll('input[type="checkbox"][data-pkg-id]').forEach(el => {
-                const pid = el.dataset.pkgId;
-                const isUser = userSelected.has(pid);
-                const inClosure = closure.has(pid);
-                const lab = el.closest('label');
+      textarea.parentNode.insertBefore(container, textarea);
 
-                el.checked = inClosure;
-                lab.classList.toggle('pkg-dim', !inClosure);
-                lab.classList.toggle('pkg-user', isUser);
-                lab.classList.toggle('pkg-auto', inClosure && !isUser);
+      fetch('packages/packages.json', { cache: 'no-cache' })
+        .then(r => r.ok ? r.json() : null)
+        .then(db => {
+          if (!db || !Array.isArray(db.categories)) {
+            selector.textContent = '(no packages found)';
+            return;
+          }
+
+          // インデックス構築
+          const idx = new Map();       // id -> meta
+          const nameIdx = new Map();   // name -> id
+          (db.categories || []).forEach(cat => {
+            (cat.packages || []).forEach(p => {
+              if (!p || typeof p !== 'object') return;
+              idx.set(p.id, p);
+              if (p.name) nameIdx.set(p.name, p.id);
+            });
+          });
+
+          const labelOf = (id) => (idx.get(id)?.name || id);
+          const depsOf = (id) => {
+            const meta = idx.get(id);
+            return (meta && Array.isArray(meta.dependencies))
+              ? meta.dependencies.filter(d => idx.has(d))
+              : [];
+          };
+
+          // 手入力から初期選択（name → id / id 直打ちも許可）
+          const initialTokens = (textarea.value.match(/[^\s,]+/g) || []);
+          const knownIdsFromInput = initialTokens
+            .map(t => nameIdx.get(t) || (idx.has(t) ? t : null))
+            .filter(Boolean);
+          const unknownTokens = initialTokens.filter(t => !nameIdx.has(t) && !idx.has(t));
+          const userSelected = new Set(knownIdsFromInput);
+
+          // UI 生成（hidden は選択 UI からは非表示、依存としては含める）
+          (db.categories || []).forEach(cat => {
+            const catWrap = document.createElement('fieldset');
+            catWrap.className = 'pkg-cat';
+
+            const legend = document.createElement('legend');
+            legend.textContent = cat.name || cat.id || 'category';
+            catWrap.appendChild(legend);
+
+            const list = document.createElement('div');
+            list.className = 'pkg-list';
+
+            (cat.packages || []).forEach(p => {
+              if (p.hidden) return; // 非表示パッケージは UI に出さない
+              const id = p.id;
+
+              const label = document.createElement('label');
+              label.className = 'pkg-item';
+
+              const cb = document.createElement('input');
+              cb.type = 'checkbox';
+              cb.value = id;
+              cb.dataset.pkgId = id;
+
+              cb.addEventListener('change', () => {
+                if (cb.checked) userSelected.add(id);
+                else userSelected.delete(id);
+                applyStateAndViews();
               });
 
-              updateTextarea(textarea, closure, idx, nameIdx);
+              cb.checked = userSelected.has(id);
+              label.appendChild(cb);
+              label.appendChild(document.createTextNode(' ' + (p.name || p.id)));
+              list.appendChild(label);
             });
 
-            // 初期チェック（ユーザー選択に合わせる）
-            cb.checked = userSelected.has(id);
-
-            const text = document.createTextNode(' ' + (p.name || p.id));
-            label.appendChild(cb);
-            label.appendChild(text);
-            list.appendChild(label);
+            catWrap.appendChild(list);
+            selector.appendChild(catWrap);
           });
 
-          catWrap.appendChild(list);
-          selector.appendChild(catWrap);
+          // 状態適用（親→子順の書き出し＋囲いビュー）
+          function applyStateAndViews() {
+            const closure = computeClosure(userSelected, idx);
+            const ordered = topoFromRoots(Array.from(userSelected), depsOf, labelOf);
+
+            // カテゴリ一覧の視覚状態（ユーザー指定=太字、非選択=薄）
+            selector.querySelectorAll('input[type="checkbox"][data-pkg-id]').forEach(el => {
+              const pid = el.dataset.pkgId;
+              const isUser = userSelected.has(pid);
+              const inClosure = closure.has(pid);
+              const lab = el.closest('label');
+              el.checked = inClosure;
+              lab.classList.toggle('pkg-dim', !inClosure);
+              lab.classList.toggle('pkg-user', isUser);
+            });
+
+            // 親子囲いビュー（親ボックス内に子をチップで表示）
+            renderGroups(groups, Array.from(userSelected), depsOf, labelOf);
+
+            // テキストエリアに親→子順で書き戻し（未知トークンは末尾維持）
+            updateTextareaOrdered(textarea, ordered, labelOf, unknownTokens);
+          }
+
+          // 初期適用
+          applyStateAndViews();
+        })
+        .catch(() => {
+          selector.textContent = '(failed to load packages.json)';
         });
+    });
+  }
 
-        // 初期状態でも依存を展開して textarea へ反映＋枠付与
-        const initialClosure = computeClosure(userSelected, idx);
-        selector.querySelectorAll('input[type="checkbox"][data-pkg-id]').forEach(el => {
-          const pid = el.dataset.pkgId;
-          const isUser = userSelected.has(pid);
-          const inClosure = initialClosure.has(pid);
-          const lab = el.closest('label');
-
-          el.checked = inClosure;
-          lab.classList.toggle('pkg-dim', !inClosure);
-          lab.classList.toggle('pkg-user', isUser);
-          lab.classList.toggle('pkg-auto', inClosure && !isUser);
-        });
-        updateTextarea(textarea, initialClosure, idx, nameIdx);
-      })
-      .catch(() => {
-        selector.textContent = '(failed to load packages.json)';
-      });
-  });
-}
-
-if (document.readyState === 'complete' || document.readyState === 'interactive') {
-  setTimeout(mount, 0);
-} else {
-  document.addEventListener('DOMContentLoaded', mount, { once: true });
-}
-})(); 
+  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    setTimeout(mount, 0);
+  } else {
+    document.addEventListener('DOMContentLoaded', mount, { once: true });
+  }
+})();
 
 (function insertSetupShInputs() {
   function mount(fields) {
