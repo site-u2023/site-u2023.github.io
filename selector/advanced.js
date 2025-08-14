@@ -193,6 +193,75 @@ function generatePackageCategories(container, packageData) {
     });
 }
 
+function updatePackageList() {
+    const textarea = document.getElementById('asu-packages');
+    if (!textarea) return;
+
+    const parseTokens = (v) =>
+        String(v || '')
+            .split(/[\s,]+/)
+            .map(s => s.trim())
+            .filter(Boolean);
+
+    let current = textarea.value.trim().split(/\s+/).filter(Boolean);
+    const checkboxes = Array.from(document.querySelectorAll('.package-selector-checkbox'));
+
+    const managedTokens = [];
+    const depMap = new Map();
+
+    checkboxes.forEach(cb => {
+        const selfNames = parseTokens(cb.getAttribute('data-package'));
+        const depNames = parseTokens(cb.getAttribute('data-dep-names'));
+        const depsEdges = parseTokens(cb.getAttribute('data-dependencies'));
+
+        managedTokens.push(...selfNames, ...depNames, ...depsEdges);
+
+        selfNames.forEach(t => {
+            const set = depMap.get(t) || new Set();
+            depsEdges.forEach(d => set.add(d));
+            depMap.set(t, set);
+        });
+    });
+
+    const managedSet = new Set(managedTokens);
+    current = current.filter(tok => !managedSet.has(tok));
+
+    const base = new Set();
+    const checkedDepNames = [];
+    checkboxes.forEach(cb => {
+        if (cb.checked) {
+            parseTokens(cb.getAttribute('data-package')).forEach(t => base.add(t));
+            const dn = parseTokens(cb.getAttribute('data-dep-names'));
+            dn.forEach(t => base.add(t));
+            checkedDepNames.push(...dn);
+        }
+    });
+
+    const required = new Set();
+    const queue = [];
+
+    base.forEach(t => {
+        required.add(t);
+        queue.push(t);
+    });
+
+    while (queue.length) {
+        const t = queue.shift();
+        const deps = depMap.get(t);
+        if (!deps) continue;
+        deps.forEach(d => {
+            if (!required.has(d)) {
+                required.add(d);
+                if (depMap.has(d)) queue.push(d);
+            }
+        });
+    }
+
+    checkedDepNames.forEach(t => required.add(t));
+    const out = Array.from(new Set([...current, ...required]));
+    textarea.value = out.join(' ');
+}
+
 function advHandleDependencyToggle(sourceCB) {
     const isChecked = !!sourceCB.checked;
     const pkgId = sourceCB.getAttribute('data-id') || '';
