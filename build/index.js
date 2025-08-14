@@ -596,23 +596,33 @@ function getDeviceTitle(device) {
 }
 
 function showAutocomplete(devices) {
-    const container = document.getElementById('models-autocomplete-list');
-    if (!container) return;
-    container.innerHTML = '';
 
-    if (devices.length === 0) {
+    const wrapper = document.getElementById('models-autocomplete');
+    if (!wrapper) return;
+
+    let list = document.getElementById('models-autocomplete-list');
+    if (!list) {
+        list = document.createElement('div');
+        list.id = 'models-autocomplete-list';
+        list.className = 'autocomplete-list';
+        wrapper.appendChild(list);
+    }
+
+    if (!devices || devices.length === 0) {
         hideAutocomplete();
         return;
     }
-    
+
+    list.innerHTML = '';
     devices.forEach(device => {
         const div = document.createElement('div');
+        div.className = 'autocomplete-item';
         div.innerHTML = `<strong>${getDeviceTitle(device)}</strong><br><small>Target: ${device.target}</small>`;
         div.addEventListener('click', () => selectDevice(device));
-        container.appendChild(div);
+        list.appendChild(div);
     });
 
-    container.style.display = 'block';
+    list.style.display = 'block';
 }
 
 function hideAutocomplete() {
