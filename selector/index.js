@@ -1156,6 +1156,39 @@ async function init() {
       fetch('packages/packages.json', { cache: 'no-cache' })
         .then(r => r.ok ? r.json() : null)
         .then(db => {
+          // ---- OS バージョンの公開（UIには干渉しない／早期 return の前に実施）----
+          if (db) {
+            const osVersion =
+              (db.os && db.os.version) ||
+              db.version ||
+              db.release ||
+              null;
+
+            if (osVersion) {
+              // <meta name="os-version"> に反映（既存があれば更新）
+              let m = document.querySelector('meta[name="os-version"]');
+              if (!m) {
+                m = document.createElement('meta');
+                m.setAttribute('name', 'os-version');
+                document.head.appendChild(m);
+              }
+              m.setAttribute('content', osVersion);
+
+              // data 属性とグローバルヒントを提供（既存を壊さない）
+              if (!document.documentElement.getAttribute('data-os-version')) {
+                document.documentElement.setAttribute('data-os-version', osVersion);
+              }
+              if (!window.__OS_VERSION__) {
+                try { Object.defineProperty(window, '__OS_VERSION__', { value: osVersion, configurable: true }); }
+                catch (_) { window.__OS_VERSION__ = osVersion; }
+              }
+
+              // 通知イベント（依存モジュール向け）
+              try { window.dispatchEvent(new CustomEvent('os:version', { detail: { version: osVersion, source: 'packages.json' } })); } catch (_) {}
+            }
+          }
+          // -----------------------------------------------------------------------
+
           if (!db || !Array.isArray(db.categories)) {
             selector.textContent = '(no packages found)';
             return;
