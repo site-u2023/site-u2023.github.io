@@ -66,7 +66,7 @@ a {
   font-size: inherit;
   border-top: none;
   z-index: 99;
-  /*position the autocomplete items to be the same width as the container:*/
+  /* input 親要素の内側で、ちょうど下に出す */
   top: 100%;
   left: 0;
   right: 0;
