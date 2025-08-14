@@ -575,6 +575,12 @@ async function loadDevices() {
 function handleDeviceSearch(e) {
     const query = e.target.value.toLowerCase();
 
+    // 親要素に position: relative を付与（CSSまたはJSで）
+    // ※ 既に relative なら上書きしません
+    if (e.target.parentNode && getComputedStyle(e.target.parentNode).position === 'static') {
+        e.target.parentNode.style.position = 'relative';
+    }
+
     if (query.length < 2) {
         hideAutocomplete();
         return;
@@ -595,17 +601,26 @@ function getDeviceTitle(device) {
     return device.id;
 }
 
+// ここから修正後の showAutocomplete
 function showAutocomplete(devices) {
+    // input の親要素をアンカーにする
+    const input = document.getElementById('models');
+    if (!input || !input.parentNode) return;
+    const wrapper = input.parentNode;
 
-    const wrapper = document.getElementById('models-autocomplete');
-    if (!wrapper) return;
+    // 親へ position: relative を保証（CSS or JS）
+    if (getComputedStyle(wrapper).position === 'static') {
+        wrapper.style.position = 'relative';
+    }
 
+    // 既存リストを取得 or 作成（CSS名は .autocomplete-items に統一）
     let list = document.getElementById('models-autocomplete-list');
     if (!list) {
         list = document.createElement('div');
         list.id = 'models-autocomplete-list';
-        list.className = 'autocomplete-list';
-        wrapper.appendChild(list);
+        list.className = 'autocomplete-items';
+        // 候補リストは input と同じ親要素にぶら下げる
+        wrapper.appendChild(list); // ← this.parentNode.appendChild(list) と同義
     }
 
     if (!devices || devices.length === 0) {
@@ -615,18 +630,19 @@ function showAutocomplete(devices) {
 
     list.innerHTML = '';
     devices.forEach(device => {
-        const div = document.createElement('div');
-        div.className = 'autocomplete-item';
-        div.innerHTML = `<strong>${getDeviceTitle(device)}</strong><br><small>Target: ${device.target}</small>`;
-        div.addEventListener('click', () => selectDevice(device));
-        list.appendChild(div);
+        // .autocomplete-items div に対応させる
+        const item = document.createElement('div');
+        item.innerHTML = `<strong>${getDeviceTitle(device)}</strong><br><small>Target: ${device.target}</small>`;
+        item.addEventListener('click', () => selectDevice(device));
+        list.appendChild(item);
     });
 
     list.style.display = 'block';
 }
 
 function hideAutocomplete() {
-    document.getElementById('models-autocomplete-list').style.display = 'none';
+    const list = document.getElementById('models-autocomplete-list');
+    if (list) list.style.display = 'none';
 }
 
 function selectDevice(device) {
