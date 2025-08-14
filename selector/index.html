@@ -133,7 +133,6 @@
               </div>
             </div>
             <div class="row">
-<div class="row">
               <details id="asu" class="hide" style="width: 100%">
                 <summary>
                   <span class="tr-customize"
@@ -157,189 +156,32 @@
                     </details>
                   </div>
                 </div>
-                
-                <!-- Installed Packages セクション（展開可能） -->
-                <details id="packages-section" open>
-                  <summary>
-                    <h4 class="tr-packages" style="display: inline; margin: 0;">Installed Packages</h4>
-                  </summary>
-                  
-                  <!-- パッケージセレクター -->
-                  <div id="package-selector" style="margin: 15px 0;">
-                    <!-- ここに packages.json のチェックボックスが動的に挿入される -->
-                  </div>
-                  
-                  <!-- 手動入力エリア -->
-                  <div style="margin-top: 10px;">
-                    <label style="font-weight: 600;">Additional packages (manual input):</label>
-                    <textarea
-                      rows="5"
-                      id="asu-packages"
-                      autocomplete="off"
-                      spellcheck="false"
-                      autocapitalize="off"
-                      placeholder="Enter additional package names separated by spaces"
-                    ></textarea>
-                  </div>
-                </details>
-
-                <!-- Script to run on first boot セクション（展開可能） -->
-                <details id="uci-defaults-section" open>
-                  <summary>
-                    <h4 class="tr-defaults" style="display: inline; margin: 0;">
-                      Script to run on first boot (uci-defaults)
-                    </h4>
-                  </summary>
-                  
-                  <!-- 設定入力フォーム -->
-                  <div id="setup-config-form" style="margin: 15px 0;">
-                    <fieldset class="config-group">
-                      <legend>Basic Settings</legend>
-                      
-                      <div class="config-row">
-                        <label>Device Name:</label>
-                        <input type="text" id="cfg-device-name" data-var="device_name" placeholder="OpenWrt">
-                      </div>
-                      
-                      <div class="config-row">
-                        <label>LAN IP Address:</label>
-                        <input type="text" id="cfg-lan-ip" data-var="lan_ip_address" placeholder="192.168.1.1">
-                      </div>
-                      
-                      <div class="config-row">
-                        <label>Root Password:</label>
-                        <input type="password" id="cfg-root-password" data-var="root_password" placeholder="Password">
-                      </div>
-                      
-                      <div class="config-row">
-                        <label>Language:</label>
-                        <select id="cfg-language" data-var="language">
-                          <option value="">Default</option>
-                          <option value="en">English</option>
-                          <option value="ja">Japanese</option>
-                          <option value="zh_cn">Chinese (Simplified)</option>
-                          <option value="zh_tw">Chinese (Traditional)</option>
-                        </select>
-                      </div>
-                      
-                      <div class="config-row">
-                        <label>Timezone:</label>
-                        <select id="cfg-timezone" data-var="timezone">
-                          <option value="">Default</option>
-                          <option value="UTC">UTC</option>
-                          <option value="JST-9">Asia/Tokyo</option>
-                          <option value="CST-8">Asia/Shanghai</option>
-                          <option value="EST5EDT">America/New_York</option>
-                          <option value="PST8PDT">America/Los_Angeles</option>
-                        </select>
-                      </div>
-                    </fieldset>
-                    
-                    <fieldset class="config-group">
-                      <legend>Wi-Fi Settings</legend>
-                      
-                      <div class="config-row">
-                        <label>SSID:</label>
-                        <input type="text" id="cfg-wlan-name" data-var="wlan_name" placeholder="OpenWrt">
-                      </div>
-                      
-                      <div class="config-row">
-                        <label>Password:</label>
-                        <input type="password" id="cfg-wlan-password" data-var="wlan_password" placeholder="12345678">
-                      </div>
-                    </fieldset>
-                    
-                    <fieldset class="config-group">
-                      <legend>WAN Connection</legend>
-                      
-                      <div class="config-row">
-                        <label>Connection Type:</label>
-                        <div class="radio-group">
-                          <label><input type="radio" name="wan-type" value="dhcp" checked> DHCP</label>
-                          <label><input type="radio" name="wan-type" value="pppoe"> PPPoE</label>
-                          <label><input type="radio" name="wan-type" value="dslite"> DS-Lite</label>
-                          <label><input type="radio" name="wan-type" value="mape"> MAP-E</label>
-                        </div>
-                      </div>
-                      
-                      <!-- PPPoE 設定（条件表示） -->
-                      <div id="pppoe-config" style="display: none;">
-                        <div class="config-row">
-                          <label>PPPoE Username:</label>
-                          <input type="text" id="cfg-pppoe-username" data-var="pppoe_username">
-                        </div>
-                        <div class="config-row">
-                          <label>PPPoE Password:</label>
-                          <input type="password" id="cfg-pppoe-password" data-var="pppoe_password">
-                        </div>
-                      </div>
-                      
-                      <!-- DS-Lite 設定（条件表示） -->
-                      <div id="dslite-config" style="display: none;">
-                        <div class="config-row">
-                          <label>AFTR Address:</label>
-                          <input type="text" id="cfg-dslite-aftr" data-var="dslite_aftr_address">
-                        </div>
-                      </div>
-                      
-                      <!-- MAP-E 設定（条件表示） -->
-                      <div id="mape-config" style="display: none;">
-                        <div class="config-row">
-                          <label>BR Address:</label>
-                          <input type="text" id="cfg-mape-br" data-var="mape_br">
-                        </div>
-                        <div class="config-row">
-                          <label>EA Length:</label>
-                          <input type="number" id="cfg-mape-ealen" data-var="mape_ealen">
-                        </div>
-                        <div class="config-row">
-                          <label>IPv4 Prefix:</label>
-                          <input type="text" id="cfg-mape-ipv4-prefix" data-var="mape_ipv4_prefix">
-                        </div>
-                        <div class="config-row">
-                          <label>IPv4 Prefix Length:</label>
-                          <input type="number" id="cfg-mape-ipv4-prefixlen" data-var="mape_ipv4_prefixlen">
-                        </div>
-                        <div class="config-row">
-                          <label>IPv6 Prefix:</label>
-                          <input type="text" id="cfg-mape-ipv6-prefix" data-var="mape_ipv6_prefix">
-                        </div>
-                        <div class="config-row">
-                          <label>IPv6 Prefix Length:</label>
-                          <input type="number" id="cfg-mape-ipv6-prefixlen" data-var="mape_ipv6_prefixlen">
-                        </div>
-                        <div class="config-row">
-                          <label>PSID Length:</label>
-                          <input type="number" id="cfg-mape-psidlen" data-var="mape_psidlen">
-                        </div>
-                        <div class="config-row">
-                          <label>PSID Offset:</label>
-                          <input type="number" id="cfg-mape-psid-offset" data-var="mape_psid_offset">
-                        </div>
-                      </div>
-                    </fieldset>
-                  </div>
-                  
-                  <!-- スクリプトエディタ -->
-                  <div id="uci-defaults-group">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-                      <label style="font-weight: 600;">Generated Script:</label>
-                      <button id="sync-script-btn" class="btn-small">Sync from Form</button>
-                    </div>
-                    <textarea
-                      rows="10"
-                      id="uci-defaults-content"
-                      autocomplete="off"
-                      spellcheck="false"
-                      autocapitalize="off"
-                    ></textarea>
-                    <span
-                      id="uci-defaults-template"
-                      data-link="uci-defaults/setup.sh"
-                    ></span>
-                  </div>
-                </details>
-                
+                <div>
+                  <h4 class="tr-packages">Installed Packages</h4>
+                  <textarea
+                    rows="10"
+                    id="asu-packages"
+                    autocomplete="off"
+                    spellcheck="false"
+                    autocapitalize="off"
+                  ></textarea>
+                </div>
+                <h4 class="tr-defaults">
+                  Script to run on first boot (uci-defaults)
+                </h4>
+                <div id="uci-defaults-group">
+                  <textarea
+                    rows="10"
+                    id="uci-defaults-content"
+                    autocomplete="off"
+                    spellcheck="false"
+                    autocapitalize="off"
+                  ></textarea>
+                  <span
+                    id="uci-defaults-template"
+                    data-link="uci-defaults/setup.sh"
+                  ></span>
+                </div>
                 <a href="javascript:buildAsuRequest()" class="custom-link">
                   <span></span
                   ><span class="tr-request-build">REQUEST BUILD</span>
