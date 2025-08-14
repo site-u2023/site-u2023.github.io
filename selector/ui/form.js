@@ -472,3 +472,62 @@ function hideProgress() {
 function showBuildStatus(message, type, logs = {}) {
   const bs = document.getElementById('asu-buildstatus');
   if (type ===
+
+import { loadPackagesDB } from '../core/packages.js';
+
+export async function insertPackageJsonSection() {
+  const header = document.querySelector('h4.tr-packages');
+  const textarea = document.getElementById('asu-packages');
+  if (!header || !textarea) return;
+
+  const containerId = 'package-json-section';
+  if (document.getElementById(containerId)) return;
+
+  const container = document.createElement('div');
+  container.id = containerId;
+  container.style.margin = '8px 0 12px';
+
+  const title = document.createElement('h5');
+  title.textContent = 'packages.json packages';
+  container.appendChild(title);
+
+  const pre = document.createElement('pre');
+  pre.id = 'package-json-list';
+  pre.style.background = '#f5f5f5';
+  pre.style.padding = '8px';
+  pre.style.whiteSpace = 'pre-wrap';
+  pre.style.wordBreak = 'break-word';
+  pre.textContent = '(loading...)';
+  container.appendChild(pre);
+
+  textarea.parentNode.insertBefore(container, textarea);
+
+  // DB 取得（core の既定パスで失敗した場合のみ相対パスでフォールバック）
+  let db = null;
+  try {
+    db = await loadPackagesDB();
+  } catch (_) {
+    try {
+      const r = await fetch('packages/packages.json', { cache: 'no-cache' });
+      db = r.ok ? await r.json() : null;
+    } catch (_) {
+      db = null;
+    }
+  }
+
+  const lines = [];
+  if (db && Array.isArray(db.categories)) {
+    db.categories.forEach(cat => {
+      const catName = cat.name || cat.id || 'category';
+      lines.push(`[${catName}]`);
+      if (Array.isArray(cat.packages)) {
+        cat.packages.forEach(p => {
+          if (p && typeof p === 'object') lines.push(`  ${p.name || p.id}`);
+        });
+      }
+      lines.push('');
+    });
+  }
+
+  pre.textContent = lines.length ? lines.join('\n').trim() : '(no packages found)';
+}
