@@ -405,33 +405,35 @@ async function populateLanguageSelectorFromGitHub() {
     const target = document.getElementById('advanced-language');
     if (!source || !target) return;
 
-    // 有効言語セットを構築（未定義なら 'en' のみ許可）
+    // GitHubから取得して有効言語セットを作成
+    const baseUrl = 'https://api.github.com/repos/openwrt/luci/contents/modules/luci-base/po?ref=master';
     let available = new Set();
-    if (Array.isArray(window.LANG_AVAILABLE)) {
-        for (const c of window.LANG_AVAILABLE) available.add(String(c).toLowerCase());
-    } else if (window.LANG_AVAILABLE && typeof window.LANG_AVAILABLE === 'object') {
-        for (const k of Object.keys(window.LANG_AVAILABLE)) available.add(String(k).toLowerCase());
+    try {
+        const res = await fetch(baseUrl);
+        const dirs = await res.json();
+        for (const entry of dirs) {
+            if (entry.type === 'dir') {
+                available.add(entry.name.toLowerCase());
+            }
+        }
+    } catch (err) {
+        console.warn('Failed to fetch language list:', err);
     }
-    if (available.size === 0) available = new Set(['en']);
+    if (available.size === 0) available.add('en');
 
-    // 既存を消して source から複製
+    // ソースの<option>から有効言語のみコピー
     target.innerHTML = '';
     for (const opt of source.options) {
+        const code = opt.value.toLowerCase();
+        if (!available.has(code)) continue; // 無効は表示しない
         const copy = document.createElement('option');
         copy.value = opt.value;
         copy.textContent = opt.textContent;
-        if (!available.has(opt.value.toLowerCase())) copy.dataset.unsupported = '1';
         target.appendChild(copy);
     }
 
-    // 初期選択の保護（未対応なら en に寄せる）
+    // 初期値を安全に設定（存在しない場合のみ en）
     if (!available.has((target.value || '').toLowerCase())) {
         target.value = 'en';
     }
-
-    // 変更時の保護（未対応を選んだら必ず en にする）
-    target.addEventListener('change', () => {
-        const v = (target.value || '').toLowerCase();
-        if (!available.has(v)) target.value = 'en';
-    });
 }
