@@ -397,43 +397,41 @@ function updateScriptVariable(script, varName, value) {
     }
 }
 
+// window.LANG_AVAILABLE に「有効な言語コードの配列 or {code:true,...}」がある前提。
+// ここに存在しない言語は選択時に 'en' へ強制フォールバックします。
+// 言語リストは index.html の <select id="languages-select"> を唯一のソースとして複製します。
 async function populateLanguageSelectorFromGitHub() {
-    const listUrl = 'https://api.github.com/repos/openwrt/luci/contents/modules/luci-base/po?ref=master';
-    const select = document.getElementById('advanced-language');
-    if (!select) return;
+    const source = document.getElementById('languages-select');
+    const target = document.getElementById('advanced-language');
+    if (!source || !target) return;
 
-    try {
-        const res = await fetch(listUrl);
-        const entries = await res.json();
-
-        // 言語コードディレクトリの一覧を取得
-        const langDirs = Array.isArray(entries)
-            ? entries.filter(e => e.type === 'dir').map(e => e.name).sort()
-            : [];
-
-        for (const code of langDirs) {
-            let label = code; // フォールバックはコードそのまま
-
-            try {
-                const poUrl = `https://raw.githubusercontent.com/openwrt/luci/master/modules/luci-base/po/${code}/luci.po`;
-                const poRes = await fetch(poUrl);
-                if (poRes.ok) {
-                    const poText = await poRes.text();
-                    const m = poText.match(/^"Language:\s*([^"]+)"/m);
-                    if (m && m[1]) {
-                        label = m[1].trim();
-                    }
-                }
-            } catch {
-                // エラー時はフォールバックのまま
-            }
-
-            const opt = document.createElement('option');
-            opt.value = code;       // パッケージ生成用
-            opt.textContent = label; // 表示用（ネイティブ名）
-            select.appendChild(opt);
-        }
-    } catch (err) {
-        console.warn('Failed to fetch language list from GitHub:', err);
+    // 有効言語セットを構築（未定義なら 'en' のみ許可）
+    let available = new Set();
+    if (Array.isArray(window.LANG_AVAILABLE)) {
+        for (const c of window.LANG_AVAILABLE) available.add(String(c).toLowerCase());
+    } else if (window.LANG_AVAILABLE && typeof window.LANG_AVAILABLE === 'object') {
+        for (const k of Object.keys(window.LANG_AVAILABLE)) available.add(String(k).toLowerCase());
     }
+    if (available.size === 0) available = new Set(['en']);
+
+    // 既存を消して source から複製
+    target.innerHTML = '';
+    for (const opt of source.options) {
+        const copy = document.createElement('option');
+        copy.value = opt.value;
+        copy.textContent = opt.textContent;
+        if (!available.has(opt.value.toLowerCase())) copy.dataset.unsupported = '1';
+        target.appendChild(copy);
+    }
+
+    // 初期選択の保護（未対応なら en に寄せる）
+    if (!available.has((target.value || '').toLowerCase())) {
+        target.value = 'en';
+    }
+
+    // 変更時の保護（未対応を選んだら必ず en にする）
+    target.addEventListener('change', () => {
+        const v = (target.value || '').toLowerCase();
+        if (!available.has(v)) target.value = 'en';
+    });
 }
