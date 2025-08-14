@@ -5,10 +5,10 @@ var config = {
   
   // Versions list (optional if provided by .versions.json)
   // 最新バージョンに更新
-  versions: ["24.10.0", "23.05.5"],
+  // versions: ["24.10.0", "23.05.5"],
   
   // Pre-selected version (optional if provided by .versions.json)
-  default_version: "24.10.0",
+  // default_version: "24.10.0",
   
   // Image download URL - OpenWrt公式ダウンロードサイト
   image_url: "https://downloads.openwrt.org",
