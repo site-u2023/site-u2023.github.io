@@ -1,333 +1,48 @@
-/* Advanced expansion styles for package selector and script editor */
-
-/* Package Selector Styles */
-.package-selector-controls {
-    margin-bottom: 15px;
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    align-items: center;
-}
-
-.package-selector-controls button {
-    background-color: #6c757d;
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 14px;
-}
-
-.package-selector-controls button:hover {
-    background-color: #5a6268;
-}
-
-.package-selector-controls input {
-    flex: 1;
-    min-width: 200px;
-    padding: 8px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-}
-
-.package-categories {
-    max-height: 400px;
-    overflow-y: auto;
-    border: 1px solid #e0e0e0;
-    border-radius: 4px;
-    padding: 10px;
-    margin-bottom: 15px;
-}
+/* Minimal styles for expanded package selector and script editor - using existing CSS classes */
 
 .package-category {
-    margin-bottom: 20px;
-    padding: 15px;
+    margin-bottom: 1rem;
+    padding: 1rem;
     background-color: #f8f9fa;
     border: 1px solid #e9ecef;
-    border-radius: 4px;
+    border-radius: 0.25rem;
 }
 
-.category-header {
-    font-size: 16px;
-    font-weight: 600;
-    color: #00a3e1;
-    margin-bottom: 8px;
-    border-bottom: 2px solid #00a3e1;
-    padding-bottom: 5px;
-}
-
-.category-description {
-    font-size: 14px;
-    color: #6c757d;
-    margin-bottom: 15px;
-    font-style: italic;
+.package-category h6 {
+    margin-bottom: 0.75rem;
+    font-weight: 500;
+    color: #495057;
 }
 
 .package-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
 }
 
 .package-item {
-    padding: 8px;
-    border-radius: 4px;
-    transition: background-color 0.2s ease;
-}
-
-.package-item:hover {
-    background-color: #e9ecef;
-}
-
-.form-check {
-    display: flex;
-    align-items: center;
-}
-
-.form-check-input {
-    margin-right: 8px;
-    transform: scale(1.1);
-}
-
-.form-check-label {
-    margin: 0;
-    cursor: pointer;
+    width: calc(50% - 0.5rem);
+    margin-bottom: 0.5rem;
 }
 
 .package-link {
     color: #007bff;
     text-decoration: none;
-    font-weight: 500;
 }
 
 .package-link:hover {
     text-decoration: underline;
 }
 
-.selected-packages {
-    background-color: #e7f3ff;
-    border: 1px solid #b3d9ff;
-    border-radius: 4px;
-    padding: 15px;
-    margin-top: 15px;
-}
-
-.selected-packages h6 {
-    margin-bottom: 10px;
-    color: #0056b3;
-}
-
-#selected-packages-list {
-    background-color: white;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    padding: 10px;
-    min-height: 60px;
-    margin-bottom: 10px;
-    font-family: monospace;
-    font-size: 14px;
-    line-height: 1.4;
-    word-break: break-all;
-}
-
-.selected-packages button {
-    background-color: #28a745;
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 14px;
-}
-
-.selected-packages button:hover {
-    background-color: #218838;
-}
-
-/* Script Editor Styles */
-.script-editor-controls {
-    margin-bottom: 15px;
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-}
-
-.script-editor-controls button {
-    background-color: #17a2b8;
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 14px;
-}
-
-.script-editor-controls button:hover {
-    background-color: #138496;
-}
-
-.quick-settings {
+.aios-config {
+    padding: 1rem;
     background-color: #f8f9fa;
-    border: 1px solid #e0e0e0;
-    border-radius: 4px;
-    padding: 15px;
-    margin-bottom: 15px;
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
 }
 
-.quick-settings h6 {
-    margin-bottom: 10px;
-    color: #495057;
-}
-
-.settings-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 10px;
-    margin-bottom: 15px;
-}
-
-.settings-grid label {
-    display: flex;
-    flex-direction: column;
-    font-size: 14px;
-    font-weight: 500;
-}
-
-.settings-grid input {
-    margin-top: 5px;
-    padding: 8px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 14px;
-}
-
-.quick-settings button {
-    background-color: #ffc107;
-    color: #212529;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: 500;
-}
-
-.quick-settings button:hover {
-    background-color: #e0a800;
-}
-
-.script-editor {
-    margin-bottom: 15px;
-}
-
-.script-editor h6 {
-    margin-bottom: 10px;
-    color: #495057;
-}
-
-#advanced-script-content {
-    width: 100%;
-    font-family: 'Courier New', monospace;
-    font-size: 14px;
-    line-height: 1.5;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    padding: 10px;
-    margin-bottom: 10px;
-    resize: vertical;
-    background-color: #f8f9fa;
-}
-
-.script-editor button {
-    background-color: #007bff;
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 14px;
-}
-
-.script-editor button:hover {
-    background-color: #0056b3;
-}
-
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-    .package-category {
-        background-color: #2d3748;
-        border-color: #4a5568;
-    }
-    
-    .package-item:hover {
-        background-color: #4a5568;
-    }
-    
-    .package-link {
-        color: #63b3ed;
-    }
-    
-    .category-header {
-        color: #63b3ed;
-        border-color: #63b3ed;
-    }
-    
-    .category-description {
-        color: #a0aec0;
-    }
-    
-    .quick-settings {
-        background-color: #2d3748;
-        border-color: #4a5568;
-    }
-    
-    .settings-grid input {
-        background-color: #4a5568;
-        border-color: #718096;
-        color: #e2e8f0;
-    }
-    
-    #advanced-script-content {
-        background-color: #2d3748;
-        border-color: #4a5568;
-        color: #e2e8f0;
-    }
-    
-    .selected-packages {
-        background-color: #1a365d;
-        border-color: #2c5282;
-    }
-    
-    #selected-packages-list {
-        background-color: #2d3748;
-        border-color: #4a5568;
-        color: #e2e8f0;
-    }
-    
-    .package-categories {
-        background-color: #2d3748;
-        border-color: #4a5568;
-    }
-}
-
-/* Responsive design */
-@media (max-width: 768px) {
-    .package-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .settings-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .package-selector-controls,
-    .script-editor-controls {
-        flex-direction: column;
-        align-items: stretch;
-    }
-    
-    .package-selector-controls input {
-        min-width: auto;
+@media (max-width: 576px) {
+    .package-item {
+        width: 100%;
     }
 }
