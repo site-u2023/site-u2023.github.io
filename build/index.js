@@ -1267,7 +1267,6 @@ function getAiosConfig() {
         dsliteMode: document.querySelector('input[name="dsliteMode"]:checked')?.value || 'auto',
         dsliteAftrType: parseOrEmpty('dslite-aftr-type'),
         dsliteArea: parseOrEmpty('dslite-area'),
-        dsliteAftrAddress: parseOrEmpty('dslite-aftr-address'),
         
         mapeBr: parseOrEmpty('mape-br'),
         mapeEalen: parseOrEmpty('mape-ealen', 'int'),
