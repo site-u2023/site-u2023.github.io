@@ -1001,7 +1001,7 @@ async function init() {
 
     textarea.parentNode.insertBefore(container, textarea);
 
-    fetch('package.json')
+    fetch('packages/packages.json')
       .then(r => r.ok ? r.json() : null)
       .then(pkg => renderPackageJson(pkg, pre));
   }
