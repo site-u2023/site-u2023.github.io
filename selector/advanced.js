@@ -101,12 +101,12 @@ async function loadPackageSelector() {
 async function loadScriptEditor() {
     const container = document.getElementById('script-editor-content');
     if (!container) return;
-    
+
     try {
         const response = await fetch('https://raw.githubusercontent.com/site-u2023/site-u2023.github.io/main/selector/uci-defaults/setup.sh');
         const template = await response.text();
-        
-        loadAiosConfig(container, template);
+
+        await loadAdvancedConfig(container, template);
         scriptEditorLoaded = true;
     } catch (error) {
         container.innerHTML = '<p>Failed to load script</p>';
@@ -371,57 +371,19 @@ function updatePackageList() {
     textarea.value = out.join(' ');
 }
 
-function loadAiosConfig(container, template) {
-    const html = `
-    <div class="aios-section">
-        <h5>Basic Configuration</h5>
-        <div class="form-row">
-            <div class="form-group">
-                <label for="aios-language">Language</label>
-                <select id="aios-language" class="form-control">
-                    <option value="en">English</option>
-                    <option value="ja">日本語 (Japanese)</option>
-                    <option value="zh-cn">简体中文 (Chinese Simplified)</option>
-                    <option value="de">Deutsch (German)</option>
-                    <option value="fr">Français (French)</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="aios-country">Country</label>
-                <input type="text" id="aios-country" class="form-control" placeholder="US">
-            </div>
-        </div>
-        <div class="form-row">
-            <div class="form-group">
-                <label for="aios-device-name">Device name</label>
-                <input type="text" id="aios-device-name" class="form-control" placeholder="OpenWrt">
-            </div>
-            <div class="form-group">
-                <label for="aios-lan-ip">LAN IP Address</label>
-                <input type="text" id="aios-lan-ip" class="form-control" placeholder="192.168.1.1" value="192.168.1.1">
-            </div>
-        </div>
-        <div class="form-row">
-            <div class="form-group">
-                <label for="aios-root-password">Root password</label>
-                <input type="password" id="aios-root-password" class="form-control">
-            </div>
-            <div class="form-group">
-                <label for="aios-wifi-ssid">Wi-Fi SSID</label>
-                <input type="text" id="aios-wifi-ssid" class="form-control" placeholder="OpenWrt">
-            </div>
-        </div>
-        <div class="form-group">
-            <label for="aios-wifi-password">Wi-Fi password</label>
-            <input type="password" id="aios-wifi-password" class="form-control" placeholder="8+ characters">
-        </div>
-    </div>`;
-    
-    container.innerHTML = html;
+async function loadAdvancedConfig(container, template) {
+    try {
+        const res = await fetch('advanced.html');
+        const html = await res.text();
+        container.innerHTML = html;
+    } catch (err) {
+        container.innerHTML = '<p>Failed to load advanced configuration</p>';
+        return;
+    }
 
-    populateLanguageSelectorFromGitHub();
+    await populateLanguageSelectorFromGitHub();
 
-    const languageSelect = container.querySelector('#aios-language');
+    const languageSelect = container.querySelector('#advanced-language');
     if (languageSelect) {
         languageSelect.addEventListener('change', function() {
             updateLanguagePackages(this.value);
