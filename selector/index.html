@@ -164,7 +164,27 @@
                       <span class="tr-packages">Installed Packages</span>
                     </summary>
                     <div id="package-selector-content">
-                      <!-- パッケージ選択の骨格がここに読み込まれる -->
+                      <div id="package-selector" data-role="package-selector">
+                        <div id="package-categories" data-role="categories"></div>
+                        <ul id="package-list" class="package-list" data-role="package-list"></ul>
+                      </div>
+
+                      <template id="pkg-item-tpl">
+                        <li class="package-item">
+                          <label>
+                            <input type="checkbox" class="package-selector-checkbox" data-package="">
+                            <a href="#" target="_blank" rel="noopener noreferrer"></a>
+                          </label>
+                        </li>
+                      </template>
+
+                      <template id="pkg-cat-tpl">
+                        <section class="package-category" data-category="">
+                          <h3></h3>
+                          <p class="package-category-description"></p>
+                          <ul class="package-list"></ul>
+                        </section>
+                      </template>
                     </div>
                   </details>
                   <textarea
