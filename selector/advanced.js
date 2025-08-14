@@ -298,27 +298,39 @@ async function loadAdvancedConfig(container, template) {
         return;
     }
 
-    // uci-defaults の入力ボックスを単一に強制（テンプレートに重複があっても除去）
-    const scriptAreas = container.querySelectorAll('#uci-defaults-content');
-    for (let i = 1; i < scriptAreas.length; i++) {
-        scriptAreas[i].remove();
+    // uci-defaults 出力領域を重複なく 1 つに絞る
+    const uciAreas = container.querySelectorAll('#uci-defaults-content');
+    uciAreas.forEach((el, idx) => {
+        if (idx > 0) el.remove();
+    });
+
+    // 言語セレクターにプレースホルダを追加
+    const langSelect = container.querySelector('#advanced-language');
+    if (langSelect) {
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.textContent = 'Select language';
+        langSelect.insertBefore(placeholder, langSelect.firstChild);
+        langSelect.value = '';
     }
 
+    // GitHub から po ファイル一覧を取得して <option> を生成
     await populateLanguageSelectorFromGitHub();
 
-    const languageSelect = container.querySelector('#aios-language');
-    if (languageSelect) {
-        languageSelect.addEventListener('change', function() {
-            updateLanguagePackages(this.value);
+    // 選択言語が変わったらパッケージ更新＆スクリプト再生成
+    if (langSelect) {
+        langSelect.addEventListener('change', () => {
+            updateLanguagePackages(langSelect.value);
             updateMainScript(template);
         });
     }
 
-    container.addEventListener('input', function() {
+    // その他フォーム要素の入力イベントでスクリプト再生成
+    container.addEventListener('input', () => {
         updateMainScript(template);
     });
 
-    // 初期反映
+    // 初回描画
     updateMainScript(template);
 }
 
