@@ -229,46 +229,83 @@ function updatePackageList() {
     const textarea = document.getElementById('asu-packages');
     if (!textarea) return;
 
+    // 小ユーティリティ: トークン配列へ
+    const parseTokens = (v) =>
+        String(v || '')
+            .split(/[\s,]+/)
+            .map(s => s.trim())
+            .filter(Boolean);
+
     // 現在の値を配列化
-    let currentPackages = textarea.value.trim().split(/\s+/).filter(Boolean);
+    let current = textarea.value.trim().split(/\s+/).filter(Boolean);
 
-    // セレクタ管理下の全トークン収集（data-package と data-dep-names）
-    const selectorTokens = [];
-    document.querySelectorAll('.package-selector-checkbox').forEach(cb => {
-        String(cb.getAttribute('data-package') || '')
-            .split(/[\s,]+/)
-            .map(s => s.trim())
-            .filter(Boolean)
-            .forEach(t => selectorTokens.push(t));
+    // 全チェックボックスを取得
+    const checkboxes = Array.from(document.querySelectorAll('.package-selector-checkbox'));
 
-        String(cb.getAttribute('data-dep-names') || '')
-            .split(/[\s,]+/)
-            .map(s => s.trim())
-            .filter(Boolean)
-            .forEach(t => selectorTokens.push(t));
+    // 管理対象トークン収集 & 依存マップ構築
+    const managedTokens = [];
+    const depMap = new Map(); // token -> Set(deps)
+
+    checkboxes.forEach(cb => {
+        const selfNames = parseTokens(cb.getAttribute('data-package'));
+        const depNames = parseTokens(cb.getAttribute('data-dep-names'));       // 平坦化された同梱名
+        const depsEdges = parseTokens(cb.getAttribute('data-dependencies'));    // 依存先（グラフ）
+
+        // 管理対象に自己/依存名/依存先をすべて含める（再構成の一貫性確保）
+        managedTokens.push(...selfNames, ...depNames, ...depsEdges);
+
+        // 自己トークンごとに依存先エッジを登録
+        selfNames.forEach(t => {
+            const set = depMap.get(t) || new Set();
+            depsEdges.forEach(d => set.add(d));
+            depMap.set(t, set);
+        });
     });
 
-    // 入力欄からセレクタ管理トークンを全削除
-    const selectorSet = new Set(selectorTokens);
-    currentPackages = currentPackages.filter(tok => !selectorSet.has(tok));
+    // 管理対象を一括削除（手動入力は残す）
+    const managedSet = new Set(managedTokens);
+    current = current.filter(tok => !managedSet.has(tok));
 
-    // チェックされている項目から（自己 + 依存）を追加
-    document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
-        String(cb.getAttribute('data-package') || '')
-            .split(/[\s,]+/)
-            .map(s => s.trim())
-            .filter(Boolean)
-            .forEach(t => currentPackages.push(t));
-
-        String(cb.getAttribute('data-dep-names') || '')
-            .split(/[\s,]+/)
-            .map(s => s.trim())
-            .filter(Boolean)
-            .forEach(t => currentPackages.push(t));
+    // チェック済み: 基底集合（自己 + 平坦依存名）
+    const base = new Set();
+    const checkedDepNames = [];
+    checkboxes.forEach(cb => {
+        if (cb.checked) {
+            parseTokens(cb.getAttribute('data-package')).forEach(t => base.add(t));
+            const dn = parseTokens(cb.getAttribute('data-dep-names'));
+            dn.forEach(t => base.add(t));
+            checkedDepNames.push(...dn); // 明示追加も保持
+        }
     });
 
-    // 重複排除して反映
-    textarea.value = Array.from(new Set(currentPackages)).join(' ');
+    // 依存のトランジティブ閉包（data-dependencies を辿る）
+    const required = new Set();
+    const queue = [];
+
+    base.forEach(t => {
+        required.add(t);
+        queue.push(t);
+    });
+
+    while (queue.length) {
+        const t = queue.shift();
+        const deps = depMap.get(t);
+        if (!deps) continue;
+        deps.forEach(d => {
+            if (!required.has(d)) {
+                required.add(d);
+                // 依存先にも更なる依存がある場合のみ探索継続
+                if (depMap.has(d)) queue.push(d);
+            }
+        });
+    }
+
+    // dep-names は平坦同梱として必ず追加（閉包に含まれていても問題なし）
+    checkedDepNames.forEach(t => required.add(t));
+
+    // 反映（手動残存 + 管理下再構成）、順序は入力順を維持
+    const out = Array.from(new Set([...current, ...required]));
+    textarea.value = out.join(' ');
 }
 
 function loadAiosConfig(container, template) {
