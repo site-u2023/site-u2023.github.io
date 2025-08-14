@@ -406,30 +406,31 @@ async function populateLanguageSelectorFromGitHub() {
         const res = await fetch(listUrl);
         const entries = await res.json();
 
-        const langDirs = (Array.isArray(entries) ? entries : [])
-            .filter(entry => entry && entry.type === 'dir')
-            .map(entry => entry.name)
-            .sort();
+        // 言語コードディレクトリの一覧を取得
+        const langDirs = Array.isArray(entries)
+            ? entries.filter(e => e.type === 'dir').map(e => e.name).sort()
+            : [];
 
         for (const code of langDirs) {
-            const poUrl = `https://raw.githubusercontent.com/openwrt/luci/master/modules/luci-base/po/${code}/luci.po`;
+            let label = code; // フォールバックはコードそのまま
 
-            let label = code; // フォールバック
             try {
+                const poUrl = `https://raw.githubusercontent.com/openwrt/luci/master/modules/luci-base/po/${code}/luci.po`;
                 const poRes = await fetch(poUrl);
                 if (poRes.ok) {
                     const poText = await poRes.text();
-                    // PO ヘッダの "Language: ..." を抽出（行頭の引用符を含む形式に対応）
-                    const m = poText.match(/^"Language:\s*([^"\n]+)\s*\\n"$/m) || poText.match(/^"Language:\s*([^"]+)"/m);
-                    if (m && m[1]) label = m[1].trim();
+                    const m = poText.match(/^"Language:\s*([^"]+)"/m);
+                    if (m && m[1]) {
+                        label = m[1].trim();
+                    }
                 }
-            } catch (_) {
-                // 取得失敗時は code を表示
+            } catch {
+                // エラー時はフォールバックのまま
             }
 
             const opt = document.createElement('option');
-            opt.value = code;      // パッケージ生成用（例：luci-i18n-base-<code>）
-            opt.textContent = label; // 表示はネイティブ名
+            opt.value = code;       // パッケージ生成用
+            opt.textContent = label; // 表示用（ネイティブ名）
             select.appendChild(opt);
         }
     } catch (err) {
