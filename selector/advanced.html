@@ -1,1 +1,28 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Advanced Control Panel</title>
+<link rel="stylesheet" href="advanced.css" />
+</head>
+<body>
+
+<section class="adv-panel">
+  <h4 class="tr-packages">Installed Packages</h4>
+  <textarea id="asu-packages" rows="10"></textarea>
+
+  <h4 class="tr-defaults">Script to run on first boot (uci-defaults)</h4>
+  <div class="uci-defaults-group">
+    <textarea id="uci-defaults-content" rows="10"></textarea>
+    <span id="uci-defaults-template" data-link="uci-defaults/setup.sh"></span>
+  </div>
+
+  <a href="javascript:buildAsuRequest()" class="custom-link">
+    <span></span><span class="tr-request-build">REQUEST BUILD</span>
+  </a>
+</section>
+
+<script type="module" src="advanced.js"></script>
+</body>
+</html>
