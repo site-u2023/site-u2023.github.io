@@ -158,13 +158,12 @@
                   </div>
                 </div>
                 <div>
-                  <h4 class="tr-packages">Installed Packages</h4>
                   <details style="width: 100%">
                     <summary>
-                      <span>Advanced Package Selector</span>
+                      <span class="tr-packages">Installed Packages</span>
                     </summary>
                     <div id="package-selector-content">
-                      <!-- advanced.htmlのパッケージ選択内容がここに読み込まれる -->
+                      <!-- パッケージ選択の骨格がここに読み込まれる -->
                     </div>
                   </details>
                   <textarea
@@ -175,17 +174,27 @@
                     autocapitalize="off"
                   ></textarea>
                 </div>
-                <h4 class="tr-defaults">
-                  Script to run on first boot (uci-defaults)
-                </h4>
                 <details style="width: 100%">
                   <summary>
-                    <span>Advanced Script Editor</span>
+                    <span class="tr-defaults">Script to run on first boot (uci-defaults)</span>
                   </summary>
                   <div id="script-editor-content">
-                    <!-- advanced.htmlのスクリプト編集内容がここに読み込まれる -->
+                    <!-- スクリプト編集の骨格がここに読み込まれる -->
                   </div>
                 </details>
+                <div id="uci-defaults-group">
+                  <textarea
+                    rows="10"
+                    id="uci-defaults-content"
+                    autocomplete="off"
+                    spellcheck="false"
+                    autocapitalize="off"
+                  ></textarea>
+                  <span
+                    id="uci-defaults-template"
+                    data-link="uci-defaults/setup.sh"
+                  ></span>
+                </div>
                 <div id="uci-defaults-group">
                   <textarea
                     rows="10"
