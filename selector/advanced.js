@@ -399,11 +399,14 @@ async function populateLanguageSelectorFromGitHub() {
     try {
         const res = await fetch(url);
         const data = await res.json();
+
+        // ディレクトリ名（＝言語コード）を取得
         const codes = data
             .filter(entry => entry.type === 'dir')
-            .map(entry => entry.name);
+            .map(entry => entry.name)
+            .sort();
 
-        codes.sort().forEach(code => {
+        codes.forEach(code => {
             const opt = document.createElement('option');
             opt.value = code;
             opt.textContent = code;
@@ -413,3 +416,4 @@ async function populateLanguageSelectorFromGitHub() {
         console.warn('Failed to fetch language list from GitHub:', err);
     }
 }
+
