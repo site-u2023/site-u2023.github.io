@@ -962,12 +962,21 @@ async function init() {
 (function insertPackageJsonSection() {
   function renderPackagesJson(pkg, pre) {
     const lines = [];
-    if (pkg && typeof pkg === 'object') {
-      for (const [name, ver] of Object.entries(pkg)) {
-        lines.push(`${name}: ${ver}`);
-      }
+    if (pkg && Array.isArray(pkg.categories)) {
+      pkg.categories.forEach(cat => {
+        const catName = cat.name || cat.id || 'category';
+        lines.push(`[${catName}]`);
+        if (Array.isArray(cat.packages)) {
+          cat.packages.forEach(p => {
+            if (p && typeof p === 'object') {
+              lines.push(`  ${p.name || p.id}`);
+            }
+          });
+        }
+        lines.push(''); // カテゴリ区切り
+      });
     }
-    pre.textContent = lines.length ? lines.join('\n') : '(no packages found)';
+    pre.textContent = lines.length ? lines.join('\n').trim() : '(no packages found)';
   }
 
   function mount() {
@@ -1007,6 +1016,7 @@ async function init() {
     document.addEventListener('DOMContentLoaded', mount, { once: true });
   }
 })();
+
 
 (function insertSetupShInputs() {
   function mount(fields) {
