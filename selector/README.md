@@ -95,18 +95,24 @@ MAP-E／DS-Lite は単一エンジンで扱い、UI は薄く保つ。
 ---
 
 ## 作成・更新するファイル
+- `selector/advanced.html`
+- `selector/advanced.js`
+- `selector/advanced.css`
 
-- `selector/core/state.js`
-- `selector/core/api.js`
-- `selector/core/i18n.js`
-- `selector/core/packages.js`
-- `selector/core/template.js`
-- `selector/network/net.wan.js`
-- `selector/network/validators.js`
-- `selector/ui/form.js`
-- `selector/ui/visibility.js`
-- `selector/ui/save.js`
 - 既存:
-  - `selector/language.js`
+  - `selector/index.html`
+  - `selector/index.js`
+  - `selector/index.css`
+  - `selector/lang/language.js`
   - `selector/packages/packages.json`
   - `selector/uci-defaults/setup.sh`
+  - `selector/core/state.js`
+  - `selector/core/api.js`
+  - `selector/core/i18n.js`
+  - `selector/core/packages.js`
+  - `selector/core/template.js`
+  - `selector/network/net.wan.js`
+  - `selector/network/validators.js`
+  - `selector/ui/form.js`
+  - `selector/ui/visibility.js`
+  - `selector/ui/save.js`
