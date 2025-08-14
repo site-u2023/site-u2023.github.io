@@ -1012,3 +1012,49 @@ async function init() {
     document.addEventListener('DOMContentLoaded', mount, { once: true });
   }
 })();
+
+(function insertSetupShInputs() {
+  function mount(fields) {
+    const textarea = document.getElementById('uci-defaults-content');
+    if (!textarea) return;
+
+    const container = document.createElement('div');
+    container.id = 'setup-sh-inputs';
+    container.style.margin = '8px 0 12px';
+
+    fields.forEach(f => {
+      const label = document.createElement('label');
+      label.textContent = f;
+      label.style.display = 'block';
+      label.style.marginTop = '4px';
+
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.name = f;
+      input.style.width = '100%';
+      input.dataset.setupField = f;
+
+      container.appendChild(label);
+      container.appendChild(input);
+    });
+
+    textarea.parentNode.insertBefore(container, textarea.nextSibling);
+  }
+
+  function parseSetupSh(content) {
+    const result = [];
+    content.split('\n').forEach(line => {
+      // コメントと空行を除く
+      const m = line.match(/^\s*([A-Za-z0-9_\-]+)=/);
+      if (m) result.push(m[1]);
+    });
+    return result;
+  }
+
+  fetch('uci-defaults/setup.sh')
+    .then(r => r.ok ? r.text() : '')
+    .then(txt => {
+      const fields = parseSetupSh(txt);
+      if (fields.length) mount(fields);
+    });
+})();
