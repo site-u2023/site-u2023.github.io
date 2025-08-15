@@ -1013,6 +1013,68 @@ async function init() {
     textarea.value = finalNames.join(' ');
   }
 
+  // 検索機能を追加
+  function filterPackages(searchQuery, selector) {
+    const categories = selector.querySelectorAll('.pkg-cat');
+    let hasVisibleResults = false;
+
+    categories.forEach(category => {
+      const legend = category.querySelector('legend');
+      const categoryName = legend ? legend.textContent.toLowerCase() : '';
+      const groups = category.querySelectorAll('.pkg-group');
+      let visibleGroupsInCategory = 0;
+
+      groups.forEach(group => {
+        const labels = group.querySelectorAll('.pkg-item');
+        let hasVisiblePackage = false;
+
+        labels.forEach(label => {
+          const packageName = label.textContent.toLowerCase();
+          const matchesSearch = !searchQuery || 
+            packageName.includes(searchQuery) || 
+            categoryName.includes(searchQuery);
+
+          if (matchesSearch) {
+            label.style.display = '';
+            hasVisiblePackage = true;
+          } else {
+            label.style.display = 'none';
+          }
+        });
+
+        if (hasVisiblePackage) {
+          group.style.display = '';
+          visibleGroupsInCategory++;
+        } else {
+          group.style.display = 'none';
+        }
+      });
+
+      if (visibleGroupsInCategory > 0) {
+        category.style.display = '';
+        hasVisibleResults = true;
+      } else {
+        category.style.display = 'none';
+      }
+    });
+
+    // 検索結果がない場合の表示
+    const noResultsDiv = selector.querySelector('.no-search-results');
+    if (!hasVisibleResults && searchQuery) {
+      if (!noResultsDiv) {
+        const div = document.createElement('div');
+        div.className = 'no-search-results';
+        div.style.textAlign = 'center';
+        div.style.padding = '20px';
+        div.style.color = '#999';
+        div.textContent = `No packages found for "${searchQuery}"`;
+        selector.appendChild(div);
+      }
+    } else if (noResultsDiv) {
+      noResultsDiv.remove();
+    }
+  }
+
   function mount() {
     const textareas = Array.from(document.querySelectorAll('textarea#asu-packages'));
     if (textareas.length === 0) return;
@@ -1026,7 +1088,7 @@ async function init() {
       container.className = 'pkg-section asu-section';
 
       const title = document.createElement('h4');
-      title.className = 'pkg-title tr-packages'; // 既存のクラスを使用
+      title.className = 'pkg-title tr-packages';
       title.textContent = 'packages.json packages';
       container.appendChild(title);
 
@@ -1038,7 +1100,6 @@ async function init() {
       if (installedPackagesH4) {
         installedPackagesH4.parentNode.insertBefore(container, installedPackagesH4);
       } else {
-        // フォールバック: textareaの直前に挿入
         textarea.parentNode.insertBefore(container, textarea);
       }
 
@@ -1168,6 +1229,22 @@ async function init() {
 
           const initialClosure = computeClosure(userSelected, idx);
           updateTextarea(textarea, initialClosure, idx, nameIdx);
+
+          // 検索機能を有効化
+          const searchInput = document.getElementById('pkg-search');
+          if (searchInput) {
+            searchInput.disabled = false;
+            searchInput.placeholder = 'Search packages...';
+            
+            let searchTimeout;
+            searchInput.addEventListener('input', (event) => {
+              clearTimeout(searchTimeout);
+              searchTimeout = setTimeout(() => {
+                const query = event.target.value.toLowerCase().trim();
+                filterPackages(query, selector);
+              }, 300);
+            });
+          }
         })
         .catch(() => {
           selector.textContent = '(failed to load packages.json)';
