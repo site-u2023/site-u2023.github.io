@@ -3658,15 +3658,19 @@ function flashSelectedOption(el) {
     ghost.style.top = rect.top + 'px';
     ghost.style.width = rect.width + 'px';
     ghost.style.height = rect.height + 'px';
-    ghost.style.fontWeight = 'bold';             // 太字で「掴んだ感」
+    ghost.style.fontWeight = 'bold';
     ghost.style.background = '#00a3e1';
     ghost.style.color = '#fff';
     ghost.style.zIndex = '10000';
     ghost.style.pointerEvents = 'none';
+    ghost.style.opacity = '1';
     ghost.style.transition = 'opacity 0.6s ease';
     document.body.appendChild(ghost);
-    setTimeout(() => { ghost.style.opacity = '0'; }, 50);   // フェード開始
-    setTimeout(() => { ghost.remove(); }, 700);             // 完全消去
+
+    // 0.9秒キープ後にフェード開始
+    setTimeout(() => { ghost.style.opacity = '0'; }, 900);
+    // フェード0.6秒後に削除（合計1.5秒）
+    setTimeout(() => { ghost.remove(); }, 1500);
 }
         
 document.addEventListener('click', function (e) {
