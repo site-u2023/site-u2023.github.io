@@ -2472,7 +2472,7 @@ function showDeviceInfo() {
         .replace("{version}", app.selectedVersion);
     
     // 公式形式のAbout this buildセクションを構築
-const infoHtml = `
+    const infoHtml = `
         <h5>About this build</h5>
         <div class="row">
             <span class="col1">Model</span>
@@ -2492,17 +2492,7 @@ const infoHtml = `
         <div class="row">
             <span class="col1">Date</span>
             <span class="col2" id="image-date">${app.buildDate ? formatDate(app.buildDate) : ''}</span>
-        </div>
-        <div class="row">
-            <span class="col1">Version</span>
-            <span class="col2">${fullVersion}</span>
-        </div>
-        ${app.buildDate ? `
-        <div class="row">
-            <span class="col1">Date</span>
-            <span class="col2">${formatDate(app.buildDate)}</span>
-        </div>
-        ` : ''}
+        </div>       
         <div class="row">
             <span class="col1">Links</span>
             <span class="col2">
