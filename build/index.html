@@ -3503,14 +3503,15 @@ function showDownloadLinks(images, fullStatus, requestHash) {
     }
 }
 
-// --- Package Search: 外部API利用版 ---
-// デバイス選択後にパッケージ一覧を取得して保持
+// デバイス固有パッケージ取得
 async function fetchDevicePackages() {
     if (!app.selectedDevice || !app.selectedVersion) return;
+
     const [target, subtarget] = app.selectedDevice.target.split('/');
+    const branch = app.selectedVersion === 'SNAPSHOT' ? 'snapshots' : 'releases';
 
     const url = config.device_packages_url
-        .replace('{branch}', app.selectedVersion === 'SNAPSHOT' ? 'snapshots' : 'releases')
+        .replace('{branch}', branch)
         .replace('{version}', app.selectedVersion)
         .replace('{target}', target)
         .replace('{subtarget}', subtarget)
@@ -3519,17 +3520,20 @@ async function fetchDevicePackages() {
     try {
         const res = await fetch(url);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        app.devicePackages = await res.json();
+        // API の返りが配列ならそのまま、オブジェクトなら必要な配列に整形
+        const data = await res.json();
+        app.devicePackages = Array.isArray(data) ? data : (data.packages || []);
     } catch (err) {
         console.error('Failed to fetch device packages:', err);
         app.devicePackages = [];
     }
 }
 
-// loadDeviceProfile の最後あたりで呼び出す
+// デバイス選択後に呼び出す
+// loadDeviceProfile() の最後に追加
 // await fetchDevicePackages();
 
-// --- 入力イベント: API取得結果からフィルタ ---
+// Package Search の入力フィルタ
 document.getElementById('package-search').addEventListener('input', function (e) {
     const query = e.target.value.trim().toLowerCase();
     if (!query || !Array.isArray(app.devicePackages)) {
@@ -3542,6 +3546,7 @@ document.getElementById('package-search').addEventListener('input', function (e)
     showPackageAutocomplete(matches);
 });
 
+// オートコンプリート表示
 function showPackageAutocomplete(packages) {
     hidePackageAutocomplete();
     const container = document.createElement('div');
@@ -3549,7 +3554,8 @@ function showPackageAutocomplete(packages) {
 
     packages.forEach(pkg => {
         const div = document.createElement('div');
-        div.innerHTML = `<strong>${pkg.name}</strong><br><small>${pkg.description || ''}</small>`;
+        div.innerHTML = `<strong>${pkg.name}</strong>` +
+                        (pkg.description ? `<br><small>${pkg.description}</small>` : '');
         div.addEventListener('click', () => {
             addPackageToList(pkg.name);
             hidePackageAutocomplete();
@@ -3566,7 +3572,6 @@ function hidePackageAutocomplete() {
     if (el) el.remove();
 }
 
-// 選択パッケージを #asu-packages に追加
 function addPackageToList(pkgName) {
     const textarea = document.getElementById('asu-packages');
     const list = textarea.value.trim() ? textarea.value.trim().split(/\s+/) : [];
@@ -3575,7 +3580,7 @@ function addPackageToList(pkgName) {
         textarea.value = list.join(' ');
     }
 }
-
+        
 document.addEventListener('click', function (e) {
     if (!e.target.closest('#package-search-autocomplete')) {
         hidePackageAutocomplete();
