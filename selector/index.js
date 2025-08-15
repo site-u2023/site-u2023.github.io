@@ -1012,179 +1012,168 @@ async function init() {
   }
 
   function mount() {
-    const textareas = Array.from(document.querySelectorAll('textarea#asu-packages'));
-    if (textareas.length === 0) return;
+    // 上段の一覧表示用アンカー
+    const anchor = document.getElementById('packages-view');
+    if (!anchor) return;
 
-    textareas.forEach(textarea => {
-      const container = document.createElement('div');
-      container.className = 'pkg-section asu-section';
+    // 二重マウント防止
+    if (anchor.hasAttribute('data-mounted')) return;
+    anchor.setAttribute('data-mounted', '1');
 
-      const title = document.createElement('h4');
-      title.className = 'pkg-title tr-packages';
-      title.textContent = 'Package Collection';  // 元のタイトル
-      container.appendChild(title);
+    // 下段の入力テキストエリア（同期対象）
+    const textarea = document.querySelector('textarea#asu-packages');
+    if (!textarea) return;
 
-      const selector = document.createElement('div');
-      selector.className = 'pkg-selector';
-      container.appendChild(selector);
+    // セレクタ本体（見出しはHTML側の h4=Packages を使用）
+    const selector = document.createElement('div');
+    selector.className = 'pkg-selector';
+    anchor.appendChild(selector);
 
-      // 元の位置（textareaの前）に挿入
-      textarea.parentNode.insertBefore(container, textarea);
+    fetch('packages/packages.json', { cache: 'no-cache' })
+      .then(r => r.ok ? r.json() : null)
+      .then(db => {
+        if (!db || !Array.isArray(db.categories)) {
+          selector.textContent = '(no packages found)';
+          return;
+        }
 
-      fetch('packages/packages.json', { cache: 'no-cache' })
-        .then(r => r.ok ? r.json() : null)
-        .then(db => {
-          if (!db || !Array.isArray(db.categories)) {
-            selector.textContent = '(no packages found)';
-            return;
-          }
-
-          const idx = new Map();
-          const nameIdx = new Map();
-          
-          db.categories.forEach(cat => {
-            cat.packages.forEach(p => {
-              if (!p || typeof p !== 'object') return;
-              idx.set(p.id, p);
-              if (p.name) nameIdx.set(p.name, p.id);
-            });
+        const idx = new Map();
+        const nameIdx = new Map();
+        
+        db.categories.forEach(cat => {
+          cat.packages.forEach(p => {
+            if (!p || typeof p !== 'object') return;
+            idx.set(p.id, p);
+            if (p.name) nameIdx.set(p.name, p.id);
           });
+        });
 
-          const initialTokens = (textarea.value.match(/[^\s,]+/g) || []);
-          const userSelected = new Set(initialTokens.map(n => nameIdx.get(n)).filter(Boolean));
+        const initialTokens = (textarea.value.match(/[^\s,]+/g) || []);
+        const userSelected = new Set(initialTokens.map(n => nameIdx.get(n)).filter(Boolean));
 
-          db.categories.forEach(cat => {
-            const catWrap = document.createElement('fieldset');
-            catWrap.className = 'pkg-cat';
+        db.categories.forEach(cat => {
+          const catWrap = document.createElement('fieldset');
+          catWrap.className = 'pkg-cat';
 
-            const legend = document.createElement('legend');
-            legend.textContent = cat.name || cat.id || 'category';
-            catWrap.appendChild(legend);
+          const legend = document.createElement('legend');
+          legend.textContent = cat.name || cat.id || 'category';
+          catWrap.appendChild(legend);
 
-            const processedPkgs = new Set();
+          const processedPkgs = new Set();
 
-            cat.packages.forEach(p => {
-              if (p.hidden || processedPkgs.has(p.id)) return;
+          cat.packages.forEach(p => {
+            if (p.hidden || processedPkgs.has(p.id)) return;
 
-              const group = {
-                primary: p,
-                dependencies: []
-              };
+            const group = {
+              primary: p,
+              dependencies: []
+            };
 
-              if (p.dependencies && p.dependencies.length > 0) {
-                p.dependencies.forEach(depId => {
-                  const dep = cat.packages.find(pkg => pkg.id === depId);
-                  if (dep && !dep.hidden) {
-                    group.dependencies.push(dep);
-                    processedPkgs.add(depId);
+            if (p.dependencies && p.dependencies.length > 0) {
+              p.dependencies.forEach(depId => {
+                const dep = cat.packages.find(pkg => pkg.id === depId);
+                if (dep && !dep.hidden) {
+                  group.dependencies.push(dep);
+                  processedPkgs.add(depId);
+                }
+              });
+            }
+
+            processedPkgs.add(p.id);
+
+            const groupDiv = document.createElement('div');
+            groupDiv.className = 'pkg-group';
+
+            const itemsContainer = document.createElement('div');
+            itemsContainer.className = 'pkg-group-items';
+
+            // プライマリ
+            const primaryLabel = document.createElement('label');
+            primaryLabel.className = 'pkg-item primary';
+
+            const primaryCb = document.createElement('input');
+            primaryCb.type = 'checkbox';
+            primaryCb.value = p.id;
+            primaryCb.dataset.pkgId = p.id;
+            primaryCb.checked = userSelected.has(p.id);
+
+            primaryCb.addEventListener('change', () => {
+              if (primaryCb.checked) {
+                userSelected.add(p.id);
+                group.dependencies.forEach(dep => {
+                  const depCb = groupDiv.querySelector(`input[data-pkg-id="${dep.id}"]`);
+                  if (depCb && !depCb.checked) {
+                    depCb.checked = true;
+                    userSelected.add(dep.id);
                   }
                 });
+              } else {
+                userSelected.delete(p.id);
               }
+              const closure = computeClosure(userSelected, idx);
+              updateTextarea(textarea, closure, idx, nameIdx);
+            });
 
-              processedPkgs.add(p.id);
+            primaryLabel.appendChild(primaryCb);
+            if (p.url) {
+              const link = document.createElement('a');
+              link.href = p.url;
+              link.target = '_blank';
+              link.textContent = p.name || p.id;
+              link.style.marginLeft = '4px';
+              primaryLabel.appendChild(link);
+            } else {
+              primaryLabel.appendChild(document.createTextNode(' ' + (p.name || p.id)));
+            }
+            itemsContainer.appendChild(primaryLabel);
 
-              const groupDiv = document.createElement('div');
-              groupDiv.className = 'pkg-group';
+            // 依存
+            group.dependencies.forEach(dep => {
+              const depLabel = document.createElement('label');
+              depLabel.className = 'pkg-item dependency';
 
-              const itemsContainer = document.createElement('div');
-              itemsContainer.className = 'pkg-group-items';
+              const depCb = document.createElement('input');
+              depCb.type = 'checkbox';
+              depCb.value = dep.id;
+              depCb.dataset.pkgId = dep.id;
+              depCb.checked = userSelected.has(dep.id);
 
-              // プライマリパッケージ
-              const primaryLabel = document.createElement('label');
-              primaryLabel.className = 'pkg-item primary';
-
-              const primaryCb = document.createElement('input');
-              primaryCb.type = 'checkbox';
-              primaryCb.value = p.id;
-              primaryCb.dataset.pkgId = p.id;
-              primaryCb.checked = userSelected.has(p.id);
-
-              primaryCb.addEventListener('change', () => {
-                if (primaryCb.checked) {
-                  userSelected.add(p.id);
-                  group.dependencies.forEach(dep => {
-                    const depCb = groupDiv.querySelector(`input[data-pkg-id="${dep.id}"]`);
-                    if (depCb && !depCb.checked) {
-                      depCb.checked = true;
-                      userSelected.add(dep.id);
-                    }
-                  });
-                } else {
-                  userSelected.delete(p.id);
-                }
-
+              depCb.addEventListener('change', () => {
+                if (depCb.checked) userSelected.add(dep.id);
+                else userSelected.delete(dep.id);
                 const closure = computeClosure(userSelected, idx);
                 updateTextarea(textarea, closure, idx, nameIdx);
               });
 
-              primaryLabel.appendChild(primaryCb);
-              
-              // ★重要：URLがある場合はリンクとして表示（元の仕様）
-              if (p.url) {
+              depLabel.appendChild(depCb);
+              if (dep.url) {
                 const link = document.createElement('a');
-                link.href = p.url;
+                link.href = dep.url;
                 link.target = '_blank';
-                link.textContent = p.name || p.id;
+                link.textContent = '↳ ' + (dep.name || dep.id);
                 link.style.marginLeft = '4px';
-                primaryLabel.appendChild(link);
+                depLabel.appendChild(link);
               } else {
-                primaryLabel.appendChild(document.createTextNode(' ' + (p.name || p.id)));
+                depLabel.appendChild(document.createTextNode(' ↳ ' + (dep.name || dep.id)));
               }
-              
-              itemsContainer.appendChild(primaryLabel);
-
-              // 依存パッケージ
-              group.dependencies.forEach(dep => {
-                const depLabel = document.createElement('label');
-                depLabel.className = 'pkg-item dependency';
-
-                const depCb = document.createElement('input');
-                depCb.type = 'checkbox';
-                depCb.value = dep.id;
-                depCb.dataset.pkgId = dep.id;
-                depCb.checked = userSelected.has(dep.id);
-
-                depCb.addEventListener('change', () => {
-                  if (depCb.checked) userSelected.add(dep.id);
-                  else userSelected.delete(dep.id);
-
-                  const closure = computeClosure(userSelected, idx);
-                  updateTextarea(textarea, closure, idx, nameIdx);
-                });
-
-                depLabel.appendChild(depCb);
-                
-                // ★重要：依存パッケージもURLがある場合はリンク（元の仕様）
-                if (dep.url) {
-                  const link = document.createElement('a');
-                  link.href = dep.url;
-                  link.target = '_blank';
-                  link.textContent = '↳ ' + (dep.name || dep.id);
-                  link.style.marginLeft = '4px';
-                  depLabel.appendChild(link);
-                } else {
-                  depLabel.appendChild(document.createTextNode(' ↳ ' + (dep.name || dep.id)));
-                }
-                
-                itemsContainer.appendChild(depLabel);
-              });
-
-              groupDiv.appendChild(itemsContainer);
-              catWrap.appendChild(groupDiv);
+              itemsContainer.appendChild(depLabel);
             });
 
-            if (catWrap.children.length > 1) {
-              selector.appendChild(catWrap);
-            }
+            groupDiv.appendChild(itemsContainer);
+            catWrap.appendChild(groupDiv);
           });
 
-          const initialClosure = computeClosure(userSelected, idx);
-          updateTextarea(textarea, initialClosure, idx, nameIdx);
-        })
-        .catch(() => {
-          selector.textContent = '(failed to load packages.json)';
+          if (catWrap.children.length > 1) {
+            selector.appendChild(catWrap);
+          }
         });
-    });
+
+        const initialClosure = computeClosure(userSelected, idx);
+        updateTextarea(textarea, initialClosure, idx, nameIdx);
+      })
+      .catch(() => {
+        selector.textContent = '(failed to load packages.json)';
+      });
   }
 
   if (document.readyState === 'complete' || document.readyState === 'interactive') {
