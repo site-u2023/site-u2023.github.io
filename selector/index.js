@@ -1234,7 +1234,7 @@ function mount(fields) {
   });
 
   // HTML下段の Scripts → Script to run on first boot (uci-defaults) 内に配置
-  // textarea の直後に差し込む（見出しと“下のインプットボックス”を揃える）
+  // textarea の直後に差し込む
   if (textarea.nextSibling) {
     parentGroup.insertBefore(container, textarea.nextSibling);
   } else {
