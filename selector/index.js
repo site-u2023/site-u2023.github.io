@@ -743,13 +743,9 @@ function changeModel(version, overview, title) {
           packageSearcher.loadPackagesForDevice(version, entry.target)
             .then(() => {
               console.log('Packages loaded for device:', entry.target);
-              // パッケージUI更新を呼び出し
-              updatePackageUI();
             })
             .catch(error => {
               console.error('Failed to load packages:', error);
-              // エラーの場合もUIを更新（無効化される）
-              updatePackageUI();
             });
         }
         // ここまで追加
