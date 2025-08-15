@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="en">
   <head>
     <meta charset="utf-8" />
@@ -53,9 +52,7 @@
             <option value="no">Norsk (Norwegian)</option>
             <option value="pl">Polski (Polish)</option>
             <option value="pt">Português (Portuguese)</option>
-            <option value="pt-br">
-              Português do Brasil (Brazilian Portuguese)
-            </option>
+            <option value="pt-br">Português do Brasil (Brazilian Portuguese)</option>
             <option value="ro">Română (Romanian)</option>
             <option value="ru">Русский (Russian)</option>
             <option value="sgs">Žemaitiu kalba (Samogitian)</option>
@@ -137,53 +134,44 @@
             <div class="row">
               <details id="asu" class="hide" style="width: 100%">
                 <summary>
-                  <span class="tr-customize"
-                    >Customize installed packages and/or first boot script</span
-                  >
+                  <span class="tr-customize">
+                    Customize installed packages and/or first boot script
+                  </span>
                 </summary>
-                
-                <!-- 追加　開始 -->
+
+                <!-- 追加 開始 -->
+                <br>
+                <label class="tr-packages">
+                  Installed Packages / インストールされたパッケージ
+                </label>
                 <div id="packages" class="asu-section">
-                  <label for="pkg-search">Search packages:</label>
                   <input
                     type="text"
                     id="pkg-search"
                     name="pkg-search"
+                    placeholder="Search packages / パッケージ検索"
                     autocomplete="off"
                     spellcheck="false"
                     autocapitalize="off"
                   />
                   <div id="pkg-list"></div>
                 </div>
-                <!-- 追加　終了 -->
-                
+                <!-- 追加 終了 -->
+
                 <div id="asu-buildstatus" class="hide">
                   <span></span>
                   <div id="asu-log" class="hide">
                     <details>
-                      <summary>
-                        <code>STDERR</code>
-                      </summary>
+                      <summary><code>STDERR</code></summary>
                       <pre id="asu-stderr"></pre>
                     </details>
                     <details>
-                      <summary>
-                        <code>STDOUT</code>
-                      </summary>
+                      <summary><code>STDOUT</code></summary>
                       <pre id="asu-stdout"></pre>
                     </details>
                   </div>
                 </div>
-                <div>
-                  <h4 class="tr-packages">Installed Packages</h4>
-                  <textarea
-                    rows="10"
-                    id="asu-packages"
-                    autocomplete="off"
-                    spellcheck="false"
-                    autocapitalize="off"
-                  ></textarea>
-                </div>
+
                 <h4 class="tr-defaults">
                   Script to run on first boot (uci-defaults)
                 </h4>
@@ -201,13 +189,13 @@
                   ></span>
                 </div>
 
-                <!-- 追加　開始 -->
+                <!-- 追加 開始 -->
                 <div id="aios" class="asu-section">
                   <label for="isp-select">ISP profile:</label>
                   <select id="isp-select" name="isp-select"></select>
                   <button type="button" id="load-template">Load template</button>
                 </div>
-                <!-- 追加　終了 -->
+                <!-- 追加 終了 -->
                 
                 <a href="javascript:buildAsuRequest()" class="custom-link">
                   <span></span
