@@ -1698,6 +1698,24 @@ document.getElementById('aios-language').addEventListener('change', function() {
     refreshTemplateAndPackages();
 });
 
+// ==================== ユーティリティ関数 ====================
+async function loadPackageDatabase() {
+    const res = await fetch('data/packages.json');
+    app.packageDB = await res.json();
+}
+
+function updateInstalledPackageList() {
+    const container = document.getElementById('installed-packages');
+    if (!container) return;
+
+    container.innerHTML = '';
+    app.packageDB.forEach(pkg => {
+        const li = document.createElement('li');
+        li.textContent = pkg.name;
+        container.appendChild(li);
+    });
+}
+
 // ==================== 初期化関数 ====================
 async function init() {
     try {
