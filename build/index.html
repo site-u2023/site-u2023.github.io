@@ -3638,7 +3638,7 @@ function showPackageAutocomplete(matches) {
     host.appendChild(container);
 }
 
-function addPackageToList(pkgName) {
+function addPackageToList(pkgName, clickedEl) {
     const textarea = document.getElementById('asu-packages');
     const list = textarea.value.trim() ? textarea.value.trim().split(/\s+/) : [];
     if (!list.includes(pkgName)) {
@@ -3646,29 +3646,27 @@ function addPackageToList(pkgName) {
         textarea.value = list.join(' ');
         refreshTemplateAndPackages();
     }
-    showPackageTag(pkgName); // ← クリック直後に残像タグ表示
+    flashSelectedOption(clickedEl || null); // ← クリック直後にその場で残像
 }
 
-function showPackageTag(pkgName) {
-    const tag = document.createElement('span');
-    tag.textContent = `＋ ${pkgName}`;
-    tag.style.position = 'absolute';
-    tag.style.background = '#00a3e1';
-    tag.style.color = '#fff';
-    tag.style.padding = '3px 6px';
-    tag.style.borderRadius = '4px';
-    tag.style.fontSize = '0.85rem';
-    tag.style.top = '0';
-    tag.style.right = '0';
-    tag.style.zIndex = '9999';
-    tag.style.opacity = '1';
-    tag.style.transition = 'opacity 0.6s ease';
-
-    const parent = document.getElementById('package-search-autocomplete') || document.body;
-    parent.appendChild(tag);
-
-    setTimeout(() => { tag.style.opacity = '0'; }, 1000);  // 1秒後フェード
-    setTimeout(() => { tag.remove(); }, 1600);              // 完全消去
+function flashSelectedOption(el) {
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const ghost = el.cloneNode(true);
+    ghost.style.position = 'fixed';
+    ghost.style.left = rect.left + 'px';
+    ghost.style.top = rect.top + 'px';
+    ghost.style.width = rect.width + 'px';
+    ghost.style.height = rect.height + 'px';
+    ghost.style.fontWeight = 'bold';             // 太字で「掴んだ感」
+    ghost.style.background = '#00a3e1';
+    ghost.style.color = '#fff';
+    ghost.style.zIndex = '10000';
+    ghost.style.pointerEvents = 'none';
+    ghost.style.transition = 'opacity 0.6s ease';
+    document.body.appendChild(ghost);
+    setTimeout(() => { ghost.style.opacity = '0'; }, 50);   // フェード開始
+    setTimeout(() => { ghost.remove(); }, 700);             // 完全消去
 }
         
 document.addEventListener('click', function (e) {
