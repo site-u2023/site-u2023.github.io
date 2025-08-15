@@ -1013,77 +1013,13 @@ async function init() {
     textarea.value = finalNames.join(' ');
   }
 
-  // 検索機能を追加
-  function filterPackages(searchQuery, selector) {
-    const categories = selector.querySelectorAll('.pkg-cat');
-    let hasVisibleResults = false;
-
-    categories.forEach(category => {
-      const legend = category.querySelector('legend');
-      const categoryName = legend ? legend.textContent.toLowerCase() : '';
-      const groups = category.querySelectorAll('.pkg-group');
-      let visibleGroupsInCategory = 0;
-
-      groups.forEach(group => {
-        const labels = group.querySelectorAll('.pkg-item');
-        let hasVisiblePackage = false;
-
-        labels.forEach(label => {
-          const packageName = label.textContent.toLowerCase();
-          const matchesSearch = !searchQuery || 
-            packageName.includes(searchQuery) || 
-            categoryName.includes(searchQuery);
-
-          if (matchesSearch) {
-            label.style.display = '';
-            hasVisiblePackage = true;
-          } else {
-            label.style.display = 'none';
-          }
-        });
-
-        if (hasVisiblePackage) {
-          group.style.display = '';
-          visibleGroupsInCategory++;
-        } else {
-          group.style.display = 'none';
-        }
-      });
-
-      if (visibleGroupsInCategory > 0) {
-        category.style.display = '';
-        hasVisibleResults = true;
-      } else {
-        category.style.display = 'none';
-      }
-    });
-
-    // 検索結果がない場合の表示
-    const noResultsDiv = selector.querySelector('.no-search-results');
-    if (!hasVisibleResults && searchQuery) {
-      if (!noResultsDiv) {
-        const div = document.createElement('div');
-        div.className = 'no-search-results';
-        div.style.textAlign = 'center';
-        div.style.padding = '20px';
-        div.style.color = '#999';
-        div.textContent = `No packages found for "${searchQuery}"`;
-        selector.appendChild(div);
-      }
-    } else if (noResultsDiv) {
-      noResultsDiv.remove();
-    }
-  }
-
   function mount() {
     const textareas = Array.from(document.querySelectorAll('textarea#asu-packages'));
     if (textareas.length === 0) return;
 
     textareas.forEach(textarea => {
-      // 「Installed Packages」のh4要素を探す
       const installedPackagesH4 = textarea.parentNode.querySelector('h4.tr-packages');
       
-      // packages.json用のコンテナを作成
       const container = document.createElement('div');
       container.className = 'pkg-section asu-section';
 
@@ -1096,7 +1032,6 @@ async function init() {
       selector.className = 'pkg-selector';
       container.appendChild(selector);
 
-      // 「Installed Packages」のh4の直前に挿入
       if (installedPackagesH4) {
         installedPackagesH4.parentNode.insertBefore(container, installedPackagesH4);
       } else {
@@ -1161,7 +1096,6 @@ async function init() {
               const itemsContainer = document.createElement('div');
               itemsContainer.className = 'pkg-group-items';
 
-              // プライマリパッケージ
               const primaryLabel = document.createElement('label');
               primaryLabel.className = 'pkg-item primary';
 
@@ -1174,7 +1108,6 @@ async function init() {
               primaryCb.addEventListener('change', () => {
                 if (primaryCb.checked) {
                   userSelected.add(p.id);
-                  // 依存パッケージも選択（ただし手動で外せる）
                   group.dependencies.forEach(dep => {
                     const depCb = groupDiv.querySelector(`input[data-pkg-id="${dep.id}"]`);
                     if (depCb && !depCb.checked) {
@@ -1194,7 +1127,6 @@ async function init() {
               primaryLabel.appendChild(document.createTextNode(p.name || p.id));
               itemsContainer.appendChild(primaryLabel);
 
-              // 依存パッケージ
               group.dependencies.forEach(dep => {
                 const depLabel = document.createElement('label');
                 depLabel.className = 'pkg-item dependency';
@@ -1229,22 +1161,6 @@ async function init() {
 
           const initialClosure = computeClosure(userSelected, idx);
           updateTextarea(textarea, initialClosure, idx, nameIdx);
-
-          // 検索機能を有効化
-          const searchInput = document.getElementById('pkg-search');
-          if (searchInput) {
-            searchInput.disabled = false;
-            searchInput.placeholder = 'Search packages...';
-            
-            let searchTimeout;
-            searchInput.addEventListener('input', (event) => {
-              clearTimeout(searchTimeout);
-              searchTimeout = setTimeout(() => {
-                const query = event.target.value.toLowerCase().trim();
-                filterPackages(query, selector);
-              }, 300);
-            });
-          }
         })
         .catch(() => {
           selector.textContent = '(failed to load packages.json)';
