@@ -189,24 +189,26 @@
                 <div class="asu-section">
                   <h4 class="tr-scripts">Scripts</h4>
 
-                  <h4 class="tr-defaults">
-                    Script to run on first boot (uci-defaults)
-                  </h4>
-                  <div id="uci-defaults-group">
-                    <textarea
-                      rows="10"
-                      id="uci-defaults-content"
-                      autocomplete="off"
-                      spellcheck="false"
-                      autocapitalize="off"
-                    ></textarea>
-                    <span
-                      id="uci-defaults-template"
-                      data-link="uci-defaults/setup.sh"
-                    ></span>
+                  <div class="asu-section" id="uci-defaults-container">
+                    <h4 class="tr-defaults">
+                      Script to run on first boot (uci-defaults)
+                    </h4>
+                    <div id="uci-defaults-group">
+                      <textarea
+                        rows="10"
+                        id="uci-defaults-content"
+                        autocomplete="off"
+                        spellcheck="false"
+                        autocapitalize="off"
+                      ></textarea>
+                      <span
+                        id="uci-defaults-template"
+                        data-link="uci-defaults/setup.sh"
+                      ></span>
+                    </div>
                   </div>
                 </div>
-
+                
                 <!-- ISP/テンプレート制御 -->
                 <div id="aios" class="asu-section">
                   <label for="isp-select">ISP profile:</label>
