@@ -1003,14 +1003,11 @@ async function init() {
       
       // packages.json用のコンテナを作成
       const container = document.createElement('div');
-      container.className = 'pkg-section';
-      container.style.marginTop = '8px';
-      container.style.marginBottom = '8px';
+      container.className = 'pkg-section asu-section';
 
-      const title = document.createElement('h4'); // h5からh4に変更してh4.tr-packagesと同じレベルに
-      title.className = 'pkg-title';
+      const title = document.createElement('h4');
+      title.className = 'pkg-title tr-packages'; // 既存のクラスを使用
       title.textContent = 'packages.json packages';
-      title.style.marginBottom = '4px';
       container.appendChild(title);
 
       const selector = document.createElement('div');
@@ -1050,15 +1047,9 @@ async function init() {
           db.categories.forEach(cat => {
             const catWrap = document.createElement('fieldset');
             catWrap.className = 'pkg-cat';
-            catWrap.style.marginBottom = '6px';
-            catWrap.style.border = '1px solid #ccc';
-            catWrap.style.borderRadius = '4px';
-            catWrap.style.padding = '6px';
 
             const legend = document.createElement('legend');
             legend.textContent = cat.name || cat.id || 'category';
-            legend.style.fontWeight = 'bold';
-            legend.style.padding = '0 8px';
             catWrap.appendChild(legend);
 
             const processedPkgs = new Set();
@@ -1085,7 +1076,6 @@ async function init() {
 
               const groupDiv = document.createElement('div');
               groupDiv.className = 'pkg-group';
-              groupDiv.style.marginBottom = '4px';
 
               const itemsContainer = document.createElement('div');
               itemsContainer.className = 'pkg-group-items';
@@ -1093,16 +1083,12 @@ async function init() {
               // プライマリパッケージ
               const primaryLabel = document.createElement('label');
               primaryLabel.className = 'pkg-item primary';
-              primaryLabel.style.display = 'block';
-              primaryLabel.style.marginBottom = '2px';
-              primaryLabel.style.fontWeight = 'bold';
 
               const primaryCb = document.createElement('input');
               primaryCb.type = 'checkbox';
               primaryCb.value = p.id;
               primaryCb.dataset.pkgId = p.id;
               primaryCb.checked = userSelected.has(p.id);
-              primaryCb.style.marginRight = '8px';
 
               primaryCb.addEventListener('change', () => {
                 if (primaryCb.checked) {
@@ -1131,18 +1117,12 @@ async function init() {
               group.dependencies.forEach(dep => {
                 const depLabel = document.createElement('label');
                 depLabel.className = 'pkg-item dependency';
-                depLabel.style.display = 'block';
-                depLabel.style.marginLeft = '20px';
-                depLabel.style.marginBottom = '2px';
-                depLabel.style.fontSize = '0.9em';
-                depLabel.style.color = '#666';
 
                 const depCb = document.createElement('input');
                 depCb.type = 'checkbox';
                 depCb.value = dep.id;
                 depCb.dataset.pkgId = dep.id;
                 depCb.checked = userSelected.has(dep.id);
-                depCb.style.marginRight = '8px';
 
                 depCb.addEventListener('change', () => {
                   if (depCb.checked) userSelected.add(dep.id);
