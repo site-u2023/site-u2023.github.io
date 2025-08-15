@@ -43,4 +43,7 @@
     "tr-latest-releases": "最新版",
     "tr-validate-manifest": "マニフェストを検証する",
     "tr-container-setup": "コンテナのセットアップ"
+
+    "tr-packages-list": "パッケージ",
+    "tr-scripts": "スクリプト"    
 }
