@@ -1218,14 +1218,19 @@ function mount(fields) {
     container.appendChild(input);
   });
 
-  // h4見出しの直後に setup.sh インプット群を配置し、その下に大きなテキストエリアを置く
-  const heading = parentGroup.querySelector('h4');
-  if (heading && heading.nextSibling) {
-    parentGroup.insertBefore(container, heading.nextSibling);
-  } else if (heading) {
-    parentGroup.appendChild(container);
+  // 構造を保証: h4 → setup.sh inputs → textarea
+  // 見出しは uci-defaults セクション内の h4（なければ textarea の直前要素を候補に）
+  const heading =
+    parentGroup.querySelector('h4') ||
+    textarea.previousElementSibling;
+
+  if (heading && heading.tagName === 'H4') {
+    // h4の直後に小入力群を配置（テキストノード無視のため insertAdjacentElement を使う）
+    heading.insertAdjacentElement('afterend', container);
+    // その直後に textarea を移動
+    container.insertAdjacentElement('afterend', textarea);
   } else {
-    // fallback: 従来どおりtextareaの直前
+    // 見出し特定ができない場合でも、inputs → textarea の順を作る
     parentGroup.insertBefore(container, textarea);
   }
 }
