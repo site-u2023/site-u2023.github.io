@@ -3628,7 +3628,7 @@ function showPackageAutocomplete(matches) {
         const div = document.createElement('div');
         div.textContent = name;
         div.addEventListener('click', () => {
-            addPackageToList(name);
+            addPackageToList(name, div); // ← 要素参照を渡す
             document.getElementById('package-search').value = '';
             hidePackageAutocomplete();
         });
@@ -3646,7 +3646,7 @@ function addPackageToList(pkgName, clickedEl) {
         textarea.value = list.join(' ');
         refreshTemplateAndPackages();
     }
-    flashSelectedOption(clickedEl || null); // ← クリック直後にその場で残像
+    flashSelectedOption(clickedEl); // null 渡しをやめる
 }
 
 function flashSelectedOption(el) {
