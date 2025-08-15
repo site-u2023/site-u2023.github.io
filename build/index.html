@@ -2435,7 +2435,7 @@ async function loadDeviceProfile(device) {
             asuCollectPackages(); 
         }
 
-        // ★ここで Package Search 用パッケージ一覧を取得
+        // ★Package Search 用のパッケージ一覧を取得
         await fetchDevicePackages();
 
         showDeviceInfo();
@@ -2443,7 +2443,7 @@ async function loadDeviceProfile(device) {
     } catch (error) {
         console.error('Failed to load device profile:', error);
 
-        // エラー時でも Package Search 用パッケージ取得は試みる
+        // エラー時も検索用を試みる
         await fetchDevicePackages();
 
         showDeviceInfo();
@@ -3531,26 +3531,45 @@ async function fetchDevicePackages() {
     }
 }
 
-// オートコンプリート表示
-function showPackageAutocomplete(packages) {
-    hidePackageAutocomplete();
-    const container = document.createElement('div');
-    container.className = 'autocomplete-items';
+// ★デバイス固有パッケージ取得（device_packages_url 利用）
+async function fetchDevicePackages() {
+    if (!app.selectedDevice || !app.selectedVersion) {
+        app.devicePackages = [];
+        return;
+    }
 
-    packages.forEach(pkg => {
-        const div = document.createElement('div');
-        div.innerHTML = `<strong>${pkg.name}</strong>` +
-                        (pkg.description ? `<br><small>${pkg.description}</small>` : '');
-        div.addEventListener('click', () => {
-            addPackageToList(pkg.name);
-            hidePackageAutocomplete();
-            document.getElementById('package-search').value = '';
-        });
-        container.appendChild(div);
-    });
+    const [target, subtarget] = app.selectedDevice.target.split('/');
+    const branch = app.selectedVersion === 'SNAPSHOT' ? 'snapshots' : 'releases';
+    const url = config.device_packages_url
+        .replace('{branch}', branch)
+        .replace('{version}', app.selectedVersion)
+        .replace('{target}', target)
+        .replace('{subtarget}', subtarget)
+        .replace('{profile}', app.selectedDevice.id);
 
-    document.getElementById('package-search-autocomplete').appendChild(container);
+    try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        app.devicePackages = Array.isArray(data) ? data : (data.packages || []);
+    } catch (err) {
+        console.error('Failed to fetch device packages:', err);
+        app.devicePackages = [];
+    }
 }
+
+// ★Package Search 入力ハンドラ（API結果を利用）
+document.getElementById('package-search').addEventListener('input', function (e) {
+    const query = e.target.value.trim().toLowerCase();
+    if (query.length < 2 || !Array.isArray(app.devicePackages) || app.devicePackages.length === 0) {
+        hidePackageAutocomplete();
+        return;
+    }
+    const matches = app.devicePackages
+        .filter(pkg => (pkg.name || '').toLowerCase().includes(query))
+        .slice(0, 10);
+    showPackageAutocomplete(matches);
+});
 
 function hidePackageAutocomplete() {
     const el = document.querySelector('#package-search-autocomplete .autocomplete-items');
