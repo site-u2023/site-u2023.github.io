@@ -2390,18 +2390,14 @@ async function loadDevices() {
     if (!app.selectedVersion) return;
 
     try {
-        let url;
-        if (app.selectedVersion === 'SNAPSHOT') {
-            url = 'https://downloads.openwrt.org/snapshots/.overview.json';
-        } else {
-            url = `https://downloads.openwrt.org/releases/${app.selectedVersion}/.overview.json`;
-        }
+        const url = (app.selectedVersion === 'SNAPSHOT')
+          ? 'https://downloads.openwrt.org/snapshots/.overview.json'
+          : `https://downloads.openwrt.org/releases/${app.selectedVersion}/.overview.json`;
 
         const response = await fetch(url);
         const data = await response.json();
 
-        // Flatten .overview.json -> [{ id, target: "arch/sub", titles: [...] }, ...]
-        app.devices = flattenOverviewToProfiles(data);
+        app.devices = flattenOverviewToProfiles(data);  // ← 修正点
     } catch (error) {
         console.error('Failed to load devices:', error);
         app.devices = [];
