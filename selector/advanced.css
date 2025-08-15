@@ -54,3 +54,130 @@
     color: #aaa;
   }
 }
+
+/* ============================================================ */
+/* Package Search Styles - パッケージ検索関連のスタイル         */
+/* ============================================================ */
+
+/* パッケージ検索結果のコンテナ */
+#pkg-search-results {
+    position: absolute;
+    z-index: 1000;
+    background: white;
+    border: 1px solid #ccc;
+    border-top: none;
+    max-height: 400px;
+    overflow-y: auto;
+    display: none;
+    width: 100%;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* パッケージ検索の親要素を相対位置に */
+#package-search {
+    position: relative;
+}
+
+/* 検索ボックス */
+#pkg-search {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+#pkg-search:disabled {
+    background-color: #f5f5f5;
+    cursor: not-allowed;
+}
+
+/* 検索結果アイテム */
+.pkg-search-item {
+    padding: 8px;
+    cursor: pointer;
+    border-bottom: 1px solid #eee;
+    transition: background-color 0.2s;
+}
+
+.pkg-search-item:hover {
+    background-color: #f0f0f0;
+}
+
+.pkg-search-item strong {
+    display: block;
+    margin-bottom: 2px;
+}
+
+.pkg-search-item div {
+    font-size: 0.9em;
+    color: #666;
+}
+
+/* 結果なしメッセージ */
+.no-results {
+    padding: 12px;
+    text-align: center;
+    color: #999;
+}
+
+/* ============================================================ */
+/* packages.json Display Styles - packages.json表示用スタイル  */
+/* ============================================================ */
+
+/* packages.json表示用のスタイル */
+.pkg-section {
+    margin: 15px 0;
+}
+
+.pkg-cat {
+    margin: 10px 0;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.pkg-cat legend {
+    padding: 0 10px;
+    font-weight: bold;
+}
+
+.pkg-group {
+    margin: 8px 0;
+}
+
+.pkg-group-items {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.pkg-item {
+    display: flex;
+    align-items: center;
+    padding: 4px 0;
+}
+
+.pkg-item.primary {
+    font-weight: normal;
+}
+
+.pkg-item.dependency {
+    margin-left: 20px;
+    font-size: 0.95em;
+    color: #666;
+}
+
+.pkg-item input[type="checkbox"] {
+    margin-right: 8px;
+}
+
+.pkg-item a {
+    margin-left: 4px;
+    color: #0066cc;
+    text-decoration: none;
+}
+
+.pkg-item a:hover {
+    text-decoration: underline;
+}
