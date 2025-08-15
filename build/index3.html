@@ -3631,6 +3631,7 @@ function showPackageAutocomplete(packages) {
             document.getElementById('package-search').value = pkg.name;
             hidePackageAutocomplete();
             // クリック時の処理をここに（例：テキストエリアに追加）
+            togglePackage(pkg.name);
         });
         container.appendChild(div);
     });
@@ -3707,6 +3708,22 @@ document.addEventListener('click', function (e) {
         
         asuPackagesTextarea.value = packagesList.join('\n');
     }
+
+    // パッケージの選択・非選択を切り替える関数
+    function togglePackage(packageName) {
+        let packagesList = asuPackagesTextarea.value.split('\n').filter(p => p.trim() !== '');
+
+        if (installedPackages.has(packageName)) {
+            installedPackages.delete(packageName);
+            packagesList = packagesList.filter(p => p !== packageName);
+        } else {
+            installedPackages.add(packageName);
+            packagesList.push(packageName);
+        }
+        
+        asuPackagesTextarea.value = packagesList.join('\n');
+    }
+        
     </script>
 </body>
 
