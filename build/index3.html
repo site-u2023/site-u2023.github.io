@@ -3530,9 +3530,57 @@ document.getElementById('package-search').addEventListener('input', function (e)
         hidePackageAutocomplete();
         return;
     }
-    const matches = (app.officialPackages || [])
-        .filter(pkg => pkg.name.toLowerCase().includes(query))
-        .slice(0, 10);
+    
+    // デバイス選択完了時（ASU応答受領後など）に一度だけロード
+    async function loadDevicePackages(ctx) {
+        // ctx: {branch, target, subtarget, arch, kernel, feedsCsv}
+        const url = `/api/device-packages?branch=${encodeURIComponent(ctx.branch)}`
+            + `&target=${encodeURIComponent(ctx.target)}`
+            + `&subtarget=${encodeURIComponent(ctx.subtarget)}`
+            + `&arch=${encodeURIComponent(ctx.arch)}`
+            + `&kernel=${encodeURIComponent(ctx.kernel)}`
+            + `&feeds=${encodeURIComponent(ctx.feedsCsv)}`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('device packages fetch failed');
+        app.devicePackages = await res.json(); // [{name, description, …}]
+    }
+
+    // 検索は常にデバイス限定
+    document.getElementById('package-search').addEventListener('input', (e) => {
+        const q = e.target.value.trim().toLowerCase();
+        if (q.length < 2) return hidePackageAutocomplete();
+        const src = app.devicePackages || [];
+        const hits = src.filter(p => p.name.toLowerCase().includes(q)).slice(0, 20);
+        showPackageAutocomplete(hits);
+    });
+
+    // クリックで #asu-packages に追記（削除は手動）
+    function showPackageAutocomplete(list) {
+        let existing = document.querySelector('#package-search-autocomplete .autocomplete-items');
+        if (existing) existing.remove();
+        const box = document.createElement('div');
+        box.className = 'autocomplete-items';
+        list.forEach(p => {
+            const div = document.createElement('div');
+            div.innerHTML = `<strong>${p.name}</strong><br><small>${p.description || ''}</small>`;
+            div.addEventListener('click', () => {
+                const ta = document.getElementById('asu-packages');
+                const words = ta.value.trim().split(/\s+/).filter(Boolean);
+                if (!words.includes(p.name)) words.push(p.name);
+                ta.value = words.join(' ');
+                hidePackageAutocomplete();
+                asuCollectPackages(); // 既存ロジックで反映
+            });
+            box.appendChild(div);
+        });
+        document.getElementById('package-search-autocomplete').appendChild(box);
+    }
+
+    function hidePackageAutocomplete() {
+        const el = document.querySelector('#package-search-autocomplete .autocomplete-items');
+        if (el) el.remove();
+    }
+
     showPackageAutocomplete(matches);
 });
 
