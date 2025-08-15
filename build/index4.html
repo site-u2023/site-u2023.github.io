@@ -645,9 +645,26 @@
                             Installed Packages
                         </label>
                     </div>
-
+                    
                     <div id="package-selector-config" class="aios-config">
                         <small class="text-muted">Select additional packages to install. Selected packages will be automatically added to the package list below.</small>
+
+                        <!-- パッケージ検索ボックス -->
+                        <div class="package-category">
+                          <h6>Package Search</h6>
+                          <div id="package-search-autocomplete" class="autocomplete" style="margin-top:1rem;">
+                            <input type="text"
+                                id="package-search"
+                                placeholder="Type package name"
+                                autocomplete="off"
+                                spellcheck="false"
+                                autocapitalize="off"
+                                class="form-control">
+                          </div>
+                        </div>
+                        <ul id="installed-packages">
+                          <!-- パッケージ一覧がここに生成される -->
+                        </ul>
                         
                         <div id="package-categories">
                             <!-- カテゴリーとパッケージは動的に生成される -->
@@ -3495,6 +3512,52 @@ function showDownloadLinks(images, fullStatus, requestHash) {
         container.appendChild(buildInfo);
     }
 }
+
+// --- パッケージ検索オートコンプリート ---
+document.getElementById('package-search').addEventListener('input', function (e) {
+    const query = e.target.value.toLowerCase();
+    if (query.length < 2) {
+        hidePackageAutocomplete();
+        return;
+    }
+    const matches = (app.packageDB || [])
+        .filter(pkg => pkg.name.toLowerCase().includes(query))
+        .slice(0, 10);
+    showPackageAutocomplete(matches);
+});
+
+function showPackageAutocomplete(packages) {
+    let existing = document.querySelector('#package-search-autocomplete .autocomplete-items');
+    if (existing) existing.remove();
+
+    const container = document.createElement('div');
+    container.className = 'autocomplete-items';
+
+    packages.forEach(pkg => {
+        const div = document.createElement('div');
+        div.innerHTML = `<strong>${pkg.name}</strong>`;
+        div.addEventListener('click', () => {
+            document.getElementById('package-search').value = pkg.name;
+            hidePackageAutocomplete();
+            // クリック時の処理をここに（例：テキストエリアに追加）
+        });
+        container.appendChild(div);
+    });
+
+    document.getElementById('package-search-autocomplete').appendChild(container);
+}
+
+function hidePackageAutocomplete() {
+    let items = document.querySelector('#package-search-autocomplete .autocomplete-items');
+    if (items) items.remove();
+}
+
+document.addEventListener('click', function (e) {
+    if (!e.target.closest('#package-search-autocomplete')) {
+        hidePackageAutocomplete();
+    }
+});
+
     </script>
 </body>
 
