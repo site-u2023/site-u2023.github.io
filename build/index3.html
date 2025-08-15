@@ -977,7 +977,7 @@
                     </div>
                 </div>
 
-                <a href="javascript:buildAsuRequest()" class="custom-link">
+                <a id="request-build" href="#" class="custom-link">
                     <span></span>
                     <span>REQUEST BUILD</span>
                 </a>
@@ -2050,7 +2050,10 @@ function bindEvents() {
     if (pkgSelectorEl) pkgSelectorEl.addEventListener('change', togglePackageSelector);
 
     const buildBtnEl = document.getElementById('request-build');
-    if (buildBtnEl) buildBtnEl.addEventListener('click', buildAsuRequest);
+    if (buildBtnEl) buildBtnEl.addEventListener('click', (e) => {
+        e.preventDefault();   // ページ遷移や href 実行を止める
+        buildAsuRequest();    // 安全に呼び出す
+    });
 
     // DS-Lite mode
     document.querySelectorAll('input[name="dsliteMode"]').forEach(radio => {
@@ -2393,15 +2396,39 @@ async function loadDevices() {
         } else {
             url = `https://downloads.openwrt.org/releases/${app.selectedVersion}/.overview.json`;
         }
-        
+
         const response = await fetch(url);
         const data = await response.json();
 
-        app.devices = data.profiles || [];
+        // Flatten .overview.json -> [{ id, target: "arch/sub", titles: [...] }, ...]
+        app.devices = flattenOverviewToProfiles(data);
     } catch (error) {
         console.error('Failed to load devices:', error);
         app.devices = [];
     }
+}
+
+function flattenOverviewToProfiles(data) {
+    const out = [];
+    const targets = data && data.targets ? data.targets : {};
+    Object.keys(targets).forEach(arch => {
+        const subs = targets[arch] || {};
+        Object.keys(subs).forEach(sub => {
+            const node = subs[sub] || {};
+            const profiles = node.profiles || {};
+            Object.keys(profiles).forEach(id => {
+                const p = profiles[id] || {};
+                out.push({
+                    id,
+                    target: `${arch}/${sub}`,
+                    titles: p.titles || [],
+                    vendor: p.vendor || '',
+                    model: p.model || ''
+                });
+            });
+        });
+    });
+    return out;
 }
 
 function handleDeviceSearch(e) {
