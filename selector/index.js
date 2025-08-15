@@ -1229,32 +1229,41 @@ function mount(fields) {
     input.style.width = '100%';
     input.dataset.setupField = f;
 
+    // 入力値の変更をtextareaに反映
+    input.addEventListener('input', updateSetupScript);
+
     container.appendChild(label);
     container.appendChild(input);
   });
 
-  // HTML下段の Scripts → Script to run on first boot (uci-defaults) 内に配置
-  // textarea の直後に差し込む
-  if (textarea.nextSibling) {
-    parentGroup.insertBefore(container, textarea.nextSibling);
-  } else {
-    parentGroup.appendChild(container);
-  }
+  // textareaの直前に挿入（templateボタンの前）
+  parentGroup.insertBefore(container, textarea);
 }
- 
-  function parseSetupSh(content) {
-    const result = [];
-    content.split('\n').forEach(line => {
-      const m = line.match(/^\s*([A-Za-z0-9_\-]+)=/);
-      if (m) result.push(m[1]);
-    });
-    return result;
-  }
 
-  fetch('uci-defaults/setup.sh')
-    .then(r => r.ok ? r.text() : '')
-    .then(txt => {
-      const fields = parseSetupSh(txt);
-      if (fields.length) mount(fields);
-    });
-})();
+function updateSetupScript() {
+  const inputs = document.querySelectorAll('#setup-sh-inputs input[data-setup-field]');
+  const textarea = document.getElementById('uci-defaults-content');
+  if (!textarea) return;
+
+  // 現在のスクリプト内容を取得
+  let content = textarea.value;
+  
+  // 各入力フィールドの値をスクリプトに反映
+  inputs.forEach(input => {
+    const fieldName = input.dataset.setupField;
+    const value = input.value;
+    
+    // 既存の行を置換または新規追加
+    const regex = new RegExp(`^${fieldName}=.*$`, 'm');
+    const newLine = `${fieldName}="${value}"`;
+    
+    if (regex.test(content)) {
+      content = content.replace(regex, newLine);
+    } else if (value) {
+      // 値がある場合のみ新規追加
+      content = content ? content + '\n' + newLine : newLine;
+    }
+  });
+  
+  textarea.value = content;
+}
