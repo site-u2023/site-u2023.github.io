@@ -1218,8 +1218,16 @@ function mount(fields) {
     container.appendChild(input);
   });
 
-  // HTML下段の Scripts → Script to run on first boot (uci-defaults) 内に配置
-  parentGroup.insertBefore(container, textarea);
+  // h4見出しの直後に setup.sh インプット群を配置し、その下に大きなテキストエリアを置く
+  const heading = parentGroup.querySelector('h4');
+  if (heading && heading.nextSibling) {
+    parentGroup.insertBefore(container, heading.nextSibling);
+  } else if (heading) {
+    parentGroup.appendChild(container);
+  } else {
+    // fallback: 従来どおりtextareaの直前
+    parentGroup.insertBefore(container, textarea);
+  }
 }
  
   function parseSetupSh(content) {
