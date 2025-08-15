@@ -81,10 +81,8 @@
 /* 検索ボックス */
 #pkg-search {
     width: 100%;
-    padding: 8px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 14px;
+    max-width: 100%; /* 幅を制限 */
+    box-sizing: border-box; /* パディング込みで幅計算 */
 }
 
 #pkg-search:disabled {
