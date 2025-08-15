@@ -7,8 +7,10 @@
     <title>OpenWrt Firmware Selector</title>
     <link rel="icon" href="favicon.ico" />
     <link rel="stylesheet" href="index.css" />
+    <link rel="stylesheet" href="advanced.css">
     <script src="config.js"></script>
     <script src="index.js"></script>
+    <script src="advanced.js"></script>
   </head>
   <body onload="init()">
     <!-- header across the whole page -->
@@ -139,6 +141,22 @@
                     >Customize installed packages and/or first boot script</span
                   >
                 </summary>
+                
+                <!-- 追加　開始 -->
+                <div id="packages" class="asu-section">
+                  <label for="pkg-search">Search packages:</label>
+                  <input
+                    type="text"
+                    id="pkg-search"
+                    name="pkg-search"
+                    autocomplete="off"
+                    spellcheck="false"
+                    autocapitalize="off"
+                  />
+                  <div id="pkg-list"></div>
+                </div>
+                <!-- 追加　終了 -->
+                
                 <div id="asu-buildstatus" class="hide">
                   <span></span>
                   <div id="asu-log" class="hide">
@@ -182,6 +200,15 @@
                     data-link="uci-defaults/setup.sh"
                   ></span>
                 </div>
+
+                <!-- 追加　開始 -->
+                <div id="aios" class="asu-section">
+                  <label for="isp-select">ISP profile:</label>
+                  <select id="isp-select" name="isp-select"></select>
+                  <button type="button" id="load-template">Load template</button>
+                </div>
+                <!-- 追加　終了 -->
+                
                 <a href="javascript:buildAsuRequest()" class="custom-link">
                   <span></span
                   ><span class="tr-request-build">REQUEST BUILD</span>
