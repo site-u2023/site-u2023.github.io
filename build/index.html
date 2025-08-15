@@ -611,6 +611,7 @@
             filter: invert(100%) sepia(9%) saturate(261%) hue-rotate(281deg) brightness(117%) contrast(100%);
         }
 
+    } /* close @media (prefers-color-scheme: dark) */
 </style>
 
 </head>
@@ -3505,32 +3506,6 @@ function showDownloadLinks(images, fullStatus, requestHash) {
     }
 }
 
-// デバイス固有パッケージ取得
-async function fetchDevicePackages() {
-    if (!app.selectedDevice || !app.selectedVersion) return;
-
-    const [target, subtarget] = app.selectedDevice.target.split('/');
-    const branch = app.selectedVersion === 'SNAPSHOT' ? 'snapshots' : 'releases';
-
-    const url = config.device_packages_url
-        .replace('{branch}', branch)
-        .replace('{version}', app.selectedVersion)
-        .replace('{target}', target)
-        .replace('{subtarget}', subtarget)
-        .replace('{profile}', app.selectedDevice.id);
-
-    try {
-        const res = await fetch(url);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        // API の返りが配列ならそのまま、オブジェクトなら必要な配列に整形
-        const data = await res.json();
-        app.devicePackages = Array.isArray(data) ? data : (data.packages || []);
-    } catch (err) {
-        console.error('Failed to fetch device packages:', err);
-        app.devicePackages = [];
-    }
-}
-
 // ★デバイス固有パッケージ取得（device_packages_url 利用）
 async function fetchDevicePackages() {
     if (!app.selectedDevice || !app.selectedVersion) {
@@ -3558,7 +3533,7 @@ async function fetchDevicePackages() {
     }
 }
 
-// ★Package Search 入力ハンドラ（API結果を利用）
+// ★Package Search 入力ハンドラ（string / {name} 両対応）
 document.getElementById('package-search').addEventListener('input', function (e) {
     const query = e.target.value.trim().toLowerCase();
     if (query.length < 2 || !Array.isArray(app.devicePackages) || app.devicePackages.length === 0) {
@@ -3566,6 +3541,7 @@ document.getElementById('package-search').addEventListener('input', function (e)
         return;
     }
     const matches = app.devicePackages
+        .map(p => (typeof p === 'string' ? { name: p } : p))
         .filter(pkg => (pkg.name || '').toLowerCase().includes(query))
         .slice(0, 10);
     showPackageAutocomplete(matches);
@@ -3577,22 +3553,27 @@ function hidePackageAutocomplete() {
 }
 
 function showPackageAutocomplete(matches) {
-    const list = document.getElementById('package-autocomplete');
-    list.innerHTML = '';
+    hidePackageAutocomplete();
+    const host = document.getElementById('package-search-autocomplete');
+    if (!host) return;
 
-    matches.forEach(pkg => {
-        const item = document.createElement('div');
-        item.textContent = pkg.name;
-        item.className = 'autocomplete-item';
-        item.addEventListener('click', () => {
-            addPackageToList(pkg.name);
-            hidePackageAutocomplete();
+    const container = document.createElement('div');
+    container.className = 'autocomplete-items';
+
+    (matches || []).forEach(item => {
+        const name = (typeof item === 'string') ? item : (item && item.name) || '';
+        if (!name) return;
+        const div = document.createElement('div');
+        div.textContent = name;
+        div.addEventListener('click', () => {
+            addPackageToList(name);
             document.getElementById('package-search').value = '';
+            hidePackageAutocomplete();
         });
-        list.appendChild(item);
+        container.appendChild(div);
     });
 
-    list.style.display = matches.length ? 'block' : 'none';
+    host.appendChild(container);
 }
 
 function addPackageToList(pkgName) {
@@ -3601,6 +3582,7 @@ function addPackageToList(pkgName) {
     if (!list.includes(pkgName)) {
         list.push(pkgName);
         textarea.value = list.join(' ');
+        refreshTemplateAndPackages();
     }
 }
         
@@ -3624,19 +3606,6 @@ document.addEventListener('click', function (e) {
         
         asuPackagesTextarea.value = packagesList.join('\n');
     }
-
-    // Package Search 入力イベント: API取得結果(app.devicePackages)からフィルタ
-    document.getElementById('package-search').addEventListener('input', function (e) {
-        const query = e.target.value.trim().toLowerCase();
-        if (query.length < 2 || !Array.isArray(app.devicePackages) || app.devicePackages.length === 0) {
-            hidePackageAutocomplete();
-            return;
-        }
-        const matches = app.devicePackages
-            .filter(pkg => (pkg.name || '').toLowerCase().includes(query))
-            .slice(0, 10);
-        showPackageAutocomplete(matches);
-    });
 
     </script>
 </body>
