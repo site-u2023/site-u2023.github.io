@@ -2108,25 +2108,43 @@ function bindEvents() {
     const mapeSection = document.getElementById('mape-manual-section');
     if (mapeSection) mapeSection.style.display = 'none';
 
+    // ===== ここから（修正後の正規実装）=====
     const pkgSelectorCheckbox = document.getElementById('use-package-selector');
     const pkgSearchInput = document.getElementById('package-search');
 
     async function handlePackageFilterTrigger() {
-        if (pkgSelectorCheckbox.checked && pkgSearchInput.value.trim() !== '') {
-            const params = {
-                branch: app.selectedVersion === 'SNAPSHOT' ? 'snapshot' : 'release',
-                version: app.selectedVersion,
-                target: app.selectedDevice?.target?.split('/')[0] || '',
-                subtarget: app.selectedDevice?.target?.split('/')[1] || '',
-                profile: app.selectedDevice?.id || ''
-            };
-            const pkgs = await fetchDevicePackages(params);
-            updatePackageList(pkgs);
+        const q = (pkgSearchInput?.value || '').trim().toLowerCase();
+
+        if (!(pkgSelectorCheckbox?.checked && q)) {
+            hidePackageAutocomplete();
+            return;
+        }
+        if (!app.selectedDevice || !app.selectedVersion) return;
+
+        const [target, subtarget] = String(app.selectedDevice.target || '').split('/');
+        const params = {
+            branch: app.selectedVersion === 'SNAPSHOT' ? 'snapshot' : 'release',
+            version: app.selectedVersion,
+            target: target || '',
+            subtarget: subtarget || '',
+            profile: app.selectedDevice.id || ''
+        };
+
+        try {
+            const list = await fetchDevicePackages(params);
+            app.devicePackages = Array.isArray(list) ? list : [];
+            const hits = app.devicePackages
+                .filter(p => p?.name?.toLowerCase().includes(q))
+                .slice(0, 20);
+            showPackageAutocomplete(hits);
+        } catch (e) {
+            console.error('device-packages fetch error:', e);
+            hidePackageAutocomplete();
         }
     }
 
-    pkgSelectorCheckbox.addEventListener('change', handlePackageFilterTrigger);
-    pkgSearchInput.addEventListener('input', handlePackageFilterTrigger);
+    pkgSelectorCheckbox?.addEventListener('change', handlePackageFilterTrigger);
+    pkgSearchInput?.addEventListener('input', handlePackageFilterTrigger);
 }
 
 // ==================== パッケージセレクター関連 ====================
@@ -3571,66 +3589,7 @@ function showDownloadLinks(images, fullStatus, requestHash) {
         container.appendChild(buildInfo);
     }
 }
-
-const pkgSelectorCheckbox = document.getElementById('use-package-selector');
-const pkgSearchInput = document.getElementById('package-search');
-
-async function handlePackageFilterTrigger() {
-    const q = pkgSearchInput.value.trim();
-    if (!(pkgSelectorCheckbox.checked && q)) {
-        hidePackageAutocomplete();
-        return;
-    }
-    if (!app.selectedDevice || !app.selectedVersion) return;
-
-    const [target, subtarget] = (app.selectedDevice.target || '').split('/');
-    const params = {
-        branch: app.selectedVersion === 'SNAPSHOT' ? 'snapshot' : 'release',
-        version: app.selectedVersion,
-        target: target || '',
-        subtarget: subtarget || '',
-        profile: app.selectedDevice.id || ''
-    };
-
-    try {
-        const list = await fetchDevicePackages(params);
-        app.devicePackages = Array.isArray(list) ? list : [];
-        const hits = app.devicePackages
-            .filter(p => p.name && p.name.toLowerCase().includes(q.toLowerCase()))
-            .slice(0, 20);
-        showPackageAutocomplete(hits);
-    } catch (e) {
-        console.error(e);
-        hidePackageAutocomplete();
-    }
-}
-
-pkgSelectorCheckbox.addEventListener('change', handlePackageFilterTrigger);
-pkgSearchInput.addEventListener('input', handlePackageFilterTrigger);
-
-function showPackageAutocomplete(packages) {
-    let existing = document.querySelector('#package-search-autocomplete .autocomplete-items');
-    if (existing) existing.remove();
-
-    const container = document.createElement('div');
-    container.className = 'autocomplete-items';
-
-    packages.forEach(pkg => {
-        const div = document.createElement('div');
-        div.innerHTML = `<strong>${pkg.name}</strong><br><small>${pkg.description || ''}</small>`;
-        div.addEventListener('click', () => {
-            const ta = document.getElementById('asu-packages');
-            const current = ta.value.trim();
-            ta.value = current ? current + ' ' + pkg.name : pkg.name;
-            hidePackageAutocomplete();
-            asuCollectPackages();
-        });
-        container.appendChild(div);
-    });
-
-    document.getElementById('package-search-autocomplete').appendChild(container);
-}
-
+    
 function showPackageAutocomplete(packages) {
     let existing = document.querySelector('#package-search-autocomplete .autocomplete-items');
     if (existing) existing.remove();
