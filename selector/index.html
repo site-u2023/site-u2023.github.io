@@ -131,6 +131,7 @@
                 <a id="image-link" href="#"></a>
               </div>
             </div>
+<!-- ASU部分のみ（正しい構造） -->
             <div class="row">
               <details id="asu" class="hide" style="width: 100%">
                 <summary>
@@ -153,26 +154,9 @@
                   </div>
                 </div>
 
-                <!-- パッケージ検索（デバイス選択後のみ有効） -->
-                <br />
-                <div id="package-search" class="asu-section">
-                  <h4 class="tr-search-packages">Search Device Packages</h4>
-                  <input
-                    type="text"
-                    id="pkg-search"
-                    name="pkg-search"
-                    placeholder="Search packages for this device..."
-                    autocomplete="off"
-                    spellcheck="false"
-                    autocapitalize="off"
-                    disabled
-                  />
-                  <div id="pkg-search-results" class="pkg-search-results"></div>
-                </div>
-
-                <!-- packages.jsonの表示はここに残る（insertPackageJsonSectionで自動挿入される） -->
-
-                <!-- Installed Packages テキストエリア -->
+                <!-- packages.jsonの表示はJavaScriptで自動挿入される -->
+                
+                <!-- Installed Packages テキストエリア（1つだけ） -->
                 <br />
                 <div id="installed-packages" class="asu-section">
                   <h4 class="tr-packages">Installed Packages</h4>
@@ -184,7 +168,7 @@
                     autocapitalize="off"
                   ></textarea>
                 </div>
-                
+
                 <h4 class="tr-defaults">
                   Script to run on first boot (uci-defaults)
                 </h4>
@@ -202,13 +186,12 @@
                   ></span>
                 </div>
 
-                <!-- 追加 開始: ISP/テンプレ制御（後でi18n化可） -->
+                <!-- ISP/テンプレート制御 -->
                 <div id="aios" class="asu-section">
                   <label for="isp-select">ISP profile:</label>
                   <select id="isp-select" name="isp-select"></select>
                   <button type="button" id="load-template">Load template</button>
                 </div>
-                <!-- 追加 終了 -->
 
                 <a href="javascript:buildAsuRequest()" class="custom-link">
                   <span></span>
@@ -216,7 +199,6 @@
                 </a>
               </details>
             </div>
-          </div>
 
           <div id="downloads1">
             <h3 class="tr-downloads">Download an image</h3>
