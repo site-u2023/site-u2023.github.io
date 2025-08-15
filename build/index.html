@@ -1700,24 +1700,33 @@ document.getElementById('aios-language').addEventListener('change', function() {
 
 // ==================== 初期化関数 ====================
 async function init() {
+async function init() {
     try {
-        const autocompleteDiv = document.getElementById('models-autocomplete');
-        if (!autocompleteDiv) {
-            console.error('models-autocomplete div not found');
-        }
-       
+        // バージョン読み込み
         await loadVersions();
+        
+        // イベントバインディング
         bindEvents();
         
         // map.shを事前ロード
         await loadMapShScripts();
 
-        // パッケージセレクターを動的生成
-        generatePackageSelector();
+        // パッケージセレクターを動的生成（エラーハンドリング付き）
+        try {
+            generatePackageSelector();
+            console.log('Package selector generated successfully');
+        } catch (error) {
+            console.error('Failed to generate package selector:', error);
+        }
         
-        refreshTemplateAndPackages();
+        // テンプレートとパッケージの更新
+        try {
+            refreshTemplateAndPackages();
+        } catch (error) {
+            console.error('Failed to refresh template and packages:', error);
+        }
         
-        // ISP情報を初期取得（常時表示のため）
+        // ISP情報を初期取得
         console.log('Starting ISP info fetch...');
         await fetchApiInfoAndUpdate();
 
@@ -2247,19 +2256,33 @@ function getDeviceTitle(device) {
 }
 
 function showAutocomplete(devices) {
-    // 既存のautocomplete-itemsを探す
-    let container = document.querySelector('.autocomplete-items');
-    
-    // なければ作成
-    if (!container) {
-        const autocompleteDiv = document.getElementById('models-autocomplete');
-        container = document.createElement('div');
-        container.className = 'autocomplete-items';
-        autocompleteDiv.appendChild(container);
+    // 既存のautocomplete-itemsを削除
+    let existingContainer = document.querySelector('.autocomplete-items');
+    if (existingContainer) {
+        existingContainer.remove();
     }
     
-    container.innerHTML = '';
+    // 新しく作成
+    const autocompleteDiv = document.getElementById('models-autocomplete');
+    const container = document.createElement('div');
+    container.className = 'autocomplete-items';
+    
+    if (devices.length === 0) {
+        autocompleteDiv.appendChild(container);
+        container.style.display = 'none';
+        return;
+    }
+
+    devices.forEach(device => {
+        const div = document.createElement('div');
+        div.innerHTML = `<strong>${getDeviceTitle(device)}</strong><br><small>Target: ${device.target}</small>`;
+        div.addEventListener('click', () => selectDevice(device));
+        container.appendChild(div);
+    });
+
+    autocompleteDiv.appendChild(container);
     container.style.display = 'block';
+}
 
     if (devices.length === 0) {
         hideAutocomplete();
