@@ -1004,12 +1004,13 @@ async function init() {
       // packages.json用のコンテナを作成
       const container = document.createElement('div');
       container.className = 'pkg-section';
-      container.style.marginBottom = '16px'; // 適切な間隔を追加
+      container.style.marginTop = '8px';
+      container.style.marginBottom = '8px';
 
       const title = document.createElement('h4'); // h5からh4に変更してh4.tr-packagesと同じレベルに
       title.className = 'pkg-title';
       title.textContent = 'packages.json packages';
-      title.style.marginBottom = '8px';
+      title.style.marginBottom = '4px';
       container.appendChild(title);
 
       const selector = document.createElement('div');
@@ -1049,10 +1050,10 @@ async function init() {
           db.categories.forEach(cat => {
             const catWrap = document.createElement('fieldset');
             catWrap.className = 'pkg-cat';
-            catWrap.style.marginBottom = '12px';
+            catWrap.style.marginBottom = '6px';
             catWrap.style.border = '1px solid #ccc';
             catWrap.style.borderRadius = '4px';
-            catWrap.style.padding = '8px';
+            catWrap.style.padding = '6px';
 
             const legend = document.createElement('legend');
             legend.textContent = cat.name || cat.id || 'category';
@@ -1084,7 +1085,7 @@ async function init() {
 
               const groupDiv = document.createElement('div');
               groupDiv.className = 'pkg-group';
-              groupDiv.style.marginBottom = '8px';
+              groupDiv.style.marginBottom = '4px';
 
               const itemsContainer = document.createElement('div');
               itemsContainer.className = 'pkg-group-items';
