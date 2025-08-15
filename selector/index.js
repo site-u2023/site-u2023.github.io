@@ -236,33 +236,48 @@ function setupSelectList(select, items, onselection) {
 function translate(lang) {
   function apply(language, language_json) {
     current_language = language;
-    current_language_json = language_json;
-    for (const tr in language_json) {
+    current_language_json = language_json || {};
+    for (const tr in current_language_json) {
       $$(`.${tr}`).forEach((e) => {
         if (e.placeholder !== undefined) {
-          e.placeholder = language_json[tr];
+          e.placeholder = current_language_json[tr];
         } else {
-          e.innerText = language_json[tr];
+          e.innerText = current_language_json[tr];
         }
       });
     }
   }
 
-  const new_lang = lang || current_language;
-  if (current_language === new_lang) {
+  const new_lang = lang || current_language || "en";
+  if (current_language === new_lang && current_language_json) {
     apply(current_language, current_language_json);
-  } else {
-    fetch(`langs/${new_lang}.json`)
-      .then((obj) => {
-        if (obj.status != 200) {
-          throw new Error(`Failed to fetch ${obj.url}`);
-        }
-        hideAlert();
-        return obj.json();
-      })
-      .then((mapping) => apply(new_lang, mapping))
-      .catch((err) => showAlert(err.message));
+    return;
   }
+
+  fetch(`langs/${new_lang}.json`)
+    .then((obj) => (obj.status === 200 ? obj.json() : null))
+    .then((mapping) => {
+      if (mapping) {
+        hideAlert();
+        apply(new_lang, mapping);
+      } else if (new_lang !== "en") {
+        // フォールバックで英語を試す（赤帯なし）
+        return fetch("langs/en.json")
+          .then((o) => (o.status === 200 ? o.json() : {}))
+          .then((en) => {
+            console.warn(`missing translation for '${new_lang}', fallback to en`);
+            hideAlert();
+            apply("en", en);
+          });
+      } else {
+        // en すら無ければ何もしない（赤帯なし）
+        console.warn("no translation file found; using raw strings");
+      }
+    })
+    .catch((e) => {
+      console.warn("translate() failed:", e);
+      // 失敗しても赤帯を出さない
+    });
 }
 
 // return array of matching ranges
