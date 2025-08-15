@@ -191,6 +191,13 @@
                   <!-- 小入力群が入るコンテナ -->
                   <div id="setup-sh-inputs"><!-- JSで WAN_DEF〜MNT の入力群を挿入 --></div>
 
+                  <!-- ISP/テンプレート制御（小入力群の最後、MNT の直後） -->
+                  <div id="aios" class="asu-section">
+                    <label for="isp-select">ISP profile:</label>
+                    <select id="isp-select" name="isp-select"></select>
+                    <button type="button" id="load-template">Load template</button>
+                  </div>
+
                   <div class="asu-section" id="uci-defaults-container">
                       <h4 class="tr-defaults">
                       Script to run on first boot (uci-defaults)
@@ -209,13 +216,6 @@
                         ></span>
                     </div>
                   </div>
-                </div>
-                
-                <!-- ISP/テンプレート制御 -->
-                <div id="aios" class="asu-section">
-                  <label for="isp-select">ISP profile:</label>
-                  <select id="isp-select" name="isp-select"></select>
-                  <button type="button" id="load-template">Load template</button>
                 </div>
 
                 <a href="javascript:buildAsuRequest()" class="custom-link">
