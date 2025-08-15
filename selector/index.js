@@ -982,8 +982,6 @@ async function init() {
   initTranslation();
 }
 
-// index.js の最後の部分を元に戻す（insertPackageJsonSectionの元の実装）
-
 (function insertPackageJsonSection() {
   function computeClosure(userIds, idx) {
     const res = new Set(userIds);
@@ -1027,7 +1025,7 @@ async function init() {
 
       const title = document.createElement('h4');
       title.className = 'pkg-title tr-packages';
-      title.textContent = 'Package Collection';
+      title.textContent = 'Package Collection';  // 元のタイトル
       container.appendChild(title);
 
       const selector = document.createElement('div');
@@ -1125,7 +1123,7 @@ async function init() {
 
               primaryLabel.appendChild(primaryCb);
               
-              // URLがある場合はリンクとして表示
+              // ★重要：URLがある場合はリンクとして表示（元の仕様）
               if (p.url) {
                 const link = document.createElement('a');
                 link.href = p.url;
@@ -1160,7 +1158,7 @@ async function init() {
 
                 depLabel.appendChild(depCb);
                 
-                // 依存パッケージもURLがある場合はリンク
+                // ★重要：依存パッケージもURLがある場合はリンク（元の仕様）
                 if (dep.url) {
                   const link = document.createElement('a');
                   link.href = dep.url;
