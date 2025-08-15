@@ -1231,6 +1231,7 @@ async function init() {
     });
 })();
 
+// 既存DOM #aios を #setup-sh-inputs の末尾に移動（小入力群の挿入完了を待ってから実行）
 (function () {
   function ready(fn) {
     if (document.readyState === 'loading') {
@@ -1242,8 +1243,25 @@ async function init() {
   ready(() => {
     const anchor = document.getElementById('setup-sh-inputs'); // 小入力群コンテナ
     const block  = document.getElementById('aios');            // ISP profile ブロック
-    if (anchor && block && !anchor.contains(block)) {
-      anchor.appendChild(block); // 末尾に移動
+    if (!anchor || !block) return;
+
+    const hasSmallInputs = () => !!anchor.querySelector('[data-setup-field]');
+
+    // すでに小入力がある → 末尾へ移動
+    if (hasSmallInputs()) {
+      if (!anchor.contains(block)) anchor.appendChild(block);
+      else anchor.appendChild(block); // 末尾へ再配置
+      return;
     }
+
+    // 小入力のマウント完了を監視してから末尾へ移動
+    const mo = new MutationObserver(() => {
+      if (hasSmallInputs()) {
+        if (!anchor.contains(block)) anchor.appendChild(block);
+        else anchor.appendChild(block); // 末尾へ再配置
+        mo.disconnect();
+      }
+    });
+    mo.observe(anchor, { childList: true });
   });
 })();
