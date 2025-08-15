@@ -3529,23 +3529,6 @@ async function fetchDevicePackages() {
     }
 }
 
-// デバイス選択後に呼び出す
-// loadDeviceProfile() の最後に追加
-// await fetchDevicePackages();
-
-// Package Search の入力フィルタ
-document.getElementById('package-search').addEventListener('input', function (e) {
-    const query = e.target.value.trim().toLowerCase();
-    if (!query || !Array.isArray(app.devicePackages)) {
-        hidePackageAutocomplete();
-        return;
-    }
-    const matches = app.devicePackages
-        .filter(pkg => pkg.name.toLowerCase().includes(query))
-        .slice(0, 10);
-    showPackageAutocomplete(matches);
-});
-
 // オートコンプリート表示
 function showPackageAutocomplete(packages) {
     hidePackageAutocomplete();
