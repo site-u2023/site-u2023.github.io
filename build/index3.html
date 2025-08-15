@@ -652,14 +652,15 @@
                         <!-- パッケージ検索ボックス -->
                         <div class="package-category">
                           <h6>Package Search</h6>
-                          <div id="package-search-autocomplete" class="autocomplete" style="margin-top:1rem;">
-                            <input type="text"
+                          <div id="package-search-autocomplete" class="autocomplete" style="margin-top:1rem; position: relative;">
+                              <input type="text"
                                 id="package-search"
                                 placeholder="Type package name"
                                 autocomplete="off"
                                 spellcheck="false"
                                 autocapitalize="off"
                                 class="form-control">
+                              <!-- ここに .autocomplete-items がJSで追加される -->
                           </div>
                         </div>
                         <ul id="installed-packages">
@@ -976,7 +977,7 @@
                     </div>
                 </div>
 
-                <a href="javascript:buildAsuRequest()" class="custom-link">
+                <a id="request-build" href="#" class="custom-link">
                     <span></span>
                     <span>REQUEST BUILD</span>
                 </a>
@@ -1294,9 +1295,21 @@ const config = {
     image_url: "https://downloads.openwrt.org",
     info_url: "https://openwrt.org/start?do=search&id=toh&q={title} @toh",
     asu_url: "https://sysupgrade.openwrt.org",
-    asu_extra_packages: ["luci"]
+    asu_extra_packages: ["luci"],
     device_packages_url: "https://sysupgrade.openwrt.org/api/v1/device-packages?branch={branch}&version={version}&target={target}&subtarget={subtarget}&profile={profile}"
 };
+
+async function fetchDevicePackages({ branch, version, target, subtarget, profile }) {
+    const url = (config.device_packages_url || '')
+        .replace("{branch}", encodeURIComponent(branch))
+        .replace("{version}", encodeURIComponent(version))
+        .replace("{target}", encodeURIComponent(target))
+        .replace("{subtarget}", encodeURIComponent(subtarget))
+        .replace("{profile}", encodeURIComponent(profile));
+    const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+    if (!res.ok) throw new Error(`device-packages fetch failed: ${res.status}`);
+    return await res.json(); // [{name, description, url?}, ...]
+}
 
 // グローバル変数
 let app = {
@@ -1815,14 +1828,39 @@ function waitForReady(ids = []) {
 }
 
 // ==================== パッケージ関数 ====================
+// パッケージデータベース（検索用）
+let packageSearchDB = [];
+
+/**
+ * パッケージデータベースの初期化
+ * @param {Array} data 外部から受け取った [{name, description, category, url}, ...] の配列
+ */
+function initializePackageDatabase(data) {
+    // 外部から渡された配列のみで初期化
+    if (!Array.isArray(data)) {
+        packageSearchDB = [];
+        return;
+    }
+
+    // 重複排除しながらコピー
+    const seen = new Set();
+    packageSearchDB = data.filter(pkg => {
+        if (!pkg || !pkg.name) return false;
+        if (seen.has(pkg.name)) return false;
+        seen.add(pkg.name);
+        return true;
+    });
+}
+
+// 言語正規化関数（既存のまま）
 function normalizeLang(lang) {
-  const map = {
-    en: '',       // 英語は i18n パッケージ不要
-    pt_br: 'pt-br',
-    zh_cn: 'zh-cn',
-    zh_tw: 'zh-tw'
-  };
-  return (map[lang] ?? String(lang || '').toLowerCase());
+    const map = {
+        en: '',       // 英語は i18n パッケージ不要
+        pt_br: 'pt-br',
+        zh_cn: 'zh-cn',
+        zh_tw: 'zh-tw'
+    };
+    return (map[lang] ?? String(lang || '').toLowerCase());
 }
 
 function asuI18nDB(lang) {
@@ -2012,7 +2050,10 @@ function bindEvents() {
     if (pkgSelectorEl) pkgSelectorEl.addEventListener('change', togglePackageSelector);
 
     const buildBtnEl = document.getElementById('request-build');
-    if (buildBtnEl) buildBtnEl.addEventListener('click', buildAsuRequest);
+    if (buildBtnEl) buildBtnEl.addEventListener('click', (e) => {
+        e.preventDefault();   // ページ遷移や href 実行を止める
+        buildAsuRequest();    // 安全に呼び出す
+    });
 
     // DS-Lite mode
     document.querySelectorAll('input[name="dsliteMode"]').forEach(radio => {
@@ -2069,6 +2110,44 @@ function bindEvents() {
 
     const mapeSection = document.getElementById('mape-manual-section');
     if (mapeSection) mapeSection.style.display = 'none';
+
+    // ===== ここから（修正後の正規実装）=====
+    const pkgSelectorCheckbox = document.getElementById('use-package-selector');
+    const pkgSearchInput = document.getElementById('package-search');
+
+    async function handlePackageFilterTrigger() {
+        const q = (pkgSearchInput?.value || '').trim().toLowerCase();
+
+        if (!(pkgSelectorCheckbox?.checked && q)) {
+            hidePackageAutocomplete();
+            return;
+        }
+        if (!app.selectedDevice || !app.selectedVersion) return;
+
+        const [target, subtarget] = String(app.selectedDevice.target || '').split('/');
+        const params = {
+            branch: app.selectedVersion === 'SNAPSHOT' ? 'snapshot' : 'release',
+            version: app.selectedVersion,
+            target: target || '',
+            subtarget: subtarget || '',
+            profile: app.selectedDevice.id || ''
+        };
+
+        try {
+            const list = await fetchDevicePackages(params);
+            app.devicePackages = Array.isArray(list) ? list : [];
+            const hits = app.devicePackages
+                .filter(p => p?.name?.toLowerCase().includes(q))
+                .slice(0, 20);
+            showPackageAutocomplete(hits);
+        } catch (e) {
+            console.error('device-packages fetch error:', e);
+            hidePackageAutocomplete();
+        }
+    }
+
+    pkgSelectorCheckbox?.addEventListener('change', handlePackageFilterTrigger);
+    pkgSearchInput?.addEventListener('input', handlePackageFilterTrigger);
 }
 
 // ==================== パッケージセレクター関連 ====================
@@ -2317,15 +2396,39 @@ async function loadDevices() {
         } else {
             url = `https://downloads.openwrt.org/releases/${app.selectedVersion}/.overview.json`;
         }
-        
+
         const response = await fetch(url);
         const data = await response.json();
 
-        app.devices = data.profiles || [];
+        // Flatten .overview.json -> [{ id, target: "arch/sub", titles: [...] }, ...]
+        app.devices = flattenOverviewToProfiles(data);
     } catch (error) {
         console.error('Failed to load devices:', error);
         app.devices = [];
     }
+}
+
+function flattenOverviewToProfiles(data) {
+    const out = [];
+    const targets = data && data.targets ? data.targets : {};
+    Object.keys(targets).forEach(arch => {
+        const subs = targets[arch] || {};
+        Object.keys(subs).forEach(sub => {
+            const node = subs[sub] || {};
+            const profiles = node.profiles || {};
+            Object.keys(profiles).forEach(id => {
+                const p = profiles[id] || {};
+                out.push({
+                    id,
+                    target: `${arch}/${sub}`,
+                    titles: p.titles || [],
+                    vendor: p.vendor || '',
+                    model: p.model || ''
+                });
+            });
+        });
+    });
+    return out;
 }
 
 function handleDeviceSearch(e) {
@@ -3513,20 +3616,7 @@ function showDownloadLinks(images, fullStatus, requestHash) {
         container.appendChild(buildInfo);
     }
 }
-
-// --- パッケージ検索オートコンプリート ---
-document.getElementById('package-search').addEventListener('input', function (e) {
-    const query = e.target.value.toLowerCase();
-    if (query.length < 2) {
-        hidePackageAutocomplete();
-        return;
-    }
-    const matches = (app.packageDB || [])
-        .filter(pkg => pkg.name.toLowerCase().includes(query))
-        .slice(0, 10);
-    showPackageAutocomplete(matches);
-});
-
+    
 function showPackageAutocomplete(packages) {
     let existing = document.querySelector('#package-search-autocomplete .autocomplete-items');
     if (existing) existing.remove();
@@ -3541,7 +3631,6 @@ function showPackageAutocomplete(packages) {
             document.getElementById('package-search').value = pkg.name;
             hidePackageAutocomplete();
             // クリック時の処理をここに（例：テキストエリアに追加）
-            togglePackage(pkg.name);
         });
         container.appendChild(div);
     });
@@ -3559,21 +3648,6 @@ document.addEventListener('click', function (e) {
         hidePackageAutocomplete();
     }
 });
-
-    // パッケージの選択・非選択を切り替える関数
-    function togglePackage(packageName) {
-        let packagesList = asuPackagesTextarea.value.split('\n').filter(p => p.trim() !== '');
-
-        if (installedPackages.has(packageName)) {
-            installedPackages.delete(packageName);
-            packagesList = packagesList.filter(p => p !== packageName);
-        } else {
-            installedPackages.add(packageName);
-            packagesList.push(packageName);
-        }
-        
-        asuPackagesTextarea.value = packagesList.join('\n');
-    }
 
     </script>
 </body>
