@@ -131,7 +131,7 @@
                 <a id="image-link" href="#"></a>
               </div>
             </div>
-<!-- ASU部分のみ（正しい構造） -->
+<!-- ASU部分の正しい構造 -->
             <div class="row">
               <details id="asu" class="hide" style="width: 100%">
                 <summary>
@@ -154,20 +154,33 @@
                   </div>
                 </div>
 
-                <!-- packages.jsonの表示はJavaScriptで自動挿入される -->
-                
-                <!-- Installed Packages テキストエリア（1つだけ） -->
+                <!-- パッケージ検索ボックス（これは必要！） -->
                 <br />
-                <div id="installed-packages" class="asu-section">
-                  <h4 class="tr-packages">Installed Packages</h4>
-                  <textarea
-                    rows="10"
-                    id="asu-packages"
+                <div id="package-search" class="asu-section">
+                  <h4 class="tr-search-packages">Search Device Packages</h4>
+                  <input
+                    type="text"
+                    id="pkg-search"
+                    name="pkg-search"
+                    placeholder="Search packages..."
                     autocomplete="off"
                     spellcheck="false"
                     autocapitalize="off"
-                  ></textarea>
+                  />
                 </div>
+
+                <!-- packages.jsonの表示はJavaScriptで自動挿入される（ここ） -->
+
+                <!-- textareaとその見出し（1セットだけ！） -->
+                <br />
+                <h4 class="tr-packages">Installed Packages</h4>
+                <textarea
+                  rows="10"
+                  id="asu-packages"
+                  autocomplete="off"
+                  spellcheck="false"
+                  autocapitalize="off"
+                ></textarea>
 
                 <h4 class="tr-defaults">
                   Script to run on first boot (uci-defaults)
