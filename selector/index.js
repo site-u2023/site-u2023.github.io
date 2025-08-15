@@ -712,7 +712,6 @@ function setModel(overview, target, id) {
   }
 }
 
-// 既存の changeModel 関数内の updateImages() 呼び出しの後に追加
 function changeModel(version, overview, title) {
   const entry = overview.profiles[title];
   const base_url = config.image_urls[version];
@@ -739,7 +738,7 @@ function changeModel(version, overview, title) {
           target: entry.target,
         };
         
-        // ここを追加：PackageSearcher でパッケージを読み込み
+        // ここから追加：PackageSearcher でパッケージを読み込み
         if (typeof packageSearcher !== 'undefined') {
           packageSearcher.loadPackagesForDevice(version, entry.target)
             .then(() => {
@@ -749,19 +748,22 @@ function changeModel(version, overview, title) {
             })
             .catch(error => {
               console.error('Failed to load packages:', error);
-              showAlert('Failed to load packages for this device');
+              // エラーの場合もUIを更新（無効化される）
+              updatePackageUI();
             });
         }
+        // ここまで追加
       })
       .catch((err) => showAlert(err.message));
   } else {
     updateImages();
     current_device = {};
     
-    // デバイスが選択されていない場合はパッケージUIをクリア
+    // ここから追加：デバイスが選択されていない場合はパッケージUIをクリア
     if (typeof clearPackageUI !== 'undefined') {
       clearPackageUI();
     }
+    // ここまで追加
   }
 }
 
