@@ -1734,10 +1734,10 @@ async function init() {
         // map.shを事前ロード
         await loadMapShScripts();
 
-        // パッケージセレクター生成
+        // パッケージセレクター生成（DOM生成完了を待機）
         try {
             if (typeof generatePackageSelector === 'function') {
-                await generatePackageSelector(); // DOM生成完了を待機
+                await generatePackageSelector();
                 console.log('Package selector generated successfully');
             }
         } catch (error) {
@@ -1747,13 +1747,21 @@ async function init() {
         // テンプレートとパッケージの更新
         try {
             if (typeof refreshTemplateAndPackages === 'function') {
-                await refreshTemplateAndPackages(); // 完了待機
+                await refreshTemplateAndPackages();
             }
         } catch (error) {
             console.error('Failed to refresh template and packages:', error);
         }
 
-        // パッケージDBをロード＆UI反映（要素存在確認込み）
+        // ====== ここで必須DOMと依存状態が揃うまで待機 ======
+        await waitForReady([
+            'versions',
+            'models',
+            'use-package-selector'
+            // 必要なら他の要素も追加
+        ]);
+
+        // パッケージDBをロード＆UI反映
         try {
             await loadPackageDatabase();
             updateInstalledPackageList();
@@ -1772,6 +1780,20 @@ async function init() {
             'Failed to initialize application: ' + error.message
         );
     }
+}
+
+// ==================== 必須要素の存在を待つユーティリティ ====================
+function waitForReady(ids = []) {
+    return new Promise(resolve => {
+        const check = () => {
+            if (ids.every(id => document.getElementById(id))) {
+                resolve();
+            } else {
+                requestAnimationFrame(check);
+            }
+        };
+        check();
+    });
 }
 
 // ==================== パッケージ関数 ====================
