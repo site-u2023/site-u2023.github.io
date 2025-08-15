@@ -1705,6 +1705,11 @@ document.getElementById('aios-language').addEventListener('change', function() {
 // ==================== 初期化関数 ====================
 async function init() {
     try {
+        const autocompleteDiv = document.getElementById('models-autocomplete');
+        if (!autocompleteDiv) {
+            console.error('models-autocomplete div not found');
+        }
+       
         await loadVersions();
         bindEvents();
         
@@ -2246,16 +2251,19 @@ function getDeviceTitle(device) {
 }
 
 function showAutocomplete(devices) {
-    const container = document.querySelector('.autocomplete-items');
+    // 既存のautocomplete-itemsを探す
+    let container = document.querySelector('.autocomplete-items');
+    
+    // なければ作成
     if (!container) {
-        // autocomplete-items要素を動的に作成
-        const autocompleteDiv = document.querySelector('.autocomplete');
-        const itemsDiv = document.createElement('div');
-        itemsDiv.className = 'autocomplete-items';
-        autocompleteDiv.appendChild(itemsDiv);
+        const autocompleteDiv = document.getElementById('models-autocomplete');
+        container = document.createElement('div');
+        container.className = 'autocomplete-items';
+        autocompleteDiv.appendChild(container);
     }
-    const container = document.querySelector('.autocomplete-items');
+    
     container.innerHTML = '';
+    container.style.display = 'block';
 
     if (devices.length === 0) {
         hideAutocomplete();
@@ -2275,7 +2283,7 @@ function showAutocomplete(devices) {
 function hideAutocomplete() {
     const items = document.querySelector('.autocomplete-items');
     if (items) {
-        items.style.display = 'none';
+        items.remove();
     }
 }
 
