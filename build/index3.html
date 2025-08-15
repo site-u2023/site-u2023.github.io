@@ -652,14 +652,15 @@
                         <!-- パッケージ検索ボックス -->
                         <div class="package-category">
                           <h6>Package Search</h6>
-                          <div id="package-search-autocomplete" class="autocomplete" style="margin-top:1rem;">
-                            <input type="text"
+                          <div id="package-search-autocomplete" class="autocomplete" style="margin-top:1rem; position: relative;">
+                              <input type="text"
                                 id="package-search"
                                 placeholder="Type package name"
                                 autocomplete="off"
                                 spellcheck="false"
                                 autocapitalize="off"
                                 class="form-control">
+                              <!-- ここに .autocomplete-items がJSで追加される -->
                           </div>
                         </div>
                         <ul id="installed-packages">
