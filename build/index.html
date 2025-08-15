@@ -3646,6 +3646,29 @@ function addPackageToList(pkgName) {
         textarea.value = list.join(' ');
         refreshTemplateAndPackages();
     }
+    showPackageTag(pkgName); // ← タグ表示追加
+}
+
+function showPackageTag(pkgName) {
+    const tag = document.createElement('span');
+    tag.textContent = `＋ ${pkgName}`;
+    tag.style.position = 'absolute';
+    tag.style.background = '#00a3e1';
+    tag.style.color = '#fff';
+    tag.style.padding = '3px 6px';
+    tag.style.borderRadius = '4px';
+    tag.style.fontSize = '0.85rem';
+    tag.style.top = '0';
+    tag.style.right = '0';
+    tag.style.zIndex = '9999';
+    tag.style.opacity = '1';
+    tag.style.transition = 'opacity 0.6s ease';
+
+    const parent = document.getElementById('package-search-autocomplete') || document.body;
+    parent.appendChild(tag);
+
+    setTimeout(() => { tag.style.opacity = '0'; }, 1000);     // 1秒後フェード
+    setTimeout(() => { tag.remove(); }, 1600);                 // 完全消去
 }
         
 document.addEventListener('click', function (e) {
