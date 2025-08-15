@@ -1240,10 +1240,10 @@ async function init() {
     }
   }
   ready(() => {
-    const anchor = document.getElementById('setup-sh-inputs');
-    const block  = document.getElementById('aios');
+    const anchor = document.getElementById('setup-sh-inputs'); // 小入力群コンテナ
+    const block  = document.getElementById('aios');            // ISP profile ブロック
     if (anchor && block && !anchor.contains(block)) {
-      anchor.insertBefore(block, anchor.firstChild);
+      anchor.appendChild(block); // 末尾に移動
     }
   });
 })();
