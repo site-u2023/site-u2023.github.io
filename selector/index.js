@@ -1188,20 +1188,15 @@ async function init() {
 
 (function insertSetupShInputs() {
   function mount(fields) {
-    const textarea = document.getElementById('uci-defaults-content');
-    if (!textarea) return;
+    // アンカーは「スクリプト」見出し直下のコンテナ
+    const container = document.getElementById('setup-sh-inputs');
+    if (!container) return;
 
-    // 「スクリプト」見出し（小入力群のh4）をアンカーにする
-    const scriptsHeading = document.querySelector('h4.tr-scripts');
-    if (!scriptsHeading) return;
+    // 二重マウント防止
+    if (container.hasAttribute('data-mounted')) return;
+    container.setAttribute('data-mounted', '1');
 
-    // 二重マウント防止（ID存在で判定）
-    if (document.getElementById('setup-sh-inputs')) return;
-
-    const container = document.createElement('div');
-    container.id = 'setup-sh-inputs';
-    container.style.margin = '8px 0 12px';
-
+    // 小入力群を追加
     fields.forEach(f => {
       const label = document.createElement('label');
       label.textContent = f;
@@ -1217,9 +1212,6 @@ async function init() {
       container.appendChild(label);
       container.appendChild(input);
     });
-
-    // 小入力群を「スクリプト」h4の直後に差し込む（textareaは動かさない）
-    scriptsHeading.insertAdjacentElement('afterend', container);
   }
 
   function parseSetupSh(content) {
