@@ -103,7 +103,7 @@ MAP-E／DS-Lite は単一エンジンで扱い、UI は薄く保つ。
   - `selector/index.html`
   - `selector/index.js`
   - `selector/index.css`
-  - `selector/lang/language.js`
+  - `selector/language/language.js`
   - `selector/packages/packages.json`
   - `selector/uci-defaults/setup.sh`
   - `selector/core/state.js`
