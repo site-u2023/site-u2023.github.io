@@ -6,12 +6,12 @@
     <title>OpenWrt Firmware Selector</title>
     <link rel="icon" href="favicon.ico" />
     <link rel="stylesheet" href="index.css" />
-    <link rel="stylesheet" href="advanced.css" />
-    <script src="config.js" defer></script>
-    <script src="index.js" defer></script>
-    <script src="advanced.js" defer></script>
+    <link rel="stylesheet" href="advanced.css">
+    <script src="config.js"></script>
+    <script src="index.js"></script>
+    <script src="advanced.js"></script>
   </head>
-  <body>
+  <body onload="init()">
     <!-- header across the whole page -->
     <header>
       <div>
@@ -20,7 +20,7 @@
         </a>
         <div style="flex-grow: 1"></div>
         <div>
-          <select id="languages">
+          <select id="languages-select">
             <option value="ar">العربية (Arabic)</option>
             <option value="ast">Asturianu (Asturian)</option>
             <option value="bg">български (Bulgarian)</option>
@@ -139,6 +139,7 @@
                   </span>
                 </summary>
 
+                <!-- 追加 開始: 検索の上に1行空ける + 検索UI -->
                 <br />
                 <div id="packages" class="asu-section">
                   <label for="pkg-search">Search packages / パッケージ検索</label>
@@ -152,6 +153,7 @@
                   />
                   <div id="pkg-list"></div>
                 </div>
+                <!-- 追加 終了 -->
 
                 <div id="asu-buildstatus" class="hide">
                   <span></span>
@@ -167,6 +169,7 @@
                   </div>
                 </div>
 
+                <!-- 公式の位置: File Sharing 等の下に「Installed Packages」見出しを置き、その直後にテキストエリア -->
                 <div>
                   <h4 class="tr-packages">Installed Packages / インストールされたパッケージ</h4>
                   <textarea
@@ -195,11 +198,13 @@
                   ></span>
                 </div>
 
+                <!-- 追加 開始: ISP/テンプレ制御（後でi18n化可） -->
                 <div id="aios" class="asu-section">
                   <label for="isp-select">ISP profile:</label>
                   <select id="isp-select" name="isp-select"></select>
                   <button type="button" id="load-template">Load template</button>
                 </div>
+                <!-- 追加 終了 -->
 
                 <a href="javascript:buildAsuRequest()" class="custom-link">
                   <span></span>
