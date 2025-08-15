@@ -1188,7 +1188,7 @@ async function init() {
 
 (function insertSetupShInputs() {
   function mount(fields) {
-    // アンカーは「スクリプト」見出し直下のコンテナ
+    // アンカーは「スクリプト」見出し直下のコンテナ（.autocomplete）
     const container = document.getElementById('setup-sh-inputs');
     if (!container) return;
 
@@ -1196,7 +1196,7 @@ async function init() {
     if (container.hasAttribute('data-mounted')) return;
     container.setAttribute('data-mounted', '1');
 
-    // 小入力群を追加
+    // 小入力群を追加（親の .autocomplete > input にスタイルを委譲）
     fields.forEach(f => {
       const label = document.createElement('label');
       label.textContent = f;
@@ -1206,7 +1206,6 @@ async function init() {
       const input = document.createElement('input');
       input.type = 'text';
       input.name = f;
-      input.className = 'tr-model';
       input.dataset.setupField = f;
 
       container.appendChild(label);
