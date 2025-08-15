@@ -1306,9 +1306,10 @@ let app = {
     devices: [],
     selectedDevice: null,
     selectedVersion: '',
-    templateLoaded: false
+    templateLoaded: false,
+    availablePackages: [] // デバイス固有のパッケージリスト
 };
-
+        
 // map.shのキャッシュ
 let mapShCache = {
     'new': null,
