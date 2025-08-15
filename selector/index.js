@@ -1191,12 +1191,12 @@ async function init() {
     const textarea = document.getElementById('uci-defaults-content');
     if (!textarea) return;
 
-    const parentGroup = document.getElementById('uci-defaults-group');
-    if (!parentGroup) return;
+    // 「スクリプト」見出し（小入力群のh4）をアンカーにする
+    const scriptsHeading = document.querySelector('h4.tr-scripts');
+    if (!scriptsHeading) return;
 
-    // 二重マウント防止
-    if (parentGroup.hasAttribute('data-mounted')) return;
-    parentGroup.setAttribute('data-mounted', '1');
+    // 二重マウント防止（ID存在で判定）
+    if (document.getElementById('setup-sh-inputs')) return;
 
     const container = document.createElement('div');
     container.id = 'setup-sh-inputs';
@@ -1218,18 +1218,8 @@ async function init() {
       container.appendChild(input);
     });
 
-    // 「スクリプト」見出し直後に小入力群を差し込む
-    const scriptHeading = [...parentGroup.querySelectorAll('h4')]
-      .find(h => h.textContent.trim() === 'スクリプト');
-
-    if (scriptHeading) {
-      scriptHeading.insertAdjacentElement('afterend', container);
-    } else {
-      // 見つからなければテキストエリアの直前に置く
-      parentGroup.insertBefore(container, textarea);
-    }
-
-    // textarea は HTML 側の「初回起動時に実行されるスクリプト (uci-defaults)」h4 の下に既にある前提
+    // 小入力群を「スクリプト」h4の直後に差し込む（textareaは動かさない）
+    scriptsHeading.insertAdjacentElement('afterend', container);
   }
 
   function parseSetupSh(content) {
