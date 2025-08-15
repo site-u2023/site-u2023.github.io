@@ -611,6 +611,7 @@
             filter: invert(100%) sepia(9%) saturate(261%) hue-rotate(281deg) brightness(117%) contrast(100%);
         }
 
+    } /* close @media (prefers-color-scheme: dark) */
 </style>
 
 </head>
@@ -1297,7 +1298,7 @@ const config = {
     info_url: "https://openwrt.org/start?do=search&id=toh&q={title} @toh",
     asu_url: "https://sysupgrade.openwrt.org",
     asu_extra_packages: ["luci"],
-    device_packages_url: "https://sysupgrade.openwrt.org/api/v1/device-packages?branch={branch}&version={version}&target={target}&subtarget={subtarget}&profile={profile}"
+    feeds: ["base", "luci", "packages", "routing", "telephony"]
 };
 
 // グローバル変数
@@ -2418,36 +2419,38 @@ async function loadDeviceProfile(device) {
             throw new Error(`Failed to fetch profiles.json: ${response.status}`);
         }
         
-const profilesData = await response.json();
+        const profilesData = await response.json();
         console.log(`Loaded profiles data:`, profilesData);
 
-        // version_codeを保存（公式と同じ）
+        // version_codeを保存
         app.versionCode = profilesData.version_code || '';
 
         if (profilesData.profiles && profilesData.profiles[profileId]) {
             const profile = profilesData.profiles[profileId];
-            console.log(`Found profile for ${profileId}:`, profile);
-            
             const defaultPackages = profilesData.default_packages || [];
             const devicePackages = profile.device_packages || [];
             const asuExtraPackages = ['luci'];
             const allPackages = defaultPackages.concat(devicePackages).concat(asuExtraPackages);
-            
-            console.log(`Setting packages: ${allPackages.join(' ')}`);
+
             document.getElementById('asu-packages').value = allPackages.join(' ');
             asuCollectPackages(); 
-            
-            showDeviceInfo();
-        } else {
-            console.error(`Profile ${profileId} not found in profiles.json`);
-            showDeviceInfo();
         }
+
+        // ★Package Search 用のパッケージ一覧を取得
+        await fetchDevicePackages();
+
+        showDeviceInfo();
+
     } catch (error) {
         console.error('Failed to load device profile:', error);
+
+        // エラー時も検索用を試みる
+        await fetchDevicePackages();
+
         showDeviceInfo();
     }
 }
-
+        
 function showDeviceInfo() {
     if (!app.selectedDevice) return;
 
@@ -3503,46 +3506,148 @@ function showDownloadLinks(images, fullStatus, requestHash) {
     }
 }
 
-// --- パッケージ検索オートコンプリート ---
+// ★パッケージインデックス取得（device_packages_url は廃止）
+async function fetchDevicePackages() {
+    app.devicePackages = [];
+    if (!app.selectedDevice || !app.selectedVersion) return;
+
+    // target/subtarget 抽出
+    const [target, subtarget] = (() => {
+        if (app.selectedDevice.target && app.selectedDevice.target.includes('/')) {
+            return app.selectedDevice.target.split('/');
+        }
+        return [app.selectedDevice.target || "", app.selectedDevice.subtarget || ""];
+    })();
+
+    const version = app.selectedVersion;
+
+    // arch_packages を profiles.json から取得
+    const profilesUrl = `${config.image_url}/releases/${encodeURIComponent(version)}` +
+                        `/targets/${encodeURIComponent(target)}/${encodeURIComponent(subtarget)}/profiles.json`;
+
+    let arch;
+    try {
+        const res = await fetch(profilesUrl);
+        if (!res.ok) throw new Error(`profiles.json HTTP ${res.status}`);
+        const meta = await res.json();
+        arch = meta.arch_packages;
+        if (!arch) throw new Error("profiles.json に arch_packages がありません");
+    } catch (e) {
+        console.error("arch_packages 取得失敗:", e);
+        return;
+    }
+
+    // パッケージインデックスURL一覧（targets と feeds）
+    const feeds = ["base", "luci", "packages", "routing", "telephony"];
+    const urls = [
+        `${config.image_url}/releases/${encodeURIComponent(version)}` +
+        `/targets/${encodeURIComponent(target)}/${encodeURIComponent(subtarget)}/packages/Packages`
+    ];
+    for (const feed of feeds) {
+        urls.push(
+            `${config.image_url}/releases/${encodeURIComponent(version)}` +
+            `/packages/${encodeURIComponent(arch)}/${encodeURIComponent(feed)}/Packages`
+        );
+    }
+
+    // 各 Packages を取得してパース
+    const allPkgs = [];
+    for (const url of urls) {
+        try {
+            const res = await fetch(url);
+            if (!res.ok) continue;
+            const text = await res.text();
+            const pkgs = parsePackagesText(text, url);
+            allPkgs.push(...pkgs);
+        } catch (e) {
+            console.warn(`パッケージ取得失敗: ${url}`, e);
+        }
+    }
+
+    // 名前重複を統合
+    const pkgMap = new Map();
+    for (const p of allPkgs) {
+        pkgMap.set(p.name, p);
+    }
+    app.devicePackages = Array.from(pkgMap.values());
+}
+
+// Packages ファイルをパース（必要なら外部化してもOK）
+function parsePackagesText(text, source) {
+    const blocks = text.split(/\n\s*\n/);
+    const pkgs = [];
+    for (const blk of blocks) {
+        const rec = {};
+        for (const line of blk.split('\n')) {
+            const m = line.match(/^([A-Za-z-]+):\s*(.*)$/);
+            if (!m) continue;
+            const key = m[1], val = m[2];
+            if (key === "Package") rec.name = val;
+            else if (key === "Version") rec.version = val;
+            else if (key === "Description") rec.description = val;
+            else if (key === "Section") rec.section = val;
+        }
+        if (rec.name) {
+            rec.source = source;
+            pkgs.push(rec);
+        }
+    }
+    return pkgs;
+}
+    
+// ★Package Search 入力ハンドラ（string / {name} 両対応）
 document.getElementById('package-search').addEventListener('input', function (e) {
-    const query = e.target.value.toLowerCase();
-    if (query.length < 2) {
+    const query = e.target.value.trim().toLowerCase();
+    if (query.length < 2 || !Array.isArray(app.devicePackages) || app.devicePackages.length === 0) {
         hidePackageAutocomplete();
         return;
     }
-    const matches = (app.packageDB || [])
-        .filter(pkg => pkg.name.toLowerCase().includes(query))
+    const matches = app.devicePackages
+        .map(p => (typeof p === 'string' ? { name: p } : p))
+        .filter(pkg => (pkg.name || '').toLowerCase().includes(query))
         .slice(0, 10);
     showPackageAutocomplete(matches);
 });
 
-function showPackageAutocomplete(packages) {
-    let existing = document.querySelector('#package-search-autocomplete .autocomplete-items');
-    if (existing) existing.remove();
+function hidePackageAutocomplete() {
+    const el = document.querySelector('#package-search-autocomplete .autocomplete-items');
+    if (el) el.remove();
+}
+
+function showPackageAutocomplete(matches) {
+    hidePackageAutocomplete();
+    const host = document.getElementById('package-search-autocomplete');
+    if (!host) return;
 
     const container = document.createElement('div');
     container.className = 'autocomplete-items';
 
-    packages.forEach(pkg => {
+    (matches || []).forEach(item => {
+        const name = (typeof item === 'string') ? item : (item && item.name) || '';
+        if (!name) return;
         const div = document.createElement('div');
-        div.innerHTML = `<strong>${pkg.name}</strong>`;
+        div.textContent = name;
         div.addEventListener('click', () => {
-            document.getElementById('package-search').value = pkg.name;
+            addPackageToList(name);
+            document.getElementById('package-search').value = '';
             hidePackageAutocomplete();
-            // クリック時の処理をここに（例：テキストエリアに追加）
-            togglePackage(pkg.name);
         });
         container.appendChild(div);
     });
 
-    document.getElementById('package-search-autocomplete').appendChild(container);
+    host.appendChild(container);
 }
 
-function hidePackageAutocomplete() {
-    let items = document.querySelector('#package-search-autocomplete .autocomplete-items');
-    if (items) items.remove();
+function addPackageToList(pkgName) {
+    const textarea = document.getElementById('asu-packages');
+    const list = textarea.value.trim() ? textarea.value.trim().split(/\s+/) : [];
+    if (!list.includes(pkgName)) {
+        list.push(pkgName);
+        textarea.value = list.join(' ');
+        refreshTemplateAndPackages();
+    }
 }
-
+        
 document.addEventListener('click', function (e) {
     if (!e.target.closest('#package-search-autocomplete')) {
         hidePackageAutocomplete();
@@ -3563,7 +3668,7 @@ document.addEventListener('click', function (e) {
         
         asuPackagesTextarea.value = packagesList.join('\n');
     }
-        
+
     </script>
 </body>
 
