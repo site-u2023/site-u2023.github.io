@@ -1719,34 +1719,58 @@ function updateInstalledPackageList() {
 // ==================== 初期化関数 ====================
 async function init() {
     try {
+        // バージョン読み込み
         await loadVersions();
-        bindEvents();
+
+        // イベントバインディング（要素存在チェック付き）
+        if (typeof bindEvents === 'function') {
+            try {
+                bindEvents();
+            } catch (error) {
+                console.error('Failed to bind events:', error);
+            }
+        }
+
+        // map.shを事前ロード
         await loadMapShScripts();
 
+        // パッケージセレクター生成
         try {
-            await generatePackageSelector();
+            if (typeof generatePackageSelector === 'function') {
+                await generatePackageSelector(); // DOM生成完了を待機
+                console.log('Package selector generated successfully');
+            }
         } catch (error) {
             console.error('Failed to generate package selector:', error);
         }
 
+        // テンプレートとパッケージの更新
         try {
-            await refreshTemplateAndPackages();
+            if (typeof refreshTemplateAndPackages === 'function') {
+                await refreshTemplateAndPackages(); // 完了待機
+            }
         } catch (error) {
             console.error('Failed to refresh template and packages:', error);
         }
 
+        // パッケージDBをロード＆UI反映（要素存在確認込み）
         try {
-            await loadPackageDatabase();       // DB読み込み
-            updateInstalledPackageList();      // UI反映
+            await loadPackageDatabase();
+            updateInstalledPackageList();
         } catch (error) {
             console.error('Failed to load/update package DB:', error);
         }
 
+        // ISP情報を初期取得
+        console.log('Starting ISP info fetch...');
         await fetchApiInfoAndUpdate();
 
     } catch (error) {
         console.error('Failed to initialize:', error);
-        updateIspDisplay('Initialization error', 'Failed to initialize application: ' + error.message);
+        updateIspDisplay(
+            'Initialization error',
+            'Failed to initialize application: ' + error.message
+        );
     }
 }
 
