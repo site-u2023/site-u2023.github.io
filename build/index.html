@@ -3517,12 +3517,19 @@ async function fetchDevicePackages() {
     const branch = app.selectedVersion === 'SNAPSHOT' ? 'snapshots' : 'releases';
 
     function buildDevicePackagesUrl(device) {
-        // device は app.selectedDevice 相当
         const version = device.version || app.selectedVersion;
-        const target = device.target;
-        const subtarget = device.subtarget;
-        const profile = device.profile;
-    
+        let target = "";
+        let subtarget = "";
+
+        if (device.target.includes("/")) {
+            [target, subtarget] = device.target.split("/");
+        } else {
+            target = device.target;
+            subtarget = device.subtarget || "";
+        }
+
+        const profile = device.id || device.profile; // profiles.jsonの構造に応じて調整
+
         return `https://sysupgrade.openwrt.org/api/v1/device-packages` +
                `?version=${encodeURIComponent(version)}` +
                `&target=${encodeURIComponent(target)}` +
