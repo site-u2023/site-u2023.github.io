@@ -1718,8 +1718,13 @@ document.getElementById('aios-language').addEventListener('change', function() {
 
 // ==================== ユーティリティ関数 ====================
 async function loadPackageDatabase() {
-    const res = await fetch('data/packages.json');
-    app.packageDB = await res.json();
+    // 内蔵DBをそのまま利用
+    app.packageDB = PACKAGE_DB.categories
+        .flatMap(cat => cat.packages.map(pkg => ({
+            name: pkg.name,
+            url: pkg.url || '',
+            category: cat.name
+        })));
 }
 
 function updateInstalledPackageList() {
@@ -2519,9 +2524,25 @@ const infoHtml = `
     // テンプレートを最初に設定（まだ設定されていない場合のみ）
     const textarea = document.getElementById('uci-defaults-content');
     if (!app.templateLoaded && (!textarea.value || textarea.value.trim() === '')) {
-        textarea.value = SETUP_SH_TEMPLATE;
-        app.templateLoaded = true;
-        console.log('Template loaded for the first time');
+        await loadSetupTemplate();
+    }
+}
+
+async function loadSetupTemplate() {
+    // 将来は fetch('setup.sh') に差し替えるだけで外部化できる
+    if (!app.templateLoaded) {
+        try {
+            const res = await fetch('setup.sh');
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const text = await res.text();
+            document.getElementById('uci-defaults-content').value = text;
+            app.templateLoaded = true;
+            console.log('Template loaded from external file');
+        } catch (e) {
+            console.error('Failed to load setup.sh, falling back to built‑in template:', e);
+            document.getElementById('uci-defaults-content').value = SETUP_SH_TEMPLATE;
+            app.templateLoaded = true;
+        }
     }
 }
 
