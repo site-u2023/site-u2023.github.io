@@ -365,6 +365,50 @@ header > div {
   position: relative;
 }
 
+/* Package selector styles */
+.asu-section {
+  margin-bottom: 1em;
+}
+
+.asu-section h4 {
+  margin-bottom: 0.5em;
+}
+
+.pkg-cat {
+  margin-bottom: 0.8em;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 0.5em;
+}
+
+.pkg-cat legend {
+  font-weight: bold;
+  padding: 0 0.5em;
+}
+
+.pkg-group {
+  margin-bottom: 0.3em;
+}
+
+.pkg-item {
+  display: block;
+  margin-bottom: 0.2em;
+}
+
+.pkg-item.primary {
+  font-weight: bold;
+}
+
+.pkg-item.dependency {
+  margin-left: 1.5em;
+  font-size: 0.9em;
+  color: #666;
+}
+
+.pkg-item input[type="checkbox"] {
+  margin-right: 0.5em;
+}
+
 /* light mode */
 header {
   background-color: #00a3e1;
@@ -457,6 +501,15 @@ body {
   #versions {
     background-color: #313135;
     color: #d0d0d0;
+  }
+
+  /* Package selector dark mode support */
+  .pkg-cat {
+    border-color: #444;
+  }
+  
+  .pkg-item.dependency {
+    color: #aaa;
   }
 }
 
