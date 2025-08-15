@@ -1234,7 +1234,12 @@ function mount(fields) {
   });
 
   // HTML下段の Scripts → Script to run on first boot (uci-defaults) 内に配置
-  parentGroup.insertBefore(container, textarea);
+  // textarea の直後に差し込む（見出しと“下のインプットボックス”を揃える）
+  if (textarea.nextSibling) {
+    parentGroup.insertBefore(container, textarea.nextSibling);
+  } else {
+    parentGroup.appendChild(container);
+  }
 }
  
   function parseSetupSh(content) {
