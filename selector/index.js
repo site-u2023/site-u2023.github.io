@@ -1230,3 +1230,20 @@ async function init() {
       if (fields.length) mount(fields);
     });
 })();
+
+(function () {
+  function ready(fn) {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', fn, { once: true });
+    } else {
+      fn();
+    }
+  }
+  ready(() => {
+    const anchor = document.getElementById('setup-sh-inputs');
+    const block  = document.getElementById('aios');
+    if (anchor && block && !anchor.contains(block)) {
+      anchor.insertBefore(block, anchor.firstChild);
+    }
+  });
+})();
