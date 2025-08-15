@@ -1815,14 +1815,39 @@ function waitForReady(ids = []) {
 }
 
 // ==================== パッケージ関数 ====================
+// パッケージデータベース（検索用）
+let packageSearchDB = [];
+
+/**
+ * パッケージデータベースの初期化
+ * @param {Array} data 外部から受け取った [{name, description, category, url}, ...] の配列
+ */
+function initializePackageDatabase(data) {
+    // 外部から渡された配列のみで初期化
+    if (!Array.isArray(data)) {
+        packageSearchDB = [];
+        return;
+    }
+
+    // 重複排除しながらコピー
+    const seen = new Set();
+    packageSearchDB = data.filter(pkg => {
+        if (!pkg || !pkg.name) return false;
+        if (seen.has(pkg.name)) return false;
+        seen.add(pkg.name);
+        return true;
+    });
+}
+
+// 言語正規化関数（既存のまま）
 function normalizeLang(lang) {
-  const map = {
-    en: '',       // 英語は i18n パッケージ不要
-    pt_br: 'pt-br',
-    zh_cn: 'zh-cn',
-    zh_tw: 'zh-tw'
-  };
-  return (map[lang] ?? String(lang || '').toLowerCase());
+    const map = {
+        en: '',       // 英語は i18n パッケージ不要
+        pt_br: 'pt-br',
+        zh_cn: 'zh-cn',
+        zh_tw: 'zh-tw'
+    };
+    return (map[lang] ?? String(lang || '').toLowerCase());
 }
 
 function asuI18nDB(lang) {
