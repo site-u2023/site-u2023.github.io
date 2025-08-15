@@ -139,22 +139,6 @@
                   </span>
                 </summary>
 
-                <!-- 追加 開始: 検索の上に1行空ける + 検索UI -->
-                <br />
-                <div id="packages" class="asu-section">
-                  <h4 class="tr-search">Search packages / パッケージ検索</h4>
-                  <input
-                    type="text"
-                    id="pkg-search"
-                    name="pkg-search"
-                    autocomplete="off"
-                    spellcheck="false"
-                    autocapitalize="off"
-                  />
-                  <div id="pkg-list"></div>
-                </div>
-                <!-- 追加 終了 -->
-
                 <div id="asu-buildstatus" class="hide">
                   <span></span>
                   <div id="asu-log" class="hide">
@@ -169,7 +153,26 @@
                   </div>
                 </div>
 
-                <!-- 公式の位置: File Sharing 等の下に「Installed Packages」見出しを置き、その直後にテキストエリア -->
+                <!-- パッケージ検索（デバイス選択後のみ有効） -->
+                <br />
+                <div id="package-search" class="asu-section">
+                  <h4 class="tr-search-packages">Search Device Packages</h4>
+                  <input
+                    type="text"
+                    id="pkg-search"
+                    name="pkg-search"
+                    placeholder="Search packages for this device..."
+                    autocomplete="off"
+                    spellcheck="false"
+                    autocapitalize="off"
+                    disabled
+                  />
+                  <div id="pkg-search-results" class="pkg-search-results"></div>
+                </div>
+
+                <!-- packages.jsonの表示はここに残る（insertPackageJsonSectionで自動挿入される） -->
+
+                <!-- Installed Packages テキストエリア -->
                 <br />
                 <div id="installed-packages" class="asu-section">
                   <h4 class="tr-packages">Installed Packages</h4>
@@ -181,7 +184,7 @@
                     autocapitalize="off"
                   ></textarea>
                 </div>
-
+                
                 <h4 class="tr-defaults">
                   Script to run on first boot (uci-defaults)
                 </h4>
