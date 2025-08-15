@@ -45,5 +45,6 @@
     "tr-defaults": "Script to run on first boot (uci-defaults)",
 
     "tr-packages-list": "Packages",
-    "tr-scripts": "Scripts"
+    "tr-scripts": "Scripts",
+    "tr-search-packages": "Search Device Packages"
 }
