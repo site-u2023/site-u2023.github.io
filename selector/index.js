@@ -1206,7 +1206,7 @@ async function init() {
       const input = document.createElement('input');
       input.type = 'text';
       input.name = f;
-      input.style.width = '100%';
+      input.className = 'tr-model';
       input.dataset.setupField = f;
 
       container.appendChild(label);
