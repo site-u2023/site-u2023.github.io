@@ -156,13 +156,12 @@
 
                 <!-- 上段: 検索 + パッケージ一覧 + 入力（Installed Packages） -->
                 <br />
-                <div id="package-search" class="asu-section">
+                <div id="package-search" class="asu-section autocomplete">
                   <h4 class="tr-search-packages">Search Device Packages</h4>
                   <input
                     type="text"
                     id="pkg-search"
                     name="pkg-search"
-                    class="tr-model"
                     placeholder="Search packages..."
                     autocomplete="off"
                     spellcheck="false"
@@ -190,7 +189,7 @@
                 <div class="asu-section">
                   <h4 class="tr-scripts">Scripts</h4>
                   <!-- 小入力群が入るコンテナ -->
-                  <div id="setup-sh-inputs"><!-- JSで WAN_DEF〜MNT の入力群を挿入 --></div>
+                  <div id="setup-sh-inputs" class="autocomplete"><!-- JSで WAN_DEF〜MNT の入力群を挿入 --></div>
 
                   <!-- ISP/テンプレート制御（小入力群の最後、MNT の直後） -->
                   <div id="aios" class="asu-section">
