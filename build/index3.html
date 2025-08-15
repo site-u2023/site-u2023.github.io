@@ -3513,18 +3513,51 @@ function showDownloadLinks(images, fullStatus, requestHash) {
     }
 }
 
-// --- パッケージ検索オートコンプリート ---
+// --- 公式パッケージ一覧をロード ---
+async function loadOfficialPackageList() {
+    const res = await fetch('https://your-endpoint.example.com/openwrt-packages.json');
+    if (!res.ok) throw new Error('Package list fetch failed');
+    app.officialPackages = await res.json(); // [{name:'luci', description:'…'}, …]
+}
+
+// init() の終わりで呼び出す
+loadOfficialPackageList().catch(console.error);
+
+// --- パッケージ検索（全文検索） ---
 document.getElementById('package-search').addEventListener('input', function (e) {
     const query = e.target.value.toLowerCase();
     if (query.length < 2) {
         hidePackageAutocomplete();
         return;
     }
-    const matches = (app.packageDB || [])
+    const matches = (app.officialPackages || [])
         .filter(pkg => pkg.name.toLowerCase().includes(query))
         .slice(0, 10);
     showPackageAutocomplete(matches);
 });
+
+function showPackageAutocomplete(packages) {
+    let existing = document.querySelector('#package-search-autocomplete .autocomplete-items');
+    if (existing) existing.remove();
+
+    const container = document.createElement('div');
+    container.className = 'autocomplete-items';
+
+    packages.forEach(pkg => {
+        const div = document.createElement('div');
+        div.innerHTML = `<strong>${pkg.name}</strong><br><small>${pkg.description || ''}</small>`;
+        div.addEventListener('click', () => {
+            const ta = document.getElementById('asu-packages');
+            const current = ta.value.trim();
+            ta.value = current ? current + ' ' + pkg.name : pkg.name;
+            hidePackageAutocomplete();
+            asuCollectPackages();
+        });
+        container.appendChild(div);
+    });
+
+    document.getElementById('package-search-autocomplete').appendChild(container);
+}
 
 function showPackageAutocomplete(packages) {
     let existing = document.querySelector('#package-search-autocomplete .autocomplete-items');
