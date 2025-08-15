@@ -2283,22 +2283,7 @@ function showAutocomplete(devices) {
     autocompleteDiv.appendChild(container);
     container.style.display = 'block';
 }
-
-    if (devices.length === 0) {
-        hideAutocomplete();
-        return;
-    }
-
-    devices.forEach(device => {
-        const div = document.createElement('div');
-        div.innerHTML = `<strong>${getDeviceTitle(device)}</strong><br><small>Target: ${device.target}</small>`;
-        div.addEventListener('click', () => selectDevice(device));
-        container.appendChild(div);
-    });
-
-    container.style.display = 'block';
-}
-
+    
 function hideAutocomplete() {
     const items = document.querySelector('.autocomplete-items');
     if (items) {
