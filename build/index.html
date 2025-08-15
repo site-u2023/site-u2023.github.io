@@ -3605,7 +3605,20 @@ document.addEventListener('click', function (e) {
         
         asuPackagesTextarea.value = packagesList.join('\n');
     }
-        
+
+    // Package Search 入力イベント: API取得結果(app.devicePackages)からフィルタ
+    document.getElementById('package-search').addEventListener('input', function (e) {
+        const query = e.target.value.trim().toLowerCase();
+        if (query.length < 2 || !Array.isArray(app.devicePackages) || app.devicePackages.length === 0) {
+            hidePackageAutocomplete();
+            return;
+        }
+        const matches = app.devicePackages
+            .filter(pkg => (pkg.name || '').toLowerCase().includes(query))
+            .slice(0, 10);
+        showPackageAutocomplete(matches);
+    });
+
     </script>
 </body>
 
