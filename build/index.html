@@ -1298,7 +1298,7 @@ const config = {
     info_url: "https://openwrt.org/start?do=search&id=toh&q={title} @toh",
     asu_url: "https://sysupgrade.openwrt.org",
     asu_extra_packages: ["luci"],
-    device_packages_url: "https://sysupgrade.openwrt.org/api/v1/device-packages?branch={branch}&version={version}&target={target}&subtarget={subtarget}&profile={profile}"
+    device_packages_url: "https://sysupgrade.openwrt.org/api/v1/device-packages?version={version}&target={target}&subtarget={subtarget}&profile={profile}"
 };
 
 // グローバル変数
@@ -3515,12 +3515,23 @@ async function fetchDevicePackages() {
 
     const [target, subtarget] = app.selectedDevice.target.split('/');
     const branch = app.selectedVersion === 'SNAPSHOT' ? 'snapshots' : 'releases';
-    const url = config.device_packages_url
-        .replace('{branch}', branch)
-        .replace('{version}', app.selectedVersion)
-        .replace('{target}', target)
-        .replace('{subtarget}', subtarget)
-        .replace('{profile}', app.selectedDevice.id);
+
+    function buildDevicePackagesUrl(device) {
+        // device は app.selectedDevice 相当
+        const version = device.version || app.selectedVersion;
+        const target = device.target;
+        const subtarget = device.subtarget;
+        const profile = device.profile;
+    
+        return `https://sysupgrade.openwrt.org/api/v1/device-packages` +
+               `?version=${encodeURIComponent(version)}` +
+               `&target=${encodeURIComponent(target)}` +
+               `&subtarget=${encodeURIComponent(subtarget)}` +
+               `&profile=${encodeURIComponent(profile)}`;
+    }
+
+    // 呼び出し側
+    const url = buildDevicePackagesUrl(app.selectedDevice);
 
     try {
         const res = await fetch(url);
