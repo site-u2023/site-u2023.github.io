@@ -1184,34 +1184,41 @@ async function init() {
 })();
 
 (function insertSetupShInputs() {
-  function mount(fields) {
-    const textarea = document.getElementById('uci-defaults-content');
-    if (!textarea) return;
+function mount(fields) {
+  const textarea = document.getElementById('uci-defaults-content');
+  if (!textarea) return;
 
-    const container = document.createElement('div');
-    container.id = 'setup-sh-inputs';
-    container.style.margin = '8px 0 12px';
+  const parentGroup = document.getElementById('uci-defaults-group');
+  if (!parentGroup) return;
 
-    fields.forEach(f => {
-      const label = document.createElement('label');
-      label.textContent = f;
-      label.style.display = 'block';
-      label.style.marginTop = '4px';
+  // 二重マウント防止
+  if (parentGroup.hasAttribute('data-mounted')) return;
+  parentGroup.setAttribute('data-mounted', '1');
 
-      const input = document.createElement('input');
-      input.type = 'text';
-      input.name = f;
-      input.style.width = '100%';
-      input.dataset.setupField = f;
+  const container = document.createElement('div');
+  container.id = 'setup-sh-inputs';
+  container.style.margin = '8px 0 12px';
 
-      container.appendChild(label);
-      container.appendChild(input);
-    });
+  fields.forEach(f => {
+    const label = document.createElement('label');
+    label.textContent = f;
+    label.style.display = 'block';
+    label.style.marginTop = '4px';
 
-    // ここを変更：textarea の「前」に挿入
-    textarea.parentNode.insertBefore(container, textarea);
-  }
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.name = f;
+    input.style.width = '100%';
+    input.dataset.setupField = f;
 
+    container.appendChild(label);
+    container.appendChild(input);
+  });
+
+  // HTML下段の Scripts → Script to run on first boot (uci-defaults) 内に配置
+  parentGroup.insertBefore(container, textarea);
+}
+ 
   function parseSetupSh(content) {
     const result = [];
     content.split('\n').forEach(line => {
