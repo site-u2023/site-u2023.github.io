@@ -1719,41 +1719,29 @@ function updateInstalledPackageList() {
 // ==================== 初期化関数 ====================
 async function init() {
     try {
-        // バージョン読み込み
         await loadVersions();
-        
-        // イベントバインディング
         bindEvents();
-        
-        // map.shを事前ロード
         await loadMapShScripts();
 
-        // パッケージセレクターを動的生成（エラーハンドリング付き）
         try {
-            generatePackageSelector();
-            console.log('Package selector generated successfully');
+            await generatePackageSelector();
         } catch (error) {
             console.error('Failed to generate package selector:', error);
         }
-        
-        // テンプレートとパッケージの更新
+
         try {
-            refreshTemplateAndPackages();
+            await refreshTemplateAndPackages();
         } catch (error) {
             console.error('Failed to refresh template and packages:', error);
         }
 
-        // パッケージDBをロードしてUIに反映
         try {
-            await loadPackageDatabase();
-            updateInstalledPackageList();
-            console.log('Installed package list updated');
+            await loadPackageDatabase();       // DB読み込み
+            updateInstalledPackageList();      // UI反映
         } catch (error) {
-            console.error('Failed to load or update package DB:', error);
+            console.error('Failed to load/update package DB:', error);
         }
-        
-        // ISP情報を初期取得
-        console.log('Starting ISP info fetch...');
+
         await fetchApiInfoAndUpdate();
 
     } catch (error) {
