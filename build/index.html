@@ -2418,36 +2418,38 @@ async function loadDeviceProfile(device) {
             throw new Error(`Failed to fetch profiles.json: ${response.status}`);
         }
         
-const profilesData = await response.json();
+        const profilesData = await response.json();
         console.log(`Loaded profiles data:`, profilesData);
 
-        // version_codeを保存（公式と同じ）
+        // version_codeを保存
         app.versionCode = profilesData.version_code || '';
 
         if (profilesData.profiles && profilesData.profiles[profileId]) {
             const profile = profilesData.profiles[profileId];
-            console.log(`Found profile for ${profileId}:`, profile);
-            
             const defaultPackages = profilesData.default_packages || [];
             const devicePackages = profile.device_packages || [];
             const asuExtraPackages = ['luci'];
             const allPackages = defaultPackages.concat(devicePackages).concat(asuExtraPackages);
-            
-            console.log(`Setting packages: ${allPackages.join(' ')}`);
+
             document.getElementById('asu-packages').value = allPackages.join(' ');
             asuCollectPackages(); 
-            
-            showDeviceInfo();
-        } else {
-            console.error(`Profile ${profileId} not found in profiles.json`);
-            showDeviceInfo();
         }
+
+        // ★ここで Package Search 用パッケージ一覧を取得
+        await fetchDevicePackages();
+
+        showDeviceInfo();
+
     } catch (error) {
         console.error('Failed to load device profile:', error);
+
+        // エラー時でも Package Search 用パッケージ取得は試みる
+        await fetchDevicePackages();
+
         showDeviceInfo();
     }
 }
-
+        
 function showDeviceInfo() {
     if (!app.selectedDevice) return;
 
