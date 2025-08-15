@@ -1724,6 +1724,15 @@ async function init() {
         } catch (error) {
             console.error('Failed to refresh template and packages:', error);
         }
+
+        // パッケージDBをロードしてUIに反映
+        try {
+            await loadPackageDatabase();
+            updateInstalledPackageList();
+            console.log('Installed package list updated');
+        } catch (error) {
+            console.error('Failed to load or update package DB:', error);
+        }
         
         // ISP情報を初期取得
         console.log('Starting ISP info fetch...');
