@@ -3576,6 +3576,25 @@ function hidePackageAutocomplete() {
     if (el) el.remove();
 }
 
+function showPackageAutocomplete(matches) {
+    const list = document.getElementById('package-autocomplete');
+    list.innerHTML = '';
+
+    matches.forEach(pkg => {
+        const item = document.createElement('div');
+        item.textContent = pkg.name;
+        item.className = 'autocomplete-item';
+        item.addEventListener('click', () => {
+            addPackageToList(pkg.name);
+            hidePackageAutocomplete();
+            document.getElementById('package-search').value = '';
+        });
+        list.appendChild(item);
+    });
+
+    list.style.display = matches.length ? 'block' : 'none';
+}
+
 function addPackageToList(pkgName) {
     const textarea = document.getElementById('asu-packages');
     const list = textarea.value.trim() ? textarea.value.trim().split(/\s+/) : [];
