@@ -790,27 +790,30 @@ function initTranslation() {
 
 // connect template icon for uci-defaults
 function setup_uci_defaults() {
-  let icon = $("#uci-defaults-template");
-  let link = icon.getAttribute("data-link");
-  let textarea = $("#uci-defaults-content");
-  icon.onclick = function () {
-    fetch(link)
-      .then((obj) => {
-        if (obj.status != 200) {
-          throw new Error(`Failed to fetch ${obj.url}`);
-        }
-        hideAlert();
-        return obj.text();
-      })
-      .then((text) => {
-        // toggle text
-        if (textarea.value.indexOf(text) != -1) {
-          textarea.value = textarea.value.replace(text, "");
-        } else {
-          textarea.value = textarea.value + text;
-        }
-      })
-      .catch((err) => showAlert(err.message));
+  const icon = $("#uci-defaults-template");
+  if (!icon) return;
+  const link = icon.getAttribute("data-link");
+  const textarea = $("#uci-defaults-content");
+  icon.onclick = async function () {
+    try {
+      const obj = await fetch(link);
+      if (obj.status !== 200) {
+        // テンプレが無い場合は黙ってスキップ（赤帯なし）
+        console.warn(`uci-defaults template not available: ${obj.url || link}`);
+        return;
+      }
+      hideAlert();
+      const text = await obj.text();
+      // toggle text
+      if (textarea.value.indexOf(text) !== -1) {
+        textarea.value = textarea.value.replace(text, "");
+      } else {
+        textarea.value = textarea.value + text;
+      }
+    } catch (e) {
+      // ネットワーク異常も赤帯にしない
+      console.warn("uci-defaults template fetch failed:", e);
+    }
   };
 }
 
