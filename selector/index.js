@@ -1187,54 +1187,51 @@ async function init() {
 })();
 
 (function insertSetupShInputs() {
-function mount(fields) {
-  const textarea = document.getElementById('uci-defaults-content');
-  if (!textarea) return;
+  function mount(fields) {
+    const textarea = document.getElementById('uci-defaults-content');
+    if (!textarea) return;
 
-  const parentGroup = document.getElementById('uci-defaults-group');
-  if (!parentGroup) return;
+    const parentGroup = document.getElementById('uci-defaults-group');
+    if (!parentGroup) return;
 
-  // 二重マウント防止
-  if (parentGroup.hasAttribute('data-mounted')) return;
-  parentGroup.setAttribute('data-mounted', '1');
+    // 二重マウント防止
+    if (parentGroup.hasAttribute('data-mounted')) return;
+    parentGroup.setAttribute('data-mounted', '1');
 
-  const container = document.createElement('div');
-  container.id = 'setup-sh-inputs';
-  container.style.margin = '8px 0 12px';
+    const container = document.createElement('div');
+    container.id = 'setup-sh-inputs';
+    container.style.margin = '8px 0 12px';
 
-  fields.forEach(f => {
-    const label = document.createElement('label');
-    label.textContent = f;
-    label.style.display = 'block';
-    label.style.marginTop = '4px';
+    fields.forEach(f => {
+      const label = document.createElement('label');
+      label.textContent = f;
+      label.style.display = 'block';
+      label.style.marginTop = '4px';
 
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.name = f;
-    input.style.width = '100%';
-    input.dataset.setupField = f;
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.name = f;
+      input.style.width = '100%';
+      input.dataset.setupField = f;
 
-    container.appendChild(label);
-    container.appendChild(input);
-  });
+      container.appendChild(label);
+      container.appendChild(input);
+    });
 
-  // 構造を保証: h4 → setup.sh inputs → textarea
-  // 見出しは uci-defaults セクション内の h4（なければ textarea の直前要素を候補に）
-  const heading =
-    parentGroup.querySelector('h4') ||
-    textarea.previousElementSibling;
+    // 「スクリプト」見出し直後に小入力群を差し込む
+    const scriptHeading = [...parentGroup.querySelectorAll('h4')]
+      .find(h => h.textContent.trim() === 'スクリプト');
 
-  if (heading && heading.tagName === 'H4') {
-    // h4の直後に小入力群を配置（テキストノード無視のため insertAdjacentElement を使う）
-    heading.insertAdjacentElement('afterend', container);
-    // その直後に textarea を移動
-    container.insertAdjacentElement('afterend', textarea);
-  } else {
-    // 見出し特定ができない場合でも、inputs → textarea の順を作る
-    parentGroup.insertBefore(container, textarea);
+    if (scriptHeading) {
+      scriptHeading.insertAdjacentElement('afterend', container);
+    } else {
+      // 見つからなければテキストエリアの直前に置く
+      parentGroup.insertBefore(container, textarea);
+    }
+
+    // textarea は HTML 側の「初回起動時に実行されるスクリプト (uci-defaults)」h4 の下に既にある前提
   }
-}
- 
+
   function parseSetupSh(content) {
     const result = [];
     content.split('\n').forEach(line => {
