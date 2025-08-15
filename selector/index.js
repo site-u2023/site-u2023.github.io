@@ -980,6 +980,8 @@ async function init() {
   initTranslation();
 }
 
+// index.js の最後の部分を元に戻す（insertPackageJsonSectionの元の実装）
+
 (function insertPackageJsonSection() {
   function computeClosure(userIds, idx) {
     const res = new Set(userIds);
@@ -1018,25 +1020,20 @@ async function init() {
     if (textareas.length === 0) return;
 
     textareas.forEach(textarea => {
-      const installedPackagesH4 = textarea.parentNode.querySelector('h4.tr-packages');
-      
       const container = document.createElement('div');
       container.className = 'pkg-section asu-section';
 
       const title = document.createElement('h4');
       title.className = 'pkg-title tr-packages';
-      title.textContent = 'packages.json packages';
+      title.textContent = 'Package Collection';
       container.appendChild(title);
 
       const selector = document.createElement('div');
       selector.className = 'pkg-selector';
       container.appendChild(selector);
 
-      if (installedPackagesH4) {
-        installedPackagesH4.parentNode.insertBefore(container, installedPackagesH4);
-      } else {
-        textarea.parentNode.insertBefore(container, textarea);
-      }
+      // 元の位置（textareaの前）に挿入
+      textarea.parentNode.insertBefore(container, textarea);
 
       fetch('packages/packages.json', { cache: 'no-cache' })
         .then(r => r.ok ? r.json() : null)
@@ -1096,6 +1093,7 @@ async function init() {
               const itemsContainer = document.createElement('div');
               itemsContainer.className = 'pkg-group-items';
 
+              // プライマリパッケージ
               const primaryLabel = document.createElement('label');
               primaryLabel.className = 'pkg-item primary';
 
@@ -1124,9 +1122,22 @@ async function init() {
               });
 
               primaryLabel.appendChild(primaryCb);
-              primaryLabel.appendChild(document.createTextNode(p.name || p.id));
+              
+              // URLがある場合はリンクとして表示
+              if (p.url) {
+                const link = document.createElement('a');
+                link.href = p.url;
+                link.target = '_blank';
+                link.textContent = p.name || p.id;
+                link.style.marginLeft = '4px';
+                primaryLabel.appendChild(link);
+              } else {
+                primaryLabel.appendChild(document.createTextNode(' ' + (p.name || p.id)));
+              }
+              
               itemsContainer.appendChild(primaryLabel);
 
+              // 依存パッケージ
               group.dependencies.forEach(dep => {
                 const depLabel = document.createElement('label');
                 depLabel.className = 'pkg-item dependency';
@@ -1146,7 +1157,19 @@ async function init() {
                 });
 
                 depLabel.appendChild(depCb);
-                depLabel.appendChild(document.createTextNode('↳ ' + (dep.name || dep.id)));
+                
+                // 依存パッケージもURLがある場合はリンク
+                if (dep.url) {
+                  const link = document.createElement('a');
+                  link.href = dep.url;
+                  link.target = '_blank';
+                  link.textContent = '↳ ' + (dep.name || dep.id);
+                  link.style.marginLeft = '4px';
+                  depLabel.appendChild(link);
+                } else {
+                  depLabel.appendChild(document.createTextNode(' ↳ ' + (dep.name || dep.id)));
+                }
+                
                 itemsContainer.appendChild(depLabel);
               });
 
