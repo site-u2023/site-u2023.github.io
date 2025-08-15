@@ -1365,7 +1365,7 @@ if (originalChangeModel) {
 
 // グローバル公開
 // window.applyInitialsFromApi = applyInitialsFromApi;
-window.buildAsuRequest = customBuildAsuRequest;
+// window.buildAsuRequest = customBuildAsuRequest;
 
 window.debugCustomFeatures = function() {
     console.log('Custom App State:', customApp);
