@@ -3631,7 +3631,6 @@ function showPackageAutocomplete(packages) {
             document.getElementById('package-search').value = pkg.name;
             hidePackageAutocomplete();
             // クリック時の処理をここに（例：テキストエリアに追加）
-            togglePackage(pkg.name);
         });
         container.appendChild(div);
     });
@@ -3650,80 +3649,6 @@ document.addEventListener('click', function (e) {
     }
 });
 
-    const installedPackages = new Set();
-    const asuPackagesTextarea = document.getElementById('asu-packages');
-    const packageSearchInput = document.getElementById('package-search');
-
-    function filterPackages(query) {
-        const branch = document.getElementById('branch').value;
-        const version = document.getElementById('version').value;
-        const target = document.getElementById('target').value;
-        const subtarget = document.getElementById('subtarget').value;
-        const profile = document.getElementById('profile').value;
-
-        let apiUrl = config.device_packages_url
-            .replace('{branch}', branch)
-            .replace('{version}', version)
-            .replace('{target}', target)
-            .replace('{subtarget}', subtarget)
-            .replace('{profile}', profile);
-            
-        apiUrl += `&q=${encodeURIComponent(query)}`;
-
-        fetch(apiUrl)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
-            .then(packages => {
-                showPackageAutocomplete(packages);
-            })
-            .catch(error => {
-                console.error('Error fetching packages:', error);
-                hidePackageAutocomplete();
-            });
-    }
-
-    packageSearchInput.addEventListener('input', function(e) {
-        const query = e.target.value.trim();
-        if (query.length > 0) {
-            filterPackages(query);
-        } else {
-            hidePackageAutocomplete();
-        }
-    });
-
-    function togglePackage(packageName) {
-        let packagesList = asuPackagesTextarea.value.split('\n').filter(p => p.trim() !== '');
-
-        if (installedPackages.has(packageName)) {
-            installedPackages.delete(packageName);
-            packagesList = packagesList.filter(p => p !== packageName);
-        } else {
-            installedPackages.add(packageName);
-            packagesList.push(packageName);
-        }
-        
-        asuPackagesTextarea.value = packagesList.join('\n');
-    }
-
-    // パッケージの選択・非選択を切り替える関数
-    function togglePackage(packageName) {
-        let packagesList = asuPackagesTextarea.value.split('\n').filter(p => p.trim() !== '');
-
-        if (installedPackages.has(packageName)) {
-            installedPackages.delete(packageName);
-            packagesList = packagesList.filter(p => p !== packageName);
-        } else {
-            installedPackages.add(packageName);
-            packagesList.push(packageName);
-        }
-        
-        asuPackagesTextarea.value = packagesList.join('\n');
-    }
-        
     </script>
 </body>
 
