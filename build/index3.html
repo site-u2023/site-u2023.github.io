@@ -1299,6 +1299,18 @@ const config = {
     device_packages_url: "https://sysupgrade.openwrt.org/api/v1/device-packages?branch={branch}&version={version}&target={target}&subtarget={subtarget}&profile={profile}"
 };
 
+async function fetchDevicePackages({ branch, version, target, subtarget, profile }) {
+    const url = (config.device_packages_url || '')
+        .replace("{branch}", encodeURIComponent(branch))
+        .replace("{version}", encodeURIComponent(version))
+        .replace("{target}", encodeURIComponent(target))
+        .replace("{subtarget}", encodeURIComponent(subtarget))
+        .replace("{profile}", encodeURIComponent(profile));
+    const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+    if (!res.ok) throw new Error(`device-packages fetch failed: ${res.status}`);
+    return await res.json(); // [{name, description, url?}, ...]
+}
+
 // グローバル変数
 let app = {
     versions: [],
@@ -2095,6 +2107,26 @@ function bindEvents() {
 
     const mapeSection = document.getElementById('mape-manual-section');
     if (mapeSection) mapeSection.style.display = 'none';
+
+    const pkgSelectorCheckbox = document.getElementById('use-package-selector');
+    const pkgSearchInput = document.getElementById('package-search');
+
+    async function handlePackageFilterTrigger() {
+        if (pkgSelectorCheckbox.checked && pkgSearchInput.value.trim() !== '') {
+            const params = {
+                branch: app.selectedVersion === 'SNAPSHOT' ? 'snapshot' : 'release',
+                version: app.selectedVersion,
+                target: app.selectedDevice?.target?.split('/')[0] || '',
+                subtarget: app.selectedDevice?.target?.split('/')[1] || '',
+                profile: app.selectedDevice?.id || ''
+            };
+            const pkgs = await fetchDevicePackages(params);
+            updatePackageList(pkgs);
+        }
+    }
+
+    pkgSelectorCheckbox.addEventListener('change', handlePackageFilterTrigger);
+    pkgSearchInput.addEventListener('input', handlePackageFilterTrigger);
 }
 
 // ==================== パッケージセレクター関連 ====================
