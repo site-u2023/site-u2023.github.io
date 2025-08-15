@@ -264,3 +264,188 @@ class PackageSearcher {
 
 // グローバルインスタンス
 const packageSearcher = new PackageSearcher();
+
+function updatePackageUI() {
+  const status = packageSearcher.getStatus();
+  if (status.isLoading) {
+    showPackageLoading();
+    return;
+  }
+  
+  if (status.packageCount === 0) {
+    showPackageError('No packages found for this device');
+    return;
+  }
+  
+  const categories = packageSearcher.getPackagesByCategory();
+  renderPackageCategories(categories);
+  
+  // 検索機能を有効化
+  setupPackageSearch();
+}
+
+function clearPackageUI() {
+  const selector = document.querySelector('.pkg-selector');
+  if (selector) {
+    selector.innerHTML = '';
+  }
+  
+  const searchInput = document.getElementById('pkg-search');
+  if (searchInput) {
+    searchInput.disabled = true;
+    searchInput.placeholder = 'Select a device first';
+  }
+}
+
+function showPackageLoading() {
+  const selector = document.querySelector('.pkg-selector');
+  if (selector) {
+    selector.innerHTML = '<div style="text-align: center; padding: 20px;">Loading packages...</div>';
+  }
+}
+
+function showPackageError(message) {
+  const selector = document.querySelector('.pkg-selector');
+  if (selector) {
+    selector.innerHTML = `<div style="text-align: center; padding: 20px; color: #999;">${message}</div>`;
+  }
+}
+
+function renderPackageCategories(categories) {
+  const selector = document.querySelector('.pkg-selector');
+  if (!selector) return;
+  
+  selector.innerHTML = '';
+  
+  // カテゴリをソート
+  const sortedCategories = Array.from(categories.entries()).sort(([a], [b]) => a.localeCompare(b));
+  
+  for (const [categoryName, packages] of sortedCategories) {
+    if (packages.length === 0) continue;
+    
+    const catWrap = document.createElement('fieldset');
+    catWrap.className = 'pkg-cat';
+    
+    const legend = document.createElement('legend');
+    legend.textContent = `${categoryName} (${packages.length})`;
+    catWrap.appendChild(legend);
+    
+    // パッケージをソート
+    packages.sort((a, b) => (a.Package || '').localeCompare(b.Package || ''));
+    
+    for (const pkg of packages) {
+      const packageDiv = createPackageElement(pkg);
+      catWrap.appendChild(packageDiv);
+    }
+    
+    selector.appendChild(catWrap);
+  }
+}
+
+function createPackageElement(pkg) {
+  const packageDiv = document.createElement('div');
+  packageDiv.className = 'pkg-group';
+  
+  const label = document.createElement('label');
+  label.className = 'pkg-item primary';
+  
+  const checkbox = document.createElement('input');
+  checkbox.type = 'checkbox';
+  checkbox.value = pkg.Package;
+  checkbox.dataset.pkgName = pkg.Package;
+  
+  // textareaの既存の値をチェック
+  const textarea = document.getElementById('asu-packages');
+  if (textarea) {
+    const currentPackages = (textarea.value.match(/[^\s,]+/g) || []);
+    checkbox.checked = currentPackages.includes(pkg.Package);
+  }
+  
+  checkbox.addEventListener('change', handlePackageSelection);
+  
+  label.appendChild(checkbox);
+  label.appendChild(document.createTextNode(' ' + pkg.Package));
+  
+  // 説明があれば表示
+  if (pkg.Description) {
+    const desc = document.createElement('div');
+    desc.className = 'pkg-description';
+    desc.style.fontSize = '0.8em';
+    desc.style.color = '#666';
+    desc.style.marginLeft = '1.5em';
+    desc.textContent = pkg.Description;
+    packageDiv.appendChild(label);
+    packageDiv.appendChild(desc);
+  } else {
+    packageDiv.appendChild(label);
+  }
+  
+  return packageDiv;
+}
+
+function handlePackageSelection(event) {
+  const checkbox = event.target;
+  const packageName = checkbox.value;
+  const textarea = document.getElementById('asu-packages');
+  
+  if (!textarea) return;
+  
+  let currentPackages = new Set((textarea.value.match(/[^\s,]+/g) || []));
+  
+  if (checkbox.checked) {
+    // 依存関係を解決
+    const resolved = packageSearcher.resolveDependencies([packageName]);
+    for (const dep of resolved) {
+      currentPackages.add(dep);
+    }
+    
+    // 依存パッケージのチェックボックスも更新
+    resolved.forEach(dep => {
+      const depCheckbox = document.querySelector(`input[data-pkg-name="${dep}"]`);
+      if (depCheckbox) {
+        depCheckbox.checked = true;
+      }
+    });
+  } else {
+    currentPackages.delete(packageName);
+  }
+  
+  textarea.value = Array.from(currentPackages).join(' ');
+}
+
+function setupPackageSearch() {
+  const searchInput = document.getElementById('pkg-search');
+  if (!searchInput) return;
+  
+  searchInput.disabled = false;
+  searchInput.placeholder = 'Search packages...';
+  
+  let searchTimeout;
+  searchInput.addEventListener('input', (event) => {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+      performPackageSearch(event.target.value);
+    }, 300); // 300ms debounce
+  });
+}
+
+function performPackageSearch(query) {
+  if (!query.trim()) {
+    // 検索クエリが空の場合は全カテゴリを表示
+    const categories = packageSearcher.getPackagesByCategory();
+    renderPackageCategories(categories);
+    return;
+  }
+  
+  const results = packageSearcher.searchPackages(query);
+  
+  if (results.length === 0) {
+    showPackageError(`No packages found for "${query}"`);
+    return;
+  }
+  
+  // 検索結果を単一カテゴリとして表示
+  const searchCategories = new Map();
+  searchCategories.set(`Search results for "${query}"`, results);
+  renderPackageCategories(searchCategories);
+}
