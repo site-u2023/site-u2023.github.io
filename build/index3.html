@@ -1959,58 +1959,76 @@ exit 1`;
 
 // ==================== イベントバインディング ====================
 function bindEvents() {
-    document.getElementById('versions').addEventListener('change', handleVersionChange);
-    document.getElementById('models').addEventListener('input', handleDeviceSearch);
-    document.getElementById('use-aios-config').addEventListener('change', toggleAiosConfig);
-    document.getElementById('use-package-selector').addEventListener('change', togglePackageSelector);
-    document.getElementById('request-build').addEventListener('click', buildAsuRequest);
+    const versionsEl = document.getElementById('versions');
+    if (versionsEl) versionsEl.addEventListener('change', handleVersionChange);
 
-    // パッケージ選択チェックボックスのイベントは動的生成時に設定
+    const modelsEl = document.getElementById('models');
+    if (modelsEl) modelsEl.addEventListener('input', handleDeviceSearch);
 
-    // DS-Lite mode (auto/manual) の監視を追加
+    const aiosConfigEl = document.getElementById('use-aios-config');
+    if (aiosConfigEl) aiosConfigEl.addEventListener('change', toggleAiosConfig);
+
+    const pkgSelectorEl = document.getElementById('use-package-selector');
+    if (pkgSelectorEl) pkgSelectorEl.addEventListener('change', togglePackageSelector);
+
+    const buildBtnEl = document.getElementById('request-build');
+    if (buildBtnEl) buildBtnEl.addEventListener('click', buildAsuRequest);
+
+    // DS-Lite mode
     document.querySelectorAll('input[name="dsliteMode"]').forEach(radio => {
         radio.addEventListener('change', handleDsliteModeChange);
     });
-    
-    // Connection mode (AUTO/OFF) の監視
+
+    // Connection mode
     document.querySelectorAll('input[name="connectionMode"]').forEach(radio => {
         radio.addEventListener('change', handleConnectionModeChange);
     });
 
-    // Connection type (DHCP/PPPoE/DS-Lite/MAP-E/None) の監視
+    // Connection type
     document.querySelectorAll('input[name="connectionType"]').forEach(radio => {
         radio.addEventListener('change', handleConnectionTypeChange);
     });
 
-    // MAP-E type (auto/gua/pd) の監視
+    // MAP-E type
     document.querySelectorAll('input[name="mapeType"]').forEach(radio => {
         radio.addEventListener('change', handleMapeTypeChange);
     });
 
-    // aios-config内の全ての入力フィールドに非同期リスナーを追加
-    document.getElementById('aios-config').addEventListener('input', function(e) {
-        if (document.getElementById('use-aios-config').checked) {
-            applyConnectionSettingsChange();
-        }
-    });
+    // aios-config 入力系
+    const aiosConfigDiv = document.getElementById('aios-config');
+    if (aiosConfigDiv) {
+        aiosConfigDiv.addEventListener('input', function () {
+            const useConfig = document.getElementById('use-aios-config');
+            if (useConfig && useConfig.checked) {
+                applyConnectionSettingsChange();
+            }
+        });
+        aiosConfigDiv.addEventListener('change', function () {
+            const useConfig = document.getElementById('use-aios-config');
+            if (useConfig && useConfig.checked) {
+                applyConnectionSettingsChange();
+            }
+        });
+    }
 
-    document.getElementById('aios-config').addEventListener('change', function(e) {
-        if (document.getElementById('use-aios-config').checked) {
-            applyConnectionSettingsChange();
-        }
-    });
-
-    document.addEventListener('click', function(e) {
+    document.addEventListener('click', function (e) {
         if (!e.target.closest('.autocomplete')) {
             hideAutocomplete();
         }
     });
 
-    // 初期状態設定：手動接続セクションを非表示
-    document.getElementById('manual-connection-section').style.display = 'none';
-    document.getElementById('pppoe-section').style.display = 'none';
-    document.getElementById('dslite-section').style.display = 'none';
-    document.getElementById('mape-manual-section').style.display = 'none';
+    // 初期状態設定（存在確認あり）
+    const manualSection = document.getElementById('manual-connection-section');
+    if (manualSection) manualSection.style.display = 'none';
+
+    const pppoeSection = document.getElementById('pppoe-section');
+    if (pppoeSection) pppoeSection.style.display = 'none';
+
+    const dsliteSection = document.getElementById('dslite-section');
+    if (dsliteSection) dsliteSection.style.display = 'none';
+
+    const mapeSection = document.getElementById('mape-manual-section');
+    if (mapeSection) mapeSection.style.display = 'none';
 }
 
 // ==================== パッケージセレクター関連 ====================
