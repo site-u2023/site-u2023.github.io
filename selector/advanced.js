@@ -1,6 +1,28 @@
 // 追加用.js
 // Package Search Component - add to advanced.js
 
+(function() {
+    'use strict';
+
+    // 既存の init 関数を保存
+    const originalInit = window.init;
+
+    // 新しい init 関数で既存の init をラップ
+    window.init = async function() {
+        if (originalInit) {
+            await originalInit();
+        }
+        await initCustomFeatures();
+    };
+
+    // カスタム機能用の状態
+    let customApp = {
+        apiInfo: null,
+        mapSh: { 'new': null, '19': null },
+        templateLoaded: false,
+        packageDB: null
+    };
+  
 class PackageSearcher {
   constructor() {
     this.packages = new Map();
@@ -265,9 +287,6 @@ class PackageSearcher {
 // グローバルインスタンス
 const packageSearcher = new PackageSearcher();
 
-// カスタム版の機能を統合
-(function() {
-    'use strict';
 
     // グローバル変数
     let app = {
@@ -1330,7 +1349,30 @@ const packageSearcher = new PackageSearcher();
         return str.match(/[^\s,]+/g) || [];
     }
 
-    // 初期化実行
-    initCustomFeatures();
+const originalChangeModel = window.changeModel;
+if (originalChangeModel) {
+    window.changeModel = function(version, overview, title) {
+        originalChangeModel.apply(this, arguments);
+        setTimeout(() => {
+            const textarea = document.getElementById('uci-defaults-content');
+            if (textarea && !textarea.value) {
+                initializeTemplate();
+            }
+            refreshTemplateAndPackages();
+        }, 100);
+    };
+}
+
+// グローバル公開
+window.applyInitialsFromApi = applyInitialsFromApi;
+window.buildAsuRequest = customBuildAsuRequest;
+
+window.debugCustomFeatures = function() {
+    console.log('Custom App State:', customApp);
+    console.log('Package Selector:', document.getElementById('use-package-selector'));
+    console.log('AIOS Config:', document.getElementById('use-aios-config'));
+    console.log('Current Device:', window.current_device);
+    console.log('Build Function:', window.buildAsuRequest);
+};
 
 })();
