@@ -1781,8 +1781,8 @@ async function init() {
 
         // パッケージDBをロード＆UI反映
         try {
-            await loadPackageDatabase();
-            updateInstalledPackageList();
+            // await loadPackageDatabase();
+            // updateInstalledPackageList();
         } catch (error) {
             console.error('Failed to load/update package DB:', error);
         }
