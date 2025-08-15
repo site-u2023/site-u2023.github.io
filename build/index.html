@@ -3506,51 +3506,95 @@ function showDownloadLinks(images, fullStatus, requestHash) {
     }
 }
 
-// ★デバイス固有パッケージ取得（device_packages_url 利用）
+// ★パッケージインデックス取得（device_packages_url は廃止）
 async function fetchDevicePackages() {
-    if (!app.selectedDevice || !app.selectedVersion) {
-        app.devicePackages = [];
+    app.devicePackages = [];
+    if (!app.selectedDevice || !app.selectedVersion) return;
+
+    // target/subtarget 抽出
+    const [target, subtarget] = (() => {
+        if (app.selectedDevice.target && app.selectedDevice.target.includes('/')) {
+            return app.selectedDevice.target.split('/');
+        }
+        return [app.selectedDevice.target || "", app.selectedDevice.subtarget || ""];
+    })();
+
+    const version = app.selectedVersion;
+
+    // arch_packages を profiles.json から取得
+    const profilesUrl = `${config.image_url}/releases/${encodeURIComponent(version)}` +
+                        `/targets/${encodeURIComponent(target)}/${encodeURIComponent(subtarget)}/profiles.json`;
+
+    let arch;
+    try {
+        const res = await fetch(profilesUrl);
+        if (!res.ok) throw new Error(`profiles.json HTTP ${res.status}`);
+        const meta = await res.json();
+        arch = meta.arch_packages;
+        if (!arch) throw new Error("profiles.json に arch_packages がありません");
+    } catch (e) {
+        console.error("arch_packages 取得失敗:", e);
         return;
     }
 
-    const [target, subtarget] = app.selectedDevice.target.split('/');
-    const branch = app.selectedVersion === 'SNAPSHOT' ? 'snapshots' : 'releases';
+    // パッケージインデックスURL一覧（targets と feeds）
+    const feeds = ["base", "luci", "packages", "routing", "telephony"];
+    const urls = [
+        `${config.image_url}/releases/${encodeURIComponent(version)}` +
+        `/targets/${encodeURIComponent(target)}/${encodeURIComponent(subtarget)}/packages/Packages`
+    ];
+    for (const feed of feeds) {
+        urls.push(
+            `${config.image_url}/releases/${encodeURIComponent(version)}` +
+            `/packages/${encodeURIComponent(arch)}/${encodeURIComponent(feed)}/Packages`
+        );
+    }
 
-    function buildDevicePackagesUrl(device) {
-        const version = device.version || app.selectedVersion;
-        let target = "";
-        let subtarget = "";
-
-        if (device.target.includes("/")) {
-            [target, subtarget] = device.target.split("/");
-        } else {
-            target = device.target;
-            subtarget = device.subtarget || "";
+    // 各 Packages を取得してパース
+    const allPkgs = [];
+    for (const url of urls) {
+        try {
+            const res = await fetch(url);
+            if (!res.ok) continue;
+            const text = await res.text();
+            const pkgs = parsePackagesText(text, url);
+            allPkgs.push(...pkgs);
+        } catch (e) {
+            console.warn(`パッケージ取得失敗: ${url}`, e);
         }
-
-        const profile = device.id || device.profile; // profiles.jsonの構造に応じて調整
-
-        return `https://sysupgrade.openwrt.org/api/v1/device-packages` +
-               `?version=${encodeURIComponent(version)}` +
-               `&target=${encodeURIComponent(target)}` +
-               `&subtarget=${encodeURIComponent(subtarget)}` +
-               `&profile=${encodeURIComponent(profile)}`;
     }
 
-    // 呼び出し側
-    const url = buildDevicePackagesUrl(app.selectedDevice);
-
-    try {
-        const res = await fetch(url);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        app.devicePackages = Array.isArray(data) ? data : (data.packages || []);
-    } catch (err) {
-        console.error('Failed to fetch device packages:', err);
-        app.devicePackages = [];
+    // 名前重複を統合
+    const pkgMap = new Map();
+    for (const p of allPkgs) {
+        pkgMap.set(p.name, p);
     }
+    app.devicePackages = Array.from(pkgMap.values());
 }
 
+// Packages ファイルをパース（必要なら外部化してもOK）
+function parsePackagesText(text, source) {
+    const blocks = text.split(/\n\s*\n/);
+    const pkgs = [];
+    for (const blk of blocks) {
+        const rec = {};
+        for (const line of blk.split('\n')) {
+            const m = line.match(/^([A-Za-z-]+):\s*(.*)$/);
+            if (!m) continue;
+            const key = m[1], val = m[2];
+            if (key === "Package") rec.name = val;
+            else if (key === "Version") rec.version = val;
+            else if (key === "Description") rec.description = val;
+            else if (key === "Section") rec.section = val;
+        }
+        if (rec.name) {
+            rec.source = source;
+            pkgs.push(rec);
+        }
+    }
+    return pkgs;
+}
+    
 // ★Package Search 入力ハンドラ（string / {name} 両対応）
 document.getElementById('package-search').addEventListener('input', function (e) {
     const query = e.target.value.trim().toLowerCase();
