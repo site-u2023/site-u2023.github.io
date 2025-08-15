@@ -1364,7 +1364,7 @@ if (originalChangeModel) {
 }
 
 // グローバル公開
-window.applyInitialsFromApi = applyInitialsFromApi;
+// window.applyInitialsFromApi = applyInitialsFromApi;
 window.buildAsuRequest = customBuildAsuRequest;
 
 window.debugCustomFeatures = function() {
