@@ -755,30 +755,32 @@
                             </div>
                         </div>
 
-                        <!-- IPアドレスとDevice name -->
+                        <!-- LAN IPv4/IPv6アドレス -->
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="aios-lan-ip">LAN IP Address</label>
-                                <input type="text" id="aios-lan-ip" class="form-control" placeholder="192.168.1.1" value="192.168.1.1">
+                                <label for="aios-lan-ipv4">LAN IPv4 Address</label>
+                                <input type="text" id="aios-lan-ipv4" class="form-control" placeholder="192.168.1.1" value="192.168.1.1">
                             </div>
+                            <div class="form-group">
+                                <label for="aios-lan-ipv6">LAN IPv6 Address</label>
+                                <input type="text" id="aios-lan-ipv6" class="form-control" placeholder="fd00::1/64">
+                                <small class="form-text text-muted">Optional: e.g., fd00::1/64</small>
+                            </div>
+                        </div>
+
+                        <!-- Device nameとRoot password -->
+                        <div class="form-row">
                             <div class="form-group">
                                 <label for="aios-device-name">Device name</label>
                                 <input type="text" id="aios-device-name" class="form-control" placeholder="OpenWrt">
                             </div>
-                        </div>
-                    
-                        <div class="form-row">
                             <div class="form-group">
                                 <label for="aios-root-password">Root password</label>
                                 <input type="password" id="aios-root-password" class="form-control" placeholder="8+ characters">
                                 <small class="form-text text-muted">Leave empty to disable password authentication</small>
                             </div>
-                            <div class="form-group">
-                                <label for="aios-confirm-password">Confirm password</label>
-                                <input type="password" id="aios-confirm-password" class="form-control" placeholder="Confirm password">
-                            </div>
                         </div>
-
+                        
                         <h5>Wi-Fi Configuration</h5>
                         <div class="form-row">
                             <div class="form-group">
@@ -1040,6 +1042,7 @@
 # timezone="UTC"
 # zonename="America/New_York"
 # lan_ip_address="192.168.1.1"
+# lan_ipv6_address=""
 # device_name="OpenWrt"
 # root_password="Password"
 # wlan_name="OpenWrt"
@@ -1106,6 +1109,12 @@ fi
 if [ -n "\${lan_ip_address}" ]; then
     echo "Setting LAN IP: \${lan_ip_address}"
     uci set network.lan.ipaddr="\${lan_ip_address}"
+fi
+
+# Configure LAN IPv6
+if [ -n "\${lan_ipv6_address}" ]; then
+    echo "Setting LAN IPv6: \${lan_ipv6_address}"
+    uci set network.lan.ip6addr="\${lan_ipv6_address}"
 fi
 
 # Configure language
@@ -2114,10 +2123,10 @@ function bindEvents() {
         'aios-country', 
         'aios-timezone',
         'aios-zonename',
-        'aios-lan-ip',
+        'aios-lan-ipv4',
+        'aios-lan-ipv6',
         'aios-device-name',
         'aios-root-password',
-        'aios-confirm-password',
         'aios-wifi-ssid',
         'aios-wifi-password'
     ];
@@ -3075,6 +3084,7 @@ function customizeSetupScript(content, config, apiInfo, selectedPackages) {
     const samePw = (config.rootPassword === config.confirmPassword) ? config.rootPassword : '';
     customized = setScriptVar(customized, 'device_name', config.deviceName, !!config.deviceName);
     customized = setScriptVar(customized, 'lan_ip_address', config.lanIp, !!config.lanIp);
+    customized = setScriptVar(customized, 'lan_ipv6_address', config.lanIpv6, !!config.lanIpv6);
     customized = setScriptVar(customized, 'root_password', samePw, !!samePw);
     customized = setScriptVar(customized, 'language', config.language, !!config.language);
     customized = setScriptVar(customized, 'country', config.country, !!config.country);
@@ -3223,9 +3233,9 @@ function getAiosConfig() {
         timezone: parseOrEmpty('aios-timezone'),
         zonename: parseOrEmpty('aios-zonename'),
         deviceName: parseOrEmpty('aios-device-name'),
-        lanIp: parseOrEmpty('aios-lan-ip'),
+        lanIpv4: parseOrEmpty('aios-lan-ipv4'),
+        lanIpv6: parseOrEmpty('aios-lan-ipv6'),
         rootPassword: parseOrEmpty('aios-root-password'),
-        confirmPassword: parseOrEmpty('aios-confirm-password'),
         wifiSSID: parseOrEmpty('aios-wifi-ssid'),
         wifiPassword: parseOrEmpty('aios-wifi-password'),
 
