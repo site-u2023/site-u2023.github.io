@@ -837,7 +837,7 @@
 
                             <!-- PPPoE設定 -->
                             <div id="pppoe-section" class="conditional-section">
-                                <h6>PPPoE Configuration</h6>
+                                <h5 class="section-title">PPPoE Configuration</h5>
                                 <div class="form-row">
                                     <div class="form-group">
                                         <label for="pppoe-username">PPPoE username</label>
@@ -852,10 +852,10 @@
                             
                             <!-- DS-Lite設定 -->
                             <div id="dslite-section" class="conditional-section">
-                                <h6>DS-Lite Configuration</h6>
+                                <h5 class="section-title">DS-Lite Configuration</h5>
                                 
                                 <div class="form-group">
-                                    <label>DS-Lite Configuration Mode</label>
+                                    <label>Configuration Mode</label>
                                     <div class="radio-group">
                                         <div class="form-check">
                                             <input class="form-check-input" type="radio" name="dsliteMode" id="dslite-auto" value="auto" checked>
@@ -897,7 +897,7 @@
                             
                             <!-- MAP-E設定 -->
                             <div id="mape-manual-section" class="conditional-section">
-                                <h6>MAP-E Configuration</h6>
+                                <h5 class="section-title">MAP-E Configuration</h5>
                                 <div class="form-group">
                                     <label>MAP-E Connection Mode</label>
                                     <div class="radio-group">
@@ -972,7 +972,7 @@
 
                         <!-- AP設定 -->
                         <div id="ap-section" class="conditional-section">
-                            <h6>AP Configuration</h6>
+                            <h5 class="section-title">AP Configuration</h5>
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="ap-ip-address">IP Address</label>
@@ -3218,13 +3218,13 @@ function customizeSetupScript(content, config, apiInfo, selectedPackages) {
     // AP
     const apActive = (activeProto === 'ap');
 
-    // ルーターIP（AP時でも値は保持、コメントアウトのみ）
-    customized = setScriptVar(customized, 'lan_ip_address', config.lanIpv4, !apActive);
-    customized = setScriptVar(customized, 'lan_ipv6_address', config.lanIpv6, !apActive);
+    // ルーターIP：非AP もしくは 有値のとき有効化（AP かつ 空ならコメントアウト）
+    customized = setScriptVar(customized, 'lan_ip_address', config.lanIpv4, (!!config.lanIpv4) || (!apActive));
+    customized = setScriptVar(customized, 'lan_ipv6_address', config.lanIpv6, (!!config.lanIpv6) || (!apActive));
 
-    // AP IP（AP時のみ有効化）
-    customized = setScriptVar(customized, 'ap_ip_address', config.apIpAddress, apActive);
-    customized = setScriptVar(customized, 'ap_gateway', config.apGateway, apActive);
+    // AP IP：AP もしくは 有値のとき有効化（非AP かつ 空ならコメントアウト）
+    customized = setScriptVar(customized, 'ap_ip_address', config.apIpAddress, apActive || !!config.apIpAddress);
+    customized = setScriptVar(customized, 'ap_gateway', config.apGateway, apActive || !!config.apGateway);
     
     return customized;
 }
