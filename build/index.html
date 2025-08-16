@@ -3564,19 +3564,28 @@ async function fetchDevicePackages() {
         );
     }
 
-    // 各 Packages を取得してパース
-    const allPkgs = [];
-    for (const url of urls) {
+// 各 Packages を並列取得してパース
+const allPkgs = [];
+
+const results = await Promise.allSettled(
+    urls.map(async (url) => {
         try {
             const res = await fetch(url);
-            if (!res.ok) continue;
+            if (!res.ok) return [];
             const text = await res.text();
-            const pkgs = parsePackagesText(text, url);
-            allPkgs.push(...pkgs);
+            return parsePackagesText(text, url);
         } catch (e) {
             console.warn(`パッケージ取得失敗: ${url}`, e);
+            return [];
         }
+    })
+);
+
+results.forEach(r => {
+    if (r.status === 'fulfilled' && Array.isArray(r.value)) {
+        allPkgs.push(...r.value);
     }
+});
 
     // 名前重複を統合
     const pkgMap = new Map();
