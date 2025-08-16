@@ -3602,19 +3602,32 @@ function parsePackagesText(text, source) {
     return pkgs;
 }
     
-// ★Package Search 入力ハンドラ（string / {name} 両対応）
-document.getElementById('package-search').addEventListener('input', function (e) {
-    const query = e.target.value.trim().toLowerCase();
-    if (query.length < 2 || !Array.isArray(app.devicePackages) || app.devicePackages.length === 0) {
-        hidePackageAutocomplete();
-        return;
+(function() {
+    const pkgInput = document.getElementById('package-search');
+    let pkgSearchTimer;
+
+    if (pkgInput) {
+        pkgInput.addEventListener('input', function(e) {
+            clearTimeout(pkgSearchTimer);
+            const query = e.target.value.trim().toLowerCase();
+
+            if (query.length < 2 || !Array.isArray(app.devicePackages) || app.devicePackages.length === 0) {
+                hidePackageAutocomplete();
+                return;
+            }
+
+            // デバイス名検索と同じ遅延処理
+            pkgSearchTimer = setTimeout(() => {
+                const matches = app.devicePackages
+                    .map(p => (typeof p === 'string' ? { name: p } : p))
+                    .filter(pkg => (pkg.name || '').toLowerCase().includes(query))
+                    .slice(0, 10);
+
+                showPackageAutocomplete(matches);
+            }, 200); // 遅延時間はデバイス名側に合わせる
+        });
     }
-    const matches = app.devicePackages
-        .map(p => (typeof p === 'string' ? { name: p } : p))
-        .filter(pkg => (pkg.name || '').toLowerCase().includes(query))
-        .slice(0, 10);
-    showPackageAutocomplete(matches);
-});
+})();
 
 function hidePackageAutocomplete() {
     const el = document.querySelector('#package-search-autocomplete .autocomplete-items');
