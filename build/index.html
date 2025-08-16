@@ -3655,13 +3655,15 @@ function addPackageToList(pkgName, clickedEl) {
 
 function flashSelectedOption(el) {
     if (!el) return;
-    el.classList.add('bold-flash');
     setTimeout(() => {
-        el.classList.remove('bold-flash');
-    }, 1500);
+        const originalWeight = el.style.fontWeight;
+        el.style.fontWeight = 'bold';
+        setTimeout(() => {
+            el.style.fontWeight = originalWeight;
+        }, 1500);
+    }, 0); // レイアウト確定直後に実行
 }
-
-        
+  
 document.addEventListener('click', function (e) {
     if (!e.target.closest('#package-search-autocomplete')) {
         hidePackageAutocomplete();
