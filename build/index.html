@@ -3182,18 +3182,26 @@ function customizeSetupScript(content, config, apiInfo, selectedPackages) {
     customized = setScriptVar(customized, 'mape_gua_mode', guaActive ? '1' : '', guaActive);
     customized = setScriptVar(customized, 'mape_gua_prefix', guaActive ? guaPrefix : '', guaActive);
 
-    // enable_* フラグ（パッケージ選択に応じて汎用的に有効化）
+    // enable_* フラグ（選択で ON、非選択で OFF に戻す）
     if (selectedPackages) {
-        // PACKAGE_DB から enableVar マップを構築
         const enableMap = {};
+        const allEnableVars = new Set();
+
         PACKAGE_DB.categories.forEach(cat => {
             (cat.packages || []).forEach(pkg => {
                 if (pkg.enableVar) {
                     enableMap[pkg.name] = pkg.enableVar;
+                    allEnableVars.add(pkg.enableVar);
                 }
             });
         });
-        // 選択されているパッケージに対応する enableVar をON
+
+        // まず全てを OFF（コメントアウト）に戻す
+        allEnableVars.forEach(varName => {
+            customized = setScriptVar(customized, varName, '', false);
+        });
+
+        // 選択されているパッケージに対応する enableVar を ON
         selectedPackages.forEach(pkgName => {
             const varName = enableMap[pkgName];
             if (varName) {
