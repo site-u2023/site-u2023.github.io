@@ -2391,6 +2391,7 @@ function selectDevice(device) {
     loadDeviceProfile(device);
 }
 
+// After（公式同等のURLマッピング構造を使い SNAPSHOT/Release 双方に対応）
 async function loadDeviceProfile(device) {
     if (!device || !device.target || !device.id) return;
 
@@ -2398,12 +2399,19 @@ async function loadDeviceProfile(device) {
     const target = device.target;
     const profileId = device.id;
 
-    let profilesUrl;
+    // 公式同等：version→URL マッピングを構築
+    if (!config.image_urls) config.image_urls = {};
+    if (!config.overview_urls) config.overview_urls = {};
+
     if (version === 'SNAPSHOT') {
-        profilesUrl = `https://downloads.openwrt.org/snapshots/targets/${target}/profiles.json`;
+        config.overview_urls[version] = `${config.image_url}/snapshots`;
+        config.image_urls[version]    = `${config.image_url}/snapshots`;
     } else {
-        profilesUrl = `https://downloads.openwrt.org/releases/${version}/targets/${target}/profiles.json`;
+        config.overview_urls[version] = `${config.image_url}/releases/${encodeURIComponent(version)}`;
+        config.image_urls[version]    = `${config.image_url}/releases/${encodeURIComponent(version)}`;
     }
+
+    const profilesUrl = `${config.image_urls[version]}/targets/${target}/profiles.json`;
 
     try {
         console.log(`Loading profile from: ${profilesUrl}`);
@@ -2422,16 +2430,16 @@ async function loadDeviceProfile(device) {
             const defaultPackages = profilesData.default_packages || [];
             const devicePackages = profile.device_packages || [];
             const asuExtraPackages = ['luci'];
-            const allPackages = defaultPackages.concat(devicePackages).concat(asuExtraPackages);
+            const allPackages = defaultPackages.concat(devicePackages, asuExtraPackages);
 
             document.getElementById('asu-packages').value = allPackages.join(' ');
             asuCollectPackages(); 
         }
 
-        // ★公式同等：profiles.json後すぐにAboutを一括レンダ
+        // profiles.json取得後にAboutを即表示
         showDeviceInfo();
 
-        // ★重い処理は裏で非同期並列実行（UIブロックなし）
+        // 重い処理は非同期並列で実行
         Promise.allSettled([
             fetchDevicePackages(),
             loadMapShScripts(),
@@ -2455,7 +2463,7 @@ async function loadDeviceProfile(device) {
         });
     }
 }
-        
+       
 function showDeviceInfo() {
     if (!app.selectedDevice) return;
 
