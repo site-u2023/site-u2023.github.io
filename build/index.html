@@ -243,6 +243,8 @@
         letter-spacing: 0.05em;
         display: inline-flex;
         align-items: center;
+        line-height: 1;
+        vertical-align: middle;
         box-shadow: 0em 0.06em 0.3em 0em rgba(0, 0, 0, 0.2),
             0em 0.125em 0.125em 0em rgba(0, 0, 0, 0.14),
             0em 0.19em 0.06em -0.125em rgba(0, 0, 0, 0.12);
@@ -260,9 +262,10 @@
     /* flex揃えだけで統一し、内部アイコンは公式通り:first-childに直接content */
     .custom-link > :first-child,
     .download-link > :first-child {
-        width: 30px;
-        margin-right: 15px;
+        height: 1em;
+        width: auto;
         margin-top: 0;
+        margin-right: 15px;
         content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM12 7a1 1 0 0 1 1 1v4h3l-4 4-4-4h3V8a1 1 0 0 1 1-1z' fill='%23fff'/%3E%3C/svg%3E");
     }
 
