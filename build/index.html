@@ -3150,7 +3150,7 @@ function refreshTemplateAndPackages() {
     asuCollectPackages();
 
     // aios-config 有効時のみテンプレ更新
-    if (document.getElementById('use-aios-config').checked) {
+    if (document.getElementById('use-aios-config-details').open) {
         updateConfiguredTemplate().catch(console.error);
     }
 }
