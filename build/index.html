@@ -2439,18 +2439,19 @@ async function loadDeviceProfile(device) {
             asuCollectPackages(); 
         }
 
-        // ★Package Search 用のパッケージ一覧を取得
-        await fetchDevicePackages();
-
+        // ★About this build は profiles.json 取得後すぐ表示（公式同等：一括レンダ）
         showDeviceInfo();
+
+        // ★Package Search 用のパッケージ一覧は後追い非同期（UIをブロックしない）
+        fetchDevicePackages().catch(e => console.warn('fetchDevicePackages failed:', e));
 
     } catch (error) {
         console.error('Failed to load device profile:', error);
 
-        // エラー時も検索用を試みる
-        await fetchDevicePackages();
-
+        // ★エラー時もAboutを先に表示してから検索用は後追い
         showDeviceInfo();
+
+        fetchDevicePackages().catch(e => console.warn('fetchDevicePackages failed:', e));
     }
 }
         
