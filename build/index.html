@@ -1076,68 +1076,68 @@ exec >/tmp/setup.log 2>&1
 echo "Starting OpenWrt initial configuration..."
 
 # Configure root password
-if [ -n "$root_password" ]; then
+if [ -n "\${root_password}" ]; then
     echo "Setting root password..."
-    (echo "$root_password"; sleep 1; echo "$root_password") | passwd > /dev/null 2>&1
+    (echo "\${root_password}"; sleep 1; echo "\${root_password}") | passwd > /dev/null 2>&1
 fi
 
 # Configure device name
-if [ -n "$device_name" ]; then
-    echo "Setting device name: $device_name"
-    uci set system.@system[0].hostname="$device_name"
+if [ -n "\${device_name}" ]; then
+    echo "Setting device name: \${device_name}"
+    uci set system.@system[0].hostname="\${device_name}"
 fi
 
 # Configure LAN IP
-if [ -n "$lan_ip_address" ]; then
-    echo "Setting LAN IP: $lan_ip_address"
-    uci set network.lan.ipaddr="$lan_ip_address"
+if [ -n "\${lan_ip_address}" ]; then
+    echo "Setting LAN IP: \${lan_ip_address}"
+    uci set network.lan.ipaddr="\${lan_ip_address}"
 fi
 
 # Configure language
-if [ -n "$language" ]; then
-    echo "Setting language: $language"
-    uci set system.@system[0].language="$language"
+if [ -n "\${language}" ]; then
+    echo "Setting language: \${language}"
+    uci set system.@system[0].language="\${language}"
 fi
 
 # Configure country code for wireless
-if [ -n "$country" ]; then
-    echo "Setting country code: $country"
-    uci set wireless.@wifi-device[0].country="$country" 2>/dev/null
+if [ -n "\${country}" ]; then
+    echo "Setting country code: \${country}"
+    uci set wireless.@wifi-device[0].country="\${country}" 2>/dev/null
 fi
 
 # Configure timezone
-if [ -n "$timezone" ]; then
-    echo "Setting timezone: $timezone"
-    uci set system.@system[0].timezone="$timezone"
+if [ -n "\${timezone}" ]; then
+    echo "Setting timezone: \${timezone}"
+    uci set system.@system[0].timezone="\${timezone}"
 fi
 
 # Configure zone name (optional)
-if [ -n "$zonename" ]; then
-    echo "Setting zone name: $zonename"
-    uci set system.@system[0].zonename="$zonename"
+if [ -n "\${zonename}" ]; then
+    echo "Setting zone name: \${zonename}"
+    uci set system.@system[0].zonename="\${zonename}"
 fi
 
 # Configure WLAN
-if [ -n "$wlan_name" ] && [ -n "$wlan_password" ] && [ \${#wlan_password} -ge 8 ]; then
-    echo "Configuring WLAN: $wlan_name"
+if [ -n "\${wlan_name}" ] && [ -n "\${wlan_password}" ] && [ \${#wlan_password} -ge 8 ]; then
+    echo "Configuring WLAN: \${wlan_name}"
     uci set wireless.@wifi-device[0].disabled='0'
     uci set wireless.@wifi-iface[0].disabled='0'
     uci set wireless.@wifi-iface[0].encryption='sae-mixed'
-    uci set wireless.@wifi-iface[0].ssid="$wlan_name"
-    uci set wireless.@wifi-iface[0].key="$wlan_password"
+    uci set wireless.@wifi-iface[0].ssid="\${wlan_name}"
+    uci set wireless.@wifi-iface[0].key="\${wlan_password}"
 fi
 
 # Configure PPPoE
-if [ -n "$pppoe_username" ] && [ -n "$pppoe_password" ]; then
+if [ -n "\${pppoe_username}" ] && [ -n "\${pppoe_password}" ]; then
     echo "Configuring PPPoE..."
     uci set network.wan.proto='pppoe'
-    uci set network.wan.username="$pppoe_username"
-    uci set network.wan.password="$pppoe_password"
+    uci set network.wan.username="\${pppoe_username}"
+    uci set network.wan.password="\${pppoe_password}"
 fi
 
 # Configure DS-Lite
-if [ -n "$dslite_aftr_address" ]; then
-    echo "Configuring DS-Lite: AFTR=$dslite_aftr_address"
+if [ -n "\${dslite_aftr_address}" ]; then
+    echo "Configuring DS-Lite: AFTR=\${dslite_aftr_address}"
 
     # Backup
     cp -p /etc/config/network /etc/config/network.\${DSLITE_NAME}.bak 2>/dev/null
@@ -1160,7 +1160,7 @@ if [ -n "$dslite_aftr_address" ]; then
     # DS-Lite interface
     uci set network.\${DSLITE_NAME}=interface
     uci set network.\${DSLITE_NAME}.proto='dslite'
-    uci set network.\${DSLITE_NAME}.peeraddr="$dslite_aftr_address"
+    uci set network.\${DSLITE_NAME}.peeraddr="\${dslite_aftr_address}"
     uci set network.\${DSLITE_NAME}.tunlink="\${DSLITE6_NAME}"
     uci set network.\${DSLITE_NAME}.mtu='1460'
     uci set network.\${DSLITE_NAME}.encaplimit='ignore'
@@ -1188,8 +1188,8 @@ if [ -n "$dslite_aftr_address" ]; then
 fi
 
 # Configure MAP-E
-if [ -n "$mape_br" ] && [ -n "$mape_ealen" ]; then
-    echo "Configuring MAP-E: BR=$mape_br, EA-len=$mape_ealen"
+if [ -n "\${mape_br}" ] && [ -n "\${mape_ealen}" ]; then
+    echo "Configuring MAP-E: BR=\${mape_br}, EA-len=\${mape_ealen}"
 
     # Backup
     cp -p /etc/config/network /etc/config/network.\${MAP_NAME}.bak 2>/dev/null
@@ -1219,14 +1219,14 @@ MAP_SH_EOF
     uci set network.\${MAP_NAME}=interface
     uci set network.\${MAP_NAME}.proto='map'
     uci set network.\${MAP_NAME}.maptype='map-e'
-    uci set network.\${MAP_NAME}.peeraddr="$mape_br"
-    uci set network.\${MAP_NAME}.ipaddr="$mape_ipv4_prefix"
-    uci set network.\${MAP_NAME}.ip4prefixlen="$mape_ipv4_prefixlen"
-    uci set network.\${MAP_NAME}.ip6prefix="$mape_ipv6_prefix"
-    uci set network.\${MAP_NAME}.ip6prefixlen="$mape_ipv6_prefixlen"
-    uci set network.\${MAP_NAME}.ealen="$mape_ealen"
-    uci set network.\${MAP_NAME}.psidlen="$mape_psidlen"
-    uci set network.\${MAP_NAME}.offset="$mape_psid_offset"
+    uci set network.\${MAP_NAME}.peeraddr="\${mape_br}"
+    uci set network.\${MAP_NAME}.ipaddr="\${mape_ipv4_prefix}"
+    uci set network.\${MAP_NAME}.ip4prefixlen="\${mape_ipv4_prefixlen}"
+    uci set network.\${MAP_NAME}.ip6prefix="\${mape_ipv6_prefix}"
+    uci set network.\${MAP_NAME}.ip6prefixlen="\${mape_ipv6_prefixlen}"
+    uci set network.\${MAP_NAME}.ealen="\${mape_ealen}"
+    uci set network.\${MAP_NAME}.psidlen="\${mape_psidlen}"
+    uci set network.\${MAP_NAME}.offset="\${mape_psid_offset}"
     uci set network.\${MAP_NAME}.mtu='1460'
     uci set network.\${MAP_NAME}.encaplimit='ignore'
     
@@ -1252,19 +1252,19 @@ MAP_SH_EOF
 fi
 
 # MAP-E GUA mode settings
-if [ -n "$mape_gua_mode" ]; then
-    echo "Setting MAP-E GUA prefix: $mape_gua_prefix"
-    uci set network.\${MAP6_NAME}.ip6prefix="$mape_gua_prefix"
+if [ -n "\${mape_gua_mode}" ]; then
+    echo "Setting MAP-E GUA prefix: \${mape_gua_prefix}"
+    uci set network.\${MAP6_NAME}.ip6prefix="\${mape_gua_prefix}"
 fi
 
 # OpenWrt 19.x specific MAP-E settings
-if [ -n "$openwrt_19" ]; then
+if [ -n "\${openwrt_19}" ]; then
     echo "Applying OpenWrt 19.x specific settings"
     uci add_list network.\${MAP_NAME}.tunlink="\${MAP6_NAME}"
 fi
 
 # OpenWrt 21.02+ specific MAP-E settings
-if [ -n "$openwrt_21" ]; then
+if [ -n "\${openwrt_21}" ]; then
     echo "Applying OpenWrt 21.02+ specific settings"
     uci set network.\${MAP_NAME}.legacymap='1'
     uci set network.\${MAP_NAME}.tunlink="\${MAP6_NAME}"
@@ -1272,13 +1272,13 @@ if [ -n "$openwrt_21" ]; then
 fi
 
 # Configure DUMB-AP
-if [ -n "$dumb_ip_address" ]; then
-    echo "Configuring Dumb AP: IP=$dumb_ip_address GW=$dumb_gateway"
+if [ -n "\${dumb_ip_address}" ]; then
+    echo "Configuring Dumb AP: IP=\${dumb_ip_address} GW=\${dumb_gateway}"
 
     # Backup
-    cp -p /etc/config/network /etc/config/network.${DUMB_NAME}.bak 2>/dev/null
-    cp -p /etc/config/dhcp /etc/config/dhcp.${DUMB_NAME}.bak 2>/dev/null
-    cp -p /etc/config/firewall /etc/config/firewall.${DUMB_NAME}.bak 2>/dev/null
+    cp -p /etc/config/network /etc/config/network.\${DUMB_NAME}.bak 2>/dev/null
+    cp -p /etc/config/dhcp /etc/config/dhcp.\${DUMB_NAME}.bak 2>/dev/null
+    cp -p /etc/config/firewall /etc/config/firewall.\${DUMB_NAME}.bak 2>/dev/null
 
     # Disable WAN/WAN6
     uci set network.wan.disabled='1'
@@ -1290,10 +1290,10 @@ if [ -n "$dumb_ip_address" ]; then
     uci set network.\${DUMB_NAME}=interface
     uci set network.\${DUMB_NAME}.proto='static'
     uci set network.\${DUMB_NAME}.device="\${LAN_DEF}"
-    uci set network.\${DUMB_NAME}.ipaddr="$dumb_ip_address"
+    uci set network.\${DUMB_NAME}.ipaddr="\${dumb_ip_address}"
     uci set network.\${DUMB_NAME}.netmask='255.255.255.0'
-    uci set network.\${DUMB_NAME}.gateway="$dumb_gateway"
-    uci set network.\${DUMB_NAME}.dns="$dumb_gateway"
+    uci set network.\${DUMB_NAME}.gateway="\${dumb_gateway}"
+    uci set network.\${DUMB_NAME}.dns="\${dumb_gateway}"
     uci set network.\${DUMB_NAME}.delegate='0'
 
     # IPv6 bridge
