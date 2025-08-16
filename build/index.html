@@ -3081,11 +3081,10 @@ function customizeSetupScript(content, config, apiInfo, selectedPackages) {
     }
 
     // Basic settings
-    const samePw = (config.rootPassword === config.confirmPassword) ? config.rootPassword : '';
     customized = setScriptVar(customized, 'device_name', config.deviceName, !!config.deviceName);
-    customized = setScriptVar(customized, 'lan_ip_address', config.lanIp, !!config.lanIp);
+    customized = setScriptVar(customized, 'lan_ip_address', config.lanIpv4, !!config.lanIpv4);
     customized = setScriptVar(customized, 'lan_ipv6_address', config.lanIpv6, !!config.lanIpv6);
-    customized = setScriptVar(customized, 'root_password', samePw, !!samePw);
+    customized = setScriptVar(customized, 'root_password', config.rootPassword, !!config.rootPassword);
     customized = setScriptVar(customized, 'language', config.language, !!config.language);
     customized = setScriptVar(customized, 'country', config.country, !!config.country);
     customized = setScriptVar(customized, 'timezone', config.timezone, !!config.timezone);
