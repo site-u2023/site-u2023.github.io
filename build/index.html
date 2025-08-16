@@ -847,21 +847,6 @@
                                     </div>
                                 </div>
                             </div>
-
-                            <!-- AP設定 -->
-                            <div id="ap-section" class="conditional-section">
-                                <h6>AP Configuration</h6>
-                                <div class="form-row">
-                                    <div class="form-group">
-                                        <label for="ap-ip-address">IP Address</label>
-                                        <input type="text" id="ap-ip-address" class="form-control" placeholder="192.168.1.2">
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="ap-gateway">Gateway</label>
-                                        <input type="text" id="ap-gateway" class="form-control" placeholder="192.168.1.1">
-                                    </div>
-                                </div>
-                            </div>
                             
                             <!-- DS-Lite設定 -->
                             <div id="dslite-section" class="conditional-section">
@@ -983,6 +968,21 @@
                             </div>
                         </div>
 
+                        <!-- AP設定 -->
+                        <div id="ap-section" class="conditional-section">
+                            <h6>AP Configuration</h6>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="ap-ip-address">IP Address</label>
+                                    <input type="text" id="ap-ip-address" class="form-control" value="192.168.1.2" readonly>
+                                </div>
+                                <div class="form-group">
+                                    <label for="ap-gateway">Gateway</label>
+                                    <input type="text" id="ap-gateway" class="form-control" value="192.168.1.1" readonly>
+                                </div>
+                            </div>
+                        </div>
+ 
                         <div class="form-group">
                             <label>ISP Detection Status</label>
                             <div id="isp-info-display" class="info" style="margin-bottom: 0;">
@@ -3164,8 +3164,8 @@ function getAiosConfig() {
         mapePsidlen: parseOrEmpty('mape-psidlen', 'int'),
         mapeGuaPrefix: parseOrEmpty('mape-gua-prefix'),
 
-        ap_ip_address: parseOrEmpty('ap_ip_address'),
-        ap_gateway: parseOrEmpty('ap_gateway')
+        ap_ip_address: parseOrEmpty('ap-ip-address'),
+        ap_gateway: parseOrEmpty('ap-gateway')
     };
 
     return config;
