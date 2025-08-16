@@ -3646,11 +3646,12 @@ function showPackageAutocomplete(matches) {
         div.textContent = name;
         div.addEventListener('click', (e) => {
             e.stopPropagation();
-            addPackageToList(name, div);
-            document.getElementById('package-search').value = '';
+            addPackageToList(name);
 
             // 選択状態を明示的に付与
             div.classList.add('bold-flash');
+
+            document.getElementById('package-search').value = '';
 
             const cont = document.querySelector('#package-search-autocomplete .autocomplete-items');
             if (cont) {
