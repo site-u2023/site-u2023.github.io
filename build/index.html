@@ -1287,27 +1287,27 @@ if [ -n "$dumb_ip_address" ]; then
     uci set network.wan6.auto='0'
 
     # IPv4 bridge
-    uci set network.${DUMB_NAME}=interface
-    uci set network.${DUMB_NAME}.proto='static'
-    uci set network.${DUMB_NAME}.device="$(LAN_DEF)"
-    uci set network.${DUMB_NAME}.ipaddr="$dumb_ip_address"
-    uci set network.${DUMB_NAME}.netmask='255.255.255.0'
-    uci set network.${DUMB_NAME}.gateway="$dumb_gateway"
-    uci set network.${DUMB_NAME}.dns="$dumb_gateway"
-    uci set network.${DUMB_NAME}.delegate='0'
+    uci set network.\${DUMB_NAME}=interface
+    uci set network.\${DUMB_NAME}.proto='static'
+    uci set network.\${DUMB_NAME}.device="$LAN_DEF"
+    uci set network.\${DUMB_NAME}.ipaddr="$dumb_ip_address"
+    uci set network.\${DUMB_NAME}.netmask='255.255.255.0'
+    uci set network.\${DUMB_NAME}.gateway="$dumb_gateway"
+    uci set network.\${DUMB_NAME}.dns="$dumb_gateway"
+    uci set network.\${DUMB_NAME}.delegate='0'
 
     # IPv6 bridge
-    uci set network.${DUMB6_NAME}=interface
-    uci set network.${DUMB6_NAME}.proto='dhcpv6'
-    uci set network.${DUMB6_NAME}.device="@${DUMB_NAME}"
-    uci set network.${DUMB6_NAME}.reqaddress='try'
-    uci set network.${DUMB6_NAME}.reqprefix='no'
-    uci set network.${DUMB6_NAME}.type='bridge'
+    uci set network.\${DUMB6_NAME}=interface
+    uci set network.\${DUMB6_NAME}.proto='dhcpv6'
+    uci set network.\${DUMB6_NAME}.device="@$DUMB_NAME"
+    uci set network.\${DUMB6_NAME}.reqaddress='try'
+    uci set network.\${DUMB6_NAME}.reqprefix='no'
+    uci set network.\${DUMB6_NAME}.type='bridge'
 
     # WLAN attach
-    uci set wireless.default_radio0.network="${DUMB_NAME}"
-    uci set wireless.default_radio1.network="${DUMB_NAME}"
-    uci set wireless.default_radio2.network="${DUMB_NAME}"
+    [ -n "\$(uci -q get wireless.default_radio0)" ] && uci set wireless.default_radio0.network="\${DUMB_NAME}"
+    [ -n "\$(uci -q get wireless.default_radio1)" ] && uci set wireless.default_radio1.network="\${DUMB_NAME}"
+    [ -n "\$(uci -q get wireless.default_radio2)" ] && uci set wireless.default_radio2.network="\${DUMB_NAME}"
 
     # Disable services only if enabled/running
     [ -x /etc/init.d/odhcpd ] && /etc/init.d/odhcpd enabled && /etc/init.d/odhcpd disable
