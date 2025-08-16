@@ -497,9 +497,37 @@
         margin: 1.5rem 0;
     }
 
-    /* 特殊フィールド */
+/* 特殊フィールド */
     #mape-gua-section {
         margin-top: 1rem;
+    }
+
+    /* details/summaryのスタイル調整 */
+    details {
+        margin: 0;
+        padding: 0;
+    }
+
+    details > summary {
+        cursor: pointer;
+        padding: 0.5rem 0;
+        margin: 0;
+        outline: none;
+    }
+
+    details[open] > summary {
+        margin-bottom: 0.5rem;
+    }
+
+    #use-package-selector-details summary,
+    #use-aios-config-details summary {
+        font-weight: 500;
+        font-size: 1.1rem;
+    }
+
+    /* Installed Packagesセクション内の最初の要素のマージン調整 */
+    #package-selector-config > *:first-child {
+        margin-top: 0 !important;
     }
 
     /* レスポンシブ */
