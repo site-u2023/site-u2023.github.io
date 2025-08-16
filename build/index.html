@@ -827,8 +827,8 @@
                                         <label class="form-check-label" for="conn-mape">MAP-E</label>
                                     </div>
                                     <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="connectionType" id="conn-none" value="none">
-                                        <label class="form-check-label" for="conn-none">None</label>
+                                        <input class="form-check-input" type="radio" name="connectionType" id="conn-ap" value="ap">
+                                        <label class="form-check-label" for="conn-ap">AP</label>
                                     </div>
                                 </div>
                             </div>
@@ -848,6 +848,21 @@
                                 </div>
                             </div>
 
+                            <!-- AP設定 -->
+                            <div id="ap-section" class="conditional-section">
+                                <h6>AP Configuration</h6>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="ap-ip-address">IP Address</label>
+                                        <input type="text" id="ap-ip-address" class="form-control" placeholder="192.168.1.2">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="ap-gateway">Gateway</label>
+                                        <input type="text" id="ap-gateway" class="form-control" placeholder="192.168.1.1">
+                                    </div>
+                                </div>
+                            </div>
+                            
                             <!-- DS-Lite設定 -->
                             <div id="dslite-section" class="conditional-section">
                                 <h6>DS-Lite Configuration</h6>
@@ -1053,8 +1068,8 @@
 # openwrt_19=""
 # openwrt_21=""
 #
-dumb_ip_address="192.168.1.2"
-dumb_gateway="192.168.1.1"
+# ap_ip_address="192.168.1.2"
+# ap_gateway="192.168.1.1"
 #
 # enable_ttyd=""
 # enable_irqbalance=""
@@ -1067,8 +1082,8 @@ MAP_NAME="map"
 MAP6_NAME="map6"
 DSLITE_NAME="dslite"
 DSLITE6_NAME="dslite6"
-DUMB_NAME="dumb"
-DUMB6_NAME="dumb6"
+AP_NAME="ap"
+AP6_NAME="ap6"
 
 # log potential errors
 exec >/tmp/setup.log 2>&1
@@ -1271,14 +1286,14 @@ if [ -n "\${openwrt_21}" ]; then
     uci set dhcp.\${MAP6_NAME}.ignore='1'
 fi
 
-# Configure DUMB-AP
-if [ -n "\${dumb_ip_address}" ]; then
-    echo "Configuring Dumb AP: IP=\${dumb_ip_address} GW=\${dumb_gateway}"
+# Configure Access point
+if [ -n "\${ap_ip_address}" ]; then
+    echo "Configuring Dumb AP: IP=\${ap_ip_address} GW=\${dumb_gateway}"
 
     # Backup
-    cp -p /etc/config/network /etc/config/network.\${DUMB_NAME}.bak 2>/dev/null
-    cp -p /etc/config/dhcp /etc/config/dhcp.\${DUMB_NAME}.bak 2>/dev/null
-    cp -p /etc/config/firewall /etc/config/firewall.\${DUMB_NAME}.bak 2>/dev/null
+    cp -p /etc/config/network /etc/config/network.\${AP_NAME}.bak 2>/dev/null
+    cp -p /etc/config/dhcp /etc/config/dhcp.\${AP_NAME}.bak 2>/dev/null
+    cp -p /etc/config/firewall /etc/config/firewall.\${AP_NAME}.bak 2>/dev/null
 
     # Disable WAN/WAN6
     uci set network.wan.disabled='1'
@@ -1286,28 +1301,28 @@ if [ -n "\${dumb_ip_address}" ]; then
     uci set network.wan6.disabled='1'
     uci set network.wan6.auto='0'
 
-    # IPv4 bridge
-    uci set network.\${DUMB_NAME}=interface
-    uci set network.\${DUMB_NAME}.proto='static'
-    uci set network.\${DUMB_NAME}.device="\${LAN_DEF}"
-    uci set network.\${DUMB_NAME}.ipaddr="\${dumb_ip_address}"
-    uci set network.\${DUMB_NAME}.netmask='255.255.255.0'
-    uci set network.\${DUMB_NAME}.gateway="\${dumb_gateway}"
-    uci set network.\${DUMB_NAME}.dns="\${dumb_gateway}"
-    uci set network.\${DUMB_NAME}.delegate='0'
+    # IPv4 Access point
+    uci set network.\${AP_NAME}=interface
+    uci set network.\${AP_NAME}.proto='static'
+    uci set network.\${AP_NAME}.device="\${LAN_DEF}"
+    uci set network.\${AP_NAME}.ipaddr="\${ap_ip_address}"
+    uci set network.\${AP_NAME}.netmask='255.255.255.0'
+    uci set network.\${AP_NAME}.gateway="\${dumb_gateway}"
+    uci set network.\${AP_NAME}.dns="\${dumb_gateway}"
+    uci set network.\${AP_NAME}.delegate='0'
 
-    # IPv6 bridge
-    uci set network.\${DUMB6_NAME}=interface
-    uci set network.\${DUMB6_NAME}.proto='dhcpv6'
-    uci set network.\${DUMB6_NAME}.device="@\${DUMB_NAME}"
-    uci set network.\${DUMB6_NAME}.reqaddress='try'
-    uci set network.\${DUMB6_NAME}.reqprefix='no'
-    uci set network.\${DUMB6_NAME}.type='bridge'
+    # IPv6 Access point
+    uci set network.\${AP6_NAME}=interface
+    uci set network.\${AP6_NAME}.proto='dhcpv6'
+    uci set network.\${AP6_NAME}.device="@\${AP_NAME}"
+    uci set network.\${AP6_NAME}.reqaddress='try'
+    uci set network.\${AP6_NAME}.reqprefix='no'
+    uci set network.\${AP6_NAME}.type='bridge'
 
     # WLAN attach
-    [ -n "\$(uci -q get wireless.default_radio0)" ] && uci set wireless.default_radio0.network="\${DUMB_NAME}"
-    [ -n "\$(uci -q get wireless.default_radio1)" ] && uci set wireless.default_radio1.network="\${DUMB_NAME}"
-    [ -n "\$(uci -q get wireless.default_radio2)" ] && uci set wireless.default_radio2.network="\${DUMB_NAME}"
+    [ -n "\$(uci -q get wireless.default_radio0)" ] && uci set wireless.default_radio0.network="\${AP_NAME}"
+    [ -n "\$(uci -q get wireless.default_radio1)" ] && uci set wireless.default_radio1.network="\${AP_NAME}"
+    [ -n "\$(uci -q get wireless.default_radio2)" ] && uci set wireless.default_radio2.network="\${AP_NAME}"
 
     # Disable services only if enabled/running
     [ -x /etc/init.d/odhcpd ] && /etc/init.d/odhcpd enabled && /etc/init.d/odhcpd disable
@@ -2631,10 +2646,12 @@ function handleConnectionTypeChange(e) {
     const pppoeSection = document.getElementById('pppoe-section');
     const dsliteSection = document.getElementById('dslite-section');
     const mapeManualSection = document.getElementById('mape-manual-section');
+    const apSection = document.getElementById('ap-section');
 
     pppoeSection.style.display = 'none';
     dsliteSection.style.display = 'none';
     mapeManualSection.style.display = 'none';
+    if (apSection) apSection.style.display = 'none';
 
     if (e.target.value === 'pppoe') {
         pppoeSection.style.display = 'block';
@@ -2649,6 +2666,8 @@ function handleConnectionTypeChange(e) {
             });
             return;
         }
+    } else if (e.target.value === 'ap') {
+        if (apSection) apSection.style.display = 'block';
     }
     
     applyConnectionSettingsChange();
@@ -3134,6 +3153,9 @@ function getAiosConfig() {
         mapePsidOffset: parseOrEmpty('mape-psid-offset', 'int'),
         mapePsidlen: parseOrEmpty('mape-psidlen', 'int'),
         mapeGuaPrefix: parseOrEmpty('mape-gua-prefix')
+
+        apIp: parseOrEmpty('ap-ip-address'),
+        apGateway: parseOrEmpty('ap-gateway')    
     };
 
     return config;
