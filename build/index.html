@@ -2006,11 +2006,11 @@ function bindEvents() {
     const modelsEl = document.getElementById('models');
     if (modelsEl) modelsEl.addEventListener('input', handleDeviceSearch);
 
-    const aiosConfigEl = document.getElementById('use-aios-config');
-    if (aiosConfigEl) aiosConfigEl.addEventListener('change', toggleAiosConfig);
+    const aiosConfigDetails = document.getElementById('use-aios-config-details');
+    if (aiosConfigDetails) aiosConfigDetails.addEventListener('toggle', toggleAiosConfig);
 
-    const pkgSelectorEl = document.getElementById('use-package-selector');
-    if (pkgSelectorEl) pkgSelectorEl.addEventListener('change', togglePackageSelector);
+    const pkgSelectorDetails = document.getElementById('use-package-selector-details');
+    if (pkgSelectorDetails) pkgSelectorDetails.addEventListener('toggle', togglePackageSelector);
 
     const buildBtnEl = document.getElementById('request-build');
     if (buildBtnEl) buildBtnEl.addEventListener('click', buildAsuRequest);
