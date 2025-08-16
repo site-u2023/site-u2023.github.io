@@ -1297,7 +1297,16 @@ const config = {
     info_url: "https://openwrt.org/start?do=search&id=toh&q={title} @toh",
     asu_url: "https://sysupgrade.openwrt.org",
     asu_extra_packages: ["luci"],
-    feeds: ["base", "luci", "packages", "routing", "telephony"]
+    feeds: ["base", "luci", "packages", "routing", "telephony"],
+    // リソースヒント用に追加
+    preconnect_urls: [
+        "https://downloads.openwrt.org",
+        "https://sysupgrade.openwrt.org"
+    ],
+    dns_prefetch_urls: [
+        "https://auto-config.site-u.workers.dev",
+        "https://site-u.pages.dev"
+    ]
 };
 
 // グローバル変数
@@ -1742,6 +1751,9 @@ function updateInstalledPackageList() {
 
 // ==================== 初期化関数 ====================
 async function init() {
+    // リソースヒントを動的に追加
+    addResourceHints();
+    
     try {
         // バージョン読み込み
         await loadVersions();
@@ -1804,6 +1816,32 @@ async function init() {
             'Failed to initialize application: ' + error.message
         );
     }
+}
+
+// リソースヒント追加関数
+function addResourceHints() {
+    const head = document.head;
+    
+    // preconnect
+    (config.preconnect_urls || [
+        config.image_url,
+        config.asu_url
+    ]).forEach(url => {
+        if (!url) return;
+        const link = document.createElement('link');
+        link.rel = 'preconnect';
+        link.href = url;
+        head.appendChild(link);
+    });
+    
+    // dns-prefetch
+    (config.dns_prefetch_urls || []).forEach(url => {
+        if (!url) return;
+        const link = document.createElement('link');
+        link.rel = 'dns-prefetch';
+        link.href = url;
+        head.appendChild(link);
+    });
 }
 
 // ==================== 必須要素の存在を待つユーティリティ ====================
@@ -2098,7 +2136,15 @@ function generatePackageSelector() {
         });
     });
 
-    PACKAGE_DB.categories.forEach(category => {
+    // DocumentFragmentを使用してバッチ処理
+    const fragment = document.createDocumentFragment();
+
+    // 最初の2カテゴリを即座に描画
+    const firstBatch = PACKAGE_DB.categories.slice(0, 2);
+    const remainingBatch = PACKAGE_DB.categories.slice(2);
+
+    // カテゴリをレンダリングする共通関数
+    const renderCategory = (category) => {
         const categoryDiv = document.createElement('div');
         categoryDiv.className = 'package-category';
 
@@ -2196,8 +2242,36 @@ function generatePackageSelector() {
         description.textContent = category.description;
         categoryDiv.appendChild(description);
 
-        container.appendChild(categoryDiv);
+        return categoryDiv;
+    };
+
+    // 最初のバッチを即座にレンダリング
+    firstBatch.forEach(category => {
+        fragment.appendChild(renderCategory(category));
     });
+    container.appendChild(fragment);
+
+    // 残りのカテゴリを遅延レンダリング
+    if (remainingBatch.length > 0) {
+        if ('requestIdleCallback' in window) {
+            requestIdleCallback(() => {
+                const remainingFragment = document.createDocumentFragment();
+                remainingBatch.forEach(category => {
+                    remainingFragment.appendChild(renderCategory(category));
+                });
+                container.appendChild(remainingFragment);
+            });
+        } else {
+            // requestIdleCallbackがない場合のフォールバック
+            setTimeout(() => {
+                const remainingFragment = document.createDocumentFragment();
+                remainingBatch.forEach(category => {
+                    remainingFragment.appendChild(renderCategory(category));
+                });
+                container.appendChild(remainingFragment);
+            }, 0);
+        }
+    }
 }
 
 function handlePackageSelection(e) {
@@ -2370,13 +2444,18 @@ function showAutocomplete(devices) {
         return;
     }
 
+    // DocumentFragmentを使用してバッチ処理
+    const fragment = document.createDocumentFragment();
+    
     devices.forEach(device => {
         const div = document.createElement('div');
         div.innerHTML = `<strong>${getDeviceTitle(device)}</strong><br><small>Target: ${device.target}</small>`;
         div.addEventListener('click', () => selectDevice(device));
-        container.appendChild(div);
+        fragment.appendChild(div);
     });
-
+    
+    // 一度だけDOMに追加
+    container.appendChild(fragment);
     autocompleteDiv.appendChild(container);
     container.style.display = 'block';
 }
