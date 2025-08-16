@@ -1288,8 +1288,8 @@ fi
 
 # Configure Access point
 if [ -n "\${ap_ip_address}" ]; then
-    echo "Configuring Dumb AP: IP=\${ap_ip_address} GW=\${dumb_gateway}"
-
+    echo "Configuring Dumb AP: IP=\${ap_ip_address} GW=\${ap_gateway}"
+    
     # Backup
     cp -p /etc/config/network /etc/config/network.\${AP_NAME}.bak 2>/dev/null
     cp -p /etc/config/dhcp /etc/config/dhcp.\${AP_NAME}.bak 2>/dev/null
@@ -2095,55 +2095,66 @@ exit 1`;
 function bindEvents() {
     const versionsEl = document.getElementById('versions');
     if (versionsEl) versionsEl.addEventListener('change', handleVersionChange);
-
+    
     const modelsEl = document.getElementById('models');
     if (modelsEl) modelsEl.addEventListener('input', handleDeviceSearch);
-
+    
     const aiosConfigDetails = document.getElementById('use-aios-config-details');
     if (aiosConfigDetails) aiosConfigDetails.addEventListener('toggle', toggleAiosConfig);
-
+    
     const pkgSelectorDetails = document.getElementById('use-package-selector-details');
     if (pkgSelectorDetails) pkgSelectorDetails.addEventListener('toggle', togglePackageSelector);
-
+    
     const buildBtnEl = document.getElementById('request-build');
     if (buildBtnEl) buildBtnEl.addEventListener('click', buildAsuRequest);
-
+    
+    // AP設定フィールドのリアルタイム反映
+    const apIpEl = document.getElementById('ap-ip-address');
+    if (apIpEl) {
+        apIpEl.addEventListener('input', () => refreshTemplateAndPackages());
+    }
+    
+    const apGwEl = document.getElementById('ap-gateway');
+    if (apGwEl) {
+        apGwEl.addEventListener('input', () => refreshTemplateAndPackages());
+    }
+    
     // DS-Lite mode
     document.querySelectorAll('input[name="dsliteMode"]').forEach(radio => {
         radio.addEventListener('change', handleDsliteModeChange);
     });
-
+    
     // Connection mode
     document.querySelectorAll('input[name="connectionMode"]').forEach(radio => {
         radio.addEventListener('change', handleConnectionModeChange);
     });
-
+    
     // Connection type
     document.querySelectorAll('input[name="connectionType"]').forEach(radio => {
         radio.addEventListener('change', handleConnectionTypeChange);
     });
-
+    
     // MAP-E type
     document.querySelectorAll('input[name="mapeType"]').forEach(radio => {
         radio.addEventListener('change', handleMapeTypeChange);
     });
-
+    
     document.addEventListener('click', function (e) {
         if (!e.target.closest('.autocomplete')) {
             hideAutocomplete();
         }
     });
-
+    
     // 初期状態設定（存在確認あり）
     const manualSection = document.getElementById('manual-connection-section');
     if (manualSection) manualSection.style.display = 'none';
-
+    
     const pppoeSection = document.getElementById('pppoe-section');
     if (pppoeSection) pppoeSection.style.display = 'none';
-
+    
     const dsliteSection = document.getElementById('dslite-section');
     if (dsliteSection) dsliteSection.style.display = 'none';
-
+    
     const mapeSection = document.getElementById('mape-manual-section');
     if (mapeSection) mapeSection.style.display = 'none';
 }
@@ -3091,12 +3102,12 @@ function customizeSetupScript(content, config, apiInfo, selectedPackages) {
     // AP
     const apActive = (activeProto === 'ap');
 
-    // ルーターIP（AP時は無効化）
-    customized = setScriptVar(customized, 'lan_ip_address', config.lan_ip_address, !apActive);
+    // ルーターIP（AP時でも値は保持、コメントアウトのみ）
+    customized = setScriptVar(customized, 'lan_ip_address', config.lanIp, !apActive);
 
     // AP IP（AP時のみ有効化）
-    customized = setScriptVar(customized, 'ap_ip_address', config.ap_ip_address, apActive);
-    customized = setScriptVar(customized, 'ap_gateway', config.ap_gateway, apActive);
+    customized = setScriptVar(customized, 'ap_ip_address', config.apIpAddress, apActive);
+    customized = setScriptVar(customized, 'ap_gateway', config.apGateway, apActive);
     
     return customized;
 }
@@ -3164,8 +3175,8 @@ function getAiosConfig() {
         mapePsidlen: parseOrEmpty('mape-psidlen', 'int'),
         mapeGuaPrefix: parseOrEmpty('mape-gua-prefix'),
 
-        ap_ip_address: parseOrEmpty('ap-ip-address'),
-        ap_gateway: parseOrEmpty('ap-gateway')
+        apIpAddress: parseOrEmpty('ap-ip-address'),
+        apGateway: parseOrEmpty('ap-gateway')
     };
 
     return config;
