@@ -1724,17 +1724,14 @@ const PACKAGE_DB = {
 };
         
 // After
-document.addEventListener('DOMContentLoaded', () => {
-  init();
-
-  // ★ Package Search を Installed Packages 折り畳みの外に移動
+document.addEventListener('DOMContentLoaded', async () => {
+  await init();
   const searchBlock = document.querySelector('#package-selector-config .package-category');
   const asuDetails = document.getElementById('asu');
   if (searchBlock && asuDetails) {
     asuDetails.insertAdjacentElement('afterend', searchBlock);
   }
 });
-
     
 // ★言語変更時にも即反映させる
 const langEl = document.getElementById('aios-language');
