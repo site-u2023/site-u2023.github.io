@@ -3209,14 +3209,14 @@ function customizeSetupScript(content, config, apiInfo, selectedPackages) {
     // AP
     const apActive = (activeProto === 'ap');
 
-    // ルーターIP：非AP もしくは 有値のとき有効化（AP かつ 空ならコメントアウト）
-    customized = setScriptVar(customized, 'lan_ip_address', config.lanIpv4, (!!config.lanIpv4) || (!apActive));
-    customized = setScriptVar(customized, 'lan_ipv6_address', config.lanIpv6, (!!config.lanIpv6) || (!apActive));
+    // ルーターIP：有値かつ非APのときだけ有効化（空 or AP ではコメントアウト）
+    customized = setScriptVar(customized, 'lan_ip_address', config.lanIpv4, !!config.lanIpv4 && !apActive);
+    customized = setScriptVar(customized, 'lan_ipv6_address', config.lanIpv6, !!config.lanIpv6 && !apActive);
 
-    // AP IP：AP もしくは 有値のとき有効化（非AP かつ 空ならコメントアウト）
-    customized = setScriptVar(customized, 'ap_ip_address', config.apIpAddress, apActive || !!config.apIpAddress);
-    customized = setScriptVar(customized, 'ap_gateway', config.apGateway, apActive || !!config.apGateway);
-    
+    // AP IP：AP時かつ有値のときだけ有効化（非AP or 空ではコメントアウト）
+    customized = setScriptVar(customized, 'ap_ip_address', config.apIpAddress, apActive && !!config.apIpAddress);
+    customized = setScriptVar(customized, 'ap_gateway', config.apGateway, apActive && !!config.apGateway);
+
     return customized;
 }
 
