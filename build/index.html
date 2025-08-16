@@ -3219,13 +3219,14 @@ function applyInitialsFromApi(type) {
     }
 }
 
-// ==================== 共通反映関数 ====================
+// ==================== 共通反映関数（<details>対応版） ====================
 function refreshTemplateAndPackages() {
     // i18n 整理
     asuCollectPackages();
 
-    // aios-config 有効時のみテンプレ更新
-    if (document.getElementById('use-aios-config').checked) {
+    // aios-config の <details> が展開中のみテンプレ更新
+    const details = document.getElementById('use-aios-config-details');
+    if (details && details.open) {
         updateConfiguredTemplate().catch(console.error);
     }
 }
