@@ -3003,16 +3003,22 @@ function customizeSetupScript(content, config, apiInfo, selectedPackages) {
 }
 
 function toggleAiosConfig(e) {
-    const configSection = document.getElementById('aios-config');
-    if (e.target.checked) {
-        configSection.style.display = 'block';
+    const details = document.getElementById('use-aios-config-details');
+    if (details && details.open) {
         updateConfiguredTemplate();
     } else {
-        configSection.style.display = 'none';
         document.getElementById('uci-defaults-content').value = SETUP_SH_TEMPLATE;
         app.templateLoaded = true;
     }
 }
+
+// 初期化時に toggle をバインド
+document.addEventListener('DOMContentLoaded', () => {
+    const details = document.getElementById('use-aios-config-details');
+    if (details) {
+        details.addEventListener('toggle', toggleAiosConfig);
+    }
+});
 
 function getAiosConfig() {
     const parseOrEmpty = (id, type = 'string') => {
