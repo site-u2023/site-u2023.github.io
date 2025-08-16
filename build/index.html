@@ -3651,26 +3651,11 @@ function addPackageToList(pkgName, clickedEl) {
 
 function flashSelectedOption(el) {
     if (!el) return;
-    const rect = el.getBoundingClientRect();
-    const ghost = el.cloneNode(true);
-    ghost.style.position = 'fixed';
-    ghost.style.left = rect.left + 'px';
-    ghost.style.top = rect.top + 'px';
-    ghost.style.width = rect.width + 'px';
-    ghost.style.height = rect.height + 'px';
-    ghost.style.fontWeight = 'bold';
-    ghost.style.background = '#00a3e1';
-    ghost.style.color = '#fff';
-    ghost.style.zIndex = '10000';
-    ghost.style.pointerEvents = 'none';
-    ghost.style.opacity = '1';
-    ghost.style.transition = 'opacity 0.6s ease';
-    document.body.appendChild(ghost);
-
-    // 0.9秒キープ後にフェード開始
-    setTimeout(() => { ghost.style.opacity = '0'; }, 900);
-    // フェード0.6秒後に削除（合計1.5秒）
-    setTimeout(() => { ghost.remove(); }, 1500);
+    const originalWeight = el.style.fontWeight;
+    el.style.fontWeight = 'bold';
+    setTimeout(() => {
+        el.style.fontWeight = originalWeight;
+    }, 1500);
 }
         
 document.addEventListener('click', function (e) {
