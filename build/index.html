@@ -2079,11 +2079,7 @@ function bindEvents() {
 // ==================== パッケージセレクター関連 ====================
 function togglePackageSelector(e) {
     const configSection = document.getElementById('package-selector-config');
-    if (e.target.checked) {
-        configSection.style.display = 'block';
-    } else {
-        configSection.style.display = 'none';
-    }
+    configSection.style.display = e.target.open ? 'block' : 'none';
 }
 
 function generatePackageSelector() {
