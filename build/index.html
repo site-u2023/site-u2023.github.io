@@ -2045,23 +2045,6 @@ function bindEvents() {
         radio.addEventListener('change', handleMapeTypeChange);
     });
 
-    // aios-config 入力系
-    const aiosConfigDiv = document.getElementById('aios-config');
-    if (aiosConfigDiv) {
-        aiosConfigDiv.addEventListener('input', function () {
-            const useConfig = document.getElementById('use-aios-config');
-            if (useConfig && useConfig.checked) {
-                applyConnectionSettingsChange();
-            }
-        });
-        aiosConfigDiv.addEventListener('change', function () {
-            const useConfig = document.getElementById('use-aios-config');
-            if (useConfig && useConfig.checked) {
-                applyConnectionSettingsChange();
-            }
-        });
-    }
-
     document.addEventListener('click', function (e) {
         if (!e.target.closest('.autocomplete')) {
             hideAutocomplete();
