@@ -1289,7 +1289,7 @@ if [ -n "$dumb_ip_address" ]; then
     # IPv4 bridge
     uci set network.\${DUMB_NAME}=interface
     uci set network.\${DUMB_NAME}.proto='static'
-    uci set network.\${DUMB_NAME}.device="$LAN_DEF"
+    uci set network.\${DUMB_NAME}.device="\${LAN_DEF}"
     uci set network.\${DUMB_NAME}.ipaddr="$dumb_ip_address"
     uci set network.\${DUMB_NAME}.netmask='255.255.255.0'
     uci set network.\${DUMB_NAME}.gateway="$dumb_gateway"
@@ -1299,7 +1299,7 @@ if [ -n "$dumb_ip_address" ]; then
     # IPv6 bridge
     uci set network.\${DUMB6_NAME}=interface
     uci set network.\${DUMB6_NAME}.proto='dhcpv6'
-    uci set network.\${DUMB6_NAME}.device="@$DUMB_NAME"
+    uci set network.\${DUMB6_NAME}.device="@\${DUMB_NAME}"
     uci set network.\${DUMB6_NAME}.reqaddress='try'
     uci set network.\${DUMB6_NAME}.reqprefix='no'
     uci set network.\${DUMB6_NAME}.type='bridge'
