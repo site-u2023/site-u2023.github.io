@@ -2090,7 +2090,7 @@ exit 1`;
     // ${map_sh_content}を実際の内容で置換
     return content.replace('\\${map_sh_content}', mapShContent);
 }
-
+        
 // ==================== イベントバインディング ====================
 function bindEvents() {
     const versionsEl = document.getElementById('versions');
@@ -2108,17 +2108,89 @@ function bindEvents() {
     const buildBtnEl = document.getElementById('request-build');
     if (buildBtnEl) buildBtnEl.addEventListener('click', buildAsuRequest);
     
-    // AP設定フィールドのリアルタイム反映
-    const apIpEl = document.getElementById('ap-ip-address');
-    if (apIpEl) {
-        apIpEl.addEventListener('input', () => refreshTemplateAndPackages());
-    }
+    // ===== 基本設定フィールドのリアルタイム反映 =====
+    const basicFields = [
+        'aios-language',
+        'aios-country', 
+        'aios-timezone',
+        'aios-zonename',
+        'aios-lan-ip',
+        'aios-device-name',
+        'aios-root-password',
+        'aios-confirm-password',
+        'aios-wifi-ssid',
+        'aios-wifi-password'
+    ];
     
-    const apGwEl = document.getElementById('ap-gateway');
-    if (apGwEl) {
-        apGwEl.addEventListener('input', () => refreshTemplateAndPackages());
-    }
+    basicFields.forEach(fieldId => {
+        const el = document.getElementById(fieldId);
+        if (el) {
+            el.addEventListener('input', () => refreshTemplateAndPackages());
+        }
+    });
     
+    // ===== PPPoE設定フィールドのリアルタイム反映 =====
+    const pppoeFields = [
+        'pppoe-username',
+        'pppoe-password'
+    ];
+    
+    pppoeFields.forEach(fieldId => {
+        const el = document.getElementById(fieldId);
+        if (el) {
+            el.addEventListener('input', () => refreshTemplateAndPackages());
+        }
+    });
+    
+    // ===== DS-Lite設定フィールドのリアルタイム反映 =====
+    const dsliteFields = [
+        'dslite-aftr-address',
+        'dslite-aftr-type',
+        'dslite-area'
+    ];
+    
+    dsliteFields.forEach(fieldId => {
+        const el = document.getElementById(fieldId);
+        if (el) {
+            el.addEventListener('input', () => refreshTemplateAndPackages());
+            el.addEventListener('change', () => refreshTemplateAndPackages());
+        }
+    });
+    
+    // ===== MAP-E設定フィールドのリアルタイム反映 =====
+    const mapeFields = [
+        'mape-br',
+        'mape-ealen',
+        'mape-ipv4-prefix',
+        'mape-ipv4-prefixlen',
+        'mape-ipv6-prefix',
+        'mape-ipv6-prefixlen',
+        'mape-psid-offset',
+        'mape-psidlen',
+        'mape-gua-prefix'
+    ];
+    
+    mapeFields.forEach(fieldId => {
+        const el = document.getElementById(fieldId);
+        if (el) {
+            el.addEventListener('input', () => refreshTemplateAndPackages());
+        }
+    });
+    
+    // ===== AP設定フィールドのリアルタイム反映 =====
+    const apFields = [
+        'ap-ip-address',
+        'ap-gateway'
+    ];
+    
+    apFields.forEach(fieldId => {
+        const el = document.getElementById(fieldId);
+        if (el) {
+            el.addEventListener('input', () => refreshTemplateAndPackages());
+        }
+    });
+    
+    // ===== ラジオボタンのリアルタイム反映 =====
     // DS-Lite mode
     document.querySelectorAll('input[name="dsliteMode"]').forEach(radio => {
         radio.addEventListener('change', handleDsliteModeChange);
@@ -2139,13 +2211,14 @@ function bindEvents() {
         radio.addEventListener('change', handleMapeTypeChange);
     });
     
+    // ===== オートコンプリート関連 =====
     document.addEventListener('click', function (e) {
         if (!e.target.closest('.autocomplete')) {
             hideAutocomplete();
         }
     });
     
-    // 初期状態設定（存在確認あり）
+    // ===== 初期状態設定（存在確認あり） =====
     const manualSection = document.getElementById('manual-connection-section');
     if (manualSection) manualSection.style.display = 'none';
     
@@ -2157,6 +2230,9 @@ function bindEvents() {
     
     const mapeSection = document.getElementById('mape-manual-section');
     if (mapeSection) mapeSection.style.display = 'none';
+    
+    const apSection = document.getElementById('ap-section');
+    if (apSection) apSection.style.display = 'none';
 }
 
 // ==================== パッケージセレクター関連 ====================
