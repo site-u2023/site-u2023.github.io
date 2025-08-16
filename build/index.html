@@ -1061,8 +1061,8 @@ dumb_gateway="192.168.1.1"
 # enable_samba4=""
 
 # Network interface names
-WAN_DEF="wan"
-LAN_DEF="lan"
+LAN_DEF="\$(uci -q get network.lan.device || echo lan)"
+WAN_DEF="\$(uci -q get network.wan.device || echo wan)"
 MAP_NAME="map"
 MAP6_NAME="map6"
 DSLITE_NAME="dslite"
