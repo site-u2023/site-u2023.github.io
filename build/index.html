@@ -3090,8 +3090,8 @@ function customizeSetupScript(content, config, apiInfo, selectedPackages) {
     
     // AP
     const apActive = (activeProto === 'ap');
-    customized = setScriptVar(customized, 'dumb_ip_address', config.apIp || '', apActive);
-    customized = setScriptVar(customized, 'dumb_gateway', config.apGateway || '', apActive);
+    customized = setScriptVar(customized, 'dumb_ip_address', config.ap_ip_address || '', apActive);
+    customized = setScriptVar(customized, 'dumb_gateway', config.ap_gateway || '', apActive);
     
     return customized;
 }
