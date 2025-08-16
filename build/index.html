@@ -1716,15 +1716,17 @@ const PACKAGE_DB = {
     ]
 };
         
-// After
+// After（aios-language の change バインドを init 内に移動）
 document.addEventListener('DOMContentLoaded', init);
-    
-// ★言語変更時にも即反映させる
-const langEl = document.getElementById('aios-language');
-if (langEl) {
-    langEl.addEventListener('change', function() {
-        refreshTemplateAndPackages();
-    });
+
+function init() {
+    const langEl = document.getElementById('aios-language');
+    if (langEl) {
+        langEl.addEventListener('change', function() {
+            refreshTemplateAndPackages();
+        });
+    }
+    // 既存の初期化処理をここに続ける…
 }
 
 // ==================== ユーティリティ関数 ====================
