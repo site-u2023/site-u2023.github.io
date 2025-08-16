@@ -2813,65 +2813,56 @@ function handleDsliteModeChange(e) {
     applyConnectionSettingsChange();
 }
 
-// GUAセクションの表示/非表示を制御
+function isGlobalUnicastIPv6(ip) {
+    if (!ip) return false;
+    // GUA: 2000::/3 (starts with 2xxx or 3xxx), exclude ULA (fd00::/8) and link-local (fe80::/10)
+    const norm = String(ip).trim().toLowerCase();
+    return /^(2|3)[0-9a-f]/.test(norm) && !/^fd/.test(norm) && !/^fe8/.test(norm);
+}
+
 function updateGuaSectionVisibility() {
     const guaSection = document.getElementById('mape-gua-section');
-    const mapeType = document.querySelector('input[name="mapeType"]:checked')?.value;
-    const connectionMode = document.querySelector('input[name="connectionMode"]:checked')?.value;
-    const connectionType = document.querySelector('input[name="connectionType"]:checked')?.value;
-    
-    // 表示条件の判定
+    const mapeType = document.querySelector('input[name="mapeType"]:checked')?.value || 'auto';
+    const connectionMode = document.querySelector('input[name="connectionMode"]:checked')?.value || 'auto';
+    const connectionType = document.querySelector('input[name="connectionType"]:checked')?.value || 'dhcp';
+
+    const api = window.cachedApiInfo || {};
+    const apiRule = api.rule || {};
+    const apiIPv6 = api.ipv6 || '';
+    const hasGua = isGlobalUnicastIPv6(apiIPv6);
+
+    // 厳密条件:
+    // - MAP-Eが対象
+    // - PDでは絶対に表示しない
+    // - Auto: APIでMAP-Eが検出され、かつ GUA アドレスがある時のみ
+    // - Manual: mapeType が 'gua' の時のみ（'auto' の場合は API 要件を満たす時）
     let shouldShow = false;
-    
-    if (connectionMode === 'auto') {
-        // AUTOモード：APIにGUA情報があれば表示
-        if (window.cachedApiInfo && window.cachedApiInfo.ipv6) {
-            shouldShow = true;
-            // 値を設定
-            const guaInput = document.getElementById('mape-gua-prefix');
-            if (!guaInput.value) {
-                const guaPrefix = calculateGuaPrefixFromApi();
-                if (guaPrefix) {
-                    guaInput.value = guaPrefix;
-                }
-            }
-        }
-    } else if (connectionMode === 'manual' && connectionType === 'mape') {
-        // マニュアルモード + MAP-E選択時
-        if (mapeType === 'auto') {
-            // Auto-detectが選択されている場合：GUA情報があれば表示
-            if (window.cachedApiInfo && window.cachedApiInfo.ipv6) {
+
+    if (connectionType === 'mape') {
+        if (connectionMode === 'auto') {
+            shouldShow = !!apiRule.brIpv6Address && hasGua;
+        } else {
+            if (mapeType === 'gua') {
                 shouldShow = true;
-                const guaInput = document.getElementById('mape-gua-prefix');
-                if (!guaInput.value) {
-                    const guaPrefix = calculateGuaPrefixFromApi();
-                    if (guaPrefix) {
-                        guaInput.value = guaPrefix;
-                    }
-                }
+            } else if (mapeType === 'auto') {
+                shouldShow = !!apiRule.brIpv6Address && hasGua;
+            } else { // 'pd'
+                shouldShow = false;
             }
-        } else if (mapeType === 'gua') {
-            // GUAモードが明示的に選択されている場合：常に表示
-            shouldShow = true;
-            // APIからの値があれば設定（なければ空欄のまま）
-            if (window.cachedApiInfo && window.cachedApiInfo.ipv6) {
-                const guaInput = document.getElementById('mape-gua-prefix');
-                if (!guaInput.value) {
-                    const guaPrefix = calculateGuaPrefixFromApi();
-                    if (guaPrefix) {
-                        guaInput.value = guaPrefix;
-                    }
-                }
-            }
-        } else if (mapeType === 'pd') {
-            // PDモード：非表示
-            shouldShow = false;
         }
     }
-    
-    // 表示/非表示を適用
+
     if (guaSection) {
         guaSection.style.display = shouldShow ? 'block' : 'none';
+    }
+
+    // 値の自動設定は表示が決まった後、未入力時のみ
+    if (shouldShow) {
+        const guaInput = document.getElementById('mape-gua-prefix');
+        if (guaInput && !guaInput.value) {
+            const guaPrefix = calculateGuaPrefixFromApi();
+            if (guaPrefix) guaInput.value = guaPrefix;
+        }
     }
 }
 
