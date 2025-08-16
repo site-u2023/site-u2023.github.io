@@ -3531,10 +3531,13 @@ async function fetchDevicePackages() {
 
     const version = app.selectedVersion;
 
-    // arch_packages を profiles.json から取得
-    const profilesUrl = `${config.image_url}/releases/${encodeURIComponent(version)}` +
-                        `/targets/${encodeURIComponent(target)}/${encodeURIComponent(subtarget)}/profiles.json`;
-
+    let profilesUrl;
+    if (version === 'SNAPSHOT') {
+        profilesUrl = `${config.image_url}/snapshots/targets/${encodeURIComponent(target)}/${encodeURIComponent(subtarget)}/profiles.json`;
+    } else {
+        profilesUrl = `${config.image_url}/releases/${encodeURIComponent(version)}/targets/${encodeURIComponent(target)}/${encodeURIComponent(subtarget)}/profiles.json`;
+    }
+    
     let arch;
     try {
         const res = await fetch(profilesUrl);
