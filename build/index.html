@@ -3636,6 +3636,11 @@ function showPackageAutocomplete(matches) {
             addPackageToList(name, div);
             document.getElementById('package-search').value = '';
 
+            div.classList.add('bold-flash');
+            setTimeout(() => {
+                div.classList.remove('bold-flash');
+            }, 1500);
+
             const cont = document.querySelector('#package-search-autocomplete .autocomplete-items');
             if (cont) {
                 cont.style.pointerEvents = 'none';
@@ -3647,9 +3652,6 @@ function showPackageAutocomplete(matches) {
         });
         container.appendChild(div);
     });
-    
-    host.appendChild(container);
-}
 
 function addPackageToList(pkgName, clickedEl) {
     const textarea = document.getElementById('asu-packages');
