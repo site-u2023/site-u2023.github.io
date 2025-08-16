@@ -2425,7 +2425,6 @@ async function loadDeviceProfile(device) {
         const profilesData = await response.json();
         console.log(`Loaded profiles data:`, profilesData);
 
-        // version_codeを保存
         app.versionCode = profilesData.version_code || '';
 
         if (profilesData.profiles && profilesData.profiles[profileId]) {
@@ -2439,19 +2438,31 @@ async function loadDeviceProfile(device) {
             asuCollectPackages(); 
         }
 
-        // ★About this build は profiles.json 取得後すぐ表示（公式同等：一括レンダ）
+        // ★公式同等：profiles.json後すぐにAboutを一括レンダ
         showDeviceInfo();
 
-        // ★Package Search 用のパッケージ一覧は後追い非同期（UIをブロックしない）
-        fetchDevicePackages().catch(e => console.warn('fetchDevicePackages failed:', e));
+        // ★重い処理は裏で非同期並列実行（UIブロックなし）
+        Promise.allSettled([
+            fetchDevicePackages(),
+            loadMapShScripts(),
+            fetchApiInfoAndUpdate()
+        ]).then(() => {
+            console.log('Background tasks completed');
+        });
 
     } catch (error) {
         console.error('Failed to load device profile:', error);
 
-        // ★エラー時もAboutを先に表示してから検索用は後追い
+        // エラー時もAboutだけは即表示
         showDeviceInfo();
 
-        fetchDevicePackages().catch(e => console.warn('fetchDevicePackages failed:', e));
+        Promise.allSettled([
+            fetchDevicePackages(),
+            loadMapShScripts(),
+            fetchApiInfoAndUpdate()
+        ]).then(() => {
+            console.log('Background tasks completed (after error)');
+        });
     }
 }
         
