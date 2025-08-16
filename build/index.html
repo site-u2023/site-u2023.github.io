@@ -776,12 +776,7 @@
                             </div>
                             <div class="form-group">
                                 <label for="aios-root-password">Root password</label>
-                                <div style="position: relative;">
-                                    <input type="password" id="aios-root-password" class="form-control" placeholder="8+ characters" style="padding-right: 40px;">
-                                    <button type="button" id="toggle-password" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; padding: 5px;">
-                                        <span id="password-icon">👁️</span>
-                                    </button>
-                                </div>
+                                <input type="password" id="aios-root-password" class="form-control" placeholder="8+ characters">
                                 <small class="form-text text-muted">Leave empty to disable password authentication</small>
                             </div>
                         </div>
@@ -1898,6 +1893,12 @@ async function init() {
         // ISP情報を初期取得
         console.log('Starting ISP info fetch...');
         await fetchApiInfoAndUpdate();
+        
+        // 初期値がある場合は即座にテンプレートに反映
+        const lanIpv4Input = document.getElementById('aios-lan-ipv4');
+        if (lanIpv4Input && lanIpv4Input.value) {
+            refreshTemplateAndPackages();
+        }
 
     } catch (error) {
         console.error('Failed to initialize:', error);
@@ -2232,7 +2233,7 @@ function bindEvents() {
         }
     });
     
-    // ===== 初期状態設定（存在確認あり） =====
+// ===== 初期状態設定（存在確認あり） =====
     const manualSection = document.getElementById('manual-connection-section');
     if (manualSection) manualSection.style.display = 'none';
     
@@ -2247,6 +2248,23 @@ function bindEvents() {
     
     const apSection = document.getElementById('ap-section');
     if (apSection) apSection.style.display = 'none';
+}
+
+// ===== パスワード表示切り替え機能 =====
+const togglePasswordBtn = document.getElementById('toggle-password');
+if (togglePasswordBtn) {
+    togglePasswordBtn.addEventListener('click', function() {
+        const passwordInput = document.getElementById('aios-root-password');
+        const passwordIcon = document.getElementById('password-icon');
+        
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            passwordIcon.textContent = '👁️‍🗨️';
+        } else {
+            passwordInput.type = 'password';
+            passwordIcon.textContent = '👁️';
+        }
+    });
 }
 
 // ==================== パッケージセレクター関連 ====================
