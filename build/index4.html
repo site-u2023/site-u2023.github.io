@@ -243,6 +243,8 @@
         letter-spacing: 0.05em;
         display: inline-flex;
         align-items: center;
+        line-height: 1;
+        vertical-align: middle;
         box-shadow: 0em 0.06em 0.3em 0em rgba(0, 0, 0, 0.2),
             0em 0.125em 0.125em 0em rgba(0, 0, 0, 0.14),
             0em 0.19em 0.06em -0.125em rgba(0, 0, 0, 0.12);
@@ -260,9 +262,10 @@
     /* flex揃えだけで統一し、内部アイコンは公式通り:first-childに直接content */
     .custom-link > :first-child,
     .download-link > :first-child {
-        width: 30px;
+        height: 1em;
+        width: auto;
+        margin-top: 0;
         margin-right: 15px;
-        margin-top: -0.125em;
         content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM12 7a1 1 0 0 1 1 1v4h3l-4 4-4-4h3V8a1 1 0 0 1 1-1z' fill='%23fff'/%3E%3C/svg%3E");
     }
 
@@ -1712,13 +1715,16 @@ const PACKAGE_DB = {
     ]
 };
         
-// DOMContentLoaded時の初期化
+// After
 document.addEventListener('DOMContentLoaded', init);
     
 // ★言語変更時にも即反映させる
-document.getElementById('aios-language').addEventListener('change', function() {
-    refreshTemplateAndPackages();
-});
+const langEl = document.getElementById('aios-language');
+if (langEl) {
+    langEl.addEventListener('change', function() {
+        refreshTemplateAndPackages();
+    });
+}
 
 // ==================== ユーティリティ関数 ====================
 async function loadPackageDatabase() {
@@ -1971,7 +1977,7 @@ async function loadMapShScripts() {
 // map.sh内容を埋め込む（同期版 - キャッシュから取得）
 function loadMapShContentSync(content, osVersion) {
     // ${map_sh_content}プレースホルダーがない場合は何もしない
-    if (!content.includes('${map_sh_content}')) {
+    if (!content.includes('\\${map_sh_content}')) {
         return content;
     }
 
@@ -1998,7 +2004,7 @@ exit 1`;
     }
     
     // ${map_sh_content}を実際の内容で置換
-    return content.replace('${map_sh_content}', mapShContent);
+    return content.replace('\\${map_sh_content}', mapShContent);
 }
 
 // ==================== イベントバインディング ====================
@@ -2422,7 +2428,6 @@ async function loadDeviceProfile(device) {
         const profilesData = await response.json();
         console.log(`Loaded profiles data:`, profilesData);
 
-        // version_codeを保存
         app.versionCode = profilesData.version_code || '';
 
         if (profilesData.profiles && profilesData.profiles[profileId]) {
@@ -2436,18 +2441,31 @@ async function loadDeviceProfile(device) {
             asuCollectPackages(); 
         }
 
-        // ★Package Search 用のパッケージ一覧を取得
-        await fetchDevicePackages();
-
+        // ★公式同等：profiles.json後すぐにAboutを一括レンダ
         showDeviceInfo();
+
+        // ★重い処理は裏で非同期並列実行（UIブロックなし）
+        Promise.allSettled([
+            fetchDevicePackages(),
+            loadMapShScripts(),
+            fetchApiInfoAndUpdate()
+        ]).then(() => {
+            console.log('Background tasks completed');
+        });
 
     } catch (error) {
         console.error('Failed to load device profile:', error);
 
-        // エラー時も検索用を試みる
-        await fetchDevicePackages();
-
+        // エラー時もAboutだけは即表示
         showDeviceInfo();
+
+        Promise.allSettled([
+            fetchDevicePackages(),
+            loadMapShScripts(),
+            fetchApiInfoAndUpdate()
+        ]).then(() => {
+            console.log('Background tasks completed (after error)');
+        });
     }
 }
         
@@ -3039,7 +3057,6 @@ function getAiosConfig() {
         dsliteMode: document.querySelector('input[name="dsliteMode"]:checked')?.value || 'auto',
         dsliteAftrType: parseOrEmpty('dslite-aftr-type'),
         dsliteArea: parseOrEmpty('dslite-area'),
-        dsliteAftrAddress: parseOrEmpty('dslite-aftr-address'),
         
         mapeBr: parseOrEmpty('mape-br'),
         mapeEalen: parseOrEmpty('mape-ealen', 'int'),
@@ -3550,19 +3567,28 @@ async function fetchDevicePackages() {
         );
     }
 
-    // 各 Packages を取得してパース
-    const allPkgs = [];
-    for (const url of urls) {
+// 各 Packages を並列取得してパース
+const allPkgs = [];
+
+const results = await Promise.allSettled(
+    urls.map(async (url) => {
         try {
             const res = await fetch(url);
-            if (!res.ok) continue;
+            if (!res.ok) return [];
             const text = await res.text();
-            const pkgs = parsePackagesText(text, url);
-            allPkgs.push(...pkgs);
+            return parsePackagesText(text, url);
         } catch (e) {
             console.warn(`パッケージ取得失敗: ${url}`, e);
+            return [];
         }
+    })
+);
+
+results.forEach(r => {
+    if (r.status === 'fulfilled' && Array.isArray(r.value)) {
+        allPkgs.push(...r.value);
     }
+});
 
     // 名前重複を統合
     const pkgMap = new Map();
@@ -3595,19 +3621,34 @@ function parsePackagesText(text, source) {
     return pkgs;
 }
     
-// ★Package Search 入力ハンドラ（string / {name} 両対応）
-document.getElementById('package-search').addEventListener('input', function (e) {
-    const query = e.target.value.trim().toLowerCase();
-    if (query.length < 2 || !Array.isArray(app.devicePackages) || app.devicePackages.length === 0) {
-        hidePackageAutocomplete();
-        return;
+(function() {
+    const pkgInput = document.getElementById('package-search');
+    let pkgSearchTimer;
+
+    if (pkgInput) {
+        pkgInput.addEventListener('input', function(e) {
+            clearTimeout(pkgSearchTimer);
+            const query = e.target.value.trim().toLowerCase();
+
+            if (query.length < 2 || !Array.isArray(app.devicePackages) || app.devicePackages.length === 0) {
+                hidePackageAutocomplete();
+                return;
+            }
+
+            // デバイス名入力と同じ遅延検索ロジック
+            pkgSearchTimer = setTimeout(() => {
+                const matches = app.devicePackages
+                    .filter(pkg => {
+                        const name = (typeof pkg === 'string') ? pkg : pkg.name || '';
+                        return name.toLowerCase().includes(query);
+                    })
+                    .slice(0, 10);
+
+                showPackageAutocomplete(matches);
+            }, 200);
+        });
     }
-    const matches = app.devicePackages
-        .map(p => (typeof p === 'string' ? { name: p } : p))
-        .filter(pkg => (pkg.name || '').toLowerCase().includes(query))
-        .slice(0, 10);
-    showPackageAutocomplete(matches);
-});
+})();
 
 function hidePackageAutocomplete() {
     const el = document.querySelector('#package-search-autocomplete .autocomplete-items');
@@ -3627,18 +3668,31 @@ function showPackageAutocomplete(matches) {
         if (!name) return;
         const div = document.createElement('div');
         div.textContent = name;
-        div.addEventListener('click', () => {
+        div.addEventListener('click', (e) => {
+            e.stopPropagation();
             addPackageToList(name);
+
+            // 選択状態を明示的に付与
+            div.classList.add('bold-flash');
+
             document.getElementById('package-search').value = '';
-            hidePackageAutocomplete();
+
+            const cont = document.querySelector('#package-search-autocomplete .autocomplete-items');
+            if (cont) {
+                cont.style.pointerEvents = 'none';
+                cont.style.userSelect = 'none';
+                setTimeout(() => { hidePackageAutocomplete(); }, 1500);
+            } else {
+                hidePackageAutocomplete();
+            }
         });
         container.appendChild(div);
     });
-
+    
     host.appendChild(container);
 }
 
-function addPackageToList(pkgName) {
+function addPackageToList(pkgName, clickedEl) {
     const textarea = document.getElementById('asu-packages');
     const list = textarea.value.trim() ? textarea.value.trim().split(/\s+/) : [];
     if (!list.includes(pkgName)) {
@@ -3646,8 +3700,17 @@ function addPackageToList(pkgName) {
         textarea.value = list.join(' ');
         refreshTemplateAndPackages();
     }
+    flashSelectedOption(clickedEl); // null 渡しをやめる
 }
-        
+
+function flashSelectedOption(el) {
+    if (!el) return;
+    el.classList.add('bold-flash');      // 即時反映
+    setTimeout(() => {
+        el.classList.remove('bold-flash');
+    }, 1500);
+}
+  
 document.addEventListener('click', function (e) {
     if (!e.target.closest('#package-search-autocomplete')) {
         hidePackageAutocomplete();
