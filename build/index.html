@@ -3631,14 +3631,23 @@ function showPackageAutocomplete(matches) {
         if (!name) return;
         const div = document.createElement('div');
         div.textContent = name;
-        div.addEventListener('click', () => {
-            addPackageToList(name, div); // ← 要素参照を渡す
+        div.addEventListener('click', (e) => {
+            e.stopPropagation();
+            addPackageToList(name, div);
             document.getElementById('package-search').value = '';
-            hidePackageAutocomplete();
+
+            const cont = document.querySelector('#package-search-autocomplete .autocomplete-items');
+            if (cont) {
+                cont.style.pointerEvents = 'none';
+                cont.style.userSelect = 'none';
+                setTimeout(() => { hidePackageAutocomplete(); }, 1500);
+            } else {
+                hidePackageAutocomplete();
+            }
         });
         container.appendChild(div);
     });
-
+    
     host.appendChild(container);
 }
 
@@ -3655,13 +3664,10 @@ function addPackageToList(pkgName, clickedEl) {
 
 function flashSelectedOption(el) {
     if (!el) return;
+    el.classList.add('bold-flash');      // 即時反映
     setTimeout(() => {
-        const originalWeight = el.style.fontWeight;
-        el.style.fontWeight = 'bold';
-        setTimeout(() => {
-            el.style.fontWeight = originalWeight;
-        }, 1500);
-    }, 0); // レイアウト確定直後に実行
+        el.classList.remove('bold-flash');
+    }, 1500);
 }
   
 document.addEventListener('click', function (e) {
