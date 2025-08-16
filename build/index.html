@@ -1053,6 +1053,9 @@
 # openwrt_19=""
 # openwrt_21=""
 #
+dumb_ip_address="192.168.1.2"
+dumb_gateway="192.168.1.1"
+#
 # enable_ttyd=""
 # enable_irqbalance=""
 # enable_samba4=""
@@ -1063,6 +1066,8 @@ MAP_NAME="map"
 MAP6_NAME="map6"
 DSLITE_NAME="dslite"
 DSLITE6_NAME="dslite6"
+DUMB_NAME="dumb"
+DUMB6_NAME="dumb6"
 
 # log potential errors
 exec >/tmp/setup.log 2>&1
@@ -1132,10 +1137,17 @@ fi
 # Configure DS-Lite
 if [ -n "$dslite_aftr_address" ]; then
     echo "Configuring DS-Lite: AFTR=$dslite_aftr_address"
+
+    # Backup
+    cp -p /etc/config/network /etc/config/network.\${DSLITE_NAME}.bak 2>/dev/null
+    cp -p /etc/config/dhcp /etc/config/dhcp.\${DSLITE_NAME}.bak 2>/dev/null
+    cp -p /etc/config/firewall /etc/config/firewall.\${DSLITE_NAME}.bak 2>/dev/null
     
-    # Disable WAN
+    # Disable WAN/WAN6
     uci set network.wan.disabled='1'
     uci set network.wan.auto='0'
+    uci set network.wan6.disabled='1'
+    uci set network.wan6.auto='0'
     
     # DS-Lite IPv6 interface
     uci set network.\${DSLITE6_NAME}=interface
@@ -1177,6 +1189,12 @@ fi
 # Configure MAP-E
 if [ -n "$mape_br" ] && [ -n "$mape_ealen" ]; then
     echo "Configuring MAP-E: BR=$mape_br, EA-len=$mape_ealen"
+
+    # Backup
+    cp -p /etc/config/network /etc/config/network.\${MAP_NAME}.bak 2>/dev/null
+    cp -p /etc/config/dhcp /etc/config/dhcp.\${MAP_NAME}.bak 2>/dev/null
+    cp -p /etc/config/firewall /etc/config/firewall.\${MAP_NAME}.bak 2>/dev/null
+    cp -p /lib/netifd/proto/map.sh /etc/config/firewall.\${MAP_NAME}.bak 2>/dev/null
     
     # Install map.sh (WEB side embeds content here)
     cat > /lib/netifd/proto/map.sh << 'MAP_SH_EOF'
@@ -1186,8 +1204,8 @@ MAP_SH_EOF
     # Disable WAN/WAN6
     uci set network.wan.disabled='1'
     uci set network.wan.auto='0'
-    uci set network.wan6.disabled='1' 2>/dev/null
-    uci set network.wan6.auto='0' 2>/dev/null
+    uci set network.wan6.disabled='1'
+    uci set network.wan6.auto='0'
     
     # MAP-E IPv6 interface
     uci set network.\${MAP6_NAME}=interface
@@ -1250,6 +1268,47 @@ if [ -n "$openwrt_21" ]; then
     uci set network.\${MAP_NAME}.legacymap='1'
     uci set network.\${MAP_NAME}.tunlink="\${MAP6_NAME}"
     uci set dhcp.\${MAP6_NAME}.ignore='1'
+fi
+
+# Configure DUMB-AP
+if [ -n "$dumb_ip_address" ]; then
+    echo "Configuring Dumb AP: IP=$dumb_ip_address GW=$dumb_gateway"
+
+    # Backup
+    cp -p /etc/config/network  /etc/config/network.${DUMB_NAME}.bak 2>/dev/null
+    cp -p /etc/config/dhcp     /etc/config/dhcp.${DUMB_NAME}.bak 2>/dev/null
+    cp -p /etc/config/firewall /etc/config/firewall.${DUMB_NAME}.bak 2>/dev/null
+
+    # Disable WAN/WAN6
+    uci delete network.wan  2>/dev/null
+    uci delete network.wan6 2>/dev/null
+
+    # IPv4 bridge
+    uci set network.${DUMB_NAME}=interface
+    uci set network.${DUMB_NAME}.proto='static'
+    uci set network.${DUMB_NAME}.device="$(uci -q get network.lan.device)"
+    uci set network.${DUMB_NAME}.ipaddr="$dumb_ip_address"
+    uci set network.${DUMB_NAME}.netmask='255.255.255.0'
+    uci set network.${DUMB_NAME}.gateway="$dumb_gateway"
+    uci set network.${DUMB_NAME}.dns="$dumb_gateway"
+    uci set network.${DUMB_NAME}.delegate='0'
+
+    # IPv6 bridge
+    uci set network.${DUMB6_NAME}=interface
+    uci set network.${DUMB6_NAME}.proto='dhcpv6'
+    uci set network.${DUMB6_NAME}.device="@${DUMB_NAME}"
+    uci set network.${DUMB6_NAME}.reqaddress='try'
+    uci set network.${DUMB6_NAME}.reqprefix='no'
+    uci set network.${DUMB6_NAME}.type='bridge'
+
+    # WLAN attach
+    uci set wireless.default_radio0.network="${DUMB_NAME}"
+    uci set wireless.default_radio1.network="${DUMB_NAME}"
+
+    # Disable DHCP/DNS/Firewall
+    /etc/init.d/odhcpd disable; /etc/init.d/odhcpd stop
+    /etc/init.d/dnsmasq disable; /etc/init.d/dnsmasq stop
+    /etc/init.d/firewall disable; /etc/init.d/firewall stop
 fi
 
 # Configure ttyd
