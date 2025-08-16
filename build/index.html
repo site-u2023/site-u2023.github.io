@@ -776,7 +776,12 @@
                             </div>
                             <div class="form-group">
                                 <label for="aios-root-password">Root password</label>
-                                <input type="password" id="aios-root-password" class="form-control" placeholder="8+ characters">
+                                <div style="position: relative;">
+                                    <input type="password" id="aios-root-password" class="form-control" placeholder="8+ characters" style="padding-right: 40px;">
+                                    <button type="button" id="toggle-password" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; padding: 5px;">
+                                        <span id="password-icon">👁️</span>
+                                    </button>
+                                </div>
                                 <small class="form-text text-muted">Leave empty to disable password authentication</small>
                             </div>
                         </div>
