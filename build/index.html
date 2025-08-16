@@ -645,16 +645,11 @@
                 
                 <!-- パッケージセレクターセクション -->
                 <div class="aios-section">
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="use-package-selector">
-                        <label class="form-check-label" for="use-package-selector">
-                            Installed Packages
-                        </label>
-                    </div>
-                    
-                    <div id="package-selector-config" class="aios-config">
-                        <small class="text-muted">Select additional packages to install. Selected packages will be automatically added to the package list below.</small>
-
+                    <details id="use-package-selector-details">
+                        <summary>Installed Packages</summary>
+                        
+                        <div id="package-selector-config">
+                            <small class="text-muted">Select additional packages to install. Selected packages will be automatically added to the package list below.</small>
                         <!-- パッケージ検索ボックス -->
                         <div class="package-category">
                           <h6>Package Search</h6>
@@ -685,15 +680,11 @@
 
                 <!-- setup.sh設定セクション -->
                 <div class="aios-section">
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="use-aios-config">
-                        <label class="form-check-label" for="use-aios-config">
-                            Script to run on first boot (uci-defaults)
-                        </label>
-                    </div>
-
-                    <div id="aios-config" class="aios-config">
-                        <h5>Basic Configuration</h5>
+                    <details id="use-aios-config-details">
+                        <summary>Script to run on first boot (uci-defaults)</summary>
+                        
+                        <div id="aios-config">
+                            <h5>Basic Configuration</h5>
                         
                         <!-- 1行目: Language と Country -->
                         <div class="form-row">
