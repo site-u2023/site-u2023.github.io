@@ -3088,6 +3088,11 @@ function customizeSetupScript(content, config, apiInfo, selectedPackages) {
         customized = loadMapShContentSync(customized, app.selectedVersion);
     }
     
+    // AP
+    const apActive = (activeProto === 'ap');
+    customized = setScriptVar(customized, 'dumb_ip_address', config.apIp || '', apActive);
+    customized = setScriptVar(customized, 'dumb_gateway', config.apGateway || '', apActive);
+    
     return customized;
 }
 
