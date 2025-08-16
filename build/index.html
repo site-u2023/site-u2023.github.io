@@ -3616,15 +3616,17 @@ function parsePackagesText(text, source) {
                 return;
             }
 
-            // デバイス名検索と同じ遅延処理
+            // デバイス名入力と同じ遅延検索ロジック
             pkgSearchTimer = setTimeout(() => {
                 const matches = app.devicePackages
-                    .map(p => (typeof p === 'string' ? { name: p } : p))
-                    .filter(pkg => (pkg.name || '').toLowerCase().includes(query))
+                    .filter(pkg => {
+                        const name = (typeof pkg === 'string') ? pkg : pkg.name || '';
+                        return name.toLowerCase().includes(query);
+                    })
                     .slice(0, 10);
 
                 showPackageAutocomplete(matches);
-            }, 200); // 遅延時間はデバイス名側に合わせる
+            }, 200);
         });
     }
 })();
