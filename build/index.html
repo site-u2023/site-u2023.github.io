@@ -82,8 +82,6 @@
         max-height: 300px;
         overflow-y: auto;
         background-color: #fff;
-        contain: layout style paint;
-        will-change: transform;        
     }
 
     .autocomplete-items div {
@@ -282,13 +280,9 @@
 
     .aios-config {
         margin-top: 1rem;
+        display: none;
     }
 
-    #package-selector-config {
-        margin-top: 1rem;
-        /* display設定は不要 */
-    }
-    
     .form-row {
         display: flex;
         flex-wrap: wrap;
@@ -373,7 +367,6 @@
         background-color: #fff;
         border: 1px solid #e9ecef;
         border-radius: 0.25rem;
-        contain: layout style paint;
     }
 
     .package-category h6 {
@@ -652,12 +645,16 @@
                 
                 <!-- パッケージセレクターセクション -->
                 <div class="aios-section">
-                    <details id="use-package-selector-details">
-                        <summary>Installed Packages</summary>
-                        
-                        <div id="package-selector-config">
-                            <small class="text-muted">Select additional packages to install. Selected packages will be automatically added to the package list below.</small>
-                        
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="use-package-selector">
+                        <label class="form-check-label" for="use-package-selector">
+                            Installed Packages
+                        </label>
+                    </div>
+                    
+                    <div id="package-selector-config" class="aios-config">
+                        <small class="text-muted">Select additional packages to install. Selected packages will be automatically added to the package list below.</small>
+
                         <!-- パッケージ検索ボックス -->
                         <div class="package-category">
                           <h6>Package Search</h6>
@@ -688,11 +685,15 @@
 
                 <!-- setup.sh設定セクション -->
                 <div class="aios-section">
-                    <details id="use-aios-config-details">
-                        <summary>Script to run on first boot (uci-defaults)</summary>
-                        
-                        <div id="aios-config">
-                            <h5>Basic Configuration</h5>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="use-aios-config">
+                        <label class="form-check-label" for="use-aios-config">
+                            Script to run on first boot (uci-defaults)
+                        </label>
+                    </div>
+
+                    <div id="aios-config" class="aios-config">
+                        <h5>Basic Configuration</h5>
                         
                         <!-- 1行目: Language と Country -->
                         <div class="form-row">
@@ -761,7 +762,7 @@
                             </div>
                             <div class="form-group">
                                 <label for="aios-device-name">Device name</label>
-                                <input type="text" id="aios-device-name" class="form-control" placeholder="OpenWrt" inputmode="latin" autocomplete="off" autocapitalize="off" spellcheck="false" pattern="[\u0020-\u007E]*" title="Use ASCII (half-width) characters only">
+                                <input type="text" id="aios-device-name" class="form-control" placeholder="OpenWrt">
                             </div>
                         </div>
                     
@@ -1300,16 +1301,7 @@ const config = {
     info_url: "https://openwrt.org/start?do=search&id=toh&q={title} @toh",
     asu_url: "https://sysupgrade.openwrt.org",
     asu_extra_packages: ["luci"],
-    feeds: ["base", "luci", "packages", "routing", "telephony"],
-    // リソースヒント用に追加
-    preconnect_urls: [
-        "https://downloads.openwrt.org",
-        "https://sysupgrade.openwrt.org"
-    ],
-    dns_prefetch_urls: [
-        "https://auto-config.site-u.workers.dev",
-        "https://site-u.pages.dev"
-    ]
+    feeds: ["base", "luci", "packages", "routing", "telephony"]
 };
 
 // グローバル変数
@@ -1724,14 +1716,7 @@ const PACKAGE_DB = {
 };
         
 // After
-document.addEventListener('DOMContentLoaded', async () => {
-  await init();
-  const searchBlock = document.querySelector('#package-selector-config .package-category');
-  const asuDetails = document.getElementById('asu');
-  if (searchBlock && asuDetails) {
-    asuDetails.insertAdjacentElement('afterend', searchBlock);
-  }
-});
+document.addEventListener('DOMContentLoaded', init);
     
 // ★言語変更時にも即反映させる
 const langEl = document.getElementById('aios-language');
@@ -1761,9 +1746,6 @@ function updateInstalledPackageList() {
 
 // ==================== 初期化関数 ====================
 async function init() {
-    // リソースヒントを動的に追加
-    addResourceHints();
-    
     try {
         // バージョン読み込み
         await loadVersions();
@@ -1826,32 +1808,6 @@ async function init() {
             'Failed to initialize application: ' + error.message
         );
     }
-}
-
-// リソースヒント追加関数
-function addResourceHints() {
-    const head = document.head;
-    
-    // preconnect
-    (config.preconnect_urls || [
-        config.image_url,
-        config.asu_url
-    ]).forEach(url => {
-        if (!url) return;
-        const link = document.createElement('link');
-        link.rel = 'preconnect';
-        link.href = url;
-        head.appendChild(link);
-    });
-    
-    // dns-prefetch
-    (config.dns_prefetch_urls || []).forEach(url => {
-        if (!url) return;
-        const link = document.createElement('link');
-        link.rel = 'dns-prefetch';
-        link.href = url;
-        head.appendChild(link);
-    });
 }
 
 // ==================== 必須要素の存在を待つユーティリティ ====================
@@ -2059,11 +2015,11 @@ function bindEvents() {
     const modelsEl = document.getElementById('models');
     if (modelsEl) modelsEl.addEventListener('input', handleDeviceSearch);
 
-    const aiosConfigDetails = document.getElementById('use-aios-config-details');
-    if (aiosConfigDetails) aiosConfigDetails.addEventListener('toggle', toggleAiosConfig);
+    const aiosConfigEl = document.getElementById('use-aios-config');
+    if (aiosConfigEl) aiosConfigEl.addEventListener('change', toggleAiosConfig);
 
-    const pkgSelectorDetails = document.getElementById('use-package-selector-details');
-    if (pkgSelectorDetails) pkgSelectorDetails.addEventListener('toggle', togglePackageSelector);
+    const pkgSelectorEl = document.getElementById('use-package-selector');
+    if (pkgSelectorEl) pkgSelectorEl.addEventListener('change', togglePackageSelector);
 
     const buildBtnEl = document.getElementById('request-build');
     if (buildBtnEl) buildBtnEl.addEventListener('click', buildAsuRequest);
@@ -2127,7 +2083,12 @@ function bindEvents() {
 
 // ==================== パッケージセレクター関連 ====================
 function togglePackageSelector(e) {
-    // 展開式なのでこの関数は不要になるが、互換性のため空関数として残す
+    const configSection = document.getElementById('package-selector-config');
+    if (e.target.checked) {
+        configSection.style.display = 'block';
+    } else {
+        configSection.style.display = 'none';
+    }
 }
 
 function generatePackageSelector() {
@@ -2146,15 +2107,7 @@ function generatePackageSelector() {
         });
     });
 
-    // DocumentFragmentを使用してバッチ処理
-    const fragment = document.createDocumentFragment();
-
-    // 最初の2カテゴリを即座に描画
-    const firstBatch = PACKAGE_DB.categories.slice(0, 2);
-    const remainingBatch = PACKAGE_DB.categories.slice(2);
-
-    // カテゴリをレンダリングする共通関数
-    const renderCategory = (category) => {
+    PACKAGE_DB.categories.forEach(category => {
         const categoryDiv = document.createElement('div');
         categoryDiv.className = 'package-category';
 
@@ -2252,36 +2205,8 @@ function generatePackageSelector() {
         description.textContent = category.description;
         categoryDiv.appendChild(description);
 
-        return categoryDiv;
-    };
-
-    // 最初のバッチを即座にレンダリング
-    firstBatch.forEach(category => {
-        fragment.appendChild(renderCategory(category));
+        container.appendChild(categoryDiv);
     });
-    container.appendChild(fragment);
-
-    // 残りのカテゴリを遅延レンダリング
-    if (remainingBatch.length > 0) {
-        if ('requestIdleCallback' in window) {
-            requestIdleCallback(() => {
-                const remainingFragment = document.createDocumentFragment();
-                remainingBatch.forEach(category => {
-                    remainingFragment.appendChild(renderCategory(category));
-                });
-                container.appendChild(remainingFragment);
-            });
-        } else {
-            // requestIdleCallbackがない場合のフォールバック
-            setTimeout(() => {
-                const remainingFragment = document.createDocumentFragment();
-                remainingBatch.forEach(category => {
-                    remainingFragment.appendChild(renderCategory(category));
-                });
-                container.appendChild(remainingFragment);
-            }, 0);
-        }
-    }
 }
 
 function handlePackageSelection(e) {
@@ -2454,18 +2379,13 @@ function showAutocomplete(devices) {
         return;
     }
 
-    // DocumentFragmentを使用してバッチ処理
-    const fragment = document.createDocumentFragment();
-    
     devices.forEach(device => {
         const div = document.createElement('div');
         div.innerHTML = `<strong>${getDeviceTitle(device)}</strong><br><small>Target: ${device.target}</small>`;
         div.addEventListener('click', () => selectDevice(device));
-        fragment.appendChild(div);
+        container.appendChild(div);
     });
-    
-    // 一度だけDOMに追加
-    container.appendChild(fragment);
+
     autocompleteDiv.appendChild(container);
     container.style.display = 'block';
 }
@@ -3092,11 +3012,12 @@ function customizeSetupScript(content, config, apiInfo, selectedPackages) {
 }
 
 function toggleAiosConfig(e) {
-    // 展開式なのでこの関数も簡略化
-    const details = document.getElementById('use-aios-config-details');
-    if (details && details.open) {
+    const configSection = document.getElementById('aios-config');
+    if (e.target.checked) {
+        configSection.style.display = 'block';
         updateConfiguredTemplate();
     } else {
+        configSection.style.display = 'none';
         document.getElementById('uci-defaults-content').value = SETUP_SH_TEMPLATE;
         app.templateLoaded = true;
     }
@@ -3226,14 +3147,13 @@ function applyInitialsFromApi(type) {
     }
 }
 
-// ==================== 共通反映関数（<details>対応版） ====================
+// ==================== 共通反映関数 ====================
 function refreshTemplateAndPackages() {
     // i18n 整理
     asuCollectPackages();
 
-    // aios-config の <details> が展開中のみテンプレ更新
-    const details = document.getElementById('use-aios-config-details');
-    if (details && details.open) {
+    // aios-config 有効時のみテンプレ更新
+    if (document.getElementById('use-aios-config').checked) {
         updateConfiguredTemplate().catch(console.error);
     }
 }
