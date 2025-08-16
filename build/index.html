@@ -3188,7 +3188,8 @@ function customizeSetupScript(content, config, apiInfo, selectedPackages) {
     const apActive = (activeProto === 'ap');
 
     // ルーターIP（AP時でも値は保持、コメントアウトのみ）
-    customized = setScriptVar(customized, 'lan_ip_address', config.lanIp, !apActive);
+    customized = setScriptVar(customized, 'lan_ip_address', config.lanIpv4, !apActive);
+    customized = setScriptVar(customized, 'lan_ipv6_address', config.lanIpv6, !apActive);
 
     // AP IP（AP時のみ有効化）
     customized = setScriptVar(customized, 'ap_ip_address', config.apIpAddress, apActive);
