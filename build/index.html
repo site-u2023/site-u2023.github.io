@@ -2376,13 +2376,18 @@ function showAutocomplete(devices) {
         return;
     }
 
+    // DocumentFragmentを使用してバッチ処理
+    const fragment = document.createDocumentFragment();
+    
     devices.forEach(device => {
         const div = document.createElement('div');
         div.innerHTML = `<strong>${getDeviceTitle(device)}</strong><br><small>Target: ${device.target}</small>`;
         div.addEventListener('click', () => selectDevice(device));
-        container.appendChild(div);
+        fragment.appendChild(div);
     });
-
+    
+    // 一度だけDOMに追加
+    container.appendChild(fragment);
     autocompleteDiv.appendChild(container);
     container.style.display = 'block';
 }
