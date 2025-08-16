@@ -280,9 +280,13 @@
 
     .aios-config {
         margin-top: 1rem;
-        display: none;
     }
 
+    #package-selector-config {
+        margin-top: 1rem;
+        /* display設定は不要 */
+    }
+    
     .form-row {
         display: flex;
         flex-wrap: wrap;
@@ -645,16 +649,12 @@
                 
                 <!-- パッケージセレクターセクション -->
                 <div class="aios-section">
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="use-package-selector">
-                        <label class="form-check-label" for="use-package-selector">
-                            Installed Packages
-                        </label>
-                    </div>
-                    
-                    <div id="package-selector-config" class="aios-config">
-                        <small class="text-muted">Select additional packages to install. Selected packages will be automatically added to the package list below.</small>
-
+                    <details id="use-package-selector-details">
+                        <summary>Installed Packages</summary>
+                        
+                        <div id="package-selector-config">
+                            <small class="text-muted">Select additional packages to install. Selected packages will be automatically added to the package list below.</small>
+                        
                         <!-- パッケージ検索ボックス -->
                         <div class="package-category">
                           <h6>Package Search</h6>
@@ -685,15 +685,11 @@
 
                 <!-- setup.sh設定セクション -->
                 <div class="aios-section">
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="use-aios-config">
-                        <label class="form-check-label" for="use-aios-config">
-                            Script to run on first boot (uci-defaults)
-                        </label>
-                    </div>
-
-                    <div id="aios-config" class="aios-config">
-                        <h5>Basic Configuration</h5>
+                    <details id="use-aios-config-details">
+                        <summary>Script to run on first boot (uci-defaults)</summary>
+                        
+                        <div id="aios-config">
+                            <h5>Basic Configuration</h5>
                         
                         <!-- 1行目: Language と Country -->
                         <div class="form-row">
@@ -2015,11 +2011,11 @@ function bindEvents() {
     const modelsEl = document.getElementById('models');
     if (modelsEl) modelsEl.addEventListener('input', handleDeviceSearch);
 
-    const aiosConfigEl = document.getElementById('use-aios-config');
-    if (aiosConfigEl) aiosConfigEl.addEventListener('change', toggleAiosConfig);
+    const aiosConfigDetails = document.getElementById('use-aios-config-details');
+    if (aiosConfigDetails) aiosConfigDetails.addEventListener('toggle', toggleAiosConfig);
 
-    const pkgSelectorEl = document.getElementById('use-package-selector');
-    if (pkgSelectorEl) pkgSelectorEl.addEventListener('change', togglePackageSelector);
+    const pkgSelectorDetails = document.getElementById('use-package-selector-details');
+    if (pkgSelectorDetails) pkgSelectorDetails.addEventListener('toggle', togglePackageSelector);
 
     const buildBtnEl = document.getElementById('request-build');
     if (buildBtnEl) buildBtnEl.addEventListener('click', buildAsuRequest);
@@ -2083,12 +2079,7 @@ function bindEvents() {
 
 // ==================== パッケージセレクター関連 ====================
 function togglePackageSelector(e) {
-    const configSection = document.getElementById('package-selector-config');
-    if (e.target.checked) {
-        configSection.style.display = 'block';
-    } else {
-        configSection.style.display = 'none';
-    }
+    // 展開式なのでこの関数は不要になるが、互換性のため空関数として残す
 }
 
 function generatePackageSelector() {
@@ -3012,12 +3003,11 @@ function customizeSetupScript(content, config, apiInfo, selectedPackages) {
 }
 
 function toggleAiosConfig(e) {
-    const configSection = document.getElementById('aios-config');
-    if (e.target.checked) {
-        configSection.style.display = 'block';
+    // 展開式なのでこの関数も簡略化
+    const details = document.getElementById('use-aios-config-details');
+    if (details && details.open) {
         updateConfiguredTemplate();
     } else {
-        configSection.style.display = 'none';
         document.getElementById('uci-defaults-content').value = SETUP_SH_TEMPLATE;
         app.templateLoaded = true;
     }
