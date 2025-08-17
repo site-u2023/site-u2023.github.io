@@ -3814,12 +3814,12 @@ async function fetchDevicePackages() {
     if (!app.selectedDevice || !app.selectedVersion) return;
     
     const version = app.selectedVersion;
-    const targetPath = app.selectedDevice.target;  // mediatek/filogic 形式をそのまま使用
+    const targetPath = app.selectedDevice.target; // mediatek/filogic 形式
 
-    // profiles.json の URL を統一的に生成（SNAPSHOT/リリース共通処理）
+    // profiles.json の URL を config.image_urls[version] 基点で生成
     const basePath = config.image_urls[version].replace(/\/$/, '');
     const profilesUrl = `${basePath}/targets/${targetPath}/profiles.json`;
-    
+
     let arch;
     try {
         const res = await fetch(profilesUrl);
@@ -3831,9 +3831,9 @@ async function fetchDevicePackages() {
         console.error("arch_packages 取得失敗:", e);
         return;
     }
-    
+
     // パッケージインデックスURL一覧（targets と feeds）
-    const feeds = ["base", "luci", "packages", "routing", "telephony"];
+    const feeds = ["base", "luci", "packages", "routing", "telephony", "video"];
     const urls = [];
 
     // ターゲット固有パッケージ
@@ -3861,12 +3861,12 @@ async function fetchDevicePackages() {
     );
 
     // 結果をマージ
-    results.forEach(r => {
+    for (const r of results) {
         if (r.status === 'fulfilled' && Array.isArray(r.value)) {
             allPkgs.push(...r.value);
         }
-    });
-    
+    }
+
     // 名前重複を統合
     const pkgMap = new Map();
     for (const p of allPkgs) {
