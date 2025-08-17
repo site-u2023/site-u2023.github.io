@@ -3001,14 +3001,14 @@ function buildIspStatus(apiInfo) {
 // ==================== ISP情報関連 ====================
 async function fetchApiInfoAndUpdate() {
     try {
+        console.log('=== fetchApiInfoAndUpdate called ===');
+        console.trace('Call stack:');  // スタックトレース表示
+        
         updateIspDisplay('Fetching', 'Retrieving ISP information...');
         console.log('Starting fetchApiInfoAndUpdate...');
-
         const apiInfo = await fetchApiInfo();
         console.log('fetchApiInfo returned:', apiInfo);
-
         window.cachedApiInfo = apiInfo;
-
         if (apiInfo) {
             // Country と Timezone（空欄のみ設定）
             setIfEmpty('aios-country', apiInfo.country);
@@ -3140,7 +3140,7 @@ function setScriptVar(content, key, value, active) {
 }
 
 // ==================== テンプレート設定 ====================
-function updateConfiguredTemplate() {
+function updateConfiguredTemplate() {  // async削除
     try {
         let content = document.getElementById('uci-defaults-content').value;
 
@@ -3150,11 +3150,9 @@ function updateConfiguredTemplate() {
         }
 
         const config = getAiosConfig();
-        const apiInfo = window.cachedApiInfo || null;  // キャッシュのみ使用
+        const apiInfo = window.cachedApiInfo || null;  // キャッシュのみ、API呼び出し削除
 
-        // 選択済みパッケージ（enable_* 反映用）
         const selectedPackages = new Set(split(document.getElementById('asu-packages').value));
-
         const customized = customizeSetupScript(content, config, apiInfo, selectedPackages);
         document.getElementById('uci-defaults-content').value = customized;
     } catch (error) {
