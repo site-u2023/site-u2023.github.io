@@ -3101,9 +3101,16 @@ async function fetchApiInfo() {
         
         const data = await response.json();
 
-        // 互換ラッパー: 新mapeキーが無く旧ruleキーがある場合はコピー
-        if (data && data.mape === undefined && data.rule) {
-            data.mape = data.rule;
+        // 互換ラッパー: 新旧どちらのキーでも動くように相互コピー
+        if (data) {
+            // 旧→新
+            if (data.rule && data.mape === undefined) {
+                data.mape = data.rule;
+            }
+            // 新→旧
+            if (data.mape && data.rule === undefined) {
+                data.rule = data.mape;
+            }
         }
 
         console.log('API Info fetched successfully:', data);
