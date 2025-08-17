@@ -3868,23 +3868,11 @@ async function fetchDevicePackages() {
     const allPkgs = [];
     const results = await Promise.allSettled(
         urls.map(async (url) => {
-          try {
+            try {
                 const res = await fetch(url);
                 if (!res.ok) return [];
-                
-                let text;
-                if (url.endsWith('.gz')) {
-                    // gzip圧縮の展開
-                    const blob = await res.blob();
-                    const ds = new DecompressionStream('gzip');
-                    const decompressedStream = blob.stream().pipeThrough(ds);
-                    text = await new Response(decompressedStream).text();
-                } else {
-                    text = await res.text();
-                }
-                
+                const text = await res.text();
                 return parsePackagesText(text, url);
-    
             } catch (e) {
                 console.warn(`パッケージ取得失敗: ${url}`, e);
                 return [];
