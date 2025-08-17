@@ -3835,11 +3835,11 @@ async function fetchDevicePackages() {
         return;
     }
     
-// パッケージインデックスURL一覧（targets と feeds）
+    // パッケージインデックスURL一覧（targets と feeds）
     const feeds = ["base", "luci", "packages", "routing", "telephony"];
     const urls = [];
     
-if (version === 'SNAPSHOT') {
+    if (version === 'SNAPSHOT') {
         // SNAPSHOTの場合：ターゲット固有パッケージは存在しない
         // フィードパッケージのみ取得
         for (const feed of feeds) {
@@ -3848,7 +3848,7 @@ if (version === 'SNAPSHOT') {
             );
         }
     } else {
-        // リリース版の場合：従来通り
+        // リリース版の場合：従来通り（変更なし）
         // ターゲット固有パッケージ
         urls.push(
             `${config.image_url}/releases/${encodeURIComponent(version)}/targets/${targetPath}/packages/Packages`
@@ -3856,8 +3856,7 @@ if (version === 'SNAPSHOT') {
         // フィードパッケージ
         for (const feed of feeds) {
             urls.push(
-                `${config.image_url}/releases/${encodeURIComponent(version)}` +
-                `/packages/${encodeURIComponent(arch)}/${encodeURIComponent(feed)}/Packages`
+                `${config.image_url}/releases/${encodeURIComponent(version)}/packages/${arch}/${feed}/Packages`
             );
         }
     }
