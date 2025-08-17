@@ -3810,7 +3810,7 @@ function showDownloadLinks(images, fullStatus, requestHash) {
 async function fetchDevicePackages() {
     app.devicePackages = [];
     if (!app.selectedDevice || !app.selectedVersion) return;
-
+    
     // target/subtarget 抽出
     const [target, subtarget] = (() => {
         if (app.selectedDevice.target && app.selectedDevice.target.includes('/')) {
@@ -3818,10 +3818,10 @@ async function fetchDevicePackages() {
         }
         return [app.selectedDevice.target || "", app.selectedDevice.subtarget || ""];
     })();
-
+    
     const version = app.selectedVersion;
-
     let profilesUrl;
+    
     if (version === 'SNAPSHOT') {
         profilesUrl = `${config.image_url}/snapshots/targets/${encodeURIComponent(target)}/${encodeURIComponent(subtarget)}/profiles.json`;
     } else {
@@ -3839,43 +3839,58 @@ async function fetchDevicePackages() {
         console.error("arch_packages 取得失敗:", e);
         return;
     }
-
+    
     // パッケージインデックスURL一覧（targets と feeds）
     const feeds = ["base", "luci", "packages", "routing", "telephony"];
-    const urls = [
-        `${config.image_url}/releases/${encodeURIComponent(version)}` +
-        `/targets/${encodeURIComponent(target)}/${encodeURIComponent(subtarget)}/packages/Packages`
-    ];
-    for (const feed of feeds) {
+    const urls = [];
+    
+    if (version === 'SNAPSHOT') {
+        // SNAPSHOTの場合：ターゲット固有パッケージは通常存在しないのでスキップ
+        // フィードパッケージのみ取得
+        for (const feed of feeds) {
+            urls.push(
+                `${config.image_url}/snapshots/packages/${encodeURIComponent(arch)}/${encodeURIComponent(feed)}/Packages`
+            );
+        }
+    } else {
+        // リリース版の場合：従来通り
+        // ターゲット固有パッケージ
         urls.push(
             `${config.image_url}/releases/${encodeURIComponent(version)}` +
-            `/packages/${encodeURIComponent(arch)}/${encodeURIComponent(feed)}/Packages`
+            `/targets/${encodeURIComponent(target)}/${encodeURIComponent(subtarget)}/packages/Packages`
         );
-    }
-
-// 各 Packages を並列取得してパース
-const allPkgs = [];
-
-const results = await Promise.allSettled(
-    urls.map(async (url) => {
-        try {
-            const res = await fetch(url);
-            if (!res.ok) return [];
-            const text = await res.text();
-            return parsePackagesText(text, url);
-        } catch (e) {
-            console.warn(`パッケージ取得失敗: ${url}`, e);
-            return [];
+        // フィードパッケージ
+        for (const feed of feeds) {
+            urls.push(
+                `${config.image_url}/releases/${encodeURIComponent(version)}` +
+                `/packages/${encodeURIComponent(arch)}/${encodeURIComponent(feed)}/Packages`
+            );
         }
-    })
-);
-
-results.forEach(r => {
-    if (r.status === 'fulfilled' && Array.isArray(r.value)) {
-        allPkgs.push(...r.value);
     }
-});
 
+    // 各 Packages を並列取得してパース
+    const allPkgs = [];
+    const results = await Promise.allSettled(
+        urls.map(async (url) => {
+            try {
+                const res = await fetch(url);
+                if (!res.ok) return [];
+                const text = await res.text();
+                return parsePackagesText(text, url);
+            } catch (e) {
+                console.warn(`パッケージ取得失敗: ${url}`, e);
+                return [];
+            }
+        })
+    );
+
+    // 結果をマージ
+    results.forEach(r => {
+        if (r.status === 'fulfilled' && Array.isArray(r.value)) {
+            allPkgs.push(...r.value);
+        }
+    });
+    
     // 名前重複を統合
     const pkgMap = new Map();
     for (const p of allPkgs) {
