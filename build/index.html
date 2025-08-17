@@ -2771,9 +2771,12 @@ let apiInfoFetched = false;  // 重複防止用フラグ
 async function handleAsuDetailsToggle(e) {
     const details = e.target;
     
-    if (details.open && !apiInfoFetched) {  // 未実行時のみ
-        console.log('ASU details opened - fetching latest ISP info (no cache)...');
-        apiInfoFetched = true;  // フラグセット
+    console.log(`=== handleAsuDetailsToggle called: open=${details.open} ===`);
+    console.trace('Call stack:');
+    
+    if (details.open && !window.apiInfoFetched) {  // 開いた時のみ & 未実行時のみ
+        console.log('ASU details opened - fetching latest ISP info...');
+        window.apiInfoFetched = true;  // グローバルフラグ
         
         try {
             await fetchApiInfoAndUpdate();
@@ -2781,12 +2784,8 @@ async function handleAsuDetailsToggle(e) {
             asuCollectPackages();
             console.log('Auto configuration completed');
         } catch (error) {
-            console.error('Auto configuration failed:', error);
-            apiInfoFetched = false;  // 失敗時はフラグリセット
-            updateIspDisplay(
-                'Auto-detection failed',
-                'Failed to retrieve ISP information. Manual configuration required.'
-            );
+            window.apiInfoFetched = false;  // 失敗時リセット
+            // エラー処理
         }
     }
 }
