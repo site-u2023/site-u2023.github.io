@@ -1282,7 +1282,7 @@ if [ -n "\${mape_br}" ] && [ -n "\${mape_ealen}" ]; then
     cp -p /etc/config/network /etc/config/network.\${MAP_NAME}.bak 2>/dev/null
     cp -p /etc/config/dhcp /etc/config/dhcp.\${MAP_NAME}.bak 2>/dev/null
     cp -p /etc/config/firewall /etc/config/firewall.\${MAP_NAME}.bak 2>/dev/null
-    cp -p /lib/netifd/proto/map.sh /etc/config/firewall.\${MAP_NAME}.bak 2>/dev/null
+    cp -p /lib/netifd/proto/map.sh /lib/netifd/proto/map.sh.bak 2>/dev/null
     
     # Install map.sh (WEB side embeds content here)
     cat > /lib/netifd/proto/map.sh << 'MAP_SH_EOF'
@@ -1379,8 +1379,8 @@ if [ -n "\${ap_ip_address}" ]; then
     uci set network.\${AP_NAME}.device="\${LAN_DEF}"
     uci set network.\${AP_NAME}.ipaddr="\${ap_ip_address}"
     uci set network.\${AP_NAME}.netmask='255.255.255.0'
-    uci set network.\${AP_NAME}.gateway="\${dumb_gateway}"
-    uci set network.\${AP_NAME}.dns="\${dumb_gateway}"
+    uci set network.\${AP_NAME}.gateway="\${ap_gateway}"
+    uci set network.\${AP_NAME}.dns="\${ap_gateway}"
     uci set network.\${AP_NAME}.delegate='0'
 
     # IPv6 Access point
@@ -1871,16 +1871,6 @@ const PACKAGE_DB = {
         
 // After（aios-language の change バインドを init 内に移動）
 document.addEventListener('DOMContentLoaded', init);
-
-function init() {
-    const langEl = document.getElementById('aios-language');
-    if (langEl) {
-        langEl.addEventListener('change', function() {
-            refreshTemplateAndPackages();
-        });
-    }
-    // 既存の初期化処理をここに続ける…
-}
 
 // ==================== ユーティリティ関数 ====================
 async function loadPackageDatabase() {
