@@ -2087,31 +2087,22 @@ function asuCollectPackages() {
 }
             
 // ==================== map.sh関連 ====================
-async function loadMapShScripts() { 
+async function loadMapShForVersion(version) {
     try {
-        // OpenWrt 21.02以降用
-        if (!mapShCache['new']) {
-            const responseNew = await fetch('https://site-u.pages.dev/build/scripts/map.sh.new');
-            if (responseNew.ok) {
-                mapShCache['new'] = await responseNew.text();
-                console.log('Loaded map.sh.new successfully');
-            } else {
-                console.error('Failed to load map.sh.new');
-            }
-        }
+        const key = version && version.startsWith('19') ? '19' : 'new';
+        const scriptName = key === '19' ? 'map.sh.19' : 'map.sh.new';
         
-        // OpenWrt 19.x用
-        if (!mapShCache['19']) {
-            const response19 = await fetch('https://site-u.pages.dev/build/scripts/map.sh.19');
-            if (response19.ok) {
-                mapShCache['19'] = await response19.text();
-                console.log('Loaded map.sh.19 successfully');
+        if (!mapShCache[key]) {
+            const response = await fetch(`https://site-u.pages.dev/build/scripts/${scriptName}`);
+            if (response.ok) {
+                mapShCache[key] = await response.text();
+                console.log(`Loaded ${scriptName} successfully`);
             } else {
-                console.error('Failed to load map.sh.19');
+                console.error(`Failed to load ${scriptName}`);
             }
         }
     } catch (error) {
-        console.error('Failed to load map.sh scripts:', error);
+        console.error(`Failed to load map.sh for ${version}:`, error);
     }
 }
 
@@ -2549,6 +2540,12 @@ async function handleVersionChange(e) {
     app.selectedVersion = e.target.value;
     app.selectedDevice = null;
     hideDeviceInfo();
+    
+    // MAP-E環境でOSバージョン変更時は必要なmap.shを追加ロード
+    if (window.cachedApiInfo?.mape?.brIpv6Address) {
+        await loadMapShForVersion(app.selectedVersion);
+    }
+    
     await loadDevices();
 }
 
@@ -3017,7 +3014,7 @@ async function fetchApiInfoAndUpdate() {
 
             // MAP-E検出時のみmap.sh読み込み
             if (apiInfo.mape && apiInfo.mape.brIpv6Address) {
-                await loadMapShScripts();
+                await loadMapShForVersion(app.selectedVersion);  // OSバージョンに応じた適切なものだけ
             }
 
             // GUA セクションの表示を更新
