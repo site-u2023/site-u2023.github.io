@@ -3833,7 +3833,7 @@ async function fetchDevicePackages() {
     }
 
     // SNAPSHOT の場合は kmods/<kernel>/packages に存在する構造に対応
-    let kernel;
+    let kernel;  
     if (version && version.includes('SNAPSHOT')) {
         try {
             console.log('[fetchDevicePackages] SNAPSHOT 判定OK:', version);
@@ -3845,13 +3845,10 @@ async function fetchDevicePackages() {
             if (!verRes.ok) throw new Error(`version.buildinfo HTTP ${verRes.status}`);
 
             const verText = await verRes.text();
-            console.log('[fetchDevicePackages] version.buildinfo 内容:\n', verText);
+            console.log('[fetchDevicePackages] version.buildinfo 先頭:\n', verText.split('\n').slice(0, 10).join('\n'));
 
-            // 複数パターンに対応
-            const match =
-                verText.match(/^LINUX_VERSION-[^\s=]+\s*=\s*([0-9]+\.[0-9]+\.[0-9]+)/m) ||
-                verText.match(/^LINUX_VERSION\s*=\s*([0-9]+\.[0-9]+\.[0-9]+)/m) ||
-                verText.match(/^kernel\s*=\s*([0-9]+\.[0-9]+\.[0-9]+)/m);
+            // 複数パターンに対応（サフィックスや rc を含む形式も許容）
+            const match = verText.match(/^(?:LINUX_VERSION(?:-[^\s=]+)?|kernel)\s*=\s*([0-9][^\s]*)$/m);
             if (match) {
                 kernel = match[1].trim();
                 console.log('[fetchDevicePackages] kernel バージョン取得:', kernel);
