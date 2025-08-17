@@ -2088,6 +2088,9 @@ function asuCollectPackages() {
             
 // ==================== map.sh関連 ====================
 async function loadMapShScripts() {
+    console.log('=== loadMapShScripts called ===');
+    console.trace('loadMapShScripts call stack:');
+    
     try {
         // OpenWrt 21.02以降用
         if (!mapShCache['new']) {
