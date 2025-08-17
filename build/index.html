@@ -3812,7 +3812,7 @@ function showDownloadLinks(images, fullStatus, requestHash) {
 async function fetchDevicePackages() {
     app.devicePackages = [];
     if (!app.selectedDevice || !app.selectedVersion) return;
-    
+
     const version = app.selectedVersion;
     const targetPath = app.selectedDevice.target; // mediatek/filogic 形式
 
@@ -3832,12 +3832,33 @@ async function fetchDevicePackages() {
         return;
     }
 
-    // パッケージインデックスURL一覧（targets と feeds）
+    // SNAPSHOT の場合は kmods/<kernel>/packages に存在する構造に対応
+    let kernel;
+    if (version === 'SNAPSHOT') {
+        try {
+            const verRes = await fetch(`${basePath}/targets/${targetPath}/version.buildinfo`);
+            if (!verRes.ok) throw new Error(`version.buildinfo HTTP ${verRes.status}`);
+            const verText = await verRes.text();
+            const match = verText.match(/^LINUX_VERSION-(?:.*)\s*=\s*(.+)$/m);
+            if (match) {
+                kernel = match[1].trim();
+            }
+        } catch (e) {
+            console.error("kernel バージョン取得失敗:", e);
+        }
+    }
+
+    // パッケージインデックスURL一覧（targets/kmods と feeds）
     const feeds = ["base", "luci", "packages", "routing", "telephony"];
     const urls = [];
 
-    // ターゲット固有パッケージ
-    urls.push(`${basePath}/targets/${targetPath}/packages/Packages`);
+    if (version === 'SNAPSHOT' && kernel) {
+        // kmods 配下の Packages
+        urls.push(`${basePath}/targets/${targetPath}/kmods/${kernel}/packages/Packages`);
+    } else {
+        // 従来のターゲット固有パッケージ
+        urls.push(`${basePath}/targets/${targetPath}/packages/Packages`);
+    }
 
     // フィードパッケージ
     for (const feed of feeds) {
@@ -3874,7 +3895,7 @@ async function fetchDevicePackages() {
     }
     app.devicePackages = Array.from(pkgMap.values());
 }
-    
+
 // Packages ファイルをパース（必要なら外部化してもOK）
 function parsePackagesText(text, source) {
     const blocks = text.split(/\n\s*\n/);
