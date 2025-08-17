@@ -2687,9 +2687,7 @@ async function loadDeviceProfile(device) {
 
         // 重い処理は非同期並列で実行
         Promise.allSettled([
-            fetchDevicePackages(),
-            loadMapShScripts(),
-            fetchApiInfoAndUpdate()
+            fetchDevicePackages()
         ]).then(() => {
             console.log('Background tasks completed');
         });
@@ -2786,21 +2784,14 @@ function hideDeviceInfo() {
 async function handleAsuDetailsToggle(e) {
     const details = e.target;
     
-    if (details.open) {
-        console.log('ASU details opened - triggering auto configuration...');
+    if (details.open && !window.cachedApiInfo) {  // 未取得時のみ
+        console.log('ASU details opened - fetching API once...');
         
         try {
-            // ISP情報取得（auto のメイン処理）
             await fetchApiInfoAndUpdate();
-            
-            // auto モード時の必要パッケージ更新を確実に実行
             updateRequiredPackages();
-            
-            // i18n整理のみ（APIは既に取得済みなので不要）
             asuCollectPackages();
-            
             console.log('Auto configuration completed');
-            
         } catch (error) {
             console.error('Auto configuration failed:', error);
             updateIspDisplay(
