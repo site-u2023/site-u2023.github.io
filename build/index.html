@@ -3442,7 +3442,6 @@ function applyInitialsFromApi(type) {
     }
 }
 
-// ==================== 共通反映関数 ====================
 function refreshTemplateAndPackages() {
     // 必要パッケージの更新（map, ds-lite等）
     updateRequiredPackages();
@@ -3452,7 +3451,7 @@ function refreshTemplateAndPackages() {
 
     // aios-config 有効時のみテンプレ更新
     if (document.getElementById('use-aios-config-details').open) {
-        updateConfiguredTemplate().catch(console.error);
+        updateConfiguredTemplate();  // .catch(console.error) 削除
     }
 }
 
