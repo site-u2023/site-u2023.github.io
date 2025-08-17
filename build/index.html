@@ -3055,12 +3055,10 @@ async function fetchApiInfoAndUpdate() {
                 setIfEmpty('mape-psidlen', apiInfo.mape.psidlen || '');
             }
             
-            // DS-Lite情報
+            // DS-Lite情報（空欄のみ設定、既存値は保護）
             if (apiInfo.mape && apiInfo.mape.aftrType) {
-                document.getElementById('dslite-aftr-type').value = apiInfo.mape.aftrType;
-                if (apiInfo.mape.aftrIpv6Address && !document.getElementById('dslite-aftr-address').value) {
-                    document.getElementById('dslite-aftr-address').value = apiInfo.mape.aftrIpv6Address;
-                }
+                setIfEmpty('dslite-aftr-type', apiInfo.mape.aftrType);
+                setIfEmpty('dslite-aftr-address', apiInfo.mape.aftrIpv6Address);
             }
             
         } else {
@@ -3413,8 +3411,8 @@ function applyInitialsFromApi(type) {
                     west: '2404:8e01::feed:100'
                 },
                 xpass: {
-                    east: '2001:e30:1c1e:1::1',
-                    west: '2001:e30:1c1f:1::1'
+                    east: '2001:f60:0:200::1:1',
+                    west: '2001:f60:0:200::1:1'
                 },
                 v6option: {
                     east: '2404:8e00::feed:101',
