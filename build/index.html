@@ -2781,11 +2781,14 @@ function hideDeviceInfo() {
 }
 
 // ==================== auto トリガー関数 ====================
+let apiInfoFetched = false;  // 重複防止用フラグ
+
 async function handleAsuDetailsToggle(e) {
     const details = e.target;
     
-    if (details.open && !window.cachedApiInfo) {  // 未取得時のみ
-        console.log('ASU details opened - fetching API once...');
+    if (details.open && !apiInfoFetched) {  // 未実行時のみ
+        console.log('ASU details opened - fetching latest ISP info (no cache)...');
+        apiInfoFetched = true;  // フラグセット
         
         try {
             await fetchApiInfoAndUpdate();
@@ -2794,6 +2797,7 @@ async function handleAsuDetailsToggle(e) {
             console.log('Auto configuration completed');
         } catch (error) {
             console.error('Auto configuration failed:', error);
+            apiInfoFetched = false;  // 失敗時はフラグリセット
             updateIspDisplay(
                 'Auto-detection failed',
                 'Failed to retrieve ISP information. Manual configuration required.'
@@ -3102,8 +3106,12 @@ async function fetchApiInfo() {
             const response = await fetch(apiUrl, {
                 method: 'GET',
                 headers: {
-                    'Accept': 'application/json'
+                    'Accept': 'application/json',
+                    'Cache-Control': 'no-cache, no-store, must-revalidate',
+                    'Pragma': 'no-cache',
+                    'Expires': '0'
                 },
+                cache: 'no-store',
                 timeout: 10000  // 10秒タイムアウト
             });
             
