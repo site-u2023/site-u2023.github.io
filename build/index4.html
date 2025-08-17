@@ -1,17 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <title>OpenWrt Custom Firmware Selector</title>
+    
+    <!-- リソースヒント -->
+    <link rel="preconnect" href="https://downloads.openwrt.org">
+    <link rel="preconnect" href="https://sysupgrade.openwrt.org">
+    <link rel="dns-prefetch" href="https://auto-config.site-u.workers.dev">
+    <link rel="dns-prefetch" href="https://site-u.pages.dev">
+    
 <style>
     /* 基本スタイル */
     body {
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
         line-height: 1.5;
         margin: 0;
-        padding: 20px;
+        padding: 0;
         background-color: #f5f5f5;
         color: #000;
     }
@@ -41,7 +47,7 @@
     /* 公式互換のオートコンプリート */
     #models-autocomplete {
         display: flex;
-        padding-top: 20px;
+        padding-top: 0px;
     }
     
     .autocomplete {
@@ -168,7 +174,8 @@
         background-color: #d1ecf1;
         border: 1px solid #bee5eb;
         color: #0c5460;
-        padding: 1rem;
+        padding:
+            1rem;
         margin: 1rem 0;
         border-radius: 0.25rem;
     }
@@ -191,7 +198,7 @@
         margin-bottom: 1rem;
         font-weight: 500;
     }
-
+    
     /* ボタン/リンク */
     .btn {
         display: inline-block;
@@ -280,9 +287,13 @@
 
     .aios-config {
         margin-top: 1rem;
-        display: none;
     }
 
+    #package-selector-config {
+        margin-top: 1rem;
+        /* display設定は不要 */
+    }
+    
     .form-row {
         display: flex;
         flex-wrap: wrap;
@@ -360,22 +371,23 @@
         transition: width 0.3s ease;
     }
 
-    /* パッケージ選択 */
     .package-category {
+        margin-top: 0; 
         margin-bottom: 1.5rem;
-        padding: 1rem;
+        padding: 0.5rem 1rem 1rem 1rem;  /* 上だけ0.5remに減らす */
         background-color: #fff;
         border: 1px solid #e9ecef;
         border-radius: 0.25rem;
     }
 
     .package-category h6 {
-        margin-bottom: 0.75rem;
+        margin-top: 0;           /* 上マージンを0に */
+        margin-bottom: 0.5rem;   /* 下マージンを減らす */
         font-size: 1.1rem;
         font-weight: 500;
         color: #495057;
         border-bottom: 1px solid #e9ecef;
-        padding-bottom: 0.5rem;
+        padding-bottom: 0.25rem; /* 下パディングを減らす */
     }
 
     .package-grid {
@@ -485,9 +497,37 @@
         margin: 1.5rem 0;
     }
 
-    /* 特殊フィールド */
+/* 特殊フィールド */
     #mape-gua-section {
         margin-top: 1rem;
+    }
+
+    /* details/summaryのスタイル調整 */
+    details {
+        margin: 0;
+        padding: 0;
+    }
+
+    details > summary {
+        cursor: pointer;
+        padding: 0.5rem 0;
+        margin: 0;
+        outline: none;
+    }
+
+    details[open] > summary {
+        margin-bottom: 0.5rem;
+    }
+
+    #use-package-selector-details summary,
+    #use-aios-config-details summary {
+        font-weight: 500;
+        font-size: 1.1rem;
+    }
+
+    /* Installed Packagesセクション内の最初の要素のマージン調整 */
+    #package-selector-config > *:first-child {
+        margin-top: 0 !important;
     }
 
     /* レスポンシブ */
@@ -645,21 +685,16 @@
                 
                 <!-- パッケージセレクターセクション -->
                 <div class="aios-section">
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="use-package-selector">
-                        <label class="form-check-label" for="use-package-selector">
-                            Installed Packages
-                        </label>
-                    </div>
-                    
-                    <div id="package-selector-config" class="aios-config">
-                        <small class="text-muted">Select additional packages to install. Selected packages will be automatically added to the package list below.</small>
-
+                    <details id="use-package-selector-details">
+                        <summary>Installed Packages</summary>
+                        
+                        <div id="package-selector-config">
+                            <small class="text-muted">Select additional packages to install. Selected packages will be automatically added to the package list below.</small>
                         <!-- パッケージ検索ボックス -->
                         <div class="package-category">
                           <h6>Package Search</h6>
-                          <div id="package-search-autocomplete" class="autocomplete" style="margin-top:1rem;">
-                            <input type="text"
+                          <div id="package-search-autocomplete" class="autocomplete">
+                              <input type="text"
                                 id="package-search"
                                 placeholder="Type package name"
                                 autocomplete="off"
@@ -685,15 +720,11 @@
 
                 <!-- setup.sh設定セクション -->
                 <div class="aios-section">
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="use-aios-config">
-                        <label class="form-check-label" for="use-aios-config">
-                            Script to run on first boot (uci-defaults)
-                        </label>
-                    </div>
-
-                    <div id="aios-config" class="aios-config">
-                        <h5>Basic Configuration</h5>
+                    <details id="use-aios-config-details">
+                        <summary>Script to run on first boot (uci-defaults)</summary>
+                        
+                        <div id="aios-config">
+                            <h5>Basic Configuration</h5>
                         
                         <!-- 1行目: Language と Country -->
                         <div class="form-row">
@@ -754,30 +785,32 @@
                             </div>
                         </div>
 
-                        <!-- IPアドレスとDevice name -->
+                        <!-- LAN IPv4/IPv6アドレス -->
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="aios-lan-ip">LAN IP Address</label>
-                                <input type="text" id="aios-lan-ip" class="form-control" placeholder="192.168.1.1" value="192.168.1.1">
+                                <label for="aios-lan-ipv4">LAN IPv4 Address</label>
+                                <input type="text" id="aios-lan-ipv4" class="form-control" placeholder="192.168.1.1" value="192.168.1.1">
                             </div>
+                            <div class="form-group">
+                                <label for="aios-lan-ipv6">LAN IPv6 Address</label>
+                                <input type="text" id="aios-lan-ipv6" class="form-control" placeholder="fd00::1/64">
+                                <small class="form-text text-muted">Optional: e.g., fd00::1/64</small>
+                            </div>
+                        </div>
+
+                        <!-- Device nameとRoot password -->
+                        <div class="form-row">
                             <div class="form-group">
                                 <label for="aios-device-name">Device name</label>
                                 <input type="text" id="aios-device-name" class="form-control" placeholder="OpenWrt">
                             </div>
-                        </div>
-                    
-                        <div class="form-row">
                             <div class="form-group">
                                 <label for="aios-root-password">Root password</label>
                                 <input type="password" id="aios-root-password" class="form-control" placeholder="8+ characters">
                                 <small class="form-text text-muted">Leave empty to disable password authentication</small>
                             </div>
-                            <div class="form-group">
-                                <label for="aios-confirm-password">Confirm password</label>
-                                <input type="password" id="aios-confirm-password" class="form-control" placeholder="Confirm password">
-                            </div>
                         </div>
-
+                        
                         <h5>Wi-Fi Configuration</h5>
                         <div class="form-row">
                             <div class="form-group">
@@ -826,15 +859,15 @@
                                         <label class="form-check-label" for="conn-mape">MAP-E</label>
                                     </div>
                                     <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="connectionType" id="conn-none" value="none">
-                                        <label class="form-check-label" for="conn-none">None</label>
+                                        <input class="form-check-input" type="radio" name="connectionType" id="conn-ap" value="ap">
+                                        <label class="form-check-label" for="conn-ap">AP</label>
                                     </div>
                                 </div>
                             </div>
 
                             <!-- PPPoE設定 -->
                             <div id="pppoe-section" class="conditional-section">
-                                <h6>PPPoE Configuration</h6>
+                                <h5 class="section-title">PPPoE Configuration</h5>
                                 <div class="form-row">
                                     <div class="form-group">
                                         <label for="pppoe-username">PPPoE username</label>
@@ -846,13 +879,13 @@
                                     </div>
                                 </div>
                             </div>
-
+                            
                             <!-- DS-Lite設定 -->
                             <div id="dslite-section" class="conditional-section">
-                                <h6>DS-Lite Configuration</h6>
+                                <h5 class="section-title">DS-Lite Configuration</h5>
                                 
                                 <div class="form-group">
-                                    <label>DS-Lite Configuration Mode</label>
+                                    <label>Configuration Mode</label>
                                     <div class="radio-group">
                                         <div class="form-check">
                                             <input class="form-check-input" type="radio" name="dsliteMode" id="dslite-auto" value="auto" checked>
@@ -894,7 +927,7 @@
                             
                             <!-- MAP-E設定 -->
                             <div id="mape-manual-section" class="conditional-section">
-                                <h6>MAP-E Configuration</h6>
+                                <h5 class="section-title">MAP-E Configuration</h5>
                                 <div class="form-group">
                                     <label>MAP-E Connection Mode</label>
                                     <div class="radio-group">
@@ -950,13 +983,15 @@
                                     </div>
                                 </div>
                                 
-                                <div class="form-group">
-                                    <label for="mape-psid-offset">PSID Offset</label>
-                                    <input type="number" id="mape-psid-offset" class="form-control" placeholder="4" min="0" max="16">
-                                </div>
-                                <div class="form-group">
-                                    <label for="mape-psidlen">PSID Length</label>
-                                    <input type="number" id="mape-psidlen" class="form-control" placeholder="6" min="0" max="16">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="mape-psid-offset">PSID Offset</label>
+                                        <input type="number" id="mape-psid-offset" class="form-control" placeholder="4" min="0" max="16">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="mape-psidlen">PSID Length</label>
+                                        <input type="number" id="mape-psidlen" class="form-control" placeholder="6" min="0" max="16">
+                                    </div>
                                 </div>
 
                                 <div id="mape-gua-section" class="form-group" style="display: none;">
@@ -967,6 +1002,21 @@
                             </div>
                         </div>
 
+                        <!-- AP設定 -->
+                        <div id="ap-section" class="conditional-section">
+                            <h5 class="section-title">AP Configuration</h5>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="ap-ip-address">IP Address</label>
+                                    <input type="text" id="ap-ip-address" class="form-control" value="192.168.1.2">
+                                </div>
+                                <div class="form-group">
+                                    <label for="ap-gateway">Gateway</label>
+                                    <input type="text" id="ap-gateway" class="form-control" value="192.168.1.1">
+                                </div>
+                            </div>
+                        </div>
+    
                         <div class="form-group">
                             <label>ISP Detection Status</label>
                             <div id="isp-info-display" class="info" style="margin-bottom: 0;">
@@ -1024,6 +1074,7 @@
 # timezone="UTC"
 # zonename="America/New_York"
 # lan_ip_address="192.168.1.1"
+# lan_ipv6_address="fd00::1/64"
 # device_name="OpenWrt"
 # root_password="Password"
 # wlan_name="OpenWrt"
@@ -1052,16 +1103,22 @@
 # openwrt_19=""
 # openwrt_21=""
 #
+# ap_ip_address="192.168.1.2"
+# ap_gateway="192.168.1.1"
+#
 # enable_ttyd=""
 # enable_irqbalance=""
 # enable_samba4=""
 
 # Network interface names
-WAN_DEF="wan"
+LAN_DEF="\$(uci -q get network.lan.device || echo lan)"
+WAN_DEF="\$(uci -q get network.wan.device || echo wan)"
 MAP_NAME="map"
 MAP6_NAME="map6"
 DSLITE_NAME="dslite"
 DSLITE6_NAME="dslite6"
+AP_NAME="ap"
+AP6_NAME="ap6"
 
 # log potential errors
 exec >/tmp/setup.log 2>&1
@@ -1069,72 +1126,85 @@ exec >/tmp/setup.log 2>&1
 echo "Starting OpenWrt initial configuration..."
 
 # Configure root password
-if [ -n "$root_password" ]; then
+if [ -n "\${root_password}" ]; then
     echo "Setting root password..."
-    (echo "$root_password"; sleep 1; echo "$root_password") | passwd > /dev/null 2>&1
+    (echo "\${root_password}"; sleep 1; echo "\${root_password}") | passwd > /dev/null 2>&1
 fi
 
 # Configure device name
-if [ -n "$device_name" ]; then
-    echo "Setting device name: $device_name"
-    uci set system.@system[0].hostname="$device_name"
+if [ -n "\${device_name}" ]; then
+    echo "Setting device name: \${device_name}"
+    uci set system.@system[0].hostname="\${device_name}"
 fi
 
 # Configure LAN IP
-if [ -n "$lan_ip_address" ]; then
-    echo "Setting LAN IP: $lan_ip_address"
-    uci set network.lan.ipaddr="$lan_ip_address"
+if [ -n "\${lan_ip_address}" ]; then
+    echo "Setting LAN IP: \${lan_ip_address}"
+    uci set network.lan.ipaddr="\${lan_ip_address}"
+fi
+
+# Configure LAN IPv6
+if [ -n "\${lan_ipv6_address}" ]; then
+    echo "Setting LAN IPv6: \${lan_ipv6_address}"
+    uci set network.lan.ip6addr="\${lan_ipv6_address}"
 fi
 
 # Configure language
-if [ -n "$language" ]; then
-    echo "Setting language: $language"
-    uci set system.@system[0].language="$language"
+if [ -n "\${language}" ]; then
+    echo "Setting language: \${language}"
+    uci set system.@system[0].language="\${language}"
 fi
 
 # Configure country code for wireless
-if [ -n "$country" ]; then
-    echo "Setting country code: $country"
-    uci set wireless.@wifi-device[0].country="$country" 2>/dev/null
+if [ -n "\${country}" ]; then
+    echo "Setting country code: \${country}"
+    uci set wireless.@wifi-device[0].country="\${country}" 2>/dev/null
 fi
 
 # Configure timezone
-if [ -n "$timezone" ]; then
-    echo "Setting timezone: $timezone"
-    uci set system.@system[0].timezone="$timezone"
+if [ -n "\${timezone}" ]; then
+    echo "Setting timezone: \${timezone}"
+    uci set system.@system[0].timezone="\${timezone}"
 fi
 
 # Configure zone name (optional)
-if [ -n "$zonename" ]; then
-    echo "Setting zone name: $zonename"
-    uci set system.@system[0].zonename="$zonename"
+if [ -n "\${zonename}" ]; then
+    echo "Setting zone name: \${zonename}"
+    uci set system.@system[0].zonename="\${zonename}"
 fi
 
 # Configure WLAN
-if [ -n "$wlan_name" ] && [ -n "$wlan_password" ] && [ \${#wlan_password} -ge 8 ]; then
-    echo "Configuring WLAN: $wlan_name"
+if [ -n "\${wlan_name}" ] && [ -n "\${wlan_password}" ] && [ \${#wlan_password} -ge 8 ]; then
+    echo "Configuring WLAN: \${wlan_name}"
     uci set wireless.@wifi-device[0].disabled='0'
     uci set wireless.@wifi-iface[0].disabled='0'
     uci set wireless.@wifi-iface[0].encryption='sae-mixed'
-    uci set wireless.@wifi-iface[0].ssid="$wlan_name"
-    uci set wireless.@wifi-iface[0].key="$wlan_password"
+    uci set wireless.@wifi-iface[0].ssid="\${wlan_name}"
+    uci set wireless.@wifi-iface[0].key="\${wlan_password}"
 fi
 
 # Configure PPPoE
-if [ -n "$pppoe_username" ] && [ -n "$pppoe_password" ]; then
+if [ -n "\${pppoe_username}" ] && [ -n "\${pppoe_password}" ]; then
     echo "Configuring PPPoE..."
     uci set network.wan.proto='pppoe'
-    uci set network.wan.username="$pppoe_username"
-    uci set network.wan.password="$pppoe_password"
+    uci set network.wan.username="\${pppoe_username}"
+    uci set network.wan.password="\${pppoe_password}"
 fi
 
 # Configure DS-Lite
-if [ -n "$dslite_aftr_address" ]; then
-    echo "Configuring DS-Lite: AFTR=$dslite_aftr_address"
+if [ -n "\${dslite_aftr_address}" ]; then
+    echo "Configuring DS-Lite: AFTR=\${dslite_aftr_address}"
+
+    # Backup
+    cp -p /etc/config/network /etc/config/network.\${DSLITE_NAME}.bak 2>/dev/null
+    cp -p /etc/config/dhcp /etc/config/dhcp.\${DSLITE_NAME}.bak 2>/dev/null
+    cp -p /etc/config/firewall /etc/config/firewall.\${DSLITE_NAME}.bak 2>/dev/null
     
-    # Disable WAN
+    # Disable WAN/WAN6
     uci set network.wan.disabled='1'
     uci set network.wan.auto='0'
+    uci set network.wan6.disabled='1'
+    uci set network.wan6.auto='0'
     
     # DS-Lite IPv6 interface
     uci set network.\${DSLITE6_NAME}=interface
@@ -1146,7 +1216,7 @@ if [ -n "$dslite_aftr_address" ]; then
     # DS-Lite interface
     uci set network.\${DSLITE_NAME}=interface
     uci set network.\${DSLITE_NAME}.proto='dslite'
-    uci set network.\${DSLITE_NAME}.peeraddr="$dslite_aftr_address"
+    uci set network.\${DSLITE_NAME}.peeraddr="\${dslite_aftr_address}"
     uci set network.\${DSLITE_NAME}.tunlink="\${DSLITE6_NAME}"
     uci set network.\${DSLITE_NAME}.mtu='1460'
     uci set network.\${DSLITE_NAME}.encaplimit='ignore'
@@ -1174,8 +1244,14 @@ if [ -n "$dslite_aftr_address" ]; then
 fi
 
 # Configure MAP-E
-if [ -n "$mape_br" ] && [ -n "$mape_ealen" ]; then
-    echo "Configuring MAP-E: BR=$mape_br, EA-len=$mape_ealen"
+if [ -n "\${mape_br}" ] && [ -n "\${mape_ealen}" ]; then
+    echo "Configuring MAP-E: BR=\${mape_br}, EA-len=\${mape_ealen}"
+
+    # Backup
+    cp -p /etc/config/network /etc/config/network.\${MAP_NAME}.bak 2>/dev/null
+    cp -p /etc/config/dhcp /etc/config/dhcp.\${MAP_NAME}.bak 2>/dev/null
+    cp -p /etc/config/firewall /etc/config/firewall.\${MAP_NAME}.bak 2>/dev/null
+    cp -p /lib/netifd/proto/map.sh /etc/config/firewall.\${MAP_NAME}.bak 2>/dev/null
     
     # Install map.sh (WEB side embeds content here)
     cat > /lib/netifd/proto/map.sh << 'MAP_SH_EOF'
@@ -1185,8 +1261,8 @@ MAP_SH_EOF
     # Disable WAN/WAN6
     uci set network.wan.disabled='1'
     uci set network.wan.auto='0'
-    uci set network.wan6.disabled='1' 2>/dev/null
-    uci set network.wan6.auto='0' 2>/dev/null
+    uci set network.wan6.disabled='1'
+    uci set network.wan6.auto='0'
     
     # MAP-E IPv6 interface
     uci set network.\${MAP6_NAME}=interface
@@ -1199,14 +1275,14 @@ MAP_SH_EOF
     uci set network.\${MAP_NAME}=interface
     uci set network.\${MAP_NAME}.proto='map'
     uci set network.\${MAP_NAME}.maptype='map-e'
-    uci set network.\${MAP_NAME}.peeraddr="$mape_br"
-    uci set network.\${MAP_NAME}.ipaddr="$mape_ipv4_prefix"
-    uci set network.\${MAP_NAME}.ip4prefixlen="$mape_ipv4_prefixlen"
-    uci set network.\${MAP_NAME}.ip6prefix="$mape_ipv6_prefix"
-    uci set network.\${MAP_NAME}.ip6prefixlen="$mape_ipv6_prefixlen"
-    uci set network.\${MAP_NAME}.ealen="$mape_ealen"
-    uci set network.\${MAP_NAME}.psidlen="$mape_psidlen"
-    uci set network.\${MAP_NAME}.offset="$mape_psid_offset"
+    uci set network.\${MAP_NAME}.peeraddr="\${mape_br}"
+    uci set network.\${MAP_NAME}.ipaddr="\${mape_ipv4_prefix}"
+    uci set network.\${MAP_NAME}.ip4prefixlen="\${mape_ipv4_prefixlen}"
+    uci set network.\${MAP_NAME}.ip6prefix="\${mape_ipv6_prefix}"
+    uci set network.\${MAP_NAME}.ip6prefixlen="\${mape_ipv6_prefixlen}"
+    uci set network.\${MAP_NAME}.ealen="\${mape_ealen}"
+    uci set network.\${MAP_NAME}.psidlen="\${mape_psidlen}"
+    uci set network.\${MAP_NAME}.offset="\${mape_psid_offset}"
     uci set network.\${MAP_NAME}.mtu='1460'
     uci set network.\${MAP_NAME}.encaplimit='ignore'
     
@@ -1232,23 +1308,70 @@ MAP_SH_EOF
 fi
 
 # MAP-E GUA mode settings
-if [ -n "$mape_gua_mode" ]; then
-    echo "Setting MAP-E GUA prefix: $mape_gua_prefix"
-    uci set network.\${MAP6_NAME}.ip6prefix="$mape_gua_prefix"
+if [ -n "\${mape_gua_mode}" ]; then
+    echo "Setting MAP-E GUA prefix: \${mape_gua_prefix}"
+    uci set network.\${MAP6_NAME}.ip6prefix="\${mape_gua_prefix}"
 fi
 
 # OpenWrt 19.x specific MAP-E settings
-if [ -n "$openwrt_19" ]; then
+if [ -n "\${openwrt_19}" ]; then
     echo "Applying OpenWrt 19.x specific settings"
     uci add_list network.\${MAP_NAME}.tunlink="\${MAP6_NAME}"
 fi
 
 # OpenWrt 21.02+ specific MAP-E settings
-if [ -n "$openwrt_21" ]; then
+if [ -n "\${openwrt_21}" ]; then
     echo "Applying OpenWrt 21.02+ specific settings"
     uci set network.\${MAP_NAME}.legacymap='1'
     uci set network.\${MAP_NAME}.tunlink="\${MAP6_NAME}"
     uci set dhcp.\${MAP6_NAME}.ignore='1'
+fi
+
+# Configure Access point
+if [ -n "\${ap_ip_address}" ]; then
+    echo "Configuring Dumb AP: IP=\${ap_ip_address} GW=\${ap_gateway}"
+    
+    # Backup
+    cp -p /etc/config/network /etc/config/network.\${AP_NAME}.bak 2>/dev/null
+    cp -p /etc/config/dhcp /etc/config/dhcp.\${AP_NAME}.bak 2>/dev/null
+    cp -p /etc/config/firewall /etc/config/firewall.\${AP_NAME}.bak 2>/dev/null
+
+    # Disable WAN/WAN6
+    uci set network.wan.disabled='1'
+    uci set network.wan.auto='0'
+    uci set network.wan6.disabled='1'
+    uci set network.wan6.auto='0'
+
+    # IPv4 Access point
+    uci set network.\${AP_NAME}=interface
+    uci set network.\${AP_NAME}.proto='static'
+    uci set network.\${AP_NAME}.device="\${LAN_DEF}"
+    uci set network.\${AP_NAME}.ipaddr="\${ap_ip_address}"
+    uci set network.\${AP_NAME}.netmask='255.255.255.0'
+    uci set network.\${AP_NAME}.gateway="\${dumb_gateway}"
+    uci set network.\${AP_NAME}.dns="\${dumb_gateway}"
+    uci set network.\${AP_NAME}.delegate='0'
+
+    # IPv6 Access point
+    uci set network.\${AP6_NAME}=interface
+    uci set network.\${AP6_NAME}.proto='dhcpv6'
+    uci set network.\${AP6_NAME}.device="@\${AP_NAME}"
+    uci set network.\${AP6_NAME}.reqaddress='try'
+    uci set network.\${AP6_NAME}.reqprefix='no'
+    uci set network.\${AP6_NAME}.type='bridge'
+
+    # WLAN attach
+    [ -n "\$(uci -q get wireless.default_radio0)" ] && uci set wireless.default_radio0.network="\${AP_NAME}"
+    [ -n "\$(uci -q get wireless.default_radio1)" ] && uci set wireless.default_radio1.network="\${AP_NAME}"
+    [ -n "\$(uci -q get wireless.default_radio2)" ] && uci set wireless.default_radio2.network="\${AP_NAME}"
+
+    # Disable services only if enabled/running
+    [ -x /etc/init.d/odhcpd ] && /etc/init.d/odhcpd enabled && /etc/init.d/odhcpd disable
+    [ -x /etc/init.d/odhcpd ] && /etc/init.d/odhcpd running && /etc/init.d/odhcpd stop
+    [ -x /etc/init.d/dnsmasq ] && /etc/init.d/dnsmasq enabled && /etc/init.d/dnsmasq disable
+    [ -x /etc/init.d/dnsmasq ] && /etc/init.d/dnsmasq running && /etc/init.d/dnsmasq stop
+    [ -x /etc/init.d/firewall ] && /etc/init.d/firewall enabled && /etc/init.d/firewall disable
+    [ -x /etc/init.d/firewall ] && /etc/init.d/firewall running && /etc/init.d/firewall stop
 fi
 
 # Configure ttyd
@@ -1715,15 +1838,17 @@ const PACKAGE_DB = {
     ]
 };
         
-// After
+// After（aios-language の change バインドを init 内に移動）
 document.addEventListener('DOMContentLoaded', init);
-    
-// ★言語変更時にも即反映させる
-const langEl = document.getElementById('aios-language');
-if (langEl) {
-    langEl.addEventListener('change', function() {
-        refreshTemplateAndPackages();
-    });
+
+function init() {
+    const langEl = document.getElementById('aios-language');
+    if (langEl) {
+        langEl.addEventListener('change', function() {
+            refreshTemplateAndPackages();
+        });
+    }
+    // 既存の初期化処理をここに続ける…
 }
 
 // ==================== ユーティリティ関数 ====================
@@ -1800,6 +1925,12 @@ async function init() {
         // ISP情報を初期取得
         console.log('Starting ISP info fetch...');
         await fetchApiInfoAndUpdate();
+        
+        // 初期値がある場合は即座にテンプレートに反映
+        const lanIpv4Input = document.getElementById('aios-lan-ipv4');
+        if (lanIpv4Input && lanIpv4Input.value) {
+            refreshTemplateAndPackages();
+        }
 
     } catch (error) {
         console.error('Failed to initialize:', error);
@@ -2006,89 +2137,172 @@ exit 1`;
     // ${map_sh_content}を実際の内容で置換
     return content.replace('\\${map_sh_content}', mapShContent);
 }
-
+        
 // ==================== イベントバインディング ====================
 function bindEvents() {
     const versionsEl = document.getElementById('versions');
     if (versionsEl) versionsEl.addEventListener('change', handleVersionChange);
-
+    
     const modelsEl = document.getElementById('models');
     if (modelsEl) modelsEl.addEventListener('input', handleDeviceSearch);
-
-    const aiosConfigEl = document.getElementById('use-aios-config');
-    if (aiosConfigEl) aiosConfigEl.addEventListener('change', toggleAiosConfig);
-
-    const pkgSelectorEl = document.getElementById('use-package-selector');
-    if (pkgSelectorEl) pkgSelectorEl.addEventListener('change', togglePackageSelector);
-
+    
+    const aiosConfigDetails = document.getElementById('use-aios-config-details');
+    if (aiosConfigDetails) aiosConfigDetails.addEventListener('toggle', toggleAiosConfig);
+    
+    const pkgSelectorDetails = document.getElementById('use-package-selector-details');
+    if (pkgSelectorDetails) pkgSelectorDetails.addEventListener('toggle', togglePackageSelector);
+    
     const buildBtnEl = document.getElementById('request-build');
     if (buildBtnEl) buildBtnEl.addEventListener('click', buildAsuRequest);
-
+    
+    // ===== 基本設定フィールドのリアルタイム反映 =====
+    const basicFields = [
+        'aios-language',
+        'aios-country', 
+        'aios-timezone',
+        'aios-zonename',
+        'aios-lan-ipv4',
+        'aios-lan-ipv6',
+        'aios-device-name',
+        'aios-root-password',
+        'aios-wifi-ssid',
+        'aios-wifi-password'
+    ];
+    
+    basicFields.forEach(fieldId => {
+        const el = document.getElementById(fieldId);
+        if (el) {
+            el.addEventListener('input', () => refreshTemplateAndPackages());
+        }
+    });
+    
+    // ===== PPPoE設定フィールドのリアルタイム反映 =====
+    const pppoeFields = [
+        'pppoe-username',
+        'pppoe-password'
+    ];
+    
+    pppoeFields.forEach(fieldId => {
+        const el = document.getElementById(fieldId);
+        if (el) {
+            el.addEventListener('input', () => refreshTemplateAndPackages());
+        }
+    });
+    
+    // ===== DS-Lite設定フィールドのリアルタイム反映 =====
+    const dsliteFields = [
+        'dslite-aftr-address',
+        'dslite-aftr-type',
+        'dslite-area'
+    ];
+    
+    dsliteFields.forEach(fieldId => {
+        const el = document.getElementById(fieldId);
+        if (el) {
+            el.addEventListener('input', () => refreshTemplateAndPackages());
+            el.addEventListener('change', () => refreshTemplateAndPackages());
+        }
+    });
+    
+    // ===== MAP-E設定フィールドのリアルタイム反映 =====
+    const mapeFields = [
+        'mape-br',
+        'mape-ealen',
+        'mape-ipv4-prefix',
+        'mape-ipv4-prefixlen',
+        'mape-ipv6-prefix',
+        'mape-ipv6-prefixlen',
+        'mape-psid-offset',
+        'mape-psidlen',
+        'mape-gua-prefix'
+    ];
+    
+    mapeFields.forEach(fieldId => {
+        const el = document.getElementById(fieldId);
+        if (el) {
+            el.addEventListener('input', () => refreshTemplateAndPackages());
+        }
+    });
+    
+    // ===== AP設定フィールドのリアルタイム反映 =====
+    const apFields = [
+        'ap-ip-address',
+        'ap-gateway'
+    ];
+    
+    apFields.forEach(fieldId => {
+        const el = document.getElementById(fieldId);
+        if (el) {
+            el.addEventListener('input', () => refreshTemplateAndPackages());
+        }
+    });
+    
+    // ===== ラジオボタンのリアルタイム反映 =====
     // DS-Lite mode
     document.querySelectorAll('input[name="dsliteMode"]').forEach(radio => {
         radio.addEventListener('change', handleDsliteModeChange);
     });
-
+    
     // Connection mode
     document.querySelectorAll('input[name="connectionMode"]').forEach(radio => {
         radio.addEventListener('change', handleConnectionModeChange);
     });
-
+    
     // Connection type
     document.querySelectorAll('input[name="connectionType"]').forEach(radio => {
         radio.addEventListener('change', handleConnectionTypeChange);
     });
-
+    
     // MAP-E type
     document.querySelectorAll('input[name="mapeType"]').forEach(radio => {
         radio.addEventListener('change', handleMapeTypeChange);
     });
-
-    // aios-config 入力系
-    const aiosConfigDiv = document.getElementById('aios-config');
-    if (aiosConfigDiv) {
-        aiosConfigDiv.addEventListener('input', function () {
-            const useConfig = document.getElementById('use-aios-config');
-            if (useConfig && useConfig.checked) {
-                applyConnectionSettingsChange();
-            }
-        });
-        aiosConfigDiv.addEventListener('change', function () {
-            const useConfig = document.getElementById('use-aios-config');
-            if (useConfig && useConfig.checked) {
-                applyConnectionSettingsChange();
-            }
-        });
-    }
-
+    
+    // ===== オートコンプリート関連 =====
     document.addEventListener('click', function (e) {
         if (!e.target.closest('.autocomplete')) {
             hideAutocomplete();
         }
     });
-
-    // 初期状態設定（存在確認あり）
+    
+// ===== 初期状態設定（存在確認あり） =====
     const manualSection = document.getElementById('manual-connection-section');
     if (manualSection) manualSection.style.display = 'none';
-
+    
     const pppoeSection = document.getElementById('pppoe-section');
     if (pppoeSection) pppoeSection.style.display = 'none';
-
+    
     const dsliteSection = document.getElementById('dslite-section');
     if (dsliteSection) dsliteSection.style.display = 'none';
-
+    
     const mapeSection = document.getElementById('mape-manual-section');
     if (mapeSection) mapeSection.style.display = 'none';
+    
+    const apSection = document.getElementById('ap-section');
+    if (apSection) apSection.style.display = 'none';
+}
+
+// ===== パスワード表示切り替え機能 =====
+const togglePasswordBtn = document.getElementById('toggle-password');
+if (togglePasswordBtn) {
+    togglePasswordBtn.addEventListener('click', function() {
+        const passwordInput = document.getElementById('aios-root-password');
+        const passwordIcon = document.getElementById('password-icon');
+        
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            passwordIcon.textContent = '👁️‍🗨️';
+        } else {
+            passwordInput.type = 'password';
+            passwordIcon.textContent = '👁️';
+        }
+    });
 }
 
 // ==================== パッケージセレクター関連 ====================
 function togglePackageSelector(e) {
     const configSection = document.getElementById('package-selector-config');
-    if (e.target.checked) {
-        configSection.style.display = 'block';
-    } else {
-        configSection.style.display = 'none';
-    }
+    configSection.style.display = e.target.open ? 'block' : 'none';
 }
 
 function generatePackageSelector() {
@@ -2379,13 +2593,18 @@ function showAutocomplete(devices) {
         return;
     }
 
+    // DocumentFragmentを使用してバッチ処理
+    const fragment = document.createDocumentFragment();
+    
     devices.forEach(device => {
         const div = document.createElement('div');
         div.innerHTML = `<strong>${getDeviceTitle(device)}</strong><br><small>Target: ${device.target}</small>`;
         div.addEventListener('click', () => selectDevice(device));
-        container.appendChild(div);
+        fragment.appendChild(div);
     });
-
+    
+    // 一度だけDOMに追加
+    container.appendChild(fragment);
     autocompleteDiv.appendChild(container);
     container.style.display = 'block';
 }
@@ -2404,6 +2623,7 @@ function selectDevice(device) {
     loadDeviceProfile(device);
 }
 
+// After（公式同等のURLマッピング構造を使い SNAPSHOT/Release 双方に対応）
 async function loadDeviceProfile(device) {
     if (!device || !device.target || !device.id) return;
 
@@ -2411,12 +2631,19 @@ async function loadDeviceProfile(device) {
     const target = device.target;
     const profileId = device.id;
 
-    let profilesUrl;
+    // 公式同等：version→URL マッピングを構築
+    if (!config.image_urls) config.image_urls = {};
+    if (!config.overview_urls) config.overview_urls = {};
+
     if (version === 'SNAPSHOT') {
-        profilesUrl = `https://downloads.openwrt.org/snapshots/targets/${target}/profiles.json`;
+        config.overview_urls[version] = `${config.image_url}/snapshots`;
+        config.image_urls[version]    = `${config.image_url}/snapshots`;
     } else {
-        profilesUrl = `https://downloads.openwrt.org/releases/${version}/targets/${target}/profiles.json`;
+        config.overview_urls[version] = `${config.image_url}/releases/${encodeURIComponent(version)}`;
+        config.image_urls[version]    = `${config.image_url}/releases/${encodeURIComponent(version)}`;
     }
+
+    const profilesUrl = `${config.image_urls[version]}/targets/${target}/profiles.json`;
 
     try {
         console.log(`Loading profile from: ${profilesUrl}`);
@@ -2435,16 +2662,16 @@ async function loadDeviceProfile(device) {
             const defaultPackages = profilesData.default_packages || [];
             const devicePackages = profile.device_packages || [];
             const asuExtraPackages = ['luci'];
-            const allPackages = defaultPackages.concat(devicePackages).concat(asuExtraPackages);
+            const allPackages = defaultPackages.concat(devicePackages, asuExtraPackages);
 
             document.getElementById('asu-packages').value = allPackages.join(' ');
             asuCollectPackages(); 
         }
 
-        // ★公式同等：profiles.json後すぐにAboutを一括レンダ
+        // profiles.json取得後にAboutを即表示
         showDeviceInfo();
 
-        // ★重い処理は裏で非同期並列実行（UIブロックなし）
+        // 重い処理は非同期並列で実行
         Promise.allSettled([
             fetchDevicePackages(),
             loadMapShScripts(),
@@ -2468,7 +2695,7 @@ async function loadDeviceProfile(device) {
         });
     }
 }
-        
+       
 function showDeviceInfo() {
     if (!app.selectedDevice) return;
 
@@ -2570,10 +2797,12 @@ function handleConnectionTypeChange(e) {
     const pppoeSection = document.getElementById('pppoe-section');
     const dsliteSection = document.getElementById('dslite-section');
     const mapeManualSection = document.getElementById('mape-manual-section');
+    const apSection = document.getElementById('ap-section');
 
     pppoeSection.style.display = 'none';
     dsliteSection.style.display = 'none';
     mapeManualSection.style.display = 'none';
+    if (apSection) apSection.style.display = 'none';
 
     if (e.target.value === 'pppoe') {
         pppoeSection.style.display = 'block';
@@ -2588,6 +2817,8 @@ function handleConnectionTypeChange(e) {
             });
             return;
         }
+    } else if (e.target.value === 'ap') {
+        if (apSection) apSection.style.display = 'block';
     }
     
     applyConnectionSettingsChange();
@@ -2614,65 +2845,56 @@ function handleDsliteModeChange(e) {
     applyConnectionSettingsChange();
 }
 
-// GUAセクションの表示/非表示を制御
+function isGlobalUnicastIPv6(ip) {
+    if (!ip) return false;
+    // GUA: 2000::/3 (starts with 2xxx or 3xxx), exclude ULA (fd00::/8) and link-local (fe80::/10)
+    const norm = String(ip).trim().toLowerCase();
+    return /^(2|3)[0-9a-f]/.test(norm) && !/^fd/.test(norm) && !/^fe8/.test(norm);
+}
+
 function updateGuaSectionVisibility() {
     const guaSection = document.getElementById('mape-gua-section');
-    const mapeType = document.querySelector('input[name="mapeType"]:checked')?.value;
-    const connectionMode = document.querySelector('input[name="connectionMode"]:checked')?.value;
-    const connectionType = document.querySelector('input[name="connectionType"]:checked')?.value;
-    
-    // 表示条件の判定
+    const mapeType = document.querySelector('input[name="mapeType"]:checked')?.value || 'auto';
+    const connectionMode = document.querySelector('input[name="connectionMode"]:checked')?.value || 'auto';
+    const connectionType = document.querySelector('input[name="connectionType"]:checked')?.value || 'dhcp';
+
+    const api = window.cachedApiInfo || {};
+    const apiRule = api.rule || {};
+    const apiIPv6 = api.ipv6 || '';
+    const hasGua = isGlobalUnicastIPv6(apiIPv6);
+
+    // 厳密条件:
+    // - MAP-Eが対象
+    // - PDでは絶対に表示しない
+    // - Auto: APIでMAP-Eが検出され、かつ GUA アドレスがある時のみ
+    // - Manual: mapeType が 'gua' の時のみ（'auto' の場合は API 要件を満たす時）
     let shouldShow = false;
-    
-    if (connectionMode === 'auto') {
-        // AUTOモード：APIにGUA情報があれば表示
-        if (window.cachedApiInfo && window.cachedApiInfo.ipv6) {
-            shouldShow = true;
-            // 値を設定
-            const guaInput = document.getElementById('mape-gua-prefix');
-            if (!guaInput.value) {
-                const guaPrefix = calculateGuaPrefixFromApi();
-                if (guaPrefix) {
-                    guaInput.value = guaPrefix;
-                }
-            }
-        }
-    } else if (connectionMode === 'manual' && connectionType === 'mape') {
-        // マニュアルモード + MAP-E選択時
-        if (mapeType === 'auto') {
-            // Auto-detectが選択されている場合：GUA情報があれば表示
-            if (window.cachedApiInfo && window.cachedApiInfo.ipv6) {
+
+    if (connectionType === 'mape') {
+        if (connectionMode === 'auto') {
+            shouldShow = !!apiRule.brIpv6Address && hasGua;
+        } else {
+            if (mapeType === 'gua') {
                 shouldShow = true;
-                const guaInput = document.getElementById('mape-gua-prefix');
-                if (!guaInput.value) {
-                    const guaPrefix = calculateGuaPrefixFromApi();
-                    if (guaPrefix) {
-                        guaInput.value = guaPrefix;
-                    }
-                }
+            } else if (mapeType === 'auto') {
+                shouldShow = !!apiRule.brIpv6Address && hasGua;
+            } else { // 'pd'
+                shouldShow = false;
             }
-        } else if (mapeType === 'gua') {
-            // GUAモードが明示的に選択されている場合：常に表示
-            shouldShow = true;
-            // APIからの値があれば設定（なければ空欄のまま）
-            if (window.cachedApiInfo && window.cachedApiInfo.ipv6) {
-                const guaInput = document.getElementById('mape-gua-prefix');
-                if (!guaInput.value) {
-                    const guaPrefix = calculateGuaPrefixFromApi();
-                    if (guaPrefix) {
-                        guaInput.value = guaPrefix;
-                    }
-                }
-            }
-        } else if (mapeType === 'pd') {
-            // PDモード：非表示
-            shouldShow = false;
         }
     }
-    
-    // 表示/非表示を適用
+
     if (guaSection) {
         guaSection.style.display = shouldShow ? 'block' : 'none';
+    }
+
+    // 値の自動設定は表示が決まった後、未入力時のみ
+    if (shouldShow) {
+        const guaInput = document.getElementById('mape-gua-prefix');
+        if (guaInput && !guaInput.value) {
+            const guaPrefix = calculateGuaPrefixFromApi();
+            if (guaPrefix) guaInput.value = guaPrefix;
+        }
     }
 }
 
@@ -2905,10 +3127,10 @@ function customizeSetupScript(content, config, apiInfo, selectedPackages) {
     }
 
     // Basic settings
-    const samePw = (config.rootPassword === config.confirmPassword) ? config.rootPassword : '';
     customized = setScriptVar(customized, 'device_name', config.deviceName, !!config.deviceName);
-    customized = setScriptVar(customized, 'lan_ip_address', config.lanIp, !!config.lanIp);
-    customized = setScriptVar(customized, 'root_password', samePw, !!samePw);
+    customized = setScriptVar(customized, 'lan_ip_address', config.lanIpv4, !!config.lanIpv4);
+    customized = setScriptVar(customized, 'lan_ipv6_address', config.lanIpv6, !!config.lanIpv6);
+    customized = setScriptVar(customized, 'root_password', config.rootPassword, !!config.rootPassword);
     customized = setScriptVar(customized, 'language', config.language, !!config.language);
     customized = setScriptVar(customized, 'country', config.country, !!config.country);
     customized = setScriptVar(customized, 'timezone', config.timezone, !!config.timezone);
@@ -2983,18 +3205,26 @@ function customizeSetupScript(content, config, apiInfo, selectedPackages) {
     customized = setScriptVar(customized, 'mape_gua_mode', guaActive ? '1' : '', guaActive);
     customized = setScriptVar(customized, 'mape_gua_prefix', guaActive ? guaPrefix : '', guaActive);
 
-    // enable_* フラグ（パッケージ選択に応じて汎用的に有効化）
+    // enable_* フラグ（選択で ON、非選択で OFF に戻す）
     if (selectedPackages) {
-        // PACKAGE_DB から enableVar マップを構築
         const enableMap = {};
+        const allEnableVars = new Set();
+
         PACKAGE_DB.categories.forEach(cat => {
             (cat.packages || []).forEach(pkg => {
                 if (pkg.enableVar) {
                     enableMap[pkg.name] = pkg.enableVar;
+                    allEnableVars.add(pkg.enableVar);
                 }
             });
         });
-        // 選択されているパッケージに対応する enableVar をON
+
+        // まず全てを OFF（コメントアウト）に戻す
+        allEnableVars.forEach(varName => {
+            customized = setScriptVar(customized, varName, '', false);
+        });
+
+        // 選択されているパッケージに対応する enableVar を ON
         selectedPackages.forEach(pkgName => {
             const varName = enableMap[pkgName];
             if (varName) {
@@ -3008,20 +3238,37 @@ function customizeSetupScript(content, config, apiInfo, selectedPackages) {
         customized = loadMapShContentSync(customized, app.selectedVersion);
     }
     
+    // AP
+    const apActive = (activeProto === 'ap');
+
+    // ルーターIP：有値かつ非APのときだけ有効化（空 or AP ではコメントアウト）
+    customized = setScriptVar(customized, 'lan_ip_address', config.lanIpv4, !!config.lanIpv4 && !apActive);
+    customized = setScriptVar(customized, 'lan_ipv6_address', config.lanIpv6, !!config.lanIpv6 && !apActive);
+
+    // AP IP：AP時かつ有値のときだけ有効化（非AP or 空ではコメントアウト）
+    customized = setScriptVar(customized, 'ap_ip_address', config.apIpAddress, apActive && !!config.apIpAddress);
+    customized = setScriptVar(customized, 'ap_gateway', config.apGateway, apActive && !!config.apGateway);
+
     return customized;
 }
 
 function toggleAiosConfig(e) {
-    const configSection = document.getElementById('aios-config');
-    if (e.target.checked) {
-        configSection.style.display = 'block';
+    const details = document.getElementById('use-aios-config-details');
+    if (details && details.open) {
         updateConfiguredTemplate();
     } else {
-        configSection.style.display = 'none';
         document.getElementById('uci-defaults-content').value = SETUP_SH_TEMPLATE;
         app.templateLoaded = true;
     }
 }
+
+// 初期化時に toggle をバインド
+document.addEventListener('DOMContentLoaded', () => {
+    const details = document.getElementById('use-aios-config-details');
+    if (details) {
+        details.addEventListener('toggle', toggleAiosConfig);
+    }
+});
 
 function getAiosConfig() {
     const parseOrEmpty = (id, type = 'string') => {
@@ -3040,9 +3287,9 @@ function getAiosConfig() {
         timezone: parseOrEmpty('aios-timezone'),
         zonename: parseOrEmpty('aios-zonename'),
         deviceName: parseOrEmpty('aios-device-name'),
-        lanIp: parseOrEmpty('aios-lan-ip'),
+        lanIpv4: parseOrEmpty('aios-lan-ipv4'),
+        lanIpv6: parseOrEmpty('aios-lan-ipv6'),
         rootPassword: parseOrEmpty('aios-root-password'),
-        confirmPassword: parseOrEmpty('aios-confirm-password'),
         wifiSSID: parseOrEmpty('aios-wifi-ssid'),
         wifiPassword: parseOrEmpty('aios-wifi-password'),
 
@@ -3066,7 +3313,10 @@ function getAiosConfig() {
         mapeIpv6Prefixlen: parseOrEmpty('mape-ipv6-prefixlen', 'int'),
         mapePsidOffset: parseOrEmpty('mape-psid-offset', 'int'),
         mapePsidlen: parseOrEmpty('mape-psidlen', 'int'),
-        mapeGuaPrefix: parseOrEmpty('mape-gua-prefix')
+        mapeGuaPrefix: parseOrEmpty('mape-gua-prefix'),
+
+        apIpAddress: parseOrEmpty('ap-ip-address'),
+        apGateway: parseOrEmpty('ap-gateway')
     };
 
     return config;
@@ -3153,7 +3403,7 @@ function refreshTemplateAndPackages() {
     asuCollectPackages();
 
     // aios-config 有効時のみテンプレ更新
-    if (document.getElementById('use-aios-config').checked) {
+    if (document.getElementById('use-aios-config-details').open) {
         updateConfiguredTemplate().catch(console.error);
     }
 }
@@ -3538,10 +3788,13 @@ async function fetchDevicePackages() {
 
     const version = app.selectedVersion;
 
-    // arch_packages を profiles.json から取得
-    const profilesUrl = `${config.image_url}/releases/${encodeURIComponent(version)}` +
-                        `/targets/${encodeURIComponent(target)}/${encodeURIComponent(subtarget)}/profiles.json`;
-
+    let profilesUrl;
+    if (version === 'SNAPSHOT') {
+        profilesUrl = `${config.image_url}/snapshots/targets/${encodeURIComponent(target)}/${encodeURIComponent(subtarget)}/profiles.json`;
+    } else {
+        profilesUrl = `${config.image_url}/releases/${encodeURIComponent(version)}/targets/${encodeURIComponent(target)}/${encodeURIComponent(subtarget)}/profiles.json`;
+    }
+    
     let arch;
     try {
         const res = await fetch(profilesUrl);
@@ -3708,7 +3961,7 @@ function flashSelectedOption(el) {
     el.classList.add('bold-flash');      // 即時反映
     setTimeout(() => {
         el.classList.remove('bold-flash');
-    }, 1500);
+    }, 200);
 }
   
 document.addEventListener('click', function (e) {
