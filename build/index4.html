@@ -25,7 +25,7 @@
     .container {
         max-width: 720px;
         margin: 0 auto;
-        padding: 0 15px;
+        padding: 0 1rem;
     }
 
     h1 {
@@ -47,7 +47,7 @@
     /* 公式互換のオートコンプリート */
     #models-autocomplete {
         display: flex;
-        padding-top: 0px;
+        padding-top: 0;
     }
     
     .autocomplete {
@@ -56,22 +56,22 @@
     }
     
     #models {
-        border: 0.06em solid transparent;
+        border: 0.06rem solid transparent;
         background-color: #f1f1f1;
-        padding: 0.8em;
+        padding: 0.8rem;
         flex-grow: 1;
-        margin-right: 5px;
-        border-radius: 0.2em;
+        margin-right: 0.3125rem;
+        border-radius: 0.2rem;
         font-size: inherit;
         color: #495057;
     }
     
     #versions {
-        border: 0.06em solid transparent;
+        border: 0.06rem solid transparent;
         background-color: #f1f1f1;
-        padding: 0.8em;
-        min-width: 8em;
-        border-radius: 0.25em;
+        padding: 0.8rem;
+        min-width: 8rem;
+        border-radius: 0.25rem;
         font-size: inherit;
         color: #495057;
     }
@@ -85,13 +85,13 @@
         top: 100%;
         left: 0;
         right: 0;
-        max-height: 300px;
+        max-height: 18.75rem;
         overflow-y: auto;
         background-color: #fff;
     }
 
     .autocomplete-items div {
-        padding: 10px;
+        padding: 0.625rem;
         cursor: pointer;
         background-color: #fff;
         border-bottom: 1px solid #d4d4d4;
@@ -126,20 +126,20 @@
         line-height: 1.25;
         color: #495057;
         background-color: #f1f1f1;
-        background-clip: padding-box;
-        border: 1px solid transparent;
+        border: 1px solid #dee2e6;
         border-radius: 0.25rem;
         transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
         box-sizing: border-box;
-        -webkit-appearance: none;
-        -moz-appearance: none;
-        appearance: none;
     }
 
     .form-control:not(textarea) {
-        height: calc(2.5rem + 2px);
+        height: 2.75rem;  /* ★textareaは除外 */
     }
 
+    textarea.form-control {
+        height: auto;  /* ★textareaは元のサイズ */
+    }
+    
     .form-control:focus {
         color: #495057;
         background-color: #fff;
@@ -174,8 +174,7 @@
         background-color: #d1ecf1;
         border: 1px solid #bee5eb;
         color: #0c5460;
-        padding:
-            1rem;
+        padding: 1rem;
         margin: 1rem 0;
         border-radius: 0.25rem;
     }
@@ -205,7 +204,6 @@
         font-weight: 400;
         color: #212529;
         text-align: center;
-        vertical-align: middle;
         cursor: pointer;
         background-color: transparent;
         border: 1px solid transparent;
@@ -215,9 +213,9 @@
         border-radius: 0.25rem;
         transition: all 0.15s ease-in-out;
         text-decoration: none;
-        box-shadow: 0em 0.06em 0.3em 0em rgba(0, 0, 0, 0.2),
-            0em 0.125em 0.125em 0em rgba(0, 0, 0, 0.14),
-            0em 0.19em 0.06em -0.125em rgba(0, 0, 0, 0.12);
+        box-shadow: 0 0.06rem 0.3rem 0 rgba(0, 0, 0, 0.2),
+                    0 0.125rem 0.125rem 0 rgba(0, 0, 0, 0.14),
+                    0 0.19rem 0.06rem -0.125rem rgba(0, 0, 0, 0.12);
     }
 
     .btn-primary {
@@ -242,19 +240,18 @@
     .custom-link,
     .download-link {
         text-decoration: none;
-        border-radius: 0.2em;
-        padding: 0.8em;
-        margin: 0.2em;
+        border-radius: 0.2rem;
+        padding: 0.8rem;
+        margin: 0.2rem;
         font-size: inherit;
         cursor: pointer;
-        letter-spacing: 0.05em;
+        letter-spacing: 0.05rem;
         display: inline-flex;
         align-items: center;
         line-height: 1;
-        vertical-align: middle;
-        box-shadow: 0em 0.06em 0.3em 0em rgba(0, 0, 0, 0.2),
-            0em 0.125em 0.125em 0em rgba(0, 0, 0, 0.14),
-            0em 0.19em 0.06em -0.125em rgba(0, 0, 0, 0.12);
+        box-shadow: 0 0.06rem 0.3rem 0 rgba(0, 0, 0, 0.2),
+                    0 0.125rem 0.125rem 0 rgba(0, 0, 0, 0.14),
+                    0 0.19rem 0.06rem -0.125rem rgba(0, 0, 0, 0.12);
         color: #fff;
         background-color: #00a3e1;
         width: max-content;
@@ -269,10 +266,10 @@
     /* flex揃えだけで統一し、内部アイコンは公式通り:first-childに直接content */
     .custom-link > :first-child,
     .download-link > :first-child {
-        height: 1em;
+        height: 1rem;
         width: auto;
         margin-top: 0;
-        margin-right: 15px;
+        margin-right: 0.9375rem;
         content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM12 7a1 1 0 0 1 1 1v4h3l-4 4-4-4h3V8a1 1 0 0 1 1-1z' fill='%23fff'/%3E%3C/svg%3E");
     }
 
@@ -289,21 +286,34 @@
         margin-top: 1rem;
     }
 
+    .aios-config h5 {
+        margin: 1rem 0 0.75rem 0;
+        padding: 0.75rem 1rem;
+        background-color: #fff;
+        border: 1px solid #e9ecef;
+        border-radius: 0.25rem;
+        font-size: 1.1rem;
+        font-weight: 500;
+    }
+
+    .aios-config h5:first-child {
+        margin-top: 0;
+    }
+    
     #package-selector-config {
         margin-top: 1rem;
-        /* display設定は不要 */
     }
     
     .form-row {
         display: flex;
         flex-wrap: wrap;
-        margin-right: -5px;
-        margin-left: -5px;
+        margin-right: -0.3125rem;
+        margin-left: -0.3125rem;
     }
 
     .form-row > .form-group {
-        padding-right: 5px;
-        padding-left: 5px;
+        padding-right: 0.3125rem;
+        padding-left: 0.3125rem;
         flex: 1;
     }
 
@@ -343,7 +353,7 @@
     }
 
     .small {
-        font-size: 0.875em;
+        font-size: 0.875rem;
     }
 
     /* プログレス表示 */
@@ -371,25 +381,33 @@
         transition: width 0.3s ease;
     }
 
+    /* パッケージ選択 */
     .package-category {
         margin-top: 0; 
         margin-bottom: 1.5rem;
-        padding: 0.5rem 1rem 1rem 1rem;  /* 上だけ0.5remに減らす */
+        padding: 0.5rem 1rem 1rem 1rem;
         background-color: #fff;
         border: 1px solid #e9ecef;
         border-radius: 0.25rem;
     }
 
     .package-category h6 {
-        margin-top: 0;           /* 上マージンを0に */
-        margin-bottom: 0.5rem;   /* 下マージンを減らす */
+        margin-top: 0;
+        margin-bottom: 0.5rem;
         font-size: 1.1rem;
         font-weight: 500;
         color: #495057;
         border-bottom: 1px solid #e9ecef;
-        padding-bottom: 0.25rem; /* 下パディングを減らす */
+        padding-bottom: 0.25rem;
     }
 
+    .package-category-description {
+        font-size: 0.9rem;
+        color: #6c757d;
+        margin: 0.5rem 0 1rem 0;
+        font-style: italic;
+    }
+    
     .package-grid {
         display: flex;
         flex-wrap: wrap;
@@ -436,7 +454,7 @@
 
     .package-dependent {
         margin-left: 1.5rem;
-        font-size: 0.9em;
+        font-size: 0.9rem;
         color: #6c757d;
         display: flex;
         align-items: center;
@@ -453,13 +471,13 @@
     .row {
         display: flex;
         line-height: 1.5;
-        padding-left: 1.5em;
+        padding-left: 1.5rem;
         overflow: hidden;
     }
 
     .col1 {
         display: inline-block;
-        width: 6em;
+        width: 6rem;
         color: #6c757d;
     }
 
@@ -474,22 +492,22 @@
     }
 
     .col2 a {
-        margin-right: 1em;
+        margin-right: 1rem;
     }
 
     /* アイコン */
     #image-info {
-        width: 1.25em;
+        width: 1.25rem;
         content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='48px' viewBox='0 -2 24 24' width='48px' fill='%23000000'%3E%3Cpath d='M0 0h24v24H0z' fill='none'/%3E%3Cpath d='M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z'/%3E%3C/svg%3E");
     }
 
     #image-folder {
-        width: 1.25em;
+        width: 1.25rem;
         content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='48px' viewBox='0 -2 24 24' width='48px' fill='%23000000'%3E%3Cpath d='M0 0h24v24H0z' fill='none'/%3E%3Cpath d='M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z'/%3E%3C/svg%3E");
     }
 
     #image-link {
-        width: 1.25em;
+        width: 1.25rem;
         content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='24px' viewBox='0 -2 24 24' width='24px' fill='%23000000'%3E%3Cpath d='M0 0h24v24H0z' fill='none'/%3E%3Cpath d='m 6.3 17.7 c -1.2 -1.2 -1.2 -3.2 0 -4.4 L 9.10 10.5 7.8 9 4.9 12 c -2 2 -2 5 0 7 2 2 5 2 7 0 l 2.8 -2.8 -1.3 -1.3 -2.8 2.8 c -1.2 1.2 -3.2 1.2 -4.4 0 z M 10 15.5 15.5 10 14 8.5 8.5 14 Z M 12 4.9 9.18 7.8 10.5 9.1 13.4 6.3 c 1.21 -1.2 3.2 -1.2 4.4 0 1.2 1.2 1.2 3.2 0 4.4 l -2.8 2.8 1.3 1.3 2.8 -2.8 c 2 -2 2 -5 0 -7 -2 -2 -5 -2 -7 0 z'/%3E%3C/svg%3E");
     }
 
@@ -497,7 +515,7 @@
         margin: 1.5rem 0;
     }
 
-/* 特殊フィールド */
+    /* 特殊フィールド */
     #mape-gua-section {
         margin-top: 1rem;
     }
@@ -537,7 +555,7 @@
         }
         
         #versions {
-            margin-top: 0.5em;
+            margin-top: 0.5rem;
         }
         
         #models {
@@ -574,6 +592,7 @@
         .form-control {
             background-color: #313135;
             color: #d0d0d0;
+            border-color: #555;
         }
         
         .form-control:focus {
@@ -586,6 +605,7 @@
         .form-control:disabled {
             background-color: #313135;
             color: #d0d0d0;
+            border-color: #444;
         }
         
         .autocomplete-items {
@@ -625,6 +645,17 @@
         .aios-section {
             background-color: #313135;
             border-color: #444;
+        }
+
+        .aios-config {
+            background-color: #252528;
+            border-color: #444;
+        }
+
+        .aios-config h5 {
+            background-color: #252528;
+            border-color: #444;
+            color: #d0d0d0;
         }
         
         .package-category {
@@ -2329,14 +2360,21 @@ function generatePackageSelector() {
         categoryTitle.textContent = category.name;
         categoryDiv.appendChild(categoryTitle);
 
+        // ★★★ 説明文を横線の直下に追加 ★★★
+        const categoryDescription = document.createElement('div');
+        categoryDescription.className = 'package-category-description';
+        categoryDescription.textContent = category.description;
+        categoryDiv.appendChild(categoryDescription);
+
         const packageGrid = document.createElement('div');
         packageGrid.className = 'package-grid';
 
+        // 既存のパッケージ処理...
         category.packages.forEach(pkg => {
             // 依存パッケージはトップレベル描画しない
             if (depIds.has(pkg.id)) return;
 
-            // 親行
+            // パッケージアイテム作成（既存のコード）
             const packageItem = document.createElement('div');
             packageItem.className = 'package-item';
             if (pkg.hidden) packageItem.classList.add('package-hidden');
@@ -2369,7 +2407,7 @@ function generatePackageSelector() {
             formCheck.appendChild(label);
             packageItem.appendChild(formCheck);
 
-            // 子行（依存パッケージ）
+            // 子行（依存パッケージ）処理
             if (pkg.dependencies) {
                 pkg.dependencies.forEach(depId => {
                     let depPkg;
@@ -2413,12 +2451,6 @@ function generatePackageSelector() {
         });
 
         categoryDiv.appendChild(packageGrid);
-
-        const description = document.createElement('div');
-        description.className = 'package-description';
-        description.textContent = category.description;
-        categoryDiv.appendChild(description);
-
         container.appendChild(categoryDiv);
     });
 }
@@ -3068,6 +3100,19 @@ async function fetchApiInfo() {
         }
         
         const data = await response.json();
+
+        // 互換ラッパー: 新旧どちらのキーでも動くように相互コピー
+        if (data) {
+            // 旧→新
+            if (data.rule && data.mape === undefined) {
+                data.mape = data.rule;
+            }
+            // 新→旧
+            if (data.mape && data.rule === undefined) {
+                data.rule = data.mape;
+            }
+        }
+
         console.log('API Info fetched successfully:', data);
         
         return data;
