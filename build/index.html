@@ -2996,7 +2996,7 @@ function buildIspStatus(apiInfo) {
 
     return { status: statusText, details: formatted };
 }
-      
+
 // ==================== ISP情報関連 ====================
 async function fetchApiInfoAndUpdate() {
     try {
@@ -3040,6 +3040,9 @@ async function fetchApiInfoAndUpdate() {
                     document.getElementById('dslite-aftr-address').value = apiInfo.mape.aftrIpv6Address;
                 }
             }
+
+            // API取得後に必要パッケージを更新（map/ds-lite等）
+            updateRequiredPackages();
 
         } else {
             updateIspDisplay(
