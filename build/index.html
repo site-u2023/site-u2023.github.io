@@ -3839,12 +3839,9 @@ async function fetchDevicePackages() {
     const feeds = ["base", "luci", "packages", "routing", "telephony"];
     const urls = [];
     
-    if (version === 'SNAPSHOT') {
-        // SNAPSHOTの場合：ターゲット固有パッケージ
-        urls.push(
-            `${config.image_url}/snapshots/targets/${targetPath}/packages/Packages`
-        );
-        // フィードパッケージ
+if (version === 'SNAPSHOT') {
+        // SNAPSHOTの場合：ターゲット固有パッケージは存在しない
+        // フィードパッケージのみ取得
         for (const feed of feeds) {
             urls.push(
                 `${config.image_url}/snapshots/packages/${arch}/${feed}/Packages`
