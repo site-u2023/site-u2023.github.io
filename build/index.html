@@ -3815,13 +3815,12 @@ async function fetchDevicePackages() {
     
     const version = app.selectedVersion;
     const targetPath = app.selectedDevice.target;  // mediatek/filogic 形式をそのまま使用
-    let profilesUrl;
     
-    if (version === 'SNAPSHOT') {
-        profilesUrl = `${config.image_url}/snapshots/targets/${targetPath}/profiles.json`;
-    } else {
-        profilesUrl = `${config.image_url}/releases/${encodeURIComponent(version)}/targets/${targetPath}/profiles.json`;
-    }
+    // profiles.json の URL を統一的に生成
+    const basePath = version === 'SNAPSHOT'
+        ? `${config.image_url}/snapshots`
+        : `${config.image_url}/releases/${encodeURIComponent(version)}`;
+    const profilesUrl = `${basePath}/targets/${targetPath}/profiles.json`;
     
     let arch;
     try {
@@ -3838,30 +3837,13 @@ async function fetchDevicePackages() {
     // パッケージインデックスURL一覧（targets と feeds）
     const feeds = ["base", "luci", "packages", "routing", "telephony"];
     const urls = [];
-    
-    if (version === 'SNAPSHOT') {
-        // ターゲット固有パッケージ
-        urls.push(
-            `${config.image_url}/snapshots/targets/${targetPath}/packages/Packages`
-        );
-        // フィードパッケージ
-        for (const feed of feeds) {
-            urls.push(
-                `${config.image_url}/snapshots/packages/${arch}/${feed}/Packages`
-            );
-        }
-    } else {
-        // リリース版の場合：従来通り（変更なし）
-        // ターゲット固有パッケージ
-        urls.push(
-            `${config.image_url}/releases/${encodeURIComponent(version)}/targets/${targetPath}/packages/Packages`
-        );
-        // フィードパッケージ
-        for (const feed of feeds) {
-            urls.push(
-                `${config.image_url}/releases/${encodeURIComponent(version)}/packages/${arch}/${feed}/Packages`
-            );
-        }
+
+    // ターゲット固有パッケージ
+    urls.push(`${basePath}/targets/${targetPath}/packages/Packages`);
+
+    // フィードパッケージ
+    for (const feed of feeds) {
+        urls.push(`${basePath}/packages/${arch}/${feed}/Packages`);
     }
 
     // 各 Packages を並列取得してパース
