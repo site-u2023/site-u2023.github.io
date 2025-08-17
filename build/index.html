@@ -126,16 +126,19 @@
         line-height: 1.25;
         color: #495057;
         background-color: #f1f1f1;
-        background-clip: padding-box;
-        border: 1px solid transparent;
+        border: 1px solid #dee2e6;
         border-radius: 0.25rem;
         transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+        height: 2.75rem;  /* ★全ての.form-controlに統一の高さを適用 */  
     }
 
     .form-control:not(textarea) {
-        height: 2.75rem;
     }
 
+    textarea.form-control {
+        height: auto;  /* ★textareaのみ高さを自動に */
+    }
+    
     .form-control:focus {
         color: #495057;
         background-color: #fff;
@@ -574,6 +577,7 @@
         .form-control {
             background-color: #313135;
             color: #d0d0d0;
+            border-color: #555;
         }
         
         .form-control:focus {
@@ -586,6 +590,7 @@
         .form-control:disabled {
             background-color: #313135;
             color: #d0d0d0;
+            border-color: #444;
         }
         
         .autocomplete-items {
