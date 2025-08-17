@@ -3155,7 +3155,7 @@ function setScriptVar(content, key, value, active) {
 }
 
 // ==================== テンプレート設定 ====================
-async function updateConfiguredTemplate() {
+function updateConfiguredTemplate() {
     try {
         let content = document.getElementById('uci-defaults-content').value;
 
@@ -3165,12 +3165,7 @@ async function updateConfiguredTemplate() {
         }
 
         const config = getAiosConfig();
-
-        let apiInfo = window.cachedApiInfo;
-        if (!apiInfo) {
-            apiInfo = await fetchApiInfo();
-            window.cachedApiInfo = apiInfo;
-        }
+        const apiInfo = window.cachedApiInfo || null;  // キャッシュのみ使用
 
         // 選択済みパッケージ（enable_* 反映用）
         const selectedPackages = new Set(split(document.getElementById('asu-packages').value));
