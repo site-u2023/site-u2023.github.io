@@ -2869,8 +2869,8 @@ function handleDsliteModeChange(e) {
         applyInitialsFromApi('dslite');
     } else {
         manualConfig.style.display = 'none';
-        if (window.cachedApiInfo && window.cachedApiInfo.rule && window.cachedApiInfo.rule.aftrIpv6Address) {
-            aftrAddressField.value = window.cachedApiInfo.rule.aftrIpv6Address;
+        if (window.cachedApiInfo && window.cachedApiInfo.mape && window.cachedApiInfo.mape.aftrIpv6Address) {
+            aftrAddressField.value = window.cachedApiInfo.mape.aftrIpv6Address;
         }
     }
     
@@ -2891,7 +2891,7 @@ function updateGuaSectionVisibility() {
     const connectionType = document.querySelector('input[name="connectionType"]:checked')?.value || 'dhcp';
 
     const api = window.cachedApiInfo || {};
-    const apiRule = api.rule || {};
+    const apiMape = api.mape || {};
     const apiIPv6 = api.ipv6 || '';
     const hasGua = isGlobalUnicastIPv6(apiIPv6);
 
@@ -2904,12 +2904,12 @@ function updateGuaSectionVisibility() {
 
     if (connectionType === 'mape') {
         if (connectionMode === 'auto') {
-            shouldShow = !!apiRule.brIpv6Address && hasGua;
+            shouldShow = !!apiMape.brIpv6Address && hasGua;
         } else {
             if (mapeType === 'gua') {
                 shouldShow = true;
             } else if (mapeType === 'auto') {
-                shouldShow = !!apiRule.brIpv6Address && hasGua;
+                shouldShow = !!apiMape.brIpv6Address && hasGua;
             } else { // 'pd'
                 shouldShow = false;
             }
@@ -2974,25 +2974,25 @@ function buildIspStatus(apiInfo) {
     }
     if (apiInfo.timezone) details += `Timezone: ${apiInfo.timezone}\n`;
 
-    if (apiInfo.rule) {
-        if (apiInfo.rule.aftrType) {
+    if (apiInfo.mape) {
+        if (apiInfo.mape.aftrType) {
             statusText += ' - DS-Lite support detected';
             details += `\n[DS-Lite Configuration]\n`;
-            details += `aftrType: ${apiInfo.rule.aftrType}\n`;
-            if (apiInfo.rule.aftrIpv6Address) {
-                details += `aftrIpv6Address: ${apiInfo.rule.aftrIpv6Address}\n`;
+            details += `aftrType: ${apiInfo.mape.aftrType}\n`;
+            if (apiInfo.mape.aftrIpv6Address) {
+                details += `aftrIpv6Address: ${apiInfo.mape.aftrIpv6Address}\n`;
             }
-        } else if (apiInfo.rule.brIpv6Address) {
+        } else if (apiInfo.mape.brIpv6Address) {
             statusText += ' - MAP-E support detected';
             details += `\n[MAP-E Configuration]\n`;
-            details += `brIpv6Address: ${apiInfo.rule.brIpv6Address}\n`;
-            details += `eaBitLength: ${apiInfo.rule.eaBitLength}\n`;
-            details += `ipv4Prefix: ${apiInfo.rule.ipv4Prefix}\n`;
-            details += `ipv4PrefixLength: ${apiInfo.rule.ipv4PrefixLength}\n`;
-            details += `ipv6Prefix: ${apiInfo.rule.ipv6Prefix}\n`;
-            details += `ipv6PrefixLength: ${apiInfo.rule.ipv6PrefixLength}\n`;
-            details += `psIdOffset: ${apiInfo.rule.psIdOffset}\n`;
-            details += `psidlen: ${apiInfo.rule.psidlen}\n`;
+            details += `brIpv6Address: ${apiInfo.mape.brIpv6Address}\n`;
+            details += `eaBitLength: ${apiInfo.mape.eaBitLength}\n`;
+            details += `ipv4Prefix: ${apiInfo.mape.ipv4Prefix}\n`;
+            details += `ipv4PrefixLength: ${apiInfo.mape.ipv4PrefixLength}\n`;
+            details += `ipv6Prefix: ${apiInfo.mape.ipv6Prefix}\n`;
+            details += `ipv6PrefixLength: ${apiInfo.mape.ipv6PrefixLength}\n`;
+            details += `psIdOffset: ${apiInfo.mape.psIdOffset}\n`;
+            details += `psidlen: ${apiInfo.mape.psidlen}\n`;
         }
     } else {
         statusText += ' - DHCP/PPPoE environment';
@@ -3032,22 +3032,22 @@ async function fetchApiInfoAndUpdate() {
 
             // ウィザードのON/OFFに関係なく、空欄には初期値を注入（上書きはしない）
             // MAP-E情報
-            if (apiInfo.rule && apiInfo.rule.brIpv6Address) {
-                setIfEmpty('mape-br', apiInfo.rule.brIpv6Address);
-                setIfEmpty('mape-ealen', apiInfo.rule.eaBitLength || '');
-                setIfEmpty('mape-ipv4-prefix', apiInfo.rule.ipv4Prefix || '');
-                setIfEmpty('mape-ipv4-prefixlen', apiInfo.rule.ipv4PrefixLength || '');
-                setIfEmpty('mape-ipv6-prefix', apiInfo.rule.ipv6Prefix || '');
-                setIfEmpty('mape-ipv6-prefixlen', apiInfo.rule.ipv6PrefixLength || '');
-                setIfEmpty('mape-psid-offset', apiInfo.rule.psIdOffset || '');
-                setIfEmpty('mape-psidlen', apiInfo.rule.psidlen || '');
+            if (apiInfo.mape && apiInfo.mape.brIpv6Address) {
+                setIfEmpty('mape-br', apiInfo.mape.brIpv6Address);
+                setIfEmpty('mape-ealen', apiInfo.mape.eaBitLength || '');
+                setIfEmpty('mape-ipv4-prefix', apiInfo.mape.ipv4Prefix || '');
+                setIfEmpty('mape-ipv4-prefixlen', apiInfo.mape.ipv4PrefixLength || '');
+                setIfEmpty('mape-ipv6-prefix', apiInfo.mape.ipv6Prefix || '');
+                setIfEmpty('mape-ipv6-prefixlen', apiInfo.mape.ipv6PrefixLength || '');
+                setIfEmpty('mape-psid-offset', apiInfo.mape.psIdOffset || '');
+                setIfEmpty('mape-psidlen', apiInfo.mape.psidlen || '');
             }
             
             // DS-Lite情報
-            if (apiInfo.rule && apiInfo.rule.aftrType) {
-                document.getElementById('dslite-aftr-type').value = apiInfo.rule.aftrType;
-                if (apiInfo.rule.aftrIpv6Address && !document.getElementById('dslite-aftr-address').value) {
-                    document.getElementById('dslite-aftr-address').value = apiInfo.rule.aftrIpv6Address;
+            if (apiInfo.mape && apiInfo.mape.aftrType) {
+                document.getElementById('dslite-aftr-type').value = apiInfo.mape.aftrType;
+                if (apiInfo.mape.aftrIpv6Address && !document.getElementById('dslite-aftr-address').value) {
+                    document.getElementById('dslite-aftr-address').value = apiInfo.mape.aftrIpv6Address;
                 }
             }
 
@@ -3187,7 +3187,7 @@ function customizeSetupScript(content, config, apiInfo, selectedPackages) {
     customized = setScriptVar(customized, 'wlan_password', config.wifiPassword, wifiActive);
 
     // APIベースの推奨値
-    const api = apiInfo?.rule || {};
+    const api = apiInfo?.mape || {};
     const apiHasDslite = !!api.aftrIpv6Address;
     const apiHasMape = !!api.brIpv6Address;
 
@@ -3227,7 +3227,7 @@ function customizeSetupScript(content, config, apiInfo, selectedPackages) {
     // DS-Lite
     let dsliteAddress = '';
     if (config.dsliteMode === 'auto') {
-        dsliteAddress = (apiInfo?.rule?.aftrIpv6Address) || config.dsliteAftrAddress || '';
+        dsliteAddress = (apiInfo?.mape?.aftrIpv6Address) || config.dsliteAftrAddress || '';
     } else {
         dsliteAddress = config.dsliteAftrAddress || '';
     }
@@ -3374,9 +3374,9 @@ function applyInitialsFromApi(type) {
         
         if (dsliteMode === 'auto') {
             // API検出値を使用
-            if (window.cachedApiInfo && window.cachedApiInfo.rule && window.cachedApiInfo.rule.aftrIpv6Address) {
+            if (window.cachedApiInfo && window.cachedApiInfo.mape && window.cachedApiInfo.mape.aftrIpv6Address) {
                 if (aftrInput) {
-                    aftrInput.value = window.cachedApiInfo.rule.aftrIpv6Address;
+                    aftrInput.value = window.cachedApiInfo.mape.aftrIpv6Address;
                 }
             }
         } else {
@@ -3411,7 +3411,7 @@ function applyInitialsFromApi(type) {
 
     // MAP-E: APIの初期値をそのまま流し込む（初期化は無条件に上書き）
     if (type === 'mape') {
-        const s = (window.cachedApiInfo && window.cachedApiInfo.rule) ? window.cachedApiInfo.rule : null;
+        const s = (window.cachedApiInfo && window.cachedApiInfo.mape) ? window.cachedApiInfo.mape : null;
 
         // 既知のキーが無い場合でも無条件初期化のポリシーに従い、値があるものは上書き
         const set = (id, val) => {
@@ -3471,17 +3471,18 @@ function updateRequiredPackages() {
     
   // 接続方式に応じたパッケージの追加
   if (config.connectionMode === 'auto') {
-      if (window.cachedApiInfo && window.cachedApiInfo.rule) {
-          if (window.cachedApiInfo.rule.aftrType) {
-              if (!currentPackages.includes('ds-lite')) {
-                  currentPackages.push('ds-lite');
-              }
-          } else if (window.cachedApiInfo.rule.brIpv6Address) {
-              if (!currentPackages.includes('map')) {
-                  currentPackages.push('map');
-              }
-          }
-      }
+    if (window.cachedApiInfo && window.cachedApiInfo.mape) {
+        if (window.cachedApiInfo.mape.aftrType) {
+            if (!currentPackages.includes('ds-lite')) {
+                currentPackages.push('ds-lite');
+            }
+        } else if (window.cachedApiInfo.mape.brIpv6Address) {
+            if (!currentPackages.includes('map')) {
+                currentPackages.push('map');
+            }
+        }
+    }
+
   } else {
       switch(config.connectionType) {
           case 'mape':
