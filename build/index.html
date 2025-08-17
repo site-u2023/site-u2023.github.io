@@ -2789,7 +2789,6 @@ function hideDeviceInfo() {
 async function handleAsuDetailsToggle(e) {
     const details = e.target;
     
-    // 展開時のみ auto 処理を実行
     if (details.open) {
         console.log('ASU details opened - triggering auto configuration...');
         
@@ -2800,8 +2799,8 @@ async function handleAsuDetailsToggle(e) {
             // auto モード時の必要パッケージ更新を確実に実行
             updateRequiredPackages();
             
-            // パッケージとテンプレートの一元反映
-            refreshTemplateAndPackages();
+            // i18n整理のみ（APIは既に取得済みなので不要）
+            asuCollectPackages();
             
             console.log('Auto configuration completed');
             
