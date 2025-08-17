@@ -3443,6 +3443,9 @@ function applyInitialsFromApi(type) {
 
 // ==================== 共通反映関数 ====================
 function refreshTemplateAndPackages() {
+    // 必要パッケージの更新（map, ds-lite等）
+    updateRequiredPackages();
+    
     // i18n 整理
     asuCollectPackages();
 
