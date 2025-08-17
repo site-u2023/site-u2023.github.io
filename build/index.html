@@ -2089,7 +2089,7 @@ function asuCollectPackages() {
 // ==================== map.sh関連 ====================
 async function loadMapShForVersion(version) {
     try {
-        const key = version && version.startsWith('19') ? '19' : 'new';
+        const key = (version && version.startsWith('19')) ? '19' : 'new';  // SNAPSHOT=new扱い
         const scriptName = key === '19' ? 'map.sh.19' : 'map.sh.new';
         
         if (!mapShCache[key]) {
