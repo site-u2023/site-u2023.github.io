@@ -1483,9 +1483,9 @@ const PACKAGE_DB = {
             description: "Terminal access and file transfer tools",
             packages: [
                 {
-                    id: "ttyd",
-                    name: "ttyd",
-                    url: "https://openwrt.org/packages/pkgdata/ttyd",
+                    id: "luci-app-ttyd",
+                    name: "luci-app-ttyd", 
+                    url: "https://openwrt.org/packages/pkgdata/luci-app-ttyd",
                     enableVar: "enable_ttyd"
                 },
                 {
@@ -1511,10 +1511,11 @@ const PACKAGE_DB = {
             description: "CPU interrupt balancing for multi-core systems",
             packages: [
                 { 
-                    id: "irqbalance", 
-                    name: "irqbalance", 
-                    url: "https://openwrt.org/packages/pkgdata/irqbalance",
-                    enableVar: "enable_irqbalance"
+                    id: "luci-app-irqbalance", 
+                    name: "luci-app-irqbalance", 
+                    url: "https://openwrt.org/packages/pkgdata/luci-app-irqbalance",
+                    enableVar: "enable_irqbalance",
+                    minVersion: "24.10"
                 }
             ]
         },
@@ -1977,33 +1978,34 @@ function normalizeLang(lang) {
 }
 
 function asuI18nDB(lang) {
-  const norm = normalizeLang(lang);
-  const isEN = !norm;
-  const s = isEN ? '' : `-${norm}`;
-  const make = (key) => (isEN ? [] : [`luci-i18n-${key}${s}`]);
-
-  return {
-    base: make('base'),
-    opkg: make('opkg'),
-    firewall: make('firewall'),
-    ttyd: make('ttyd'),
-    commands: make('commands'),
-    irqbalance: make('irqbalance'),
-    qos: make('qos'),
-    sqm: make('sqm'),
-    statistics: make('statistics'),
-    nlbwmon: make('nlbwmon'),
-    wifischedule: make('wifischedule'),
-    wol: make('wol'),
-    ddns: make('ddns'),
-    banip: make('banip'),
-    watchcat: make('watchcat'),
-    dashboard: make('dashboard'),
-    attendedsysupgrade: make('attendedsysupgrade'),
-    dockerman: make('dockerman'),
-    'hd-idle': make('hd-idle'),
-    samba4: make('samba4'),
-  };
+    const norm = normalizeLang(lang);
+    const isEN = !norm;
+    const s = isEN ? '' : `-${norm}`;
+    const make = (key) => (isEN ? [] : [`luci-i18n-${key}${s}`]);
+    
+    const result = {
+        base: make('base'),
+        opkg: make('opkg'),
+        firewall: make('firewall')
+    };
+    
+    // PACKAGE_DBから動的に生成
+    PACKAGE_DB.categories.forEach(category => {
+        category.packages.forEach(pkg => {
+            if (pkg.enableVar) {
+                // enableVarがある場合はそれを使用
+                const key = pkg.enableVar.replace('enable_', '');
+                result[key] = make(key);
+            } else if (pkg.id.startsWith('luci-app-')) {
+                // luci-app-xxxの場合はxxxを抽出
+                const key = pkg.id.replace('luci-app-', '');
+                result[key] = make(key);
+            }
+            // 他にもルールがあれば追加
+        });
+    });
+    
+    return result;
 }
 
 function asuCollectPackages() {
