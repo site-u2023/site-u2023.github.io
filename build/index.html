@@ -2640,15 +2640,12 @@ function selectDevice(device) {
 // After（公式同等のURLマッピング構造を使い SNAPSHOT/Release 双方に対応）
 async function loadDeviceProfile(device) {
     if (!device || !device.target || !device.id) return;
-
     const version = app.selectedVersion;
     const target = device.target;
     const profileId = device.id;
-
     // 公式同等：version→URL マッピングを構築
     if (!config.image_urls) config.image_urls = {};
     if (!config.overview_urls) config.overview_urls = {};
-
     if (version === 'SNAPSHOT') {
         config.overview_urls[version] = `${config.image_url}/snapshots`;
         config.image_urls[version]    = `${config.image_url}/snapshots`;
@@ -2656,9 +2653,7 @@ async function loadDeviceProfile(device) {
         config.overview_urls[version] = `${config.image_url}/releases/${encodeURIComponent(version)}`;
         config.image_urls[version]    = `${config.image_url}/releases/${encodeURIComponent(version)}`;
     }
-
     const profilesUrl = `${config.image_urls[version]}/targets/${target}/profiles.json`;
-
     try {
         console.log(`Loading profile from: ${profilesUrl}`);
         const response = await fetch(profilesUrl, { cache: 'no-cache' });
@@ -2668,40 +2663,30 @@ async function loadDeviceProfile(device) {
         
         const profilesData = await response.json();
         console.log(`Loaded profiles data:`, profilesData);
-
         app.versionCode = profilesData.version_code || '';
-
         if (profilesData.profiles && profilesData.profiles[profileId]) {
             const profile = profilesData.profiles[profileId];
             const defaultPackages = profilesData.default_packages || [];
             const devicePackages = profile.device_packages || [];
             const asuExtraPackages = ['luci'];
             const allPackages = defaultPackages.concat(devicePackages, asuExtraPackages);
-
             document.getElementById('asu-packages').value = allPackages.join(' ');
             asuCollectPackages(); 
         }
-
         // profiles.json取得後にAboutを即表示
         showDeviceInfo();
-
         // 重い処理は非同期並列で実行
         Promise.allSettled([
             fetchDevicePackages()
         ]).then(() => {
             console.log('Background tasks completed');
         });
-
     } catch (error) {
         console.error('Failed to load device profile:', error);
-
         // エラー時もAboutだけは即表示
         showDeviceInfo();
-
         Promise.allSettled([
-            fetchDevicePackages(),
-            loadMapShScripts(),
-            fetchApiInfoAndUpdate()
+            fetchDevicePackages()
         ]).then(() => {
             console.log('Background tasks completed (after error)');
         });
