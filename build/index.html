@@ -2149,7 +2149,17 @@ exit 1`;
 }
         
 // ==================== イベントバインディング ====================
+let eventsbound = false;  // 重複実行防止フラグ
+
 function bindEvents() {
+    if (eventsbound) {
+        console.log('Events already bound, skipping...');
+        return;
+    }
+    
+    console.log('=== bindEvents called ===');
+    eventsbound = true;  // フラグセット
+    
     const versionsEl = document.getElementById('versions');
     if (versionsEl) versionsEl.addEventListener('change', handleVersionChange);
     
@@ -3306,14 +3316,6 @@ function toggleAiosConfig(e) {
         app.templateLoaded = true;
     }
 }
-
-// 初期化時に toggle をバインド
-document.addEventListener('DOMContentLoaded', () => {
-    const details = document.getElementById('use-aios-config-details');
-    if (details) {
-        details.addEventListener('toggle', toggleAiosConfig);
-    }
-});
 
 function getAiosConfig() {
     const parseOrEmpty = (id, type = 'string') => {
