@@ -3072,44 +3072,53 @@ function updateIspDisplay(status, details) {
 }
 
 async function fetchApiInfo() {
-    try {
-        console.log('Fetching API info from auto-config.site-u.workers.dev...');
-        
-        const response = await fetch('https://auto-config.site-u.workers.dev/', {
-            method: 'GET',
-            headers: {
-                'Accept': 'application/json'
+    const apis = [
+        'https://auto-config.site-u.workers.dev/',
+        'https://site-u2023.github.io/api/auto-config/'  // バックアップ
+    ];
+    
+    for (const apiUrl of apis) {
+        try {
+            console.log(`Fetching API info from ${apiUrl}...`);
+            
+            const response = await fetch(apiUrl, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json'
+                },
+                timeout: 10000  // 10秒タイムアウト
+            });
+            
+            console.log(`API response status (${apiUrl}):`, response.status);
+            
+            if (!response.ok) {
+                console.warn(`API access failed with status: ${response.status} (${apiUrl})`);
+                continue;  // 次のAPIを試行
             }
-        });
-        
-        console.log('API response status:', response.status);
-        
-        if (!response.ok) {
-            console.warn('API access failed with status:', response.status);
-            return null;
+            
+            const data = await response.json();
+            
+            // 互換ラッパー: 新旧どちらのキーでも動くように相互コピー
+            if (data) {
+                if (data.rule && data.mape === undefined) {
+                    data.mape = data.rule;
+                }
+                if (data.mape && data.rule === undefined) {
+                    data.rule = data.mape;
+                }
+            }
+            
+            console.log(`API Info fetched successfully from ${apiUrl}:`, data);
+            return data;
+            
+        } catch (error) {
+            console.error(`Failed to fetch from ${apiUrl}:`, error);
+            // 次のAPIを試行
         }
-        
-        const data = await response.json();
-
-        // 互換ラッパー: 新旧どちらのキーでも動くように相互コピー
-        if (data) {
-            // 旧→新
-            if (data.rule && data.mape === undefined) {
-                data.mape = data.rule;
-            }
-            // 新→旧
-            if (data.mape && data.rule === undefined) {
-                data.rule = data.mape;
-            }
-        }
-
-        console.log('API Info fetched successfully:', data);
-        
-        return data;
-    } catch (error) {
-        console.error('Failed to fetch API info:', error);
-        return null;
     }
+    
+    console.error('All API endpoints failed');
+    return null;
 }
 
 // ==================== テンプレ文字列の変数設定共通関数 ====================
