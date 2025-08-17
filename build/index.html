@@ -1051,7 +1051,7 @@
                         <div class="form-group">
                             <label>ISP Detection Status</label>
                             <div id="isp-info-display" class="info" style="margin-bottom: 0;">
-                                <div id="isp-status-message">ISP情報を取得中...</div>
+                                <div id="isp-status-message">ISP information will be detected when configuration is opened</div>
                                 <div id="isp-technical-info" style="font-family: monospace; font-size: 0.9em; margin-top: 0.5rem; display: none;"></div>
                             </div>
                         </div>
@@ -1890,7 +1890,6 @@ function updateInstalledPackageList() {
     });
 }
 
-// ==================== 初期化関数 ====================
 async function init() {
     try {
         // バージョン読み込み
@@ -1943,15 +1942,8 @@ async function init() {
             console.error('Failed to load/update package DB:', error);
         }
 
-        // ISP情報を初期取得
-        console.log('Starting ISP info fetch...');
-        await fetchApiInfoAndUpdate();
-        
-        // 初期値がある場合は即座にテンプレートに反映
-        const lanIpv4Input = document.getElementById('aios-lan-ipv4');
-        if (lanIpv4Input && lanIpv4Input.value) {
-            refreshTemplateAndPackages();
-        }
+        // ISP情報取得は details 展開時に移動（auto トリガー）
+        console.log('Initialization completed. ISP info will be fetched when details are opened.');
 
     } catch (error) {
         console.error('Failed to initialize:', error);
@@ -2166,6 +2158,9 @@ function bindEvents() {
     
     const modelsEl = document.getElementById('models');
     if (modelsEl) modelsEl.addEventListener('input', handleDeviceSearch);
+
+    const asuEl = document.getElementById('asu');
+    if (asuEl) asuEl.addEventListener('toggle', handleAsuDetailsToggle);
     
     const aiosConfigDetails = document.getElementById('use-aios-config-details');
     if (aiosConfigDetails) aiosConfigDetails.addEventListener('toggle', toggleAiosConfig);
@@ -2790,6 +2785,36 @@ function hideDeviceInfo() {
     document.getElementById('request-build').style.display = 'none';
 }
 
+// ==================== auto トリガー関数 ====================
+async function handleAsuDetailsToggle(e) {
+    const details = e.target;
+    
+    // 展開時のみ auto 処理を実行
+    if (details.open) {
+        console.log('ASU details opened - triggering auto configuration...');
+        
+        try {
+            // ISP情報取得（auto のメイン処理）
+            await fetchApiInfoAndUpdate();
+            
+            // auto モード時の必要パッケージ更新を確実に実行
+            updateRequiredPackages();
+            
+            // パッケージとテンプレートの一元反映
+            refreshTemplateAndPackages();
+            
+            console.log('Auto configuration completed');
+            
+        } catch (error) {
+            console.error('Auto configuration failed:', error);
+            updateIspDisplay(
+                'Auto-detection failed',
+                'Failed to retrieve ISP information. Manual configuration required.'
+            );
+        }
+    }
+}
+
 // ==================== 接続設定変更反映関数 ====================
 function applyConnectionSettingsChange() {
     // 表示更新
@@ -3040,10 +3065,7 @@ async function fetchApiInfoAndUpdate() {
                     document.getElementById('dslite-aftr-address').value = apiInfo.mape.aftrIpv6Address;
                 }
             }
-
-            // API取得後に必要パッケージを更新（map/ds-lite等）
-            updateRequiredPackages();
-
+            
         } else {
             updateIspDisplay(
                 'Auto-detection failed',
