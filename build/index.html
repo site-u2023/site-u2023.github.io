@@ -2774,7 +2774,7 @@ async function handleAsuDetailsToggle(e) {
     console.log(`=== handleAsuDetailsToggle called: open=${details.open} ===`);
     console.trace('Call stack:');
     
-    if (details.open && !window.apiInfoFetched) {  // 開いた時のみ & 未実行時のみ
+    if (details.open && !window.apiInfoFetched) {
         console.log('ASU details opened - fetching latest ISP info...');
         window.apiInfoFetched = true;  // グローバルフラグ
         
