@@ -3101,15 +3101,15 @@ async function fetchApiInfo() {
         try {
             console.log(`Fetching API info from ${apiUrl}...`);
             
-            const response = await fetch(apiUrl, {
+            // キャッシュ無効化用のランダムパラメータを追加
+            const cacheBreaker = `?_t=${Date.now()}&_r=${Math.random()}`;
+            const finalUrl = apiUrl + cacheBreaker;
+            
+            const response = await fetch(finalUrl, {
                 method: 'GET',
                 headers: {
-                    'Accept': 'application/json',
-                    'Cache-Control': 'no-cache, no-store, must-revalidate',
-                    'Pragma': 'no-cache',
-                    'Expires': '0'
+                    'Accept': 'application/json'
                 },
-                cache: 'no-store',
                 timeout: 10000  // 10秒タイムアウト
             });
             
