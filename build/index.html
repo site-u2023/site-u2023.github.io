@@ -3841,10 +3841,10 @@ async function fetchDevicePackages() {
     
     if (version === 'SNAPSHOT') {
         // SNAPSHOTの場合：ターゲット固有パッケージは存在しない
-        // フィードパッケージのみ取得
+        // フィードパッケージのみ取得（.gz版を使用）
         for (const feed of feeds) {
             urls.push(
-                `${config.image_url}/snapshots/packages/${arch}/${feed}/Packages`
+                `${config.image_url}/snapshots/packages/${arch}/${feed}/Packages.gz`
             );
         }
     } else {
@@ -3865,11 +3865,23 @@ async function fetchDevicePackages() {
     const allPkgs = [];
     const results = await Promise.allSettled(
         urls.map(async (url) => {
-            try {
+          try {
                 const res = await fetch(url);
                 if (!res.ok) return [];
-                const text = await res.text();
+                
+                let text;
+                if (url.endsWith('.gz')) {
+                    // gzip圧縮の展開
+                    const blob = await res.blob();
+                    const ds = new DecompressionStream('gzip');
+                    const decompressedStream = blob.stream().pipeThrough(ds);
+                    text = await new Response(decompressedStream).text();
+                } else {
+                    text = await res.text();
+                }
+                
                 return parsePackagesText(text, url);
+    
             } catch (e) {
                 console.warn(`パッケージ取得失敗: ${url}`, e);
                 return [];
