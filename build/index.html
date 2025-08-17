@@ -2648,7 +2648,7 @@ function selectDevice(device) {
 async function loadDeviceProfile(device) {
     if (!device || !device.target || !device.id) return;
     const version = app.selectedVersion;
-    const target = device.target;
+    const targetPath = device.target;  // mediatek/filogic のような形式
     const profileId = device.id;
     // 公式同等：version→URL マッピングを構築
     if (!config.image_urls) config.image_urls = {};
@@ -2660,7 +2660,7 @@ async function loadDeviceProfile(device) {
         config.overview_urls[version] = `${config.image_url}/releases/${encodeURIComponent(version)}`;
         config.image_urls[version]    = `${config.image_url}/releases/${encodeURIComponent(version)}`;
     }
-    const profilesUrl = `${config.image_urls[version]}/targets/${target}/profiles.json`;
+    const profilesUrl = `${config.image_urls[version]}/targets/${targetPath}/profiles.json`;
     try {
         console.log(`Loading profile from: ${profilesUrl}`);
         const response = await fetch(profilesUrl, { cache: 'no-cache' });
@@ -3813,21 +3813,14 @@ async function fetchDevicePackages() {
     app.devicePackages = [];
     if (!app.selectedDevice || !app.selectedVersion) return;
     
-    // target/subtarget 抽出
-    const [target, subtarget] = (() => {
-        if (app.selectedDevice.target && app.selectedDevice.target.includes('/')) {
-            return app.selectedDevice.target.split('/');
-        }
-        return [app.selectedDevice.target || "", app.selectedDevice.subtarget || ""];
-    })();
-    
     const version = app.selectedVersion;
+    const targetPath = app.selectedDevice.target;  // mediatek/filogic 形式をそのまま使用
     let profilesUrl;
     
     if (version === 'SNAPSHOT') {
-        profilesUrl = `${config.image_url}/snapshots/targets/${encodeURIComponent(target)}/${encodeURIComponent(subtarget)}/profiles.json`;
+        profilesUrl = `${config.image_url}/snapshots/targets/${targetPath}/profiles.json`;
     } else {
-        profilesUrl = `${config.image_url}/releases/${encodeURIComponent(version)}/targets/${encodeURIComponent(target)}/${encodeURIComponent(subtarget)}/profiles.json`;
+        profilesUrl = `${config.image_url}/releases/${encodeURIComponent(version)}/targets/${targetPath}/profiles.json`;
     }
     
     let arch;
@@ -3842,24 +3835,26 @@ async function fetchDevicePackages() {
         return;
     }
     
-    // パッケージインデックスURL一覧（targets と feeds）
+// パッケージインデックスURL一覧（targets と feeds）
     const feeds = ["base", "luci", "packages", "routing", "telephony"];
     const urls = [];
     
     if (version === 'SNAPSHOT') {
-        // SNAPSHOTの場合：ターゲット固有パッケージは通常存在しないのでスキップ
-        // フィードパッケージのみ取得
+        // SNAPSHOTの場合：ターゲット固有パッケージ
+        urls.push(
+            `${config.image_url}/snapshots/targets/${targetPath}/packages/Packages`
+        );
+        // フィードパッケージ
         for (const feed of feeds) {
             urls.push(
-                `${config.image_url}/snapshots/packages/${encodeURIComponent(arch)}/${encodeURIComponent(feed)}/Packages`
+                `${config.image_url}/snapshots/packages/${arch}/${feed}/Packages`
             );
         }
     } else {
         // リリース版の場合：従来通り
         // ターゲット固有パッケージ
         urls.push(
-            `${config.image_url}/releases/${encodeURIComponent(version)}` +
-            `/targets/${encodeURIComponent(target)}/${encodeURIComponent(subtarget)}/packages/Packages`
+            `${config.image_url}/releases/${encodeURIComponent(version)}/targets/${targetPath}/packages/Packages`
         );
         // フィードパッケージ
         for (const feed of feeds) {
