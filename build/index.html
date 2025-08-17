@@ -133,10 +133,11 @@
     }
 
     .form-control:not(textarea) {
+        height: 2.75rem;  /* ★textareaは除外 */
     }
 
     textarea.form-control {
-        height: 2.75rem;
+        height: auto;  /* ★textareaは元のサイズ */
     }
     
     .form-control:focus {
