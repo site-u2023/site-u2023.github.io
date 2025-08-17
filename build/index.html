@@ -3086,6 +3086,9 @@ function updateIspDisplay(status, details) {
 }
 
 async function fetchApiInfo() {
+    console.log('=== fetchApiInfo called ===');
+    console.trace('fetchApiInfo call stack:');
+    
     const apis = [
         'https://auto-config.site-u.workers.dev/',
         'https://site-u2023.github.io/api/auto-config/'  // バックアップ
