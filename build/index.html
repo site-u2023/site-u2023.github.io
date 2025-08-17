@@ -3100,6 +3100,12 @@ async function fetchApiInfo() {
         }
         
         const data = await response.json();
+
+        // 互換ラッパー: 新mapeキーが無く旧ruleキーがある場合はコピー
+        if (data && data.mape === undefined && data.rule) {
+            data.mape = data.rule;
+        }
+
         console.log('API Info fetched successfully:', data);
         
         return data;
