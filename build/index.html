@@ -2322,14 +2322,21 @@ function generatePackageSelector() {
         categoryTitle.textContent = category.name;
         categoryDiv.appendChild(categoryTitle);
 
+        // ★★★ 説明文を横線の直下に追加 ★★★
+        const categoryDescription = document.createElement('div');
+        categoryDescription.className = 'package-category-description';
+        categoryDescription.textContent = category.description;
+        categoryDiv.appendChild(categoryDescription);
+
         const packageGrid = document.createElement('div');
         packageGrid.className = 'package-grid';
 
+        // 既存のパッケージ処理...
         category.packages.forEach(pkg => {
             // 依存パッケージはトップレベル描画しない
             if (depIds.has(pkg.id)) return;
 
-            // 親行
+            // パッケージアイテム作成（既存のコード）
             const packageItem = document.createElement('div');
             packageItem.className = 'package-item';
             if (pkg.hidden) packageItem.classList.add('package-hidden');
@@ -2362,7 +2369,7 @@ function generatePackageSelector() {
             formCheck.appendChild(label);
             packageItem.appendChild(formCheck);
 
-            // 子行（依存パッケージ）
+            // 子行（依存パッケージ）処理
             if (pkg.dependencies) {
                 pkg.dependencies.forEach(depId => {
                     let depPkg;
@@ -2406,12 +2413,6 @@ function generatePackageSelector() {
         });
 
         categoryDiv.appendChild(packageGrid);
-
-        const description = document.createElement('div');
-        description.className = 'package-description';
-        description.textContent = category.description;
-        categoryDiv.appendChild(description);
-
         container.appendChild(categoryDiv);
     });
 }
