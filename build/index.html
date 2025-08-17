@@ -930,18 +930,16 @@
                                     <small class="text-muted">Auto: Use ISP-detected AFTR address | Manual: Specify AFTR settings manually</small>
                                 </div>
 
-                                <div class="form-group">
-                                        <label for="dslite-aftr-type">AFTR (DS-Lite)</label>
+                                <div id="dslite-manual-config" class="conditional-section">
+                                    <div class="form-group">
+                                        <label for="dslite-aftr-type">AFTR Type</label>
                                         <select id="dslite-aftr-type" class="form-control" onchange="applyInitialsFromApi('dslite')">
-                                            <option value="gw.transix.jp">gw.transix.jp</option>
-                                            <option value="gw.xpass.jp">gw.xpass.jp</option>
-                                            <option value="gw.v6option.jp">gw.v6option.jp</option>
+                                            <option value="transix">gw.transix.jp</option>
+                                            <option value="xpass">gw.xpass.jp</option>
+                                            <option value="v6option">gw.v6option.jp</option>
                                         </select>
-                                        <small class="form-text text-muted">
-                                            Select the AFTR host name for DS-Lite
-                                        </small>
                                     </div>
-                                
+
                                     <div class="form-group">
                                         <label for="dslite-area">Region</label>
                                         <select id="dslite-area" class="form-control" onchange="applyInitialsFromApi('dslite')">
