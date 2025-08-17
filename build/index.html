@@ -3815,11 +3815,9 @@ async function fetchDevicePackages() {
     
     const version = app.selectedVersion;
     const targetPath = app.selectedDevice.target;  // mediatek/filogic 形式をそのまま使用
-    
-    // profiles.json の URL を統一的に生成
-    const basePath = version === 'SNAPSHOT'
-        ? `${config.image_url}/snapshots`
-        : `${config.image_url}/releases/${encodeURIComponent(version)}`;
+
+    // profiles.json の URL を統一的に生成（SNAPSHOT/リリース共通処理）
+    const basePath = config.image_urls[version].replace(/\/$/, '');
     const profilesUrl = `${basePath}/targets/${targetPath}/profiles.json`;
     
     let arch;
@@ -3876,7 +3874,7 @@ async function fetchDevicePackages() {
     }
     app.devicePackages = Array.from(pkgMap.values());
 }
-
+    
 // Packages ファイルをパース（必要なら外部化してもOK）
 function parsePackagesText(text, source) {
     const blocks = text.split(/\n\s*\n/);
