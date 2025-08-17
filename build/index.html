@@ -2156,11 +2156,9 @@ let eventsbound = false;  // 重複実行防止フラグ
 
 function bindEvents() {
     if (eventsbound) {
-        console.log('Events already bound, skipping...');
         return;
     }
     
-    console.log('=== bindEvents called ===');
     eventsbound = true;  // フラグセット
     
     const versionsEl = document.getElementById('versions');
@@ -2784,18 +2782,13 @@ let apiInfoFetched = false;  // 重複防止用フラグ
 async function handleAsuDetailsToggle(e) {
     const details = e.target;
     
-    console.log(`=== handleAsuDetailsToggle called: open=${details.open} ===`);
-    console.trace('Call stack:');
-    
     if (details.open && !window.apiInfoFetched) {
-        console.log('ASU details opened - fetching latest ISP info...');
         window.apiInfoFetched = true;  // グローバルフラグ
         
         try {
             await fetchApiInfoAndUpdate();
             updateRequiredPackages();
             asuCollectPackages();
-            console.log('Auto configuration completed');
         } catch (error) {
             window.apiInfoFetched = false;  // 失敗時リセット
             // エラー処理
@@ -3013,13 +3006,8 @@ function buildIspStatus(apiInfo) {
 // ==================== ISP情報関連 ====================
 async function fetchApiInfoAndUpdate() {
     try {
-        console.log('=== fetchApiInfoAndUpdate called ===');
-        console.trace('Call stack:');  // スタックトレース表示
-        
         updateIspDisplay('Fetching', 'Retrieving ISP information...');
-        console.log('Starting fetchApiInfoAndUpdate...');
         const apiInfo = await fetchApiInfo();
-        console.log('fetchApiInfo returned:', apiInfo);
         window.cachedApiInfo = apiInfo;
         if (apiInfo) {
             // Country と Timezone（空欄のみ設定）
@@ -3032,7 +3020,6 @@ async function fetchApiInfoAndUpdate() {
 
             // MAP-E検出時のみmap.sh読み込み
             if (apiInfo.mape && apiInfo.mape.brIpv6Address) {
-                console.log('MAP-E detected, loading map.sh...');
                 await loadMapShScripts();
             }
 
@@ -3089,9 +3076,6 @@ function updateIspDisplay(status, details) {
 }
 
 async function fetchApiInfo() {
-    console.log('=== fetchApiInfo called ===');
-    console.trace('fetchApiInfo call stack:');
-    
     const apis = [
         'https://auto-config.site-u.workers.dev/',
         'https://site-u2023.github.io/api/auto-config/'  // バックアップ
@@ -3099,7 +3083,6 @@ async function fetchApiInfo() {
     
     for (const apiUrl of apis) {
         try {
-            console.log(`Fetching API info from ${apiUrl}...`);
             
             // キャッシュ無効化用のランダムパラメータを追加
             const cacheBreaker = `?_t=${Date.now()}&_r=${Math.random()}`;
