@@ -3840,11 +3840,14 @@ async function fetchDevicePackages() {
     const urls = [];
     
     if (version === 'SNAPSHOT') {
-        // SNAPSHOTの場合：ターゲット固有パッケージは存在しない
-        // フィードパッケージのみ取得（.gz版を使用）
+        // ターゲット固有パッケージ
+        urls.push(
+            `${config.image_url}/snapshots/targets/${targetPath}/packages/Packages`
+        );
+        // フィードパッケージ
         for (const feed of feeds) {
             urls.push(
-                `${config.image_url}/snapshots/packages/${arch}/${feed}/Packages.gz`
+                `${config.image_url}/snapshots/packages/${arch}/${feed}/Packages`
             );
         }
     } else {
