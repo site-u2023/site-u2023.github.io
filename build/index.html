@@ -3198,10 +3198,14 @@ async function updateConfiguredTemplate() {
     try {
         let content = document.getElementById('uci-defaults-content').value;
 
-        if (!content || content.trim() === '' || content.includes('Failed to load setup.sh template')) {
-            content = SETUP_SH_TEMPLATE;
-            app.templateLoaded = true;
-        }
+    if (!content || content.trim() === '' || content.includes('Failed to load setup.sh template')) {
+        content = SETUP_SH_TEMPLATE;
+        app.templateLoaded = true;
+    } else if (!app.templateLoaded) {
+        // 初期表示時にテンプレが未設定なら必ず適用
+        document.getElementById('uci-defaults-content').value = SETUP_SH_TEMPLATE;
+        app.templateLoaded = true;
+    }
 
         const config = getAiosConfig();
         const apiInfo = window.cachedApiInfo || null;  // キャッシュのみ、API呼び出し削除
