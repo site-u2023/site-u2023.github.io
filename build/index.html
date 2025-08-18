@@ -3973,22 +3973,7 @@ function parsePackagesText(text, source) {
     const pkgInput = document.getElementById('package-search');
     let pkgSearchTimer;
 
-    function handleBoxRemoval(inputEl) {
-        if (!inputEl.value.trim()) {
-            const allInputs = document.querySelectorAll('#package-search-autocomplete input.package-search');
-            if (allInputs.length > 1) {
-                inputEl.parentNode.removeChild(inputEl);
-            }
-            syncTextareaFromBoxes();
-        }
-    }
-
     if (pkgInput) {
-        // class付与して全欄共通セレクタで拾えるようにする
-        if (!pkgInput.classList.contains('package-search')) {
-            pkgInput.classList.add('package-search');
-        }
-
         pkgInput.addEventListener('input', function(e) {
             clearTimeout(pkgSearchTimer);
             const query = e.target.value.trim().toLowerCase();
@@ -4010,9 +3995,15 @@ function parsePackagesText(text, source) {
             }, 200);
         });
 
-        // 順不同・最後の1つは残す
+        // 空にしたら削除（順不同・最後の1つは残す）
         pkgInput.addEventListener('change', function() {
-            handleBoxRemoval(pkgInput);
+            if (!pkgInput.value.trim()) {
+                const total = document.querySelectorAll('#package-search, #package-search-autocomplete input.package-search').length;
+                if (total > 1 && pkgInput.parentNode) {
+                    pkgInput.parentNode.removeChild(pkgInput);
+                }
+                syncTextareaFromBoxes();
+            }
         });
     }
 })();
@@ -4030,7 +4021,7 @@ function showPackageAutocomplete(matches, inputEl) {
     const container = document.createElement('div');
     container.className = 'autocomplete-items';
 
-    matches.forEach(item => {
+    (matches || []).forEach(item => {
         const name = (typeof item === 'string') ? item : (item && item.name) || '';
         if (!name) return;
         const div = document.createElement('div');
@@ -4039,6 +4030,7 @@ function showPackageAutocomplete(matches, inputEl) {
             inputEl.value = name;
             hidePackageAutocomplete();
             syncTextareaFromBoxes();
+            // 空欄が無ければ次の欄を生成
             if (!document.querySelector('#package-search-autocomplete input[value=""]')) {
                 createExtraPackageBox();
             }
@@ -4058,8 +4050,9 @@ function createExtraPackageBox() {
     newInput.autocomplete = 'off';
     newInput.spellcheck = false;
     newInput.autocapitalize = 'off';
-    newInput.dataset.extra = '1';
+    newInput.dataset.extra = '1'; // 追加欄フラグ
 
+    // イベント紐付け（元と同じ動き）
     let timer;
     newInput.addEventListener('input', function() {
         clearTimeout(timer);
@@ -4082,13 +4075,15 @@ function createExtraPackageBox() {
         }, 200);
     });
 
-    // 順不同・最後の1つは残す
+    // 空にしたら削除（順不同・最後の1つは残す）
     newInput.addEventListener('change', function() {
-        const allInputs = document.querySelectorAll('#package-search-autocomplete input.package-search');
-        if (!this.value.trim() && allInputs.length > 1) {
-            host.removeChild(this);
+        if (!this.value.trim()) {
+            const total = document.querySelectorAll('#package-search, #package-search-autocomplete input.package-search').length;
+            if (total > 1 && this.parentNode) {
+                this.parentNode.removeChild(this);
+            }
+            syncTextareaFromBoxes();
         }
-        syncTextareaFromBoxes();
     });
 
     host.appendChild(newInput);
@@ -4096,11 +4091,32 @@ function createExtraPackageBox() {
 }
 
 function syncTextareaFromBoxes() {
-    const allVals = Array.from(document.querySelectorAll('#package-search-autocomplete input.package-search'))
-        .map(el => el.value.trim())
+    const ta = document.getElementById('asu-packages');
+    if (!ta) return;
+
+    // 直前呼び出し時に注入していた「追加パッケージ」を差し引いてテンプレート部分を抽出
+    const prevExtras = (ta.dataset.extrasPrev || '').trim().split(/\s+/).filter(Boolean);
+    const prevExtrasSet = new Set(prevExtras);
+    const currentTokens = (ta.value || '').trim().split(/\s+/).filter(Boolean);
+    const templateNow = currentTokens.filter(tok => !prevExtrasSet.has(tok));
+
+    // 現在の入力欄から追加パッケージを取得
+    const extras = Array.from(document.querySelectorAll('#package-search-autocomplete input.package-search, #package-search'))
+        .map(el => (el && typeof el.value === 'string') ? el.value.trim() : '')
         .filter(Boolean);
-    document.getElementById('asu-packages').value = allVals.join(' ');
-    refreshTemplateAndPackages();
+
+    // テンプレート + 追加の順で重複排除して結合（テンプレートは常に保持）
+    const seen = new Set();
+    const merged = [];
+    templateNow.forEach(tok => { if (!seen.has(tok)) { seen.add(tok); merged.push(tok); } });
+    extras.forEach(tok => { if (!seen.has(tok)) { seen.add(tok); merged.push(tok); } });
+
+    ta.value = merged.join(' ');
+    ta.dataset.extrasPrev = extras.join(' ');
+
+    if (typeof refreshTemplateAndPackages === 'function') {
+        refreshTemplateAndPackages();
+    }
 }
 // ---------------------------------------------------------!!
 // ---------------------------------------------------------!!
