@@ -743,16 +743,18 @@
 
         <div id="packages" class="packages" style="display: none;">
             <details id="asu">
-                <summary>Customize installed packages and/or first boot script</summary>
+                <h2>Customize installed packages and/or first boot script</h2>
+                <details id="asu">
                 <!-- パッケージセレクターセクション -->
                 <div class="aios-section">
                     <details id="use-package-selector-details">
-                        <summary>▼ Installed Packages</summary>
+                        <h3>Installed Packages</h3>
+                        <details id="use-package-selector-details" open>
                         
                         <div id="package-selector-config">
                         <!-- パッケージ検索ボックス -->
                         <div class="package-category">
-                          <h5>Package Search</h5>
+                          <h4>Package Search</h4>
                           <div class="package-category-description">
                             Select extra packages to install. They'll be added to the list below.
                           </div>  
@@ -786,10 +788,11 @@
                 <!-- setup.sh設定セクション -->
                 <div class="aios-section">
                     <details id="use-aios-config-details">
-                        <summary>▼ Script to run on first boot (uci-defaults)</summary>
+                        <h3>Script to run on first boot (uci-defaults)</h3>
+                        <details id="use-aios-config-details" open>
                         
                         <div id="aios-config">
-                            <h5>Basic Configuration</h5>
+                            <h4>Basic Configuration</h4>
                         
                         <!-- 1行目: Language と Country -->
                         <div class="form-row">
@@ -876,7 +879,7 @@
                             </div>
                         </div>
                         
-                        <h5>Wi-Fi Configuration</h5>
+                        <h4>Wi-Fi Configuration</h4>
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="aios-wifi-ssid">Wi-Fi SSID</label>
@@ -888,7 +891,7 @@
                             </div>
                         </div>
 
-                        <h5>Internet Connection</h5>
+                        <h4>Internet Connection</h4>
                         <div class="form-group">
                             <label>Connection mode</label>
                             <div class="radio-group">
