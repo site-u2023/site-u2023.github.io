@@ -1462,7 +1462,6 @@ const config = {
 let app = {
     versions: [],
     devices: [],
-    selectedDevice: null,
     selectedVersion: '',
     templateLoaded: false,
     availablePackages: [] // デバイス固有のパッケージリスト
@@ -2738,9 +2737,10 @@ async function loadDeviceProfile(device) {
 }
        
 function showDeviceInfo() {
-    if (!app.selectedDevice) return;
+    if (!current_device || !current_device.id) return;
 
-    const device = app.selectedDevice;
+    const device = app.devices.find(d => d.id === current_device.id && d.target === current_device.target);
+    if (!device) return;
     
     // バージョン番号の取得（ビルド番号含む）
     let fullVersion = app.selectedVersion;
@@ -3532,7 +3532,7 @@ function updateRequiredPackages() {
 
 // ==================== ビルド処理 ====================
 async function buildAsuRequest() {
-    if (!app.selectedDevice) {
+    if (!current_device || !current_device.id) {
         alert('Please select a device first');
         return;
     }
@@ -3545,8 +3545,8 @@ async function buildAsuRequest() {
         const script = document.getElementById('uci-defaults-content').value;
 
         const requestBody = {
-            target: app.selectedDevice.target,
-            profile: app.selectedDevice.id,
+            target: current_device.target,
+            profile: current_device.id,
             packages: packages,
             version: app.selectedVersion
         };
@@ -3848,10 +3848,10 @@ function showDownloadLinks(images, fullStatus, requestHash) {
 // ★パッケージインデックス取得（device_packages_url は廃止）
 async function fetchDevicePackages() {
     app.devicePackages = [];
-    if (!app.selectedDevice || !app.selectedVersion) return;
+    if (!current_device || !current_device.id || !app.selectedVersion) return;
 
     const version = app.selectedVersion;
-    const targetPath = app.selectedDevice.target; // mediatek/filogic 形式
+    const targetPath = current_device.target; // mediatek/filogic 形式
 
     // profiles.json の URL を config.image_urls[version] 基点で生成
     const basePath = config.image_urls[version].replace(/\/$/, '');
