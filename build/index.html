@@ -3845,8 +3845,11 @@ async function fetchDevicePackages() {
     const feeds = ["base", "luci", "packages", "routing", "telephony"];
     const urls = [];
 
-    // 従来のターゲット固有パッケージ
-    urls.push(`${base_url}/targets/${targetPath}/packages/Packages`);
+    // SNAPSHOTではターゲット固有パッケージは存在しない場合が多いため除外
+    if (version !== 'SNAPSHOT') {
+        // リリース版のみターゲット固有パッケージを追加
+        urls.push(`${base_url}/targets/${targetPath}/packages/Packages`);
+    }
 
     // フィードパッケージ
     for (const feed of feeds) {
