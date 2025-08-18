@@ -3808,12 +3808,15 @@ function showDownloadLinks(images, fullStatus, requestHash) {
     }
 }
 
+// ★パッケージインデックス取得（device_packages_url は廃止）
 async function fetchDevicePackages() {
     app.devicePackages = [];
     if (!app.selectedDevice || !app.selectedVersion) return;
 
     const version = app.selectedVersion;
     const targetPath = app.selectedDevice.target; // mediatek/filogic 形式
+
+    // profiles.json の URL を config.image_urls[version] 基点で生成
     const basePath = config.image_urls[version].replace(/\/$/, '');
     const profilesUrl = `${basePath}/targets/${targetPath}/profiles.json`;
 
@@ -3829,11 +3832,32 @@ async function fetchDevicePackages() {
         return;
     }
 
-    // 公式と同じ：arch_packages からパッケージURLを構築
-    const pkgsUrl = `${basePath}/packages/${arch}/Packages`;
-    console.log('[fetchDevicePackages] packages URL:', pkgsUrl);
+    async function fetchDevicePackages() {
+        app.devicePackages = [];
+        if (!app.selectedDevice || !app.selectedVersion) return;
 
-    // 以降、この pkgsUrl を fetch して処理
+        const version = app.selectedVersion;
+        const targetPath = app.selectedDevice.target; // mediatek/filogic 形式
+        const basePath = config.image_urls[version].replace(/\/$/, '');
+        const profilesUrl = `${basePath}/targets/${targetPath}/profiles.json`;
+
+        let arch;
+        try {
+            const res = await fetch(profilesUrl);
+            if (!res.ok) throw new Error(`profiles.json HTTP ${res.status}`);
+            const meta = await res.json();
+            arch = meta.arch_packages;
+            if (!arch) throw new Error("profiles.json に arch_packages がありません");
+        } catch (e) {
+            console.error("arch_packages 取得失敗:", e);
+            return;
+        }
+
+        // 公式と同じ：arch_packages からパッケージURLを構築
+        const pkgsUrl = `${basePath}/packages/${arch}/Packages`;
+        console.log('[fetchDevicePackages] packages URL:', pkgsUrl);
+
+        // 以降、この pkgsUrl を fetch して処理
     }
 
     // パッケージインデックスURL一覧（targets/kmods と feeds）
