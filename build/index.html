@@ -708,7 +708,15 @@
         <p class="lead">Type the name or model of your device, then select a stable build or the nightly "snapshot" build.</p>
 
         <div id="models-autocomplete" class="autocomplete">
-            <input type="text" id="models" placeholder="Type device model" autocomplete="off" spellcheck="false" autocapitalize="off" autofocus>
+            <input type="text"
+              id="models" 
+              placeholder="Type device model"
+              lang="en"
+              inputmode="latin"
+              autocomplete="off"
+              spellcheck="false"
+              autocapitalize="off"
+              autofocus>
             <select id="versions">
                 <option value="" disabled selected>Loading versions...</option>
             </select>
@@ -740,6 +748,8 @@
                               <input type="text"
                                 id="package-search"
                                 placeholder="Type package name"
+                                lang="en"
+                                inputmode="latin"
                                 autocomplete="off"
                                 spellcheck="false"
                                 autocapitalize="off"
