@@ -1478,7 +1478,7 @@ const config = {
     info_url: "https://openwrt.org/start?do=search&id=toh&q={title} @toh",
     asu_url: "https://sysupgrade.openwrt.org",
     asu_extra_packages: ["luci"],
-    feeds: ["base", "luci", "packages", "routing", "telephony"]
+    min_version: "19.07.0"  // 最小サポートバージョン
 };
 
 // グローバル変数
@@ -2543,18 +2543,30 @@ async function loadVersions() {
     try {
         const response = await fetch('https://downloads.openwrt.org/.versions.json');
         const data = await response.json();
-
         // 公式と同じ: SNAPSHOTを最初に追加
         app.versions = ['SNAPSHOT'];
         
-        // 安定版を追加
+        // 安定版を追加（config.min_version以上のみ）
         if (data.versions_list) {
-            app.versions = app.versions.concat(data.versions_list);
+            let versionList = data.versions_list;
+            
+            // min_versionが設定されていればフィルタリング
+            if (config.min_version) {
+                const minParts = config.min_version.split('.').map(n => parseInt(n, 10));
+                versionList = versionList.filter(version => {
+                    const parts = version.split('.').map(n => parseInt(n, 10));
+                    for (let i = 0; i < minParts.length; i++) {
+                        if (parts[i] > minParts[i]) return true;
+                        if (parts[i] < minParts[i]) return false;
+                    }
+                    return true;  // 完全一致も含む
+                });
+            }
+            
+            app.versions = app.versions.concat(versionList);
         }
-
         // デフォルト選択: 公式と同じく最新リリース版（2番目）
         app.selectedVersion = data.stable_version || (data.versions_list ? data.versions_list[0] : 'SNAPSHOT');
-
         updateVersionSelect();
         await loadDevices();
     } catch (error) {
