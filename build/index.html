@@ -2148,8 +2148,7 @@ function asuI18nDB(lang) {
 // ==================== map.sh関連 ====================
 async function loadMapShForVersion(version) {
     try {
-        // 19.x系のみ '19'、それ以外（SNAPSHOT含む）は 'new'
-        const key = (version && version.startsWith('19.')) ? '19' : 'new';  // ← 19.と厳密に判定
+        const key = (version && version.startsWith('19.')) ? '19' : 'new';
         const scriptName = key === '19' ? 'map.sh.19' : 'map.sh.new';
         const scriptUrl = `https://site-u.pages.dev/build/scripts/${scriptName}`;
         
@@ -2171,9 +2170,10 @@ async function loadMapShForVersion(version) {
                 console.error(`Failed to download ${scriptName}: HTTP ${response.status}`);
                 mapShCache[key] = '';
             }
-    } catch (error) {
+        }  // ← 追加：if文の閉じ括弧
+    } catch (error) {  // ← これで正しくtry-catchになる
         console.error(`Failed to load map.sh for ${version}:`, error);
-        const key = (version && version.startsWith('19')) ? '19' : 'new';
+        const key = (version && version.startsWith('19.')) ? '19' : 'new';
         mapShCache[key] = '';
     }
 }
