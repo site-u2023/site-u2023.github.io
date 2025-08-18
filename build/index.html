@@ -2598,7 +2598,7 @@ function handleDeviceSearch(e) {
     const matches = app.devices.filter(device => {
         const title = getDeviceTitle(device).toLowerCase();
         return title.includes(query) || device.id.toLowerCase().includes(query);
-    }).slice(0, 10);
+    });
 
     showAutocomplete(matches);
 }
