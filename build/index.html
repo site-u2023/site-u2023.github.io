@@ -4094,30 +4094,45 @@ function syncTextareaFromBoxes() {
     const ta = document.getElementById('asu-packages');
     if (!ta) return;
 
-    // 前回の追加パッケージを記録から取得
+    // 前回記録した追加パッケージ
     const prevExtras = (ta.dataset.extrasPrev || '').trim().split(/\s+/).filter(Boolean);
     const prevExtrasSet = new Set(prevExtras);
 
-    // 現在の asu-packages 内容からテンプレート部分を抽出（前回の extras を除いた残り）
+    // 現在の asu-packages に入っている全パッケージ
     const currentTokens = (ta.value || '').trim().split(/\s+/).filter(Boolean);
+
+    // 前回 extras を除外 → テンプレ部分として保持
     const templateNow = currentTokens.filter(tok => !prevExtrasSet.has(tok));
 
-    // 今回の入力欄から追加パッケージ一覧を生成
+    // 今回 UI の検索ボックス群から拾った追加パッケージ一覧
     const extras = Array.from(document.querySelectorAll('#package-search-autocomplete input.package-search, #package-search'))
         .map(el => (el && typeof el.value === 'string') ? el.value.trim() : '')
         .filter(Boolean);
 
-    // テンプレート＋追加パッケージを順序通りにマージしつつ重複排除
+    // テンプレ + 新しい extras を順番通りに重複なく結合
     const seen = new Set();
     const merged = [];
-    templateNow.forEach(tok => { if (!seen.has(tok)) { seen.add(tok); merged.push(tok); } });
-    extras.forEach(tok => { if (!seen.has(tok)) { seen.add(tok); merged.push(tok); } });
 
-    // textarea とデータ属性を更新
+    templateNow.forEach(tok => {
+        if (!seen.has(tok)) {
+            seen.add(tok);
+            merged.push(tok);
+        }
+    });
+
+    extras.forEach(tok => {
+        if (!seen.has(tok)) {
+            seen.add(tok);
+            merged.push(tok);
+        }
+    });
+
+    // テキストエリア更新
     ta.value = merged.join(' ');
+    // 今回の extras を記録
     ta.dataset.extrasPrev = extras.join(' ');
 
-    // 他欄と同様にテンプレ＆パッケージ一元更新
+    // テンプレと追加をまとめて再反映
     if (typeof refreshTemplateAndPackages === 'function') {
         refreshTemplateAndPackages();
     }
