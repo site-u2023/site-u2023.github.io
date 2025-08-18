@@ -3985,6 +3985,11 @@ function parsePackagesText(text, source) {
     }
 
     if (pkgInput) {
+        // class付与して全欄共通セレクタで拾えるようにする
+        if (!pkgInput.classList.contains('package-search')) {
+            pkgInput.classList.add('package-search');
+        }
+
         pkgInput.addEventListener('input', function(e) {
             clearTimeout(pkgSearchTimer);
             const query = e.target.value.trim().toLowerCase();
@@ -4006,7 +4011,7 @@ function parsePackagesText(text, source) {
             }, 200);
         });
 
-        // 空にしたら削除処理（順不同・最後の1つは残す）
+        // 順不同・最後の1つは残す
         pkgInput.addEventListener('change', function() {
             handleBoxRemoval(pkgInput);
         });
@@ -4035,7 +4040,6 @@ function showPackageAutocomplete(matches, inputEl) {
             inputEl.value = name;
             hidePackageAutocomplete();
             syncTextareaFromBoxes();
-            // 空欄が無ければ次の欄を生成
             if (!document.querySelector('#package-search-autocomplete input[value=""]')) {
                 createExtraPackageBox();
             }
@@ -4055,9 +4059,8 @@ function createExtraPackageBox() {
     newInput.autocomplete = 'off';
     newInput.spellcheck = false;
     newInput.autocapitalize = 'off';
-    newInput.dataset.extra = '1'; // 追加欄フラグ
+    newInput.dataset.extra = '1';
 
-    // イベント紐付け（元と同じ動き）
     let timer;
     newInput.addEventListener('input', function() {
         clearTimeout(timer);
@@ -4080,7 +4083,7 @@ function createExtraPackageBox() {
         }, 200);
     });
 
-    // 空にしたら削除処理（順不同・最後の1つは残す）
+    // 順不同・最後の1つは残す
     newInput.addEventListener('change', function() {
         const allInputs = document.querySelectorAll('#package-search-autocomplete input.package-search');
         if (!this.value.trim() && allInputs.length > 1) {
