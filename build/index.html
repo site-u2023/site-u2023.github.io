@@ -2541,6 +2541,13 @@ function updateVersionSelect() {
 
 async function handleVersionChange(e) {
     app.selectedVersion = e.target.value;
+    
+    // 現在選択されているデバイス情報を保存
+    const previousDevice = app.selectedDevice;
+    const previousDeviceTitle = previousDevice ? getDeviceTitle(previousDevice) : null;
+    const previousInputValue = document.getElementById('models').value;
+    
+    // 一時的にクリア
     app.selectedDevice = null;
     hideDeviceInfo();
     
@@ -2550,6 +2557,37 @@ async function handleVersionChange(e) {
     }
     
     await loadDevices();
+    
+    // 同じデバイスが新しいバージョンにも存在するかチェック
+    if (previousDevice && app.devices.length > 0) {
+        // 1. まず同じターゲットとIDで完全一致を探す
+        let matchedDevice = app.devices.find(device => 
+            device.target === previousDevice.target && 
+            device.id === previousDevice.id
+        );
+        
+        // 2. 完全一致がない場合は、デバイス名（タイトル）で検索
+        if (!matchedDevice && previousDeviceTitle) {
+            matchedDevice = app.devices.find(device => 
+                getDeviceTitle(device) === previousDeviceTitle
+            );
+        }
+        
+        // 3. 一致するデバイスが見つかった場合は自動選択
+        if (matchedDevice) {
+            app.selectedDevice = matchedDevice;
+            document.getElementById('models').value = getDeviceTitle(matchedDevice);
+            // デバイス情報を即座にロード
+            loadDeviceProfile(matchedDevice);
+            console.log(`Device maintained after version change: ${getDeviceTitle(matchedDevice)}`);
+        } else {
+            // 一致するデバイスが見つからない場合は入力値だけ復元
+            if (previousInputValue) {
+                document.getElementById('models').value = previousInputValue;
+                console.log(`Device not found in new version, input value restored: ${previousInputValue}`);
+            }
+        }
+    }
 }
 
 // ==================== デバイス管理 ====================
