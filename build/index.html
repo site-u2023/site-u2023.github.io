@@ -2587,6 +2587,7 @@ async function loadDevices() {
     }
 }
 
+// After
 function handleDeviceSearch(e) {
     const query = e.target.value.toLowerCase();
 
@@ -2595,12 +2596,23 @@ function handleDeviceSearch(e) {
         return;
     }
 
-    const matches = app.devices.filter(device => {
-        const title = getDeviceTitle(device).toLowerCase();
-        return title.includes(query) || device.id.toLowerCase().includes(query);
-    });
+    const exact = [];
+    const others = [];
 
-    showAutocomplete(matches);
+    // 元配列順を維持しつつ、完全一致を先頭に
+    for (const device of app.devices) {
+        const title = getDeviceTitle(device);
+        const lt = title.toLowerCase();
+        const id = device.id.toLowerCase();
+
+        if (lt === query || id === query) {
+            exact.push(device);
+        } else if (lt.includes(query) || id.includes(query)) {
+            others.push(device);
+        }
+    }
+
+    showAutocomplete(exact.concat(others));
 }
 
 function getDeviceTitle(device) {
