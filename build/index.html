@@ -3969,6 +3969,7 @@ function parsePackagesText(text, source) {
 }
     
 // ==================== パッケージ入力ボックス ====================
+// ==================== パッケージ入力ボックス ====================
 (function() {
     const pkgInput = document.getElementById('package-search');
     let pkgSearchTimer;
@@ -4130,7 +4131,16 @@ function syncTextareaFromBoxes() {
     });
 
     // テキストエリア更新
-    ta.value = merg
+    ta.value = merged.join(' ');
+    
+    // 今回の検索パッケージを記録（次回の差分計算用）
+    ta.dataset.searchPackages = searchPackages.join(' ');
+
+    // テンプレートとパッケージの反映（i18n整理含む）
+    if (typeof refreshTemplateAndPackages === 'function') {
+        refreshTemplateAndPackages();
+    }
+}
 // ---------------------------------------------------------!!
 // ---------------------------------------------------------!!
 
