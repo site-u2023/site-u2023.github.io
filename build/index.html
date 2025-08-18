@@ -2501,36 +2501,13 @@ function handlePackageSelection(e) {
 }
     
 function updatePackageListFromSelector() {
-    const packagesTextarea = document.getElementById('asu-packages');
-    let currentPackages = split(packagesTextarea.value);
-    
-    // グラフィカルセレクターで管理するパッケージのリスト
-    const selectorPackages = [];
-    document.querySelectorAll('.package-selector-checkbox').forEach(checkbox => {
-        const pkgName = checkbox.getAttribute('data-package');
-        if (pkgName) {
-            selectorPackages.push(pkgName);
-        }
+    const checkedPkgs = [];
+    document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
+        const n = cb.getAttribute('data-package');
+        if (n) checkedPkgs.push(n);
     });
-    
-    // 既存のパッケージから、セレクター管理のものを完全一致で削除
-    currentPackages = currentPackages.filter(pkg => !selectorPackages.includes(pkg));
-    
-    // チェックされているパッケージを追加
-    document.querySelectorAll('.package-selector-checkbox:checked').forEach(checkbox => {
-        const pkgName = checkbox.getAttribute('data-package');
-        if (pkgName) {
-            currentPackages.push(pkgName);
-        }
-    });
-
-    // 重複排除
-    currentPackages = Array.from(new Set(currentPackages));
-    
-    packagesTextarea.value = currentPackages.join(' ');
-    
-    // パッケージとテンプレの一元反映
-    refreshTemplateAndPackages();
+    // 終点ロジックに集約
+    syncTemplateAndPackages({ trigger: 'selector', updatedPackages: checkedPkgs });
 }
 
 // ==================== バージョン管理 ====================
@@ -2832,14 +2809,10 @@ async function handleAsuDetailsToggle(e) {
 
 // ==================== 接続設定変更反映関数 ====================
 function applyConnectionSettingsChange() {
-    // 表示更新
     updateGuaSectionVisibility();
-    // API値の適用（現在の接続種別を渡す）
     applyInitialsFromApi(document.querySelector('input[name="connectionType"]:checked')?.value || '');
-    // 必要パッケージの更新
-    updateRequiredPackages();
-    // パッケージとテンプレの一元反映
-    refreshTemplateAndPackages();
+    // 終点ロジックへ
+    syncTemplateAndPackages({ trigger: 'connection-change' });
 }
 
 // ==================== 接続設定ハンドラー ====================
@@ -3467,6 +3440,33 @@ function applyInitialsFromApi(type) {
     }
 }
 
+// === 新規追加：全入力経路を収束させる終点ロジック ===
+function syncTemplateAndPackages(opts = {}) {
+    const textarea = document.getElementById('asu-packages');
+    let pkgList = split(textarea.value);
+
+    // 外部からの更新分をマージ
+    if (Array.isArray(opts.updatedPackages)) {
+        pkgList = mergeUnique(pkgList, opts.updatedPackages);
+    }
+    textarea.value = pkgList.join(' ');
+
+    // 必須パッケージ追加 + i18n整理
+    updateRequiredPackages();
+    asuCollectPackages();
+
+    // テンプレはGUI開状態のみ再生成
+    if (document.getElementById('use-aios-config-details').open) {
+        updateConfiguredTemplate();
+    }
+}
+
+function mergeUnique(base, extra) {
+    const set = new Set(base);
+    (extra || []).forEach(p => set.add(p));
+    return Array.from(set);
+}
+        
 function refreshTemplateAndPackages() {
     // 必要パッケージの更新（map, ds-lite等）
     updateRequiredPackages();
@@ -4092,64 +4092,18 @@ function createExtraPackageBox() {
 }
 
 function syncTextareaFromBoxes() {
-    const ta = document.getElementById('asu-packages');
-    if (!ta) return;
-
-    // 前回記録した追加パッケージ
-    const prevExtras = (ta.dataset.extrasPrev || '').trim().split(/\s+/).filter(Boolean);
-    const prevExtrasSet = new Set(prevExtras);
-
-    // 現在の asu-packages に入っている全パッケージ
-    const currentTokens = (ta.value || '').trim().split(/\s+/).filter(Boolean);
-
-    // 前回 extras を除外 → テンプレ部分として保持
-    const templateNow = currentTokens.filter(tok => !prevExtrasSet.has(tok));
-
-    // 今回 UI の検索ボックス群から拾った追加パッケージ一覧（#package-searchも含める）
     const extras = [];
-    
-    // メインの検索ボックス
     const mainSearch = document.getElementById('package-search');
     if (mainSearch && mainSearch.value.trim()) {
         extras.push(mainSearch.value.trim());
     }
-    
-    // 追加の検索ボックス
     document.querySelectorAll('#package-search-autocomplete input.package-search').forEach(el => {
         const val = el.value.trim();
         if (val) extras.push(val);
     });
-
-    // テンプレ + 新しい extras を順番通りに重複なく結合
-    const seen = new Set();
-    const merged = [];
-
-    templateNow.forEach(tok => {
-        if (!seen.has(tok)) {
-            seen.add(tok);
-            merged.push(tok);
-        }
-    });
-
-    extras.forEach(tok => {
-        if (!seen.has(tok)) {
-            seen.add(tok);
-            merged.push(tok);
-        }
-    });
-
-    // テキストエリア更新
-    ta.value = merged.join(' ');
-    // 今回の extras を記録
-    ta.dataset.extrasPrev = extras.join(' ');
-
-    // テンプレと追加をまとめて再反映
-    if (typeof refreshTemplateAndPackages === 'function') {
-        refreshTemplateAndPackages();
-    }
+    // 終点ロジックへ
+    syncTemplateAndPackages({ trigger: 'manual', updatedPackages: extras });
 }
-// ---------------------------------------------------------!!
-// ---------------------------------------------------------!!
 
 function createExtraPackageBox() {
     const host = document.getElementById('package-search-autocomplete');
