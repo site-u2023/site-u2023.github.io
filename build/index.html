@@ -2041,7 +2041,8 @@ function asuI18nDB(lang) {
     return result;
 }
 
-function asuCollectPackages() {
+// ==================== i18nパッケージ関数 ====================
+ function asuCollectPackages() {
   const lang = document.getElementById('aios-language').value?.trim() || 'en';
   const norm = normalizeLang(lang);
   const db = asuI18nDB(lang);
@@ -2089,38 +2090,38 @@ function asuCollectPackages() {
   };
 
   // 5) 非英語のみ、基本 i18n を追加
-  ['base', 'opkg', 'firewall'].forEach(k => (db[k] || []).forEach(add));
+  if (norm) { // 英語以外の場合のみ
+    ['base', 'opkg', 'firewall'].forEach(k => (db[k] || []).forEach(add));
+  }
 
-  // 6) i18n 対象キー（セレクターと手打ちの両方から抽出）
-  const keys = new Set();
-
-  // セレクター選択中のパッケージからキー抽出
-  document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
-    const names = cb.getAttribute('data-package')?.split(/\s+/) || [];
-    names.forEach(pkg => {
+  // 6) 全てのluci-app-xxxパッケージから動的にi18nパッケージを生成
+  if (norm) { // 英語以外の場合のみ
+    baseSet.forEach(pkg => {
+      // luci-app-xxx形式のパッケージを検出
       const m = pkg.match(/^luci-app-(.+)$/);
-      const key = m ? m[1] : pkg;
-      if (db[key]) keys.add(key);
+      if (m) {
+        const key = m[1];
+        const i18nPkg = `luci-i18n-${key}-${norm}`;
+        
+        // デバイスパッケージリストに存在するか確認（オプション）
+        // 存在チェックを入れる場合はここでapp.devicePackagesを参照
+        // const exists = app.devicePackages && app.devicePackages.some(p => 
+        //   (typeof p === 'string' ? p : p.name) === i18nPkg
+        // );
+        // if (exists) add(i18nPkg);
+        
+        // または存在チェックなしで追加（OpenWrtが自動的に無視する）
+        add(i18nPkg);
+      }
     });
-  });
-
-  // 手動入力からキー抽出（luci-app- と素の両対応）
-  current.forEach(pkg => {
-    if (pkg.startsWith('luci-i18n-')) return;
-    const m = pkg.match(/^luci-app-(.+)$/);
-    const key = m ? m[1] : pkg;
-    if (db[key]) keys.add(key);
-  });
-
-  // 7) 現在言語の i18n のみ追加（英語は何も追加しない）
-  keys.forEach(k => (db[k] || []).forEach(add));
+  }
 
   // 8) 最終重複排除
   current = Array.from(new Set(current));
 
   textarea.value = current.join(' ');
 }
-            
+        
 // ==================== map.sh関連 ====================
 async function loadMapShForVersion(version) {
     try {
