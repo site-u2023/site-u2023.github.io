@@ -299,7 +299,7 @@
         margin-top: 1rem;
     }
 
-    .aios-config h5 {
+    .aios-config h4 {
         margin: 1rem 0 0.75rem 0;
         padding: 0.75rem 1rem;
         background-color: #fff;
@@ -309,7 +309,7 @@
         font-weight: 500;
     }
 
-    .aios-config h5:first-child {
+    .aios-config h4:first-child {
         margin-top: 0;
     }
     
@@ -361,6 +361,13 @@
         display: none;
     }
 
+    h5.section-title {
+        font-size: 1rem;
+        font-weight: 500;
+        margin-bottom: 0.75rem;
+        color: #495057;
+    }
+    
     .text-muted {
         color: #6c757d;
     }
@@ -404,7 +411,7 @@
         border-radius: 0.25rem;
     }
 
-    .package-category h6 {
+    .package-category h4 {
         margin-top: 0;
         margin-bottom: 0.5rem;
         font-size: 1.1rem;
@@ -665,7 +672,7 @@
             border-color: #444;
         }
 
-        .aios-config h5 {
+        .aios-config h4 {
             background-color: #252528;
             border-color: #444;
             color: #d0d0d0;
@@ -676,7 +683,7 @@
             border-color: #444;
         }
         
-        .package-category h6 {
+        .package-category h4 {
             color: #d0d0d0;
             border-color: #444;
         }
@@ -684,6 +691,10 @@
         .conditional-section {
             background-color: #313135 !important;
             border-color: #444 !important;
+        }
+
+        h5.section-title {
+            color: #d0d0d0;
         }
         
         #asu-stderr,
@@ -2397,7 +2408,7 @@ function generatePackageSelector() {
         const categoryDiv = document.createElement('div');
         categoryDiv.className = 'package-category';
 
-        const categoryTitle = document.createElement('h6');
+        const categoryTitle = document.createElement('h4');
         categoryTitle.textContent = category.name;
         categoryDiv.appendChild(categoryTitle);
 
