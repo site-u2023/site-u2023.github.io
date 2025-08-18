@@ -3808,65 +3808,49 @@ function showDownloadLinks(images, fullStatus, requestHash) {
     }
 }
 
-// ★パッケージインデックス取得（device_packages_url は廃止）
-async function fetchDevicePackages() {
-    app.devicePackages = [];
-    if (!app.selectedDevice || !app.selectedVersion) return;
+    async function fetchDevicePackages() {
+        app.devicePackages = [];
+        if (!app.selectedDevice || !app.selectedVersion) return;
 
-    const version = app.selectedVersion;
-    const targetPath = app.selectedDevice.target; // mediatek/filogic 形式
+        const version = app.selectedVersion;
+        const targetPath = app.selectedDevice.target;
+        const basePath = config.image_urls[version].replace(/\/$/, '');
+        const profilesUrl = `${basePath}/targets/${targetPath}/profiles.json`;
 
-    // profiles.json の URL を config.image_urls[version] 基点で生成
-    const basePath = config.image_urls[version].replace(/\/$/, '');
-    const profilesUrl = `${basePath}/targets/${targetPath}/profiles.json`;
-
-    let arch;
-    try {
-        const res = await fetch(profilesUrl);
-        if (!res.ok) throw new Error(`profiles.json HTTP ${res.status}`);
-        const meta = await res.json();
-        arch = meta.arch_packages;
-        if (!arch) throw new Error("profiles.json に arch_packages がありません");
-    } catch (e) {
-        console.error("arch_packages 取得失敗:", e);
-        return;
-    }
-
-    // SNAPSHOT の場合は kmods/<kernel>/packages に存在する構造に対応
-    let kernel;  
-    if (version && version.includes('SNAPSHOT')) {
+        let arch;
         try {
-            console.log('[fetchDevicePackages] SNAPSHOT 判定OK:', version);
+            const res = await fetch(profilesUrl);
+            if (!res.ok) throw new Error(`profiles.json HTTP ${res.status}`);
+            const meta = await res.json();
+            arch = meta.arch_packages;
+            if (!arch) throw new Error("profiles.json に arch_packages がありません");
+        } catch (e) {
+            console.error("arch_packages 取得失敗:", e);
+            return;
+        }
 
-            const verUrl = `${basePath}/targets/${targetPath}/version.buildinfo`;
-            console.log('[fetchDevicePackages] version.buildinfo URL:', verUrl);
+        let kernel;
+        if (version.includes('SNAPSHOT')) {
+            try {
+                const verUrl = `${basePath}/targets/${targetPath}/version.buildinfo`;
+                const verRes = await fetch(verUrl, { mode: 'cors' });
+                if (!verRes.ok) throw new Error(`version.buildinfo HTTP ${verRes.status}`);
 
-            const verRes = await fetch(verUrl, { mode: 'cors' });
-            if (!verRes.ok) throw new Error(`version.buildinfo HTTP ${verRes.status}`);
+                const verText = await verRes.text();
+                const match = verText.match(
+                    /^(?:LINUX_VERSION(?:-[^\s=]+)?|KERNEL_PATCHVER|KERNEL_VER|kernel)\s*=\s*([0-9][^\s]*)$/mi
+                );
+                if (!match) throw new Error('version.buildinfo に kernel バージョン行が見つかりません');
 
-            const verText = await verRes.text();
-
-            // まずは生ログをすべて出力して現物確認
-            console.log('[fetchDevicePackages] version.buildinfo 全文:\n', verText);
-
-            // 複数パターンに対応（サフィックスや rc を含む形式・KERNEL_PATCHVER も許容、大文字小文字無視）
-            const match = verText.match(
-                /^(?:LINUX_VERSION(?:-[^\s=]+)?|KERNEL_PATCHVER|KERNEL_VER|kernel)\s*=\s*([0-9][^\s]*)$/mi
-            );
-
-            if (match) {
                 kernel = match[1].trim();
-                console.log('[fetchDevicePackages] kernel バージョン取得:', kernel);
-                console.log(
-                    '[fetchDevicePackages] kmods パス:',
+                console.log('[fetchDevicePackages] kernel:', kernel);
+                console.log('[fetchDevicePackages] kmods パス:',
                     `${basePath}/targets/${targetPath}/kmods/${kernel}/packages/Packages`
                 );
-            } else {
-                throw new Error('version.buildinfo に kernel バージョン行が見つかりません');
+            } catch (e) {
+                console.error('[fetchDevicePackages] kernel バージョン取得失敗:', e);
+                return;
             }
-        } catch (e) {
-            console.error('[fetchDevicePackages] kernel バージョン取得失敗:', e);
-            return; // フォールバックせず終了して原因特定を優先
         }
     }
 
