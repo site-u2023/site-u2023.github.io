@@ -22,6 +22,19 @@
         color: #000;
     }
 
+    /* PCブラウザ向けIME抑止（対応ブラウザのみ） */
+    #models,
+    #package-search,
+    #package-search-autocomplete input.package-search {
+        ime-mode: disabled;
+    }
+
+    /* 公式互換のオートコンプリート */
+    #models-autocomplete {
+        display: flex;
+        padding-top: 0;
+    }
+    
     .container {
         max-width: 720px;
         margin: 0 auto;
