@@ -1306,11 +1306,6 @@ if [ -n "\${mape_br}" ] && [ -n "\${mape_ealen}" ]; then
     cp -p /etc/config/firewall /etc/config/firewall.\${MAP_NAME}.bak 2>/dev/null
     cp -p /lib/netifd/proto/map.sh /lib/netifd/proto/map.sh.bak 2>/dev/null
     
-    # Install map.sh (WEB side embeds content here)
-    cat > /lib/netifd/proto/map.sh << 'MAP_SH_EOF'
-\${map_sh_content}
-MAP_SH_EOF
-    
     # Disable WAN/WAN6
     uci set network.wan.disabled='1'
     uci set network.wan.auto='0'
@@ -1358,6 +1353,12 @@ MAP_SH_EOF
     uci add_list firewall.@zone[1].network="\${MAP6_NAME}"
     uci set firewall.@zone[1].masq='1'
     uci set firewall.@zone[1].mtu_fix='1'
+
+    # Install map.sh (WEB side embeds content here)
+    cat > /lib/netifd/proto/map.sh << 'MAP_SH_EOF'
+\${map_sh_content}
+MAP_SH_EOF
+
 fi
 
 # MAP-E GUA mode settings
