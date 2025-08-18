@@ -801,8 +801,7 @@
                 <!-- setup.sh設定セクション -->
                 <div class="aios-section">
                     <details id="use-aios-config-details">
-                        <h3>Script to run on first boot (uci-defaults)</h3>
-                        <details id="use-aios-config-details" open>
+                        <summary>Script to run on first boot (uci-defaults)</summary>
                         
                         <div id="aios-config">
                             <h4>Basic Configuration</h4>
@@ -1111,14 +1110,14 @@
                             <label for="uci-defaults-content" style="display: none;">Scripts</label>
                             <textarea id="uci-defaults-content" class="form-control" rows="6" placeholder="#!/bin/sh&#10;&#10;# Your custom script here&#10;# This area is for manual editing - configuration wizard will not overwrite your changes"></textarea>
                         </div>
-                    </div>
+                    </details>  <!-- use-aios-config-details を閉じる -->
                 </div>
 
                 <a id="request-build" href="javascript:buildAsuRequest()" class="custom-link">
                     <span></span>
                     <span>REQUEST BUILD</span>
                 </a>
-            </details>
+            </details>  <!-- asu を閉じる -->
         </div>
 
         <!-- プログレス表示 -->
