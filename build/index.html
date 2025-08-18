@@ -3194,7 +3194,7 @@ function setScriptVar(content, key, value, active) {
 }
 
 // ==================== テンプレート設定 ====================
-function updateConfiguredTemplate() {  // async削除
+async function updateConfiguredTemplate() {
     try {
         let content = document.getElementById('uci-defaults-content').value;
 
@@ -3214,7 +3214,7 @@ function updateConfiguredTemplate() {  // async削除
     }
 }
 
-function customizeSetupScript(content, config, apiInfo, selectedPackages) {
+fasync function customizeSetupScript(content, config, apiInfo, selectedPackages) {
     let customized = content;
 
     // OpenWrt version flags
