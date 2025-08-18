@@ -684,27 +684,6 @@
         #image-link {
             filter: invert(100%) sepia(9%) saturate(261%) hue-rotate(281deg) brightness(117%) contrast(100%);
         }
-
-        /* === パッケージタグ＋削除ボタン === */
-        .package-tag {
-            display: inline-flex;
-            align-items: center;
-            background: #f0f0f0;
-            border-radius: 4px;
-            padding: 2px 6px;
-            margin: 2px;
-            font-size: 0.9em;
-        }
-
-        .remove-btn {
-            margin-left: 4px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-
-        .remove-btn:hover {
-            color: red;
-        }
     } /* close @media (prefers-color-scheme: dark) */
 </style>
 
@@ -2059,22 +2038,6 @@ function asuI18nDB(lang) {
     });
     
     return result;
-}
-
-function addPackageTag(packageName) {
-    const container = document.getElementById('package-tags');
-
-    const tag = document.createElement('div');
-    tag.className = 'package-tag';
-    tag.textContent = packageName;
-
-    const removeBtn = document.createElement('span');
-    removeBtn.className = 'remove-btn';
-    removeBtn.textContent = '×';  // シンプルなバツ
-    removeBtn.onclick = () => tag.remove();
-
-    tag.appendChild(removeBtn);
-    container.appendChild(tag);
 }
         
 // ==================== i18nパッケージ関数 ====================
