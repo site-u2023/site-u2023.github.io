@@ -1969,419 +1969,7 @@ function waitForReady(ids = []) {
     });
 }
 
-// ==================== 公式互換オートコンプリート関数 ====================
-// 公式と同じ関数名・ロジック
-function match(value, patterns) {
-    // find matching ranges
-    const item = value.toUpperCase();
-    let matches = [];
-    for (const p of patterns) {
-        const i = item.indexOf(p);
-        if (i == -1) return [];
-        matches.push({ begin: i, length: p.length });
-    }
-
-    matches.sort((a, b) => a.begin > b.begin);
-
-    // merge overlapping ranges
-    let prev = null;
-    let ranges = [];
-    for (const m of matches) {
-        if (prev && m.begin <= prev.begin + prev.length) {
-            prev.length = Math.max(prev.length, m.begin + m.length - prev.begin);
-        } else {
-            ranges.push(m);
-            prev = m;
-        }
-    }
-    return ranges;
-}
-
-function setupAutocompleteList(input, items, onbegin, onend) {
-    let currentFocus = -1;
-
-    // sort numbers and other characters separately
-    const collator = new Intl.Collator(undefined, {
-        numeric: true,
-        sensitivity: "base",
-    });
-
-    items.sort(collator.compare);
-
-    input.oninput = function () {
-        onbegin();
-
-        let pattern = this.value;
-
-        // close any already open lists of autocompleted values
-        closeAllLists();
-
-        if (pattern.length === 0) {
-            return false;
-        }
-
-        if (items.includes(pattern)) {
-            closeAllLists();
-            onend(input);
-            return false;
-        }
-
-        // create a DIV element that will contain the items (values):
-        const list = document.createElement("DIV");
-        list.setAttribute("id", this.id + "-autocomplete-list");
-        list.setAttribute("class", "autocomplete-items");
-        // append the DIV element as a child of the autocomplete container:
-        this.parentNode.appendChild(list);
-
-        const patterns = split(pattern.toUpperCase());
-        let count = 0;
-        for (const item of items) {
-            const matches = match(item, patterns);
-            if (matches.length == 0) {
-                continue;
-            }
-
-            count += 1;
-            if (count >= 15) {
-                let div = document.createElement("DIV");
-                div.innerText = "...";
-                list.appendChild(div);
-                break;
-            } else {
-                let div = document.createElement("DIV");
-                // make matching letters bold:
-                let prev = 0;
-                let html = "";
-                for (const m of matches) {
-                    html += item.substr(prev, m.begin - prev);
-                    html += `<strong>${item.substr(m.begin, m.length)}</strong>`;
-                    prev = m.begin + m.length;
-                }
-                html += item.substr(prev);
-                html += `<input type="hidden" value="${item}">`;
-                div.innerHTML = html;
-
-                div.addEventListener("click", function () {
-                    // include selected value
-                    input.value = this.getElementsByTagName("input")[0].value;
-                    // close the list of autocompleted values
-                    closeAllLists();
-                    onend(input);
-                });
-
-                list.appendChild(div);
-            }
-        }
-    };
-
-    input.onkeydown = function (e) {
-        let x = document.getElementById(this.id + "-autocomplete-list");
-        if (x) x = x.getElementsByTagName("div");
-        if (e.keyCode == 40) {
-            // key down
-            currentFocus += 1;
-            // and and make the current item more visible:
-            setActive(x);
-        } else if (e.keyCode == 38) {
-            // key up
-            currentFocus -= 1;
-            // and and make the current item more visible:
-            setActive(x);
-        } else if (e.keyCode == 13) {
-            // If the ENTER key is pressed, prevent the form from being submitted,
-            e.preventDefault();
-            if (currentFocus > -1) {
-                // and simulate a click on the 'active' item:
-                if (x) x[currentFocus].click();
-            }
-        }
-    };
-
-    input.onkeyup = function (e) {
-        if (e && (e.key === "Enter" || e.keyCode === 13)) {
-            onend(input);
-        }
-    };
-
-    function setActive(xs) {
-        // a function to classify an item as 'active':
-        if (!xs) return false;
-        // start by removing the 'active' class on all items:
-        for (const x of xs) {
-            x.classList.remove("autocomplete-active");
-        }
-        if (currentFocus >= xs.length) currentFocus = 0;
-        if (currentFocus < 0) currentFocus = xs.length - 1;
-        // add class 'autocomplete-active':
-        xs[currentFocus].classList.add("autocomplete-active");
-        xs[currentFocus].setAttribute("tabindex", "0");
-    }
-
-    // ensure the input can receive focus
-    input.setAttribute("tabindex", "0");
-
-    function closeAllLists(elmnt) {
-        // close all autocomplete lists in the document,
-        // except the one passed as an argument:
-        const autocompleteItems = document.querySelectorAll(".autocomplete-items");
-        for (const x of autocompleteItems) {
-            if (elmnt != x && elmnt != input) {
-                x.parentNode.removeChild(x);
-            }
-        }
-    }
-
-    // close select list if focus is lost
-    document.addEventListener("click", (e) => {
-        closeAllLists(e.target);
-    });
-}
-
-// ==================== 公式準拠オートコンプリート ====================
-function match(value, patterns) {
-    const item = value.toUpperCase();
-    let matches = [];
-    for (const p of patterns) {
-        const i = item.indexOf(p);
-        if (i == -1) return [];
-        matches.push({ begin: i, length: p.length });
-    }
-    matches.sort((a, b) => a.begin > b.begin);
-    let prev = null;
-    let ranges = [];
-    for (const m of matches) {
-        if (prev && m.begin <= prev.begin + prev.length) {
-            prev.length = Math.max(prev.length, m.begin + m.length - prev.begin);
-        } else {
-            ranges.push(m);
-            prev = m;
-        }
-    }
-    return ranges;
-}
-
-function setupAutocompleteList(input, items, onbegin, onend) {
-    let currentFocus = -1;
-    const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
-    items.sort(collator.compare);
-
-    input.oninput = function () {
-        onbegin();
-        let pattern = this.value;
-        closeAllLists();
-        if (pattern.length === 0) return false;
-        if (items.includes(pattern)) {
-            closeAllLists();
-            onend(input);
-            return false;
-        }
-
-        const list = document.createElement("DIV");
-        list.setAttribute("id", this.id + "-autocomplete-list");
-        list.setAttribute("class", "autocomplete-items");
-        this.parentNode.appendChild(list);
-
-        const patterns = split(pattern.toUpperCase());
-        let count = 0;
-        for (const item of items) {
-            const matches = match(item, patterns);
-            if (matches.length == 0) continue;
-            count += 1;
-            if (count >= 15) {
-                let div = document.createElement("DIV");
-                div.innerText = "...";
-                list.appendChild(div);
-                break;
-            } else {
-                let div = document.createElement("DIV");
-                let prev = 0;
-                let html = "";
-                for (const m of matches) {
-                    html += item.substr(prev, m.begin - prev);
-                    html += `<strong>${item.substr(m.begin, m.length)}</strong>`;
-                    prev = m.begin + m.length;
-                }
-                html += item.substr(prev);
-                html += `<input type="hidden" value="${item}">`;
-                div.innerHTML = html;
-                div.addEventListener("click", function () {
-                    input.value = this.getElementsByTagName("input")[0].value;
-                    closeAllLists();
-                    onend(input);
-                });
-                list.appendChild(div);
-            }
-        }
-    };
-
-    function closeAllLists(elmnt) {
-        const autocompleteItems = document.querySelectorAll(".autocomplete-items");
-        for (const x of autocompleteItems) {
-            if (elmnt != x && elmnt != input) {
-                x.parentNode.removeChild(x);
-            }
-        }
-    }
-
-    input.onkeydown = function (e) {
-        let x = document.getElementById(this.id + "-autocomplete-list");
-        if (x) x = x.getElementsByTagName("div");
-        if (e.keyCode == 40) {
-            currentFocus += 1;
-            setActive(x);
-        } else if (e.keyCode == 38) {
-            currentFocus -= 1;
-            setActive(x);
-        } else if (e.keyCode == 13) {
-            e.preventDefault();
-            if (currentFocus > -1) {
-                if (x) x[currentFocus].click();
-            }
-        }
-    };
-
-    function setActive(xs) {
-        if (!xs) return false;
-        for (const x of xs) {
-            x.classList.remove("autocomplete-active");
-        }
-        if (currentFocus >= xs.length) currentFocus = 0;
-        if (currentFocus < 0) currentFocus = xs.length - 1;
-        xs[currentFocus].classList.add("autocomplete-active");
-    }
-
-    document.addEventListener("click", (e) => {
-        closeAllLists(e.target);
-    });
-}
-
 // ==================== 公式互換デバイス管理関数 ====================
-// 公式と同じ関数名・ロジックでデバイス設定
-function setModel(target, id) {
-function getDeviceTitle(device) {
-    if (device.titles && device.titles.length > 0) {
-        return device.titles[0].title || device.id;
-    }
-    return device.id;
-}
-
-function match(value, patterns) {
-    const item = value.toUpperCase();
-    let matches = [];
-    for (const p of patterns) {
-        const i = item.indexOf(p);
-        if (i == -1) return [];
-        matches.push({ begin: i, length: p.length });
-    }
-    matches.sort((a, b) => a.begin > b.begin);
-    let prev = null;
-    let ranges = [];
-    for (const m of matches) {
-        if (prev && m.begin <= prev.begin + prev.length) {
-            prev.length = Math.max(prev.length, m.begin + m.length - prev.begin);
-        } else {
-            ranges.push(m);
-            prev = m;
-        }
-    }
-    return ranges;
-}
-
-function setupAutocompleteList(input, items, onbegin, onend) {
-    let currentFocus = -1;
-    const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
-    items.sort(collator.compare);
-
-    input.oninput = function () {
-        onbegin();
-        let pattern = this.value;
-        closeAllLists();
-        if (pattern.length === 0) return false;
-        if (items.includes(pattern)) {
-            closeAllLists();
-            onend(input);
-            return false;
-        }
-
-        const list = document.createElement("DIV");
-        list.setAttribute("id", this.id + "-autocomplete-list");
-        list.setAttribute("class", "autocomplete-items");
-        this.parentNode.appendChild(list);
-
-        const patterns = split(pattern.toUpperCase());
-        let count = 0;
-        for (const item of items) {
-            const matches = match(item, patterns);
-            if (matches.length == 0) continue;
-            count += 1;
-            if (count >= 15) {
-                let div = document.createElement("DIV");
-                div.innerText = "...";
-                list.appendChild(div);
-                break;
-            } else {
-                let div = document.createElement("DIV");
-                let prev = 0;
-                let html = "";
-                for (const m of matches) {
-                    html += item.substr(prev, m.begin - prev);
-                    html += `<strong>${item.substr(m.begin, m.length)}</strong>`;
-                    prev = m.begin + m.length;
-                }
-                html += item.substr(prev);
-                html += `<input type="hidden" value="${item}">`;
-                div.innerHTML = html;
-                div.addEventListener("click", function () {
-                    input.value = this.getElementsByTagName("input")[0].value;
-                    closeAllLists();
-                    onend(input);
-                });
-                list.appendChild(div);
-            }
-        }
-    };
-
-    function closeAllLists(elmnt) {
-        const autocompleteItems = document.querySelectorAll(".autocomplete-items");
-        for (const x of autocompleteItems) {
-            if (elmnt != x && elmnt != input) {
-                x.parentNode.removeChild(x);
-            }
-        }
-    }
-
-    input.onkeydown = function (e) {
-        let x = document.getElementById(this.id + "-autocomplete-list");
-        if (x) x = x.getElementsByTagName("div");
-        if (e.keyCode == 40) {
-            currentFocus += 1;
-            setActive(x);
-        } else if (e.keyCode == 38) {
-            currentFocus -= 1;
-            setActive(x);
-        } else if (e.keyCode == 13) {
-            e.preventDefault();
-            if (currentFocus > -1) {
-                if (x) x[currentFocus].click();
-            }
-        }
-    };
-
-    function setActive(xs) {
-        if (!xs) return false;
-        for (const x of xs) {
-            x.classList.remove("autocomplete-active");
-        }
-        if (currentFocus >= xs.length) currentFocus = 0;
-        if (currentFocus < 0) currentFocus = xs.length - 1;
-        xs[currentFocus].classList.add("autocomplete-active");
-    }
-
-    document.addEventListener("click", (e) => {
-        closeAllLists(e.target);
-    });
-}
-
 // 公式と同じ関数名・ロジックでデバイス設定
 function setModel(target, id) {
     if (target && id) {
@@ -2598,6 +2186,9 @@ function bindEvents() {
     
     const versionsEl = document.getElementById('versions');
     if (versionsEl) versionsEl.addEventListener('change', handleVersionChange);
+    
+    const modelsEl = document.getElementById('models');
+    if (modelsEl) modelsEl.addEventListener('input', handleDeviceSearch);
 
     const asuEl = document.getElementById('asu');
     if (asuEl) asuEl.addEventListener('toggle', handleAsuDetailsToggle);
@@ -3012,30 +2603,74 @@ async function loadDevices() {
         const response = await fetch(url);
         const data = await response.json();
 
-app.devices = data.profiles || [];
-        
-        // 公式準拠：デバイス一覧をタイトルベースに変換
-        const deviceTitles = app.devices.map(device => getDeviceTitle(device));
-        
-        // 公式準拠：オートコンプリート設定
-        setupAutocompleteList(
-            document.getElementById('models'),
-            deviceTitles,
-            () => hideDeviceInfo(),
-            (input) => {
-                const selectedTitle = input.value;
-                const selectedDevice = app.devices.find(device => 
-                    getDeviceTitle(device) === selectedTitle
-                );
-                if (selectedDevice) {
-                    selectDevice(selectedDevice);
-                }
-            }
-        );
-        
+        app.devices = data.profiles || [];
     } catch (error) {
         console.error('Failed to load devices:', error);
         app.devices = [];
+    }
+}
+
+function handleDeviceSearch(e) {
+    const query = e.target.value.toLowerCase();
+
+    if (query.length < 2) {
+        hideAutocomplete();
+        return;
+    }
+
+    const matches = app.devices.filter(device => {
+        const title = getDeviceTitle(device).toLowerCase();
+        return title.includes(query) || device.id.toLowerCase().includes(query);
+    }).slice(0, 10);
+
+    showAutocomplete(matches);
+}
+
+function getDeviceTitle(device) {
+    if (device.titles && device.titles.length > 0) {
+        return device.titles[0].title || device.id;
+    }
+    return device.id;
+}
+
+function showAutocomplete(devices) {
+    // 既存のautocomplete-itemsを削除
+    let existingContainer = document.querySelector('.autocomplete-items');
+    if (existingContainer) {
+        existingContainer.remove();
+    }
+    
+    // 新しく作成
+    const autocompleteDiv = document.getElementById('models-autocomplete');
+    const container = document.createElement('div');
+    container.className = 'autocomplete-items';
+    
+    if (devices.length === 0) {
+        autocompleteDiv.appendChild(container);
+        container.style.display = 'none';
+        return;
+    }
+
+    // DocumentFragmentを使用してバッチ処理
+    const fragment = document.createDocumentFragment();
+    
+    devices.forEach(device => {
+        const div = document.createElement('div');
+        div.innerHTML = `<strong>${getDeviceTitle(device)}</strong><br><small>Target: ${device.target}</small>`;
+        div.addEventListener('click', () => selectDevice(device));
+        fragment.appendChild(div);
+    });
+    
+    // 一度だけDOMに追加
+    container.appendChild(fragment);
+    autocompleteDiv.appendChild(container);
+    container.style.display = 'block';
+}
+    
+function hideAutocomplete() {
+    const items = document.querySelector('.autocomplete-items');
+    if (items) {
+        items.remove();
     }
 }
 
