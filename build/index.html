@@ -2148,17 +2148,24 @@ function asuI18nDB(lang) {
 // ==================== map.sh関連 ====================
 async function loadMapShForVersion(version) {
     try {
-        const key = (version && version.startsWith('19')) ? '19' : 'new';  // SNAPSHOT=new扱い
+        const key = (version && version.startsWith('19')) ? '19' : 'new';
         const scriptName = key === '19' ? 'map.sh.19' : 'map.sh.new';
         
         if (!mapShCache[key]) {
             const response = await fetch(`https://site-u.pages.dev/build/scripts/${scriptName}`);
             if (response.ok) {
-                mapShCache[key] = await response.text();
-                console.log(`Loaded ${scriptName} successfully`);
+                const text = await response.text();
+                if (text && text.trim().length > 0) {
+                    mapShCache[key] = text;
+                    console.log(`Loaded ${scriptName} successfully (${text.length} bytes)`);
+                } else {
+                    console.error(`${scriptName} is empty`);
+                }
             } else {
-                console.error(`Failed to load ${scriptName}`);
+                console.error(`Failed to load ${scriptName}: HTTP ${response.status}`);
             }
+        } else {
+            console.log(`Using cached ${scriptName} (${mapShCache[key].length} bytes)`);
         }
     } catch (error) {
         console.error(`Failed to load map.sh for ${version}:`, error);
@@ -2195,7 +2202,7 @@ exit 1`;
     }
     
     // ${map_sh_content}を実際の内容で置換
-    return content.replace('\\${map_sh_content}', mapShContent);
+    return content.replace('${map_sh_content}', mapShContent);
 }
         
 // ==================== イベントバインディング ====================
