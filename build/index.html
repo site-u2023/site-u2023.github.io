@@ -2153,15 +2153,13 @@ async function loadMapShForVersion(version) {
         const scriptUrl = `https://site-u.pages.dev/build/scripts/${scriptName}`;
         
         if (mapShCache[key] === undefined) {
-            console.log(`Fetching MAP-E script from: ${scriptUrl}`);
             const response = await fetch(scriptUrl);
-            console.log(`MAP-E script response status (${scriptUrl}): ${response.status}`);
             
             if (response.ok) {
                 const content = await response.text();
                 if (content && content.trim().length > 0) {
                     mapShCache[key] = content;
-                    console.log(`MAP-E script ${scriptName} loaded successfully (${content.length} bytes)`);
+                    console.log(`MAP-E script loaded from: ${scriptUrl}`);
                 } else {
                     console.error(`${scriptName} is empty from server`);
                     mapShCache[key] = '';
@@ -2180,35 +2178,29 @@ async function loadMapShForVersion(version) {
 
 // map.sh内容を埋め込む（同期版 - キャッシュから取得）
 function loadMapShContentSync(content, osVersion) {
-    // ${map_sh_content}プレースホルダーがない場合は何もしない
+    // プレースホルダーのチェック（バックスラッシュ付きで検索）
     if (!content.includes('\\${map_sh_content}')) {
         return content;
     }
-
+    
     let mapShContent = '';
     
     // OSバージョンに応じて適切なmap.shを選択
-    if (osVersion && osVersion.startsWith('19')) {
+    // 19.x系のみ '19'、それ以外（SNAPSHOT含む）は 'new'
+    if (osVersion && osVersion.startsWith('19.')) {
         mapShContent = mapShCache['19'] || '';
-        console.log('Using map.sh.19 for OpenWrt 19.x');
     } else {
         mapShContent = mapShCache['new'] || '';
-        console.log('Using map.sh.new for OpenWrt 21.02+');
     }
     
     // map.shが取得できていない場合の警告
     if (!mapShContent) {
-        console.warn('map.sh content not available, using fallback');
-        mapShContent = `#!/bin/sh
-# MAP-E script not loaded - network download required
-# This is a fallback placeholder. The actual script should be downloaded from:
-# https://site-u.pages.dev/build/scripts/map.sh.new or map.sh.19
-echo "ERROR: map.sh was not properly embedded during build" >&2
-exit 1`;
+        console.warn('map.sh content not available');
+        mapShContent = '#!/bin/sh\necho "ERROR: map.sh was not properly embedded" >&2\nexit 1';
     }
     
-    // ${map_sh_content}を実際の内容で置換
-    return content.replace('${map_sh_content}', mapShContent);
+    // バックスラッシュ付きのプレースホルダーを置換
+    return content.replace('\\${map_sh_content}', mapShContent);
 }
         
 // ==================== イベントバインディング ====================
