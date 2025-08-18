@@ -3211,7 +3211,7 @@ async function updateConfiguredTemplate() {
         const apiInfo = window.cachedApiInfo || null;  // キャッシュのみ、API呼び出し削除
 
         const selectedPackages = new Set(split(document.getElementById('asu-packages').value));
-        const customized = customizeSetupScript(content, config, apiInfo, selectedPackages);
+        const customized = await customizeSetupScript(content, config, apiInfo, selectedPackages);
         document.getElementById('uci-defaults-content').value = customized;
     } catch (error) {
         console.error('Template update error:', error);
