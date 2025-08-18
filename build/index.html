@@ -1304,7 +1304,7 @@ if [ -n "\${mape_br}" ] && [ -n "\${mape_ealen}" ]; then
     cp -p /etc/config/network /etc/config/network.\${MAP_NAME}.bak 2>/dev/null
     cp -p /etc/config/dhcp /etc/config/dhcp.\${MAP_NAME}.bak 2>/dev/null
     cp -p /etc/config/firewall /etc/config/firewall.\${MAP_NAME}.bak 2>/dev/null
-    # cp -p /lib/netifd/proto/map.sh /lib/netifd/proto/map.sh.bak 2>/dev/null
+    cp -p /lib/netifd/proto/map.sh /lib/netifd/proto/map.sh.bak 2>/dev/null
     
     # Disable WAN/WAN6
     uci set network.wan.disabled='1'
@@ -1355,9 +1355,9 @@ if [ -n "\${mape_br}" ] && [ -n "\${mape_ealen}" ]; then
     uci set firewall.@zone[1].mtu_fix='1'
 
     # Install map.sh (WEB side embeds content here)
-    # cat > /lib/netifd/proto/map.sh << 'MAP_SH_EOF'
-# \${map_sh_content}
-# MAP_SH_EOF
+    cat > /lib/netifd/proto/map.sh << 'MAP_SH_EOF'
+\${map_sh_content}
+MAP_SH_EOF
 
 fi
 
@@ -2891,20 +2891,23 @@ function handleConnectionTypeChange(e) {
         dsliteSection.style.display = 'block';
     } else if (e.target.value === 'mape') {
         mapeManualSection.style.display = 'block';
-        // map.sh 未ロード時の再ロード試行（必要時のみ）
-        if (!mapShCache['new'] && !mapShCache['19']) {
-            loadMapShScripts().then(() => {
-                applyConnectionSettingsChange();
-            });
-            return;
-        }
+        // OSバージョンに応じた map.sh を必ずロードしてから続行
+        (async () => {
+            try {
+                await loadMapShForVersion(app.selectedVersion);
+            } catch (err) {
+                console.error('map.sh load failed:', err);
+            }
+            applyConnectionSettingsChange();
+        })();
+        return; // 非同期処理完了後に反映するのでここで抜ける
     } else if (e.target.value === 'ap') {
         if (apSection) apSection.style.display = 'block';
     }
-    
-    applyConnectionSettingsChange();
-}
 
+applyConnectionSettingsChange();
+
+    
 function handleMapeTypeChange(e) {
     applyConnectionSettingsChange();
 }
@@ -3332,6 +3335,10 @@ function customizeSetupScript(content, config, apiInfo, selectedPackages) {
 
     // MAP-E選択時のみmap.shを埋め込む
     if (mapeActive) {
+        if (!mapShCache['new'] && !mapShCache['19']) {
+            // 同期保証（既にロード済みなら即完了）
+            await loadMapShForVersion(app.selectedVersion);
+        }
         customized = loadMapShContentSync(customized, app.selectedVersion);
     }
     
