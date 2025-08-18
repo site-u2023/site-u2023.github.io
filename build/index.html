@@ -3969,9 +3969,20 @@ function parsePackagesText(text, source) {
 }
     
 // ---------------------------------------------------------!!
+// ---------------------------------------------------------!!
 (function() {
     const pkgInput = document.getElementById('package-search');
     let pkgSearchTimer;
+
+    function handleBoxRemoval(inputEl) {
+        if (!inputEl.value.trim()) {
+            const allInputs = document.querySelectorAll('#package-search-autocomplete input.package-search');
+            if (allInputs.length > 1) {
+                inputEl.parentNode.removeChild(inputEl);
+            }
+            syncTextareaFromBoxes();
+        }
+    }
 
     if (pkgInput) {
         pkgInput.addEventListener('input', function(e) {
@@ -3995,49 +4006,94 @@ function parsePackagesText(text, source) {
             }, 200);
         });
 
-        // 空にしたら削除処理（追加欄用に）
         pkgInput.addEventListener('change', function() {
-            if (!pkgInput.value.trim() && pkgInput.dataset.extra === '1') {
-                pkgInput.parentNode.removeChild(pkgInput);
-                syncTextareaFromBoxes();
-            }
+            handleBoxRemoval(pkgInput);
         });
     }
-})();
 
-function hidePackageAutocomplete() {
-    const el = document.querySelector('#package-search-autocomplete .autocomplete-items');
-    if (el) el.remove();
-}
+    function createExtraPackageBox() {
+        const host = document.getElementById('package-search-autocomplete');
+        const newInput = document.createElement('input');
+        newInput.type = 'text';
+        newInput.className = 'form-control package-search';
+        newInput.placeholder = 'Type package name';
+        newInput.autocomplete = 'off';
+        newInput.spellcheck = false;
+        newInput.autocapitalize = 'off';
 
-function showPackageAutocomplete(matches, inputEl) {
-    hidePackageAutocomplete();
-    const host = document.getElementById('package-search-autocomplete');
-    if (!host) return;
+        let timer;
+        newInput.addEventListener('input', function() {
+            clearTimeout(timer);
+            const query = this.value.trim().toLowerCase();
 
-    const container = document.createElement('div');
-    container.className = 'autocomplete-items';
-
-    matches.forEach(item => {
-        const name = (typeof item === 'string') ? item : (item && item.name) || '';
-        if (!name) return;
-        const div = document.createElement('div');
-        div.textContent = name;
-        div.addEventListener('click', () => {
-            inputEl.value = name;
-            hidePackageAutocomplete();
-            syncTextareaFromBoxes();
-            // 空欄が無ければ次の欄を生成
-            if (!document.querySelector('#package-search-autocomplete input[value=""]')) {
-                createExtraPackageBox();
+            if (query.length < 2 || !Array.isArray(app.devicePackages) || app.devicePackages.length === 0) {
+                hidePackageAutocomplete();
+                return;
             }
+
+            timer = setTimeout(() => {
+                const matches = app.devicePackages
+                    .filter(pkg => {
+                        const name = (typeof pkg === 'string') ? pkg : pkg.name || '';
+                        return name.toLowerCase().includes(query);
+                    })
+                    .slice(0, 10);
+
+                showPackageAutocomplete(matches, newInput);
+            }, 200);
         });
-        container.appendChild(div);
-    });
 
-    host.appendChild(container);
-}
+        newInput.addEventListener('change', function() {
+            handleBoxRemoval(newInput);
+        });
 
+        host.appendChild(newInput);
+        newInput.focus();
+    }
+
+    function hidePackageAutocomplete() {
+        const el = document.querySelector('#package-search-autocomplete .autocomplete-items');
+        if (el) el.remove();
+    }
+
+    function showPackageAutocomplete(matches, inputEl) {
+        hidePackageAutocomplete();
+        const host = document.getElementById('package-search-autocomplete');
+        if (!host) return;
+
+        const container = document.createElement('div');
+        container.className = 'autocomplete-items';
+
+        matches.forEach(item => {
+            const name = (typeof item === 'string') ? item : (item && item.name) || '';
+            if (!name) return;
+            const div = document.createElement('div');
+            div.textContent = name;
+            div.addEventListener('click', () => {
+                inputEl.value = name;
+                hidePackageAutocomplete();
+                syncTextareaFromBoxes();
+                if (!document.querySelector('#package-search-autocomplete input.package-search[value=""]')) {
+                    createExtraPackageBox();
+                }
+            });
+            container.appendChild(div);
+        });
+
+        host.appendChild(container);
+    }
+
+    function syncTextareaFromBoxes() {
+        const allVals = Array.from(document.querySelectorAll('#package-search-autocomplete input.package-search'))
+            .map(el => el.value.trim())
+            .filter(Boolean);
+        document.getElementById('asu-packages').value = allVals.join(' ');
+        refreshTemplateAndPackages();
+    }
+})();
+// ---------------------------------------------------------!!
+// ---------------------------------------------------------!!
+        
 function createExtraPackageBox() {
     const host = document.getElementById('package-search-autocomplete');
     const newInput = document.createElement('input');
