@@ -3999,8 +3999,7 @@ function parsePackagesText(text, source) {
                     .filter(pkg => {
                         const name = (typeof pkg === 'string') ? pkg : pkg.name || '';
                         return name.toLowerCase().includes(query);
-                    })
-                    .slice(0, 10);
+                    });
 
                 showPackageAutocomplete(matches, pkgInput);
             }, 200);
@@ -4050,55 +4049,6 @@ function showPackageAutocomplete(matches, inputEl) {
     });
 
     host.appendChild(container);
-}
-
-function createExtraPackageBox() {
-    const host = document.getElementById('package-search-autocomplete');
-    const newInput = document.createElement('input');
-    newInput.type = 'text';
-    newInput.className = 'form-control package-search';
-    newInput.placeholder = 'Type package name';
-    newInput.autocomplete = 'off';
-    newInput.spellcheck = false;
-    newInput.autocapitalize = 'off';
-    newInput.dataset.extra = '1'; // 追加欄フラグ
-
-    // イベント紐付け
-    let timer;
-    newInput.addEventListener('input', function() {
-        clearTimeout(timer);
-        const query = this.value.trim().toLowerCase();
-
-        if (query.length < 2 || !Array.isArray(app.devicePackages) || app.devicePackages.length === 0) {
-            hidePackageAutocomplete();
-            return;
-        }
-
-        timer = setTimeout(() => {
-            const matches = app.devicePackages
-                .filter(pkg => {
-                    const name = (typeof pkg === 'string') ? pkg : pkg.name || '';
-                    return name.toLowerCase().includes(query);
-                })
-                .slice(0, 10);
-
-            showPackageAutocomplete(matches, newInput);
-        }, 200);
-    });
-
-    // 空にしたら削除
-    newInput.addEventListener('change', function() {
-        if (!this.value.trim()) {
-            const total = document.querySelectorAll('#package-search, #package-search-autocomplete input.package-search').length;
-            if (total > 1 && this.parentNode) {
-                this.parentNode.removeChild(this);
-            }
-            syncTextareaFromBoxes();
-        }
-    });
-
-    host.appendChild(newInput);
-    newInput.focus();
 }
 
 function syncTextareaFromBoxes() {
