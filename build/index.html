@@ -177,12 +177,6 @@
         border-radius: 0.25rem;
     }
 
-    .info h5 {
-        margin-top: 0;
-        margin-bottom: 0.5rem;
-        font-weight: 500;
-    }
-
     .asu-info {
         background-color: #d1ecf1;
         border: 1px solid #bee5eb;
@@ -204,11 +198,6 @@
     /* パッケージセクション */
     .packages {
         margin: 1.5rem 0;
-    }
-
-    .packages h4 {
-        margin-bottom: 1rem;
-        font-weight: 500;
     }
     
     /* ボタン/リンク */
@@ -297,20 +286,6 @@
 
     .aios-config {
         margin-top: 1rem;
-    }
-
-    .aios-config h5 {
-        margin: 1rem 0 0.75rem 0;
-        padding: 0.75rem 1rem;
-        background-color: #fff;
-        border: 1px solid #e9ecef;
-        border-radius: 0.25rem;
-        font-size: 1.1rem;
-        font-weight: 500;
-    }
-
-    .aios-config h5:first-child {
-        margin-top: 0;
     }
     
     #package-selector-config {
@@ -411,14 +386,16 @@
         border-radius: 0.25rem;
     }
 
-    .package-category h4 {
-        margin-top: 0;
-        margin-bottom: 0.5rem;
+/* h4タグを全部同じスタイルに統一 */
+    h4 {
+        margin-top: 1rem;
+        margin-bottom: 0.75rem;
+        padding: 0.75rem 1rem;
+        background-color: #fff;
+        border: 1px solid #e9ecef;
+        border-radius: 0.25rem;
         font-size: 1.1rem;
         font-weight: 500;
-        color: #495057;
-        border-bottom: 1px solid #e9ecef;
-        padding-bottom: 0.25rem;
     }
 
     .package-category-description {
@@ -686,7 +663,7 @@
             border-color: #444;
         }
 
-        .aios-config h5 {
+        h4 {
             background-color: #252528;
             border-color: #444;
             color: #d0d0d0;
@@ -694,11 +671,6 @@
         
         .package-category {
             background-color: #252528;
-            border-color: #444;
-        }
-        
-        .package-category h4 {
-            color: #d0d0d0;
             border-color: #444;
         }
         
