@@ -2658,12 +2658,16 @@ function selectDevice(device) {
     changeModel(device);  // changeModel内でcurrent_deviceを設定
 }
 
-// After（公式同等のURLマッピング構造を使い SNAPSHOT/Release 双方に対応）
+// 初回のみDL必須、同一デバイス＋同一OSバージョンはキャッシュ利用
+const profileCache = {};
+
 async function loadDeviceProfile(device) {
     if (!device || !device.target || !device.id) return;
     const version = app.selectedVersion;
-    const targetPath = device.target;  // mediatek/filogic のような形式
+    const targetPath = device.target;
     const profileId = device.id;
+    const cacheKey = `${version}::${targetPath}::${profileId}`;
+
     // 公式同等：version→URL マッピングを構築
     if (!config.image_urls) config.image_urls = {};
     if (!config.overview_urls) config.overview_urls = {};
@@ -2675,42 +2679,49 @@ async function loadDeviceProfile(device) {
         config.image_urls[version]    = `${config.image_url}/releases/${encodeURIComponent(version)}`;
     }
     const profilesUrl = `${config.image_urls[version]}/targets/${targetPath}/profiles.json`;
+
+    // キャッシュ命中時は即利用
+    if (profileCache[cacheKey]) {
+        console.log(`Using cached profile for ${cacheKey}`);
+        applyProfileData(profileCache[cacheKey], profileId);
+        showDeviceInfo();
+        Promise.allSettled([ fetchDevicePackages() ])
+            .then(() => console.log('Background tasks completed (from cache)'));
+        return;
+    }
+
+    // 初回は必ずDL
     try {
         console.log(`Loading profile from: ${profilesUrl}`);
         const response = await fetch(profilesUrl, { cache: 'no-cache' });
         if (!response.ok) {
             throw new Error(`Failed to fetch profiles.json: ${response.status}`);
         }
-        
         const profilesData = await response.json();
         console.log(`Loaded profiles data:`, profilesData);
-        app.versionCode = profilesData.version_code || '';
-        if (profilesData.profiles && profilesData.profiles[profileId]) {
-            const profile = profilesData.profiles[profileId];
-            const defaultPackages = profilesData.default_packages || [];
-            const devicePackages = profile.device_packages || [];
-            const asuExtraPackages = ['luci'];
-            const allPackages = defaultPackages.concat(devicePackages, asuExtraPackages);
-            document.getElementById('asu-packages').value = allPackages.join(' ');
-            asuCollectPackages(); 
-        }
-        // profiles.json取得後にAboutを即表示
+        profileCache[cacheKey] = profilesData; // キャッシュ登録
+        applyProfileData(profilesData, profileId);
         showDeviceInfo();
-        // 重い処理は非同期並列で実行
-        Promise.allSettled([
-            fetchDevicePackages()
-        ]).then(() => {
-            console.log('Background tasks completed');
-        });
+        Promise.allSettled([ fetchDevicePackages() ])
+            .then(() => console.log('Background tasks completed'));
     } catch (error) {
         console.error('Failed to load device profile:', error);
-        // エラー時もAboutだけは即表示
         showDeviceInfo();
-        Promise.allSettled([
-            fetchDevicePackages()
-        ]).then(() => {
-            console.log('Background tasks completed (after error)');
-        });
+        Promise.allSettled([ fetchDevicePackages() ])
+            .then(() => console.log('Background tasks completed (after error)'));
+    }
+}
+
+function applyProfileData(profilesData, profileId) {
+    app.versionCode = profilesData.version_code || '';
+    if (profilesData.profiles && profilesData.profiles[profileId]) {
+        const profile = profilesData.profiles[profileId];
+        const defaultPackages = profilesData.default_packages || [];
+        const devicePackages = profile.device_packages || [];
+        const asuExtraPackages = ['luci'];
+        const allPackages = defaultPackages.concat(devicePackages, asuExtraPackages);
+        document.getElementById('asu-packages').value = allPackages.join(' ');
+        asuCollectPackages();
     }
 }
        
