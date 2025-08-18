@@ -2220,7 +2220,7 @@ function bindEvents() {
     basicFields.forEach(fieldId => {
         const el = document.getElementById(fieldId);
         if (el) {
-            el.addEventListener('input', () => refreshTemplateAndPackages());
+            el.addEventListener('input', () => syncTemplateAndPackages({ trigger: 'script' }));
         }
     });
     
@@ -2233,7 +2233,7 @@ function bindEvents() {
     pppoeFields.forEach(fieldId => {
         const el = document.getElementById(fieldId);
         if (el) {
-            el.addEventListener('input', () => refreshTemplateAndPackages());
+            el.addEventListener('input', () => syncTemplateAndPackages({ trigger: 'script' }));
         }
     });
     
@@ -2247,8 +2247,8 @@ function bindEvents() {
     dsliteFields.forEach(fieldId => {
         const el = document.getElementById(fieldId);
         if (el) {
-            el.addEventListener('input', () => refreshTemplateAndPackages());
-            el.addEventListener('change', () => refreshTemplateAndPackages());
+            el.addEventListener('input', () => syncTemplateAndPackages({ trigger: 'script' }));
+            el.addEventListener('change', () => syncTemplateAndPackages({ trigger: 'script' }));
         }
     });
     
@@ -2268,7 +2268,7 @@ function bindEvents() {
     mapeFields.forEach(fieldId => {
         const el = document.getElementById(fieldId);
         if (el) {
-            el.addEventListener('input', () => refreshTemplateAndPackages());
+            el.addEventListener('input', () => syncTemplateAndPackages({ trigger: 'script' }));
         }
     });
     
@@ -2281,7 +2281,7 @@ function bindEvents() {
     apFields.forEach(fieldId => {
         const el = document.getElementById(fieldId);
         if (el) {
-            el.addEventListener('input', () => refreshTemplateAndPackages());
+            el.addEventListener('input', () => syncTemplateAndPackages({ trigger: 'script' }));
         }
     });
     
