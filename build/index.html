@@ -3969,7 +3969,6 @@ function parsePackagesText(text, source) {
 }
     
 // ==================== パッケージ入力ボックス ====================
-// ==================== パッケージ入力ボックス ====================
 (function() {
     const pkgInput = document.getElementById('package-search');
     let pkgSearchTimer;
@@ -4194,14 +4193,6 @@ function createExtraPackageBox() {
 
     host.appendChild(newInput);
     newInput.focus();
-}
-
-function syncTextareaFromBoxes() {
-    const allVals = Array.from(document.querySelectorAll('#package-search-autocomplete input.package-search'))
-        .map(el => el.value.trim())
-        .filter(Boolean);
-    document.getElementById('asu-packages').value = allVals.join(' ');
-    refreshTemplateAndPackages();
 }
 
 function addPackageToList(pkgName, clickedEl) {
