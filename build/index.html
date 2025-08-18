@@ -2582,7 +2582,7 @@ async function loadDevices() {
 
     try {
         // 公式と同等：config.overview_urls を使用
-        const url = config.overview_urls[app.selectedVersion] + '.overview.json';
+        const url = config.overview_urls[app.selectedVersion] + '/.overview.json';
         
         console.log(`Loading devices from: ${url}`);
         const response = await fetch(url, { cache: "no-cache" });
