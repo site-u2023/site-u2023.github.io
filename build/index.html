@@ -1467,6 +1467,9 @@ let app = {
     templateLoaded: false,
     availablePackages: [] // デバイス固有のパッケージリスト
 };
+
+// 公式と同じグローバル変数
+let current_device = {};
         
 // map.shのキャッシュ
 let mapShCache = {
@@ -1965,6 +1968,36 @@ function waitForReady(ids = []) {
         };
         check();
     });
+}
+
+// ==================== 公式互換デバイス管理関数 ====================
+// 公式と同じ関数名・ロジックでデバイス設定
+function setModel(target, id) {
+    if (target && id) {
+        const title = document.getElementById('models').value;
+        for (const device of app.devices) {
+            if ((device.target === target && device.id === id) || getDeviceTitle(device) === title) {
+                document.getElementById('models').value = getDeviceTitle(device);
+                selectDevice(device);
+                return;
+            }
+        }
+    }
+}
+
+// 公式と同じ関数名でデバイス変更処理
+function changeModel(device) {
+    if (device) {
+        loadDeviceProfile(device);
+        current_device = {
+            version: app.selectedVersion,
+            id: device.id,
+            target: device.target
+        };
+    } else {
+        showDeviceInfo();
+        current_device = {};
+    }
 }
 
 // ==================== パッケージ関数 ====================
@@ -2542,10 +2575,6 @@ function updateVersionSelect() {
 async function handleVersionChange(e) {
     app.selectedVersion = e.target.value;
     
-    // 現在選択されているデバイス情報を保存（公式と同様のアプローチ）
-    const savedDevice = app.selectedDevice;
-    const savedInputValue = document.getElementById('models').value;
-    
     // MAP-E環境でOSバージョン変更時は必要なmap.shを追加ロード
     if (window.cachedApiInfo?.mape?.brIpv6Address) {
         await loadMapShForVersion(app.selectedVersion);
@@ -2553,26 +2582,11 @@ async function handleVersionChange(e) {
     
     await loadDevices();
     
-    // 公式の setModel() と同様のロジックでデバイスを復元
-    if (savedDevice && app.devices.length > 0) {
-        const matchedDevice = app.devices.find(device => 
-            (device.target === savedDevice.target && device.id === savedDevice.id) ||
-            getDeviceTitle(device) === savedInputValue
-        );
-        
-        if (matchedDevice) {
-            document.getElementById('models').value = getDeviceTitle(matchedDevice);
-            selectDevice(matchedDevice);
-        } else {
-            // デバイスが見つからない場合は状態をクリア
-            app.selectedDevice = null;
-            document.getElementById('models').value = savedInputValue; // 入力値は保持
-            hideDeviceInfo();
-        }
-    } else {
-        app.selectedDevice = null;
-        hideDeviceInfo();
-    }
+    // 公式と同じ setModel() 関数でデバイス復元
+    setModel(
+        current_device.target,
+        current_device.id
+    );
 }
 
 // ==================== デバイス管理 ====================
@@ -2662,10 +2676,9 @@ function hideAutocomplete() {
 }
 
 function selectDevice(device) {
-    app.selectedDevice = device;
     document.getElementById('models').value = getDeviceTitle(device);
     hideAutocomplete();
-    loadDeviceProfile(device);
+    changeModel(device);  // changeModel内でcurrent_deviceを設定
 }
 
 // After（公式同等のURLマッピング構造を使い SNAPSHOT/Release 双方に対応）
