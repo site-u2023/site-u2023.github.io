@@ -1495,8 +1495,8 @@ let current_device = {};
         
 // map.shのキャッシュ
 let mapShCache = {
-    'new': null,
-    '19': null
+    'new': undefined,  // ← undefined に変更
+    '19': undefined
 };
 
 // パッケージデータベース
@@ -2151,24 +2151,30 @@ async function loadMapShForVersion(version) {
         const key = (version && version.startsWith('19')) ? '19' : 'new';
         const scriptName = key === '19' ? 'map.sh.19' : 'map.sh.new';
         
-        if (!mapShCache[key]) {
+        // undefined の場合のみダウンロード（文字列がセット済みならスキップ）
+        if (mapShCache[key] === undefined) {
+            console.log(`Downloading ${scriptName} for MAP-E configuration...`);
             const response = await fetch(`https://site-u.pages.dev/build/scripts/${scriptName}`);
             if (response.ok) {
-                const text = await response.text();
-                if (text && text.trim().length > 0) {
-                    mapShCache[key] = text;
-                    console.log(`Loaded ${scriptName} successfully (${text.length} bytes)`);
+                const content = await response.text();
+                if (content && content.trim().length > 0) {
+                    mapShCache[key] = content;
+                    console.log(`Downloaded ${scriptName} successfully (${content.length} bytes)`);
                 } else {
-                    console.error(`${scriptName} is empty`);
+                    console.error(`${scriptName} is empty from server`);
+                    mapShCache[key] = '';  // 空文字列をセット（再ダウンロード防止）
                 }
             } else {
-                console.error(`Failed to load ${scriptName}: HTTP ${response.status}`);
+                console.error(`Failed to download ${scriptName}: HTTP ${response.status}`);
+                mapShCache[key] = '';  // 空文字列をセット（再ダウンロード防止）
             }
-        } else {
+        } else if (mapShCache[key]) {
             console.log(`Using cached ${scriptName} (${mapShCache[key].length} bytes)`);
         }
     } catch (error) {
         console.error(`Failed to load map.sh for ${version}:`, error);
+        const key = (version && version.startsWith('19')) ? '19' : 'new';
+        mapShCache[key] = '';  // エラー時も空文字列をセット
     }
 }
 
