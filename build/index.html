@@ -3820,13 +3820,12 @@ async function fetchDevicePackages() {
     const basePath = config.image_urls[version].replace(/\/$/, '');
     const profilesUrl = `${basePath}/targets/${targetPath}/profiles.json`;
 
-    let arch, kernel;
+    let arch;
     try {
         const res = await fetch(profilesUrl);
         if (!res.ok) throw new Error(`profiles.json HTTP ${res.status}`);
         const meta = await res.json();
         arch = meta.arch_packages;
-        kernel = meta.version_code; // カーネルバージョンを取得
         if (!arch) throw new Error("profiles.json に arch_packages がありません");
     } catch (e) {
         console.error("arch_packages 取得失敗:", e);
@@ -3837,13 +3836,8 @@ async function fetchDevicePackages() {
     const feeds = ["base", "luci", "packages", "routing", "telephony"];
     const urls = [];
 
-    if (version === 'SNAPSHOT' && kernel) {
-        // kmods 配下の Packages
-        urls.push(`${basePath}/targets/${targetPath}/kmods/${kernel}/packages/Packages`);
-    } else {
-        // 従来のターゲット固有パッケージ
-        urls.push(`${basePath}/targets/${targetPath}/packages/Packages`);
-    }
+    // 従来のターゲット固有パッケージ（SNAPSHOT でも安全な方式を使用）
+    urls.push(`${basePath}/targets/${targetPath}/packages/Packages`);
 
     // フィードパッケージ
     for (const feed of feeds) {
