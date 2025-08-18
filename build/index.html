@@ -3995,7 +3995,7 @@ function parsePackagesText(text, source) {
             }, 200);
         });
 
-        // 空にしたら削除（順不同・最後の1つは残す）
+        // 空にしたら削除
         pkgInput.addEventListener('change', function() {
             if (!pkgInput.value.trim()) {
                 const total = document.querySelectorAll('#package-search, #package-search-autocomplete input.package-search').length;
@@ -4052,7 +4052,7 @@ function createExtraPackageBox() {
     newInput.autocapitalize = 'off';
     newInput.dataset.extra = '1'; // 追加欄フラグ
 
-    // イベント紐付け（元と同じ動き）
+    // イベント紐付け
     let timer;
     newInput.addEventListener('input', function() {
         clearTimeout(timer);
@@ -4075,7 +4075,7 @@ function createExtraPackageBox() {
         }, 200);
     });
 
-    // 空にしたら削除（順不同・最後の1つは残す）
+    // 空にしたら削除
     newInput.addEventListener('change', function() {
         if (!this.value.trim()) {
             const total = document.querySelectorAll('#package-search, #package-search-autocomplete input.package-search').length;
@@ -4094,49 +4094,43 @@ function syncTextareaFromBoxes() {
     const ta = document.getElementById('asu-packages');
     if (!ta) return;
 
-    // 前回記録した追加パッケージ
-    const prevExtras = (ta.dataset.extrasPrev || '').trim().split(/\s+/).filter(Boolean);
-    const prevExtrasSet = new Set(prevExtras);
+    // 前回記録した検索ボックス由来のパッケージ
+    const prevSearchPackages = (ta.dataset.searchPackages || '').trim().split(/\s+/).filter(Boolean);
+    const prevSearchSet = new Set(prevSearchPackages);
 
-    // 現在の asu-packages に入っている全パッケージ
-    const currentTokens = (ta.value || '').trim().split(/\s+/).filter(Boolean);
+    // 現在の asu-packages の全パッケージ
+    const currentPackages = (ta.value || '').trim().split(/\s+/).filter(Boolean);
 
-    // 前回 extras を除外 → テンプレ部分として保持
-    const templateNow = currentTokens.filter(tok => !prevExtrasSet.has(tok));
+    // 前回の検索ボックス由来を除外してベースパッケージを保持
+    const basePackages = currentPackages.filter(pkg => !prevSearchSet.has(pkg));
 
-    // 今回 UI の検索ボックス群から拾った追加パッケージ一覧
-    const extras = Array.from(document.querySelectorAll('#package-search-autocomplete input.package-search, #package-search'))
+    // 今回の検索ボックスから取得したパッケージ
+    const searchPackages = Array.from(document.querySelectorAll('#package-search-autocomplete input.package-search, #package-search'))
         .map(el => (el && typeof el.value === 'string') ? el.value.trim() : '')
         .filter(Boolean);
 
-    // テンプレ + 新しい extras を順番通りに重複なく結合
+    // ベースパッケージと検索パッケージを重複なく結合
     const seen = new Set();
     const merged = [];
 
-    templateNow.forEach(tok => {
-        if (!seen.has(tok)) {
-            seen.add(tok);
-            merged.push(tok);
+    // ベースパッケージを先に追加
+    basePackages.forEach(pkg => {
+        if (!seen.has(pkg)) {
+            seen.add(pkg);
+            merged.push(pkg);
         }
     });
 
-    extras.forEach(tok => {
-        if (!seen.has(tok)) {
-            seen.add(tok);
-            merged.push(tok);
+    // 検索ボックスのパッケージを追加
+    searchPackages.forEach(pkg => {
+        if (!seen.has(pkg)) {
+            seen.add(pkg);
+            merged.push(pkg);
         }
     });
 
     // テキストエリア更新
-    ta.value = merged.join(' ');
-    // 今回の extras を記録
-    ta.dataset.extrasPrev = extras.join(' ');
-
-    // テンプレと追加をまとめて再反映
-    if (typeof refreshTemplateAndPackages === 'function') {
-        refreshTemplateAndPackages();
-    }
-}
+    ta.value = merg
 // ---------------------------------------------------------!!
 // ---------------------------------------------------------!!
 
