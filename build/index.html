@@ -3850,10 +3850,11 @@ async function fetchDevicePackages() {
             console.log('[fetchDevicePackages] version.buildinfo 全文:\n', verText);
 
             // 複数パターンに対応（サフィックスや rc を含む形式・KERNEL_PATCHVER も許容、大文字小文字無視）
-            const match = verText.match(
-                /^(?:LINUX_VERSION(?:-[^\s=]+)?|KERNEL_PATCHVER|KERNEL_VER|kernel)\s*=\s*([0-9][^\s]*)$/mi
+            const clean = verText.replace(/^\uFEFF/, '').replace(/\r/g, '');
+            const match = clean.match(
+                /^(?:LINUX_VERSION(?:-[^\s=]+)?|KERNEL_PATCHVER|KERNEL_VER|kernel)\s*=\s*(\S+)$/mi
             );
-
+            
             if (match) {
                 kernel = match[1].trim();
                 console.log('[fetchDevicePackages] kernel バージョン取得:', kernel);
