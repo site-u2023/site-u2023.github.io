@@ -2148,7 +2148,8 @@ function asuI18nDB(lang) {
 // ==================== map.sh関連 ====================
 async function loadMapShForVersion(version) {
     try {
-        const key = (version && version.startsWith('19')) ? '19' : 'new';
+        // 19.x系のみ '19'、それ以外（SNAPSHOT含む）は 'new'
+        const key = (version && version.startsWith('19.')) ? '19' : 'new';  // ← 19.と厳密に判定
         const scriptName = key === '19' ? 'map.sh.19' : 'map.sh.new';
         const scriptUrl = `https://site-u.pages.dev/build/scripts/${scriptName}`;
         
@@ -2170,9 +2171,6 @@ async function loadMapShForVersion(version) {
                 console.error(`Failed to download ${scriptName}: HTTP ${response.status}`);
                 mapShCache[key] = '';
             }
-        } else if (mapShCache[key]) {
-            console.log(`Using cached ${scriptName} (${mapShCache[key].length} bytes)`);
-        }
     } catch (error) {
         console.error(`Failed to load map.sh for ${version}:`, error);
         const key = (version && version.startsWith('19')) ? '19' : 'new';
@@ -2894,35 +2892,41 @@ function handleConnectionTypeChange(e) {
     const dsliteSection = document.getElementById('dslite-section');
     const mapeManualSection = document.getElementById('mape-manual-section');
     const apSection = document.getElementById('ap-section');
-
+    
     pppoeSection.style.display = 'none';
     dsliteSection.style.display = 'none';
     mapeManualSection.style.display = 'none';
     if (apSection) apSection.style.display = 'none';
-
+    
     if (e.target.value === 'pppoe') {
         pppoeSection.style.display = 'block';
     } else if (e.target.value === 'dslite') {
         dsliteSection.style.display = 'block';
     } else if (e.target.value === 'mape') {
         mapeManualSection.style.display = 'block';
-        // OSバージョンに応じた map.sh を必ずロードしてから続行
-        (async () => {
-            try {
-                await loadMapShForVersion(app.selectedVersion);
-            } catch (err) {
-                console.error('map.sh load failed:', err);
-            }
-            applyConnectionSettingsChange();
-        })();
-        return; // 非同期処理完了後に反映するのでここで抜ける
+        
+        // キャッシュ確認してから必要時のみロード
+        const key = (app.selectedVersion && app.selectedVersion.startsWith('19.')) ? '19' : 'new';
+        if (mapShCache[key] === undefined) {
+            // 未ロードの場合のみ非同期でロード
+            (async () => {
+                try {
+                    await loadMapShForVersion(app.selectedVersion);
+                } catch (err) {
+                    console.error('map.sh load failed:', err);
+                }
+                applyConnectionSettingsChange();
+            })();
+            return; // 非同期処理完了後に反映するのでここで抜ける
+        }
+        // 既にキャッシュ済みの場合はそのまま続行
     } else if (e.target.value === 'ap') {
         if (apSection) apSection.style.display = 'block';
     }
-
+    
     applyConnectionSettingsChange();
 }
-    
+
 function handleMapeTypeChange(e) {
     applyConnectionSettingsChange();
 }
