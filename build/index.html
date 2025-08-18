@@ -3974,6 +3974,16 @@ function parsePackagesText(text, source) {
     const pkgInput = document.getElementById('package-search');
     let pkgSearchTimer;
 
+    function handleBoxRemoval(inputEl) {
+        if (!inputEl.value.trim()) {
+            const allInputs = document.querySelectorAll('#package-search-autocomplete input.package-search');
+            if (allInputs.length > 1) {
+                inputEl.parentNode.removeChild(inputEl);
+            }
+            syncTextareaFromBoxes();
+        }
+    }
+
     if (pkgInput) {
         pkgInput.addEventListener('input', function(e) {
             clearTimeout(pkgSearchTimer);
@@ -3996,12 +4006,9 @@ function parsePackagesText(text, source) {
             }, 200);
         });
 
-        // 空にしたら削除処理（追加欄用に）
+        // 空にしたら削除処理（順不同・最後の1つは残す）
         pkgInput.addEventListener('change', function() {
-            if (!pkgInput.value.trim() && pkgInput.dataset.extra === '1') {
-                pkgInput.parentNode.removeChild(pkgInput);
-                syncTextareaFromBoxes();
-            }
+            handleBoxRemoval(pkgInput);
         });
     }
 })();
@@ -4073,11 +4080,13 @@ function createExtraPackageBox() {
         }, 200);
     });
 
+    // 空にしたら削除処理（順不同・最後の1つは残す）
     newInput.addEventListener('change', function() {
-        if (!this.value.trim() && this.dataset.extra === '1') {
+        const allInputs = document.querySelectorAll('#package-search-autocomplete input.package-search');
+        if (!this.value.trim() && allInputs.length > 1) {
             host.removeChild(this);
-            syncTextareaFromBoxes();
         }
+        syncTextareaFromBoxes();
     });
 
     host.appendChild(newInput);
