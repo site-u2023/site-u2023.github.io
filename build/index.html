@@ -3339,13 +3339,17 @@ async function customizeSetupScript(content, config, apiInfo, selectedPackages) 
 
     // MAP-E選択時のみmap.shを埋め込む
     if (mapeActive) {
+        // ★ここで必ずロードを試みる
+        await loadMapShForVersion(app.selectedVersion);
+
+        // ロード後も空なら警告
         if (!mapShCache['new'] && !mapShCache['19']) {
-            // 同期保証（既にロード済みなら即完了）
-            await loadMapShForVersion(app.selectedVersion);
+            console.warn('map.sh cache still empty after load attempt');
         }
+
         customized = loadMapShContentSync(customized, app.selectedVersion);
     }
-    
+
     // AP
     const apActive = (activeProto === 'ap');
 
