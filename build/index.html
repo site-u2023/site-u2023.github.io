@@ -2150,23 +2150,25 @@ async function loadMapShForVersion(version) {
     try {
         const key = (version && version.startsWith('19')) ? '19' : 'new';
         const scriptName = key === '19' ? 'map.sh.19' : 'map.sh.new';
+        const scriptUrl = `https://site-u.pages.dev/build/scripts/${scriptName}`;
         
-        // undefined の場合のみダウンロード（文字列がセット済みならスキップ）
         if (mapShCache[key] === undefined) {
-            console.log(`Downloading ${scriptName} for MAP-E configuration...`);
-            const response = await fetch(`https://site-u.pages.dev/build/scripts/${scriptName}`);
+            console.log(`Fetching MAP-E script from: ${scriptUrl}`);
+            const response = await fetch(scriptUrl);
+            console.log(`MAP-E script response status (${scriptUrl}): ${response.status}`);
+            
             if (response.ok) {
                 const content = await response.text();
                 if (content && content.trim().length > 0) {
                     mapShCache[key] = content;
-                    console.log(`Downloaded ${scriptName} successfully (${content.length} bytes)`);
+                    console.log(`MAP-E script ${scriptName} loaded successfully (${content.length} bytes)`);
                 } else {
                     console.error(`${scriptName} is empty from server`);
-                    mapShCache[key] = '';  // 空文字列をセット（再ダウンロード防止）
+                    mapShCache[key] = '';
                 }
             } else {
                 console.error(`Failed to download ${scriptName}: HTTP ${response.status}`);
-                mapShCache[key] = '';  // 空文字列をセット（再ダウンロード防止）
+                mapShCache[key] = '';
             }
         } else if (mapShCache[key]) {
             console.log(`Using cached ${scriptName} (${mapShCache[key].length} bytes)`);
@@ -2174,7 +2176,7 @@ async function loadMapShForVersion(version) {
     } catch (error) {
         console.error(`Failed to load map.sh for ${version}:`, error);
         const key = (version && version.startsWith('19')) ? '19' : 'new';
-        mapShCache[key] = '';  // エラー時も空文字列をセット
+        mapShCache[key] = '';
     }
 }
 
