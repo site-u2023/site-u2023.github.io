@@ -4092,8 +4092,7 @@ function createExtraPackageBox() {
                 .filter(pkg => {
                     const name = (typeof pkg === 'string') ? pkg : pkg.name || '';
                     return name.toLowerCase().includes(query);
-                })
-                .slice(0, 10);
+                });
 
             showPackageAutocomplete(matches, newInput);
         }, 200);
