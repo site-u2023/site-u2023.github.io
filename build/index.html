@@ -2516,11 +2516,36 @@ async function loadVersions() {
         // デフォルト選択: 公式と同じく最新リリース版（2番目）
         app.selectedVersion = data.stable_version || (data.versions_list ? data.versions_list[0] : 'SNAPSHOT');
 
+        // 公式同等のURL設定を追加
+        setupImageUrls(data);
+
         updateVersionSelect();
         await loadDevices();
     } catch (error) {
         console.error('Failed to load versions:', error);
     }
+}
+
+function setupImageUrls(upstreamConfig) {
+    // 公式と完全同等のURL設定
+    config.overview_urls = {};
+    config.image_urls = {};
+
+    const overview_url = config.image_url;
+    const image_url = upstreamConfig.image_url_override || config.image_url;
+    
+    for (const version of app.versions) {
+        if (version == "SNAPSHOT") {
+            // openwrt.org oddity - 公式コメントそのまま
+            config.overview_urls[version] = `${overview_url}/snapshots/`;
+            config.image_urls[version] = `${image_url}/snapshots/`;
+        } else {
+            config.overview_urls[version] = `${overview_url}/releases/${version}`;
+            config.image_urls[version] = `${image_url}/releases/${version}`;
+        }
+    }
+    
+    console.log("Image URLs configured:", config.image_urls);
 }
 
 function updateVersionSelect() {
@@ -2556,14 +2581,11 @@ async function loadDevices() {
     if (!app.selectedVersion) return;
 
     try {
-        let url;
-        if (app.selectedVersion === 'SNAPSHOT') {
-            url = 'https://downloads.openwrt.org/snapshots/.overview.json';
-        } else {
-            url = `https://downloads.openwrt.org/releases/${app.selectedVersion}/.overview.json`;
-        }
+        // 公式と同等：config.overview_urls を使用
+        const url = config.overview_urls[app.selectedVersion] + '.overview.json';
         
-        const response = await fetch(url);
+        console.log(`Loading devices from: ${url}`);
+        const response = await fetch(url, { cache: "no-cache" });
         const data = await response.json();
 
         app.devices = data.profiles || [];
@@ -2644,23 +2666,17 @@ function selectDevice(device) {
     loadDeviceProfile(device);
 }
 
-// After（公式同等のURLマッピング構造を使い SNAPSHOT/Release 双方に対応）
 async function loadDeviceProfile(device) {
     if (!device || !device.target || !device.id) return;
+    
     const version = app.selectedVersion;
-    const targetPath = device.target;  // mediatek/filogic のような形式
+    const targetPath = device.target;
     const profileId = device.id;
-    // 公式同等：version→URL マッピングを構築
-    if (!config.image_urls) config.image_urls = {};
-    if (!config.overview_urls) config.overview_urls = {};
-    if (version === 'SNAPSHOT') {
-        config.overview_urls[version] = `${config.image_url}/snapshots`;
-        config.image_urls[version]    = `${config.image_url}/snapshots`;
-    } else {
-        config.overview_urls[version] = `${config.image_url}/releases/${encodeURIComponent(version)}`;
-        config.image_urls[version]    = `${config.image_url}/releases/${encodeURIComponent(version)}`;
-    }
-    const profilesUrl = `${config.image_urls[version]}/targets/${targetPath}/profiles.json`;
+    
+    // 公式同等：config.image_urls から base_url を取得
+    const base_url = config.image_urls[version];
+    const profilesUrl = `${base_url}/targets/${targetPath}/profiles.json`;
+    
     try {
         console.log(`Loading profile from: ${profilesUrl}`);
         const response = await fetch(profilesUrl, { cache: 'no-cache' });
@@ -2671,6 +2687,7 @@ async function loadDeviceProfile(device) {
         const profilesData = await response.json();
         console.log(`Loaded profiles data:`, profilesData);
         app.versionCode = profilesData.version_code || '';
+        
         if (profilesData.profiles && profilesData.profiles[profileId]) {
             const profile = profilesData.profiles[profileId];
             const defaultPackages = profilesData.default_packages || [];
@@ -2680,21 +2697,15 @@ async function loadDeviceProfile(device) {
             document.getElementById('asu-packages').value = allPackages.join(' ');
             asuCollectPackages(); 
         }
-        // profiles.json取得後にAboutを即表示
+        
         showDeviceInfo();
-        // 重い処理は非同期並列で実行
-        Promise.allSettled([
-            fetchDevicePackages()
-        ]).then(() => {
+        Promise.allSettled([fetchDevicePackages()]).then(() => {
             console.log('Background tasks completed');
         });
     } catch (error) {
         console.error('Failed to load device profile:', error);
-        // エラー時もAboutだけは即表示
         showDeviceInfo();
-        Promise.allSettled([
-            fetchDevicePackages()
-        ]).then(() => {
+        Promise.allSettled([fetchDevicePackages()]).then(() => {
             console.log('Background tasks completed (after error)');
         });
     }
@@ -2711,10 +2722,8 @@ function showDeviceInfo() {
         fullVersion = `${app.selectedVersion} (${app.versionCode})`;
     }
     
-    // URLs生成
-    const imageFolder = app.selectedVersion === 'SNAPSHOT' 
-        ? `https://downloads.openwrt.org/snapshots/targets/${device.target}`
-        : `https://downloads.openwrt.org/releases/${app.selectedVersion}/targets/${device.target}`;
+    // 公式同等：config.image_urls[version] から imageFolder を構築
+    const imageFolder = `${config.image_urls[app.selectedVersion]}/targets/${device.target}`;
     
     const deviceLink = `${window.location.origin}${window.location.pathname}?version=${encodeURIComponent(app.selectedVersion)}&target=${encodeURIComponent(device.target)}&id=${encodeURIComponent(device.id)}`;
     
@@ -3808,7 +3817,7 @@ function showDownloadLinks(images, fullStatus, requestHash) {
     }
 }
 
-// ★パッケージインデックス取得（device_packages_url は廃止）
+// ★パッケージインデックス取得（公式同等のURL構築方法を使用）
 async function fetchDevicePackages() {
     app.devicePackages = [];
     if (!app.selectedDevice || !app.selectedVersion) return;
@@ -3816,9 +3825,9 @@ async function fetchDevicePackages() {
     const version = app.selectedVersion;
     const targetPath = app.selectedDevice.target; // mediatek/filogic 形式
 
-    // profiles.json の URL を config.image_urls[version] 基点で生成
-    const basePath = config.image_urls[version].replace(/\/$/, '');
-    const profilesUrl = `${basePath}/targets/${targetPath}/profiles.json`;
+    // 公式同等：config.image_urls[version] から base_url を取得
+    const base_url = config.image_urls[version];
+    const profilesUrl = `${base_url}/targets/${targetPath}/profiles.json`;
 
     let arch;
     try {
@@ -3836,17 +3845,12 @@ async function fetchDevicePackages() {
     const feeds = ["base", "luci", "packages", "routing", "telephony"];
     const urls = [];
 
-    if (version === 'SNAPSHOT' && kernel) {
-        // kmods 配下の Packages
-        urls.push(`${basePath}/targets/${targetPath}/kmods/${kernel}/packages/Packages`);
-    } else {
-        // 従来のターゲット固有パッケージ
-        urls.push(`${basePath}/targets/${targetPath}/packages/Packages`);
-    }
+    // 従来のターゲット固有パッケージ
+    urls.push(`${base_url}/targets/${targetPath}/packages/Packages`);
 
     // フィードパッケージ
     for (const feed of feeds) {
-        urls.push(`${basePath}/packages/${arch}/${feed}/Packages`);
+        urls.push(`${base_url}/packages/${arch}/${feed}/Packages`);
     }
 
     // 各 Packages を並列取得してパース
