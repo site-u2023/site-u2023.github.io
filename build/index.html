@@ -2654,8 +2654,8 @@ async function loadDeviceProfile(device) {
     if (!config.image_urls) config.image_urls = {};
     if (!config.overview_urls) config.overview_urls = {};
     if (version === 'SNAPSHOT') {
-        config.overview_urls[version] = `${config.image_url}/snapshots`;
-        config.image_urls[version]    = `${config.image_url}/snapshots`;
+        config.overview_urls[version] = `${config.image_url}/snapshots/`;
+        config.image_urls[version]    = `${config.image_url}/snapshots/`;
     } else {
         config.overview_urls[version] = `${config.image_url}/releases/${encodeURIComponent(version)}`;
         config.image_urls[version]    = `${config.image_url}/releases/${encodeURIComponent(version)}`;
