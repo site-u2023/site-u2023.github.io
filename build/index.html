@@ -4381,33 +4381,23 @@ function parsePackagesText(text, source) {
     const cmdInput = document.getElementById('command');
 
     if (cmdInput) {
-        // ---- 入力確定後（IME確定・Enter・フォーカスアウト）で反映 ----
         const commitCommandValue = () => {
             const val = cmdInput.value.trim();
-            if (val) {
-                syncCommandsToTemplate();
-                // extra欄のみを対象に空欄チェック
-                if (!document.querySelector('#commands-autocomplete input.command[value=""]')) {
-                    createExtraCommandBox();
-                }
-            } else {
-                syncCommandsToTemplate();
+            syncCommandsToTemplate();
+            if (val && !document.querySelector('#commands-autocomplete input.command[value=""]')) {
+                createExtraCommandBox();
             }
         };
 
-        // 入力中は反映しない（過去の頭文字症状回避）
         cmdInput.addEventListener('change', commitCommandValue);
-
-        cmdInput.addEventListener('keydown', function(e) {
+        cmdInput.addEventListener('keydown', e => {
             if (e.key === 'Enter') {
                 e.preventDefault();
                 commitCommandValue();
             }
         });
-
         cmdInput.addEventListener('blur', commitCommandValue);
 
-        // 空にしたら削除（最低1つは残す）
         cmdInput.addEventListener('change', function() {
             if (!this.value.trim()) {
                 const total = document.querySelectorAll('#command, #commands-autocomplete input.command').length;
@@ -4431,31 +4421,17 @@ function createExtraCommandBox() {
     newInput.autocapitalize = 'off';
     newInput.dataset.extra = '1';
 
-    // 入力確定時のみテンプレ反映（IME確定・Enter・フォーカスアウト）
-    const commit = () => {
-        syncCommandsToTemplate();
-    };
-
-    newInput.addEventListener('change', commit);
-
-    newInput.addEventListener('keydown', function(e) {
+    // 追加欄では同期のみ（生成判定はしない）
+    newInput.addEventListener('change', syncCommandsToTemplate);
+    newInput.addEventListener('keydown', e => {
         if (e.key === 'Enter') {
             e.preventDefault();
-            commit();
-        }
-    });
-
-    newInput.addEventListener('blur', commit);
-
-    newInput.addEventListener('change', function() {
-        if (!this.value.trim() && this.dataset.extra === '1') {
-            host.removeChild(this);
             syncCommandsToTemplate();
         }
     });
+    newInput.addEventListener('blur', syncCommandsToTemplate);
 
     host.appendChild(newInput);
-    newInput.focus();
 }
 
 function syncCommandsToTemplate() {
