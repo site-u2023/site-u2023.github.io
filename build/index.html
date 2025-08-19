@@ -3573,13 +3573,13 @@ async function customizeSetupScript(content, userConfig, apiInfo, selectedPackag
 
     // Custom Commands
     const customCommands = getCustomCommands();
+    const commandsText = customCommands.length > 0 ? customCommands.join('\n') : '';
     
     // プレースホルダーを探してその直前にコマンドを挿入/削除
     const placeholderPattern = /^# \$\{custom_commands\}$/m;
     
     if (customized.includes('# ${custom_commands}')) {
-        if (customCommands.length > 0) {
-            const commandsText = customCommands.join('\n');
+        if (commandsText) {
             // プレースホルダーの直前にコマンドを挿入
             customized = customized.replace(placeholderPattern, `${commandsText}\n# \${custom_commands}`);
         }
