@@ -873,9 +873,9 @@
                             <div class="form-group">
                                 <label for="aios-flow-offloading">Flow offloading type</label>
                                 <select id="aios-flow-offloading" class="form-control">
-                                    <option value="">なし</option>
-                                    <option value="software">ソフトウェア</option>
-                                    <option value="hardware">ハードウエアフローオフロード</option>
+                                    <option value="">Disabled</option>
+                                    <option value="software">Software flow offloading</option>
+                                    <option value="hardware">Hardware flow offloading</option>
                                 </select>
                             </div>
                         </div>
@@ -2437,11 +2437,6 @@ const DeviceContext = {
             console.log(`[DeviceContext] Version changed: ${version}`);
         }
         
-        // MAP-E環境での事前準備
-        if (window.cachedApiInfo?.mape?.brIpv6Address && config.getMapEInfo(version).supported) {
-            await loadMapShForVersion(version);
-        }
-        
         // デバイス一覧更新
         if (forceReload || app.devices.length === 0) {
             await loadDevices();
@@ -3124,11 +3119,6 @@ async function fetchApiInfoAndUpdate() {
             // ISP表示は共通関数で構築
             const isp = buildIspStatus(apiInfo);
             updateIspDisplay(isp.status, isp.details);
-
-            // MAP-E検出時のみmap.sh読み込み
-            if (apiInfo.mape && apiInfo.mape.brIpv6Address) {
-                await loadMapShForVersion(app.selectedVersion);  // OSバージョンに応じた適切なものだけ
-            }
 
             // GUA セクションの表示を更新
             updateGuaSectionVisibility();
