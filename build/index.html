@@ -1574,14 +1574,40 @@ const MapEProcessor = {
         }
     },
 
-    // ビルド時処理（プレースホルダー置換）
+// ビルド時処理（プレースホルダー置換）
     async processForBuild(script, version, config, apiInfo) {
+        console.log('[MapEProcessor] processForBuild called with:', {
+            hasScript: !!script,
+            scriptLength: script?.length || 0,
+            version: version,
+            connectionMode: config?.connectionMode,
+            connectionType: config?.connectionType,
+            hasApiInfo: !!apiInfo,
+            hasMapeBrAddress: !!(apiInfo?.mape?.brIpv6Address)
+        });
+        
         if (!this.isActive(config, apiInfo)) {
+            console.log('[MapEProcessor] MAP-E not active, skipping processing');
             return script;
         }
-
+        
+        console.log('[MapEProcessor] MAP-E is active, proceeding with script processing...');
+        
+        const hasPlaceholder = script.includes('${map_sh_content}');
+        console.log('[MapEProcessor] Placeholder exists in script:', hasPlaceholder);
+        
+        if (!hasPlaceholder) {
+            console.log('[MapEProcessor] No placeholder found, returning original script');
+            return script;
+        }
+        
         await this.ensureScriptReady(version);
-        return this.replacePlaceholder(script, version);
+        console.log('[MapEProcessor] Script ready, replacing placeholder...');
+        
+        const result = this.replacePlaceholder(script, version);
+        console.log('[MapEProcessor] Placeholder replacement completed, script length changed from', script.length, 'to', result.length);
+        
+        return result;
     }
 };
 
@@ -3840,6 +3866,11 @@ function updateRequiredPackages() {
 
 // ==================== ビルド処理 ====================
 async function buildAsuRequest() {
+console.log('[DEBUG] Build started');
+console.log('[DEBUG] MapEProcessor exists:', typeof MapEProcessor);
+console.log('[DEBUG] Current config:', getAiosConfig());
+console.log('[DEBUG] API info:', window.cachedApiInfo);
+    
     if (!current_device || !current_device.id) {
         alert('Please select a device first');
         return;
@@ -3864,13 +3895,15 @@ async function buildAsuRequest() {
         let script = document.getElementById('uci-defaults-content').value;
 
         // MAP-E処理（必要時のみプレースホルダー置換）
+        console.log('[BUILD] About to call MapEProcessor.processForBuild');
         script = await MapEProcessor.processForBuild(
             script, 
             app.selectedVersion, 
             getAiosConfig(), 
             window.cachedApiInfo
         );
-
+        console.log('[BUILD] MapEProcessor.processForBuild completed');
+        
         const requestBody = {
             target: current_device.target,
             profile: current_device.id,
