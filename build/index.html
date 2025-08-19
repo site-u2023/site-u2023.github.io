@@ -2219,8 +2219,8 @@ function bindEvents() {
     const modelsEl = document.getElementById('models');
     if (modelsEl) modelsEl.addEventListener('input', handleDeviceSearch);
 
-    const asuEl = document.getElementById('asu');
-    if (asuEl) asuEl.addEventListener('toggle', handleAsuDetailsToggle);
+    // const asuEl = document.getElementById('asu');
+    // if (asuEl) asuEl.addEventListener('toggle', handleAsuDetailsToggle);
     
     const aiosConfigDetails = document.getElementById('use-aios-config-details');
     if (aiosConfigDetails) aiosConfigDetails.addEventListener('toggle', toggleAiosConfig);
@@ -2785,6 +2785,7 @@ function showDeviceInfo() {
     
     // バージョン番号の取得（ビルド番号含む）
     let fullVersion = app.selectedVersion;
+    let displayVersionCode = app.versionCode || '-';  // versionCodeが無い場合は「-」を表示
     if (app.versionCode) {
         fullVersion = `${app.selectedVersion} (${app.versionCode})`;
     }
@@ -2817,9 +2818,9 @@ function showDeviceInfo() {
             <span class="col1">Version</span>
             <span class="col2">
                 <span id="image-version">${app.selectedVersion}</span>
-                (<span id="image-code">${app.versionCode || ''}</span>)
+                (<span id="image-code">${displayVersionCode}</span>)
             </span>
-        </div>   
+        </div>  
         <div class="row">
             <span class="col1">Links</span>
             <span class="col2">
@@ -2835,12 +2836,28 @@ function showDeviceInfo() {
     document.getElementById('packages').style.display = 'block';
     document.getElementById('request-build').style.display = 'inline-block';
 
-    // テンプレートを最初に設定（まだ設定されていない場合のみ）
+// テンプレートを最初に設定（まだ設定されていない場合のみ）
     const textarea = document.getElementById('uci-defaults-content');
     if (!app.templateLoaded && (!textarea.value || textarea.value.trim() === '')) {
         textarea.value = SETUP_SH_TEMPLATE;
         app.templateLoaded = true;
         console.log('Template loaded for the first time');
+    }
+
+    // デバイス選択時にAPIを取得（一度だけ）
+    if (!window.apiInfoFetched) {
+        window.apiInfoFetched = true;
+        
+        Promise.resolve().then(async () => {
+            try {
+                await fetchApiInfoAndUpdate();
+                updateRequiredPackages();
+                asuCollectPackages();
+            } catch (error) {
+                window.apiInfoFetched = false;
+                console.error('API fetch error during device selection:', error);
+            }
+        });
     }
 }
 
@@ -2853,6 +2870,7 @@ function hideDeviceInfo() {
 // ==================== auto トリガー関数 ====================
 let apiInfoFetched = false;  // 重複防止用フラグ
 
+/*
 async function handleAsuDetailsToggle(e) {
     const details = e.target;
     
@@ -2869,6 +2887,7 @@ async function handleAsuDetailsToggle(e) {
         }
     }
 }
+*/
 
 // ==================== 接続設定変更反映関数 ====================
 function applyConnectionSettingsChange() {
