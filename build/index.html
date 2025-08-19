@@ -2182,26 +2182,37 @@ async function loadMapShForVersion(version) {
 
 // map.sh内容を埋め込む（同期版 - キャッシュから取得）
 function loadMapShContentSync(content, osVersion) {
+    console.log('[MAP-E Debug] Starting replacement for version:', osVersion);
+    
     // プレースホルダーのチェック（バックスラッシュ付きで検索）
     if (!content.includes('\\${map_sh_content}')) {
+        console.log('[MAP-E Debug] No placeholder found');
         return content;
     }
     
     const mapeInfo = config.getMapEInfo(osVersion);
+    console.log('[MAP-E Debug] mapeInfo:', mapeInfo);
+    console.log('[MAP-E Debug] Current cache state:', mapShCache);
+    
     let mapShContent = '';
     
     if (mapeInfo.supported) {
         mapShContent = mapShCache[mapeInfo.scriptType] || '';
+        console.log('[MAP-E Debug] Retrieved content length:', mapShContent.length);
+        console.log('[MAP-E Debug] First 100 chars:', mapShContent.substring(0, 100));
     }
     
     // map.shが取得できていない場合の警告
     if (!mapShContent) {
-        console.warn('map.sh content not available');
+        console.warn('[MAP-E Debug] map.sh content not available - cache miss!');
         mapShContent = '#!/bin/sh\necho "ERROR: map.sh was not properly embedded" >&2\nexit 1';
     }
     
     // バックスラッシュ付きのプレースホルダーを置換
-    return content.replace('\\${map_sh_content}', mapShContent);
+    const result = content.replace('\\${map_sh_content}', mapShContent);
+    console.log('[MAP-E Debug] Replacement done, content changed:', result !== content);
+    
+    return result;
 }
         
 // ==================== イベントバインディング ====================
