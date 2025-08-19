@@ -3573,18 +3573,24 @@ async function customizeSetupScript(content, userConfig, apiInfo, selectedPackag
 
     // Custom Commands
     const customCommands = getCustomCommands();
-    console.log('DEBUG: customCommands =', customCommands);
-    
     const commandsText = customCommands.length > 0 ? customCommands.join('\n') : '';
-    console.log('DEBUG: commandsText =', JSON.stringify(commandsText));
-    console.log('DEBUG: commandsText length =', commandsText.length);
-    console.log('DEBUG: commandsText lines =', commandsText.split('\n'));
     
-    customized = customized.replace(/^# \$\{custom_commands\}$/m, 
+    // デバッグ：実際の文字列を詳細確認
+    const lines = customized.split('\n');
+    const targetLines = lines.filter(line => line.includes('custom_commands'));
+    console.log('All lines with custom_commands:');
+    targetLines.forEach((line, i) => {
+        console.log(`  Line ${i}: ${JSON.stringify(line)}`);
+        console.log(`  Length: ${line.length}`);
+        console.log(`  Exact match test: ${line === '# ${custom_commands}'}`);
+    });
+
+    // より柔軟な正規表現を使用
+    customized = customized.replace(/^#\s*\$\{custom_commands\}\s*$/m, 
         customCommands.length > 0 ? commandsText : '# ${custom_commands}');
-    
+
     return customized;
-}      
+}   
         
 function getCustomCommands() {
     const commands = [];
