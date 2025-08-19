@@ -850,7 +850,7 @@
                             </div>
                         </div>
 
-                        <!-- Device nameとRoot password -->
+<!-- Device nameとRoot password -->
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="aios-device-name">Device name</label>
@@ -860,6 +860,23 @@
                                 <label for="aios-root-password">Root password</label>
                                 <input type="password" id="aios-root-password" class="form-control" placeholder="8+ characters">
                                 <small class="form-text text-muted">Leave empty to disable password authentication</small>
+                            </div>
+                        </div>
+
+                        <!-- SSH Interface と Flow Offloading -->
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="aios-ssh-interface">SSH Interface</label>
+                                <input type="text" id="aios-ssh-interface" class="form-control" placeholder="lan" value="lan">
+                                <small class="form-text text-muted">Network interface for SSH access</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="aios-flow-offloading">Flow offloading type</label>
+                                <select id="aios-flow-offloading" class="form-control">
+                                    <option value="">なし</option>
+                                    <option value="software">ソフトウェア</option>
+                                    <option value="hardware">ハードウエアフローオフロード</option>
+                                </select>
                             </div>
                         </div>
                         
@@ -2221,7 +2238,9 @@ const basicFields = [
     'aios-device-name',
     'aios-root-password',
     'aios-wifi-ssid',
-    'aios-wifi-password'
+    'aios-wifi-password',
+    'aios-ssh-interface',
+    'aios-flow-offloading'
 ];
 
 basicFields.forEach(fieldId => {
@@ -3523,6 +3542,12 @@ async function customizeSetupScript(content, userConfig, apiInfo, selectedPackag
     customized = setScriptVar(customized, 'ap_ip_address', userConfig.apIpAddress, apActive && !!userConfig.apIpAddress);
     customized = setScriptVar(customized, 'ap_gateway', userConfig.apGateway, apActive && !!userConfig.apGateway);
 
+    // SSH Interface
+    customized = setScriptVar(customized, 'ssh_interface', userConfig.sshInterface, !!userConfig.sshInterface);
+    
+    // Flow Offloading
+    customized = setScriptVar(customized, 'flow_offloading_type', userConfig.flowOffloading, !!userConfig.flowOffloading);
+
     return customized;
 }
 
@@ -3582,7 +3607,10 @@ function getAiosConfig() {
         mapeGuaPrefix: parseOrEmpty('mape-gua-prefix'),
 
         apIpAddress: parseOrEmpty('ap-ip-address'),
-        apGateway: parseOrEmpty('ap-gateway')
+        apGateway: parseOrEmpty('ap-gateway'),
+        
+        sshInterface: parseOrEmpty('aios-ssh-interface'),
+        flowOffloading: parseOrEmpty('aios-flow-offloading')
     };
 
     return config;
