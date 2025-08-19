@@ -2785,7 +2785,7 @@ function showDeviceInfo() {
     
     // バージョン番号の取得（ビルド番号含む）
     let fullVersion = app.selectedVersion;
-    let displayVersionCode = app.versionCode || '-';  // versionCodeが無い場合は「-」を表示
+    let displayVersionCode = app.versionCode || 'null';  // versionCodeが無い場合は「-」を表示
     if (app.versionCode) {
         fullVersion = `${app.selectedVersion} (${app.versionCode})`;
     }
