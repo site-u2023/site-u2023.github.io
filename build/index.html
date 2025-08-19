@@ -3573,27 +3573,11 @@ async function customizeSetupScript(content, userConfig, apiInfo, selectedPackag
 
     // Custom Commands
     const customCommands = getCustomCommands();
-    const commandsText = customCommands.length > 0 ? customCommands.join('\n') : '';
-    customized = customized.replace(/^# \$\{custom_commands\}$/m, 
-        customCommands.length > 0 ? commandsText : '# ${custom_commands}');
-    
-    // デバッグ：実際の文字列を詳細確認
-    const lines = customized.split('\n');
-    const targetLines = lines.filter(line => line.includes('custom_commands'));
-    console.log('All lines with custom_commands:');
-    targetLines.forEach((line, i) => {
-        console.log(`  Line ${i}: ${JSON.stringify(line)}`);
-        console.log(`  Length: ${line.length}`);
-        console.log(`  Exact match test: ${line === '# ${custom_commands}'}`);
-    });
-
-    // より柔軟な正規表現を使用し、複数行の customCommands にも完全対応
-    // さらに、customCommands が空の場合は必ず元のプレースホルダー行 "# ${custom_commands}" に差し戻す
-    // 複数コマンドがある場合は "\n" 区切りでテンプレート内に全行挿入する
     const commandsText = Array.isArray(customCommands) && customCommands.length > 0
         ? customCommands.join('\n')
         : '';
 
+    // プレースホルダー行を、空なら元に戻し、非空なら全コマンドを複数行で埋め込む
     customized = customized.replace(
         /^#\s*\$\{custom_commands\}\s*$/m,
         commandsText.length > 0 ? commandsText : '# ${custom_commands}'
@@ -4252,39 +4236,34 @@ async function fetchDevicePackages() {
         return;
     }
 
-    async function fetchDevicePackages() {
-        app.devicePackages = [];
-        if (!app.selectedDevice || !app.selectedVersion) return;
+async function fetchDevicePackages() {
+    app.devicePackages = [];
+    if (!current_device || !current_device.id || !app.selectedVersion) return;
 
-        const version = app.selectedVersion;
-        const targetPath = app.selectedDevice.target; // mediatek/filogic 形式
-        const basePath = config.image_urls[version].replace(/\/$/, '');
-        const profilesUrl = `${basePath}/targets/${targetPath}/profiles.json`;
+    const version = app.selectedVersion;
+    const targetPath = current_device.target; // mediatek/filogic 形式
 
-        let arch;
-        try {
-            const res = await fetch(profilesUrl);
-            if (!res.ok) throw new Error(`profiles.json HTTP ${res.status}`);
-            const meta = await res.json();
-            arch = meta.arch_packages;
-            if (!arch) throw new Error("profiles.json に arch_packages がありません");
-        } catch (e) {
-            console.error("arch_packages 取得失敗:", e);
-            return;
-        }
+    // profiles.json の URL を config.image_urls[version] 基点で生成
+    const basePath = config.image_urls[version].replace(/\/$/, '');
+    const profilesUrl = `${basePath}/targets/${targetPath}/profiles.json`;
 
-        // 公式と同じ：arch_packages からパッケージURLを構築
-        const pkgsUrl = `${basePath}/packages/${arch}/Packages`;
-        console.log('[fetchDevicePackages] packages URL:', pkgsUrl);
-
-        // 以降、この pkgsUrl を fetch して処理
+    let arch;
+    try {
+        const res = await fetch(profilesUrl);
+        if (!res.ok) throw new Error(`profiles.json HTTP ${res.status}`);
+        const meta = await res.json();
+        arch = meta.arch_packages;
+        if (!arch) throw new Error("profiles.json に arch_packages がありません");
+    } catch (e) {
+        console.error("arch_packages 取得失敗:", e);
+        return;
     }
 
     // パッケージインデックスURL一覧（targets/kmods と feeds）
     const feeds = ["base", "luci", "packages", "routing", "telephony"];
     const urls = [];
 
-    if (version === 'SNAPSHOT' && kernel) {
+    if (version === 'SNAPSHOT' && typeof kernel !== 'undefined' && kernel) {
         // kmods 配下の Packages
         urls.push(`${basePath}/targets/${targetPath}/kmods/${kernel}/packages/Packages`);
     } else {
@@ -4452,22 +4431,21 @@ function createExtraCommandBox() {
     newInput.autocapitalize = 'off';
     newInput.dataset.extra = '1';
 
-    newInput.addEventListener('input', function() {
+    // 入力確定時のみテンプレ反映（IME確定・Enter・フォーカスアウト）
+    const commit = () => {
         syncCommandsToTemplate();
-    });
+    };
+
+    newInput.addEventListener('change', commit);
 
     newInput.addEventListener('keydown', function(e) {
         if (e.key === 'Enter') {
             e.preventDefault();
-            const command = this.value.trim();
-            if (command) {
-                syncCommandsToTemplate();
-                if (!document.querySelector('#commands-autocomplete input[value=""]')) {
-                    createExtraCommandBox();
-                }
-            }
+            commit();
         }
     });
+
+    newInput.addEventListener('blur', commit);
 
     newInput.addEventListener('change', function() {
         if (!this.value.trim() && this.dataset.extra === '1') {
