@@ -1144,11 +1144,12 @@
 # mape_psid_offset=""
 # mape_gua_mode=""
 # mape_gua_prefix=""
-# map_sh=""
 # openwrt_19=""
 # openwrt_21=""
 # ap_ip_address="192.168.1.2"
 # ap_gateway="192.168.1.1"
+# ssh_interface="lan"
+# flow_offloading_type=""
 # enable_ttyd=""
 # enable_irqbalance=""
 # enable_samba4=""
@@ -1161,157 +1162,158 @@ DSLITE6_NAME="dslite6"
 AP_NAME="ap"
 AP6_NAME="ap6"
 exec >/tmp/setup.log 2>&1
-if [ -n "${root_password}" ]; then
-    (echo "${root_password}"; sleep 1; echo "${root_password}") | passwd >/dev/null 2>&1
+if [ -n "\${root_password}" ]; then
+    (echo "\${root_password}"; sleep 1; echo "\${root_password}") | passwd >/dev/null 2>&1
 fi
-if [ -n "${device_name}" ]; then
-    uci set system.@system[0].hostname="${device_name}"
+if [ -n "\${device_name}" ]; then
+    uci set system.@system[0].hostname="\${device_name}"
 fi
-if [ -n "${lan_ip_address}" ]; then
-    uci set network.lan.ipaddr="${lan_ip_address}"
+if [ -n "\${lan_ip_address}" ]; then
+    uci set network.lan.ipaddr="\${lan_ip_address}"
 fi
-if [ -n "${lan_ipv6_address}" ]; then
-    uci set network.lan.ip6addr="${lan_ipv6_address}"
+if [ -n "\${lan_ipv6_address}" ]; then
+    uci set network.lan.ip6addr="\${lan_ipv6_address}"
 fi
-if [ -n "${language}" ]; then
-    uci set system.@system[0].language="${language}"
+if [ -n "\${language}" ]; then
+    uci set system.@system[0].language="\${language}"
 fi
-if [ -n "${country}" ]; then
-    uci set wireless.@wifi-device[0].country="${country}" 2>/dev/null
+if [ -n "\${country}" ]; then
+    uci set wireless.@wifi-device[0].country="\${country}" 2>/dev/null
 fi
-if [ -n "${timezone}" ]; then
-    uci set system.@system[0].timezone="${timezone}"
+if [ -n "\${timezone}" ]; then
+    uci set system.@system[0].timezone="\${timezone}"
 fi
-if [ -n "${zonename}" ]; then
-    uci set system.@system[0].zonename="${zonename}"
+if [ -n "\${zonename}" ]; then
+    uci set system.@system[0].zonename="\${zonename}"
 fi
-if [ -n "${wlan_name}" ] && [ -n "${wlan_password}" ] && [ ${#wlan_password} -ge 8 ]; then
+if [ -n "\${wlan_name}" ] && [ -n "\${wlan_password}" ] && [ \${wlan_password} -ge 8 ]; then
     uci set wireless.@wifi-device[0].disabled='0'
     uci set wireless.@wifi-iface[0].disabled='0'
     uci set wireless.@wifi-iface[0].encryption='sae-mixed'
-    uci set wireless.@wifi-iface[0].ssid="${wlan_name}"
-    uci set wireless.@wifi-iface[0].key="${wlan_password}"
+    uci set wireless.@wifi-iface[0].ssid="\${wlan_name}"
+    uci set wireless.@wifi-iface[0].key="\${wlan_password}"
 fi
-if [ -n "${pppoe_username}" ] && [ -n "${pppoe_password}" ]; then
+if [ -n "\${pppoe_username}" ] && [ -n "\${pppoe_password}" ]; then
     uci set network.wan.proto='pppoe'
-    uci set network.wan.username="${pppoe_username}"
-    uci set network.wan.password="${pppoe_password}"
+    uci set network.wan.username="\${pppoe_username}"
+    uci set network.wan.password="\${pppoe_password}"
 fi
-if [ -n "${dslite_aftr_address}" ]; then
-    cp -p /etc/config/network /etc/config/network.${DSLITE_NAME}.bak 2>/dev/null
-    cp -p /etc/config/dhcp /etc/config/dhcp.${DSLITE_NAME}.bak 2>/dev/null
-    cp -p /etc/config/firewall /etc/config/firewall.${DSLITE_NAME}.bak 2>/dev/null
+if [ -n "\${dslite_aftr_address}" ]; then
+    cp -p /etc/config/network /etc/config/network.\${DSLITE_NAME}.bak 2>/dev/null
+    cp -p /etc/config/dhcp /etc/config/dhcp.\${DSLITE_NAME}.bak 2>/dev/null
+    cp -p /etc/config/firewall /etc/config/firewall.\${DSLITE_NAME}.bak 2>/dev/null
     uci set network.wan.disabled='1'
     uci set network.wan.auto='0'
     uci set network.wan6.disabled='1'
     uci set network.wan6.auto='0'
-    uci set network.${DSLITE6_NAME}=interface
-    uci set network.${DSLITE6_NAME}.proto='dhcpv6'
-    uci set network.${DSLITE6_NAME}.device="${WAN_DEF}"
-    uci set network.${DSLITE6_NAME}.reqaddress='try'
-    uci set network.${DSLITE6_NAME}.reqprefix='auto'
-    uci set network.${DSLITE_NAME}=interface
-    uci set network.${DSLITE_NAME}.proto='dslite'
-    uci set network.${DSLITE_NAME}.peeraddr="${dslite_aftr_address}"
-    uci set network.${DSLITE_NAME}.tunlink="${DSLITE6_NAME}"
-    uci set network.${DSLITE_NAME}.mtu='1460'
-    uci set network.${DSLITE_NAME}.encaplimit='ignore'
-    uci set dhcp.${DSLITE6_NAME}=dhcp
-    uci set dhcp.${DSLITE6_NAME}.interface="${DSLITE6_NAME}"
-    uci set dhcp.${DSLITE6_NAME}.master='1'
-    uci set dhcp.${DSLITE6_NAME}.ra='relay'
-    uci set dhcp.${DSLITE6_NAME}.dhcpv6='relay'
-    uci set dhcp.${DSLITE6_NAME}.ndp='relay'
-    uci set dhcp.${DSLITE6_NAME}.ignore='1'
+    uci set network.\${DSLITE6_NAME}=interface
+    uci set network.\${DSLITE6_NAME}.proto='dhcpv6'
+    uci set network.\${DSLITE6_NAME}.device="\${WAN_DEF}"
+    uci set network.\${DSLITE6_NAME}.reqaddress='try'
+    uci set network.\${DSLITE6_NAME}.reqprefix='auto'
+    uci set network.\${DSLITE_NAME}=interface
+    uci set network.\${DSLITE_NAME}.proto='dslite'
+    uci set network.\${DSLITE_NAME}.peeraddr="\${dslite_aftr_address}"
+    uci set network.\${DSLITE_NAME}.tunlink="\${DSLITE6_NAME}"
+    uci set network.\${DSLITE_NAME}.mtu='1460'
+    uci set network.\${DSLITE_NAME}.encaplimit='ignore'
+    uci set dhcp.\${DSLITE6_NAME}=dhcp
+    uci set dhcp.\${DSLITE6_NAME}.interface="\${DSLITE6_NAME}"
+    uci set dhcp.\${DSLITE6_NAME}.master='1'
+    uci set dhcp.\${DSLITE6_NAME}.ra='relay'
+    uci set dhcp.\${DSLITE6_NAME}.dhcpv6='relay'
+    uci set dhcp.\${DSLITE6_NAME}.ndp='relay'
+    uci set dhcp.\${DSLITE6_NAME}.ignore='1'
     uci set dhcp.lan.ra='relay'
     uci set dhcp.lan.dhcpv6='relay'
     uci set dhcp.lan.ndp='relay'
     uci set dhcp.lan.force='1'
-    uci add_list firewall.@zone[1].network="${DSLITE_NAME}"
-    uci add_list firewall.@zone[1].network="${DSLITE6_NAME}"
+    uci add_list firewall.@zone[1].network="\${DSLITE_NAME}"
+    uci add_list firewall.@zone[1].network="\${DSLITE6_NAME}"
     uci set firewall.@zone[1].masq='1'
     uci set firewall.@zone[1].mtu_fix='1'
 fi
-if [ -n "${mape_br}" ] && [ -n "${mape_ealen}" ]; then
-    cp -p /etc/config/network /etc/config/network.${MAP_NAME}.bak 2>/dev/null
-    cp -p /etc/config/dhcp /etc/config/dhcp.${MAP_NAME}.bak 2>/dev/null
-    cp -p /etc/config/firewall /etc/config/firewall.${MAP_NAME}.bak 2>/dev/null
+if [ -n "\${mape_br}" ] && [ -n "\${mape_ealen}" ]; then
+    cp -p /etc/config/network /etc/config/network.\${MAP_NAME}.bak 2>/dev/null
+    cp -p /etc/config/dhcp /etc/config/dhcp.\${MAP_NAME}.bak 2>/dev/null
+    cp -p /etc/config/firewall /etc/config/firewall.\${MAP_NAME}.bak 2>/dev/null
     cp -p /lib/netifd/proto/map.sh /lib/netifd/proto/map.sh.bak 2>/dev/null
     uci set network.wan.disabled='1'
     uci set network.wan.auto='0'
     uci set network.wan6.disabled='1'
     uci set network.wan6.auto='0'
-    uci set network.${MAP6_NAME}=interface
-    uci set network.${MAP6_NAME}.proto='dhcpv6'
-    uci set network.${MAP6_NAME}.device="${WAN_DEF}"
-    uci set network.${MAP6_NAME}.reqaddress='try'
-    uci set network.${MAP6_NAME}.reqprefix='auto'
-    uci set network.${MAP_NAME}=interface
-    uci set network.${MAP_NAME}.proto='map'
-    uci set network.${MAP_NAME}.maptype='map-e'
-    uci set network.${MAP_NAME}.peeraddr="${mape_br}"
-    uci set network.${MAP_NAME}.ipaddr="${mape_ipv4_prefix}"
-    uci set network.${MAP_NAME}.ip4prefixlen="${mape_ipv4_prefixlen}"
-    uci set network.${MAP_NAME}.ip6prefix="${mape_ipv6_prefix}"
-    uci set network.${MAP_NAME}.ip6prefixlen="${mape_ipv6_prefixlen}"
-    uci set network.${MAP_NAME}.ealen="${mape_ealen}"
-    uci set network.${MAP_NAME}.psidlen="${mape_psidlen}"
-    uci set network.${MAP_NAME}.offset="${mape_psid_offset}"
-    uci set network.${MAP_NAME}.mtu='1460'
-    uci set network.${MAP_NAME}.encaplimit='ignore'
-    uci set dhcp.${MAP6_NAME}=dhcp
-    uci set dhcp.${MAP6_NAME}.interface="${MAP6_NAME}"
-    uci set dhcp.${MAP6_NAME}.master='1'
-    uci set dhcp.${MAP6_NAME}.ra='relay'
-    uci set dhcp.${MAP6_NAME}.dhcpv6='relay'
-    uci set dhcp.${MAP6_NAME}.ndp='relay'
+    uci set network.\${MAP6_NAME}=interface
+    uci set network.\${MAP6_NAME}.proto='dhcpv6'
+    uci set network.\${MAP6_NAME}.device="\${WAN_DEF}"
+    uci set network.\${MAP6_NAME}.reqaddress='try'
+    uci set network.\${MAP6_NAME}.reqprefix='auto'
+    uci set network.\${MAP_NAME}=interface
+    uci set network.\${MAP_NAME}.proto='map'
+    uci set network.\${MAP_NAME}.maptype='map-e'
+    uci set network.\${MAP_NAME}.peeraddr="\${mape_br}"
+    uci set network.\${MAP_NAME}.ipaddr="\${mape_ipv4_prefix}"
+    uci set network.\${MAP_NAME}.ip4prefixlen="\${mape_ipv4_prefixlen}"
+    uci set network.\${MAP_NAME}.ip6prefix="\${mape_ipv6_prefix}"
+    uci set network.\${MAP_NAME}.ip6prefixlen="\${mape_ipv6_prefixlen}"
+    uci set network.\${MAP_NAME}.ealen="\${mape_ealen}"
+    uci set network.\${MAP_NAME}.psidlen="\${mape_psidlen}"
+    uci set network.\${MAP_NAME}.offset="\${mape_psid_offset}"
+    uci set network.\${MAP_NAME}.mtu='1460'
+    uci set network.\${MAP_NAME}.encaplimit='ignore'
+    uci set dhcp.\${MAP6_NAME}=dhcp
+    uci set dhcp.\${MAP6_NAME}.interface="\${MAP6_NAME}"
+    uci set dhcp.\${MAP6_NAME}.master='1'
+    uci set dhcp.\${MAP6_NAME}.ra='relay'
+    uci set dhcp.\${MAP6_NAME}.dhcpv6='relay'
+    uci set dhcp.\${MAP6_NAME}.ndp='relay'
     uci set dhcp.lan.ra='relay'
     uci set dhcp.lan.dhcpv6='relay'
     uci set dhcp.lan.ndp='relay'
     uci set dhcp.lan.force='1'
-    uci add_list firewall.@zone[1].network="${MAP_NAME}"
-    uci add_list firewall.@zone[1].network="${MAP6_NAME}"
+    uci add_list firewall.@zone[1].network="\${MAP_NAME}"
+    uci add_list firewall.@zone[1].network="\${MAP6_NAME}"
     uci set firewall.@zone[1].masq='1'
     uci set firewall.@zone[1].mtu_fix='1'
-if [ -n "${mape_gua_mode}" ]; then
-    uci set network.${MAP6_NAME}.ip6prefix="${mape_gua_prefix}"
+    cat > /lib/netifd/proto/map.sh << 'MAP_SH_EOF'
+\${map_sh_content}
+MAP_SH_EOF
 fi
-if [ -n "${openwrt_19}" ]; then
-    uci add_list network.${MAP_NAME}.tunlink="${MAP6_NAME}"
+if [ -n "\${mape_gua_mode}" ]; then
+    uci set network.\${MAP6_NAME}.ip6prefix="\${mape_gua_prefix}"
 fi
-if [ -n "${openwrt_21}" ]; then
-    uci set network.${MAP_NAME}.legacymap='1'
-    uci set network.${MAP_NAME}.tunlink="${MAP6_NAME}"
-    uci set dhcp.${MAP6_NAME}.ignore='1'
+if [ -n "\${openwrt_19}" ]; then
+    uci add_list network.\${MAP_NAME}.tunlink="\${MAP6_NAME}"
 fi
-if [ -n "${map_sh}" ]; then
-    convert_map_sh_to_nftables
+if [ -n "\${openwrt_21}" ]; then
+    uci set network.\${MAP_NAME}.legacymap='1'
+    uci set network.\${MAP_NAME}.tunlink="\${MAP6_NAME}"
+    uci set dhcp.\${MAP6_NAME}.ignore='1'
 fi
-if [ -n "${ap_ip_address}" ]; then
-    cp -p /etc/config/network /etc/config/network.${AP_NAME}.bak 2>/dev/null
-    cp -p /etc/config/dhcp /etc/config/dhcp.${AP_NAME}.bak 2>/dev/null
-    cp -p /etc/config/firewall /etc/config/firewall.${AP_NAME}.bak 2>/dev/null
+if [ -n "\${ap_ip_address}" ]; then
+    cp -p /etc/config/network /etc/config/network.\${AP_NAME}.bak 2>/dev/null
+    cp -p /etc/config/dhcp /etc/config/dhcp.\${AP_NAME}.bak 2>/dev/null
+    cp -p /etc/config/firewall /etc/config/firewall.\${AP_NAME}.bak 2>/dev/null
     uci set network.wan.disabled='1'
     uci set network.wan.auto='0'
     uci set network.wan6.disabled='1'
     uci set network.wan6.auto='0'
-    uci set network.${AP_NAME}=interface
-    uci set network.${AP_NAME}.proto='static'
-    uci set network.${AP_NAME}.device="${LAN_DEF}"
-    uci set network.${AP_NAME}.ipaddr="${ap_ip_address}"
-    uci set network.${AP_NAME}.netmask='255.255.255.0'
-    uci set network.${AP_NAME}.gateway="${ap_gateway}"
-    uci set network.${AP_NAME}.dns="${ap_gateway}"
-    uci set network.${AP_NAME}.delegate='0'
-    uci set network.${AP6_NAME}=interface
-    uci set network.${AP6_NAME}.proto='dhcpv6'
-    uci set network.${AP6_NAME}.device="@${AP_NAME}"
-    uci set network.${AP6_NAME}.reqaddress='try'
-    uci set network.${AP6_NAME}.reqprefix='no'
-    uci set network.${AP6_NAME}.type='bridge'
-    [ -n "$(uci -q get wireless.default_radio0)" ] && uci set wireless.default_radio0.network="${AP_NAME}"
-    [ -n "$(uci -q get wireless.default_radio1)" ] && uci set wireless.default_radio1.network="${AP_NAME}"
-    [ -n "$(uci -q get wireless.default_radio2)" ] && uci set wireless.default_radio2.network="${AP_NAME}"
+    uci set network.\${AP_NAME}=interface
+    uci set network.\${AP_NAME}.proto='static'
+    uci set network.\${AP_NAME}.device="\${LAN_DEF}"
+    uci set network.\${AP_NAME}.ipaddr="\${ap_ip_address}"
+    uci set network.\${AP_NAME}.netmask='255.255.255.0'
+    uci set network.\${AP_NAME}.gateway="\${ap_gateway}"
+    uci set network.\${AP_NAME}.dns="\${ap_gateway}"
+    uci set network.\${AP_NAME}.delegate='0'
+    uci set network.\${AP6_NAME}=interface
+    uci set network.\${AP6_NAME}.proto='dhcpv6'
+    uci set network.\${AP6_NAME}.device="@\${AP_NAME}"
+    uci set network.\${AP6_NAME}.reqaddress='try'
+    uci set network.\${AP6_NAME}.reqprefix='no'
+    uci set network.\${AP6_NAME}.type='bridge'
+    [ -n "$(uci -q get wireless.default_radio0)" ] && uci set wireless.default_radio0.network="\${AP_NAME}"
+    [ -n "$(uci -q get wireless.default_radio1)" ] && uci set wireless.default_radio1.network="\${AP_NAME}"
+    [ -n "$(uci -q get wireless.default_radio2)" ] && uci set wireless.default_radio2.network="\${AP_NAME}"
     [ -x /etc/init.d/odhcpd ] && /etc/init.d/odhcpd enabled && /etc/init.d/odhcpd disable
     [ -x /etc/init.d/odhcpd ] && /etc/init.d/odhcpd running && /etc/init.d/odhcpd stop
     [ -x /etc/init.d/dnsmasq ] && /etc/init.d/dnsmasq enabled && /etc/init.d/dnsmasq disable
@@ -1319,10 +1321,24 @@ if [ -n "${ap_ip_address}" ]; then
     [ -x /etc/init.d/firewall ] && /etc/init.d/firewall enabled && /etc/init.d/firewall disable
     [ -x /etc/init.d/firewall ] && /etc/init.d/firewall running && /etc/init.d/firewall stop
 fi
+if [ -n "\${ssh_interface}" ]; then
+    uci set dropbear.@dropbear[0].Interface="\${ssh_interface}"
+fi
+if [ -n "\${flow_offloading_type}" ]; then
+    case "\${flow_offloading_type}" in
+        "software")
+            uci set firewall.@defaults[0].flow_offloading='1'
+            ;;
+        "hardware")
+            uci set firewall.@defaults[0].flow_offloading='1'
+            uci set firewall.@defaults[0].flow_offloading_hw='1'
+            ;;
+    esac
+fi
 if [ -n "$enable_ttyd" ]; then
     uci set ttyd.@ttyd[0].ttyd.ipv6='1' 
     uci set ttyd.@ttyd[0].command='/bin/login -f root' 
-fi 
+fi
 if [ -n "$enable_irqbalance" ]; then
     uci set irqbalance.irqbalance=irqbalance
     uci set irqbalance.irqbalance.enabled='1'
@@ -1337,8 +1353,8 @@ if [ -n "$enable_samba4" ]; then
     uci set samba4.@samba[0].enable_extra_tuning='1'
     uci set samba4.@samba[0].interface='lan'
     uci set samba4.sambashare=sambashare
-    uci set samba4.sambashare.name="${NAS}"
-    uci set samba4.sambashare.path="${MNT}"
+    uci set samba4.sambashare.name="\${NAS}"
+    uci set samba4.sambashare.path="\${MNT}"
     uci set samba4.sambashare.read_only='no'
     uci set samba4.sambashare.force_root='1'
     uci set samba4.sambashare.guest_ok='yes'
@@ -1349,7 +1365,7 @@ fi
 uci commit 2>/dev/null
 echo "All done!"
 exit 0`;
- 
+
 // config.js相当の設定
 const config = {
     show_help: true,
@@ -1363,11 +1379,10 @@ const config = {
     getMapEInfo(version) {
         if (version === 'SNAPSHOT') return { supported: true, scriptType: 'new' };
         if (version.startsWith('19.')) return { supported: true, scriptType: '19' };
-    
+        
         const parts = version.split('.').map(n => parseInt(n, 10));
-        if (parts[0] >= 23) return { supported: true, scriptType: 'new' };    // nftables
-        if (parts[0] >= 21) return { supported: true, scriptType: '21' };     // iptables
-    
+        if (parts[0] >= 21) return { supported: true, scriptType: 'new' };
+        
         return { supported: false, scriptType: null };
     }
 };
@@ -1383,6 +1398,91 @@ let app = {
 
 // 公式と同じグローバル変数
 let current_device = {};
+        
+// map.shのキャッシュ
+let mapShCache = {
+    'new': undefined,  // ← undefined に変更
+    '19': undefined
+};
+
+// ==================== MAP-E専用処理モジュール ====================
+const MapEProcessor = {
+    // MAP-E設定がアクティブかどうかを判定
+    isActive(config, apiInfo) {
+        if (config.connectionMode === 'auto') {
+            return !!(apiInfo?.mape?.brIpv6Address);
+        } else if (config.connectionMode === 'manual') {
+            return config.connectionType === 'mape';
+        }
+        return false;
+    },
+
+    // 必要なmap.shがキャッシュされているかチェック
+    isScriptCached(version) {
+        const mapeInfo = config.getMapEInfo(version);
+        return mapeInfo.supported && !!mapShCache[mapeInfo.scriptType];
+    },
+
+    // map.shダウンロードの確保
+    async ensureScriptReady(version) {
+        const mapeInfo = config.getMapEInfo(version);
+        
+        if (!mapeInfo.supported) {
+            throw new Error(`MAP-E is not supported in OpenWrt ${version}`);
+        }
+
+        if (!mapShCache[mapeInfo.scriptType]) {
+            await loadMapShForVersion(version);
+            
+            if (!mapShCache[mapeInfo.scriptType]) {
+                throw new Error('Failed to download map.sh script. Please check your internet connection and try again.');
+            }
+        }
+    },
+
+    // プレースホルダーの置換
+    replacePlaceholder(content, version) {
+        if (!content.includes('${map_sh_content}')) {
+            return content;
+        }
+
+        const mapeInfo = config.getMapEInfo(version);
+        const mapShContent = mapShCache[mapeInfo.scriptType];
+
+        if (!mapShContent) {
+            throw new Error('MAP-E script not available in cache');
+        }
+
+        const result = content.replace(/\$\{map_sh_content\}/g, mapShContent);
+        
+        if (result.includes('${map_sh_content}')) {
+            throw new Error('MAP-E script embedding failed - placeholder still exists');
+        }
+
+        return result;
+    },
+
+    // 事前準備処理（設定画面表示時）
+    async prepareForDisplay(version, config, apiInfo) {
+        if (this.isActive(config, apiInfo)) {
+            await loadMapShForVersion(version);
+        }
+    },
+
+    // ビルド時処理（プレースホルダー置換）
+    async processForBuild(script, version, config, apiInfo) {
+        if (!this.isActive(config, apiInfo)) {
+            return script;
+        }
+    
+        if (!script.includes('${map_sh_content}')) {
+            return script;
+        }
+    
+        await this.ensureScriptReady(version);
+        return this.replacePlaceholder(script, version);
+    }
+};
 
 // パッケージデータベース
 const PACKAGE_DB = {
@@ -2013,6 +2113,56 @@ function asuI18nDB(lang) {
   current = Array.from(new Set(current));
 
   textarea.value = current.join(' ');
+}
+        
+// ==================== map.sh関連 ====================
+async function loadMapShForVersion(version) {
+    console.log('[MAP-E Download] Starting download for version:', version);
+    
+    try {
+        const mapeInfo = config.getMapEInfo(version);
+        console.log('[MAP-E Download] mapeInfo:', mapeInfo);
+        
+        if (!mapeInfo.supported) {
+            console.log(`[MAP-E Download] MAP-E not supported in version ${version}`);
+            return;
+        }
+        
+        const key = mapeInfo.scriptType;
+        const scriptName = `map.sh.${key}`;
+        const scriptUrl = `https://site-u.pages.dev/build/scripts/${scriptName}`;
+        
+        console.log('[MAP-E Download] Key:', key, 'URL:', scriptUrl);
+        console.log('[MAP-E Download] Cache before:', mapShCache);
+        
+        if (mapShCache[key] === undefined) {
+            console.log('[MAP-E Download] Cache miss, downloading...');
+            const response = await fetch(scriptUrl);
+            
+            if (response.ok) {
+                const content = await response.text();
+                if (content && content.trim().length > 0) {
+                    mapShCache[key] = content;
+                    console.log(`[MAP-E Download] ✓ Saved to cache[${key}], length:`, content.length);
+                    console.log('[MAP-E Download] Cache after:', mapShCache);
+                } else {
+                    console.error(`[MAP-E Download] ✗ ${scriptName} is empty from server`);
+                    mapShCache[key] = '';
+                }
+            } else {
+                console.error(`[MAP-E Download] ✗ Failed to download ${scriptName}: HTTP ${response.status}`);
+                mapShCache[key] = '';
+            }
+        } else {
+            console.log('[MAP-E Download] Cache hit, skipping download');
+        }
+    } catch (error) {
+        console.error(`[MAP-E Download] ✗ Failed to load map.sh for ${version}:`, error);
+        const mapeInfo = config.getMapEInfo(version);
+        if (mapeInfo.supported) {
+            mapShCache[mapeInfo.scriptType] = '';
+        }
+    }
 }
         
 // ==================== イベントバインディング ====================
@@ -3621,11 +3771,33 @@ async function buildAsuRequest() {
         console.log('[buildAsuRequest] Button disabled');
         showProgress('Preparing build request...', 10);
         console.log('[buildAsuRequest] Progress shown');
+        
+        // 初回の進捗表示時に確実にスクロール
+        setTimeout(() => {
+            const progressElement = document.getElementById('build-progress');
+            if (progressElement) {
+                progressElement.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'center' 
+                });
+            }
+        }, 200);
 
         console.log('[buildAsuRequest] Getting packages');
         const packages = split(document.getElementById('asu-packages').value);
         console.log('[buildAsuRequest] Getting script');
         let script = document.getElementById('uci-defaults-content').value;
+        const originalSize = script.length;
+        console.log('[buildAsuRequest] Calling MapEProcessor');
+        // MAP-E処理（必要時のみプレースホルダー置換）
+        script = await MapEProcessor.processForBuild(
+            script, 
+            app.selectedVersion, 
+            getAiosConfig(), 
+            window.cachedApiInfo
+        );
+        console.log('[VERIFY] Script size:', originalSize, '→', script.length, '(', script.length - originalSize, 'bytes added)');
+        console.log('[buildAsuRequest] MapEProcessor completed');
 
         console.log('[buildAsuRequest] Building request body');
         const requestBody = {
@@ -3634,6 +3806,8 @@ async function buildAsuRequest() {
             packages: packages,
             version: app.selectedVersion
         };
+
+        console.log('[buildAsuRequest] About to send fetch request');
 
         if (script && script.trim()) {
             requestBody.defaults = script;
