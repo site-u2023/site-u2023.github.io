@@ -2612,10 +2612,9 @@ async function handleVersionChange(e) {
             // デバイスが存在する場合は復元
             selectDevice(device);
         } else {
-            // デバイスが存在しない場合はフィールドをクリア
-            document.getElementById('models').value = '';
+            // デバイスが存在しない場合はデバイス名は保持、情報部分のみ隠す
             hideDeviceInfo();
-            current_device = {};
+            // current_deviceとデバイス名は保持（クリアしない）
         }
     }
 }
@@ -2638,11 +2637,8 @@ async function loadDevices() {
             console.warn(`Version ${app.selectedVersion} not found (${response.status})`);
             app.devices = [];
             app.versionCode = null;  // versionCodeもクリア
-            // デバイス選択状態もリセット
-            if (current_device && current_device.id) {
-                hideDeviceInfo();
-                current_device = {};
-            }
+            // UIだけ隠す（デバイス名とcurrent_deviceは保持）
+            hideDeviceInfo();
             return;
         }
         
