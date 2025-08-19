@@ -3573,32 +3573,19 @@ async function customizeSetupScript(content, userConfig, apiInfo, selectedPackag
 
     // Custom Commands
     const customCommands = getCustomCommands();
-    const commandsText = customCommands.length > 0 ? customCommands.join('\n') : '';
     
-    // プレースホルダーを探してその直前にコマンドを挿入/削除
-    const placeholderPattern = /^# \$\{custom_commands\}$/m;
+    // プレースホルダー上の領域を完全管理（追加・削除・更新すべて対応）
+    const commandsRegex = /(^# \$\{custom_commands\}$)/m;
+    const placeholderMatch = customized.match(commandsRegex);
     
-    if (customized.includes('# ${custom_commands}')) {
-        if (commandsText) {
-            // プレースホルダーの直前にコマンドを挿入
-            customized = customized.replace(placeholderPattern, `${commandsText}\n# \${custom_commands}`);
+    if (placeholderMatch) {
+        if (customCommands.length > 0) {
+            // コマンドがある場合：プレースホルダーの直前に全コマンドを挿入
+            const commandsText = customCommands.join('\n');
+            customized = customized.replace(commandsRegex, `${commandsText}\n$1`);
         }
-        // コマンドが空の場合は何もしない（プレースホルダーのみ残る）
+        // コマンドが空の場合：プレースホルダーのみ残す（何もしない）
     }
-    
-    // デバッグ：実際の文字列を詳細確認
-    const lines = customized.split('\n');
-    const targetLines = lines.filter(line => line.includes('custom_commands'));
-    console.log('All lines with custom_commands:');
-    targetLines.forEach((line, i) => {
-        console.log(`  Line ${i}: ${JSON.stringify(line)}`);
-        console.log(`  Length: ${line.length}`);
-        console.log(`  Exact match test: ${line === '# ${custom_commands}'}`);
-    });
-
-    // より柔軟な正規表現を使用
-    customized = customized.replace(/^#\s*\$\{custom_commands\}\s*$/m, 
-        customCommands.length > 0 ? commandsText : '# ${custom_commands}');
 
     return customized;
 }   
@@ -4475,15 +4462,9 @@ function createExtraCommandBox() {
 }
 
 function syncCommandsToTemplate() {
-    const commands = getCustomCommands();
-    console.log('syncCommandsToTemplate called, commands:', commands);
-    
     // リアルタイムでテンプレート更新（aios-config開状態のみ）
     if (document.getElementById('use-aios-config-details').open) {
-        console.log('Details is open, calling updateConfiguredTemplate');
         updateConfiguredTemplate();
-    } else {
-        console.log('Details is closed, not updating template');
     }
 }
      
