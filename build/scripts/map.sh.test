@@ -129,36 +129,16 @@ proto_map_setup() {
 	    local portcount=0
 	    local allports=""
 	    
-	    local blocked_pattern=""
-	    for blocked_port in $DONT_SNAT_TO; do
-	        blocked_pattern="$blocked_pattern|^$blocked_port$"
-	    done
-	    blocked_pattern=${blocked_pattern#|}  # 先頭の|を削除
-	    
-	    for portset in $(eval "echo \$RULE_${k}_PORTSETS"); do
-		local startport=$(echo $portset | cut -d'-' -f1)
-		local endport=$(echo $portset | cut -d'-' -f2)
-		
-		for x in $(seq $startport $endport); do
-		    if [ -n "$blocked_pattern" ]; then
-		        echo "$x" | grep -qE "$blocked_pattern" && continue
-		    fi
-		    allports="$allports $portcount : $x , "
-		    portcount=$((portcount + 1))
-		done
-	    done
-	    allports=${allports%??}
+	for x in $(seq $startport $endport); do
+    	if ! echo "$DONT_SNAT_TO" | tr ' ' '\n' | grep -qw $x; then                        
+        	allports="$allports $portcount : $x , "
+        	portcount=`expr $portcount + 1`
+    	fi
+	done
 
-            nft add table inet mape 2>/dev/null || true
-            nft add chain inet mape srcnat {type nat hook postrouting priority 0\; policy accept\; } 2>/dev/null || true
-
-		nft add rule inet mape srcnat ct state established,related accept
-
-		for proto in icmp tcp udp; do
-    		nft add rule inet mape srcnat ip protocol $proto oifname "map-$cfg" \
-        		counter name "mape_${cfg}_${proto}_out" comment "\"MAP-E $cfg $proto outbound\"" \
-        		snat ip to $(eval "echo \$RULE_${k}_IPV4ADDR") : numgen inc mod $portcount map { $allports }
-		done
+	for proto in icmp tcp udp; do
+    	nft add rule inet mape srcnat ip protocol $proto oifname "map-$cfg" snat ip to $(eval "echo \$RULE_${k}_IPV4ADDR") : numgen inc mod $portcount map { $allports }
+	done
 
 	    cat > "/tmp/mape_stats_${cfg}" << EOF
 #!/bin/sh
