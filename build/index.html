@@ -23,13 +23,13 @@
     }
 
     /* PCブラウザ向けIME抑止（対応ブラウザのみ） */
-    #models,
-    #package-search,
-    #package-search-autocomplete input.package-search,
-    #uci-command,
-    #uci-commands-autocomplete input.uci-command {
-        ime-mode: disabled;
-    }
+#models,
+#package-search,
+#package-search-autocomplete input.package-search,
+#command,
+#commands-autocomplete input.command {
+    ime-mode: disabled;
+}
 
     /* 公式互換のオートコンプリート */
     #models-autocomplete {
@@ -1400,6 +1400,7 @@ if [ -n "$enable_samba4" ]; then
     uci set samba4.sambashare.create_mask='0777'
     uci set samba4.sambashare.dir_mask='0777'
 fi
+\${custom_commands}
 uci commit 2>/dev/null
 echo "All done!"
 exit 0`;
@@ -3566,10 +3567,28 @@ async function customizeSetupScript(content, userConfig, apiInfo, selectedPackag
     // SSH Interface
     customized = setScriptVar(customized, 'ssh_interface', userConfig.sshInterface, !!userConfig.sshInterface);
     
-    // Flow Offloading
+// Flow Offloading
     customized = setScriptVar(customized, 'flow_offloading_type', userConfig.flowOffloading, !!userConfig.flowOffloading);
 
+    // Custom Commands
+    const customCommands = getCustomCommands();
+    const commandsText = customCommands.length > 0 ? customCommands.join('\n') : '';
+    customized = setScriptVar(customized, 'custom_commands', commandsText, customCommands.length > 0);
+
     return customized;
+}
+
+function getCustomCommands() {
+    const commands = [];
+    const mainCommand = document.getElementById('command');
+    if (mainCommand && mainCommand.value.trim()) {
+        commands.push(mainCommand.value.trim());
+    }
+    document.querySelectorAll('#commands-autocomplete input.command').forEach(el => {
+        const val = el.value.trim();
+        if (val) commands.push(val);
+    });
+    return commands;
 }
 
 function toggleAiosConfig(e) {
@@ -4334,6 +4353,89 @@ function parsePackagesText(text, source) {
     }
 })();
 
+// ==================== Commands入力ボックス ====================
+(function() {
+    const cmdInput = document.getElementById('command');
+
+    if (cmdInput) {
+        cmdInput.addEventListener('input', function(e) {
+            // リアルタイムでテンプレート更新
+            syncCommandsToTemplate();
+        });
+
+        cmdInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const command = this.value.trim();
+                if (command) {
+                    syncCommandsToTemplate();
+                    // 空欄が無ければ次の欄を生成
+                    if (!document.querySelector('#commands-autocomplete input[value=""]')) {
+                        createExtraCommandBox();
+                    }
+                }
+            }
+        });
+
+        // 空にしたら削除（最低1つは残す）
+        cmdInput.addEventListener('change', function() {
+            if (!this.value.trim()) {
+                const total = document.querySelectorAll('#command, #commands-autocomplete input.command').length;
+                if (total > 1 && this.parentNode) {
+                    this.parentNode.removeChild(this);
+                }
+                syncCommandsToTemplate();
+            }
+        });
+    }
+})();
+
+function createExtraCommandBox() {
+    const host = document.getElementById('commands-autocomplete');
+    const newInput = document.createElement('input');
+    newInput.type = 'text';
+    newInput.className = 'form-control command';
+    newInput.placeholder = 'uci set system.@system[0].hostname=\'MyRouter\'';
+    newInput.autocomplete = 'off';
+    newInput.spellcheck = false;
+    newInput.autocapitalize = 'off';
+    newInput.dataset.extra = '1';
+
+    newInput.addEventListener('input', function() {
+        syncCommandsToTemplate();
+    });
+
+    newInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const command = this.value.trim();
+            if (command) {
+                syncCommandsToTemplate();
+                if (!document.querySelector('#commands-autocomplete input[value=""]')) {
+                    createExtraCommandBox();
+                }
+            }
+        }
+    });
+
+    newInput.addEventListener('change', function() {
+        if (!this.value.trim() && this.dataset.extra === '1') {
+            host.removeChild(this);
+            syncCommandsToTemplate();
+        }
+    });
+
+    host.appendChild(newInput);
+    newInput.focus();
+}
+
+function syncCommandsToTemplate() {
+    // リアルタイムでテンプレート更新（aios-config開状態のみ）
+    if (document.getElementById('use-aios-config-details').open) {
+        updateConfiguredTemplate();
+    }
+}
+     
 function hidePackageAutocomplete() {
     const el = document.querySelector('#package-search-autocomplete .autocomplete-items');
     if (el) el.remove();
