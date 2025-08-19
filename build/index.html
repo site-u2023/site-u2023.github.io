@@ -2293,13 +2293,15 @@ async function loadMapShForVersion(version) {
 }
         
 // ==================== イベントバインディング ====================
-let eventsbound = false;  // 重複実行防止フラグ
-
 function bindEvents() {
+    console.log('[BIND] bindEvents called, eventsbound =', eventsbound);
+    
     if (eventsbound) {
+        console.log('[BIND] Events already bound, skipping');
         return;
     }
     
+    console.log('[BIND] Setting eventsbound = true');
     eventsbound = true;  // フラグセット
     
     const versionsEl = document.getElementById('versions');
@@ -2318,7 +2320,10 @@ function bindEvents() {
     if (pkgSelectorDetails) pkgSelectorDetails.addEventListener('toggle', togglePackageSelector);
     
     const buildBtnEl = document.getElementById('request-build');
-    if (buildBtnEl) buildBtnEl.addEventListener('click', buildAsuRequest);
+    if (buildBtnEl) {
+        console.log('[BIND] Adding click listener to build button');
+        buildBtnEl.addEventListener('click', buildAsuRequest);
+    }
     
     // ===== 基本設定フィールドのリアルタイム反映 =====
     const basicFields = [
