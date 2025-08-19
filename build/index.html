@@ -3860,11 +3860,13 @@ function updateRequiredPackages() {
 
 // ==================== ビルド処理 ====================
 async function buildAsuRequest() {
+    console.log('[buildAsuRequest] Function entered'); // <- この行を追加
     if (!current_device || !current_device.id) {
         alert('Please select a device first');
         return;
     }
-
+    console.log('[buildAsuRequest] Device check passed'); // <- この行を追加
+    
     try {
         document.getElementById('request-build').disabled = true;
         showProgress('Preparing build request...', 10);
