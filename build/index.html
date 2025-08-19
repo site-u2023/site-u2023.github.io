@@ -4434,27 +4434,30 @@ function createExtraCommandBox() {
     newInput.autocapitalize = 'off';
     newInput.dataset.extra = '1';
 
-    newInput.addEventListener('input', function() {
-        syncCommandsToTemplate();
-    });
+    // 確定時のみ反映（inputイベント削除）
+    const commitValue = () => {
+        const val = newInput.value.trim();
+        if (val) {
+            syncCommandsToTemplate();
+            if (!document.querySelector('#commands-autocomplete input[value=""]')) {
+                createExtraCommandBox();
+            }
+        } else {
+            if (newInput.dataset.extra === '1') {
+                host.removeChild(newInput);
+            }
+            syncCommandsToTemplate();
+        }
+    };
 
+    // changeイベントのみ
+    newInput.addEventListener('change', commitValue);
+
+    // Enterキー処理
     newInput.addEventListener('keydown', function(e) {
         if (e.key === 'Enter') {
             e.preventDefault();
-            const command = this.value.trim();
-            if (command) {
-                syncCommandsToTemplate();
-                if (!document.querySelector('#commands-autocomplete input[value=""]')) {
-                    createExtraCommandBox();
-                }
-            }
-        }
-    });
-
-    newInput.addEventListener('change', function() {
-        if (!this.value.trim() && this.dataset.extra === '1') {
-            host.removeChild(this);
-            syncCommandsToTemplate();
+            this.blur(); // changeイベントを発火
         }
     });
 
