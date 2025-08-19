@@ -4384,24 +4384,31 @@ function parsePackagesText(text, source) {
     const cmdInput = document.getElementById('command');
 
     if (cmdInput) {
-        cmdInput.addEventListener('input', function(e) {
-            // リアルタイムでテンプレート更新
-            syncCommandsToTemplate();
-        });
+        // ---- 入力確定後（IME確定・Enter・フォーカスアウト）で反映 ----
+        const commitCommandValue = () => {
+            const val = cmdInput.value.trim();
+            if (val) {
+                syncCommandsToTemplate();
+                // 空欄が無ければ追加欄生成
+                if (!document.querySelector('#commands-autocomplete input[value=""]')) {
+                    createExtraCommandBox();
+                }
+            } else {
+                syncCommandsToTemplate();
+            }
+        };
+
+        // 入力中は反映しない（過去の頭文字症状回避）
+        cmdInput.addEventListener('change', commitCommandValue);
 
         cmdInput.addEventListener('keydown', function(e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
-                const command = this.value.trim();
-                if (command) {
-                    syncCommandsToTemplate();
-                    // 空欄が無ければ次の欄を生成
-                    if (!document.querySelector('#commands-autocomplete input[value=""]')) {
-                        createExtraCommandBox();
-                    }
-                }
+                commitCommandValue();
             }
         });
+
+        cmdInput.addEventListener('blur', commitCommandValue);
 
         // 空にしたら削除（最低1つは残す）
         cmdInput.addEventListener('change', function() {
