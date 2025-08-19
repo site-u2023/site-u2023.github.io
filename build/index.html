@@ -3573,50 +3573,48 @@ async function customizeSetupScript(content, userConfig, apiInfo, selectedPackag
 
     // Custom Commands
     const customCommands = getCustomCommands();
-    const commandsText = Array.isArray(customCommands) && customCommands.length > 0
-        ? customCommands.join('\n')
-        : '';
+    const commandsText = customCommands.length > 0 ? customCommands.join('\n') : '';
+    customized = customized.replace(/^# \$\{custom_commands\}$/m, 
+        customCommands.length > 0 ? commandsText : '# ${custom_commands}');
+    
+    // デバッグ：実際の文字列を詳細確認
+    const lines = customized.split('\n');
+    const targetLines = lines.filter(line => line.includes('custom_commands'));
+    console.log('All lines with custom_commands:');
+    targetLines.forEach((line, i) => {
+        console.log(`  Line ${i}: ${JSON.stringify(line)}`);
+        console.log(`  Length: ${line.length}`);
+        console.log(`  Exact match test: ${line === '# ${custom_commands}'}`);
+    });
 
-    // プレースホルダー行を、空なら元に戻し、非空なら全コマンドを複数行で埋め込む
-    customized = customized.replace(
-        /^#\s*\$\{custom_commands\}\s*$/m,
-        commandsText.length > 0 ? commandsText : '# ${custom_commands}'
-    );
+    // より柔軟な正規表現を使用
+    customized = customized.replace(/^#\s*\$\{custom_commands\}\s*$/m, 
+        customCommands.length > 0 ? commandsText : '# ${custom_commands}');
 
     return customized;
-}
+}   
         
 function getCustomCommands() {
     const commands = [];
-
-    // メイン入力欄
     const mainCommand = document.getElementById('command');
-    if (mainCommand) {
-        const val = mainCommand.value != null ? mainCommand.value.trim() : '';
-        if (val.length > 0) {
-            commands.push(val);
-        }
+    console.log('mainCommand element:', mainCommand);
+    console.log('mainCommand value:', mainCommand?.value);
+    
+    if (mainCommand && mainCommand.value.trim()) {
+        commands.push(mainCommand.value.trim());
     }
-
-    // 追加コマンド欄（空欄以外をすべて反映）
+    
     const extraInputs = document.querySelectorAll('#commands-autocomplete input.command');
-    extraInputs.forEach((el) => {
-        if (!el) return;
-        const val = el.value != null ? el.value.trim() : '';
-        if (val.length > 0) {
-            commands.push(val);
-        }
+    console.log('extra command inputs found:', extraInputs.length);
+    
+    extraInputs.forEach((el, index) => {
+        console.log(`extra input ${index} value:`, el.value);
+        const val = el.value.trim();
+        if (val) commands.push(val);
     });
-
-    // 重複除去（順序は保持）
-    const seen = new Set();
-    const uniqueCommands = commands.filter(cmd => {
-        if (seen.has(cmd)) return false;
-        seen.add(cmd);
-        return true;
-    });
-
-    return uniqueCommands;
+    
+    console.log('final commands array:', commands);
+    return commands;
 }
 
 function toggleAiosConfig(e) {
@@ -4236,34 +4234,39 @@ async function fetchDevicePackages() {
         return;
     }
 
-async function fetchDevicePackages() {
-    app.devicePackages = [];
-    if (!current_device || !current_device.id || !app.selectedVersion) return;
+    async function fetchDevicePackages() {
+        app.devicePackages = [];
+        if (!app.selectedDevice || !app.selectedVersion) return;
 
-    const version = app.selectedVersion;
-    const targetPath = current_device.target; // mediatek/filogic 形式
+        const version = app.selectedVersion;
+        const targetPath = app.selectedDevice.target; // mediatek/filogic 形式
+        const basePath = config.image_urls[version].replace(/\/$/, '');
+        const profilesUrl = `${basePath}/targets/${targetPath}/profiles.json`;
 
-    // profiles.json の URL を config.image_urls[version] 基点で生成
-    const basePath = config.image_urls[version].replace(/\/$/, '');
-    const profilesUrl = `${basePath}/targets/${targetPath}/profiles.json`;
+        let arch;
+        try {
+            const res = await fetch(profilesUrl);
+            if (!res.ok) throw new Error(`profiles.json HTTP ${res.status}`);
+            const meta = await res.json();
+            arch = meta.arch_packages;
+            if (!arch) throw new Error("profiles.json に arch_packages がありません");
+        } catch (e) {
+            console.error("arch_packages 取得失敗:", e);
+            return;
+        }
 
-    let arch;
-    try {
-        const res = await fetch(profilesUrl);
-        if (!res.ok) throw new Error(`profiles.json HTTP ${res.status}`);
-        const meta = await res.json();
-        arch = meta.arch_packages;
-        if (!arch) throw new Error("profiles.json に arch_packages がありません");
-    } catch (e) {
-        console.error("arch_packages 取得失敗:", e);
-        return;
+        // 公式と同じ：arch_packages からパッケージURLを構築
+        const pkgsUrl = `${basePath}/packages/${arch}/Packages`;
+        console.log('[fetchDevicePackages] packages URL:', pkgsUrl);
+
+        // 以降、この pkgsUrl を fetch して処理
     }
 
     // パッケージインデックスURL一覧（targets/kmods と feeds）
     const feeds = ["base", "luci", "packages", "routing", "telephony"];
     const urls = [];
 
-    if (version === 'SNAPSHOT' && typeof kernel !== 'undefined' && kernel) {
+    if (version === 'SNAPSHOT' && kernel) {
         // kmods 配下の Packages
         urls.push(`${basePath}/targets/${targetPath}/kmods/${kernel}/packages/Packages`);
     } else {
@@ -4381,24 +4384,26 @@ function parsePackagesText(text, source) {
     const cmdInput = document.getElementById('command');
 
     if (cmdInput) {
-        const commitCommandValue = () => {
-            const val = cmdInput.value.trim();
+        cmdInput.addEventListener('input', function(e) {
+            // リアルタイムでテンプレート更新
             syncCommandsToTemplate();
-            // ここでだけ生成判定
-            if (val && !document.querySelector('#commands-autocomplete input.command[value=""]')) {
-                createExtraCommandBox();
-            }
-        };
+        });
 
-        cmdInput.addEventListener('change', commitCommandValue);
-        cmdInput.addEventListener('keydown', e => {
+        cmdInput.addEventListener('keydown', function(e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
-                commitCommandValue();
+                const command = this.value.trim();
+                if (command) {
+                    syncCommandsToTemplate();
+                    // 空欄が無ければ次の欄を生成
+                    if (!document.querySelector('#commands-autocomplete input[value=""]')) {
+                        createExtraCommandBox();
+                    }
+                }
             }
         });
-        cmdInput.addEventListener('blur', commitCommandValue);
 
+        // 空にしたら削除（最低1つは残す）
         cmdInput.addEventListener('change', function() {
             if (!this.value.trim()) {
                 const total = document.querySelectorAll('#command, #commands-autocomplete input.command').length;
@@ -4422,25 +4427,32 @@ function createExtraCommandBox() {
     newInput.autocapitalize = 'off';
     newInput.dataset.extra = '1';
 
-    const commit = () => {
-        const val = newInput.value.trim();
+    newInput.addEventListener('input', function() {
         syncCommandsToTemplate();
-        // 元の仕様ではここにも生成判定があった
-        if (val && !document.querySelector('#commands-autocomplete input.command[value=""]')) {
-            createExtraCommandBox();
-        }
-    };
+    });
 
-    newInput.addEventListener('change', commit);
-    newInput.addEventListener('keydown', e => {
+    newInput.addEventListener('keydown', function(e) {
         if (e.key === 'Enter') {
             e.preventDefault();
-            commit();
+            const command = this.value.trim();
+            if (command) {
+                syncCommandsToTemplate();
+                if (!document.querySelector('#commands-autocomplete input[value=""]')) {
+                    createExtraCommandBox();
+                }
+            }
         }
     });
-    newInput.addEventListener('blur', commit);
+
+    newInput.addEventListener('change', function() {
+        if (!this.value.trim() && this.dataset.extra === '1') {
+            host.removeChild(this);
+            syncCommandsToTemplate();
+        }
+    });
 
     host.appendChild(newInput);
+    newInput.focus();
 }
 
 function syncCommandsToTemplate() {
