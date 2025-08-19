@@ -2323,6 +2323,8 @@ function bindEvents() {
     const buildBtnEl = document.getElementById('request-build');
     if (buildBtnEl) {
         console.log('[BIND] Adding click listener to build button');
+        // 既存リスナーを必ず削除してから追加
+        buildBtnEl.removeEventListener('click', buildAsuRequest);
         buildBtnEl.addEventListener('click', buildAsuRequest);
     }
     
@@ -3871,14 +3873,23 @@ function updateRequiredPackages() {
 }
 
 // ==================== ビルド処理 ====================
+// 実行中フラグの追加
+let buildInProgress = false;
+
 async function buildAsuRequest() {
-console.log('[DEBUG] Build started');
-console.log('[DEBUG] MapEProcessor exists:', typeof MapEProcessor);
-console.log('[DEBUG] Current config:', getAiosConfig());
-console.log('[DEBUG] API info:', window.cachedApiInfo);
+    // 重複実行の確実な防止
+    if (buildInProgress) {
+        console.log('[BUILD] Build already in progress, ignoring duplicate call');
+        return;
+    }
+    
+    buildInProgress = true;
+    const callId = Math.random().toString(36).substr(2, 9);
+    console.log(`[BUILD-${callId}] Starting build process`);
     
     if (!current_device || !current_device.id) {
         alert('Please select a device first');
+        buildInProgress = false;
         return;
     }
 
@@ -3956,8 +3967,10 @@ console.log('[DEBUG] API info:', window.cachedApiInfo);
         console.error('Build request failed:', error);
         alert('Build failed: ' + error.message);
         hideProgress();
-    } finally {
+} finally {
         document.getElementById('request-build').disabled = false;
+        buildInProgress = false;
+        console.log(`[BUILD-${callId}] Build process completed, flag reset`);
     }
 }
 
