@@ -2592,6 +2592,11 @@ function updateVersionSelect() {
 async function handleVersionChange(e) {
     app.selectedVersion = e.target.value;
     
+    // 現在のデバイス情報を保存
+    const savedDeviceTitle = document.getElementById('models').value;
+    const savedTarget = current_device.target;
+    const savedId = current_device.id;
+    
     // MAP-E環境でOSバージョン変更時は必要なmap.shを追加ロード
     if (window.cachedApiInfo?.mape?.brIpv6Address) {
         await loadMapShForVersion(app.selectedVersion);
@@ -2599,11 +2604,20 @@ async function handleVersionChange(e) {
     
     await loadDevices();
     
-    // 公式と同じ setModel() 関数でデバイス復元
-    setModel(
-        current_device.target,
-        current_device.id
-    );
+    // デバイスが選択されていた場合の復元処理
+    if (savedDeviceTitle && savedDeviceTitle.trim()) {
+        // 新しいバージョンでデバイスが存在するかチェック
+        const device = app.devices.find(d => getDeviceTitle(d) === savedDeviceTitle);
+        if (device) {
+            // デバイスが存在する場合は復元
+            selectDevice(device);
+        } else {
+            // デバイスが存在しない場合はフィールドをクリア
+            document.getElementById('models').value = '';
+            hideDeviceInfo();
+            current_device = {};
+        }
+    }
 }
 
 // ==================== デバイス管理 ====================
