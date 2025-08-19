@@ -3407,7 +3407,10 @@ async function updateConfiguredTemplate() {
     }
 }
 
-async function customizeSetupScript(content, config, apiInfo, selectedPackages) {
+async function customizeSetupScript(content, userConfig, apiInfo, selectedPackages) {
+    // これでグローバルのconfig.getMapEInfo()が使える
+    const mapeInfo = config.getMapEInfo(app.selectedVersion);
+    
     let customized = content;
 
     // OpenWrt version flags
@@ -3420,19 +3423,19 @@ async function customizeSetupScript(content, config, apiInfo, selectedPackages) 
     }
 
     // Basic settings
-    customized = setScriptVar(customized, 'device_name', config.deviceName, !!config.deviceName);
-    customized = setScriptVar(customized, 'lan_ip_address', config.lanIpv4, !!config.lanIpv4);
-    customized = setScriptVar(customized, 'lan_ipv6_address', config.lanIpv6, !!config.lanIpv6);
-    customized = setScriptVar(customized, 'root_password', config.rootPassword, !!config.rootPassword);
-    customized = setScriptVar(customized, 'language', config.language, !!config.language);
-    customized = setScriptVar(customized, 'country', config.country, !!config.country);
-    customized = setScriptVar(customized, 'timezone', config.timezone, !!config.timezone);
-    customized = setScriptVar(customized, 'zonename', config.zonename, !!config.zonename);
+    customized = setScriptVar(customized, 'device_name', userConfig.deviceName, !!userConfig.deviceName);
+    customized = setScriptVar(customized, 'lan_ip_address', userConfig.lanIpv4, !!userConfig.lanIpv4);
+    customized = setScriptVar(customized, 'lan_ipv6_address', userConfig.lanIpv6, !!userConfig.lanIpv6);
+    customized = setScriptVar(customized, 'root_password', userConfig.rootPassword, !!userConfig.rootPassword);
+    customized = setScriptVar(customized, 'language', userConfig.language, !!userConfig.language);
+    customized = setScriptVar(customized, 'country', userConfig.country, !!userConfig.country);
+    customized = setScriptVar(customized, 'timezone', userConfig.timezone, !!userConfig.timezone);
+    customized = setScriptVar(customized, 'zonename', userConfig.zonename, !!userConfig.zonename);
 
     // Wi-Fi
-    const wifiActive = !!(config.wifiSSID && config.wifiPassword && String(config.wifiPassword).length >= 8);
-    customized = setScriptVar(customized, 'wlan_name', config.wifiSSID, wifiActive);
-    customized = setScriptVar(customized, 'wlan_password', config.wifiPassword, wifiActive);
+    const wifiActive = !!(userConfig.wifiSSID && userConfig.wifiPassword && String(userConfig.wifiPassword).length >= 8);
+    customized = setScriptVar(customized, 'wlan_name', userConfig.wifiSSID, wifiActive);
+    customized = setScriptVar(customized, 'wlan_password', userConfig.wifiPassword, wifiActive);
 
     // APIベースの推奨値
     const api = apiInfo?.mape || {};
@@ -3442,25 +3445,25 @@ async function customizeSetupScript(content, config, apiInfo, selectedPackages) 
     // DS-Lite 候補値（未使用の dsliteVal は削除）
     // MAP-E 候補値
     const mapeVals = {
-        br: config.mapeBr || (apiHasMape ? api.brIpv6Address : ''),
-        ealen: config.mapeEalen || (apiHasMape ? api.eaBitLength : ''),
-        v4p: config.mapeIpv4Prefix || (apiHasMape ? api.ipv4Prefix : ''),
-        v4l: config.mapeIpv4Prefixlen || (apiHasMape ? api.ipv4PrefixLength : ''),
-        v6p: config.mapeIpv6Prefix || (apiHasMape ? api.ipv6Prefix : ''),
-        v6l: config.mapeIpv6Prefixlen || (apiHasMape ? api.ipv6PrefixLength : ''),
-        off: config.mapePsidOffset || (apiHasMape ? api.psIdOffset : ''),
-        psid: config.mapePsidlen || (apiHasMape ? api.psidlen : '')
+        br: userConfig.mapeBr || (apiHasMape ? api.brIpv6Address : ''),
+        ealen: userConfig.mapeEalen || (apiHasMape ? api.eaBitLength : ''),
+        v4p: userConfig.mapeIpv4Prefix || (apiHasMape ? api.ipv4Prefix : ''),
+        v4l: userConfig.mapeIpv4Prefixlen || (apiHasMape ? api.ipv4PrefixLength : ''),
+        v6p: userConfig.mapeIpv6Prefix || (apiHasMape ? api.ipv6Prefix : ''),
+        v6l: userConfig.mapeIpv6Prefixlen || (apiHasMape ? api.ipv6PrefixLength : ''),
+        off: userConfig.mapePsidOffset || (apiHasMape ? api.psIdOffset : ''),
+        psid: userConfig.mapePsidlen || (apiHasMape ? api.psidlen : '')
     };
 
     // GUAプレフィックス
-    const guaPrefix = config.mapeGuaPrefix || calculateGuaPrefixFromApi() || '';
+    const guaPrefix = userConfig.mapeGuaPrefix || calculateGuaPrefixFromApi() || '';
 
     // 選択プロトコル
-    const manual = (config.connectionMode === 'manual');
+    const manual = (userConfig.connectionMode === 'manual');
     let activeProto = '';
 
     if (manual) {
-        activeProto = config.connectionType;
+        activeProto = userConfig.connectionType;
     } else {
         if (apiHasDslite) activeProto = 'dslite';
         else if (apiHasMape) activeProto = 'mape';
@@ -3469,15 +3472,15 @@ async function customizeSetupScript(content, config, apiInfo, selectedPackages) 
 
     // PPPoE
     const pppoeActive = (activeProto === 'pppoe');
-    customized = setScriptVar(customized, 'pppoe_username', config.pppoeUsername || '', pppoeActive);
-    customized = setScriptVar(customized, 'pppoe_password', config.pppoePassword || '', pppoeActive);
+    customized = setScriptVar(customized, 'pppoe_username', userConfig.pppoeUsername || '', pppoeActive);
+    customized = setScriptVar(customized, 'pppoe_password', userConfig.pppoePassword || '', pppoeActive);
 
     // DS-Lite
     let dsliteAddress = '';
-    if (config.dsliteMode === 'auto') {
-        dsliteAddress = (apiInfo?.mape?.aftrIpv6Address) || config.dsliteAftrAddress || '';
+    if (userConfig.dsliteMode === 'auto') {
+        dsliteAddress = (apiInfo?.mape?.aftrIpv6Address) || userConfig.dsliteAftrAddress || '';
     } else {
-        dsliteAddress = config.dsliteAftrAddress || '';
+        dsliteAddress = userConfig.dsliteAftrAddress || '';
     }
     const dsliteActive = (activeProto === 'dslite') && !!dsliteAddress;
     customized = setScriptVar(customized, 'dslite_aftr_address', dsliteAddress, dsliteActive);
@@ -3494,7 +3497,7 @@ async function customizeSetupScript(content, config, apiInfo, selectedPackages) 
     customized = setScriptVar(customized, 'mape_psidlen', mapeVals.psid || '', mapeActive);
 
     // MAP-E GUA
-    const guaActive = mapeActive && (config.mapeType === 'gua' || config.mapeType === 'auto');
+    const guaActive = mapeActive && (userConfig.mapeType === 'gua' || userConfig.mapeType === 'auto');
     customized = setScriptVar(customized, 'mape_gua_mode', guaActive ? '1' : '', guaActive);
     customized = setScriptVar(customized, 'mape_gua_prefix', guaActive ? guaPrefix : '', guaActive);
 
@@ -3526,7 +3529,7 @@ async function customizeSetupScript(content, config, apiInfo, selectedPackages) 
         });
     }
 
-    // MAP-E選択時のみmap.shを埋め込む
+    // MAP-E選択時のみmap.shを埋め込む（グローバルconfigを使用）
     if (mapeActive && config.getMapEInfo(app.selectedVersion).supported) {
         // ★ここで必ずロードを試みる
         await loadMapShForVersion(app.selectedVersion);
@@ -3544,12 +3547,12 @@ async function customizeSetupScript(content, config, apiInfo, selectedPackages) 
     const apActive = (activeProto === 'ap');
 
     // ルーターIP：有値かつ非APのときだけ有効化（空 or AP ではコメントアウト）
-    customized = setScriptVar(customized, 'lan_ip_address', config.lanIpv4, !!config.lanIpv4 && !apActive);
-    customized = setScriptVar(customized, 'lan_ipv6_address', config.lanIpv6, !!config.lanIpv6 && !apActive);
+    customized = setScriptVar(customized, 'lan_ip_address', userConfig.lanIpv4, !!userConfig.lanIpv4 && !apActive);
+    customized = setScriptVar(customized, 'lan_ipv6_address', userConfig.lanIpv6, !!userConfig.lanIpv6 && !apActive);
 
     // AP IP：AP時かつ有値のときだけ有効化（非AP or 空ではコメントアウト）
-    customized = setScriptVar(customized, 'ap_ip_address', config.apIpAddress, apActive && !!config.apIpAddress);
-    customized = setScriptVar(customized, 'ap_gateway', config.apGateway, apActive && !!config.apGateway);
+    customized = setScriptVar(customized, 'ap_ip_address', userConfig.apIpAddress, apActive && !!userConfig.apIpAddress);
+    customized = setScriptVar(customized, 'ap_gateway', userConfig.apGateway, apActive && !!userConfig.apGateway);
 
     return customized;
 }
