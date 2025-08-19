@@ -3596,7 +3596,7 @@ async function customizeSetupScript(content, userConfig, apiInfo, selectedPackag
 
     customized = customized.replace(
         /^#\s*\$\{custom_commands\}\s*$/m,
-        commandsText.length > 0 ? commandsText : '# ${custom_commands}'
+        () => (commandsText.length > 0 ? commandsText : '# ${custom_commands}')
     );
 
     return customized;
