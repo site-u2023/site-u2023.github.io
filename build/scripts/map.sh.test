@@ -152,15 +152,13 @@ proto_map_setup() {
             nft add table inet mape 2>/dev/null || true
             nft add chain inet mape srcnat {type nat hook postrouting priority 0\; policy accept\; } 2>/dev/null || true
 
-            for proto in icmp tcp udp; do
-                # 送信パケット統計（詳細版）
-		nft add rule inet mape srcnat ip protocol $proto oifname "map-$cfg" \
-		    counter name "mape_${cfg}_${proto}_out_pkts" comment "\"MAP-E $cfg $proto outbound packets\"" \
-		    snat ip to $(eval "echo \$RULE_${k}_IPV4ADDR") : numgen inc mod $portcount map { $allports }
-		
-		nft add rule inet mape srcnat ip protocol $proto oifname "map-$cfg" \
-		    counter name "mape_${cfg}_${proto}_out_bytes" comment "\"MAP-E $cfg $proto outbound bytes\""
-	    done
+		nft add rule inet mape srcnat ct state established,related accept
+
+		for proto in icmp tcp udp; do
+    		nft add rule inet mape srcnat ip protocol $proto oifname "map-$cfg" \
+        		counter name "mape_${cfg}_${proto}_out" comment "\"MAP-E $cfg $proto outbound\"" \
+        		snat ip to $(eval "echo \$RULE_${k}_IPV4ADDR") : numgen inc mod $portcount map { $allports }
+		done
 
 	    cat > "/tmp/mape_stats_${cfg}" << EOF
 #!/bin/sh
