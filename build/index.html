@@ -2672,7 +2672,12 @@ async function loadDevices() {
         const data = await response.json();
         app.devices = data.profiles || [];
     } catch (error) {
-        console.error('✗ Network error while loading devices:', error.message || error);
+        // CORS拒否や存在しないバージョンは静かに処理
+        if (error.message && (error.message.includes('Failed to fetch') || error.message.includes('CORS'))) {
+            console.log(`✓ Confirmed: Version ${app.selectedVersion} not available (${error.message})`);
+        } else {
+            console.error('✗ Network error while loading devices:', error.message || error);
+        }
         app.devices = [];
         app.versionCode = null;
         hideDeviceInfo();
