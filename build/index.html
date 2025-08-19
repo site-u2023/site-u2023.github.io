@@ -3572,10 +3572,9 @@ async function customizeSetupScript(content, userConfig, apiInfo, selectedPackag
 
 // Custom Commands
     const customCommands = getCustomCommands();
-    if (customCommands.length > 0) {
-        const commandsText = customCommands.join('\n');
-        customized = customized.replace(/^# \\\$\{custom_commands\}$/m, commandsText);
-    }
+    const commandsText = customCommands.length > 0 ? customCommands.join('\n') : '';
+    customized = customized.replace(/^# \\\$\{custom_commands\}$/m, 
+        customCommands.length > 0 ? commandsText : '# \\${custom_commands}');
     // 空の場合はコメントアウトのまま維持（何もしない）
     
     return customized;
