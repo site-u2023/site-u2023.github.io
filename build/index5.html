@@ -1379,10 +1379,11 @@ const config = {
     getMapEInfo(version) {
         if (version === 'SNAPSHOT') return { supported: true, scriptType: 'new' };
         if (version.startsWith('19.')) return { supported: true, scriptType: '19' };
-        
+    
         const parts = version.split('.').map(n => parseInt(n, 10));
-        if (parts[0] >= 21) return { supported: true, scriptType: 'new' };
-        
+        if (parts[0] >= 23) return { supported: true, scriptType: 'new' };    // nftables
+        if (parts[0] >= 21) return { supported: true, scriptType: '21' };     // iptables
+    
         return { supported: false, scriptType: null };
     }
 };
