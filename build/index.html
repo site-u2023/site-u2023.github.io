@@ -3571,10 +3571,17 @@ async function customizeSetupScript(content, userConfig, apiInfo, selectedPackag
     // Flow Offloading
     customized = setScriptVar(customized, 'flow_offloading_type', userConfig.flowOffloading, !!userConfig.flowOffloading);
 
-    // Custom Commands
+// Custom Commands
     const customCommands = getCustomCommands();
-    const commandsText = customCommands.length > 0 ? customCommands.join('\n') : '';
-    customized = customized.replace(/^# \$\{custom_commands\}$/m, 
+    if (customCommands.length > 0) {
+        // 複数のコマンドを改行で結合
+        const commandsText = customCommands.join('\n');
+        // プレースホルダーを実際のコマンドで置換
+        customized = customized.replace(/^# \$\{custom_commands\}$/m, commandsText);
+    } else {
+        // コマンドがない場合はコメントアウトのまま
+        customized = customized.replace(/^# \$\{custom_commands\}$/m, '# ${custom_commands}');
+    }
         customCommands.length > 0 ? commandsText : '# ${custom_commands}');
     
     // デバッグ：実際の文字列を詳細確認
