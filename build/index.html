@@ -3594,8 +3594,8 @@ async function customizeSetupScript(content, userConfig, apiInfo, selectedPackag
     console.log('customizeSetupScript: template contains:', customized.includes('# \\${custom_commands}'));
     
     const beforeReplace = customized;
-    customized = customized.replace(/^# \\\$\{custom_commands\}$/m, 
-        customCommands.length > 0 ? commandsText : '# \\${custom_commands}');
+    customized = customized.replace(/^# \$\{custom_commands\}$/m, 
+        customCommands.length > 0 ? commandsText : '# ${custom_commands}');
     
     console.log('customizeSetupScript: replacement success:', beforeReplace !== customized);
     console.log('customizeSetupScript: after replace result length:', customized.length);
