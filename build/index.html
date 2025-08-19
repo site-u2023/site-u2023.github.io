@@ -3578,6 +3578,18 @@ async function customizeSetupScript(content, userConfig, apiInfo, selectedPackag
     const commandsText = customCommands.length > 0 ? customCommands.join('\n') : '';
     console.log('customizeSetupScript: commandsText =', commandsText);
     
+    // テンプレート内容の詳細確認
+    console.log('customizeSetupScript: searching for exactly:', '# \\${custom_commands}');
+    
+    // テンプレート内の該当部分を抽出して確認
+    const lines = customized.split('\n');
+    const targetLines = lines.filter(line => line.includes('custom_commands'));
+    console.log('customizeSetupScript: lines containing custom_commands:', targetLines);
+    
+    // 完全一致確認
+    const exactMatch = lines.find(line => line === '# \\${custom_commands}');
+    console.log('customizeSetupScript: exact match found:', exactMatch);
+    
     console.log('customizeSetupScript: before replace, searching for:', '# \\${custom_commands}');
     console.log('customizeSetupScript: template contains:', customized.includes('# \\${custom_commands}'));
     
@@ -3589,7 +3601,7 @@ async function customizeSetupScript(content, userConfig, apiInfo, selectedPackag
     console.log('customizeSetupScript: after replace result length:', customized.length);
 
     return customized;
-}        
+}      
         
 function getCustomCommands() {
     const commands = [];
