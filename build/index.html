@@ -3568,14 +3568,15 @@ async function customizeSetupScript(content, userConfig, apiInfo, selectedPackag
     // SSH Interface
     customized = setScriptVar(customized, 'ssh_interface', userConfig.sshInterface, !!userConfig.sshInterface);
     
-// Flow Offloading
+    // Flow Offloading
     customized = setScriptVar(customized, 'flow_offloading_type', userConfig.flowOffloading, !!userConfig.flowOffloading);
 
-// Custom Commands
+    // Custom Commands
     const customCommands = getCustomCommands();
     const commandsText = customCommands.length > 0 ? customCommands.join('\n') : '';
-    customized = setScriptVar(customized, 'custom_commands', commandsText, customCommands.length > 0);
-
+    customized = customized.replace(/^# \$\{custom_commands\}$/m, 
+        customCommands.length > 0 ? commandsText : '# ${custom_commands}');
+    
     return customized;
 }      
         
