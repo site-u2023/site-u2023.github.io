@@ -3596,25 +3596,31 @@ async function customizeSetupScript(content, userConfig, apiInfo, selectedPackag
         
 function getCustomCommands() {
     const commands = [];
+    // メイン入力欄
     const mainCommand = document.getElementById('command');
-    console.log('mainCommand element:', mainCommand);
-    console.log('mainCommand value:', mainCommand?.value);
-    
-    if (mainCommand && mainCommand.value.trim()) {
-        commands.push(mainCommand.value.trim());
+    if (mainCommand) {
+        const val = mainCommand.value != null ? mainCommand.value.trim() : '';
+        if (val.length > 0) {
+            commands.push(val);
+        }
     }
-    
+    // 追加コマンド欄（空欄以外をすべて反映）
     const extraInputs = document.querySelectorAll('#commands-autocomplete input.command');
-    console.log('extra command inputs found:', extraInputs.length);
-    
-    extraInputs.forEach((el, index) => {
-        console.log(`extra input ${index} value:`, el.value);
-        const val = el.value.trim();
-        if (val) commands.push(val);
+    extraInputs.forEach((el) => {
+        if (!el) return;
+        const val = el.value != null ? el.value.trim() : '';
+        if (val.length > 0) {
+            commands.push(val);
+        }
     });
-    
-    console.log('final commands array:', commands);
-    return commands;
+    // 重複除去（順序は保持）
+    const seen = new Set();
+    const uniqueCommands = commands.filter(cmd => {
+        if (seen.has(cmd)) return false;
+        seen.add(cmd);
+        return true;
+    });
+    return uniqueCommands;
 }
 
 function toggleAiosConfig(e) {
@@ -4382,35 +4388,36 @@ function parsePackagesText(text, source) {
 // ==================== Commands入力ボックス ====================
 (function() {
     const cmdInput = document.getElementById('command');
-
     if (cmdInput) {
-        cmdInput.addEventListener('input', function(e) {
-            // リアルタイムでテンプレート更新
-            syncCommandsToTemplate();
-        });
-
-        cmdInput.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                const command = this.value.trim();
-                if (command) {
-                    syncCommandsToTemplate();
-                    // 空欄が無ければ次の欄を生成
+        // ---- 入力確定後（IME確定・Enter・フォーカスアウト）で反映 ----
+        const commitCommandValue = () => {
+            const val = cmdInput.value.trim();
+            if (val) {
+                syncCommandsToTemplate();
+                // 空欄が無ければ追加欄生成（1つだけ）
+                setTimeout(() => {
                     if (!document.querySelector('#commands-autocomplete input[value=""]')) {
                         createExtraCommandBox();
                     }
-                }
-            }
-        });
-
-        // 空にしたら削除（最低1つは残す）
-        cmdInput.addEventListener('change', function() {
-            if (!this.value.trim()) {
+                }, 100);
+            } else {
+                // 空の場合は削除処理
                 const total = document.querySelectorAll('#command, #commands-autocomplete input.command').length;
-                if (total > 1 && this.parentNode) {
-                    this.parentNode.removeChild(this);
+                if (total > 1 && cmdInput.parentNode) {
+                    cmdInput.parentNode.removeChild(cmdInput);
                 }
                 syncCommandsToTemplate();
+            }
+        };
+        
+        // changeイベントのみに統一
+        cmdInput.addEventListener('change', commitCommandValue);
+
+        // Enterキー処理のみ追加（changeイベントを発火させる）
+        cmdInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                this.blur(); // フォーカスを外してchangeイベントを発火
             }
         });
     }
@@ -4427,27 +4434,30 @@ function createExtraCommandBox() {
     newInput.autocapitalize = 'off';
     newInput.dataset.extra = '1';
 
-    newInput.addEventListener('input', function() {
-        syncCommandsToTemplate();
-    });
+    // 確定時のみ反映（inputイベント削除）
+    const commitValue = () => {
+        const val = newInput.value.trim();
+        if (val) {
+            syncCommandsToTemplate();
+            if (!document.querySelector('#commands-autocomplete input[value=""]')) {
+                createExtraCommandBox();
+            }
+        } else {
+            if (newInput.dataset.extra === '1') {
+                host.removeChild(newInput);
+            }
+            syncCommandsToTemplate();
+        }
+    };
 
+    // changeイベントのみ
+    newInput.addEventListener('change', commitValue);
+
+    // Enterキー処理
     newInput.addEventListener('keydown', function(e) {
         if (e.key === 'Enter') {
             e.preventDefault();
-            const command = this.value.trim();
-            if (command) {
-                syncCommandsToTemplate();
-                if (!document.querySelector('#commands-autocomplete input[value=""]')) {
-                    createExtraCommandBox();
-                }
-            }
-        }
-    });
-
-    newInput.addEventListener('change', function() {
-        if (!this.value.trim() && this.dataset.extra === '1') {
-            host.removeChild(this);
-            syncCommandsToTemplate();
+            this.blur(); // changeイベントを発火
         }
     });
 
