@@ -4384,6 +4384,7 @@ function parsePackagesText(text, source) {
         const commitCommandValue = () => {
             const val = cmdInput.value.trim();
             syncCommandsToTemplate();
+            // ここでだけ生成判定
             if (val && !document.querySelector('#commands-autocomplete input.command[value=""]')) {
                 createExtraCommandBox();
             }
@@ -4421,15 +4422,23 @@ function createExtraCommandBox() {
     newInput.autocapitalize = 'off';
     newInput.dataset.extra = '1';
 
-    // 追加欄では同期のみ（生成判定はしない）
-    newInput.addEventListener('change', syncCommandsToTemplate);
+    const commit = () => {
+        const val = newInput.value.trim();
+        syncCommandsToTemplate();
+        // 元の仕様ではここにも生成判定があった
+        if (val && !document.querySelector('#commands-autocomplete input.command[value=""]')) {
+            createExtraCommandBox();
+        }
+    };
+
+    newInput.addEventListener('change', commit);
     newInput.addEventListener('keydown', e => {
         if (e.key === 'Enter') {
             e.preventDefault();
-            syncCommandsToTemplate();
+            commit();
         }
     });
-    newInput.addEventListener('blur', syncCommandsToTemplate);
+    newInput.addEventListener('blur', commit);
 
     host.appendChild(newInput);
 }
