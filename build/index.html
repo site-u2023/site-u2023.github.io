@@ -2143,10 +2143,14 @@ function asuI18nDB(lang) {
         
 // ==================== map.sh関連 ====================
 async function loadMapShForVersion(version) {
+    console.log('[MAP-E Download] Starting download for version:', version);
+    
     try {
         const mapeInfo = config.getMapEInfo(version);
+        console.log('[MAP-E Download] mapeInfo:', mapeInfo);
+        
         if (!mapeInfo.supported) {
-            console.log(`MAP-E not supported in version ${version}`);
+            console.log(`[MAP-E Download] MAP-E not supported in version ${version}`);
             return;
         }
         
@@ -2154,25 +2158,32 @@ async function loadMapShForVersion(version) {
         const scriptName = `map.sh.${key}`;
         const scriptUrl = `https://site-u.pages.dev/build/scripts/${scriptName}`;
         
+        console.log('[MAP-E Download] Key:', key, 'URL:', scriptUrl);
+        console.log('[MAP-E Download] Cache before:', mapShCache);
+        
         if (mapShCache[key] === undefined) {
+            console.log('[MAP-E Download] Cache miss, downloading...');
             const response = await fetch(scriptUrl);
             
             if (response.ok) {
                 const content = await response.text();
                 if (content && content.trim().length > 0) {
                     mapShCache[key] = content;
-                    console.log(`MAP-E script loaded from: ${scriptUrl}`);
+                    console.log(`[MAP-E Download] ✓ Saved to cache[${key}], length:`, content.length);
+                    console.log('[MAP-E Download] Cache after:', mapShCache);
                 } else {
-                    console.error(`${scriptName} is empty from server`);
+                    console.error(`[MAP-E Download] ✗ ${scriptName} is empty from server`);
                     mapShCache[key] = '';
                 }
             } else {
-                console.error(`Failed to download ${scriptName}: HTTP ${response.status}`);
+                console.error(`[MAP-E Download] ✗ Failed to download ${scriptName}: HTTP ${response.status}`);
                 mapShCache[key] = '';
             }
+        } else {
+            console.log('[MAP-E Download] Cache hit, skipping download');
         }
     } catch (error) {
-        console.error(`Failed to load map.sh for ${version}:`, error);
+        console.error(`[MAP-E Download] ✗ Failed to load map.sh for ${version}:`, error);
         const mapeInfo = config.getMapEInfo(version);
         if (mapeInfo.supported) {
             mapShCache[mapeInfo.scriptType] = '';
@@ -2185,7 +2196,7 @@ function loadMapShContentSync(content, osVersion) {
     console.log('[MAP-E Debug] Starting replacement for version:', osVersion);
     
     // プレースホルダーのチェック（バックスラッシュ付きで検索）
-    if (!content.includes('\\${map_sh_content}')) {
+    if (!content.includes('\${map_sh_content}')) {
         console.log('[MAP-E Debug] No placeholder found');
         return content;
     }
@@ -2209,7 +2220,7 @@ function loadMapShContentSync(content, osVersion) {
     }
     
     // バックスラッシュ付きのプレースホルダーを置換
-    const result = content.replace('\\${map_sh_content}', mapShContent);
+    const result = content.replace('\${map_sh_content}', mapShContent);
     console.log('[MAP-E Debug] Replacement done, content changed:', result !== content);
     
     return result;
