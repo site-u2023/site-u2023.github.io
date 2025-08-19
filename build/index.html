@@ -2193,49 +2193,50 @@ async function loadMapShForVersion(version) {
 
 // map.sh内容を埋め込む（同期版 - キャッシュから取得）
 function loadMapShContentSync(content, osVersion) {
-    console.log('[MAP-E Debug] Starting replacement for version:', osVersion);
+    console.log('[MAP-E] Starting placeholder replacement for version:', osVersion);
     
     // 両方のパターンをチェック（バックスラッシュあり・なし）
     const hasPlaceholderWithBS = content.includes('\\${map_sh_content}');
     const hasPlaceholderWithoutBS = content.includes('${map_sh_content}');
     
-    console.log('[MAP-E Debug] Placeholder with \\:', hasPlaceholderWithBS);
-    console.log('[MAP-E Debug] Placeholder without \\:', hasPlaceholderWithoutBS);
+    console.log('[MAP-E] Placeholder with \\:', hasPlaceholderWithBS);
+    console.log('[MAP-E] Placeholder without \\:', hasPlaceholderWithoutBS);
     
     if (!hasPlaceholderWithBS && !hasPlaceholderWithoutBS) {
-        console.log('[MAP-E Debug] No placeholder found');
+        console.log('[MAP-E] No placeholder found - this is expected during normal template display');
         return content;
     }
     
     const mapeInfo = config.getMapEInfo(osVersion);
-    console.log('[MAP-E Debug] mapeInfo:', mapeInfo);
-    console.log('[MAP-E Debug] Current cache state:', mapShCache);
+    console.log('[MAP-E] mapeInfo:', mapeInfo);
+    console.log('[MAP-E] Current cache state:', mapShCache);
     
     let mapShContent = '';
     
     if (mapeInfo.supported) {
         mapShContent = mapShCache[mapeInfo.scriptType] || '';
-        console.log('[MAP-E Debug] Retrieved content length:', mapShContent.length);
+        console.log('[MAP-E] Retrieved content length:', mapShContent.length);
     }
     
     // map.shが取得できていない場合の警告
     if (!mapShContent) {
-        console.warn('[MAP-E Debug] map.sh content not available - cache miss!');
-        mapShContent = '#!/bin/sh\necho "ERROR: map.sh was not properly embedded" >&2\nexit 1';
+        console.error('[MAP-E] CRITICAL: map.sh content not available - build will fail!');
+        throw new Error('MAP-E script not available in cache');
     }
     
-    // 両方のパターンを置換
+    // 両方のパターンを置換（globalで全置換し、重複処理に対応）
     let result = content;
     if (hasPlaceholderWithBS) {
-        result = result.replace('\\${map_sh_content}', mapShContent);
-        console.log('[MAP-E Debug] Replaced backslash version');
+        result = result.replace(/\\?\$\{map_sh_content\}/g, mapShContent);
+        console.log('[MAP-E] Replaced backslash version');
     }
-    if (hasPlaceholderWithoutBS) {
-        result = result.replace('${map_sh_content}', mapShContent);
-        console.log('[MAP-E Debug] Replaced normal version');
+    if (hasPlaceholderWithoutBS && !hasPlaceholderWithBS) {
+        // バックスラッシュ版で処理済みでない場合のみ実行
+        result = result.replace(/\$\{map_sh_content\}/g, mapShContent);
+        console.log('[MAP-E] Replaced normal version');
     }
     
-    console.log('[MAP-E Debug] Replacement done, content changed:', result !== content);
+    console.log('[MAP-E] Replacement completed, content changed:', result !== content);
     
     return result;
 }
@@ -3565,18 +3566,18 @@ async function customizeSetupScript(content, userConfig, apiInfo, selectedPackag
         });
     }
 
-    // MAP-E選択時のみmap.shを埋め込む（グローバルconfigを使用）
+    // MAP-E選択時: map.shのダウンロードのみ実行、プレースホルダーの置換はビルド時まで遅延
     if (mapeActive && config.getMapEInfo(app.selectedVersion).supported) {
-        // ★ここで必ずロードを試みる
+        // map.shのダウンロードのみ実行（プレースホルダーは保持）
         await loadMapShForVersion(app.selectedVersion);
 
-        // ロード後も空なら警告
+        // ダウンロード状況をログ出力のみ（置換は行わない）
         const mapeInfo = config.getMapEInfo(app.selectedVersion);
         if (!mapShCache[mapeInfo.scriptType]) {
-            console.warn('map.sh cache still empty after load attempt');
+            console.warn('[MAP-E] map.sh not cached yet - will be downloaded during build');
+        } else {
+            console.log('[MAP-E] map.sh ready in cache, placeholder will be replaced during build');
         }
-
-        customized = loadMapShContentSync(customized, app.selectedVersion);
     }
 
     // AP
@@ -3830,7 +3831,7 @@ async function buildAsuRequest() {
 
     try {
         document.getElementById('request-build').disabled = true;
-        showProgress('Sending build request...', 10);
+        showProgress('Preparing build request...', 5);
         
         // 初回の進捗表示時に確実にスクロール
         setTimeout(() => {
@@ -3844,7 +3845,57 @@ async function buildAsuRequest() {
         }, 200);
 
         const packages = split(document.getElementById('asu-packages').value);
-        const script = document.getElementById('uci-defaults-content').value;
+        let script = document.getElementById('uci-defaults-content').value;
+
+        // === MAP-E処理: ビルド時のプレースホルダー置換 ===
+        const config = getAiosConfig();
+        const apiInfo = window.cachedApiInfo || null;
+        const api = apiInfo?.mape || {};
+
+        // MAP-E設定がアクティブかチェック
+        let mapeActive = false;
+        if (config.connectionMode === 'auto') {
+            mapeActive = !!(api.brIpv6Address);
+        } else if (config.connectionMode === 'manual') {
+            mapeActive = (config.connectionType === 'mape');
+        }
+
+        // MAP-E設定がアクティブでプレースホルダーが存在する場合のみ処理
+        if (mapeActive && script.includes('${map_sh_content}')) {
+            showProgress('Preparing MAP-E configuration...', 10);
+            
+            // map.shが必要なバージョンかチェック
+            const mapeInfo = config.getMapEInfo(app.selectedVersion);
+            if (!mapeInfo.supported) {
+                throw new Error(`MAP-E is not supported in OpenWrt ${app.selectedVersion}`);
+            }
+
+            // map.shがキャッシュされていない場合は緊急ダウンロード
+            if (!mapShCache[mapeInfo.scriptType]) {
+                console.warn('[BUILD] map.sh not cached, performing emergency download...');
+                await loadMapShForVersion(app.selectedVersion);
+            }
+
+            // 最終確認: map.shの取得に成功したか
+            if (!mapShCache[mapeInfo.scriptType]) {
+                throw new Error('Failed to download map.sh script. Please check your internet connection and try again.');
+            }
+
+            // プレースホルダーを置換
+            try {
+                script = loadMapShContentSync(script, app.selectedVersion);
+                console.log('[BUILD] MAP-E placeholder replaced successfully');
+            } catch (error) {
+                throw new Error(`Failed to embed MAP-E script: ${error.message}`);
+            }
+
+            // 置換後もプレースホルダーが残っている場合はエラー
+            if (script.includes('${map_sh_content}')) {
+                throw new Error('MAP-E script embedding failed - placeholder still exists');
+            }
+        }
+
+        showProgress('Sending build request...', 15);
 
         const requestBody = {
             target: current_device.target,
