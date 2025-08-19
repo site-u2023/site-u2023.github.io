@@ -3573,7 +3573,13 @@ async function customizeSetupScript(content, userConfig, apiInfo, selectedPackag
 
     // Custom Commands
     const customCommands = getCustomCommands();
+    console.log('DEBUG: customCommands =', customCommands);
+    
     const commandsText = customCommands.length > 0 ? customCommands.join('\n') : '';
+    console.log('DEBUG: commandsText =', JSON.stringify(commandsText));
+    console.log('DEBUG: commandsText length =', commandsText.length);
+    console.log('DEBUG: commandsText lines =', commandsText.split('\n'));
+    
     customized = customized.replace(/^# \$\{custom_commands\}$/m, 
         customCommands.length > 0 ? commandsText : '# ${custom_commands}');
     
