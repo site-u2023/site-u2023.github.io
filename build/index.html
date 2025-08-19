@@ -2597,27 +2597,29 @@ async function handleVersionChange(e) {
     const savedTarget = current_device.target;
     const savedId = current_device.id;
     
-    // MAP-E環境でOSバージョン変更時は必要なmap.shを追加ロード
-    if (window.cachedApiInfo?.mape?.brIpv6Address) {
+    // MAP-E環境でOSバージョン変更時は必要なmap.shを追加ロード（21.02以降のみ）
+    if (window.cachedApiInfo?.mape?.brIpv6Address && 
+        !app.selectedVersion.startsWith('19.') && 
+        !app.selectedVersion.startsWith('20.')) {
         await loadMapShForVersion(app.selectedVersion);
     }
     
     await loadDevices();
     
-// デバイスが選択されていた場合の復元処理
+    // デバイスが選択されていた場合の復元処理
     if (savedDeviceTitle && savedDeviceTitle.trim()) {
         console.log(`Attempting to restore device: ${savedDeviceTitle}, devices loaded: ${app.devices.length}`);
+        // デバッグ用：最初の数個のデバイスタイトルを表示
+        console.log('Available device titles:', app.devices.slice(0, 3).map(d => getDeviceTitle(d)));
+    
         // 新しいバージョンでデバイスが存在するかチェック
         const device = app.devices.find(d => getDeviceTitle(d) === savedDeviceTitle);
         if (device) {
             console.log(`Device found, restoring: ${device.id}`);
-            // デバイスが存在する場合は復元
             selectDevice(device);
         } else {
             console.log(`Device not found in new version, hiding info but keeping name`);
-            // デバイスが存在しない場合はデバイス名は保持、情報部分のみ隠す
             hideDeviceInfo();
-            // current_deviceとデバイス名は保持（クリアしない）
         }
     }
 }
@@ -2635,14 +2637,18 @@ async function loadDevices() {
         
         const response = await fetch(url);
         
-        // 404エラーの場合は静かに処理（エラーログを出さない）
+        // 404は期待される動作（バージョン不存在の確認）
+        if (response.status === 404) {
+            console.log(`✓ Confirmed: Version ${app.selectedVersion} not available`);
+            app.devices = [];
+            app.versionCode = null;
+            hideDeviceInfo();
+            return;
+        }
+        
+        // 404以外のHTTPエラーは実際の問題
         if (!response.ok) {
-            if (response.status === 404) {
-                // 404は期待される動作なので静かに処理
-                console.log(`Version ${app.selectedVersion} not available`);
-            } else {
-                console.warn(`Version ${app.selectedVersion} failed with status ${response.status}`);
-            }
+            console.error(`✗ Failed to load version ${app.selectedVersion}: HTTP ${response.status} - Server or network issue`);
             app.devices = [];
             app.versionCode = null;
             hideDeviceInfo();
@@ -2652,10 +2658,9 @@ async function loadDevices() {
         const data = await response.json();
         app.devices = data.profiles || [];
     } catch (error) {
-        console.error('Failed to load devices:', error);
+        console.error('✗ Network error while loading devices:', error.message || error);
         app.devices = [];
         app.versionCode = null;
-        // UIだけ隠す（デバイス名とcurrent_deviceは保持）
         hideDeviceInfo();
     }
 }
@@ -3410,9 +3415,10 @@ async function customizeSetupScript(content, config, apiInfo, selectedPackages) 
         });
     }
 
-    // MAP-E選択時のみmap.shを埋め込む
-    if (mapeActive) {
-        // ★ここで必ずロードを試みる
+    // MAP-E選択時のみmap.shを埋め込む（21.02以降のみ）
+    if (mapeActive && 
+        !app.selectedVersion.startsWith('19.') && 
+        !app.selectedVersion.startsWith('20.')) {
         await loadMapShForVersion(app.selectedVersion);
 
         // ロード後も空なら警告
