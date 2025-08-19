@@ -137,8 +137,9 @@ proto_map_setup() {
 	    for portset in $(eval "echo \$RULE_${k}_PORTSETS"); do
 		local startport=$(echo $portset | cut -d'-' -f1)
 		local endport=$(echo $portset | cut -d'-' -f2)
+		blocked_regex=$(echo "$DONT_SNAT_TO" | tr ' ' '|')
 		for x in $(seq $startport $endport); do
-			if ! echo "$DONT_SNAT_TO" | tr ' ' '\n' | grep -qw $x; then                        
+    		echo "$x" | grep -qE "^($blocked_regex)$" && continue                       
 				allports="$allports $portcount : $x , "
 				portcount=`expr $portcount + 1`
 			fi
@@ -152,8 +153,9 @@ proto_map_setup() {
 	    local counter=0
 	    
         for proto in icmp tcp udp; do
-    		nft add rule inet mape srcnat ip protocol $proto oifname "map-$cfg" counter comment "\"MAP-E $cfg $proto traffic\"" snat ip to $(eval "echo \$RULE_${k}_IPV4ADDR") : numgen inc mod $portcount map { $allports }
-		done
+			nft add rule inet mape srcnat ip protocol $proto oifname "map-$cfg" snat ip to $(eval "echo \$RULE_${k}_IPV4ADDR") : numgen inc mod $portcount map { $allports }
+			nft add rule inet mape srcnat ip protocol $proto oifname "map-$cfg" counter packets 0 bytes 0 snat ip to $(eval "echo \$RULE_${k}_IPV4ADDR") : numgen inc mod $portcount map { $allports }
+	    done
 
 	  fi
 	  if [ "$maptype" = "map-t" ]; then
