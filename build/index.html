@@ -2307,7 +2307,10 @@ if (buildBtnEl) {
     buildBtnEl.addEventListener('click', (e) => {
         e.preventDefault();  // あらゆるデフォルト動作を阻止
         e.stopImmediatePropagation();  // 他のイベントハンドラーを阻止
+        
+        console.log('[BIND] About to call buildAsuRequest'); // <- この行を追加
         buildAsuRequest();
+        console.log('[BIND] buildAsuRequest call completed'); // <- この行を追加
     });
 }
 
