@@ -3573,11 +3573,10 @@ async function customizeSetupScript(content, userConfig, apiInfo, selectedPackag
 // Custom Commands
     const customCommands = getCustomCommands();
     if (customCommands.length > 0) {
-        // アクティブなコマンドがある場合のみコメント解除して個別行として追加
         const commandsText = customCommands.join('\n');
         customized = customized.replace(/^# \\\$\{custom_commands\}$/m, commandsText);
     }
-    // コマンドがない場合はコメントアウトのまま維持
+    // 空の場合はコメントアウトのまま維持（何もしない）
     
     return customized;
 }        
