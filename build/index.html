@@ -1400,7 +1400,7 @@ if [ -n "$enable_samba4" ]; then
     uci set samba4.sambashare.create_mask='0777'
     uci set samba4.sambashare.dir_mask='0777'
 fi
-\${custom_commands}
+# \${custom_commands}
 uci commit 2>/dev/null
 echo "All done!"
 exit 0`;
@@ -3570,14 +3570,18 @@ async function customizeSetupScript(content, userConfig, apiInfo, selectedPackag
 // Flow Offloading
     customized = setScriptVar(customized, 'flow_offloading_type', userConfig.flowOffloading, !!userConfig.flowOffloading);
 
-    // Custom Commands
+// Custom Commands
     const customCommands = getCustomCommands();
-    const commandsText = customCommands.length > 0 ? customCommands.join('\n') : '';
-    customized = setScriptVar(customized, 'custom_commands', commandsText, customCommands.length > 0);
-
+    if (customCommands.length > 0) {
+        // アクティブなコマンドがある場合のみコメント解除して個別行として追加
+        const commandsText = customCommands.join('\n');
+        customized = customized.replace(/^# \\\$\{custom_commands\}$/m, commandsText);
+    }
+    // コマンドがない場合はコメントアウトのまま維持
+    
     return customized;
-}
-
+}        
+        
 function getCustomCommands() {
     const commands = [];
     const mainCommand = document.getElementById('command');
