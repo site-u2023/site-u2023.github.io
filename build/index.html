@@ -3584,13 +3584,23 @@ async function customizeSetupScript(content, userConfig, apiInfo, selectedPackag
 function getCustomCommands() {
     const commands = [];
     const mainCommand = document.getElementById('command');
+    console.log('mainCommand element:', mainCommand);
+    console.log('mainCommand value:', mainCommand?.value);
+    
     if (mainCommand && mainCommand.value.trim()) {
         commands.push(mainCommand.value.trim());
     }
-    document.querySelectorAll('#commands-autocomplete input.command').forEach(el => {
+    
+    const extraInputs = document.querySelectorAll('#commands-autocomplete input.command');
+    console.log('extra command inputs found:', extraInputs.length);
+    
+    extraInputs.forEach((el, index) => {
+        console.log(`extra input ${index} value:`, el.value);
         const val = el.value.trim();
         if (val) commands.push(val);
     });
+    
+    console.log('final commands array:', commands);
     return commands;
 }
 
@@ -4433,9 +4443,15 @@ function createExtraCommandBox() {
 }
 
 function syncCommandsToTemplate() {
+    const commands = getCustomCommands();
+    console.log('syncCommandsToTemplate called, commands:', commands);
+    
     // リアルタイムでテンプレート更新（aios-config開状態のみ）
     if (document.getElementById('use-aios-config-details').open) {
+        console.log('Details is open, calling updateConfiguredTemplate');
         updateConfiguredTemplate();
+    } else {
+        console.log('Details is closed, not updating template');
     }
 }
      
