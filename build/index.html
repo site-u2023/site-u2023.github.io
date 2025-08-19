@@ -1510,6 +1510,81 @@ let mapShCache = {
     '19': undefined
 };
 
+// ==================== MAP-E専用処理モジュール ====================
+const MapEProcessor = {
+    // MAP-E設定がアクティブかどうかを判定
+    isActive(config, apiInfo) {
+        if (config.connectionMode === 'auto') {
+            return !!(apiInfo?.mape?.brIpv6Address);
+        } else if (config.connectionMode === 'manual') {
+            return config.connectionType === 'mape';
+        }
+        return false;
+    },
+
+    // 必要なmap.shがキャッシュされているかチェック
+    isScriptCached(version) {
+        const mapeInfo = config.getMapEInfo(version);
+        return mapeInfo.supported && !!mapShCache[mapeInfo.scriptType];
+    },
+
+    // map.shダウンロードの確保
+    async ensureScriptReady(version) {
+        const mapeInfo = config.getMapEInfo(version);
+        
+        if (!mapeInfo.supported) {
+            throw new Error(`MAP-E is not supported in OpenWrt ${version}`);
+        }
+
+        if (!mapShCache[mapeInfo.scriptType]) {
+            await loadMapShForVersion(version);
+            
+            if (!mapShCache[mapeInfo.scriptType]) {
+                throw new Error('Failed to download map.sh script. Please check your internet connection and try again.');
+            }
+        }
+    },
+
+    // プレースホルダーの置換
+    replacePlaceholder(content, version) {
+        if (!content.includes('${map_sh_content}')) {
+            return content;
+        }
+
+        const mapeInfo = config.getMapEInfo(version);
+        const mapShContent = mapShCache[mapeInfo.scriptType];
+
+        if (!mapShContent) {
+            throw new Error('MAP-E script not available in cache');
+        }
+
+        const result = content.replace(/\$\{map_sh_content\}/g, mapShContent);
+        
+        if (result.includes('${map_sh_content}')) {
+            throw new Error('MAP-E script embedding failed - placeholder still exists');
+        }
+
+        return result;
+    },
+
+    // 事前準備処理（設定画面表示時）
+    async prepareForDisplay(version, config, apiInfo) {
+        if (this.isActive(config, apiInfo)) {
+            await loadMapShForVersion(version);
+        }
+    },
+
+    // ビルド時処理（プレースホルダー置換）
+    async processForBuild(script, version, config, apiInfo) {
+        if (!this.isActive(config, apiInfo)) {
+            return script;
+        }
+
+        await this.ensureScriptReady(version);
+        return this.replacePlaceholder(script, version);
+    }
+};
+
 // パッケージデータベース
 const PACKAGE_DB = {
     categories: [
@@ -2189,56 +2264,6 @@ async function loadMapShForVersion(version) {
             mapShCache[mapeInfo.scriptType] = '';
         }
     }
-}
-
-// map.sh内容を埋め込む（同期版 - キャッシュから取得）
-function loadMapShContentSync(content, osVersion) {
-    console.log('[MAP-E] Starting placeholder replacement for version:', osVersion);
-    
-    // 両方のパターンをチェック（バックスラッシュあり・なし）
-    const hasPlaceholderWithBS = content.includes('\\${map_sh_content}');
-    const hasPlaceholderWithoutBS = content.includes('${map_sh_content}');
-    
-    console.log('[MAP-E] Placeholder with \\:', hasPlaceholderWithBS);
-    console.log('[MAP-E] Placeholder without \\:', hasPlaceholderWithoutBS);
-    
-    if (!hasPlaceholderWithBS && !hasPlaceholderWithoutBS) {
-        console.log('[MAP-E] No placeholder found - this is expected during normal template display');
-        return content;
-    }
-    
-    const mapeInfo = config.getMapEInfo(osVersion);
-    console.log('[MAP-E] mapeInfo:', mapeInfo);
-    console.log('[MAP-E] Current cache state:', mapShCache);
-    
-    let mapShContent = '';
-    
-    if (mapeInfo.supported) {
-        mapShContent = mapShCache[mapeInfo.scriptType] || '';
-        console.log('[MAP-E] Retrieved content length:', mapShContent.length);
-    }
-    
-    // map.shが取得できていない場合の警告
-    if (!mapShContent) {
-        console.error('[MAP-E] CRITICAL: map.sh content not available - build will fail!');
-        throw new Error('MAP-E script not available in cache');
-    }
-    
-    // 両方のパターンを置換（globalで全置換し、重複処理に対応）
-    let result = content;
-    if (hasPlaceholderWithBS) {
-        result = result.replace(/\\?\$\{map_sh_content\}/g, mapShContent);
-        console.log('[MAP-E] Replaced backslash version');
-    }
-    if (hasPlaceholderWithoutBS && !hasPlaceholderWithBS) {
-        // バックスラッシュ版で処理済みでない場合のみ実行
-        result = result.replace(/\$\{map_sh_content\}/g, mapShContent);
-        console.log('[MAP-E] Replaced normal version');
-    }
-    
-    console.log('[MAP-E] Replacement completed, content changed:', result !== content);
-    
-    return result;
 }
         
 // ==================== イベントバインディング ====================
@@ -3566,18 +3591,9 @@ async function customizeSetupScript(content, userConfig, apiInfo, selectedPackag
         });
     }
 
-    // MAP-E選択時: map.shのダウンロードのみ実行、プレースホルダーの置換はビルド時まで遅延
+    // MAP-E設定時の事前準備（ダウンロードのみ、プレースホルダーは保持）
     if (mapeActive && config.getMapEInfo(app.selectedVersion).supported) {
-        // map.shのダウンロードのみ実行（プレースホルダーは保持）
-        await loadMapShForVersion(app.selectedVersion);
-
-        // ダウンロード状況をログ出力のみ（置換は行わない）
-        const mapeInfo = config.getMapEInfo(app.selectedVersion);
-        if (!mapShCache[mapeInfo.scriptType]) {
-            console.warn('[MAP-E] map.sh not cached yet - will be downloaded during build');
-        } else {
-            console.log('[MAP-E] map.sh ready in cache, placeholder will be replaced during build');
-        }
+        await MapEProcessor.prepareForDisplay(app.selectedVersion, config, apiInfo);
     }
 
     // AP
@@ -3831,7 +3847,7 @@ async function buildAsuRequest() {
 
     try {
         document.getElementById('request-build').disabled = true;
-        showProgress('Preparing build request...', 5);
+        showProgress('Preparing build request...', 10);
         
         // 初回の進捗表示時に確実にスクロール
         setTimeout(() => {
@@ -3847,55 +3863,13 @@ async function buildAsuRequest() {
         const packages = split(document.getElementById('asu-packages').value);
         let script = document.getElementById('uci-defaults-content').value;
 
-        // === MAP-E処理: ビルド時のプレースホルダー置換 ===
-        const config = getAiosConfig();
-        const apiInfo = window.cachedApiInfo || null;
-        const api = apiInfo?.mape || {};
-
-        // MAP-E設定がアクティブかチェック
-        let mapeActive = false;
-        if (config.connectionMode === 'auto') {
-            mapeActive = !!(api.brIpv6Address);
-        } else if (config.connectionMode === 'manual') {
-            mapeActive = (config.connectionType === 'mape');
-        }
-
-        // MAP-E設定がアクティブでプレースホルダーが存在する場合のみ処理
-        if (mapeActive && script.includes('${map_sh_content}')) {
-            showProgress('Preparing MAP-E configuration...', 10);
-            
-            // map.shが必要なバージョンかチェック
-            const mapeInfo = config.getMapEInfo(app.selectedVersion);
-            if (!mapeInfo.supported) {
-                throw new Error(`MAP-E is not supported in OpenWrt ${app.selectedVersion}`);
-            }
-
-            // map.shがキャッシュされていない場合は緊急ダウンロード
-            if (!mapShCache[mapeInfo.scriptType]) {
-                console.warn('[BUILD] map.sh not cached, performing emergency download...');
-                await loadMapShForVersion(app.selectedVersion);
-            }
-
-            // 最終確認: map.shの取得に成功したか
-            if (!mapShCache[mapeInfo.scriptType]) {
-                throw new Error('Failed to download map.sh script. Please check your internet connection and try again.');
-            }
-
-            // プレースホルダーを置換
-            try {
-                script = loadMapShContentSync(script, app.selectedVersion);
-                console.log('[BUILD] MAP-E placeholder replaced successfully');
-            } catch (error) {
-                throw new Error(`Failed to embed MAP-E script: ${error.message}`);
-            }
-
-            // 置換後もプレースホルダーが残っている場合はエラー
-            if (script.includes('${map_sh_content}')) {
-                throw new Error('MAP-E script embedding failed - placeholder still exists');
-            }
-        }
-
-        showProgress('Sending build request...', 15);
+        // MAP-E処理（必要時のみプレースホルダー置換）
+        script = await MapEProcessor.processForBuild(
+            script, 
+            app.selectedVersion, 
+            getAiosConfig(), 
+            window.cachedApiInfo
+        );
 
         const requestBody = {
             target: current_device.target,
@@ -3907,7 +3881,7 @@ async function buildAsuRequest() {
         if (script && script.trim()) {
             requestBody.defaults = script;
         }
-
+            
         const response = await fetch('https://sysupgrade.openwrt.org/api/v1/build', {
             method: 'POST',
             headers: {
