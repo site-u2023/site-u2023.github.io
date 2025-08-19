@@ -3573,11 +3573,21 @@ async function customizeSetupScript(content, userConfig, apiInfo, selectedPackag
 
 // Custom Commands
     const customCommands = getCustomCommands();
+    console.log('customizeSetupScript: customCommands =', customCommands);
+    
     const commandsText = customCommands.length > 0 ? customCommands.join('\n') : '';
+    console.log('customizeSetupScript: commandsText =', commandsText);
+    
+    console.log('customizeSetupScript: before replace, searching for:', '# \\${custom_commands}');
+    console.log('customizeSetupScript: template contains:', customized.includes('# \\${custom_commands}'));
+    
+    const beforeReplace = customized;
     customized = customized.replace(/^# \\\$\{custom_commands\}$/m, 
         customCommands.length > 0 ? commandsText : '# \\${custom_commands}');
-    // 空の場合はコメントアウトのまま維持（何もしない）
     
+    console.log('customizeSetupScript: replacement success:', beforeReplace !== customized);
+    console.log('customizeSetupScript: after replace result length:', customized.length);
+
     return customized;
 }        
         
