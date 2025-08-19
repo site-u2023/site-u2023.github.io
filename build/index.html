@@ -3795,6 +3795,17 @@ async function buildAsuRequest() {
     try {
         document.getElementById('request-build').disabled = true;
         showProgress('Sending build request...', 10);
+        
+        // 初回の進捗表示時に確実にスクロール
+        setTimeout(() => {
+            const progressElement = document.getElementById('build-progress');
+            if (progressElement) {
+                progressElement.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'center' 
+                });
+            }
+        }, 200);
 
         const packages = split(document.getElementById('asu-packages').value);
         const script = document.getElementById('uci-defaults-content').value;
@@ -3950,6 +3961,18 @@ function showProgress(message, percentage) {
     document.getElementById('build-message').textContent = message;
     document.getElementById('progress-bar').style.width = `${percentage}%`;
     document.getElementById('build-progress').style.display = 'block';
+    
+    // 進捗バーエリアにスクロールして必ず見えるようにする
+    setTimeout(() => {
+        const progressElement = document.getElementById('build-progress');
+        if (progressElement) {
+            progressElement.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'nearest',
+                inline: 'nearest'
+            });
+        }
+    }, 100); // DOM更新後にスクロール
 }
 
 function hideProgress() {
