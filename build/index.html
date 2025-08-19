@@ -2604,20 +2604,22 @@ async function handleVersionChange(e) {
     
     await loadDevices();
     
-    // デバイスが選択されていた場合の復元処理
+// デバイスが選択されていた場合の復元処理
     if (savedDeviceTitle && savedDeviceTitle.trim()) {
+        console.log(`Attempting to restore device: ${savedDeviceTitle}, devices loaded: ${app.devices.length}`);
         // 新しいバージョンでデバイスが存在するかチェック
         const device = app.devices.find(d => getDeviceTitle(d) === savedDeviceTitle);
         if (device) {
+            console.log(`Device found, restoring: ${device.id}`);
             // デバイスが存在する場合は復元
             selectDevice(device);
         } else {
+            console.log(`Device not found in new version, hiding info but keeping name`);
             // デバイスが存在しない場合はデバイス名は保持、情報部分のみ隠す
             hideDeviceInfo();
             // current_deviceとデバイス名は保持（クリアしない）
         }
     }
-}
 
 // ==================== デバイス管理 ====================
 async function loadDevices() {
@@ -2632,12 +2634,16 @@ async function loadDevices() {
         
         const response = await fetch(url);
         
-        // 404エラーの場合は空のデバイスリストを設定
+        // 404エラーの場合は静かに処理（エラーログを出さない）
         if (!response.ok) {
-            console.warn(`Version ${app.selectedVersion} not found (${response.status})`);
+            if (response.status === 404) {
+                // 404は期待される動作なので静かに処理
+                console.log(`Version ${app.selectedVersion} not available`);
+            } else {
+                console.warn(`Version ${app.selectedVersion} failed with status ${response.status}`);
+            }
             app.devices = [];
-            app.versionCode = null;  // versionCodeもクリア
-            // UIだけ隠す（デバイス名とcurrent_deviceは保持）
+            app.versionCode = null;
             hideDeviceInfo();
             return;
         }
