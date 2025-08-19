@@ -2320,34 +2320,39 @@ function bindEvents() {
     const pkgSelectorDetails = document.getElementById('use-package-selector-details');
     if (pkgSelectorDetails) pkgSelectorDetails.addEventListener('toggle', togglePackageSelector);
     
-    const buildBtnEl = document.getElementById('request-build');
-    if (buildBtnEl) {
-        console.log('[BIND] Adding click listener to build button');
-        // 既存リスナーを必ず削除してから追加
-        buildBtnEl.removeEventListener('click', buildAsuRequest);
-        buildBtnEl.addEventListener('click', buildAsuRequest);
-    }
+const buildBtnEl = document.getElementById('request-build');
+if (buildBtnEl) {
+    console.log('[BIND] Adding click listener to build button');
     
-    // ===== 基本設定フィールドのリアルタイム反映 =====
-    const basicFields = [
-        'aios-language',
-        'aios-country', 
-        'aios-timezone',
-        'aios-zonename',
-        'aios-lan-ipv4',
-        'aios-lan-ipv6',
-        'aios-device-name',
-        'aios-root-password',
-        'aios-wifi-ssid',
-        'aios-wifi-password'
-    ];
-    
-    basicFields.forEach(fieldId => {
-        const el = document.getElementById(fieldId);
-        if (el) {
-            el.addEventListener('input', () => syncTemplateAndPackages({ trigger: 'script' }));
-        }
+    // href="javascript:..."を無効化して重複実行を根絶
+    buildBtnEl.removeAttribute('href');
+    buildBtnEl.addEventListener('click', (e) => {
+        e.preventDefault();  // あらゆるデフォルト動作を阻止
+        e.stopImmediatePropagation();  // 他のイベントハンドラーを阻止
+        buildAsuRequest();
     });
+}
+
+// ===== 基本設定フィールドのリアルタイム反映 =====
+const basicFields = [
+    'aios-language',
+    'aios-country', 
+    'aios-timezone',
+    'aios-zonename',
+    'aios-lan-ipv4',
+    'aios-lan-ipv6',
+    'aios-device-name',
+    'aios-root-password',
+    'aios-wifi-ssid',
+    'aios-wifi-password'
+];
+
+basicFields.forEach(fieldId => {
+    const el = document.getElementById(fieldId);
+    if (el) {
+        el.addEventListener('input', () => syncTemplateAndPackages({ trigger: 'script' }));
+    }
+});
     
     // ===== PPPoE設定フィールドのリアルタイム反映 =====
     const pppoeFields = [
@@ -3877,8 +3882,10 @@ function updateRequiredPackages() {
 let buildInProgress = false;
 
 async function buildAsuRequest() {
+    // 呼び出し元のスタックトレースを表示
+    console.log('[BUILD] Called from:', new Error().stack);
     // 重複実行の確実な防止
-    if (buildInProgress) {
+  if (buildInProgress) {
         console.log('[BUILD] Build already in progress, ignoring duplicate call');
         return;
     }
