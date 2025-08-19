@@ -3574,21 +3574,23 @@ async function customizeSetupScript(content, userConfig, apiInfo, selectedPackag
     // Custom Commands
     const customCommands = getCustomCommands();
     
-    // プレースホルダー上の領域を完全管理（追加・削除・更新すべて対応）
-    const commandsRegex = /(^# \$\{custom_commands\}$)/m;
-    const placeholderMatch = customized.match(commandsRegex);
+    // プレースホルダー上の管理領域を完全再構築（累積防止）
+    const managedRegion = /(fi\n)([\s\S]*?)(^# \$\{custom_commands\}$)/m;
+    const regionMatch = customized.match(managedRegion);
     
-    if (placeholderMatch) {
+    if (regionMatch) {
         if (customCommands.length > 0) {
-            // コマンドがある場合：プレースホルダーの直前に全コマンドを挿入
+            // UIのコマンドリストで管理領域を完全置換
             const commandsText = customCommands.join('\n');
-            customized = customized.replace(commandsRegex, `${commandsText}\n$1`);
+            customized = customized.replace(managedRegion, `$1${commandsText}\n$3`);
+        } else {
+            // コマンドが空の場合：プレースホルダーのみ残す
+            customized = customized.replace(managedRegion, `$1$3`);
         }
-        // コマンドが空の場合：プレースホルダーのみ残す（何もしない）
     }
-
+    
     return customized;
-}   
+}  
         
 function getCustomCommands() {
     const commands = [];
