@@ -3587,12 +3587,20 @@ async function customizeSetupScript(content, userConfig, apiInfo, selectedPackag
         console.log(`  Exact match test: ${line === '# ${custom_commands}'}`);
     });
 
-    // より柔軟な正規表現を使用
-    customized = customized.replace(/^#\s*\$\{custom_commands\}\s*$/m, 
-        customCommands.length > 0 ? commandsText : '# ${custom_commands}');
+    // より柔軟な正規表現を使用し、複数行の customCommands にも完全対応
+    // さらに、customCommands が空の場合は必ず元のプレースホルダー行 "# ${custom_commands}" に差し戻す
+    // 複数コマンドがある場合は "\n" 区切りでテンプレート内に全行挿入する
+    const commandsText = Array.isArray(customCommands) && customCommands.length > 0
+        ? customCommands.join('\n')
+        : '';
+
+    customized = customized.replace(
+        /^#\s*\$\{custom_commands\}\s*$/m,
+        commandsText.length > 0 ? commandsText : '# ${custom_commands}'
+    );
 
     return customized;
-}   
+}
         
 function getCustomCommands() {
     const commands = [];
@@ -4399,8 +4407,8 @@ function parsePackagesText(text, source) {
             const val = cmdInput.value.trim();
             if (val) {
                 syncCommandsToTemplate();
-                // 空欄が無ければ追加欄生成
-                if (!document.querySelector('#commands-autocomplete input[value=""]')) {
+                // extra欄のみを対象に空欄チェック
+                if (!document.querySelector('#commands-autocomplete input.command[value=""]')) {
                     createExtraCommandBox();
                 }
             } else {
