@@ -25,7 +25,9 @@
     /* PCブラウザ向けIME抑止（対応ブラウザのみ） */
     #models,
     #package-search,
-    #package-search-autocomplete input.package-search {
+    #package-search-autocomplete input.package-search,
+    #uci-command,
+    #uci-commands-autocomplete input.uci-command {
         ime-mode: disabled;
     }
 
@@ -771,11 +773,30 @@
                 </div>
 
                 <!-- setup.sh設定セクション -->
-                <div class="aios-section">
+<div class="aios-section">
                     <details id="use-aios-config-details">
                         <summary>Script to run on first boot (uci-defaults)</summary>
                         
                         <div id="aios-config">
+                            <!-- UCI Commands -->
+                            <div class="package-category">
+                              <h4>UCI Commands</h4>
+                              <div class="package-category-description">
+                                Add custom UCI set commands. They'll be executed during first boot.
+                              </div>  
+                              <div id="uci-commands-autocomplete" class="autocomplete">
+                                  <input type="text"
+                                    id="uci-command"
+                                    placeholder="uci set system.@system[0].hostname='MyRouter'"
+                                    lang="en"
+                                    inputmode="latin"
+                                    autocomplete="off"
+                                    spellcheck="false"
+                                    autocapitalize="off"
+                                    class="form-control">
+                              </div>
+                            </div>
+
                             <h4>Basic Configuration</h4>
                         
                         <!-- 1行目: Language と Country -->
