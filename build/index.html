@@ -3574,6 +3574,8 @@ async function customizeSetupScript(content, userConfig, apiInfo, selectedPackag
     // Custom Commands
     const customCommands = getCustomCommands();
     const commandsText = customCommands.length > 0 ? customCommands.join('\n') : '';
+    customized = customized.replace(/^# \$\{custom_commands\}$/m, 
+        customCommands.length > 0 ? commandsText : '# ${custom_commands}');
     
     // デバッグ：実際の文字列を詳細確認
     const lines = customized.split('\n');
