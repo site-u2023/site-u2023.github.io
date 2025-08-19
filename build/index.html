@@ -3574,16 +3574,16 @@ async function customizeSetupScript(content, userConfig, apiInfo, selectedPackag
     // Custom Commands
     const customCommands = getCustomCommands();
     
-    // プレースホルダーの直前領域を特定して全て置換
-    const commandsPattern = /(# Custom Commands\n)([\s\S]*?)(^# \\\$\{custom_commands\}$)/m;
+    // プレースホルダーを探してその直前にコマンドを挿入/削除
+    const placeholderPattern = /^# \$\{custom_commands\}$/m;
     
-    if (customCommands.length > 0) {
-        const commandsText = customCommands.join('\n');
-        // プレースホルダー上に現在のコマンドリストを完全書き換え
-        customized = customized.replace(commandsPattern, `$1${commandsText}\n$3`);
-    } else {
-        // コマンドが空の場合は、プレースホルダー上の領域をクリア
-        customized = customized.replace(commandsPattern, `$1$3`);
+    if (customized.includes('# ${custom_commands}')) {
+        if (customCommands.length > 0) {
+            const commandsText = customCommands.join('\n');
+            // プレースホルダーの直前にコマンドを挿入
+            customized = customized.replace(placeholderPattern, `${commandsText}\n# \${custom_commands}`);
+        }
+        // コマンドが空の場合は何もしない（プレースホルダーのみ残る）
     }
     
     // デバッグ：実際の文字列を詳細確認
