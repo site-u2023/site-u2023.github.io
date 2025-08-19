@@ -3902,12 +3902,16 @@ async function buildAsuRequest() {
             window.cachedApiInfo
         );
         console.log('[buildAsuRequest] MapEProcessor completed');
+
+        console.log('[buildAsuRequest] Building request body');
         const requestBody = {
             target: current_device.target,
             profile: current_device.id,
             packages: packages,
             version: app.selectedVersion
         };
+
+        console.log('[buildAsuRequest] About to send fetch request');
 
         if (script && script.trim()) {
             requestBody.defaults = script;
