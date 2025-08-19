@@ -3860,16 +3860,22 @@ function updateRequiredPackages() {
 
 // ==================== ビルド処理 ====================
 async function buildAsuRequest() {
-    console.log('[buildAsuRequest] Function entered'); // <- この行を追加
+    console.log('[buildAsuRequest] Function entered');
+    
     if (!current_device || !current_device.id) {
+        console.log('[buildAsuRequest] No device selected');
         alert('Please select a device first');
         return;
     }
-    console.log('[buildAsuRequest] Device check passed'); // <- この行を追加
     
+    console.log('[buildAsuRequest] Device check passed');
+
     try {
+        console.log('[buildAsuRequest] Entering try block');
         document.getElementById('request-build').disabled = true;
+        console.log('[buildAsuRequest] Button disabled');
         showProgress('Preparing build request...', 10);
+        console.log('[buildAsuRequest] Progress shown');
         
         // 初回の進捗表示時に確実にスクロール
         setTimeout(() => {
@@ -3882,9 +3888,12 @@ async function buildAsuRequest() {
             }
         }, 200);
 
+        console.log('[buildAsuRequest] Getting packages');
         const packages = split(document.getElementById('asu-packages').value);
+        console.log('[buildAsuRequest] Getting script');
         let script = document.getElementById('uci-defaults-content').value;
 
+        console.log('[buildAsuRequest] Calling MapEProcessor');
         // MAP-E処理（必要時のみプレースホルダー置換）
         script = await MapEProcessor.processForBuild(
             script, 
@@ -3892,7 +3901,7 @@ async function buildAsuRequest() {
             getAiosConfig(), 
             window.cachedApiInfo
         );
-        
+        console.log('[buildAsuRequest] MapEProcessor completed');
         const requestBody = {
             target: current_device.target,
             profile: current_device.id,
