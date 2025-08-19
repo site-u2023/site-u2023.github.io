@@ -2609,7 +2609,6 @@ async function handleVersionChange(e) {
 // ==================== デバイス管理 ====================
 async function loadDevices() {
     if (!app.selectedVersion) return;
-
     try {
         let url;
         if (app.selectedVersion === 'SNAPSHOT') {
@@ -2619,12 +2618,31 @@ async function loadDevices() {
         }
         
         const response = await fetch(url);
+        
+        // 404エラーの場合は空のデバイスリストを設定
+        if (!response.ok) {
+            console.warn(`Version ${app.selectedVersion} not found (${response.status})`);
+            app.devices = [];
+            app.versionCode = null;  // versionCodeもクリア
+            // デバイス選択状態もリセット
+            if (current_device && current_device.id) {
+                hideDeviceInfo();
+                current_device = {};
+            }
+            return;
+        }
+        
         const data = await response.json();
-
         app.devices = data.profiles || [];
     } catch (error) {
         console.error('Failed to load devices:', error);
         app.devices = [];
+        app.versionCode = null;  // エラー時もversionCodeをクリア
+        // デバイス選択状態もリセット
+        if (current_device && current_device.id) {
+            hideDeviceInfo();
+            current_device = {};
+        }
     }
 }
 
@@ -2785,7 +2803,7 @@ function showDeviceInfo() {
     
     // バージョン番号の取得（ビルド番号含む）
     let fullVersion = app.selectedVersion;
-    let displayVersionCode = app.versionCode || 'null';  // versionCodeが無い場合は「-」を表示
+    let displayVersionCode = app.versionCode || 'null';  // versionCodeが無い場合は「null」を表示
     if (app.versionCode) {
         fullVersion = `${app.selectedVersion} (${app.versionCode})`;
     }
