@@ -2018,21 +2018,6 @@ function setModel(target, id) {
     }
 }
 
-// 公式と同じ関数名でデバイス変更処理
-function changeModel(device) {
-    if (device) {
-        loadDeviceProfile(device);
-        current_device = {
-            version: app.selectedVersion,
-            id: device.id,
-            target: device.target
-        };
-    } else {
-        showDeviceInfo();
-        current_device = {};
-    }
-}
-
 // ==================== パッケージ関数 ====================
 function normalizeLang(lang) {
   const map = {
@@ -2554,6 +2539,152 @@ function updatePackageListFromSelector() {
     syncTemplateAndPackages({ trigger: 'selector', updatedPackages: checkedPkgs });
 }
 
+// ==================== デバイス・バージョン統合管理 ====================
+const DeviceContext = {
+    // 統合更新入口
+    async update(options = {}) {
+        const {
+            version = app.selectedVersion,
+            deviceTitle = document.getElementById('models')?.value?.trim(),
+            forceReload = false,
+            trigger = 'unknown'
+        } = options;
+        
+        console.log(`[DeviceContext] Update: ${trigger} | Version: ${version} | Device: ${deviceTitle || 'none'}`);
+        
+        try {
+            // Phase 1: バージョン更新
+            await this._updateVersion(version, forceReload);
+            
+            // Phase 2: デバイス処理
+            await this._updateDevice(deviceTitle);
+            
+            // Phase 3: 統合後処理
+            await this._finalizeUpdate();
+            
+        } catch (error) {
+            console.error('[DeviceContext] Update failed:', error);
+            this._handleError();
+        }
+    },
+    
+    // バージョン更新処理
+    async _updateVersion(version, forceReload) {
+        if (version !== app.selectedVersion) {
+            app.selectedVersion = version;
+            console.log(`[DeviceContext] Version changed: ${version}`);
+        }
+        
+        // MAP-E環境での事前準備
+        if (window.cachedApiInfo?.mape?.brIpv6Address && config.getMapEInfo(version).supported) {
+            await loadMapShForVersion(version);
+        }
+        
+        // デバイス一覧更新
+        if (forceReload || app.devices.length === 0) {
+            await loadDevices();
+        }
+    },
+    
+    // デバイス更新処理
+    async _updateDevice(deviceTitle) {
+        if (!deviceTitle || app.devices.length === 0) {
+            this._clearDevice();
+            return;
+        }
+        
+        const device = app.devices.find(d => getDeviceTitle(d) === deviceTitle);
+        
+        if (device) {
+            await this._selectDevice(device);
+        } else {
+            this._deviceNotFound(deviceTitle);
+        }
+    },
+    
+    // デバイス選択処理
+    async _selectDevice(device) {
+        console.log(`[DeviceContext] Device selected: ${device.id}`);
+        
+        // デバイス状態更新
+        current_device = {
+            version: app.selectedVersion,
+            id: device.id,
+            target: device.target
+        };
+        
+        // プロファイル読み込み
+        await loadDeviceProfile(device);
+        
+        // UI表示
+        showDeviceInfo();
+    },
+    
+    // 統合後処理
+    async _finalizeUpdate() {
+        // API処理（デバイス選択時、初回のみ）
+        if (current_device.id && !window.apiInfoFetched) {
+            window.apiInfoFetched = true;
+            try {
+                await fetchApiInfoAndUpdate();
+                updateRequiredPackages();
+                asuCollectPackages();
+            } catch (error) {
+                window.apiInfoFetched = false;
+                console.error('[DeviceContext] API fetch failed:', error);
+            }
+        }
+    },
+    
+    // デバイス未発見処理
+    _deviceNotFound(deviceTitle) {
+        console.log(`[DeviceContext] Device not found: ${deviceTitle} (keeping name, hiding info)`);
+        hideDeviceInfo();
+    },
+    
+    // デバイスクリア処理
+    _clearDevice() {
+        hideDeviceInfo();
+    },
+    
+    // エラー処理
+    _handleError() {
+        hideDeviceInfo();
+        // current_deviceは保持（復旧の可能性のため）
+    }
+};
+
+// ==================== 簡素化された入口関数 ====================
+async function handleVersionChange(e) {
+    await DeviceContext.update({
+        version: e.target.value,
+        forceReload: true,
+        trigger: 'version-change'
+    });
+}
+
+function selectDevice(device) {
+    document.getElementById('models').value = getDeviceTitle(device);
+    hideAutocomplete();
+    
+    DeviceContext.update({
+        deviceTitle: getDeviceTitle(device),
+        trigger: 'device-selection'
+    });
+}
+
+// ==================== changeModel関数の簡素化 ====================
+function changeModel(device) {
+    if (device) {
+        DeviceContext.update({
+            deviceTitle: getDeviceTitle(device),
+            trigger: 'change-model'
+        });
+    } else {
+        DeviceContext._clearDevice();
+    }
+}
+        
 // ==================== バージョン管理 ====================
 async function loadVersions() {
     try {
@@ -2603,39 +2734,6 @@ function updateVersionSelect() {
         }
         select.appendChild(option);
     });
-}
-
-async function handleVersionChange(e) {
-    app.selectedVersion = e.target.value;
-    
-    // 現在のデバイス情報を保存
-    const savedDeviceTitle = document.getElementById('models').value;
-    const savedTarget = current_device.target;
-    const savedId = current_device.id;
-    
-    // MAP-E環境でOSバージョン変更時は必要なmap.shを追加ロード
-    if (window.cachedApiInfo?.mape?.brIpv6Address && config.getMapEInfo(app.selectedVersion).supported) {
-        await loadMapShForVersion(app.selectedVersion);
-    }
-    
-    await loadDevices();
-    
-    // デバイスが選択されていた場合の復元処理
-    if (savedDeviceTitle && savedDeviceTitle.trim()) {
-        console.log(`Attempting to restore device: ${savedDeviceTitle}, devices loaded: ${app.devices.length}`);
-        // デバッグ用：最初の数個のデバイスタイトルを表示
-        console.log('Available device titles:', app.devices.slice(0, 3).map(d => getDeviceTitle(d)));
-    
-        // 新しいバージョンでデバイスが存在するかチェック
-        const device = app.devices.find(d => getDeviceTitle(d) === savedDeviceTitle);
-        if (device) {
-            console.log(`Device found, restoring: ${device.id}`);
-            selectDevice(device);
-        } else {
-            console.log(`Device not found in new version, hiding info but keeping name`);
-            hideDeviceInfo();
-        }
-    }
 }
 
 // ==================== デバイス管理 ====================
@@ -2757,12 +2855,6 @@ function hideAutocomplete() {
     if (items) {
         items.remove();
     }
-}
-
-function selectDevice(device) {
-    document.getElementById('models').value = getDeviceTitle(device);
-    hideAutocomplete();
-    changeModel(device);  // changeModel内でcurrent_deviceを設定
 }
 
 // 初回のみDL必須、同一デバイス＋同一OSバージョンはキャッシュ利用
