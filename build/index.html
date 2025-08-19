@@ -1382,7 +1382,7 @@ fi
 uci commit 2>/dev/null
 echo "All done!"
 exit 0`;
-        
+
 // config.js相当の設定
 const config = {
     show_help: true,
@@ -1416,6 +1416,91 @@ let app = {
 
 // 公式と同じグローバル変数
 let current_device = {};
+        
+// map.shのキャッシュ
+let mapShCache = {
+    'new': undefined,  // ← undefined に変更
+    '19': undefined
+};
+
+// ==================== MAP-E専用処理モジュール ====================
+const MapEProcessor = {
+    // MAP-E設定がアクティブかどうかを判定
+    isActive(config, apiInfo) {
+        if (config.connectionMode === 'auto') {
+            return !!(apiInfo?.mape?.brIpv6Address);
+        } else if (config.connectionMode === 'manual') {
+            return config.connectionType === 'mape';
+        }
+        return false;
+    },
+
+    // 必要なmap.shがキャッシュされているかチェック
+    isScriptCached(version) {
+        const mapeInfo = config.getMapEInfo(version);
+        return mapeInfo.supported && !!mapShCache[mapeInfo.scriptType];
+    },
+
+    // map.shダウンロードの確保
+    async ensureScriptReady(version) {
+        const mapeInfo = config.getMapEInfo(version);
+        
+        if (!mapeInfo.supported) {
+            throw new Error(`MAP-E is not supported in OpenWrt ${version}`);
+        }
+
+        if (!mapShCache[mapeInfo.scriptType]) {
+            await loadMapShForVersion(version);
+            
+            if (!mapShCache[mapeInfo.scriptType]) {
+                throw new Error('Failed to download map.sh script. Please check your internet connection and try again.');
+            }
+        }
+    },
+
+    // プレースホルダーの置換
+    replacePlaceholder(content, version) {
+        if (!content.includes('${map_sh_content}')) {
+            return content;
+        }
+
+        const mapeInfo = config.getMapEInfo(version);
+        const mapShContent = mapShCache[mapeInfo.scriptType];
+
+        if (!mapShContent) {
+            throw new Error('MAP-E script not available in cache');
+        }
+
+        const result = content.replace(/\$\{map_sh_content\}/g, mapShContent);
+        
+        if (result.includes('${map_sh_content}')) {
+            throw new Error('MAP-E script embedding failed - placeholder still exists');
+        }
+
+        return result;
+    },
+
+    // 事前準備処理（設定画面表示時）
+    async prepareForDisplay(version, config, apiInfo) {
+        if (this.isActive(config, apiInfo)) {
+            await loadMapShForVersion(version);
+        }
+    },
+
+    // ビルド時処理（プレースホルダー置換）
+    async processForBuild(script, version, config, apiInfo) {
+        if (!this.isActive(config, apiInfo)) {
+            return script;
+        }
+    
+        if (!script.includes('${map_sh_content}')) {
+            return script;
+        }
+    
+        await this.ensureScriptReady(version);
+        return this.replacePlaceholder(script, version);
+    }
+};
 
 // パッケージデータベース
 const PACKAGE_DB = {
@@ -1872,7 +1957,7 @@ async function init() {
         await waitForReady([
             'versions',
             'models',
-            'use-package-selector-details'
+            'use-package-selector'
             // 必要なら他の要素も追加
         ]);
 
@@ -2046,6 +2131,56 @@ function asuI18nDB(lang) {
   current = Array.from(new Set(current));
 
   textarea.value = current.join(' ');
+}
+        
+// ==================== map.sh関連 ====================
+async function loadMapShForVersion(version) {
+    console.log('[MAP-E Download] Starting download for version:', version);
+    
+    try {
+        const mapeInfo = config.getMapEInfo(version);
+        console.log('[MAP-E Download] mapeInfo:', mapeInfo);
+        
+        if (!mapeInfo.supported) {
+            console.log(`[MAP-E Download] MAP-E not supported in version ${version}`);
+            return;
+        }
+        
+        const key = mapeInfo.scriptType;
+        const scriptName = `map.sh.${key}`;
+        const scriptUrl = `https://site-u.pages.dev/build/scripts/${scriptName}`;
+        
+        console.log('[MAP-E Download] Key:', key, 'URL:', scriptUrl);
+        console.log('[MAP-E Download] Cache before:', mapShCache);
+        
+        if (mapShCache[key] === undefined) {
+            console.log('[MAP-E Download] Cache miss, downloading...');
+            const response = await fetch(scriptUrl);
+            
+            if (response.ok) {
+                const content = await response.text();
+                if (content && content.trim().length > 0) {
+                    mapShCache[key] = content;
+                    console.log(`[MAP-E Download] ✓ Saved to cache[${key}], length:`, content.length);
+                    console.log('[MAP-E Download] Cache after:', mapShCache);
+                } else {
+                    console.error(`[MAP-E Download] ✗ ${scriptName} is empty from server`);
+                    mapShCache[key] = '';
+                }
+            } else {
+                console.error(`[MAP-E Download] ✗ Failed to download ${scriptName}: HTTP ${response.status}`);
+                mapShCache[key] = '';
+            }
+        } else {
+            console.log('[MAP-E Download] Cache hit, skipping download');
+        }
+    } catch (error) {
+        console.error(`[MAP-E Download] ✗ Failed to load map.sh for ${version}:`, error);
+        const mapeInfo = config.getMapEInfo(version);
+        if (mapeInfo.supported) {
+            mapShCache[mapeInfo.scriptType] = '';
+        }
+    }
 }
         
 // ==================== イベントバインディング ====================
@@ -2435,6 +2570,11 @@ const DeviceContext = {
         if (version !== app.selectedVersion) {
             app.selectedVersion = version;
             console.log(`[DeviceContext] Version changed: ${version}`);
+        }
+        
+        // MAP-E環境での事前準備
+        if (window.cachedApiInfo?.mape?.brIpv6Address && config.getMapEInfo(version).supported) {
+            await loadMapShForVersion(version);
         }
         
         // デバイス一覧更新
@@ -3120,6 +3260,11 @@ async function fetchApiInfoAndUpdate() {
             const isp = buildIspStatus(apiInfo);
             updateIspDisplay(isp.status, isp.details);
 
+            // MAP-E検出時のみmap.sh読み込み
+            if (apiInfo.mape && apiInfo.mape.brIpv6Address) {
+                await loadMapShForVersion(app.selectedVersion);  // OSバージョンに応じた適切なものだけ
+            }
+
             // GUA セクションの表示を更新
             updateGuaSectionVisibility();
 
@@ -3393,7 +3538,7 @@ async function customizeSetupScript(content, userConfig, apiInfo, selectedPackag
     customized = setScriptVar(customized, 'lan_ip_address', userConfig.lanIpv4, !!userConfig.lanIpv4 && !apActive);
     customized = setScriptVar(customized, 'lan_ipv6_address', userConfig.lanIpv6, !!userConfig.lanIpv6 && !apActive);
 
-// AP IP：AP時かつ有値のときだけ有効化（非AP or 空ではコメントアウト）
+    // AP IP：AP時かつ有値のときだけ有効化（非AP or 空ではコメントアウト）
     customized = setScriptVar(customized, 'ap_ip_address', userConfig.apIpAddress, apActive && !!userConfig.apIpAddress);
     customized = setScriptVar(customized, 'ap_gateway', userConfig.apGateway, apActive && !!userConfig.apGateway);
 
@@ -3655,11 +3800,33 @@ async function buildAsuRequest() {
         console.log('[buildAsuRequest] Button disabled');
         showProgress('Preparing build request...', 10);
         console.log('[buildAsuRequest] Progress shown');
+        
+        // 初回の進捗表示時に確実にスクロール
+        setTimeout(() => {
+            const progressElement = document.getElementById('build-progress');
+            if (progressElement) {
+                progressElement.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'center' 
+                });
+            }
+        }, 200);
 
         console.log('[buildAsuRequest] Getting packages');
         const packages = split(document.getElementById('asu-packages').value);
         console.log('[buildAsuRequest] Getting script');
         let script = document.getElementById('uci-defaults-content').value;
+        const originalSize = script.length;
+        console.log('[buildAsuRequest] Calling MapEProcessor');
+        // MAP-E処理（必要時のみプレースホルダー置換）
+        script = await MapEProcessor.processForBuild(
+            script, 
+            app.selectedVersion, 
+            getAiosConfig(), 
+            window.cachedApiInfo
+        );
+        console.log('[VERIFY] Script size:', originalSize, '→', script.length, '(', script.length - originalSize, 'bytes added)');
+        console.log('[buildAsuRequest] MapEProcessor completed');
 
         console.log('[buildAsuRequest] Building request body');
         const requestBody = {
@@ -3668,6 +3835,8 @@ async function buildAsuRequest() {
             packages: packages,
             version: app.selectedVersion
         };
+
+        console.log('[buildAsuRequest] About to send fetch request');
 
         if (script && script.trim()) {
             requestBody.defaults = script;
