@@ -23,11 +23,13 @@
     }
 
     /* PCブラウザ向けIME抑止（対応ブラウザのみ） */
-    #models,
-    #package-search,
-    #package-search-autocomplete input.package-search {
-        ime-mode: disabled;
-    }
+#models,
+#package-search,
+#package-search-autocomplete input.package-search,
+#command,
+#commands-autocomplete input.command {
+    ime-mode: disabled;
+}
 
     /* 公式互換のオートコンプリート */
     #models-autocomplete {
@@ -771,11 +773,30 @@
                 </div>
 
                 <!-- setup.sh設定セクション -->
-                <div class="aios-section">
+<div class="aios-section">
                     <details id="use-aios-config-details">
                         <summary>Script to run on first boot (uci-defaults)</summary>
                         
                         <div id="aios-config">
+                            <!-- Commands -->
+                            <div class="package-category">
+                              <h4>Commands</h4>
+                              <div class="package-category-description">
+                                Add custom shell commands. They'll be executed during first boot.
+                              </div>  
+                              <div id="commands-autocomplete" class="autocomplete">
+                                  <input type="text"
+                                    id="command"
+                                    placeholder="uci set system.@system[0].hostname='MyRouter'"
+                                    lang="en"
+                                    inputmode="latin"
+                                    autocomplete="off"
+                                    spellcheck="false"
+                                    autocapitalize="off"
+                                    class="form-control">
+                              </div>
+                            </div>
+
                             <h4>Basic Configuration</h4>
                         
                         <!-- 1行目: Language と Country -->
@@ -824,7 +845,7 @@
                             </div>
                         </div>
 
-                        <!-- 2行目: Timezone と Zone name -->
+<!-- 2行目: Timezone と Zone name -->
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="aios-timezone">Timezone</label>
@@ -834,6 +855,19 @@
                                 <label for="aios-zonename">Zone name</label>
                                 <input type="text" id="aios-zonename" class="form-control" placeholder="America/New_York">
                                 <small class="form-text text-muted">Optional: e.g., America/New_York, Asia/Tokyo</small>
+                            </div>
+                        </div>
+
+                        <!-- Device nameとRoot password -->
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="aios-device-name">Device name</label>
+                                <input type="text" id="aios-device-name" class="form-control" placeholder="OpenWrt">
+                            </div>
+                            <div class="form-group">
+                                <label for="aios-root-password">Root password</label>
+                                <input type="password" id="aios-root-password" class="form-control" placeholder="8+ characters">
+                                <small class="form-text text-muted">Leave empty to disable password authentication</small>
                             </div>
                         </div>
 
@@ -847,19 +881,6 @@
                                 <label for="aios-lan-ipv6">LAN IPv6 Address</label>
                                 <input type="text" id="aios-lan-ipv6" class="form-control" placeholder="fd00::1/64">
                                 <small class="form-text text-muted">Optional: e.g., fd00::1/64</small>
-                            </div>
-                        </div>
-
-<!-- Device nameとRoot password -->
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="aios-device-name">Device name</label>
-                                <input type="text" id="aios-device-name" class="form-control" placeholder="OpenWrt">
-                            </div>
-                            <div class="form-group">
-                                <label for="aios-root-password">Root password</label>
-                                <input type="password" id="aios-root-password" class="form-control" placeholder="8+ characters">
-                                <small class="form-text text-muted">Leave empty to disable password authentication</small>
                             </div>
                         </div>
 
@@ -1167,6 +1188,7 @@
 # ap_gateway="192.168.1.1"
 # ssh_interface="lan"
 # flow_offloading_type=""
+# custom_commands=""
 # enable_ttyd=""
 # enable_irqbalance=""
 # enable_samba4=""
@@ -1379,6 +1401,7 @@ if [ -n "$enable_samba4" ]; then
     uci set samba4.sambashare.create_mask='0777'
     uci set samba4.sambashare.dir_mask='0777'
 fi
+# \${custom_commands}
 uci commit 2>/dev/null
 echo "All done!"
 exit 0`;
@@ -3548,7 +3571,50 @@ async function customizeSetupScript(content, userConfig, apiInfo, selectedPackag
     // Flow Offloading
     customized = setScriptVar(customized, 'flow_offloading_type', userConfig.flowOffloading, !!userConfig.flowOffloading);
 
+    // Custom Commands
+    const customCommands = getCustomCommands();
+    const commandsText = customCommands.length > 0 ? customCommands.join('\n') : '';
+    customized = customized.replace(/^# \$\{custom_commands\}$/m, 
+        customCommands.length > 0 ? commandsText : '# ${custom_commands}');
+    
+    // デバッグ：実際の文字列を詳細確認
+    const lines = customized.split('\n');
+    const targetLines = lines.filter(line => line.includes('custom_commands'));
+    console.log('All lines with custom_commands:');
+    targetLines.forEach((line, i) => {
+        console.log(`  Line ${i}: ${JSON.stringify(line)}`);
+        console.log(`  Length: ${line.length}`);
+        console.log(`  Exact match test: ${line === '# ${custom_commands}'}`);
+    });
+
+    // より柔軟な正規表現を使用
+    customized = customized.replace(/^#\s*\$\{custom_commands\}\s*$/m, 
+        customCommands.length > 0 ? commandsText : '# ${custom_commands}');
+
     return customized;
+}   
+        
+function getCustomCommands() {
+    const commands = [];
+    const mainCommand = document.getElementById('command');
+    console.log('mainCommand element:', mainCommand);
+    console.log('mainCommand value:', mainCommand?.value);
+    
+    if (mainCommand && mainCommand.value.trim()) {
+        commands.push(mainCommand.value.trim());
+    }
+    
+    const extraInputs = document.querySelectorAll('#commands-autocomplete input.command');
+    console.log('extra command inputs found:', extraInputs.length);
+    
+    extraInputs.forEach((el, index) => {
+        console.log(`extra input ${index} value:`, el.value);
+        const val = el.value.trim();
+        if (val) commands.push(val);
+    });
+    
+    console.log('final commands array:', commands);
+    return commands;
 }
 
 function toggleAiosConfig(e) {
@@ -4313,6 +4379,95 @@ function parsePackagesText(text, source) {
     }
 })();
 
+// ==================== Commands入力ボックス ====================
+(function() {
+    const cmdInput = document.getElementById('command');
+
+    if (cmdInput) {
+        cmdInput.addEventListener('input', function(e) {
+            // リアルタイムでテンプレート更新
+            syncCommandsToTemplate();
+        });
+
+        cmdInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const command = this.value.trim();
+                if (command) {
+                    syncCommandsToTemplate();
+                    // 空欄が無ければ次の欄を生成
+                    if (!document.querySelector('#commands-autocomplete input[value=""]')) {
+                        createExtraCommandBox();
+                    }
+                }
+            }
+        });
+
+        // 空にしたら削除（最低1つは残す）
+        cmdInput.addEventListener('change', function() {
+            if (!this.value.trim()) {
+                const total = document.querySelectorAll('#command, #commands-autocomplete input.command').length;
+                if (total > 1 && this.parentNode) {
+                    this.parentNode.removeChild(this);
+                }
+                syncCommandsToTemplate();
+            }
+        });
+    }
+})();
+
+function createExtraCommandBox() {
+    const host = document.getElementById('commands-autocomplete');
+    const newInput = document.createElement('input');
+    newInput.type = 'text';
+    newInput.className = 'form-control command';
+    newInput.placeholder = 'uci set system.@system[0].hostname=\'MyRouter\'';
+    newInput.autocomplete = 'off';
+    newInput.spellcheck = false;
+    newInput.autocapitalize = 'off';
+    newInput.dataset.extra = '1';
+
+    newInput.addEventListener('input', function() {
+        syncCommandsToTemplate();
+    });
+
+    newInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const command = this.value.trim();
+            if (command) {
+                syncCommandsToTemplate();
+                if (!document.querySelector('#commands-autocomplete input[value=""]')) {
+                    createExtraCommandBox();
+                }
+            }
+        }
+    });
+
+    newInput.addEventListener('change', function() {
+        if (!this.value.trim() && this.dataset.extra === '1') {
+            host.removeChild(this);
+            syncCommandsToTemplate();
+        }
+    });
+
+    host.appendChild(newInput);
+    newInput.focus();
+}
+
+function syncCommandsToTemplate() {
+    const commands = getCustomCommands();
+    console.log('syncCommandsToTemplate called, commands:', commands);
+    
+    // リアルタイムでテンプレート更新（aios-config開状態のみ）
+    if (document.getElementById('use-aios-config-details').open) {
+        console.log('Details is open, calling updateConfiguredTemplate');
+        updateConfiguredTemplate();
+    } else {
+        console.log('Details is closed, not updating template');
+    }
+}
+     
 function hidePackageAutocomplete() {
     const el = document.querySelector('#package-search-autocomplete .autocomplete-items');
     if (el) el.remove();
