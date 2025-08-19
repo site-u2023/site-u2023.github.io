@@ -3856,9 +3856,6 @@ function updateRequiredPackages() {
 }
 
 // ==================== ビルド処理 ====================
-// 実行中フラグの追加
-let buildInProgress = false;
-
 async function buildAsuRequest() {
     if (!current_device || !current_device.id) {
         alert('Please select a device first');
@@ -3939,8 +3936,6 @@ async function buildAsuRequest() {
         hideProgress();
 } finally {
         document.getElementById('request-build').disabled = false;
-        buildInProgress = false;
-        console.log(`[BUILD-${callId}] Build process completed, flag reset`);
     }
 }
 
