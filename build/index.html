@@ -4410,15 +4410,16 @@ function parsePackagesText(text, source) {
             }
         };
         
-        // イベントリスナー（重複削除）
+        // changeイベントのみに統一
         cmdInput.addEventListener('change', commitCommandValue);
+
+        // Enterキー処理のみ追加（changeイベントを発火させる）
         cmdInput.addEventListener('keydown', function(e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
-                commitCommandValue();
+                this.blur(); // フォーカスを外してchangeイベントを発火
             }
         });
-        cmdInput.addEventListener('blur', commitCommandValue);
     }
 })();
 
