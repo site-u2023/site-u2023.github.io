@@ -1478,7 +1478,18 @@ const config = {
     info_url: "https://openwrt.org/start?do=search&id=toh&q={title} @toh",
     asu_url: "https://sysupgrade.openwrt.org",
     asu_extra_packages: ["luci"],
-    min_version: "19.07.0"  // 最小サポートバージョン
+    min_version: "19.07.0",  // 最小サポートバージョン
+    
+    // MAP-E情報を一括取得
+    getMapEInfo(version) {
+        if (version === 'SNAPSHOT') return { supported: true, scriptType: 'new' };
+        if (version.startsWith('19.')) return { supported: true, scriptType: '19' };
+        
+        const parts = version.split('.').map(n => parseInt(n, 10));
+        if (parts[0] >= 21) return { supported: true, scriptType: 'new' };
+        
+        return { supported: false, scriptType: null };
+    }
 };
 
 // グローバル変数
@@ -2148,8 +2159,14 @@ function asuI18nDB(lang) {
 // ==================== map.sh関連 ====================
 async function loadMapShForVersion(version) {
     try {
-        const key = (version && version.startsWith('19.')) ? '19' : 'new';
-        const scriptName = key === '19' ? 'map.sh.19' : 'map.sh.new';
+        const mapeInfo = config.getMapEInfo(version);
+        if (!mapeInfo.supported) {
+            console.log(`MAP-E not supported in version ${version}`);
+            return;
+        }
+        
+        const key = mapeInfo.scriptType;
+        const scriptName = `map.sh.${key}`;
         const scriptUrl = `https://site-u.pages.dev/build/scripts/${scriptName}`;
         
         if (mapShCache[key] === undefined) {
@@ -2168,11 +2185,13 @@ async function loadMapShForVersion(version) {
                 console.error(`Failed to download ${scriptName}: HTTP ${response.status}`);
                 mapShCache[key] = '';
             }
-        }  // ← 追加：if文の閉じ括弧
-    } catch (error) {  // ← これで正しくtry-catchになる
+        }
+    } catch (error) {
         console.error(`Failed to load map.sh for ${version}:`, error);
-        const key = (version && version.startsWith('19.')) ? '19' : 'new';
-        mapShCache[key] = '';
+        const mapeInfo = config.getMapEInfo(version);
+        if (mapeInfo.supported) {
+            mapShCache[mapeInfo.scriptType] = '';
+        }
     }
 }
 
@@ -2183,14 +2202,11 @@ function loadMapShContentSync(content, osVersion) {
         return content;
     }
     
+    const mapeInfo = config.getMapEInfo(osVersion);
     let mapShContent = '';
     
-    // OSバージョンに応じて適切なmap.shを選択
-    // 19.x系のみ '19'、それ以外（SNAPSHOT含む）は 'new'
-    if (osVersion && osVersion.startsWith('19.')) {
-        mapShContent = mapShCache['19'] || '';
-    } else {
-        mapShContent = mapShCache['new'] || '';
+    if (mapeInfo.supported) {
+        mapShContent = mapShCache[mapeInfo.scriptType] || '';
     }
     
     // map.shが取得できていない場合の警告
@@ -2597,10 +2613,8 @@ async function handleVersionChange(e) {
     const savedTarget = current_device.target;
     const savedId = current_device.id;
     
-    // MAP-E環境でOSバージョン変更時は必要なmap.shを追加ロード（21.02以降のみ）
-    if (window.cachedApiInfo?.mape?.brIpv6Address && 
-        !app.selectedVersion.startsWith('19.') && 
-        !app.selectedVersion.startsWith('20.')) {
+    // MAP-E環境でOSバージョン変更時は必要なmap.shを追加ロード
+    if (window.cachedApiInfo?.mape?.brIpv6Address && config.getMapEInfo(app.selectedVersion).supported) {
         await loadMapShForVersion(app.selectedVersion);
     }
     
@@ -2965,8 +2979,8 @@ function handleConnectionTypeChange(e) {
         mapeManualSection.style.display = 'block';
         
         // キャッシュ確認してから必要時のみロード
-        const key = (app.selectedVersion && app.selectedVersion.startsWith('19.')) ? '19' : 'new';
-        if (mapShCache[key] === undefined) {
+        const mapeInfo = config.getMapEInfo(app.selectedVersion);
+        if (mapeInfo.supported && mapShCache[mapeInfo.scriptType] === undefined) {
             // 未ロードの場合のみ非同期でロード
             (async () => {
                 try {
@@ -3415,14 +3429,14 @@ async function customizeSetupScript(content, config, apiInfo, selectedPackages) 
         });
     }
 
-    // MAP-E選択時のみmap.shを埋め込む（21.02以降のみ）
-    if (mapeActive && 
-        !app.selectedVersion.startsWith('19.') && 
-        !app.selectedVersion.startsWith('20.')) {
+    // MAP-E選択時のみmap.shを埋め込む
+    if (mapeActive && config.getMapEInfo(app.selectedVersion).supported) {
+        // ★ここで必ずロードを試みる
         await loadMapShForVersion(app.selectedVersion);
 
         // ロード後も空なら警告
-        if (!mapShCache['new'] && !mapShCache['19']) {
+        const mapeInfo = config.getMapEInfo(app.selectedVersion);
+        if (!mapShCache[mapeInfo.scriptType]) {
             console.warn('map.sh cache still empty after load attempt');
         }
 
