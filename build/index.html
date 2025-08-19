@@ -2653,16 +2653,12 @@ async function loadDevices() {
     } catch (error) {
         console.error('Failed to load devices:', error);
         app.devices = [];
-        app.versionCode = null;  // エラー時もversionCodeをクリア
-        // デバイス選択状態もリセット
-        if (current_device && current_device.id) {
-            hideDeviceInfo();
-            current_device = {};
-        }
+        app.versionCode = null;
+        // UIだけ隠す（デバイス名とcurrent_deviceは保持）
+        hideDeviceInfo();
     }
 }
 
-// After
 function handleDeviceSearch(e) {
     const query = e.target.value.toLowerCase();
 
