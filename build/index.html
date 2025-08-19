@@ -2007,7 +2007,7 @@ const PACKAGE_DB = {
     ]
 };
         
-// After（aios-language の change バインドを init 内に移動）
+// JS ----------------------------------------------------------------------------
 document.addEventListener('DOMContentLoaded', init);
 
 // ==================== ユーティリティ関数 ====================
@@ -2293,6 +2293,7 @@ async function loadMapShForVersion(version) {
 }
         
 // ==================== イベントバインディング ====================
+let eventsbound = false;  // 重複実行防止フラグ
 function bindEvents() {
     console.log('[BIND] bindEvents called, eventsbound =', eventsbound);
     
