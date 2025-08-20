@@ -1248,7 +1248,7 @@ fi
 if [ -n "\${zonename}" ]; then
     uci set system.@system[0].zonename="\${zonename}"
 fi
-if [ -n "${wlan_name}" ] && [ -n "${wlan_password}" ]; then
+if [ -n "\${wlan_name}" ] && [ -n "\${wlan_password}" ]; then
     uci set wireless.@wifi-device[0].disabled='0'
     uci set wireless.@wifi-iface[0].disabled='0'
     uci set wireless.@wifi-iface[0].encryption='sae-mixed'
