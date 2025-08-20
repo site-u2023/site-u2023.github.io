@@ -1430,8 +1430,8 @@ if [ -n "\${enable_samba4}" ]; then
 fi
 # \${custom_commands}
 uci commit 2>/dev/null
-sysupgrade -b "/root/backup_\${VER}.tar.gz"
 echo "All done!"
+sysupgrade -b "/root/backup_\${VER}.tar.gz"
 exit 0`;
 
 // config.js相当の設定
