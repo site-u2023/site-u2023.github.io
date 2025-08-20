@@ -1529,8 +1529,7 @@ const MapEProcessor = {
     }
 };
 
-const SEARCH_URL_TEMPLATE = 'https://openwrt.org/start?do=search&id=packages&q={id}%20@packages';
-
+const SEARCH_URL_TEMPLATE = 'https://openwrt.org/start?do=search&q={id}';
 function applySearchUrls(db) {
   db.categories.forEach(category => {
     category.packages.forEach(pkg => {
