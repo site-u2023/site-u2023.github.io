@@ -3942,10 +3942,14 @@ async function buildAsuRequest() {
             body: JSON.stringify(requestBody)
         });
 
+        // レスポンス本文を最初に全て読む
         const responseText = await response.text();
 
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${responseText}`);
+            // 本文を持ったエラーオブジェクトを作成
+            const err = new Error(`HTTP ${response.status}`);
+            err.responseBody = responseText;
+            throw err;
         }
 
         let result;
