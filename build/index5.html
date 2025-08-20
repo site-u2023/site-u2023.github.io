@@ -1539,11 +1539,13 @@ const PACKAGE_DB = {
                     name: "luci-app-ttyd", 
                     url: "https://openwrt.org/packages/pkgdata/luci-app-ttyd",
                     enableVar: "enable_ttyd"
+                    checked: true
                 },
                 {
                     id: "openssh-sftp-server",
                     name: "openssh-sftp-server",
                     url: "https://openwrt.org/packages/pkgdata/openssh-sftp-server"
+                    checked: true
                 },
                 {
                     id: "luci-app-commands",
@@ -2456,6 +2458,10 @@ function generatePackageSelector() {
             checkbox.setAttribute('data-package', pkg.name);
             if (pkg.dependencies) {
                 checkbox.setAttribute('data-dependencies', pkg.dependencies.join(','));
+            }
+            if (pkg.checked) {
+                checkbox.checked = true;
+                checkbox.setAttribute('data-user', '1');
             }
             checkbox.addEventListener('change', handlePackageSelection);
 
