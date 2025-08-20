@@ -2450,13 +2450,11 @@ function generatePackageSelector() {
             label.setAttribute('for', `pkg-${pkg.id}`);
 
             const link = document.createElement('a');
-            link.href = pkg.url;
-            const link = document.createElement('a');
             link.href = `https://openwrt.org/docs/guide-user/start?q=${encodeURIComponent(pkg.id)}&do=search`;
             link.target = '_blank';
             link.className = 'package-link';
             link.textContent = pkg.name;
-
+            
             label.appendChild(link);
             const desc = document.createElement('div');
             desc.className = 'package-description';
