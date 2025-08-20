@@ -1995,7 +1995,8 @@ async function init() {
         await waitForReady([
             'versions',
             'models',
-            'use-package-selector'
+            'use-package-selector-details',
+            'use-aios-config-details'
             // 必要なら他の要素も追加
         ]);
 
@@ -4282,7 +4283,8 @@ async function fetchDevicePackages() {
 
     const version = app.selectedVersion;
     const targetPath = current_device.target; // mediatek/filogic 形式
-
+    const kernel = (typeof window !== 'undefined' && window.kernel) ? String(window.kernel) : '';
+    
     // profiles.json の URL を config.image_urls[version] 基点で生成
     const basePath = config.image_urls[version].replace(/\/$/, '');
     const profilesUrl = `${basePath}/targets/${targetPath}/profiles.json`;
@@ -4303,7 +4305,7 @@ async function fetchDevicePackages() {
     const feeds = ["base", "luci", "packages", "routing", "telephony"];
     const urls = [];
 
-    if (version === 'SNAPSHOT' && typeof kernel !== 'undefined' && kernel) {
+    if (version === 'SNAPSHOT' && kernel) {
         // kmods 配下の Packages
         urls.push(`${basePath}/targets/${targetPath}/kmods/${kernel}/packages/Packages`);
     } else {
