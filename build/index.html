@@ -1178,6 +1178,15 @@
 
 // setup.shテンプレート
 const SETUP_SH_TEMPLATE = `#!/bin/sh
+VER="$(cat /etc/openwrt_version 2>/dev/null || echo unknown)"
+LAN_DEF="$(uci get network.lan.device || echo lan)"
+WAN_DEF="$(uci get network.wan.device || echo wan)"
+MAP_NAME="map"
+MAP6_NAME="map6"
+DSLITE_NAME="dslite"
+DSLITE6_NAME="dslite6"
+AP_NAME="ap"
+AP6_NAME="ap6"
 # language="en"
 # country="US"
 # timezone="UTC"
@@ -1189,7 +1198,7 @@ const SETUP_SH_TEMPLATE = `#!/bin/sh
 # ssh_interface="lan"
 # ssh_port="22"
 # flow_offloading_type=""
-# backup_path="/root/backup_\${VER}.tar.gz"
+# backup_path="/root/backup_${VER}.tar.gz"
 # wlan_name="OpenWrt"
 # wlan_password="12345678"
 # pppoe_username=""
@@ -1212,15 +1221,6 @@ const SETUP_SH_TEMPLATE = `#!/bin/sh
 # enable_samba4=""
 # openwrt_19=""
 # openwrt_21=""
-VER="$(cat /etc/openwrt_version 2>/dev/null || echo unknown)"
-LAN_DEF="$(uci -q get network.lan.device || echo lan)"
-WAN_DEF="$(uci -q get network.wan.device || echo wan)"
-MAP_NAME="map"
-MAP6_NAME="map6"
-DSLITE_NAME="dslite"
-DSLITE6_NAME="dslite6"
-AP_NAME="ap"
-AP6_NAME="ap6"
 exec >/tmp/setup.log 2>&1
 if [ -n "\${device_name}" ]; then
     uci set system.@system[0].hostname="\${device_name}"
