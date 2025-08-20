@@ -787,8 +787,8 @@
                               <h4>Add commands</h4>
                               <div class="package-category-description">
                                 Add custom shell commands that run on first boot.
-                                <a href="https://openwrt.org/docs/guide-user/base-system/uci" target="_blank" rel="noopener">
-                                    The UCI system
+                                <a href="https://openwrt.org/docs/techref/start" target="_blank" rel="noopener">
+                                    Technical Reference
                                 </a>
                               </div>  
                               <div id="commands-autocomplete" class="autocomplete">
@@ -995,6 +995,7 @@
                                 <h5 class="section-title">DS-Lite Configuration</h5>
                                 
                                 <div class="form-group">
+                                    <label>Configuration Mode</label>
                                     <div class="radio-group">
                                         <div class="form-check">
                                             <input class="form-check-input" type="radio" name="dsliteMode" id="dslite-auto" value="auto" checked>
@@ -1038,6 +1039,7 @@
                             <div id="mape-manual-section" class="conditional-section">
                                 <h5 class="section-title">MAP-E Configuration</h5>
                                 <div class="form-group">
+                                    <label>MAP-E Connection Mode</label>
                                     <div class="radio-group">
                                         <div class="form-check">
                                             <input class="form-check-input" type="radio" name="mapeType" id="mape-auto" value="auto" checked>
@@ -1189,7 +1191,7 @@ const SETUP_SH_TEMPLATE = `#!/bin/sh
 # ssh_interface="lan"
 # ssh_port="22"
 # flow_offloading_type=""
-# backup_path="/root/backup_${VER}.tar.gz"
+# backup_path="/root/backup_\${VER}.tar.gz"
 # wlan_name="OpenWrt"
 # wlan_password="12345678"
 # pppoe_username=""
@@ -1213,8 +1215,8 @@ const SETUP_SH_TEMPLATE = `#!/bin/sh
 # openwrt_19=""
 # openwrt_21=""
 VER="$(cat /etc/openwrt_version 2>/dev/null || echo unknown)"
-LAN_DEF="$(uci get network.lan.device || echo lan)"
-WAN_DEF="$(uci get network.wan.device || echo wan)"
+LAN_DEF="$(uci -q get network.lan.device || echo lan)"
+WAN_DEF="$(uci -q get network.wan.device || echo wan)"
 MAP_NAME="map"
 MAP6_NAME="map6"
 DSLITE_NAME="dslite"
@@ -1397,7 +1399,7 @@ if [ -n "\${ap_ip_address}" ]; then
     [ -x /etc/init.d/firewall ] && /etc/init.d/firewall running && /etc/init.d/firewall stop
 fi
 if [ -n "\${enable_ttyd}" ]; then
-    uci set ttyd.@ttyd[0].ipv6='1' 
+    uci set ttyd.@ttyd[0].ttyd.ipv6='1' 
     uci set ttyd.@ttyd[0].command='/bin/login -f root' 
 fi
 if [ -n "\${enable_irqbalance}" ]; then
