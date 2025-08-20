@@ -1199,6 +1199,7 @@
 # enable_ttyd=""
 # enable_irqbalance=""
 # enable_samba4=""
+VER="$(cat /etc/openwrt_version 2>/dev/null || echo unknown)"
 LAN_DEF="$(uci -q get network.lan.device || echo lan)"
 WAN_DEF="$(uci -q get network.wan.device || echo wan)"
 MAP_NAME="map"
@@ -1209,7 +1210,7 @@ AP_NAME="ap"
 AP6_NAME="ap6"
 exec >/tmp/setup.log 2>&1
 if [ -n "\${root_password}" ]; then
-    (echo "\${root_password}"; sleep 1; echo "\${root_password}") | passwd >/dev/null 2>&1
+    printf "%s\n%s\n" "\${root_password}" "\${root_password}" | passwd >/dev/null
 fi
 if [ -n "\${device_name}" ]; then
     uci set system.@system[0].hostname="\${device_name}"
@@ -1410,6 +1411,7 @@ if [ -n "$enable_samba4" ]; then
 fi
 # \${custom_commands}
 uci commit 2>/dev/null
+sysupgrade -b "/root/backup_\${VER}.tar.gz"
 echo "All done!"
 exit 0`;
 
