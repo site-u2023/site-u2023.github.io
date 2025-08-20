@@ -2289,7 +2289,7 @@ function bindEvents() {
         });
     }
 
-    // ===== 基本設定フィールドのリアルタイム反映 =====
+// ===== 基本設定フィールドのリアルタイム反映 =====
     const basicFields = [
         'aios-language',
         'aios-country', 
@@ -2302,7 +2302,9 @@ function bindEvents() {
         'aios-wifi-ssid',
         'aios-wifi-password',
         'aios-ssh-interface',
-        'aios-flow-offloading'
+        'aios-ssh-port',
+        'aios-flow-offloading',
+        'aios-backup-path'
     ];
 
     // ===== フィールドイベントの統合バインディング =====
@@ -3581,8 +3583,14 @@ async function customizeSetupScript(content, userConfig, apiInfo, selectedPackag
     // SSH Interface
     customized = setScriptVar(customized, 'ssh_interface', userConfig.sshInterface, !!userConfig.sshInterface);
     
+    // SSH Port
+    customized = setScriptVar(customized, 'ssh_port', userConfig.sshPort, !!userConfig.sshPort);
+    
     // Flow Offloading
     customized = setScriptVar(customized, 'flow_offloading_type', userConfig.flowOffloading, !!userConfig.flowOffloading);
+    
+    // Backup Path
+    customized = setScriptVar(customized, 'backup_path', userConfig.backupPath, !!userConfig.backupPath);
 
     // Custom Commands
     const customCommands = getCustomCommands();
@@ -3666,7 +3674,13 @@ function getAiosConfig() {
         rootPassword: parseOrEmpty('aios-root-password'),
         wifiSSID: parseOrEmpty('aios-wifi-ssid'),
         wifiPassword: parseOrEmpty('aios-wifi-password'),
-
+        apIpAddress: parseOrEmpty('ap-ip-address'),
+        apGateway: parseOrEmpty('ap-gateway'),
+        sshInterface: parseOrEmpty('aios-ssh-interface'),
+        sshPort: parseOrEmpty('aios-ssh-port', 'int'),
+        flowOffloading: parseOrEmpty('aios-flow-offloading'),
+        backupPath: parseOrEmpty('aios-backup-path'),
+        
         connectionMode: document.querySelector('input[name="connectionMode"]:checked')?.value || 'auto',
         connectionType: document.querySelector('input[name="connectionType"]:checked')?.value || 'dhcp',
         mapeType: document.querySelector('input[name="mapeType"]:checked')?.value || 'auto',
@@ -3687,13 +3701,7 @@ function getAiosConfig() {
         mapeIpv6Prefixlen: parseOrEmpty('mape-ipv6-prefixlen', 'int'),
         mapePsidOffset: parseOrEmpty('mape-psid-offset', 'int'),
         mapePsidlen: parseOrEmpty('mape-psidlen', 'int'),
-        mapeGuaPrefix: parseOrEmpty('mape-gua-prefix'),
-
-        apIpAddress: parseOrEmpty('ap-ip-address'),
-        apGateway: parseOrEmpty('ap-gateway'),
-        
-        sshInterface: parseOrEmpty('aios-ssh-interface'),
-        flowOffloading: parseOrEmpty('aios-flow-offloading')
+        mapeGuaPrefix: parseOrEmpty('mape-gua-prefix')
     };
 
     return config;
