@@ -2545,8 +2545,16 @@ function updatePackageListFromSelector() {
         const n = cb.getAttribute('data-package');
         if (n) checkedPkgs.push(n);
     });
-    // 終点ロジックに集約
-    syncTemplateAndPackages({ trigger: 'selector', updatedPackages: checkedPkgs });
+    
+    // 完全同期：selector由来のパッケージは差し替え
+    const textarea = document.getElementById('asu-packages');
+    const current = split(textarea.value);
+    const nonSelectorPkgs = current.filter(pkg => {
+        return !document.querySelector(`.package-selector-checkbox[data-package="${pkg}"]`);
+    });
+    const newList = [...nonSelectorPkgs, ...checkedPkgs];
+    textarea.value = newList.join(' ');
+    syncTemplateAndPackages({ trigger: 'selector' }); // updatedPackages不要
 }
 
 // ==================== デバイス・バージョン統合管理 ====================
