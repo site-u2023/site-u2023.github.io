@@ -1702,7 +1702,12 @@ const PACKAGE_DB = {
         {
           id: "htop",
           name: "htop",
-          dependencies: ["collectd", "collectd-mod-thermal"]
+          dependencies: ["collectd-htop", "collectd-mod-thermal"]
+        },
+        {
+          id: "collectd-htop",
+          name: "collectd",
+          hidden: true
         },
         {
           id: "collectd-mod-thermal",
