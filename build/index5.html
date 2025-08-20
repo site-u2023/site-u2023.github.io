@@ -787,7 +787,7 @@
                               <div id="commands-autocomplete" class="autocomplete">
                                   <input type="text"
                                     id="command"
-                                    placeholder="uci set system.@system[0].hostname='MyRouter'"
+                                    placeholder="Type commands"
                                     lang="en"
                                     inputmode="latin"
                                     autocomplete="off"
@@ -2213,6 +2213,21 @@ async function loadMapShForVersion(version) {
     }
 }
         
+// ==================== イベントバインディング統合関数（bindEventsの外で定義） ====================
+function bindFieldEvents(fieldIds, events = ['input'], callback = null) {
+    const handler = callback || (() => syncTemplateAndPackages({ trigger: 'script' }));
+    
+    fieldIds.forEach(fieldId => {
+        const el = document.getElementById(fieldId);
+        if (el) {
+            const eventList = Array.isArray(events) ? events : [events];
+            eventList.forEach(eventType => {
+                el.addEventListener(eventType, handler);
+            });
+        }
+    });
+}
+
 // ==================== イベントバインディング ====================
 let eventsbound = false;  // 重複実行防止フラグ
 function bindEvents() {
@@ -2232,115 +2247,63 @@ function bindEvents() {
     const modelsEl = document.getElementById('models');
     if (modelsEl) modelsEl.addEventListener('input', handleDeviceSearch);
 
-    // const asuEl = document.getElementById('asu');
-    // if (asuEl) asuEl.addEventListener('toggle', handleAsuDetailsToggle);
-    
     const aiosConfigDetails = document.getElementById('use-aios-config-details');
     if (aiosConfigDetails) aiosConfigDetails.addEventListener('toggle', toggleAiosConfig);
     
     const pkgSelectorDetails = document.getElementById('use-package-selector-details');
     if (pkgSelectorDetails) pkgSelectorDetails.addEventListener('toggle', togglePackageSelector);
     
-const buildBtnEl = document.getElementById('request-build');
-if (buildBtnEl) {
-    console.log('[BIND] Adding click listener to build button');
-    
-    // href="javascript:..."を無効化して重複実行を根絶
-    buildBtnEl.removeAttribute('href');
-    buildBtnEl.addEventListener('click', (e) => {
-        e.preventDefault();  // あらゆるデフォルト動作を阻止
-        e.stopImmediatePropagation();  // 他のイベントハンドラーを阻止
+    const buildBtnEl = document.getElementById('request-build');
+    if (buildBtnEl) {
+        console.log('[BIND] Adding click listener to build button');
         
-        console.log('[BIND] About to call buildAsuRequest'); // <- この行を追加
-        buildAsuRequest();
-        console.log('[BIND] buildAsuRequest call completed'); // <- この行を追加
-    });
-}
-
-// ===== 基本設定フィールドのリアルタイム反映 =====
-const basicFields = [
-    'aios-language',
-    'aios-country', 
-    'aios-timezone',
-    'aios-zonename',
-    'aios-lan-ipv4',
-    'aios-lan-ipv6',
-    'aios-device-name',
-    'aios-root-password',
-    'aios-wifi-ssid',
-    'aios-wifi-password',
-    'aios-ssh-interface',
-    'aios-flow-offloading'
-];
-
-basicFields.forEach(fieldId => {
-    const el = document.getElementById(fieldId);
-    if (el) {
-        el.addEventListener('input', () => syncTemplateAndPackages({ trigger: 'script' }));
+        buildBtnEl.removeAttribute('href');
+        buildBtnEl.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            
+            console.log('[BIND] About to call buildAsuRequest');
+            buildAsuRequest();
+            console.log('[BIND] buildAsuRequest call completed');
+        });
     }
-});
-    
-    // ===== PPPoE設定フィールドのリアルタイム反映 =====
-    const pppoeFields = [
-        'pppoe-username',
-        'pppoe-password'
+
+    // ===== 基本設定フィールドのリアルタイム反映 =====
+    const basicFields = [
+        'aios-language',
+        'aios-country', 
+        'aios-timezone',
+        'aios-zonename',
+        'aios-lan-ipv4',
+        'aios-lan-ipv6',
+        'aios-device-name',
+        'aios-root-password',
+        'aios-wifi-ssid',
+        'aios-wifi-password',
+        'aios-ssh-interface',
+        'aios-flow-offloading'
     ];
-    
-    pppoeFields.forEach(fieldId => {
-        const el = document.getElementById(fieldId);
-        if (el) {
-            el.addEventListener('input', () => syncTemplateAndPackages({ trigger: 'script' }));
-        }
-    });
-    
-    // ===== DS-Lite設定フィールドのリアルタイム反映 =====
-    const dsliteFields = [
-        'dslite-aftr-address',
-        'dslite-aftr-type',
-        'dslite-area'
-    ];
-    
-    dsliteFields.forEach(fieldId => {
-        const el = document.getElementById(fieldId);
-        if (el) {
-            el.addEventListener('input', () => syncTemplateAndPackages({ trigger: 'script' }));
-            el.addEventListener('change', () => syncTemplateAndPackages({ trigger: 'script' }));
-        }
-    });
-    
-    // ===== MAP-E設定フィールドのリアルタイム反映 =====
-    const mapeFields = [
-        'mape-br',
-        'mape-ealen',
-        'mape-ipv4-prefix',
-        'mape-ipv4-prefixlen',
-        'mape-ipv6-prefix',
-        'mape-ipv6-prefixlen',
-        'mape-psid-offset',
-        'mape-psidlen',
-        'mape-gua-prefix'
-    ];
-    
-    mapeFields.forEach(fieldId => {
-        const el = document.getElementById(fieldId);
-        if (el) {
-            el.addEventListener('input', () => syncTemplateAndPackages({ trigger: 'script' }));
-        }
-    });
-    
-    // ===== AP設定フィールドのリアルタイム反映 =====
-    const apFields = [
-        'ap-ip-address',
-        'ap-gateway'
-    ];
-    
-    apFields.forEach(fieldId => {
-        const el = document.getElementById(fieldId);
-        if (el) {
-            el.addEventListener('input', () => syncTemplateAndPackages({ trigger: 'script' }));
-        }
-    });
-    
+
+    // ===== フィールドイベントの統合バインディング =====
+    const fieldGroups = {
+        basic: basicFields,  // 上で定義したbasicFieldsを使用
+        pppoe: ['pppoe-username', 'pppoe-password'],
+        dslite: ['dslite-aftr-address', 'dslite-aftr-type', 'dslite-area'],
+        mape: [
+            'mape-br', 'mape-ealen', 'mape-ipv4-prefix', 'mape-ipv4-prefixlen',
+            'mape-ipv6-prefix', 'mape-ipv6-prefixlen', 'mape-psid-offset',
+            'mape-psidlen', 'mape-gua-prefix'
+        ],
+        ap: ['ap-ip-address', 'ap-gateway']
+    };
+
+    // 一括バインディング
+    bindFieldEvents(fieldGroups.basic);
+    bindFieldEvents(fieldGroups.pppoe);
+    bindFieldEvents(fieldGroups.dslite, ['input', 'change']);  // DS-Liteは2つのイベント
+    bindFieldEvents(fieldGroups.mape);
+    bindFieldEvents(fieldGroups.ap);
+
     // ===== ラジオボタンのリアルタイム反映 =====
     // DS-Lite mode
     document.querySelectorAll('input[name="dsliteMode"]').forEach(radio => {
@@ -2369,7 +2332,7 @@ basicFields.forEach(fieldId => {
         }
     });
     
-// ===== 初期状態設定（存在確認あり） =====
+    // ===== 初期状態設定（存在確認あり） =====
     const manualSection = document.getElementById('manual-connection-section');
     if (manualSection) manualSection.style.display = 'none';
     
