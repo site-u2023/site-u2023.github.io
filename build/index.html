@@ -1397,7 +1397,7 @@ if [ -n "\${ap_ip_address}" ]; then
     [ -x /etc/init.d/firewall ] && /etc/init.d/firewall running && /etc/init.d/firewall stop
 fi
 if [ -n "\${enable_ttyd}" ]; then
-    uci set ttyd.@ttyd[0].ttyd.ipv6='1' 
+    uci set ttyd.@ttyd[0].ipv6='1' 
     uci set ttyd.@ttyd[0].command='/bin/login -f root' 
 fi
 if [ -n "\${enable_irqbalance}" ]; then
