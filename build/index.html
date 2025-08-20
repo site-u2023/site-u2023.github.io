@@ -1572,6 +1572,7 @@ const PACKAGE_DB = {
                 }
             ]
         },
+// After
         {
             id: "network-management",
             name: "Network Management",
@@ -1631,6 +1632,17 @@ const PACKAGE_DB = {
                     id: "luci-app-ddns", 
                     name: "luci-app-ddns", 
                     url: "https://openwrt.org/packages/pkgdata/luci-app-ddns"
+                },
+                {
+                    id: "mwan3",
+                    name: "mwan3",
+                    url: "https://openwrt.org/packages/pkgdata/mwan3"
+                },
+                {
+                    id: "luci-app-mwan3",
+                    name: "luci-app-mwan3",
+                    url: "https://openwrt.org/packages/pkgdata/luci-app-mwan3",
+                    dependencies: ["mwan3"]
                 }
             ]
         },
