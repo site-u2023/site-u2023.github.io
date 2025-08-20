@@ -916,7 +916,7 @@
                             </div>
                             <div class="form-group">
                                 <label for="aios-backup-path">Restore Backup Path</label>
-                                <input type="text" id="aios-backup-path" class="form-control" placeholder="/root/backup_${VER}.tar.gz" value="/root/backup_${VER}.tar.gz">
+                                <input type="text" id="aios-backup-path" class="form-control" placeholder="/root/backup_\${VER}.tar.gz" value="/root/backup_\${VER}.tar.gz">
                                 <small class="form-text text-muted">Path to backup file for restore</small>
                             </div>
                         </div>
@@ -1201,7 +1201,7 @@ AP6_NAME="ap6"
 # ssh_interface="lan"
 # ssh_port="22"
 # flow_offloading_type=""
-# backup_path="/root/backup_${VER}.tar.gz"
+# backup_path="/root/backup_\${VER}.tar.gz"
 # wlan_name="OpenWrt"
 # wlan_password="12345678"
 # pppoe_username=""
