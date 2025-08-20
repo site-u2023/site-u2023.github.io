@@ -1275,9 +1275,6 @@ case "\${flow_offloading_type}" in
         uci set firewall.@defaults[0].flow_offloading_hw='1'
         ;;
 esac
-if [ -n "\${backup_path}" ]; then
-    sysupgrade -r "\${backup_path}"
-fi
 if [ -n "\${dslite_aftr_address}" ]; then
     cp -p /etc/config/network /etc/config/network.\${DSLITE_NAME}.bak 2>/dev/null
     cp -p /etc/config/dhcp /etc/config/dhcp.\${DSLITE_NAME}.bak 2>/dev/null
@@ -1431,7 +1428,9 @@ fi
 # \${custom_commands}
 uci commit 2>/dev/null
 echo "All done!"
-sysupgrade -b "/root/backup_\${VER}.tar.gz"
+if [ -n "\${backup_path}" ]; then
+    sysupgrade -r "\${backup_path}"
+fi
 exit 0`;
 
 // config.js相当の設定
