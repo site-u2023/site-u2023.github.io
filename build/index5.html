@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -788,7 +787,7 @@
                               <div id="commands-autocomplete" class="autocomplete">
                                   <input type="text"
                                     id="command"
-                                    placeholder="Type command"
+                                    placeholder="uci set system.@system[0].hostname='MyRouter'"
                                     lang="en"
                                     inputmode="latin"
                                     autocomplete="off"
@@ -1997,6 +1996,11 @@ async function init() {
 
         // ISP情報取得は details 展開時に移動（auto トリガー）
         console.log('Initialization completed. ISP info will be fetched when details are opened.');
+        
+        // 初期化完了後、セレクターの初期値を確実に反映（バグ修正）
+        setTimeout(() => {
+            refreshTemplateAndPackages();
+        }, 100);
 
     } catch (error) {
         console.error('Failed to initialize:', error);
@@ -2526,6 +2530,7 @@ function generatePackageSelector() {
         categoryDiv.appendChild(packageGrid);
         container.appendChild(categoryDiv);
     });
+    updatePackageListFromSelector();
 }
 
 function handlePackageSelection(e) {
@@ -2945,7 +2950,24 @@ function applyProfileData(profilesData, profileId) {
         const defaultPackages = profilesData.default_packages || [];
         const devicePackages = profile.device_packages || [];
         const asuExtraPackages = ['luci'];
-        const allPackages = defaultPackages.concat(devicePackages, asuExtraPackages);
+        
+        // セレクターでチェックされているパッケージも収集
+        const checkedPackages = [];
+        document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
+            const pkgName = cb.getAttribute('data-package');
+            if (pkgName) {
+                checkedPackages.push(pkgName);
+            }
+        });
+        
+        // 全パッケージを統合（重複除去）
+        const allPackages = Array.from(new Set([
+            ...defaultPackages,
+            ...devicePackages,
+            ...asuExtraPackages,
+            ...checkedPackages
+        ]));
+        
         document.getElementById('asu-packages').value = allPackages.join(' ');
         asuCollectPackages();
     }
@@ -3796,6 +3818,20 @@ function mergeUnique(base, extra) {
 }
         
 function refreshTemplateAndPackages() {
+    // セレクターの初期値を反映（バグ修正）
+    const checkedPackages = [];
+    document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
+        const pkgName = cb.getAttribute('data-package');
+        if (pkgName) checkedPackages.push(pkgName);
+    });
+    
+    if (checkedPackages.length > 0) {
+        const textarea = document.getElementById('asu-packages');
+        const currentList = split(textarea.value);
+        const mergedList = Array.from(new Set([...currentList, ...checkedPackages]));
+        textarea.value = mergedList.join(' ');
+    }
+    
     // 必要パッケージの更新（map, ds-lite等）
     updateRequiredPackages();
     
@@ -3804,7 +3840,7 @@ function refreshTemplateAndPackages() {
 
     // aios-config 有効時のみテンプレ更新
     if (document.getElementById('use-aios-config-details').open) {
-        updateConfiguredTemplate();  // .catch(console.error) 削除
+        updateConfiguredTemplate();
     }
 }
 
