@@ -2273,74 +2273,50 @@ const basicFields = [
     'aios-flow-offloading'
 ];
 
-basicFields.forEach(fieldId => {
-    const el = document.getElementById(fieldId);
-    if (el) {
-        el.addEventListener('input', () => syncTemplateAndPackages({ trigger: 'script' }));
-    }
-});
+// ==================== イベントバインディング統合関数 ====================
+function bindFieldEvents(fieldIds, events = ['input'], callback = null) {
+    const handler = callback || (() => syncTemplateAndPackages({ trigger: 'script' }));
     
-    // ===== PPPoE設定フィールドのリアルタイム反映 =====
-    const pppoeFields = [
-        'pppoe-username',
-        'pppoe-password'
-    ];
-    
-    pppoeFields.forEach(fieldId => {
+    fieldIds.forEach(fieldId => {
         const el = document.getElementById(fieldId);
         if (el) {
-            el.addEventListener('input', () => syncTemplateAndPackages({ trigger: 'script' }));
+            // 複数イベントタイプに対応
+            const eventList = Array.isArray(events) ? events : [events];
+            eventList.forEach(eventType => {
+                el.addEventListener(eventType, handler);
+            });
         }
     });
-    
-    // ===== DS-Lite設定フィールドのリアルタイム反映 =====
-    const dsliteFields = [
-        'dslite-aftr-address',
-        'dslite-aftr-type',
-        'dslite-area'
-    ];
-    
-    dsliteFields.forEach(fieldId => {
-        const el = document.getElementById(fieldId);
-        if (el) {
-            el.addEventListener('input', () => syncTemplateAndPackages({ trigger: 'script' }));
-            el.addEventListener('change', () => syncTemplateAndPackages({ trigger: 'script' }));
-        }
-    });
-    
-    // ===== MAP-E設定フィールドのリアルタイム反映 =====
-    const mapeFields = [
-        'mape-br',
-        'mape-ealen',
-        'mape-ipv4-prefix',
-        'mape-ipv4-prefixlen',
-        'mape-ipv6-prefix',
-        'mape-ipv6-prefixlen',
-        'mape-psid-offset',
-        'mape-psidlen',
-        'mape-gua-prefix'
-    ];
-    
-    mapeFields.forEach(fieldId => {
-        const el = document.getElementById(fieldId);
-        if (el) {
-            el.addEventListener('input', () => syncTemplateAndPackages({ trigger: 'script' }));
-        }
-    });
-    
-    // ===== AP設定フィールドのリアルタイム反映 =====
-    const apFields = [
-        'ap-ip-address',
-        'ap-gateway'
-    ];
-    
-    apFields.forEach(fieldId => {
-        const el = document.getElementById(fieldId);
-        if (el) {
-            el.addEventListener('input', () => syncTemplateAndPackages({ trigger: 'script' }));
-        }
-    });
-    
+}
+
+// ==================== bindEvents関数内での使用 ====================
+function bindEvents() {
+    // ... 既存のコード ...
+
+    // ===== フィールドイベントの統合バインディング =====
+    const fieldGroups = {
+        basic: [
+            'aios-language', 'aios-country', 'aios-timezone', 'aios-zonename',
+            'aios-lan-ipv4', 'aios-lan-ipv6', 'aios-device-name', 'aios-root-password',
+            'aios-wifi-ssid', 'aios-wifi-password', 'aios-ssh-interface', 'aios-flow-offloading'
+        ],
+        pppoe: ['pppoe-username', 'pppoe-password'],
+        dslite: ['dslite-aftr-address', 'dslite-aftr-type', 'dslite-area'],
+        mape: [
+            'mape-br', 'mape-ealen', 'mape-ipv4-prefix', 'mape-ipv4-prefixlen',
+            'mape-ipv6-prefix', 'mape-ipv6-prefixlen', 'mape-psid-offset',
+            'mape-psidlen', 'mape-gua-prefix'
+        ],
+        ap: ['ap-ip-address', 'ap-gateway']
+    };
+
+    // 一括バインディング
+    bindFieldEvents(fieldGroups.basic);
+    bindFieldEvents(fieldGroups.pppoe);
+    bindFieldEvents(fieldGroups.dslite, ['input', 'change']);  // DS-Liteは2つのイベント
+    bindFieldEvents(fieldGroups.mape);
+    bindFieldEvents(fieldGroups.ap);
+
     // ===== ラジオボタンのリアルタイム反映 =====
     // DS-Lite mode
     document.querySelectorAll('input[name="dsliteMode"]').forEach(radio => {
