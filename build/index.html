@@ -1543,7 +1543,7 @@ const PACKAGE_DB = {
                 {
                     id: "openssh-sftp-server",
                     name: "openssh-sftp-server",
-                    url: "https://openwrt.org/packages/pkgdata/openssh-sftp-server",
+                    url: "https://openwrt.org/docs/guide-user/services/nas/sftp.server",
                     checked: true
                 },
                 {
@@ -1566,13 +1566,12 @@ const PACKAGE_DB = {
                 { 
                     id: "luci-app-irqbalance", 
                     name: "luci-app-irqbalance", 
-                    url: "https://openwrt.org/packages/pkgdata/luci-app-irqbalance",
+                    url: "https://openwrt.org/docs/guide-user/services/irqbalance",
                     enableVar: "enable_irqbalance",
                     minVersion: "24.10"
                 }
             ]
         },
-// After
         {
             id: "network-management",
             name: "Network Management",
@@ -1631,7 +1630,7 @@ const PACKAGE_DB = {
                 { 
                     id: "luci-app-ddns", 
                     name: "luci-app-ddns", 
-                    url: "https://openwrt.org/packages/pkgdata/luci-app-ddns"
+                    url: "https://openwrt.org/docs/guide-user/services/ddns/client"
                 },
                 {
                     id: "mwan3",
@@ -1660,6 +1659,17 @@ const PACKAGE_DB = {
                     id: "banip", 
                     name: "banip", 
                     url: "https://openwrt.org/packages/pkgdata/banip"
+                },
+                {
+                  id: "geoip-shell",
+                  name: "geoip-shell",
+                  url: "https://github.com/friendly-bits/geoip-shell"
+                },
+                {
+                  id: "geoip-shell-iptables",
+                  name: "geoip-shell-iptables",
+                  url: "https://openwrt.org/packages/pkgdata/geoip-shell-iptables",
+                  dependencies: ["geoip-shell"]
                 }
             ]
         },
@@ -1780,12 +1790,12 @@ const PACKAGE_DB = {
                 {
                     id: "luci-app-openvpn",
                     name: "luci-app-openvpn",
-                    url: "https://openwrt.org/packages/pkgdata/luci-app-openvpn",
+                    url: "https://openwrt.org/docs/guide-user/services/vpn/openvpn/client-luci",
                 },
                 {
                     id: "luci-app-minidlna",
                     name: "luci-app-minidlna",
-                    url: "https://openwrt.org/packages/pkgdata/luci-app-minidlna"
+                    url: "https://openwrt.org/docs/guide-user/services/media_server/minidlna"
                 }
             ]
         },
@@ -1935,7 +1945,7 @@ const PACKAGE_DB = {
                 { 
                     id: "luci-app-samba4", 
                     name: "luci-app-samba4", 
-                    url: "https://openwrt.org/packages/pkgdata/luci-app-samba4",
+                    url: "https://openwrt.org/docs/guide-user/services/nas/cifs.server",
                     dependencies: ["wsdd2"],
                     enableVar: "enable_samba4"
                 },
