@@ -3966,14 +3966,41 @@ async function buildAsuRequest() {
 
     } catch (error) {
         console.error('Build request failed:', error);
-        alert('Build failed: ' + error.message);
+
+        // ==== UI側にもエラー表示 ====
+        const showErrorOnPage = (msg) => {
+            const stderrEl = document.getElementById('asu-stderr');
+            if (stderrEl) {
+                stderrEl.textContent = msg;
+                document.getElementById('asu-log').style.display = 'block';
+            }
+        };
+
+        // まず例外メッセージをUIに出す
+        showErrorOnPage(error.message || String(error));
+
+        // fetch のレスポンス本文があれば取得して表示
+        if (error.response && typeof error.response.text === 'function') {
+            error.response.text().then(t => {
+                console.error('Server body:\n', t);
+                showErrorOnPage(`${error.message || 'Server error'}\n\n${t}`);
+            }).catch(e => {
+                console.error('Body read error:', e);
+                showErrorOnPage(`${error.message || 'Server error'}\n\n(Body read error: ${e})`);
+            });
+        }
+
+        // アラート通知（任意）
+        alert('Build failed: ' + (error.message || 'Unknown error'));
+
         hideProgress();
-} finally {
+    } finally {
         document.getElementById('request-build').disabled = false;
     }
 }
 
 async function pollBuildStatus(requestHash) {
+
     const maxAttempts = 120;
     let attempts = 0;
     const startTime = Date.now();
