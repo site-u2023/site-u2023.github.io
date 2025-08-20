@@ -10,6 +10,10 @@
     <link rel="preconnect" href="https://sysupgrade.openwrt.org">
     <link rel="dns-prefetch" href="https://auto-config.site-u.workers.dev">
     <link rel="dns-prefetch" href="https://site-u.pages.dev">
+
+    <!-- ドキュメント検索に向けたリソースヒント -->
+    <link rel="preconnect" href="https://openwrt.org" crossorigin>
+    <link rel="dns-prefetch" href="https://openwrt.org">
     
 <style>
     /* 基本スタイル */
@@ -782,7 +786,10 @@
                             <div class="package-category">
                               <h4>Add commands</h4>
                               <div class="package-category-description">
-                                Add custom shell commands. They'll be executed during first boot.
+                                Add custom shell commands that run on first boot.
+                                <a href="https://openwrt.org/docs/techref/start" target="_blank" rel="noopener">
+                                    Technical Reference
+                                </a>
                               </div>  
                               <div id="commands-autocomplete" class="autocomplete">
                                   <input type="text"
@@ -845,7 +852,7 @@
                             </div>
                         </div>
 
-<!-- 2行目: Timezone と Zone name -->
+                        <!-- 2行目: Timezone と Zone name -->
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="aios-timezone">Timezone</label>
@@ -892,6 +899,14 @@
                                 <small class="form-text text-muted">Network interface for SSH access</small>
                             </div>
                             <div class="form-group">
+                                <label for="aios-ssh-port">SSH Port</label>
+                                <input type="number" id="aios-ssh-port" class="form-control" placeholder="22" value="22" min="1" max="65535">
+                                <small class="form-text text-muted">Port number for SSH access</small>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
                                 <label for="aios-flow-offloading">Flow offloading type</label>
                                 <select id="aios-flow-offloading" class="form-control">
                                     <option value="">Disabled</option>
@@ -899,16 +914,21 @@
                                     <option value="hardware">Hardware flow offloading</option>
                                 </select>
                             </div>
+                            <div class="form-group">
+                                <label for="aios-backup-path">Restore Backup Path</label>
+                                <input type="text" id="aios-backup-path" class="form-control" placeholder="/root/backup_${VER}.tar.gz" value="/root/backup_${VER}.tar.gz">
+                                <small class="form-text text-muted">Path to backup file for restore</small>
+                            </div>
                         </div>
                         
-                        <h4>Wi-Fi Configuration</h4>
+                        <h4>Wi‑Fi Configuration</h4>
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="aios-wifi-ssid">Wi-Fi SSID</label>
+                                <label for="aios-wifi-ssid">Wi‑Fi SSID</label>
                                 <input type="text" id="aios-wifi-ssid" class="form-control" placeholder="OpenWrt">
                             </div>
                             <div class="form-group">
-                                <label for="aios-wifi-password">Wi-Fi password</label>
+                                <label for="aios-wifi-password">Wi‑Fi password</label>
                                 <input type="password" id="aios-wifi-password" class="form-control" placeholder="8+ characters">
                             </div>
                         </div>
@@ -1157,7 +1177,7 @@
     </div>
 
     <script>
-        
+
 // setup.shテンプレート
 const SETUP_SH_TEMPLATE = `#!/bin/sh
 # language="en"
@@ -1533,8 +1553,7 @@ const MapEProcessor = {
     }
 };
 
-const SEARCH_URL_TEMPLATE = 'https://openwrt.org/docs/guide-user/start?q={id}&do=search';
-
+const SEARCH_URL_TEMPLATE = 'https://openwrt.org/start?do=search&q={id}';
 function applySearchUrls(db) {
   db.categories.forEach(category => {
     category.packages.forEach(pkg => {
@@ -1661,15 +1680,6 @@ const PACKAGE_DB = {
         {
           id: "banip",
           name: "banip"
-        },
-        {
-          id: "geoip-shell",
-          name: "geoip-shell"
-        },
-        {
-          id: "geoip-shell-iptables",
-          name: "geoip-shell-iptables",
-          dependencies: ["geoip-shell"]
         }
       ]
     },
@@ -2271,7 +2281,7 @@ function bindEvents() {
         });
     }
 
-    // ===== 基本設定フィールドのリアルタイム反映 =====
+// ===== 基本設定フィールドのリアルタイム反映 =====
     const basicFields = [
         'aios-language',
         'aios-country', 
@@ -2284,7 +2294,9 @@ function bindEvents() {
         'aios-wifi-ssid',
         'aios-wifi-password',
         'aios-ssh-interface',
-        'aios-flow-offloading'
+        'aios-ssh-port',
+        'aios-flow-offloading',
+        'aios-backup-path'
     ];
 
     // ===== フィールドイベントの統合バインディング =====
@@ -3563,29 +3575,29 @@ async function customizeSetupScript(content, userConfig, apiInfo, selectedPackag
     // SSH Interface
     customized = setScriptVar(customized, 'ssh_interface', userConfig.sshInterface, !!userConfig.sshInterface);
     
+    // SSH Port
+    customized = setScriptVar(customized, 'ssh_port', userConfig.sshPort, !!userConfig.sshPort);
+    
     // Flow Offloading
     customized = setScriptVar(customized, 'flow_offloading_type', userConfig.flowOffloading, !!userConfig.flowOffloading);
+    
+    // Backup Path
+    customized = setScriptVar(customized, 'backup_path', userConfig.backupPath, !!userConfig.backupPath);
 
     // Custom Commands
     const customCommands = getCustomCommands();
     
-    // プレースホルダー上の管理領域を完全再構築（累積防止）
-    const managedRegion = /(fi\n)([\s\S]*?)(^# \$\{custom_commands\}$)/m;
-    const regionMatch = customized.match(managedRegion);
+    const managedRegion = /(# BEGIN_CUSTOM_COMMANDS\n)([\s\S]*?)(# END_CUSTOM_COMMANDS\n)/;
     
-    if (regionMatch) {
-        if (customCommands.length > 0) {
-            // UIのコマンドリストで管理領域を完全置換
-            const commandsText = customCommands.join('\n');
-            customized = customized.replace(managedRegion, `$1${commandsText}\n$3`);
-        } else {
-            // コマンドが空の場合：プレースホルダーのみ残す
-            customized = customized.replace(managedRegion, `$1$3`);
-        }
+    if (customCommands.length > 0) {
+        const commandsText = customCommands.join('\n');
+        customized = customized.replace(managedRegion, `$1${commandsText}\n$3`);
+    } else {
+        customized = customized.replace(managedRegion, `$1$3`);
     }
     
     return customized;
-}  
+}
         
 function getCustomCommands() {
     const commands = [];
@@ -3648,7 +3660,13 @@ function getAiosConfig() {
         rootPassword: parseOrEmpty('aios-root-password'),
         wifiSSID: parseOrEmpty('aios-wifi-ssid'),
         wifiPassword: parseOrEmpty('aios-wifi-password'),
-
+        apIpAddress: parseOrEmpty('ap-ip-address'),
+        apGateway: parseOrEmpty('ap-gateway'),
+        sshInterface: parseOrEmpty('aios-ssh-interface'),
+        sshPort: parseOrEmpty('aios-ssh-port', 'int'),
+        flowOffloading: parseOrEmpty('aios-flow-offloading'),
+        backupPath: parseOrEmpty('aios-backup-path'),
+        
         connectionMode: document.querySelector('input[name="connectionMode"]:checked')?.value || 'auto',
         connectionType: document.querySelector('input[name="connectionType"]:checked')?.value || 'dhcp',
         mapeType: document.querySelector('input[name="mapeType"]:checked')?.value || 'auto',
@@ -3669,13 +3687,7 @@ function getAiosConfig() {
         mapeIpv6Prefixlen: parseOrEmpty('mape-ipv6-prefixlen', 'int'),
         mapePsidOffset: parseOrEmpty('mape-psid-offset', 'int'),
         mapePsidlen: parseOrEmpty('mape-psidlen', 'int'),
-        mapeGuaPrefix: parseOrEmpty('mape-gua-prefix'),
-
-        apIpAddress: parseOrEmpty('ap-ip-address'),
-        apGateway: parseOrEmpty('ap-gateway'),
-        
-        sshInterface: parseOrEmpty('aios-ssh-interface'),
-        flowOffloading: parseOrEmpty('aios-flow-offloading')
+        mapeGuaPrefix: parseOrEmpty('mape-gua-prefix')
     };
 
     return config;
