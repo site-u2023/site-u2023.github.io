@@ -3933,32 +3933,36 @@ async function buildAsuRequest() {
             requestBody.defaults = script;
         }
             
-        const response = await fetch('https://sysupgrade.openwrt.org/api/v1/build', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify(requestBody)
-        });
+const response = await fetch('https://sysupgrade.openwrt.org/api/v1/build', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+    },
+    body: JSON.stringify(requestBody)
+});
 
-        // レスポンス本文を最初に全て読む
-        const responseText = await response.text();
+// レスポンス本文を最初に全て読む
+const responseText = await response.text();
 
-        if (!response.ok) {
-            // 本文を持ったエラーオブジェクトを作成
-            const err = new Error(`HTTP ${response.status}`);
-            err.responseBody = responseText;
-            throw err;
-        }
+if (!response.ok) {
+    // 本文を持ったエラーオブジェクトを作成
+    const err = new Error(`HTTP ${response.status}`);
+    err.responseBody = responseText;   // ← 本文を格納
+    err.statusCode = response.status;  // ← 任意: ステータスコードも渡す
+    throw err;
+}
 
-        let result;
-        try {
-            result = JSON.parse(responseText);
-        } catch (e) {
-            throw new Error('Invalid JSON response: ' + responseText);
-        }
-
+let result;
+try {
+    result = JSON.parse(responseText);
+} catch (e) {
+    // パース失敗時も本文を持たせて投げ直す
+    const err = new Error('Invalid JSON response');
+    err.responseBody = responseText;
+    throw err;
+}
+        
         if (result.request_hash) {
             await pollBuildStatus(result.request_hash);
         } else if (result.images && result.images.length > 0) {
@@ -3968,22 +3972,27 @@ async function buildAsuRequest() {
             throw new Error('No request hash or images in response');
         }
 
-    } catch (error) {
-        console.error('Build request failed:', error);
+} catch (error) {
+    console.error('Build request failed:', error);
 
-        // ==== UI側にもエラー表示 ====
-        const showErrorOnPage = (msg) => {
-            const stderrEl = document.getElementById('asu-stderr');
-            if (stderrEl) {
-                stderrEl.textContent = msg;
-                document.getElementById('asu-log').style.display = 'block';
-            }
-        };
+    // ==== UI側にもエラー表示 ====
+    const showErrorOnPage = (msg) => {
+        const stderrEl = document.getElementById('asu-stderr');
+        if (stderrEl) {
+            stderrEl.textContent = msg;
+            document.getElementById('asu-log').style.display = 'block';
+        }
+    };
 
-        // まず例外メッセージをUIに出す
+    // エラー本文があればそれを優先表示
+    if (error.responseBody) {   // ← fetch側で付けた本文プロパティ
+        console.error('Server body:\n', error.responseBody);
+        showErrorOnPage(`${error.message}\n\n${error.responseBody}`);
+    } else {
+        // エラーオブジェクトしか無い場合は従来通り
         showErrorOnPage(error.message || String(error));
 
-        // fetch のレスポンス本文があれば取得して表示
+        // fetch Responseオブジェクトが付いていた場合は読み出し
         if (error.response && typeof error.response.text === 'function') {
             error.response.text().then(t => {
                 console.error('Server body:\n', t);
@@ -3993,14 +4002,14 @@ async function buildAsuRequest() {
                 showErrorOnPage(`${error.message || 'Server error'}\n\n(Body read error: ${e})`);
             });
         }
-
-        // アラート通知（任意）
-        alert('Build failed: ' + (error.message || 'Unknown error'));
-
-        hideProgress();
-    } finally {
-        document.getElementById('request-build').disabled = false;
     }
+
+    // アラート通知（任意）
+    alert('Build failed: ' + (error.message || 'Unknown error'));
+
+    hideProgress();
+} finally {
+    document.getElementById('request-build').disabled = false;
 }
 
 async function pollBuildStatus(requestHash) {
