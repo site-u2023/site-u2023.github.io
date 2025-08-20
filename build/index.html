@@ -1178,6 +1178,7 @@
 
 // setup.shテンプレート
 const SETUP_SH_TEMPLATE = `#!/bin/sh
+exec >/tmp/setup.log 2>&1
 VER="$(cat /etc/openwrt_version 2>/dev/null || echo unknown)"
 LAN_DEF="$(uci get network.lan.device || echo lan)"
 WAN_DEF="$(uci get network.wan.device || echo wan)"
@@ -1221,7 +1222,6 @@ AP6_NAME="ap6"
 # enable_samba4=""
 # openwrt_19=""
 # openwrt_21=""
-exec >/tmp/setup.log 2>&1
 if [ -n "\${device_name}" ]; then
     uci set system.@system[0].hostname="\${device_name}"
 fi
