@@ -1933,7 +1933,11 @@ const PACKAGE_DB = {
 };
 
 // JS ----------------------------------------------------------------------------
-document.addEventListener('DOMContentLoaded', init);
+document.addEventListener('DOMContentLoaded', async () => {
+  // OpenWrt REST Summary API で title/summary/url を取得してから UI を生成
+  await applySummaryUrls(PACKAGE_DB);
+  init();
+});
 
 // ==================== ユーティリティ関数 ====================
 async function loadPackageDatabase() {
@@ -2452,6 +2456,10 @@ function generatePackageSelector() {
             link.textContent = pkg.name;
 
             label.appendChild(link);
+            const desc = document.createElement('div');
+            desc.className = 'package-description';
+            desc.textContent = pkg.summary || '説明が取得できませんでした';
+            packageItem.appendChild(desc);            
             formCheck.appendChild(checkbox);
             formCheck.appendChild(label);
             packageItem.appendChild(formCheck);
