@@ -1525,33 +1525,17 @@ const MapEProcessor = {
     }
 };
 
-const SUMMARY_URL_TEMPLATE =
-  'https://openwrt.org/api/rest_v1/page/summary/{id}';
+const SEARCH_URL_TEMPLATE = 'https://openwrt.org/docs/guide-user/start?q={id}&do=search';
 
-async function applySummaryUrls(db, template = SUMMARY_URL_TEMPLATE) {
-  const tasks = [];
-
-  db.categories.forEach(cat => {
-    cat.packages.forEach(pkg => {
-      const url = template.replace('{id}', encodeURIComponent(pkg.id));
-      tasks.push(
-        fetch(url + '?origin=*')
-          .then(res => res.json())
-          .then(json => {
-            pkg.title   = json.title;
-            pkg.summary = json.extract;
-            pkg.url     = json.content_urls.desktop.page;
-          })
-          .catch(() => {
-            pkg.title   = pkg.name;
-            pkg.summary = '説明が取得できませんでした';
-            pkg.url     = '';
-          })
+function applySearchUrls(db) {
+  db.categories.forEach(category => {
+    category.packages.forEach(pkg => {
+      pkg.url = SEARCH_URL_TEMPLATE.replace(
+        '{id}',
+        encodeURIComponent(pkg.id)
       );
     });
   });
-
-  await Promise.all(tasks);
 }
 
 // パッケージデータベース
@@ -1932,12 +1916,10 @@ const PACKAGE_DB = {
   ]
 };
 
+applySearchUrls(PACKAGE_DB);
+
 // JS ----------------------------------------------------------------------------
-document.addEventListener('DOMContentLoaded', async () => {
-  // OpenWrt REST Summary API で title/summary/url を取得してから UI を生成
-  await applySummaryUrls(PACKAGE_DB);
-  init();
-});
+document.addEventListener('DOMContentLoaded', init);
 
 // ==================== ユーティリティ関数 ====================
 async function loadPackageDatabase() {
@@ -2450,16 +2432,12 @@ function generatePackageSelector() {
             label.setAttribute('for', `pkg-${pkg.id}`);
 
             const link = document.createElement('a');
-            link.href = `https://openwrt.org/docs/guide-user/start?q=${encodeURIComponent(pkg.id)}&do=search`;
+            link.href = pkg.url;
             link.target = '_blank';
             link.className = 'package-link';
             link.textContent = pkg.name;
-            
+
             label.appendChild(link);
-            const desc = document.createElement('div');
-            desc.className = 'package-description';
-            desc.textContent = pkg.summary || '説明が取得できませんでした';
-            packageItem.appendChild(desc);            
             formCheck.appendChild(checkbox);
             formCheck.appendChild(label);
             packageItem.appendChild(formCheck);
