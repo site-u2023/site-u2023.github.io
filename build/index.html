@@ -1429,7 +1429,7 @@ fi
 uci commit 2>/dev/null
 echo "All done!"
 if [ -n "\${backup_path}" ]; then
-    sysupgrade -r "\${backup_path}"
+    sysupgrade -q -k -b "\${backup_path}"
 fi
 exit 0`;
 
