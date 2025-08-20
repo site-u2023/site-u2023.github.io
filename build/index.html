@@ -1207,6 +1207,8 @@
 # ap_ip_address="192.168.1.2"
 # ap_gateway="192.168.1.1"
 # ssh_interface="lan"
+# ssh_port="22"
+# backup_path="/root/backup_\${VER}.tar.gz"
 # flow_offloading_type=""
 # custom_commands=""
 # enable_ttyd=""
@@ -1246,7 +1248,7 @@ fi
 if [ -n "\${zonename}" ]; then
     uci set system.@system[0].zonename="\${zonename}"
 fi
-if [ -n "\${wlan_name}" ] && [ -n "\${wlan_password}" ] && [ \${wlan_password} -ge 8 ]; then
+if [ -n "${wlan_name}" ] && [ -n "${wlan_password}" ]; then
     uci set wireless.@wifi-device[0].disabled='0'
     uci set wireless.@wifi-iface[0].disabled='0'
     uci set wireless.@wifi-iface[0].encryption='sae-mixed'
@@ -1257,6 +1259,24 @@ if [ -n "\${pppoe_username}" ] && [ -n "\${pppoe_password}" ]; then
     uci set network.wan.proto='pppoe'
     uci set network.wan.username="\${pppoe_username}"
     uci set network.wan.password="\${pppoe_password}"
+fi
+if [ -n "\${ssh_interface}" ]; then
+    uci set dropbear.@dropbear[0].Interface="\${ssh_interface}"
+fi
+if [ -n "\${ssh_port}" ]; then
+    uci set dropbear.@dropbear[0].Port="\${ssh_port}"
+fi
+case "\${flow_offloading_type}" in
+    "software")
+        uci set firewall.@defaults[0].flow_offloading='1'
+        ;;
+    "hardware")
+        uci set firewall.@defaults[0].flow_offloading='1'
+        uci set firewall.@defaults[0].flow_offloading_hw='1'
+        ;;
+esac
+if [ -n "\${backup_path}" ]; then
+    sysupgrade -r "\${backup_path}"
 fi
 if [ -n "\${dslite_aftr_address}" ]; then
     cp -p /etc/config/network /etc/config/network.\${DSLITE_NAME}.bak 2>/dev/null
@@ -1381,29 +1401,15 @@ if [ -n "\${ap_ip_address}" ]; then
     [ -x /etc/init.d/firewall ] && /etc/init.d/firewall enabled && /etc/init.d/firewall disable
     [ -x /etc/init.d/firewall ] && /etc/init.d/firewall running && /etc/init.d/firewall stop
 fi
-if [ -n "\${ssh_interface}" ]; then
-    uci set dropbear.@dropbear[0].Interface="\${ssh_interface}"
-fi
-if [ -n "\${flow_offloading_type}" ]; then
-    case "\${flow_offloading_type}" in
-        "software")
-            uci set firewall.@defaults[0].flow_offloading='1'
-            ;;
-        "hardware")
-            uci set firewall.@defaults[0].flow_offloading='1'
-            uci set firewall.@defaults[0].flow_offloading_hw='1'
-            ;;
-    esac
-fi
-if [ -n "$enable_ttyd" ]; then
+if [ -n "\${enable_ttyd}" ]; then
     uci set ttyd.@ttyd[0].ttyd.ipv6='1' 
     uci set ttyd.@ttyd[0].command='/bin/login -f root' 
 fi
-if [ -n "$enable_irqbalance" ]; then
+if [ -n "\${enable_irqbalance}" ]; then
     uci set irqbalance.irqbalance=irqbalance
     uci set irqbalance.irqbalance.enabled='1'
 fi
-if [ -n "$enable_samba4" ]; then
+if [ -n "\${enable_samba4}" ]; then
     NAS="openwrt"
     MNT="/mnt/sda"
     uci set samba4.@samba[0]=samba
