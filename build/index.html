@@ -2714,7 +2714,6 @@ async _selectDevice(device) {
         await loadDeviceProfile(device);
         // 成功時のみUI表示
         showDeviceInfo();
-        this._executeBackgroundTasks();
     } catch (error) {
         ErrorHandler.handle('DeviceContext._selectDevice', error);
     }
