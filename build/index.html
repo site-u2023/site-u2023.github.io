@@ -4660,13 +4660,6 @@ function showDownloadLinks(images, fullStatus, requestHash) {
         }
     }
 
-    // 結果をマージ
-    for (const r of results) {
-        if (r.status === 'fulfilled' && Array.isArray(r.value)) {
-            allPkgs.push(...r.value);
-        }
-    }
-
     // 名前重複を統合
     const pkgMap = new Map();
     for (const p of allPkgs) {
