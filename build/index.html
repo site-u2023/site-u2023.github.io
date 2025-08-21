@@ -4591,18 +4591,33 @@ async function fetchDevicePackages() {
         }
 
         // パッケージインデックスURL一覧（targets/kmods と feeds）
-        const feeds = ["base", "luci", "packages", "routing", "telephony"];
-        const urls = [];
-
-        if (version !== 'SNAPSHOT') {
+if (version !== 'SNAPSHOT') {
+            // 従来のターゲット固有パッケージ
             urls.push(`${basePath}/targets/${targetPath}/packages/Packages`);
         } else {
+            // SNAPSHOT の場合、version_code をそのまま kernel version として使用
             const kernelVer = meta?.version_code;
+            
+            ErrorHandler.debug('SNAPSHOT kmods detection', 'Checking kernel version', {
+                version_code: kernelVer,
+                target: targetPath,
+                basePath: basePath,
+                meta_keys: Object.keys(meta || {}),
+                arch_packages: meta?.arch_packages
+            });
+            
             if (kernelVer) {
-                urls.push(`${basePath}/targets/${targetPath}/kmods/${kernelVer}/Packages`);
-                console.log('[SNAPSHOT] Using kernel version from version_code:', kernelVer);
+                const kmodsUrl = `${basePath}/targets/${targetPath}/kmods/${kernelVer}/Packages`;
+                urls.push(kmodsUrl);
+                
+                ErrorHandler.debug('SNAPSHOT kmods URL built', 'URL constructed', {
+                    kmods_url: kmodsUrl,
+                    all_urls_count: urls.length
+                });
             } else {
-                console.warn('[SNAPSHOT] version_code not found in profiles.json');
+                ErrorHandler.debug('SNAPSHOT kmods missing', 'No version_code found', {
+                    meta_content: meta
+                });
             }
         }
 
@@ -4611,17 +4626,36 @@ async function fetchDevicePackages() {
             urls.push(`${basePath}/packages/${arch}/${feed}/Packages`);
         }
 
-        // 各 Packages ファイルを並列取得・パース
+// 各 Packages ファイルを並列取得・パース
+        ErrorHandler.debug('Package fetch start', 'Fetching packages', {
+            urls: urls,
+            url_count: urls.length
+        });
+        
         const allPkgs = [];
         const results = await Promise.allSettled(
             urls.map(async (url) => {
                 try {
                     const res = await fetch(url);
+                    
+                    ErrorHandler.debug('Package fetch result', url, {
+                        status: res.status,
+                        ok: res.ok,
+                        headers: res.headers
+                    });
+                    
                     if (!res.ok) return [];
                     const text = await res.text();
-                    return parsePackagesText(text, url);
+                    const packages = parsePackagesText(text, url);
+                    
+                    ErrorHandler.debug('Package parse result', url, {
+                        text_length: text.length,
+                        packages_found: packages.length
+                    });
+                    
+                    return packages;
                 } catch (err) {
-                    console.warn(`パッケージ取得失敗: ${url}`, err);
+                    ErrorHandler.handle('Package fetch error', err, { url: url });
                     return [];
                 }
             })
