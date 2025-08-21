@@ -2954,7 +2954,9 @@ try {
             .then(() => console.log('Background tasks completed'));
     } catch (error) {
         console.error('Failed to load device profile:', error);
+        console.log('About to call hideDeviceInfo()'); // ← デバッグログ追加
         hideDeviceInfo(); // ← showDeviceInfo() から hideDeviceInfo() に変更
+        console.log('hideDeviceInfo() completed'); // ← デバッグログ追加
         Promise.allSettled([ fetchDevicePackages() ])
             .then(() => console.log('Background tasks completed (after error)'));
     }
