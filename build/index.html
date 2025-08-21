@@ -2754,8 +2754,8 @@ async _selectDevice(device) {
         // 成功時のみUI表示
         showDeviceInfo();
     } catch (error) {
-        ErrorHandler.handle('DeviceContext._selectDevice', error);
-        // 例外は既にハンドルされているので何もしない
+        const result = ErrorHandler.handle('DeviceContext._selectDevice', error);
+        // ErrorHandlerで処理済み、制御フローは結果オブジェクトで管理
     }
 },
     
