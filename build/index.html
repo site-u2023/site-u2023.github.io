@@ -2700,8 +2700,7 @@ const DeviceContext = {
             await this._finalizeUpdate();
             
         } catch (error) {
-            console.error('[DeviceContext] Update failed:', error);
-            this._handleError();
+            ErrorHandler.handle('DeviceContext.update', error);
         }
     },
     
