@@ -3135,6 +3135,15 @@ function hideDeviceInfo() {
     document.getElementById('request-build').style.display = 'none';
     console.log('hideDeviceInfo: After hiding, info display =', 
                 document.getElementById('info').style.display);
+    
+    // 犯人特定用のウォッチャー
+    setTimeout(() => {
+        const infoEl = document.getElementById('info');
+        if (infoEl.style.display !== 'none') {
+            console.error('🚨 CULPRIT FOUND! Someone changed display to:', infoEl.style.display);
+            console.trace('Who changed it?');
+        }
+    }, 100);
 }
 
 // ==================== auto トリガー関数 ====================
