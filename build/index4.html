@@ -2040,6 +2040,53 @@ const ErrorHandler = {
     }
 };
 
+// ==================== URL存在確認ユーティリティ ====================
+async function checkUrlExists(url) {
+    try {
+        const response = await fetch(url, { 
+            method: 'HEAD',
+            cache: 'no-cache'
+        });
+        return response.ok;
+    } catch (error) {
+        // CORSエラーの場合もfalseとして扱う
+        console.log(`URL check failed for ${url}:`, error.message);
+        return false;
+    }
+}
+
+// 複数URLから有効なものを検出
+async function findValidUrls(urlCandidates) {
+    const validUrls = [];
+    
+    for (const url of urlCandidates) {
+        const exists = await checkUrlExists(url);
+        console.log(`URL ${exists ? '✓' : '✗'}: ${url}`);
+        if (exists) {
+            validUrls.push(url);
+        }
+    }
+    
+    return validUrls;
+}
+        
+// ==================== URL管理の統一関数 ====================
+function setupVersionUrls(version) {
+    if (!config.image_urls) config.image_urls = {};
+    if (!config.overview_urls) config.overview_urls = {};
+    
+    // 既に設定済みならスキップ
+    if (config.image_urls[version]) return;
+    
+    if (version === 'SNAPSHOT') {
+        config.overview_urls[version] = `${config.image_url}/snapshots/`;
+        config.image_urls[version] = `${config.image_url}/snapshots/`;
+    } else {
+        config.overview_urls[version] = `${config.image_url}/releases/${encodeURIComponent(version)}/`;
+        config.image_urls[version] = `${config.image_url}/releases/${encodeURIComponent(version)}/`;
+    }
+}
+
 // ==================== ユーティリティ関数 ====================
 async function loadPackageDatabase() {
     const res = await fetch('data/packages.json');
@@ -2880,6 +2927,10 @@ async function loadVersions() {
             
             app.versions = app.versions.concat(versionList);
         }
+        
+        // 全バージョンのURL設定を事前に構築
+        app.versions.forEach(ver => setupVersionUrls(ver));
+        
         // デフォルト選択: 公式と同じく最新リリース版（2番目）
         app.selectedVersion = data.stable_version || (data.versions_list ? data.versions_list[0] : 'SNAPSHOT');
         updateVersionSelect();
@@ -2921,12 +2972,9 @@ async function loadDevices() {
     }
     
     try {
-        let url;
-        if (app.selectedVersion === 'SNAPSHOT') {
-            url = 'https://downloads.openwrt.org/snapshots/.overview.json';
-        } else {
-            url = `https://downloads.openwrt.org/releases/${app.selectedVersion}/.overview.json`;
-        }
+        // URL設定を確認
+        setupVersionUrls(app.selectedVersion);
+        const url = config.overview_urls[app.selectedVersion] + '.overview.json';
         
         const response = await fetch(url, {
             cache: 'no-cache',
@@ -3049,18 +3097,10 @@ async function loadDeviceProfile(device) {
     const profileId = device.id;
     const cacheKey = `${version}::${targetPath}::${profileId}`;
 
-    // 公式同等：version→URL マッピングを構築
-    if (!config.image_urls) config.image_urls = {};
-    if (!config.overview_urls) config.overview_urls = {};
-    if (version === 'SNAPSHOT') {
-        config.overview_urls[version] = `${config.image_url}/snapshots/`;
-        config.image_urls[version]    = `${config.image_url}/snapshots/`;
-    } else {
-        config.overview_urls[version] = `${config.image_url}/releases/${encodeURIComponent(version)}`;
-        config.image_urls[version]    = `${config.image_url}/releases/${encodeURIComponent(version)}`;
-    }
+    // URL設定を確認（通常はloadVersionsで設定済みだが念のため）
+    setupVersionUrls(version);
+    
     const profilesUrl = `${config.image_urls[version]}/targets/${targetPath}/profiles.json`;
-
     // キャッシュ命中時は即利用
     if (profileCache[cacheKey]) {
         console.log(`Using cached profile for ${cacheKey}`);
@@ -3165,10 +3205,11 @@ function showDeviceInfo() {
         fullVersion = `${app.selectedVersion} (${app.versionCode})`;
     }
     
+    // URL設定を確認
+    setupVersionUrls(app.selectedVersion);
+    
     // URLs生成
-    const imageFolder = app.selectedVersion === 'SNAPSHOT' 
-        ? `https://downloads.openwrt.org/snapshots/targets/${device.target}`
-        : `https://downloads.openwrt.org/releases/${app.selectedVersion}/targets/${device.target}`;
+    const imageFolder = `${config.image_urls[app.selectedVersion]}targets/${device.target}`;
     
     const deviceLink = `${window.location.origin}${window.location.pathname}?version=${encodeURIComponent(app.selectedVersion)}&target=${encodeURIComponent(device.target)}&id=${encodeURIComponent(device.id)}`;
     
@@ -4554,18 +4595,24 @@ function showDownloadLinks(images, fullStatus, requestHash) {
     }
 }
 
-    // ★パッケージインデックス取得（device_packages_url は廃止）
-    async function fetchDevicePackages() {
+// ★パッケージインデックス取得（device_packages_url は廃止）
+async function fetchDevicePackages() {
         app.devicePackages = [];
         if (!current_device || !current_device.id || !app.selectedVersion) return;
-
+        
         const version = app.selectedVersion;
-        const targetPath = current_device.target; // mediatek/filogic 形式
-
-        // profiles.json の URL を config.image_urls[version] 基点で生成
+        const targetPath = current_device.target;
+        
+        // URL設定を確認
+        setupVersionUrls(version);
         const basePath = config.image_urls[version].replace(/\/$/, '');
         const profilesUrl = `${basePath}/targets/${targetPath}/profiles.json`;
-
+        
+        // 初期化
+        const feeds = ["base", "luci", "packages", "routing", "telephony"];
+        const urls = [];
+        
+        // profiles.json からアーキテクチャ情報を取得
         let meta, arch;
         try {
             const res = await fetch(profilesUrl);
@@ -4577,38 +4624,41 @@ function showDownloadLinks(images, fullStatus, requestHash) {
             console.error("profiles.json 取得失敗:", e);
             return;
         }
-
-        // パッケージインデックスURL一覧（targets/kmods と feeds）
-        const feeds = ["base", "luci", "packages", "routing", "telephony"];
-        const urls = [];
-
+        
+        // target固有パッケージ（リリース版のみ存在）
         if (version !== 'SNAPSHOT') {
-            // 従来のターゲット固有パッケージ
             urls.push(`${basePath}/targets/${targetPath}/packages/Packages`);
-        } else {
-            // SNAPSHOT の場合、profiles.json から kernel を取得できたときのみ kmods を追加
-            const kernelVer = meta?.linux_kernel;
-            if (kernelVer) {
-                urls.push(`${basePath}/targets/${targetPath}/kmods/${kernelVer}/packages/Packages`);
-            }
         }
-
-        // フィードパッケージ
+        // SNAPSHOTの場合：target固有パッケージは存在しない
+        
+        // フィードパッケージ（全バージョン共通）
         for (const feed of feeds) {
             urls.push(`${basePath}/packages/${arch}/${feed}/Packages`);
         }
-
+        
+        console.log('[Package URLs]', {
+            version: version,
+            target: targetPath,
+            arch: arch,
+            urls: urls
+        });
+        
         // 各 Packages ファイルを並列取得・パース
         const allPkgs = [];
         const results = await Promise.allSettled(
             urls.map(async (url) => {
                 try {
                     const res = await fetch(url);
-                    if (!res.ok) return [];
+                    if (!res.ok) {
+                        console.log(`Package fetch ${res.status} for: ${url}`);
+                        return [];
+                    }
                     const text = await res.text();
-                    return parsePackagesText(text, url);
+                    const packages = parsePackagesText(text, url);
+                    console.log(`Parsed ${packages.length} packages from: ${url}`);
+                    return packages;
                 } catch (err) {
-                    console.warn(`パッケージ取得失敗: ${url}`, err);
+                    console.log(`Package fetch failed: ${url}`, err.message);
                     return [];
                 }
             })
@@ -4629,6 +4679,8 @@ function showDownloadLinks(images, fullStatus, requestHash) {
             }
         }
         app.devicePackages = Array.from(pkgMap.values());
+        
+        console.log(`[Package Summary] Total unique packages: ${app.devicePackages.length}`);
 
         // 取得完了後にセレクター再描画
         if (typeof generatePackageSelector === 'function') {
@@ -4649,15 +4701,15 @@ function showDownloadLinks(images, fullStatus, requestHash) {
                     else if (key === "Version") rec.version = val;
                     else if (key === "Description") rec.description = val;
                     else if (key === "Section") rec.section = val;
+                }  // ← インデント修正
+                if (rec.name) {
+                    rec.source = source;
+                    pkgs.push(rec);
+                }
             }
-            if (rec.name) {
-                rec.source = source;
-                pkgs.push(rec);
-            }
+            return pkgs;
         }
-        return pkgs;
     }
-}
         
 // ==================== パッケージ入力ボックス ====================
 (function() {
