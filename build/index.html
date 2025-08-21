@@ -4566,17 +4566,21 @@ function showDownloadLinks(images, fullStatus, requestHash) {
 }
 
     // ★パッケージインデックス取得（device_packages_url は廃止）
-async function fetchDevicePackages() {
-    app.devicePackages = [];
-    if (!current_device || !current_device.id || !app.selectedVersion) return;
+    async function fetchDevicePackages() {
+        app.devicePackages = [];
+        if (!current_device || !current_device.id || !app.selectedVersion) return;
 
-    const version = app.selectedVersion;
-    const targetPath = current_device.target;
+        const version = app.selectedVersion;
+        const targetPath = current_device.target;
 
-    // URL設定を確認
-    setupVersionUrls(version);
-    const basePath = config.image_urls[version].replace(/\/$/, '');
-    const profilesUrl = `${basePath}/targets/${targetPath}/profiles.json`;
+        // URL設定を確認
+        setupVersionUrls(version);
+        const basePath = config.image_urls[version].replace(/\/$/, '');
+        const profilesUrl = `${basePath}/targets/${targetPath}/profiles.json`;
+
+        // パッケージインデックスURL一覧（targets/kmods と feeds）
+        const feeds = ["base", "luci", "packages", "routing", "telephony"];
+        const urls = [];  // ← 先に定義を移動
 
         let meta, arch;
         try {
@@ -4591,7 +4595,7 @@ async function fetchDevicePackages() {
         }
 
         // パッケージインデックスURL一覧（targets/kmods と feeds）
-if (version !== 'SNAPSHOT') {
+        if (version !== 'SNAPSHOT') {
             // 従来のターゲット固有パッケージ
             urls.push(`${basePath}/targets/${targetPath}/packages/Packages`);
         } else {
@@ -4626,7 +4630,7 @@ if (version !== 'SNAPSHOT') {
             urls.push(`${basePath}/packages/${arch}/${feed}/Packages`);
         }
 
-// 各 Packages ファイルを並列取得・パース
+        // 各 Packages ファイルを並列取得・パース
         ErrorHandler.debug('Package fetch start', 'Fetching packages', {
             urls: urls,
             url_count: urls.length
