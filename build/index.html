@@ -2009,7 +2009,8 @@ const ErrorHandler = {
                 console.error(`Unexpected error in ${context}:`, error.message);
                 hideDeviceInfo();
         }
-        return { success: false, errorType, context };
+        // 元の例外を再throw
+        throw error;
     },
 
     // デバッグログ
@@ -2755,6 +2756,7 @@ async _selectDevice(device) {
         showDeviceInfo();
     } catch (error) {
         ErrorHandler.handle('DeviceContext._selectDevice', error);
+        // 例外は既にハンドルされているので何もしない
     }
 },
     
@@ -3160,14 +3162,6 @@ function hideDeviceInfo() {
     console.log('hideDeviceInfo: After hiding, info display =', 
                 document.getElementById('info').style.display);
     
-    // 犯人特定用のウォッチャー
-    setTimeout(() => {
-        const infoEl = document.getElementById('info');
-        if (infoEl.style.display !== 'none') {
-            console.error('CULPRIT FOUND! Someone changed display to:', infoEl.style.display);
-            console.trace('Who changed it?');
-        }
-    }, 100);
 }
 
 // ==================== auto トリガー関数 ====================
