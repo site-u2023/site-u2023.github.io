@@ -2396,6 +2396,15 @@ function generatePackageSelector() {
 
     container.innerHTML = '';
 
+    // 利用可能パッケージ名のセットを作成
+    const availablePackages = new Set();
+    if (app.devicePackages && app.devicePackages.length > 0) {
+        app.devicePackages.forEach(pkg => {
+            const name = (typeof pkg === 'string') ? pkg : pkg.name;
+            if (name) availablePackages.add(name);
+        });
+    }
+
     // 依存パッケージIDの集合を構築
     const depIds = new Set();
     PACKAGE_DB.categories.forEach(cat => {
@@ -2414,7 +2423,6 @@ function generatePackageSelector() {
         categoryTitle.textContent = category.name;
         categoryDiv.appendChild(categoryTitle);
 
-        // ★★★ 説明文を横線の直下に追加 ★★★
         const categoryDescription = document.createElement('div');
         categoryDescription.className = 'package-category-description';
         categoryDescription.textContent = category.description;
@@ -2423,15 +2431,27 @@ function generatePackageSelector() {
         const packageGrid = document.createElement('div');
         packageGrid.className = 'package-grid';
 
-        // 既存のパッケージ処理...
+        let hasVisiblePackages = false; // カテゴリに表示可能なパッケージがあるかチェック
+
         category.packages.forEach(pkg => {
             // 依存パッケージはトップレベル描画しない
             if (depIds.has(pkg.id)) return;
 
-            // パッケージアイテム作成（既存のコード）
+            // パッケージが利用可能かチェック
+            const isAvailable = availablePackages.size === 0 || availablePackages.has(pkg.name);
+            
+            // パッケージアイテム作成
             const packageItem = document.createElement('div');
             packageItem.className = 'package-item';
             if (pkg.hidden) packageItem.classList.add('package-hidden');
+            
+            // 利用不可パッケージは非表示
+            if (!isAvailable) {
+                packageItem.style.display = 'none';
+                return; // 完全に除外
+            }
+
+            hasVisiblePackages = true; // 表示可能なパッケージがある
 
             const formCheck = document.createElement('div');
             formCheck.className = 'form-check';
@@ -2465,7 +2485,7 @@ function generatePackageSelector() {
             formCheck.appendChild(label);
             packageItem.appendChild(formCheck);
 
-            // 子行（依存パッケージ）処理
+            // 依存パッケージ処理（同様に利用可能性をチェック）
             if (pkg.dependencies) {
                 pkg.dependencies.forEach(depId => {
                     let depPkg;
@@ -2474,6 +2494,11 @@ function generatePackageSelector() {
                         if (depPkg) break;
                     }
 
+                    const depName = depPkg ? depPkg.name : depId;
+                    const depIsAvailable = availablePackages.size === 0 || availablePackages.has(depName);
+                    
+                    if (!depIsAvailable) return; // 依存パッケージが利用不可なら表示しない
+
                     const depItem = document.createElement('div');
                     depItem.className = 'package-dependent';
 
@@ -2481,7 +2506,7 @@ function generatePackageSelector() {
                     depCheck.className = 'form-check-input package-selector-checkbox';
                     depCheck.type = 'checkbox';
                     depCheck.id = `pkg-${depPkg ? depPkg.id : depId}`;
-                    depCheck.setAttribute('data-package', depPkg ? depPkg.name : depId);
+                    depCheck.setAttribute('data-package', depName);
                     depCheck.addEventListener('change', handlePackageSelection);
 
                     const depLabel = document.createElement('label');
@@ -2508,12 +2533,15 @@ function generatePackageSelector() {
             packageGrid.appendChild(packageItem);
         });
 
-        categoryDiv.appendChild(packageGrid);
-        container.appendChild(categoryDiv);
+        // 表示可能なパッケージがあるカテゴリのみ追加
+        if (hasVisiblePackages) {
+            categoryDiv.appendChild(packageGrid);
+            container.appendChild(categoryDiv);
+        }
     });
     updatePackageListFromSelector();
 }
-
+        
 function handlePackageSelection(e) {
     const pkg = e.target;
     const packageName = pkg.getAttribute('data-package');
