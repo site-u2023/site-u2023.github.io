@@ -2074,16 +2074,22 @@ async function findValidUrls(urlCandidates) {
 function setupVersionUrls(version) {
     if (!config.image_urls) config.image_urls = {};
     if (!config.overview_urls) config.overview_urls = {};
-    
+
     // 既に設定済みならスキップ
     if (config.image_urls[version]) return;
-    
-    if (version === 'SNAPSHOT') {
-        config.overview_urls[version] = `${config.image_url}/snapshots/`;
-        config.image_urls[version] = `${config.image_url}/snapshots/`;
+
+    const overview_url = config.image_url;
+    const image_url = (typeof upstream_config !== 'undefined' && upstream_config.image_url_override) 
+        ? upstream_config.image_url_override 
+        : config.image_url;
+
+    // SNAPSHOT または *-SNAPSHOT はすべて /snapshots/ 配下
+    if (version === 'SNAPSHOT' || /-SNAPSHOT$/.test(version)) {
+        config.overview_urls[version] = `${overview_url}/snapshots/`;
+        config.image_urls[version] = `${image_url}/snapshots/`;
     } else {
-        config.overview_urls[version] = `${config.image_url}/releases/${encodeURIComponent(version)}/`;
-        config.image_urls[version] = `${config.image_url}/releases/${encodeURIComponent(version)}/`;
+        config.overview_urls[version] = `${overview_url}/releases/${encodeURIComponent(version)}/`;
+        config.image_urls[version] = `${image_url}/releases/${encodeURIComponent(version)}/`;
     }
 }
 
