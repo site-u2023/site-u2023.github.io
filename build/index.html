@@ -1950,9 +1950,8 @@ const ErrorHandler = {
         if (response?.status === 404) return 'NOT_FOUND';
         if (response?.status === 403) return 'PERMISSION_DENIED';
         
-        // 古いバージョンのCORS拒否は期待される動作
-        if (error.name === 'TypeError' && error.message.includes('fetch') && 
-            error.message.includes('CORS')) {
+        // 古いバージョンのCORS拒否は期待される動作  
+        if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
             return 'EXPECTED_CORS_REJECTION';
         }
         
@@ -1963,6 +1962,10 @@ const ErrorHandler = {
 
     // 統一エラー処理
     handle(context, error, response = null) {
+        // デバッグ: 実際のエラーメッセージ内容確認
+        console.log('[DEBUG] Actual error.message:', JSON.stringify(error.message));
+        console.log('[DEBUG] Error object:', error);
+        
         const errorType = this.classify(error, response);
         
         // 詳細ログ出力（どこの何のエラーか明確）
