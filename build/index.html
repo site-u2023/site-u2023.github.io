@@ -2651,7 +2651,7 @@ const DeviceContext = {
         }
     },
     
-    // デバイス選択処理
+// デバイス選択処理
     async _selectDevice(device) {
         console.log(`[DeviceContext] Device selected: ${device.id}`);
         
@@ -2663,10 +2663,14 @@ const DeviceContext = {
         };
         
         // プロファイル読み込み
-        await loadDeviceProfile(device);
-        
-        // UI表示
-        showDeviceInfo();
+        try {
+            await loadDeviceProfile(device);
+            // 成功時のみUI表示
+            showDeviceInfo();
+        } catch (error) {
+            // 失敗時は何もしない（loadDeviceProfile内でhideDeviceInfo済み）
+            console.log('Profile load failed, device info hidden');
+        }
     },
     
     // 統合後処理
