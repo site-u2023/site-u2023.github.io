@@ -1601,7 +1601,6 @@ const PACKAGE_DB = {
           id: "luci-app-irqbalance",
           name: "luci-app-irqbalance",
           enableVar: "enable_irqbalance",
-          minVersion: "24.10"
         }
       ]
     },
@@ -1993,10 +1992,21 @@ const ErrorHandler = {
         
         // エラータイプ別処理
         switch (errorType) {
-            case 'VERSION_NOT_AVAILABLE':
+            case 'VERSION_NOT_AVAILABLE': {
                 console.log(`✓ Version ${app.selectedVersion} not available - This is expected for older versions`);
                 hideDeviceInfo();
+
+                // ▼ ここから追加：パッケージセクターを厳格に閉じる／初期化
+                app.devicePackages = [];
+                // package-categories を空にしてパネルごと隠す
+                const pkgPanel = document.getElementById('packages');
+                const categories = document.getElementById('package-categories');
+                if (categories) categories.innerHTML = '';
+                if (pkgPanel) pkgPanel.style.display = 'none';
+                // ▲ ここまで追加
+
                 break;
+            }
             case 'PERMISSION_DENIED':
             case 'EXPECTED_CORS_REJECTION':
                 console.log(`✓ Access blocked by CORS policy - This is expected for older versions`);
@@ -2063,15 +2073,7 @@ async function init() {
             }
         }
 
-        // パッケージセレクター生成（DOM生成完了を待機）
-        try {
-            if (typeof generatePackageSelector === 'function') {
-                await generatePackageSelector();
-                console.log('Package selector generated successfully');
-            }
-        } catch (error) {
-            console.error('Failed to generate package selector:', error);
-        }
+        // 初期化段階では生成しない（デバイス選択＋パッケージ取得完了後に生成
 
         // テンプレートとパッケージの更新
         try {
@@ -2086,7 +2088,7 @@ async function init() {
         await waitForReady([
             'versions',
             'models',
-            'use-package-selector'
+            //'use-package-selector-details'
             // 必要なら他の要素も追加
         ]);
 
@@ -2484,20 +2486,40 @@ function generatePackageSelector() {
 
     container.innerHTML = '';
 
-    // 利用可能パッケージ名のセットを作成
+    // 利用可能パッケージ名のセットを作成（デバイス＋OSバージョンで取得済みのもの）
     const availablePackages = new Set();
-    if (app.devicePackages && app.devicePackages.length > 0) {
+    if (Array.isArray(app.devicePackages) && app.devicePackages.length > 0) {
         app.devicePackages.forEach(pkg => {
-            const name = (typeof pkg === 'string') ? pkg : pkg.name;
+            const name = (typeof pkg === 'string') ? pkg : pkg && pkg.name;
             if (name) availablePackages.add(name);
         });
+    }
+
+    // 判定直前の状態を総合デバッガで出力
+    ErrorHandler.debug(
+        'generatePackageSelector',
+        'ゼロ件判定直前の状態',
+        {
+            devicePackages_raw: app.devicePackages,
+            availablePackages_list: Array.from(availablePackages),
+            availablePackages_size: availablePackages.size
+        }
+    );
+
+    
+    // 取得できていない（＝判定不能）場合は、何も描画しない
+    if (availablePackages.size === 0) {
+        container.innerHTML =
+            '<p class="text-muted small">Unable to retrieve the package index for this OS version/device. ' +
+            'Please try a different version or device, or try again later.</p>';
+        return;
     }
 
     // 依存パッケージIDの集合を構築
     const depIds = new Set();
     PACKAGE_DB.categories.forEach(cat => {
         cat.packages.forEach(pkg => {
-            if (pkg.dependencies) {
+            if (Array.isArray(pkg.dependencies)) {
                 pkg.dependencies.forEach(d => depIds.add(d));
             }
         });
@@ -2519,27 +2541,26 @@ function generatePackageSelector() {
         const packageGrid = document.createElement('div');
         packageGrid.className = 'package-grid';
 
-        let hasVisiblePackages = false; // カテゴリに表示可能なパッケージがあるかチェック
+        let hasVisiblePackages = false;
 
         category.packages.forEach(pkg => {
             // 依存パッケージはトップレベル描画しない
             if (depIds.has(pkg.id)) return;
 
-            // パッケージが利用可能かチェック
-            const isAvailable = availablePackages.size === 0 || availablePackages.has(pkg.name);
-            
-            // パッケージアイテム作成
+            // ▼ 厳格：available にあるものだけ表示
+            const isAvailable = availablePackages.has(pkg.name);
+
             const packageItem = document.createElement('div');
             packageItem.className = 'package-item';
             if (pkg.hidden) packageItem.classList.add('package-hidden');
-            
-            // 利用不可パッケージは非表示
+
             if (!isAvailable) {
+                // 完全に除外
                 packageItem.style.display = 'none';
-                return; // 完全に除外
+                return;
             }
 
-            hasVisiblePackages = true; // 表示可能なパッケージがある
+            hasVisiblePackages = true;
 
             const formCheck = document.createElement('div');
             formCheck.className = 'form-check';
@@ -2573,8 +2594,8 @@ function generatePackageSelector() {
             formCheck.appendChild(label);
             packageItem.appendChild(formCheck);
 
-            // 依存パッケージ処理（同様に利用可能性をチェック）
-            if (pkg.dependencies) {
+            // 依存パッケージも厳格判定
+            if (Array.isArray(pkg.dependencies)) {
                 pkg.dependencies.forEach(depId => {
                     let depPkg;
                     for (const cat of PACKAGE_DB.categories) {
@@ -2583,9 +2604,8 @@ function generatePackageSelector() {
                     }
 
                     const depName = depPkg ? depPkg.name : depId;
-                    const depIsAvailable = availablePackages.size === 0 || availablePackages.has(depName);
-                    
-                    if (!depIsAvailable) return; // 依存パッケージが利用不可なら表示しない
+                    const depIsAvailable = availablePackages.has(depName);
+                    if (!depIsAvailable) return;
 
                     const depItem = document.createElement('div');
                     depItem.className = 'package-dependent';
@@ -2621,12 +2641,12 @@ function generatePackageSelector() {
             packageGrid.appendChild(packageItem);
         });
 
-        // 表示可能なパッケージがあるカテゴリのみ追加
         if (hasVisiblePackages) {
             categoryDiv.appendChild(packageGrid);
             container.appendChild(categoryDiv);
         }
     });
+
     updatePackageListFromSelector();
 }
         
@@ -3071,8 +3091,17 @@ async function loadDeviceProfile(device) {
         console.log(`Loaded profiles data:`, profilesData);
         profileCache[cacheKey] = profilesData;
         applyProfileData(profilesData, profileId);
-        Promise.allSettled([ fetchDevicePackages() ])
-            .then(() => console.log('Background tasks completed'));
+
+        // パッケージ取得完了を待ってから描画
+        try {
+            await fetchDevicePackages();
+        } catch (e) {
+            console.error('fetchDevicePackages failed:', e);
+        }
+        // 取得完了後にだけ UI 生成
+        if (typeof generatePackageSelector === 'function') {
+            generatePackageSelector();
+        }
         return true;
         
     } catch (error) {
@@ -4525,129 +4554,111 @@ function showDownloadLinks(images, fullStatus, requestHash) {
     }
 }
 
-// ★パッケージインデックス取得（device_packages_url は廃止）
-async function fetchDevicePackages() {
-    app.devicePackages = [];
-    if (!current_device || !current_device.id || !app.selectedVersion) return;
-
-    const version = app.selectedVersion;
-    const targetPath = current_device.target; // mediatek/filogic 形式
-
-    // profiles.json の URL を config.image_urls[version] 基点で生成
-    const basePath = config.image_urls[version].replace(/\/$/, '');
-    const profilesUrl = `${basePath}/targets/${targetPath}/profiles.json`;
-
-    let arch;
-    try {
-        const res = await fetch(profilesUrl);
-        if (!res.ok) throw new Error(`profiles.json HTTP ${res.status}`);
-        const meta = await res.json();
-        arch = meta.arch_packages;
-        if (!arch) throw new Error("profiles.json に arch_packages がありません");
-    } catch (e) {
-        console.error("arch_packages 取得失敗:", e);
-        return;
-    }
-
+    // ★パッケージインデックス取得（device_packages_url は廃止）
     async function fetchDevicePackages() {
         app.devicePackages = [];
-        if (!app.selectedDevice || !app.selectedVersion) return;
+        if (!current_device || !current_device.id || !app.selectedVersion) return;
 
         const version = app.selectedVersion;
-        const targetPath = app.selectedDevice.target; // mediatek/filogic 形式
+        const targetPath = current_device.target; // mediatek/filogic 形式
+
+        // profiles.json の URL を config.image_urls[version] 基点で生成
         const basePath = config.image_urls[version].replace(/\/$/, '');
         const profilesUrl = `${basePath}/targets/${targetPath}/profiles.json`;
 
-        let arch;
+        let meta, arch;
         try {
             const res = await fetch(profilesUrl);
             if (!res.ok) throw new Error(`profiles.json HTTP ${res.status}`);
-            const meta = await res.json();
+            meta = await res.json();
             arch = meta.arch_packages;
             if (!arch) throw new Error("profiles.json に arch_packages がありません");
         } catch (e) {
-            console.error("arch_packages 取得失敗:", e);
+            console.error("profiles.json 取得失敗:", e);
             return;
         }
 
-        // 公式と同じ：arch_packages からパッケージURLを構築
-        const pkgsUrl = `${basePath}/packages/${arch}/Packages`;
-        console.log('[fetchDevicePackages] packages URL:', pkgsUrl);
+        // パッケージインデックスURL一覧（targets/kmods と feeds）
+        const feeds = ["base", "luci", "packages", "routing", "telephony"];
+        const urls = [];
 
-        // 以降、この pkgsUrl を fetch して処理
-    }
-
-    // パッケージインデックスURL一覧（targets/kmods と feeds）
-    const feeds = ["base", "luci", "packages", "routing", "telephony"];
-    const urls = [];
-
-    if (version === 'SNAPSHOT' && kernel) {
-        // kmods 配下の Packages
-        urls.push(`${basePath}/targets/${targetPath}/kmods/${kernel}/packages/Packages`);
-    } else {
-        // 従来のターゲット固有パッケージ
-        urls.push(`${basePath}/targets/${targetPath}/packages/Packages`);
-    }
-
-    // フィードパッケージ
-    for (const feed of feeds) {
-        urls.push(`${basePath}/packages/${arch}/${feed}/Packages`);
-    }
-
-    // 各 Packages を並列取得してパース
-    const allPkgs = [];
-    const results = await Promise.allSettled(
-        urls.map(async (url) => {
-            try {
-                const res = await fetch(url);
-                if (!res.ok) return [];
-                const text = await res.text();
-                return parsePackagesText(text, url);
-            } catch (e) {
-                console.warn(`パッケージ取得失敗: ${url}`, e);
-                return [];
+        if (version !== 'SNAPSHOT') {
+            // 従来のターゲット固有パッケージ
+            urls.push(`${basePath}/targets/${targetPath}/packages/Packages`);
+        } else {
+            // SNAPSHOT の場合、profiles.json から kernel を取得できたときのみ kmods を追加
+            const kernelVer = meta?.linux_kernel;
+            if (kernelVer) {
+                urls.push(`${basePath}/targets/${targetPath}/kmods/${kernelVer}/packages/Packages`);
             }
-        })
-    );
-
-    // 結果をマージ
-    for (const r of results) {
-        if (r.status === 'fulfilled' && Array.isArray(r.value)) {
-            allPkgs.push(...r.value);
         }
-    }
 
-    // 名前重複を統合
-    const pkgMap = new Map();
-    for (const p of allPkgs) {
-        pkgMap.set(p.name, p);
+        // フィードパッケージ
+        for (const feed of feeds) {
+            urls.push(`${basePath}/packages/${arch}/${feed}/Packages`);
+        }
+
+        // 各 Packages ファイルを並列取得・パース
+        const allPkgs = [];
+        const results = await Promise.allSettled(
+            urls.map(async (url) => {
+                try {
+                    const res = await fetch(url);
+                    if (!res.ok) return [];
+                    const text = await res.text();
+                    return parsePackagesText(text, url);
+                } catch (err) {
+                    console.warn(`パッケージ取得失敗: ${url}`, err);
+                    return [];
+                }
+            })
+        );
+
+        // 結果を統合
+        for (const r of results) {
+            if (r.status === 'fulfilled' && Array.isArray(r.value)) {
+                allPkgs.push(...r.value);
+            }
+        }
+
+        // 名前重複を統合
+        const pkgMap = new Map();
+        for (const p of allPkgs) {
+            if (p?.name) {
+                pkgMap.set(p.name, p);
+            }
+        }
+        app.devicePackages = Array.from(pkgMap.values());
+
+        // 取得完了後にセレクター再描画
+        if (typeof generatePackageSelector === 'function') {
+            generatePackageSelector();
+        }
+
+        // 内部関数: Packagesファイルをパース
+        function parsePackagesText(text, source) {
+            const blocks = text.split(/\n\s*\n/);
+            const pkgs = [];
+            for (const blk of blocks) {
+                const rec = {};
+                for (const line of blk.split('\n')) {
+                    const m = line.match(/^([A-Za-z-]+):\s*(.*)$/);
+                    if (!m) continue;
+                    const key = m[1], val = m[2];
+                    if (key === "Package") rec.name = val;
+                    else if (key === "Version") rec.version = val;
+                    else if (key === "Description") rec.description = val;
+                    else if (key === "Section") rec.section = val;
+            }
+            if (rec.name) {
+                rec.source = source;
+                pkgs.push(rec);
+            }
+        }
+        return pkgs;
     }
-    app.devicePackages = Array.from(pkgMap.values());
 }
-
-// Packages ファイルをパース（必要なら外部化してもOK）
-function parsePackagesText(text, source) {
-    const blocks = text.split(/\n\s*\n/);
-    const pkgs = [];
-    for (const blk of blocks) {
-        const rec = {};
-        for (const line of blk.split('\n')) {
-            const m = line.match(/^([A-Za-z-]+):\s*(.*)$/);
-            if (!m) continue;
-            const key = m[1], val = m[2];
-            if (key === "Package") rec.name = val;
-            else if (key === "Version") rec.version = val;
-            else if (key === "Description") rec.description = val;
-            else if (key === "Section") rec.section = val;
-        }
-        if (rec.name) {
-            rec.source = source;
-            pkgs.push(rec);
-        }
-    }
-    return pkgs;
-}
-    
+        
 // ==================== パッケージ入力ボックス ====================
 (function() {
     const pkgInput = document.getElementById('package-search');
