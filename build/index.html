@@ -2507,8 +2507,8 @@ function generatePackageSelector() {
     // 取得できていない（＝判定不能）場合は、何も描画しない
     if (availablePackages.size === 0) {
         container.innerHTML =
-            '<p class="text-muted small">このOSバージョン／デバイス向けのパッケージ索引を取得できません。' +
-            'バージョンやデバイスを変更するか、後で再試行してください。</p>';
+            '<p class="text-muted small">Unable to retrieve the package index for this OS version/device. ' +
+            'Please try a different version or device, or try again later.</p>';
         return;
     }
 
