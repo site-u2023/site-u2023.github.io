@@ -1978,16 +1978,20 @@ const ErrorHandler = {
         // エラータイプ別処理
         switch (errorType) {
             case 'NOT_FOUND':
-                console.log(`✓ Confirmed: Resource not available (${context})`);
+                console.log(`✓ Version/Device not available (${context}) - This is expected behavior`);
+                hideDeviceInfo();
+                break;
+            case 'PERMISSION_DENIED':
+            case 'EXPECTED_CORS_REJECTION':
+                console.log(`✓ Access blocked by CORS policy (${context}) - This is expected for older versions`);
                 hideDeviceInfo();
                 break;
             case 'NETWORK_ERROR':
-            case 'PERMISSION_DENIED':
-                console.warn(`Network/Permission issue in ${context}`);
+                console.warn(`Network connectivity issue in ${context}`);
                 hideDeviceInfo();
                 break;
             default:
-                console.error(`Unexpected error in ${context}`);
+                console.error(`Unexpected error in ${context}:`, error.message);
                 hideDeviceInfo();
         }
         // 元の例外を再throw
@@ -3147,7 +3151,7 @@ function hideDeviceInfo() {
     setTimeout(() => {
         const infoEl = document.getElementById('info');
         if (infoEl.style.display !== 'none') {
-            console.error('🚨 CULPRIT FOUND! Someone changed display to:', infoEl.style.display);
+            console.error('CULPRIT FOUND! Someone changed display to:', infoEl.style.display);
             console.trace('Who changed it?');
         }
     }, 100);
