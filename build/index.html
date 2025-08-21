@@ -3155,13 +3155,21 @@ function showDeviceInfo() {
 }
 
 function hideDeviceInfo() {
-    console.log('hideDeviceInfo: Before hiding');
+    ErrorHandler.debug('hideDeviceInfo', 'Before hiding');
     document.getElementById('info').style.display = 'none';
     document.getElementById('packages').style.display = 'none';
     document.getElementById('request-build').style.display = 'none';
-    console.log('hideDeviceInfo: After hiding, info display =', 
-                document.getElementById('info').style.display);
+    ErrorHandler.debug('hideDeviceInfo', 'After hiding', {
+        infoDisplay: document.getElementById('info').style.display
+    });
     
+    // 統合デバッグでの犯人特定
+    setTimeout(() => {
+        const infoEl = document.getElementById('info');
+        if (infoEl.style.display !== 'none') {
+            ErrorHandler.debug('hideDeviceInfo', 'CULPRIT FOUND! Display changed to: ' + infoEl.style.display);
+        }
+    }, 100);
 }
 
 // ==================== auto トリガー関数 ====================
