@@ -2944,7 +2944,7 @@ async function loadDevices() {
     try {
         // URL設定を確認
         setupVersionUrls(app.selectedVersion);
-        const url = `${config.overview_urls[app.selectedVersion]}.overview.json`;
+        const url = config.overview_urls[app.selectedVersion] + '.overview.json';
         
         const response = await fetch(url, {
             cache: 'no-cache',
