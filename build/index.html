@@ -4596,7 +4596,7 @@ function showDownloadLinks(images, fullStatus, requestHash) {
 }
 
 // ★パッケージインデックス取得（device_packages_url は廃止）
-    async function fetchDevicePackages() {
+async function fetchDevicePackages() {
         app.devicePackages = [];
         if (!current_device || !current_device.id || !app.selectedVersion) return;
         
@@ -4636,39 +4636,29 @@ function showDownloadLinks(images, fullStatus, requestHash) {
             urls.push(`${basePath}/packages/${arch}/${feed}/Packages`);
         }
         
-        // 各 Packages ファイルを並列取得・パース
-        ErrorHandler.debug('Package fetch start', 'Fetching packages', {
+        console.log('[Package URLs]', {
             version: version,
             target: targetPath,
             arch: arch,
-            urls: urls,
-            url_count: urls.length
+            urls: urls
         });
         
+        // 各 Packages ファイルを並列取得・パース
         const allPkgs = [];
         const results = await Promise.allSettled(
             urls.map(async (url) => {
                 try {
                     const res = await fetch(url);
-                    
-                    ErrorHandler.debug('Package fetch result', url, {
-                        status: res.status,
-                        ok: res.ok,
-                        headers: res.headers
-                    });
-                    
-                    if (!res.ok) return [];
+                    if (!res.ok) {
+                        console.log(`Package fetch ${res.status} for: ${url}`);
+                        return [];
+                    }
                     const text = await res.text();
                     const packages = parsePackagesText(text, url);
-                    
-                    ErrorHandler.debug('Package parse result', url, {
-                        text_length: text.length,
-                        packages_found: packages.length
-                    });
-                    
+                    console.log(`Parsed ${packages.length} packages from: ${url}`);
                     return packages;
                 } catch (err) {
-                    ErrorHandler.handle('Package fetch error', err, { url: url });
+                    console.log(`Package fetch failed: ${url}`, err.message);
                     return [];
                 }
             })
@@ -4689,6 +4679,8 @@ function showDownloadLinks(images, fullStatus, requestHash) {
             }
         }
         app.devicePackages = Array.from(pkgMap.values());
+        
+        console.log(`[Package Summary] Total unique packages: ${app.devicePackages.length}`);
 
         // 取得完了後にセレクター再描画
         if (typeof generatePackageSelector === 'function') {
@@ -4709,15 +4701,15 @@ function showDownloadLinks(images, fullStatus, requestHash) {
                     else if (key === "Version") rec.version = val;
                     else if (key === "Description") rec.description = val;
                     else if (key === "Section") rec.section = val;
+                }  // ← インデント修正
+                if (rec.name) {
+                    rec.source = source;
+                    pkgs.push(rec);
+                }
             }
-            if (rec.name) {
-                rec.source = source;
-                pkgs.push(rec);
-            }
+            return pkgs;
         }
-        return pkgs;
     }
-}
         
 // ==================== パッケージ入力ボックス ====================
 (function() {
