@@ -4650,15 +4650,16 @@ function showDownloadLinks(images, fullStatus, requestHash) {
                     else if (key === "Version") rec.version = val;
                     else if (key === "Description") rec.description = val;
                     else if (key === "Section") rec.section = val;
-                }
-        if (rec.name) {
-            rec.source = source;
-            pkgs.push(rec);
+            }
+            if (rec.name) {
+                rec.source = source;
+                pkgs.push(rec);
+            }
         }
+        return pkgs;
     }
-    return pkgs;
 }
-
+        
 // ==================== パッケージ入力ボックス ====================
 (function() {
     const pkgInput = document.getElementById('package-search');
