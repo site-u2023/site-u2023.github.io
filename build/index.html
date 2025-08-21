@@ -2849,23 +2849,12 @@ async function loadDevices() {
         
         const response = await fetch(url);
         
-        // 404は期待される動作（バージョン不存在の確認）
-        if (response.status === 404) {
-            console.log(`✓ Confirmed: Version ${app.selectedVersion} not available`);
-            app.devices = [];
-            app.versionCode = null;
-            hideDeviceInfo();
-            return;
-        }
-        
-        // 404以外のHTTPエラーは実際の問題
-        if (!response.ok) {
-            console.error(`✗ Failed to load version ${app.selectedVersion}: HTTP ${response.status} - Server or network issue`);
-            app.devices = [];
-            app.versionCode = null;
-            hideDeviceInfo();
-            return;
-        }
+    if (!response.ok) {
+        app.devices = [];
+        app.versionCode = null;
+        ErrorHandler.handle('loadDevices', new Error(`HTTP ${response.status}`), response);
+        return;
+    }
         
         const data = await response.json();
         app.devices = data.profiles || [];
@@ -3004,10 +2993,7 @@ try {
         Promise.allSettled([ fetchDevicePackages() ])
             .then(() => console.log('Background tasks completed'));
     } catch (error) {
-        console.error('Failed to load device profile:', error);
-        console.log('About to call hideDeviceInfo()'); // ← デバッグログ追加
-        hideDeviceInfo(); // ← showDeviceInfo() から hideDeviceInfo() に変更
-        console.log('hideDeviceInfo() completed'); // ← デバッグログ追加
+        ErrorHandler.handle('loadDeviceProfile', error);
         Promise.allSettled([ fetchDevicePackages() ])
             .then(() => console.log('Background tasks completed (after error)'));
     }
