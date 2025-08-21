@@ -3029,7 +3029,12 @@ function applyProfileData(profilesData, profileId) {
 }
        
 function showDeviceInfo() {
-    console.log('showDeviceInfo() called from:', new Error().stack);
+    console.log('=== showDeviceInfo() START ===');
+    console.log('Call stack:');
+    console.trace(); // 詳細なスタックトレース
+    console.log('Current device:', current_device);
+    console.log('=== showDeviceInfo() END ===');
+
     if (!current_device || !current_device.id) return;
 
     const device = app.devices.find(d => d.id === current_device.id && d.target === current_device.target);
