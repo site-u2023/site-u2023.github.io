@@ -2009,8 +2009,7 @@ const ErrorHandler = {
                 console.error(`Unexpected error in ${context}:`, error.message);
                 hideDeviceInfo();
         }
-        // 元の例外を再throw
-        throw error;
+        return { success: false, errorType, context };
     },
 
     // デバッグログ
