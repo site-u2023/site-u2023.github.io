@@ -3978,27 +3978,26 @@ fetch('https://sysupgrade.openwrt.org/api/v1/build', {
                     break;
                 case 400: // bad request
                 case 422: // bad package
-                case 500: // build failed
-                    response.json().then((mobj) => {
+case 500: // build failed
+                    response.text().then((responseText) => {
                         hideProgress();
-                        if ('stderr' in mobj) {
-                            document.getElementById('asu-stderr').innerText = mobj.stderr;
-                            document.getElementById('asu-stdout').innerText = mobj.stdout;
-                            document.getElementById('asu-log').style.display = 'block';
-                        } else {
-                            document.getElementById('asu-log').style.display = 'none';
-                        }
-
-                        if ('detail' in mobj) {
-                            showBuildStatus(mobj['detail'], 'error');
-                        } else if (
-                            'stderr' in mobj &&
-                            mobj['stderr'].includes('images are too big')
-                        ) {
-                            showBuildStatus('Build failed: Images are too big', 'error');
-                        } else {
-                            showBuildStatus('Build failed', 'error');
-                        }
+                        showBuildStatus('Build failed: HTTP 500 Server Error', 'error');
+                        
+                        // 詳細なエラー情報を表示
+                        const container = document.getElementById('download-links');
+                        container.innerHTML = `
+                            <div class="asu-error" style="margin-top: 1rem;">
+                                <h4>Build Failed - Server Error</h4>
+                                <div><strong>HTTP Status:</strong> 500 Internal Server Error</div>
+                                <div><strong>Error Details:</strong></div>
+                                <pre style="background: #f8f8f8; padding: 10px; margin: 10px 0; border-radius: 4px; overflow-x: auto; font-size: 0.9em; max-height: 200px;">${responseText}</pre>
+                            </div>
+                            
+                            <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; color: #856404; padding: 1rem; margin: 1rem 0; border-radius: 0.25rem;">
+                                <h5 style="margin-top: 0; color: #856404;">⚠️ Troubleshooting</h5>
+                                <p style="margin-bottom: 0;">Please verify network connectivity, package selection, and script configuration. Try removing custom packages or scripts, then retry the build.</p>
+                            </div>
+                        `;
                     });
                     break;
             }
