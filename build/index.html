@@ -3944,68 +3944,69 @@ async function buildAsuRequest() {
             requestBody.defaults = script;
         }
             
-const response = await fetch('https://sysupgrade.openwrt.org/api/v1/build', {
+fetch('https://sysupgrade.openwrt.org/api/v1/build', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json'
             },
             body: JSON.stringify(requestBody)
-        });
+        })
+        .then((response) => {
+            switch (response.status) {
+                case 200:
+                    showProgress('Build completed!', 100);
+                    response.json().then((mobj) => {
+                        if ('stderr' in mobj) {
+                            document.getElementById('asu-stderr').innerText = mobj.stderr;
+                            document.getElementById('asu-stdout').innerText = mobj.stdout;
+                            document.getElementById('asu-log').style.display = 'block';
+                        } else {
+                            document.getElementById('asu-log').style.display = 'none';
+                        }
+                        hideProgress();
+                        showBuildStatus('Build successful', 'info');
+                        mobj['id'] = current_device.id;
+                        showDownloadLinks(mobj.images || [], mobj, mobj.request_hash);
+                    });
+                    break;
+                case 202:
+                    response.json().then((mobj) => {
+                        showProgress(`${mobj.imagebuilder_status || 'Processing'}...`, 30);
+                        setTimeout(() => pollBuildStatus(mobj.request_hash), 5000);
+                    });
+                    break;
+                case 400: // bad request
+                case 422: // bad package
+                case 500: // build failed
+                    response.json().then((mobj) => {
+                        hideProgress();
+                        if ('stderr' in mobj) {
+                            document.getElementById('asu-stderr').innerText = mobj.stderr;
+                            document.getElementById('asu-stdout').innerText = mobj.stdout;
+                            document.getElementById('asu-log').style.display = 'block';
+                        } else {
+                            document.getElementById('asu-log').style.display = 'none';
+                        }
 
-        const responseText = await response.text();
-        let result;
-
-        // レスポンスのJSONパース（エラー時も含む）
-        try {
-            result = JSON.parse(responseText);
-        } catch (e) {
-            // JSONパースに失敗した場合、レスポンステキストをそのまま表示
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${responseText}`);
+                        if ('detail' in mobj) {
+                            showBuildStatus(mobj['detail'], 'error');
+                        } else if (
+                            'stderr' in mobj &&
+                            mobj['stderr'].includes('images are too big')
+                        ) {
+                            showBuildStatus('Build failed: Images are too big', 'error');
+                        } else {
+                            showBuildStatus('Build failed', 'error');
+                        }
+                    });
+                    break;
             }
-            throw new Error('Invalid JSON response: ' + responseText);
-        }
-
-        if (!response.ok) {
-            // エラー時もビルドログ詳細を表示
+        })
+        .catch((err) => {
             hideProgress();
-            showBuildError(result, response.status);
-            return;
-        }
-        
-
-        if (result.request_hash) {
-            await pollBuildStatus(result.request_hash);
-        } else if (result.images && result.images.length > 0) {
-            hideProgress();
-            showDownloadLinks(result.images);
-        } else {
-            throw new Error('No request hash or images in response');
-        }
-
-    } catch (error) {
-        console.error('Build request failed:', error);
-        hideProgress();
-        
-        // エラーオブジェクトの詳細を表示
-        const errorMessage = error.message || 'Unknown error occurred';
-        showBuildStatus(`Build failed: ${errorMessage}`, 'error');
-        
-        // ネットワークエラーやその他のエラーの詳細情報も表示
-        const container = document.getElementById('download-links');
-        container.innerHTML = `
-            <div class="asu-error" style="margin-top: 1rem;">
-                <h4>Error Information</h4>
-                <div><strong>Error Type:</strong> ${error.constructor.name}</div>
-                <div><strong>Error Message:</strong> ${errorMessage}</div>
-                ${error.stack ? `<div><strong>Stack Trace:</strong><pre style="white-space: pre-wrap; font-size: 0.8em; margin-top: 0.5rem;">${error.stack}</pre></div>` : ''}
-            </div>
-        `;
-    } finally {
-        document.getElementById('request-build').disabled = false;
-    }
-}
+            showBuildStatus(err.message, 'error');
+        });
 
 async function pollBuildStatus(requestHash) {
     const maxAttempts = 120;
