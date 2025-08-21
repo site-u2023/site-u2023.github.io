@@ -4584,14 +4584,16 @@ async function fetchDevicePackages() {
     const urls = [];
 
     if (version !== 'SNAPSHOT') {
-        // 従来のターゲット固有パッケージ
         urls.push(`${basePath}/targets/${targetPath}/packages/Packages`);
     } else {
-        // SNAPSHOT の場合、profiles.json 等から kernel を取得できたときのみ kmods を追加
         const kernelVer = meta?.linux_kernel;
         if (kernelVer) {
             urls.push(`${basePath}/targets/${targetPath}/kmods/${kernelVer}/packages/Packages`);
         }
+    }
+
+    for (const feed of feeds) {
+        urls.push(`${basePath}/packages/${arch}/${feed}/Packages`);
     }
 
     // フィードパッケージ
