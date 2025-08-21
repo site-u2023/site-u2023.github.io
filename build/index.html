@@ -2082,8 +2082,8 @@ function setupVersionUrls(version) {
         ? upstream_config.image_url_override
         : config.image_url;
 
-    // 全ての SNAPSHOT（ブランチ含む）を /snapshots/ に集約
-    if (/-SNAPSHOT$/.test(version) || version === 'SNAPSHOT') {
+    // すべての SNAPSHOT（SNAPSHOT / *-SNAPSHOT）を /snapshots/ に集約
+    if (version === 'SNAPSHOT' || /-SNAPSHOT$/i.test(version)) {
         config.overview_urls[version] = `${overview_url}/snapshots/`;
         config.image_urls[version]   = `${image_url}/snapshots/`;
     } else {
