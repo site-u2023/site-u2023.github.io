@@ -2952,7 +2952,7 @@ async function loadDeviceProfile(device) {
         showDeviceInfo();
         Promise.allSettled([ fetchDevicePackages() ])
             .then(() => console.log('Background tasks completed'));
-    } catch (error) {
+        } catch (error) {
             console.error('Failed to load device profile:', error);
             hideDeviceInfo();  // ← showDeviceInfo() から hideDeviceInfo() に変更
             // fetchDevicePackages() は不要（デバイス情報が無いため）
