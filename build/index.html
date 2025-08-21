@@ -2040,6 +2040,36 @@ const ErrorHandler = {
     }
 };
 
+// ==================== URL存在確認ユーティリティ ====================
+async function checkUrlExists(url) {
+    try {
+        const response = await fetch(url, { 
+            method: 'HEAD',
+            cache: 'no-cache'
+        });
+        return response.ok;
+    } catch (error) {
+        // CORSエラーの場合もfalseとして扱う
+        console.log(`URL check failed for ${url}:`, error.message);
+        return false;
+    }
+}
+
+// 複数URLから有効なものを検出
+async function findValidUrls(urlCandidates) {
+    const validUrls = [];
+    
+    for (const url of urlCandidates) {
+        const exists = await checkUrlExists(url);
+        console.log(`URL ${exists ? '✓' : '✗'}: ${url}`);
+        if (exists) {
+            validUrls.push(url);
+        }
+    }
+    
+    return validUrls;
+}
+        
 // ==================== URL管理の統一関数 ====================
 function setupVersionUrls(version) {
     if (!config.image_urls) config.image_urls = {};
@@ -4599,29 +4629,28 @@ function showDownloadLinks(images, fullStatus, requestHash) {
             // 従来のターゲット固有パッケージ
             urls.push(`${basePath}/targets/${targetPath}/packages/Packages`);
         } else {
-            // SNAPSHOT の場合、version_code をそのまま kernel version として使用
+            // SNAPSHOT用のURL候補を作成
+            const urlCandidates = [];
+            
+            // 1. 通常のpackagesディレクトリ
+            urlCandidates.push(`${basePath}/targets/${targetPath}/packages/Packages`);
+            
+            // 2. kmodsディレクトリ（version_codeがある場合）
             const kernelVer = meta?.version_code;
-            
-            ErrorHandler.debug('SNAPSHOT kmods detection', 'Checking kernel version', {
-                version_code: kernelVer,
-                target: targetPath,
-                basePath: basePath,
-                meta_keys: Object.keys(meta || {}),
-                arch_packages: meta?.arch_packages
-            });
-            
             if (kernelVer) {
-                const kmodsUrl = `${basePath}/targets/${targetPath}/kmods/${kernelVer}/Packages`;
-                urls.push(kmodsUrl);
-                
-                ErrorHandler.debug('SNAPSHOT kmods URL built', 'URL constructed', {
-                    kmods_url: kmodsUrl,
-                    all_urls_count: urls.length
-                });
+                urlCandidates.push(`${basePath}/targets/${targetPath}/kmods/${kernelVer}/Packages`);
+            }
+            
+            console.log('[SNAPSHOT] Checking URL candidates:', urlCandidates);
+            
+            // 存在するURLのみを使用
+            const validUrls = await findValidUrls(urlCandidates);
+            
+            if (validUrls.length > 0) {
+                urls.push(...validUrls);
+                console.log('[SNAPSHOT] Valid URLs found:', validUrls);
             } else {
-                ErrorHandler.debug('SNAPSHOT kmods missing', 'No version_code found', {
-                    meta_content: meta
-                });
+                console.warn('[SNAPSHOT] No valid package URLs found');
             }
         }
 
