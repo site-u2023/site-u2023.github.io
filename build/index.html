@@ -2738,27 +2738,34 @@ const DeviceContext = {
     },
     
 // デバイス選択処理
-async _selectDevice(device) {
-    console.log(`[DeviceContext] Device selected: ${device.id}`);
-    
-    // デバイス状態更新
-    current_device = {
-        version: app.selectedVersion,
-        id: device.id,
-        target: device.target
-    };
-    
-    // プロファイル読み込み
-    try {
-        await loadDeviceProfile(device);
-        // 成功時のみUI表示
-        showDeviceInfo();
-    } catch (error) {
-        const result = ErrorHandler.handle('DeviceContext._selectDevice', error);
-        // ErrorHandlerで処理完了、制御フロー中断
-        return;
-    }
-},
+    async _selectDevice(device) {
+        console.log(`[DeviceContext] Device selected: ${device.id}`);
+        
+        // デバイス状態更新
+        current_device = {
+            version: app.selectedVersion,
+            id: device.id,
+            target: device.target
+        };
+        
+        // プロファイル読み込み
+        try {
+            const success = await loadDeviceProfile(device);
+            // 成功時のみUI表示
+            if (success) {
+                showDeviceInfo();
+            } else {
+                // 失敗時はデバイス情報をクリア
+                current_device = {};
+            }
+        } catch (error) {
+            const result = ErrorHandler.handle('DeviceContext._selectDevice', error);
+            current_device = {};
+            hideDeviceInfo();
+            // ErrorHandlerで処理完了、制御フロー中断
+            return;
+        }
+    },
     
     // 統合後処理
     async _finalizeUpdate() {
@@ -3012,14 +3019,14 @@ async function loadDeviceProfile(device) {
     if (profileCache[cacheKey]) {
         console.log(`Using cached profile for ${cacheKey}`);
         applyProfileData(profileCache[cacheKey], profileId);
-        showDeviceInfo();
+        // showDeviceInfo(); ← 削除：呼び出し元で制御
         Promise.allSettled([ fetchDevicePackages() ])
             .then(() => console.log('Background tasks completed (from cache)'));
-        return;
+        return true; // 成功を返す
     }
 
     // 初回は必ずDL
-try {
+    try {
         console.log(`Loading profile from: ${profilesUrl}`);
         const response = await fetch(profilesUrl, { cache: 'no-cache' });
         if (!response.ok) {
@@ -3029,21 +3036,22 @@ try {
         console.log(`Loaded profiles data:`, profilesData);
         profileCache[cacheKey] = profilesData; // キャッシュ登録
         applyProfileData(profilesData, profileId);
-        showDeviceInfo();
+        // showDeviceInfo(); ← 削除：呼び出し元で制御
         Promise.allSettled([ fetchDevicePackages() ])
             .then(() => console.log('Background tasks completed'));
+        return true; // 成功を返す
     } catch (error) {
         // CORS拒否は古いバージョンでは期待される動作
         if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
             console.log(`✓ Confirmed: Version ${app.selectedVersion} access blocked by CORS - This is expected for older versions`);
-            hideDeviceInfo();
-            return;
+        } else {
+            console.error('Failed to load device profile:', error);
         }
-    
-        console.error('Failed to load device profile:', error);
         hideDeviceInfo();
+        current_device = {}; // デバイス情報をクリア
         Promise.allSettled([ fetchDevicePackages() ])
             .then(() => console.log('Background tasks completed (after error)'));
+        return false; // 失敗を返す
     }
 }
 
