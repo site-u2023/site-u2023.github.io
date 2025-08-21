@@ -2504,6 +2504,16 @@ function generatePackageSelector() {
         });
     }
 
+    // 判定直前の状態を総合デバッガで出力
+    ErrorHandler.debug(
+        'generatePackageSelector',
+        {
+            devicePackages_raw: app.devicePackages,
+            availablePackages_list: Array.from(availablePackages),
+            availablePackages_size: availablePackages.size
+        }
+    );
+    
     // 取得できていない（＝判定不能）場合は、何も描画しない
     if (availablePackages.size === 0) {
         container.innerHTML =
