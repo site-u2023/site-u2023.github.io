@@ -2526,7 +2526,8 @@ function generatePackageSelector() {
             if (depIds.has(pkg.id)) return;
 
             // パッケージが利用可能かチェック
-            const isAvailable = availablePackages.has(pkg.name);
+            const isAvailable = availablePackages.size === 0 || availablePackages.has(pkg.name);
+            // const isAvailable = availablePackages.has(pkg.name);
             
             // パッケージアイテム作成
             const packageItem = document.createElement('div');
