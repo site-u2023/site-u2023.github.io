@@ -4658,21 +4658,6 @@ function showDownloadLinks(images, fullStatus, requestHash) {
     }
     return pkgs;
 }
-
-    // 名前重複を統合
-    const pkgMap = new Map();
-    for (const p of allPkgs) {
-        if (p?.name) {
-            pkgMap.set(p.name, p);
-        }
-    }
-    app.devicePackages = Array.from(pkgMap.values());
-
-    // 取得完了後のみ描画
-    if (typeof generatePackageSelector === 'function') {
-        generatePackageSelector();
-    }
-}
   
 // ==================== パッケージ入力ボックス ====================
 (function() {
