@@ -4595,23 +4595,24 @@ function showDownloadLinks(images, fullStatus, requestHash) {
     }
 }
 
-    // ★パッケージインデックス取得（device_packages_url は廃止）
+// ★パッケージインデックス取得（device_packages_url は廃止）
     async function fetchDevicePackages() {
         app.devicePackages = [];
         if (!current_device || !current_device.id || !app.selectedVersion) return;
-
+        
         const version = app.selectedVersion;
         const targetPath = current_device.target;
-
+        
         // URL設定を確認
         setupVersionUrls(version);
         const basePath = config.image_urls[version].replace(/\/$/, '');
         const profilesUrl = `${basePath}/targets/${targetPath}/profiles.json`;
-
-        // パッケージインデックスURL一覧（targets/kmods と feeds）
+        
+        // 初期化
         const feeds = ["base", "luci", "packages", "routing", "telephony"];
-        const urls = [];  // ← 先に定義を移動
-
+        const urls = [];
+        
+        // profiles.json からアーキテクチャ情報を取得
         let meta, arch;
         try {
             const res = await fetch(profilesUrl);
@@ -4623,44 +4624,23 @@ function showDownloadLinks(images, fullStatus, requestHash) {
             console.error("profiles.json 取得失敗:", e);
             return;
         }
-
-        // パッケージインデックスURL一覧（targets/kmods と feeds）
+        
+        // target固有パッケージ（リリース版のみ存在）
         if (version !== 'SNAPSHOT') {
-            // 従来のターゲット固有パッケージ
             urls.push(`${basePath}/targets/${targetPath}/packages/Packages`);
-        } else {
-            // SNAPSHOT用のURL候補を作成
-            const urlCandidates = [];
-            
-            // 1. 通常のpackagesディレクトリ
-            urlCandidates.push(`${basePath}/targets/${targetPath}/packages/Packages`);
-            
-            // 2. kmodsディレクトリ（version_codeがある場合）
-            const kernelVer = meta?.version_code;
-            if (kernelVer) {
-                urlCandidates.push(`${basePath}/targets/${targetPath}/kmods/${kernelVer}/Packages`);
-            }
-            
-            console.log('[SNAPSHOT] Checking URL candidates:', urlCandidates);
-            
-            // 存在するURLのみを使用
-            const validUrls = await findValidUrls(urlCandidates);
-            
-            if (validUrls.length > 0) {
-                urls.push(...validUrls);
-                console.log('[SNAPSHOT] Valid URLs found:', validUrls);
-            } else {
-                console.warn('[SNAPSHOT] No valid package URLs found');
-            }
         }
-
-        // フィードパッケージ
+        // SNAPSHOTの場合：target固有パッケージは存在しない
+        
+        // フィードパッケージ（全バージョン共通）
         for (const feed of feeds) {
             urls.push(`${basePath}/packages/${arch}/${feed}/Packages`);
         }
-
+        
         // 各 Packages ファイルを並列取得・パース
         ErrorHandler.debug('Package fetch start', 'Fetching packages', {
+            version: version,
+            target: targetPath,
+            arch: arch,
             urls: urls,
             url_count: urls.length
         });
