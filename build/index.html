@@ -1947,7 +1947,8 @@ document.addEventListener('DOMContentLoaded', init);
 const ErrorHandler = {
     // エラータイプ分類
     classify(error, response = null) {
-        if (response?.status === 404) return 'NOT_FOUND';
+        // HTTPステータスコードベースの分類
+        if (response?.status === 404) return 'VERSION_NOT_AVAILABLE';
         if (response?.status === 403) return 'PERMISSION_DENIED';
         
         // 古いバージョンのCORS拒否は期待される動作  
@@ -1962,17 +1963,16 @@ const ErrorHandler = {
 
     // 統一エラー処理
     handle(context, error, response = null) {
-        // デバッグ: 実際のエラーメッセージ内容確認
-        console.log('[DEBUG] Actual error.message:', JSON.stringify(error.message));
-        console.log('[DEBUG] Error object:', error);
-        
         const errorType = this.classify(error, response);
         
-// 詳細ログ出力（どこの何のエラーか明確）
-        if (errorType === 'EXPECTED_CORS_REJECTION' || errorType === 'NOT_FOUND') {
-            console.log(`[${context}] ${errorType}:`, {
+        // 期待される動作の場合は通常ログ
+        const expectedBehaviors = ['VERSION_NOT_AVAILABLE', 'EXPECTED_CORS_REJECTION', 'PERMISSION_DENIED'];
+        const isExpected = expectedBehaviors.includes(errorType);
+        
+        // ログ出力（期待される動作は通常ログ、それ以外はエラーログ）
+        if (isExpected) {
+            console.log(`[${context}] ${errorType}: Expected behavior for older versions`, {
                 message: error.message,
-                stack: error.stack,
                 response: response ? {
                     status: response.status,
                     statusText: response.statusText,
@@ -1980,7 +1980,7 @@ const ErrorHandler = {
                 } : null
             });
         } else {
-            console.error(`[${context}] ${errorType}:`, {
+            console.error(`[${context}] ${errorType}: Unexpected error`, {
                 message: error.message,
                 stack: error.stack,
                 response: response ? {
@@ -1990,15 +1990,16 @@ const ErrorHandler = {
                 } : null
             });
         }
+        
         // エラータイプ別処理
         switch (errorType) {
-            case 'NOT_FOUND':
-                console.log(`✓ Version/Device not available (${context}) - This is expected behavior`);
+            case 'VERSION_NOT_AVAILABLE':
+                console.log(`✓ Version ${app.selectedVersion} not available - This is expected for older versions`);
                 hideDeviceInfo();
                 break;
             case 'PERMISSION_DENIED':
             case 'EXPECTED_CORS_REJECTION':
-                console.log(`✓ Access blocked by CORS policy (${context}) - This is expected for older versions`);
+                console.log(`✓ Access blocked by CORS policy - This is expected for older versions`);
                 hideDeviceInfo();
                 break;
             case 'NETWORK_ERROR':
@@ -2009,7 +2010,7 @@ const ErrorHandler = {
                 console.error(`Unexpected error in ${context}:`, error.message);
                 hideDeviceInfo();
         }
-        return { success: false, errorType, context };
+        return { success: false, errorType, context, isExpected };
     },
 
     // デバッグログ
@@ -2896,19 +2897,26 @@ async function loadDevices() {
         
         const response = await fetch(url);
         
-    if (!response.ok) {
-        app.devices = [];
-        app.versionCode = null;
-        ErrorHandler.handle('loadDevices', new Error(`HTTP ${response.status}`), response);
-        return;
-    }
+        if (!response.ok) {
+            app.devices = [];
+            app.versionCode = null;
+            // 404の場合は期待される動作として処理
+            if (response.status === 404) {
+                console.log(`✓ Version ${app.selectedVersion} not available (HTTP 404) - This is expected for older versions`);
+                hideDeviceInfo();
+                return;
+            }
+            // その他のエラーのみErrorHandlerに渡す
+            ErrorHandler.handle('loadDevices', new Error(`HTTP ${response.status}`), response);
+            return;
+        }
         
         const data = await response.json();
         app.devices = data.profiles || [];
     } catch (error) {
         // CORS拒否や存在しないバージョンは静かに処理
         if (error.message && (error.message.includes('Failed to fetch') || error.message.includes('CORS'))) {
-            console.log(`✓ Confirmed: Version ${app.selectedVersion} not available (${error.message})`);
+            console.log(`✓ Confirmed: Version ${app.selectedVersion} not available (CORS blocked)`);
         } else {
             console.error('✗ Network error while loading devices:', error.message || error);
         }
@@ -3030,6 +3038,13 @@ async function loadDeviceProfile(device) {
         console.log(`Loading profile from: ${profilesUrl}`);
         const response = await fetch(profilesUrl, { cache: 'no-cache' });
         if (!response.ok) {
+            // 404は期待される動作として特別処理
+            if (response.status === 404) {
+                console.log(`✓ Profile not available for version ${app.selectedVersion} (HTTP 404) - This is expected for older versions`);
+                hideDeviceInfo();
+                current_device = {};
+                return false;
+            }
             throw new Error(`Failed to fetch profiles.json: ${response.status}`);
         }
         const profilesData = await response.json();
