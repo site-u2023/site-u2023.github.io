@@ -2009,8 +2009,7 @@ const ErrorHandler = {
                 console.error(`Unexpected error in ${context}:`, error.message);
                 hideDeviceInfo();
         }
-        // 制御フロー中断のため例外を再throw
-        throw new Error(`[${errorType}] ${context}: ${error.message}`);
+        return { success: false, errorType, context };
     },
 
     // デバッグログ
@@ -2755,12 +2754,9 @@ async _selectDevice(device) {
         // 成功時のみUI表示
         showDeviceInfo();
     } catch (error) {
-        if (error.message?.startsWith('[EXPECTED_CORS_REJECTION]') || 
-            error.message?.startsWith('[NOT_FOUND]')) {
-            // 期待される動作なので静かに終了
-            return;
-        }
-        ErrorHandler.handle('DeviceContext._selectDevice', error);
+        const result = ErrorHandler.handle('DeviceContext._selectDevice', error);
+        // ErrorHandlerで処理完了、制御フロー中断
+        return;
     }
 },
     
@@ -4076,7 +4072,7 @@ async function buildAsuRequest() {
             requestBody.defaults = script;
         }
             
-fetch('https://sysupgrade.openwrt.org/api/v1/build', {
+        fetch('https://sysupgrade.openwrt.org/api/v1/build', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -4110,7 +4106,7 @@ fetch('https://sysupgrade.openwrt.org/api/v1/build', {
                     break;
                 case 400: // bad request
                 case 422: // bad package
-case 500: // build failed
+                case 500: // build failed
                     response.text().then((responseText) => {
                         hideProgress();
                         showBuildStatus('Build failed: HTTP 500 Server Error', 'error');
