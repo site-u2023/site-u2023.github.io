@@ -1940,7 +1940,54 @@ const PACKAGE_DB = {
 applySearchUrls(PACKAGE_DB);
 
 // JS ----------------------------------------------------------------------------
+// -------------------------------------------------------------------------------
 document.addEventListener('DOMContentLoaded', init);
+
+// ==================== エラーハンドリング統一 ====================
+const ErrorHandler = {
+    // エラータイプ分類
+    classify(error, response = null) {
+        if (response?.status === 404) return 'NOT_FOUND';
+        if (response?.status === 403) return 'PERMISSION_DENIED';
+        if (error.name === 'TypeError' && error.message.includes('fetch')) return 'NETWORK_ERROR';
+        if (error.message?.includes('timeout')) return 'TIMEOUT';
+        return 'UNKNOWN';
+    },
+
+    // 統一エラー処理
+    handle(context, error, response = null) {
+        const errorType = this.classify(error, response);
+        
+        // 詳細ログ出力（どこの何のエラーか明確）
+        console.error(`[${context}] ${errorType}:`, {
+            message: error.message,
+            stack: error.stack,
+            response: response ? {
+                status: response.status,
+                statusText: response.statusText,
+                url: response.url
+            } : null
+        });
+
+        // エラータイプ別処理
+        switch (errorType) {
+            case 'NOT_FOUND':
+                console.log(`✓ Confirmed: Resource not available (${context})`);
+                hideDeviceInfo();
+                break;
+            case 'NETWORK_ERROR':
+            case 'PERMISSION_DENIED':
+                console.warn(`Network/Permission issue in ${context}`);
+                hideDeviceInfo();
+                break;
+            default:
+                console.error(`Unexpected error in ${context}`);
+                hideDeviceInfo();
+        }
+
+        return { success: false, errorType, context };
+    }
+};
 
 // ==================== ユーティリティ関数 ====================
 async function loadPackageDatabase() {
