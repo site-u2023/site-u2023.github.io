@@ -2080,9 +2080,16 @@ function setupVersionUrls(version) {
         ? upstream_config.image_url_override
         : config.image_url;
     
-    config.overview_urls[version] = `${overview_url}/releases/${encodeURIComponent(version)}/`;
-    config.image_urls[version]    = `${image_url}/releases/${encodeURIComponent(version)}/`;
+    // SNAPSHOTのみ /snapshots/ パス、他は /releases/ パス
+    if (version === "SNAPSHOT") {
+        config.overview_urls[version] = `${overview_url}/snapshots/`;
+        config.image_urls[version]   = `${image_url}/snapshots/`;
+    } else {
+        config.overview_urls[version] = `${overview_url}/releases/${encodeURIComponent(version)}/`;
+        config.image_urls[version]    = `${image_url}/releases/${encodeURIComponent(version)}/`;
+    }
 }
+        
 // ==================== ユーティリティ関数 ====================
 async function loadPackageDatabase() {
     const res = await fetch('data/packages.json');
