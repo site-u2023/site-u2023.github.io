@@ -2887,6 +2887,19 @@ function updateVersionSelect() {
 // ==================== デバイス管理 ====================
 async function loadDevices() {
     if (!app.selectedVersion) return;
+    
+    const cacheKey = `devices:${app.selectedVersion}`;
+    const notFoundKey = `404:${cacheKey}`;
+    
+    // 404キャッシュチェック
+    if (profileCache[notFoundKey]) {
+        console.log(`[loadDevices] Version ${app.selectedVersion} known to be unavailable`);
+        app.devices = [];
+        app.versionCode = null;
+        hideDeviceInfo();
+        return;
+    }
+    
     try {
         let url;
         if (app.selectedVersion === 'SNAPSHOT') {
@@ -2895,30 +2908,35 @@ async function loadDevices() {
             url = `https://downloads.openwrt.org/releases/${app.selectedVersion}/.overview.json`;
         }
         
-        const response = await fetch(url);
+        const response = await fetch(url, {
+            cache: 'no-cache',
+            credentials: 'omit',
+            mode: 'cors'
+        });
         
-        if (!response.ok) {
+        // 404は正常な応答として処理
+        if (response.status === 404) {
+            console.log(`✓ Version ${app.selectedVersion} not available (HTTP 404) - Normal for unsupported versions`);
+            profileCache[notFoundKey] = true;
             app.devices = [];
             app.versionCode = null;
-            // 404の場合は期待される動作として処理
-            if (response.status === 404) {
-                console.log(`✓ Version ${app.selectedVersion} not available (HTTP 404) - This is expected for older versions`);
-                hideDeviceInfo();
-                return;
-            }
-            // その他のエラーのみErrorHandlerに渡す
-            ErrorHandler.handle('loadDevices', new Error(`HTTP ${response.status}`), response);
+            hideDeviceInfo();
             return;
+        }
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
         }
         
         const data = await response.json();
         app.devices = data.profiles || [];
+        
     } catch (error) {
-        // CORS拒否や存在しないバージョンは静かに処理
         if (error.message && (error.message.includes('Failed to fetch') || error.message.includes('CORS'))) {
-            console.log(`✓ Confirmed: Version ${app.selectedVersion} not available (CORS blocked)`);
+            console.log(`✓ Version ${app.selectedVersion} access blocked - Normal for older versions`);
+            profileCache[notFoundKey] = true;
         } else {
-            console.error('✗ Network error while loading devices:', error.message || error);
+            console.log(`[loadDevices] Error: ${error.message}`);
         }
         app.devices = [];
         app.versionCode = null;
@@ -3005,7 +3023,7 @@ function hideAutocomplete() {
 const profileCache = {};
 
 async function loadDeviceProfile(device) {
-    if (!device || !device.target || !device.id) return;
+    if (!device || !device.target || !device.id) return false;
     const version = app.selectedVersion;
     const targetPath = device.target;
     const profileId = device.id;
@@ -3027,46 +3045,63 @@ async function loadDeviceProfile(device) {
     if (profileCache[cacheKey]) {
         console.log(`Using cached profile for ${cacheKey}`);
         applyProfileData(profileCache[cacheKey], profileId);
-        // showDeviceInfo(); ← 削除：呼び出し元で制御
+        // showDeviceInfo()は呼び出し元で制御
         Promise.allSettled([ fetchDevicePackages() ])
             .then(() => console.log('Background tasks completed (from cache)'));
-        return true; // 成功を返す
+        return true;
+    }
+
+    // 404キャッシュのチェック（一度404だったものは再試行しない）
+    const notFoundKey = `404:${cacheKey}`;
+    if (profileCache[notFoundKey]) {
+        console.log(`[loadDeviceProfile] Profile known to be unavailable for ${version}/${targetPath}/${profileId}`);
+        hideDeviceInfo();
+        current_device = {};
+        return false;
     }
 
     // 初回は必ずDL
     try {
         console.log(`Loading profile from: ${profilesUrl}`);
-        const response = await fetch(profilesUrl, { cache: 'no-cache' });
-        if (!response.ok) {
-            // 404は期待される動作として特別処理
-            if (response.status === 404) {
-                console.log(`✓ Profile not available for version ${app.selectedVersion} (HTTP 404) - This is expected for older versions`);
-                hideDeviceInfo();
-                current_device = {};
-                return false;
-            }
-            throw new Error(`Failed to fetch profiles.json: ${response.status}`);
+        const response = await fetch(profilesUrl, { 
+            cache: 'no-cache',
+            // fetchのログレベルを下げる試み（ブラウザ依存）
+            credentials: 'omit',
+            mode: 'cors'
+        });
+        
+        // 404は正常な応答として処理
+        if (response.status === 404) {
+            console.log(`✓ Profile not available for ${device.id} on version ${version} - This is normal for older versions`);
+            profileCache[notFoundKey] = true; // 404をキャッシュ
+            hideDeviceInfo();
+            current_device = {};
+            return false;
         }
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        
         const profilesData = await response.json();
-        console.log(`Loaded profiles data:`, profilesData);
+        console.log(`Loaded profiles data for ${device.id}`);
         profileCache[cacheKey] = profilesData; // キャッシュ登録
         applyProfileData(profilesData, profileId);
-        // showDeviceInfo(); ← 削除：呼び出し元で制御
         Promise.allSettled([ fetchDevicePackages() ])
             .then(() => console.log('Background tasks completed'));
-        return true; // 成功を返す
+        return true;
+        
     } catch (error) {
-        // CORS拒否は古いバージョンでは期待される動作
+        // ネットワークエラーやCORS拒否
         if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
-            console.log(`✓ Confirmed: Version ${app.selectedVersion} access blocked by CORS - This is expected for older versions`);
+            console.log(`✓ Profile access blocked (CORS/Network) for version ${version} - Expected for older versions`);
+            profileCache[notFoundKey] = true; // 失敗もキャッシュ
         } else {
-            console.error('Failed to load device profile:', error);
+            console.log(`[loadDeviceProfile] Failed to load profile: ${error.message}`);
         }
         hideDeviceInfo();
-        current_device = {}; // デバイス情報をクリア
-        Promise.allSettled([ fetchDevicePackages() ])
-            .then(() => console.log('Background tasks completed (after error)'));
-        return false; // 失敗を返す
+        current_device = {};
+        return false;
     }
 }
 
