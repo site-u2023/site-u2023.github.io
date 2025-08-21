@@ -4604,13 +4604,36 @@ async function fetchDevicePackages() {
                 const res = await fetch(url);
                 if (!res.ok) return [];
                 const text = await res.text();
-                return parsePackagesText(text, url);
+                return parsePackagesText(text, url);  // ← グローバル定義を呼べる
             } catch (e) {
                 console.warn(`パッケージ取得失敗: ${url}`, e);
                 return [];
             }
         })
     );
+
+    // …fetchDevicePackages の外、トップレベルに追加…
+    function parsePackagesText(text, source) {
+        const blocks = text.split(/\n\s*\n/);
+        const pkgs = [];
+        for (const blk of blocks) {
+            const rec = {};
+            for (const line of blk.split('\n')) {
+                const m = line.match(/^([A-Za-z-]+):\s*(.*)$/);
+                if (!m) continue;
+                const key = m[1], val = m[2];
+                if (key === "Package") rec.name = val;
+                else if (key === "Version") rec.version = val;
+                else if (key === "Description") rec.description = val;
+                else if (key === "Section") rec.section = val;
+            }
+            if (rec.name) {
+                rec.source = source;
+                pkgs.push(rec);
+            }
+        }
+        return pkgs;
+    }
 
     // 結果をマージ
     for (const r of results) {
