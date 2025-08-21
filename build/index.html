@@ -1461,6 +1461,7 @@ let app = {
     selectedVersion: '',
     templateLoaded: false,
     availablePackages: [] // デバイス固有のパッケージリスト
+    archPackagesMap: {},
 };
 
 // 公式と同じグローバル変数
@@ -3003,6 +3004,7 @@ async function loadDevices() {
         
         const data = await response.json();
         app.devices = data.profiles || [];
+        app.archPackagesMap = data.arch_packages || {};
         
     } catch (error) {
         if (error.message && (error.message.includes('Failed to fetch') || error.message.includes('CORS'))) {
@@ -4602,119 +4604,130 @@ function showDownloadLinks(images, fullStatus, requestHash) {
 
 // ★パッケージインデックス取得（device_packages_url は廃止）
 async function fetchDevicePackages() {
-        app.devicePackages = [];
-        if (!current_device || !current_device.id || !app.selectedVersion) return;
-        
-        const version = app.selectedVersion;
-        const targetPath = current_device.target;
-        
-        // URL設定を確認
-        setupVersionUrls(version);
-        const basePath = config.image_urls[version].replace(/\/$/, '');
-        const profilesUrl = `${basePath}/targets/${targetPath}/profiles.json`;
-        
-        // 初期化
-        const feeds = ["base", "luci", "packages", "routing", "telephony"];
-        const urls = [];
-        
-        // profiles.json からアーキテクチャ情報を取得
-        let meta, arch;
-        try {
-            const res = await fetch(profilesUrl);
-            if (!res.ok) throw new Error(`profiles.json HTTP ${res.status}`);
-            meta = await res.json();
-            arch = meta.arch_packages;
-            if (!arch) throw new Error("profiles.json に arch_packages がありません");
-        } catch (e) {
-            console.error("profiles.json 取得失敗:", e);
+    app.devicePackages = [];
+    if (!current_device || !current_device.id || !app.selectedVersion) return;
+
+    const version = app.selectedVersion;
+    const targetPath = current_device.target;
+
+    // URL設定を確認
+    setupVersionUrls(version);
+    const basePath = config.image_urls[version].replace(/\/$/, '');
+    const profilesUrl = `${basePath}/targets/${targetPath}/profiles.json`;
+
+    // 初期化
+    const feeds = ["base", "luci", "packages", "routing", "telephony"];
+    const urls = [];
+
+    // アーキテクチャ情報を取得 (profiles.json -> .overview.json のフォールバック付き)
+    let arch;
+    try {
+        const res = await fetch(profilesUrl);
+        if (!res.ok) throw new Error(`profiles.json HTTP ${res.status}`);
+        const meta = await res.json();
+        arch = meta.arch_packages;
+        if (!arch) throw new Error("profiles.json に arch_packages がありません");
+    } catch (e) {
+        console.warn(`profiles.json 取得失敗: ${e.message}. フォールバックを試みます。`);
+        // フォールバック: .overview.jsonから取得したマップを使用
+        if (app.archPackagesMap && app.archPackagesMap[targetPath]) {
+            arch = app.archPackagesMap[targetPath];
+            console.log(`フォールバック成功: target '${targetPath}' のアーキテクチャは '${arch}' です。`);
+        } else {
+            console.error("フォールバック失敗: アーキテクチャ情報を特定できませんでした。");
+            app.devicePackages = [];
+            if (typeof generatePackageSelector === 'function') {
+                generatePackageSelector();
+            }
             return;
         }
-        
-        // target固有パッケージ（リリース版のみ存在）
-        if (version !== 'SNAPSHOT') {
-            urls.push(`${basePath}/targets/${targetPath}/packages/Packages`);
-        }
-        // SNAPSHOTの場合：target固有パッケージは存在しない
-        
-        // フィードパッケージ（全バージョン共通）
-        for (const feed of feeds) {
-            urls.push(`${basePath}/packages/${arch}/${feed}/Packages`);
-        }
-        
-        console.log('[Package URLs]', {
-            version: version,
-            target: targetPath,
-            arch: arch,
-            urls: urls
-        });
-        
-        // 各 Packages ファイルを並列取得・パース
-        const allPkgs = [];
-        const results = await Promise.allSettled(
-            urls.map(async (url) => {
-                try {
-                    const res = await fetch(url);
-                    if (!res.ok) {
-                        console.log(`Package fetch ${res.status} for: ${url}`);
-                        return [];
-                    }
-                    const text = await res.text();
-                    const packages = parsePackagesText(text, url);
-                    console.log(`Parsed ${packages.length} packages from: ${url}`);
-                    return packages;
-                } catch (err) {
-                    console.log(`Package fetch failed: ${url}`, err.message);
+    }
+
+    // target固有パッケージ（リリース版のみ存在）
+    // SNAPSHOT または *-SNAPSHOT の場合は除外
+    if (!/SNAPSHOT$/i.test(version)) {
+        urls.push(`${basePath}/targets/${targetPath}/packages/Packages`);
+    }
+
+    // フィードパッケージ（全バージョン共通）
+    for (const feed of feeds) {
+        urls.push(`${basePath}/packages/${arch}/${feed}/Packages`);
+    }
+
+    console.log('[Package URLs]', {
+        version: version,
+        target: targetPath,
+        arch: arch,
+        urls: urls
+    });
+
+    // 各 Packages ファイルを並列取得・パース
+    const allPkgs = [];
+    const results = await Promise.allSettled(
+        urls.map(async (url) => {
+            try {
+                const res = await fetch(url);
+                if (!res.ok) {
+                    console.log(`Package fetch ${res.status} for: ${url}`);
                     return [];
                 }
-            })
-        );
-
-        // 結果を統合
-        for (const r of results) {
-            if (r.status === 'fulfilled' && Array.isArray(r.value)) {
-                allPkgs.push(...r.value);
+                const text = await res.text();
+                const packages = parsePackagesText(text, url);
+                console.log(`Parsed ${packages.length} packages from: ${url}`);
+                return packages;
+            } catch (err) {
+                console.log(`Package fetch failed: ${url}`, err.message);
+                return [];
             }
-        }
+        })
+    );
 
-        // 名前重複を統合
-        const pkgMap = new Map();
-        for (const p of allPkgs) {
-            if (p?.name) {
-                pkgMap.set(p.name, p);
-            }
-        }
-        app.devicePackages = Array.from(pkgMap.values());
-        
-        console.log(`[Package Summary] Total unique packages: ${app.devicePackages.length}`);
-
-        // 取得完了後にセレクター再描画
-        if (typeof generatePackageSelector === 'function') {
-            generatePackageSelector();
-        }
-
-        // 内部関数: Packagesファイルをパース
-        function parsePackagesText(text, source) {
-            const blocks = text.split(/\n\s*\n/);
-            const pkgs = [];
-            for (const blk of blocks) {
-                const rec = {};
-                for (const line of blk.split('\n')) {
-                    const m = line.match(/^([A-Za-z-]+):\s*(.*)$/);
-                    if (!m) continue;
-                    const key = m[1], val = m[2];
-                    if (key === "Package") rec.name = val;
-                    else if (key === "Version") rec.version = val;
-                    else if (key === "Description") rec.description = val;
-                    else if (key === "Section") rec.section = val;
-                }  // ← インデント修正
-                if (rec.name) {
-                    rec.source = source;
-                    pkgs.push(rec);
-                }
-            }
-            return pkgs;
+    // 結果を統合
+    for (const r of results) {
+        if (r.status === 'fulfilled' && Array.isArray(r.value)) {
+            allPkgs.push(...r.value);
         }
     }
+
+    // 名前重複を統合
+    const pkgMap = new Map();
+    for (const p of allPkgs) {
+        if (p?.name) {
+            pkgMap.set(p.name, p);
+        }
+    }
+    app.devicePackages = Array.from(pkgMap.values());
+    
+    console.log(`[Package Summary] Total unique packages: ${app.devicePackages.length}`);
+
+    // 取得完了後にセレクター再描画
+    if (typeof generatePackageSelector === 'function') {
+        generatePackageSelector();
+    }
+
+    // 内部関数: Packagesファイルをパース
+    function parsePackagesText(text, source) {
+        const blocks = text.split(/\n\s*\n/);
+        const pkgs = [];
+        for (const blk of blocks) {
+            const rec = {};
+            for (const line of blk.split('\n')) {
+                const m = line.match(/^([A-Za-z-]+):\s*(.*)$/);
+                if (!m) continue;
+                const key = m[1], val = m[2];
+                if (key === "Package") rec.name = val;
+                else if (key === "Version") rec.version = val;
+                else if (key === "Description") rec.description = val;
+                else if (key === "Section") rec.section = val;
+            }
+            if (rec.name) {
+                rec.source = source;
+                pkgs.push(rec);
+            }
+        }
+        return pkgs;
+    }
+}
         
 // ==================== パッケージ入力ボックス ====================
 (function() {
