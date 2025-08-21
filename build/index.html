@@ -4604,6 +4604,19 @@ function showDownloadLinks(images, fullStatus, requestHash) {
 
 // ★パッケージインデックス取得（device_packages_url は廃止）
 async function fetchDevicePackages() {
+    // CORSプロキシのURLを定義
+    const CORS_PROXY = 'https://corsproxy.io/?';
+
+    /**
+     * SNAPSHOT版の場合のみプロキシを適用するヘルパー関数
+     * @param {string} url - 元のURL
+     * @param {string} version - バージョン文字列
+     * @returns {string} - 処理後のURL
+     */
+    const getFinalUrl = (url, version) => {
+        return /SNAPSHOT$/i.test(version) ? CORS_PROXY + url : url;
+    };
+
     app.devicePackages = [];
     if (!current_device || !current_device.id || !app.selectedVersion) return;
 
@@ -4622,36 +4635,32 @@ async function fetchDevicePackages() {
     // アーキテクチャ情報を取得 (profiles.json -> .overview.json のフォールバック付き)
     let arch;
     try {
-        const res = await fetch(profilesUrl);
+        const res = await fetch(getFinalUrl(profilesUrl, version)); // ★動的URL適用
         if (!res.ok) throw new Error(`profiles.json HTTP ${res.status}`);
         const meta = await res.json();
         arch = meta.arch_packages;
         if (!arch) throw new Error("profiles.json に arch_packages がありません");
     } catch (e) {
         console.warn(`profiles.json 取得失敗: ${e.message}. フォールバックを試みます。`);
-        // フォールバック: .overview.jsonから取得したマップを使用
         if (app.archPackagesMap && app.archPackagesMap[targetPath]) {
             arch = app.archPackagesMap[targetPath];
             console.log(`フォールバック成功: target '${targetPath}' のアーキテクチャは '${arch}' です。`);
         } else {
             console.error("フォールバック失敗: アーキテクチャ情報を特定できませんでした。");
             app.devicePackages = [];
-            if (typeof generatePackageSelector === 'function') {
-                generatePackageSelector();
-            }
+            if (typeof generatePackageSelector === 'function') generatePackageSelector();
             return;
         }
     }
 
     // target固有パッケージ（リリース版のみ存在）
-    // SNAPSHOT または *-SNAPSHOT の場合は除外
     if (!/SNAPSHOT$/i.test(version)) {
-        urls.push(`${basePath}/targets/${targetPath}/packages/Packages`);
+        urls.push(getFinalUrl(`${basePath}/targets/${targetPath}/packages/Packages`, version)); // ★動的URL適用
     }
 
     // フィードパッケージ（全バージョン共通）
     for (const feed of feeds) {
-        urls.push(`${basePath}/packages/${arch}/${feed}/Packages`);
+        urls.push(getFinalUrl(`${basePath}/packages/${arch}/${feed}/Packages`, version)); // ★動的URL適用
     }
 
     console.log('[Package URLs]', {
@@ -4666,17 +4675,17 @@ async function fetchDevicePackages() {
     const results = await Promise.allSettled(
         urls.map(async (url) => {
             try {
-                const res = await fetch(url);
+                const res = await fetch(url); // urlは既に処理済み
                 if (!res.ok) {
-                    console.log(`Package fetch ${res.status} for: ${url}`);
+                    console.log(`Package fetch ${res.status} for: ${url.replace(CORS_PROXY, '')}`);
                     return [];
                 }
                 const text = await res.text();
                 const packages = parsePackagesText(text, url);
-                console.log(`Parsed ${packages.length} packages from: ${url}`);
+                console.log(`Parsed ${packages.length} packages from: ${url.replace(CORS_PROXY, '')}`);
                 return packages;
             } catch (err) {
-                console.log(`Package fetch failed: ${url}`, err.message);
+                console.log(`Package fetch failed: ${url.replace(CORS_PROXY, '')}`, err.message);
                 return [];
             }
         })
@@ -4700,12 +4709,10 @@ async function fetchDevicePackages() {
     
     console.log(`[Package Summary] Total unique packages: ${app.devicePackages.length}`);
 
-    // 取得完了後にセレクター再描画
     if (typeof generatePackageSelector === 'function') {
         generatePackageSelector();
     }
 
-    // 内部関数: Packagesファイルをパース
     function parsePackagesText(text, source) {
         const blocks = text.split(/\n\s*\n/);
         const pkgs = [];
