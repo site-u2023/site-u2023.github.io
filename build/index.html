@@ -2652,26 +2652,26 @@ const DeviceContext = {
     },
     
 // デバイス選択処理
-    async _selectDevice(device) {
-        console.log(`[DeviceContext] Device selected: ${device.id}`);
-        
-        // デバイス状態更新
-        current_device = {
-            version: app.selectedVersion,
-            id: device.id,
-            target: device.target
-        };
-        
-        // プロファイル読み込み
-        try {
-            await loadDeviceProfile(device);
-            // 成功時のみUI表示
-            showDeviceInfo();
-        } catch (error) {
-            // 失敗時は何もしない（loadDeviceProfile内でhideDeviceInfo済み）
-            console.log('Profile load failed, device info hidden');
-        }
-    },
+async _selectDevice(device) {
+    console.log(`[DeviceContext] Device selected: ${device.id}`);
+    
+    // デバイス状態更新
+    current_device = {
+        version: app.selectedVersion,
+        id: device.id,
+        target: device.target
+    };
+    
+    // プロファイル読み込み
+    try {
+        await loadDeviceProfile(device);
+        // 成功時のみUI表示
+        showDeviceInfo();
+        this._executeBackgroundTasks();
+    } catch (error) {
+        ErrorHandler.handle('DeviceContext._selectDevice', error);
+    }
+},
     
     // 統合後処理
     async _finalizeUpdate() {
