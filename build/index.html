@@ -2074,14 +2074,16 @@ async function findValidUrls(urlCandidates) {
 function setupVersionUrls(version) {
     if (!config.image_urls) config.image_urls = {};
     if (!config.overview_urls) config.overview_urls = {};
+
     if (config.image_urls[version]) return;
+
     const overview_url = config.image_url;
     const image_url = (typeof upstream_config !== 'undefined' && upstream_config.image_url_override)
         ? upstream_config.image_url_override
         : config.image_url;
-    
-    // SNAPSHOTのみ /snapshots/ パス、他は /releases/ パス
-    if (version === "SNAPSHOT") {
+
+    // SNAPSHOT または *-SNAPSHOT → /snapshots/ に集約
+    if (/SNAPSHOT$/i.test(version)) {
         config.overview_urls[version] = `${overview_url}/snapshots/`;
         config.image_urls[version]   = `${image_url}/snapshots/`;
     } else {
