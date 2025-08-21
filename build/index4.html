@@ -10,6 +10,10 @@
     <link rel="preconnect" href="https://sysupgrade.openwrt.org">
     <link rel="dns-prefetch" href="https://auto-config.site-u.workers.dev">
     <link rel="dns-prefetch" href="https://site-u.pages.dev">
+
+    <!-- ドキュメント検索に向けたリソースヒント -->
+    <link rel="preconnect" href="https://openwrt.org" crossorigin>
+    <link rel="dns-prefetch" href="https://openwrt.org">
     
 <style>
     /* 基本スタイル */
@@ -23,11 +27,13 @@
     }
 
     /* PCブラウザ向けIME抑止（対応ブラウザのみ） */
-    #models,
-    #package-search,
-    #package-search-autocomplete input.package-search {
-        ime-mode: disabled;
-    }
+#models,
+#package-search,
+#package-search-autocomplete input.package-search,
+#command,
+#commands-autocomplete input.command {
+    ime-mode: disabled;
+}
 
     /* 公式互換のオートコンプリート */
     #models-autocomplete {
@@ -776,6 +782,28 @@
                         <summary>Script to run on first boot (uci-defaults)</summary>
                         
                         <div id="aios-config">
+                            <!-- Commands -->
+                            <div class="package-category">
+                              <h4>Add commands</h4>
+                              <div class="package-category-description">
+                                Add custom shell commands that run on first boot.
+                                <a href="https://openwrt.org/docs/guide-user/base-system/uci" target="_blank" rel="noopener">
+                                    The UCI system
+                                </a>
+                              </div>  
+                              <div id="commands-autocomplete" class="autocomplete">
+                                  <input type="text"
+                                    id="command"
+                                    placeholder="Type commands"
+                                    lang="en"
+                                    inputmode="latin"
+                                    autocomplete="off"
+                                    spellcheck="false"
+                                    autocapitalize="off"
+                                    class="form-control">
+                              </div>
+                            </div>
+
                             <h4>Basic Configuration</h4>
                         
                         <!-- 1行目: Language と Country -->
@@ -837,6 +865,19 @@
                             </div>
                         </div>
 
+                        <!-- Device nameとRoot password -->
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="aios-device-name">Device name</label>
+                                <input type="text" id="aios-device-name" class="form-control" placeholder="OpenWrt">
+                            </div>
+                            <div class="form-group">
+                                <label for="aios-root-password">Root password</label>
+                                <input type="password" id="aios-root-password" class="form-control" placeholder="8+ characters">
+                                <small class="form-text text-muted">Leave empty to disable password authentication</small>
+                            </div>
+                        </div>
+
                         <!-- LAN IPv4/IPv6アドレス -->
                         <div class="form-row">
                             <div class="form-group">
@@ -850,27 +891,44 @@
                             </div>
                         </div>
 
-                        <!-- Device nameとRoot password -->
+                        <!-- SSH Interface と Flow Offloading -->
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="aios-device-name">Device name</label>
-                                <input type="text" id="aios-device-name" class="form-control" placeholder="OpenWrt">
+                                <label for="aios-ssh-interface">SSH Interface</label>
+                                <input type="text" id="aios-ssh-interface" class="form-control" placeholder="lan" value="lan">
+                                <small class="form-text text-muted">Network interface for SSH access</small>
                             </div>
                             <div class="form-group">
-                                <label for="aios-root-password">Root password</label>
-                                <input type="password" id="aios-root-password" class="form-control" placeholder="8+ characters">
-                                <small class="form-text text-muted">Leave empty to disable password authentication</small>
+                                <label for="aios-ssh-port">SSH Port</label>
+                                <input type="number" id="aios-ssh-port" class="form-control" placeholder="22" value="22" min="1" max="65535">
+                                <small class="form-text text-muted">Port number for SSH access</small>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="aios-flow-offloading">Flow offloading type</label>
+                                <select id="aios-flow-offloading" class="form-control">
+                                    <option value="">Disabled</option>
+                                    <option value="software">Software flow offloading</option>
+                                    <option value="hardware">Hardware flow offloading</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="aios-backup-path">Restore Backup Path</label>
+                                <input type="text" id="aios-backup-path" class="form-control" placeholder="/root/backup_\${VER}.tar.gz" value="/root/backup_\${VER}.tar.gz">
+                                <small class="form-text text-muted">Path to backup file for restore</small>
                             </div>
                         </div>
                         
-                        <h4>Wi-Fi Configuration</h4>
+                        <h4>Wi‑Fi Configuration</h4>
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="aios-wifi-ssid">Wi-Fi SSID</label>
+                                <label for="aios-wifi-ssid">Wi‑Fi SSID</label>
                                 <input type="text" id="aios-wifi-ssid" class="form-control" placeholder="OpenWrt">
                             </div>
                             <div class="form-group">
-                                <label for="aios-wifi-password">Wi-Fi password</label>
+                                <label for="aios-wifi-password">Wi‑Fi password</label>
                                 <input type="password" id="aios-wifi-password" class="form-control" placeholder="8+ characters">
                             </div>
                         </div>
@@ -937,7 +995,6 @@
                                 <h5 class="section-title">DS-Lite Configuration</h5>
                                 
                                 <div class="form-group">
-                                    <label>Configuration Mode</label>
                                     <div class="radio-group">
                                         <div class="form-check">
                                             <input class="form-check-input" type="radio" name="dsliteMode" id="dslite-auto" value="auto" checked>
@@ -981,7 +1038,6 @@
                             <div id="mape-manual-section" class="conditional-section">
                                 <h5 class="section-title">MAP-E Configuration</h5>
                                 <div class="form-group">
-                                    <label>MAP-E Connection Mode</label>
                                     <div class="radio-group">
                                         <div class="form-check">
                                             <input class="form-check-input" type="radio" name="mapeType" id="mape-auto" value="auto" checked>
@@ -1119,16 +1175,31 @@
     </div>
 
     <script>
-        // setup.shテンプレートを内蔵（外部ファイル読み込み不要）
-        const SETUP_SH_TEMPLATE = `#!/bin/sh
+
+// setup.shテンプレート
+const SETUP_SH_TEMPLATE = `#!/bin/sh
+exec >/tmp/setup.log 2>&1
+VER="$(cat /etc/openwrt_version 2>/dev/null || echo unknown)"
+LAN_DEF="$(uci -q get network.lan.device || echo lan)"
+WAN_DEF="$(uci -q get network.wan.device || echo wan)"
+MAP_NAME="map"
+MAP6_NAME="map6"
+DSLITE_NAME="dslite"
+DSLITE6_NAME="dslite6"
+AP_NAME="ap"
+AP6_NAME="ap6"
 # language="en"
 # country="US"
 # timezone="UTC"
 # zonename="America/New_York"
-# lan_ip_address="192.168.1.1"
-# lan_ipv6_address="fd00::1/64"
 # device_name="OpenWrt"
 # root_password="Password"
+# lan_ip_address="192.168.1.1"
+# lan_ipv6_address="fd00::1/64"
+# ssh_interface="lan"
+# ssh_port="22"
+# flow_offloading_type=""
+# backup_path="/root/backup_\${VER}.tar.gz"
 # wlan_name="OpenWrt"
 # wlan_password="12345678"
 # pppoe_username=""
@@ -1144,174 +1215,180 @@
 # mape_psid_offset=""
 # mape_gua_mode=""
 # mape_gua_prefix=""
-# openwrt_19=""
-# openwrt_21=""
 # ap_ip_address="192.168.1.2"
 # ap_gateway="192.168.1.1"
 # enable_ttyd=""
 # enable_irqbalance=""
 # enable_samba4=""
-LAN_DEF="$(uci -q get network.lan.device || echo lan)"
-WAN_DEF="$(uci -q get network.wan.device || echo wan)"
-MAP_NAME="map"
-MAP6_NAME="map6"
-DSLITE_NAME="dslite"
-DSLITE6_NAME="dslite6"
-AP_NAME="ap"
-AP6_NAME="ap6"
-exec >/tmp/setup.log 2>&1
-if [ -n "${root_password}" ]; then
-    (echo "${root_password}"; sleep 1; echo "${root_password}") | passwd >/dev/null 2>&1
+# openwrt_19=""
+# openwrt_21=""
+if [ -n "\${device_name}" ]; then
+    uci set system.@system[0].hostname="\${device_name}"
 fi
-if [ -n "${device_name}" ]; then
-    uci set system.@system[0].hostname="${device_name}"
+if [ -n "\${root_password}" ]; then
+    printf "%s\n%s\n" "\${root_password}" "\${root_password}" | passwd >/dev/null
 fi
-if [ -n "${lan_ip_address}" ]; then
-    uci set network.lan.ipaddr="${lan_ip_address}"
+if [ -n "\${lan_ip_address}" ]; then
+    uci set network.lan.ipaddr="\${lan_ip_address}"
 fi
-if [ -n "${lan_ipv6_address}" ]; then
-    uci set network.lan.ip6addr="${lan_ipv6_address}"
+if [ -n "\${lan_ipv6_address}" ]; then
+    uci set network.lan.ip6addr="\${lan_ipv6_address}"
 fi
-if [ -n "${language}" ]; then
-    uci set system.@system[0].language="${language}"
+if [ -n "\${language}" ]; then
+    uci set system.@system[0].language="\${language}"
 fi
-if [ -n "${country}" ]; then
-    uci set wireless.@wifi-device[0].country="${country}" 2>/dev/null
+if [ -n "\${country}" ]; then
+    uci set wireless.@wifi-device[0].country="\${country}" 2>/dev/null
 fi
-if [ -n "${timezone}" ]; then
-    uci set system.@system[0].timezone="${timezone}"
+if [ -n "\${timezone}" ]; then
+    uci set system.@system[0].timezone="\${timezone}"
 fi
-if [ -n "${zonename}" ]; then
-    uci set system.@system[0].zonename="${zonename}"
+if [ -n "\${zonename}" ]; then
+    uci set system.@system[0].zonename="\${zonename}"
 fi
-if [ -n "${wlan_name}" ] && [ -n "${wlan_password}" ] && [ ${#wlan_password} -ge 8 ]; then
+if [ -n "\${ssh_interface}" ]; then
+    uci set dropbear.@dropbear[0].Interface="\${ssh_interface}"
+fi
+if [ -n "\${ssh_port}" ]; then
+    uci set dropbear.@dropbear[0].Port="\${ssh_port}"
+fi
+case "\${flow_offloading_type}" in
+    "software")
+        uci set firewall.@defaults[0].flow_offloading='1'
+        ;;
+    "hardware")
+        uci set firewall.@defaults[0].flow_offloading='1'
+        uci set firewall.@defaults[0].flow_offloading_hw='1'
+        ;;
+esac
+if [ -n "\${wlan_name}" ] && [ -n "\${wlan_password}" ]; then
     uci set wireless.@wifi-device[0].disabled='0'
     uci set wireless.@wifi-iface[0].disabled='0'
     uci set wireless.@wifi-iface[0].encryption='sae-mixed'
-    uci set wireless.@wifi-iface[0].ssid="${wlan_name}"
-    uci set wireless.@wifi-iface[0].key="${wlan_password}"
+    uci set wireless.@wifi-iface[0].ssid="\${wlan_name}"
+    uci set wireless.@wifi-iface[0].key="\${wlan_password}"
 fi
-if [ -n "${pppoe_username}" ] && [ -n "${pppoe_password}" ]; then
+if [ -n "\${pppoe_username}" ] && [ -n "\${pppoe_password}" ]; then
     uci set network.wan.proto='pppoe'
-    uci set network.wan.username="${pppoe_username}"
-    uci set network.wan.password="${pppoe_password}"
+    uci set network.wan.username="\${pppoe_username}"
+    uci set network.wan.password="\${pppoe_password}"
 fi
-if [ -n "${dslite_aftr_address}" ]; then
-    cp -p /etc/config/network /etc/config/network.${DSLITE_NAME}.bak 2>/dev/null
-    cp -p /etc/config/dhcp /etc/config/dhcp.${DSLITE_NAME}.bak 2>/dev/null
-    cp -p /etc/config/firewall /etc/config/firewall.${DSLITE_NAME}.bak 2>/dev/null
+if [ -n "\${dslite_aftr_address}" ]; then
+    cp -p /etc/config/network /etc/config/network.\${DSLITE_NAME}.bak 2>/dev/null
+    cp -p /etc/config/dhcp /etc/config/dhcp.\${DSLITE_NAME}.bak 2>/dev/null
+    cp -p /etc/config/firewall /etc/config/firewall.\${DSLITE_NAME}.bak 2>/dev/null
     uci set network.wan.disabled='1'
     uci set network.wan.auto='0'
     uci set network.wan6.disabled='1'
     uci set network.wan6.auto='0'
-    uci set network.${DSLITE6_NAME}=interface
-    uci set network.${DSLITE6_NAME}.proto='dhcpv6'
-    uci set network.${DSLITE6_NAME}.device="${WAN_DEF}"
-    uci set network.${DSLITE6_NAME}.reqaddress='try'
-    uci set network.${DSLITE6_NAME}.reqprefix='auto'
-    uci set network.${DSLITE_NAME}=interface
-    uci set network.${DSLITE_NAME}.proto='dslite'
-    uci set network.${DSLITE_NAME}.peeraddr="${dslite_aftr_address}"
-    uci set network.${DSLITE_NAME}.tunlink="${DSLITE6_NAME}"
-    uci set network.${DSLITE_NAME}.mtu='1460'
-    uci set network.${DSLITE_NAME}.encaplimit='ignore'
-    uci set dhcp.${DSLITE6_NAME}=dhcp
-    uci set dhcp.${DSLITE6_NAME}.interface="${DSLITE6_NAME}"
-    uci set dhcp.${DSLITE6_NAME}.master='1'
-    uci set dhcp.${DSLITE6_NAME}.ra='relay'
-    uci set dhcp.${DSLITE6_NAME}.dhcpv6='relay'
-    uci set dhcp.${DSLITE6_NAME}.ndp='relay'
-    uci set dhcp.${DSLITE6_NAME}.ignore='1'
+    uci set network.\${DSLITE6_NAME}=interface
+    uci set network.\${DSLITE6_NAME}.proto='dhcpv6'
+    uci set network.\${DSLITE6_NAME}.device="\${WAN_DEF}"
+    uci set network.\${DSLITE6_NAME}.reqaddress='try'
+    uci set network.\${DSLITE6_NAME}.reqprefix='auto'
+    uci set network.\${DSLITE_NAME}=interface
+    uci set network.\${DSLITE_NAME}.proto='dslite'
+    uci set network.\${DSLITE_NAME}.peeraddr="\${dslite_aftr_address}"
+    uci set network.\${DSLITE_NAME}.tunlink="\${DSLITE6_NAME}"
+    uci set network.\${DSLITE_NAME}.mtu='1460'
+    uci set network.\${DSLITE_NAME}.encaplimit='ignore'
+    uci set dhcp.\${DSLITE6_NAME}=dhcp
+    uci set dhcp.\${DSLITE6_NAME}.interface="\${DSLITE6_NAME}"
+    uci set dhcp.\${DSLITE6_NAME}.master='1'
+    uci set dhcp.\${DSLITE6_NAME}.ra='relay'
+    uci set dhcp.\${DSLITE6_NAME}.dhcpv6='relay'
+    uci set dhcp.\${DSLITE6_NAME}.ndp='relay'
+    uci set dhcp.\${DSLITE6_NAME}.ignore='1'
     uci set dhcp.lan.ra='relay'
     uci set dhcp.lan.dhcpv6='relay'
     uci set dhcp.lan.ndp='relay'
     uci set dhcp.lan.force='1'
-    uci add_list firewall.@zone[1].network="${DSLITE_NAME}"
-    uci add_list firewall.@zone[1].network="${DSLITE6_NAME}"
+    uci add_list firewall.@zone[1].network="\${DSLITE_NAME}"
+    uci add_list firewall.@zone[1].network="\${DSLITE6_NAME}"
     uci set firewall.@zone[1].masq='1'
     uci set firewall.@zone[1].mtu_fix='1'
 fi
-if [ -n "${mape_br}" ] && [ -n "${mape_ealen}" ]; then
-    cp -p /etc/config/network /etc/config/network.${MAP_NAME}.bak 2>/dev/null
-    cp -p /etc/config/dhcp /etc/config/dhcp.${MAP_NAME}.bak 2>/dev/null
-    cp -p /etc/config/firewall /etc/config/firewall.${MAP_NAME}.bak 2>/dev/null
+if [ -n "\${mape_br}" ] && [ -n "\${mape_ealen}" ]; then
+    cp -p /etc/config/network /etc/config/network.\${MAP_NAME}.bak 2>/dev/null
+    cp -p /etc/config/dhcp /etc/config/dhcp.\${MAP_NAME}.bak 2>/dev/null
+    cp -p /etc/config/firewall /etc/config/firewall.\${MAP_NAME}.bak 2>/dev/null
     cp -p /lib/netifd/proto/map.sh /lib/netifd/proto/map.sh.bak 2>/dev/null
     uci set network.wan.disabled='1'
     uci set network.wan.auto='0'
     uci set network.wan6.disabled='1'
     uci set network.wan6.auto='0'
-    uci set network.${MAP6_NAME}=interface
-    uci set network.${MAP6_NAME}.proto='dhcpv6'
-    uci set network.${MAP6_NAME}.device="${WAN_DEF}"
-    uci set network.${MAP6_NAME}.reqaddress='try'
-    uci set network.${MAP6_NAME}.reqprefix='auto'
-    uci set network.${MAP_NAME}=interface
-    uci set network.${MAP_NAME}.proto='map'
-    uci set network.${MAP_NAME}.maptype='map-e'
-    uci set network.${MAP_NAME}.peeraddr="${mape_br}"
-    uci set network.${MAP_NAME}.ipaddr="${mape_ipv4_prefix}"
-    uci set network.${MAP_NAME}.ip4prefixlen="${mape_ipv4_prefixlen}"
-    uci set network.${MAP_NAME}.ip6prefix="${mape_ipv6_prefix}"
-    uci set network.${MAP_NAME}.ip6prefixlen="${mape_ipv6_prefixlen}"
-    uci set network.${MAP_NAME}.ealen="${mape_ealen}"
-    uci set network.${MAP_NAME}.psidlen="${mape_psidlen}"
-    uci set network.${MAP_NAME}.offset="${mape_psid_offset}"
-    uci set network.${MAP_NAME}.mtu='1460'
-    uci set network.${MAP_NAME}.encaplimit='ignore'
-    uci set dhcp.${MAP6_NAME}=dhcp
-    uci set dhcp.${MAP6_NAME}.interface="${MAP6_NAME}"
-    uci set dhcp.${MAP6_NAME}.master='1'
-    uci set dhcp.${MAP6_NAME}.ra='relay'
-    uci set dhcp.${MAP6_NAME}.dhcpv6='relay'
-    uci set dhcp.${MAP6_NAME}.ndp='relay'
+    uci set network.\${MAP6_NAME}=interface
+    uci set network.\${MAP6_NAME}.proto='dhcpv6'
+    uci set network.\${MAP6_NAME}.device="\${WAN_DEF}"
+    uci set network.\${MAP6_NAME}.reqaddress='try'
+    uci set network.\${MAP6_NAME}.reqprefix='auto'
+    uci set network.\${MAP_NAME}=interface
+    uci set network.\${MAP_NAME}.proto='map'
+    uci set network.\${MAP_NAME}.maptype='map-e'
+    uci set network.\${MAP_NAME}.peeraddr="\${mape_br}"
+    uci set network.\${MAP_NAME}.ipaddr="\${mape_ipv4_prefix}"
+    uci set network.\${MAP_NAME}.ip4prefixlen="\${mape_ipv4_prefixlen}"
+    uci set network.\${MAP_NAME}.ip6prefix="\${mape_ipv6_prefix}"
+    uci set network.\${MAP_NAME}.ip6prefixlen="\${mape_ipv6_prefixlen}"
+    uci set network.\${MAP_NAME}.ealen="\${mape_ealen}"
+    uci set network.\${MAP_NAME}.psidlen="\${mape_psidlen}"
+    uci set network.\${MAP_NAME}.offset="\${mape_psid_offset}"
+    uci set network.\${MAP_NAME}.mtu='1460'
+    uci set network.\${MAP_NAME}.encaplimit='ignore'
+    uci set dhcp.\${MAP6_NAME}=dhcp
+    uci set dhcp.\${MAP6_NAME}.interface="\${MAP6_NAME}"
+    uci set dhcp.\${MAP6_NAME}.master='1'
+    uci set dhcp.\${MAP6_NAME}.ra='relay'
+    uci set dhcp.\${MAP6_NAME}.dhcpv6='relay'
+    uci set dhcp.\${MAP6_NAME}.ndp='relay'
     uci set dhcp.lan.ra='relay'
     uci set dhcp.lan.dhcpv6='relay'
     uci set dhcp.lan.ndp='relay'
     uci set dhcp.lan.force='1'
-    uci add_list firewall.@zone[1].network="${MAP_NAME}"
-    uci add_list firewall.@zone[1].network="${MAP6_NAME}"
+    uci add_list firewall.@zone[1].network="\${MAP_NAME}"
+    uci add_list firewall.@zone[1].network="\${MAP6_NAME}"
     uci set firewall.@zone[1].masq='1'
     uci set firewall.@zone[1].mtu_fix='1'
     cat > /lib/netifd/proto/map.sh << 'MAP_SH_EOF'
-${map_sh_content}
+\${map_sh_content}
 MAP_SH_EOF
 fi
-if [ -n "${mape_gua_mode}" ]; then
-    uci set network.${MAP6_NAME}.ip6prefix="${mape_gua_prefix}"
+if [ -n "\${mape_gua_mode}" ]; then
+    uci set network.\${MAP6_NAME}.ip6prefix="\${mape_gua_prefix}"
 fi
-if [ -n "${openwrt_19}" ]; then
-    uci add_list network.${MAP_NAME}.tunlink="${MAP6_NAME}"
+if [ -n "\${openwrt_19}" ]; then
+    uci add_list network.\${MAP_NAME}.tunlink="\${MAP6_NAME}"
 fi
-if [ -n "${openwrt_21}" ]; then
-    uci set network.${MAP_NAME}.legacymap='1'
-    uci set network.${MAP_NAME}.tunlink="${MAP6_NAME}"
-    uci set dhcp.${MAP6_NAME}.ignore='1'
+if [ -n "\${openwrt_21}" ]; then
+    uci set network.\${MAP_NAME}.legacymap='1'
+    uci set network.\${MAP_NAME}.tunlink="\${MAP6_NAME}"
+    uci set dhcp.\${MAP6_NAME}.ignore='1'
 fi
-if [ -n "${ap_ip_address}" ]; then
-    cp -p /etc/config/network /etc/config/network.${AP_NAME}.bak 2>/dev/null
-    cp -p /etc/config/dhcp /etc/config/dhcp.${AP_NAME}.bak 2>/dev/null
-    cp -p /etc/config/firewall /etc/config/firewall.${AP_NAME}.bak 2>/dev/null
+if [ -n "\${ap_ip_address}" ]; then
+    cp -p /etc/config/network /etc/config/network.\${AP_NAME}.bak 2>/dev/null
+    cp -p /etc/config/dhcp /etc/config/dhcp.\${AP_NAME}.bak 2>/dev/null
+    cp -p /etc/config/firewall /etc/config/firewall.\${AP_NAME}.bak 2>/dev/null
     uci set network.wan.disabled='1'
     uci set network.wan.auto='0'
     uci set network.wan6.disabled='1'
     uci set network.wan6.auto='0'
-    uci set network.${AP_NAME}=interface
-    uci set network.${AP_NAME}.proto='static'
-    uci set network.${AP_NAME}.device="${LAN_DEF}"
-    uci set network.${AP_NAME}.ipaddr="${ap_ip_address}"
-    uci set network.${AP_NAME}.netmask='255.255.255.0'
-    uci set network.${AP_NAME}.gateway="${ap_gateway}"
-    uci set network.${AP_NAME}.dns="${ap_gateway}"
-    uci set network.${AP_NAME}.delegate='0'
-    uci set network.${AP6_NAME}=interface
-    uci set network.${AP6_NAME}.proto='dhcpv6'
-    uci set network.${AP6_NAME}.device="@${AP_NAME}"
-    uci set network.${AP6_NAME}.reqaddress='try'
-    uci set network.${AP6_NAME}.reqprefix='no'
-    uci set network.${AP6_NAME}.type='bridge'
-    [ -n "$(uci -q get wireless.default_radio0)" ] && uci set wireless.default_radio0.network="${AP_NAME}"
-    [ -n "$(uci -q get wireless.default_radio1)" ] && uci set wireless.default_radio1.network="${AP_NAME}"
-    [ -n "$(uci -q get wireless.default_radio2)" ] && uci set wireless.default_radio2.network="${AP_NAME}"
+    uci set network.\${AP_NAME}=interface
+    uci set network.\${AP_NAME}.proto='static'
+    uci set network.\${AP_NAME}.device="\${LAN_DEF}"
+    uci set network.\${AP_NAME}.ipaddr="\${ap_ip_address}"
+    uci set network.\${AP_NAME}.netmask='255.255.255.0'
+    uci set network.\${AP_NAME}.gateway="\${ap_gateway}"
+    uci set network.\${AP_NAME}.dns="\${ap_gateway}"
+    uci set network.\${AP_NAME}.delegate='0'
+    uci set network.\${AP6_NAME}=interface
+    uci set network.\${AP6_NAME}.proto='dhcpv6'
+    uci set network.\${AP6_NAME}.device="@\${AP_NAME}"
+    uci set network.\${AP6_NAME}.reqaddress='try'
+    uci set network.\${AP6_NAME}.reqprefix='no'
+    uci set network.\${AP6_NAME}.type='bridge'
+    [ -n "$(uci -q get wireless.default_radio0)" ] && uci set wireless.default_radio0.network="\${AP_NAME}"
+    [ -n "$(uci -q get wireless.default_radio1)" ] && uci set wireless.default_radio1.network="\${AP_NAME}"
+    [ -n "$(uci -q get wireless.default_radio2)" ] && uci set wireless.default_radio2.network="\${AP_NAME}"
     [ -x /etc/init.d/odhcpd ] && /etc/init.d/odhcpd enabled && /etc/init.d/odhcpd disable
     [ -x /etc/init.d/odhcpd ] && /etc/init.d/odhcpd running && /etc/init.d/odhcpd stop
     [ -x /etc/init.d/dnsmasq ] && /etc/init.d/dnsmasq enabled && /etc/init.d/dnsmasq disable
@@ -1319,15 +1396,15 @@ if [ -n "${ap_ip_address}" ]; then
     [ -x /etc/init.d/firewall ] && /etc/init.d/firewall enabled && /etc/init.d/firewall disable
     [ -x /etc/init.d/firewall ] && /etc/init.d/firewall running && /etc/init.d/firewall stop
 fi
-if [ -n "$enable_ttyd" ]; then
+if [ -n "\${enable_ttyd}" ]; then
     uci set ttyd.@ttyd[0].ttyd.ipv6='1' 
     uci set ttyd.@ttyd[0].command='/bin/login -f root' 
-fi 
-if [ -n "$enable_irqbalance" ]; then
+fi
+if [ -n "\${enable_irqbalance}" ]; then
     uci set irqbalance.irqbalance=irqbalance
     uci set irqbalance.irqbalance.enabled='1'
 fi
-if [ -n "$enable_samba4" ]; then
+if [ -n "\${enable_samba4}" ]; then
     NAS="openwrt"
     MNT="/mnt/sda"
     uci set samba4.@samba[0]=samba
@@ -1337,8 +1414,8 @@ if [ -n "$enable_samba4" ]; then
     uci set samba4.@samba[0].enable_extra_tuning='1'
     uci set samba4.@samba[0].interface='lan'
     uci set samba4.sambashare=sambashare
-    uci set samba4.sambashare.name="${NAS}"
-    uci set samba4.sambashare.path="${MNT}"
+    uci set samba4.sambashare.name="\${NAS}"
+    uci set samba4.sambashare.path="\${MNT}"
     uci set samba4.sambashare.read_only='no'
     uci set samba4.sambashare.force_root='1'
     uci set samba4.sambashare.guest_ok='yes'
@@ -1346,10 +1423,15 @@ if [ -n "$enable_samba4" ]; then
     uci set samba4.sambashare.create_mask='0777'
     uci set samba4.sambashare.dir_mask='0777'
 fi
+# BEGIN_CUSTOM_COMMANDS
+# END_CUSTOM_COMMANDS
 uci commit 2>/dev/null
 echo "All done!"
+if [ -n "\${backup_path}" ]; then
+    sysupgrade -q -k -b "\${backup_path}"
+fi
 exit 0`;
- 
+
 // config.js相当の設定
 const config = {
     show_help: true,
@@ -1469,404 +1551,484 @@ const MapEProcessor = {
     }
 };
 
+const SEARCH_URL_TEMPLATE = 'https://openwrt.org/start?do=search&q={id}';
+function applySearchUrls(db) {
+  db.categories.forEach(category => {
+    category.packages.forEach(pkg => {
+      pkg.url = SEARCH_URL_TEMPLATE.replace(
+        '{id}',
+        encodeURIComponent(pkg.id)
+      );
+    });
+  });
+}
+
 // パッケージデータベース
 const PACKAGE_DB = {
-    categories: [
+  categories: [
+    {
+      id: "basic-system",
+      name: "Basic System Features",
+      description: "Terminal access and file transfer tools",
+      packages: [
         {
-            id: "basic-system",
-            name: "Basic System Features",
-            description: "Terminal access and file transfer tools",
-            packages: [
-                {
-                    id: "luci-app-ttyd",
-                    name: "luci-app-ttyd", 
-                    url: "https://openwrt.org/packages/pkgdata/luci-app-ttyd",
-                    enableVar: "enable_ttyd"
-                },
-                {
-                    id: "openssh-sftp-server",
-                    name: "openssh-sftp-server",
-                    url: "https://openwrt.org/packages/pkgdata/openssh-sftp-server"
-                },
-                {
-                    id: "luci-app-commands",
-                    name: "luci-app-commands",
-                    url: "https://openwrt.org/packages/pkgdata/luci-app-commands"
-                },
-                {
-                    id: "luci-app-filebrowser",
-                    name: "luci-app-filebrowser",
-                    url: "https://openwrt.org/packages/pkgdata/luci-app-filebrowser"
-                }
-            ]
+          id: "luci-app-ttyd",
+          name: "luci-app-ttyd",
+          enableVar: "enable_ttyd",
+          checked: true
         },
         {
-            id: "system-management",
-            name: "System Management",
-            description: "CPU interrupt balancing for multi-core systems",
-            packages: [
-                { 
-                    id: "luci-app-irqbalance", 
-                    name: "luci-app-irqbalance", 
-                    url: "https://openwrt.org/packages/pkgdata/luci-app-irqbalance",
-                    enableVar: "enable_irqbalance",
-                    minVersion: "24.10"
-                }
-            ]
+          id: "openssh-sftp-server",
+          name: "openssh-sftp-server",
+          checked: true
         },
         {
-            id: "network-management",
-            name: "Network Management",
-            description: "QoS, bandwidth monitoring, Wi-Fi scheduling, and network utilities",
-            packages: [
-                { 
-                    id: "luci-app-qos", 
-                    name: "luci-app-qos", 
-                    url: "https://openwrt.org/packages/pkgdata/luci-app-qos"
-                },
-                { 
-                    id: "luci-app-sqm", 
-                    name: "luci-app-sqm", 
-                    url: "https://openwrt.org/packages/pkgdata/luci-app-sqm",
-                    dependencies: ["tc-full"]
-                },
-                { 
-                    id: "tc-full", 
-                    name: "tc-full", 
-                    url: "https://openwrt.org/packages/pkgdata/tc-full",
-                    hidden: true
-                },
-                { 
-                    id: "luci-app-statistics", 
-                    name: "luci-app-statistics", 
-                    url: "https://openwrt.org/packages/pkgdata/luci-app-statistics",
-                    dependencies: ["collectd", "rrdtool1"]
-                },
-                { 
-                    id: "collectd", 
-                    name: "collectd", 
-                    url: "https://openwrt.org/packages/pkgdata/collectd",
-                    hidden: true
-                },
-                { 
-                    id: "rrdtool1", 
-                    name: "rrdtool1", 
-                    url: "https://openwrt.org/packages/pkgdata/rrdtool1",
-                    hidden: true
-                },
-                { 
-                    id: "nlbwmon", 
-                    name: "nlbwmon", 
-                    url: "https://openwrt.org/packages/pkgdata/nlbwmon"
-                },
-                { 
-                    id: "wifischedule", 
-                    name: "wifischedule", 
-                    url: "https://openwrt.org/packages/pkgdata/wifischedule"
-                },
-                { 
-                    id: "luci-app-wol", 
-                    name: "luci-app-wol", 
-                    url: "https://openwrt.org/packages/pkgdata/luci-app-wol"
-                },
-                { 
-                    id: "luci-app-ddns", 
-                    name: "luci-app-ddns", 
-                    url: "https://openwrt.org/packages/pkgdata/luci-app-ddns"
-                }
-            ]
+          id: "luci-app-commands",
+          name: "luci-app-commands"
         },
         {
-            id: "security-tools",
-            name: "Security Tools",
-            description: "Intrusion prevention and IP blocking tools",
-            packages: [
-                { 
-                    id: "znc-mod-fail2ban", 
-                    name: "znc-mod-fail2ban", 
-                    url: "https://openwrt.org/packages/pkgdata/znc-mod-fail2ban"
-                },
-                { 
-                    id: "banip", 
-                    name: "banip", 
-                    url: "https://openwrt.org/packages/pkgdata/banip"
-                }
-            ]
-        },
-        {
-            id: "system-monitoring",
-            name: "System Monitoring",
-            description: "System watchdog and network monitoring",
-            packages: [
-                { 
-                    id: "luci-app-watchcat", 
-                    name: "luci-app-watchcat", 
-                    url: "https://openwrt.org/packages/pkgdata/luci-app-watchcat"
-                }
-            ]
-        },
-        {
-            id: "diagnostic-tools",
-            name: "Network Diagnostic Tools",
-            description: "System monitoring and network analysis tools",
-            packages: [
-                { 
-                    id: "htop", 
-                    name: "htop", 
-                    url: "https://openwrt.org/packages/pkgdata/htop",
-                    dependencies: ["collectd", "collectd-mod-thermal"]
-                },
-                { 
-                    id: "collectd-mod-thermal", 
-                    name: "collectd-mod-thermal", 
-                    url: "https://openwrt.org/packages/pkgdata/collectd-mod-thermal",
-                    hidden: true
-                },
-                { 
-                    id: "mtr", 
-                    name: "mtr", 
-                    url: "https://openwrt.org/packages/pkgdata/mtr"
-                },
-                { 
-                    id: "nmap", 
-                    name: "nmap", 
-                    url: "https://openwrt.org/packages/pkgdata/nmap"
-                },
-                { 
-                    id: "tcpdump", 
-                    name: "tcpdump", 
-                    url: "https://openwrt.org/packages/pkgdata/tcpdump"
-                }
-            ]
-        },
-        {
-            id: "themes-dashboard",
-            name: "Themes and Dashboard",
-            description: "UI themes and dashboard improvements",
-            packages: [
-                { 
-                    id: "luci-theme-openwrt", 
-                    name: "luci-theme-openwrt", 
-                    url: "https://openwrt.org/packages/pkgdata/luci-theme-openwrt",
-                    dependencies: ["luci-theme-material", "luci-theme-openwrt-2020"]
-                },
-                { 
-                    id: "luci-theme-material", 
-                    name: "luci-theme-material", 
-                    url: "https://openwrt.org/packages/pkgdata/luci-theme-material"
-                },
-                { 
-                    id: "luci-theme-openwrt-2020", 
-                    name: "luci-theme-openwrt-2020", 
-                    url: "https://openwrt.org/packages/pkgdata/luci-theme-openwrt-2020"
-                },
-                { 
-                    id: "luci-mod-dashboard", 
-                    name: "luci-mod-dashboard", 
-                    url: "https://openwrt.org/packages/pkgdata/luci-mod-dashboard"
-                }
-            ]
-        },
-        {
-            id: "utilities",
-            name: "Utilities",
-            description: "System upgrade tools and VPN utilities",
-            packages: [
-                { 
-                    id: "attendedsysupgrade-common", 
-                    name: "attendedsysupgrade-common", 
-                    url: "https://openwrt.org/packages/pkgdata/attendedsysupgrade-common"
-                },
-                { 
-                    id: "wireguard-tools", 
-                    name: "wireguard-tools", 
-                    url: "https://openwrt.org/packages/pkgdata/wireguard-tools"
-                },
-                { 
-                    id: "luci-app-wireguard", 
-                    name: "luci-app-wireguard", 
-                    url: "https://openwrt.org/packages/pkgdata/luci-app-wireguard",
-                    dependencies: ["wireguard-tools"]
-                },
-                { 
-                    id: "luci-app-dockerman",
-                    name: "luci-app-dockerman",
-                    url: "https://openwrt.org/packages/pkgdata/luci-app-dockerman",
-                    dependencies: ["docker-compose"]
-                },
-                { 
-                    id: "docker-compose",
-                    name: "docker-compose",
-                    url: "https://openwrt.org/packages/pkgdata/docker-compose",
-                    dependencies: ["docker"],
-                    hidden: true
-                },
-                { 
-                    id: "docker",
-                    name: "docker",
-                    url: "https://openwrt.org/packages/pkgdata/docker",
-                    hidden: true
-                }
-            ]
-        },
-        {
-            id: "usb-storage",
-            name: "USB Storage Support",
-            description: "USB storage kernel module and filesystem tools",
-            packages: [
-                { 
-                    id: "kmod-usb-storage", 
-                    name: "kmod-usb-storage", 
-                    url: "https://openwrt.org/packages/pkgdata/kmod-usb-storage",
-                    dependencies: ["block-mount", "kmod-usb-storage-uas", "usbutils", "libblkid1", "gdisk"]
-                },
-                { 
-                    id: "block-mount", 
-                    name: "block-mount", 
-                    url: "https://openwrt.org/packages/pkgdata/block-mount",
-                    hidden: true
-                },
-                { 
-                    id: "kmod-usb-storage-uas", 
-                    name: "kmod-usb-storage-uas", 
-                    url: "https://openwrt.org/packages/pkgdata/kmod-usb-storage-uas",
-                    hidden: true
-                },
-                { 
-                    id: "usbutils", 
-                    name: "usbutils", 
-                    url: "https://openwrt.org/packages/pkgdata/usbutils",
-                    hidden: true
-                },
-                { 
-                    id: "libblkid1", 
-                    name: "libblkid1", 
-                    url: "https://openwrt.org/packages/pkgdata/libblkid1",
-                    hidden: true
-                },
-                {
-                    id: "gdisk",
-                    name: "gdisk",
-                    url: "https://openwrt.org/packages/pkgdata/gdisk",
-                    hidden: true
-                },
-                {
-                    id: "dosfstools",
-                    name: "dosfstools",
-                    url: "https://openwrt.org/packages/pkgdata/dosfstools",
-                    dependencies: ["kmod-fs-vfat"]
-                },
-                { 
-                    id: "kmod-fs-vfat", 
-                    name: "kmod-fs-vfat", 
-                    url: "https://openwrt.org/packages/pkgdata/kmod-fs-vfat",
-                    hidden: true
-                },
-                { 
-                    id: "e2fsprogs", 
-                    name: "e2fsprogs", 
-                    url: "https://openwrt.org/packages/pkgdata/e2fsprogs",
-                    dependencies: ["kmod-fs-ext4"]
-                },
-                { 
-                    id: "kmod-fs-ext4", 
-                    name: "kmod-fs-ext4", 
-                    url: "https://openwrt.org/packages/pkgdata/kmod-fs-ext4",
-                    hidden: true
-                },
-                { 
-                    id: "f2fs-tools", 
-                    name: "f2fs-tools", 
-                    url: "https://openwrt.org/packages/pkgdata/f2fs-tools",
-                    dependencies: ["kmod-fs-f2fs"]
-                },
-                { 
-                    id: "kmod-fs-f2fs", 
-                    name: "kmod-fs-f2fs", 
-                    url: "https://openwrt.org/packages/pkgdata/kmod-fs-f2fs",
-                    hidden: true
-                },
-                { 
-                    id: "exfat-fsck", 
-                    name: "exfat-fsck", 
-                    url: "https://openwrt.org/packages/pkgdata/exfat-fsck",
-                    dependencies: ["kmod-fs-exfat"]
-                },
-                { 
-                    id: "kmod-fs-exfat", 
-                    name: "kmod-fs-exfat", 
-                    url: "https://openwrt.org/packages/pkgdata/kmod-fs-exfat",
-                    hidden: true
-                },
-                { 
-                    id: "ntfs-3g", 
-                    name: "ntfs-3g", 
-                    url: "https://openwrt.org/packages/pkgdata/ntfs-3g",
-                    dependencies: ["kmod-fs-ntfs3"]
-                },
-                { 
-                    id: "kmod-fs-ntfs3", 
-                    name: "kmod-fs-ntfs3", 
-                    url: "https://openwrt.org/packages/pkgdata/kmod-fs-ntfs3",
-                    hidden: true
-                },
-                { 
-                    id: "hfsfsck", 
-                    name: "hfsfsck", 
-                    url: "https://openwrt.org/packages/pkgdata/hfsfsck",
-                    dependencies: ["kmod-fs-hfs", "kmod-fs-hfsplus"]
-                },
-                { 
-                    id: "kmod-fs-hfs", 
-                    name: "kmod-fs-hfs", 
-                    url: "https://openwrt.org/packages/pkgdata/kmod-fs-hfs",
-                    hidden: true
-                },
-                { 
-                    id: "kmod-fs-hfsplus", 
-                    name: "kmod-fs-hfsplus", 
-                    url: "https://openwrt.org/packages/pkgdata/kmod-fs-hfsplus",
-                    hidden: true
-                },
-                { 
-                    id: "hdparm", 
-                    name: "hdparm", 
-                    url: "https://openwrt.org/packages/pkgdata/hdparm",
-                    dependencies: ["hd-idle"]
-                },
-                { 
-                    id: "hd-idle", 
-                    name: "hd-idle", 
-                    url: "https://openwrt.org/packages/pkgdata/hd-idle",
-                    hidden: true
-                }
-            ]
-        },
-        {
-            id: "file-sharing",
-            name: "File Sharing",
-            description: "SMB/CIFS file sharing server",
-            packages: [
-                { 
-                    id: "luci-app-samba4", 
-                    name: "luci-app-samba4", 
-                    url: "https://openwrt.org/packages/pkgdata/luci-app-samba4",
-                    dependencies: ["wsdd2"],
-                    enableVar: "enable_samba4"
-                },
-                { 
-                    id: "wsdd2", 
-                    name: "wsdd2", 
-                    url: "https://openwrt.org/packages/pkgdata/wsdd2",
-                    hidden: true
-                }
-            ]
+          id: "luci-app-filebrowser",
+          name: "luci-app-filebrowser"
         }
-    ]
+      ]
+    },
+    {
+      id: "system-management",
+      name: "System Management",
+      description: "CPU interrupt balancing for multi-core systems",
+      packages: [
+        {
+          id: "luci-app-irqbalance",
+          name: "luci-app-irqbalance",
+          enableVar: "enable_irqbalance",
+          minVersion: "24.10"
+        }
+      ]
+    },
+    {
+      id: "network-management",
+      name: "Network Management",
+      description: "QoS, bandwidth monitoring, Wi-Fi scheduling, and network utilities",
+      packages: [
+        {
+          id: "luci-app-qos",
+          name: "luci-app-qos"
+        },
+        {
+          id: "luci-app-sqm",
+          name: "luci-app-sqm",
+          dependencies: ["tc-full"]
+        },
+        {
+          id: "tc-full",
+          name: "tc-full",
+          hidden: true
+        },
+        {
+          id: "luci-app-statistics",
+          name: "luci-app-statistics",
+          dependencies: ["collectd", "rrdtool1"]
+        },
+        {
+          id: "collectd",
+          name: "collectd",
+          hidden: true
+        },
+        {
+          id: "rrdtool1",
+          name: "rrdtool1",
+          hidden: true
+        },
+        {
+          id: "nlbwmon",
+          name: "nlbwmon"
+        },
+        {
+          id: "wifischedule",
+          name: "wifischedule"
+        },
+        {
+          id: "luci-app-wol",
+          name: "luci-app-wol"
+        },
+        {
+          id: "luci-app-ddns",
+          name: "luci-app-ddns"
+        },
+        {
+          id: "mwan3",
+          name: "mwan3"
+        },
+        {
+          id: "luci-app-mwan3",
+          name: "luci-app-mwan3",
+          dependencies: ["mwan3"]
+        }
+      ]
+    },
+    {
+      id: "security-tools",
+      name: "Security Tools",
+      description: "Intrusion prevention and IP blocking tools",
+      packages: [
+        {
+          id: "znc-mod-fail2ban",
+          name: "znc-mod-fail2ban"
+        },
+        {
+          id: "banip",
+          name: "banip"
+        }
+      ]
+    },
+    {
+      id: "system-monitoring",
+      name: "System Monitoring",
+      description: "System watchdog and network monitoring",
+      packages: [
+        {
+          id: "luci-app-watchcat",
+          name: "luci-app-watchcat"
+        }
+      ]
+    },
+    {
+      id: "diagnostic-tools",
+      name: "Network Diagnostic Tools",
+      description: "System monitoring and network analysis tools",
+      packages: [
+        {
+          id: "htop",
+          name: "htop",
+          dependencies: ["collectd-htop", "collectd-mod-thermal"]
+        },
+        {
+          id: "collectd-htop",
+          name: "collectd",
+          hidden: true
+        },
+        {
+          id: "collectd-mod-thermal",
+          name: "collectd-mod-thermal",
+          hidden: true
+        },
+        {
+          id: "mtr",
+          name: "mtr"
+        },
+        {
+          id: "nmap",
+          name: "nmap"
+        },
+        {
+          id: "tcpdump",
+          name: "tcpdump"
+        }
+      ]
+    },
+    {
+      id: "themes-dashboard",
+      name: "Themes and Dashboard",
+      description: "UI themes and dashboard improvements",
+      packages: [
+        {
+          id: "luci-mod-dashboard",
+          name: "luci-mod-dashboard"
+        },
+        {
+          id: "luci-theme-openwrt",
+          name: "luci-theme-openwrt",
+          dependencies: ["luci-theme-material", "luci-theme-openwrt-2020"]
+        },
+        {
+          id: "luci-theme-material",
+          name: "luci-theme-material"
+        },
+        {
+          id: "luci-theme-openwrt-2020",
+          name: "luci-theme-openwrt-2020"
+        }
+      ]
+    },
+    {
+      id: "utilities",
+      name: "Utilities",
+      description: "System upgrade tools and VPN utilities",
+      packages: [
+        {
+          id: "attendedsysupgrade-common",
+          name: "attendedsysupgrade-common"
+        },
+        {
+          id: "wireguard-tools",
+          name: "wireguard-tools"
+        },
+        {
+          id: "luci-app-wireguard",
+          name: "luci-app-wireguard",
+          dependencies: ["wireguard-tools"]
+        },
+        {
+          id: "luci-app-dockerman",
+          name: "luci-app-dockerman",
+          dependencies: ["docker-compose"]
+        },
+        {
+          id: "docker-compose",
+          name: "docker-compose",
+          dependencies: ["docker"],
+          hidden: true
+        },
+        {
+          id: "docker",
+          name: "docker",
+          hidden: true
+        },
+        {
+          id: "luci-app-openvpn",
+          name: "luci-app-openvpn"
+        },
+        {
+          id: "luci-app-minidlna",
+          name: "luci-app-minidlna"
+        }
+      ]
+    },
+    {
+      id: "usb-storage",
+      name: "USB Storage Support",
+      description: "USB storage kernel module and filesystem tools",
+      packages: [
+        {
+          id: "kmod-usb-storage",
+          name: "kmod-usb-storage",
+          dependencies: [
+            "block-mount",
+            "kmod-usb-storage-uas",
+            "usbutils",
+            "libblkid1",
+            "gdisk"
+          ]
+        },
+        {
+          id: "block-mount",
+          name: "block-mount",
+          hidden: true
+        },
+        {
+          id: "kmod-usb-storage-uas",
+          name: "kmod-usb-storage-uas",
+          hidden: true
+        },
+        {
+          id: "usbutils",
+          name: "usbutils",
+          hidden: true
+        },
+        {
+          id: "libblkid1",
+          name: "libblkid1",
+          hidden: true
+        },
+        {
+          id: "gdisk",
+          name: "gdisk",
+          hidden: true
+        },
+        {
+          id: "dosfstools",
+          name: "dosfstools",
+          dependencies: ["kmod-fs-vfat"]
+        },
+        {
+          id: "kmod-fs-vfat",
+          name: "kmod-fs-vfat",
+          hidden: true
+        },
+        {
+          id: "e2fsprogs",
+          name: "e2fsprogs",
+          dependencies: ["kmod-fs-ext4"]
+        },
+        {
+          id: "kmod-fs-ext4",
+          name: "kmod-fs-ext4",
+          hidden: true
+        },
+        {
+          id: "f2fs-tools",
+          name: "f2fs-tools",
+          dependencies: ["kmod-fs-f2fs"]
+        },
+        {
+          id: "kmod-fs-f2fs",
+          name: "kmod-fs-f2fs",
+          hidden: true
+        },
+        {
+          id: "exfat-fsck",
+          name: "exfat-fsck",
+          dependencies: ["kmod-fs-exfat"]
+        },
+        {
+          id: "kmod-fs-exfat",
+          name: "kmod-fs-exfat",
+          hidden: true
+        },
+        {
+          id: "ntfs-3g",
+          name: "ntfs-3g",
+          dependencies: ["kmod-fs-ntfs3"]
+        },
+        {
+          id: "kmod-fs-ntfs3",
+          name: "kmod-fs-ntfs3",
+          hidden: true
+        },
+        {
+          id: "hfsfsck",
+          name: "hfsfsck",
+          dependencies: ["kmod-fs-hfs", "kmod-fs-hfsplus"]
+        },
+        {
+          id: "kmod-fs-hfs",
+          name: "kmod-fs-hfs",
+          hidden: true
+        },
+        {
+          id: "kmod-fs-hfsplus",
+          name: "kmod-fs-hfsplus",
+          hidden: true
+        },
+        {
+          id: "hdparm",
+          name: "hdparm",
+          dependencies: ["hd-idle"]
+        },
+        {
+          id: "hd-idle",
+          name: "hd-idle",
+          hidden: true
+        },
+        {
+          id: "kmod-usb-ledtrig-usbport",
+          name: "kmod-usb-ledtrig-usbport"
+        }
+      ]
+    },
+    {
+      id: "file-sharing",
+      name: "File Sharing",
+      description: "SMB/CIFS file sharing server",
+      packages: [
+        {
+          id: "luci-app-samba4",
+          name: "luci-app-samba4",
+          dependencies: ["wsdd2"],
+          enableVar: "enable_samba4"
+        },
+        {
+          id: "wsdd2",
+          name: "wsdd2",
+          hidden: true
+        }
+      ]
+    }
+  ]
 };
-        
+
+applySearchUrls(PACKAGE_DB);
+
+// Java Script -------------------------------------------------------------------
 // JS ----------------------------------------------------------------------------
 document.addEventListener('DOMContentLoaded', init);
+
+// ==================== エラーハンドリング統一 ====================
+const ErrorHandler = {
+    // エラータイプ分類
+    classify(error, response = null) {
+        // HTTPステータスコードベースの分類
+        if (response?.status === 404) return 'VERSION_NOT_AVAILABLE';
+        if (response?.status === 403) return 'PERMISSION_DENIED';
+        
+        // 古いバージョンのCORS拒否は期待される動作  
+        if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+            return 'EXPECTED_CORS_REJECTION';
+        }
+        
+        if (error.name === 'TypeError' && error.message.includes('fetch')) return 'NETWORK_ERROR';
+        if (error.message?.includes('timeout')) return 'TIMEOUT';
+        return 'UNKNOWN';
+    },
+
+    // 統一エラー処理
+    handle(context, error, response = null) {
+        const errorType = this.classify(error, response);
+        
+        // 期待される動作の場合は通常ログ
+        const expectedBehaviors = ['VERSION_NOT_AVAILABLE', 'EXPECTED_CORS_REJECTION', 'PERMISSION_DENIED'];
+        const isExpected = expectedBehaviors.includes(errorType);
+        
+        // ログ出力（期待される動作は通常ログ、それ以外はエラーログ）
+        if (isExpected) {
+            console.log(`[${context}] ${errorType}: Expected behavior for older versions`, {
+                message: error.message,
+                response: response ? {
+                    status: response.status,
+                    statusText: response.statusText,
+                    url: response.url
+                } : null
+            });
+        } else {
+            console.error(`[${context}] ${errorType}: Unexpected error`, {
+                message: error.message,
+                stack: error.stack,
+                response: response ? {
+                    status: response.status,
+                    statusText: response.statusText,
+                    url: response.url
+                } : null
+            });
+        }
+        
+        // エラータイプ別処理
+        switch (errorType) {
+            case 'VERSION_NOT_AVAILABLE':
+                console.log(`✓ Version ${app.selectedVersion} not available - This is expected for older versions`);
+                hideDeviceInfo();
+                break;
+            case 'PERMISSION_DENIED':
+            case 'EXPECTED_CORS_REJECTION':
+                console.log(`✓ Access blocked by CORS policy - This is expected for older versions`);
+                hideDeviceInfo();
+                break;
+            case 'NETWORK_ERROR':
+                console.warn(`Network connectivity issue in ${context}`);
+                hideDeviceInfo();
+                break;
+            default:
+                console.error(`Unexpected error in ${context}:`, error.message);
+                hideDeviceInfo();
+        }
+        return { success: false, errorType, context, isExpected };
+    },
+
+    // デバッグログ
+    debug(context, message, data = null) {
+        console.log(`[DEBUG] ${context}: ${message}`);
+        if (data) {
+            console.log('Data:', data);
+        }
+        console.trace(`[${context}] Call trace:`);
+    },
+
+    // 関数呼び出し追跡
+    trace(functionName, ...args) {
+        console.log(`[TRACE] ${functionName}() called`);
+        console.log('Arguments:', args);
+        console.trace(`${functionName} call stack:`);
+    }
+};
 
 // ==================== ユーティリティ関数 ====================
 async function loadPackageDatabase() {
@@ -1938,6 +2100,11 @@ async function init() {
 
         // ISP情報取得は details 展開時に移動（auto トリガー）
         console.log('Initialization completed. ISP info will be fetched when details are opened.');
+        
+        // 初期化完了後、セレクターの初期値を確実に反映（バグ修正）
+        setTimeout(() => {
+            refreshTemplateAndPackages();
+        }, 100);
 
     } catch (error) {
         console.error('Failed to initialize:', error);
@@ -2150,6 +2317,21 @@ async function loadMapShForVersion(version) {
     }
 }
         
+// ==================== イベントバインディング統合関数（bindEventsの外で定義） ====================
+function bindFieldEvents(fieldIds, events = ['input'], callback = null) {
+    const handler = callback || (() => syncTemplateAndPackages({ trigger: 'script' }));
+    
+    fieldIds.forEach(fieldId => {
+        const el = document.getElementById(fieldId);
+        if (el) {
+            const eventList = Array.isArray(events) ? events : [events];
+            eventList.forEach(eventType => {
+                el.addEventListener(eventType, handler);
+            });
+        }
+    });
+}
+
 // ==================== イベントバインディング ====================
 let eventsbound = false;  // 重複実行防止フラグ
 function bindEvents() {
@@ -2169,113 +2351,65 @@ function bindEvents() {
     const modelsEl = document.getElementById('models');
     if (modelsEl) modelsEl.addEventListener('input', handleDeviceSearch);
 
-    // const asuEl = document.getElementById('asu');
-    // if (asuEl) asuEl.addEventListener('toggle', handleAsuDetailsToggle);
-    
     const aiosConfigDetails = document.getElementById('use-aios-config-details');
     if (aiosConfigDetails) aiosConfigDetails.addEventListener('toggle', toggleAiosConfig);
     
     const pkgSelectorDetails = document.getElementById('use-package-selector-details');
     if (pkgSelectorDetails) pkgSelectorDetails.addEventListener('toggle', togglePackageSelector);
     
-const buildBtnEl = document.getElementById('request-build');
-if (buildBtnEl) {
-    console.log('[BIND] Adding click listener to build button');
-    
-    // href="javascript:..."を無効化して重複実行を根絶
-    buildBtnEl.removeAttribute('href');
-    buildBtnEl.addEventListener('click', (e) => {
-        e.preventDefault();  // あらゆるデフォルト動作を阻止
-        e.stopImmediatePropagation();  // 他のイベントハンドラーを阻止
+    const buildBtnEl = document.getElementById('request-build');
+    if (buildBtnEl) {
+        console.log('[BIND] Adding click listener to build button');
         
-        console.log('[BIND] About to call buildAsuRequest'); // <- この行を追加
-        buildAsuRequest();
-        console.log('[BIND] buildAsuRequest call completed'); // <- この行を追加
-    });
-}
+        buildBtnEl.removeAttribute('href');
+        buildBtnEl.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            
+            console.log('[BIND] About to call buildAsuRequest');
+            buildAsuRequest();
+            console.log('[BIND] buildAsuRequest call completed');
+        });
+    }
 
 // ===== 基本設定フィールドのリアルタイム反映 =====
-const basicFields = [
-    'aios-language',
-    'aios-country', 
-    'aios-timezone',
-    'aios-zonename',
-    'aios-lan-ipv4',
-    'aios-lan-ipv6',
-    'aios-device-name',
-    'aios-root-password',
-    'aios-wifi-ssid',
-    'aios-wifi-password'
-];
+    const basicFields = [
+        'aios-language',
+        'aios-country', 
+        'aios-timezone',
+        'aios-zonename',
+        'aios-lan-ipv4',
+        'aios-lan-ipv6',
+        'aios-device-name',
+        'aios-root-password',
+        'aios-wifi-ssid',
+        'aios-wifi-password',
+        'aios-ssh-interface',
+        'aios-ssh-port',
+        'aios-flow-offloading',
+        'aios-backup-path'
+    ];
 
-basicFields.forEach(fieldId => {
-    const el = document.getElementById(fieldId);
-    if (el) {
-        el.addEventListener('input', () => syncTemplateAndPackages({ trigger: 'script' }));
-    }
-});
-    
-    // ===== PPPoE設定フィールドのリアルタイム反映 =====
-    const pppoeFields = [
-        'pppoe-username',
-        'pppoe-password'
-    ];
-    
-    pppoeFields.forEach(fieldId => {
-        const el = document.getElementById(fieldId);
-        if (el) {
-            el.addEventListener('input', () => syncTemplateAndPackages({ trigger: 'script' }));
-        }
-    });
-    
-    // ===== DS-Lite設定フィールドのリアルタイム反映 =====
-    const dsliteFields = [
-        'dslite-aftr-address',
-        'dslite-aftr-type',
-        'dslite-area'
-    ];
-    
-    dsliteFields.forEach(fieldId => {
-        const el = document.getElementById(fieldId);
-        if (el) {
-            el.addEventListener('input', () => syncTemplateAndPackages({ trigger: 'script' }));
-            el.addEventListener('change', () => syncTemplateAndPackages({ trigger: 'script' }));
-        }
-    });
-    
-    // ===== MAP-E設定フィールドのリアルタイム反映 =====
-    const mapeFields = [
-        'mape-br',
-        'mape-ealen',
-        'mape-ipv4-prefix',
-        'mape-ipv4-prefixlen',
-        'mape-ipv6-prefix',
-        'mape-ipv6-prefixlen',
-        'mape-psid-offset',
-        'mape-psidlen',
-        'mape-gua-prefix'
-    ];
-    
-    mapeFields.forEach(fieldId => {
-        const el = document.getElementById(fieldId);
-        if (el) {
-            el.addEventListener('input', () => syncTemplateAndPackages({ trigger: 'script' }));
-        }
-    });
-    
-    // ===== AP設定フィールドのリアルタイム反映 =====
-    const apFields = [
-        'ap-ip-address',
-        'ap-gateway'
-    ];
-    
-    apFields.forEach(fieldId => {
-        const el = document.getElementById(fieldId);
-        if (el) {
-            el.addEventListener('input', () => syncTemplateAndPackages({ trigger: 'script' }));
-        }
-    });
-    
+    // ===== フィールドイベントの統合バインディング =====
+    const fieldGroups = {
+        basic: basicFields,  // 上で定義したbasicFieldsを使用
+        pppoe: ['pppoe-username', 'pppoe-password'],
+        dslite: ['dslite-aftr-address', 'dslite-aftr-type', 'dslite-area'],
+        mape: [
+            'mape-br', 'mape-ealen', 'mape-ipv4-prefix', 'mape-ipv4-prefixlen',
+            'mape-ipv6-prefix', 'mape-ipv6-prefixlen', 'mape-psid-offset',
+            'mape-psidlen', 'mape-gua-prefix'
+        ],
+        ap: ['ap-ip-address', 'ap-gateway']
+    };
+
+    // 一括バインディング
+    bindFieldEvents(fieldGroups.basic);
+    bindFieldEvents(fieldGroups.pppoe);
+    bindFieldEvents(fieldGroups.dslite, ['input', 'change']);  // DS-Liteは2つのイベント
+    bindFieldEvents(fieldGroups.mape);
+    bindFieldEvents(fieldGroups.ap);
+
     // ===== ラジオボタンのリアルタイム反映 =====
     // DS-Lite mode
     document.querySelectorAll('input[name="dsliteMode"]').forEach(radio => {
@@ -2304,7 +2438,7 @@ basicFields.forEach(fieldId => {
         }
     });
     
-// ===== 初期状態設定（存在確認あり） =====
+    // ===== 初期状態設定（存在確認あり） =====
     const manualSection = document.getElementById('manual-connection-section');
     if (manualSection) manualSection.style.display = 'none';
     
@@ -2350,6 +2484,15 @@ function generatePackageSelector() {
 
     container.innerHTML = '';
 
+    // 利用可能パッケージ名のセットを作成
+    const availablePackages = new Set();
+    if (app.devicePackages && app.devicePackages.length > 0) {
+        app.devicePackages.forEach(pkg => {
+            const name = (typeof pkg === 'string') ? pkg : pkg.name;
+            if (name) availablePackages.add(name);
+        });
+    }
+
     // 依存パッケージIDの集合を構築
     const depIds = new Set();
     PACKAGE_DB.categories.forEach(cat => {
@@ -2368,7 +2511,6 @@ function generatePackageSelector() {
         categoryTitle.textContent = category.name;
         categoryDiv.appendChild(categoryTitle);
 
-        // ★★★ 説明文を横線の直下に追加 ★★★
         const categoryDescription = document.createElement('div');
         categoryDescription.className = 'package-category-description';
         categoryDescription.textContent = category.description;
@@ -2377,15 +2519,27 @@ function generatePackageSelector() {
         const packageGrid = document.createElement('div');
         packageGrid.className = 'package-grid';
 
-        // 既存のパッケージ処理...
+        let hasVisiblePackages = false; // カテゴリに表示可能なパッケージがあるかチェック
+
         category.packages.forEach(pkg => {
             // 依存パッケージはトップレベル描画しない
             if (depIds.has(pkg.id)) return;
 
-            // パッケージアイテム作成（既存のコード）
+            // パッケージが利用可能かチェック
+            const isAvailable = availablePackages.size === 0 || availablePackages.has(pkg.name);
+            
+            // パッケージアイテム作成
             const packageItem = document.createElement('div');
             packageItem.className = 'package-item';
             if (pkg.hidden) packageItem.classList.add('package-hidden');
+            
+            // 利用不可パッケージは非表示
+            if (!isAvailable) {
+                packageItem.style.display = 'none';
+                return; // 完全に除外
+            }
+
+            hasVisiblePackages = true; // 表示可能なパッケージがある
 
             const formCheck = document.createElement('div');
             formCheck.className = 'form-check';
@@ -2397,6 +2551,10 @@ function generatePackageSelector() {
             checkbox.setAttribute('data-package', pkg.name);
             if (pkg.dependencies) {
                 checkbox.setAttribute('data-dependencies', pkg.dependencies.join(','));
+            }
+            if (pkg.checked) {
+                checkbox.checked = true;
+                checkbox.setAttribute('data-user', '1');
             }
             checkbox.addEventListener('change', handlePackageSelection);
 
@@ -2415,7 +2573,7 @@ function generatePackageSelector() {
             formCheck.appendChild(label);
             packageItem.appendChild(formCheck);
 
-            // 子行（依存パッケージ）処理
+            // 依存パッケージ処理（同様に利用可能性をチェック）
             if (pkg.dependencies) {
                 pkg.dependencies.forEach(depId => {
                     let depPkg;
@@ -2424,6 +2582,11 @@ function generatePackageSelector() {
                         if (depPkg) break;
                     }
 
+                    const depName = depPkg ? depPkg.name : depId;
+                    const depIsAvailable = availablePackages.size === 0 || availablePackages.has(depName);
+                    
+                    if (!depIsAvailable) return; // 依存パッケージが利用不可なら表示しない
+
                     const depItem = document.createElement('div');
                     depItem.className = 'package-dependent';
 
@@ -2431,7 +2594,7 @@ function generatePackageSelector() {
                     depCheck.className = 'form-check-input package-selector-checkbox';
                     depCheck.type = 'checkbox';
                     depCheck.id = `pkg-${depPkg ? depPkg.id : depId}`;
-                    depCheck.setAttribute('data-package', depPkg ? depPkg.name : depId);
+                    depCheck.setAttribute('data-package', depName);
                     depCheck.addEventListener('change', handlePackageSelection);
 
                     const depLabel = document.createElement('label');
@@ -2458,11 +2621,15 @@ function generatePackageSelector() {
             packageGrid.appendChild(packageItem);
         });
 
-        categoryDiv.appendChild(packageGrid);
-        container.appendChild(categoryDiv);
+        // 表示可能なパッケージがあるカテゴリのみ追加
+        if (hasVisiblePackages) {
+            categoryDiv.appendChild(packageGrid);
+            container.appendChild(categoryDiv);
+        }
     });
+    updatePackageListFromSelector();
 }
-
+        
 function handlePackageSelection(e) {
     const pkg = e.target;
     const packageName = pkg.getAttribute('data-package');
@@ -2497,8 +2664,16 @@ function updatePackageListFromSelector() {
         const n = cb.getAttribute('data-package');
         if (n) checkedPkgs.push(n);
     });
-    // 終点ロジックに集約
-    syncTemplateAndPackages({ trigger: 'selector', updatedPackages: checkedPkgs });
+    
+    // 完全同期：selector由来のパッケージは差し替え
+    const textarea = document.getElementById('asu-packages');
+    const current = split(textarea.value);
+    const nonSelectorPkgs = current.filter(pkg => {
+        return !document.querySelector(`.package-selector-checkbox[data-package="${pkg}"]`);
+    });
+    const newList = [...nonSelectorPkgs, ...checkedPkgs];
+    textarea.value = newList.join(' ');
+    syncTemplateAndPackages({ trigger: 'selector' }); // updatedPackages不要
 }
 
 // ==================== デバイス・バージョン統合管理 ====================
@@ -2525,8 +2700,7 @@ const DeviceContext = {
             await this._finalizeUpdate();
             
         } catch (error) {
-            console.error('[DeviceContext] Update failed:', error);
-            this._handleError();
+            ErrorHandler.handle('DeviceContext.update', error);
         }
     },
     
@@ -2564,7 +2738,7 @@ const DeviceContext = {
         }
     },
     
-    // デバイス選択処理
+// デバイス選択処理
     async _selectDevice(device) {
         console.log(`[DeviceContext] Device selected: ${device.id}`);
         
@@ -2576,10 +2750,22 @@ const DeviceContext = {
         };
         
         // プロファイル読み込み
-        await loadDeviceProfile(device);
-        
-        // UI表示
-        showDeviceInfo();
+        try {
+            const success = await loadDeviceProfile(device);
+            // 成功時のみUI表示
+            if (success) {
+                showDeviceInfo();
+            } else {
+                // 失敗時はデバイス情報をクリア
+                current_device = {};
+            }
+        } catch (error) {
+            const result = ErrorHandler.handle('DeviceContext._selectDevice', error);
+            current_device = {};
+            hideDeviceInfo();
+            // ErrorHandlerで処理完了、制御フロー中断
+            return;
+        }
     },
     
     // 統合後処理
@@ -2701,6 +2887,19 @@ function updateVersionSelect() {
 // ==================== デバイス管理 ====================
 async function loadDevices() {
     if (!app.selectedVersion) return;
+    
+    const cacheKey = `devices:${app.selectedVersion}`;
+    const notFoundKey = `404:${cacheKey}`;
+    
+    // 404キャッシュチェック
+    if (profileCache[notFoundKey]) {
+        console.log(`[loadDevices] Version ${app.selectedVersion} known to be unavailable`);
+        app.devices = [];
+        app.versionCode = null;
+        hideDeviceInfo();
+        return;
+    }
+    
     try {
         let url;
         if (app.selectedVersion === 'SNAPSHOT') {
@@ -2709,34 +2908,35 @@ async function loadDevices() {
             url = `https://downloads.openwrt.org/releases/${app.selectedVersion}/.overview.json`;
         }
         
-        const response = await fetch(url);
+        const response = await fetch(url, {
+            cache: 'no-cache',
+            credentials: 'omit',
+            mode: 'cors'
+        });
         
-        // 404は期待される動作（バージョン不存在の確認）
+        // 404は正常な応答として処理
         if (response.status === 404) {
-            console.log(`✓ Confirmed: Version ${app.selectedVersion} not available`);
+            console.log(`✓ Version ${app.selectedVersion} not available (HTTP 404) - Normal for unsupported versions`);
+            profileCache[notFoundKey] = true;
             app.devices = [];
             app.versionCode = null;
             hideDeviceInfo();
             return;
         }
         
-        // 404以外のHTTPエラーは実際の問題
         if (!response.ok) {
-            console.error(`✗ Failed to load version ${app.selectedVersion}: HTTP ${response.status} - Server or network issue`);
-            app.devices = [];
-            app.versionCode = null;
-            hideDeviceInfo();
-            return;
+            throw new Error(`HTTP ${response.status}`);
         }
         
         const data = await response.json();
         app.devices = data.profiles || [];
+        
     } catch (error) {
-        // CORS拒否や存在しないバージョンは静かに処理
         if (error.message && (error.message.includes('Failed to fetch') || error.message.includes('CORS'))) {
-            console.log(`✓ Confirmed: Version ${app.selectedVersion} not available (${error.message})`);
+            console.log(`✓ Version ${app.selectedVersion} access blocked - Normal for older versions`);
+            profileCache[notFoundKey] = true;
         } else {
-            console.error('✗ Network error while loading devices:', error.message || error);
+            console.log(`[loadDevices] Error: ${error.message}`);
         }
         app.devices = [];
         app.versionCode = null;
@@ -2823,7 +3023,7 @@ function hideAutocomplete() {
 const profileCache = {};
 
 async function loadDeviceProfile(device) {
-    if (!device || !device.target || !device.id) return;
+    if (!device || !device.target || !device.id) return false;
     const version = app.selectedVersion;
     const targetPath = device.target;
     const profileId = device.id;
@@ -2845,31 +3045,50 @@ async function loadDeviceProfile(device) {
     if (profileCache[cacheKey]) {
         console.log(`Using cached profile for ${cacheKey}`);
         applyProfileData(profileCache[cacheKey], profileId);
-        showDeviceInfo();
         Promise.allSettled([ fetchDevicePackages() ])
             .then(() => console.log('Background tasks completed (from cache)'));
-        return;
+        return true;
     }
 
     // 初回は必ずDL
     try {
         console.log(`Loading profile from: ${profilesUrl}`);
         const response = await fetch(profilesUrl, { cache: 'no-cache' });
+        
         if (!response.ok) {
-            throw new Error(`Failed to fetch profiles.json: ${response.status}`);
+            if (response.status === 404) {
+                // バージョンは存在するがパッケージが無い（期待される動作）
+                console.log(`Device ${device.id} not supported in version ${version}`);
+                hideDeviceInfo();
+                current_device = {};
+                return false;
+            }
+            // 404以外のHTTPエラーは本当のエラー
+            throw new Error(`Failed to fetch profiles.json: HTTP ${response.status}`);
         }
+        
         const profilesData = await response.json();
         console.log(`Loaded profiles data:`, profilesData);
-        profileCache[cacheKey] = profilesData; // キャッシュ登録
+        profileCache[cacheKey] = profilesData;
         applyProfileData(profilesData, profileId);
-        showDeviceInfo();
         Promise.allSettled([ fetchDevicePackages() ])
             .then(() => console.log('Background tasks completed'));
+        return true;
+        
     } catch (error) {
-        console.error('Failed to load device profile:', error);
-        showDeviceInfo();
-        Promise.allSettled([ fetchDevicePackages() ])
-            .then(() => console.log('Background tasks completed (after error)'));
+        // CORSエラー（古いバージョンで期待される動作）
+        if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+            console.log(`Version ${version} access blocked by CORS - Expected for older versions`);
+            hideDeviceInfo();
+            current_device = {};
+            return false;
+        }
+        
+        // それ以外は本当のネットワークエラー
+        console.error('Network error loading device profile:', error);
+        hideDeviceInfo();
+        current_device = {};
+        return false;
     }
 }
 
@@ -2880,13 +3099,31 @@ function applyProfileData(profilesData, profileId) {
         const defaultPackages = profilesData.default_packages || [];
         const devicePackages = profile.device_packages || [];
         const asuExtraPackages = ['luci'];
-        const allPackages = defaultPackages.concat(devicePackages, asuExtraPackages);
+        
+        // セレクターでチェックされているパッケージも収集
+        const checkedPackages = [];
+        document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
+            const pkgName = cb.getAttribute('data-package');
+            if (pkgName) {
+                checkedPackages.push(pkgName);
+            }
+        });
+        
+        // 全パッケージを統合（重複除去）
+        const allPackages = Array.from(new Set([
+            ...defaultPackages,
+            ...devicePackages,
+            ...asuExtraPackages,
+            ...checkedPackages
+        ]));
+        
         document.getElementById('asu-packages').value = allPackages.join(' ');
         asuCollectPackages();
     }
 }
        
 function showDeviceInfo() {
+    ErrorHandler.trace('showDeviceInfo', current_device);
     if (!current_device || !current_device.id) return;
 
     const device = app.devices.find(d => d.id === current_device.id && d.target === current_device.target);
@@ -2971,9 +3208,21 @@ function showDeviceInfo() {
 }
 
 function hideDeviceInfo() {
+    ErrorHandler.debug('hideDeviceInfo', 'Before hiding');
     document.getElementById('info').style.display = 'none';
     document.getElementById('packages').style.display = 'none';
     document.getElementById('request-build').style.display = 'none';
+    ErrorHandler.debug('hideDeviceInfo', 'After hiding', {
+        infoDisplay: document.getElementById('info').style.display
+    });
+    
+    // 統合デバッグでの犯人特定
+    setTimeout(() => {
+        const infoEl = document.getElementById('info');
+        if (infoEl.style.display !== 'none') {
+            ErrorHandler.debug('hideDeviceInfo', 'CULPRIT FOUND! Display changed to: ' + infoEl.style.display);
+        }
+    }, 100);
 }
 
 // ==================== auto トリガー関数 ====================
@@ -3507,7 +3756,60 @@ async function customizeSetupScript(content, userConfig, apiInfo, selectedPackag
     customized = setScriptVar(customized, 'ap_ip_address', userConfig.apIpAddress, apActive && !!userConfig.apIpAddress);
     customized = setScriptVar(customized, 'ap_gateway', userConfig.apGateway, apActive && !!userConfig.apGateway);
 
+    // SSH Interface
+    customized = setScriptVar(customized, 'ssh_interface', userConfig.sshInterface, !!userConfig.sshInterface);
+    
+    // SSH Port
+    customized = setScriptVar(customized, 'ssh_port', userConfig.sshPort, !!userConfig.sshPort);
+    
+    // Flow Offloading
+    customized = setScriptVar(customized, 'flow_offloading_type', userConfig.flowOffloading, !!userConfig.flowOffloading);
+    
+    // Backup Path
+    customized = setScriptVar(customized, 'backup_path', userConfig.backupPath, !!userConfig.backupPath);
+
+    // Custom Commands
+    const customCommands = getCustomCommands();
+    
+    const managedRegion = /(# BEGIN_CUSTOM_COMMANDS\n)([\s\S]*?)(# END_CUSTOM_COMMANDS\n)/;
+    
+    if (customCommands.length > 0) {
+        const commandsText = customCommands.join('\n');
+        customized = customized.replace(managedRegion, `$1${commandsText}\n$3`);
+    } else {
+        customized = customized.replace(managedRegion, `$1$3`);
+    }
+    
     return customized;
+}
+        
+function getCustomCommands() {
+    const commands = [];
+    // メイン入力欄
+    const mainCommand = document.getElementById('command');
+    if (mainCommand) {
+        const val = mainCommand.value != null ? mainCommand.value.trim() : '';
+        if (val.length > 0) {
+            commands.push(val);
+        }
+    }
+    // 追加コマンド欄（空欄以外をすべて反映）
+    const extraInputs = document.querySelectorAll('#commands-autocomplete input.command');
+    extraInputs.forEach((el) => {
+        if (!el) return;
+        const val = el.value != null ? el.value.trim() : '';
+        if (val.length > 0) {
+            commands.push(val);
+        }
+    });
+    // 重複除去（順序は保持）
+    const seen = new Set();
+    const uniqueCommands = commands.filter(cmd => {
+        if (seen.has(cmd)) return false;
+        seen.add(cmd);
+        return true;
+    });
+    return uniqueCommands;
 }
 
 function toggleAiosConfig(e) {
@@ -3542,7 +3844,13 @@ function getAiosConfig() {
         rootPassword: parseOrEmpty('aios-root-password'),
         wifiSSID: parseOrEmpty('aios-wifi-ssid'),
         wifiPassword: parseOrEmpty('aios-wifi-password'),
-
+        apIpAddress: parseOrEmpty('ap-ip-address'),
+        apGateway: parseOrEmpty('ap-gateway'),
+        sshInterface: parseOrEmpty('aios-ssh-interface'),
+        sshPort: parseOrEmpty('aios-ssh-port', 'int'),
+        flowOffloading: parseOrEmpty('aios-flow-offloading'),
+        backupPath: parseOrEmpty('aios-backup-path'),
+        
         connectionMode: document.querySelector('input[name="connectionMode"]:checked')?.value || 'auto',
         connectionType: document.querySelector('input[name="connectionType"]:checked')?.value || 'dhcp',
         mapeType: document.querySelector('input[name="mapeType"]:checked')?.value || 'auto',
@@ -3563,10 +3871,7 @@ function getAiosConfig() {
         mapeIpv6Prefixlen: parseOrEmpty('mape-ipv6-prefixlen', 'int'),
         mapePsidOffset: parseOrEmpty('mape-psid-offset', 'int'),
         mapePsidlen: parseOrEmpty('mape-psidlen', 'int'),
-        mapeGuaPrefix: parseOrEmpty('mape-gua-prefix'),
-
-        apIpAddress: parseOrEmpty('ap-ip-address'),
-        apGateway: parseOrEmpty('ap-gateway')
+        mapeGuaPrefix: parseOrEmpty('mape-gua-prefix')
     };
 
     return config;
@@ -3675,6 +3980,20 @@ function mergeUnique(base, extra) {
 }
         
 function refreshTemplateAndPackages() {
+    // セレクターの初期値を反映（バグ修正）
+    const checkedPackages = [];
+    document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
+        const pkgName = cb.getAttribute('data-package');
+        if (pkgName) checkedPackages.push(pkgName);
+    });
+    
+    if (checkedPackages.length > 0) {
+        const textarea = document.getElementById('asu-packages');
+        const currentList = split(textarea.value);
+        const mergedList = Array.from(new Set([...currentList, ...checkedPackages]));
+        textarea.value = mergedList.join(' ');
+    }
+    
     // 必要パッケージの更新（map, ds-lite等）
     updateRequiredPackages();
     
@@ -3683,7 +4002,7 @@ function refreshTemplateAndPackages() {
 
     // aios-config 有効時のみテンプレ更新
     if (document.getElementById('use-aios-config-details').open) {
-        updateConfiguredTemplate();  // .catch(console.error) 削除
+        updateConfiguredTemplate();
     }
 }
 
@@ -3798,42 +4117,74 @@ async function buildAsuRequest() {
             requestBody.defaults = script;
         }
             
-        const response = await fetch('https://sysupgrade.openwrt.org/api/v1/build', {
+        fetch('https://sysupgrade.openwrt.org/api/v1/build', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json'
             },
             body: JSON.stringify(requestBody)
-        });
-
-        const responseText = await response.text();
-
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${responseText}`);
-        }
-
-        let result;
-        try {
-            result = JSON.parse(responseText);
-        } catch (e) {
-            throw new Error('Invalid JSON response: ' + responseText);
-        }
-
-        if (result.request_hash) {
-            await pollBuildStatus(result.request_hash);
-        } else if (result.images && result.images.length > 0) {
+        })
+        .then((response) => {
+            switch (response.status) {
+                case 200:
+                    showProgress('Build completed!', 100);
+                    response.json().then((mobj) => {
+                        if ('stderr' in mobj) {
+                            document.getElementById('asu-stderr').innerText = mobj.stderr;
+                            document.getElementById('asu-stdout').innerText = mobj.stdout;
+                            document.getElementById('asu-log').style.display = 'block';
+                        } else {
+                            document.getElementById('asu-log').style.display = 'none';
+                        }
+                        hideProgress();
+                        showBuildStatus('Build successful', 'info');
+                        mobj['id'] = current_device.id;
+                        showDownloadLinks(mobj.images || [], mobj, mobj.request_hash);
+                    });
+                    break;
+                case 202:
+                    response.json().then((mobj) => {
+                        showProgress(`${mobj.imagebuilder_status || 'Processing'}...`, 30);
+                        setTimeout(() => pollBuildStatus(mobj.request_hash), 5000);
+                    });
+                    break;
+                case 400: // bad request
+                case 422: // bad package
+                case 500: // build failed
+                    response.text().then((responseText) => {
+                        hideProgress();
+                        showBuildStatus('Build failed: HTTP 500 Server Error', 'error');
+                        
+                        // 詳細なエラー情報を表示
+                        const container = document.getElementById('download-links');
+                        container.innerHTML = `
+                            <div class="asu-error" style="margin-top: 1rem;">
+                                <h4>Build Failed - Server Error</h4>
+                                <div><strong>HTTP Status:</strong> 500 Internal Server Error</div>
+                                <div><strong>Error Details:</strong></div>
+                                <pre style="background: #f8f8f8; padding: 10px; margin: 10px 0; border-radius: 4px; overflow-x: auto; font-size: 0.9em; max-height: 200px;">${responseText}</pre>
+                            </div>
+                            
+                            <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; color: #856404; padding: 1rem; margin: 1rem 0; border-radius: 0.25rem;">
+                                <h5 style="margin-top: 0; color: #856404;">⚠️ Troubleshooting</h5>
+                                <p style="margin-bottom: 0;">Please verify network connectivity, package selection, and script configuration. Try removing custom packages or scripts, then retry the build.</p>
+                            </div>
+                        `;
+                    });
+                    break;
+            }
+        })
+        .catch((err) => {
             hideProgress();
-            showDownloadLinks(result.images);
-        } else {
-            throw new Error('No request hash or images in response');
-        }
+            showBuildStatus(err.message, 'error');
+        });
 
     } catch (error) {
         console.error('Build request failed:', error);
-        alert('Build failed: ' + error.message);
         hideProgress();
-} finally {
+        showBuildStatus(`Build failed: ${error.message}`, 'error');
+    } finally {
         document.getElementById('request-build').disabled = false;
     }
 }
@@ -3914,7 +4265,11 @@ async function pollBuildStatus(requestHash) {
 
             if (status.status === 'failed' || status.status === 'failure' || 
                 status.detail === 'failed' || status.imagebuilder_status === 'failed') {
-                throw new Error(`Build failed: ${status.detail || status.stdout || 'Unknown error'}`);
+                
+                // ビルド失敗時も詳細情報を表示
+                hideProgress();
+                showBuildError(status, null);
+                return;
             }
 
             showProgress(`${progressMsg}... ${timeStr}`, progressPercent);
@@ -3969,6 +4324,76 @@ function showBuildStatus(message, type) {
     
     bs.querySelector('span').textContent = message;
     bs.style.display = 'block';
+}
+
+function showBuildError(errorData, statusCode) {
+    // エラーメッセージを表示
+    let errorMessage = `Build failed (HTTP ${statusCode})`;
+    
+    if (errorData) {
+        if (typeof errorData === 'string') {
+            errorMessage += `: ${errorData}`;
+        } else if (errorData.detail) {
+            errorMessage += `: ${errorData.detail}`;
+        } else if (errorData.message) {
+            errorMessage += `: ${errorData.message}`;
+        } else if (errorData.error) {
+            errorMessage += `: ${errorData.error}`;
+        }
+    }
+    
+    showBuildStatus(errorMessage, 'error');
+    
+    // STDERR/STDOUTがある場合は詳細ログも表示
+    if (errorData && (errorData.stderr || errorData.stdout)) {
+        document.getElementById('asu-stderr').textContent = errorData.stderr || 'No error output';
+        document.getElementById('asu-stdout').textContent = errorData.stdout || 'No standard output';
+        document.getElementById('asu-log').style.display = 'block';
+        
+        // ログセクションにスクロール
+        setTimeout(() => {
+            const logElement = document.getElementById('asu-log');
+            if (logElement) {
+                logElement.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'center' 
+                });
+            }
+        }, 200);
+    }
+    
+    // 追加のエラー詳細情報を表示
+    if (errorData && typeof errorData === 'object') {
+        const container = document.getElementById('download-links');
+        
+        let debugInfo = '<div class="asu-error" style="margin-top: 1rem;"><h4>Error Details</h4>';
+        
+        // リクエストハッシュがあれば表示
+        if (errorData.request_hash) {
+            debugInfo += `<div><strong>Request ID:</strong> <code>${errorData.request_hash}</code></div>`;
+        }
+        
+        // エラータイプを表示
+        if (errorData.status) {
+            debugInfo += `<div><strong>Build Status:</strong> ${errorData.status}</div>`;
+        }
+        
+        // ImageBuilderのステータス
+        if (errorData.imagebuilder_status) {
+            debugInfo += `<div><strong>ImageBuilder Status:</strong> ${errorData.imagebuilder_status}</div>`;
+        }
+        
+        // その他のフィールドも表示（デバッグ用）
+        const excludeFields = ['stderr', 'stdout', 'request_hash', 'status', 'imagebuilder_status', 'detail', 'message', 'error'];
+        for (const [key, value] of Object.entries(errorData)) {
+            if (!excludeFields.includes(key) && value != null) {
+                debugInfo += `<div><strong>${key}:</strong> ${JSON.stringify(value)}</div>`;
+            }
+        }
+        
+        debugInfo += '</div>';
+        container.innerHTML = debugInfo;
+    }
 }
 
 function formatDate(date) {
@@ -4269,6 +4694,93 @@ function parsePackagesText(text, source) {
     }
 })();
 
+// ==================== Commands入力ボックス ====================
+(function() {
+    const cmdInput = document.getElementById('command');
+    if (cmdInput) {
+        // ---- 入力確定後（IME確定・Enter・フォーカスアウト）で反映 ----
+        const commitCommandValue = () => {
+            const val = cmdInput.value.trim();
+            if (val) {
+                syncCommandsToTemplate();
+                // 空欄が無ければ追加欄生成（1つだけ）
+                setTimeout(() => {
+                    if (!document.querySelector('#commands-autocomplete input[value=""]')) {
+                        createExtraCommandBox();
+                    }
+                }, 100);
+            } else {
+                // 空の場合は削除処理
+                const total = document.querySelectorAll('#command, #commands-autocomplete input.command').length;
+                if (total > 1 && cmdInput.parentNode) {
+                    cmdInput.parentNode.removeChild(cmdInput);
+                }
+                syncCommandsToTemplate();
+            }
+        };
+        
+        // changeイベントのみに統一
+        cmdInput.addEventListener('change', commitCommandValue);
+
+        // Enterキー処理のみ追加（changeイベントを発火させる）
+        cmdInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                this.blur(); // フォーカスを外してchangeイベントを発火
+            }
+        });
+    }
+})();
+
+function createExtraCommandBox() {
+    const host = document.getElementById('commands-autocomplete');
+    const newInput = document.createElement('input');
+    newInput.type = 'text';
+    newInput.className = 'form-control command';
+    newInput.placeholder = 'uci set system.@system[0].hostname=\'MyRouter\'';
+    newInput.autocomplete = 'off';
+    newInput.spellcheck = false;
+    newInput.autocapitalize = 'off';
+    newInput.dataset.extra = '1';
+
+    // 確定時のみ反映（inputイベント削除）
+    const commitValue = () => {
+        const val = newInput.value.trim();
+        if (val) {
+            syncCommandsToTemplate();
+            if (!document.querySelector('#commands-autocomplete input[value=""]')) {
+                createExtraCommandBox();
+            }
+        } else {
+            if (newInput.dataset.extra === '1') {
+                host.removeChild(newInput);
+            }
+            syncCommandsToTemplate();
+        }
+    };
+
+    // changeイベントのみ
+    newInput.addEventListener('change', commitValue);
+
+    // Enterキー処理
+    newInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            this.blur(); // changeイベントを発火
+        }
+    });
+
+    host.appendChild(newInput);
+    newInput.focus();
+}
+
+function syncCommandsToTemplate() {
+    // リアルタイムでテンプレート更新（aios-config開状態のみ）
+    if (document.getElementById('use-aios-config-details').open) {
+        updateConfiguredTemplate();
+    }
+}
+     
 function hidePackageAutocomplete() {
     const el = document.querySelector('#package-search-autocomplete .autocomplete-items');
     if (el) el.remove();
