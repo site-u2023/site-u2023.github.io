@@ -1983,7 +1983,8 @@ const ErrorHandler = {
                 console.error(`Unexpected error in ${context}`);
                 hideDeviceInfo();
         }
-        return { success: false, errorType, context };
+        // 元の例外を再throw
+        throw error;
     },
 
     // デバッグログ
