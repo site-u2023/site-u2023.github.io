@@ -2548,6 +2548,9 @@ function generatePackageSelector() {
         });
     }
 
+// SNAPSHOT版の判定
+    const isSnapshot = /SNAPSHOT$/i.test(app.selectedVersion);
+    
     // 判定直前の状態を総合デバッガで出力
     ErrorHandler.debug(
         'generatePackageSelector',
@@ -2555,17 +2558,25 @@ function generatePackageSelector() {
         {
             devicePackages_raw: app.devicePackages,
             availablePackages_list: Array.from(availablePackages),
-            availablePackages_size: availablePackages.size
+            availablePackages_size: availablePackages.size,
+            isSnapshot: isSnapshot
         }
     );
 
-    
-    // 取得できていない（＝判定不能）場合は、何も描画しない
-    if (availablePackages.size === 0) {
+    // 取得できていない（＝判定不能）場合の処理
+    if (availablePackages.size === 0 && !isSnapshot) {
+        // リリース版でパッケージリストが取得できない場合
         container.innerHTML =
             '<p class="text-muted small">Unable to retrieve the package index for this OS version/device. ' +
             'Please try a different version or device, or try again later.</p>';
         return;
+    } else if (isSnapshot) {
+        // SNAPSHOT版の場合の注記
+        const noteDiv = document.createElement('div');
+        noteDiv.className = 'info';
+        noteDiv.style.marginBottom = '1rem';
+        noteDiv.innerHTML = '<strong>Note:</strong> Package availability in SNAPSHOT builds may vary. All packages are shown for selection at your own risk.';
+        container.appendChild(noteDiv);
     }
 
     // 依存パッケージIDの集合を構築
@@ -2600,8 +2611,8 @@ function generatePackageSelector() {
             // 依存パッケージはトップレベル描画しない
             if (depIds.has(pkg.id)) return;
 
-            // ▼ 厳格：available にあるものだけ表示
-            const isAvailable = availablePackages.has(pkg.name);
+            // ▼ 厳格：available にあるものだけ表示（SNAPSHOT版は全表示）
+            const isAvailable = isSnapshot || availablePackages.has(pkg.name);
 
             const packageItem = document.createElement('div');
             packageItem.className = 'package-item';
@@ -2657,7 +2668,7 @@ function generatePackageSelector() {
                     }
 
                     const depName = depPkg ? depPkg.name : depId;
-                    const depIsAvailable = availablePackages.has(depName);
+                    const depIsAvailable = isSnapshot || availablePackages.has(depName);
                     if (!depIsAvailable) return;
 
                     const depItem = document.createElement('div');
@@ -3139,13 +3150,13 @@ async function loadDeviceProfile(device) {
         profileCache[cacheKey] = profilesData;
         applyProfileData(profilesData, profileId);
 
-        // パッケージ取得完了を待ってから描画
+        // パッケージ取得完了を待ってから描画（SNAPSHOT版は別処理）
         try {
             await fetchDevicePackages();
         } catch (e) {
             console.error('fetchDevicePackages failed:', e);
         }
-        // 取得完了後にだけ UI 生成
+        // 取得完了後にだけ UI 生成（SNAPSHOTでも実行される）
         if (typeof generatePackageSelector === 'function') {
             generatePackageSelector();
         }
@@ -4604,18 +4615,17 @@ function showDownloadLinks(images, fullStatus, requestHash) {
 
 // ★パッケージインデックス取得（device_packages_url は廃止）
 async function fetchDevicePackages() {
-    // CORSプロキシのURLを定義
-    const CORS_PROXY = 'https://corsproxy.io/?';
-
-    /**
-     * SNAPSHOT版の場合のみプロキシを適用するヘルパー関数
-     * @param {string} url - 元のURL
-     * @param {string} version - バージョン文字列
-     * @returns {string} - 処理後のURL
-     */
-    const getFinalUrl = (url, version) => {
-        return /SNAPSHOT$/i.test(version) ? CORS_PROXY + url : url;
-    };
+    // SNAPSHOT版の場合は処理をスキップ（公式準拠）
+    if (/SNAPSHOT$/i.test(app.selectedVersion)) {
+        console.log('[fetchDevicePackages] SNAPSHOT version detected - skipping package fetch (official compliant)');
+        app.devicePackages = [];  // 空配列をセット
+        
+        // SNAPSHOT版でもパッケージセレクターを生成（PACKAGE_DBを直接使用）
+        if (typeof generatePackageSelector === 'function') {
+            generatePackageSelector();
+        }
+        return;
+    }
 
     app.devicePackages = [];
     if (!current_device || !current_device.id || !app.selectedVersion) return;
