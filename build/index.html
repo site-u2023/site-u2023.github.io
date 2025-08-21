@@ -2993,6 +2993,7 @@ function applyProfileData(profilesData, profileId) {
 }
        
 function showDeviceInfo() {
+    console.log('showDeviceInfo() called from:', new Error().stack);
     if (!current_device || !current_device.id) return;
 
     const device = app.devices.find(d => d.id === current_device.id && d.target === current_device.target);
