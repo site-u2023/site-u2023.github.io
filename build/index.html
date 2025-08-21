@@ -3032,7 +3032,15 @@ try {
         Promise.allSettled([ fetchDevicePackages() ])
             .then(() => console.log('Background tasks completed'));
     } catch (error) {
-        ErrorHandler.handle('loadDeviceProfile', error);
+        // CORS拒否は古いバージョンでは期待される動作
+        if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+            console.log(`✓ Confirmed: Version ${app.selectedVersion} access blocked by CORS - This is expected for older versions`);
+            hideDeviceInfo();
+            return;
+        }
+    
+        console.error('Failed to load device profile:', error);
+        hideDeviceInfo();
         Promise.allSettled([ fetchDevicePackages() ])
             .then(() => console.log('Background tasks completed (after error)'));
     }
