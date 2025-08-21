@@ -1954,7 +1954,7 @@ const ErrorHandler = {
         return 'UNKNOWN';
     },
 
-    // 統一エラー処理
+// 統一エラー処理
     handle(context, error, response = null) {
         const errorType = this.classify(error, response);
         
@@ -1968,7 +1968,6 @@ const ErrorHandler = {
                 url: response.url
             } : null
         });
-
         // エラータイプ別処理
         switch (errorType) {
             case 'NOT_FOUND':
@@ -1984,8 +1983,23 @@ const ErrorHandler = {
                 console.error(`Unexpected error in ${context}`);
                 hideDeviceInfo();
         }
-
         return { success: false, errorType, context };
+    },
+
+    // デバッグログ
+    debug(context, message, data = null) {
+        console.log(`[DEBUG] ${context}: ${message}`);
+        if (data) {
+            console.log('Data:', data);
+        }
+        console.trace(`[${context}] Call trace:`);
+    },
+
+    // 関数呼び出し追跡
+    trace(functionName, ...args) {
+        console.log(`[TRACE] ${functionName}() called`);
+        console.log('Arguments:', args);
+        console.trace(`${functionName} call stack:`);
     }
 };
 
@@ -3029,12 +3043,7 @@ function applyProfileData(profilesData, profileId) {
 }
        
 function showDeviceInfo() {
-    console.log('=== showDeviceInfo() START ===');
-    console.log('Call stack:');
-    console.trace(); // 詳細なスタックトレース
-    console.log('Current device:', current_device);
-    console.log('=== showDeviceInfo() END ===');
-
+    ErrorHandler.trace('showDeviceInfo', current_device);
     if (!current_device || !current_device.id) return;
 
     const device = app.devices.find(d => d.id === current_device.id && d.target === current_device.target);
