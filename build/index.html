@@ -2072,25 +2072,23 @@ async function findValidUrls(urlCandidates) {
         
 // ==================== URL管理の統一関数 ====================
 function setupVersionUrls(version) {
-    if (!config.image_urls) config.image_urls = Object.create(null);
-    if (!config.overview_urls) config.overview_urls = Object.create(null);
+    if (!config.image_urls) config.image_urls = {};
+    if (!config.overview_urls) config.overview_urls = {};
 
     if (config.image_urls[version]) return;
 
-    // ベースURLの末尾スラッシュ除去
-    const overview_base = String(config.image_url).replace(/\/+$/, "");
-    const image_base = (typeof upstream_config !== "undefined" && upstream_config.image_url_override)
-        ? String(upstream_config.image_url_override).replace(/\/+$/, "")
-        : overview_base;
+    const overview_url = config.image_url;
+    const image_url = (typeof upstream_config !== 'undefined' && upstream_config.image_url_override)
+        ? upstream_config.image_url_override
+        : config.image_url;
 
-    // SNAPSHOT または *-SNAPSHOT（大文字小文字問わず）
-    if (/SNAPSHOT$/i.test(version)) {
-        config.overview_urls[version] = `${overview_base}/snapshots`;
-        config.image_urls[version]    = `${image_base}/snapshots`;
+    // すべての SNAPSHOT（SNAPSHOT / *-SNAPSHOT）を /snapshots/ に集約
+    if (version === 'SNAPSHOT' || /-SNAPSHOT$/i.test(version)) {
+        config.overview_urls[version] = `${overview_url}/snapshots/`;
+        config.image_urls[version]   = `${image_url}/snapshots/`;
     } else {
-        const v = encodeURIComponent(version);
-        config.overview_urls[version] = `${overview_base}/releases/${v}`;
-        config.image_urls[version]    = `${image_base}/releases/${v}`;
+        config.overview_urls[version] = `${overview_url}/releases/${encodeURIComponent(version)}/`;
+        config.image_urls[version]    = `${image_url}/releases/${encodeURIComponent(version)}/`;
     }
 }
 
