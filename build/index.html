@@ -3045,60 +3045,47 @@ async function loadDeviceProfile(device) {
     if (profileCache[cacheKey]) {
         console.log(`Using cached profile for ${cacheKey}`);
         applyProfileData(profileCache[cacheKey], profileId);
-        // showDeviceInfo()は呼び出し元で制御
         Promise.allSettled([ fetchDevicePackages() ])
             .then(() => console.log('Background tasks completed (from cache)'));
         return true;
     }
 
-    // 404キャッシュのチェック（一度404だったものは再試行しない）
-    const notFoundKey = `404:${cacheKey}`;
-    if (profileCache[notFoundKey]) {
-        console.log(`[loadDeviceProfile] Profile known to be unavailable for ${version}/${targetPath}/${profileId}`);
-        hideDeviceInfo();
-        current_device = {};
-        return false;
-    }
-
     // 初回は必ずDL
     try {
         console.log(`Loading profile from: ${profilesUrl}`);
-        const response = await fetch(profilesUrl, { 
-            cache: 'no-cache',
-            // fetchのログレベルを下げる試み（ブラウザ依存）
-            credentials: 'omit',
-            mode: 'cors'
-        });
-        
-        // 404は正常な応答として処理
-        if (response.status === 404) {
-            console.log(`✓ Profile not available for ${device.id} on version ${version} - This is normal for older versions`);
-            profileCache[notFoundKey] = true; // 404をキャッシュ
-            hideDeviceInfo();
-            current_device = {};
-            return false;
-        }
+        const response = await fetch(profilesUrl, { cache: 'no-cache' });
         
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
+            if (response.status === 404) {
+                // バージョンは存在するがパッケージが無い（期待される動作）
+                console.log(`Device ${device.id} not supported in version ${version}`);
+                hideDeviceInfo();
+                current_device = {};
+                return false;
+            }
+            // 404以外のHTTPエラーは本当のエラー
+            throw new Error(`Failed to fetch profiles.json: HTTP ${response.status}`);
         }
         
         const profilesData = await response.json();
-        console.log(`Loaded profiles data for ${device.id}`);
-        profileCache[cacheKey] = profilesData; // キャッシュ登録
+        console.log(`Loaded profiles data:`, profilesData);
+        profileCache[cacheKey] = profilesData;
         applyProfileData(profilesData, profileId);
         Promise.allSettled([ fetchDevicePackages() ])
             .then(() => console.log('Background tasks completed'));
         return true;
         
     } catch (error) {
-        // ネットワークエラーやCORS拒否
+        // CORSエラー（古いバージョンで期待される動作）
         if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
-            console.log(`✓ Profile access blocked (CORS/Network) for version ${version} - Expected for older versions`);
-            profileCache[notFoundKey] = true; // 失敗もキャッシュ
-        } else {
-            console.log(`[loadDeviceProfile] Failed to load profile: ${error.message}`);
+            console.log(`Version ${version} access blocked by CORS - Expected for older versions`);
+            hideDeviceInfo();
+            current_device = {};
+            return false;
         }
+        
+        // それ以外は本当のネットワークエラー
+        console.error('Network error loading device profile:', error);
         hideDeviceInfo();
         current_device = {};
         return false;
