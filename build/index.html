@@ -1993,10 +1993,21 @@ const ErrorHandler = {
         
         // エラータイプ別処理
         switch (errorType) {
-            case 'VERSION_NOT_AVAILABLE':
+            case 'VERSION_NOT_AVAILABLE': {
                 console.log(`✓ Version ${app.selectedVersion} not available - This is expected for older versions`);
                 hideDeviceInfo();
+
+                // ▼ ここから追加：パッケージセクターを厳格に閉じる／初期化
+                app.devicePackages = [];
+                // package-categories を空にしてパネルごと隠す
+                const pkgPanel = document.getElementById('packages');
+                const categories = document.getElementById('package-categories');
+                if (categories) categories.innerHTML = '';
+                if (pkgPanel) pkgPanel.style.display = 'none';
+                // ▲ ここまで追加
+
                 break;
+            }
             case 'PERMISSION_DENIED':
             case 'EXPECTED_CORS_REJECTION':
                 console.log(`✓ Access blocked by CORS policy - This is expected for older versions`);
@@ -2484,20 +2495,28 @@ function generatePackageSelector() {
 
     container.innerHTML = '';
 
-    // 利用可能パッケージ名のセットを作成
+    // 利用可能パッケージ名のセットを作成（デバイス＋OSバージョンで取得済みのもの）
     const availablePackages = new Set();
-    if (app.devicePackages && app.devicePackages.length > 0) {
+    if (Array.isArray(app.devicePackages) && app.devicePackages.length > 0) {
         app.devicePackages.forEach(pkg => {
-            const name = (typeof pkg === 'string') ? pkg : pkg.name;
+            const name = (typeof pkg === 'string') ? pkg : pkg && pkg.name;
             if (name) availablePackages.add(name);
         });
+    }
+
+    // 取得できていない（＝判定不能）場合は、何も描画しない
+    if (availablePackages.size === 0) {
+        container.innerHTML =
+            '<p class="text-muted small">このOSバージョン／デバイス向けのパッケージ索引を取得できません。' +
+            'バージョンやデバイスを変更するか、後で再試行してください。</p>';
+        return;
     }
 
     // 依存パッケージIDの集合を構築
     const depIds = new Set();
     PACKAGE_DB.categories.forEach(cat => {
         cat.packages.forEach(pkg => {
-            if (pkg.dependencies) {
+            if (Array.isArray(pkg.dependencies)) {
                 pkg.dependencies.forEach(d => depIds.add(d));
             }
         });
@@ -2519,28 +2538,26 @@ function generatePackageSelector() {
         const packageGrid = document.createElement('div');
         packageGrid.className = 'package-grid';
 
-        let hasVisiblePackages = false; // カテゴリに表示可能なパッケージがあるかチェック
+        let hasVisiblePackages = false;
 
         category.packages.forEach(pkg => {
             // 依存パッケージはトップレベル描画しない
             if (depIds.has(pkg.id)) return;
 
-            // パッケージが利用可能かチェック
-            const isAvailable = availablePackages.size === 0 || availablePackages.has(pkg.name);
-            // const isAvailable = availablePackages.has(pkg.name);
-            
-            // パッケージアイテム作成
+            // ▼ 厳格：available にあるものだけ表示
+            const isAvailable = availablePackages.has(pkg.name);
+
             const packageItem = document.createElement('div');
             packageItem.className = 'package-item';
             if (pkg.hidden) packageItem.classList.add('package-hidden');
-            
-            // 利用不可パッケージは非表示
+
             if (!isAvailable) {
+                // 完全に除外
                 packageItem.style.display = 'none';
-                return; // 完全に除外
+                return;
             }
 
-            hasVisiblePackages = true; // 表示可能なパッケージがある
+            hasVisiblePackages = true;
 
             const formCheck = document.createElement('div');
             formCheck.className = 'form-check';
@@ -2574,8 +2591,8 @@ function generatePackageSelector() {
             formCheck.appendChild(label);
             packageItem.appendChild(formCheck);
 
-            // 依存パッケージ処理（同様に利用可能性をチェック）
-            if (pkg.dependencies) {
+            // 依存パッケージも厳格判定
+            if (Array.isArray(pkg.dependencies)) {
                 pkg.dependencies.forEach(depId => {
                     let depPkg;
                     for (const cat of PACKAGE_DB.categories) {
@@ -2584,9 +2601,8 @@ function generatePackageSelector() {
                     }
 
                     const depName = depPkg ? depPkg.name : depId;
-                    const depIsAvailable = availablePackages.size === 0 || availablePackages.has(depName);
-                    
-                    if (!depIsAvailable) return; // 依存パッケージが利用不可なら表示しない
+                    const depIsAvailable = availablePackages.has(depName);
+                    if (!depIsAvailable) return;
 
                     const depItem = document.createElement('div');
                     depItem.className = 'package-dependent';
@@ -2622,12 +2638,12 @@ function generatePackageSelector() {
             packageGrid.appendChild(packageItem);
         });
 
-        // 表示可能なパッケージがあるカテゴリのみ追加
         if (hasVisiblePackages) {
             categoryDiv.appendChild(packageGrid);
             container.appendChild(categoryDiv);
         }
     });
+
     updatePackageListFromSelector();
 }
         
