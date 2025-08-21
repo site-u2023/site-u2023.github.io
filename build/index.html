@@ -2952,11 +2952,17 @@ async function loadDeviceProfile(device) {
         showDeviceInfo();
         Promise.allSettled([ fetchDevicePackages() ])
             .then(() => console.log('Background tasks completed'));
-    } catch (error) {
+} catch (error) {
+        // 404 = プロファイル存在しない（OSバージョン無しと同じ扱い）
+        if (error.message && error.message.includes('404')) {
+            console.log(`✓ Confirmed: Profile not available for ${app.selectedVersion} + ${device.target}`);
+            hideDeviceInfo();
+            return;
+        }
+        
+        // その他のネットワークエラー
         console.error('Failed to load device profile:', error);
-        showDeviceInfo();
-        Promise.allSettled([ fetchDevicePackages() ])
-            .then(() => console.log('Background tasks completed (after error)'));
+        hideDeviceInfo();
     }
 }
 
