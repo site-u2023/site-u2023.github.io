@@ -4602,21 +4602,21 @@ function showDownloadLinks(images, fullStatus, requestHash) {
     }
 }
 
-// ★パッケージインデックス取得（device_packages_url は廃止）
+// ★パッケージインデックス取得
 async function fetchDevicePackages() {
-    // CORSプロキシのURLを定義
-    const CORS_PROXY = 'https://corsproxy.io/?';
-
-    /**
-     * SNAPSHOT版の場合のみプロキシを適用するヘルパー関数
-     * @param {string} url - 元のURL
-     * @param {string} version - バージョン文字列
-     * @returns {string} - 処理後のURL
-     */
-    const getFinalUrl = (url, version) => {
-        return /SNAPSHOT$/i.test(version) ? CORS_PROXY + url : url;
-    };
-
+    // SNAPSHOT版の場合は処理をスキップ（公式準拠）
+    if (/SNAPSHOT$/i.test(app.selectedVersion)) {
+        console.log('[fetchDevicePackages] SNAPSHOT version detected - skipping package fetch (official compliant)');
+        app.devicePackages = [];  // 空配列をセット
+        
+        // SNAPSHOT版でもパッケージセレクターを生成（PACKAGE_DBを直接使用）
+        if (typeof generatePackageSelector === 'function') {
+            generatePackageSelector();
+        }
+        return;
+    }
+    
+    // ========== 以下、リリース版用の既存コード ==========
     app.devicePackages = [];
     if (!current_device || !current_device.id || !app.selectedVersion) return;
 
