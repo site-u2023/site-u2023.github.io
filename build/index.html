@@ -3077,9 +3077,12 @@ function showDeviceInfo() {
 }
 
 function hideDeviceInfo() {
+    console.log('hideDeviceInfo: Before hiding');
     document.getElementById('info').style.display = 'none';
     document.getElementById('packages').style.display = 'none';
     document.getElementById('request-build').style.display = 'none';
+    console.log('hideDeviceInfo: After hiding, info display =', 
+                document.getElementById('info').style.display);
 }
 
 // ==================== auto トリガー関数 ====================
