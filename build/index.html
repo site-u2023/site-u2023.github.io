@@ -4555,89 +4555,109 @@ function showDownloadLinks(images, fullStatus, requestHash) {
     }
 }
 
-// ★パッケージインデックス取得（device_packages_url は廃止）
-async function fetchDevicePackages() {
-    app.devicePackages = [];
-    if (!current_device || !current_device.id || !app.selectedVersion) return;
+    // ★パッケージインデックス取得（device_packages_url は廃止）
+    async function fetchDevicePackages() {
+        app.devicePackages = [];
+        if (!current_device || !current_device.id || !app.selectedVersion) return;
 
-    const version = app.selectedVersion;
-    const targetPath = current_device.target; // mediatek/filogic 形式
+        const version = app.selectedVersion;
+        const targetPath = current_device.target; // mediatek/filogic 形式
 
-    // profiles.json の URL を config.image_urls[version] 基点で生成
-    const basePath = config.image_urls[version].replace(/\/$/, '');
-    const profilesUrl = `${basePath}/targets/${targetPath}/profiles.json`;
+        // profiles.json の URL を config.image_urls[version] 基点で生成
+        const basePath = config.image_urls[version].replace(/\/$/, '');
+        const profilesUrl = `${basePath}/targets/${targetPath}/profiles.json`;
 
-    let arch;
-    try {
-        const res = await fetch(profilesUrl);
-        if (!res.ok) throw new Error(`profiles.json HTTP ${res.status}`);
-        const meta = await res.json();
-        arch = meta.arch_packages;
-        if (!arch) throw new Error("profiles.json に arch_packages がありません");
-    } catch (e) {
-        console.error("arch_packages 取得失敗:", e);
-        return;
-    }
-
-    // パッケージインデックスURL一覧（targets/kmods と feeds）
-    const feeds = ["base", "luci", "packages", "routing", "telephony"];
-    const urls = [];
-
-    if (version !== 'SNAPSHOT') {
-        urls.push(`${basePath}/targets/${targetPath}/packages/Packages`);
-    } else {
-        const kernelVer = meta?.linux_kernel;
-        if (kernelVer) {
-            urls.push(`${basePath}/targets/${targetPath}/kmods/${kernelVer}/packages/Packages`);
+        let meta, arch;
+        try {
+            const res = await fetch(profilesUrl);
+            if (!res.ok) throw new Error(`profiles.json HTTP ${res.status}`);
+            meta = await res.json();
+            arch = meta.arch_packages;
+            if (!arch) throw new Error("profiles.json に arch_packages がありません");
+        } catch (e) {
+            console.error("profiles.json 取得失敗:", e);
+            return;
         }
-    }
 
-    for (const feed of feeds) {
-        urls.push(`${basePath}/packages/${arch}/${feed}/Packages`);
-    }
+        // パッケージインデックスURL一覧（targets/kmods と feeds）
+        const feeds = ["base", "luci", "packages", "routing", "telephony"];
+        const urls = [];
 
-    // フィードパッケージ
-    for (const feed of feeds) {
-        urls.push(`${basePath}/packages/${arch}/${feed}/Packages`);
-    }
-
-    // 各 Packages を並列取得してパース
-    const allPkgs = [];
-    const results = await Promise.allSettled(
-        urls.map(async (url) => {
-            try {
-                const res = await fetch(url);
-                if (!res.ok) return [];
-                const text = await res.text();
-                return parsePackagesText(text, url);  // ← グローバル定義を呼べる
-            } catch (e) {
-                console.warn(`パッケージ取得失敗: ${url}`, e);
-                return [];
-            }
-        })
-    );
-
-    // …fetchDevicePackages の外、トップレベルに追加…
-    function parsePackagesText(text, source) {
-        const blocks = text.split(/\n\s*\n/);
-        const pkgs = [];
-        for (const blk of blocks) {
-            const rec = {};
-            for (const line of blk.split('\n')) {
-                const m = line.match(/^([A-Za-z-]+):\s*(.*)$/);
-                if (!m) continue;
-                const key = m[1], val = m[2];
-                if (key === "Package") rec.name = val;
-                else if (key === "Version") rec.version = val;
-                else if (key === "Description") rec.description = val;
-                else if (key === "Section") rec.section = val;
-            }
-            if (rec.name) {
-                rec.source = source;
-                pkgs.push(rec);
+        if (version !== 'SNAPSHOT') {
+            // 従来のターゲット固有パッケージ
+            urls.push(`${basePath}/targets/${targetPath}/packages/Packages`);
+        } else {
+            // SNAPSHOT の場合、profiles.json から kernel を取得できたときのみ kmods を追加
+            const kernelVer = meta?.linux_kernel;
+            if (kernelVer) {
+                urls.push(`${basePath}/targets/${targetPath}/kmods/${kernelVer}/packages/Packages`);
             }
         }
-        return pkgs;
+
+        // フィードパッケージ
+        for (const feed of feeds) {
+            urls.push(`${basePath}/packages/${arch}/${feed}/Packages`);
+        }
+
+        // 各 Packages ファイルを並列取得・パース
+        const allPkgs = [];
+        const results = await Promise.allSettled(
+            urls.map(async (url) => {
+                try {
+                    const res = await fetch(url);
+                    if (!res.ok) return [];
+                    const text = await res.text();
+                    return parsePackagesText(text, url);
+                } catch (err) {
+                    console.warn(`パッケージ取得失敗: ${url}`, err);
+                    return [];
+                }
+            })
+        );
+
+        // 結果を統合
+        for (const r of results) {
+            if (r.status === 'fulfilled' && Array.isArray(r.value)) {
+                allPkgs.push(...r.value);
+            }
+        }
+
+        // 名前重複を統合
+        const pkgMap = new Map();
+        for (const p of allPkgs) {
+            if (p?.name) {
+                pkgMap.set(p.name, p);
+            }
+        }
+        app.devicePackages = Array.from(pkgMap.values());
+
+        // 取得完了後にセレクター再描画
+        if (typeof generatePackageSelector === 'function') {
+            generatePackageSelector();
+        }
+
+        // 内部関数: Packagesファイルをパース
+        function parsePackagesText(text, source) {
+            const blocks = text.split(/\n\s*\n/);
+            const pkgs = [];
+            for (const blk of blocks) {
+                const rec = {};
+                for (const line of blk.split('\n')) {
+                    const m = line.match(/^([A-Za-z-]+):\s*(.*)$/);
+                    if (!m) continue;
+                    const key = m[1], val = m[2];
+                    if (key === "Package") rec.name = val;
+                    else if (key === "Version") rec.version = val;
+                    else if (key === "Description") rec.description = val;
+                    else if (key === "Section") rec.section = val;
+                }
+                if (rec.name) {
+                    rec.source = source;
+                    pkgs.push(rec);
+                }
+            }
+            return pkgs;
+        }
     }
 
     // 結果をマージ
