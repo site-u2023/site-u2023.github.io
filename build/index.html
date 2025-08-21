@@ -2072,25 +2072,18 @@ async function findValidUrls(urlCandidates) {
         
 // ==================== URL管理の統一関数 ====================
 function setupVersionUrls(version) {
-   if (!config.image_urls) config.image_urls = {};
-   if (!config.overview_urls) config.overview_urls = {};
-   if (config.image_urls[version]) return;
-   
-   const overview_url = config.image_url;
-   const image_url = (typeof upstream_config !== 'undefined' && upstream_config.image_url_override)
-       ? upstream_config.image_url_override
-       : config.image_url;
-   
-   // OpenWrt公式仕様に従った修正
-   if (version === "SNAPSHOT") {
-       // 汎用SNAPSHOTのみ /snapshots/ パス
-       config.overview_urls[version] = `${overview_url}/snapshots/`;
-       config.image_urls[version]   = `${image_url}/snapshots/`;
-   } else {
-       // 通常リリース版およびブランチSNAPSHOT（24-SNAPSHOT等）は /releases/ パス
-       config.overview_urls[version] = `${overview_url}/releases/${version}/`;
-       config.image_urls[version]    = `${image_url}/releases/${version}/`;
-   }
+    if (!config.image_urls) config.image_urls = {};
+    if (!config.overview_urls) config.overview_urls = {};
+    if (config.image_urls[version]) return;
+    
+    const overview_url = config.image_url;
+    const image_url = (typeof upstream_config !== 'undefined' && upstream_config.image_url_override)
+        ? upstream_config.image_url_override
+        : config.image_url;
+    
+    // 修正: すべてのバージョンで /releases/ パスを使用
+    config.overview_urls[version] = `${overview_url}/releases/${version}/`;
+    config.image_urls[version]    = `${image_url}/releases/${version}/`;
 }
 
 // ==================== ユーティリティ関数 ====================
