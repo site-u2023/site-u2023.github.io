@@ -2074,15 +2074,7 @@ async function init() {
             }
         }
 
-        // パッケージセレクター生成（DOM生成完了を待機）
-        try {
-            if (typeof generatePackageSelector === 'function') {
-                await generatePackageSelector();
-                console.log('Package selector generated successfully');
-            }
-        } catch (error) {
-            console.error('Failed to generate package selector:', error);
-        }
+        // 初期化段階では生成しない（デバイス選択＋パッケージ取得完了後に生成
 
         // テンプレートとパッケージの更新
         try {
@@ -3098,8 +3090,17 @@ async function loadDeviceProfile(device) {
         console.log(`Loaded profiles data:`, profilesData);
         profileCache[cacheKey] = profilesData;
         applyProfileData(profilesData, profileId);
-        Promise.allSettled([ fetchDevicePackages() ])
-            .then(() => console.log('Background tasks completed'));
+
+        // パッケージ取得完了を待ってから描画
+        try {
+            await fetchDevicePackages();
+        } catch (e) {
+            console.error('fetchDevicePackages failed:', e);
+        }
+        // 取得完了後にだけ UI 生成
+        if (typeof generatePackageSelector === 'function') {
+            generatePackageSelector();
+        }
         return true;
         
     } catch (error) {
@@ -4576,39 +4577,33 @@ async function fetchDevicePackages() {
         return;
     }
 
-    async function fetchDevicePackages() {
-        app.devicePackages = [];
-        if (!app.selectedDevice || !app.selectedVersion) return;
+async function fetchDevicePackages() {
+    app.devicePackages = [];
+    // 現在選択中のデバイスとバージョンを確認
+    if (!current_device || !current_device.id || !app.selectedVersion) return;
 
-        const version = app.selectedVersion;
-        const targetPath = app.selectedDevice.target; // mediatek/filogic 形式
-        const basePath = config.image_urls[version].replace(/\/$/, '');
-        const profilesUrl = `${basePath}/targets/${targetPath}/profiles.json`;
+    const version = app.selectedVersion;
+    const targetPath = current_device.target; // mediatek/filogic 形式
+    const basePath = config.image_urls[version].replace(/\/$/, '');
+    const profilesUrl = `${basePath}/targets/${targetPath}/profiles.json`;
 
-        let arch;
-        try {
-            const res = await fetch(profilesUrl);
-            if (!res.ok) throw new Error(`profiles.json HTTP ${res.status}`);
-            const meta = await res.json();
-            arch = meta.arch_packages;
-            if (!arch) throw new Error("profiles.json に arch_packages がありません");
-        } catch (e) {
-            console.error("arch_packages 取得失敗:", e);
-            return;
-        }
-
-        // 公式と同じ：arch_packages からパッケージURLを構築
-        const pkgsUrl = `${basePath}/packages/${arch}/Packages`;
-        console.log('[fetchDevicePackages] packages URL:', pkgsUrl);
-
-        // 以降、この pkgsUrl を fetch して処理
+    let arch;
+    try {
+        const res = await fetch(profilesUrl);
+        if (!res.ok) throw new Error(`profiles.json HTTP ${res.status}`);
+        const meta = await res.json();
+        arch = meta.arch_packages;
+        if (!arch) throw new Error("profiles.json に arch_packages がありません");
+    } catch (e) {
+        console.error("arch_packages 取得失敗:", e);
+        return;
     }
 
     // パッケージインデックスURL一覧（targets/kmods と feeds）
     const feeds = ["base", "luci", "packages", "routing", "telephony"];
     const urls = [];
 
-    if (version === 'SNAPSHOT' && kernel) {
+    if (version === 'SNAPSHOT' && typeof kernel !== 'undefined' && kernel) {
         // kmods 配下の Packages
         urls.push(`${basePath}/targets/${targetPath}/kmods/${kernel}/packages/Packages`);
     } else {
@@ -4647,9 +4642,16 @@ async function fetchDevicePackages() {
     // 名前重複を統合
     const pkgMap = new Map();
     for (const p of allPkgs) {
-        pkgMap.set(p.name, p);
+        if (p?.name) {
+            pkgMap.set(p.name, p);
+        }
     }
     app.devicePackages = Array.from(pkgMap.values());
+
+    // --- ここで初めて UI 生成を呼ぶ ---
+    if (typeof generatePackageSelector === 'function') {
+        generatePackageSelector();
+    }
 }
 
 // Packages ファイルをパース（必要なら外部化してもOK）
