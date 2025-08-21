@@ -1968,16 +1968,28 @@ const ErrorHandler = {
         
         const errorType = this.classify(error, response);
         
-        // 詳細ログ出力（どこの何のエラーか明確）
-        console.error(`[${context}] ${errorType}:`, {
-            message: error.message,
-            stack: error.stack,
-            response: response ? {
-                status: response.status,
-                statusText: response.statusText,
-                url: response.url
-            } : null
-        });
+// 詳細ログ出力（どこの何のエラーか明確）
+        if (errorType === 'EXPECTED_CORS_REJECTION' || errorType === 'NOT_FOUND') {
+            console.log(`[${context}] ${errorType}:`, {
+                message: error.message,
+                stack: error.stack,
+                response: response ? {
+                    status: response.status,
+                    statusText: response.statusText,
+                    url: response.url
+                } : null
+            });
+        } else {
+            console.error(`[${context}] ${errorType}:`, {
+                message: error.message,
+                stack: error.stack,
+                response: response ? {
+                    status: response.status,
+                    statusText: response.statusText,
+                    url: response.url
+                } : null
+            });
+        }
         // エラータイプ別処理
         switch (errorType) {
             case 'NOT_FOUND':
