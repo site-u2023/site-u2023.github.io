@@ -4651,14 +4651,13 @@ function showDownloadLinks(images, fullStatus, requestHash) {
                     else if (key === "Description") rec.description = val;
                     else if (key === "Section") rec.section = val;
                 }
-                if (rec.name) {
-                    rec.source = source;
-                    pkgs.push(rec);
-                }
-            }
-            return pkgs;
+        if (rec.name) {
+            rec.source = source;
+            pkgs.push(rec);
         }
     }
+    return pkgs;
+}
 
     // 名前重複を統合
     const pkgMap = new Map();
@@ -4674,7 +4673,7 @@ function showDownloadLinks(images, fullStatus, requestHash) {
         generatePackageSelector();
     }
 }
-    
+  
 // ==================== パッケージ入力ボックス ====================
 (function() {
     const pkgInput = document.getElementById('package-search');
