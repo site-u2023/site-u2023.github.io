@@ -2052,8 +2052,8 @@ function setupVersionUrls(version) {
         config.overview_urls[version] = `${config.image_url}/snapshots/`;
         config.image_urls[version] = `${config.image_url}/snapshots/`;
     } else {
-        config.overview_urls[version] = `${config.image_url}/releases/${encodeURIComponent(version)}`;
-        config.image_urls[version] = `${config.image_url}/releases/${encodeURIComponent(version)}`;
+        config.overview_urls[version] = `${config.image_url}/releases/${encodeURIComponent(version)}/`;
+        config.image_urls[version] = `${config.image_url}/releases/${encodeURIComponent(version)}/`;
     }
 }
 
