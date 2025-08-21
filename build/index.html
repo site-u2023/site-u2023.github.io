@@ -4008,6 +4008,15 @@ fetch('https://sysupgrade.openwrt.org/api/v1/build', {
             showBuildStatus(err.message, 'error');
         });
 
+    } catch (error) {
+        console.error('Build request failed:', error);
+        hideProgress();
+        showBuildStatus(`Build failed: ${error.message}`, 'error');
+    } finally {
+        document.getElementById('request-build').disabled = false;
+    }
+}
+
 async function pollBuildStatus(requestHash) {
     const maxAttempts = 120;
     let attempts = 0;
