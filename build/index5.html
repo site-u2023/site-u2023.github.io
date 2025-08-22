@@ -4611,7 +4611,7 @@ async function fetchDevicePackages() {
 
     const version = app.selectedVersion;
     const targetPath = current_device.target;
-
+    
     // ★プロキシ定義
     const proxyBase = 'https://proxy.site-u.workers.dev/?url=';
     const proxify = (url) => proxyBase + encodeURIComponent(url);
