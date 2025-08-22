@@ -4672,7 +4672,7 @@ function showDownloadLinks(images, fullStatus, requestHash) {
     }
 }
 
-// ★パッケージインデックス取得（SNAPSHOT版修正）
+// ★パッケージインデックス取得（SNAPSHOT/Release 共通）
 async function fetchDevicePackages() {
     app.devicePackages = [];
     if (!current_device || !current_device.id || !app.selectedVersion) return;
@@ -4685,25 +4685,8 @@ async function fetchDevicePackages() {
     setupVersionUrls(version);
     const basePath    = config.image_urls[version].replace(/\/$/, '');
 
-    // arch 解決
-    let arch = isSnapshot
-        ? await resolveArchForSnapshot(version, targetPath)
-        : await (async () => {
-            try {
-                const profilesUrl = `${basePath}/targets/${targetPath}/profiles.json`;
-                const res = await fetch(profilesUrl);
-                if (!res.ok) throw new Error(`profiles.json HTTP ${res.status}`);
-                const meta = await res.json();
-                return meta.arch_packages;
-            } catch (e) {
-                if (app.archPackagesMap && app.archPackagesMap[targetPath]) {
-                    return app.archPackagesMap[targetPath];
-                }
-                console.error("Unable to resolve arch:", e.message);
-                return '';
-            }
-        })();
-
+    // ▼ 統合版 arch 解決
+    const arch = await resolveArch(version, targetPath /*, { profilesData: 既に持っていれば渡す } */);
     if (!arch) {
         console.error('[fetchDevicePackages] Unable to resolve arch for target:', targetPath);
         if (typeof generatePackageSelector === 'function') generatePackageSelector();
@@ -4714,7 +4697,6 @@ async function fetchDevicePackages() {
     const urls  = [];
 
     if (isSnapshot) {
-        // SNAPSHOT: 各feedの index.json
         feeds.forEach(feed => {
             urls.push(`${basePath}/packages/${arch}/${feed}/index.json`);
         });
@@ -4722,7 +4704,6 @@ async function fetchDevicePackages() {
             urls.push(`${basePath}/targets/${targetPath}/kmods/${app.kernelHash}/index.json`);
         }
     } else {
-        // リリース: targets配下のPackages + kmods + 各feedのPackages
         urls.push(`${basePath}/targets/${targetPath}/packages/Packages`);
         if (app.kernelHash) {
             urls.push(`${basePath}/targets/${targetPath}/kmods/${app.kernelHash}/Packages`);
@@ -4734,7 +4715,6 @@ async function fetchDevicePackages() {
 
     const allPkgsMap = new Map();
 
-    // 共通取得処理
     await Promise.allSettled(urls.map(async (url) => {
         try {
             const res = await fetch(url, { cache: 'no-cache', credentials: 'omit', mode: 'cors' });
@@ -4791,24 +4771,53 @@ async function fetchDevicePackages() {
     }
 }
         
-// SNAPSHOT用 arch 解決（map → profiles.json フォールバック）
-async function resolveArchForSnapshot(version, targetPath) {
-    const fromMap = app.archPackagesMap?.[targetPath];
-    if (fromMap) return fromMap;
-
+// SNAPSHOT/Release 共通 arch 解決
+async function resolveArch(version, targetPath, opts = {}) {
     try {
-        const base = (config.image_urls && config.image_urls[version]) ? config.image_urls[version].replace(/\/$/, '') : 'https://downloads.openwrt.org/snapshots/';
-        const profilesUrl = `${base}/targets/${targetPath}/profiles.json`;
-        const res = await fetch(profilesUrl, { cache: 'no-cache', credentials: 'omit', mode: 'cors' });
-        if (!res.ok) return '';
-        const meta = await res.json();
-        const arch = meta?.arch_packages || '';
-        if (arch) {
+        // 0) キャッシュ優先
+        if (app.archPackagesMap && app.archPackagesMap[targetPath]) {
+            return app.archPackagesMap[targetPath];
+        }
+
+        // 1) 呼び出し元が profilesData を渡してきた場合
+        if (opts.profilesData?.arch_packages) {
+            const arch = opts.profilesData.arch_packages;
             app.archPackagesMap = app.archPackagesMap || {};
             app.archPackagesMap[targetPath] = arch;
+            return arch;
         }
-        return arch;
-    } catch {
+
+        // 2) URL構築
+        setupVersionUrls(version);
+        const basePath = (config.image_urls && config.image_urls[version])
+            ? config.image_urls[version].replace(/\/$/, '')
+            : '';
+
+        // 3) profiles.json 直接参照
+        const profilesUrl = `${basePath}/targets/${targetPath}/profiles.json`;
+        try {
+            const res = await fetch(profilesUrl, { cache: 'no-cache', credentials: 'omit', mode: 'cors' });
+            if (res.ok) {
+                const meta = await res.json();
+                const arch = meta?.arch_packages || '';
+                if (arch) {
+                    app.archPackagesMap = app.archPackagesMap || {};
+                    app.archPackagesMap[targetPath] = arch;
+                    return arch;
+                }
+            }
+        } catch (e) {
+            console.log(`[ARCH] profiles.json fetch failed: ${e.message}`);
+        }
+
+        // 4) overview.json 由来のフォールバック
+        if (app.archPackagesMap && app.archPackagesMap[targetPath]) {
+            return app.archPackagesMap[targetPath];
+        }
+
+        return '';
+    } catch (err) {
+        console.error('[ARCH] unexpected error:', err);
         return '';
     }
 }
