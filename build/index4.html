@@ -4687,11 +4687,11 @@ function showDownloadLinks(images, fullStatus, requestHash) {
     }
 }
 
-// ★パッケージインデックス取得
+// ★パッケージインデックス取得（SNAPSHOT版修正）
 async function fetchDevicePackages() {
-    // SNAPSHOT版の場合は index.json と Packages の両方を試す
+    // SNAPSHOT版の場合は index.json のみから取得
     if (/SNAPSHOT$/i.test(app.selectedVersion)) {
-        console.log('[fetchDevicePackages] SNAPSHOT version detected - hybrid approach');
+        console.log('[fetchDevicePackages] SNAPSHOT version detected - index.json only approach');
 
         app.devicePackages = [];
         if (!current_device || !current_device.id || !app.selectedVersion) return;
@@ -4707,7 +4707,7 @@ async function fetchDevicePackages() {
         const feeds = ["base", "luci", "packages", "routing", "telephony"];
         const allPkgsMap = new Map(); // name -> packageInfo
 
-        // 1. まずindex.jsonから取得（高速・軽量）
+        // index.jsonから全パッケージを取得
         for (const feed of feeds) {
             const url = `https://downloads.openwrt.org/snapshots/packages/${arch}/${feed}/index.json`;
             try {
@@ -4723,61 +4723,30 @@ async function fetchDevicePackages() {
                         name,
                         version: info.version,
                         section: info.section,
-                        source: `index.json:${feed}`
+                        description: info.description || '',
+                        depends: info.depends || [],
+                        size: info.size || 0,
+                        source: `index.json:${feed}`,
+                        feed: feed
                     });
                 });
-                console.log(`[PKG Fetch] OK ${arch}/${feed}/index.json: ${Object.keys(packages).length} pkgs`);
+                // デバッガーの統計機能を使用
+                const pkgArray = Object.entries(packages).map(([name, info]) => ({ name, ...info }));
+                ErrorHandler.packageDebug.logFetch(url, true, pkgArray);
             } catch (err) {
                 console.warn(`index.json fetch failed: ${url} -> ${err.message}`);
             }
         }
 
-        // 2. ターゲット固有のPackagesも取得（kmods含む）
-        const targetPath = current_device.target;
-        const basePath = 'https://downloads.openwrt.org/snapshots';
-        const targetUrls = [
-            `${basePath}/targets/${targetPath}/packages/Packages`
-        ];
+        // NOTE: SNAPSHOT版では packages.adb がターゲット固有パッケージに使われるが、
+        // これはopkg用のバイナリ形式でWebからは読み取れない
+        // kmods等のターゲット固有パッケージは index.json に含まれている前提
+        
+        console.log(`[PKG Info] SNAPSHOT uses packages.adb for target-specific packages (not accessible via web)`);
+        console.log(`[PKG Info] Relying on index.json data only for web-based package selection`);
 
-        // kernel hashがあればkmodsも追加
-        if (app.kernelHash) {
-            targetUrls.push(`${basePath}/targets/${targetPath}/kmods/${app.kernelHash}/Packages`);
-        }
-
-        // Packagesファイルから追加情報を取得
-        for (const url of targetUrls) {
-            try {
-                const res = await fetch(url, { cache: 'no-cache', credentials: 'omit', mode: 'cors' });
-                if (!res.ok) {
-                    console.warn(`Packages not found: ${url} (HTTP ${res.status})`);
-                    continue;
-                }
-                const text = await res.text();
-                const packages = parsePackagesText(text, url);
-                packages.forEach(pkg => {
-                    if (pkg.name && !allPkgsMap.has(pkg.name)) {
-                        allPkgsMap.set(pkg.name, pkg);
-                    }
-                });
-                console.log(`[PKG Fetch] OK ${url}: ${packages.length} pkgs (target-specific)`);
-            } catch (err) {
-                console.warn(`Packages fetch failed: ${url} -> ${err.message}`);
-            }
-        }
-
-    // 統計情報を出力
-    const kmodCount = Array.from(allPkgsMap.keys()).filter(name => name.startsWith('kmod-')).length;
-    const luciCount = Array.from(allPkgsMap.keys()).filter(name => name.startsWith('luci-')).length;
-    console.log(`[PKG Summary] Total: ${allPkgsMap.size} packages`);
-    console.log(`  - kmods: ${kmodCount}`);
-    console.log(`  - luci: ${luciCount}`);
-    console.log(`  - others: ${allPkgsMap.size - kmodCount - luciCount}`);
-    
-    // デバッグ用：パッケージ検証
-    if (window.debugPackages) {
-        const sample = Array.from(allPkgsMap.entries()).slice(0, 10);
-        console.log('[PKG Sample] First 10 packages:', sample);
-    }
+        // デバッガーの完全ダンプ機能を使用
+        ErrorHandler.packageDebug.dumpAll();
 
         app.devicePackages = Array.from(allPkgsMap.values());
         if (typeof generatePackageSelector === 'function') {
