@@ -4613,7 +4613,7 @@ function showDownloadLinks(images, fullStatus, requestHash) {
     }
 }
 
-// ★パッケージインデックス取得（device_packages_url は廃止）
+// ★パッケージインデックス取得
 async function fetchDevicePackages() {
     // SNAPSHOT版の場合は処理をスキップ（公式準拠）
     if (/SNAPSHOT$/i.test(app.selectedVersion)) {
@@ -4626,14 +4626,15 @@ async function fetchDevicePackages() {
         }
         return;
     }
-
+    
+    // ========== リリース版用のコード ==========
     app.devicePackages = [];
     if (!current_device || !current_device.id || !app.selectedVersion) return;
 
     const version = app.selectedVersion;
     const targetPath = current_device.target;
 
-    // URL設定を確認
+    // URLは直接使用
     setupVersionUrls(version);
     const basePath = config.image_urls[version].replace(/\/$/, '');
     const profilesUrl = `${basePath}/targets/${targetPath}/profiles.json`;
@@ -4642,10 +4643,10 @@ async function fetchDevicePackages() {
     const feeds = ["base", "luci", "packages", "routing", "telephony"];
     const urls = [];
 
-    // アーキテクチャ情報を取得 (profiles.json -> .overview.json のフォールバック付き)
+    // アーキテクチャ情報を取得
     let arch;
     try {
-        const res = await fetch(getFinalUrl(profilesUrl, version)); // ★動的URL適用
+        const res = await fetch(profilesUrl);  // ★直接fetch
         if (!res.ok) throw new Error(`profiles.json HTTP ${res.status}`);
         const meta = await res.json();
         arch = meta.arch_packages;
@@ -4665,12 +4666,12 @@ async function fetchDevicePackages() {
 
     // target固有パッケージ（リリース版のみ存在）
     if (!/SNAPSHOT$/i.test(version)) {
-        urls.push(getFinalUrl(`${basePath}/targets/${targetPath}/packages/Packages`, version)); // ★動的URL適用
+        urls.push(`${basePath}/targets/${targetPath}/packages/Packages`);  // ★直接URL
     }
 
     // フィードパッケージ（全バージョン共通）
     for (const feed of feeds) {
-        urls.push(getFinalUrl(`${basePath}/packages/${arch}/${feed}/Packages`, version)); // ★動的URL適用
+        urls.push(`${basePath}/packages/${arch}/${feed}/Packages`);  // ★直接URL
     }
 
     console.log('[Package URLs]', {
@@ -4685,17 +4686,17 @@ async function fetchDevicePackages() {
     const results = await Promise.allSettled(
         urls.map(async (url) => {
             try {
-                const res = await fetch(url); // urlは既に処理済み
+                const res = await fetch(url);  // ★直接fetch
                 if (!res.ok) {
-                    console.log(`Package fetch ${res.status} for: ${url.replace(CORS_PROXY, '')}`);
+                    console.log(`Package fetch ${res.status} for: ${url}`);
                     return [];
                 }
                 const text = await res.text();
                 const packages = parsePackagesText(text, url);
-                console.log(`Parsed ${packages.length} packages from: ${url.replace(CORS_PROXY, '')}`);
+                console.log(`Parsed ${packages.length} packages from: ${url}`);
                 return packages;
             } catch (err) {
-                console.log(`Package fetch failed: ${url.replace(CORS_PROXY, '')}`, err.message);
+                console.log(`Package fetch failed: ${url}`, err.message);
                 return [];
             }
         })
