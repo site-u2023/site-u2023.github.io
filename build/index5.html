@@ -4613,7 +4613,7 @@ async function fetchDevicePackages() {
     
     const profilesUrl = `${basePath}/targets/${targetPath}/profiles.json`;
     
-    // アーキテクチャ情報を取得（共通処理）
+    // アーキテクチャ情報を取得
     let arch;
     try {
         const res = await fetch(profilesUrl);
@@ -4636,31 +4636,22 @@ async function fetchDevicePackages() {
 
     const feeds = ["base", "luci", "packages", "routing", "telephony"];
     const urls = [];
+
     if (isSnapshot) {
-        // SNAPSHOT → packages.adb 形式
+        // SNAPSHOT → packages.adb
         for (const feed of feeds) {
             urls.push({ url: `${basePath}/packages/${arch}/${feed}/packages.adb`, type: 'adb' });
         }
-        // kmods も必要なら profiles.json からサブディレクトリを組み立てて追加
-        // if (meta.kmods_subdir) {
-        //     urls.push({ url: `${basePath}/targets/${targetPath}/kmods/${meta.kmods_subdir}/packages.adb`, type: 'adb' });
-        // }
     } else {
-        // リリース版 → opkg形式
+        // リリース版 → Packages
         urls.push({ url: `${basePath}/targets/${targetPath}/packages/Packages`, type: 'opkg' });
         for (const feed of feeds) {
             urls.push({ url: `${basePath}/packages/${arch}/${feed}/Packages`, type: 'opkg' });
         }
     }
-    
-    console.log('[Package URLs]', {
-        version: version,
-        target: targetPath,
-        arch: arch,
-        urls: urls.map(u => u.url)
-    });
 
-    // パッケージ取得・パース（統合処理）
+    console.log('[Package URLs]', { version, target: targetPath, arch, urls: urls.map(u => u.url) });
+
     const allPkgs = [];
     const results = await Promise.allSettled(
         urls.map(async (item) => {
@@ -4671,7 +4662,6 @@ async function fetchDevicePackages() {
                     return [];
                 }
                 if (item.type === 'adb') {
-                    // SQLite DB をパース
                     const buf = await res.arrayBuffer();
                     const SQL = await initSqlJs({ locateFile: f => `/${f}` });
                     const db = new SQL.Database(new Uint8Array(buf));
@@ -4680,7 +4670,6 @@ async function fetchDevicePackages() {
                         name, version, description: desc, source: item.url
                     })) || [];
                 } else {
-                    // opkg Packages
                     const text = await res.text();
                     return parseOpkgPackages(text, item.url);
                 }
@@ -4691,14 +4680,12 @@ async function fetchDevicePackages() {
         })
     );
 
-    // 結果を統合
     for (const r of results) {
         if (r.status === 'fulfilled' && Array.isArray(r.value)) {
             allPkgs.push(...r.value);
         }
     }
 
-    // 名前重複を統合
     const pkgMap = new Map();
     for (const p of allPkgs) {
         if (p?.name) {
@@ -4706,12 +4693,13 @@ async function fetchDevicePackages() {
         }
     }
     app.devicePackages = Array.from(pkgMap.values());
-    
+
     console.log(`[Package Summary] Total unique packages: ${app.devicePackages.length}`);
 
     if (typeof generatePackageSelector === 'function') {
         generatePackageSelector();
     }
+} // ← 閉じカッコをここで追加
 
 function parseOpkgPackages(text, source) {
     const blocks = text.split(/\n\s*\n/);
