@@ -1302,6 +1302,8 @@ if [ -n "\${dslite_aftr_address}" ]; then
     uci set dhcp.lan.dhcpv6='relay'
     uci set dhcp.lan.ndp='relay'
     uci set dhcp.lan.force='1'
+    uci del_list firewall.@zone[1].network='map'
+    uci del_list firewall.@zone[1].network='map6'
     uci add_list firewall.@zone[1].network="\${DSLITE_NAME}"
     uci add_list firewall.@zone[1].network="\${DSLITE6_NAME}"
     uci set firewall.@zone[1].masq='1'
@@ -1344,6 +1346,8 @@ if [ -n "\${mape_br}" ] && [ -n "\${mape_ealen}" ]; then
     uci set dhcp.lan.dhcpv6='relay'
     uci set dhcp.lan.ndp='relay'
     uci set dhcp.lan.force='1'
+    uci del_list firewall.@zone[1].network='map'
+    uci del_list firewall.@zone[1].network='map6'
     uci add_list firewall.@zone[1].network="\${MAP_NAME}"
     uci add_list firewall.@zone[1].network="\${MAP6_NAME}"
     uci set firewall.@zone[1].masq='1'
