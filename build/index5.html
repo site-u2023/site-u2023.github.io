@@ -4624,9 +4624,9 @@ async function fetchDevicePackages() {
     if (/SNAPSHOT$/i.test(version)) {
         basePath = proxify(basePath);
     }
-
+    
     const profilesUrl = `${basePath}/targets/${targetPath}/profiles.json`;
- 
+    
     // アーキテクチャ情報を取得（共通処理）
     let arch;
     try {
