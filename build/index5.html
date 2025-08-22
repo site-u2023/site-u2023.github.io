@@ -4730,222 +4730,81 @@ async function fetchDevicePackages() {
                     console.log(`Package fetch ${res.status} for: ${item.url}`);
                     return [];
                 }
+                
                 if (item.type === 'adb') {
-                    ErrorHandler.trace('fetchDevicePackages[ADB]', item.url);
+                    // ADB (SNAPSHOT版SQLite形式) - 統合デバッガー使用
+                    ErrorHandler.adbDebug.start(item.url);
 
-                    // URL存在確認
-                    const exists = await checkUrlExists(item.url);
-                    if (!exists) {
-                        return ErrorHandler.handle(
-                            'fetchDevicePackages[ADB]',
-                            new Error('packages.adb not found'),
-                            { status: 404, statusText: 'Not Found', url: item.url }
-                        );
-                    }
-
-                    console.group(`[ADB DEBUG] ${item.url}`);
-
-                    // 実データ取得
-                    const buf = await fetch(item.url).then(r => r.arrayBuffer());
+                    const buf = await res.arrayBuffer();
                     let u8 = new Uint8Array(buf);
-                    console.log("Size:", buf.byteLength, "bytes");
-                    console.log("First 16 bytes (hex):", Array.from(u8.slice(0, 16))
-                        .map(b => b.toString(16).padStart(2, "0")).join(" "));
-
-                    // 形式判定＋gzip展開
-                    if (u8[0] === 0x53 && u8[1] === 0x51 && u8[2] === 0x4c && u8[3] === 0x69) {
-                        console.log("Format: SQLite");
-                    } else if (u8[0] === 0x1f && u8[1] === 0x8b) {
-                        console.log("Format: gzip-compressed");
+                    
+                    const format = ErrorHandler.adbDebug.format(u8, 'Raw: ');
+                    
+                    // gzip展開処理
+                    if (format === 'gzip') {
                         try {
                             u8 = pako.ungzip(u8);
-                            console.log("[ADB] gzip decompressed, new size:", u8.byteLength, "bytes");
+                            ErrorHandler.adbDebug.format(u8, 'Decompressed: ');
                         } catch (e) {
                             console.error("[ADB] gzip decompression failed:", e);
+                            ErrorHandler.adbDebug.end();
                             throw e;
                         }
-                    } else if (u8[0] === 0xfd && u8[1] === 0x37 && u8[2] === 0x7a && u8[3] === 0x58) {
-                        console.log("Format: xz-compressed (not yet supported)");
+                    } else if (format === 'xz') {
+                        ErrorHandler.adbDebug.end();
                         throw new Error("XZ-compressed .adb is not supported");
-                    } else {
-                        console.log("Format: unknown");
+                    } else if (format !== 'sqlite') {
+                        console.warn("[ADB] Unknown format, attempting SQLite anyway...");
                     }
 
-                    // SQLite 初期化
+                    // SQLite初期化と処理
                     const SQL = await initSqlJs({ locateFile: f => `./vendor/sql.js/${f}` });
                     const db = new SQL.Database(u8);
 
-                    // 実際のテーブル名を取得
-                    const tablesRes = db.exec("SELECT name FROM sqlite_master WHERE type='table'");
-                    if (!tablesRes.length || !tablesRes[0].values.length) {
-                        console.error("[ADB] No tables found in .adb database");
-                        console.groupEnd();
-                        return [];
-                    }
-                    const tableName = tablesRes[0].values[0][0];
-                    console.log(`[ADB] Using table: ${tableName}`);
-
-                    // カラム構造を確認
-                    const pragmaRes = db.exec(`PRAGMA table_info(${tableName})`);
-                    const colNames = pragmaRes[0].values.map(row => row[1]);
-                    console.log(`[ADB] Columns in ${tableName}:`, colNames);
-
-                    // name/version/description の存在を確認し、無ければ代替カラムを探す
-                    const nameCol = colNames.find(c => c.toLowerCase() === 'name') || colNames[0];
-                    const verCol  = colNames.find(c => c.toLowerCase() === 'version') || colNames[1] || '""';
-                    const descCol = colNames.find(c => c.toLowerCase().startsWith('desc')) || colNames[2] || '""';
-
-                    // パッケージ一覧取得（検出したテーブル名・カラム名を使用）
-                    const result = db.exec(`SELECT ${nameCol}, ${verCol}, ${descCol} FROM ${tableName}`);
-                    console.groupEnd();
-                    return result[0]?.values.map(([name, version, desc]) => ({
-                        name, version, description: desc, source: item.url
-                    })) || [];
-} else {
-                    // ADB (SNAPSHOT版SQLite形式)
-                    ErrorHandler.trace('fetchDevicePackages[ADB]', item.url);
-
-                    // URL存在確認
-                    const exists = await checkUrlExists(item.url);
-                    if (!exists) {
-                        return ErrorHandler.handle(
-                            'fetchDevicePackages[ADB]',
-                            new Error('packages.adb not found'),
-                            { status: 404, statusText: 'Not Found', url: item.url }
-                        );
-                    }
-
-                    console.group(`[ADB DEBUG] ${item.url}`);
-
-                    // 実データ取得
-                    const buf = await fetch(item.url).then(r => r.arrayBuffer());
-                    let u8 = new Uint8Array(buf);
-                    console.log("Size:", buf.byteLength, "bytes");
-                    console.log("First 16 bytes (hex):", Array.from(u8.slice(0, 16))
-                        .map(b => b.toString(16).padStart(2, "0")).join(" "));
-
-                    // 形式判定＋gzip展開
-                    if (u8[0] === 0x53 && u8[1] === 0x51 && u8[2] === 0x4c && u8[3] === 0x69) {
-                        console.log("Format: SQLite (raw)");
-                    } else if (u8[0] === 0x1f && u8[1] === 0x8b) {
-                        console.log("Format: gzip-compressed");
-                        try {
-                            u8 = pako.ungzip(u8);
-                            console.log("[ADB] gzip decompressed, new size:", u8.byteLength, "bytes");
-                            console.log("[ADB] After gzip, first 16 bytes:", Array.from(u8.slice(0, 16))
-                                .map(b => b.toString(16).padStart(2, "0")).join(" "));
-                        } catch (e) {
-                            console.error("[ADB] gzip decompression failed:", e);
-                            console.groupEnd();
-                            throw e;
-                        }
-                    } else if (u8[0] === 0xfd && u8[1] === 0x37 && u8[2] === 0x7a && u8[3] === 0x58) {
-                        console.log("Format: xz-compressed (not yet supported)");
-                        console.groupEnd();
-                        throw new Error("XZ-compressed .adb is not supported");
-                    } else {
-                        console.log("Format: unknown - First 4 bytes:", 
-                            Array.from(u8.slice(0, 4)).map(b => `0x${b.toString(16).padStart(2, "0")}`).join(" "));
-                    }
-
-                    // SQLite初期化
-                    console.log("[ADB] Initializing SQL.js...");
-                    const SQL = await initSqlJs({ locateFile: f => `./vendor/sql.js/${f}` });
-                    console.log("[ADB] SQL.js initialized successfully");
-                    
-                    let db;
-                    try {
-                        db = new SQL.Database(u8);
-                        console.log("[ADB] SQLite database opened successfully");
-                    } catch (e) {
-                        console.error("[ADB] Failed to open SQLite database:", e);
-                        console.groupEnd();
-                        throw e;
-                    }
-
-                    // 実際のテーブル名を取得
-                    console.log("[ADB] Querying for tables...");
-                    const tablesRes = db.exec("SELECT name FROM sqlite_master WHERE type='table'");
-                    console.log("[ADB] Tables query result:", tablesRes);
+                    // テーブル情報取得
+                    const tablesRes = ErrorHandler.adbDebug.sql(db, 
+                        "SELECT name FROM sqlite_master WHERE type='table'", 'Tables: ');
                     
                     if (!tablesRes.length || !tablesRes[0].values.length) {
-                        console.error("[ADB] No tables found in .adb database");
-                        console.groupEnd();
-                        return [];
+                        ErrorHandler.adbDebug.end();
+                        throw new Error("No tables found in .adb database");
                     }
                     
                     const tableName = tablesRes[0].values[0][0];
-                    console.log(`[ADB] Using table: ${tableName}`);
 
-                    // カラム構造を確認
-                    console.log("[ADB] Querying table structure...");
-                    const pragmaRes = db.exec(`PRAGMA table_info(${tableName})`);
-                    console.log("[ADB] Table info result:", pragmaRes);
-                    
-                    if (!pragmaRes.length || !pragmaRes[0].values.length) {
-                        console.error("[ADB] Failed to get table structure");
-                        console.groupEnd();
-                        return [];
-                    }
+                    // カラム構造確認
+                    const pragmaRes = ErrorHandler.adbDebug.sql(db, 
+                        `PRAGMA table_info(${tableName})`, 'Schema: ');
                     
                     const colNames = pragmaRes[0].values.map(row => row[1]);
-                    console.log(`[ADB] Columns in ${tableName}:`, colNames);
-
-                    // name/version/description の存在を確認し、無ければ代替カラムを探す
                     const nameCol = colNames.find(c => c.toLowerCase() === 'name') || colNames[0];
-                    const verCol  = colNames.find(c => c.toLowerCase() === 'version') || colNames[1] || '""';
+                    const verCol = colNames.find(c => c.toLowerCase() === 'version') || colNames[1] || '""';
                     const descCol = colNames.find(c => c.toLowerCase().startsWith('desc')) || colNames[2] || '""';
                     
                     console.log(`[ADB] Column mapping: name=${nameCol}, version=${verCol}, description=${descCol}`);
 
-                    // レコード数を確認
-                    console.log("[ADB] Counting total records...");
-                    const countRes = db.exec(`SELECT COUNT(*) FROM ${tableName}`);
-                    const totalCount = countRes[0]?.values[0][0] || 0;
-                    console.log(`[ADB] Total records in ${tableName}: ${totalCount}`);
-
-                    // サンプルデータを確認（最初の5件）
-                    console.log("[ADB] Fetching sample data...");
-                    const sampleRes = db.exec(`SELECT ${nameCol}, ${verCol}, ${descCol} FROM ${tableName} LIMIT 5`);
-                    console.log("[ADB] Sample query result:", sampleRes);
+                    // パッケージデータ取得
+                    const result = ErrorHandler.adbDebug.sql(db, 
+                        `SELECT ${nameCol}, ${verCol}, ${descCol} FROM ${tableName}`, 'Data: ');
                     
-                    if (sampleRes.length > 0 && sampleRes[0].values.length > 0) {
-                        console.log("[ADB] Sample records:", sampleRes[0].values);
-                    }
-
-                    // パッケージ一覧取得（検出したテーブル名・カラム名を使用）
-                    console.log("[ADB] Fetching all package data...");
-                    const result = db.exec(`SELECT ${nameCol}, ${verCol}, ${descCol} FROM ${tableName}`);
-                    console.log("[ADB] Full query result structure:", {
-                        length: result.length,
-                        hasValues: result[0]?.values?.length || 0,
-                        columns: result[0]?.columns || []
-                    });
-
                     if (!result.length || !result[0]?.values?.length) {
-                        console.error("[ADB] Query returned no data");
-                        console.groupEnd();
-                        return [];
+                        ErrorHandler.adbDebug.end();
+                        throw new Error("Query returned no package data");
                     }
 
-                    // データマッピング処理
-                    console.log("[ADB] Processing package data...");
-                    const packages = result[0].values.map((row, index) => {
-                        const [name, version, desc] = row;
-                        const pkg = { name, version, description: desc, source: item.url };
-                        
-                        if (index < 3) { // 最初の3件をデバッグ出力
-                            console.log(`[ADB] Package ${index + 1}:`, pkg);
-                        }
-                        
-                        return pkg;
-                    });
+                    // データ変換
+                    const packages = result[0].values.map(([name, version, desc]) => ({
+                        name, version, description: desc, source: item.url
+                    }));
 
-                    console.log(`[ADB] Successfully processed ${packages.length} packages`);
-                    console.log(`[ADB] Final package array sample:`, packages.slice(0, 3));
-                    console.groupEnd();
+                    ErrorHandler.adbDebug.packages(packages, item.url);
+                    ErrorHandler.adbDebug.end();
                     
                     return packages;
+                } else {
+                    // OPKG (リリース版テキスト形式)
+                    const text = await res.text();
+                    return parseOpkgPackages(text, item.url);
                 }
             } catch (err) {
                 return ErrorHandler.handle('fetchDevicePackages', err, res);
@@ -4972,7 +4831,7 @@ async function fetchDevicePackages() {
     if (typeof generatePackageSelector === 'function') {
         generatePackageSelector();
     }
-} // ← 閉じカッコをここで追加
+}
 
 function parseOpkgPackages(text, source) {
     const blocks = text.split(/\n\s*\n/);
