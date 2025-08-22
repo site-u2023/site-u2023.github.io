@@ -916,7 +916,7 @@
                             </div>
                             <div class="form-group">
                                 <label for="aios-backup-path">Restore Backup Path</label>
-                                <input type="text" id="aios-backup-path" class="form-control" placeholder="/root/backup_\${VER}.tar.gz" value="/root/backup_\${VER}.tar.gz">
+                                <input type="text" id="aios-backup-path" class="form-control" placeholder="/root/backup.tar.gz" value="/root/backup.tar.gz">
                                 <small class="form-text text-muted">Path to backup file for restore</small>
                             </div>
                         </div>
@@ -1179,7 +1179,6 @@
 // setup.shテンプレート
 const SETUP_SH_TEMPLATE = `#!/bin/sh
 exec >/tmp/setup.log 2>&1
-VER="$(cat /etc/openwrt_version 2>/dev/null || echo unknown)"
 LAN_DEF="$(uci -q get network.lan.device || echo lan)"
 WAN_DEF="$(uci -q get network.wan.device || echo wan)"
 MAP_NAME="map"
@@ -1199,7 +1198,7 @@ AP6_NAME="ap6"
 # ssh_interface="lan"
 # ssh_port="22"
 # flow_offloading_type=""
-# backup_path="/root/backup_\${VER}.tar.gz"
+# backup_path="/root/backup.tar.gz"
 # wlan_name="OpenWrt"
 # wlan_password="12345678"
 # pppoe_username=""
