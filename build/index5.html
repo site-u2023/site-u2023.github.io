@@ -4611,19 +4611,8 @@ async function fetchDevicePackages() {
 
     const version = app.selectedVersion;
     const targetPath = current_device.target;
-    
-    // ★プロキシ定義（SNAPSHOT専用）
-    const proxyBase = 'https://proxy.site-u.workers.dev/?url=';
-    const proxify = (url) => proxyBase + encodeURIComponent(url);
-
-    // URLベース構築（共通）
-    setupVersionUrls(version);
-    let basePath = config.image_urls[version].replace(/\/$/, '');
-
-    const isSnapshot = /SNAPSHOT$/i.test(version);
-    if (isSnapshot) {
-        basePath = proxify(basePath);
-    }
+    const basePath = config.image_urls[version].replace(/\/$/, '');
+    const isSnapshot = /SNAPSHOT$/i.test(version);    
     
     const profilesUrl = `${basePath}/targets/${targetPath}/profiles.json`;
     
@@ -4648,23 +4637,24 @@ async function fetchDevicePackages() {
         }
     }
 
-    // フィード定義（共通）
     const feeds = ["base", "luci", "packages", "routing", "telephony"];
     const urls = [];
-
     if (isSnapshot) {
-        // SNAPSHOT → apk形式のみ
-        urls.push({ url: `${basePath}/targets/${targetPath}/packages/APKINDEX.tar.gz`, type: 'apk' });
+        // SNAPSHOT → packages.adb 形式
         for (const feed of feeds) {
-            urls.push({ url: `${basePath}/packages/${arch}/${feed}/APKINDEX.tar.gz`, type: 'apk' });
+            urls.push({ url: `${basePath}/packages/${arch}/${feed}/packages.adb`, type: 'adb' });
         }
+        // kmods も必要なら profiles.json からサブディレクトリを組み立てて追加
+        // if (meta.kmods_subdir) {
+        //     urls.push({ url: `${basePath}/targets/${targetPath}/kmods/${meta.kmods_subdir}/packages.adb`, type: 'adb' });
+        // }
     } else {
-        // リリース版 → opkg形式のみ
+        // リリース版 → opkg形式
         urls.push({ url: `${basePath}/targets/${targetPath}/packages/Packages`, type: 'opkg' });
         for (const feed of feeds) {
             urls.push({ url: `${basePath}/packages/${arch}/${feed}/Packages`, type: 'opkg' });
         }
-    }   
+    }
     
     console.log('[Package URLs]', {
         version: version,
@@ -4683,24 +4673,20 @@ async function fetchDevicePackages() {
                     console.log(`Package fetch ${res.status} for: ${item.url}`);
                     return [];
                 }
-
-                let text;
-                if (item.type === 'apk') {
-                    // APKINDEX.tar.gz の処理
-                    const arrayBuffer = await res.arrayBuffer();
-                    text = await extractAPKINDEX(arrayBuffer);
-                    if (!text) {
-                        console.log(`Failed to extract APKINDEX from: ${item.url}`);
-                        return [];
-                    }
+                if (item.type === 'adb') {
+                    // SQLite DB をパース
+                    const buf = await res.arrayBuffer();
+                    const SQL = await initSqlJs({ locateFile: f => `/${f}` });
+                    const db = new SQL.Database(new Uint8Array(buf));
+                    const result = db.exec("SELECT name, version, description FROM packages");
+                    return result[0]?.values.map(([name, version, desc]) => ({
+                        name, version, description: desc, source: item.url
+                    })) || [];
                 } else {
-                    // 通常のPackagesファイル
-                    text = await res.text();
+                    // opkg Packages
+                    const text = await res.text();
+                    return parseOpkgPackages(text, item.url);
                 }
-
-                const packages = parsePackagesText(text, item.url, item.type);
-                console.log(`Parsed ${packages.length} packages from: ${item.url}`);
-                return packages;
             } catch (err) {
                 console.log(`Package fetch failed: ${item.url}`, err.message);
                 return [];
@@ -4730,7 +4716,6 @@ async function fetchDevicePackages() {
         generatePackageSelector();
     }
 
-    // APKINDEX.tar.gz展開関数
     async function extractAPKINDEX(arrayBuffer) {
         try {
             // Step 1: gzip解凍
@@ -4779,43 +4764,27 @@ async function fetchDevicePackages() {
         }
     }
 
-    // パッケージテキストパース関数（opkg/apk両対応）
-    function parsePackagesText(text, source, type) {
-        const blocks = text.split(/\n\s*\n/);
-        const pkgs = [];
-        
-        for (const blk of blocks) {
-            const rec = {};
-            for (const line of blk.split('\n')) {
-                // APK形式とopkg形式の両方に対応
-                const m = line.match(/^([A-Za-z-]+):\s*(.*)$/);
-                if (!m) continue;
-                const key = m[1], val = m[2];
-                
-                // キーマッピング（APK -> 共通形式）
-                if (type === 'apk') {
-                    if (key === "P") rec.name = val;           // Package name
-                    else if (key === "V") rec.version = val;   // Version
-                    else if (key === "T") rec.description = val; // Description
-                    else if (key === "S") rec.size = val;      // Size
-                } else {
-                    // opkg形式（既存）
-                    if (key === "Package") rec.name = val;
-                    else if (key === "Version") rec.version = val;
-                    else if (key === "Description") rec.description = val;
-                    else if (key === "Section") rec.section = val;
-                }
-            }
-            
-            if (rec.name) {
-                rec.source = source;
-                pkgs.push(rec);
-            }
+function parseOpkgPackages(text, source) {
+    const blocks = text.split(/\n\s*\n/);
+    const pkgs = [];
+    for (const blk of blocks) {
+        const rec = {};
+        for (const line of blk.split('\n')) {
+            const m = line.match(/^([A-Za-z-]+):\s*(.*)$/);
+            if (!m) continue;
+            const key = m[1], val = m[2];
+            if (key === "Package") rec.name = val;
+            else if (key === "Version") rec.version = val;
+            else if (key === "Description") rec.description = val;
         }
-        return pkgs;
+        if (rec.name) {
+            rec.source = source;
+            pkgs.push(rec);
+        }
     }
+    return pkgs;
 }
-        
+      
 // ==================== パッケージ入力ボックス ====================
 (function() {
     const pkgInput = document.getElementById('package-search');
