@@ -3311,9 +3311,21 @@ function showDeviceInfo() {
     const vendorSlug = (device.titles?.[0]?.vendor || '')
         .trim().toLowerCase().replace(/\s+/g, '_');
     
+    // device.idからmodel部分を抽出（ベンダー名の有無を考慮）
     let modelSlug = (device.id || '').trim().toLowerCase().replace(/\s+/g, '_');
+    
+    // ベンダー名がある場合のみ、device.idの先頭から除去を試行
     if (vendorSlug && modelSlug.startsWith(vendorSlug + '_')) {
         modelSlug = modelSlug.substring(vendorSlug.length + 1);
+    }
+    
+    // バリアント情報を除去（OpenWrt ToHページの命名規則に合わせる）
+    // 一般的なバリアントパターン: -v1, -v2, -cellular, -lte, -wifi, -pro, -plus など
+    modelSlug = modelSlug.replace(/-(?:v\d+|cellular|lte|wifi|pro|plus|lite|mini|max|ac|ax|be|g|n)$/, '');
+    
+    // 最終的なmodelSlugが空になった場合の保険
+    if (!modelSlug) {
+        modelSlug = (device.id || '').trim().toLowerCase().replace(/\s+/g, '_');
     }
 
     const infoUrl = (config.info_url || "")
