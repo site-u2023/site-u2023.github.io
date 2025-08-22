@@ -13,6 +13,8 @@ button { margin-top: 12px; padding: 6px 12px; }
 .err { color: red; font-weight: bold; }
 .muted { color: #666; }
 </style>
+<!-- 安定CDNからUMD版を先に読み込む -->
+<script src="https://cdn.jsdelivr.net/npm/openpgp@5.11.3/dist/openpgp.min.js"></script>
 </head>
 <body>
 <h1>packages.adb 署名検証</h1>
@@ -26,114 +28,71 @@ button { margin-top: 12px; padding: 6px 12px; }
 <button id="verifyBtn">検証開始</button>
 <div id="output">ここに進行ログと検証結果が出ます</div>
 
-<script type="module">
-(async () => {
-  // 安定CDNを順に試して openpgp を動的 import
-  async function loadOpenPGP() {
-    const cdns = [
-      'https://cdn.jsdelivr.net/npm/openpgp@5.11.3/dist/openpgp.min.mjs',
-      'https://unpkg.com/openpgp@5.11.3/dist/openpgp.min.mjs'
-    ];
-    let lastErr;
-    for (const url of cdns) {
-      try { return await import(url); }
-      catch (e) { lastErr = e; }
-    }
-    throw new Error('openpgpの読み込みに失敗しました: ' + (lastErr?.message || 'unknown'));
-  }
-
-  const { default: openpgp } = await loadOpenPGP();
-
-  const out = document.getElementById('output');
-  const btn = document.getElementById('verifyBtn');
-
-  function log(line, html=false) {
+<script>
+const out = document.getElementById('output');
+function log(line, html=false) {
     if (html) out.innerHTML += line + '\n';
     else out.textContent += line + '\n';
-  }
-
-  function sanitizeBase(url) {
+}
+function sanitizeBase(url) {
     if (!url) return '';
     return url.endsWith('/') ? url : (url + '/');
-  }
-
-  function buildFetchUrl(base, filename, proxyPrefix) {
+}
+function buildFetchUrl(base, filename, proxyPrefix) {
     const direct = sanitizeBase(base) + filename;
     if (proxyPrefix && proxyPrefix.trim().length) {
-      const p = proxyPrefix.trim();
-      // ユーザーのプロキシ仕様に合わせて「プロキシ接頭辞 + 元URL」をそのまま連結
-      return (p.endsWith('/') ? p : (p + '/')) + direct;
+        const p = proxyPrefix.trim();
+        return (p.endsWith('/') ? p : (p + '/')) + direct;
     }
     return direct;
-  }
-
-  async function fetchBinary(name, url) {
+}
+async function fetchBinary(name, url) {
     log(`[DL] ${name} → ${url}`);
     const res = await fetch(url, { cache: 'no-store' });
     if (!res.ok) throw new Error(`${name} HTTP ${res.status}`);
-    // CORSでopaqueになった場合の見え方を補足
-    if (res.type === 'opaque') log(`  [!] 応答type=opaque（CORS制限の可能性）`, false);
+    if (res.type === 'opaque') log(`  [!] 応答type=opaque（CORS制限の可能性）`);
     const buf = new Uint8Array(await res.arrayBuffer());
     log(`  OK ${buf.length} bytes`);
     return buf;
-  }
-
-  async function verifySignature(adbBytes, sigBytes, armoredPubKey) {
+}
+async function verifySignature(adbBytes, sigBytes, armoredPubKey) {
     const message = await openpgp.createMessage({ binary: adbBytes });
-
-    // .sig はバイナリ優先、失敗ならASCIIアーマーで再解釈
     let signature;
     try {
-      signature = await openpgp.readSignature({ binarySignature: sigBytes });
+        signature = await openpgp.readSignature({ binarySignature: sigBytes });
     } catch {
-      signature = await openpgp.readSignature({ armoredSignature: new TextDecoder().decode(sigBytes) });
+        signature = await openpgp.readSignature({ armoredSignature: new TextDecoder().decode(sigBytes) });
     }
-
     const pubKey = await openpgp.readKey({ armoredKey: armoredPubKey });
     const vr = await openpgp.verify({ message, signature, verificationKeys: pubKey });
     const sig = vr.signatures[0];
-    await sig.verified; // 失敗時は例外
+    await sig.verified;
     return sig.keyID.toHex();
-  }
+}
 
-  btn.addEventListener('click', async () => {
+document.getElementById('verifyBtn').addEventListener('click', async () => {
     out.textContent = '--- 開始 ---\n';
     const base = document.getElementById('urlInput').value.trim();
     const proxyPrefix = document.getElementById('proxyInput').value.trim();
-
     if (!base) { log('エラー: URLを入力してください'); return; }
-
     const baseFixed = sanitizeBase(base);
     log(`[Base] ${baseFixed}`);
     if (proxyPrefix) log(`[Proxy] ${proxyPrefix}`);
-
     try {
-      // URL組み立て
-      const adbURL = buildFetchUrl(baseFixed, 'packages.adb', proxyPrefix);
-      const sigURL = buildFetchUrl(baseFixed, 'packages.adb.sig', proxyPrefix);
-      const ascURL = buildFetchUrl(baseFixed, 'packages.adb.asc', proxyPrefix);
-
-      // 逐次DL（ログの視認性を優先）
-      const adbBuf = await fetchBinary('packages.adb', adbURL);
-      const sigBuf = await fetchBinary('packages.adb.sig', sigURL);
-      const ascBuf = await fetchBinary('packages.adb.asc', ascURL);
-
-      log('\n--- 署名検証 ---');
-      const ascText = new TextDecoder().decode(ascBuf);
-
-      const keyId = await verifySignature(adbBuf, sigBuf, ascText);
-      log('', false);
-      log(`<span class="ok">✓ Signature valid (key ${keyId})</span>`, true);
+        const adbBuf = await fetchBinary('packages.adb', buildFetchUrl(baseFixed, 'packages.adb', proxyPrefix));
+        const sigBuf = await fetchBinary('packages.adb.sig', buildFetchUrl(baseFixed, 'packages.adb.sig', proxyPrefix));
+        const ascBuf = await fetchBinary('packages.adb.asc', buildFetchUrl(baseFixed, 'packages.adb.asc', proxyPrefix));
+        log('\n--- 署名検証 ---');
+        const ascText = new TextDecoder().decode(ascBuf);
+        const keyId = await verifySignature(adbBuf, sigBuf, ascText);
+        log(`<span class="ok">✓ Signature valid (key ${keyId})</span>`, true);
     } catch (e) {
-      log('', false);
-      log(`<span class="err">✗ 検証失敗: ${e.message}</span>`, true);
-      // ヒント（CORS/プロキシ）
-      if ((e.message || '').includes('Failed to fetch')) {
-        log(`<span class="muted">補足: CORSでブロックされている可能性があります。必要なら任意プロキシを設定してください。</span>`, true);
-      }
+        log(`<span class="err">✗ 検証失敗: ${e.message}</span>`, true);
+        if ((e.message || '').includes('Failed to fetch')) {
+            log(`<span class="muted">補足: CORSでブロックされている可能性があります。必要なら任意プロキシを設定してください。</span>`, true);
+        }
     }
-  });
-})();
+});
 </script>
 </body>
 </html>
