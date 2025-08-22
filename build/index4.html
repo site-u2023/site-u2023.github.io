@@ -4730,8 +4730,38 @@ async function fetchDevicePackages() {
         // これはopkg用のバイナリ形式でWebからは読み取れない
         // kmods等のターゲット固有パッケージは index.json に含まれている前提
         
-        console.log(`[PKG Info] SNAPSHOT uses packages.adb for target-specific packages (not accessible via web)`);
-        console.log(`[PKG Info] Relying on index.json data only for web-based package selection`);
+        // ターゲット固有のkmods取得（SNAPSHOT版もindex.jsonを使用）
+        const targetPath = current_device.target;
+        if (app.kernelHash) {
+            const kmodsUrl = `https://downloads.openwrt.org/snapshots/targets/${targetPath}/kmods/${app.kernelHash}/index.json`;
+            try {
+                const res = await fetch(kmodsUrl, { cache: 'no-cache', credentials: 'omit', mode: 'cors' });
+                if (res.ok) {
+                    const data = await res.json();
+                    const packages = data?.packages || {};
+                    Object.entries(packages).forEach(([name, info]) => {
+                        if (!allPkgsMap.has(name)) {  // 重複回避
+                            allPkgsMap.set(name, {
+                                name,
+                                version: info.version,
+                                section: info.section,
+                                description: info.description || '',
+                                depends: info.depends || [],
+                                size: info.size || 0,
+                                source: `index.json:kmods`,
+                                feed: 'kmods'
+                            });
+                        }
+                    });
+                    const pkgArray = Object.entries(packages).map(([name, info]) => ({ name, ...info }));
+                    ErrorHandler.packageDebug.logFetch(kmodsUrl, true, pkgArray);
+                } else {
+                    console.warn(`kmods index.json not found: ${kmodsUrl} (HTTP ${res.status})`);
+                }
+            } catch (err) {
+                console.warn(`kmods index.json fetch failed: ${kmodsUrl} -> ${err.message}`);
+            }
+        }
 
         // デバッガーの完全ダンプ機能を使用
         ErrorHandler.packageDebug.dumpAll();
