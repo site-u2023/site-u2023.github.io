@@ -4671,7 +4671,7 @@ async function fetchDevicePackages() {
                     if (u8[0] === 0x41 && u8[1] === 0x44 && u8[2] === 0x42) {
                         console.log(`[ADB] Processing packages.adb from ${item.url}`);
                         // ADBフォーマットの解析
-                        return parseADB(u8, item.url);
+                        return await parseADB(u8, item.url);
                     } else {
                         console.warn(`Unknown format in packages.adb from ${item.url}`);
                         return [];
@@ -4710,7 +4710,7 @@ async function fetchDevicePackages() {
 }
 
 // ADBフォーマットパーサー
-function parseADB(u8, source) {
+async function parseADB(u8, source) {
     // ADBヘッダー確認 "ADBd" (0x41 0x44 0x42 0x64)
     if (u8[0] !== 0x41 || u8[1] !== 0x44 || u8[2] !== 0x42 || u8[3] !== 0x64) {
         console.error(`[ADB] Invalid header in ${source}`);
