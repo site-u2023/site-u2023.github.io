@@ -9,6 +9,7 @@ body { font-family: monospace; padding: 20px; }
 .ok { color: green; font-weight: bold; }
 .err { color: red; font-weight: bold; }
 </style>
+<!-- 必ず先に読み込む -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/openpgp/5.11.0/openpgp.min.js"></script>
 </head>
 <body>
@@ -24,47 +25,42 @@ async function fetchBinary(url) {
     if (!res.ok) throw new Error(`HTTP ${res.status} - ${url}`);
     return new Uint8Array(await res.arrayBuffer());
 }
+
 async function verifySignature(adbBytes, sigBytes, pubKeyArmored) {
+    const message = await openpgp.createMessage({ binary: adbBytes });
+    let signature;
     try {
-        const message = await openpgp.createMessage({ binary: adbBytes });
-        let signature;
-        try {
-            signature = await openpgp.readSignature({ binarySignature: sigBytes });
-        } catch {
-            signature = await openpgp.readSignature({ armoredSignature: new TextDecoder().decode(sigBytes) });
-        }
-        const pubKey = await openpgp.readKey({ armoredKey: pubKeyArmored });
-        const verificationResult = await openpgp.verify({
-            message,
-            signature,
-            verificationKeys: pubKey
-        });
-        const { verified, keyID } = verificationResult.signatures[0];
-        await verified;
-        return { ok: true, keyID: keyID.toHex() };
-    } catch (e) {
-        return { ok: false, error: e.message };
+        signature = await openpgp.readSignature({ binarySignature: sigBytes });
+    } catch {
+        signature = await openpgp.readSignature({ armoredSignature: new TextDecoder().decode(sigBytes) });
     }
+    const pubKey = await openpgp.readKey({ armoredKey: pubKeyArmored });
+    const verificationResult = await openpgp.verify({
+        message,
+        signature,
+        verificationKeys: pubKey
+    });
+    const { verified, keyID } = verificationResult.signatures[0];
+    await verified;
+    return { ok: true, keyID: keyID.toHex() };
 }
+
 document.getElementById('verifyBtn').addEventListener('click', async () => {
     const baseUrl = document.getElementById('urlInput').value.trim();
     const out = document.getElementById('output');
     out.textContent = 'ダウンロード中...';
     try {
-        // 3ファイル取得
         const [adbBuf, sigBuf, ascBuf] = await Promise.all([
             fetchBinary(baseUrl + 'packages.adb'),
             fetchBinary(baseUrl + 'packages.adb.sig'),
             fetchBinary(baseUrl + 'packages.adb.asc')
         ]);
-        // .asc から公開鍵抽出（ASCIIアーマー形式）
         const ascText = new TextDecoder().decode(ascBuf);
-        // 検証
         const res = await verifySignature(adbBuf, sigBuf, ascText);
         if (res.ok) {
             out.innerHTML = `<span class="ok">✓ Signature valid (key ${res.keyID})</span>`;
         } else {
-            out.innerHTML = `<span class="err">✗ Invalid signature: ${res.error}</span>`;
+            out.innerHTML = `<span class="err">✗ Invalid signature</span>`;
         }
     } catch (e) {
         out.innerHTML = `<span class="err">エラー: ${e.message}</span>`;
