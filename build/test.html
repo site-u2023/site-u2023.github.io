@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>ADB Format Test</title>
+    <title>ADB Format Full Dump</title>
     <style>
         body {
             font-family: monospace;
@@ -15,6 +15,8 @@
             white-space: pre-wrap;
             background: #f5f5f5;
             min-height: 200px;
+            max-height: 80vh;
+            overflow-y: auto;
         }
         input[type="file"] {
             margin: 20px 0;
@@ -26,48 +28,59 @@
     </style>
 </head>
 <body>
-    <h1>packages.adb Parser Test</h1>
+    <h1>packages.adb Full Dump & Header Info</h1>
     <p>packages.adbファイルを選択してください：</p>
     <input type="file" id="fileInput" accept=".adb">
     <div id="output">結果がここに表示されます</div>
-    
+
     <script>
-    document.getElementById('fileInput').addEventListener('change', async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        
-        const buffer = await file.arrayBuffer();
-        const u8 = new Uint8Array(buffer);
-        
-        const output = document.getElementById('output');
-        
-        // ヘッダー情報
-        let result = 'File: ' + file.name + '\n';
-        result += 'Size: ' + u8.length + ' bytes\n';
-        result += 'Header (first 4 bytes): ' + Array.from(u8.slice(0, 4)).map(b => '0x' + b.toString(16).padStart(2, '0')).join(' ') + '\n\n';
-        
-        // 最初の512バイトをダンプ
-        result += 'First 512 bytes (hex):\n';
-        for (let i = 0; i < Math.min(512, u8.length); i += 16) {
-            result += i.toString(16).padStart(4, '0') + ': ';
-            for (let j = 0; j < 16 && i + j < u8.length; j++) {
-                result += u8[i + j].toString(16).padStart(2, '0') + ' ';
+        document.getElementById('fileInput').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const buffer = await file.arrayBuffer();
+            const u8 = new Uint8Array(buffer);
+            const dv = new DataView(buffer);
+
+            let result = '';
+            result += `File: ${file.name}\n`;
+            result += `Size: ${u8.length} bytes\n`;
+
+            // ヘッダー解析
+            const magic = String.fromCharCode(...u8.slice(0, 4));
+            result += `Magic: ${magic}\n`;
+
+            const sqliteOffset = dv.getUint32(8, true);
+            result += `SQLite offset (from header): ${sqliteOffset}\n`;
+
+            const sig = String.fromCharCode(...u8.slice(sqliteOffset, sqliteOffset + 15));
+            result += `Signature at offset: ${sig}\n`;
+
+            // SQLiteシグネチャ検索
+            const sigBytes = Array.from("SQLite format 3").map(c => c.charCodeAt(0));
+            let foundOffsets = [];
+            for (let i = 0; i < u8.length - sigBytes.length; i++) {
+                if (sigBytes.every((b, idx) => u8[i + idx] === b)) {
+                    foundOffsets.push(i);
+                }
             }
-            result += '  ';
-            // ASCII表示
-            for (let j = 0; j < 16 && i + j < u8.length; j++) {
-                const byte = u8[i + j];
-                result += (byte >= 32 && byte < 127) ? String.fromCharCode(byte) : '.';
+            result += `Found SQLite signatures at: ${foundOffsets.join(', ')}\n\n`;
+
+            // 全バイトをダンプ
+            result += 'Full file hex dump:\n';
+            for (let i = 0; i < u8.length; i += 16) {
+                result += i.toString(16).padStart(6, '0') + ': ';
+                result += Array.from(u8.slice(i, i + 16))
+                    .map(b => b.toString(16).padStart(2, '0'))
+                    .join(' ') + '  ';
+                result += Array.from(u8.slice(i, i + 16))
+                    .map(b => (b >= 32 && b < 127) ? String.fromCharCode(b) : '.')
+                    .join('');
+                result += '\n';
             }
-            result += '\n';
-        }
-        
-        output.textContent = result;
-        
-        // コンソールにも出力
-        console.log('Full hex dump (first 1024 bytes):');
-        console.log(Array.from(u8.slice(0, 1024)).map(b => b.toString(16).padStart(2, '0')).join(' '));
-    });
+
+            document.getElementById('output').textContent = result;
+        });
     </script>
 </body>
 </html>
