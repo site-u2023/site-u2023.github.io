@@ -3311,8 +3311,10 @@ function showDeviceInfo() {
     const vendorSlug = (device.titles?.[0]?.vendor || '')
         .trim().toLowerCase().replace(/\s+/g, '_');
     
-    const modelSlug = (device.id || '')
-        .trim().toLowerCase().replace(/\s+/g, '_');
+    let modelSlug = (device.id || '').trim().toLowerCase().replace(/\s+/g, '_');
+    if (vendorSlug && modelSlug.startsWith(vendorSlug + '_')) {
+        modelSlug = modelSlug.substring(vendorSlug.length + 1);
+    }
 
     const infoUrl = (config.info_url || "")
         .replace(/{vendor_slug}/g, vendorSlug)
