@@ -703,6 +703,9 @@
     } /* close @media (prefers-color-scheme: dark) */
 </style>
 
+<!-- SQL.js (SQLite in WebAssembly) -->
+<script src="./vendor/sql.js/sql-wasm.js"></script>
+    
 <!-- Pako (gzip decompression) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
     
@@ -4706,12 +4709,49 @@ async function fetchDevicePackages() {
     }
 }
 
-// ADBフォーマットパーサー（簡易実装）
+// ADBフォーマットパーサー
 function parseADB(u8, source) {
-    // ADBフォーマットは調査が必要
-    // 現時点では空配列を返す（パッケージセレクターは非表示になる）
-    console.warn(`[ADB] packages.adb format parsing not yet implemented for ${source}`);
-    return [];
+    // ADBヘッダー確認 "ADBd" (0x41 0x44 0x42 0x64)
+    if (u8[0] !== 0x41 || u8[1] !== 0x44 || u8[2] !== 0x42 || u8[3] !== 0x64) {
+        console.error(`[ADB] Invalid header in ${source}`);
+        return [];
+    }
+    
+    // SQLiteデータは24バイト目から始まる
+    const sqliteData = u8.slice(24);
+    
+    // SQLiteシグネチャ確認
+    if (sqliteData[0] !== 0x53 || sqliteData[1] !== 0x51 || sqliteData[2] !== 0x4c || sqliteData[3] !== 0x69) {
+        console.error(`[ADB] No SQLite data found in ${source}`);
+        return [];
+    }
+    
+    try {
+        // SQL.jsでSQLiteデータベースを読み込む
+        const SQL = await initSqlJs({ locateFile: f => `./vendor/sql.js/${f}` });
+        const db = new SQL.Database(sqliteData);
+        
+        // パッケージ情報を取得
+        const result = db.exec("SELECT name, version, description FROM packages");
+        
+        if (!result.length || !result[0].values) {
+            return [];
+        }
+        
+        const packages = result[0].values.map(([name, version, description]) => ({
+            name,
+            version,
+            description,
+            source
+        }));
+        
+        db.close();
+        return packages;
+        
+    } catch (e) {
+        console.error(`[ADB] SQLite processing failed for ${source}:`, e);
+        return [];
+    }
 }
 
 function parseOpkgPackages(text, source) {
