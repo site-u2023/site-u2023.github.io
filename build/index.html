@@ -3311,12 +3311,12 @@ function showDeviceInfo() {
     const vendorSlug = (device.titles?.[0]?.vendor || '')
         .trim().toLowerCase().replace(/\s+/g, '_');
     
-    const modelSlug = `${vendorSlug}_${(device.id || '')
-        .trim().toLowerCase().replace(/\s+/g, '_')}`;
+    const modelSlug = (device.id || '')
+        .trim().toLowerCase().replace(/\s+/g, '_');
 
     const infoUrl = (config.info_url || "")
-        .replace("{vendorSlug}", vendorSlug)
-        .replace("{modelSlug}", modelSlug)
+        .replace(/{vendor_slug}/g, vendorSlug)
+        .replace(/{model_slug}/g, modelSlug)
         .replace("{target}", device.target)
         .replace("{id}", device.id)
         .replace("{version}", app.selectedVersion);
