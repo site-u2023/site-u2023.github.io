@@ -2,28 +2,31 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>packages.adb 署名検証</title>
+<title>packages.adb 署名検証（DLログ付き）</title>
 <style>
 body { font-family: monospace; padding: 20px; }
 #output { border: 1px solid #ccc; padding: 10px; margin-top: 20px; white-space: pre-wrap; background: #f5f5f5; }
 .ok { color: green; font-weight: bold; }
 .err { color: red; font-weight: bold; }
 </style>
-<!-- ここで必ず先に読み込む -->
+<!-- OpenPGPライブラリを先に読み込む -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/openpgp/5.11.0/openpgp.min.js"></script>
 </head>
 <body>
-<h1>packages.adb 署名検証</h1>
+<h1>packages.adb 署名検証（DLログ付き）</h1>
 <p>OpenWrtパッケージディレクトリのURLを入力してください（末尾に / を付ける）</p>
 <input type="text" id="urlInput" size="100" placeholder="例: https://downloads.openwrt.org/snapshots/packages/mipsel_24kc/luci/">
 <button id="verifyBtn">検証開始</button>
 <div id="output">結果がここに表示されます</div>
 
 <script>
-async function fetchBinary(url) {
+async function fetchAndLog(name, url, out) {
+    out.textContent += `[DL] ${name} ... `;
     const res = await fetch(url);
-    if (!res.ok) throw new Error(`HTTP ${res.status} - ${url}`);
-    return new Uint8Array(await res.arrayBuffer());
+    if (!res.ok) throw new Error(`${name} HTTP ${res.status}`);
+    const buf = new Uint8Array(await res.arrayBuffer());
+    out.textContent += `OK (${buf.length} bytes)\n`;
+    return buf;
 }
 
 async function verifySignature(adbBytes, sigBytes, pubKeyArmored) {
@@ -48,24 +51,22 @@ async function verifySignature(adbBytes, sigBytes, pubKeyArmored) {
 document.getElementById('verifyBtn').addEventListener('click', async () => {
     const baseUrl = document.getElementById('urlInput').value.trim();
     const out = document.getElementById('output');
-    out.textContent = 'ダウンロード中...';
+    out.textContent = '--- ダウンロード開始 ---\n';
     try {
-        // 3ファイル取得
-        const [adbBuf, sigBuf, ascBuf] = await Promise.all([
-            fetchBinary(baseUrl + 'packages.adb'),
-            fetchBinary(baseUrl + 'packages.adb.sig'),
-            fetchBinary(baseUrl + 'packages.adb.asc')
-        ]);
-        // .asc は公開鍵として使用
+        const adbBuf = await fetchAndLog('packages.adb', baseUrl + 'packages.adb', out);
+        const sigBuf = await fetchAndLog('packages.adb.sig', baseUrl + 'packages.adb.sig', out);
+        const ascBuf = await fetchAndLog('packages.adb.asc', baseUrl + 'packages.adb.asc', out);
+
+        out.textContent += '\n--- 署名検証 ---\n';
         const ascText = new TextDecoder().decode(ascBuf);
         const res = await verifySignature(adbBuf, sigBuf, ascText);
         if (res.ok) {
-            out.innerHTML = `<span class="ok">✓ Signature valid (key ${res.keyID})</span>`;
+            out.innerHTML += `<span class="ok">✓ Signature valid (key ${res.keyID})</span>\n`;
         } else {
-            out.innerHTML = `<span class="err">✗ Invalid signature</span>`;
+            out.innerHTML += `<span class="err">✗ Invalid signature</span>\n`;
         }
     } catch (e) {
-        out.innerHTML = `<span class="err">エラー: ${e.message}</span>`;
+        out.innerHTML += `<span class="err">エラー: ${e.message}</span>\n`;
     }
 });
 </script>
