@@ -10,12 +10,11 @@
     <link rel="preconnect" href="https://sysupgrade.openwrt.org">
     <link rel="dns-prefetch" href="https://auto-config.site-u.workers.dev">
     <link rel="dns-prefetch" href="https://site-u.pages.dev">
-    <link rel="preconnect" href="https://apk-proxy.site-u.workers.dev"> 
-    
+
     <!-- ドキュメント検索に向けたリソースヒント -->
     <link rel="preconnect" href="https://openwrt.org" crossorigin>
     <link rel="dns-prefetch" href="https://openwrt.org">
-
+    
 <style>
     /* 基本スタイル */
     body {
@@ -2072,50 +2071,26 @@ async function findValidUrls(urlCandidates) {
     return validUrls;
 }
         
-// ==================== URL管理の統一関数（プロキシ統合版） ====================
-
-// SNAPSHOT専用プロキシURL
-const SNAPSHOT_PROXY_URL = 'https://apk-proxy.site-u.workers.dev';
-
+// ==================== URL管理の統一関数 ====================
 function setupVersionUrls(version) {
-    ErrorHandler.debug('setupVersionUrls', 'Function called', { version }); // 追加
-    
     if (!config.image_urls) config.image_urls = {};
     if (!config.overview_urls) config.overview_urls = {};
-    if (!config.package_urls) config.package_urls = {}; // 追加
-    if (config.image_urls[version]) {
-        ErrorHandler.debug('setupVersionUrls', 'Version already exists, returning', { version }); // 追加
-        return;
-    }
-    
+
+    if (config.image_urls[version]) return;
+
     const overview_url = config.image_url;
     const image_url = (typeof upstream_config !== 'undefined' && upstream_config.image_url_override)
         ? upstream_config.image_url_override
         : config.image_url;
-    
-    ErrorHandler.debug('setupVersionUrls', 'URLs determined', { overview_url, image_url }); // 追加
-    
+
     // SNAPSHOT または *-SNAPSHOT → /snapshots/ に集約
     if (/SNAPSHOT$/i.test(version)) {
-        ErrorHandler.debug('setupVersionUrls', 'SNAPSHOT version detected', { version }); // 追加
         config.overview_urls[version] = `${overview_url}/snapshots/`;
         config.image_urls[version]   = `${image_url}/snapshots/`;
-        config.package_urls[version] = SNAPSHOT_PROXY_URL; // 追加
     } else {
-        ErrorHandler.debug('setupVersionUrls', 'Release version detected', { version }); // 追加
         config.overview_urls[version] = `${overview_url}/releases/${encodeURIComponent(version)}/`;
         config.image_urls[version]    = `${image_url}/releases/${encodeURIComponent(version)}/`;
-        config.package_urls[version] = `${image_url}/releases/${encodeURIComponent(version)}/packages/`; // 追加
     }
-    
-    ErrorHandler.debug('setupVersionUrls', 'Function completed', { 
-        version,
-        urls: {
-            overview: config.overview_urls[version],
-            image: config.image_urls[version],
-            packages: config.package_urls[version]
-        }
-    });
 }
         
 // ==================== ユーティリティ関数 ====================
