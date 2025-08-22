@@ -3257,6 +3257,14 @@ async function loadDeviceProfile(device) {
 
 function applyProfileData(profilesData, profileId) {
     app.versionCode = profilesData.version_code || '';
+    // ★カーネルハッシュを保存（fetchDevicePackagesで使用）
+    if (profilesData.linux_kernel) {
+        // どのフィールド名か確認が必要
+        app.kernelHash = profilesData.linux_kernel.version || 
+                         profilesData.linux_kernel.hash ||
+                         profilesData.linux_kernel.version_hash;
+        console.log('[Kernel] Found hash:', app.kernelHash);
+    }    
     if (profilesData.profiles && profilesData.profiles[profileId]) {
         const profile = profilesData.profiles[profileId];
         const defaultPackages = profilesData.default_packages || [];
@@ -4740,11 +4748,20 @@ async function fetchDevicePackages() {
         }
     }
 
-    // target固有パッケージ（リリース版のみ存在）
+    // target固有パッケージ
     if (!/SNAPSHOT$/i.test(version)) {
-        urls.push(`${basePath}/targets/${targetPath}/packages/Packages`);  // ★直接URL
+        urls.push(`${basePath}/targets/${targetPath}/packages/Packages`);
+    
+        // ★kmodsディレクトリ
+        if (app.kernelHash) {
+            const kmodsUrl = `${basePath}/targets/${targetPath}/kmods/${app.kernelHash}/Packages`;
+            urls.push(kmodsUrl);
+            console.log(`[KMODS] Adding: ${kmodsUrl}`);
+        } else {
+            console.error('[KMODS] ERROR: No kernel hash available!');
+        }
     }
-
+    
     // フィードパッケージ（全バージョン共通）
     for (const feed of feeds) {
         urls.push(`${basePath}/packages/${arch}/${feed}/Packages`);  // ★直接URL
