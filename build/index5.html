@@ -4665,9 +4665,27 @@ async function fetchDevicePackages() {
                     return [];
                 }
                 if (item.type === 'adb') {
-                    const buf = await res.arrayBuffer();
+                    console.log("[ADB] Fetching package DB from:", item.url);
+
+                    // まず HEAD リクエストで存在確認
+                    const headResp = await fetch(item.url, { method: 'HEAD' });
+                    console.log("[ADB] HEAD status:", headResp.status, headResp.statusText);
+                    if (!headResp.ok) {
+                        throw new Error(`packages.adb not found at ${item.url}`);
+                    }
+
+                    // 実データ取得
+                    const buf = await fetch(item.url).then(r => r.arrayBuffer());
+                    console.log("[ADB] Size:", buf.byteLength, "bytes");
+
+                    // SQLite 初期化
                     const SQL = await initSqlJs({ locateFile: f => `./vendor/sql.js/${f}` });
                     const db = new SQL.Database(new Uint8Array(buf));
+
+                    // テーブル一覧を確認
+                    console.log("[ADB] Tables:", db.exec("SELECT name FROM sqlite_master"));
+
+                    // パッケージ一覧取得
                     const result = db.exec("SELECT name, version, description FROM packages");
                     return result[0]?.values.map(([name, version, desc]) => ({
                         name, version, description: desc, source: item.url
