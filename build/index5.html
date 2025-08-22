@@ -4711,63 +4711,29 @@ async function fetchDevicePackages() {
 
 // ADBフォーマットパーサー
 async function parseADB(u8, source) {
-    // ADBヘッダー確認 ("ADB\0" または "ADBd")
-    if (!(u8[0] === 0x41 && u8[1] === 0x44 && u8[2] === 0x42)) {
+    if (!(u8[0] === 0x41 && u8[1] === 0x44 && u8[2] === 0x42 && u8[3] === 0x64)) {
         console.error(`[ADB] Invalid header in ${source}`);
         return [];
     }
-
-    // ヘッダーから SQLite 開始オフセットを取得（8〜11バイト目に格納されていることが多い）
-    // Little-endian 32bit
     const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
-    const sqliteOffset = dv.getUint32(8, true); // 8バイト目から4バイト
+    const sqliteOffset = dv.getUint32(8, true);
     if (sqliteOffset <= 0 || sqliteOffset >= u8.length) {
         console.error(`[ADB] Suspicious SQLite offset ${sqliteOffset} in ${source}`);
         return [];
     }
-
     const sqliteData = u8.slice(sqliteOffset);
-
-    // SQLiteシグネチャ確認
-    if (!(sqliteData[0] === 0x53 && sqliteData[1] === 0x51 && sqliteData[2] === 0x4C && sqliteData[3] === 0x69)) {
-        console.error(`[ADB] No SQLite signature found at offset ${sqliteOffset} in ${source}`);
+    if (!(sqliteData[0] === 0x53 && sqliteData[1] === 0x51 && sqliteData[2] === 0x4c && sqliteData[3] === 0x69)) {
+        console.error(`[ADB] No SQLite signature at offset ${sqliteOffset} in ${source}`);
         return [];
     }
-
     try {
         const SQL = await initSqlJs({ locateFile: f => `./vendor/sql.js/${f}` });
         const db = new SQL.Database(sqliteData);
-
-        // テーブル名を取得
-        const tablesRes = db.exec("SELECT name FROM sqlite_master WHERE type='table'");
-        if (!tablesRes.length || !tablesRes[0].values.length) {
-            console.warn(`[ADB] No tables found in ${source}`);
-            db.close();
-            return [];
-        }
-        const tableName = tablesRes[0].values[0][0];
-
-        // カラム情報を取得
-        const colsRes = db.exec(`PRAGMA table_info(${tableName})`);
-        const colNames = colsRes[0].values.map(row => row[1].toLowerCase());
-
-        // name/version/description に相当するカラムを探す
-        const nameIdx = colNames.findIndex(c => c === 'name' || c === 'package');
-        const versionIdx = colNames.findIndex(c => c === 'version' || c === 'ver');
-        const descIdx = colNames.findIndex(c => c.includes('desc'));
-
-        // 全行取得
-        const rowsRes = db.exec(`SELECT * FROM ${tableName}`);
-        const packages = rowsRes[0].values.map(row => ({
-            name: row[nameIdx >= 0 ? nameIdx : 0],
-            version: versionIdx >= 0 ? row[versionIdx] : '',
-            description: descIdx >= 0 ? row[descIdx] : '',
-            source
-        }));
-
+        const result = db.exec("SELECT name, version, description FROM packages");
         db.close();
-        console.log(`[ADB] Found ${packages.length} packages in ${source}`);
-        return packages;
+        return result[0]?.values.map(([name, version, desc]) => ({
+            name, version, description: desc, source
+        })) || [];
     } catch (e) {
         console.error(`[ADB] SQLite processing failed for ${source}:`, e);
         return [];
