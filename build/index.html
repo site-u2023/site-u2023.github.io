@@ -4689,12 +4689,38 @@ function showDownloadLinks(images, fullStatus, requestHash) {
 
 // ★パッケージインデックス取得
 async function fetchDevicePackages() {
-    // SNAPSHOT版の場合は処理をスキップ（公式準拠）
+    // SNAPSHOT版の場合は index.json を利用
     if (/SNAPSHOT$/i.test(app.selectedVersion)) {
-        console.log('[fetchDevicePackages] SNAPSHOT version detected - skipping package fetch (official compliant)');
-        app.devicePackages = [];  // 空配列をセット
-        
-        // SNAPSHOT版でもパッケージセレクターを生成（PACKAGE_DBを直接使用）
+        console.log('[fetchDevicePackages] SNAPSHOT version detected - using index.json');
+
+        app.devicePackages = [];
+        if (!current_device || !current_device.id) return;
+
+        const arch = app.archPackagesMap?.[current_device.target];
+        if (!arch) {
+            console.error('No arch info for target:', current_device.target);
+            return;
+        }
+
+        const feeds = ["base", "luci", "packages", "routing", "telephony"];
+        const allPkgs = new Set();
+
+        for (const feed of feeds) {
+            const url = `https://downloads.openwrt.org/snapshots/packages/${arch}/${feed}/index.json`;
+            try {
+                const res = await fetch(url);
+                if (!res.ok) {
+                    console.warn(`index.json not found: ${url}`);
+                    continue;
+                }
+                const data = await res.json();
+                Object.keys(data.packages || {}).forEach(name => allPkgs.add(name));
+            } catch (err) {
+                console.error(`Failed to fetch ${url}:`, err);
+            }
+        }
+
+        app.devicePackages = Array.from(allPkgs).map(name => ({ name }));
         if (typeof generatePackageSelector === 'function') {
             generatePackageSelector();
         }
