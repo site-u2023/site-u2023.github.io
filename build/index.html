@@ -3308,10 +3308,8 @@ function showDeviceInfo() {
     
     const deviceLink = `${window.location.origin}${window.location.pathname}?version=${encodeURIComponent(app.selectedVersion)}&target=${encodeURIComponent(device.target)}&id=${encodeURIComponent(device.id)}`;
 
-    const vendorSlug = (device.titles?.[0]?.vendor || '')
-        .trim().toLowerCase().replace(/\s+/g, '_');
-    const modelSlug = (device.id || '')
-        .trim().toLowerCase().replace(/\s+/g, '_');
+    const vendorSlug = slugify(device.titles?.[0]?.vendor || '');
+    const modelSlug  = slugify(device.id || '');
 
     const infoUrl = (config.info_url || "")
         .replace("{vendorSlug}", vendorSlug)
