@@ -4681,18 +4681,26 @@ async function fetchDevicePackages() {
 
                     // 実データ取得
                     const buf = await fetch(item.url).then(r => r.arrayBuffer());
-                    const u8 = new Uint8Array(buf);
+                    let u8 = new Uint8Array(buf);
                     console.log("Size:", buf.byteLength, "bytes");
                     console.log("First 16 bytes (hex):", Array.from(u8.slice(0, 16))
                         .map(b => b.toString(16).padStart(2, "0")).join(" "));
 
-                    // 形式判定
+                    // 形式判定＋gzip展開
                     if (u8[0] === 0x53 && u8[1] === 0x51 && u8[2] === 0x4c && u8[3] === 0x69) {
                         console.log("Format: SQLite");
                     } else if (u8[0] === 0x1f && u8[1] === 0x8b) {
                         console.log("Format: gzip-compressed");
+                        try {
+                            u8 = pako.ungzip(u8);
+                            console.log("[ADB] gzip decompressed, new size:", u8.byteLength, "bytes");
+                        } catch (e) {
+                            console.error("[ADB] gzip decompression failed:", e);
+                            throw e;
+                        }
                     } else if (u8[0] === 0xfd && u8[1] === 0x37 && u8[2] === 0x7a && u8[3] === 0x58) {
-                        console.log("Format: xz-compressed");
+                        console.log("Format: xz-compressed (not yet supported)");
+                        throw new Error("XZ-compressed .adb is not supported");
                     } else {
                         console.log("Format: unknown");
                     }
