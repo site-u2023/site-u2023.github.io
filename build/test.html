@@ -1,12 +1,35 @@
 <!DOCTYPE html>
-<html>
+<html lang="ja">
 <head>
+    <meta charset="UTF-8">
     <title>ADB Format Test</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+        }
+        #output {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-top: 20px;
+            white-space: pre-wrap;
+            background: #f5f5f5;
+            min-height: 200px;
+        }
+        input[type="file"] {
+            margin: 20px 0;
+            padding: 10px;
+            border: 2px dashed #ccc;
+            display: block;
+            width: 300px;
+        }
+    </style>
 </head>
 <body>
     <h1>packages.adb Parser Test</h1>
+    <p>packages.adbファイルを選択してください：</p>
     <input type="file" id="fileInput" accept=".adb">
-    <pre id="output"></pre>
+    <div id="output">結果がここに表示されます</div>
     
     <script>
     document.getElementById('fileInput').addEventListener('change', async (e) => {
@@ -16,23 +39,34 @@
         const buffer = await file.arrayBuffer();
         const u8 = new Uint8Array(buffer);
         
-        // ヘッダー解析
-        console.log('First 256 bytes (hex):');
-        console.log(Array.from(u8.slice(0, 256)).map(b => b.toString(16).padStart(2, '0')).join(' '));
+        const output = document.getElementById('output');
         
-        // ASCII表示
-        console.log('First 256 bytes (ASCII):');
-        let ascii = '';
-        for (let i = 0; i < Math.min(256, u8.length); i++) {
-            ascii += (u8[i] >= 32 && u8[i] < 127) ? String.fromCharCode(u8[i]) : '.';
-            if ((i + 1) % 16 === 0) ascii += '\n';
+        // ヘッダー情報
+        let result = 'File: ' + file.name + '\n';
+        result += 'Size: ' + u8.length + ' bytes\n';
+        result += 'Header (first 4 bytes): ' + Array.from(u8.slice(0, 4)).map(b => '0x' + b.toString(16).padStart(2, '0')).join(' ') + '\n\n';
+        
+        // 最初の512バイトをダンプ
+        result += 'First 512 bytes (hex):\n';
+        for (let i = 0; i < Math.min(512, u8.length); i += 16) {
+            result += i.toString(16).padStart(4, '0') + ': ';
+            for (let j = 0; j < 16 && i + j < u8.length; j++) {
+                result += u8[i + j].toString(16).padStart(2, '0') + ' ';
+            }
+            result += '  ';
+            // ASCII表示
+            for (let j = 0; j < 16 && i + j < u8.length; j++) {
+                const byte = u8[i + j];
+                result += (byte >= 32 && byte < 127) ? String.fromCharCode(byte) : '.';
+            }
+            result += '\n';
         }
-        console.log(ascii);
         
-        document.getElementById('output').textContent = 
-            'Check console for hex dump\n' +
-            'File size: ' + u8.length + ' bytes\n' +
-            'Header: ' + Array.from(u8.slice(0, 4)).map(b => '0x' + b.toString(16).padStart(2, '0')).join(' ');
+        output.textContent = result;
+        
+        // コンソールにも出力
+        console.log('Full hex dump (first 1024 bytes):');
+        console.log(Array.from(u8.slice(0, 1024)).map(b => b.toString(16).padStart(2, '0')).join(' '));
     });
     </script>
 </body>
