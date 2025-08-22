@@ -704,8 +704,8 @@
 </style>
 
 <!-- SQL.js (SQLite in WebAssembly) -->
-<script src="vendor/sql.js/sql-wasm.js"></script>
-    
+<script src="./vendor/sql.js/sql-wasm.js"></script>
+
 </head>
 
 <body>
@@ -4666,7 +4666,7 @@ async function fetchDevicePackages() {
                 }
                 if (item.type === 'adb') {
                     const buf = await res.arrayBuffer();
-                    const SQL = await initSqlJs({ locateFile: f => `vendor/sql.js/${f}` });
+                    const SQL = await initSqlJs({ locateFile: f => `./vendor/sql.js/${f}` });
                     const db = new SQL.Database(new Uint8Array(buf));
                     const result = db.exec("SELECT name, version, description FROM packages");
                     return result[0]?.values.map(([name, version, desc]) => ({
