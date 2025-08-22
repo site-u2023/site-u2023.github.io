@@ -4851,11 +4851,6 @@ async function fetchDevicePackages() {
             if (rec.name) {
                 rec.source = source;
                 pkgs.push(rec);
-                
-                // デバッグ：kmodパッケージ検出
-                if (rec.name.startsWith('kmod-')) {
-                    console.log(`[Parse] Found kmod: ${rec.name} from ${source}`);
-                }
             }
         }
         return pkgs;
