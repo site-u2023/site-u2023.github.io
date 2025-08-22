@@ -4715,17 +4715,22 @@ async function parseADB(u8, source) {
         console.error(`[ADB] Invalid header in ${source}`);
         return [];
     }
-    const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
-    const sqliteOffset = dv.getUint32(8, true);
-    if (sqliteOffset <= 0 || sqliteOffset >= u8.length) {
-        console.error(`[ADB] Suspicious SQLite offset ${sqliteOffset} in ${source}`);
+
+    // ヘッダー値は信用せず、SQLiteシグネチャを直接検索
+    const sig = Array.from("SQLite format 3").map(c => c.charCodeAt(0));
+    let sqliteOffset = -1;
+    for (let i = 0; i < u8.length - sig.length; i++) {
+        if (sig.every((b, idx) => u8[i + idx] === b)) {
+            sqliteOffset = i;
+            break;
+        }
+    }
+    if (sqliteOffset === -1) {
+        console.error(`[ADB] SQLite signature not found in ${source}`);
         return [];
     }
+
     const sqliteData = u8.slice(sqliteOffset);
-    if (!(sqliteData[0] === 0x53 && sqliteData[1] === 0x51 && sqliteData[2] === 0x4c && sqliteData[3] === 0x69)) {
-        console.error(`[ADB] No SQLite signature at offset ${sqliteOffset} in ${source}`);
-        return [];
-    }
     try {
         const SQL = await initSqlJs({ locateFile: f => `./vendor/sql.js/${f}` });
         const db = new SQL.Database(sqliteData);
