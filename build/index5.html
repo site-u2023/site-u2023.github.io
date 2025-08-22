@@ -2041,6 +2041,72 @@ const ErrorHandler = {
         console.log(`[TRACE] ${functionName}() called`);
         console.log('Arguments:', args);
         console.trace(`${functionName} call stack:`);
+    },
+
+    // ADB専用デバッグシステム
+    adbDebug: {
+        start(url) {
+            console.group(`[ADB DEBUG] ${url}`);
+            this.startTime = Date.now();
+        },
+
+        end() {
+            const elapsed = Date.now() - this.startTime;
+            console.log(`[ADB DEBUG] Completed in ${elapsed}ms`);
+            console.groupEnd();
+        },
+
+        format(u8, label = '') {
+            console.log(`[ADB] ${label}Size:`, u8.byteLength, "bytes");
+            console.log(`[ADB] ${label}First 16 bytes (hex):`, 
+                Array.from(u8.slice(0, 16)).map(b => b.toString(16).padStart(2, "0")).join(" "));
+            
+            // SQLiteシグネチャチェック
+            if (u8[0] === 0x53 && u8[1] === 0x51 && u8[2] === 0x4c && u8[3] === 0x69) {
+                console.log(`[ADB] ${label}Format: SQLite database`);
+                return 'sqlite';
+            } else if (u8[0] === 0x1f && u8[1] === 0x8b) {
+                console.log(`[ADB] ${label}Format: gzip-compressed`);
+                return 'gzip';
+            } else if (u8[0] === 0xfd && u8[1] === 0x37 && u8[2] === 0x7a && u8[3] === 0x58) {
+                console.log(`[ADB] ${label}Format: xz-compressed (unsupported)`);
+                return 'xz';
+            } else {
+                console.log(`[ADB] ${label}Format: unknown -`, 
+                    Array.from(u8.slice(0, 4)).map(b => `0x${b.toString(16).padStart(2, "0")}`).join(" "));
+                return 'unknown';
+            }
+        },
+
+        sql(db, query, label = '') {
+            console.log(`[ADB] ${label}Executing SQL:`, query);
+            try {
+                const result = db.exec(query);
+                console.log(`[ADB] ${label}Result:`, {
+                    length: result.length,
+                    hasData: result[0]?.values?.length || 0,
+                    columns: result[0]?.columns || []
+                });
+                return result;
+            } catch (e) {
+                console.error(`[ADB] ${label}SQL Error:`, e);
+                throw e;
+            }
+        },
+
+        packages(packages, source) {
+            console.log(`[ADB] Package processing complete:`, {
+                count: packages.length,
+                source: source,
+                sample: packages.slice(0, 3).map(p => ({ name: p.name, version: p.version }))
+            });
+            
+            if (packages.length === 0) {
+                console.warn(`[ADB] WARNING: No packages extracted from ${source}`);
+            }
+            
+            return packages;
+        }
     }
 };
 
