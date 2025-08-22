@@ -4634,9 +4634,9 @@ async function fetchDevicePackages() {
     const urls = [];
 
     if (isSnapshot) {
-        // SNAPSHOT → APKINDEX.tar.gz (APKフォーマット)
+        // SNAPSHOT → packages.adb (ADBフォーマット)
         for (const feed of feeds) {
-            urls.push({ url: `${basePath}/packages/${arch}/${feed}/APKINDEX.tar.gz`, type: 'apk' });
+            urls.push({ url: `${basePath}/packages/${arch}/${feed}/packages.adb`, type: 'adb' });
         }
     } else {
         // リリース版 → Packages (OPKGフォーマット)
@@ -4658,27 +4658,19 @@ async function fetchDevicePackages() {
                     return [];
                 }
                 
-                if (item.type === 'apk') {
-                    // APK形式 (SNAPSHOT版) - APKINDEX.tar.gz
+                if (item.type === 'adb') {
+                    // ADB形式 (SNAPSHOT版) - packages.adb
                     const buf = await res.arrayBuffer();
                     const u8 = new Uint8Array(buf);
                     
-                    try {
-                        // gzip解凍
-                        const ungzipped = pako.ungzip(u8);
-                        
-                        // tar展開してAPKINDEXファイルを取得
-                        const apkindexContent = extractAPKINDEXFromTar(ungzipped);
-                        
-                        if (apkindexContent) {
-                            // APKINDEXフォーマットをパース
-                            return parseAPKINDEX(apkindexContent, item.url);
-                        } else {
-                            console.warn(`No APKINDEX found in ${item.url}`);
-                            return [];
-                        }
-                    } catch (e) {
-                        console.error(`Failed to process APK index from ${item.url}:`, e);
+                    // ADBファイルを解析
+                    // ADBは "ADB\0" (0x41 0x44 0x42 0x00) で始まる独自フォーマット
+                    if (u8[0] === 0x41 && u8[1] === 0x44 && u8[2] === 0x42) {
+                        console.log(`[ADB] Processing packages.adb from ${item.url}`);
+                        // ADBフォーマットの解析
+                        return parseADB(u8, item.url);
+                    } else {
+                        console.warn(`Unknown format in packages.adb from ${item.url}`);
                         return [];
                     }
                 } else {
@@ -4714,66 +4706,12 @@ async function fetchDevicePackages() {
     }
 }
 
-// tarファイルからAPKINDEXを抽出
-function extractAPKINDEXFromTar(tarData) {
-    // 簡易的なtar解析（APKINDEXファイルのみ抽出）
-    let offset = 0;
-    while (offset < tarData.length - 512) {
-        // tarヘッダー読み取り
-        const header = tarData.slice(offset, offset + 512);
-        const fileName = new TextDecoder().decode(header.slice(0, 100)).replace(/\0.*$/, '');
-        
-        if (fileName === '' || header[0] === 0) {
-            // 空のヘッダー = tarの終端
-            break;
-        }
-        
-        // ファイルサイズ取得（8進数）
-        const sizeOctal = new TextDecoder().decode(header.slice(124, 136)).replace(/\0.*$/, '').trim();
-        const fileSize = parseInt(sizeOctal, 8) || 0;
-        
-        offset += 512; // ヘッダー分進める
-        
-        if (fileName === 'APKINDEX' || fileName.endsWith('/APKINDEX')) {
-            // APKINDEXファイル発見
-            const content = tarData.slice(offset, offset + fileSize);
-            return new TextDecoder().decode(content);
-        }
-        
-        // 次のヘッダーへ（512バイト境界に合わせる）
-        offset += Math.ceil(fileSize / 512) * 512;
-    }
-    return null;
-}
-
-// APKINDEXフォーマットをパース
-function parseAPKINDEX(text, source) {
-    const packages = [];
-    const blocks = text.split('\n\n');
-    
-    for (const block of blocks) {
-        if (!block.trim()) continue;
-        
-        const pkg = {};
-        const lines = block.split('\n');
-        
-        for (const line of lines) {
-            if (line.startsWith('P:')) {
-                pkg.name = line.substring(2);
-            } else if (line.startsWith('V:')) {
-                pkg.version = line.substring(2);
-            } else if (line.startsWith('T:')) {
-                pkg.description = line.substring(2);
-            }
-        }
-        
-        if (pkg.name) {
-            pkg.source = source;
-            packages.push(pkg);
-        }
-    }
-    
-    return packages;
+// ADBフォーマットパーサー（簡易実装）
+function parseADB(u8, source) {
+    // ADBフォーマットは調査が必要
+    // 現時点では空配列を返す（パッケージセレクターは非表示になる）
+    console.warn(`[ADB] packages.adb format parsing not yet implemented for ${source}`);
+    return [];
 }
 
 function parseOpkgPackages(text, source) {
