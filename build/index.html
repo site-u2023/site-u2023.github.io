@@ -1181,8 +1181,8 @@ const SETUP_SH_TEMPLATE = `#!/bin/sh
 exec >/tmp/setup.log 2>&1
 LAN_DEF="$(uci -q get network.lan.device || echo lan)"
 WAN_DEF="$(uci -q get network.wan.device || echo wan)"
-MAP_NAME="map"
-MAP6_NAME="map6"
+MAPE_NAME="mape"
+MAPE6_NAME="mape6"
 DSLITE_NAME="dslite"
 DSLITE6_NAME="dslite6"
 AP_NAME="ap"
@@ -1310,46 +1310,46 @@ if [ -n "\${dslite_aftr_address}" ]; then
     uci set firewall.@zone[1].mtu_fix='1'
 fi
 if [ -n "\${mape_br}" ] && [ -n "\${mape_ealen}" ]; then
-    cp -p /etc/config/network /etc/config/network.\${MAP_NAME}.bak 2>/dev/null
-    cp -p /etc/config/dhcp /etc/config/dhcp.\${MAP_NAME}.bak 2>/dev/null
-    cp -p /etc/config/firewall /etc/config/firewall.\${MAP_NAME}.bak 2>/dev/null
+    cp -p /etc/config/network /etc/config/network.\${MAPE_NAME}.bak 2>/dev/null
+    cp -p /etc/config/dhcp /etc/config/dhcp.\${MAPE_NAME}.bak 2>/dev/null
+    cp -p /etc/config/firewall /etc/config/firewall.\${MAPE_NAME}.bak 2>/dev/null
     cp -p /lib/netifd/proto/map.sh /lib/netifd/proto/map.sh.bak 2>/dev/null
     uci set network.wan.disabled='1'
     uci set network.wan.auto='0'
     uci set network.wan6.disabled='1'
     uci set network.wan6.auto='0'
-    uci set network.\${MAP6_NAME}=interface
-    uci set network.\${MAP6_NAME}.proto='dhcpv6'
-    uci set network.\${MAP6_NAME}.device="\${WAN_DEF}"
-    uci set network.\${MAP6_NAME}.reqaddress='try'
-    uci set network.\${MAP6_NAME}.reqprefix='auto'
-    uci set network.\${MAP_NAME}=interface
-    uci set network.\${MAP_NAME}.proto='map'
-    uci set network.\${MAP_NAME}.maptype='map-e'
-    uci set network.\${MAP_NAME}.peeraddr="\${mape_br}"
-    uci set network.\${MAP_NAME}.ipaddr="\${mape_ipv4_prefix}"
-    uci set network.\${MAP_NAME}.ip4prefixlen="\${mape_ipv4_prefixlen}"
-    uci set network.\${MAP_NAME}.ip6prefix="\${mape_ipv6_prefix}"
-    uci set network.\${MAP_NAME}.ip6prefixlen="\${mape_ipv6_prefixlen}"
-    uci set network.\${MAP_NAME}.ealen="\${mape_ealen}"
-    uci set network.\${MAP_NAME}.psidlen="\${mape_psidlen}"
-    uci set network.\${MAP_NAME}.offset="\${mape_psid_offset}"
-    uci set network.\${MAP_NAME}.mtu='1460'
-    uci set network.\${MAP_NAME}.encaplimit='ignore'
-    uci set dhcp.\${MAP6_NAME}=dhcp
-    uci set dhcp.\${MAP6_NAME}.interface="\${MAP6_NAME}"
-    uci set dhcp.\${MAP6_NAME}.master='1'
-    uci set dhcp.\${MAP6_NAME}.ra='relay'
-    uci set dhcp.\${MAP6_NAME}.dhcpv6='relay'
-    uci set dhcp.\${MAP6_NAME}.ndp='relay'
+    uci set network.\${MAPE6_NAME}=interface
+    uci set network.\${MAPE6_NAME}.proto='dhcpv6'
+    uci set network.\${MAPE6_NAME}.device="\${WAN_DEF}"
+    uci set network.\${MAPE6_NAME}.reqaddress='try'
+    uci set network.\${MAPE6_NAME}.reqprefix='auto'
+    uci set network.\${MAPE_NAME}=interface
+    uci set network.\${MAPE_NAME}.proto='map'
+    uci set network.\${MAPE_NAME}.maptype='map-e'
+    uci set network.\${MAPE_NAME}.peeraddr="\${mape_br}"
+    uci set network.\${MAPE_NAME}.ipaddr="\${mape_ipv4_prefix}"
+    uci set network.\${MAPE_NAME}.ip4prefixlen="\${mape_ipv4_prefixlen}"
+    uci set network.\${MAPE_NAME}.ip6prefix="\${mape_ipv6_prefix}"
+    uci set network.\${MAPE_NAME}.ip6prefixlen="\${mape_ipv6_prefixlen}"
+    uci set network.\${MAPE_NAME}.ealen="\${mape_ealen}"
+    uci set network.\${MAPE_NAME}.psidlen="\${mape_psidlen}"
+    uci set network.\${MAPE_NAME}.offset="\${mape_psid_offset}"
+    uci set network.\${MAPE_NAME}.mtu='1460'
+    uci set network.\${MAPE_NAME}.encaplimit='ignore'
+    uci set dhcp.\${MAPE6_NAME}=dhcp
+    uci set dhcp.\${MAPE6_NAME}.interface="\${MAPE6_NAME}"
+    uci set dhcp.\${MAPE6_NAME}.master='1'
+    uci set dhcp.\${MAPE6_NAME}.ra='relay'
+    uci set dhcp.\${MAPE6_NAME}.dhcpv6='relay'
+    uci set dhcp.\${MAPE6_NAME}.ndp='relay'
     uci set dhcp.lan.ra='relay'
     uci set dhcp.lan.dhcpv6='relay'
     uci set dhcp.lan.ndp='relay'
     uci set dhcp.lan.force='1'
     uci del_list firewall.@zone[1].network='map'
     uci del_list firewall.@zone[1].network='map6'
-    uci add_list firewall.@zone[1].network="\${MAP_NAME}"
-    uci add_list firewall.@zone[1].network="\${MAP6_NAME}"
+    uci add_list firewall.@zone[1].network="\${MAPE_NAME}"
+    uci add_list firewall.@zone[1].network="\${MAPE6_NAME}"
     uci set firewall.@zone[1].masq='1'
     uci set firewall.@zone[1].mtu_fix='1'
     cat > /lib/netifd/proto/map.sh << 'MAP_SH_EOF'
@@ -1357,15 +1357,15 @@ if [ -n "\${mape_br}" ] && [ -n "\${mape_ealen}" ]; then
 MAP_SH_EOF
 fi
 if [ -n "\${mape_gua_mode}" ]; then
-    uci set network.\${MAP6_NAME}.ip6prefix="\${mape_gua_prefix}"
+    uci set network.\${MAPE6_NAME}.ip6prefix="\${mape_gua_prefix}"
 fi
 if [ -n "\${openwrt_19}" ]; then
-    uci add_list network.\${MAP_NAME}.tunlink="\${MAP6_NAME}"
+    uci add_list network.\${MAPE_NAME}.tunlink="\${MAPE6_NAME}"
 fi
 if [ -n "\${openwrt_21}" ]; then
-    uci set network.\${MAP_NAME}.legacymap='1'
-    uci set network.\${MAP_NAME}.tunlink="\${MAP6_NAME}"
-    uci set dhcp.\${MAP6_NAME}.ignore='1'
+    uci set network.\${MAPE_NAME}.legacymap='1'
+    uci set network.\${MAPE_NAME}.tunlink="\${MAPE6_NAME}"
+    uci set dhcp.\${MAPE6_NAME}.ignore='1'
 fi
 if [ -n "\${ap_ip_address}" ]; then
     cp -p /etc/config/network /etc/config/network.\${AP_NAME}.bak 2>/dev/null
