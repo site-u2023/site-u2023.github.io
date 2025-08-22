@@ -701,11 +701,11 @@
             filter: invert(100%) sepia(9%) saturate(261%) hue-rotate(281deg) brightness(117%) contrast(100%);
         }
     } /* close @media (prefers-color-scheme: dark) */
-
-    <!-- gzip解凍用ライブラリ（SNAPSHOT版のAPKINDEX.tar.gz用） -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
 </style>
 
+<!-- gzip解凍用ライブラリ（APKINDEX.tar.gz用） -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+    
 </head>
 
 <body>
@@ -2659,7 +2659,7 @@ function generatePackageSelector() {
                     }
 
                     const depName = depPkg ? depPkg.name : depId;
-                    const depIsAvailable = isSnapshot || availablePackages.has(depName);
+                    const depIsAvailable = availablePackages.has(depName);
                     if (!depIsAvailable) return;
 
                     const depItem = document.createElement('div');
@@ -4642,39 +4642,16 @@ async function fetchDevicePackages() {
     const feeds = ["base", "luci", "packages", "routing", "telephony"];
     const urls = [];
 
-    // URL構築（バージョン別）
-    if (isSnapshot) {
-        // SNAPSHOT版: APKINDEX.tar.gz形式
-        // target固有パッケージ（SNAPSHOT版にも存在する可能性）
-        urls.push({
-            url: `${basePath}/targets/${targetPath}/packages/APKINDEX.tar.gz`,
-            type: 'apk'
-        });
-        
-        // フィードパッケージ
-        for (const feed of feeds) {
-            urls.push({
-                url: `${basePath}/packages/${arch}/${feed}/APKINDEX.tar.gz`,
-                type: 'apk'
-            });
-        }
-    } else {
-        // リリース版: Packages形式
-        // target固有パッケージ
-        urls.push({
-            url: `${basePath}/targets/${targetPath}/packages/Packages`,
-            type: 'opkg'
-        });
-        
-        // フィードパッケージ
-        for (const feed of feeds) {
-            urls.push({
-                url: `${basePath}/packages/${arch}/${feed}/Packages`,
-                type: 'opkg'
-            });
-        }
-    }
-
+    // URL構築（形式自動判定: まず APKINDEX.tar.gz、ダメなら Packages を試す）
+    // target固有
+    urls.push({ url: `${basePath}/targets/${targetPath}/packages/APKINDEX.tar.gz`, type: 'apk' });
+    urls.push({ url: `${basePath}/targets/${targetPath}/packages/Packages`,         type: 'opkg' });
+    // フィード
+    for (const feed of feeds) {
+        urls.push({ url: `${basePath}/packages/${arch}/${feed}/APKINDEX.tar.gz`, type: 'apk' });
+        urls.push({ url: `${basePath}/packages/${arch}/${feed}/Packages`,       type: 'opkg' });
+    }   
+    
     console.log('[Package URLs]', {
         version: version,
         isSnapshot: isSnapshot,
