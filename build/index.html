@@ -2054,18 +2054,10 @@ const ErrorHandler = {
                     (typeof p === 'string' ? p : p?.name)?.startsWith('kmod-')
                 );
                 
-                console.log(`[PKG Fetch] ✓ ${source}: ${packages.length} pkgs (${kmods.length} kmods)`);
+                console.log(`[PKG Fetch] OK ${source}: ${packages.length} pkgs (${kmods.length} kmods)`);
                 
-                // 特定パッケージの存在確認
-                const target = 'kmod-usb-ledtrig-usbport';
-                const found = packages.find(p => 
-                    (typeof p === 'string' ? p : p?.name) === target
-                );
-                if (found) {
-                    console.log(`[PKG] Found ${target} in ${source}!`);
-                }
             } else {
-                console.log(`[PKG Fetch] ✗ ${source}: FAILED`);
+                console.log(`[PKG Fetch] NG ${source}: FAILED`);
             }
         },
         
