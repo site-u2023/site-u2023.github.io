@@ -1,86 +1,109 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <title>ADB Format Key Dump</title>
-    <style>
-        body { font-family: monospace; padding: 20px; }
-        #output {
-            border: 1px solid #ccc;
-            padding: 10px;
-            margin-top: 20px;
-            white-space: pre-wrap;
-            background: #f5f5f5;
-        }
-        input[type="file"] {
-            margin: 20px 0;
-            padding: 10px;
-            border: 2px dashed #ccc;
-            display: block;
-            width: 300px;
-        }
-    </style>
+<meta charset="UTF-8">
+<title>ADB Format Key Dump (判定付き)</title>
+<style>
+    body { font-family: monospace; padding: 20px; }
+    #output {
+        border: 1px solid #ccc;
+        padding: 10px;
+        margin-top: 20px;
+        white-space: pre-wrap;
+        background: #f5f5f5;
+    }
+    input[type="file"] {
+        margin: 20px 0;
+        padding: 10px;
+        border: 2px dashed #ccc;
+        display: block;
+        width: 300px;
+    }
+    .ok { color: green; font-weight: bold; }
+    .warn { color: orange; font-weight: bold; }
+    .err { color: red; font-weight: bold; }
+</style>
 </head>
 <body>
-    <h1>packages.adb Header & Key Offsets</h1>
-    <p>packages.adbファイルを選択してください：</p>
-    <input type="file" id="fileInput" accept=".adb">
-    <div id="output">結果がここに表示されます</div>
+<h1>packages.adb Header & Key Offsets</h1>
+<p>packages.adbファイルを選択してください：</p>
+<input type="file" id="fileInput" accept=".adb">
+<div id="output">結果がここに表示されます</div>
 
-    <script>
-        function dumpHex(u8, start, length) {
-            let out = '';
-            for (let i = start; i < start + length && i < u8.length; i += 16) {
-                out += i.toString(16).padStart(6, '0') + ': ';
-                out += Array.from(u8.slice(i, i + 16))
-                    .map(b => b.toString(16).padStart(2, '0')).join(' ') + '  ';
-                out += Array.from(u8.slice(i, i + 16))
-                    .map(b => (b >= 32 && b < 127) ? String.fromCharCode(b) : '.').join('');
-                out += '\n';
-            }
-            return out;
+<script>
+function dumpHex(u8, start, length) {
+    let out = '';
+    for (let i = start; i < start + length && i < u8.length; i += 16) {
+        out += i.toString(16).padStart(6, '0') + ': ';
+        out += Array.from(u8.slice(i, i + 16))
+            .map(b => b.toString(16).padStart(2, '0')).join(' ') + '  ';
+        out += Array.from(u8.slice(i, i + 16))
+            .map(b => (b >= 32 && b < 127) ? String.fromCharCode(b) : '.').join('');
+        out += '\n';
+    }
+    return out;
+}
+
+document.getElementById('fileInput').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const buffer = await file.arrayBuffer();
+    const u8 = new Uint8Array(buffer);
+    const dv = new DataView(buffer);
+
+    let html = `<strong>File:</strong> ${file.name}<br>`;
+    html += `<strong>Size:</strong> ${u8.length} bytes<br>`;
+
+    // ヘッダー解析
+    const magic = String.fromCharCode(...u8.slice(0, 4));
+    html += `<strong>Magic:</strong> ${magic} ` +
+            (magic === "ADBd" ? `<span class="ok">✓ OK</span>` : `<span class="err">✗ Invalid</span>`) + `<br>`;
+
+    const sqliteOffset = dv.getUint32(8, true);
+    let offsetStatus = '';
+    if (sqliteOffset <= 0 || sqliteOffset >= u8.length) {
+        offsetStatus = `<span class="err">✗ Out of range</span>`;
+    } else {
+        offsetStatus = `<span class="ok">✓ In range</span>`;
+    }
+    html += `<strong>SQLite offset (from header):</strong> ${sqliteOffset} (0x${sqliteOffset.toString(16)}) ${offsetStatus}<br>`;
+
+    // SQLiteシグネチャ検索
+    const sigBytes = Array.from("SQLite format 3").map(c => c.charCodeAt(0));
+    let foundOffsets = [];
+    for (let i = 0; i < u8.length - sigBytes.length; i++) {
+        if (sigBytes.every((b, idx) => u8[i + idx] === b)) {
+            foundOffsets.push(i);
         }
+    }
+    html += `<strong>Found SQLite signatures at:</strong> ${foundOffsets.length ? foundOffsets.join(', ') : '<span class="err">None</span>'}<br>`;
 
-        document.getElementById('fileInput').addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
+    // ヘッダー値と一致判定
+    if (foundOffsets.length) {
+        if (foundOffsets.includes(sqliteOffset)) {
+            html += `<strong>Offset match:</strong> <span class="ok">✓ Header offset matches signature</span><br>`;
+        } else {
+            html += `<strong>Offset match:</strong> <span class="warn">⚠ Header offset does not match any signature</span><br>`;
+        }
+    }
 
-            const buffer = await file.arrayBuffer();
-            const u8 = new Uint8Array(buffer);
-            const dv = new DataView(buffer);
+    // ダンプ（先頭64バイト）
+    html += `<pre>--- Header dump (0x00) ---\n${dumpHex(u8, 0, 64)}</pre>`;
 
-            let result = `File: ${file.name}\nSize: ${u8.length} bytes\n`;
+    // ダンプ（ヘッダー値位置から64バイト）
+    if (sqliteOffset > 0 && sqliteOffset < u8.length) {
+        html += `<pre>--- SQLite start dump (0x${sqliteOffset.toString(16)}) ---\n${dumpHex(u8, sqliteOffset, 64)}</pre>`;
+    }
 
-            // ヘッダー解析
-            const magic = String.fromCharCode(...u8.slice(0, 4));
-            result += `Magic: ${magic}\n`;
+    // ダンプ（最初に見つかったシグネチャ位置から64バイト）
+    if (foundOffsets.length) {
+        const firstSig = foundOffsets[0];
+        html += `<pre>--- First found SQLite signature dump (0x${firstSig.toString(16)}) ---\n${dumpHex(u8, firstSig, 64)}</pre>`;
+    }
 
-            const sqliteOffset = dv.getUint32(8, true);
-            result += `SQLite offset (from header): ${sqliteOffset}\n`;
-
-            const sig = String.fromCharCode(...u8.slice(sqliteOffset, sqliteOffset + 15));
-            result += `Signature at offset: ${sig}\n`;
-
-            // SQLiteシグネチャ検索
-            const sigBytes = Array.from("SQLite format 3").map(c => c.charCodeAt(0));
-            let foundOffsets = [];
-            for (let i = 0; i < u8.length - sigBytes.length; i++) {
-                if (sigBytes.every((b, idx) => u8[i + idx] === b)) {
-                    foundOffsets.push(i);
-                }
-            }
-            result += `Found SQLite signatures at: ${foundOffsets.join(', ')}\n\n`;
-
-            // ダンプ（先頭64バイト）
-            result += '--- Header dump (0x00) ---\n';
-            result += dumpHex(u8, 0, 64);
-
-            // ダンプ（SQLite開始位置から64バイト）
-            result += `\n--- SQLite start dump (0x${sqliteOffset.toString(16)}) ---\n`;
-            result += dumpHex(u8, sqliteOffset, 64);
-
-            document.getElementById('output').textContent = result;
-        });
-    </script>
+    document.getElementById('output').innerHTML = html;
+});
+</script>
 </body>
 </html>
