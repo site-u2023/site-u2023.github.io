@@ -2071,25 +2071,31 @@ async function findValidUrls(urlCandidates) {
     return validUrls;
 }
         
-// ==================== URL管理の統一関数 ====================
+// ==================== URL管理の統一関数（プロキシ統合版） ====================
+
+// SNAPSHOT専用プロキシURL
+const SNAPSHOT_PROXY_URL = 'https://apk-proxy.site-u.workers.dev';
+
 function setupVersionUrls(version) {
     if (!config.image_urls) config.image_urls = {};
     if (!config.overview_urls) config.overview_urls = {};
-
+    if (!config.package_urls) config.package_urls = {}; // 追加
     if (config.image_urls[version]) return;
-
+    
     const overview_url = config.image_url;
     const image_url = (typeof upstream_config !== 'undefined' && upstream_config.image_url_override)
         ? upstream_config.image_url_override
         : config.image_url;
-
+    
     // SNAPSHOT または *-SNAPSHOT → /snapshots/ に集約
     if (/SNAPSHOT$/i.test(version)) {
         config.overview_urls[version] = `${overview_url}/snapshots/`;
         config.image_urls[version]   = `${image_url}/snapshots/`;
+        config.package_urls[version] = SNAPSHOT_PROXY_URL; // 追加
     } else {
         config.overview_urls[version] = `${overview_url}/releases/${encodeURIComponent(version)}/`;
         config.image_urls[version]    = `${image_url}/releases/${encodeURIComponent(version)}/`;
+        config.package_urls[version] = `${image_url}/releases/${encodeURIComponent(version)}/packages/`; // 追加
     }
 }
         
