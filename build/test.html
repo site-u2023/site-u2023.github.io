@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>ADB Format Key Dump (全方式同時テスト)</title>
+<title>packages.adb 署名検証 & 圧縮方式判定</title>
 <style>
 body { font-family: monospace; padding: 20px; }
 #output { border: 1px solid #ccc; padding: 10px; margin-top: 20px; white-space: pre-wrap; background: #f5f5f5; }
@@ -11,6 +11,7 @@ body { font-family: monospace; padding: 20px; }
 .warn { color: orange; font-weight: bold; }
 .section { margin-top: 12px; }
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/openpgp/5.11.0/openpgp.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/lz4js@0.2.0/lz4.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/brotli-wasm@1.0.0/dist/brotli.min.js"></script>
@@ -18,11 +19,21 @@ body { font-family: monospace; padding: 20px; }
 <script src="https://cdn.jsdelivr.net/npm/@zstd/wasm@1.0.0/zstd.min.js"></script>
 </head>
 <body>
-<h1>packages.adb 全方式同時テスト</h1>
-<input type="file" id="fileInput" accept=".adb">
+<h1>packages.adb 署名検証 & 圧縮方式判定</h1>
+<p>以下3つのファイルを選択してください：</p>
+<ul>
+<li>packages.adb</li>
+<li>packages.adb.sig または packages.adb.asc</li>
+<li>公開鍵ファイル（.pub または .asc）</li>
+</ul>
+<input type="file" id="adbFile" accept=".adb"><br>
+<input type="file" id="sigFile" accept=".sig,.asc"><br>
+<input type="file" id="pubKeyFile" accept=".pub,.asc"><br>
 <div id="output">結果がここに表示されます</div>
 
 <script>
+let adbBuf, sigBuf, pubBuf;
+
 function dumpHex(u8, start, length) {
     let out = '';
     for (let i = start; i < start + length && i < u8.length; i += 16) {
@@ -46,42 +57,51 @@ async function tryMethod(name, fn, data) {
         const hit = findSignature(out, 'SQLite format 3');
         if (hit >= 0) return { name, ok: true, offset: hit, buf: out };
         return { name, ok: false };
-    } catch (e) {
+    } catch {
         return { name, ok: false };
     }
 }
-document.getElementById('fileInput').addEventListener('change', async e => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const buf = new Uint8Array(await file.arrayBuffer());
+async function verifySignature(adbBytes, sigBytes, pubKeyBytes) {
+    try {
+        const message = await openpgp.createMessage({ binary: adbBytes });
+        let signature;
+        try {
+            signature = await openpgp.readSignature({ binarySignature: sigBytes });
+        } catch {
+            signature = await openpgp.readSignature({ armoredSignature: new TextDecoder().decode(sigBytes) });
+        }
+        const pubKey = await openpgp.readKey({ armoredKey: new TextDecoder().decode(pubKeyBytes) });
+        const verificationResult = await openpgp.verify({
+            message,
+            signature,
+            verificationKeys: pubKey
+        });
+        const { verified, keyID } = verificationResult.signatures[0];
+        await verified;
+        return { ok: true, keyID: keyID.toHex() };
+    } catch (e) {
+        return { ok: false, error: e.message };
+    }
+}
+async function runAll() {
+    if (!(adbBuf && sigBuf && pubBuf)) return;
+    let html = '';
+    // 署名検証
+    const sigRes = await verifySignature(adbBuf, sigBuf, pubBuf);
+    if (sigRes.ok) {
+        html += `<span class="ok">✓ Signature valid (key ${sigRes.keyID})</span>\n\n`;
+    } else {
+        html += `<span class="err">✗ Invalid signature: ${sigRes.error}</span>\n\n`;
+    }
+    // 圧縮方式判定
     const results = [];
-    // Raw
-    const rawHit = findSignature(buf, 'SQLite format 3');
-    results.push(rawHit >= 0 ? { name: 'Raw', ok: true, offset: rawHit, buf } : { name: 'Raw', ok: false });
-    // gzip
-    results.push(await tryMethod('gzip', d => pako.ungzip(d), buf));
-    // zlib
-    results.push(await tryMethod('zlib', d => pako.inflate(d), buf));
-    // LZ4
-    results.push(await tryMethod('lz4', d => {
-        const dec = new Uint8Array(10_000_000);
-        const size = LZ4.decodeBlock(d, dec);
-        return dec.slice(0, size);
-    }, buf));
-    // Brotli
-    results.push(await tryMethod('brotli', d => BrotliDecode(d), buf));
-    // XZ
-    results.push(await tryMethod('xz', d => {
-        const dec = XzDecompressor.decompress(d);
-        return new Uint8Array(dec);
-    }, buf));
-    // Zstd
-    results.push(await tryMethod('zstd', async d => {
-        await ZstdInit();
-        return ZstdSimple.decompress(d);
-    }, buf));
-
-    let html = `<strong>File:</strong> ${file.name} (${buf.length} bytes)\n`;
+    results.push(findSignature(adbBuf, 'SQLite format 3') >= 0 ? { name: 'Raw', ok: true, offset: findSignature(adbBuf, 'SQLite format 3'), buf: adbBuf } : { name: 'Raw', ok: false });
+    results.push(await tryMethod('gzip', d => pako.ungzip(d), adbBuf));
+    results.push(await tryMethod('zlib', d => pako.inflate(d), adbBuf));
+    results.push(await tryMethod('lz4', d => { const dec = new Uint8Array(10_000_000); const size = LZ4.decodeBlock(d, dec); return dec.slice(0, size); }, adbBuf));
+    results.push(await tryMethod('brotli', d => BrotliDecode(d), adbBuf));
+    results.push(await tryMethod('xz', d => { const dec = XzDecompressor.decompress(d); return new Uint8Array(dec); }, adbBuf));
+    results.push(await tryMethod('zstd', async d => { await ZstdInit(); return ZstdSimple.decompress(d); }, adbBuf));
     results.forEach(r => {
         if (r.ok) {
             html += `<span class="ok">[✓]</span> ${r.name}: SQLite at 0x${r.offset.toString(16)}\n`;
@@ -91,7 +111,10 @@ document.getElementById('fileInput').addEventListener('change', async e => {
         }
     });
     document.getElementById('output').textContent = html;
-});
+}
+document.getElementById('adbFile').addEventListener('change', async e => { adbBuf = new Uint8Array(await e.target.files[0].arrayBuffer()); runAll(); });
+document.getElementById('sigFile').addEventListener('change', async e => { sigBuf = new Uint8Array(await e.target.files[0].arrayBuffer()); runAll(); });
+document.getElementById('pubKeyFile').addEventListener('change', async e => { pubBuf = new Uint8Array(await e.target.files[0].arrayBuffer()); runAll(); });
 </script>
 </body>
 </html>
