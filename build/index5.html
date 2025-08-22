@@ -702,9 +702,6 @@
         }
     } /* close @media (prefers-color-scheme: dark) */
 </style>
-
-<!-- gzip解凍用ライブラリ（APKINDEX.tar.gz用） -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
     
 </head>
 
@@ -4714,54 +4711,6 @@ async function fetchDevicePackages() {
 
     if (typeof generatePackageSelector === 'function') {
         generatePackageSelector();
-    }
-
-    async function extractAPKINDEX(arrayBuffer) {
-        try {
-            // Step 1: gzip解凍
-            const gunzipped = pako.ungzip(new Uint8Array(arrayBuffer));
-            
-            // Step 2: tar展開（簡易実装 - APKINDEXファイルのみ抽出）
-            // tarフォーマット: 512バイトブロック単位
-            let offset = 0;
-            while (offset < gunzipped.length) {
-                // ヘッダー読み取り（512バイト）
-                const header = gunzipped.slice(offset, offset + 512);
-                if (header.length < 512) break;
-                
-                // ファイル名（最初の100バイト、null終端）
-                let filename = '';
-                for (let i = 0; i < 100 && header[i] !== 0; i++) {
-                    filename += String.fromCharCode(header[i]);
-                }
-                
-                // ファイルサイズ（124-135バイト、8進数文字列）
-                let sizeStr = '';
-                for (let i = 124; i < 136 && header[i] !== 0; i++) {
-                    sizeStr += String.fromCharCode(header[i]);
-                }
-                const fileSize = parseInt(sizeStr, 8) || 0;
-                
-                // APKINDEXファイルを探す
-                if (filename === 'APKINDEX' || filename.includes('APKINDEX')) {
-                    const fileData = gunzipped.slice(offset + 512, offset + 512 + fileSize);
-                    return new TextDecoder().decode(fileData);
-                }
-                
-                // 次のブロックへ（512バイト境界に整列）
-                const blockSize = Math.ceil(fileSize / 512) * 512;
-                offset += 512 + blockSize;
-                
-                // 空ブロック検出（終端）
-                if (header.every(b => b === 0)) break;
-            }
-            
-            console.warn('APKINDEX not found in tar archive');
-            return null;
-        } catch (err) {
-            console.error('Error extracting APKINDEX:', err);
-            return null;
-        }
     }
 
 function parseOpkgPackages(text, source) {
