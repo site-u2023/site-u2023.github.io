@@ -2542,7 +2542,7 @@ function generatePackageSelector() {
 
     container.innerHTML = '';
 
-    // 利用可能パッケージ名のセットを作成（デバイス＋OSバージョンで取得済みのもの）
+    // 利用可能パッケージ名のセットを作成（統一処理）
     const availablePackages = new Set();
     if (Array.isArray(app.devicePackages) && app.devicePackages.length > 0) {
         app.devicePackages.forEach(pkg => {
@@ -2551,35 +2551,23 @@ function generatePackageSelector() {
         });
     }
 
-// SNAPSHOT版の判定
-    const isSnapshot = /SNAPSHOT$/i.test(app.selectedVersion);
-    
-    // 判定直前の状態を総合デバッガで出力
+    // デバッグ出力
     ErrorHandler.debug(
         'generatePackageSelector',
-        'ゼロ件判定直前の状態',
+        'パッケージ判定状態',
         {
             devicePackages_raw: app.devicePackages,
             availablePackages_list: Array.from(availablePackages),
-            availablePackages_size: availablePackages.size,
-            isSnapshot: isSnapshot
+            availablePackages_size: availablePackages.size
         }
     );
 
-    // 取得できていない（＝判定不能）場合の処理
-    if (availablePackages.size === 0 && !isSnapshot) {
-        // リリース版でパッケージリストが取得できない場合
+    // 取得できていない場合
+    if (availablePackages.size === 0) {
         container.innerHTML =
             '<p class="text-muted small">Unable to retrieve the package index for this OS version/device. ' +
             'Please try a different version or device, or try again later.</p>';
         return;
-    } else if (isSnapshot) {
-        // SNAPSHOT版の場合の注記
-        const noteDiv = document.createElement('div');
-        noteDiv.className = 'info';
-        noteDiv.style.marginBottom = '1rem';
-        noteDiv.innerHTML = '<strong>Note:</strong> Package availability in SNAPSHOT builds may vary. All packages are shown for selection at your own risk.';
-        container.appendChild(noteDiv);
     }
 
     // 依存パッケージIDの集合を構築
@@ -2614,8 +2602,8 @@ function generatePackageSelector() {
             // 依存パッケージはトップレベル描画しない
             if (depIds.has(pkg.id)) return;
 
-            // ▼ 厳格：available にあるものだけ表示（SNAPSHOT版は全表示）
-            const isAvailable = isSnapshot || availablePackages.has(pkg.name);
+            //
+            const isAvailable = availablePackages.has(pkg.name);
 
             const packageItem = document.createElement('div');
             packageItem.className = 'package-item';
@@ -4623,7 +4611,6 @@ async function fetchDevicePackages() {
 
     const version = app.selectedVersion;
     const targetPath = current_device.target;
-    const isSnapshot = /SNAPSHOT$/i.test(version);
 
     // URLベース構築（共通）
     setupVersionUrls(version);
