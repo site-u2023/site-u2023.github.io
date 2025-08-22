@@ -1439,10 +1439,10 @@ exit 0`;
 const config = {
     show_help: true,
     image_url: "https://downloads.openwrt.org",
-    info_url: "https://openwrt.org/start?do=search&id=toh&q={title} @toh",
+    info_url: "https://openwrt.org/toh/hwdata/{vendorSlug}/{modelSlug}",
     asu_url: "https://sysupgrade.openwrt.org",
     asu_extra_packages: ["luci"],
-    min_version: "19.07.0",  // 最小サポートバージョン
+    min_version: "19.07.0",
     
     // MAP-E情報を一括取得
     getMapEInfo(version) {
@@ -3307,9 +3307,15 @@ function showDeviceInfo() {
     const imageFolder = `${config.image_urls[app.selectedVersion]}targets/${device.target}`;
     
     const deviceLink = `${window.location.origin}${window.location.pathname}?version=${encodeURIComponent(app.selectedVersion)}&target=${encodeURIComponent(device.target)}&id=${encodeURIComponent(device.id)}`;
-    
+
+    const vendorSlug = (device.titles?.[0]?.vendor || '')
+        .trim().toLowerCase().replace(/\s+/g, '_');
+    const modelSlug = (device.id || '')
+        .trim().toLowerCase().replace(/\s+/g, '_');
+
     const infoUrl = (config.info_url || "")
-        .replace("{title}", encodeURI(getDeviceTitle(device)))
+        .replace("{vendorSlug}", vendorSlug)
+        .replace("{modelSlug}", modelSlug)
         .replace("{target}", device.target)
         .replace("{id}", device.id)
         .replace("{version}", app.selectedVersion);
