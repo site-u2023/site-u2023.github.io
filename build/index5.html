@@ -4731,19 +4731,49 @@ async function parseADB(u8, source) {
         const SQL = await initSqlJs({ locateFile: f => `./vendor/sql.js/${f}` });
         const db = new SQL.Database(sqliteData);
         
-        // パッケージ情報を取得
-        const result = db.exec("SELECT name, version, description FROM packages");
+        // テーブル名を確認
+        const tables = db.exec("SELECT name FROM sqlite_master WHERE type='table'");
+        console.log(`[ADB] Tables in ${source}:`, tables[0]?.values);
         
-        if (!result.length || !result[0].values) {
+        if (!tables[0]?.values?.length) {
+            console.warn(`[ADB] No tables found in ${source}`);
             return [];
         }
         
-        const packages = result[0].values.map(([name, version, description]) => ({
-            name,
-            version,
-            description,
+        const tableName = tables[0].values[0][0];
+        console.log(`[ADB] Using table: ${tableName}`);
+        
+        // カラム名を確認
+        const columns = db.exec(`PRAGMA table_info(${tableName})`);
+        console.log(`[ADB] Columns:`, columns[0]?.values?.map(row => row[1]));
+        
+        // パッケージ情報を取得（実際のカラム名を使用）
+        const result = db.exec(`SELECT * FROM ${tableName} LIMIT 5`);
+        console.log(`[ADB] Sample data:`, result[0]?.values?.slice(0, 2));
+        
+        // 実際のデータ構造に基づいてクエリを修正
+        const fullResult = db.exec(`SELECT * FROM ${tableName}`);
+        
+        if (!fullResult.length || !fullResult[0].values) {
+            return [];
+        }
+        
+        // カラムインデックスを特定
+        const cols = fullResult[0].columns;
+        const nameIdx = cols.findIndex(c => c.toLowerCase() === 'name' || c.toLowerCase() === 'package');
+        const versionIdx = cols.findIndex(c => c.toLowerCase() === 'version' || c.toLowerCase() === 'ver');
+        const descIdx = cols.findIndex(c => c.toLowerCase().includes('desc'));
+        
+        console.log(`[ADB] Column indexes - name:${nameIdx}, version:${versionIdx}, desc:${descIdx}`);
+        
+        const packages = fullResult[0].values.map(row => ({
+            name: row[nameIdx >= 0 ? nameIdx : 0],
+            version: row[versionIdx >= 0 ? versionIdx : 1],
+            description: row[descIdx >= 0 ? descIdx : 2],
             source
         }));
+        
+        console.log(`[ADB] Found ${packages.length} packages in ${source}`);
         
         db.close();
         return packages;
