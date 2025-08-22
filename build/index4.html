@@ -2054,18 +2054,10 @@ const ErrorHandler = {
                     (typeof p === 'string' ? p : p?.name)?.startsWith('kmod-')
                 );
                 
-                console.log(`[PKG Fetch] ✓ ${source}: ${packages.length} pkgs (${kmods.length} kmods)`);
+                console.log(`[PKG Fetch] OK ${source}: ${packages.length} pkgs (${kmods.length} kmods)`);
                 
-                // 特定パッケージの存在確認
-                const target = 'kmod-usb-ledtrig-usbport';
-                const found = packages.find(p => 
-                    (typeof p === 'string' ? p : p?.name) === target
-                );
-                if (found) {
-                    console.log(`🎯 [PKG] Found ${target} in ${source}!`);
-                }
             } else {
-                console.log(`[PKG Fetch] ✗ ${source}: FAILED`);
+                console.log(`[PKG Fetch] NG ${source}: FAILED`);
             }
         },
         
@@ -2630,7 +2622,7 @@ function generatePackageSelector() {
     // 判定直前の状態を総合デバッガで出力
     ErrorHandler.debug(
         'generatePackageSelector',
-        'ゼロ件判定直前の状態',
+        'State immediately before zero check',
         {
             devicePackages_raw: app.devicePackages,
             availablePackages_list: Array.from(availablePackages),
@@ -4851,11 +4843,6 @@ async function fetchDevicePackages() {
             if (rec.name) {
                 rec.source = source;
                 pkgs.push(rec);
-                
-                // デバッグ：kmodパッケージ検出
-                if (rec.name.startsWith('kmod-')) {
-                    console.log(`[Parse] Found kmod: ${rec.name} from ${source}`);
-                }
             }
         }
         return pkgs;
