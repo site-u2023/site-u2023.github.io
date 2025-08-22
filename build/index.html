@@ -3259,20 +3259,10 @@ function applyProfileData(profilesData, profileId) {
     app.versionCode = profilesData.version_code || '';
     
     if (profilesData.linux_kernel) {
-        app.kernelHash = profilesData.linux_kernel.version_hash || 
-                         profilesData.linux_kernel.hash ||
-                         profilesData.linux_kernel.version;
-        
-        if (!app.kernelHash || app.kernelHash === profilesData.linux_kernel.version) {
-            if (profilesData.linux_kernel.version_code) {
-                app.kernelHash = profilesData.linux_kernel.version_code;
-            }
-        }
-        
-        console.log('[Kernel] Full data:', profilesData.linux_kernel);
-        console.log('[Kernel] Using hash:', app.kernelHash);
-        
-    }    
+        const lk = profilesData.linux_kernel;
+        app.kernelHash = `${lk.version}-${lk.release}-${lk.vermagic}`;
+        console.log('[Kernel] Constructed hash:', app.kernelHash);
+    }  
     if (profilesData.profiles && profilesData.profiles[profileId]) {
         const profile = profilesData.profiles[profileId];
         const defaultPackages = profilesData.default_packages || [];
