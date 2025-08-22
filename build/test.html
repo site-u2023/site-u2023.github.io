@@ -2,21 +2,15 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>ADB Format Full Dump</title>
+    <title>ADB Format Key Dump</title>
     <style>
-        body {
-            font-family: monospace;
-            padding: 20px;
-        }
+        body { font-family: monospace; padding: 20px; }
         #output {
             border: 1px solid #ccc;
             padding: 10px;
             margin-top: 20px;
             white-space: pre-wrap;
             background: #f5f5f5;
-            min-height: 200px;
-            max-height: 80vh;
-            overflow-y: auto;
         }
         input[type="file"] {
             margin: 20px 0;
@@ -28,12 +22,25 @@
     </style>
 </head>
 <body>
-    <h1>packages.adb Full Dump & Header Info</h1>
+    <h1>packages.adb Header & Key Offsets</h1>
     <p>packages.adbファイルを選択してください：</p>
     <input type="file" id="fileInput" accept=".adb">
     <div id="output">結果がここに表示されます</div>
 
     <script>
+        function dumpHex(u8, start, length) {
+            let out = '';
+            for (let i = start; i < start + length && i < u8.length; i += 16) {
+                out += i.toString(16).padStart(6, '0') + ': ';
+                out += Array.from(u8.slice(i, i + 16))
+                    .map(b => b.toString(16).padStart(2, '0')).join(' ') + '  ';
+                out += Array.from(u8.slice(i, i + 16))
+                    .map(b => (b >= 32 && b < 127) ? String.fromCharCode(b) : '.').join('');
+                out += '\n';
+            }
+            return out;
+        }
+
         document.getElementById('fileInput').addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file) return;
@@ -42,9 +49,7 @@
             const u8 = new Uint8Array(buffer);
             const dv = new DataView(buffer);
 
-            let result = '';
-            result += `File: ${file.name}\n`;
-            result += `Size: ${u8.length} bytes\n`;
+            let result = `File: ${file.name}\nSize: ${u8.length} bytes\n`;
 
             // ヘッダー解析
             const magic = String.fromCharCode(...u8.slice(0, 4));
@@ -66,18 +71,13 @@
             }
             result += `Found SQLite signatures at: ${foundOffsets.join(', ')}\n\n`;
 
-            // 全バイトをダンプ
-            result += 'Full file hex dump:\n';
-            for (let i = 0; i < u8.length; i += 16) {
-                result += i.toString(16).padStart(6, '0') + ': ';
-                result += Array.from(u8.slice(i, i + 16))
-                    .map(b => b.toString(16).padStart(2, '0'))
-                    .join(' ') + '  ';
-                result += Array.from(u8.slice(i, i + 16))
-                    .map(b => (b >= 32 && b < 127) ? String.fromCharCode(b) : '.')
-                    .join('');
-                result += '\n';
-            }
+            // ダンプ（先頭64バイト）
+            result += '--- Header dump (0x00) ---\n';
+            result += dumpHex(u8, 0, 64);
+
+            // ダンプ（SQLite開始位置から64バイト）
+            result += `\n--- SQLite start dump (0x${sqliteOffset.toString(16)}) ---\n`;
+            result += dumpHex(u8, sqliteOffset, 64);
 
             document.getElementById('output').textContent = result;
         });
