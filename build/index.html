@@ -4612,7 +4612,7 @@ function showDownloadLinks(images, fullStatus, requestHash) {
         container.appendChild(buildInfo);
     }
 }
-
+    // SNAPSHOT版の場合は処理をスキップ（公式準拠）
 // ★パッケージインデックス取得
 async function fetchDevicePackages() {
     // SNAPSHOT版の場合は処理をスキップ（公式準拠）
@@ -4640,7 +4640,7 @@ async function fetchDevicePackages() {
     const profilesUrl = `${basePath}/targets/${targetPath}/profiles.json`;
 
     // 初期化
-    const feeds = ["base", "luci", "packages", "routing", "telephony"];
+    const feeds = ["base", "kernel", "luci", "packages", "routing", "telephony", "video"];
     const urls = [];
 
     // アーキテクチャ情報を取得
