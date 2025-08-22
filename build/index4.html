@@ -4716,10 +4716,10 @@ async function fetchDevicePackages() {
     if (isSnapshot) {
         // SNAPSHOT: 各feedの index.json
         feeds.forEach(feed => {
-            urls.push(`${basePath}packages/${arch}/${feed}/index.json`);
+            urls.push(`${basePath}/packages/${arch}/${feed}/index.json`);
         });
         if (app.kernelHash) {
-            urls.push(`${basePath}targets/${targetPath}/kmods/${app.kernelHash}/index.json`);
+            urls.push(`${basePath}/targets/${targetPath}/kmods/${app.kernelHash}/index.json`);
         }
     } else {
         // リリース: targets配下のPackages + kmods + 各feedのPackages
