@@ -2597,189 +2597,177 @@ if (togglePasswordBtn) {
 
 // ==================== パッケージセレクター関連 ====================
 function togglePackageSelector(e) {
-    const configSection = document.getElementById('package-selector-config');
-    configSection.style.display = e.target.open ? 'block' : 'none';
+   const configSection = document.getElementById('package-selector-config');
+   configSection.style.display = e.target.open ? 'block' : 'none';
 }
 
 function generatePackageSelector() {
-    const container = document.getElementById('package-categories');
-    if (!container) return;
+   const container = document.getElementById('package-categories');
+   if (!container) return;
 
-    container.innerHTML = '';
+   container.innerHTML = '';
 
-    // 利用可能パッケージ名のセットを作成（デバイス＋OSバージョンで取得済みのもの）
-    const availablePackages = new Set();
-    if (Array.isArray(app.devicePackages) && app.devicePackages.length > 0) {
-        app.devicePackages.forEach(pkg => {
-            const name = (typeof pkg === 'string') ? pkg : pkg && pkg.name;
-            if (name) availablePackages.add(name);
-        });
-    }
+   // 利用可能パッケージ名のセットを作成（デバイス＋OSバージョンで取得済みのもの）
+   const availablePackages = new Set();
+   if (Array.isArray(app.devicePackages) && app.devicePackages.length > 0) {
+       app.devicePackages.forEach(pkg => {
+           const name = (typeof pkg === 'string') ? pkg : pkg && pkg.name;
+           if (name) availablePackages.add(name);
+       });
+   }
 
-// SNAPSHOT版の判定
-    const isSnapshot = /SNAPSHOT$/i.test(app.selectedVersion);
-    
-    // 判定直前の状態を総合デバッガで出力
-    ErrorHandler.debug(
-        'generatePackageSelector',
-        'State immediately before zero check',
-        {
-            devicePackages_raw: app.devicePackages,
-            availablePackages_list: Array.from(availablePackages),
-            availablePackages_size: availablePackages.size,
-            isSnapshot: isSnapshot
-        }
-    );
+   // 判定直前の状態を総合デバッガで出力
+   ErrorHandler.debug(
+       'generatePackageSelector',
+       'State immediately before zero check',
+       {
+           devicePackages_raw: app.devicePackages,
+           availablePackages_list: Array.from(availablePackages),
+           availablePackages_size: availablePackages.size
+       }
+   );
 
-    // 取得できていない（＝判定不能）場合の処理
-    if (availablePackages.size === 0 && !isSnapshot) {
-        // リリース版でパッケージリストが取得できない場合
-        container.innerHTML =
-            '<p class="text-muted small">Unable to retrieve the package index for this OS version/device. ' +
-            'Please try a different version or device, or try again later.</p>';
-        return;
-    } else if (isSnapshot) {
-        // SNAPSHOT版の場合の注記
-        const noteDiv = document.createElement('div');
-        noteDiv.className = 'info';
-        noteDiv.style.marginBottom = '1rem';
-        noteDiv.innerHTML = '<strong>Note:</strong> Package availability in SNAPSHOT builds may vary. All packages are shown for selection at your own risk.';
-        container.appendChild(noteDiv);
-    }
+   // 取得できていない（＝判定不能）場合の処理
+   if (availablePackages.size === 0) {
+       container.innerHTML =
+           '<p class="text-muted small">Unable to retrieve the package index for this OS version/device. ' +
+           'Please try a different version or device, or try again later.</p>';
+       return;
+   }
 
-    // 依存パッケージIDの集合を構築
-    const depIds = new Set();
-    PACKAGE_DB.categories.forEach(cat => {
-        cat.packages.forEach(pkg => {
-            if (Array.isArray(pkg.dependencies)) {
-                pkg.dependencies.forEach(d => depIds.add(d));
-            }
-        });
-    });
+   // 依存パッケージIDの集合を構築
+   const depIds = new Set();
+   PACKAGE_DB.categories.forEach(cat => {
+       cat.packages.forEach(pkg => {
+           if (Array.isArray(pkg.dependencies)) {
+               pkg.dependencies.forEach(d => depIds.add(d));
+           }
+       });
+   });
 
-    PACKAGE_DB.categories.forEach(category => {
-        const categoryDiv = document.createElement('div');
-        categoryDiv.className = 'package-category';
+   PACKAGE_DB.categories.forEach(category => {
+       const categoryDiv = document.createElement('div');
+       categoryDiv.className = 'package-category';
 
-        const categoryTitle = document.createElement('h4');
-        categoryTitle.textContent = category.name;
-        categoryDiv.appendChild(categoryTitle);
+       const categoryTitle = document.createElement('h4');
+       categoryTitle.textContent = category.name;
+       categoryDiv.appendChild(categoryTitle);
 
-        const categoryDescription = document.createElement('div');
-        categoryDescription.className = 'package-category-description';
-        categoryDescription.textContent = category.description;
-        categoryDiv.appendChild(categoryDescription);
+       const categoryDescription = document.createElement('div');
+       categoryDescription.className = 'package-category-description';
+       categoryDescription.textContent = category.description;
+       categoryDiv.appendChild(categoryDescription);
 
-        const packageGrid = document.createElement('div');
-        packageGrid.className = 'package-grid';
+       const packageGrid = document.createElement('div');
+       packageGrid.className = 'package-grid';
 
-        let hasVisiblePackages = false;
+       let hasVisiblePackages = false;
 
-        category.packages.forEach(pkg => {
-            // 依存パッケージはトップレベル描画しない
-            if (depIds.has(pkg.id)) return;
+       category.packages.forEach(pkg => {
+           // 依存パッケージはトップレベル描画しない
+           if (depIds.has(pkg.id)) return;
 
-            // ▼ 厳格：available にあるものだけ表示（SNAPSHOT版は全表示）
-            const isAvailable = isSnapshot || availablePackages.has(pkg.name);
+           // 厳格：available にあるものだけ表示
+           const isAvailable = availablePackages.has(pkg.name);
 
-            const packageItem = document.createElement('div');
-            packageItem.className = 'package-item';
-            if (pkg.hidden) packageItem.classList.add('package-hidden');
+           const packageItem = document.createElement('div');
+           packageItem.className = 'package-item';
+           if (pkg.hidden) packageItem.classList.add('package-hidden');
 
-            if (!isAvailable) {
-                // 完全に除外
-                packageItem.style.display = 'none';
-                return;
-            }
+           if (!isAvailable) {
+               // 完全に除外
+               packageItem.style.display = 'none';
+               return;
+           }
 
-            hasVisiblePackages = true;
+           hasVisiblePackages = true;
 
-            const formCheck = document.createElement('div');
-            formCheck.className = 'form-check';
+           const formCheck = document.createElement('div');
+           formCheck.className = 'form-check';
 
-            const checkbox = document.createElement('input');
-            checkbox.className = 'form-check-input package-selector-checkbox';
-            checkbox.type = 'checkbox';
-            checkbox.id = `pkg-${pkg.id}`;
-            checkbox.setAttribute('data-package', pkg.name);
-            if (pkg.dependencies) {
-                checkbox.setAttribute('data-dependencies', pkg.dependencies.join(','));
-            }
-            if (pkg.checked) {
-                checkbox.checked = true;
-                checkbox.setAttribute('data-user', '1');
-            }
-            checkbox.addEventListener('change', handlePackageSelection);
+           const checkbox = document.createElement('input');
+           checkbox.className = 'form-check-input package-selector-checkbox';
+           checkbox.type = 'checkbox';
+           checkbox.id = `pkg-${pkg.id}`;
+           checkbox.setAttribute('data-package', pkg.name);
+           if (pkg.dependencies) {
+               checkbox.setAttribute('data-dependencies', pkg.dependencies.join(','));
+           }
+           if (pkg.checked) {
+               checkbox.checked = true;
+               checkbox.setAttribute('data-user', '1');
+           }
+           checkbox.addEventListener('change', handlePackageSelection);
 
-            const label = document.createElement('label');
-            label.className = 'form-check-label';
-            label.setAttribute('for', `pkg-${pkg.id}`);
+           const label = document.createElement('label');
+           label.className = 'form-check-label';
+           label.setAttribute('for', `pkg-${pkg.id}`);
 
-            const link = document.createElement('a');
-            link.href = pkg.url;
-            link.target = '_blank';
-            link.className = 'package-link';
-            link.textContent = pkg.name;
+           const link = document.createElement('a');
+           link.href = pkg.url;
+           link.target = '_blank';
+           link.className = 'package-link';
+           link.textContent = pkg.name;
 
-            label.appendChild(link);
-            formCheck.appendChild(checkbox);
-            formCheck.appendChild(label);
-            packageItem.appendChild(formCheck);
+           label.appendChild(link);
+           formCheck.appendChild(checkbox);
+           formCheck.appendChild(label);
+           packageItem.appendChild(formCheck);
 
-            // 依存パッケージも厳格判定
-            if (Array.isArray(pkg.dependencies)) {
-                pkg.dependencies.forEach(depId => {
-                    let depPkg;
-                    for (const cat of PACKAGE_DB.categories) {
-                        depPkg = cat.packages.find(p => p.id === depId);
-                        if (depPkg) break;
-                    }
+           // 依存パッケージも厳格判定
+           if (Array.isArray(pkg.dependencies)) {
+               pkg.dependencies.forEach(depId => {
+                   let depPkg;
+                   for (const cat of PACKAGE_DB.categories) {
+                       depPkg = cat.packages.find(p => p.id === depId);
+                       if (depPkg) break;
+                   }
 
-                    const depName = depPkg ? depPkg.name : depId;
-                    const depIsAvailable = isSnapshot || availablePackages.has(depName);
-                    if (!depIsAvailable) return;
+                   const depName = depPkg ? depPkg.name : depId;
+                   const depIsAvailable = availablePackages.has(depName);
+                   if (!depIsAvailable) return;
 
-                    const depItem = document.createElement('div');
-                    depItem.className = 'package-dependent';
+                   const depItem = document.createElement('div');
+                   depItem.className = 'package-dependent';
 
-                    const depCheck = document.createElement('input');
-                    depCheck.className = 'form-check-input package-selector-checkbox';
-                    depCheck.type = 'checkbox';
-                    depCheck.id = `pkg-${depPkg ? depPkg.id : depId}`;
-                    depCheck.setAttribute('data-package', depName);
-                    depCheck.addEventListener('change', handlePackageSelection);
+                   const depCheck = document.createElement('input');
+                   depCheck.className = 'form-check-input package-selector-checkbox';
+                   depCheck.type = 'checkbox';
+                   depCheck.id = `pkg-${depPkg ? depPkg.id : depId}`;
+                   depCheck.setAttribute('data-package', depName);
+                   depCheck.addEventListener('change', handlePackageSelection);
 
-                    const depLabel = document.createElement('label');
-                    depLabel.className = 'form-check-label';
-                    depLabel.setAttribute('for', `pkg-${depPkg ? depPkg.id : depId}`);
+                   const depLabel = document.createElement('label');
+                   depLabel.className = 'form-check-label';
+                   depLabel.setAttribute('for', `pkg-${depPkg ? depPkg.id : depId}`);
 
-                    if (depPkg) {
-                        const depLink = document.createElement('a');
-                        depLink.href = depPkg.url;
-                        depLink.target = '_blank';
-                        depLink.className = 'package-link';
-                        depLink.textContent = depPkg.name;
-                        depLabel.appendChild(depLink);
-                    } else {
-                        depLabel.textContent = depId;
-                    }
+                   if (depPkg) {
+                       const depLink = document.createElement('a');
+                       depLink.href = depPkg.url;
+                       depLink.target = '_blank';
+                       depLink.className = 'package-link';
+                       depLink.textContent = depPkg.name;
+                       depLabel.appendChild(depLink);
+                   } else {
+                       depLabel.textContent = depId;
+                   }
 
-                    depItem.appendChild(depCheck);
-                    depItem.appendChild(depLabel);
-                    packageItem.appendChild(depItem);
-                });
-            }
+                   depItem.appendChild(depCheck);
+                   depItem.appendChild(depLabel);
+                   packageItem.appendChild(depItem);
+               });
+           }
 
-            packageGrid.appendChild(packageItem);
-        });
+           packageGrid.appendChild(packageItem);
+       });
 
-        if (hasVisiblePackages) {
-            categoryDiv.appendChild(packageGrid);
-            container.appendChild(categoryDiv);
-        }
-    });
+       if (hasVisiblePackages) {
+           categoryDiv.appendChild(packageGrid);
+           container.appendChild(categoryDiv);
+       }
+   });
 
-    updatePackageListFromSelector();
+   updatePackageListFromSelector();
 }
         
 function handlePackageSelection(e) {
