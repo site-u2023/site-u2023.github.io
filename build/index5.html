@@ -703,9 +703,6 @@
     } /* close @media (prefers-color-scheme: dark) */
 </style>
 
-<!-- SQL.js (SQLite in WebAssembly) -->
-<script src="./vendor/sql.js/sql-wasm.js"></script>
-
 </head>
 
 <body>
@@ -4692,28 +4689,22 @@ async function fetchDevicePackages() {
         arch = meta.arch_packages;
         if (!arch) throw new Error("profiles.json に arch_packages がありません");
     } catch (e) {
-        console.warn(`profiles.json 取得失敗: ${e.message}. フォールバックを試みます。`);
-        if (app.archPackagesMap && app.archPackagesMap[targetPath]) {
-            arch = app.archPackagesMap[targetPath];
-            console.log(`フォールバック成功: target '${targetPath}' のアーキテクチャは '${arch}' です。`);
-        } else {
-            console.error("フォールバック失敗: アーキテクチャ情報を特定できませんでした。");
-            app.devicePackages = [];
-            if (typeof generatePackageSelector === 'function') generatePackageSelector();
-            return;
-        }
+        console.warn(`profiles.json 取得失敗: ${e.message}`);
+        app.devicePackages = [];
+        if (typeof generatePackageSelector === 'function') generatePackageSelector();
+        return;
     }
 
     const feeds = ["base", "luci", "packages", "routing", "telephony"];
     const urls = [];
 
     if (isSnapshot) {
-        // SNAPSHOT → packages.adb
+        // SNAPSHOT → APKINDEX.tar.gz (APKフォーマット)
         for (const feed of feeds) {
-            urls.push({ url: `${basePath}/packages/${arch}/${feed}/packages.adb`, type: 'adb' });
+            urls.push({ url: `${basePath}/packages/${arch}/${feed}/APKINDEX.tar.gz`, type: 'apk' });
         }
     } else {
-        // リリース版 → Packages
+        // リリース版 → Packages (OPKGフォーマット)
         urls.push({ url: `${basePath}/targets/${targetPath}/packages/Packages`, type: 'opkg' });
         for (const feed of feeds) {
             urls.push({ url: `${basePath}/packages/${arch}/${feed}/Packages`, type: 'opkg' });
@@ -4732,139 +4723,31 @@ async function fetchDevicePackages() {
                     return [];
                 }
                 
-                if (item.type === 'adb') {
-                    // ADB (SNAPSHOT版SQLite形式) - 統合デバッガー使用
-                    ErrorHandler.adbDebug.start(item.url);
-
+                if (item.type === 'apk') {
+                    // APK形式 (SNAPSHOT版) - APKINDEX.tar.gz
                     const buf = await res.arrayBuffer();
-                    let u8 = new Uint8Array(buf);
+                    const u8 = new Uint8Array(buf);
                     
-                    // ADBファイルのフォーマット判定を改善
-                    const format = ErrorHandler.adbDebug.format(u8, 'Raw: ');
-                    
-                    // ADBヘッダーチェック（0x41 0x44 0x42 = "ADB"）
-                    if (u8[0] === 0x41 && u8[1] === 0x44 && u8[2] === 0x42) {
-                        console.log("[ADB] Native ADB format detected, attempting to parse as SQLite after header");
-                        
-                        // ADBヘッダーをスキップしてSQLiteデータを探す
-                        // 通常、ADBファイルはヘッダーの後にSQLiteデータが続く
-                        let sqliteStart = 0;
-                        
-                        // SQLiteマジックナンバー "SQLite format 3\0" を探す
-                        for (let i = 0; i < Math.min(u8.length - 16, 4096); i++) {
-                            if (u8[i] === 0x53 && u8[i+1] === 0x51 && u8[i+2] === 0x4c && 
-                                u8[i+3] === 0x69 && u8[i+4] === 0x74 && u8[i+5] === 0x65) {
-                                sqliteStart = i;
-                                console.log(`[ADB] Found SQLite header at offset ${i}`);
-                                break;
-                            }
-                        }
-                        
-                        if (sqliteStart > 0) {
-                            // SQLite部分のみを抽出
-                            u8 = u8.slice(sqliteStart);
-                            ErrorHandler.adbDebug.format(u8, 'After ADB header removal: ');
-                        } else {
-                            // SQLiteヘッダーが見つからない場合、生のADBとして処理
-                            console.warn("[ADB] No SQLite header found in ADB file, may be compressed or different format");
-                            
-                            // gzip圧縮をチェック（ADBヘッダーの後）
-                            if (u8.length > 10 && u8[8] === 0x1f && u8[9] === 0x8b) {
-                                console.log("[ADB] Found gzip data after ADB header");
-                                try {
-                                    u8 = pako.ungzip(u8.slice(8));
-                                    ErrorHandler.adbDebug.format(u8, 'After decompression: ');
-                                } catch (e) {
-                                    console.error("[ADB] Failed to decompress embedded gzip data:", e);
-                                }
-                            }
-                        }
-                    } else if (format === 'gzip') {
-                        // gzip圧縮されたADBファイル
-                        try {
-                            u8 = pako.ungzip(u8);
-                            ErrorHandler.adbDebug.format(u8, 'Decompressed: ');
-                            
-                            // 解凍後、ADBヘッダーをチェック
-                            if (u8[0] === 0x41 && u8[1] === 0x44 && u8[2] === 0x42) {
-                                console.log("[ADB] ADB header found after decompression");
-                                // 同様の処理を繰り返す
-                                let sqliteStart = 0;
-                                for (let i = 0; i < Math.min(u8.length - 16, 4096); i++) {
-                                    if (u8[i] === 0x53 && u8[i+1] === 0x51 && u8[i+2] === 0x4c && 
-                                        u8[i+3] === 0x69 && u8[i+4] === 0x74 && u8[i+5] === 0x65) {
-                                        sqliteStart = i;
-                                        console.log(`[ADB] Found SQLite header at offset ${i} after decompression`);
-                                        break;
-                                    }
-                                }
-                                if (sqliteStart > 0) {
-                                    u8 = u8.slice(sqliteStart);
-                                }
-                            }
-                        } catch (e) {
-                            console.error("[ADB] gzip decompression failed:", e);
-                            ErrorHandler.adbDebug.end();
-                            throw e;
-                        }
-                    } else if (format === 'xz') {
-                        ErrorHandler.adbDebug.end();
-                        throw new Error("XZ-compressed .adb is not supported");
-                    }
-
-                    // SQLite処理を試みる
                     try {
-                        const SQL = await initSqlJs({ locateFile: f => `./vendor/sql.js/${f}` });
-                        const db = new SQL.Database(u8);
-
-                        // テーブル情報取得
-                        const tablesRes = ErrorHandler.adbDebug.sql(db, 
-                            "SELECT name FROM sqlite_master WHERE type='table'", 'Tables: ');
+                        // gzip解凍
+                        const ungzipped = pako.ungzip(u8);
                         
-                        if (!tablesRes.length || !tablesRes[0].values.length) {
-                            ErrorHandler.adbDebug.end();
-                            throw new Error("No tables found in .adb database");
+                        // tar展開してAPKINDEXファイルを取得
+                        const apkindexContent = extractAPKINDEXFromTar(ungzipped);
+                        
+                        if (apkindexContent) {
+                            // APKINDEXフォーマットをパース
+                            return parseAPKINDEX(apkindexContent, item.url);
+                        } else {
+                            console.warn(`No APKINDEX found in ${item.url}`);
+                            return [];
                         }
-                        
-                        const tableName = tablesRes[0].values[0][0];
-
-                        // カラム構造確認
-                        const pragmaRes = ErrorHandler.adbDebug.sql(db, 
-                            `PRAGMA table_info(${tableName})`, 'Schema: ');
-                        
-                        const colNames = pragmaRes[0].values.map(row => row[1]);
-                        const nameCol = colNames.find(c => c.toLowerCase() === 'name') || colNames[0];
-                        const verCol = colNames.find(c => c.toLowerCase() === 'version') || colNames[1] || '""';
-                        const descCol = colNames.find(c => c.toLowerCase().startsWith('desc')) || colNames[2] || '""';
-                        
-                        console.log(`[ADB] Column mapping: name=${nameCol}, version=${verCol}, description=${descCol}`);
-
-                        // パッケージデータ取得
-                        const result = ErrorHandler.adbDebug.sql(db, 
-                            `SELECT ${nameCol}, ${verCol}, ${descCol} FROM ${tableName}`, 'Data: ');
-                        
-                        if (!result.length || !result[0]?.values?.length) {
-                            ErrorHandler.adbDebug.end();
-                            throw new Error("Query returned no package data");
-                        }
-
-                        // データ変換
-                        const packages = result[0].values.map(([name, version, desc]) => ({
-                            name, version, description: desc, source: item.url
-                        }));
-
-                        ErrorHandler.adbDebug.packages(packages, item.url);
-                        ErrorHandler.adbDebug.end();
-                        
-                        return packages;
-                    } catch (sqlError) {
-                        console.error("[ADB] SQLite processing failed:", sqlError);
-                        ErrorHandler.adbDebug.end();
-                        // SQLiteとして処理できない場合は空配列を返す
+                    } catch (e) {
+                        console.error(`Failed to process APK index from ${item.url}:`, e);
                         return [];
                     }
                 } else {
-                    // OPKG (リリース版テキスト形式)
+                    // OPKG形式 (リリース版)
                     const text = await res.text();
                     return parseOpkgPackages(text, item.url);
                 }
@@ -4894,6 +4777,68 @@ async function fetchDevicePackages() {
     if (typeof generatePackageSelector === 'function') {
         generatePackageSelector();
     }
+}
+
+// tarファイルからAPKINDEXを抽出
+function extractAPKINDEXFromTar(tarData) {
+    // 簡易的なtar解析（APKINDEXファイルのみ抽出）
+    let offset = 0;
+    while (offset < tarData.length - 512) {
+        // tarヘッダー読み取り
+        const header = tarData.slice(offset, offset + 512);
+        const fileName = new TextDecoder().decode(header.slice(0, 100)).replace(/\0.*$/, '');
+        
+        if (fileName === '' || header[0] === 0) {
+            // 空のヘッダー = tarの終端
+            break;
+        }
+        
+        // ファイルサイズ取得（8進数）
+        const sizeOctal = new TextDecoder().decode(header.slice(124, 136)).replace(/\0.*$/, '').trim();
+        const fileSize = parseInt(sizeOctal, 8) || 0;
+        
+        offset += 512; // ヘッダー分進める
+        
+        if (fileName === 'APKINDEX' || fileName.endsWith('/APKINDEX')) {
+            // APKINDEXファイル発見
+            const content = tarData.slice(offset, offset + fileSize);
+            return new TextDecoder().decode(content);
+        }
+        
+        // 次のヘッダーへ（512バイト境界に合わせる）
+        offset += Math.ceil(fileSize / 512) * 512;
+    }
+    return null;
+}
+
+// APKINDEXフォーマットをパース
+function parseAPKINDEX(text, source) {
+    const packages = [];
+    const blocks = text.split('\n\n');
+    
+    for (const block of blocks) {
+        if (!block.trim()) continue;
+        
+        const pkg = {};
+        const lines = block.split('\n');
+        
+        for (const line of lines) {
+            if (line.startsWith('P:')) {
+                pkg.name = line.substring(2);
+            } else if (line.startsWith('V:')) {
+                pkg.version = line.substring(2);
+            } else if (line.startsWith('T:')) {
+                pkg.description = line.substring(2);
+            }
+        }
+        
+        if (pkg.name) {
+            pkg.source = source;
+            packages.push(pkg);
+        }
+    }
+    
+    return packages;
 }
 
 function parseOpkgPackages(text, source) {
