@@ -4709,11 +4709,18 @@ async function fetchDevicePackages() {
                     const SQL = await initSqlJs({ locateFile: f => `./vendor/sql.js/${f}` });
                     const db = new SQL.Database(u8);
 
-                    // テーブル一覧
-                    console.log("Tables:", db.exec("SELECT name FROM sqlite_master"));
+                    // テーブル一覧取得
+                    const tablesRes = db.exec("SELECT name FROM sqlite_master WHERE type='table'");
+                    if (!tablesRes.length || !tablesRes[0].values.length) {
+                        console.error("[ADB] No tables found in .adb database");
+                        console.groupEnd();
+                        return [];
+                    }
+                    const tableName = tablesRes[0].values[0][0];
+                    console.log(`[ADB] Using table: ${tableName}`);
 
-                    // パッケージ一覧取得
-                    const result = db.exec("SELECT name, version, description FROM packages");
+                    // パッケージ一覧取得（検出したテーブル名を使用）
+                    const result = db.exec(`SELECT name, version, description FROM ${tableName}`);
                     console.groupEnd();
                     return result[0]?.values.map(([name, version, desc]) => ({
                         name, version, description: desc, source: item.url
