@@ -3308,9 +3308,9 @@ function showDeviceInfo() {
     
     const deviceLink = `${window.location.origin}${window.location.pathname}?version=${encodeURIComponent(app.selectedVersion)}&target=${encodeURIComponent(device.target)}&id=${encodeURIComponent(device.id)}`;
 
-    const vendorSlug = (device.titles?.[0]?.vendor || '')
+    const vendorSlug = (device.vendor || '')
         .trim().toLowerCase().replace(/\s+/g, '_');
-
+    
     const modelSlug = `${vendorSlug}_${(device.id || '')
         .trim().toLowerCase().replace(/\s+/g, '_')}`;
 
