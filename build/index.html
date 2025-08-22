@@ -1944,6 +1944,7 @@ applySearchUrls(PACKAGE_DB);
 document.addEventListener('DOMContentLoaded', init);
 
 // ==================== エラーハンドリング統一 ====================
+// ==================== 統合・総合 デバッカー ====================
 const ErrorHandler = {
     // エラータイプ分類
     classify(error, response = null) {
@@ -1997,14 +1998,13 @@ const ErrorHandler = {
                 console.log(`✓ Version ${app.selectedVersion} not available - This is expected for older versions`);
                 hideDeviceInfo();
 
-                // ▼ ここから追加：パッケージセクターを厳格に閉じる／初期化
+                // パッケージセクターを厳格に閉じる／初期化
                 app.devicePackages = [];
                 // package-categories を空にしてパネルごと隠す
                 const pkgPanel = document.getElementById('packages');
                 const categories = document.getElementById('package-categories');
                 if (categories) categories.innerHTML = '';
                 if (pkgPanel) pkgPanel.style.display = 'none';
-                // ▲ ここまで追加
 
                 break;
             }
@@ -2024,13 +2024,17 @@ const ErrorHandler = {
         return { success: false, errorType, context, isExpected };
     },
 
-    // デバッグログ
+    // デバッグログ（拡張版）
     debug(context, message, data = null) {
         console.log(`[DEBUG] ${context}: ${message}`);
         if (data) {
             console.log('Data:', data);
         }
-        console.trace(`[${context}] Call trace:`);
+        
+        // ★追加：パッケージ関連なら自動でパッケージ状態チェック
+        if (context.includes('Package') || context.includes('package')) {
+            this.packageDebug.checkMissing();
+        }
     },
 
     // 関数呼び出し追跡
@@ -2038,9 +2042,81 @@ const ErrorHandler = {
         console.log(`[TRACE] ${functionName}() called`);
         console.log('Arguments:', args);
         console.trace(`${functionName} call stack:`);
+    },
+
+    packageDebug: {
+        // 取得ログ記録
+        logFetch(url, success, packages = []) {
+            const source = url.split('/').slice(-2).join('/');
+            
+            if (success) {
+                const kmods = packages.filter(p => 
+                    (typeof p === 'string' ? p : p?.name)?.startsWith('kmod-')
+                );
+                
+                console.log(`[PKG Fetch] ✓ ${source}: ${packages.length} pkgs (${kmods.length} kmods)`);
+                
+                // 特定パッケージの存在確認
+                const target = 'kmod-usb-ledtrig-usbport';
+                const found = packages.find(p => 
+                    (typeof p === 'string' ? p : p?.name) === target
+                );
+                if (found) {
+                    console.log(`🎯 [PKG] Found ${target} in ${source}!`);
+                }
+            } else {
+                console.log(`[PKG Fetch] ✗ ${source}: FAILED`);
+            }
+        },
+        
+        // 欠落パッケージチェック
+        checkMissing() {
+            if (!PACKAGE_DB || !app.devicePackages) return;
+            
+            const missing = [];
+            const notDisplayed = [];
+            
+            // PACKAGE_DBの全パッケージをチェック
+            PACKAGE_DB.categories.forEach(category => {
+                category.packages.forEach(pkg => {
+                    const inDevice = app.devicePackages?.some(p => 
+                        (typeof p === 'string' ? p : p?.name) === pkg.name
+                    );
+                    const inUI = document.querySelector(`[data-package="${pkg.name}"]`);
+                    
+                    if (!inDevice) missing.push(pkg.name);
+                    if (inDevice && !inUI) notDisplayed.push(pkg.name);
+                });
+            });
+            
+            if (missing.length > 0) {
+                console.warn('[NG] Missing from device packages:', missing);
+            }
+            if (notDisplayed.length > 0) {
+                console.warn('[NG] In device but not displayed:', notDisplayed);
+            }
+            if (missing.length === 0 && notDisplayed.length === 0) {
+                console.log('[OK] All packages available');
+            }
+        },
+        
+        // 全情報ダンプ
+        dumpAll() {
+            console.group('[Package Debug] Complete Dump');
+            console.log('Device packages:', app.devicePackages?.length || 0);
+            console.log('First 10 packages:', app.devicePackages?.slice(0, 10));
+            const kmods = app.devicePackages?.filter(p => 
+                (typeof p === 'string' ? p : p?.name)?.startsWith('kmod-')
+            );
+            console.log('Total kmods:', kmods?.length || 0);
+            console.log('First 10 kmods:', kmods?.slice(0, 10).map(k => 
+                typeof k === 'string' ? k : k?.name
+            ));
+            console.groupEnd();
+        }
     }
 };
-
+        
 // ==================== URL存在確認ユーティリティ ====================
 async function checkUrlExists(url) {
     try {
