@@ -2054,10 +2054,18 @@ const ErrorHandler = {
                     (typeof p === 'string' ? p : p?.name)?.startsWith('kmod-')
                 );
                 
-                console.log(`[PKG Fetch] OK ${source}: ${packages.length} pkgs (${kmods.length} kmods)`);
+                console.log(`[PKG Fetch] ✓ ${source}: ${packages.length} pkgs (${kmods.length} kmods)`);
                 
+                // 特定パッケージの存在確認
+                const target = 'kmod-usb-ledtrig-usbport';
+                const found = packages.find(p => 
+                    (typeof p === 'string' ? p : p?.name) === target
+                );
+                if (found) {
+                    console.log(`🎯 [PKG] Found ${target} in ${source}!`);
+                }
             } else {
-                console.log(`[PKG Fetch] NG ${source}: FAILED`);
+                console.log(`[PKG Fetch] ✗ ${source}: FAILED`);
             }
         },
         
@@ -2622,7 +2630,7 @@ function generatePackageSelector() {
     // 判定直前の状態を総合デバッガで出力
     ErrorHandler.debug(
         'generatePackageSelector',
-        'State immediately before zero check',
+        'ゼロ件判定直前の状態',
         {
             devicePackages_raw: app.devicePackages,
             availablePackages_list: Array.from(availablePackages),
@@ -4689,72 +4697,38 @@ function showDownloadLinks(images, fullStatus, requestHash) {
 
 // ★パッケージインデックス取得
 async function fetchDevicePackages() {
-    // SNAPSHOT版の場合は index.json を利用
+    // SNAPSHOT版の場合は処理をスキップ（公式準拠）
     if (/SNAPSHOT$/i.test(app.selectedVersion)) {
-        console.log('[fetchDevicePackages] SNAPSHOT version detected - using index.json');
-
-        app.devicePackages = [];
-        if (!current_device || !current_device.id || !app.selectedVersion) return;
-
-        // arch を解決（map → profiles.json フォールバック）
-        const arch = await resolveArchForSnapshot(app.selectedVersion, current_device.target);
-        if (!arch) {
-            console.error('[fetchDevicePackages] Unable to resolve arch for target:', current_device.target);
-            if (typeof generatePackageSelector === 'function') generatePackageSelector();
-            return;
-        }
-
-        const feeds = ["base", "luci", "packages", "routing", "telephony"];
-        const allPkgs = new Set();
-
-        for (const feed of feeds) {
-            const url = `https://downloads.openwrt.org/snapshots/packages/${arch}/${feed}/index.json`;
-            try {
-                const res = await fetch(url, { cache: 'no-cache', credentials: 'omit', mode: 'cors' });
-                if (!res.ok) {
-                    console.warn(`index.json not found: ${url} (HTTP ${res.status})`);
-                    continue;
-                }
-                const data = await res.json();
-                Object.keys(data?.packages || {}).forEach(name => allPkgs.add(name));
-                console.log(`[PKG Fetch] OK ${arch}/${feed}: ${Object.keys(data?.packages || {}).length} pkgs`);
-            } catch (err) {
-                console.warn(`index.json fetch failed: ${url} -> ${err.message}`);
-            }
-        }
-
-        app.devicePackages = Array.from(allPkgs).map(name => ({ name }));
+        console.log('[fetchDevicePackages] SNAPSHOT version detected - skipping package fetch (official compliant)');
+        app.devicePackages = [];  // 空配列をセット
+        
+        // SNAPSHOT版でもパッケージセレクターを生成（PACKAGE_DBを直接使用）
         if (typeof generatePackageSelector === 'function') {
             generatePackageSelector();
         }
         return;
     }
-
-    // リリース版（Packages テキストパース）
+    
+    // ========== リリース版用のコード ==========
     app.devicePackages = [];
     if (!current_device || !current_device.id || !app.selectedVersion) return;
 
     const version = app.selectedVersion;
     const targetPath = current_device.target;
 
+    // URLは直接使用
     setupVersionUrls(version);
     const basePath = config.image_urls[version].replace(/\/$/, '');
     const profilesUrl = `${basePath}/targets/${targetPath}/profiles.json`;
 
+    // 初期化
     const feeds = ["base", "luci", "packages", "routing", "telephony"];
     const urls = [];
 
-    urls.push(`${basePath}/targets/${targetPath}/packages/Packages`);
-
-    if (app.kernelHash) {
-        urls.push(`${basePath}/targets/${targetPath}/kmods/${app.kernelHash}/Packages`);
-    } else {
-        console.error('[KMODS] ERROR: No kernel hash available!');
-    }
-
+    // アーキテクチャ情報を取得
     let arch;
     try {
-        const res = await fetch(profilesUrl);
+        const res = await fetch(profilesUrl);  // ★直接fetch
         if (!res.ok) throw new Error(`profiles.json HTTP ${res.status}`);
         const meta = await res.json();
         arch = meta.arch_packages;
@@ -4766,27 +4740,66 @@ async function fetchDevicePackages() {
             console.log(`フォールバック成功: target '${targetPath}' のアーキテクチャは '${arch}' です。`);
         } else {
             console.error("フォールバック失敗: アーキテクチャ情報を特定できませんでした。");
+            app.devicePackages = [];
             if (typeof generatePackageSelector === 'function') generatePackageSelector();
             return;
         }
     }
 
+    // target固有パッケージ
+    if (!/SNAPSHOT$/i.test(version)) {
+        urls.push(`${basePath}/targets/${targetPath}/packages/Packages`);
+    
+        // ★kmodsディレクトリ
+        if (app.kernelHash) {
+            const kmodsUrl = `${basePath}/targets/${targetPath}/kmods/${app.kernelHash}/Packages`;
+            urls.push(kmodsUrl);
+            console.log(`[KMODS] Adding: ${kmodsUrl}`);
+        } else {
+            console.error('[KMODS] ERROR: No kernel hash available!');
+        }
+    }
+    
+    // フィードパッケージ（全バージョン共通）
     for (const feed of feeds) {
-        urls.push(`${basePath}/packages/${arch}/${feed}/Packages`);
+        urls.push(`${basePath}/packages/${arch}/${feed}/Packages`);  // ★直接URL
     }
 
+    console.log('[Package URLs]', {
+        version: version,
+        target: targetPath,
+        arch: arch,
+        urls: urls
+    });
+
+    // 各 Packages ファイルを並列取得・パース
     const allPkgs = [];
     const results = await Promise.allSettled(
         urls.map(async (url) => {
             try {
-                const res = await fetch(url);
+                const res = await fetch(url);  // ★直接fetch
                 if (!res.ok) {
                     console.log(`Package fetch ${res.status} for: ${url}`);
                     return [];
                 }
                 const text = await res.text();
                 const packages = parsePackagesText(text, url);
+
+                // デバッグ出力
+                console.log(`[Parse Debug] From ${url}:`);
+                console.log(`  Total: ${packages.length}`);
+                console.log(`  First 3:`, packages.slice(0, 3));
+
+                // kmodパッケージが本当に含まれているか確認
+                const kmodsInThisFile = packages.filter(p => p.name?.startsWith('kmod-'));
+                if (kmodsInThisFile.length > 0) {
+                    console.log(`  Contains ${kmodsInThisFile.length} kmods!`);
+                    console.log(`  Sample kmods:`, kmodsInThisFile.slice(0, 3).map(k => k.name));
+                }
+
+                // ErrorHandlerに記録
                 ErrorHandler.packageDebug.logFetch(url, true, packages);
+
                 return packages;
             } catch (err) {
                 console.log(`Package fetch failed: ${url}`, err.message);
@@ -4795,12 +4808,14 @@ async function fetchDevicePackages() {
         })
     );
 
+    // 結果を統合
     for (const r of results) {
         if (r.status === 'fulfilled' && Array.isArray(r.value)) {
             allPkgs.push(...r.value);
         }
     }
 
+    // 名前重複を統合
     const pkgMap = new Map();
     for (const p of allPkgs) {
         if (p?.name) {
@@ -4808,17 +4823,22 @@ async function fetchDevicePackages() {
         }
     }
     app.devicePackages = Array.from(pkgMap.values());
+    
+    console.log(`[Package Summary] Total unique packages: ${app.devicePackages.length}`);
 
     if (typeof generatePackageSelector === 'function') {
         generatePackageSelector();
     }
 
+    // パッケージ取得
     function parsePackagesText(text, source) {
         const blocks = text.split(/\n\s*\n/);
         const pkgs = [];
+        
         for (const blk of blocks) {
             const rec = {};
             for (const line of blk.split('\n')) {
+                // より厳密なマッチング
                 const m = line.match(/^([A-Za-z][A-Za-z0-9-]*):\s*(.*)$/);
                 if (!m) continue;
                 const key = m[1], val = m[2];
@@ -4831,31 +4851,14 @@ async function fetchDevicePackages() {
             if (rec.name) {
                 rec.source = source;
                 pkgs.push(rec);
+                
+                // デバッグ：kmodパッケージ検出
+                if (rec.name.startsWith('kmod-')) {
+                    console.log(`[Parse] Found kmod: ${rec.name} from ${source}`);
+                }
             }
         }
         return pkgs;
-    }
-}
-
-// SNAPSHOT用 arch 解決（map → profiles.json フォールバック）
-async function resolveArchForSnapshot(version, targetPath) {
-    const fromMap = app.archPackagesMap?.[targetPath];
-    if (fromMap) return fromMap;
-
-    try {
-        const base = (config.image_urls && config.image_urls[version]) ? config.image_urls[version].replace(/\/$/, '') : 'https://downloads.openwrt.org/snapshots/';
-        const profilesUrl = `${base}/targets/${targetPath}/profiles.json`;
-        const res = await fetch(profilesUrl, { cache: 'no-cache', credentials: 'omit', mode: 'cors' });
-        if (!res.ok) return '';
-        const meta = await res.json();
-        const arch = meta?.arch_packages || '';
-        if (arch) {
-            app.archPackagesMap = app.archPackagesMap || {};
-            app.archPackagesMap[targetPath] = arch;
-        }
-        return arch;
-    } catch {
-        return '';
     }
 }
         
