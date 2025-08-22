@@ -2061,35 +2061,84 @@ const ErrorHandler = {
             }
         },
         
-        // 欠落パッケージチェック
+        // 欠落パッケージチェック（詳細版）
         checkMissing() {
             if (!PACKAGE_DB || !app.devicePackages) return;
             
+            const devMap = new Map(app.devicePackages.map(p => [ (typeof p === 'string' ? p : p?.name), p ]));
             const missing = [];
             const notDisplayed = [];
             
             // PACKAGE_DBの全パッケージをチェック
             PACKAGE_DB.categories.forEach(category => {
                 category.packages.forEach(pkg => {
-                    const inDevice = app.devicePackages?.some(p => 
-                        (typeof p === 'string' ? p : p?.name) === pkg.name
-                    );
+                    const inDevice = devMap.has(pkg.name);
                     const inUI = document.querySelector(`[data-package="${pkg.name}"]`);
                     
-                    if (!inDevice) missing.push(pkg.name);
-                    if (inDevice && !inUI) notDisplayed.push(pkg.name);
+                    if (!inDevice) {
+                        missing.push({
+                            name: pkg.name,
+                            feed: this._findFeedName(pkg.name),
+                            existsInFeed: null
+                        });
+                    }
+                    if (inDevice && !inUI) {
+                        notDisplayed.push({
+                            name: pkg.name,
+                            reason: this._detectUiExclusionReason(pkg.name, pkg)
+                        });
+                    }
                 });
             });
-            
-            if (missing.length > 0) {
-                console.warn('[NG] Missing from device packages:', missing);
-            }
-            if (notDisplayed.length > 0) {
-                console.warn('[NG] In device but not displayed:', notDisplayed);
-            }
+
+            // Missing側の存在チェック（HEADリクエスト）
+            missing.forEach(async m => {
+                const url = this._buildFeedUrl(m.feed, m.name);
+                m.existsInFeed = await checkUrlExists(url);
+                console.log(
+                    `%c[Missing] ${m.name} | feed=${m.feed} | exists=${m.existsInFeed}`,
+                    m.existsInFeed ? 'color:orange' : 'color:red'
+                );
+            });
+
+            // NotDisplayed側の理由表示
+            notDisplayed.forEach(n => {
+                console.log(
+                    `%c[NotDisplayed] ${n.name} | reason=${n.reason}`,
+                    'color:blue'
+                );
+            });
+
             if (missing.length === 0 && notDisplayed.length === 0) {
                 console.log('[OK] All packages available');
             }
+        },
+
+        // feed逆引き
+        _findFeedName(pkgName) {
+            const found = app.devicePackages.find(p => (p.name || p) === pkgName);
+            if (found?.source) {
+                const parts = found.source.split('/');
+                return parts.length >= 2 ? parts[parts.length - 2] : 'unknown';
+            }
+            return 'unknown';
+        },
+
+        // UI除外理由推定
+        _detectUiExclusionReason(pkgName, pkgMeta) {
+            if (pkgMeta?.hidden) return 'hidden flag';
+            if (!/SNAPSHOT$/i.test(app.selectedVersion) && pkgName.startsWith('kmod-')) return 'ABI mismatch?';
+            return 'UI filter';
+        },
+
+        // feed URL生成
+        _buildFeedUrl(feed, pkgName) {
+            const arch = app.archPackagesMap?.[current_device.target] || '';
+            const base = /SNAPSHOT$/i.test(app.selectedVersion)
+                ? `https://downloads.openwrt.org/snapshots/packages/${arch}/${feed}`
+                : `https://downloads.openwrt.org/releases/${app.selectedVersion}/packages/${arch}/${feed}`;
+            return `${base}/${pkgName}`;
+        }
         },
         
         // 全情報ダンプ
