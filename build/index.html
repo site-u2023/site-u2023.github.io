@@ -701,9 +701,6 @@
             filter: invert(100%) sepia(9%) saturate(261%) hue-rotate(281deg) brightness(117%) contrast(100%);
         }
     } /* close @media (prefers-color-scheme: dark) */
-
-    <!-- gzip解凍用ライブラリ（SNAPSHOT版のAPKINDEX.tar.gz用） -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
 </style>
 
 </head>
@@ -1463,8 +1460,7 @@ let app = {
     devices: [],
     selectedVersion: '',
     templateLoaded: false,
-    availablePackages: [], // デバイス固有のパッケージリスト
-    archPackagesMap: {},
+    availablePackages: [] // デバイス固有のパッケージリスト
 };
 
 // 公式と同じグローバル変数
@@ -2078,24 +2074,19 @@ async function findValidUrls(urlCandidates) {
 function setupVersionUrls(version) {
     if (!config.image_urls) config.image_urls = {};
     if (!config.overview_urls) config.overview_urls = {};
-
+    
+    // 既に設定済みならスキップ
     if (config.image_urls[version]) return;
-
-    const overview_url = config.image_url;
-    const image_url = (typeof upstream_config !== 'undefined' && upstream_config.image_url_override)
-        ? upstream_config.image_url_override
-        : config.image_url;
-
-    // SNAPSHOT または *-SNAPSHOT → /snapshots/ に集約
-    if (/SNAPSHOT$/i.test(version)) {
-        config.overview_urls[version] = `${overview_url}/snapshots/`;
-        config.image_urls[version]   = `${image_url}/snapshots/`;
+    
+    if (version === 'SNAPSHOT') {
+        config.overview_urls[version] = `${config.image_url}/snapshots/`;
+        config.image_urls[version] = `${config.image_url}/snapshots/`;
     } else {
-        config.overview_urls[version] = `${overview_url}/releases/${encodeURIComponent(version)}/`;
-        config.image_urls[version]    = `${image_url}/releases/${encodeURIComponent(version)}/`;
+        config.overview_urls[version] = `${config.image_url}/releases/${encodeURIComponent(version)}/`;
+        config.image_urls[version] = `${config.image_url}/releases/${encodeURIComponent(version)}/`;
     }
 }
-        
+
 // ==================== ユーティリティ関数 ====================
 async function loadPackageDatabase() {
     const res = await fetch('data/packages.json');
@@ -2542,7 +2533,7 @@ function generatePackageSelector() {
 
     container.innerHTML = '';
 
-    // 利用可能パッケージ名のセットを作成（統一処理）
+    // 利用可能パッケージ名のセットを作成（デバイス＋OSバージョンで取得済みのもの）
     const availablePackages = new Set();
     if (Array.isArray(app.devicePackages) && app.devicePackages.length > 0) {
         app.devicePackages.forEach(pkg => {
@@ -2551,10 +2542,10 @@ function generatePackageSelector() {
         });
     }
 
-    // デバッグ出力
+    // 判定直前の状態を総合デバッガで出力
     ErrorHandler.debug(
         'generatePackageSelector',
-        'パッケージ判定状態',
+        'ゼロ件判定直前の状態',
         {
             devicePackages_raw: app.devicePackages,
             availablePackages_list: Array.from(availablePackages),
@@ -2562,7 +2553,8 @@ function generatePackageSelector() {
         }
     );
 
-    // 取得できていない場合
+    
+    // 取得できていない（＝判定不能）場合は、何も描画しない
     if (availablePackages.size === 0) {
         container.innerHTML =
             '<p class="text-muted small">Unable to retrieve the package index for this OS version/device. ' +
@@ -2602,7 +2594,7 @@ function generatePackageSelector() {
             // 依存パッケージはトップレベル描画しない
             if (depIds.has(pkg.id)) return;
 
-            //
+            // ▼ 厳格：available にあるものだけ表示
             const isAvailable = availablePackages.has(pkg.name);
 
             const packageItem = document.createElement('div');
@@ -2659,7 +2651,7 @@ function generatePackageSelector() {
                     }
 
                     const depName = depPkg ? depPkg.name : depId;
-                    const depIsAvailable = isSnapshot || availablePackages.has(depName);
+                    const depIsAvailable = availablePackages.has(depName);
                     if (!depIsAvailable) return;
 
                     const depItem = document.createElement('div');
@@ -3006,7 +2998,6 @@ async function loadDevices() {
         
         const data = await response.json();
         app.devices = data.profiles || [];
-        app.archPackagesMap = data.arch_packages || {};
         
     } catch (error) {
         if (error.message && (error.message.includes('Failed to fetch') || error.message.includes('CORS'))) {
@@ -3141,13 +3132,13 @@ async function loadDeviceProfile(device) {
         profileCache[cacheKey] = profilesData;
         applyProfileData(profilesData, profileId);
 
-        // パッケージ取得完了を待ってから描画（SNAPSHOT版は別処理）
+        // パッケージ取得完了を待ってから描画
         try {
             await fetchDevicePackages();
         } catch (e) {
             console.error('fetchDevicePackages failed:', e);
         }
-        // 取得完了後にだけ UI 生成（SNAPSHOTでも実行される）
+        // 取得完了後にだけ UI 生成
         if (typeof generatePackageSelector === 'function') {
             generatePackageSelector();
         }
@@ -4604,227 +4595,121 @@ function showDownloadLinks(images, fullStatus, requestHash) {
     }
 }
 
-// ★パッケージインデックス取得（リリース版・SNAPSHOT版統合）
+// ★パッケージインデックス取得（device_packages_url は廃止）
 async function fetchDevicePackages() {
-    app.devicePackages = [];
-    if (!current_device || !current_device.id || !app.selectedVersion) return;
-
-    const version = app.selectedVersion;
-    const targetPath = current_device.target;
-
-    // URLベース構築（共通）
-    setupVersionUrls(version);
-    const basePath = config.image_urls[version].replace(/\/$/, '');
-    const profilesUrl = `${basePath}/targets/${targetPath}/profiles.json`;
-
-    // アーキテクチャ情報を取得（共通処理）
-    let arch;
-    try {
-        const res = await fetch(profilesUrl);
-        if (!res.ok) throw new Error(`profiles.json HTTP ${res.status}`);
-        const meta = await res.json();
-        arch = meta.arch_packages;
-        if (!arch) throw new Error("profiles.json に arch_packages がありません");
-    } catch (e) {
-        console.warn(`profiles.json 取得失敗: ${e.message}. フォールバックを試みます。`);
-        if (app.archPackagesMap && app.archPackagesMap[targetPath]) {
-            arch = app.archPackagesMap[targetPath];
-            console.log(`フォールバック成功: target '${targetPath}' のアーキテクチャは '${arch}' です。`);
-        } else {
-            console.error("フォールバック失敗: アーキテクチャ情報を特定できませんでした。");
-            app.devicePackages = [];
-            if (typeof generatePackageSelector === 'function') generatePackageSelector();
+        app.devicePackages = [];
+        if (!current_device || !current_device.id || !app.selectedVersion) return;
+        
+        const version = app.selectedVersion;
+        const targetPath = current_device.target;
+        
+        // URL設定を確認
+        setupVersionUrls(version);
+        const basePath = config.image_urls[version].replace(/\/$/, '');
+        const profilesUrl = `${basePath}/targets/${targetPath}/profiles.json`;
+        
+        // 初期化
+        const feeds = ["base", "luci", "packages", "routing", "telephony"];
+        const urls = [];
+        
+        // profiles.json からアーキテクチャ情報を取得
+        let meta, arch;
+        try {
+            const res = await fetch(profilesUrl);
+            if (!res.ok) throw new Error(`profiles.json HTTP ${res.status}`);
+            meta = await res.json();
+            arch = meta.arch_packages;
+            if (!arch) throw new Error("profiles.json に arch_packages がありません");
+        } catch (e) {
+            console.error("profiles.json 取得失敗:", e);
             return;
         }
-    }
-
-    // フィード定義（共通）
-    const feeds = ["base", "luci", "packages", "routing", "telephony"];
-    const urls = [];
-
-    // URL構築（バージョン別）
-    if (isSnapshot) {
-        // SNAPSHOT版: APKINDEX.tar.gz形式
-        // target固有パッケージ（SNAPSHOT版にも存在する可能性）
-        urls.push({
-            url: `${basePath}/targets/${targetPath}/packages/APKINDEX.tar.gz`,
-            type: 'apk'
+        
+        // target固有パッケージ（リリース版のみ存在）
+        if (version !== 'SNAPSHOT') {
+            urls.push(`${basePath}/targets/${targetPath}/packages/Packages`);
+        }
+        // SNAPSHOTの場合：target固有パッケージは存在しない
+        
+        // フィードパッケージ（全バージョン共通）
+        for (const feed of feeds) {
+            urls.push(`${basePath}/packages/${arch}/${feed}/Packages`);
+        }
+        
+        console.log('[Package URLs]', {
+            version: version,
+            target: targetPath,
+            arch: arch,
+            urls: urls
         });
         
-        // フィードパッケージ
-        for (const feed of feeds) {
-            urls.push({
-                url: `${basePath}/packages/${arch}/${feed}/APKINDEX.tar.gz`,
-                type: 'apk'
-            });
-        }
-    } else {
-        // リリース版: Packages形式
-        // target固有パッケージ
-        urls.push({
-            url: `${basePath}/targets/${targetPath}/packages/Packages`,
-            type: 'opkg'
-        });
-        
-        // フィードパッケージ
-        for (const feed of feeds) {
-            urls.push({
-                url: `${basePath}/packages/${arch}/${feed}/Packages`,
-                type: 'opkg'
-            });
-        }
-    }
-
-    console.log('[Package URLs]', {
-        version: version,
-        isSnapshot: isSnapshot,
-        target: targetPath,
-        arch: arch,
-        urls: urls.map(u => u.url)
-    });
-
-    // パッケージ取得・パース（統合処理）
-    const allPkgs = [];
-    const results = await Promise.allSettled(
-        urls.map(async (item) => {
-            try {
-                const res = await fetch(item.url);
-                if (!res.ok) {
-                    console.log(`Package fetch ${res.status} for: ${item.url}`);
-                    return [];
-                }
-
-                let text;
-                if (item.type === 'apk') {
-                    // APKINDEX.tar.gz の処理
-                    const arrayBuffer = await res.arrayBuffer();
-                    text = await extractAPKINDEX(arrayBuffer);
-                    if (!text) {
-                        console.log(`Failed to extract APKINDEX from: ${item.url}`);
+        // 各 Packages ファイルを並列取得・パース
+        const allPkgs = [];
+        const results = await Promise.allSettled(
+            urls.map(async (url) => {
+                try {
+                    const res = await fetch(url);
+                    if (!res.ok) {
+                        console.log(`Package fetch ${res.status} for: ${url}`);
                         return [];
                     }
-                } else {
-                    // 通常のPackagesファイル
-                    text = await res.text();
+                    const text = await res.text();
+                    const packages = parsePackagesText(text, url);
+                    console.log(`Parsed ${packages.length} packages from: ${url}`);
+                    return packages;
+                } catch (err) {
+                    console.log(`Package fetch failed: ${url}`, err.message);
+                    return [];
                 }
+            })
+        );
 
-                const packages = parsePackagesText(text, item.url, item.type);
-                console.log(`Parsed ${packages.length} packages from: ${item.url}`);
-                return packages;
-            } catch (err) {
-                console.log(`Package fetch failed: ${item.url}`, err.message);
-                return [];
+        // 結果を統合
+        for (const r of results) {
+            if (r.status === 'fulfilled' && Array.isArray(r.value)) {
+                allPkgs.push(...r.value);
             }
-        })
-    );
-
-    // 結果を統合
-    for (const r of results) {
-        if (r.status === 'fulfilled' && Array.isArray(r.value)) {
-            allPkgs.push(...r.value);
         }
-    }
 
-    // 名前重複を統合
-    const pkgMap = new Map();
-    for (const p of allPkgs) {
-        if (p?.name) {
-            pkgMap.set(p.name, p);
-        }
-    }
-    app.devicePackages = Array.from(pkgMap.values());
-    
-    console.log(`[Package Summary] Total unique packages: ${app.devicePackages.length}`);
-
-    if (typeof generatePackageSelector === 'function') {
-        generatePackageSelector();
-    }
-
-    // APKINDEX.tar.gz展開関数
-    async function extractAPKINDEX(arrayBuffer) {
-        try {
-            // Step 1: gzip解凍
-            const gunzipped = pako.ungzip(new Uint8Array(arrayBuffer));
-            
-            // Step 2: tar展開（簡易実装 - APKINDEXファイルのみ抽出）
-            // tarフォーマット: 512バイトブロック単位
-            let offset = 0;
-            while (offset < gunzipped.length) {
-                // ヘッダー読み取り（512バイト）
-                const header = gunzipped.slice(offset, offset + 512);
-                if (header.length < 512) break;
-                
-                // ファイル名（最初の100バイト、null終端）
-                let filename = '';
-                for (let i = 0; i < 100 && header[i] !== 0; i++) {
-                    filename += String.fromCharCode(header[i]);
-                }
-                
-                // ファイルサイズ（124-135バイト、8進数文字列）
-                let sizeStr = '';
-                for (let i = 124; i < 136 && header[i] !== 0; i++) {
-                    sizeStr += String.fromCharCode(header[i]);
-                }
-                const fileSize = parseInt(sizeStr, 8) || 0;
-                
-                // APKINDEXファイルを探す
-                if (filename === 'APKINDEX' || filename.includes('APKINDEX')) {
-                    const fileData = gunzipped.slice(offset + 512, offset + 512 + fileSize);
-                    return new TextDecoder().decode(fileData);
-                }
-                
-                // 次のブロックへ（512バイト境界に整列）
-                const blockSize = Math.ceil(fileSize / 512) * 512;
-                offset += 512 + blockSize;
-                
-                // 空ブロック検出（終端）
-                if (header.every(b => b === 0)) break;
+        // 名前重複を統合
+        const pkgMap = new Map();
+        for (const p of allPkgs) {
+            if (p?.name) {
+                pkgMap.set(p.name, p);
             }
-            
-            console.warn('APKINDEX not found in tar archive');
-            return null;
-        } catch (err) {
-            console.error('Error extracting APKINDEX:', err);
-            return null;
         }
-    }
-
-    // パッケージテキストパース関数（opkg/apk両対応）
-    function parsePackagesText(text, source, type) {
-        const blocks = text.split(/\n\s*\n/);
-        const pkgs = [];
+        app.devicePackages = Array.from(pkgMap.values());
         
-        for (const blk of blocks) {
-            const rec = {};
-            for (const line of blk.split('\n')) {
-                // APK形式とopkg形式の両方に対応
-                const m = line.match(/^([A-Za-z-]+):\s*(.*)$/);
-                if (!m) continue;
-                const key = m[1], val = m[2];
-                
-                // キーマッピング（APK -> 共通形式）
-                if (type === 'apk') {
-                    if (key === "P") rec.name = val;           // Package name
-                    else if (key === "V") rec.version = val;   // Version
-                    else if (key === "T") rec.description = val; // Description
-                    else if (key === "S") rec.size = val;      // Size
-                } else {
-                    // opkg形式（既存）
+        console.log(`[Package Summary] Total unique packages: ${app.devicePackages.length}`);
+
+        // 取得完了後にセレクター再描画
+        if (typeof generatePackageSelector === 'function') {
+            generatePackageSelector();
+        }
+
+        // 内部関数: Packagesファイルをパース
+        function parsePackagesText(text, source) {
+            const blocks = text.split(/\n\s*\n/);
+            const pkgs = [];
+            for (const blk of blocks) {
+                const rec = {};
+                for (const line of blk.split('\n')) {
+                    const m = line.match(/^([A-Za-z-]+):\s*(.*)$/);
+                    if (!m) continue;
+                    const key = m[1], val = m[2];
                     if (key === "Package") rec.name = val;
                     else if (key === "Version") rec.version = val;
                     else if (key === "Description") rec.description = val;
                     else if (key === "Section") rec.section = val;
+                }  // ← インデント修正
+                if (rec.name) {
+                    rec.source = source;
+                    pkgs.push(rec);
                 }
             }
-            
-            if (rec.name) {
-                rec.source = source;
-                pkgs.push(rec);
-            }
+            return pkgs;
         }
-        return pkgs;
     }
-}
         
 // ==================== パッケージ入力ボックス ====================
 (function() {
