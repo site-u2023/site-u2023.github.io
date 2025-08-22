@@ -9,7 +9,7 @@ body { font-family: monospace; padding: 20px; }
 .ok { color: green; font-weight: bold; }
 .err { color: red; font-weight: bold; }
 </style>
-<!-- 必ず先に読み込む -->
+<!-- ここで必ず先に読み込む -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/openpgp/5.11.0/openpgp.min.js"></script>
 </head>
 <body>
@@ -50,11 +50,13 @@ document.getElementById('verifyBtn').addEventListener('click', async () => {
     const out = document.getElementById('output');
     out.textContent = 'ダウンロード中...';
     try {
+        // 3ファイル取得
         const [adbBuf, sigBuf, ascBuf] = await Promise.all([
             fetchBinary(baseUrl + 'packages.adb'),
             fetchBinary(baseUrl + 'packages.adb.sig'),
             fetchBinary(baseUrl + 'packages.adb.asc')
         ]);
+        // .asc は公開鍵として使用
         const ascText = new TextDecoder().decode(ascBuf);
         const res = await verifySignature(adbBuf, sigBuf, ascText);
         if (res.ok) {
