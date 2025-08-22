@@ -1439,7 +1439,7 @@ exit 0`;
 const config = {
     show_help: true,
     image_url: "https://downloads.openwrt.org",
-    info_url: "https://openwrt.org/toh/hwdata/{vendor_slug}/{vendor_slug}_{model_slug}",
+    info_url: "https://openwrt.org/start?q={device_id}&do=search",
     asu_url: "https://sysupgrade.openwrt.org",
     asu_extra_packages: ["luci"],
     min_version: "19.07.0",
@@ -3308,32 +3308,9 @@ function showDeviceInfo() {
     
     const deviceLink = `${window.location.origin}${window.location.pathname}?version=${encodeURIComponent(app.selectedVersion)}&target=${encodeURIComponent(device.target)}&id=${encodeURIComponent(device.id)}`;
 
-    const vendorSlug = (device.titles?.[0]?.vendor || '')
-        .trim().toLowerCase().replace(/\s+/g, '_');
-    
-    // device.idからmodel部分を抽出（ベンダー名の有無を考慮）
-    let modelSlug = (device.id || '').trim().toLowerCase().replace(/\s+/g, '_');
-    
-    // ベンダー名がある場合のみ、device.idの先頭から除去を試行
-    if (vendorSlug && modelSlug.startsWith(vendorSlug + '_')) {
-        modelSlug = modelSlug.substring(vendorSlug.length + 1);
-    }
-    
-    // バリアント情報を除去（OpenWrt ToHページの命名規則に合わせる）
-    // 一般的なバリアントパターン: -v1, -v2, -cellular, -lte, -wifi, -pro, -plus など
-    modelSlug = modelSlug.replace(/-(?:v\d+|cellular|lte|wifi|pro|plus|lite|mini|max|ac|ax|be|g|n)$/, '');
-    
-    // 最終的なmodelSlugが空になった場合の保険
-    if (!modelSlug) {
-        modelSlug = (device.id || '').trim().toLowerCase().replace(/\s+/g, '_');
-    }
-
-    const infoUrl = (config.info_url || "")
-        .replace(/{vendor_slug}/g, vendorSlug)
-        .replace(/{model_slug}/g, modelSlug)
-        .replace("{target}", device.target)
-        .replace("{id}", device.id)
-        .replace("{version}", app.selectedVersion);
+    // OpenWrt検索ベースのリンク生成（確実性重視）
+    const deviceSearchQuery = encodeURIComponent(device.id || '');
+    const infoUrl = config.info_url.replace("{device_id}", deviceSearchQuery);
     
     // 公式形式のAbout this buildセクションを構築
     const infoHtml = `
