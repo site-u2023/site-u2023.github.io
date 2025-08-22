@@ -4612,16 +4612,16 @@ async function fetchDevicePackages() {
     const version = app.selectedVersion;
     const targetPath = current_device.target;
     
-    // ★プロキシ定義
+    // ★プロキシ定義（SNAPSHOT専用）
     const proxyBase = 'https://proxy.site-u.workers.dev/?url=';
     const proxify = (url) => proxyBase + encodeURIComponent(url);
-    
+
     // URLベース構築（共通）
     setupVersionUrls(version);
-    let basePath = config.image_urls[version].replace(/\/$/, ''); // ← let に変更
+    let basePath = config.image_urls[version].replace(/\/$/, '');
 
-    // ★SNAPSHOT のときだけプロキシ経由にする
-    if (/SNAPSHOT$/i.test(version)) {
+    const isSnapshot = /SNAPSHOT$/i.test(version);
+    if (isSnapshot) {
         basePath = proxify(basePath);
     }
     
@@ -4652,14 +4652,18 @@ async function fetchDevicePackages() {
     const feeds = ["base", "luci", "packages", "routing", "telephony"];
     const urls = [];
 
-    // URL構築（形式自動判定: まず APKINDEX.tar.gz、ダメなら Packages を試す）
-    // target固有
-    urls.push({ url: `${basePath}/targets/${targetPath}/packages/APKINDEX.tar.gz`, type: 'apk' });
-    urls.push({ url: `${basePath}/targets/${targetPath}/packages/Packages`,         type: 'opkg' });
-    // フィード
-    for (const feed of feeds) {
-        urls.push({ url: `${basePath}/packages/${arch}/${feed}/APKINDEX.tar.gz`, type: 'apk' });
-        urls.push({ url: `${basePath}/packages/${arch}/${feed}/Packages`,       type: 'opkg' });
+    if (isSnapshot) {
+        // SNAPSHOT → apk形式のみ
+        urls.push({ url: `${basePath}/targets/${targetPath}/packages/APKINDEX.tar.gz`, type: 'apk' });
+        for (const feed of feeds) {
+            urls.push({ url: `${basePath}/packages/${arch}/${feed}/APKINDEX.tar.gz`, type: 'apk' });
+        }
+    } else {
+        // リリース版 → opkg形式のみ
+        urls.push({ url: `${basePath}/targets/${targetPath}/packages/Packages`, type: 'opkg' });
+        for (const feed of feeds) {
+            urls.push({ url: `${basePath}/packages/${arch}/${feed}/Packages`, type: 'opkg' });
+        }
     }   
     
     console.log('[Package URLs]', {
