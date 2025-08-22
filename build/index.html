@@ -4688,7 +4688,7 @@ function showDownloadLinks(images, fullStatus, requestHash) {
         container.appendChild(buildInfo);
     }
 }
-    // SNAPSHOT版の場合は処理をスキップ（公式準拠）
+
 // ★パッケージインデックス取得
 async function fetchDevicePackages() {
     // SNAPSHOT版の場合は処理をスキップ（公式準拠）
@@ -4769,7 +4769,22 @@ async function fetchDevicePackages() {
                 }
                 const text = await res.text();
                 const packages = parsePackagesText(text, url);
-                console.log(`Parsed ${packages.length} packages from: ${url}`);
+
+                // デバッグ出力
+                console.log(`[Parse Debug] From ${url}:`);
+                console.log(`  Total: ${packages.length}`);
+                console.log(`  First 3:`, packages.slice(0, 3));
+
+                // kmodパッケージが本当に含まれているか確認
+                const kmodsInThisFile = packages.filter(p => p.name?.startsWith('kmod-'));
+                if (kmodsInThisFile.length > 0) {
+                    console.log(`  Contains ${kmodsInThisFile.length} kmods!`);
+                    console.log(`  Sample kmods:`, kmodsInThisFile.slice(0, 3).map(k => k.name));
+                }
+
+                // ErrorHandlerに記録
+                ErrorHandler.packageDebug.logFetch(url, true, packages);
+
                 return packages;
             } catch (err) {
                 console.log(`Package fetch failed: ${url}`, err.message);
@@ -4800,23 +4815,32 @@ async function fetchDevicePackages() {
         generatePackageSelector();
     }
 
+    // パッケージ取得
     function parsePackagesText(text, source) {
         const blocks = text.split(/\n\s*\n/);
         const pkgs = [];
+        
         for (const blk of blocks) {
             const rec = {};
             for (const line of blk.split('\n')) {
-                const m = line.match(/^([A-Za-z-]+):\s*(.*)$/);
+                // より厳密なマッチング
+                const m = line.match(/^([A-Za-z][A-Za-z0-9-]*):\s*(.*)$/);
                 if (!m) continue;
                 const key = m[1], val = m[2];
-                if (key === "Package") rec.name = val;
+                if (key === "Package") rec.name = val.trim();
                 else if (key === "Version") rec.version = val;
                 else if (key === "Description") rec.description = val;
                 else if (key === "Section") rec.section = val;
+                else if (key === "Filename") rec.filename = val;
             }
             if (rec.name) {
                 rec.source = source;
                 pkgs.push(rec);
+                
+                // デバッグ：kmodパッケージ検出
+                if (rec.name.startsWith('kmod-')) {
+                    console.log(`[Parse] Found kmod: ${rec.name} from ${source}`);
+                }
             }
         }
         return pkgs;
