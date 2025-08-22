@@ -4665,28 +4665,48 @@ async function fetchDevicePackages() {
                     return [];
                 }
                 if (item.type === 'adb') {
-                    console.log("[ADB] Fetching package DB from:", item.url);
+                    ErrorHandler.trace('fetchDevicePackages[ADB]', item.url);
 
-                    // まず HEAD リクエストで存在確認
-                    const headResp = await fetch(item.url, { method: 'HEAD' });
-                    console.log("[ADB] HEAD status:", headResp.status, headResp.statusText);
-                    if (!headResp.ok) {
-                        throw new Error(`packages.adb not found at ${item.url}`);
+                    // URL存在確認
+                    const exists = await checkUrlExists(item.url);
+                    if (!exists) {
+                        return ErrorHandler.handle(
+                            'fetchDevicePackages[ADB]',
+                            new Error('packages.adb not found'),
+                            { status: 404, statusText: 'Not Found', url: item.url }
+                        );
                     }
+
+                    console.group(`[ADB DEBUG] ${item.url}`);
 
                     // 実データ取得
                     const buf = await fetch(item.url).then(r => r.arrayBuffer());
-                    console.log("[ADB] Size:", buf.byteLength, "bytes");
+                    const u8 = new Uint8Array(buf);
+                    console.log("Size:", buf.byteLength, "bytes");
+                    console.log("First 16 bytes (hex):", Array.from(u8.slice(0, 16))
+                        .map(b => b.toString(16).padStart(2, "0")).join(" "));
+
+                    // 形式判定
+                    if (u8[0] === 0x53 && u8[1] === 0x51 && u8[2] === 0x4c && u8[3] === 0x69) {
+                        console.log("Format: SQLite");
+                    } else if (u8[0] === 0x1f && u8[1] === 0x8b) {
+                        console.log("Format: gzip-compressed");
+                    } else if (u8[0] === 0xfd && u8[1] === 0x37 && u8[2] === 0x7a && u8[3] === 0x58) {
+                        console.log("Format: xz-compressed");
+                    } else {
+                        console.log("Format: unknown");
+                    }
 
                     // SQLite 初期化
                     const SQL = await initSqlJs({ locateFile: f => `./vendor/sql.js/${f}` });
-                    const db = new SQL.Database(new Uint8Array(buf));
+                    const db = new SQL.Database(u8);
 
-                    // テーブル一覧を確認
-                    console.log("[ADB] Tables:", db.exec("SELECT name FROM sqlite_master"));
+                    // テーブル一覧
+                    console.log("Tables:", db.exec("SELECT name FROM sqlite_master"));
 
                     // パッケージ一覧取得
                     const result = db.exec("SELECT name, version, description FROM packages");
+                    console.groupEnd();
                     return result[0]?.values.map(([name, version, desc]) => ({
                         name, version, description: desc, source: item.url
                     })) || [];
@@ -4695,8 +4715,7 @@ async function fetchDevicePackages() {
                     return parseOpkgPackages(text, item.url);
                 }
             } catch (err) {
-                console.log(`Package fetch failed: ${item.url}`, err.message);
-                return [];
+                return ErrorHandler.handle('fetchDevicePackages', err, res);
             }
         })
     );
