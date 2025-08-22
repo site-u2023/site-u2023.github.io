@@ -1944,6 +1944,7 @@ applySearchUrls(PACKAGE_DB);
 document.addEventListener('DOMContentLoaded', init);
 
 // ==================== エラーハンドリング統一 ====================
+// ==================== 統合・総合 デバッカー ====================
 const ErrorHandler = {
     // エラータイプ分類
     classify(error, response = null) {
@@ -1997,14 +1998,13 @@ const ErrorHandler = {
                 console.log(`✓ Version ${app.selectedVersion} not available - This is expected for older versions`);
                 hideDeviceInfo();
 
-                // ▼ ここから追加：パッケージセクターを厳格に閉じる／初期化
+                // パッケージセクターを厳格に閉じる／初期化
                 app.devicePackages = [];
                 // package-categories を空にしてパネルごと隠す
                 const pkgPanel = document.getElementById('packages');
                 const categories = document.getElementById('package-categories');
                 if (categories) categories.innerHTML = '';
                 if (pkgPanel) pkgPanel.style.display = 'none';
-                // ▲ ここまで追加
 
                 break;
             }
@@ -2024,13 +2024,17 @@ const ErrorHandler = {
         return { success: false, errorType, context, isExpected };
     },
 
-    // デバッグログ
+    // デバッグログ（拡張版）
     debug(context, message, data = null) {
         console.log(`[DEBUG] ${context}: ${message}`);
         if (data) {
             console.log('Data:', data);
         }
-        console.trace(`[${context}] Call trace:`);
+        
+        // ★追加：パッケージ関連なら自動でパッケージ状態チェック
+        if (context.includes('Package') || context.includes('package')) {
+            this.packageDebug.checkMissing();
+        }
     },
 
     // 関数呼び出し追跡
@@ -2038,9 +2042,81 @@ const ErrorHandler = {
         console.log(`[TRACE] ${functionName}() called`);
         console.log('Arguments:', args);
         console.trace(`${functionName} call stack:`);
+    },
+
+    packageDebug: {
+        // 取得ログ記録
+        logFetch(url, success, packages = []) {
+            const source = url.split('/').slice(-2).join('/');
+            
+            if (success) {
+                const kmods = packages.filter(p => 
+                    (typeof p === 'string' ? p : p?.name)?.startsWith('kmod-')
+                );
+                
+                console.log(`[PKG Fetch] ✓ ${source}: ${packages.length} pkgs (${kmods.length} kmods)`);
+                
+                // 特定パッケージの存在確認
+                const target = 'kmod-usb-ledtrig-usbport';
+                const found = packages.find(p => 
+                    (typeof p === 'string' ? p : p?.name) === target
+                );
+                if (found) {
+                    console.log(`🎯 [PKG] Found ${target} in ${source}!`);
+                }
+            } else {
+                console.log(`[PKG Fetch] ✗ ${source}: FAILED`);
+            }
+        },
+        
+        // 欠落パッケージチェック
+        checkMissing() {
+            if (!PACKAGE_DB || !app.devicePackages) return;
+            
+            const missing = [];
+            const notDisplayed = [];
+            
+            // PACKAGE_DBの全パッケージをチェック
+            PACKAGE_DB.categories.forEach(category => {
+                category.packages.forEach(pkg => {
+                    const inDevice = app.devicePackages?.some(p => 
+                        (typeof p === 'string' ? p : p?.name) === pkg.name
+                    );
+                    const inUI = document.querySelector(`[data-package="${pkg.name}"]`);
+                    
+                    if (!inDevice) missing.push(pkg.name);
+                    if (inDevice && !inUI) notDisplayed.push(pkg.name);
+                });
+            });
+            
+            if (missing.length > 0) {
+                console.warn('[NG] Missing from device packages:', missing);
+            }
+            if (notDisplayed.length > 0) {
+                console.warn('[NG] In device but not displayed:', notDisplayed);
+            }
+            if (missing.length === 0 && notDisplayed.length === 0) {
+                console.log('[OK] All packages available');
+            }
+        },
+        
+        // 全情報ダンプ
+        dumpAll() {
+            console.group('[Package Debug] Complete Dump');
+            console.log('Device packages:', app.devicePackages?.length || 0);
+            console.log('First 10 packages:', app.devicePackages?.slice(0, 10));
+            const kmods = app.devicePackages?.filter(p => 
+                (typeof p === 'string' ? p : p?.name)?.startsWith('kmod-')
+            );
+            console.log('Total kmods:', kmods?.length || 0);
+            console.log('First 10 kmods:', kmods?.slice(0, 10).map(k => 
+                typeof k === 'string' ? k : k?.name
+            ));
+            console.groupEnd();
+        }
     }
 };
-
+        
 // ==================== URL存在確認ユーティリティ ====================
 async function checkUrlExists(url) {
     try {
@@ -3097,7 +3173,7 @@ function showAutocomplete(devices) {
     autocompleteDiv.appendChild(container);
     container.style.display = 'block';
 }
-    
+        
 function hideAutocomplete() {
     const items = document.querySelector('.autocomplete-items');
     if (items) {
@@ -3181,6 +3257,12 @@ async function loadDeviceProfile(device) {
 
 function applyProfileData(profilesData, profileId) {
     app.versionCode = profilesData.version_code || '';
+    
+    if (profilesData.linux_kernel) {
+        const lk = profilesData.linux_kernel;
+        app.kernelHash = `${lk.version}-${lk.release}-${lk.vermagic}`;
+        console.log('[Kernel] Constructed hash:', app.kernelHash);
+    }  
     if (profilesData.profiles && profilesData.profiles[profileId]) {
         const profile = profilesData.profiles[profileId];
         const defaultPackages = profilesData.default_packages || [];
@@ -4664,11 +4746,20 @@ async function fetchDevicePackages() {
         }
     }
 
-    // target固有パッケージ（リリース版のみ存在）
+    // target固有パッケージ
     if (!/SNAPSHOT$/i.test(version)) {
-        urls.push(`${basePath}/targets/${targetPath}/packages/Packages`);  // ★直接URL
+        urls.push(`${basePath}/targets/${targetPath}/packages/Packages`);
+    
+        // ★kmodsディレクトリ
+        if (app.kernelHash) {
+            const kmodsUrl = `${basePath}/targets/${targetPath}/kmods/${app.kernelHash}/Packages`;
+            urls.push(kmodsUrl);
+            console.log(`[KMODS] Adding: ${kmodsUrl}`);
+        } else {
+            console.error('[KMODS] ERROR: No kernel hash available!');
+        }
     }
-
+    
     // フィードパッケージ（全バージョン共通）
     for (const feed of feeds) {
         urls.push(`${basePath}/packages/${arch}/${feed}/Packages`);  // ★直接URL
@@ -4693,7 +4784,22 @@ async function fetchDevicePackages() {
                 }
                 const text = await res.text();
                 const packages = parsePackagesText(text, url);
-                console.log(`Parsed ${packages.length} packages from: ${url}`);
+
+                // デバッグ出力
+                console.log(`[Parse Debug] From ${url}:`);
+                console.log(`  Total: ${packages.length}`);
+                console.log(`  First 3:`, packages.slice(0, 3));
+
+                // kmodパッケージが本当に含まれているか確認
+                const kmodsInThisFile = packages.filter(p => p.name?.startsWith('kmod-'));
+                if (kmodsInThisFile.length > 0) {
+                    console.log(`  Contains ${kmodsInThisFile.length} kmods!`);
+                    console.log(`  Sample kmods:`, kmodsInThisFile.slice(0, 3).map(k => k.name));
+                }
+
+                // ErrorHandlerに記録
+                ErrorHandler.packageDebug.logFetch(url, true, packages);
+
                 return packages;
             } catch (err) {
                 console.log(`Package fetch failed: ${url}`, err.message);
@@ -4724,23 +4830,32 @@ async function fetchDevicePackages() {
         generatePackageSelector();
     }
 
+    // パッケージ取得
     function parsePackagesText(text, source) {
         const blocks = text.split(/\n\s*\n/);
         const pkgs = [];
+        
         for (const blk of blocks) {
             const rec = {};
             for (const line of blk.split('\n')) {
-                const m = line.match(/^([A-Za-z-]+):\s*(.*)$/);
+                // より厳密なマッチング
+                const m = line.match(/^([A-Za-z][A-Za-z0-9-]*):\s*(.*)$/);
                 if (!m) continue;
                 const key = m[1], val = m[2];
-                if (key === "Package") rec.name = val;
+                if (key === "Package") rec.name = val.trim();
                 else if (key === "Version") rec.version = val;
                 else if (key === "Description") rec.description = val;
                 else if (key === "Section") rec.section = val;
+                else if (key === "Filename") rec.filename = val;
             }
             if (rec.name) {
                 rec.source = source;
                 pkgs.push(rec);
+                
+                // デバッグ：kmodパッケージ検出
+                if (rec.name.startsWith('kmod-')) {
+                    console.log(`[Parse] Found kmod: ${rec.name} from ${source}`);
+                }
             }
         }
         return pkgs;
