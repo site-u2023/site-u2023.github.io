@@ -4640,7 +4640,7 @@ async function fetchDevicePackages() {
     const profilesUrl = `${basePath}/targets/${targetPath}/profiles.json`;
 
     // 初期化
-    const feeds = ["base", "kernel", "luci", "packages", "routing", "telephony", "video"];
+    const feeds = ["base", "luci", "packages", "routing", "telephony"];
     const urls = [];
 
     // アーキテクチャ情報を取得
