@@ -3257,12 +3257,22 @@ async function loadDeviceProfile(device) {
 
 function applyProfileData(profilesData, profileId) {
     app.versionCode = profilesData.version_code || '';
-    // ★カーネルハッシュを保存（fetchDevicePackagesで使用）
+    
     if (profilesData.linux_kernel) {
-        // どのフィールド名か確認が必要
-        app.kernelHash = profilesData.linux_kernel.version || 
+        app.kernelHash = profilesData.linux_kernel.version_hash || 
                          profilesData.linux_kernel.hash ||
-                         profilesData.linux_kernel.version_hash;
+                         profilesData.linux_kernel.version;
+        
+        if (!app.kernelHash || app.kernelHash === profilesData.linux_kernel.version) {
+            if (profilesData.linux_kernel.version_code) {
+                app.kernelHash = profilesData.linux_kernel.version_code;
+            }
+        }
+        
+        console.log('[Kernel] Full data:', profilesData.linux_kernel);
+        console.log('[Kernel] Using hash:', app.kernelHash);
+    }
+    
         console.log('[Kernel] Found hash:', app.kernelHash);
     }    
     if (profilesData.profiles && profilesData.profiles[profileId]) {
