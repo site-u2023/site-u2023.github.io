@@ -2151,14 +2151,11 @@ function setupVersionUrls(version) {
         ? upstream_config.image_url_override
         : config.image_url;
 
-    // SNAPSHOT または *-SNAPSHOT → /snapshots/ に集約
-    if (/SNAPSHOT$/i.test(version)) {
-        config.overview_urls[version] = `${overview_url}/snapshots/`;
-        config.image_urls[version]   = `${image_url}/snapshots/`;
-    } else {
-        config.overview_urls[version] = `${overview_url}/releases/${encodeURIComponent(version)}/`;
-        config.image_urls[version]    = `${image_url}/releases/${encodeURIComponent(version)}/`;
-    }
+    const isSnapshot = /SNAPSHOT$/i.test(version);
+    const basePath   = isSnapshot ? 'snapshots' : `releases/${encodeURIComponent(version)}`;
+
+    config.overview_urls[version] = `${overview_url}/${basePath}/`;
+    config.image_urls[version]    = `${image_url}/${basePath}/`;
 }
         
 // ==================== ユーティリティ関数 ====================
@@ -4677,180 +4674,94 @@ function showDownloadLinks(images, fullStatus, requestHash) {
 
 // ★パッケージインデックス取得（SNAPSHOT版修正）
 async function fetchDevicePackages() {
-    // SNAPSHOT版の場合は index.json のみから取得
-    if (/SNAPSHOT$/i.test(app.selectedVersion)) {
-        console.log('[fetchDevicePackages] SNAPSHOT version detected - index.json only approach');
-
-        app.devicePackages = [];
-        if (!current_device || !current_device.id || !app.selectedVersion) return;
-
-        // arch を解決（map → profiles.json フォールバック）
-        const arch = await resolveArchForSnapshot(app.selectedVersion, current_device.target);
-        if (!arch) {
-            console.error('[fetchDevicePackages] Unable to resolve arch for target:', current_device.target);
-            if (typeof generatePackageSelector === 'function') generatePackageSelector();
-            return;
-        }
-
-        const feeds = ["base", "luci", "packages", "routing", "telephony"];
-        const allPkgsMap = new Map(); // name -> packageInfo
-
-        // index.jsonから全パッケージを取得
-        for (const feed of feeds) {
-            const url = `https://downloads.openwrt.org/snapshots/packages/${arch}/${feed}/index.json`;
-            try {
-                const res = await fetch(url, { cache: 'no-cache', credentials: 'omit', mode: 'cors' });
-                if (!res.ok) {
-                    console.warn(`index.json not found: ${url} (HTTP ${res.status})`);
-                    continue;
-                }
-                const data = await res.json();
-                const packages = data?.packages || {};
-                Object.entries(packages).forEach(([name, info]) => {
-                    allPkgsMap.set(name, {
-                        name,
-                        version: info.version,
-                        section: info.section,
-                        description: info.description || '',
-                        depends: info.depends || [],
-                        size: info.size || 0,
-                        source: `index.json:${feed}`,
-                        feed: feed
-                    });
-                });
-                // デバッガーの統計機能を使用
-                const pkgArray = Object.entries(packages).map(([name, info]) => ({ name, ...info }));
-                ErrorHandler.packageDebug.logFetch(url, true, pkgArray);
-            } catch (err) {
-                console.warn(`index.json fetch failed: ${url} -> ${err.message}`);
-            }
-        }
-
-        // NOTE: SNAPSHOT版では packages.adb がターゲット固有パッケージに使われるが、
-        // これはopkg用のバイナリ形式でWebからは読み取れない
-        // kmods等のターゲット固有パッケージは index.json に含まれている前提
-        
-        // ターゲット固有のkmods取得（SNAPSHOT版もindex.jsonを使用）
-        const targetPath = current_device.target;
-        if (app.kernelHash) {
-            const kmodsUrl = `https://downloads.openwrt.org/snapshots/targets/${targetPath}/kmods/${app.kernelHash}/index.json`;
-            try {
-                const res = await fetch(kmodsUrl, { cache: 'no-cache', credentials: 'omit', mode: 'cors' });
-                if (res.ok) {
-                    const data = await res.json();
-                    const packages = data?.packages || {};
-                    Object.entries(packages).forEach(([name, info]) => {
-                        if (!allPkgsMap.has(name)) {  // 重複回避
-                            allPkgsMap.set(name, {
-                                name,
-                                version: info.version,
-                                section: info.section,
-                                description: info.description || '',
-                                depends: info.depends || [],
-                                size: info.size || 0,
-                                source: `index.json:kmods`,
-                                feed: 'kmods'
-                            });
-                        }
-                    });
-                    const pkgArray = Object.entries(packages).map(([name, info]) => ({ name, ...info }));
-                    ErrorHandler.packageDebug.logFetch(kmodsUrl, true, pkgArray);
-                } else {
-                    console.warn(`kmods index.json not found: ${kmodsUrl} (HTTP ${res.status})`);
-                }
-            } catch (err) {
-                console.warn(`kmods index.json fetch failed: ${kmodsUrl} -> ${err.message}`);
-            }
-        }
-
-        // デバッガーの完全ダンプ機能を使用
-        ErrorHandler.packageDebug.dumpAll();
-
-        app.devicePackages = Array.from(allPkgsMap.values());
-        if (typeof generatePackageSelector === 'function') {
-            generatePackageSelector();
-        }
-        return;
-    }
-
-    // リリース版（Packages テキストパース）
     app.devicePackages = [];
     if (!current_device || !current_device.id || !app.selectedVersion) return;
 
-    const version = app.selectedVersion;
-    const targetPath = current_device.target;
+    const version     = app.selectedVersion;
+    const targetPath  = current_device.target;
+    const isSnapshot  = /SNAPSHOT$/i.test(version);
 
+    // URLベース設定
     setupVersionUrls(version);
-    const basePath = config.image_urls[version].replace(/\/$/, '');
-    const profilesUrl = `${basePath}/targets/${targetPath}/profiles.json`;
+    const basePath    = config.image_urls[version].replace(/\/$/, '');
+
+    // arch 解決
+    let arch = isSnapshot
+        ? await resolveArchForSnapshot(version, targetPath)
+        : await (async () => {
+            try {
+                const profilesUrl = `${basePath}/targets/${targetPath}/profiles.json`;
+                const res = await fetch(profilesUrl);
+                if (!res.ok) throw new Error(`profiles.json HTTP ${res.status}`);
+                const meta = await res.json();
+                return meta.arch_packages;
+            } catch (e) {
+                if (app.archPackagesMap && app.archPackagesMap[targetPath]) {
+                    return app.archPackagesMap[targetPath];
+                }
+                console.error("Unable to resolve arch:", e.message);
+                return '';
+            }
+        })();
+
+    if (!arch) {
+        console.error('[fetchDevicePackages] Unable to resolve arch for target:', targetPath);
+        if (typeof generatePackageSelector === 'function') generatePackageSelector();
+        return;
+    }
 
     const feeds = ["base", "luci", "packages", "routing", "telephony"];
-    const urls = [];
+    const urls  = [];
 
-    urls.push(`${basePath}/targets/${targetPath}/packages/Packages`);
-
-    if (app.kernelHash) {
-        urls.push(`${basePath}/targets/${targetPath}/kmods/${app.kernelHash}/Packages`);
-    } else {
-        console.error('[KMODS] ERROR: No kernel hash available!');
-    }
-
-    let arch;
-    try {
-        const res = await fetch(profilesUrl);
-        if (!res.ok) throw new Error(`profiles.json HTTP ${res.status}`);
-        const meta = await res.json();
-        arch = meta.arch_packages;
-        if (!arch) throw new Error("profiles.json に arch_packages がありません");
-    } catch (e) {
-        console.warn(`profiles.json 取得失敗: ${e.message}. フォールバックを試みます。`);
-        if (app.archPackagesMap && app.archPackagesMap[targetPath]) {
-            arch = app.archPackagesMap[targetPath];
-            console.log(`フォールバック成功: target '${targetPath}' のアーキテクチャは '${arch}' です。`);
-        } else {
-            console.error("フォールバック失敗: アーキテクチャ情報を特定できませんでした。");
-            if (typeof generatePackageSelector === 'function') generatePackageSelector();
-            return;
+    if (isSnapshot) {
+        // SNAPSHOT: 各feedの index.json
+        feeds.forEach(feed => {
+            urls.push(`${basePath}packages/${arch}/${feed}/index.json`);
+        });
+        if (app.kernelHash) {
+            urls.push(`${basePath}targets/${targetPath}/kmods/${app.kernelHash}/index.json`);
         }
+    } else {
+        // リリース: targets配下のPackages + kmods + 各feedのPackages
+        urls.push(`${basePath}/targets/${targetPath}/packages/Packages`);
+        if (app.kernelHash) {
+            urls.push(`${basePath}/targets/${targetPath}/kmods/${app.kernelHash}/Packages`);
+        }
+        feeds.forEach(feed => {
+            urls.push(`${basePath}/packages/${arch}/${feed}/Packages`);
+        });
     }
 
-    for (const feed of feeds) {
-        urls.push(`${basePath}/packages/${arch}/${feed}/Packages`);
-    }
+    const allPkgsMap = new Map();
 
-    const allPkgs = [];
-    const results = await Promise.allSettled(
-        urls.map(async (url) => {
-            try {
-                const res = await fetch(url);
-                if (!res.ok) {
-                    console.log(`Package fetch ${res.status} for: ${url}`);
-                    return [];
-                }
+    // 共通取得処理
+    await Promise.allSettled(urls.map(async (url) => {
+        try {
+            const res = await fetch(url, { cache: 'no-cache', credentials: 'omit', mode: 'cors' });
+            if (!res.ok) {
+                console.warn(`Package fetch ${res.status}: ${url}`);
+                return;
+            }
+            if (url.endsWith('.json')) {
+                const data = await res.json();
+                const packages = data?.packages || {};
+                Object.entries(packages).forEach(([name, info]) => {
+                    allPkgsMap.set(name, { name, ...info, source: url });
+                });
+                ErrorHandler.packageDebug.logFetch(url, true, Object.entries(packages).map(([n, i]) => ({ name: n, ...i })));
+            } else {
                 const text = await res.text();
                 const packages = parsePackagesText(text, url);
+                packages.forEach(pkg => allPkgsMap.set(pkg.name, pkg));
                 ErrorHandler.packageDebug.logFetch(url, true, packages);
-                return packages;
-            } catch (err) {
-                console.log(`Package fetch failed: ${url}`, err.message);
-                return [];
             }
-        })
-    );
-
-    for (const r of results) {
-        if (r.status === 'fulfilled' && Array.isArray(r.value)) {
-            allPkgs.push(...r.value);
+        } catch (err) {
+            console.warn(`Package fetch failed: ${url} -> ${err.message}`);
         }
-    }
+    }));
 
-    const pkgMap = new Map();
-    for (const p of allPkgs) {
-        if (p?.name) {
-            pkgMap.set(p.name, p);
-        }
-    }
-    app.devicePackages = Array.from(pkgMap.values());
+    app.devicePackages = Array.from(allPkgsMap.values());
+    ErrorHandler.packageDebug.dumpAll();
 
     if (typeof generatePackageSelector === 'function') {
         generatePackageSelector();
@@ -4879,7 +4790,7 @@ async function fetchDevicePackages() {
         return pkgs;
     }
 }
-
+        
 // SNAPSHOT用 arch 解決（map → profiles.json フォールバック）
 async function resolveArchForSnapshot(version, targetPath) {
     const fromMap = app.archPackagesMap?.[targetPath];
