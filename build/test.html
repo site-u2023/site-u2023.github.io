@@ -1,109 +1,207 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<title>ADB Format Key Dump (判定付き)</title>
-<style>
-    body { font-family: monospace; padding: 20px; }
-    #output {
-        border: 1px solid #ccc;
-        padding: 10px;
-        margin-top: 20px;
-        white-space: pre-wrap;
-        background: #f5f5f5;
-    }
-    input[type="file"] {
-        margin: 20px 0;
-        padding: 10px;
-        border: 2px dashed #ccc;
-        display: block;
-        width: 300px;
-    }
-    .ok { color: green; font-weight: bold; }
-    .warn { color: orange; font-weight: bold; }
-    .err { color: red; font-weight: bold; }
-</style>
+    <meta charset="UTF-8">
+    <title>ADB Format Key Dump (圧縮対応・判定付き)</title>
+    <style>
+        body { font-family: monospace; padding: 20px; }
+        #output {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-top: 20px;
+            white-space: pre-wrap;
+            background: #f5f5f5;
+        }
+        input[type="file"] {
+            margin: 20px 0;
+            padding: 10px;
+            border: 2px dashed #ccc;
+            display: block;
+            width: 300px;
+        }
+        .ok { color: green; font-weight: bold; }
+        .warn { color: orange; font-weight: bold; }
+        .err { color: red; font-weight: bold; }
+        .muted { color: #666; }
+        .section { margin-top: 12px; }
+        pre { margin: 8px 0; }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
 </head>
 <body>
-<h1>packages.adb Header & Key Offsets</h1>
-<p>packages.adbファイルを選択してください：</p>
-<input type="file" id="fileInput" accept=".adb">
-<div id="output">結果がここに表示されます</div>
+    <h1>packages.adb Header & Key Offsets (圧縮対応)</h1>
+    <p>packages.adbファイルを選択してください：</p>
+    <input type="file" id="fileInput" accept=".adb">
+    <div id="output">結果がここに表示されます</div>
 
-<script>
-function dumpHex(u8, start, length) {
-    let out = '';
-    for (let i = start; i < start + length && i < u8.length; i += 16) {
-        out += i.toString(16).padStart(6, '0') + ': ';
-        out += Array.from(u8.slice(i, i + 16))
-            .map(b => b.toString(16).padStart(2, '0')).join(' ') + '  ';
-        out += Array.from(u8.slice(i, i + 16))
-            .map(b => (b >= 32 && b < 127) ? String.fromCharCode(b) : '.').join('');
-        out += '\n';
-    }
-    return out;
-}
-
-document.getElementById('fileInput').addEventListener('change', async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const buffer = await file.arrayBuffer();
-    const u8 = new Uint8Array(buffer);
-    const dv = new DataView(buffer);
-
-    let html = `<strong>File:</strong> ${file.name}<br>`;
-    html += `<strong>Size:</strong> ${u8.length} bytes<br>`;
-
-    // ヘッダー解析
-    const magic = String.fromCharCode(...u8.slice(0, 4));
-    html += `<strong>Magic:</strong> ${magic} ` +
-            (magic === "ADBd" ? `<span class="ok">✓ OK</span>` : `<span class="err">✗ Invalid</span>`) + `<br>`;
-
-    const sqliteOffset = dv.getUint32(8, true);
-    let offsetStatus = '';
-    if (sqliteOffset <= 0 || sqliteOffset >= u8.length) {
-        offsetStatus = `<span class="err">✗ Out of range</span>`;
-    } else {
-        offsetStatus = `<span class="ok">✓ In range</span>`;
-    }
-    html += `<strong>SQLite offset (from header):</strong> ${sqliteOffset} (0x${sqliteOffset.toString(16)}) ${offsetStatus}<br>`;
-
-    // SQLiteシグネチャ検索
-    const sigBytes = Array.from("SQLite format 3").map(c => c.charCodeAt(0));
-    let foundOffsets = [];
-    for (let i = 0; i < u8.length - sigBytes.length; i++) {
-        if (sigBytes.every((b, idx) => u8[i + idx] === b)) {
-            foundOffsets.push(i);
+    <script>
+        function dumpHex(u8, start, length) {
+            let out = '';
+            for (let i = start; i < start + length && i < u8.length; i += 16) {
+                out += i.toString(16).padStart(6, '0') + ': ';
+                out += Array.from(u8.slice(i, i + 16))
+                    .map(b => b.toString(16).padStart(2, '0')).join(' ') + '  ';
+                out += Array.from(u8.slice(i, i + 16))
+                    .map(b => (b >= 32 && b < 127) ? String.fromCharCode(b) : '.').join('');
+                out += '\n';
+            }
+            return out;
         }
-    }
-    html += `<strong>Found SQLite signatures at:</strong> ${foundOffsets.length ? foundOffsets.join(', ') : '<span class="err">None</span>'}<br>`;
 
-    // ヘッダー値と一致判定
-    if (foundOffsets.length) {
-        if (foundOffsets.includes(sqliteOffset)) {
-            html += `<strong>Offset match:</strong> <span class="ok">✓ Header offset matches signature</span><br>`;
-        } else {
-            html += `<strong>Offset match:</strong> <span class="warn">⚠ Header offset does not match any signature</span><br>`;
+        function findSignature(u8, needle) {
+            const sig = Array.from(needle).map(c => c.charCodeAt(0));
+            const hits = [];
+            for (let i = 0; i <= u8.length - sig.length; i++) {
+                if (sig.every((b, k) => u8[i + k] === b)) hits.push(i);
+            }
+            return hits;
         }
-    }
 
-    // ダンプ（先頭64バイト）
-    html += `<pre>--- Header dump (0x00) ---\n${dumpHex(u8, 0, 64)}</pre>`;
+        function findMagic(u8, bytes) {
+            const b = bytes;
+            const hits = [];
+            for (let i = 0; i <= u8.length - b.length; i++) {
+                let ok = true;
+                for (let k = 0; k < b.length; k++) {
+                    if (u8[i + k] !== b[k]) { ok = false; break; }
+                }
+                if (ok) hits.push(i);
+            }
+            return hits;
+        }
 
-    // ダンプ（ヘッダー値位置から64バイト）
-    if (sqliteOffset > 0 && sqliteOffset < u8.length) {
-        html += `<pre>--- SQLite start dump (0x${sqliteOffset.toString(16)}) ---\n${dumpHex(u8, sqliteOffset, 64)}</pre>`;
-    }
+        function safeInflate(name, data, fn) {
+            try {
+                const out = fn(data);
+                if (out && out.length) {
+                    return { ok: true, data: out, err: null, name };
+                }
+                return { ok: false, data: null, err: new Error(name + ' produced empty') };
+            } catch (e) {
+                return { ok: false, data: null, err: e };
+            }
+        }
 
-    // ダンプ（最初に見つかったシグネチャ位置から64バイト）
-    if (foundOffsets.length) {
-        const firstSig = foundOffsets[0];
-        html += `<pre>--- First found SQLite signature dump (0x${firstSig.toString(16)}) ---\n${dumpHex(u8, firstSig, 64)}</pre>`;
-    }
+        document.getElementById('fileInput').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
 
-    document.getElementById('output').innerHTML = html;
-});
-</script>
+            const buffer = await file.arrayBuffer();
+            const u8 = new Uint8Array(buffer);
+            const dv = new DataView(buffer);
+
+            let html = '';
+            html += `<strong>File:</strong> ${file.name}<br>`;
+            html += `<strong>Size:</strong> ${u8.length} bytes<br>`;
+
+            // 1) ヘッダー解析
+            const magic = String.fromCharCode(...u8.slice(0, 4));
+            html += `<strong>Magic:</strong> ${magic} ` +
+                    (magic === 'ADBd' ? `<span class="ok">✓ OK</span>` : `<span class="err">✗ Invalid</span>`) + `<br>`;
+
+            const headerOffset = dv.getUint32(8, true);
+            const headerOffsetInRange = (headerOffset > 0 && headerOffset < u8.length);
+            html += `<strong>SQLite offset (from header):</strong> ${headerOffset} (0x${headerOffset.toString(16)}) ` +
+                    (headerOffsetInRange ? `<span class="ok">✓ In range</span>` : `<span class="err">✗ Out of range</span>`) + `<br>`;
+
+            // 2) 未圧縮SQLiteシグネチャ探索
+            const sqliteHitsRaw = findSignature(u8, 'SQLite format 3');
+            html += `<strong>Raw SQLite signatures:</strong> ${
+                sqliteHitsRaw.length ? sqliteHitsRaw.join(', ') : '<span class="warn">None</span>'
+            }<br>`;
+
+            // 3) 代表的圧縮マジック探索
+            const gzipHits = findMagic(u8, [0x1f, 0x8b]);
+            const xzHits   = findMagic(u8, [0xfd, 0x37, 0x7a, 0x58, 0x5a, 0x00]);
+            const zstdHits = findMagic(u8, [0x28, 0xb5, 0x2f, 0xfd]);
+            html += `<strong>GZIP magic:</strong> ${gzipHits.length ? gzipHits.join(', ') : '<span class="muted">None</span>'}<br>`;
+            html += `<strong>XZ magic:</strong> ${xzHits.length ? xzHits.join(', ') : '<span class="muted">None</span>'}<br>`;
+            html += `<strong>Zstd magic:</strong> ${zstdHits.length ? zstdHits.join(', ') : '<span class="muted">None</span>'}<br>`;
+
+            // 4) 判定フロー
+            let verdict = '';
+            let dumps = '';
+
+            // 4-1) 未圧縮で読めるなら即OK
+            if (sqliteHitsRaw.length) {
+                verdict = `<span class="ok">✓ Verdict: Uncompressed SQLite detected at 0x${sqliteHitsRaw[0].toString(16)}. Reader can use raw offset.</span>`;
+                dumps += `<pre class="section">--- Header dump (0x00) ---\n${dumpHex(u8, 0, 64)}</pre>`;
+                if (headerOffsetInRange) {
+                    dumps += `<pre class="section">--- Header offset dump (0x${headerOffset.toString(16)}) ---\n${dumpHex(u8, headerOffset, 64)}</pre>`;
+                }
+                dumps += `<pre class="section">--- Raw SQLite dump (0x${sqliteHitsRaw[0].toString(16)}) ---\n${dumpHex(u8, sqliteHitsRaw[0], 64)}</pre>`;
+                document.getElementById('output').innerHTML = `${html}<div class="section">${verdict}</div>${dumps}`;
+                return;
+            }
+
+            // 4-2) ヘッダーオフセット位置ダンプ（参考）
+            dumps += `<pre class="section">--- Header dump (0x00) ---\n${dumpHex(u8, 0, 64)}</pre>`;
+            if (headerOffsetInRange) {
+                dumps += `<pre class="section">--- Header offset dump (0x${headerOffset.toString(16)}) ---\n${dumpHex(u8, headerOffset, 64)}</pre>`;
+            }
+
+            // 4-3) GZIP 試行（全体/先頭命中位置ごと）
+            let sqliteAfterGzip = null;
+            let gzipTried = false;
+
+            // a) 全体をgzipとして試す
+            gzipTried = true;
+            let gunz = safeInflate('gunzip(full)', u8, (d) => pako.ungzip(d));
+            if (gunz.ok) {
+                const hits = findSignature(gunz.data, 'SQLite format 3');
+                if (hits.length) sqliteAfterGzip = { offset: hits[0], buf: gunz.data, path: 'gunzip(full)' };
+            }
+
+            // b) 先頭GZIPマジックごとに試す
+            if (!sqliteAfterGzip && gzipHits.length) {
+                for (const pos of gzipHits) {
+                    const slice = u8.slice(pos);
+                    const r = safeInflate(`gunzip(0x${pos.toString(16)})`, slice, (d) => pako.ungzip(d));
+                    if (r.ok) {
+                        const hits = findSignature(r.data, 'SQLite format 3');
+                        if (hits.length) {
+                            sqliteAfterGzip = { offset: hits[0], buf: r.data, path: `gunzip(0x${pos.toString(16)})` };
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // 4-4) zlib inflate 試行（全体）
+            let sqliteAfterZlib = null;
+            let inflateTried = false;
+            if (!sqliteAfterGzip) {
+                inflateTried = true;
+                const infl = safeInflate('inflate(full)', u8, (d) => pako.inflate(d));
+                if (infl.ok) {
+                    const hits = findSignature(infl.data, 'SQLite format 3');
+                    if (hits.length) sqliteAfterZlib = { offset: hits[0], buf: infl.data, path: 'inflate(full)' };
+                }
+            }
+
+            // 4-5) 判定
+            if (sqliteAfterGzip) {
+                verdict = `<span class="ok">✓ Verdict: GZIP-compressed SQLite detected via ${sqliteAfterGzip.path} at offset 0x${sqliteAfterGzip.offset.toString(16)}. Reader must gunzip before SQLite.</span>`;
+                dumps += `<pre class="section">--- GZIP → SQLite dump (0x${sqliteAfterGzip.offset.toString(16)}) ---\n${dumpHex(sqliteAfterGzip.buf, sqliteAfterGzip.offset, 64)}</pre>`;
+            } else if (sqliteAfterZlib) {
+                verdict = `<span class="ok">✓ Verdict: zlib-compressed SQLite detected via ${sqliteAfterZlib.path} at offset 0x${sqliteAfterZlib.offset.toString(16)}. Reader must inflate before SQLite.</span>`;
+                dumps += `<pre class="section">--- zlib → SQLite dump (0x${sqliteAfterZlib.offset.toString(16)}) ---\n${dumpHex(sqliteAfterZlib.buf, sqliteAfterZlib.offset, 64)}</pre>`;
+            } else {
+                // XZ/Zstd は未展開サポート
+                const hints = [];
+                if (xzHits.length) hints.push('XZ detected');
+                if (zstdHits.length) hints.push('Zstd detected');
+                const hintMsg = hints.length ? ` (${hints.join(', ')} - decompression not implemented here)` : '';
+                const tried = [
+                    sqliteHitsRaw.length ? 'raw' : null,
+                    gzipTried ? 'gzip' : null,
+                    inflateTried ? 'zlib' : null
+                ].filter(Boolean).join(', ');
+                verdict = `<span class="err">✗ Verdict: SQLite not found in raw/gzip/zlib${hintMsg}. Tried: ${tried}.</span>`;
+            }
+
+            document.getElementById('output').innerHTML = `${html}<div class="section">${verdict}</div>${dumps}`;
+        });
+    </script>
 </body>
 </html>
