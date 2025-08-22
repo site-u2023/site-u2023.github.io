@@ -4612,11 +4612,21 @@ async function fetchDevicePackages() {
     const version = app.selectedVersion;
     const targetPath = current_device.target;
 
+    // ★プロキシ定義
+    const proxyBase = 'https://proxy.site-u.workers.dev/?url=';
+    const proxify = (url) => proxyBase + encodeURIComponent(url);
+    
     // URLベース構築（共通）
     setupVersionUrls(version);
-    const basePath = config.image_urls[version].replace(/\/$/, '');
-    const profilesUrl = `${basePath}/targets/${targetPath}/profiles.json`;
+    let basePath = config.image_urls[version].replace(/\/$/, ''); // ← let に変更
 
+    // ★SNAPSHOT のときだけプロキシ経由にする
+    if (/SNAPSHOT$/i.test(version)) {
+        basePath = proxify(basePath);
+    }
+
+    const profilesUrl = `${basePath}/targets/${targetPath}/profiles.json`;
+ 
     // アーキテクチャ情報を取得（共通処理）
     let arch;
     try {
