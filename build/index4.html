@@ -2025,15 +2025,83 @@ const ErrorHandler = {
     },
 
     // デバッグログ（拡張版）
+const ErrorHandler = {
     debug(context, message, data = null) {
         console.log(`[DEBUG] ${context}: ${message}`);
         if (data) {
             console.log('Data:', data);
         }
         
-        // ★追加：パッケージ関連なら自動でパッケージ状態チェック
+        // 自動分析トリガー
         if (context.includes('Package') || context.includes('package')) {
             this.packageDebug.checkMissing();
+        }
+        if (context.includes('Kernel') || context.includes('kernel')) {
+            this.kernelDebug.analyzeHash(data);
+        }
+        if (context.includes('URL') || context.includes('url')) {
+            this.urlDebug.validatePath(data);
+        }
+    },
+
+    // 新規追加：カーネルデバッグ
+    kernelDebug: {
+        analyzeHash(kernelData) {
+            if (!kernelData) return;
+            
+            console.group('[Kernel Analysis]');
+            console.log('Raw kernel data:', kernelData);
+            
+            const lk = kernelData.linux_kernel || kernelData;
+            if (lk) {
+                console.log('Version field:', JSON.stringify(lk.version));
+                console.log('Release field:', JSON.stringify(lk.release)); 
+                console.log('Vermagic field:', JSON.stringify(lk.vermagic));
+                
+                // 異常検出
+                const issues = [];
+                if (String(lk.vermagic).includes('..')) {
+                    issues.push(`Vermagic contains ".." - VALUE: ${lk.vermagic}`);
+                }
+                if (lk.version === undefined) issues.push('Version is undefined');
+                if (lk.release === undefined) issues.push('Release is undefined');
+                if (lk.vermagic === undefined) issues.push('Vermagic is undefined');
+                
+                if (issues.length > 0) {
+                    console.error('🚨 KERNEL ISSUES FOUND:', issues);
+                } else {
+                    console.log('✅ Kernel data looks normal');
+                }
+            }
+            console.groupEnd();
+        }
+    },
+
+    // 新規追加：URLデバッグ  
+    urlDebug: {
+        validatePath(urlOrPath) {
+            if (!urlOrPath) return;
+            
+            console.group('[URL Analysis]');
+            console.log('Checking URL/Path:', urlOrPath);
+            
+            const issues = [];
+            if (urlOrPath.includes('..')) {
+                issues.push(`Contains ".." - DANGEROUS PATH`);
+            }
+            if (urlOrPath.includes('undefined')) {
+                issues.push('Contains "undefined" string');
+            }
+            if (/\/\/+/.test(urlOrPath)) {
+                issues.push('Contains double slashes');
+            }
+            
+            if (issues.length > 0) {
+                console.error('🚨 URL ISSUES FOUND:', issues);
+            } else {
+                console.log('✅ URL/Path looks normal');
+            }
+            console.groupEnd();
         }
     },
 
@@ -3237,9 +3305,10 @@ function applyProfileData(profilesData, profileId) {
     
     if (profilesData.linux_kernel) {
         const lk = profilesData.linux_kernel;
+        ErrorHandler.debug('Kernel', 'Building kernel hash', profilesData);
         app.kernelHash = `${lk.version}-${lk.release}-${lk.vermagic}`;
         console.log('[Kernel] Constructed hash:', app.kernelHash);
-    }  
+    }    
     if (profilesData.profiles && profilesData.profiles[profileId]) {
         const profile = profilesData.profiles[profileId];
         const defaultPackages = profilesData.default_packages || [];
