@@ -538,46 +538,43 @@
         margin-top: 1rem;
     }
 
-    /* デバイス入力セクションのスタイル */
+/* デバイス入力セクションのスタイル */
     .device-input-section {
         margin: 1rem 0;
-        background-color: #313135;
+        background-color: #252528;  /* より濃い色に変更 */
         border: 1px solid #444;
         border-radius: 0.25rem;
-        overflow: visible;  /* hidden から visible に変更 */
+        overflow: visible;
         position: relative;
-    }
-    
-    .device-input-section .section-header {
-        font-size: 1.2rem;
-        font-weight: 500;
-        padding: 0.75rem 1rem;
-        background-color: #252528;
-        border-bottom: 1px solid #444;
-        color: #d0d0d0;
-        cursor: default;
     }
     
     .device-input-section #models-autocomplete {
         padding: 1rem;
-        background-color: #313135;
+        background-color: transparent;
     }
     
-    /* ライトモード対応 */
+    /* インプットボックス自体をより濃く */
+    .device-input-section #models {
+        background-color: #1a1a1d !important;  /* さらに濃い色 */
+        border-color: #555;
+    }
+    
+    .device-input-section #versions {
+        background-color: #1a1a1d !important;  /* さらに濃い色 */
+        border-color: #555;
+    }
+    
+/* ライトモード対応 */
     @media (prefers-color-scheme: light) {
         .device-input-section {
-            background-color: #f8f9fa;
-            border-color: #dee2e6;
-        }
-        
-        .device-input-section .section-header {
             background-color: #e9ecef;
             border-color: #dee2e6;
-            color: #495057;
         }
         
-        .device-input-section #models-autocomplete {
-            background-color: #f8f9fa;
+        .device-input-section #models,
+        .device-input-section #versions {
+            background-color: #ffffff !important;
+            border-color: #ced4da;
         }
     }
     
@@ -754,7 +751,6 @@
         <p class="lead">Enter your device model and choose a build</p>
 
         <div class="device-input-section">
-            <div class="section-header">Select Device</div>
             <div id="models-autocomplete" class="autocomplete">
                 <input type="text"
                   id="models" 
