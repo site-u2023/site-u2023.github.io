@@ -42,10 +42,20 @@
         /* padding は .device-input-section 内で設定 */
     }
     
-    .container {
+.container {
         max-width: 720px;
         margin: 0 auto;
         padding: 0 1rem;
+    }
+
+    /* 親コンテナの直下要素に統一マージン */
+    .container > *:not(:last-child) {
+        margin-bottom: 1.5rem;
+    }
+    
+    /* packages内の直下要素も同様 */
+    #packages > *:not(:last-child) {
+        margin-bottom: 1.5rem;
     }
 
     h1 {
@@ -180,7 +190,6 @@
         border: 1px solid #bee5eb;
         color: #0c5460;
         padding: 0.75rem 1.25rem;
-        margin-bottom: 1.5rem;  /* 1remから1.5remに統一 */
         border-radius: 0.25rem;
     }
 
@@ -284,7 +293,7 @@
 
     /* カスタムセクション */
     .aios-section {
-        margin: 0 0 1.5rem 0;  /* 上マージンを0、下を1.5remに統一 */
+        margin: 0;
         padding: 1rem;
         background-color: #f8f9fa;
         border: 1px solid #dee2e6;
@@ -540,7 +549,7 @@
 
     /* デバイス入力セクションのスタイル */
     .device-input-section {
-        margin: 0 0 1.5rem 0;  /* 下マージンを1.5remに統一 */
+        margin: 0;
         background-color: #252528;
         border: 1px solid #444;
         border-radius: 0.25rem;
