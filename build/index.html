@@ -3142,8 +3142,8 @@ function handleDeviceSearch(e) {
 
     // 元配列順を維持しつつ、完全一致を先頭に
     for (const device of app.devices) {
-        const title = device._displayTitle || getDeviceTitle(device);
-        const lt = title.toLowerCase();
+        const rawTitle = getDeviceTitle(device); // 検索は生タイトル
+        const lt = rawTitle.toLowerCase();
         const id = device.id.toLowerCase();
 
         if (lt === query || id === query) {
@@ -3190,9 +3190,12 @@ function showAutocomplete(devices) {
     const fragment = document.createDocumentFragment();
     
     devices.forEach(device => {
-        const title = device._displayTitle || getDeviceTitle(device);
-        div.innerHTML = `<strong>${title}</strong><br><small>Target: ${device.target}</small>`;         
-    });
+        const rawTitle = getDeviceTitle(device);
+        const dupCount = devices.filter(d => getDeviceTitle(d) === rawTitle).length;
+        const displayTitle = dupCount > 1 ? `${rawTitle} (${device.target})` : rawTitle;
+        const div = document.createElement('div');
+        div.innerHTML = `<strong>${displayTitle}</strong><br><small>Target: ${device.target}</small>`;
+    });    
     
     // 一度だけDOMに追加
     container.appendChild(fragment);
