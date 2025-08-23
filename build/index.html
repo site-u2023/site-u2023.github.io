@@ -3425,7 +3425,7 @@ function showDeviceInfo() {
     const zoneValue    = regionName;
     const ispValue     = isp;
     const asValue      = asNumber;
-    const ipv4v6Value  = [ipv4, ipv6].filter(Boolean).join(' / ') || 'unknown';
+    const ipAddressValue = [ipv4, ipv6].filter(Boolean).join(' / ') || 'unknown';
 
     let wanType = 'unknown';
     if (aftr) {
@@ -3469,8 +3469,8 @@ function showDeviceInfo() {
             <span class="col2" id="image-as">${asValue}</span>
         </div>
         <div class="row">
-            <span class="col1">IPv4/IPv6</span>
-            <span class="col2" id="image-ip">${ipv4v6Value}</span>
+            <span class="col1">IP Address</span>
+            <span class="col2" id="image-ip-address">${ipAddressValue}</span>
         </div>
         <div class="row">
             <span class="col1">WAN</span>
