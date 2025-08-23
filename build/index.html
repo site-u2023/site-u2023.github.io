@@ -3409,17 +3409,32 @@ function showDeviceInfo() {
         .replace("{id}", device.id)
         .replace("{version}", app.selectedVersion);
 
-    // ISP種別判定
+    // ===== About this build 表示用 前処理ブロック =====
+    const {
+        country = 'unknown',
+        regionName = 'unknown',
+        isp = 'unknown',
+        as: asNumber = 'unknown',
+        ipv4 = '',
+        ipv6 = '',
+        aftr,
+        mape
+    } = window.cachedApiInfo || {};
+
+    const countryValue = country;
+    const zoneValue    = regionName;
+    const ispValue     = isp;
+    const asValue      = asNumber;
+    const ipv4v6Value  = [ipv4, ipv6].filter(Boolean).join(' / ') || 'unknown';
+
     let wanType = 'unknown';
-    if (window.cachedApiInfo) {
-        if (window.cachedApiInfo.aftr) {
-            wanType = 'DS-LITE';
-        } else if (window.cachedApiInfo.mape) {
-            wanType = 'MAP-E';
-        }
+    if (aftr) {
+        wanType = 'DS-LITE';
+    } else if (mape) {
+        wanType = 'MAP-E';
     }
     
-    // 公式形式のAbout this buildセクションを構築
+    // 公式形式のAbout this buildセクションを構築（After）
     const infoHtml = `
         <h5>About this build</h5>
         <div class="row">
@@ -3436,7 +3451,31 @@ function showDeviceInfo() {
                 <span id="image-version">${app.selectedVersion}</span>
                 (<span id="image-code">${displayVersionCode}</span>)
             </span>
-        </div>  
+        </div>
+        <div class="row">
+            <span class="col1">Country</span>
+            <span class="col2" id="image-country">${countryValue}</span>
+        </div>
+        <div class="row">
+            <span class="col1">Zone</span>
+            <span class="col2" id="image-zone">${zoneValue}</span>
+        </div>
+        <div class="row">
+            <span class="col1">ISP</span>
+            <span class="col2" id="image-isp">${ispValue}</span>
+        </div>
+        <div class="row">
+            <span class="col1">AS</span>
+            <span class="col2" id="image-as">${asValue}</span>
+        </div>
+        <div class="row">
+            <span class="col1">IPv4/IPv6</span>
+            <span class="col2" id="image-ip">${ipv4v6Value}</span>
+        </div>
+        <div class="row">
+            <span class="col1">WAN</span>
+            <span class="col2" id="wan-type">${wanType}</span>
+        </div>
         <div class="row">
             <span class="col1">Links</span>
             <span class="col2">
@@ -3444,10 +3483,6 @@ function showDeviceInfo() {
                 <a id="image-info" href="${infoUrl}" title="Device info" target="_blank"></a>
                 <a id="image-link" href="#" title="Copy link" onclick="navigator.clipboard.writeText('${deviceLink}').then(() => alert('Link copied!')); return false;"></a>
             </span>
-        </div>
-        <div class="row">
-            <span class="col1">WAN</span>
-            <span class="col2" id="wan-type">${wanType}</span>
         </div>
     `;
     
