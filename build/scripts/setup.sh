@@ -83,11 +83,23 @@ case "\${flow_offloading_type}" in
         ;;
 esac
 if [ -n "\${wlan_name}" ] && [ -n "\${wlan_password}" ]; then
-    uci set wireless.@wifi-device[0].disabled='0'
-    uci set wireless.@wifi-iface[0].disabled='0'
-    uci set wireless.@wifi-iface[0].encryption='sae-mixed'
-    uci set wireless.@wifi-iface[0].ssid="\${wlan_name}"
-    uci set wireless.@wifi-iface[0].key="\${wlan_password}"
+    for radio in $(uci -q show wireless | grep "wireless\.radio[0-9]*=" | cut -d. -f2 | cut -d= -f1); do
+        uci set wireless.\${radio}.disabled='0'
+        band=$(uci -q get wireless.\${radio}.band)
+        case "\${band}" in
+            2g) suffix="-2g" ;;
+            5g) suffix="-5g" ;;
+            6g) suffix="-6g" ;;
+            *) suffix="" ;;
+        esac
+        iface="default_\${radio}"
+        [ -n "$(uci -q get wireless.\${iface})" ] && {
+            uci set wireless.\${iface}.disabled='0'
+            uci set wireless.\${iface}.encryption='sae-mixed'
+            uci set wireless.\${iface}.ssid="\${wlan_name}\${suffix}"
+            uci set wireless.\${iface}.key="\${wlan_password}"
+        }
+    done
 fi
 if [ -n "\${pppoe_username}" ] && [ -n "\${pppoe_password}" ]; then
     uci set network.wan.proto='pppoe'
