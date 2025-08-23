@@ -997,7 +997,7 @@
                                 <div class="form-group">
                                     <div class="radio-group">
                                         <div class="form-check">
-                                            <input class="form-check-input" type="radio" name="dsliteMode" id="dslite-auto" value="auto" checked>
+                                            <input class="form-check-input" type="radio" name="dsliteMode" id="dslite-auto" value="auto">
                                             <label class="form-check-label" for="dslite-auto">Auto (Recommended)</label>
                                         </div>
                                         <div class="form-check">
@@ -1005,7 +1005,7 @@
                                             <label class="form-check-label" for="dslite-manual">Manual</label>
                                         </div>
                                     </div>
-                                    <small class="text-muted">Auto: Use ISP-detected AFTR address | Manual: Specify AFTR settings manually</small>
+                                    <small class="text-muted" id="dslite-mode-hint">Auto: Use ISP-detected AFTR address | Manual: Specify AFTR settings manually</small>
                                 </div>
 
                                 <div id="dslite-manual-config" class="conditional-section">
@@ -1040,7 +1040,7 @@
                                 <div class="form-group">
                                     <div class="radio-group">
                                         <div class="form-check">
-                                            <input class="form-check-input" type="radio" name="mapeType" id="mape-auto" value="auto" checked>
+                                            <input class="form-check-input" type="radio" name="mapeType" id="mape-auto" value="auto">
                                             <label class="form-check-label" for="mape-auto">Auto (Recommended)</label>
                                         </div>
                                         <div class="form-check">
@@ -3584,12 +3584,65 @@ function handleConnectionTypeChange(e) {
     mapeManualSection.style.display = 'none';
     if (apSection) apSection.style.display = 'none';
     
+    // APIデータ取得
+    const apiInfo = window.cachedApiInfo || {};
+    const hasAftr = !!(apiInfo.mape && apiInfo.mape.aftrIpv6Address);
+    const hasMape = !!(apiInfo.mape && apiInfo.mape.brIpv6Address);
+    
     if (e.target.value === 'pppoe') {
         pppoeSection.style.display = 'block';
     } else if (e.target.value === 'dslite') {
         dsliteSection.style.display = 'block';
+        
+        // DS-Lite: AFTRデータの有無でAuto/Manual制御
+        const dsliteAuto = document.getElementById('dslite-auto');
+        const dsliteManual = document.getElementById('dslite-manual');
+        const dsliteHint = document.getElementById('dslite-mode-hint');
+        
+        if (hasAftr) {
+            // AFTRデータあり：Auto有効（初期選択）
+            dsliteAuto.disabled = false;
+            dsliteAuto.checked = true;
+            dsliteManual.checked = false;
+            if (dsliteHint) dsliteHint.textContent = 'Auto: Use ISP-detected AFTR address | Manual: Specify AFTR settings manually';
+        } else {
+            // AFTRデータなし：Auto無効、Manual強制
+            dsliteAuto.disabled = true;
+            dsliteAuto.checked = false;
+            dsliteManual.checked = true;
+            if (dsliteHint) dsliteHint.textContent = 'Auto not available (no AFTR detected) | Manual configuration required';
+        }
+        
+        // Manual設定エリアの表示制御
+        const manualConfig = document.getElementById('dslite-manual-config');
+        if (manualConfig) {
+            manualConfig.style.display = hasAftr ? 'none' : 'block';
+        }
+        
     } else if (e.target.value === 'mape') {
         mapeManualSection.style.display = 'block';
+        
+        // MAP-E: BRデータの有無でAuto/Manual制御
+        const mapeAuto = document.getElementById('mape-auto');
+        const mapeGua = document.getElementById('mape-gua');
+        const mapePd = document.getElementById('mape-pd');
+        
+        if (hasMape) {
+            // MAP-Eデータあり：Auto有効（初期選択）
+            mapeAuto.disabled = false;
+            mapeAuto.checked = true;
+            if (mapeGua) mapeGua.checked = false;
+            if (mapePd) mapePd.checked = false;
+        } else {
+            // MAP-Eデータなし：Auto無効、GUA選択
+            mapeAuto.disabled = true;
+            mapeAuto.checked = false;
+            if (mapeGua) {
+                mapeGua.checked = true;
+            } else if (mapePd) {
+                mapePd.checked = true;
+            }
+        }
         
         // キャッシュ確認してから必要時のみロード
         const mapeInfo = config.getMapEInfo(app.selectedVersion);
