@@ -916,7 +916,7 @@
                             </div>
                             <div class="form-group">
                                 <label for="aios-backup-path">Restore Backup Path</label>
-                                <input type="text" id="aios-backup-path" class="form-control" placeholder="/root/backup.tar.gz" value="/root/backup.tar.gz">
+                                <input type="text" id="aios-backup-path" class="form-control" placeholder="/root/backup_\${VER}.tar.gz" value="/root/backup_\${VER}.tar.gz">
                                 <small class="form-text text-muted">Path to backup file for restore</small>
                             </div>
                         </div>
@@ -1179,10 +1179,11 @@
 // setup.shテンプレート
 const SETUP_SH_TEMPLATE = `#!/bin/sh
 exec >/tmp/setup.log 2>&1
+VER="$(cat /etc/openwrt_version 2>/dev/null || echo unknown)"
 LAN_DEF="$(uci -q get network.lan.device || echo lan)"
 WAN_DEF="$(uci -q get network.wan.device || echo wan)"
-MAPE_NAME="mape"
-MAPE6_NAME="mape6"
+MAP_NAME="map"
+MAP6_NAME="map6"
 DSLITE_NAME="dslite"
 DSLITE6_NAME="dslite6"
 AP_NAME="ap"
@@ -1198,7 +1199,7 @@ AP6_NAME="ap6"
 # ssh_interface="lan"
 # ssh_port="22"
 # flow_offloading_type=""
-# backup_path="/root/backup.tar.gz"
+# backup_path="/root/backup_\${VER}.tar.gz"
 # wlan_name="OpenWrt"
 # wlan_password="12345678"
 # pppoe_username=""
@@ -1302,54 +1303,50 @@ if [ -n "\${dslite_aftr_address}" ]; then
     uci set dhcp.lan.dhcpv6='relay'
     uci set dhcp.lan.ndp='relay'
     uci set dhcp.lan.force='1'
-    uci del_list firewall.@zone[1].network='map'
-    uci del_list firewall.@zone[1].network='map6'
     uci add_list firewall.@zone[1].network="\${DSLITE_NAME}"
     uci add_list firewall.@zone[1].network="\${DSLITE6_NAME}"
     uci set firewall.@zone[1].masq='1'
     uci set firewall.@zone[1].mtu_fix='1'
 fi
 if [ -n "\${mape_br}" ] && [ -n "\${mape_ealen}" ]; then
-    cp -p /etc/config/network /etc/config/network.\${MAPE_NAME}.bak 2>/dev/null
-    cp -p /etc/config/dhcp /etc/config/dhcp.\${MAPE_NAME}.bak 2>/dev/null
-    cp -p /etc/config/firewall /etc/config/firewall.\${MAPE_NAME}.bak 2>/dev/null
+    cp -p /etc/config/network /etc/config/network.\${MAP_NAME}.bak 2>/dev/null
+    cp -p /etc/config/dhcp /etc/config/dhcp.\${MAP_NAME}.bak 2>/dev/null
+    cp -p /etc/config/firewall /etc/config/firewall.\${MAP_NAME}.bak 2>/dev/null
     cp -p /lib/netifd/proto/map.sh /lib/netifd/proto/map.sh.bak 2>/dev/null
     uci set network.wan.disabled='1'
     uci set network.wan.auto='0'
     uci set network.wan6.disabled='1'
     uci set network.wan6.auto='0'
-    uci set network.\${MAPE6_NAME}=interface
-    uci set network.\${MAPE6_NAME}.proto='dhcpv6'
-    uci set network.\${MAPE6_NAME}.device="\${WAN_DEF}"
-    uci set network.\${MAPE6_NAME}.reqaddress='try'
-    uci set network.\${MAPE6_NAME}.reqprefix='auto'
-    uci set network.\${MAPE_NAME}=interface
-    uci set network.\${MAPE_NAME}.proto='map'
-    uci set network.\${MAPE_NAME}.maptype='map-e'
-    uci set network.\${MAPE_NAME}.peeraddr="\${mape_br}"
-    uci set network.\${MAPE_NAME}.ipaddr="\${mape_ipv4_prefix}"
-    uci set network.\${MAPE_NAME}.ip4prefixlen="\${mape_ipv4_prefixlen}"
-    uci set network.\${MAPE_NAME}.ip6prefix="\${mape_ipv6_prefix}"
-    uci set network.\${MAPE_NAME}.ip6prefixlen="\${mape_ipv6_prefixlen}"
-    uci set network.\${MAPE_NAME}.ealen="\${mape_ealen}"
-    uci set network.\${MAPE_NAME}.psidlen="\${mape_psidlen}"
-    uci set network.\${MAPE_NAME}.offset="\${mape_psid_offset}"
-    uci set network.\${MAPE_NAME}.mtu='1460'
-    uci set network.\${MAPE_NAME}.encaplimit='ignore'
-    uci set dhcp.\${MAPE6_NAME}=dhcp
-    uci set dhcp.\${MAPE6_NAME}.interface="\${MAPE6_NAME}"
-    uci set dhcp.\${MAPE6_NAME}.master='1'
-    uci set dhcp.\${MAPE6_NAME}.ra='relay'
-    uci set dhcp.\${MAPE6_NAME}.dhcpv6='relay'
-    uci set dhcp.\${MAPE6_NAME}.ndp='relay'
+    uci set network.\${MAP6_NAME}=interface
+    uci set network.\${MAP6_NAME}.proto='dhcpv6'
+    uci set network.\${MAP6_NAME}.device="\${WAN_DEF}"
+    uci set network.\${MAP6_NAME}.reqaddress='try'
+    uci set network.\${MAP6_NAME}.reqprefix='auto'
+    uci set network.\${MAP_NAME}=interface
+    uci set network.\${MAP_NAME}.proto='map'
+    uci set network.\${MAP_NAME}.maptype='map-e'
+    uci set network.\${MAP_NAME}.peeraddr="\${mape_br}"
+    uci set network.\${MAP_NAME}.ipaddr="\${mape_ipv4_prefix}"
+    uci set network.\${MAP_NAME}.ip4prefixlen="\${mape_ipv4_prefixlen}"
+    uci set network.\${MAP_NAME}.ip6prefix="\${mape_ipv6_prefix}"
+    uci set network.\${MAP_NAME}.ip6prefixlen="\${mape_ipv6_prefixlen}"
+    uci set network.\${MAP_NAME}.ealen="\${mape_ealen}"
+    uci set network.\${MAP_NAME}.psidlen="\${mape_psidlen}"
+    uci set network.\${MAP_NAME}.offset="\${mape_psid_offset}"
+    uci set network.\${MAP_NAME}.mtu='1460'
+    uci set network.\${MAP_NAME}.encaplimit='ignore'
+    uci set dhcp.\${MAP6_NAME}=dhcp
+    uci set dhcp.\${MAP6_NAME}.interface="\${MAP6_NAME}"
+    uci set dhcp.\${MAP6_NAME}.master='1'
+    uci set dhcp.\${MAP6_NAME}.ra='relay'
+    uci set dhcp.\${MAP6_NAME}.dhcpv6='relay'
+    uci set dhcp.\${MAP6_NAME}.ndp='relay'
     uci set dhcp.lan.ra='relay'
     uci set dhcp.lan.dhcpv6='relay'
     uci set dhcp.lan.ndp='relay'
     uci set dhcp.lan.force='1'
-    uci del_list firewall.@zone[1].network='map'
-    uci del_list firewall.@zone[1].network='map6'
-    uci add_list firewall.@zone[1].network="\${MAPE_NAME}"
-    uci add_list firewall.@zone[1].network="\${MAPE6_NAME}"
+    uci add_list firewall.@zone[1].network="\${MAP_NAME}"
+    uci add_list firewall.@zone[1].network="\${MAP6_NAME}"
     uci set firewall.@zone[1].masq='1'
     uci set firewall.@zone[1].mtu_fix='1'
     cat > /lib/netifd/proto/map.sh << 'MAP_SH_EOF'
@@ -1357,15 +1354,15 @@ if [ -n "\${mape_br}" ] && [ -n "\${mape_ealen}" ]; then
 MAP_SH_EOF
 fi
 if [ -n "\${mape_gua_mode}" ]; then
-    uci set network.\${MAPE6_NAME}.ip6prefix="\${mape_gua_prefix}"
+    uci set network.\${MAP6_NAME}.ip6prefix="\${mape_gua_prefix}"
 fi
 if [ -n "\${openwrt_19}" ]; then
-    uci add_list network.\${MAPE_NAME}.tunlink="\${MAPE6_NAME}"
+    uci add_list network.\${MAP_NAME}.tunlink="\${MAP6_NAME}"
 fi
 if [ -n "\${openwrt_21}" ]; then
-    uci set network.\${MAPE_NAME}.legacymap='1'
-    uci set network.\${MAPE_NAME}.tunlink="\${MAPE6_NAME}"
-    uci set dhcp.\${MAPE6_NAME}.ignore='1'
+    uci set network.\${MAP_NAME}.legacymap='1'
+    uci set network.\${MAP_NAME}.tunlink="\${MAP6_NAME}"
+    uci set dhcp.\${MAP6_NAME}.ignore='1'
 fi
 if [ -n "\${ap_ip_address}" ]; then
     cp -p /etc/config/network /etc/config/network.\${AP_NAME}.bak 2>/dev/null
@@ -1400,7 +1397,7 @@ if [ -n "\${ap_ip_address}" ]; then
     [ -x /etc/init.d/firewall ] && /etc/init.d/firewall running && /etc/init.d/firewall stop
 fi
 if [ -n "\${enable_ttyd}" ]; then
-    uci set ttyd.@ttyd[0].ipv6='1' 
+    uci set ttyd.@ttyd[0].ttyd.ipv6='1' 
     uci set ttyd.@ttyd[0].command='/bin/login -f root' 
 fi
 if [ -n "\${enable_irqbalance}" ]; then
@@ -1439,10 +1436,10 @@ exit 0`;
 const config = {
     show_help: true,
     image_url: "https://downloads.openwrt.org",
-    info_url: "https://openwrt.org/start?q={device_id}&do=search",
+    info_url: "https://openwrt.org/start?q={title}&do=search",
     asu_url: "https://sysupgrade.openwrt.org",
     asu_extra_packages: ["luci"],
-    min_version: "19.07.0",
+    min_version: "19.07.0",  // 最小サポートバージョン
     
     // MAP-E情報を一括取得
     getMapEInfo(version) {
@@ -2058,7 +2055,7 @@ const ErrorHandler = {
                 );
                 
                 console.log(`[PKG Fetch] OK ${source}: ${packages.length} pkgs (${kmods.length} kmods)`);
-
+                
             } else {
                 console.log(`[PKG Fetch] NG ${source}: FAILED`);
             }
@@ -2154,14 +2151,11 @@ function setupVersionUrls(version) {
         ? upstream_config.image_url_override
         : config.image_url;
 
-    // SNAPSHOT または *-SNAPSHOT → /snapshots/ に集約
-    if (/SNAPSHOT$/i.test(version)) {
-        config.overview_urls[version] = `${overview_url}/snapshots/`;
-        config.image_urls[version]   = `${image_url}/snapshots/`;
-    } else {
-        config.overview_urls[version] = `${overview_url}/releases/${encodeURIComponent(version)}/`;
-        config.image_urls[version]    = `${image_url}/releases/${encodeURIComponent(version)}/`;
-    }
+    const isSnapshot = /SNAPSHOT$/i.test(version);
+    const basePath   = isSnapshot ? 'snapshots' : `releases/${encodeURIComponent(version)}`;
+
+    config.overview_urls[version] = `${overview_url}/${basePath}/`;
+    config.image_urls[version]    = `${image_url}/${basePath}/`;
 }
         
 // ==================== ユーティリティ関数 ====================
@@ -2394,6 +2388,10 @@ function asuI18nDB(lang) {
 }
         
 // ==================== map.sh関連 ====================
+// グローバルスコープに追加
+const downloadPromises = {};
+
+// loadMapShForVersion関数の修正
 async function loadMapShForVersion(version) {
     console.log('[MAP-E Download] Starting download for version:', version);
     
@@ -2414,23 +2412,40 @@ async function loadMapShForVersion(version) {
         console.log('[MAP-E Download] Cache before:', mapShCache);
         
         if (mapShCache[key] === undefined) {
-            console.log('[MAP-E Download] Cache miss, downloading...');
-            const response = await fetch(scriptUrl);
-            
-            if (response.ok) {
-                const content = await response.text();
-                if (content && content.trim().length > 0) {
-                    mapShCache[key] = content;
-                    console.log(`[MAP-E Download] ✓ Saved to cache[${key}], length:`, content.length);
-                    console.log('[MAP-E Download] Cache after:', mapShCache);
-                } else {
-                    console.error(`[MAP-E Download] ✗ ${scriptName} is empty from server`);
-                    mapShCache[key] = '';
-                }
-            } else {
-                console.error(`[MAP-E Download] ✗ Failed to download ${scriptName}: HTTP ${response.status}`);
-                mapShCache[key] = '';
+            // 既に同じkeyでダウンロード中の場合は待機
+            if (downloadPromises[key]) {
+                console.log('[MAP-E Download] Already downloading, waiting...');
+                return await downloadPromises[key];
             }
+            
+            console.log('[MAP-E Download] Cache miss, downloading...');
+            
+            // ダウンロードPromiseを保存
+            downloadPromises[key] = (async () => {
+                try {
+                    const response = await fetch(scriptUrl);
+                    
+                    if (response.ok) {
+                        const content = await response.text();
+                        if (content && content.trim().length > 0) {
+                            mapShCache[key] = content;
+                            console.log(`[MAP-E Download] ✓ Saved to cache[${key}], length:`, content.length);
+                            console.log('[MAP-E Download] Cache after:', mapShCache);
+                        } else {
+                            console.error(`[MAP-E Download] ✗ ${scriptName} is empty from server`);
+                            mapShCache[key] = '';
+                        }
+                    } else {
+                        console.error(`[MAP-E Download] ✗ Failed to download ${scriptName}: HTTP ${response.status}`);
+                        mapShCache[key] = '';
+                    }
+                } finally {
+                    // ダウンロード完了後にPromiseを削除
+                    delete downloadPromises[key];
+                }
+            })();
+            
+            await downloadPromises[key];
         } else {
             console.log('[MAP-E Download] Cache hit, skipping download');
         }
@@ -2600,189 +2615,177 @@ if (togglePasswordBtn) {
 
 // ==================== パッケージセレクター関連 ====================
 function togglePackageSelector(e) {
-    const configSection = document.getElementById('package-selector-config');
-    configSection.style.display = e.target.open ? 'block' : 'none';
+   const configSection = document.getElementById('package-selector-config');
+   configSection.style.display = e.target.open ? 'block' : 'none';
 }
 
 function generatePackageSelector() {
-    const container = document.getElementById('package-categories');
-    if (!container) return;
+   const container = document.getElementById('package-categories');
+   if (!container) return;
 
-    container.innerHTML = '';
+   container.innerHTML = '';
 
-    // 利用可能パッケージ名のセットを作成（デバイス＋OSバージョンで取得済みのもの）
-    const availablePackages = new Set();
-    if (Array.isArray(app.devicePackages) && app.devicePackages.length > 0) {
-        app.devicePackages.forEach(pkg => {
-            const name = (typeof pkg === 'string') ? pkg : pkg && pkg.name;
-            if (name) availablePackages.add(name);
-        });
-    }
+   // 利用可能パッケージ名のセットを作成（デバイス＋OSバージョンで取得済みのもの）
+   const availablePackages = new Set();
+   if (Array.isArray(app.devicePackages) && app.devicePackages.length > 0) {
+       app.devicePackages.forEach(pkg => {
+           const name = (typeof pkg === 'string') ? pkg : pkg && pkg.name;
+           if (name) availablePackages.add(name);
+       });
+   }
 
-// SNAPSHOT版の判定
-    const isSnapshot = /SNAPSHOT$/i.test(app.selectedVersion);
-    
-    // 判定直前の状態を総合デバッガで出力
-    ErrorHandler.debug(
-        'generatePackageSelector',
-        'State immediately before zero check',
-        {
-            devicePackages_raw: app.devicePackages,
-            availablePackages_list: Array.from(availablePackages),
-            availablePackages_size: availablePackages.size,
-            isSnapshot: isSnapshot
-        }
-    );
+   // 判定直前の状態を総合デバッガで出力
+   ErrorHandler.debug(
+       'generatePackageSelector',
+       'State immediately before zero check',
+       {
+           devicePackages_raw: app.devicePackages,
+           availablePackages_list: Array.from(availablePackages),
+           availablePackages_size: availablePackages.size
+       }
+   );
 
-    // 取得できていない（＝判定不能）場合の処理
-    if (availablePackages.size === 0 && !isSnapshot) {
-        // リリース版でパッケージリストが取得できない場合
-        container.innerHTML =
-            '<p class="text-muted small">Unable to retrieve the package index for this OS version/device. ' +
-            'Please try a different version or device, or try again later.</p>';
-        return;
-    } else if (isSnapshot) {
-        // SNAPSHOT版の場合の注記
-        const noteDiv = document.createElement('div');
-        noteDiv.className = 'info';
-        noteDiv.style.marginBottom = '1rem';
-        noteDiv.innerHTML = '<strong>Note:</strong> Package availability in SNAPSHOT builds may vary. All packages are shown for selection at your own risk.';
-        container.appendChild(noteDiv);
-    }
+   // 取得できていない（＝判定不能）場合の処理
+   if (availablePackages.size === 0) {
+       container.innerHTML =
+           '<p class="text-muted small">Unable to retrieve the package index for this OS version/device. ' +
+           'Please try a different version or device, or try again later.</p>';
+       return;
+   }
 
-    // 依存パッケージIDの集合を構築
-    const depIds = new Set();
-    PACKAGE_DB.categories.forEach(cat => {
-        cat.packages.forEach(pkg => {
-            if (Array.isArray(pkg.dependencies)) {
-                pkg.dependencies.forEach(d => depIds.add(d));
-            }
-        });
-    });
+   // 依存パッケージIDの集合を構築
+   const depIds = new Set();
+   PACKAGE_DB.categories.forEach(cat => {
+       cat.packages.forEach(pkg => {
+           if (Array.isArray(pkg.dependencies)) {
+               pkg.dependencies.forEach(d => depIds.add(d));
+           }
+       });
+   });
 
-    PACKAGE_DB.categories.forEach(category => {
-        const categoryDiv = document.createElement('div');
-        categoryDiv.className = 'package-category';
+   PACKAGE_DB.categories.forEach(category => {
+       const categoryDiv = document.createElement('div');
+       categoryDiv.className = 'package-category';
 
-        const categoryTitle = document.createElement('h4');
-        categoryTitle.textContent = category.name;
-        categoryDiv.appendChild(categoryTitle);
+       const categoryTitle = document.createElement('h4');
+       categoryTitle.textContent = category.name;
+       categoryDiv.appendChild(categoryTitle);
 
-        const categoryDescription = document.createElement('div');
-        categoryDescription.className = 'package-category-description';
-        categoryDescription.textContent = category.description;
-        categoryDiv.appendChild(categoryDescription);
+       const categoryDescription = document.createElement('div');
+       categoryDescription.className = 'package-category-description';
+       categoryDescription.textContent = category.description;
+       categoryDiv.appendChild(categoryDescription);
 
-        const packageGrid = document.createElement('div');
-        packageGrid.className = 'package-grid';
+       const packageGrid = document.createElement('div');
+       packageGrid.className = 'package-grid';
 
-        let hasVisiblePackages = false;
+       let hasVisiblePackages = false;
 
-        category.packages.forEach(pkg => {
-            // 依存パッケージはトップレベル描画しない
-            if (depIds.has(pkg.id)) return;
+       category.packages.forEach(pkg => {
+           // 依存パッケージはトップレベル描画しない
+           if (depIds.has(pkg.id)) return;
 
-            // ▼ 厳格：available にあるものだけ表示（SNAPSHOT版は全表示）
-            const isAvailable = isSnapshot || availablePackages.has(pkg.name);
+           // 厳格：available にあるものだけ表示
+           const isAvailable = availablePackages.has(pkg.name);
 
-            const packageItem = document.createElement('div');
-            packageItem.className = 'package-item';
-            if (pkg.hidden) packageItem.classList.add('package-hidden');
+           const packageItem = document.createElement('div');
+           packageItem.className = 'package-item';
+           if (pkg.hidden) packageItem.classList.add('package-hidden');
 
-            if (!isAvailable) {
-                // 完全に除外
-                packageItem.style.display = 'none';
-                return;
-            }
+           if (!isAvailable) {
+               // 完全に除外
+               packageItem.style.display = 'none';
+               return;
+           }
 
-            hasVisiblePackages = true;
+           hasVisiblePackages = true;
 
-            const formCheck = document.createElement('div');
-            formCheck.className = 'form-check';
+           const formCheck = document.createElement('div');
+           formCheck.className = 'form-check';
 
-            const checkbox = document.createElement('input');
-            checkbox.className = 'form-check-input package-selector-checkbox';
-            checkbox.type = 'checkbox';
-            checkbox.id = `pkg-${pkg.id}`;
-            checkbox.setAttribute('data-package', pkg.name);
-            if (pkg.dependencies) {
-                checkbox.setAttribute('data-dependencies', pkg.dependencies.join(','));
-            }
-            if (pkg.checked) {
-                checkbox.checked = true;
-                checkbox.setAttribute('data-user', '1');
-            }
-            checkbox.addEventListener('change', handlePackageSelection);
+           const checkbox = document.createElement('input');
+           checkbox.className = 'form-check-input package-selector-checkbox';
+           checkbox.type = 'checkbox';
+           checkbox.id = `pkg-${pkg.id}`;
+           checkbox.setAttribute('data-package', pkg.name);
+           if (pkg.dependencies) {
+               checkbox.setAttribute('data-dependencies', pkg.dependencies.join(','));
+           }
+           if (pkg.checked) {
+               checkbox.checked = true;
+               checkbox.setAttribute('data-user', '1');
+           }
+           checkbox.addEventListener('change', handlePackageSelection);
 
-            const label = document.createElement('label');
-            label.className = 'form-check-label';
-            label.setAttribute('for', `pkg-${pkg.id}`);
+           const label = document.createElement('label');
+           label.className = 'form-check-label';
+           label.setAttribute('for', `pkg-${pkg.id}`);
 
-            const link = document.createElement('a');
-            link.href = pkg.url;
-            link.target = '_blank';
-            link.className = 'package-link';
-            link.textContent = pkg.name;
+           const link = document.createElement('a');
+           link.href = pkg.url;
+           link.target = '_blank';
+           link.className = 'package-link';
+           link.textContent = pkg.name;
 
-            label.appendChild(link);
-            formCheck.appendChild(checkbox);
-            formCheck.appendChild(label);
-            packageItem.appendChild(formCheck);
+           label.appendChild(link);
+           formCheck.appendChild(checkbox);
+           formCheck.appendChild(label);
+           packageItem.appendChild(formCheck);
 
-            // 依存パッケージも厳格判定
-            if (Array.isArray(pkg.dependencies)) {
-                pkg.dependencies.forEach(depId => {
-                    let depPkg;
-                    for (const cat of PACKAGE_DB.categories) {
-                        depPkg = cat.packages.find(p => p.id === depId);
-                        if (depPkg) break;
-                    }
+           // 依存パッケージも厳格判定
+           if (Array.isArray(pkg.dependencies)) {
+               pkg.dependencies.forEach(depId => {
+                   let depPkg;
+                   for (const cat of PACKAGE_DB.categories) {
+                       depPkg = cat.packages.find(p => p.id === depId);
+                       if (depPkg) break;
+                   }
 
-                    const depName = depPkg ? depPkg.name : depId;
-                    const depIsAvailable = isSnapshot || availablePackages.has(depName);
-                    if (!depIsAvailable) return;
+                   const depName = depPkg ? depPkg.name : depId;
+                   const depIsAvailable = availablePackages.has(depName);
+                   if (!depIsAvailable) return;
 
-                    const depItem = document.createElement('div');
-                    depItem.className = 'package-dependent';
+                   const depItem = document.createElement('div');
+                   depItem.className = 'package-dependent';
 
-                    const depCheck = document.createElement('input');
-                    depCheck.className = 'form-check-input package-selector-checkbox';
-                    depCheck.type = 'checkbox';
-                    depCheck.id = `pkg-${depPkg ? depPkg.id : depId}`;
-                    depCheck.setAttribute('data-package', depName);
-                    depCheck.addEventListener('change', handlePackageSelection);
+                   const depCheck = document.createElement('input');
+                   depCheck.className = 'form-check-input package-selector-checkbox';
+                   depCheck.type = 'checkbox';
+                   depCheck.id = `pkg-${depPkg ? depPkg.id : depId}`;
+                   depCheck.setAttribute('data-package', depName);
+                   depCheck.addEventListener('change', handlePackageSelection);
 
-                    const depLabel = document.createElement('label');
-                    depLabel.className = 'form-check-label';
-                    depLabel.setAttribute('for', `pkg-${depPkg ? depPkg.id : depId}`);
+                   const depLabel = document.createElement('label');
+                   depLabel.className = 'form-check-label';
+                   depLabel.setAttribute('for', `pkg-${depPkg ? depPkg.id : depId}`);
 
-                    if (depPkg) {
-                        const depLink = document.createElement('a');
-                        depLink.href = depPkg.url;
-                        depLink.target = '_blank';
-                        depLink.className = 'package-link';
-                        depLink.textContent = depPkg.name;
-                        depLabel.appendChild(depLink);
-                    } else {
-                        depLabel.textContent = depId;
-                    }
+                   if (depPkg) {
+                       const depLink = document.createElement('a');
+                       depLink.href = depPkg.url;
+                       depLink.target = '_blank';
+                       depLink.className = 'package-link';
+                       depLink.textContent = depPkg.name;
+                       depLabel.appendChild(depLink);
+                   } else {
+                       depLabel.textContent = depId;
+                   }
 
-                    depItem.appendChild(depCheck);
-                    depItem.appendChild(depLabel);
-                    packageItem.appendChild(depItem);
-                });
-            }
+                   depItem.appendChild(depCheck);
+                   depItem.appendChild(depLabel);
+                   packageItem.appendChild(depItem);
+               });
+           }
 
-            packageGrid.appendChild(packageItem);
-        });
+           packageGrid.appendChild(packageItem);
+       });
 
-        if (hasVisiblePackages) {
-            categoryDiv.appendChild(packageGrid);
-            container.appendChild(categoryDiv);
-        }
-    });
+       if (hasVisiblePackages) {
+           categoryDiv.appendChild(packageGrid);
+           container.appendChild(categoryDiv);
+       }
+   });
 
-    updatePackageListFromSelector();
+   updatePackageListFromSelector();
 }
         
 function handlePackageSelection(e) {
@@ -3055,6 +3058,7 @@ async function loadDevices() {
         console.log(`[loadDevices] Version ${app.selectedVersion} known to be unavailable`);
         app.devices = [];
         app.versionCode = null;
+        app.kernelHash = null;
         hideDeviceInfo();
         return;
     }
@@ -3076,6 +3080,7 @@ async function loadDevices() {
             profileCache[notFoundKey] = true;
             app.devices = [];
             app.versionCode = null;
+            app.kernelHash = null;
             hideDeviceInfo();
             return;
         }
@@ -3097,6 +3102,7 @@ async function loadDevices() {
         }
         app.devices = [];
         app.versionCode = null;
+        app.kernelHash = null;
         hideDeviceInfo();
     }
 }
@@ -3250,14 +3256,106 @@ async function loadDeviceProfile(device) {
     }
 }
 
-function applyProfileData(profilesData, profileId) {
+async function applyProfileData(profilesData, profileId) {
     app.versionCode = profilesData.version_code || '';
     
     if (profilesData.linux_kernel) {
         const lk = profilesData.linux_kernel;
         app.kernelHash = `${lk.version}-${lk.release}-${lk.vermagic}`;
-        console.log('[Kernel] Constructed hash:', app.kernelHash);
+        console.log('[Kernel] From profiles.json:', app.kernelHash);
+    } else {
+        console.log('[Kernel] No linux_kernel in profiles.json, fetching from server...');
+        app.kernelHash = await fetchActualKernelHash(app.selectedVersion, current_device.target);
+        console.log('[Kernel] From server HTML:', app.kernelHash);
     }
+    async function fetchActualKernelHash(version, targetPath) {
+        try {
+            setupVersionUrls(version);
+            const kmodsUrl = `${config.image_urls[version]}targets/${targetPath}/kmods/`;
+        
+            const response = await fetch(kmodsUrl, { cache: 'no-cache' });
+            if (!response.ok) {
+                console.log(`[Kernel] kmods directory not found: ${response.status}`);
+                return null;
+            }
+        
+            const html = await response.text();
+            console.log('[Kernel] Fetched HTML from:', kmodsUrl);
+        
+            return await selectKernelSmart(html);
+            
+        } catch (error) {
+            console.log('[Kernel] Failed to fetch kernel hash:', error.message);
+            return null;
+        }
+    }
+    
+    async function selectKernelSmart(html) {
+        // 全てのカーネルディレクトリを抽出
+        const kernelDirs = extractAllKernels(html);
+        
+        if (kernelDirs.length === 0) {
+            console.log('[Kernel] No valid kernel directories found');
+            return null;
+        } else if (kernelDirs.length === 1) {
+            // 単一カーネル → 即採用（効率化）
+            console.log('[Kernel] Single kernel found:', kernelDirs[0].hash);
+            return kernelDirs[0].hash;
+        } else {
+            // 複数カーネル → 日付で最新選択
+            console.log(`[Kernel] Multiple kernels found (${kernelDirs.length}), selecting latest by date`);
+            return selectLatestByDate(kernelDirs);
+        }
+    }
+    
+    function extractAllKernels(html) {
+        const tableRowPattern = /<tr><td class="n"><a href="([^"\/]+)\/"[^>]*>([^<]+)<\/a>\/[^<]*<\/td><td class="s">[^<]*<\/td><td class="d">([^<]+)<\/td>/g;
+        const kernelDirs = [];
+        let match;
+        
+        while ((match = tableRowPattern.exec(html)) !== null) {
+            const dirName = match[1];
+            const dateStr = match[3];
+            
+            // "." や ".." ディレクトリを除外
+            if (dirName === '.' || dirName === '..') continue;
+            
+            // カーネルハッシュ形式の検証
+            if (dirName.match(/^\d+\.\d+\.\d+-\d+-[a-f0-9]{32}$/)) {
+                try {
+                    const date = new Date(dateStr);
+                    if (!isNaN(date.getTime())) {
+                        kernelDirs.push({
+                            hash: dirName,
+                            date: date,
+                            dateStr: dateStr
+                        });
+                    }
+                } catch (e) {
+                    console.log(`[Kernel] Invalid date format: ${dateStr}`);
+                }
+            }
+        }
+        
+        return kernelDirs;
+    }
+    
+    function selectLatestByDate(kernelDirs) {
+        // 日付でソートして最新を選択
+        kernelDirs.sort((a, b) => b.date - a.date);
+        const latestKernel = kernelDirs[0];
+        
+        console.log(`[Kernel] Selected latest kernel: ${latestKernel.hash} (${latestKernel.dateStr})`);
+        
+        // フォールバック情報も保存（パッケージが見つからない場合に使用）
+        if (kernelDirs.length > 1) {
+            app.snapshotKernelFallbacks = kernelDirs.slice(1, 3).map(k => k.hash);
+            console.log(`[Kernel] Fallback kernels available: ${app.snapshotKernelFallbacks.join(', ')}`);
+        }
+        
+        return latestKernel.hash;
+    }
+
     if (profilesData.profiles && profilesData.profiles[profileId]) {
         const profile = profilesData.profiles[profileId];
         const defaultPackages = profilesData.default_packages || [];
@@ -3307,10 +3405,12 @@ function showDeviceInfo() {
     const imageFolder = `${config.image_urls[app.selectedVersion]}targets/${device.target}`;
     
     const deviceLink = `${window.location.origin}${window.location.pathname}?version=${encodeURIComponent(app.selectedVersion)}&target=${encodeURIComponent(device.target)}&id=${encodeURIComponent(device.id)}`;
-
-    // OpenWrt検索ベースのリンク生成（確実性重視）
-    const deviceSearchQuery = encodeURIComponent(device.id || '');
-    const infoUrl = config.info_url.replace("{device_id}", deviceSearchQuery);
+    
+    const infoUrl = (config.info_url || "")
+        .replace("{title}", encodeURI(getDeviceTitle(device)))
+        .replace("{target}", device.target)
+        .replace("{id}", device.id)
+        .replace("{version}", app.selectedVersion);
     
     // 公式形式のAbout this buildセクションを構築
     const infoHtml = `
@@ -4688,150 +4788,87 @@ function showDownloadLinks(images, fullStatus, requestHash) {
     }
 }
 
-// ★パッケージインデックス取得
+// ★パッケージインデックス取得（SNAPSHOT/Release 共通）
 async function fetchDevicePackages() {
-    // SNAPSHOT版の場合は処理をスキップ（公式準拠）
-    if (/SNAPSHOT$/i.test(app.selectedVersion)) {
-        console.log('[fetchDevicePackages] SNAPSHOT version detected - skipping package fetch (official compliant)');
-        app.devicePackages = [];  // 空配列をセット
-        
-        // SNAPSHOT版でもパッケージセレクターを生成（PACKAGE_DBを直接使用）
-        if (typeof generatePackageSelector === 'function') {
-            generatePackageSelector();
-        }
-        return;
-    }
-    
-    // ========== リリース版用のコード ==========
     app.devicePackages = [];
     if (!current_device || !current_device.id || !app.selectedVersion) return;
 
-    const version = app.selectedVersion;
-    const targetPath = current_device.target;
+    const version     = app.selectedVersion;
+    const targetPath  = current_device.target;
+    const isSnapshot  = /SNAPSHOT$/i.test(version);
 
-    // URLは直接使用
+    // URLベース設定
     setupVersionUrls(version);
-    const basePath = config.image_urls[version].replace(/\/$/, '');
-    const profilesUrl = `${basePath}/targets/${targetPath}/profiles.json`;
+    const basePath    = config.image_urls[version].replace(/\/$/, '');
 
-    // 初期化
+    // ▼ 統合版 arch 解決
+    const arch = await resolveArch(version, targetPath /*, { profilesData: 既に持っていれば渡す } */);
+    if (!arch) {
+        console.error('[fetchDevicePackages] Unable to resolve arch for target:', targetPath);
+        if (typeof generatePackageSelector === 'function') generatePackageSelector();
+        return;
+    }
+
     const feeds = ["base", "luci", "packages", "routing", "telephony"];
-    const urls = [];
+    const urls  = [];
 
-    // アーキテクチャ情報を取得
-    let arch;
-    try {
-        const res = await fetch(profilesUrl);  // ★直接fetch
-        if (!res.ok) throw new Error(`profiles.json HTTP ${res.status}`);
-        const meta = await res.json();
-        arch = meta.arch_packages;
-        if (!arch) throw new Error("profiles.json に arch_packages がありません");
-    } catch (e) {
-        console.warn(`profiles.json 取得失敗: ${e.message}. フォールバックを試みます。`);
-        if (app.archPackagesMap && app.archPackagesMap[targetPath]) {
-            arch = app.archPackagesMap[targetPath];
-            console.log(`フォールバック成功: target '${targetPath}' のアーキテクチャは '${arch}' です。`);
-        } else {
-            console.error("フォールバック失敗: アーキテクチャ情報を特定できませんでした。");
-            app.devicePackages = [];
-            if (typeof generatePackageSelector === 'function') generatePackageSelector();
-            return;
-        }
-    }
-
-    // target固有パッケージ
-    if (!/SNAPSHOT$/i.test(version)) {
-        urls.push(`${basePath}/targets/${targetPath}/packages/Packages`);
-    
-        // ★kmodsディレクトリ
+    if (isSnapshot) {
+        feeds.forEach(feed => {
+            urls.push(`${basePath}/packages/${arch}/${feed}/index.json`);
+        });
         if (app.kernelHash) {
-            const kmodsUrl = `${basePath}/targets/${targetPath}/kmods/${app.kernelHash}/Packages`;
-            urls.push(kmodsUrl);
-            console.log(`[KMODS] Adding: ${kmodsUrl}`);
-        } else {
-            console.error('[KMODS] ERROR: No kernel hash available!');
+            urls.push(`${basePath}/targets/${targetPath}/kmods/${app.kernelHash}/index.json`);
         }
-    }
-    
-    // フィードパッケージ（全バージョン共通）
-    for (const feed of feeds) {
-        urls.push(`${basePath}/packages/${arch}/${feed}/Packages`);  // ★直接URL
+    } else {
+        urls.push(`${basePath}/targets/${targetPath}/packages/Packages`);
+        if (app.kernelHash) {
+            urls.push(`${basePath}/targets/${targetPath}/kmods/${app.kernelHash}/Packages`);
+        }
+        feeds.forEach(feed => {
+            urls.push(`${basePath}/packages/${arch}/${feed}/Packages`);
+        });
     }
 
-    console.log('[Package URLs]', {
-        version: version,
-        target: targetPath,
-        arch: arch,
-        urls: urls
-    });
+    const allPkgsMap = new Map();
 
-    // 各 Packages ファイルを並列取得・パース
-    const allPkgs = [];
-    const results = await Promise.allSettled(
-        urls.map(async (url) => {
-            try {
-                const res = await fetch(url);  // ★直接fetch
-                if (!res.ok) {
-                    console.log(`Package fetch ${res.status} for: ${url}`);
-                    return [];
-                }
+    await Promise.allSettled(urls.map(async (url) => {
+        try {
+            const res = await fetch(url, { cache: 'no-cache', credentials: 'omit', mode: 'cors' });
+            if (!res.ok) {
+                console.warn(`Package fetch ${res.status}: ${url}`);
+                return;
+            }
+            if (url.endsWith('.json')) {
+                const data = await res.json();
+                const packages = data?.packages || {};
+                Object.entries(packages).forEach(([name, info]) => {
+                    allPkgsMap.set(name, { name, ...info, source: url });
+                });
+                ErrorHandler.packageDebug.logFetch(url, true, Object.entries(packages).map(([n, i]) => ({ name: n, ...i })));
+            } else {
                 const text = await res.text();
                 const packages = parsePackagesText(text, url);
-
-                // デバッグ出力
-                console.log(`[Parse Debug] From ${url}:`);
-                console.log(`  Total: ${packages.length}`);
-                console.log(`  First 3:`, packages.slice(0, 3));
-
-                // kmodパッケージが本当に含まれているか確認
-                const kmodsInThisFile = packages.filter(p => p.name?.startsWith('kmod-'));
-                if (kmodsInThisFile.length > 0) {
-                    console.log(`  Contains ${kmodsInThisFile.length} kmods!`);
-                    console.log(`  Sample kmods:`, kmodsInThisFile.slice(0, 3).map(k => k.name));
-                }
-
-                // ErrorHandlerに記録
+                packages.forEach(pkg => allPkgsMap.set(pkg.name, pkg));
                 ErrorHandler.packageDebug.logFetch(url, true, packages);
-
-                return packages;
-            } catch (err) {
-                console.log(`Package fetch failed: ${url}`, err.message);
-                return [];
             }
-        })
-    );
-
-    // 結果を統合
-    for (const r of results) {
-        if (r.status === 'fulfilled' && Array.isArray(r.value)) {
-            allPkgs.push(...r.value);
+        } catch (err) {
+            console.warn(`Package fetch failed: ${url} -> ${err.message}`);
         }
-    }
+    }));
 
-    // 名前重複を統合
-    const pkgMap = new Map();
-    for (const p of allPkgs) {
-        if (p?.name) {
-            pkgMap.set(p.name, p);
-        }
-    }
-    app.devicePackages = Array.from(pkgMap.values());
-    
-    console.log(`[Package Summary] Total unique packages: ${app.devicePackages.length}`);
+    app.devicePackages = Array.from(allPkgsMap.values());
+    ErrorHandler.packageDebug.dumpAll();
 
     if (typeof generatePackageSelector === 'function') {
         generatePackageSelector();
     }
 
-    // パッケージ取得
     function parsePackagesText(text, source) {
         const blocks = text.split(/\n\s*\n/);
         const pkgs = [];
-        
         for (const blk of blocks) {
             const rec = {};
             for (const line of blk.split('\n')) {
-                // より厳密なマッチング
                 const m = line.match(/^([A-Za-z][A-Za-z0-9-]*):\s*(.*)$/);
                 if (!m) continue;
                 const key = m[1], val = m[2];
@@ -4847,6 +4884,57 @@ async function fetchDevicePackages() {
             }
         }
         return pkgs;
+    }
+}
+        
+// SNAPSHOT/Release 共通 arch 解決
+async function resolveArch(version, targetPath, opts = {}) {
+    try {
+        // 0) キャッシュ優先
+        if (app.archPackagesMap && app.archPackagesMap[targetPath]) {
+            return app.archPackagesMap[targetPath];
+        }
+
+        // 1) 呼び出し元が profilesData を渡してきた場合
+        if (opts.profilesData?.arch_packages) {
+            const arch = opts.profilesData.arch_packages;
+            app.archPackagesMap = app.archPackagesMap || {};
+            app.archPackagesMap[targetPath] = arch;
+            return arch;
+        }
+
+        // 2) URL構築
+        setupVersionUrls(version);
+        const basePath = (config.image_urls && config.image_urls[version])
+            ? config.image_urls[version].replace(/\/$/, '')
+            : '';
+
+        // 3) profiles.json 直接参照
+        const profilesUrl = `${basePath}/targets/${targetPath}/profiles.json`;
+        try {
+            const res = await fetch(profilesUrl, { cache: 'no-cache', credentials: 'omit', mode: 'cors' });
+            if (res.ok) {
+                const meta = await res.json();
+                const arch = meta?.arch_packages || '';
+                if (arch) {
+                    app.archPackagesMap = app.archPackagesMap || {};
+                    app.archPackagesMap[targetPath] = arch;
+                    return arch;
+                }
+            }
+        } catch (e) {
+            console.log(`[ARCH] profiles.json fetch failed: ${e.message}`);
+        }
+
+        // 4) overview.json 由来のフォールバック
+        if (app.archPackagesMap && app.archPackagesMap[targetPath]) {
+            return app.archPackagesMap[targetPath];
+        }
+
+        return '';
+    } catch (err) {
+        console.error('[ARCH] unexpected error:', err);
+        return '';
     }
 }
         
