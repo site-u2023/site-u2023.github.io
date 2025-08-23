@@ -3255,10 +3255,9 @@ function applyProfileData(profilesData, profileId) {
     
     if (profilesData.linux_kernel) {
         const lk = profilesData.linux_kernel;
-        const cleanVermagic = lk.vermagic.replace(/\.+$/, '');
-        app.kernelHash = `${lk.version}-${lk.release}-${cleanVermagic}`;
+        app.kernelHash = `${lk.version}-${lk.release}-${lk.vermagic}`;
         console.log('[Kernel] Constructed hash:', app.kernelHash);
-    }  
+    }
     if (profilesData.profiles && profilesData.profiles[profileId]) {
         const profile = profilesData.profiles[profileId];
         const defaultPackages = profilesData.default_packages || [];
