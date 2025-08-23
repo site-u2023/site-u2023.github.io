@@ -1,4 +1,3 @@
-// setup.shテンプレート
 const SETUP_SH_TEMPLATE = `#!/bin/sh
 exec >/tmp/setup.log 2>&1
 VER="$(cat /etc/openwrt_version 2>/dev/null || echo unknown)"
