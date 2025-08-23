@@ -1165,7 +1165,7 @@
                             </div>
                         </div>
 
-                        <!-- AP設定 -->
+                        <!-- APè¨­å®š -->
                         <div id="ap-section" class="conditional-section">
                             <h5 class="section-title">AP Configuration</h5>
                             <div class="form-row">
@@ -2634,24 +2634,25 @@ function bindEvents() {
         }
     });
     
-    // ===== 初期状態設定（存在確認あり） =====
+    // デフォルトはAutoモード
     const manualSection = document.getElementById('manual-connection-section');
     if (manualSection) manualSection.style.display = 'none';
-    
+
     const ispDetectionGroup = document.getElementById('isp-detection-group');
     if (ispDetectionGroup) ispDetectionGroup.style.display = 'block'; // Auto時は表示
-    
-    const pppoeSection = document.getElementById('pppoe-section');
-    if (pppoeSection) pppoeSection.style.display = 'none';
-    
-    const dsliteSection = document.getElementById('dslite-section');
-    if (dsliteSection) dsliteSection.style.display = 'none';
-    
-    const mapeSection = document.getElementById('mape-manual-section');
-    if (mapeSection) mapeSection.style.display = 'none';
-    
-    const apSection = document.getElementById('ap-section');
-    if (apSection) apSection.style.display = 'none';
+
+    // 全ての接続タイプ固有セクションを非表示
+    const connectionSections = [
+        'pppoe-section',
+        'dslite-section', 
+        'mape-manual-section',
+        'ap-section'
+    ];
+
+    connectionSections.forEach(id => {
+        const section = document.getElementById(id);
+        if (section) section.style.display = 'none';
+    });
 }
 
 // ===== パスワード表示切り替え機能 =====
@@ -3656,6 +3657,12 @@ function handleConnectionModeChange(e) {
     const manualSection = document.getElementById('manual-connection-section');
     const ispDetectionGroup = document.getElementById('isp-detection-group');
     
+    // Auto に戻った時、全ての接続タイプ設定を確実に非表示
+    const pppoeSection = document.getElementById('pppoe-section');
+    const dsliteSection = document.getElementById('dslite-section');
+    const mapeManualSection = document.getElementById('mape-manual-section');
+    const apSection = document.getElementById('ap-section');
+    
     if (e.target.value === 'manual') {
         manualSection.style.display = 'block';
         // Manual時はISP Detection Statusを非表示
@@ -3663,7 +3670,15 @@ function handleConnectionModeChange(e) {
             ispDetectionGroup.style.display = 'none';
         }
     } else {
+        // Auto選択時
         manualSection.style.display = 'none';
+        
+        // 全ての接続タイプ固有設定を非表示
+        if (pppoeSection) pppoeSection.style.display = 'none';
+        if (dsliteSection) dsliteSection.style.display = 'none';
+        if (mapeManualSection) mapeManualSection.style.display = 'none';
+        if (apSection) apSection.style.display = 'none';
+        
         // Auto時はISP Detection Statusを表示
         if (ispDetectionGroup) {
             ispDetectionGroup.style.display = 'block';
