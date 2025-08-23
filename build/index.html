@@ -3175,7 +3175,6 @@ function showAutocomplete(devices) {
         existingContainer.remove();
     }
     
-    // 新しく作成
     const autocompleteDiv = document.getElementById('models-autocomplete');
     const container = document.createElement('div');
     container.className = 'autocomplete-items';
@@ -3186,20 +3185,22 @@ function showAutocomplete(devices) {
         return;
     }
 
-    // DocumentFragmentを使用してバッチ処理
     const fragment = document.createDocumentFragment();
     
     devices.forEach(device => {
         const rawTitle = getDeviceTitle(device);
         const dupCount = devices.filter(d => getDeviceTitle(d) === rawTitle).length;
         const displayTitle = dupCount > 1 ? `${rawTitle} (${device.target})` : rawTitle;
+
         const div = document.createElement('div');
         div.innerHTML = `<strong>${displayTitle}</strong><br><small>Target: ${device.target}</small>`;
+
+        // ★ クリックで選択できるようにする（元の動作）
         div.addEventListener('click', () => selectDevice(device));
-        fragment.appendChild(div);   
+
+        fragment.appendChild(div);
     });    
     
-    // 一度だけDOMに追加
     container.appendChild(fragment);
     autocompleteDiv.appendChild(container);
     container.style.display = 'block';
