@@ -3241,7 +3241,7 @@ function applyProfileData(profilesData, profileId) {
         console.log('[Kernel Debug] version:', JSON.stringify(lk.version));
         console.log('[Kernel Debug] release:', JSON.stringify(lk.release));
         console.log('[Kernel Debug] vermagic:', JSON.stringify(lk.vermagic));
-        const cleanVermagic = lk.vermagic.replace(/\.\.+$/, '');
+        const cleanVermagic = lk.vermagic.replace(/\.+$/, '');
         app.kernelHash = `${lk.version}-${lk.release}-${cleanVermagic}`;
         console.log('[Kernel] Constructed hash:', app.kernelHash);
     }
