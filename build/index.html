@@ -3255,7 +3255,8 @@ function applyProfileData(profilesData, profileId) {
     
     if (profilesData.linux_kernel) {
         const lk = profilesData.linux_kernel;
-        app.kernelHash = `${lk.version}-${lk.release}-${lk.vermagic}`;
+        const cleanVermagic = lk.vermagic.replace(/\.\.+$/, '');
+        app.kernelHash = `${lk.version}-${lk.release}-${cleanVermagic}`;
         console.log('[Kernel] Constructed hash:', app.kernelHash);
     }  
     if (profilesData.profiles && profilesData.profiles[profileId]) {
