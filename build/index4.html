@@ -2388,6 +2388,10 @@ function asuI18nDB(lang) {
 }
         
 // ==================== map.sh関連 ====================
+// グローバルスコープに追加
+const downloadPromises = {};
+
+// loadMapShForVersion関数の修正
 async function loadMapShForVersion(version) {
     console.log('[MAP-E Download] Starting download for version:', version);
     
@@ -2408,23 +2412,40 @@ async function loadMapShForVersion(version) {
         console.log('[MAP-E Download] Cache before:', mapShCache);
         
         if (mapShCache[key] === undefined) {
-            console.log('[MAP-E Download] Cache miss, downloading...');
-            const response = await fetch(scriptUrl);
-            
-            if (response.ok) {
-                const content = await response.text();
-                if (content && content.trim().length > 0) {
-                    mapShCache[key] = content;
-                    console.log(`[MAP-E Download] ✓ Saved to cache[${key}], length:`, content.length);
-                    console.log('[MAP-E Download] Cache after:', mapShCache);
-                } else {
-                    console.error(`[MAP-E Download] ✗ ${scriptName} is empty from server`);
-                    mapShCache[key] = '';
-                }
-            } else {
-                console.error(`[MAP-E Download] ✗ Failed to download ${scriptName}: HTTP ${response.status}`);
-                mapShCache[key] = '';
+            // 既に同じkeyでダウンロード中の場合は待機
+            if (downloadPromises[key]) {
+                console.log('[MAP-E Download] Already downloading, waiting...');
+                return await downloadPromises[key];
             }
+            
+            console.log('[MAP-E Download] Cache miss, downloading...');
+            
+            // ダウンロードPromiseを保存
+            downloadPromises[key] = (async () => {
+                try {
+                    const response = await fetch(scriptUrl);
+                    
+                    if (response.ok) {
+                        const content = await response.text();
+                        if (content && content.trim().length > 0) {
+                            mapShCache[key] = content;
+                            console.log(`[MAP-E Download] ✓ Saved to cache[${key}], length:`, content.length);
+                            console.log('[MAP-E Download] Cache after:', mapShCache);
+                        } else {
+                            console.error(`[MAP-E Download] ✗ ${scriptName} is empty from server`);
+                            mapShCache[key] = '';
+                        }
+                    } else {
+                        console.error(`[MAP-E Download] ✗ Failed to download ${scriptName}: HTTP ${response.status}`);
+                        mapShCache[key] = '';
+                    }
+                } finally {
+                    // ダウンロード完了後にPromiseを削除
+                    delete downloadPromises[key];
+                }
+            })();
+            
+            await downloadPromises[key];
         } else {
             console.log('[MAP-E Download] Cache hit, skipping download');
         }
