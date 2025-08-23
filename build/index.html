@@ -3489,11 +3489,40 @@ function showDeviceInfo() {
     const asValue      = asNumber;
     const ipAddressValue = [ipv4, ipv6].filter(Boolean).join(' / ') || 'unknown';
 
-    let wanType = 'unknown';
-    if (aftr) {
-        wanType = 'DS-LITE';
-    } else if (mape) {
-        wanType = 'MAP-E';
+    // ▼ WAN 表示を Connection mode／type に合わせて動的変更
+    const connMode = document.querySelector('input[name="connectionMode"]:checked')?.value || 'auto';
+    const connType = document.querySelector('input[name="connectionType"]:checked')?.value || '';
+    let wanType = 'Unknown';
+
+    if (connMode === 'manual') {
+        switch (connType) {
+            case 'dhcp':
+                wanType = 'Manual (DHCP)';
+                break;
+            case 'pppoe':
+                wanType = 'Manual (PPPoE)';
+                break;
+            case 'dslite':
+                wanType = 'Manual (DS-Lite)';
+                break;
+            case 'mape':
+                wanType = 'Manual (MAP-E)';
+                break;
+            case 'ap':
+                wanType = 'Manual (AP)';
+                break;
+            default:
+                wanType = 'Manual (Unknown)';
+        }
+    } else {
+        // Auto: API 検出結果を反映
+        if (aftr) {
+            wanType = 'Auto (DS-Lite)';
+        } else if (mape) {
+            wanType = 'Auto (MAP-E)';
+        } else {
+            wanType = 'Auto (DHCP/PPPoE)';
+        }
     }
     
     // 公式形式のAbout this buildセクションを構築（After）
