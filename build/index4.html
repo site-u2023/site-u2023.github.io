@@ -3037,6 +3037,7 @@ async function loadDevices() {
         console.log(`[loadDevices] Version ${app.selectedVersion} known to be unavailable`);
         app.devices = [];
         app.versionCode = null;
+        app.kernelHash = null;
         hideDeviceInfo();
         return;
     }
@@ -3058,6 +3059,7 @@ async function loadDevices() {
             profileCache[notFoundKey] = true;
             app.devices = [];
             app.versionCode = null;
+            app.kernelHash = null;
             hideDeviceInfo();
             return;
         }
@@ -3079,6 +3081,7 @@ async function loadDevices() {
         }
         app.devices = [];
         app.versionCode = null;
+        app.kernelHash = null;
         hideDeviceInfo();
     }
 }
