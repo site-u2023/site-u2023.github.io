@@ -3411,6 +3411,16 @@ function showDeviceInfo() {
         .replace("{target}", device.target)
         .replace("{id}", device.id)
         .replace("{version}", app.selectedVersion);
+
+    // ISP種別判定
+    let ispType = 'unknown';
+    if (window.cachedApiInfo) {
+        if (window.cachedApiInfo.aftr) {
+            ispType = 'DS-LITE';
+        } else if (window.cachedApiInfo.mape) {
+            ispType = 'MAP-E';
+        }
+    }
     
     // 公式形式のAbout this buildセクションを構築
     const infoHtml = `
@@ -3437,6 +3447,10 @@ function showDeviceInfo() {
                 <a id="image-info" href="${infoUrl}" title="Device info" target="_blank"></a>
                 <a id="image-link" href="#" title="Copy link" onclick="navigator.clipboard.writeText('${deviceLink}').then(() => alert('Link copied!')); return false;"></a>
             </span>
+        </div>
+        <div class="row">
+            <span class="col1">ISP</span>
+            <span class="col2" id="isp-detect">${ispType}</span>
         </div>
     `;
     
