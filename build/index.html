@@ -73,12 +73,6 @@
         margin-bottom: 2rem;
         color: #6c757d;
     }
-
-    /* 公式互換のオートコンプリート */
-    #models-autocomplete {
-        display: flex;
-        padding-top: 0;
-    }
     
     .autocomplete {
         position: relative;
@@ -129,11 +123,6 @@
 
     .autocomplete-items div:hover {
         background-color: #e9ecef;
-    }
-
-    .autocomplete-active {
-        background-color: #00a3e1 !important;
-        color: #ffffff;
     }
 
     /* フォーム要素 */
@@ -684,12 +673,6 @@
             border-color: #444;
         }
         
-        .autocomplete-items div:hover,
-        .autocomplete-active {
-            background-color: #0080b3 !important;
-            color: #fff;
-        }
-        
         .info {
             background-color: #1d4046;
             border-color: #2a5a61;
@@ -782,10 +765,6 @@
 
         <div id="info" class="info" style="display: none;">
             <!-- Content will be dynamically generated -->
-        </div>
-
-        <div id="images" class="images" style="display: none;">
-            <!-- Device images will be shown here -->
         </div>
 
         <div id="packages" class="packages" style="display: none;">
@@ -2186,36 +2165,6 @@ const ErrorHandler = {
     }
 };
         
-// ==================== URL存在確認ユーティリティ ====================
-async function checkUrlExists(url) {
-    try {
-        const response = await fetch(url, { 
-            method: 'HEAD',
-            cache: 'no-cache'
-        });
-        return response.ok;
-    } catch (error) {
-        // CORSエラーの場合もfalseとして扱う
-        console.log(`URL check failed for ${url}:`, error.message);
-        return false;
-    }
-}
-
-// 複数URLから有効なものを検出
-async function findValidUrls(urlCandidates) {
-    const validUrls = [];
-    
-    for (const url of urlCandidates) {
-        const exists = await checkUrlExists(url);
-        console.log(`URL ${exists ? '✓' : '✗'}: ${url}`);
-        if (exists) {
-            validUrls.push(url);
-        }
-    }
-    
-    return validUrls;
-}
-        
 // ==================== URL管理の統一関数 ====================
 function setupVersionUrls(version) {
     if (!config.image_urls) config.image_urls = {};
@@ -2233,24 +2182,6 @@ function setupVersionUrls(version) {
 
     config.overview_urls[version] = `${overview_url}/${basePath}/`;
     config.image_urls[version]    = `${image_url}/${basePath}/`;
-}
-        
-// ==================== ユーティリティ関数 ====================
-async function loadPackageDatabase() {
-    const res = await fetch('data/packages.json');
-    app.packageDB = await res.json();
-}
-
-function updateInstalledPackageList() {
-    const container = document.getElementById('installed-packages');
-    if (!container) return;
-
-    container.innerHTML = '';
-    app.packageDB.forEach(pkg => {
-        const li = document.createElement('li');
-        li.textContent = pkg.name;
-        container.appendChild(li);
-    });
 }
 
 // ==================== 初期化関数 ====================
@@ -2674,23 +2605,6 @@ function bindEvents() {
     connectionSections.forEach(id => {
         const section = document.getElementById(id);
         if (section) section.style.display = 'none';
-    });
-}
-
-// ===== パスワード表示切り替え機能 =====
-const togglePasswordBtn = document.getElementById('toggle-password');
-if (togglePasswordBtn) {
-    togglePasswordBtn.addEventListener('click', function() {
-        const passwordInput = document.getElementById('aios-root-password');
-        const passwordIcon = document.getElementById('password-icon');
-        
-        if (passwordInput.type === 'password') {
-            passwordInput.type = 'text';
-            passwordIcon.textContent = '👁️‍🗨️';
-        } else {
-            passwordInput.type = 'password';
-            passwordIcon.textContent = '👁️';
-        }
     });
 }
 
@@ -5400,46 +5314,12 @@ function createExtraPackageBox() {
     host.appendChild(newInput);
     newInput.focus();
 }
-
-function addPackageToList(pkgName, clickedEl) {
-    const textarea = document.getElementById('asu-packages');
-    const list = textarea.value.trim() ? textarea.value.trim().split(/\s+/) : [];
-    if (!list.includes(pkgName)) {
-        list.push(pkgName);
-        textarea.value = list.join(' ');
-        refreshTemplateAndPackages();
-    }
-    flashSelectedOption(clickedEl); // null 渡しをやめる
-}
-
-function flashSelectedOption(el) {
-    if (!el) return;
-    el.classList.add('bold-flash');      // 即時反映
-    setTimeout(() => {
-        el.classList.remove('bold-flash');
-    }, 200);
-}
-  
+        
 document.addEventListener('click', function (e) {
     if (!e.target.closest('#package-search-autocomplete')) {
         hidePackageAutocomplete();
     }
 });
-
-    // パッケージの選択・非選択を切り替える関数
-    function togglePackage(packageName) {
-        let packagesList = asuPackagesTextarea.value.split('\n').filter(p => p.trim() !== '');
-
-        if (installedPackages.has(packageName)) {
-            installedPackages.delete(packageName);
-            packagesList = packagesList.filter(p => p !== packageName);
-        } else {
-            installedPackages.add(packageName);
-            packagesList.push(packageName);
-        }
-        
-        asuPackagesTextarea.value = packagesList.join('\n');
-    }
 
     </script>
 </body>
