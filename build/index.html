@@ -3637,6 +3637,7 @@ function applyConnectionSettingsChange() {
     applyInitialsFromApi(document.querySelector('input[name="connectionType"]:checked')?.value || '');
     // 終点ロジックへ
     syncTemplateAndPackages({ trigger: 'connection-change' });
+    showDeviceInfo();
 }
 
 // ==================== 接続設定ハンドラー ====================
@@ -3659,7 +3660,6 @@ function handleConnectionModeChange(e) {
     }
     
     applyConnectionSettingsChange();
-    showDeviceInfo();
 }
 
 function handleConnectionTypeChange(e) {
@@ -3753,7 +3753,6 @@ function handleConnectionTypeChange(e) {
     }
     
     applyConnectionSettingsChange();
-    showDeviceInfo();
 }
 
 function handleMapeTypeChange(e) {
