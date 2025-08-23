@@ -3161,6 +3161,14 @@ async function loadDevices() {
 function handleDeviceSearch(e) {
     const query = e.target.value.toLowerCase();
 
+    // 空文字の場合はデバイス情報をクリア
+    if (query.length === 0) {
+        hideAutocomplete();
+        hideDeviceInfo();
+        current_device = {};
+        return;
+    }
+
     if (query.length < 2) {
         hideAutocomplete();
         return;
@@ -3184,7 +3192,7 @@ function handleDeviceSearch(e) {
 
     showAutocomplete(exact.concat(others));
 }
-
+        
 function getDeviceTitle(device) {
     if (device.titles && device.titles.length > 0) {
         return device.titles[0].title || device.id;
