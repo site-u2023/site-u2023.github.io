@@ -3134,13 +3134,18 @@ function handleDeviceSearch(e) {
 
 function getDeviceTitle(device) {
     if (device.titles && device.titles.length > 0) {
-        return device.titles[0].title || device.id;
+        const t = device.titles[0];
+        if (t.title) return t.title;
+        let parts = [];
+        if (t.vendor) parts.push(t.vendor);
+        if (t.model) parts.push(t.model);
+        if (t.variant) parts.push(t.variant);
+        return parts.join(' ');
     }
     return device.id;
 }
 
 function showAutocomplete(devices) {
-    // 既存のautocomplete-itemsを削除
     let existingContainer = document.querySelector('.autocomplete-items');
     if (existingContainer) {
         existingContainer.remove();
