@@ -3474,7 +3474,7 @@ function showDeviceInfo() {
     // ===== About this build 表示用 前処理ブロック =====
     const {
         country = 'unknown',
-        regionName = 'unknown',
+        timezone = 'unknown',
         isp = 'unknown',
         as: asNumber = 'unknown',
         ipv4 = '',
@@ -3484,7 +3484,7 @@ function showDeviceInfo() {
     } = window.cachedApiInfo || {};
 
     const countryValue = country;
-    const zoneValue    = regionName;
+    const zoneValue    = timezone;
     const ispValue     = isp;
     const asValue      = asNumber;
     const ipAddressValue = [ipv4, ipv6].filter(Boolean).join(' / ') || 'unknown';
