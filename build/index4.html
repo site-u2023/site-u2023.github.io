@@ -2407,14 +2407,8 @@ async function loadMapShForVersion(version) {
         console.log('[MAP-E Download] Key:', key, 'URL:', scriptUrl);
         console.log('[MAP-E Download] Cache before:', mapShCache);
         
-        if (mapShCache[key] === undefined || mapShCache[key] === 'loading') {
-            if (mapShCache[key] === 'loading') {
-                console.log('[MAP-E Download] Already loading, skipping...');
-                return;
-            }
-
+        if (mapShCache[key] === undefined) {
             console.log('[MAP-E Download] Cache miss, downloading...');
-            mapShCache[key] = 'loading';
             const response = await fetch(scriptUrl);
             
             if (response.ok) {
