@@ -2912,6 +2912,18 @@ const DeviceContext = {
             const success = await loadDeviceProfile(device);
             // 成功時のみUI表示
             if (success) {
+                if (!window.apiInfoFetched) {
+                    window.apiInfoFetched = true;
+                    try {
+                        await fetchApiInfoAndUpdate();
+                        updateRequiredPackages();
+                        asuCollectPackages();
+                    } catch (e) {
+                        window.apiInfoFetched = false;
+                        console.error('[DeviceContext] API fetch failed before showDeviceInfo:', e);
+                    }
+                }
+
                 showDeviceInfo();
             } else {
                 // 失敗時はデバイス情報をクリア
@@ -2928,18 +2940,7 @@ const DeviceContext = {
     
     // 統合後処理
     async _finalizeUpdate() {
-        // API処理（デバイス選択時、初回のみ）
-        if (current_device.id && !window.apiInfoFetched) {
-            window.apiInfoFetched = true;
-            try {
-                await fetchApiInfoAndUpdate();
-                updateRequiredPackages();
-                asuCollectPackages();
-            } catch (error) {
-                window.apiInfoFetched = false;
-                console.error('[DeviceContext] API fetch failed:', error);
-            }
-        }
+        // ここでの API 取得は不要（_selectDevice で先読み済み）
     },
     
     // デバイス未発見処理
@@ -3465,22 +3466,6 @@ function showDeviceInfo() {
         textarea.value = SETUP_SH_TEMPLATE;
         app.templateLoaded = true;
         console.log('Template loaded for the first time');
-    }
-
-    // デバイス選択時にAPIを取得（一度だけ）
-    if (!window.apiInfoFetched) {
-        window.apiInfoFetched = true;
-        
-        Promise.resolve().then(async () => {
-            try {
-                await fetchApiInfoAndUpdate();
-                updateRequiredPackages();
-                asuCollectPackages();
-            } catch (error) {
-                window.apiInfoFetched = false;
-                console.error('API fetch error during device selection:', error);
-            }
-        });
     }
 }
 
