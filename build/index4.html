@@ -3247,7 +3247,6 @@ async function applyProfileData(profilesData, profileId) {
         app.kernelHash = await fetchActualKernelHash(app.selectedVersion, current_device.target);
         console.log('[Kernel] From server HTML:', app.kernelHash);
     }
-
     async function fetchActualKernelHash(version, targetPath) {
         try {
             setupVersionUrls(version);
@@ -3262,12 +3261,24 @@ async function applyProfileData(profilesData, profileId) {
             const html = await response.text();
             console.log('[Kernel] Fetched HTML from:', kmodsUrl);
         
-            // HTMLからディレクトリ名を抽出
-            // <a href="5.15.134-1-29c7378c7e1adfd339581af2c1ddc93a/">
-            const dirMatch = html.match(/<a href="([^"]+)\/"[^>]*>([^<]+)<\/a>/);
+            // HTMLからディレクトリ名を抽出 - テーブル行のみを対象とする
+            // <tr><td class="n"><a href="5.15.134-1-29c7378c7e1adfd339581af2c1ddc93a/">...</a>/</td>
+            const tableRowPattern = /<tr><td class="n"><a href="([^"\/]+)\/"[^>]*>([^<]+)<\/a>\/</;
+            const dirMatch = html.match(tableRowPattern);
+            
             if (dirMatch && dirMatch[1] && dirMatch[1] !== '..' && dirMatch[1] !== '.') {
                 const actualHash = dirMatch[1];
                 console.log('[Kernel] Extracted hash from HTML:', actualHash);
+                return actualHash;
+            }
+            
+            // 上記パターンで見つからない場合の代替パターン（より汎用的）
+            const alternativePattern = /<td class="n"><a href="([^"\/]+)\/"[^>]*>[^<]+<\/a>\/</;
+            const altMatch = html.match(alternativePattern);
+            
+            if (altMatch && altMatch[1] && altMatch[1] !== '..' && altMatch[1] !== '.') {
+                const actualHash = altMatch[1];
+                console.log('[Kernel] Extracted hash from alternative pattern:', actualHash);
                 return actualHash;
             }
         
