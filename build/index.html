@@ -1125,7 +1125,7 @@
                             </div>
                         </div>
     
-                        <div class="form-group">
+                        <div class="form-group" id="isp-detection-group">
                             <label>ISP Detection Status</label>
                             <div id="isp-info-display" class="info" style="margin-bottom: 0;">
                                 <div id="isp-status-message">ISP information will be detected when configuration is opened</div>
@@ -2583,6 +2583,9 @@ function bindEvents() {
     const manualSection = document.getElementById('manual-connection-section');
     if (manualSection) manualSection.style.display = 'none';
     
+    const ispDetectionGroup = document.getElementById('isp-detection-group');
+    if (ispDetectionGroup) ispDetectionGroup.style.display = 'block'; // Auto時は表示
+    
     const pppoeSection = document.getElementById('pppoe-section');
     if (pppoeSection) pppoeSection.style.display = 'none';
     
@@ -3551,11 +3554,20 @@ function applyConnectionSettingsChange() {
 // ==================== 接続設定ハンドラー ====================
 function handleConnectionModeChange(e) {
     const manualSection = document.getElementById('manual-connection-section');
+    const ispDetectionGroup = document.getElementById('isp-detection-group');
     
     if (e.target.value === 'manual') {
         manualSection.style.display = 'block';
+        // Manual時はISP Detection Statusを非表示
+        if (ispDetectionGroup) {
+            ispDetectionGroup.style.display = 'none';
+        }
     } else {
         manualSection.style.display = 'none';
+        // Auto時はISP Detection Statusを表示
+        if (ispDetectionGroup) {
+            ispDetectionGroup.style.display = 'block';
+        }
     }
     
     applyConnectionSettingsChange();
