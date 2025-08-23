@@ -3480,7 +3480,8 @@ function showDeviceInfo() {
         ipv4 = '',
         ipv6 = '',
         aftr,
-        mape
+        mape,
+        notice = ''
     } = window.cachedApiInfo || {};
 
     const countryValue = country;
@@ -3524,6 +3525,8 @@ function showDeviceInfo() {
             wanType = 'Auto (DHCP/PPPoE)';
         }
     }
+
+    const noticeValue = notice.trim();
     
     // 公式形式のAbout this buildセクションを構築（After）
     const infoHtml = `
@@ -3566,6 +3569,10 @@ function showDeviceInfo() {
         <div class="row">
             <span class="col1">WAN</span>
             <span class="col2" id="wan-type">${wanType}</span>
+        </div>
+        <div class="row">
+            <span class="col1">Notice</span>
+            <span class="col2" id="image-notice">${noticeValue}</span>
         </div>
         <div class="row">
             <span class="col1">Links</span>
