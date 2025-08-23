@@ -3562,40 +3562,27 @@ function handleConnectionModeChange(e) {
 }
 
 function handleConnectionTypeChange(e) {
-    const pppoeSection      = document.getElementById('pppoe-section');
-    const dsliteSection     = document.getElementById('dslite-section');
+    const pppoeSection = document.getElementById('pppoe-section');
+    const dsliteSection = document.getElementById('dslite-section');
     const mapeManualSection = document.getElementById('mape-manual-section');
-    const apSection         = document.getElementById('ap-section');
-
-    pppoeSection.style.display      = 'none';
-    dsliteSection.style.display     = 'none';
+    const apSection = document.getElementById('ap-section');
+    
+    pppoeSection.style.display = 'none';
+    dsliteSection.style.display = 'none';
     mapeManualSection.style.display = 'none';
     if (apSection) apSection.style.display = 'none';
-
-    // APIキャッシュ参照
-    const api   = window.cachedApiInfo || {};
-    const mape  = api.mape || {};
-    const aftrV = mape.aftrIpv6Address || 'unknown';
-    const brV   = mape.brIpv6Address   || 'unknown';
-
+    
     if (e.target.value === 'pppoe') {
         pppoeSection.style.display = 'block';
-
     } else if (e.target.value === 'dslite') {
         dsliteSection.style.display = 'block';
-        // DS-Lite 選択時に AFTR IPv6 を反映
-        const aftrField = document.getElementById('dslite-aftr-address');
-        if (aftrField) aftrField.value = aftrV;
-
     } else if (e.target.value === 'mape') {
         mapeManualSection.style.display = 'block';
-        // MAP-E 選択時に BR IPv6 を反映
-        const brField = document.getElementById('mape-br');
-        if (brField) brField.value = brV;
-
+        
         // キャッシュ確認してから必要時のみロード
         const mapeInfo = config.getMapEInfo(app.selectedVersion);
         if (mapeInfo.supported && mapShCache[mapeInfo.scriptType] === undefined) {
+            // 未ロードの場合のみ非同期でロード
             (async () => {
                 try {
                     await loadMapShForVersion(app.selectedVersion);
@@ -3604,13 +3591,13 @@ function handleConnectionTypeChange(e) {
                 }
                 applyConnectionSettingsChange();
             })();
-            return;
+            return; // 非同期処理完了後に反映するのでここで抜ける
         }
-
+        // 既にキャッシュ済みの場合はそのまま続行
     } else if (e.target.value === 'ap') {
         if (apSection) apSection.style.display = 'block';
     }
-
+    
     applyConnectionSettingsChange();
 }
 
