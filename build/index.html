@@ -2912,16 +2912,13 @@ const DeviceContext = {
             const success = await loadDeviceProfile(device);
             // 成功時のみUI表示
             if (success) {
-                if (!window.apiInfoFetched) {
-                    window.apiInfoFetched = true;
-                    try {
-                        await fetchApiInfoAndUpdate();
-                        updateRequiredPackages();
-                        asuCollectPackages();
-                    } catch (e) {
-                        window.apiInfoFetched = false;
-                        console.error('[DeviceContext] API fetch failed before showDeviceInfo:', e);
-                    }
+                // ISP 先読み（デバイス決定後・表示前）
+                try {
+                    await fetchApiInfoAndUpdate();
+                    updateRequiredPackages();
+                    asuCollectPackages();
+                } catch (e) {
+                    console.error('[DeviceContext] API fetch failed before showDeviceInfo:', e);
                 }
 
                 showDeviceInfo();
