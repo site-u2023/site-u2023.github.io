@@ -27,18 +27,19 @@
     }
 
     /* PCブラウザ向けIME抑止（対応ブラウザのみ） */
-#models,
-#package-search,
-#package-search-autocomplete input.package-search,
-#command,
-#commands-autocomplete input.command {
-    ime-mode: disabled;
-}
+    #models,
+    #package-search,
+    #package-search-autocomplete input.package-search,
+    #command,
+    #commands-autocomplete input.command {
+        ime-mode: disabled;
+    }
 
     /* 公式互換のオートコンプリート */
     #models-autocomplete {
         display: flex;
         padding-top: 0;
+        /* padding は .device-input-section 内で設定 */
     }
     
     .container {
@@ -538,6 +539,48 @@
     }
 
     /* details/summaryのスタイル調整 */
+/* デバイス入力セクションのスタイル */
+    .device-input-section {
+        margin: 1rem 0;
+        background-color: #313135;
+        border: 1px solid #444;
+        border-radius: 0.25rem;
+        overflow: hidden;
+    }
+    
+    .device-input-section .section-header {
+        font-size: 1.2rem;
+        font-weight: 500;
+        padding: 0.75rem 1rem;
+        background-color: #252528;
+        border-bottom: 1px solid #444;
+        color: #d0d0d0;
+        cursor: default;
+    }
+    
+    .device-input-section #models-autocomplete {
+        padding: 1rem;
+        background-color: #313135;
+    }
+    
+    /* ライトモード対応 */
+    @media (prefers-color-scheme: light) {
+        .device-input-section {
+            background-color: #f8f9fa;
+            border-color: #dee2e6;
+        }
+        
+        .device-input-section .section-header {
+            background-color: #e9ecef;
+            border-color: #dee2e6;
+            color: #495057;
+        }
+        
+        .device-input-section #models-autocomplete {
+            background-color: #f8f9fa;
+        }
+    }
+    
     details {
         margin: 0;
         padding: 0;
@@ -710,19 +753,22 @@
         <h1>OpenWrt Custom Firmware Selector</h1>
         <p class="lead">Enter your device model and choose a build</p>
 
-        <div id="models-autocomplete" class="autocomplete">
-            <input type="text"
-              id="models" 
-              placeholder="Type device model"
-              lang="en"
-              inputmode="latin"
-              autocomplete="off"
-              spellcheck="false"
-              autocapitalize="off"
-              autofocus>
-            <select id="versions">
-                <option value="" disabled selected>Loading versions...</option>
-            </select>
+        <div class="device-input-section">
+            <div class="section-header">Select Device</div>
+            <div id="models-autocomplete" class="autocomplete">
+                <input type="text"
+                  id="models" 
+                  placeholder="Type device model"
+                  lang="en"
+                  inputmode="latin"
+                  autocomplete="off"
+                  spellcheck="false"
+                  autocapitalize="off"
+                  autofocus>
+                <select id="versions">
+                    <option value="" disabled selected>Loading versions...</option>
+                </select>
+            </div>
         </div>
 
         <div id="info" class="info" style="display: none;">
