@@ -3410,12 +3410,12 @@ function showDeviceInfo() {
         .replace("{version}", app.selectedVersion);
 
     // ISP種別判定
-    let connectionType = 'unknown';
+    let wanType = 'unknown';
     if (window.cachedApiInfo) {
         if (window.cachedApiInfo.aftr) {
-            connectionType = 'DS-LITE';
+            wanType = 'DS-LITE';
         } else if (window.cachedApiInfo.mape) {
-            connectionType = 'MAP-E';
+            wanType = 'MAP-E';
         }
     }
     
@@ -3447,7 +3447,7 @@ function showDeviceInfo() {
         </div>
         <div class="row">
             <span class="col1">WAN</span>
-            <span class="col2" id="isp-detect">${connectionType}</span>
+            <span class="col2" id="wan-type">${wanType}</span>
         </div>
     `;
     
