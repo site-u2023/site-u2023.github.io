@@ -3195,6 +3195,8 @@ function showAutocomplete(devices) {
         const displayTitle = dupCount > 1 ? `${rawTitle} (${device.target})` : rawTitle;
         const div = document.createElement('div');
         div.innerHTML = `<strong>${displayTitle}</strong><br><small>Target: ${device.target}</small>`;
+        div.addEventListener('click', () => selectDevice(device));
+        fragment.appendChild(div);   
     });    
     
     // 一度だけDOMに追加
