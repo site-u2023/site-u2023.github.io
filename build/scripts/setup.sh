@@ -1,12 +1,27 @@
-#!/bin/sh
+// setup.shテンプレート
+const SETUP_SH_TEMPLATE = `#!/bin/sh
+exec >/tmp/setup.log 2>&1
+VER="$(cat /etc/openwrt_version 2>/dev/null || echo unknown)"
+LAN_DEF="$(uci -q get network.lan.device || echo lan)"
+WAN_DEF="$(uci -q get network.wan.device || echo wan)"
+MAP_NAME="map"
+MAP6_NAME="map6"
+DSLITE_NAME="dslite"
+DSLITE6_NAME="dslite6"
+AP_NAME="ap"
+AP6_NAME="ap6"
 # language="en"
 # country="US"
 # timezone="UTC"
 # zonename="America/New_York"
-# lan_ip_address="192.168.1.1"
-# lan_ipv6_address="fd00::1/64"
 # device_name="OpenWrt"
 # root_password="Password"
+# lan_ip_address="192.168.1.1"
+# lan_ipv6_address="fd00::1/64"
+# ssh_interface="lan"
+# ssh_port="22"
+# flow_offloading_type=""
+# backup_path="/root/backup_\${VER}.tar.gz"
 # wlan_name="OpenWrt"
 # wlan_password="12345678"
 # pppoe_username=""
@@ -22,29 +37,18 @@
 # mape_psid_offset=""
 # mape_gua_mode=""
 # mape_gua_prefix=""
-# openwrt_19=""
-# openwrt_21=""
 # ap_ip_address="192.168.1.2"
 # ap_gateway="192.168.1.1"
-# ssh_interface="lan"
-# flow_offloading_type=""
 # enable_ttyd=""
 # enable_irqbalance=""
 # enable_samba4=""
-LAN_DEF="$(uci -q get network.lan.device || echo lan)"
-WAN_DEF="$(uci -q get network.wan.device || echo wan)"
-MAP_NAME="map"
-MAP6_NAME="map6"
-DSLITE_NAME="dslite"
-DSLITE6_NAME="dslite6"
-AP_NAME="ap"
-AP6_NAME="ap6"
-exec >/tmp/setup.log 2>&1
-if [ -n "\${root_password}" ]; then
-    (echo "\${root_password}"; sleep 1; echo "\${root_password}") | passwd >/dev/null 2>&1
-fi
+# openwrt_19=""
+# openwrt_21=""
 if [ -n "\${device_name}" ]; then
     uci set system.@system[0].hostname="\${device_name}"
+fi
+if [ -n "\${root_password}" ]; then
+    printf "%s\n%s\n" "\${root_password}" "\${root_password}" | passwd >/dev/null
 fi
 if [ -n "\${lan_ip_address}" ]; then
     uci set network.lan.ipaddr="\${lan_ip_address}"
@@ -64,7 +68,22 @@ fi
 if [ -n "\${zonename}" ]; then
     uci set system.@system[0].zonename="\${zonename}"
 fi
-if [ -n "\${wlan_name}" ] && [ -n "\${wlan_password}" ] && [ \${wlan_password} -ge 8 ]; then
+if [ -n "\${ssh_interface}" ]; then
+    uci set dropbear.@dropbear[0].Interface="\${ssh_interface}"
+fi
+if [ -n "\${ssh_port}" ]; then
+    uci set dropbear.@dropbear[0].Port="\${ssh_port}"
+fi
+case "\${flow_offloading_type}" in
+    "software")
+        uci set firewall.@defaults[0].flow_offloading='1'
+        ;;
+    "hardware")
+        uci set firewall.@defaults[0].flow_offloading='1'
+        uci set firewall.@defaults[0].flow_offloading_hw='1'
+        ;;
+esac
+if [ -n "\${wlan_name}" ] && [ -n "\${wlan_password}" ]; then
     uci set wireless.@wifi-device[0].disabled='0'
     uci set wireless.@wifi-iface[0].disabled='0'
     uci set wireless.@wifi-iface[0].encryption='sae-mixed'
@@ -199,29 +218,15 @@ if [ -n "\${ap_ip_address}" ]; then
     [ -x /etc/init.d/firewall ] && /etc/init.d/firewall enabled && /etc/init.d/firewall disable
     [ -x /etc/init.d/firewall ] && /etc/init.d/firewall running && /etc/init.d/firewall stop
 fi
-if [ -n "\${ssh_interface}" ]; then
-    uci set dropbear.@dropbear[0].Interface="\${ssh_interface}"
-fi
-if [ -n "\${flow_offloading_type}" ]; then
-    case "\${flow_offloading_type}" in
-        "software")
-            uci set firewall.@defaults[0].flow_offloading='1'
-            ;;
-        "hardware")
-            uci set firewall.@defaults[0].flow_offloading='1'
-            uci set firewall.@defaults[0].flow_offloading_hw='1'
-            ;;
-    esac
-fi
-if [ -n "$enable_ttyd" ]; then
+if [ -n "\${enable_ttyd}" ]; then
     uci set ttyd.@ttyd[0].ttyd.ipv6='1' 
     uci set ttyd.@ttyd[0].command='/bin/login -f root' 
 fi
-if [ -n "$enable_irqbalance" ]; then
+if [ -n "\${enable_irqbalance}" ]; then
     uci set irqbalance.irqbalance=irqbalance
     uci set irqbalance.irqbalance.enabled='1'
 fi
-if [ -n "$enable_samba4" ]; then
+if [ -n "\${enable_samba4}" ]; then
     NAS="openwrt"
     MNT="/mnt/sda"
     uci set samba4.@samba[0]=samba
@@ -240,6 +245,11 @@ if [ -n "$enable_samba4" ]; then
     uci set samba4.sambashare.create_mask='0777'
     uci set samba4.sambashare.dir_mask='0777'
 fi
+# BEGIN_CUSTOM_COMMANDS
+# END_CUSTOM_COMMANDS
 uci commit 2>/dev/null
 echo "All done!"
-exit 0
+if [ -n "\${backup_path}" ]; then
+    sysupgrade -q -k -b "\${backup_path}"
+fi
+exit 0`;
