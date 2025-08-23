@@ -2912,13 +2912,16 @@ const DeviceContext = {
             const success = await loadDeviceProfile(device);
             // 成功時のみUI表示
             if (success) {
-                // ISP 先読み（デバイス決定後・表示前）
-                try {
-                    await fetchApiInfoAndUpdate();
-                    updateRequiredPackages();
-                    asuCollectPackages();
-                } catch (e) {
-                    console.error('[DeviceContext] API fetch failed before showDeviceInfo:', e);
+                if (!window.apiInfoFetched) {
+                    window.apiInfoFetched = true;
+                    try {
+                        await fetchApiInfoAndUpdate();
+                        updateRequiredPackages();
+                        asuCollectPackages();
+                    } catch (e) {
+                        window.apiInfoFetched = false;
+                        console.error('[DeviceContext] API fetch failed before showDeviceInfo:', e);
+                    }
                 }
 
                 showDeviceInfo();
@@ -2968,7 +2971,7 @@ async function handleVersionChange(e) {
 }
 
 function selectDevice(device) {
-    document.getElementById('models').value = device._displayTitle || getDeviceTitle(device);
+    document.getElementById('models').value = getDeviceTitle(device);
     hideAutocomplete();
     
     DeviceContext.update({
@@ -3088,32 +3091,8 @@ async function loadDevices() {
         }
         
         const data = await response.json();
-        const raw = data.profiles || [];
+        app.devices = data.profiles || [];
         app.archPackagesMap = data.arch_packages || {};
-    
-        const expanded = [];
-        for (const p of raw) {
-            const titles = getModelTitles(p.titles || []);
-            if (!titles.length) continue;
-            for (const title of titles) {
-                expanded.push({ ...p, _displayTitle: title });
-            }
-        }
-        const seen = new Map();
-        for (const d of expanded) {
-            const key = (d._displayTitle || '').toUpperCase();
-            if (!key) continue;
-            if (!seen.has(key)) {
-                seen.set(key, d);
-            } else {
-                const first = seen.get(key);
-                if (!/\(.+\)$/.test(first._displayTitle)) {
-                    first._displayTitle = `${first._displayTitle} (${first.target})`;
-                }
-                d._displayTitle = `${d._displayTitle} (${d.target})`;
-            }
-        }
-        app.devices = expanded;
         
     } catch (error) {
         if (error.message && (error.message.includes('Failed to fetch') || error.message.includes('CORS'))) {
@@ -3142,8 +3121,8 @@ function handleDeviceSearch(e) {
 
     // 元配列順を維持しつつ、完全一致を先頭に
     for (const device of app.devices) {
-        const rawTitle = getDeviceTitle(device); // 検索は生タイトル
-        const lt = rawTitle.toLowerCase();
+        const title = getDeviceTitle(device);
+        const lt = title.toLowerCase();
         const id = device.id.toLowerCase();
 
         if (lt === query || id === query) {
@@ -3158,23 +3137,19 @@ function handleDeviceSearch(e) {
 
 function getDeviceTitle(device) {
     if (device.titles && device.titles.length > 0) {
-        const t = device.titles[0];
-        if (t.title) return t.title;
-        let parts = [];
-        if (t.vendor) parts.push(t.vendor);
-        if (t.model) parts.push(t.model);
-        if (t.variant) parts.push(t.variant);
-        return parts.join(' ');
+        return device.titles[0].title || device.id;
     }
     return device.id;
 }
 
 function showAutocomplete(devices) {
+    // 既存のautocomplete-itemsを削除
     let existingContainer = document.querySelector('.autocomplete-items');
     if (existingContainer) {
         existingContainer.remove();
     }
     
+    // 新しく作成
     const autocompleteDiv = document.getElementById('models-autocomplete');
     const container = document.createElement('div');
     container.className = 'autocomplete-items';
@@ -3185,22 +3160,17 @@ function showAutocomplete(devices) {
         return;
     }
 
+    // DocumentFragmentを使用してバッチ処理
     const fragment = document.createDocumentFragment();
     
     devices.forEach(device => {
-        const rawTitle = getDeviceTitle(device);
-        const dupCount = devices.filter(d => getDeviceTitle(d) === rawTitle).length;
-        const displayTitle = dupCount > 1 ? `${rawTitle} (${device.target})` : rawTitle;
-
         const div = document.createElement('div');
-        div.innerHTML = `<strong>${displayTitle}</strong><br><small>Target: ${device.target}</small>`;
-
-        // ★ クリックで選択できるようにする（元の動作）
+        div.innerHTML = `<strong>${getDeviceTitle(device)}</strong><br><small>Target: ${device.target}</small>`;
         div.addEventListener('click', () => selectDevice(device));
-
         fragment.appendChild(div);
-    });    
+    });
     
+    // 一度だけDOMに追加
     container.appendChild(fragment);
     autocompleteDiv.appendChild(container);
     container.style.display = 'block';
@@ -3458,7 +3428,7 @@ function showDeviceInfo() {
         <h5>About this build</h5>
         <div class="row">
             <span class="col1">Model</span>
-            <span class="col2" id="image-model"><strong>${device._displayTitle || getDeviceTitle(device)}</strong></span>
+            <span class="col2" id="image-model"><strong>${getDeviceTitle(device)}</strong></span>
         </div>
         <div class="row">
             <span class="col1">Target</span>
