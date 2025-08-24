@@ -1,8 +1,8 @@
 #!/bin/sh
 LAN="$(uci -q get network.lan.device || echo lan)"
 WAN="$(uci -q get network.wan.device || echo wan)"
-MAP="map"
-MAP6="map6"
+MAP="mape"
+MAP6="mape6"
 DSL="dslite"
 DSL6="dslite6"
 AP="ap"
