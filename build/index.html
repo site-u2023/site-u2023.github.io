@@ -4506,16 +4506,27 @@ function updateRequiredPackages() {
   packagesTextarea.value = currentPackages.join(' ');
 }
 
+// グローバルに追加（関数の外）
+let isBuilding = false;
+
 // ==================== ビルド処理 ====================
 async function buildAsuRequest() {
     console.log('[buildAsuRequest] Function entered');
-    
+
+    // ★ 多重防止ガード
+    if (isBuilding) {
+        console.log('[buildAsuRequest] Already building, ignoring click');
+        return;
+    }
+    isBuilding = true;
+
     if (!current_device || !current_device.id) {
         console.log('[buildAsuRequest] No device selected');
         alert('Please select a device first');
+        isBuilding = false; // デバイス未選択時は即解除
         return;
     }
-    
+
     console.log('[buildAsuRequest] Device check passed');
 
     try {
@@ -4528,14 +4539,14 @@ async function buildAsuRequest() {
         console.log('[buildAsuRequest] Button disabled');
         showProgress('Preparing build request...', 10);
         console.log('[buildAsuRequest] Progress shown');
-        
+
         // 初回の進捗表示時に確実にスクロール
         setTimeout(() => {
             const progressElement = document.getElementById('build-progress');
             if (progressElement) {
-                progressElement.scrollIntoView({ 
-                    behavior: 'smooth', 
-                    block: 'center' 
+                progressElement.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center'
                 });
             }
         }, 200);
@@ -4548,9 +4559,9 @@ async function buildAsuRequest() {
         console.log('[buildAsuRequest] Calling MapEProcessor');
         // MAP-E処理（必要時のみプレースホルダー置換）
         script = await MapEProcessor.processForBuild(
-            script, 
-            app.selectedVersion, 
-            getAiosConfig(), 
+            script,
+            app.selectedVersion,
+            getAiosConfig(),
             window.cachedApiInfo
         );
         console.log('[VERIFY] Script size:', originalSize, '→', script.length, '(', script.length - originalSize, 'bytes added)');
@@ -4569,8 +4580,8 @@ async function buildAsuRequest() {
         if (script && script.trim()) {
             requestBody.defaults = script;
         }
-            
-        fetchWithTimeout('https://sysupgrade.openwrt.org/api/v1/build', {
+
+        await fetchWithTimeout('https://sysupgrade.openwrt.org/api/v1/build', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -4609,7 +4620,7 @@ async function buildAsuRequest() {
                     response.text().then((responseText) => {
                         hideProgress();
                         showBuildStatus('Build failed: HTTP 500 Server Error', 'error');
-                        
+
                         // 詳細なエラー情報を表示
                         const container = document.getElementById('download-links');
                         container.innerHTML = `
@@ -4619,7 +4630,7 @@ async function buildAsuRequest() {
                                 <div><strong>Error Details:</strong></div>
                                 <pre style="background: #f8f8f8; padding: 10px; margin: 10px 0; border-radius: 4px; overflow-x: auto; font-size: 0.9em; max-height: 200px;">${responseText}</pre>
                             </div>
-                            
+
                             <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; color: #856404; padding: 1rem; margin: 1rem 0; border-radius: 0.25rem;">
                                 <h5 style="margin-top: 0; color: #856404;">⚠️ Troubleshooting</h5>
                                 <p style="margin-bottom: 0;">Please verify network connectivity, package selection, and script configuration. Try removing custom packages or scripts, then retry the build.</p>
@@ -4639,6 +4650,9 @@ async function buildAsuRequest() {
         hideProgress();
         showBuildStatus(`Build failed: ${error.message}`, 'error');
     } finally {
+        // ★ フラグ解除
+        isBuilding = false;
+
         const btn = document.getElementById('request-build');
         if (btn) {
             btn.disabled = false;
