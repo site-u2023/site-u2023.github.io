@@ -1275,8 +1275,6 @@ AP6_NAME="ap6"
 # enable_ttyd=""
 # enable_irqbalance=""
 # enable_samba4=""
-# openwrt_19=""
-# openwrt_21=""
 if [ -n "\${device_name}" ]; then
     uci set system.@system[0].hostname="\${device_name}"
 fi
@@ -1402,12 +1400,15 @@ if [ -n "\${mape_br}" ] && [ -n "\${mape_ealen}" ]; then
     uci set network.\${MAP_NAME}.offset="\${mape_psid_offset}"
     uci set network.\${MAP_NAME}.mtu='1460'
     uci set network.\${MAP_NAME}.encaplimit='ignore'
+    uci set network.\${MAP_NAME}.legacymap='1'
+    uci set network.\${MAP_NAME}.tunlink="\${MAP6_NAME}"
     uci set dhcp.\${MAP6_NAME}=dhcp
     uci set dhcp.\${MAP6_NAME}.interface="\${MAP6_NAME}"
     uci set dhcp.\${MAP6_NAME}.master='1'
     uci set dhcp.\${MAP6_NAME}.ra='relay'
     uci set dhcp.\${MAP6_NAME}.dhcpv6='relay'
     uci set dhcp.\${MAP6_NAME}.ndp='relay'
+    uci set dhcp.\${MAP6_NAME}.ignore='1'
     uci set dhcp.lan.ra='relay'
     uci set dhcp.lan.dhcpv6='relay'
     uci set dhcp.lan.ndp='relay'
@@ -1422,14 +1423,6 @@ MAP_SH_EOF
 fi
 if [ -n "\${mape_gua_mode}" ]; then
     uci set network.\${MAP6_NAME}.ip6prefix="\${mape_gua_prefix}"
-fi
-if [ -n "\${openwrt_19}" ]; then
-    uci add_list network.\${MAP_NAME}.tunlink="\${MAP6_NAME}"
-fi
-if [ -n "\${openwrt_21}" ]; then
-    uci set network.\${MAP_NAME}.legacymap='1'
-    uci set network.\${MAP_NAME}.tunlink="\${MAP6_NAME}"
-    uci set dhcp.\${MAP6_NAME}.ignore='1'
 fi
 if [ -n "\${ap_ip_address}" ]; then
     cp -p /etc/config/network /etc/config/network.\${AP_NAME}.bak 2>/dev/null
@@ -1507,18 +1500,6 @@ const config = {
     asu_url: "https://sysupgrade.openwrt.org",
     asu_extra_packages: ["luci"],
     min_version: "21.02.0",  // 最小サポートバージョン
-    
-    // MAP-E情報を一括取得
-    getMapEInfo(version) {
-        if (version === 'SNAPSHOT') return { supported: true, scriptType: 'new' };
-        if (version.startsWith('19.')) return { supported: true, scriptType: '19' };
-    
-        const parts = version.split('.').map(n => parseInt(n, 10));
-        if (parts[0] >= 23) return { supported: true, scriptType: 'new' };    // nftables
-        if (parts[0] >= 21) return { supported: true, scriptType: '21' };     // iptables
-    
-        return { supported: false, scriptType: null };
-    }
 };
 
 // グローバル変数
@@ -1535,10 +1516,7 @@ let app = {
 let current_device = {};
         
 // map.shのキャッシュ
-let mapShCache = {
-    'new': undefined,  // ← undefined に変更
-    '19': undefined
-};
+let mapShCache = undefined;
 
 // ==================== MAP-E専用処理モジュール ====================
 const MapEProcessor = {
@@ -2410,70 +2388,35 @@ function asuI18nDB(lang) {
 // グローバルスコープに追加
 const downloadPromises = {};
 
-// loadMapShForVersion関数の修正
-async function loadMapShForVersion(version) {
-    console.log('[MAP-E Download] Starting download for version:', version);
+async function loadMapSh() {
+    console.log('[MAP-E Download] Starting download');
+    
+    if (mapShCache !== undefined) {
+        console.log('[MAP-E Download] Already cached');
+        return;
+    }
     
     try {
-        const mapeInfo = config.getMapEInfo(version);
-        console.log('[MAP-E Download] mapeInfo:', mapeInfo);
+        const scriptUrl = 'https://site-u.pages.dev/build/scripts/map.sh.new';
+        console.log('[MAP-E Download] URL:', scriptUrl);
         
-        if (!mapeInfo.supported) {
-            console.log(`[MAP-E Download] MAP-E not supported in version ${version}`);
-            return;
-        }
-        
-        const key = mapeInfo.scriptType;
-        const scriptName = `map.sh.${key}`;
-        const scriptUrl = `https://site-u.pages.dev/build/scripts/${scriptName}`;
-        
-        console.log('[MAP-E Download] Key:', key, 'URL:', scriptUrl);
-        console.log('[MAP-E Download] Cache before:', mapShCache);
-        
-        if (mapShCache[key] === undefined) {
-            // 既に同じkeyでダウンロード中の場合は待機
-            if (downloadPromises[key]) {
-                console.log('[MAP-E Download] Already downloading, waiting...');
-                return await downloadPromises[key];
+        const response = await fetch(scriptUrl);
+        if (response.ok) {
+            const content = await response.text();
+            if (content && content.trim().length > 0) {
+                mapShCache = content;
+                console.log('[MAP-E Download] ✓ Saved to cache, length:', content.length);
+            } else {
+                console.error('[MAP-E Download] ✗ Empty response');
+                mapShCache = '';
             }
-            
-            console.log('[MAP-E Download] Cache miss, downloading...');
-            
-            // ダウンロードPromiseを保存
-            downloadPromises[key] = (async () => {
-                try {
-                    const response = await fetch(scriptUrl);
-                    
-                    if (response.ok) {
-                        const content = await response.text();
-                        if (content && content.trim().length > 0) {
-                            mapShCache[key] = content;
-                            console.log(`[MAP-E Download] ✓ Saved to cache[${key}], length:`, content.length);
-                            console.log('[MAP-E Download] Cache after:', mapShCache);
-                        } else {
-                            console.error(`[MAP-E Download] ✗ ${scriptName} is empty from server`);
-                            mapShCache[key] = '';
-                        }
-                    } else {
-                        console.error(`[MAP-E Download] ✗ Failed to download ${scriptName}: HTTP ${response.status}`);
-                        mapShCache[key] = '';
-                    }
-                } finally {
-                    // ダウンロード完了後にPromiseを削除
-                    delete downloadPromises[key];
-                }
-            })();
-            
-            await downloadPromises[key];
         } else {
-            console.log('[MAP-E Download] Cache hit, skipping download');
+            console.error('[MAP-E Download] ✗ HTTP', response.status);
+            mapShCache = '';
         }
     } catch (error) {
-        console.error(`[MAP-E Download] ✗ Failed to load map.sh for ${version}:`, error);
-        const mapeInfo = config.getMapEInfo(version);
-        if (mapeInfo.supported) {
-            mapShCache[mapeInfo.scriptType] = '';
-        }
+        console.error('[MAP-E Download] ✗ Failed:', error);
+        mapShCache = '';
     }
 }
         
@@ -4039,19 +3982,7 @@ async function updateConfiguredTemplate() {
 }
 
 async function customizeSetupScript(content, userConfig, apiInfo, selectedPackages) {
-    // これでグローバルのconfig.getMapEInfo()が使える
-    const mapeInfo = config.getMapEInfo(app.selectedVersion);
-    
     let customized = content;
-
-    // OpenWrt version flags
-    if (app.selectedVersion && app.selectedVersion.startsWith('19')) {
-        customized = customized.replace(/^# openwrt_19=""/m, `openwrt_19="1"`);
-        customized = customized.replace(/^# openwrt_21=""/m, `# openwrt_21=""`);
-    } else {
-        customized = customized.replace(/^# openwrt_19=""/m, `# openwrt_19=""`);
-        customized = customized.replace(/^# openwrt_21=""/m, `openwrt_21="1"`);
-    }
 
     // Basic settings
     customized = setScriptVar(customized, 'device_name', userConfig.deviceName, !!userConfig.deviceName);
