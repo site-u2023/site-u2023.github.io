@@ -1454,6 +1454,103 @@ const config = {
     min_version: "21.02.0",  // 最小サポートバージョン
 };
 
+// グローバル変数
+let app = {
+    versions: [],
+    devices: [],
+    selectedVersion: '',
+    templateLoaded: false,
+    availablePackages: [], // デバイス固有のパッケージリスト
+    archPackagesMap: {},
+};
+
+// 公式と同じグローバル変数
+let current_device = {};
+        
+// map.shのキャッシュ
+let mapShCache = undefined;
+
+// ==================== MAP-E専用処理モジュール ====================
+const MapEProcessor = {
+    // MAP-E設定がアクティブかどうかを判定
+    isActive(config, apiInfo) {
+        if (config.connectionMode === 'auto') {
+            return !!(apiInfo?.mape?.brIpv6Address);
+        } else if (config.connectionMode === 'manual') {
+            return config.connectionType === 'mape';
+        }
+        return false;
+    },
+    
+    // 必要なmap.shがキャッシュされているかチェック
+    isScriptCached() {
+        return mapShCache !== undefined && mapShCache !== null;
+    },
+    
+    // map.shダウンロードの確保
+    async ensureScriptReady() {
+        if (!mapShCache) {
+            await loadMapSh();
+            
+            if (!mapShCache) {
+                throw new Error('Failed to download map.sh script. Please check your internet connection and try again.');
+            }
+        }
+    },
+    
+    // プレースホルダーの置換
+    replacePlaceholder(content) {
+        if (!content.includes('${map_sh_content}')) {
+            return content;
+        }
+        
+        if (!mapShCache) {
+            throw new Error('MAP-E script not available in cache');
+        }
+        
+        const result = content.replace(/\$\{map_sh_content\}/g, mapShCache);
+        
+        if (result.includes('${map_sh_content}')) {
+            throw new Error('MAP-E script embedding failed - placeholder still exists');
+        }
+        
+        return result;
+    },
+    
+    // 事前準備処理（設定画面表示時）
+    async prepareForDisplay(config, apiInfo) {
+        if (this.isActive(config, apiInfo)) {
+            await loadMapSh();
+        }
+    },
+    
+    // ビルド時処理（プレースホルダー置換）
+    async processForBuild(script, config, apiInfo) {
+        if (!this.isActive(config, apiInfo)) {
+            return script;
+        }
+    
+        if (!script.includes('${map_sh_content}')) {
+            return script;
+        }
+    
+        await this.ensureScriptReady();
+        return this.replacePlaceholder(script);
+    }
+};
+
+const SEARCH_URL_TEMPLATE = 'https://openwrt.org/start?do=search&q={id}';
+function applySearchUrls(db) {
+  db.categories.forEach(category => {
+    category.packages.forEach(pkg => {
+      pkg.url = SEARCH_URL_TEMPLATE.replace(
+        '{id}',
+        encodeURIComponent(pkg.id)
+      );
+    });
+  });
+}
+
 // パッケージデータベース
 const PACKAGE_DB = {
   categories: [
@@ -1574,7 +1671,7 @@ const PACKAGE_DB = {
     {
       id: "modem-support",
       name: "Modem Support",
-      description: "4G/5G modem management (ModemManager includes SMS support)",
+      description: "4G/5G modem management and SMS tools",
       packages: [
         {
           id: "luci-proto-modemmanager",
@@ -1653,7 +1750,7 @@ const PACKAGE_DB = {
     {
       id: "diagnostic-tools",
       name: "Network Diagnostic Tools",
-      description: "Network testing, monitoring, analysis and DNS troubleshooting tools",
+      description: "System monitoring and network analysis tools",
       packages: [
         {
           id: "htop",
@@ -1672,8 +1769,7 @@ const PACKAGE_DB = {
         },
         {
           id: "mtr-nojson",
-          name: "mtr-nojson",
-          description: "Network diagnostic tool (traceroute + ping)"
+          name: "mtr-nojson"
         },
         {
           id: "nmap",
@@ -1684,92 +1780,16 @@ const PACKAGE_DB = {
           name: "tcpdump"
         },
         {
-          id: "iperf3",
-          name: "iperf3",
-          description: "Network bandwidth measurement tool"
+          id: "screen",
+          name: "screen"
         },
         {
-          id: "speedtest-netperf",
-          name: "speedtest-netperf",
-          description: "Speed test with latency monitoring",
-          dependencies: ["netperf"]
+          id: "minicom",
+          name: "minicom"
         },
         {
-          id: "iftop",
-          name: "iftop",
-          description: "Real-time bandwidth usage per connection"
-        },
-        {
-          id: "bwm-ng",
-          name: "bwm-ng",
-          description: "Bandwidth monitor with multiple interfaces"
-        },
-        {
-          id: "bind-dig",
-          name: "bind-dig",
-          description: "DNS lookup utility"
-        },
-        {
-          id: "drill",
-          name: "drill",
-          description: "DNS lookup tool (ldns based)"
-        }
-      ]
-    },
-    {
-      id: "system-tools",
-      name: "System Administration Tools",
-      description: "Terminal enhancements, debugging, file management and HTTP client tools",
-      packages: [
-        {
-          id: "tmux",
-          name: "tmux",
-          description: "Terminal multiplexer"
-        },
-        {
-          id: "nano-plus",
-          name: "nano-plus",
-          description: "Enhanced nano text editor with UTF-8"
-        },
-        {
-          id: "vim-fuller",
-          name: "vim-fuller",
-          description: "Full-featured vim editor"
-        },
-        {
-          id: "lsof",
-          name: "lsof",
-          description: "List open files and ports"
-        },
-        {
-          id: "strace",
-          name: "strace",
-          description: "System call tracer"
-        },
-        {
-          id: "rsync",
-          name: "rsync",
-          description: "File synchronization tool"
-        },
-        {
-          id: "tree",
-          name: "tree",
-          description: "Directory tree viewer"
-        },
-        {
-          id: "curl",
-          name: "curl",
-          description: "Command line HTTP client"
-        },
-        {
-          id: "wget-ssl",
-          name: "wget-ssl",
-          description: "wget with SSL/TLS support"
-        },
-        {
-          id: "netdata",
-          name: "netdata",
-          description: "Real-time performance monitoring"
+          id: "picocom",
+          name: "picocom"
         }
       ]
     },
@@ -1800,7 +1820,7 @@ const PACKAGE_DB = {
     {
       id: "utilities",
       name: "Utilities",
-      description: "System upgrade, VPN and media server utilities",
+      description: "System upgrade tools and VPN utilities",
       packages: [
         {
           id: "attendedsysupgrade-common",
@@ -1819,16 +1839,6 @@ const PACKAGE_DB = {
           id: "luci-proto-wireguard",
           name: "luci-proto-wireguard",
           dependencies: ["wireguard-tools"]
-        },
-        {
-          id: "zerotier",
-          name: "zerotier",
-          description: "Zero-trust mesh VPN"
-        },
-        {
-          id: "tailscale",
-          name: "tailscale",
-          description: "WireGuard-based mesh VPN"
         },
         {
           id: "luci-app-dockerman",
