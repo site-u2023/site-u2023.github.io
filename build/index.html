@@ -2801,18 +2801,17 @@ const DeviceContext = {
         }
     },
     
-    // バージョン更新処理
     async _updateVersion(version, forceReload) {
         if (version !== app.selectedVersion) {
             app.selectedVersion = version;
             console.log(`[DeviceContext] Version changed: ${version}`);
         }
-        
+    
         // MAP-E環境での事前準備
-        if (window.cachedApiInfo?.mape?.brIpv6Address && config.getMapEInfo(version).supported) {
-            await loadMapShForVersion(version);
+        if (window.cachedApiInfo?.mape?.brIpv6Address) {
+            await loadMapSh();
         }
-        
+    
         // デバイス一覧更新
         if (forceReload || app.devices.length === 0) {
             await loadDevices();
@@ -3614,7 +3613,7 @@ function handleConnectionTypeChange(e) {
             manualConfig.style.display = hasAftr ? 'none' : 'block';
         }
         
-    } else if (e.target.value === 'mape') {
+} else if (e.target.value === 'mape') {
         mapeManualSection.style.display = 'block';
         
         // MAP-E: BRデータの有無でAuto/Manual制御
@@ -3640,12 +3639,11 @@ function handleConnectionTypeChange(e) {
         }
         
         // キャッシュ確認してから必要時のみロード
-        const mapeInfo = config.getMapEInfo(app.selectedVersion);
-        if (mapeInfo.supported && mapShCache[mapeInfo.scriptType] === undefined) {
+        if (mapShCache === undefined) {
             // 未ロードの場合のみ非同期でロード
             (async () => {
                 try {
-                    await loadMapShForVersion(app.selectedVersion);
+                    await loadMapSh();
                 } catch (err) {
                     console.error('map.sh load failed:', err);
                 }
@@ -3829,7 +3827,7 @@ async function fetchApiInfoAndUpdate() {
 
             // MAP-E検出時のみmap.sh読み込み
             if (apiInfo.mape && apiInfo.mape.brIpv6Address) {
-                await loadMapShForVersion(app.selectedVersion);  // OSバージョンに応じた適切なものだけ
+                await loadMapSh();
             }
 
             // GUA セクションの表示を更新
@@ -4082,8 +4080,8 @@ async function customizeSetupScript(content, userConfig, apiInfo, selectedPackag
     }
 
     // MAP-E設定時の事前準備（ダウンロードのみ、プレースホルダーは保持）
-    if (mapeActive && config.getMapEInfo(app.selectedVersion).supported) {
-        await MapEProcessor.prepareForDisplay(app.selectedVersion, config, apiInfo);
+    if (mapeActive) {
+        await MapEProcessor.prepareForDisplay(config, apiInfo);
     }
 
     // AP
@@ -4437,7 +4435,6 @@ async function buildAsuRequest() {
         // MAP-E処理（必要時のみプレースホルダー置換）
         script = await MapEProcessor.processForBuild(
             script, 
-            app.selectedVersion, 
             getAiosConfig(), 
             window.cachedApiInfo
         );
