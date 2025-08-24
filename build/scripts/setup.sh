@@ -10,13 +10,10 @@ AP6_NAME="ap6"
 # BEGIN_VARIABLE_DEFINITIONS
 # END_VARIABLE_DEFINITIONS
 exec >/tmp/setup.log 2>&1
-
 [ -n "\${device_name}" ] && uci batch <<'EOF'
 set system.@system[0].hostname="\${device_name}"
 EOF
-
 [ -n "\${root_password}" ] && printf "%s\n%s\n" "\${root_password}" "\${root_password}" | passwd >/dev/null
-
 uci batch <<'EOF'
 [ -n "\${lan_ip_address}" ] && set network.lan.ipaddr="\${lan_ip_address}"
 [ -n "\${lan_ipv6_address}" ] && set network.lan.ip6addr="\${lan_ipv6_address}"
@@ -28,7 +25,6 @@ uci batch <<'EOF'
 [ "\${flow_offloading_type}" = "software" ] && set firewall.@defaults[0].flow_offloading='1'
 [ "\${flow_offloading_type}" = "hardware" ] && { set firewall.@defaults[0].flow_offloading='1'; set firewall.@defaults[0].flow_offloading_hw='1'; }
 EOF
-
 if [ -n "\${wlan_name}" ] && [ -n "\${wlan_password}" ]; then
     for radio in $(uci -q show wireless | grep "wireless\.radio[0-9]*=" | cut -d. -f2 | cut -d= -f1); do
         band=$(uci -q get wireless.\${radio}.band)
@@ -51,13 +47,11 @@ set wireless.\${radio}.country="\${country:-00}"
 EOF
     done
 fi
-
 [ -n "\${pppoe_username}" ] && [ -n "\${pppoe_password}" ] && uci batch <<'EOF'
 set network.wan.proto='pppoe'
 set network.wan.username="\${pppoe_username}"
 set network.wan.password="\${pppoe_password}"
 EOF
-
 [ -n "\${dslite_aftr_address}" ] && uci batch <<'EOF'
 set network.wan.disabled='1'
 set network.wan.auto='0'
@@ -92,7 +86,6 @@ add_list firewall.@zone[1].network="\${DSLITE6_NAME}"
 set firewall.@zone[1].masq='1'
 set firewall.@zone[1].mtu_fix='1'
 EOF
-
 [ -n "\${mape_br}" ] && [ -n "\${mape_ealen}" ] && {
     uci batch <<'EOF'
 set network.wan.disabled='1'
@@ -142,7 +135,6 @@ EOF
 \${map_sh_content}
 MAP_SH_EOF
 }
-
 [ -n "\${ap_ip_address}" ] && {
     uci batch <<'EOF'
 set network.wan.disabled='1'
@@ -174,17 +166,14 @@ EOF
     [ -x /etc/init.d/firewall ] && /etc/init.d/firewall enabled && /etc/init.d/firewall disable
     [ -x /etc/init.d/firewall ] && /etc/init.d/firewall running && /etc/init.d/firewall stop
 }
-
 [ -n "\${enable_ttyd}" ] && uci batch <<'EOF'
 set ttyd.@ttyd[0].ipv6='1'
 set ttyd.@ttyd[0].command='/bin/login -f root'
 EOF
-
 [ -n "\${enable_irqbalance}" ] && uci batch <<'EOF'
 set irqbalance.irqbalance=irqbalance
 set irqbalance.irqbalance.enabled='1'
 EOF
-
 [ -n "\${enable_samba4}" ] && {
     NAS="openwrt"
     MNT="/mnt/sda"
@@ -206,10 +195,8 @@ set samba4.sambashare.create_mask='0777'
 set samba4.sambashare.dir_mask='0777'
 EOF
 }
-
 # BEGIN_CUSTOM_COMMANDS
 # END_CUSTOM_COMMANDS
-
 uci commit 2>/dev/null
 echo "All done!"
 [ -n "\${backup_path}" ] && sysupgrade -q -k -b "\${backup_path}"
