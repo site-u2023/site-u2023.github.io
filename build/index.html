@@ -3459,6 +3459,7 @@ function showDeviceInfo() {
     // ===== About this build 表示用 前処理ブロック =====
     const {
         country = 'unknown',
+        zonename = 'unknown',
         timezone = 'unknown',
         isp = 'unknown',
         as: asNumber = 'unknown',
@@ -3470,7 +3471,7 @@ function showDeviceInfo() {
     } = window.cachedApiInfo || {};
 
     const countryValue = country;
-    const zoneValue    = timezone;
+    const zoneValue    = zonename;
     const ispValue     = isp;
     const asValue      = asNumber;
     const ipAddressValue = [ipv4, ipv6].filter(Boolean).join(' / ') || 'unknown';
@@ -3920,7 +3921,8 @@ async function fetchApiInfoAndUpdate() {
         if (apiInfo) {
             // Country と Timezone（空欄のみ設定）
             setIfEmpty('aios-country', apiInfo.country);
-            setIfEmpty('aios-zonename', apiInfo.timezone);
+            setIfEmpty('aios-zonename', apiInfo.zonename);
+            setIfEmpty('aios-timezone', apiInfo.timezone);
 
             // ISP表示は共通関数で構築
             const isp = buildIspStatus(apiInfo);
