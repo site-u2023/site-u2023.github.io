@@ -1388,6 +1388,9 @@ if [ -n "\${mape_br}" ] && [ -n "\${mape_ealen}" ]; then
     uci set network.\${MAP6_NAME}.device="\${WAN_DEF}"
     uci set network.\${MAP6_NAME}.reqaddress='try'
     uci set network.\${MAP6_NAME}.reqprefix='auto'
+    if [ -n "\${mape_gua_mode}" ]; then
+        uci set network.\${MAP6_NAME}.ip6prefix="\${mape_gua_prefix}"
+    fi
     uci set network.\${MAP_NAME}=interface
     uci set network.\${MAP_NAME}.proto='map'
     uci set network.\${MAP_NAME}.maptype='map-e'
@@ -1423,9 +1426,6 @@ if [ -n "\${mape_br}" ] && [ -n "\${mape_ealen}" ]; then
     cat > /lib/netifd/proto/map.sh << 'MAP_SH_EOF'
 \${map_sh_content}
 MAP_SH_EOF
-fi
-if [ -n "\${mape_gua_mode}" ]; then
-    uci set network.\${MAP6_NAME}.ip6prefix="\${mape_gua_prefix}"
 fi
 if [ -n "\${ap_ip_address}" ]; then
     cp -p /etc/config/network /etc/config/network.\${AP_NAME}.bak 2>/dev/null
