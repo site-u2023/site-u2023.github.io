@@ -118,7 +118,7 @@ const PACKAGE_DB = {
     {
       id: "modem-support",
       name: "Modem Support",
-      description: "4G/5G modem management and SMS tools",
+      description: "4G/5G modem management (ModemManager includes SMS support)",
       packages: [
         {
           id: "luci-proto-modemmanager",
@@ -129,8 +129,7 @@ const PACKAGE_DB = {
             "kmod-usb-net-qmi-wwan",
             "uqmi",
             "mbim-utils",
-            "screen",
-            "smstools"
+            "screen"
           ]
         },
         {
@@ -161,11 +160,6 @@ const PACKAGE_DB = {
         {
           id: "screen",
           name: "screen",
-          hidden: true
-        },
-        {
-          id: "smstools",
-          name: "smstools",
           hidden: true
         }
       ]
@@ -203,7 +197,7 @@ const PACKAGE_DB = {
     {
       id: "diagnostic-tools",
       name: "Network Diagnostic Tools",
-      description: "System monitoring and network analysis tools",
+      description: "Network testing, monitoring, analysis and DNS troubleshooting tools",
       packages: [
         {
           id: "htop",
@@ -221,8 +215,8 @@ const PACKAGE_DB = {
           hidden: true
         },
         {
-          id: "mtr",
-          name: "mtr"
+          id: "mtr-nojson",
+          name: "mtr-nojson"
         },
         {
           id: "nmap",
@@ -233,16 +227,76 @@ const PACKAGE_DB = {
           name: "tcpdump"
         },
         {
-          id: "screen",
-          name: "screen"
+          id: "iperf3",
+          name: "iperf3"
         },
         {
-          id: "minicom",
-          name: "minicom"
+          id: "speedtest-netperf",
+          name: "speedtest-netperf",
+          dependencies: ["netperf"]
         },
         {
-          id: "picocom",
-          name: "picocom"
+          id: "iftop",
+          name: "iftop"
+        },
+        {
+          id: "bwm-ng",
+          name: "bwm-ng"
+        },
+        {
+          id: "bind-dig",
+          name: "bind-dig"
+        },
+        {
+          id: "drill",
+          name: "drill"
+        }
+      ]
+    },
+    {
+      id: "system-tools",
+      name: "System Administration Tools",
+      description: "Terminal enhancements, debugging, file management and HTTP client tools",
+      packages: [
+        {
+          id: "tmux",
+          name: "tmux"
+        },
+        {
+          id: "nano-plus",
+          name: "nano-plus"
+        },
+        {
+          id: "vim-fuller",
+          name: "vim-fuller"
+        },
+        {
+          id: "lsof",
+          name: "lsof"
+        },
+        {
+          id: "strace",
+          name: "strace"
+        },
+        {
+          id: "rsync",
+          name: "rsync"
+        },
+        {
+          id: "tree",
+          name: "tree"
+        },
+        {
+          id: "curl",
+          name: "curl"
+        },
+        {
+          id: "wget-ssl",
+          name: "wget-ssl"
+        },
+        {
+          id: "netdata",
+          name: "netdata"
         }
       ]
     },
@@ -273,7 +327,7 @@ const PACKAGE_DB = {
     {
       id: "utilities",
       name: "Utilities",
-      description: "System upgrade tools and VPN utilities",
+      description: "System upgrade, VPN and media server utilities",
       packages: [
         {
           id: "attendedsysupgrade-common",
@@ -292,6 +346,14 @@ const PACKAGE_DB = {
           id: "luci-proto-wireguard",
           name: "luci-proto-wireguard",
           dependencies: ["wireguard-tools"]
+        },
+        {
+          id: "zerotier",
+          name: "zerotier"
+        },
+        {
+          id: "tailscale",
+          name: "tailscale"
         },
         {
           id: "luci-app-dockerman",
