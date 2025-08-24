@@ -892,7 +892,7 @@
                             </div>
                             <div class="form-group">
                                 <label for="aios-country">Country</label>
-                                <input type="text" id="aios-country" class="form-control" placeholder="US" maxlength="2">
+                                <input type="text" id="aios-country" class="form-control" placeholder="00" maxlength="2">
                                 <small class="form-text text-muted">2-letter country code (e.g., US, JP)</small>
                             </div>
                         </div>
@@ -905,7 +905,7 @@
                             </div>
                             <div class="form-group">
                                 <label for="aios-zonename">Zone name</label>
-                                <input type="text" id="aios-zonename" class="form-control" placeholder="America/New_York">
+                                <input type="text" id="aios-zonename" class="form-control" placeholder="UTC">
                                 <small class="form-text text-muted">Optional: e.g., America/New_York, Asia/Tokyo</small>
                             </div>
                         </div>
@@ -1234,7 +1234,6 @@
 // setup.shテンプレート
 const SETUP_SH_TEMPLATE = `#!/bin/sh
 exec >/tmp/setup.log 2>&1
-VER="$(cat /etc/openwrt_version 2>/dev/null || echo unknown)"
 LAN_DEF="$(uci -q get network.lan.device || echo lan)"
 WAN_DEF="$(uci -q get network.wan.device || echo wan)"
 MAP_NAME="map"
@@ -1244,9 +1243,9 @@ DSLITE6_NAME="dslite6"
 AP_NAME="ap"
 AP6_NAME="ap6"
 # language="en"
-# country="US"
+# country="00"
 # timezone="UTC"
-# zonename="America/New_York"
+# zonename="UTC"
 # device_name="OpenWrt"
 # root_password="Password"
 # lan_ip_address="192.168.1.1"
@@ -1254,7 +1253,7 @@ AP6_NAME="ap6"
 # ssh_interface="lan"
 # ssh_port="22"
 # flow_offloading_type=""
-# backup_path="/root/backup_\${VER}.tar.gz"
+# backup_path="/root/backup.tar.gz"
 # wlan_name="OpenWrt"
 # wlan_password="12345678"
 # pppoe_username=""
