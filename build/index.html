@@ -2345,14 +2345,21 @@ async function loadMapSh() {
         
 // ==================== イベントバインディング統合関数（bindEventsの外で定義） ====================
 function bindFieldEvents(fieldIds, events = ['input'], callback = null) {
-    const handler = callback || (() => syncTemplateAndPackages({ trigger: 'script' }));
+    let debounceTimer;
+    const debouncedHandler = (...args) => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+            const handler = callback || (() => syncTemplateAndPackages({ trigger: 'script' }));
+            handler(...args);
+        }, 300); // 300ms デバウンス
+    };
     
     fieldIds.forEach(fieldId => {
         const el = document.getElementById(fieldId);
         if (el) {
             const eventList = Array.isArray(events) ? events : [events];
             eventList.forEach(eventType => {
-                el.addEventListener(eventType, handler);
+                el.addEventListener(eventType, debouncedHandler);
             });
         }
     });
@@ -3924,7 +3931,7 @@ async function customizeSetupScript(content, userConfig, apiInfo, selectedPackag
         ealen: userConfig.mapeEalen || (apiHasMape ? api.eaBitLength : ''),
         v4p: userConfig.mapeIpv4Prefix || (apiHasMape ? api.ipv4Prefix : ''),
         v4l: userConfig.mapeIpv4Prefixlen || (apiHasMape ? api.ipv4PrefixLength : ''),
-        v6p: userConfig.mapeIpv6Prefix || (apiHasMae ? api.ipv6Prefix : ''),
+        v6p: userConfig.mapeIpv6Prefix || (apiHasMape ? api.ipv6Prefix : ''),
         v6l: userConfig.mapeIpv6Prefixlen || (apiHasMape ? api.ipv6PrefixLength : ''),
         off: userConfig.mapePsidOffset || (apiHasMape ? api.psIdOffset : ''),
         psid: userConfig.mapePsidlen || (apiHasMape ? api.psidlen : '')
@@ -4039,11 +4046,6 @@ async function customizeSetupScript(content, userConfig, apiInfo, selectedPackag
     // 変数定義を適用
     customized = setVariableDefinitions(customized, variables);
 
-    // MAP-E設定時の事前準備（ダウンロードのみ、プレースホルダーは保持）
-    if (mapeActive) {
-        await MapEProcessor.prepareForDisplay(userConfig, apiInfo);
-    }
-
     // Custom Commands
     const customCommands = getCustomCommands();
     
@@ -4100,8 +4102,16 @@ function toggleAiosConfig(e) {
 
 function getAiosConfig() {
     const parseOrEmpty = (id, type = 'string') => {
-        const val = document.getElementById(id)?.value?.trim();
+        const element = document.getElementById(id);
+        if (!element) return '';
+        
+        // value が空でも、HTML の初期値（placeholder や value 属性）を確認
+        let val = element.value?.trim();
+        if (!val && element.getAttribute('value')) {
+            val = element.getAttribute('value').trim();
+        }
         if (!val) return '';
+        
         if (type === 'int') {
             const num = parseInt(val, 10);
             return isNaN(num) ? '' : num;
