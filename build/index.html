@@ -1987,9 +1987,10 @@ const ErrorHandler = {
         if (response?.status === 404) return 'VERSION_NOT_AVAILABLE';
         if (response?.status === 403) return 'PERMISSION_DENIED';
         
-        // 古いバージョンのCORS拒否は期待される動作  
+        if (response?.status === 404) return 'NOT_FOUND';
+        // CORS エラーは真のエラーとして扱う
         if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
-            return 'EXPECTED_CORS_REJECTION';
+            return 'NETWORK_ERROR';
         }
         
         if (error.name === 'TypeError' && error.message.includes('fetch')) return 'NETWORK_ERROR';
@@ -2938,7 +2939,7 @@ async function loadVersions() {
         if (data.versions_list) {
             let versionList = data.versions_list;
             
-            // min_versionが設定されていればフィルタリング
+            // min_versionが設定されていればフィルタリング（21.02.0以降のみ）
             if (config.min_version) {
                 const minParts = config.min_version.split('.').map(n => parseInt(n, 10));
                 versionList = versionList.filter(version => {
@@ -3009,15 +3010,10 @@ async function loadDevices() {
             mode: 'cors'
         });
         
-        // 404は正常な応答として処理
+        // 404は真のエラーとして処理
         if (response.status === 404) {
-            console.log(`✓ Version ${app.selectedVersion} not available (HTTP 404) - Normal for unsupported versions`);
-            profileCache[notFoundKey] = true;
-            app.devices = [];
-            app.versionCode = null;
-            app.kernelHash = null;
-            hideDeviceInfo();
-            return;
+            console.error(`Version ${app.selectedVersion} not found (HTTP 404)`);
+            throw new Error('Version not available');
         }
         
         if (!response.ok) {
