@@ -1233,8 +1233,6 @@
 
 // setup.shテンプレート
 const SETUP_SH_TEMPLATE = `#!/bin/sh
-exec >/tmp/setup.log 2>&1
-VER="$(cat /etc/openwrt_version 2>/dev/null || echo unknown)"
 LAN_DEF="$(uci -q get network.lan.device || echo lan)"
 WAN_DEF="$(uci -q get network.wan.device || echo wan)"
 MAPE_NAME="mape"
@@ -1243,6 +1241,8 @@ DSLITE_NAME="dslite"
 DSLITE6_NAME="dslite6"
 AP_NAME="ap"
 AP6_NAME="ap6"
+# BEGIN_VARIABLE_DEFINITIONS
+# END_VARIABLE_DEFINITIONS
 # language="en"
 # country="US"
 # timezone="UTC"
@@ -1254,7 +1254,7 @@ AP6_NAME="ap6"
 # ssh_interface="lan"
 # ssh_port="22"
 # flow_offloading_type=""
-# backup_path="/root/backup_\${VER}.tar.gz"
+# backup_path="/root/backup.tar.gz"
 # wlan_name="OpenWrt"
 # wlan_password="12345678"
 # pppoe_username=""
@@ -1275,6 +1275,7 @@ AP6_NAME="ap6"
 # enable_ttyd=""
 # enable_irqbalance=""
 # enable_samba4=""
+exec >/tmp/setup.log 2>&1
 [ -n "${device_name}" ] && uci set system.@system[0].hostname="${device_name}"
 [ -n "${root_password}" ] && printf "%s\n%s\n" "${root_password}" "${root_password}" | passwd >/dev/null
 [ -n "${lan_ip_address}" ] && uci set network.lan.ipaddr="${lan_ip_address}"
@@ -1364,6 +1365,7 @@ AP6_NAME="ap6"
     uci set network.${MAPE6_NAME}.device="${WAN_DEF}"
     uci set network.${MAPE6_NAME}.reqaddress='try'
     uci set network.${MAPE6_NAME}.reqprefix='auto'
+    [ -n "${mape_gua_mode}" ] && uci set network.${MAPE6_NAME}.ip6prefix="${mape_gua_prefix}"
     uci set network.${MAPE_NAME}=interface
     uci set network.${MAPE_NAME}.proto='map'
     uci set network.${MAPE_NAME}.maptype='map-e'
@@ -1400,7 +1402,6 @@ AP6_NAME="ap6"
 ${map_sh_content}
 MAP_SH_EOF
 }
-[ -n "${mape_gua_mode}" ] && uci set network.${MAPE6_NAME}.ip6prefix="${mape_gua_prefix}"
 [ -n "${ap_ip_address}" ] && {
     cp -p /etc/config/network /etc/config/network.${AP_NAME}.bak 2>/dev/null
     cp -p /etc/config/dhcp /etc/config/dhcp.${AP_NAME}.bak 2>/dev/null
