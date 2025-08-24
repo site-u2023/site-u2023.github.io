@@ -1265,7 +1265,7 @@ AP6_NAME="ap6"
 # END_VARIABLE_DEFINITIONS
 exec >/tmp/setup.log 2>&1
 [ -n "\${device_name}" ] && uci set system.@system[0].hostname="\${device_name}"
-[ -n "\${root_password}" ] && printf "%s\n%s\n" "\${root_password}" "\${root_password}" | passwd >/dev/null
+[ -n "\\${root_password}" ] && printf "%s\n%s\n" "\\${root_password}" "\\${root_password}" | passwd >/dev/null
 [ -n "\${lan_ip_address}" ] && uci set network.lan.ipaddr="\${lan_ip_address}"
 [ -n "\${lan_ipv6_address}" ] && uci set network.lan.ip6addr="\${lan_ipv6_address}"
 [ -n "\${language}" ] && uci set system.@system[0].language="\${language}"
