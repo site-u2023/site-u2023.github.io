@@ -1671,7 +1671,7 @@ const PACKAGE_DB = {
     {
       id: "modem-support",
       name: "Modem Support",
-      description: "4G/5G modem management and SMS tools",
+      description: "4G/5G modem management (ModemManager includes SMS support)",
       packages: [
         {
           id: "luci-proto-modemmanager",
@@ -1750,7 +1750,7 @@ const PACKAGE_DB = {
     {
       id: "diagnostic-tools",
       name: "Network Diagnostic Tools",
-      description: "System monitoring and network analysis tools",
+      description: "Network testing, monitoring, analysis and DNS troubleshooting tools",
       packages: [
         {
           id: "htop",
@@ -1769,7 +1769,8 @@ const PACKAGE_DB = {
         },
         {
           id: "mtr-nojson",
-          name: "mtr-nojson"
+          name: "mtr-nojson",
+          description: "Network diagnostic tool (traceroute + ping)"
         },
         {
           id: "nmap",
@@ -1780,16 +1781,92 @@ const PACKAGE_DB = {
           name: "tcpdump"
         },
         {
-          id: "screen",
-          name: "screen"
+          id: "iperf3",
+          name: "iperf3",
+          description: "Network bandwidth measurement tool"
         },
         {
-          id: "minicom",
-          name: "minicom"
+          id: "speedtest-netperf",
+          name: "speedtest-netperf",
+          description: "Speed test with latency monitoring",
+          dependencies: ["netperf"]
+        }
+        {
+          id: "iftop",
+          name: "iftop",
+          description: "Real-time bandwidth usage per connection"
         },
         {
-          id: "picocom",
-          name: "picocom"
+          id: "bwm-ng",
+          name: "bwm-ng",
+          description: "Bandwidth monitor with multiple interfaces"
+        },
+        {
+          id: "bind-dig",
+          name: "bind-dig",
+          description: "DNS lookup utility"
+        },
+        {
+          id: "drill",
+          name: "drill",
+          description: "DNS lookup tool (ldns based)"
+        }
+      ]
+    },
+    {
+      id: "system-tools",
+      name: "System Administration Tools",
+      description: "Terminal enhancements, debugging, file management and HTTP client tools",
+      packages: [
+        {
+          id: "tmux",
+          name: "tmux",
+          description: "Terminal multiplexer"
+        },
+        {
+          id: "nano-plus",
+          name: "nano-plus",
+          description: "Enhanced nano text editor with UTF-8"
+        },
+        {
+          id: "vim-fuller",
+          name: "vim-fuller",
+          description: "Full-featured vim editor"
+        },
+        {
+          id: "lsof",
+          name: "lsof",
+          description: "List open files and ports"
+        },
+        {
+          id: "strace",
+          name: "strace",
+          description: "System call tracer"
+        },
+        {
+          id: "rsync",
+          name: "rsync",
+          description: "File synchronization tool"
+        },
+        {
+          id: "tree",
+          name: "tree",
+          description: "Directory tree viewer"
+        },
+        {
+          id: "curl",
+          name: "curl",
+          description: "Command line HTTP client"
+        },
+        {
+          id: "wget-ssl",
+          name: "wget-ssl",
+          description: "wget with SSL/TLS support"
+        },
+        {
+          id: "netdata",
+          name: "netdata",
+          description: "Real-time performance monitoring"
         }
       ]
     },
@@ -1820,7 +1897,7 @@ const PACKAGE_DB = {
     {
       id: "utilities",
       name: "Utilities",
-      description: "System upgrade tools and VPN utilities",
+      description: "System upgrade, VPN and media server utilities",
       packages: [
         {
           id: "attendedsysupgrade-common",
@@ -1839,6 +1916,16 @@ const PACKAGE_DB = {
           id: "luci-proto-wireguard",
           name: "luci-proto-wireguard",
           dependencies: ["wireguard-tools"]
+        },
+        {
+          id: "zerotier",
+          name: "zerotier",
+          description: "Zero-trust mesh VPN"
+        },
+        {
+          id: "tailscale",
+          name: "tailscale",
+          description: "WireGuard-based mesh VPN"
         },
         {
           id: "luci-app-dockerman",
