@@ -1243,38 +1243,6 @@ AP_NAME="ap"
 AP6_NAME="ap6"
 # BEGIN_VARIABLE_DEFINITIONS
 # END_VARIABLE_DEFINITIONS
-# language="en"
-# country="00"
-# timezone="UTC"
-# zonename="UTC"
-# device_name="OpenWrt"
-# root_password="Password"
-# lan_ip_address="192.168.1.1"
-# lan_ipv6_address="fd00::1/64"
-# ssh_interface="lan"
-# ssh_port="22"
-# flow_offloading_type=""
-# backup_path="/root/backup.tar.gz"
-# wlan_name="OpenWrt"
-# wlan_password="12345678"
-# pppoe_username=""
-# pppoe_password=""
-# dslite_aftr_address=""
-# mape_br=""
-# mape_ealen=""
-# mape_ipv4_prefix=""
-# mape_ipv4_prefixlen=""
-# mape_ipv6_prefix=""
-# mape_ipv6_prefixlen=""
-# mape_psidlen=""
-# mape_psid_offset=""
-# mape_gua_mode=""
-# mape_gua_prefix=""
-# ap_ip_address="192.168.1.2"
-# ap_gateway="192.168.1.1"
-# enable_ttyd=""
-# enable_irqbalance=""
-# enable_samba4=""
 exec >/tmp/setup.log 2>&1
 [ -n "\${device_name}" ] && uci set system.@system[0].hostname="\${device_name}"
 [ -n "\${root_password}" ] && printf "%s\n%s\n" "\${root_password}" "\${root_password}" | passwd >/dev/null
@@ -3896,12 +3864,20 @@ async function fetchApiInfo() {
 }
 
 // ==================== テンプレ文字列の変数設定共通関数 ====================
-function setScriptVar(content, key, value, active) {
-    const safe = (v) => (v === undefined || v === null) ? '' : String(v).trim();
-    const val = safe(value);
-    const re = new RegExp(`^#?\\s*${key}=".*"$`, 'm');
-    const line = active ? `${key}="${val}"` : `# ${key}="${val}"`;
-    return content.replace(re, line);
+function setVariableDefinitions(content, variables) {
+    const variableLines = [];
+    
+    for (const [key, { value, active }] of Object.entries(variables)) {
+        const safeValue = (value === undefined || value === null) ? '' : String(value).trim();
+        if (active && safeValue !== '') {
+            variableLines.push(`${key}="${safeValue}"`);
+        }
+    }
+    
+    const variableText = variableLines.length > 0 ? variableLines.join('\n') : '';
+    const managedRegion = /(# BEGIN_VARIABLE_DEFINITIONS\n)([\s\S]*?)(# END_VARIABLE_DEFINITIONS\n)/;
+    
+    return content.replace(managedRegion, `$1${variableText}${variableText ? '\n' : ''}$3`);
 }
 
 // ==================== テンプレート設定 ====================
@@ -3931,22 +3907,23 @@ async function updateConfiguredTemplate() {
 
 async function customizeSetupScript(content, userConfig, apiInfo, selectedPackages) {
     let customized = content;
+    const variables = {};
 
     // Basic settings
-    customized = setScriptVar(customized, 'device_name', userConfig.deviceName, !!userConfig.deviceName);
-    customized = setScriptVar(customized, 'lan_ip_address', userConfig.lanIpv4, !!userConfig.lanIpv4);
-    customized = setScriptVar(customized, 'lan_ipv6_address', userConfig.lanIpv6, !!userConfig.lanIpv6);
-    customized = setScriptVar(customized, 'root_password', userConfig.rootPassword, !!userConfig.rootPassword);
-    customized = setScriptVar(customized, 'language', userConfig.language, !!userConfig.language);
-    customized = setScriptVar(customized, 'country', userConfig.country, !!userConfig.country);
-    customized = setScriptVar(customized, 'timezone', userConfig.timezone, !!userConfig.timezone);
-    customized = setScriptVar(customized, 'zonename', userConfig.zonename, !!userConfig.zonename);
+    variables.device_name = { value: userConfig.deviceName, active: !!userConfig.deviceName };
+    variables.lan_ip_address = { value: userConfig.lanIpv4, active: !!userConfig.lanIpv4 && !apActive };
+    variables.lan_ipv6_address = { value: userConfig.lanIpv6, active: !!userConfig.lanIpv6 && !apActive };
+    variables.root_password = { value: userConfig.rootPassword, active: !!userConfig.rootPassword };
+    variables.language = { value: userConfig.language, active: !!userConfig.language };
+    variables.country = { value: userConfig.country, active: !!userConfig.country };
+    variables.timezone = { value: userConfig.timezone, active: !!userConfig.timezone };
+    variables.zonename = { value: userConfig.zonename, active: !!userConfig.zonename };
 
     // Wi-Fi
     const wifiActive = !!(userConfig.wifiSSID && userConfig.wifiPassword && String(userConfig.wifiPassword).length >= 8);
-    customized = setScriptVar(customized, 'wlan_name', userConfig.wifiSSID, wifiActive);
-    customized = setScriptVar(customized, 'wlan_password', userConfig.wifiPassword, wifiActive);
-
+    variables.wlan_name = { value: userConfig.wifiSSID, active: wifiActive };
+    variables.wlan_password = { value: userConfig.wifiPassword, active: wifiActive };
+    
     // APIベースの推奨値
     const api = apiInfo?.mape || {};
     const apiHasDslite = !!api.aftrIpv6Address;
@@ -3982,8 +3959,8 @@ async function customizeSetupScript(content, userConfig, apiInfo, selectedPackag
 
     // PPPoE
     const pppoeActive = (activeProto === 'pppoe');
-    customized = setScriptVar(customized, 'pppoe_username', userConfig.pppoeUsername || '', pppoeActive);
-    customized = setScriptVar(customized, 'pppoe_password', userConfig.pppoePassword || '', pppoeActive);
+    variables.pppoe_username = { value: userConfig.pppoeUsername || '', active: pppoeActive };
+    variables.pppoe_password = { value: userConfig.pppoePassword || '', active: pppoeActive };
 
     // DS-Lite
     let dsliteAddress = '';
@@ -3993,48 +3970,41 @@ async function customizeSetupScript(content, userConfig, apiInfo, selectedPackag
         dsliteAddress = userConfig.dsliteAftrAddress || '';
     }
     const dsliteActive = (activeProto === 'dslite') && !!dsliteAddress;
-    customized = setScriptVar(customized, 'dslite_aftr_address', dsliteAddress, dsliteActive);
+    variables.dslite_aftr_address = { value: dsliteAddress, active: dsliteActive };
 
     // MAP-E
     const mapeActive = (activeProto === 'mape');
-    customized = setScriptVar(customized, 'mape_br', mapeVals.br || '', mapeActive);
-    customized = setScriptVar(customized, 'mape_ealen', mapeVals.ealen || '', mapeActive);
-    customized = setScriptVar(customized, 'mape_ipv4_prefix', mapeVals.v4p || '', mapeActive);
-    customized = setScriptVar(customized, 'mape_ipv4_prefixlen', mapeVals.v4l || '', mapeActive);
-    customized = setScriptVar(customized, 'mape_ipv6_prefix', mapeVals.v6p || '', mapeActive);
-    customized = setScriptVar(customized, 'mape_ipv6_prefixlen', mapeVals.v6l || '', mapeActive);
-    customized = setScriptVar(customized, 'mape_psid_offset', mapeVals.off || '', mapeActive);
-    customized = setScriptVar(customized, 'mape_psidlen', mapeVals.psid || '', mapeActive);
+    variables.mape_br = { value: mapeVals.br || '', active: mapeActive };
+    variables.mape_ealen = { value: mapeVals.ealen || '', active: mapeActive };
+    variables.mape_ipv4_prefix = { value: mapeVals.v4p || '', active: mapeActive };
+    variables.mape_ipv4_prefixlen = { value: mapeVals.v4l || '', active: mapeActive };
+    variables.mape_ipv6_prefix = { value: mapeVals.v6p || '', active: mapeActive };
+    variables.mape_ipv6_prefixlen = { value: mapeVals.v6l || '', active: mapeActive };
+    variables.mape_psid_offset = { value: mapeVals.off || '', active: mapeActive };
+    variables.mape_psidlen = { value: mapeVals.psid || '', active: mapeActive };
 
     // MAP-E GUA
     const guaActive = mapeActive && (userConfig.mapeType === 'gua' || userConfig.mapeType === 'auto');
-    customized = setScriptVar(customized, 'mape_gua_mode', guaActive ? '1' : '', guaActive);
-    customized = setScriptVar(customized, 'mape_gua_prefix', guaActive ? guaPrefix : '', guaActive);
+    variables.mape_gua_mode = { value: guaActive ? '1' : '', active: guaActive };
+    variables.mape_gua_prefix = { value: guaActive ? guaPrefix : '', active: guaActive };
 
     // enable_* フラグ（選択で ON、非選択で OFF に戻す）
     if (selectedPackages) {
         const enableMap = {};
-        const allEnableVars = new Set();
-
+        
         PACKAGE_DB.categories.forEach(cat => {
             (cat.packages || []).forEach(pkg => {
                 if (pkg.enableVar) {
                     enableMap[pkg.name] = pkg.enableVar;
-                    allEnableVars.add(pkg.enableVar);
                 }
             });
         });
 
-        // まず全てを OFF（コメントアウト）に戻す
-        allEnableVars.forEach(varName => {
-            customized = setScriptVar(customized, varName, '', false);
-        });
-
-        // 選択されているパッケージに対応する enableVar を ON
+        // 選択されているパッケージに対応する enableVar を設定
         selectedPackages.forEach(pkgName => {
             const varName = enableMap[pkgName];
             if (varName) {
-                customized = setScriptVar(customized, varName, '1', true);
+                variables[varName] = { value: '1', active: true };
             }
         });
     }
@@ -4044,28 +4014,27 @@ async function customizeSetupScript(content, userConfig, apiInfo, selectedPackag
         await MapEProcessor.prepareForDisplay(config, apiInfo);
     }
 
-    // AP
+// AP（注意：apActiveをvariables定義より前に移動）
     const apActive = (activeProto === 'ap');
 
-    // ルーターIP：有値かつ非APのときだけ有効化（空 or AP ではコメントアウト）
-    customized = setScriptVar(customized, 'lan_ip_address', userConfig.lanIpv4, !!userConfig.lanIpv4 && !apActive);
-    customized = setScriptVar(customized, 'lan_ipv6_address', userConfig.lanIpv6, !!userConfig.lanIpv6 && !apActive);
-
-    // AP IP：AP時かつ有値のときだけ有効化（非AP or 空ではコメントアウト）
-    customized = setScriptVar(customized, 'ap_ip_address', userConfig.apIpAddress, apActive && !!userConfig.apIpAddress);
-    customized = setScriptVar(customized, 'ap_gateway', userConfig.apGateway, apActive && !!userConfig.apGateway);
+    // AP IP：AP時かつ有値のとき だけ有効化（非AP or 空ではコメントアウト）
+    variables.ap_ip_address = { value: userConfig.apIpAddress, active: apActive && !!userConfig.apIpAddress };
+    variables.ap_gateway = { value: userConfig.apGateway, active: apActive && !!userConfig.apGateway };
 
     // SSH Interface
-    customized = setScriptVar(customized, 'ssh_interface', userConfig.sshInterface, !!userConfig.sshInterface);
+    variables.ssh_interface = { value: userConfig.sshInterface, active: !!userConfig.sshInterface };
     
     // SSH Port
-    customized = setScriptVar(customized, 'ssh_port', userConfig.sshPort, !!userConfig.sshPort);
+    variables.ssh_port = { value: userConfig.sshPort, active: !!userConfig.sshPort };
     
     // Flow Offloading
-    customized = setScriptVar(customized, 'flow_offloading_type', userConfig.flowOffloading, !!userConfig.flowOffloading);
+    variables.flow_offloading_type = { value: userConfig.flowOffloading, active: !!userConfig.flowOffloading };
     
     // Backup Path
-    customized = setScriptVar(customized, 'backup_path', userConfig.backupPath, !!userConfig.backupPath);
+    variables.backup_path = { value: userConfig.backupPath, active: !!userConfig.backupPath };
+
+    // 変数定義を適用
+    customized = setVariableDefinitions(customized, variables);
 
     // Custom Commands
     const customCommands = getCustomCommands();
