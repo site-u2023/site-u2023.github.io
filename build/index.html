@@ -26,6 +26,15 @@
         color: #000;
     }
 
+    /* ライトモード：リンクのデフォルト */
+    a {
+        color: #007bff;
+    }
+
+    a:hover {
+        color: #0056b3;
+    }
+    
     /* PCブラウザ向けIME抑止（対応ブラウザのみ） */
     #models,
     #package-search,
@@ -641,7 +650,16 @@
             background-color: #18181b;
             color: #d0d0d0;
         }
-        
+
+        /* リンクのデフォルト */
+        a {
+            color: #64b5f6;
+        }
+    
+        a:hover {
+            color: #90caf9;
+        }
+
         #models,
         #versions {
             background-color: #313135;
@@ -709,20 +727,8 @@
         .aios-config {
             background-color: #252528;
             border-color: #444;
-        }
-
-        #aios-config a,
-        .package-category-description a {
-            color: #64b5f6 !important;
-            text-decoration: underline;
-        }
-    
-        #aios-config a:hover,
-        .package-category-description a:hover {
-            color: #90caf9 !important;
-        }       
+        }    
         
-
         h4 {
             background-color: #252528;
             border-color: #444;
