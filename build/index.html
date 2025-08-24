@@ -1529,61 +1529,51 @@ const MapEProcessor = {
         }
         return false;
     },
-
+    
     // 必要なmap.shがキャッシュされているかチェック
-    isScriptCached(version) {
-        const mapeInfo = config.getMapEInfo(version);
-        return mapeInfo.supported && !!mapShCache[mapeInfo.scriptType];
+    isScriptCached() {
+        return mapShCache !== undefined && mapShCache !== null;
     },
-
+    
     // map.shダウンロードの確保
-    async ensureScriptReady(version) {
-        const mapeInfo = config.getMapEInfo(version);
-        
-        if (!mapeInfo.supported) {
-            throw new Error(`MAP-E is not supported in OpenWrt ${version}`);
-        }
-
-        if (!mapShCache[mapeInfo.scriptType]) {
-            await loadMapShForVersion(version);
+    async ensureScriptReady() {
+        if (!mapShCache) {
+            await loadMapSh();
             
-            if (!mapShCache[mapeInfo.scriptType]) {
+            if (!mapShCache) {
                 throw new Error('Failed to download map.sh script. Please check your internet connection and try again.');
             }
         }
     },
-
+    
     // プレースホルダーの置換
-    replacePlaceholder(content, version) {
+    replacePlaceholder(content) {
         if (!content.includes('${map_sh_content}')) {
             return content;
         }
-
-        const mapeInfo = config.getMapEInfo(version);
-        const mapShContent = mapShCache[mapeInfo.scriptType];
-
-        if (!mapShContent) {
+        
+        if (!mapShCache) {
             throw new Error('MAP-E script not available in cache');
         }
-
-        const result = content.replace(/\$\{map_sh_content\}/g, mapShContent);
+        
+        const result = content.replace(/\$\{map_sh_content\}/g, mapShCache);
         
         if (result.includes('${map_sh_content}')) {
             throw new Error('MAP-E script embedding failed - placeholder still exists');
         }
-
+        
         return result;
     },
-
+    
     // 事前準備処理（設定画面表示時）
-    async prepareForDisplay(version, config, apiInfo) {
+    async prepareForDisplay(config, apiInfo) {
         if (this.isActive(config, apiInfo)) {
-            await loadMapShForVersion(version);
+            await loadMapSh();
         }
     },
-
+    
     // ビルド時処理（プレースホルダー置換）
-    async processForBuild(script, version, config, apiInfo) {
+    async processForBuild(script, config, apiInfo) {
         if (!this.isActive(config, apiInfo)) {
             return script;
         }
@@ -1592,8 +1582,8 @@ const MapEProcessor = {
             return script;
         }
     
-        await this.ensureScriptReady(version);
-        return this.replacePlaceholder(script, version);
+        await this.ensureScriptReady();
+        return this.replacePlaceholder(script);
     }
 };
 
