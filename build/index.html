@@ -4930,10 +4930,6 @@ async function fetchDevicePackages() {
     app.devicePackages = Array.from(allPkgsMap.values());
     ErrorHandler.packageDebug.dumpAll();
 
-    if (typeof generatePackageSelector === 'function') {
-        generatePackageSelector();
-    }
-
     function parsePackagesText(text, source) {
         const blocks = text.split(/\n\s*\n/);
         const pkgs = [];
