@@ -3472,7 +3472,6 @@ function showDeviceInfo() {
     } = window.cachedApiInfo || {};
 
     const countryValue = country;
-    const zoneValue    = zonename;
     const ispValue     = isp;
     const asValue      = asNumber;
     const ipAddressValue = [ipv4, ipv6].filter(Boolean).join(' / ') || 'unknown';
@@ -3538,8 +3537,12 @@ function showDeviceInfo() {
             <span class="col2" id="image-country">${countryValue}</span>
         </div>
         <div class="row">
-            <span class="col1">Zone</span>
-            <span class="col2" id="image-zone">${zoneValue}</span>
+            <span class="col1">Timezone</span>
+            <span class="col2" id="image-timezone">${timezone}</span>
+        </div>
+        <div class="row">
+            <span class="col1">Zonename</span>
+            <span class="col2" id="image-zonename">${zonename}</span>
         </div>
         <div class="row">
             <span class="col1">ISP</span>
