@@ -1310,23 +1310,23 @@ case "\${flow_offloading_type}" in
         uci set firewall.@defaults[0].flow_offloading_hw='1'
         ;;
 esac
-if [ -n "${wlan_name}" ] && [ -n "${wlan_password}" ]; then
+if [ -n "\${wlan_name}" ] && [ -n "\${wlan_password}" ]; then
     for radio in $(uci -q show wireless | grep "wireless\.radio[0-9]*=" | cut -d. -f2 | cut -d= -f1); do
-        uci set wireless.${radio}.disabled='0'
-        uci set wireless.${radio}.country="${country:-00}" 2>/dev/null
-        band=$(uci -q get wireless.${radio}.band)
-        case "${band}" in
+        uci set wireless.\${radio}.disabled='0'
+        uci set wireless.\${radio}.country="\${country:-00}" 2>/dev/null
+        band=$(uci -q get wireless.\${radio}.band)
+        case "\${band}" in
             2g) suffix="-2g"; encryption='sae-mixed' ;;
             5g) suffix="-5g"; encryption='sae-mixed' ;;
             6g) suffix="-6g"; encryption='sae' ;;
             *) suffix=""; encryption='sae-mixed' ;;
         esac
-        iface="default_${radio}"
-        [ -n "$(uci -q get wireless.${iface})" ] && {
-            uci set wireless.${iface}.disabled='0'
-            uci set wireless.${iface}.encryption="${encryption}"
-            uci set wireless.${iface}.ssid="${wlan_name}${suffix}"
-            uci set wireless.${iface}.key="${wlan_password}"
+        iface="default_\${radio}"
+        [ -n "$(uci -q get wireless.\${iface})" ] && {
+            uci set wireless.\${iface}.disabled='0'
+            uci set wireless.\${iface}.encryption="\${encryption}"
+            uci set wireless.\${iface}.ssid="\${wlan_name}\${suffix}"
+            uci set wireless.\${iface}.key="\${wlan_password}"
         }
     done
 fi
