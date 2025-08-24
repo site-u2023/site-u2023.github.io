@@ -1631,10 +1631,6 @@ const PACKAGE_DB = {
           name: "nlbwmon"
         },
         {
-          id: "wifischedule",
-          name: "wifischedule"
-        },
-        {
           id: "luci-app-wol",
           name: "luci-app-wol"
         },
@@ -1650,14 +1646,76 @@ const PACKAGE_DB = {
           id: "luci-app-mwan3",
           name: "luci-app-mwan3",
           dependencies: ["mwan3"]
-        },
+        }
+      ]
+    },
+    {
+      id: "wifi-management",
+      name: "Wi-Fi Management", 
+      description: "Wi-Fi scheduling, roaming optimization, and wireless utilities",
+      packages: [
         {
           id: "luci-app-usteer",
           name: "luci-app-usteer"
         },
         {
+          id: "wifischedule",
+          name: "wifischedule"
+        }
+      ]
+    },
+    {
+      id: "modem-support",
+      name: "Modem Support",
+      description: "4G/5G modem management and SMS tools",
+      packages: [
+        {
           id: "luci-proto-modemmanager",
-          name: "luci-proto-modemmanager"
+          name: "luci-proto-modemmanager",
+          dependencies: [
+            "kmod-usb-wdm",
+            "kmod-usb-net-cdc-mbim",
+            "kmod-usb-net-qmi-wwan",
+            "uqmi",
+            "mbim-utils",
+            "screen",
+            "smstools"
+          ]
+        },
+        {
+          id: "kmod-usb-wdm",
+          name: "kmod-usb-wdm",
+          hidden: true
+        },
+        {
+          id: "kmod-usb-net-cdc-mbim", 
+          name: "kmod-usb-net-cdc-mbim",
+          hidden: true
+        },
+        {
+          id: "kmod-usb-net-qmi-wwan",
+          name: "kmod-usb-net-qmi-wwan", 
+          hidden: true
+        },
+        {
+          id: "uqmi",
+          name: "uqmi",
+          hidden: true
+        },
+        {
+          id: "mbim-utils",
+          name: "mbim-utils",
+          hidden: true
+        },
+        {
+          id: "screen",
+          name: "screen",
+          hidden: true
+        },
+        {
+          id: "smstools",
+          name: "smstools",
+          hidden: true
         }
       ]
     },
@@ -1718,6 +1776,18 @@ const PACKAGE_DB = {
         {
           id: "tcpdump",
           name: "tcpdump"
+        },
+        {
+          id: "screen",
+          name: "screen"
+        },
+        {
+          id: "minicom",
+          name: "minicom"
+        },
+        {
+          id: "picocom",
+          name: "picocom"
         }
       ]
     },
@@ -1765,7 +1835,7 @@ const PACKAGE_DB = {
         },
         {
           id: "luci-proto-wireguard",
-          name: "luci-proto-wireguard"
+          name: "luci-proto-wireguard",
           dependencies: ["wireguard-tools"]
         },
         {
