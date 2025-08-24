@@ -4509,9 +4509,9 @@ function updateRequiredPackages() {
 // ==================== ビルド実行マネージャ ====================
 const BuildManager = (() => {
     let isBuilding = false;
-    const btn = document.getElementById('request-build');
 
     function setUIState(building) {
+        const btn = document.getElementById('request-build'); // ★毎回取得
         if (!btn) return;
         btn.disabled = building;
         btn.setAttribute('aria-busy', building ? 'true' : 'false');
