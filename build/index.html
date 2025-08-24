@@ -4343,6 +4343,153 @@ function updateRequiredPackages() {
   packagesTextarea.value = currentPackages.join(' ');
 }
 
+// ==================== ビルドエラー処理統一 ====================
+const BuildErrorHandler = {
+    // スクリプトサイズ計算（システム使用分も含む）
+    calculateTotalSize(script, packages) {
+        const scriptSize = new Blob([script]).size;
+        const packagesSize = new Blob([packages.join(' ')]).size;
+        const systemOverhead = 1024; // システム使用分約1KB
+        const totalSize = scriptSize + packagesSize + systemOverhead;
+        
+        console.log(`[SIZE CHECK] Script: ${scriptSize}B, Packages: ${packagesSize}B, System: ${systemOverhead}B, Total: ${totalSize}B`);
+        
+        return {
+            scriptSize,
+            packagesSize,
+            systemOverhead,
+            totalSize,
+            isOverLimit: totalSize > 20480 // 20KB = 20480 bytes
+        };
+    },
+
+    // エラー表示統一処理
+    showError(errorType, statusCode, errorData, sizeInfo = null) {
+        // 進捗バーを赤いエラー表示に変更
+        this.showErrorProgress(errorType, statusCode);
+        
+        // ステータス表示
+        hideProgress();
+        showBuildStatus(`Build failed: ${errorType}`, 'error');
+        
+        // 詳細エラー情報を構築
+        const errorDetails = this.buildErrorDetails(errorType, statusCode, errorData, sizeInfo);
+        
+        // エラー詳細をdownload-linksに表示
+        const container = document.getElementById('download-links');
+        container.innerHTML = errorDetails;
+        
+        // エラーエリアにスクロール
+        setTimeout(() => {
+            container.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'center' 
+            });
+        }, 200);
+    },
+
+    // 進捗バーのエラー表示
+    showErrorProgress(errorType, statusCode) {
+        const progressElement = document.getElementById('build-progress');
+        const messageElement = document.getElementById('build-message');
+        const progressBar = document.getElementById('progress-bar');
+        
+        // 進捗バーを赤に変更
+        progressBar.style.backgroundColor = '#dc3545';
+        progressBar.style.width = '100%';
+        messageElement.textContent = `Build failed: ${errorType} (HTTP ${statusCode})`;
+        progressElement.style.display = 'block';
+        
+        // 5秒後に自動で隠す
+        setTimeout(() => {
+            hideProgress();
+        }, 5000);
+    },
+
+    // エラー詳細HTML構築
+    buildErrorDetails(errorType, statusCode, errorData, sizeInfo) {
+        let html = `
+            <div class="asu-error" style="margin-top: 1rem;">
+                <h4>Build Failed - ${errorType}</h4>
+                <div><strong>HTTP Status:</strong> ${statusCode}</div>
+        `;
+
+        // 20KB制限チェック
+        if (sizeInfo && sizeInfo.isOverLimit) {
+            html += `
+                <div style="background-color: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; padding: 1rem; margin: 1rem 0; border-radius: 0.25rem;">
+                    <h5 style="margin-top: 0; color: #721c24;">🚫 Size Limit Exceeded</h5>
+                    <div><strong>Total Size:</strong> ${sizeInfo.totalSize} bytes (Limit: 20,480 bytes)</div>
+                    <div><strong>Breakdown:</strong></div>
+                    <ul style="margin: 0.5rem 0;">
+                        <li>Script: ${sizeInfo.scriptSize} bytes</li>
+                        <li>Packages: ${sizeInfo.packagesSize} bytes</li>
+                        <li>System overhead: ${sizeInfo.systemOverhead} bytes</li>
+                    </ul>
+                    <div><strong>Over by:</strong> ${sizeInfo.totalSize - 20480} bytes</div>
+                </div>
+            `;
+        }
+
+        // エラー詳細
+        if (errorData) {
+            if (typeof errorData === 'string') {
+                html += `<div><strong>Error Details:</strong></div>
+                         <pre style="background: #f8f8f8; padding: 10px; margin: 10px 0; border-radius: 4px; overflow-x: auto; font-size: 0.9em; max-height: 200px;">${errorData}</pre>`;
+            } else if (typeof errorData === 'object') {
+                // リクエストハッシュがあれば表示
+                if (errorData.request_hash) {
+                    html += `<div><strong>Request ID:</strong> <code>${errorData.request_hash}</code></div>`;
+                }
+                
+                // その他の詳細情報
+                const excludeFields = ['request_hash'];
+                for (const [key, value] of Object.entries(errorData)) {
+                    if (!excludeFields.includes(key) && value != null) {
+                        html += `<div><strong>${key}:</strong> ${JSON.stringify(value)}</div>`;
+                    }
+                }
+            }
+        }
+
+        // トラブルシューティング情報
+        html += this.getTroubleshootingInfo(errorType, sizeInfo);
+        html += '</div>';
+        
+        return html;
+    },
+
+    // トラブルシューティング情報
+    getTroubleshootingInfo(errorType, sizeInfo) {
+        let tips = [];
+        
+        if (sizeInfo && sizeInfo.isOverLimit) {
+            tips.push('Remove unnecessary packages or custom commands to reduce size');
+            tips.push('Consider using minimal package selection');
+        }
+        
+        if (errorType.includes('500')) {
+            tips.push('Verify network connectivity and try again');
+            tips.push('Check if custom script syntax is correct');
+            tips.push('Try building without custom packages first');
+        }
+        
+        if (tips.length === 0) {
+            tips.push('Verify device selection and network connectivity');
+            tips.push('Try again with reduced package selection');
+        }
+
+        return `
+            <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; color: #856404; padding: 1rem; margin: 1rem 0; border-radius: 0.25rem;">
+                <h5 style="margin-top: 0; color: #856404;">⚠️ Troubleshooting</h5>
+                <ul style="margin-bottom: 0;">
+                    ${tips.map(tip => `<li>${tip}</li>`).join('')}
+                </ul>
+            </div>
+        `;
+    }
+};
+        
 // ==================== ビルド処理 ====================
 async function buildAsuRequest() {
     console.log('[buildAsuRequest] Function entered');
@@ -4401,7 +4548,10 @@ async function buildAsuRequest() {
         if (script && script.trim()) {
             requestBody.defaults = script;
         }
-            
+
+        // サイズチェックを事前実行
+        const sizeInfo = BuildErrorHandler.calculateTotalSize(script, packages);
+        
         fetch('https://sysupgrade.openwrt.org/api/v1/build', {
             method: 'POST',
             headers: {
@@ -4461,8 +4611,7 @@ async function buildAsuRequest() {
             }
         })
         .catch((err) => {
-            hideProgress();
-            showBuildStatus(err.message, 'error');
+            BuildErrorHandler.showError('Network Error', null, err.message, sizeInfo);
         });
 
     } catch (error) {
@@ -4609,76 +4758,6 @@ function showBuildStatus(message, type) {
     
     bs.querySelector('span').textContent = message;
     bs.style.display = 'block';
-}
-
-function showBuildError(errorData, statusCode) {
-    // エラーメッセージを表示
-    let errorMessage = `Build failed (HTTP ${statusCode})`;
-    
-    if (errorData) {
-        if (typeof errorData === 'string') {
-            errorMessage += `: ${errorData}`;
-        } else if (errorData.detail) {
-            errorMessage += `: ${errorData.detail}`;
-        } else if (errorData.message) {
-            errorMessage += `: ${errorData.message}`;
-        } else if (errorData.error) {
-            errorMessage += `: ${errorData.error}`;
-        }
-    }
-    
-    showBuildStatus(errorMessage, 'error');
-    
-    // STDERR/STDOUTがある場合は詳細ログも表示
-    if (errorData && (errorData.stderr || errorData.stdout)) {
-        document.getElementById('asu-stderr').textContent = errorData.stderr || 'No error output';
-        document.getElementById('asu-stdout').textContent = errorData.stdout || 'No standard output';
-        document.getElementById('asu-log').style.display = 'block';
-        
-        // ログセクションにスクロール
-        setTimeout(() => {
-            const logElement = document.getElementById('asu-log');
-            if (logElement) {
-                logElement.scrollIntoView({ 
-                    behavior: 'smooth', 
-                    block: 'center' 
-                });
-            }
-        }, 200);
-    }
-    
-    // 追加のエラー詳細情報を表示
-    if (errorData && typeof errorData === 'object') {
-        const container = document.getElementById('download-links');
-        
-        let debugInfo = '<div class="asu-error" style="margin-top: 1rem;"><h4>Error Details</h4>';
-        
-        // リクエストハッシュがあれば表示
-        if (errorData.request_hash) {
-            debugInfo += `<div><strong>Request ID:</strong> <code>${errorData.request_hash}</code></div>`;
-        }
-        
-        // エラータイプを表示
-        if (errorData.status) {
-            debugInfo += `<div><strong>Build Status:</strong> ${errorData.status}</div>`;
-        }
-        
-        // ImageBuilderのステータス
-        if (errorData.imagebuilder_status) {
-            debugInfo += `<div><strong>ImageBuilder Status:</strong> ${errorData.imagebuilder_status}</div>`;
-        }
-        
-        // その他のフィールドも表示（デバッグ用）
-        const excludeFields = ['stderr', 'stdout', 'request_hash', 'status', 'imagebuilder_status', 'detail', 'message', 'error'];
-        for (const [key, value] of Object.entries(errorData)) {
-            if (!excludeFields.includes(key) && value != null) {
-                debugInfo += `<div><strong>${key}:</strong> ${JSON.stringify(value)}</div>`;
-            }
-        }
-        
-        debugInfo += '</div>';
-        container.innerHTML = debugInfo;
-    }
 }
 
 function formatDate(date) {
