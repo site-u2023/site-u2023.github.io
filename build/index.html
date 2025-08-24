@@ -1276,47 +1276,45 @@ AP6_NAME="ap6"
 # enable_irqbalance=""
 # enable_samba4=""
 exec >/tmp/setup.log 2>&1
-if [ -n "\${device_name}" ]; then
+[ -n "\${device_name}" ] && {
     uci set system.@system[0].hostname="\${device_name}"
-fi
-if [ -n "\${root_password}" ]; then
+}
+[ -n "\${root_password}" ] && {
     printf "%s\n%s\n" "\${root_password}" "\${root_password}" | passwd >/dev/null
-fi
-if [ -n "\${lan_ip_address}" ]; then
+}
+[ -n "\${lan_ip_address}" ] && {
     uci set network.lan.ipaddr="\${lan_ip_address}"
-fi
-if [ -n "\${lan_ipv6_address}" ]; then
+}
+[ -n "\${lan_ipv6_address}" ] && {
     uci set network.lan.ip6addr="\${lan_ipv6_address}"
-fi
-if [ -n "\${language}" ]; then
+}
+[ -n "\${language}" ] && {
     uci set system.@system[0].language="\${language}"
-fi
-if [ -n "\${timezone}" ]; then
+}
+[ -n "\${timezone}" ] && {
     uci set system.@system[0].timezone="\${timezone}"
-fi
-if [ -n "\${zonename}" ]; then
+}
+[ -n "\${zonename}" ] && {
     uci set system.@system[0].zonename="\${zonename}"
-fi
-if [ -n "\${ssh_interface}" ]; then
+}
+[ -n "\${ssh_interface}" ] && {
     uci set dropbear.@dropbear[0].Interface="\${ssh_interface}"
-fi
-if [ -n "\${ssh_port}" ]; then
+}
+[ -n "\${ssh_port}" ] && {
     uci set dropbear.@dropbear[0].Port="\${ssh_port}"
-fi
-case "\${flow_offloading_type}" in
-    "software")
-        uci set firewall.@defaults[0].flow_offloading='1'
-        ;;
-    "hardware")
-        uci set firewall.@defaults[0].flow_offloading='1'
-        uci set firewall.@defaults[0].flow_offloading_hw='1'
-        ;;
-esac
-if [ -n "\${wlan_name}" ] && [ -n "\${wlan_password}" ]; then
-    for radio in $(uci -q show wireless | grep "wireless\.radio[0-9]*=" | cut -d. -f2 | cut -d= -f1); do
+}
+[ "\${flow_offloading_type}" = "software" ] && {
+    uci set firewall.@defaults[0].flow_offloading='1'
+}
+[ "\${flow_offloading_type}" = "hardware" ] && {
+    uci set firewall.@defaults[0].flow_offloading='1'
+    uci set firewall.@defaults[0].flow_offloading_hw='1'
+}
+[ -n "\${wlan_name}" ] && [ -n "\${wlan_password}" ] && {
+    for radio in \$(uci -q show wireless | grep "wireless\.radio[0-9]*=" | cut -d. -f2 | cut -d= -f1); do
         uci set wireless.\${radio}.disabled='0'
         uci set wireless.\${radio}.country="\${country:-00}" 2>/dev/null
-        band=$(uci -q get wireless.\${radio}.band)
+        band=\$(uci -q get wireless.\${radio}.band)
         case "\${band}" in
             2g) suffix="-2g"; encryption='sae-mixed' ;;
             5g) suffix="-5g"; encryption='sae-mixed' ;;
@@ -1324,20 +1322,20 @@ if [ -n "\${wlan_name}" ] && [ -n "\${wlan_password}" ]; then
             *) suffix=""; encryption='sae-mixed' ;;
         esac
         iface="default_\${radio}"
-        [ -n "$(uci -q get wireless.\${iface})" ] && {
+        [ -n "\$(uci -q get wireless.\${iface})" ] && {
             uci set wireless.\${iface}.disabled='0'
             uci set wireless.\${iface}.encryption="\${encryption}"
             uci set wireless.\${iface}.ssid="\${wlan_name}\${suffix}"
             uci set wireless.\${iface}.key="\${wlan_password}"
         }
     done
-fi
-if [ -n "\${pppoe_username}" ] && [ -n "\${pppoe_password}" ]; then
+}
+[ -n "\${pppoe_username}" ] && [ -n "\${pppoe_password}" ] && {
     uci set network.wan.proto='pppoe'
     uci set network.wan.username="\${pppoe_username}"
     uci set network.wan.password="\${pppoe_password}"
-fi
-if [ -n "\${dslite_aftr_address}" ]; then
+}
+[ -n "\${dslite_aftr_address}" ] && {
     cp -p /etc/config/network /etc/config/network.\${DSLITE_NAME}.bak 2>/dev/null
     cp -p /etc/config/dhcp /etc/config/dhcp.\${DSLITE_NAME}.bak 2>/dev/null
     cp -p /etc/config/firewall /etc/config/firewall.\${DSLITE_NAME}.bak 2>/dev/null
@@ -1373,8 +1371,8 @@ if [ -n "\${dslite_aftr_address}" ]; then
     uci add_list firewall.@zone[1].network="\${DSLITE6_NAME}"
     uci set firewall.@zone[1].masq='1'
     uci set firewall.@zone[1].mtu_fix='1'
-fi
-if [ -n "\${mape_br}" ] && [ -n "\${mape_ealen}" ]; then
+}
+[ -n "\${mape_br}" ] && [ -n "\${mape_ealen}" ] && {
     cp -p /etc/config/network /etc/config/network.\${MAP_NAME}.bak 2>/dev/null
     cp -p /etc/config/dhcp /etc/config/dhcp.\${MAP_NAME}.bak 2>/dev/null
     cp -p /etc/config/firewall /etc/config/firewall.\${MAP_NAME}.bak 2>/dev/null
@@ -1388,9 +1386,9 @@ if [ -n "\${mape_br}" ] && [ -n "\${mape_ealen}" ]; then
     uci set network.\${MAP6_NAME}.device="\${WAN_DEF}"
     uci set network.\${MAP6_NAME}.reqaddress='try'
     uci set network.\${MAP6_NAME}.reqprefix='auto'
-    if [ -n "\${mape_gua_mode}" ]; then
+    [ -n "\${mape_gua_mode}" ] && {
         uci set network.\${MAP6_NAME}.ip6prefix="\${mape_gua_prefix}"
-    fi
+    }
     uci set network.\${MAP_NAME}=interface
     uci set network.\${MAP_NAME}.proto='map'
     uci set network.\${MAP_NAME}.maptype='map-e'
@@ -1426,8 +1424,8 @@ if [ -n "\${mape_br}" ] && [ -n "\${mape_ealen}" ]; then
     cat > /lib/netifd/proto/map.sh << 'MAP_SH_EOF'
 \${map_sh_content}
 MAP_SH_EOF
-fi
-if [ -n "\${ap_ip_address}" ]; then
+}
+[ -n "\${ap_ip_address}" ] && {
     cp -p /etc/config/network /etc/config/network.\${AP_NAME}.bak 2>/dev/null
     cp -p /etc/config/dhcp /etc/config/dhcp.\${AP_NAME}.bak 2>/dev/null
     cp -p /etc/config/firewall /etc/config/firewall.\${AP_NAME}.bak 2>/dev/null
@@ -1449,25 +1447,25 @@ if [ -n "\${ap_ip_address}" ]; then
     uci set network.\${AP6_NAME}.reqaddress='try'
     uci set network.\${AP6_NAME}.reqprefix='no'
     uci set network.\${AP6_NAME}.type='bridge'
-    [ -n "$(uci -q get wireless.default_radio0)" ] && uci set wireless.default_radio0.network="\${AP_NAME}"
-    [ -n "$(uci -q get wireless.default_radio1)" ] && uci set wireless.default_radio1.network="\${AP_NAME}"
-    [ -n "$(uci -q get wireless.default_radio2)" ] && uci set wireless.default_radio2.network="\${AP_NAME}"
+    [ -n "\$(uci -q get wireless.default_radio0)" ] && uci set wireless.default_radio0.network="\${AP_NAME}"
+    [ -n "\$(uci -q get wireless.default_radio1)" ] && uci set wireless.default_radio1.network="\${AP_NAME}"
+    [ -n "\$(uci -q get wireless.default_radio2)" ] && uci set wireless.default_radio2.network="\${AP_NAME}"
     [ -x /etc/init.d/odhcpd ] && /etc/init.d/odhcpd enabled && /etc/init.d/odhcpd disable
     [ -x /etc/init.d/odhcpd ] && /etc/init.d/odhcpd running && /etc/init.d/odhcpd stop
     [ -x /etc/init.d/dnsmasq ] && /etc/init.d/dnsmasq enabled && /etc/init.d/dnsmasq disable
     [ -x /etc/init.d/dnsmasq ] && /etc/init.d/dnsmasq running && /etc/init.d/dnsmasq stop
     [ -x /etc/init.d/firewall ] && /etc/init.d/firewall enabled && /etc/init.d/firewall disable
     [ -x /etc/init.d/firewall ] && /etc/init.d/firewall running && /etc/init.d/firewall stop
-fi
-if [ -n "\${enable_ttyd}" ]; then
-    uci set ttyd.@ttyd[0].ipv6='1' 
-    uci set ttyd.@ttyd[0].command='/bin/login -f root' 
-fi
-if [ -n "\${enable_irqbalance}" ]; then
+}
+[ -n "\${enable_ttyd}" ] && {
+    uci set ttyd.@ttyd[0].ipv6='1'
+    uci set ttyd.@ttyd[0].command='/bin/login -f root'
+}
+[ -n "\${enable_irqbalance}" ] && {
     uci set irqbalance.irqbalance=irqbalance
     uci set irqbalance.irqbalance.enabled='1'
-fi
-if [ -n "\${enable_samba4}" ]; then
+}
+[ -n "\${enable_samba4}" ] && {
     NAS="openwrt"
     MNT="/mnt/sda"
     uci set samba4.@samba[0]=samba
@@ -1485,14 +1483,14 @@ if [ -n "\${enable_samba4}" ]; then
     uci set samba4.sambashare.inherit_owner='yes'
     uci set samba4.sambashare.create_mask='0777'
     uci set samba4.sambashare.dir_mask='0777'
-fi
+}
 # BEGIN_CUSTOM_COMMANDS
 # END_CUSTOM_COMMANDS
 uci commit 2>/dev/null
 echo "All done!"
-if [ -n "\${backup_path}" ]; then
+[ -n "\${backup_path}" ] && {
     sysupgrade -q -k -b "\${backup_path}"
-fi
+}
 exit 0`;
 
 // config.js相当の設定
