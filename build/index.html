@@ -3867,8 +3867,13 @@ async function fetchApiInfo() {
 function setVariableDefinitions(content, variables) {
     const variableLines = [];
     
-    for (const [key, { value, active }] of Object.entries(variables)) {
+    for (const [key, config] of Object.entries(variables)) {
+        if (!config || typeof config !== 'object') continue;
+        
+        const { value, active } = config;
         const safeValue = (value === undefined || value === null) ? '' : String(value).trim();
+        
+        // activeがtrueで値がある場合のみ変数を定義
         if (active && safeValue !== '') {
             variableLines.push(`${key}="${safeValue}"`);
         }
@@ -3877,7 +3882,7 @@ function setVariableDefinitions(content, variables) {
     const variableText = variableLines.length > 0 ? variableLines.join('\n') : '';
     const managedRegion = /(# BEGIN_VARIABLE_DEFINITIONS\n)([\s\S]*?)(# END_VARIABLE_DEFINITIONS\n)/;
     
-    return content.replace(managedRegion, `$1${variableText}${variableText ? '\n' : ''}$3`);
+    return content.replace(managedRegion, `$1${variableText ? variableText + '\n' : ''}$3`);
 }
 
 // ==================== テンプレート設定 ====================
@@ -3907,36 +3912,19 @@ async function updateConfiguredTemplate() {
 
 async function customizeSetupScript(content, userConfig, apiInfo, selectedPackages) {
     let customized = content;
-    const variables = {};
 
-    // Basic settings
-    variables.device_name = { value: userConfig.deviceName, active: !!userConfig.deviceName };
-    variables.lan_ip_address = { value: userConfig.lanIpv4, active: !!userConfig.lanIpv4 && !apActive };
-    variables.lan_ipv6_address = { value: userConfig.lanIpv6, active: !!userConfig.lanIpv6 && !apActive };
-    variables.root_password = { value: userConfig.rootPassword, active: !!userConfig.rootPassword };
-    variables.language = { value: userConfig.language, active: !!userConfig.language };
-    variables.country = { value: userConfig.country, active: !!userConfig.country };
-    variables.timezone = { value: userConfig.timezone, active: !!userConfig.timezone };
-    variables.zonename = { value: userConfig.zonename, active: !!userConfig.zonename };
-
-    // Wi-Fi
-    const wifiActive = !!(userConfig.wifiSSID && userConfig.wifiPassword && String(userConfig.wifiPassword).length >= 8);
-    variables.wlan_name = { value: userConfig.wifiSSID, active: wifiActive };
-    variables.wlan_password = { value: userConfig.wifiPassword, active: wifiActive };
-    
     // APIベースの推奨値
     const api = apiInfo?.mape || {};
     const apiHasDslite = !!api.aftrIpv6Address;
     const apiHasMape = !!api.brIpv6Address;
 
-    // DS-Lite 候補値（未使用の dsliteVal は削除）
     // MAP-E 候補値
     const mapeVals = {
         br: userConfig.mapeBr || (apiHasMape ? api.brIpv6Address : ''),
         ealen: userConfig.mapeEalen || (apiHasMape ? api.eaBitLength : ''),
         v4p: userConfig.mapeIpv4Prefix || (apiHasMape ? api.ipv4Prefix : ''),
         v4l: userConfig.mapeIpv4Prefixlen || (apiHasMape ? api.ipv4PrefixLength : ''),
-        v6p: userConfig.mapeIpv6Prefix || (apiHasMape ? api.ipv6Prefix : ''),
+        v6p: userConfig.mapeIpv6Prefix || (apiHasMae ? api.ipv6Prefix : ''),
         v6l: userConfig.mapeIpv6Prefixlen || (apiHasMape ? api.ipv6PrefixLength : ''),
         off: userConfig.mapePsidOffset || (apiHasMape ? api.psIdOffset : ''),
         psid: userConfig.mapePsidlen || (apiHasMape ? api.psidlen : '')
@@ -3957,12 +3945,18 @@ async function customizeSetupScript(content, userConfig, apiInfo, selectedPackag
         else activeProto = 'dhcp';
     }
 
-    // PPPoE
+    // AP判定（重要：variables定義より前に行う）
+    const apActive = (activeProto === 'ap');
+    
+    // Wi-Fi設定判定
+    const wifiActive = !!(userConfig.wifiSSID && userConfig.wifiPassword && String(userConfig.wifiPassword).length >= 8);
+    
+    // プロトコル別の判定
     const pppoeActive = (activeProto === 'pppoe');
-    variables.pppoe_username = { value: userConfig.pppoeUsername || '', active: pppoeActive };
-    variables.pppoe_password = { value: userConfig.pppoePassword || '', active: pppoeActive };
-
-    // DS-Lite
+    const mapeActive = (activeProto === 'mape');
+    const guaActive = mapeActive && (userConfig.mapeType === 'gua' || userConfig.mapeType === 'auto');
+    
+    // DS-Lite設定
     let dsliteAddress = '';
     if (userConfig.dsliteMode === 'auto') {
         dsliteAddress = (apiInfo?.mape?.aftrIpv6Address) || userConfig.dsliteAftrAddress || '';
@@ -3970,25 +3964,58 @@ async function customizeSetupScript(content, userConfig, apiInfo, selectedPackag
         dsliteAddress = userConfig.dsliteAftrAddress || '';
     }
     const dsliteActive = (activeProto === 'dslite') && !!dsliteAddress;
-    variables.dslite_aftr_address = { value: dsliteAddress, active: dsliteActive };
 
-    // MAP-E
-    const mapeActive = (activeProto === 'mape');
-    variables.mape_br = { value: mapeVals.br || '', active: mapeActive };
-    variables.mape_ealen = { value: mapeVals.ealen || '', active: mapeActive };
-    variables.mape_ipv4_prefix = { value: mapeVals.v4p || '', active: mapeActive };
-    variables.mape_ipv4_prefixlen = { value: mapeVals.v4l || '', active: mapeActive };
-    variables.mape_ipv6_prefix = { value: mapeVals.v6p || '', active: mapeActive };
-    variables.mape_ipv6_prefixlen = { value: mapeVals.v6l || '', active: mapeActive };
-    variables.mape_psid_offset = { value: mapeVals.off || '', active: mapeActive };
-    variables.mape_psidlen = { value: mapeVals.psid || '', active: mapeActive };
+    // 変数定義オブジェクトを構築
+    const variables = {
+        // Basic settings
+        device_name: { value: userConfig.deviceName, active: !!userConfig.deviceName },
+        root_password: { value: userConfig.rootPassword, active: !!userConfig.rootPassword },
+        language: { value: userConfig.language, active: !!userConfig.language },
+        country: { value: userConfig.country, active: !!userConfig.country },
+        timezone: { value: userConfig.timezone, active: !!userConfig.timezone },
+        zonename: { value: userConfig.zonename, active: !!userConfig.zonename },
+        
+        // Network settings（AP判定後に設定）
+        lan_ip_address: { value: userConfig.lanIpv4, active: !!userConfig.lanIpv4 && !apActive },
+        lan_ipv6_address: { value: userConfig.lanIpv6, active: !!userConfig.lanIpv6 && !apActive },
+        
+        // Wi-Fi
+        wlan_name: { value: userConfig.wifiSSID, active: wifiActive },
+        wlan_password: { value: userConfig.wifiPassword, active: wifiActive },
+        
+        // SSH
+        ssh_interface: { value: userConfig.sshInterface, active: !!userConfig.sshInterface },
+        ssh_port: { value: userConfig.sshPort, active: !!userConfig.sshPort },
+        
+        // System
+        flow_offloading_type: { value: userConfig.flowOffloading, active: !!userConfig.flowOffloading },
+        backup_path: { value: userConfig.backupPath, active: !!userConfig.backupPath },
 
-    // MAP-E GUA
-    const guaActive = mapeActive && (userConfig.mapeType === 'gua' || userConfig.mapeType === 'auto');
-    variables.mape_gua_mode = { value: guaActive ? '1' : '', active: guaActive };
-    variables.mape_gua_prefix = { value: guaActive ? guaPrefix : '', active: guaActive };
+        // PPPoE
+        pppoe_username: { value: userConfig.pppoeUsername || '', active: pppoeActive },
+        pppoe_password: { value: userConfig.pppoePassword || '', active: pppoeActive },
 
-    // enable_* フラグ（選択で ON、非選択で OFF に戻す）
+        // DS-Lite
+        dslite_aftr_address: { value: dsliteAddress, active: dsliteActive },
+
+        // MAP-E
+        mape_br: { value: mapeVals.br || '', active: mapeActive },
+        mape_ealen: { value: mapeVals.ealen || '', active: mapeActive },
+        mape_ipv4_prefix: { value: mapeVals.v4p || '', active: mapeActive },
+        mape_ipv4_prefixlen: { value: mapeVals.v4l || '', active: mapeActive },
+        mape_ipv6_prefix: { value: mapeVals.v6p || '', active: mapeActive },
+        mape_ipv6_prefixlen: { value: mapeVals.v6l || '', active: mapeActive },
+        mape_psid_offset: { value: mapeVals.off || '', active: mapeActive },
+        mape_psidlen: { value: mapeVals.psid || '', active: mapeActive },
+        mape_gua_mode: { value: guaActive ? '1' : '', active: guaActive },
+        mape_gua_prefix: { value: guaActive ? guaPrefix : '', active: guaActive },
+
+        // AP
+        ap_ip_address: { value: userConfig.apIpAddress, active: apActive && !!userConfig.apIpAddress },
+        ap_gateway: { value: userConfig.apGateway, active: apActive && !!userConfig.apGateway }
+    };
+
+    // enable_* フラグ（選択で ON、非選択は設定しない）
     if (selectedPackages) {
         const enableMap = {};
         
@@ -4009,32 +4036,13 @@ async function customizeSetupScript(content, userConfig, apiInfo, selectedPackag
         });
     }
 
-    // MAP-E設定時の事前準備（ダウンロードのみ、プレースホルダーは保持）
-    if (mapeActive) {
-        await MapEProcessor.prepareForDisplay(config, apiInfo);
-    }
-
-// AP（注意：apActiveをvariables定義より前に移動）
-    const apActive = (activeProto === 'ap');
-
-    // AP IP：AP時かつ有値のとき だけ有効化（非AP or 空ではコメントアウト）
-    variables.ap_ip_address = { value: userConfig.apIpAddress, active: apActive && !!userConfig.apIpAddress };
-    variables.ap_gateway = { value: userConfig.apGateway, active: apActive && !!userConfig.apGateway };
-
-    // SSH Interface
-    variables.ssh_interface = { value: userConfig.sshInterface, active: !!userConfig.sshInterface };
-    
-    // SSH Port
-    variables.ssh_port = { value: userConfig.sshPort, active: !!userConfig.sshPort };
-    
-    // Flow Offloading
-    variables.flow_offloading_type = { value: userConfig.flowOffloading, active: !!userConfig.flowOffloading };
-    
-    // Backup Path
-    variables.backup_path = { value: userConfig.backupPath, active: !!userConfig.backupPath };
-
     // 変数定義を適用
     customized = setVariableDefinitions(customized, variables);
+
+    // MAP-E設定時の事前準備（ダウンロードのみ、プレースホルダーは保持）
+    if (mapeActive) {
+        await MapEProcessor.prepareForDisplay(userConfig, apiInfo);
+    }
 
     // Custom Commands
     const customCommands = getCustomCommands();
