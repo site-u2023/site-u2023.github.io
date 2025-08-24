@@ -4929,9 +4929,6 @@ async function fetchDevicePackages() {
 
     app.devicePackages = Array.from(allPkgsMap.values());
     ErrorHandler.packageDebug.dumpAll();
-
-    if (typeof generatePackageSelector === 'function') {
-        generatePackageSelector();
     }
 
     function parsePackagesText(text, source) {
