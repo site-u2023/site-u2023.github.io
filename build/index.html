@@ -1281,10 +1281,10 @@ exec >/tmp/setup.log 2>&1
         uci set wireless.\${radio}.country="\${country:-00}" 2>/dev/null
         band=$(uci -q get wireless.\${radio}.band)
         case "\${band}" in
-            2g) suffix="-2g"; encryption='psk2' ;;
+            2g) suffix="-2g"; encryption='psk-mixed' ;;
             5g) suffix="-5g"; encryption='sae-mixed' ;;
             6g) suffix="-6g"; encryption='sae' ;;
-            *) suffix=""; encryption='psk2' ;;
+            *) suffix=""; encryption='psk-mixed' ;;
         esac
         iface="default_\${radio}"
         [ -n "$(uci -q get wireless.\${iface})" ] && {
