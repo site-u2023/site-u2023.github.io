@@ -282,6 +282,13 @@
         color: #fff;
     }
 
+    /* 無効化時の視覚とポインタ */
+    .custom-link:disabled {
+        opacity: 0.65;
+        cursor: not-allowed;
+        filter: grayscale(10%);
+    }
+    
     /* flex揃えだけで統一し、内部アイコンは公式通り:first-childに直接content */
     .custom-link > :first-child,
     .download-link > :first-child {
@@ -1197,10 +1204,11 @@
                     </details>  <!-- use-aios-config-details を閉じる -->
                 </div>
 
-                <a id="request-build" href="javascript:buildAsuRequest()" class="custom-link">
+                <button id="request-build" type="button" class="custom-link" aria-busy="false">
                     <span></span>
                     <span>REQUEST BUILD</span>
-                </a>
+                </button>
+            
             <!-- </details> -->  <!-- asu を閉じる -->
         </div>
 
@@ -2176,7 +2184,31 @@ const ErrorHandler = {
         }
     }
 };
-        
+
+
+// ==================== fetch タイムアウト（AbortController） ====================
+/**
+ * 共通 fetch + タイムアウト制御
+ * @param {string} url - リクエスト先URL
+ * @param {object} options - fetchオプション（timeoutMsを含められる）
+ * @param {number} [options.timeoutMs=15000] - タイムアウト時間(ms)
+ */
+async function fetchWithTimeout(url, options = {}) {
+    const { timeoutMs = 15000, ...fetchOptions } = options;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+        return await fetch(url, { ...fetchOptions, signal: controller.signal });
+    } catch (err) {
+        if (err.name === 'AbortError') {
+            throw new Error(`Fetch timeout after ${timeoutMs}ms`);
+        }
+        throw err;
+    } finally {
+        clearTimeout(timer);
+    }
+}
+
 // ==================== URL管理の統一関数 ====================
 function setupVersionUrls(version) {
     if (!config.image_urls) config.image_urls = {};
@@ -2443,7 +2475,7 @@ async function loadMapShForVersion(version) {
             // ダウンロードPromiseを保存
             downloadPromises[key] = (async () => {
                 try {
-                    const response = await fetch(scriptUrl);
+                    const response = await fetchWithTimeout(scriptUrl, { timeoutMs: 10000 });
                     
                     if (response.ok) {
                         const content = await response.text();
@@ -2521,10 +2553,8 @@ function bindEvents() {
     const buildBtnEl = document.getElementById('request-build');
     if (buildBtnEl) {
         console.log('[BIND] Adding click listener to build button');
-        
-        buildBtnEl.removeAttribute('href');
+
         buildBtnEl.addEventListener('click', (e) => {
-            e.preventDefault();
             e.stopImmediatePropagation();
             
             console.log('[BIND] About to call buildAsuRequest');
@@ -3965,12 +3995,10 @@ async function fetchApiInfo() {
             const cacheBreaker = `?_t=${Date.now()}&_r=${Math.random()}`;
             const finalUrl = apiUrl + cacheBreaker;
             
-            const response = await fetch(finalUrl, {
+            const response = await fetchWithTimeout(finalUrl, {
                 method: 'GET',
-                headers: {
-                    'Accept': 'application/json'
-                },
-                timeout: 10000  // 10秒タイムアウト
+                headers: { 'Accept': 'application/json' },
+                timeoutMs: 10000
             });
             
             console.log(`API response status (${apiUrl}):`, response.status);
@@ -4492,7 +4520,11 @@ async function buildAsuRequest() {
 
     try {
         console.log('[buildAsuRequest] Entering try block');
-        document.getElementById('request-build').disabled = true;
+        const btn = document.getElementById('request-build');
+        if (btn) {
+            btn.disabled = true;
+            btn.setAttribute('aria-busy', 'true');
+        }
         console.log('[buildAsuRequest] Button disabled');
         showProgress('Preparing build request...', 10);
         console.log('[buildAsuRequest] Progress shown');
@@ -4538,13 +4570,14 @@ async function buildAsuRequest() {
             requestBody.defaults = script;
         }
             
-        fetch('https://sysupgrade.openwrt.org/api/v1/build', {
+        fetchWithTimeout('https://sysupgrade.openwrt.org/api/v1/build', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json'
             },
-            body: JSON.stringify(requestBody)
+            body: JSON.stringify(requestBody),
+            timeoutMs: 15000
         })
         .then((response) => {
             switch (response.status) {
@@ -4606,7 +4639,11 @@ async function buildAsuRequest() {
         hideProgress();
         showBuildStatus(`Build failed: ${error.message}`, 'error');
     } finally {
-        document.getElementById('request-build').disabled = false;
+        const btn = document.getElementById('request-build');
+        if (btn) {
+            btn.disabled = false;
+            btn.removeAttribute('aria-busy');
+        }
     }
 }
 
@@ -4618,9 +4655,10 @@ async function pollBuildStatus(requestHash) {
     while (attempts < maxAttempts) {
         try {
             const statusUrl = `https://sysupgrade.openwrt.org/api/v1/build/${requestHash}`;
-            const response = await fetch(statusUrl, {
+            const response = await fetchWithTimeout(statusUrl, {
                 method: 'GET',
-                headers: { 'Accept': 'application/json' }
+                headers: { 'Accept': 'application/json' },
+                timeoutMs: 10000
             });
 
             if (!response.ok) {
