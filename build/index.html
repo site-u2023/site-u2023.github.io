@@ -4506,39 +4506,52 @@ function updateRequiredPackages() {
   packagesTextarea.value = currentPackages.join(' ');
 }
 
-// グローバルに追加（関数の外）
-let isBuilding = false;
+// ==================== ビルド実行マネージャ ====================
+const BuildManager = (() => {
+    let isBuilding = false;
+    const btn = document.getElementById('request-build');
+
+    function setUIState(building) {
+        if (!btn) return;
+        btn.disabled = building;
+        btn.setAttribute('aria-busy', building ? 'true' : 'false');
+    }
+
+    async function run(taskFn) {
+        if (isBuilding) {
+            console.log('[BuildManager] Already building, ignoring request');
+            return;
+        }
+        isBuilding = true;
+        setUIState(true);
+
+        try {
+            await taskFn();
+        } catch (err) {
+            console.error('[BuildManager] Task failed:', err);
+            throw err;
+        } finally {
+            isBuilding = false;
+            setUIState(false);
+        }
+    }
+
+    return { run };
+})();
 
 // ==================== ビルド処理 ====================
 async function buildAsuRequest() {
-    console.log('[buildAsuRequest] Function entered');
+    await BuildManager.run(async () => {
+        console.log('[buildAsuRequest] Function entered');
 
-    // ★ 多重防止ガード
-    if (isBuilding) {
-        console.log('[buildAsuRequest] Already building, ignoring click');
-        return;
-    }
-    isBuilding = true;
-
-    if (!current_device || !current_device.id) {
-        console.log('[buildAsuRequest] No device selected');
-        alert('Please select a device first');
-        isBuilding = false; // デバイス未選択時は即解除
-        return;
-    }
-
-    console.log('[buildAsuRequest] Device check passed');
-
-    try {
-        console.log('[buildAsuRequest] Entering try block');
-        const btn = document.getElementById('request-build');
-        if (btn) {
-            btn.disabled = true;
-            btn.setAttribute('aria-busy', 'true');
+        if (!current_device || !current_device.id) {
+            console.log('[buildAsuRequest] No device selected');
+            alert('Please select a device first');
+            return;
         }
-        console.log('[buildAsuRequest] Button disabled');
+
+        console.log('[buildAsuRequest] Device check passed');
         showProgress('Preparing build request...', 10);
-        console.log('[buildAsuRequest] Progress shown');
 
         // 初回の進捗表示時に確実にスクロール
         setTimeout(() => {
@@ -4644,122 +4657,7 @@ async function buildAsuRequest() {
             hideProgress();
             showBuildStatus(err.message, 'error');
         });
-
-    } catch (error) {
-        console.error('Build request failed:', error);
-        hideProgress();
-        showBuildStatus(`Build failed: ${error.message}`, 'error');
-    } finally {
-        // ★ フラグ解除
-        isBuilding = false;
-
-        const btn = document.getElementById('request-build');
-        if (btn) {
-            btn.disabled = false;
-            btn.removeAttribute('aria-busy');
-        }
-    }
-}
-
-async function pollBuildStatus(requestHash) {
-    const maxAttempts = 120;
-    let attempts = 0;
-    const startTime = Date.now();
-
-    while (attempts < maxAttempts) {
-        try {
-            const statusUrl = `https://sysupgrade.openwrt.org/api/v1/build/${requestHash}`;
-            const response = await fetchWithTimeout(statusUrl, {
-                method: 'GET',
-                headers: { 'Accept': 'application/json' },
-                timeoutMs: 10000
-            });
-
-            if (!response.ok) {
-                if (response.status === 404 && attempts < 5) {
-                    const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
-                    const minutes = Math.floor(elapsedSeconds / 60);
-                    const seconds = elapsedSeconds % 60;
-                    const timeStr = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
-
-                    showProgress(`Waiting for build to start... ${timeStr}`, 10);
-                    await new Promise(resolve => setTimeout(resolve, 5000));
-                    attempts++;
-                    continue;
-                }
-                throw new Error(`Status check failed: HTTP ${response.status}`);
-            }
-
-            const statusText = await response.text();
-            let status;
-
-            try {
-                status = JSON.parse(statusText);
-            } catch (e) {
-                throw new Error('Invalid JSON in status response: ' + statusText);
-            }
-
-            const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
-            const minutes = Math.floor(elapsedSeconds / 60);
-            const seconds = elapsedSeconds % 60;
-            const timeStr = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
-
-            const progressPercent = Math.min((elapsedSeconds / 600) * 85 + 10, 95);
-            const progressMsg =
-                status.detail && typeof status.detail === 'string' ? status.detail :
-                status.status && typeof status.status === 'string' ? status.status :
-                'Processing';
-
-            if (status.status === 'done' || status.status === 'success' || 
-                status.detail === 'done' || status.imagebuilder_status === 'done') {
-                const images = status.images || 
-                               status.request?.images || 
-                               status.request?.files ||
-                               status.files || [];
-
-                const rh = status.request_hash || status.request?.request_hash;
-
-                showProgress('Build completed!', 100);
-                setTimeout(() => {
-                    hideProgress();
-                    showBuildStatus('Build successful', 'info');
-                    
-                    // STDERR/STDOUT の表示
-                    if (status.stderr || status.stdout) {
-                        document.getElementById('asu-stderr').textContent = status.stderr || 'No errors';
-                        document.getElementById('asu-stdout').textContent = status.stdout || 'No output';
-                        document.getElementById('asu-log').style.display = 'block';
-                    }
-                    
-                    showDownloadLinks(images, status, rh);
-                }, 500);
-                return;
-            }
-
-            if (status.status === 'failed' || status.status === 'failure' || 
-                status.detail === 'failed' || status.imagebuilder_status === 'failed') {
-                
-                // ビルド失敗時も詳細情報を表示
-                hideProgress();
-                showBuildError(status, null);
-                return;
-            }
-
-            showProgress(`${progressMsg}... ${timeStr}`, progressPercent);
-            await new Promise(resolve => setTimeout(resolve, 5000));
-            attempts++;
-
-        } catch (error) {
-            if (attempts >= 5) throw error;
-
-            const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
-            showProgress(`Connection error, retrying... ${elapsedSeconds}s`, 5);
-            await new Promise(resolve => setTimeout(resolve, 5000));
-            attempts++;
-        }
-    }
-
-    throw new Error('Build timeout after 10 minutes');
+    });
 }
 
 function showProgress(message, percentage) {
