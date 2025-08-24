@@ -73,6 +73,12 @@
         margin-bottom: 2rem;
         color: #6c757d;
     }
+
+    /* 公式互換のオートコンプリート */
+    #models-autocomplete {
+        display: flex;
+        padding-top: 0;
+    }
     
     .autocomplete {
         position: relative;
@@ -121,20 +127,13 @@
         border-bottom: 1px solid #d4d4d4;
     }
 
-    .autocomplete-items div:hover,
-    .autocomplete-active {
-        background-color: #0080b3 !important;
-        color: #fff;
-    }
-
-    /* オートコンプリートの選択状態 */
-    .autocomplete-active {
-        background-color: DodgerBlue !important;
-        color: #ffffff;
-    }
-    
     .autocomplete-items div:hover {
         background-color: #e9ecef;
+    }
+
+    .autocomplete-active {
+        background-color: #00a3e1 !important;
+        color: #ffffff;
     }
 
     /* フォーム要素 */
@@ -282,13 +281,6 @@
         color: #fff;
     }
 
-    /* 無効化時の視覚とポインタ */
-    .custom-link:disabled {
-        opacity: 0.65;
-        cursor: not-allowed;
-        filter: grayscale(10%);
-    }
-    
     /* flex揃えだけで統一し、内部アイコンは公式通り:first-childに直接content */
     .custom-link > :first-child,
     .download-link > :first-child {
@@ -692,6 +684,12 @@
             border-color: #444;
         }
         
+        .autocomplete-items div:hover,
+        .autocomplete-active {
+            background-color: #0080b3 !important;
+            color: #fff;
+        }
+        
         .info {
             background-color: #1d4046;
             border-color: #2a5a61;
@@ -784,6 +782,10 @@
 
         <div id="info" class="info" style="display: none;">
             <!-- Content will be dynamically generated -->
+        </div>
+
+        <div id="images" class="images" style="display: none;">
+            <!-- Device images will be shown here -->
         </div>
 
         <div id="packages" class="packages" style="display: none;">
@@ -1204,11 +1206,10 @@
                     </details>  <!-- use-aios-config-details を閉じる -->
                 </div>
 
-                <button id="request-build" type="button" class="custom-link" aria-busy="false">
+                <a id="request-build" href="javascript:buildAsuRequest()" class="custom-link">
                     <span></span>
                     <span>REQUEST BUILD</span>
-                </button>
-            
+                </a>
             <!-- </details> -->  <!-- asu を閉じる -->
         </div>
 
@@ -2184,31 +2185,37 @@ const ErrorHandler = {
         }
     }
 };
-
-
-// ==================== fetch タイムアウト（AbortController） ====================
-/**
- * 共通 fetch + タイムアウト制御
- * @param {string} url - リクエスト先URL
- * @param {object} options - fetchオプション（timeoutMsを含められる）
- * @param {number} [options.timeoutMs=15000] - タイムアウト時間(ms)
- */
-async function fetchWithTimeout(url, options = {}) {
-    const { timeoutMs = 15000, ...fetchOptions } = options;
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
+        
+// ==================== URL存在確認ユーティリティ ====================
+async function checkUrlExists(url) {
     try {
-        return await fetch(url, { ...fetchOptions, signal: controller.signal });
-    } catch (err) {
-        if (err.name === 'AbortError') {
-            throw new Error(`Fetch timeout after ${timeoutMs}ms`);
-        }
-        throw err;
-    } finally {
-        clearTimeout(timer);
+        const response = await fetch(url, { 
+            method: 'HEAD',
+            cache: 'no-cache'
+        });
+        return response.ok;
+    } catch (error) {
+        // CORSエラーの場合もfalseとして扱う
+        console.log(`URL check failed for ${url}:`, error.message);
+        return false;
     }
 }
 
+// 複数URLから有効なものを検出
+async function findValidUrls(urlCandidates) {
+    const validUrls = [];
+    
+    for (const url of urlCandidates) {
+        const exists = await checkUrlExists(url);
+        console.log(`URL ${exists ? '✓' : '✗'}: ${url}`);
+        if (exists) {
+            validUrls.push(url);
+        }
+    }
+    
+    return validUrls;
+}
+        
 // ==================== URL管理の統一関数 ====================
 function setupVersionUrls(version) {
     if (!config.image_urls) config.image_urls = {};
@@ -2226,6 +2233,24 @@ function setupVersionUrls(version) {
 
     config.overview_urls[version] = `${overview_url}/${basePath}/`;
     config.image_urls[version]    = `${image_url}/${basePath}/`;
+}
+        
+// ==================== ユーティリティ関数 ====================
+async function loadPackageDatabase() {
+    const res = await fetch('data/packages.json');
+    app.packageDB = await res.json();
+}
+
+function updateInstalledPackageList() {
+    const container = document.getElementById('installed-packages');
+    if (!container) return;
+
+    container.innerHTML = '';
+    app.packageDB.forEach(pkg => {
+        const li = document.createElement('li');
+        li.textContent = pkg.name;
+        container.appendChild(li);
+    });
 }
 
 // ==================== 初期化関数 ====================
@@ -2475,7 +2500,7 @@ async function loadMapShForVersion(version) {
             // ダウンロードPromiseを保存
             downloadPromises[key] = (async () => {
                 try {
-                    const response = await fetchWithTimeout(scriptUrl, { timeoutMs: 10000 });
+                    const response = await fetch(scriptUrl);
                     
                     if (response.ok) {
                         const content = await response.text();
@@ -2553,8 +2578,10 @@ function bindEvents() {
     const buildBtnEl = document.getElementById('request-build');
     if (buildBtnEl) {
         console.log('[BIND] Adding click listener to build button');
-
+        
+        buildBtnEl.removeAttribute('href');
         buildBtnEl.addEventListener('click', (e) => {
+            e.preventDefault();
             e.stopImmediatePropagation();
             
             console.log('[BIND] About to call buildAsuRequest');
@@ -2647,6 +2674,23 @@ function bindEvents() {
     connectionSections.forEach(id => {
         const section = document.getElementById(id);
         if (section) section.style.display = 'none';
+    });
+}
+
+// ===== パスワード表示切り替え機能 =====
+const togglePasswordBtn = document.getElementById('toggle-password');
+if (togglePasswordBtn) {
+    togglePasswordBtn.addEventListener('click', function() {
+        const passwordInput = document.getElementById('aios-root-password');
+        const passwordIcon = document.getElementById('password-icon');
+        
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            passwordIcon.textContent = '👁️‍🗨️';
+        } else {
+            passwordInput.type = 'password';
+            passwordIcon.textContent = '👁️';
+        }
     });
 }
 
@@ -3995,10 +4039,12 @@ async function fetchApiInfo() {
             const cacheBreaker = `?_t=${Date.now()}&_r=${Math.random()}`;
             const finalUrl = apiUrl + cacheBreaker;
             
-            const response = await fetchWithTimeout(finalUrl, {
+            const response = await fetch(finalUrl, {
                 method: 'GET',
-                headers: { 'Accept': 'application/json' },
-                timeoutMs: 10000
+                headers: {
+                    'Accept': 'application/json'
+                },
+                timeout: 10000  // 10秒タイムアウト
             });
             
             console.log(`API response status (${apiUrl}):`, response.status);
@@ -4506,60 +4552,32 @@ function updateRequiredPackages() {
   packagesTextarea.value = currentPackages.join(' ');
 }
 
-// ==================== ビルド実行マネージャ ====================
-const BuildManager = (() => {
-    let isBuilding = false;
-
-    function setUIState(building) {
-        const btn = document.getElementById('request-build'); // ★毎回取得
-        if (!btn) return;
-        btn.disabled = building;
-        btn.setAttribute('aria-busy', building ? 'true' : 'false');
-    }
-
-    async function run(taskFn) {
-        if (isBuilding) {
-            console.log('[BuildManager] Already building, ignoring request');
-            return;
-        }
-        isBuilding = true;
-        setUIState(true);
-
-        try {
-            await taskFn();
-        } catch (err) {
-            console.error('[BuildManager] Task failed:', err);
-            throw err;
-        } finally {
-            isBuilding = false;
-            setUIState(false);
-        }
-    }
-
-    return { run };
-})();
-
 // ==================== ビルド処理 ====================
 async function buildAsuRequest() {
-    await BuildManager.run(async () => {
-        console.log('[buildAsuRequest] Function entered');
+    console.log('[buildAsuRequest] Function entered');
+    
+    if (!current_device || !current_device.id) {
+        console.log('[buildAsuRequest] No device selected');
+        alert('Please select a device first');
+        return;
+    }
+    
+    console.log('[buildAsuRequest] Device check passed');
 
-        if (!current_device || !current_device.id) {
-            console.log('[buildAsuRequest] No device selected');
-            alert('Please select a device first');
-            return;
-        }
-
-        console.log('[buildAsuRequest] Device check passed');
+    try {
+        console.log('[buildAsuRequest] Entering try block');
+        document.getElementById('request-build').disabled = true;
+        console.log('[buildAsuRequest] Button disabled');
         showProgress('Preparing build request...', 10);
-
+        console.log('[buildAsuRequest] Progress shown');
+        
         // 初回の進捗表示時に確実にスクロール
         setTimeout(() => {
             const progressElement = document.getElementById('build-progress');
             if (progressElement) {
-                progressElement.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'center'
+                progressElement.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'center' 
                 });
             }
         }, 200);
@@ -4572,9 +4590,9 @@ async function buildAsuRequest() {
         console.log('[buildAsuRequest] Calling MapEProcessor');
         // MAP-E処理（必要時のみプレースホルダー置換）
         script = await MapEProcessor.processForBuild(
-            script,
-            app.selectedVersion,
-            getAiosConfig(),
+            script, 
+            app.selectedVersion, 
+            getAiosConfig(), 
             window.cachedApiInfo
         );
         console.log('[VERIFY] Script size:', originalSize, '→', script.length, '(', script.length - originalSize, 'bytes added)');
@@ -4593,15 +4611,14 @@ async function buildAsuRequest() {
         if (script && script.trim()) {
             requestBody.defaults = script;
         }
-
-        await fetchWithTimeout('https://sysupgrade.openwrt.org/api/v1/build', {
+            
+        fetch('https://sysupgrade.openwrt.org/api/v1/build', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json'
             },
-            body: JSON.stringify(requestBody),
-            timeoutMs: 15000
+            body: JSON.stringify(requestBody)
         })
         .then((response) => {
             switch (response.status) {
@@ -4633,7 +4650,7 @@ async function buildAsuRequest() {
                     response.text().then((responseText) => {
                         hideProgress();
                         showBuildStatus('Build failed: HTTP 500 Server Error', 'error');
-
+                        
                         // 詳細なエラー情報を表示
                         const container = document.getElementById('download-links');
                         container.innerHTML = `
@@ -4643,7 +4660,7 @@ async function buildAsuRequest() {
                                 <div><strong>Error Details:</strong></div>
                                 <pre style="background: #f8f8f8; padding: 10px; margin: 10px 0; border-radius: 4px; overflow-x: auto; font-size: 0.9em; max-height: 200px;">${responseText}</pre>
                             </div>
-
+                            
                             <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; color: #856404; padding: 1rem; margin: 1rem 0; border-radius: 0.25rem;">
                                 <h5 style="margin-top: 0; color: #856404;">⚠️ Troubleshooting</h5>
                                 <p style="margin-bottom: 0;">Please verify network connectivity, package selection, and script configuration. Try removing custom packages or scripts, then retry the build.</p>
@@ -4657,7 +4674,114 @@ async function buildAsuRequest() {
             hideProgress();
             showBuildStatus(err.message, 'error');
         });
-    });
+
+    } catch (error) {
+        console.error('Build request failed:', error);
+        hideProgress();
+        showBuildStatus(`Build failed: ${error.message}`, 'error');
+    } finally {
+        document.getElementById('request-build').disabled = false;
+    }
+}
+
+async function pollBuildStatus(requestHash) {
+    const maxAttempts = 120;
+    let attempts = 0;
+    const startTime = Date.now();
+
+    while (attempts < maxAttempts) {
+        try {
+            const statusUrl = `https://sysupgrade.openwrt.org/api/v1/build/${requestHash}`;
+            const response = await fetch(statusUrl, {
+                method: 'GET',
+                headers: { 'Accept': 'application/json' }
+            });
+
+            if (!response.ok) {
+                if (response.status === 404 && attempts < 5) {
+                    const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+                    const minutes = Math.floor(elapsedSeconds / 60);
+                    const seconds = elapsedSeconds % 60;
+                    const timeStr = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+
+                    showProgress(`Waiting for build to start... ${timeStr}`, 10);
+                    await new Promise(resolve => setTimeout(resolve, 5000));
+                    attempts++;
+                    continue;
+                }
+                throw new Error(`Status check failed: HTTP ${response.status}`);
+            }
+
+            const statusText = await response.text();
+            let status;
+
+            try {
+                status = JSON.parse(statusText);
+            } catch (e) {
+                throw new Error('Invalid JSON in status response: ' + statusText);
+            }
+
+            const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+            const minutes = Math.floor(elapsedSeconds / 60);
+            const seconds = elapsedSeconds % 60;
+            const timeStr = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+
+            const progressPercent = Math.min((elapsedSeconds / 600) * 85 + 10, 95);
+            const progressMsg =
+                status.detail && typeof status.detail === 'string' ? status.detail :
+                status.status && typeof status.status === 'string' ? status.status :
+                'Processing';
+
+            if (status.status === 'done' || status.status === 'success' || 
+                status.detail === 'done' || status.imagebuilder_status === 'done') {
+                const images = status.images || 
+                               status.request?.images || 
+                               status.request?.files ||
+                               status.files || [];
+
+                const rh = status.request_hash || status.request?.request_hash;
+
+                showProgress('Build completed!', 100);
+                setTimeout(() => {
+                    hideProgress();
+                    showBuildStatus('Build successful', 'info');
+                    
+                    // STDERR/STDOUT の表示
+                    if (status.stderr || status.stdout) {
+                        document.getElementById('asu-stderr').textContent = status.stderr || 'No errors';
+                        document.getElementById('asu-stdout').textContent = status.stdout || 'No output';
+                        document.getElementById('asu-log').style.display = 'block';
+                    }
+                    
+                    showDownloadLinks(images, status, rh);
+                }, 500);
+                return;
+            }
+
+            if (status.status === 'failed' || status.status === 'failure' || 
+                status.detail === 'failed' || status.imagebuilder_status === 'failed') {
+                
+                // ビルド失敗時も詳細情報を表示
+                hideProgress();
+                showBuildError(status, null);
+                return;
+            }
+
+            showProgress(`${progressMsg}... ${timeStr}`, progressPercent);
+            await new Promise(resolve => setTimeout(resolve, 5000));
+            attempts++;
+
+        } catch (error) {
+            if (attempts >= 5) throw error;
+
+            const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+            showProgress(`Connection error, retrying... ${elapsedSeconds}s`, 5);
+            await new Promise(resolve => setTimeout(resolve, 5000));
+            attempts++;
+        }
+    }
+
+    throw new Error('Build timeout after 10 minutes');
 }
 
 function showProgress(message, percentage) {
@@ -5276,12 +5400,46 @@ function createExtraPackageBox() {
     host.appendChild(newInput);
     newInput.focus();
 }
-        
+
+function addPackageToList(pkgName, clickedEl) {
+    const textarea = document.getElementById('asu-packages');
+    const list = textarea.value.trim() ? textarea.value.trim().split(/\s+/) : [];
+    if (!list.includes(pkgName)) {
+        list.push(pkgName);
+        textarea.value = list.join(' ');
+        refreshTemplateAndPackages();
+    }
+    flashSelectedOption(clickedEl); // null 渡しをやめる
+}
+
+function flashSelectedOption(el) {
+    if (!el) return;
+    el.classList.add('bold-flash');      // 即時反映
+    setTimeout(() => {
+        el.classList.remove('bold-flash');
+    }, 200);
+}
+  
 document.addEventListener('click', function (e) {
     if (!e.target.closest('#package-search-autocomplete')) {
         hidePackageAutocomplete();
     }
 });
+
+    // パッケージの選択・非選択を切り替える関数
+    function togglePackage(packageName) {
+        let packagesList = asuPackagesTextarea.value.split('\n').filter(p => p.trim() !== '');
+
+        if (installedPackages.has(packageName)) {
+            installedPackages.delete(packageName);
+            packagesList = packagesList.filter(p => p !== packageName);
+        } else {
+            installedPackages.add(packageName);
+            packagesList.push(packageName);
+        }
+        
+        asuPackagesTextarea.value = packagesList.join('\n');
+    }
 
     </script>
 </body>
