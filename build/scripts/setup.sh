@@ -208,5 +208,6 @@ E
 # END_CUSTOM_COMMANDS
 uci commit 2>/dev/null
 sed -i '$i (ifup lan; ifup wan; sleep 5; [ -x /etc/init.d/odhcpd ] && /etc/init.d/odhcpd restart; sed -i '\''/ifup lan/d;/ifup wan/d;/odhcpd restart/d'\'' /etc/rc.local) &' /etc/rc.local
+[ -n "\${backup_path}" ] && sysupgrade -q -k -b "\${backup_path}"
 echo "All done!"
 exit 0
