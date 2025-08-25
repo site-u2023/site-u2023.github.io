@@ -183,6 +183,9 @@ MAP_SH_EOF
     uci set samba4.sambashare.create_mask='0777'
     uci set samba4.sambashare.dir_mask='0777'
 }
+# BEGIN_CUSTOM_COMMANDS
+# END_CUSTOM_COMMANDS
+uci commit 2>/dev/null
 enable_netopt="1"
 [ -n "\${enable_netopt}" ] && { cat > /etc/rc.local << 'EOF'
 #!/bin/bash
@@ -201,9 +204,6 @@ sysctl -p \$C
 exit 0
 EOF
 }
-# BEGIN_CUSTOM_COMMANDS
-# END_CUSTOM_COMMANDS
-uci commit 2>/dev/null
 sed -i '$i (for i in $(uci show network|grep "=interface"|cut -d. -f2|cut -d= -f1); do ifup $i; done; sleep 5; [ -x /etc/init.d/odhcpd ] && /etc/init.d/odhcpd restart; sed -i '\''/ifup /d;/odhcpd restart/d'\'' /etc/rc.local) &' /etc/rc.local
 [ -n "\${backup_path}" ] && sysupgrade -q -k -b "\${backup_path}"
 echo "All done!"
