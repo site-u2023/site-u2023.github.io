@@ -1201,11 +1201,84 @@
                             </div>
                         </div>
     
-                        <div class="form-group" id="isp-detection-group">
+<div class="form-group" id="isp-detection-group">
                             <label>ISP Detection Status</label>
                             <div id="isp-info-display" class="info" style="margin-bottom: 0;">
                                 <div id="isp-status-message">ISP information will be detected when configuration is opened</div>
                                 <div id="isp-technical-info" style="font-family: monospace; font-size: 0.9em; margin-top: 0.5rem; display: none;"></div>
+                            </div>
+                        </div>
+                        
+                        <h4>Network Performance Tuning</h4>
+                        <div class="form-group">
+                            <label>Dynamic Network Optimizer</label>
+                            <div class="radio-group">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="netOptimizer" id="netopt-disabled" value="disabled" checked>
+                                    <label class="form-check-label" for="netopt-disabled">Disabled (Default)</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="netOptimizer" id="netopt-enabled" value="enabled">
+                                    <label class="form-check-label" for="netopt-enabled">Enabled</label>
+                                </div>
+                            </div>
+                            <small class="form-text text-muted">Automatically optimizes TCP buffer sizes and network parameters based on available RAM</small>
+                        </div>
+
+                        <div id="net-optimizer-section" class="conditional-section">
+                            <h5 class="section-title">Optimizer Configuration</h5>
+                            <div class="form-group">
+                                <label>Configuration Mode</label>
+                                <div class="radio-group">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="netOptimizerMode" id="netopt-auto" value="auto" checked>
+                                        <label class="form-check-label" for="netopt-auto">Auto (Recommended)</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="netOptimizerMode" id="netopt-manual" value="manual">
+                                        <label class="form-check-label" for="netopt-manual">Manual</label>
+                                    </div>
+                                </div>
+                                <small class="form-text text-muted">Auto mode adjusts parameters based on system resources</small>
+                            </div>
+
+                            <div id="net-optimizer-manual" class="conditional-section">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="netopt-rmem">TCP Read Memory</label>
+                                        <input type="text" id="netopt-rmem" class="form-control" placeholder="4096 131072 8388608">
+                                        <small class="form-text text-muted">min default max (bytes)</small>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="netopt-wmem">TCP Write Memory</label>
+                                        <input type="text" id="netopt-wmem" class="form-control" placeholder="4096 131072 8388608">
+                                        <small class="form-text text-muted">min default max (bytes)</small>
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="netopt-conntrack">Connection Tracking Max</label>
+                                        <input type="number" id="netopt-conntrack" class="form-control" placeholder="131072" min="1024">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="netopt-backlog">Network Device Backlog</label>
+                                        <input type="number" id="netopt-backlog" class="form-control" placeholder="5000" min="100">
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="netopt-somaxconn">Socket Max Connections</label>
+                                        <input type="number" id="netopt-somaxconn" class="form-control" placeholder="16384" min="128">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="netopt-congestion">TCP Congestion Control</label>
+                                        <select id="netopt-congestion" class="form-control">
+                                            <option value="cubic" selected>cubic (default)</option>
+                                            <option value="bbr">bbr</option>
+                                            <option value="reno">reno</option>
+                                        </select>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         
@@ -2650,12 +2723,28 @@ function bindEvents() {
         radio.addEventListener('change', handleMapeTypeChange);
     });
     
-    // ===== オートコンプリート関連 =====
+// ===== オートコンプリート関連 =====
     document.addEventListener('click', function (e) {
         if (!e.target.closest('.autocomplete')) {
             hideAutocomplete();
         }
     });
+    
+    // Network Optimizer
+    document.querySelectorAll('input[name="netOptimizer"]').forEach(radio => {
+        radio.addEventListener('change', handleNetOptimizerChange);
+    });
+    
+    document.querySelectorAll('input[name="netOptimizerMode"]').forEach(radio => {
+        radio.addEventListener('change', handleNetOptimizerModeChange);
+    });
+
+    // Network Optimizer manual fields
+    const netOptFields = [
+        'netopt-rmem', 'netopt-wmem', 'netopt-conntrack',
+        'netopt-backlog', 'netopt-somaxconn', 'netopt-congestion'
+    ];
+    bindFieldEvents(netOptFields);
     
     // デフォルトはAutoモード
     const manualSection = document.getElementById('manual-connection-section');
@@ -3807,6 +3896,44 @@ function handleDsliteModeChange(e) {
     applyConnectionSettingsChange();
 }
 
+function handleNetOptimizerChange(e) {
+    const optimizerSection = document.getElementById('net-optimizer-section');
+    
+    if (e.target.value === 'enabled') {
+        optimizerSection.style.display = 'block';
+        // Auto mode is default
+        const autoRadio = document.getElementById('netopt-auto');
+        if (autoRadio && !document.querySelector('input[name="netOptimizerMode"]:checked')) {
+            autoRadio.checked = true;
+        }
+        handleNetOptimizerModeChange({ target: { value: 'auto' } });
+    } else {
+        optimizerSection.style.display = 'none';
+        document.getElementById('net-optimizer-manual').style.display = 'none';
+    }
+    
+    syncTemplateAndPackages({ trigger: 'netopt-change' });
+}
+
+function handleNetOptimizerModeChange(e) {
+    const manualSection = document.getElementById('net-optimizer-manual');
+    
+    if (e && e.target && e.target.value === 'manual') {
+        manualSection.style.display = 'block';
+        // Set default values if empty
+        setIfEmpty('netopt-rmem', '4096 131072 8388608');
+        setIfEmpty('netopt-wmem', '4096 131072 8388608');
+        setIfEmpty('netopt-conntrack', '131072');
+        setIfEmpty('netopt-backlog', '5000');
+        setIfEmpty('netopt-somaxconn', '16384');
+        setIfEmpty('netopt-congestion', 'cubic');
+    } else {
+        manualSection.style.display = 'none';
+    }
+    
+    syncTemplateAndPackages({ trigger: 'netopt-mode-change' });
+}
+
 function isGlobalUnicastIPv6(ip) {
     if (!ip) return false;
     // GUA: 2000::/3 (starts with 2xxx or 3xxx), exclude ULA (fd00::/8) and link-local (fe80::/10)
@@ -4212,9 +4339,25 @@ async function customizeSetupScript(content, userConfig, apiInfo, selectedPackag
 
         // AP
         ap_ip_address: { value: userConfig.apIpAddress, active: apActive && !!userConfig.apIpAddress },
-        ap_gateway: { value: userConfig.apGateway, active: apActive && !!userConfig.apGateway }
+        ap_gateway: { value: userConfig.apGateway, active: apActive && !!userConfig.apGateway },
+        
+        // Network Optimizer
+        enable_netopt: { 
+            value: userConfig.netOptimizer === 'enabled' ? '1' : '', 
+            active: userConfig.netOptimizer === 'enabled' 
+        },
+        netopt_manual: { 
+            value: userConfig.netOptimizerMode === 'manual' ? '1' : '', 
+            active: userConfig.netOptimizer === 'enabled' && userConfig.netOptimizerMode === 'manual' 
+        },
+        netopt_rmem: { value: userConfig.netOptRmem, active: userConfig.netOptimizer === 'enabled' && userConfig.netOptimizerMode === 'manual' },
+        netopt_wmem: { value: userConfig.netOptWmem, active: userConfig.netOptimizer === 'enabled' && userConfig.netOptimizerMode === 'manual' },
+        netopt_conntrack: { value: userConfig.netOptConntrack, active: userConfig.netOptimizer === 'enabled' && userConfig.netOptimizerMode === 'manual' },
+        netopt_backlog: { value: userConfig.netOptBacklog, active: userConfig.netOptimizer === 'enabled' && userConfig.netOptimizerMode === 'manual' },
+        netopt_somaxconn: { value: userConfig.netOptSomaxconn, active: userConfig.netOptimizer === 'enabled' && userConfig.netOptimizerMode === 'manual' },
+        netopt_congestion: { value: userConfig.netOptCongestion, active: userConfig.netOptimizer === 'enabled' && userConfig.netOptimizerMode === 'manual' }
     };
-
+    
     // enable_* フラグ（選択で ON、非選択は設定しない）
     if (selectedPackages) {
         const enableMap = {};
@@ -4350,7 +4493,17 @@ function getAiosConfig() {
         mapeIpv6Prefixlen: parseOrEmpty('mape-ipv6-prefixlen', 'int'),
         mapePsidOffset: parseOrEmpty('mape-psid-offset', 'int'),
         mapePsidlen: parseOrEmpty('mape-psidlen', 'int'),
-        mapeGuaPrefix: parseOrEmpty('mape-gua-prefix')
+        mapeGuaPrefix: parseOrEmpty('mape-gua-prefix'),
+        
+        // Network Optimizer settings
+        netOptimizer: document.querySelector('input[name="netOptimizer"]:checked')?.value || 'disabled',
+        netOptimizerMode: document.querySelector('input[name="netOptimizerMode"]:checked')?.value || 'auto',
+        netOptRmem: parseOrEmpty('netopt-rmem'),
+        netOptWmem: parseOrEmpty('netopt-wmem'),
+        netOptConntrack: parseOrEmpty('netopt-conntrack', 'int'),
+        netOptBacklog: parseOrEmpty('netopt-backlog', 'int'),
+        netOptSomaxconn: parseOrEmpty('netopt-somaxconn', 'int'),
+        netOptCongestion: parseOrEmpty('netopt-congestion')
     };
 
     return config;
