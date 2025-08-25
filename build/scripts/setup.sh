@@ -183,7 +183,7 @@ MAP_SH_EOF
     uci set samba4.sambashare.create_mask='0777'
     uci set samba4.sambashare.dir_mask='0777'
 }
-[ -n "${enable_netopt}" ] && {
+[ -n "\${enable_netopt}" ] && {
     C=/etc/sysctl.d/99-net-opt.conf
     M=$(grep MemTotal /proc/meminfo|awk '{print int($2/1024)}')
     P=$(grep -c ^processor /proc/cpuinfo)
