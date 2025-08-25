@@ -1519,13 +1519,13 @@ uci commit 2>/dev/null
 C=/etc/sysctl.d/99-net-opt.conf
 M=\$(awk '/MemTotal/{print int(\$2/1024)}' /proc/meminfo)
 P=\$(grep -c ^processor /proc/cpuinfo)
-if [ \$M -ge 3072 ]; then R=16777216 W=16777216 TR="${netopt_rmem:-4096 262144 16777216}" TW="${netopt_wmem:-4096 262144 16777216}" CT=${netopt_conntrack:-262144} NB=${netopt_backlog:-5000} SC=${netopt_somaxconn:-16384}
-elif [ \$M -ge 1536 ]; then R=8388608 W=8388608 TR="${netopt_rmem:-4096 131072 8388608}" TW="${netopt_wmem:-4096 131072 8388608}" CT=${netopt_conntrack:-131072} NB=${netopt_backlog:-2500} SC=${netopt_somaxconn:-8192}
-elif [ \$M -ge 512 ]; then R=4194304 W=4194304 TR="${netopt_rmem:-4096 65536 4194304}" TW="${netopt_wmem:-4096 65536 4194304}" CT=${netopt_conntrack:-65536} NB=${netopt_backlog:-1000} SC=${netopt_somaxconn:-4096}
+if [ \$M -ge 3072 ]; then R=16777216 W=16777216 TR="4096 262144 16777216" TW=\$TR CT=262144 NB=5000 SC=16384
+elif [ \$M -ge 1536 ]; then R=8388608 W=8388608 TR="4096 131072 8388608" TW=\$TR CT=131072 NB=2500 SC=8192
+elif [ \$M -ge 512 ]; then R=4194304 W=4194304 TR="4096 65536 4194304" TW=\$TR CT=65536 NB=1000 SC=4096
 else exit 0; fi
 [ \$P -gt 4 ] && { NB=\$((NB*2)); SC=\$((SC*2)); }
 [ \$P -gt 2 ] && [ \$P -le 4 ] && { NB=\$((NB*3/2)); SC=\$((SC*3/2)); }
-printf "net.core.rmem_max=%s\\nnet.core.wmem_max=%s\\nnet.ipv4.tcp_rmem=%s\\nnet.ipv4.tcp_wmem=%s\\nnet.ipv4.tcp_congestion_control=${netopt_congestion:-cubic}\\nnet.ipv4.tcp_fastopen=3\\nnet.netfilter.nf_conntrack_max=%s\\nnet.core.netdev_max_backlog=%s\\nnet.core.somaxconn=%s\\n" "\$R" "\$W" "\$TR" "\$TW" "\$CT" "\$NB" "\$SC" > \$C
+printf "net.core.rmem_max=%s\\nnet.core.wmem_max=%s\\nnet.ipv4.tcp_rmem=%s\\nnet.ipv4.tcp_wmem=%s\\nnet.ipv4.tcp_congestion_control=cubic\\nnet.ipv4.tcp_fastopen=3\\nnet.netfilter.nf_conntrack_max=%s\\nnet.core.netdev_max_backlog=%s\\nnet.core.somaxconn=%s\\n" "\$R" "\$W" "\$TR" "\$TW" "\$CT" "\$NB" "\$SC" > \$C
 sysctl -p \$C
 cat > /etc/rc.local <<'RESET_EOF'
 exit 0
@@ -3915,38 +3915,18 @@ function handleNetOptimizerChange(e) {
     syncTemplateAndPackages({ trigger: 'netopt-change' });
 }
 
-// デフォルト値定義（グローバル）
-const NET_OPT_DEFAULTS = {
-    rmem_3g: '4096 262144 16777216',
-    wmem_3g: '4096 262144 16777216',
-    rmem_1g: '4096 131072 8388608',
-    wmem_1g: '4096 131072 8388608',
-    rmem_512m: '4096 65536 4194304',
-    wmem_512m: '4096 65536 4194304',
-    conntrack_3g: '262144',
-    conntrack_1g: '131072',
-    conntrack_512m: '65536',
-    backlog_3g: '5000',
-    backlog_1g: '2500',
-    backlog_512m: '1000',
-    somaxconn_3g: '16384',
-    somaxconn_1g: '8192',
-    somaxconn_512m: '4096',
-    congestion: 'cubic'
-};
-
 function handleNetOptimizerModeChange(e) {
     const manualSection = document.getElementById('net-optimizer-manual');
     
     if (e && e.target && e.target.value === 'manual') {
         manualSection.style.display = 'block';
-        // デフォルト値設定（1Gメモリ想定）
-        setIfEmpty('netopt-rmem', NET_OPT_DEFAULTS.rmem_1g);
-        setIfEmpty('netopt-wmem', NET_OPT_DEFAULTS.wmem_1g);
-        setIfEmpty('netopt-conntrack', NET_OPT_DEFAULTS.conntrack_1g);
-        setIfEmpty('netopt-backlog', NET_OPT_DEFAULTS.backlog_1g);
-        setIfEmpty('netopt-somaxconn', NET_OPT_DEFAULTS.somaxconn_1g);
-        setIfEmpty('netopt-congestion', NET_OPT_DEFAULTS.congestion);
+        // Set default values if empty
+        setIfEmpty('netopt-rmem', '4096 131072 8388608');
+        setIfEmpty('netopt-wmem', '4096 131072 8388608');
+        setIfEmpty('netopt-conntrack', '131072');
+        setIfEmpty('netopt-backlog', '5000');
+        setIfEmpty('netopt-somaxconn', '16384');
+        setIfEmpty('netopt-congestion', 'cubic');
     } else {
         manualSection.style.display = 'none';
     }
@@ -4361,34 +4341,9 @@ async function customizeSetupScript(content, userConfig, apiInfo, selectedPackag
         ap_ip_address: { value: userConfig.apIpAddress, active: apActive && !!userConfig.apIpAddress },
         ap_gateway: { value: userConfig.apGateway, active: apActive && !!userConfig.apGateway },
         
-        // Network Optimizer (Auto/Manual両方で変数渡し)
+        // Network Optimizer
         enable_netopt: { 
             value: userConfig.netOptimizer === 'enabled' ? '1' : '', 
-            active: userConfig.netOptimizer === 'enabled' 
-        },
-        // Manual時のみ値を渡す（Auto時は空で自動判定）
-        netopt_rmem: { 
-            value: userConfig.netOptimizerMode === 'manual' ? userConfig.netOptRmem : '', 
-            active: userConfig.netOptimizer === 'enabled' 
-        },
-        netopt_wmem: { 
-            value: userConfig.netOptimizerMode === 'manual' ? userConfig.netOptWmem : '', 
-            active: userConfig.netOptimizer === 'enabled' 
-        },
-        netopt_conntrack: { 
-            value: userConfig.netOptimizerMode === 'manual' ? userConfig.netOptConntrack : '', 
-            active: userConfig.netOptimizer === 'enabled' 
-        },
-        netopt_backlog: { 
-            value: userConfig.netOptimizerMode === 'manual' ? userConfig.netOptBacklog : '', 
-            active: userConfig.netOptimizer === 'enabled' 
-        },
-        netopt_somaxconn: { 
-            value: userConfig.netOptimizerMode === 'manual' ? userConfig.netOptSomaxconn : '', 
-            active: userConfig.netOptimizer === 'enabled' 
-        },
-        netopt_congestion: { 
-            value: userConfig.netOptimizerMode === 'manual' ? (userConfig.netOptCongestion || 'cubic') : 'cubic', 
             active: userConfig.netOptimizer === 'enabled' 
         },
         netopt_manual: { 
