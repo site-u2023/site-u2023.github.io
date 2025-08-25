@@ -1438,6 +1438,28 @@ MAP_SH_EOF
     uci set samba4.sambashare.create_mask='0777'
     uci set samba4.sambashare.dir_mask='0777'
 }
+[ -n "${enable_netopt}" ] && {
+    C=/etc/sysctl.d/99-net-opt.conf
+    M=$(grep MemTotal /proc/meminfo|awk '{print int($2/1024)}')
+    P=$(grep -c ^processor /proc/cpuinfo)
+    if [ $M -ge 3072 ];then R=16777216;W=16777216;TR="4096 262144 16777216";TW="4096 262144 16777216";CT=262144;NB=5000;SC=16384
+    elif [ $M -ge 1536 ];then R=8388608;W=8388608;TR="4096 131072 8388608";TW="4096 131072 8388608";CT=131072;NB=2500;SC=8192
+    elif [ $M -ge 512 ];then R=4194304;W=4194304;TR="4096 65536 4194304";TW="4096 65536 4194304";CT=65536;NB=1000;SC=4096
+    else R=1048576;W=1048576;TR="4096 32768 1048576";TW="4096 32768 1048576";CT=32768;NB=500;SC=2048;fi
+    [ $P -gt 4 ]&&NB=$((NB*2))&&SC=$((SC*2))||[ $P -gt 2 ]&&NB=$((NB*3/2))&&SC=$((SC*3/2))
+    cat>$C<<E
+net.core.rmem_max=$R
+net.core.wmem_max=$W
+net.ipv4.tcp_rmem=$TR
+net.ipv4.tcp_wmem=$TW
+net.ipv4.tcp_congestion_control=cubic
+net.ipv4.tcp_fastopen=3
+net.netfilter.nf_conntrack_max=$CT
+net.core.netdev_max_backlog=$NB
+net.core.somaxconn=$SC
+E
+    sysctl -p $C
+}
 # BEGIN_CUSTOM_COMMANDS
 # END_CUSTOM_COMMANDS
 uci commit 2>/dev/null
