@@ -200,7 +200,12 @@ else exit 0; fi
 [ \$P -gt 2 ] && [ \$P -le 4 ] && { NB=\$((NB*3/2)); SC=\$((SC*3/2)); }
 printf "net.core.rmem_max=%s\\nnet.core.wmem_max=%s\\nnet.ipv4.tcp_rmem=%s\\nnet.ipv4.tcp_wmem=%s\\nnet.ipv4.tcp_congestion_control=cubic\\nnet.ipv4.tcp_fastopen=3\\nnet.netfilter.nf_conntrack_max=%s\\nnet.core.netdev_max_backlog=%s\\nnet.core.somaxconn=%s\\n" "\$R" "\$W" "\$TR" "\$TW" "\$CT" "\$NB" "\$SC" > \$C
 sysctl -p \$C
-rm $0
+cat >/etc/rc.local <<EOF
+# Put your custom commands here that should be executed once
+# the system init process has finished. By default this file does nothing.
+
+exit 0
+EOF
 exit 0
 EOF
 }
