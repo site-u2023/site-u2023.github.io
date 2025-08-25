@@ -488,11 +488,13 @@
         line-height: 1.5;
         padding-left: 1.5rem;
         overflow: hidden;
+        align-items: flex-start;  /* 頭揃え */
     }
 
     .col1 {
         display: inline-block;
-        width: 6rem;
+        flex-shrink: 0;  /* 縮小防止 */
+        width: 8rem;  /* 幅を少し広げる */
         color: #6c757d;
     }
 
@@ -502,8 +504,11 @@
 
     .col2 {
         display: inline-block;
+        flex: 1;  /* 残りの幅を使用 */
         overflow: hidden;
         text-overflow: ellipsis;
+        padding-left: 0.5rem;  /* 列間スペース */
+        word-wrap: break-word;  /* 長い文字列の折り返し */
     }
 
     .col2 a {
@@ -641,6 +646,22 @@
 
         .package-item {
             width: 100%;
+        }
+        
+        /* モバイル向けレイアウト調整 */
+        .row {
+            flex-direction: column;
+            padding-left: 1rem;
+        }
+        
+        .col1 {
+            width: 100%;
+            margin-bottom: 0.25rem;
+        }
+        
+        .col2 {
+            padding-left: 0;
+            margin-bottom: 0.5rem;
         }
     }
 
@@ -3908,7 +3929,8 @@ function handleNetOptimizerChange(e) {
         if (autoRadio && !document.querySelector('input[name="netOptimizerMode"]:checked')) {
             autoRadio.checked = true;
         }
-        handleNetOptimizerModeChange({ target: { value: 'auto' } });
+        // 初期状態はAuto（Manualセクション非表示）
+        document.getElementById('net-optimizer-manual').style.display = 'none';
     } else {
         optimizerSection.style.display = 'none';
         document.getElementById('net-optimizer-manual').style.display = 'none';
@@ -4025,13 +4047,9 @@ function buildIspStatus(apiInfo) {
     let statusText = 'Auto-detection successful';
     let details = '';
 
+    // ISPとASの表示
     if (apiInfo.isp) details += `ISP: ${apiInfo.isp}\n`;
-    if (apiInfo.country) {
-        details += `Country/Region: ${apiInfo.country}`;
-        if (apiInfo.regionName) details += ` (${apiInfo.regionName})`;
-        details += '\n';
-    }
-    if (apiInfo.timezone) details += `Timezone: ${apiInfo.timezone}\n`;
+    if (apiInfo.as) details += `AS: ${apiInfo.as}\n`;
 
     if (apiInfo.mape) {
         if (apiInfo.mape.aftrType) {
