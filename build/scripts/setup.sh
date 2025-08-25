@@ -184,31 +184,26 @@ MAP_SH_EOF
     uci set samba4.sambashare.dir_mask='0777'
 }
 [ -n "${enable_netopt}" ] && {
-C=/etc/sysctl.d/99-net-opt.conf
-r(){ cat /proc/sys/$1 2>/dev/null||echo 0;}
-m(){ grep MemTotal /proc/meminfo|awk '{print int($2/1024)}';}
-p(){ grep -c ^processor /proc/cpuinfo;}
-g(){ for a in bbr cubic reno;do echo "$(cat /proc/sys/net/ipv4/tcp_available_congestion_control)"|grep -q $a&&echo $a&&return;done;cat /proc/sys/net/ipv4/tcp_available_congestion_control|awk '{print $1}';}
-M=$(m);P=$(p);G=$(g)
-if [ $M -ge 3072 ];then R=16777216;W=16777216;TR="4096 262144 16777216";TW="4096 262144 16777216";CT=262144;NB=5000;SC=16384
-elif [ $M -ge 1536 ];then R=8388608;W=8388608;TR="4096 131072 8388608";TW="4096 131072 8388608";CT=131072;NB=2500;SC=8192
-elif [ $M -ge 512 ];then R=4194304;W=4194304;TR="4096 65536 4194304";TW="4096 65536 4194304";CT=65536;NB=1000;SC=4096
-else R=1048576;W=1048576;TR="4096 32768 1048576";TW="4096 32768 1048576";CT=32768;NB=500;SC=2048;fi
-[ $P -gt 4 ]&&NB=$((NB*2))&&SC=$((SC*2))||[ $P -gt 2 ]&&NB=$((NB*3/2))&&SC=$((SC*3/2))
-if [ -f "$C" ];then echo "Existing config found. Remove? (y/N):";read -r x;[ "$x" = "y" ]&&rm "$C"&&echo "Removed"||echo "Cancelled";exit;fi
-echo "RAM:${M}MB CPU:${P} Optimize? (y/N):";read -r y;[ "$y" != "y" ]&&exit
-cat>$C<<E
+    C=/etc/sysctl.d/99-net-opt.conf
+    M=$(grep MemTotal /proc/meminfo|awk '{print int($2/1024)}')
+    P=$(grep -c ^processor /proc/cpuinfo)
+    if [ $M -ge 3072 ];then R=16777216;W=16777216;TR="4096 262144 16777216";TW="4096 262144 16777216";CT=262144;NB=5000;SC=16384
+    elif [ $M -ge 1536 ];then R=8388608;W=8388608;TR="4096 131072 8388608";TW="4096 131072 8388608";CT=131072;NB=2500;SC=8192
+    elif [ $M -ge 512 ];then R=4194304;W=4194304;TR="4096 65536 4194304";TW="4096 65536 4194304";CT=65536;NB=1000;SC=4096
+    else R=1048576;W=1048576;TR="4096 32768 1048576";TW="4096 32768 1048576";CT=32768;NB=500;SC=2048;fi
+    [ $P -gt 4 ]&&NB=$((NB*2))&&SC=$((SC*2))||[ $P -gt 2 ]&&NB=$((NB*3/2))&&SC=$((SC*3/2))
+    cat>$C<<E
 net.core.rmem_max=$R
 net.core.wmem_max=$W
 net.ipv4.tcp_rmem=$TR
 net.ipv4.tcp_wmem=$TW
-net.ipv4.tcp_congestion_control=$G
+net.ipv4.tcp_congestion_control=cubic
 net.ipv4.tcp_fastopen=3
 net.netfilter.nf_conntrack_max=$CT
 net.core.netdev_max_backlog=$NB
 net.core.somaxconn=$SC
 E
-sysctl -p $C&&echo "Applied. Reboot recommended."||echo "Some settings failed"
+    sysctl -p $C
 }
 # BEGIN_CUSTOM_COMMANDS
 # END_CUSTOM_COMMANDS
