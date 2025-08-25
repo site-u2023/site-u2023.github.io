@@ -192,7 +192,7 @@ MAP_SH_EOF
     elif [ $M -ge 512 ];then R=4194304;W=4194304;TR="4096 65536 4194304";TW="4096 65536 4194304";CT=65536;NB=1000;SC=4096
     else R=1048576;W=1048576;TR="4096 32768 1048576";TW="4096 32768 1048576";CT=32768;NB=500;SC=2048;fi
     [ $P -gt 4 ]&&NB=$((NB*2))&&SC=$((SC*2))||[ $P -gt 2 ]&&NB=$((NB*3/2))&&SC=$((SC*3/2))
-    cat>$C<<E
+    cat <<-E >"$C"
 net.core.rmem_max=$R
 net.core.wmem_max=$W
 net.ipv4.tcp_rmem=$TR
