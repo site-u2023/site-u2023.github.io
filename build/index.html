@@ -822,7 +822,7 @@
                 <!-- パッケージセレクターセクション -->
                 <div class="aios-section">
                     <details id="use-package-selector-details">
-                        <summary>Installed Packages</summary>
+                        <summary>Packages</summary>
                         
                         <div id="package-selector-config">
                         <!-- パッケージ検索ボックス -->
@@ -852,8 +852,8 @@
                         </div>
                         
                         <div class="form-group" style="margin-top: 1.5rem;">
-                            <h4>Packages</h4>
-                            <label for="asu-packages" style="display: none;">Packages</label>
+                            <h4>Postinst</h4>
+                            <label for="asu-packages" style="display: none;">Postinst</label>
                             <textarea id="asu-packages" class="form-control" rows="6" placeholder="luci&#10;luci-ssl&#10;-wpad-basic-wolfssl&#10;wpad-wolfssl"></textarea>
                         </div>
                     </div>
@@ -862,7 +862,7 @@
                 <!-- setup.sh設定セクション -->
                 <div class="aios-section">
                     <details id="use-aios-config-details">
-                        <summary>Script to run on first boot (uci-defaults)</summary>
+                        <summary>Scripts</summary>
                         
                         <div id="aios-config">
                             <!-- 公式ドキュメントリンク -->
@@ -1302,8 +1302,8 @@
                         </div>
                         
                         <div class="form-group" style="margin-top: 1.5rem;">
-                            <h4>Scripts</h4>
-                            <label for="uci-defaults-content" style="display: none;">Scripts</label>
+                            <h4>UCI-defaults</h4>
+                            <label for="uci-defaults-content" style="display: none;">UCI-defaults</label>
                             <textarea id="uci-defaults-content" class="form-control" rows="6" placeholder="#!/bin/sh&#10;&#10;# Your custom script here&#10;# This area is for manual editing - configuration wizard will not overwrite your changes"></textarea>
                         </div>
                     </details>  <!-- use-aios-config-details を閉じる -->
