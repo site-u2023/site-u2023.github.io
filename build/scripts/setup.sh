@@ -1,5 +1,4 @@
-// setup.shテンプレート
-const SETUP_SH_TEMPLATE = `#!/bin/sh
+#!/bin/sh
 LAN_DEF="$(uci -q get network.lan.device || echo lan)"
 WAN_DEF="$(uci -q get network.wan.device || echo wan)"
 MAP_NAME="mape"
@@ -12,7 +11,7 @@ AP6_NAME="ap6"
 # END_VARIABLE_DEFINITIONS
 exec >/tmp/setup.log 2>&1
 [ -n "\${device_name}" ] && uci set system.@system[0].hostname="\${device_name}"
-[ -n "\${root_password}" ] && printf "%s\n%s\n" "\${root_password}" "\${root_password}" | passwd >/dev/null
+[ -n "\${root_password}" ] && printf '%s\\n%s\\n' "\${root_password}" "\${root_password}" | passwd >/dev/null
 [ -n "\${lan_ip_address}" ] && uci set network.lan.ipaddr="\${lan_ip_address}"
 [ -n "\${lan_ipv6_address}" ] && uci set network.lan.ip6addr="\${lan_ipv6_address}"
 [ -n "\${language}" ] && uci set system.@system[0].language="\${language}"
@@ -28,10 +27,10 @@ exec >/tmp/setup.log 2>&1
         uci set wireless.\${radio}.country="\${country:-00}" 2>/dev/null
         band=$(uci -q get wireless.\${radio}.band)
         case "\${band}" in
-            2g) suffix="-2g"; encryption='psk2' ;;
+            2g) suffix="-2g"; encryption='psk-mixed' ;;
             5g) suffix="-5g"; encryption='sae-mixed' ;;
             6g) suffix="-6g"; encryption='sae' ;;
-            *) suffix=""; encryption='psk2' ;;
+            *) suffix=""; encryption='psk-mixed' ;;
         esac
         iface="default_\${radio}"
         [ -n "$(uci -q get wireless.\${iface})" ] && {
@@ -189,4 +188,4 @@ MAP_SH_EOF
 uci commit 2>/dev/null
 echo "All done!"
 [ -n "\${backup_path}" ] && sysupgrade -q -k -b "\${backup_path}"
-exit 0`;
+exit 0
