@@ -3919,6 +3919,26 @@ function handleDsliteModeChange(e) {
     applyConnectionSettingsChange();
 }
 
+// Network Optimizer のデフォルト値定義
+const NETOPT_DEFAULTS = {
+    rmem: '4096 131072 8388608',
+    wmem: '4096 131072 8388608',
+    conntrack: '131072',
+    backlog: '5000',
+    somaxconn: '16384',
+    congestion: 'cubic'
+};
+
+function resetNetOptimizerValues() {
+    // 全フィールドをデフォルト値にリセット
+    document.getElementById('netopt-rmem').value = NETOPT_DEFAULTS.rmem;
+    document.getElementById('netopt-wmem').value = NETOPT_DEFAULTS.wmem;
+    document.getElementById('netopt-conntrack').value = NETOPT_DEFAULTS.conntrack;
+    document.getElementById('netopt-backlog').value = NETOPT_DEFAULTS.backlog;
+    document.getElementById('netopt-somaxconn').value = NETOPT_DEFAULTS.somaxconn;
+    document.getElementById('netopt-congestion').value = NETOPT_DEFAULTS.congestion;
+}
+
 function handleNetOptimizerChange(e) {
     const optimizerSection = document.getElementById('net-optimizer-section');
     
@@ -3926,14 +3946,22 @@ function handleNetOptimizerChange(e) {
         optimizerSection.style.display = 'block';
         // Auto mode is default
         const autoRadio = document.getElementById('netopt-auto');
-        if (autoRadio && !document.querySelector('input[name="netOptimizerMode"]:checked')) {
-            autoRadio.checked = true;
-        }
-        // 初期状態はAuto（Manualセクション非表示）
+        autoRadio.checked = true;
+        // Autoモード選択時は常にデフォルト値にリセット
+        resetNetOptimizerValues();
+        // Manualセクションは非表示
         document.getElementById('net-optimizer-manual').style.display = 'none';
     } else {
+        // Disabled時は全てクリア
         optimizerSection.style.display = 'none';
         document.getElementById('net-optimizer-manual').style.display = 'none';
+        // 値もクリア（次回Enabled時のため）
+        document.getElementById('netopt-rmem').value = '';
+        document.getElementById('netopt-wmem').value = '';
+        document.getElementById('netopt-conntrack').value = '';
+        document.getElementById('netopt-backlog').value = '';
+        document.getElementById('netopt-somaxconn').value = '';
+        document.getElementById('netopt-congestion').value = 'cubic';
     }
     
     syncTemplateAndPackages({ trigger: 'netopt-change' });
@@ -3944,15 +3972,13 @@ function handleNetOptimizerModeChange(e) {
     
     if (e && e.target && e.target.value === 'manual') {
         manualSection.style.display = 'block';
-        // Set default values if empty
-        setIfEmpty('netopt-rmem', '4096 131072 8388608');
-        setIfEmpty('netopt-wmem', '4096 131072 8388608');
-        setIfEmpty('netopt-conntrack', '131072');
-        setIfEmpty('netopt-backlog', '5000');
-        setIfEmpty('netopt-somaxconn', '16384');
-        setIfEmpty('netopt-congestion', 'cubic');
+        // Manual選択時も常にデフォルト値を設定（編集の起点として）
+        resetNetOptimizerValues();
     } else {
+        // Auto選択時
         manualSection.style.display = 'none';
+        // Autoは常にデフォルト値を使用するのでリセット
+        resetNetOptimizerValues();
     }
     
     syncTemplateAndPackages({ trigger: 'netopt-mode-change' });
@@ -4361,7 +4387,7 @@ async function customizeSetupScript(content, userConfig, apiInfo, selectedPackag
         ap_ip_address: { value: userConfig.apIpAddress, active: apActive && !!userConfig.apIpAddress },
         ap_gateway: { value: userConfig.apGateway, active: apActive && !!userConfig.apGateway },
         
-        // Network Optimizer
+// Network Optimizer
         enable_netopt: { 
             value: userConfig.netOptimizer === 'enabled' ? '1' : '', 
             active: userConfig.netOptimizer === 'enabled' 
@@ -4370,8 +4396,14 @@ async function customizeSetupScript(content, userConfig, apiInfo, selectedPackag
             value: userConfig.netOptimizerMode === 'manual' ? '1' : '', 
             active: userConfig.netOptimizer === 'enabled' && userConfig.netOptimizerMode === 'manual' 
         },
-        netopt_rmem: { value: userConfig.netOptRmem, active: userConfig.netOptimizer === 'enabled' && userConfig.netOptimizerMode === 'manual' },
-        netopt_wmem: { value: userConfig.netOptWmem, active: userConfig.netOptimizer === 'enabled' && userConfig.netOptimizerMode === 'manual' },
+        netopt_rmem: { 
+            value: userConfig.netOptimizerMode === 'manual' ? userConfig.netOptRmem : NETOPT_DEFAULTS.rmem, 
+            active: userConfig.netOptimizer === 'enabled' && userConfig.netOptimizerMode === 'manual' 
+        },
+        netopt_wmem: { 
+            value: userConfig.netOptimizerMode === 'manual' ? userConfig.netOptWmem : NETOPT_DEFAULTS.wmem, 
+            active: userConfig.netOptimizer === 'enabled' && userConfig.netOptimizerMode === 'manual' 
+        },
         netopt_conntrack: { value: userConfig.netOptConntrack, active: userConfig.netOptimizer === 'enabled' && userConfig.netOptimizerMode === 'manual' },
         netopt_backlog: { value: userConfig.netOptBacklog, active: userConfig.netOptimizer === 'enabled' && userConfig.netOptimizerMode === 'manual' },
         netopt_somaxconn: { value: userConfig.netOptSomaxconn, active: userConfig.netOptimizer === 'enabled' && userConfig.netOptimizerMode === 'manual' },
