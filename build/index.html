@@ -1150,7 +1150,7 @@
                                         </div>
                                     </div>
                                     <small class="text-muted">
-                                        <strong>Auto-detect</strong>: Auto (Recommended): Automatically retrieves MAP-E configuration.
+                                        <strong>Auto (Recommended)</strong>: Automatically retrieves MAP-E configuration
                                     </small>
                                 </div>
                                 
@@ -1201,7 +1201,7 @@
                                 <div id="mape-gua-section" class="form-group" style="display: none;">
                                     <label for="mape-gua-prefix">GUA Prefix</label>
                                     <input type="text" id="mape-gua-prefix" class="form-control" placeholder="2400:4151:80e2:7500::/64">
-                                    <small class="form-text text-muted">IPv6 Global Unicast Address prefix for 1G/10G line compatibility</small>
+                                    <small class="form-text text-muted">IPv6 Global Unicast Address prefix</small>
                                 </div>
                             </div>
                             
@@ -3836,13 +3836,13 @@ function handleConnectionTypeChange(e) {
             dsliteAuto.disabled = false;
             dsliteAuto.checked = true;
             dsliteManual.checked = false;
-            if (dsliteHint) dsliteHint.textContent = 'Auto: Use ISP-detected AFTR address | Manual: Specify AFTR settings manually';
+            if (dsliteHint) dsliteHint.textContent = 'Auto: Use ISP-detected AFTR address';
         } else {
             // AFTRデータなし：Auto無効、Manual強制
             dsliteAuto.disabled = true;
             dsliteAuto.checked = false;
             dsliteManual.checked = true;
-            if (dsliteHint) dsliteHint.textContent = 'Auto not available (no AFTR detected) | Manual configuration required';
+            if (dsliteHint) dsliteHint.textContent = 'Auto not available (no AFTR detected)';
         }
         
         // Manual設定エリアの表示制御
