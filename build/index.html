@@ -1378,7 +1378,7 @@ exec >/tmp/setup.log 2>&1
     uci add_list firewall.@zone[1].network="\${MAP6_NAME}"
     uci set firewall.@zone[1].masq='1'
     uci set firewall.@zone[1].mtu_fix='1'
-    cat > /lib/netifd/proto/map.sh << 'MAP_SH_EOF'
+    cat > /lib/netifd/proto/map.sh <<'MAP_SH_EOF'
 \${map_sh_content}
 MAP_SH_EOF
 }
@@ -1442,7 +1442,7 @@ MAP_SH_EOF
 # END_CUSTOM_COMMANDS
 uci commit 2>/dev/null
 # enable_netopt="1"
-[ -n "\${enable_netopt}" ] && { cat > /etc/rc.local << 'EOF'
+[ -n "\${enable_netopt}" ] && { cat > /etc/rc.local <<'EOF'
 #!/bin/sh
 C=/etc/sysctl.d/99-net-opt.conf
 M=\$(awk '/MemTotal/{print int(\$2/1024)}' /proc/meminfo)
@@ -1455,7 +1455,9 @@ else exit 0; fi
 [ \$P -gt 2 ] && [ \$P -le 4 ] && { NB=\$((NB*3/2)); SC=\$((SC*3/2)); }
 printf "net.core.rmem_max=%s\\nnet.core.wmem_max=%s\\nnet.ipv4.tcp_rmem=%s\\nnet.ipv4.tcp_wmem=%s\\nnet.ipv4.tcp_congestion_control=cubic\\nnet.ipv4.tcp_fastopen=3\\nnet.netfilter.nf_conntrack_max=%s\\nnet.core.netdev_max_backlog=%s\\nnet.core.somaxconn=%s\\n" "\$R" "\$W" "\$TR" "\$TW" "\$CT" "\$NB" "\$SC" > \$C
 sysctl -p \$C
-rm \$0
+cat > /etc/rc.local <<'RESET_EOF'
+exit 0
+RESET_EOF
 exit 0
 EOF
 }
