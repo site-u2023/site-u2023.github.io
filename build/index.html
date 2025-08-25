@@ -1327,7 +1327,7 @@
 
 // setup.shテンプレート
 const SETUP_SH_TEMPLATE = `#!/bin/sh
-DATE="$(date +%F)"
+DATE="$(date '+%Y-%m-%d %H:%M')"
 LAN_DEF="$(uci -q get network.lan.device || echo lan)"
 WAN_DEF="$(uci -q get network.wan.device || echo wan)"
 MAP_NAME="mape"
@@ -1339,7 +1339,7 @@ AP6_NAME="ap6"
 # BEGIN_VARIABLE_DEFINITIONS
 # END_VARIABLE_DEFINITIONS
 exec >/tmp/setup.log 2>&1
-uci set system.@system[0].description="OpenWrt Custom Firmware Selector Build"
+uci set system.@system[0].description="Custom Firmware"
 uci set system.@system[0].notes="\${DATE} https://site-u.pages.dev/build"
 [ -n "\${device_name}" ] && uci set system.@system[0].hostname="\${device_name}"
 [ -n "\${root_password}" ] && printf '%s\\n%s\\n' "\${root_password}" "\${root_password}" | passwd >/dev/null
