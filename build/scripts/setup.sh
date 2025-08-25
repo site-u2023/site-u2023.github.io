@@ -186,9 +186,9 @@ MAP_SH_EOF
 # BEGIN_CUSTOM_COMMANDS
 # END_CUSTOM_COMMANDS
 uci commit 2>/dev/null
-enable_netopt="1"
+# enable_netopt="1"
 [ -n "\${enable_netopt}" ] && { cat > /etc/rc.local << 'EOF'
-#!/bin/bash
+#!/bin/sh
 C=/etc/sysctl.d/99-net-opt.conf
 M=\$(awk '/MemTotal/{print int(\$2/1024)}' /proc/meminfo)
 P=\$(grep -c ^processor /proc/cpuinfo)
