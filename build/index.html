@@ -409,7 +409,7 @@
         transition: width 0.3s ease;
     }
 
-    /* パッケージ選択 - 抜本修正 */
+/* パッケージセクション - 抜本修正 */
     .package-category {
         margin: 0;  /* 構造に従う */
         padding: 1rem;  /* 上下左右統一パディング */
@@ -421,8 +421,19 @@
         min-height: fit-content;  /* 最小高さを内容に合わせる */
     }
 
-    h4 {
-        margin: 0;  /* 上マージンなし、構造に従う */
+    /* package-category内のh4は枠なし */
+    .package-category h4 {
+        margin: 0 0 1rem 0;  /* 下マージンのみ */
+        padding: 0;
+        background-color: transparent;
+        border: none;
+        font-size: 1.1rem;
+        font-weight: 500;
+    }
+    
+    /* 独立したh4（旧スタイル）は削除または別クラスに */
+    h4.standalone {
+        margin: 0;
         padding: 0.75rem 1rem;
         background-color: #fff;
         border: 1px solid #e9ecef;
