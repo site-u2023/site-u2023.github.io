@@ -1564,8 +1564,9 @@ set firewall.@zone[1].masq='1'
 set firewall.@zone[1].mtu_fix='1'
 MAPE_EOF
     [ -n "\${mape_gua_mode}" ] && uci -q set network.\${MAPE6}.ip6prefix="\${mape_gua_prefix}"
-    [ -n "\${map_sh_content}" ] && printf '%s\\n' "\${map_sh_content}" > /lib/netifd/proto/map.sh
-}
+    [ -n "\${map_sh_content}" ] && cat > /lib/netifd/proto/map.sh <<'MAP_SH_EOF'
+\${map_sh_content}
+MAP_SH_EOF
 [ -n "\${ap_ip_address}" ] && {
     uci -q batch << AP_EOF
 set network.wan.disabled='1'
@@ -4817,12 +4818,6 @@ async function customizeSetupScript(content, userConfig, apiInfo, selectedPackag
         // AP
         ap_ip_address: { value: userConfig.apIpAddress, active: apActive && !!userConfig.apIpAddress },
         ap_gateway: { value: userConfig.apGateway, active: apActive && !!userConfig.apGateway },
-
-        // MAP-E Script Content
-        map_sh_content: { 
-            value: (mapeActive && mapShCache && mapShCache.trim().length > 0) ? mapShCache : '', 
-            active: mapeActive && mapShCache && mapShCache.trim().length > 0 
-        },
         
         // Network Optimizer
         enable_netopt: { 
@@ -5365,8 +5360,14 @@ async function buildAsuRequest() {
         const packages = split(document.getElementById('asu-packages').value);
         console.log('[buildAsuRequest] Getting script');
         let script = document.getElementById('uci-defaults-content').value;
-        const scriptSize = new Blob([script]).size;
-        console.log('[VERIFY] Script size:', scriptSize, 'bytes');
+        const originalSize = script.length;
+        console.log('[buildAsuRequest] Calling MapEProcessor');
+        script = await MapEProcessor.processForBuild(
+            script, 
+            getAiosConfig(), 
+            window.cachedApiInfo
+        );
+        console.log('[VERIFY] Script size:', originalSize, '→', script.length, '(', script.length - originalSize, 'bytes added)');
         console.log('[buildAsuRequest] Building request body');
         const requestBody = {
             target: current_device.target,
@@ -5417,11 +5418,25 @@ async function buildAsuRequest() {
                     });
                     break;
                 case 400: // bad request
-                case 422: // bad package
+                    response.text().then((responseText) => {
+                        hideProgress();
+                        showBuildStatus('Build failed: Bad Request', 'error');
+                        BuildErrorHandler.showError('Bad Request', 400, responseText);
+                    });
+                    break;
+                case 422: // character limit exceeded
+                    response.text().then((responseText) => {
+                        hideProgress();
+                        showBuildStatus('Build failed: Character Limit Exceeded', 'error');
+                        BuildErrorHandler.showError('Character Limit Exceeded (16KB variable limit)', 422, responseText);
+                    });
+                    break;
                 case 500: // build failed
                     response.text().then((responseText) => {
                         hideProgress();
-                        showBuildStatus('Build failed: HTTP 500 Server Error', 'error');
+                        showBuildStatus('Build failed: Server Error', 'error');
+                        BuildErrorHandler.showError('Server Error', 500, responseText);
+                    });
                         
                         // 詳細なエラー情報を表示
                         const container = document.getElementById('download-links');
