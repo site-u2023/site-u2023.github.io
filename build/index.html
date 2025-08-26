@@ -2424,24 +2424,154 @@ const ResetManager = {
     }
 };
 
+// ==================== オートコンプリート関数（公式版準拠） ====================
+function setupAutocompleteList(input, items, onbegin, onend) {
+    let currentFocus = -1;
+    
+    const collator = new Intl.Collator(undefined, {
+        numeric: true,
+        sensitivity: "base",
+    });
+    
+    items.sort(collator.compare);
+    
+    input.oninput = function () {
+        onbegin();
+        
+        let pattern = this.value;
+        closeAllLists();
+        
+        if (pattern.length === 0) {
+            return false;
+        }
+        
+        if (items.includes(pattern)) {
+            closeAllLists();
+            onend(input);
+            return false;
+        }
+        
+        const list = document.createElement("DIV");
+        list.setAttribute("id", this.id + "-autocomplete-list");
+        list.setAttribute("class", "autocomplete-items");
+        this.parentNode.appendChild(list);
+        
+        const patterns = split(pattern.toUpperCase());
+        let count = 0;
+        for (const item of items) {
+            const matches = match(item, patterns);
+            if (matches.length == 0) {
+                continue;
+            }
+            
+            count += 1;
+            if (count >= 15) {
+                let div = document.createElement("DIV");
+                div.innerText = "...";
+                list.appendChild(div);
+                break;
+            } else {
+                let div = document.createElement("DIV");
+                let prev = 0;
+                let html = "";
+                for (const m of matches) {
+                    html += item.substr(prev, m.begin - prev);
+                    html += `<strong>${item.substr(m.begin, m.length)}</strong>`;
+                    prev = m.begin + m.length;
+                }
+                html += item.substr(prev);
+                html += `<input type="hidden" value="${item}">`;
+                div.innerHTML = html;
+                
+                div.addEventListener("click", function () {
+                    input.value = this.getElementsByTagName("input")[0].value;
+                    closeAllLists();
+                    onend(input);
+                });
+                
+                list.appendChild(div);
+            }
+        }
+    };
+    
+    input.onkeydown = function (e) {
+        let x = document.getElementById(this.id + "-autocomplete-list");
+        if (x) x = x.getElementsByTagName("div");
+        if (e.keyCode == 40) {
+            currentFocus += 1;
+            setActive(x);
+        } else if (e.keyCode == 38) {
+            currentFocus -= 1;
+            setActive(x);
+        } else if (e.keyCode == 13) {
+            e.preventDefault();
+            if (currentFocus > -1) {
+                if (x) x[currentFocus].click();
+            }
+        }
+    };
+    
+    function setActive(xs) {
+        if (!xs) return false;
+        for (const x of xs) {
+            x.classList.remove("autocomplete-active");
+        }
+        if (currentFocus >= xs.length) currentFocus = 0;
+        if (currentFocus < 0) currentFocus = xs.length - 1;
+        xs[currentFocus].classList.add("autocomplete-active");
+    }
+    
+    function closeAllLists(elmnt) {
+        for (const x of document.querySelectorAll(".autocomplete-items")) {
+            if (elmnt != x && elmnt != input) {
+                x.parentNode.removeChild(x);
+            }
+        }
+    }
+    
+    document.addEventListener("click", (e) => {
+        closeAllLists(e.target);
+    });
+}
+
+function match(value, patterns) {
+    const item = value.toUpperCase();
+    let matches = [];
+    for (const p of patterns) {
+        const i = item.indexOf(p);
+        if (i == -1) return [];
+        matches.push({ begin: i, length: p.length });
+    }
+    
+    matches.sort((a, b) => a.begin > b.begin);
+    
+    let prev = null;
+    let ranges = [];
+    for (const m of matches) {
+        if (prev && m.begin <= prev.begin + prev.length) {
+            prev.length = Math.max(prev.length, m.begin + m.length - prev.begin);
+        } else {
+            ranges.push(m);
+            prev = m;
+        }
+    }
+    return ranges;
+}
+
 // ==================== URL管理の統一関数 ====================
 function setupVersionUrls(version) {
     if (!config.image_urls) config.image_urls = {};
     if (!config.overview_urls) config.overview_urls = {};
-
     if (config.image_urls[version]) return;
-
     const overview_url = config.image_url;
     const image_url = (typeof upstream_config !== 'undefined' && upstream_config.image_url_override)
         ? upstream_config.image_url_override
         : config.image_url;
-
     const isSnapshot = /SNAPSHOT$/i.test(version);
     const basePath   = isSnapshot ? 'snapshots' : `releases/${encodeURIComponent(version)}`;
-
     config.overview_urls[version] = `${overview_url}/${basePath}/`;
     config.image_urls[version]    = `${image_url}/${basePath}/`;
-}  
+} 
 
 // ==================== 初期化関数 ====================
 async function init() {
@@ -2730,7 +2860,17 @@ function bindEvents() {
     if (versionsEl) versionsEl.addEventListener('change', handleVersionChange);
     
     const modelsEl = document.getElementById('models');
-    if (modelsEl) modelsEl.addEventListener('input', handleDeviceSearch);
+    if (modelsEl) {
+        // 初期化時にオートコンプリートをセットアップ
+        if (app.devicesMap) {
+            setupAutocompleteList(
+                modelsEl,
+                Object.keys(app.devicesMap),
+                hideDeviceInfo,
+                (input) => changeModel(app.selectedVersion, app.devicesMap, input.value)
+            );
+        }
+    }
 
     const aiosConfigDetails = document.getElementById('use-aios-config-details');
     if (aiosConfigDetails) aiosConfigDetails.addEventListener('toggle', toggleAiosConfig);
@@ -3200,13 +3340,26 @@ const DeviceContext = {
     }
 };
 
-// ==================== 簡素化された入口関数 ====================
+// ==================== 簡略化された入口関数 ====================
 async function handleVersionChange(e) {
     await DeviceContext.update({
         version: e.target.value,
         forceReload: true,
         trigger: 'version-change'
     });
+    
+    // バージョン変更時にオートコンプリートを再セットアップ
+    if (app.devicesMap) {
+        const modelsEl = document.getElementById('models');
+        if (modelsEl) {
+            setupAutocompleteList(
+                modelsEl,
+                Object.keys(app.devicesMap),
+                hideDeviceInfo,
+                (input) => changeModel(app.selectedVersion, app.devicesMap, input.value)
+            );
+        }
+    }
 }
 
 function selectDevice(device) {
@@ -3325,7 +3478,7 @@ async function loadDevices() {
             throw new Error(`HTTP ${response.status}`);
         }
         
-const data = await response.json();
+        const data = await response.json();
         
         // 公式と同じ重複解決処理を追加
         const dups = {};
@@ -3359,7 +3512,9 @@ const data = await response.json();
             }
         }
         
-        app.devices = profiles;
+        // プロファイルをオブジェクトに変換（公式と同じ）
+        app.devicesMap = profiles.reduce((d, e) => ((d[e.title] = e), d), {});
+        app.devices = profiles;  // 互換性のため配列も保持
         app.archPackagesMap = data.arch_packages || {};
         
     } catch (error) {
@@ -3370,6 +3525,7 @@ const data = await response.json();
             console.log(`[loadDevices] Error: ${error.message}`);
         }
         app.devices = [];
+        app.devicesMap = {};
         app.versionCode = null;
         app.kernelHash = null;
         hideDeviceInfo();
@@ -3377,38 +3533,17 @@ const data = await response.json();
 }
 
 function handleDeviceSearch(e) {
-    const query = e.target.value.toLowerCase();
-
-    // 空文字の場合はデバイス情報をクリア
-    if (query.length === 0) {
-        hideAutocomplete();
-        hideDeviceInfo();
-        current_device = {};
-        return;
-    }
-
-    if (query.length < 2) {
-        hideAutocomplete();
-        return;
-    }
-
-    const exact = [];
-    const others = [];
-
-    // 元配列順を維持しつつ、完全一致を先頭に
-    for (const device of app.devices) {
-        const title = device.title || getDeviceTitle(device);
-        const lt = title.toLowerCase();
-        const id = (device.id || '').toLowerCase();
-
-        if (lt === query || id === query) {
-            exact.push(device);
-        } else if (lt.includes(query) || id.includes(query)) {
-            others.push(device);
+    // setupAutocompleteListに置き換え
+    if (!app.devicesMap) return;
+    
+    setupAutocompleteList(
+        document.getElementById('models'),
+        Object.keys(app.devicesMap),
+        hideDeviceInfo,  // onbegin
+        (input) => {      // onend
+            changeModel(app.selectedVersion, app.devicesMap, input.value);
         }
-    }
-
-    showAutocomplete(exact.concat(others));
+    );
 }
         
 function getModelTitles(titles) {
@@ -3427,11 +3562,41 @@ function getModelTitles(titles) {
     });
 }
 
+function changeModel(version, devicesMap, title) {
+    const device = devicesMap[title];
+    if (device) {
+        current_device = {
+            version: version,
+            id: device.id,
+            target: device.target
+        };
+        selectDeviceProfile(device);
+    } else {
+        hideDeviceInfo();
+        current_device = {};
+    }
+}
+
+// selectDeviceのプロファイル読み込み部分を分離
+async function selectDeviceProfile(device) {
+    const success = await loadDeviceProfile(device);
+    if (success) {
+        try {
+            await fetchApiInfoAndUpdate();
+            updateRequiredPackages();
+            asuCollectPackages();
+        } catch (e) {
+            console.error('[selectDeviceProfile] API fetch failed:', e);
+        }
+        showDeviceInfo();
+    } else {
+        current_device = {};
+    }
+}
+
 function getDeviceTitle(device) {
-    // 互換性のため残す - 最初のタイトルのみ返す
     if (device.titles && device.titles.length > 0) {
-        const titles = getModelTitles(device.titles);
-        return titles[0] || device.id;
+        return device.titles[0].title || device.id;
     }
     return device.id;
 }
