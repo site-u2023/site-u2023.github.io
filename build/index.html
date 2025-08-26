@@ -1425,11 +1425,11 @@ uci set system.@system[0].notes="site-u.pages.dev/build"
 [ "\${flow_offloading_type}" = "software" ] && uci set firewall.@defaults[0].flow_offloading='1'
 [ "\${flow_offloading_type}" = "hardware" ] && { uci set firewall.@defaults[0].flow_offloading='1'; uci set firewall.@defaults[0].flow_offloading_hw='1'; }
 [ -n "\${wlan_name}" ] && [ -n "\${wlan_password}" ] && [ "\${#wlan_password}" -ge 8 ] && {
-    wireless_cfg="\$(uci -q show wireless)"
-    for radio in \$(printf '%s\n' "\${wireless_cfg}" | grep "wireless\.radio[0-9]*=" | cut -d. -f2 | cut -d= -f1); do
+    wireless_cfg="$(uci -q show wireless)"
+    for radio in \$(printf '%s\\n' "\${wireless_cfg}" | grep "wireless\.radio[0-9]*=" | cut -d. -f2 | cut -d= -f1); do
         uci set wireless.\${radio}.disabled='0'
         uci set wireless.\${radio}.country="\${country:-00}" 2>/dev/null
-        band=\$(uci -q get wireless.\${radio}.band)
+        band=$(uci -q get wireless.\${radio}.band)
         case "\${band}" in
             2g) suffix="-2g"; encryption='psk-mixed' ;;
             5g) suffix="-5g"; encryption='sae-mixed' ;;
@@ -1438,12 +1438,12 @@ uci set system.@system[0].notes="site-u.pages.dev/build"
         esac
         ssid="\${wlan_name}\${suffix}"
         n=2
-        while printf '%s\n' "\${wireless_cfg}" | grep -q "ssid='\${ssid}'"; do
+        while printf '%s\\n' "\${wireless_cfg}" | grep -q "ssid='\${ssid}'"; do
             ssid="\${wlan_name}\${suffix}\${n}"
             n=\$((n+1))
         done
         iface="default_\${radio}"
-        [ -n "\$(uci -q get wireless.\${iface})" ] && {
+        [ -n "$(uci -q get wireless.\${iface})" ] && {
             uci set wireless.\${iface}.disabled='0'
             uci set wireless.\${iface}.encryption="\${encryption}"
             uci set wireless.\${iface}.ssid="\${ssid}"
@@ -1500,7 +1500,6 @@ uci set system.@system[0].notes="site-u.pages.dev/build"
     uci set network.\${MAPE6}.device="\${WAN}"
     uci set network.\${MAPE6}.reqaddress='try'
     uci set network.\${MAPE6}.reqprefix='auto'
-    [ -n "\${mape_gua_mode}" ] && uci set network.\${MAPE6}.ip6prefix="\${mape_gua_prefix}"
     uci set network.\${MAPE}=interface
     uci set network.\${MAPE}.proto='map'
     uci set network.\${MAPE}.maptype='map-e'
@@ -1533,6 +1532,7 @@ uci set system.@system[0].notes="site-u.pages.dev/build"
     uci add_list firewall.@zone[1].network="\${MAPE6}"
     uci set firewall.@zone[1].masq='1'
     uci set firewall.@zone[1].mtu_fix='1'
+    [ -n "\${mape_gua_mode}" ] && uci set network.\${MAPE6}.ip6prefix="\${mape_gua_prefix}"
     cat > /lib/netifd/proto/map.sh <<'MAP_SH_EOF'
 \${map_sh_content}
 MAP_SH_EOF
