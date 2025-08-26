@@ -668,10 +668,123 @@
         }
     }
 
-    /* ダークモード（変更なし、省略） */
+    /* ダークモード */
     @media (prefers-color-scheme: dark) {
-        /* ... 既存のダークモード設定をそのまま維持 ... */
-    }
+        body {
+            background-color: #18181b;
+            color: #d0d0d0;
+        }
+
+        /* リンクのデフォルト */
+        a {
+            color: #64b5f6;
+        }
+    
+        a:hover {
+            color: #90caf9;
+        }
+
+        #models,
+        #versions {
+            background-color: #313135;
+            color: #d0d0d0;
+        }
+        
+        .form-control {
+            background-color: #313135;
+            color: #d0d0d0;
+            border-color: #555;
+        }
+        
+        .form-control:focus {
+            background-color: #313135;
+            color: #d0d0d0;
+            border-color: #0080b3;
+            box-shadow: 0 0 0 0.2rem rgba(0, 128, 179, 0.25);
+        }
+        
+        .form-control:disabled {
+            background-color: #313135;
+            color: #d0d0d0;
+            border-color: #444;
+        }
+        
+        .autocomplete-items {
+            background-color: #252528;
+            border-color: #444;
+        }
+        
+        .autocomplete-items div {
+            background-color: #252528;
+            border-color: #444;
+        }
+        
+        .autocomplete-items div:hover,
+        .autocomplete-active {
+            background-color: #0080b3 !important;
+            color: #fff;
+        }
+        
+        .info {
+            background-color: #1d4046;
+            border-color: #2a5a61;
+            color: #d0d0d0;
+        }
+        
+        .asu-info {
+            background-color: #1d4046;
+            border-color: #2a5a61;
+            color: #d0d0d0;
+        }
+        
+        .asu-error {
+            background-color: #601b21;
+            border-color: #721c24;
+            color: #d0d0d0;
+        }
+        
+        .aios-section {
+            background-color: #313135;
+            border-color: #444;
+        }
+
+        .aios-config {
+            background-color: #252528;
+            border-color: #444;
+        }    
+        
+        h4 {
+            background-color: #252528;
+            border-color: #444;
+            color: #d0d0d0;
+        }
+        
+        .package-category {
+            background-color: #252528;
+            border-color: #444;
+        }
+        
+        .conditional-section {
+            background-color: #313135 !important;
+            border-color: #444 !important;
+        }
+
+        h5.section-title {
+            color: #d0d0d0;
+        }
+        
+        #asu-stderr,
+        #asu-stdout {
+            background-color: #252528 !important;
+            color: #d0d0d0;
+        }
+        
+        #image-info,
+        #image-folder,
+        #image-link {
+            filter: invert(100%) sepia(9%) saturate(261%) hue-rotate(281deg) brightness(117%) contrast(100%);
+        }
+    } /* close @media (prefers-color-scheme: dark) */
 </style>
 
 </head>
