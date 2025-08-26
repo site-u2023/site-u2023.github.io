@@ -13,9 +13,10 @@ AP6="ap6"
 NAS="openwrt"
 MNT="/mnt/sda"
 exec >/tmp/setup.log 2>&1
-
-uci set system.@system[0].description="\${DATE}"
-uci set system.@system[0].notes="site-u.pages.dev/build"
+uci -q batch <<'EOI'
+set system.@system[0].description="\${DATE}"
+set system.@system[0].notes="site-u.pages.dev/build"
+EOF
 [ -n "\${device_name}" ] && uci set system.@system[0].hostname="\${device_name}"
 [ -n "\${root_password}" ] && printf '%s\\n%s\\n' "\${root_password}" "\${root_password}" | passwd >/dev/null
 [ -n "\${lan_ip_address}" ] && uci set network.lan.ipaddr="\${lan_ip_address}"
@@ -30,7 +31,6 @@ uci set system.@system[0].notes="site-u.pages.dev/build"
 set firewall.@defaults[0].flow_offloading='1'
 set firewall.@defaults[0].flow_offloading_hw='1'
 EOI
-
 [ -n "\${wlan_name}" ] && [ -n "\${wlan_password}" ] && [ "\${#wlan_password}" -ge 8 ] && {
     wireless_cfg="$(uci -q show wireless)"
     for radio in $(printf '%s\\n' "\${wireless_cfg}" | grep "wireless\.radio[0-9]*=" | cut -d. -f2 | cut -d= -f1); do
