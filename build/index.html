@@ -1689,21 +1689,15 @@ const MapEProcessor = {
         
         // 厳格な安全確認: キャッシュが空または無効な場合の処理
         if (!mapShCache || mapShCache.trim().length === 0) {
-            console.warn('[MAP-E] Script cache empty, removing map.sh creation block');
-            // 該当部分全体をコメントアウトして安全化
-            return content.replace(
-                /\s*\[ -n "\$\{map_sh_content\}" \] && cat > \/lib\/netifd\/proto\/map\.sh <<'MAP_SH_EOF'\n[\s\S]*?\nMAP_SH_EOF/,
-                '\n    # MAP-E script not available - map.sh creation skipped'
-            );
+            console.warn('[MAP-E] Script cache empty, skipping map.sh creation');
+            // プレースホルダーを空文字で置換（シェル側の条件分岐で保護される）
+            return content.replace(/\$\{map_sh_content\}/g, '');
         }
         
         // スクリプト内容の最低限の検証
-        if (!mapShCache.includes('#!/bin/sh') && !mapShCache.includes('netifd')) {
-            console.warn('[MAP-E] Script content appears invalid');
-            return content.replace(
-                /\s*\[ -n "\$\{map_sh_content\}" \] && cat > \/lib\/netifd\/proto\/map\.sh <<'MAP_SH_EOF'\n[\s\S]*?\nMAP_SH_EOF/,
-                '\n    # MAP-E script validation failed - map.sh creation skipped'
-            );
+        if (mapShCache.trim().length < 100) {  // 最低限のサイズチェック
+            console.warn('[MAP-E] Script content appears too short, skipping');
+            return content.replace(/\$\{map_sh_content\}/g, '');
         }
         
         const result = content.replace(/\$\{map_sh_content\}/g, mapShCache);
@@ -4801,18 +4795,12 @@ async function customizeSetupScript(content, userConfig, apiInfo, selectedPackag
         mape_psidlen: { value: mapeVals.psid || '', active: mapeActive },
         mape_gua_mode: { value: guaActive ? '1' : '', active: guaActive },
         mape_gua_prefix: { value: guaActive ? guaPrefix : '', active: guaActive },
-        
-        // MAP-E script content (安全確認付き)
-        map_sh_content: { 
-            value: (mapeActive && mapShCache && mapShCache.trim().length > 0) ? mapShCache : '', 
-            active: mapeActive && mapShCache && mapShCache.trim().length > 0 
-        },
 
         // AP
         ap_ip_address: { value: userConfig.apIpAddress, active: apActive && !!userConfig.apIpAddress },
         ap_gateway: { value: userConfig.apGateway, active: apActive && !!userConfig.apGateway },
         
-// Network Optimizer
+        // Network Optimizer
         enable_netopt: { 
             value: userConfig.netOptimizer === 'enabled' ? '1' : '', 
             active: userConfig.netOptimizer === 'enabled' 
