@@ -864,7 +864,7 @@
                             <!-- カテゴリーとパッケージは動的に生成される -->
                         </div>
                         
-                        <div class="form-group">
+                        <div class="package-category">
                             <h4>Postinst (Package installation script)</h4>
                             <label for="asu-packages" style="display: none;">Postinst</label>
                             <textarea id="asu-packages" class="form-control" rows="6" placeholder="luci&#10;luci-ssl&#10;-wpad-basic-wolfssl&#10;wpad-wolfssl"></textarea>
@@ -901,13 +901,14 @@
                               </div>
                             </div>
 
+                        <div class="package-category">
                             <h4>Basic Configuration</h4>
-                        
-                        <!-- 1行目: Language と Country -->
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="aios-language">Language</label>
-                                <select id="aios-language" class="form-control">
+                            
+                            <!-- 1行目: Language と Country -->
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="aios-language">Language</label>
+                                    <select id="aios-language" class="form-control">
                                     <option value="en">English</option>
                                     <option value="ar">العربية (Arabic)</option>
                                     <option value="bg">Български (Bulgarian)</option>
@@ -1019,12 +1020,14 @@
                                 <label for="aios-backup-path">Restore Backup Path</label>
                                 <input type="text" id="aios-backup-path" class="form-control" placeholder="/root/backup.tar.gz" value="/root/backup.tar.gz">
                                 <small class="form-text text-muted">Path to backup file for restore</small>
+                                </div>
                             </div>
                         </div>
                         
-                        <h4>Wi-Fi Configuration</h4>
-                        <div class="form-row">
-                            <div class="form-group">
+                        <div class="package-category">
+                            <h4>Wi-Fi Configuration</h4>
+                            <div class="form-row">
+                                <div class="form-group">
                                 <label for="aios-wifi-ssid">Wi‑Fi SSIDs (Base name)</label>
                                 <input type="text" id="aios-wifi-ssid" class="form-control" placeholder="OpenWrt" value="OpenWrt">
                                 <small class="form-text text-muted">Auto-creates SSID per interface with band suffix</small>
@@ -1033,12 +1036,15 @@
                                 <label for="aios-wifi-password">Wi‑Fi Password (Shared)</label>
                                 <input type="text" id="aios-wifi-password" class="form-control" placeholder="8+ characters" value="password">
                                 <small class="form-text text-muted">Same password for all SSIDs</small>
+                                </div>
                             </div>
                         </div>
 
-                        <h4>Internet Connection</h4>
-                        <div class="form-group">
-                            <label>Connection mode</label>
+                        <div class="package-category">
+                        <div class="package-category">
+                            <h4>Internet Connection</h4>
+                            <div class="form-group">
+                                <label>Connection mode</label>
                             <div class="radio-group">
                                 <div class="form-check">
                                     <input class="form-check-input" type="radio" name="connectionMode" id="mode-auto" value="auto" checked>
@@ -1235,7 +1241,7 @@
                             </div>
                         </div>
     
-<div class="form-group" id="isp-detection-group">
+                        <div class="form-group" id="isp-detection-group">
                             <label>ISP Detection Status</label>
                             <div id="isp-info-display" class="info" style="margin-bottom: 0;">
                                 <div id="isp-status-message">ISP information will be detected when configuration is opened</div>
@@ -1243,8 +1249,9 @@
                             </div>
                         </div>
                         
-                        <h4>Tuning</h4>
-                        <div class="form-group">
+                        <div class="package-category">
+                            <h4>Tuning</h4>
+                            <div class="form-group">
                             <label>Dynamic Network Optimizer</label>
                             <div class="radio-group">
                                 <div class="form-check">
@@ -1315,7 +1322,7 @@
                             </div>
                         </div>
                         
-                        <div class="form-group">
+                        <div class="package-category">
                             <h4>UCI-defaults (Boot configuration script)</h4>
                             <label for="uci-defaults-content" style="display: none;">UCI-defaults</label>
                             <textarea id="uci-defaults-content" class="form-control" rows="6" placeholder="#!/bin/sh&#10;&#10;# Your custom script here&#10;# This area is for manual editing - configuration wizard will not overwrite your changes"></textarea>
