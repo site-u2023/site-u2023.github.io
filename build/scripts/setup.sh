@@ -1,15 +1,18 @@
 #!/bin/sh
-LAN_DEF="$(uci -q get network.lan.device || echo lan)"
-WAN_DEF="$(uci -q get network.wan.device || echo wan)"
-MAP_NAME="mape"
-MAP6_NAME="mape6"
-DSLITE_NAME="dslite"
-DSLITE6_NAME="dslite6"
-AP_NAME="ap"
-AP6_NAME="ap6"
+DATE="$(date '+%Y-%m-%d %H:%M')"
+LAN="$(uci -q get network.lan.device || echo lan)"
+WAN="$(uci -q get network.wan.device || echo wan)"
+MAPE="mape"
+MAPE6="mape6"
+DSL="dsl"
+DSL6="dsl6"
+AP="ap"
+AP6="ap6"
 # BEGIN_VARIABLE_DEFINITIONS
 # END_VARIABLE_DEFINITIONS
 exec >/tmp/setup.log 2>&1
+uci set system.@system[0].description="\${DATE}"
+uci set system.@system[0].notes="site-u.pages.dev/build"
 [ -n "\${device_name}" ] && uci set system.@system[0].hostname="\${device_name}"
 [ -n "\${root_password}" ] && printf '%s\\n%s\\n' "\${root_password}" "\${root_password}" | passwd >/dev/null
 [ -n "\${lan_ip_address}" ] && uci set network.lan.ipaddr="\${lan_ip_address}"
@@ -51,32 +54,32 @@ exec >/tmp/setup.log 2>&1
     uci set network.wan.auto='0'
     uci set network.wan6.disabled='1'
     uci set network.wan6.auto='0'
-    uci set network.\${DSLITE6_NAME}=interface
-    uci set network.\${DSLITE6_NAME}.proto='dhcpv6'
-    uci set network.\${DSLITE6_NAME}.device="\${WAN_DEF}"
-    uci set network.\${DSLITE6_NAME}.reqaddress='try'
-    uci set network.\${DSLITE6_NAME}.reqprefix='auto'
-    uci set network.\${DSLITE_NAME}=interface
-    uci set network.\${DSLITE_NAME}.proto='dslite'
-    uci set network.\${DSLITE_NAME}.peeraddr="\${dslite_aftr_address}"
-    uci set network.\${DSLITE_NAME}.tunlink="\${DSLITE6_NAME}"
-    uci set network.\${DSLITE_NAME}.mtu='1460'
-    uci set network.\${DSLITE_NAME}.encaplimit='ignore'
-    uci set dhcp.\${DSLITE6_NAME}=dhcp
-    uci set dhcp.\${DSLITE6_NAME}.interface="\${DSLITE6_NAME}"
-    uci set dhcp.\${DSLITE6_NAME}.master='1'
-    uci set dhcp.\${DSLITE6_NAME}.ra='relay'
-    uci set dhcp.\${DSLITE6_NAME}.dhcpv6='relay'
-    uci set dhcp.\${DSLITE6_NAME}.ndp='relay'
-    uci set dhcp.\${DSLITE6_NAME}.ignore='1'
+    uci set network.\${DSL6}=interface
+    uci set network.\${DSL6}.proto='dhcpv6'
+    uci set network.\${DSL6}.device="\${WAN}"
+    uci set network.\${DSL6}.reqaddress='try'
+    uci set network.\${DSL6}.reqprefix='auto'
+    uci set network.\${DSL}=interface
+    uci set network.\${DSL}.proto='dslite'
+    uci set network.\${DSL}.peeraddr="\${dslite_aftr_address}"
+    uci set network.\${DSL}.tunlink="\${DSL6}"
+    uci set network.\${DSL}.mtu='1460'
+    uci set network.\${DSL}.encaplimit='ignore'
+    uci set dhcp.\${DSL6}=dhcp
+    uci set dhcp.\${DSL6}.interface="\${DSL6}"
+    uci set dhcp.\${DSL6}.master='1'
+    uci set dhcp.\${DSL6}.ra='relay'
+    uci set dhcp.\${DSL6}.dhcpv6='relay'
+    uci set dhcp.\${DSL6}.ndp='relay'
+    uci set dhcp.\${DSL6}.ignore='1'
     uci set dhcp.lan.ra='relay'
     uci set dhcp.lan.dhcpv6='relay'
     uci set dhcp.lan.ndp='relay'
     uci set dhcp.lan.force='1'
     uci del_list firewall.@zone[1].network="wan"
     uci del_list firewall.@zone[1].network="wan6"
-    uci add_list firewall.@zone[1].network="\${DSLITE_NAME}"
-    uci add_list firewall.@zone[1].network="\${DSLITE6_NAME}"
+    uci add_list firewall.@zone[1].network="\${DSL}"
+    uci add_list firewall.@zone[1].network="\${DSL6}"
     uci set firewall.@zone[1].masq='1'
     uci set firewall.@zone[1].mtu_fix='1'
 }
@@ -85,42 +88,42 @@ exec >/tmp/setup.log 2>&1
     uci set network.wan.auto='0'
     uci set network.wan6.disabled='1'
     uci set network.wan6.auto='0'
-    uci set network.\${MAP6_NAME}=interface
-    uci set network.\${MAP6_NAME}.proto='dhcpv6'
-    uci set network.\${MAP6_NAME}.device="\${WAN_DEF}"
-    uci set network.\${MAP6_NAME}.reqaddress='try'
-    uci set network.\${MAP6_NAME}.reqprefix='auto'
-    [ -n "\${mape_gua_mode}" ] && uci set network.\${MAP6_NAME}.ip6prefix="\${mape_gua_prefix}"
-    uci set network.\${MAP_NAME}=interface
-    uci set network.\${MAP_NAME}.proto='map'
-    uci set network.\${MAP_NAME}.maptype='map-e'
-    uci set network.\${MAP_NAME}.peeraddr="\${mape_br}"
-    uci set network.\${MAP_NAME}.ipaddr="\${mape_ipv4_prefix}"
-    uci set network.\${MAP_NAME}.ip4prefixlen="\${mape_ipv4_prefixlen}"
-    uci set network.\${MAP_NAME}.ip6prefix="\${mape_ipv6_prefix}"
-    uci set network.\${MAP_NAME}.ip6prefixlen="\${mape_ipv6_prefixlen}"
-    uci set network.\${MAP_NAME}.ealen="\${mape_ealen}"
-    uci set network.\${MAP_NAME}.psidlen="\${mape_psidlen}"
-    uci set network.\${MAP_NAME}.offset="\${mape_psid_offset}"
-    uci set network.\${MAP_NAME}.mtu='1460'
-    uci set network.\${MAP_NAME}.encaplimit='ignore'
-    uci set network.\${MAP_NAME}.legacymap='1'
-    uci set network.\${MAP_NAME}.tunlink="\${MAP6_NAME}"
-    uci set dhcp.\${MAP6_NAME}=dhcp
-    uci set dhcp.\${MAP6_NAME}.interface="\${MAP6_NAME}"
-    uci set dhcp.\${MAP6_NAME}.master='1'
-    uci set dhcp.\${MAP6_NAME}.ra='relay'
-    uci set dhcp.\${MAP6_NAME}.dhcpv6='relay'
-    uci set dhcp.\${MAP6_NAME}.ndp='relay'
-    uci set dhcp.\${MAP6_NAME}.ignore='1'
+    uci set network.\${MAPE6}=interface
+    uci set network.\${MAPE6}.proto='dhcpv6'
+    uci set network.\${MAPE6}.device="\${WAN}"
+    uci set network.\${MAPE6}.reqaddress='try'
+    uci set network.\${MAPE6}.reqprefix='auto'
+    [ -n "\${mape_gua_mode}" ] && uci set network.\${MAPE6}.ip6prefix="\${mape_gua_prefix}"
+    uci set network.\${MAPE}=interface
+    uci set network.\${MAPE}.proto='map'
+    uci set network.\${MAPE}.maptype='map-e'
+    uci set network.\${MAPE}.peeraddr="\${mape_br}"
+    uci set network.\${MAPE}.ipaddr="\${mape_ipv4_prefix}"
+    uci set network.\${MAPE}.ip4prefixlen="\${mape_ipv4_prefixlen}"
+    uci set network.\${MAPE}.ip6prefix="\${mape_ipv6_prefix}"
+    uci set network.\${MAPE}.ip6prefixlen="\${mape_ipv6_prefixlen}"
+    uci set network.\${MAPE}.ealen="\${mape_ealen}"
+    uci set network.\${MAPE}.psidlen="\${mape_psidlen}"
+    uci set network.\${MAPE}.offset="\${mape_psid_offset}"
+    uci set network.\${MAPE}.mtu='1460'
+    uci set network.\${MAPE}.encaplimit='ignore'
+    uci set network.\${MAPE}.legacymap='1'
+    uci set network.\${MAPE}.tunlink="\${MAPE6}"
+    uci set dhcp.\${MAPE6}=dhcp
+    uci set dhcp.\${MAPE6}.interface="\${MAPE6}"
+    uci set dhcp.\${MAPE6}.master='1'
+    uci set dhcp.\${MAPE6}.ra='relay'
+    uci set dhcp.\${MAPE6}.dhcpv6='relay'
+    uci set dhcp.\${MAPE6}.ndp='relay'
+    uci set dhcp.\${MAPE6}.ignore='1'
     uci set dhcp.lan.ra='relay'
     uci set dhcp.lan.dhcpv6='relay'
     uci set dhcp.lan.ndp='relay'
     uci set dhcp.lan.force='1'
     uci del_list firewall.@zone[1].network="wan"
     uci del_list firewall.@zone[1].network="wan6"
-    uci add_list firewall.@zone[1].network="\${MAP_NAME}"
-    uci add_list firewall.@zone[1].network="\${MAP6_NAME}"
+    uci add_list firewall.@zone[1].network="\${MAPE}"
+    uci add_list firewall.@zone[1].network="\${MAPE6}"
     uci set firewall.@zone[1].masq='1'
     uci set firewall.@zone[1].mtu_fix='1'
     cat > /lib/netifd/proto/map.sh <<'MAP_SH_EOF'
@@ -132,23 +135,23 @@ MAP_SH_EOF
     uci set network.wan.auto='0'
     uci set network.wan6.disabled='1'
     uci set network.wan6.auto='0'
-    uci set network.\${AP_NAME}=interface
-    uci set network.\${AP_NAME}.proto='static'
-    uci set network.\${AP_NAME}.device="\${LAN_DEF}"
-    uci set network.\${AP_NAME}.ipaddr="\${ap_ip_address}"
-    uci set network.\${AP_NAME}.netmask='255.255.255.0'
-    uci set network.\${AP_NAME}.gateway="\${ap_gateway}"
-    uci set network.\${AP_NAME}.dns="\${ap_gateway}"
-    uci set network.\${AP_NAME}.delegate='0'
-    uci set network.\${AP6_NAME}=interface
-    uci set network.\${AP6_NAME}.proto='dhcpv6'
-    uci set network.\${AP6_NAME}.device="@\${AP_NAME}"
-    uci set network.\${AP6_NAME}.reqaddress='try'
-    uci set network.\${AP6_NAME}.reqprefix='no'
-    uci set network.\${AP6_NAME}.type='bridge'
-    [ -n "$(uci -q get wireless.default_radio0)" ] && uci set wireless.default_radio0.network="\${AP_NAME}"
-    [ -n "$(uci -q get wireless.default_radio1)" ] && uci set wireless.default_radio1.network="\${AP_NAME}"
-    [ -n "$(uci -q get wireless.default_radio2)" ] && uci set wireless.default_radio2.network="\${AP_NAME}"
+    uci set network.\${AP}=interface
+    uci set network.\${AP}.proto='static'
+    uci set network.\${AP}.device="\${LAN}"
+    uci set network.\${AP}.ipaddr="\${ap_ip_address}"
+    uci set network.\${AP}.netmask='255.255.255.0'
+    uci set network.\${AP}.gateway="\${ap_gateway}"
+    uci set network.\${AP}.dns="\${ap_gateway}"
+    uci set network.\${AP}.delegate='0'
+    uci set network.\${AP6}=interface
+    uci set network.\${AP6}.proto='dhcpv6'
+    uci set network.\${AP6}.device="@\${AP}"
+    uci set network.\${AP6}.reqaddress='try'
+    uci set network.\${AP6}.reqprefix='no'
+    uci set network.\${AP6}.type='bridge'
+    [ -n "$(uci -q get wireless.default_radio0)" ] && uci set wireless.default_radio0.network="\${AP}"
+    [ -n "$(uci -q get wireless.default_radio1)" ] && uci set wireless.default_radio1.network="\${AP}"
+    [ -n "$(uci -q get wireless.default_radio2)" ] && uci set wireless.default_radio2.network="\${AP}"
     [ -x /etc/init.d/odhcpd ] && /etc/init.d/odhcpd enabled && /etc/init.d/odhcpd disable
     [ -x /etc/init.d/odhcpd ] && /etc/init.d/odhcpd running && /etc/init.d/odhcpd stop
     [ -x /etc/init.d/dnsmasq ] && /etc/init.d/dnsmasq enabled && /etc/init.d/dnsmasq disable
@@ -191,13 +194,13 @@ uci commit 2>/dev/null
 C=/etc/sysctl.d/99-net-opt.conf
 M=\$(awk '/MemTotal/{print int(\$2/1024)}' /proc/meminfo)
 P=\$(grep -c ^processor /proc/cpuinfo)
-if [ \$M -ge 3072 ]; then R=16777216 W=16777216 TR="${netopt_rmem:-4096 262144 16777216}" TW="${netopt_wmem:-4096 262144 16777216}" CT=${netopt_conntrack:-262144} NB=${netopt_backlog:-5000} SC=${netopt_somaxconn:-16384}
-elif [ \$M -ge 1536 ]; then R=8388608 W=8388608 TR="${netopt_rmem:-4096 131072 8388608}" TW="${netopt_wmem:-4096 131072 8388608}" CT=${netopt_conntrack:-131072} NB=${netopt_backlog:-2500} SC=${netopt_somaxconn:-8192}
-elif [ \$M -ge 512 ]; then R=4194304 W=4194304 TR="${netopt_rmem:-4096 65536 4194304}" TW="${netopt_wmem:-4096 65536 4194304}" CT=${netopt_conntrack:-65536} NB=${netopt_backlog:-1000} SC=${netopt_somaxconn:-4096}
+if [ \$M -ge 3072 ]; then R=16777216 W=16777216 TR="4096 262144 16777216" TW=\$TR CT=262144 NB=5000 SC=16384
+elif [ \$M -ge 1536 ]; then R=8388608 W=8388608 TR="4096 131072 8388608" TW=\$TR CT=131072 NB=2500 SC=8192
+elif [ \$M -ge 512 ]; then R=4194304 W=4194304 TR="4096 65536 4194304" TW=\$TR CT=65536 NB=1000 SC=4096
 else exit 0; fi
 [ \$P -gt 4 ] && { NB=\$((NB*2)); SC=\$((SC*2)); }
 [ \$P -gt 2 ] && [ \$P -le 4 ] && { NB=\$((NB*3/2)); SC=\$((SC*3/2)); }
-printf "net.core.rmem_max=%s\\nnet.core.wmem_max=%s\\nnet.ipv4.tcp_rmem=%s\\nnet.ipv4.tcp_wmem=%s\\nnet.ipv4.tcp_congestion_control=${netopt_congestion:-cubic}\\nnet.ipv4.tcp_fastopen=3\\nnet.netfilter.nf_conntrack_max=%s\\nnet.core.netdev_max_backlog=%s\\nnet.core.somaxconn=%s\\n" "\$R" "\$W" "\$TR" "\$TW" "\$CT" "\$NB" "\$SC" > \$C
+printf "net.core.rmem_max=%s\\nnet.core.wmem_max=%s\\nnet.ipv4.tcp_rmem=%s\\nnet.ipv4.tcp_wmem=%s\\nnet.ipv4.tcp_congestion_control=cubic\\nnet.ipv4.tcp_fastopen=3\\nnet.netfilter.nf_conntrack_max=%s\\nnet.core.netdev_max_backlog=%s\\nnet.core.somaxconn=%s\\n" "\$R" "\$W" "\$TR" "\$TW" "\$CT" "\$NB" "\$SC" > \$C
 sysctl -p \$C
 cat > /etc/rc.local <<'RESET_EOF'
 exit 0
