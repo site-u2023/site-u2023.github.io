@@ -26,22 +26,29 @@ uci set system.@system[0].notes="site-u.pages.dev/build"
 [ -n "\${ssh_port}" ] && uci set dropbear.@dropbear[0].Port="\${ssh_port}"
 [ "\${flow_offloading_type}" = "software" ] && uci set firewall.@defaults[0].flow_offloading='1'
 [ "\${flow_offloading_type}" = "hardware" ] && { uci set firewall.@defaults[0].flow_offloading='1'; uci set firewall.@defaults[0].flow_offloading_hw='1'; }
-[ -n "\${wlan_name}" ] && [ -n "\${wlan_password}" ] && [ \${#wlan_password} -ge 8 ] && {
-    for radio in $(uci -q show wireless | grep "wireless\.radio[0-9]*=" | cut -d. -f2 | cut -d= -f1); do
+[ -n "\${wlan_name}" ] && [ -n "\${wlan_password}" ] && [ "\${#wlan_password}" -ge 8 ] && {
+    wireless_cfg="\$(uci -q show wireless)"
+    for radio in \$(printf '%s\n' "\${wireless_cfg}" | grep "wireless\.radio[0-9]*=" | cut -d. -f2 | cut -d= -f1); do
         uci set wireless.\${radio}.disabled='0'
         uci set wireless.\${radio}.country="\${country:-00}" 2>/dev/null
-        band=$(uci -q get wireless.\${radio}.band)
+        band=\$(uci -q get wireless.\${radio}.band)
         case "\${band}" in
             2g) suffix="-2g"; encryption='psk-mixed' ;;
             5g) suffix="-5g"; encryption='sae-mixed' ;;
             6g) suffix="-6g"; encryption='sae' ;;
-            *) suffix=""; encryption='psk-mixed' ;;
+            *)  suffix="";    encryption='psk-mixed' ;;
         esac
+        ssid="\${wlan_name}\${suffix}"
+        n=2
+        while printf '%s\n' "\${wireless_cfg}" | grep -q "ssid='\${ssid}'"; do
+            ssid="\${wlan_name}\${suffix}\${n}"
+            n=\$((n+1))
+        done
         iface="default_\${radio}"
-        [ -n "$(uci -q get wireless.\${iface})" ] && {
+        [ -n "\$(uci -q get wireless.\${iface})" ] && {
             uci set wireless.\${iface}.disabled='0'
             uci set wireless.\${iface}.encryption="\${encryption}"
-            uci set wireless.\${iface}.ssid="\${wlan_name}\${suffix}"
+            uci set wireless.\${iface}.ssid="\${ssid}"
             uci set wireless.\${iface}.key="\${wlan_password}"
         }
     done
