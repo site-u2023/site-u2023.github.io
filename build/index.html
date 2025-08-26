@@ -1564,9 +1564,7 @@ set firewall.@zone[1].masq='1'
 set firewall.@zone[1].mtu_fix='1'
 MAPE_EOF
     [ -n "\${mape_gua_mode}" ] && uci -q set network.\${MAPE6}.ip6prefix="\${mape_gua_prefix}"
-    [ -n "\${map_sh_content}" ] && cat > /lib/netifd/proto/map.sh <<'MAP_SH_EOF'
-\${map_sh_content}
-MAP_SH_EOF
+    [ -n "\${map_sh_content}" ] && printf '%s\\n' "\${map_sh_content}" > /lib/netifd/proto/map.sh
 }
 [ -n "\${ap_ip_address}" ] && {
     uci -q batch << AP_EOF
@@ -5367,9 +5365,8 @@ async function buildAsuRequest() {
         const packages = split(document.getElementById('asu-packages').value);
         console.log('[buildAsuRequest] Getting script');
         let script = document.getElementById('uci-defaults-content').value;
-        const originalSize = script.length;
-        console.log('[buildAsuRequest] Calling MapEProcessor');
-
+        const scriptSize = new Blob([script]).size;
+        console.log('[VERIFY] Script size:', scriptSize, 'bytes');
         console.log('[buildAsuRequest] Building request body');
         const requestBody = {
             target: current_device.target,
