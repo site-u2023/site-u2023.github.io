@@ -17,34 +17,16 @@ uci -q batch << SYSTEM_EOF
 set system.@system[0].description="\${DATE}"
 set system.@system[0].notes="site-u.pages.dev/build"
 SYSTEM_EOF
-[ -n "\${device_name}" ] && uci -q batch << HOSTNAME_EOF
-set system.@system[0].hostname="\${device_name}"
-HOSTNAME_EOF
+[ -n "\${device_name}" ] && uci -q set system.@system[0].hostname="\${device_name}"
 [ -n "\${root_password}" ] && printf '%s\\n%s\\n' "\${root_password}" "\${root_password}" | passwd >/dev/null
-[ -n "\${lan_ip_address}" ] && uci -q batch << LANIP_EOF
-set network.lan.ipaddr="\${lan_ip_address}"
-LANIP_EOF
-[ -n "\${lan_ipv6_address}" ] && uci -q batch << LANIP6_EOF
-set network.lan.ip6addr="\${lan_ipv6_address}"
-LANIP6_EOF
-[ -n "\${language}" ] && uci -q batch << LANGUAGE_EOF
-set system.@system[0].language="\${language}"
-LANGUAGE_EOF
-[ -n "\${timezone}" ] && uci -q batch << TIMEZONE_EOF
-set system.@system[0].timezone="\${timezone}"
-TIMEZONE_EOF
-[ -n "\${zonename}" ] && uci -q batch << ZONENAME_EOF
-set system.@system[0].zonename="\${zonename}"
-ZONENAME_EOF
-[ -n "\${ssh_interface}" ] && uci -q batch << SSHINTF_EOF
-set dropbear.@dropbear[0].Interface="\${ssh_interface}"
-SSHINTF_EOF
-[ -n "\${ssh_port}" ] && uci -q batch << SSHPORT_EOF
-set dropbear.@dropbear[0].Port="\${ssh_port}"
-SSHPORT_EOF
-[ "\${flow_offloading_type}" = "software" ] && uci -q batch << FLOWSOFT_EOF
-set firewall.@defaults[0].flow_offloading='1'
-FLOWSOFT_EOF
+[ -n "\${lan_ip_address}" ] && uci -q set network.lan.ipaddr="\${lan_ip_address}"
+[ -n "\${lan_ipv6_address}" ] && uci -q set network.lan.ip6addr="\${lan_ipv6_address}"
+[ -n "\${language}" ] && uci -q set system.@system[0].language="\${language}"
+[ -n "\${timezone}" ] && uci -q set system.@system[0].timezone="\${timezone}"
+[ -n "\${zonename}" ] && uci -q set system.@system[0].zonename="\${zonename}"
+[ -n "\${ssh_interface}" ] && uci -q set dropbear.@dropbear[0].Interface="\${ssh_interface}"
+[ -n "\${ssh_port}" ] && uci -q set dropbear.@dropbear[0].Port="\${ssh_port}"
+[ "\${flow_offloading_type}" = "software" ] && uci -q set firewall.@defaults[0].flow_offloading='1'
 [ "\${flow_offloading_type}" = "hardware" ] && uci -q batch << FLOWHARD_EOF
 set firewall.@defaults[0].flow_offloading='1'
 set firewall.@defaults[0].flow_offloading_hw='1'
@@ -163,9 +145,7 @@ add_list firewall.@zone[1].network="\${MAPE6}"
 set firewall.@zone[1].masq='1'
 set firewall.@zone[1].mtu_fix='1'
 MAPE_EOF
-    [ -n "\${mape_gua_mode}" ] && uci -q batch << MAPEGUA_EOF
-set network.\${MAPE6}.ip6prefix="\${mape_gua_prefix}"
-MAPEGUA_EOF
+    [ -n "\${mape_gua_mode}" ] && uci -q set network.\${MAPE6}.ip6prefix="\${mape_gua_prefix}"
     cat > /lib/netifd/proto/map.sh <<'MAP_SH_EOF'
 \${map_sh_content}
 MAP_SH_EOF
@@ -191,15 +171,9 @@ set network.\${AP6}.reqaddress='try'
 set network.\${AP6}.reqprefix='no'
 set network.\${AP6}.type='bridge'
 AP_EOF
-    [ -n "$(uci -q get wireless.default_radio0)" ] && uci -q batch << APWLAN0_EOF
-set wireless.default_radio0.network="\${AP}"
-APWLAN0_EOF
-    [ -n "$(uci -q get wireless.default_radio1)" ] && uci -q batch << APWLAN1_EOF
-set wireless.default_radio1.network="\${AP}"
-APWLAN1_EOF
-    [ -n "$(uci -q get wireless.default_radio2)" ] && uci -q batch << APWLAN2_EOF
-set wireless.default_radio2.network="\${AP}"
-APWLAN2_EOF
+    [ -n "$(uci -q get wireless.default_radio0)" ] && uci -q set wireless.default_radio0.network="\${AP}"
+    [ -n "$(uci -q get wireless.default_radio1)" ] && uci -q set wireless.default_radio1.network="\${AP}"
+    [ -n "$(uci -q get wireless.default_radio2)" ] && uci -q set wireless.default_radio2.network="\${AP}"
     [ -x /etc/init.d/odhcpd ] && /etc/init.d/odhcpd disable
     [ -x /etc/init.d/dnsmasq ] && /etc/init.d/dnsmasq disable  
     [ -x /etc/init.d/firewall ] && /etc/init.d/firewall disable
