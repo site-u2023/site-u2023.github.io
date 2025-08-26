@@ -3938,7 +3938,7 @@ function showDeviceInfo() {
         <h5>About this build</h5>
         <div class="row">
             <span class="col1">Model</span>
-            <span class="col2" id="image-model"><strong>${getDeviceTitle(device)}</strong></span>
+            <span class="col2" id="image-model"><strong>${device.title || getDeviceTitle(device)}</strong></span>
         </div>
         <div class="row">
             <span class="col1">Target</span>
