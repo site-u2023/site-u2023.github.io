@@ -200,12 +200,9 @@ APWLAN1_EOF
     [ -n "$(uci -q get wireless.default_radio2)" ] && uci -q batch << APWLAN2_EOF
 set wireless.default_radio2.network="\${AP}"
 APWLAN2_EOF
-    [ -x /etc/init.d/odhcpd ] && /etc/init.d/odhcpd enabled && /etc/init.d/odhcpd disable
-    [ -x /etc/init.d/odhcpd ] && /etc/init.d/odhcpd running && /etc/init.d/odhcpd stop
-    [ -x /etc/init.d/dnsmasq ] && /etc/init.d/dnsmasq enabled && /etc/init.d/dnsmasq disable
-    [ -x /etc/init.d/dnsmasq ] && /etc/init.d/dnsmasq running && /etc/init.d/dnsmasq stop
-    [ -x /etc/init.d/firewall ] && /etc/init.d/firewall enabled && /etc/init.d/firewall disable
-    [ -x /etc/init.d/firewall ] && /etc/init.d/firewall running && /etc/init.d/firewall stop
+    [ -x /etc/init.d/odhcpd ] && /etc/init.d/odhcpd disable
+    [ -x /etc/init.d/dnsmasq ] && /etc/init.d/dnsmasq disable  
+    [ -x /etc/init.d/firewall ] && /etc/init.d/firewall disable
 }
 [ -n "\${enable_ttyd}" ] && uci -q batch << TTYD_EOF
 set ttyd.@ttyd[0].ipv6='1'
