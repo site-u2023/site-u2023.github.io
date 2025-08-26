@@ -1,15 +1,17 @@
 #!/bin/sh
+# BEGIN_VARIABLE_DEFINITIONS
+# END_VARIABLE_DEFINITIONS
 DATE="$(date '+%Y-%m-%d %H:%M')"
 LAN="$(uci -q get network.lan.device || echo lan)"
 WAN="$(uci -q get network.wan.device || echo wan)"
-MAPE="mape"
-MAPE6="mape6"
 DSL="dsl"
 DSL6="dsl6"
+MAPE="mape"
+MAPE6="mape6"
 AP="ap"
 AP6="ap6"
-# BEGIN_VARIABLE_DEFINITIONS
-# END_VARIABLE_DEFINITIONS
+NAS="openwrt"
+MNT="/mnt/sda"
 exec >/tmp/setup.log 2>&1
 uci set system.@system[0].description="\${DATE}"
 uci set system.@system[0].notes="site-u.pages.dev/build"
@@ -168,8 +170,6 @@ MAP_SH_EOF
     uci set irqbalance.irqbalance.enabled='1'
 }
 [ -n "\${enable_samba4}" ] && {
-    NAS="openwrt"
-    MNT="/mnt/sda"
     uci set samba4.@samba[0]=samba
     uci set samba4.@samba[0].workgroup='WORKGROUP'
     uci set samba4.@samba[0].charset='UTF-8'
