@@ -13,6 +13,7 @@ AP6="ap6"
 NAS="openwrt"
 MNT="/mnt/sda"
 exec >/tmp/setup.log 2>&1
+
 uci set system.@system[0].description="\${DATE}"
 uci set system.@system[0].notes="site-u.pages.dev/build"
 [ -n "\${device_name}" ] && uci set system.@system[0].hostname="\${device_name}"
@@ -29,6 +30,7 @@ uci set system.@system[0].notes="site-u.pages.dev/build"
 set firewall.@defaults[0].flow_offloading='1'
 set firewall.@defaults[0].flow_offloading_hw='1'
 EOI
+
 [ -n "\${wlan_name}" ] && [ -n "\${wlan_password}" ] && [ "\${#wlan_password}" -ge 8 ] && {
     wireless_cfg="$(uci -q show wireless)"
     for radio in $(printf '%s\\n' "\${wireless_cfg}" | grep "wireless\.radio[0-9]*=" | cut -d. -f2 | cut -d= -f1); do
@@ -41,7 +43,7 @@ EOI
         esac
         ssid="\${wlan_name}\${suffix}"
         n=2
-        while printf '%s\n' "\${wireless_cfg}" | grep -q "ssid='\${ssid}'"; do
+        while printf '%s\\n' "\${wireless_cfg}" | grep -q "ssid='\${ssid}'"; do
             ssid="\${wlan_name}\${suffix}\${n}"
             n=$((n+1))
         done
@@ -200,6 +202,8 @@ set samba4.sambashare.inherit_owner='yes'
 set samba4.sambashare.create_mask='0777'
 set samba4.sambashare.dir_mask='0777'
 EOI
+# BEGIN_CUSTOM_COMMANDS
+# END_CUSTOM_COMMANDS
 uci commit 2>/dev/null
 [ -n "\${enable_netopt}" ] && { cat > /etc/rc.local <<'EOF'
 #!/bin/sh
