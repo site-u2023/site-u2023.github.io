@@ -5337,14 +5337,6 @@ async function buildAsuRequest() {
         let script = document.getElementById('uci-defaults-content').value;
         const originalSize = script.length;
         console.log('[buildAsuRequest] Calling MapEProcessor');
-        // MAP-E処理（必要時のみプレースホルダー置換）
-        script = await MapEProcessor.processForBuild(
-            script, 
-            getAiosConfig(), 
-            window.cachedApiInfo
-        );
-        console.log('[VERIFY] Script size:', originalSize, '→', script.length, '(', script.length - originalSize, 'bytes added)');
-        console.log('[buildAsuRequest] MapEProcessor completed');
 
         console.log('[buildAsuRequest] Building request body');
         const requestBody = {
