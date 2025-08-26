@@ -488,11 +488,13 @@
         line-height: 1.5;
         padding-left: 1.5rem;
         overflow: hidden;
+        align-items: flex-start;  /* 頭揃え */
     }
 
     .col1 {
         display: inline-block;
-        width: 6rem;
+        flex-shrink: 0;  /* 縮小防止 */
+        width: 8rem;  /* 幅を少し広げる */
         color: #6c757d;
     }
 
@@ -502,8 +504,11 @@
 
     .col2 {
         display: inline-block;
+        flex: 1;  /* 残りの幅を使用 */
         overflow: hidden;
         text-overflow: ellipsis;
+        padding-left: 0.5rem;  /* 列間スペース */
+        word-wrap: break-word;  /* 長い文字列の折り返し */
     }
 
     .col2 a {
@@ -641,6 +646,22 @@
 
         .package-item {
             width: 100%;
+        }
+        
+        /* モバイル向けレイアウト調整 */
+        .row {
+            flex-direction: column;
+            padding-left: 1rem;
+        }
+        
+        .col1 {
+            width: 100%;
+            margin-bottom: 0.25rem;
+        }
+        
+        .col2 {
+            padding-left: 0;
+            margin-bottom: 0.5rem;
         }
     }
 
@@ -801,7 +822,7 @@
                 <!-- パッケージセレクターセクション -->
                 <div class="aios-section">
                     <details id="use-package-selector-details">
-                        <summary>Installed Packages</summary>
+                        <summary>Packages</summary>
                         
                         <div id="package-selector-config">
                         <!-- パッケージ検索ボックス -->
@@ -831,8 +852,8 @@
                         </div>
                         
                         <div class="form-group" style="margin-top: 1.5rem;">
-                            <h4>Packages</h4>
-                            <label for="asu-packages" style="display: none;">Packages</label>
+                            <h4>Postinst (Package installation script)</h4>
+                            <label for="asu-packages" style="display: none;">Postinst</label>
                             <textarea id="asu-packages" class="form-control" rows="6" placeholder="luci&#10;luci-ssl&#10;-wpad-basic-wolfssl&#10;wpad-wolfssl"></textarea>
                         </div>
                     </div>
@@ -841,7 +862,7 @@
                 <!-- setup.sh設定セクション -->
                 <div class="aios-section">
                     <details id="use-aios-config-details">
-                        <summary>Script to run on first boot (uci-defaults)</summary>
+                        <summary>Scripts</summary>
                         
                         <div id="aios-config">
                             <!-- 公式ドキュメントリンク -->
@@ -1129,8 +1150,7 @@
                                         </div>
                                     </div>
                                     <small class="text-muted">
-                                        <strong>Auto-detect</strong>: Automatically retrieve MAP-E technical information and configure with GUA mode (1G/10G compatible)<br>
-                                        <strong>Manual selection</strong>: For troubleshooting or specific requirements only
+                                        <strong>Auto (Recommended)</strong>: Automatically retrieves MAP-E configuration
                                     </small>
                                 </div>
                                 
@@ -1181,7 +1201,7 @@
                                 <div id="mape-gua-section" class="form-group" style="display: none;">
                                     <label for="mape-gua-prefix">GUA Prefix</label>
                                     <input type="text" id="mape-gua-prefix" class="form-control" placeholder="2400:4151:80e2:7500::/64">
-                                    <small class="form-text text-muted">IPv6 Global Unicast Address prefix for 1G/10G line compatibility</small>
+                                    <small class="form-text text-muted">IPv6 Global Unicast Address prefix</small>
                                 </div>
                             </div>
                             
@@ -1201,7 +1221,7 @@
                             </div>
                         </div>
     
-                        <div class="form-group" id="isp-detection-group">
+<div class="form-group" id="isp-detection-group">
                             <label>ISP Detection Status</label>
                             <div id="isp-info-display" class="info" style="margin-bottom: 0;">
                                 <div id="isp-status-message">ISP information will be detected when configuration is opened</div>
@@ -1209,9 +1229,81 @@
                             </div>
                         </div>
                         
+                        <h4>Tuning</h4>
+                        <div class="form-group">
+                            <label>Dynamic Network Optimizer</label>
+                            <div class="radio-group">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="netOptimizer" id="netopt-disabled" value="disabled" checked>
+                                    <label class="form-check-label" for="netopt-disabled">Disabled</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="netOptimizer" id="netopt-enabled" value="enabled">
+                                    <label class="form-check-label" for="netopt-enabled">Enabled</label>
+                                </div>
+                            </div>
+                            <small class="form-text text-muted">Automatically optimizes TCP buffer sizes and network parameters based on available RAM</small>
+                        </div>
+
+                        <div id="net-optimizer-section" class="conditional-section">
+                            <div class="form-group">
+                                <label>Configuration Mode</label>
+                                <div class="radio-group">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="netOptimizerMode" id="netopt-auto" value="auto" checked>
+                                        <label class="form-check-label" for="netopt-auto">Auto (Recommended)</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="netOptimizerMode" id="netopt-manual" value="manual">
+                                        <label class="form-check-label" for="netopt-manual">Manual</label>
+                                    </div>
+                                </div>
+                                <small class="form-text text-muted">Auto mode adjusts parameters based on system resources</small>
+                            </div>
+
+                            <div id="net-optimizer-manual" class="conditional-section">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="netopt-rmem">TCP Read Memory</label>
+                                        <input type="text" id="netopt-rmem" class="form-control" placeholder="4096 131072 8388608">
+                                        <small class="form-text text-muted">min default max (bytes)</small>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="netopt-wmem">TCP Write Memory</label>
+                                        <input type="text" id="netopt-wmem" class="form-control" placeholder="4096 131072 8388608">
+                                        <small class="form-text text-muted">min default max (bytes)</small>
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="netopt-conntrack">Connection Tracking Max</label>
+                                        <input type="number" id="netopt-conntrack" class="form-control" placeholder="131072" min="1024">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="netopt-backlog">Network Device Backlog</label>
+                                        <input type="number" id="netopt-backlog" class="form-control" placeholder="5000" min="100">
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="netopt-somaxconn">Socket Max Connections</label>
+                                        <input type="number" id="netopt-somaxconn" class="form-control" placeholder="16384" min="128">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="netopt-congestion">TCP Congestion Control</label>
+                                        <select id="netopt-congestion" class="form-control">
+                                            <option value="cubic" selected>cubic (default)</option>
+                                            <option value="bbr">bbr</option>
+                                            <option value="reno">reno</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <div class="form-group" style="margin-top: 1.5rem;">
-                            <h4>Scripts</h4>
-                            <label for="uci-defaults-content" style="display: none;">Scripts</label>
+                            <h4>UCI-defaults (Boot configuration script)</h4>
+                            <label for="uci-defaults-content" style="display: none;">UCI-defaults</label>
                             <textarea id="uci-defaults-content" class="form-control" rows="6" placeholder="#!/bin/sh&#10;&#10;# Your custom script here&#10;# This area is for manual editing - configuration wizard will not overwrite your changes"></textarea>
                         </div>
                     </details>  <!-- use-aios-config-details を閉じる -->
@@ -1254,6 +1346,7 @@
 
 // setup.shテンプレート
 const SETUP_SH_TEMPLATE = `#!/bin/sh
+DATE="$(date '+%Y-%m-%d %H:%M')"
 LAN_DEF="$(uci -q get network.lan.device || echo lan)"
 WAN_DEF="$(uci -q get network.wan.device || echo wan)"
 MAP_NAME="mape"
@@ -1265,6 +1358,8 @@ AP6_NAME="ap6"
 # BEGIN_VARIABLE_DEFINITIONS
 # END_VARIABLE_DEFINITIONS
 exec >/tmp/setup.log 2>&1
+uci set system.@system[0].description="Custom Firmware"
+uci set system.@system[0].notes="\${DATE} https://site-u.pages.dev/build"
 [ -n "\${device_name}" ] && uci set system.@system[0].hostname="\${device_name}"
 [ -n "\${root_password}" ] && printf '%s\\n%s\\n' "\${root_password}" "\${root_password}" | passwd >/dev/null
 [ -n "\${lan_ip_address}" ] && uci set network.lan.ipaddr="\${lan_ip_address}"
@@ -2262,7 +2357,73 @@ const ErrorHandler = {
         }
     }
 };
+
+// ==================== リセット共通関数 ====================
+const ResetManager = {
+    // 接続タイプをデフォルトにリセット
+    resetConnectionType() {
+        const dhcpRadio = document.getElementById('conn-dhcp');
+        if (dhcpRadio) {
+            dhcpRadio.checked = true;
+        }
         
+        // 全ての接続タイプ固有セクションを非表示
+        const sections = [
+            'pppoe-section',
+            'dslite-section', 
+            'mape-manual-section',
+            'ap-section',
+            'dhcp-section'
+        ];
+        
+        sections.forEach(id => {
+            const section = document.getElementById(id);
+            if (section) section.style.display = 'none';
+        });
+        
+        // DHCPセクションのみ表示
+        const dhcpSection = document.getElementById('dhcp-section');
+        if (dhcpSection) dhcpSection.style.display = 'block';
+    },
+    
+    // DS-Lite設定をデフォルトにリセット
+    resetDsliteSettings() {
+        const dsliteAuto = document.getElementById('dslite-auto');
+        if (dsliteAuto) {
+            dsliteAuto.checked = true;
+        }
+        
+        const manualConfig = document.getElementById('dslite-manual-config');
+        if (manualConfig) {
+            manualConfig.style.display = 'none';
+        }
+    },
+    
+    // MAP-E設定をデフォルトにリセット
+    resetMapeSettings() {
+        const mapeAuto = document.getElementById('mape-auto');
+        if (mapeAuto) {
+            mapeAuto.checked = true;
+        }
+    },
+    
+    // Network Optimizer設定をデフォルトにリセット
+    resetNetOptimizerSettings() {
+        const netoptAuto = document.getElementById('netopt-auto');
+        if (netoptAuto) {
+            netoptAuto.checked = true;
+        }
+        
+        const manualSection = document.getElementById('net-optimizer-manual');
+        if (manualSection) {
+            manualSection.style.display = 'none';
+        }
+        
+        // デフォルト値に戻す
+        resetNetOptimizerValues();
+    }
+};
+
 // ==================== URL管理の統一関数 ====================
 function setupVersionUrls(version) {
     if (!config.image_urls) config.image_urls = {};
@@ -2650,12 +2811,28 @@ function bindEvents() {
         radio.addEventListener('change', handleMapeTypeChange);
     });
     
-    // ===== オートコンプリート関連 =====
+// ===== オートコンプリート関連 =====
     document.addEventListener('click', function (e) {
         if (!e.target.closest('.autocomplete')) {
             hideAutocomplete();
         }
     });
+    
+    // Network Optimizer
+    document.querySelectorAll('input[name="netOptimizer"]').forEach(radio => {
+        radio.addEventListener('change', handleNetOptimizerChange);
+    });
+    
+    document.querySelectorAll('input[name="netOptimizerMode"]').forEach(radio => {
+        radio.addEventListener('change', handleNetOptimizerModeChange);
+    });
+
+    // Network Optimizer manual fields
+    const netOptFields = [
+        'netopt-rmem', 'netopt-wmem', 'netopt-conntrack',
+        'netopt-backlog', 'netopt-somaxconn', 'netopt-congestion'
+    ];
+    bindFieldEvents(netOptFields);
     
     // デフォルトはAutoモード
     const manualSection = document.getElementById('manual-connection-section');
@@ -2664,8 +2841,9 @@ function bindEvents() {
     const ispDetectionGroup = document.getElementById('isp-detection-group');
     if (ispDetectionGroup) ispDetectionGroup.style.display = 'block'; // Auto時は表示
 
-    // 全ての接続タイプ固有セクションを非表示
+    // 全ての接続タイプ固有セクションを非表示（DHCPセクション含む）
     const connectionSections = [
+        'dhcp-section',
         'pppoe-section',
         'dslite-section', 
         'mape-manual-section',
@@ -3663,12 +3841,6 @@ function handleConnectionModeChange(e) {
     const manualSection = document.getElementById('manual-connection-section');
     const ispDetectionGroup = document.getElementById('isp-detection-group');
     
-    // Auto に戻った時、全ての接続タイプ設定を確実に非表示
-    const pppoeSection = document.getElementById('pppoe-section');
-    const dsliteSection = document.getElementById('dslite-section');
-    const mapeManualSection = document.getElementById('mape-manual-section');
-    const apSection = document.getElementById('ap-section');
-    
     if (e.target.value === 'manual') {
         manualSection.style.display = 'block';
         // Manual時はISP Detection Statusを非表示
@@ -3676,14 +3848,15 @@ function handleConnectionModeChange(e) {
             ispDetectionGroup.style.display = 'none';
         }
     } else {
-        // Auto選択時
+        // Auto選択時 - 全てをリセット
         manualSection.style.display = 'none';
         
-        // 全ての接続タイプ固有設定を非表示
-        if (pppoeSection) pppoeSection.style.display = 'none';
-        if (dsliteSection) dsliteSection.style.display = 'none';
-        if (mapeManualSection) mapeManualSection.style.display = 'none';
-        if (apSection) apSection.style.display = 'none';
+        // 重要：接続タイプを DHCP にリセット
+        ResetManager.resetConnectionType();
+        
+        // 各プロトコルの詳細設定もリセット
+        ResetManager.resetDsliteSettings();
+        ResetManager.resetMapeSettings();
         
         // Auto時はISP Detection Statusを表示
         if (ispDetectionGroup) {
@@ -3695,11 +3868,14 @@ function handleConnectionModeChange(e) {
 }
 
 function handleConnectionTypeChange(e) {
+    const dhcpSection = document.getElementById('dhcp-section');
     const pppoeSection = document.getElementById('pppoe-section');
     const dsliteSection = document.getElementById('dslite-section');
     const mapeManualSection = document.getElementById('mape-manual-section');
     const apSection = document.getElementById('ap-section');
     
+    // 全セクションを一旦非表示
+    if (dhcpSection) dhcpSection.style.display = 'none';
     pppoeSection.style.display = 'none';
     dsliteSection.style.display = 'none';
     mapeManualSection.style.display = 'none';
@@ -3710,7 +3886,10 @@ function handleConnectionTypeChange(e) {
     const hasAftr = !!(apiInfo.mape && apiInfo.mape.aftrIpv6Address);
     const hasMape = !!(apiInfo.mape && apiInfo.mape.brIpv6Address);
     
-    if (e.target.value === 'pppoe') {
+    // 選択された接続タイプに応じてセクションを表示
+    if (e.target.value === 'dhcp') {
+        if (dhcpSection) dhcpSection.style.display = 'block';
+    } else if (e.target.value === 'pppoe') {
         pppoeSection.style.display = 'block';
     } else if (e.target.value === 'dslite') {
         dsliteSection.style.display = 'block';
@@ -3725,13 +3904,13 @@ function handleConnectionTypeChange(e) {
             dsliteAuto.disabled = false;
             dsliteAuto.checked = true;
             dsliteManual.checked = false;
-            if (dsliteHint) dsliteHint.textContent = 'Auto: Use ISP-detected AFTR address | Manual: Specify AFTR settings manually';
+            if (dsliteHint) dsliteHint.textContent = 'Auto: Use ISP-detected AFTR address';
         } else {
             // AFTRデータなし：Auto無効、Manual強制
             dsliteAuto.disabled = true;
             dsliteAuto.checked = false;
             dsliteManual.checked = true;
-            if (dsliteHint) dsliteHint.textContent = 'Auto not available (no AFTR detected) | Manual configuration required';
+            if (dsliteHint) dsliteHint.textContent = 'Auto not available (no AFTR detected)';
         }
         
         // Manual設定エリアの表示制御
@@ -3805,6 +3984,66 @@ function handleDsliteModeChange(e) {
     }
     
     applyConnectionSettingsChange();
+}
+
+// Network Optimizer のデフォルト値定義
+const NETOPT_DEFAULTS = {
+    rmem: '4096 131072 8388608',
+    wmem: '4096 131072 8388608',
+    conntrack: '131072',
+    backlog: '5000',
+    somaxconn: '16384',
+    congestion: 'cubic'
+};
+
+function resetNetOptimizerValues() {
+    // 全フィールドをデフォルト値にリセット
+    document.getElementById('netopt-rmem').value = NETOPT_DEFAULTS.rmem;
+    document.getElementById('netopt-wmem').value = NETOPT_DEFAULTS.wmem;
+    document.getElementById('netopt-conntrack').value = NETOPT_DEFAULTS.conntrack;
+    document.getElementById('netopt-backlog').value = NETOPT_DEFAULTS.backlog;
+    document.getElementById('netopt-somaxconn').value = NETOPT_DEFAULTS.somaxconn;
+    document.getElementById('netopt-congestion').value = NETOPT_DEFAULTS.congestion;
+}
+
+function handleNetOptimizerChange(e) {
+    const optimizerSection = document.getElementById('net-optimizer-section');
+    
+    if (e.target.value === 'enabled') {
+        optimizerSection.style.display = 'block';
+        // デフォルト設定にリセット
+        ResetManager.resetNetOptimizerSettings();
+    } else {
+        // Disabled時は全てクリア
+        optimizerSection.style.display = 'none';
+        document.getElementById('net-optimizer-manual').style.display = 'none';
+        // 値もクリア（次回Enabled時のため）
+        document.getElementById('netopt-rmem').value = '';
+        document.getElementById('netopt-wmem').value = '';
+        document.getElementById('netopt-conntrack').value = '';
+        document.getElementById('netopt-backlog').value = '';
+        document.getElementById('netopt-somaxconn').value = '';
+        document.getElementById('netopt-congestion').value = 'cubic';
+    }
+    
+    syncTemplateAndPackages({ trigger: 'netopt-change' });
+}
+
+function handleNetOptimizerModeChange(e) {
+    const manualSection = document.getElementById('net-optimizer-manual');
+    
+    if (e && e.target && e.target.value === 'manual') {
+        manualSection.style.display = 'block';
+        // Manual選択時も常にデフォルト値を設定（編集の起点として）
+        resetNetOptimizerValues();
+    } else {
+        // Auto選択時
+        manualSection.style.display = 'none';
+        // Autoは常にデフォルト値を使用するのでリセット
+        resetNetOptimizerValues();
+    }
+    
+    syncTemplateAndPackages({ trigger: 'netopt-mode-change' });
 }
 
 function isGlobalUnicastIPv6(ip) {
@@ -3896,13 +4135,9 @@ function buildIspStatus(apiInfo) {
     let statusText = 'Auto-detection successful';
     let details = '';
 
+    // ISPとASの表示
     if (apiInfo.isp) details += `ISP: ${apiInfo.isp}\n`;
-    if (apiInfo.country) {
-        details += `Country/Region: ${apiInfo.country}`;
-        if (apiInfo.regionName) details += ` (${apiInfo.regionName})`;
-        details += '\n';
-    }
-    if (apiInfo.timezone) details += `Timezone: ${apiInfo.timezone}\n`;
+    if (apiInfo.as) details += `AS: ${apiInfo.as}\n`;
 
     if (apiInfo.mape) {
         if (apiInfo.mape.aftrType) {
@@ -4212,9 +4447,31 @@ async function customizeSetupScript(content, userConfig, apiInfo, selectedPackag
 
         // AP
         ap_ip_address: { value: userConfig.apIpAddress, active: apActive && !!userConfig.apIpAddress },
-        ap_gateway: { value: userConfig.apGateway, active: apActive && !!userConfig.apGateway }
+        ap_gateway: { value: userConfig.apGateway, active: apActive && !!userConfig.apGateway },
+        
+// Network Optimizer
+        enable_netopt: { 
+            value: userConfig.netOptimizer === 'enabled' ? '1' : '', 
+            active: userConfig.netOptimizer === 'enabled' 
+        },
+        netopt_manual: { 
+            value: userConfig.netOptimizerMode === 'manual' ? '1' : '', 
+            active: userConfig.netOptimizer === 'enabled' && userConfig.netOptimizerMode === 'manual' 
+        },
+        netopt_rmem: { 
+            value: userConfig.netOptimizerMode === 'manual' ? userConfig.netOptRmem : NETOPT_DEFAULTS.rmem, 
+            active: userConfig.netOptimizer === 'enabled' && userConfig.netOptimizerMode === 'manual' 
+        },
+        netopt_wmem: { 
+            value: userConfig.netOptimizerMode === 'manual' ? userConfig.netOptWmem : NETOPT_DEFAULTS.wmem, 
+            active: userConfig.netOptimizer === 'enabled' && userConfig.netOptimizerMode === 'manual' 
+        },
+        netopt_conntrack: { value: userConfig.netOptConntrack, active: userConfig.netOptimizer === 'enabled' && userConfig.netOptimizerMode === 'manual' },
+        netopt_backlog: { value: userConfig.netOptBacklog, active: userConfig.netOptimizer === 'enabled' && userConfig.netOptimizerMode === 'manual' },
+        netopt_somaxconn: { value: userConfig.netOptSomaxconn, active: userConfig.netOptimizer === 'enabled' && userConfig.netOptimizerMode === 'manual' },
+        netopt_congestion: { value: userConfig.netOptCongestion, active: userConfig.netOptimizer === 'enabled' && userConfig.netOptimizerMode === 'manual' }
     };
-
+    
     // enable_* フラグ（選択で ON、非選択は設定しない）
     if (selectedPackages) {
         const enableMap = {};
@@ -4350,7 +4607,17 @@ function getAiosConfig() {
         mapeIpv6Prefixlen: parseOrEmpty('mape-ipv6-prefixlen', 'int'),
         mapePsidOffset: parseOrEmpty('mape-psid-offset', 'int'),
         mapePsidlen: parseOrEmpty('mape-psidlen', 'int'),
-        mapeGuaPrefix: parseOrEmpty('mape-gua-prefix')
+        mapeGuaPrefix: parseOrEmpty('mape-gua-prefix'),
+        
+        // Network Optimizer settings
+        netOptimizer: document.querySelector('input[name="netOptimizer"]:checked')?.value || 'disabled',
+        netOptimizerMode: document.querySelector('input[name="netOptimizerMode"]:checked')?.value || 'auto',
+        netOptRmem: parseOrEmpty('netopt-rmem'),
+        netOptWmem: parseOrEmpty('netopt-wmem'),
+        netOptConntrack: parseOrEmpty('netopt-conntrack', 'int'),
+        netOptBacklog: parseOrEmpty('netopt-backlog', 'int'),
+        netOptSomaxconn: parseOrEmpty('netopt-somaxconn', 'int'),
+        netOptCongestion: parseOrEmpty('netopt-congestion')
     };
 
     return config;
