@@ -16,6 +16,12 @@
     <link rel="dns-prefetch" href="https://openwrt.org">
     
 <style>
+/* ===== スペーシング変数定義 ===== */
+    :root {
+        --spacing-section: 0.75rem;  /* セクション間の統一間隔 */
+        --spacing-element: 1rem;     /* 要素間の標準間隔 */
+    }
+
     /* 基本スタイル */
     body {
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
@@ -48,23 +54,29 @@
     #models-autocomplete {
         display: flex;
         padding-top: 0;
-        /* padding は .device-input-section 内で設定 */
     }
     
-.container {
+    .container {
         max-width: 720px;
         margin: 0 auto;
         padding: 0 1rem;
     }
 
-    /* 親コンテナの直下要素に統一マージン */
-    .container > *:not(:last-child) {
-        margin-bottom: 1.5rem;
+    /* ===== 構造的スペーシング管理 ===== */
+    .container > * {
+        margin-bottom: var(--spacing-section);
     }
     
-    /* packages内の直下要素も同様 */
-    #packages > *:not(:last-child) {
-        margin-bottom: 1.5rem;
+    .container > *:last-child {
+        margin-bottom: 0;
+    }
+    
+    #packages > * {
+        margin-bottom: var(--spacing-section);
+    }
+    
+    #packages > *:last-child {
+        margin-bottom: 0;
     }
 
     h1 {
@@ -114,7 +126,7 @@
         border: 1px solid #d4d4d4;
         border-bottom: none;
         border-top: none;
-        z-index: 999;  /* 99 から 999 に増やす */
+        z-index: 999;
         top: 100%;
         left: 0;
         right: 0;
@@ -141,7 +153,7 @@
 
     /* フォーム要素 */
     .form-group {
-        margin-bottom: 1rem;
+        margin-bottom: var(--spacing-element);
     }
 
     label {
@@ -166,11 +178,11 @@
     }
 
     .form-control:not(textarea) {
-        height: 2.75rem;  /* ★textareaは除外 */
+        height: 2.75rem;
     }
 
     textarea.form-control {
-        height: auto;  /* ★textareaは元のサイズ */
+        height: auto;
     }
     
     .form-control:focus {
@@ -216,7 +228,7 @@
 
     /* パッケージセクション */
     .packages {
-        margin: 1.5rem 0;
+        margin: 0;  /* 構造に従う */
     }
     
     /* ボタン/リンク */
@@ -263,7 +275,7 @@
         text-decoration: none;
         border-radius: 0.2rem;
         padding: 0.8rem;
-        margin: 1.5rem 0.2rem 0.2rem 0.2rem;  /* 上マージンを1.5remに */
+        margin: 0;  /* 構造に従う、特別なマージンなし */
         font-size: inherit;
         cursor: pointer;
         letter-spacing: 0.05rem;
@@ -284,7 +296,6 @@
         color: #fff;
     }
 
-    /* flex揃えだけで統一し、内部アイコンは公式通り:first-childに直接content */
     .custom-link > :first-child,
     .download-link > :first-child {
         height: 1rem;
@@ -302,13 +313,16 @@
         border: 1px solid #dee2e6;
         border-radius: 0.25rem;
     }
-
-    .aios-config {
-        margin-top: 1rem;
+    
+    /* ===== 内部要素の構造的管理 ===== */
+    #package-selector-config > *,
+    #aios-config > * {
+        margin-bottom: var(--spacing-section);
     }
     
-    #package-selector-config {
-        margin-top: 1rem;
+    #package-selector-config > *:last-child,
+    #aios-config > *:last-child {
+        margin-bottom: 0;
     }
     
     .form-row {
@@ -395,20 +409,31 @@
         transition: width 0.3s ease;
     }
 
-    /* パッケージ選択 */
+/* パッケージセクション - 抜本修正 */
     .package-category {
-        margin-top: 0; 
-        margin-bottom: 1.5rem;
-        padding: 0.5rem 1rem 1rem 1rem;
+        margin: 0;  /* 構造に従う */
+        padding: 1rem;  /* 上下左右統一パディング */
         background-color: #fff;
         border: 1px solid #e9ecef;
         border-radius: 0.25rem;
+        display: flex;
+        flex-direction: column;
+        min-height: fit-content;  /* 最小高さを内容に合わせる */
     }
 
-/* h4タグを全部同じスタイルに統一 */
-    h4 {
-        margin-top: 1rem;
-        margin-bottom: 0.75rem;
+    /* package-category内のh4は枠なし */
+    .package-category h4 {
+        margin: 0 0 1rem 0;  /* 下マージンのみ */
+        padding: 0;
+        background-color: transparent;
+        border: none;
+        font-size: 1.1rem;
+        font-weight: 500;
+    }
+    
+    /* 独立したh4（旧スタイル）は削除または別クラスに */
+    h4.standalone {
+        margin: 0;
         padding: 0.75rem 1rem;
         background-color: #fff;
         border: 1px solid #e9ecef;
@@ -421,6 +446,7 @@
         font-size: 0.9rem;
         color: #6c757d;
         margin: 0.5rem 0 1rem 0;
+        flex-shrink: 0;  /* 説明文の縮小防止 */
     }
     
     .package-grid {
@@ -428,6 +454,7 @@
         flex-wrap: wrap;
         gap: 0.5rem 1rem;
         align-items: flex-start;
+        flex-grow: 1;  /* 残り空間を活用 */
     }
 
     .package-item {
@@ -488,13 +515,13 @@
         line-height: 1.5;
         padding-left: 1.5rem;
         overflow: hidden;
-        align-items: flex-start;  /* 頭揃え */
+        align-items: flex-start;
     }
 
     .col1 {
         display: inline-block;
-        flex-shrink: 0;  /* 縮小防止 */
-        width: 8rem;  /* 幅を少し広げる */
+        flex-shrink: 0;
+        width: 8rem;
         color: #6c757d;
     }
 
@@ -504,11 +531,11 @@
 
     .col2 {
         display: inline-block;
-        flex: 1;  /* 残りの幅を使用 */
+        flex: 1;
         overflow: hidden;
         text-overflow: ellipsis;
-        padding-left: 0.5rem;  /* 列間スペース */
-        word-wrap: break-word;  /* 長い文字列の折り返し */
+        padding-left: 0.5rem;
+        word-wrap: break-word;
     }
 
     .col2 a {
@@ -569,18 +596,16 @@
         background-color: transparent;
     }
     
-    /* インプットボックス自体をより濃く */
     .device-input-section #models {
-        background-color: #1a1a1d !important;  /* さらに濃い色 */
+        background-color: #1a1a1d !important;
         border-color: #555;
     }
     
     .device-input-section #versions {
-        background-color: #1a1a1d !important;  /* さらに濃い色 */
+        background-color: #1a1a1d !important;
         border-color: #555;
     }
     
-/* ライトモード対応 */
     @media (prefers-color-scheme: light) {
         .device-input-section {
             background-color: #e9ecef;
@@ -609,18 +634,13 @@
     details[open] > summary {
         margin-bottom: 0.5rem;
     }
-
+    
     #use-package-selector-details summary,
     #use-aios-config-details summary {
         font-weight: 500;
         font-size: 1.1rem;
     }
-
-    /* Installed Packagesセクション内の最初の要素のマージン調整 */
-    #package-selector-config > *:first-child {
-        margin-top: 0 !important;
-    }
-
+    
     /* レスポンシブ */
     @media (max-width: 576px) {
         #models-autocomplete {
@@ -648,7 +668,6 @@
             width: 100%;
         }
         
-        /* モバイル向けレイアウト調整 */
         .row {
             flex-direction: column;
             padding-left: 1rem;
@@ -662,6 +681,11 @@
         .col2 {
             padding-left: 0;
             margin-bottom: 0.5rem;
+        }
+
+        /* モバイルでのh4調整 */
+        h4 {
+            font-size: 1rem;
         }
     }
 
@@ -851,7 +875,7 @@
                             <!-- カテゴリーとパッケージは動的に生成される -->
                         </div>
                         
-                        <div class="form-group" style="margin-top: 1.5rem;">
+                        <div class="package-category">
                             <h4>Postinst (Package installation script)</h4>
                             <label for="asu-packages" style="display: none;">Postinst</label>
                             <textarea id="asu-packages" class="form-control" rows="6" placeholder="luci&#10;luci-ssl&#10;-wpad-basic-wolfssl&#10;wpad-wolfssl"></textarea>
@@ -865,9 +889,7 @@
                         <summary>Scripts</summary>
                         
                         <div id="aios-config">
-                            <!-- 公式ドキュメントリンク -->
-                            <p><a href="https://openwrt.org/docs/guide-user/installation/sysupgrade.owut#using_a_uci-defaults_script" target="_blank" rel="noopener">Using a uci-defaults script</a></p>
-
+                            
                             <!-- Commands -->
                             <div class="package-category">
                               <h4>Add commands</h4>
@@ -890,13 +912,14 @@
                               </div>
                             </div>
 
+                        <div class="package-category">
                             <h4>Basic Configuration</h4>
-                        
-                        <!-- 1行目: Language と Country -->
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="aios-language">Language</label>
-                                <select id="aios-language" class="form-control">
+                            
+                            <!-- 1行目: Language と Country -->
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="aios-language">Language</label>
+                                    <select id="aios-language" class="form-control">
                                     <option value="en">English</option>
                                     <option value="ar">العربية (Arabic)</option>
                                     <option value="bg">Български (Bulgarian)</option>
@@ -930,6 +953,9 @@
                                     <option value="zh_cn">简体中文 (Chinese Simplified)</option>
                                     <option value="zh_tw">繁體中文 (Chinese Traditional)</option>
                                 </select>
+                                <small class="form-text text-muted">
+                                    LuCI base and i18n added automatically
+                                </small>
                             </div>
                             <div class="form-group">
                                 <label for="aios-country">Country</label>
@@ -1005,12 +1031,14 @@
                                 <label for="aios-backup-path">Restore Backup Path</label>
                                 <input type="text" id="aios-backup-path" class="form-control" placeholder="/root/backup.tar.gz" value="/root/backup.tar.gz">
                                 <small class="form-text text-muted">Path to backup file for restore</small>
+                                </div>
                             </div>
                         </div>
                         
-                        <h4>Wi-Fi Configuration</h4>
-                        <div class="form-row">
-                            <div class="form-group">
+                        <div class="package-category">
+                            <h4>Wi-Fi Configuration</h4>
+                            <div class="form-row">
+                                <div class="form-group">
                                 <label for="aios-wifi-ssid">Wi‑Fi SSIDs (Base name)</label>
                                 <input type="text" id="aios-wifi-ssid" class="form-control" placeholder="OpenWrt" value="OpenWrt">
                                 <small class="form-text text-muted">Auto-creates SSID per interface with band suffix</small>
@@ -1019,293 +1047,298 @@
                                 <label for="aios-wifi-password">Wi‑Fi Password (Shared)</label>
                                 <input type="text" id="aios-wifi-password" class="form-control" placeholder="8+ characters" value="password">
                                 <small class="form-text text-muted">Same password for all SSIDs</small>
-                            </div>
-                        </div>
-
-                        <h4>Internet Connection</h4>
-                        <div class="form-group">
-                            <label>Connection mode</label>
-                            <div class="radio-group">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="connectionMode" id="mode-auto" value="auto" checked>
-                                    <label class="form-check-label" for="mode-auto">Auto (Recommended)</label>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="connectionMode" id="mode-manual" value="manual">
-                                    <label class="form-check-label" for="mode-manual">Manual</label>
                                 </div>
                             </div>
                         </div>
 
-                        <div id="manual-connection-section" class="conditional-section">
+                        <div class="package-category">
+                            <h4>Internet Connection</h4>
                             <div class="form-group">
-                                <label>Connection type</label>
+                                <label>Connection mode</label>
                                 <div class="radio-group">
                                     <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="connectionType" id="conn-dhcp" value="dhcp" checked>
-                                        <label class="form-check-label" for="conn-dhcp">DHCP</label>
+                                        <input class="form-check-input" type="radio" name="connectionMode" id="mode-auto" value="auto" checked>
+                                        <label class="form-check-label" for="mode-auto">Auto (Recommended)</label>
                                     </div>
                                     <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="connectionType" id="conn-pppoe" value="pppoe">
-                                        <label class="form-check-label" for="conn-pppoe">PPPoE</label>
-                                    </div>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="connectionType" id="conn-dslite" value="dslite">
-                                        <label class="form-check-label" for="conn-dslite">DS-Lite</label>
-                                    </div>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="connectionType" id="conn-mape" value="mape">
-                                        <label class="form-check-label" for="conn-mape">MAP-E</label>
-                                    </div>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="connectionType" id="conn-ap" value="ap">
-                                        <label class="form-check-label" for="conn-ap">AP</label>
+                                        <input class="form-check-input" type="radio" name="connectionMode" id="mode-manual" value="manual">
+                                        <label class="form-check-label" for="mode-manual">Manual</label>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- DHCP設定 -->
-                            <div id="dhcp-section" class="conditional-section">
-                                <h5 class="section-title">DHCP Configuration</h5>
+                            <div id="manual-connection-section" class="conditional-section">
                                 <div class="form-group">
-                                    <small class="text-muted">No additional configuration required. Router will obtain IP address automatically from ISP.</small>
-                                </div>
-                            </div>
-
-                            <!-- PPPoE設定 -->
-                            <div id="pppoe-section" class="conditional-section">
-                                <h5 class="section-title">PPPoE Configuration</h5>
-                                <div class="form-row">
-                                    <div class="form-group">
-                                        <label for="pppoe-username">PPPoE username</label>
-                                        <input type="text" id="pppoe-username" class="form-control" placeholder="Username">
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="pppoe-password">PPPoE password</label>
-                                        <input type="password" id="pppoe-password" class="form-control" placeholder="Password">
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- DS-Lite設定 -->
-                            <div id="dslite-section" class="conditional-section">
-                                <h5 class="section-title">DS-Lite Configuration</h5>
-                                
-                                <div class="form-group">
+                                    <label>Connection type</label>
                                     <div class="radio-group">
                                         <div class="form-check">
-                                            <input class="form-check-input" type="radio" name="dsliteMode" id="dslite-auto" value="auto">
-                                            <label class="form-check-label" for="dslite-auto">Auto (Recommended)</label>
+                                            <input class="form-check-input" type="radio" name="connectionType" id="conn-dhcp" value="dhcp" checked>
+                                            <label class="form-check-label" for="conn-dhcp">DHCP</label>
                                         </div>
                                         <div class="form-check">
-                                            <input class="form-check-input" type="radio" name="dsliteMode" id="dslite-manual" value="manual">
-                                            <label class="form-check-label" for="dslite-manual">Manual</label>
+                                            <input class="form-check-input" type="radio" name="connectionType" id="conn-pppoe" value="pppoe">
+                                            <label class="form-check-label" for="conn-pppoe">PPPoE</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="connectionType" id="conn-dslite" value="dslite">
+                                            <label class="form-check-label" for="conn-dslite">DS-Lite</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="connectionType" id="conn-mape" value="mape">
+                                            <label class="form-check-label" for="conn-mape">MAP-E</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="connectionType" id="conn-ap" value="ap">
+                                            <label class="form-check-label" for="conn-ap">AP</label>
                                         </div>
                                     </div>
-                                    <small class="text-muted" id="dslite-mode-hint">Auto: Use ISP-detected AFTR address | Manual: Specify AFTR settings manually</small>
                                 </div>
 
-                                <div id="dslite-manual-config" class="conditional-section">
+                                <!-- DHCP設定 -->
+                                <div id="dhcp-section" class="conditional-section">
+                                    <h5 class="section-title">DHCP Configuration</h5>
                                     <div class="form-group">
-                                        <label for="dslite-aftr-type">AFTR Type</label>
-                                        <select id="dslite-aftr-type" class="form-control" onchange="applyInitialsFromApi('dslite')">
-                                            <option value="transix">gw.transix.jp</option>
-                                            <option value="xpass">gw.xpass.jp</option>
-                                            <option value="v6option">gw.v6option.jp</option>
-                                        </select>
-                                    </div>
-
-                                    <div class="form-group">
-                                        <label for="dslite-area">Region</label>
-                                        <select id="dslite-area" class="form-control" onchange="applyInitialsFromApi('dslite')">
-                                            <option value="east">East Japan</option>
-                                            <option value="west">West Japan</option>
-                                        </select>
+                                        <small class="text-muted">No additional configuration required. Router will obtain IP address automatically from ISP.</small>
                                     </div>
                                 </div>
 
-                                <div class="form-group">
-                                    <label for="dslite-aftr-address">AFTR IPv6 Address</label>
-                                    <input type="text" id="dslite-aftr-address" class="form-control" placeholder="2404:8e00::feed:100" value="">
-                                    <small class="form-text text-muted">Auto mode: Set from ISP detection | Manual mode: Set based on AFTR type and region</small>
+                                <!-- PPPoE設定 -->
+                                <div id="pppoe-section" class="conditional-section">
+                                    <h5 class="section-title">PPPoE Configuration</h5>
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="pppoe-username">PPPoE username</label>
+                                            <input type="text" id="pppoe-username" class="form-control" placeholder="Username">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="pppoe-password">PPPoE password</label>
+                                            <input type="password" id="pppoe-password" class="form-control" placeholder="Password">
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- DS-Lite設定 -->
+                                <div id="dslite-section" class="conditional-section">
+                                    <h5 class="section-title">DS-Lite Configuration</h5>
+                                    
+                                    <div class="form-group">
+                                        <div class="radio-group">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="dsliteMode" id="dslite-auto" value="auto">
+                                                <label class="form-check-label" for="dslite-auto">Auto (Recommended)</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="dsliteMode" id="dslite-manual" value="manual">
+                                                <label class="form-check-label" for="dslite-manual">Manual</label>
+                                            </div>
+                                        </div>
+                                        <small class="text-muted" id="dslite-mode-hint">Auto: Use ISP-detected AFTR address | Manual: Specify AFTR settings manually</small>
+                                    </div>
+
+                                    <div id="dslite-manual-config" class="conditional-section">
+                                        <div class="form-group">
+                                            <label for="dslite-aftr-type">AFTR Type</label>
+                                            <select id="dslite-aftr-type" class="form-control" onchange="applyInitialsFromApi('dslite')">
+                                                <option value="transix">gw.transix.jp</option>
+                                                <option value="xpass">gw.xpass.jp</option>
+                                                <option value="v6option">gw.v6option.jp</option>
+                                            </select>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label for="dslite-area">Region</label>
+                                            <select id="dslite-area" class="form-control" onchange="applyInitialsFromApi('dslite')">
+                                                <option value="east">East Japan</option>
+                                                <option value="west">West Japan</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="dslite-aftr-address">AFTR IPv6 Address</label>
+                                        <input type="text" id="dslite-aftr-address" class="form-control" placeholder="2404:8e00::feed:100" value="">
+                                        <small class="form-text text-muted">Auto mode: Set from ISP detection | Manual mode: Set based on AFTR type and region</small>
+                                    </div>
+                                </div>
+                                
+                                <!-- MAP-E設定 -->
+                                <div id="mape-manual-section" class="conditional-section">
+                                    <h5 class="section-title">MAP-E Configuration</h5>
+                                    <div class="form-group">
+                                        <div class="radio-group">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="mapeType" id="mape-auto" value="auto">
+                                                <label class="form-check-label" for="mape-auto">Auto (Recommended)</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="mapeType" id="mape-gua" value="gua">
+                                                <label class="form-check-label" for="mape-gua">GUA</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="mapeType" id="mape-pd" value="pd">
+                                                <label class="form-check-label" for="mape-pd">PD</label>
+                                            </div>
+                                        </div>
+                                        <small class="text-muted">
+                                            <strong>Auto (Recommended)</strong>: Automatically retrieves MAP-E configuration
+                                        </small>
+                                    </div>
+                                    
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="mape-br">BR (Border Relay)</label>
+                                            <input type="text" id="mape-br" class="form-control" placeholder="2001:db8::1">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="mape-ealen">EA-len</label>
+                                            <input type="number" id="mape-ealen" class="form-control" placeholder="16" min="0" max="48">
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="mape-ipv4-prefix">IPv4 Prefix</label>
+                                            <input type="text" id="mape-ipv4-prefix" class="form-control" placeholder="192.0.2.0">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="mape-ipv4-prefixlen">IPv4 Prefix Length</label>
+                                            <input type="number" id="mape-ipv4-prefixlen" class="form-control" placeholder="24" min="1" max="32">
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="mape-ipv6-prefix">IPv6 Prefix</label>
+                                            <input type="text" id="mape-ipv6-prefix" class="form-control" placeholder="2001:db8:8000::">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="mape-ipv6-prefixlen">IPv6 Prefix Length</label>
+                                            <input type="number" id="mape-ipv6-prefixlen" class="form-control" placeholder="32" min="1" max="128">
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="mape-psid-offset">PSID Offset</label>
+                                            <input type="number" id="mape-psid-offset" class="form-control" placeholder="4" min="0" max="16">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="mape-psidlen">PSID Length</label>
+                                            <input type="number" id="mape-psidlen" class="form-control" placeholder="6" min="0" max="16">
+                                        </div>
+                                    </div>
+
+                                    <div id="mape-gua-section" class="form-group" style="display: none;">
+                                        <label for="mape-gua-prefix">GUA Prefix</label>
+                                        <input type="text" id="mape-gua-prefix" class="form-control" placeholder="2400:4151:80e2:7500::/64">
+                                        <small class="form-text text-muted">IPv6 Global Unicast Address prefix</small>
+                                    </div>
+                                </div>
+                                
+                                <!-- AP設定 -->
+                                <div id="ap-section" class="conditional-section">
+                                    <h5 class="section-title">AP Configuration</h5>
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="ap-ip-address">IP Address</label>
+                                            <input type="text" id="ap-ip-address" class="form-control" value="192.168.1.2">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="ap-gateway">Gateway</label>
+                                            <input type="text" id="ap-gateway" class="form-control" value="192.168.1.1">
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                            
-                            <!-- MAP-E設定 -->
-                            <div id="mape-manual-section" class="conditional-section">
-                                <h5 class="section-title">MAP-E Configuration</h5>
-                                <div class="form-group">
-                                    <div class="radio-group">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="radio" name="mapeType" id="mape-auto" value="auto">
-                                            <label class="form-check-label" for="mape-auto">Auto (Recommended)</label>
-                                        </div>
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="radio" name="mapeType" id="mape-gua" value="gua">
-                                            <label class="form-check-label" for="mape-gua">GUA</label>
-                                        </div>
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="radio" name="mapeType" id="mape-pd" value="pd">
-                                            <label class="form-check-label" for="mape-pd">PD</label>
-                                        </div>
-                                    </div>
-                                    <small class="text-muted">
-                                        <strong>Auto (Recommended)</strong>: Automatically retrieves MAP-E configuration
-                                    </small>
-                                </div>
-                                
-                                <div class="form-row">
-                                    <div class="form-group">
-                                        <label for="mape-br">BR (Border Relay)</label>
-                                        <input type="text" id="mape-br" class="form-control" placeholder="2001:db8::1">
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="mape-ealen">EA-len</label>
-                                        <input type="number" id="mape-ealen" class="form-control" placeholder="16" min="0" max="48">
-                                    </div>
-                                </div>
-                                
-                                <div class="form-row">
-                                    <div class="form-group">
-                                        <label for="mape-ipv4-prefix">IPv4 Prefix</label>
-                                        <input type="text" id="mape-ipv4-prefix" class="form-control" placeholder="192.0.2.0">
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="mape-ipv4-prefixlen">IPv4 Prefix Length</label>
-                                        <input type="number" id="mape-ipv4-prefixlen" class="form-control" placeholder="24" min="1" max="32">
-                                    </div>
-                                </div>
-                                
-                                <div class="form-row">
-                                    <div class="form-group">
-                                        <label for="mape-ipv6-prefix">IPv6 Prefix</label>
-                                        <input type="text" id="mape-ipv6-prefix" class="form-control" placeholder="2001:db8:8000::">
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="mape-ipv6-prefixlen">IPv6 Prefix Length</label>
-                                        <input type="number" id="mape-ipv6-prefixlen" class="form-control" placeholder="32" min="1" max="128">
-                                    </div>
-                                </div>
-                                
-                                <div class="form-row">
-                                    <div class="form-group">
-                                        <label for="mape-psid-offset">PSID Offset</label>
-                                        <input type="number" id="mape-psid-offset" class="form-control" placeholder="4" min="0" max="16">
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="mape-psidlen">PSID Length</label>
-                                        <input type="number" id="mape-psidlen" class="form-control" placeholder="6" min="0" max="16">
-                                    </div>
-                                </div>
-
-                                <div id="mape-gua-section" class="form-group" style="display: none;">
-                                    <label for="mape-gua-prefix">GUA Prefix</label>
-                                    <input type="text" id="mape-gua-prefix" class="form-control" placeholder="2400:4151:80e2:7500::/64">
-                                    <small class="form-text text-muted">IPv6 Global Unicast Address prefix</small>
-                                </div>
-                            </div>
-                            
-                            <!-- APè¨­å®š -->
-                            <div id="ap-section" class="conditional-section">
-                                <h5 class="section-title">AP Configuration</h5>
-                                <div class="form-row">
-                                    <div class="form-group">
-                                        <label for="ap-ip-address">IP Address</label>
-                                        <input type="text" id="ap-ip-address" class="form-control" value="192.168.1.2">
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="ap-gateway">Gateway</label>
-                                        <input type="text" id="ap-gateway" class="form-control" value="192.168.1.1">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
     
-<div class="form-group" id="isp-detection-group">
-                            <label>ISP Detection Status</label>
-                            <div id="isp-info-display" class="info" style="margin-bottom: 0;">
-                                <div id="isp-status-message">ISP information will be detected when configuration is opened</div>
-                                <div id="isp-technical-info" style="font-family: monospace; font-size: 0.9em; margin-top: 0.5rem; display: none;"></div>
-                            </div>
-                        </div>
-                        
-                        <h4>Tuning</h4>
-                        <div class="form-group">
-                            <label>Dynamic Network Optimizer</label>
-                            <div class="radio-group">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="netOptimizer" id="netopt-disabled" value="disabled" checked>
-                                    <label class="form-check-label" for="netopt-disabled">Disabled</label>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="netOptimizer" id="netopt-enabled" value="enabled">
-                                    <label class="form-check-label" for="netopt-enabled">Enabled</label>
+                            <div class="form-group" id="isp-detection-group">
+                                <label>ISP Detection Status</label>
+                                <div id="isp-info-display" class="info" style="margin-bottom: 0;">
+                                    <div id="isp-status-message">ISP information will be detected when configuration is opened</div>
+                                    <div id="isp-technical-info" style="font-family: monospace; font-size: 0.9em; margin-top: 0.5rem; display: none;"></div>
                                 </div>
                             </div>
-                            <small class="form-text text-muted">Automatically optimizes TCP buffer sizes and network parameters based on available RAM</small>
                         </div>
 
-                        <div id="net-optimizer-section" class="conditional-section">
+                        <div class="package-category">
+                            <h4>Tuning</h4>
                             <div class="form-group">
-                                <label>Configuration Mode</label>
+                                <label>Dynamic Network Optimizer</label>
                                 <div class="radio-group">
                                     <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="netOptimizerMode" id="netopt-auto" value="auto" checked>
-                                        <label class="form-check-label" for="netopt-auto">Auto (Recommended)</label>
+                                        <input class="form-check-input" type="radio" name="netOptimizer" id="netopt-disabled" value="disabled" checked>
+                                        <label class="form-check-label" for="netopt-disabled">Disabled</label>
                                     </div>
                                     <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="netOptimizerMode" id="netopt-manual" value="manual">
-                                        <label class="form-check-label" for="netopt-manual">Manual</label>
+                                        <input class="form-check-input" type="radio" name="netOptimizer" id="netopt-enabled" value="enabled">
+                                        <label class="form-check-label" for="netopt-enabled">Enabled</label>
                                     </div>
                                 </div>
-                                <small class="form-text text-muted">Auto mode adjusts parameters based on system resources</small>
+                                <small class="form-text text-muted">Automatically optimizes TCP buffer sizes and network parameters based on available RAM</small>
                             </div>
 
-                            <div id="net-optimizer-manual" class="conditional-section">
-                                <div class="form-row">
-                                    <div class="form-group">
-                                        <label for="netopt-rmem">TCP Read Memory</label>
-                                        <input type="text" id="netopt-rmem" class="form-control" placeholder="4096 131072 8388608">
-                                        <small class="form-text text-muted">min default max (bytes)</small>
+                            <div id="net-optimizer-section" class="conditional-section">
+                                <div class="form-group">
+                                    <label>Configuration Mode</label>
+                                    <div class="radio-group">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="netOptimizerMode" id="netopt-auto" value="auto" checked>
+                                            <label class="form-check-label" for="netopt-auto">Auto (Recommended)</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="netOptimizerMode" id="netopt-manual" value="manual">
+                                            <label class="form-check-label" for="netopt-manual">Manual</label>
+                                        </div>
                                     </div>
-                                    <div class="form-group">
-                                        <label for="netopt-wmem">TCP Write Memory</label>
-                                        <input type="text" id="netopt-wmem" class="form-control" placeholder="4096 131072 8388608">
-                                        <small class="form-text text-muted">min default max (bytes)</small>
-                                    </div>
+                                    <small class="form-text text-muted">Auto mode adjusts parameters based on system resources</small>
                                 </div>
-                                <div class="form-row">
-                                    <div class="form-group">
-                                        <label for="netopt-conntrack">Connection Tracking Max</label>
-                                        <input type="number" id="netopt-conntrack" class="form-control" placeholder="131072" min="1024">
+
+                                <div id="net-optimizer-manual" class="conditional-section">
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="netopt-rmem">TCP Read Memory</label>
+                                            <input type="text" id="netopt-rmem" class="form-control" placeholder="4096 131072 8388608">
+                                            <small class="form-text text-muted">min default max (bytes)</small>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="netopt-wmem">TCP Write Memory</label>
+                                            <input type="text" id="netopt-wmem" class="form-control" placeholder="4096 131072 8388608">
+                                            <small class="form-text text-muted">min default max (bytes)</small>
+                                        </div>
                                     </div>
-                                    <div class="form-group">
-                                        <label for="netopt-backlog">Network Device Backlog</label>
-                                        <input type="number" id="netopt-backlog" class="form-control" placeholder="5000" min="100">
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="netopt-conntrack">Connection Tracking Max</label>
+                                            <input type="number" id="netopt-conntrack" class="form-control" placeholder="131072" min="1024">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="netopt-backlog">Network Device Backlog</label>
+                                            <input type="number" id="netopt-backlog" class="form-control" placeholder="5000" min="100">
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="form-row">
-                                    <div class="form-group">
-                                        <label for="netopt-somaxconn">Socket Max Connections</label>
-                                        <input type="number" id="netopt-somaxconn" class="form-control" placeholder="16384" min="128">
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="netopt-congestion">TCP Congestion Control</label>
-                                        <select id="netopt-congestion" class="form-control">
-                                            <option value="cubic" selected>cubic (default)</option>
-                                            <option value="bbr">bbr</option>
-                                            <option value="reno">reno</option>
-                                        </select>
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="netopt-somaxconn">Socket Max Connections</label>
+                                            <input type="number" id="netopt-somaxconn" class="form-control" placeholder="16384" min="128">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="netopt-congestion">TCP Congestion Control</label>
+                                            <select id="netopt-congestion" class="form-control">
+                                                <option value="cubic" selected>cubic (default)</option>
+                                                <option value="bbr">bbr</option>
+                                                <option value="reno">reno</option>
+                                            </select>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                         
-                        <div class="form-group" style="margin-top: 1.5rem;">
+                        <div class="package-category">
                             <h4>UCI-defaults (Boot configuration script)</h4>
                             <label for="uci-defaults-content" style="display: none;">UCI-defaults</label>
                             <textarea id="uci-defaults-content" class="form-control" rows="6" placeholder="#!/bin/sh&#10;&#10;# Your custom script here&#10;# This area is for manual editing - configuration wizard will not overwrite your changes"></textarea>
-                        </div>
+                    </div>
                     </details>  <!-- use-aios-config-details を閉じる -->
                 </div>
 
@@ -1346,20 +1379,22 @@
 
 // setup.shテンプレート
 const SETUP_SH_TEMPLATE = `#!/bin/sh
-DATE="$(date '+%Y-%m-%d %H:%M')"
-LAN_DEF="$(uci -q get network.lan.device || echo lan)"
-WAN_DEF="$(uci -q get network.wan.device || echo wan)"
-MAP_NAME="mape"
-MAP6_NAME="mape6"
-DSLITE_NAME="dslite"
-DSLITE6_NAME="dslite6"
-AP_NAME="ap"
-AP6_NAME="ap6"
 # BEGIN_VARIABLE_DEFINITIONS
 # END_VARIABLE_DEFINITIONS
+DATE="$(date '+%Y-%m-%d %H:%M')"
+LAN="$(uci -q get network.lan.device || echo lan)"
+WAN="$(uci -q get network.wan.device || echo wan)"
+DSL="dsl"
+DSL6="dsl6"
+MAPE="mape"
+MAPE6="mape6"
+AP="ap"
+AP6="ap6"
+NAS="openwrt"
+MNT="/mnt/sda"
 exec >/tmp/setup.log 2>&1
-uci set system.@system[0].description="Custom Firmware"
-uci set system.@system[0].notes="\${DATE} https://site-u.pages.dev/build"
+uci set system.@system[0].description="\${DATE}"
+uci set system.@system[0].notes="site-u.pages.dev/build"
 [ -n "\${device_name}" ] && uci set system.@system[0].hostname="\${device_name}"
 [ -n "\${root_password}" ] && printf '%s\\n%s\\n' "\${root_password}" "\${root_password}" | passwd >/dev/null
 [ -n "\${lan_ip_address}" ] && uci set network.lan.ipaddr="\${lan_ip_address}"
@@ -1401,32 +1436,32 @@ uci set system.@system[0].notes="\${DATE} https://site-u.pages.dev/build"
     uci set network.wan.auto='0'
     uci set network.wan6.disabled='1'
     uci set network.wan6.auto='0'
-    uci set network.\${DSLITE6_NAME}=interface
-    uci set network.\${DSLITE6_NAME}.proto='dhcpv6'
-    uci set network.\${DSLITE6_NAME}.device="\${WAN_DEF}"
-    uci set network.\${DSLITE6_NAME}.reqaddress='try'
-    uci set network.\${DSLITE6_NAME}.reqprefix='auto'
-    uci set network.\${DSLITE_NAME}=interface
-    uci set network.\${DSLITE_NAME}.proto='dslite'
-    uci set network.\${DSLITE_NAME}.peeraddr="\${dslite_aftr_address}"
-    uci set network.\${DSLITE_NAME}.tunlink="\${DSLITE6_NAME}"
-    uci set network.\${DSLITE_NAME}.mtu='1460'
-    uci set network.\${DSLITE_NAME}.encaplimit='ignore'
-    uci set dhcp.\${DSLITE6_NAME}=dhcp
-    uci set dhcp.\${DSLITE6_NAME}.interface="\${DSLITE6_NAME}"
-    uci set dhcp.\${DSLITE6_NAME}.master='1'
-    uci set dhcp.\${DSLITE6_NAME}.ra='relay'
-    uci set dhcp.\${DSLITE6_NAME}.dhcpv6='relay'
-    uci set dhcp.\${DSLITE6_NAME}.ndp='relay'
-    uci set dhcp.\${DSLITE6_NAME}.ignore='1'
+    uci set network.\${DSL6}=interface
+    uci set network.\${DSL6}.proto='dhcpv6'
+    uci set network.\${DSL6}.device="\${WAN}"
+    uci set network.\${DSL6}.reqaddress='try'
+    uci set network.\${DSL6}.reqprefix='auto'
+    uci set network.\${DSL}=interface
+    uci set network.\${DSL}.proto='dslite'
+    uci set network.\${DSL}.peeraddr="\${dslite_aftr_address}"
+    uci set network.\${DSL}.tunlink="\${DSL6}"
+    uci set network.\${DSL}.mtu='1460'
+    uci set network.\${DSL}.encaplimit='ignore'
+    uci set dhcp.\${DSL6}=dhcp
+    uci set dhcp.\${DSL6}.interface="\${DSL6}"
+    uci set dhcp.\${DSL6}.master='1'
+    uci set dhcp.\${DSL6}.ra='relay'
+    uci set dhcp.\${DSL6}.dhcpv6='relay'
+    uci set dhcp.\${DSL6}.ndp='relay'
+    uci set dhcp.\${DSL6}.ignore='1'
     uci set dhcp.lan.ra='relay'
     uci set dhcp.lan.dhcpv6='relay'
     uci set dhcp.lan.ndp='relay'
     uci set dhcp.lan.force='1'
     uci del_list firewall.@zone[1].network="wan"
     uci del_list firewall.@zone[1].network="wan6"
-    uci add_list firewall.@zone[1].network="\${DSLITE_NAME}"
-    uci add_list firewall.@zone[1].network="\${DSLITE6_NAME}"
+    uci add_list firewall.@zone[1].network="\${DSL}"
+    uci add_list firewall.@zone[1].network="\${DSL6}"
     uci set firewall.@zone[1].masq='1'
     uci set firewall.@zone[1].mtu_fix='1'
 }
@@ -1435,42 +1470,42 @@ uci set system.@system[0].notes="\${DATE} https://site-u.pages.dev/build"
     uci set network.wan.auto='0'
     uci set network.wan6.disabled='1'
     uci set network.wan6.auto='0'
-    uci set network.\${MAP6_NAME}=interface
-    uci set network.\${MAP6_NAME}.proto='dhcpv6'
-    uci set network.\${MAP6_NAME}.device="\${WAN_DEF}"
-    uci set network.\${MAP6_NAME}.reqaddress='try'
-    uci set network.\${MAP6_NAME}.reqprefix='auto'
-    [ -n "\${mape_gua_mode}" ] && uci set network.\${MAP6_NAME}.ip6prefix="\${mape_gua_prefix}"
-    uci set network.\${MAP_NAME}=interface
-    uci set network.\${MAP_NAME}.proto='map'
-    uci set network.\${MAP_NAME}.maptype='map-e'
-    uci set network.\${MAP_NAME}.peeraddr="\${mape_br}"
-    uci set network.\${MAP_NAME}.ipaddr="\${mape_ipv4_prefix}"
-    uci set network.\${MAP_NAME}.ip4prefixlen="\${mape_ipv4_prefixlen}"
-    uci set network.\${MAP_NAME}.ip6prefix="\${mape_ipv6_prefix}"
-    uci set network.\${MAP_NAME}.ip6prefixlen="\${mape_ipv6_prefixlen}"
-    uci set network.\${MAP_NAME}.ealen="\${mape_ealen}"
-    uci set network.\${MAP_NAME}.psidlen="\${mape_psidlen}"
-    uci set network.\${MAP_NAME}.offset="\${mape_psid_offset}"
-    uci set network.\${MAP_NAME}.mtu='1460'
-    uci set network.\${MAP_NAME}.encaplimit='ignore'
-    uci set network.\${MAP_NAME}.legacymap='1'
-    uci set network.\${MAP_NAME}.tunlink="\${MAP6_NAME}"
-    uci set dhcp.\${MAP6_NAME}=dhcp
-    uci set dhcp.\${MAP6_NAME}.interface="\${MAP6_NAME}"
-    uci set dhcp.\${MAP6_NAME}.master='1'
-    uci set dhcp.\${MAP6_NAME}.ra='relay'
-    uci set dhcp.\${MAP6_NAME}.dhcpv6='relay'
-    uci set dhcp.\${MAP6_NAME}.ndp='relay'
-    uci set dhcp.\${MAP6_NAME}.ignore='1'
+    uci set network.\${MAPE6}=interface
+    uci set network.\${MAPE6}.proto='dhcpv6'
+    uci set network.\${MAPE6}.device="\${WAN}"
+    uci set network.\${MAPE6}.reqaddress='try'
+    uci set network.\${MAPE6}.reqprefix='auto'
+    [ -n "\${mape_gua_mode}" ] && uci set network.\${MAPE6}.ip6prefix="\${mape_gua_prefix}"
+    uci set network.\${MAPE}=interface
+    uci set network.\${MAPE}.proto='map'
+    uci set network.\${MAPE}.maptype='map-e'
+    uci set network.\${MAPE}.peeraddr="\${mape_br}"
+    uci set network.\${MAPE}.ipaddr="\${mape_ipv4_prefix}"
+    uci set network.\${MAPE}.ip4prefixlen="\${mape_ipv4_prefixlen}"
+    uci set network.\${MAPE}.ip6prefix="\${mape_ipv6_prefix}"
+    uci set network.\${MAPE}.ip6prefixlen="\${mape_ipv6_prefixlen}"
+    uci set network.\${MAPE}.ealen="\${mape_ealen}"
+    uci set network.\${MAPE}.psidlen="\${mape_psidlen}"
+    uci set network.\${MAPE}.offset="\${mape_psid_offset}"
+    uci set network.\${MAPE}.mtu='1460'
+    uci set network.\${MAPE}.encaplimit='ignore'
+    uci set network.\${MAPE}.legacymap='1'
+    uci set network.\${MAPE}.tunlink="\${MAPE6}"
+    uci set dhcp.\${MAPE6}=dhcp
+    uci set dhcp.\${MAPE6}.interface="\${MAPE6}"
+    uci set dhcp.\${MAPE6}.master='1'
+    uci set dhcp.\${MAPE6}.ra='relay'
+    uci set dhcp.\${MAPE6}.dhcpv6='relay'
+    uci set dhcp.\${MAPE6}.ndp='relay'
+    uci set dhcp.\${MAPE6}.ignore='1'
     uci set dhcp.lan.ra='relay'
     uci set dhcp.lan.dhcpv6='relay'
     uci set dhcp.lan.ndp='relay'
     uci set dhcp.lan.force='1'
     uci del_list firewall.@zone[1].network="wan"
     uci del_list firewall.@zone[1].network="wan6"
-    uci add_list firewall.@zone[1].network="\${MAP_NAME}"
-    uci add_list firewall.@zone[1].network="\${MAP6_NAME}"
+    uci add_list firewall.@zone[1].network="\${MAPE}"
+    uci add_list firewall.@zone[1].network="\${MAPE6}"
     uci set firewall.@zone[1].masq='1'
     uci set firewall.@zone[1].mtu_fix='1'
     cat > /lib/netifd/proto/map.sh <<'MAP_SH_EOF'
@@ -1482,23 +1517,23 @@ MAP_SH_EOF
     uci set network.wan.auto='0'
     uci set network.wan6.disabled='1'
     uci set network.wan6.auto='0'
-    uci set network.\${AP_NAME}=interface
-    uci set network.\${AP_NAME}.proto='static'
-    uci set network.\${AP_NAME}.device="\${LAN_DEF}"
-    uci set network.\${AP_NAME}.ipaddr="\${ap_ip_address}"
-    uci set network.\${AP_NAME}.netmask='255.255.255.0'
-    uci set network.\${AP_NAME}.gateway="\${ap_gateway}"
-    uci set network.\${AP_NAME}.dns="\${ap_gateway}"
-    uci set network.\${AP_NAME}.delegate='0'
-    uci set network.\${AP6_NAME}=interface
-    uci set network.\${AP6_NAME}.proto='dhcpv6'
-    uci set network.\${AP6_NAME}.device="@\${AP_NAME}"
-    uci set network.\${AP6_NAME}.reqaddress='try'
-    uci set network.\${AP6_NAME}.reqprefix='no'
-    uci set network.\${AP6_NAME}.type='bridge'
-    [ -n "$(uci -q get wireless.default_radio0)" ] && uci set wireless.default_radio0.network="\${AP_NAME}"
-    [ -n "$(uci -q get wireless.default_radio1)" ] && uci set wireless.default_radio1.network="\${AP_NAME}"
-    [ -n "$(uci -q get wireless.default_radio2)" ] && uci set wireless.default_radio2.network="\${AP_NAME}"
+    uci set network.\${AP}=interface
+    uci set network.\${AP}.proto='static'
+    uci set network.\${AP}.device="\${LAN}"
+    uci set network.\${AP}.ipaddr="\${ap_ip_address}"
+    uci set network.\${AP}.netmask='255.255.255.0'
+    uci set network.\${AP}.gateway="\${ap_gateway}"
+    uci set network.\${AP}.dns="\${ap_gateway}"
+    uci set network.\${AP}.delegate='0'
+    uci set network.\${AP6}=interface
+    uci set network.\${AP6}.proto='dhcpv6'
+    uci set network.\${AP6}.device="@\${AP}"
+    uci set network.\${AP6}.reqaddress='try'
+    uci set network.\${AP6}.reqprefix='no'
+    uci set network.\${AP6}.type='bridge'
+    [ -n "$(uci -q get wireless.default_radio0)" ] && uci set wireless.default_radio0.network="\${AP}"
+    [ -n "$(uci -q get wireless.default_radio1)" ] && uci set wireless.default_radio1.network="\${AP}"
+    [ -n "$(uci -q get wireless.default_radio2)" ] && uci set wireless.default_radio2.network="\${AP}"
     [ -x /etc/init.d/odhcpd ] && /etc/init.d/odhcpd enabled && /etc/init.d/odhcpd disable
     [ -x /etc/init.d/odhcpd ] && /etc/init.d/odhcpd running && /etc/init.d/odhcpd stop
     [ -x /etc/init.d/dnsmasq ] && /etc/init.d/dnsmasq enabled && /etc/init.d/dnsmasq disable
@@ -1515,8 +1550,6 @@ MAP_SH_EOF
     uci set irqbalance.irqbalance.enabled='1'
 }
 [ -n "\${enable_samba4}" ] && {
-    NAS="openwrt"
-    MNT="/mnt/sda"
     uci set samba4.@samba[0]=samba
     uci set samba4.@samba[0].workgroup='WORKGROUP'
     uci set samba4.@samba[0].charset='UTF-8'
@@ -2424,24 +2457,154 @@ const ResetManager = {
     }
 };
 
+// ==================== オートコンプリート関数（公式版準拠） ====================
+function setupAutocompleteList(input, items, onbegin, onend) {
+    let currentFocus = -1;
+    
+    const collator = new Intl.Collator(undefined, {
+        numeric: true,
+        sensitivity: "base",
+    });
+    
+    items.sort(collator.compare);
+    
+    input.oninput = function () {
+        onbegin();
+        
+        let pattern = this.value;
+        closeAllLists();
+        
+        if (pattern.length === 0) {
+            return false;
+        }
+        
+        if (items.includes(pattern)) {
+            closeAllLists();
+            onend(input);
+            return false;
+        }
+        
+        const list = document.createElement("DIV");
+        list.setAttribute("id", this.id + "-autocomplete-list");
+        list.setAttribute("class", "autocomplete-items");
+        this.parentNode.appendChild(list);
+        
+        const patterns = split(pattern.toUpperCase());
+        let count = 0;
+        for (const item of items) {
+            const matches = match(item, patterns);
+            if (matches.length == 0) {
+                continue;
+            }
+            
+            count += 1;
+            if (count >= 15) {
+                let div = document.createElement("DIV");
+                div.innerText = "...";
+                list.appendChild(div);
+                break;
+            } else {
+                let div = document.createElement("DIV");
+                let prev = 0;
+                let html = "";
+                for (const m of matches) {
+                    html += item.substr(prev, m.begin - prev);
+                    html += `<strong>${item.substr(m.begin, m.length)}</strong>`;
+                    prev = m.begin + m.length;
+                }
+                html += item.substr(prev);
+                html += `<input type="hidden" value="${item}">`;
+                div.innerHTML = html;
+                
+                div.addEventListener("click", function () {
+                    input.value = this.getElementsByTagName("input")[0].value;
+                    closeAllLists();
+                    onend(input);
+                });
+                
+                list.appendChild(div);
+            }
+        }
+    };
+    
+    input.onkeydown = function (e) {
+        let x = document.getElementById(this.id + "-autocomplete-list");
+        if (x) x = x.getElementsByTagName("div");
+        if (e.keyCode == 40) {
+            currentFocus += 1;
+            setActive(x);
+        } else if (e.keyCode == 38) {
+            currentFocus -= 1;
+            setActive(x);
+        } else if (e.keyCode == 13) {
+            e.preventDefault();
+            if (currentFocus > -1) {
+                if (x) x[currentFocus].click();
+            }
+        }
+    };
+    
+    function setActive(xs) {
+        if (!xs) return false;
+        for (const x of xs) {
+            x.classList.remove("autocomplete-active");
+        }
+        if (currentFocus >= xs.length) currentFocus = 0;
+        if (currentFocus < 0) currentFocus = xs.length - 1;
+        xs[currentFocus].classList.add("autocomplete-active");
+    }
+    
+    function closeAllLists(elmnt) {
+        for (const x of document.querySelectorAll(".autocomplete-items")) {
+            if (elmnt != x && elmnt != input) {
+                x.parentNode.removeChild(x);
+            }
+        }
+    }
+    
+    document.addEventListener("click", (e) => {
+        closeAllLists(e.target);
+    });
+}
+
+function match(value, patterns) {
+    const item = value.toUpperCase();
+    let matches = [];
+    for (const p of patterns) {
+        const i = item.indexOf(p);
+        if (i == -1) return [];
+        matches.push({ begin: i, length: p.length });
+    }
+    
+    matches.sort((a, b) => a.begin > b.begin);
+    
+    let prev = null;
+    let ranges = [];
+    for (const m of matches) {
+        if (prev && m.begin <= prev.begin + prev.length) {
+            prev.length = Math.max(prev.length, m.begin + m.length - prev.begin);
+        } else {
+            ranges.push(m);
+            prev = m;
+        }
+    }
+    return ranges;
+}
+
 // ==================== URL管理の統一関数 ====================
 function setupVersionUrls(version) {
     if (!config.image_urls) config.image_urls = {};
     if (!config.overview_urls) config.overview_urls = {};
-
     if (config.image_urls[version]) return;
-
     const overview_url = config.image_url;
     const image_url = (typeof upstream_config !== 'undefined' && upstream_config.image_url_override)
         ? upstream_config.image_url_override
         : config.image_url;
-
     const isSnapshot = /SNAPSHOT$/i.test(version);
     const basePath   = isSnapshot ? 'snapshots' : `releases/${encodeURIComponent(version)}`;
-
     config.overview_urls[version] = `${overview_url}/${basePath}/`;
     config.image_urls[version]    = `${image_url}/${basePath}/`;
-}  
+} 
 
 // ==================== 初期化関数 ====================
 async function init() {
@@ -2730,7 +2893,17 @@ function bindEvents() {
     if (versionsEl) versionsEl.addEventListener('change', handleVersionChange);
     
     const modelsEl = document.getElementById('models');
-    if (modelsEl) modelsEl.addEventListener('input', handleDeviceSearch);
+    if (modelsEl) {
+        // 初期化時にオートコンプリートをセットアップ
+        if (app.devicesMap) {
+            setupAutocompleteList(
+                modelsEl,
+                Object.keys(app.devicesMap),
+                hideDeviceInfo,
+                (input) => changeModel(app.selectedVersion, app.devicesMap, input.value)
+            );
+        }
+    }
 
     const aiosConfigDetails = document.getElementById('use-aios-config-details');
     if (aiosConfigDetails) aiosConfigDetails.addEventListener('toggle', toggleAiosConfig);
@@ -3200,13 +3373,26 @@ const DeviceContext = {
     }
 };
 
-// ==================== 簡素化された入口関数 ====================
+// ==================== 簡略化された入口関数 ====================
 async function handleVersionChange(e) {
     await DeviceContext.update({
         version: e.target.value,
         forceReload: true,
         trigger: 'version-change'
     });
+    
+    // バージョン変更時にオートコンプリートを再セットアップ
+    if (app.devicesMap) {
+        const modelsEl = document.getElementById('models');
+        if (modelsEl) {
+            setupAutocompleteList(
+                modelsEl,
+                Object.keys(app.devicesMap),
+                hideDeviceInfo,
+                (input) => changeModel(app.selectedVersion, app.devicesMap, input.value)
+            );
+        }
+    }
 }
 
 function selectDevice(device) {
@@ -3325,7 +3511,7 @@ async function loadDevices() {
             throw new Error(`HTTP ${response.status}`);
         }
         
-const data = await response.json();
+        const data = await response.json();
         
         // 公式と同じ重複解決処理を追加
         const dups = {};
@@ -3359,7 +3545,9 @@ const data = await response.json();
             }
         }
         
-        app.devices = profiles;
+        // プロファイルをオブジェクトに変換（公式と同じ）
+        app.devicesMap = profiles.reduce((d, e) => ((d[e.title] = e), d), {});
+        app.devices = profiles;  // 互換性のため配列も保持
         app.archPackagesMap = data.arch_packages || {};
         
     } catch (error) {
@@ -3370,6 +3558,7 @@ const data = await response.json();
             console.log(`[loadDevices] Error: ${error.message}`);
         }
         app.devices = [];
+        app.devicesMap = {};
         app.versionCode = null;
         app.kernelHash = null;
         hideDeviceInfo();
@@ -3377,38 +3566,17 @@ const data = await response.json();
 }
 
 function handleDeviceSearch(e) {
-    const query = e.target.value.toLowerCase();
-
-    // 空文字の場合はデバイス情報をクリア
-    if (query.length === 0) {
-        hideAutocomplete();
-        hideDeviceInfo();
-        current_device = {};
-        return;
-    }
-
-    if (query.length < 2) {
-        hideAutocomplete();
-        return;
-    }
-
-    const exact = [];
-    const others = [];
-
-    // 元配列順を維持しつつ、完全一致を先頭に
-    for (const device of app.devices) {
-        const title = device.title || getDeviceTitle(device);
-        const lt = title.toLowerCase();
-        const id = (device.id || '').toLowerCase();
-
-        if (lt === query || id === query) {
-            exact.push(device);
-        } else if (lt.includes(query) || id.includes(query)) {
-            others.push(device);
+    // setupAutocompleteListに置き換え
+    if (!app.devicesMap) return;
+    
+    setupAutocompleteList(
+        document.getElementById('models'),
+        Object.keys(app.devicesMap),
+        hideDeviceInfo,  // onbegin
+        (input) => {      // onend
+            changeModel(app.selectedVersion, app.devicesMap, input.value);
         }
-    }
-
-    showAutocomplete(exact.concat(others));
+    );
 }
         
 function getModelTitles(titles) {
@@ -3427,11 +3595,41 @@ function getModelTitles(titles) {
     });
 }
 
+function changeModel(version, devicesMap, title) {
+    const device = devicesMap[title];
+    if (device) {
+        current_device = {
+            version: version,
+            id: device.id,
+            target: device.target
+        };
+        selectDeviceProfile(device);
+    } else {
+        hideDeviceInfo();
+        current_device = {};
+    }
+}
+
+// selectDeviceのプロファイル読み込み部分を分離
+async function selectDeviceProfile(device) {
+    const success = await loadDeviceProfile(device);
+    if (success) {
+        try {
+            await fetchApiInfoAndUpdate();
+            updateRequiredPackages();
+            asuCollectPackages();
+        } catch (e) {
+            console.error('[selectDeviceProfile] API fetch failed:', e);
+        }
+        showDeviceInfo();
+    } else {
+        current_device = {};
+    }
+}
+
 function getDeviceTitle(device) {
-    // 互換性のため残す - 最初のタイトルのみ返す
     if (device.titles && device.titles.length > 0) {
-        const titles = getModelTitles(device.titles);
-        return titles[0] || device.id;
+        return device.titles[0].title || device.id;
     }
     return device.id;
 }
@@ -3773,7 +3971,7 @@ function showDeviceInfo() {
         <h5>About this build</h5>
         <div class="row">
             <span class="col1">Model</span>
-            <span class="col2" id="image-model"><strong>${getDeviceTitle(device)}</strong></span>
+            <span class="col2" id="image-model"><strong>${device.title || getDeviceTitle(device)}</strong></span>
         </div>
         <div class="row">
             <span class="col1">Target</span>
