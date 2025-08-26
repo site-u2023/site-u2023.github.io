@@ -13,27 +13,49 @@ AP6="ap6"
 NAS="openwrt"
 MNT="/mnt/sda"
 exec >/tmp/setup.log 2>&1
-uci -q batch <<'EOI'
+uci -q batch << SYSTEM_EOF
 set system.@system[0].description="\${DATE}"
 set system.@system[0].notes="site-u.pages.dev/build"
-EOI
-[ -n "\${device_name}" ] && uci set system.@system[0].hostname="\${device_name}"
+SYSTEM_EOF
+[ -n "\${device_name}" ] && uci -q batch << HOSTNAME_EOF
+set system.@system[0].hostname="\${device_name}"
+HOSTNAME_EOF
 [ -n "\${root_password}" ] && printf '%s\\n%s\\n' "\${root_password}" "\${root_password}" | passwd >/dev/null
-[ -n "\${lan_ip_address}" ] && uci set network.lan.ipaddr="\${lan_ip_address}"
-[ -n "\${lan_ipv6_address}" ] && uci set network.lan.ip6addr="\${lan_ipv6_address}"
-[ -n "\${language}" ] && uci set system.@system[0].language="\${language}"
-[ -n "\${timezone}" ] && uci set system.@system[0].timezone="\${timezone}"
-[ -n "\${zonename}" ] && uci set system.@system[0].zonename="\${zonename}"
-[ -n "\${ssh_interface}" ] && uci set dropbear.@dropbear[0].Interface="\${ssh_interface}"
-[ -n "\${ssh_port}" ] && uci set dropbear.@dropbear[0].Port="\${ssh_port}"
-[ "\${flow_offloading_type}" = "software" ] && uci set firewall.@defaults[0].flow_offloading='1'
-[ "\${flow_offloading_type}" = "hardware" ] && uci -q batch <<'EOI'
+[ -n "\${lan_ip_address}" ] && uci -q batch << LANIP_EOF
+set network.lan.ipaddr="\${lan_ip_address}"
+LANIP_EOF
+[ -n "\${lan_ipv6_address}" ] && uci -q batch << LANIP6_EOF
+set network.lan.ip6addr="\${lan_ipv6_address}"
+LANIP6_EOF
+[ -n "\${language}" ] && uci -q batch << LANGUAGE_EOF
+set system.@system[0].language="\${language}"
+LANGUAGE_EOF
+[ -n "\${timezone}" ] && uci -q batch << TIMEZONE_EOF
+set system.@system[0].timezone="\${timezone}"
+TIMEZONE_EOF
+[ -n "\${zonename}" ] && uci -q batch << ZONENAME_EOF
+set system.@system[0].zonename="\${zonename}"
+ZONENAME_EOF
+[ -n "\${ssh_interface}" ] && uci -q batch << SSHINTF_EOF
+set dropbear.@dropbear[0].Interface="\${ssh_interface}"
+SSHINTF_EOF
+[ -n "\${ssh_port}" ] && uci -q batch << SSHPORT_EOF
+set dropbear.@dropbear[0].Port="\${ssh_port}"
+SSHPORT_EOF
+[ "\${flow_offloading_type}" = "software" ] && uci -q batch << FLOWSOFT_EOF
+set firewall.@defaults[0].flow_offloading='1'
+FLOWSOFT_EOF
+[ "\${flow_offloading_type}" = "hardware" ] && uci -q batch << FLOWHARD_EOF
 set firewall.@defaults[0].flow_offloading='1'
 set firewall.@defaults[0].flow_offloading_hw='1'
-EOI
+FLOWHARD_EOF
 [ -n "\${wlan_name}" ] && [ -n "\${wlan_password}" ] && [ "\${#wlan_password}" -ge 8 ] && {
     wireless_cfg="$(uci -q show wireless)"
-    for radio in $(printf '%s\\n' "\${wireless_cfg}" | grep "wireless\.radio[0-9]*=" | cut -d. -f2 | cut -d= -f1); do
+    for radio in \$(printf '%s\\n' "\${wireless_cfg}" | grep "wireless\.radio[0-9]*=" | cut -d. -f2 | cut -d= -f1); do
+        uci -q batch << RADIO_EOF
+set wireless.\${radio}.disabled='0'
+set wireless.\${radio}.country="\${country:-00}"
+RADIO_EOF
         band=$(uci -q get wireless.\${radio}.band)
         case "\${band}" in
             2g) suffix="-2g"; encryption='psk-mixed' ;;
@@ -45,25 +67,24 @@ EOI
         n=2
         while printf '%s\\n' "\${wireless_cfg}" | grep -q "ssid='\${ssid}'"; do
             ssid="\${wlan_name}\${suffix}\${n}"
-            n=$((n+1))
+            n=\$((n+1))
         done
         iface="default_\${radio}"
-        [ -n "$(uci -q get wireless.\${iface})" ] && uci -q batch <<'EOI'
-set wireless.\${radio}.disabled='0'
-set wireless.\${radio}.country="\${country:-00}"
+        [ -n "$(uci -q get wireless.\${iface})" ] && uci -q batch << WLAN_EOF
 set wireless.\${iface}.disabled='0'
 set wireless.\${iface}.encryption="\${encryption}"
 set wireless.\${iface}.ssid="\${ssid}"
 set wireless.\${iface}.key="\${wlan_password}"
-EOI
+WLAN_EOF
     done
 }
-[ -n "\${pppoe_username}" ] && [ -n "\${pppoe_password}" ] && uci -q batch <<'EOI'
+[ -n "\${pppoe_username}" ] && [ -n "\${pppoe_password}" ] && uci -q batch << PPPOE_EOF
 set network.wan.proto='pppoe'
 set network.wan.username="\${pppoe_username}"
 set network.wan.password="\${pppoe_password}"
-EOI
-[ -n "\${dslite_aftr_address}" ] && uci -q batch <<'EOI'
+PPPOE_EOF
+[ -n "\${dslite_aftr_address}" ] && {
+    uci -q batch << DSLITE_EOF
 set network.wan.disabled='1'
 set network.wan.auto='0'
 set network.wan6.disabled='1'
@@ -96,9 +117,10 @@ add_list firewall.@zone[1].network="\${DSL}"
 add_list firewall.@zone[1].network="\${DSL6}"
 set firewall.@zone[1].masq='1'
 set firewall.@zone[1].mtu_fix='1'
-EOI
+DSLITE_EOF
+}
 [ -n "\${mape_br}" ] && [ -n "\${mape_ealen}" ] && {
-    uci -q batch <<'EOI'
+    uci -q batch << MAPE_EOF
 set network.wan.disabled='1'
 set network.wan.auto='0'
 set network.wan6.disabled='1'
@@ -140,14 +162,16 @@ add_list firewall.@zone[1].network="\${MAPE}"
 add_list firewall.@zone[1].network="\${MAPE6}"
 set firewall.@zone[1].masq='1'
 set firewall.@zone[1].mtu_fix='1'
-EOI
-    [ -n "\${mape_gua_mode}" ] && uci set network.\${MAPE6}.ip6prefix="\${mape_gua_prefix}"
-    [ -n "\${map_sh_content}" ] && cat > /lib/netifd/proto/map.sh <<'MAP_SH_EOF'
+MAPE_EOF
+    [ -n "\${mape_gua_mode}" ] && uci -q batch << MAPEGUA_EOF
+set network.\${MAPE6}.ip6prefix="\${mape_gua_prefix}"
+MAPEGUA_EOF
+    cat > /lib/netifd/proto/map.sh <<'MAP_SH_EOF'
 \${map_sh_content}
 MAP_SH_EOF
 }
 [ -n "\${ap_ip_address}" ] && {
-    uci -q batch <<'EOI'
+    uci -q batch << AP_EOF
 set network.wan.disabled='1'
 set network.wan.auto='0'
 set network.wan6.disabled='1'
@@ -166,10 +190,16 @@ set network.\${AP6}.device="@\${AP}"
 set network.\${AP6}.reqaddress='try'
 set network.\${AP6}.reqprefix='no'
 set network.\${AP6}.type='bridge'
-EOI
-    [ -n "$(uci -q get wireless.default_radio0)" ] && uci set wireless.default_radio0.network="\${AP}"
-    [ -n "$(uci -q get wireless.default_radio1)" ] && uci set wireless.default_radio1.network="\${AP}"
-    [ -n "$(uci -q get wireless.default_radio2)" ] && uci set wireless.default_radio2.network="\${AP}"
+AP_EOF
+    [ -n "$(uci -q get wireless.default_radio0)" ] && uci -q batch << APWLAN0_EOF
+set wireless.default_radio0.network="\${AP}"
+APWLAN0_EOF
+    [ -n "$(uci -q get wireless.default_radio1)" ] && uci -q batch << APWLAN1_EOF
+set wireless.default_radio1.network="\${AP}"
+APWLAN1_EOF
+    [ -n "$(uci -q get wireless.default_radio2)" ] && uci -q batch << APWLAN2_EOF
+set wireless.default_radio2.network="\${AP}"
+APWLAN2_EOF
     [ -x /etc/init.d/odhcpd ] && /etc/init.d/odhcpd enabled && /etc/init.d/odhcpd disable
     [ -x /etc/init.d/odhcpd ] && /etc/init.d/odhcpd running && /etc/init.d/odhcpd stop
     [ -x /etc/init.d/dnsmasq ] && /etc/init.d/dnsmasq enabled && /etc/init.d/dnsmasq disable
@@ -177,15 +207,15 @@ EOI
     [ -x /etc/init.d/firewall ] && /etc/init.d/firewall enabled && /etc/init.d/firewall disable
     [ -x /etc/init.d/firewall ] && /etc/init.d/firewall running && /etc/init.d/firewall stop
 }
-[ -n "\${enable_ttyd}" ] && uci -q batch <<'EOI'
+[ -n "\${enable_ttyd}" ] && uci -q batch << TTYD_EOF
 set ttyd.@ttyd[0].ipv6='1'
 set ttyd.@ttyd[0].command='/bin/login -f root'
-EOI
-[ -n "\${enable_irqbalance}" ] && uci -q batch <<'EOI'
+TTYD_EOF
+[ -n "\${enable_irqbalance}" ] && uci -q batch << IRQ_EOF
 set irqbalance.irqbalance=irqbalance
 set irqbalance.irqbalance.enabled='1'
-EOI
-[ -n "\${enable_samba4}" ] && uci -q batch <<'EOI'
+IRQ_EOF
+[ -n "\${enable_samba4}" ] && uci -q batch << SAMBA_EOF
 set samba4.@samba[0]=samba
 set samba4.@samba[0].workgroup='WORKGROUP'
 set samba4.@samba[0].charset='UTF-8'
@@ -201,11 +231,11 @@ set samba4.sambashare.guest_ok='yes'
 set samba4.sambashare.inherit_owner='yes'
 set samba4.sambashare.create_mask='0777'
 set samba4.sambashare.dir_mask='0777'
-EOI
+SAMBA_EOF
 # BEGIN_CUSTOM_COMMANDS
 # END_CUSTOM_COMMANDS
 uci commit 2>/dev/null
-[ -n "\${enable_netopt}" ] && { cat > /etc/rc.local <<'EOF'
+[ -n "\${enable_netopt}" ] && { cat > /etc/rc.local <<'RCLOCAL_EOF'
 #!/bin/sh
 C=/etc/sysctl.d/99-net-opt.conf
 M=\$(awk '/MemTotal/{print int(\$2/1024)}' /proc/meminfo)
@@ -222,7 +252,7 @@ cat > /etc/rc.local <<'RESET_EOF'
 exit 0
 RESET_EOF
 exit 0
-EOF
+RCLOCAL_EOF
 }
 [ -n "\${backup_path}" ] && sysupgrade -q -k -b "\${backup_path}"
 echo "All done!"
