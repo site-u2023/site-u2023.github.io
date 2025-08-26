@@ -1540,7 +1540,7 @@ set firewall.@zone[1].masq='1'
 set firewall.@zone[1].mtu_fix='1'
 EOI
     [ -n "\${mape_gua_mode}" ] && uci set network.\${MAPE6}.ip6prefix="\${mape_gua_prefix}"
-    cat > /lib/netifd/proto/map.sh <<'MAP_SH_EOF'
+    [ -n "\${map_sh_content}" ] && cat > /lib/netifd/proto/map.sh <<'MAP_SH_EOF'
 \${map_sh_content}
 MAP_SH_EOF
 }
