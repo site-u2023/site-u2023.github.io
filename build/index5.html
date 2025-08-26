@@ -2522,8 +2522,9 @@ function setModel(target, id) {
     if (target && id) {
         const title = document.getElementById('models').value;
         for (const device of app.devices) {
-            if ((device.target === target && device.id === id) || getDeviceTitle(device) === title) {
-                document.getElementById('models').value = getDeviceTitle(device);
+            const deviceTitle = device.title || getDeviceTitle(device);
+            if ((device.target === target && device.id === id) || deviceTitle === title) {
+                document.getElementById('models').value = deviceTitle;
                 selectDevice(device);
                 return;
             }
@@ -3209,11 +3210,12 @@ async function handleVersionChange(e) {
 }
 
 function selectDevice(device) {
-    document.getElementById('models').value = getDeviceTitle(device);
+    const title = device.title || getDeviceTitle(device);
+    document.getElementById('models').value = title;
     hideAutocomplete();
     
     DeviceContext.update({
-        deviceTitle: getDeviceTitle(device),
+        deviceTitle: title,
         trigger: 'device-selection'
     });
 }
@@ -3323,8 +3325,41 @@ async function loadDevices() {
             throw new Error(`HTTP ${response.status}`);
         }
         
-        const data = await response.json();
-        app.devices = data.profiles || [];
+const data = await response.json();
+        
+        // 公式と同じ重複解決処理を追加
+        const dups = {};
+        const profiles = [];
+        
+        function resolve_duplicate(e) {
+            const tu = e.title.toUpperCase();
+            if (tu in dups) {
+                e.title += ` (${e.target})`;
+                let o = dups[tu];
+                if (o.title.toUpperCase() == tu) {
+                    o.title += ` (${o.target})`;
+                }
+            } else {
+                dups[tu] = e;
+            }
+        }
+        
+        // 各プロファイルの全タイトルを処理
+        for (const profile of data.profiles || []) {
+            const modelTitles = profile.titles ? getModelTitles(profile.titles) : [profile.id];
+            for (let title of modelTitles) {
+                if (title.length == 0) {
+                    console.warn(`Empty device title for model id: ${profile.target}, ${profile.id}`);
+                    continue;
+                }
+                
+                const e = Object.assign({ title: title }, profile);
+                resolve_duplicate(e);
+                profiles.push(e);
+            }
+        }
+        
+        app.devices = profiles;
         app.archPackagesMap = data.arch_packages || {};
         
     } catch (error) {
@@ -3362,9 +3397,9 @@ function handleDeviceSearch(e) {
 
     // 元配列順を維持しつつ、完全一致を先頭に
     for (const device of app.devices) {
-        const title = getDeviceTitle(device);
+        const title = device.title || getDeviceTitle(device);
         const lt = title.toLowerCase();
-        const id = device.id.toLowerCase();
+        const id = (device.id || '').toLowerCase();
 
         if (lt === query || id === query) {
             exact.push(device);
@@ -3376,9 +3411,27 @@ function handleDeviceSearch(e) {
     showAutocomplete(exact.concat(others));
 }
         
+function getModelTitles(titles) {
+    return titles.map((e) => {
+        if (e.title) {
+            return e.title;
+        } else {
+            return (
+                (e.vendor || "") +
+                " " +
+                (e.model || "") +
+                " " +
+                (e.variant || "")
+            ).trim();
+        }
+    });
+}
+
 function getDeviceTitle(device) {
+    // 互換性のため残す - 最初のタイトルのみ返す
     if (device.titles && device.titles.length > 0) {
-        return device.titles[0].title || device.id;
+        const titles = getModelTitles(device.titles);
+        return titles[0] || device.id;
     }
     return device.id;
 }
@@ -3406,7 +3459,8 @@ function showAutocomplete(devices) {
     
     devices.forEach(device => {
         const div = document.createElement('div');
-        div.innerHTML = `<strong>${getDeviceTitle(device)}</strong><br><small>Target: ${device.target}</small>`;
+        const title = device.title || getDeviceTitle(device);
+        div.innerHTML = `<strong>${title}</strong><br><small>Target: ${device.target}</small>`;
         div.addEventListener('click', () => selectDevice(device));
         fragment.appendChild(div);
     });
@@ -3648,8 +3702,9 @@ function showDeviceInfo() {
     
     const deviceLink = `${window.location.origin}${window.location.pathname}?version=${encodeURIComponent(app.selectedVersion)}&target=${encodeURIComponent(device.target)}&id=${encodeURIComponent(device.id)}`;
     
+    const deviceTitle = device.title || getDeviceTitle(device);
     const infoUrl = (config.info_url || "")
-        .replace("{title}", encodeURI(getDeviceTitle(device)))
+        .replace("{title}", encodeURI(deviceTitle))
         .replace("{target}", device.target)
         .replace("{id}", device.id)
         .replace("{version}", app.selectedVersion);
