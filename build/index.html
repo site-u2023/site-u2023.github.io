@@ -16,7 +16,7 @@
     <link rel="dns-prefetch" href="https://openwrt.org">
     
 <style>
-    /* ===== スペーシング変数定義 ===== */
+/* ===== スペーシング変数定義 ===== */
     :root {
         --spacing-section: 0.75rem;  /* セクション間の統一間隔 */
         --spacing-element: 1rem;     /* 要素間の標準間隔 */
@@ -409,29 +409,40 @@
         transition: width 0.3s ease;
     }
 
-    /* パッケージ選択 */
+    /* パッケージ選択 - 抜本修正 */
     .package-category {
         margin: 0;  /* 構造に従う */
-        padding: 0.5rem 1rem 1rem 1rem;
+        padding: 1rem;  /* 上下左右統一パディング */
         background-color: #fff;
         border: 1px solid #e9ecef;
         border-radius: 0.25rem;
+        display: flex;
+        flex-direction: column;
+        min-height: fit-content;  /* 最小高さを内容に合わせる */
     }
 
+    /* h4タイトル要素の抜本修正 */
     h4 {
-        margin: 0 0 0.75rem 0;  /* 上マージンなし、構造に従う */
-        padding: 0.75rem 1rem;
+        margin: 0;  /* 全マージンリセット */
+        padding: 0.75rem 1rem;  /* 内側パディングで調整 */
         background-color: #fff;
         border: 1px solid #e9ecef;
         border-radius: 0.25rem;
         font-size: 1.1rem;
         font-weight: 500;
+        display: flex;  /* フレックスボックス化 */
+        align-items: center;  /* 垂直中央揃え */
+        justify-content: center;  /* 水平中央揃え */
+        text-align: center;
+        min-height: 3rem;  /* 最小高さを設定してバランスを取る */
+        line-height: 1.3;  /* 行間調整 */
     }
 
     .package-category-description {
         font-size: 0.9rem;
         color: #6c757d;
         margin: 0.5rem 0 1rem 0;
+        flex-shrink: 0;  /* 説明文の縮小防止 */
     }
     
     .package-grid {
@@ -439,6 +450,7 @@
         flex-wrap: wrap;
         gap: 0.5rem 1rem;
         align-items: flex-start;
+        flex-grow: 1;  /* 残り空間を活用 */
     }
 
     .package-item {
@@ -665,6 +677,12 @@
         .col2 {
             padding-left: 0;
             margin-bottom: 0.5rem;
+        }
+
+        /* モバイルでのh4調整 */
+        h4 {
+            min-height: 2.5rem;
+            font-size: 1rem;
         }
     }
 
