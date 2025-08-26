@@ -26,6 +26,15 @@
         color: #000;
     }
 
+    /* ライトモード：リンクのデフォルト */
+    a {
+        color: #007bff;
+    }
+
+    a:hover {
+        color: #0056b3;
+    }
+    
     /* PCブラウザ向けIME抑止（対応ブラウザのみ） */
     #models,
     #package-search,
@@ -72,12 +81,6 @@
         text-align: center;
         margin-bottom: 2rem;
         color: #6c757d;
-    }
-
-    /* 公式互換のオートコンプリート */
-    #models-autocomplete {
-        display: flex;
-        padding-top: 0;
     }
     
     .autocomplete {
@@ -344,7 +347,6 @@
     }
 
     .conditional-section {
-        margin-top: 1rem;
         padding: 1rem;
         background-color: #fff3cd;
         border: 1px solid #ffeaa7;
@@ -355,6 +357,7 @@
     h5.section-title {
         font-size: 1rem;
         font-weight: 500;
+        margin-top: 0;
         margin-bottom: 0.75rem;
         color: #495057;
     }
@@ -418,7 +421,6 @@
         font-size: 0.9rem;
         color: #6c757d;
         margin: 0.5rem 0 1rem 0;
-        font-style: italic;
     }
     
     .package-grid {
@@ -486,11 +488,13 @@
         line-height: 1.5;
         padding-left: 1.5rem;
         overflow: hidden;
+        align-items: flex-start;  /* 頭揃え */
     }
 
     .col1 {
         display: inline-block;
-        width: 6rem;
+        flex-shrink: 0;  /* 縮小防止 */
+        width: 8rem;  /* 幅を少し広げる */
         color: #6c757d;
     }
 
@@ -500,8 +504,11 @@
 
     .col2 {
         display: inline-block;
+        flex: 1;  /* 残りの幅を使用 */
         overflow: hidden;
         text-overflow: ellipsis;
+        padding-left: 0.5rem;  /* 列間スペース */
+        word-wrap: break-word;  /* 長い文字列の折り返し */
     }
 
     .col2 a {
@@ -640,6 +647,22 @@
         .package-item {
             width: 100%;
         }
+        
+        /* モバイル向けレイアウト調整 */
+        .row {
+            flex-direction: column;
+            padding-left: 1rem;
+        }
+        
+        .col1 {
+            width: 100%;
+            margin-bottom: 0.25rem;
+        }
+        
+        .col2 {
+            padding-left: 0;
+            margin-bottom: 0.5rem;
+        }
     }
 
     /* ダークモード */
@@ -648,7 +671,16 @@
             background-color: #18181b;
             color: #d0d0d0;
         }
-        
+
+        /* リンクのデフォルト */
+        a {
+            color: #64b5f6;
+        }
+    
+        a:hover {
+            color: #90caf9;
+        }
+
         #models,
         #versions {
             background-color: #313135;
@@ -716,8 +748,8 @@
         .aios-config {
             background-color: #252528;
             border-color: #444;
-        }
-
+        }    
+        
         h4 {
             background-color: #252528;
             border-color: #444;
@@ -784,17 +816,13 @@
             <!-- Content will be dynamically generated -->
         </div>
 
-        <div id="images" class="images" style="display: none;">
-            <!-- Device images will be shown here -->
-        </div>
-
         <div id="packages" class="packages" style="display: none;">
             <!-- <details id="asu">
                 <summary>Customize installed packages and/or first boot script</summary> -->
                 <!-- パッケージセレクターセクション -->
                 <div class="aios-section">
                     <details id="use-package-selector-details">
-                        <summary>Installed Packages</summary>
+                        <summary>Packages</summary>
                         
                         <div id="package-selector-config">
                         <!-- パッケージ検索ボックス -->
@@ -824,8 +852,8 @@
                         </div>
                         
                         <div class="form-group" style="margin-top: 1.5rem;">
-                            <h4>Packages</h4>
-                            <label for="asu-packages" style="display: none;">Packages</label>
+                            <h4>Postinst (Package installation script)</h4>
+                            <label for="asu-packages" style="display: none;">Postinst</label>
                             <textarea id="asu-packages" class="form-control" rows="6" placeholder="luci&#10;luci-ssl&#10;-wpad-basic-wolfssl&#10;wpad-wolfssl"></textarea>
                         </div>
                     </div>
@@ -834,9 +862,12 @@
                 <!-- setup.sh設定セクション -->
                 <div class="aios-section">
                     <details id="use-aios-config-details">
-                        <summary>Script to run on first boot (uci-defaults)</summary>
+                        <summary>Scripts</summary>
                         
                         <div id="aios-config">
+                            <!-- 公式ドキュメントリンク -->
+                            <p><a href="https://openwrt.org/docs/guide-user/installation/sysupgrade.owut#using_a_uci-defaults_script" target="_blank" rel="noopener">Using a uci-defaults script</a></p>
+
                             <!-- Commands -->
                             <div class="package-category">
                               <h4>Add commands</h4>
@@ -902,33 +933,34 @@
                             </div>
                             <div class="form-group">
                                 <label for="aios-country">Country</label>
-                                <input type="text" id="aios-country" class="form-control" placeholder="US" maxlength="2">
+                                <input type="text" id="aios-country" class="form-control" placeholder="00" maxlength="2">
                                 <small class="form-text text-muted">2-letter country code (e.g., US, JP)</small>
                             </div>
                         </div>
 
-                        <!-- 2行目: Timezone と Zone name -->
+                        <!-- 2行目: Timezone と Zonename -->
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="aios-timezone">Timezone</label>
                                 <input type="text" id="aios-timezone" class="form-control" placeholder="UTC">
+                                <small class="form-text text-muted">Optional: e.g., EST5EDT,M3.2.0,M11.1.0, JST-9</small>
                             </div>
                             <div class="form-group">
-                                <label for="aios-zonename">Zone name</label>
-                                <input type="text" id="aios-zonename" class="form-control" placeholder="America/New_York">
+                                <label for="aios-zonename">Zonename</label>
+                                <input type="text" id="aios-zonename" class="form-control" placeholder="UTC">
                                 <small class="form-text text-muted">Optional: e.g., America/New_York, Asia/Tokyo</small>
                             </div>
                         </div>
 
-                        <!-- Device nameとRoot password -->
+                        <!-- Device nameã¨Root password -->
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="aios-device-name">Device name</label>
-                                <input type="text" id="aios-device-name" class="form-control" placeholder="OpenWrt">
+                                <input type="text" id="aios-device-name" class="form-control" placeholder="OpenWrt" value="OpenWrt">
                             </div>
                             <div class="form-group">
                                 <label for="aios-root-password">Root password</label>
-                                <input type="password" id="aios-root-password" class="form-control" placeholder="8+ characters">
+                                <input type="text" id="aios-root-password" class="form-control" placeholder="8+ characters" value="password">
                                 <small class="form-text text-muted">Leave empty to disable password authentication</small>
                             </div>
                         </div>
@@ -976,15 +1008,17 @@
                             </div>
                         </div>
                         
-                        <h4>Wi‑Fi Configuration</h4>
+                        <h4>Wi-Fi Configuration</h4>
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="aios-wifi-ssid">Wi‑Fi SSID</label>
-                                <input type="text" id="aios-wifi-ssid" class="form-control" placeholder="OpenWrt">
+                                <label for="aios-wifi-ssid">Wi‑Fi SSIDs (Base name)</label>
+                                <input type="text" id="aios-wifi-ssid" class="form-control" placeholder="OpenWrt" value="OpenWrt">
+                                <small class="form-text text-muted">Auto-creates SSID per interface with band suffix</small>
                             </div>
                             <div class="form-group">
-                                <label for="aios-wifi-password">Wi‑Fi password</label>
-                                <input type="password" id="aios-wifi-password" class="form-control" placeholder="8+ characters">
+                                <label for="aios-wifi-password">Wi‑Fi Password (Shared)</label>
+                                <input type="text" id="aios-wifi-password" class="form-control" placeholder="8+ characters" value="password">
+                                <small class="form-text text-muted">Same password for all SSIDs</small>
                             </div>
                         </div>
 
@@ -1027,6 +1061,14 @@
                                         <input class="form-check-input" type="radio" name="connectionType" id="conn-ap" value="ap">
                                         <label class="form-check-label" for="conn-ap">AP</label>
                                     </div>
+                                </div>
+                            </div>
+
+                            <!-- DHCP設定 -->
+                            <div id="dhcp-section" class="conditional-section">
+                                <h5 class="section-title">DHCP Configuration</h5>
+                                <div class="form-group">
+                                    <small class="text-muted">No additional configuration required. Router will obtain IP address automatically from ISP.</small>
                                 </div>
                             </div>
 
@@ -1108,8 +1150,7 @@
                                         </div>
                                     </div>
                                     <small class="text-muted">
-                                        <strong>Auto-detect</strong>: Automatically retrieve MAP-E technical information and configure with GUA mode (1G/10G compatible)<br>
-                                        <strong>Manual selection</strong>: For troubleshooting or specific requirements only
+                                        <strong>Auto (Recommended)</strong>: Automatically retrieves MAP-E configuration
                                     </small>
                                 </div>
                                 
@@ -1160,27 +1201,27 @@
                                 <div id="mape-gua-section" class="form-group" style="display: none;">
                                     <label for="mape-gua-prefix">GUA Prefix</label>
                                     <input type="text" id="mape-gua-prefix" class="form-control" placeholder="2400:4151:80e2:7500::/64">
-                                    <small class="form-text text-muted">IPv6 Global Unicast Address prefix for 1G/10G line compatibility</small>
+                                    <small class="form-text text-muted">IPv6 Global Unicast Address prefix</small>
                                 </div>
                             </div>
-                        </div>
-
-                        <!-- AP設定 -->
-                        <div id="ap-section" class="conditional-section">
-                            <h5 class="section-title">AP Configuration</h5>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="ap-ip-address">IP Address</label>
-                                    <input type="text" id="ap-ip-address" class="form-control" value="192.168.1.2">
-                                </div>
-                                <div class="form-group">
-                                    <label for="ap-gateway">Gateway</label>
-                                    <input type="text" id="ap-gateway" class="form-control" value="192.168.1.1">
+                            
+                            <!-- APè¨­å®š -->
+                            <div id="ap-section" class="conditional-section">
+                                <h5 class="section-title">AP Configuration</h5>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="ap-ip-address">IP Address</label>
+                                        <input type="text" id="ap-ip-address" class="form-control" value="192.168.1.2">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="ap-gateway">Gateway</label>
+                                        <input type="text" id="ap-gateway" class="form-control" value="192.168.1.1">
+                                    </div>
                                 </div>
                             </div>
                         </div>
     
-                        <div class="form-group" id="isp-detection-group">
+<div class="form-group" id="isp-detection-group">
                             <label>ISP Detection Status</label>
                             <div id="isp-info-display" class="info" style="margin-bottom: 0;">
                                 <div id="isp-status-message">ISP information will be detected when configuration is opened</div>
@@ -1188,9 +1229,81 @@
                             </div>
                         </div>
                         
+                        <h4>Tuning</h4>
+                        <div class="form-group">
+                            <label>Dynamic Network Optimizer</label>
+                            <div class="radio-group">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="netOptimizer" id="netopt-disabled" value="disabled" checked>
+                                    <label class="form-check-label" for="netopt-disabled">Disabled</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="netOptimizer" id="netopt-enabled" value="enabled">
+                                    <label class="form-check-label" for="netopt-enabled">Enabled</label>
+                                </div>
+                            </div>
+                            <small class="form-text text-muted">Automatically optimizes TCP buffer sizes and network parameters based on available RAM</small>
+                        </div>
+
+                        <div id="net-optimizer-section" class="conditional-section">
+                            <div class="form-group">
+                                <label>Configuration Mode</label>
+                                <div class="radio-group">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="netOptimizerMode" id="netopt-auto" value="auto" checked>
+                                        <label class="form-check-label" for="netopt-auto">Auto (Recommended)</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="netOptimizerMode" id="netopt-manual" value="manual">
+                                        <label class="form-check-label" for="netopt-manual">Manual</label>
+                                    </div>
+                                </div>
+                                <small class="form-text text-muted">Auto mode adjusts parameters based on system resources</small>
+                            </div>
+
+                            <div id="net-optimizer-manual" class="conditional-section">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="netopt-rmem">TCP Read Memory</label>
+                                        <input type="text" id="netopt-rmem" class="form-control" placeholder="4096 131072 8388608">
+                                        <small class="form-text text-muted">min default max (bytes)</small>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="netopt-wmem">TCP Write Memory</label>
+                                        <input type="text" id="netopt-wmem" class="form-control" placeholder="4096 131072 8388608">
+                                        <small class="form-text text-muted">min default max (bytes)</small>
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="netopt-conntrack">Connection Tracking Max</label>
+                                        <input type="number" id="netopt-conntrack" class="form-control" placeholder="131072" min="1024">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="netopt-backlog">Network Device Backlog</label>
+                                        <input type="number" id="netopt-backlog" class="form-control" placeholder="5000" min="100">
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="netopt-somaxconn">Socket Max Connections</label>
+                                        <input type="number" id="netopt-somaxconn" class="form-control" placeholder="16384" min="128">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="netopt-congestion">TCP Congestion Control</label>
+                                        <select id="netopt-congestion" class="form-control">
+                                            <option value="cubic" selected>cubic (default)</option>
+                                            <option value="bbr">bbr</option>
+                                            <option value="reno">reno</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <div class="form-group" style="margin-top: 1.5rem;">
-                            <h4>Scripts</h4>
-                            <label for="uci-defaults-content" style="display: none;">Scripts</label>
+                            <h4>UCI-defaults (Boot configuration script)</h4>
+                            <label for="uci-defaults-content" style="display: none;">UCI-defaults</label>
                             <textarea id="uci-defaults-content" class="form-control" rows="6" placeholder="#!/bin/sh&#10;&#10;# Your custom script here&#10;# This area is for manual editing - configuration wizard will not overwrite your changes"></textarea>
                         </div>
                     </details>  <!-- use-aios-config-details を閉じる -->
@@ -1233,105 +1346,57 @@
 
 // setup.shテンプレート
 const SETUP_SH_TEMPLATE = `#!/bin/sh
-exec >/tmp/setup.log 2>&1
-VER="$(cat /etc/openwrt_version 2>/dev/null || echo unknown)"
+DATE="$(date '+%Y-%m-%d %H:%M')"
 LAN_DEF="$(uci -q get network.lan.device || echo lan)"
 WAN_DEF="$(uci -q get network.wan.device || echo wan)"
-MAP_NAME="map"
-MAP6_NAME="map6"
+MAP_NAME="mape"
+MAP6_NAME="mape6"
 DSLITE_NAME="dslite"
 DSLITE6_NAME="dslite6"
 AP_NAME="ap"
 AP6_NAME="ap6"
-# language="en"
-# country="US"
-# timezone="UTC"
-# zonename="America/New_York"
-# device_name="OpenWrt"
-# root_password="Password"
-# lan_ip_address="192.168.1.1"
-# lan_ipv6_address="fd00::1/64"
-# ssh_interface="lan"
-# ssh_port="22"
-# flow_offloading_type=""
-# backup_path="/root/backup_\${VER}.tar.gz"
-# wlan_name="OpenWrt"
-# wlan_password="12345678"
-# pppoe_username=""
-# pppoe_password=""
-# dslite_aftr_address=""
-# mape_br=""
-# mape_ealen=""
-# mape_ipv4_prefix=""
-# mape_ipv4_prefixlen=""
-# mape_ipv6_prefix=""
-# mape_ipv6_prefixlen=""
-# mape_psidlen=""
-# mape_psid_offset=""
-# mape_gua_mode=""
-# mape_gua_prefix=""
-# ap_ip_address="192.168.1.2"
-# ap_gateway="192.168.1.1"
-# enable_ttyd=""
-# enable_irqbalance=""
-# enable_samba4=""
-# openwrt_19=""
-# openwrt_21=""
-if [ -n "\${device_name}" ]; then
-    uci set system.@system[0].hostname="\${device_name}"
-fi
-if [ -n "\${root_password}" ]; then
-    printf "%s\n%s\n" "\${root_password}" "\${root_password}" | passwd >/dev/null
-fi
-if [ -n "\${lan_ip_address}" ]; then
-    uci set network.lan.ipaddr="\${lan_ip_address}"
-fi
-if [ -n "\${lan_ipv6_address}" ]; then
-    uci set network.lan.ip6addr="\${lan_ipv6_address}"
-fi
-if [ -n "\${language}" ]; then
-    uci set system.@system[0].language="\${language}"
-fi
-if [ -n "\${country}" ]; then
-    uci set wireless.@wifi-device[0].country="\${country}" 2>/dev/null
-fi
-if [ -n "\${timezone}" ]; then
-    uci set system.@system[0].timezone="\${timezone}"
-fi
-if [ -n "\${zonename}" ]; then
-    uci set system.@system[0].zonename="\${zonename}"
-fi
-if [ -n "\${ssh_interface}" ]; then
-    uci set dropbear.@dropbear[0].Interface="\${ssh_interface}"
-fi
-if [ -n "\${ssh_port}" ]; then
-    uci set dropbear.@dropbear[0].Port="\${ssh_port}"
-fi
-case "\${flow_offloading_type}" in
-    "software")
-        uci set firewall.@defaults[0].flow_offloading='1'
-        ;;
-    "hardware")
-        uci set firewall.@defaults[0].flow_offloading='1'
-        uci set firewall.@defaults[0].flow_offloading_hw='1'
-        ;;
-esac
-if [ -n "\${wlan_name}" ] && [ -n "\${wlan_password}" ]; then
-    uci set wireless.@wifi-device[0].disabled='0'
-    uci set wireless.@wifi-iface[0].disabled='0'
-    uci set wireless.@wifi-iface[0].encryption='sae-mixed'
-    uci set wireless.@wifi-iface[0].ssid="\${wlan_name}"
-    uci set wireless.@wifi-iface[0].key="\${wlan_password}"
-fi
-if [ -n "\${pppoe_username}" ] && [ -n "\${pppoe_password}" ]; then
+# BEGIN_VARIABLE_DEFINITIONS
+# END_VARIABLE_DEFINITIONS
+exec >/tmp/setup.log 2>&1
+uci set system.@system[0].description="Custom Firmware"
+uci set system.@system[0].notes="\${DATE} https://site-u.pages.dev/build"
+[ -n "\${device_name}" ] && uci set system.@system[0].hostname="\${device_name}"
+[ -n "\${root_password}" ] && printf '%s\\n%s\\n' "\${root_password}" "\${root_password}" | passwd >/dev/null
+[ -n "\${lan_ip_address}" ] && uci set network.lan.ipaddr="\${lan_ip_address}"
+[ -n "\${lan_ipv6_address}" ] && uci set network.lan.ip6addr="\${lan_ipv6_address}"
+[ -n "\${language}" ] && uci set system.@system[0].language="\${language}"
+[ -n "\${timezone}" ] && uci set system.@system[0].timezone="\${timezone}"
+[ -n "\${zonename}" ] && uci set system.@system[0].zonename="\${zonename}"
+[ -n "\${ssh_interface}" ] && uci set dropbear.@dropbear[0].Interface="\${ssh_interface}"
+[ -n "\${ssh_port}" ] && uci set dropbear.@dropbear[0].Port="\${ssh_port}"
+[ "\${flow_offloading_type}" = "software" ] && uci set firewall.@defaults[0].flow_offloading='1'
+[ "\${flow_offloading_type}" = "hardware" ] && { uci set firewall.@defaults[0].flow_offloading='1'; uci set firewall.@defaults[0].flow_offloading_hw='1'; }
+[ -n "\${wlan_name}" ] && [ -n "\${wlan_password}" ] && [ \${#wlan_password} -ge 8 ] && {
+    for radio in $(uci -q show wireless | grep "wireless\.radio[0-9]*=" | cut -d. -f2 | cut -d= -f1); do
+        uci set wireless.\${radio}.disabled='0'
+        uci set wireless.\${radio}.country="\${country:-00}" 2>/dev/null
+        band=$(uci -q get wireless.\${radio}.band)
+        case "\${band}" in
+            2g) suffix="-2g"; encryption='psk-mixed' ;;
+            5g) suffix="-5g"; encryption='sae-mixed' ;;
+            6g) suffix="-6g"; encryption='sae' ;;
+            *) suffix=""; encryption='psk-mixed' ;;
+        esac
+        iface="default_\${radio}"
+        [ -n "$(uci -q get wireless.\${iface})" ] && {
+            uci set wireless.\${iface}.disabled='0'
+            uci set wireless.\${iface}.encryption="\${encryption}"
+            uci set wireless.\${iface}.ssid="\${wlan_name}\${suffix}"
+            uci set wireless.\${iface}.key="\${wlan_password}"
+        }
+    done
+}
+[ -n "\${pppoe_username}" ] && [ -n "\${pppoe_password}" ] && {
     uci set network.wan.proto='pppoe'
     uci set network.wan.username="\${pppoe_username}"
     uci set network.wan.password="\${pppoe_password}"
-fi
-if [ -n "\${dslite_aftr_address}" ]; then
-    cp -p /etc/config/network /etc/config/network.\${DSLITE_NAME}.bak 2>/dev/null
-    cp -p /etc/config/dhcp /etc/config/dhcp.\${DSLITE_NAME}.bak 2>/dev/null
-    cp -p /etc/config/firewall /etc/config/firewall.\${DSLITE_NAME}.bak 2>/dev/null
+}
+[ -n "\${dslite_aftr_address}" ] && {
     uci set network.wan.disabled='1'
     uci set network.wan.auto='0'
     uci set network.wan6.disabled='1'
@@ -1358,16 +1423,14 @@ if [ -n "\${dslite_aftr_address}" ]; then
     uci set dhcp.lan.dhcpv6='relay'
     uci set dhcp.lan.ndp='relay'
     uci set dhcp.lan.force='1'
+    uci del_list firewall.@zone[1].network="wan"
+    uci del_list firewall.@zone[1].network="wan6"
     uci add_list firewall.@zone[1].network="\${DSLITE_NAME}"
     uci add_list firewall.@zone[1].network="\${DSLITE6_NAME}"
     uci set firewall.@zone[1].masq='1'
     uci set firewall.@zone[1].mtu_fix='1'
-fi
-if [ -n "\${mape_br}" ] && [ -n "\${mape_ealen}" ]; then
-    cp -p /etc/config/network /etc/config/network.\${MAP_NAME}.bak 2>/dev/null
-    cp -p /etc/config/dhcp /etc/config/dhcp.\${MAP_NAME}.bak 2>/dev/null
-    cp -p /etc/config/firewall /etc/config/firewall.\${MAP_NAME}.bak 2>/dev/null
-    cp -p /lib/netifd/proto/map.sh /lib/netifd/proto/map.sh.bak 2>/dev/null
+}
+[ -n "\${mape_br}" ] && [ -n "\${mape_ealen}" ] && {
     uci set network.wan.disabled='1'
     uci set network.wan.auto='0'
     uci set network.wan6.disabled='1'
@@ -1377,6 +1440,7 @@ if [ -n "\${mape_br}" ] && [ -n "\${mape_ealen}" ]; then
     uci set network.\${MAP6_NAME}.device="\${WAN_DEF}"
     uci set network.\${MAP6_NAME}.reqaddress='try'
     uci set network.\${MAP6_NAME}.reqprefix='auto'
+    [ -n "\${mape_gua_mode}" ] && uci set network.\${MAP6_NAME}.ip6prefix="\${mape_gua_prefix}"
     uci set network.\${MAP_NAME}=interface
     uci set network.\${MAP_NAME}.proto='map'
     uci set network.\${MAP_NAME}.maptype='map-e'
@@ -1390,39 +1454,30 @@ if [ -n "\${mape_br}" ] && [ -n "\${mape_ealen}" ]; then
     uci set network.\${MAP_NAME}.offset="\${mape_psid_offset}"
     uci set network.\${MAP_NAME}.mtu='1460'
     uci set network.\${MAP_NAME}.encaplimit='ignore'
+    uci set network.\${MAP_NAME}.legacymap='1'
+    uci set network.\${MAP_NAME}.tunlink="\${MAP6_NAME}"
     uci set dhcp.\${MAP6_NAME}=dhcp
     uci set dhcp.\${MAP6_NAME}.interface="\${MAP6_NAME}"
     uci set dhcp.\${MAP6_NAME}.master='1'
     uci set dhcp.\${MAP6_NAME}.ra='relay'
     uci set dhcp.\${MAP6_NAME}.dhcpv6='relay'
     uci set dhcp.\${MAP6_NAME}.ndp='relay'
+    uci set dhcp.\${MAP6_NAME}.ignore='1'
     uci set dhcp.lan.ra='relay'
     uci set dhcp.lan.dhcpv6='relay'
     uci set dhcp.lan.ndp='relay'
     uci set dhcp.lan.force='1'
+    uci del_list firewall.@zone[1].network="wan"
+    uci del_list firewall.@zone[1].network="wan6"
     uci add_list firewall.@zone[1].network="\${MAP_NAME}"
     uci add_list firewall.@zone[1].network="\${MAP6_NAME}"
     uci set firewall.@zone[1].masq='1'
     uci set firewall.@zone[1].mtu_fix='1'
-    cat > /lib/netifd/proto/map.sh << 'MAP_SH_EOF'
+    cat > /lib/netifd/proto/map.sh <<'MAP_SH_EOF'
 \${map_sh_content}
 MAP_SH_EOF
-fi
-if [ -n "\${mape_gua_mode}" ]; then
-    uci set network.\${MAP6_NAME}.ip6prefix="\${mape_gua_prefix}"
-fi
-if [ -n "\${openwrt_19}" ]; then
-    uci add_list network.\${MAP_NAME}.tunlink="\${MAP6_NAME}"
-fi
-if [ -n "\${openwrt_21}" ]; then
-    uci set network.\${MAP_NAME}.legacymap='1'
-    uci set network.\${MAP_NAME}.tunlink="\${MAP6_NAME}"
-    uci set dhcp.\${MAP6_NAME}.ignore='1'
-fi
-if [ -n "\${ap_ip_address}" ]; then
-    cp -p /etc/config/network /etc/config/network.\${AP_NAME}.bak 2>/dev/null
-    cp -p /etc/config/dhcp /etc/config/dhcp.\${AP_NAME}.bak 2>/dev/null
-    cp -p /etc/config/firewall /etc/config/firewall.\${AP_NAME}.bak 2>/dev/null
+}
+[ -n "\${ap_ip_address}" ] && {
     uci set network.wan.disabled='1'
     uci set network.wan.auto='0'
     uci set network.wan6.disabled='1'
@@ -1450,16 +1505,16 @@ if [ -n "\${ap_ip_address}" ]; then
     [ -x /etc/init.d/dnsmasq ] && /etc/init.d/dnsmasq running && /etc/init.d/dnsmasq stop
     [ -x /etc/init.d/firewall ] && /etc/init.d/firewall enabled && /etc/init.d/firewall disable
     [ -x /etc/init.d/firewall ] && /etc/init.d/firewall running && /etc/init.d/firewall stop
-fi
-if [ -n "\${enable_ttyd}" ]; then
-    uci set ttyd.@ttyd[0].ttyd.ipv6='1' 
-    uci set ttyd.@ttyd[0].command='/bin/login -f root' 
-fi
-if [ -n "\${enable_irqbalance}" ]; then
+}
+[ -n "\${enable_ttyd}" ] && {
+    uci set ttyd.@ttyd[0].ipv6='1'
+    uci set ttyd.@ttyd[0].command='/bin/login -f root'
+}
+[ -n "\${enable_irqbalance}" ] && {
     uci set irqbalance.irqbalance=irqbalance
     uci set irqbalance.irqbalance.enabled='1'
-fi
-if [ -n "\${enable_samba4}" ]; then
+}
+[ -n "\${enable_samba4}" ] && {
     NAS="openwrt"
     MNT="/mnt/sda"
     uci set samba4.@samba[0]=samba
@@ -1477,14 +1532,31 @@ if [ -n "\${enable_samba4}" ]; then
     uci set samba4.sambashare.inherit_owner='yes'
     uci set samba4.sambashare.create_mask='0777'
     uci set samba4.sambashare.dir_mask='0777'
-fi
+}
 # BEGIN_CUSTOM_COMMANDS
 # END_CUSTOM_COMMANDS
 uci commit 2>/dev/null
+[ -n "\${enable_netopt}" ] && { cat > /etc/rc.local <<'EOF'
+#!/bin/sh
+C=/etc/sysctl.d/99-net-opt.conf
+M=\$(awk '/MemTotal/{print int(\$2/1024)}' /proc/meminfo)
+P=\$(grep -c ^processor /proc/cpuinfo)
+if [ \$M -ge 3072 ]; then R=16777216 W=16777216 TR="4096 262144 16777216" TW=\$TR CT=262144 NB=5000 SC=16384
+elif [ \$M -ge 1536 ]; then R=8388608 W=8388608 TR="4096 131072 8388608" TW=\$TR CT=131072 NB=2500 SC=8192
+elif [ \$M -ge 512 ]; then R=4194304 W=4194304 TR="4096 65536 4194304" TW=\$TR CT=65536 NB=1000 SC=4096
+else exit 0; fi
+[ \$P -gt 4 ] && { NB=\$((NB*2)); SC=\$((SC*2)); }
+[ \$P -gt 2 ] && [ \$P -le 4 ] && { NB=\$((NB*3/2)); SC=\$((SC*3/2)); }
+printf "net.core.rmem_max=%s\\nnet.core.wmem_max=%s\\nnet.ipv4.tcp_rmem=%s\\nnet.ipv4.tcp_wmem=%s\\nnet.ipv4.tcp_congestion_control=cubic\\nnet.ipv4.tcp_fastopen=3\\nnet.netfilter.nf_conntrack_max=%s\\nnet.core.netdev_max_backlog=%s\\nnet.core.somaxconn=%s\\n" "\$R" "\$W" "\$TR" "\$TW" "\$CT" "\$NB" "\$SC" > \$C
+sysctl -p \$C
+cat > /etc/rc.local <<'RESET_EOF'
+exit 0
+RESET_EOF
+exit 0
+EOF
+}
+[ -n "\${backup_path}" ] && sysupgrade -q -k -b "\${backup_path}"
 echo "All done!"
-if [ -n "\${backup_path}" ]; then
-    sysupgrade -q -k -b "\${backup_path}"
-fi
 exit 0`;
 
 // config.js相当の設定
@@ -1494,19 +1566,7 @@ const config = {
     info_url: "https://openwrt.org/start?q={title}&do=search",
     asu_url: "https://sysupgrade.openwrt.org",
     asu_extra_packages: ["luci"],
-    min_version: "19.07.0",  // 最小サポートバージョン
-    
-    // MAP-E情報を一括取得
-    getMapEInfo(version) {
-        if (version === 'SNAPSHOT') return { supported: true, scriptType: 'new' };
-        if (version.startsWith('19.')) return { supported: true, scriptType: '19' };
-    
-        const parts = version.split('.').map(n => parseInt(n, 10));
-        if (parts[0] >= 23) return { supported: true, scriptType: 'new' };    // nftables
-        if (parts[0] >= 21) return { supported: true, scriptType: '21' };     // iptables
-    
-        return { supported: false, scriptType: null };
-    }
+    min_version: "21.02.0",  // 最小サポートバージョン
 };
 
 // グローバル変数
@@ -1523,10 +1583,7 @@ let app = {
 let current_device = {};
         
 // map.shのキャッシュ
-let mapShCache = {
-    'new': undefined,  // ← undefined に変更
-    '19': undefined
-};
+let mapShCache = undefined;
 
 // ==================== MAP-E専用処理モジュール ====================
 const MapEProcessor = {
@@ -1539,61 +1596,51 @@ const MapEProcessor = {
         }
         return false;
     },
-
+    
     // 必要なmap.shがキャッシュされているかチェック
-    isScriptCached(version) {
-        const mapeInfo = config.getMapEInfo(version);
-        return mapeInfo.supported && !!mapShCache[mapeInfo.scriptType];
+    isScriptCached() {
+        return mapShCache !== undefined && mapShCache !== null;
     },
-
+    
     // map.shダウンロードの確保
-    async ensureScriptReady(version) {
-        const mapeInfo = config.getMapEInfo(version);
-        
-        if (!mapeInfo.supported) {
-            throw new Error(`MAP-E is not supported in OpenWrt ${version}`);
-        }
-
-        if (!mapShCache[mapeInfo.scriptType]) {
-            await loadMapShForVersion(version);
+    async ensureScriptReady() {
+        if (!mapShCache) {
+            await loadMapSh();
             
-            if (!mapShCache[mapeInfo.scriptType]) {
+            if (!mapShCache) {
                 throw new Error('Failed to download map.sh script. Please check your internet connection and try again.');
             }
         }
     },
-
+    
     // プレースホルダーの置換
-    replacePlaceholder(content, version) {
+    replacePlaceholder(content) {
         if (!content.includes('${map_sh_content}')) {
             return content;
         }
-
-        const mapeInfo = config.getMapEInfo(version);
-        const mapShContent = mapShCache[mapeInfo.scriptType];
-
-        if (!mapShContent) {
+        
+        if (!mapShCache) {
             throw new Error('MAP-E script not available in cache');
         }
-
-        const result = content.replace(/\$\{map_sh_content\}/g, mapShContent);
+        
+        const result = content.replace(/\$\{map_sh_content\}/g, mapShCache);
         
         if (result.includes('${map_sh_content}')) {
             throw new Error('MAP-E script embedding failed - placeholder still exists');
         }
-
+        
         return result;
     },
-
+    
     // 事前準備処理（設定画面表示時）
-    async prepareForDisplay(version, config, apiInfo) {
+    async prepareForDisplay(config, apiInfo) {
         if (this.isActive(config, apiInfo)) {
-            await loadMapShForVersion(version);
+            await loadMapSh();
         }
     },
-
+    
     // ビルド時処理（プレースホルダー置換）
-    async processForBuild(script, version, config, apiInfo) {
+    async processForBuild(script, config, apiInfo) {
         if (!this.isActive(config, apiInfo)) {
             return script;
         }
@@ -1602,8 +1649,8 @@ const MapEProcessor = {
             return script;
         }
     
-        await this.ensureScriptReady(version);
-        return this.replacePlaceholder(script, version);
+        await this.ensureScriptReady();
+        return this.replacePlaceholder(script);
     }
 };
 
@@ -1695,12 +1742,12 @@ const PACKAGE_DB = {
           hidden: true
         },
         {
-          id: "nlbwmon",
-          name: "nlbwmon"
+          id: "luci-app-nlbwmon",
+          name: "luci-app-nlbwmon"
         },
         {
-          id: "wifischedule",
-          name: "wifischedule"
+          id: "luci-app-vnstat2",
+          name: "luci-app-vnstat2"
         },
         {
           id: "luci-app-wol",
@@ -1722,17 +1769,85 @@ const PACKAGE_DB = {
       ]
     },
     {
+      id: "wifi-management",
+      name: "Wi-Fi Management", 
+      description: "Wi-Fi scheduling, roaming optimization, and wireless utilities",
+      packages: [
+        {
+          id: "luci-app-usteer",
+          name: "luci-app-usteer"
+        },
+        {
+          id: "wifischedule",
+          name: "wifischedule"
+        }
+      ]
+    },
+    {
+      id: "modem-support",
+      name: "Modem Support",
+      description: "4G/5G modem management (ModemManager includes SMS support)",
+      packages: [
+        {
+          id: "luci-proto-modemmanager",
+          name: "luci-proto-modemmanager",
+          dependencies: [
+            "kmod-usb-wdm",
+            "kmod-usb-net-cdc-mbim",
+            "kmod-usb-net-qmi-wwan",
+            "uqmi",
+            "mbim-utils",
+            "screen"
+          ]
+        },
+        {
+          id: "kmod-usb-wdm",
+          name: "kmod-usb-wdm",
+          hidden: true
+        },
+        {
+          id: "kmod-usb-net-cdc-mbim", 
+          name: "kmod-usb-net-cdc-mbim",
+          hidden: true
+        },
+        {
+          id: "kmod-usb-net-qmi-wwan",
+          name: "kmod-usb-net-qmi-wwan", 
+          hidden: true
+        },
+        {
+          id: "uqmi",
+          name: "uqmi",
+          hidden: true
+        },
+        {
+          id: "mbim-utils",
+          name: "mbim-utils",
+          hidden: true
+        },
+        {
+          id: "screen",
+          name: "screen",
+          hidden: true
+        }
+      ]
+    },
+    {
       id: "security-tools",
       name: "Security Tools",
       description: "Intrusion prevention and IP blocking tools",
       packages: [
         {
-          id: "znc-mod-fail2ban",
-          name: "znc-mod-fail2ban"
+          id: "fail2ban",
+          name: "fail2ban"
         },
         {
           id: "banip",
           name: "banip"
+        },
+        {
+          id: "luci-app-acme",
+          name: "luci-app-acme"
         }
       ]
     },
@@ -1750,7 +1865,7 @@ const PACKAGE_DB = {
     {
       id: "diagnostic-tools",
       name: "Network Diagnostic Tools",
-      description: "System monitoring and network analysis tools",
+      description: "Network testing, monitoring, analysis and DNS troubleshooting tools",
       packages: [
         {
           id: "htop",
@@ -1768,8 +1883,8 @@ const PACKAGE_DB = {
           hidden: true
         },
         {
-          id: "mtr",
-          name: "mtr"
+          id: "mtr-nojson",
+          name: "mtr-nojson"
         },
         {
           id: "nmap",
@@ -1778,6 +1893,77 @@ const PACKAGE_DB = {
         {
           id: "tcpdump",
           name: "tcpdump"
+        },
+        {
+          id: "iperf3",
+          name: "iperf3"
+        },
+        {
+          id: "speedtest-netperf",
+          name: "speedtest-netperf"
+        },
+        {
+          id: "iftop",
+          name: "iftop"
+        },
+        {
+          id: "bwm-ng",
+          name: "bwm-ng"
+        },
+        {
+          id: "bind-dig",
+          name: "bind-dig"
+        },
+        {
+          id: "drill",
+          name: "drill"
+        }
+      ]
+    },
+    {
+      id: "system-tools",
+      name: "System Administration Tools",
+      description: "Terminal enhancements, debugging, file management and HTTP client tools",
+      packages: [
+        {
+          id: "tmux",
+          name: "tmux"
+        },
+        {
+          id: "nano-plus",
+          name: "nano-plus"
+        },
+        {
+          id: "vim-fuller",
+          name: "vim-fuller"
+        },
+        {
+          id: "lsof",
+          name: "lsof"
+        },
+        {
+          id: "strace",
+          name: "strace"
+        },
+        {
+          id: "rsync",
+          name: "rsync"
+        },
+        {
+          id: "tree",
+          name: "tree"
+        },
+        {
+          id: "curl",
+          name: "curl"
+        },
+        {
+          id: "wget-ssl",
+          name: "wget-ssl"
+        },
+        {
+          id: "netdata",
+          name: "netdata"
         }
       ]
     },
@@ -1808,7 +1994,7 @@ const PACKAGE_DB = {
     {
       id: "utilities",
       name: "Utilities",
-      description: "System upgrade tools and VPN utilities",
+      description: "System upgrade, VPN and media server utilities",
       packages: [
         {
           id: "attendedsysupgrade-common",
@@ -1822,6 +2008,19 @@ const PACKAGE_DB = {
           id: "luci-app-wireguard",
           name: "luci-app-wireguard",
           dependencies: ["wireguard-tools"]
+        },
+        {
+          id: "luci-proto-wireguard",
+          name: "luci-proto-wireguard",
+          dependencies: ["wireguard-tools"]
+        },
+        {
+          id: "zerotier",
+          name: "zerotier"
+        },
+        {
+          id: "tailscale",
+          name: "tailscale"
         },
         {
           id: "luci-app-dockerman",
@@ -1956,14 +2155,8 @@ const PACKAGE_DB = {
           hidden: true
         },
         {
-          id: "hdparm",
-          name: "hdparm",
-          dependencies: ["hd-idle"]
-        },
-        {
-          id: "hd-idle",
-          name: "hd-idle",
-          hidden: true
+          id: "luci-app-hd-idle",
+          name: "luci-app-hd-idle"
         },
         {
           id: "kmod-usb-ledtrig-usbport",
@@ -2007,9 +2200,10 @@ const ErrorHandler = {
         if (response?.status === 404) return 'VERSION_NOT_AVAILABLE';
         if (response?.status === 403) return 'PERMISSION_DENIED';
         
-        // 古いバージョンのCORS拒否は期待される動作  
+        if (response?.status === 404) return 'NOT_FOUND';
+        // CORS エラーは真のエラーとして扱う
         if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
-            return 'EXPECTED_CORS_REJECTION';
+            return 'NETWORK_ERROR';
         }
         
         if (error.name === 'TypeError' && error.message.includes('fetch')) return 'NETWORK_ERROR';
@@ -2163,73 +2357,221 @@ const ErrorHandler = {
         }
     }
 };
-        
-// ==================== URL存在確認ユーティリティ ====================
-async function checkUrlExists(url) {
-    try {
-        const response = await fetch(url, { 
-            method: 'HEAD',
-            cache: 'no-cache'
-        });
-        return response.ok;
-    } catch (error) {
-        // CORSエラーの場合もfalseとして扱う
-        console.log(`URL check failed for ${url}:`, error.message);
-        return false;
-    }
-}
 
-// 複数URLから有効なものを検出
-async function findValidUrls(urlCandidates) {
-    const validUrls = [];
+// ==================== リセット共通関数 ====================
+const ResetManager = {
+    // 接続タイプをデフォルトにリセット
+    resetConnectionType() {
+        const dhcpRadio = document.getElementById('conn-dhcp');
+        if (dhcpRadio) {
+            dhcpRadio.checked = true;
+        }
+        
+        // 全ての接続タイプ固有セクションを非表示
+        const sections = [
+            'pppoe-section',
+            'dslite-section', 
+            'mape-manual-section',
+            'ap-section',
+            'dhcp-section'
+        ];
+        
+        sections.forEach(id => {
+            const section = document.getElementById(id);
+            if (section) section.style.display = 'none';
+        });
+        
+        // DHCPセクションのみ表示
+        const dhcpSection = document.getElementById('dhcp-section');
+        if (dhcpSection) dhcpSection.style.display = 'block';
+    },
     
-    for (const url of urlCandidates) {
-        const exists = await checkUrlExists(url);
-        console.log(`URL ${exists ? '✓' : '✗'}: ${url}`);
-        if (exists) {
-            validUrls.push(url);
+    // DS-Lite設定をデフォルトにリセット
+    resetDsliteSettings() {
+        const dsliteAuto = document.getElementById('dslite-auto');
+        if (dsliteAuto) {
+            dsliteAuto.checked = true;
+        }
+        
+        const manualConfig = document.getElementById('dslite-manual-config');
+        if (manualConfig) {
+            manualConfig.style.display = 'none';
+        }
+    },
+    
+    // MAP-E設定をデフォルトにリセット
+    resetMapeSettings() {
+        const mapeAuto = document.getElementById('mape-auto');
+        if (mapeAuto) {
+            mapeAuto.checked = true;
+        }
+    },
+    
+    // Network Optimizer設定をデフォルトにリセット
+    resetNetOptimizerSettings() {
+        const netoptAuto = document.getElementById('netopt-auto');
+        if (netoptAuto) {
+            netoptAuto.checked = true;
+        }
+        
+        const manualSection = document.getElementById('net-optimizer-manual');
+        if (manualSection) {
+            manualSection.style.display = 'none';
+        }
+        
+        // デフォルト値に戻す
+        resetNetOptimizerValues();
+    }
+};
+
+// ==================== オートコンプリート関数（公式版準拠） ====================
+function setupAutocompleteList(input, items, onbegin, onend) {
+    let currentFocus = -1;
+    
+    const collator = new Intl.Collator(undefined, {
+        numeric: true,
+        sensitivity: "base",
+    });
+    
+    items.sort(collator.compare);
+    
+    input.oninput = function () {
+        onbegin();
+        
+        let pattern = this.value;
+        closeAllLists();
+        
+        if (pattern.length === 0) {
+            return false;
+        }
+        
+        if (items.includes(pattern)) {
+            closeAllLists();
+            onend(input);
+            return false;
+        }
+        
+        const list = document.createElement("DIV");
+        list.setAttribute("id", this.id + "-autocomplete-list");
+        list.setAttribute("class", "autocomplete-items");
+        this.parentNode.appendChild(list);
+        
+        const patterns = split(pattern.toUpperCase());
+        let count = 0;
+        for (const item of items) {
+            const matches = match(item, patterns);
+            if (matches.length == 0) {
+                continue;
+            }
+            
+            count += 1;
+            if (count >= 15) {
+                let div = document.createElement("DIV");
+                div.innerText = "...";
+                list.appendChild(div);
+                break;
+            } else {
+                let div = document.createElement("DIV");
+                let prev = 0;
+                let html = "";
+                for (const m of matches) {
+                    html += item.substr(prev, m.begin - prev);
+                    html += `<strong>${item.substr(m.begin, m.length)}</strong>`;
+                    prev = m.begin + m.length;
+                }
+                html += item.substr(prev);
+                html += `<input type="hidden" value="${item}">`;
+                div.innerHTML = html;
+                
+                div.addEventListener("click", function () {
+                    input.value = this.getElementsByTagName("input")[0].value;
+                    closeAllLists();
+                    onend(input);
+                });
+                
+                list.appendChild(div);
+            }
+        }
+    };
+    
+    input.onkeydown = function (e) {
+        let x = document.getElementById(this.id + "-autocomplete-list");
+        if (x) x = x.getElementsByTagName("div");
+        if (e.keyCode == 40) {
+            currentFocus += 1;
+            setActive(x);
+        } else if (e.keyCode == 38) {
+            currentFocus -= 1;
+            setActive(x);
+        } else if (e.keyCode == 13) {
+            e.preventDefault();
+            if (currentFocus > -1) {
+                if (x) x[currentFocus].click();
+            }
+        }
+    };
+    
+    function setActive(xs) {
+        if (!xs) return false;
+        for (const x of xs) {
+            x.classList.remove("autocomplete-active");
+        }
+        if (currentFocus >= xs.length) currentFocus = 0;
+        if (currentFocus < 0) currentFocus = xs.length - 1;
+        xs[currentFocus].classList.add("autocomplete-active");
+    }
+    
+    function closeAllLists(elmnt) {
+        for (const x of document.querySelectorAll(".autocomplete-items")) {
+            if (elmnt != x && elmnt != input) {
+                x.parentNode.removeChild(x);
+            }
         }
     }
     
-    return validUrls;
+    document.addEventListener("click", (e) => {
+        closeAllLists(e.target);
+    });
 }
-        
+
+function match(value, patterns) {
+    const item = value.toUpperCase();
+    let matches = [];
+    for (const p of patterns) {
+        const i = item.indexOf(p);
+        if (i == -1) return [];
+        matches.push({ begin: i, length: p.length });
+    }
+    
+    matches.sort((a, b) => a.begin > b.begin);
+    
+    let prev = null;
+    let ranges = [];
+    for (const m of matches) {
+        if (prev && m.begin <= prev.begin + prev.length) {
+            prev.length = Math.max(prev.length, m.begin + m.length - prev.begin);
+        } else {
+            ranges.push(m);
+            prev = m;
+        }
+    }
+    return ranges;
+}
+
 // ==================== URL管理の統一関数 ====================
 function setupVersionUrls(version) {
     if (!config.image_urls) config.image_urls = {};
     if (!config.overview_urls) config.overview_urls = {};
-
     if (config.image_urls[version]) return;
-
     const overview_url = config.image_url;
     const image_url = (typeof upstream_config !== 'undefined' && upstream_config.image_url_override)
         ? upstream_config.image_url_override
         : config.image_url;
-
     const isSnapshot = /SNAPSHOT$/i.test(version);
     const basePath   = isSnapshot ? 'snapshots' : `releases/${encodeURIComponent(version)}`;
-
     config.overview_urls[version] = `${overview_url}/${basePath}/`;
     config.image_urls[version]    = `${image_url}/${basePath}/`;
-}
-        
-// ==================== ユーティリティ関数 ====================
-async function loadPackageDatabase() {
-    const res = await fetch('data/packages.json');
-    app.packageDB = await res.json();
-}
-
-function updateInstalledPackageList() {
-    const container = document.getElementById('installed-packages');
-    if (!container) return;
-
-    container.innerHTML = '';
-    app.packageDB.forEach(pkg => {
-        const li = document.createElement('li');
-        li.textContent = pkg.name;
-        container.appendChild(li);
-    });
-}
+} 
 
 // ==================== 初期化関数 ====================
 async function init() {
@@ -2310,8 +2652,9 @@ function setModel(target, id) {
     if (target && id) {
         const title = document.getElementById('models').value;
         for (const device of app.devices) {
-            if ((device.target === target && device.id === id) || getDeviceTitle(device) === title) {
-                document.getElementById('models').value = getDeviceTitle(device);
+            const deviceTitle = device.title || getDeviceTitle(device);
+            if ((device.target === target && device.id === id) || deviceTitle === title) {
+                document.getElementById('models').value = deviceTitle;
                 selectDevice(device);
                 return;
             }
@@ -2446,83 +2789,55 @@ function asuI18nDB(lang) {
 // グローバルスコープに追加
 const downloadPromises = {};
 
-// loadMapShForVersion関数の修正
-async function loadMapShForVersion(version) {
-    console.log('[MAP-E Download] Starting download for version:', version);
+async function loadMapSh() {
+    console.log('[MAP-E Download] Starting download');
+    
+    if (mapShCache !== undefined) {
+        console.log('[MAP-E Download] Already cached');
+        return;
+    }
     
     try {
-        const mapeInfo = config.getMapEInfo(version);
-        console.log('[MAP-E Download] mapeInfo:', mapeInfo);
+        const scriptUrl = 'https://site-u.pages.dev/build/scripts/map.sh.new';
+        console.log('[MAP-E Download] URL:', scriptUrl);
         
-        if (!mapeInfo.supported) {
-            console.log(`[MAP-E Download] MAP-E not supported in version ${version}`);
-            return;
-        }
-        
-        const key = mapeInfo.scriptType;
-        const scriptName = `map.sh.${key}`;
-        const scriptUrl = `https://site-u.pages.dev/build/scripts/${scriptName}`;
-        
-        console.log('[MAP-E Download] Key:', key, 'URL:', scriptUrl);
-        console.log('[MAP-E Download] Cache before:', mapShCache);
-        
-        if (mapShCache[key] === undefined) {
-            // 既に同じkeyでダウンロード中の場合は待機
-            if (downloadPromises[key]) {
-                console.log('[MAP-E Download] Already downloading, waiting...');
-                return await downloadPromises[key];
+        const response = await fetch(scriptUrl);
+        if (response.ok) {
+            const content = await response.text();
+            if (content && content.trim().length > 0) {
+                mapShCache = content;
+                console.log('[MAP-E Download] ✓ Saved to cache, length:', content.length);
+            } else {
+                console.error('[MAP-E Download] ✗ Empty response');
+                mapShCache = '';
             }
-            
-            console.log('[MAP-E Download] Cache miss, downloading...');
-            
-            // ダウンロードPromiseを保存
-            downloadPromises[key] = (async () => {
-                try {
-                    const response = await fetch(scriptUrl);
-                    
-                    if (response.ok) {
-                        const content = await response.text();
-                        if (content && content.trim().length > 0) {
-                            mapShCache[key] = content;
-                            console.log(`[MAP-E Download] ✓ Saved to cache[${key}], length:`, content.length);
-                            console.log('[MAP-E Download] Cache after:', mapShCache);
-                        } else {
-                            console.error(`[MAP-E Download] ✗ ${scriptName} is empty from server`);
-                            mapShCache[key] = '';
-                        }
-                    } else {
-                        console.error(`[MAP-E Download] ✗ Failed to download ${scriptName}: HTTP ${response.status}`);
-                        mapShCache[key] = '';
-                    }
-                } finally {
-                    // ダウンロード完了後にPromiseを削除
-                    delete downloadPromises[key];
-                }
-            })();
-            
-            await downloadPromises[key];
         } else {
-            console.log('[MAP-E Download] Cache hit, skipping download');
+            console.error('[MAP-E Download] ✗ HTTP', response.status);
+            mapShCache = '';
         }
     } catch (error) {
-        console.error(`[MAP-E Download] ✗ Failed to load map.sh for ${version}:`, error);
-        const mapeInfo = config.getMapEInfo(version);
-        if (mapeInfo.supported) {
-            mapShCache[mapeInfo.scriptType] = '';
-        }
+        console.error('[MAP-E Download] ✗ Failed:', error);
+        mapShCache = '';
     }
 }
         
 // ==================== イベントバインディング統合関数（bindEventsの外で定義） ====================
 function bindFieldEvents(fieldIds, events = ['input'], callback = null) {
-    const handler = callback || (() => syncTemplateAndPackages({ trigger: 'script' }));
+    let debounceTimer;
+    const debouncedHandler = (...args) => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+            const handler = callback || (() => syncTemplateAndPackages({ trigger: 'script' }));
+            handler(...args);
+        }, 300); // 300ms デバウンス
+    };
     
     fieldIds.forEach(fieldId => {
         const el = document.getElementById(fieldId);
         if (el) {
             const eventList = Array.isArray(events) ? events : [events];
             eventList.forEach(eventType => {
-                el.addEventListener(eventType, handler);
+                el.addEventListener(eventType, debouncedHandler);
             });
         }
     });
@@ -2545,7 +2860,17 @@ function bindEvents() {
     if (versionsEl) versionsEl.addEventListener('change', handleVersionChange);
     
     const modelsEl = document.getElementById('models');
-    if (modelsEl) modelsEl.addEventListener('input', handleDeviceSearch);
+    if (modelsEl) {
+        // 初期化時にオートコンプリートをセットアップ
+        if (app.devicesMap) {
+            setupAutocompleteList(
+                modelsEl,
+                Object.keys(app.devicesMap),
+                hideDeviceInfo,
+                (input) => changeModel(app.selectedVersion, app.devicesMap, input.value)
+            );
+        }
+    }
 
     const aiosConfigDetails = document.getElementById('use-aios-config-details');
     if (aiosConfigDetails) aiosConfigDetails.addEventListener('toggle', toggleAiosConfig);
@@ -2627,47 +2952,48 @@ function bindEvents() {
         radio.addEventListener('change', handleMapeTypeChange);
     });
     
-    // ===== オートコンプリート関連 =====
+// ===== オートコンプリート関連 =====
     document.addEventListener('click', function (e) {
         if (!e.target.closest('.autocomplete')) {
             hideAutocomplete();
         }
     });
     
-    // ===== 初期状態設定（存在確認あり） =====
+    // Network Optimizer
+    document.querySelectorAll('input[name="netOptimizer"]').forEach(radio => {
+        radio.addEventListener('change', handleNetOptimizerChange);
+    });
+    
+    document.querySelectorAll('input[name="netOptimizerMode"]').forEach(radio => {
+        radio.addEventListener('change', handleNetOptimizerModeChange);
+    });
+
+    // Network Optimizer manual fields
+    const netOptFields = [
+        'netopt-rmem', 'netopt-wmem', 'netopt-conntrack',
+        'netopt-backlog', 'netopt-somaxconn', 'netopt-congestion'
+    ];
+    bindFieldEvents(netOptFields);
+    
+    // デフォルトはAutoモード
     const manualSection = document.getElementById('manual-connection-section');
     if (manualSection) manualSection.style.display = 'none';
-    
+
     const ispDetectionGroup = document.getElementById('isp-detection-group');
     if (ispDetectionGroup) ispDetectionGroup.style.display = 'block'; // Auto時は表示
-    
-    const pppoeSection = document.getElementById('pppoe-section');
-    if (pppoeSection) pppoeSection.style.display = 'none';
-    
-    const dsliteSection = document.getElementById('dslite-section');
-    if (dsliteSection) dsliteSection.style.display = 'none';
-    
-    const mapeSection = document.getElementById('mape-manual-section');
-    if (mapeSection) mapeSection.style.display = 'none';
-    
-    const apSection = document.getElementById('ap-section');
-    if (apSection) apSection.style.display = 'none';
-}
 
-// ===== パスワード表示切り替え機能 =====
-const togglePasswordBtn = document.getElementById('toggle-password');
-if (togglePasswordBtn) {
-    togglePasswordBtn.addEventListener('click', function() {
-        const passwordInput = document.getElementById('aios-root-password');
-        const passwordIcon = document.getElementById('password-icon');
-        
-        if (passwordInput.type === 'password') {
-            passwordInput.type = 'text';
-            passwordIcon.textContent = '👁️‍🗨️';
-        } else {
-            passwordInput.type = 'password';
-            passwordIcon.textContent = '👁️';
-        }
+    // 全ての接続タイプ固有セクションを非表示（DHCPセクション含む）
+    const connectionSections = [
+        'dhcp-section',
+        'pppoe-section',
+        'dslite-section', 
+        'mape-manual-section',
+        'ap-section'
+    ];
+
+    connectionSections.forEach(id => {
+        const section = document.getElementById(id);
+        if (section) section.style.display = 'none';
     });
 }
 
@@ -2920,18 +3246,17 @@ const DeviceContext = {
         }
     },
     
-    // バージョン更新処理
     async _updateVersion(version, forceReload) {
         if (version !== app.selectedVersion) {
             app.selectedVersion = version;
             console.log(`[DeviceContext] Version changed: ${version}`);
         }
-        
+    
         // MAP-E環境での事前準備
-        if (window.cachedApiInfo?.mape?.brIpv6Address && config.getMapEInfo(version).supported) {
-            await loadMapShForVersion(version);
+        if (window.cachedApiInfo?.mape?.brIpv6Address) {
+            await loadMapSh();
         }
-        
+    
         // デバイス一覧更新
         if (forceReload || app.devices.length === 0) {
             await loadDevices();
@@ -3015,21 +3340,35 @@ const DeviceContext = {
     }
 };
 
-// ==================== 簡素化された入口関数 ====================
+// ==================== 簡略化された入口関数 ====================
 async function handleVersionChange(e) {
     await DeviceContext.update({
         version: e.target.value,
         forceReload: true,
         trigger: 'version-change'
     });
+    
+    // バージョン変更時にオートコンプリートを再セットアップ
+    if (app.devicesMap) {
+        const modelsEl = document.getElementById('models');
+        if (modelsEl) {
+            setupAutocompleteList(
+                modelsEl,
+                Object.keys(app.devicesMap),
+                hideDeviceInfo,
+                (input) => changeModel(app.selectedVersion, app.devicesMap, input.value)
+            );
+        }
+    }
 }
 
 function selectDevice(device) {
-    document.getElementById('models').value = getDeviceTitle(device);
+    const title = device.title || getDeviceTitle(device);
+    document.getElementById('models').value = title;
     hideAutocomplete();
     
     DeviceContext.update({
-        deviceTitle: getDeviceTitle(device),
+        deviceTitle: title,
         trigger: 'device-selection'
     });
 }
@@ -3058,7 +3397,7 @@ async function loadVersions() {
         if (data.versions_list) {
             let versionList = data.versions_list;
             
-            // min_versionが設定されていればフィルタリング
+            // min_versionが設定されていればフィルタリング（21.02.0以降のみ）
             if (config.min_version) {
                 const minParts = config.min_version.split('.').map(n => parseInt(n, 10));
                 versionList = versionList.filter(version => {
@@ -3129,15 +3468,10 @@ async function loadDevices() {
             mode: 'cors'
         });
         
-        // 404は正常な応答として処理
+        // 404は真のエラーとして処理
         if (response.status === 404) {
-            console.log(`✓ Version ${app.selectedVersion} not available (HTTP 404) - Normal for unsupported versions`);
-            profileCache[notFoundKey] = true;
-            app.devices = [];
-            app.versionCode = null;
-            app.kernelHash = null;
-            hideDeviceInfo();
-            return;
+            console.error(`Version ${app.selectedVersion} not found (HTTP 404)`);
+            throw new Error('Version not available');
         }
         
         if (!response.ok) {
@@ -3145,7 +3479,42 @@ async function loadDevices() {
         }
         
         const data = await response.json();
-        app.devices = data.profiles || [];
+        
+        // 公式と同じ重複解決処理を追加
+        const dups = {};
+        const profiles = [];
+        
+        function resolve_duplicate(e) {
+            const tu = e.title.toUpperCase();
+            if (tu in dups) {
+                e.title += ` (${e.target})`;
+                let o = dups[tu];
+                if (o.title.toUpperCase() == tu) {
+                    o.title += ` (${o.target})`;
+                }
+            } else {
+                dups[tu] = e;
+            }
+        }
+        
+        // 各プロファイルの全タイトルを処理
+        for (const profile of data.profiles || []) {
+            const modelTitles = profile.titles ? getModelTitles(profile.titles) : [profile.id];
+            for (let title of modelTitles) {
+                if (title.length == 0) {
+                    console.warn(`Empty device title for model id: ${profile.target}, ${profile.id}`);
+                    continue;
+                }
+                
+                const e = Object.assign({ title: title }, profile);
+                resolve_duplicate(e);
+                profiles.push(e);
+            }
+        }
+        
+        // プロファイルをオブジェクトに変換（公式と同じ）
+        app.devicesMap = profiles.reduce((d, e) => ((d[e.title] = e), d), {});
+        app.devices = profiles;  // 互換性のため配列も保持
         app.archPackagesMap = data.arch_packages || {};
         
     } catch (error) {
@@ -3156,6 +3525,7 @@ async function loadDevices() {
             console.log(`[loadDevices] Error: ${error.message}`);
         }
         app.devices = [];
+        app.devicesMap = {};
         app.versionCode = null;
         app.kernelHash = null;
         hideDeviceInfo();
@@ -3163,40 +3533,67 @@ async function loadDevices() {
 }
 
 function handleDeviceSearch(e) {
-    const query = e.target.value.toLowerCase();
-
-    // 空文字の場合はデバイス情報をクリア
-    if (query.length === 0) {
-        hideAutocomplete();
-        hideDeviceInfo();
-        current_device = {};
-        return;
-    }
-
-    if (query.length < 2) {
-        hideAutocomplete();
-        return;
-    }
-
-    const exact = [];
-    const others = [];
-
-    // 元配列順を維持しつつ、完全一致を先頭に
-    for (const device of app.devices) {
-        const title = getDeviceTitle(device);
-        const lt = title.toLowerCase();
-        const id = device.id.toLowerCase();
-
-        if (lt === query || id === query) {
-            exact.push(device);
-        } else if (lt.includes(query) || id.includes(query)) {
-            others.push(device);
+    // setupAutocompleteListに置き換え
+    if (!app.devicesMap) return;
+    
+    setupAutocompleteList(
+        document.getElementById('models'),
+        Object.keys(app.devicesMap),
+        hideDeviceInfo,  // onbegin
+        (input) => {      // onend
+            changeModel(app.selectedVersion, app.devicesMap, input.value);
         }
-    }
-
-    showAutocomplete(exact.concat(others));
+    );
 }
         
+function getModelTitles(titles) {
+    return titles.map((e) => {
+        if (e.title) {
+            return e.title;
+        } else {
+            return (
+                (e.vendor || "") +
+                " " +
+                (e.model || "") +
+                " " +
+                (e.variant || "")
+            ).trim();
+        }
+    });
+}
+
+function changeModel(version, devicesMap, title) {
+    const device = devicesMap[title];
+    if (device) {
+        current_device = {
+            version: version,
+            id: device.id,
+            target: device.target
+        };
+        selectDeviceProfile(device);
+    } else {
+        hideDeviceInfo();
+        current_device = {};
+    }
+}
+
+// selectDeviceのプロファイル読み込み部分を分離
+async function selectDeviceProfile(device) {
+    const success = await loadDeviceProfile(device);
+    if (success) {
+        try {
+            await fetchApiInfoAndUpdate();
+            updateRequiredPackages();
+            asuCollectPackages();
+        } catch (e) {
+            console.error('[selectDeviceProfile] API fetch failed:', e);
+        }
+        showDeviceInfo();
+    } else {
+        current_device = {};
+    }
+}
+
 function getDeviceTitle(device) {
     if (device.titles && device.titles.length > 0) {
         return device.titles[0].title || device.id;
@@ -3227,7 +3624,8 @@ function showAutocomplete(devices) {
     
     devices.forEach(device => {
         const div = document.createElement('div');
-        div.innerHTML = `<strong>${getDeviceTitle(device)}</strong><br><small>Target: ${device.target}</small>`;
+        const title = device.title || getDeviceTitle(device);
+        div.innerHTML = `<strong>${title}</strong><br><small>Target: ${device.target}</small>`;
         div.addEventListener('click', () => selectDevice(device));
         fragment.appendChild(div);
     });
@@ -3469,8 +3867,9 @@ function showDeviceInfo() {
     
     const deviceLink = `${window.location.origin}${window.location.pathname}?version=${encodeURIComponent(app.selectedVersion)}&target=${encodeURIComponent(device.target)}&id=${encodeURIComponent(device.id)}`;
     
+    const deviceTitle = device.title || getDeviceTitle(device);
     const infoUrl = (config.info_url || "")
-        .replace("{title}", encodeURI(getDeviceTitle(device)))
+        .replace("{title}", encodeURI(deviceTitle))
         .replace("{target}", device.target)
         .replace("{id}", device.id)
         .replace("{version}", app.selectedVersion);
@@ -3478,6 +3877,7 @@ function showDeviceInfo() {
     // ===== About this build 表示用 前処理ブロック =====
     const {
         country = 'unknown',
+        zonename = 'unknown',
         timezone = 'unknown',
         isp = 'unknown',
         as: asNumber = 'unknown',
@@ -3489,7 +3889,8 @@ function showDeviceInfo() {
     } = window.cachedApiInfo || {};
 
     const countryValue = country;
-    const zoneValue    = timezone;
+    const timezoneValue = timezone || 'unknown';
+    const zonenameValue = zonename || 'unknown';
     const ispValue     = isp;
     const asValue      = asNumber;
     const ipAddressValue = [ipv4, ipv6].filter(Boolean).join(' / ') || 'unknown';
@@ -3555,8 +3956,12 @@ function showDeviceInfo() {
             <span class="col2" id="image-country">${countryValue}</span>
         </div>
         <div class="row">
-            <span class="col1">Zone</span>
-            <span class="col2" id="image-zone">${zoneValue}</span>
+            <span class="col1">Timezone</span>
+            <span class="col2" id="image-timezone">${timezoneValue}</span>
+        </div>
+        <div class="row">
+            <span class="col1">Zonename</span>
+            <span class="col2" id="image-zonename">${zonenameValue}</span>
         </div>
         <div class="row">
             <span class="col1">ISP</span>
@@ -3663,7 +4068,16 @@ function handleConnectionModeChange(e) {
             ispDetectionGroup.style.display = 'none';
         }
     } else {
+        // Auto選択時 - 全てをリセット
         manualSection.style.display = 'none';
+        
+        // 重要：接続タイプを DHCP にリセット
+        ResetManager.resetConnectionType();
+        
+        // 各プロトコルの詳細設定もリセット
+        ResetManager.resetDsliteSettings();
+        ResetManager.resetMapeSettings();
+        
         // Auto時はISP Detection Statusを表示
         if (ispDetectionGroup) {
             ispDetectionGroup.style.display = 'block';
@@ -3674,11 +4088,14 @@ function handleConnectionModeChange(e) {
 }
 
 function handleConnectionTypeChange(e) {
+    const dhcpSection = document.getElementById('dhcp-section');
     const pppoeSection = document.getElementById('pppoe-section');
     const dsliteSection = document.getElementById('dslite-section');
     const mapeManualSection = document.getElementById('mape-manual-section');
     const apSection = document.getElementById('ap-section');
     
+    // 全セクションを一旦非表示
+    if (dhcpSection) dhcpSection.style.display = 'none';
     pppoeSection.style.display = 'none';
     dsliteSection.style.display = 'none';
     mapeManualSection.style.display = 'none';
@@ -3689,7 +4106,10 @@ function handleConnectionTypeChange(e) {
     const hasAftr = !!(apiInfo.mape && apiInfo.mape.aftrIpv6Address);
     const hasMape = !!(apiInfo.mape && apiInfo.mape.brIpv6Address);
     
-    if (e.target.value === 'pppoe') {
+    // 選択された接続タイプに応じてセクションを表示
+    if (e.target.value === 'dhcp') {
+        if (dhcpSection) dhcpSection.style.display = 'block';
+    } else if (e.target.value === 'pppoe') {
         pppoeSection.style.display = 'block';
     } else if (e.target.value === 'dslite') {
         dsliteSection.style.display = 'block';
@@ -3704,13 +4124,13 @@ function handleConnectionTypeChange(e) {
             dsliteAuto.disabled = false;
             dsliteAuto.checked = true;
             dsliteManual.checked = false;
-            if (dsliteHint) dsliteHint.textContent = 'Auto: Use ISP-detected AFTR address | Manual: Specify AFTR settings manually';
+            if (dsliteHint) dsliteHint.textContent = 'Auto: Use ISP-detected AFTR address';
         } else {
             // AFTRデータなし：Auto無効、Manual強制
             dsliteAuto.disabled = true;
             dsliteAuto.checked = false;
             dsliteManual.checked = true;
-            if (dsliteHint) dsliteHint.textContent = 'Auto not available (no AFTR detected) | Manual configuration required';
+            if (dsliteHint) dsliteHint.textContent = 'Auto not available (no AFTR detected)';
         }
         
         // Manual設定エリアの表示制御
@@ -3719,7 +4139,7 @@ function handleConnectionTypeChange(e) {
             manualConfig.style.display = hasAftr ? 'none' : 'block';
         }
         
-    } else if (e.target.value === 'mape') {
+} else if (e.target.value === 'mape') {
         mapeManualSection.style.display = 'block';
         
         // MAP-E: BRデータの有無でAuto/Manual制御
@@ -3745,12 +4165,11 @@ function handleConnectionTypeChange(e) {
         }
         
         // キャッシュ確認してから必要時のみロード
-        const mapeInfo = config.getMapEInfo(app.selectedVersion);
-        if (mapeInfo.supported && mapShCache[mapeInfo.scriptType] === undefined) {
+        if (mapShCache === undefined) {
             // 未ロードの場合のみ非同期でロード
             (async () => {
                 try {
-                    await loadMapShForVersion(app.selectedVersion);
+                    await loadMapSh();
                 } catch (err) {
                     console.error('map.sh load failed:', err);
                 }
@@ -3785,6 +4204,66 @@ function handleDsliteModeChange(e) {
     }
     
     applyConnectionSettingsChange();
+}
+
+// Network Optimizer のデフォルト値定義
+const NETOPT_DEFAULTS = {
+    rmem: '4096 131072 8388608',
+    wmem: '4096 131072 8388608',
+    conntrack: '131072',
+    backlog: '5000',
+    somaxconn: '16384',
+    congestion: 'cubic'
+};
+
+function resetNetOptimizerValues() {
+    // 全フィールドをデフォルト値にリセット
+    document.getElementById('netopt-rmem').value = NETOPT_DEFAULTS.rmem;
+    document.getElementById('netopt-wmem').value = NETOPT_DEFAULTS.wmem;
+    document.getElementById('netopt-conntrack').value = NETOPT_DEFAULTS.conntrack;
+    document.getElementById('netopt-backlog').value = NETOPT_DEFAULTS.backlog;
+    document.getElementById('netopt-somaxconn').value = NETOPT_DEFAULTS.somaxconn;
+    document.getElementById('netopt-congestion').value = NETOPT_DEFAULTS.congestion;
+}
+
+function handleNetOptimizerChange(e) {
+    const optimizerSection = document.getElementById('net-optimizer-section');
+    
+    if (e.target.value === 'enabled') {
+        optimizerSection.style.display = 'block';
+        // デフォルト設定にリセット
+        ResetManager.resetNetOptimizerSettings();
+    } else {
+        // Disabled時は全てクリア
+        optimizerSection.style.display = 'none';
+        document.getElementById('net-optimizer-manual').style.display = 'none';
+        // 値もクリア（次回Enabled時のため）
+        document.getElementById('netopt-rmem').value = '';
+        document.getElementById('netopt-wmem').value = '';
+        document.getElementById('netopt-conntrack').value = '';
+        document.getElementById('netopt-backlog').value = '';
+        document.getElementById('netopt-somaxconn').value = '';
+        document.getElementById('netopt-congestion').value = 'cubic';
+    }
+    
+    syncTemplateAndPackages({ trigger: 'netopt-change' });
+}
+
+function handleNetOptimizerModeChange(e) {
+    const manualSection = document.getElementById('net-optimizer-manual');
+    
+    if (e && e.target && e.target.value === 'manual') {
+        manualSection.style.display = 'block';
+        // Manual選択時も常にデフォルト値を設定（編集の起点として）
+        resetNetOptimizerValues();
+    } else {
+        // Auto選択時
+        manualSection.style.display = 'none';
+        // Autoは常にデフォルト値を使用するのでリセット
+        resetNetOptimizerValues();
+    }
+    
+    syncTemplateAndPackages({ trigger: 'netopt-mode-change' });
 }
 
 function isGlobalUnicastIPv6(ip) {
@@ -3876,13 +4355,9 @@ function buildIspStatus(apiInfo) {
     let statusText = 'Auto-detection successful';
     let details = '';
 
+    // ISPとASの表示
     if (apiInfo.isp) details += `ISP: ${apiInfo.isp}\n`;
-    if (apiInfo.country) {
-        details += `Country/Region: ${apiInfo.country}`;
-        if (apiInfo.regionName) details += ` (${apiInfo.regionName})`;
-        details += '\n';
-    }
-    if (apiInfo.timezone) details += `Timezone: ${apiInfo.timezone}\n`;
+    if (apiInfo.as) details += `AS: ${apiInfo.as}\n`;
 
     if (apiInfo.mape) {
         if (apiInfo.mape.aftrType) {
@@ -3926,7 +4401,8 @@ async function fetchApiInfoAndUpdate() {
         if (apiInfo) {
             // Country と Timezone（空欄のみ設定）
             setIfEmpty('aios-country', apiInfo.country);
-            setIfEmpty('aios-zonename', apiInfo.timezone);
+            setIfEmpty('aios-zonename', apiInfo.zonename);
+            setIfEmpty('aios-timezone', apiInfo.timezone);
 
             // ISP表示は共通関数で構築
             const isp = buildIspStatus(apiInfo);
@@ -3934,7 +4410,7 @@ async function fetchApiInfoAndUpdate() {
 
             // MAP-E検出時のみmap.sh読み込み
             if (apiInfo.mape && apiInfo.mape.brIpv6Address) {
-                await loadMapShForVersion(app.selectedVersion);  // OSバージョンに応じた適切なものだけ
+                await loadMapSh();
             }
 
             // GUA セクションの表示を更新
@@ -4043,12 +4519,25 @@ async function fetchApiInfo() {
 }
 
 // ==================== テンプレ文字列の変数設定共通関数 ====================
-function setScriptVar(content, key, value, active) {
-    const safe = (v) => (v === undefined || v === null) ? '' : String(v).trim();
-    const val = safe(value);
-    const re = new RegExp(`^#?\\s*${key}=".*"$`, 'm');
-    const line = active ? `${key}="${val}"` : `# ${key}="${val}"`;
-    return content.replace(re, line);
+function setVariableDefinitions(content, variables) {
+    const variableLines = [];
+    
+    for (const [key, config] of Object.entries(variables)) {
+        if (!config || typeof config !== 'object') continue;
+        
+        const { value, active } = config;
+        const safeValue = (value === undefined || value === null) ? '' : String(value).trim();
+        
+        // activeがtrueで値がある場合のみ変数を定義
+        if (active && safeValue !== '') {
+            variableLines.push(`${key}="${safeValue}"`);
+        }
+    }
+    
+    const variableText = variableLines.length > 0 ? variableLines.join('\n') : '';
+    const managedRegion = /(# BEGIN_VARIABLE_DEFINITIONS\n)([\s\S]*?)(# END_VARIABLE_DEFINITIONS\n)/;
+    
+    return content.replace(managedRegion, `$1${variableText ? variableText + '\n' : ''}$3`);
 }
 
 // ==================== テンプレート設定 ====================
@@ -4077,41 +4566,13 @@ async function updateConfiguredTemplate() {
 }
 
 async function customizeSetupScript(content, userConfig, apiInfo, selectedPackages) {
-    // これでグローバルのconfig.getMapEInfo()が使える
-    const mapeInfo = config.getMapEInfo(app.selectedVersion);
-    
     let customized = content;
-
-    // OpenWrt version flags
-    if (app.selectedVersion && app.selectedVersion.startsWith('19')) {
-        customized = customized.replace(/^# openwrt_19=""/m, `openwrt_19="1"`);
-        customized = customized.replace(/^# openwrt_21=""/m, `# openwrt_21=""`);
-    } else {
-        customized = customized.replace(/^# openwrt_19=""/m, `# openwrt_19=""`);
-        customized = customized.replace(/^# openwrt_21=""/m, `openwrt_21="1"`);
-    }
-
-    // Basic settings
-    customized = setScriptVar(customized, 'device_name', userConfig.deviceName, !!userConfig.deviceName);
-    customized = setScriptVar(customized, 'lan_ip_address', userConfig.lanIpv4, !!userConfig.lanIpv4);
-    customized = setScriptVar(customized, 'lan_ipv6_address', userConfig.lanIpv6, !!userConfig.lanIpv6);
-    customized = setScriptVar(customized, 'root_password', userConfig.rootPassword, !!userConfig.rootPassword);
-    customized = setScriptVar(customized, 'language', userConfig.language, !!userConfig.language);
-    customized = setScriptVar(customized, 'country', userConfig.country, !!userConfig.country);
-    customized = setScriptVar(customized, 'timezone', userConfig.timezone, !!userConfig.timezone);
-    customized = setScriptVar(customized, 'zonename', userConfig.zonename, !!userConfig.zonename);
-
-    // Wi-Fi
-    const wifiActive = !!(userConfig.wifiSSID && userConfig.wifiPassword && String(userConfig.wifiPassword).length >= 8);
-    customized = setScriptVar(customized, 'wlan_name', userConfig.wifiSSID, wifiActive);
-    customized = setScriptVar(customized, 'wlan_password', userConfig.wifiPassword, wifiActive);
 
     // APIベースの推奨値
     const api = apiInfo?.mape || {};
     const apiHasDslite = !!api.aftrIpv6Address;
     const apiHasMape = !!api.brIpv6Address;
 
-    // DS-Lite 候補値（未使用の dsliteVal は削除）
     // MAP-E 候補値
     const mapeVals = {
         br: userConfig.mapeBr || (apiHasMape ? api.brIpv6Address : ''),
@@ -4139,12 +4600,18 @@ async function customizeSetupScript(content, userConfig, apiInfo, selectedPackag
         else activeProto = 'dhcp';
     }
 
-    // PPPoE
+    // AP判定（重要：variables定義より前に行う）
+    const apActive = (activeProto === 'ap');
+    
+    // Wi-Fi設定判定
+    const wifiActive = !!(userConfig.wifiSSID && userConfig.wifiPassword && String(userConfig.wifiPassword).length >= 8);
+    
+    // プロトコル別の判定
     const pppoeActive = (activeProto === 'pppoe');
-    customized = setScriptVar(customized, 'pppoe_username', userConfig.pppoeUsername || '', pppoeActive);
-    customized = setScriptVar(customized, 'pppoe_password', userConfig.pppoePassword || '', pppoeActive);
-
-    // DS-Lite
+    const mapeActive = (activeProto === 'mape');
+    const guaActive = mapeActive && (userConfig.mapeType === 'gua' || userConfig.mapeType === 'auto');
+    
+    // DS-Lite設定
     let dsliteAddress = '';
     if (userConfig.dsliteMode === 'auto') {
         dsliteAddress = (apiInfo?.mape?.aftrIpv6Address) || userConfig.dsliteAftrAddress || '';
@@ -4152,79 +4619,102 @@ async function customizeSetupScript(content, userConfig, apiInfo, selectedPackag
         dsliteAddress = userConfig.dsliteAftrAddress || '';
     }
     const dsliteActive = (activeProto === 'dslite') && !!dsliteAddress;
-    customized = setScriptVar(customized, 'dslite_aftr_address', dsliteAddress, dsliteActive);
 
-    // MAP-E
-    const mapeActive = (activeProto === 'mape');
-    customized = setScriptVar(customized, 'mape_br', mapeVals.br || '', mapeActive);
-    customized = setScriptVar(customized, 'mape_ealen', mapeVals.ealen || '', mapeActive);
-    customized = setScriptVar(customized, 'mape_ipv4_prefix', mapeVals.v4p || '', mapeActive);
-    customized = setScriptVar(customized, 'mape_ipv4_prefixlen', mapeVals.v4l || '', mapeActive);
-    customized = setScriptVar(customized, 'mape_ipv6_prefix', mapeVals.v6p || '', mapeActive);
-    customized = setScriptVar(customized, 'mape_ipv6_prefixlen', mapeVals.v6l || '', mapeActive);
-    customized = setScriptVar(customized, 'mape_psid_offset', mapeVals.off || '', mapeActive);
-    customized = setScriptVar(customized, 'mape_psidlen', mapeVals.psid || '', mapeActive);
+    // 変数定義オブジェクトを構築
+    const variables = {
+        // Basic settings
+        device_name: { value: userConfig.deviceName, active: !!userConfig.deviceName },
+        root_password: { value: userConfig.rootPassword, active: !!userConfig.rootPassword },
+        language: { value: userConfig.language, active: !!userConfig.language },
+        country: { value: userConfig.country, active: !!userConfig.country },
+        timezone: { value: userConfig.timezone, active: !!userConfig.timezone },
+        zonename: { value: userConfig.zonename, active: !!userConfig.zonename },
+        
+        // Network settings（AP判定後に設定）
+        lan_ip_address: { value: userConfig.lanIpv4, active: !!userConfig.lanIpv4 && !apActive },
+        lan_ipv6_address: { value: userConfig.lanIpv6, active: !!userConfig.lanIpv6 && !apActive },
+        
+        // Wi-Fi
+        wlan_name: { value: userConfig.wifiSSID, active: wifiActive },
+        wlan_password: { value: userConfig.wifiPassword, active: wifiActive },
+        
+        // SSH
+        ssh_interface: { value: userConfig.sshInterface, active: !!userConfig.sshInterface },
+        ssh_port: { value: userConfig.sshPort, active: !!userConfig.sshPort },
+        
+        // System
+        flow_offloading_type: { value: userConfig.flowOffloading, active: !!userConfig.flowOffloading },
+        backup_path: { value: userConfig.backupPath, active: !!userConfig.backupPath },
 
-    // MAP-E GUA
-    const guaActive = mapeActive && (userConfig.mapeType === 'gua' || userConfig.mapeType === 'auto');
-    customized = setScriptVar(customized, 'mape_gua_mode', guaActive ? '1' : '', guaActive);
-    customized = setScriptVar(customized, 'mape_gua_prefix', guaActive ? guaPrefix : '', guaActive);
+        // PPPoE
+        pppoe_username: { value: userConfig.pppoeUsername || '', active: pppoeActive },
+        pppoe_password: { value: userConfig.pppoePassword || '', active: pppoeActive },
 
-    // enable_* フラグ（選択で ON、非選択で OFF に戻す）
+        // DS-Lite
+        dslite_aftr_address: { value: dsliteAddress, active: dsliteActive },
+
+        // MAP-E
+        mape_br: { value: mapeVals.br || '', active: mapeActive },
+        mape_ealen: { value: mapeVals.ealen || '', active: mapeActive },
+        mape_ipv4_prefix: { value: mapeVals.v4p || '', active: mapeActive },
+        mape_ipv4_prefixlen: { value: mapeVals.v4l || '', active: mapeActive },
+        mape_ipv6_prefix: { value: mapeVals.v6p || '', active: mapeActive },
+        mape_ipv6_prefixlen: { value: mapeVals.v6l || '', active: mapeActive },
+        mape_psid_offset: { value: mapeVals.off || '', active: mapeActive },
+        mape_psidlen: { value: mapeVals.psid || '', active: mapeActive },
+        mape_gua_mode: { value: guaActive ? '1' : '', active: guaActive },
+        mape_gua_prefix: { value: guaActive ? guaPrefix : '', active: guaActive },
+
+        // AP
+        ap_ip_address: { value: userConfig.apIpAddress, active: apActive && !!userConfig.apIpAddress },
+        ap_gateway: { value: userConfig.apGateway, active: apActive && !!userConfig.apGateway },
+        
+// Network Optimizer
+        enable_netopt: { 
+            value: userConfig.netOptimizer === 'enabled' ? '1' : '', 
+            active: userConfig.netOptimizer === 'enabled' 
+        },
+        netopt_manual: { 
+            value: userConfig.netOptimizerMode === 'manual' ? '1' : '', 
+            active: userConfig.netOptimizer === 'enabled' && userConfig.netOptimizerMode === 'manual' 
+        },
+        netopt_rmem: { 
+            value: userConfig.netOptimizerMode === 'manual' ? userConfig.netOptRmem : NETOPT_DEFAULTS.rmem, 
+            active: userConfig.netOptimizer === 'enabled' && userConfig.netOptimizerMode === 'manual' 
+        },
+        netopt_wmem: { 
+            value: userConfig.netOptimizerMode === 'manual' ? userConfig.netOptWmem : NETOPT_DEFAULTS.wmem, 
+            active: userConfig.netOptimizer === 'enabled' && userConfig.netOptimizerMode === 'manual' 
+        },
+        netopt_conntrack: { value: userConfig.netOptConntrack, active: userConfig.netOptimizer === 'enabled' && userConfig.netOptimizerMode === 'manual' },
+        netopt_backlog: { value: userConfig.netOptBacklog, active: userConfig.netOptimizer === 'enabled' && userConfig.netOptimizerMode === 'manual' },
+        netopt_somaxconn: { value: userConfig.netOptSomaxconn, active: userConfig.netOptimizer === 'enabled' && userConfig.netOptimizerMode === 'manual' },
+        netopt_congestion: { value: userConfig.netOptCongestion, active: userConfig.netOptimizer === 'enabled' && userConfig.netOptimizerMode === 'manual' }
+    };
+    
+    // enable_* フラグ（選択で ON、非選択は設定しない）
     if (selectedPackages) {
         const enableMap = {};
-        const allEnableVars = new Set();
-
+        
         PACKAGE_DB.categories.forEach(cat => {
             (cat.packages || []).forEach(pkg => {
                 if (pkg.enableVar) {
                     enableMap[pkg.name] = pkg.enableVar;
-                    allEnableVars.add(pkg.enableVar);
                 }
             });
         });
 
-        // まず全てを OFF（コメントアウト）に戻す
-        allEnableVars.forEach(varName => {
-            customized = setScriptVar(customized, varName, '', false);
-        });
-
-        // 選択されているパッケージに対応する enableVar を ON
+        // 選択されているパッケージに対応する enableVar を設定
         selectedPackages.forEach(pkgName => {
             const varName = enableMap[pkgName];
             if (varName) {
-                customized = setScriptVar(customized, varName, '1', true);
+                variables[varName] = { value: '1', active: true };
             }
         });
     }
 
-    // MAP-E設定時の事前準備（ダウンロードのみ、プレースホルダーは保持）
-    if (mapeActive && config.getMapEInfo(app.selectedVersion).supported) {
-        await MapEProcessor.prepareForDisplay(app.selectedVersion, config, apiInfo);
-    }
-
-    // AP
-    const apActive = (activeProto === 'ap');
-
-    // ルーターIP：有値かつ非APのときだけ有効化（空 or AP ではコメントアウト）
-    customized = setScriptVar(customized, 'lan_ip_address', userConfig.lanIpv4, !!userConfig.lanIpv4 && !apActive);
-    customized = setScriptVar(customized, 'lan_ipv6_address', userConfig.lanIpv6, !!userConfig.lanIpv6 && !apActive);
-
-    // AP IP：AP時かつ有値のときだけ有効化（非AP or 空ではコメントアウト）
-    customized = setScriptVar(customized, 'ap_ip_address', userConfig.apIpAddress, apActive && !!userConfig.apIpAddress);
-    customized = setScriptVar(customized, 'ap_gateway', userConfig.apGateway, apActive && !!userConfig.apGateway);
-
-    // SSH Interface
-    customized = setScriptVar(customized, 'ssh_interface', userConfig.sshInterface, !!userConfig.sshInterface);
-    
-    // SSH Port
-    customized = setScriptVar(customized, 'ssh_port', userConfig.sshPort, !!userConfig.sshPort);
-    
-    // Flow Offloading
-    customized = setScriptVar(customized, 'flow_offloading_type', userConfig.flowOffloading, !!userConfig.flowOffloading);
-    
-    // Backup Path
-    customized = setScriptVar(customized, 'backup_path', userConfig.backupPath, !!userConfig.backupPath);
+    // 変数定義を適用
+    customized = setVariableDefinitions(customized, variables);
 
     // Custom Commands
     const customCommands = getCustomCommands();
@@ -4282,8 +4772,16 @@ function toggleAiosConfig(e) {
 
 function getAiosConfig() {
     const parseOrEmpty = (id, type = 'string') => {
-        const val = document.getElementById(id)?.value?.trim();
+        const element = document.getElementById(id);
+        if (!element) return '';
+        
+        // value が空でも、HTML の初期値（placeholder や value 属性）を確認
+        let val = element.value?.trim();
+        if (!val && element.getAttribute('value')) {
+            val = element.getAttribute('value').trim();
+        }
         if (!val) return '';
+        
         if (type === 'int') {
             const num = parseInt(val, 10);
             return isNaN(num) ? '' : num;
@@ -4329,7 +4827,17 @@ function getAiosConfig() {
         mapeIpv6Prefixlen: parseOrEmpty('mape-ipv6-prefixlen', 'int'),
         mapePsidOffset: parseOrEmpty('mape-psid-offset', 'int'),
         mapePsidlen: parseOrEmpty('mape-psidlen', 'int'),
-        mapeGuaPrefix: parseOrEmpty('mape-gua-prefix')
+        mapeGuaPrefix: parseOrEmpty('mape-gua-prefix'),
+        
+        // Network Optimizer settings
+        netOptimizer: document.querySelector('input[name="netOptimizer"]:checked')?.value || 'disabled',
+        netOptimizerMode: document.querySelector('input[name="netOptimizerMode"]:checked')?.value || 'auto',
+        netOptRmem: parseOrEmpty('netopt-rmem'),
+        netOptWmem: parseOrEmpty('netopt-wmem'),
+        netOptConntrack: parseOrEmpty('netopt-conntrack', 'int'),
+        netOptBacklog: parseOrEmpty('netopt-backlog', 'int'),
+        netOptSomaxconn: parseOrEmpty('netopt-somaxconn', 'int'),
+        netOptCongestion: parseOrEmpty('netopt-congestion')
     };
 
     return config;
@@ -4515,6 +5023,153 @@ function updateRequiredPackages() {
   packagesTextarea.value = currentPackages.join(' ');
 }
 
+// ==================== ビルドエラー処理統一 ====================
+const BuildErrorHandler = {
+    // スクリプトサイズ計算（システム使用分も含む）
+    calculateTotalSize(script, packages) {
+        const scriptSize = new Blob([script]).size;
+        const packagesSize = new Blob([packages.join(' ')]).size;
+        const systemOverhead = 1024; // システム使用分約1KB
+        const totalSize = scriptSize + packagesSize + systemOverhead;
+        
+        console.log(`[SIZE CHECK] Script: ${scriptSize}B, Packages: ${packagesSize}B, System: ${systemOverhead}B, Total: ${totalSize}B`);
+        
+        return {
+            scriptSize,
+            packagesSize,
+            systemOverhead,
+            totalSize,
+            isOverLimit: totalSize > 20480 // 20KB = 20480 bytes
+        };
+    },
+
+    // エラー表示統一処理
+    showError(errorType, statusCode, errorData, sizeInfo = null) {
+        // 進捗バーを赤いエラー表示に変更
+        this.showErrorProgress(errorType, statusCode);
+        
+        // ステータス表示
+        hideProgress();
+        showBuildStatus(`Build failed: ${errorType}`, 'error');
+        
+        // 詳細エラー情報を構築
+        const errorDetails = this.buildErrorDetails(errorType, statusCode, errorData, sizeInfo);
+        
+        // エラー詳細をdownload-linksに表示
+        const container = document.getElementById('download-links');
+        container.innerHTML = errorDetails;
+        
+        // エラーエリアにスクロール
+        setTimeout(() => {
+            container.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'center' 
+            });
+        }, 200);
+    },
+
+    // 進捗バーのエラー表示
+    showErrorProgress(errorType, statusCode) {
+        const progressElement = document.getElementById('build-progress');
+        const messageElement = document.getElementById('build-message');
+        const progressBar = document.getElementById('progress-bar');
+        
+        // 進捗バーを赤に変更
+        progressBar.style.backgroundColor = '#dc3545';
+        progressBar.style.width = '100%';
+        messageElement.textContent = `Build failed: ${errorType} (HTTP ${statusCode})`;
+        progressElement.style.display = 'block';
+        
+        // 5秒後に自動で隠す
+        setTimeout(() => {
+            hideProgress();
+        }, 5000);
+    },
+
+    // エラー詳細HTML構築
+    buildErrorDetails(errorType, statusCode, errorData, sizeInfo) {
+        let html = `
+            <div class="asu-error" style="margin-top: 1rem;">
+                <h4>Build Failed - ${errorType}</h4>
+                <div><strong>HTTP Status:</strong> ${statusCode}</div>
+        `;
+
+        // 20KB制限チェック
+        if (sizeInfo && sizeInfo.isOverLimit) {
+            html += `
+                <div style="background-color: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; padding: 1rem; margin: 1rem 0; border-radius: 0.25rem;">
+                    <h5 style="margin-top: 0; color: #721c24;">🚫 Size Limit Exceeded</h5>
+                    <div><strong>Total Size:</strong> ${sizeInfo.totalSize} bytes (Limit: 20,480 bytes)</div>
+                    <div><strong>Breakdown:</strong></div>
+                    <ul style="margin: 0.5rem 0;">
+                        <li>Script: ${sizeInfo.scriptSize} bytes</li>
+                        <li>Packages: ${sizeInfo.packagesSize} bytes</li>
+                        <li>System overhead: ${sizeInfo.systemOverhead} bytes</li>
+                    </ul>
+                    <div><strong>Over by:</strong> ${sizeInfo.totalSize - 20480} bytes</div>
+                </div>
+            `;
+        }
+
+        // エラー詳細
+        if (errorData) {
+            if (typeof errorData === 'string') {
+                html += `<div><strong>Error Details:</strong></div>
+                         <pre style="background: #f8f8f8; padding: 10px; margin: 10px 0; border-radius: 4px; overflow-x: auto; font-size: 0.9em; max-height: 200px;">${errorData}</pre>`;
+            } else if (typeof errorData === 'object') {
+                // リクエストハッシュがあれば表示
+                if (errorData.request_hash) {
+                    html += `<div><strong>Request ID:</strong> <code>${errorData.request_hash}</code></div>`;
+                }
+                
+                // その他の詳細情報
+                const excludeFields = ['request_hash'];
+                for (const [key, value] of Object.entries(errorData)) {
+                    if (!excludeFields.includes(key) && value != null) {
+                        html += `<div><strong>${key}:</strong> ${JSON.stringify(value)}</div>`;
+                    }
+                }
+            }
+        }
+
+        // トラブルシューティング情報
+        html += this.getTroubleshootingInfo(errorType, sizeInfo);
+        html += '</div>';
+        
+        return html;
+    },
+
+    // トラブルシューティング情報
+    getTroubleshootingInfo(errorType, sizeInfo) {
+        let tips = [];
+        
+        if (sizeInfo && sizeInfo.isOverLimit) {
+            tips.push('Remove unnecessary packages or custom commands to reduce size');
+            tips.push('Consider using minimal package selection');
+        }
+        
+        if (errorType.includes('500')) {
+            tips.push('Verify network connectivity and try again');
+            tips.push('Check if custom script syntax is correct');
+            tips.push('Try building without custom packages first');
+        }
+        
+        if (tips.length === 0) {
+            tips.push('Verify device selection and network connectivity');
+            tips.push('Try again with reduced package selection');
+        }
+
+        return `
+            <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; color: #856404; padding: 1rem; margin: 1rem 0; border-radius: 0.25rem;">
+                <h5 style="margin-top: 0; color: #856404;">⚠️ Troubleshooting</h5>
+                <ul style="margin-bottom: 0;">
+                    ${tips.map(tip => `<li>${tip}</li>`).join('')}
+                </ul>
+            </div>
+        `;
+    }
+};
+        
 // ==================== ビルド処理 ====================
 async function buildAsuRequest() {
     console.log('[buildAsuRequest] Function entered');
@@ -4554,7 +5209,6 @@ async function buildAsuRequest() {
         // MAP-E処理（必要時のみプレースホルダー置換）
         script = await MapEProcessor.processForBuild(
             script, 
-            app.selectedVersion, 
             getAiosConfig(), 
             window.cachedApiInfo
         );
@@ -4574,7 +5228,10 @@ async function buildAsuRequest() {
         if (script && script.trim()) {
             requestBody.defaults = script;
         }
-            
+
+        // サイズチェックを事前実行
+        const sizeInfo = BuildErrorHandler.calculateTotalSize(script, packages);
+        
         fetch('https://sysupgrade.openwrt.org/api/v1/build', {
             method: 'POST',
             headers: {
@@ -4634,8 +5291,7 @@ async function buildAsuRequest() {
             }
         })
         .catch((err) => {
-            hideProgress();
-            showBuildStatus(err.message, 'error');
+            BuildErrorHandler.showError('Network Error', null, err.message, sizeInfo);
         });
 
     } catch (error) {
@@ -4782,76 +5438,6 @@ function showBuildStatus(message, type) {
     
     bs.querySelector('span').textContent = message;
     bs.style.display = 'block';
-}
-
-function showBuildError(errorData, statusCode) {
-    // エラーメッセージを表示
-    let errorMessage = `Build failed (HTTP ${statusCode})`;
-    
-    if (errorData) {
-        if (typeof errorData === 'string') {
-            errorMessage += `: ${errorData}`;
-        } else if (errorData.detail) {
-            errorMessage += `: ${errorData.detail}`;
-        } else if (errorData.message) {
-            errorMessage += `: ${errorData.message}`;
-        } else if (errorData.error) {
-            errorMessage += `: ${errorData.error}`;
-        }
-    }
-    
-    showBuildStatus(errorMessage, 'error');
-    
-    // STDERR/STDOUTがある場合は詳細ログも表示
-    if (errorData && (errorData.stderr || errorData.stdout)) {
-        document.getElementById('asu-stderr').textContent = errorData.stderr || 'No error output';
-        document.getElementById('asu-stdout').textContent = errorData.stdout || 'No standard output';
-        document.getElementById('asu-log').style.display = 'block';
-        
-        // ログセクションにスクロール
-        setTimeout(() => {
-            const logElement = document.getElementById('asu-log');
-            if (logElement) {
-                logElement.scrollIntoView({ 
-                    behavior: 'smooth', 
-                    block: 'center' 
-                });
-            }
-        }, 200);
-    }
-    
-    // 追加のエラー詳細情報を表示
-    if (errorData && typeof errorData === 'object') {
-        const container = document.getElementById('download-links');
-        
-        let debugInfo = '<div class="asu-error" style="margin-top: 1rem;"><h4>Error Details</h4>';
-        
-        // リクエストハッシュがあれば表示
-        if (errorData.request_hash) {
-            debugInfo += `<div><strong>Request ID:</strong> <code>${errorData.request_hash}</code></div>`;
-        }
-        
-        // エラータイプを表示
-        if (errorData.status) {
-            debugInfo += `<div><strong>Build Status:</strong> ${errorData.status}</div>`;
-        }
-        
-        // ImageBuilderのステータス
-        if (errorData.imagebuilder_status) {
-            debugInfo += `<div><strong>ImageBuilder Status:</strong> ${errorData.imagebuilder_status}</div>`;
-        }
-        
-        // その他のフィールドも表示（デバッグ用）
-        const excludeFields = ['stderr', 'stdout', 'request_hash', 'status', 'imagebuilder_status', 'detail', 'message', 'error'];
-        for (const [key, value] of Object.entries(errorData)) {
-            if (!excludeFields.includes(key) && value != null) {
-                debugInfo += `<div><strong>${key}:</strong> ${JSON.stringify(value)}</div>`;
-            }
-        }
-        
-        debugInfo += '</div>';
-        container.innerHTML = debugInfo;
-    }
 }
 
 function formatDate(date) {
@@ -5053,10 +5639,6 @@ async function fetchDevicePackages() {
 
     app.devicePackages = Array.from(allPkgsMap.values());
     ErrorHandler.packageDebug.dumpAll();
-
-    if (typeof generatePackageSelector === 'function') {
-        generatePackageSelector();
-    }
 
     function parsePackagesText(text, source) {
         const blocks = text.split(/\n\s*\n/);
@@ -5363,46 +5945,12 @@ function createExtraPackageBox() {
     host.appendChild(newInput);
     newInput.focus();
 }
-
-function addPackageToList(pkgName, clickedEl) {
-    const textarea = document.getElementById('asu-packages');
-    const list = textarea.value.trim() ? textarea.value.trim().split(/\s+/) : [];
-    if (!list.includes(pkgName)) {
-        list.push(pkgName);
-        textarea.value = list.join(' ');
-        refreshTemplateAndPackages();
-    }
-    flashSelectedOption(clickedEl); // null 渡しをやめる
-}
-
-function flashSelectedOption(el) {
-    if (!el) return;
-    el.classList.add('bold-flash');      // 即時反映
-    setTimeout(() => {
-        el.classList.remove('bold-flash');
-    }, 200);
-}
   
 document.addEventListener('click', function (e) {
     if (!e.target.closest('#package-search-autocomplete')) {
         hidePackageAutocomplete();
     }
 });
-
-    // パッケージの選択・非選択を切り替える関数
-    function togglePackage(packageName) {
-        let packagesList = asuPackagesTextarea.value.split('\n').filter(p => p.trim() !== '');
-
-        if (installedPackages.has(packageName)) {
-            installedPackages.delete(packageName);
-            packagesList = packagesList.filter(p => p !== packageName);
-        } else {
-            installedPackages.add(packageName);
-            packagesList.push(packageName);
-        }
-        
-        asuPackagesTextarea.value = packagesList.join('\n');
-    }
 
     </script>
 </body>
