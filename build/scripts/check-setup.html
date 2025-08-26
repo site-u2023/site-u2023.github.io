@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>setup.sh チェックツール</title>
+<style>
+body { font-family: monospace; background: #111; color: #eee; }
+.ok { color: #0f0; }
+.warn { color: #ff0; }
+.err { color: #f55; }
+pre { background: #222; padding: 10px; overflow-x: auto; }
+</style>
+</head>
+<body>
+<h1>setup.sh チェック結果</h1>
+<div id="output"><em>読み込み中...</em></div>
+
+<script>
+// setup.sh を読み込む
+fetch("setup.sh")
+  .then(res => res.text())
+  .then(text => {
+    const lines = text.split("\n");
+    let out = [];
+
+    out.push("<h2>Escaped variables (\\\\${...})</h2><pre>");
+    lines.forEach((line, idx) => {
+      if (line.match(/\\\${[^}]*}/)) {
+        out.push(`<span class="ok">${idx+1}: ${line}</span>\n`);
+      }
+    });
+    out.push("</pre>");
+
+    out.push("<h2>Normal variables (${...})</h2><pre>");
+    lines.forEach((line, idx) => {
+      // 「\${...}」を含まないが「${...}」を含む行
+      if (line.match(/\${[^}]*}/) && !line.match(/\\\${[^}]*}/)) {
+        out.push(`<span class="err">${idx+1}: ${line}</span>\n`);
+      }
+    });
+    out.push("</pre>");
+
+    out.push("<h2>printf with \\\\n</h2><pre>");
+    lines.forEach((line, idx) => {
+      if (line.match(/printf .*\\\\n/)) {
+        out.push(`<span class="warn">${idx+1}: ${line}</span>\n`);
+      }
+    });
+    out.push("</pre>");
+
+    document.getElementById("output").innerHTML = out.join("");
+  })
+  .catch(err => {
+    document.getElementById("output").innerHTML =
+      `<span class="err">Error loading setup.sh: ${err}</span>`;
+  });
+</script>
+</body>
+</html>
