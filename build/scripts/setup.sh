@@ -16,7 +16,7 @@ exec >/tmp/setup.log 2>&1
 uci set system.@system[0].description="\${DATE}"
 uci set system.@system[0].notes="site-u.pages.dev/build"
 [ -n "\${device_name}" ] && uci set system.@system[0].hostname="\${device_name}"
-[ -n "\${root_password}" ] && printf '%s\n%s\n' "\${root_password}" "\${root_password}" | passwd >/dev/null
+[ -n "\${root_password}" ] && printf '%s\\n%s\\n' "\${root_password}" "\${root_password}" | passwd >/dev/null
 [ -n "\${lan_ip_address}" ] && uci set network.lan.ipaddr="\${lan_ip_address}"
 [ -n "\${lan_ipv6_address}" ] && uci set network.lan.ip6addr="\${lan_ipv6_address}"
 [ -n "\${language}" ] && uci set system.@system[0].language="\${language}"
@@ -30,9 +30,9 @@ set firewall.@defaults[0].flow_offloading='1'
 set firewall.@defaults[0].flow_offloading_hw='1'
 EOI
 [ -n "\${wlan_name}" ] && [ -n "\${wlan_password}" ] && [ "\${#wlan_password}" -ge 8 ] && {
-    wireless_cfg="\$(uci -q show wireless)"
-    for radio in \$(printf '%s\n' "\${wireless_cfg}" | grep "wireless\.radio[0-9]*=" | cut -d. -f2 | cut -d= -f1); do
-        band=\$(uci -q get wireless.\${radio}.band)
+    wireless_cfg="$(uci -q show wireless)"
+    for radio in $(printf '%s\\n' "\${wireless_cfg}" | grep "wireless\.radio[0-9]*=" | cut -d. -f2 | cut -d= -f1); do
+        band=$(uci -q get wireless.\${radio}.band)
         case "\${band}" in
             2g) suffix="-2g"; encryption='psk-mixed' ;;
             5g) suffix="-5g"; encryption='sae-mixed' ;;
@@ -43,10 +43,10 @@ EOI
         n=2
         while printf '%s\n' "\${wireless_cfg}" | grep -q "ssid='\${ssid}'"; do
             ssid="\${wlan_name}\${suffix}\${n}"
-            n=\$((n+1))
+            n=$((n+1))
         done
         iface="default_\${radio}"
-        [ -n "\$(uci -q get wireless.\${iface})" ] && uci -q batch <<'EOI'
+        [ -n "$(uci -q get wireless.\${iface})" ] && uci -q batch <<'EOI'
 set wireless.\${radio}.disabled='0'
 set wireless.\${radio}.country="\${country:-00}"
 set wireless.\${iface}.disabled='0'
@@ -139,7 +139,7 @@ add_list firewall.@zone[1].network="\${MAPE6}"
 set firewall.@zone[1].masq='1'
 set firewall.@zone[1].mtu_fix='1'
 EOI
-[ -n "\${mape_gua_mode}" ] && uci set network.\${MAPE6}.ip6prefix="\${mape_gua_prefix}"
+    [ -n "\${mape_gua_mode}" ] && uci set network.\${MAPE6}.ip6prefix="\${mape_gua_prefix}"
     cat > /lib/netifd/proto/map.sh <<'MAP_SH_EOF'
 \${map_sh_content}
 MAP_SH_EOF
@@ -165,9 +165,9 @@ set network.\${AP6}.reqaddress='try'
 set network.\${AP6}.reqprefix='no'
 set network.\${AP6}.type='bridge'
 EOI
-    [ -n "\$(uci -q get wireless.default_radio0)" ] && uci set wireless.default_radio0.network="\${AP}"
-    [ -n "\$(uci -q get wireless.default_radio1)" ] && uci set wireless.default_radio1.network="\${AP}"
-    [ -n "\$(uci -q get wireless.default_radio2)" ] && uci set wireless.default_radio2.network="\${AP}"
+    [ -n "$(uci -q get wireless.default_radio0)" ] && uci set wireless.default_radio0.network="\${AP}"
+    [ -n "$(uci -q get wireless.default_radio1)" ] && uci set wireless.default_radio1.network="\${AP}"
+    [ -n "$(uci -q get wireless.default_radio2)" ] && uci set wireless.default_radio2.network="\${AP}"
     [ -x /etc/init.d/odhcpd ] && /etc/init.d/odhcpd enabled && /etc/init.d/odhcpd disable
     [ -x /etc/init.d/odhcpd ] && /etc/init.d/odhcpd running && /etc/init.d/odhcpd stop
     [ -x /etc/init.d/dnsmasq ] && /etc/init.d/dnsmasq enabled && /etc/init.d/dnsmasq disable
@@ -212,7 +212,7 @@ elif [ \$M -ge 512 ]; then R=4194304 W=4194304 TR="4096 65536 4194304" TW=\$TR C
 else exit 0; fi
 [ \$P -gt 4 ] && { NB=\$((NB*2)); SC=\$((SC*2)); }
 [ \$P -gt 2 ] && [ \$P -le 4 ] && { NB=\$((NB*3/2)); SC=\$((SC*3/2)); }
-printf "net.core.rmem_max=%s\nnet.core.wmem_max=%s\nnet.ipv4.tcp_rmem=%s\nnet.ipv4.tcp_wmem=%s\nnet.ipv4.tcp_congestion_control=cubic\nnet.ipv4.tcp_fastopen=3\nnet.netfilter.nf_conntrack_max=%s\nnet.core.netdev_max_backlog=%s\nnet.core.somaxconn=%s\n" "\$R" "\$W" "\$TR" "\$TW" "\$CT" "\$NB" "\$SC" > \$C
+printf "net.core.rmem_max=%s\\nnet.core.wmem_max=%s\\nnet.ipv4.tcp_rmem=%s\\nnet.ipv4.tcp_wmem=%s\\nnet.ipv4.tcp_congestion_control=cubic\\nnet.ipv4.tcp_fastopen=3\\nnet.netfilter.nf_conntrack_max=%s\\nnet.core.netdev_max_backlog=%s\\nnet.core.somaxconn=%s\\n" "\$R" "\$W" "\$TR" "\$TW" "\$CT" "\$NB" "\$SC" > \$C
 sysctl -p \$C
 cat > /etc/rc.local <<'RESET_EOF'
 exit 0
