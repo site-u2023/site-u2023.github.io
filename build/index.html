@@ -397,17 +397,17 @@
 
     /* パッケージ選択 */
     .package-category {
-        margin-top: 0; 
-        margin-bottom: 1.5rem;
+        margin-top: 0;
+        margin-bottom: 0;  /* 1.5remから0に変更 */
         padding: 0.5rem 1rem 1rem 1rem;
         background-color: #fff;
         border: 1px solid #e9ecef;
         border-radius: 0.25rem;
     }
 
-/* h4タグを全部同じスタイルに統一 */
+    /* h4タグを全部同じスタイルに統一 */
     h4 {
-        margin-top: 1rem;
+        margin-top: 0;  /* 1remから0に変更 */
         margin-bottom: 0.75rem;
         padding: 0.75rem 1rem;
         background-color: #fff;
@@ -609,18 +609,23 @@
     details[open] > summary {
         margin-bottom: 0.5rem;
     }
-
+    
     #use-package-selector-details summary,
     #use-aios-config-details summary {
         font-weight: 500;
         font-size: 1.1rem;
     }
-
-    /* Installed Packagesセクション内の最初の要素のマージン調整 */
-    #package-selector-config > *:first-child {
-        margin-top: 0 !important;
+    
+    /* パッケージセクション内の統一margin管理 */
+    #package-selector-config > * {
+        margin-top: 1.5rem;
+        margin-bottom: 0;
     }
-
+    
+    #package-selector-config > *:first-child {
+        margin-top: 0;
+    }
+    
     /* レスポンシブ */
     @media (max-width: 576px) {
         #models-autocomplete {
