@@ -640,6 +640,20 @@
         font-weight: 500;
         font-size: 1.1rem;
     }
+
+/* Postinst/UCI-defaults展開式のスタイル */
+    #postinst-details summary,
+    #uci-defaults-details summary {
+        font-size: 1.1rem;
+        font-weight: 500;
+        cursor: pointer;
+        padding: 0.5rem 0;
+    }
+    
+    #postinst-details[open] summary,
+    #uci-defaults-details[open] summary {
+        margin-bottom: 1rem;
+    }
     
     /* レスポンシブ */
     @media (max-width: 576px) {
@@ -876,9 +890,11 @@
                         </div>
                         
                         <div class="package-category">
-                            <h4>Postinst (Package installation script)</h4>
-                            <label for="asu-packages" style="display: none;">Postinst</label>
-                            <textarea id="asu-packages" class="form-control" rows="6" placeholder="luci&#10;luci-ssl&#10;-wpad-basic-wolfssl&#10;wpad-wolfssl"></textarea>
+                            <details id="postinst-details">
+                                <summary>Postinst (Package installation script)</summary>
+                                <label for="asu-packages" style="display: none;">Postinst</label>
+                                <textarea id="asu-packages" class="form-control" rows="6" placeholder="luci&#10;luci-ssl&#10;-wpad-basic-wolfssl&#10;wpad-wolfssl"></textarea>
+                            </details>
                         </div>
                     </div>
                 </div>
@@ -1335,10 +1351,12 @@
                         </div>
                         
                         <div class="package-category">
-                            <h4>UCI-defaults (Boot configuration script)</h4>
-                            <label for="uci-defaults-content" style="display: none;">UCI-defaults</label>
-                            <textarea id="uci-defaults-content" class="form-control" rows="6" placeholder="#!/bin/sh&#10;&#10;# Your custom script here&#10;# This area is for manual editing - configuration wizard will not overwrite your changes"></textarea>
-                    </div>
+                            <details id="uci-defaults-details">
+                                <summary>UCI-defaults (Boot configuration script)</summary>
+                                <label for="uci-defaults-content" style="display: none;">UCI-defaults</label>
+                                <textarea id="uci-defaults-content" class="form-control" rows="6" placeholder="#!/bin/sh&#10;&#10;# Your custom script here&#10;# This area is for manual editing - configuration wizard will not overwrite your changes"></textarea>
+                            </details>
+                        </div>
                     </details>  <!-- use-aios-config-details を閉じる -->
                 </div>
 
@@ -2606,7 +2624,27 @@ function setupVersionUrls(version) {
     config.image_urls[version]    = `${image_url}/${basePath}/`;
 } 
 
-// ==================== 初期化関数 ====================
+// textareaの高さを内容に合わせて自動調整
+function adjustTextareaHeight(textareaId) {
+    const textarea = document.getElementById(textareaId);
+    if (!textarea) return;
+    
+    // 内容の行数を計算
+    const lines = textarea.value.split('\n');
+    const lineCount = lines.length;
+    
+    // 最小6行、最大は内容に応じて無制限
+    const rows = Math.max(6, lineCount + 1);
+    
+    // rows属性を更新
+    textarea.rows = rows;
+    
+    // スクロールバーが出ないように高さも調整
+    textarea.style.height = 'auto';
+    textarea.style.height = textarea.scrollHeight + 'px';
+}
+
+// ==================== 初期化関数 (init関数) ====================
 async function init() {
     try {
         // バージョン読み込み
@@ -2923,6 +2961,40 @@ function bindEvents() {
             console.log('[BIND] About to call buildAsuRequest');
             buildAsuRequest();
             console.log('[BIND] buildAsuRequest call completed');
+        });
+    }
+
+// Postinst/UCI-defaults展開時の自動高さ調整
+    const postinstDetails = document.getElementById('postinst-details');
+    if (postinstDetails) {
+        postinstDetails.addEventListener('toggle', function() {
+            if (this.open) {
+                adjustTextareaHeight('asu-packages');
+            }
+        });
+    }
+    
+    const uciDefaultsDetails = document.getElementById('uci-defaults-details');
+    if (uciDefaultsDetails) {
+        uciDefaultsDetails.addEventListener('toggle', function() {
+            if (this.open) {
+                adjustTextareaHeight('uci-defaults-content');
+            }
+        });
+    }
+    
+    // textareaの内容変更時も高さ自動調整
+    const asuPackages = document.getElementById('asu-packages');
+    if (asuPackages) {
+        asuPackages.addEventListener('input', function() {
+            adjustTextareaHeight('asu-packages');
+        });
+    }
+    
+    const uciDefaultsContent = document.getElementById('uci-defaults-content');
+    if (uciDefaultsContent) {
+        uciDefaultsContent.addEventListener('input', function() {
+            adjustTextareaHeight('uci-defaults-content');
         });
     }
 
