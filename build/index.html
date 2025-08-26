@@ -3280,7 +3280,7 @@ const DeviceContext = {
     },
     
 // デバイス選択処理
-    async _selectDevice(device) {
+async _selectDevice(device) {
         console.log(`[DeviceContext] Device selected: ${device.id}`);
         
         // デバイス状態更新
@@ -3295,15 +3295,17 @@ const DeviceContext = {
             const success = await loadDeviceProfile(device);
             // 成功時のみUI表示
             if (success) {
-                // ISP 先読み（デバイス決定後・表示前）
-                try {
-                    await fetchApiInfoAndUpdate();
-                    updateRequiredPackages();
-                    asuCollectPackages();
-                } catch (e) {
-                    console.error('[DeviceContext] API fetch failed before showDeviceInfo:', e);
-                }   
+                // 即座にデバイス情報を表示（API情報はLoading...）
                 showDeviceInfo();
+                
+                // API情報取得とパッケージ更新を並列実行
+                Promise.all([
+                    fetchApiInfoAndUpdate(),
+                    updateRequiredPackages(),
+                    asuCollectPackages()
+                ]).catch(e => {
+                    console.error('[DeviceContext] Background tasks failed:', e);
+                });
             } else {
                 // 失敗時はデバイス情報をクリア
                 current_device = {};
@@ -3845,6 +3847,9 @@ async function applyProfileData(profilesData, profileId) {
     }
 }
        
+// API呼び出しの追跡用
+let activeApiRequestId = 0;
+
 function showDeviceInfo() {
     ErrorHandler.trace('showDeviceInfo', current_device);
     if (!current_device || !current_device.id) return;
@@ -3874,19 +3879,70 @@ function showDeviceInfo() {
         .replace("{id}", device.id)
         .replace("{version}", app.selectedVersion);
 
-    // ===== About this build 表示用 前処理ブロック =====
-    const {
-        country = 'unknown',
-        zonename = 'unknown',
-        timezone = 'unknown',
-        isp = 'unknown',
-        as: asNumber = 'unknown',
-        ipv4 = '',
-        ipv6 = '',
-        aftr,
-        mape,
-        notice = ''
-    } = window.cachedApiInfo || {};
+    // ===== 即座に表示可能な情報 =====
+    const initialHtml = `
+        <h5>About this build</h5>
+        <div class="row">
+            <span class="col1">Model</span>
+            <span class="col2" id="image-model"><strong>${deviceTitle}</strong></span>
+        </div>
+        <div class="row">
+            <span class="col1">Target</span>
+            <span class="col2" id="image-target">${device.target}</span>
+        </div>
+        <div class="row">
+            <span class="col1">Version</span>
+            <span class="col2">
+                <span id="image-version">${app.selectedVersion}</span>
+                (<span id="image-code">${displayVersionCode}</span>)
+            </span>
+        </div>
+        <div class="row">
+            <span class="col1">Country</span>
+            <span class="col2" id="image-country" style="color: #999;">Loading...</span>
+        </div>
+        <div class="row">
+            <span class="col1">Timezone</span>
+            <span class="col2" id="image-timezone" style="color: #999;">Loading...</span>
+        </div>
+        <div class="row">
+            <span class="col1">Zonename</span>
+            <span class="col2" id="image-zonename" style="color: #999;">Loading...</span>
+        </div>
+        <div class="row">
+            <span class="col1">ISP</span>
+            <span class="col2" id="image-isp" style="color: #999;">Loading...</span>
+        </div>
+        <div class="row">
+            <span class="col1">AS</span>
+            <span class="col2" id="image-as" style="color: #999;">Loading...</span>
+        </div>
+        <div class="row">
+            <span class="col1">IP Address</span>
+            <span class="col2" id="image-ip-address" style="color: #999;">Loading...</span>
+        </div>
+        <div class="row">
+            <span class="col1">WAN</span>
+            <span class="col2" id="wan-type" style="color: #999;">Loading...</span>
+        </div>
+        <div class="row">
+            <span class="col1">Notice</span>
+            <span class="col2" id="image-notice" style="color: #999;">Loading...</span>
+        </div>
+        <div class="row">
+            <span class="col1">Links</span>
+            <span class="col2">
+                <a id="image-folder" href="${imageFolder}" title="Browse image folder" target="_blank"></a>
+                <a id="image-info" href="${infoUrl}" title="Device info" target="_blank"></a>
+                <a id="image-link" href="#" title="Copy link" onclick="navigator.clipboard.writeText('${deviceLink}').then(() => alert('Link copied!')); return false;"></a>
+            </span>
+        </div>
+    `;
+    
+    document.getElementById('info').innerHTML = initialHtml;
+    document.getElementById('info').style.display = 'block';
+    document.getElementById('packages').style.display = 'block';
+    document.getElementById('request-build').style.display = 'inline-block';
 
     const countryValue = country;
     const timezoneValue = timezone || 'unknown';
@@ -3993,13 +4049,12 @@ function showDeviceInfo() {
         </div>
     `;
     
-    document.getElementById('info').innerHTML = infoHtml;
-    document.getElementById('info').style.display = 'block';
-    document.getElementById('packages').style.display = 'block';
-    document.getElementById('request-build').style.display = 'inline-block';
+    // API情報の非同期更新
+    updateApiInfoAsync();
 
-// テンプレートを最初に設定（まだ設定されていない場合のみ）
-    const textarea = document.getElementById('uci-defaults-content');
+    // テンプレートを最初に設定（まだ設定されていない場合のみ）
+    const textarea = document.getElementById('uci-defaults-content');    
+
     if (!app.templateLoaded && (!textarea.value || textarea.value.trim() === '')) {
         textarea.value = SETUP_SH_TEMPLATE;
         app.templateLoaded = true;
@@ -4007,7 +4062,86 @@ function showDeviceInfo() {
     }
 }
 
+async function updateApiInfoAsync() {
+    // 新しいリクエストIDを生成
+    const requestId = ++activeApiRequestId;
+    
+    try {
+        // APIから情報を取得（キャッシュがあればそれを使用）
+        if (!window.cachedApiInfo) {
+            await fetchApiInfoAndUpdate();
+        }
+        
+        // このリクエストが最新でない場合は処理を中断
+        if (requestId !== activeApiRequestId) return;
+        
+        const apiInfo = window.cachedApiInfo || {};
+        
+        // API依存フィールドを更新
+        updateElement('image-country', apiInfo.country || 'unknown');
+        updateElement('image-timezone', apiInfo.timezone || 'unknown');
+        updateElement('image-zonename', apiInfo.zonename || 'unknown');
+        updateElement('image-isp', apiInfo.isp || 'unknown');
+        updateElement('image-as', apiInfo.as || 'unknown');
+        
+        const ipAddress = [apiInfo.ipv4, apiInfo.ipv6].filter(Boolean).join(' / ') || 'unknown';
+        updateElement('image-ip-address', ipAddress);
+        
+        // WAN type判定
+        const connMode = document.querySelector('input[name="connectionMode"]:checked')?.value || 'auto';
+        const connType = document.querySelector('input[name="connectionType"]:checked')?.value || '';
+        let wanType = 'Unknown';
+        
+        if (connMode === 'manual') {
+            switch (connType) {
+                case 'dhcp': wanType = 'Manual (DHCP)'; break;
+                case 'pppoe': wanType = 'Manual (PPPoE)'; break;
+                case 'dslite': wanType = 'Manual (DS-Lite)'; break;
+                case 'mape': wanType = 'Manual (MAP-E)'; break;
+                case 'ap': wanType = 'Manual (AP)'; break;
+                default: wanType = 'Manual (Unknown)';
+            }
+        } else {
+            if (apiInfo.mape?.aftrIpv6Address) {
+                wanType = 'Auto (DS-Lite)';
+            } else if (apiInfo.mape?.brIpv6Address) {
+                wanType = 'Auto (MAP-E)';
+            } else {
+                wanType = 'Auto (DHCP/PPPoE)';
+            }
+        }
+        updateElement('wan-type', wanType);
+        
+        updateElement('image-notice', apiInfo.notice?.trim() || '');
+        
+    } catch (error) {
+        // エラー時も最新リクエストの場合のみ更新
+        if (requestId !== activeApiRequestId) return;
+        
+        console.error('Failed to update API info:', error);
+        updateElement('image-country', 'Error');
+        updateElement('image-timezone', 'Error');
+        updateElement('image-zonename', 'Error');
+        updateElement('image-isp', 'Error');
+        updateElement('image-as', 'Error');
+        updateElement('image-ip-address', 'Error');
+        updateElement('wan-type', 'Error');
+        updateElement('image-notice', 'Failed to fetch API info');
+    }
+}
+
+function updateElement(id, value) {
+    const el = document.getElementById(id);
+    if (el) {
+        el.textContent = value;
+        el.style.color = ''; // Loading...スタイルを削除
+    }
+}
+
 function hideDeviceInfo() {
+    // API呼び出しをキャンセル
+    activeApiRequestId++;
+    
     ErrorHandler.debug('hideDeviceInfo', 'Before hiding');
     document.getElementById('info').style.display = 'none';
     document.getElementById('packages').style.display = 'none';
