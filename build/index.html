@@ -4819,6 +4819,18 @@ async function customizeSetupScript(content, userConfig, apiInfo, selectedPackag
         // AP
         ap_ip_address: { value: userConfig.apIpAddress, active: apActive && !!userConfig.apIpAddress },
         ap_gateway: { value: userConfig.apGateway, active: apActive && !!userConfig.apGateway },
+
+        // MAP-E Script Content
+        map_sh_content: { 
+            value: (mapeActive && mapShCache && mapShCache.trim().length > 0) ? mapShCache : '', 
+            active: mapeActive && mapShCache && mapShCache.trim().length > 0 
+        },
+        
+        // Network Optimizer
+        enable_netopt: { 
+            value: userConfig.netOptimizer === 'enabled' ? '1' : '', 
+            active: userConfig.netOptimizer === 'enabled' 
+        },
         
         // Network Optimizer
         enable_netopt: { 
