@@ -2403,13 +2403,13 @@ const ErrorHandler = {
             // PACKAGE_DBの全パッケージをチェック
             PACKAGE_DB.categories.forEach(category => {
                 category.packages.forEach(pkg => {
-                    const inDevice = app.devicePackages?.some(p => 
-                        (typeof p === 'string' ? p : p?.name) === pkg.name
+                    const inDevice = app.devicePackages?.some(p =>
+                        (typeof p === 'string' ? p : p?.name) === pkg.id
                     );
-                    const inUI = document.querySelector(`[data-package="${pkg.name}"]`);
+                    const inUI = document.querySelector(`[data-package="${pkg.id}"]`);
                     
-                    if (!inDevice) missing.push(pkg.name);
-                    if (inDevice && !inUI) notDisplayed.push(pkg.name);
+                    if (!inDevice) missing.push(pkg.id);
+                    if (inDevice && !inUI) notDisplayed.push(pkg.id);
                 });
             });
             
@@ -3152,18 +3152,14 @@ function generatePackageSelector() {
    );
 
    // 判定直前の状態を総合デバッガで出力
-   ErrorHandler.debug(
-       'generatePackageSelector',
-       'State immediately before zero check',
-       {
-           devicePackages_raw: app.devicePackages,
-           availablePackages_list: Array.from(availablePackages),
-           availablePackages_size: availablePackages.size
-       }
-   );
+   ErrorHandler.debug('generatePackageSelector', 'State immediately before zero check', {
+       devicePackages_raw: app.devicePackages,
+       availablePackageIds_list: Array.from(availablePackageIds),
+       availablePackageIds_size: availablePackageIds.size
+   });
 
    // 取得できていない（＝判定不能）場合の処理
-   if (availablePackages.size === 0) {
+   if (availablePackageIds.size === 0) {
        container.innerHTML =
            '<p class="text-muted small">Unable to retrieve the package index for this OS version/device. ' +
            'Please try a different version or device, or try again later.</p>';
@@ -3335,6 +3331,7 @@ function handlePackageSelection(e) {
 }
     
 function updatePackageListFromSelector() {
+    const checkedPkgs = [];
     document.querySelectorAll('.package-selector-checkbox:checked')
       .forEach(cb => checkedPkgs.push(cb.getAttribute('data-package')));
     
@@ -3505,15 +3502,27 @@ function selectDevice(device) {
 }
 
 // ==================== changeModel関数の簡素化 ====================
-function changeModel(device) {
+function changeModel(a, b, c) {
+  // 互換: changeModel(version, devicesMap, title)
+  if (typeof a === 'string' && b && typeof c === 'string') {
+    const version = a, devicesMap = b, title = c;
+    const device = devicesMap[title];
     if (device) {
-        DeviceContext.update({
-            deviceTitle: getDeviceTitle(device),
-            trigger: 'change-model'
-        });
+      current_device = { version, id: device.id, target: device.target };
+      selectDeviceProfile(device);
     } else {
-        DeviceContext._clearDevice();
+      hideDeviceInfo();
+      current_device = {};
     }
+    return;
+  }
+  // 新: changeModel(deviceObject)
+  const device = a;
+  if (device && device.id) {
+    DeviceContext.update({ deviceTitle: getDeviceTitle(device), trigger: 'change-model' });
+  } else {
+    DeviceContext._clearDevice();
+  }
 }
         
 // ==================== バージョン管理 ====================
