@@ -1192,7 +1192,7 @@
 
                                     <div class="form-group">
                                         <label for="dslite-aftr-address">AFTR IPv6 Address</label>
-                                        <input type="text" id="dslite-aftr-address" class="form-control" placeholder="2404:8e00::feed:100" value="">
+                                        <input type="text" id="dslite-aftr-address" class="form-control" value="">
                                         <small class="form-text text-muted">Auto mode: Set from ISP detection | Manual mode: Set based on AFTR type and region</small>
                                     </div>
                                 </div>
@@ -2514,67 +2514,6 @@ const ResetManager = {
         this.clearMAPEValues();
         this.clearAPValues();
     },
-    
-    // ==================== リセット共通関数 ====================
-    resetConnectionType() {
-        const dhcpRadio = document.getElementById('conn-dhcp');
-        if (dhcpRadio) {
-            dhcpRadio.checked = true;
-        }
-        
-        // 全ての接続タイプ固有セクションを非表示
-        const sections = [
-            'pppoe-section',
-            'dslite-section', 
-            'mape-manual-section',
-            'ap-section',
-            'dhcp-section'
-        ];
-        
-        sections.forEach(id => {
-            const section = document.getElementById(id);
-            if (section) section.style.display = 'none';
-        });
-        
-        // DHCPセクションのみ表示
-        const dhcpSection = document.getElementById('dhcp-section');
-        if (dhcpSection) dhcpSection.style.display = 'block';
-    },
-    
-    // DS-Lite設定をデフォルトにリセット
-    resetDsliteSettings() {
-        const dsliteAuto = document.getElementById('dslite-auto');
-        if (dsliteAuto) {
-            dsliteAuto.checked = true;
-        }
-        
-        const manualFields = document.getElementById('dslite-manual-fields');
-        if (manualFields) {
-            manualFields.style.display = 'none';
-        }
-    },
-    
-    // MAP-E設定をデフォルトにリセット
-    resetMapeSettings() {
-        const mapeAuto = document.getElementById('mape-auto');
-        if (mapeAuto) {
-            mapeAuto.checked = true;
-        }
-    },
-    
-    // Network Optimizer設定をデフォルトにリセット
-    resetNetOptimizerSettings() {
-        const netoptAuto = document.getElementById('netopt-auto');
-        if (netoptAuto) {
-            netoptAuto.checked = true;
-        }
-        
-        const manualSection = document.getElementById('net-optimizer-manual');
-        if (manualSection) {
-            manualSection.style.display = 'none';
-        }
-    }
-};
 
 // ==================== オートコンプリート関数（公式版準拠） ====================
 function setupAutocompleteList(input, items, onbegin, onend) {
