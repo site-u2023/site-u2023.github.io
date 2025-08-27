@@ -3259,8 +3259,8 @@ function generatePackageSelector() {
                        if (depPkg) break;
                    }
 
-                   const depName = depPkg ? depPkg.name : depId;
-                   const depIsAvailable = availablePackages.has(depName);
+                   const depKey = depPkg ? depPkg.id : depId;
+                   const depIsAvailable = availablePackageIds.has(depKey);
                    if (!depIsAvailable) return;
 
                    const depItem = document.createElement('div');
@@ -3269,8 +3269,8 @@ function generatePackageSelector() {
                    const depCheck = document.createElement('input');
                    depCheck.className = 'form-check-input package-selector-checkbox';
                    depCheck.type = 'checkbox';
-                   depCheck.id = `pkg-${depPkg ? depPkg.id : depId}`;
-                   depCheck.setAttribute('data-package', depName);
+                   depCheck.id = `pkg-${depKey}`;
+                   depCheck.setAttribute('data-package', depKey);
                    depCheck.addEventListener('change', handlePackageSelection);
 
                    const depLabel = document.createElement('label');
