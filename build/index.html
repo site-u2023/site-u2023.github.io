@@ -3146,14 +3146,10 @@ function generatePackageSelector() {
 
    container.innerHTML = '';
 
-   // 利用可能パッケージ名のセットを作成（デバイス＋OSバージョンで取得済みのもの）
-   const availablePackages = new Set();
-   if (Array.isArray(app.devicePackages) && app.devicePackages.length > 0) {
-       app.devicePackages.forEach(pkg => {
-           const name = (typeof pkg === 'string') ? pkg : pkg && pkg.name;
-           if (name) availablePackages.add(name);
-       });
-   }
+   // 利用可能パッケージIDのセットを作成
+   const availablePackageIds = new Set(
+     app.devicePackages.map(p => typeof p === 'string' ? p : p.id)
+   );
 
    // 判定直前の状態を総合デバッガで出力
    ErrorHandler.debug(
@@ -3206,8 +3202,8 @@ function generatePackageSelector() {
            // 依存パッケージはトップレベル描画しない
            if (depIds.has(pkg.id)) return;
 
-           // 厳格：available にあるものだけ表示
-           const isAvailable = availablePackages.has(pkg.name);
+           // 厳格：ID が availablePackageIds にあるものだけ表示
+           const isAvailable = availablePackageIds.has(pkg.id);
 
            const packageItem = document.createElement('div');
            packageItem.className = 'package-item';
@@ -3228,7 +3224,8 @@ function generatePackageSelector() {
            checkbox.className = 'form-check-input package-selector-checkbox';
            checkbox.type = 'checkbox';
            checkbox.id = `pkg-${pkg.id}`;
-           checkbox.setAttribute('data-package', pkg.name);
+           // data-package は常に pkg.id
+           checkbox.setAttribute('data-package', pkg.id);
            if (pkg.dependencies) {
                checkbox.setAttribute('data-dependencies', pkg.dependencies.join(','));
            }
@@ -3338,11 +3335,8 @@ function handlePackageSelection(e) {
 }
     
 function updatePackageListFromSelector() {
-    const checkedPkgs = [];
-    document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
-        const n = cb.getAttribute('data-package');
-        if (n) checkedPkgs.push(n);
-    });
+    document.querySelectorAll('.package-selector-checkbox:checked')
+      .forEach(cb => checkedPkgs.push(cb.getAttribute('data-package')));
     
     // 完全同期：selector由来のパッケージは差し替え
     const textarea = document.getElementById('asu-packages');
