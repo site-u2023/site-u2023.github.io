@@ -3306,7 +3306,7 @@ function generatePackageSelector() {
            link.href = pkg.url;
            link.target = '_blank';
            link.className = 'package-link';
-           link.textContent = pkg.name;
+           link.textContent = pkg.id;
 
            label.appendChild(link);
            formCheck.appendChild(checkbox);
@@ -3345,7 +3345,7 @@ function generatePackageSelector() {
                        depLink.href = depPkg.url;
                        depLink.target = '_blank';
                        depLink.className = 'package-link';
-                       depLink.textContent = depPkg.name;
+                       depLink.textContent = depPkg.id;
                        depLabel.appendChild(depLink);
                    } else {
                        depLabel.textContent = depId;
