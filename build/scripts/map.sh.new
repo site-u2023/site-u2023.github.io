@@ -127,8 +127,8 @@ proto_map_setup() {
             nft add chain inet mape srcnat {type nat hook postrouting priority 0\; policy accept\; }
 	    local counter=0  
         for proto in icmp tcp udp; do
-			nft add rule inet mape srcnat ip protocol $proto oifname "map-$cfg" counter packets 0 bytes 0 snat ip to $(eval "echo \$RULE_${k}_IPV4ADDR") : numgen inc mod $portcount map { $allports }
-	    done
+	  nft add rule inet mape srcnat ip protocol $proto oifname "map-$cfg" counter packets 0 bytes 0 snat ip to $(eval "echo \$RULE_${k}_IPV4ADDR") : numgen inc mod $portcount map { $allports } comment "MAP-E: $proto traffic via map-$cfg"
+	  done
 	  fi
 	  if [ "$maptype" = "map-t" ]; then
 		[ -z "$zone" ] && zone=$(fw3 -q network $iface 2>/dev/null)
