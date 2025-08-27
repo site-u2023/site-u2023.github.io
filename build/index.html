@@ -2391,16 +2391,16 @@ const ErrorHandler = {
             const missing = [];
             const notDisplayed = [];
             
-            // PACKAGE_DBの全パッケージをチェック
+            // 修正版：
             PACKAGE_DB.categories.forEach(category => {
                 category.packages.forEach(pkg => {
                     const inDevice = app.devicePackages?.some(p => 
-                        (typeof p === 'string' ? p : p?.name) === pkg.name
+                        (typeof p === 'string' ? p : p?.name) === pkg.id  // pkg.idで比較
                     );
-                    const inUI = document.querySelector(`[data-package="${pkg.name}"]`);
-                    
-                    if (!inDevice) missing.push(pkg.name);
-                    if (inDevice && !inUI) notDisplayed.push(pkg.name);
+                    const inUI = document.querySelector(`[data-package="${pkg.id}"]`);  // pkg.idで検索
+        
+                    if (!inDevice) missing.push(pkg.name);  // 表示用はnameのまま
+                    if (inDevice && !inUI) notDisplayed.push(pkg.name);  // 表示用はnameのまま
                 });
             });
             
