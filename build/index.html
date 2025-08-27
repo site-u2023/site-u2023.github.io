@@ -3263,8 +3263,6 @@ function generatePackageSelector() {
        let hasVisiblePackages = false;
 
        category.packages.forEach(pkg => {
-           // 依存パッケージはトップレベル描画しない
-           if (depIds.has(pkg.id)) return;
 
            // 厳格：available にあるものだけ表示
            const isAvailable = availablePackages.has(pkg.id);
