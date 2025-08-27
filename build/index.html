@@ -2476,9 +2476,9 @@ const ResetManager = {
             dsliteAuto.checked = true;
         }
         
-        const manualConfig = document.getElementById('dslite-manual-config');
-        if (manualConfig) {
-            manualConfig.style.display = 'none';
+        const manualFields = document.getElementById('dslite-manual-fields');
+        if (manualFields) {
+            manualFields.style.display = 'none';
         }
     },
     
@@ -4271,9 +4271,9 @@ function handleConnectionTypeChange(e) {
         }
         
         // Manual設定エリアの表示制御
-        const manualConfig = document.getElementById('dslite-manual-config');
-        if (manualConfig) {
-            manualConfig.style.display = hasAftr ? 'none' : 'block';
+        const manualFields = document.getElementById('dslite-manual-fields');
+        if (manualFields) {
+            manualFields.style.display = hasAftr ? 'none' : 'block';
         }
         
 } else if (e.target.value === 'mape') {
@@ -4327,14 +4327,14 @@ function handleMapeTypeChange(e) {
 }
 
 function handleDsliteModeChange(e) {
-    const manualConfig = document.getElementById('dslite-manual-config');
+    const manualFields = document.getElementById('dslite-manual-fields');
     const aftrAddressField = document.getElementById('dslite-aftr-address');
     
     if (e.target.value === 'manual') {
-        manualConfig.style.display = 'block';
+        manualFields.style.display = 'block';
         applyInitialsFromApi('dslite');
     } else {
-        manualConfig.style.display = 'none';
+        manualFields.style.display = 'none';
         if (window.cachedApiInfo && window.cachedApiInfo.mape && window.cachedApiInfo.mape.aftrIpv6Address) {
             aftrAddressField.value = window.cachedApiInfo.mape.aftrIpv6Address;
         }
