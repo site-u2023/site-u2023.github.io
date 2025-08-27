@@ -2441,9 +2441,81 @@ const ErrorHandler = {
     }
 };
 
-// ==================== リセット共通関数 ====================
+// ==================== ãƒªã‚»ãƒƒãƒˆå…±é€šé–¢æ•° ====================
 const ResetManager = {
-    // 接続タイプをデフォルトにリセット
+    // フィールド値をクリアする汎用関数
+    clearFields(fieldIds) {
+        fieldIds.forEach(id => {
+            const element = document.getElementById(id);
+            if (element) {
+                if (element.type === 'text' || element.type === 'password' || 
+                    element.type === 'number' || element.tagName === 'TEXTAREA') {
+                    element.value = '';
+                } else if (element.type === 'select-one') {
+                    element.selectedIndex = 0;
+                } else if (element.type === 'radio' || element.type === 'checkbox') {
+                    element.checked = false;
+                }
+            }
+        });
+    },
+    
+    // ラジオボタンをデフォルトにリセット
+    resetRadio(name, defaultId) {
+        const defaultRadio = document.getElementById(defaultId);
+        if (defaultRadio) {
+            defaultRadio.checked = true;
+        }
+    },
+    
+    // PPPoE値をクリア
+    clearPPPoEValues() {
+        this.clearFields(['pppoe-username', 'pppoe-password']);
+    },
+    
+    // DS-Lite値をクリア
+    clearDSLiteValues() {
+        this.clearFields(['dslite-aftr-address']);
+        // デフォルトに戻す
+        const typeSelect = document.getElementById('dslite-aftr-type');
+        const areaSelect = document.getElementById('dslite-area');
+        if (typeSelect) typeSelect.selectedIndex = 0;
+        if (areaSelect) areaSelect.selectedIndex = 0;
+    },
+    
+    // MAP-E値をクリア  
+    clearMAPEValues() {
+        this.clearFields([
+            'mape-br', 'mape-ealen', 'mape-ipv4-prefix', 'mape-ipv4-prefixlen',
+            'mape-ipv6-prefix', 'mape-ipv6-prefixlen', 'mape-psid-offset', 
+            'mape-psidlen', 'mape-gua-prefix'
+        ]);
+    },
+    
+    // AP値をクリア
+    clearAPValues() {
+        this.clearFields(['ap-ip-address', 'ap-gateway']);
+    },
+    
+    // Network Optimizer値をクリア
+    clearNetOptimizerValues() {
+        this.clearFields([
+            'netopt-rmem', 'netopt-wmem', 'netopt-conntrack',
+            'netopt-backlog', 'netopt-somaxconn'
+        ]);
+        const congestionSelect = document.getElementById('netopt-congestion');
+        if (congestionSelect) congestionSelect.value = 'cubic';
+    },
+    
+    // 接続タイプ全体をリセット
+    resetAllConnectionValues() {
+        this.clearPPPoEValues();
+        this.clearDSLiteValues();
+        this.clearMAPEValues();
+        this.clearAPValues();
+    },
+    
+    // ==================== リセット共通関数 ====================
     resetConnectionType() {
         const dhcpRadio = document.getElementById('conn-dhcp');
         if (dhcpRadio) {
@@ -2501,9 +2573,6 @@ const ResetManager = {
         if (manualSection) {
             manualSection.style.display = 'none';
         }
-        
-        // デフォルト値に戻す
-        resetNetOptimizerValues();
     }
 };
 
@@ -4208,6 +4277,9 @@ function handleConnectionModeChange(e) {
         // Auto選択時 - 全てをリセット
         manualSection.style.display = 'none';
         
+        // 全ての接続タイプの値をクリア
+        ResetManager.resetAllConnectionValues();
+        
         // 重要：接続タイプを DHCP にリセット
         ResetManager.resetConnectionType();
         
@@ -4246,6 +4318,16 @@ function handleConnectionTypeChange(e) {
     // 選択された接続タイプに応じてセクションを表示
     if (e.target.value === 'dhcp') {
         if (dhcpSection) dhcpSection.style.display = 'block';
+    // 前の接続タイプの値をクリア
+    const previousType = e.target.previousType || '';
+    if (previousType === 'pppoe') ResetManager.clearPPPoEValues();
+    else if (previousType === 'dslite') ResetManager.clearDSLiteValues();
+    else if (previousType === 'mape') ResetManager.clearMAPEValues();
+    else if (previousType === 'ap') ResetManager.clearAPValues();
+    
+    // 現在のタイプを記録
+    e.target.previousType = e.target.value;
+    
     } else if (e.target.value === 'pppoe') {
         pppoeSection.style.display = 'block';
     } else if (e.target.value === 'dslite') {
@@ -4374,13 +4456,8 @@ function handleNetOptimizerChange(e) {
         // Disabled時は全てクリア
         optimizerSection.style.display = 'none';
         document.getElementById('net-optimizer-manual').style.display = 'none';
-        // 値もクリア（次回Enabled時のため）
-        document.getElementById('netopt-rmem').value = '';
-        document.getElementById('netopt-wmem').value = '';
-        document.getElementById('netopt-conntrack').value = '';
-        document.getElementById('netopt-backlog').value = '';
-        document.getElementById('netopt-somaxconn').value = '';
-        document.getElementById('netopt-congestion').value = 'cubic';
+        // 統一された関数で値をクリア
+        ResetManager.clearNetOptimizerValues();
     }
     
     syncTemplateAndPackages({ trigger: 'netopt-change' });
