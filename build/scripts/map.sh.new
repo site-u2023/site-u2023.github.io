@@ -21,7 +21,7 @@ proto_map_setup() {
 	[ -z "$maptype" ] && maptype="map-e"
 	( proto_add_host_dependency "$cfg" "::" "$tunlink" )
 	# fixme: handle RA/DHCPv6 address race for LW
-	[ "$maptype" = lw4o6 ] && sleep 
+	[ "$maptype" = lw4o6 ] && sleep 5
 	if [ -z "$rule" ]; then
 		rule="type=$maptype,ipv6prefix=$ip6prefix,prefix6len=$ip6prefixlen,ipv4prefix=$ipaddr,prefix4len=$ip4prefixlen"
 		[ -n "$psid" ] && rule="$rule,psid=$psid"
