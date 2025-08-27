@@ -820,6 +820,26 @@
             filter: invert(100%) sepia(9%) saturate(261%) hue-rotate(281deg) brightness(117%) contrast(100%);
         }
     } /* close @media (prefers-color-scheme: dark) */
+
+    /* エラー詳細のpre要素 */
+    .asu-error pre {
+        background: #f8f8f8 !important;
+        color: #333 !important;
+        padding: 10px;
+        margin: 10px 0;
+        border-radius: 4px;
+        overflow-x: auto;
+        font-size: 0.9em;
+        max-height: 200px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+        .asu-error pre {
+            background: #2d2d2d !important;
+            color: #f0f0f0 !important;
+            border: 1px solid #444;
+        }
+    }
 </style>
 
 </head>
@@ -1780,10 +1800,6 @@ const PACKAGE_DB = {
       description: "QoS, bandwidth monitoring, Wi-Fi scheduling, and network utilities",
       packages: [
         {
-          id: "luci-app-qos",
-          name: "luci-app-qos"
-        },
-        {
           id: "luci-app-sqm",
           name: "luci-app-sqm",
           dependencies: ["tc-full"]
@@ -1830,7 +1846,7 @@ const PACKAGE_DB = {
         },
         {
           id: "luci-app-mwan3",
-          name: "luci-app-mwan3",
+          name: "luci-app-mwan3 (iptables)",
           dependencies: ["mwan3"]
         }
       ]
@@ -2091,7 +2107,7 @@ const PACKAGE_DB = {
         },
         {
           id: "luci-app-dockerman",
-          name: "luci-app-dockerman",
+          name: "luci-app-dockerman (iptables)",
           dependencies: ["docker-compose"]
         },
         {
@@ -3191,7 +3207,7 @@ function generatePackageSelector() {
            if (depIds.has(pkg.id)) return;
 
            // 厳格：available にあるものだけ表示
-           const isAvailable = availablePackages.has(pkg.name);
+           const isAvailable = availablePackages.has(pkg.id);
 
            const packageItem = document.createElement('div');
            packageItem.className = 'package-item';
@@ -5236,7 +5252,7 @@ const BuildErrorHandler = {
         if (errorData) {
             if (typeof errorData === 'string') {
                 html += `<div><strong>Error Details:</strong></div>
-                         <pre style="background: #f8f8f8; padding: 10px; margin: 10px 0; border-radius: 4px; overflow-x: auto; font-size: 0.9em; max-height: 200px;">${errorData}</pre>`;
+                         <pre style="background: #f8f8f8; padding: 10px; margin: 10px 0; border-radius: 4px; overflow-x: auto; font-size: 0.9em; max-height: 200px; color: #333;">${errorData}</pre>`;
             } else if (typeof errorData === 'object') {
                 // リクエストハッシュがあれば表示
                 if (errorData.request_hash) {
