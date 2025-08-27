@@ -1,5 +1,5 @@
 #!/bin/sh
-
+# Nichiban-ready
 DONT_SNAT_TO="0"
 [ -n "$INCLUDE_ONLY" ] || {
 	. /lib/functions.sh
