@@ -4297,6 +4297,25 @@ function handleConnectionModeChange(e) {
 }
 
 function handleConnectionTypeChange(e) {
+    // 全フィールドを初期値にリセット
+    document.getElementById('pppoe-username').value = '';
+    document.getElementById('pppoe-password').value = '';
+    document.getElementById('dslite-aftr-address').value = '';
+    document.getElementById('ap-ip-address').value = '192.168.1.2';
+    document.getElementById('ap-gateway').value = '192.168.1.1';
+    
+    // MAP-E初期値（APIから）
+    const api = window.cachedApiInfo?.mape || {};
+    document.getElementById('mape-br').value = api.brIpv6Address || '';
+    document.getElementById('mape-ealen').value = api.eaBitLength || '';
+    document.getElementById('mape-ipv4-prefix').value = api.ipv4Prefix || '';
+    document.getElementById('mape-ipv4-prefixlen').value = api.ipv4PrefixLength || '';
+    document.getElementById('mape-ipv6-prefix').value = api.ipv6Prefix || '';
+    document.getElementById('mape-ipv6-prefixlen').value = api.ipv6PrefixLength || '';
+    document.getElementById('mape-psid-offset').value = api.psIdOffset || '';
+    document.getElementById('mape-psidlen').value = api.psidlen || '';
+    document.getElementById('mape-gua-prefix').value = '';
+    
     const dhcpSection = document.getElementById('dhcp-section');
     const pppoeSection = document.getElementById('pppoe-section');
     const dsliteSection = document.getElementById('dslite-section');
