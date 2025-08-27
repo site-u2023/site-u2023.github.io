@@ -489,6 +489,11 @@
         margin-top: 0.1rem;
     }
 
+    .package-hidden {
+        opacity: 0.7;
+        font-style: italic;
+    }
+
     .package-dependent {
         margin-left: 1.5rem;
         font-size: 0.9rem;
@@ -1832,7 +1837,7 @@ const PACKAGE_DB = {
         },
         {
           id: "luci-app-mwan3",
-          name: "luci-app-mwan3 (iptables)",
+          name: "luci-app-mwan3",
           dependencies: ["mwan3"]
         }
       ]
@@ -2093,7 +2098,7 @@ const PACKAGE_DB = {
         },
         {
           id: "luci-app-dockerman",
-          name: "luci-app-dockerman (iptables)",
+          name: "luci-app-dockerman",
           dependencies: ["docker-compose"]
         },
         {
@@ -2386,16 +2391,16 @@ const ErrorHandler = {
             const missing = [];
             const notDisplayed = [];
             
-            // 修正版：
+            // PACKAGE_DBの全パッケージをチェック
             PACKAGE_DB.categories.forEach(category => {
                 category.packages.forEach(pkg => {
                     const inDevice = app.devicePackages?.some(p => 
-                        (typeof p === 'string' ? p : p?.name) === pkg.id  // pkg.idで比較
+                        (typeof p === 'string' ? p : p?.name) === pkg.name
                     );
-                    const inUI = document.querySelector(`[data-package="${pkg.id}"]`);  // pkg.idで検索
-        
-                    if (!inDevice) missing.push(pkg.name);  // 表示用はnameのまま
-                    if (inDevice && !inUI) notDisplayed.push(pkg.name);  // 表示用はnameのまま
+                    const inUI = document.querySelector(`[data-package="${pkg.name}"]`);
+                    
+                    if (!inDevice) missing.push(pkg.name);
+                    if (inDevice && !inUI) notDisplayed.push(pkg.name);
                 });
             });
             
@@ -3205,9 +3210,10 @@ function generatePackageSelector() {
    const availablePackages = new Set();
    if (Array.isArray(app.devicePackages) && app.devicePackages.length > 0) {
        app.devicePackages.forEach(pkg => {
-            const name = (typeof pkg === 'string') ? pkg : pkg && pkg.name;
-            if (name) availablePackages.add(name);
-        });
+           const name = (typeof pkg === 'string') ? pkg : pkg && pkg.name;
+           if (name) availablePackages.add(name);
+       });
+   }
 
    // 判定直前の状態を総合デバッガで出力
    ErrorHandler.debug(
@@ -3257,12 +3263,15 @@ function generatePackageSelector() {
        let hasVisiblePackages = false;
 
        category.packages.forEach(pkg => {
+           // 依存パッケージはトップレベル描画しない
+           if (depIds.has(pkg.id)) return;
 
            // 厳格：available にあるものだけ表示
            const isAvailable = availablePackages.has(pkg.id);
 
            const packageItem = document.createElement('div');
            packageItem.className = 'package-item';
+           if (pkg.hidden) packageItem.classList.add('package-hidden');
 
            if (!isAvailable) {
                // 完全に除外
@@ -3279,7 +3288,7 @@ function generatePackageSelector() {
            checkbox.className = 'form-check-input package-selector-checkbox';
            checkbox.type = 'checkbox';
            checkbox.id = `pkg-${pkg.id}`;
-           checkbox.setAttribute('data-package', pkg.id);
+           checkbox.setAttribute('data-package', pkg.name);
            if (pkg.dependencies) {
                checkbox.setAttribute('data-dependencies', pkg.dependencies.join(','));
            }
@@ -3313,7 +3322,7 @@ function generatePackageSelector() {
                        if (depPkg) break;
                    }
 
-                   const depName = depPkg ? depPkg.id : depId;
+                   const depName = depPkg ? depPkg.name : depId;
                    const depIsAvailable = availablePackages.has(depName);
                    if (!depIsAvailable) return;
 
@@ -3324,7 +3333,7 @@ function generatePackageSelector() {
                    depCheck.className = 'form-check-input package-selector-checkbox';
                    depCheck.type = 'checkbox';
                    depCheck.id = `pkg-${depPkg ? depPkg.id : depId}`;
-                   depCheck.setAttribute('data-package', depPkg ? depPkg.id : depId);
+                   depCheck.setAttribute('data-package', depName);
                    depCheck.addEventListener('change', handlePackageSelection);
 
                    const depLabel = document.createElement('label');
