@@ -3207,11 +3207,6 @@ function generatePackageSelector() {
        app.devicePackages.forEach(pkg => {
             const name = (typeof pkg === 'string') ? pkg : pkg && pkg.name;
             if (name) availablePackages.add(name);
-    
-            // nameではなくidも追加（collectdのような単純な名前のために）
-            if (typeof pkg === 'object' && pkg.name) {
-                availablePackages.add(pkg.name);
-            }
         });
 
    // 判定直前の状態を総合デバッガで出力
