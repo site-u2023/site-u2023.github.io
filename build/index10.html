@@ -820,26 +820,6 @@
             filter: invert(100%) sepia(9%) saturate(261%) hue-rotate(281deg) brightness(117%) contrast(100%);
         }
     } /* close @media (prefers-color-scheme: dark) */
-
-    /* エラー詳細のpre要素 */
-    .asu-error pre {
-        background: #f8f8f8 !important;
-        color: #333 !important;
-        padding: 10px;
-        margin: 10px 0;
-        border-radius: 4px;
-        overflow-x: auto;
-        font-size: 0.9em;
-        max-height: 200px;
-    }
-
-    @media (prefers-color-scheme: dark) {
-        .asu-error pre {
-            background: #2d2d2d !important;
-            color: #f0f0f0 !important;
-            border: 1px solid #444;
-        }
-    }
 </style>
 
 </head>
@@ -5256,7 +5236,7 @@ const BuildErrorHandler = {
         if (errorData) {
             if (typeof errorData === 'string') {
                 html += `<div><strong>Error Details:</strong></div>
-                         <pre style="background: #f8f8f8; padding: 10px; margin: 10px 0; border-radius: 4px; overflow-x: auto; font-size: 0.9em; max-height: 200px; color: #333;">${errorData}</pre>`;
+                         <pre style="background: #f8f8f8; padding: 10px; margin: 10px 0; border-radius: 4px; overflow-x: auto; font-size: 0.9em; max-height: 200px;">${errorData}</pre>`;
             } else if (typeof errorData === 'object') {
                 // リクエストハッシュがあれば表示
                 if (errorData.request_hash) {
@@ -5406,25 +5386,11 @@ async function buildAsuRequest() {
                     });
                     break;
                 case 400: // bad request
-                    response.text().then((responseText) => {
-                        hideProgress();
-                        showBuildStatus('Build failed: Bad Request', 'error');
-                        BuildErrorHandler.showError('Bad Request', 400, responseText);
-                    });
-                    break;
-                case 422: // character limit exceeded
-                    response.text().then((responseText) => {
-                        hideProgress();
-                        showBuildStatus('Build failed: Character Limit Exceeded', 'error');
-                        BuildErrorHandler.showError('Character Limit Exceeded (16KB variable limit)', 422, responseText);
-                    });
-                    break;
+                case 422: // bad package
                 case 500: // build failed
                     response.text().then((responseText) => {
                         hideProgress();
-                        showBuildStatus('Build failed: Server Error', 'error');
-                        BuildErrorHandler.showError('Server Error', 500, responseText);
-                    });
+                        showBuildStatus('Build failed: HTTP 500 Server Error', 'error');
                         
                         // 詳細なエラー情報を表示
                         const container = document.getElementById('download-links');
