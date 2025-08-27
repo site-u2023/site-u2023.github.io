@@ -1846,7 +1846,7 @@ const PACKAGE_DB = {
         },
         {
           id: "luci-app-mwan3",
-          name: "luci-app-mwan3",
+          name: "luci-app-mwan3 (mwan3)",
           dependencies: ["mwan3"]
         }
       ]
@@ -2107,7 +2107,7 @@ const PACKAGE_DB = {
         },
         {
           id: "luci-app-dockerman",
-          name: "luci-app-dockerman",
+          name: "luci-app-dockerman (iptables)",
           dependencies: ["docker-compose"]
         },
         {
@@ -3207,7 +3207,7 @@ function generatePackageSelector() {
            if (depIds.has(pkg.id)) return;
 
            // 厳格：available にあるものだけ表示
-           const isAvailable = availablePackages.has(pkg.name);
+           const isAvailable = availablePackages.has(pkg.id);
 
            const packageItem = document.createElement('div');
            packageItem.className = 'package-item';
