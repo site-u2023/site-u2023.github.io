@@ -1754,7 +1754,7 @@ const PACKAGE_DB = {
       packages: [
         {
           id: "luci-app-ttyd",
-          name: "luci-app-ttyd (test)",
+          name: "luci-app-ttyd",
           enableVar: "enable_ttyd",
           checked: true
         },
@@ -1837,7 +1837,7 @@ const PACKAGE_DB = {
         },
         {
           id: "luci-app-mwan3",
-          name: "luci-app-mwan3",
+          name: "luci-app-mwan3 (iptables)",
           dependencies: ["mwan3"]
         }
       ]
@@ -2098,7 +2098,7 @@ const PACKAGE_DB = {
         },
         {
           id: "luci-app-dockerman",
-          name: "luci-app-dockerman",
+          name: "luci-app-dockerman (iptables)",
           dependencies: ["docker-compose"]
         },
         {
@@ -3288,7 +3288,7 @@ function generatePackageSelector() {
            checkbox.className = 'form-check-input package-selector-checkbox';
            checkbox.type = 'checkbox';
            checkbox.id = `pkg-${pkg.id}`;
-           checkbox.setAttribute('data-package', pkg.name);
+           checkbox.setAttribute('data-package', pkg.id);
            if (pkg.dependencies) {
                checkbox.setAttribute('data-dependencies', pkg.dependencies.join(','));
            }
@@ -3322,7 +3322,7 @@ function generatePackageSelector() {
                        if (depPkg) break;
                    }
 
-                   const depName = depPkg ? depPkg.name : depId;
+                   const depName = depPkg ? depPkg.id : depId;
                    const depIsAvailable = availablePackages.has(depName);
                    if (!depIsAvailable) return;
 
@@ -3333,7 +3333,7 @@ function generatePackageSelector() {
                    depCheck.className = 'form-check-input package-selector-checkbox';
                    depCheck.type = 'checkbox';
                    depCheck.id = `pkg-${depPkg ? depPkg.id : depId}`;
-                   depCheck.setAttribute('data-package', depName);
+                   depCheck.setAttribute('data-package', depPkg ? depPkg.id : depId);
                    depCheck.addEventListener('change', handlePackageSelection);
 
                    const depLabel = document.createElement('label');
