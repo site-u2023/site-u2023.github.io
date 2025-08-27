@@ -4303,6 +4303,12 @@ function handleConnectionTypeChange(e) {
     document.getElementById('dslite-aftr-address').value = '';
     document.getElementById('ap-ip-address').value = '192.168.1.2';
     document.getElementById('ap-gateway').value = '192.168.1.1';
+
+    // DS-Liteラジオボタンもリセット（Auto/Manual）
+    const dsliteAuto = document.getElementById('dslite-auto');
+    const dsliteManual = document.getElementById('dslite-manual');
+    if (dsliteAuto) dsliteAuto.checked = false;
+    if (dsliteManual) dsliteManual.checked = false;
     
     // MAP-E初期値（APIから）
     const api = window.cachedApiInfo?.mape || {};
@@ -4315,6 +4321,14 @@ function handleConnectionTypeChange(e) {
     document.getElementById('mape-psid-offset').value = api.psIdOffset || '';
     document.getElementById('mape-psidlen').value = api.psidlen || '';
     document.getElementById('mape-gua-prefix').value = '';
+
+    // MAP-Eラジオボタンもリセット
+    const mapeAuto = document.getElementById('mape-auto');
+    const mapeGua = document.getElementById('mape-gua');
+    const mapePd = document.getElementById('mape-pd');
+    if (mapeAuto) mapeAuto.checked = false;
+    if (mapeGua) mapeGua.checked = false;
+    if (mapePd) mapePd.checked = false;
     
     const dhcpSection = document.getElementById('dhcp-section');
     const pppoeSection = document.getElementById('pppoe-section');
