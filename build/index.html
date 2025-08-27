@@ -2404,12 +2404,12 @@ const ErrorHandler = {
             PACKAGE_DB.categories.forEach(category => {
                 category.packages.forEach(pkg => {
                     const inDevice = app.devicePackages?.some(p => 
-                        (typeof p === 'string' ? p : p?.name) === pkg.name
+                        (typeof p === 'string' ? p : p?.name) === pkg.id
                     );
-                    const inUI = document.querySelector(`[data-package="${pkg.name}"]`);
+                    const inUI = document.querySelector(`[data-package="${pkg.id}"]`);
                     
-                    if (!inDevice) missing.push(pkg.name);
-                    if (inDevice && !inUI) notDisplayed.push(pkg.name);
+                    if (!inDevice) missing.push(pkg.id);
+                    if (inDevice && !inUI) notDisplayed.push(pkg.id);
                 });
             });
             
@@ -3207,7 +3207,7 @@ function generatePackageSelector() {
            if (depIds.has(pkg.id)) return;
 
            // 厳格：available にあるものだけ表示
-           const isAvailable = availablePackages.has(pkg.name);
+           const isAvailable = availablePackages.has(pkg.id);
 
            const packageItem = document.createElement('div');
            packageItem.className = 'package-item';
@@ -3228,7 +3228,7 @@ function generatePackageSelector() {
            checkbox.className = 'form-check-input package-selector-checkbox';
            checkbox.type = 'checkbox';
            checkbox.id = `pkg-${pkg.id}`;
-           checkbox.setAttribute('data-package', pkg.name);
+           checkbox.setAttribute('data-package', pkg.id);
            if (pkg.dependencies) {
                checkbox.setAttribute('data-dependencies', pkg.dependencies.join(','));
            }
@@ -3262,8 +3262,9 @@ function generatePackageSelector() {
                        if (depPkg) break;
                    }
 
-                   const depName = depPkg ? depPkg.name : depId;
-                   const depIsAvailable = availablePackages.has(depName);
+                   // 内部判定・属性は ID を使う
+                   const depPkgId = depPkg ? depPkg.id : depId;
+                   const depIsAvailable = availablePackages.has(depPkgId);
                    if (!depIsAvailable) return;
 
                    const depItem = document.createElement('div');
@@ -3272,14 +3273,15 @@ function generatePackageSelector() {
                    const depCheck = document.createElement('input');
                    depCheck.className = 'form-check-input package-selector-checkbox';
                    depCheck.type = 'checkbox';
-                   depCheck.id = `pkg-${depPkg ? depPkg.id : depId}`;
-                   depCheck.setAttribute('data-package', depName);
+                   depCheck.id = `pkg-${depPkgId}`;
+                   depCheck.setAttribute('data-package', depPkgId);
                    depCheck.addEventListener('change', handlePackageSelection);
 
                    const depLabel = document.createElement('label');
                    depLabel.className = 'form-check-label';
-                   depLabel.setAttribute('for', `pkg-${depPkg ? depPkg.id : depId}`);
+                   depLabel.setAttribute('for', `pkg-${depPkgId}`);
 
+                   // 表示テキストは name（リンク文字列）を使う
                    if (depPkg) {
                        const depLink = document.createElement('a');
                        depLink.href = depPkg.url;
@@ -3327,7 +3329,7 @@ function handlePackageSelection(e) {
 
     if (depPackages.length) {
         depPackages.forEach(dep => {
-            const depCheckbox = document.querySelector(`#pkg-${dep}`);
+            const depCheckbox = document.getElementById(`pkg-${dep}`);
             if (!depCheckbox) return;
             depCheckbox.checked = isChecked;
             depCheckbox.disabled = false; // 念のため解除
@@ -4836,19 +4838,18 @@ async function customizeSetupScript(content, userConfig, apiInfo, selectedPackag
         PACKAGE_DB.categories.forEach(cat => {
             (cat.packages || []).forEach(pkg => {
                 if (pkg.enableVar) {
-                    enableMap[pkg.name] = pkg.enableVar;
+                    enableMap[pkg.id] = pkg.enableVar;   // ← キーは id
                 }
             });
         });
 
-        // 選択されているパッケージに対応する enableVar を設定
-        selectedPackages.forEach(pkgName => {
-            const varName = enableMap[pkgName];
+        // 選択されているパッケージ（= id）に対応する enableVar を設定
+        selectedPackages.forEach(pkgId => {
+            const varName = enableMap[pkgId];
             if (varName) {
                 variables[varName] = { value: '1', active: true };
             }
         });
-    }
 
     // 変数定義を適用
     customized = setVariableDefinitions(customized, variables);
