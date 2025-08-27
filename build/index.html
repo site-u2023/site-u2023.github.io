@@ -1291,18 +1291,18 @@
                                             <label for="ap-gateway">Gateway</label>
                                             <input type="text" id="ap-gateway" class="form-control" value="192.168.1.1">
                                         </div>
-                                    </div>
-                                </div>
-                            </div>
-    
-                            <div class="form-group" id="isp-detection-group">
-                                <label>ISP Detection Status</label>
-                                <div id="isp-info-display" class="info" style="margin-bottom: 0;">
-                                    <div id="isp-status-message">ISP information will be detected when configuration is opened</div>
-                                    <div id="isp-technical-info" style="font-family: monospace; font-size: 0.9em; margin-top: 0.5rem; display: none;"></div>
-                                </div>
                             </div>
                         </div>
+                        
+                        <div class="form-group" id="isp-detection-group">
+                            <label>ISP Detection Status</label>
+                            <div id="isp-info-display" class="info" style="margin-bottom: 0;">
+                                <div id="isp-status-message">ISP information will be detected when configuration is opened</div>
+                                <div id="isp-technical-info" style="font-family: monospace; font-size: 0.9em; margin-top: 0.5rem; display: none;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
                         <div class="package-category">
                             <h4>Tuning</h4>
@@ -4160,6 +4160,7 @@ function hideDeviceInfo() {
     ErrorHandler.debug('hideDeviceInfo', 'After hiding', {
         infoDisplay: document.getElementById('info').style.display
     });
+}
     
     // 統合デバッグでの犯人特定
     setTimeout(() => {
@@ -4223,7 +4224,7 @@ function handleConnectionModeChange(e) {
         ResetManager.resetDsliteSettings();
         ResetManager.resetMapeSettings();
         
-        // 全Manual入力値をクリア
+        // 全Manual入力値をクリア（APは除外）
         document.getElementById('pppoe-username').value = '';
         document.getElementById('pppoe-password').value = '';
         document.getElementById('dslite-aftr-address').value = '';
@@ -4365,6 +4366,27 @@ function handleConnectionTypeChange(e) {
 }
 
 function handleMapeTypeChange(e) {
+    const mapeType = e.target.value;
+    
+    if (mapeType === 'auto') {
+        // Auto時は全入力欄を非表示
+        ['mape-br', 'mape-ealen', 'mape-ipv4-prefix', 'mape-ipv4-prefixlen',
+         'mape-ipv6-prefix', 'mape-ipv6-prefixlen', 'mape-psid-offset', 
+         'mape-psidlen'].forEach(id => {
+            const row = document.getElementById(id).closest('.form-row');
+            if (row) row.style.display = 'none';
+        });
+    } else {
+        // Manual時は表示
+        ['mape-br', 'mape-ealen', 'mape-ipv4-prefix', 'mape-ipv4-prefixlen',
+         'mape-ipv6-prefix', 'mape-ipv6-prefixlen', 'mape-psid-offset', 
+         'mape-psidlen'].forEach(id => {
+            const row = document.getElementById(id).closest('.form-row');
+            if (row) row.style.display = 'flex';
+        });
+    }
+    
+    updateGuaSectionVisibility();
     applyConnectionSettingsChange();
 }
 
