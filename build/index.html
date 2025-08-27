@@ -1188,16 +1188,24 @@
                                                 <option value="west">West Japan</option>
                                             </select>
                                         </div>
+                                        <div class="form-group">
+                                            <label for="dslite-area">Region</label>
+                                            <select id="dslite-area" class="form-control" onchange="applyInitialsFromApi('dslite')">
+                                                <option value="east">East Japan</option>
+                                                <option value="west">West Japan</option>
+                                            </select>
+                                        </div>
                                     </div>
-
+                                    
                                     <div class="form-group">
                                         <label for="dslite-aftr-address">AFTR IPv6 Address</label>
                                         <input type="text" id="dslite-aftr-address" class="form-control" placeholder="2404:8e00::feed:100" value="">
                                         <small class="form-text text-muted">Auto mode: Set from ISP detection | Manual mode: Set based on AFTR type and region</small>
                                     </div>
                                 </div>
-                                
-                                <!-- MAP-E設定 -->
+                            </div>
+                            
+                            <!-- MAP-E設定 -->
                                 <div id="mape-manual-section" class="conditional-section">
                                     <h5 class="section-title">MAP-E Configuration</h5>
                                     <div class="form-group">
@@ -4198,7 +4206,7 @@ function handleConnectionModeChange(e) {
     const manualSection = document.getElementById('manual-connection-section');
     const ispDetectionGroup = document.getElementById('isp-detection-group');
     
-    if (e.target.value === 'manual') {
+     if (e.target.value === 'manual') {
         manualSection.style.display = 'block';
         // Manual時はISP Detection Statusを非表示
         if (ispDetectionGroup) {
@@ -4214,6 +4222,19 @@ function handleConnectionModeChange(e) {
         // 各プロトコルの詳細設定もリセット
         ResetManager.resetDsliteSettings();
         ResetManager.resetMapeSettings();
+        
+        // 全Manual入力値をクリア
+        document.getElementById('pppoe-username').value = '';
+        document.getElementById('pppoe-password').value = '';
+        document.getElementById('dslite-aftr-address').value = '';
+        ['mape-br', 'mape-ealen', 'mape-ipv4-prefix', 'mape-ipv4-prefixlen',
+         'mape-ipv6-prefix', 'mape-ipv6-prefixlen', 'mape-psid-offset',
+         'mape-psidlen', 'mape-gua-prefix'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = '';
+        });
+        document.getElementById('ap-ip-address').value = '';
+        document.getElementById('ap-gateway').value = '';
         
         // Auto時はISP Detection Statusを表示
         if (ispDetectionGroup) {
@@ -4255,6 +4276,7 @@ function handleConnectionTypeChange(e) {
         const dsliteAuto = document.getElementById('dslite-auto');
         const dsliteManual = document.getElementById('dslite-manual');
         const dsliteHint = document.getElementById('dslite-mode-hint');
+        const aftrAddressRow = document.getElementById('dslite-aftr-address').closest('.form-group');
         
         if (hasAftr) {
             // AFTRデータあり：Auto有効（初期選択）
@@ -4262,12 +4284,16 @@ function handleConnectionTypeChange(e) {
             dsliteAuto.checked = true;
             dsliteManual.checked = false;
             if (dsliteHint) dsliteHint.textContent = 'Auto: Use ISP-detected AFTR address';
+            // Auto時はAFTRアドレス欄も非表示
+            if (aftrAddressRow) aftrAddressRow.style.display = 'none';
         } else {
             // AFTRデータなし：Auto無効、Manual強制
             dsliteAuto.disabled = true;
             dsliteAuto.checked = false;
             dsliteManual.checked = true;
             if (dsliteHint) dsliteHint.textContent = 'Auto not available (no AFTR detected)';
+            // Manual時はAFTRアドレス欄を表示
+            if (aftrAddressRow) aftrAddressRow.style.display = 'block';
         }
         
         // Manual設定エリアの表示制御
@@ -4276,7 +4302,7 @@ function handleConnectionTypeChange(e) {
             manualConfig.style.display = hasAftr ? 'none' : 'block';
         }
         
-} else if (e.target.value === 'mape') {
+    } else if (e.target.value === 'mape') {
         mapeManualSection.style.display = 'block';
         
         // MAP-E: BRデータの有無でAuto/Manual制御
@@ -4290,6 +4316,14 @@ function handleConnectionTypeChange(e) {
             mapeAuto.checked = true;
             if (mapeGua) mapeGua.checked = false;
             if (mapePd) mapePd.checked = false;
+            
+            // Auto時は全入力欄を非表示
+            ['mape-br', 'mape-ealen', 'mape-ipv4-prefix', 'mape-ipv4-prefixlen',
+             'mape-ipv6-prefix', 'mape-ipv6-prefixlen', 'mape-psid-offset', 
+             'mape-psidlen'].forEach(id => {
+                const row = document.getElementById(id).closest('.form-row');
+                if (row) row.style.display = 'none';
+            });
         } else {
             // MAP-Eデータなし：Auto無効、GUA選択
             mapeAuto.disabled = true;
@@ -4299,6 +4333,14 @@ function handleConnectionTypeChange(e) {
             } else if (mapePd) {
                 mapePd.checked = true;
             }
+            
+            // Manual時は入力欄を表示
+            ['mape-br', 'mape-ealen', 'mape-ipv4-prefix', 'mape-ipv4-prefixlen',
+             'mape-ipv6-prefix', 'mape-ipv6-prefixlen', 'mape-psid-offset', 
+             'mape-psidlen'].forEach(id => {
+                const row = document.getElementById(id).closest('.form-row');
+                if (row) row.style.display = 'flex';
+            });
         }
         
         // キャッシュ確認してから必要時のみロード
@@ -4391,13 +4433,18 @@ function handleNetOptimizerModeChange(e) {
     
     if (e && e.target && e.target.value === 'manual') {
         manualSection.style.display = 'block';
-        // Manual選択時も常にデフォルト値を設定（編集の起点として）
+        // Manualでもデフォルト値を設定
         resetNetOptimizerValues();
     } else {
         // Auto選択時
         manualSection.style.display = 'none';
-        // Autoは常にデフォルト値を使用するのでリセット
-        resetNetOptimizerValues();
+        // 値をクリア（保持しない）
+        document.getElementById('netopt-rmem').value = '';
+        document.getElementById('netopt-wmem').value = '';
+        document.getElementById('netopt-conntrack').value = '';
+        document.getElementById('netopt-backlog').value = '';
+        document.getElementById('netopt-somaxconn').value = '';
+        document.getElementById('netopt-congestion').value = 'cubic';
     }
     
     syncTemplateAndPackages({ trigger: 'netopt-mode-change' });
