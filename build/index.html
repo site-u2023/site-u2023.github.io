@@ -489,11 +489,6 @@
         margin-top: 0.1rem;
     }
 
-    .package-hidden {
-        opacity: 0.7;
-        font-style: italic;
-    }
-
     .package-dependent {
         margin-left: 1.5rem;
         font-size: 0.9rem;
@@ -3269,7 +3264,6 @@ function generatePackageSelector() {
 
            const packageItem = document.createElement('div');
            packageItem.className = 'package-item';
-           if (pkg.hidden) packageItem.classList.add('package-hidden');
 
            if (!isAvailable) {
                // 完全に除外
