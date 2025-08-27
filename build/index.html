@@ -1846,7 +1846,7 @@ const PACKAGE_DB = {
         },
         {
           id: "luci-app-mwan3",
-          name: "luci-app-mwan3 (iptables)",
+          name: "luci-app-mwan3",
           dependencies: ["mwan3"]
         }
       ]
@@ -2107,7 +2107,7 @@ const PACKAGE_DB = {
         },
         {
           id: "luci-app-dockerman",
-          name: "luci-app-dockerman (iptables)",
+          name: "luci-app-dockerman",
           dependencies: ["docker-compose"]
         },
         {
@@ -2403,13 +2403,13 @@ const ErrorHandler = {
             // PACKAGE_DBの全パッケージをチェック
             PACKAGE_DB.categories.forEach(category => {
                 category.packages.forEach(pkg => {
-                    const inDevice = app.devicePackages?.some(p =>
-                        (typeof p === 'string' ? p : p?.name) === pkg.id
+                    const inDevice = app.devicePackages?.some(p => 
+                        (typeof p === 'string' ? p : p?.name) === pkg.name
                     );
-                    const inUI = document.querySelector(`[data-package="${pkg.id}"]`);
+                    const inUI = document.querySelector(`[data-package="${pkg.name}"]`);
                     
-                    if (!inDevice) missing.push(pkg.id);
-                    if (inDevice && !inUI) notDisplayed.push(pkg.id);
+                    if (!inDevice) missing.push(pkg.name);
+                    if (inDevice && !inUI) notDisplayed.push(pkg.name);
                 });
             });
             
@@ -3152,14 +3152,18 @@ function generatePackageSelector() {
    );
 
    // 判定直前の状態を総合デバッガで出力
-   ErrorHandler.debug('generatePackageSelector', 'State immediately before zero check', {
-       devicePackages_raw: app.devicePackages,
-       availablePackageIds_list: Array.from(availablePackageIds),
-       availablePackageIds_size: availablePackageIds.size
-   });
+   ErrorHandler.debug(
+       'generatePackageSelector',
+       'State immediately before zero check',
+       {
+           devicePackages_raw: app.devicePackages,
+           availablePackages_list: Array.from(availablePackages),
+           availablePackages_size: availablePackages.size
+       }
+   );
 
    // 取得できていない（＝判定不能）場合の処理
-   if (availablePackageIds.size === 0) {
+   if (availablePackages.size === 0) {
        container.innerHTML =
            '<p class="text-muted small">Unable to retrieve the package index for this OS version/device. ' +
            'Please try a different version or device, or try again later.</p>';
@@ -3255,8 +3259,8 @@ function generatePackageSelector() {
                        if (depPkg) break;
                    }
 
-                   const depKey = depPkg ? depPkg.id : depId;
-                   const depIsAvailable = availablePackageIds.has(depKey);
+                   const depName = depPkg ? depPkg.name : depId;
+                   const depIsAvailable = availablePackages.has(depName);
                    if (!depIsAvailable) return;
 
                    const depItem = document.createElement('div');
@@ -3265,8 +3269,8 @@ function generatePackageSelector() {
                    const depCheck = document.createElement('input');
                    depCheck.className = 'form-check-input package-selector-checkbox';
                    depCheck.type = 'checkbox';
-                   depCheck.id = `pkg-${depKey}`;
-                   depCheck.setAttribute('data-package', depKey);
+                   depCheck.id = `pkg-${depPkg ? depPkg.id : depId}`;
+                   depCheck.setAttribute('data-package', depName);
                    depCheck.addEventListener('change', handlePackageSelection);
 
                    const depLabel = document.createElement('label');
@@ -3331,7 +3335,6 @@ function handlePackageSelection(e) {
 }
     
 function updatePackageListFromSelector() {
-    const checkedPkgs = [];
     document.querySelectorAll('.package-selector-checkbox:checked')
       .forEach(cb => checkedPkgs.push(cb.getAttribute('data-package')));
     
@@ -3502,27 +3505,15 @@ function selectDevice(device) {
 }
 
 // ==================== changeModel関数の簡素化 ====================
-function changeModel(a, b, c) {
-  // 互換: changeModel(version, devicesMap, title)
-  if (typeof a === 'string' && b && typeof c === 'string') {
-    const version = a, devicesMap = b, title = c;
-    const device = devicesMap[title];
+function changeModel(device) {
     if (device) {
-      current_device = { version, id: device.id, target: device.target };
-      selectDeviceProfile(device);
+        DeviceContext.update({
+            deviceTitle: getDeviceTitle(device),
+            trigger: 'change-model'
+        });
     } else {
-      hideDeviceInfo();
-      current_device = {};
+        DeviceContext._clearDevice();
     }
-    return;
-  }
-  // 新: changeModel(deviceObject)
-  const device = a;
-  if (device && device.id) {
-    DeviceContext.update({ deviceTitle: getDeviceTitle(device), trigger: 'change-model' });
-  } else {
-    DeviceContext._clearDevice();
-  }
 }
         
 // ==================== バージョン管理 ====================
