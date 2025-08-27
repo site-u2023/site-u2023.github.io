@@ -3205,10 +3205,14 @@ function generatePackageSelector() {
    const availablePackages = new Set();
    if (Array.isArray(app.devicePackages) && app.devicePackages.length > 0) {
        app.devicePackages.forEach(pkg => {
-           const name = (typeof pkg === 'string') ? pkg : pkg && pkg.name;
-           if (name) availablePackages.add(name);
-       });
-   }
+            const name = (typeof pkg === 'string') ? pkg : pkg && pkg.name;
+            if (name) availablePackages.add(name);
+    
+            // nameではなくidも追加（collectdのような単純な名前のために）
+            if (typeof pkg === 'object' && pkg.name) {
+                availablePackages.add(pkg.name);
+            }
+        });
 
    // 判定直前の状態を総合デバッガで出力
    ErrorHandler.debug(
