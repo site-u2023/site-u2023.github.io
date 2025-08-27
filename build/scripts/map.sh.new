@@ -11,6 +11,8 @@ proto_map_setup() {
 	local cfg="$1"
 	local iface="$2"
 	local link="map-$cfg"
+	iptables -t nat -D POSTROUTING -o map-$cfg -j SNAT 2>/dev/null || true
+	iptables -t nat -D POSTROUTING -o map-$cfg -j MASQUERADE 2>/dev/null || true
 	local maptype type legacymap mtu ttl tunlink zone encaplimit
 	local rule ipaddr ip4prefixlen ip6prefix ip6prefixlen peeraddr ealen psidlen psid offset
 	json_get_vars maptype type legacymap mtu ttl tunlink zone encaplimit
@@ -121,7 +123,8 @@ proto_map_setup() {
 			fi
 		done
 	    done
-	    allports=${allports%??}
+		allports=${allports%??}
+	    nft delete table inet mape 2>/dev/null || true
             nft add table inet mape
             nft add chain inet mape srcnat {type nat hook postrouting priority 0\; policy accept\; }
 	    local counter=0  
