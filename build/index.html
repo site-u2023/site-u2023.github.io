@@ -1762,8 +1762,8 @@ const PACKAGE_DB = {
       description: "Terminal access and file transfer tools",
       packages: [
         {
-          id: "luci-app-ttyd",
-          name: "luci-app-ttyd",
+          id: "luci-app-ttyd (ID)",
+          name: "luci-app-ttyd (NAME)",
           enableVar: "enable_ttyd",
           checked: true
         },
@@ -2404,12 +2404,12 @@ const ErrorHandler = {
             PACKAGE_DB.categories.forEach(category => {
                 category.packages.forEach(pkg => {
                     const inDevice = app.devicePackages?.some(p => 
-                        (typeof p === 'string' ? p : p?.name) === pkg.id
+                        (typeof p === 'string' ? p : p?.name) === pkg.name
                     );
-                    const inUI = document.querySelector(`[data-package="${pkg.id}"]`);
+                    const inUI = document.querySelector(`[data-package="${pkg.name}"]`);
                     
-                    if (!inDevice) missing.push(pkg.id);
-                    if (inDevice && !inUI) notDisplayed.push(pkg.id);
+                    if (!inDevice) missing.push(pkg.name);
+                    if (inDevice && !inUI) notDisplayed.push(pkg.name);
                 });
             });
             
@@ -3207,7 +3207,7 @@ function generatePackageSelector() {
            if (depIds.has(pkg.id)) return;
 
            // 厳格：available にあるものだけ表示
-           const isAvailable = availablePackages.has(pkg.id);
+           const isAvailable = availablePackages.has(pkg.name);
 
            const packageItem = document.createElement('div');
            packageItem.className = 'package-item';
@@ -3228,7 +3228,7 @@ function generatePackageSelector() {
            checkbox.className = 'form-check-input package-selector-checkbox';
            checkbox.type = 'checkbox';
            checkbox.id = `pkg-${pkg.id}`;
-           checkbox.setAttribute('data-package', pkg.id);
+           checkbox.setAttribute('data-package', pkg.name);
            if (pkg.dependencies) {
                checkbox.setAttribute('data-dependencies', pkg.dependencies.join(','));
            }
@@ -3262,9 +3262,8 @@ function generatePackageSelector() {
                        if (depPkg) break;
                    }
 
-                   // 内部判定・属性は ID を使う
-                   const depPkgId = depPkg ? depPkg.id : depId;
-                   const depIsAvailable = availablePackages.has(depPkgId);
+                   const depName = depPkg ? depPkg.name : depId;
+                   const depIsAvailable = availablePackages.has(depName);
                    if (!depIsAvailable) return;
 
                    const depItem = document.createElement('div');
@@ -3273,15 +3272,14 @@ function generatePackageSelector() {
                    const depCheck = document.createElement('input');
                    depCheck.className = 'form-check-input package-selector-checkbox';
                    depCheck.type = 'checkbox';
-                   depCheck.id = `pkg-${depPkgId}`;
-                   depCheck.setAttribute('data-package', depPkgId);
+                   depCheck.id = `pkg-${depPkg ? depPkg.id : depId}`;
+                   depCheck.setAttribute('data-package', depName);
                    depCheck.addEventListener('change', handlePackageSelection);
 
                    const depLabel = document.createElement('label');
                    depLabel.className = 'form-check-label';
-                   depLabel.setAttribute('for', `pkg-${depPkgId}`);
+                   depLabel.setAttribute('for', `pkg-${depPkg ? depPkg.id : depId}`);
 
-                   // 表示テキストは name（リンク文字列）を使う
                    if (depPkg) {
                        const depLink = document.createElement('a');
                        depLink.href = depPkg.url;
@@ -3329,7 +3327,7 @@ function handlePackageSelection(e) {
 
     if (depPackages.length) {
         depPackages.forEach(dep => {
-            const depCheckbox = document.getElementById(`pkg-${dep}`);
+            const depCheckbox = document.querySelector(`#pkg-${dep}`);
             if (!depCheckbox) return;
             depCheckbox.checked = isChecked;
             depCheckbox.disabled = false; // 念のため解除
@@ -4838,18 +4836,19 @@ async function customizeSetupScript(content, userConfig, apiInfo, selectedPackag
         PACKAGE_DB.categories.forEach(cat => {
             (cat.packages || []).forEach(pkg => {
                 if (pkg.enableVar) {
-                    enableMap[pkg.id] = pkg.enableVar;   // ← キーは id
+                    enableMap[pkg.name] = pkg.enableVar;
                 }
             });
         });
 
-        // 選択されているパッケージ（= id）に対応する enableVar を設定
-        selectedPackages.forEach(pkgId => {
-            const varName = enableMap[pkgId];
+        // 選択されているパッケージに対応する enableVar を設定
+        selectedPackages.forEach(pkgName => {
+            const varName = enableMap[pkgName];
             if (varName) {
                 variables[varName] = { value: '1', active: true };
             }
         });
+    }
 
     // 変数定義を適用
     customized = setVariableDefinitions(customized, variables);
