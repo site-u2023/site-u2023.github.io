@@ -1192,7 +1192,7 @@
 
                                     <div class="form-group">
                                         <label for="dslite-aftr-address">AFTR IPv6 Address</label>
-                                        <input type="text" id="dslite-aftr-address" class="form-control" placeholder="2404:8e00::feed:100" value="2404:8e00::feed:100">
+                                        <input type="text" id="dslite-aftr-address" class="form-control" placeholder="2404:8e00::feed:100" value="">
                                         <small class="form-text text-muted">Auto mode: Set from ISP detection | Manual mode: Set based on AFTR type and region</small>
                                     </div>
                                 </div>
@@ -4318,16 +4318,6 @@ function handleConnectionTypeChange(e) {
     // 選択された接続タイプに応じてセクションを表示
     if (e.target.value === 'dhcp') {
         if (dhcpSection) dhcpSection.style.display = 'block';
-    // 前の接続タイプの値をクリア
-    const previousType = e.target.previousType || '';
-    if (previousType === 'pppoe') ResetManager.clearPPPoEValues();
-    else if (previousType === 'dslite') ResetManager.clearDSLiteValues();
-    else if (previousType === 'mape') ResetManager.clearMAPEValues();
-    else if (previousType === 'ap') ResetManager.clearAPValues();
-    
-    // 現在のタイプを記録
-    e.target.previousType = e.target.value;
-    
     } else if (e.target.value === 'pppoe') {
         pppoeSection.style.display = 'block';
     } else if (e.target.value === 'dslite') {
