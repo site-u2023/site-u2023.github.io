@@ -1431,10 +1431,8 @@ AP6="ap6"
 NAS="openwrt"
 MNT="/mnt/sda"
 exec >/tmp/setup.log 2>&1
-uci -q batch <<'EOI'
-set system.@system[0].description="\${DATE}"
-set system.@system[0].notes="site-u.pages.dev/build"
-EOI
+uci set system.@system[0].description="\${DATE}"
+uci set system.@system[0].notes="site-u.pages.dev/build"
 [ -n "\${device_name}" ] && uci set system.@system[0].hostname="\${device_name}"
 [ -n "\${root_password}" ] && printf '%s\\n%s\\n' "\${root_password}" "\${root_password}" | passwd >/dev/null
 [ -n "\${lan_ip_address}" ] && uci set network.lan.ipaddr="\${lan_ip_address}"
@@ -1445,14 +1443,13 @@ EOI
 [ -n "\${ssh_interface}" ] && uci set dropbear.@dropbear[0].Interface="\${ssh_interface}"
 [ -n "\${ssh_port}" ] && uci set dropbear.@dropbear[0].Port="\${ssh_port}"
 [ "\${flow_offloading_type}" = "software" ] && uci set firewall.@defaults[0].flow_offloading='1'
-[ "\${flow_offloading_type}" = "hardware" ] && uci -q batch <<'EOI'
-set firewall.@defaults[0].flow_offloading='1'
-set firewall.@defaults[0].flow_offloading_hw='1'
-EOI
+[ "\${flow_offloading_type}" = "hardware" ] && { uci set firewall.@defaults[0].flow_offloading='1'; uci set firewall.@defaults[0].flow_offloading_hw='1'; }
 [ -n "\${wlan_name}" ] && [ -n "\${wlan_password}" ] && [ "\${#wlan_password}" -ge 8 ] && {
-    wireless_cfg="$(uci -q show wireless)"
-    for radio in $(printf '%s\\n' "\${wireless_cfg}" | grep "wireless\.radio[0-9]*=" | cut -d. -f2 | cut -d= -f1); do
-        band=$(uci -q get wireless.\${radio}.band)
+    wireless_cfg="\$(uci -q show wireless)"
+    for radio in \$(printf '%s\n' "\${wireless_cfg}" | grep "wireless\.radio[0-9]*=" | cut -d. -f2 | cut -d= -f1); do
+        uci set wireless.\${radio}.disabled='0'
+        uci set wireless.\${radio}.country="\${country:-00}" 2>/dev/null
+        band=\$(uci -q get wireless.\${radio}.band)
         case "\${band}" in
             2g) suffix="-2g"; encryption='psk-mixed' ;;
             5g) suffix="-5g"; encryption='sae-mixed' ;;
@@ -1461,130 +1458,124 @@ EOI
         esac
         ssid="\${wlan_name}\${suffix}"
         n=2
-        while printf '%s\\n' "\${wireless_cfg}" | grep -q "ssid='\${ssid}'"; do
+        while printf '%s\n' "\${wireless_cfg}" | grep -q "ssid='\${ssid}'"; do
             ssid="\${wlan_name}\${suffix}\${n}"
-            n=$((n+1))
+            n=\$((n+1))
         done
         iface="default_\${radio}"
-        [ -n "$(uci -q get wireless.\${iface})" ] && uci -q batch <<'EOI'
-set wireless.\${radio}.disabled='0'
-set wireless.\${radio}.country="\${country:-00}"
-set wireless.\${iface}.disabled='0'
-set wireless.\${iface}.encryption="\${encryption}"
-set wireless.\${iface}.ssid="\${ssid}"
-set wireless.\${iface}.key="\${wlan_password}"
-EOI
+        [ -n "\$(uci -q get wireless.\${iface})" ] && {
+            uci set wireless.\${iface}.disabled='0'
+            uci set wireless.\${iface}.encryption="\${encryption}"
+            uci set wireless.\${iface}.ssid="\${ssid}"
+            uci set wireless.\${iface}.key="\${wlan_password}"
+        }
     done
 }
-[ -n "\${pppoe_username}" ] && [ -n "\${pppoe_password}" ] && uci -q batch <<'EOI'
-set network.wan.proto='pppoe'
-set network.wan.username="\${pppoe_username}"
-set network.wan.password="\${pppoe_password}"
-EOI
-[ -n "\${dslite_aftr_address}" ] && uci -q batch <<'EOI'
-set network.wan.disabled='1'
-set network.wan.auto='0'
-set network.wan6.disabled='1'
-set network.wan6.auto='0'
-set network.\${DSL6}=interface
-set network.\${DSL6}.proto='dhcpv6'
-set network.\${DSL6}.device="\${WAN}"
-set network.\${DSL6}.reqaddress='try'
-set network.\${DSL6}.reqprefix='auto'
-set network.\${DSL}=interface
-set network.\${DSL}.proto='dslite'
-set network.\${DSL}.peeraddr="\${dslite_aftr_address}"
-set network.\${DSL}.tunlink="\${DSL6}"
-set network.\${DSL}.mtu='1460'
-set network.\${DSL}.encaplimit='ignore'
-set dhcp.\${DSL6}=dhcp
-set dhcp.\${DSL6}.interface="\${DSL6}"
-set dhcp.\${DSL6}.master='1'
-set dhcp.\${DSL6}.ra='relay'
-set dhcp.\${DSL6}.dhcpv6='relay'
-set dhcp.\${DSL6}.ndp='relay'
-set dhcp.\${DSL6}.ignore='1'
-set dhcp.lan.ra='relay'
-set dhcp.lan.dhcpv6='relay'
-set dhcp.lan.ndp='relay'
-set dhcp.lan.force='1'
-del_list firewall.@zone[1].network="wan"
-del_list firewall.@zone[1].network="wan6"
-add_list firewall.@zone[1].network="\${DSL}"
-add_list firewall.@zone[1].network="\${DSL6}"
-set firewall.@zone[1].masq='1'
-set firewall.@zone[1].mtu_fix='1'
-EOI
+[ -n "\${pppoe_username}" ] && [ -n "\${pppoe_password}" ] && {
+    uci set network.wan.proto='pppoe'
+    uci set network.wan.username="\${pppoe_username}"
+    uci set network.wan.password="\${pppoe_password}"
+}
+[ -n "\${dslite_aftr_address}" ] && {
+    uci set network.wan.disabled='1'
+    uci set network.wan.auto='0'
+    uci set network.wan6.disabled='1'
+    uci set network.wan6.auto='0'
+    uci set network.\${DSL6}=interface
+    uci set network.\${DSL6}.proto='dhcpv6'
+    uci set network.\${DSL6}.device="\${WAN}"
+    uci set network.\${DSL6}.reqaddress='try'
+    uci set network.\${DSL6}.reqprefix='auto'
+    uci set network.\${DSL}=interface
+    uci set network.\${DSL}.proto='dslite'
+    uci set network.\${DSL}.peeraddr="\${dslite_aftr_address}"
+    uci set network.\${DSL}.tunlink="\${DSL6}"
+    uci set network.\${DSL}.mtu='1460'
+    uci set network.\${DSL}.encaplimit='ignore'
+    uci set dhcp.\${DSL6}=dhcp
+    uci set dhcp.\${DSL6}.interface="\${DSL6}"
+    uci set dhcp.\${DSL6}.master='1'
+    uci set dhcp.\${DSL6}.ra='relay'
+    uci set dhcp.\${DSL6}.dhcpv6='relay'
+    uci set dhcp.\${DSL6}.ndp='relay'
+    uci set dhcp.\${DSL6}.ignore='1'
+    uci set dhcp.lan.ra='relay'
+    uci set dhcp.lan.dhcpv6='relay'
+    uci set dhcp.lan.ndp='relay'
+    uci set dhcp.lan.force='1'
+    uci del_list firewall.@zone[1].network="wan"
+    uci del_list firewall.@zone[1].network="wan6"
+    uci add_list firewall.@zone[1].network="\${DSL}"
+    uci add_list firewall.@zone[1].network="\${DSL6}"
+    uci set firewall.@zone[1].masq='1'
+    uci set firewall.@zone[1].mtu_fix='1'
+}
 [ -n "\${mape_br}" ] && [ -n "\${mape_ealen}" ] && {
-    uci -q batch <<'EOI'
-set network.wan.disabled='1'
-set network.wan.auto='0'
-set network.wan6.disabled='1'
-set network.wan6.auto='0'
-set network.\${MAPE6}=interface
-set network.\${MAPE6}.proto='dhcpv6'
-set network.\${MAPE6}.device="\${WAN}"
-set network.\${MAPE6}.reqaddress='try'
-set network.\${MAPE6}.reqprefix='auto'
-set network.\${MAPE}=interface
-set network.\${MAPE}.proto='map'
-set network.\${MAPE}.maptype='map-e'
-set network.\${MAPE}.peeraddr="\${mape_br}"
-set network.\${MAPE}.ipaddr="\${mape_ipv4_prefix}"
-set network.\${MAPE}.ip4prefixlen="\${mape_ipv4_prefixlen}"
-set network.\${MAPE}.ip6prefix="\${mape_ipv6_prefix}"
-set network.\${MAPE}.ip6prefixlen="\${mape_ipv6_prefixlen}"
-set network.\${MAPE}.ealen="\${mape_ealen}"
-set network.\${MAPE}.psidlen="\${mape_psidlen}"
-set network.\${MAPE}.offset="\${mape_psid_offset}"
-set network.\${MAPE}.mtu='1460'
-set network.\${MAPE}.encaplimit='ignore'
-set network.\${MAPE}.legacymap='1'
-set network.\${MAPE}.tunlink="\${MAPE6}"
-set dhcp.\${MAPE6}=dhcp
-set dhcp.\${MAPE6}.interface="\${MAPE6}"
-set dhcp.\${MAPE6}.master='1'
-set dhcp.\${MAPE6}.ra='relay'
-set dhcp.\${MAPE6}.dhcpv6='relay'
-set dhcp.\${MAPE6}.ndp='relay'
-set dhcp.\${MAPE6}.ignore='1'
-set dhcp.lan.ra='relay'
-set dhcp.lan.dhcpv6='relay'
-set dhcp.lan.ndp='relay'
-set dhcp.lan.force='1'
-del_list firewall.@zone[1].network="wan"
-del_list firewall.@zone[1].network="wan6"
-add_list firewall.@zone[1].network="\${MAPE}"
-add_list firewall.@zone[1].network="\${MAPE6}"
-set firewall.@zone[1].masq='1'
-set firewall.@zone[1].mtu_fix='1'
-EOI
+    uci set network.wan.disabled='1'
+    uci set network.wan.auto='0'
+    uci set network.wan6.disabled='1'
+    uci set network.wan6.auto='0'
+    uci set network.\${MAPE6}=interface
+    uci set network.\${MAPE6}.proto='dhcpv6'
+    uci set network.\${MAPE6}.device="\${WAN}"
+    uci set network.\${MAPE6}.reqaddress='try'
+    uci set network.\${MAPE6}.reqprefix='auto'
     [ -n "\${mape_gua_mode}" ] && uci set network.\${MAPE6}.ip6prefix="\${mape_gua_prefix}"
+    uci set network.\${MAPE}=interface
+    uci set network.\${MAPE}.proto='map'
+    uci set network.\${MAPE}.maptype='map-e'
+    uci set network.\${MAPE}.peeraddr="\${mape_br}"
+    uci set network.\${MAPE}.ipaddr="\${mape_ipv4_prefix}"
+    uci set network.\${MAPE}.ip4prefixlen="\${mape_ipv4_prefixlen}"
+    uci set network.\${MAPE}.ip6prefix="\${mape_ipv6_prefix}"
+    uci set network.\${MAPE}.ip6prefixlen="\${mape_ipv6_prefixlen}"
+    uci set network.\${MAPE}.ealen="\${mape_ealen}"
+    uci set network.\${MAPE}.psidlen="\${mape_psidlen}"
+    uci set network.\${MAPE}.offset="\${mape_psid_offset}"
+    uci set network.\${MAPE}.mtu='1460'
+    uci set network.\${MAPE}.encaplimit='ignore'
+    uci set network.\${MAPE}.legacymap='1'
+    uci set network.\${MAPE}.tunlink="\${MAPE6}"
+    uci set dhcp.\${MAPE6}=dhcp
+    uci set dhcp.\${MAPE6}.interface="\${MAPE6}"
+    uci set dhcp.\${MAPE6}.master='1'
+    uci set dhcp.\${MAPE6}.ra='relay'
+    uci set dhcp.\${MAPE6}.dhcpv6='relay'
+    uci set dhcp.\${MAPE6}.ndp='relay'
+    uci set dhcp.\${MAPE6}.ignore='1'
+    uci set dhcp.lan.ra='relay'
+    uci set dhcp.lan.dhcpv6='relay'
+    uci set dhcp.lan.ndp='relay'
+    uci set dhcp.lan.force='1'
+    uci del_list firewall.@zone[1].network="wan"
+    uci del_list firewall.@zone[1].network="wan6"
+    uci add_list firewall.@zone[1].network="\${MAPE}"
+    uci add_list firewall.@zone[1].network="\${MAPE6}"
+    uci set firewall.@zone[1].masq='1'
+    uci set firewall.@zone[1].mtu_fix='1'
     cat > /lib/netifd/proto/map.sh <<'MAP_SH_EOF'
 \${map_sh_content}
 MAP_SH_EOF
 }
 [ -n "\${ap_ip_address}" ] && {
-    uci -q batch <<'EOI'
-set network.wan.disabled='1'
-set network.wan.auto='0'
-set network.wan6.disabled='1'
-set network.wan6.auto='0'
-set network.\${AP}=interface
-set network.\${AP}.proto='static'
-set network.\${AP}.device="\${LAN}"
-set network.\${AP}.ipaddr="\${ap_ip_address}"
-set network.\${AP}.netmask='255.255.255.0'
-set network.\${AP}.gateway="\${ap_gateway}"
-set network.\${AP}.dns="\${ap_gateway}"
-set network.\${AP}.delegate='0'
-set network.\${AP6}=interface
-set network.\${AP6}.proto='dhcpv6'
-set network.\${AP6}.device="@\${AP}"
-set network.\${AP6}.reqaddress='try'
-set network.\${AP6}.reqprefix='no'
-set network.\${AP6}.type='bridge'
-EOI
+    uci set network.wan.disabled='1'
+    uci set network.wan.auto='0'
+    uci set network.wan6.disabled='1'
+    uci set network.wan6.auto='0'
+    uci set network.\${AP}=interface
+    uci set network.\${AP}.proto='static'
+    uci set network.\${AP}.device="\${LAN}"
+    uci set network.\${AP}.ipaddr="\${ap_ip_address}"
+    uci set network.\${AP}.netmask='255.255.255.0'
+    uci set network.\${AP}.gateway="\${ap_gateway}"
+    uci set network.\${AP}.dns="\${ap_gateway}"
+    uci set network.\${AP}.delegate='0'
+    uci set network.\${AP6}=interface
+    uci set network.\${AP6}.proto='dhcpv6'
+    uci set network.\${AP6}.device="@\${AP}"
+    uci set network.\${AP6}.reqaddress='try'
+    uci set network.\${AP6}.reqprefix='no'
+    uci set network.\${AP6}.type='bridge'
     [ -n "$(uci -q get wireless.default_radio0)" ] && uci set wireless.default_radio0.network="\${AP}"
     [ -n "$(uci -q get wireless.default_radio1)" ] && uci set wireless.default_radio1.network="\${AP}"
     [ -n "$(uci -q get wireless.default_radio2)" ] && uci set wireless.default_radio2.network="\${AP}"
@@ -1595,31 +1586,31 @@ EOI
     [ -x /etc/init.d/firewall ] && /etc/init.d/firewall enabled && /etc/init.d/firewall disable
     [ -x /etc/init.d/firewall ] && /etc/init.d/firewall running && /etc/init.d/firewall stop
 }
-[ -n "\${enable_ttyd}" ] && uci -q batch <<'EOI'
-set ttyd.@ttyd[0].ipv6='1'
-set ttyd.@ttyd[0].command='/bin/login -f root'
-EOI
-[ -n "\${enable_irqbalance}" ] && uci -q batch <<'EOI'
-set irqbalance.irqbalance=irqbalance
-set irqbalance.irqbalance.enabled='1'
-EOI
-[ -n "\${enable_samba4}" ] && uci -q batch <<'EOI'
-set samba4.@samba[0]=samba
-set samba4.@samba[0].workgroup='WORKGROUP'
-set samba4.@samba[0].charset='UTF-8'
-set samba4.@samba[0].description='Samba on OpenWRT'
-set samba4.@samba[0].enable_extra_tuning='1'
-set samba4.@samba[0].interface='lan'
-set samba4.sambashare=sambashare
-set samba4.sambashare.name="\${NAS}"
-set samba4.sambashare.path="\${MNT}"
-set samba4.sambashare.read_only='no'
-set samba4.sambashare.force_root='1'
-set samba4.sambashare.guest_ok='yes'
-set samba4.sambashare.inherit_owner='yes'
-set samba4.sambashare.create_mask='0777'
-set samba4.sambashare.dir_mask='0777'
-EOI
+[ -n "\${enable_ttyd}" ] && {
+    uci set ttyd.@ttyd[0].ipv6='1'
+    uci set ttyd.@ttyd[0].command='/bin/login -f root'
+}
+[ -n "\${enable_irqbalance}" ] && {
+    uci set irqbalance.irqbalance=irqbalance
+    uci set irqbalance.irqbalance.enabled='1'
+}
+[ -n "\${enable_samba4}" ] && {
+    uci set samba4.@samba[0]=samba
+    uci set samba4.@samba[0].workgroup='WORKGROUP'
+    uci set samba4.@samba[0].charset='UTF-8'
+    uci set samba4.@samba[0].description='Samba on OpenWRT'
+    uci set samba4.@samba[0].enable_extra_tuning='1'
+    uci set samba4.@samba[0].interface='lan'
+    uci set samba4.sambashare=sambashare
+    uci set samba4.sambashare.name="\${NAS}"
+    uci set samba4.sambashare.path="\${MNT}"
+    uci set samba4.sambashare.read_only='no'
+    uci set samba4.sambashare.force_root='1'
+    uci set samba4.sambashare.guest_ok='yes'
+    uci set samba4.sambashare.inherit_owner='yes'
+    uci set samba4.sambashare.create_mask='0777'
+    uci set samba4.sambashare.dir_mask='0777'
+}
 # BEGIN_CUSTOM_COMMANDS
 # END_CUSTOM_COMMANDS
 uci commit 2>/dev/null
