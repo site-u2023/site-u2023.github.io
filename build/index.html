@@ -4037,7 +4037,6 @@ async function applyProfileData(profilesData, profileId) {
 }
        
 function showDeviceInfo() {
-    ErrorHandler.trace('showDeviceInfo', current_device);
     if (!current_device || !current_device.id) return;
 
     const device = app.devices.find(d => d.id === current_device.id && d.target === current_device.target);
@@ -4199,21 +4198,9 @@ function showDeviceInfo() {
 }
 
 function hideDeviceInfo() {
-    ErrorHandler.debug('hideDeviceInfo', 'Before hiding');
     document.getElementById('info').style.display = 'none';
     document.getElementById('packages').style.display = 'none';
     document.getElementById('request-build').style.display = 'none';
-    ErrorHandler.debug('hideDeviceInfo', 'After hiding', {
-        infoDisplay: document.getElementById('info').style.display
-    });
-    
-    // 統合デバッグでの犯人特定
-    setTimeout(() => {
-        const infoEl = document.getElementById('info');
-        if (infoEl.style.display !== 'none') {
-            ErrorHandler.debug('hideDeviceInfo', 'CULPRIT FOUND! Display changed to: ' + infoEl.style.display);
-        }
-    }, 100);
 }
 
 // ==================== auto トリガー関数 ====================
