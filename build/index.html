@@ -5406,11 +5406,25 @@ async function buildAsuRequest() {
                     });
                     break;
                 case 400: // bad request
-                case 422: // bad package
+                    response.text().then((responseText) => {
+                        hideProgress();
+                        showBuildStatus('Build failed: Bad Request', 'error');
+                        BuildErrorHandler.showError('Bad Request', 400, responseText);
+                    });
+                    break;
+                case 422: // character limit exceeded
+                    response.text().then((responseText) => {
+                        hideProgress();
+                        showBuildStatus('Build failed: Character Limit Exceeded', 'error');
+                        BuildErrorHandler.showError('Character Limit Exceeded (16KB variable limit)', 422, responseText);
+                    });
+                    break;
                 case 500: // build failed
                     response.text().then((responseText) => {
                         hideProgress();
-                        showBuildStatus('Build failed: HTTP 500 Server Error', 'error');
+                        showBuildStatus('Build failed: Server Error', 'error');
+                        BuildErrorHandler.showError('Server Error', 500, responseText);
+                    });
                         
                         // 詳細なエラー情報を表示
                         const container = document.getElementById('download-links');
