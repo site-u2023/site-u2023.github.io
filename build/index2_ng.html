@@ -1652,6 +1652,9 @@ const config = {
     min_version: "21.02.0",  // 最小サポートバージョン
 };
 
+// バージョン定義（公式互換）
+const ofs_version = "1.0.0";
+
 // グローバル変数
 let app = {
     versions: [],
@@ -5394,8 +5397,6 @@ const BuildErrorHandler = {
         
 // ==================== ビルド処理 ====================
 async function buildAsuRequest() {
-    console.log('[buildAsuRequest] Function entered');
-    
     if (!current_device || !current_device.id) {
         alert('Please select a device first');
         return;
@@ -5405,81 +5406,81 @@ async function buildAsuRequest() {
         document.getElementById('request-build').disabled = true;
         showProgress('Preparing build request...', 10);
 
-        const packages = split(document.getElementById('asu-packages').value);
-        let script = document.getElementById('uci-defaults-content').value;
-        
-        // MAP-E処理
+        // スクリプトをMAP-E処理（独自機能）
+        let defaults_content = document.getElementById('uci-defaults-content').value;
         const config = getAiosConfig();
         const apiInfo = window.cachedApiInfo;
         if (MapEProcessor.isActive(config, apiInfo)) {
-            script = await MapEProcessor.processForBuild(script, config, apiInfo);
+            defaults_content = await MapEProcessor.processForBuild(defaults_content, config, apiInfo);
         }
 
-        const requestBody = {
+        // 公式と完全に同じ構造
+        var body = JSON.stringify({
             profile: current_device.id,
             target: current_device.target,
-            packages: packages,
-            version: app.selectedVersion,
-            diff_packages: true
-        };
-        
-        if (script && script.trim()) {
-            requestBody.defaults = script;
-        }
-        if (app.versionCode) {
-            requestBody.version_code = app.versionCode;
-        }
+            packages: split(document.getElementById('asu-packages').value),
+            defaults: defaults_content,
+            version_code: document.getElementById('image-code').innerText,
+            version: document.getElementById('versions').value,
+            diff_packages: true,
+            client: "ofs/" + ofs_version
+        });
 
-        console.log('[buildAsuRequest] Sending request to ASU server');
-
-        const response = await fetch('https://sysupgrade.openwrt.org/api/v1/build', {
+        fetch('https://sysupgrade.openwrt.org/api/v1/build', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(requestBody)
-        });
-
-        console.log('[buildAsuRequest] Response status:', response.status);
-
-        if (response.status === 200) {
-            const mobj = await response.json();
-            if ('stderr' in mobj) {
-                document.getElementById('asu-stderr').innerText = mobj.stderr;
-                document.getElementById('asu-stdout').innerText = mobj.stdout;
-                document.getElementById('asu-log').style.display = 'block';
+            body: body
+        })
+        .then((response) => {
+            switch (response.status) {
+                case 200:
+                    response.json().then((mobj) => {
+                        if ('stderr' in mobj) {
+                            document.getElementById('asu-stderr').innerText = mobj.stderr;
+                            document.getElementById('asu-stdout').innerText = mobj.stdout;
+                            document.getElementById('asu-log').style.display = 'block';
+                        }
+                        hideProgress();
+                        showBuildStatus('Build successful', 'info');
+                        mobj['id'] = current_device.id;
+                        showDownloadLinks(mobj.images || [], mobj, mobj.request_hash);
+                    });
+                    break;
+                case 202:
+                    response.json().then((mobj) => {
+                        showProgress(`${mobj.imagebuilder_status || 'Processing'}...`, 30);
+                        setTimeout(() => pollBuildStatus(mobj.request_hash), 5000);
+                    });
+                    break;
+                case 400:
+                case 422:
+                case 500:
+                    response.json().then((mobj) => {
+                        if ('stderr' in mobj) {
+                            document.getElementById('asu-stderr').innerText = mobj.stderr;
+                            document.getElementById('asu-stdout').innerText = mobj.stdout;
+                            document.getElementById('asu-log').style.display = 'block';
+                        }
+                        if ('detail' in mobj) {
+                            showBuildStatus(mobj['detail'], 'error');
+                        } else {
+                            showBuildStatus('Build failed', 'error');
+                        }
+                    });
+                    break;
             }
-            hideProgress();
-            showBuildStatus('Build successful', 'info');
-            mobj['id'] = current_device.id;
-            showDownloadLinks(mobj.images || [], mobj, mobj.request_hash);
-            
-        } else if (response.status === 202) {
-            const mobj = await response.json();
-            console.log('[buildAsuRequest] Build queued, request_hash:', mobj.request_hash);
-            showProgress(`${mobj.imagebuilder_status || 'Processing'}...`, 30);
-            setTimeout(() => pollBuildStatus(mobj.request_hash), 5000);
-            
-        } else {
-            const mobj = await response.json();
-            if ('stderr' in mobj) {
-                document.getElementById('asu-stderr').innerText = mobj.stderr;
-                document.getElementById('asu-stdout').innerText = mobj.stdout;
-                document.getElementById('asu-log').style.display = 'block';
-            }
-            hideProgress();
-            showBuildStatus(mobj.detail || 'Build failed', 'error');
-            document.getElementById('request-build').disabled = false;
-        }
+        })
+        .catch((err) => showBuildStatus(err.message, 'error'));
 
     } catch (error) {
-        console.error('[buildAsuRequest] Error:', error);
-        hideProgress();
         showBuildStatus(`Build failed: ${error.message}`, 'error');
+    } finally {
         document.getElementById('request-build').disabled = false;
     }
 }
-
+        
 async function pollBuildStatus(requestHash) {
     const statusUrl = `https://sysupgrade.openwrt.org/api/v1/build/${requestHash}`;
     
