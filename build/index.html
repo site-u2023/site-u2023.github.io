@@ -4891,8 +4891,8 @@ async function customizeSetupScript(content, userConfig, apiInfo, selectedPackag
         
 // Network Optimizer
         enable_netopt: { 
-            value: userConfig.netOptimizer === 'enabled' ? '1' : '', 
-            active: userConfig.netOptimizer === 'enabled' 
+            value: (userConfig.netOptimizer || 'enabled') === 'enabled' ? '1' : '', 
+            active: (userConfig.netOptimizer || 'enabled') === 'enabled' 
         },
         netopt_manual: { 
             value: userConfig.netOptimizerMode === 'manual' ? '1' : '', 
