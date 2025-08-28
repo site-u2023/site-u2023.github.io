@@ -3931,6 +3931,9 @@ async function loadDeviceProfile(device) {
 async function applyProfileData(profilesData, profileId) {
     app.versionCode = profilesData.version_code || '';
     
+    // プロファイルデータをグローバルに保存（重要）
+    app.currentProfilesData = profilesData;
+    
     if (profilesData.linux_kernel) {
         const lk = profilesData.linux_kernel;
         app.kernelHash = `${lk.version}-${lk.release}-${lk.vermagic}`;
@@ -5434,17 +5437,25 @@ async function buildAsuRequest() {
 
         console.log('[buildAsuRequest] Getting packages');
         
-        // ユーザー入力パッケージのみを取得（重要な変更）
-        const userInputPackages = split(document.getElementById('asu-packages').value);
+        // ユーザー入力パッケージを取得
+        const allPackages = split(document.getElementById('asu-packages').value);
         
         // デフォルト/デバイスパッケージを除外
-        let packagesToSend = userInputPackages;
-        if (app.currentProfileData) {
-            const excludeSet = new Set([
-                ...(app.currentProfileData.default_packages || []),
-                ...(app.currentProfileData.device_packages || [])
-            ]);
-            packagesToSend = userInputPackages.filter(pkg => !excludeSet.has(pkg));
+        let packagesToSend = allPackages;
+        
+        if (app.currentProfilesData && current_device.id) {
+            const profile = app.currentProfilesData.profiles?.[current_device.id];
+            const defaultPackages = app.currentProfilesData.default_packages || [];
+            const devicePackages = profile?.device_packages || [];
+            
+            console.log('[buildAsuRequest] Default packages:', defaultPackages);
+            console.log('[buildAsuRequest] Device packages:', devicePackages);
+            
+            // ユーザーが追加したパッケージのみを送信（ASU側で差分計算させる）
+            const excludeSet = new Set([...defaultPackages, ...devicePackages]);
+            packagesToSend = allPackages.filter(pkg => !excludeSet.has(pkg));
+            
+            console.log('[buildAsuRequest] Excluded:', Array.from(excludeSet).length, 'packages');
         }
         
         console.log('[buildAsuRequest] User packages to send:', packagesToSend);
@@ -5468,8 +5479,8 @@ async function buildAsuRequest() {
         const requestBody = {
             target: current_device.target,
             profile: current_device.id,
-            packages: packagesToSend,  // ユーザー入力のみ
-            diff_packages: true,  // 必須フラグ
+            packages: packagesToSend,  // ユーザー追加分のみ
+            diff_packages: true,  // ASUサーバー側で差分計算を有効化
             version: app.selectedVersion,
             client: "ofs/custom-1.0"  // クライアント識別
         };
@@ -5484,68 +5495,74 @@ async function buildAsuRequest() {
         // サイズチェックを事前実行
         const sizeInfo = BuildErrorHandler.calculateTotalSize(script, packagesToSend);
         
-        fetch('https://sysupgrade.openwrt.org/api/v1/build', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify(requestBody),
-            cache: 'no-cache'  // SNAPSHOT対応
-        })
-        .then((response) => {
-            switch (response.status) {
-                case 200:
-                    showProgress('Build completed!', 100);
-                    response.json().then((mobj) => {
-                        if ('stderr' in mobj) {
-                            document.getElementById('asu-stderr').innerText = mobj.stderr;
-                            document.getElementById('asu-stdout').innerText = mobj.stdout;
-                            document.getElementById('asu-log').style.display = 'block';
-                        } else {
-                            document.getElementById('asu-log').style.display = 'none';
-                        }
-                        hideProgress();
-                        showBuildStatus('Build successful', 'info');
-                        mobj['id'] = current_device.id;
-                        showDownloadLinks(mobj.images || [], mobj, mobj.request_hash);
-                    });
-                    break;
-                case 202:
-                    response.json().then((mobj) => {
-                        showProgress(`${mobj.imagebuilder_status || 'Processing'}...`, 30);
-                        setTimeout(() => pollBuildStatus(mobj.request_hash), 5000);
-                    });
-                    break;
-                case 400: // bad request
-                case 422: // bad package
-                case 500: // build failed
-                    response.text().then((responseText) => {
-                        hideProgress();
-                        showBuildStatus('Build failed: HTTP 500 Server Error', 'error');
-                        
-                        // 詳細なエラー情報を表示
-                        const container = document.getElementById('download-links');
-                        container.innerHTML = `
-                            <div class="asu-error" style="margin-top: 1rem;">
-                                <h4>Build Failed - Server Error</h4>
-                                <div><strong>HTTP Status:</strong> 500 Internal Server Error</div>
-                                <div><strong>Error Details:</strong></div>
-                                <pre style="background: #f8f8f8; padding: 10px; margin: 10px 0; border-radius: 4px; overflow-x: auto; font-size: 0.9em; max-height: 200px;">${responseText}</pre>
-                            </div>
-                            
-                            <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; color: #856404; padding: 1rem; margin: 1rem 0; border-radius: 0.25rem;">
-                                <h5 style="margin-top: 0; color: #856404;">⚠️ Troubleshooting</h5>
-                                <p style="margin-bottom: 0;">Please verify network connectivity, package selection, and script configuration. Try removing custom packages or scripts, then retry the build.</p>
-                            </div>
-                        `;
-                    });
-                    break;
+        // ネットワークエラー対策：リトライ機能付き
+        const maxRetries = 3;
+        let retryCount = 0;
+        
+        const sendRequest = async () => {
+            return fetch('https://sysupgrade.openwrt.org/api/v1/build', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify(requestBody),
+                cache: 'no-cache',  // SNAPSHOT対応
+                signal: AbortSignal.timeout(30000)  // 30秒タイムアウト
+            });
+        };
+        
+        const handleResponse = async () => {
+            try {
+                const response = await sendRequest();
+                
+                switch (response.status) {
+                    case 200:
+                        showProgress('Build completed!', 100);
+                        response.json().then((mobj) => {
+                            if ('stderr' in mobj) {
+                                document.getElementById('asu-stderr').innerText = mobj.stderr;
+                                document.getElementById('asu-stdout').innerText = mobj.stdout;
+                                document.getElementById('asu-log').style.display = 'block';
+                            } else {
+                                document.getElementById('asu-log').style.display = 'none';
+                            }
+                            hideProgress();
+                            showBuildStatus('Build successful', 'info');
+                            mobj['id'] = current_device.id;
+                            showDownloadLinks(mobj.images || [], mobj, mobj.request_hash);
+                        });
+                        break;
+                    case 202:
+                        response.json().then((mobj) => {
+                            showProgress(`${mobj.imagebuilder_status || 'Processing'}...`, 30);
+                            setTimeout(() => pollBuildStatus(mobj.request_hash), 5000);
+                        });
+                        break;
+                    case 400: // bad request
+                    case 422: // bad package
+                    case 500: // build failed
+                        response.text().then((responseText) => {
+                            hideProgress();
+                            showBuildStatus('Build failed: Server Error', 'error');
+                            BuildErrorHandler.showError('Build Failed', response.status, responseText, sizeInfo);
+                        });
+                        break;
+                }
+            } catch (err) {
+                // ネットワークエラーの場合はリトライ
+                if (retryCount < maxRetries && err.name === 'TypeError') {
+                    retryCount++;
+                    console.log(`[buildAsuRequest] Network error, retry ${retryCount}/${maxRetries}`);
+                    showProgress(`Network error, retrying... (${retryCount}/${maxRetries})`, 5);
+                    setTimeout(() => handleResponse(), 2000 * retryCount);
+                } else {
+                    BuildErrorHandler.showError('Network Error', null, err.message, sizeInfo);
+                }
             }
-        })
-        .catch((err) => {
-            BuildErrorHandler.showError('Network Error', null, err.message, sizeInfo);
-        });
+        };
+        
+        await handleResponse();
 
     } catch (error) {
         console.error('Build request failed:', error);
