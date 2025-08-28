@@ -1427,8 +1427,12 @@ NAS="openwrt"
 MNT="/mnt/sda"
 exec >/tmp/setup.log 2>&1
 uci -q batch <<SYSTEM_EOF
-set system.@system[0].description="\${DATE}"
-set system.@system[0].notes="site-u.pages.dev/build"
+    set system.@system[0].description="\${DATE}"
+    set system.@system[0].notes="site-u.pages.dev/build"
+    delete system.ntp.server
+$(for i in $(seq 0 3); do
+    printf '\\tlist system.ntp.server="%s.\\${country}.pool.ntp.org"\n' "$i"
+done)
 SYSTEM_EOF
 [ -n "\${device_name}" ] && uci -q set system.@system[0].hostname="\${device_name}"
 [ -n "\${root_password}" ] && printf '%s\\n%s\\n' "\${root_password}" "\${root_password}" | passwd >/dev/null
@@ -1619,7 +1623,7 @@ SAMBA_EOF
 # BEGIN_CUSTOM_COMMANDS
 # END_CUSTOM_COMMANDS
 uci commit 2>/dev/null
-[ -n "\${enable_netopt}" ] && { cat > /etc/rc.local <<RCLOCAL_EOF
+[ -n "\${enable_netopt}" ] && { cat > /etc/rc.local <<'EOF'
 #!/bin/sh
 C=/etc/sysctl.d/99-net-opt.conf
 M=\$(awk '/MemTotal/{print int(\$2/1024)}' /proc/meminfo)
@@ -1632,11 +1636,11 @@ else exit 0; fi
 [ \$P -gt 2 ] && [ \$P -le 4 ] && { NB=\$((NB*3/2)); SC=\$((SC*3/2)); }
 printf "net.core.rmem_max=%s\\nnet.core.wmem_max=%s\\nnet.ipv4.tcp_rmem=%s\\nnet.ipv4.tcp_wmem=%s\\nnet.ipv4.tcp_congestion_control=cubic\\nnet.ipv4.tcp_fastopen=3\\nnet.netfilter.nf_conntrack_max=%s\\nnet.core.netdev_max_backlog=%s\\nnet.core.somaxconn=%s\\n" "\$R" "\$W" "\$TR" "\$TW" "\$CT" "\$NB" "\$SC" > \$C
 sysctl -p \$C
-cat > /etc/rc.local <<RESET_EOF
+cat > /etc/rc.local <<'RESET_EOF'
 exit 0
 RESET_EOF
 exit 0
-RCLOCAL_EOF
+EOF
 }
 [ -n "\${backup_path}" ] && sysupgrade -q -k -b "\${backup_path}"
 echo "All done!"
