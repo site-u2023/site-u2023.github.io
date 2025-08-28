@@ -1427,7 +1427,7 @@ NAS="openwrt"
 MNT="/mnt/sda"
 exec >/tmp/setup.log 2>&1
 uci -q batch << 'SYSTEM_EOF'
-set system.@system[0].description="\${DATE}"
+set system.@system[0].description="${DATE}"
 set system.@system[0].notes="site-u.pages.dev/build"
 SYSTEM_EOF
 [ -n "\${device_name}" ] && uci -q set system.@system[0].hostname="\${device_name}"
@@ -1448,8 +1448,8 @@ FLOWHARD_EOF
     wireless_cfg="$(uci -q show wireless)"
     for radio in \$(printf '%s\\n' "\${wireless_cfg}" | grep "wireless\.radio[0-9]*=" | cut -d. -f2 | cut -d= -f1); do
         uci -q batch << 'RADIO_EOF'
-set wireless.\${radio}.disabled='0'
-set wireless.\${radio}.country="\${country:-00}"
+set wireless.${radio}.disabled='0'
+set wireless.${radio}.country="${country:-00}"
 RADIO_EOF
         band=$(uci -q get wireless.\${radio}.band)
         case "\${band}" in
@@ -1466,17 +1466,17 @@ RADIO_EOF
         done
         iface="default_\${radio}"
         [ -n "$(uci -q get wireless.\${iface})" ] && uci -q batch << 'WLAN_EOF'
-set wireless.\${iface}.disabled='0'
-set wireless.\${iface}.encryption="\${encryption}"
-set wireless.\${iface}.ssid="\${ssid}"
-set wireless.\${iface}.key="\${wlan_password}"
+set wireless.${iface}.disabled='0'
+set wireless.${iface}.encryption="${encryption}"
+set wireless.${iface}.ssid="${ssid}"
+set wireless.${iface}.key="${wlan_password}"
 WLAN_EOF
     done
 }
 [ -n "\${pppoe_username}" ] && [ -n "\${pppoe_password}" ] && uci -q batch << 'PPPOE_EOF'
 set network.wan.proto='pppoe'
-set network.wan.username="\${pppoe_username}"
-set network.wan.password="\${pppoe_password}"
+set network.wan.username="${pppoe_username}"
+set network.wan.password="${pppoe_password}"
 PPPOE_EOF
 [ -n "\${dslite_aftr_address}" ] && {
     uci -q batch << 'DSLITE_EOF'
@@ -1484,32 +1484,32 @@ set network.wan.disabled='1'
 set network.wan.auto='0'
 set network.wan6.disabled='1'
 set network.wan6.auto='0'
-set network.\${DSL6}=interface
-set network.\${DSL6}.proto='dhcpv6'
-set network.\${DSL6}.device="\${WAN}"
-set network.\${DSL6}.reqaddress='try'
-set network.\${DSL6}.reqprefix='auto'
-set network.\${DSL}=interface
-set network.\${DSL}.proto='dslite'
-set network.\${DSL}.peeraddr="\${dslite_aftr_address}"
-set network.\${DSL}.tunlink="\${DSL6}"
-set network.\${DSL}.mtu='1460'
-set network.\${DSL}.encaplimit='ignore'
-set dhcp.\${DSL6}=dhcp
-set dhcp.\${DSL6}.interface="\${DSL6}"
-set dhcp.\${DSL6}.master='1'
-set dhcp.\${DSL6}.ra='relay'
-set dhcp.\${DSL6}.dhcpv6='relay'
-set dhcp.\${DSL6}.ndp='relay'
-set dhcp.\${DSL6}.ignore='1'
+set network.${DSL6}=interface
+set network.${DSL6}.proto='dhcpv6'
+set network.${DSL6}.device="${WAN}"
+set network.${DSL6}.reqaddress='try'
+set network.${DSL6}.reqprefix='auto'
+set network.${DSL}=interface
+set network.${DSL}.proto='dslite'
+set network.${DSL}.peeraddr="${dslite_aftr_address}"
+set network.${DSL}.tunlink="${DSL6}"
+set network.${DSL}.mtu='1460'
+set network.${DSL}.encaplimit='ignore'
+set dhcp.${DSL6}=dhcp
+set dhcp.${DSL6}.interface="${DSL6}"
+set dhcp.${DSL6}.master='1'
+set dhcp.${DSL6}.ra='relay'
+set dhcp.${DSL6}.dhcpv6='relay'
+set dhcp.${DSL6}.ndp='relay'
+set dhcp.${DSL6}.ignore='1'
 set dhcp.lan.ra='relay'
 set dhcp.lan.dhcpv6='relay'
 set dhcp.lan.ndp='relay'
 set dhcp.lan.force='1'
 del_list firewall.@zone[1].network="wan"
 del_list firewall.@zone[1].network="wan6"
-add_list firewall.@zone[1].network="\${DSL}"
-add_list firewall.@zone[1].network="\${DSL6}"
+add_list firewall.@zone[1].network="${DSL}"
+add_list firewall.@zone[1].network="${DSL6}"
 set firewall.@zone[1].masq='1'
 set firewall.@zone[1].mtu_fix='1'
 DSLITE_EOF
@@ -1520,41 +1520,41 @@ set network.wan.disabled='1'
 set network.wan.auto='0'
 set network.wan6.disabled='1'
 set network.wan6.auto='0'
-set network.\${MAPE6}=interface
-set network.\${MAPE6}.proto='dhcpv6'
-set network.\${MAPE6}.device="\${WAN}"
-set network.\${MAPE6}.reqaddress='try'
-set network.\${MAPE6}.reqprefix='auto'
-set network.\${MAPE}=interface
-set network.\${MAPE}.proto='map'
-set network.\${MAPE}.maptype='map-e'
-set network.\${MAPE}.peeraddr="\${mape_br}"
-set network.\${MAPE}.ipaddr="\${mape_ipv4_prefix}"
-set network.\${MAPE}.ip4prefixlen="\${mape_ipv4_prefixlen}"
-set network.\${MAPE}.ip6prefix="\${mape_ipv6_prefix}"
-set network.\${MAPE}.ip6prefixlen="\${mape_ipv6_prefixlen}"
-set network.\${MAPE}.ealen="\${mape_ealen}"
-set network.\${MAPE}.psidlen="\${mape_psidlen}"
-set network.\${MAPE}.offset="\${mape_psid_offset}"
-set network.\${MAPE}.mtu='1460'
-set network.\${MAPE}.encaplimit='ignore'
-set network.\${MAPE}.legacymap='1'
-set network.\${MAPE}.tunlink="\${MAPE6}"
-set dhcp.\${MAPE6}=dhcp
-set dhcp.\${MAPE6}.interface="\${MAPE6}"
-set dhcp.\${MAPE6}.master='1'
-set dhcp.\${MAPE6}.ra='relay'
-set dhcp.\${MAPE6}.dhcpv6='relay'
-set dhcp.\${MAPE6}.ndp='relay'
-set dhcp.\${MAPE6}.ignore='1'
+set network.${MAPE6}=interface
+set network.${MAPE6}.proto='dhcpv6'
+set network.${MAPE6}.device="\${WAN}"
+set network.${MAPE6}.reqaddress='try'
+set network.${MAPE6}.reqprefix='auto'
+set network.${MAPE}=interface
+set network.${MAPE}.proto='map'
+set network.${MAPE}.maptype='map-e'
+set network.${MAPE}.peeraddr="${mape_br}"
+set network.${MAPE}.ipaddr="${mape_ipv4_prefix}"
+set network.${MAPE}.ip4prefixlen="${mape_ipv4_prefixlen}"
+set network.${MAPE}.ip6prefix="${mape_ipv6_prefix}"
+set network.${MAPE}.ip6prefixlen="${mape_ipv6_prefixlen}"
+set network.${MAPE}.ealen="${mape_ealen}"
+set network.${MAPE}.psidlen="${mape_psidlen}"
+set network.${MAPE}.offset="${mape_psid_offset}"
+set network.${MAPE}.mtu='1460'
+set network.${MAPE}.encaplimit='ignore'
+set network.${MAPE}.legacymap='1'
+set network.${MAPE}.tunlink="${MAPE6}"
+set dhcp.${MAPE6}=dhcp
+set dhcp.${MAPE6}.interface="${MAPE6}"
+set dhcp.${MAPE6}.master='1'
+set dhcp.${MAPE6}.ra='relay'
+set dhcp.${MAPE6}.dhcpv6='relay'
+set dhcp.${MAPE6}.ndp='relay'
+set dhcp.${MAPE6}.ignore='1'
 set dhcp.lan.ra='relay'
 set dhcp.lan.dhcpv6='relay'
 set dhcp.lan.ndp='relay'
 set dhcp.lan.force='1'
 del_list firewall.@zone[1].network="wan"
 del_list firewall.@zone[1].network="wan6"
-add_list firewall.@zone[1].network="\${MAPE}"
-add_list firewall.@zone[1].network="\${MAPE6}"
+add_list firewall.@zone[1].network="${MAPE}"
+add_list firewall.@zone[1].network="${MAPE6}"
 set firewall.@zone[1].masq='1'
 set firewall.@zone[1].mtu_fix='1'
 MAPE_EOF
@@ -1569,20 +1569,20 @@ set network.wan.disabled='1'
 set network.wan.auto='0'
 set network.wan6.disabled='1'
 set network.wan6.auto='0'
-set network.\${AP}=interface
-set network.\${AP}.proto='static'
-set network.\${AP}.device="\${LAN}"
-set network.\${AP}.ipaddr="\${ap_ip_address}"
-set network.\${AP}.netmask='255.255.255.0'
-set network.\${AP}.gateway="\${ap_gateway}"
-set network.\${AP}.dns="\${ap_gateway}"
-set network.\${AP}.delegate='0'
-set network.\${AP6}=interface
-set network.\${AP6}.proto='dhcpv6'
-set network.\${AP6}.device="@\${AP}"
-set network.\${AP6}.reqaddress='try'
-set network.\${AP6}.reqprefix='no'
-set network.\${AP6}.type='bridge'
+set network.${AP}=interface
+set network.${AP}.proto='static'
+set network.${AP}.device="${LAN}"
+set network.${AP}.ipaddr="${ap_ip_address}"
+set network.${AP}.netmask='255.255.255.0'
+set network.${AP}.gateway="${ap_gateway}"
+set network.${AP}.dns="${ap_gateway}"
+set network.${AP}.delegate='0'
+set network.${AP6}=interface
+set network.${AP6}.proto='dhcpv6'
+set network.${AP6}.device="@${AP}"
+set network.${AP6}.reqaddress='try'
+set network.${AP6}.reqprefix='no'
+set network.${AP6}.type='bridge'
 AP_EOF
     [ -n "$(uci -q get wireless.default_radio0)" ] && uci -q set wireless.default_radio0.network="\${AP}"
     [ -n "$(uci -q get wireless.default_radio1)" ] && uci -q set wireless.default_radio1.network="\${AP}"
@@ -1607,8 +1607,8 @@ set samba4.@samba[0].description='Samba on OpenWRT'
 set samba4.@samba[0].enable_extra_tuning='1'
 set samba4.@samba[0].interface='lan'
 set samba4.sambashare=sambashare
-set samba4.sambashare.name="\${NAS}"
-set samba4.sambashare.path="\${MNT}"
+set samba4.sambashare.name="${NAS}"
+set samba4.sambashare.path="${MNT}"
 set samba4.sambashare.read_only='no'
 set samba4.sambashare.force_root='1'
 set samba4.sambashare.guest_ok='yes'
