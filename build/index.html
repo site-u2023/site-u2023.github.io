@@ -1429,7 +1429,7 @@ exec >/tmp/setup.log 2>&1
 # uci set system.@system[0].description="\${DATE}"
 # uci set system.@system[0].notes="site-u.pages.dev/build"
 
-uci -q batch <<SYSTEM_EOF
+uci -q batch <<'SYSTEM_EOF'
 set system.@system[0].description="\${DATE}"
 set system.@system[0].notes="site-u.pages.dev/build"
 SYSTEM_EOF
