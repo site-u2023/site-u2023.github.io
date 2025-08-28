@@ -5446,8 +5446,11 @@ async function buildAsuRequest() {
             target: current_device.target,
             profile: current_device.id,
             packages: packages,
-            diff_packages: true,
-            version: app.selectedVersion
+            defaults: $("#uci-defaults-content").value,
+            version_code: $("#image-code").innerText,
+            version: app.selectedVersion,
+            diff_packages: true
+            client: "ofs/" + ofs_version
         };
         
         console.log('[buildAsuRequest] About to send fetch request');
