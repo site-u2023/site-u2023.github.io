@@ -16,10 +16,10 @@ exec >/tmp/setup.log 2>&1
 uci set system.@system[0].description="\${DATE}"
 uci set system.@system[0].notes="site-u.pages.dev/build"
 uci -q delete system.ntp.server
-uci add_list system.ntp.server="0.${country}.pool.ntp.org"
-uci add_list system.ntp.server="1.${country}.pool.ntp.org"
-uci add_list system.ntp.server="2.${country}.pool.ntp.org"
-uci add_list system.ntp.server="3.${country}.pool.ntp.org"
+uci add_list system.ntp.server="0.\${country}.pool.ntp.org"
+uci add_list system.ntp.server="1.\${country}.pool.ntp.org"
+uci add_list system.ntp.server="2.\${country}.pool.ntp.org"
+uci add_list system.ntp.server="3.\${country}.pool.ntp.org"
 [ -n "\${device_name}" ] && uci set system.@system[0].hostname="\${device_name}"
 [ -n "\${root_password}" ] && printf '%s\\n%s\\n' "\${root_password}" "\${root_password}" | passwd >/dev/null
 [ -n "\${lan_ip_address}" ] && uci set network.lan.ipaddr="\${lan_ip_address}"
