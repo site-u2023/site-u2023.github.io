@@ -5420,8 +5420,7 @@ async function buildAsuRequest() {
             defaults: script,
             version_code: app.versionCode,
             version: app.selectedVersion,
-            diff_packages: true,
-            client: "ofs/" + ofs_version
+            diff_packages: true
         };
 
         fetch('https://sysupgrade.openwrt.org/api/v1/build', {
