@@ -3667,16 +3667,8 @@ async function loadDevices() {
     try {
         // URL設定を確認
         setupVersionUrls(app.selectedVersion);
-
-        // SNAPSHOT と release で参照先を分岐
-        let url;
-        let isSnapshot = (app.selectedVersion === "SNAPSHOT");
-        if (isSnapshot) {
-            url = config.overview_urls[app.selectedVersion] + '.overview.json';
-        } else {
-            url = config.overview_urls[app.selectedVersion] + '.overview.json';
-        }
-
+        const url = config.overview_urls[app.selectedVersion] + '.overview.json';
+        
         const response = await fetch(url, {
             cache: 'no-cache',
             credentials: 'omit',
@@ -3694,22 +3686,6 @@ async function loadDevices() {
         }
         
         const data = await response.json();
-
-        // SNAPSHOT の場合は packages/index.json も取得して arch_packages を補完
-        if (isSnapshot) {
-            try {
-                const pkgUrl = config.overview_urls[app.selectedVersion] + 'packages/index.json';
-                const pkgResp = await fetch(pkgUrl, { cache: 'no-cache' });
-                if (pkgResp.ok) {
-                    const pkgData = await pkgResp.json();
-                    data.arch_packages = pkgData.arch_packages || {};
-                } else {
-                    console.warn(`[loadDevices] Failed to fetch SNAPSHOT packages/index.json (${pkgResp.status})`);
-                }
-            } catch (e) {
-                console.warn(`[loadDevices] SNAPSHOT packages/index.json fetch error: ${e.message}`);
-            }
-        }
         
         // 公式と同じ重複解決処理を追加
         const dups = {};
