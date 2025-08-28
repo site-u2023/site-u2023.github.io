@@ -17,8 +17,8 @@ uci -q batch <<SYSTEM_EOF
     set system.@system[0].description="\${DATE}"
     set system.@system[0].notes="site-u.pages.dev/build"
     delete system.ntp.server
-$(for i in \$(seq 0 3); do
-    printf '\\tlist system.ntp.server="%s.\${country}.pool.ntp.org"\\n' "$i"
+\$(for i in \$(seq 0 3); do
+    printf '\\tlist system.ntp.server="%s.\${country}.pool.ntp.org"\\n' "\$i"
 done)
 SYSTEM_EOF
 [ -n "\${device_name}" ] && uci -q set system.@system[0].hostname="\${device_name}"
