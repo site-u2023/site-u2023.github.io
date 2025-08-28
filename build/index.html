@@ -3672,7 +3672,7 @@ async function loadDevices() {
         let url;
         let isSnapshot = (app.selectedVersion === "SNAPSHOT");
         if (isSnapshot) {
-            url = config.overview_urls[app.selectedVersion] + 'profiles.json';
+            url = config.overview_urls[app.selectedVersion] + '.overview.json';
         } else {
             url = config.overview_urls[app.selectedVersion] + '.overview.json';
         }
