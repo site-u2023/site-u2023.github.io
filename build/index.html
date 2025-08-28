@@ -4889,10 +4889,10 @@ async function customizeSetupScript(content, userConfig, apiInfo, selectedPackag
         ap_ip_address: { value: userConfig.apIpAddress, active: apActive && !!userConfig.apIpAddress },
         ap_gateway: { value: userConfig.apGateway, active: apActive && !!userConfig.apGateway },
         
-// Network Optimizer
+        // Network Optimizer
         enable_netopt: { 
-            value: (userConfig.netOptimizer || 'enabled') === 'enabled' ? '1' : '', 
-            active: (userConfig.netOptimizer || 'enabled') === 'enabled' 
+            value: userConfig.netOptimizer === 'enabled' ? '1' : '', 
+            active: userConfig.netOptimizer === 'enabled' 
         },
         netopt_manual: { 
             value: userConfig.netOptimizerMode === 'manual' ? '1' : '', 
