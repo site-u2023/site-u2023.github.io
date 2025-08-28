@@ -4269,18 +4269,19 @@ function handleConnectionModeChange(e) {
 }
 
 function handleConnectionTypeChange(e) {
-    // 全フィールドを初期値にリセット
-    document.getElementById('pppoe-username').value = '';
-    document.getElementById('pppoe-password').value = '';
-    document.getElementById('dslite-aftr-address').value = '';
+    // ResetManagerを使用して統一的にリセット
+    ResetManager.clearPPPoEValues();
+    ResetManager.clearDSLiteValues();  // AFTRタイプ・地域もデフォルト値に戻す
+    ResetManager.clearMAPEValues();
+    ResetManager.clearAPValues();
+    
+    // 各プロトコルの詳細設定もリセット
+    ResetManager.resetDsliteSettings();  // Auto/Manualもデフォルト状態に
+    ResetManager.resetMapeSettings();
+    
+    // AP用の特定値設定
     document.getElementById('ap-ip-address').value = '192.168.1.2';
     document.getElementById('ap-gateway').value = '192.168.1.1';
-
-    // DS-Liteラジオボタンもリセット（Auto/Manual）
-    const dsliteAuto = document.getElementById('dslite-auto');
-    const dsliteManual = document.getElementById('dslite-manual');
-    if (dsliteAuto) dsliteAuto.checked = false;
-    if (dsliteManual) dsliteManual.checked = false;
     
     // MAP-E初期値（APIから）
     const api = window.cachedApiInfo?.mape || {};
