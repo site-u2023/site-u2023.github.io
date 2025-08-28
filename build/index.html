@@ -2427,7 +2427,7 @@ const ErrorHandler = {
     }
 };
 
-// ==================== ãƒªã‚»ãƒƒãƒˆå…±é€šé–¢æ•° ====================
+// ==================== リセット共通関数 ====================
 const ResetManager = {
     // フィールド値をクリアする汎用関数
     clearFields(fieldIds) {
@@ -2462,11 +2462,11 @@ const ResetManager = {
     // DS-Lite値をクリア
     clearDSLiteValues() {
         this.clearFields(['dslite-aftr-address']);
-        // デフォルトに戻す
+        // デフォルトに戻す（transix, East）
         const typeSelect = document.getElementById('dslite-aftr-type');
         const areaSelect = document.getElementById('dslite-area');
-        if (typeSelect) typeSelect.selectedIndex = 0;
-        if (areaSelect) areaSelect.selectedIndex = 0;
+        if (typeSelect) typeSelect.value = 'transix';
+        if (areaSelect) areaSelect.value = 'east';
     },
     
     // MAP-E値をクリア  
@@ -2501,7 +2501,7 @@ const ResetManager = {
         this.clearAPValues();
     },
     
-    // ==================== リセット共通関数 ====================
+    // 接続タイプをデフォルトにリセット
     resetConnectionType() {
         const dhcpRadio = document.getElementById('conn-dhcp');
         if (dhcpRadio) {
