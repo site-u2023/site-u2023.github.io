@@ -2560,6 +2560,11 @@ const ResetManager = {
     
     // Network Optimizer設定をデフォルトにリセット
     resetNetOptimizerSettings() {
+        const netoptEnabled = document.getElementById('netopt-enabled');
+        if (netoptEnabled) {
+            netoptEnabled.checked = true;
+        }
+        
         const netoptAuto = document.getElementById('netopt-auto');
         if (netoptAuto) {
             netoptAuto.checked = true;
