@@ -5394,6 +5394,8 @@ const BuildErrorHandler = {
         
 // ==================== ビルド処理 ====================
 async function buildAsuRequest() {
+    console.log('[buildAsuRequest] Function entered');
+    
     if (!current_device || !current_device.id) {
         alert('Please select a device first');
         return;
@@ -5403,94 +5405,75 @@ async function buildAsuRequest() {
         document.getElementById('request-build').disabled = true;
         showProgress('Preparing build request...', 10);
 
-        // パッケージリストをそのまま取得（フィルタリングしない）
         const packages = split(document.getElementById('asu-packages').value);
-        
-        // スクリプトを取得
         let script = document.getElementById('uci-defaults-content').value;
         
-        // MAP-E処理（必要な場合のみ）
+        // MAP-E処理
         const config = getAiosConfig();
         const apiInfo = window.cachedApiInfo;
         if (MapEProcessor.isActive(config, apiInfo)) {
             script = await MapEProcessor.processForBuild(script, config, apiInfo);
         }
 
-        // 公式と同じ構造のリクエストボディ
         const requestBody = {
             profile: current_device.id,
             target: current_device.target,
             packages: packages,
-            defaults: script || undefined,
-            version_code: app.versionCode || undefined,
             version: app.selectedVersion,
-            diff_packages: true,
-            client: "ofs/custom"
+            diff_packages: true
         };
+        
+        if (script && script.trim()) {
+            requestBody.defaults = script;
+        }
+        if (app.versionCode) {
+            requestBody.version_code = app.versionCode;
+        }
 
-        // undefinedの値を削除
-        Object.keys(requestBody).forEach(key => {
-            if (requestBody[key] === undefined) {
-                delete requestBody[key];
-            }
-        });
+        console.log('[buildAsuRequest] Sending request to ASU server');
 
-        fetch('https://sysupgrade.openwrt.org/api/v1/build', {
+        const response = await fetch('https://sysupgrade.openwrt.org/api/v1/build', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify(requestBody)
-        })
-        .then((response) => {
-            switch (response.status) {
-                case 200:
-                    response.json().then((mobj) => {
-                        if ('stderr' in mobj) {
-                            document.getElementById('asu-stderr').innerText = mobj.stderr;
-                            document.getElementById('asu-stdout').innerText = mobj.stdout;
-                            document.getElementById('asu-log').style.display = 'block';
-                        } else {
-                            document.getElementById('asu-log').style.display = 'none';
-                        }
-                        hideProgress();
-                        showBuildStatus('Build successful', 'info');
-                        mobj['id'] = current_device.id;
-                        showDownloadLinks(mobj.images || [], mobj, mobj.request_hash);
-                    });
-                    break;
-                case 202:
-                    response.json().then((mobj) => {
-                        showProgress(`${mobj.imagebuilder_status || 'Processing'}...`, 30);
-                        setTimeout(() => pollBuildStatus(mobj.request_hash), 5000);
-                    });
-                    break;
-                case 400:
-                case 422:
-                case 500:
-                    response.json().then((mobj) => {
-                        if ('stderr' in mobj) {
-                            document.getElementById('asu-stderr').innerText = mobj.stderr;
-                            document.getElementById('asu-stdout').innerText = mobj.stdout;
-                            document.getElementById('asu-log').style.display = 'block';
-                        }
-                        if ('detail' in mobj) {
-                            showBuildStatus(mobj['detail'], 'error');
-                        } else {
-                            showBuildStatus('Build failed', 'error');
-                        }
-                    });
-                    break;
-            }
-        })
-        .catch((err) => {
-            hideProgress();
-            showBuildStatus(err.message, 'error');
         });
 
+        console.log('[buildAsuRequest] Response status:', response.status);
+
+        if (response.status === 200) {
+            const mobj = await response.json();
+            if ('stderr' in mobj) {
+                document.getElementById('asu-stderr').innerText = mobj.stderr;
+                document.getElementById('asu-stdout').innerText = mobj.stdout;
+                document.getElementById('asu-log').style.display = 'block';
+            }
+            hideProgress();
+            showBuildStatus('Build successful', 'info');
+            mobj['id'] = current_device.id;
+            showDownloadLinks(mobj.images || [], mobj, mobj.request_hash);
+            
+        } else if (response.status === 202) {
+            const mobj = await response.json();
+            console.log('[buildAsuRequest] Build queued, request_hash:', mobj.request_hash);
+            showProgress(`${mobj.imagebuilder_status || 'Processing'}...`, 30);
+            setTimeout(() => pollBuildStatus(mobj.request_hash), 5000);
+            
+        } else {
+            const mobj = await response.json();
+            if ('stderr' in mobj) {
+                document.getElementById('asu-stderr').innerText = mobj.stderr;
+                document.getElementById('asu-stdout').innerText = mobj.stdout;
+                document.getElementById('asu-log').style.display = 'block';
+            }
+            hideProgress();
+            showBuildStatus(mobj.detail || 'Build failed', 'error');
+            document.getElementById('request-build').disabled = false;
+        }
+
     } catch (error) {
-        console.error('Build request failed:', error);
+        console.error('[buildAsuRequest] Error:', error);
         hideProgress();
         showBuildStatus(`Build failed: ${error.message}`, 'error');
         document.getElementById('request-build').disabled = false;
