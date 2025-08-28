@@ -489,11 +489,6 @@
         margin-top: 0.1rem;
     }
 
-    .package-hidden {
-        opacity: 0.7;
-        font-style: italic;
-    }
-
     .package-dependent {
         margin-left: 1.5rem;
         font-size: 0.9rem;
@@ -1302,18 +1297,18 @@
                                 <label>Dynamic Network Optimizer</label>
                                 <div class="radio-group">
                                     <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="netOptimizer" id="netopt-disabled" value="disabled" checked>
-                                        <label class="form-check-label" for="netopt-disabled">Disabled</label>
+                                        <input class="form-check-input" type="radio" name="netOptimizer" id="netopt-enabled" value="enabled" checked>
+                                        <label class="form-check-label" for="netopt-enabled">Enabled</label>
                                     </div>
                                     <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="netOptimizer" id="netopt-enabled" value="enabled">
-                                        <label class="form-check-label" for="netopt-enabled">Enabled</label>
+                                        <input class="form-check-input" type="radio" name="netOptimizer" id="netopt-disabled" value="disabled">
+                                        <label class="form-check-label" for="netopt-disabled">Disabled</label>
                                     </div>
                                 </div>
                                 <small class="form-text text-muted">Automatically optimizes TCP buffer sizes and network parameters based on available RAM</small>
                             </div>
 
-                            <div id="net-optimizer-section" class="conditional-section">
+                            <div id="net-optimizer-section" class="conditional-section" style="display: block;">
                                 <div class="form-group">
                                     <label>Configuration Mode</label>
                                     <div class="radio-group">
@@ -1431,25 +1426,32 @@ AP6="ap6"
 NAS="openwrt"
 MNT="/mnt/sda"
 exec >/tmp/setup.log 2>&1
-uci set system.@system[0].description="\${DATE}"
-uci set system.@system[0].notes="site-u.pages.dev/build"
-[ -n "\${device_name}" ] && uci set system.@system[0].hostname="\${device_name}"
+uci -q batch <<SYSTEM_EOF
+set system.@system[0].description="\${DATE}"
+set system.@system[0].notes="site-u.pages.dev/build"
+SYSTEM_EOF
+[ -n "\${device_name}" ] && uci -q set system.@system[0].hostname="\${device_name}"
 [ -n "\${root_password}" ] && printf '%s\\n%s\\n' "\${root_password}" "\${root_password}" | passwd >/dev/null
-[ -n "\${lan_ip_address}" ] && uci set network.lan.ipaddr="\${lan_ip_address}"
-[ -n "\${lan_ipv6_address}" ] && uci set network.lan.ip6addr="\${lan_ipv6_address}"
-[ -n "\${language}" ] && uci set system.@system[0].language="\${language}"
-[ -n "\${timezone}" ] && uci set system.@system[0].timezone="\${timezone}"
-[ -n "\${zonename}" ] && uci set system.@system[0].zonename="\${zonename}"
-[ -n "\${ssh_interface}" ] && uci set dropbear.@dropbear[0].Interface="\${ssh_interface}"
-[ -n "\${ssh_port}" ] && uci set dropbear.@dropbear[0].Port="\${ssh_port}"
-[ "\${flow_offloading_type}" = "software" ] && uci set firewall.@defaults[0].flow_offloading='1'
-[ "\${flow_offloading_type}" = "hardware" ] && { uci set firewall.@defaults[0].flow_offloading='1'; uci set firewall.@defaults[0].flow_offloading_hw='1'; }
+[ -n "\${lan_ip_address}" ] && uci -q set network.lan.ipaddr="\${lan_ip_address}"
+[ -n "\${lan_ipv6_address}" ] && uci -q set network.lan.ip6addr="\${lan_ipv6_address}"
+[ -n "\${language}" ] && uci -q set system.@system[0].language="\${language}"
+[ -n "\${timezone}" ] && uci -q set system.@system[0].timezone="\${timezone}"
+[ -n "\${zonename}" ] && uci -q set system.@system[0].zonename="\${zonename}"
+[ -n "\${ssh_interface}" ] && uci -q set dropbear.@dropbear[0].Interface="\${ssh_interface}"
+[ -n "\${ssh_port}" ] && uci -q set dropbear.@dropbear[0].Port="\${ssh_port}"
+[ "\${flow_offloading_type}" = "software" ] && uci -q set firewall.@defaults[0].flow_offloading='1'
+[ "\${flow_offloading_type}" = "hardware" ] && uci -q batch <<FLOWHARD_EOF
+set firewall.@defaults[0].flow_offloading='1'
+set firewall.@defaults[0].flow_offloading_hw='1'
+FLOWHARD_EOF
 [ -n "\${wlan_name}" ] && [ -n "\${wlan_password}" ] && [ "\${#wlan_password}" -ge 8 ] && {
-    wireless_cfg="\$(uci -q show wireless)"
-    for radio in \$(printf '%s\n' "\${wireless_cfg}" | grep "wireless\.radio[0-9]*=" | cut -d. -f2 | cut -d= -f1); do
-        uci set wireless.\${radio}.disabled='0'
-        uci set wireless.\${radio}.country="\${country:-00}" 2>/dev/null
-        band=\$(uci -q get wireless.\${radio}.band)
+    wireless_cfg="$(uci -q show wireless)"
+    for radio in \$(printf '%s\\n' "\${wireless_cfg}" | grep "wireless\.radio[0-9]*=" | cut -d. -f2 | cut -d= -f1); do
+        uci -q batch <<RADIO_EOF
+set wireless.\${radio}.disabled='0'
+set wireless.\${radio}.country="\${country:-00}"
+RADIO_EOF
+        band=$(uci -q get wireless.\${radio}.band)
         case "\${band}" in
             2g) suffix="-2g"; encryption='psk-mixed' ;;
             5g) suffix="-5g"; encryption='sae-mixed' ;;
@@ -1458,159 +1460,162 @@ uci set system.@system[0].notes="site-u.pages.dev/build"
         esac
         ssid="\${wlan_name}\${suffix}"
         n=2
-        while printf '%s\n' "\${wireless_cfg}" | grep -q "ssid='\${ssid}'"; do
+        while printf '%s\\n' "\${wireless_cfg}" | grep -q "ssid='\${ssid}'"; do
             ssid="\${wlan_name}\${suffix}\${n}"
             n=\$((n+1))
         done
         iface="default_\${radio}"
-        [ -n "\$(uci -q get wireless.\${iface})" ] && {
-            uci set wireless.\${iface}.disabled='0'
-            uci set wireless.\${iface}.encryption="\${encryption}"
-            uci set wireless.\${iface}.ssid="\${ssid}"
-            uci set wireless.\${iface}.key="\${wlan_password}"
-        }
+        [ -n "$(uci -q get wireless.\${iface})" ] && uci -q batch <<WLAN_EOF
+set wireless.\${iface}.disabled='0'
+set wireless.\${iface}.encryption="\${encryption}"
+set wireless.\${iface}.ssid="\${ssid}"
+set wireless.\${iface}.key="\${wlan_password}"
+WLAN_EOF
     done
 }
-[ -n "\${pppoe_username}" ] && [ -n "\${pppoe_password}" ] && {
-    uci set network.wan.proto='pppoe'
-    uci set network.wan.username="\${pppoe_username}"
-    uci set network.wan.password="\${pppoe_password}"
-}
+[ -n "\${pppoe_username}" ] && [ -n "\${pppoe_password}" ] && uci -q batch <<PPPOE_EOF
+set network.wan.proto='pppoe'
+set network.wan.username="\${pppoe_username}"
+set network.wan.password="\${pppoe_password}"
+PPPOE_EOF
 [ -n "\${dslite_aftr_address}" ] && {
-    uci set network.wan.disabled='1'
-    uci set network.wan.auto='0'
-    uci set network.wan6.disabled='1'
-    uci set network.wan6.auto='0'
-    uci set network.\${DSL6}=interface
-    uci set network.\${DSL6}.proto='dhcpv6'
-    uci set network.\${DSL6}.device="\${WAN}"
-    uci set network.\${DSL6}.reqaddress='try'
-    uci set network.\${DSL6}.reqprefix='auto'
-    uci set network.\${DSL}=interface
-    uci set network.\${DSL}.proto='dslite'
-    uci set network.\${DSL}.peeraddr="\${dslite_aftr_address}"
-    uci set network.\${DSL}.tunlink="\${DSL6}"
-    uci set network.\${DSL}.mtu='1460'
-    uci set network.\${DSL}.encaplimit='ignore'
-    uci set dhcp.\${DSL6}=dhcp
-    uci set dhcp.\${DSL6}.interface="\${DSL6}"
-    uci set dhcp.\${DSL6}.master='1'
-    uci set dhcp.\${DSL6}.ra='relay'
-    uci set dhcp.\${DSL6}.dhcpv6='relay'
-    uci set dhcp.\${DSL6}.ndp='relay'
-    uci set dhcp.\${DSL6}.ignore='1'
-    uci set dhcp.lan.ra='relay'
-    uci set dhcp.lan.dhcpv6='relay'
-    uci set dhcp.lan.ndp='relay'
-    uci set dhcp.lan.force='1'
-    uci del_list firewall.@zone[1].network="wan"
-    uci del_list firewall.@zone[1].network="wan6"
-    uci add_list firewall.@zone[1].network="\${DSL}"
-    uci add_list firewall.@zone[1].network="\${DSL6}"
-    uci set firewall.@zone[1].masq='1'
-    uci set firewall.@zone[1].mtu_fix='1'
+    uci -q batch <<DSLITE_EOF
+set network.wan.disabled='1'
+set network.wan.auto='0'
+set network.wan6.disabled='1'
+set network.wan6.auto='0'
+set network.\${DSL6}=interface
+set network.\${DSL6}.proto='dhcpv6'
+set network.\${DSL6}.device="\${WAN}"
+set network.\${DSL6}.reqaddress='try'
+set network.\${DSL6}.reqprefix='auto'
+set network.\${DSL}=interface
+set network.\${DSL}.proto='dslite'
+set network.\${DSL}.peeraddr="\${dslite_aftr_address}"
+set network.\${DSL}.tunlink="\${DSL6}"
+set network.\${DSL}.mtu='1460'
+set network.\${DSL}.encaplimit='ignore'
+set dhcp.\${DSL6}=dhcp
+set dhcp.\${DSL6}.interface="\${DSL6}"
+set dhcp.\${DSL6}.master='1'
+set dhcp.\${DSL6}.ra='relay'
+set dhcp.\${DSL6}.dhcpv6='relay'
+set dhcp.\${DSL6}.ndp='relay'
+set dhcp.\${DSL6}.ignore='1'
+set dhcp.lan.ra='relay'
+set dhcp.lan.dhcpv6='relay'
+set dhcp.lan.ndp='relay'
+set dhcp.lan.force='1'
+del_list firewall.@zone[1].network="wan"
+del_list firewall.@zone[1].network="wan6"
+add_list firewall.@zone[1].network="\${DSL}"
+add_list firewall.@zone[1].network="\${DSL6}"
+set firewall.@zone[1].masq='1'
+set firewall.@zone[1].mtu_fix='1'
+DSLITE_EOF
 }
 [ -n "\${mape_br}" ] && [ -n "\${mape_ealen}" ] && {
-    uci set network.wan.disabled='1'
-    uci set network.wan.auto='0'
-    uci set network.wan6.disabled='1'
-    uci set network.wan6.auto='0'
-    uci set network.\${MAPE6}=interface
-    uci set network.\${MAPE6}.proto='dhcpv6'
-    uci set network.\${MAPE6}.device="\${WAN}"
-    uci set network.\${MAPE6}.reqaddress='try'
-    uci set network.\${MAPE6}.reqprefix='auto'
-    [ -n "\${mape_gua_mode}" ] && uci set network.\${MAPE6}.ip6prefix="\${mape_gua_prefix}"
-    uci set network.\${MAPE}=interface
-    uci set network.\${MAPE}.proto='map'
-    uci set network.\${MAPE}.maptype='map-e'
-    uci set network.\${MAPE}.peeraddr="\${mape_br}"
-    uci set network.\${MAPE}.ipaddr="\${mape_ipv4_prefix}"
-    uci set network.\${MAPE}.ip4prefixlen="\${mape_ipv4_prefixlen}"
-    uci set network.\${MAPE}.ip6prefix="\${mape_ipv6_prefix}"
-    uci set network.\${MAPE}.ip6prefixlen="\${mape_ipv6_prefixlen}"
-    uci set network.\${MAPE}.ealen="\${mape_ealen}"
-    uci set network.\${MAPE}.psidlen="\${mape_psidlen}"
-    uci set network.\${MAPE}.offset="\${mape_psid_offset}"
-    uci set network.\${MAPE}.mtu='1460'
-    uci set network.\${MAPE}.encaplimit='ignore'
-    uci set network.\${MAPE}.legacymap='1'
-    uci set network.\${MAPE}.tunlink="\${MAPE6}"
-    uci set dhcp.\${MAPE6}=dhcp
-    uci set dhcp.\${MAPE6}.interface="\${MAPE6}"
-    uci set dhcp.\${MAPE6}.master='1'
-    uci set dhcp.\${MAPE6}.ra='relay'
-    uci set dhcp.\${MAPE6}.dhcpv6='relay'
-    uci set dhcp.\${MAPE6}.ndp='relay'
-    uci set dhcp.\${MAPE6}.ignore='1'
-    uci set dhcp.lan.ra='relay'
-    uci set dhcp.lan.dhcpv6='relay'
-    uci set dhcp.lan.ndp='relay'
-    uci set dhcp.lan.force='1'
-    uci del_list firewall.@zone[1].network="wan"
-    uci del_list firewall.@zone[1].network="wan6"
-    uci add_list firewall.@zone[1].network="\${MAPE}"
-    uci add_list firewall.@zone[1].network="\${MAPE6}"
-    uci set firewall.@zone[1].masq='1'
-    uci set firewall.@zone[1].mtu_fix='1'
+    uci -q batch <<MAPE_EOF
+set network.wan.disabled='1'
+set network.wan.auto='0'
+set network.wan6.disabled='1'
+set network.wan6.auto='0'
+set network.\${MAPE6}=interface
+set network.\${MAPE6}.proto='dhcpv6'
+set network.\${MAPE6}.device="\${WAN}"
+set network.\${MAPE6}.reqaddress='try'
+set network.\${MAPE6}.reqprefix='auto'
+set network.\${MAPE}=interface
+set network.\${MAPE}.proto='map'
+set network.\${MAPE}.maptype='map-e'
+set network.\${MAPE}.peeraddr="\${mape_br}"
+set network.\${MAPE}.ipaddr="\${mape_ipv4_prefix}"
+set network.\${MAPE}.ip4prefixlen="\${mape_ipv4_prefixlen}"
+set network.\${MAPE}.ip6prefix="\${mape_ipv6_prefix}"
+set network.\${MAPE}.ip6prefixlen="\${mape_ipv6_prefixlen}"
+set network.\${MAPE}.ealen="\${mape_ealen}"
+set network.\${MAPE}.psidlen="\${mape_psidlen}"
+set network.\${MAPE}.offset="\${mape_psid_offset}"
+set network.\${MAPE}.mtu='1460'
+set network.\${MAPE}.encaplimit='ignore'
+set network.\${MAPE}.legacymap='1'
+set network.\${MAPE}.tunlink="\${MAPE6}"
+set dhcp.\${MAPE6}=dhcp
+set dhcp.\${MAPE6}.interface="\${MAPE6}"
+set dhcp.\${MAPE6}.master='1'
+set dhcp.\${MAPE6}.ra='relay'
+set dhcp.\${MAPE6}.dhcpv6='relay'
+set dhcp.\${MAPE6}.ndp='relay'
+set dhcp.\${MAPE6}.ignore='1'
+set dhcp.lan.ra='relay'
+set dhcp.lan.dhcpv6='relay'
+set dhcp.lan.ndp='relay'
+set dhcp.lan.force='1'
+del_list firewall.@zone[1].network="wan"
+del_list firewall.@zone[1].network="wan6"
+add_list firewall.@zone[1].network="\${MAPE}"
+add_list firewall.@zone[1].network="\${MAPE6}"
+set firewall.@zone[1].masq='1'
+set firewall.@zone[1].mtu_fix='1'
+MAPE_EOF
+    [ -n "\${mape_gua_mode}" ] && uci -q set network.\${MAPE6}.ip6prefix="\${mape_gua_prefix}"
     cat > /lib/netifd/proto/map.sh <<'MAP_SH_EOF'
 \${map_sh_content}
 MAP_SH_EOF
 }
 [ -n "\${ap_ip_address}" ] && {
-    uci set network.wan.disabled='1'
-    uci set network.wan.auto='0'
-    uci set network.wan6.disabled='1'
-    uci set network.wan6.auto='0'
-    uci set network.\${AP}=interface
-    uci set network.\${AP}.proto='static'
-    uci set network.\${AP}.device="\${LAN}"
-    uci set network.\${AP}.ipaddr="\${ap_ip_address}"
-    uci set network.\${AP}.netmask='255.255.255.0'
-    uci set network.\${AP}.gateway="\${ap_gateway}"
-    uci set network.\${AP}.dns="\${ap_gateway}"
-    uci set network.\${AP}.delegate='0'
-    uci set network.\${AP6}=interface
-    uci set network.\${AP6}.proto='dhcpv6'
-    uci set network.\${AP6}.device="@\${AP}"
-    uci set network.\${AP6}.reqaddress='try'
-    uci set network.\${AP6}.reqprefix='no'
-    uci set network.\${AP6}.type='bridge'
-    [ -n "$(uci -q get wireless.default_radio0)" ] && uci set wireless.default_radio0.network="\${AP}"
-    [ -n "$(uci -q get wireless.default_radio1)" ] && uci set wireless.default_radio1.network="\${AP}"
-    [ -n "$(uci -q get wireless.default_radio2)" ] && uci set wireless.default_radio2.network="\${AP}"
-    [ -x /etc/init.d/odhcpd ] && /etc/init.d/odhcpd enabled && /etc/init.d/odhcpd disable
-    [ -x /etc/init.d/odhcpd ] && /etc/init.d/odhcpd running && /etc/init.d/odhcpd stop
-    [ -x /etc/init.d/dnsmasq ] && /etc/init.d/dnsmasq enabled && /etc/init.d/dnsmasq disable
-    [ -x /etc/init.d/dnsmasq ] && /etc/init.d/dnsmasq running && /etc/init.d/dnsmasq stop
-    [ -x /etc/init.d/firewall ] && /etc/init.d/firewall enabled && /etc/init.d/firewall disable
-    [ -x /etc/init.d/firewall ] && /etc/init.d/firewall running && /etc/init.d/firewall stop
+    uci -q batch <<AP_EOF
+set network.wan.disabled='1'
+set network.wan.auto='0'
+set network.wan6.disabled='1'
+set network.wan6.auto='0'
+set network.\${AP}=interface
+set network.\${AP}.proto='static'
+set network.\${AP}.device="\${LAN}"
+set network.\${AP}.ipaddr="\${ap_ip_address}"
+set network.\${AP}.netmask='255.255.255.0'
+set network.\${AP}.gateway="\${ap_gateway}"
+set network.\${AP}.dns="\${ap_gateway}"
+set network.\${AP}.delegate='0'
+set network.\${AP6}=interface
+set network.\${AP6}.proto='dhcpv6'
+set network.\${AP6}.device="@\${AP}"
+set network.\${AP6}.reqaddress='try'
+set network.\${AP6}.reqprefix='no'
+set network.\${AP6}.type='bridge'
+AP_EOF
+    [ -n "$(uci -q get wireless.default_radio0)" ] && uci -q set wireless.default_radio0.network="\${AP}"
+    [ -n "$(uci -q get wireless.default_radio1)" ] && uci -q set wireless.default_radio1.network="\${AP}"
+    [ -n "$(uci -q get wireless.default_radio2)" ] && uci -q set wireless.default_radio2.network="\${AP}"
+    [ -x /etc/init.d/odhcpd ] && /etc/init.d/odhcpd disable
+    [ -x /etc/init.d/dnsmasq ] && /etc/init.d/dnsmasq disable  
+    [ -x /etc/init.d/firewall ] && /etc/init.d/firewall disable
 }
-[ -n "\${enable_ttyd}" ] && {
-    uci set ttyd.@ttyd[0].ipv6='1'
-    uci set ttyd.@ttyd[0].command='/bin/login -f root'
-}
-[ -n "\${enable_irqbalance}" ] && {
-    uci set irqbalance.irqbalance=irqbalance
-    uci set irqbalance.irqbalance.enabled='1'
-}
-[ -n "\${enable_samba4}" ] && {
-    uci set samba4.@samba[0]=samba
-    uci set samba4.@samba[0].workgroup='WORKGROUP'
-    uci set samba4.@samba[0].charset='UTF-8'
-    uci set samba4.@samba[0].description='Samba on OpenWRT'
-    uci set samba4.@samba[0].enable_extra_tuning='1'
-    uci set samba4.@samba[0].interface='lan'
-    uci set samba4.sambashare=sambashare
-    uci set samba4.sambashare.name="\${NAS}"
-    uci set samba4.sambashare.path="\${MNT}"
-    uci set samba4.sambashare.read_only='no'
-    uci set samba4.sambashare.force_root='1'
-    uci set samba4.sambashare.guest_ok='yes'
-    uci set samba4.sambashare.inherit_owner='yes'
-    uci set samba4.sambashare.create_mask='0777'
-    uci set samba4.sambashare.dir_mask='0777'
-}
+[ -n "\${enable_ttyd}" ] && uci -q batch <<TTYD_EOF
+set ttyd.@ttyd[0].ipv6='1'
+set ttyd.@ttyd[0].command='/bin/login -f root'
+TTYD_EOF
+[ -n "\${enable_irqbalance}" ] && uci -q batch <<IRQ_EOF
+set irqbalance.irqbalance=irqbalance
+set irqbalance.irqbalance.enabled='1'
+IRQ_EOF
+[ -n "\${enable_samba4}" ] && uci -q batch <<SAMBA_EOF
+set samba4.@samba[0]=samba
+set samba4.@samba[0].workgroup='WORKGROUP'
+set samba4.@samba[0].charset='UTF-8'
+set samba4.@samba[0].description='Samba on OpenWRT'
+set samba4.@samba[0].enable_extra_tuning='1'
+set samba4.@samba[0].interface='lan'
+set samba4.sambashare=sambashare
+set samba4.sambashare.name="\${NAS}"
+set samba4.sambashare.path="\${MNT}"
+set samba4.sambashare.read_only='no'
+set samba4.sambashare.force_root='1'
+set samba4.sambashare.guest_ok='yes'
+set samba4.sambashare.inherit_owner='yes'
+set samba4.sambashare.create_mask='0777'
+set samba4.sambashare.dir_mask='0777'
+SAMBA_EOF
 # BEGIN_CUSTOM_COMMANDS
 # END_CUSTOM_COMMANDS
 uci commit 2>/dev/null
@@ -1836,7 +1841,7 @@ const PACKAGE_DB = {
           name: "mwan3"
         },
         {
-          id: "luci-app-mwan3",
+          id: "luci-app-mwan3 (iptables)",
           name: "luci-app-mwan3",
           dependencies: ["mwan3"]
         }
@@ -2097,7 +2102,7 @@ const PACKAGE_DB = {
           name: "tailscale"
         },
         {
-          id: "luci-app-dockerman",
+          id: "luci-app-dockerman (iptables)",
           name: "luci-app-dockerman",
           dependencies: ["docker-compose"]
         },
@@ -2432,7 +2437,7 @@ const ErrorHandler = {
     }
 };
 
-// ==================== ãƒªã‚»ãƒƒãƒˆå…±é€šé–¢æ•° ====================
+// ==================== リセット共通関数 ====================
 const ResetManager = {
     // フィールド値をクリアする汎用関数
     clearFields(fieldIds) {
@@ -2467,11 +2472,11 @@ const ResetManager = {
     // DS-Lite値をクリア
     clearDSLiteValues() {
         this.clearFields(['dslite-aftr-address']);
-        // デフォルトに戻す
+        // デフォルトに戻す（transix, East）
         const typeSelect = document.getElementById('dslite-aftr-type');
         const areaSelect = document.getElementById('dslite-area');
-        if (typeSelect) typeSelect.selectedIndex = 0;
-        if (areaSelect) areaSelect.selectedIndex = 0;
+        if (typeSelect) typeSelect.value = 'transix';
+        if (areaSelect) areaSelect.value = 'east';
     },
     
     // MAP-E値をクリア  
@@ -2506,7 +2511,7 @@ const ResetManager = {
         this.clearAPValues();
     },
     
-    // ==================== リセット共通関数 ====================
+    // 接続タイプをデフォルトにリセット
     resetConnectionType() {
         const dhcpRadio = document.getElementById('conn-dhcp');
         if (dhcpRadio) {
@@ -3172,12 +3177,18 @@ function bindEvents() {
     ];
     bindFieldEvents(netOptFields);
     
-    // デフォルトはAutoモード
+// デフォルトはAutoモード
     const manualSection = document.getElementById('manual-connection-section');
     if (manualSection) manualSection.style.display = 'none';
 
     const ispDetectionGroup = document.getElementById('isp-detection-group');
     if (ispDetectionGroup) ispDetectionGroup.style.display = 'block'; // Auto時は表示
+
+    // Dynamic Network Optimizer デフォルト設定
+    const netOptimizerSection = document.getElementById('net-optimizer-section');
+    if (netOptimizerSection) netOptimizerSection.style.display = 'block'; // Enabled時は表示
+    const netOptimizerManual = document.getElementById('net-optimizer-manual');
+    if (netOptimizerManual) netOptimizerManual.style.display = 'none'; // Autoモードなので手動設定は非表示
 
     // 全ての接続タイプ固有セクションを非表示（DHCPセクション含む）
     const connectionSections = [
@@ -3267,11 +3278,10 @@ function generatePackageSelector() {
            if (depIds.has(pkg.id)) return;
 
            // 厳格：available にあるものだけ表示
-           const isAvailable = availablePackages.has(pkg.id);
+           const isAvailable = availablePackages.has(pkg.name);
 
            const packageItem = document.createElement('div');
            packageItem.className = 'package-item';
-           if (pkg.hidden) packageItem.classList.add('package-hidden');
 
            if (!isAvailable) {
                // 完全に除外
@@ -3306,7 +3316,7 @@ function generatePackageSelector() {
            link.href = pkg.url;
            link.target = '_blank';
            link.className = 'package-link';
-           link.textContent = pkg.name;
+           link.textContent = pkg.id;
 
            label.appendChild(link);
            formCheck.appendChild(checkbox);
@@ -3345,7 +3355,7 @@ function generatePackageSelector() {
                        depLink.href = depPkg.url;
                        depLink.target = '_blank';
                        depLink.className = 'package-link';
-                       depLink.textContent = depPkg.name;
+                       depLink.textContent = depPkg.id;
                        depLabel.appendChild(depLink);
                    } else {
                        depLabel.textContent = depId;
@@ -4043,7 +4053,6 @@ async function applyProfileData(profilesData, profileId) {
 }
        
 function showDeviceInfo() {
-    ErrorHandler.trace('showDeviceInfo', current_device);
     if (!current_device || !current_device.id) return;
 
     const device = app.devices.find(d => d.id === current_device.id && d.target === current_device.target);
@@ -4205,21 +4214,9 @@ function showDeviceInfo() {
 }
 
 function hideDeviceInfo() {
-    ErrorHandler.debug('hideDeviceInfo', 'Before hiding');
     document.getElementById('info').style.display = 'none';
     document.getElementById('packages').style.display = 'none';
     document.getElementById('request-build').style.display = 'none';
-    ErrorHandler.debug('hideDeviceInfo', 'After hiding', {
-        infoDisplay: document.getElementById('info').style.display
-    });
-    
-    // 統合デバッグでの犯人特定
-    setTimeout(() => {
-        const infoEl = document.getElementById('info');
-        if (infoEl.style.display !== 'none') {
-            ErrorHandler.debug('hideDeviceInfo', 'CULPRIT FOUND! Display changed to: ' + infoEl.style.display);
-        }
-    }, 100);
 }
 
 // ==================== auto トリガー関数 ====================
@@ -4288,18 +4285,19 @@ function handleConnectionModeChange(e) {
 }
 
 function handleConnectionTypeChange(e) {
-    // 全フィールドを初期値にリセット
-    document.getElementById('pppoe-username').value = '';
-    document.getElementById('pppoe-password').value = '';
-    document.getElementById('dslite-aftr-address').value = '';
+    // ResetManagerを使用して統一的にリセット
+    ResetManager.clearPPPoEValues();
+    ResetManager.clearDSLiteValues();  // AFTRタイプ・地域もデフォルト値に戻す
+    ResetManager.clearMAPEValues();
+    ResetManager.clearAPValues();
+    
+    // 各プロトコルの詳細設定もリセット
+    ResetManager.resetDsliteSettings();  // Auto/Manualもデフォルト状態に
+    ResetManager.resetMapeSettings();
+    
+    // AP用の特定値設定
     document.getElementById('ap-ip-address').value = '192.168.1.2';
     document.getElementById('ap-gateway').value = '192.168.1.1';
-
-    // DS-Liteラジオボタンもリセット（Auto/Manual）
-    const dsliteAuto = document.getElementById('dslite-auto');
-    const dsliteManual = document.getElementById('dslite-manual');
-    if (dsliteAuto) dsliteAuto.checked = false;
-    if (dsliteManual) dsliteManual.checked = false;
     
     // MAP-E初期値（APIから）
     const api = window.cachedApiInfo?.mape || {};
@@ -4897,7 +4895,7 @@ async function customizeSetupScript(content, userConfig, apiInfo, selectedPackag
         ap_ip_address: { value: userConfig.apIpAddress, active: apActive && !!userConfig.apIpAddress },
         ap_gateway: { value: userConfig.apGateway, active: apActive && !!userConfig.apGateway },
         
-// Network Optimizer
+        // Network Optimizer
         enable_netopt: { 
             value: userConfig.netOptimizer === 'enabled' ? '1' : '', 
             active: userConfig.netOptimizer === 'enabled' 
