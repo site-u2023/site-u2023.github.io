@@ -4034,28 +4034,15 @@ async function applyProfileData(profilesData, profileId) {
     if (profilesData.profiles && profilesData.profiles[profileId]) {
         const profile = profilesData.profiles[profileId];
         
-        // プロファイルデータをグローバルに保存（buildAsuRequestで使用）
-        app.currentProfileData = {
-            default_packages: profilesData.default_packages || [],
-            device_packages: profile.device_packages || []
-        };
-        
-        // ユーザー選択パッケージのみを設定
-        const asuExtraPackages = ['luci'];
+        // ユーザーが選択したパッケージのみ設定（デフォルトは含めない）
         const checkedPackages = [];
         document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
             const pkgName = cb.getAttribute('data-package');
-            if (pkgName) {
-                checkedPackages.push(pkgName);
-            }
+            if (pkgName) checkedPackages.push(pkgName);
         });
         
-        // ASUエクストラとチェックされたパッケージのみ（デフォルト/デバイスパッケージは含めない）
-        const userPackages = Array.from(new Set([
-            ...asuExtraPackages,
-            ...checkedPackages
-        ]));
-        
+        // luciパッケージとユーザー選択分のみ
+        const userPackages = ['luci', ...checkedPackages];
         document.getElementById('asu-packages').value = userPackages.join(' ');
         asuCollectPackages();
     }
@@ -5407,167 +5394,83 @@ const BuildErrorHandler = {
         
 // ==================== ビルド処理 ====================
 async function buildAsuRequest() {
-    console.log('[buildAsuRequest] Function entered');
-    
     if (!current_device || !current_device.id) {
-        console.log('[buildAsuRequest] No device selected');
         alert('Please select a device first');
         return;
     }
-    
-    console.log('[buildAsuRequest] Device check passed');
 
     try {
-        console.log('[buildAsuRequest] Entering try block');
         document.getElementById('request-build').disabled = true;
-        console.log('[buildAsuRequest] Button disabled');
         showProgress('Preparing build request...', 10);
-        console.log('[buildAsuRequest] Progress shown');
-        
-        // 初回の進捗表示時に確実にスクロール
-        setTimeout(() => {
-            const progressElement = document.getElementById('build-progress');
-            if (progressElement) {
-                progressElement.scrollIntoView({ 
-                    behavior: 'smooth', 
-                    block: 'center' 
-                });
-            }
-        }, 200);
 
-        console.log('[buildAsuRequest] Getting packages');
-        
-        // ユーザー入力パッケージを取得
-        const allPackages = split(document.getElementById('asu-packages').value);
-        
-        // デフォルト/デバイスパッケージを除外
-        let packagesToSend = allPackages;
-        
-        if (app.currentProfilesData && current_device.id) {
-            const profile = app.currentProfilesData.profiles?.[current_device.id];
-            const defaultPackages = app.currentProfilesData.default_packages || [];
-            const devicePackages = profile?.device_packages || [];
-            
-            console.log('[buildAsuRequest] Default packages:', defaultPackages);
-            console.log('[buildAsuRequest] Device packages:', devicePackages);
-            
-            // ユーザーが追加したパッケージのみを送信（ASU側で差分計算させる）
-            const excludeSet = new Set([...defaultPackages, ...devicePackages]);
-            packagesToSend = allPackages.filter(pkg => !excludeSet.has(pkg));
-            
-            console.log('[buildAsuRequest] Excluded:', Array.from(excludeSet).length, 'packages');
-        }
-        
-        console.log('[buildAsuRequest] User packages to send:', packagesToSend);
-        console.log('[buildAsuRequest] Getting script');
-        
+        const packages = split(document.getElementById('asu-packages').value);
         let script = document.getElementById('uci-defaults-content').value;
-        const originalSize = script.length;
-        console.log('[buildAsuRequest] Calling MapEProcessor');
         
-        // MAP-E処理（必要時のみプレースホルダー置換）
+        // MAP-E処理
         script = await MapEProcessor.processForBuild(
             script, 
             getAiosConfig(), 
             window.cachedApiInfo
         );
-        console.log('[VERIFY] Script size:', originalSize, '→', script.length, '(', script.length - originalSize, 'bytes added)');
-        console.log('[buildAsuRequest] MapEProcessor completed');
-
-        console.log('[buildAsuRequest] Building request body');
 
         const requestBody = {
-            target: current_device.target,
             profile: current_device.id,
-            packages: packagesToSend,  // ユーザー追加分のみ
-            diff_packages: true,  // ASUサーバー側で差分計算を有効化
+            target: current_device.target,
+            packages: packages,
+            defaults: script,
+            version_code: app.versionCode,
             version: app.selectedVersion,
-            client: "ofs/custom-1.0"  // クライアント識別
+            diff_packages: true,
+            client: "ofs/" + ofs_version
         };
-        
-        if (script && script.trim()) {
-            requestBody.defaults = script;
-        }
-    
-        console.log('[buildAsuRequest] Request body:', JSON.stringify(requestBody, null, 2));
-        console.log('[buildAsuRequest] About to send fetch request');
 
-        // サイズチェックを事前実行
-        const sizeInfo = BuildErrorHandler.calculateTotalSize(script, packagesToSend);
-        
-        // ネットワークエラー対策：リトライ機能付き
-        const maxRetries = 3;
-        let retryCount = 0;
-        
-        const sendRequest = async () => {
-            return fetch('https://sysupgrade.openwrt.org/api/v1/build', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify(requestBody),
-                cache: 'no-cache',  // SNAPSHOT対応
-                signal: AbortSignal.timeout(30000)  // 30秒タイムアウト
-            });
-        };
-        
-        const handleResponse = async () => {
-            try {
-                const response = await sendRequest();
-                
-                switch (response.status) {
-                    case 200:
-                        showProgress('Build completed!', 100);
-                        response.json().then((mobj) => {
-                            if ('stderr' in mobj) {
-                                document.getElementById('asu-stderr').innerText = mobj.stderr;
-                                document.getElementById('asu-stdout').innerText = mobj.stdout;
-                                document.getElementById('asu-log').style.display = 'block';
-                            } else {
-                                document.getElementById('asu-log').style.display = 'none';
-                            }
-                            hideProgress();
-                            showBuildStatus('Build successful', 'info');
-                            mobj['id'] = current_device.id;
-                            showDownloadLinks(mobj.images || [], mobj, mobj.request_hash);
-                        });
-                        break;
-                    case 202:
-                        response.json().then((mobj) => {
-                            showProgress(`${mobj.imagebuilder_status || 'Processing'}...`, 30);
-                            setTimeout(() => pollBuildStatus(mobj.request_hash), 5000);
-                        });
-                        break;
-                    case 400: // bad request
-                    case 422: // bad package
-                    case 500: // build failed
-                        response.text().then((responseText) => {
-                            hideProgress();
-                            showBuildStatus('Build failed: Server Error', 'error');
-                            BuildErrorHandler.showError('Build Failed', response.status, responseText, sizeInfo);
-                        });
-                        break;
-                }
-            } catch (err) {
-                // ネットワークエラーの場合はリトライ
-                if (retryCount < maxRetries && err.name === 'TypeError') {
-                    retryCount++;
-                    console.log(`[buildAsuRequest] Network error, retry ${retryCount}/${maxRetries}`);
-                    showProgress(`Network error, retrying... (${retryCount}/${maxRetries})`, 5);
-                    setTimeout(() => handleResponse(), 2000 * retryCount);
-                } else {
-                    BuildErrorHandler.showError('Network Error', null, err.message, sizeInfo);
-                }
+        fetch('https://sysupgrade.openwrt.org/api/v1/build', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(requestBody)
+        })
+        .then((response) => {
+            switch (response.status) {
+                case 200:
+                    showProgress('Build completed!', 100);
+                    response.json().then((mobj) => {
+                        if ('stderr' in mobj) {
+                            document.getElementById('asu-stderr').innerText = mobj.stderr;
+                            document.getElementById('asu-stdout').innerText = mobj.stdout;
+                            document.getElementById('asu-log').style.display = 'block';
+                        }
+                        hideProgress();
+                        showBuildStatus('Build successful', 'info');
+                        mobj['id'] = current_device.id;
+                        showDownloadLinks(mobj.images || [], mobj, mobj.request_hash);
+                    });
+                    break;
+                case 202:
+                    response.json().then((mobj) => {
+                        showProgress(`${mobj.imagebuilder_status || 'Processing'}...`, 30);
+                        setTimeout(() => pollBuildStatus(mobj.request_hash), 5000);
+                    });
+                    break;
+                case 400:
+                case 422:
+                case 500:
+                    response.json().then((mobj) => {
+                        if ('stderr' in mobj) {
+                            document.getElementById('asu-stderr').innerText = mobj.stderr;
+                            document.getElementById('asu-stdout').innerText = mobj.stdout;
+                            document.getElementById('asu-log').style.display = 'block';
+                        }
+                        showBuildStatus('Build failed', 'error');
+                    });
+                    break;
             }
-        };
-        
-        await handleResponse();
+        })
+        .catch((err) => {
+            showBuildStatus(err.message, 'error');
+        });
 
-    } catch (error) {
-        console.error('Build request failed:', error);
-        hideProgress();
-        showBuildStatus(`Build failed: ${error.message}`, 'error');
     } finally {
         document.getElementById('request-build').disabled = false;
     }
