@@ -5442,17 +5442,18 @@ async function buildAsuRequest() {
         console.log('[buildAsuRequest] MapEProcessor completed');
 
         console.log('[buildAsuRequest] Building request body');
+
         const requestBody = {
-            target: current_device.target,
             profile: current_device.id,
+            target: current_device.target,
             packages: packages,
             defaults: $("#uci-defaults-content").value,
             version_code: $("#image-code").innerText,
-            version: app.selectedVersion,
+            version: $("#versions").value,
             diff_packages: true,
             client: "ofs/" + ofs_version
-        };
-        
+        });
+    
         console.log('[buildAsuRequest] About to send fetch request');
 
         if (script && script.trim()) {
