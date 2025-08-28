@@ -13,7 +13,7 @@ AP6="ap6"
 NAS="openwrt"
 MNT="/mnt/sda"
 exec >/tmp/setup.log 2>&1
-uci -q batch << SYSTEM_EOF
+uci -q batch << 'SYSTEM_EOF'
 set system.@system[0].description="\${DATE}"
 set system.@system[0].notes="site-u.pages.dev/build"
 SYSTEM_EOF
@@ -27,14 +27,14 @@ SYSTEM_EOF
 [ -n "\${ssh_interface}" ] && uci -q set dropbear.@dropbear[0].Interface="\${ssh_interface}"
 [ -n "\${ssh_port}" ] && uci -q set dropbear.@dropbear[0].Port="\${ssh_port}"
 [ "\${flow_offloading_type}" = "software" ] && uci -q set firewall.@defaults[0].flow_offloading='1'
-[ "\${flow_offloading_type}" = "hardware" ] && uci -q batch << FLOWHARD_EOF
+[ "\${flow_offloading_type}" = "hardware" ] && uci -q batch << 'FLOWHARD_EOF'
 set firewall.@defaults[0].flow_offloading='1'
 set firewall.@defaults[0].flow_offloading_hw='1'
 FLOWHARD_EOF
 [ -n "\${wlan_name}" ] && [ -n "\${wlan_password}" ] && [ "\${#wlan_password}" -ge 8 ] && {
     wireless_cfg="$(uci -q show wireless)"
     for radio in \$(printf '%s\\n' "\${wireless_cfg}" | grep "wireless\.radio[0-9]*=" | cut -d. -f2 | cut -d= -f1); do
-        uci -q batch << RADIO_EOF
+        uci -q batch << 'RADIO_EOF'
 set wireless.\${radio}.disabled='0'
 set wireless.\${radio}.country="\${country:-00}"
 RADIO_EOF
@@ -52,7 +52,7 @@ RADIO_EOF
             n=\$((n+1))
         done
         iface="default_\${radio}"
-        [ -n "$(uci -q get wireless.\${iface})" ] && uci -q batch << WLAN_EOF
+        [ -n "$(uci -q get wireless.\${iface})" ] && uci -q batch << 'WLAN_EOF'
 set wireless.\${iface}.disabled='0'
 set wireless.\${iface}.encryption="\${encryption}"
 set wireless.\${iface}.ssid="\${ssid}"
@@ -60,13 +60,13 @@ set wireless.\${iface}.key="\${wlan_password}"
 WLAN_EOF
     done
 }
-[ -n "\${pppoe_username}" ] && [ -n "\${pppoe_password}" ] && uci -q batch << PPPOE_EOF
+[ -n "\${pppoe_username}" ] && [ -n "\${pppoe_password}" ] && uci -q batch << 'PPPOE_EOF'
 set network.wan.proto='pppoe'
 set network.wan.username="\${pppoe_username}"
 set network.wan.password="\${pppoe_password}"
 PPPOE_EOF
 [ -n "\${dslite_aftr_address}" ] && {
-    uci -q batch << DSLITE_EOF
+    uci -q batch << 'DSLITE_EOF'
 set network.wan.disabled='1'
 set network.wan.auto='0'
 set network.wan6.disabled='1'
@@ -102,7 +102,7 @@ set firewall.@zone[1].mtu_fix='1'
 DSLITE_EOF
 }
 [ -n "\${mape_br}" ] && [ -n "\${mape_ealen}" ] && {
-    uci -q batch << MAPE_EOF
+    uci -q batch << 'MAPE_EOF'
 set network.wan.disabled='1'
 set network.wan.auto='0'
 set network.wan6.disabled='1'
@@ -151,7 +151,7 @@ MAPE_EOF
 MAP_SH_EOF
 }
 [ -n "\${ap_ip_address}" ] && {
-    uci -q batch << AP_EOF
+    uci -q batch << 'AP_EOF'
 set network.wan.disabled='1'
 set network.wan.auto='0'
 set network.wan6.disabled='1'
@@ -178,15 +178,15 @@ AP_EOF
     [ -x /etc/init.d/dnsmasq ] && /etc/init.d/dnsmasq disable  
     [ -x /etc/init.d/firewall ] && /etc/init.d/firewall disable
 }
-[ -n "\${enable_ttyd}" ] && uci -q batch << TTYD_EOF
+[ -n "\${enable_ttyd}" ] && uci -q batch << 'TTYD_EOF'
 set ttyd.@ttyd[0].ipv6='1'
 set ttyd.@ttyd[0].command='/bin/login -f root'
 TTYD_EOF
-[ -n "\${enable_irqbalance}" ] && uci -q batch << IRQ_EOF
+[ -n "\${enable_irqbalance}" ] && uci -q batch << 'IRQ_EOF'
 set irqbalance.irqbalance=irqbalance
 set irqbalance.irqbalance.enabled='1'
 IRQ_EOF
-[ -n "\${enable_samba4}" ] && uci -q batch << SAMBA_EOF
+[ -n "\${enable_samba4}" ] && uci -q batch << 'SAMBA_EOF'
 set samba4.@samba[0]=samba
 set samba4.@samba[0].workgroup='WORKGROUP'
 set samba4.@samba[0].charset='UTF-8'
