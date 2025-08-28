@@ -3876,7 +3876,11 @@ async function loadDeviceProfile(device) {
     // 初回は必ずDL
     try {
         console.log(`Loading profile from: ${profilesUrl}`);
-        const response = await fetch(profilesUrl, { cache: 'no-cache' });
+        const response = await fetch(profilesUrl, { 
+            cache: 'no-cache',
+            credentials: 'omit',
+            mode: 'cors'
+        });
         
         if (!response.ok) {
             if (response.status === 404) {
@@ -4026,11 +4030,15 @@ async function applyProfileData(profilesData, profileId) {
 
     if (profilesData.profiles && profilesData.profiles[profileId]) {
         const profile = profilesData.profiles[profileId];
-        const defaultPackages = profilesData.default_packages || [];
-        const devicePackages = profile.device_packages || [];
-        const asuExtraPackages = ['luci'];
         
-        // セレクターでチェックされているパッケージも収集
+        // プロファイルデータをグローバルに保存（buildAsuRequestで使用）
+        app.currentProfileData = {
+            default_packages: profilesData.default_packages || [],
+            device_packages: profile.device_packages || []
+        };
+        
+        // ユーザー選択パッケージのみを設定
+        const asuExtraPackages = ['luci'];
         const checkedPackages = [];
         document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
             const pkgName = cb.getAttribute('data-package');
@@ -4039,15 +4047,13 @@ async function applyProfileData(profilesData, profileId) {
             }
         });
         
-        // 全パッケージを統合（重複除去）
-        const allPackages = Array.from(new Set([
-            ...defaultPackages,
-            ...devicePackages,
+        // ASUエクストラとチェックされたパッケージのみ（デフォルト/デバイスパッケージは含めない）
+        const userPackages = Array.from(new Set([
             ...asuExtraPackages,
             ...checkedPackages
         ]));
         
-        document.getElementById('asu-packages').value = allPackages.join(' ');
+        document.getElementById('asu-packages').value = userPackages.join(' ');
         asuCollectPackages();
     }
 }
@@ -5427,11 +5433,27 @@ async function buildAsuRequest() {
         }, 200);
 
         console.log('[buildAsuRequest] Getting packages');
-        const packages = split(document.getElementById('asu-packages').value);
+        
+        // ユーザー入力パッケージのみを取得（重要な変更）
+        const userInputPackages = split(document.getElementById('asu-packages').value);
+        
+        // デフォルト/デバイスパッケージを除外
+        let packagesToSend = userInputPackages;
+        if (app.currentProfileData) {
+            const excludeSet = new Set([
+                ...(app.currentProfileData.default_packages || []),
+                ...(app.currentProfileData.device_packages || [])
+            ]);
+            packagesToSend = userInputPackages.filter(pkg => !excludeSet.has(pkg));
+        }
+        
+        console.log('[buildAsuRequest] User packages to send:', packagesToSend);
         console.log('[buildAsuRequest] Getting script');
+        
         let script = document.getElementById('uci-defaults-content').value;
         const originalSize = script.length;
         console.log('[buildAsuRequest] Calling MapEProcessor');
+        
         // MAP-E処理（必要時のみプレースホルダー置換）
         script = await MapEProcessor.processForBuild(
             script, 
@@ -5446,19 +5468,21 @@ async function buildAsuRequest() {
         const requestBody = {
             target: current_device.target,
             profile: current_device.id,
-            packages: packages,
-            diff_packages: true,
-            version: app.selectedVersion
+            packages: packagesToSend,  // ユーザー入力のみ
+            diff_packages: true,  // 必須フラグ
+            version: app.selectedVersion,
+            client: "ofs/custom-1.0"  // クライアント識別
         };
-    
-        console.log('[buildAsuRequest] About to send fetch request');
-
+        
         if (script && script.trim()) {
             requestBody.defaults = script;
         }
+    
+        console.log('[buildAsuRequest] Request body:', JSON.stringify(requestBody, null, 2));
+        console.log('[buildAsuRequest] About to send fetch request');
 
         // サイズチェックを事前実行
-        const sizeInfo = BuildErrorHandler.calculateTotalSize(script, packages);
+        const sizeInfo = BuildErrorHandler.calculateTotalSize(script, packagesToSend);
         
         fetch('https://sysupgrade.openwrt.org/api/v1/build', {
             method: 'POST',
@@ -5466,7 +5490,8 @@ async function buildAsuRequest() {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json'
             },
-            body: JSON.stringify(requestBody)
+            body: JSON.stringify(requestBody),
+            cache: 'no-cache'  // SNAPSHOT対応
         })
         .then((response) => {
             switch (response.status) {
