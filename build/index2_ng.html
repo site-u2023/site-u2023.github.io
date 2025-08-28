@@ -1642,6 +1642,10 @@ EOF
 echo "All done!"
 exit 0`;
 
+// 公式と同じグローバル変数
+let current_device = {};
+const ofs_version = "1.0.0";
+
 // config.js相当の設定
 const config = {
     show_help: true,
@@ -1652,21 +1656,18 @@ const config = {
     min_version: "21.02.0",  // 最小サポートバージョン
 };
 
-// バージョン定義（公式互換）
-const ofs_version = "1.0.0";
-
 // グローバル変数
 let app = {
     versions: [],
     devices: [],
     selectedVersion: '',
+    versionCode: '',
+    kernelHash: '',
     templateLoaded: false,
-    availablePackages: [], // デバイス固有のパッケージリスト
+    devicePackages: [],
     archPackagesMap: {},
+    currentProfilesData: null
 };
-
-// 公式と同じグローバル変数
-let current_device = {};
         
 // map.shのキャッシュ
 let mapShCache = undefined;
@@ -5402,83 +5403,87 @@ async function buildAsuRequest() {
         return;
     }
 
-    try {
-        document.getElementById('request-build').disabled = true;
-        showProgress('Preparing build request...', 10);
+    document.getElementById('request-build').disabled = true;
 
-        // スクリプトをMAP-E処理（独自機能）
-        let defaults_content = document.getElementById('uci-defaults-content').value;
-        const config = getAiosConfig();
-        const apiInfo = window.cachedApiInfo;
-        if (MapEProcessor.isActive(config, apiInfo)) {
-            defaults_content = await MapEProcessor.processForBuild(defaults_content, config, apiInfo);
-        }
-
-        // 公式と完全に同じ構造
-        var body = JSON.stringify({
-            profile: current_device.id,
-            target: current_device.target,
-            packages: split(document.getElementById('asu-packages').value),
-            defaults: defaults_content,
-            version_code: document.getElementById('image-code').innerText,
-            version: document.getElementById('versions').value,
-            diff_packages: true,
-            client: "ofs/" + ofs_version
-        });
-
-        fetch('https://sysupgrade.openwrt.org/api/v1/build', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: body
-        })
-        .then((response) => {
-            switch (response.status) {
-                case 200:
-                    response.json().then((mobj) => {
-                        if ('stderr' in mobj) {
-                            document.getElementById('asu-stderr').innerText = mobj.stderr;
-                            document.getElementById('asu-stdout').innerText = mobj.stdout;
-                            document.getElementById('asu-log').style.display = 'block';
-                        }
-                        hideProgress();
-                        showBuildStatus('Build successful', 'info');
-                        mobj['id'] = current_device.id;
-                        showDownloadLinks(mobj.images || [], mobj, mobj.request_hash);
-                    });
-                    break;
-                case 202:
-                    response.json().then((mobj) => {
-                        showProgress(`${mobj.imagebuilder_status || 'Processing'}...`, 30);
-                        setTimeout(() => pollBuildStatus(mobj.request_hash), 5000);
-                    });
-                    break;
-                case 400:
-                case 422:
-                case 500:
-                    response.json().then((mobj) => {
-                        if ('stderr' in mobj) {
-                            document.getElementById('asu-stderr').innerText = mobj.stderr;
-                            document.getElementById('asu-stdout').innerText = mobj.stdout;
-                            document.getElementById('asu-log').style.display = 'block';
-                        }
-                        if ('detail' in mobj) {
-                            showBuildStatus(mobj['detail'], 'error');
-                        } else {
-                            showBuildStatus('Build failed', 'error');
-                        }
-                    });
-                    break;
-            }
-        })
-        .catch((err) => showBuildStatus(err.message, 'error'));
-
-    } catch (error) {
-        showBuildStatus(`Build failed: ${error.message}`, 'error');
-    } finally {
-        document.getElementById('request-build').disabled = false;
+    // defaults（スクリプト）の取得と処理（独自機能はここだけ）
+    let defaults_value = document.getElementById('uci-defaults-content').value;
+    if (MapEProcessor.isActive(getAiosConfig(), window.cachedApiInfo)) {
+        defaults_value = await MapEProcessor.processForBuild(
+            defaults_value, 
+            getAiosConfig(), 
+            window.cachedApiInfo
+        );
     }
+
+    // 公式と完全同一のbody
+    var body = JSON.stringify({
+        profile: current_device.id,
+        target: current_device.target,
+        packages: split(document.getElementById('asu-packages').value),
+        defaults: defaults_value,
+        version_code: document.getElementById('image-code').innerText,
+        version: document.getElementById('versions').value,
+        diff_packages: true,
+        client: "ofs/" + ofs_version
+    });
+
+    fetch(config.asu_url + '/api/v1/build', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: body
+    })
+    .then((response) => {
+        switch (response.status) {
+            case 200:
+                showProgress('Build completed!', 100);
+                response.json().then((mobj) => {
+                    if ('stderr' in mobj) {
+                        document.getElementById('asu-stderr').innerText = mobj.stderr;
+                        document.getElementById('asu-stdout').innerText = mobj.stdout;
+                        document.getElementById('asu-log').style.display = 'block';
+                    } else {
+                        document.getElementById('asu-log').style.display = 'none';
+                    }
+                    hideProgress();
+                    showBuildStatus('Build successful', 'info');
+                    mobj['id'] = current_device.id;
+                    showDownloadLinks(mobj.images || [], mobj, mobj.request_hash);
+                });
+                break;
+            case 202:
+                response.json().then((mobj) => {
+                    showProgress(`${mobj.imagebuilder_status || 'Processing'}...`, 30);
+                    setTimeout(() => pollBuildStatus(mobj.request_hash), 5000);
+                });
+                break;
+            case 400:
+            case 422:
+            case 500:
+                response.json().then((mobj) => {
+                    if ('stderr' in mobj) {
+                        document.getElementById('asu-stderr').innerText = mobj.stderr;
+                        document.getElementById('asu-stdout').innerText = mobj.stdout;
+                        document.getElementById('asu-log').style.display = 'block';
+                    } else {
+                        document.getElementById('asu-log').style.display = 'none';
+                    }
+                    if ('detail' in mobj) {
+                        showBuildStatus(mobj['detail'], 'error');
+                    } else if ('stderr' in mobj && mobj['stderr'].includes('images are too big')) {
+                        showBuildStatus('Build size exceeded', 'error');
+                    } else {
+                        showBuildStatus('Build failed', 'error');
+                    }
+                });
+                break;
+        }
+    })
+    .catch((err) => showBuildStatus(err.message, 'error'))
+    .finally(() => {
+        document.getElementById('request-build').disabled = false;
+    });
 }
         
 async function pollBuildStatus(requestHash) {
