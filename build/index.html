@@ -5445,10 +5445,12 @@ async function buildAsuRequest() {
         const requestBody = {
             target: current_device.target,
             profile: current_device.id,
-            packages: split($("#asu-packages").value), // ユーザー入力のみ送信
-            diff_packages: true,                      // 差分モードを有効化
-            packages: packages,
-            version: app.selectedVersion
+            packages: split($("#asu-packages").value),
+            defaults: $("#uci-defaults-content").value,
+            version_code: $("#image-code").innerText,
+            version: $("#versions").value,
+            diff_packages: true,
+            client: "ofs/" + ofs_version
         };
 
         console.log('[buildAsuRequest] About to send fetch request');
