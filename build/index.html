@@ -1308,7 +1308,7 @@
                                 <small class="form-text text-muted">Automatically optimizes TCP buffer sizes and network parameters based on available RAM</small>
                             </div>
 
-                            <div id="net-optimizer-section" class="conditional-section">
+                            <div id="net-optimizer-section" class="conditional-section" style="display: block;">
                                 <div class="form-group">
                                     <label>Configuration Mode</label>
                                     <div class="radio-group">
@@ -3177,12 +3177,18 @@ function bindEvents() {
     ];
     bindFieldEvents(netOptFields);
     
-    // デフォルトはAutoモード
+// デフォルトはAutoモード
     const manualSection = document.getElementById('manual-connection-section');
     if (manualSection) manualSection.style.display = 'none';
 
     const ispDetectionGroup = document.getElementById('isp-detection-group');
     if (ispDetectionGroup) ispDetectionGroup.style.display = 'block'; // Auto時は表示
+
+    // Dynamic Network Optimizer デフォルト設定
+    const netOptimizerSection = document.getElementById('net-optimizer-section');
+    if (netOptimizerSection) netOptimizerSection.style.display = 'block'; // Enabled時は表示
+    const netOptimizerManual = document.getElementById('net-optimizer-manual');
+    if (netOptimizerManual) netOptimizerManual.style.display = 'none'; // Autoモードなので手動設定は非表示
 
     // 全ての接続タイプ固有セクションを非表示（DHCPセクション含む）
     const connectionSections = [
