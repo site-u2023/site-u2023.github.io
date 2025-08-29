@@ -915,7 +915,7 @@ const DeviceContext = {
                 window.current_device = {};
             }
         } catch (error) {
-            window.result = ErrorHandler.handle('DeviceContext._selectDevice', error);
+            ErrorHandler.handle('DeviceContext._selectDevice', error);
             current_device = {};
             hideDeviceInfo();
             return;
