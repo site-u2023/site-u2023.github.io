@@ -183,6 +183,9 @@ const ErrorHandler = {
     }
 };
 
+// Windowオブジェクトにエクスポート
+window.ErrorHandler = ErrorHandler;
+
 // ==================== リセット共通関数 ====================
 const ResetManager = {
     // フィールド値をクリアする汎用関数
