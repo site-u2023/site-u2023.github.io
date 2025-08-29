@@ -5503,25 +5503,58 @@ async function pollBuildStatus(requestHash) {
         }
 
         const status = await response.json();
-
-        // この条件分岐を修正する必要があります
-        if (status.status === 'done' || status.status === 'success') {
-            // 成功処理
-        } else if (status.status === 'failed' || status.status === 'error') {  // 追加
-            // 失敗処理
-        } else if (status.status === 'started' || status.status === 'queued' || status.status === 'building') {  // 明示的に処理中ステータスを定義
-            showProgress(`${status.imagebuilder_status || 'Processing'}...`, 50);
+        console.log('[POLL] Status response:', status);
+        
+        // status.statusが数値の場合も文字列の場合も対応
+        const buildStatus = String(status.status).toLowerCase();
+        
+        // また、status.detailフィールドも確認（'done', 'started'など）
+        const statusDetail = status.detail ? String(status.detail).toLowerCase() : '';
+        
+        // 成功判定
+        if (buildStatus === 'done' || buildStatus === 'success' || 
+            buildStatus === '200' || statusDetail === 'done') {
+            
+            if ('stderr' in status) {
+                document.getElementById('asu-stderr').innerText = status.stderr;
+                document.getElementById('asu-stdout').innerText = status.stdout;
+                document.getElementById('asu-log').style.display = 'block';
+            }
+            hideProgress();
+            showBuildStatus('Build successful', 'info');
+            status['id'] = current_device.id;
+            showDownloadLinks(status.images || [], status, requestHash);
+            
+        // 失敗判定
+        } else if (buildStatus === 'failed' || buildStatus === 'error' || 
+                   buildStatus === '500' || buildStatus === '422') {
+            
+            if ('stderr' in status) {
+                document.getElementById('asu-stderr').innerText = status.stderr;
+                document.getElementById('asu-stdout').innerText = status.stdout;
+                document.getElementById('asu-log').style.display = 'block';
+            }
+            hideProgress();
+            showBuildStatus('Build failed: ' + (status.detail || 'Unknown error'), 'error');
+            
+        // 処理中判定
+        } else if (buildStatus === 'started' || buildStatus === 'building' || 
+                   buildStatus === 'queued' || buildStatus === '202' ||
+                   statusDetail === 'started' || statusDetail === 'building') {
+            
+            const progress = status.imagebuilder_status || statusDetail || 'Processing';
+            showProgress(`${progress}...`, 50);
             setTimeout(() => pollBuildStatus(requestHash), 5000);
+            
         } else {
-            // 未知のステータスの場合もポーリング継続
-            console.warn('Unknown status:', status.status);
+            // 不明なステータスでも処理を継続
+            console.warn('Unknown status:', status.status, 'detail:', status.detail);
+            showProgress('Processing...', 50);
             setTimeout(() => pollBuildStatus(requestHash), 5000);
         }
         
-    console.log('[POLL] Status response:', status);
-    console.log('[POLL] Build status:', status.status);
-        
     } catch (error) {
+        console.error('[POLL] Error:', error);
         hideProgress();
         showBuildStatus(error.message, 'error');
     }
