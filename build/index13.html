@@ -3877,8 +3877,9 @@ async function loadDeviceProfile(device) {
     if (profileCache[cacheKey]) {
         console.log(`Using cached profile for ${cacheKey}`);
         applyProfileData(profileCache[cacheKey], profileId);
-        Promise.allSettled([ fetchDevicePackages() ])
-            .then(() => console.log('Background tasks completed (from cache)'));
+        Promise.allSettled([
+            fetchDevicePackages(app.selectedVersion, current_device.id, current_device.target)
+        ])
         return true;
     }
 
