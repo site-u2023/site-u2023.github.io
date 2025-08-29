@@ -1683,7 +1683,7 @@ function showAlert(msg){ console.warn(msg); }
 function hideAlert(){ /* no-op */ }
 // jQuery風ショートカットが使われている箇所のガード（実コードは素のDOMしか使ってない）
 const $ = (sel) => document.querySelector(sel);
-+
+
 // 公式UI依存の簡易フォールバック: セレクトを埋めて即コールバック
 function setupSelectList(selectEl, items, onChange) {
   if (!selectEl) return;
@@ -1697,12 +1697,12 @@ function setupSelectList(selectEl, items, onChange) {
   selectEl.addEventListener('change', e => onChange(e.target.value));
   if (items.length) onChange(items[0]);
 }
-+
+
 // バージョン変更ハンドラ: DeviceContext に渡すだけ
 function handleVersionChange(e){
   DeviceContext.update({ version: e.target.value, forceReload: true, trigger: 'version-change' });
 }
-+
+
 // デバイス一覧ロード: overview_cache から埋める簡易版
 async function loadDevices(){
   const v = app.selectedVersion || document.getElementById('versions')?.value;
@@ -1712,7 +1712,7 @@ async function loadDevices(){
   app.devices = list;
   app.devicesMap = ov.profiles;
 }
-+
+
 // スナップショット系のカーネル/パッケージ取得は安全なno-opへ
 async function fetchKernelHashForSnapshot(){ return null; }
 async function fetchPackagesForSnapshot(){ /* no-op */ }
