@@ -146,8 +146,8 @@ function generatePackageSelector() {
 
     // 利用可能パッケージ名のセットを作成
     const availablePackages = new Set();
-    if (Array.isArray(window.appState.devicePackages) && window.appState.devicePackages.length > 0) {
-        window.appState.devicePackages.forEach(pkg => {
+    if (Array.isArray(window.app.devicePackages) && window.app.devicePackages.length > 0) {
+        window.app.devicePackages.forEach(pkg => {
             const name = (typeof pkg === 'string') ? pkg : pkg && pkg.name;
             if (name) availablePackages.add(name);
         });
@@ -354,10 +354,10 @@ function updatePackageListFromSelector() {
 // ==================== パッケージ取得 ====================
 async function fetchDevicePackages() {
     window.appState.devicePackages = [];
-    if (!window.currentDevice || !window.currentDevice.id || !window.appState.selectedVersion) return;
+    if (!window.current_device || !window.current_device.id || !window.app.selectedVersion) return;
 
-    const version = window.appState.selectedVersion;
-    const targetPath = window.currentDevice.target;
+    const version = window.app.selectedVersion;
+    const targetPath = window.current_device.target;
     const isSnapshot = /SNAPSHOT$/i.test(version);
 
     // URLベース設定
