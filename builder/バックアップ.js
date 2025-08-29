@@ -1,32 +1,9 @@
-function loadSetupScript() {
-  fetch('scripts/setup.sh', { cache: 'no-store' })
-    .then(r => {
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      return r.text();
-    })
-    .then(text => {
-      window.SETUP_SH_TEMPLATE = text;
-      const el = document.getElementById('setup-script');
-      if (el) el.textContent = text;
-    })
-    .catch(err => {
-      console.error('setup.sh 読み込みエラー:', err);
-      window.SETUP_SH_TEMPLATE = '';
-    });
-}
-
-document.addEventListener('DOMContentLoaded', loadSetupScript);
-
-async function loadPackageDb() {
-  const res = await fetch('scripts/packages.json');
-  const data = await res.json();
-  applySearchUrls(data);
-  return data;
-}
-
+// ==================== パッケージデータベース ====================
 let PACKAGE_DB = {};
 loadPackageDb().then(db => {
-  PACKAGE_DB = db;
+    PACKAGE_DB = db;
+    window.PACKAGE_DB = db; // グローバルに公開
+    init();
 });
 
 // グローバル変数
@@ -601,12 +578,37 @@ function adjustTextareaHeight(textareaId) {
     textarea.style.height = textarea.scrollHeight + 'px';
 }
 
+// ==================== パッケージDB読み込み ====================
+async function loadPackageDb() {
+    const res = await fetch('scripts/packages.json', { cache: 'no-store' });
+    if (!res.ok) throw new Error(`packages.json 読み込み失敗: HTTP ${res.status}`);
+    const data = await res.json();
+    applySearchUrls(data);
+    return data;
+}
+
+// ==================== setup.sh 読み込み ====================
+async function loadSetupScript() {
+    const res = await fetch('scripts/setup.sh', { cache: 'no-store' });
+    if (!res.ok) throw new Error(`setup.sh 読み込み失敗: HTTP ${res.status}`);
+    const text = await res.text();
+    window.SETUP_SH_TEMPLATE = text;
+    const el = document.getElementById('setup-script');
+    if (el) el.textContent = text;
+}
+
 // ==================== 初期化関数 (init関数) ====================
 async function init() {
     try {
         // バージョン読み込み
         await loadVersions();
 
+        // パッケージDBロード
+        PACKAGE_DB = await loadPackageDb();
+
+        // setup.shロード
+        await loadSetupScript();
+      
         // イベントバインディング（要素存在チェック付き）
         if (typeof bindEvents === 'function') {
             try {
@@ -659,6 +661,9 @@ async function init() {
         );
     }
 }
+
+// ==================== DOM読み込み完了時に初期化開始 ====================
+document.addEventListener('DOMContentLoaded', init);
 
 // ==================== 必須要素の存在を待つユーティリティ ====================
 function waitForReady(ids = []) {
