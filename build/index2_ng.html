@@ -5439,9 +5439,14 @@ async function buildAsuRequest() {
 
         const responseData = await response.json();
 
+        console.log('[BUILD] Response status:', response.status);
+        console.log('[BUILD] Response data:', responseData);
+        
         switch (response.status) {
             case 200:
+                console.log('[BUILD] 202 received, request_hash:', responseData.request_hash);
                 if ('stderr' in responseData) {
+                    console.error('[BUILD] Missing request_hash in 202 response');
                     document.getElementById('asu-stderr').innerText = responseData.stderr;
                     document.getElementById('asu-stdout').innerText = responseData.stdout;
                     document.getElementById('asu-log').style.display = 'block';
@@ -5453,6 +5458,12 @@ async function buildAsuRequest() {
                 break;
 
             case 202:
+                if (!responseData.request_hash) {
+                    console.error('No request_hash in 202 response:', responseData);
+                    hideProgress();
+                    showBuildStatus('Build request accepted but no tracking ID received', 'error');
+                    break;
+                }
                 showProgress(`${responseData.imagebuilder_status || 'Processing'}...`, 30);
                 setTimeout(() => pollBuildStatus(responseData.request_hash), 5000);
                 break;
@@ -5478,7 +5489,8 @@ async function buildAsuRequest() {
 }
         
 async function pollBuildStatus(requestHash) {
-    const statusUrl = `https://sysupgrade.openwrt.org/api/v1/build/${requestHash}`;
+    console.log('[POLL] Checking status for:', requestHash);
+    const statusUrl = `${config.asu_url}/api/v1/build/${requestHash}`;
     
     try {
         const response = await fetch(statusUrl, {
@@ -5492,28 +5504,23 @@ async function pollBuildStatus(requestHash) {
 
         const status = await response.json();
 
+        // この条件分岐を修正する必要があります
         if (status.status === 'done' || status.status === 'success') {
-            if ('stderr' in status) {
-                document.getElementById('asu-stderr').innerText = status.stderr;
-                document.getElementById('asu-stdout').innerText = status.stdout;
-                document.getElementById('asu-log').style.display = 'block';
-            }
-            hideProgress();
-            showBuildStatus('Build successful', 'info');
-            status['id'] = current_device.id;
-            showDownloadLinks(status.images || [], status, requestHash);
-        } else if (status.status === 'failed') {
-            if ('stderr' in status) {
-                document.getElementById('asu-stderr').innerText = status.stderr;
-                document.getElementById('asu-stdout').innerText = status.stdout;
-                document.getElementById('asu-log').style.display = 'block';
-            }
-            hideProgress();
-            showBuildStatus('Build failed', 'error');
-        } else {
+            // 成功処理
+        } else if (status.status === 'failed' || status.status === 'error') {  // 追加
+            // 失敗処理
+        } else if (status.status === 'started' || status.status === 'queued' || status.status === 'building') {  // 明示的に処理中ステータスを定義
             showProgress(`${status.imagebuilder_status || 'Processing'}...`, 50);
             setTimeout(() => pollBuildStatus(requestHash), 5000);
+        } else {
+            // 未知のステータスの場合もポーリング継続
+            console.warn('Unknown status:', status.status);
+            setTimeout(() => pollBuildStatus(requestHash), 5000);
         }
+        
+    console.log('[POLL] Status response:', status);
+    console.log('[POLL] Build status:', status.status);
+        
     } catch (error) {
         hideProgress();
         showBuildStatus(error.message, 'error');
