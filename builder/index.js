@@ -1786,92 +1786,104 @@ async function loadDeviceProfile(device) {
     }
 }
 
-// SNAPSHOT/Release 共通 arch 解決
-async function resolveArch(version, targetPath, opts = {}) {
-    try {
-        // 0) キャッシュ優先
-        if (app.archPackagesMap && app.archPackagesMap[targetPath]) {
-            return app.archPackagesMap[targetPath];
-        }
-
-        // 1) 呼び出し元が profilesData を渡してきた場合
-        if (opts.profilesData) {
-            // 新旧両方のフィールド名に対応
-            const arch = opts.profilesData?.arch_packages || 
-                        opts.profilesData?.arch ||
-                        '';
-            if (arch) {
-                app.archPackagesMap = app.archPackagesMap || {};
-                app.archPackagesMap[targetPath] = arch;
-                return arch;
-            }
-        }
-
-        // 2) URL構築
-        setupVersionUrls(version);
-        const basePath = (config.image_urls && config.image_urls[version])
-            ? config.image_urls[version].replace(/\/$/, '')
-            : '';
-
-        // 3) profiles.json 直接参照
-        const profilesUrl = `${basePath}/targets/${targetPath}/profiles.json`;
-        try {
-            const res = await fetch(profilesUrl, { cache: 'no-cache', credentials: 'omit', mode: 'cors' });
-            if (res.ok) {
-                const meta = await res.json();
-                // 新旧両方のフィールド名に対応
-                const arch = meta?.arch_packages || meta?.arch || '';
-                if (arch) {
-                    app.archPackagesMap = app.archPackagesMap || {};
-                    app.archPackagesMap[targetPath] = arch;
-                    return arch;
-                }
-            }
-        } catch (e) {
-            console.log(`[ARCH] profiles.json fetch failed: ${e.message}`);
-        }
-
-        // 4) overview.json 由来のフォールバック
-        if (app.archPackagesMap && app.archPackagesMap[targetPath]) {
-            return app.archPackagesMap[targetPath];
-        }
-
-        return '';
-    } catch (err) {
-        console.error('[ARCH] unexpected error:', err);
-        return '';
+async function applyProfileData(profilesData, profileId) {
+    app.versionCode = profilesData.version_code || '';
+    
+    if (profilesData.linux_kernel) {
+        const lk = profilesData.linux_kernel;
+        app.kernelHash = `${lk.version}-${lk.release}-${lk.vermagic}`;
+        console.log('[Kernel] From profiles.json:', app.kernelHash);
+    } else {
+        console.log('[Kernel] No linux_kernel in profiles.json, fetching from server...');
+        app.kernelHash = await fetchActualKernelHash(app.selectedVersion, current_device.target);
+        console.log('[Kernel] From server HTML:', app.kernelHash);
     }
-}
-
-    async function fetchKernelHashFromHTML(version, targetPath) {
+    async function fetchActualKernelHash(version, targetPath) {
         try {
             setupVersionUrls(version);
             const kmodsUrl = `${config.image_urls[version]}targets/${targetPath}/kmods/`;
-            
+        
             const response = await fetch(kmodsUrl, { cache: 'no-cache' });
             if (!response.ok) {
-                console.log(`[Kernel] kmods directory not accessible: ${response.status}`);
+                console.log(`[Kernel] kmods directory not found: ${response.status}`);
                 return null;
             }
-            
+        
             const html = await response.text();
-            
-            // HTMLからカーネルハッシュを抽出（最初に見つかったもの）
-            const pattern = /<a href="([0-9]+\.[0-9]+\.[0-9]+-[0-9]+-[a-f0-9]{32})\/">/;
-            const match = html.match(pattern);
-            
-            if (match) {
-                console.log('[Kernel] Found kernel hash:', match[1]);
-                return match[1];
-            }
-            
-            console.log('[Kernel] No kernel hash found in HTML');
-            return null;
+            console.log('[Kernel] Fetched HTML from:', kmodsUrl);
+        
+            return await selectKernelSmart(html);
             
         } catch (error) {
             console.log('[Kernel] Failed to fetch kernel hash:', error.message);
             return null;
         }
+    }
+    
+    async function selectKernelSmart(html) {
+        // 全てのカーネルディレクトリを抽出
+        const kernelDirs = extractAllKernels(html);
+        
+        if (kernelDirs.length === 0) {
+            console.log('[Kernel] No valid kernel directories found');
+            return null;
+        } else if (kernelDirs.length === 1) {
+            // 単一カーネル → 即採用（効率化）
+            console.log('[Kernel] Single kernel found:', kernelDirs[0].hash);
+            return kernelDirs[0].hash;
+        } else {
+            // 複数カーネル → 日付で最新選択
+            console.log(`[Kernel] Multiple kernels found (${kernelDirs.length}), selecting latest by date`);
+            return selectLatestByDate(kernelDirs);
+        }
+    }
+    
+    function extractAllKernels(html) {
+        const tableRowPattern = /<tr><td class="n"><a href="([^"\/]+)\/"[^>]*>([^<]+)<\/a>\/[^<]*<\/td><td class="s">[^<]*<\/td><td class="d">([^<]+)<\/td>/g;
+        const kernelDirs = [];
+        let match;
+        
+        while ((match = tableRowPattern.exec(html)) !== null) {
+            const dirName = match[1];
+            const dateStr = match[3];
+            
+            // "." や ".." ディレクトリを除外
+            if (dirName === '.' || dirName === '..') continue;
+            
+            // カーネルハッシュ形式の検証
+            if (dirName.match(/^\d+\.\d+\.\d+-\d+-[a-f0-9]{32}$/)) {
+                try {
+                    const date = new Date(dateStr);
+                    if (!isNaN(date.getTime())) {
+                        kernelDirs.push({
+                            hash: dirName,
+                            date: date,
+                            dateStr: dateStr
+                        });
+                    }
+                } catch (e) {
+                    console.log(`[Kernel] Invalid date format: ${dateStr}`);
+                }
+            }
+        }
+        
+        return kernelDirs;
+    }
+    
+    function selectLatestByDate(kernelDirs) {
+        // 日付でソートして最新を選択
+        kernelDirs.sort((a, b) => b.date - a.date);
+        const latestKernel = kernelDirs[0];
+        
+        console.log(`[Kernel] Selected latest kernel: ${latestKernel.hash} (${latestKernel.dateStr})`);
+        
+        // フォールバック情報も保存（パッケージが見つからない場合に使用）
+        if (kernelDirs.length > 1) {
+            app.snapshotKernelFallbacks = kernelDirs.slice(1, 3).map(k => k.hash);
+            console.log(`[Kernel] Fallback kernels available: ${app.snapshotKernelFallbacks.join(', ')}`);
+        }
+        
+        return latestKernel.hash;
     }
 
     if (profilesData.profiles && profilesData.profiles[profileId]) {
@@ -3678,7 +3690,6 @@ async function fetchDevicePackages() {
             urls.push(`${basePath}/targets/${targetPath}/kmods/${app.kernelHash}/index.json`);
         }
     } else {
-        // リリース版は元のまま
         urls.push(`${basePath}/targets/${targetPath}/packages/Packages`);
         if (app.kernelHash) {
             urls.push(`${basePath}/targets/${targetPath}/kmods/${app.kernelHash}/Packages`);
@@ -3751,82 +3762,11 @@ async function resolveArch(version, targetPath, opts = {}) {
         }
 
         // 1) 呼び出し元が profilesData を渡してきた場合
-        if (opts.profilesData) {
-            // 新旧両方のフォーマットに対応
-            const arch = opts.profilesData.arch_packages || 
-                        opts.profilesData.arch || 
-                        opts.profilesData.arch_packages_default ||
-                        '';
-            if (arch) {
-                app.archPackagesMap = app.archPackagesMap || {};
-                app.archPackagesMap[targetPath] = arch;
-                return arch;
-            }
-        }
-
-        // 2) URL構築
-        setupVersionUrls(version);
-        const basePath = (config.image_urls && config.image_urls[version])
-            ? config.image_urls[version].replace(/\/$/, '')
-            : '';
-
-        // 3) profiles.json 直接参照
-        const profilesUrl = `${basePath}/targets/${targetPath}/profiles.json`;
-        try {
-            const res = await fetch(profilesUrl, { cache: 'no-cache', credentials: 'omit', mode: 'cors' });
-            if (res.ok) {
-                const meta = await res.json();
-                // 新旧両方のフォーマットに対応
-                const arch = meta?.arch_packages || 
-                            meta?.arch || 
-                            meta?.arch_packages_default || 
-                            '';
-                if (arch) {
-                    app.archPackagesMap = app.archPackagesMap || {};
-                    app.archPackagesMap[targetPath] = arch;
-                    return arch;
-                }
-            }
-        } catch (e) {
-            console.log(`[ARCH] profiles.json fetch failed: ${e.message}`);
-        }
-
-        // 4) デフォルトアーキテクチャの推測
-        // targetPathから一般的なアーキテクチャを推測
-        const archGuess = guessArchFromTarget(targetPath);
-        if (archGuess) {
-            console.log(`[ARCH] Guessed architecture: ${archGuess} for ${targetPath}`);
+        if (opts.profilesData?.arch_packages) {
+            const arch = opts.profilesData.arch_packages;
             app.archPackagesMap = app.archPackagesMap || {};
-            app.archPackagesMap[targetPath] = archGuess;
-            return archGuess;
-        }
-
-        return '';
-    } catch (err) {
-        console.error('[ARCH] unexpected error:', err);
-        return '';
-    }
-}
-
-// SNAPSHOT/Release 共通 arch 解決
-async function resolveArch(version, targetPath, opts = {}) {
-    try {
-        // 0) キャッシュ優先
-        if (app.archPackagesMap && app.archPackagesMap[targetPath]) {
-            return app.archPackagesMap[targetPath];
-        }
-
-        // 1) 呼び出し元が profilesData を渡してきた場合
-        if (opts.profilesData) {
-            // 新旧両方のフォーマットに対応
-            const arch = opts.profilesData.arch_packages || 
-                        opts.profilesData.arch || 
-                        '';
-            if (arch) {
-                app.archPackagesMap = app.archPackagesMap || {};
-                app.archPackagesMap[targetPath] = arch;
-                return arch;
-            }
+            app.archPackagesMap[targetPath] = arch;
+            return arch;
         }
 
         // 2) URL構築
@@ -3841,10 +3781,7 @@ async function resolveArch(version, targetPath, opts = {}) {
             const res = await fetch(profilesUrl, { cache: 'no-cache', credentials: 'omit', mode: 'cors' });
             if (res.ok) {
                 const meta = await res.json();
-                // 新旧両方のフォーマットに対応
-                const arch = meta?.arch_packages || 
-                            meta?.arch || 
-                            '';
+                const arch = meta?.arch_packages || '';
                 if (arch) {
                     app.archPackagesMap = app.archPackagesMap || {};
                     app.archPackagesMap[targetPath] = arch;
