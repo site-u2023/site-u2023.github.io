@@ -5763,49 +5763,44 @@ function showDownloadLinks(images, fullStatus, requestHash) {
     }
 }
 
-// --- 公式準拠：引数3つ（version, profile, target）でURL配列作成 ---
+// --- 公式準拠 fetchDevicePackages ---
+// 外部仕様・引数構成は公式と同一
 async function fetchDevicePackages(version, profile, target) {
     const urls = [];
     const allPkgsMap = new Map();
     const baseUrl = config.image_urls[version];
     const feeds   = ["base", "luci", "packages", "routing", "telephony"];
 
+    // 公式仕様のURL生成（単純形）
     for (const feed of feeds) {
         urls.push(`${baseUrl}/packages/${feed}/${target}/Packages`);
     }
 
-    // 公式仕様外の追加処理は別関数に委譲
+    // 独自仕様の実行
     await fetchDevicePackagesCustom(version, profile, target, urls, allPkgsMap);
 
+    // 最終反映
     app.devicePackages = Array.from(allPkgsMap.values());
 }
 
-// 公式準拠
-async function fetchDevicePackages(version, profile, target) {
-    const urls = [];
-    const allPkgsMap = new Map();
-    const baseUrl = config.image_urls[version];
-    const feeds   = ["base", "luci", "packages", "routing", "telephony"];
-
-    for (const feed of feeds) {
-        urls.push(`${baseUrl}/packages/${feed}/${target}/Packages`);
-    }
-    await fetchDevicePackagesCustom(version, profile, target, urls, allPkgsMap);
-    app.devicePackages = Array.from(allPkgsMap.values());
-}
-
-// 独自仕様
+// --- 独自仕様関数 ---
+// arch解決、SNAPSHOT/Release対応、kmods、ErrorHandler等をこちらに集約
 async function fetchDevicePackagesCustom(version, profile, target, urls, allPkgsMap) {
     const isSnapshot = /SNAPSHOT$/i.test(version);
+
+    // URLベース設定
     setupVersionUrls(version);
     const basePath = config.image_urls[version].replace(/\/$/, '');
-    const arch     = await resolveArch(version, target);
+
+    // arch解決
+    const arch = await resolveArch(version, target);
     if (!arch) {
         console.error('[fetchDevicePackagesCustom] Unable to resolve arch for target:', target);
         if (typeof generatePackageSelector === 'function') generatePackageSelector();
         return;
     }
 
+    // 公式生成URLを独自仕様に差し替え
     urls.length = 0;
     if (isSnapshot) {
         ["base", "luci", "packages", "routing", "telephony"].forEach(feed => {
@@ -5824,6 +5819,7 @@ async function fetchDevicePackagesCustom(version, profile, target, urls, allPkgs
         });
     }
 
+    // パッケージ取得処理（現行のfetch+parseロジックを移植）
     await Promise.allSettled(urls.map(async (url) => {
         try {
             const res = await fetch(url, { cache: 'no-cache', credentials: 'omit', mode: 'cors' });
@@ -5831,6 +5827,7 @@ async function fetchDevicePackagesCustom(version, profile, target, urls, allPkgs
                 console.warn(`Package fetch ${res.status}: ${url}`);
                 return;
             }
+
             if (url.endsWith('.json')) {
                 const data = await res.json();
                 const packages = data?.packages || {};
@@ -5853,6 +5850,7 @@ async function fetchDevicePackagesCustom(version, profile, target, urls, allPkgs
 
     ErrorHandler.packageDebug.dumpAll();
 
+    // 内部ヘルパー：Packagesテキスト解析
     function parsePackagesText(text, source) {
         return text.split(/\n\s*\n/).reduce((arr, blk) => {
             const rec = {};
