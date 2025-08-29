@@ -107,6 +107,54 @@ function waitForReady(ids = []) {
     });
 }
 
+function addPackageSelector() {
+    const host = document.getElementById('packages-search-input');
+    const newInput = document.createElement('input');
+    newInput.type = 'text';
+    newInput.id = `package-input-${host.children.length}`;
+    newInput.className = 'form-control form-control-sm mb-1';
+    newInput.placeholder = 'Search packages...';
+    newInput.dataset.extra = '1';
+
+    let timer;
+    newInput.addEventListener('input', function() {
+        clearTimeout(timer);
+        const query = this.value.trim().toLowerCase();
+
+        if (query.length < 2 || !Array.isArray(app.devicePackages) || app.devicePackages.length === 0) {
+            hidePackageAutocomplete();
+            return;
+        }
+
+        timer = setTimeout(() => {
+            const matches = app.devicePackages
+                .filter(pkg => {
+                    const name = (typeof pkg === 'string') ? pkg : pkg.name || '';
+                    return name.toLowerCase().includes(query);
+                })
+                .sort((a, b) => {
+                    const nameA = (typeof a === 'string') ? a : a.name || '';
+                    const nameB = (typeof b === 'string') ? b : b.name || '';
+                    if (nameA.toLowerCase() === query && nameB.toLowerCase() !== query) return -1;
+                    if (nameB.toLowerCase() === query && nameA.toLowerCase() !== query) return 1;
+                    return 0;
+                });
+
+            showPackageAutocomplete(matches, newInput);
+        }, 200);
+    });
+
+    newInput.addEventListener('change', function() {
+        if (!this.value.trim() && this.dataset.extra === '1') {
+            host.removeChild(this);
+            syncTextareaFromBoxes();
+        }
+    });
+
+    host.appendChild(newInput);
+    newInput.focus();
+}
+
 // ==================== エラーハンドリング統一 ====================
 const ErrorHandler = {
     classify(error, response = null) {
