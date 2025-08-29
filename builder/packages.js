@@ -405,13 +405,29 @@ async function fetchDevicePackages() {
                 const data = await res.json();
                 const packages = data?.packages || {};
                 Object.entries(packages).forEach(([name, info]) => {
+                    if (!info || !info.properties || !info.properties.packageName) {
+                        console.warn(`[fetchDevicePackages] Missing properties for package: ${name}`, info);
+                        return; // スキップ
+                    }
                     allPkgsMap.set(name, { name, ...info, source: url });
                 });
-                window.ErrorHandler.packageDebug.logFetch(url, true, Object.entries(packages).map(([n, i]) => ({ name: n, ...i })));
+                window.ErrorHandler.packageDebug.logFetch(
+                    url,
+                    true,
+                    Object.entries(packages)
+                        .filter(([n, i]) => i && i.properties && i.properties.packageName)
+                        .map(([n, i]) => ({ name: n, ...i }))
+                );
             } else {
                 const text = await res.text();
                 const packages = parsePackagesText(text, url);
-                packages.forEach(pkg => allPkgsMap.set(pkg.name, pkg));
+                packages.forEach(pkg => {
+                    if (!pkg || !pkg.name) {
+                        console.warn(`[fetchDevicePackages] Skipping invalid pkg record from ${url}`, pkg);
+                        return;
+                    }
+                    allPkgsMap.set(pkg.name, pkg);
+                });
                 window.ErrorHandler.packageDebug.logFetch(url, true, packages);
             }
         } catch (err) {
