@@ -5563,6 +5563,28 @@ function setupSelectList(select, items, onselection) {
     }
 }
 
+        function setupInterfaceList(select, interfaces) {
+    interfaces.sort();
+    for (const iface of interfaces) {
+        const option = document.createElement("OPTION");
+        option.innerText = iface;
+        option.value = iface;
+        select.appendChild(option);
+    }
+
+    // URLパラメータから初期選択を設定
+    const preselect = url_params.get("interface");
+    if (preselect) {
+        select.value = preselect;
+    }
+
+    // 選択変更時にURLパラメータを更新
+    select.addEventListener("change", () => {
+        const option = select.options[select.selectedIndex];
+        url_params.set("interface", option.value);
+    });
+}
+
 async function pollBuildStatus(requestHash) {
     console.log('[POLL] Checking status for:', requestHash);
     const statusUrl = `${config.asu_url}/api/v1/build/${requestHash}`;
