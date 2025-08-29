@@ -24,9 +24,11 @@ async function loadPackageDb() {
   return data;
 }
 
+// ==================== パッケージデータベース ====================
 let PACKAGE_DB = {};
 loadPackageDb().then(db => {
-  PACKAGE_DB = db;
+    PACKAGE_DB = db;
+    window.PACKAGE_DB = db; // グローバルに公開
 });
 
 // グローバル変数
