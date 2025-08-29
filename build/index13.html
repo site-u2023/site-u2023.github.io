@@ -3910,7 +3910,11 @@ async function loadDeviceProfile(device) {
 
         // パッケージ取得完了を待ってから描画（SNAPSHOT版は別処理）
         try {
-            await fetchDevicePackages();
+            await fetchDevicePackages(
+                app.selectedVersion,
+                current_device.id,
+                current_device.target
+            );
         } catch (e) {
             console.error('fetchDevicePackages failed:', e);
         }
@@ -5776,11 +5780,23 @@ async function fetchDevicePackages(version, profile, target) {
     app.devicePackages = Array.from(allPkgsMap.values());
 }
 
-// --- 独自仕様：arch解決・SNAPSHOT/Release 分岐・ErrorHandler ロギング ---
+// 公式準拠
+async function fetchDevicePackages(version, profile, target) {
+    const urls = [];
+    const allPkgsMap = new Map();
+    const baseUrl = config.image_urls[version];
+    const feeds   = ["base", "luci", "packages", "routing", "telephony"];
+
+    for (const feed of feeds) {
+        urls.push(`${baseUrl}/packages/${feed}/${target}/Packages`);
+    }
+    await fetchDevicePackagesCustom(version, profile, target, urls, allPkgsMap);
+    app.devicePackages = Array.from(allPkgsMap.values());
+}
+
+// 独自仕様
 async function fetchDevicePackagesCustom(version, profile, target, urls, allPkgsMap) {
     const isSnapshot = /SNAPSHOT$/i.test(version);
-
-    // URLベース設定（既存ロジック流用可）
     setupVersionUrls(version);
     const basePath = config.image_urls[version].replace(/\/$/, '');
     const arch     = await resolveArch(version, target);
@@ -5790,8 +5806,7 @@ async function fetchDevicePackagesCustom(version, profile, target, urls, allPkgs
         return;
     }
 
-    // 公式URL配列を差し替え（SNAPSHOT/Release対応）
-    urls.length = 0; // 元の配列をクリア
+    urls.length = 0;
     if (isSnapshot) {
         ["base", "luci", "packages", "routing", "telephony"].forEach(feed => {
             urls.push(`${basePath}/packages/${arch}/${feed}/index.json`);
@@ -5809,7 +5824,6 @@ async function fetchDevicePackagesCustom(version, profile, target, urls, allPkgs
         });
     }
 
-    // パッケージ情報取得処理（現行fetchロジックそのまま移植）
     await Promise.allSettled(urls.map(async (url) => {
         try {
             const res = await fetch(url, { cache: 'no-cache', credentials: 'omit', mode: 'cors' });
@@ -5838,32 +5852,26 @@ async function fetchDevicePackagesCustom(version, profile, target, urls, allPkgs
     }));
 
     ErrorHandler.packageDebug.dumpAll();
-}
-
-    app.devicePackages = Array.from(allPkgsMap.values());
-    ErrorHandler.packageDebug.dumpAll();
 
     function parsePackagesText(text, source) {
-        const blocks = text.split(/\n\s*\n/);
-        const pkgs = [];
-        for (const blk of blocks) {
+        return text.split(/\n\s*\n/).reduce((arr, blk) => {
             const rec = {};
-            for (const line of blk.split('\n')) {
+            blk.split('\n').forEach(line => {
                 const m = line.match(/^([A-Za-z][A-Za-z0-9-]*):\s*(.*)$/);
-                if (!m) continue;
+                if (!m) return;
                 const key = m[1], val = m[2];
                 if (key === "Package") rec.name = val.trim();
                 else if (key === "Version") rec.version = val;
                 else if (key === "Description") rec.description = val;
                 else if (key === "Section") rec.section = val;
                 else if (key === "Filename") rec.filename = val;
-            }
+            });
             if (rec.name) {
                 rec.source = source;
-                pkgs.push(rec);
+                arr.push(rec);
             }
-        }
-        return pkgs;
+            return arr;
+        }, []);
     }
 }
         
