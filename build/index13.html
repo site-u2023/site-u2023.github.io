@@ -5759,49 +5759,57 @@ function showDownloadLinks(images, fullStatus, requestHash) {
     }
 }
 
-// ★パッケージインデックス取得（SNAPSHOT/Release 共通）
-async function fetchDevicePackages() {
-    app.devicePackages = [];
-    if (!current_device || !current_device.id || !app.selectedVersion) return;
+// --- 公式準拠：引数3つ（version, profile, target）でURL配列作成 ---
+async function fetchDevicePackages(version, profile, target) {
+    const urls = [];
+    const allPkgsMap = new Map();
+    const baseUrl = config.image_urls[version];
+    const feeds   = ["base", "luci", "packages", "routing", "telephony"];
 
-    const version     = app.selectedVersion;
-    const targetPath  = current_device.target;
-    const isSnapshot  = /SNAPSHOT$/i.test(version);
+    for (const feed of feeds) {
+        urls.push(`${baseUrl}/packages/${feed}/${target}/Packages`);
+    }
 
-    // URLベース設定
+    // 公式仕様外の追加処理は別関数に委譲
+    await fetchDevicePackagesCustom(version, profile, target, urls, allPkgsMap);
+
+    app.devicePackages = Array.from(allPkgsMap.values());
+}
+
+// --- 独自仕様：arch解決・SNAPSHOT/Release 分岐・ErrorHandler ロギング ---
+async function fetchDevicePackagesCustom(version, profile, target, urls, allPkgsMap) {
+    const isSnapshot = /SNAPSHOT$/i.test(version);
+
+    // URLベース設定（既存ロジック流用可）
     setupVersionUrls(version);
-    const basePath    = config.image_urls[version].replace(/\/$/, '');
-
-    // ▼ 統合版 arch 解決
-    const arch = await resolveArch(version, targetPath /*, { profilesData: 既に持っていれば渡す } */);
+    const basePath = config.image_urls[version].replace(/\/$/, '');
+    const arch     = await resolveArch(version, target);
     if (!arch) {
-        console.error('[fetchDevicePackages] Unable to resolve arch for target:', targetPath);
+        console.error('[fetchDevicePackagesCustom] Unable to resolve arch for target:', target);
         if (typeof generatePackageSelector === 'function') generatePackageSelector();
         return;
     }
 
-    const feeds = ["base", "luci", "packages", "routing", "telephony"];
-    const urls  = [];
-
+    // 公式URL配列を差し替え（SNAPSHOT/Release対応）
+    urls.length = 0; // 元の配列をクリア
     if (isSnapshot) {
-        feeds.forEach(feed => {
+        ["base", "luci", "packages", "routing", "telephony"].forEach(feed => {
             urls.push(`${basePath}/packages/${arch}/${feed}/index.json`);
         });
         if (app.kernelHash) {
-            urls.push(`${basePath}/targets/${targetPath}/kmods/${app.kernelHash}/index.json`);
+            urls.push(`${basePath}/targets/${target}/kmods/${app.kernelHash}/index.json`);
         }
     } else {
-        urls.push(`${basePath}/targets/${targetPath}/packages/Packages`);
+        urls.push(`${basePath}/targets/${target}/packages/Packages`);
         if (app.kernelHash) {
-            urls.push(`${basePath}/targets/${targetPath}/kmods/${app.kernelHash}/Packages`);
+            urls.push(`${basePath}/targets/${target}/kmods/${app.kernelHash}/Packages`);
         }
-        feeds.forEach(feed => {
+        ["base", "luci", "packages", "routing", "telephony"].forEach(feed => {
             urls.push(`${basePath}/packages/${arch}/${feed}/Packages`);
         });
     }
 
-    const allPkgsMap = new Map();
-
+    // パッケージ情報取得処理（現行fetchロジックそのまま移植）
     await Promise.allSettled(urls.map(async (url) => {
         try {
             const res = await fetch(url, { cache: 'no-cache', credentials: 'omit', mode: 'cors' });
@@ -5815,7 +5823,9 @@ async function fetchDevicePackages() {
                 Object.entries(packages).forEach(([name, info]) => {
                     allPkgsMap.set(name, { name, ...info, source: url });
                 });
-                ErrorHandler.packageDebug.logFetch(url, true, Object.entries(packages).map(([n, i]) => ({ name: n, ...i })));
+                ErrorHandler.packageDebug.logFetch(url, true,
+                    Object.entries(packages).map(([n, i]) => ({ name: n, ...i }))
+                );
             } else {
                 const text = await res.text();
                 const packages = parsePackagesText(text, url);
@@ -5826,6 +5836,9 @@ async function fetchDevicePackages() {
             console.warn(`Package fetch failed: ${url} -> ${err.message}`);
         }
     }));
+
+    ErrorHandler.packageDebug.dumpAll();
+}
 
     app.devicePackages = Array.from(allPkgsMap.values());
     ErrorHandler.packageDebug.dumpAll();
