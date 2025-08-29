@@ -5415,10 +5415,7 @@ async function buildAsuRequest() {
                 getAiosConfig(), 
                 window.cachedApiInfo
             );
-        }  
-
-        // setup.sh テンプレートを defaults に反映させる
-        let defaults_value = document.getElementById('uci-defaults-content').value;
+        }
 
         // setup.sh テンプレートがあれば結合
         if (typeof SETUP_SH_TEMPLATE !== "undefined" && SETUP_SH_TEMPLATE.trim() !== "") {
