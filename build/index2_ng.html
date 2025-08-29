@@ -2715,15 +2715,19 @@ function setupVersionUrls(version) {
     if (!config.image_urls) config.image_urls = {};
     if (!config.overview_urls) config.overview_urls = {};
     if (config.image_urls[version]) return;
-    const overview_url = config.image_url;
-    const image_url = (typeof upstream_config !== 'undefined' && upstream_config.image_url_override)
-        ? upstream_config.image_url_override
-        : config.image_url;
-    const isSnapshot = /SNAPSHOT$/i.test(version);
-    const basePath   = isSnapshot ? 'snapshots' : `releases/${encodeURIComponent(version)}`;
-    config.overview_urls[version] = `${overview_url}/${basePath}/`;
-    config.image_urls[version]    = `${image_url}/${basePath}/`;
-} 
+
+    if (/SNAPSHOT$/i.test(version)) {
+        config.overview_urls[version] = `${config.image_url}/snapshots/`;
+        config.image_urls[version]    = `${config.image_url}/snapshots/`;
+    } else {
+        const overview_url = config.image_url;
+        const image_url = (typeof upstream_config !== 'undefined' && upstream_config.image_url_override)
+            ? upstream_config.image_url_override
+            : config.image_url;
+        config.overview_urls[version] = `${overview_url}/releases/${encodeURIComponent(version)}/`;
+        config.image_urls[version]    = `${image_url}/releases/${encodeURIComponent(version)}/`;
+    }
+}
 
 // textareaの高さを内容に合わせて自動調整
 function adjustTextareaHeight(textareaId) {
@@ -3242,10 +3246,11 @@ function generatePackageSelector() {
    );
 
    // 取得できていない（＝判定不能）場合の処理
-   if (availablePackages.size === 0) {
+   const isSnapshot = /SNAPSHOT$/i.test(app.selectedVersion);
+   
+   if (availablePackages.size === 0 && !isSnapshot) {
        container.innerHTML =
-           '<p class="text-muted small">Unable to retrieve the package index for this OS version/device. ' +
-           'Please try a different version or device, or try again later.</p>';
+       '<p class="text-muted small">Unable to retrieve the package index for this OS version/device. Please try a different version or device, or try again later.</p>';
        return;
    }
 
@@ -3282,7 +3287,7 @@ function generatePackageSelector() {
            if (depIds.has(pkg.id)) return;
 
            // 厳格：available にあるものだけ表示
-           const isAvailable = availablePackages.has(pkg.name);
+           const isAvailable = isSnapshot ? true : availablePackages.has(pkg.name);
 
            const packageItem = document.createElement('div');
            packageItem.className = 'package-item';
@@ -3337,7 +3342,7 @@ function generatePackageSelector() {
                    }
 
                    const depName = depPkg ? depPkg.name : depId;
-                   const depIsAvailable = availablePackages.has(depName);
+                   const depIsAvailable = isSnapshot ? true : availablePackages.has(depName);
                    if (!depIsAvailable) return;
 
                    const depItem = document.createElement('div');
@@ -5438,21 +5443,24 @@ async function buildAsuRequest() {
             client: "ofs/" + ofs_version
         });
 
-        // デバッグログ追加
-        console.log("=== ASU Request Debug ===");
-        console.log("typeof defaults_value:", typeof defaults_value);
-
-        if (typeof defaults_value === "string") {
-            console.log("defaults_value length:", defaults_value.length);
-            console.log("defaults_value preview:", defaults_value.substring(0, 200));
-        } else {
-            console.warn("defaults_value is not a string:", defaults_value);
+        // デバッグログ（SNAPSHOTのみ詳細）
+        if (/SNAPSHOT$/i.test(document.getElementById('versions').value)) {
+            console.log("=== ASU Request Debug (SNAPSHOT) ===");
+            console.log("typeof defaults_value:", typeof defaults_value);
+            if (typeof defaults_value === "string") {
+                console.log("defaults_value length:", defaults_value.length);
+                console.log("defaults_value preview:", defaults_value.substring(0, 200));
+            }
+            try {
+                const payloadPreview = JSON.parse(body); // body は直前で定義済み
+                if (typeof payloadPreview.defaults === 'string') {
+                    payloadPreview.defaults = `...(${payloadPreview.defaults.length} bytes)...`;
+                }
+                console.log("Request payload preview:", payloadPreview);
+            } catch (e) {
+                console.warn("payload preview failed:", e.message);
+            }
         }
-
-        console.log("Full request object:", requestPayload);
-
-        const body = JSON.stringify(requestPayload);
-        console.log("Final JSON string:", body);
         
         const response = await fetch(config.asu_url + '/api/v1/build', {
             method: 'POST',
