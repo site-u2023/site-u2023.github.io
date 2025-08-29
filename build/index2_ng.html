@@ -5438,6 +5438,15 @@ async function buildAsuRequest() {
             client: "ofs/" + ofs_version
         });
 
+        // デバッグログ追加
+        console.log("=== ASU Request Debug ===");
+        console.log("typeof defaults_value:", typeof defaults_value);
+        console.log("defaults_value preview:", defaults_value.substring(0, 200)); // 長い場合200文字だけ
+        console.log("Full request object:", requestPayload);
+
+        const body = JSON.stringify(requestPayload);
+        console.log("Final JSON string:", body);
+        
         const response = await fetch(config.asu_url + '/api/v1/build', {
             method: 'POST',
             headers: {
