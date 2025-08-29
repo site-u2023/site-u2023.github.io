@@ -16,7 +16,6 @@ let mapShCache = undefined;
 
 document.addEventListener('DOMContentLoaded', init);
 
-// ==================== エラーハンドリング統一 ====================
 // ==================== 統合・総合 デバッカー ====================
 const ErrorHandler = {
     // エラータイプ分類
