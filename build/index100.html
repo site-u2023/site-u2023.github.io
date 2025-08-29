@@ -2490,6 +2490,86 @@ const ErrorHandler = {
     }
 };
 
+// ==================== デバイス管理 ====================
+// loadDevices関数は削除し、公式のフローを使用
+
+// グローバル変数定義（公式準拠）
+let current_device = {};
+let overview_cache = {};  // 公式には無いが、キャッシュ用に追加
+
+// 公式と同じinit関数内でバージョン処理
+// 初期化関数 (init関数)
+async function init() {
+    const url_params = new URLSearchParams(window.location.search);
+    
+    // バージョンリスト取得（公式と同じ）
+    const upstream_config = await fetch(config.image_url + "/.versions.json", {
+        cache: "no-cache",
+    })
+        .then((obj) => {
+            if (obj.status == 200) {
+                return obj.json();
+            } else {
+                return { versions_list: [] };
+            }
+        })
+        .then((obj) => {
+            const versions = obj.versions_list.filter(version => {
+                // min_version以上のみ
+                if (config.min_version) {
+                    const minParts = config.min_version.split('.').map(n => parseInt(n, 10));
+                    const parts = version.split('.').map(n => parseInt(n, 10));
+                    for (let i = 0; i < minParts.length; i++) {
+                        if (parts[i] > minParts[i]) return true;
+                        if (parts[i] < minParts[i]) return false;
+                    }
+                    return true;
+                }
+                return true;
+            });
+            
+            // SNAPSHOTを追加
+            versions.push("SNAPSHOT");
+            
+            return {
+                versions: versions,
+                image_url_override: obj.image_url_override,
+                default_version: obj.stable_version,
+            };
+        });
+    
+    if (!upstream_config) return;
+    
+    config.versions = upstream_config.versions;
+    config.default_version = upstream_config.default_version;
+    config.overview_urls = {};
+    config.image_urls = {};
+    
+    // URL設定（公式と同じ）
+    const overview_url = config.image_url;
+    const image_url = upstream_config.image_url_override || config.image_url;
+    for (const version of config.versions) {
+        if (version == "SNAPSHOT" || version.includes("-SNAPSHOT")) {
+            config.overview_urls[version] = `${overview_url}/snapshots/`;
+            config.image_urls[version] = `${image_url}/snapshots/`;
+        } else {
+            config.overview_urls[version] = `${overview_url}/releases/${version}`;
+            config.image_urls[version] = `${image_url}/releases/${version}`;
+        }
+    }
+    
+    // 公式のsetupSelectListを使用
+    setupSelectList(document.getElementById("versions"), config.versions, (version) => {
+        loadVersionOverview(version);
+    });
+    
+    // その他の初期化処理
+    bindEvents();
+    if (typeof refreshTemplateAndPackages === 'function') {
+        refreshTemplateAndPackages();
+    }
+}
+        
 // ==================== リセット共通関数 ====================
 const ResetManager = {
     // フィールド値をクリアする汎用関数
@@ -3698,86 +3778,6 @@ function updateVersionSelect() {
         }
         select.appendChild(option);
     });
-}
-
-// ==================== デバイス管理 ====================
-// loadDevices関数は削除し、公式のフローを使用
-
-// グローバル変数定義（公式準拠）
-let current_device = {};
-let overview_cache = {};  // 公式には無いが、キャッシュ用に追加
-
-// 公式と同じinit関数内でバージョン処理
-// 初期化関数 (init関数)
-async function init() {
-    const url_params = new URLSearchParams(window.location.search);
-    
-    // バージョンリスト取得（公式と同じ）
-    const upstream_config = await fetch(config.image_url + "/.versions.json", {
-        cache: "no-cache",
-    })
-        .then((obj) => {
-            if (obj.status == 200) {
-                return obj.json();
-            } else {
-                return { versions_list: [] };
-            }
-        })
-        .then((obj) => {
-            const versions = obj.versions_list.filter(version => {
-                // min_version以上のみ
-                if (config.min_version) {
-                    const minParts = config.min_version.split('.').map(n => parseInt(n, 10));
-                    const parts = version.split('.').map(n => parseInt(n, 10));
-                    for (let i = 0; i < minParts.length; i++) {
-                        if (parts[i] > minParts[i]) return true;
-                        if (parts[i] < minParts[i]) return false;
-                    }
-                    return true;
-                }
-                return true;
-            });
-            
-            // SNAPSHOTを追加
-            versions.push("SNAPSHOT");
-            
-            return {
-                versions: versions,
-                image_url_override: obj.image_url_override,
-                default_version: obj.stable_version,
-            };
-        });
-    
-    if (!upstream_config) return;
-    
-    config.versions = upstream_config.versions;
-    config.default_version = upstream_config.default_version;
-    config.overview_urls = {};
-    config.image_urls = {};
-    
-    // URL設定（公式と同じ）
-    const overview_url = config.image_url;
-    const image_url = upstream_config.image_url_override || config.image_url;
-    for (const version of config.versions) {
-        if (version == "SNAPSHOT" || version.includes("-SNAPSHOT")) {
-            config.overview_urls[version] = `${overview_url}/snapshots/`;
-            config.image_urls[version] = `${image_url}/snapshots/`;
-        } else {
-            config.overview_urls[version] = `${overview_url}/releases/${version}`;
-            config.image_urls[version] = `${image_url}/releases/${version}`;
-        }
-    }
-    
-    // 公式のsetupSelectListを使用
-    setupSelectList(document.getElementById("versions"), config.versions, (version) => {
-        loadVersionOverview(version);
-    });
-    
-    // その他の初期化処理
-    bindEvents();
-    if (typeof refreshTemplateAndPackages === 'function') {
-        refreshTemplateAndPackages();
-    }
 }
 
 // バージョン選択時の処理（公式準拠）
