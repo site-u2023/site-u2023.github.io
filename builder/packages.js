@@ -154,15 +154,17 @@ function generatePackageSelector() {
     }
 
     // 判定直前の状態を総合デバッガで出力
-    window.ErrorHandler.debug(
-        'generatePackageSelector',
-        'State immediately before zero check',
-        {
-            devicePackages_raw: window.app.devicePackages,
-            availablePackages_list: Array.from(availablePackages),
-            availablePackages_size: availablePackages.size
-        }
-    );
+    if (window.ErrorHandler?.debug) {
+        window.ErrorHandler.debug(
+            'generatePackageSelector',
+            'State immediately before zero check',
+            {
+                devicePackages_raw: window.app.devicePackages,
+                availablePackages_list: Array.from(availablePackages),
+                availablePackages_size: availablePackages.size
+            }
+        );
+    }
 
     // 取得できていない場合の処理
     if (availablePackages.size === 0) {
@@ -412,13 +414,17 @@ async function fetchDevicePackages() {
                     allPkgsMap.set(name, { name, ...info, source: url });
                 });
                 if (window.ErrorHandler && window.ErrorHandler.packageDebug) {
-                    window.ErrorHandler.packageDebug.logFetch(
-                        url,
-                        true,
-                        Object.entries(packages)
-                            .filter(([n, i]) => i && i.properties && i.properties.packageName)
-                            .map(([n, i]) => ({ name: n, ...i }))
-                    );
+                    if (window.ErrorHandler && window.ErrorHandler.packageDebug) {
+                        if (window.ErrorHandler?.packageDebug) {
+                            window.ErrorHandler.packageDebug.logFetch(
+                                url,
+                                true,
+                                Object.entries(packages)
+                                    .filter(([n, i]) => i && i.properties && i.properties.packageName)
+                                    .map(([n, i]) => ({ name: n, ...i }))
+                            );
+                        }
+                    }
                 }
             } else {
                 const text = await res.text();
@@ -431,7 +437,11 @@ async function fetchDevicePackages() {
                     allPkgsMap.set(pkg.name, pkg);
                 });
                 if (window.ErrorHandler && window.ErrorHandler.packageDebug) {
-                    window.ErrorHandler.packageDebug.logFetch(url, true, packages);
+                    if (window.ErrorHandler && window.ErrorHandler.packageDebug) {
+                        if (window.ErrorHandler?.packageDebug) {
+                            window.ErrorHandler.packageDebug.logFetch(url, true, packages);
+                        }
+                    }
                 }
             }
         } catch (err) {
@@ -440,7 +450,8 @@ async function fetchDevicePackages() {
     }));
 
     // 最終正規化：name必須・string化、最低限の形に揃える
-    window.app.devicePackages = Array.from(allPkgsMap.values())
+    wi
+        ndow.app.devicePackages = Array.from(allPkgsMap.values())
         .map(p => {
             const name = (typeof p === 'string') ? p : p?.name;
             if (!name) return null;
@@ -450,7 +461,11 @@ async function fetchDevicePackages() {
         })
         .filter(Boolean);
     if (window.ErrorHandler && window.ErrorHandler.packageDebug) {
-        window.ErrorHandler.packageDebug.dumpAll();
+        if (window.ErrorHandler && window.ErrorHandler.packageDebug) {
+            if (window.ErrorHandler?.packageDebug) {
+                window.ErrorHandler.packageDebug.dumpAll();
+            }
+        }
     }
 
     function parsePackagesText(text, source) {
