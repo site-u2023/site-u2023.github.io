@@ -1789,17 +1789,14 @@ async function loadDeviceProfile(device) {
 async function applyProfileData(profilesData, profileId) {
     app.versionCode = profilesData.version_code || '';
     
-    // カーネルハッシュ
     if (profilesData.linux_kernel) {
         const lk = profilesData.linux_kernel;
         app.kernelHash = `${lk.version}-${lk.release}-${lk.vermagic}`;
-    }
-    
-    // ★重要：arch_packagesを確実に保存
-    if (profilesData.arch_packages) {
-        if (!app.archPackagesMap) app.archPackagesMap = {};
-        app.archPackagesMap[current_device.target] = profilesData.arch_packages;
-        console.log(`[ARCH] Stored: ${current_device.target} = ${profilesData.arch_packages}`);
+        console.log('[Kernel] From profiles.json:', app.kernelHash);
+    } else {
+        console.log('[Kernel] No linux_kernel in profiles.json, fetching from server...');
+        app.kernelHash = await fetchActualKernelHash(app.selectedVersion, current_device.target);
+        console.log('[Kernel] From server HTML:', app.kernelHash);
     }
     async function fetchActualKernelHash(version, targetPath) {
         try {
@@ -3311,7 +3308,6 @@ async function buildAsuRequest() {
             target: current_device.target,
             profile: current_device.id,
             packages: packages,
-            diff_packages: true,
             version: app.selectedVersion
         };
 
@@ -3666,24 +3662,25 @@ async function fetchDevicePackages() {
     app.devicePackages = [];
     if (!current_device || !current_device.id || !app.selectedVersion) return;
 
-    const version = app.selectedVersion;
-    const targetPath = current_device.target;
-    const isSnapshot = /SNAPSHOT$/i.test(version);
+    const version     = app.selectedVersion;
+    const targetPath  = current_device.target;
+    const isSnapshot  = /SNAPSHOT$/i.test(version);
 
+    // URLベース設定
     setupVersionUrls(version);
-    const basePath = config.image_urls[version].replace(/\/$/, '');
+    const basePath    = config.image_urls[version].replace(/\/$/, '');
 
-    // archPackagesMapから取得
-    const arch = app.archPackagesMap[targetPath] || '';
+    // ▼ 統合版 arch 解決
+    const arch = await resolveArch(version, targetPath /*, { profilesData: 既に持っていれば渡す } */);
     if (!arch) {
-        console.error('[fetchDevicePackages] No arch for target:', targetPath);
+        console.error('[fetchDevicePackages] Unable to resolve arch for target:', targetPath);
+        if (typeof generatePackageSelector === 'function') generatePackageSelector();
         return;
     }
 
     const feeds = ["base", "luci", "packages", "routing", "telephony"];
-    const urls = [];
+    const urls  = [];
 
-    // 元のシンプルなURL構築
     if (isSnapshot) {
         feeds.forEach(feed => {
             urls.push(`${basePath}/packages/${arch}/${feed}/index.json`);
