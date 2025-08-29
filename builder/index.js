@@ -27,7 +27,7 @@ function split(str) {
     return str.match(/[^\s,]+/g) || [];
 }
 
-function hideAutocomplete() {
+function hidePackageAutocomplete() {
     const items = document.querySelector('.autocomplete-items');
     if (items) {
         items.remove();
