@@ -2711,21 +2711,21 @@ function match(value, patterns) {
 }
 
 // ==================== URL管理の統一関数 ====================
-function setupVersionUrls(version) {
-    if (!config.image_urls) config.image_urls = {};
-    if (!config.overview_urls) config.overview_urls = {};
-    if (config.image_urls[version]) return;
+function setVersionUrls(version) {
+    if (!config.imageUrls) config.imageUrls = {};
+    if (!config.overviewUrls) config.overviewUrls = {};
+    if (config.imageUrls[version]) return;
 
     if (/SNAPSHOT$/i.test(version)) {
-        config.overview_urls[version] = `${config.image_url}/snapshots/`;
-        config.image_urls[version]    = `${config.image_url}/snapshots/`;
+        config.overviewUrls[version] = `${config.imageUrl}/snapshots/`;
+        config.imageUrls[version]    = `${config.imageUrl}/snapshots/`;
     } else {
-        const overview_url = config.image_url;
-        const image_url = (typeof upstream_config !== 'undefined' && upstream_config.image_url_override)
-            ? upstream_config.image_url_override
-            : config.image_url;
-        config.overview_urls[version] = `${overview_url}/releases/${encodeURIComponent(version)}/`;
-        config.image_urls[version]    = `${image_url}/releases/${encodeURIComponent(version)}/`;
+        const overviewUrl = config.imageUrl;
+        const imageUrl = (typeof upstreamConfig !== 'undefined' && upstreamConfig.imageUrlOverride)
+            ? upstreamConfig.imageUrlOverride
+            : config.imageUrl;
+        config.overviewUrls[version] = `${overviewUrl}/releases/${encodeURIComponent(version)}/`;
+        config.imageUrls[version]    = `${imageUrl}/releases/${encodeURIComponent(version)}/`;
     }
 }
 
