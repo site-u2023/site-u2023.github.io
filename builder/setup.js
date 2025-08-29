@@ -632,10 +632,10 @@ async function updateConfiguredTemplate() {
 
         if (!content || content.trim() === '' || content.includes('Failed to load setup.sh template')) {
             content = window.SETUP_SH_TEMPLATE;
-            window.appState.templateLoaded = true;
-        } else if (!window.appState.templateLoaded) {
+            window.app.templateLoaded = true;
+        } else if (!window.app.templateLoaded) {
             document.getElementById('uci-defaults-content').value = window.SETUP_SH_TEMPLATE;
-            window.appState.templateLoaded = true;
+            window.app.templateLoaded = true;
         }
 
         const config = getAiosConfig();
@@ -1129,7 +1129,7 @@ const BuildErrorHandler = {
 async function buildAsuRequest() {
     console.log('[buildAsuRequest] Function entered');
     
-    if (!window.currentDevice || !window.currentDevice.id) {
+    if (!window.current_device || !window.current_device.id) {
         console.log('[buildAsuRequest] No device selected');
         alert('Please select a device first');
         return;
@@ -1171,10 +1171,10 @@ async function buildAsuRequest() {
 
         console.log('[buildAsuRequest] Building request body');
         const requestBody = {
-            target: window.currentDevice.target,
-            profile: window.currentDevice.id,
+            target: window.current_device.target,
+            profile: window.current_device.id,
             packages: packages,
-            version: window.appState.selectedVersion
+            version: window.app.selectedVersion
         };
 
         console.log('[buildAsuRequest] About to send fetch request');
