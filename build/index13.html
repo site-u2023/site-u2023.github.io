@@ -5525,7 +5525,44 @@ async function buildAsuRequest() {
         document.getElementById('request-build').disabled = false;
     }
 }
-        
+
+function setupSelectList(select, items, onselection) {
+    // normalize prerelease version part for semver-like sorting
+    items.sort((b, a) =>
+        (a + (a.indexOf("-") < 0 ? "-Z" : "")).localeCompare(
+            b + (b.indexOf("-") < 0 ? "-Z" : ""),
+            undefined,
+            { numeric: true }
+        )
+    );
+
+    for (const item of items) {
+        const option = document.createElement("OPTION");
+        option.innerText = item;
+        option.value = item;
+        if (item == "latest") {
+            // translate the artificial release "latest"
+            option.innerText = "Latest";
+            option.classList.add("tr-latest-releases");
+        }
+        select.appendChild(option);
+    }
+
+    // pre-select version from URL or config.json
+    const preselect = url_params.get("version") || config.default_version;
+    if (preselect) {
+        $("#versions").value = preselect;
+    }
+
+    select.addEventListener("change", () => {
+        onselection(items[select.selectedIndex]);
+    });
+
+    if (select.selectedIndex >= 0) {
+        onselection(items[select.selectedIndex]);
+    }
+}
+
 async function pollBuildStatus(requestHash) {
     console.log('[POLL] Checking status for:', requestHash);
     const statusUrl = `${config.asu_url}/api/v1/build/${requestHash}`;
