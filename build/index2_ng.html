@@ -1653,19 +1653,19 @@ const config = {
     info_url: "https://openwrt.org/start?q={title}&do=search",
     asu_url: "https://sysupgrade.openwrt.org",
     asu_extra_packages: ["luci"],
-    min_version: "21.02.0",  // 最小サポートバージョン
+    min_version: "21.02.0",
+    versions: [],
+    default_version: null,
+    overview_urls: {},
+    image_urls: {}
 };
 
-// グローバル変数
-let app = {
-    versions: [],
-    devices: [],
-    selectedVersion: '',
+// 独自拡張用の内部変数（公式には影響しない）
+let app_internal = {
     versionCode: '',
     kernelHash: '',
     templateLoaded: false,
     devicePackages: [],
-    archPackagesMap: {},
     currentProfilesData: null
 };
         
@@ -3557,25 +3557,79 @@ const DeviceContext = {
 };
 
 // ==================== 簡略化された入口関数 ====================
-async function handleVersionChange(e) {
-    await DeviceContext.update({
-        version: e.target.value,
-        forceReload: true,
-        trigger: 'version-change'
+// 公式のsetupSelectList使用
+function initVersionSelector() {
+    setupSelectList($("#versions"), config.versions, (version) => {
+        // A new version was selected
+        let overview_url = `${config.overview_urls[version]}/.overview.json`;
+        fetch(overview_url, { cache: "no-cache" })
+            .then((obj) => {
+                if (obj.status != 200) {
+                    throw new Error(`Failed to fetch ${obj.url}`);
+                }
+                hideAlert();
+                return obj.json();
+            })
+            .then((obj) => {
+                var dups = {};
+                var profiles = [];
+                
+                // 公式の重複解決処理
+                function resolve_duplicate(e) {
+                    const tu = e.title.toUpperCase();
+                    if (tu in dups) {
+                        e.title += ` (${e.target})`;
+                        let o = dups[tu];
+                        if (o.title.toUpperCase() == tu) {
+                            o.title += ` (${o.target})`;
+                        }
+                    } else {
+                        dups[tu] = e;
+                    }
+                }
+                
+                for (const profile of obj.profiles) {
+                    for (let title of getModelTitles(profile.titles)) {
+                        if (title.length == 0) {
+                            console.warn(
+                                `Empty device title for model id: ${profile.target}, ${profile.id}`
+                            );
+                            continue;
+                        }
+                        
+                        const e = Object.assign({ id: profile.id, title: title }, profile);
+                        resolve_duplicate(e);
+                        profiles.push(e);
+                    }
+                }
+                
+                // replace profiles
+                obj.profiles = profiles.reduce((d, e) => ((d[e.title] = e), d), {});
+                
+                return obj;
+            })
+            .then((obj) => {
+                setupAutocompleteList(
+                    $("#models"),
+                    Object.keys(obj.profiles),
+                    updateImages,
+                    (selectList) => {
+                        changeModel(version, obj, selectList.value);
+                    }
+                );
+                
+                // set model when selected version changes
+                setModel(
+                    obj,
+                    current_device["target"] || url_params.get("target"),
+                    current_device["id"] || url_params.get("id")
+                );
+                
+                // trigger update of current selected model
+                $("#models").onkeyup();
+            })
+            .catch((err) => showAlert(err.message));
     });
-    
-    // バージョン変更時にオートコンプリートを再セットアップ
-    if (app.devicesMap) {
-        const modelsEl = document.getElementById('models');
-        if (modelsEl) {
-            setupAutocompleteList(
-                modelsEl,
-                Object.keys(app.devicesMap),
-                hideDeviceInfo,
-                (input) => changeModel(app.selectedVersion, app.devicesMap, input.value)
-            );
-        }
-    }
 }
 
 function selectDevice(device) {
@@ -3657,32 +3711,82 @@ function updateVersionSelect() {
 }
 
 // ==================== デバイス管理 ====================
-async function loadDevices() {
-    if (!app.selectedVersion) return;
-    
-    const cacheKey = `devices:${app.selectedVersion}`;
-    const notFoundKey = `404:${cacheKey}`;
-    
-    // 404キャッシュチェック
-    if (profileCache[notFoundKey]) {
-        console.log(`[loadDevices] Version ${app.selectedVersion} known to be unavailable`);
-        app.devices = [];
-        app.versionCode = null;
-        app.kernelHash = null;
-        hideDeviceInfo();
-        return;
+// 公式と同じchangeModel関数
+function changeModel(version, overview, title) {
+    const entry = overview.profiles[title];
+    const base_url = config.image_urls[version];
+    if (entry) {
+        fetch(`${base_url}/targets/${entry.target}/profiles.json`, {
+            cache: "no-cache",
+        })
+            .then((obj) => {
+                if (obj.status != 200) {
+                    throw new Error(`Failed to fetch ${obj.url}`);
+                }
+                hideAlert();
+                return obj.json();
+            })
+            .then((mobj) => {
+                mobj["id"] = entry.id;
+                mobj["images"] = mobj["profiles"][entry.id]["images"];
+                mobj["titles"] = mobj["profiles"][entry.id]["titles"];
+                mobj["device_packages"] = mobj["profiles"][entry.id]["device_packages"];
+                
+                // 独自拡張: パッケージとテンプレート処理
+                handleCustomExtensions(version, mobj);
+                
+                updateImages(version, mobj);
+                current_device = {
+                    version: version,
+                    id: entry.id,
+                    target: entry.target,
+                };
+            })
+            .catch((err) => showAlert(err.message));
+    } else {
+        updateImages();
+        current_device = {};
+    }
+}
+
+// 独自拡張を別関数に分離
+async function handleCustomExtensions(version, mobj) {
+    // カーネルハッシュ取得
+    if (mobj.linux_kernel) {
+        const lk = mobj.linux_kernel;
+        app_internal.kernelHash = `${lk.version}-${lk.release}-${lk.vermagic}`;
+    } else {
+        app_internal.kernelHash = await fetchActualKernelHash(version, mobj.target);
     }
     
-    try {
-        // URL設定を確認
-        setupVersionUrls(app.selectedVersion);
-        const url = config.overview_urls[app.selectedVersion] + '.overview.json';
-        
-        const response = await fetch(url, {
-            cache: 'no-cache',
-            credentials: 'omit',
-            mode: 'cors'
-        });
+    // versionCode保存
+    app_internal.versionCode = mobj.version_code || '';
+    app_internal.currentProfilesData = mobj;
+    
+    // デバイスパッケージ取得（SNAPSHOT対応）
+    if (/SNAPSHOT$/i.test(version)) {
+        await fetchDevicePackagesForSnapshot(version, mobj.target);
+    } else {
+        await fetchDevicePackages(version, mobj.target);
+    }
+    
+    // パッケージセレクタ更新
+    if (typeof generatePackageSelector === 'function') {
+        generatePackageSelector();
+    }
+    
+    // デフォルトパッケージ設定
+    const defaultPackages = mobj.default_packages || [];
+    const devicePackages = mobj.device_packages || [];
+    const asuPackages = Array.from(new Set([
+        ...defaultPackages,
+        ...devicePackages,
+        'luci'
+    ]));
+    
+    document.getElementById('asu-packages').value = asuPackages.join(' ');
+    asuCollectPackages();
+}
         
         // 404は真のエラーとして処理
         if (response.status === 404) {
@@ -5760,13 +5864,140 @@ function showDownloadLinks(images, fullStatus, requestHash) {
 }
 
 // ★パッケージインデックス取得（SNAPSHOT/Release 共通）
-async function fetchDevicePackages() {
-    app.devicePackages = [];
-    if (!current_device || !current_device.id || !app.selectedVersion) return;
+// SNAPSHOT用のパッケージ取得（公式形式準拠）
+async function fetchDevicePackagesForSnapshot(version, target) {
+    const base_url = config.image_urls[version];
+    const arch = await resolveArchForTarget(version, target);
+    
+    if (!arch) {
+        console.warn('[Packages] Unable to resolve arch for target:', target);
+        app_internal.devicePackages = [];
+        return;
+    }
+    
+    const feeds = ["base", "luci", "packages", "routing", "telephony"];
+    const allPackages = new Map();
+    
+    // Fetch package indices
+    const urls = [];
+    feeds.forEach(feed => {
+        urls.push(`${base_url}/packages/${arch}/${feed}/index.json`);
+    });
+    
+    // Add kmods if kernel hash is available
+    if (app_internal.kernelHash) {
+        urls.push(`${base_url}/targets/${target}/kmods/${app_internal.kernelHash}/index.json`);
+    }
+    
+    await Promise.allSettled(urls.map(async (url) => {
+        try {
+            const res = await fetch(url, { cache: 'no-cache', credentials: 'omit', mode: 'cors' });
+            if (!res.ok) {
+                console.warn(`Package fetch ${res.status}: ${url}`);
+                return;
+            }
+            
+            const data = await res.json();
+            const packages = data?.packages || {};
+            Object.entries(packages).forEach(([name, info]) => {
+                allPackages.set(name, { name, ...info });
+            });
+        } catch (err) {
+            console.warn(`Package fetch failed: ${url} -> ${err.message}`);
+        }
+    }));
+    
+    app_internal.devicePackages = Array.from(allPackages.values());
+    console.log(`[Packages] Loaded ${app_internal.devicePackages.length} packages for SNAPSHOT`);
+}
 
-    const version     = app.selectedVersion;
-    const targetPath  = current_device.target;
-    const isSnapshot  = /SNAPSHOT$/i.test(version);
+// 通常版のパッケージ取得
+async function fetchDevicePackages(version, target) {
+    const base_url = config.image_urls[version];
+    const arch = await resolveArchForTarget(version, target);
+    
+    if (!arch) {
+        console.warn('[Packages] Unable to resolve arch for target:', target);
+        app_internal.devicePackages = [];
+        return;
+    }
+    
+    const feeds = ["base", "luci", "packages", "routing", "telephony"];
+    const allPackages = new Map();
+    
+    // Build URLs for Packages files
+    const urls = [];
+    urls.push(`${base_url}/targets/${target}/packages/Packages`);
+    
+    if (app_internal.kernelHash) {
+        urls.push(`${base_url}/targets/${target}/kmods/${app_internal.kernelHash}/Packages`);
+    }
+    
+    feeds.forEach(feed => {
+        urls.push(`${base_url}/packages/${arch}/${feed}/Packages`);
+    });
+    
+    await Promise.allSettled(urls.map(async (url) => {
+        try {
+            const res = await fetch(url, { cache: 'no-cache', credentials: 'omit', mode: 'cors' });
+            if (!res.ok) {
+                console.warn(`Package fetch ${res.status}: ${url}`);
+                return;
+            }
+            
+            const text = await res.text();
+            const packages = parsePackagesText(text);
+            packages.forEach(pkg => allPackages.set(pkg.name, pkg));
+        } catch (err) {
+            console.warn(`Package fetch failed: ${url} -> ${err.message}`);
+        }
+    }));
+    
+    app_internal.devicePackages = Array.from(allPackages.values());
+    console.log(`[Packages] Loaded ${app_internal.devicePackages.length} packages for ${version}`);
+}
+
+// arch取得を公式形式に準拠
+async function resolveArchForTarget(version, target) {
+    try {
+        const profiles_url = `${config.image_urls[version]}/targets/${target}/profiles.json`;
+        const res = await fetch(profiles_url, { cache: 'no-cache' });
+        if (res.ok) {
+            const data = await res.json();
+            return data?.arch_packages || '';
+        }
+    } catch (e) {
+        console.warn('[Arch] Failed to resolve arch:', e.message);
+    }
+    return '';
+}
+
+function parsePackagesText(text) {
+    const blocks = text.split(/\n\s*\n/);
+    const packages = [];
+    
+    for (const block of blocks) {
+        const record = {};
+        for (const line of block.split('\n')) {
+            const match = line.match(/^([A-Za-z][A-Za-z0-9-]*):\s*(.*)$/);
+            if (!match) continue;
+            
+            const key = match[1];
+            const val = match[2];
+            
+            if (key === "Package") record.name = val.trim();
+            else if (key === "Version") record.version = val;
+            else if (key === "Description") record.description = val;
+            else if (key === "Section") record.section = val;
+        }
+        
+        if (record.name) {
+            packages.push(record);
+        }
+    }
+    
+    return packages;
+}
 
     // URLベース設定
     setupVersionUrls(version);
