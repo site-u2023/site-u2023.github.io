@@ -435,7 +435,16 @@ async function fetchDevicePackages() {
         }
     }));
 
-    window.app.devicePackages = Array.from(allPkgsMap.values());
+    // 最終正規化：name必須・string化、最低限の形に揃える
+    window.app.devicePackages = Array.from(allPkgsMap.values())
+        .map(p => {
+            const name = (typeof p === 'string') ? p : p?.name;
+            if (!name) return null;
+            return (typeof p === 'string')
+                ? name
+                : { name, version: p.version, description: p.description, section: p.section, filename: p.filename, source: p.source };
+        })
+        .filter(Boolean);
     window.ErrorHandler.packageDebug.dumpAll();
 
     function parsePackagesText(text, source) {
