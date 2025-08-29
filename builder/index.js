@@ -1,11 +1,23 @@
-function loadSetupScript() {
-  fetch('scripts/setup.sh')
-    .then(r => r.text())
-    .then(t => {
-      document.getElementById('setup-script').textContent = t;
+(function loadSetupTemplateFromFile() {
+  const url = 'scripts/setup.sh';
+  fetch(url, { cache: 'no-store' })
+    .then(r => {
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      return r.text();
     })
-    .catch(e => console.error('setup.sh 読み込みエラー:', e));
-}
+    .then(text => {
+      // 原文をそのまま保持
+      window.SETUP_SH_TEMPLATE = text;
+
+      // 既存に #setup-script がある場合のみ表示（DOMは新設しない）
+      const el = document.getElementById('setup-script');
+      if (el) el.textContent = text;
+    })
+    .catch(err => {
+      console.error('setup.sh 読み込みエラー:', err);
+      window.SETUP_SH_TEMPLATE = '';
+    });
+})();
 
 document.addEventListener('DOMContentLoaded', loadSetupScript);
 
