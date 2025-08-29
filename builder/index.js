@@ -8,6 +8,14 @@ const config = {
     min_version: "21.02.0",  // 最小サポートバージョン
 };
 
+async function loadSetupScript() {
+  const res = await fetch('scripts/setup.sh');
+  const setupScript = await res.text();
+  document.getElementById('setup-script').textContent = setupScript;
+}
+
+loadSetupScript();
+
 // グローバル変数
 let app = {
     versions: [],
