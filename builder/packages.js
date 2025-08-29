@@ -411,13 +411,15 @@ async function fetchDevicePackages() {
                     }
                     allPkgsMap.set(name, { name, ...info, source: url });
                 });
-                window.ErrorHandler.packageDebug.logFetch(
-                    url,
-                    true,
-                    Object.entries(packages)
-                        .filter(([n, i]) => i && i.properties && i.properties.packageName)
-                        .map(([n, i]) => ({ name: n, ...i }))
-                );
+                if (window.ErrorHandler && window.ErrorHandler.packageDebug) {
+                    window.ErrorHandler.packageDebug.logFetch(
+                        url,
+                        true,
+                        Object.entries(packages)
+                            .filter(([n, i]) => i && i.properties && i.properties.packageName)
+                            .map(([n, i]) => ({ name: n, ...i }))
+                    );
+                }
             } else {
                 const text = await res.text();
                 const packages = parsePackagesText(text, url);
@@ -428,7 +430,9 @@ async function fetchDevicePackages() {
                     }
                     allPkgsMap.set(pkg.name, pkg);
                 });
-                window.ErrorHandler.packageDebug.logFetch(url, true, packages);
+                if (window.ErrorHandler && window.ErrorHandler.packageDebug) {
+                    window.ErrorHandler.packageDebug.logFetch(url, true, packages);
+                }
             }
         } catch (err) {
             console.warn(`Package fetch failed: ${url} -> ${err.message}`);
@@ -445,7 +449,9 @@ async function fetchDevicePackages() {
                 : { name, version: p.version, description: p.description, section: p.section, filename: p.filename, source: p.source };
         })
         .filter(Boolean);
-    window.ErrorHandler.packageDebug.dumpAll();
+    if (window.ErrorHandler && window.ErrorHandler.packageDebug) {
+        window.ErrorHandler.packageDebug.dumpAll();
+    }
 
     function parsePackagesText(text, source) {
         const blocks = text.split(/\n\s*\n/);
