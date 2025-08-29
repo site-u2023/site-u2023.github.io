@@ -34,6 +34,53 @@ function hideAutocomplete() {
     }
 }
 
+function setupAutocompleteList(input, list) {
+    const parentContainer = input.parentNode;
+    const itemsContainer = document.createElement('div');
+    itemsContainer.setAttribute('id', 'package-search-autocomplete');
+    itemsContainer.setAttribute('class', 'autocomplete-items');
+    parentContainer.appendChild(itemsContainer);
+
+    list.forEach(item => {
+        const itemDiv = document.createElement('div');
+        let text = item;
+        let id = item;
+        if (typeof item !== 'string') {
+            text = item.name;
+            id = item.id;
+        }
+
+        const matchIndex = text.toLowerCase().indexOf(input.value.toLowerCase());
+        itemDiv.innerHTML = text.substr(0, matchIndex) + "<strong>" + text.substr(matchIndex, input.value.length) + "</strong>" + text.substr(matchIndex + input.value.length);
+        itemDiv.innerHTML += `<input type='hidden' value='${id}'>`;
+
+        itemDiv.addEventListener('click', function() {
+            input.value = this.getElementsByTagName('input')[0].value;
+            hideAutocomplete();
+        });
+        itemsContainer.appendChild(itemDiv);
+    });
+}
+
+function setActive(x) {
+    if (!x) return false;
+    closeAllLists();
+    if (x.length > 0) x[0].classList.add("autocomplete-active");
+}
+
+function closeAllLists(elmnt) {
+    const items = document.querySelectorAll(".autocomplete-items");
+    items.forEach(item => {
+        if (elmnt !== item && elmnt !== document.getElementById(input.id)) {
+            item.parentNode.removeChild(item);
+        }
+    });
+}
+
+function match(arr, query) {
+    return arr.filter(name => name.toLowerCase().includes(query));
+}
+
 function adjustTextareaHeight(textareaId) {
     const textarea = document.getElementById(textareaId);
     if (!textarea) return;
@@ -1380,3 +1427,4 @@ window.currentDevice = current_device;
 window.ErrorHandler = ErrorHandler;
 window.ResetManager = ResetManager;
 window.DeviceContext = DeviceContext;
+
