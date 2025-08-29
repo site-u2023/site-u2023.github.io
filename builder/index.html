@@ -1,0 +1,1415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>OpenWrt Custom Firmware Selector</title>
+    
+    <!-- リソースヒント -->
+    <link rel="preconnect" href="https://downloads.openwrt.org">
+    <link rel="preconnect" href="https://sysupgrade.openwrt.org">
+    <link rel="dns-prefetch" href="https://auto-config.site-u.workers.dev">
+    <link rel="dns-prefetch" href="https://site-u.pages.dev">
+
+    <!-- ドキュメント検索に向けたリソースヒント -->
+    <link rel="preconnect" href="https://openwrt.org" crossorigin>
+    <link rel="dns-prefetch" href="https://openwrt.org">
+    
+<style>
+/* ===== スペーシング変数定義 ===== */
+    :root {
+        --spacing-section: 0.75rem;  /* セクション間の統一間隔 */
+        --spacing-element: 1rem;     /* 要素間の標準間隔 */
+    }
+
+    /* 基本スタイル */
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+        line-height: 1.5;
+        margin: 0;
+        padding: 0;
+        background-color: #f5f5f5;
+        color: #000;
+    }
+
+    /* ライトモード：リンクのデフォルト */
+    a {
+        color: #007bff;
+    }
+
+    a:hover {
+        color: #0056b3;
+    }
+    
+    /* PCブラウザ向けIME抑止（対応ブラウザのみ） */
+    #models,
+    #package-search,
+    #package-search-autocomplete input.package-search,
+    #command,
+    #commands-autocomplete input.command {
+        ime-mode: disabled;
+    }
+
+    /* 公式互換のオートコンプリート */
+    #models-autocomplete {
+        display: flex;
+        padding-top: 0;
+    }
+    
+    .container {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 0 1rem;
+    }
+
+    /* ===== 構造的スペーシング管理 ===== */
+    .container > * {
+        margin-bottom: var(--spacing-section);
+    }
+    
+    .container > *:last-child {
+        margin-bottom: 0;
+    }
+    
+    #packages > * {
+        margin-bottom: var(--spacing-section);
+    }
+    
+    #packages > *:last-child {
+        margin-bottom: 0;
+    }
+
+    h1 {
+        font-size: 2.5rem;
+        font-weight: 300;
+        text-align: center;
+        margin-bottom: 1rem;
+        color: #007bff;
+    }
+
+    .lead {
+        font-size: 1.25rem;
+        font-weight: 300;
+        text-align: center;
+        margin-bottom: 2rem;
+        color: #6c757d;
+    }
+    
+    .autocomplete {
+        position: relative;
+        flex-grow: 1;
+    }
+    
+    #models {
+        border: 0.06rem solid transparent;
+        background-color: #f1f1f1;
+        padding: 0.8rem;
+        flex-grow: 1;
+        margin-right: 0.3125rem;
+        border-radius: 0.2rem;
+        font-size: inherit;
+        color: #495057;
+    }
+    
+    #versions {
+        border: 0.06rem solid transparent;
+        background-color: #f1f1f1;
+        padding: 0.8rem;
+        min-width: 8rem;
+        border-radius: 0.25rem;
+        font-size: inherit;
+        color: #495057;
+    }
+
+    .autocomplete-items {
+        position: absolute;
+        border: 1px solid #d4d4d4;
+        border-bottom: none;
+        border-top: none;
+        z-index: 999;
+        top: 100%;
+        left: 0;
+        right: 0;
+        max-height: 18.75rem;
+        overflow-y: auto;
+        background-color: #fff;
+    }
+
+    .autocomplete-items div {
+        padding: 0.625rem;
+        cursor: pointer;
+        background-color: #fff;
+        border-bottom: 1px solid #d4d4d4;
+    }
+
+    .autocomplete-items div:hover {
+        background-color: #e9ecef;
+    }
+
+    .autocomplete-active {
+        background-color: #00a3e1 !important;
+        color: #ffffff;
+    }
+
+    /* フォーム要素 */
+    .form-group {
+        margin-bottom: var(--spacing-element);
+    }
+
+    label {
+        display: inline-block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+    }
+
+    .form-control {
+        display: block;
+        width: 100%;
+        padding: 0.75rem;
+        font-size: 1rem;
+        font-weight: 400;
+        line-height: 1.25;
+        color: #495057;
+        background-color: #f1f1f1;
+        border: 1px solid #dee2e6;
+        border-radius: 0.25rem;
+        transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+        box-sizing: border-box;
+    }
+
+    .form-control:not(textarea) {
+        height: 2.75rem;
+    }
+
+    textarea.form-control {
+        height: auto;
+    }
+    
+    .form-control:focus {
+        color: #495057;
+        background-color: #fff;
+        border-color: #007bff;
+        outline: 0;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    }
+
+    .form-control:disabled {
+        background-color: #e9ecef;
+        color: #495057;
+        opacity: 1;
+    }
+
+    /* Info/Status ボックス */
+    .info {
+        background-color: #d1ecf1;
+        border: 1px solid #bee5eb;
+        color: #0c5460;
+        padding: 0.75rem 1.25rem;
+        border-radius: 0.25rem;
+    }
+
+    .asu-info {
+        background-color: #d1ecf1;
+        border: 1px solid #bee5eb;
+        color: #0c5460;
+        padding: 1rem;
+        margin: 1rem 0;
+        border-radius: 0.25rem;
+    }
+
+    .asu-error {
+        background-color: #f8d7da;
+        border: 1px solid #f5c6cb;
+        color: #721c24;
+        padding: 1rem;
+        margin: 1rem 0;
+        border-radius: 0.25rem;
+    }
+
+    /* パッケージセクション */
+    .packages {
+        margin: 0;  /* 構造に従う */
+    }
+    
+    /* ボタン/リンク */
+    .btn {
+        display: inline-block;
+        font-weight: 400;
+        color: #212529;
+        text-align: center;
+        cursor: pointer;
+        background-color: transparent;
+        border: 1px solid transparent;
+        padding: 0.375rem 0.75rem;
+        font-size: 1rem;
+        line-height: 1.5;
+        border-radius: 0.25rem;
+        transition: all 0.15s ease-in-out;
+        text-decoration: none;
+        box-shadow: 0 0.06rem 0.3rem 0 rgba(0, 0, 0, 0.2),
+                    0 0.125rem 0.125rem 0 rgba(0, 0, 0, 0.14),
+                    0 0.19rem 0.06rem -0.125rem rgba(0, 0, 0, 0.12);
+    }
+
+    .btn-primary {
+        color: #fff;
+        background-color: #00a3e1;
+        border-color: #00a3e1;
+    }
+
+    .btn-primary:hover {
+        color: #fff;
+        background-color: #038fc6;
+        border-color: #038fc6;
+    }
+
+    .btn-primary:disabled {
+        color: #fff;
+        background-color: #00a3e1;
+        border-color: #00a3e1;
+        opacity: 0.65;
+    }
+
+    .custom-link,
+    .download-link {
+        text-decoration: none;
+        border-radius: 0.2rem;
+        padding: 0.8rem;
+        margin: 0;  /* 構造に従う、特別なマージンなし */
+        font-size: inherit;
+        cursor: pointer;
+        letter-spacing: 0.05rem;
+        display: inline-flex;
+        align-items: center;
+        line-height: 1;
+        box-shadow: 0 0.06rem 0.3rem 0 rgba(0, 0, 0, 0.2),
+                    0 0.125rem 0.125rem 0 rgba(0, 0, 0, 0.14),
+                    0 0.19rem 0.06rem -0.125rem rgba(0, 0, 0, 0.12);
+        color: #fff;
+        background-color: #00a3e1;
+        width: max-content;
+    }
+
+    .custom-link:hover,
+    .download-link:hover {
+        background-color: #038fc6;
+        color: #fff;
+    }
+
+    .custom-link > :first-child,
+    .download-link > :first-child {
+        height: 1rem;
+        width: auto;
+        margin-top: 0;
+        margin-right: 0.9375rem;
+        content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM12 7a1 1 0 0 1 1 1v4h3l-4 4-4-4h3V8a1 1 0 0 1 1-1z' fill='%23fff'/%3E%3C/svg%3E");
+    }
+
+    /* カスタムセクション */
+    .aios-section {
+        margin: 0;
+        padding: 1rem;
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 0.25rem;
+    }
+    
+    /* ===== 内部要素の構造的管理 ===== */
+    #package-selector-config > *,
+    #aios-config > * {
+        margin-bottom: var(--spacing-section);
+    }
+    
+    #package-selector-config > *:last-child,
+    #aios-config > *:last-child {
+        margin-bottom: 0;
+    }
+    
+    .form-row {
+        display: flex;
+        flex-wrap: wrap;
+        margin-right: -0.3125rem;
+        margin-left: -0.3125rem;
+    }
+
+    .form-row > .form-group {
+        padding-right: 0.3125rem;
+        padding-left: 0.3125rem;
+        flex: 1;
+    }
+
+    .radio-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .form-check {
+        position: relative;
+        display: block;
+        padding-left: 1.25rem;
+    }
+
+    .form-check-input {
+        position: absolute;
+        margin-top: 0.3rem;
+        margin-left: -1.25rem;
+    }
+
+    .form-check-label {
+        margin-bottom: 0;
+    }
+
+    .conditional-section {
+        padding: 1rem;
+        background-color: #fff3cd;
+        border: 1px solid #ffeaa7;
+        border-radius: 0.25rem;
+        display: none;
+    }
+
+    h5.section-title {
+        font-size: 1rem;
+        font-weight: 500;
+        margin-top: 0;
+        margin-bottom: 0.75rem;
+        color: #495057;
+    }
+    
+    .text-muted {
+        color: #6c757d;
+    }
+
+    .small {
+        font-size: 0.875rem;
+    }
+
+    /* プログレス表示 */
+    .build-progress {
+        margin: 1rem 0;
+        padding: 1rem;
+        background-color: inherit;
+        border: 1px solid #2196f3;
+        border-radius: 0.25rem;
+        display: none;
+    }
+
+    .progress {
+        width: 100%;
+        height: 1rem;
+        background-color: #e9ecef;
+        border-radius: 0.25rem;
+        overflow: hidden;
+        margin-top: 0.5rem;
+    }
+
+    .progress-bar {
+        height: 100%;
+        background-color: #007bff;
+        transition: width 0.3s ease;
+    }
+
+/* パッケージセクション - 抜本修正 */
+    .package-category {
+        margin: 0;  /* 構造に従う */
+        padding: 1rem;  /* 上下左右統一パディング */
+        background-color: #fff;
+        border: 1px solid #e9ecef;
+        border-radius: 0.25rem;
+        display: flex;
+        flex-direction: column;
+        min-height: fit-content;  /* 最小高さを内容に合わせる */
+    }
+
+    /* package-category内のh4は枠なし */
+    .package-category h4 {
+        margin: 0 0 1rem 0;  /* 下マージンのみ */
+        padding: 0;
+        background-color: transparent;
+        border: none;
+        font-size: 1.1rem;
+        font-weight: 500;
+    }
+    
+    /* 独立したh4（旧スタイル）は削除または別クラスに */
+    h4.standalone {
+        margin: 0;
+        padding: 0.75rem 1rem;
+        background-color: #fff;
+        border: 1px solid #e9ecef;
+        border-radius: 0.25rem;
+        font-size: 1.1rem;
+        font-weight: 500;
+    }
+
+    .package-category-description {
+        font-size: 0.9rem;
+        color: #6c757d;
+        margin: 0.5rem 0 1rem 0;
+        flex-shrink: 0;  /* 説明文の縮小防止 */
+    }
+    
+    .package-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem 1rem;
+        align-items: flex-start;
+        flex-grow: 1;  /* 残り空間を活用 */
+    }
+
+    .package-item {
+        width: calc(50% - 0.5rem);
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 0.25rem 0;
+        margin-bottom: 0.5rem;
+    }
+
+    .package-item .form-check {
+        margin-bottom: 0;
+        flex: 1;
+    }
+
+    .package-link {
+        color: #007bff;
+        text-decoration: none;
+        font-size: 1rem;
+    }
+
+    .package-link:hover {
+        color: #0056b3;
+        text-decoration: underline;
+    }
+
+    .package-description {
+        font-size: 0.9rem;
+        color: #6c757d;
+        margin-left: 1.25rem;
+        margin-top: 0.1rem;
+    }
+
+    .package-dependent {
+        margin-left: 1.5rem;
+        font-size: 0.9rem;
+        color: #6c757d;
+        display: flex;
+        align-items: center;
+    }
+
+    .package-dependent::before {
+        content: "↳";
+        display: inline-block;
+        margin-right: 0.25rem;
+        color: #007bff;
+    }
+
+    /* 公式レイアウト */
+    .row {
+        display: flex;
+        line-height: 1.5;
+        padding-left: 1.5rem;
+        overflow: hidden;
+        align-items: flex-start;
+    }
+
+    .col1 {
+        display: inline-block;
+        flex-shrink: 0;
+        width: 8rem;
+        color: #6c757d;
+    }
+
+    .col1:after {
+        content: ":";
+    }
+
+    .col2 {
+        display: inline-block;
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        padding-left: 0.5rem;
+        word-wrap: break-word;
+    }
+
+    .col2 a {
+        margin-right: 1rem;
+    }
+
+    /* アイコン */
+    #image-info {
+        width: 1.25rem;
+        content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='48px' viewBox='0 -2 24 24' width='48px' fill='%23000000'%3E%3Cpath d='M0 0h24v24H0z' fill='none'/%3E%3Cpath d='M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z'/%3E%3C/svg%3E");
+    }
+
+    #image-folder {
+        width: 1.25rem;
+        content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='48px' viewBox='0 -2 24 24' width='48px' fill='%23000000'%3E%3Cpath d='M0 0h24v24H0z' fill='none'/%3E%3Cpath d='M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z'/%3E%3C/svg%3E");
+    }
+
+    #image-link {
+        width: 1.25rem;
+        content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='24px' viewBox='0 -2 24 24' width='24px' fill='%23000000'%3E%3Cpath d='M0 0h24v24H0z' fill='none'/%3E%3Cpath d='m 6.3 17.7 c -1.2 -1.2 -1.2 -3.2 0 -4.4 L 9.10 10.5 7.8 9 4.9 12 c -2 2 -2 5 0 7 2 2 5 2 7 0 l 2.8 -2.8 -1.3 -1.3 -2.8 2.8 c -1.2 1.2 -3.2 1.2 -4.4 0 z M 10 15.5 15.5 10 14 8.5 8.5 14 Z M 12 4.9 9.18 7.8 10.5 9.1 13.4 6.3 c 1.21 -1.2 3.2 -1.2 4.4 0 1.2 1.2 1.2 3.2 0 4.4 l -2.8 2.8 1.3 1.3 2.8 -2.8 c 2 -2 2 -5 0 -7 -2 -2 -5 -2 -7 0 z'/%3E%3C/svg%3E");
+    }
+
+    .images {
+        margin: 1.5rem 0;
+    }
+
+    /* summaryの階層表示 */
+    #asu > summary {
+        font-size: 1.3rem;
+        font-weight: 500;
+        cursor: pointer;
+    }
+
+    #use-package-selector-details > summary,
+    #use-aios-config-details > summary {
+        font-size: 1.2rem;
+        font-weight: 500;
+        cursor: pointer;
+    }
+    
+    /* 特殊フィールド */
+    #mape-gua-section {
+        margin-top: 1rem;
+    }
+
+    /* デバイス入力セクションのスタイル */
+    .device-input-section {
+        margin: 0;
+        background-color: #252528;
+        border: 1px solid #444;
+        border-radius: 0.25rem;
+        overflow: visible;
+        position: relative;
+    }
+    
+    .device-input-section #models-autocomplete {
+        padding: 1rem;
+        background-color: transparent;
+    }
+    
+    .device-input-section #models {
+        background-color: #1a1a1d !important;
+        border-color: #555;
+    }
+    
+    .device-input-section #versions {
+        background-color: #1a1a1d !important;
+        border-color: #555;
+    }
+    
+    @media (prefers-color-scheme: light) {
+        .device-input-section {
+            background-color: #e9ecef;
+            border-color: #dee2e6;
+        }
+        
+        .device-input-section #models,
+        .device-input-section #versions {
+            background-color: #ffffff !important;
+            border-color: #ced4da;
+        }
+    }
+    
+    details {
+        margin: 0;
+        padding: 0;
+    }
+
+    details > summary {
+        cursor: pointer;
+        padding: 0.5rem 0;
+        margin: 0;
+        outline: none;
+    }
+
+    details[open] > summary {
+        margin-bottom: 0.5rem;
+    }
+    
+    #use-package-selector-details summary,
+    #use-aios-config-details summary {
+        font-weight: 500;
+        font-size: 1.1rem;
+    }
+
+/* Postinst/UCI-defaults展開式のスタイル */
+    #postinst-details summary,
+    #uci-defaults-details summary {
+        font-size: 1.1rem;
+        font-weight: 500;
+        cursor: pointer;
+        padding: 0.5rem 0;
+    }
+    
+    #postinst-details[open] summary,
+    #uci-defaults-details[open] summary {
+        margin-bottom: 1rem;
+    }
+    
+    /* レスポンシブ */
+    @media (max-width: 576px) {
+        #models-autocomplete {
+            flex-direction: column;
+        }
+        
+        #versions {
+            margin-top: 0.5rem;
+        }
+        
+        #models {
+            margin-right: 0;
+        }
+        
+        .form-row {
+            flex-direction: column;
+        }
+        
+        .radio-group {
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .package-item {
+            width: 100%;
+        }
+        
+        .row {
+            flex-direction: column;
+            padding-left: 1rem;
+        }
+        
+        .col1 {
+            width: 100%;
+            margin-bottom: 0.25rem;
+        }
+        
+        .col2 {
+            padding-left: 0;
+            margin-bottom: 0.5rem;
+        }
+
+        /* モバイルでのh4調整 */
+        h4 {
+            font-size: 1rem;
+        }
+    }
+
+    /* ダークモード */
+    @media (prefers-color-scheme: dark) {
+        body {
+            background-color: #18181b;
+            color: #d0d0d0;
+        }
+
+        /* リンクのデフォルト */
+        a {
+            color: #64b5f6;
+        }
+    
+        a:hover {
+            color: #90caf9;
+        }
+
+        #models,
+        #versions {
+            background-color: #313135;
+            color: #d0d0d0;
+        }
+        
+        .form-control {
+            background-color: #313135;
+            color: #d0d0d0;
+            border-color: #555;
+        }
+        
+        .form-control:focus {
+            background-color: #313135;
+            color: #d0d0d0;
+            border-color: #0080b3;
+            box-shadow: 0 0 0 0.2rem rgba(0, 128, 179, 0.25);
+        }
+        
+        .form-control:disabled {
+            background-color: #313135;
+            color: #d0d0d0;
+            border-color: #444;
+        }
+        
+        .autocomplete-items {
+            background-color: #252528;
+            border-color: #444;
+        }
+        
+        .autocomplete-items div {
+            background-color: #252528;
+            border-color: #444;
+        }
+        
+        .autocomplete-items div:hover,
+        .autocomplete-active {
+            background-color: #0080b3 !important;
+            color: #fff;
+        }
+        
+        .info {
+            background-color: #1d4046;
+            border-color: #2a5a61;
+            color: #d0d0d0;
+        }
+        
+        .asu-info {
+            background-color: #1d4046;
+            border-color: #2a5a61;
+            color: #d0d0d0;
+        }
+        
+        .asu-error {
+            background-color: #601b21;
+            border-color: #721c24;
+            color: #d0d0d0;
+        }
+        
+        .aios-section {
+            background-color: #313135;
+            border-color: #444;
+        }
+
+        .aios-config {
+            background-color: #252528;
+            border-color: #444;
+        }    
+        
+        h4 {
+            background-color: #252528;
+            border-color: #444;
+            color: #d0d0d0;
+        }
+        
+        .package-category {
+            background-color: #252528;
+            border-color: #444;
+        }
+        
+        .conditional-section {
+            background-color: #313135 !important;
+            border-color: #444 !important;
+        }
+
+        h5.section-title {
+            color: #d0d0d0;
+        }
+        
+        #asu-stderr,
+        #asu-stdout {
+            background-color: #252528 !important;
+            color: #d0d0d0;
+        }
+        
+        #image-info,
+        #image-folder,
+        #image-link {
+            filter: invert(100%) sepia(9%) saturate(261%) hue-rotate(281deg) brightness(117%) contrast(100%);
+        }
+    } /* close @media (prefers-color-scheme: dark) */
+
+    /* エラー詳細のpre要素 */
+    .asu-error pre {
+        background: #f8f8f8 !important;
+        color: #333 !important;
+        padding: 10px;
+        margin: 10px 0;
+        border-radius: 4px;
+        overflow-x: auto;
+        font-size: 0.9em;
+        max-height: 200px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+        .asu-error pre {
+            background: #2d2d2d !important;
+            color: #f0f0f0 !important;
+            border: 1px solid #444;
+        }
+    }
+</style>
+
+</head>
+
+<body>
+    <div class="container">
+        <h1>OpenWrt Custom Firmware Selector</h1>
+        <p class="lead">Firmware images are built via the official 
+            <a href="https://sysupgrade.openwrt.org" target="_blank" rel="noopener noreferrer">
+                ASU server
+            </a>.
+        </p>
+        <p class="server-info" style="text-align: center;">Enter your device model and choose a build</p>
+    <div class="device-input-section">
+            <div id="models-autocomplete" class="autocomplete">
+                <input type="text"
+                  id="models" 
+                  placeholder="Type device model"
+                  lang="en"
+                  inputmode="latin"
+                  autocomplete="off"
+                  spellcheck="false"
+                  autocapitalize="off"
+                  autofocus>
+                <select id="versions">
+                    <option value="" disabled selected>Loading versions...</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="info" class="info" style="display: none;">
+            <!-- Content will be dynamically generated -->
+        </div>
+
+        <div id="packages" class="packages" style="display: none;">
+            <!-- <details id="asu">
+                <summary>Customize installed packages and/or first boot script</summary> -->
+                <!-- パッケージセレクターセクション -->
+                <div class="aios-section">
+                    <details id="use-package-selector-details">
+                        <summary>Packages</summary>
+                        
+                        <div id="package-selector-config">
+                        <!-- パッケージ検索ボックス -->
+                        <div class="package-category">
+                          <h4>Package Search</h4>
+                          <div class="package-category-description">
+                            Select extra packages to install. They'll be added to the list below.
+                          </div>  
+                          <div id="package-search-autocomplete" class="autocomplete">
+                              <input type="text"
+                                id="package-search"
+                                placeholder="Type package name"
+                                lang="en"
+                                inputmode="latin"
+                                autocomplete="off"
+                                spellcheck="false"
+                                autocapitalize="off"
+                                class="form-control">
+                          </div>
+                        </div>
+                        <ul id="installed-packages">
+                          <!-- パッケージ一覧がここに生成される -->
+                        </ul>
+                        
+                        <div id="package-categories">
+                            <!-- カテゴリーとパッケージは動的に生成される -->
+                        </div>
+                        
+                        <div class="package-category">
+                            <details id="postinst-details">
+                                <summary>Postinst (Package installation script)</summary>
+                                <label for="asu-packages" style="display: none;">Postinst</label>
+                                <textarea id="asu-packages" class="form-control" rows="6" placeholder="luci&#10;luci-ssl&#10;-wpad-basic-wolfssl&#10;wpad-wolfssl"></textarea>
+                            </details>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- setup.sh設定セクション -->
+                <div class="aios-section">
+                    <details id="use-aios-config-details">
+                        <summary>Scripts</summary>
+                        
+                        <div id="aios-config">
+                            
+                            <!-- Commands -->
+                            <div class="package-category">
+                              <h4>Add commands</h4>
+                              <div class="package-category-description">
+                                Add custom shell commands that run on first boot.
+                                <a href="https://openwrt.org/docs/guide-user/base-system/uci" target="_blank" rel="noopener">
+                                    The UCI system
+                                </a>
+                              </div>  
+                              <div id="commands-autocomplete" class="autocomplete">
+                                  <input type="text"
+                                    id="command"
+                                    placeholder="Type commands"
+                                    lang="en"
+                                    inputmode="latin"
+                                    autocomplete="off"
+                                    spellcheck="false"
+                                    autocapitalize="off"
+                                    class="form-control">
+                              </div>
+                            </div>
+
+                        <div class="package-category">
+                            <h4>Basic Configuration</h4>
+                            
+                            <!-- 1行目: Language と Country -->
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="aios-language">Language</label>
+                                    <select id="aios-language" class="form-control">
+                                    <option value="en">English</option>
+                                    <option value="ar">العربية (Arabic)</option>
+                                    <option value="bg">Български (Bulgarian)</option>
+                                    <option value="ca">Català (Catalan)</option>
+                                    <option value="cs">Čeština (Czech)</option>
+                                    <option value="da">Dansk (Danish)</option>
+                                    <option value="de">Deutsch (German)</option>
+                                    <option value="el">Ελληνικά (Greek)</option>
+                                    <option value="es">Español (Spanish)</option>
+                                    <option value="fi">Suomi (Finnish)</option>
+                                    <option value="fr">Français (French)</option>
+                                    <option value="he">עברית (Hebrew)</option>
+                                    <option value="hu">Magyar (Hungarian)</option>
+                                    <option value="it">Italiano (Italian)</option>
+                                    <option value="ja">日本語 (Japanese)</option>
+                                    <option value="ko">한국어 (Korean)</option>
+                                    <option value="lt">Lietuvių (Lithuanian)</option>
+                                    <option value="ms">Bahasa Melayu (Malay)</option>
+                                    <option value="nl">Nederlands (Dutch)</option>
+                                    <option value="no">Norsk (Norwegian)</option>
+                                    <option value="pl">Polski (Polish)</option>
+                                    <option value="pt">Português (Portuguese)</option>
+                                    <option value="pt_br">Português do Brasil (Portuguese Brazil)</option>
+                                    <option value="ro">Română (Romanian)</option>
+                                    <option value="ru">Русский (Russian)</option>
+                                    <option value="sk">Slovenčina (Slovak)</option>
+                                    <option value="sv">Svenska (Swedish)</option>
+                                    <option value="tr">Türkçe (Turkish)</option>
+                                    <option value="uk">Українська (Ukrainian)</option>
+                                    <option value="vi">Tiếng Việt (Vietnamese)</option>
+                                    <option value="zh_cn">简体中文 (Chinese Simplified)</option>
+                                    <option value="zh_tw">繁體中文 (Chinese Traditional)</option>
+                                </select>
+                                <small class="form-text text-muted">
+                                    LuCI base and i18n added automatically
+                                </small>
+                            </div>
+                            <div class="form-group">
+                                <label for="aios-country">Country</label>
+                                <input type="text" id="aios-country" class="form-control" placeholder="00" maxlength="2">
+                                <small class="form-text text-muted">2-letter country code (e.g., US, JP)</small>
+                            </div>
+                        </div>
+
+                        <!-- 2行目: Timezone と Zonename -->
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="aios-timezone">Timezone</label>
+                                <input type="text" id="aios-timezone" class="form-control" placeholder="UTC">
+                                <small class="form-text text-muted">Optional: e.g., EST5EDT,M3.2.0,M11.1.0, JST-9</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="aios-zonename">Zonename</label>
+                                <input type="text" id="aios-zonename" class="form-control" placeholder="UTC">
+                                <small class="form-text text-muted">Optional: e.g., America/New_York, Asia/Tokyo</small>
+                            </div>
+                        </div>
+
+                        <!-- Device nameã¨Root password -->
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="aios-device-name">Device name</label>
+                                <input type="text" id="aios-device-name" class="form-control" placeholder="OpenWrt" value="OpenWrt">
+                            </div>
+                            <div class="form-group">
+                                <label for="aios-root-password">Root password</label>
+                                <input type="text" id="aios-root-password" class="form-control" placeholder="8+ characters" value="password">
+                                <small class="form-text text-muted">Leave empty to disable password authentication</small>
+                            </div>
+                        </div>
+
+                        <!-- LAN IPv4/IPv6アドレス -->
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="aios-lan-ipv4">LAN IPv4 Address</label>
+                                <input type="text" id="aios-lan-ipv4" class="form-control" placeholder="192.168.1.1" value="192.168.1.1">
+                            </div>
+                            <div class="form-group">
+                                <label for="aios-lan-ipv6">LAN IPv6 Address</label>
+                                <input type="text" id="aios-lan-ipv6" class="form-control" placeholder="fd00::1/64">
+                                <small class="form-text text-muted">Optional: e.g., fd00::1/64</small>
+                            </div>
+                        </div>
+
+                        <!-- SSH Interface と Flow Offloading -->
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="aios-ssh-interface">SSH Interface</label>
+                                <input type="text" id="aios-ssh-interface" class="form-control" placeholder="lan" value="lan">
+                                <small class="form-text text-muted">Network interface for SSH access</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="aios-ssh-port">SSH Port</label>
+                                <input type="number" id="aios-ssh-port" class="form-control" placeholder="22" value="22" min="1" max="65535">
+                                <small class="form-text text-muted">Port number for SSH access</small>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="aios-flow-offloading">Flow offloading type</label>
+                                <select id="aios-flow-offloading" class="form-control">
+                                    <option value="">Disabled</option>
+                                    <option value="software">Software flow offloading</option>
+                                    <option value="hardware">Hardware flow offloading</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="aios-backup-path">Restore Backup Path</label>
+                                <input type="text" id="aios-backup-path" class="form-control" placeholder="/root/backup.tar.gz" value="/root/backup.tar.gz">
+                                <small class="form-text text-muted">Path to backup file for restore</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="package-category">
+                            <h4>Wi-Fi Configuration</h4>
+                            <div class="form-row">
+                                <div class="form-group">
+                                <label for="aios-wifi-ssid">Wi‑Fi SSIDs (Base name)</label>
+                                <input type="text" id="aios-wifi-ssid" class="form-control" placeholder="OpenWrt" value="OpenWrt">
+                                <small class="form-text text-muted">Auto-creates SSID per interface with band suffix</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="aios-wifi-password">Wi‑Fi Password (Shared)</label>
+                                <input type="text" id="aios-wifi-password" class="form-control" placeholder="8+ characters" value="password">
+                                <small class="form-text text-muted">Same password for all SSIDs</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="package-category">
+                            <h4>Internet Connection</h4>
+                            <div class="form-group">
+                                <label>Connection mode</label>
+                                <div class="radio-group">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="connectionMode" id="mode-auto" value="auto" checked>
+                                        <label class="form-check-label" for="mode-auto">Auto (Recommended)</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="connectionMode" id="mode-manual" value="manual">
+                                        <label class="form-check-label" for="mode-manual">Manual</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="manual-connection-section" class="conditional-section">
+                                <div class="form-group">
+                                    <label>Connection type</label>
+                                    <div class="radio-group">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="connectionType" id="conn-dhcp" value="dhcp" checked>
+                                            <label class="form-check-label" for="conn-dhcp">DHCP</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="connectionType" id="conn-pppoe" value="pppoe">
+                                            <label class="form-check-label" for="conn-pppoe">PPPoE</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="connectionType" id="conn-dslite" value="dslite">
+                                            <label class="form-check-label" for="conn-dslite">DS-Lite</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="connectionType" id="conn-mape" value="mape">
+                                            <label class="form-check-label" for="conn-mape">MAP-E</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="connectionType" id="conn-ap" value="ap">
+                                            <label class="form-check-label" for="conn-ap">AP</label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- DHCP設定 -->
+                                <div id="dhcp-section" class="conditional-section">
+                                    <h5 class="section-title">DHCP Configuration</h5>
+                                    <div class="form-group">
+                                        <small class="text-muted">No additional configuration required. Router will obtain IP address automatically from ISP.</small>
+                                    </div>
+                                </div>
+
+                                <!-- PPPoE設定 -->
+                                <div id="pppoe-section" class="conditional-section">
+                                    <h5 class="section-title">PPPoE Configuration</h5>
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="pppoe-username">PPPoE username</label>
+                                            <input type="text" id="pppoe-username" class="form-control" placeholder="Username">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="pppoe-password">PPPoE password</label>
+                                            <input type="password" id="pppoe-password" class="form-control" placeholder="Password">
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- DS-Lite設定 -->
+                                <div id="dslite-section" class="conditional-section">
+                                    <h5 class="section-title">DS-Lite Configuration</h5>
+                                    
+                                    <div class="form-group">
+                                        <div class="radio-group">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="dsliteMode" id="dslite-auto" value="auto">
+                                                <label class="form-check-label" for="dslite-auto">Auto (Recommended)</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="dsliteMode" id="dslite-manual" value="manual" checked>
+                                                <label class="form-check-label" for="dslite-manual">Manual</label>
+                                            </div>
+                                        </div>
+                                        <small class="text-muted" id="dslite-mode-hint">Auto not available (no AFTR detected)</small>
+                                    </div>
+
+                                    <div id="dslite-manual-fields">
+                                        <div class="form-group">
+                                            <label for="dslite-aftr-type">AFTR Type</label>
+                                            <select id="dslite-aftr-type" class="form-control" onchange="applyInitialsFromApi('dslite')">
+                                                <option value="transix">gw.transix.jp</option>
+                                                <option value="xpass">gw.xpass.jp</option>
+                                                <option value="v6option">gw.v6option.jp</option>
+                                            </select>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label for="dslite-area">Region</label>
+                                            <select id="dslite-area" class="form-control" onchange="applyInitialsFromApi('dslite')">
+                                                <option value="east">East Japan</option>
+                                                <option value="west">West Japan</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="dslite-aftr-address">AFTR IPv6 Address</label>
+                                        <input type="text" id="dslite-aftr-address" class="form-control" placeholder="2404:8e00::feed:100" value="">
+                                        <small class="form-text text-muted">Auto mode: Set from ISP detection | Manual mode: Set based on AFTR type and region</small>
+                                    </div>
+                                </div>
+                                
+                                <!-- MAP-E設定 -->
+                                <div id="mape-manual-section" class="conditional-section">
+                                    <h5 class="section-title">MAP-E Configuration</h5>
+                                    <div class="form-group">
+                                        <div class="radio-group">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="mapeType" id="mape-auto" value="auto">
+                                                <label class="form-check-label" for="mape-auto">Auto (Recommended)</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="mapeType" id="mape-gua" value="gua">
+                                                <label class="form-check-label" for="mape-gua">GUA</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="mapeType" id="mape-pd" value="pd">
+                                                <label class="form-check-label" for="mape-pd">PD</label>
+                                            </div>
+                                        </div>
+                                        <small class="text-muted">
+                                            <strong>Auto (Recommended)</strong>: Automatically retrieves MAP-E configuration
+                                        </small>
+                                    </div>
+                                    
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="mape-br">BR (Border Relay)</label>
+                                            <input type="text" id="mape-br" class="form-control" placeholder="2001:db8::1">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="mape-ealen">EA-len</label>
+                                            <input type="number" id="mape-ealen" class="form-control" placeholder="16" min="0" max="48">
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="mape-ipv4-prefix">IPv4 Prefix</label>
+                                            <input type="text" id="mape-ipv4-prefix" class="form-control" placeholder="192.0.2.0">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="mape-ipv4-prefixlen">IPv4 Prefix Length</label>
+                                            <input type="number" id="mape-ipv4-prefixlen" class="form-control" placeholder="24" min="1" max="32">
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="mape-ipv6-prefix">IPv6 Prefix</label>
+                                            <input type="text" id="mape-ipv6-prefix" class="form-control" placeholder="2001:db8:8000::">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="mape-ipv6-prefixlen">IPv6 Prefix Length</label>
+                                            <input type="number" id="mape-ipv6-prefixlen" class="form-control" placeholder="32" min="1" max="128">
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="mape-psid-offset">PSID Offset</label>
+                                            <input type="number" id="mape-psid-offset" class="form-control" placeholder="4" min="0" max="16">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="mape-psidlen">PSID Length</label>
+                                            <input type="number" id="mape-psidlen" class="form-control" placeholder="6" min="0" max="16">
+                                        </div>
+                                    </div>
+
+                                    <div id="mape-gua-section" class="form-group" style="display: none;">
+                                        <label for="mape-gua-prefix">GUA Prefix</label>
+                                        <input type="text" id="mape-gua-prefix" class="form-control" placeholder="2400:4151:80e2:7500::/64">
+                                        <small class="form-text text-muted">IPv6 Global Unicast Address prefix</small>
+                                    </div>
+                                </div>
+                                
+                                <!-- AP設定 -->
+                                <div id="ap-section" class="conditional-section">
+                                    <h5 class="section-title">AP Configuration</h5>
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="ap-ip-address">IP Address</label>
+                                            <input type="text" id="ap-ip-address" class="form-control" value="192.168.1.2">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="ap-gateway">Gateway</label>
+                                            <input type="text" id="ap-gateway" class="form-control" value="192.168.1.1">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+    
+                            <div class="form-group" id="isp-detection-group">
+                                <label>ISP Detection Status</label>
+                                <div id="isp-info-display" class="info" style="margin-bottom: 0;">
+                                    <div id="isp-status-message">ISP information will be detected when configuration is opened</div>
+                                    <div id="isp-technical-info" style="font-family: monospace; font-size: 0.9em; margin-top: 0.5rem; display: none;"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="package-category">
+                            <h4>Tuning</h4>
+                            <div class="form-group">
+                                <label>Dynamic Network Optimizer</label>
+                                <div class="radio-group">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="netOptimizer" id="netopt-enabled" value="enabled" checked>
+                                        <label class="form-check-label" for="netopt-enabled">Enabled</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="netOptimizer" id="netopt-disabled" value="disabled">
+                                        <label class="form-check-label" for="netopt-disabled">Disabled</label>
+                                    </div>
+                                </div>
+                                <small class="form-text text-muted">Automatically optimizes TCP buffer sizes and network parameters based on available RAM</small>
+                            </div>
+
+                            <div id="net-optimizer-section" class="conditional-section" style="display: block;">
+                                <div class="form-group">
+                                    <label>Configuration Mode</label>
+                                    <div class="radio-group">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="netOptimizerMode" id="netopt-auto" value="auto" checked>
+                                            <label class="form-check-label" for="netopt-auto">Auto (Recommended)</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="netOptimizerMode" id="netopt-manual" value="manual">
+                                            <label class="form-check-label" for="netopt-manual">Manual</label>
+                                        </div>
+                                    </div>
+                                    <small class="form-text text-muted">Auto mode adjusts parameters based on system resources</small>
+                                </div>
+
+                                <div id="net-optimizer-manual" class="conditional-section">
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="netopt-rmem">TCP Read Memory</label>
+                                            <input type="text" id="netopt-rmem" class="form-control" placeholder="4096 131072 8388608">
+                                            <small class="form-text text-muted">min default max (bytes)</small>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="netopt-wmem">TCP Write Memory</label>
+                                            <input type="text" id="netopt-wmem" class="form-control" placeholder="4096 131072 8388608">
+                                            <small class="form-text text-muted">min default max (bytes)</small>
+                                        </div>
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="netopt-conntrack">Connection Tracking Max</label>
+                                            <input type="number" id="netopt-conntrack" class="form-control" placeholder="131072" min="1024">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="netopt-backlog">Network Device Backlog</label>
+                                            <input type="number" id="netopt-backlog" class="form-control" placeholder="5000" min="100">
+                                        </div>
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="netopt-somaxconn">Socket Max Connections</label>
+                                            <input type="number" id="netopt-somaxconn" class="form-control" placeholder="16384" min="128">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="netopt-congestion">TCP Congestion Control</label>
+                                            <select id="netopt-congestion" class="form-control">
+                                                <option value="cubic" selected>cubic (default)</option>
+                                                <option value="bbr">bbr</option>
+                                                <option value="reno">reno</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="package-category">
+                            <details id="uci-defaults-details">
+                                <summary>UCI-defaults (Boot configuration script)</summary>
+                                <label for="uci-defaults-content" style="display: none;">UCI-defaults</label>
+                                <textarea id="uci-defaults-content" class="form-control" rows="6" placeholder="#!/bin/sh&#10;&#10;# Your custom script here&#10;# This area is for manual editing - configuration wizard will not overwrite your changes"></textarea>
+                            </details>
+                        </div>
+                    </details>  <!-- use-aios-config-details を閉じる -->
+                </div>
+
+                <a id="request-build" href="javascript:buildAsuRequest()" class="custom-link">
+                    <span></span>
+                    <span>REQUEST BUILD</span>
+                </a>
+            <!-- </details> -->  <!-- asu を閉じる -->
+        </div>
+
+        <!-- プログレス表示 -->
+        <div id="build-progress" class="build-progress">
+            <div id="build-message">Building image...</div>
+            <div class="progress">
+                <div id="progress-bar" class="progress-bar" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <div id="asu-buildstatus" class="asu-info" style="display: none;">
+            <span></span>
+        </div>
+
+        <div id="asu-log" style="display: none;">
+            <details>
+                <summary>STDERR</summary>
+                <pre id="asu-stderr" style="background: #f8f8f8; padding: 10px; overflow: auto; max-height: 300px;"></pre>
+            </details>
+            <details>
+                <summary>STDOUT</summary>
+                <pre id="asu-stdout" style="background: #f8f8f8; padding: 10px; overflow: auto; max-height: 300px;"></pre>
+            </details>
+        </div>
+
+        <div id="download-links"></div>
+    </div>
+  
+<script src="index.js"></script> 
+
+</body>
+
+</html>
