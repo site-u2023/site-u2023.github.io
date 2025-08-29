@@ -1,10 +1,13 @@
-async function loadSetupScript() {
-  const res = await fetch('scripts/setup.sh');
-  const setupScript = await res.text();
-  document.getElementById('setup-script').textContent = setupScript;
+function loadSetupScript() {
+  fetch('scripts/setup.sh')
+    .then(r => r.text())
+    .then(t => {
+      document.getElementById('setup-script').textContent = t;
+    })
+    .catch(e => console.error('setup.sh 読み込みエラー:', e));
 }
 
-loadSetupScript();
+document.addEventListener('DOMContentLoaded', loadSetupScript);
 
 async function loadPackageDb() {
   const res = await fetch('scripts/packages.json');
