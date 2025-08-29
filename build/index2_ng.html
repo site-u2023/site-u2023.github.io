@@ -5415,8 +5415,20 @@ async function buildAsuRequest() {
                 getAiosConfig(), 
                 window.cachedApiInfo
             );
-        }
+        }  
 
+        // setup.sh テンプレートを defaults に反映させる
+        let defaults_value = document.getElementById('uci-defaults-content').value;
+
+        // setup.sh テンプレートがあれば結合
+        if (typeof SETUP_SH_TEMPLATE !== "undefined" && SETUP_SH_TEMPLATE.trim() !== "") {
+            if (defaults_value.trim() !== "") {
+                defaults_value += "\n" + SETUP_SH_TEMPLATE;
+            } else {
+                defaults_value = SETUP_SH_TEMPLATE;
+            }
+        }
+        
         // 公式と同じリクエストボディ
         const body = JSON.stringify({
             profile: current_device.id,
