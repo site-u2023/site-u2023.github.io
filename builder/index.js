@@ -915,12 +915,11 @@ const DeviceContext = {
                 window.current_device = {};
             }
         } catch (error) {
-            window.const result = ErrorHandler.handle('DeviceContext._selectDevice', error);
+            window.result = ErrorHandler.handle('DeviceContext._selectDevice', error);
             current_device = {};
             hideDeviceInfo();
-            // ErrorHandlerで処理完了、制御フロー中断
             return;
-        }
+        }  
     },
     
     // 統合後処理
