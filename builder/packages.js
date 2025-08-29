@@ -158,7 +158,7 @@ function generatePackageSelector() {
         'generatePackageSelector',
         'State immediately before zero check',
         {
-            devicePackages_raw: window.appState.devicePackages,
+            devicePackages_raw: window.app.devicePackages,
             availablePackages_list: Array.from(availablePackages),
             availablePackages_size: availablePackages.size
         }
@@ -353,7 +353,7 @@ function updatePackageListFromSelector() {
 
 // ==================== パッケージ取得 ====================
 async function fetchDevicePackages() {
-    window.appState.devicePackages = [];
+    window.app.devicePackages = [];
     if (!window.current_device || !window.current_device.id || !window.app.selectedVersion) return;
 
     const version = window.app.selectedVersion;
@@ -379,13 +379,13 @@ async function fetchDevicePackages() {
         feeds.forEach(feed => {
             urls.push(`${basePath}/packages/${arch}/${feed}/index.json`);
         });
-        if (window.appState.kernelHash) {
-            urls.push(`${basePath}/targets/${targetPath}/kmods/${window.appState.kernelHash}/index.json`);
+        if (window.app.kernelHash) {
+            urls.push(`${basePath}/targets/${targetPath}/kmods/${window.app.kernelHash}/index.json`);
         }
     } else {
         urls.push(`${basePath}/targets/${targetPath}/packages/Packages`);
-        if (window.appState.kernelHash) {
-            urls.push(`${basePath}/targets/${targetPath}/kmods/${window.appState.kernelHash}/Packages`);
+        if (window.app.kernelHash) {
+            urls.push(`${basePath}/targets/${targetPath}/kmods/${window.app.kernelHash}/Packages`);
         }
         feeds.forEach(feed => {
             urls.push(`${basePath}/packages/${arch}/${feed}/Packages`);
@@ -419,7 +419,7 @@ async function fetchDevicePackages() {
         }
     }));
 
-    window.appState.devicePackages = Array.from(allPkgsMap.values());
+    window.app.devicePackages = Array.from(allPkgsMap.values());
     window.ErrorHandler.packageDebug.dumpAll();
 
     function parsePackagesText(text, source) {
@@ -449,15 +449,15 @@ async function fetchDevicePackages() {
 async function resolveArch(version, targetPath, opts = {}) {
     try {
         // 0) キャッシュ優先
-        if (window.appState.archPackagesMap && window.appState.archPackagesMap[targetPath]) {
-            return window.appState.archPackagesMap[targetPath];
+        if (window.app.archPackagesMap && window.app.archPackagesMap[targetPath]) {
+            return window.app.archPackagesMap[targetPath];
         }
 
         // 1) 呼び出し元が profilesData を渡してきた場合
         if (opts.profilesData?.arch_packages) {
             const arch = opts.profilesData.arch_packages;
-            window.appState.archPackagesMap = window.appState.archPackagesMap || {};
-            window.appState.archPackagesMap[targetPath] = arch;
+            window.app.archPackagesMap = window.app.archPackagesMap || {};
+            window.app.archPackagesMap[targetPath] = arch;
             return arch;
         }
 
@@ -475,8 +475,8 @@ async function resolveArch(version, targetPath, opts = {}) {
                 const meta = await res.json();
                 const arch = meta?.arch_packages || '';
                 if (arch) {
-                    window.appState.archPackagesMap = window.appState.archPackagesMap || {};
-                    window.appState.archPackagesMap[targetPath] = arch;
+                    window.app.archPackagesMap = window.app.archPackagesMap || {};
+                    window.app.archPackagesMap[targetPath] = arch;
                     return arch;
                 }
             }
@@ -485,8 +485,8 @@ async function resolveArch(version, targetPath, opts = {}) {
         }
 
         // 4) overview.json 由来のフォールバック
-        if (window.appState.archPackagesMap && window.appState.archPackagesMap[targetPath]) {
-            return window.appState.archPackagesMap[targetPath];
+        if (window.app.archPackagesMap && window.app.archPackagesMap[targetPath]) {
+            return window.app.archPackagesMap[targetPath];
         }
 
         return '';
@@ -610,13 +610,13 @@ function refreshTemplateAndPackages() {
             clearTimeout(pkgSearchTimer);
             const query = e.target.value.trim().toLowerCase();
 
-            if (query.length < 2 || !Array.isArray(window.appState.devicePackages) || window.appState.devicePackages.length === 0) {
+            if (query.length < 2 || !Array.isArray(window.app.devicePackages) || window.app.devicePackages.length === 0) {
                 hidePackageAutocomplete();
                 return;
             }
 
             pkgSearchTimer = setTimeout(() => {
-                const matches = window.appState.devicePackages
+                const matches = window.app.devicePackages
                     .filter(pkg => {
                         const name = (typeof pkg === 'string') ? pkg : pkg.name || '';
                         return name.toLowerCase().includes(query);
@@ -706,13 +706,13 @@ function createExtraPackageBox() {
         clearTimeout(timer);
         const query = this.value.trim().toLowerCase();
 
-        if (query.length < 2 || !Array.isArray(window.appState.devicePackages) || window.appState.devicePackages.length === 0) {
+        if (query.length < 2 || !Array.isArray(window.app.devicePackages) || window.app.devicePackages.length === 0) {
             hidePackageAutocomplete();
             return;
         }
 
         timer = setTimeout(() => {
-            const matches = window.appState.devicePackages
+            const matches = window.app.devicePackages
                 .filter(pkg => {
                     const name = (typeof pkg === 'string') ? pkg : pkg.name || '';
                     return name.toLowerCase().includes(query);
