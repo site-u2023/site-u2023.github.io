@@ -842,7 +842,7 @@ function toggleAiosConfig(e) {
         updateConfiguredTemplate();
     } else {
         document.getElementById('uci-defaults-content').value = window.SETUP_SH_TEMPLATE;
-        window.appState.templateLoaded = true;
+        window.app.templateLoaded = true;
     }
 }
 
@@ -1207,7 +1207,7 @@ async function buildAsuRequest() {
                         }
                         hideProgress();
                         showBuildStatus('Build successful', 'info');
-                        mobj['id'] = window.currentDevice.id;
+                        mobj['id'] = window.current_device.id;
                         showDownloadLinks(mobj.images || [], mobj, mobj.request_hash);
                     });
                     break;
