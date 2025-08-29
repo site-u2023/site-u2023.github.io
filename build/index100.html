@@ -1642,8 +1642,6 @@ EOF
 echo "All done!"
 exit 0`;
 
-// 公式と同じグローバル変数
-let current_device = {};
 const ofs_version = "1.0.0";
 
 // config.jsç›¸å½"ã®è¨­å®š
@@ -1660,6 +1658,17 @@ const config = {
     image_urls: {}            // 公式と同じ
 };
 
+ const app = {
+   versions: [],
+   selectedVersion: null,
+   devices: [],
+   devicesMap: null,
+   archPackagesMap: {},
+   kernelHash: '',
+   versionCode: '',
+   currentProfilesData: null
+ };
+        
 // 独自拡張用の内部変数（公式には影響しない）
 let app_internal = {
     versionCode: '',
@@ -1668,7 +1677,48 @@ let app_internal = {
     devicePackages: [],
     currentProfilesData: null
 };
-        
+
+// ===== 必要最小のスタブ =====
+function updateImages() {}
+function showAlert(msg){ console.warn(msg); }
+function hideAlert(){ /* no-op */ }
+// jQuery風ショートカットが使われている箇所のガード（実コードは素のDOMしか使ってない）
+const $ = (sel) => document.querySelector(sel);
++
+// 公式UI依存の簡易フォールバック: セレクトを埋めて即コールバック
+function setupSelectList(selectEl, items, onChange) {
+  if (!selectEl) return;
+  selectEl.innerHTML = '';
+  for (const v of items) {
+    const o = document.createElement('option');
+    o.value = v; o.textContent = v;
+    if (!selectEl.value) o.selected = true;
+    selectEl.appendChild(o);
+  }
+  selectEl.addEventListener('change', e => onChange(e.target.value));
+  if (items.length) onChange(items[0]);
+}
++
+// バージョン変更ハンドラ: DeviceContext に渡すだけ
+function handleVersionChange(e){
+  DeviceContext.update({ version: e.target.value, forceReload: true, trigger: 'version-change' });
+}
++
+// デバイス一覧ロード: overview_cache から埋める簡易版
+async function loadDevices(){
+  const v = app.selectedVersion || document.getElementById('versions')?.value;
+  const ov = overview_cache[v];
+  if (!ov || !ov.profiles) { app.devices = []; app.devicesMap = null; return; }
+  const list = Object.values(ov.profiles);
+  app.devices = list;
+  app.devicesMap = ov.profiles;
+}
++
+// スナップショット系のカーネル/パッケージ取得は安全なno-opへ
+async function fetchKernelHashForSnapshot(){ return null; }
+async function fetchPackagesForSnapshot(){ /* no-op */ }
+async function fetchPackagesForRelease(){ /* no-op */ }
+
 // map.shのキャッシュ
 let mapShCache = undefined;
 
@@ -2749,65 +2799,6 @@ function adjustTextareaHeight(textareaId) {
     textarea.style.height = textarea.scrollHeight + 'px';
 }
 
-// ==================== 初期化関数 (init関数) ====================
-async function init() {
-    try {
-        // バージョン読み込み
-        await loadVersions();
-
-        // イベントバインディング（要素存在チェック付き）
-        if (typeof bindEvents === 'function') {
-            try {
-                bindEvents();
-            } catch (error) {
-                console.error('Failed to bind events:', error);
-            }
-        }
-
-        // 初期化段階では生成しない（デバイス選択＋パッケージ取得完了後に生成
-
-        // テンプレートとパッケージの更新
-        try {
-            if (typeof refreshTemplateAndPackages === 'function') {
-                await refreshTemplateAndPackages();
-            }
-        } catch (error) {
-            console.error('Failed to refresh template and packages:', error);
-        }
-
-        // ====== ここで必須DOMと依存状態が揃うまで待機 ======
-        await waitForReady([
-            'versions',
-            'models',
-            //'use-package-selector-details'
-            // 必要なら他の要素も追加
-        ]);
-
-        // パッケージDBをロード＆UI反映
-        try {
-            // await loadPackageDatabase();
-            // updateInstalledPackageList();
-        } catch (error) {
-            console.error('Failed to load/update package DB:', error);
-        }
-
-        // ISP情報取得は details 展開時に移動（auto トリガー）
-        console.log('Initialization completed. ISP info will be fetched when details are opened.');
-        
-        // 初期化完了後、セレクターの初期値を確実に反映（バグ修正）
-        setTimeout(() => {
-            refreshTemplateAndPackages();
-        }, 100);
-
-    } catch (error) {
-        console.error('Failed to initialize:', error);
-        updateIspDisplay(
-            'Initialization error',
-            'Failed to initialize application: ' + error.message
-        );
-    }
-}
-
 // ==================== 必須要素の存在を待つユーティリティ ====================
 function waitForReady(ids = []) {
     return new Promise(resolve => {
@@ -3718,6 +3709,7 @@ let current_device = {};
 let overview_cache = {};  // 公式には無いが、キャッシュ用に追加
 
 // 公式と同じinit関数内でバージョン処理
+// 初期化関数 (init関数)
 async function init() {
     const url_params = new URLSearchParams(window.location.search);
     
