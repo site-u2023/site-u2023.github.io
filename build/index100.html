@@ -3703,7 +3703,7 @@ function initVersionSelector() {
                 
                 // trigger update of current selected model
                 const modelsElement = $("#models");
-                if (modelsElement && modelsElement.onkeyup) {
+                if (modelsElement && typeof modelsElement.onkeyup === 'function') {
                     modelsElement.onkeyup();
                 } else {
                     console.log('models element not found or onkeyup not defined');
