@@ -1269,7 +1269,7 @@ async function loadDeviceProfile(device) {
     if (profileCache[cacheKey]) {
         console.log(`Using cached profile for ${cacheKey}`);
         applyProfileData(profileCache[cacheKey], profileId);
-        Promise.allSettled([ fetchDevicePackages() ])
+        Promise.allSettled([ window.fetchDevicePackages() ])
             .then(() => console.log('Background tasks completed (from cache)'));
         return true;
     }
@@ -1298,7 +1298,7 @@ async function loadDeviceProfile(device) {
 
         // パッケージ取得完了を待ってから描画（SNAPSHOT版は別処理）
         try {
-            await fetchDevicePackages();
+            await window.fetchDevicePackages();
         } catch (e) {
             console.error('fetchDevicePackages failed:', e);
         }
