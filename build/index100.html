@@ -3702,12 +3702,7 @@ function initVersionSelector() {
                 );
                 
                 // trigger update of current selected model
-                const modelsElement = $("#models");
-                if (modelsElement && typeof modelsElement.onkeyup === 'function') {
-                    modelsElement.onkeyup();
-                } else {
-                    console.log('models element not found or onkeyup not defined');
-                }
+                console.log('Skipping models onkeyup trigger - not available in custom version');
             })
             .catch((err) => showAlert(err.message));
     });
