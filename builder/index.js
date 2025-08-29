@@ -1789,19 +1789,17 @@ async function loadDeviceProfile(device) {
 async function applyProfileData(profilesData, profileId) {
     app.versionCode = profilesData.version_code || '';
     
-    // カーネルハッシュ（シンプルに）
+    // カーネルハッシュ
     if (profilesData.linux_kernel) {
         const lk = profilesData.linux_kernel;
         app.kernelHash = `${lk.version}-${lk.release}-${lk.vermagic}`;
-        console.log('[Kernel] From profiles.json:', app.kernelHash);
     }
     
-    // ★重要：archをここで確実に保存
+    // ★重要：arch_packagesを確実に保存
     if (profilesData.arch_packages) {
-        const targetPath = current_device.target;
-        app.archPackagesMap = app.archPackagesMap || {};
-        app.archPackagesMap[targetPath] = profilesData.arch_packages;
-        console.log(`[ARCH] Saved: ${targetPath} -> ${profilesData.arch_packages}`);
+        if (!app.archPackagesMap) app.archPackagesMap = {};
+        app.archPackagesMap[current_device.target] = profilesData.arch_packages;
+        console.log(`[ARCH] Stored: ${current_device.target} = ${profilesData.arch_packages}`);
     }
     async function fetchActualKernelHash(version, targetPath) {
         try {
