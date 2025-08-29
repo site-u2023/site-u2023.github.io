@@ -1786,29 +1786,62 @@ async function loadDeviceProfile(device) {
     }
 }
 
-async function applyProfileData(profilesData, profileId) {
-    app.versionCode = profilesData.version_code || '';
-    
-    // シンプルなカーネルハッシュ取得（公式版に準拠）
-    if (profilesData.kernel_vermagic) {
-        // v23以降のフォーマット
-        app.kernelHash = profilesData.kernel_vermagic;
-        console.log('[Kernel] From kernel_vermagic:', app.kernelHash);
-    } else if (profilesData.kernel_hash) {
-        // 古いフォーマット
-        app.kernelHash = profilesData.kernel_hash;
-        console.log('[Kernel] From kernel_hash:', app.kernelHash);
-    } else if (profilesData.linux_kernel) {
-        // linux_kernelオブジェクトからの構築
-        const lk = profilesData.linux_kernel;
-        app.kernelHash = `${lk.version}-${lk.release}-${lk.vermagic}`;
-        console.log('[Kernel] From linux_kernel:', app.kernelHash);
-    } else {
-        // フォールバック：HTMLから取得（SNAPSHOTなど）
-        console.log('[Kernel] No kernel info in profiles.json, trying HTML fetch...');
-        app.kernelHash = await fetchKernelHashFromHTML(app.selectedVersion, current_device.target);
-        console.log('[Kernel] From HTML:', app.kernelHash);
+// SNAPSHOT/Release 共通 arch 解決
+async function resolveArch(version, targetPath, opts = {}) {
+    try {
+        // 0) キャッシュ優先
+        if (app.archPackagesMap && app.archPackagesMap[targetPath]) {
+            return app.archPackagesMap[targetPath];
+        }
+
+        // 1) 呼び出し元が profilesData を渡してきた場合
+        if (opts.profilesData) {
+            // 新旧両方のフィールド名に対応
+            const arch = opts.profilesData?.arch_packages || 
+                        opts.profilesData?.arch ||
+                        '';
+            if (arch) {
+                app.archPackagesMap = app.archPackagesMap || {};
+                app.archPackagesMap[targetPath] = arch;
+                return arch;
+            }
+        }
+
+        // 2) URL構築
+        setupVersionUrls(version);
+        const basePath = (config.image_urls && config.image_urls[version])
+            ? config.image_urls[version].replace(/\/$/, '')
+            : '';
+
+        // 3) profiles.json 直接参照
+        const profilesUrl = `${basePath}/targets/${targetPath}/profiles.json`;
+        try {
+            const res = await fetch(profilesUrl, { cache: 'no-cache', credentials: 'omit', mode: 'cors' });
+            if (res.ok) {
+                const meta = await res.json();
+                // 新旧両方のフィールド名に対応
+                const arch = meta?.arch_packages || meta?.arch || '';
+                if (arch) {
+                    app.archPackagesMap = app.archPackagesMap || {};
+                    app.archPackagesMap[targetPath] = arch;
+                    return arch;
+                }
+            }
+        } catch (e) {
+            console.log(`[ARCH] profiles.json fetch failed: ${e.message}`);
+        }
+
+        // 4) overview.json 由来のフォールバック
+        if (app.archPackagesMap && app.archPackagesMap[targetPath]) {
+            return app.archPackagesMap[targetPath];
+        }
+
+        return '';
+    } catch (err) {
+        console.error('[ARCH] unexpected error:', err);
+        return '';
     }
+}
 
     async function fetchKernelHashFromHTML(version, targetPath) {
         try {
@@ -3637,8 +3670,7 @@ async function fetchDevicePackages() {
     const feeds = ["base", "luci", "packages", "routing", "telephony"];
     const urls  = [];
 
-if (isSnapshot) {
-        // SNAPSHOT版のURL構築
+    if (isSnapshot) {
         feeds.forEach(feed => {
             urls.push(`${basePath}/packages/${arch}/${feed}/index.json`);
         });
@@ -3646,28 +3678,14 @@ if (isSnapshot) {
             urls.push(`${basePath}/targets/${targetPath}/kmods/${app.kernelHash}/index.json`);
         }
     } else {
-        // リリース版のURL構築（v24以降とv23以前で異なる）
-        const versionParts = version.split('.');
-        const majorVersion = parseInt(versionParts[0], 10);
-        
-        if (majorVersion >= 24) {
-            // v24以降：新形式（archベース）
-            feeds.forEach(feed => {
-                urls.push(`${basePath}/packages/${arch}/${feed}/Packages`);
-            });
-            if (app.kernelHash) {
-                urls.push(`${basePath}/targets/${targetPath}/kmods/${app.kernelHash}/Packages`);
-            }
-        } else {
-            // v23以前：旧形式（targetベース）
-            urls.push(`${basePath}/targets/${targetPath}/packages/Packages`);
-            if (app.kernelHash) {
-                urls.push(`${basePath}/targets/${targetPath}/kmods/${app.kernelHash}/Packages`);
-            }
-            feeds.forEach(feed => {
-                urls.push(`${basePath}/packages/${arch}/${feed}/Packages`);
-            });
+        // リリース版は元のまま
+        urls.push(`${basePath}/targets/${targetPath}/packages/Packages`);
+        if (app.kernelHash) {
+            urls.push(`${basePath}/targets/${targetPath}/kmods/${app.kernelHash}/Packages`);
         }
+        feeds.forEach(feed => {
+            urls.push(`${basePath}/packages/${arch}/${feed}/Packages`);
+        });
     }
 
     const allPkgsMap = new Map();
