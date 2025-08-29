@@ -1678,7 +1678,14 @@ let app_internal = {
 };
 
 // ===== 必要最小のスタブ =====
-function updateImages() {}
+function updateImages(version, mobj) {
+  console.log('updateImages called with:', version, mobj);
+  // 必要に応じて処理を追加
+  if (mobj) {
+    // デバイス情報がある場合の処理
+    console.log('Device selected:', mobj.title);
+  }
+}
 function showAlert(msg){ console.warn(msg); }
 function hideAlert(){ /* no-op */ }
 // jQuery風ショートカットが使われている箇所のガード（実コードは素のDOMしか使ってない）
@@ -3695,7 +3702,12 @@ function initVersionSelector() {
                 );
                 
                 // trigger update of current selected model
-                $("#models").onkeyup();
+                const modelsElement = $("#models");
+                if (modelsElement && modelsElement.onkeyup) {
+                    modelsElement.onkeyup();
+                } else {
+                    console.log('models element not found or onkeyup not defined');
+                }
             })
             .catch((err) => showAlert(err.message));
     });
