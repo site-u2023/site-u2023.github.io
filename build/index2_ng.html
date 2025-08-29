@@ -5441,7 +5441,14 @@ async function buildAsuRequest() {
         // デバッグログ追加
         console.log("=== ASU Request Debug ===");
         console.log("typeof defaults_value:", typeof defaults_value);
-        console.log("defaults_value preview:", defaults_value.substring(0, 200)); // 長い場合200文字だけ
+
+        if (typeof defaults_value === "string") {
+            console.log("defaults_value length:", defaults_value.length);
+            console.log("defaults_value preview:", defaults_value.substring(0, 200));
+        } else {
+            console.warn("defaults_value is not a string:", defaults_value);
+        }
+
         console.log("Full request object:", requestPayload);
 
         const body = JSON.stringify(requestPayload);
