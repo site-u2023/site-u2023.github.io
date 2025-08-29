@@ -29,6 +29,7 @@ let PACKAGE_DB = {};
 loadPackageDb().then(db => {
     PACKAGE_DB = db;
     window.PACKAGE_DB = db; // グローバルに公開
+    init();
 });
 
 // グローバル変数
