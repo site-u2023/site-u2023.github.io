@@ -5404,86 +5404,77 @@ async function buildAsuRequest() {
     }
 
     document.getElementById('request-build').disabled = true;
+    showProgress('Preparing build request...', 10);
 
-    // defaults（スクリプト）の取得と処理（独自機能はここだけ）
-    let defaults_value = document.getElementById('uci-defaults-content').value;
-    if (MapEProcessor.isActive(getAiosConfig(), window.cachedApiInfo)) {
-        defaults_value = await MapEProcessor.processForBuild(
-            defaults_value, 
-            getAiosConfig(), 
-            window.cachedApiInfo
-        );
-    }
+    try {
+        // スクリプト処理（MAP-Eのみ独自）
+        let defaults_value = document.getElementById('uci-defaults-content').value;
+        if (MapEProcessor.isActive(getAiosConfig(), window.cachedApiInfo)) {
+            defaults_value = await MapEProcessor.processForBuild(
+                defaults_value, 
+                getAiosConfig(), 
+                window.cachedApiInfo
+            );
+        }
 
-    // 公式と完全同一のbody
-    var body = JSON.stringify({
-        profile: current_device.id,
-        target: current_device.target,
-        packages: split(document.getElementById('asu-packages').value),
-        defaults: defaults_value,
-        version_code: document.getElementById('image-code').innerText,
-        version: document.getElementById('versions').value,
-        diff_packages: true,
-        client: "ofs/" + ofs_version
-    });
+        // 公式と同じリクエストボディ
+        const body = JSON.stringify({
+            profile: current_device.id,
+            target: current_device.target,
+            packages: split(document.getElementById('asu-packages').value),
+            defaults: defaults_value,
+            version_code: document.getElementById('image-code').innerText,
+            version: document.getElementById('versions').value,
+            diff_packages: true,
+            client: "ofs/" + ofs_version
+        });
 
-    fetch(config.asu_url + '/api/v1/build', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: body
-    })
-    .then((response) => {
+        const response = await fetch(config.asu_url + '/api/v1/build', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: body
+        });
+
+        const responseData = await response.json();
+
         switch (response.status) {
             case 200:
-                showProgress('Build completed!', 100);
-                response.json().then((mobj) => {
-                    if ('stderr' in mobj) {
-                        document.getElementById('asu-stderr').innerText = mobj.stderr;
-                        document.getElementById('asu-stdout').innerText = mobj.stdout;
-                        document.getElementById('asu-log').style.display = 'block';
-                    } else {
-                        document.getElementById('asu-log').style.display = 'none';
-                    }
-                    hideProgress();
-                    showBuildStatus('Build successful', 'info');
-                    mobj['id'] = current_device.id;
-                    showDownloadLinks(mobj.images || [], mobj, mobj.request_hash);
-                });
+                if ('stderr' in responseData) {
+                    document.getElementById('asu-stderr').innerText = responseData.stderr;
+                    document.getElementById('asu-stdout').innerText = responseData.stdout;
+                    document.getElementById('asu-log').style.display = 'block';
+                }
+                hideProgress();
+                showBuildStatus('Build successful', 'info');
+                responseData['id'] = current_device.id;
+                showDownloadLinks(responseData.images || [], responseData, responseData.request_hash);
                 break;
+
             case 202:
-                response.json().then((mobj) => {
-                    showProgress(`${mobj.imagebuilder_status || 'Processing'}...`, 30);
-                    setTimeout(() => pollBuildStatus(mobj.request_hash), 5000);
-                });
+                showProgress(`${responseData.imagebuilder_status || 'Processing'}...`, 30);
+                setTimeout(() => pollBuildStatus(responseData.request_hash), 5000);
                 break;
-            case 400:
-            case 422:
-            case 500:
-                response.json().then((mobj) => {
-                    if ('stderr' in mobj) {
-                        document.getElementById('asu-stderr').innerText = mobj.stderr;
-                        document.getElementById('asu-stdout').innerText = mobj.stdout;
-                        document.getElementById('asu-log').style.display = 'block';
-                    } else {
-                        document.getElementById('asu-log').style.display = 'none';
-                    }
-                    if ('detail' in mobj) {
-                        showBuildStatus(mobj['detail'], 'error');
-                    } else if ('stderr' in mobj && mobj['stderr'].includes('images are too big')) {
-                        showBuildStatus('Build size exceeded', 'error');
-                    } else {
-                        showBuildStatus('Build failed', 'error');
-                    }
-                });
+
+            default:
+                if ('stderr' in responseData) {
+                    document.getElementById('asu-stderr').innerText = responseData.stderr;
+                    document.getElementById('asu-stdout').innerText = responseData.stdout;
+                    document.getElementById('asu-log').style.display = 'block';
+                }
+                hideProgress();
+                showBuildStatus(responseData.detail || 'Build failed', 'error');
                 break;
         }
-    })
-    .catch((err) => showBuildStatus(err.message, 'error'))
-    .finally(() => {
+
+    } catch (error) {
+        console.error('[buildAsuRequest] Error:', error);
+        hideProgress();
+        showBuildStatus(error.message, 'error');
+    } finally {
         document.getElementById('request-build').disabled = false;
-    });
+    }
 }
         
 async function pollBuildStatus(requestHash) {
