@@ -2496,12 +2496,11 @@ const ErrorHandler = {
 // グローバル変数定義（公式準拠）
 let current_device = {};
 let overview_cache = {};  // 公式には無いが、キャッシュ用に追加
-let url_params = new URLSearchParams(window.location.search);
         
 // 公式と同じinit関数内でバージョン処理
 // 初期化関数 (init関数)
 async function init() {
-    
+    url_params = new URLSearchParams(window.location.search); 
     // バージョンリスト取得（公式と同じ）
     const upstream_config = await fetch(config.image_url + "/.versions.json", {
         cache: "no-cache",
