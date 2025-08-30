@@ -28,5 +28,11 @@ var config = {
   min_version: "21.02.0",
 
   // Auto-configuration API URL
-  auto_config_api_url: "https://auto-config.site-u.workers.dev/"
+  auto_config_api_url: "https://auto-config.site-u.workers.dev/",
+
+  // UCI-defaults setup.sh URL
+  uci_defaults_setup_url: "uci-defaults/setup.sh",
+
+  // Package database URL
+  packages_db_url: "packages/packages.json"
 };
