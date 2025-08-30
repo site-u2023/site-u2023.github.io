@@ -739,7 +739,7 @@ function fetchAndDisplayIspInfo() {
         } else if (apiInfo.aftr) {
           wanType = "DS-Lite";
         }
-        setValue("#auto-config-wan-type", wanType);
+        setValue("#auto-config-method", wanType);
         
         setValue("#auto-config-notice", apiInfo.notice || "");
         
@@ -912,7 +912,7 @@ function displayIspInfo(apiInfo) {
   } else if (apiInfo.aftr) {
     connectionType = "DS-Lite";
   }
-  setValue("#auto-config-wan-type", connectionType);
+  setValue("#auto-config-method", connectionType);
   
   // Display notice
   if (apiInfo.notice) {
