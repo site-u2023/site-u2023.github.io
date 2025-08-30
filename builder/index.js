@@ -1,5 +1,17 @@
+// ==================== グローバル設定 ====================
+const config = window.config || {
+    image_url: "https://downloads.openwrt.org",
+    asu_url: "https://sysupgrade.openwrt.org",
+    image_urls: {},
+    overview_urls: {},
+    min_version: "21.02.0",
+    info_url: "https://openwrt.org/search?q={title}"
+};
+
 // ==================== パッケージデータベース ====================
 let PACKAGE_DB = {};
+let initializationComplete = false;  // 初期化完了フラグ
+
 loadPackageDb().then(db => {
     PACKAGE_DB = db;
     window.PACKAGE_DB = db; // グローバルに公開
@@ -14,6 +26,7 @@ let app = {
     templateLoaded: false,
     availablePackages: [], // デバイス固有のパッケージリスト
     archPackagesMap: {},
+    devicePackages: [] 
 };
 
 // 公式と同じグローバル変数
@@ -21,6 +34,126 @@ let current_device = {};
         
 // map.shのキャッシュ
 let mapShCache = undefined;
+
+// setup.shテンプレート格納用
+let SETUP_SH_TEMPLATE = '';
+
+// ==================== パッケージDB読み込み ====================
+async function loadPackageDb() {
+    const res = await fetch('scripts/packages.json', { cache: 'no-store' });
+    if (!res.ok) throw new Error(`packages.json 読み込み失敗: HTTP ${res.status}`);
+    const data = await res.json();
+    applySearchUrls(data);
+    return data;
+}
+
+// ==================== setup.sh 読み込み ====================
+async function loadSetupScript() {
+    const res = await fetch('scripts/setup.sh', { cache: 'no-store' });
+    if (!res.ok) throw new Error(`setup.sh 読み込み失敗: HTTP ${res.status}`);
+    const text = await res.text();
+    window.SETUP_SH_TEMPLATE = text;
+    const el = document.getElementById('setup-script');
+    if (el) el.textContent = text;
+}
+
+// ==================== 初期化関数 (init関数) ====================
+async function init() {
+    try {
+        // バージョン読み込み
+        await loadVersions();
+
+        // パッケージDBロード
+        PACKAGE_DB = await loadPackageDb();
+
+        // setup.shロード
+        await loadSetupScript();
+      
+        // イベントバインディング（要素存在チェック付き）
+        if (typeof bindEvents === 'function') {
+            try {
+                bindEvents();
+            } catch (error) {
+                console.error('Failed to bind events:', error);
+            }
+        }
+
+        // 初期化段階では生成しない（デバイス選択＋パッケージ取得完了後に生成
+
+        // テンプレートとパッケージの更新
+        try {
+            if (typeof refreshTemplateAndPackages === 'function') {
+                await refreshTemplateAndPackages();
+            }
+        } catch (error) {
+            console.error('Failed to refresh template and packages:', error);
+        }
+
+        // ====== ここで必須DOMと依存状態が揃うまで待機 ======
+        await waitForReady([
+            'versions',
+            'models',
+            //'use-package-selector-details'
+            // 必要なら他の要素も追加
+        ]);
+
+        // パッケージDBをロード＆UI反映
+        try {
+            // await loadPackageDatabase();
+            // updateInstalledPackageList();
+        } catch (error) {
+            console.error('Failed to load/update package DB:', error);
+        }
+
+        // ISP情報取得は details 展開時に移動（auto トリガー）
+        console.log('Initialization completed. ISP info will be fetched when details are opened.');
+        
+        // 初期化完了後、セレクターの初期値を確実に反映（バグ修正）
+        setTimeout(() => {
+            refreshTemplateAndPackages();
+        }, 100);
+
+    } catch (error) {
+        console.error('Failed to initialize:', error);
+        updateIspDisplay(
+            'Initialization error',
+            'Failed to initialize application: ' + error.message
+        );
+    }
+}
+
+// ==================== DOM読み込み完了時に初期化開始 ====================
+document.addEventListener('DOMContentLoaded', init);
+
+// ==================== 必須要素の存在を待つユーティリティ ====================
+function waitForReady(ids = []) {
+    return new Promise(resolve => {
+        const check = () => {
+            if (ids.every(id => document.getElementById(id))) {
+                resolve();
+            } else {
+                requestAnimationFrame(check);
+            }
+        };
+        check();
+    });
+}
+
+// ==================== 公式互換デバイス管理関数 ====================
+// 公式と同じ関数名・ロジックでデバイス設定
+function setModel(target, id) {
+    if (target && id) {
+        const title = document.getElementById('models').value;
+        for (const device of app.devices) {
+            const deviceTitle = device.title || getDeviceTitle(device);
+            if ((device.target === target && device.id === id) || deviceTitle === title) {
+                document.getElementById('models').value = deviceTitle;
+                selectDevice(device);
+                return;
+            }
+        }
+    }
+}
 
 // ==================== MAP-E専用処理モジュール ====================
 const MapEProcessor = {
@@ -573,123 +706,6 @@ function adjustTextareaHeight(textareaId) {
     // スクロールバーが出ないように高さも調整
     textarea.style.height = 'auto';
     textarea.style.height = textarea.scrollHeight + 'px';
-}
-
-// ==================== パッケージDB読み込み ====================
-async function loadPackageDb() {
-    const res = await fetch('scripts/packages.json', { cache: 'no-store' });
-    if (!res.ok) throw new Error(`packages.json 読み込み失敗: HTTP ${res.status}`);
-    const data = await res.json();
-    applySearchUrls(data);
-    return data;
-}
-
-// ==================== setup.sh 読み込み ====================
-async function loadSetupScript() {
-    const res = await fetch('scripts/setup.sh', { cache: 'no-store' });
-    if (!res.ok) throw new Error(`setup.sh 読み込み失敗: HTTP ${res.status}`);
-    const text = await res.text();
-    window.SETUP_SH_TEMPLATE = text;
-    const el = document.getElementById('setup-script');
-    if (el) el.textContent = text;
-}
-
-// ==================== 初期化関数 (init関数) ====================
-async function init() {
-    try {
-        // バージョン読み込み
-        await loadVersions();
-
-        // パッケージDBロード
-        PACKAGE_DB = await loadPackageDb();
-
-        // setup.shロード
-        await loadSetupScript();
-      
-        // イベントバインディング（要素存在チェック付き）
-        if (typeof bindEvents === 'function') {
-            try {
-                bindEvents();
-            } catch (error) {
-                console.error('Failed to bind events:', error);
-            }
-        }
-
-        // 初期化段階では生成しない（デバイス選択＋パッケージ取得完了後に生成
-
-        // テンプレートとパッケージの更新
-        try {
-            if (typeof refreshTemplateAndPackages === 'function') {
-                await refreshTemplateAndPackages();
-            }
-        } catch (error) {
-            console.error('Failed to refresh template and packages:', error);
-        }
-
-        // ====== ここで必須DOMと依存状態が揃うまで待機 ======
-        await waitForReady([
-            'versions',
-            'models',
-            //'use-package-selector-details'
-            // 必要なら他の要素も追加
-        ]);
-
-        // パッケージDBをロード＆UI反映
-        try {
-            // await loadPackageDatabase();
-            // updateInstalledPackageList();
-        } catch (error) {
-            console.error('Failed to load/update package DB:', error);
-        }
-
-        // ISP情報取得は details 展開時に移動（auto トリガー）
-        console.log('Initialization completed. ISP info will be fetched when details are opened.');
-        
-        // 初期化完了後、セレクターの初期値を確実に反映（バグ修正）
-        setTimeout(() => {
-            refreshTemplateAndPackages();
-        }, 100);
-
-    } catch (error) {
-        console.error('Failed to initialize:', error);
-        updateIspDisplay(
-            'Initialization error',
-            'Failed to initialize application: ' + error.message
-        );
-    }
-}
-
-// ==================== DOM読み込み完了時に初期化開始 ====================
-document.addEventListener('DOMContentLoaded', init);
-
-// ==================== 必須要素の存在を待つユーティリティ ====================
-function waitForReady(ids = []) {
-    return new Promise(resolve => {
-        const check = () => {
-            if (ids.every(id => document.getElementById(id))) {
-                resolve();
-            } else {
-                requestAnimationFrame(check);
-            }
-        };
-        check();
-    });
-}
-
-// ==================== 公式互換デバイス管理関数 ====================
-// 公式と同じ関数名・ロジックでデバイス設定
-function setModel(target, id) {
-    if (target && id) {
-        const title = document.getElementById('models').value;
-        for (const device of app.devices) {
-            const deviceTitle = device.title || getDeviceTitle(device);
-            if ((device.target === target && device.id === id) || deviceTitle === title) {
-                document.getElementById('models').value = deviceTitle;
-                selectDevice(device);
-                return;
-            }
-        }
-    }
 }
 
 // ==================== パッケージ関数 ====================
