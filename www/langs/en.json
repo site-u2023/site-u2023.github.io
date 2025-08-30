@@ -12,7 +12,7 @@
     "tr-customize": "Customize installed packages and/or first boot script",
     "tr-request-build": "REQUEST BUILD",
     "tr-model": "Model",
-    "tr-target": "Platform",
+    "tr-target": "Target",
     "tr-version": "Version",
     "tr-date": "Date",
     "tr-downloads": "Download an image",
