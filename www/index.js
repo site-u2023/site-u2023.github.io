@@ -1206,25 +1206,25 @@ function displayIspInfo(apiInfo) {
   // Display country
   if (apiInfo.country) {
     setValue("#auto-config-country", apiInfo.country);
-    show("#auto-config-info-row");
+    show("#auto-config-country");
   }
   
   // Display timezone
   if (apiInfo.timezone && apiInfo.zonename) {
     setValue("#auto-config-timezone", `${apiInfo.zonename} (${apiInfo.timezone})`);
-    show("#auto-config-timezone-row");
+    show("#auto-config-timezone");
   }
   
   // Display ISP
   if (apiInfo.isp) {
     setValue("#auto-config-isp", apiInfo.isp);
-    show("#auto-config-isp-row");
+    show("#auto-config-isp");
   }
   
   // Display AS
   if (apiInfo.as) {
     setValue("#auto-config-as", apiInfo.as);
-    show("#auto-config-as-row");
+    show("#auto-config-as");
   }
   
   // Display IP
@@ -1233,7 +1233,7 @@ function displayIspInfo(apiInfo) {
   if (apiInfo.ipv6) ips.push(apiInfo.ipv6);
   if (ips.length > 0) {
     setValue("#auto-config-ip", ips.join(" / "));
-    show("#auto-config-ip-row");
+    show("#auto-config-ip");
   }
   
   // Display connection type
@@ -1244,7 +1244,7 @@ function displayIspInfo(apiInfo) {
     connectionType = "DS-Lite";
   }
   setValue("#auto-config-connection", connectionType);
-  show("#auto-config-connection-row");
+  show("#auto-config-connection");
   
   // Auto-configure based on ISP detection
   applyIspAutoConfig(apiInfo);
