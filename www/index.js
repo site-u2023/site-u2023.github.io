@@ -1193,66 +1193,6 @@ async function init() {
   initTranslation();
 }
 
-// New functions to add
-function fetchApiInfo() {
-  return fetch('https://auto-config.site-u.workers.dev/')
-    .then(response => response.json())
-    .catch(error => {
-      console.error('Failed to fetch API info:', error);
-      return null;
-    });
-}
-
-function displayIspInfo(apiInfo) {
-  if (!apiInfo) return;
-  
-  // Display country
-  if (apiInfo.country) {
-    setValue("#auto-config-country", apiInfo.country);
-    show("#auto-config-country");
-  }
-  
-  // Display timezone
-  if (apiInfo.timezone && apiInfo.zonename) {
-    setValue("#auto-config-timezone", `${apiInfo.zonename} (${apiInfo.timezone})`);
-    show("#auto-config-timezone");
-  }
-  
-  // Display ISP
-  if (apiInfo.isp) {
-    setValue("#auto-config-isp", apiInfo.isp);
-    show("#auto-config-isp");
-  }
-  
-  // Display AS
-  if (apiInfo.as) {
-    setValue("#auto-config-as", apiInfo.as);
-    show("#auto-config-as");
-  }
-  
-  // Display IP
-  const ips = [];
-  if (apiInfo.ipv4) ips.push(apiInfo.ipv4);
-  if (apiInfo.ipv6) ips.push(apiInfo.ipv6);
-  if (ips.length > 0) {
-    setValue("#auto-config-ip", ips.join(" / "));
-    show("#auto-config-ip");
-  }
-  
-  // Display connection type
-  let connectionType = "DHCP/PPPoE";
-  if (apiInfo.mape && apiInfo.mape.brIpv6Address) {
-    connectionType = "MAP-E";
-  } else if (apiInfo.aftr) {
-    connectionType = "DS-Lite";
-  }
-  setValue("#auto-config-connection", connectionType);
-  show("#auto-config-connection");
-  
-  // Auto-configure based on ISP detection
-  applyIspAutoConfig(apiInfo);
-}
-
 function applyIspAutoConfig(apiInfo) {
   if (!apiInfo) return;
   
