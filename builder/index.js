@@ -2,14 +2,6 @@
 let PACKAGE_DB = {};
 let initializationComplete = false;
 
-loadPackageDb().then(db => {
-    PACKAGE_DB = db;
-    window.PACKAGE_DB = db;
-}).catch(err => {
-    console.error('Package DB load failed:', err);
-    PACKAGE_DB = { categories: [] };
-});
-
 // グローバル変数
 let app = {
     versions: [],
@@ -26,9 +18,6 @@ let current_device = {};
         
 // map.shのキャッシュ
 let mapShCache = undefined;
-
-// setup.shテンプレート格納用
-let SETUP_SH_TEMPLATE = '';
 
 // ==================== 初期化関数 (init関数) ====================
 async function init() {
