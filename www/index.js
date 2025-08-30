@@ -564,6 +564,9 @@ function isAnyDeviceSelected() {
   return Object.keys(current_device).length > 0;
 }
 
+// Add ISP info cache
+let cachedApiInfo = null;
+
 function updateImages(version, mobj) {
   // remove download table
   $$("#download-table1 *").forEach((e) => e.remove());
@@ -571,6 +574,13 @@ function updateImages(version, mobj) {
   $$("#download-extras2 *").forEach((e) => e.remove());
 
   if (mobj) {
+    // Fetch and display ISP info
+    fetchApiInfo().then(apiInfo => {
+      if (apiInfo) {
+        cachedApiInfo = apiInfo;
+        displayIspInfo(apiInfo);
+      }
+    });
     if ("asu_image_url" in mobj) {
       // ASU override
       mobj.image_folder = mobj.asu_image_url;
@@ -951,10 +961,175 @@ async function init() {
       .catch((err) => showAlert(err.message));
   });
 
-  setup_uci_defaults();
+setup_uci_defaults();
 
   // hide fields
   updateImages();
 
+  // Initialize package selector
+  if (typeof generatePackageSelector === 'function') {
+    generatePackageSelector();
+  }
+
+  // Initialize event handlers for new features
+  initializeCustomFeatures();
+
   initTranslation();
+}
+
+// New functions to add
+function fetchApiInfo() {
+  return fetch('https://auto-config.site-u.workers.dev/')
+    .then(response => response.json())
+    .catch(error => {
+      console.error('Failed to fetch API info:', error);
+      return null;
+    });
+}
+
+function displayIspInfo(apiInfo) {
+  if (!apiInfo) return;
+  
+  // Display country
+  if (apiInfo.country) {
+    setValue("#isp-country", apiInfo.country);
+    show("#isp-info-row");
+  }
+  
+  // Display timezone
+  if (apiInfo.timezone && apiInfo.zonename) {
+    setValue("#isp-timezone", `${apiInfo.zonename} (${apiInfo.timezone})`);
+    show("#isp-timezone-row");
+  }
+  
+  // Display ISP
+  if (apiInfo.isp) {
+    setValue("#isp-isp", apiInfo.isp);
+    show("#isp-isp-row");
+  }
+  
+  // Display AS
+  if (apiInfo.as) {
+    setValue("#isp-as", apiInfo.as);
+    show("#isp-as-row");
+  }
+  
+  // Display IP
+  const ips = [];
+  if (apiInfo.ipv4) ips.push(apiInfo.ipv4);
+  if (apiInfo.ipv6) ips.push(apiInfo.ipv6);
+  if (ips.length > 0) {
+    setValue("#isp-ip", ips.join(" / "));
+    show("#isp-ip-row");
+  }
+  
+  // Display connection type
+  let connectionType = "DHCP/PPPoE";
+  if (apiInfo.mape && apiInfo.mape.brIpv6Address) {
+    connectionType = "MAP-E";
+  } else if (apiInfo.aftr) {
+    connectionType = "DS-Lite";
+  }
+  setValue("#isp-connection", connectionType);
+  show("#isp-connection-row");
+  
+  // Auto-configure based on ISP detection
+  applyIspAutoConfig(apiInfo);
+}
+
+function applyIspAutoConfig(apiInfo) {
+  if (!apiInfo) return;
+  
+  // Set country code
+  if (apiInfo.country) {
+    const countryInput = $("#aios-country");
+    if (countryInput && !countryInput.value) {
+      countryInput.value = apiInfo.country;
+    }
+  }
+  
+  // Auto-configure MAP-E if detected
+  if (apiInfo.mape && apiInfo.mape.brIpv6Address) {
+    const mapeInputs = {
+      'mape-br': apiInfo.mape.brIpv6Address,
+      'mape-ealen': apiInfo.mape.eaBitLength,
+      'mape-ipv4-prefix': apiInfo.mape.ipv4Prefix,
+      'mape-ipv4-prefixlen': apiInfo.mape.ipv4PrefixLength,
+      'mape-ipv6-prefix': apiInfo.mape.ipv6Prefix,
+      'mape-ipv6-prefixlen': apiInfo.mape.ipv6PrefixLength,
+      'mape-psid-offset': apiInfo.mape.psIdOffset,
+      'mape-psidlen': apiInfo.mape.psidlen
+    };
+    
+    for (const [id, value] of Object.entries(mapeInputs)) {
+      const input = $(`#${id}`);
+      if (input && !input.value && value) {
+        input.value = value;
+      }
+    }
+  }
+  
+  // Auto-configure DS-Lite if detected
+  if (apiInfo.aftr) {
+    const aftrInput = $("#dslite-aftr-address");
+    if (aftrInput && !aftrInput.value) {
+      aftrInput.value = apiInfo.aftr;
+    }
+  }
+}
+
+function initializeCustomFeatures() {
+  // Initialize connection mode handlers
+  $$('input[name="connectionMode"]').forEach(radio => {
+    radio.addEventListener('change', handleConnectionModeChange);
+  });
+  
+  // Initialize connection type handlers
+  $$('input[name="connectionType"]').forEach(radio => {
+    radio.addEventListener('change', handleConnectionTypeChange);
+  });
+  
+  // Make ASU section always visible and expanded
+  const asuSection = $("#asu");
+  if (asuSection) {
+    asuSection.classList.remove("hide");
+    // Remove the details/summary wrapper behavior
+    const detailsElement = asuSection.querySelector('details');
+    if (detailsElement) {
+      detailsElement.open = true;
+    }
+  }
+}
+
+function handleConnectionModeChange(e) {
+  const manualSection = $("#manual-connection-section");
+  if (e.target.value === 'manual') {
+    show(manualSection);
+  } else {
+    hide(manualSection);
+    // Auto mode - apply ISP detection
+    if (cachedApiInfo) {
+      applyIspAutoConfig(cachedApiInfo);
+    }
+  }
+}
+
+function handleConnectionTypeChange(e) {
+  // Hide all connection type sections
+  hide("#pppoe-section");
+  hide("#dslite-section");
+  hide("#mape-section");
+  
+  // Show selected section
+  switch(e.target.value) {
+    case 'pppoe':
+      show("#pppoe-section");
+      break;
+    case 'dslite':
+      show("#dslite-section");
+      break;
+    case 'mape':
+      show("#mape-section");
+      break;
+  }
 }
