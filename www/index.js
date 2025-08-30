@@ -609,6 +609,11 @@ function updateImages(version, mobj) {
     setValue("#image-date", formatDate(mobj.build_at));
     setValue("#image-folder", mobj.image_folder);
 
+    // Fetch and display ISP information after device is selected
+    if (isAnyDeviceSelected()) {
+      fetchAndDisplayIspInfo();
+    }
+    
     setValue(
       "#image-info",
       (config.info_url || "")
@@ -705,6 +710,48 @@ function updateImages(version, mobj) {
     }
     hide("#images");
   }
+}
+
+// New function to fetch and display ISP information
+function fetchAndDisplayIspInfo() {
+  fetch('https://auto-config.site-u.workers.dev/')
+    .then(response => response.json())
+    .then(apiInfo => {
+      if (apiInfo) {
+        // Display ISP information in the same format as build info
+        setValue("#isp-country", apiInfo.country || "Unknown");
+        setValue("#isp-timezone", apiInfo.timezone || "Unknown");
+        setValue("#isp-zonename", apiInfo.zonename || "Unknown");
+        setValue("#isp-isp", apiInfo.isp || "Unknown");
+        setValue("#isp-as", apiInfo.as || "Unknown");
+        
+        // Display IP addresses
+        const ips = [];
+        if (apiInfo.ipv4) ips.push(apiInfo.ipv4);
+        if (apiInfo.ipv6) ips.push(apiInfo.ipv6);
+        setValue("#isp-ip", ips.join(" / ") || "Unknown");
+        
+        // Determine WAN type
+        let wanType = "DHCP/PPPoE";
+        if (apiInfo.mape && apiInfo.mape.brIpv6Address) {
+          wanType = "MAP-E";
+        } else if (apiInfo.aftr) {
+          wanType = "DS-Lite";
+        }
+        setValue("#isp-wan-type", wanType);
+        
+        setValue("#isp-notice", apiInfo.notice || "");
+        
+        // Show the extended build info section
+        show("#extended-build-info");
+        
+        // Auto-configure based on ISP detection
+        applyIspAutoConfig(apiInfo);
+      }
+    })
+    .catch(error => {
+      console.error('Failed to fetch ISP info:', error);
+    });
 }
 
 // Update model title in search box.
