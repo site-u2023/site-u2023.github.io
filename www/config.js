@@ -26,4 +26,7 @@ var config = {
 
   // 最小サポートバージョン（任意）
   min_version: "21.02.0"
+
+  // Auto-configuration API URL
+  auto_config_api_url: "https://auto-config.site-u.workers.dev/"
 };
