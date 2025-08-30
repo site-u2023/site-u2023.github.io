@@ -830,7 +830,7 @@ function initTranslation() {
 // connect template for uci-defaults - automatically load setup.sh
 function setup_uci_defaults() {
   let textarea = $("#uci-defaults-content");
-  const link = "uci-defaults/setup.sh";
+  const link = config.uci_defaults_setup_url;
   
   // Automatically load setup.sh content
   fetch(link)
