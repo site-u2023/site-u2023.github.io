@@ -715,7 +715,7 @@ function updateImages(version, mobj) {
 
 // Function to fetch and display ISP information
 function fetchAndDisplayIspInfo() {
-  fetch('https://auto-config.site-u.workers.dev/')
+  fetch(config.auto_config_api_url)
     .then(response => response.json())
     .then(apiInfo => {
       if (apiInfo) {
@@ -865,7 +865,7 @@ function insertSnapshotVersions(versions) {
 
 // New helper functions for ISP integration
 function fetchApiInfo() {
-  return fetch('https://auto-config.site-u.workers.dev/')
+  return fetch(config.auto_config_api_url)
     .then(response => response.json())
     .catch(error => {
       console.error('Failed to fetch API info:', error);
@@ -878,26 +878,27 @@ function displayIspInfo(apiInfo) {
   
   // Display country
   if (apiInfo.country) {
-    setValue("#isp-country", apiInfo.country);
-    show("#isp-info-row");
+    setValue("#auto-config-country", apiInfo.country);
   }
   
   // Display timezone
-  if (apiInfo.timezone && apiInfo.zonename) {
-    setValue("#isp-timezone", `${apiInfo.zonename} (${apiInfo.timezone})`);
-    show("#isp-timezone-row");
+  if (apiInfo.timezone) {
+    setValue("#auto-config-timezone", apiInfo.timezone);
+  }
+  
+  // Display zonename
+  if (apiInfo.zonename) {
+    setValue("#auto-config-zonename", apiInfo.zonename);
   }
   
   // Display ISP
   if (apiInfo.isp) {
-    setValue("#isp-isp", apiInfo.isp);
-    show("#isp-isp-row");
+    setValue("#auto-config-isp", apiInfo.isp);
   }
   
   // Display AS
   if (apiInfo.as) {
-    setValue("#isp-as", apiInfo.as);
-    show("#isp-as-row");
+    setValue("#auto-config-as", apiInfo.as);
   }
   
   // Display IP
@@ -905,8 +906,7 @@ function displayIspInfo(apiInfo) {
   if (apiInfo.ipv4) ips.push(apiInfo.ipv4);
   if (apiInfo.ipv6) ips.push(apiInfo.ipv6);
   if (ips.length > 0) {
-    setValue("#isp-ip", ips.join(" / "));
-    show("#isp-ip-row");
+    setValue("#auto-config-ip", ips.join(" / "));
   }
   
   // Display connection type
@@ -916,8 +916,12 @@ function displayIspInfo(apiInfo) {
   } else if (apiInfo.aftr) {
     connectionType = "DS-Lite";
   }
-  setValue("#isp-connection", connectionType);
-  show("#isp-connection-row");
+  setValue("#auto-config-wan-type", connectionType);
+  
+  // Display notice
+  if (apiInfo.notice) {
+    setValue("#auto-config-notice", apiInfo.notice);
+  }
   
   // Auto-configure based on ISP detection
   applyIspAutoConfig(apiInfo);
