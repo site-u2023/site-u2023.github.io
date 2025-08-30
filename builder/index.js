@@ -1303,8 +1303,8 @@ async function loadDeviceProfile(device) {
             console.error('fetchDevicePackages failed:', e);
         }
         // 取得完了後にだけ UI 生成（SNAPSHOTでも実行される）
-        if (typeof generatePackageSelector === 'function') {
-            generatePackageSelector();
+        if (typeof window.generatePackageSelector === 'function') {
+            window.generatePackageSelector();
         }
         return true;
         
