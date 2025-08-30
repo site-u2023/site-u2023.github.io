@@ -877,6 +877,7 @@ function fetchApiInfo() {
     });
 }
 
+// ...
 function displayIspInfo(apiInfo) {
   if (!apiInfo) return;
   
@@ -926,6 +927,9 @@ function displayIspInfo(apiInfo) {
   if (apiInfo.notice) {
     setValue("#auto-config-notice", apiInfo.notice);
   }
+
+  // 親要素である #extended-build-info を一度だけ表示する
+  show("#extended-build-info");
   
   // Auto-configure based on ISP detection
   applyIspAutoConfig(apiInfo);
