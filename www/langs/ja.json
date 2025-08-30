@@ -52,5 +52,5 @@
     "tr-isp": "ISP",
     "tr-as": "AS",
     "tr-ip-address": "IPアドレス",
-    "tr-wan": "自動判定"
+    "tr-wan": "接続方式"
 }
