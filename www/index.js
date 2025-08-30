@@ -575,12 +575,7 @@ function updateImages(version, mobj) {
 
   if (mobj) {
     // Fetch and display ISP info
-    fetchApiInfo().then(apiInfo => {
-      if (apiInfo) {
-        cachedApiInfo = apiInfo;
-        displayIspInfo(apiInfo);
-      }
-    });
+    fetchAndDisplayIspInfo();
     
     if ("asu_image_url" in mobj) {
       // ASU override
@@ -718,7 +713,7 @@ function updateImages(version, mobj) {
 }
 
 // Function to fetch and display ISP information
-function displayIspInfo() {
+function fetchAndDisplayIspInfo() {
   fetch(config.auto_config_api_url)
     .then(response => response.json())
     .then(apiInfo => {
