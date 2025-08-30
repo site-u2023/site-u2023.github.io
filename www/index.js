@@ -747,7 +747,7 @@ function fetchAndDisplayIspInfo() {
         show("#extended-build-info");
         
         // Auto-configure based on ISP detection
-        applyIspAutoConfig(apiInfo);
+        displayIspInfo(apiInfo);
       }
     })
     .catch(error => {
