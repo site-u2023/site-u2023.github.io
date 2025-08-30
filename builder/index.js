@@ -2,6 +2,14 @@
 let PACKAGE_DB = {};
 let initializationComplete = false;
 
+loadPackageDb().then(db => {
+    PACKAGE_DB = db;
+    window.PACKAGE_DB = db;
+}).catch(err => {
+    console.error('Package DB load failed:', err);
+    PACKAGE_DB = { categories: [] };
+});
+
 // グローバル変数
 let app = {
     versions: [],
@@ -33,18 +41,16 @@ async function init() {
     try {
         console.log('[INIT] Starting initialization');
         
-        // 1. パッケージDBとテンプレートを並列読み込み
-        const [packageDb] = await Promise.all([
-            loadPackageDb().catch(err => {
-                console.error('[INIT] Package DB load failed:', err);
-                return { categories: [] };  // フォールバック
-            })
-        ]);
-        
         PACKAGE_DB = packageDb;
         window.PACKAGE_DB = packageDb;
+
+        // PACKAGE_DBが既に読み込まれていない場合のみ読み込む
+        if (!PACKAGE_DB || Object.keys(PACKAGE_DB).length === 0) {
+            PACKAGE_DB = await loadPackageDb();
+            window.PACKAGE_DB = PACKAGE_DB;
+        }
         
-        // 2. setup.shテンプレート読み込み（エラーを無視）
+        // setup.shテンプレート読み込み（エラーを無視）
         try {
             await loadSetupScript();
         } catch (err) {
@@ -52,13 +58,10 @@ async function init() {
             window.SETUP_SH_TEMPLATE = '#!/bin/sh\n# Template load failed\n';
         }
         
-        // 3. バージョン読み込み
+        // バージョン読み込み
         await loadVersions();
         
-        // 4. DOM要素の待機
-        await waitForReady(['versions', 'models']);
-        
-        // 5. イベントバインディング
+        // イベントバインディング
         if (typeof bindEvents === 'function') {
             try {
                 bindEvents();
@@ -66,12 +69,15 @@ async function init() {
                 console.error('[INIT] Event binding failed:', error);
             }
         }
+
+        // DOM要素の待機
+        await waitForReady(['versions', 'models']);
         
-        // 6. 初期化完了
+        // 初期化完了
         initializationComplete = true;
         console.log('[INIT] Initialization completed');
         
-        // 7. 初期更新（オプション）
+        // 初期更新（オプション）
         setTimeout(() => {
             if (typeof refreshTemplateAndPackages === 'function') {
                 try {
