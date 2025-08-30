@@ -5,10 +5,11 @@ var config = {
   show_help: true,
 
   // Versions list (optional if provided by .versions.json)
-  versions: [],
+  // 最新バージョンに更新
+  // versions: ["24.10.0", "23.05.5"],
 
   // Pre-selected version (optional if provided by .versions.json)
-  default_version: "",
+  // default_version: "24.10.0",
 
   // Image download URL (e.g. "https://downloads.openwrt.org")
   image_url: "https://downloads.openwrt.org",
