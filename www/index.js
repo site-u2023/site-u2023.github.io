@@ -591,13 +591,17 @@ function updateImages(version, mobj) {
     }
 
     const h3 = $("#downloads1 h3");
-    if ("build_cmd" in mobj) {
-      h3.classList.remove("tr-downloads");
-      h3.classList.add("tr-custom-downloads");
-    } else {
-      h3.classList.remove("tr-custom-downloads");
-      h3.classList.add("tr-downloads");
-    }
+        if ("build_cmd" in mobj) {
+            if (h3) {
+                h3.classList.remove("tr-downloads");
+                h3.classList.add("tr-custom-downloads");
+            }
+        } else {
+            if (h3) {
+                h3.classList.remove("tr-custom-downloads");
+                h3.classList.add("tr-downloads");
+            }
+        }
 
     // update title translation
     translate();
