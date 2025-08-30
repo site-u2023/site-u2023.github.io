@@ -1,18 +1,19 @@
 // グローバル変数
-let app = {
+window.app = {
     versions: [],
     devices: [],
+    devicesMap: {},
     selectedVersion: '',
     templateLoaded: false,
-    availablePackages: [], // デバイス固有のパッケージリスト
+    devicePackages: [],
     archPackagesMap: {},
 };
 
 // 公式と同じグローバル変数
-let current_device = {};
+window.current_device = {};
         
 // map.shのキャッシュ
-let mapShCache = undefined;
+window.mapShCache = undefined;
 
 document.addEventListener('DOMContentLoaded', init);
 
@@ -181,6 +182,9 @@ const ErrorHandler = {
         }
     }
 };
+
+// Windowオブジェクトにエクスポート
+window.ErrorHandler = ErrorHandler;
 
 // ==================== リセット共通関数 ====================
 const ResetManager = {
@@ -648,21 +652,21 @@ function bindEvents() {
     const modelsEl = document.getElementById('models');
     if (modelsEl) {
         // 初期化時にオートコンプリートをセットアップ
-        if (app.devicesMap) {
+        if (window.app.devicesMap) {
             setupAutocompleteList(
                 modelsEl,
-                Object.keys(app.devicesMap),
+                Object.keys(window.app.devicesMap),
                 hideDeviceInfo,
-                (input) => changeModel(app.selectedVersion, app.devicesMap, input.value)
+                (input) => changeModel(window.app.selectedVersion, window.app.devicesMap, input.value)
             );
         }
     }
 
     const aiosConfigDetails = document.getElementById('use-aios-config-details');
-    if (aiosConfigDetails) aiosConfigDetails.addEventListener('toggle', toggleAiosConfig);
+    if (aiosConfigDetails) aiosConfigDetails.addEventListener('toggle', window.toggleAiosConfig);
     
     const pkgSelectorDetails = document.getElementById('use-package-selector-details');
-    if (pkgSelectorDetails) pkgSelectorDetails.addEventListener('toggle', togglePackageSelector);
+    if (pkgSelectorDetails) pkgSelectorDetails.addEventListener('toggle', window.togglePackageSelector);
     
     const buildBtnEl = document.getElementById('request-build');
     if (buildBtnEl) {
@@ -674,7 +678,7 @@ function bindEvents() {
             e.stopImmediatePropagation();
             
             console.log('[BIND] About to call buildAsuRequest');
-            buildAsuRequest();
+            window.buildAsuRequest();
             console.log('[BIND] buildAsuRequest call completed');
         });
     }
@@ -754,12 +758,12 @@ function bindEvents() {
     // ===== ラジオボタンのリアルタイム反映 =====
     // DS-Lite mode
     document.querySelectorAll('input[name="dsliteMode"]').forEach(radio => {
-        radio.addEventListener('change', handleDsliteModeChange);
+        radio.addEventListener('change', window.handleDsliteModeChange);
     });
     
     // Connection mode
     document.querySelectorAll('input[name="connectionMode"]').forEach(radio => {
-        radio.addEventListener('change', handleConnectionModeChange);
+        radio.addEventListener('change', window.handleConnectionModeChange);
     });
     
     // Connection type
@@ -889,8 +893,8 @@ const DeviceContext = {
         console.log(`[DeviceContext] Device selected: ${device.id}`);
         
         // デバイス状態更新
-        current_device = {
-            version: app.selectedVersion,
+        window.current_device = {
+            version: window.app.selectedVersion,
             id: device.id,
             target: device.target
         };
@@ -902,24 +906,23 @@ const DeviceContext = {
             if (success) {
                 // ISP 先読み（デバイス決定後・表示前）
                 try {
-                    await fetchApiInfoAndUpdate();
-                    updateRequiredPackages();
-                    asuCollectPackages();
+                    await window.fetchApiInfoAndUpdate();
+                    window.updateRequiredPackages();
+                    window.asuCollectPackages();
                 } catch (e) {
                     console.error('[DeviceContext] API fetch failed before showDeviceInfo:', e);
                 }   
                 showDeviceInfo();
             } else {
                 // 失敗時はデバイス情報をクリア
-                current_device = {};
+                window.current_device = {};
             }
         } catch (error) {
-            const result = ErrorHandler.handle('DeviceContext._selectDevice', error);
+            ErrorHandler.handle('DeviceContext._selectDevice', error);
             current_device = {};
             hideDeviceInfo();
-            // ErrorHandlerで処理完了、制御フロー中断
             return;
-        }
+        }  
     },
     
     // 統合後処理
@@ -1266,7 +1269,7 @@ async function loadDeviceProfile(device) {
     if (profileCache[cacheKey]) {
         console.log(`Using cached profile for ${cacheKey}`);
         applyProfileData(profileCache[cacheKey], profileId);
-        Promise.allSettled([ fetchDevicePackages() ])
+        Promise.allSettled([ window.fetchDevicePackages() ])
             .then(() => console.log('Background tasks completed (from cache)'));
         return true;
     }
@@ -1295,13 +1298,13 @@ async function loadDeviceProfile(device) {
 
         // パッケージ取得完了を待ってから描画（SNAPSHOT版は別処理）
         try {
-            await fetchDevicePackages();
+            await window.fetchDevicePackages();
         } catch (e) {
             console.error('fetchDevicePackages failed:', e);
         }
         // 取得完了後にだけ UI 生成（SNAPSHOTでも実行される）
-        if (typeof generatePackageSelector === 'function') {
-            generatePackageSelector();
+        if (typeof window.generatePackageSelector === 'function') {
+            window.generatePackageSelector();
         }
         return true;
         
