@@ -44,13 +44,13 @@
     "tr-validate-manifest": "マニフェストを検証する",
     "tr-container-setup": "コンテナのセットアップ",
 
-    "tr-extended-info": "場所とISP情報",
-    "tr-notice": "通知",
-    "tr-country": "国",
-    "tr-timezone": "タイムゾーン",
-    "tr-zonename": "ゾーン名",
+    "tr-extended-info": "地域とISP情報",
+    "tr-notice": "お知らせ",
+    "tr-country": "地域",
+    "tr-timezone": "時間帯",
+    "tr-zonename": "地域名",
     "tr-isp": "ISP",
-    "tr-as": "AS番号",
+    "tr-as": "AS",
     "tr-ip-address": "IPアドレス",
-    "tr-wan": "WAN接続"
+    "tr-wan": "WAN"
 }
