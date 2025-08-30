@@ -1,13 +1,3 @@
-// ==================== グローバル設定 ====================
-const config = window.config || {
-    image_url: "https://downloads.openwrt.org",
-    asu_url: "https://sysupgrade.openwrt.org",
-    image_urls: {},
-    overview_urls: {},
-    min_version: "21.02.0",
-    info_url: "https://openwrt.org/search?q={title}"
-};
-
 // ==================== パッケージデータベース ====================
 let PACKAGE_DB = {};
 let initializationComplete = false;  // 初期化完了フラグ
