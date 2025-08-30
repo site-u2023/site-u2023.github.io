@@ -112,7 +112,6 @@ async function init() {
     }
 }
 
-// ==================== DOM読み込み完了時に初期化開始 ====================
 document.addEventListener('DOMContentLoaded', init);
 
 // ==================== 必須要素の存在を待つユーティリティ ====================
@@ -225,8 +224,6 @@ function applySearchUrls(db) {
     });
   });
 }
-
-document.addEventListener('DOMContentLoaded', init);
 
 // ==================== 統合・総合 デバッカー ====================
 const ErrorHandler = {
