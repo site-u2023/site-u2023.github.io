@@ -717,6 +717,7 @@ function fetchAndDisplayIspInfo() {
   fetch(config.auto_config_api_url)
     .then(response => response.json())
     .then(apiInfo => {
+      console.log("API response:", apiInfo);
       if (apiInfo) {
         // Display ISP information in the same format as build info
         setValue("#auto-config-country", apiInfo.country || "Unknown");
@@ -873,6 +874,8 @@ function fetchApiInfo() {
 }
 
 function displayIspInfo(apiInfo) {
+  console.log("Displaying ISP info:", apiInfo);
+  
   if (!apiInfo) return;
   
   // Display country
