@@ -133,35 +133,47 @@
                 <a id="image-link" href="#"></a>
               </div>
             </div>
-<!-- ISP Information Display -->
-            <div class="row" id="isp-info-row" style="display: none;">
-              <div class="col1 tr-country">Country</div>
-              <div class="col2" id="isp-country"></div>
-            </div>
-            <div class="row" id="isp-timezone-row" style="display: none;">
-              <div class="col1 tr-timezone">Timezone</div>
-              <div class="col2" id="isp-timezone"></div>
-            </div>
-            <div class="row" id="isp-isp-row" style="display: none;">
-              <div class="col1 tr-isp">ISP</div>
-              <div class="col2" id="isp-isp"></div>
-            </div>
-            <div class="row" id="isp-as-row" style="display: none;">
-              <div class="col1 tr-as">AS</div>
-              <div class="col2" id="isp-as"></div>
-            </div>
-            <div class="row" id="isp-ip-row" style="display: none;">
-              <div class="col1 tr-ip">IP Address</div>
-              <div class="col2" id="isp-ip"></div>
-            </div>
-            <div class="row" id="isp-connection-row" style="display: none;">
-              <div class="col1 tr-connection">Connection</div>
-              <div class="col2" id="isp-connection"></div>
+            
+            <!-- Additional Build Information (ISP/Location) -->
+            <div id="extended-build-info" style="display: none;">
+              <h3 class="tr-extended-info">Location & ISP Information</h3>
+              <div class="row">
+                <div class="col1 tr-country">Country</div>
+                <div class="col2" id="isp-country"></div>
+              </div>
+              <div class="row">
+                <div class="col1 tr-timezone">Timezone</div>
+                <div class="col2" id="isp-timezone"></div>
+              </div>
+              <div class="row">
+                <div class="col1 tr-zonename">Zonename</div>
+                <div class="col2" id="isp-zonename"></div>
+              </div>
+              <div class="row">
+                <div class="col1 tr-isp">ISP</div>
+                <div class="col2" id="isp-isp"></div>
+              </div>
+              <div class="row">
+                <div class="col1 tr-as">AS</div>
+                <div class="col2" id="isp-as"></div>
+              </div>
+              <div class="row">
+                <div class="col1 tr-ip-address">IP Address</div>
+                <div class="col2" id="isp-ip"></div>
+              </div>
+              <div class="row">
+                <div class="col1 tr-wan">WAN</div>
+                <div class="col2" id="isp-wan-type"></div>
+              </div>
+              <div class="row">
+                <div class="col1 tr-notice">Notice</div>
+                <div class="col2" id="isp-notice"></div>
+              </div>
             </div>
             
             <div class="row">
               <div id="asu" class="hide" style="width: 100%">
-                <!-- Remove summary, always expanded -->
+                <!-- No summary, always expanded -->
                 <div id="asu-buildstatus" class="hide">
                   <span></span>
                   <div id="asu-log" class="hide">
@@ -183,20 +195,20 @@
                 <!-- Packages Section -->
                 <details id="packages-details" open>
                   <summary>
-                    <h4 class="tr-packages">Packages</h4>
+                    <span class="tr-packages">Installed Packages</span>
                   </summary>
                   <div id="package-selector-config">
                     <!-- Package Search Box -->
-                    <div style="margin-bottom: 1em;">
-                      <label for="package-search">Package Search</label>
+                    <div class="package-search-container">
+                      <h5>Package Search</h5>
+                      <p class="text-muted">Select extra packages to install. They'll be added to the list below.</p>
                       <div id="package-search-autocomplete" class="autocomplete">
                         <input type="text"
                           id="package-search"
                           placeholder="Type package name"
                           autocomplete="off"
                           spellcheck="false"
-                          autocapitalize="off"
-                          style="width: 100%; padding: 0.5em;">
+                          autocapitalize="off">
                       </div>
                     </div>
                     
@@ -208,7 +220,7 @@
                     <!-- Postinst Section -->
                     <details id="postinst-details">
                       <summary>
-                        <h4 class="tr-postinst">Postinst (Package installation script)</h4>
+                        <span>Postinst (Package installation script)</span>
                       </summary>
                       <textarea
                         rows="10"
@@ -221,28 +233,28 @@
                   </div>
                 </details>
                 
-                <!-- Scripts Section -->
+                <!-- Scripts Section - Using official tr-defaults -->
                 <details id="scripts-details" open>
                   <summary>
-                    <h4 class="tr-scripts">Scripts</h4>
+                    <span class="tr-defaults">Script to run on first boot (uci-defaults)</span>
                   </summary>
                   <div id="scripts-config">
                     <!-- Commands -->
-                    <div style="margin-bottom: 1em;">
-                      <label for="command">Add commands</label>
+                    <div class="commands-container">
+                      <h5>Add commands</h5>
+                      <p class="text-muted">Add custom shell commands that run on first boot.</p>
                       <div id="commands-autocomplete" class="autocomplete">
                         <input type="text"
                           id="command"
                           placeholder="Type commands"
                           autocomplete="off"
                           spellcheck="false"
-                          autocapitalize="off"
-                          style="width: 100%; padding: 0.5em;">
+                          autocapitalize="off">
                       </div>
                     </div>
                     
                     <!-- Basic Configuration -->
-                    <div id="basic-config">
+                    <div id="basic-config" class="config-section">
                       <h5>Basic Configuration</h5>
                       <div class="form-row">
                         <div class="form-group">
@@ -250,12 +262,25 @@
                           <select id="aios-language">
                             <option value="en">English</option>
                             <option value="ja">日本語 (Japanese)</option>
+                            <option value="zh-cn">简体中文 (Chinese Simplified)</option>
+                            <option value="ko">한국어 (Korean)</option>
                             <!-- Add more languages as needed -->
                           </select>
                         </div>
                         <div class="form-group">
                           <label for="aios-country">Country</label>
                           <input type="text" id="aios-country" placeholder="00" maxlength="2">
+                        </div>
+                      </div>
+                      
+                      <div class="form-row">
+                        <div class="form-group">
+                          <label for="aios-timezone">Timezone</label>
+                          <input type="text" id="aios-timezone" placeholder="UTC">
+                        </div>
+                        <div class="form-group">
+                          <label for="aios-zonename">Zonename</label>
+                          <input type="text" id="aios-zonename" placeholder="UTC">
                         </div>
                       </div>
                       
@@ -283,7 +308,7 @@
                     </div>
                     
                     <!-- Wi-Fi Configuration -->
-                    <div id="wifi-config">
+                    <div id="wifi-config" class="config-section">
                       <h5>Wi-Fi Configuration</h5>
                       <div class="form-row">
                         <div class="form-group">
@@ -298,7 +323,7 @@
                     </div>
                     
                     <!-- Internet Connection -->
-                    <div id="internet-config">
+                    <div id="internet-config" class="config-section">
                       <h5>Internet Connection</h5>
                       <div class="form-group">
                         <label>Connection mode</label>
@@ -337,8 +362,8 @@
                           </div>
                         </div>
                         
-                        <!-- PPPoE Settings -->
-                        <div id="pppoe-section" style="display: none;">
+                        <!-- Connection type specific settings -->
+                        <div id="pppoe-section" class="connection-config" style="display: none;">
                           <div class="form-row">
                             <div class="form-group">
                               <label for="pppoe-username">PPPoE username</label>
@@ -351,16 +376,14 @@
                           </div>
                         </div>
                         
-                        <!-- DS-Lite Settings -->
-                        <div id="dslite-section" style="display: none;">
+                        <div id="dslite-section" class="connection-config" style="display: none;">
                           <div class="form-group">
                             <label for="dslite-aftr-address">AFTR IPv6 Address</label>
                             <input type="text" id="dslite-aftr-address" placeholder="2404:8e00::feed:100">
                           </div>
                         </div>
                         
-                        <!-- MAP-E Settings -->
-                        <div id="mape-section" style="display: none;">
+                        <div id="mape-section" class="connection-config" style="display: none;">
                           <div class="form-row">
                             <div class="form-group">
                               <label for="mape-br">BR (Border Relay)</label>
@@ -371,14 +394,15 @@
                               <input type="number" id="mape-ealen" placeholder="16" min="0" max="48">
                             </div>
                           </div>
+                          <!-- Add more MAP-E fields as needed -->
                         </div>
                       </div>
                     </div>
                     
-                    <!-- UCI-defaults -->
+                    <!-- UCI-defaults (The actual script textarea) -->
                     <details id="uci-defaults-details">
                       <summary>
-                        <h4 class="tr-defaults">UCI-defaults (Boot configuration script)</h4>
+                        <span>UCI-defaults (Boot configuration script)</span>
                       </summary>
                       <div id="uci-defaults-group">
                         <textarea
@@ -403,7 +427,7 @@
                 </a>
               </div>
             </div>
-          
+            
           <div id="downloads1">
             <h3 class="tr-downloads">Download an image</h3>
             <!-- table of rows of download button and help text -->
