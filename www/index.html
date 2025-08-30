@@ -397,14 +397,88 @@
                           </div>
                           <!-- Add more MAP-E fields as needed -->
                         </div>
-                      </div>
-                    </div>
-                    
-                    <!-- UCI-defaults (The actual script textarea) -->
-                    <details id="uci-defaults-details">
-                      <summary>
-                        <span>UCI-defaults (Boot configuration script)</span>
-                      </summary>
+</div>
+                        </div>
+
+                        <div class="package-category">
+                            <h4>Tuning</h4>
+                            <div class="form-group">
+                                <label>Dynamic Network Optimizer</label>
+                                <div class="radio-group">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="netOptimizer" id="netopt-enabled" value="enabled" checked>
+                                        <label class="form-check-label" for="netopt-enabled">Enabled</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="netOptimizer" id="netopt-disabled" value="disabled">
+                                        <label class="form-check-label" for="netopt-disabled">Disabled</label>
+                                    </div>
+                                </div>
+                                <small class="form-text text-muted">Automatically optimizes TCP buffer sizes and network parameters based on available RAM</small>
+                            </div>
+
+                            <div id="net-optimizer-section" class="conditional-section" style="display: block;">
+                                <div class="form-group">
+                                    <label>Configuration Mode</label>
+                                    <div class="radio-group">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="netOptimizerMode" id="netopt-auto" value="auto" checked>
+                                            <label class="form-check-label" for="netopt-auto">Auto (Recommended)</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="netOptimizerMode" id="netopt-manual" value="manual">
+                                            <label class="form-check-label" for="netopt-manual">Manual</label>
+                                        </div>
+                                    </div>
+                                    <small class="form-text text-muted">Auto mode adjusts parameters based on system resources</small>
+                                </div>
+
+                                <div id="net-optimizer-manual" class="conditional-section" style="display: none;">
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="netopt-rmem">TCP Read Memory</label>
+                                            <input type="text" id="netopt-rmem" class="form-control" placeholder="4096 131072 8388608">
+                                            <small class="form-text text-muted">min default max (bytes)</small>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="netopt-wmem">TCP Write Memory</label>
+                                            <input type="text" id="netopt-wmem" class="form-control" placeholder="4096 131072 8388608">
+                                            <small class="form-text text-muted">min default max (bytes)</small>
+                                        </div>
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="netopt-conntrack">Connection Tracking Max</label>
+                                            <input type="number" id="netopt-conntrack" class="form-control" placeholder="131072" min="1024">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="netopt-backlog">Network Device Backlog</label>
+                                            <input type="number" id="netopt-backlog" class="form-control" placeholder="5000" min="100">
+                                        </div>
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="netopt-somaxconn">Socket Max Connections</label>
+                                            <input type="number" id="netopt-somaxconn" class="form-control" placeholder="16384" min="128">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="netopt-congestion">TCP Congestion Control</label>
+                                            <select id="netopt-congestion" class="form-control">
+                                                <option value="cubic" selected>cubic (default)</option>
+                                                <option value="bbr">bbr</option>
+                                                <option value="reno">reno</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="package-category">
+                            <details id="uci-defaults-details">
+                                <summary>
+                                <span>UCI-defaults (Boot configuration script)</span>
+                                </summary>
                       <div id="uci-defaults-group">
                         <textarea
                           rows="10"
