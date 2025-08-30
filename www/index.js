@@ -1214,7 +1214,7 @@ function displayIspInfo(apiInfo) {
   // Display ISP
   if (apiInfo.isp) {
     setValue("#auto-config-isp", apiInfo.isp);
-    show("#auto-config-auto-config-row");
+    show("#auto-config-isp-row");
   }
   
   // Display AS
