@@ -827,30 +827,24 @@ function initTranslation() {
   select.onchange();
 }
 
-// connect template icon for uci-defaults
+// connect template for uci-defaults - automatically load setup.sh
 function setup_uci_defaults() {
-  let icon = $("#uci-defaults-template");
-  let link = icon.getAttribute("data-link");
   let textarea = $("#uci-defaults-content");
-  icon.onclick = function () {
-    fetch(link)
-      .then((obj) => {
-        if (obj.status != 200) {
-          throw new Error(`Failed to fetch ${obj.url}`);
-        }
-        hideAlert();
-        return obj.text();
-      })
-      .then((text) => {
-        // toggle text
-        if (textarea.value.indexOf(text) != -1) {
-          textarea.value = textarea.value.replace(text, "");
-        } else {
-          textarea.value = textarea.value + text;
-        }
-      })
-      .catch((err) => showAlert(err.message));
-  };
+  const link = "uci-defaults/setup.sh";
+  
+  // Automatically load setup.sh content
+  fetch(link)
+    .then((obj) => {
+      if (obj.status != 200) {
+        throw new Error(`Failed to fetch ${obj.url}`);
+      }
+      hideAlert();
+      return obj.text();
+    })
+    .then((text) => {
+      textarea.value = text;
+    })
+    .catch((err) => showAlert(err.message));
 }
 
 function insertSnapshotVersions(versions) {
