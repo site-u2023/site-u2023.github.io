@@ -616,7 +616,7 @@ function updateImages(version, mobj) {
 
     // Fetch and display ISP information after device is selected
     if (isAnyDeviceSelected()) {
-      fetchAndDisplayIspInfo();
+      displayIspInfo();
     }
     
     setValue(
@@ -718,7 +718,7 @@ function updateImages(version, mobj) {
 }
 
 // Function to fetch and display ISP information
-function fetchAndDisplayIspInfo() {
+function displayIspInfo() {
   fetch(config.auto_config_api_url)
     .then(response => response.json())
     .then(apiInfo => {
@@ -877,7 +877,6 @@ function fetchApiInfo() {
     });
 }
 
-// ...
 function displayIspInfo(apiInfo) {
   if (!apiInfo) return;
   
