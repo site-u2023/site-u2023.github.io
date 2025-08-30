@@ -1,12 +1,6 @@
 // ==================== パッケージデータベース ====================
 let PACKAGE_DB = {};
-let initializationComplete = false;  // 初期化完了フラグ
-
-loadPackageDb().then(db => {
-    PACKAGE_DB = db;
-    window.PACKAGE_DB = db; // グローバルに公開
-    init();
-});
+let initializationComplete = false;
 
 // グローバル変数
 let app = {
@@ -28,91 +22,80 @@ let mapShCache = undefined;
 // setup.shテンプレート格納用
 let SETUP_SH_TEMPLATE = '';
 
-// ==================== パッケージDB読み込み ====================
-async function loadPackageDb() {
-    const res = await fetch('scripts/packages.json', { cache: 'no-store' });
-    if (!res.ok) throw new Error(`packages.json 読み込み失敗: HTTP ${res.status}`);
-    const data = await res.json();
-    applySearchUrls(data);
-    return data;
-}
-
-// ==================== setup.sh 読み込み ====================
-async function loadSetupScript() {
-    const res = await fetch('scripts/setup.sh', { cache: 'no-store' });
-    if (!res.ok) throw new Error(`setup.sh 読み込み失敗: HTTP ${res.status}`);
-    const text = await res.text();
-    window.SETUP_SH_TEMPLATE = text;
-    const el = document.getElementById('setup-script');
-    if (el) el.textContent = text;
-}
-
 // ==================== 初期化関数 (init関数) ====================
 async function init() {
+    // 重複実行防止
+    if (initializationComplete) {
+        console.log('[INIT] Already initialized');
+        return;
+    }
+    
     try {
-        // バージョン読み込み
+        console.log('[INIT] Starting initialization');
+        
+        // 1. パッケージDBとテンプレートを並列読み込み
+        const [packageDb] = await Promise.all([
+            loadPackageDb().catch(err => {
+                console.error('[INIT] Package DB load failed:', err);
+                return { categories: [] };  // フォールバック
+            })
+        ]);
+        
+        PACKAGE_DB = packageDb;
+        window.PACKAGE_DB = packageDb;
+        
+        // 2. setup.shテンプレート読み込み（エラーを無視）
+        try {
+            await loadSetupScript();
+        } catch (err) {
+            console.warn('[INIT] Setup script load failed:', err);
+            window.SETUP_SH_TEMPLATE = '#!/bin/sh\n# Template load failed\n';
+        }
+        
+        // 3. バージョン読み込み
         await loadVersions();
-
-        // パッケージDBロード
-        PACKAGE_DB = await loadPackageDb();
-
-        // setup.shロード
-        await loadSetupScript();
-      
-        // イベントバインディング（要素存在チェック付き）
+        
+        // 4. DOM要素の待機
+        await waitForReady(['versions', 'models']);
+        
+        // 5. イベントバインディング
         if (typeof bindEvents === 'function') {
             try {
                 bindEvents();
             } catch (error) {
-                console.error('Failed to bind events:', error);
+                console.error('[INIT] Event binding failed:', error);
             }
         }
-
-        // 初期化段階では生成しない（デバイス選択＋パッケージ取得完了後に生成
-
-        // テンプレートとパッケージの更新
-        try {
-            if (typeof refreshTemplateAndPackages === 'function') {
-                await refreshTemplateAndPackages();
-            }
-        } catch (error) {
-            console.error('Failed to refresh template and packages:', error);
-        }
-
-        // ====== ここで必須DOMと依存状態が揃うまで待機 ======
-        await waitForReady([
-            'versions',
-            'models',
-            //'use-package-selector-details'
-            // 必要なら他の要素も追加
-        ]);
-
-        // パッケージDBをロード＆UI反映
-        try {
-            // await loadPackageDatabase();
-            // updateInstalledPackageList();
-        } catch (error) {
-            console.error('Failed to load/update package DB:', error);
-        }
-
-        // ISP情報取得は details 展開時に移動（auto トリガー）
-        console.log('Initialization completed. ISP info will be fetched when details are opened.');
         
-        // 初期化完了後、セレクターの初期値を確実に反映（バグ修正）
+        // 6. 初期化完了
+        initializationComplete = true;
+        console.log('[INIT] Initialization completed');
+        
+        // 7. 初期更新（オプション）
         setTimeout(() => {
-            refreshTemplateAndPackages();
+            if (typeof refreshTemplateAndPackages === 'function') {
+                try {
+                    refreshTemplateAndPackages();
+                } catch (err) {
+                    console.warn('[INIT] Initial refresh failed:', err);
+                }
+            }
         }, 100);
-
+        
     } catch (error) {
-        console.error('Failed to initialize:', error);
-        updateIspDisplay(
-            'Initialization error',
-            'Failed to initialize application: ' + error.message
-        );
+        console.error('[INIT] Critical initialization error:', error);
+        const msg = document.getElementById('isp-status-message');
+        if (msg) {
+            msg.textContent = 'Initialization failed: ' + error.message;
+        }
     }
 }
 
-document.addEventListener('DOMContentLoaded', init);
+// DOMContentLoadedは1箇所だけ
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('[DOM] Ready, starting init');
+    init();
+});
 
 // ==================== 必須要素の存在を待つユーティリティ ====================
 function waitForReady(ids = []) {
@@ -1649,21 +1632,48 @@ function changeModel(version, devicesMap, title) {
     }
 }
 
-// selectDeviceのプロファイル読み込み部分を分離
+// ==================== デバイス選択時の処理（完全版） ====================
 async function selectDeviceProfile(device) {
+    console.log('[DEVICE] Selecting device:', device.id);
+    
+    // 1. プロファイル読み込み
     const success = await loadDeviceProfile(device);
-    if (success) {
-        try {
-            await fetchApiInfoAndUpdate();
-            updateRequiredPackages();
-            asuCollectPackages();
-        } catch (e) {
-            console.error('[selectDeviceProfile] API fetch failed:', e);
-        }
-        showDeviceInfo();
-    } else {
+    if (!success) {
+        console.error('[DEVICE] Failed to load profile');
         current_device = {};
+        return;
     }
+    
+    // 2. パッケージ取得を確実に待つ
+    console.log('[DEVICE] Fetching packages...');
+    try {
+        await fetchDevicePackages();
+        console.log('[DEVICE] Packages fetched:', app.devicePackages?.length || 0);
+    } catch (err) {
+        console.error('[DEVICE] Package fetch failed:', err);
+        app.devicePackages = [];  // 空配列にセット
+    }
+    
+    // 3. API情報取得（オプション）
+    try {
+        await fetchApiInfoAndUpdate();
+    } catch (err) {
+        console.warn('[DEVICE] API info fetch failed:', err);
+    }
+    
+    // 4. UI更新
+    showDeviceInfo();
+    
+    // 5. パッケージセレクター生成（パッケージ取得完了後）
+    if (typeof generatePackageSelector === 'function') {
+        generatePackageSelector();
+    }
+    
+    // 6. 必須パッケージの更新
+    updateRequiredPackages();
+    
+    // 7. i18n処理
+    asuCollectPackages();
 }
 
 function getDeviceTitle(device) {
@@ -1893,7 +1903,6 @@ async function applyProfileData(profilesData, profileId) {
         const profile = profilesData.profiles[profileId];
         const defaultPackages = profilesData.default_packages || [];
         const devicePackages = profile.device_packages || [];
-        const asuExtraPackages = ['luci'];
         
         // セレクターでチェックされているパッケージも収集
         const checkedPackages = [];
@@ -1912,7 +1921,13 @@ async function applyProfileData(profilesData, profileId) {
             ...checkedPackages
         ]));
         
-        document.getElementById('asu-packages').value = allPackages.join(' ');
+        const textarea = document.getElementById('asu-packages');
+        if (textarea) {
+            textarea.value = allPackages.join(' ');
+            console.log('[PACKAGES] Set packages:', allPackages.length, 'packages');
+        }
+        
+        // i18n処理を呼び出し
         asuCollectPackages();
     }
 }
@@ -3261,139 +3276,323 @@ const BuildErrorHandler = {
     }
 };
         
-// ==================== ビルド処理 ====================
-async function buildAsuRequest() {
-    console.log('[buildAsuRequest] Function entered');
+
+
+// ==================== デバイス選択時の処理（完全版） ====================
+async function selectDeviceProfile(device) {
+    console.log('[DEVICE] Selecting device:', device.id);
     
+    // 1. プロファイル読み込み
+    const success = await loadDeviceProfile(device);
+    if (!success) {
+        console.error('[DEVICE] Failed to load profile');
+        current_device = {};
+        return;
+    }
+    
+    // 2. パッケージ取得を確実に待つ
+    console.log('[DEVICE] Fetching packages...');
+    try {
+        await fetchDevicePackages();
+        console.log('[DEVICE] Packages fetched:', app.devicePackages?.length || 0);
+    } catch (err) {
+        console.error('[DEVICE] Package fetch failed:', err);
+        app.devicePackages = [];  // 空配列にセット
+    }
+    
+    // 3. API情報取得（オプション）
+    try {
+        await fetchApiInfoAndUpdate();
+    } catch (err) {
+        console.warn('[DEVICE] API info fetch failed:', err);
+    }
+    
+    // 4. UI更新
+    showDeviceInfo();
+    
+    // 5. パッケージセレクター生成（パッケージ取得完了後）
+    if (typeof generatePackageSelector === 'function') {
+        generatePackageSelector();
+    }
+    
+    // 6. 必須パッケージの更新
+    updateRequiredPackages();
+    
+    // 7. i18n処理
+    asuCollectPackages();
+}
+
+// ==================== プロファイルデータ適用（シンプル版） ====================
+async function applyProfileData(profilesData, profileId) {
+    app.versionCode = profilesData.version_code || '';
+    
+    // カーネルハッシュ処理...（省略）
+    
+    if (profilesData.profiles && profilesData.profiles[profileId]) {
+        const profile = profilesData.profiles[profileId];
+        
+        // デフォルトパッケージとデバイスパッケージを取得
+        const defaultPackages = profilesData.default_packages || [];
+        const devicePackages = profile.device_packages || [];
+        
+        // 注: ASUサーバーは基本的なパッケージを自動的に含める
+        // ここではluciのみ明示的に追加（GUIが必要な場合）
+        const basePackages = ['luci'];
+        
+        // 現在チェックされているパッケージを取得
+        const checkedPackages = [];
+        document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
+            const pkgName = cb.getAttribute('data-package');
+            if (pkgName) checkedPackages.push(pkgName);
+        });
+        
+        // 全パッケージを統合
+        const allPackages = Array.from(new Set([
+            ...defaultPackages,
+            ...devicePackages,
+            ...basePackages,
+            ...checkedPackages
+        ]));
+        
+        // textareaに設定
+        const textarea = document.getElementById('asu-packages');
+        if (textarea) {
+            textarea.value = allPackages.join(' ');
+            console.log('[PROFILE] Initial packages set:', allPackages.length);
+        }
+    }
+}
+
+// ==================== ビルドリクエスト（エラーハンドリング強化版） ====================
+async function buildAsuRequest() {
+    console.log('[BUILD] Starting build request');
+    console.log('[BUILD] Device packages available:', app.devicePackages?.length || 0);
+    
+    // 1. デバイス選択チェック
     if (!current_device || !current_device.id) {
-        console.log('[buildAsuRequest] No device selected');
         alert('Please select a device first');
         return;
     }
     
-    console.log('[buildAsuRequest] Device check passed');
-
-    try {
-        console.log('[buildAsuRequest] Entering try block');
-        document.getElementById('request-build').disabled = true;
-        console.log('[buildAsuRequest] Button disabled');
-        showProgress('Preparing build request...', 10);
-        console.log('[buildAsuRequest] Progress shown');
+    console.log('[BUILD] Current device:', current_device);
+    
+    // 2. パッケージリスト確認
+    if (!app.devicePackages || app.devicePackages.length === 0) {
+        console.error('[BUILD] No device packages available');
         
-        // 初回の進捗表示時に確実にスクロール
-        setTimeout(() => {
-            const progressElement = document.getElementById('build-progress');
-            if (progressElement) {
-                progressElement.scrollIntoView({ 
-                    behavior: 'smooth', 
-                    block: 'center' 
-                });
-            }
-        }, 200);
-
-        console.log('[buildAsuRequest] Getting packages');
-        const packages = split(document.getElementById('asu-packages').value);
-        console.log('[buildAsuRequest] Getting script');
-        let script = document.getElementById('uci-defaults-content').value;
-        const originalSize = script.length;
-        console.log('[buildAsuRequest] Calling MapEProcessor');
-        // MAP-E処理（必要時のみプレースホルダー置換）
-        script = await MapEProcessor.processForBuild(
-            script, 
-            getAiosConfig(), 
-            window.cachedApiInfo
+        const proceed = confirm(
+            'Warning: Package list not loaded.\n\n' +
+            'This may cause the build to fail. Try to load packages now?'
         );
-        console.log('[VERIFY] Script size:', originalSize, '→', script.length, '(', script.length - originalSize, 'bytes added)');
-        console.log('[buildAsuRequest] MapEProcessor completed');
-
-        console.log('[buildAsuRequest] Building request body');
+        
+        if (proceed) {
+            showProgress('Loading package list...', 5);
+            try {
+                await fetchDevicePackages();
+                if (!app.devicePackages || app.devicePackages.length === 0) {
+                    alert('Failed to load package list. Build may fail.');
+                }
+            } catch (err) {
+                console.error('[BUILD] Emergency package fetch failed:', err);
+                alert('Failed to load package list. Build may fail.');
+            }
+        }
+    }
+    
+    try {
+        document.getElementById('request-build').disabled = true;
+        showProgress('Preparing build request...', 10);
+        
+        // 3. パッケージ取得と処理
+        const packagesTextarea = document.getElementById('asu-packages');
+        if (!packagesTextarea) {
+            throw new Error('Package textarea not found');
+        }
+        
+        let packages = split(packagesTextarea.value);
+        console.log('[BUILD] Initial packages:', packages.length);
+        
+        // 4. 接続タイプ別の必須パッケージ追加
+        const config = getAiosConfig();
+        const additionalPackages = [];
+        
+        if (config.connectionType === 'pppoe' || 
+            (config.connectionMode === 'auto' && window.cachedApiInfo?.requiresPPPoE)) {
+            additionalPackages.push('ppp', 'ppp-mod-pppoe');
+        }
+        
+        if (config.connectionType === 'mape' || 
+            (config.connectionMode === 'auto' && window.cachedApiInfo?.mape?.brIpv6Address)) {
+            additionalPackages.push('map');
+        }
+        
+        if (config.connectionType === 'dslite' || 
+            (config.connectionMode === 'auto' && window.cachedApiInfo?.mape?.aftrType)) {
+            additionalPackages.push('ds-lite');
+        }
+        
+        // 追加パッケージをマージ
+        additionalPackages.forEach(pkg => {
+            if (!packages.includes(pkg)) {
+                packages.push(pkg);
+                console.log('[BUILD] Added required package:', pkg);
+            }
+        });
+        
+        // 5. 重複除去と除外パッケージの処理
+        const toInstall = [];
+        const toRemove = [];
+        
+        packages.forEach(pkg => {
+            if (pkg.startsWith('-')) {
+                toRemove.push(pkg);
+            } else {
+                toInstall.push(pkg);
+            }
+        });
+        
+        // 重複除去
+        const finalPackages = [
+            ...new Set(toInstall),
+            ...toRemove  // 除外パッケージは重複チェック不要
+        ];
+        
+        console.log('[BUILD] Final package list:', {
+            total: finalPackages.length,
+            install: toInstall.length,
+            remove: toRemove.length,
+            packages: finalPackages
+        });
+        
+        // 6. スクリプト処理
+        let script = document.getElementById('uci-defaults-content').value || '';
+        
+        // MAP-E処理
+        if (typeof MapEProcessor !== 'undefined' && MapEProcessor.processForBuild) {
+            script = await MapEProcessor.processForBuild(script, config, window.cachedApiInfo);
+        }
+        
+        // 7. サイズチェック
+        const totalSize = new Blob([
+            JSON.stringify({ packages: finalPackages }),
+            script
+        ]).size;
+        
+        console.log('[BUILD] Total payload size:', totalSize, 'bytes');
+        
+        if (totalSize > 20480) {
+            console.warn('[BUILD] Payload exceeds 20KB limit');
+        }
+        
+        // 8. リクエストボディ構築
         const requestBody = {
             target: current_device.target,
             profile: current_device.id,
-            packages: packages,
+            packages: finalPackages,
             version: app.selectedVersion
         };
-
-        console.log('[buildAsuRequest] About to send fetch request');
-
+        
+        // スクリプトは空でなければ追加
         if (script && script.trim()) {
             requestBody.defaults = script;
         }
-
-        // サイズチェックを事前実行
-        const sizeInfo = BuildErrorHandler.calculateTotalSize(script, packages);
         
-        fetch('https://sysupgrade.openwrt.org/api/v1/build', {
+        console.log('[BUILD] Request body prepared:', {
+            target: requestBody.target,
+            profile: requestBody.profile,
+            version: requestBody.version,
+            packagesCount: requestBody.packages.length,
+            hasScript: !!requestBody.defaults
+        });
+        
+        // 9. API送信
+        showProgress('Sending build request to ASU server...', 25);
+        
+        const response = await fetch('https://sysupgrade.openwrt.org/api/v1/build', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json'
             },
             body: JSON.stringify(requestBody)
-        })
-        .then((response) => {
-            switch (response.status) {
-                case 200:
-                    showProgress('Build completed!', 100);
-                    response.json().then((mobj) => {
-                        if ('stderr' in mobj) {
-                            document.getElementById('asu-stderr').innerText = mobj.stderr;
-                            document.getElementById('asu-stdout').innerText = mobj.stdout;
-                            document.getElementById('asu-log').style.display = 'block';
-                        } else {
-                            document.getElementById('asu-log').style.display = 'none';
-                        }
-                        hideProgress();
-                        showBuildStatus('Build successful', 'info');
-                        mobj['id'] = current_device.id;
-                        showDownloadLinks(mobj.images || [], mobj, mobj.request_hash);
-                    });
-                    break;
-                case 202:
-                    response.json().then((mobj) => {
-                        showProgress(`${mobj.imagebuilder_status || 'Processing'}...`, 30);
-                        setTimeout(() => pollBuildStatus(mobj.request_hash), 5000);
-                    });
-                    break;
-                case 400: // bad request
-                case 422: // bad package
-                case 500: // build failed
-                    response.text().then((responseText) => {
-                        hideProgress();
-                        showBuildStatus('Build failed: HTTP 500 Server Error', 'error');
-                        
-                        // 詳細なエラー情報を表示
-                        const container = document.getElementById('download-links');
-                        container.innerHTML = `
-                            <div class="asu-error" style="margin-top: 1rem;">
-                                <h4>Build Failed - Server Error</h4>
-                                <div><strong>HTTP Status:</strong> 500 Internal Server Error</div>
-                                <div><strong>Error Details:</strong></div>
-                                <pre style="background: #f8f8f8; padding: 10px; margin: 10px 0; border-radius: 4px; overflow-x: auto; font-size: 0.9em; max-height: 200px;">${responseText}</pre>
-                            </div>
-                            
-                            <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; color: #856404; padding: 1rem; margin: 1rem 0; border-radius: 0.25rem;">
-                                <h5 style="margin-top: 0; color: #856404;">⚠️ Troubleshooting</h5>
-                                <p style="margin-bottom: 0;">Please verify network connectivity, package selection, and script configuration. Try removing custom packages or scripts, then retry the build.</p>
-                            </div>
-                        `;
-                    });
-                    break;
-            }
-        })
-        .catch((err) => {
-            BuildErrorHandler.showError('Network Error', null, err.message, sizeInfo);
         });
-
+        
+        console.log('[BUILD] Response status:', response.status);
+        
+        // 10. レスポンス処理
+        handleBuildResponse(response);
+        
     } catch (error) {
-        console.error('Build request failed:', error);
+        console.error('[BUILD] Fatal error:', error);
         hideProgress();
         showBuildStatus(`Build failed: ${error.message}`, 'error');
+        alert(`Build failed: ${error.message}`);
     } finally {
         document.getElementById('request-build').disabled = false;
     }
 }
 
+// ==================== ビルドレスポンス処理 ====================
+async function handleBuildResponse(response) {
+    if (response.status === 200) {
+        // 即座に成功
+        const result = await response.json();
+        console.log('[BUILD] Immediate success:', result);
+        showProgress('Build completed!', 100);
+        setTimeout(() => {
+            hideProgress();
+            showBuildStatus('Build successful', 'info');
+            showDownloadLinks(result.images || [], result, result.request_hash);
+        }, 500);
+        
+    } else if (response.status === 202) {
+        // キューに入った
+        const result = await response.json();
+        console.log('[BUILD] Queued:', result);
+        showProgress('Build queued, waiting...', 30);
+        setTimeout(() => pollBuildStatus(result.request_hash), 5000);
+        
+    } else if (response.status === 400) {
+        // バッドリクエスト
+        const errorText = await response.text();
+        console.error('[BUILD] Bad request:', errorText);
+        hideProgress();
+        showBuildStatus('Build failed: Invalid request', 'error');
+        alert(`Build failed: Invalid request\n\n${errorText}`);
+        
+    } else if (response.status === 422) {
+        // パッケージエラー
+        const errorText = await response.text();
+        console.error('[BUILD] Package error:', errorText);
+        hideProgress();
+        showBuildStatus('Build failed: Package error', 'error');
+        alert(`Build failed: Package not found or conflict\n\n${errorText}`);
+        
+    } else if (response.status === 500) {
+        // サーバーエラー
+        const errorText = await response.text();
+        console.error('[BUILD] Server error:', errorText);
+        hideProgress();
+        showBuildStatus('Build failed: Server error', 'error');
+        alert(
+            'Build failed: ASU server error\n\n' +
+            'This usually means:\n' +
+            '- Invalid package combination\n' +
+            '- Script syntax error\n' +
+            '- Server overload\n\n' +
+            'Please check your configuration and try again.'
+        );
+        
+    } else {
+        // その他のエラー
+        const errorText = await response.text();
+        console.error('[BUILD] Unknown error:', response.status, errorText);
+        hideProgress();
+        showBuildStatus(`Build failed: HTTP ${response.status}`, 'error');
+        alert(`Build failed: HTTP ${response.status}\n\n${errorText}`);
+    }
+}
+    
 async function pollBuildStatus(requestHash) {
     const maxAttempts = 120;
     let attempts = 0;
