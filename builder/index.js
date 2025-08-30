@@ -19,6 +19,9 @@ let current_device = {};
 // map.shのキャッシュ
 let mapShCache = undefined;
 
+// setup.shテンプレート格納用
+let SETUP_SH_TEMPLATE = '';
+
 // ==================== 初期化関数 (init関数) ====================
 async function init() {
     // 重複実行防止
