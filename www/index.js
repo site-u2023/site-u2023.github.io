@@ -720,17 +720,17 @@ function fetchAndDisplayIspInfo() {
     .then(apiInfo => {
       if (apiInfo) {
         // Display ISP information in the same format as build info
-        setValue("#isp-country", apiInfo.country || "Unknown");
-        setValue("#isp-timezone", apiInfo.timezone || "Unknown");
-        setValue("#isp-zonename", apiInfo.zonename || "Unknown");
-        setValue("#isp-isp", apiInfo.isp || "Unknown");
-        setValue("#isp-as", apiInfo.as || "Unknown");
+        setValue("#auto-config-country", apiInfo.country || "Unknown");
+        setValue("#auto-config-timezone", apiInfo.timezone || "Unknown");
+        setValue("#auto-config-zonename", apiInfo.zonename || "Unknown");
+        setValue("#auto-config-isp", apiInfo.isp || "Unknown");
+        setValue("#auto-config-as", apiInfo.as || "Unknown");
         
         // Display IP addresses
         const ips = [];
         if (apiInfo.ipv4) ips.push(apiInfo.ipv4);
         if (apiInfo.ipv6) ips.push(apiInfo.ipv6);
-        setValue("#isp-ip", ips.join(" / ") || "Unknown");
+        setValue("#auto-config-ip", ips.join(" / ") || "Unknown");
         
         // Determine WAN type
         let wanType = "DHCP/PPPoE";
@@ -739,9 +739,9 @@ function fetchAndDisplayIspInfo() {
         } else if (apiInfo.aftr) {
           wanType = "DS-Lite";
         }
-        setValue("#isp-wan-type", wanType);
+        setValue("#auto-config-wan-type", wanType);
         
-        setValue("#isp-notice", apiInfo.notice || "");
+        setValue("#auto-config-notice", apiInfo.notice || "");
         
         // Show the extended build info section
         show("#extended-build-info");
@@ -1201,26 +1201,26 @@ function displayIspInfo(apiInfo) {
   
   // Display country
   if (apiInfo.country) {
-    setValue("#isp-country", apiInfo.country);
-    show("#isp-info-row");
+    setValue("#auto-config-country", apiInfo.country);
+    show("#auto-config-info-row");
   }
   
   // Display timezone
   if (apiInfo.timezone && apiInfo.zonename) {
-    setValue("#isp-timezone", `${apiInfo.zonename} (${apiInfo.timezone})`);
-    show("#isp-timezone-row");
+    setValue("#auto-config-timezone", `${apiInfo.zonename} (${apiInfo.timezone})`);
+    show("#auto-config-timezone-row");
   }
   
   // Display ISP
   if (apiInfo.isp) {
-    setValue("#isp-isp", apiInfo.isp);
-    show("#isp-isp-row");
+    setValue("#auto-config-isp", apiInfo.isp);
+    show("#auto-config-auto-config-row");
   }
   
   // Display AS
   if (apiInfo.as) {
-    setValue("#isp-as", apiInfo.as);
-    show("#isp-as-row");
+    setValue("#auto-config-as", apiInfo.as);
+    show("#auto-config-as-row");
   }
   
   // Display IP
@@ -1228,8 +1228,8 @@ function displayIspInfo(apiInfo) {
   if (apiInfo.ipv4) ips.push(apiInfo.ipv4);
   if (apiInfo.ipv6) ips.push(apiInfo.ipv6);
   if (ips.length > 0) {
-    setValue("#isp-ip", ips.join(" / "));
-    show("#isp-ip-row");
+    setValue("#auto-config-ip", ips.join(" / "));
+    show("#auto-config-ip-row");
   }
   
   // Display connection type
@@ -1239,8 +1239,8 @@ function displayIspInfo(apiInfo) {
   } else if (apiInfo.aftr) {
     connectionType = "DS-Lite";
   }
-  setValue("#isp-connection", connectionType);
-  show("#isp-connection-row");
+  setValue("#auto-config-connection", connectionType);
+  show("#auto-config-connection-row");
   
   // Auto-configure based on ISP detection
   applyIspAutoConfig(apiInfo);
