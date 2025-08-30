@@ -52,5 +52,5 @@
     "tr-isp": "ISP",
     "tr-as": "AS",
     "tr-ip-address": "IP Address",
-    "tr-wan": "Method"
+    "tr-method": "Method"
 }
