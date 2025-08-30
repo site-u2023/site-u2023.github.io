@@ -311,10 +311,74 @@ function handleConnectionModeChange(e) {
         }
     }
     
-    applyConnectionSettingsChange();
+applyConnectionSettingsChange();
 }
 
-function handleConnectionTypeChange(e) {
+const NETOPT_DEFAULTS = {
+    rmem: '4096 131072 8388608',
+    wmem: '4096 131072 8388608',
+    conntrack: '131072',
+    backlog: '5000',
+    somaxconn: '16384',
+    congestion: 'cubic'
+};
+
+function resetNetOptimizerValues() {
+    document.getElementById('netopt-rmem').value = NETOPT_DEFAULTS.rmem;
+    document.getElementById('netopt-wmem').value = NETOPT_DEFAULTS.wmem;
+    document.getElementById('netopt-conntrack').value = NETOPT_DEFAULTS.conntrack;
+    document.getElementById('netopt-backlog').value = NETOPT_DEFAULTS.backlog;
+    document.getElementById('netopt-somaxconn').value = NETOPT_DEFAULTS.somaxconn;
+    document.getElementById('netopt-congestion').value = NETOPT_DEFAULTS.congestion;
+}
+
+function handleNetOptimizerChange(e) {
+    const optimizerSection = document.getElementById('net-optimizer-section');
+    
+    if (e.target.value === 'enabled') {
+        optimizerSection.style.display = 'block';
+        const netoptAuto = document.getElementById('netopt-auto');
+        if (netoptAuto) netoptAuto.checked = true;
+        document.getElementById('net-optimizer-manual').style.display = 'none';
+        resetNetOptimizerValues();
+    } else {
+        optimizerSection.style.display = 'none';
+        document.getElementById('net-optimizer-manual').style.display = 'none';
+        clearNetOptimizerValues();
+    }
+    
+    syncTemplateAndPackages({ trigger: 'netopt-change' });
+}
+
+function handleNetOptimizerModeChange(e) {
+    const manualSection = document.getElementById('net-optimizer-manual');
+    
+    if (e && e.target && e.target.value === 'manual') {
+        manualSection.style.display = 'block';
+        resetNetOptimizerValues();
+    } else {
+        manualSection.style.display = 'none';
+        resetNetOptimizerValues();
+    }
+    
+    syncTemplateAndPackages({ trigger: 'netopt-mode-change' });
+}
+
+function clearNetOptimizerValues() {
+    const fields = [
+        'netopt-rmem', 'netopt-wmem', 'netopt-conntrack',
+        'netopt-backlog', 'netopt-somaxconn'
+    ];
+    fields.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+    const congestionSelect = document.getElementById('netopt-congestion');
+    if (congestionSelect) congestionSelect.value = 'cubic';
+}
+
+// ==================== 接続設定管理 ====================
+function applyConnectionSettingsChange() {
     window.ResetManager.clearPPPoEValues();
     window.ResetManager.clearDSLiteValues();
     window.ResetManager.clearMAPEValues();
@@ -730,6 +794,7 @@ async function customizeSetupScript(content, userConfig, apiInfo, selectedPackag
         mape_gua_mode: { value: guaActive ? '1' : '', active: guaActive },
         mape_gua_prefix: { value: guaActive ? guaPrefix : '', active: guaActive },
 
+        // AP
         ap_ip_address: { value: userConfig.apIpAddress, active: apActive && !!userConfig.apIpAddress },
         ap_gateway: { value: userConfig.apGateway, active: apActive && !!userConfig.apGateway },
         
@@ -904,6 +969,7 @@ function getAiosConfig() {
         mapePsidlen: parseOrEmpty('mape-psidlen', 'int'),
         mapeGuaPrefix: parseOrEmpty('mape-gua-prefix'),
         
+        // Network Optimizer settings
         netOptimizer: document.querySelector('input[name="netOptimizer"]:checked')?.value || 'disabled',
         netOptimizerMode: document.querySelector('input[name="netOptimizerMode"]:checked')?.value || 'auto',
         netOptRmem: parseOrEmpty('netopt-rmem'),
@@ -1524,3 +1590,30 @@ window.buildAsuRequest = buildAsuRequest;
 window.showDeviceInfo = showDeviceInfo;
 window.setupVersionUrls = setupVersionUrls;
 window.showBuildStatus = showBuildStatus;
+
+// Network Optimizerイベントリスナーの設定
+document.addEventListener('DOMContentLoaded', function() {
+    // Network Optimizer有効/無効
+    document.querySelectorAll('input[name="netOptimizer"]').forEach(radio => {
+        radio.addEventListener('change', handleNetOptimizerChange);
+    });
+
+    // Network OptimizerのAuto/Manual切り替え
+    document.querySelectorAll('input[name="netOptimizerMode"]').forEach(radio => {
+        radio.addEventListener('change', handleNetOptimizerModeChange);
+    });
+
+    // Network Optimizerのマニュアル設定フィールド
+    const netOptFields = [
+        'netopt-rmem', 'netopt-wmem', 'netopt-conntrack',
+        'netopt-backlog', 'netopt-somaxconn', 'netopt-congestion'
+    ];
+    netOptFields.forEach(fieldId => {
+        const el = document.getElementById(fieldId);
+        if (el) {
+            el.addEventListener('input', () => {
+                syncTemplateAndPackages({ trigger: 'netopt-field' });
+            });
+        }
+    });
+});
