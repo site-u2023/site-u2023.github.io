@@ -153,38 +153,33 @@ MAPE_EOF
 # github.com/fakemanhk/openwrt-jp-ipoe
 DONT_SNAT_TO="0"
 apply_map_patch() {
-	local cfg="$1"
-	local k="$2"
-	if [ -z "$(eval "echo \$RULE_${k}_PORTSETS")" ]; then
-		json_add_object ""
-			json_add_string type nat
-			json_add_string target SNAT
-			json_add_string family inet
-			json_add_string snat_ip $(eval "echo \$RULE_${k}_IPV4ADDR")
-		json_close_object
-	else
-		local portcount=0
-		local allports=""
-		for portset in $(eval "echo \$RULE_${k}_PORTSETS"); do
-			local startport=$(echo $portset | cut -d'-' -f1)
-			local endport=$(echo $portset | cut -d'-' -f2)
-			for x in $(seq $startport $endport); do
-				if ! echo "$DONT_SNAT_TO" | tr ' ' '\n' | grep -qw $x; then
-					allports="$allports $portcount : $x , "
-					portcount=`expr $portcount + 1`
-				fi
-			done
-		done
-		allports=${allports%??}
-		if nft list tables | grep -q "table inet mape"; then
-			nft delete table inet mape
-		fi
-		nft add table inet mape
-		nft add chain inet mape srcnat {type nat hook postrouting priority 0\; policy accept\; }
-		for proto in icmp tcp udp; do
-			nft add rule inet mape srcnat ip protocol $proto oifname "map-$cfg" snat ip to $(eval "echo \$RULE_${k}_IPV4ADDR") : numgen inc mod $portcount map { $allports }
-		done
-	fi
+    local cfg="$1"
+    local k="$2"
+    local portcount=0
+    local allports=""
+    for portset in $(eval "echo \$RULE_${k}_PORTSETS"); do
+        local startport=$(echo "$portset" | cut -d'-' -f1)
+        local endport=$(echo "$portset" | cut -d'-' -f2)
+        for x in $(seq "$startport" "$endport"); do
+            if ! echo "$DONT_SNAT_TO" | tr ' ' '\n' | grep -qw "$x"; then
+                allports="$allports $portcount : $x , "
+                portcount=$((portcount+1))
+            fi
+        done
+    done
+    allports=${allports%??}
+    if nft list tables | grep -q "table inet mape"; then
+        nft delete table inet mape
+    fi
+    nft add table inet mape
+    nft add chain inet mape srcnat { type nat hook postrouting priority 0; policy accept; }
+
+    for proto in icmp tcp udp; do
+        nft add rule inet mape srcnat ip protocol "$proto" \
+            oifname "map-$cfg" \
+            snat ip to $(eval "echo \$RULE_${k}_IPV4ADDR") \
+            : numgen inc mod "$portcount" map { $allports }
+    done
 }
 MAP_SH_EOF
 }
