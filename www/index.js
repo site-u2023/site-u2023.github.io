@@ -66,16 +66,17 @@ function getModelTitles(titles) {
   });
 }
 
-function showLogClosed() {
-  show("#asu-log");
-  $("#asu-log").querySelectorAll('details').forEach(details => {
+
+function showElementClosed(selector) {
+  show(selector);
+  $(selector).querySelectorAll('details').forEach(details => {
     details.removeAttribute('open');
   });
 }
 
-function showLogOpen() {
-  show("#asu-log");
-  $("#asu-log").querySelectorAll('details').forEach(details => {
+function showElementOpen(selector) {
+  show(selector);
+  $(selector).querySelectorAll('details').forEach(details => {
     details.setAttribute('open', '');
   });
 }
@@ -161,7 +162,7 @@ function buildAsuRequest(request_hash) {
             if ("stderr" in mobj) {
               $("#asu-stderr").innerText = mobj.stderr;
               $("#asu-stdout").innerText = mobj.stdout;
-              showLogClosed(); // 成功時は閉じて表示
+              showElementClosed("#asu-log");
             } else {
               hide("#asu-log");
             }
@@ -188,7 +189,7 @@ function buildAsuRequest(request_hash) {
             if ("stderr" in mobj) {
               $("#asu-stderr").innerText = mobj.stderr;
               $("#asu-stdout").innerText = mobj.stdout;
-              showLogClosed(); // エラー時も閉じて表示
+              showElementClosed("#asu-log");
             } else {
               hide("#asu-log");
             }
