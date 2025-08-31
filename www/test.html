@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ASU uci-defaults Test v7.0</title>
+    <title>ASU uci-defaults Test v9.0</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -106,7 +106,7 @@
 </head>
 <body>
     <div class="container">
-        <h2>ASU uci-defaults Test v7.0</h2>
+        <h2>ASU uci-defaults Test v9.0</h2>
         
         <label for="profile">プロファイル:</label><br>
         <input type="text" id="profile" value="asus_rt-ax53u"><br>
@@ -191,6 +191,8 @@ echo "すべてのファイルが作成されました。/tmp/test_file_*.txtを
         
         <button onclick="sendRequest()">リクエストを送信</button>
         
+        <div id="sendInfo" style="margin-top: 15px; font-weight: bold; color: #34495e;"></div>
+        
         <div class="result" id="result">
             <!-- 結果がここに表示されます -->
         </div>
@@ -232,11 +234,24 @@ echo "すべてのファイルが作成されました。/tmp/test_file_*.txtを
         const version = document.getElementById('version').value;
         const defaults = document.getElementById('defaults').value;
         const resultDiv = document.getElementById('result');
+        const sendInfoDiv = document.getElementById('sendInfo');
         
         if (!profile || !target) {
             showMessageBox('Profile and Target are required');
             return;
         }
+        
+        // 解析して送信情報を表示
+        const byteSize = new Blob([defaults]).size;
+        const kbSize = (byteSize / 1024).toFixed(2);
+        const fileCountMatch = defaults.match(/for i in \$\(seq 1 (\d+)\);/);
+        const fileCount = fileCountMatch ? fileCountMatch[1] : '不明';
+
+        sendInfoDiv.innerHTML = `
+            <p>送信KB数: ${kbSize}KB</p>
+            <p>分割数: ${fileCount} 個</p>
+            <p>合計サイズ（目標）: 20KB以上</p>
+        `;
         
         const body = JSON.stringify({
             profile: profile,
