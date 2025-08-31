@@ -1,11 +1,10 @@
-// custom.js - OpenWrt カスタム機能 完全版
+// custom.js - OpenWrt カスタム機能 完全版（多重表示・構文エラー修正版）
 
 console.log('custom.js loaded');
 
 // ===== グローバル変数 =====
 let cachedApiInfo = null;
 let originalBuildAsuRequest = null;
-let originalUpdateImages = null; // 使わない（再フック廃止）
 let originalSetupUciDefaults = null;
 let hasCustomHtmlLoaded = false;
 let hasIspInfoRendered = false;
@@ -16,11 +15,13 @@ let isCustomHtmlLoading = false;
 const ofsShow = window.show;
 const ofsHide = window.hide;
 
-// ==================== updateImages フック ====================
+// ==================== updateImages フック（1回だけ） ====================
 const _originalUpdateImages = window.updateImages;
 window.updateImages = function(version, mobj) {
-    if (_originalUpdateImages) _originalUpdateImages(version, mobj);
-    loadCustomHTML(); // フック描画（排他制御あり）
+    if (typeof _originalUpdateImages === 'function') {
+        _originalUpdateImages(version, mobj);
+    }
+    loadCustomHTML();
     if (mobj && !hasIspInfoRendered) {
         fetchAndDisplayIspInfo();
     }
@@ -28,7 +29,7 @@ window.updateImages = function(version, mobj) {
 
 // ==================== custom.html 読み込み ====================
 async function loadCustomHTML() {
-    if (hasCustomHtmlLoaded || isCustomHtmlLoading) return; // 1回だけ（ロード中も抑止）
+    if (hasCustomHtmlLoaded || isCustomHtmlLoading) return;
     try {
         isCustomHtmlLoading = true;
 
@@ -81,13 +82,12 @@ async function loadCustomHTML() {
 
 // ==================== カスタム機能初期化 ====================
 function initCustomFeatures() {
-    if (hasCustomUIInitialized) return; // 多重初期化防止
+    if (hasCustomUIInitialized) return;
 
     if (typeof buildAsuRequest === 'function' && !originalBuildAsuRequest) {
         originalBuildAsuRequest = buildAsuRequest;
         window.buildAsuRequest = customBuildAsuRequest;
     }
-    // updateImages は先頭で一度だけフック済み。ここでは再フックしない。
     if (typeof setup_uci_defaults === 'function' && !originalSetupUciDefaults) {
         originalSetupUciDefaults = setup_uci_defaults;
         window.setup_uci_defaults = customSetupUciDefaults;
@@ -106,7 +106,7 @@ function customBuildAsuRequest(request_hash) {
             if ([200,400,422,500].includes(response.status)) {
                 response.clone().json().then(mobj => {
                     if ("stderr" in mobj) initializeCustomUI(response.status !== 200);
-                }).catch(() => {}); // JSON でない応答に備える
+                }).catch(() => {});
             }
             return response;
         });
@@ -186,7 +186,7 @@ function displayIspInfo(apiInfo) {
     applyIspAutoConfig(apiInfo);
 }
 
-// ==================== ISP自動設定 ====================
+// ==================== ISP自動設定（構文エラー修正版） ====================
 function applyIspAutoConfig(apiInfo) {
     if (!apiInfo) return;
 
@@ -230,17 +230,4 @@ function handleConnectionTypeChange(e) {
 
 // ==================== DOMContentLoaded 初期化 ====================
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initCustomFeatures, { once: true });
-} else {
-    initCustomFeatures();
-}
-
-// ==================== ヘルパー ====================
-function show(sel) {
-    if (typeof ofsShow === 'function') return ofsShow(sel);
-    const el = typeof sel==='string'?document.querySelector(sel):sel; if(el) el.style.display='block';
-}
-function hide(sel) {
-    if (typeof ofsHide === 'function') return ofsHide(sel);
-    const el = typeof sel==='string'?document.querySelector(sel):sel; if(el) el.style.display='none';
-}
+    document.addEventListener
