@@ -77,9 +77,10 @@ async function loadCustomHTML() {
 // -------------------------------------
 
 // ===== グローバル変数 =====
+// ===== グローバル変数 =====
 let cachedApiInfo = null;
 let originalBuildAsuRequest = null;
-let originalUpdateImages = null;
+// originalUpdateImages はファイルの先頭で既に宣言済み
 let originalSetupUciDefaults = null;
 
 // カスタム機能の初期化
