@@ -149,6 +149,7 @@ MAPE_EOF
     cat > /lib/netifd/proto/map.sh <<'MAP_SH_EOF'
 #!/bin/sh
 # Nichiban-ready
+# this script based github.com/fakemanhk/openwrt-jp-ipoe
 DONT_SNAT_TO="0"
 [ -n "$INCLUDE_ONLY" ] || {
 	. /lib/functions.sh
