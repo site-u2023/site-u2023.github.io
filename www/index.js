@@ -66,20 +66,6 @@ function getModelTitles(titles) {
   });
 }
 
-function showElementClosed(selector) {
-  show(selector);
-  $(selector).querySelectorAll('details').forEach(details => {
-    details.removeAttribute('open');
-  });
-}
-
-function showElementOpen(selector) {
-  show(selector);
-  $(selector).querySelectorAll('details').forEach(details => {
-    details.setAttribute('open', '');
-  });
-}
-
 /* exported buildAsuRequest */
 function buildAsuRequest(request_hash) {
   $$("#download-table1 *").forEach((e) => e.remove());
@@ -161,7 +147,7 @@ function buildAsuRequest(request_hash) {
             if ("stderr" in mobj) {
               $("#asu-stderr").innerText = mobj.stderr;
               $("#asu-stdout").innerText = mobj.stdout;
-              showElementClosed("#asu-log");
+              initializeCustomFeatures(false); // 2閉じる
             } else {
               hide("#asu-log");
             }
@@ -188,7 +174,7 @@ function buildAsuRequest(request_hash) {
             if ("stderr" in mobj) {
               $("#asu-stderr").innerText = mobj.stderr;
               $("#asu-stdout").innerText = mobj.stdout;
-              showElementClosed("#asu-log");
+              initializeCustomFeatures(true); // 開く
             } else {
               hide("#asu-log");
             }
@@ -979,26 +965,30 @@ function applyIspAutoConfig(apiInfo) {
   }
 }
 
-function initializeCustomFeatures() {
+/* -------------------- ✂︎ -------------------- */
+function initializeCustomFeatures(open = true) {
   // Initialize connection mode handlers
-  $('input[name="connectionMode"]').forEach(radio => {
+  $$('input[name="connectionMode"]').forEach(radio => {
     radio.addEventListener('change', handleConnectionModeChange);
   });
   
   // Initialize connection type handlers
-  $('input[name="connectionType"]').forEach(radio => {
+  $$('input[name="connectionType"]').forEach(radio => {
     radio.addEventListener('change', handleConnectionTypeChange);
   });
   
-  // Make ASU section always visible and expanded
+  // Make ASU section always visible and handle open/closed state
   const asuSection = $("#asu");
   if (asuSection) {
     asuSection.classList.remove("hide");
-    // Remove the details/summary wrapper behavior
-    const detailsElement = asuSection.querySelector('details');
-    if (detailsElement) {
-      detailsElement.open = true;
-    }
+    const detailsElements = asuSection.querySelectorAll('details');
+    detailsElements.forEach(details => {
+      if (open) {
+        details.setAttribute('open', '');
+      } else {
+        details.removeAttribute('open');
+      }
+    });
   }
 }
 
@@ -1190,9 +1180,6 @@ async function init() {
   if (typeof generatePackageSelector === 'function') {
     generatePackageSelector();
   }
-
-  // Initialize event handlers for new features
-  initializeCustomFeatures();
 
   initTranslation();
 }
