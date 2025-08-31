@@ -74,60 +74,71 @@ document.addEventListener('DOMContentLoaded', async function() {
         console.warn('Could not find .row parent for image-link');
       }
     }
-    
+
     // 2. ASUセクション内を完全に置き換え
     const asuDetails = document.querySelector('#asu');
     console.log('ASU section found:', !!asuDetails);
     
     if (asuDetails) {
-      console.log('Replacing ASU section content...');
-      
-      // 既存の中身を全削除
-      asuDetails.innerHTML = '';
-      
-      // カスタムパッケージセクションを追加
-      const customPackages = temp.querySelector('#custom-packages-section');
-      if (customPackages) {
-        const packagesDetails = customPackages.querySelector('details');
-        if (packagesDetails) {
-          asuDetails.appendChild(packagesDetails);
-          console.log('Custom packages section added');
-        }
-      }
-      
-      // カスタムスクリプトセクションを追加
-      const customScripts = temp.querySelector('#custom-scripts-section');
-      if (customScripts) {
-        const scriptsDetails = customScripts.querySelector('details');
-        if (scriptsDetails) {
-          asuDetails.appendChild(scriptsDetails);
-          console.log('Custom scripts section added');
-        }
-      }
-      
-      // ビルドステータスとログを戻す
-      asuDetails.insertAdjacentHTML('beforeend', `
-        <br>
-        <div id="asu-buildstatus" class="hide">
-          <span></span>
-          <div id="asu-log" class="hide">
-            <details>
-              <summary><code>STDERR</code></summary>
-              <pre id="asu-stderr"></pre>
-            </details>
-            <details>
-              <summary><code>STDOUT</code></summary>
-              <pre id="asu-stdout"></pre>
-            </details>
-          </div>
-        </div>
-        <a href="javascript:buildAsuRequest()" class="custom-link">
-          <span></span><span class="tr-request-build">REQUEST BUILD</span>
-        </a>
-      `);
-      console.log('Build status and log sections restored');
+        console.log('Replacing ASU section content...');
+        
+        // 既存の中身を全削除（summaryは残す）
+        const summary = asuDetails.querySelector('summary');
+        asuDetails.innerHTML = '';
+        
+        // summaryを戻す
+        if (summary) {
+            asuDetails.appendChild(summary);
+        }
+        
+        // カスタムパッケージセクションを追加
+        const customPackages = temp.querySelector('#custom-packages-section');
+        if (customPackages) {
+            const packagesDetails = customPackages.querySelector('details');
+            if (packagesDetails) {
+                asuDetails.appendChild(packagesDetails);
+                console.log('Custom packages section added');
+            }
+        }
+        
+        // カスタムスクリプトセクションを追加
+        const customScripts = temp.querySelector('#custom-scripts-section');
+        if (customScripts) {
+            const scriptsDetails = customScripts.querySelector('details');
+            if (scriptsDetails) {
+                asuDetails.appendChild(scriptsDetails);
+                console.log('Custom scripts section added');
+            }
+        }
+        
+        // ビルドステータスとログを戻す
+        const buildStatusHtml = `
+            <br>
+            <div id="asu-buildstatus" class="hide">
+                <span></span>
+                <div id="asu-log" class="hide">
+                    <details>
+                        <summary><code>STDERR</code></summary>
+                        <pre id="asu-stderr"></pre>
+                    </details>
+                    <details>
+                        <summary><code>STDOUT</code></summary>
+                        <pre id="asu-stdout"></pre>
+                    </details>
+                </div>
+            </div>
+            <a href="javascript:buildAsuRequest()" class="custom-link">
+                <span></span><span class="tr-request-build">REQUEST BUILD</span>
+            </a>
+        `;
+        asuDetails.insertAdjacentHTML('beforeend', buildStatusHtml);
+        console.log('Build status and log sections restored');
+        
+        // ASUセクションを表示
+        asuDetails.classList.remove('hide');
+        asuDetails.style.display = '';
     }
-    
+
     // カスタム機能の初期化
     console.log('Initializing custom features...');
     initCustomFeatures();
