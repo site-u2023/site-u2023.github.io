@@ -58,6 +58,7 @@ async function loadCustomHTML() {
     const imageLink = document.querySelector('#image-link');
     if (extendedInfo && imageLink) {
       imageLink.closest('.row').insertAdjacentElement('afterend', extendedInfo);
+      show('#extended-build-info');
     }
 
     initCustomFeatures();
