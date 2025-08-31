@@ -1,265 +1,195 @@
-// custom.js - OpenWrt カスタム機能 完全版（多重表示・構文エラー・null安全修正版）
+// custom.js - OpenWrt カスタム機能（完全版）
 
 console.log('custom.js loaded');
 
-// ===== グローバル変数 =====
-let cachedApiInfo = null;
-let originalBuildAsuRequest = null;
-let originalSetupUciDefaults = null;
-let hasCustomHtmlLoaded = false;
-let hasIspInfoRendered = false;
-let hasCustomUIInitialized = false;
-let isCustomHtmlLoading = false;
+// 元の updateImages を保持
+const originalUpdateImages = window.updateImages;
 
-// 既存の show/hide を退避（index.js の実装に委譲する）
-const ofsShow = window.show;
-const ofsHide = window.hide;
-
-// ==================== updateImages フック（1回だけ） ====================
-const _originalUpdateImages = window.updateImages;
+// updateImages をフック
 window.updateImages = function(version, mobj) {
-    if (typeof _originalUpdateImages === 'function') {
-        _originalUpdateImages(version, mobj);
-    }
+    if (originalUpdateImages) originalUpdateImages(version, mobj);
+    console.log("updateImages finished, now load custom.html");
     loadCustomHTML();
-    if (mobj && !hasIspInfoRendered) {
-        fetchAndDisplayIspInfo();
-    }
 };
 
-// ==================== custom.html 読み込み ====================
+// custom.html 読み込み＆挿入
 async function loadCustomHTML() {
-    if (hasCustomHtmlLoaded || isCustomHtmlLoading) return;
     try {
-        isCustomHtmlLoading = true;
+        const response = await fetch('custom.html');
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const html = await response.text();
+        console.log('custom.html loaded');
 
-        const res = await fetch('custom.html');
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const html = await res.text();
         const temp = document.createElement('div');
         temp.innerHTML = html;
 
-        // ASUセクションの書き換え
-        const asuDetails = document.querySelector('#asu');
-        if (asuDetails) {
-            const summaryText = asuDetails.querySelector('summary span')?.innerText || '';
-            asuDetails.innerHTML = `<summary><span class="tr-customize">${summaryText}</span></summary>`;
-
-            const customPackages = temp.querySelector('#custom-packages-section details');
-            if (customPackages) asuDetails.appendChild(customPackages.cloneNode(true));
-
-            const customScripts = temp.querySelector('#custom-scripts-section details');
-            if (customScripts) asuDetails.appendChild(customScripts.cloneNode(true));
-
-            asuDetails.insertAdjacentHTML('beforeend', `
-                <br>
-                <div id="asu-buildstatus" class="hide"><span></span></div>
-                <a href="javascript:buildAsuRequest()" class="custom-link">
-                    <span></span><span class="tr-request-build">REQUEST BUILD</span>
-                </a>
-            `);
-        }
-
-        // Extended info
-        const extendedInfo = temp.querySelector('#extended-build-info');
-        const imageLink = document.querySelector('#image-link');
-        if (extendedInfo && imageLink) {
-            const parent = imageLink.closest('.row');
-            const oldExtended = parent.querySelector('#extended-build-info');
-            if (oldExtended) oldExtended.remove();
-            parent.insertAdjacentElement('afterend', extendedInfo.cloneNode(true));
-        }
-
-        initCustomFeatures();
-        hasCustomHtmlLoaded = true;
-
+        // #asu が生成されるまで待機して初期化
+        waitForAsuAndInit(temp);
     } catch (err) {
         console.error('Failed to load custom.html:', err);
-    } finally {
-        isCustomHtmlLoading = false;
     }
 }
 
-// ==================== カスタム機能初期化 ====================
-function initCustomFeatures() {
-    if (hasCustomUIInitialized) return;
+// #asu が存在するまで再試行
+function waitForAsuAndInit(temp, retry = 50) {
+    const asuSection = document.querySelector('#asu');
+    if (asuSection) {
+        initializeCustomFeatures(asuSection, temp);
+    } else if (retry > 0) {
+        setTimeout(() => waitForAsuAndInit(temp, retry - 1), 50);
+    } else {
+        console.warn('#asu not found after waiting');
+    }
+}
 
+// 初期化処理
+function initializeCustomFeatures(asuSection, temp) {
+    console.log('initializeCustomFeatures called');
+
+    // #asu 内の HTML を置換
+    const summaryText = asuSection.querySelector('summary span')?.innerText || 'ASU';
+    asuSection.innerHTML = `<summary><span class="tr-customize">${summaryText}</span></summary>`;
+
+    const customPackages = temp.querySelector('#custom-packages-section details');
+    const customScripts = temp.querySelector('#custom-scripts-section details');
+
+    if (customPackages) asuSection.appendChild(customPackages);
+    if (customScripts) asuSection.appendChild(customScripts);
+
+    asuSection.insertAdjacentHTML('beforeend', `
+        <br>
+        <div id="asu-buildstatus" class="hide"><span></span></div>
+        <a href="javascript:buildAsuRequest()" class="custom-link">
+            <span></span><span class="tr-request-build">REQUEST BUILD</span>
+        </a>
+    `);
+
+    // Extended info 挿入
+    const extendedInfo = temp.querySelector('#extended-build-info');
+    const imageLink = document.querySelector('#image-link');
+    if (extendedInfo && imageLink) {
+        imageLink.closest('.row').insertAdjacentElement('afterend', extendedInfo);
+        show('#extended-build-info');
+    }
+
+    hookOriginalFunctions();
+    setupEventListeners();
+}
+
+// オリジナル関数をフック
+let originalBuildAsuRequest = null;
+let originalSetupUciDefaults = null;
+
+function hookOriginalFunctions() {
     if (typeof buildAsuRequest === 'function' && !originalBuildAsuRequest) {
         originalBuildAsuRequest = buildAsuRequest;
         window.buildAsuRequest = customBuildAsuRequest;
     }
+
     if (typeof setup_uci_defaults === 'function' && !originalSetupUciDefaults) {
         originalSetupUciDefaults = setup_uci_defaults;
         window.setup_uci_defaults = customSetupUciDefaults;
     }
-
-    initializeCustomUI(true);
-    hasCustomUIInitialized = true;
 }
 
-// ==================== buildAsuRequest カスタム版 ====================
+// buildAsuRequest カスタム版
 function customBuildAsuRequest(request_hash) {
-    console.log('customBuildAsuRequest called', request_hash);
-    const originalFetch = window.fetch;
+    console.log('customBuildAsuRequest called with:', request_hash);
+
+    const origFetch = window.fetch;
     window.fetch = function(url, options) {
-        return originalFetch(url, options).then(response => {
-            if ([200,400,422,500].includes(response.status)) {
-                response.clone().json().then(mobj => {
-                    if ("stderr" in mobj) initializeCustomUI(response.status !== 200);
-                }).catch(() => {});
-            }
-            return response;
+        return origFetch(url, options).then(res => {
+            res.clone().json().then(mobj => {
+                if ("stderr" in mobj) initializeCustomFeatures(document.querySelector('#asu'));
+            });
+            return res;
         });
     };
+
     if (originalBuildAsuRequest) originalBuildAsuRequest(request_hash);
-    window.fetch = originalFetch;
+    window.fetch = origFetch;
 }
 
-// ==================== setup_uci_defaults カスタム版 ====================
+// setup_uci_defaults カスタム版
 function customSetupUciDefaults() {
+    console.log('customSetupUciDefaults called');
     const textarea = document.querySelector("#uci-defaults-content");
-    if (!textarea) return console.warn('#uci-defaults-content not found');
-    if (!config?.uci_defaults_setup_url) return console.warn('config.uci_defaults_setup_url not defined');
+    if (!textarea || !config?.uci_defaults_setup_url) return;
 
     fetch(config.uci_defaults_setup_url)
-        .then(obj => {
-            if (obj.status !== 200) throw new Error(`Failed to fetch ${obj.url}`);
-            hideAlert();
-            return obj.text();
-        })
+        .then(r => { if (!r.ok) throw new Error(r.statusText); return r.text(); })
         .then(text => textarea.value = text)
         .catch(err => showAlert(err.message));
 }
 
-// ==================== UI初期化（null安全） ====================
-function initializeCustomUI(open = true) {
-    document.querySelectorAll('input[name="connectionMode"]').forEach(radio =>
-        radio.addEventListener('change', handleConnectionModeChange)
-    );
-    document.querySelectorAll('input[name="connectionType"]').forEach(radio =>
-        radio.addEventListener('change', handleConnectionTypeChange)
-    );
-
-    const asuSection = document.querySelector("#asu");
-    if (!asuSection) {
-        console.warn('#asu section not found, skipping UI init');
-        return;
-    }
-    asuSection.classList.remove("hide");
-    asuSection.querySelectorAll('details').forEach(d =>
-        open ? d.setAttribute('open','') : d.removeAttribute('open')
-    );
+// イベントリスナー設定
+function setupEventListeners() {
+    document.querySelectorAll('input[name="connectionMode"]').forEach(r => 
+        r.addEventListener('change', handleConnectionModeChange));
+    document.querySelectorAll('input[name="connectionType"]').forEach(r => 
+        r.addEventListener('change', handleConnectionTypeChange));
 }
 
-// ==================== ISP情報取得 ====================
-function fetchAndDisplayIspInfo() {
-    if (hasIspInfoRendered) return;
-    if (!config?.auto_config_api_url) return console.warn('config.auto_config_api_url not defined');
+// 接続モード変更
+function handleConnectionModeChange(e) {
+    const manualSection = document.querySelector("#manual-connection-section");
+    if (e.target.value === 'manual') show(manualSection);
+    else { hide(manualSection); if (cachedApiInfo) applyIspAutoConfig(cachedApiInfo); }
+}
 
+// 接続タイプ変更
+function handleConnectionTypeChange(e) {
+    hide("#pppoe-section"); hide("#dslite-section"); hide("#mape-section");
+    if (e.target.value === 'pppoe') show("#pppoe-section");
+    else if (e.target.value === 'dslite') show("#dslite-section");
+    else if (e.target.value === 'mape') show("#mape-section");
+}
+
+// ISP情報取得・表示
+let cachedApiInfo = null;
+function fetchAndDisplayIspInfo() {
+    if (!config?.auto_config_api_url) return;
     fetch(config.auto_config_api_url)
-        .then(res => res.json())
-        .then(apiInfo => {
-            cachedApiInfo = apiInfo;
-            displayIspInfo(apiInfo);
-            hasIspInfoRendered = true;
-        })
-        .catch(err => console.error('Failed to fetch ISP info:', err));
+        .then(r => r.json())
+        .then(apiInfo => { cachedApiInfo = apiInfo; displayIspInfo(apiInfo); })
+        .catch(err => console.error(err));
 }
 
 function displayIspInfo(apiInfo) {
     if (!apiInfo) return;
-    const ips = [apiInfo.ipv4, apiInfo.ipv6].filter(Boolean).join(' / ');
-    const method = apiInfo.mape?.brIpv6Address ? 'MAP-E' : apiInfo.aftr ? 'DS-Lite' : 'DHCP/PPPoE';
+    setValue("#auto-config-country", apiInfo.country || "Unknown");
+    setValue("#auto-config-timezone", apiInfo.timezone || "Unknown");
+    setValue("#auto-config-zonename", apiInfo.zonename || "Unknown");
+    setValue("#auto-config-isp", apiInfo.isp || "Unknown");
+    setValue("#auto-config-as", apiInfo.as || "Unknown");
+    setValue("#auto-config-ip", [apiInfo.ipv4, apiInfo.ipv6].filter(Boolean).join(" / ") || "Unknown");
 
-    const map = {
-        "#auto-config-country": apiInfo.country,
-        "#auto-config-timezone": apiInfo.timezone,
-        "#auto-config-zonename": apiInfo.zonename,
-        "#auto-config-isp": apiInfo.isp,
-        "#auto-config-as": apiInfo.as,
-        "#auto-config-ip": ips,
-        "#auto-config-method": method,
-        "#auto-config-notice": apiInfo.notice
-    };
-
-    Object.entries(map).forEach(([sel,val]) => {
-        const el = document.querySelector(sel);
-        if(el) el.textContent = val || "Unknown";
-    });
+    let wanType = "DHCP/PPPoE";
+    if (apiInfo.mape?.brIpv6Address) wanType = "MAP-E";
+    else if (apiInfo.aftr) wanType = "DS-Lite";
+    setValue("#auto-config-method", wanType);
+    setValue("#auto-config-notice", apiInfo.notice || "");
+    show("#extended-build-info");
 
     applyIspAutoConfig(apiInfo);
 }
 
-// ==================== ISP自動設定（構文エラー修正版） ====================
 function applyIspAutoConfig(apiInfo) {
     if (!apiInfo) return;
-
-    if (apiInfo.country) {
-        const el = document.querySelector("#aios-country");
-        if (el && !el.value) el.value = apiInfo.country;
-    }
-
+    if (apiInfo.country) document.querySelector("#aios-country")?.value || (document.querySelector("#aios-country").value = apiInfo.country);
     if (apiInfo.mape?.brIpv6Address) {
-        const mapeMap = {
-            'mape-br': apiInfo.mape.brIpv6Address,
-            'mape-ealen': apiInfo.mape.eaBitLength
-        };
-        Object.entries(mapeMap).forEach(([id, val]) => {
-            const input = document.querySelector(`#${id}`);
-            if (input && !input.value && val) input.value = val;
-        });
+        const mapeInputs = { 'mape-br': apiInfo.mape.brIpv6Address, 'mape-ealen': apiInfo.mape.eaBitLength };
+        Object.entries(mapeInputs).forEach(([id, val]) => document.querySelector(`#${id}`)?.value || (document.querySelector(`#${id}`).value = val));
     }
-
-    if (apiInfo.aftr) {
-        const el = document.querySelector("#dslite-aftr-address");
-        if (el && !el.value) el.value = apiInfo.aftr;
-    }
+    if (apiInfo.aftr) document.querySelector("#dslite-aftr-address")?.value || (document.querySelector("#dslite-aftr-address").value = apiInfo.aftr);
 }
 
-// ==================== 変更イベント ====================
-function handleConnectionModeChange(e) {
-    const manualSection = document.querySelector("#manual-connection-section");
-    if (e.target.value === 'manual') {
-        show(manualSection);
-    } else {
-        hide(manualSection);
-        if (cachedApiInfo) applyIspAutoConfig(cachedApiInfo);
-    }
-}
+// ヘルパー
+function show(el) { const e = typeof el === 'string' ? document.querySelector(el) : el; if (e) e.classList.remove('hide'); }
+function hide(el) { const e = typeof el === 'string' ? document.querySelector(el) : el; if (e) e.classList.add('hide'); }
+function setValue(selector, val) { const el = document.querySelector(selector); if (el) el.value = val; }
 
-function handleConnectionTypeChange(e) {
-    hide("#pppoe-section");
-    hide("#dslite-section");
-    hide("#mape-section");
-    switch(e.target.value) {
-        case 'pppoe':
-            show("#pppoe-section");
-            break;
-        case 'dslite':
-            show("#dslite-section");
-            break;
-        case 'mape':
-            show("#mape-section");
-            break;
-    }
-}
-
-// ==================== DOMContentLoaded 初期化 ====================
+// DOMContentLoaded で初期化
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initCustomFeatures, { once: true });
-} else {
-    initCustomFeatures();
-}
-
-// ==================== ヘルパー ====================
-function show(sel) {
-    if (typeof ofsShow === 'function') return ofsShow(sel);
-    const el = typeof sel === 'string' ? document.querySelector(sel) : sel;
-    if (el) el.style.display = 'block';
-}
-
-function hide(sel) {
-    if (typeof ofsHide === 'function') return ofsHide(sel);
-    const el = typeof sel === 'string' ? document.querySelector(sel) : sel;
-    if (el) el.style.display = 'none';
-}
+    document.addEventListener('DOMContentLoaded', () => fetchAndDisplayIspInfo());
+} else fetchAndDisplayIspInfo();
