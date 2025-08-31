@@ -190,15 +190,11 @@ function displayIspInfo(apiInfo) {
 function applyIspAutoConfig(apiInfo) {
     if (!apiInfo) return;
 
-    // 国コード
     if (apiInfo.country) {
         const el = document.querySelector("#aios-country");
-        if (el && !el.value) {
-            el.value = apiInfo.country;
-        }
+        if (el && !el.value) el.value = apiInfo.country;
     }
 
-    // MAP-E 関連
     if (apiInfo.mape?.brIpv6Address) {
         const mapeMap = {
             'mape-br': apiInfo.mape.brIpv6Address,
@@ -206,18 +202,13 @@ function applyIspAutoConfig(apiInfo) {
         };
         Object.entries(mapeMap).forEach(([id, val]) => {
             const input = document.querySelector(`#${id}`);
-            if (input && !input.value && val) {
-                input.value = val;
-            }
+            if (input && !input.value && val) input.value = val;
         });
     }
 
-    // DS-Lite AFTR
     if (apiInfo.aftr) {
         const el = document.querySelector("#dslite-aftr-address");
-        if (el && !el.value) {
-            el.value = apiInfo.aftr;
-        }
+        if (el && !el.value) el.value = apiInfo.aftr;
     }
 }
 
