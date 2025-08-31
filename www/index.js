@@ -1235,7 +1235,7 @@ function initializeCustomFeatures() {
   $$('input[name="connectionType"]').forEach(radio => {
     radio.addEventListener('change', handleConnectionTypeChange);
   });
-  
+
   // Make ASU section always visible and expanded
   const asuSection = $("#asu");
   if (asuSection) {
@@ -1247,19 +1247,18 @@ function initializeCustomFeatures() {
     }
   }
 
-  // 新規：detailsを開いた時にテキストエリアのサイズを調整する機能を追加
-  const detailsElements = $$('#asu-packages-details, #asu-defaults-details');
-  detailsElements.forEach(details => {
-    details.addEventListener('toggle', () => {
-      // detailsが開いた時のみサイズを調整
-      if (details.open) {
-        const textarea = details.querySelector('textarea');
-        if (textarea) {
-          textarea.style.height = "auto";
-          textarea.style.height = textarea.scrollHeight + "px";
-        }
-      }
+  // 新規：テキストエリアのサイズを動的に調整する機能
+  const textareas = $$('#asu-packages, #uci-defaults-content');
+  textareas.forEach(textarea => {
+    // ユーザーの入力時にサイズを自動調整
+    textarea.addEventListener('input', () => {
+      textarea.style.height = "auto";
+      textarea.style.height = textarea.scrollHeight + "px";
     });
+
+    // 初回ロード時にもサイズを調整（既存のファイル内容に対応）
+    textarea.style.height = "auto";
+    textarea.style.height = textarea.scrollHeight + "px";
   });
 }
 
