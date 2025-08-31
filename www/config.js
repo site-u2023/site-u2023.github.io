@@ -36,3 +36,17 @@ var config = {
   // Package database URL
   packages_db_url: "packages/packages.json"
 };
+
+// カスタム機能の自動読み込み
+(function() {
+  // custom.jsを動的に読み込み
+  const customScript = document.createElement('script');
+  customScript.src = 'custom.js';
+  document.head.appendChild(customScript);
+  
+  // custom.cssを動的に読み込み
+  const customCSS = document.createElement('link');
+  customCSS.rel = 'stylesheet';
+  customCSS.href = 'custom.css';
+  document.head.appendChild(customCSS);
+})();
