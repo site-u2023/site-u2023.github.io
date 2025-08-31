@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>ADU分割送信テスト</title>
+<style>
+body { font-family: sans-serif; }
+#log { white-space: pre; background: #f5f5f5; padding: 1em; }
+</style>
+</head>
+<body>
+<h1>ADU分割送信テスト</h1>
+<button id="startBtn">テスト開始</button>
+<div id="log"></div>
+
+<script>
+const CHUNK_LIMIT = 20 * 1024; // 20KB
+const TOTAL_SIZE = 55 * 1024;  // 総合計 55KB
+const UPLOAD_URL = 'https://example.com/adu/upload'; // 実際のADUエンドポイントに変更
+const API_KEY = ''; // 必要なら設定
+
+function log(msg) {
+  document.getElementById('log').textContent += msg + "\n";
+}
+
+async function sendChunk(chunk, index, total) {
+  const res = await fetch(UPLOAD_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/octet-stream',
+      'Content-Length': chunk.byteLength,
+      'X-Chunk-Index': index + 1,
+      'X-Total-Chunks': total,
+      ...(API_KEY && { 'Authorization': `Bearer ${API_KEY}` })
+    },
+    body: chunk
+  });
+  if (!res.ok) throw new Error(`チャンク #${index+1} 送信失敗: ${res.status}`);
+  log(`チャンク #${index+1} 送信成功 (${chunk.byteLength} bytes)`);
+}
+
+document.getElementById('startBtn').addEventListener('click', async () => {
+  document.getElementById('log').textContent = '';
+  log(`総データサイズ: ${(TOTAL_SIZE/1024).toFixed(2)} KB`);
+
+  // ダミーデータ生成
+  const totalBuffer = new Uint8Array(TOTAL_SIZE);
+  crypto.getRandomValues(totalBuffer);
+
+  // 分割
+  const chunks = [];
+  for (let offset = 0; offset < totalBuffer.length; offset += CHUNK_LIMIT) {
+    chunks.push(totalBuffer.slice(offset, offset + CHUNK_LIMIT));
+  }
+  log(`チャンク数: ${chunks.length}`);
+
+  // 順次送信
+  try {
+    for (let i = 0; i < chunks.length; i++) {
+      await sendChunk(chunks[i], i, chunks.length);
+    }
+    log('全チャンク送信完了');
+  } catch (err) {
+    log(`エラー: ${err.message}`);
+  }
+});
+</script>
+</body>
+</html>
