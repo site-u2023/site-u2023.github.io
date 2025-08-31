@@ -1,10 +1,58 @@
 // custom.js - OpenWrt カスタム機能
 
+// デバッグ用：スクリプトが読み込まれたことを確認
+console.log('custom.js loaded at:', new Date().toISOString());
+console.log('Document ready state:', document.readyState);
+
+// ===== ヘルパー関数の定義（OpenWrtのapp.jsから） =====
+function setValue(selector, value) {
+  const element = document.querySelector(selector);
+  if (element) {
+    element.textContent = value;
+  }
+}
+
+function show(selector) {
+  const element = typeof selector === 'string' ? document.querySelector(selector) : selector;
+  if (element) {
+    element.style.display = '';
+    element.classList.remove('hide');
+  }
+}
+
+function hide(selector) {
+  const element = typeof selector === 'string' ? document.querySelector(selector) : selector;
+  if (element) {
+    element.style.display = 'none';
+    element.classList.add('hide');
+  }
+}
+
+function showAlert(message) {
+  console.error('Alert:', message);
+  // 簡単なアラート表示（OpenWrtの元実装に合わせて後で調整可能）
+  alert(message);
+}
+
+function hideAlert() {
+  // アラートを隠す処理（必要に応じて実装）
+  console.log('Hide alert called');
+}
+
 // ===== HTML読み込み処理 =====
 document.addEventListener('DOMContentLoaded', async function() {
+  console.log('DOMContentLoaded fired in custom.js');
+  
   try {
-    const response = await fetch('custom.html');
+    console.log('Attempting to fetch custom.html...');
+    const response = await fetch('./custom.html');
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
     const html = await response.text();
+    console.log('custom.html loaded successfully, length:', html.length);
     
     // 一時コンテナに読み込み
     const temp = document.createElement('div');
@@ -15,26 +63,46 @@ document.addEventListener('DOMContentLoaded', async function() {
     // 1. Extended Build Info を追加
     const extendedInfo = temp.querySelector('#extended-build-info');
     const imageLink = document.querySelector('#image-link');
+    console.log('Extended info found:', !!extendedInfo, 'Image link found:', !!imageLink);
+    
     if (extendedInfo && imageLink) {
-      imageLink.closest('.row').insertAdjacentElement('afterend', extendedInfo);
+      const targetRow = imageLink.closest('.row');
+      if (targetRow) {
+        targetRow.insertAdjacentElement('afterend', extendedInfo);
+        console.log('Extended build info inserted');
+      } else {
+        console.warn('Could not find .row parent for image-link');
+      }
     }
     
     // 2. ASUセクション内を完全に置き換え
     const asuDetails = document.querySelector('#asu');
+    console.log('ASU section found:', !!asuDetails);
+    
     if (asuDetails) {
+      console.log('Replacing ASU section content...');
+      
       // 既存の中身を全削除
       asuDetails.innerHTML = '';
       
       // カスタムパッケージセクションを追加
       const customPackages = temp.querySelector('#custom-packages-section');
       if (customPackages) {
-        asuDetails.appendChild(customPackages.querySelector('details'));
+        const packagesDetails = customPackages.querySelector('details');
+        if (packagesDetails) {
+          asuDetails.appendChild(packagesDetails);
+          console.log('Custom packages section added');
+        }
       }
       
       // カスタムスクリプトセクションを追加
       const customScripts = temp.querySelector('#custom-scripts-section');
       if (customScripts) {
-        asuDetails.appendChild(customScripts.querySelector('details'));
+        const scriptsDetails = customScripts.querySelector('details');
+        if (scriptsDetails) {
+          asuDetails.appendChild(scriptsDetails);
+          console.log('Custom scripts section added');
+        }
       }
       
       // ビルドステータスとログを戻す
@@ -57,12 +125,19 @@ document.addEventListener('DOMContentLoaded', async function() {
           <span></span><span class="tr-request-build">REQUEST BUILD</span>
         </a>
       `);
+      console.log('Build status and log sections restored');
     }
     
     // カスタム機能の初期化
+    console.log('Initializing custom features...');
     initCustomFeatures();
+    
   } catch (error) {
     console.error('Failed to load custom.html:', error);
+    
+    // フォールバック：最低限の初期化だけ実行
+    console.log('Executing fallback initialization...');
+    initCustomFeatures();
   }
 });
 
@@ -74,25 +149,37 @@ let originalSetupUciDefaults = null;
 
 // カスタム機能の初期化
 function initCustomFeatures() {
+  console.log('initCustomFeatures called');
+  console.log('Available functions:', {
+    buildAsuRequest: typeof buildAsuRequest,
+    updateImages: typeof updateImages,
+    setup_uci_defaults: typeof setup_uci_defaults
+  });
+  
   // オリジナル関数を保存してフック
   if (typeof buildAsuRequest === 'function' && !originalBuildAsuRequest) {
     originalBuildAsuRequest = buildAsuRequest;
     window.buildAsuRequest = customBuildAsuRequest;
+    console.log('buildAsuRequest hooked');
   }
   
   if (typeof updateImages === 'function' && !originalUpdateImages) {
     originalUpdateImages = updateImages;
     window.updateImages = customUpdateImages;
+    console.log('updateImages hooked');
   }
   
   if (typeof setup_uci_defaults === 'function' && !originalSetupUciDefaults) {
     originalSetupUciDefaults = setup_uci_defaults;
     window.setup_uci_defaults = customSetupUciDefaults;
+    console.log('setup_uci_defaults hooked');
   }
 }
 
 // buildAsuRequestのカスタム版
 function customBuildAsuRequest(request_hash) {
+  console.log('customBuildAsuRequest called with:', request_hash);
+  
   // オリジナルを実行する前にフェッチとステータス処理をフック
   const originalFetch = window.fetch;
   window.fetch = function(url, options) {
@@ -110,7 +197,11 @@ function customBuildAsuRequest(request_hash) {
   };
   
   // オリジナル関数を実行
-  originalBuildAsuRequest(request_hash);
+  if (originalBuildAsuRequest) {
+    originalBuildAsuRequest(request_hash);
+  } else {
+    console.warn('Original buildAsuRequest not found');
+  }
   
   // フェッチを元に戻す
   window.fetch = originalFetch;
@@ -118,8 +209,12 @@ function customBuildAsuRequest(request_hash) {
 
 // updateImagesのカスタム版
 function customUpdateImages(version, mobj) {
+  console.log('customUpdateImages called with:', version, mobj);
+  
   // オリジナル関数を実行
-  originalUpdateImages(version, mobj);
+  if (originalUpdateImages) {
+    originalUpdateImages(version, mobj);
+  }
   
   // カスタム処理を追加
   if (mobj) {
@@ -130,7 +225,19 @@ function customUpdateImages(version, mobj) {
 
 // setup_uci_defaultsのカスタム版  
 function customSetupUciDefaults() {
+  console.log('customSetupUciDefaults called');
+  
   let textarea = document.querySelector("#uci-defaults-content");
+  if (!textarea) {
+    console.warn('#uci-defaults-content not found');
+    return;
+  }
+  
+  if (!config || !config.uci_defaults_setup_url) {
+    console.warn('config.uci_defaults_setup_url not defined');
+    return;
+  }
+  
   const link = config.uci_defaults_setup_url;
   
   fetch(link)
@@ -149,6 +256,8 @@ function customSetupUciDefaults() {
 
 // UI要素の初期化（details要素の開閉制御）
 function initializeCustomFeatures(open = true) {
+  console.log('initializeCustomFeatures called with open =', open);
+  
   document.querySelectorAll('input[name="connectionMode"]').forEach(radio => {
     radio.addEventListener('change', handleConnectionModeChange);
   });
@@ -161,6 +270,8 @@ function initializeCustomFeatures(open = true) {
   if (asuSection) {
     asuSection.classList.remove("hide");
     const detailsElements = asuSection.querySelectorAll('details');
+    console.log('Found details elements:', detailsElements.length);
+    
     detailsElements.forEach(details => {
       if (open) {
         details.setAttribute('open', '');
@@ -173,6 +284,13 @@ function initializeCustomFeatures(open = true) {
 
 // ISP情報の取得と表示
 function fetchAndDisplayIspInfo() {
+  console.log('fetchAndDisplayIspInfo called');
+  
+  if (!config || !config.auto_config_api_url) {
+    console.warn('config.auto_config_api_url not defined');
+    return;
+  }
+  
   fetch(config.auto_config_api_url)
     .then(response => response.json())
     .then(apiInfo => {
@@ -189,6 +307,8 @@ function fetchAndDisplayIspInfo() {
 
 function displayIspInfo(apiInfo) {
   if (!apiInfo) return;
+  
+  console.log('displayIspInfo called with:', apiInfo);
   
   setValue("#auto-config-country", apiInfo.country || "Unknown");
   setValue("#auto-config-timezone", apiInfo.timezone || "Unknown");
@@ -216,6 +336,8 @@ function displayIspInfo(apiInfo) {
 
 function applyIspAutoConfig(apiInfo) {
   if (!apiInfo) return;
+  
+  console.log('applyIspAutoConfig called with:', apiInfo);
   
   if (apiInfo.country) {
     const countryInput = document.querySelector("#aios-country");
