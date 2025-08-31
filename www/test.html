@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ASU uci-defaults Test v9.2</title>
+    <title>ASU uci-defaults Test v9.3</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -106,7 +106,7 @@
 </head>
 <body>
     <div class="container">
-        <h2>ASU uci-defaults Test v9.2</h2>
+        <h2>ASU uci-defaults Test v9.3</h2>
         
         <label for="profile">プロファイル:</label><br>
         <input type="text" id="profile" value="asus_rt-ax53u"><br>
@@ -252,6 +252,7 @@ echo "すべてのファイルが作成されました。/tmp/test_file_*.txtを
         let totalSize = "不明";
         if (dummyBlockMatch) {
             const dummyBlockContent = dummyBlockMatch[1];
+            // 改行コードのバイト数を考慮して正確なサイズを計算します。
             const dummyBlockSize = new Blob([dummyBlockContent]).size;
             const loopCountMatch = defaults.match(/for i in \$\(seq 1 (\d+)\);/);
             const loopCount = loopCountMatch ? parseInt(loopCountMatch[1], 10) : 0;
