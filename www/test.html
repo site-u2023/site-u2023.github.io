@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ASU uci-defaults Test v9.1</title>
+    <title>ASU uci-defaults Test v9.2</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -106,7 +106,7 @@
 </head>
 <body>
     <div class="container">
-        <h2>ASU uci-defaults Test v9.1</h2>
+        <h2>ASU uci-defaults Test v9.2</h2>
         
         <label for="profile">プロファイル:</label><br>
         <input type="text" id="profile" value="asus_rt-ax53u"><br>
@@ -248,7 +248,7 @@ echo "すべてのファイルが作成されました。/tmp/test_file_*.txtを
         const fileCount = fileCountMatch ? fileCountMatch[1] : '不明';
 
         // スクリプト内のダミーブロックのバイトサイズを計算し、合計サイズを算出
-        const dummyBlockMatch = defaults.match(/generate_dummy_block\(\) \{([\s\S]*?)\}/);
+        const dummyBlockMatch = defaults.match(/generate_dummy_block\(\) \{([\s\S]*?)EOF\}/);
         let totalSize = "不明";
         if (dummyBlockMatch) {
             const dummyBlockContent = dummyBlockMatch[1];
@@ -264,7 +264,7 @@ echo "すべてのファイルが作成されました。/tmp/test_file_*.txtを
         sendInfoDiv.innerHTML = `
             <p>送信KB数: ${kbSize}KB</p>
             <p>分割数: ${fileCount} 個</p>
-            <p>合計サイズ（目標）: ${totalSize}KB</p>
+            <p>生成される合計サイズ: ${totalSize}KB</p>
         `;
         
         const body = JSON.stringify({
