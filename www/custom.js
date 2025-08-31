@@ -68,28 +68,34 @@ function initializeCustomFeatures(asuSection, temp) {
     // 既存のカスタム要素をクリーンアップ
     cleanupExistingCustomElements();
 
-    // #asu 内の HTML を完全にクリア
-    asuSection.innerHTML = '';
-
+    // #asuをdivタグに置き換える
+    const newDiv = document.createElement('div');
+    newDiv.id = 'asu';
+    newDiv.className = asuSection.className;
+    newDiv.style.width = '100%';
+    
     const customPackages = temp.querySelector('#custom-packages-section details');
     const customScripts = temp.querySelector('#custom-scripts-section details');
 
     if (customPackages) {
         customPackages.id = 'custom-packages-details';  // IDを付与して後で識別できるように
-        asuSection.appendChild(customPackages);
+        newDiv.appendChild(customPackages);
     }
     if (customScripts) {
         customScripts.id = 'custom-scripts-details';  // IDを付与して後で識別できるように
-        asuSection.appendChild(customScripts);
+        newDiv.appendChild(customScripts);
     }
 
-    asuSection.insertAdjacentHTML('beforeend', `
+    newDiv.insertAdjacentHTML('beforeend', `
         <br>
         <div id="asu-buildstatus" class="hide"><span></span></div>
         <a href="javascript:buildAsuRequest()" class="custom-link">
             <span></span><span class="tr-request-build">REQUEST BUILD</span>
         </a>
     `);
+    
+    // 元の#asuを新しいdivで置き換える
+    asuSection.parentNode.replaceChild(newDiv, asuSection);
 
     // Extended info 挿入
     const extendedInfo = temp.querySelector('#extended-build-info');
