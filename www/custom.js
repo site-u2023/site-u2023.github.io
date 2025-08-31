@@ -189,15 +189,36 @@ function displayIspInfo(apiInfo) {
 // ==================== ISP自動設定 ====================
 function applyIspAutoConfig(apiInfo) {
     if (!apiInfo) return;
-    if (apiInfo.country) document.querySelector("#aios-country")?.value ||= apiInfo.country;
+
+    // 国コード
+    if (apiInfo.country) {
+        const el = document.querySelector("#aios-country");
+        if (el && !el.value) {
+            el.value = apiInfo.country;
+        }
+    }
+
+    // MAP-E 関連
     if (apiInfo.mape?.brIpv6Address) {
-        const mapeMap = { 'mape-br': apiInfo.mape.brIpv6Address, 'mape-ealen': apiInfo.mape.eaBitLength };
-        Object.entries(mapeMap).forEach(([id,val]) => {
+        const mapeMap = {
+            'mape-br': apiInfo.mape.brIpv6Address,
+            'mape-ealen': apiInfo.mape.eaBitLength
+        };
+        Object.entries(mapeMap).forEach(([id, val]) => {
             const input = document.querySelector(`#${id}`);
-            if (input && !input.value && val) input.value = val;
+            if (input && !input.value && val) {
+                input.value = val;
+            }
         });
     }
-    if (apiInfo.aftr) document.querySelector("#dslite-aftr-address")?.value ||= apiInfo.aftr;
+
+    // DS-Lite AFTR
+    if (apiInfo.aftr) {
+        const el = document.querySelector("#dslite-aftr-address");
+        if (el && !el.value) {
+            el.value = apiInfo.aftr;
+        }
+    }
 }
 
 // ==================== 変更イベント ====================
