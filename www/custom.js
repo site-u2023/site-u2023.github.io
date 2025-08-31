@@ -143,8 +143,11 @@ function initializeCustomUI(open = true) {
     const asuSection = document.querySelector("#asu");
     if (asuSection) {
         asuSection.classList.remove("hide");
-        asuSection.querySelectorAll('details').forEach(d => open ? d.setAttribute('open','') : d.removeAttribute('open'));
+        asuSection.querySelectorAll('details').forEach(d =>
+            open ? d.setAttribute('open','') : d.removeAttribute('open')
+        );
     }
+
 }
 
 // ==================== ISP情報取得 ====================
