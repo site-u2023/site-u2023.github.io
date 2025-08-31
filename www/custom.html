@@ -1,0 +1,328 @@
+<!-- Extended Build Info Section - ISP情報表示 -->
+<div id="extended-build-info" class="hide">
+  <h3 class="tr-extended-info">Location & ISP Information</h3>
+  <div class="row">
+    <div class="col1 tr-notice">Notice</div>
+    <div class="col2" id="auto-config-notice"></div>
+  </div>
+  <div class="row">
+    <div class="col1 tr-country">Country</div>
+    <div class="col2" id="auto-config-country"></div>
+  </div>
+  <div class="row">
+    <div class="col1 tr-timezone">Timezone</div>
+    <div class="col2" id="auto-config-timezone"></div>
+  </div>
+  <div class="row">
+    <div class="col1 tr-zonename">Zonename</div>
+    <div class="col2" id="auto-config-zonename"></div>
+  </div>
+  <div class="row">
+    <div class="col1 tr-isp">ISP</div>
+    <div class="col2" id="auto-config-isp"></div>
+  </div>
+  <div class="row">
+    <div class="col1 tr-as">AS</div>
+    <div class="col2" id="auto-config-as"></div>
+  </div>
+  <div class="row">
+    <div class="col1 tr-ip-address">IP Address</div>
+    <div class="col2" id="auto-config-ip"></div>
+  </div>
+  <div class="row">
+    <div class="col1 tr-method">Method</div>
+    <div class="col2" id="auto-config-method"></div>
+  </div>
+</div>
+
+<!-- Enhanced Package Selector -->
+<div id="custom-packages-section">
+  <details id="packages-details">
+    <summary>
+      <span class="tr-packages">Installed Packages</span>
+    </summary>
+    <div id="package-selector-config">
+      <div class="package-search-container">
+        <h5>Package Search</h5>
+        <p class="text-muted">Select extra packages to install. They'll be added to the list below.</p>
+        <div id="package-search-autocomplete" class="autocomplete">
+          <input type="text"
+            id="package-search"
+            placeholder="Type package name"
+            autocomplete="off"
+            spellcheck="false"
+            autocapitalize="off">
+        </div>
+      </div>
+      
+      <div id="package-categories">
+      </div>
+      
+      <details id="postinst-details">
+        <summary>
+          <span>Postinst (Package installation script)</span>
+        </summary>
+        <textarea
+          rows="10"
+          id="asu-packages"
+          data-initial="package1\npackage2\npackage3"
+          autocomplete="off"
+          spellcheck="false"
+          autocapitalize="off"
+        ></textarea>
+      </details>
+    </div>
+  </details>
+</div>
+
+<!-- Scripts Configuration -->
+<div id="custom-scripts-section">
+  <details id="scripts-details">
+    <summary>
+      <span class="tr-defaults">Script to run on first boot (uci-defaults)</span>
+    </summary>
+    <div id="scripts-config">
+      <div class="commands-container">
+        <h5>Add commands</h5>
+        <p class="text-muted">Add custom shell commands that run on first boot.</p>
+        <div id="commands-autocomplete" class="autocomplete">
+          <input type="text"
+            id="command"
+            placeholder="Type commands"
+            autocomplete="off"
+            spellcheck="false"
+            autocapitalize="off">
+        </div>
+      </div>
+      
+      <div id="basic-config" class="config-section">
+        <h5>Basic Configuration</h5>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="aios-language">Language</label>
+            <select id="aios-language">
+              <option value="en">English</option>
+              <option value="ja">日本語 (Japanese)</option>
+              <option value="zh-cn">简体中文 (Chinese Simplified)</option>
+              <option value="ko">한국어 (Korean)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="aios-country">Country</label>
+            <input type="text" id="aios-country" placeholder="00" maxlength="2">
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="aios-timezone">Timezone</label>
+            <input type="text" id="aios-timezone" placeholder="UTC">
+          </div>
+          <div class="form-group">
+            <label for="aios-zonename">Zonename</label>
+            <input type="text" id="aios-zonename" placeholder="UTC">
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="aios-device-name">Device name</label>
+            <input type="text" id="aios-device-name" placeholder="OpenWrt" value="OpenWrt">
+          </div>
+          <div class="form-group">
+            <label for="aios-root-password">Root password</label>
+            <input type="text" id="aios-root-password" placeholder="8+ characters">
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="aios-lan-ipv4">LAN IPv4 Address</label>
+            <input type="text" id="aios-lan-ipv4" placeholder="192.168.1.1" value="192.168.1.1">
+          </div>
+          <div class="form-group">
+            <label for="aios-lan-ipv6">LAN IPv6 Address</label>
+            <input type="text" id="aios-lan-ipv6" placeholder="fd00::1/64">
+          </div>
+        </div>
+      </div>
+      
+      <div id="wifi-config" class="config-section">
+        <h5>Wi-Fi Configuration</h5>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="aios-wifi-ssid">Wi-Fi SSID</label>
+            <input type="text" id="aios-wifi-ssid" placeholder="OpenWrt" value="OpenWrt">
+          </div>
+          <div class="form-group">
+            <label for="aios-wifi-password">Wi-Fi Password</label>
+            <input type="text" id="aios-wifi-password" placeholder="8+ characters">
+          </div>
+        </div>
+      </div>
+      
+      <div id="internet-config" class="config-section">
+        <h5>Internet Connection</h5>
+        <div class="form-group">
+          <label>Connection mode</label>
+          <div class="radio-group">
+            <label>
+              <input type="radio" name="connectionMode" value="auto" checked>
+              Auto (Recommended)
+            </label>
+            <label>
+              <input type="radio" name="connectionMode" value="manual">
+              Manual
+            </label>
+          </div>
+        </div>
+        
+        <div id="manual-connection-section" style="display: none;">
+          <div class="form-group">
+            <label>Connection type</label>
+            <div class="radio-group">
+              <label>
+                <input type="radio" name="connectionType" value="dhcp" checked>
+                DHCP
+              </label>
+              <label>
+                <input type="radio" name="connectionType" value="pppoe">
+                PPPoE
+              </label>
+              <label>
+                <input type="radio" name="connectionType" value="dslite">
+                DS-Lite
+              </label>
+              <label>
+                <input type="radio" name="connectionType" value="mape">
+                MAP-E
+              </label>
+            </div>
+          </div>
+          
+          <div id="pppoe-section" class="connection-config" style="display: none;">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="pppoe-username">PPPoE username</label>
+                <input type="text" id="pppoe-username" placeholder="Username">
+              </div>
+              <div class="form-group">
+                <label for="pppoe-password">PPPoE password</label>
+                <input type="password" id="pppoe-password" placeholder="Password">
+              </div>
+            </div>
+          </div>
+          
+          <div id="dslite-section" class="connection-config" style="display: none;">
+            <div class="form-group">
+              <label for="dslite-aftr-address">AFTR IPv6 Address</label>
+              <input type="text" id="dslite-aftr-address" placeholder="2404:8e00::feed:100">
+            </div>
+          </div>
+          
+          <div id="mape-section" class="connection-config" style="display: none;">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="mape-br">BR (Border Relay)</label>
+                <input type="text" id="mape-br" placeholder="2001:db8::1">
+              </div>
+              <div class="form-group">
+                <label for="mape-ealen">EA-len</label>
+                <input type="number" id="mape-ealen" placeholder="16" min="0" max="48">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="package-category">
+        <h4>Tuning</h4>
+        <div class="form-group">
+          <label>Dynamic Network Optimizer</label>
+          <div class="radio-group">
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="netOptimizer" id="netopt-enabled" value="enabled" checked>
+              <label class="form-check-label" for="netopt-enabled">Enabled</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="netOptimizer" id="netopt-disabled" value="disabled">
+              <label class="form-check-label" for="netopt-disabled">Disabled</label>
+            </div>
+          </div>
+          <small class="form-text text-muted">Automatically optimizes TCP buffer sizes and network parameters based on available RAM</small>
+        </div>
+
+        <div id="net-optimizer-section" class="conditional-section" style="display: block;">
+          <div class="form-group">
+            <label>Configuration Mode</label>
+            <div class="radio-group">
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="netOptimizerMode" id="netopt-auto" value="auto" checked>
+                <label class="form-check-label" for="netopt-auto">Auto (Recommended)</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="netOptimizerMode" id="netopt-manual" value="manual">
+                <label class="form-check-label" for="netopt-manual">Manual</label>
+              </div>
+            </div>
+            <small class="form-text text-muted">Auto mode adjusts parameters based on system resources</small>
+          </div>
+
+          <div id="net-optimizer-manual" class="conditional-section" style="display: none;">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="netopt-rmem">TCP Read Memory</label>
+                <input type="text" id="netopt-rmem" class="form-control" placeholder="4096 131072 8388608">
+                <small class="form-text text-muted">min default max (bytes)</small>
+              </div>
+              <div class="form-group">
+                <label for="netopt-wmem">TCP Write Memory</label>
+                <input type="text" id="netopt-wmem" class="form-control" placeholder="4096 131072 8388608">
+                <small class="form-text text-muted">min default max (bytes)</small>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="netopt-conntrack">Connection Tracking Max</label>
+                <input type="number" id="netopt-conntrack" class="form-control" placeholder="131072" min="1024">
+              </div>
+              <div class="form-group">
+                <label for="netopt-backlog">Network Device Backlog</label>
+                <input type="number" id="netopt-backlog" class="form-control" placeholder="5000" min="100">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="netopt-somaxconn">Socket Max Connections</label>
+                <input type="number" id="netopt-somaxconn" class="form-control" placeholder="16384" min="128">
+              </div>
+              <div class="form-group">
+                <label for="netopt-congestion">TCP Congestion Control</label>
+                <select id="netopt-congestion" class="form-control">
+                  <option value="cubic" selected>cubic (default)</option>
+                  <option value="bbr">bbr</option>
+                  <option value="reno">reno</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <details id="uci-defaults-details">
+        <summary>
+          <span>UCI-defaults (Boot configuration script)</span>
+        </summary>
+        <div id="uci-defaults-group">
+          <textarea
+            rows="10"
+            id="uci-defaults-content"
+            autocomplete="off"
+            spellcheck="false"
+            autocapitalize="off"
+          ></textarea>
+        </div>
+      </details>
+    </div>
+  </details>
+</div>
