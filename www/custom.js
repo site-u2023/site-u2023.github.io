@@ -5,16 +5,22 @@ console.log('custom.js loaded');
 // ===== グローバル変数 =====
 let cachedApiInfo = null;
 let originalBuildAsuRequest = null;
-let originalUpdateImages = null;
+let originalUpdateImages = null; // 使わない（再フック廃止）
 let originalSetupUciDefaults = null;
 let hasCustomHtmlLoaded = false;
 let hasIspInfoRendered = false;
+let hasCustomUIInitialized = false;
+let isCustomHtmlLoading = false;
+
+// 既存の show/hide を退避（index.js の実装に委譲する）
+const ofsShow = window.show;
+const ofsHide = window.hide;
 
 // ==================== updateImages フック ====================
 const _originalUpdateImages = window.updateImages;
 window.updateImages = function(version, mobj) {
     if (_originalUpdateImages) _originalUpdateImages(version, mobj);
-    loadCustomHTML(); // フック描画
+    loadCustomHTML(); // フック描画（排他制御あり）
     if (mobj && !hasIspInfoRendered) {
         fetchAndDisplayIspInfo();
     }
@@ -22,8 +28,10 @@ window.updateImages = function(version, mobj) {
 
 // ==================== custom.html 読み込み ====================
 async function loadCustomHTML() {
-    if (hasCustomHtmlLoaded) return; // 1回だけ
+    if (hasCustomHtmlLoaded || isCustomHtmlLoading) return; // 1回だけ（ロード中も抑止）
     try {
+        isCustomHtmlLoading = true;
+
         const res = await fetch('custom.html');
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const html = await res.text();
@@ -66,25 +74,27 @@ async function loadCustomHTML() {
 
     } catch (err) {
         console.error('Failed to load custom.html:', err);
+    } finally {
+        isCustomHtmlLoading = false;
     }
 }
 
 // ==================== カスタム機能初期化 ====================
 function initCustomFeatures() {
+    if (hasCustomUIInitialized) return; // 多重初期化防止
+
     if (typeof buildAsuRequest === 'function' && !originalBuildAsuRequest) {
         originalBuildAsuRequest = buildAsuRequest;
         window.buildAsuRequest = customBuildAsuRequest;
     }
-    if (typeof updateImages === 'function' && !originalUpdateImages) {
-        originalUpdateImages = updateImages;
-        window.updateImages = customUpdateImages;
-    }
+    // updateImages は先頭で一度だけフック済み。ここでは再フックしない。
     if (typeof setup_uci_defaults === 'function' && !originalSetupUciDefaults) {
         originalSetupUciDefaults = setup_uci_defaults;
         window.setup_uci_defaults = customSetupUciDefaults;
     }
 
     initializeCustomUI(true);
+    hasCustomUIInitialized = true;
 }
 
 // ==================== buildAsuRequest カスタム版 ====================
@@ -96,19 +106,13 @@ function customBuildAsuRequest(request_hash) {
             if ([200,400,422,500].includes(response.status)) {
                 response.clone().json().then(mobj => {
                     if ("stderr" in mobj) initializeCustomUI(response.status !== 200);
-                });
+                }).catch(() => {}); // JSON でない応答に備える
             }
             return response;
         });
     };
     if (originalBuildAsuRequest) originalBuildAsuRequest(request_hash);
     window.fetch = originalFetch;
-}
-
-// ==================== updateImages カスタム版 ====================
-function customUpdateImages(version, mobj) {
-    if (originalUpdateImages) originalUpdateImages(version, mobj);
-    if (mobj && !hasIspInfoRendered) fetchAndDisplayIspInfo();
 }
 
 // ==================== setup_uci_defaults カスタム版 ====================
@@ -214,12 +218,17 @@ function handleConnectionTypeChange(e) {
 
 // ==================== DOMContentLoaded 初期化 ====================
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initCustomFeatures);
+    document.addEventListener('DOMContentLoaded', initCustomFeatures, { once: true });
 } else {
     initCustomFeatures();
 }
 
 // ==================== ヘルパー ====================
-function show(sel) { const el = typeof sel==='string'?document.querySelector(sel):sel; if(el) el.style.display='block'; }
-function hide(sel) { const el = typeof sel==='string'?document.querySelector(sel):sel; if(el) el.style.display='none'; }
-
+function show(sel) {
+    if (typeof ofsShow === 'function') return ofsShow(sel);
+    const el = typeof sel==='string'?document.querySelector(sel):sel; if(el) el.style.display='block';
+}
+function hide(sel) {
+    if (typeof ofsHide === 'function') return ofsHide(sel);
+    const el = typeof sel==='string'?document.querySelector(sel):sel; if(el) el.style.display='none';
+}
