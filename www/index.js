@@ -66,7 +66,6 @@ function getModelTitles(titles) {
   });
 }
 
-
 function showElementClosed(selector) {
   show(selector);
   $(selector).querySelectorAll('details').forEach(details => {
