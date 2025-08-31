@@ -2,15 +2,17 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<title>ASU uci-defaults 20KB超過テスト（分割数表示付き）</title>
+<title>ASU uci-defaults 20KB超過テスト（分割送信・UTF-8安全）</title>
 <style>
 body { font-family: sans-serif; margin: 20px; }
 #log { white-space: pre; background: #f5f5f5; padding: 1em; }
 label { display: block; margin-top: 0.5em; }
+input, textarea { width: 100%; }
+button { margin-top: 1em; }
 </style>
 </head>
 <body>
-<h1>ASU uci-defaults 20KB超過テスト（分割数表示付き）</h1>
+<h1>ASU uci-defaults 20KB超過テスト（分割送信・UTF-8安全）</h1>
 
 <label>プロファイル: <input id="profile" value="asus_rt-ax53u"></label>
 <label>ターゲット: <input id="target" value="ramips/mt7621"></label>
@@ -18,20 +20,59 @@ label { display: block; margin-top: 0.5em; }
 <label>パッケージ(カンマ区切り): <input id="packages" value="luci"></label>
 
 <label>uci-defaults の内容:</label>
-<textarea id="defaults" rows="15" style="width:100%"></textarea>
+<textarea id="defaults" rows="15"></textarea>
 
-<button id="sendBtn">ASUへ送信</button>
+<button id="sendBtn">ASUへ分割送信</button>
 <div id="log"></div>
 
 <script>
 const ASU_URL = 'https://sysupgrade.openwrt.org/api/v1/build';
-const CHUNK_LIMIT = 20 * 1024; // 20KB
+// ASUのフィールド制限(20KB)にJSONエスケープ等の余白を確保して19KBで分割
+const CHUNK_LIMIT_BYTES = 19000;
+
+const enc = new TextEncoder();
+const dec = new TextDecoder();
 
 function log(msg) {
-  document.getElementById('log').textContent += msg + "\n";
+  const el = document.getElementById('log');
+  el.textContent += msg + "\n";
 }
 
-// 最初から20KB超過のdefaultsを生成
+function utf8SizeBytes(str) {
+  return enc.encode(str).length;
+}
+
+// UTF-8のバイト長で安全に分割（境界は文字単位）
+function splitByUtf8Bytes(str, limit) {
+  const chunks = [];
+  let start = 0;
+  while (start < str.length) {
+    // 上限近辺から二分探索で収まる最大文字位置を探す
+    let low = start + 1;
+    let high = str.length;
+    // 先に粗く見積もり（文字は最短1バイトだが多言語で最大4バイト）
+    high = Math.min(high, start + limit); // 極端な無駄計測を避ける
+    let best = start + 1;
+    while (low <= high) {
+      const mid = ((low + high) >> 1);
+      const slice = str.slice(start, mid);
+      const size = utf8SizeBytes(slice);
+      if (size <= limit) {
+        best = mid;
+        low = mid + 1;
+      } else {
+        high = mid - 1;
+      }
+    }
+    const piece = str.slice(start, best);
+    // 理論上ここが0バイトになることはない（limit>=1）
+    chunks.push(piece);
+    start = best;
+  }
+  return chunks;
+}
+
+// 大きめのdefaultsを生成（ダミー）
 function makeLargeDefaults() {
   let base = "#!/bin/sh\n";
   base += "echo start > /tmp/test.log\n";
@@ -54,38 +95,49 @@ document.getElementById('sendBtn').addEventListener('click', async () => {
   const pkgs = document.getElementById('packages').value.trim();
   const defaults = document.getElementById('defaults').value;
 
-  // サイズ計算
-  const sizeBytes = new Blob([defaults]).size;
-  const chunks = Math.ceil(sizeBytes / CHUNK_LIMIT);
-  const chunkSizeKB = (sizeBytes / chunks / 1024).toFixed(2);
-  const totalKB = (sizeBytes / 1024).toFixed(2);
+  const totalBytes = utf8SizeBytes(defaults);
+  const chunks = splitByUtf8Bytes(defaults, CHUNK_LIMIT_BYTES);
+  const totalKB = (totalBytes / 1024).toFixed(2);
 
-  log(`defaultsサイズ: ${sizeBytes} bytes (${totalKB} KB)`);
-  log(`分割数: ${chunks} 個`);
-  log(`1チャンク: ${chunkSizeKB} KB`);
-  log(`合計サイズ: ${totalKB} KB`);
+  log(`defaults合計: ${totalBytes} bytes (${totalKB} KB)`);
+  log(`分割数: ${chunks.length} 個`);
+  chunks.forEach((c, i) => {
+    log(`  チャンク${i+1}: ${utf8SizeBytes(c)} bytes`);
+  });
   log('--- 実送信開始 ---');
 
-  const body = {
-    profile: profile,
-    target: target,
-    version: version,
-    packages: pkgs ? pkgs.split(',').map(s => s.trim()).filter(Boolean) : [],
-    defaults: defaults,
-    client: 'asu-defaults-test/20kb-over'
-  };
+  const buildId = `asu-chunktest-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
+  const packages = pkgs ? pkgs.split(',').map(s => s.trim()).filter(Boolean) : [];
 
-  try {
-    const res = await fetch(ASU_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
-    log(`HTTP ${res.status}`);
-    const data = await res.json().catch(() => ({}));
-    log(JSON.stringify(data, null, 2));
-  } catch (e) {
-    log(`送信エラー: ${e.message}`);
+  for (let i = 0; i < chunks.length; i++) {
+    const chunkData = chunks[i];
+    const body = {
+      profile,
+      target,
+      version,
+      packages,
+      defaults: chunkData,
+      // 相関取引用。サーバーは無視するかもしれないため、許容フィールド内に収める
+      client: `asu-defaults-chunks/${buildId} part ${i+1}/${chunks.length}`
+    };
+
+    try {
+      const res = await fetch(ASU_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const status = res.status;
+      let data = {};
+      try {
+        data = await res.json();
+      } catch (_) {}
+      log(`チャンク${i+1}/${chunks.length} → HTTP ${status}`);
+      log(JSON.stringify(data, null, 2));
+      // ASUがチャンク再構築非対応なら、各リクエストは独立に評価されます
+    } catch (e) {
+      log(`チャンク${i+1} 送信エラー: ${e.message}`);
+    }
   }
 });
 </script>
