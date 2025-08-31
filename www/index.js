@@ -1246,6 +1246,21 @@ function initializeCustomFeatures() {
       detailsElement.open = true;
     }
   }
+
+  // 新規：detailsを開いた時にテキストエリアのサイズを調整する機能を追加
+  const detailsElements = $$('#asu-packages-details, #asu-defaults-details');
+  detailsElements.forEach(details => {
+    details.addEventListener('toggle', () => {
+      // detailsが開いた時のみサイズを調整
+      if (details.open) {
+        const textarea = details.querySelector('textarea');
+        if (textarea) {
+          textarea.style.height = "auto";
+          textarea.style.height = textarea.scrollHeight + "px";
+        }
+      }
+    });
+  });
 }
 
 function handleConnectionModeChange(e) {
