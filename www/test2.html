@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<title>ASU uci-defaults 20KB超過テスト</title>
+<title>ASU uci-defaults 20KB超過テスト（分割数表示付き）</title>
 <style>
 body { font-family: sans-serif; margin: 20px; }
 #log { white-space: pre; background: #f5f5f5; padding: 1em; }
@@ -10,7 +10,7 @@ label { display: block; margin-top: 0.5em; }
 </style>
 </head>
 <body>
-<h1>ASU uci-defaults 20KB超過テスト</h1>
+<h1>ASU uci-defaults 20KB超過テスト（分割数表示付き）</h1>
 
 <label>プロファイル: <input id="profile" value="asus_rt-ax53u"></label>
 <label>ターゲット: <input id="target" value="ramips/mt7621"></label>
@@ -25,18 +25,18 @@ label { display: block; margin-top: 0.5em; }
 
 <script>
 const ASU_URL = 'https://sysupgrade.openwrt.org/api/v1/build';
-const LIMIT_BYTES = 20 * 1024;
+const CHUNK_LIMIT = 20 * 1024; // 20KB
 
 function log(msg) {
   document.getElementById('log').textContent += msg + "\n";
 }
 
-// 20KB超過のダミーdefaultsを生成
+// 最初から20KB超過のdefaultsを生成
 function makeLargeDefaults() {
   let base = "#!/bin/sh\n";
   base += "echo start > /tmp/test.log\n";
   base += "generate_dummy_block() {\ncat << 'EOF'\n";
-  for (let i = 0; i < 2000; i++) {
+  for (let i = 0; i < 2500; i++) {
     base += `# dummy line ${i+1}\n`;
   }
   base += "EOF\n}\n";
@@ -54,8 +54,17 @@ document.getElementById('sendBtn').addEventListener('click', async () => {
   const pkgs = document.getElementById('packages').value.trim();
   const defaults = document.getElementById('defaults').value;
 
-  const size = new Blob([defaults]).size;
-  log(`defaultsサイズ: ${size} bytes (${(size/1024).toFixed(2)} KB)`);
+  // サイズ計算
+  const sizeBytes = new Blob([defaults]).size;
+  const chunks = Math.ceil(sizeBytes / CHUNK_LIMIT);
+  const chunkSizeKB = (sizeBytes / chunks / 1024).toFixed(2);
+  const totalKB = (sizeBytes / 1024).toFixed(2);
+
+  log(`defaultsサイズ: ${sizeBytes} bytes (${totalKB} KB)`);
+  log(`分割数: ${chunks} 個`);
+  log(`1チャンク: ${chunkSizeKB} KB`);
+  log(`合計サイズ: ${totalKB} KB`);
+  log('--- 実送信開始 ---');
 
   const body = {
     profile: profile,
