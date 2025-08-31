@@ -108,6 +108,9 @@ function initializeCustomFeatures(asuSection, temp) {
     hookOriginalFunctions();
     setupEventListeners();
     
+    // setup.shを自動読み込み
+    loadUciDefaultsTemplate();
+    
     // 初期化完了フラグ
     customInitialized = true;
 }
@@ -196,6 +199,26 @@ function customSetupUciDefaults() {
             textarea.value = text;
         })
         .catch(err => showAlert(err.message));
+}
+
+// setup.shを自動読み込みする関数
+function loadUciDefaultsTemplate() {
+    console.log('loadUciDefaultsTemplate called');
+    const textarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
+    if (!textarea || !config?.uci_defaults_setup_url) return;
+
+    fetch(config.uci_defaults_setup_url)
+        .then(r => { 
+            if (!r.ok) throw new Error(r.statusText); 
+            return r.text(); 
+        })
+        .then(text => {
+            textarea.value = text;
+            console.log('setup.sh loaded successfully');
+        })
+        .catch(err => {
+            console.error('Failed to load setup.sh:', err);
+        });
 }
 
 // イベントリスナー設定
