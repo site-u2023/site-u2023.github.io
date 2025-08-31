@@ -148,7 +148,6 @@ MAPE_EOF
     [ -n "\${mape_gua_mode}" ] && uci -q set network.\${MAPE6}.ip6prefix="\${mape_gua_prefix}"
     cat > /lib/netifd/proto/map.sh <<'MAP_SH_EOF'
 #!/bin/sh
-# Nichiban-ready
 # this script based github.com/fakemanhk/openwrt-jp-ipoe
 DONT_SNAT_TO="0"
 [ -n "$INCLUDE_ONLY" ] || {
