@@ -10,8 +10,33 @@ document.addEventListener('DOMContentLoaded', async function() {
     const temp = document.createElement('div');
     temp.innerHTML = html;
     
-    // 各セクションを適切な場所に挿入
-    // （適切な挿入位置の処理 - 後で実装）
+// 各セクションを適切な場所に挿入
+const extendedInfo = temp.querySelector('#extended-build-info');
+if (extendedInfo) {
+  const imageLink = document.querySelector('#image-link');
+  if (imageLink) {
+    const targetRow = imageLink.closest('.row');
+    targetRow.insertAdjacentElement('afterend', extendedInfo);
+  }
+}
+
+// パッケージセクションを置き換え
+const customPackages = temp.querySelector('#custom-packages-section');
+if (customPackages) {
+  const asuPackages = document.querySelector('#asu-packages');
+  if (asuPackages && asuPackages.parentElement) {
+    asuPackages.parentElement.replaceWith(customPackages);
+  }
+}
+
+// スクリプトセクションを追加
+const customScripts = temp.querySelector('#custom-scripts-section');
+if (customScripts) {
+  const uciDefaults = document.querySelector('#uci-defaults-group');
+  if (uciDefaults && uciDefaults.parentElement) {
+    uciDefaults.parentElement.insertAdjacentElement('afterend', customScripts);
+  }
+}
     
     // カスタム機能の初期化
     initCustomFeatures();
@@ -68,18 +93,6 @@ function customBuildAsuRequest(request_hash) {
   
   // フェッチを元に戻す
   window.fetch = originalFetch;
-}
-
-// updateImagesのカスタム版
-function customUpdateImages(version, mobj) {
-  // オリジナル関数を実行
-  originalUpdateImages(version, mobj);
-  
-  // カスタム処理を追加
-  if (mobj) {
-    // Fetch and display ISP info
-    fetchAndDisplayIspInfo();
-  }
 }
 
 // updateImagesのカスタム版
