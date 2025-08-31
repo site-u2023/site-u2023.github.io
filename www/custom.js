@@ -82,12 +82,23 @@ function customUpdateImages(version, mobj) {
   }
 }
 
+// updateImagesのカスタム版
+function customUpdateImages(version, mobj) {
+  // オリジナル関数を実行
+  originalUpdateImages(version, mobj);
+  
+  // カスタム処理を追加
+  if (mobj) {
+    // Fetch and display ISP info
+    fetchAndDisplayIspInfo();
+  }
+}
+
 // setup_uci_defaultsのカスタム版  
 function customSetupUciDefaults() {
   let textarea = document.querySelector("#uci-defaults-content");
   const link = config.uci_defaults_setup_url;
   
-  // Automatically load setup.sh content
   fetch(link)
     .then((obj) => {
       if (obj.status != 200) {
@@ -102,139 +113,16 @@ function customSetupUciDefaults() {
     .catch((err) => showAlert(err.message));
 }
 
-// ISP情報の取得と表示
-function fetchAndDisplayIspInfo() {
-  fetch(config.auto_config_api_url)
-    .then(response => response.json())
-    .then(apiInfo => {
-      console.log("API response:", apiInfo);
-      cachedApiInfo = apiInfo;
-      if (apiInfo) {
-        // Display ISP information
-        setValue("#auto-config-country", apiInfo.country || "Unknown");
-        setValue("#auto-config-timezone", apiInfo.timezone || "Unknown");
-        setValue("#auto-config-zonename", apiInfo.zonename || "Unknown");
-        setValue("#auto-config-isp", apiInfo.isp || "Unknown");
-        setValue("#auto-config-as", apiInfo.as || "Unknown");
-        
-        // Display IP addresses
-        const ips = [];
-        if (apiInfo.ipv4) ips.push(apiInfo.ipv4);
-        if (apiInfo.ipv6) ips.push(apiInfo.ipv6);
-        setValue("#auto-config-ip", ips.join(" / ") || "Unknown");
-        
-        // Determine WAN type
-        let wanType = "DHCP/PPPoE";
-        if (apiInfo.mape && apiInfo.mape.brIpv6Address) {
-          wanType = "MAP-E";
-        } else if (apiInfo.aftr) {
-          wanType = "DS-Lite";
-        }
-        setValue("#auto-config-method", wanType);
-        
-        setValue("#auto-config-notice", apiInfo.notice || "");
-        
-        // Show the extended build info section
-        show("#extended-build-info");
-        
-        // Auto-configure based on ISP detection
-        displayIspInfo(apiInfo);
-      }
-    })
-    .catch(error => {
-      console.error('Failed to fetch ISP info:', error);
-    });
-}
-
-function displayIspInfo(apiInfo) {
-  console.log("Displaying ISP info:", apiInfo);
-  
-  if (!apiInfo) return;
-  
-  // Display all ISP information fields
-  setValue("#auto-config-country", apiInfo.country);
-  setValue("#auto-config-timezone", apiInfo.timezone);
-  setValue("#auto-config-zonename", apiInfo.zonename);
-  setValue("#auto-config-isp", apiInfo.isp);
-  setValue("#auto-config-as", apiInfo.as);
-  
-  const ips = [];
-  if (apiInfo.ipv4) ips.push(apiInfo.ipv4);
-  if (apiInfo.ipv6) ips.push(apiInfo.ipv6);
-  if (ips.length > 0) {
-    setValue("#auto-config-ip", ips.join(" / "));
-  }
-  
-  let connectionType = "DHCP/PPPoE";
-  if (apiInfo.mape && apiInfo.mape.brIpv6Address) {
-    connectionType = "MAP-E";
-  } else if (apiInfo.aftr) {
-    connectionType = "DS-Lite";
-  }
-  setValue("#auto-config-method", connectionType);
-  
-  if (apiInfo.notice) {
-    setValue("#auto-config-notice", apiInfo.notice);
-  }
-
-  show("#extended-build-info");
-  
-  applyIspAutoConfig(apiInfo);
-}
-
-function applyIspAutoConfig(apiInfo) {
-  if (!apiInfo) return;
-  
-  // Set country code
-  if (apiInfo.country) {
-    const countryInput = document.querySelector("#aios-country");
-    if (countryInput && !countryInput.value) {
-      countryInput.value = apiInfo.country;
-    }
-  }
-  
-  // Auto-configure MAP-E if detected
-  if (apiInfo.mape && apiInfo.mape.brIpv6Address) {
-    const mapeInputs = {
-      'mape-br': apiInfo.mape.brIpv6Address,
-      'mape-ealen': apiInfo.mape.eaBitLength,
-      'mape-ipv4-prefix': apiInfo.mape.ipv4Prefix,
-      'mape-ipv4-prefixlen': apiInfo.mape.ipv4PrefixLength,
-      'mape-ipv6-prefix': apiInfo.mape.ipv6Prefix,
-      'mape-ipv6-prefixlen': apiInfo.mape.ipv6PrefixLength,
-      'mape-psid-offset': apiInfo.mape.psIdOffset,
-      'mape-psidlen': apiInfo.mape.psidlen
-    };
-    
-    for (const [id, value] of Object.entries(mapeInputs)) {
-      const input = document.querySelector(`#${id}`);
-      if (input && !input.value && value) {
-        input.value = value;
-      }
-    }
-  }
-  
-  // Auto-configure DS-Lite if detected
-  if (apiInfo.aftr) {
-    const aftrInput = document.querySelector("#dslite-aftr-address");
-    if (aftrInput && !aftrInput.value) {
-      aftrInput.value = apiInfo.aftr;
-    }
-  }
-}
-
+// UI要素の初期化（details要素の開閉制御）
 function initializeCustomFeatures(open = true) {
-  // Initialize connection mode handlers
   document.querySelectorAll('input[name="connectionMode"]').forEach(radio => {
     radio.addEventListener('change', handleConnectionModeChange);
   });
   
-  // Initialize connection type handlers
   document.querySelectorAll('input[name="connectionType"]').forEach(radio => {
     radio.addEventListener('change', handleConnectionTypeChange);
   });
   
-  // Make ASU section always visible and handle open/closed state
   const asuSection = document.querySelector("#asu");
   if (asuSection) {
     asuSection.classList.remove("hide");
@@ -249,13 +137,87 @@ function initializeCustomFeatures(open = true) {
   }
 }
 
+// ISP情報の取得と表示
+function fetchAndDisplayIspInfo() {
+  fetch(config.auto_config_api_url)
+    .then(response => response.json())
+    .then(apiInfo => {
+      console.log("API response:", apiInfo);
+      cachedApiInfo = apiInfo;
+      if (apiInfo) {
+        displayIspInfo(apiInfo);
+      }
+    })
+    .catch(error => {
+      console.error('Failed to fetch ISP info:', error);
+    });
+}
+
+function displayIspInfo(apiInfo) {
+  if (!apiInfo) return;
+  
+  setValue("#auto-config-country", apiInfo.country || "Unknown");
+  setValue("#auto-config-timezone", apiInfo.timezone || "Unknown");
+  setValue("#auto-config-zonename", apiInfo.zonename || "Unknown");
+  setValue("#auto-config-isp", apiInfo.isp || "Unknown");
+  setValue("#auto-config-as", apiInfo.as || "Unknown");
+  
+  const ips = [];
+  if (apiInfo.ipv4) ips.push(apiInfo.ipv4);
+  if (apiInfo.ipv6) ips.push(apiInfo.ipv6);
+  setValue("#auto-config-ip", ips.join(" / ") || "Unknown");
+  
+  let wanType = "DHCP/PPPoE";
+  if (apiInfo.mape && apiInfo.mape.brIpv6Address) {
+    wanType = "MAP-E";
+  } else if (apiInfo.aftr) {
+    wanType = "DS-Lite";
+  }
+  setValue("#auto-config-method", wanType);
+  setValue("#auto-config-notice", apiInfo.notice || "");
+  
+  show("#extended-build-info");
+  applyIspAutoConfig(apiInfo);
+}
+
+function applyIspAutoConfig(apiInfo) {
+  if (!apiInfo) return;
+  
+  if (apiInfo.country) {
+    const countryInput = document.querySelector("#aios-country");
+    if (countryInput && !countryInput.value) {
+      countryInput.value = apiInfo.country;
+    }
+  }
+  
+  if (apiInfo.mape && apiInfo.mape.brIpv6Address) {
+    const mapeInputs = {
+      'mape-br': apiInfo.mape.brIpv6Address,
+      'mape-ealen': apiInfo.mape.eaBitLength
+    };
+    
+    for (const [id, value] of Object.entries(mapeInputs)) {
+      const input = document.querySelector(`#${id}`);
+      if (input && !input.value && value) {
+        input.value = value;
+      }
+    }
+  }
+  
+  if (apiInfo.aftr) {
+    const aftrInput = document.querySelector("#dslite-aftr-address");
+    if (aftrInput && !aftrInput.value) {
+      aftrInput.value = apiInfo.aftr;
+    }
+  }
+}
+
 function handleConnectionModeChange(e) {
   const manualSection = document.querySelector("#manual-connection-section");
   if (e.target.value === 'manual') {
     show(manualSection);
   } else {
     hide(manualSection);
-    // Auto mode - apply ISP detection
     if (cachedApiInfo) {
       applyIspAutoConfig(cachedApiInfo);
     }
@@ -263,12 +225,10 @@ function handleConnectionModeChange(e) {
 }
 
 function handleConnectionTypeChange(e) {
-  // Hide all connection type sections
   hide("#pppoe-section");
   hide("#dslite-section");
   hide("#mape-section");
   
-  // Show selected section
   switch(e.target.value) {
     case 'pppoe':
       show("#pppoe-section");
