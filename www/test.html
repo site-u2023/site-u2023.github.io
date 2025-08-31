@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ASU uci-defaults Test v4.0</title>
+    <title>ASU uci-defaults Test v5.0</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -106,7 +106,7 @@
 </head>
 <body>
     <div class="container">
-        <h2>ASU uci-defaults Test v4.0</h2>
+        <h2>ASU uci-defaults Test v5.0</h2>
         
         <label for="profile">プロファイル:</label><br>
         <input type="text" id="profile" value="asus_rt-ax53u"><br>
@@ -122,12 +122,12 @@
         <textarea id="defaults" rows="15" cols="80">#!/bin/sh
 
 # このスクリプトは、2KBのファイルを11個作成し、合計サイズが20KBを超えることを確認するテストです。
-# あなたが提案した、分割と再利用の効率的な方法を適用しています。
+# 効率的な分割と再利用のあなたのアイデアを適用しています。
 
 echo "合計20KB超えファイル作成テストを開始します..." > /tmp/asu-test-multi-file.log
 
 # 約100バイトのダミーコンテンツブロックを生成する関数。
-generate_2kb_block() {
+generate_dummy_block() {
     cat << 'EOF'
 # これは2KBのダミーブロックの一部です。
 # 約20回の繰り返しで合計2KBのファイルになります。
@@ -159,8 +159,9 @@ EOF
 for i in $(seq 1 11); do
     output_file="/tmp/test_file_${i}.txt"
     echo "Creating file: ${output_file}" >> /tmp/asu-test-multi-file.log
+    # 2KB（約2048バイト）を作成するためには、100バイトのブロックを21回繰り返す
     for j in $(seq 1 21); do
-        generate_2kb_block >> "${output_file}"
+        generate_dummy_block >> "${output_file}"
     done
 done
 
