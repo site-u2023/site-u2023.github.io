@@ -1,9 +1,27 @@
 // custom.js - OpenWrt カスタム機能
 
-// ISP info cache
-let cachedApiInfo = null;
+// ===== HTML読み込み処理 =====
+document.addEventListener('DOMContentLoaded', async function() {
+  try {
+    const response = await fetch('custom.html');
+    const html = await response.text();
+    
+    // 一時コンテナに読み込み
+    const temp = document.createElement('div');
+    temp.innerHTML = html;
+    
+    // 各セクションを適切な場所に挿入
+    // （適切な挿入位置の処理 - 後で実装）
+    
+    // カスタム機能の初期化
+    initCustomFeatures();
+  } catch (error) {
+    console.error('Failed to load custom.html:', error);
+  }
+});
 
-// オリジナル関数の保存
+// ===== グローバル変数 =====
+let cachedApiInfo = null;
 let originalBuildAsuRequest = null;
 let originalUpdateImages = null;
 let originalSetupUciDefaults = null;
