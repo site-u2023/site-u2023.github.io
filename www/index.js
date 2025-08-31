@@ -66,6 +66,20 @@ function getModelTitles(titles) {
   });
 }
 
+function showLogClosed() {
+  show("#asu-log");
+  $("#asu-log").querySelectorAll('details').forEach(details => {
+    details.removeAttribute('open');
+  });
+}
+
+function showLogOpen() {
+  show("#asu-log");
+  $("#asu-log").querySelectorAll('details').forEach(details => {
+    details.setAttribute('open', '');
+  });
+}
+
 /* exported buildAsuRequest */
 function buildAsuRequest(request_hash) {
   $$("#download-table1 *").forEach((e) => e.remove());
@@ -143,21 +157,14 @@ function buildAsuRequest(request_hash) {
       switch (response.status) {
         case 200:
           showStatus("tr-build-successful", false, "info");
-
           response.json().then((mobj) => {
             if ("stderr" in mobj) {
-            $("#asu-stderr").innerText = mobj.stderr;
-            $("#asu-stdout").innerText = mobj.stdout;
-            show("#asu-log");
-            
-            // STDERRとSTDOUTのdetails要素を明示的に閉じた状態にする
-            const stderrDetails = $("#asu-stderr").closest('details');
-            const stdoutDetails = $("#asu-stdout").closest('details');
-            if (stderrDetails) stderrDetails.removeAttribute('open');
-            if (stdoutDetails) stdoutDetails.removeAttribute('open');
-          } else {
-            hide("#asu-log");
-          }
+              $("#asu-stderr").innerText = mobj.stderr;
+              $("#asu-stdout").innerText = mobj.stdout;
+              showLogClosed(); // 成功時は閉じて表示
+            } else {
+              hide("#asu-log");
+            }
             showStatus("tr-build-successful", false, "info");
             mobj["id"] = current_device.id;
             mobj["asu_image_url"] = config.asu_url + "/store/" + mobj.bin_dir;
@@ -181,11 +188,10 @@ function buildAsuRequest(request_hash) {
             if ("stderr" in mobj) {
               $("#asu-stderr").innerText = mobj.stderr;
               $("#asu-stdout").innerText = mobj.stdout;
-              show("#asu-log");
+              showLogClosed(); // エラー時も閉じて表示
             } else {
               hide("#asu-log");
             }
-
             if ("detail" in mobj) {
               showStatus(mobj["detail"], false, "error");
             } else if (
