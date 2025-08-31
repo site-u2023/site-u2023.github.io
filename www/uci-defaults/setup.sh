@@ -146,8 +146,9 @@ set firewall.@zone[1].masq='1'
 set firewall.@zone[1].mtu_fix='1'
 MAPE_EOF
     [ -n "\${mape_gua_mode}" ] && uci -q set network.\${MAPE6}.ip6prefix="\${mape_gua_prefix}"
-	sed -i.bak '/json_add_array firewall/a\\t. /lib/netifd/proto/map_patch.sh' /lib/netifd/proto/map.sh
-	sed -i '/if \[ -z.*RULE_.*_PORTSETS/,/^[ \t]*fi$/{/if \[ -z.*RULE_.*_PORTSETS/c\\t  apply_map_patch "$cfg" "$k";/^[ \t]*fi$/d;d;}' /lib/netifd/proto/map.sh
+	# sed -i.bak '/json_add_array firewall/a\\t. /lib/netifd/proto/map_patch.sh' /lib/netifd/proto/map.sh
+ 	# sed -i '/if \[ -z.*RULE_.*_PORTSETS/,/^[ \t]*fi$/c\\tapply_map_patch "$cfg" "$k"' /lib/netifd/proto/map.sh
+	sed -i.bak '/json_add_array firewall/a\\t. /lib/netifd/proto/map_patch.sh;/if \[ -z.*RULE_.*_PORTSETS/,/^[ \t]*fi$/c\\tapply_map_patch "$cfg" "$k"' /lib/netifd/proto/map.sh
 	cat > /lib/netifd/proto/map_patch.sh <<'MAP_SH_EOF'
 #!/bin/sh
 # github.com/fakemanhk/openwrt-jp-ipoe
