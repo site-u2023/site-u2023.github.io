@@ -68,9 +68,8 @@ function initializeCustomFeatures(asuSection, temp) {
     // 既存のカスタム要素をクリーンアップ
     cleanupExistingCustomElements();
 
-    // #asu 内の HTML を置換
-    const summaryText = asuSection.querySelector('summary span')?.innerText || 'ASU';
-    asuSection.innerHTML = `<summary><span class="tr-customize">${summaryText}</span></summary>`;
+    // #asu 内の HTML を完全にクリア
+    asuSection.innerHTML = '';
 
     const customPackages = temp.querySelector('#custom-packages-section details');
     const customScripts = temp.querySelector('#custom-scripts-section details');
