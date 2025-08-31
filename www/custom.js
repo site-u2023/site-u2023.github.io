@@ -9,34 +9,55 @@ document.addEventListener('DOMContentLoaded', async function() {
     // 一時コンテナに読み込み
     const temp = document.createElement('div');
     temp.innerHTML = html;
+
+    // 各セクションを適切な場所に挿入
     
-// 各セクションを適切な場所に挿入
-const extendedInfo = temp.querySelector('#extended-build-info');
-if (extendedInfo) {
-  const imageLink = document.querySelector('#image-link');
-  if (imageLink) {
-    const targetRow = imageLink.closest('.row');
-    targetRow.insertAdjacentElement('afterend', extendedInfo);
-  }
-}
-
-// パッケージセクションを置き換え
-const customPackages = temp.querySelector('#custom-packages-section');
-if (customPackages) {
-  const asuPackages = document.querySelector('#asu-packages');
-  if (asuPackages && asuPackages.parentElement) {
-    asuPackages.parentElement.replaceWith(customPackages);
-  }
-}
-
-// スクリプトセクションを追加
-const customScripts = temp.querySelector('#custom-scripts-section');
-if (customScripts) {
-  const uciDefaults = document.querySelector('#uci-defaults-group');
-  if (uciDefaults && uciDefaults.parentElement) {
-    uciDefaults.parentElement.insertAdjacentElement('afterend', customScripts);
-  }
-}
+    // 1. Extended Build Info を追加
+    const extendedInfo = temp.querySelector('#extended-build-info');
+    const imageLink = document.querySelector('#image-link');
+    if (extendedInfo && imageLink) {
+      imageLink.closest('.row').insertAdjacentElement('afterend', extendedInfo);
+    }
+    
+    // 2. ASUセクション内を完全に置き換え
+    const asuDetails = document.querySelector('#asu');
+    if (asuDetails) {
+      // 既存の中身を全削除
+      asuDetails.innerHTML = '';
+      
+      // カスタムパッケージセクションを追加
+      const customPackages = temp.querySelector('#custom-packages-section');
+      if (customPackages) {
+        asuDetails.appendChild(customPackages.querySelector('details'));
+      }
+      
+      // カスタムスクリプトセクションを追加
+      const customScripts = temp.querySelector('#custom-scripts-section');
+      if (customScripts) {
+        asuDetails.appendChild(customScripts.querySelector('details'));
+      }
+      
+      // ビルドステータスとログを戻す
+      asuDetails.insertAdjacentHTML('beforeend', `
+        <br>
+        <div id="asu-buildstatus" class="hide">
+          <span></span>
+          <div id="asu-log" class="hide">
+            <details>
+              <summary><code>STDERR</code></summary>
+              <pre id="asu-stderr"></pre>
+            </details>
+            <details>
+              <summary><code>STDOUT</code></summary>
+              <pre id="asu-stdout"></pre>
+            </details>
+          </div>
+        </div>
+        <a href="javascript:buildAsuRequest()" class="custom-link">
+          <span></span><span class="tr-request-build">REQUEST BUILD</span>
+        </a>
+      `);
+    }
     
     // カスタム機能の初期化
     initCustomFeatures();
