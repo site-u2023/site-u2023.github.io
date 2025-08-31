@@ -1,67 +1,82 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<title>ADU分割送信テスト</title>
+<meta charset="utf-8">
+<title>ASU uci-defaults 20KB超過テスト</title>
 <style>
-body { font-family: sans-serif; }
+body { font-family: sans-serif; margin: 20px; }
 #log { white-space: pre; background: #f5f5f5; padding: 1em; }
+label { display: block; margin-top: 0.5em; }
 </style>
 </head>
 <body>
-<h1>ADU分割送信テスト</h1>
-<button id="startBtn">テスト開始</button>
+<h1>ASU uci-defaults 20KB超過テスト</h1>
+
+<label>プロファイル: <input id="profile" value="asus_rt-ax53u"></label>
+<label>ターゲット: <input id="target" value="ramips/mt7621"></label>
+<label>バージョン: <input id="version" value="23.05.5"></label>
+<label>パッケージ(カンマ区切り): <input id="packages" value="luci"></label>
+
+<label>uci-defaults の内容:</label>
+<textarea id="defaults" rows="15" style="width:100%"></textarea>
+
+<button id="sendBtn">ASUへ送信</button>
 <div id="log"></div>
 
 <script>
-const CHUNK_LIMIT = 20 * 1024; // 20KB
-const TOTAL_SIZE = 55 * 1024;  // 総合計 55KB
-const UPLOAD_URL = 'https://example.com/adu/upload'; // 実際のADUエンドポイントに変更
-const API_KEY = ''; // 必要なら設定
+const ASU_URL = 'https://sysupgrade.openwrt.org/api/v1/build';
+const LIMIT_BYTES = 20 * 1024;
 
 function log(msg) {
   document.getElementById('log').textContent += msg + "\n";
 }
 
-async function sendChunk(chunk, index, total) {
-  const res = await fetch(UPLOAD_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/octet-stream',
-      'Content-Length': chunk.byteLength,
-      'X-Chunk-Index': index + 1,
-      'X-Total-Chunks': total,
-      ...(API_KEY && { 'Authorization': `Bearer ${API_KEY}` })
-    },
-    body: chunk
-  });
-  if (!res.ok) throw new Error(`チャンク #${index+1} 送信失敗: ${res.status}`);
-  log(`チャンク #${index+1} 送信成功 (${chunk.byteLength} bytes)`);
+// 20KB超過のダミーdefaultsを生成
+function makeLargeDefaults() {
+  let base = "#!/bin/sh\n";
+  base += "echo start > /tmp/test.log\n";
+  base += "generate_dummy_block() {\ncat << 'EOF'\n";
+  for (let i = 0; i < 2000; i++) {
+    base += `# dummy line ${i+1}\n`;
+  }
+  base += "EOF\n}\n";
+  base += "for i in $(seq 1 5); do f=/tmp/file_$i; : > $f; generate_dummy_block >> $f; done\n";
+  return base;
 }
 
-document.getElementById('startBtn').addEventListener('click', async () => {
+document.getElementById('defaults').value = makeLargeDefaults();
+
+document.getElementById('sendBtn').addEventListener('click', async () => {
   document.getElementById('log').textContent = '';
-  log(`総データサイズ: ${(TOTAL_SIZE/1024).toFixed(2)} KB`);
+  const profile = document.getElementById('profile').value.trim();
+  const target = document.getElementById('target').value.trim();
+  const version = document.getElementById('version').value.trim();
+  const pkgs = document.getElementById('packages').value.trim();
+  const defaults = document.getElementById('defaults').value;
 
-  // ダミーデータ生成
-  const totalBuffer = new Uint8Array(TOTAL_SIZE);
-  crypto.getRandomValues(totalBuffer);
+  const size = new Blob([defaults]).size;
+  log(`defaultsサイズ: ${size} bytes (${(size/1024).toFixed(2)} KB)`);
 
-  // 分割
-  const chunks = [];
-  for (let offset = 0; offset < totalBuffer.length; offset += CHUNK_LIMIT) {
-    chunks.push(totalBuffer.slice(offset, offset + CHUNK_LIMIT));
-  }
-  log(`チャンク数: ${chunks.length}`);
+  const body = {
+    profile: profile,
+    target: target,
+    version: version,
+    packages: pkgs ? pkgs.split(',').map(s => s.trim()).filter(Boolean) : [],
+    defaults: defaults,
+    client: 'asu-defaults-test/20kb-over'
+  };
 
-  // 順次送信
   try {
-    for (let i = 0; i < chunks.length; i++) {
-      await sendChunk(chunks[i], i, chunks.length);
-    }
-    log('全チャンク送信完了');
-  } catch (err) {
-    log(`エラー: ${err.message}`);
+    const res = await fetch(ASU_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    log(`HTTP ${res.status}`);
+    const data = await res.json().catch(() => ({}));
+    log(JSON.stringify(data, null, 2));
+  } catch (e) {
+    log(`送信エラー: ${e.message}`);
   }
 });
 </script>
