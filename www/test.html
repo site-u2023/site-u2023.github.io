@@ -6,14 +6,59 @@
 <body>
     <h2>ASU uci-defaults Test</h2>
     
-    <label>Profile (例: asus_rt-ax53u):</label><br>
-    <input type="text" id="profile" value=""><br><br>
+    <label>Profile:</label><br>
+    <input type="text" id="profile" value="asus_rt-ax53u"><br><br>
     
-    <label>Target (例: ramips/mt7621):</label><br>
-    <input type="text" id="target" value=""><br><br>
+    <label>Target:</label><br>
+    <input type="text" id="target" value="ramips/mt7621"><br><br>
     
-    <label>Version (例: 24.10.0):</label><br>
-    <input type="text" id="version" value="24.10.0"><br><br>
+    <label>Version:</label><br>
+    <input type="text" id="version" value="24.10.2"><br><br>
+    
+    <h3>テスト実行結果</h3>
+    <table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse; margin-bottom: 20px;">
+        <tr style="background-color: #f0f0f0;">
+            <th>Version</th>
+            <th>Request Hash</th>
+            <th>Build Date</th>
+            <th>Kernel</th>
+            <th>Status</th>
+            <th>実行内容</th>
+        </tr>
+        <tr>
+            <td>24.10.1</td>
+            <td>93bdd6d4...</td>
+            <td>2025-04-13 16:38:32</td>
+            <td>6.6.86</td>
+            <td>✅ 成功</td>
+            <td rowspan="3">heredoc動的スクリプト生成テスト<br>
+                ・/tmp/test1.sh 生成・実行<br>
+                ・/tmp/test2.sh 生成・実行<br>
+                ・/tmp/asu-test.log に結果記録</td>
+        </tr>
+        <tr>
+            <td>24.10.2</td>
+            <td>fdba15e3...</td>
+            <td>2025-06-23 20:40:36</td>
+            <td>6.6.93</td>
+            <td>✅ 成功</td>
+        </tr>
+        <tr>
+            <td>24.10.2</td>
+            <td>fdba15e3...</td>
+            <td>2025-06-23 20:40:36</td>
+            <td>6.6.93</td>
+            <td>✅ 成功 (再実行)</td>
+        </tr>
+    </table>
+    
+    <p><strong>判明事実:</strong></p>
+    <ul>
+        <li>ASUサーバーは20KBまでのuci-defaultsを正常に受付</li>
+        <li>heredoc記法による動的スクリプト生成が動作確認済み</li>
+        <li><code>FILES=/srv/store/.../files</code>でファイル展開処理</li>
+        <li>異なるバージョンでも同一ハッシュで結果をキャッシュ</li>
+    </ul>
     
     <label>uci-defaults content:</label><br>
     <textarea id="defaults" rows="15" cols="80">#!/bin/sh
