@@ -1,4 +1,4 @@
-// custom.js - OpenWrt カスタム機能 完全版（多重表示・構文エラー修正版）
+// custom.js - OpenWrt カスタム機能 完全版（多重表示・構文エラー・null安全修正版）
 
 console.log('custom.js loaded');
 
@@ -131,7 +131,7 @@ function customSetupUciDefaults() {
         .catch(err => showAlert(err.message));
 }
 
-// ==================== UI初期化 ====================
+// ==================== UI初期化（null安全） ====================
 function initializeCustomUI(open = true) {
     document.querySelectorAll('input[name="connectionMode"]').forEach(radio =>
         radio.addEventListener('change', handleConnectionModeChange)
@@ -141,13 +141,14 @@ function initializeCustomUI(open = true) {
     );
 
     const asuSection = document.querySelector("#asu");
-    if (asuSection) {
-        asuSection.classList.remove("hide");
-        asuSection.querySelectorAll('details').forEach(d =>
-            open ? d.setAttribute('open','') : d.removeAttribute('open')
-        );
+    if (!asuSection) {
+        console.warn('#asu section not found, skipping UI init');
+        return;
     }
-
+    asuSection.classList.remove("hide");
+    asuSection.querySelectorAll('details').forEach(d =>
+        open ? d.setAttribute('open','') : d.removeAttribute('open')
+    );
 }
 
 // ==================== ISP情報取得 ====================
@@ -218,16 +219,28 @@ function applyIspAutoConfig(apiInfo) {
 // ==================== 変更イベント ====================
 function handleConnectionModeChange(e) {
     const manualSection = document.querySelector("#manual-connection-section");
-    if (e.target.value === 'manual') show(manualSection);
-    else { hide(manualSection); if (cachedApiInfo) applyIspAutoConfig(cachedApiInfo); }
+    if (e.target.value === 'manual') {
+        show(manualSection);
+    } else {
+        hide(manualSection);
+        if (cachedApiInfo) applyIspAutoConfig(cachedApiInfo);
+    }
 }
 
 function handleConnectionTypeChange(e) {
-    hide("#pppoe-section"); hide("#dslite-section"); hide("#mape-section");
+    hide("#pppoe-section");
+    hide("#dslite-section");
+    hide("#mape-section");
     switch(e.target.value) {
-        case 'pppoe': show("#pppoe-section"); break;
-        case 'dslite': show("#dslite-section"); break;
-        case 'mape': show("#mape-section"); break;
+        case 'pppoe':
+            show("#pppoe-section");
+            break;
+        case 'dslite':
+            show("#dslite-section");
+            break;
+        case 'mape':
+            show("#mape-section");
+            break;
     }
 }
 
@@ -236,4 +249,17 @@ if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initCustomFeatures, { once: true });
 } else {
     initCustomFeatures();
+}
+
+// ==================== ヘルパー ====================
+function show(sel) {
+    if (typeof ofsShow === 'function') return ofsShow(sel);
+    const el = typeof sel === 'string' ? document.querySelector(sel) : sel;
+    if (el) el.style.display = 'block';
+}
+
+function hide(sel) {
+    if (typeof ofsHide === 'function') return ofsHide(sel);
+    const el = typeof sel === 'string' ? document.querySelector(sel) : sel;
+    if (el) el.style.display = 'none';
 }
