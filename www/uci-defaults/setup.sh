@@ -166,7 +166,7 @@ apply_map_patch() {
             fi
         done
     done
-    allports=${allports%??}  # 末尾の ", " を削除
+    allports=${allports%??}
     if nft list tables | grep -q "table inet mape"; then
         nft delete table inet mape
     fi
