@@ -2,21 +2,71 @@
 
 console.log('custom.js loaded');
 
-// init() の後に実行されるようにフック
-window.addEventListener('load', function() {
-  // init() 実行完了を待つ
-  setTimeout(function() {
-    console.log('Starting custom initialization...');
-    loadCustomHTML();
-  }, 100);
-});
+// updateImages をフックして、処理後に custom.html を差し込む
+const originalUpdateImages = window.updateImages;
+
+window.updateImages = function(version, mobj) {
+  // まず元の処理を実行
+  if (originalUpdateImages) {
+    originalUpdateImages(version, mobj);
+  }
+
+  console.log("updateImages finished, now load custom.html");
+  loadCustomHTML();
+};
 
 // HTML読み込み処理
 async function loadCustomHTML() {
   try {
     const response = await fetch('custom.html');
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const html = await response.text();
     console.log('custom.html loaded');
+
+    // 一時コンテナに読み込み
+    const temp = document.createElement('div');
+    temp.innerHTML = html;
+
+    // ASUセクションの中身を置き換え
+    const asuDetails = document.querySelector('#asu');
+    if (asuDetails) {
+      const summaryText = asuDetails.querySelector('summary span').innerText;
+      asuDetails.innerHTML = '';
+      asuDetails.innerHTML = `<summary><span class="tr-customize">${summaryText}</span></summary>`;
+
+      const customPackages = temp.querySelector('#custom-packages-section');
+      if (customPackages) {
+        asuDetails.appendChild(customPackages.querySelector('details'));
+      }
+
+      const customScripts = temp.querySelector('#custom-scripts-section');
+      if (customScripts) {
+        asuDetails.appendChild(customScripts.querySelector('details'));
+      }
+
+      asuDetails.insertAdjacentHTML('beforeend', `
+        <br>
+        <div id="asu-buildstatus" class="hide"><span></span></div>
+        <a href="javascript:buildAsuRequest()" class="custom-link">
+          <span></span><span class="tr-request-build">REQUEST BUILD</span>
+        </a>
+      `);
+    }
+
+    // Extended info を追加
+    const extendedInfo = temp.querySelector('#extended-build-info');
+    const imageLink = document.querySelector('#image-link');
+    if (extendedInfo && imageLink) {
+      imageLink.closest('.row').insertAdjacentElement('afterend', extendedInfo);
+    }
+
+    initCustomFeatures();
+
+  } catch (error) {
+    console.error('Failed to load custom.html:', error);
+  }
+}
+
 
     // 一時コンテナに読み込み
     const temp = document.createElement('div');
