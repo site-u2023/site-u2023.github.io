@@ -146,12 +146,18 @@ function buildAsuRequest(request_hash) {
 
           response.json().then((mobj) => {
             if ("stderr" in mobj) {
-              $("#asu-stderr").innerText = mobj.stderr;
-              $("#asu-stdout").innerText = mobj.stdout;
-              show("#asu-log");
-            } else {
-              hide("#asu-log");
-            }
+            $("#asu-stderr").innerText = mobj.stderr;
+            $("#asu-stdout").innerText = mobj.stdout;
+            show("#asu-log");
+            
+            // STDERRとSTDOUTのdetails要素を明示的に閉じた状態にする
+            const stderrDetails = $("#asu-stderr").closest('details');
+            const stdoutDetails = $("#asu-stdout").closest('details');
+            if (stderrDetails) stderrDetails.removeAttribute('open');
+            if (stdoutDetails) stdoutDetails.removeAttribute('open');
+          } else {
+            hide("#asu-log");
+          }
             showStatus("tr-build-successful", false, "info");
             mobj["id"] = current_device.id;
             mobj["asu_image_url"] = config.asu_url + "/store/" + mobj.bin_dir;
