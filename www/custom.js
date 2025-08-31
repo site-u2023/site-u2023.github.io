@@ -230,4 +230,7 @@ function handleConnectionTypeChange(e) {
 
 // ==================== DOMContentLoaded 初期化 ====================
 if (document.readyState === 'loading') {
-    document.addEventListener
+    document.addEventListener('DOMContentLoaded', initCustomFeatures, { once: true });
+} else {
+    initCustomFeatures();
+}
