@@ -1,0 +1,225 @@
+#!/bin/sh
+# Nichiban-ready - Optimized version
+DONT_SNAT_TO="0"
+[ -n "$INCLUDE_ONLY" ] || {
+	. /lib/functions.sh
+	. /lib/functions/network.sh
+	. ../netifd-proto.sh
+	init_proto "$@"
+}
+
+proto_map_setup() {
+	local cfg="$1" iface="$2" link="map-$cfg"
+	local maptype type legacymap mtu ttl tunlink zone encaplimit
+	local rule ipaddr ip4prefixlen ip6prefix ip6prefixlen peeraddr ealen psidlen psid offset
+	
+	json_get_vars maptype type legacymap mtu ttl tunlink zone encaplimit \
+		rule ipaddr ip4prefixlen ip6prefix ip6prefixlen peeraddr ealen psidlen psid offset
+	
+	[ "$zone" = "-" ] && zone=""
+	maptype="${maptype:-${type:-map-e}}"
+	
+	proto_add_host_dependency "$cfg" "::" "$tunlink"
+	[ "$maptype" = "lw4o6" ] && sleep 5
+	
+	# Build rule if not provided
+	if [ -z "$rule" ]; then
+		rule="type=$maptype,ipv6prefix=$ip6prefix,prefix6len=$ip6prefixlen,ipv4prefix=$ipaddr,prefix4len=$ip4prefixlen"
+		[ -n "$psid" ] && rule="$rule,psid=$psid"
+		[ -n "$psidlen" ] && rule="$rule,psidlen=$psidlen"
+		[ -n "$offset" ] && rule="$rule,offset=$offset"
+		[ -n "$ealen" ] && rule="$rule,ealen=$ealen"
+		rule="$rule,$([ "$maptype" = "map-t" ] && echo "dmr" || echo "br")=$peeraddr"
+	fi
+	
+	echo "rule=$rule" > /tmp/map-$cfg.rules
+	RULE_DATA=$(LEGACY="$legacymap" mapcalc ${tunlink:-\*} $rule) || {
+		proto_notify_error "$cfg" "INVALID_MAP_RULE"
+		proto_block_restart "$cfg"
+		return
+	}
+	
+	echo "$RULE_DATA" >> /tmp/map-$cfg.rules
+	eval $RULE_DATA
+	
+	[ -z "$RULE_BMR" ] && {
+		proto_notify_error "$cfg" "NO_MATCHING_PD"
+		proto_block_restart "$cfg"
+		return
+	}
+	
+	k=$RULE_BMR
+	
+	case "$maptype" in
+		"lw4o6"|"map-e")
+			proto_init_update "$link" 1
+			proto_add_ipv4_address $(eval "echo \$RULE_${k}_IPV4ADDR") "" "" ""
+			proto_add_tunnel
+			json_add_string mode ipip6
+			json_add_int mtu "${mtu:-1460}"
+			json_add_int ttl "${ttl:-64}"
+			json_add_string local $(eval "echo \$RULE_${k}_IPV6ADDR")
+			json_add_string remote $(eval "echo \$RULE_${k}_BR")
+			json_add_string link $(eval "echo \$RULE_${k}_PD6IFACE")
+			json_add_object "data"
+				[ -n "$encaplimit" ] && json_add_string encaplimit "$encaplimit"
+				if [ "$maptype" = "map-e" ]; then
+					json_add_array "fmrs"
+					i=1; while [ $i -le $RULE_COUNT ]; do
+						[ "$(eval "echo \$RULE_${i}_FMR")" = 1 ] && {
+							json_add_object ""
+							json_add_string prefix6 "$(eval "echo \$RULE_${i}_IPV6PREFIX")/$(eval "echo \$RULE_${i}_PREFIX6LEN")"
+							json_add_string prefix4 "$(eval "echo \$RULE_${i}_IPV4PREFIX")/$(eval "echo \$RULE_${i}_PREFIX4LEN")"
+							json_add_int ealen $(eval "echo \$RULE_${i}_EALEN")
+							json_add_int offset $(eval "echo \$RULE_${i}_OFFSET")
+							json_close_object
+						}
+						i=$((i+1))
+					done
+					json_close_array
+				fi
+			json_close_object
+			proto_close_tunnel
+			;;
+		"map-t")
+			[ -f "/proc/net/nat46/control" ] || {
+				proto_notify_error "$cfg" "UNSUPPORTED_TYPE"
+				proto_block_restart "$cfg"
+				return
+			}
+			proto_init_update "$link" 1
+			local style=$([ "$legacymap" = 1 ] && echo "MAP0" || echo "MAP")
+			echo add $link > /proc/net/nat46/control
+			
+			local cfgstr="local.style $style local.v4 $(eval "echo \$RULE_${k}_IPV4PREFIX")/$(eval "echo \$RULE_${k}_PREFIX4LEN")"
+			cfgstr="$cfgstr local.v6 $(eval "echo \$RULE_${k}_IPV6PREFIX")/$(eval "echo \$RULE_${k}_PREFIX6LEN")"
+			cfgstr="$cfgstr local.ea-len $(eval "echo \$RULE_${k}_EALEN") local.psid-offset $(eval "echo \$RULE_${k}_OFFSET")"
+			cfgstr="$cfgstr remote.v4 0.0.0.0/0 remote.v6 $(eval "echo \$RULE_${k}_DMR") remote.style RFC6052 remote.ea-len 0 remote.psid-offset 0"
+			echo config $link $cfgstr > /proc/net/nat46/control
+			
+			i=1; while [ $i -le $RULE_COUNT ]; do
+				[ "$(eval "echo \$RULE_${i}_FMR")" = 1 ] && {
+					local cfgstr="remote.style $style remote.v4 $(eval "echo \$RULE_${i}_IPV4PREFIX")/$(eval "echo \$RULE_${i}_PREFIX4LEN")"
+					cfgstr="$cfgstr remote.v6 $(eval "echo \$RULE_${i}_IPV6PREFIX")/$(eval "echo \$RULE_${i}_PREFIX6LEN")"
+					cfgstr="$cfgstr remote.ea-len $(eval "echo \$RULE_${i}_EALEN") remote.psid-offset $(eval "echo \$RULE_${i}_OFFSET")"
+					echo insert $link $cfgstr > /proc/net/nat46/control
+				}
+				i=$((i+1))
+			done
+			;;
+		*)
+			proto_notify_error "$cfg" "UNSUPPORTED_TYPE"
+			proto_block_restart "$cfg"
+			return
+			;;
+	esac
+	
+	proto_add_ipv4_route "0.0.0.0" 0
+	proto_add_data
+	[ -n "$zone" ] && json_add_string zone "$zone"
+	json_add_array firewall
+	
+	# SNAT configuration
+	portsets=$(eval "echo \$RULE_${k}_PORTSETS")
+	if [ -z "$portsets" ]; then
+		json_add_object ""
+		json_add_string type nat
+		json_add_string target SNAT
+		json_add_string family inet
+		json_add_string snat_ip $(eval "echo \$RULE_${k}_IPV4ADDR")
+		json_close_object
+	else
+		local portcount=0 allports=""
+		for portset in $portsets; do
+			local startport=${portset%-*} endport=${portset#*-}
+			local x=$startport
+			while [ $x -le $endport ]; do
+				case " $DONT_SNAT_TO " in
+					*" $x "*) ;;
+					*) allports="$allports $portcount : $x , "; portcount=$((portcount+1));;
+				esac
+				x=$((x+1))
+			done
+		done
+		allports=${allports%??}
+		nft add table inet mape 2>/dev/null
+		nft add chain inet mape srcnat {type nat hook postrouting priority 0\; policy accept\; } 2>/dev/null
+		for proto in icmp tcp udp; do
+			nft add rule inet mape srcnat ip protocol $proto oifname "map-$cfg" counter snat ip to $(eval "echo \$RULE_${k}_IPV4ADDR") : numgen inc mod $portcount map { $allports }
+		done
+	fi
+	
+	# MAP-T specific firewall rules
+	if [ "$maptype" = "map-t" ]; then
+		zone="${zone:-$(fw3 -q network $iface 2>/dev/null)}"
+		[ -n "$zone" ] && {
+			local ipv6addr=$(eval "echo \$RULE_${k}_IPV6ADDR")
+			for direction in "in dest" "out dest_ip"; do
+				json_add_object ""
+				json_add_string type rule
+				json_add_string family inet6
+				json_add_string proto all
+				json_add_string direction ${direction% *}
+				json_add_string dest "$zone"
+				json_add_string src "$zone"
+				json_add_string ${direction#* } "$ipv6addr"
+				json_add_string target ACCEPT
+				json_close_object
+			done
+		}
+		proto_add_ipv6_route $(eval "echo \$RULE_${k}_IPV6ADDR") 128
+	fi
+	
+	json_close_array
+	proto_close_data
+	proto_send_update "$cfg"
+	
+	# Dynamic interface for lw4o6/map-e
+	if [ "$maptype" = "lw4o6" -o "$maptype" = "map-e" ]; then
+		json_init
+		json_add_string name "${cfg}_"
+		json_add_string ifname "@$(eval "echo \$RULE_${k}_PD6IFACE")"
+		json_add_string proto "static"
+		json_add_array ip6addr
+		json_add_string "" "$(eval "echo \$RULE_${k}_IPV6ADDR")"
+		json_close_array
+		json_close_object
+		ubus call network add_dynamic "$(json_dump)"
+	fi
+}
+
+proto_map_teardown() {
+	local cfg="$1" link="map-$cfg"
+	json_get_var maptype type
+	maptype="${maptype:-map-e}"
+	
+	case "$maptype" in
+		"map-e"|"lw4o6") ifdown "${cfg}_" ;;
+		"map-t") [ -f "/proc/net/nat46/control" ] && echo del $link > /proc/net/nat46/control ;;
+	esac
+	rm -f /tmp/map-$cfg.rules
+}
+
+proto_map_init_config() {
+	no_device=1
+	available=1
+	proto_config_add_string "maptype"
+	proto_config_add_string "rule"
+	proto_config_add_string "ipaddr"
+	proto_config_add_int "ip4prefixlen"
+	proto_config_add_string "ip6prefix"
+	proto_config_add_int "ip6prefixlen"
+	proto_config_add_string "peeraddr"
+	proto_config_add_int "ealen"
+	proto_config_add_int "psidlen"
+	proto_config_add_int "psid"
+	proto_config_add_int "offset"
+	proto_config_add_boolean "legacymap"
+	proto_config_add_string "tunlink"
+	proto_config_add_int "mtu"
+	proto_config_add_int "ttl"
+	proto_config_add_string "zone"
+	proto_config_add_string "encaplimit"
+}
+
+[ -n "$INCLUDE_ONLY" ] || add_protocol map
