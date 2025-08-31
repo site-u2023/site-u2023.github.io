@@ -15,19 +15,43 @@ window.updateImages = function(version, mobj) {
   loadCustomHTML();
 };
 
+// HTML読み込み処理
 async function loadCustomHTML() {
   try {
     const response = await fetch('custom.html');
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const html = await response.text();
-    console.log('custom.html raw:', html.substring(0, 200)); // 先頭だけログ
+    console.log('custom.html loaded');
 
-    // 強制的に body の最後に突っ込む
-    document.body.insertAdjacentHTML('beforeend', html);
+    // 一時コンテナに読み込み
+    const temp = document.createElement('div');
+    temp.innerHTML = html;
 
-  } catch (error) {
-    console.error('Failed to load custom.html:', error);
-  }
-}
+    // ASUセクションの中身を置き換え
+    const asuDetails = document.querySelector('#asu');
+    if (asuDetails) {
+      const summaryText = asuDetails.querySelector('summary span').innerText;
+      asuDetails.innerHTML = '';
+      asuDetails.innerHTML = `<summary><span class="tr-customize">${summaryText}</span></summary>`;
+
+      const customPackages = temp.querySelector('#custom-packages-section');
+      if (customPackages) {
+        asuDetails.appendChild(customPackages.querySelector('details'));
+      }
+
+      const customScripts = temp.querySelector('#custom-scripts-section');
+      if (customScripts) {
+        asuDetails.appendChild(customScripts.querySelector('details'));
+      }
+
+      asuDetails.insertAdjacentHTML('beforeend', `
+        <br>
+        <div id="asu-buildstatus" class="hide"><span></span></div>
+        <a href="javascript:buildAsuRequest()" class="custom-link">
+          <span></span><span class="tr-request-build">REQUEST BUILD</span>
+        </a>
+      `);
+    }
 
     // Extended info を追加
     const extendedInfo = temp.querySelector('#extended-build-info');
