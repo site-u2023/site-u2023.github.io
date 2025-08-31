@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ASU uci-defaults Test v5.0</title>
+    <title>ASU uci-defaults Test v7.0</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -106,7 +106,7 @@
 </head>
 <body>
     <div class="container">
-        <h2>ASU uci-defaults Test v5.0</h2>
+        <h2>ASU uci-defaults Test v7.0</h2>
         
         <label for="profile">プロファイル:</label><br>
         <input type="text" id="profile" value="asus_rt-ax53u"><br>
@@ -126,11 +126,11 @@
 
 echo "合計20KB超えファイル作成テストを開始します..." > /tmp/asu-test-multi-file.log
 
-# 約100バイトのダミーコンテンツブロックを生成する関数。
+# これは約1.8KBのダミーコンテンツブロックです。
 generate_dummy_block() {
     cat << 'EOF'
-# これは2KBのダミーブロックの一部です。
-# 約20回の繰り返しで合計2KBのファイルになります。
+# This is a dummy block to build a large file.
+# We will repeat this block many times.
 # ----------------------------------------------------
 # Dummy line 1
 # Dummy line 2
@@ -152,6 +152,26 @@ generate_dummy_block() {
 # Dummy line 18
 # Dummy line 19
 # Dummy line 20
+# Dummy line 21
+# Dummy line 22
+# Dummy line 23
+# Dummy line 24
+# Dummy line 25
+# Dummy line 26
+# Dummy line 27
+# Dummy line 28
+# Dummy line 29
+# Dummy line 30
+# Dummy line 31
+# Dummy line 32
+# Dummy line 33
+# Dummy line 34
+# Dummy line 35
+# Dummy line 36
+# Dummy line 37
+# Dummy line 38
+# Dummy line 39
+# Dummy line 40
 EOF
 }
 
@@ -159,10 +179,11 @@ EOF
 for i in $(seq 1 11); do
     output_file="/tmp/test_file_${i}.txt"
     echo "Creating file: ${output_file}" >> /tmp/asu-test-multi-file.log
-    # 2KB（約2048バイト）を作成するためには、100バイトのブロックを21回繰り返す
-    for j in $(seq 1 21); do
-        generate_dummy_block >> "${output_file}"
-    done
+    
+    # 2KBのファイルを作成するために、関数を2回繰り返します。（関数1回で約1.8KB、2回で3.6KB）
+    # 合計で22KB以上になり、20KBの制限をはるかに超えることを確認します。
+    generate_dummy_block >> "${output_file}"
+    generate_dummy_block >> "${output_file}"
 done
 
 echo "すべてのファイルが作成されました。/tmp/test_file_*.txtを確認してください。" >> /tmp/asu-test-multi-file.log
