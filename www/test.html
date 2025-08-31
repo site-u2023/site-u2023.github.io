@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ASU uci-defaults Test</title>
+</head>
+<body>
+    <h2>ASU uci-defaults Test</h2>
+    
+    <label>Profile (例: asus_rt-ax53u):</label><br>
+    <input type="text" id="profile" value=""><br><br>
+    
+    <label>Target (例: ramips/mt7621):</label><br>
+    <input type="text" id="target" value=""><br><br>
+    
+    <label>Version (例: 24.10.0):</label><br>
+    <input type="text" id="version" value="24.10.0"><br><br>
+    
+    <label>uci-defaults content:</label><br>
+    <textarea id="defaults" rows="15" cols="80">#!/bin/sh
+
+# Test script 1
+echo "# Generated script 1" > /tmp/test1.sh
+cat > /tmp/test1.sh << 'EOF'
+#!/bin/sh
+echo "Script 1 executed" >> /tmp/asu-test.log
+EOF
+chmod +x /tmp/test1.sh
+
+# Test script 2  
+echo "# Generated script 2" > /tmp/test2.sh
+cat > /tmp/test2.sh << 'EOF'
+#!/bin/sh
+echo "Script 2 executed" >> /tmp/asu-test.log
+EOF
+chmod +x /tmp/test2.sh
+
+# Execute both
+/tmp/test1.sh
+/tmp/test2.sh
+
+echo "ASU test completed at $(date)" >> /tmp/asu-test.log
+</textarea><br><br>
+    
+    <button onclick="testAsu()">Send to ASU</button><br><br>
+    
+    <div id="result"></div>
+
+    <script>
+    function testAsu() {
+        const profile = document.getElementById('profile').value;
+        const target = document.getElementById('target').value;
+        const version = document.getElementById('version').value;
+        const defaults = document.getElementById('defaults').value;
+        const resultDiv = document.getElementById('result');
+        
+        if (!profile || !target) {
+            alert('Profile and Target are required');
+            return;
+        }
+        
+        const body = JSON.stringify({
+            profile: profile,
+            target: target,
+            version: version,
+            packages: ['luci'],
+            defaults: defaults,
+            client: "test/1.0"
+        });
+        
+        resultDiv.innerHTML = '<p>Sending request...</p>';
+        
+        fetch('https://sysupgrade.openwrt.org/api/v1/build', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: body
+        })
+        .then(response => {
+            resultDiv.innerHTML += `<p>Status: ${response.status}</p>`;
+            return response.json();
+        })
+        .then(data => {
+            resultDiv.innerHTML += `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+            if (data.request_hash) {
+                resultDiv.innerHTML += `<p>Request hash: ${data.request_hash}</p>`;
+            }
+        })
+        .catch(error => {
+            resultDiv.innerHTML += `<p>Error: ${error.message}</p>`;
+        });
+    }
+    </script>
+</body>
+</html>
