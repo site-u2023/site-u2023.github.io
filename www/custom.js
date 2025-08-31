@@ -1,47 +1,66 @@
 // custom.js - OpenWrt カスタム機能
 
-// デバッグ用：スクリプトが読み込まれたことを確認
-console.log('custom.js loaded at:', new Date().toISOString());
-console.log('Document ready state:', document.readyState);
+console.log('custom.js loaded');
 
-// ===== ヘルパー関数の定義（OpenWrtのapp.jsから） =====
-function setValue(selector, value) {
-  const element = document.querySelector(selector);
-  if (element) {
-    element.textContent = value;
+// init() の後に実行されるようにフック
+window.addEventListener('load', function() {
+  // init() 実行完了を待つ
+  setTimeout(function() {
+    console.log('Starting custom initialization...');
+    loadCustomHTML();
+  }, 100);
+});
+
+// HTML読み込み処理
+async function loadCustomHTML() {
+  try {
+    const response = await fetch('custom.html');
+    const html = await response.text();
+    console.log('custom.html loaded');
+
+    // 一時コンテナに読み込み
+    const temp = document.createElement('div');
+    temp.innerHTML = html;
+
+    // ASUセクションの中身を置き換え
+    const asuDetails = document.querySelector('#asu');
+    if (asuDetails) {
+      const summaryText = asuDetails.querySelector('summary span').innerText;
+      asuDetails.innerHTML = '';
+      asuDetails.innerHTML = `<summary><span class="tr-customize">${summaryText}</span></summary>`;
+
+      const customPackages = temp.querySelector('#custom-packages-section');
+      if (customPackages) {
+        asuDetails.appendChild(customPackages.querySelector('details'));
+      }
+
+      const customScripts = temp.querySelector('#custom-scripts-section');
+      if (customScripts) {
+        asuDetails.appendChild(customScripts.querySelector('details'));
+      }
+
+      asuDetails.insertAdjacentHTML('beforeend', `
+        <br>
+        <div id="asu-buildstatus" class="hide"><span></span></div>
+        <a href="javascript:buildAsuRequest()" class="custom-link">
+          <span></span><span class="tr-request-build">REQUEST BUILD</span>
+        </a>
+      `);
+    }
+
+    // Extended info を追加
+    const extendedInfo = temp.querySelector('#extended-build-info');
+    const imageLink = document.querySelector('#image-link');
+    if (extendedInfo && imageLink) {
+      imageLink.closest('.row').insertAdjacentElement('afterend', extendedInfo);
+    }
+
+    initCustomFeatures();
+
+  } catch (error) {
+    console.error('Failed to load custom.html:', error);
   }
 }
-
-function show(selector) {
-  const element = typeof selector === 'string' ? document.querySelector(selector) : selector;
-  if (element) {
-    element.style.display = '';
-    element.classList.remove('hide');
-  }
-}
-
-function hide(selector) {
-  const element = typeof selector === 'string' ? document.querySelector(selector) : selector;
-  if (element) {
-    element.style.display = 'none';
-    element.classList.add('hide');
-  }
-}
-
-function showAlert(message) {
-  console.error('Alert:', message);
-  // 簡単なアラート表示（OpenWrtの元実装に合わせて後で調整可能）
-  alert(message);
-}
-
-function hideAlert() {
-  // アラートを隠す処理（必要に応じて実装）
-  console.log('Hide alert called');
-}
-
-// ===== HTML読み込み処理 =====
-document.addEventListener('DOMContentLoaded', async function() {
-  console.log('DOMContentLoaded fired in custom.js');
   
   try {
     console.log('Attempting to fetch custom.html...');
