@@ -40,6 +40,9 @@ var config = {
   packages_db_url: "packages/packages.json"
 };
 
+// Language
+current_language = "en";
+
 // カスタム機能の自動読み込み
 (function() {
   // custom.jsを動的に読み込み
