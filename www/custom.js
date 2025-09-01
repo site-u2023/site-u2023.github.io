@@ -491,13 +491,13 @@ function loadUciDefaultsTemplate() {
 // Postinstテキストエリアを初期化する関数
 function initializePostinstTextarea() {
     console.log('initializePostinstTextarea called');
-    const textarea = setupAutoResizeTextarea("#asu-packages", 2);
+    const textarea = setupAutoResizeTextarea("#postinst-script", 2);
     if (!textarea) return;
     
-// 初期値がある場合、それを設定
+    // 初期値がある場合、それを設定（\n を実改行に展開）
     const initialValue = textarea.getAttribute('data-initial');
     if (initialValue && !textarea.value) {
-        textarea.value = initialValue;
+        textarea.value = initialValue.replace(/\\n/g, '\n').replace(/\\t/g, '\t');
     }
     
     // 現在の内容に応じて自動リサイズ
