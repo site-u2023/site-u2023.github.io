@@ -175,10 +175,39 @@ async function loadPackageDatabase() {
     }
 }
 
+// 修正版：依存パッケージを同じ枠内に配置する
 function createPackageCheckbox(pkgId, pkgName, isChecked = false, dependencies = null) {
     const packageItem = document.createElement('div');
     packageItem.className = 'package-item';
     
+    // メインパッケージのチェックボックス作成
+    const mainFormCheck = createSingleCheckbox(pkgId, pkgName, isChecked, dependencies);
+    packageItem.appendChild(mainFormCheck);
+    
+    // 依存パッケージがある場合、同じpackage-item内に追加
+    if (dependencies && Array.isArray(dependencies)) {
+        dependencies.forEach(depId => {
+            const depPkg = findPackageById(depId);
+            const depName = depPkg ? depPkg.name : depId;
+            
+            // 利用可能なパッケージのみ追加
+            const availablePackages = new Set(devicePackages.map(p => 
+                typeof p === 'string' ? p : p.name
+            ));
+            
+            if (availablePackages.has(depName)) {
+                const depFormCheck = createSingleCheckbox(depId, depName, isChecked);
+                depFormCheck.classList.add('package-dependent'); // 依存パッケージのスタイル
+                packageItem.appendChild(depFormCheck); // 同じpackage-item内に追加
+            }
+        });
+    }
+    
+    return packageItem;
+}
+
+// 単一のチェックボックスを作成するヘルパー関数
+function createSingleCheckbox(pkgId, pkgName, isChecked = false, dependencies = null) {
     const formCheck = document.createElement('div');
     formCheck.className = 'form-check';
     
@@ -208,11 +237,11 @@ function createPackageCheckbox(pkgId, pkgName, isChecked = false, dependencies =
     label.appendChild(link);
     formCheck.appendChild(checkbox);
     formCheck.appendChild(label);
-    packageItem.appendChild(formCheck);
     
-    return packageItem;
+    return formCheck;
 }
 
+// 修正版のgeneratePackageSelector（依存パッケージの重複処理を削除）
 function generatePackageSelector() {
     const container = document.querySelector('#package-categories');
     if (!container || !PACKAGE_DB) return;
@@ -268,23 +297,9 @@ function generatePackageSelector() {
             
             hasVisiblePackages = true;
             
-            // 親パッケージ作成
+            // パッケージアイテム作成（依存パッケージも同じ枠内に含まれる）
             const packageItem = createPackageCheckbox(pkg.id, pkg.name, pkg.checked, pkg.dependencies);
             packageGrid.appendChild(packageItem);
-            
-            // 依存パッケージの表示
-            if (Array.isArray(pkg.dependencies)) {
-                pkg.dependencies.forEach(depId => {
-                    const depPkg = findPackageById(depId);
-                    const depName = depPkg ? depPkg.name : depId;
-                    
-                    if (!availablePackages.has(depName)) return;
-                    
-                    const depItem = createPackageCheckbox(depId, depName);
-                    depItem.classList.add('package-dependent');
-                    packageGrid.appendChild(depItem);
-                });
-            }
         });
         
         if (hasVisiblePackages) {
