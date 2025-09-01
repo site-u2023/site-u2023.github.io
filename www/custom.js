@@ -669,7 +669,7 @@ function initDeviceTranslation() {
     } else if (select.querySelector(`[value="${short}"]`)) {
         select.value = short;
     } else {
-        select.value = current_language; // 公式と同じ fallback
+        select.value = current_language;
     }
 
     // onchange 処理
