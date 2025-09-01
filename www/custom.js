@@ -175,6 +175,44 @@ async function loadPackageDatabase() {
     }
 }
 
+function createPackageCheckbox(pkgId, pkgName, isChecked = false, dependencies = null) {
+    const packageItem = document.createElement('div');
+    packageItem.className = 'package-item';
+    
+    const formCheck = document.createElement('div');
+    formCheck.className = 'form-check';
+    
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.id = `pkg-${pkgId}`;
+    checkbox.className = 'form-check-input package-selector-checkbox';
+    checkbox.setAttribute('data-package', pkgName);
+    if (dependencies) {
+        checkbox.setAttribute('data-dependencies', dependencies.join(','));
+    }
+    if (isChecked) {
+        checkbox.checked = true;
+    }
+    checkbox.addEventListener('change', handlePackageSelection);
+    
+    const label = document.createElement('label');
+    label.className = 'form-check-label';
+    label.setAttribute('for', `pkg-${pkgId}`);
+    
+    const link = document.createElement('a');
+    link.href = config.package_url.replace("{id}", encodeURIComponent(pkgId));
+    link.target = '_blank';
+    link.className = 'package-link';
+    link.textContent = pkgId;
+    
+    label.appendChild(link);
+    formCheck.appendChild(checkbox);
+    formCheck.appendChild(label);
+    packageItem.appendChild(formCheck);
+    
+    return packageItem;
+}
+
 function generatePackageSelector() {
     const container = document.querySelector('#package-categories');
     if (!container || !PACKAGE_DB) return;
@@ -230,34 +268,9 @@ function generatePackageSelector() {
             
             hasVisiblePackages = true;
             
-            const packageItem = document.createElement('div');
-            packageItem.className = 'package-item';
-            
-            const checkbox = document.createElement('input');
-            checkbox.type = 'checkbox';
-            checkbox.id = `pkg-${pkg.id}`;
-            checkbox.className = 'package-selector-checkbox';
-            checkbox.setAttribute('data-package', pkg.name);
-            if (pkg.dependencies) {
-                checkbox.setAttribute('data-dependencies', pkg.dependencies.join(','));
-            }
-            if (pkg.checked) {
-                checkbox.checked = true;
-            }
-            checkbox.addEventListener('change', handlePackageSelection);
-            
-            const label = document.createElement('label');
-            label.setAttribute('for', `pkg-${pkg.id}`);
-            
-            const link = document.createElement('a');
-            link.href = config.package_url.replace("{id}", encodeURIComponent(pkg.id));
-            link.target = '_blank';
-            link.className = 'package-link';
-            link.textContent = pkg.id;
-            
-            label.appendChild(link);
-            packageItem.appendChild(checkbox);
-            packageItem.appendChild(label);
+            // 親パッケージ作成
+            const packageItem = createPackageCheckbox(pkg.id, pkg.name, pkg.checked, pkg.dependencies);
+            packageGrid.appendChild(packageItem);
             
             // 依存パッケージの表示
             if (Array.isArray(pkg.dependencies)) {
@@ -267,33 +280,11 @@ function generatePackageSelector() {
                     
                     if (!availablePackages.has(depName)) return;
                     
-                    const depItem = document.createElement('div');
-                    depItem.className = 'package-item';
-                    
-                    const depCheck = document.createElement('input');
-                    depCheck.type = 'checkbox';
-                    depCheck.id = `pkg-${depId}`;
-                    depCheck.className = 'package-selector-checkbox';
-                    depCheck.setAttribute('data-package', depName);
-                    depCheck.addEventListener('change', handlePackageSelection);
-                    
-                    const depLabel = document.createElement('label');
-                    depLabel.setAttribute('for', `pkg-${depId}`);
-                    
-                    const depLink = document.createElement('a');
-                    depLink.href = config.package_url.replace("{id}", encodeURIComponent(depId));
-                    depLink.target = '_blank';
-                    depLink.className = 'package-link';
-                    depLink.textContent = depId;
-                    
-                    depLabel.appendChild(depLink);
-                    depItem.appendChild(depCheck);
-                    depItem.appendChild(depLabel);
-                    packageItem.appendChild(depItem);
+                    const depItem = createPackageCheckbox(depId, depName);
+                    depItem.classList.add('package-dependent');
+                    packageGrid.appendChild(depItem);
                 });
             }
-            
-            packageGrid.appendChild(packageItem);
         });
         
         if (hasVisiblePackages) {
