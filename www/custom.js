@@ -359,16 +359,14 @@ function customSetupUciDefaults() {
 }
 
 // 自動リサイズ対応のテキストエリア共通関数
-function setupAutoResizeTextarea(selector, minRows = 2) {
+function setupAutoResizeTextarea(selector) {
     const textarea = document.querySelector(selector);
     if (!textarea) return;
-
     // 自動リサイズ関数
     function autoResize() {
         const lines = textarea.value.split('\n').length;
         textarea.rows = lines + 1;
     }
-
     // 初期設定
     textarea.style.resize = 'both';
     
@@ -385,9 +383,9 @@ function setupAutoResizeTextarea(selector, minRows = 2) {
 // setup.shを自動読み込みする関数
 function loadUciDefaultsTemplate() {
     console.log('loadUciDefaultsTemplate called');
-    const textarea = setupAutoResizeTextarea("#custom-scripts-details #uci-defaults-content", 5);
+    const textarea = setupAutoResizeTextarea("#uci-defaults-content"); // ←正しいセレクター（index.htmlに存在）
     if (!textarea || !config?.uci_defaults_setup_url) return;
-
+    
     fetch(config.uci_defaults_setup_url)
         .then(r => { 
             if (!r.ok) throw new Error(r.statusText); 
@@ -400,21 +398,6 @@ function loadUciDefaultsTemplate() {
         .catch(err => {
             console.error('Failed to load setup.sh:', err);
         });
-}
-
-// Postinstテキストエリアを初期化する関数
-function initializePostinstTextarea() {
-    console.log('initializePostinstTextarea called');
-    const textarea = setupAutoResizeTextarea("#asu-packages", 2);
-    if (!textarea) return;
-    
-    // 初期値がある場合、それを設定
-    const initialValue = textarea.getAttribute('data-initial');
-    if (initialValue && !textarea.value) {
-        textarea.value = initialValue;
-    }
-    
-    console.log('Postinst textarea initialized');
 }
 
 // イベントリスナー設定
