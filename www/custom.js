@@ -470,7 +470,6 @@ function setupAutoResizeTextarea(selector, minRows = 2) {
     return textarea;
 }
 
-// setup.shを自動読み込みする関数
 function loadUciDefaultsTemplate() {
     console.log('loadUciDefaultsTemplate called');
     const textarea = setupAutoResizeTextarea("#custom-scripts-details #uci-defaults-content");
@@ -483,9 +482,9 @@ function loadUciDefaultsTemplate() {
         })
         .then(text => {
             textarea.value = text;
-            // コンテンツ読み込み後に自動リサイズ
-            const lines = text.split('\n').length;
-            textarea.rows = lines + 1;
+            // 一時的にheightをautoにして自然なサイズを取得
+            textarea.style.height = 'auto';
+            textarea.style.height = textarea.scrollHeight + 'px';
             console.log('setup.sh loaded successfully');
         })
         .catch(err => {
