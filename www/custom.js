@@ -496,20 +496,13 @@ function loadUciDefaultsTemplate() {
 // Postinstテキストエリアをリサイズする関数
 function resizePostinstTextarea() {
     const textarea = document.querySelector("#asu-packages");
-    if (!textarea || !textarea.value) return;
+    if (!textarea) return;
     
-    // パッケージリストの内容に応じて自動リサイズ
-    const content = textarea.value;
-    const packages = content.split(/\s+/).filter(p => p.length > 0);
+    // 一時的にheightをautoにして自然なサイズを取得
+    textarea.style.height = 'auto';
+    textarea.style.height = textarea.scrollHeight + 'px';
     
-    // パッケージ数に応じて行数を計算（1行あたり約80文字として）
-    const avgLineLength = 80;
-    const totalLength = content.length;
-    const estimatedLines = Math.max(2, Math.ceil(totalLength / avgLineLength));
-    
-    textarea.rows = Math.min(estimatedLines + 1, 15); // 最大15行に制限
-    
-    console.log(`Postinst textarea resized: ${packages.length} packages, ${estimatedLines} lines`);
+    console.log('Postinst textarea auto-resized');
 }
 
 // イベントリスナー設定
