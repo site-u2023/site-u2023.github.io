@@ -6,6 +6,10 @@ console.log('custom.js loaded');
 let customInitialized = false;
 let customHTMLLoaded = false;
 
+// パッケージデータベース
+let PACKAGE_DB = null;
+let devicePackages = [];
+
 // 元の updateImages を保持
 const originalUpdateImages = window.updateImages;
 
@@ -111,6 +115,9 @@ function initializeCustomFeatures(asuSection, temp) {
     // setup.shを自動読み込み
     loadUciDefaultsTemplate();
     
+    // パッケージデータベースを読み込み
+    loadPackageDatabase();
+    
     // 初期化完了フラグ
     customInitialized = true;
 }
@@ -140,6 +147,11 @@ function reinitializeFeatures() {
     
     // イベントリスナーの再設定のみ行う
     setupEventListeners();
+    
+    // パッケージセレクターを再生成
+    if (PACKAGE_DB) {
+        generatePackageSelector();
+    }
     
     // ISP情報の更新
     fetchAndDisplayIspInfo();
@@ -247,6 +259,209 @@ function setupEventListeners() {
     netOptimizerModeRadios.forEach(r => {
         r.removeEventListener('change', handleNetOptimizerModeChange);
         r.addEventListener('change', handleNetOptimizerModeChange);
+    });
+}
+
+// ==================== パッケージ管理関数 ====================
+async function loadPackageDatabase() {
+    try {
+        const response = await fetch('packages/packages.json');
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        PACKAGE_DB = await response.json();
+        console.log('Package database loaded:', PACKAGE_DB);
+        
+        // パッケージセレクターを生成
+        generatePackageSelector();
+    } catch (err) {
+        console.error('Failed to load package database:', err);
+    }
+}
+
+function generatePackageSelector() {
+    const container = document.querySelector('#package-categories');
+    if (!container || !PACKAGE_DB) return;
+    
+    container.innerHTML = '';
+    
+    // デバイスパッケージが取得できていない場合
+    if (!devicePackages || devicePackages.length === 0) {
+        container.innerHTML = '<p class="text-muted small">Package information not available for this device.</p>';
+        return;
+    }
+    
+    // 利用可能パッケージ名のセット
+    const availablePackages = new Set(devicePackages.map(p => 
+        typeof p === 'string' ? p : p.name
+    ));
+    
+    // 依存パッケージIDの集合
+    const depIds = new Set();
+    PACKAGE_DB.categories.forEach(cat => {
+        cat.packages.forEach(pkg => {
+            if (Array.isArray(pkg.dependencies)) {
+                pkg.dependencies.forEach(d => depIds.add(d));
+            }
+        });
+    });
+    
+    PACKAGE_DB.categories.forEach(category => {
+        const categoryDiv = document.createElement('div');
+        categoryDiv.className = 'package-category';
+        
+        const categoryTitle = document.createElement('h5');
+        categoryTitle.textContent = category.name;
+        categoryDiv.appendChild(categoryTitle);
+        
+        const categoryDescription = document.createElement('div');
+        categoryDescription.className = 'package-category-description';
+        categoryDescription.textContent = category.description;
+        categoryDiv.appendChild(categoryDescription);
+        
+        const packageGrid = document.createElement('div');
+        packageGrid.className = 'package-grid';
+        
+        let hasVisiblePackages = false;
+        
+        category.packages.forEach(pkg => {
+            // 依存パッケージはトップレベル描画しない
+            if (depIds.has(pkg.id)) return;
+            
+            // 利用可能なパッケージのみ表示
+            const isAvailable = availablePackages.has(pkg.name);
+            if (!isAvailable) return;
+            
+            hasVisiblePackages = true;
+            
+            const packageItem = document.createElement('div');
+            packageItem.className = 'package-item';
+            
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.id = `pkg-${pkg.id}`;
+            checkbox.className = 'package-selector-checkbox';
+            checkbox.setAttribute('data-package', pkg.name);
+            if (pkg.dependencies) {
+                checkbox.setAttribute('data-dependencies', pkg.dependencies.join(','));
+            }
+            if (pkg.checked) {
+                checkbox.checked = true;
+            }
+            checkbox.addEventListener('change', handlePackageSelection);
+            
+            const label = document.createElement('label');
+            label.setAttribute('for', `pkg-${pkg.id}`);
+            label.innerHTML = `<span class="package-link">${pkg.id}</span>`;
+            
+            packageItem.appendChild(checkbox);
+            packageItem.appendChild(label);
+            
+            // 依存パッケージの表示
+            if (Array.isArray(pkg.dependencies)) {
+                pkg.dependencies.forEach(depId => {
+                    const depPkg = findPackageById(depId);
+                    const depName = depPkg ? depPkg.name : depId;
+                    
+                    if (!availablePackages.has(depName)) return;
+                    
+                    const depItem = document.createElement('div');
+                    depItem.className = 'package-dependent';
+                    
+                    const depCheck = document.createElement('input');
+                    depCheck.type = 'checkbox';
+                    depCheck.id = `pkg-${depId}`;
+                    depCheck.className = 'package-selector-checkbox';
+                    depCheck.setAttribute('data-package', depName);
+                    depCheck.addEventListener('change', handlePackageSelection);
+                    
+                    const depLabel = document.createElement('label');
+                    depLabel.setAttribute('for', `pkg-${depId}`);
+                    depLabel.textContent = depId;
+                    
+                    depItem.appendChild(depCheck);
+                    depItem.appendChild(depLabel);
+                    packageItem.appendChild(depItem);
+                });
+            }
+            
+            packageGrid.appendChild(packageItem);
+        });
+        
+        if (hasVisiblePackages) {
+            categoryDiv.appendChild(packageGrid);
+            container.appendChild(categoryDiv);
+        }
+    });
+    
+    updatePackageListFromSelector();
+}
+
+function findPackageById(id) {
+    if (!PACKAGE_DB) return null;
+    
+    for (const category of PACKAGE_DB.categories) {
+        const pkg = category.packages.find(p => p.id === id);
+        if (pkg) return pkg;
+    }
+    return null;
+}
+
+function handlePackageSelection(e) {
+    const pkg = e.target;
+    const packageName = pkg.getAttribute('data-package');
+    const isChecked = pkg.checked;
+    
+    // 依存パッケージの同期
+    const dependencies = pkg.getAttribute('data-dependencies');
+    if (dependencies) {
+        dependencies.split(',').forEach(dep => {
+            const depCheckbox = document.querySelector(`#pkg-${dep}`);
+            if (depCheckbox) {
+                depCheckbox.checked = isChecked;
+            }
+        });
+    }
+    
+    updatePackageListFromSelector();
+}
+
+function updatePackageListFromSelector() {
+    const checkedPkgs = [];
+    document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
+        const pkgName = cb.getAttribute('data-package');
+        if (pkgName) checkedPkgs.push(pkgName);
+    });
+    
+    const textarea = document.querySelector('#asu-packages');
+    if (textarea) {
+        const currentPackages = split(textarea.value);
+        const nonSelectorPkgs = currentPackages.filter(pkg => {
+            return !document.querySelector(`.package-selector-checkbox[data-package="${pkg}"]`);
+        });
+        const newList = [...nonSelectorPkgs, ...checkedPkgs];
+        textarea.value = newList.join(' ');
+    }
+}
+
+function split(str) {
+    return str.match(/[^\s,]+/g) || [];
+}
+
+// デバイスパッケージの取得（モック）
+function fetchDevicePackages(target, version) {
+    // 実際の実装では、デバイスに応じたパッケージリストを取得
+    // ここではダミーデータを返す
+    return new Promise((resolve) => {
+        // すべてのパッケージを利用可能として返す（テスト用）
+        const allPackages = [];
+        if (PACKAGE_DB) {
+            PACKAGE_DB.categories.forEach(cat => {
+                cat.packages.forEach(pkg => {
+                    allPackages.push(pkg.name);
+                });
+            });
+        }
+        devicePackages = allPackages;
+        resolve(allPackages);
     });
 }
 
