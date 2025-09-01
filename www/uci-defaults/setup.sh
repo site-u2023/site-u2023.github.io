@@ -145,54 +145,53 @@ add_list firewall.@zone[1].network="\${MAPE6}"
 set firewall.@zone[1].masq='1'
 set firewall.@zone[1].mtu_fix='1'
 MAPE_EOF
-    [ -n "\${mape_gua_mode}" ] && uci -q set network.\${MAPE6}.ip6prefix="\${mape_gua_prefix}"
-	# github.com/fakemanhk/openwrt-jp-ipoe
-	cp /lib/netifd/proto/map.sh /lib/netifd/proto/map.sh.orig 2>/dev/null
-	sed -i '/# GNU General Public License for more details./a\\\\nDONT_SNAT_TO="0"' /lib/netifd/proto/map.sh
-	sed -i '/if \\[ "\\$maptype" = "map-t" \\]; then/,/rule="\\$rule,br=\\$peeraddr"/ {
-    /else\\$/,/rule="\\$rule,br=\\$peeraddr"/ {
+[ -n "\${mape_gua_mode}" ] && uci -q set network.\${MAPE6}.ip6prefix="\${mape_gua_prefix}"
+# github.com/fakemanhk/openwrt-jp-ipoe
+sed -i '/# GNU General Public License for more details./a\\nDONT_SNAT_TO="0"' /lib/netifd/proto/map.sh
+sed -i '/if \[ "$maptype" = "map-t" \]; then/,/rule="$rule,br=$peeraddr"/ {
+    /else$/,/rule="$rule,br=$peeraddr"/ {
         /local portcount=/d
         /local allports=/d
-        /for portset.*PORTSETS/,/done\\$/d
-        /if nft list tables/,/done\\$/d
+        /for portset.*PORTSETS/,/done$/d
+        /if nft list tables/,/done$/d
     }
 }' /lib/netifd/proto/map.sh
-	sed -i '/else\\$/,/proto_notify_error.*UNSUPPORTED_TYPE/ {
+sed -i '/else$/,/proto_notify_error.*UNSUPPORTED_TYPE/ {
     /local portcount=/d
     /local allports=/d
-    /for portset.*PORTSETS/,/done\\$/d
-    /if nft list tables/,/done\\$/d
+    /for portset.*PORTSETS/,/done$/d
+    /if nft list tables/,/done$/d
 }' /lib/netifd/proto/map.sh
-	sed -i '/json_add_array firewall/,/json_close_array/ {
-    /for portset.*PORTSETS.*do/,/done\\$/ {
+sed -i '/json_add_array firewall/,/json_close_array/ {
+    /for portset.*PORTSETS.*do/,/done$/ {
         /for portset/,/done/d
     }
 }' /lib/netifd/proto/map.sh
-	sed -i '/json_add_array firewall/,/json_close_array/ {
-    /^\\t    done\\$/d
+sed -i '/json_add_array firewall/,/json_close_array/ {
+    /^\t    done$/d
 }' /lib/netifd/proto/map.sh
-	sed -i '/json_add_array firewall/,/json_close_array/ {
-    /else\\$/a\\\\
-\\\\t    local portcount=0\\\\
-\\\\t    local allports=""\\\\
-\\\\t    for portset in \\$(eval "echo \\\\\\$RULE_\\${k}_PORTSETS"); do\\\\
-\\\\t\\\\tlocal startport=\\$(echo \\$portset | cut -d\\'\\''\\-\\'\\'\\' -f1)\\\\
-\\\\t\\\\tlocal endport=\\$(echo \\$portset | cut -d\\'\\''\\-\\'\\'\\' -f2)\\\\
-\\\\t\\\\tfor x in \\$(seq \\$startport \\$endport); do\\\\
-\\\\t\\\\t\\\\tif ! echo "\\$DONT_SNAT_TO" | tr \\'\\'\\' \\'\\'\\' \\'\\''\\\\\\n\\'\\'\\' | grep -qw \\$x; then\\\\
-\\\\t\\\\t\\\\t\\\\tallports="\\$allports \\$portcount : \\$x , "\\\\
-\\\\t\\\\t\\\\t\\\\tportcount=\\`expr \\$portcount + 1\\`\\\\
-\\\\t\\\\t\\\\tfi\\\\
-\\\\t\\\\tdone\\\\
-\\\\t    done\\\\
-\\\\t    allports=\\${allports%??}\\\\
-            if nft list tables | grep -q "table inet mape"; then\\\\
-                nft delete table inet mape\\\\
-            fi\\\\
-            nft add table inet mape\\\\
-            nft add chain inet mape srcnat {type nat hook postrouting priority 0\\\\\\\\; policy accept\\\\\\\\; }\\\\
-            for proto in icmp tcp udp; do\\\\
-                nft add rule inet mape srcnat ip protocol \\$proto oifname "map-\\$cfg" snat ip to \\$(eval "echo \\\\\\$RULE_\\${k}_IPV4ADDR") : numgen inc mod \\$portcount map { \\$allports }\\\\
+sed -i '/json_add_array firewall/,/json_close_array/ {
+    /else$/a\
+\t    local portcount=0\
+\t    local allports=""\
+\t    for portset in $(eval "echo \\$RULE_${k}_PORTSETS"); do\
+\t\tlocal startport=$(echo $portset | cut -d'\''-'\'' -f1)\
+\t\tlocal endport=$(echo $portset | cut -d'\''-'\'' -f2)\
+\t\tfor x in $(seq $startport $endport); do\
+\t\t\tif ! echo "$DONT_SNAT_TO" | tr '\'' '\'' '\''\n'\'' | grep -qw $x; then\
+\t\t\t\tallports="$allports $portcount : $x , "\
+\t\t\t\tportcount=`expr $portcount + 1`\
+\t\t\tfi\
+\t\tdone\
+\t    done\
+\t    allports=${allports%??}\
+            if nft list tables | grep -q "table inet mape"; then\
+                nft delete table inet mape\
+            fi\
+            nft add table inet mape\
+            nft add chain inet mape srcnat {type nat hook postrouting priority 0\\; policy accept\\; }\
+            for proto in icmp tcp udp; do\
+                nft add rule inet mape srcnat ip protocol $proto oifname "map-$cfg" snat ip to $(eval "echo \\$RULE_${k}_IPV4ADDR") : numgen inc mod $portcount map { $allports }\
             done
 }' /lib/netifd/proto/map.sh
 }
