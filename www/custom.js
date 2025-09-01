@@ -488,22 +488,24 @@ function loadUciDefaultsTemplate() {
 // Postinstテキストエリアを初期化する関数
 function initializePostinstTextarea() {
     console.log('initializePostinstTextarea called');
-    const textarea = setupAutoResizeTextarea("#postinst-script", 2);
-    if (!textarea) return;
-    
-    // 初期値がある場合、それを設定（\n を実改行に展開）
-    const initialValue = textarea.getAttribute('data-initial');
-    if (initialValue && !textarea.value) {
-        textarea.value = initialValue.replace(/\\n/g, '\n').replace(/\\t/g, '\t');
-    }
-    
-    // 現在の内容に応じて自動リサイズ
-    if (textarea.value) {
-        const lines = textarea.value.split('\n').length;
-        textarea.rows = lines + 1;
-    }
-    
-    console.log('Postinst textarea initialized');
+    const textarea = setupAutoResizeTextarea("#custom-packages-section #asu-packages");
+    if (!textarea || !config?.packages_db_url) return;
+
+    fetch(config.packages_db_url)
+        .then(r => { 
+            if (!r.ok) throw new Error(r.statusText); 
+            return r.text(); 
+        })
+        .then(text => {
+            textarea.value = text;
+            // コンテンツ読み込み後に自動リサイズ
+            const lines = text.split('\n').length;
+            textarea.rows = lines + 1;
+            console.log('packages.json loaded successfully');
+        })
+        .catch(err => {
+            console.error('Failed to load packages.json:', err);
+        });
 }
 
 // イベントリスナー設定
