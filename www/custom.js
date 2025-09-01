@@ -17,15 +17,50 @@ const originalUpdateImages = window.updateImages;
 window.updateImages = function(version, mobj) {
     if (originalUpdateImages) originalUpdateImages(version, mobj);
     
-    // 初回のみ初期化
-    if (!customInitialized) {
-        console.log("updateImages finished, now initialize custom features");
-        initializeCustomFeatures();
+    // 初回のみ custom.html を読み込む
+    if (!customHTMLLoaded) {
+        console.log("updateImages finished, now load custom.html");
+        loadCustomHTML();
+        customHTMLLoaded = true;
+    } else {
+        // 2回目以降は再初期化のみ
+        console.log("updateImages called again, reinitializing features");
+        reinitializeFeatures();
     }
 };
 
+// custom.html 読み込み＆挿入
+async function loadCustomHTML() {
+    try {
+        const response = await fetch('custom.html');
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const html = await response.text();
+        console.log('custom.html loaded');
+
+        const temp = document.createElement('div');
+        temp.innerHTML = html;
+
+        // #asu が生成されるまで待機して初期化
+        waitForAsuAndInit(temp);
+    } catch (err) {
+        console.error('Failed to load custom.html:', err);
+    }
+}
+
+// #asu が存在するまで再試行
+function waitForAsuAndInit(temp, retry = 50) {
+    const asuSection = document.querySelector('#asu');
+    if (asuSection) {
+        initializeCustomFeatures(asuSection, temp);
+    } else if (retry > 0) {
+        setTimeout(() => waitForAsuAndInit(temp, retry - 1), 50);
+    } else {
+        console.warn('#asu not found after waiting');
+    }
+}
+
 // 初期化処理
-function initializeCustomFeatures() {
+function initializeCustomFeatures(asuSection, temp) {
     console.log('initializeCustomFeatures called');
     
     // 既に初期化済みの場合はスキップ
@@ -34,12 +69,57 @@ function initializeCustomFeatures() {
         return;
     }
 
-    // 既存のテキストエリアに自動リサイズ機能を適用するだけ
-    setupAutoResizeTextarea("#asu-packages");        // Postinst側（index.htmlに既存）
-    setupAutoResizeTextarea("#uci-defaults-content"); // uci-defaults側（index.htmlに既存）
+    // 既存のカスタム要素をクリーンアップ
+    cleanupExistingCustomElements();
+
+    // #asuをdivタグに置き換える
+    const newDiv = document.createElement('div');
+    newDiv.id = 'asu';
+    newDiv.className = asuSection.className;
+    newDiv.style.width = '100%';
     
-    // setup.shを自動読み込み（既存機能の拡張）
+    const customPackages = temp.querySelector('#custom-packages-section details');
+    const customScripts = temp.querySelector('#custom-scripts-section details');
+
+    if (customPackages) {
+        customPackages.id = 'custom-packages-details';  // IDを付与して後で識別できるように
+        newDiv.appendChild(customPackages);
+    }
+    if (customScripts) {
+        customScripts.id = 'custom-scripts-details';  // IDを付与して後で識別できるように
+        newDiv.appendChild(customScripts);
+    }
+
+    newDiv.insertAdjacentHTML('beforeend', `
+        <br>
+        <div id="asu-buildstatus" class="hide"><span></span></div>
+        <a href="javascript:buildAsuRequest()" class="custom-link">
+            <span></span><span class="tr-request-build">REQUEST BUILD</span>
+        </a>
+    `);
+    
+    // 元の#asuを新しいdivで置き換える
+    asuSection.parentNode.replaceChild(newDiv, asuSection);
+
+    // Extended info 挿入
+    const extendedInfo = temp.querySelector('#extended-build-info');
+    const imageLink = document.querySelector('#image-link');
+    if (extendedInfo && imageLink && !document.querySelector('#extended-build-info')) {
+        imageLink.closest('.row').insertAdjacentElement('afterend', extendedInfo);
+        show('#extended-build-info');
+    }
+
+    hookOriginalFunctions();
+    setupEventListeners();
+    
+    // setup.shを自動読み込み
     loadUciDefaultsTemplate();
+    
+    // パッケージデータベースを読み込み
+    loadPackageDatabase();
+
+    // デバイス用言語セレクター初期化
+    initDeviceTranslation();
     
     // 初期化完了フラグ
     customInitialized = true;
