@@ -1,4 +1,4 @@
-// custom.js - OpenWrt カスタム機能（多重表示修正版）
+// custom.js - OpenWrt カスタム機能（パッケージ機能統合版）
 
 console.log('custom.js loaded');
 
@@ -157,111 +157,6 @@ function reinitializeFeatures() {
     fetchAndDisplayIspInfo();
 }
 
-// オリジナル関数をフック
-let originalBuildAsuRequest = null;
-let originalSetupUciDefaults = null;
-
-function hookOriginalFunctions() {
-    if (typeof buildAsuRequest === 'function' && !originalBuildAsuRequest) {
-        originalBuildAsuRequest = buildAsuRequest;
-        window.buildAsuRequest = customBuildAsuRequest;
-    }
-
-    if (typeof setup_uci_defaults === 'function' && !originalSetupUciDefaults) {
-        originalSetupUciDefaults = setup_uci_defaults;
-        window.setup_uci_defaults = customSetupUciDefaults;
-    }
-}
-
-// buildAsuRequest カスタム版
-function customBuildAsuRequest(request_hash) {
-    console.log('customBuildAsuRequest called with:', request_hash);
-
-    const origFetch = window.fetch;
-    window.fetch = function(url, options) {
-        return origFetch(url, options).then(res => {
-            res.clone().json().then(mobj => {
-                if ("stderr" in mobj) {
-                    // エラー時の再初期化は不要
-                    console.log('Build error detected, skipping reinitialization');
-                }
-            }).catch(() => {
-                // JSON解析エラーは無視
-            });
-            return res;
-        });
-    };
-
-    if (originalBuildAsuRequest) originalBuildAsuRequest(request_hash);
-    window.fetch = origFetch;
-}
-
-// setup_uci_defaults カスタム版
-function customSetupUciDefaults() {
-    console.log('customSetupUciDefaults called');
-    const textarea = document.querySelector("#uci-defaults-content");
-    if (!textarea || !config?.uci_defaults_setup_url) return;
-
-    fetch(config.uci_defaults_setup_url)
-        .then(r => { 
-            if (!r.ok) throw new Error(r.statusText); 
-            return r.text(); 
-        })
-        .then(text => {
-            textarea.value = text;
-        })
-        .catch(err => showAlert(err.message));
-}
-
-// setup.shを自動読み込みする関数
-function loadUciDefaultsTemplate() {
-    console.log('loadUciDefaultsTemplate called');
-    const textarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
-    if (!textarea || !config?.uci_defaults_setup_url) return;
-
-    fetch(config.uci_defaults_setup_url)
-        .then(r => { 
-            if (!r.ok) throw new Error(r.statusText); 
-            return r.text(); 
-        })
-        .then(text => {
-            textarea.value = text;
-            console.log('setup.sh loaded successfully');
-        })
-        .catch(err => {
-            console.error('Failed to load setup.sh:', err);
-        });
-}
-
-// イベントリスナー設定
-function setupEventListeners() {
-    // 既存のリスナーを削除してから再設定
-    const connectionModeRadios = document.querySelectorAll('input[name="connectionMode"]');
-    const connectionTypeRadios = document.querySelectorAll('input[name="connectionType"]');
-    const netOptimizerRadios = document.querySelectorAll('input[name="netOptimizer"]');
-    const netOptimizerModeRadios = document.querySelectorAll('input[name="netOptimizerMode"]');
-    
-    connectionModeRadios.forEach(r => {
-        r.removeEventListener('change', handleConnectionModeChange);
-        r.addEventListener('change', handleConnectionModeChange);
-    });
-    
-    connectionTypeRadios.forEach(r => {
-        r.removeEventListener('change', handleConnectionTypeChange);
-        r.addEventListener('change', handleConnectionTypeChange);
-    });
-    
-    netOptimizerRadios.forEach(r => {
-        r.removeEventListener('change', handleNetOptimizerChange);
-        r.addEventListener('change', handleNetOptimizerChange);
-    });
-    
-    netOptimizerModeRadios.forEach(r => {
-        r.removeEventListener('change', handleNetOptimizerModeChange);
-        r.addEventListener('change', handleNetOptimizerModeChange);
-    });
-}
-
 // ==================== パッケージ管理関数 ====================
 async function loadPackageDatabase() {
     try {
@@ -269,6 +164,9 @@ async function loadPackageDatabase() {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         PACKAGE_DB = await response.json();
         console.log('Package database loaded:', PACKAGE_DB);
+        
+        // デバイスパッケージを取得（ダミー）
+        await fetchDevicePackages();
         
         // パッケージセレクターを生成
         generatePackageSelector();
@@ -446,22 +344,125 @@ function split(str) {
     return str.match(/[^\s,]+/g) || [];
 }
 
-// デバイスパッケージの取得（モック）
-function fetchDevicePackages(target, version) {
+// デバイスパッケージの取得（ダミー実装）
+async function fetchDevicePackages() {
     // 実際の実装では、デバイスに応じたパッケージリストを取得
-    // ここではダミーデータを返す
-    return new Promise((resolve) => {
-        // すべてのパッケージを利用可能として返す（テスト用）
-        const allPackages = [];
-        if (PACKAGE_DB) {
-            PACKAGE_DB.categories.forEach(cat => {
-                cat.packages.forEach(pkg => {
-                    allPackages.push(pkg.name);
-                });
+    // ここではすべてのパッケージを利用可能として返す（テスト用）
+    const allPackages = [];
+    if (PACKAGE_DB) {
+        PACKAGE_DB.categories.forEach(cat => {
+            cat.packages.forEach(pkg => {
+                allPackages.push(pkg.name);
             });
-        }
-        devicePackages = allPackages;
-        resolve(allPackages);
+        });
+    }
+    devicePackages = allPackages;
+    console.log('Device packages loaded:', devicePackages.length);
+    return allPackages;
+}
+
+// オリジナル関数をフック
+let originalBuildAsuRequest = null;
+let originalSetupUciDefaults = null;
+
+function hookOriginalFunctions() {
+    if (typeof buildAsuRequest === 'function' && !originalBuildAsuRequest) {
+        originalBuildAsuRequest = buildAsuRequest;
+        window.buildAsuRequest = customBuildAsuRequest;
+    }
+
+    if (typeof setup_uci_defaults === 'function' && !originalSetupUciDefaults) {
+        originalSetupUciDefaults = setup_uci_defaults;
+        window.setup_uci_defaults = customSetupUciDefaults;
+    }
+}
+
+// buildAsuRequest カスタム版
+function customBuildAsuRequest(request_hash) {
+    console.log('customBuildAsuRequest called with:', request_hash);
+
+    const origFetch = window.fetch;
+    window.fetch = function(url, options) {
+        return origFetch(url, options).then(res => {
+            res.clone().json().then(mobj => {
+                if ("stderr" in mobj) {
+                    // エラー時の再初期化は不要
+                    console.log('Build error detected, skipping reinitialization');
+                }
+            }).catch(() => {
+                // JSON解析エラーは無視
+            });
+            return res;
+        });
+    };
+
+    if (originalBuildAsuRequest) originalBuildAsuRequest(request_hash);
+    window.fetch = origFetch;
+}
+
+// setup_uci_defaults カスタム版
+function customSetupUciDefaults() {
+    console.log('customSetupUciDefaults called');
+    const textarea = document.querySelector("#uci-defaults-content");
+    if (!textarea || !config?.uci_defaults_setup_url) return;
+
+    fetch(config.uci_defaults_setup_url)
+        .then(r => { 
+            if (!r.ok) throw new Error(r.statusText); 
+            return r.text(); 
+        })
+        .then(text => {
+            textarea.value = text;
+        })
+        .catch(err => showAlert(err.message));
+}
+
+// setup.shを自動読み込みする関数
+function loadUciDefaultsTemplate() {
+    console.log('loadUciDefaultsTemplate called');
+    const textarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
+    if (!textarea || !config?.uci_defaults_setup_url) return;
+
+    fetch(config.uci_defaults_setup_url)
+        .then(r => { 
+            if (!r.ok) throw new Error(r.statusText); 
+            return r.text(); 
+        })
+        .then(text => {
+            textarea.value = text;
+            console.log('setup.sh loaded successfully');
+        })
+        .catch(err => {
+            console.error('Failed to load setup.sh:', err);
+        });
+}
+
+// イベントリスナー設定
+function setupEventListeners() {
+    // 既存のリスナーを削除してから再設定
+    const connectionModeRadios = document.querySelectorAll('input[name="connectionMode"]');
+    const connectionTypeRadios = document.querySelectorAll('input[name="connectionType"]');
+    const netOptimizerRadios = document.querySelectorAll('input[name="netOptimizer"]');
+    const netOptimizerModeRadios = document.querySelectorAll('input[name="netOptimizerMode"]');
+    
+    connectionModeRadios.forEach(r => {
+        r.removeEventListener('change', handleConnectionModeChange);
+        r.addEventListener('change', handleConnectionModeChange);
+    });
+    
+    connectionTypeRadios.forEach(r => {
+        r.removeEventListener('change', handleConnectionTypeChange);
+        r.addEventListener('change', handleConnectionTypeChange);
+    });
+    
+    netOptimizerRadios.forEach(r => {
+        r.removeEventListener('change', handleNetOptimizerChange);
+        r.addEventListener('change', handleNetOptimizerChange);
+    });
+    
+    netOptimizerModeRadios.forEach(r => {
+        r.removeEventListener('change', handleNetOptimizerModeChange);
+        r.addEventListener('change', handleNetOptimizerModeChange);
     });
 }
 
