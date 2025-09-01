@@ -145,31 +145,32 @@ add_list firewall.@zone[1].network="\${MAPE6}"
 set firewall.@zone[1].masq='1'
 set firewall.@zone[1].mtu_fix='1'
 MAPE_EOF
-    [ -n "\${mape_gua_mode}" ] && uci -q set network.\${MAPE6}.ip6prefix="\${mape_gua_prefix}"
+[ -n "\${mape_gua_mode}" ] && uci -q set network.\${MAPE6}.ip6prefix="\${mape_gua_prefix}"
+# github.com/fakemanhk/openwrt-jp-ipoe
 MAP_SH="/lib/netifd/proto/map.sh"
 grep -q '^DONT_SNAT_TO=' "$MAP_SH" || sed -i '1iDONT_SNAT_TO="0"' "$MAP_SH"
 sed -i 's/json_add_int mtu "${mtu:-1280}"/json_add_int mtu "${mtu:-1460}"/' "$MAP_SH"
 sed -i '/for portset in $(eval "\$RULE_${k}_PORTSETS"); do/,/done/d' "$MAP_SH"
 sed -i '/^[[:space:]]*else/ a\
-local portcount=0\
-local allports=""\
-for portset in $(eval "echo \$RULE_${k}_PORTSETS"); do\
-local startport=$(echo $portset | cut -d"-" -f1);\
-local endport=$(echo $portset | cut -d"-" -f2);\
-for x in $(seq $startport $endport); do\
-if ! echo "$DONT_SNAT_TO" | tr " " "\n" | grep -qw $x; then\
-allports="$allports $portcount : $x , ";\
-portcount=`expr $portcount + 1`;\
-fi;\
-done;\
-done;\
-allports=${allports%??};\
-if nft list tables | grep -q "table inet mape"; then nft delete table inet mape; fi;\
-nft add table inet mape;\
-nft add chain inet mape srcnat {type nat hook postrouting priority 0\; policy accept\; };\
-for proto in icmp tcp udp; do\
-nft add rule inet mape srcnat ip protocol $proto oifname "map-$cfg" snat ip to $(eval "echo \$RULE_${k}_IPV4ADDR") : numgen inc mod $portcount map { $allports };\
-done' "$MAP_SH"	
+    local portcount=0\
+    local allports=""\
+    for portset in $(eval "echo \$RULE_${k}_PORTSETS"); do\
+        local startport=$(echo $portset | cut -d"-" -f1);\
+        local endport=$(echo $portset | cut -d"-" -f2);\
+        for x in $(seq $startport $endport); do\
+            if ! echo "$DONT_SNAT_TO" | tr " " "\n" | grep -qw $x; then\
+                allports="$allports $portcount : $x , ";\
+                portcount=`expr $portcount + 1`;\
+            fi;\
+        done;\
+    done;\
+    allports=${allports%??};\
+    if nft list tables | grep -q "table inet mape"; then nft delete table inet mape; fi;\
+    nft add table inet mape;\
+    nft add chain inet mape srcnat {type nat hook postrouting priority 0\; policy accept\; };\
+    for proto in icmp tcp udp; do\
+        nft add rule inet mape srcnat ip protocol $proto oifname "map-$cfg" snat ip to $(eval "echo \$RULE_${k}_IPV4ADDR") : numgen inc mod $portcount map { $allports };\
+    done' "$MAP_SH"
 }
 [ -n "\${ap_ip_address}" ] && {
     uci -q batch <<AP_EOF
