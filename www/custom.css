@@ -34,6 +34,11 @@
     resize: both;
 }
 
+#asu-packages,
+#postinst-content {
+    resize: both;
+}
+
 .form-group input:focus,
 .form-group select:focus,
 .form-group textarea:focus {
