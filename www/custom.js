@@ -248,8 +248,14 @@ function generatePackageSelector() {
             
             const label = document.createElement('label');
             label.setAttribute('for', `pkg-${pkg.id}`);
-            label.innerHTML = `<span class="package-link">${pkg.id}</span>`;
             
+            const link = document.createElement('a');
+            link.href = config.package_url.replace("{id}", encodeURIComponent(pkg.id));
+            link.target = '_blank';
+            link.className = 'package-link';
+            link.textContent = pkg.id;
+            
+            label.appendChild(link);
             packageItem.appendChild(checkbox);
             packageItem.appendChild(label);
             
@@ -273,7 +279,14 @@ function generatePackageSelector() {
                     
                     const depLabel = document.createElement('label');
                     depLabel.setAttribute('for', `pkg-${depId}`);
-                    depLabel.textContent = depId;
+                    
+                    const depLink = document.createElement('a');
+                    depLink.href = config.package_url.replace("{id}", encodeURIComponent(depId));
+                    depLink.target = '_blank';
+                    depLink.className = 'package-link';
+                    depLink.textContent = depId;
+                    
+                    depLabel.appendChild(depLink);
                     
                     depItem.appendChild(depCheck);
                     depItem.appendChild(depLabel);
