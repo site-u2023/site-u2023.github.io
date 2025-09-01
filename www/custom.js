@@ -208,8 +208,13 @@ function createPackageCheckbox(pkgId, pkgName, isChecked = false, dependencies =
 
 // 単一のチェックボックスを作成するヘルパー関数
 function createSingleCheckbox(pkgId, pkgName, isChecked = false, dependencies = null) {
-    const formCheck = document.createElement('div');
-    formCheck.className = 'form-check';
+    const label = document.createElement('label');
+    label.className = 'form-check-label';
+    label.setAttribute('for', `pkg-${pkgId}`);
+    label.style.display = 'flex';
+    label.style.alignItems = 'center';
+    label.style.gap = '0.5em';
+    label.style.cursor = 'pointer';
     
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
@@ -224,21 +229,16 @@ function createSingleCheckbox(pkgId, pkgName, isChecked = false, dependencies = 
     }
     checkbox.addEventListener('change', handlePackageSelection);
     
-    const label = document.createElement('label');
-    label.className = 'form-check-label';
-    label.setAttribute('for', `pkg-${pkgId}`);
-    
     const link = document.createElement('a');
     link.href = config.package_url.replace("{id}", encodeURIComponent(pkgId));
     link.target = '_blank';
     link.className = 'package-link';
     link.textContent = pkgId;
     
+    label.appendChild(checkbox);
     label.appendChild(link);
-    formCheck.appendChild(checkbox);
-    formCheck.appendChild(label);
     
-    return formCheck;
+    return label;
 }
 
 // 修正版のgeneratePackageSelector（依存パッケージの重複処理を削除）
