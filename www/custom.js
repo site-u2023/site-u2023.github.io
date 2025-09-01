@@ -358,6 +358,7 @@ function updatePackageListFromSelector() {
         });
         const newList = [...nonSelectorPkgs, ...checkedPkgs];
         textarea.value = newList.join(' ');
+        autoResizeTextarea(textarea);
     }
 }
 
