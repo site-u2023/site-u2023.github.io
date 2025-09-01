@@ -120,7 +120,7 @@ function initializeCustomFeatures(asuSection, temp) {
     hookOriginalFunctions();
     setupEventListeners();
     
-    // setup.shを自動読み込み
+    // UCI-defaults自動読み込み
     loadUciDefaultsTemplate();
     
     // パッケージデータベースを読み込み
