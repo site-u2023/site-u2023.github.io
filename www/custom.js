@@ -451,7 +451,6 @@ function loadUciDefaultsTemplate() {
         })
         .then(text => {
             textarea.value = text;
-            autoResizeTextarea(textarea);
             console.log('setup.sh loaded successfully');
         })
         .catch(err => {
