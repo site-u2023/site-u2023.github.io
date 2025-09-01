@@ -19,6 +19,9 @@ var config = {
 
   // Info link URL (optional)
   info_url: "https://openwrt.org/start?q={title}&do=search",
+  
+  // Package search URL (optional)
+  package_url: "https://openwrt.org/start?do=search&q={id}",
 
   // Attended Sysupgrade Server support (optional)
   asu_url: "https://sysupgrade.openwrt.org",
