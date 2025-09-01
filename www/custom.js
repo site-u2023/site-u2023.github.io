@@ -268,7 +268,7 @@ function generatePackageSelector() {
                     if (!availablePackages.has(depName)) return;
                     
                     const depItem = document.createElement('div');
-                    depItem.className = 'package-dependent';
+                    depItem.className = 'package-item';
                     
                     const depCheck = document.createElement('input');
                     depCheck.type = 'checkbox';
@@ -287,7 +287,6 @@ function generatePackageSelector() {
                     depLink.textContent = depId;
                     
                     depLabel.appendChild(depLink);
-                    
                     depItem.appendChild(depCheck);
                     depItem.appendChild(depLabel);
                     packageItem.appendChild(depItem);
