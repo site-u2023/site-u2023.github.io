@@ -450,7 +450,7 @@ function setupAutoResizeTextarea(selector) {
     }
 
     // 初期設定
-    textarea.style.resize = 'vertical';
+    textarea.style.resize = 'both';
     
     // イベントリスナー設定
     textarea.addEventListener('input', autoResize);
