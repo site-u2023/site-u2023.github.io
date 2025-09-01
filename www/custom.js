@@ -446,10 +446,11 @@ function customSetupUciDefaults() {
         .catch(err => showAlert(err.message));
 }
 
-// 自動リサイズ対応のテキストエリア共通関数
-function setupAutoResizeTextarea(selector, minRows = 2) {
-    const textarea = document.querySelector(selector);
-    if (!textarea) return;
+// UCI-defaultsテキストエリアをリサイズする関数
+function loadUciDefaultsTemplate() {
+    console.log('loadUciDefaultsTemplate called');
+    const textarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
+    if (!textarea || !config?.uci_defaults_setup_url) return;
 
     // 自動リサイズ関数
     function autoResize() {
@@ -463,18 +464,6 @@ function setupAutoResizeTextarea(selector, minRows = 2) {
     // イベントリスナー設定
     textarea.addEventListener('input', autoResize);
     textarea.addEventListener('paste', () => setTimeout(autoResize, 10));
-    
-    // 初期リサイズ
-    autoResize();
-    
-    return textarea;
-}
-
-// UCI-defaultsテキストエリアをリサイズする関数
-function loadUciDefaultsTemplate() {
-    console.log('loadUciDefaultsTemplate called');
-    const textarea = setupAutoResizeTextarea("#custom-scripts-details #uci-defaults-content");
-    if (!textarea || !config?.uci_defaults_setup_url) return;
 
     fetch(config.uci_defaults_setup_url)
         .then(r => { 
@@ -483,9 +472,8 @@ function loadUciDefaultsTemplate() {
         })
         .then(text => {
             textarea.value = text;
-            // コンテンツ読み込み後に自動リサイズ
-            const lines = text.split('\n').length;
-            textarea.rows = lines + 1;
+            // コンテンツ読み込み後にリサイズ
+            autoResize();
             console.log('setup.sh loaded successfully');
         })
         .catch(err => {
