@@ -438,10 +438,34 @@ function customSetupUciDefaults() {
         .catch(err => showAlert(err.message));
 }
 
+// 自動リサイズ対応のテキストエリア共通関数
+function setupAutoResizeTextarea(selector) {
+    const textarea = document.querySelector(selector);
+    if (!textarea) return;
+
+    // 自動リサイズ関数
+    function autoResize() {
+        const lines = textarea.value.split('\n').length;
+        textarea.rows = lines + 1;
+    }
+
+    // 初期設定
+    textarea.style.resize = 'vertical';
+    
+    // イベントリスナー設定
+    textarea.addEventListener('input', autoResize);
+    textarea.addEventListener('paste', () => setTimeout(autoResize, 10));
+    
+    // 初期リサイズ
+    autoResize();
+    
+    return textarea;
+}
+
 // setup.shを自動読み込みする関数
 function loadUciDefaultsTemplate() {
     console.log('loadUciDefaultsTemplate called');
-    const textarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
+    const textarea = setupAutoResizeTextarea("#custom-scripts-details #uci-defaults-content");
     if (!textarea || !config?.uci_defaults_setup_url) return;
 
     fetch(config.uci_defaults_setup_url)
@@ -451,6 +475,9 @@ function loadUciDefaultsTemplate() {
         })
         .then(text => {
             textarea.value = text;
+            // コンテンツ読み込み後に再リサイズ
+            const lines = text.split('\n').length;
+            textarea.rows = lines + 1;
             console.log('setup.sh loaded successfully');
         })
         .catch(err => {
