@@ -500,8 +500,14 @@ function initializePostinstTextarea() {
         textarea.value = initialValue;
     }
     
-    // 現在の内容に応じて自動リサイズ
-    if (textarea.value) {
+    // data-initial の内容を強制的に反映してリサイズ
+    const initialValue = textarea.getAttribute('data-initial');
+    if (initialValue) {
+        textarea.value = initialValue;
+        const lines = initialValue.split('\n').length;
+        textarea.rows = lines + 1;
+    } else if (textarea.value) {
+        // 既存の内容がある場合もリサイズ
         const lines = textarea.value.split('\n').length;
         textarea.rows = lines + 1;
     }
