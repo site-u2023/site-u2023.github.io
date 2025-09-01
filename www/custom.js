@@ -628,14 +628,17 @@ function hide(el) {
 }
 
 function setValue(selector, val) {
-    const el = document.querySelector(selector);
-    if (el) {
-        if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
-            el.value = val;
-        } else {
-            el.innerText = val;
-        }
-    }
+    const el = document.querySelector(selector);
+    if (el) {
+        if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+            el.value = val;
+            if (el.tagName === 'TEXTAREA') {
+                autoResizeTextarea(el);
+            }
+        } else {
+            el.innerText = val;
+        }
+    }
 }
 
 function showAlert(message) {
@@ -681,3 +684,28 @@ function initDeviceTranslation() {
     // 初期化トリガー
     select.onchange();
 }
+
+// テキストエリアを自動リサイズする関数
+function autoResizeTextarea(textarea) {
+  if (textarea) {
+    textarea.style.height = 'auto'; // 一度高さをリセット
+    textarea.style.height = textarea.scrollHeight + 'px'; // コンテンツ全体に高さを合わせる
+  }
+}
+
+// uci-defaultsとpostinstの自動リサイズを設定
+function setupAutoResize() {
+  const uciDefaultsTextarea = document.getElementById('uci-defaults-content');
+  const postinstTextarea = document.getElementById('postinst-content');
+
+  // inputイベントでリサイズ
+  if (uciDefaultsTextarea) {
+    uciDefaultsTextarea.addEventListener('input', () => autoResizeTextarea(uciDefaultsTextarea));
+  }
+  if (postinstTextarea) {
+    postinstTextarea.addEventListener('input', () => autoResizeTextarea(postinstTextarea));
+  }
+}
+
+// ページ読み込み完了時に自動リサイズを設定
+document.addEventListener('DOMContentLoaded', setupAutoResize);
