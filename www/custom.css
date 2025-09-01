@@ -197,9 +197,6 @@ details[open] summary {
 
 .package-dependent {
   margin-left: 1.5em;
-  margin-top: 0.5em;
-  padding-left: 1em;
-  border-left: 2px solid #00a3e1;
 }
 
 /* ===== Configuration Sections ===== */
@@ -353,10 +350,6 @@ details[open] summary {
   .package-category-description,
   .package-description {
     color: #999;
-  }
-  
-  .package-dependent {
-    border-left-color: #0080b3;
   }
 }
 
