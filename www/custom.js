@@ -498,8 +498,11 @@ function initializePostinstTextarea() {
     const initialValue = textarea.getAttribute('data-initial');
     if (initialValue && !textarea.value) {
         textarea.value = initialValue;
-        // コンテンツ設定後に自動リサイズ
-        const lines = initialValue.split('\n').length;
+    }
+    
+    // 現在の内容に応じて自動リサイズ
+    if (textarea.value) {
+        const lines = textarea.value.split('\n').length;
         textarea.rows = lines + 1;
     }
     
