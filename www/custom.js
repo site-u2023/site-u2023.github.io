@@ -114,6 +114,9 @@ function initializeCustomFeatures(asuSection, temp) {
     
     // setup.shを自動読み込み
     loadUciDefaultsTemplate();
+
+    // Postinstテキストエリアを初期化
+    initializePostinstTextarea();
     
     // パッケージデータベースを読み込み
     loadPackageDatabase();
