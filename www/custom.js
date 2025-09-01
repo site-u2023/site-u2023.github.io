@@ -117,6 +117,9 @@ function initializeCustomFeatures(asuSection, temp) {
     
     // パッケージデータベースを読み込み
     loadPackageDatabase();
+
+    // デバイス用言語セレクター初期化
+    initDeviceTranslation();
     
     // 初期化完了フラグ
     customInitialized = true;
@@ -650,4 +653,31 @@ if (document.readyState === 'loading') {
     });
 } else {
     fetchAndDisplayIspInfo();
+}
+
+// デバイス用言語セレクター初期化関数
+function initDeviceTranslation() {
+    const select = document.querySelector("#aios-language");
+    if (!select) return;
+
+    // 初期言語設定
+    const long = (navigator.language || navigator.userLanguage).toLowerCase();
+    const short = long.split("-")[0];
+
+    if (select.querySelector(`[value="${long}"]`)) {
+        select.value = long;
+    } else if (select.querySelector(`[value="${short}"]`)) {
+        select.value = short;
+    } else {
+        select.value = current_language; // 公式と同じ fallback
+    }
+
+    // onchange 処理
+    select.onchange = function () {
+        const option = select.options[select.selectedIndex];
+        saveConfig("language", option.value);
+    };
+
+    // 初期化トリガー
+    select.onchange();
 }
