@@ -17,6 +17,14 @@ const originalUpdateImages = window.updateImages;
 window.updateImages = function(version, mobj) {
     if (originalUpdateImages) originalUpdateImages(version, mobj);
     
+    // パッケージリストが設定された後にリサイズを実行
+    if (mobj && "manifest" in mobj === false) {
+        // 少し遅延させて DOM 更新後にリサイズ
+        setTimeout(() => {
+            resizePostinstTextarea();
+        }, 100);
+    }
+    
     // 初回のみ custom.html を読み込む
     if (!customHTMLLoaded) {
         console.log("updateImages finished, now load custom.html");
@@ -485,27 +493,23 @@ function loadUciDefaultsTemplate() {
         });
 }
 
-// Postinstテキストエリアを初期化する関数
-function initializePostinstTextarea() {
-    console.log('initializePostinstTextarea called');
-    const textarea = setupAutoResizeTextarea("#custom-packages-section #asu-packages");
-    if (!textarea || !config?.packages_db_url) return;
-
-    fetch(config.packages_db_url)
-        .then(r => { 
-            if (!r.ok) throw new Error(r.statusText); 
-            return r.text(); 
-        })
-        .then(text => {
-            textarea.value = text;
-            // コンテンツ読み込み後に自動リサイズ
-            const lines = text.split('\n').length;
-            textarea.rows = lines + 1;
-            console.log('packages.json loaded successfully');
-        })
-        .catch(err => {
-            console.error('Failed to load packages.json:', err);
-        });
+// Postinstテキストエリアをリサイズする関数
+function resizePostinstTextarea() {
+    const textarea = document.querySelector("#asu-packages");
+    if (!textarea || !textarea.value) return;
+    
+    // パッケージリストの内容に応じて自動リサイズ
+    const content = textarea.value;
+    const packages = content.split(/\s+/).filter(p => p.length > 0);
+    
+    // パッケージ数に応じて行数を計算（1行あたり約80文字として）
+    const avgLineLength = 80;
+    const totalLength = content.length;
+    const estimatedLines = Math.max(2, Math.ceil(totalLength / avgLineLength));
+    
+    textarea.rows = Math.min(estimatedLines + 1, 15); // 最大15行に制限
+    
+    console.log(`Postinst textarea resized: ${packages.length} packages, ${estimatedLines} lines`);
 }
 
 // イベントリスナー設定
