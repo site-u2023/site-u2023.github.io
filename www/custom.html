@@ -54,65 +54,9 @@
             autocapitalize="off">
         </div>
       </div>
-
-      <div class="basic-features-container config-section">
-        <h4>Basic System Features</h4>
-        <p class="text-muted">Terminal access and file transfer tools</p>
-        <div class="feature-grid">
-          <div class="feature-item">
-            <input type="checkbox" id="luci-app-ttyd" checked>
-            <label for="luci-app-ttyd">luci-app-ttyd</label>
-          </div>
-          <div class="feature-item">
-            <input type="checkbox" id="openssh-sftp-server" checked>
-            <label for="openssh-sftp-server">openssh-sftp-server</label>
-          </div>
-          <div class="feature-item">
-            <input type="checkbox" id="luci-app-commands">
-            <label for="luci-app-commands">luci-app-commands</label>
-          </div>
-          <div class="feature-item">
-            <input type="checkbox" id="luci-app-filebrowser">
-            <label for="luci-app-filebrowser">luci-app-filebrowser</label>
-          </div>
-        </div>
-      </div>
-
-      <div class="system-management-container config-section">
-        <h4>System Management</h4>
-        <p class="text-muted">CPU interrupt balancing for multi-core systems</p>
-        <div class="system-management-grid">
-          <div class="feature-item">
-            <input type="checkbox" id="luci-app-irqbalance">
-            <label for="luci-app-irqbalance">luci-app-irqbalance</label>
-          </div>
-        </div>
-      </div>
-
-      <div class="network-management-container config-section">
-        <h4>Network Management</h4>
-        <p class="text-muted">QoS, bandwidth monitoring, Wi-Fi scheduling, and network utilities</p>
-        <div class="feature-grid">
-          <div class="feature-item">
-            <input type="checkbox" id="luci-app-sqm">
-            <label for="luci-app-sqm">luci-app-sqm</label>
-          </div>
-          <div class="feature-item">
-            <input type="checkbox" id="luci-app-nlbwmon">
-            <label for="luci-app-nlbwmon">luci-app-nlbwmon</label>
-          </div>
-          <div class="feature-item">
-            <input type="checkbox" id="luci-app-wifischedule">
-            <label for="luci-app-wifischedule">luci-app-wifischedule</label>
-          </div>
-          <div class="feature-item">
-            <input type="checkbox" id="luci-app-upnp">
-            <label for="luci-app-upnp">luci-app-upnp</label>
-          </div>
-        </div>
-      </div>
       
       <div id="package-categories">
+        <!-- JSONから動的に生成される -->
       </div>
       
       <details id="postinst-details" class="config-section">
