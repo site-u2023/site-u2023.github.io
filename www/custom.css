@@ -15,7 +15,6 @@
   --bg-item: #fafafa;
   --bg-item-hover: #f0f0f0;
   --bg-details: #f9f9f9;
-  --bg-connection: #f8f9fa;
   --bg-warning: #fff3cd;
   
   --border-main: #e0e0e0;
@@ -38,7 +37,6 @@
     --bg-item: #2a2a2d;
     --bg-item-hover: #3a3a3e;
     --bg-details: #2a2a2d;
-    --bg-connection: #2a2a2d;
     --bg-warning: #3d3319;
     
     --border-main: #444;
@@ -322,7 +320,7 @@ details summary h4 {
 #ap-section {
   margin-top: 1em;
   padding: 1em;
-  background-color: var(--bg-connection);
+  background-color: var(--bg-main);  /* bodyと同じ背景色 */
   border: 1px solid var(--border-connection);
   border-radius: 0.25em;
 }
