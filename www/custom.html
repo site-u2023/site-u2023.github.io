@@ -171,7 +171,6 @@
             <input type="text" id="aios-lan-ipv6" placeholder="fd00::1/64">
           </div>
         </div>
-      </div>
 
         <div class="form-row">
           <div class="form-group">
@@ -333,6 +332,9 @@
                   <label class="form-check-label" for="mape-pd">PD</label>
                 </div>
               </div>
+              <small class="text-muted">
+                <strong>Auto (Recommended)</strong>: Automatically retrieves MAP-E configuration
+              </small>
             </div>
             
             <div class="form-row">
@@ -408,9 +410,9 @@
             </div>
           </div>
         </div>
+      </div>
 
-        <div class="package-category">
-        <!-- 修正: h4 → h5 -->
+      <div class="config-section">
         <h5>Tuning</h5>
         <div class="form-group">
           <label>Dynamic Network Optimizer</label>
@@ -428,7 +430,6 @@
         </div>
 
         <div id="net-optimizer-section" class="conditional-section" style="display: block;">
-          <!-- 追加 -->
           <div class="form-group">
             <label>Configuration Mode</label>
             <div class="radio-group">
@@ -444,7 +445,6 @@
             <small class="form-text text-muted">Auto mode adjusts parameters based on system resources</small>
           </div>
 
-          <!-- 追加 -->
           <div id="net-optimizer-manual" class="conditional-section">
             <div class="form-row">
               <div class="form-group">
