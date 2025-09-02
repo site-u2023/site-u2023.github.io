@@ -42,7 +42,7 @@
       <h3 class="tr-packages">Installed Packages</h3>
     </summary>
     <div id="package-selector-config">
-      <div class="package-search-container">
+      <div class="package-search-container package-category">
         <h4>Package Search</h4>
         <p class="text-muted">Select extra packages to install. They'll be added to the list below.</p>
         <div id="package-search-autocomplete" class="autocomplete">
@@ -58,7 +58,7 @@
       <div id="package-categories">
       </div>
       
-      <details id="postinst-details">
+      <details id="postinst-details" class="package-category">
         <summary>
           <h4>Postinst (Package installation script)</h4>
         </summary>
@@ -80,7 +80,7 @@
       <h3 class="tr-defaults">Script to run on first boot (uci-defaults)</h3>
     </summary>
     <div id="scripts-config">
-      <div class="commands-container">
+      <div class="commands-container package-category">
         <h4>Add commands</h4>
         <p class="text-muted">Add custom shell commands that run on first boot.</p>
         <div id="commands-autocomplete" class="autocomplete">
@@ -486,7 +486,7 @@
         </div>
       </div>
 
-      <details id="uci-defaults-details">
+      <details id="uci-defaults-details" class="package-category">
         <summary>
           <h4>UCI-defaults (Boot configuration script)</h4>
         </summary>
