@@ -210,7 +210,7 @@ details[open] summary {
 
 /* ===== Configuration Sections ===== */
 .config-section {
-  margin: 1.5em 0;
+  margin: 0 0 1.5em 0;
   padding: 1em;
   background-color: #fff;
   border: 1px solid #e0e0e0;
