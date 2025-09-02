@@ -273,6 +273,7 @@ details summary h4 {
   border-radius: 0.25em;
 }
 
+#dhcp-section,
 #pppoe-section,
 #dslite-section,
 #mape-section,
@@ -282,6 +283,10 @@ details summary h4 {
   background-color: #f8f9fa;
   border: 1px solid #dee2e6;
   border-radius: 0.25em;
+}
+
+#internet-config {
+  padding-bottom: 1.5em;
 }
 
 /* ===== Commands Autocomplete ===== */
