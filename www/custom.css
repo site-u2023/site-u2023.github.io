@@ -358,6 +358,8 @@ details summary h4 {
 
 /* ===== Dark Mode Support ===== */
 @media (prefers-color-scheme: dark) {
+
+  /* === Form Inputs === */
   .form-group input,
   .form-group select,
   .form-group textarea {
@@ -365,66 +367,73 @@ details summary h4 {
     color: #d0d0d0;
     border-color: #444;
   }
-  
+
   .form-group input:focus,
   .form-group select:focus,
   .form-group textarea:focus {
     background-color: #3a3a3e;
     border-color: var(--owrt-blue);
   }
-  
-  details[open] summary {
-    border-bottom-color: #444;
-  }
-  
-  #packages-details,
-  #scripts-details {
-    background-color: #2a2a2d;
-  }
-  
-  .package-category {
-    background-color: #313135;
-    border-color: #444;
-  }
-  
-  .package-item {
-    background-color: #2a2a2d;
-  }
-  
-  .package-item:hover {
-    background-color: #3a3a3e;
+
+  .form-group small {
+    color: #999;
   }
 
-  .feature-item {
-    background-color: #2a2a2d;
-  }
-  
-  .feature-item:hover {
-    background-color: #3a3a3e;
-  }
-  
+  /* === Config Sections === */
   .config-section {
     background-color: #313135;
     border-color: #444;
   }
-  
+
   .config-section h4 {
-    border-bottom-color: var(--owrt-blue);
     color: var(--owrt-white);
+    border-bottom-color: var(--owrt-blue);
   }
-  
+
+  /* === Details Summary === */
+  details[open] summary {
+    border-bottom-color: #444;
+  }
+
+  /* === Package & Script Sections === */
+  #packages-details,
+  #scripts-details {
+    background-color: #2a2a2d;
+  }
+
+  .package-category {
+    background-color: #313135;
+    border-color: #444;
+  }
+
+  .package-category-description,
+  .package-description {
+    color: #999;
+  }
+
+  .package-item,
+  .feature-item {
+    background-color: #2a2a2d;
+  }
+
+  .package-item:hover,
+  .feature-item:hover {
+    background-color: #3a3a3e;
+  }
+
+  /* === Internet Connection Sections === */
   #manual-connection-section {
     background-color: #3d3319;
     border-color: #5a4d1f;
   }
-  
+
   #pppoe-section,
   #dslite-section,
   #mape-section {
     background-color: #2a2a2d;
     border-color: #444;
   }
-  
+
   #isp-info-row,
   #isp-timezone-row,
   #isp-isp-row,
@@ -432,15 +441,6 @@ details summary h4 {
   #isp-ip-row,
   #isp-connection-row {
     background-color: #1a3a4a;
-  }
-  
-  .form-group small {
-    color: #999;
-  }
-  
-  .package-category-description,
-  .package-description {
-    color: #999;
   }
 }
 
