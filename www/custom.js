@@ -536,12 +536,14 @@ function handleConnectionModeChange(e) {
 // 接続タイプ変更
 function handleConnectionTypeChange(e) {
     hide("#auto-section");
+    hide("#dhcp-section");
     hide("#pppoe-section");
     hide("#dslite-section");
     hide("#mape-section");
     hide("#ap-section");
 
     if (e.target.value === 'auto') show("#auto-section");
+    else if (e.target.value === 'dhcp') show("#dhcp-section");
     else if (e.target.value === 'pppoe') show("#pppoe-section");
     else if (e.target.value === 'dslite') show("#dslite-section");
     else if (e.target.value === 'mape') show("#mape-section");
