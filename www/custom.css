@@ -88,10 +88,6 @@
   resize: both;
 }
 
-textarea {
-  resize: both;
-}
-
 .form-group small {
   display: block;
   margin-top: 0.25em;
