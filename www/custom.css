@@ -2,10 +2,17 @@
 /* Inherits from index.css */
 
 :root {
+  /* ベースカラー（他のUI要素でも使用） */
   --owrt-blue: #00B5E2;     /* PANTONE 306 C */
   --owrt-navy: #003E54;     /* PANTONE 7463 C */
   --owrt-black: #231F20;    /* PANTONE 419 C */
   --owrt-white: #FFFFFF;
+
+  /* 入力欄専用カラー（index.css 由来の継承色） */
+  --owrt-input-bg: #f1f1f1;
+  --owrt-input-border: #d4d4d4;
+  --owrt-input-focus-bg: var(--owrt-white);
+  --owrt-input-focus-border: var(--owrt-blue);
 }
 
 /* ===== Form Elements ===== */
@@ -25,41 +32,63 @@
   font-weight: 500;
 }
 
+/* ===== Input Styling with Variables ===== */
 .form-group input,
 .form-group select,
-.form-group textarea {
+.form-group textarea,
+#package-search-autocomplete input,
+#commands-autocomplete input {
   width: 100%;
   padding: 0.5em;
-  border: 1px solid #d4d4d4;
+  border: 1px solid var(--owrt-input-border);
   border-radius: 0.2em;
-  background-color: #f1f1f1;
+  background-color: var(--owrt-input-bg);
   font-size: inherit;
+}
+
+/* ===== Focus Styling with Variables ===== */
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus,
+#package-search-autocomplete input:focus,
+#commands-autocomplete input:focus {
+  outline: none;
+  border-color: var(--owrt-input-focus-border);
+  background-color: var(--owrt-input-focus-bg);
 }
 
 #uci-defaults-content,
 #postinst-content {
-    resize: both;
+  resize: both;
 }
 
 #asu-packages,
 #postinst-content {
-    resize: both;
+  resize: both;
 }
-
-.form-group input:focus,
-.form-group select:focus,
-.form-group textarea:focus {
-  outline: none;
-  border-color: var(--owrt-blue);
-  background-color: var(--owrt-white);
-}
-
 
 .form-group small {
   display: block;
   margin-top: 0.25em;
   color: #6c757d;
   font-size: 0.875em;
+}
+
+/* ===== Autocomplete Inputs (継承色の明示適用) ===== */
+#package-search-autocomplete input,
+#commands-autocomplete input {
+  background-color: #f1f1f1;
+  border: 1px solid #d4d4d4;
+  padding: 0.5em;
+  border-radius: 0.2em;
+  font-size: inherit;
+}
+
+#package-search-autocomplete input:focus,
+#commands-autocomplete input:focus {
+  outline: none;
+  border-color: var(--owrt-blue);
+  background-color: var(--owrt-white);
 }
 
 /* ===== Radio Groups ===== */
