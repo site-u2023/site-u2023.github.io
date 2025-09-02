@@ -138,12 +138,15 @@ details[open] summary {
 }
 
 .package-category {
-  margin-bottom: 1.5em;
   padding: 1em;
   background-color: #fff;
   border: 1px solid #e0e0e0;
   border-radius: 0.25em;
   box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.package-category + .package-category {
+  margin-top: 1.5em;
 }
 
 .package-category h5 {
