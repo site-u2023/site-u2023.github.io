@@ -30,13 +30,8 @@
 }
 
 #uci-defaults-content,
-#postinst-content {
-    resize: both;
-}
-
-#asu-packages,
-#postinst-content {
-    resize: both;
+#asu-packages {
+  resize: both;
 }
 
 .form-group input:focus,
@@ -70,10 +65,6 @@
 }
 
 /* ===== Details/Summary Styling ===== */
-details {
-  margin-top: 1em;
-}
-
 details summary {
   cursor: pointer;
   padding: 0.75em 0;
@@ -85,77 +76,49 @@ details summary:hover {
 }
 
 details summary h3,
-details summary h4,
-details summary h5 {
+details summary h4 {
   display: inline;
   margin: 0;
   font-weight: 500;
 }
 
-details[open] summary {
-  margin-bottom: 1em;
-}
-
-#packages-details,
-#scripts-details {
-  margin-top: 1.5em;
+/* ===== Configuration Sections ===== */
+.config-section {
   padding: 1em;
-  background-color: #f9f9f9;
+  background-color: #fff;
+  border: 1px solid #e0e0e0;
   border-radius: 0.25em;
 }
 
-#postinst-details,
-#uci-defaults-details {
+.config-section + .config-section {
   margin-top: 1em;
-  padding: 0.5em;
 }
 
-/* ===== ISP Information Display ===== */
-#isp-info-row,
-#isp-timezone-row,
-#isp-isp-row,
-#isp-as-row,
-#isp-ip-row,
-#isp-connection-row {
-  background-color: #e3f2fd;
-  margin: 0.25em 0;
-  padding: 0.5em 1.5em;
-  border-radius: 0.2em;
+.config-section h4 {
+  margin-top: 0;
+  margin-bottom: 1em;
+  padding-bottom: 0.5em;
+  border-bottom: 2px solid #00a3e1;
+  color: #333;
 }
 
-/* ===== Package Selector ===== */
-#package-selector-config {
-  padding: 1em;
-}
-
-#package-search-autocomplete {
-  position: relative;
-  margin-bottom: 1.5em;
-}
-
-#package-categories {
-  margin: 1em 0;
-}
-
+/* ===== Package Categories ===== */
 .package-category {
   padding: 1em;
   background-color: #fff;
   border: 1px solid #e0e0e0;
   border-radius: 0.25em;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
 
+.package-category + .package-category {
+  margin-top: 1em;
+}
+
+.package-category h4,
 .package-category h5 {
   margin-top: 0;
   margin-bottom: 0.75em;
   color: #333;
-  font-size: 1.1em;
-}
-
-.package-category-description {
-  margin-bottom: 1em;
-  color: #666;
-  font-size: 0.9em;
 }
 
 .package-grid {
@@ -187,70 +150,13 @@ details[open] summary {
   margin: 0;
 }
 
-.package-link {
-  color: #00a3e1;
-  text-decoration: none;
-  font-weight: 500;
-}
-
-.package-link:hover {
-  text-decoration: underline;
-}
-
-.package-description {
-  margin-left: 1.5em;
-  margin-top: 0.25em;
-  color: #666;
-  font-size: 0.85em;
-}
-
-.package-dependent {
-  margin-left: 1.5em;
-}
-
-/* ===== Configuration Sections ===== */
-.config-section {
-  margin: 0 0 1.5em 0;
-  padding: 1em;
-  background-color: #fff;
-  border: 1px solid #e0e0e0;
-  border-radius: 0.25em;
-}
-
-.config-section h4 {
-  margin-top: 0;
-  margin-bottom: 1em;
-  padding-bottom: 0.5em;
-  border-bottom: 2px solid #00a3e1;
-  color: #333;
-}
-
-/* ===== Connection Type Sections ===== */
-#manual-connection-section {
-  margin-top: 1em;
-  padding: 1em;
-  background-color: #fff3cd;
-  border: 1px solid #ffeaa7;
-  border-radius: 0.25em;
-}
-
-#pppoe-section,
-#dslite-section,
-#mape-section {
+/* ===== Connection Config Sections ===== */
+.connection-config {
   margin-top: 1em;
   padding: 1em;
   background-color: #f8f9fa;
   border: 1px solid #dee2e6;
   border-radius: 0.25em;
-}
-
-/* ===== Commands Autocomplete ===== */
-#commands-autocomplete {
-  position: relative;
-}
-
-#commands-autocomplete .command {
-  margin-bottom: 0.5em;
 }
 
 /* ===== Responsive Design ===== */
@@ -266,11 +172,6 @@ details[open] summary {
   
   .package-grid {
     grid-template-columns: 1fr;
-  }
-  
-  #packages-details,
-  #scripts-details {
-    padding: 0.5em;
   }
 }
 
@@ -291,13 +192,14 @@ details[open] summary {
     border-color: #0080b3;
   }
   
-  details[open] summary {
-    border-bottom-color: #444;
+  .config-section {
+    background-color: #313135;
+    border-color: #444;
   }
   
-  #packages-details,
-  #scripts-details {
-    background-color: #2a2a2d;
+  .config-section h4 {
+    border-bottom-color: #0080b3;
+    color: #d0d0d0;
   }
   
   .package-category {
@@ -313,43 +215,12 @@ details[open] summary {
     background-color: #3a3a3e;
   }
   
-  .config-section {
-    background-color: #313135;
-    border-color: #444;
-  }
-  
-  .config-section h4 {
-    border-bottom-color: #0080b3;
-    color: #d0d0d0;
-  }
-  
-  #manual-connection-section {
-    background-color: #3d3319;
-    border-color: #5a4d1f;
-  }
-  
-  #pppoe-section,
-  #dslite-section,
-  #mape-section {
+  .connection-config {
     background-color: #2a2a2d;
     border-color: #444;
   }
   
-  #isp-info-row,
-  #isp-timezone-row,
-  #isp-isp-row,
-  #isp-as-row,
-  #isp-ip-row,
-  #isp-connection-row {
-    background-color: #1a3a4a;
-  }
-  
   .form-group small {
-    color: #999;
-  }
-  
-  .package-category-description,
-  .package-description {
     color: #999;
   }
 }
@@ -357,79 +228,4 @@ details[open] summary {
 /* ===== Utility Classes ===== */
 .text-muted {
   color: #6c757d;
-}
-
-.text-small {
-  font-size: 0.875em;
-}
-
-.mt-1 { margin-top: 0.5em; }
-.mt-2 { margin-top: 1em; }
-.mt-3 { margin-top: 1.5em; }
-.mb-1 { margin-bottom: 0.5em; }
-.mb-2 { margin-bottom: 1em; }
-.mb-3 { margin-bottom: 1.5em; }
-
-.p-1 { padding: 0.5em; }
-.p-2 { padding: 1em; }
-.p-3 { padding: 1.5em; }
-
-/* ===== Animation ===== */
-details[open] > summary ~ * {
-  animation: fadeIn 0.3s ease-in-out;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* ===== Build Progress Indicator ===== */
-.build-progress {
-  margin: 1em 0;
-  padding: 1em;
-  background-color: #e3f2fd;
-  border: 1px solid #2196f3;
-  border-radius: 0.25em;
-  display: none;
-}
-
-.build-progress.active {
-  display: block;
-}
-
-.progress-bar {
-  width: 100%;
-  height: 20px;
-  background-color: #e0e0e0;
-  border-radius: 10px;
-  overflow: hidden;
-  margin-top: 0.5em;
-}
-
-.progress-bar-fill {
-  height: 100%;
-  background-color: #2196f3;
-  transition: width 0.3s ease;
-}
-
-@media (prefers-color-scheme: dark) {
-  .build-progress {
-    background-color: #1a3a4a;
-    border-color: #0080b3;
-  }
-  
-  .progress-bar {
-    background-color: #444;
-  }
-  
-  .progress-bar-fill {
-    background-color: #0080b3;
-  }
 }
