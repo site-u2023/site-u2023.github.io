@@ -1,5 +1,13 @@
 // custom.js - OpenWrt カスタム機能（パッケージ機能統合版）
 
+// IDマッピング表（旧 → 新）
+// JS内で参照している旧ID / セレクタ	HTMLでの新ID	用途
+// #asu-packages	#custom-postinst-content	Postinst（パッケージインストールスクリプト）textarea
+// #uci-defaults-content	#custom-uci-defaults-content	uci-defaults（初回起動スクリプト）textarea
+// #custom-scripts-details #uci-defaults-content	#custom-scripts-details #custom-uci-defaults-content	同上（スコープ付き）
+// #package-search	#custom-package-search	パッケージ検索入力欄
+// #command	#custom-command-input	コマンド入力欄
+
 console.log('custom.js loaded');
 
 // 初期化フラグ
