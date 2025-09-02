@@ -128,8 +128,10 @@ function initializeCustomFeatures(asuSection, temp) {
     hookOriginalFunctions();
     setupEventListeners();
     
-    // UCI-defaults自動読み込み
-    loadUciDefaultsTemplate();
+    // UCI-defaults自動読み込み（DOM描画完了後に遅延実行）
+    setTimeout(() => {
+        loadUciDefaultsTemplate();
+    }, 50);
     
     // パッケージデータベースを読み込み
     loadPackageDatabase();
@@ -441,7 +443,11 @@ function customBuildAsuRequest(request_hash) {
 function customSetupUciDefaults() {
     console.log('customSetupUciDefaults called');
     const textarea = document.querySelector("#custom-uci-defaults-content");
-    if (!textarea || !config?.uci_defaults_setup_url) return;
+    if (!textarea) {
+        console.warn("custom-uci-defaults-content が存在しないためスキップ");
+        return;
+    }
+    if (!config?.uci_defaults_setup_url) return;
 
     fetch(config.uci_defaults_setup_url)
         .then(r => { 
@@ -458,7 +464,11 @@ function customSetupUciDefaults() {
 function loadUciDefaultsTemplate() {
     console.log('loadUciDefaultsTemplate called');
     const textarea = document.querySelector("#custom-scripts-details #custom-uci-defaults-content");
-    if (!textarea || !config?.uci_defaults_setup_url) return;
+    if (!textarea) {
+        console.warn("custom-uci-defaults-content が存在しないためスキップ");
+        return;
+    }
+    if (!config?.uci_defaults_setup_url) return;
 
     // 自動リサイズ関数
     function autoResize() {
@@ -492,7 +502,10 @@ function loadUciDefaultsTemplate() {
 // Postinstテキストエリアをリサイズする関数
 function resizePostinstTextarea() {
     const textarea = document.querySelector("#custom-postinst-content");
-    if (!textarea) return;
+    if (!textarea) {
+        console.warn("custom-postinst-content が存在しないためスキップ");
+        return;
+    }
     
     // 一時的にheightをautoにして自然なサイズを取得
     textarea.style.height = 'auto';
