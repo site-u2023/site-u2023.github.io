@@ -287,7 +287,9 @@ details summary h4 {
 }
 
 #internet-config {
+  display: flow-root;
   padding-bottom: 1.5em;
+  margin-bottom: 1.5em;
 }
 
 /* ===== Commands Autocomplete ===== */
