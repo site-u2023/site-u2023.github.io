@@ -3,12 +3,30 @@
 
 :root {
   /* OpenWrt公式カラー */
-  --owrt-blue: #00B5E2;     /* PANTONE 306 C */
-  --owrt-navy: #003E54;     /* PANTONE 7463 C */  
-  --owrt-navy-alt: #002B49; /* 代替ネイビー */
-  --owrt-black: #231F20;    /* PANTONE 419 C */
-  --owrt-white: #212322;
+  --owrt-blue: #00B5E2;
+  --owrt-navy: #002B49;
+  --owrt-black: #231F20;
+  --owrt-gray: #212322;
   --owrt-white: #FFFFFF;
+  
+  /* ライトモード用カラー */
+  --bg-main: #f5f5f5;
+  --bg-section: #fff;
+  --bg-input: #f1f1f1;  /* index.cssと同じ */
+  --bg-item: #fafafa;
+  --bg-item-hover: #f0f0f0;
+  --bg-details: #f9f9f9;
+  --bg-warning: #fff3cd;
+  
+  --border-main: #e0e0e0;
+  --border-connection: #dee2e6;
+  --border-warning: #ffeaa7;
+  
+  --text-main: #000;
+  --text-secondary: #666;
+  --text-muted: #6c757d;
+  --text-header: #333;
+  --text-small: #999;
 }
 
 /* ダークモード用カラー */
@@ -16,6 +34,7 @@
   :root {
     --bg-main: #18181b;
     --bg-section: #252528;  /* index.cssのcontainer > divと同じ */
+    --bg-input: #313135;  /* index.cssと同じ */
     --bg-item: #2a2a2d;
     --bg-item-hover: #3a3a3e;
     --bg-details: #2a2a2d;
@@ -30,19 +49,6 @@
     --text-muted: #999;
     --text-header: #d0d0d0;
     --text-small: #999;
-  }
-  
-  /* インプットボックスの色をindex.cssと同じに */
-  .form-group input,
-  .form-group select,
-  .form-group textarea,
-  #package-search,
-  #command,
-  #uci-defaults-content,
-  #postinst-content,
-  #asu-packages {
-    background-color: #313135;  /* index.cssと同じ - 変更しない */
-    color: #d0d0d0;
   }
 }
 
@@ -75,8 +81,8 @@
   width: 100%;
   padding: 0.8em;
   border: 0.06em solid transparent;
-  background-color: #f1f1f1;  /* index.cssと同じ - 変更しない */
-  color: inherit;
+  background-color: var(--bg-input);
+  color: var(--text-main);
   border-radius: 0.2em;
   font-size: inherit;
 }
@@ -88,7 +94,7 @@ textarea {
 .form-group small {
   display: block;
   margin-top: 0.25em;
-  color: #6c757d;
+  color: var(--text-muted);
   font-size: 0.875em;
 }
 
@@ -105,10 +111,6 @@ textarea {
   align-items: center;
   gap: 0.25em;
   cursor: pointer;
-}
-
-.radio-group input[type="radio"]:checked {
-  accent-color: var(--owrt-blue);  /* OpenWrt公式水色 */
 }
 
 /* ===== Details/Summary Styling ===== */
@@ -144,7 +146,7 @@ details[open] summary {
 #scripts-details {
   margin-top: 1.5em;
   padding: 1em;
-  background-color: #f9f9f9;
+  background-color: var(--bg-details);
   border-radius: 0.25em;
 }
 
@@ -201,13 +203,13 @@ details[open] summary {
   align-items: center;
   gap: 0.5em;
   padding: 0.5em;
-  background-color: #fafafa;
+  background-color: var(--bg-item);
   border-radius: 0.2em;
   transition: background-color 0.2s;
 }
 
 .feature-item:hover {
-  background-color: #f0f0f0;
+  background-color: var(--bg-item-hover);
 }
 
 .feature-item input[type="checkbox"] {
@@ -235,11 +237,11 @@ details[open] summary {
 #uci-defaults-details {
   margin: 0 0 1.5em 0;
   padding: 1em;
-  background-color: #fff;  /* index.cssのcontainer > divと同じ */
-  border: 1px solid #e0e0e0;  /* index.cssと同じ */
+  background-color: var(--bg-section);
+  border: 1px solid var(--border-main);
   border-radius: 0.25em;
   box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-  color: inherit;
+  color: var(--text-main);
 }
 
 .config-section h4,
@@ -255,7 +257,7 @@ details summary h4 {
 .package-category-description,
 .package-description {
   margin-bottom: 1em;
-  color: #666;
+  color: var(--text-secondary);
   font-size: 0.9em;
 }
 
@@ -267,13 +269,13 @@ details summary h4 {
 
 .package-item {
   padding: 0.5em;
-  background-color: #fafafa;
+  background-color: var(--bg-item);
   border-radius: 0.2em;
   transition: background-color 0.2s;
 }
 
 .package-item:hover {
-  background-color: #f0f0f0;
+  background-color: var(--bg-item-hover);
 }
 
 .package-item label {
@@ -306,8 +308,8 @@ details summary h4 {
 #manual-connection-section {
   margin-top: 1em;
   padding: 1em;
-  background-color: #fff3cd;
-  border: 1px solid #ffeaa7;
+  background-color: var(--bg-warning);
+  border: 1px solid var(--border-warning);
   border-radius: 0.25em;
 }
 
@@ -319,8 +321,8 @@ details summary h4 {
 #ap-section {
   margin-top: 1em;
   padding: 1em;
-  background-color: transparent;  /* 親要素の色を透過 */
-  border: 1px solid #dee2e6;
+  background-color: transparent;
+  border: 1px solid var(--border-connection);
   border-radius: 0.25em;
 }
 
@@ -369,7 +371,7 @@ details summary h4 {
 
 /* ===== Utility Classes ===== */
 .text-muted {
-  color: #6c757d;
+  color: var(--text-muted);
 }
 
 .text-small {
