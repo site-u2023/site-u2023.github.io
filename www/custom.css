@@ -218,7 +218,7 @@ details[open] summary {
   border-radius: 0.25em;
 }
 
-.config-section h5 {
+.config-section h4 {
   margin-top: 0;
   margin-bottom: 1em;
   padding-bottom: 0.5em;
@@ -319,7 +319,7 @@ details[open] summary {
     border-color: #444;
   }
   
-  .config-section h5 {
+  .config-section h4 {
     border-bottom-color: #0080b3;
     color: #d0d0d0;
   }
