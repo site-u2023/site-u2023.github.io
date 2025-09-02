@@ -42,7 +42,8 @@
       <h3 class="tr-packages">Installed Packages</h3>
     </summary>
     <div id="package-selector-config">
-      <div class="package-search-container config-section">
+      <!-- Package Search - 統一された.config-sectionを使用 -->
+      <div class="config-section">
         <h4>Package Search</h4>
         <p class="text-muted">Select extra packages to install. They'll be added to the list below.</p>
         <div id="package-search-autocomplete" class="autocomplete">
@@ -54,11 +55,71 @@
             autocapitalize="off">
         </div>
       </div>
+
+      <!-- Basic System Features - 統一された.config-sectionを使用 -->
+      <div class="config-section">
+        <h4>Basic System Features</h4>
+        <p class="text-muted">Terminal access and file transfer tools</p>
+        <div class="feature-grid">
+          <div class="feature-item">
+            <input type="checkbox" id="luci-app-ttyd" checked>
+            <label for="luci-app-ttyd">luci-app-ttyd</label>
+          </div>
+          <div class="feature-item">
+            <input type="checkbox" id="openssh-sftp-server" checked>
+            <label for="openssh-sftp-server">openssh-sftp-server</label>
+          </div>
+          <div class="feature-item">
+            <input type="checkbox" id="luci-app-commands">
+            <label for="luci-app-commands">luci-app-commands</label>
+          </div>
+          <div class="feature-item">
+            <input type="checkbox" id="luci-app-filebrowser">
+            <label for="luci-app-filebrowser">luci-app-filebrowser</label>
+          </div>
+        </div>
+      </div>
+
+      <!-- System Management - 統一された.config-sectionを使用 -->
+      <div class="config-section">
+        <h4>System Management</h4>
+        <p class="text-muted">CPU interrupt balancing for multi-core systems</p>
+        <div class="system-management-grid">
+          <div class="feature-item">
+            <input type="checkbox" id="luci-app-irqbalance">
+            <label for="luci-app-irqbalance">luci-app-irqbalance</label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Network Management - 統一された.config-sectionを使用 -->
+      <div class="config-section">
+        <h4>Network Management</h4>
+        <p class="text-muted">QoS, bandwidth monitoring, Wi-Fi scheduling, and network utilities</p>
+        <div class="feature-grid">
+          <div class="feature-item">
+            <input type="checkbox" id="luci-app-sqm">
+            <label for="luci-app-sqm">luci-app-sqm</label>
+          </div>
+          <div class="feature-item">
+            <input type="checkbox" id="luci-app-nlbwmon">
+            <label for="luci-app-nlbwmon">luci-app-nlbwmon</label>
+          </div>
+          <div class="feature-item">
+            <input type="checkbox" id="luci-app-wifischedule">
+            <label for="luci-app-wifischedule">luci-app-wifischedule</label>
+          </div>
+          <div class="feature-item">
+            <input type="checkbox" id="luci-app-upnp">
+            <label for="luci-app-upnp">luci-app-upnp</label>
+          </div>
+        </div>
+      </div>
       
       <div id="package-categories">
       </div>
       
-      <details id="postinst-details" class="package-category">
+      <details id="postinst-details" class="config-section">
         <summary>
           <h4>Postinst (Package installation script)</h4>
         </summary>
@@ -486,7 +547,7 @@
         </div>
       </div>
 
-      <details id="uci-defaults-details" class="package-category">
+      <details id="uci-defaults-details" class="config-section">
         <summary>
           <h4>UCI-defaults (Boot configuration script)</h4>
         </summary>
