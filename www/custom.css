@@ -84,6 +84,7 @@ details summary:hover {
   color: #00a3e1;
 }
 
+details summary h3,
 details summary h4,
 details summary h5 {
   display: inline;
