@@ -27,9 +27,7 @@
 }
 
 /* ===== Custom Form Elements (index.cssのスタイルパターンに準拠) ===== */
-.form-group input,
-.form-group select,
-.form-group textarea {
+.form-control {
   width: 100%;
   padding: 0.8em;
   border: 0.06em solid transparent;
@@ -38,11 +36,26 @@
   font-size: inherit;
 }
 
-/* Custom固有のtextarea設定 */
-#uci-defaults-content,
-#postinst-content,
-#asu-packages {
+/* Autocomplete inputs - index.cssの.autocomplete > inputを継承 */
+.autocomplete-input {
+  border: 0.06em solid transparent;
+  background-color: #f1f1f1;
+  padding: 0.8em;
+  width: 100%;
+  border-radius: 0.2em;
+  font-size: inherit;
+}
+
+/* Config textareas */
+.config-textarea {
+  width: 100%;
+  padding: 0.8em;
+  border: 0.06em solid transparent;
+  background-color: #f1f1f1;
+  border-radius: 0.2em;
+  font-size: inherit;
   resize: both;
+  min-height: 10em;
 }
 
 .form-group small {
@@ -103,11 +116,6 @@ details[open] summary {
   border-radius: 0.25em;
 }
 
-#postinst-details,
-#uci-defaults-details {
-  padding: 1em;
-}
-
 /* ===== ISP Information Display ===== */
 #isp-info-row,
 #isp-timezone-row,
@@ -123,9 +131,8 @@ details[open] summary {
 }
 
 /* ===== Package Selector ===== */
-#package-search-autocomplete {
+.autocomplete {
   position: relative;
-  margin-bottom: 1.5em;
 }
 
 #package-categories {
@@ -175,16 +182,6 @@ details[open] summary {
 /* ===== 統一されたセクションコンテナ ===== */
 .config-section,
 .package-category {
-  margin: 0 0 1.5em 0;
-  padding: 1em;
-  background-color: #fff;
-  border: 1px solid #e0e0e0;
-  border-radius: 0.25em;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-}
-
-#postinst-details,
-#uci-defaults-details {
   margin: 0 0 1.5em 0;
   padding: 1em;
   background-color: #fff;
@@ -273,10 +270,7 @@ details summary h4 {
   border-radius: 0.25em;
 }
 
-#pppoe-section,
-#dslite-section,
-#mape-section,
-#ap-section {
+.connection-config {
   margin-top: 1em;
   padding: 1em;
   background-color: #f8f9fa;
@@ -284,12 +278,8 @@ details summary h4 {
   border-radius: 0.25em;
 }
 
-/* ===== Commands Autocomplete ===== */
-#commands-autocomplete {
-  position: relative;
-}
-
-#commands-autocomplete .command {
+/* ===== Commands ===== */
+.command {
   margin-bottom: 0.5em;
 }
 
@@ -324,27 +314,12 @@ details summary h4 {
 
 /* ===== Dark Mode Support ===== */
 @media (prefers-color-scheme: dark) {
-  /* === Custom固有要素のみ定義（基本スタイルはindex.cssから継承） === */
+  /* === 共通クラスベースの定義 === */
   
-  /* === Custom Form Inputs (index.cssのパターンに準拠) === */
-  .form-group input,
-  .form-group select,
-  .form-group textarea {
-    background-color: #313135;  /* index.css と同じ値 */
-    color: #d0d0d0;            /* index.css と同じ値 */
-  }
-  
-  /* === Autocomplete inputs（index.cssにない固有要素） === */
-  #package-search,
-  #command {
-    background-color: #313135;
-    color: #d0d0d0;
-  }
-  
-  /* === Custom固有のtextarea === */
-  #asu-packages,        
-  #uci-defaults-content,  
-  #postinst-content {
+  /* === Form Controls === */
+  .form-control,
+  .autocomplete-input,
+  .config-textarea {
     background-color: #313135;  /* index.css と同じ値 */
     color: #d0d0d0;            /* index.css と同じ値 */
   }
@@ -354,22 +329,19 @@ details summary h4 {
   }
   
   /* === Config Sections === */
-  .config-section,
-  #postinst-details,
-  #uci-defaults-details {
+  .config-section {
     background-color: #313135;
     border-color: #444;
     color: #d0d0d0;
   }
   
   .config-section h4,
-  #postinst-details h4,
-  #uci-defaults-details h4 {
+  .config-section h5 {
     color: #d0d0d0;
   }
   
   .config-section summary > * {
-    color: var(--owrt-white);
+    color: #d0d0d0;
   }
   
   /* === Details Summary === */
@@ -409,10 +381,7 @@ details summary h4 {
     border-color: #5a4d1f;
   }
 
-  #pppoe-section,
-  #dslite-section,
-  #mape-section,
-  #ap-section {
+  .connection-config {
     background-color: #2a2a2d;
     border-color: #444;
   }
