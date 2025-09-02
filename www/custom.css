@@ -338,23 +338,22 @@ details summary h4 {
   .form-group input,
   .form-group select,
   .form-group textarea {
-    background-color: inherit;  /* index.css と同じ値 */
-    color: inherit;           /* index.css と同じ値 */
+    background-color: #f1f1f1;  /* ライトモード: index.cssと同じ */
+    border: 0.06em solid transparent;  /* index.cssと同じ */
   }
   
   /* === Autocomplete inputs（index.cssにない固有要素） === */
   #package-search,
   #command {
-    background-color: inherit;
-    color: inherit;
+    background-color: #f1f1f1;  /* ライトモード: index.cssと同じ */
+    border: 0.06em solid transparent;  /* index.cssと同じ */
   }
   
   /* === Custom固有のtextarea === */
   #asu-packages,        
   #uci-defaults-content,  
   #postinst-content {
-    background-color: inherit;  /* index.css と同じ値 */
-    color: inherit;            /* index.css と同じ値 */
+    background-color: #f1f1f1;  /* ライトモード: index.cssと同じ */
   }
   
   .form-group small {
