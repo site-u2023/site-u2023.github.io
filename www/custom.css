@@ -86,12 +86,11 @@ details summary {
   cursor: pointer;
   padding: 0.75em 0;
   user-select: none;
+  color: inherit;
+  display: inline-block;
 }
 
-details summary:hover,
-details summary h3:hover,
-details summary h4:hover,
-details summary h5:hover {
+details summary:hover {
   color: var(--owrt-blue);
 }
 
