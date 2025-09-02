@@ -217,93 +217,127 @@
         </div>
       </div>
 
-<div id="internet-config" class="config-section">
-  <h4>Internet Connection</h4>
+      <div id="internet-config" class="config-section">
+        <h4>Internet Connection</h4>
 
-  <!-- 接続方式ラジオ -->
-  <div class="form-group">
-    <label>Connection type</label>
-    <div class="radio-group">
-      <label><input type="radio" name="connectionType" value="auto" checked> AUTO</label>
-      <label><input type="radio" name="connectionType" value="dhcp"> DHCP</label>
-      <label><input type="radio" name="connectionType" value="dslite"> DS-Lite</label>
-      <label><input type="radio" name="connectionType" value="mape"> MAP-E</label>
-      <label><input type="radio" name="connectionType" value="ap"> AP</label>
-    </div>
-  </div>
+        <!-- 接続方式ラジオ -->
+        <div class="form-group">
+          <label>Connection type</label>
+          <div class="radio-group">
+            <label><input type="radio" name="connectionType" value="auto" checked> AUTO</label>
+            <label><input type="radio" name="connectionType" value="dhcp"> DHCP</label>
+            <label><input type="radio" name="connectionType" value="pppoe"> PPPoE</label>
+            <label><input type="radio" name="connectionType" value="dslite"> DS-Lite</label>
+            <label><input type="radio" name="connectionType" value="mape"> MAP-E</label>
+            <label><input type="radio" name="connectionType" value="ap"> AP</label>
+          </div>
+        </div>
 
-  <!-- AUTO情報表示 -->
-  <div id="auto-section" class="connection-config">
-    <div class="form-group">
-      <label>ISP</label>
-      <input type="text" class="form-control" id="auto-isp" readonly placeholder="ISP name">
-    </div>
-    <div class="form-group">
-      <label>AS</label>
-      <input type="text" class="form-control" id="auto-as" readonly placeholder="AS number / Name">
-    </div>
-    <div class="form-group">
-      <label>IP Address</label>
-      <input type="text" class="form-control" id="auto-ip" readonly placeholder="0.0.0.0">
-    </div>
-  </div>
+        <!-- AUTO INFO -->
+        <div id="auto-section" class="connection-config">
+          <pre id="auto-info">ISP情報を取得中...</pre>
+        </div>
 
-  <!-- DHCP -->
-  <div id="dhcp-section" class="connection-config" style="display: none;">
-    <p>DHCPは自動取得です。特別な設定は不要です。</p>
-  </div>
+        <!-- DHCP -->
+        <div id="dhcp-section" class="connection-config" style="display: none;">
+          <p>DHCPは自動取得です。</p>
+        </div>
 
-  <!-- DS-Lite -->
-  <div id="dslite-section" class="connection-config" style="display: none;">
-    <h5>DS-Lite Configuration</h5>
-    <div class="form-group">
-      <label>AFTR Address</label>
-      <input type="text" id="dslite-aftr-address" class="form-control" placeholder="例: 2404:8e00::feed:100">
-    </div>
-    <div class="form-group">
-      <label>Region</label>
-      <select id="dslite-area" class="form-control">
-        <option value="east">East Japan</option>
-        <option value="west">West Japan</option>
-      </select>
-    </div>
-  </div>
+        <!-- PPPoE -->
+        <div id="pppoe-section" class="connection-config" style="display: none;">
+          <div class="form-group">
+            <label for="pppoe-username">Username</label>
+            <input type="text" id="pppoe-username" class="form-control" placeholder="ISP提供のID">
+          </div>
+          <div class="form-group">
+            <label for="pppoe-password">Password</label>
+            <input type="password" id="pppoe-password" class="form-control" placeholder="ISP提供のパスワード">
+          </div>
+        </div>
 
-  <!-- MAP-E -->
-  <div id="mape-section" class="connection-config" style="display: none;">
-    <h5>MAP-E Configuration</h5>
-    <div class="form-group">
-      <label>BR</label>
-      <input type="text" id="mape-br" class="form-control" placeholder="例: 2001:db8::1">
-    </div>
-    <div class="form-group">
-      <label>EA-len</label>
-      <input type="number" id="mape-ealen" class="form-control" placeholder="例: 16">
-    </div>
-    <div class="form-group">
-      <label>IPv4 Prefix</label>
-      <input type="text" id="mape-ipv4-prefix" class="form-control" placeholder="例: 192.0.2.0">
-    </div>
-    <div class="form-group">
-      <label>IPv6 Prefix</label>
-      <input type="text" id="mape-ipv6-prefix" class="form-control" placeholder="例: 2001:db8:8000::">
-    </div>
-  </div>
+        <!-- DS-Lite -->
+        <div id="dslite-section" class="connection-config" style="display: none;">
+          <div class="form-group">
+            <label for="dslite-aftr">AFTR Type</label>
+            <select id="dslite-aftr" class="form-control">
+              <option value="transix">gw.transix.jp</option>
+              <option value="xpass">gw.xpass.jp</option>
+              <option value="v6option">gw.v6option.jp</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="dslite-region">Region</label>
+            <select id="dslite-region" class="form-control">
+              <option value="east">East Japan</option>
+              <option value="west">West Japan</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="dslite-aftr-address">AFTR IPv6 Address</label>
+            <input type="text" id="dslite-aftr-address" class="form-control" placeholder="例: 2404:8e00::feed:100">
+          </div>
+        </div>
 
-  <!-- AP -->
-  <div id="ap-section" class="connection-config" style="display: none;">
-    <h5>AP Configuration</h5>
-    <div class="form-group">
-      <label>IP Address</label>
-      <input type="text" id="ap-ip-address" class="form-control" placeholder="例: 192.168.1.2">
-    </div>
-    <div class="form-group">
-      <label>Gateway</label>
-      <input type="text" id="ap-gateway" class="form-control" placeholder="例: 192.168.1.1">
-    </div>
-  </div>
-</div>
+        <!-- MAP-E -->
+        <div id="mape-section" class="connection-config" style="display: none;">
+          <div class="form-group">
+            <label>Type</label>
+            <div class="radio-group">
+              <label><input type="radio" name="mapeType" value="gua" checked> GUA</label>
+              <label><input type="radio" name="mapeType" value="pd"> PD</label>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>BR</label>
+            <input type="text" id="mape-br" class="form-control" placeholder="例: 2001:db8::1">
+          </div>
+          <div class="form-group">
+            <label>EA-len</label>
+            <input type="number" id="mape-ealen" class="form-control" placeholder="例: 16">
+          </div>
+          <div class="form-group">
+            <label>IPv4 Prefix</label>
+            <input type="text" id="mape-ipv4-prefix" class="form-control" placeholder="例: 192.0.2.0">
+          </div>
+          <div class="form-group">
+            <label>IPv4 Prefix Length</label>
+            <input type="number" id="mape-ipv4-prefixlen" class="form-control" placeholder="例: 24">
+          </div>
+          <div class="form-group">
+            <label>IPv6 Prefix</label>
+            <input type="text" id="mape-ipv6-prefix" class="form-control" placeholder="例: 2001:db8:8000::">
+          </div>
+          <div class="form-group">
+            <label>IPv6 Prefix Length</label>
+            <input type="number" id="mape-ipv6-prefixlen" class="form-control" placeholder="例: 32">
+          </div>
+          <div class="form-group">
+            <label>PSID Offset</label>
+            <input type="number" id="mape-psid-offset" class="form-control" placeholder="例: 4">
+          </div>
+          <div class="form-group">
+            <label>PSID Length</label>
+            <input type="number" id="mape-psidlen" class="form-control" placeholder="例: 6">
+          </div>
+          <div id="mape-gua-prefix-section" class="form-group">
+            <label>GUA Prefix</label>
+            <input type="text" id="mape-gua-prefix" class="form-control" placeholder="例: 2400:4151:80e2:7500::/64">
+          </div>
+        </div>
 
+        <!-- AP -->
+        <div id="ap-section" class="connection-config" style="display: none;">
+          <div class="form-group">
+            <label>IP Address</label>
+            <input type="text" id="ap-ip-address" class="form-control" placeholder="例: 192.168.1.2">
+          </div>
+          <div class="form-group">
+            <label>Gateway</label>
+            <input type="text" id="ap-gateway" class="form-control" placeholder="例: 192.168.1.1">
+          </div>
+        </div>
+      </div>
+      
       <div id="tuning-config" class="config-section">
         <h4>Tuning</h4>
         <div class="form-group">
