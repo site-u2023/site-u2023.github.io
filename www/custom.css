@@ -338,23 +338,23 @@ details summary h4 {
   .form-group input,
   .form-group select,
   .form-group textarea {
-    background-color: #313135;  /* index.css と同じ値 */
-    color: #d0d0d0;            /* index.css と同じ値 */
+    background-color: inherit;  /* index.css と同じ値 */
+    color: inherit;           /* index.css と同じ値 */
   }
   
   /* === Autocomplete inputs（index.cssにない固有要素） === */
   #package-search,
   #command {
-    background-color: #313135;
-    color: #d0d0d0;
+    background-color: inherit;
+    color: inherit;
   }
   
   /* === Custom固有のtextarea === */
   #asu-packages,        
   #uci-defaults-content,  
   #postinst-content {
-    background-color: #313135;  /* index.css と同じ値 */
-    color: #d0d0d0;            /* index.css と同じ値 */
+    background-color: inherit;  /* index.css と同じ値 */
+    color: inherit;            /* index.css と同じ値 */
   }
   
   .form-group small {
@@ -365,15 +365,15 @@ details summary h4 {
   .config-section,
   #postinst-details,
   #uci-defaults-details {
-    background-color: #313135;
+    background-color: inherit;
     border-color: #444;
-    color: #d0d0d0;
+    color: inherit;
   }
   
   .config-section h4,
   #postinst-details h4,
   #uci-defaults-details h4 {
-    color: #d0d0d0;
+    color: inherit;
   }
   
   .config-section summary > * {
@@ -392,7 +392,7 @@ details summary h4 {
   }
 
   .package-category {
-    background-color: #313135;
+    background-color: inherit;
     border-color: #444;
   }
 
