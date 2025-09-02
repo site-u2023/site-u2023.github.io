@@ -88,7 +88,9 @@ details summary {
   user-select: none;
 }
 
-details summary:hover {
+details summary h3:hover,
+details summary h4:hover,
+details summary h5:hover {
   color: var(--owrt-blue);
 }
 
