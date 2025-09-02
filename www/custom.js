@@ -459,7 +459,7 @@ function loadUciDefaultsTemplate() {
     }
 
     // 初期設定
-    textarea.style.resize = 'both';
+    // textarea.style.resize = 'both';
     
     // イベントリスナー設定
     textarea.addEventListener('input', autoResize);
@@ -487,7 +487,7 @@ function resizePostinstTextarea() {
     if (!textarea) return;
 
     // 初期設定
-    textarea.style.resize = 'both';
+    // textarea.style.resize = 'both';
     
     // 一時的にheightをautoにして自然なサイズを取得
     textarea.style.height = 'auto';
