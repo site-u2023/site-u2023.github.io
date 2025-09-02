@@ -114,7 +114,7 @@ details[open] summary {
 
 #postinst-details,
 #uci-defaults-details {
-  padding: 0.5em;
+  padding: 1em;
 }
 
 /* ===== ISP Information Display ===== */
