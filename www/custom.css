@@ -252,11 +252,7 @@ details[open] summary {
 details summary h4 {
   margin-top: 0;
   margin-bottom: 1em;
-  color: var(--text-header);
-}
-
-.config-section summary > * {
-  color: inherit;
+  color: inherit;  /* 親要素から継承 */
 }
 
 .package-category-description,
