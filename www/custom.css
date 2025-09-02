@@ -177,7 +177,12 @@ details[open] summary {
   margin-top: 1em;
 }
 
-.package-category {
+/* ===== 統一されたセクションコンテナ ===== */
+.config-section,
+.package-category,
+#postinst-details,
+#uci-defaults-details {
+  margin: 0 0 1.5em 0;
   padding: 1em;
   background-color: #fff;
   border: 1px solid #e0e0e0;
@@ -248,22 +253,17 @@ details[open] summary {
   margin-left: 1.5em;
 }
 
-/* ===== Configuration Sections ===== */
-.config-section {
-  margin: 0 0 1.5em 0;
-  padding: 1em;
-  background-color: #fff;
-  border: 1px solid #e0e0e0;
-  border-radius: 0.25em;
-}
-
-.config-section h4 {
+/* ===== 統一されたセクションヘッダー ===== */
+.config-section h4,
+.package-category h5,
+details summary h4 {
   margin-top: 0;
   margin-bottom: 1em;
   padding-bottom: 0.5em;
   border-bottom: 2px solid #00a3e1;
   color: #333;
   width: 100%;
+  display: block;
 }
 
 /* ===== Connection Type Sections ===== */
