@@ -287,10 +287,13 @@ details summary h4 {
 }
 
 #internet-config {
-  display: flow-root;
+  display: flex;
+  flex-direction: column;
+  gap: 1em; /* 子要素間の縦スペース */
   padding-bottom: 1.5em;
   margin-bottom: 1.5em;
 }
+
 
 /* ===== Commands Autocomplete ===== */
 #commands-autocomplete {
