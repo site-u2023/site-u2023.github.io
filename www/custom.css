@@ -125,7 +125,7 @@ details[open] summary {
 
 /* ===== Package Selector ===== */
 #package-selector-config {
-  padding: 1em;
+  /* padding: 1em; 削除 - これがmarginを潰していた */
 }
 
 #package-search-autocomplete {
@@ -263,6 +263,7 @@ details[open] summary {
   padding-bottom: 0.5em;
   border-bottom: 2px solid #00a3e1;
   color: #333;
+  width: 100%;
 }
 
 /* ===== Connection Type Sections ===== */
