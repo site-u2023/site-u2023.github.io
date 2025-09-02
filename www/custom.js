@@ -366,7 +366,7 @@ function updatePackageListFromSelector() {
         if (pkgName) checkedPkgs.push(pkgName);
     });
     
-    const textarea = document.querySelector('#asu-packages');
+    const textarea = document.querySelector('#custom-postinst-content');
     if (textarea) {
         const currentPackages = split(textarea.value);
         const nonSelectorPkgs = currentPackages.filter(pkg => {
@@ -440,7 +440,7 @@ function customBuildAsuRequest(request_hash) {
 // setup_uci_defaults カスタム版
 function customSetupUciDefaults() {
     console.log('customSetupUciDefaults called');
-    const textarea = document.querySelector("#uci-defaults-content");
+    const textarea = document.querySelector("#custom-uci-defaults-content");
     if (!textarea || !config?.uci_defaults_setup_url) return;
 
     fetch(config.uci_defaults_setup_url)
@@ -457,7 +457,7 @@ function customSetupUciDefaults() {
 // UCI-defaultsテキストエリアをリサイズする関数
 function loadUciDefaultsTemplate() {
     console.log('loadUciDefaultsTemplate called');
-    const textarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
+    const textarea = document.querySelector("#custom-scripts-details #custom-uci-defaults-content");
     if (!textarea || !config?.uci_defaults_setup_url) return;
 
     // 自動リサイズ関数
@@ -491,7 +491,7 @@ function loadUciDefaultsTemplate() {
 
 // Postinstテキストエリアをリサイズする関数
 function resizePostinstTextarea() {
-    const textarea = document.querySelector("#asu-packages");
+    const textarea = document.querySelector("#custom-postinst-content");
     if (!textarea) return;
     
     // 一時的にheightをautoにして自然なサイズを取得
