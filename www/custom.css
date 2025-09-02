@@ -320,7 +320,7 @@ details summary h4 {
 #ap-section {
   margin-top: 1em;
   padding: 1em;
-  background-color: var(--bg-main);  /* bodyと同じ背景色 */
+  background-color: transparent;
   border: 1px solid var(--border-connection);
   border-radius: 0.25em;
 }
