@@ -263,14 +263,20 @@ details[open] summary {
 
 /* ===== 統一されたセクションヘッダー ===== */
 .config-section h4,
-.package-category h5,
-details summary h4 {
+.package-category h5 {
   margin-top: 0;
   margin-bottom: 1em;
   padding-bottom: 0.5em;
   border-bottom: 2px solid var(--owrt-blue);
   color: #333;
   width: 100%;
+  display: block;
+}
+
+ details summary h4 {
+   margin: 0;
+   font-weight: 500;
+   display: inline;
 }
 
 /* ===== Connection Type Sections ===== */
