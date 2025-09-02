@@ -1,6 +1,13 @@
 /* ===== OpenWrt Custom Firmware Selector - Extended Styles ===== */
 /* Inherits from index.css */
 
+:root {
+  --owrt-blue: #00B5E2;     /* PANTONE 306 C */
+  --owrt-navy: #003E54;     /* PANTONE 7463 C */
+  --owrt-black: #231F20;    /* PANTONE 419 C */
+  --owrt-white: #FFFFFF;
+}
+
 /* ===== Form Elements ===== */
 .form-row {
   display: flex;
@@ -43,9 +50,10 @@
 .form-group select:focus,
 .form-group textarea:focus {
   outline: none;
-  border-color: #00a3e1;
-  background-color: #fff;
+  border-color: var(--owrt-blue);
+  background-color: var(--owrt-white);
 }
+
 
 .form-group small {
   display: block;
@@ -117,7 +125,8 @@ details[open] summary {
 #isp-as-row,
 #isp-ip-row,
 #isp-connection-row {
-  background-color: #e3f2fd;
+  background-color: var(--owrt-blue);
+  color: var(--owrt-white);
   margin: 0.25em 0;
   padding: 0.5em 1.5em;
   border-radius: 0.2em;
@@ -233,7 +242,7 @@ details[open] summary {
 }
 
 .package-link {
-  color: #00a3e1;
+  color: var(--owrt-blue);
   text-decoration: none;
   font-weight: 500;
 }
@@ -260,7 +269,7 @@ details summary h4 {
   margin-top: 0;
   margin-bottom: 1em;
   padding-bottom: 0.5em;
-  border-bottom: 2px solid #00a3e1;
+  border-bottom: 2px solid var(--owrt-blue);
   color: #333;
   width: 100%;
   display: block;
@@ -376,8 +385,8 @@ details summary h4 {
   }
   
   .config-section h4 {
-    border-bottom-color: #0080b3;
-    color: #d0d0d0;
+    border-bottom-color: var(--owrt-blue);
+    color: var(--owrt-white);
   }
   
   #manual-connection-section {
