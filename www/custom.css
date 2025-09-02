@@ -273,6 +273,7 @@ details summary h4 {
   border-radius: 0.25em;
 }
 
+#auto-section,
 #dhcp-section,
 #pppoe-section,
 #dslite-section,
