@@ -1,13 +1,5 @@
 // custom.js - OpenWrt カスタム機能（パッケージ機能統合版）
 
-// IDマッピング表（旧 → 新）
-// JS内で参照している旧ID / セレクタ	HTMLでの新ID	用途
-// #asu-packages	#custom-postinst-content	Postinst（パッケージインストールスクリプト）textarea
-// #uci-defaults-content	#custom-uci-defaults-content	uci-defaults（初回起動スクリプト）textarea
-// #custom-scripts-details #uci-defaults-content	#custom-scripts-details #custom-uci-defaults-content	同上（スコープ付き）
-// #package-search	#custom-package-search	パッケージ検索入力欄
-// #command	#custom-command-input	コマンド入力欄
-
 console.log('custom.js loaded');
 
 // 初期化フラグ
@@ -128,10 +120,8 @@ function initializeCustomFeatures(asuSection, temp) {
     hookOriginalFunctions();
     setupEventListeners();
     
-    // UCI-defaults自動読み込み（DOM描画完了後に遅延実行）
-    setTimeout(() => {
-        loadUciDefaultsTemplate();
-    }, 50);
+    // UCI-defaults自動読み込み
+    loadUciDefaultsTemplate();
     
     // パッケージデータベースを読み込み
     loadPackageDatabase();
@@ -368,7 +358,7 @@ function updatePackageListFromSelector() {
         if (pkgName) checkedPkgs.push(pkgName);
     });
     
-    const textarea = document.querySelector('#custom-postinst-content');
+    const textarea = document.querySelector('#asu-packages');
     if (textarea) {
         const currentPackages = split(textarea.value);
         const nonSelectorPkgs = currentPackages.filter(pkg => {
@@ -442,12 +432,8 @@ function customBuildAsuRequest(request_hash) {
 // setup_uci_defaults カスタム版
 function customSetupUciDefaults() {
     console.log('customSetupUciDefaults called');
-    const textarea = document.querySelector("#custom-uci-defaults-content");
-    if (!textarea) {
-        console.warn("custom-uci-defaults-content が存在しないためスキップ");
-        return;
-    }
-    if (!config?.uci_defaults_setup_url) return;
+    const textarea = document.querySelector("#uci-defaults-content");
+    if (!textarea || !config?.uci_defaults_setup_url) return;
 
     fetch(config.uci_defaults_setup_url)
         .then(r => { 
@@ -463,12 +449,8 @@ function customSetupUciDefaults() {
 // UCI-defaultsテキストエリアをリサイズする関数
 function loadUciDefaultsTemplate() {
     console.log('loadUciDefaultsTemplate called');
-    const textarea = document.querySelector("#custom-scripts-details #custom-uci-defaults-content");
-    if (!textarea) {
-        console.warn("custom-uci-defaults-content が存在しないためスキップ");
-        return;
-    }
-    if (!config?.uci_defaults_setup_url) return;
+    const textarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
+    if (!textarea || !config?.uci_defaults_setup_url) return;
 
     // 自動リサイズ関数
     function autoResize() {
@@ -501,11 +483,8 @@ function loadUciDefaultsTemplate() {
 
 // Postinstテキストエリアをリサイズする関数
 function resizePostinstTextarea() {
-    const textarea = document.querySelector("#custom-postinst-content");
-    if (!textarea) {
-        console.warn("custom-postinst-content が存在しないためスキップ");
-        return;
-    }
+    const textarea = document.querySelector("#asu-packages");
+    if (!textarea) return;
     
     // 一時的にheightをautoにして自然なサイズを取得
     textarea.style.height = 'auto';
