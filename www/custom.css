@@ -2,17 +2,11 @@
 /* Inherits from index.css */
 
 :root {
-  /* ベースカラー（他のUI要素でも使用） */
+  /* OpenWrt公式カラー（共通利用） */
   --owrt-blue: #00B5E2;     /* PANTONE 306 C */
   --owrt-navy: #003E54;     /* PANTONE 7463 C */
   --owrt-black: #231F20;    /* PANTONE 419 C */
   --owrt-white: #FFFFFF;
-
-  /* 入力欄専用カラー（index.css 由来の継承色） */
-  --owrt-input-bg: #f1f1f1;
-  --owrt-input-border: #d4d4d4;
-  --owrt-input-focus-bg: var(--owrt-white);
-  --owrt-input-focus-border: var(--owrt-blue);
 }
 
 /* ===== Form Elements ===== */
@@ -32,38 +26,22 @@
   font-weight: 500;
 }
 
-/* ===== Input Styling with Variables ===== */
+/* ===== Custom Form Elements (index.cssのスタイルパターンに準拠) ===== */
 .form-group input,
 .form-group select,
-.form-group textarea,
-#package-search-autocomplete input,
-#commands-autocomplete input {
+.form-group textarea {
   width: 100%;
-  padding: 0.5em;
-  border: 1px solid var(--owrt-input-border);
+  padding: 0.8em;
+  border: 0.06em solid transparent;
+  background-color: #f1f1f1;  /* index.css と同じ値 */
   border-radius: 0.2em;
-  background-color: var(--owrt-input-bg);
   font-size: inherit;
 }
 
-/* ===== Focus Styling with Variables ===== */
-.form-group input:focus,
-.form-group select:focus,
-.form-group textarea:focus,
-#package-search-autocomplete input:focus,
-#commands-autocomplete input:focus {
-  outline: none;
-  border-color: var(--owrt-input-focus-border);
-  background-color: var(--owrt-input-focus-bg);
-}
-
+/* Custom固有のtextarea設定 */
 #uci-defaults-content,
-#postinst-content {
-  resize: both;
-}
-
-#asu-packages,
-#postinst-content {
+#postinst-content,
+#asu-packages {
   resize: both;
 }
 
@@ -72,23 +50,6 @@
   margin-top: 0.25em;
   color: #6c757d;
   font-size: 0.875em;
-}
-
-/* ===== Autocomplete Inputs (継承色の明示適用) ===== */
-#package-search-autocomplete input,
-#commands-autocomplete input {
-  background-color: #f1f1f1;
-  border: 1px solid #d4d4d4;
-  padding: 0.5em;
-  border-radius: 0.2em;
-  font-size: inherit;
-}
-
-#package-search-autocomplete input:focus,
-#commands-autocomplete input:focus {
-  outline: none;
-  border-color: var(--owrt-blue);
-  background-color: var(--owrt-white);
 }
 
 /* ===== Radio Groups ===== */
@@ -162,10 +123,6 @@ details[open] summary {
 }
 
 /* ===== Package Selector ===== */
-#package-selector-config {
-  /* padding: 1em; 削除 - これがmarginを潰していた */
-}
-
 #package-search-autocomplete {
   position: relative;
   margin-bottom: 1.5em;
@@ -310,7 +267,8 @@ details summary h4 {
 
 #pppoe-section,
 #dslite-section,
-#mape-section {
+#mape-section,
+#ap-section {
   margin-top: 1em;
   padding: 1em;
   background-color: #f8f9fa;
@@ -358,50 +316,33 @@ details summary h4 {
 
 /* ===== Dark Mode Support ===== */
 @media (prefers-color-scheme: dark) {
-
-  /* === Form Inputs === */
+  /* === Custom固有要素のみ定義（基本スタイルはindex.cssから継承） === */
+  
+  /* === Custom Form Inputs (index.cssのパターンに準拠) === */
   .form-group input,
   .form-group select,
-  .form-group textarea,
-  #asu-packages,
-  #uci-defaults-content,
-  #postinst-content,
-  #command,
-  #package-search,
-  #commands-autocomplete input,
-  #package-search-autocomplete input {
-    background-color: #313135;
-    color: #d0d0d0;
-    border-color: #444;
+  .form-group textarea {
+    background-color: #313135;  /* index.css と同じ値 */
+    color: #d0d0d0;            /* index.css と同じ値 */
   }
-
-  .form-group input:focus,
-  .form-group select:focus,
-  .form-group textarea:focus,
-  #asu-packages:focus,
-  #uci-defaults-content:focus,
-  #postinst-content:focus,
-  #command:focus,
-  #package-search:focus,
-  #commands-autocomplete input:focus,
-  #package-search-autocomplete input:focus {
-    background-color: #3a3a3e;
-    border-color: var(--owrt-blue);
+  
+  /* === Custom固有のtextarea === */
+  #asu-packages,        
+  #uci-defaults-content,  
+  #postinst-content {
+    background-color: #313135;  /* index.css と同じ値 */
+    color: #d0d0d0;            /* index.css と同じ値 */
   }
-
+  
   .form-group small {
     color: #999;
   }
-
+  
   /* === Config Sections === */
   .config-section {
     background-color: #313135;
     border-color: #444;
-  }
-
-  .config-section {
     color: var(--owrt-white);
-    border-bottom-color: var(--owrt-blue);
   }
   
   .config-section summary > * {
@@ -447,7 +388,8 @@ details summary h4 {
 
   #pppoe-section,
   #dslite-section,
-  #mape-section {
+  #mape-section,
+  #ap-section {
     background-color: #2a2a2d;
     border-color: #444;
   }
@@ -524,7 +466,6 @@ details[open] > summary ~ * {
 .progress-bar-fill {
   height: 100%;
   background-color: var(--owrt-blue);
-}
   transition: width 0.3s ease;
 }
 
