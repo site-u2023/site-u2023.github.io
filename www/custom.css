@@ -89,7 +89,7 @@ details summary {
 }
 
 details summary:hover {
-  color: #00a3e1;
+  color: var(--owrt-blue);
 }
 
 details summary h3,
@@ -345,7 +345,7 @@ details summary h4 {
   .form-group select:focus,
   .form-group textarea:focus {
     background-color: #3a3a3e;
-    border-color: #0080b3;
+    border-color: var(--owrt-blue);
   }
   
   details[open] summary {
@@ -460,7 +460,7 @@ details[open] > summary ~ * {
   margin: 1em 0;
   padding: 1em;
   background-color: #e3f2fd;
-  border: 1px solid #2196f3;
+  border: 1px solid var(--owrt-blue);
   border-radius: 0.25em;
   display: none;
 }
@@ -480,7 +480,8 @@ details[open] > summary ~ * {
 
 .progress-bar-fill {
   height: 100%;
-  background-color: #2196f3;
+  background-color: var(--owrt-blue);
+}
   transition: width 0.3s ease;
 }
 
