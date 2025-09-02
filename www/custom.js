@@ -485,6 +485,9 @@ function loadUciDefaultsTemplate() {
 function resizePostinstTextarea() {
     const textarea = document.querySelector("#asu-packages");
     if (!textarea) return;
+
+    // 初期設定
+    textarea.style.resize = 'both';
     
     // 一時的にheightをautoにして自然なサイズを取得
     textarea.style.height = 'auto';
