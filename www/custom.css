@@ -271,6 +271,7 @@ details summary h4 {
   border-bottom: 2px solid var(--owrt-blue);
   color: #333;
   width: 100%;
+  display: inline;
 }
 
 /* ===== Connection Type Sections ===== */
