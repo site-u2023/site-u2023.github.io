@@ -216,202 +216,218 @@
           </div>
         </div>
       </div>
-      
-      <div id="internet-config" class="config-section">
-        <h4>Internet Connection</h4>
+
+<div id="internet-config" class="config-section">
+  <h4>Internet Connection</h4>
+  <div class="form-group">
+    <label>Connection mode</label>
+    <div class="radio-group">
+      <label>
+        <input type="radio" name="connectionMode" value="auto" checked>
+        Auto (Recommended)
+      </label>
+      <label>
+        <input type="radio" name="connectionMode" value="manual">
+        Manual
+      </label>
+    </div>
+  </div>
+
+  <!-- ここからAUTOモード表示用セクション -->
+  <div id="auto-connection-section">
+    <div class="form-group">
+      <label for="auto-config-method">Detected connection type (AI)</label>
+      <input type="text" id="auto-config-method" class="form-control" readonly placeholder="Detecting...">
+    </div>
+    <div class="form-group">
+      <label for="auto-config-isp">Detected ISP</label>
+      <input type="text" id="auto-config-isp" class="form-control" readonly placeholder="Unknown">
+    </div>
+    <div class="form-group">
+      <label for="auto-config-ip">Detected IP Address</label>
+      <input type="text" id="auto-config-ip" class="form-control" readonly placeholder="0.0.0.0">
+    </div>
+  </div>
+  <!-- AUTOセクションここまで -->
+
+  <div id="manual-connection-section" style="display: none;">
+    <div class="form-group">
+      <label>Connection type</label>
+      <div class="radio-group">
+        <label>
+          <input type="radio" name="connectionType" value="dhcp" checked>
+          DHCP
+        </label>
+        <label>
+          <input type="radio" name="connectionType" value="pppoe">
+          PPPoE
+        </label>
+        <label>
+          <input type="radio" name="connectionType" value="dslite">
+          DS-Lite
+        </label>
+        <label>
+          <input type="radio" name="connectionType" value="mape">
+          MAP-E
+        </label>
+        <label>
+          <input type="radio" name="connectionType" value="ap">
+          AP
+        </label>
+      </div>
+    </div>
+    
+    <div id="pppoe-section" class="connection-config" style="display: none;">
+      <div class="form-row">
         <div class="form-group">
-          <label>Connection mode</label>
-          <div class="radio-group">
-            <label>
-              <input type="radio" name="connectionMode" value="auto" checked>
-              Auto (Recommended)
-            </label>
-            <label>
-              <input type="radio" name="connectionMode" value="manual">
-              Manual
-            </label>
-          </div>
+          <label for="pppoe-username">PPPoE username</label>
+          <input type="text" id="pppoe-username" placeholder="Username">
         </div>
-        
-        <div id="manual-connection-section" style="display: none;">
-          <div class="form-group">
-            <label>Connection type</label>
-            <div class="radio-group">
-              <label>
-                <input type="radio" name="connectionType" value="dhcp" checked>
-                DHCP
-              </label>
-              <label>
-                <input type="radio" name="connectionType" value="pppoe">
-                PPPoE
-              </label>
-              <label>
-                <input type="radio" name="connectionType" value="dslite">
-                DS-Lite
-              </label>
-              <label>
-                <input type="radio" name="connectionType" value="mape">
-                MAP-E
-              </label>
-              <label>
-                <input type="radio" name="connectionType" value="ap">
-                AP
-              </label>
-            </div>
-          </div>
-          
-          <div id="pppoe-section" class="connection-config" style="display: none;">
-            <div class="form-row">
-              <div class="form-group">
-                <label for="pppoe-username">PPPoE username</label>
-                <input type="text" id="pppoe-username" placeholder="Username">
-              </div>
-              <div class="form-group">
-                <label for="pppoe-password">PPPoE password</label>
-                <input type="password" id="pppoe-password" placeholder="Password">
-              </div>
-            </div>
-          </div>
-          
-          <div id="dslite-section" class="connection-config" style="display: none;">
-            <h5 class="section-title">DS-Lite Configuration</h5>
-            
-            <div class="form-group">
-              <div class="radio-group">
-                <div class="form-check">
-                  <input class="form-check-input" type="radio" name="dsliteMode" id="dslite-auto" value="auto">
-                  <label class="form-check-label" for="dslite-auto">Auto (Recommended)</label>
-                </div>
-                <div class="form-check">
-                  <input class="form-check-input" type="radio" name="dsliteMode" id="dslite-manual" value="manual" checked>
-                  <label class="form-check-label" for="dslite-manual">Manual</label>
-                </div>
-              </div>
-              <small class="text-muted" id="dslite-mode-hint">Auto not available (no AFTR detected)</small>
-            </div>
-
-            <div id="dslite-manual-fields">
-              <div class="form-group">
-                <label for="dslite-aftr-type">AFTR Type</label>
-                <select id="dslite-aftr-type" class="form-control" onchange="applyInitialsFromApi('dslite')">
-                  <option value="transix">gw.transix.jp</option>
-                  <option value="xpass">gw.xpass.jp</option>
-                  <option value="v6option">gw.v6option.jp</option>
-                </select>
-              </div>
-
-              <div class="form-group">
-                <label for="dslite-area">Region</label>
-                <select id="dslite-area" class="form-control" onchange="applyInitialsFromApi('dslite')">
-                  <option value="east">East Japan</option>
-                  <option value="west">West Japan</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label for="dslite-aftr-address">AFTR IPv6 Address</label>
-              <input type="text" id="dslite-aftr-address" class="form-control" placeholder="2404:8e00::feed:100" value="">
-              <small class="form-text text-muted">Auto mode: Set from ISP detection | Manual mode: Set based on AFTR type and region</small>
-            </div>
-          </div>
-
-          <div id="mape-section" class="connection-config" style="display: none;">
-            <h5 class="section-title">MAP-E Configuration</h5>
-            <div class="form-group">
-              <div class="radio-group">
-                <div class="form-check">
-                  <input class="form-check-input" type="radio" name="mapeType" id="mape-auto" value="auto">
-                  <label class="form-check-label" for="mape-auto">Auto (Recommended)</label>
-                </div>
-                <div class="form-check">
-                  <input class="form-check-input" type="radio" name="mapeType" id="mape-gua" value="gua">
-                  <label class="form-check-label" for="mape-gua">GUA</label>
-                </div>
-                <div class="form-check">
-                  <input class="form-check-input" type="radio" name="mapeType" id="mape-pd" value="pd">
-                  <label class="form-check-label" for="mape-pd">PD</label>
-                </div>
-              </div>
-              <small class="text-muted">
-                <strong>Auto (Recommended)</strong>: Automatically retrieves MAP-E configuration
-              </small>
-            </div>
-            
-            <div class="form-row">
-              <div class="form-group">
-                <label for="mape-br">BR (Border Relay)</label>
-                <input type="text" id="mape-br" class="form-control" placeholder="2001:db8::1">
-              </div>
-              <div class="form-group">
-                <label for="mape-ealen">EA-len</label>
-                <input type="number" id="mape-ealen" class="form-control" placeholder="16" min="0" max="48">
-              </div>
-            </div>
-            
-            <div class="form-row">
-              <div class="form-group">
-                <label for="mape-ipv4-prefix">IPv4 Prefix</label>
-                <input type="text" id="mape-ipv4-prefix" class="form-control" placeholder="192.0.2.0">
-              </div>
-              <div class="form-group">
-                <label for="mape-ipv4-prefixlen">IPv4 Prefix Length</label>
-                <input type="number" id="mape-ipv4-prefixlen" class="form-control" placeholder="24" min="1" max="32">
-              </div>
-            </div>
-            
-            <div class="form-row">
-              <div class="form-group">
-                <label for="mape-ipv6-prefix">IPv6 Prefix</label>
-                <input type="text" id="mape-ipv6-prefix" class="form-control" placeholder="2001:db8:8000::">
-              </div>
-              <div class="form-group">
-                <label for="mape-ipv6-prefixlen">IPv6 Prefix Length</label>
-                <input type="number" id="mape-ipv6-prefixlen" class="form-control" placeholder="32" min="1" max="128">
-              </div>
-            </div>
-            
-            <div class="form-row">
-              <div class="form-group">
-                <label for="mape-psid-offset">PSID Offset</label>
-                <input type="number" id="mape-psid-offset" class="form-control" placeholder="4" min="0" max="16">
-              </div>
-              <div class="form-group">
-                <label for="mape-psidlen">PSID Length</label>
-                <input type="number" id="mape-psidlen" class="form-control" placeholder="6" min="0" max="16">
-              </div>
-            </div>
-
-            <div id="mape-gua-section" class="form-group" style="display: none;">
-              <label for="mape-gua-prefix">GUA Prefix</label>
-              <input type="text" id="mape-gua-prefix" class="form-control" placeholder="2400:4151:80e2:7500::/64">
-              <small class="form-text text-muted">IPv6 Global Unicast Address prefix</small>
-            </div>
-          </div>
-          
-          <div id="ap-section" class="conditional-section">
-            <h5 class="section-title">AP Configuration</h5>
-            <div class="form-row">
-              <div class="form-group">
-                <label for="ap-ip-address">IP Address</label>
-                <input type="text" id="ap-ip-address" class="form-control" value="192.168.1.2">
-              </div>
-              <div class="form-group">
-                <label for="ap-gateway">Gateway</label>
-                <input type="text" id="ap-gateway" class="form-control" value="192.168.1.1">
-              </div>
-            </div>
-          </div>
-
-          <div class="form-group" id="isp-detection-group">
-            <label>ISP Detection Status</label>
-            <div id="isp-info-display" class="info" style="margin-bottom: 0;">
-              <div id="isp-status-message">ISP information will be detected when configuration is opened</div>
-              <div id="isp-technical-info" style="font-family: monospace; font-size: 0.9em; margin-top: 0.5rem; display: none;"></div>
-            </div>
-          </div>
+        <div class="form-group">
+          <label for="pppoe-password">PPPoE password</label>
+          <input type="password" id="pppoe-password" placeholder="Password">
         </div>
       </div>
+    </div>
+    
+    <div id="dslite-section" class="connection-config" style="display: none;">
+      <h5 class="section-title">DS-Lite Configuration</h5>
+      <div class="form-group">
+        <div class="radio-group">
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="dsliteMode" id="dslite-auto" value="auto">
+            <label class="form-check-label" for="dslite-auto">Auto (Recommended)</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="dsliteMode" id="dslite-manual" value="manual" checked>
+            <label class="form-check-label" for="dslite-manual">Manual</label>
+          </div>
+        </div>
+        <small class="text-muted" id="dslite-mode-hint">Auto not available (no AFTR detected)</small>
+      </div>
+
+      <div id="dslite-manual-fields">
+        <div class="form-group">
+          <label for="dslite-aftr-type">AFTR Type</label>
+          <select id="dslite-aftr-type" class="form-control" onchange="applyInitialsFromApi('dslite')">
+            <option value="transix">gw.transix.jp</option>
+            <option value="xpass">gw.xpass.jp</option>
+            <option value="v6option">gw.v6option.jp</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="dslite-area">Region</label>
+          <select id="dslite-area" class="form-control" onchange="applyInitialsFromApi('dslite')">
+            <option value="east">East Japan</option>
+            <option value="west">West Japan</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="dslite-aftr-address">AFTR IPv6 Address</label>
+        <input type="text" id="dslite-aftr-address" class="form-control" placeholder="2404:8e00::feed:100" value="">
+        <small class="form-text text-muted">Auto mode: Set from ISP detection | Manual mode: Set based on AFTR type and region</small>
+      </div>
+    </div>
+
+    <div id="mape-section" class="connection-config" style="display: none;">
+      <h5 class="section-title">MAP-E Configuration</h5>
+      <div class="form-group">
+        <div class="radio-group">
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="mapeType" id="mape-auto" value="auto">
+            <label class="form-check-label" for="mape-auto">Auto (Recommended)</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="mapeType" id="mape-gua" value="gua">
+            <label class="form-check-label" for="mape-gua">GUA</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="mapeType" id="mape-pd" value="pd">
+            <label class="form-check-label" for="mape-pd">PD</label>
+          </div>
+        </div>
+        <small class="text-muted">
+          <strong>Auto (Recommended)</strong>: Automatically retrieves MAP-E configuration
+        </small>
+      </div>
+      
+      <div class="form-row">
+        <div class="form-group">
+          <label for="mape-br">BR (Border Relay)</label>
+          <input type="text" id="mape-br" class="form-control" placeholder="2001:db8::1">
+        </div>
+        <div class="form-group">
+          <label for="mape-ealen">EA-len</label>
+          <input type="number" id="mape-ealen" class="form-control" placeholder="16" min="0" max="48">
+        </div>
+      </div>
+      
+      <div class="form-row">
+        <div class="form-group">
+          <label for="mape-ipv4-prefix">IPv4 Prefix</label>
+          <input type="text" id="mape-ipv4-prefix" class="form-control" placeholder="192.0.2.0">
+        </div>
+        <div class="form-group">
+          <label for="mape-ipv4-prefixlen">IPv4 Prefix Length</label>
+          <input type="number" id="mape-ipv4-prefixlen" class="form-control" placeholder="24" min="1" max="32">
+        </div>
+      </div>
+      
+      <div class="form-row">
+        <div class="form-group">
+          <label for="mape-ipv6-prefix">IPv6 Prefix</label>
+          <input type="text" id="mape-ipv6-prefix" class="form-control" placeholder="2001:db8:8000::">
+        </div>
+        <div class="form-group">
+          <label for="mape-ipv6-prefixlen">IPv6 Prefix Length</label>
+          <input type="number" id="mape-ipv6-prefixlen" class="form-control" placeholder="32" min="1" max="128">
+        </div>
+      </div>
+      
+      <div class="form-row">
+        <div class="form-group">
+          <label for="mape-psid-offset">PSID Offset</label>
+          <input type="number" id="mape-psid-offset" class="form-control" placeholder="4" min="0" max="16">
+        </div>
+        <div class="form-group">
+          <label for="mape-psidlen">PSID Length</label>
+          <input type="number" id="mape-psidlen" class="form-control" placeholder="6" min="0" max="16">
+        </div>
+      </div>
+
+      <div id="mape-gua-section" class="form-group" style="display: none;">
+        <label for="mape-gua-prefix">GUA Prefix</label>
+        <input type="text" id="mape-gua-prefix" class="form-control" placeholder="2400:4151:80e2:7500::/64">
+        <small class="form-text text-muted">IPv6 Global Unicast Address prefix</small>
+      </div>
+    </div>
+    
+    <div id="ap-section" class="conditional-section">
+      <h5 class="section-title">AP Configuration</h5>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="ap-ip-address">IP Address</label>
+          <input type="text" id="ap-ip-address" class="form-control" value="192.168.1.2">
+        </div>
+        <div class="form-group">
+          <label for="ap-gateway">Gateway</label>
+          <input type="text" id="ap-gateway" class="form-control" value="192.168.1.1">
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group" id="isp-detection-group">
+      <label>ISP Detection Status</label>
+      <div id="isp-info-display" class="info" style="margin-bottom: 0;">
+        <div id="isp-status-message">ISP information will be detected when configuration is opened</div>
+        <div id="isp-technical-info" style="font-family: monospace; font-size: 0.9em; margin-top: 0.5rem; display: none;"></div>
+      </div>
+    </div>
+  </div>
+</div>
 
       <div id="tuning-config" class="config-section">
         <h4>Tuning</h4>
