@@ -362,7 +362,14 @@ details summary h4 {
   /* === Form Inputs === */
   .form-group input,
   .form-group select,
-  .form-group textarea {
+  .form-group textarea,
+  #asu-packages,
+  #uci-defaults-content,
+  #postinst-content,
+  #command,
+  #package-search,
+  #commands-autocomplete input,
+  #package-search-autocomplete input {
     background-color: #313135;
     color: #d0d0d0;
     border-color: #444;
@@ -370,7 +377,14 @@ details summary h4 {
 
   .form-group input:focus,
   .form-group select:focus,
-  .form-group textarea:focus {
+  .form-group textarea:focus,
+  #asu-packages:focus,
+  #uci-defaults-content:focus,
+  #postinst-content:focus,
+  #command:focus,
+  #package-search:focus,
+  #commands-autocomplete input:focus,
+  #package-search-autocomplete input:focus {
     background-color: #3a3a3e;
     border-color: var(--owrt-blue);
   }
