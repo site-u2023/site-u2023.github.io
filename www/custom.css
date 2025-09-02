@@ -385,11 +385,15 @@ details summary h4 {
     border-color: #444;
   }
 
-  .config-section h4 {
+  .config-section {
     color: var(--owrt-white);
     border-bottom-color: var(--owrt-blue);
   }
-
+  
+  .config-section summary > * {
+    color: var(--owrt-white);
+  }
+  
   /* === Details Summary === */
   details[open] summary {
     border-bottom-color: #444;
