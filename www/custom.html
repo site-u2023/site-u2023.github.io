@@ -42,12 +42,13 @@
       <h3 class="tr-packages">Installed Packages</h3>
     </summary>
     <div id="package-selector-config">
-      <div class="package-search-container config-section">
+      <div class="config-section">
         <h4>Package Search</h4>
         <p class="text-muted">Select extra packages to install. They'll be added to the list below.</p>
-        <div id="package-search-autocomplete" class="autocomplete">
+        <div class="autocomplete">
           <input type="text"
-            id="package-search"
+            id="custom-package-search"
+            class="autocomplete-input"
             placeholder="Type package name"
             autocomplete="off"
             spellcheck="false"
@@ -59,12 +60,13 @@
         <!-- JSONから動的に生成される -->
       </div>
       
-      <details id="postinst-details" class="config-section">
+      <details class="config-section">
         <summary>
           <h4>Postinst (Package installation script)</h4>
         </summary>
         <textarea
-          id="asu-packages"
+          id="custom-postinst-content"
+          class="config-textarea"
           autocomplete="off"
           spellcheck="false"
           autocapitalize="off"
@@ -81,12 +83,13 @@
       <h3 class="tr-defaults">Script to run on first boot (uci-defaults)</h3>
     </summary>
     <div id="scripts-config">
-      <div class="commands-container config-section">
+      <div class="config-section">
         <h4>Add commands</h4>
         <p class="text-muted">Add custom shell commands that run on first boot.</p>
-        <div id="commands-autocomplete" class="autocomplete">
+        <div class="autocomplete">
           <input type="text"
-            id="command"
+            id="custom-command-input"
+            class="autocomplete-input"
             placeholder="Type commands"
             autocomplete="off"
             spellcheck="false"
@@ -99,7 +102,7 @@
         <div class="form-row">
           <div class="form-group">
             <label for="aios-language">Language</label>
-            <select id="aios-language">
+            <select id="aios-language" class="form-control">
               <option value="ar">العربية (Arabic)</option>
               <option value="bg">Български (Bulgarian)</option>
               <option value="ca">Català (Catalan)</option>
@@ -136,40 +139,40 @@
           </div>
           <div class="form-group">
             <label for="aios-country">Country</label>
-            <input type="text" id="aios-country" placeholder="00" maxlength="2">
+            <input type="text" id="aios-country" class="form-control" placeholder="00" maxlength="2">
           </div>
         </div>
         
         <div class="form-row">
           <div class="form-group">
             <label for="aios-timezone">Timezone</label>
-            <input type="text" id="aios-timezone" placeholder="UTC">
+            <input type="text" id="aios-timezone" class="form-control" placeholder="UTC">
           </div>
           <div class="form-group">
             <label for="aios-zonename">Zonename</label>
-            <input type="text" id="aios-zonename" placeholder="UTC">
+            <input type="text" id="aios-zonename" class="form-control" placeholder="UTC">
           </div>
         </div>
         
         <div class="form-row">
           <div class="form-group">
             <label for="aios-device-name">Device name</label>
-            <input type="text" id="aios-device-name" placeholder="OpenWrt" value="">
+            <input type="text" id="aios-device-name" class="form-control" placeholder="OpenWrt" value="">
           </div>
           <div class="form-group">
             <label for="aios-root-password">Root password</label>
-            <input type="text" id="aios-root-password" placeholder="8+ characters" value="">
+            <input type="text" id="aios-root-password" class="form-control" placeholder="8+ characters" value="">
           </div>
         </div>
         
         <div class="form-row">
           <div class="form-group">
             <label for="aios-lan-ipv4">LAN IPv4 Address</label>
-            <input type="text" id="aios-lan-ipv4" placeholder="192.168.1.1" value="">
+            <input type="text" id="aios-lan-ipv4" class="form-control" placeholder="192.168.1.1" value="">
           </div>
           <div class="form-group">
             <label for="aios-lan-ipv6">LAN IPv6 Address</label>
-            <input type="text" id="aios-lan-ipv6" placeholder="fd00::1/64">
+            <input type="text" id="aios-lan-ipv6" class="form-control" placeholder="fd00::1/64">
           </div>
         </div>
 
@@ -208,11 +211,11 @@
         <div class="form-row">
           <div class="form-group">
             <label for="aios-wifi-ssid">Wi-Fi SSID</label>
-            <input type="text" id="aios-wifi-ssid" placeholder="OpenWrt" value="OpenWrt">
+            <input type="text" id="aios-wifi-ssid" class="form-control" placeholder="OpenWrt" value="OpenWrt">
           </div>
           <div class="form-group">
             <label for="aios-wifi-password">Wi-Fi Password</label>
-            <input type="text" id="aios-wifi-password" placeholder="8+ characters" value="password">
+            <input type="text" id="aios-wifi-password" class="form-control" placeholder="8+ characters" value="password">
           </div>
         </div>
       </div>
@@ -264,11 +267,11 @@
             <div class="form-row">
               <div class="form-group">
                 <label for="pppoe-username">PPPoE username</label>
-                <input type="text" id="pppoe-username" placeholder="Username">
+                <input type="text" id="pppoe-username" class="form-control" placeholder="Username">
               </div>
               <div class="form-group">
                 <label for="pppoe-password">PPPoE password</label>
-                <input type="password" id="pppoe-password" placeholder="Password">
+                <input type="password" id="pppoe-password" class="form-control" placeholder="Password">
               </div>
             </div>
           </div>
@@ -389,7 +392,7 @@
             </div>
           </div>
           
-          <div id="ap-section" class="conditional-section">
+          <div id="ap-section" class="connection-config" style="display: none;">
             <h5 class="section-title">AP Configuration</h5>
             <div class="form-row">
               <div class="form-group">
@@ -487,13 +490,14 @@
         </div>
       </div>
 
-      <details id="uci-defaults-details" class="config-section">
+      <details class="config-section">
         <summary>
           <h4>UCI-defaults (Boot configuration script)</h4>
         </summary>
         <div id="uci-defaults-group">
           <textarea
-            id="uci-defaults-content"
+            id="custom-uci-defaults-content"
+            class="config-textarea"
             autocomplete="off"
             spellcheck="false"
             autocapitalize="off"
