@@ -85,6 +85,7 @@
   color: var(--text-main);
   border-radius: 0.2em;
   font-size: inherit;
+  resize: both;
 }
 
 textarea {
