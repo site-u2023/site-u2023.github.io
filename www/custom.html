@@ -326,19 +326,22 @@
         </div>
 
         <!-- AP -->
-      <div id="ap-section" class="connection-config" style="display: none;">
-        <div class="form-row">
-          <div class="form-group" style="flex: 1; min-width: 150px;">
-            <label>IP Address</label>
-            <input type="text" id="ap-ip-address" class="form-control" placeholder="例: 192.168.1.2">
-          </div>
-          <div class="form-group" style="flex: 1; min-width: 150px;">
-            <label>Gateway</label>
-            <input type="text" id="ap-gateway" class="form-control" placeholder="例: 192.168.1.1">
+        <div id="ap-section" class="connection-config" style="display: none;">
+          <div class="form-row">
+            <div class="form-group" style="flex: 1; min-width: 150px;">
+              <label>IP Address</label>
+              <input type="text" id="ap-ip-address" class="form-control" placeholder="例: 192.168.1.2">
+            </div>
+            <div class="form-group" style="flex: 1; min-width: 150px;">
+              <label>Gateway</label>
+              <input type="text" id="ap-gateway" class="form-control" placeholder="例: 192.168.1.1">
+            </div>
           </div>
         </div>
-      </div>
-      
+
+      </div> <!-- Internet Connection セクションここまで -->
+
+      <!-- Tuning セクション（独立階層） -->
       <div id="tuning-config" class="config-section">
         <h4>Tuning</h4>
         <div class="form-group">
@@ -413,7 +416,7 @@
         </div>
       </div>
 
-      <!-- UCI-defaults -->
+      <!-- UCI-defaults セクション（独立階層） -->
       <details id="uci-defaults-details" class="config-section">
         <summary>
           <h4>UCI-defaults (Boot configuration script)</h4>
