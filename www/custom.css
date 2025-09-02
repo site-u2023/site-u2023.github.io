@@ -65,6 +65,10 @@
 }
 
 /* ===== Details/Summary Styling ===== */
+details {
+  margin-top: 1em;
+}
+
 details summary {
   cursor: pointer;
   padding: 0.75em 0;
@@ -82,16 +86,34 @@ details summary h4 {
   font-weight: 500;
 }
 
+#packages-details,
+#scripts-details {
+  margin-top: 1.5em;
+  padding: 1em;
+  background-color: #f9f9f9;
+  border-radius: 0.25em;
+}
+
+#postinst-details,
+#uci-defaults-details {
+  margin-top: 1em;
+  padding: 0.5em;
+  background-color: #f9f9f9;
+  border: 1px solid #e0e0e0;
+  border-radius: 0.25em;
+}
+
 /* ===== Configuration Sections ===== */
 .config-section {
+  margin-bottom: 1em;
   padding: 1em;
   background-color: #fff;
   border: 1px solid #e0e0e0;
   border-radius: 0.25em;
 }
 
-.config-section + .config-section {
-  margin-top: 1em;
+.config-section:first-child {
+  margin-top: 0;
 }
 
 .config-section h4 {
@@ -104,14 +126,15 @@ details summary h4 {
 
 /* ===== Package Categories ===== */
 .package-category {
+  margin-bottom: 1em;
   padding: 1em;
   background-color: #fff;
   border: 1px solid #e0e0e0;
   border-radius: 0.25em;
 }
 
-.package-category + .package-category {
-  margin-top: 1em;
+.package-category:first-child {
+  margin-top: 0;
 }
 
 .package-category h4,
@@ -190,6 +213,17 @@ details summary h4 {
   .form-group textarea:focus {
     background-color: #3a3a3e;
     border-color: #0080b3;
+  }
+  
+  #packages-details,
+  #scripts-details {
+    background-color: #2a2a2d;
+  }
+  
+  #postinst-details,
+  #uci-defaults-details {
+    background-color: #2a2a2d;
+    border-color: #444;
   }
   
   .config-section {
