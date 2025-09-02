@@ -137,6 +137,46 @@ details[open] summary {
   margin: 1em 0;
 }
 
+/* ===== 統一されたフィーチャーグリッド ===== */
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.75em;
+  margin-top: 1em;
+}
+
+.feature-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  padding: 0.5em;
+  background-color: #fafafa;
+  border-radius: 0.2em;
+  transition: background-color 0.2s;
+}
+
+.feature-item:hover {
+  background-color: #f0f0f0;
+}
+
+.feature-item input[type="checkbox"] {
+  width: auto;
+  margin: 0;
+}
+
+.feature-item label {
+  margin: 0;
+  cursor: pointer;
+  font-weight: normal;
+}
+
+.system-management-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5em;
+  margin-top: 1em;
+}
+
 .package-category {
   padding: 1em;
   background-color: #fff;
@@ -264,6 +304,14 @@ details[open] summary {
     gap: 0.5em;
   }
   
+  .feature-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .system-management-grid {
+    grid-template-columns: 1fr;
+  }
+  
   .package-grid {
     grid-template-columns: 1fr;
   }
@@ -310,6 +358,14 @@ details[open] summary {
   }
   
   .package-item:hover {
+    background-color: #3a3a3e;
+  }
+
+  .feature-item {
+    background-color: #2a2a2d;
+  }
+  
+  .feature-item:hover {
     background-color: #3a3a3e;
   }
   
