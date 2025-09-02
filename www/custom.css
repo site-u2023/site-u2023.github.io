@@ -212,7 +212,8 @@ details[open] summary {
 /* ===== Configuration Sections ===== */
 #basic-config,
 #wifi-config,
-#internet-config {
+#internet-config,
+#tuning-config {
   margin: 1.5em 0;
   padding: 1em;
   background-color: #fff;
@@ -222,7 +223,8 @@ details[open] summary {
 
 #basic-config h5,
 #wifi-config h5,
-#internet-config h5 {
+#internet-config h5,
+#tuning-config h5 {
   margin-top: 0;
   margin-bottom: 1em;
   padding-bottom: 0.5em;
