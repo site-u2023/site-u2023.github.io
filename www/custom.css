@@ -210,10 +210,7 @@ details[open] summary {
 }
 
 /* ===== Configuration Sections ===== */
-#basic-config,
-#wifi-config,
-#internet-config,
-#tuning-config {
+.config-section {
   margin: 1.5em 0;
   padding: 1em;
   background-color: #fff;
@@ -221,10 +218,7 @@ details[open] summary {
   border-radius: 0.25em;
 }
 
-#basic-config h5,
-#wifi-config h5,
-#internet-config h5,
-#tuning-config h5 {
+.config-section h5 {
   margin-top: 0;
   margin-bottom: 1em;
   padding-bottom: 0.5em;
@@ -320,18 +314,12 @@ details[open] summary {
     background-color: #3a3a3e;
   }
   
-  #basic-config,
-  #wifi-config,
-  #internet-config,
-  #tuning-config {
+  .config-section {
     background-color: #313135;
     border-color: #444;
   }
   
-  #basic-config h5,
-  #wifi-config h5,
-  #internet-config h5,
-  #tuning-config h5 {
+  .config-section h5 {
     border-bottom-color: #0080b3;
     color: #d0d0d0;
   }
