@@ -549,6 +549,9 @@ function handleConnectionModeChange(e) {
 
 // 接続タイプ変更
 function handleConnectionTypeChange(e) {
+    const selectedType = e.target.value;
+    
+    // すべてのセクションを非表示
     hide("#auto-section");
     hide("#dhcp-section");
     hide("#pppoe-section");
@@ -556,12 +559,45 @@ function handleConnectionTypeChange(e) {
     hide("#mape-section");
     hide("#ap-section");
 
-    if (e.target.value === 'auto') show("#auto-section");
-    else if (e.target.value === 'dhcp') show("#dhcp-section");
-    else if (e.target.value === 'pppoe') show("#pppoe-section");
-    else if (e.target.value === 'dslite') show("#dslite-section");
-    else if (e.target.value === 'mape') show("#mape-section");
-    else if (e.target.value === 'ap') show("#ap-section");
+    // 選択されたセクションを表示
+    if (selectedType === 'auto') show("#auto-section");
+    else if (selectedType === 'dhcp') show("#dhcp-section");
+    else if (selectedType === 'pppoe') show("#pppoe-section");
+    else if (selectedType === 'dslite') show("#dslite-section");
+    else if (selectedType === 'mape') show("#mape-section");
+    else if (selectedType === 'ap') show("#ap-section");
+    
+    // 非選択の接続タイプのフィールドをクリア
+    clearUnselectedConnectionFields(selectedType);
+    
+    // setup.shを即座に更新
+    updateVariableDefinitions();
+}
+
+// 非選択の接続タイプのフィールドをクリアする関数
+function clearUnselectedConnectionFields(selectedType) {
+    console.log(`Clearing fields for all connection types except: ${selectedType}`);
+    
+    Object.entries(connectionTypeFields).forEach(([type, fields]) => {
+        if (type !== selectedType) {
+            fields.forEach(selector => {
+                const elements = document.querySelectorAll(selector);
+                elements.forEach(element => {
+                    if (element.type === 'radio') {
+                        // ラジオボタンの場合、最初の選択肢を選択
+                        const firstRadio = document.querySelector(`${selector}:first-of-type`);
+                        if (firstRadio) firstRadio.checked = true;
+                    } else if (element.type === 'checkbox') {
+                        // チェックボックスの場合、チェックを外す
+                        element.checked = false;
+                    } else {
+                        // その他の入力フィールドは空にする
+                        element.value = '';
+                    }
+                });
+            });
+        }
+    });
 }
 
 // ネットワークオプティマイザー変更
@@ -826,42 +862,51 @@ function collectFormValues() {
     if (sshPort && sshPort !== "22") values.ssh_port = sshPort;
     if (backupPath && backupPath !== "/root/backup.tar.gz") values.backup_path = backupPath;
     
-    // Flow offloading
+// Flow offloading
     if (flowOffloading) values.flow_offloading_type = flowOffloading;
     
-    // Wi-Fi設定
-    if (wifiMode === "usteer") values.enable_usteer = "1";
-    if (wifiSsid) values.wlan_ssid = wifiSsid;
-    if (wifiPassword) values.wlan_password = wifiPassword;
-    if (mobilityDomain) values.mobility_domain = mobilityDomain;
-    if (snr) values.snr = snr;
+    // Wi-Fi設定（disabledでない場合のみ）
+    if (wifiMode !== "disabled") {
+        if (wifiMode === "usteer") values.enable_usteer = "1";
+        if (wifiSsid) values.wlan_ssid = wifiSsid;
+        if (wifiPassword) values.wlan_password = wifiPassword;
+        if (wifiMode === "usteer") {
+            // Usteer特有の設定
+            if (mobilityDomain) values.mobility_domain = mobilityDomain;
+            if (snr) values.snr = snr;
+        }
+    }
     
-    // PPPoE設定
-    if (pppoeUsername) values.pppoe_username = pppoeUsername;
-    if (pppoePassword) values.pppoe_password = pppoePassword;
-    
-    // DS-Lite設定
-    if (dsliteAftrAddress) values.dslite_aftr_address = dsliteAftrAddress;
-    
-    // MAP-E設定
-    if (mapeBr) values.mape_br = mapeBr;
-    if (mapeEalen) values.mape_ealen = mapeEalen;
-    if (mapeIpv4Prefix) values.mape_ipv4_prefix = mapeIpv4Prefix;
-    if (mapeIpv4Prefixlen) values.mape_ipv4_prefixlen = mapeIpv4Prefixlen;
-    if (mapeIpv6Prefix) values.mape_ipv6_prefix = mapeIpv6Prefix;
-    if (mapeIpv6Prefixlen) values.mape_ipv6_prefixlen = mapeIpv6Prefixlen;
-    if (mapePsidOffset) values.mape_psid_offset = mapePsidOffset;
-    if (mapePsidlen) values.mape_psidlen = mapePsidlen;
-    if (mapeGuaPrefix) values.mape_gua_prefix = mapeGuaPrefix;
-    if (mapeType === "gua") values.mape_gua_mode = "1";
-    
-    // AP設定
-    if (apIpAddress) values.ap_ip_address = apIpAddress;
-    if (apGateway) values.ap_gateway = apGateway;
+    // 接続タイプ別の設定
+    if (connectionType === 'pppoe') {
+        // PPPoE設定
+        if (pppoeUsername) values.pppoe_username = pppoeUsername;
+        if (pppoePassword) values.pppoe_password = pppoePassword;
+    } else if (connectionType === 'dslite') {
+        // DS-Lite設定
+        if (dsliteAftrAddress) values.dslite_aftr_address = dsliteAftrAddress;
+    } else if (connectionType === 'mape') {
+        // MAP-E設定
+        if (mapeBr) values.mape_br = mapeBr;
+        if (mapeEalen) values.mape_ealen = mapeEalen;
+        if (mapeIpv4Prefix) values.mape_ipv4_prefix = mapeIpv4Prefix;
+        if (mapeIpv4Prefixlen) values.mape_ipv4_prefixlen = mapeIpv4Prefixlen;
+        if (mapeIpv6Prefix) values.mape_ipv6_prefix = mapeIpv6Prefix;
+        if (mapeIpv6Prefixlen) values.mape_ipv6_prefixlen = mapeIpv6Prefixlen;
+        if (mapePsidOffset) values.mape_psid_offset = mapePsidOffset;
+        if (mapePsidlen) values.mape_psidlen = mapePsidlen;
+        if (mapeGuaPrefix) values.mape_gua_prefix = mapeGuaPrefix;
+        if (mapeType === "gua") values.mape_gua_mode = "1";
+    } else if (connectionType === 'ap') {
+        // AP設定
+        if (apIpAddress) values.ap_ip_address = apIpAddress;
+        if (apGateway) values.ap_gateway = apGateway;
+    }
     
     // Network Optimizer設定
-    if (netOptimizer === "auto") values.enable_netopt = "1";
-    if (netOptimizer === "manual") {
+    if (netOptimizer === "auto") {
+        values.enable_netopt = "1";
+    } else if (netOptimizer === "manual") {
         if (netoptRmem) values.netopt_rmem = netoptRmem;
         if (netoptWmem) values.netopt_wmem = netoptWmem;
         if (netoptConntrack) values.netopt_conntrack = netoptConntrack;
@@ -964,6 +1009,20 @@ function updateCustomCommands() {
 // カテゴリ別フォーム構造
 let formFields = {};
 
+// 接続タイプごとのフィールド定義
+const connectionTypeFields = {
+    auto: [],
+    dhcp: [],
+    pppoe: ['#pppoe-username', '#pppoe-password'],
+    dslite: ['#dslite-aftr-address'],
+    mape: [
+        '#mape-br', '#mape-ealen', '#mape-ipv4-prefix', '#mape-ipv4-prefixlen',
+        '#mape-ipv6-prefix', '#mape-ipv6-prefixlen', '#mape-psid-offset', 
+        '#mape-psidlen', '#mape-gua-prefix', 'input[name="mapeType"]'
+    ],
+    ap: ['#ap-ip-address', '#ap-gateway']
+};
+
 // setup.jsonからformFieldsを生成
 fetch(setup_db_url)
     .then(response => response.json())
@@ -994,24 +1053,30 @@ fetch(setup_db_url)
     })
     .catch(error => console.error('Failed to load setup.json:', error));
 
-// 監視設定時はJSONを展開
 function setupFormWatchers() {
     console.log('setupFormWatchers called');
-    Object.values(formFields).flat().forEach(selector => {
-        document.querySelectorAll(selector).forEach(element => {
-            element.removeEventListener('input', updateVariableDefinitions);
-            element.removeEventListener('change', updateVariableDefinitions);
-            if (element.type === 'radio' || element.type === 'checkbox' || element.tagName === 'SELECT') {
-                element.addEventListener('change', updateVariableDefinitions);
-            } else {
-                element.addEventListener('input', updateVariableDefinitions);
-            }
-        });
+    
+    // 既存のイベントリスナーをクリアしてから再設定
+    const allWatchedSelectors = new Set();
+    
+    // カテゴリごとのフィールドを監視対象に追加
+    Object.values(formFields).flat().forEach(selector => allWatchedSelectors.add(selector));
+    
+    // 接続タイプごとのフィールドも監視対象に追加
+    Object.values(connectionTypeFields).flat().forEach(selector => allWatchedSelectors.add(selector));
+    
+    // 各要素に対してイベントリスナーを設定
+    allWatchedSelectors.forEach(selector => {
+        // イベントリスナー設定
     });
-    const commandInput = document.querySelector("#command");
-    if (commandInput) {
-        commandInput.removeEventListener('input', updateCustomCommands);
-        commandInput.addEventListener('input', updateCustomCommands);
-    }
+    
+    // 初期値を反映
     updateVariableDefinitions();
+    
+    // 接続タイプの初期状態を適用
+    const checkedConnectionType = document.querySelector('input[name="connectionType"]:checked');
+    if (checkedConnectionType) {
+        // 初期状態で非選択のフィールドをクリア
+        clearUnselectedConnectionFields(checkedConnectionType.value);
+    }
 }
