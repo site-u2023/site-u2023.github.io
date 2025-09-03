@@ -78,7 +78,7 @@
 #uci-defaults-content,
 #postinst-content,
 #asu-packages {
-  width: calc(100% - 2em);
+  width: 90%;
   margin: 0;
   padding: 0.8em;
   border: 0.06em solid transparent;
