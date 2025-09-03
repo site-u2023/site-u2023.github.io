@@ -203,16 +203,37 @@
         </div>
       </div>
     
-      <div id="wifi-config" class="config-section">
+<div id="wifi-config" class="config-section">
         <h4>Wi-Fi Configuration</h4>
-        <div class="form-row">
-          <div class="form-group">
-            <label for="aios-wifi-ssid">Wi-Fi SSID</label>
-            <input type="text" id="aios-wifi-ssid" placeholder="OpenWrt" value="OpenWrt">
+        <div class="form-group">
+          <label>Wi-Fi Mode</label>
+          <div class="radio-group">
+            <label><input type="radio" name="wifi_mode" value="standard" checked> Standard</label>
+            <label><input type="radio" name="wifi_mode" value="usteer"> Usteer</label>
+            <label><input type="radio" name="wifi_mode" value="disabled"> Disabled</label>
           </div>
-          <div class="form-group">
-            <label for="aios-wifi-password">Wi-Fi Password</label>
-            <input type="text" id="aios-wifi-password" placeholder="8+ characters" value="password">
+        </div>
+
+        <div id="wifi-options-container">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="aios-wifi-ssid">Wi-Fi SSID</label>
+              <input type="text" id="aios-wifi-ssid" placeholder="OpenWrt" value="OpenWrt">
+            </div>
+            <div class="form-group">
+              <label for="aios-wifi-password">Wi-Fi Password</label>
+              <input type="text" id="aios-wifi-password" placeholder="8+ characters" value="password">
+            </div>
+          </div>
+          <div id="usteer-options" class="form-row" style="display: none;">
+            <div class="form-group">
+              <label for="aios-wifi-mobility-domain">Mobility Domain</label>
+              <input type="text" id="aios-wifi-mobility-domain" placeholder="e.g., 4f57" value="4f57">
+            </div>
+            <div class="form-group">
+              <label for="aios-wifi-snr">Min SNR</label>
+              <input type="number" id="aios-wifi-snr" placeholder="20" value="20" min="0">
+            </div>
           </div>
         </div>
       </div>
