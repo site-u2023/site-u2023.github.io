@@ -152,6 +152,7 @@ function reinitializeFeatures() {
     setupEventListeners();
     if (PACKAGE_DB) generatePackageSelector();
     fetchAndDisplayIspInfo();
+    if (cachedApiInfo) updateAutoConnectionInfo(cachedApiInfo);  // AUTO情報の再更新
 }
 
 // ==================== setup.json 処理 ====================
@@ -269,7 +270,37 @@ function getFieldValue(selector) {
 function applySpecialFieldLogic(values) {
     // 接続タイプに応じたフィルタリング
     const connectionType = getFieldValue('input[name="connectionType"]');
-    if (connectionType && connectionType !== 'auto') {
+    
+    if (connectionType === 'auto') {
+        // AUTO選択時は、APIから検出された値を使用
+        if (cachedApiInfo) {
+            if (cachedApiInfo.mape?.brIpv6Address) {
+                // MAP-Eの値を自動設定
+                values.mape_br = cachedApiInfo.mape.brIpv6Address;
+                values.mape_ealen = cachedApiInfo.mape.eaBitLength;
+                values.mape_ipv4_prefix = cachedApiInfo.mape.ipv4Prefix;
+                values.mape_ipv4_prefixlen = cachedApiInfo.mape.ipv4PrefixLength;
+                values.mape_ipv6_prefix = cachedApiInfo.mape.ipv6Prefix;
+                values.mape_ipv6_prefixlen = cachedApiInfo.mape.ipv6PrefixLength;
+                values.mape_psid_offset = cachedApiInfo.mape.psIdOffset;
+                values.mape_psidlen = cachedApiInfo.mape.psidlen;
+                
+                // GUA Prefix処理
+                if (cachedApiInfo.mape.ipv6Prefix) {
+                    const prefix = cachedApiInfo.mape.ipv6Prefix;
+                    const segments = prefix.split(':');
+                    while (segments.length < 4) {
+                        segments.push('0');
+                    }
+                    values.mape_gua_prefix = segments.slice(0, 4).join(':') + '::/64';
+                    values.mape_gua_mode = '1';
+                }
+            } else if (cachedApiInfo.aftr) {
+                // DS-Liteの値を自動設定
+                values.dslite_aftr_address = cachedApiInfo.aftr;
+            }
+        }
+    } else if (connectionType && connectionType !== 'auto') {
         // 他の接続タイプのフィールドを除外
         Object.keys(formStructure.connectionTypes).forEach(type => {
             if (type !== connectionType) {
@@ -304,7 +335,7 @@ function applySpecialFieldLogic(values) {
             .forEach(key => delete values[key]);
     }
     
-    // MAP-E GUAモード
+    // MAP-E GUAモード（手動選択時のみ）
     if (connectionType === 'mape') {
         const mapeType = getFieldValue('input[name="mapeType"]');
         if (mapeType === 'gua') values.mape_gua_mode = '1';
@@ -338,6 +369,20 @@ function setupEventListeners() {
 function handleConnectionTypeChange(e) {
     const selectedType = e.target.value;
     
+    // AUTOセクションも含めて制御
+    const autoSection = document.querySelector('#auto-section');
+    if (autoSection) {
+        if (selectedType === 'auto') {
+            show(autoSection);
+            // AUTO選択時は検出された情報を再表示
+            if (cachedApiInfo) {
+                updateAutoConnectionInfo(cachedApiInfo);
+            }
+        } else {
+            hide(autoSection);
+        }
+    }
+    
     // すべてのセクションを制御
     Object.keys(formStructure.connectionTypes).forEach(type => {
         const section = document.querySelector(`#${type}-section`);
@@ -346,8 +391,10 @@ function handleConnectionTypeChange(e) {
                 show(section);
             } else {
                 hide(section);
-                // フィールドをクリア
-                clearConnectionTypeFields(type);
+                // フィールドをクリア（AUTO選択時は除く）
+                if (selectedType !== 'auto') {
+                    clearConnectionTypeFields(type);
+                }
             }
         }
     });
@@ -435,8 +482,14 @@ async function fetchAndDisplayIspInfo() {
         cachedApiInfo = apiInfo;
         displayIspInfo(apiInfo);
         applyIspAutoConfig(apiInfo);
+        updateAutoConnectionInfo(apiInfo);  // AUTOセクションの情報を更新
     } catch (err) {
         console.error('Failed to fetch ISP info:', err);
+        // エラー時もAUTO情報を更新
+        const autoInfo = document.querySelector('#auto-info');
+        if (autoInfo) {
+            autoInfo.textContent = 'Failed to detect connection type.\nPlease select manually.';
+        }
     }
 }
 
@@ -492,22 +545,45 @@ function applyIspAutoConfig(apiInfo) {
         }
     });
     
-    // 接続タイプを自動判定
-    let detectedType = null;
-    if (apiInfo.mape?.brIpv6Address) detectedType = 'mape';
-    else if (apiInfo.aftr) detectedType = 'dslite';
+    // AUTO選択時の情報表示を更新
+    updateAutoConnectionInfo(apiInfo);
     
-    // AUTO選択時のみ自動切替
-    const autoRadio = document.querySelector('input[name="connectionType"][value="auto"]');
-    if (autoRadio?.checked && detectedType) {
-        const targetRadio = document.querySelector(`input[name="connectionType"][value="${detectedType}"]`);
-        if (targetRadio) {
-            targetRadio.checked = true;
-            handleConnectionTypeChange({ target: targetRadio });
+    updateVariableDefinitions();
+}
+
+// AUTO接続情報の表示更新
+function updateAutoConnectionInfo(apiInfo) {
+    const autoInfo = document.querySelector('#auto-info');
+    if (!autoInfo) return;
+    
+    let infoText = '';
+    
+    if (apiInfo?.mape?.brIpv6Address) {
+        infoText = '🌐 Detected: MAP-E\n';
+        infoText += `   BR: ${apiInfo.mape.brIpv6Address}\n`;
+        infoText += `   EA-len: ${apiInfo.mape.eaBitLength}\n`;
+        infoText += `   IPv4 Prefix: ${apiInfo.mape.ipv4Prefix}/${apiInfo.mape.ipv4PrefixLength}\n`;
+        infoText += `   IPv6 Prefix: ${apiInfo.mape.ipv6Prefix}/${apiInfo.mape.ipv6PrefixLength}\n`;
+        infoText += `   PSID: offset=${apiInfo.mape.psIdOffset}, length=${apiInfo.mape.psidlen}`;
+    } else if (apiInfo?.aftr) {
+        infoText = '🌐 Detected: DS-Lite\n';
+        infoText += `   AFTR: ${apiInfo.aftr}`;
+    } else if (apiInfo) {
+        infoText = '🌐 Detected: DHCP/PPPoE\n';
+        infoText += '   Standard connection will be used';
+    } else {
+        infoText = '⚠ No connection information available\n';
+        infoText += '   Please select connection type manually';
+    }
+    
+    if (apiInfo?.isp) {
+        infoText += `\n\n📡 ISP: ${apiInfo.isp}`;
+        if (apiInfo.as) {
+            infoText += ` (${apiInfo.as})`;
         }
     }
     
-    updateVariableDefinitions();
+    autoInfo.textContent = infoText;
 }
 
 // ==================== パッケージ管理 ====================
