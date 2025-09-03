@@ -555,11 +555,18 @@ function handleConnectionTypeChange(e) {
 
 // ネットワークオプティマイザー変更
 function handleNetOptimizerChange(e) {
-    const optimizerSection = document.querySelector("#net-optimizer-section");
-    if (e.target.value === 'enabled') {
-        show(optimizerSection);
-    } else {
-        hide(optimizerSection);
+    // すべてのセクションを非表示
+    hide("#netopt-auto-section");
+    hide("#netopt-manual-section");
+    hide("#netopt-disabled-section");
+    
+    // 選択された値に応じて表示
+    if (e.target.value === 'auto') {
+        show("#netopt-auto-section");
+    } else if (e.target.value === 'manual') {
+        show("#netopt-manual-section");
+    } else if (e.target.value === 'disabled') {
+        show("#netopt-disabled-section");
     }
 }
 
