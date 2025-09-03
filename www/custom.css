@@ -246,7 +246,7 @@ details[open] summary {
 .package-category h4,
 #postinst-details h4,
 #uci-defaults-details h4 {
-  margin-top: 0.5em;
+  margin-top: 1em;
   margin-bottom: 1em;
   color: inherit;  /* 親要素から継承 */
 }
