@@ -63,6 +63,7 @@ WLAN_EOF
 ###################################################################################################
 [ -n "\${wlan_ssid}" ] && [ -n "\${wlan_password}" ] && [ "\${#wlan_password}" -ge 8 ] && {
     wireless_cfg="\$(uci -q show wireless)"
+    nasid_prefix="\${wlan_ssid}"
     for radio in \$(printf '%s\n' "\${wireless_cfg}" | grep "wireless\.radio[0-9]*=" | cut -d. -f2 | cut -d= -f1); do
         uci -q batch <<RADIO_EOF
 set wireless.\${radio}.disabled='0'
@@ -70,20 +71,17 @@ set wireless.\${radio}.country="\${country:-00}"
 RADIO_EOF
         band="\$(uci -q get wireless.\${radio}.band)"
         case "\${band}" in
-            2g) suffix="-2g"; encryption='psk-mixed'; nasid_suffix='-2g' ;;
-            5g) suffix="-5g"; encryption='sae-mixed'; nasid_suffix='-5g' ;;
-            6g) suffix="-6g"; encryption='sae';        nasid_suffix='-6g' ;;
-            *)  suffix="";    encryption='psk-mixed';  nasid_suffix='' ;;
+                2g) band_suffix='-2g'; encryption='psk-mixed' ;;
+                5g) band_suffix='-5g'; encryption='sae-mixed' ;;
+                6g) band_suffix='-6g'; encryption='sae' ;;
+                *)  band_suffix='';    encryption='psk-mixed' ;;
         esac
         if [ -n "\${enable_usteer}" ]; then
             ssid="\${wlan_ssid}"
+            nasid="\${wlan_ssid}\${band_suffix}"
         else
-            ssid="\${wlan_ssid}\${suffix}"
-            n=2
-            while printf '%s\n' "\${wireless_cfg}" | grep -q "ssid='\${ssid}'"; do
-                ssid="\${wlan_ssid}\${suffix}\${n}"
-                n=\$((n+1))
-            done
+            ssid="\${wlan_ssid}\${band_suffix}"
+            nasid="\${wlan_ssid}\${band_suffix}"
         fi
         iface="default_\${radio}"
         [ -n "\$(uci -q get wireless.\${iface})" ] && {
@@ -100,7 +98,7 @@ set wireless.\${iface}.ocv='1'
 set wireless.\${iface}.ieee80211r='1'
 set wireless.\${iface}.mobilty_domain="\${mobilty_domain}"
 set wireless.\${iface}.ft_over_ds='1'
-set wireless.\${iface}.nasid="ap1\${nasid_suffix}"
+set wireless.\${iface}.nasid="\${nasid_prefix}\${nasid_suffix}"
 set wireless.\${iface}.usteer_min_snr="\${snr}"
 set wireless.\${iface}.ieee80211k='1'
 set wireless.\${iface}.ieee80211v='1'
