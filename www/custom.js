@@ -498,10 +498,15 @@ function resizePostinstTextarea() {
 
 // イベントリスナー設定
 function setupEventListeners() {
+    console.log('setupEventListeners called');
+    
     // 既存のリスナーを削除してから再設定
     const connectionModeRadios = document.querySelectorAll('input[name="connectionMode"]');
     const connectionTypeRadios = document.querySelectorAll('input[name="connectionType"]');
     const netOptimizerRadios = document.querySelectorAll('input[name="netOptimizer"]');
+    const wifiModeRadios = document.querySelectorAll('input[name="wifi_mode"]');
+    
+    console.log('Found wifi_mode radios:', wifiModeRadios.length);
     
     connectionModeRadios.forEach(r => {
         r.removeEventListener('change', handleConnectionModeChange);
@@ -517,6 +522,19 @@ function setupEventListeners() {
         r.removeEventListener('change', handleNetOptimizerChange);
         r.addEventListener('change', handleNetOptimizerChange);
     });
+    
+    wifiModeRadios.forEach(r => {
+        console.log('Adding event listener to wifi radio:', r.value);
+        r.removeEventListener('change', handleWifiModeChange);
+        r.addEventListener('change', handleWifiModeChange);
+    });
+    
+    // Wi-Fi初期状態設定
+    const checkedWifiMode = document.querySelector('input[name="wifi_mode"]:checked');
+    if (checkedWifiMode) {
+        console.log('Initial wifi mode:', checkedWifiMode.value);
+        handleWifiModeChange({ target: checkedWifiMode });
+    }
 }
 
 // 接続モード変更
