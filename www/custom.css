@@ -370,10 +370,6 @@ details summary h4 {
   .form-row label:not(.radio-group label) {
     white-space: nowrap; 
   }
-  
-  .radio-group label {
-    white-space: normal;
-  }
 }
 
 /* ===== Utility Classes ===== */
