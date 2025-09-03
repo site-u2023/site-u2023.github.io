@@ -128,6 +128,9 @@ function initializeCustomFeatures(asuSection, temp) {
 
     // デバイス用言語セレクター初期化
     initDeviceTranslation();
+
+    // フォーム全体の監視を開始する関数を呼び出す
+    setupFormWatchers();
     
     // 初期化完了フラグ
     customInitialized = true;
@@ -743,15 +746,6 @@ function initDeviceTranslation() {
     } else {
         select.value = current_language;
     }
-
-    // onchange 処理
-    select.onchange = function () {
-        const option = select.options[select.selectedIndex];
-        saveConfig("language", option.value);
-    };
-
-    // 初期化トリガー
-    select.onchange();
 }
 
 // フォーム値収集関数
