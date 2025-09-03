@@ -71,15 +71,15 @@
               "id": "mape",
               "name": "MAP-E",
               "children": [
-                {"id": "mape-br", "name": "BR", "selector": "#mape-br", "apiMapping": "mape.brIpv6Address"},
-                {"id": "mape-ealen", "name": "EALEN", "selector": "#mape-ealen", "apiMapping": "mape.eaLength"},
-                {"id": "mape-ipv4-prefix", "name": "IPv4 Prefix", "selector": "#mape-ipv4-prefix", "apiMapping": "mape.ipv4Prefix"},
-                {"id": "mape-ipv4-prefixlen", "name": "IPv4 Prefix Length", "selector": "#mape-ipv4-prefixlen", "apiMapping": "mape.ipv4PrefixLength"},
-                {"id": "mape-ipv6-prefix", "name": "IPv6 Prefix", "selector": "#mape-ipv6-prefix", "apiMapping": "mape.ipv6Prefix"},
-                {"id": "mape-ipv6-prefixlen", "name": "IPv6 Prefix Length", "selector": "#mape-ipv6-prefixlen", "apiMapping": "mape.ipv6PrefixLength"},
-                {"id": "mape-psid-offset", "name": "PSID Offset", "selector": "#mape-psid-offset", "apiMapping": "mape.psidOffset"},
-                {"id": "mape-psidlen", "name": "PSID Length", "selector": "#mape-psidlen", "apiMapping": "mape.psidLength"},
-                {"id": "mape-gua-prefix", "name": "GUA Prefix", "selector": "#mape-gua-prefix", "apiMapping": "mape.ipv6Prefix"}
+                {"id": "mape-br", "name": "BR", "selector": "#mape-br", "variableName": "mape_br", "apiMapping": "mape.brIpv6Address"},
+                {"id": "mape-ealen", "name": "EALEN", "selector": "#mape-ealen", "variableName": "mape_ealen", "apiMapping": "mape.eaBitLength"},
+                {"id": "mape-ipv4-prefix", "name": "IPv4 Prefix", "selector": "#mape-ipv4-prefix", "variableName": "mape_ipv4_prefix", "apiMapping": "mape.ipv4Prefix"},
+                {"id": "mape-ipv4-prefixlen", "name": "IPv4 Prefix Length", "selector": "#mape-ipv4-prefixlen", "variableName": "mape_ipv4_prefixlen", "apiMapping": "mape.ipv4PrefixLength"},
+                {"id": "mape-ipv6-prefix", "name": "IPv6 Prefix", "selector": "#mape-ipv6-prefix", "variableName": "mape_ipv6_prefix", "apiMapping": "mape.ipv6Prefix"},
+                {"id": "mape-ipv6-prefixlen", "name": "IPv6 Prefix Length", "selector": "#mape-ipv6-prefixlen", "variableName": "mape_ipv6_prefixlen", "apiMapping": "mape.ipv6PrefixLength"},
+                {"id": "mape-psid-offset", "name": "PSID Offset", "selector": "#mape-psid-offset", "variableName": "mape_psid_offset", "apiMapping": "mape.psIdOffset"},
+                {"id": "mape-psidlen", "name": "PSID Length", "selector": "#mape-psidlen", "variableName": "mape_psidlen", "apiMapping": "mape.psidlen"},
+                {"id": "mape-gua-prefix", "name": "GUA Prefix", "selector": "#mape-gua-prefix", "variableName": "mape_gua_prefix", "apiMapping": "mape.ipv6PrefixWith64"}
               ]
             },
             {
