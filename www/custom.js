@@ -465,7 +465,24 @@ function applyIspAutoConfig(apiInfo) {
     // APIマッピングに基づいて値を設定
     Object.values(formStructure.fields).forEach(field => {
         if (field.apiMapping) {
-            const value = getNestedValue(apiInfo, field.apiMapping);
+            let value = getNestedValue(apiInfo, field.apiMapping);
+            
+            // GUA Prefix特別処理（/64を付加）
+            if (field.apiMapping === 'mape.ipv6PrefixWith64' && apiInfo.mape?.ipv6Prefix) {
+                const prefix = apiInfo.mape.ipv6Prefix;
+                // 既に/が含まれていない場合、第四セグメントまで展開して/64を付加
+                if (!prefix.includes('/')) {
+                    const segments = prefix.split(':');
+                    // 第四セグメントまで確保（足りない場合は0で埋める）
+                    while (segments.length < 4) {
+                        segments.push('0');
+                    }
+                    value = segments.slice(0, 4).join(':') + '::/64';
+                } else {
+                    value = prefix;
+                }
+            }
+            
             if (value !== null && value !== undefined) {                    
                 const element = document.querySelector(field.selector);
                 if (element) {
