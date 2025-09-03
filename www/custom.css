@@ -109,7 +109,7 @@
   align-items: center;
   gap: 0.25em;
   cursor: pointer;
-  white-space: normal;
+  white-space: nowrap;
 }
 
 /* ===== Details/Summary Styling ===== */
