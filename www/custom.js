@@ -284,7 +284,7 @@ function generatePackageSelector() {
         const categoryDiv = document.createElement('div');
         categoryDiv.className = 'package-category';
         
-        const categoryTitle = document.createElement('h5');
+        const categoryTitle = document.createElement('h4');
         categoryTitle.textContent = category.name;
         categoryDiv.appendChild(categoryTitle);
         
