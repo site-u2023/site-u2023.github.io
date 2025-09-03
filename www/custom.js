@@ -475,11 +475,30 @@ function applyIspAutoConfig(apiInfo) {
         }
     });
     
-    // 接続タイプを自動判定
+    // 接続タイプを自動判定（MAP-E を確実に親で拾う）
     let detectedType = null;
-    if (apiInfo.mape?.brIpv6Address) detectedType = 'mape';
-    else if (apiInfo.aftr) detectedType = 'dslite';
-    
+
+    // MAP-E が存在するかチェック
+    if (apiInfo.mape) {
+        detectedType = 'mape';
+
+        // 親フィールドだけで値を反映
+        const mapeParentFields = ['brIpv6Address', 'guaMode'];
+        mapeParentFields.forEach(key => {
+            const value = apiInfo.mape[key];
+            if (value !== undefined && value !== null) {
+                const fieldKey = key === 'brIpv6Address' ? 'mape_br' : 'mape_gua_mode';
+                const field = formStructure.fields[fieldKey];
+                if (field) {
+                    const el = document.querySelector(field.selector);
+                    if (el && !el.value) el.value = value;
+                }
+            }
+        });
+    } else if (apiInfo.aftr) {
+        detectedType = 'dslite';
+    }
+
     // AUTO選択時のみ自動切替
     const autoRadio = document.querySelector('input[name="connectionType"][value="auto"]');
     if (autoRadio?.checked && detectedType) {
@@ -489,7 +508,7 @@ function applyIspAutoConfig(apiInfo) {
             handleConnectionTypeChange({ target: targetRadio });
         }
     }
-    
+
     updateVariableDefinitions();
 }
 
