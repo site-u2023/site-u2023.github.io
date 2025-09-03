@@ -267,7 +267,7 @@ details summary h4 {
 
 .package-item {
   padding: 0.5em;
-  background-color: var(--bg-item);
+  background-color: transparent;
   border-radius: 0.2em;
   transition: background-color 0.2s;
 }
