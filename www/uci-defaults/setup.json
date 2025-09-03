@@ -7,9 +7,9 @@
       "description": "Basic system and device configuration",
       "packages": [
         {"id": "language", "name": "Language", "selector": "#aios-language"},
-        {"id": "country", "name": "Country", "selector": "#aios-country"},
-        {"id": "timezone", "name": "Timezone", "selector": "#aios-timezone"},
-        {"id": "zonename", "name": "Zone Name", "selector": "#aios-zonename"},
+        {"id": "country", "name": "Country", "selector": "#aios-country", "apiMapping": "country"},
+        {"id": "timezone", "name": "Timezone", "selector": "#aios-timezone", "apiMapping": "timezone"},
+        {"id": "zonename", "name": "Zone Name", "selector": "#aios-zonename", "apiMapping": "zonename"},
         {"id": "device-name", "name": "Device Name", "selector": "#aios-device-name"},
         {"id": "root-password", "name": "Root Password", "selector": "#aios-root-password"},
         {"id": "lan-ipv4", "name": "LAN IPv4", "selector": "#aios-lan-ipv4"},
