@@ -638,49 +638,53 @@ function displayIspInfo(apiInfo) {
 
 function applyIspAutoConfig(apiInfo) {
     if (!apiInfo) return;
-    
+
+    // Country
     if (apiInfo.country) {
-        const countryInput = document.querySelector("#aios-country");
-        if (countryInput && !countryInput.value) {
-            countryInput.value = apiInfo.country;
-        }
+        const el = document.querySelector("#aios-country");
+        if (el && !el.value) el.value = apiInfo.country;
     }
-    
+
+    // Timezone
     if (apiInfo.timezone) {
-        const timezoneInput = document.querySelector("#aios-timezone");
-        if (timezoneInput && !timezoneInput.value) {
-            timezoneInput.value = apiInfo.timezone;
-        }
+        const el = document.querySelector("#aios-timezone");
+        if (el && !el.value) el.value = apiInfo.timezone;
     }
-    
+
+    // Zonename
     if (apiInfo.zonename) {
-        const zonenameInput = document.querySelector("#aios-zonename");
-        if (zonenameInput && !zonenameInput.value) {
-            zonenameInput.value = apiInfo.zonename;
-        }
+        const el = document.querySelector("#aios-zonename");
+        if (el && !el.value) el.value = apiInfo.zonename;
     }
-    
-    if (apiInfo.mape?.brIpv6Address) {
+
+    // MAP-E
+    if (apiInfo.mape) {
         const mapeInputs = {
             'mape-br': apiInfo.mape.brIpv6Address,
-            'mape-ealen': apiInfo.mape.eaBitLength
+            'mape-ealen': apiInfo.mape.eaBitLength,
+            'mape-ipv4-prefix': apiInfo.mape.ipv4Prefix,
+            'mape-ipv4-prefixlen': apiInfo.mape.ipv4PrefixLength,
+            'mape-ipv6-prefix': apiInfo.mape.ipv6Prefix,
+            'mape-ipv6-prefixlen': apiInfo.mape.ipv6PrefixLength,
+            'mape-psid-offset': apiInfo.mape.psIdOffset,
+            'mape-psidlen': apiInfo.mape.psidlen
         };
+
         Object.entries(mapeInputs).forEach(([id, val]) => {
-            const input = document.querySelector(`#${id}`);
-            if (input && !input.value) {
-                input.value = val;
+            const el = document.querySelector(`#${id}`);
+            if (el) {
+                el.value = val || "";  // null/undefinedなら空欄
             }
         });
     }
-    
-    if (apiInfo.aftr) {
-        const dsliteInput = document.querySelector("#dslite-aftr-address");
-        if (dsliteInput && !dsliteInput.value) {
-            dsliteInput.value = apiInfo.aftr;
-        }
+
+    // DS-Lite
+    const dsliteInput = document.querySelector("#dslite-aftr-address");
+    if (dsliteInput) {
+        dsliteInput.value = apiInfo.aftr || "";  // nullなら空欄
     }
 
-    // ISP 情報を即 setup.sh に反映
+    // ISP 情報をフォームに反映したら即 setup.sh に反映
     updateVariableDefinitions();
 }
 
