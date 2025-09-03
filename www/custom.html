@@ -228,11 +228,17 @@
           <div id="usteer-options" class="form-row" style="display: none;">
             <div class="form-group">
               <label for="aios-wifi-mobility-domain">Mobility Domain</label>
-              <input type="text" id="aios-wifi-mobility-domain" placeholder="e.g., 1234" value="1234">
+              <input type="text" id="aios-wifi-mobility-domain" 
+                placeholder="1234" 
+                value="1234" 
+                maxlength="4" 
+                pattern="[0-9A-Fa-f]{4}">
+              <small class="form-text text-muted">4-digit hex (e.g. 1234, 4f57)</small>
             </div>
             <div class="form-group">
               <label for="aios-wifi-snr">Min SNR</label>
               <input type="number" id="aios-wifi-snr" placeholder="30 15 5">
+              <small class="form-text text-muted">Enter the SNR for each band separated by spaces.</small>
             </div>
           </div>
         </div>
