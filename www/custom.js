@@ -962,37 +962,41 @@ function updateCustomCommands() {
 }
 
 // カテゴリ別フォーム構造
-const formFields = {
-    general: [
-        "#aios-language", "#aios-country", "#aios-timezone", "#aios-zonename",
-        "#aios-device-name", "#aios-root-password",
-        "#aios-lan-ipv4", "#aios-lan-ipv6",
-        "#aios-ssh-interface", "#aios-ssh-port",
-        "#aios-flow-offloading", "#aios-backup-path"
-    ],
-    wifi: [
-        "#aios-wifi-ssid", "#aios-wifi-password", "#aios-wifi-mobility-domain",
-        "#aios-wifi-snr", 'input[name="wifi_mode"]'
-    ],
-    connection: [
-        'input[name="connectionType"]', 'input[name="netOptimizer"]', 'input[name="mapeType"]'
-    ],
-    pppoe: ["#pppoe-username", "#pppoe-password"],
-    dslite: ["#dslite-aftr-address"],
-    mape: [
-        "#mape-br", "#mape-ealen", "#mape-ipv4-prefix", "#mape-ipv4-prefixlen",
-        "#mape-ipv6-prefix", "#mape-ipv6-prefixlen",
-        "#mape-psid-offset", "#mape-psidlen", "#mape-gua-prefix"
-    ],
-    ap: ["#ap-ip-address", "#ap-gateway"],
-    netopt: ["#netopt-rmem", "#netopt-wmem", "#netopt-conntrack", "#netopt-backlog",
-             "#netopt-somaxconn", "#netopt-congestion"]
-};
+let formFields = {};
+
+// setup.jsonからformFieldsを生成
+fetch(setup_db_url)
+    .then(response => response.json())
+    .then(setupData => {
+        setupData.categories.forEach(category => {
+            formFields[category.id] = [];
+            
+            category.packages.forEach(pkg => {
+                if (pkg.selector) {
+                    formFields[category.id].push(pkg.selector);
+                }
+                
+                // 子要素の処理
+                if (pkg.children) {
+                    pkg.children.forEach(child => {
+                        if (child.children && child.children.length > 0) {
+                            formFields[child.id] = [];
+                            child.children.forEach(grandChild => {
+                                if (grandChild.selector) {
+                                    formFields[child.id].push(grandChild.selector);
+                                }
+                            });
+                        }
+                    });
+                }
+            });
+        });
+    })
+    .catch(error => console.error('Failed to load setup.json:', error));
 
 // 監視設定時はJSONを展開
 function setupFormWatchers() {
     console.log('setupFormWatchers called');
-
     Object.values(formFields).flat().forEach(selector => {
         document.querySelectorAll(selector).forEach(element => {
             element.removeEventListener('input', updateVariableDefinitions);
@@ -1004,12 +1008,10 @@ function setupFormWatchers() {
             }
         });
     });
-
     const commandInput = document.querySelector("#command");
     if (commandInput) {
         commandInput.removeEventListener('input', updateCustomCommands);
         commandInput.addEventListener('input', updateCustomCommands);
     }
-
     updateVariableDefinitions();
 }
