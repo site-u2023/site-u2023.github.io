@@ -245,8 +245,8 @@ function collectFormValues() {
     Object.values(formStructure.fields).forEach(field => {
         const value = getFieldValue(field.selector);
         
-        // 値が存在し、デフォルト値と異なる場合のみ設定
-        if (value && value !== field.defaultValue) {
+        // 値が存在すれば無条件で設定
+        if (value !== null && value !== undefined && value !== "") {
             values[field.variableName] = value;
         }
     });
