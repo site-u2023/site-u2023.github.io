@@ -754,6 +754,216 @@ function initDeviceTranslation() {
     select.onchange();
 }
 
+// フォーム値収集関数
+function collectFormValues() {
+    const values = {};
+    
+    // 基本設定
+    const language = document.querySelector("#aios-language")?.value;
+    const country = document.querySelector("#aios-country")?.value;
+    const timezone = document.querySelector("#aios-timezone")?.value;
+    const zonename = document.querySelector("#aios-zonename")?.value;
+    const deviceName = document.querySelector("#aios-device-name")?.value;
+    const rootPassword = document.querySelector("#aios-root-password")?.value;
+    const lanIpAddress = document.querySelector("#aios-lan-ipv4")?.value;
+    const lanIpv6Address = document.querySelector("#aios-lan-ipv6")?.value;
+    const sshInterface = document.querySelector("#aios-ssh-interface")?.value;
+    const sshPort = document.querySelector("#aios-ssh-port")?.value;
+    const backupPath = document.querySelector("#aios-backup-path")?.value;
+    
+    // Flow offloading
+    const flowOffloading = document.querySelector("#aios-flow-offloading")?.value;
+    
+    // Wi-Fi設定
+    const wifiMode = document.querySelector('input[name="wifi_mode"]:checked')?.value;
+    const wifiSsid = document.querySelector("#aios-wifi-ssid")?.value;
+    const wifiPassword = document.querySelector("#aios-wifi-password")?.value;
+    const mobilityDomain = document.querySelector("#aios-wifi-mobility-domain")?.value;
+    const snr = document.querySelector("#aios-wifi-snr")?.value;
+    
+    // 接続タイプ設定
+    const connectionType = document.querySelector('input[name="connectionType"]:checked')?.value;
+    
+    // PPPoE設定
+    const pppoeUsername = document.querySelector("#pppoe-username")?.value;
+    const pppoePassword = document.querySelector("#pppoe-password")?.value;
+    
+    // DS-Lite設定
+    const dsliteAftrAddress = document.querySelector("#dslite-aftr-address")?.value;
+    
+    // MAP-E設定
+    const mapeBr = document.querySelector("#mape-br")?.value;
+    const mapeEalen = document.querySelector("#mape-ealen")?.value;
+    const mapeIpv4Prefix = document.querySelector("#mape-ipv4-prefix")?.value;
+    const mapeIpv4Prefixlen = document.querySelector("#mape-ipv4-prefixlen")?.value;
+    const mapeIpv6Prefix = document.querySelector("#mape-ipv6-prefix")?.value;
+    const mapeIpv6Prefixlen = document.querySelector("#mape-ipv6-prefixlen")?.value;
+    const mapePsidOffset = document.querySelector("#mape-psid-offset")?.value;
+    const mapePsidlen = document.querySelector("#mape-psidlen")?.value;
+    const mapeGuaPrefix = document.querySelector("#mape-gua-prefix")?.value;
+    const mapeType = document.querySelector('input[name="mapeType"]:checked')?.value;
+    
+    // AP設定
+    const apIpAddress = document.querySelector("#ap-ip-address")?.value;
+    const apGateway = document.querySelector("#ap-gateway")?.value;
+    
+    // Network Optimizer設定
+    const netOptimizer = document.querySelector('input[name="netOptimizer"]:checked')?.value;
+    const netoptRmem = document.querySelector("#netopt-rmem")?.value;
+    const netoptWmem = document.querySelector("#netopt-wmem")?.value;
+    const netoptConntrack = document.querySelector("#netopt-conntrack")?.value;
+    const netoptBacklog = document.querySelector("#netopt-backlog")?.value;
+    const netoptSomaxconn = document.querySelector("#netopt-somaxconn")?.value;
+    const netoptCongestion = document.querySelector("#netopt-congestion")?.value;
+    
+    // 値が存在する場合のみ設定
+    if (language && language !== "en") values.language = language;
+    if (country) values.country = country;
+    if (timezone) values.timezone = timezone;
+    if (zonename) values.zonename = zonename;
+    if (deviceName) values.device_name = deviceName;
+    if (rootPassword) values.root_password = rootPassword;
+    if (lanIpAddress) values.lan_ip_address = lanIpAddress;
+    if (lanIpv6Address) values.lan_ipv6_address = lanIpv6Address;
+    if (sshInterface && sshInterface !== "lan") values.ssh_interface = sshInterface;
+    if (sshPort && sshPort !== "22") values.ssh_port = sshPort;
+    if (backupPath && backupPath !== "/root/backup.tar.gz") values.backup_path = backupPath;
+    
+    // Flow offloading
+    if (flowOffloading) values.flow_offloading_type = flowOffloading;
+    
+    // Wi-Fi設定
+    if (wifiMode === "usteer") values.enable_usteer = "1";
+    if (wifiSsid) values.wlan_ssid = wifiSsid;
+    if (wifiPassword) values.wlan_password = wifiPassword;
+    if (mobilityDomain) values.mobility_domain = mobilityDomain;
+    if (snr) values.snr = snr;
+    
+    // PPPoE設定
+    if (pppoeUsername) values.pppoe_username = pppoeUsername;
+    if (pppoePassword) values.pppoe_password = pppoePassword;
+    
+    // DS-Lite設定
+    if (dsliteAftrAddress) values.dslite_aftr_address = dsliteAftrAddress;
+    
+    // MAP-E設定
+    if (mapeBr) values.mape_br = mapeBr;
+    if (mapeEalen) values.mape_ealen = mapeEalen;
+    if (mapeIpv4Prefix) values.mape_ipv4_prefix = mapeIpv4Prefix;
+    if (mapeIpv4Prefixlen) values.mape_ipv4_prefixlen = mapeIpv4Prefixlen;
+    if (mapeIpv6Prefix) values.mape_ipv6_prefix = mapeIpv6Prefix;
+    if (mapeIpv6Prefixlen) values.mape_ipv6_prefixlen = mapeIpv6Prefixlen;
+    if (mapePsidOffset) values.mape_psid_offset = mapePsidOffset;
+    if (mapePsidlen) values.mape_psidlen = mapePsidlen;
+    if (mapeGuaPrefix) values.mape_gua_prefix = mapeGuaPrefix;
+    if (mapeType === "gua") values.mape_gua_mode = "1";
+    
+    // AP設定
+    if (apIpAddress) values.ap_ip_address = apIpAddress;
+    if (apGateway) values.ap_gateway = apGateway;
+    
+    // Network Optimizer設定
+    if (netOptimizer === "auto") values.enable_netopt = "1";
+    if (netOptimizer === "manual") {
+        if (netoptRmem) values.netopt_rmem = netoptRmem;
+        if (netoptWmem) values.netopt_wmem = netoptWmem;
+        if (netoptConntrack) values.netopt_conntrack = netoptConntrack;
+        if (netoptBacklog) values.netopt_backlog = netoptBacklog;
+        if (netoptSomaxconn) values.netopt_somaxconn = netoptSomaxconn;
+        if (netoptCongestion) values.netopt_congestion = netoptCongestion;
+    }
+    
+    return values;
+}
+
+// 変数定義文字列生成関数
+function generateVariableDefinitions(values) {
+    const lines = [];
+    
+    // 各値をシェル変数として出力
+    Object.entries(values).forEach(([key, value]) => {
+        // 値をエスケープ（シングルクォートを含む場合の処理）
+        const escapedValue = value.toString().replace(/'/g, "'\"'\"'");
+        lines.push(`${key}='${escapedValue}'`);
+    });
+    
+    return lines.join('\n');
+}
+
+// 変数定義部分更新関数
+function updateVariableDefinitions() {
+    const textarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
+    if (!textarea) {
+        console.log('UCI defaults textarea not found');
+        return;
+    }
+    
+    const values = collectFormValues();
+    const variableDefinitions = generateVariableDefinitions(values);
+    
+    let content = textarea.value;
+    
+    // BEGIN_VARIABLE_DEFINITIONS から END_VARIABLE_DEFINITIONS までを置換
+    const beginMarker = '# BEGIN_VARIABLE_DEFINITIONS';
+    const endMarker = '# END_VARIABLE_DEFINITIONS';
+    
+    const beginIndex = content.indexOf(beginMarker);
+    const endIndex = content.indexOf(endMarker);
+    
+    if (beginIndex !== -1 && endIndex !== -1) {
+        const beforeSection = content.substring(0, beginIndex + beginMarker.length);
+        const afterSection = content.substring(endIndex);
+        
+        // 変数定義が空でない場合は改行を追加
+        const newSection = variableDefinitions ? '\n' + variableDefinitions + '\n' : '\n';
+        
+        textarea.value = beforeSection + newSection + afterSection;
+        
+        // リサイズを実行
+        const lines = textarea.value.split('\n').length;
+        textarea.rows = lines + 1;
+        
+        console.log('Variable definitions updated:', Object.keys(values).length, 'variables');
+    } else {
+        console.log('Variable definition markers not found in content');
+    }
+}
+
+// カスタムコマンド更新関数
+function updateCustomCommands() {
+    const textarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
+    if (!textarea) return;
+    
+    // カスタムコマンドの収集
+    const commandInput = document.querySelector("#command");
+    const customCommands = commandInput?.value || '';
+    
+    let content = textarea.value;
+    
+    // BEGIN_CUSTOM_COMMANDS から END_CUSTOM_COMMANDS までを置換
+    const beginMarker = '# BEGIN_CUSTOM_COMMANDS';
+    const endMarker = '# END_CUSTOM_COMMANDS';
+    
+    const beginIndex = content.indexOf(beginMarker);
+    const endIndex = content.indexOf(endMarker);
+    
+    if (beginIndex !== -1 && endIndex !== -1) {
+        const beforeSection = content.substring(0, beginIndex + beginMarker.length);
+        const afterSection = content.substring(endIndex);
+        
+        // カスタムコマンドが空でない場合は改行を追加
+        const newSection = customCommands ? '\n' + customCommands + '\n' : '\n';
+        
+        textarea.value = beforeSection + newSection + afterSection;
+        
+        // リサイズを実行
+        const lines = textarea.value.split('\n').length;
+        textarea.rows = lines + 1;
+        
+        console.log('Custom commands updated');
+    }
+}
+
 // フォーム監視設定関数
 function setupFormWatchers() {
     console.log('setupFormWatchers called');
@@ -803,8 +1013,11 @@ function setupFormWatchers() {
     ];
     
     // 各要素にイベントリスナーを設定
+    let foundElements = 0;
     watchSelectors.forEach(selector => {
         const elements = document.querySelectorAll(selector);
+        if (elements.length > 0) foundElements += elements.length;
+        
         elements.forEach(element => {
             // 既存のリスナーを削除
             element.removeEventListener('input', updateVariableDefinitions);
@@ -819,11 +1032,14 @@ function setupFormWatchers() {
         });
     });
     
+    console.log('Found', foundElements, 'elements to watch');
+    
     // カスタムコマンド入力欄の監視
     const commandInput = document.querySelector("#command");
     if (commandInput) {
         commandInput.removeEventListener('input', updateCustomCommands);
         commandInput.addEventListener('input', updateCustomCommands);
+        console.log('Command input watcher added');
     }
     
     // 初回実行
