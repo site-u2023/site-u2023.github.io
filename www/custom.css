@@ -341,11 +341,6 @@ details summary h4 {
     flex-direction: column;
   }
   
-  .radio-group {
-    flex-direction: column;
-    gap: 0.5em;
-  }
-  
   .feature-grid {
     grid-template-columns: 1fr;
   }
