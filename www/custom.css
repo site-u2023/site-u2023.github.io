@@ -335,30 +335,6 @@ details summary h4 {
   margin-bottom: 0.5em;
 }
 
-/* ===== Responsive Design ===== */
-@media (max-width: 768px) {
-  .form-row {
-    flex-direction: column;
-  }
-  
-  .feature-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .system-management-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .package-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  #packages-details,
-  #scripts-details {
-    padding: 0.5em;
-  }
-}
-
 /* ===== Utility Classes ===== */
 .text-muted {
   color: var(--text-muted);
