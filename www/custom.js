@@ -240,75 +240,33 @@ function generateFormStructure(config) {
 
 function collectFormValues() {
     const values = {};
-    const connectionType = getFieldValue('input[name="connectionType"]');
-
-    // ===== Internet Connection 特別処理 =====
-    if (connectionType === 'auto') {
-        if (cachedApiInfo) {
-            if (cachedApiInfo.mape?.brIpv6Address) {
-                // MAP-E 実効値あり
-                values.connection_type = 'mape';
-                values.mape_br = cachedApiInfo.mape.brIpv6Address;
-                values.mape_ealen = cachedApiInfo.mape.eaBitLength;
-                values.mape_ipv4_prefix = cachedApiInfo.mape.ipv4Prefix;
-                values.mape_ipv4_prefixlen = cachedApiInfo.mape.ipv4PrefixLength;
-                values.mape_ipv6_prefix = cachedApiInfo.mape.ipv6Prefix;
-                values.mape_ipv6_prefixlen = cachedApiInfo.mape.ipv6PrefixLength;
-                values.mape_psid_offset = cachedApiInfo.mape.psIdOffset;
-                values.mape_psidlen = cachedApiInfo.mape.psidlen;
-
-                // GUA Prefix自動生成
-                if (cachedApiInfo.mape.ipv6Prefix) {
-                    const segments = cachedApiInfo.mape.ipv6Prefix.split(':');
-                    while (segments.length < 4) segments.push('0');
-                    values.mape_gua_prefix = segments.slice(0, 4).join(':') + '::/64';
-                    values.mape_gua_mode = '1';
-                }
-            } else if (cachedApiInfo.aftr) {
-                // DS-Lite 実効値あり
-                values.connection_type = 'dslite';
-                values.dslite_aftr_address = cachedApiInfo.aftr;
-            }
-            // 両方 null → 何も出さない
-        }
-    } else if (connectionType) {
-        // DS-Lite / MAP-E / DHCP をユーザーが明示的に選択
-        if (connectionType === 'dslite' && cachedApiInfo?.aftr) {
-            values.connection_type = 'dslite';
-            values.dslite_aftr_address = cachedApiInfo.aftr;
-        } else if (connectionType === 'mape' && cachedApiInfo?.mape?.brIpv6Address) {
-            values.connection_type = 'mape';
-            values.mape_br = cachedApiInfo.mape.brIpv6Address;
-            // 他の MAP-E 実効値も同様に設定
-        } else {
-            // ISP 実効値なし → HTML 初期値をそのまま出力
-            Object.keys(formStructure.connectionTypes).forEach(type => {
-                if (type === connectionType) {
-                    formStructure.connectionTypes[type].forEach(fieldId => {
-                        const field = formStructure.fields[fieldId];
-                        if (field) {
-                            const value = getFieldValue(field.selector);
-                            if (value) values[field.variableName] = value;
-                        }
-                    });
-                }
-            });
-        }
-    }
-
-    // ===== その他の項目（Wi-Fi, Rootパスワード etc） =====
+    
+    // setup.jsonベースで値を収集
     Object.values(formStructure.fields).forEach(field => {
-        if (!field.selector) return;
-        if (field.id.startsWith("dslite-") || field.id.startsWith("mape-")) return; // Internet Connection は上で処理済み
-
         const value = getFieldValue(field.selector);
+        
+        // 値が存在すれば無条件で設定
         if (value !== null && value !== undefined && value !== "") {
             values[field.variableName] = value;
         }
     });
-
+    
+    // 特殊処理が必要なフィールド
     applySpecialFieldLogic(values);
+    
     return values;
+}
+
+// フィールド値取得
+function getFieldValue(selector) {
+    const element = document.querySelector(selector);
+    if (!element) return null;
+    
+    if (element.type === 'radio' || element.type === 'checkbox') {
+        const checked = document.querySelector(`${selector}:checked`);
+        return checked?.value;
+    }
+    return element.value;
 }
 
 // 特殊なフィールドロジック適用
