@@ -432,7 +432,13 @@ function customBuildAsuRequest(request_hash) {
     window.fetch = origFetch;
 }
 
-// setup_uci_defaults カスタム版
+// 共通処理: setup.sh 読み込み後にフォーム値を反映する
+function applyFormValuesToSetup(textarea, text) {
+    textarea.value = text;
+    updateVariableDefinitions();
+}
+
+// setup_uci_defaults
 function customSetupUciDefaults() {
     console.log('customSetupUciDefaults called');
     const textarea = document.querySelector("#uci-defaults-content");
@@ -443,31 +449,21 @@ function customSetupUciDefaults() {
             if (!r.ok) throw new Error(r.statusText); 
             return r.text(); 
         })
-        .then(text => {
-            textarea.value = text;
-
-            // ISP 情報を即 setup.sh に反映（ロード完了後）
-            updateVariableDefinitions();
-        })
+        .then(text => applyFormValuesToSetup(textarea, text))
         .catch(err => showAlert(err.message));
 }
 
-// UCI-defaultsテキストエリアをリサイズする関数
+// loadUciDefaultsTemplate
 function loadUciDefaultsTemplate() {
     console.log('loadUciDefaultsTemplate called');
     const textarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
     if (!textarea || !config?.uci_defaults_setup_url) return;
 
-    // 自動リサイズ関数
     function autoResize() {
         const lines = textarea.value.split('\n').length;
         textarea.rows = lines + 1;
     }
 
-    // 初期設定
-    // textarea.style.resize = 'both';
-    
-    // イベントリスナー設定
     textarea.addEventListener('input', autoResize);
     textarea.addEventListener('paste', () => setTimeout(autoResize, 10));
 
@@ -477,17 +473,11 @@ function loadUciDefaultsTemplate() {
             return r.text(); 
         })
         .then(text => {
-            textarea.value = text;
-            // コンテンツ読み込み後にリサイズ
+            applyFormValuesToSetup(textarea, text);  // 共通処理
             autoResize();
             console.log('setup.sh loaded successfully');
-
-            // 初期値をフォームから反映
-            updateVariableDefinitions();      
         })
-        .catch(err => {
-            console.error('Failed to load setup.sh:', err);
-        });
+        .catch(err => console.error('Failed to load setup.sh:', err));
 }
 
 // Postinstテキストエリアをリサイズする関数
