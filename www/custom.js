@@ -502,7 +502,6 @@ function setupEventListeners() {
     const connectionModeRadios = document.querySelectorAll('input[name="connectionMode"]');
     const connectionTypeRadios = document.querySelectorAll('input[name="connectionType"]');
     const netOptimizerRadios = document.querySelectorAll('input[name="netOptimizer"]');
-    const netOptimizerModeRadios = document.querySelectorAll('input[name="netOptimizerMode"]');
     
     connectionModeRadios.forEach(r => {
         r.removeEventListener('change', handleConnectionModeChange);
@@ -517,11 +516,6 @@ function setupEventListeners() {
     netOptimizerRadios.forEach(r => {
         r.removeEventListener('change', handleNetOptimizerChange);
         r.addEventListener('change', handleNetOptimizerChange);
-    });
-    
-    netOptimizerModeRadios.forEach(r => {
-        r.removeEventListener('change', handleNetOptimizerModeChange);
-        r.addEventListener('change', handleNetOptimizerModeChange);
     });
 }
 
@@ -567,16 +561,6 @@ function handleNetOptimizerChange(e) {
         show("#netopt-manual-section");
     } else if (e.target.value === 'disabled') {
         show("#netopt-disabled-section");
-    }
-}
-
-// ネットワークオプティマイザーモード変更
-function handleNetOptimizerModeChange(e) {
-    const manualSection = document.querySelector("#net-optimizer-manual");
-    if (e.target.value === 'manual') {
-        show(manualSection);
-    } else {
-        hide(manualSection);
     }
 }
 
