@@ -31,34 +31,63 @@ SYSTEM_EOF
 set firewall.@defaults[0].flow_offloading='1'
 set firewall.@defaults[0].flow_offloading_hw='1'
 FLOWHARD_EOF
-[ -n "\${wlan_name}" ] && [ -n "\${wlan_password}" ] && [ "\${#wlan_password}" -ge 8 ] && {
-    wireless_cfg="$(uci -q show wireless)"
-    for radio in \$(printf '%s\\n' "\${wireless_cfg}" | grep "wireless\.radio[0-9]*=" | cut -d. -f2 | cut -d= -f1); do
+[ -n "\${wlan_ssid}" ] && [ -n "\${wlan_password}" ] && [ "\${#wlan_password}" -ge 8 ] && {
+    wireless_cfg="\$(uci -q show wireless)"
+    for radio in \$(printf '%s\n' "\${wireless_cfg}" | grep "wireless\.radio[0-9]*=" | cut -d. -f2 | cut -d= -f1); do
         uci -q batch <<RADIO_EOF
 set wireless.\${radio}.disabled='0'
 set wireless.\${radio}.country="\${country:-00}"
 RADIO_EOF
-        band=$(uci -q get wireless.\${radio}.band)
+        band="\$(uci -q get wireless.\${radio}.band)"
         case "\${band}" in
-            2g) suffix="-2g"; encryption='psk-mixed' ;;
-            5g) suffix="-5g"; encryption='sae-mixed' ;;
-            6g) suffix="-6g"; encryption='sae' ;;
-            *)  suffix="";    encryption='psk-mixed' ;;
+            2g) suffix="-2g"; encryption='psk-mixed'; nasid_suffix='-2g' ;;
+            5g) suffix="-5g"; encryption='sae-mixed'; nasid_suffix='-5g' ;;
+            6g) suffix="-6g"; encryption='sae';        nasid_suffix='-6g' ;;
+            *)  suffix="";    encryption='psk-mixed';  nasid_suffix='' ;;
         esac
-        ssid="\${wlan_name}\${suffix}"
-        n=2
-        while printf '%s\\n' "\${wireless_cfg}" | grep -q "ssid='\${ssid}'"; do
-            ssid="\${wlan_name}\${suffix}\${n}"
-            n=\$((n+1))
-        done
+        if [ -n "\${enable_usteer}" ]; then
+            ssid="\${wlan_ssid}"
+        else
+            ssid="\${wlan_ssid}\${suffix}"
+            n=2
+            while printf '%s\n' "\${wireless_cfg}" | grep -q "ssid='\${ssid}'"; do
+                ssid="\${wlan_ssid}\${suffix}\${n}"
+                n=\$((n+1))
+            done
+        fi
         iface="default_\${radio}"
-        [ -n "$(uci -q get wireless.\${iface})" ] && uci -q batch <<WLAN_EOF
+        [ -n "\$(uci -q get wireless.\${iface})" ] && {
+            uci -q batch <<WLAN_EOF
 set wireless.\${iface}.disabled='0'
 set wireless.\${iface}.encryption="\${encryption}"
 set wireless.\${iface}.ssid="\${ssid}"
 set wireless.\${iface}.key="\${wlan_password}"
 WLAN_EOF
+            if [ -n "\${enable_usteer}" ]; then
+                uci -q batch <<USTEER_EOF
+set wireless.\${iface}.isolate='1'
+set wireless.\${iface}.ocv='1'
+set wireless.\${iface}.ieee80211r='1'
+set wireless.\${iface}.mobilty_domain="\${mobilty_domain}"
+set wireless.\${iface}.ft_over_ds='1'
+set wireless.\${iface}.nasid="ap1\${nasid_suffix}"
+set wireless.\${iface}.usteer_min_snr="\${snr}"
+set wireless.\${iface}.ieee80211k='1'
+set wireless.\${iface}.ieee80211v='1'
+USTEER_EOF
+            fi
+        }
     done
+    if [ -n "\${enable_usteer}" ]; then
+        uci -q batch <<USTEERCFG_EOF
+set usteer.@usteer[0].band_steering='1'
+set usteer.@usteer[0].load_balancing='1'
+set usteer.@usteer[0].sta_block_timeout='300'
+set usteer.@usteer[0].min_snr='20'
+set usteer.@usteer[0].max_snr='80'
+set usteer.@usteer[0].signal_diff_threshold='10'
+USTEERCFG_EOF
+    fi
 }
 [ -n "\${pppoe_username}" ] && [ -n "\${pppoe_password}" ] && uci -q batch <<PPPOE_EOF
 set network.wan.proto='pppoe'
