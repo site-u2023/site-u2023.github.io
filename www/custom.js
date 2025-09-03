@@ -466,9 +466,9 @@ function applyIspAutoConfig(apiInfo) {
     Object.values(formStructure.fields).forEach(field => {
         if (field.apiMapping) {
             const value = getNestedValue(apiInfo, field.apiMapping);
-            if (value !== null && value !== undefined) {
+            if (value !== null && value !== undefined) {                    
                 const element = document.querySelector(field.selector);
-                if (element && !element.value) {
+                if (element) {
                     element.value = value;
                 }
             }
