@@ -478,6 +478,9 @@ function loadUciDefaultsTemplate() {
             // コンテンツ読み込み後にリサイズ
             autoResize();
             console.log('setup.sh loaded successfully');
+
+            // 初期値をフォームから反映
+            updateVariableDefinitions();      
         })
         .catch(err => {
             console.error('Failed to load setup.sh:', err);
