@@ -69,10 +69,10 @@ WLAN_EOF
 set wireless.\${iface}.isolate='1'
 set wireless.\${iface}.ocv='1'
 set wireless.\${iface}.ieee80211r='1'
-set wireless.\${iface}.mobility_domain="\${mobility_domain}"
+set wireless.\${iface}.mobility_domain="\${mobility_domain:-4f57}"
 set wireless.\${iface}.ft_over_ds='1'
-set wireless.\${iface}.nasid="ap1\${nasid_suffix}"
-set wireless.\${iface}.usteer_min_snr="\${band_snr}"
+set wireless.\${iface}.nasid="\${wlan_ssid}\${nasid_suffix}"
+set wireless.\${iface}.usteer_min_snr="\${band_snr:-20}"
 set wireless.\${iface}.ieee80211k='1'
 set wireless.\${iface}.ieee80211v='1'
 USTEER_EOF
