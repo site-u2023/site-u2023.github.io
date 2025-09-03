@@ -40,11 +40,12 @@ set wireless.\${radio}.country="\${country:-00}"
 RADIO_EOF
         band="\$(uci -q get wireless.\${radio}.band)"
         case "\${band}" in
-            2g) suffix="-2g"; encryption='psk-mixed'; nasid_suffix='-2g' ;;
-            5g) suffix="-5g"; encryption='sae-mixed'; nasid_suffix='-5g' ;;
-            6g) suffix="-6g"; encryption='sae';        nasid_suffix='-6g' ;;
-            *)  suffix="";    encryption='psk-mixed';  nasid_suffix='' ;;
+            2g) suffix="-2g"; encryption='psk-mixed'; nasid_suffix='-2g'; band_snr="\$(echo \${snr} | cut -d' ' -f1)" ;;
+            5g) suffix="-5g"; encryption='sae-mixed'; nasid_suffix='-5g'; band_snr="\$(echo \${snr} | cut -d' ' -f2)" ;;
+            6g) suffix="-6g"; encryption='sae';        nasid_suffix='-6g'; band_snr="\$(echo \${snr} | cut -d' ' -f3)" ;;
+            *)  suffix="";    encryption='psk-mixed';  nasid_suffix='';    band_snr="0" ;;
         esac
+        
         if [ -n "\${enable_usteer}" ]; then
             ssid="\${wlan_ssid}"
         else
@@ -71,7 +72,7 @@ set wireless.\${iface}.ieee80211r='1'
 set wireless.\${iface}.mobility_domain="\${mobility_domain}"
 set wireless.\${iface}.ft_over_ds='1'
 set wireless.\${iface}.nasid="ap1\${nasid_suffix}"
-set wireless.\${iface}.usteer_min_snr="\${snr}"
+set wireless.\${iface}.usteer_min_snr="\${band_snr}"
 set wireless.\${iface}.ieee80211k='1'
 set wireless.\${iface}.ieee80211v='1'
 USTEER_EOF
