@@ -535,7 +535,7 @@ function setupEventListeners() {
         handleWifiModeChange({ target: checkedWifiMode });
     }
 }
-
+ 
 // 接続モード変更
 function handleConnectionModeChange(e) {
     const manualSection = document.querySelector("#manual-connection-section");
