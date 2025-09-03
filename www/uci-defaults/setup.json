@@ -1,1 +1,112 @@
 
+{
+  "categories": [
+    {
+      "id": "general",
+      "name": "General Settings",
+      "description": "Basic system and device configuration",
+      "packages": [
+        {"id": "language", "name": "Language", "selector": "#aios-language"},
+        {"id": "country", "name": "Country", "selector": "#aios-country"},
+        {"id": "timezone", "name": "Timezone", "selector": "#aios-timezone"},
+        {"id": "zonename", "name": "Zone Name", "selector": "#aios-zonename"},
+        {"id": "device-name", "name": "Device Name", "selector": "#aios-device-name"},
+        {"id": "root-password", "name": "Root Password", "selector": "#aios-root-password"},
+        {"id": "lan-ipv4", "name": "LAN IPv4", "selector": "#aios-lan-ipv4"},
+        {"id": "lan-ipv6", "name": "LAN IPv6", "selector": "#aios-lan-ipv6"},
+        {"id": "ssh-interface", "name": "SSH Interface", "selector": "#aios-ssh-interface"},
+        {"id": "ssh-port", "name": "SSH Port", "selector": "#aios-ssh-port"},
+        {"id": "flow-offloading", "name": "Flow Offloading", "selector": "#aios-flow-offloading"},
+        {"id": "backup-path", "name": "Backup Path", "selector": "#aios-backup-path"}
+      ]
+    },
+    {
+      "id": "wifi",
+      "name": "Wi-Fi Settings",
+      "description": "Wireless network configuration",
+      "packages": [
+        {"id": "wifi-ssid", "name": "SSID", "selector": "#aios-wifi-ssid"},
+        {"id": "wifi-password", "name": "Password", "selector": "#aios-wifi-password"},
+        {"id": "wifi-mobility-domain", "name": "Mobility Domain", "selector": "#aios-wifi-mobility-domain"},
+        {"id": "wifi-snr", "name": "SNR Threshold", "selector": "#aios-wifi-snr"},
+        {"id": "wifi-mode", "name": "Wi-Fi Mode", "selector": "input[name='wifi_mode']"}
+      ]
+    },
+    {
+      "id": "connection",
+      "name": "Internet Connection",
+      "description": "Select the type of internet connection",
+      "packages": [
+        {
+          "id": "connection-type",
+          "name": "Connection Type",
+          "selector": "input[name='connectionType']",
+          "children": [
+            {
+              "id": "auto",
+              "name": "AUTO",
+              "children": []
+            },
+            {
+              "id": "dhcp",
+              "name": "DHCP",
+              "children": []
+            },
+            {
+              "id": "pppoe",
+              "name": "PPPoE",
+              "children": [
+                {"id": "pppoe-username", "name": "Username", "selector": "#pppoe-username"},
+                {"id": "pppoe-password", "name": "Password", "selector": "#pppoe-password"}
+              ]
+            },
+            {
+              "id": "dslite",
+              "name": "DS-Lite",
+              "children": [
+                {"id": "dslite-aftr-address", "name": "AFTR Address", "selector": "#dslite-aftr-address"}
+              ]
+            },
+            {
+              "id": "mape",
+              "name": "MAP-E",
+              "children": [
+                {"id": "mape-br", "name": "BR", "selector": "#mape-br"},
+                {"id": "mape-ealen", "name": "EALEN", "selector": "#mape-ealen"},
+                {"id": "mape-ipv4-prefix", "name": "IPv4 Prefix", "selector": "#mape-ipv4-prefix"},
+                {"id": "mape-ipv4-prefixlen", "name": "IPv4 Prefix Length", "selector": "#mape-ipv4-prefixlen"},
+                {"id": "mape-ipv6-prefix", "name": "IPv6 Prefix", "selector": "#mape-ipv6-prefix"},
+                {"id": "mape-ipv6-prefixlen", "name": "IPv6 Prefix Length", "selector": "#mape-ipv6-prefixlen"},
+                {"id": "mape-psid-offset", "name": "PSID Offset", "selector": "#mape-psid-offset"},
+                {"id": "mape-psidlen", "name": "PSID Length", "selector": "#mape-psidlen"},
+                {"id": "mape-gua-prefix", "name": "GUA Prefix", "selector": "#mape-gua-prefix"}
+              ]
+            },
+            {
+              "id": "ap",
+              "name": "AP",
+              "children": [
+                {"id": "ap-ip-address", "name": "IP Address", "selector": "#ap-ip-address"},
+                {"id": "ap-gateway", "name": "Gateway", "selector": "#ap-gateway"}
+              ]
+            }
+          ]
+        },
+        {"id": "net-optimizer", "name": "Net Optimizer", "selector": "input[name='netOptimizer']"}
+      ]
+    },
+    {
+      "id": "netopt",
+      "name": "Network Optimization",
+      "description": "Tuning system network parameters",
+      "packages": [
+        {"id": "rmem", "name": "Receive Memory", "selector": "#netopt-rmem"},
+        {"id": "wmem", "name": "Write Memory", "selector": "#netopt-wmem"},
+        {"id": "conntrack", "name": "Conntrack Max", "selector": "#netopt-conntrack"},
+        {"id": "backlog", "name": "Backlog", "selector": "#netopt-backlog"},
+        {"id": "somaxconn", "name": "SOMAXCONN", "selector": "#netopt-somaxconn"},
+        {"id": "congestion", "name": "Congestion Control", "selector": "#netopt-congestion"}
+      ]
+    }
+  ]
+}
