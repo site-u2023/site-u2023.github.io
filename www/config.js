@@ -40,7 +40,7 @@ var config = {
   packages_db_url: "packages/packages.json",
 
   // setup.sh database URL
-  packages_db_url: "uci-defaults/setup.json"
+  setup_db_url: "uci-defaults/setup.json"
 };
 
 // Language
