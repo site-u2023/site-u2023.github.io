@@ -564,6 +564,35 @@ function handleNetOptimizerChange(e) {
     }
 }
 
+// Wi-Fiモード変更
+function handleWifiModeChange(e) {
+    const wifiOptionsContainer = document.querySelector("#wifi-options-container");
+    const usteerOptions = document.querySelector("#usteer-options");
+    
+    if (e.target.value === 'disabled') {
+        hide(wifiOptionsContainer);
+        hide(usteerOptions);
+    } else {
+        show(wifiOptionsContainer);
+        
+        if (e.target.value === 'usteer') {
+            show(usteerOptions);
+            // Usteer用のデフォルト値を設定
+            const mobilityDomainInput = document.querySelector("#aios-wifi-mobility-domain");
+            const snrInput = document.querySelector("#aios-wifi-snr");
+            
+            if (mobilityDomainInput && !mobilityDomainInput.value) {
+                mobilityDomainInput.value = "1234";
+            }
+            if (snrInput && !snrInput.value) {
+                snrInput.value = "30";
+            }
+        } else {
+            hide(usteerOptions);
+        }
+    }
+}
+
 // ISP情報取得・表示
 let cachedApiInfo = null;
 function fetchAndDisplayIspInfo() {
