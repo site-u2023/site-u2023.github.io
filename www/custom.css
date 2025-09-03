@@ -78,7 +78,8 @@
 #uci-defaults-content,
 #postinst-content,
 #asu-packages {
-  width: 100%;
+  width: calc(100% - 2em);
+  margin: 0 1em;
   padding: 0.8em;
   border: 0.06em solid transparent;
   background-color: var(--bg-input);
