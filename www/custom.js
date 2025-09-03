@@ -777,7 +777,7 @@ function collectFormValues() {
     const wifiPassword = document.querySelector("#aios-wifi-password")?.value;
     const mobilityDomain = document.querySelector("#aios-wifi-mobility-domain")?.value;
     const snr = document.querySelector("#aios-wifi-snr")?.value;
-    
+
     // 接続タイプ設定
     const connectionType = document.querySelector('input[name="connectionType"]:checked')?.value;
     
@@ -787,7 +787,7 @@ function collectFormValues() {
     
     // DS-Lite設定
     const dsliteAftrAddress = document.querySelector("#dslite-aftr-address")?.value;
-    
+
     // MAP-E設定
     const mapeBr = document.querySelector("#mape-br")?.value;
     const mapeEalen = document.querySelector("#mape-ealen")?.value;
@@ -961,66 +961,42 @@ function updateCustomCommands() {
     }
 }
 
-// フォーム監視設定関数
+// カテゴリ別フォーム構造
+const formFields = {
+    general: [
+        "#aios-language", "#aios-country", "#aios-timezone", "#aios-zonename",
+        "#aios-device-name", "#aios-root-password",
+        "#aios-lan-ipv4", "#aios-lan-ipv6",
+        "#aios-ssh-interface", "#aios-ssh-port",
+        "#aios-flow-offloading", "#aios-backup-path"
+    ],
+    wifi: [
+        "#aios-wifi-ssid", "#aios-wifi-password", "#aios-wifi-mobility-domain",
+        "#aios-wifi-snr", 'input[name="wifi_mode"]'
+    ],
+    connection: [
+        'input[name="connectionType"]', 'input[name="netOptimizer"]', 'input[name="mapeType"]'
+    ],
+    pppoe: ["#pppoe-username", "#pppoe-password"],
+    dslite: ["#dslite-aftr-address"],
+    mape: [
+        "#mape-br", "#mape-ealen", "#mape-ipv4-prefix", "#mape-ipv4-prefixlen",
+        "#mape-ipv6-prefix", "#mape-ipv6-prefixlen",
+        "#mape-psid-offset", "#mape-psidlen", "#mape-gua-prefix"
+    ],
+    ap: ["#ap-ip-address", "#ap-gateway"],
+    netopt: ["#netopt-rmem", "#netopt-wmem", "#netopt-conntrack", "#netopt-backlog",
+             "#netopt-somaxconn", "#netopt-congestion"]
+};
+
+// 監視設定時はJSONを展開
 function setupFormWatchers() {
     console.log('setupFormWatchers called');
-    
-    // 監視対象の要素セレクター
-    const watchSelectors = [
-        "#aios-language",
-        "#aios-country", 
-        "#aios-timezone",
-        "#aios-zonename",
-        "#aios-device-name",
-        "#aios-root-password",
-        "#aios-lan-ipv4",
-        "#aios-lan-ipv6",
-        "#aios-ssh-interface",
-        "#aios-ssh-port",
-        "#aios-flow-offloading",
-        "#aios-backup-path",
-        "#aios-wifi-ssid",
-        "#aios-wifi-password",
-        "#aios-wifi-mobility-domain",
-        "#aios-wifi-snr",
-        'input[name="wifi_mode"]',
-        'input[name="connectionType"]',
-        'input[name="netOptimizer"]',
-        'input[name="mapeType"]',
-        "#pppoe-username",
-        "#pppoe-password",
-        "#dslite-aftr-address",
-        "#mape-br",
-        "#mape-ealen",
-        "#mape-ipv4-prefix",
-        "#mape-ipv4-prefixlen",
-        "#mape-ipv6-prefix",
-        "#mape-ipv6-prefixlen",
-        "#mape-psid-offset",
-        "#mape-psidlen",
-        "#mape-gua-prefix",
-        "#ap-ip-address",
-        "#ap-gateway",
-        "#netopt-rmem",
-        "#netopt-wmem",
-        "#netopt-conntrack",
-        "#netopt-backlog",
-        "#netopt-somaxconn",
-        "#netopt-congestion"
-    ];
-    
-    // 各要素にイベントリスナーを設定
-    let foundElements = 0;
-    watchSelectors.forEach(selector => {
-        const elements = document.querySelectorAll(selector);
-        if (elements.length > 0) foundElements += elements.length;
-        
-        elements.forEach(element => {
-            // 既存のリスナーを削除
+
+    Object.values(formFields).flat().forEach(selector => {
+        document.querySelectorAll(selector).forEach(element => {
             element.removeEventListener('input', updateVariableDefinitions);
             element.removeEventListener('change', updateVariableDefinitions);
-            
-            // 新しいリスナーを追加
             if (element.type === 'radio' || element.type === 'checkbox' || element.tagName === 'SELECT') {
                 element.addEventListener('change', updateVariableDefinitions);
             } else {
@@ -1028,19 +1004,12 @@ function setupFormWatchers() {
             }
         });
     });
-    
-    console.log('Found', foundElements, 'elements to watch');
-    
-    // カスタムコマンド入力欄の監視
+
     const commandInput = document.querySelector("#command");
     if (commandInput) {
         commandInput.removeEventListener('input', updateCustomCommands);
         commandInput.addEventListener('input', updateCustomCommands);
-        console.log('Command input watcher added');
     }
-    
-    // 初回実行
+
     updateVariableDefinitions();
-    
-    console.log('Form watchers setup completed');
 }
