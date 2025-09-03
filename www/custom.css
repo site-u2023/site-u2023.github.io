@@ -150,7 +150,7 @@ details[open] summary {
 
 #postinst-details,
 #uci-defaults-details {
-  padding: 1em;
+  padding: 0 1em 1em 1em;
 }
 
 /* ===== ISP Information Display ===== */
@@ -233,7 +233,7 @@ details[open] summary {
 #postinst-details,
 #uci-defaults-details {
   margin: 0 0 1.5em 0;
-  padding: 1em;
+  padding: 0 1em 1em 1em;
   background-color: var(--bg-section);
   border: 1px solid var(--border-main);
   border-radius: 0.25em;
