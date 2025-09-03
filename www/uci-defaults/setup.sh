@@ -68,7 +68,7 @@ WLAN_EOF
 set wireless.\${iface}.isolate='1'
 set wireless.\${iface}.ocv='1'
 set wireless.\${iface}.ieee80211r='1'
-set wireless.\${iface}.mobilty_domain="\${mobilty_domain}"
+set wireless.\${iface}.mobility_domain="\${mobility_domain}"
 set wireless.\${iface}.ft_over_ds='1'
 set wireless.\${iface}.nasid="ap1\${nasid_suffix}"
 set wireless.\${iface}.usteer_min_snr="\${snr}"
