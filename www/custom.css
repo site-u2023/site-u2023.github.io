@@ -109,6 +109,7 @@
   align-items: center;
   gap: 0.25em;
   cursor: pointer;
+  white-space: nowrap;
 }
 
 /* ===== Details/Summary Styling ===== */
@@ -325,6 +326,12 @@ details summary h4 {
 #internet-config {
   display: flex;
   flex-direction: column;
+}
+
+#internet-config .radio-group {
+  overflow-x: auto;      /* ← 追加：横スクロール可能に */
+  flex-wrap: nowrap;     /* ← 追加：折り返しを防ぐ */
+  padding-bottom: 0.25em;
 }
 
 /* ===== Commands Autocomplete ===== */
