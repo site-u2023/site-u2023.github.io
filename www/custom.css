@@ -245,11 +245,16 @@ details[open] summary {
 .config-section h4,
 .package-category h4,
 #postinst-details h4,
-#uci-defaults-details h4,
-details summary h4 {
-  margin-top: 0;
+#uci-defaults-details h4 {
+  margin-top: 0.5em;
   margin-bottom: 1em;
   color: inherit;  /* 親要素から継承 */
+}
+
+details summary h4 {
+  display: inline;
+  margin: 0;
+  font-weight: 500;
 }
 
 .package-category-description,
