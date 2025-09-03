@@ -99,6 +99,7 @@
 /* ===== Radio Groups ===== */
 .radio-group {
   display: flex;
+  flex-wrap: wrap;
   gap: 1em;
   margin-top: 0.5em;
 }
@@ -365,9 +366,13 @@ details summary h4 {
     gap: 0.5em;
   }
 
-  label,
-  .form-row label {
+  .form-group label,
+  .form-row label:not(.radio-group label) {
     white-space: nowrap; 
+  }
+  
+  .radio-group label {
+    white-space: normal;
   }
 }
 
