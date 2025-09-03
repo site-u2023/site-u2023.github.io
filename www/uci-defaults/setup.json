@@ -63,24 +63,25 @@
             {
               "id": "dslite",
               "name": "DS-Lite",
+              "apiMapping": "dslite",
               "children": [
-                {"id": "dslite-aftr-address", "name": "AFTR Address", "selector": "#dslite-aftr-address", "apiMapping": "dslite.aftrAddress"}
-
+                {"id": "dslite-aftr-address", "name": "AFTR Address", "selector": "#dslite-aftr-address"}
               ]
             },
             {
               "id": "mape",
               "name": "MAP-E",
+              "apiMapping": "mape",
               "children": [
-                {"id": "mape-br", "name": "BR", "selector": "#mape-br", "apiMapping": "mape.br"},
-                {"id": "mape-ealen", "name": "EALEN", "selector": "#mape-ealen", "apiMapping": "mape.ealen"},
-                {"id": "mape-ipv4-prefix", "name": "IPv4 Prefix", "selector": "#mape-ipv4-prefix", "apiMapping": "mape.ipv4_prefix"},
-                {"id": "mape-ipv4-prefixlen", "name": "IPv4 Prefix Length", "selector": "#mape-ipv4-prefixlen", "apiMapping": "mape.ipv4_prefixlen"},
-                {"id": "mape-ipv6-prefix", "name": "IPv6 Prefix", "selector": "#mape-ipv6-prefix", "apiMapping": "mape.ipv6_prefix"},
-                {"id": "mape-ipv6-prefixlen", "name": "IPv6 Prefix Length", "selector": "#mape-ipv6-prefixlen", "apiMapping": "mape.ipv6_prefixlen"},
-                {"id": "mape-psid-offset", "name": "PSID Offset", "selector": "#mape-psid-offset", "apiMapping": "mape.psid_offset"},
-                {"id": "mape-psidlen", "name": "PSID Length", "selector": "#mape-psidlen", "apiMapping": "mape.psidlen"},
-                {"id": "mape-gua-prefix", "name": "GUA Prefix", "selector": "#mape-gua-prefix", "apiMapping": "mape.gua_prefix"}
+                {"id": "mape-br", "name": "BR", "selector": "#mape-br"},
+                {"id": "mape-ealen", "name": "EALEN", "selector": "#mape-ealen"},
+                {"id": "mape-ipv4-prefix", "name": "IPv4 Prefix", "selector": "#mape-ipv4-prefix"},
+                {"id": "mape-ipv4-prefixlen", "name": "IPv4 Prefix Length", "selector": "#mape-ipv4-prefixlen"},
+                {"id": "mape-ipv6-prefix", "name": "IPv6 Prefix", "selector": "#mape-ipv6-prefix"},
+                {"id": "mape-ipv6-prefixlen", "name": "IPv6 Prefix Length", "selector": "#mape-ipv6-prefixlen"},
+                {"id": "mape-psid-offset", "name": "PSID Offset", "selector": "#mape-psid-offset"},
+                {"id": "mape-psidlen", "name": "PSID Length", "selector": "#mape-psidlen"},
+                {"id": "mape-gua-prefix", "name": "GUA Prefix", "selector": "#mape-gua-prefix"}
               ]
             },
             {
