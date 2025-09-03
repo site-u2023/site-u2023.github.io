@@ -753,3 +753,81 @@ function initDeviceTranslation() {
     // 初期化トリガー
     select.onchange();
 }
+
+// フォーム監視設定関数
+function setupFormWatchers() {
+    console.log('setupFormWatchers called');
+    
+    // 監視対象の要素セレクター
+    const watchSelectors = [
+        "#aios-language",
+        "#aios-country", 
+        "#aios-timezone",
+        "#aios-zonename",
+        "#aios-device-name",
+        "#aios-root-password",
+        "#aios-lan-ipv4",
+        "#aios-lan-ipv6",
+        "#aios-ssh-interface",
+        "#aios-ssh-port",
+        "#aios-flow-offloading",
+        "#aios-backup-path",
+        "#aios-wifi-ssid",
+        "#aios-wifi-password",
+        "#aios-wifi-mobility-domain",
+        "#aios-wifi-snr",
+        'input[name="wifi_mode"]',
+        'input[name="connectionType"]',
+        'input[name="netOptimizer"]',
+        'input[name="mapeType"]',
+        "#pppoe-username",
+        "#pppoe-password",
+        "#dslite-aftr-address",
+        "#mape-br",
+        "#mape-ealen",
+        "#mape-ipv4-prefix",
+        "#mape-ipv4-prefixlen",
+        "#mape-ipv6-prefix",
+        "#mape-ipv6-prefixlen",
+        "#mape-psid-offset",
+        "#mape-psidlen",
+        "#mape-gua-prefix",
+        "#ap-ip-address",
+        "#ap-gateway",
+        "#netopt-rmem",
+        "#netopt-wmem",
+        "#netopt-conntrack",
+        "#netopt-backlog",
+        "#netopt-somaxconn",
+        "#netopt-congestion"
+    ];
+    
+    // 各要素にイベントリスナーを設定
+    watchSelectors.forEach(selector => {
+        const elements = document.querySelectorAll(selector);
+        elements.forEach(element => {
+            // 既存のリスナーを削除
+            element.removeEventListener('input', updateVariableDefinitions);
+            element.removeEventListener('change', updateVariableDefinitions);
+            
+            // 新しいリスナーを追加
+            if (element.type === 'radio' || element.type === 'checkbox' || element.tagName === 'SELECT') {
+                element.addEventListener('change', updateVariableDefinitions);
+            } else {
+                element.addEventListener('input', updateVariableDefinitions);
+            }
+        });
+    });
+    
+    // カスタムコマンド入力欄の監視
+    const commandInput = document.querySelector("#command");
+    if (commandInput) {
+        commandInput.removeEventListener('input', updateCustomCommands);
+        commandInput.addEventListener('input', updateCustomCommands);
+    }
+    
+    // 初回実行
+    updateVariableDefinitions();
+    
+    console.log('Form watchers setup completed');
+}
