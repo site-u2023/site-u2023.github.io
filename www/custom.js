@@ -445,6 +445,9 @@ function customSetupUciDefaults() {
         })
         .then(text => {
             textarea.value = text;
+
+            // ISP 情報を即 setup.sh に反映（ロード完了後）
+            updateVariableDefinitions();
         })
         .catch(err => showAlert(err.message));
 }
@@ -686,6 +689,9 @@ function applyIspAutoConfig(apiInfo) {
             dsliteInput.value = apiInfo.aftr;
         }
     }
+
+    // ISP 情報を即 setup.sh に反映
+    updateVariableDefinitions();
 }
 
 // ヘルパー関数
