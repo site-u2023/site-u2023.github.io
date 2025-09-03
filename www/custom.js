@@ -189,12 +189,14 @@ function generateFormStructure(config) {
         structure.categories[category.id] = [];
         
         category.packages.forEach(pkg => {
-            // フィールド情報を構造化
+            const el = pkg.selector ? document.querySelector(pkg.selector) : null;
+
+            // HTML の value を優先、無ければ setup.json の defaultValue
             const fieldInfo = {
                 id: pkg.id,
                 selector: pkg.selector,
                 variableName: pkg.variableName || pkg.id.replace(/-/g, '_'),
-                defaultValue: pkg.defaultValue,
+                defaultValue: (el && el.value) ? el.value : pkg.defaultValue,
                 apiMapping: pkg.apiMapping
             };
             
@@ -210,11 +212,12 @@ function generateFormStructure(config) {
                     structure.connectionTypes[child.id] = [];
                     if (child.children) {
                         child.children.forEach(grandChild => {
+                            const elChild = grandChild.selector ? document.querySelector(grandChild.selector) : null;
                             const childFieldInfo = {
                                 id: grandChild.id,
                                 selector: grandChild.selector,
                                 variableName: grandChild.variableName || grandChild.id.replace(/-/g, '_'),
-                                defaultValue: grandChild.defaultValue,
+                                defaultValue: (elChild && elChild.value) ? elChild.value : grandChild.defaultValue,
                                 apiMapping: grandChild.apiMapping
                             };
                             
@@ -512,42 +515,37 @@ function displayIspInfo(apiInfo) {
     show("#extended-build-info");
 }
 
+// ISP 情報でフォームを上書き
 function applyIspAutoConfig(apiInfo) {
     if (!apiInfo || !formStructure.fields) return;
     
-    // APIマッピングに基づいて値を設定
     Object.values(formStructure.fields).forEach(field => {
         if (field.apiMapping) {
             let value = getNestedValue(apiInfo, field.apiMapping);
-            
+
             // GUA Prefix特別処理（/64を付加）
             if (field.apiMapping === 'mape.ipv6PrefixWith64' && apiInfo.mape?.ipv6Prefix) {
                 const prefix = apiInfo.mape.ipv6Prefix;
-                // 既に/が含まれていない場合、第四セグメントまで展開して/64を付加
                 if (!prefix.includes('/')) {
                     const segments = prefix.split(':');
-                    // 第四セグメントまで確保（足りない場合は0で埋める）
-                    while (segments.length < 4) {
-                        segments.push('0');
-                    }
+                    while (segments.length < 4) segments.push('0');
                     value = segments.slice(0, 4).join(':') + '::/64';
                 } else {
                     value = prefix;
                 }
             }
-            
-            if (value !== null && value !== undefined) {                    
+
+            if (value !== null && value !== undefined) {
                 const element = document.querySelector(field.selector);
                 if (element) {
+                    // ISP 情報が来たら問答無用で上書き
                     element.value = value;
                 }
             }
         }
     });
     
-    // AUTO選択時の情報表示を更新
     updateAutoConnectionInfo(apiInfo);
-    
     updateVariableDefinitions();
 }
 
