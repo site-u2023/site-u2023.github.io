@@ -1,812 +1,511 @@
 {
   "categories": [
     {
-      "id": "basic-config",
-      "name": "Basic Configuration",
-      "description": "Basic system and device configuration",
-      "type": "form-section",
+      "id": "basic-system",
+      "name": "Basic System Features",
+      "description": "Terminal access and file transfer tools",
       "packages": [
         {
-          "id": "language-group",
-          "name": "Language Settings",
-          "type": "input-group",
-          "rows": [
-            {
-              "columns": [
-                {
-                  "id": "aios-language",
-                  "label": "Language",
-                  "type": "select",
-                  "selector": "#aios-language",
-                  "variableName": "language",
-                  "defaultValue": "en",
-                  "options": [
-                    {"value": "ar", "label": "العربية (Arabic)"},
-                    {"value": "bg", "label": "Български (Bulgarian)"},
-                    {"value": "ca", "label": "Català (Catalan)"},
-                    {"value": "cs", "label": "Čeština (Czech)"},
-                    {"value": "da", "label": "Dansk (Danish)"},
-                    {"value": "de", "label": "Deutsch (German)"},
-                    {"value": "el", "label": "Ελληνικά (Greek)"},
-                    {"value": "en", "label": "English", "selected": true},
-                    {"value": "es", "label": "Español (Spanish)"},
-                    {"value": "fi", "label": "Suomi (Finnish)"},
-                    {"value": "fr", "label": "Français (French)"},
-                    {"value": "he", "label": "עברית (Hebrew)"},
-                    {"value": "hu", "label": "Magyar (Hungarian)"},
-                    {"value": "it", "label": "Italiano (Italian)"},
-                    {"value": "ja", "label": "日本語 (Japanese)"},
-                    {"value": "ko", "label": "한국어 (Korean)"},
-                    {"value": "lt", "label": "Lietuvių (Lithuanian)"},
-                    {"value": "ms", "label": "Bahasa Melayu (Malay)"},
-                    {"value": "nl", "label": "Nederlands (Dutch)"},
-                    {"value": "no", "label": "Norsk (Norwegian)"},
-                    {"value": "pl", "label": "Polski (Polish)"},
-                    {"value": "pt", "label": "Português (Portuguese)"},
-                    {"value": "pt_br", "label": "Português do Brasil (Portuguese Brazil)"},
-                    {"value": "ro", "label": "Română (Romanian)"},
-                    {"value": "ru", "label": "Русский (Russian)"},
-                    {"value": "sk", "label": "Slovenčina (Slovak)"},
-                    {"value": "sv", "label": "Svenska (Swedish)"},
-                    {"value": "tr", "label": "Türkçe (Turkish)"},
-                    {"value": "uk", "label": "Українська (Ukrainian)"},
-                    {"value": "vi", "label": "Tiếng Việt (Vietnamese)"},
-                    {"value": "zh_cn", "label": "简体中文 (Chinese Simplified)"},
-                    {"value": "zh_tw", "label": "繁體中文 (Chinese Traditional)"}
-                  ]
-                },
-                {
-                  "id": "aios-device-name",
-                  "label": "Device name",
-                  "type": "text",
-                  "selector": "#aios-device-name",
-                  "variableName": "device_name",
-                  "placeholder": "OpenWrt",
-                  "defaultValue": ""
-                }
-              ]
-            }
-          ]
+          "id": "luci-app-ttyd",
+          "name": "luci-app-ttyd",
+          "enableVar": "enable_ttyd",
+          "checked": true
         },
         {
-          "id": "basic-info-group",
-          "name": "Location & Device Information",
-          "type": "input-group",
-          "rows": [
-            {
-              "columns": [
-                {
-                  "id": "aios-country",
-                  "label": "Country",
-                  "type": "text",
-                  "selector": "#aios-country",
-                  "variableName": "country",
-                  "placeholder": "00",
-                  "maxlength": 2,
-                  "apiMapping": "country"
-                },
-                {
-                  "id": "aios-timezone",
-                  "label": "Timezone",
-                  "type": "text",
-                  "selector": "#aios-timezone",
-                  "variableName": "timezone",
-                  "placeholder": "UTC",
-                  "apiMapping": "timezone"
-                }
-              ]
-            }
-          ]
+          "id": "openssh-sftp-server",
+          "name": "openssh-sftp-server",
+          "checked": true
         },
         {
-          "id": "zone-info-group",
-          "name": "Zone Information",
-          "type": "input-group",
-          "rows": [
-            {
-              "columns": [
-                {
-                  "id": "aios-zonename",
-                  "label": "Zonename",
-                  "type": "text",
-                  "selector": "#aios-zonename",
-                  "variableName": "zonename",
-                  "placeholder": "UTC",
-                  "apiMapping": "zonename"
-                },
-                {
-                  "id": "aios-root-password",
-                  "label": "Root password",
-                  "type": "text",
-                  "selector": "#aios-root-password",
-                  "variableName": "root_password",
-                  "placeholder": "8+ characters",
-                  "defaultValue": ""
-                }
-              ]
-            }
-          ]
+          "id": "luci-app-commands",
+          "name": "luci-app-commands"
         },
         {
-          "id": "network-ssh-group",
-          "name": "Network & SSH Settings",
-          "type": "input-group",
-          "rows": [
-            {
-              "columns": [
-                {
-                  "id": "aios-lan-ipv4",
-                  "label": "LAN IPv4 Address",
-                  "type": "text",
-                  "selector": "#aios-lan-ipv4",
-                  "variableName": "lan_ip_address",
-                  "placeholder": "192.168.1.1",
-                  "defaultValue": ""
-                },
-                {
-                  "id": "aios-lan-ipv6",
-                  "label": "LAN IPv6 Address",
-                  "type": "text",
-                  "selector": "#aios-lan-ipv6",
-                  "variableName": "lan_ipv6_address",
-                  "placeholder": "fd00::1/64"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "id": "ssh-settings-group",
-          "name": "SSH Configuration",
-          "type": "input-group",
-          "rows": [
-            {
-              "columns": [
-                {
-                  "id": "aios-ssh-interface",
-                  "label": "SSH Interface",
-                  "type": "text",
-                  "selector": "#aios-ssh-interface",
-                  "variableName": "ssh_interface",
-                  "placeholder": "lan",
-                  "defaultValue": "lan",
-                  "description": "Network interface for SSH access"
-                },
-                {
-                  "id": "aios-ssh-port",
-                  "label": "SSH Port",
-                  "type": "number",
-                  "selector": "#aios-ssh-port",
-                  "variableName": "ssh_port",
-                  "placeholder": "22",
-                  "defaultValue": "",
-                  "min": 1,
-                  "max": 65535,
-                  "description": "Port number for SSH access"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "id": "system-settings-group",
-          "name": "System Configuration",
-          "type": "input-group",
-          "rows": [
-            {
-              "columns": [
-                {
-                  "id": "aios-flow-offloading",
-                  "label": "Flow offloading type",
-                  "type": "select",
-                  "selector": "#aios-flow-offloading",
-                  "variableName": "flow_offloading_type",
-                  "options": [
-                    {"value": "", "label": "Disabled", "selected": true},
-                    {"value": "software", "label": "Software flow offloading"},
-                    {"value": "hardware", "label": "Hardware flow offloading"}
-                  ]
-                },
-                {
-                  "id": "aios-backup-path",
-                  "label": "Restore Backup Path",
-                  "type": "text",
-                  "selector": "#aios-backup-path",
-                  "variableName": "backup_path",
-                  "placeholder": "/root/backup.tar.gz",
-                  "defaultValue": "/root/backup.tar.gz",
-                  "description": "Path to backup file for restore"
-                }
-              ]
-            }
-          ]
+          "id": "luci-app-filebrowser",
+          "name": "luci-app-filebrowser"
         }
       ]
     },
     {
-      "id": "wifi-config",
-      "name": "Wi-Fi Configuration",
-      "description": "Wireless network configuration",
-      "type": "form-section",
+      "id": "system-management",
+      "name": "System Management",
+      "description": "CPU interrupt balancing for multi-core systems",
       "packages": [
         {
-          "id": "wifi-mode",
-          "name": "Wi-Fi Mode",
-          "type": "radio-group",
-          "variableName": "wifi_mode",
-          "options": [
-            {"value": "standard", "label": "Standard", "checked": true},
-            {"value": "usteer", "label": "Usteer"},
-            {"value": "disabled", "label": "Disabled"}
-          ]
-        },
-        {
-          "id": "wifi-options-container",
-          "name": "Wi-Fi Options",
-          "type": "conditional-section",
-          "showWhen": {"field": "wifi_mode", "values": ["standard", "usteer"]},
-          "children": [
-            {
-              "id": "wifi-basic-group",
-              "name": "Basic Wi-Fi Settings",
-              "type": "input-group",
-              "rows": [
-                {
-                  "columns": [
-                    {
-                      "id": "aios-wifi-ssid",
-                      "label": "Wi-Fi SSID",
-                      "type": "text",
-                      "selector": "#aios-wifi-ssid",
-                      "variableName": "wlan_ssid",
-                      "placeholder": "OpenWrt",
-                      "defaultValue": "OpenWrt"
-                    },
-                    {
-                      "id": "aios-wifi-password",
-                      "label": "Wi-Fi Password",
-                      "type": "text",
-                      "selector": "#aios-wifi-password",
-                      "variableName": "wlan_password",
-                      "placeholder": "8+ characters",
-                      "defaultValue": "openwrt123"
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "id": "usteer-options",
-              "name": "Usteer Options",
-              "type": "conditional-section",
-              "showWhen": {"field": "wifi_mode", "values": ["usteer"]},
-              "children": [
-                {
-                  "id": "usteer-group",
-                  "name": "Usteer Settings",
-                  "type": "input-group",
-                  "rows": [
-                    {
-                      "columns": [
-                        {
-                          "id": "aios-wifi-mobility-domain",
-                          "label": "Mobility Domain",
-                          "type": "text",
-                          "selector": "#aios-wifi-mobility-domain",
-                          "variableName": "mobility_domain",
-                          "placeholder": "4f57",
-                          "defaultValue": "4f57",
-                          "maxlength": 4,
-                          "pattern": "[0-9A-Fa-f]{4}",
-                          "description": "4-digit hex (e.g. 4f57)"
-                        },
-                        {
-                          "id": "aios-wifi-snr",
-                          "label": "Min SNR",
-                          "type": "text",
-                          "selector": "#aios-wifi-snr",
-                          "variableName": "snr",
-                          "placeholder": "30 15 5",
-                          "defaultValue": "30 15 5",
-                          "description": "SNR values in band order"
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
+          "id": "luci-app-irqbalance",
+          "name": "luci-app-irqbalance",
+          "enableVar": "enable_irqbalance"
         }
       ]
     },
     {
-      "id": "internet-config",
-      "name": "Internet Connection",
-      "description": "Configure your internet connection type",
-      "type": "form-section",
+      "id": "network-management",
+      "name": "Network Management",
+      "description": "QoS, bandwidth monitoring, Wi-Fi scheduling, and network utilities",
       "packages": [
         {
-          "id": "connection-type",
-          "name": "Connection type",
-          "type": "radio-group",
-          "variableName": "connection_type",
-          "options": [
-            {"value": "auto", "label": "AUTO", "checked": true},
-            {"value": "dhcp", "label": "DHCP"},
-            {"value": "pppoe", "label": "PPPoE"},
-            {"value": "dslite", "label": "DS-Lite"},
-            {"value": "mape", "label": "MAP-E"},
-            {"value": "ap", "label": "AP"}
-          ]
+          "id": "luci-app-sqm",
+          "name": "luci-app-sqm",
+          "dependencies": ["tc-full"]
         },
         {
-          "id": "auto-section",
-          "name": "AUTO Detection",
-          "type": "conditional-section",
-          "showWhen": {"field": "connection_type", "values": ["auto"]},
-          "children": [
-            {
-              "id": "auto-info",
-              "name": "Auto Detection Information",
-              "type": "info-display",
-              "content": "Detecting connection type..."
-            }
-          ]
+          "id": "tc-full",
+          "name": "tc-full",
+          "hidden": true
         },
         {
-          "id": "dhcp-section",
-          "name": "DHCP",
-          "type": "conditional-section",
-          "showWhen": {"field": "connection_type", "values": ["dhcp"]},
-          "children": [
-            {
-              "id": "dhcp-info",
-              "name": "DHCP Information",
-              "type": "info-display",
-              "content": "DHCP configuration will be applied automatically. No additional settings required."
-            }
-          ]
+          "id": "luci-app-statistics",
+          "name": "luci-app-statistics",
+          "dependencies": ["collectd", "rrdtool1"]
         },
         {
-          "id": "pppoe-section",
-          "name": "PPPoE",
-          "type": "conditional-section",
-          "showWhen": {"field": "connection_type", "values": ["pppoe"]},
-          "children": [
-            {
-              "id": "pppoe-group",
-              "name": "PPPoE Credentials",
-              "type": "input-group",
-              "rows": [
-                {
-                  "columns": [
-                    {
-                      "id": "pppoe-username",
-                      "label": "Username",
-                      "type": "text",
-                      "selector": "#pppoe-username",
-                      "variableName": "pppoe_username",
-                      "placeholder": "Username"
-                    },
-                    {
-                      "id": "pppoe-password",
-                      "label": "Password",
-                      "type": "password",
-                      "selector": "#pppoe-password",
-                      "variableName": "pppoe_password",
-                      "placeholder": "Password"
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
+          "id": "collectd",
+          "name": "collectd",
+          "hidden": true
         },
         {
-          "id": "dslite-section",
-          "name": "DS-Lite",
-          "type": "conditional-section",
-          "showWhen": {"field": "connection_type", "values": ["dslite"]},
-          "children": [
-            {
-              "id": "dslite-group",
-              "name": "DS-Lite Settings",
-              "type": "input-group",
-              "rows": [
-                {
-                  "columns": [
-                    {
-                      "id": "dslite-aftr-type",
-                      "label": "AFTR Type",
-                      "type": "select",
-                      "selector": "#dslite-aftr-type",
-                      "variableName": "dslite_aftr_type",
-                      "options": [
-                        {"value": "transix", "label": "gw.transix.jp"},
-                        {"value": "xpass", "label": "gw.xpass.jp"},
-                        {"value": "v6option", "label": "gw.v6option.jp"}
-                      ]
-                    },
-                    {
-                      "id": "dslite-region",
-                      "label": "Region",
-                      "type": "select",
-                      "selector": "#dslite-region",
-                      "variableName": "dslite_region",
-                      "options": [
-                        {"value": "east", "label": "East Japan"},
-                        {"value": "west", "label": "West Japan"}
-                      ]
-                    }
-                  ]
-                },
-                {
-                  "columns": [
-                    {
-                      "id": "dslite-aftr-address",
-                      "label": "AFTR IPv6 Address",
-                      "type": "text",
-                      "selector": "#dslite-aftr-address",
-                      "variableName": "dslite_aftr_address",
-                      "placeholder": "2404:8e00::feed:100",
-                      "defaultValue": "2404:8e00::feed:100",
-                      "apiMapping": "aftr"
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
+          "id": "rrdtool1",
+          "name": "rrdtool1",
+          "hidden": true
         },
         {
-          "id": "mape-section",
-          "name": "MAP-E",
-          "type": "conditional-section",
-          "showWhen": {"field": "connection_type", "values": ["mape"]},
-          "children": [
-            {
-              "id": "mape-type",
-              "name": "Type",
-              "type": "radio-group",
-              "variableName": "mape_type",
-              "options": [
-                {"value": "gua", "label": "GUA", "checked": true},
-                {"value": "pd", "label": "PD"}
-              ]
-            },
-            {
-              "id": "mape-basic-group",
-              "name": "MAP-E Basic Settings",
-              "type": "input-group",
-              "rows": [
-                {
-                  "columns": [
-                    {
-                      "id": "mape-br",
-                      "label": "BR",
-                      "type": "text",
-                      "selector": "#mape-br",
-                      "variableName": "mape_br",
-                      "placeholder": "2001:db8::1",
-                      "apiMapping": "mape.brIpv6Address"
-                    },
-                    {
-                      "id": "mape-ealen",
-                      "label": "EA-len",
-                      "type": "number",
-                      "selector": "#mape-ealen",
-                      "variableName": "mape_ealen",
-                      "placeholder": "16",
-                      "apiMapping": "mape.eaBitLength"
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "id": "mape-ipv4-group",
-              "name": "IPv4 Settings",
-              "type": "input-group",
-              "rows": [
-                {
-                  "columns": [
-                    {
-                      "id": "mape-ipv4-prefix",
-                      "label": "IPv4 Prefix",
-                      "type": "text",
-                      "selector": "#mape-ipv4-prefix",
-                      "variableName": "mape_ipv4_prefix",
-                      "placeholder": "",
-                      "apiMapping": "mape.ipv4Prefix"
-                    },
-                    {
-                      "id": "mape-ipv4-prefixlen",
-                      "label": "IPv4 Prefix Length",
-                      "type": "number",
-                      "selector": "#mape-ipv4-prefixlen",
-                      "variableName": "mape_ipv4_prefixlen",
-                      "placeholder": "24",
-                      "apiMapping": "mape.ipv4PrefixLength"
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "id": "mape-ipv6-group",
-              "name": "IPv6 Settings",
-              "type": "input-group",
-              "rows": [
-                {
-                  "columns": [
-                    {
-                      "id": "mape-ipv6-prefix",
-                      "label": "IPv6 Prefix",
-                      "type": "text",
-                      "selector": "#mape-ipv6-prefix",
-                      "variableName": "mape_ipv6_prefix",
-                      "placeholder": "",
-                      "apiMapping": "mape.ipv6Prefix"
-                    },
-                    {
-                      "id": "mape-ipv6-prefixlen",
-                      "label": "IPv6 Prefix Length",
-                      "type": "number",
-                      "selector": "#mape-ipv6-prefixlen",
-                      "variableName": "mape_ipv6_prefixlen",
-                      "placeholder": "32",
-                      "apiMapping": "mape.ipv6PrefixLength"
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "id": "mape-psid-group",
-              "name": "PSID Settings",
-              "type": "input-group",
-              "rows": [
-                {
-                  "columns": [
-                    {
-                      "id": "mape-psid-offset",
-                      "label": "PSID Offset",
-                      "type": "number",
-                      "selector": "#mape-psid-offset",
-                      "variableName": "mape_psid_offset",
-                      "placeholder": "6",
-                      "apiMapping": "mape.psIdOffset"
-                    },
-                    {
-                      "id": "mape-psidlen",
-                      "label": "PSID Length",
-                      "type": "number",
-                      "selector": "#mape-psidlen",
-                      "variableName": "mape_psidlen",
-                      "placeholder": "6",
-                      "apiMapping": "mape.psidlen"
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "id": "mape-gua-prefix-section",
-              "name": "GUA Prefix Settings",
-              "type": "conditional-section",
-              "showWhen": {"field": "mape_type", "values": ["gua"]},
-              "children": [
-                {
-                  "id": "mape-gua-group",
-                  "name": "GUA Prefix",
-                  "type": "input-group",
-                  "rows": [
-                    {
-                      "columns": [
-                        {
-                          "id": "mape-gua-prefix",
-                          "label": "GUA Prefix",
-                          "type": "text",
-                          "selector": "#mape-gua-prefix",
-                          "variableName": "mape_gua_prefix",
-                          "placeholder": "",
-                          "apiMapping": "mape.ipv6PrefixWith64"
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
+          "id": "luci-app-nlbwmon",
+          "name": "luci-app-nlbwmon"
         },
         {
-          "id": "ap-section",
-          "name": "AP Mode",
-          "type": "conditional-section",
-          "showWhen": {"field": "connection_type", "values": ["ap"]},
-          "children": [
-            {
-              "id": "ap-group",
-              "name": "AP Network Settings",
-              "type": "input-group",
-              "rows": [
-                {
-                  "columns": [
-                    {
-                      "id": "ap-ip-address",
-                      "label": "IP Address",
-                      "type": "text",
-                      "selector": "#ap-ip-address",
-                      "variableName": "ap_ip_address",
-                      "placeholder": "192.168.1.2",
-                      "defaultValue": "192.168.1.2"
-                    },
-                    {
-                      "id": "ap-gateway",
-                      "label": "Gateway",
-                      "type": "text",
-                      "selector": "#ap-gateway",
-                      "variableName": "ap_gateway",
-                      "placeholder": "192.168.1.1",
-                      "defaultValue": "192.168.1.1"
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
+          "id": "luci-app-vnstat2",
+          "name": "luci-app-vnstat2"
+        },
+        {
+          "id": "luci-app-wol",
+          "name": "luci-app-wol"
+        },
+        {
+          "id": "luci-app-ddns",
+          "name": "luci-app-ddns"
+        },
+        {
+          "id": "mwan3",
+          "name": "mwan3"
+        },
+        {
+          "id": "luci-app-mwan3 (iptables)",
+          "name": "luci-app-mwan3",
+          "dependencies": ["mwan3"]
         }
       ]
     },
     {
-      "id": "tuning-config",
-      "name": "Tuning",
-      "description": "System performance and network optimization",
-      "type": "form-section",
+      "id": "wifi-management",
+      "name": "Wi-Fi Management",
+      "description": "Wi-Fi scheduling, roaming optimization, and wireless utilities",
       "packages": [
         {
-          "id": "net-optimizer",
-          "name": "Dynamic Network Optimizer",
-          "type": "radio-group",
-          "variableName": "net_optimizer",
-          "options": [
-            {"value": "auto", "label": "AUTO", "checked": true},
-            {"value": "manual", "label": "Manual"},
-            {"value": "disabled", "label": "Disabled"}
+          "id": "luci-app-usteer",
+          "name": "luci-app-usteer"
+        },
+        {
+          "id": "wifischedule",
+          "name": "wifischedule"
+        }
+      ]
+    },
+    {
+      "id": "modem-support",
+      "name": "Modem Support",
+      "description": "4G/5G modem management (ModemManager includes SMS support)",
+      "packages": [
+        {
+          "id": "luci-proto-modemmanager",
+          "name": "luci-proto-modemmanager",
+          "dependencies": [
+            "kmod-usb-wdm",
+            "kmod-usb-net-cdc-mbim",
+            "kmod-usb-net-qmi-wwan",
+            "uqmi",
+            "mbim-utils",
+            "screen"
           ]
         },
         {
-          "id": "netopt-auto-section",
-          "name": "AUTO Mode",
-          "type": "conditional-section",
-          "showWhen": {"field": "net_optimizer", "values": ["auto"]},
-          "children": [
-            {
-              "id": "netopt-auto-info",
-              "name": "Auto Optimization",
-              "type": "info-display",
-              "content": "Auto mode adjusts parameters based on system resources (Memory, CPU cores, etc.)"
-            }
+          "id": "kmod-usb-wdm",
+          "name": "kmod-usb-wdm",
+          "hidden": true
+        },
+        {
+          "id": "kmod-usb-net-cdc-mbim",
+          "name": "kmod-usb-net-cdc-mbim",
+          "hidden": true
+        },
+        {
+          "id": "kmod-usb-net-qmi-wwan",
+          "name": "kmod-usb-net-qmi-wwan",
+          "hidden": true
+        },
+        {
+          "id": "uqmi",
+          "name": "uqmi",
+          "hidden": true
+        },
+        {
+          "id": "mbim-utils",
+          "name": "mbim-utils",
+          "hidden": true
+        },
+        {
+          "id": "screen",
+          "name": "screen",
+          "hidden": true
+        }
+      ]
+    },
+    {
+      "id": "security-tools",
+      "name": "Security Tools",
+      "description": "Intrusion prevention and IP blocking tools",
+      "packages": [
+        {
+          "id": "fail2ban",
+          "name": "fail2ban"
+        },
+        {
+          "id": "banip",
+          "name": "banip"
+        },
+        {
+          "id": "luci-app-acme",
+          "name": "luci-app-acme"
+        }
+      ]
+    },
+    {
+      "id": "system-monitoring",
+      "name": "System Monitoring",
+      "description": "System watchdog and network monitoring",
+      "packages": [
+        {
+          "id": "luci-app-watchcat",
+          "name": "luci-app-watchcat"
+        }
+      ]
+    },
+    {
+      "id": "diagnostic-tools",
+      "name": "Network Diagnostic Tools",
+      "description": "Network testing, monitoring, analysis and DNS troubleshooting tools",
+      "packages": [
+        {
+          "id": "htop",
+          "name": "htop",
+          "dependencies": ["collectd-htop", "collectd-mod-thermal"]
+        },
+        {
+          "id": "collectd-htop",
+          "name": "collectd",
+          "hidden": true
+        },
+        {
+          "id": "collectd-mod-thermal",
+          "name": "collectd-mod-thermal",
+          "hidden": true
+        },
+        {
+          "id": "mtr-nojson",
+          "name": "mtr-nojson"
+        },
+        {
+          "id": "nmap",
+          "name": "nmap"
+        },
+        {
+          "id": "tcpdump",
+          "name": "tcpdump"
+        },
+        {
+          "id": "iperf3",
+          "name": "iperf3"
+        },
+        {
+          "id": "speedtest-netperf",
+          "name": "speedtest-netperf"
+        },
+        {
+          "id": "iftop",
+          "name": "iftop"
+        },
+        {
+          "id": "bwm-ng",
+          "name": "bwm-ng"
+        },
+        {
+          "id": "bind-dig",
+          "name": "bind-dig"
+        },
+        {
+          "id": "drill",
+          "name": "drill"
+        }
+      ]
+    },
+    {
+      "id": "system-tools",
+      "name": "System Administration Tools",
+      "description": "Terminal enhancements, debugging, file management and HTTP client tools",
+      "packages": [
+        {
+          "id": "tmux",
+          "name": "tmux"
+        },
+        {
+          "id": "nano-plus",
+          "name": "nano-plus"
+        },
+        {
+          "id": "vim-fuller",
+          "name": "vim-fuller"
+        },
+        {
+          "id": "lsof",
+          "name": "lsof"
+        },
+        {
+          "id": "strace",
+          "name": "strace"
+        },
+        {
+          "id": "rsync",
+          "name": "rsync"
+        },
+        {
+          "id": "tree",
+          "name": "tree"
+        },
+        {
+          "id": "curl",
+          "name": "curl"
+        },
+        {
+          "id": "wget-ssl",
+          "name": "wget-ssl"
+        },
+        {
+          "id": "netdata",
+          "name": "netdata"
+        }
+      ]
+    },
+    {
+      "id": "themes-dashboard",
+      "name": "Themes and Dashboard",
+      "description": "UI themes and dashboard improvements",
+      "packages": [
+        {
+          "id": "luci-mod-dashboard",
+          "name": "luci-mod-dashboard"
+        },
+        {
+          "id": "luci-theme-openwrt",
+          "name": "luci-theme-openwrt",
+          "dependencies": ["luci-theme-material", "luci-theme-openwrt-2020"]
+        },
+        {
+          "id": "luci-theme-material",
+          "name": "luci-theme-material"
+        },
+        {
+          "id": "luci-theme-openwrt-2020",
+          "name": "luci-theme-openwrt-2020"
+        }
+      ]
+    },
+    {
+      "id": "utilities",
+      "name": "Utilities",
+      "description": "System upgrade, VPN and media server utilities",
+      "packages": [
+        {
+          "id": "attendedsysupgrade-common",
+          "name": "attendedsysupgrade-common"
+        },
+        {
+          "id": "wireguard-tools",
+          "name": "wireguard-tools"
+        },
+        {
+          "id": "luci-app-wireguard",
+          "name": "luci-app-wireguard",
+          "dependencies": ["wireguard-tools"]
+        },
+        {
+          "id": "luci-proto-wireguard",
+          "name": "luci-proto-wireguard",
+          "dependencies": ["wireguard-tools"]
+        },
+        {
+          "id": "zerotier",
+          "name": "zerotier"
+        },
+        {
+          "id": "tailscale",
+          "name": "tailscale"
+        },
+        {
+          "id": "luci-app-dockerman (iptables)",
+          "name": "luci-app-dockerman",
+          "dependencies": ["docker-compose"]
+        },
+        {
+          "id": "docker-compose",
+          "name": "docker-compose",
+          "dependencies": ["docker"],
+          "hidden": true
+        },
+        {
+          "id": "docker",
+          "name": "docker",
+          "hidden": true
+        },
+        {
+          "id": "luci-app-openvpn",
+          "name": "luci-app-openvpn"
+        },
+        {
+          "id": "luci-app-minidlna",
+          "name": "luci-app-minidlna"
+        }
+      ]
+    },
+    {
+      "id": "usb-storage",
+      "name": "USB Storage Support",
+      "description": "USB storage kernel module and filesystem tools",
+      "packages": [
+        {
+          "id": "kmod-usb-storage",
+          "name": "kmod-usb-storage",
+          "dependencies": [
+            "block-mount",
+            "kmod-usb-storage-uas",
+            "usbutils",
+            "libblkid1",
+            "gdisk"
           ]
         },
         {
-          "id": "netopt-manual-section",
-          "name": "Manual Mode",
-          "type": "conditional-section",
-          "showWhen": {"field": "net_optimizer", "values": ["manual"]},
-          "children": [
-            {
-              "id": "netopt-memory-group",
-              "name": "TCP Memory Settings",
-              "type": "input-group",
-              "rows": [
-                {
-                  "columns": [
-                    {
-                      "id": "netopt-rmem",
-                      "label": "TCP Read Memory",
-                      "type": "text",
-                      "selector": "#netopt-rmem",
-                      "variableName": "netopt_rmem",
-                      "placeholder": "4096 131072 8388608",
-                      "defaultValue": "4096 131072 8388608",
-                      "description": "min default max (bytes)"
-                    },
-                    {
-                      "id": "netopt-wmem",
-                      "label": "TCP Write Memory",
-                      "type": "text",
-                      "selector": "#netopt-wmem",
-                      "variableName": "netopt_wmem",
-                      "placeholder": "4096 131072 8388608",
-                      "defaultValue": "4096 131072 8388608",
-                      "description": "min default max (bytes)"
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "id": "netopt-connection-group",
-              "name": "Connection Settings",
-              "type": "input-group",
-              "rows": [
-                {
-                  "columns": [
-                    {
-                      "id": "netopt-conntrack",
-                      "label": "Connection Tracking Max",
-                      "type": "number",
-                      "selector": "#netopt-conntrack",
-                      "variableName": "netopt_conntrack",
-                      "placeholder": "131072",
-                      "defaultValue": "131072",
-                      "min": 1024
-                    },
-                    {
-                      "id": "netopt-backlog",
-                      "label": "Network Device Backlog",
-                      "type": "number",
-                      "selector": "#netopt-backlog",
-                      "variableName": "netopt_backlog",
-                      "placeholder": "5000",
-                      "defaultValue": "5000",
-                      "min": 100
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "id": "netopt-socket-group",
-              "name": "Socket Settings",
-              "type": "input-group",
-              "rows": [
-                {
-                  "columns": [
-                    {
-                      "id": "netopt-somaxconn",
-                      "label": "Socket Max Connections",
-                      "type": "number",
-                      "selector": "#netopt-somaxconn",
-                      "variableName": "netopt_somaxconn",
-                      "placeholder": "16384",
-                      "defaultValue": "16384",
-                      "min": 128
-                    },
-                    {
-                      "id": "netopt-congestion",
-                      "label": "TCP Congestion Control",
-                      "type": "select",
-                      "selector": "#netopt-congestion",
-                      "variableName": "netopt_congestion",
-                      "options": [
-                        {"value": "cubic", "label": "cubic (default)", "selected": true},
-                        {"value": "bbr", "label": "bbr"},
-                        {"value": "reno", "label": "reno"}
-                      ]
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
+          "id": "block-mount",
+          "name": "block-mount",
+          "hidden": true
         },
         {
-          "id": "netopt-disabled-section",
-          "name": "Disabled Mode",
-          "type": "conditional-section",
-          "showWhen": {"field": "net_optimizer", "values": ["disabled"]},
-          "children": [
-            {
-              "id": "netopt-disabled-info",
-              "name": "Optimization Disabled",
-              "type": "info-display",
-              "content": "Network optimization will be disabled"
-            }
-          ]
+          "id": "kmod-usb-storage-uas",
+          "name": "kmod-usb-storage-uas",
+          "hidden": true
+        },
+        {
+          "id": "usbutils",
+          "name": "usbutils",
+          "hidden": true
+        },
+        {
+          "id": "libblkid1",
+          "name": "libblkid1",
+          "hidden": true
+        },
+        {
+          "id": "gdisk",
+          "name": "gdisk",
+          "hidden": true
+        },
+        {
+          "id": "dosfstools",
+          "name": "dosfstools",
+          "dependencies": ["kmod-fs-vfat"]
+        },
+        {
+          "id": "kmod-fs-vfat",
+          "name": "kmod-fs-vfat",
+          "hidden": true
+        },
+        {
+          "id": "e2fsprogs",
+          "name": "e2fsprogs",
+          "dependencies": ["kmod-fs-ext4"]
+        },
+        {
+          "id": "kmod-fs-ext4",
+          "name": "kmod-fs-ext4",
+          "hidden": true
+        },
+        {
+          "id": "f2fs-tools",
+          "name": "f2fs-tools",
+          "dependencies": ["kmod-fs-f2fs"]
+        },
+        {
+          "id": "kmod-fs-f2fs",
+          "name": "kmod-fs-f2fs",
+          "hidden": true
+        },
+        {
+          "id": "exfat-fsck",
+          "name": "exfat-fsck",
+          "dependencies": ["kmod-fs-exfat"]
+        },
+        {
+          "id": "kmod-fs-exfat",
+          "name": "kmod-fs-exfat",
+          "hidden": true
+        },
+        {
+          "id": "ntfs-3g",
+          "name": "ntfs-3g",
+          "dependencies": ["kmod-fs-ntfs3"]
+        },
+        {
+          "id": "kmod-fs-ntfs3",
+          "name": "kmod-fs-ntfs3",
+          "hidden": true
+        },
+        {
+          "id": "hfsfsck",
+          "name": "hfsfsck",
+          "dependencies": ["kmod-fs-hfs", "kmod-fs-hfsplus"]
+        },
+        {
+          "id": "kmod-fs-hfs",
+          "name": "kmod-fs-hfs",
+          "hidden": true
+        },
+        {
+          "id": "kmod-fs-hfsplus",
+          "name": "kmod-fs-hfsplus",
+          "hidden": true
+        },
+        {
+          "id": "luci-app-hd-idle",
+          "name": "luci-app-hd-idle"
+        },
+        {
+          "id": "kmod-usb-ledtrig-usbport",
+          "name": "kmod-usb-ledtrig-usbport"
+        }
+      ]
+    },
+    {
+      "id": "file-sharing",
+      "name": "File Sharing",
+      "description": "SMB/CIFS file sharing server",
+      "packages": [
+        {
+          "id": "luci-app-samba4",
+          "name": "luci-app-samba4",
+          "dependencies": ["wsdd2"],
+          "enableVar": "enable_samba4"
+        },
+        {
+          "id": "wsdd2",
+          "name": "wsdd2",
+          "hidden": true
         }
       ]
     }
