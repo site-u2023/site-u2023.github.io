@@ -200,6 +200,9 @@ function renderSetupConfig(config) {
 
         container.appendChild(section);
     });
+    
+  // 条件表示の初期評価とイベント連動
+  initConditionalSections(config);
 }
 
 function buildField(parent, pkg) {
@@ -397,22 +400,116 @@ function buildFormGroup(field) {
     return group;
 }
 
+// 追補：conditional-section の表示制御（showWhen.field に連動）
+function initConditionalSections(config) {
+  const conditionals = collectConditionals(config); // [{id, showWhen}, ...]
+  const deps = buildDeps(conditionals);             // key -> [ids...]
+
+  // 初期評価
+  evaluateAll();
+
+  // 依存コントローラにイベントを結線
+  for (const key of Object.keys(deps)) {
+    const ctrls = findControlsByKey(key);
+    ctrls.forEach(el => {
+      const evt = el.tagName === 'INPUT' && (el.type === 'text' || el.type === 'number' || el.type === 'password') ? 'input' : 'change';
+      el.addEventListener(evt, evaluateAll);
+    });
+  }
+
+  function evaluateAll() {
+    for (const cond of conditionals) {
+      const visible = evaluateShowWhen(cond.showWhen, getControlValue);
+      const el = document.getElementById(cond.id);
+      if (!el) continue;
+      el.style.display = visible ? '' : 'none';
+    }
+  }
+
+  function getControlValue(key) {
+    // key の揺れ対策: hyphen/underscore 双方向対応
+    const keys = [key, key.replace(/-/g, '_'), key.replace(/_/g, '-')];
+
+    // 1) radio(name=key) 優先
+    for (const k of keys) {
+      const radios = document.querySelectorAll(`input[type="radio"][name="${cssEscape(k)}"]`);
+      if (radios.length) {
+        const r = Array.from(radios).find(x => x.checked);
+        if (r) return r.value;
+      }
+    }
+    // 2) select/input の id または name
+    for (const k of keys) {
+      const byId = document.getElementById(k);
+      if (byId) return byId.value;
+      const byName = document.querySelector(`[name="${cssEscape(k)}"]`);
+      if (byName) return byName.value;
+    }
+    return '';
+  }
+}
+
+function collectConditionals(config) {
+  const out = [];
+  walkConfig(config, node => {
+    if (node.type === 'conditional-section' && node.id && node.showWhen && node.showWhen.field) {
+      out.push({ id: node.id, showWhen: node.showWhen });
+    }
+  });
+  return out;
+}
+
+function buildDeps(conditionals) {
+  const map = {};
+  for (const c of conditionals) {
+    const key = c.showWhen.field;
+    if (!map[key]) map[key] = [];
+    map[key].push(c.id);
+  }
+  return map;
+}
+
+function evaluateShowWhen(showWhen, getVal) {
+  if (!showWhen || !showWhen.field) return true;
+  const v = String(getVal(showWhen.field) ?? '');
+  if (Array.isArray(showWhen.values)) {
+    return showWhen.values.map(String).includes(v);
+  }
+  return Boolean(v);
+}
+
+function walkConfig(config, fn) {
+  for (const cat of (config.categories || [])) {
+    for (const pkg of (cat.packages || [])) walkNode(pkg, fn);
+  }
+  function walkNode(node, fn) {
+    fn(node);
+    if (node.type === 'input-group') {
+      const rows = getRows(node);
+      rows.forEach(r => (r.columns || []).forEach(col => walkNode(col, fn)));
+    } else if (node.type === 'conditional-section') {
+      (node.children || []).forEach(ch => walkNode(ch, fn));
+    }
+  }
+}
+
 // rows/columns 優先。無ければ fields[] を2列の rows に正規化。
 function getRows(group) {
-    if (Array.isArray(group.rows) && group.rows.length) {
-        // 期待形式: [{ columns: [field, field] }, ...]
-        return group.rows.map(r => ({
-            columns: Array.isArray(r.columns) ? r.columns : []
-        }));
-    }
-    const fields = Array.isArray(group.fields) ? group.fields : [];
-    const rows = [];
-    for (let i = 0; i < fields.length; i += 2) {
-        const cols = [fields[i]];
-        if (fields[i + 1]) cols.push(fields[i + 1]);
-        rows.push({ columns: cols });
-    }
-    return rows;
+  if (Array.isArray(group.rows) && group.rows.length) {
+    return group.rows.map(r => ({ columns: Array.isArray(r.columns) ? r.columns : [] }));
+  }
+  const fields = Array.isArray(group.fields) ? group.fields : [];
+  const rows = [];
+  for (let i = 0; i < fields.length; i += 2) {
+    const cols = [fields[i]];
+    if (fields[i + 1]) cols.push(fields[i + 1]);
+    rows.push({ columns: cols });
+  }
+  return rows;
+}
+
+function cssEscape(s) {
+  return String(s).replace(/"/g, '\\"');
 }
 
 // setup.jsonからフォーム構造を生成
