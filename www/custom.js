@@ -179,22 +179,22 @@ async function loadSetupConfig() {
     }
 }
 
-// setup.json → HTML描画
+// setup.json → HTML描画（2列対応／rows/columns + legacy fields 両対応）
 function renderSetupConfig(config) {
     const container = document.querySelector('#dynamic-config-sections');
     if (!container) return;
     container.innerHTML = '';
 
-    config.categories.forEach(category => {
+    (config.categories || []).forEach(category => {
         const section = document.createElement('div');
         section.className = 'config-section';
         section.id = category.id;
 
         const h4 = document.createElement('h4');
-        h4.textContent = category.name;
+        h4.textContent = category.name || category.id || '';
         section.appendChild(h4);
 
-        category.packages.forEach(pkg => {
+        (category.packages || []).forEach(pkg => {
             buildField(section, pkg);
         });
 
@@ -204,95 +204,215 @@ function renderSetupConfig(config) {
 
 function buildField(parent, pkg) {
     switch (pkg.type) {
-        case 'input-group':
-            pkg.fields.forEach(field => {
-                const row = document.createElement('div');
-                row.className = 'form-row';
-
-                const group = document.createElement('div');
-                group.className = 'form-group';
-
-                const label = document.createElement('label');
-                label.textContent = field.label || field.id;
-                label.setAttribute('for', field.id);
-                group.appendChild(label);
-
-                const input = document.createElement('input');
-                input.id = field.id;
-                input.type = field.type || 'text';
-                if (field.placeholder) input.placeholder = field.placeholder;
-                if (field.defaultValue) input.value = field.defaultValue;
-                group.appendChild(input);
-
-                if (field.description) {
-                    const small = document.createElement('small');
-                    small.className = 'text-muted';
-                    small.textContent = field.description;
-                    group.appendChild(small);
-                }
-
-                row.appendChild(group);
-                parent.appendChild(row);
+        case 'input-group': {
+            const rows = getRows(pkg); // rows が無ければ fields から2列に整形
+            rows.forEach(row => {
+                const rowEl = document.createElement('div');
+                rowEl.className = 'form-row';
+                (row.columns || []).forEach(col => {
+                    rowEl.appendChild(buildFormGroup(col));
+                });
+                parent.appendChild(rowEl);
             });
             break;
+        }
 
-        case 'select':
+        case 'select': {
+            // 単独 select パッケージ
             const rowSel = document.createElement('div');
             rowSel.className = 'form-row';
+
             const groupSel = document.createElement('div');
             groupSel.className = 'form-group';
 
             const labelSel = document.createElement('label');
-            labelSel.textContent = pkg.label || pkg.id;
+            labelSel.textContent = pkg.label || pkg.name || pkg.id || '';
             labelSel.setAttribute('for', pkg.id);
             groupSel.appendChild(labelSel);
 
             const select = document.createElement('select');
             select.id = pkg.id;
-            pkg.options.forEach(opt => {
+            (pkg.options || []).forEach(opt => {
                 const option = document.createElement('option');
                 option.value = opt.value;
-                option.textContent = opt.label;
-                if (opt.selected || opt.value === pkg.defaultValue) option.selected = true;
+                option.textContent = opt.label != null ? opt.label : String(opt.value);
+                if (opt.selected || (pkg.defaultValue != null && opt.value === pkg.defaultValue)) {
+                    option.selected = true;
+                }
                 select.appendChild(option);
             });
             groupSel.appendChild(select);
             rowSel.appendChild(groupSel);
             parent.appendChild(rowSel);
             break;
+        }
 
-        case 'radio-group':
+        case 'radio-group': {
+            const row = document.createElement('div');
+            row.className = 'form-row';
+
+            const group = document.createElement('div');
+            group.className = 'form-group';
+
+            if (pkg.name || pkg.label) {
+                const legend = document.createElement('div');
+                legend.className = 'form-label';
+                legend.textContent = pkg.name || pkg.label;
+                group.appendChild(legend);
+            }
+
             const radioWrap = document.createElement('div');
             radioWrap.className = 'radio-group';
-            pkg.options.forEach(opt => {
-                const labelRadio = document.createElement('label');
+            (pkg.options || []).forEach(opt => {
+                const lbl = document.createElement('label');
                 const radio = document.createElement('input');
                 radio.type = 'radio';
                 radio.name = pkg.variableName || pkg.id;
                 radio.value = opt.value;
-                if (opt.checked || opt.value === pkg.defaultValue) radio.checked = true;
-                labelRadio.appendChild(radio);
-                labelRadio.appendChild(document.createTextNode(opt.label));
-                radioWrap.appendChild(labelRadio);
+                if (opt.checked || (pkg.defaultValue != null && opt.value === pkg.defaultValue)) {
+                    radio.checked = true;
+                }
+                lbl.appendChild(radio);
+                lbl.appendChild(document.createTextNode(opt.label != null ? opt.label : String(opt.value)));
+                radioWrap.appendChild(lbl);
             });
-            parent.appendChild(radioWrap);
-            break;
 
-        case 'conditional-section':
+            group.appendChild(radioWrap);
+            row.appendChild(group);
+            parent.appendChild(row);
+            break;
+        }
+
+        case 'conditional-section': {
             const condWrap = document.createElement('div');
             condWrap.id = pkg.id;
             condWrap.className = 'config-section';
-            pkg.children.forEach(child => buildField(condWrap, child));
+            (pkg.children || []).forEach(child => buildField(condWrap, child));
             parent.appendChild(condWrap);
             break;
+        }
 
-        case 'info-display':
+        case 'info-display': {
+            const row = document.createElement('div');
+            row.className = 'form-row';
             const info = document.createElement('div');
             info.id = pkg.id;
             info.textContent = pkg.content || '';
-            parent.appendChild(info);
+            row.appendChild(info);
+            parent.appendChild(row);
+            break;
+        }
+
+        default:
+            // 未知タイプは無視（将来拡張用）
             break;
     }
+}
+
+// 2列行の .form-group を構築（text/number/password/select に対応）
+function buildFormGroup(field) {
+    // 別タイプが紛れた場合にも対応
+    if (field.type === 'radio-group') {
+        const wrap = document.createElement('div');
+        wrap.className = 'form-group';
+        const legend = document.createElement('div');
+        legend.className = 'form-label';
+        legend.textContent = field.name || field.label || field.id || '';
+        wrap.appendChild(legend);
+
+        const radioWrap = document.createElement('div');
+        radioWrap.className = 'radio-group';
+        (field.options || []).forEach(opt => {
+            const lbl = document.createElement('label');
+            const radio = document.createElement('input');
+            radio.type = 'radio';
+            radio.name = field.variableName || field.id;
+            radio.value = opt.value;
+            if (opt.checked || (field.defaultValue != null && opt.value === field.defaultValue)) {
+                radio.checked = true;
+            }
+            lbl.appendChild(radio);
+            lbl.appendChild(document.createTextNode(opt.label != null ? opt.label : String(opt.value)));
+            radioWrap.appendChild(lbl);
+        });
+        wrap.appendChild(radioWrap);
+        return wrap;
+    }
+
+    if (field.type === 'conditional-section') {
+        const wrap = document.createElement('div');
+        wrap.className = 'form-group';
+        const inner = document.createElement('div');
+        inner.id = field.id;
+        inner.className = 'config-section';
+        (field.children || []).forEach(child => {
+            // ネスト内も2列化したい場合はさらに行を作る
+            buildField(inner, child);
+        });
+        wrap.appendChild(inner);
+        return wrap;
+    }
+
+    const group = document.createElement('div');
+    group.className = 'form-group';
+
+    const label = document.createElement('label');
+    label.textContent = field.label || field.name || field.id || '';
+    if (field.id) label.setAttribute('for', field.id);
+    group.appendChild(label);
+
+    let ctrl;
+    if (field.type === 'select') {
+        ctrl = document.createElement('select');
+        if (field.id) ctrl.id = field.id;
+        (field.options || []).forEach(opt => {
+            const option = document.createElement('option');
+            option.value = opt.value;
+            option.textContent = opt.label != null ? opt.label : String(opt.value);
+            if (opt.selected || (field.defaultValue != null && opt.value === field.defaultValue)) {
+                option.selected = true;
+            }
+            ctrl.appendChild(option);
+        });
+    } else {
+        ctrl = document.createElement('input');
+        ctrl.type = field.type || 'text';
+        if (field.id) ctrl.id = field.id;
+        if (field.placeholder) ctrl.placeholder = field.placeholder;
+        if (field.defaultValue != null) ctrl.value = field.defaultValue;
+        if (field.min != null) ctrl.min = field.min;
+        if (field.max != null) ctrl.max = field.max;
+        if (field.maxlength != null) ctrl.maxLength = field.maxlength;
+        if (field.pattern != null) ctrl.pattern = field.pattern;
+    }
+    group.appendChild(ctrl);
+
+    if (field.description) {
+        const small = document.createElement('small');
+        small.className = 'text-muted';
+        small.textContent = field.description;
+        group.appendChild(small);
+    }
+
+    return group;
+}
+
+// rows/columns 優先。無ければ fields[] を2列の rows に正規化。
+function getRows(group) {
+    if (Array.isArray(group.rows) && group.rows.length) {
+        // 期待形式: [{ columns: [field, field] }, ...]
+        return group.rows.map(r => ({
+            columns: Array.isArray(r.columns) ? r.columns : []
+        }));
+    }
+    const fields = Array.isArray(group.fields) ? group.fields : [];
+    const rows = [];
+    for (let i = 0; i < fields.length; i += 2) {
+        const cols = [fields[i]];
+        if (fields[i + 1]) cols.push(fields[i + 1]);
+        rows.push({ columns: cols });
+    }
+    return rows;
 }
 
 // setup.jsonからフォーム構造を生成
