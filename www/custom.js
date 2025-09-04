@@ -587,20 +587,105 @@ function updatePackageListFromDynamicSources() {
 }
 
 function updateLanguagePackage() {
-    // 既存の言語パッケージを削除
+    // 全ての既存言語パッケージを削除
+    const toDelete = [];
     for (const pkg of dynamicPackages) {
-        if (pkg.startsWith('luci-i18n-') && pkg.endsWith('-' + selectedLanguage.replace('_', '-'))) {
-            dynamicPackages.delete(pkg);
+        if (pkg.startsWith('luci-i18n-')) {
+            toDelete.push(pkg);
         }
     }
+    toDelete.forEach(pkg => {
+        dynamicPackages.delete(pkg);
+        console.log(`Removed language package: ${pkg}`);
+    });
     
     // 新しい言語パッケージを追加（英語以外の場合）
     if (selectedLanguage && selectedLanguage !== 'en') {
         const langCode = selectedLanguage.replace('_', '-');
-        const languagePackage = `luci-i18n-base-${langCode}`;
-        dynamicPackages.add(languagePackage);
-        console.log(`Added language package: ${languagePackage}`);
+        
+        // 現在のパッケージリストを取得
+        const currentPackages = getCurrentPackageList();
+        
+        // luciパッケージを検出して対応する言語パッケージを追加
+        const luciPackages = findLuciPackages(currentPackages);
+        luciPackages.forEach(luciPkg => {
+            const languagePackage = `luci-i18n-${luciPkg}-${langCode}`;
+            dynamicPackages.add(languagePackage);
+            console.log(`Added language package: ${languagePackage}`);
+        });
+        
+        // ベース言語パッケージも追加
+        const baseLanguagePackage = `luci-i18n-base-${langCode}`;
+        dynamicPackages.add(baseLanguagePackage);
+        console.log(`Added base language package: ${baseLanguagePackage}`);
     }
+}
+
+function getCurrentPackageList() {
+    const packages = new Set();
+    
+    // パッケージセレクターから選択されたパッケージ
+    document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
+        const pkgName = cb.getAttribute('data-package');
+        if (pkgName) packages.add(pkgName);
+    });
+    
+    // テキストエリアから既存パッケージ
+    const textarea = document.querySelector('#asu-packages');
+    if (textarea) {
+        const textPackages = split(textarea.value);
+        textPackages.forEach(pkg => packages.add(pkg));
+    }
+    
+    // setup.json由来の動的パッケージ
+    if (setupConfig) {
+        setupConfig.categories.forEach(category => {
+            category.packages.forEach(pkg => {
+                if (pkg.type === 'radio-group' && pkg.variableName) {
+                    const selectedValue = getFieldValue(`input[name="${pkg.variableName}"]:checked`);
+                    if (selectedValue) {
+                        const selectedOption = pkg.options.find(opt => opt.value === selectedValue);
+                        if (selectedOption && selectedOption.packages) {
+                            selectedOption.packages.forEach(pkgName => packages.add(pkgName));
+                        }
+                    }
+                }
+            });
+        });
+    }
+    
+    return Array.from(packages);
+}
+
+function findLuciPackages(packageList) {
+    const luciPackages = [];
+    
+    packageList.forEach(pkg => {
+        if (pkg.startsWith('luci-')) {
+            // luci-i18n- パッケージは除外
+            if (!pkg.startsWith('luci-i18n-')) {
+                let luciName = pkg;
+                
+                // 特定のパッケージ名変換
+                if (pkg === 'luci') {
+                    luciName = 'base';
+                } else if (pkg.startsWith('luci-app-')) {
+                    luciName = pkg.substring(5); // "luci-" を除去してapp-から始まる部分を取得
+                } else if (pkg.startsWith('luci-mod-')) {
+                    luciName = pkg.substring(5); // "luci-" を除去してmod-から始まる部分を取得
+                } else if (pkg.startsWith('luci-theme-')) {
+                    luciName = pkg.substring(5); // "luci-" を除去してtheme-から始まる部分を取得
+                } else if (pkg.startsWith('luci-proto-')) {
+                    luciName = pkg.substring(5); // "luci-" を除去してproto-から始まる部分を取得
+                }
+                
+                luciPackages.push(luciName);
+                console.log(`Found LuCI package: ${pkg} -> ${luciName}`);
+            }
+        }
+    });
+    
+    return luciPackages;
 }
 
 function updateSetupJsonPackages() {
