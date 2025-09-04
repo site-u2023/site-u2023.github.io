@@ -569,7 +569,7 @@ function handleRadioChange(e) {
     updateVariableDefinitions();
 }
 
-// ==================== 動的パッケージ管理 ====================
+// ==================== 動的パッケージ管理（修正版） ====================
 
 function updatePackageListFromDynamicSources() {
     console.log('updatePackageListFromDynamicSources called');
@@ -587,7 +587,15 @@ function updatePackageListFromDynamicSources() {
 }
 
 function updateLanguagePackage() {
-    // 全ての既存言語パッケージを削除
+    // 全ての既存言語パッケージを削除（dynamicPackagesとテキストエリアの両方から）
+    const textarea = document.querySelector('#asu-packages');
+    if (textarea) {
+        const currentPackages = split(textarea.value);
+        const filteredPackages = currentPackages.filter(pkg => !pkg.startsWith('luci-i18n-'));
+        textarea.value = filteredPackages.join(' ');
+    }
+    
+    // dynamicPackagesからも削除
     const toDelete = [];
     for (const pkg of dynamicPackages) {
         if (pkg.startsWith('luci-i18n-')) {
@@ -601,9 +609,9 @@ function updateLanguagePackage() {
     
     // 新しい言語パッケージを追加（英語以外の場合）
     if (selectedLanguage && selectedLanguage !== 'en') {
-        const langCode = selectedLanguage.replace('_', '-');
+        const langCode = selectedLanguage.replace('_', '-').toLowerCase();
         
-        // 言語パッケージを除外した現在のパッケージリストを取得
+        // 現在のパッケージリストを取得（言語パッケージを除く）
         const currentPackages = getCurrentPackageListExcludingLanguages();
         
         // luciパッケージを検出して対応する言語パッケージを追加
@@ -644,37 +652,23 @@ function getCurrentPackageListExcludingLanguages() {
     }
     
     // setup.json由来の動的パッケージ（言語パッケージ除外）
-    if (setupConfig) {
-        setupConfig.categories.forEach(category => {
-            category.packages.forEach(pkg => {
-                if (pkg.type === 'radio-group' && pkg.variableName) {
-                    const selectedValue = getFieldValue(`input[name="${pkg.variableName}"]:checked`);
-                    if (selectedValue) {
-                        const selectedOption = pkg.options.find(opt => opt.value === selectedValue);
-                        if (selectedOption && selectedOption.packages) {
-                            selectedOption.packages.forEach(pkgName => {
-                                if (!pkgName.startsWith('luci-i18n-')) {
-                                    packages.add(pkgName);
-                                }
-                            });
-                        }
-                    }
-                }
-            });
-        });
+    for (const pkg of dynamicPackages) {
+        if (!pkg.startsWith('luci-i18n-')) {
+            packages.add(pkg);
+        }
     }
     
     return Array.from(packages);
 }
 
 function findLuciPackages(packageList) {
-    const luciPackages = [];
+    const luciPackages = new Set();
     
     packageList.forEach(pkg => {
         if (pkg.startsWith('luci-')) {
             // luci-i18n- パッケージは除外
             if (!pkg.startsWith('luci-i18n-')) {
-                let luciName = pkg;
+                let luciName = '';
                 
                 // 特定のパッケージ名変換
                 if (pkg === 'luci') {
@@ -687,15 +681,25 @@ function findLuciPackages(packageList) {
                     luciName = pkg.substring(5); // "luci-" を除去してtheme-から始まる部分を取得
                 } else if (pkg.startsWith('luci-proto-')) {
                     luciName = pkg.substring(5); // "luci-" を除去してproto-から始まる部分を取得
+                } else if (pkg.startsWith('luci-lib-')) {
+                    luciName = pkg.substring(5); // "luci-" を除去
+                } else if (pkg.startsWith('luci-ssl')) {
+                    // luci-ssl は特別扱いしない
+                    continue;
+                } else {
+                    // その他のluciパッケージ
+                    luciName = pkg.substring(5);
                 }
                 
-                luciPackages.push(luciName);
-                console.log(`Found LuCI package: ${pkg} -> ${luciName}`);
+                if (luciName) {
+                    luciPackages.add(luciName);
+                    console.log(`Found LuCI package: ${pkg} -> ${luciName}`);
+                }
             }
         }
     });
     
-    return luciPackages;
+    return Array.from(luciPackages);
 }
 
 function updateSetupJsonPackages() {
@@ -1629,14 +1633,16 @@ function updatePackageListFromSelector() {
     if (textarea) {
         const currentPackages = split(textarea.value);
         
-        // セレクターで管理されていないパッケージを保持
+        // セレクターで管理されていない、かつ動的でもない、かつ言語パッケージでもないパッケージを保持
         const nonSelectorPkgs = currentPackages.filter(pkg => {
             // パッケージセレクターにあるかチェック
             const hasInSelector = document.querySelector(`.package-selector-checkbox[data-package="${pkg}"]`);
             // 動的パッケージにあるかチェック
             const hasInDynamic = dynamicPackages.has(pkg);
-            // どちらにもない場合は保持
-            return !hasInSelector && !hasInDynamic;
+            // 言語パッケージかチェック
+            const isLanguagePkg = pkg.startsWith('luci-i18n-');
+            // どれにも該当しない場合のみ保持
+            return !hasInSelector && !hasInDynamic && !isLanguagePkg;
         });
         
         const newList = [...new Set([...nonSelectorPkgs, ...checkedPkgs])];
