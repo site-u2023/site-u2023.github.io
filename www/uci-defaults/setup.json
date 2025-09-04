@@ -7,45 +7,65 @@
       "type": "form-section",
       "packages": [
         {
-          "id": "aios-language",
-          "name": "Language",
-          "type": "select",
-          "selector": "#aios-language",
-          "variableName": "language",
-          "defaultValue": "en",
-          "options": [
-            {"value": "ar", "label": "العربية (Arabic)"},
-            {"value": "bg", "label": "Български (Bulgarian)"},
-            {"value": "ca", "label": "Català (Catalan)"},
-            {"value": "cs", "label": "Čeština (Czech)"},
-            {"value": "da", "label": "Dansk (Danish)"},
-            {"value": "de", "label": "Deutsch (German)"},
-            {"value": "el", "label": "Ελληνικά (Greek)"},
-            {"value": "en", "label": "English", "selected": true},
-            {"value": "es", "label": "Español (Spanish)"},
-            {"value": "fi", "label": "Suomi (Finnish)"},
-            {"value": "fr", "label": "Français (French)"},
-            {"value": "he", "label": "עברית (Hebrew)"},
-            {"value": "hu", "label": "Magyar (Hungarian)"},
-            {"value": "it", "label": "Italiano (Italian)"},
-            {"value": "ja", "label": "日本語 (Japanese)"},
-            {"value": "ko", "label": "한국어 (Korean)"},
-            {"value": "lt", "label": "Lietuvių (Lithuanian)"},
-            {"value": "ms", "label": "Bahasa Melayu (Malay)"},
-            {"value": "nl", "label": "Nederlands (Dutch)"},
-            {"value": "no", "label": "Norsk (Norwegian)"},
-            {"value": "pl", "label": "Polski (Polish)"},
-            {"value": "pt", "label": "Português (Portuguese)"},
-            {"value": "pt_br", "label": "Português do Brasil (Portuguese Brazil)"},
-            {"value": "ro", "label": "Română (Romanian)"},
-            {"value": "ru", "label": "Русский (Russian)"},
-            {"value": "sk", "label": "Slovenčina (Slovak)"},
-            {"value": "sv", "label": "Svenska (Swedish)"},
-            {"value": "tr", "label": "Türkçe (Turkish)"},
-            {"value": "uk", "label": "Українська (Ukrainian)"},
-            {"value": "vi", "label": "Tiếng Việt (Vietnamese)"},
-            {"value": "zh_cn", "label": "简体中文 (Chinese Simplified)"},
-            {"value": "zh_tw", "label": "繁體中文 (Chinese Traditional)"}
+          "id": "language-group",
+          "name": "Language Settings",
+          "type": "input-group",
+          "rows": [
+            {
+              "columns": [
+                {
+                  "id": "aios-language",
+                  "label": "Language",
+                  "type": "select",
+                  "selector": "#aios-language",
+                  "variableName": "language",
+                  "defaultValue": "en",
+                  "options": [
+                    {"value": "ar", "label": "العربية (Arabic)"},
+                    {"value": "bg", "label": "Български (Bulgarian)"},
+                    {"value": "ca", "label": "Català (Catalan)"},
+                    {"value": "cs", "label": "Čeština (Czech)"},
+                    {"value": "da", "label": "Dansk (Danish)"},
+                    {"value": "de", "label": "Deutsch (German)"},
+                    {"value": "el", "label": "Ελληνικά (Greek)"},
+                    {"value": "en", "label": "English", "selected": true},
+                    {"value": "es", "label": "Español (Spanish)"},
+                    {"value": "fi", "label": "Suomi (Finnish)"},
+                    {"value": "fr", "label": "Français (French)"},
+                    {"value": "he", "label": "עברית (Hebrew)"},
+                    {"value": "hu", "label": "Magyar (Hungarian)"},
+                    {"value": "it", "label": "Italiano (Italian)"},
+                    {"value": "ja", "label": "日本語 (Japanese)"},
+                    {"value": "ko", "label": "한국어 (Korean)"},
+                    {"value": "lt", "label": "Lietuvių (Lithuanian)"},
+                    {"value": "ms", "label": "Bahasa Melayu (Malay)"},
+                    {"value": "nl", "label": "Nederlands (Dutch)"},
+                    {"value": "no", "label": "Norsk (Norwegian)"},
+                    {"value": "pl", "label": "Polski (Polish)"},
+                    {"value": "pt", "label": "Português (Portuguese)"},
+                    {"value": "pt_br", "label": "Português do Brasil (Portuguese Brazil)"},
+                    {"value": "ro", "label": "Română (Romanian)"},
+                    {"value": "ru", "label": "Русский (Russian)"},
+                    {"value": "sk", "label": "Slovenčina (Slovak)"},
+                    {"value": "sv", "label": "Svenska (Swedish)"},
+                    {"value": "tr", "label": "Türkçe (Turkish)"},
+                    {"value": "uk", "label": "Українська (Ukrainian)"},
+                    {"value": "vi", "label": "Tiếng Việt (Vietnamese)"},
+                    {"value": "zh_cn", "label": "简体中文 (Chinese Simplified)"},
+                    {"value": "zh_tw", "label": "繁體中文 (Chinese Traditional)"}
+                  ]
+                },
+                {
+                  "id": "aios-device-name",
+                  "label": "Device name",
+                  "type": "text",
+                  "selector": "#aios-device-name",
+                  "variableName": "device_name",
+                  "placeholder": "OpenWrt",
+                  "defaultValue": ""
+                }
+              ]
+            }
           ]
         },
         {
@@ -95,26 +115,6 @@
                   "apiMapping": "zonename"
                 },
                 {
-                  "id": "aios-device-name",
-                  "label": "Device name",
-                  "type": "text",
-                  "selector": "#aios-device-name",
-                  "variableName": "device_name",
-                  "placeholder": "OpenWrt",
-                  "defaultValue": ""
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "id": "security-group",
-          "name": "Security Settings",
-          "type": "input-group",
-          "rows": [
-            {
-              "columns": [
-                {
                   "id": "aios-root-password",
                   "label": "Root password",
                   "type": "text",
@@ -122,35 +122,46 @@
                   "variableName": "root_password",
                   "placeholder": "8+ characters",
                   "defaultValue": ""
-                },
-                {
-                  "id": "aios-lan-ipv4",
-                  "label": "LAN IPv4 Address",
-                  "type": "text",
-                  "selector": "#aios-lan-ipv4",
-                  "variableName": "lan_ipv4",
-                  "placeholder": "192.168.1.1",
-                  "defaultValue": ""
                 }
               ]
             }
           ]
         },
         {
-          "id": "network-group",
-          "name": "Network Settings",
+          "id": "network-ssh-group",
+          "name": "Network & SSH Settings",
           "type": "input-group",
           "rows": [
             {
               "columns": [
                 {
+                  "id": "aios-lan-ipv4",
+                  "label": "LAN IPv4 Address",
+                  "type": "text",
+                  "selector": "#aios-lan-ipv4",
+                  "variableName": "lan_ip_address",
+                  "placeholder": "192.168.1.1",
+                  "defaultValue": ""
+                },
+                {
                   "id": "aios-lan-ipv6",
                   "label": "LAN IPv6 Address",
                   "type": "text",
                   "selector": "#aios-lan-ipv6",
-                  "variableName": "lan_ipv6",
+                  "variableName": "lan_ipv6_address",
                   "placeholder": "fd00::1/64"
-                },
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ssh-settings-group",
+          "name": "SSH Configuration",
+          "type": "input-group",
+          "rows": [
+            {
+              "columns": [
                 {
                   "id": "aios-ssh-interface",
                   "label": "SSH Interface",
@@ -160,18 +171,7 @@
                   "placeholder": "lan",
                   "defaultValue": "lan",
                   "description": "Network interface for SSH access"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "id": "ssh-flow-group",
-          "name": "SSH & Flow Control",
-          "type": "input-group",
-          "rows": [
-            {
-              "columns": [
+                },
                 {
                   "id": "aios-ssh-port",
                   "label": "SSH Port",
@@ -183,30 +183,30 @@
                   "min": 1,
                   "max": 65535,
                   "description": "Port number for SSH access"
-                },
-                {
-                  "id": "aios-flow-offloading",
-                  "label": "Flow offloading type",
-                  "type": "select",
-                  "selector": "#aios-flow-offloading",
-                  "variableName": "flow_offloading",
-                  "options": [
-                    {"value": "", "label": "Disabled", "selected": true},
-                    {"value": "software", "label": "Software flow offloading"},
-                    {"value": "hardware", "label": "Hardware flow offloading"}
-                  ]
                 }
               ]
             }
           ]
         },
         {
-          "id": "backup-group",
-          "name": "Backup Settings",
+          "id": "system-settings-group",
+          "name": "System Configuration",
           "type": "input-group",
           "rows": [
             {
               "columns": [
+                {
+                  "id": "aios-flow-offloading",
+                  "label": "Flow offloading type",
+                  "type": "select",
+                  "selector": "#aios-flow-offloading",
+                  "variableName": "flow_offloading_type",
+                  "options": [
+                    {"value": "", "label": "Disabled", "selected": true},
+                    {"value": "software", "label": "Software flow offloading"},
+                    {"value": "hardware", "label": "Hardware flow offloading"}
+                  ]
+                },
                 {
                   "id": "aios-backup-path",
                   "label": "Restore Backup Path",
@@ -269,7 +269,7 @@
                       "selector": "#aios-wifi-password",
                       "variableName": "wlan_password",
                       "placeholder": "8+ characters",
-                      "defaultValue": "password"
+                      "defaultValue": "openwrt123"
                     }
                   ]
                 }
@@ -344,7 +344,7 @@
           "id": "auto-section",
           "name": "AUTO Detection",
           "type": "conditional-section",
-          "showWhen": {"field": "connection-type", "values": ["auto"]},
+          "showWhen": {"field": "connection_type", "values": ["auto"]},
           "children": [
             {
               "id": "auto-info",
@@ -358,13 +358,13 @@
           "id": "dhcp-section",
           "name": "DHCP",
           "type": "conditional-section",
-          "showWhen": {"field": "connection-type", "values": ["dhcp"]},
+          "showWhen": {"field": "connection_type", "values": ["dhcp"]},
           "children": [
             {
               "id": "dhcp-info",
               "name": "DHCP Information",
               "type": "info-display",
-              "content": "DHCP configuration will be applied automatically."
+              "content": "DHCP configuration will be applied automatically. No additional settings required."
             }
           ]
         },
@@ -372,7 +372,7 @@
           "id": "pppoe-section",
           "name": "PPPoE",
           "type": "conditional-section",
-          "showWhen": {"field": "connection-type", "values": ["pppoe"]},
+          "showWhen": {"field": "connection_type", "values": ["pppoe"]},
           "children": [
             {
               "id": "pppoe-group",
@@ -407,7 +407,7 @@
           "id": "dslite-section",
           "name": "DS-Lite",
           "type": "conditional-section",
-          "showWhen": {"field": "connection-type", "values": ["dslite"]},
+          "showWhen": {"field": "connection_type", "values": ["dslite"]},
           "children": [
             {
               "id": "dslite-group",
@@ -417,10 +417,10 @@
                 {
                   "columns": [
                     {
-                      "id": "dslite-aftr",
+                      "id": "dslite-aftr-type",
                       "label": "AFTR Type",
                       "type": "select",
-                      "selector": "#dslite-aftr",
+                      "selector": "#dslite-aftr-type",
                       "variableName": "dslite_aftr_type",
                       "options": [
                         {"value": "transix", "label": "gw.transix.jp"},
@@ -463,7 +463,7 @@
           "id": "mape-section",
           "name": "MAP-E",
           "type": "conditional-section",
-          "showWhen": {"field": "connection-type", "values": ["mape"]},
+          "showWhen": {"field": "connection_type", "values": ["mape"]},
           "children": [
             {
               "id": "mape-type",
@@ -595,7 +595,7 @@
               "id": "mape-gua-prefix-section",
               "name": "GUA Prefix Settings",
               "type": "conditional-section",
-              "showWhen": {"field": "mape-type", "values": ["gua"]},
+              "showWhen": {"field": "mape_type", "values": ["gua"]},
               "children": [
                 {
                   "id": "mape-gua-group",
@@ -625,7 +625,7 @@
           "id": "ap-section",
           "name": "AP Mode",
           "type": "conditional-section",
-          "showWhen": {"field": "connection-type", "values": ["ap"]},
+          "showWhen": {"field": "connection_type", "values": ["ap"]},
           "children": [
             {
               "id": "ap-group",
@@ -681,13 +681,13 @@
           "id": "netopt-auto-section",
           "name": "AUTO Mode",
           "type": "conditional-section",
-          "showWhen": {"field": "net-optimizer", "values": ["auto"]},
+          "showWhen": {"field": "net_optimizer", "values": ["auto"]},
           "children": [
             {
               "id": "netopt-auto-info",
               "name": "Auto Optimization",
               "type": "info-display",
-              "content": "Auto mode adjusts parameters based on system resources"
+              "content": "Auto mode adjusts parameters based on system resources (Memory, CPU cores, etc.)"
             }
           ]
         },
@@ -695,7 +695,7 @@
           "id": "netopt-manual-section",
           "name": "Manual Mode",
           "type": "conditional-section",
-          "showWhen": {"field": "net-optimizer", "values": ["manual"]},
+          "showWhen": {"field": "net_optimizer", "values": ["manual"]},
           "children": [
             {
               "id": "netopt-memory-group",
@@ -798,7 +798,7 @@
           "id": "netopt-disabled-section",
           "name": "Disabled Mode",
           "type": "conditional-section",
-          "showWhen": {"field": "net-optimizer", "values": ["disabled"]},
+          "showWhen": {"field": "net_optimizer", "values": ["disabled"]},
           "children": [
             {
               "id": "netopt-disabled-info",
