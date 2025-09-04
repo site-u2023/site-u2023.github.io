@@ -81,7 +81,371 @@
       <h3 class="tr-defaults">Script to run on first boot (uci-defaults)</h3>
     </summary>
     <div id="scripts-config">
-      <!-- JSONから動的に生成される -->
+      <div class="commands-container config-section">
+        <h4>Add commands</h4>
+        <p class="text-muted">Add custom shell commands that run on first boot.</p>
+        <div id="commands-autocomplete" class="autocomplete">
+          <input type="text"
+            id="command"
+            placeholder="Type commands"
+            autocomplete="off"
+            spellcheck="false"
+            autocapitalize="off">
+        </div>
+      </div>
+      
+      <div id="basic-config" class="config-section">
+        <h4>Basic Configuration</h4>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="aios-language">Language</label>
+            <select id="aios-language">
+              <option value="ar">العربية (Arabic)</option>
+              <option value="bg">Български (Bulgarian)</option>
+              <option value="ca">Català (Catalan)</option>
+              <option value="cs">Čeština (Czech)</option>
+              <option value="da">Dansk (Danish)</option>
+              <option value="de">Deutsch (German)</option>
+              <option value="el">Ελληνικά (Greek)</option>
+              <option value="en">English</option>
+              <option value="es">Español (Spanish)</option>
+              <option value="fi">Suomi (Finnish)</option>
+              <option value="fr">Français (French)</option>
+              <option value="he">עברית (Hebrew)</option>
+              <option value="hu">Magyar (Hungarian)</option>
+              <option value="it">Italiano (Italian)</option>
+              <option value="ja">日本語 (Japanese)</option>
+              <option value="ko">한국어 (Korean)</option>
+              <option value="lt">Lietuvių (Lithuanian)</option>
+              <option value="ms">Bahasa Melayu (Malay)</option>
+              <option value="nl">Nederlands (Dutch)</option>
+              <option value="no">Norsk (Norwegian)</option>
+              <option value="pl">Polski (Polish)</option>
+              <option value="pt">Português (Portuguese)</option>
+              <option value="pt_br">Português do Brasil (Portuguese Brazil)</option>
+              <option value="ro">Română (Romanian)</option>
+              <option value="ru">Русский (Russian)</option>
+              <option value="sk">Slovenčina (Slovak)</option>
+              <option value="sv">Svenska (Swedish)</option>
+              <option value="tr">Türkçe (Turkish)</option>
+              <option value="uk">Українська (Ukrainian)</option>
+              <option value="vi">Tiếng Việt (Vietnamese)</option>
+              <option value="zh_cn">简体中文 (Chinese Simplified)</option>
+              <option value="zh_tw">繁體中文 (Chinese Traditional)</option>                       
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="aios-country">Country</label>
+            <input type="text" id="aios-country" placeholder="00" maxlength="2">
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="aios-timezone">Timezone</label>
+            <input type="text" id="aios-timezone" placeholder="UTC">
+          </div>
+          <div class="form-group">
+            <label for="aios-zonename">Zonename</label>
+            <input type="text" id="aios-zonename" placeholder="UTC">
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="aios-device-name">Device name</label>
+            <input type="text" id="aios-device-name" placeholder="OpenWrt" value="">
+          </div>
+          <div class="form-group">
+            <label for="aios-root-password">Root password</label>
+            <input type="text" id="aios-root-password" placeholder="8+ characters" value="">
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="aios-lan-ipv4">LAN IPv4 Address</label>
+            <input type="text" id="aios-lan-ipv4" placeholder="192.168.1.1" value="">
+          </div>
+          <div class="form-group">
+            <label for="aios-lan-ipv6">LAN IPv6 Address</label>
+            <input type="text" id="aios-lan-ipv6" placeholder="fd00::1/64">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="aios-ssh-interface">SSH Interface</label>
+            <input type="text" id="aios-ssh-interface" class="form-control" placeholder="lan" value="lan">
+            <small class="form-text text-muted">Network interface for SSH access</small>
+          </div>
+          <div class="form-group">
+            <label for="aios-ssh-port">SSH Port</label>
+            <input type="number" id="aios-ssh-port" class="form-control" placeholder="22" value="" min="1" max="65535">
+            <small class="form-text text-muted">Port number for SSH access</small>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="aios-flow-offloading">Flow offloading type</label>
+            <select id="aios-flow-offloading" class="form-control">
+              <option value="">Disabled</option>
+              <option value="software">Software flow offloading</option>
+              <option value="hardware">Hardware flow offloading</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="aios-backup-path">Restore Backup Path</label>
+            <input type="text" id="aios-backup-path" class="form-control" placeholder="/root/backup.tar.gz" value="/root/backup.tar.gz">
+            <small class="form-text text-muted">Path to backup file for restore</small>
+          </div>
+        </div>
+      </div>
+    
+      <div id="wifi-config" class="config-section">
+        <h4>Wi-Fi Configuration</h4>
+        <div class="form-group">
+          <label>Wi-Fi Mode</label>
+          <div class="radio-group">
+            <label><input type="radio" name="wifi_mode" value="standard" checked> Standard</label>
+            <label><input type="radio" name="wifi_mode" value="usteer"> Usteer</label>
+            <label><input type="radio" name="wifi_mode" value="disabled"> Disabled</label>
+          </div>
+        </div>
+
+        <div id="wifi-options-container">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="aios-wifi-ssid">Wi-Fi SSID</label>
+              <input type="text" id="aios-wifi-ssid" placeholder="OpenWrt" value="OpenWrt">
+            </div>
+            <div class="form-group">
+              <label for="aios-wifi-password">Wi-Fi Password</label>
+              <input type="text" id="aios-wifi-password" placeholder="8+ characters" value="password">
+            </div>
+          </div>
+          <div id="usteer-options" class="form-row" style="display: none;">
+            <div class="form-group">
+              <label for="aios-wifi-mobility-domain">Mobility Domain</label>
+              <input type="text" id="aios-wifi-mobility-domain" 
+                placeholder="4f57" 
+                value="4f57" 
+                maxlength="4" 
+                pattern="[0-9A-Fa-f]{4}">
+              <small class="form-text text-muted">4-digit hex (e.g. 4f57)</small>
+            </div>
+            <div class="form-group">
+              <label for="aios-wifi-snr">Min SNR</label>
+              <input type="text" id="aios-wifi-snr" placeholder="30 15 5" value="30 15 5">
+              <small class="form-text text-muted">SNR values in band order</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="internet-config" class="config-section">
+        <h4>Internet Connection</h4>
+
+        <!-- 接続方式ラジオ -->
+        <div class="form-group">
+          <label>Connection type</label>
+          <div class="radio-group">
+            <label><input type="radio" name="connectionType" value="auto" checked> AUTO</label>
+            <label><input type="radio" name="connectionType" value="dhcp"> DHCP</label>
+            <label><input type="radio" name="connectionType" value="pppoe"> PPPoE</label>
+            <label><input type="radio" name="connectionType" value="dslite"> DS-Lite</label>
+            <label><input type="radio" name="connectionType" value="mape"> MAP-E</label>
+            <label><input type="radio" name="connectionType" value="ap"> AP</label>
+          </div>
+        </div>
+
+        <!-- AUTO INFO -->
+        <div id="auto-section" class="connection-config">
+          <p class="text-muted">Automatically detects and configures your internet connection type.</p>
+          <pre id="auto-info">Detecting connection type...</pre>
+        </div>
+        
+        <!-- DHCP -->
+        <div id="dhcp-section" class="connection-config" style="display: none;">
+          <pre id="dhcp-info">DHCP</pre>
+        </div>
+
+        <!-- PPPoE -->
+        <div id="pppoe-section" class="connection-config" style="display: none;">
+          <div class="form-group">
+            <label for="pppoe-username">Username</label>
+            <input type="text" id="pppoe-username" class="form-control" placeholder="Username">
+          </div>
+          <div class="form-group">
+            <label for="pppoe-password">Password</label>
+            <input type="password" id="pppoe-password" class="form-control" placeholder="Password">
+          </div>
+        </div>
+
+        <!-- DS-Lite -->
+        <div id="dslite-section" class="connection-config" style="display: none;">
+          <div class="form-group">
+            <label for="dslite-aftr">AFTR Type</label>
+            <select id="dslite-aftr" class="form-control">
+              <option value="transix">gw.transix.jp</option>
+              <option value="xpass">gw.xpass.jp</option>
+              <option value="v6option">gw.v6option.jp</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="dslite-region">Region</label>
+            <select id="dslite-region" class="form-control">
+              <option value="east">East Japan</option>
+              <option value="west">West Japan</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="dslite-aftr-address">AFTR IPv6 Address</label>
+            <input type="text" id="dslite-aftr-address" class="form-control" placeholder="2404:8e00::feed:100" value="2404:8e00::feed:100">
+          </div>
+        </div>
+
+        <!-- MAP-E -->
+        <div id="mape-section" class="connection-config" style="display: none;">
+          <div class="form-group">
+            <label>Type</label>
+            <div class="radio-group">
+              <label><input type="radio" name="mapeType" value="gua" checked> GUA</label>
+              <label><input type="radio" name="mapeType" value="pd"> PD</label>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>BR</label>
+            <input type="text" id="mape-br" class="form-control" placeholder="2001:db8::1">
+          </div>
+          <div class="form-group">
+            <label>EA-len</label>
+            <input type="number" id="mape-ealen" class="form-control" placeholder="16">
+          </div>
+          <div class="form-group">
+            <label>IPv4 Prefix</label>
+            <input type="text" id="mape-ipv4-prefix" class="form-control" placeholder="">
+          </div>
+          <div class="form-group">
+            <label>IPv4 Prefix Length</label>
+            <input type="number" id="mape-ipv4-prefixlen" class="form-control" placeholder="24">
+          </div>
+          <div class="form-group">
+            <label>IPv6 Prefix</label>
+            <input type="text" id="mape-ipv6-prefix" class="form-control" placeholder="">
+          </div>
+          <div class="form-group">
+            <label>IPv6 Prefix Length</label>
+            <input type="number" id="mape-ipv6-prefixlen" class="form-control" placeholder="32">
+          </div>
+          <div class="form-group">
+            <label>PSID Offset</label>
+            <input type="number" id="mape-psid-offset" class="form-control" placeholder="6">
+          </div>
+          <div class="form-group">
+            <label>PSID Length</label>
+            <input type="number" id="mape-psidlen" class="form-control" placeholder="6">
+          </div>
+          <div id="mape-gua-prefix-section" class="form-group">
+            <label>GUA Prefix</label>
+            <input type="text" id="mape-gua-prefix" class="form-control" placeholder="">
+          </div>
+        </div>
+
+        <!-- AP -->
+        <div id="ap-section" class="connection-config" style="display: none;">
+          <div class="form-row">
+            <div class="form-group" style="flex: 1; min-width: 150px;">
+              <label>IP Address</label>
+              <input type="text" id="ap-ip-address" class="form-control" placeholder="192.168.1.2" value="192.168.1.2">
+            </div>
+            <div class="form-group" style="flex: 1; min-width: 150px;">
+              <label>Gateway</label>
+              <input type="text" id="ap-gateway" class="form-control" placeholder="192.168.1.1" value="192.168.1.1">
+            </div>
+          </div>
+        </div>
+
+      </div> <!-- Internet Connection セクションここまで -->
+
+      <!-- Tuning セクション（独立階層） -->
+      <div id="tuning-config" class="config-section">
+        <h4>Tuning</h4>
+        <div class="form-group">
+          <label>Dynamic Network Optimizer</label>
+          <div class="radio-group">
+            <label><input type="radio" name="netOptimizer" value="auto" checked> AUTO</label>
+            <label><input type="radio" name="netOptimizer" value="manual"> Manual</label>
+            <label><input type="radio" name="netOptimizer" value="disabled"> Disabled</label>
+          </div>
+        </div>
+
+        <!-- AUTO -->
+        <div id="netopt-auto-section" class="connection-config">
+          <p class="text-muted">Auto mode adjusts parameters based on system resources</p>
+        </div>
+
+        <!-- Manual -->
+        <div id="netopt-manual-section" class="connection-config" style="display: none;">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="netopt-rmem">TCP Read Memory</label>
+              <input type="text" id="netopt-rmem" class="form-control" placeholder="4096 131072 8388608" value="4096 131072 8388608">
+              <small class="form-text text-muted">min default max (bytes)</small>
+            </div>
+            <div class="form-group">
+              <label for="netopt-wmem">TCP Write Memory</label>
+              <input type="text" id="netopt-wmem" class="form-control" placeholder="4096 131072 8388608" value="4096 131072 8388608">
+              <small class="form-text text-muted">min default max (bytes)</small>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="netopt-conntrack">Connection Tracking Max</label>
+              <input type="number" id="netopt-conntrack" class="form-control" placeholder="131072" value="131072" min="1024">
+            </div>
+            <div class="form-group">
+              <label for="netopt-backlog">Network Device Backlog</label>
+              <input type="number" id="netopt-backlog" class="form-control" placeholder="5000" value="5000" min="100">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="netopt-somaxconn">Socket Max Connections</label>
+              <input type="number" id="netopt-somaxconn" class="form-control" placeholder="16384" value="16384" min="128">
+            </div>
+            <div class="form-group">
+              <label for="netopt-congestion">TCP Congestion Control</label>
+              <select id="netopt-congestion" class="form-control">
+                <option value="cubic" selected>cubic (default)</option>
+                <option value="bbr">bbr</option>
+                <option value="reno">reno</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Disabled -->
+        <div id="netopt-disabled-section" class="connection-config" style="display: none;">
+          <p class="text-muted">Network optimization will be disabled</p>
+        </div>
+      </div>
+
+      <!-- UCI-defaults セクション（独立階層） -->
+      <details id="uci-defaults-details" class="config-section">
+        <summary>
+          <h4>UCI-defaults (Boot configuration script)</h4>
+        </summary>
+        <div id="uci-defaults-group">
+          <textarea
+            id="uci-defaults-content"
+            autocomplete="off"
+            spellcheck="false"
+            autocapitalize="off"
+          ></textarea>
+        </div>
+      </details>
     </div>
   </details>
 </div>
