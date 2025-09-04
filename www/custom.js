@@ -1,4 +1,4 @@
-// custom.js - OpenWrt カスタム機能（JSONベース動的生成版）
+// custom.js - OpenWrt カスタム機能（統合版）
 
 console.log('custom.js loaded');
 
@@ -85,7 +85,6 @@ async function initializeCustomFeatures(asuSection, temp) {
     ]);
     
     // 依存関係のある初期化
-    generateFormsFromJson();  // JSONからフォーム生成
     setupEventListeners();
     loadUciDefaultsTemplate();
     initDeviceTranslation();
@@ -153,209 +152,915 @@ function reinitializeFeatures() {
     setupEventListeners();
     if (PACKAGE_DB) generatePackageSelector();
     fetchAndDisplayIspInfo();
-    if (cachedApiInfo) updateAutoConnectionInfo(cachedApiInfo);
+    if (cachedApiInfo) updateAutoConnectionInfo(cachedApiInfo);  // AUTO情報の再更新
 }
 
-// ==================== JSONからフォーム動的生成 ====================
+// ==================== setup.json 処理 ====================
 
-function generateFormsFromJson() {
-    const container = document.querySelector('#scripts-config');
-    if (!container || !setupConfig) return;
-    
-    // 既存コンテンツをクリア
-    container.innerHTML = '';
-    
-    setupConfig.formSections.forEach(section => {
-        if (section.type === 'commands') {
-            // コマンド入力セクション
-            const commandDiv = createCommandSection(section);
-            container.appendChild(commandDiv);
-        } else if (section.type === 'details') {
-            // 詳細セクション（UCI-defaults）
-            const detailsDiv = createDetailsSection(section);
-            container.appendChild(detailsDiv);
-        } else {
-            // 通常セクション
-            const sectionDiv = createFormSection(section);
-            container.appendChild(sectionDiv);
-        }
-    });
-    
-    // フォーム構造を生成（値収集用）
-    formStructure = generateFormStructure(setupConfig);
-}
-
-function createCommandSection(section) {
-    const div = document.createElement('div');
-    div.className = section.className;
-    
-    const title = document.createElement('h4');
-    title.textContent = section.title;
-    div.appendChild(title);
-    
-    if (section.description) {
-        const desc = document.createElement('p');
-        desc.className = 'text-muted';
-        desc.textContent = section.description;
-        div.appendChild(desc);
+async function loadSetupConfig() {
+    try {
+        const url = config?.setup_db_url || 'uci-defaults/setup.json';
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
+        setupConfig = await response.json();
+        
+        // フォーム構造を生成
+        formStructure = generateFormStructure(setupConfig);
+        
+        console.log('Setup config loaded:', setupConfig);
+        return setupConfig;
+    } catch (err) {
+        console.error('Failed to load setup.json:', err);
+        return null;
     }
-    
-    const autocompleteDiv = document.createElement('div');
-    autocompleteDiv.id = 'commands-autocomplete';
-    autocompleteDiv.className = 'autocomplete';
-    
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.id = section.fields[0].id;
-    input.placeholder = section.fields[0].placeholder;
-    input.autocomplete = 'off';
-    input.spellcheck = 'false';
-    input.autocapitalize = 'off';
-    
-    autocompleteDiv.appendChild(input);
-    div.appendChild(autocompleteDiv);
-    
-    return div;
 }
 
-function createDetailsSection(section) {
-    const details = document.createElement('details');
-    details.id = section.id;
-    details.className = section.className;
+// setup.jsonからフォーム構造を生成
+function generateFormStructure(config) {
+    const structure = {
+        fields: {},           // すべてのフィールド
+        connectionTypes: {},  // 接続タイプ別フィールド
+        categories: {},       // カテゴリ別フィールド
+        fieldMapping: {}      // selector -> field情報のマッピング
+    };
     
-    const summary = document.createElement('summary');
-    const title = document.createElement('h4');
-    title.textContent = section.title;
-    summary.appendChild(title);
-    details.appendChild(summary);
-    
-    const groupDiv = document.createElement('div');
-    groupDiv.id = section.id.replace('-details', '-group');
-    
-    section.fields.forEach(field => {
-        const element = createFormField(field);
-        groupDiv.appendChild(element);
-    });
-    
-    details.appendChild(groupDiv);
-    return details;
-}
+    config.categories.forEach(category => {
+        structure.categories[category.id] = [];
+        
+        category.packages.forEach(pkg => {
+            const el = pkg.selector ? document.querySelector(pkg.selector) : null;
 
-function createFormSection(section) {
-    const div = document.createElement('div');
-    div.id = section.id;
-    div.className = section.className;
-    
-    const title = document.createElement('h4');
-    title.textContent = section.title;
-    div.appendChild(title);
-    
-    // メインフィールド
-    if (section.fields) {
-        const fieldsContainer = createFieldsContainer(section.fields);
-        div.appendChild(fieldsContainer);
-    }
-    
-    // サブセクション（Wi-Fi用）
-    if (section.subSections) {
-        section.subSections.forEach(subSection => {
-            const subDiv = document.createElement('div');
-            subDiv.id = subSection.id;
-            if (subSection.showWhen) {
-                subDiv.style.display = 'none';
+            // HTML の value を優先、無ければ setup.json の defaultValue
+            const fieldInfo = {
+                id: pkg.id,
+                selector: pkg.selector,
+                variableName: pkg.variableName || pkg.id.replace(/-/g, '_'),
+                defaultValue: (el && el.value) ? el.value : pkg.defaultValue,
+                apiMapping: pkg.apiMapping
+            };
+            
+            if (pkg.selector) {
+                structure.fields[pkg.id] = fieldInfo;
+                structure.categories[category.id].push(pkg.id);
+                structure.fieldMapping[pkg.selector] = fieldInfo;
             }
             
-            const subFieldsContainer = createFieldsContainer(subSection.fields);
-            subDiv.appendChild(subFieldsContainer);
-            div.appendChild(subDiv);
+            // 接続タイプの子要素を処理
+            if (pkg.id === 'connection-type' && pkg.children) {
+                pkg.children.forEach(child => {
+                    structure.connectionTypes[child.id] = [];
+                    if (child.children) {
+                        child.children.forEach(grandChild => {
+                            const elChild = grandChild.selector ? document.querySelector(grandChild.selector) : null;
+                            const childFieldInfo = {
+                                id: grandChild.id,
+                                selector: grandChild.selector,
+                                variableName: grandChild.variableName || grandChild.id.replace(/-/g, '_'),
+                                defaultValue: (elChild && elChild.value) ? elChild.value : grandChild.defaultValue,
+                                apiMapping: grandChild.apiMapping
+                            };
+                            
+                            if (grandChild.selector) {
+                                structure.fields[grandChild.id] = childFieldInfo;
+                                structure.connectionTypes[child.id].push(grandChild.id);
+                                structure.fieldMapping[grandChild.selector] = childFieldInfo;
+                            }
+                        });
+                    }
+                });
+            }
         });
-    }
-    
-    // 接続タイプ別セクション
-    if (section.connectionTypes) {
-        Object.entries(section.connectionTypes).forEach(([type, config]) => {
-            const typeDiv = createConnectionTypeSection(config);
-            typeDiv.style.display = 'none';
-            div.appendChild(typeDiv);
-        });
-    }
-    
-    // オプティマイザータイプ別セクション
-    if (section.optimizerTypes) {
-        Object.entries(section.optimizerTypes).forEach(([type, config]) => {
-            const typeDiv = createConnectionTypeSection(config);
-            typeDiv.style.display = 'none';
-            div.appendChild(typeDiv);
-        });
-    }
-    
-    return div;
-}
-
-function createFieldsContainer(fields, isRow = true) {
-    const container = document.createElement('div');
-    if (isRow && fields.length === 2) {
-        container.className = 'form-row';
-    }
-    
-    fields.forEach(field => {
-        const formGroup = createFormGroup(field);
-        container.appendChild(formGroup);
     });
     
-    return container;
+    return structure;
 }
 
-function createFormGroup(field) {
-    const div = document.createElement('div');
-    div.className = 'form-group';
+// ==================== フォーム値処理 ====================
+
+function collectFormValues() {
+    const values = {};
     
-    if (field.type === 'radio-group') {
-        const label = document.createElement('label');
-        label.textContent = field.label;
-        div.appendChild(label);
+    // setup.jsonベースで値を収集
+    Object.values(formStructure.fields).forEach(field => {
+        const value = getFieldValue(field.selector);
         
-        const radioGroup = document.createElement('div');
-        radioGroup.className = 'radio-group';
-        
-        field.options.forEach(option => {
-            const radioLabel = document.createElement('label');
-            const radio = document.createElement('input');
-            radio.type = 'radio';
-            radio.name = field.id.replace(/^aios-/, '');
-            radio.value = option.value;
-            if (field.defaultValue === option.value) {
-                radio.checked = true;
+        // 値が存在すれば無条件で設定
+        if (value !== null && value !== undefined && value !== "") {
+            values[field.variableName] = value;
+        }
+    });
+    
+    // 特殊処理が必要なフィールド
+    applySpecialFieldLogic(values);
+    
+    return values;
+}
+
+// フィールド値取得
+function getFieldValue(selector) {
+    const element = document.querySelector(selector);
+    if (!element) return null;
+    
+    if (element.type === 'radio' || element.type === 'checkbox') {
+        const checked = document.querySelector(`${selector}:checked`);
+        return checked?.value;
+    }
+    return element.value;
+}
+
+// 特殊なフィールドロジック適用
+function applySpecialFieldLogic(values) {
+    // 接続タイプに応じたフィルタリング
+    const connectionType = getFieldValue('input[name="connectionType"]');
+    
+    if (connectionType === 'auto') {
+        // AUTO選択時は、全ての接続タイプのHTMLフィールド値を削除
+        Object.keys(formStructure.connectionTypes).forEach(type => {
+            if (type !== 'auto') {  // autoは元々フィールドがないのでスキップ
+                formStructure.connectionTypes[type].forEach(fieldId => {
+                    const field = formStructure.fields[fieldId];
+                    if (field) delete values[field.variableName];
+                });
             }
-            radioLabel.appendChild(radio);
-            radioLabel.appendChild(document.createTextNode(' ' + option.label));
-            radioGroup.appendChild(radioLabel);
         });
         
-        div.appendChild(radioGroup);
-    } else {
-        if (field.label) {
-            const label = document.createElement('label');
-            label.setAttribute('for', field.id);
-            label.textContent = field.label;
-            div.appendChild(label);
+        // その後、APIから検出された値のみを使用
+        if (cachedApiInfo) {
+            if (cachedApiInfo.mape?.brIpv6Address) {
+                // MAP-Eの値を自動設定
+                values.mape_br = cachedApiInfo.mape.brIpv6Address;
+                values.mape_ealen = cachedApiInfo.mape.eaBitLength;
+                values.mape_ipv4_prefix = cachedApiInfo.mape.ipv4Prefix;
+                values.mape_ipv4_prefixlen = cachedApiInfo.mape.ipv4PrefixLength;
+                values.mape_ipv6_prefix = cachedApiInfo.mape.ipv6Prefix;
+                values.mape_ipv6_prefixlen = cachedApiInfo.mape.ipv6PrefixLength;
+                values.mape_psid_offset = cachedApiInfo.mape.psIdOffset;
+                values.mape_psidlen = cachedApiInfo.mape.psidlen;
+                
+                // GUA Prefix処理
+                if (cachedApiInfo.mape.ipv6Prefix) {
+                    const prefix = cachedApiInfo.mape.ipv6Prefix;
+                    const segments = prefix.split(':');
+                    while (segments.length < 4) {
+                        segments.push('0');
+                    }
+                    values.mape_gua_prefix = segments.slice(0, 4).join(':') + '::/64';
+                    values.mape_gua_mode = '1';
+                }
+            } else if (cachedApiInfo.aftr) {
+                // DS-Liteの値を自動設定
+                values.dslite_aftr_address = cachedApiInfo.aftr;
+            }
+            // 両方nullの場合は何も設定しない（接続タイプ関連は完全スキップ）
         }
+    } else if (connectionType && connectionType !== 'auto') {
+        // 手動選択時：他の接続タイプのフィールドを除外
+        Object.keys(formStructure.connectionTypes).forEach(type => {
+            if (type !== connectionType) {
+                formStructure.connectionTypes[type].forEach(fieldId => {
+                    const field = formStructure.fields[fieldId];
+                    if (field) delete values[field.variableName];
+                });
+            }
+        });
+    }
+    
+    // Wi-Fiモードに応じたフィルタリング
+    const wifiMode = getFieldValue('input[name="wifi_mode"]');
+    if (wifiMode === 'disabled') {
+        ['wlan_ssid', 'wlan_password', 'enable_usteer', 'mobility_domain', 'snr']
+            .forEach(key => delete values[key]);
+    } else if (wifiMode === 'standard') {
+        ['enable_usteer', 'mobility_domain', 'snr']
+            .forEach(key => delete values[key]);
+    } else if (wifiMode === 'usteer') {
+        values.enable_usteer = '1';
+    }
+    
+    // Network Optimizerモード
+    const netOptimizer = getFieldValue('input[name="netOptimizer"]');
+    if (netOptimizer === 'auto') {
+        values.enable_netopt = '1';
+        ['netopt_rmem', 'netopt_wmem', 'netopt_conntrack', 'netopt_backlog', 'netopt_somaxconn', 'netopt_congestion']
+            .forEach(key => delete values[key]);
+    } else if (netOptimizer === 'disabled') {
+        ['enable_netopt', 'netopt_rmem', 'netopt_wmem', 'netopt_conntrack', 'netopt_backlog', 'netopt_somaxconn', 'netopt_congestion']
+            .forEach(key => delete values[key]);
+    }
+    
+    // MAP-E GUAモード（手動選択時のみ）
+    if (connectionType === 'mape') {
+        const mapeType = getFieldValue('input[name="mapeType"]');
+        if (mapeType === 'gua') values.mape_gua_mode = '1';
+    }
+}
+
+// ==================== イベントハンドラ ====================
+
+function setupEventListeners() {
+    console.log('setupEventListeners called');
+    
+    // ラジオボタンのイベント設定
+    const radioGroups = {
+        'connectionType': handleConnectionTypeChange,
+        'netOptimizer': handleNetOptimizerChange,
+        'wifi_mode': handleWifiModeChange
+    };
+    
+    Object.entries(radioGroups).forEach(([name, handler]) => {
+        document.querySelectorAll(`input[name="${name}"]`).forEach(radio => {
+            radio.removeEventListener('change', handler);
+            radio.addEventListener('change', handler);
+        });
         
-        const element = createFormField(field);
-        div.appendChild(element);
-        
-        if (field.hint) {
-            const small = document.createElement('small');
-            small.className = 'form-text text-muted';
-            small.textContent = field.hint;
-            div.appendChild(small);
+        // 初期状態を適用
+        const checked = document.querySelector(`input[name="${name}"]:checked`);
+        if (checked) handler({ target: checked });
+    });
+}
+
+function handleConnectionTypeChange(e) {
+    const selectedType = e.target.value;
+    
+    // AUTOセクションも含めて制御
+    const autoSection = document.querySelector('#auto-section');
+    if (autoSection) {
+        if (selectedType === 'auto') {
+            show(autoSection);
+            // AUTO選択時は検出された情報を再表示
+            if (cachedApiInfo) {
+                updateAutoConnectionInfo(cachedApiInfo);
+            }
+        } else {
+            hide(autoSection);
         }
     }
     
-    return div;
+    // すべてのセクションを制御
+    Object.keys(formStructure.connectionTypes).forEach(type => {
+        const section = document.querySelector(`#${type}-section`);
+        if (section) {
+            if (type === selectedType) {
+                show(section);
+            } else {
+                hide(section);
+                // 手動選択時はフィールドをクリアしない（HTMLの初期値を保持）
+            }
+        }
+    });
+    
+    updateVariableDefinitions();
 }
 
-function createFormField(field) {
-    let element;
+function clearConnectionTypeFields(type) {
+    const fieldIds = formStructure.connectionTypes[type] || [];
+    fieldIds.forEach(fieldId => {
+        const field = formStructure.fields[fieldId];
+        if (field) {
+            const element = document.querySelector(field.selector);
+            if (element) {
+                if (element.type === 'radio' || element.type === 'checkbox') {
+                    element.checked = false;
+                } else {
+                    element.value = '';
+                }
+            }
+        }
+    });
+}
+
+function handleNetOptimizerChange(e) {
+    const mode = e.target.value;
+    ['auto', 'manual', 'disabled'].forEach(m => {
+        const section = document.querySelector(`#netopt-${m}-section`);
+        if (section) {
+            if (m === mode) show(section);
+            else hide(section);
+        }
+    });
     
-    if (field.type
+    if (mode !== 'manual') {
+        // Manual設定をクリア
+        ['netopt-rmem', 'netopt-wmem', 'netopt-conntrack', 'netopt-backlog', 'netopt-somaxconn', 'netopt-congestion']
+            .forEach(id => {
+                const el = document.querySelector(`#${id}`);
+                if (el) el.value = '';
+            });
+    }
+    
+    updateVariableDefinitions();
+}
+
+function handleWifiModeChange(e) {
+    const mode = e.target.value;
+    const wifiOptionsContainer = document.querySelector("#wifi-options-container");
+    const usteerOptions = document.querySelector("#usteer-options");
+    
+    if (mode === 'disabled') {
+        hide(wifiOptionsContainer);
+        // Disabled時のみフィールドをクリア
+        ['aios-wifi-ssid', 'aios-wifi-password', 'aios-wifi-mobility-domain', 'aios-wifi-snr']
+            .forEach(id => {
+                const el = document.querySelector(`#${id}`);
+                if (el) el.value = '';
+            });
+    } else {
+        show(wifiOptionsContainer);
+        if (mode === 'usteer') {
+            show(usteerOptions);
+            // Usteer選択時はクリアしない（HTMLの初期値を保持）
+        } else {
+            hide(usteerOptions);
+            // Standard選択時もクリアしない（HTMLの初期値を保持）
+        }
+    }
+    
+    updateVariableDefinitions();
+}
+
+// ==================== ISP情報処理 ====================
+
+async function fetchAndDisplayIspInfo() {
+    if (!config?.auto_config_api_url) return;
+    
+    try {
+        const response = await fetch(config.auto_config_api_url);
+        const apiInfo = await response.json();
+        cachedApiInfo = apiInfo;
+        displayIspInfo(apiInfo);
+        applyIspAutoConfig(apiInfo);
+        updateAutoConnectionInfo(apiInfo);  // AUTOセクションの情報を更新
+    } catch (err) {
+        console.error('Failed to fetch ISP info:', err);
+        // エラー時もAUTO情報を更新
+        const autoInfo = document.querySelector('#auto-info');
+        if (autoInfo) {
+            autoInfo.textContent = 'Failed to detect connection type.\nPlease select manually.';
+        }
+    }
+}
+
+function displayIspInfo(apiInfo) {
+    if (!apiInfo) return;
+    
+    setValue("#auto-config-country", apiInfo.country || "Unknown");
+    setValue("#auto-config-timezone", apiInfo.timezone || "Unknown");
+    setValue("#auto-config-zonename", apiInfo.zonename || "Unknown");
+    setValue("#auto-config-isp", apiInfo.isp || "Unknown");
+    setValue("#auto-config-as", apiInfo.as || "Unknown");
+    setValue("#auto-config-ip", [apiInfo.ipv4, apiInfo.ipv6].filter(Boolean).join(" / ") || "Unknown");
+
+    let wanType = "DHCP/PPPoE";
+    if (apiInfo.mape?.brIpv6Address) wanType = "MAP-E";
+    else if (apiInfo.aftr) wanType = "DS-Lite";
+    setValue("#auto-config-method", wanType);
+    setValue("#auto-config-notice", apiInfo.notice || "");
+    
+    show("#extended-build-info");
+}
+
+// ISP 情報でフォームを上書き（AUTO選択時のみ接続情報を上書き）
+function applyIspAutoConfig(apiInfo) {
+    if (!apiInfo || !formStructure.fields) return;
+    
+    // 現在の接続タイプを取得
+    const connectionType = getFieldValue('input[name="connectionType"]');
+    
+    Object.values(formStructure.fields).forEach(field => {
+        if (field.apiMapping) {
+            // 接続関連フィールドかどうかを判定
+            const isConnectionField = ['dslite', 'mape', 'ap', 'pppoe'].some(type => 
+                formStructure.connectionTypes[type]?.includes(field.id)
+            );
+            
+            // AUTO選択時以外は接続関連フィールドをスキップ
+            if (isConnectionField && connectionType !== 'auto') {
+                return;
+            }
+            
+            let value = getNestedValue(apiInfo, field.apiMapping);
+
+            // GUA Prefix特別処理（/64を付加）
+            if (field.apiMapping === 'mape.ipv6PrefixWith64' && apiInfo.mape?.ipv6Prefix) {
+                const prefix = apiInfo.mape.ipv6Prefix;
+                if (!prefix.includes('/')) {
+                    const segments = prefix.split(':');
+                    while (segments.length < 4) segments.push('0');
+                    value = segments.slice(0, 4).join(':') + '::/64';
+                } else {
+                    value = prefix;
+                }
+            }
+
+            if (value !== null && value !== undefined) {
+                const element = document.querySelector(field.selector);
+                if (element) {
+                    // ISP 情報が来たら上書き（ただし接続関連はAUTO時のみ）
+                    element.value = value;
+                }
+            }
+        }
+    });
+    
+    updateAutoConnectionInfo(apiInfo);
+    updateVariableDefinitions();
+}
+
+// AUTO接続情報の表示更新
+function updateAutoConnectionInfo(apiInfo) {
+    const autoInfo = document.querySelector('#auto-info');
+    if (!autoInfo) return;
+    
+    let infoText = '';
+    
+    if (apiInfo?.mape?.brIpv6Address) {
+        infoText = '🌐 Detected: MAP-E\n';
+        infoText += `   BR: ${apiInfo.mape.brIpv6Address}\n`;
+        infoText += `   EA-len: ${apiInfo.mape.eaBitLength}\n`;
+        infoText += `   IPv4 Prefix: ${apiInfo.mape.ipv4Prefix}/${apiInfo.mape.ipv4PrefixLength}\n`;
+        infoText += `   IPv6 Prefix: ${apiInfo.mape.ipv6Prefix}/${apiInfo.mape.ipv6PrefixLength}\n`;
+        infoText += `   PSID: offset=${apiInfo.mape.psIdOffset}, length=${apiInfo.mape.psidlen}`;
+    } else if (apiInfo?.aftr) {
+        infoText = '🌐 Detected: DS-Lite\n';
+        infoText += `   AFTR: ${apiInfo.aftr}`;
+    } else if (apiInfo) {
+        infoText = '🌐 Detected: DHCP/PPPoE\n';
+        infoText += '   Standard connection will be used';
+    } else {
+        infoText = '⚠ No connection information available\n';
+        infoText += '   Please select connection type manually';
+    }
+    
+    if (apiInfo?.isp) {
+        infoText += `\n\n📡 ISP: ${apiInfo.isp}`;
+        if (apiInfo.as) {
+            infoText += ` (${apiInfo.as})`;
+        }
+    }
+    
+    autoInfo.textContent = infoText;
+}
+
+// ==================== パッケージ管理 ====================
+
+async function loadPackageDatabase() {
+    try {
+        const response = await fetch('packages/packages.json');
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        PACKAGE_DB = await response.json();
+        console.log('Package database loaded:', PACKAGE_DB);
+        
+        await fetchDevicePackages();
+        generatePackageSelector();
+    } catch (err) {
+        console.error('Failed to load package database:', err);
+    }
+}
+
+function generatePackageSelector() {
+    const container = document.querySelector('#package-categories');
+    if (!container || !PACKAGE_DB) return;
+    
+    container.innerHTML = '';
+    
+    if (!devicePackages || devicePackages.length === 0) {
+        container.innerHTML = '<p class="text-muted small">Package information not available for this device.</p>';
+        return;
+    }
+    
+    const availablePackages = new Set(devicePackages.map(p => 
+        typeof p === 'string' ? p : p.name
+    ));
+    
+    const depIds = new Set();
+    PACKAGE_DB.categories.forEach(cat => {
+        cat.packages.forEach(pkg => {
+            if (Array.isArray(pkg.dependencies)) {
+                pkg.dependencies.forEach(d => depIds.add(d));
+            }
+        });
+    });
+    
+    PACKAGE_DB.categories.forEach(category => {
+        const categoryDiv = createPackageCategory(category, availablePackages, depIds);
+        if (categoryDiv) container.appendChild(categoryDiv);
+    });
+    
+    updatePackageListFromSelector();
+}
+
+function createPackageCategory(category, availablePackages, depIds) {
+    const categoryDiv = document.createElement('div');
+    categoryDiv.className = 'package-category';
+    
+    const packageGrid = document.createElement('div');
+    packageGrid.className = 'package-grid';
+    
+    let hasVisiblePackages = false;
+    
+    category.packages.forEach(pkg => {
+        if (depIds.has(pkg.id)) return;
+        if (!availablePackages.has(pkg.name)) return;
+        
+        hasVisiblePackages = true;
+        const packageItem = createPackageCheckbox(pkg.id, pkg.name, pkg.checked, pkg.dependencies);
+        packageGrid.appendChild(packageItem);
+    });
+    
+    if (!hasVisiblePackages) return null;
+    
+    const title = document.createElement('h4');
+    title.textContent = category.name;
+    categoryDiv.appendChild(title);
+    
+    const description = document.createElement('div');
+    description.className = 'package-category-description';
+    description.textContent = category.description;
+    categoryDiv.appendChild(description);
+    
+    categoryDiv.appendChild(packageGrid);
+    return categoryDiv;
+}
+
+function createPackageCheckbox(pkgId, pkgName, isChecked = false, dependencies = null) {
+    const packageItem = document.createElement('div');
+    packageItem.className = 'package-item';
+    
+    const mainFormCheck = createSingleCheckbox(pkgId, pkgName, isChecked, dependencies);
+    packageItem.appendChild(mainFormCheck);
+    
+    if (dependencies && Array.isArray(dependencies)) {
+        dependencies.forEach(depId => {
+            const depPkg = findPackageById(depId);
+            const depName = depPkg ? depPkg.name : depId;
+            
+            const availablePackages = new Set(devicePackages.map(p => 
+                typeof p === 'string' ? p : p.name
+            ));
+            
+            if (availablePackages.has(depName)) {
+                const depFormCheck = createSingleCheckbox(depId, depName, isChecked);
+                depFormCheck.classList.add('package-dependent');
+                packageItem.appendChild(depFormCheck);
+            }
+        });
+    }
+    
+    return packageItem;
+}
+
+function createSingleCheckbox(pkgId, pkgName, isChecked = false, dependencies = null) {
+    const label = document.createElement('label');
+    label.className = 'form-check-label';
+    label.setAttribute('for', `pkg-${pkgId}`);
+    label.style.display = 'flex';
+    label.style.alignItems = 'center';
+    label.style.gap = '0.5em';
+    label.style.cursor = 'pointer';
+    
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.id = `pkg-${pkgId}`;
+    checkbox.className = 'form-check-input package-selector-checkbox';
+    checkbox.setAttribute('data-package', pkgName);
+    if (dependencies) {
+        checkbox.setAttribute('data-dependencies', dependencies.join(','));
+    }
+    if (isChecked) {
+        checkbox.checked = true;
+    }
+    checkbox.addEventListener('change', handlePackageSelection);
+    
+    const link = document.createElement('a');
+    link.href = config.package_url.replace("{id}", encodeURIComponent(pkgId));
+    link.target = '_blank';
+    link.className = 'package-link';
+    link.textContent = pkgId;
+    
+    label.appendChild(checkbox);
+    label.appendChild(link);
+    
+    return label;
+}
+
+function handlePackageSelection(e) {
+    const pkg = e.target;
+    const isChecked = pkg.checked;
+    
+    const dependencies = pkg.getAttribute('data-dependencies');
+    if (dependencies) {
+        dependencies.split(',').forEach(dep => {
+            const depCheckbox = document.querySelector(`#pkg-${dep}`);
+            if (depCheckbox) {
+                depCheckbox.checked = isChecked;
+            }
+        });
+    }
+    
+    updatePackageListFromSelector();
+}
+
+function updatePackageListFromSelector() {
+    const checkedPkgs = [];
+    document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
+        const pkgName = cb.getAttribute('data-package');
+        if (pkgName) checkedPkgs.push(pkgName);
+    });
+    
+    const textarea = document.querySelector('#asu-packages');
+    if (textarea) {
+        const currentPackages = split(textarea.value);
+        const nonSelectorPkgs = currentPackages.filter(pkg => {
+            return !document.querySelector(`.package-selector-checkbox[data-package="${pkg}"]`);
+        });
+        const newList = [...nonSelectorPkgs, ...checkedPkgs];
+        textarea.value = newList.join(' ');
+    }
+}
+
+function findPackageById(id) {
+    if (!PACKAGE_DB) return null;
+    
+    for (const category of PACKAGE_DB.categories) {
+        const pkg = category.packages.find(p => p.id === id);
+        if (pkg) return pkg;
+    }
+    return null;
+}
+
+async function fetchDevicePackages() {
+    const allPackages = [];
+    if (PACKAGE_DB) {
+        PACKAGE_DB.categories.forEach(cat => {
+            cat.packages.forEach(pkg => {
+                allPackages.push(pkg.name);
+            });
+        });
+    }
+    devicePackages = allPackages;
+    console.log('Device packages loaded:', devicePackages.length);
+    return allPackages;
+}
+
+// ==================== UCI-defaults処理 ====================
+
+function loadUciDefaultsTemplate() {
+    console.log('loadUciDefaultsTemplate called');
+    const textarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
+    if (!textarea || !config?.uci_defaults_setup_url) return;
+
+    function autoResize() {
+        const lines = textarea.value.split('\n').length;
+        textarea.rows = lines + 1;
+    }
+
+    textarea.addEventListener('input', autoResize);
+    textarea.addEventListener('paste', () => setTimeout(autoResize, 10));
+
+    fetch(config.uci_defaults_setup_url)
+        .then(r => { 
+            if (!r.ok) throw new Error(r.statusText); 
+            return r.text(); 
+        })
+        .then(text => {
+            textarea.value = text;
+            updateVariableDefinitions();
+            autoResize();
+            console.log('setup.sh loaded successfully');
+        })
+        .catch(err => console.error('Failed to load setup.sh:', err));
+}
+
+function updateVariableDefinitions() {
+    const textarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
+    if (!textarea) {
+        console.log('UCI defaults textarea not found');
+        return;
+    }
+    
+    const values = collectFormValues();
+    const variableDefinitions = generateVariableDefinitions(values);
+    
+    let content = textarea.value;
+    
+    const beginMarker = '# BEGIN_VARIABLE_DEFINITIONS';
+    const endMarker = '# END_VARIABLE_DEFINITIONS';
+    
+    const beginIndex = content.indexOf(beginMarker);
+    const endIndex = content.indexOf(endMarker);
+    
+    if (beginIndex !== -1 && endIndex !== -1) {
+        const beforeSection = content.substring(0, beginIndex + beginMarker.length);
+        const afterSection = content.substring(endIndex);
+        const newSection = variableDefinitions ? '\n' + variableDefinitions + '\n' : '\n';
+        
+        textarea.value = beforeSection + newSection + afterSection;
+        
+        const lines = textarea.value.split('\n').length;
+        textarea.rows = lines + 1;
+        
+        console.log('Variable definitions updated:', Object.keys(values).length, 'variables');
+    } else {
+        console.log('Variable definition markers not found in content');
+    }
+}
+
+function generateVariableDefinitions(values) {
+    const lines = [];
+    Object.entries(values).forEach(([key, value]) => {
+        const escapedValue = value.toString().replace(/'/g, "'\"'\"'");
+        lines.push(`${key}='${escapedValue}'`);
+    });
+    return lines.join('\n');
+}
+
+function updateCustomCommands() {
+    const textarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
+    if (!textarea) return;
+    
+    const commandInput = document.querySelector("#command");
+    const customCommands = commandInput?.value || '';
+    
+    let content = textarea.value;
+    
+    const beginMarker = '# BEGIN_CUSTOM_COMMANDS';
+    const endMarker = '# END_CUSTOM_COMMANDS';
+    
+    const beginIndex = content.indexOf(beginMarker);
+    const endIndex = content.indexOf(endMarker);
+    
+    if (beginIndex !== -1 && endIndex !== -1) {
+        const beforeSection = content.substring(0, beginIndex + beginMarker.length);
+        const afterSection = content.substring(endIndex);
+        const newSection = customCommands ? '\n' + customCommands + '\n' : '\n';
+        
+        textarea.value = beforeSection + newSection + afterSection;
+        
+        const lines = textarea.value.split('\n').length;
+        textarea.rows = lines + 1;
+        
+        console.log('Custom commands updated');
+    }
+}
+
+// ==================== フォーム監視 ====================
+
+function setupFormWatchers() {
+    console.log('setupFormWatchers called');
+    
+    if (!formStructure.fields) {
+        console.log('Form structure not ready, skipping watchers');
+        return;
+    }
+    
+    // すべてのフィールドに監視を設定
+    Object.values(formStructure.fields).forEach(field => {
+        if (field.selector) {
+            document.querySelectorAll(field.selector).forEach(element => {
+                element.removeEventListener('input', updateVariableDefinitions);
+                element.removeEventListener('change', updateVariableDefinitions);
+                
+                if (element.type === 'radio' || element.type === 'checkbox' || element.tagName === 'SELECT') {
+                    element.addEventListener('change', updateVariableDefinitions);
+                } else {
+                    element.addEventListener('input', updateVariableDefinitions);
+                }
+            });
+        }
+    });
+    
+    // カスタムコマンド入力の監視
+    const commandInput = document.querySelector("#command");
+    if (commandInput) {
+        commandInput.removeEventListener('input', updateCustomCommands);
+        commandInput.addEventListener('input', updateCustomCommands);
+    }
+    
+    // 初期値を反映
+    updateVariableDefinitions();
+}
+
+// ==================== オリジナル関数フック ====================
+
+let originalBuildAsuRequest = null;
+let originalSetupUciDefaults = null;
+
+function hookOriginalFunctions() {
+    if (typeof buildAsuRequest === 'function' && !originalBuildAsuRequest) {
+        originalBuildAsuRequest = buildAsuRequest;
+        window.buildAsuRequest = customBuildAsuRequest;
+    }
+
+    if (typeof setup_uci_defaults === 'function' && !originalSetupUciDefaults) {
+        originalSetupUciDefaults = setup_uci_defaults;
+        window.setup_uci_defaults = customSetupUciDefaults;
+    }
+}
+
+function customBuildAsuRequest(request_hash) {
+    console.log('customBuildAsuRequest called with:', request_hash);
+
+    const origFetch = window.fetch;
+    window.fetch = function(url, options) {
+        return origFetch(url, options).then(res => {
+            res.clone().json().then(mobj => {
+                if ("stderr" in mobj) {
+                    console.log('Build error detected, skipping reinitialization');
+                }
+            }).catch(() => {});
+            return res;
+        });
+    };
+
+    if (originalBuildAsuRequest) originalBuildAsuRequest(request_hash);
+    window.fetch = origFetch;
+}
+
+function customSetupUciDefaults() {
+    console.log('customSetupUciDefaults called');
+    const textarea = document.querySelector("#uci-defaults-content");
+    if (!textarea || !config?.uci_defaults_setup_url) return;
+
+    fetch(config.uci_defaults_setup_url)
+        .then(r => { 
+            if (!r.ok) throw new Error(r.statusText); 
+            return r.text(); 
+        })
+        .then(text => {
+            textarea.value = text;
+            updateVariableDefinitions();
+        })
+        .catch(err => showAlert(err.message));
+}
+
+// ==================== ユーティリティ関数 ====================
+
+function show(el) {
+    const e = typeof el === 'string' ? document.querySelector(el) : el;
+    if (e) {
+        e.classList.remove('hide');
+        e.style.display = '';
+    }
+}
+
+function hide(el) {
+    const e = typeof el === 'string' ? document.querySelector(el) : el;
+    if (e) {
+        e.classList.add('hide');
+        e.style.display = 'none';
+    }
+}
+
+function setValue(selector, val) {
+    const el = document.querySelector(selector);
+    if (el) {
+        if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+            el.value = val;
+        } else {
+            el.innerText = val;
+        }
+    }
+}
+
+function showAlert(message) {
+    const alertEl = document.querySelector("#alert");
+    if (alertEl) {
+        alertEl.innerText = message;
+        show(alertEl);
+    }
+}
+
+function split(str) {
+    return str.match(/[^\s,]+/g) || [];
+}
+
+function getNestedValue(obj, path) {
+    return path.split('.').reduce((current, key) => current?.[key], obj);
+}
+
+function resizePostinstTextarea() {
+    const textarea = document.querySelector("#asu-packages");
+    if (!textarea) return;
+    
+    textarea.style.height = 'auto';
+    textarea.style.height = textarea.scrollHeight + 'px';
+    
+    console.log('Postinst textarea auto-resized');
+}
+
+function initDeviceTranslation() {
+    const select = document.querySelector("#aios-language");
+    if (!select) return;
+
+    const long = (navigator.language || navigator.userLanguage).toLowerCase();
+    const short = long.split("-")[0];
+
+    if (select.querySelector(`[value="${long}"]`)) {
+        select.value = long;
+    } else if (select.querySelector(`[value="${short}"]`)) {
+        select.value = short;
+    } else {
+        select.value = current_language;
+    }
+}
