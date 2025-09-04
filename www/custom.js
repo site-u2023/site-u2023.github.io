@@ -181,106 +181,118 @@ async function loadSetupConfig() {
 
 // setup.json → HTML描画
 function renderSetupConfig(config) {
-   const container = document.querySelector('#dynamic-config-sections');
-   if (!container) return;
-   container.innerHTML = '';
+    const container = document.querySelector('#dynamic-config-sections');
+    if (!container) return;
+    container.innerHTML = '';
 
-   config.categories.forEach(category => {
-       const section = document.createElement('section');
-       section.className = 'config-section';
+    config.categories.forEach(category => {
+        const section = document.createElement('div');
+        section.className = 'config-section';
+        section.id = category.id;
 
-       const h3 = document.createElement('h3');
-       h3.textContent = category.name;
-       section.appendChild(h3);
+        const h4 = document.createElement('h4');
+        h4.textContent = category.name;
+        section.appendChild(h4);
 
-       category.packages.forEach(pkg => {
-           buildField(section, pkg);
-       });
+        category.packages.forEach(pkg => {
+            buildField(section, pkg);
+        });
 
-       container.appendChild(section);
-   });
+        container.appendChild(section);
+    });
 }
 
 function buildField(parent, pkg) {
-   switch (pkg.type) {
-       case 'input-group':
-           pkg.fields.forEach(field => {
-               const row = document.createElement('div');
-               row.className = field.class || 'row';
+    switch (pkg.type) {
+        case 'input-group':
+            pkg.fields.forEach(field => {
+                const row = document.createElement('div');
+                row.className = 'form-row';
 
-               const label = document.createElement('label');
-               label.textContent = field.label || field.id;
-               label.setAttribute('for', field.id);
-               if (field.labelClass) label.className = field.labelClass;
-               row.appendChild(label);
+                const group = document.createElement('div');
+                group.className = 'form-group';
 
-               const input = document.createElement('input');
-               input.id = field.id;
-               input.type = field.type || 'text';
-               if (field.placeholder) input.placeholder = field.placeholder;
-               if (field.defaultValue) input.value = field.defaultValue;
-               if (field.inputClass) input.className = field.inputClass;
-               row.appendChild(input);
+                const label = document.createElement('label');
+                label.textContent = field.label || field.id;
+                label.setAttribute('for', field.id);
+                group.appendChild(label);
 
-               parent.appendChild(row);
-           });
-           break;
+                const input = document.createElement('input');
+                input.id = field.id;
+                input.type = field.type || 'text';
+                if (field.placeholder) input.placeholder = field.placeholder;
+                if (field.defaultValue) input.value = field.defaultValue;
+                group.appendChild(input);
 
-       case 'select':
-           const rowSel = document.createElement('div');
-           rowSel.className = pkg.class || 'row';
-           const labelSel = document.createElement('label');
-           labelSel.textContent = pkg.label || pkg.id;
-           labelSel.setAttribute('for', pkg.id);
-           rowSel.appendChild(labelSel);
-           const select = document.createElement('select');
-           select.id = pkg.id;
-           pkg.options.forEach(opt => {
-               const option = document.createElement('option');
-               option.value = opt.value;
-               option.textContent = opt.label;
-               if (opt.selected || opt.value === pkg.defaultValue) option.selected = true;
-               select.appendChild(option);
-           });
-           rowSel.appendChild(select);
-           parent.appendChild(rowSel);
-           break;
+                if (field.description) {
+                    const small = document.createElement('small');
+                    small.className = 'text-muted';
+                    small.textContent = field.description;
+                    group.appendChild(small);
+                }
 
-       case 'radio-group':
-           const wrapRadio = document.createElement('div');
-           wrapRadio.className = pkg.class || 'radio-group';
-           const labelRadio = document.createElement('div');
-           labelRadio.textContent = pkg.label || pkg.id;
-           wrapRadio.appendChild(labelRadio);
-           pkg.options.forEach(opt => {
-               const radioLabel = document.createElement('label');
-               const radio = document.createElement('input');
-               radio.type = 'radio';
-               radio.name = pkg.variableName || pkg.id;
-               radio.value = opt.value;
-               if (opt.checked || opt.value === pkg.defaultValue) radio.checked = true;
-               radioLabel.appendChild(radio);
-               radioLabel.appendChild(document.createTextNode(opt.label));
-               wrapRadio.appendChild(radioLabel);
-           });
-           parent.appendChild(wrapRadio);
-           break;
+                row.appendChild(group);
+                parent.appendChild(row);
+            });
+            break;
 
-       case 'conditional-section':
-           const condWrap = document.createElement('div');
-           condWrap.id = pkg.id;
-           condWrap.className = 'conditional-section';
-           pkg.children.forEach(child => buildField(condWrap, child));
-           parent.appendChild(condWrap);
-           break;
+        case 'select':
+            const rowSel = document.createElement('div');
+            rowSel.className = 'form-row';
+            const groupSel = document.createElement('div');
+            groupSel.className = 'form-group';
 
-       case 'info-display':
-           const info = document.createElement('div');
-           info.id = pkg.id;
-           info.textContent = pkg.content || '';
-           parent.appendChild(info);
-           break;
-   }
+            const labelSel = document.createElement('label');
+            labelSel.textContent = pkg.label || pkg.id;
+            labelSel.setAttribute('for', pkg.id);
+            groupSel.appendChild(labelSel);
+
+            const select = document.createElement('select');
+            select.id = pkg.id;
+            pkg.options.forEach(opt => {
+                const option = document.createElement('option');
+                option.value = opt.value;
+                option.textContent = opt.label;
+                if (opt.selected || opt.value === pkg.defaultValue) option.selected = true;
+                select.appendChild(option);
+            });
+            groupSel.appendChild(select);
+            rowSel.appendChild(groupSel);
+            parent.appendChild(rowSel);
+            break;
+
+        case 'radio-group':
+            const radioWrap = document.createElement('div');
+            radioWrap.className = 'radio-group';
+            pkg.options.forEach(opt => {
+                const labelRadio = document.createElement('label');
+                const radio = document.createElement('input');
+                radio.type = 'radio';
+                radio.name = pkg.variableName || pkg.id;
+                radio.value = opt.value;
+                if (opt.checked || opt.value === pkg.defaultValue) radio.checked = true;
+                labelRadio.appendChild(radio);
+                labelRadio.appendChild(document.createTextNode(opt.label));
+                radioWrap.appendChild(labelRadio);
+            });
+            parent.appendChild(radioWrap);
+            break;
+
+        case 'conditional-section':
+            const condWrap = document.createElement('div');
+            condWrap.id = pkg.id;
+            condWrap.className = 'config-section';
+            pkg.children.forEach(child => buildField(condWrap, child));
+            parent.appendChild(condWrap);
+            break;
+
+        case 'info-display':
+            const info = document.createElement('div');
+            info.id = pkg.id;
+            info.textContent = pkg.content || '';
+            parent.appendChild(info);
+            break;
+    }
 }
 
 // setup.jsonからフォーム構造を生成
