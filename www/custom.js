@@ -167,6 +167,9 @@ async function loadSetupConfig() {
         
         // フォーム構造を生成
         formStructure = generateFormStructure(setupConfig);
+
+        // HTMLに描画
+        renderSetupConfig(setupConfig);
         
         console.log('Setup config loaded:', setupConfig);
         return setupConfig;
@@ -174,6 +177,49 @@ async function loadSetupConfig() {
         console.error('Failed to load setup.json:', err);
         return null;
     }
+}
+
+// setup.json → HTML描画
+function renderSetupConfig(config) {
+    const container = document.querySelector('#dynamic-config-sections');
+    if (!container) return;
+    container.innerHTML = ''; // 初期化
+
+    config.categories.forEach(category => {
+        const section = document.createElement('section');
+        section.className = 'config-section';
+
+        const h4 = document.createElement('h4');
+        h4.textContent = category.name;
+        section.appendChild(h4);
+
+        category.packages.forEach(pkg => {
+            // input-group
+            if (pkg.type === 'input-group' && pkg.fields) {
+                pkg.fields.forEach(field => {
+                    const row = document.createElement('div');
+                    row.className = 'row';
+
+                    const label = document.createElement('label');
+                    label.textContent = field.label || field.id;
+                    label.setAttribute('for', field.id);
+                    row.appendChild(label);
+
+                    const input = document.createElement('input');
+                    input.id = field.id;
+                    input.type = field.type || 'text';
+                    if (field.placeholder) input.placeholder = field.placeholder;
+                    if (field.defaultValue) input.value = field.defaultValue;
+                    row.appendChild(input);
+
+                    section.appendChild(row);
+                });
+            }
+            // select / radio-group なども同様に分岐して生成
+        });
+
+        container.appendChild(section);
+    });
 }
 
 // setup.jsonからフォーム構造を生成
