@@ -245,7 +245,13 @@ function renderSetupConfig(config) {
 
         (category.packages || []).forEach((pkg, packageIndex) => {
             console.log(`Rendering package ${categoryIndex}-${packageIndex}: ${pkg.id || 'no-id'} (${pkg.type})`);
-            buildField(section, pkg);
+            try {
+                buildField(section, pkg);
+                console.log(`✓ Successfully rendered package ${pkg.id}`);
+            } catch (error) {
+                console.error(`✗ Error rendering package ${pkg.id}:`, error);
+                console.trace(); // スタックトレース
+            }
         });
 
         container.appendChild(section);
