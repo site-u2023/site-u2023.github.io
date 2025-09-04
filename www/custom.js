@@ -660,19 +660,26 @@ function getFieldValue(selector) {
 
 function applySpecialFieldLogic(values) {
     const connectionType = getFieldValue('input[name="connection_type"]');
+    console.log('Connection type for filtering:', connectionType);
+    
+    // 全ての接続タイプのフィールド変数名をリストアップ
+    const connectionFieldVars = [
+        'pppoe_username', 'pppoe_password',
+        'dslite_aftr_type', 'dslite_region', 'dslite_aftr_address', 
+        'mape_br', 'mape_ealen', 'mape_ipv4_prefix', 'mape_ipv4_prefixlen',
+        'mape_ipv6_prefix', 'mape_ipv6_prefixlen', 'mape_psid_offset', 'mape_psidlen',
+        'mape_gua_prefix', 'mape_gua_mode', 'mape_type',
+        'ap_ip_address', 'ap_gateway'
+    ];
     
     if (connectionType === 'auto') {
-        Object.keys(formStructure.connectionTypes).forEach(type => {
-            if (type !== 'auto') {  
-                formStructure.connectionTypes[type].forEach(fieldId => {
-                    const field = formStructure.fields[fieldId];
-                    if (field) delete values[field.variableName];
-                });
-            }
-        });
+        // AUTO: まず全ての接続フィールドを削除
+        connectionFieldVars.forEach(key => delete values[key]);
         
+        // APIから検出された値のみを追加
         if (cachedApiInfo) {
             if (cachedApiInfo.mape?.brIpv6Address) {
+                // MAP-Eの値のみを設定
                 values.mape_br = cachedApiInfo.mape.brIpv6Address;
                 values.mape_ealen = cachedApiInfo.mape.eaBitLength;
                 values.mape_ipv4_prefix = cachedApiInfo.mape.ipv4Prefix;
@@ -691,21 +698,77 @@ function applySpecialFieldLogic(values) {
                     values.mape_gua_prefix = segments.slice(0, 4).join(':') + '::/64';
                     values.mape_gua_mode = '1';
                 }
+                console.log('AUTO: Applied MAP-E settings from API');
             } else if (cachedApiInfo.aftr) {
+                // DS-Liteの値のみを設定
                 values.dslite_aftr_address = cachedApiInfo.aftr;
+                console.log('AUTO: Applied DS-Lite settings from API');
+            } else {
+                console.log('AUTO: No connection info from API, no connection fields set');
             }
+        } else {
+            console.log('AUTO: No API info available, no connection fields set');
         }
-    } else if (connectionType && connectionType !== 'auto') {
-        Object.keys(formStructure.connectionTypes).forEach(type => {
-            if (type !== connectionType) {
-                formStructure.connectionTypes[type].forEach(fieldId => {
-                    const field = formStructure.fields[fieldId];
-                    if (field) delete values[field.variableName];
-                });
+    } else if (connectionType === 'dhcp') {
+        // DHCP: 全ての接続関連フィールドを削除
+        connectionFieldVars.forEach(key => delete values[key]);
+        console.log('DHCP: Removed all connection fields');
+    } else if (connectionType === 'pppoe') {
+        // PPPoE: PPPoE以外の接続フィールドを削除
+        connectionFieldVars.filter(key => !key.startsWith('pppoe_')).forEach(key => delete values[key]);
+        console.log('PPPoE: Kept only PPPoE fields');
+    } else if (connectionType === 'dslite') {
+        // DS-Lite: DS-Lite以外の接続フィールドを削除
+        connectionFieldVars.filter(key => !key.startsWith('dslite_')).forEach(key => delete values[key]);
+        
+        // APIから実際の値がある場合は上書き
+        if (cachedApiInfo?.aftr) {
+            values.dslite_aftr_address = cachedApiInfo.aftr;
+            console.log('DS-Lite: Overrode with API value');
+        }
+        console.log('DS-Lite: Kept only DS-Lite fields');
+    } else if (connectionType === 'mape') {
+        // MAP-E: MAP-E以外の接続フィールドを削除
+        connectionFieldVars.filter(key => !key.startsWith('mape_')).forEach(key => delete values[key]);
+        
+        // APIから実際の値がある場合は上書き
+        if (cachedApiInfo?.mape?.brIpv6Address) {
+            values.mape_br = cachedApiInfo.mape.brIpv6Address;
+            values.mape_ealen = cachedApiInfo.mape.eaBitLength;
+            values.mape_ipv4_prefix = cachedApiInfo.mape.ipv4Prefix;
+            values.mape_ipv4_prefixlen = cachedApiInfo.mape.ipv4PrefixLength;
+            values.mape_ipv6_prefix = cachedApiInfo.mape.ipv6Prefix;
+            values.mape_ipv6_prefixlen = cachedApiInfo.mape.ipv6PrefixLength;
+            values.mape_psid_offset = cachedApiInfo.mape.psIdOffset;
+            values.mape_psidlen = cachedApiInfo.mape.psidlen;
+            
+            if (cachedApiInfo.mape.ipv6Prefix) {
+                const prefix = cachedApiInfo.mape.ipv6Prefix;
+                const segments = prefix.split(':');
+                while (segments.length < 4) {
+                    segments.push('0');
+                }
+                values.mape_gua_prefix = segments.slice(0, 4).join(':') + '::/64';
+                values.mape_gua_mode = '1';
             }
-        });
+            console.log('MAP-E: Overrode with API values');
+        }
+        
+        // MAP-E GUAモード設定
+        const mapeType = getFieldValue('input[name="mape_type"]');
+        if (mapeType === 'gua') values.mape_gua_mode = '1';
+        console.log('MAP-E: Kept only MAP-E fields');
+    } else if (connectionType === 'ap') {
+        // AP: AP以外の接続フィールドを削除
+        connectionFieldVars.filter(key => !key.startsWith('ap_')).forEach(key => delete values[key]);
+        console.log('AP: Kept only AP fields');
+    } else {
+        // 未知の接続タイプ: 全ての接続フィールドを削除
+        connectionFieldVars.forEach(key => delete values[key]);
+        console.log('Unknown connection type: Removed all connection fields');
     }
     
+    // Wi-Fiモード処理
     const wifiMode = getFieldValue('input[name="wifi_mode"]');
     if (wifiMode === 'disabled') {
         ['wlan_ssid', 'wlan_password', 'enable_usteer', 'mobility_domain', 'snr']
@@ -717,6 +780,7 @@ function applySpecialFieldLogic(values) {
         values.enable_usteer = '1';
     }
     
+    // Network Optimizerモード処理
     const netOptimizer = getFieldValue('input[name="net_optimizer"]');
     if (netOptimizer === 'auto') {
         values.enable_netopt = '1';
@@ -727,10 +791,7 @@ function applySpecialFieldLogic(values) {
             .forEach(key => delete values[key]);
     }
     
-    if (connectionType === 'mape') {
-        const mapeType = getFieldValue('input[name="mape_type"]');
-        if (mapeType === 'gua') values.mape_gua_mode = '1';
-    }
+    console.log('Final values after filtering:', Object.keys(values));
 }
 
 // ==================== イベントハンドラ（完全修正版） ====================
