@@ -128,8 +128,8 @@
           ]
         },
         {
-          "id": "network-group",
-          "name": "Network Settings",
+          "id": "network-ssh-group",
+          "name": "Network & SSH Settings",
           "type": "input-group",
           "rows": [
             {
@@ -156,8 +156,8 @@
           ]
         },
         {
-          "id": "ssh-flow-group",
-          "name": "SSH & Flow Control",
+          "id": "ssh-settings-group",
+          "name": "SSH Configuration",
           "type": "input-group",
           "rows": [
             {
@@ -189,8 +189,8 @@
           ]
         },
         {
-          "id": "flow-backup-group",
-          "name": "Flow Control & Backup",
+          "id": "system-settings-group",
+          "name": "System Configuration",
           "type": "input-group",
           "rows": [
             {
