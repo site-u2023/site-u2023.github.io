@@ -320,7 +320,7 @@ function buildField(parent, pkg) {
     }
 }
 
-// フォームグループを構築（修正版）
+// buildFormGroup関数の初期値処理を改善
 function buildFormGroup(field) {
     if (!field) return null;
 
@@ -408,7 +408,10 @@ function buildFormGroup(field) {
         ctrl.type = field.type || 'text';
         if (field.id) ctrl.id = field.id;
         if (field.placeholder) ctrl.placeholder = field.placeholder;
-        if (field.defaultValue != null) ctrl.value = field.defaultValue;
+        // 初期値設定を改善：空文字列でも設定する
+        if (field.defaultValue !== null && field.defaultValue !== undefined) {
+            ctrl.value = field.defaultValue;
+        }
         if (field.min != null) ctrl.min = field.min;
         if (field.max != null) ctrl.max = field.max;
         if (field.maxlength != null) ctrl.maxLength = field.maxlength;
