@@ -1017,6 +1017,10 @@ function applyIspAutoConfig(apiInfo) {
     });
     
     updateAutoConnectionInfo(apiInfo);
+    
+    // ISP情報適用後に動的パッケージ管理を実行
+    applyDynamicPackageManagement();
+    
     updateVariableDefinitions();
 }
 
