@@ -405,10 +405,7 @@ function handleConnectionTypeChange(e) {
                 show(section);
             } else {
                 hide(section);
-                // フィールドをクリア（AUTO選択時は除く）
-                if (selectedType !== 'auto') {
-                    clearConnectionTypeFields(type);
-                }
+                // 手動選択時はフィールドをクリアしない（HTMLの初期値を保持）
             }
         }
     });
@@ -526,12 +523,25 @@ function displayIspInfo(apiInfo) {
     show("#extended-build-info");
 }
 
-// ISP 情報でフォームを上書き
+// ISP 情報でフォームを上書き（AUTO選択時のみ接続情報を上書き）
 function applyIspAutoConfig(apiInfo) {
     if (!apiInfo || !formStructure.fields) return;
     
+    // 現在の接続タイプを取得
+    const connectionType = getFieldValue('input[name="connectionType"]');
+    
     Object.values(formStructure.fields).forEach(field => {
         if (field.apiMapping) {
+            // 接続関連フィールドかどうかを判定
+            const isConnectionField = ['dslite', 'mape', 'ap', 'pppoe'].some(type => 
+                formStructure.connectionTypes[type]?.includes(field.id)
+            );
+            
+            // AUTO選択時以外は接続関連フィールドをスキップ
+            if (isConnectionField && connectionType !== 'auto') {
+                return;
+            }
+            
             let value = getNestedValue(apiInfo, field.apiMapping);
 
             // GUA Prefix特別処理（/64を付加）
@@ -549,7 +559,7 @@ function applyIspAutoConfig(apiInfo) {
             if (value !== null && value !== undefined) {
                 const element = document.querySelector(field.selector);
                 if (element) {
-                    // ISP 情報が来たら問答無用で上書き
+                    // ISP 情報が来たら上書き（ただし接続関連はAUTO時のみ）
                     element.value = value;
                 }
             }
