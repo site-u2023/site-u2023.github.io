@@ -1,4 +1,4 @@
-// custom.js - OpenWrt カスタム機能（統合版）
+// custom.js - OpenWrt カスタム機能（統合版・修正版）
 
 console.log('custom.js loaded');
 
@@ -179,7 +179,7 @@ async function loadSetupConfig() {
     }
 }
 
-// setup.json → HTML描画（2列対応／rows/columns + legacy fields 両対応）
+// setup.json → HTML描画（修正版）
 function renderSetupConfig(config) {
     const container = document.querySelector('#dynamic-config-sections');
     if (!container) return;
@@ -194,6 +194,13 @@ function renderSetupConfig(config) {
         h4.textContent = category.name || category.id || '';
         section.appendChild(h4);
 
+        if (category.description) {
+            const desc = document.createElement('p');
+            desc.className = 'package-category-description';
+            desc.textContent = category.description;
+            section.appendChild(desc);
+        }
+
         (category.packages || []).forEach(pkg => {
             buildField(section, pkg);
         });
@@ -201,52 +208,39 @@ function renderSetupConfig(config) {
         container.appendChild(section);
     });
     
-  // 条件表示の初期評価とイベント連動
-  initConditionalSections(config);
+    // 条件表示の初期評価とイベント連動
+    initConditionalSections(config);
 }
 
 function buildField(parent, pkg) {
     switch (pkg.type) {
         case 'input-group': {
-            const rows = getRows(pkg); // rows が無ければ fields から2列に整形
+            const rows = getRows(pkg);
             rows.forEach(row => {
                 const rowEl = document.createElement('div');
                 rowEl.className = 'form-row';
                 (row.columns || []).forEach(col => {
-                    rowEl.appendChild(buildFormGroup(col));
+                    const groupEl = buildFormGroup(col);
+                    if (groupEl) {
+                        rowEl.appendChild(groupEl);
+                    }
                 });
-                parent.appendChild(rowEl);
+                if (rowEl.children.length > 0) {
+                    parent.appendChild(rowEl);
+                }
             });
             break;
         }
 
         case 'select': {
-            // 単独 select パッケージ
             const rowSel = document.createElement('div');
             rowSel.className = 'form-row';
 
-            const groupSel = document.createElement('div');
-            groupSel.className = 'form-group';
-
-            const labelSel = document.createElement('label');
-            labelSel.textContent = pkg.label || pkg.name || pkg.id || '';
-            labelSel.setAttribute('for', pkg.id);
-            groupSel.appendChild(labelSel);
-
-            const select = document.createElement('select');
-            select.id = pkg.id;
-            (pkg.options || []).forEach(opt => {
-                const option = document.createElement('option');
-                option.value = opt.value;
-                option.textContent = opt.label != null ? opt.label : String(opt.value);
-                if (opt.selected || (pkg.defaultValue != null && opt.value === pkg.defaultValue)) {
-                    option.selected = true;
-                }
-                select.appendChild(option);
-            });
-            groupSel.appendChild(select);
-            rowSel.appendChild(groupSel);
-            parent.appendChild(rowSel);
+            const groupSel = buildFormGroup(pkg);
+            if (groupSel) {
+                rowSel.appendChild(groupSel);
+                parent.appendChild(rowSel);
+            }
             break;
         }
 
@@ -276,7 +270,7 @@ function buildField(parent, pkg) {
                     radio.checked = true;
                 }
                 lbl.appendChild(radio);
-                lbl.appendChild(document.createTextNode(opt.label != null ? opt.label : String(opt.value)));
+                lbl.appendChild(document.createTextNode(' ' + (opt.label != null ? opt.label : String(opt.value))));
                 radioWrap.appendChild(lbl);
             });
 
@@ -289,31 +283,47 @@ function buildField(parent, pkg) {
         case 'conditional-section': {
             const condWrap = document.createElement('div');
             condWrap.id = pkg.id;
-            condWrap.className = 'config-section';
-            (pkg.children || []).forEach(child => buildField(condWrap, child));
+            condWrap.className = 'conditional-section';
+            condWrap.style.display = 'none'; // 初期は非表示
+
+            if (pkg.name) {
+                const h5 = document.createElement('h5');
+                h5.textContent = pkg.name;
+                condWrap.appendChild(h5);
+            }
+
+            (pkg.children || []).forEach(child => {
+                buildField(condWrap, child);
+            });
+
             parent.appendChild(condWrap);
             break;
         }
 
         case 'info-display': {
-            const row = document.createElement('div');
-            row.className = 'form-row';
-            const info = document.createElement('div');
-            info.id = pkg.id;
-            info.textContent = pkg.content || '';
-            row.appendChild(info);
-            parent.appendChild(row);
+            const infoDiv = document.createElement('div');
+            infoDiv.id = pkg.id;
+            infoDiv.className = 'info-display';
+            infoDiv.style.padding = '1em';
+            infoDiv.style.backgroundColor = 'var(--bg-item)';
+            infoDiv.style.borderRadius = '0.2em';
+            infoDiv.style.marginTop = '0.5em';
+            infoDiv.style.whiteSpace = 'pre-line';
+            infoDiv.textContent = pkg.content || '';
+            parent.appendChild(infoDiv);
             break;
         }
 
         default:
-            // 未知タイプは無視（将来拡張用）
+            console.warn('Unknown field type:', pkg.type, pkg);
             break;
     }
 }
 
-// 2列行の .form-group を構築（text/number/password/select に対応）
+// フォームグループを構築（修正版）
 function buildFormGroup(field) {
+    if (!field) return null;
+
     // 別タイプが紛れた場合にも対応
     if (field.type === 'radio-group') {
         const wrap = document.createElement('div');
@@ -335,7 +345,7 @@ function buildFormGroup(field) {
                 radio.checked = true;
             }
             lbl.appendChild(radio);
-            lbl.appendChild(document.createTextNode(opt.label != null ? opt.label : String(opt.value)));
+            lbl.appendChild(document.createTextNode(' ' + (opt.label != null ? opt.label : String(opt.value))));
             radioWrap.appendChild(lbl);
         });
         wrap.appendChild(radioWrap);
@@ -347,12 +357,28 @@ function buildFormGroup(field) {
         wrap.className = 'form-group';
         const inner = document.createElement('div');
         inner.id = field.id;
-        inner.className = 'config-section';
+        inner.className = 'conditional-section';
+        inner.style.display = 'none'; // 初期は非表示
         (field.children || []).forEach(child => {
-            // ネスト内も2列化したい場合はさらに行を作る
             buildField(inner, child);
         });
         wrap.appendChild(inner);
+        return wrap;
+    }
+
+    if (field.type === 'info-display') {
+        const wrap = document.createElement('div');
+        wrap.className = 'form-group';
+        const infoDiv = document.createElement('div');
+        infoDiv.id = field.id;
+        infoDiv.className = 'info-display';
+        infoDiv.style.padding = '1em';
+        infoDiv.style.backgroundColor = 'var(--bg-item)';
+        infoDiv.style.borderRadius = '0.2em';
+        infoDiv.style.marginTop = '0.5em';
+        infoDiv.style.whiteSpace = 'pre-line';
+        infoDiv.textContent = field.content || '';
+        wrap.appendChild(infoDiv);
         return wrap;
     }
 
@@ -400,176 +426,200 @@ function buildFormGroup(field) {
     return group;
 }
 
-// 追補：conditional-section の表示制御（showWhen.field に連動）
+// 条件表示の初期化（修正版）
 function initConditionalSections(config) {
-  const conditionals = collectConditionals(config); // [{id, showWhen}, ...]
-  const deps = buildDeps(conditionals);             // key -> [ids...]
+    const conditionals = collectConditionals(config);
+    const deps = buildDeps(conditionals);
 
-  // 初期評価
-  evaluateAll();
+    // 初期評価
+    evaluateAll();
 
-  // 依存コントローラにイベントを結線
-  for (const key of Object.keys(deps)) {
-    const ctrls = findControlsByKey(key);
-    ctrls.forEach(el => {
-      const evt = el.tagName === 'INPUT' && (el.type === 'text' || el.type === 'number' || el.type === 'password') ? 'input' : 'change';
-      el.addEventListener(evt, evaluateAll);
-    });
-  }
-
-  function evaluateAll() {
-    for (const cond of conditionals) {
-      const visible = evaluateShowWhen(cond.showWhen, getControlValue);
-      const el = document.getElementById(cond.id);
-      if (!el) continue;
-      el.style.display = visible ? '' : 'none';
+    // 依存コントローラにイベントを結線
+    for (const key of Object.keys(deps)) {
+        const ctrls = findControlsByKey(key);
+        ctrls.forEach(el => {
+            const evt = el.tagName === 'INPUT' && (el.type === 'text' || el.type === 'number' || el.type === 'password') ? 'input' : 'change';
+            el.addEventListener(evt, evaluateAll);
+        });
     }
-  }
 
-  function getControlValue(key) {
-    // key の揺れ対策: hyphen/underscore 双方向対応
+    function evaluateAll() {
+        for (const cond of conditionals) {
+            const visible = evaluateShowWhen(cond.showWhen, getControlValue);
+            const el = document.getElementById(cond.id);
+            if (!el) continue;
+            el.style.display = visible ? '' : 'none';
+        }
+    }
+
+    function getControlValue(key) {
+        // key の揺れ対策: hyphen/underscore 双方向対応
+        const keys = [key, key.replace(/-/g, '_'), key.replace(/_/g, '-')];
+
+        // 1) radio(name=key) 優先
+        for (const k of keys) {
+            const radios = document.querySelectorAll(`input[type="radio"][name="${cssEscape(k)}"]`);
+            if (radios.length) {
+                const r = Array.from(radios).find(x => x.checked);
+                if (r) return r.value;
+            }
+        }
+        // 2) select/input の id または name
+        for (const k of keys) {
+            const byId = document.getElementById(k);
+            if (byId) return byId.value;
+            const byName = document.querySelector(`[name="${cssEscape(k)}"]`);
+            if (byName) return byName.value;
+        }
+        return '';
+    }
+}
+
+function findControlsByKey(key) {
     const keys = [key, key.replace(/-/g, '_'), key.replace(/_/g, '-')];
-
-    // 1) radio(name=key) 優先
+    const controls = [];
+    
     for (const k of keys) {
-      const radios = document.querySelectorAll(`input[type="radio"][name="${cssEscape(k)}"]`);
-      if (radios.length) {
-        const r = Array.from(radios).find(x => x.checked);
-        if (r) return r.value;
-      }
+        // radio buttons
+        const radios = document.querySelectorAll(`input[type="radio"][name="${cssEscape(k)}"]`);
+        controls.push(...radios);
+        
+        // select/input by id
+        const byId = document.getElementById(k);
+        if (byId) controls.push(byId);
+        
+        // by name attribute
+        const byName = document.querySelectorAll(`[name="${cssEscape(k)}"]`);
+        controls.push(...byName);
     }
-    // 2) select/input の id または name
-    for (const k of keys) {
-      const byId = document.getElementById(k);
-      if (byId) return byId.value;
-      const byName = document.querySelector(`[name="${cssEscape(k)}"]`);
-      if (byName) return byName.value;
-    }
-    return '';
-  }
+    
+    return [...new Set(controls)]; // 重複除去
 }
 
 function collectConditionals(config) {
-  const out = [];
-  walkConfig(config, node => {
-    if (node.type === 'conditional-section' && node.id && node.showWhen && node.showWhen.field) {
-      out.push({ id: node.id, showWhen: node.showWhen });
-    }
-  });
-  return out;
+    const out = [];
+    walkConfig(config, node => {
+        if (node.type === 'conditional-section' && node.id && node.showWhen && node.showWhen.field) {
+            out.push({ id: node.id, showWhen: node.showWhen });
+        }
+    });
+    return out;
 }
 
 function buildDeps(conditionals) {
-  const map = {};
-  for (const c of conditionals) {
-    const key = c.showWhen.field;
-    if (!map[key]) map[key] = [];
-    map[key].push(c.id);
-  }
-  return map;
+    const map = {};
+    for (const c of conditionals) {
+        const key = c.showWhen.field;
+        if (!map[key]) map[key] = [];
+        map[key].push(c.id);
+    }
+    return map;
 }
 
 function evaluateShowWhen(showWhen, getVal) {
-  if (!showWhen || !showWhen.field) return true;
-  const v = String(getVal(showWhen.field) ?? '');
-  if (Array.isArray(showWhen.values)) {
-    return showWhen.values.map(String).includes(v);
-  }
-  return Boolean(v);
+    if (!showWhen || !showWhen.field) return true;
+    const v = String(getVal(showWhen.field) ?? '');
+    if (Array.isArray(showWhen.values)) {
+        return showWhen.values.map(String).includes(v);
+    }
+    return Boolean(v);
 }
 
 function walkConfig(config, fn) {
-  for (const cat of (config.categories || [])) {
-    for (const pkg of (cat.packages || [])) walkNode(pkg, fn);
-  }
-  function walkNode(node, fn) {
-    fn(node);
-    if (node.type === 'input-group') {
-      const rows = getRows(node);
-      rows.forEach(r => (r.columns || []).forEach(col => walkNode(col, fn)));
-    } else if (node.type === 'conditional-section') {
-      (node.children || []).forEach(ch => walkNode(ch, fn));
+    for (const cat of (config.categories || [])) {
+        for (const pkg of (cat.packages || [])) walkNode(pkg, fn);
     }
-  }
+    function walkNode(node, fn) {
+        fn(node);
+        if (node.type === 'input-group') {
+            const rows = getRows(node);
+            rows.forEach(r => (r.columns || []).forEach(col => walkNode(col, fn)));
+        } else if (node.type === 'conditional-section') {
+            (node.children || []).forEach(ch => walkNode(ch, fn));
+        }
+    }
 }
 
-// rows/columns 優先。無ければ fields[] を2列の rows に正規化。
+// rows/columns 処理（修正版）
 function getRows(group) {
-  if (Array.isArray(group.rows) && group.rows.length) {
-    return group.rows.map(r => ({ columns: Array.isArray(r.columns) ? r.columns : [] }));
-  }
-  const fields = Array.isArray(group.fields) ? group.fields : [];
-  const rows = [];
-  for (let i = 0; i < fields.length; i += 2) {
-    const cols = [fields[i]];
-    if (fields[i + 1]) cols.push(fields[i + 1]);
-    rows.push({ columns: cols });
-  }
-  return rows;
+    if (Array.isArray(group.rows) && group.rows.length) {
+        return group.rows.map(r => ({ columns: Array.isArray(r.columns) ? r.columns : [] }));
+    }
+    const fields = Array.isArray(group.fields) ? group.fields : [];
+    const rows = [];
+    for (let i = 0; i < fields.length; i += 2) {
+        const cols = [fields[i]];
+        if (fields[i + 1]) cols.push(fields[i + 1]);
+        rows.push({ columns: cols });
+    }
+    return rows;
 }
 
 function cssEscape(s) {
-  return String(s).replace(/"/g, '\\"');
+    return String(s).replace(/"/g, '\\"');
 }
 
-// setup.jsonからフォーム構造を生成
+// setup.jsonからフォーム構造を生成（修正版）
 function generateFormStructure(config) {
     const structure = {
-        fields: {},           // すべてのフィールド
-        connectionTypes: {},  // 接続タイプ別フィールド
-        categories: {},       // カテゴリ別フィールド
-        fieldMapping: {}      // selector -> field情報のマッピング
+        fields: {},           
+        connectionTypes: {},  
+        categories: {},       
+        fieldMapping: {}      
     };
     
     config.categories.forEach(category => {
         structure.categories[category.id] = [];
         
         category.packages.forEach(pkg => {
-            const el = pkg.selector ? document.querySelector(pkg.selector) : null;
-
-            // HTML の value を優先、無ければ setup.json の defaultValue
-            const fieldInfo = {
-                id: pkg.id,
-                selector: pkg.selector,
-                variableName: pkg.variableName || pkg.id.replace(/-/g, '_'),
-                defaultValue: (el && el.value) ? el.value : pkg.defaultValue,
-                apiMapping: pkg.apiMapping
-            };
-            
-            if (pkg.selector) {
-                structure.fields[pkg.id] = fieldInfo;
-                structure.categories[category.id].push(pkg.id);
-                structure.fieldMapping[pkg.selector] = fieldInfo;
-            }
-            
-            // 接続タイプの子要素を処理
-            if (pkg.id === 'connection-type' && pkg.children) {
-                pkg.children.forEach(child => {
-                    structure.connectionTypes[child.id] = [];
-                    if (child.children) {
-                        child.children.forEach(grandChild => {
-                            const elChild = grandChild.selector ? document.querySelector(grandChild.selector) : null;
-                            const childFieldInfo = {
-                                id: grandChild.id,
-                                selector: grandChild.selector,
-                                variableName: grandChild.variableName || grandChild.id.replace(/-/g, '_'),
-                                defaultValue: (elChild && elChild.value) ? elChild.value : grandChild.defaultValue,
-                                apiMapping: grandChild.apiMapping
-                            };
-                            
-                            if (grandChild.selector) {
-                                structure.fields[grandChild.id] = childFieldInfo;
-                                structure.connectionTypes[child.id].push(grandChild.id);
-                                structure.fieldMapping[grandChild.selector] = childFieldInfo;
-                            }
-                        });
-                    }
-                });
-            }
+            collectFieldsFromPackage(pkg, structure, category.id);
         });
     });
     
     return structure;
+}
+
+function collectFieldsFromPackage(pkg, structure, categoryId) {
+    if (pkg.selector) {
+        const el = document.querySelector(pkg.selector);
+        const fieldInfo = {
+            id: pkg.id,
+            selector: pkg.selector,
+            variableName: pkg.variableName || pkg.id.replace(/-/g, '_'),
+            defaultValue: (el && el.value) ? el.value : pkg.defaultValue,
+            apiMapping: pkg.apiMapping
+        };
+        
+        structure.fields[pkg.id] = fieldInfo;
+        structure.categories[categoryId].push(pkg.id);
+        structure.fieldMapping[pkg.selector] = fieldInfo;
+    }
+    
+    // 子要素を再帰処理
+    if (pkg.children) {
+        pkg.children.forEach(child => {
+            collectFieldsFromPackage(child, structure, categoryId);
+        });
+    }
+    
+    // input-groupのrows/columnsを処理
+    if (pkg.type === 'input-group') {
+        const rows = getRows(pkg);
+        rows.forEach(row => {
+            (row.columns || []).forEach(col => {
+                collectFieldsFromPackage(col, structure, categoryId);
+            });
+        });
+    }
+    
+    // 接続タイプの特別処理
+    if (pkg.id === 'connection-type' && pkg.variableName === 'connection_type') {
+        // 接続タイプのセクションを収集
+        const connectionSections = ['auto-section', 'dhcp-section', 'pppoe-section', 'dslite-section', 'mape-section', 'ap-section'];
+        connectionSections.forEach(sectionId => {
+            structure.connectionTypes[sectionId.replace('-section', '')] = [];
+        });
+    }
 }
 
 // ==================== フォーム値処理 ====================
@@ -598,9 +648,11 @@ function getFieldValue(selector) {
     const element = document.querySelector(selector);
     if (!element) return null;
     
-    if (element.type === 'radio' || element.type === 'checkbox') {
-        const checked = document.querySelector(`${selector}:checked`);
+    if (element.type === 'radio') {
+        const checked = document.querySelector(`input[name="${element.name}"]:checked`);
         return checked?.value;
+    } else if (element.type === 'checkbox') {
+        return element.checked ? element.value : null;
     }
     return element.value;
 }
@@ -608,12 +660,12 @@ function getFieldValue(selector) {
 // 特殊なフィールドロジック適用
 function applySpecialFieldLogic(values) {
     // 接続タイプに応じたフィルタリング
-    const connectionType = getFieldValue('input[name="connectionType"]');
+    const connectionType = getFieldValue('input[name="connection_type"]');
     
     if (connectionType === 'auto') {
         // AUTO選択時は、全ての接続タイプのHTMLフィールド値を削除
         Object.keys(formStructure.connectionTypes).forEach(type => {
-            if (type !== 'auto') {  // autoは元々フィールドがないのでスキップ
+            if (type !== 'auto') {  
                 formStructure.connectionTypes[type].forEach(fieldId => {
                     const field = formStructure.fields[fieldId];
                     if (field) delete values[field.variableName];
@@ -648,7 +700,6 @@ function applySpecialFieldLogic(values) {
                 // DS-Liteの値を自動設定
                 values.dslite_aftr_address = cachedApiInfo.aftr;
             }
-            // 両方nullの場合は何も設定しない（接続タイプ関連は完全スキップ）
         }
     } else if (connectionType && connectionType !== 'auto') {
         // 手動選択時：他の接続タイプのフィールドを除外
@@ -675,7 +726,7 @@ function applySpecialFieldLogic(values) {
     }
     
     // Network Optimizerモード
-    const netOptimizer = getFieldValue('input[name="netOptimizer"]');
+    const netOptimizer = getFieldValue('input[name="net_optimizer"]');
     if (netOptimizer === 'auto') {
         values.enable_netopt = '1';
         ['netopt_rmem', 'netopt_wmem', 'netopt_conntrack', 'netopt_backlog', 'netopt_somaxconn', 'netopt_congestion']
@@ -687,7 +738,7 @@ function applySpecialFieldLogic(values) {
     
     // MAP-E GUAモード（手動選択時のみ）
     if (connectionType === 'mape') {
-        const mapeType = getFieldValue('input[name="mapeType"]');
+        const mapeType = getFieldValue('input[name="mape_type"]');
         if (mapeType === 'gua') values.mape_gua_mode = '1';
     }
 }
@@ -699,8 +750,8 @@ function setupEventListeners() {
     
     // ラジオボタンのイベント設定
     const radioGroups = {
-        'connectionType': handleConnectionTypeChange,
-        'netOptimizer': handleNetOptimizerChange,
+        'connection_type': handleConnectionTypeChange,
+        'net_optimizer': handleNetOptimizerChange,
         'wifi_mode': handleWifiModeChange
     };
     
@@ -719,51 +770,24 @@ function setupEventListeners() {
 function handleConnectionTypeChange(e) {
     const selectedType = e.target.value;
     
-    // AUTOセクションも含めて制御
-    const autoSection = document.querySelector('#auto-section');
-    if (autoSection) {
-        if (selectedType === 'auto') {
-            show(autoSection);
-            // AUTO選択時は検出された情報を再表示
-            if (cachedApiInfo) {
-                updateAutoConnectionInfo(cachedApiInfo);
-            }
-        } else {
-            hide(autoSection);
-        }
-    }
-    
-    // すべてのセクションを制御
-    Object.keys(formStructure.connectionTypes).forEach(type => {
+    // 各セクションの表示制御
+    const sections = ['auto', 'dhcp', 'pppoe', 'dslite', 'mape', 'ap'];
+    sections.forEach(type => {
         const section = document.querySelector(`#${type}-section`);
         if (section) {
             if (type === selectedType) {
                 show(section);
+                // AUTO選択時は検出された情報を再表示
+                if (type === 'auto' && cachedApiInfo) {
+                    updateAutoConnectionInfo(cachedApiInfo);
+                }
             } else {
                 hide(section);
-                // 手動選択時はフィールドをクリアしない（HTMLの初期値を保持）
             }
         }
     });
     
     updateVariableDefinitions();
-}
-
-function clearConnectionTypeFields(type) {
-    const fieldIds = formStructure.connectionTypes[type] || [];
-    fieldIds.forEach(fieldId => {
-        const field = formStructure.fields[fieldId];
-        if (field) {
-            const element = document.querySelector(field.selector);
-            if (element) {
-                if (element.type === 'radio' || element.type === 'checkbox') {
-                    element.checked = false;
-                } else {
-                    element.value = '';
-                }
-            }
-        }
-    });
 }
 
 function handleNetOptimizerChange(e) {
@@ -805,10 +829,8 @@ function handleWifiModeChange(e) {
         show(wifiOptionsContainer);
         if (mode === 'usteer') {
             show(usteerOptions);
-            // Usteer選択時はクリアしない（HTMLの初期値を保持）
         } else {
             hide(usteerOptions);
-            // Standard選択時もクリアしない（HTMLの初期値を保持）
         }
     }
     
@@ -826,7 +848,7 @@ async function fetchAndDisplayIspInfo() {
         cachedApiInfo = apiInfo;
         displayIspInfo(apiInfo);
         applyIspAutoConfig(apiInfo);
-        updateAutoConnectionInfo(apiInfo);  // AUTOセクションの情報を更新
+        updateAutoConnectionInfo(apiInfo);  
     } catch (err) {
         console.error('Failed to fetch ISP info:', err);
         // エラー時もAUTO情報を更新
@@ -861,7 +883,7 @@ function applyIspAutoConfig(apiInfo) {
     if (!apiInfo || !formStructure.fields) return;
     
     // 現在の接続タイプを取得
-    const connectionType = getFieldValue('input[name="connectionType"]');
+    const connectionType = getFieldValue('input[name="connection_type"]');
     
     Object.values(formStructure.fields).forEach(field => {
         if (field.apiMapping) {
@@ -892,7 +914,6 @@ function applyIspAutoConfig(apiInfo) {
             if (value !== null && value !== undefined) {
                 const element = document.querySelector(field.selector);
                 if (element) {
-                    // ISP 情報が来たら上書き（ただし接続関連はAUTO時のみ）
                     element.value = value;
                 }
             }
@@ -1544,3 +1565,31 @@ function initDeviceTranslation() {
         select.value = current_language;
     }
 }
+
+// ==================== デバッグ用ヘルパー関数 ====================
+
+function debugFormStructure() {
+    console.log('Form Structure:', formStructure);
+    console.log('Cached API Info:', cachedApiInfo);
+    console.log('Setup Config:', setupConfig);
+}
+
+function debugCollectValues() {
+    const values = collectFormValues();
+    console.log('Collected Form Values:', values);
+    return values;
+}
+
+// ==================== エラーハンドリング ====================
+
+window.addEventListener('error', function(e) {
+    console.error('Custom.js Error:', e.error);
+});
+
+window.addEventListener('unhandledrejection', function(e) {
+    console.error('Custom.js Unhandled Promise Rejection:', e.reason);
+});
+
+// ==================== 初期化完了通知 ====================
+
+console.log('custom.js fully loaded and ready');
