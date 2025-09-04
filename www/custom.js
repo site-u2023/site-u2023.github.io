@@ -603,8 +603,8 @@ function updateLanguagePackage() {
     if (selectedLanguage && selectedLanguage !== 'en') {
         const langCode = selectedLanguage.replace('_', '-');
         
-        // 現在のパッケージリストを取得
-        const currentPackages = getCurrentPackageList();
+        // 言語パッケージを除外した現在のパッケージリストを取得
+        const currentPackages = getCurrentPackageListExcludingLanguages();
         
         // luciパッケージを検出して対応する言語パッケージを追加
         const luciPackages = findLuciPackages(currentPackages);
@@ -621,23 +621,29 @@ function updateLanguagePackage() {
     }
 }
 
-function getCurrentPackageList() {
+function getCurrentPackageListExcludingLanguages() {
     const packages = new Set();
     
     // パッケージセレクターから選択されたパッケージ
     document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
         const pkgName = cb.getAttribute('data-package');
-        if (pkgName) packages.add(pkgName);
+        if (pkgName && !pkgName.startsWith('luci-i18n-')) {
+            packages.add(pkgName);
+        }
     });
     
-    // テキストエリアから既存パッケージ
+    // テキストエリアから既存パッケージ（言語パッケージ除外）
     const textarea = document.querySelector('#asu-packages');
     if (textarea) {
         const textPackages = split(textarea.value);
-        textPackages.forEach(pkg => packages.add(pkg));
+        textPackages.forEach(pkg => {
+            if (!pkg.startsWith('luci-i18n-')) {
+                packages.add(pkg);
+            }
+        });
     }
     
-    // setup.json由来の動的パッケージ
+    // setup.json由来の動的パッケージ（言語パッケージ除外）
     if (setupConfig) {
         setupConfig.categories.forEach(category => {
             category.packages.forEach(pkg => {
@@ -646,7 +652,11 @@ function getCurrentPackageList() {
                     if (selectedValue) {
                         const selectedOption = pkg.options.find(opt => opt.value === selectedValue);
                         if (selectedOption && selectedOption.packages) {
-                            selectedOption.packages.forEach(pkgName => packages.add(pkgName));
+                            selectedOption.packages.forEach(pkgName => {
+                                if (!pkgName.startsWith('luci-i18n-')) {
+                                    packages.add(pkgName);
+                                }
+                            });
                         }
                     }
                 }
@@ -715,6 +725,29 @@ function updateSetupJsonPackages() {
                             });
                         }
                     });
+                    
+                    // AUTO時の特別処理：APIから検出された接続タイプに応じてパッケージを追加
+                    if (pkg.variableName === 'connection_type' && selectedValue === 'auto' && cachedApiInfo) {
+                        if (cachedApiInfo.mape?.brIpv6Address) {
+                            // MAP-Eが検出された場合
+                            const mapeOption = pkg.options.find(opt => opt.value === 'mape');
+                            if (mapeOption && mapeOption.packages) {
+                                mapeOption.packages.forEach(pkgName => {
+                                    dynamicPackages.add(pkgName);
+                                    console.log(`Added AUTO-detected MAP-E package: ${pkgName}`);
+                                });
+                            }
+                        } else if (cachedApiInfo.aftr) {
+                            // DS-Liteが検出された場合
+                            const dsliteOption = pkg.options.find(opt => opt.value === 'dslite');
+                            if (dsliteOption && dsliteOption.packages) {
+                                dsliteOption.packages.forEach(pkgName => {
+                                    dynamicPackages.add(pkgName);
+                                    console.log(`Added AUTO-detected DS-Lite package: ${pkgName}`);
+                                });
+                            }
+                        }
+                    }
                 }
             }
         });
