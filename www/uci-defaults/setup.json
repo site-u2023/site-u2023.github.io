@@ -24,10 +24,10 @@
       "name": "Wi-Fi Settings",
       "description": "Wireless network configuration",
       "packages": [
-        {"id": "wifi-ssid", "name": "SSID", "selector": "#aios-wifi-ssid"},
-        {"id": "wifi-password", "name": "Password", "selector": "#aios-wifi-password"},
-        {"id": "wifi-mobility-domain", "name": "Mobility Domain", "selector": "#aios-wifi-mobility-domain"},
-        {"id": "wifi-snr", "name": "SNR Threshold", "selector": "#aios-wifi-snr"},
+        {"id": "wifi-ssid", "name": "SSID", "selector": "#aios-wifi-ssid", "variableName": "wlan_ssid"},
+        {"id": "wifi-password", "name": "Password", "selector": "#aios-wifi-password", "variableName": "wlan_password"},
+        {"id": "wifi-mobility-domain", "name": "Mobility Domain", "selector": "#aios-wifi-mobility-domain", "variableName": "mobility_domain"},
+        {"id": "wifi-snr", "name": "SNR Threshold", "selector": "#aios-wifi-snr", "variableName": "snr"},
         {"id": "wifi-mode", "name": "Wi-Fi Mode", "selector": "input[name='wifi_mode']"}
       ]
     },
@@ -99,12 +99,12 @@
       "name": "Network Optimization",
       "description": "Tuning system network parameters",
       "packages": [
-        {"id": "rmem", "name": "Receive Memory", "selector": "#netopt-rmem"},
-        {"id": "wmem", "name": "Write Memory", "selector": "#netopt-wmem"},
-        {"id": "conntrack", "name": "Conntrack Max", "selector": "#netopt-conntrack"},
-        {"id": "backlog", "name": "Backlog", "selector": "#netopt-backlog"},
-        {"id": "somaxconn", "name": "SOMAXCONN", "selector": "#netopt-somaxconn"},
-        {"id": "congestion", "name": "Congestion Control", "selector": "#netopt-congestion"}
+        {"id": "rmem", "name": "Receive Memory", "selector": "#netopt-rmem", "variableName": "netopt_rmem"},
+        {"id": "wmem", "name": "Write Memory", "selector": "#netopt-wmem", "variableName": "netopt_wmem"},
+        {"id": "conntrack", "name": "Conntrack Max", "selector": "#netopt-conntrack", "variableName": "netopt_conntrack"},
+        {"id": "backlog", "name": "Backlog", "selector": "#netopt-backlog", "variableName": "netopt_backlog"},
+        {"id": "somaxconn", "name": "SOMAXCONN", "selector": "#netopt-somaxconn", "variableName": "netopt_somaxconn"},
+        {"id": "congestion", "name": "Congestion Control", "selector": "#netopt-congestion", "variableName": "netopt_congestion"}
       ]
     }
   ]
