@@ -236,7 +236,7 @@
           "variableName": "wifi_mode",
           "options": [
             {"value": "standard", "label": "Standard", "checked": true},
-            {"value": "usteer", "label": "Usteer"},
+            {"value": "usteer", "label": "Usteer", "packages": ["luci-app-usteer"]},
             {"value": "disabled", "label": "Disabled"}
           ]
         },
@@ -335,8 +335,8 @@
             {"value": "auto", "label": "AUTO", "checked": true},
             {"value": "dhcp", "label": "DHCP"},
             {"value": "pppoe", "label": "PPPoE"},
-            {"value": "dslite", "label": "DS-Lite"},
-            {"value": "mape", "label": "MAP-E"},
+            {"value": "dslite", "label": "DS-Lite", "packages": ["ds-lite"]},
+            {"value": "mape", "label": "MAP-E", "packages": ["map"]},
             {"value": "ap", "label": "AP"}
           ]
         },
