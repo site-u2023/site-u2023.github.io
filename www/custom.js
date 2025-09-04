@@ -275,7 +275,17 @@ function applySpecialFieldLogic(values) {
     const connectionType = getFieldValue('input[name="connectionType"]');
     
     if (connectionType === 'auto') {
-        // AUTO選択時は、APIから検出された値を使用
+        // AUTO選択時は、全ての接続タイプのHTMLフィールド値を削除
+        Object.keys(formStructure.connectionTypes).forEach(type => {
+            if (type !== 'auto') {  // autoは元々フィールドがないのでスキップ
+                formStructure.connectionTypes[type].forEach(fieldId => {
+                    const field = formStructure.fields[fieldId];
+                    if (field) delete values[field.variableName];
+                });
+            }
+        });
+        
+        // その後、APIから検出された値のみを使用
         if (cachedApiInfo) {
             if (cachedApiInfo.mape?.brIpv6Address) {
                 // MAP-Eの値を自動設定
@@ -302,9 +312,10 @@ function applySpecialFieldLogic(values) {
                 // DS-Liteの値を自動設定
                 values.dslite_aftr_address = cachedApiInfo.aftr;
             }
+            // 両方nullの場合は何も設定しない（接続タイプ関連は完全スキップ）
         }
     } else if (connectionType && connectionType !== 'auto') {
-        // 他の接続タイプのフィールドを除外
+        // 手動選択時：他の接続タイプのフィールドを除外
         Object.keys(formStructure.connectionTypes).forEach(type => {
             if (type !== connectionType) {
                 formStructure.connectionTypes[type].forEach(fieldId => {
