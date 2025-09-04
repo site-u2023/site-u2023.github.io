@@ -269,7 +269,7 @@
                       "selector": "#aios-wifi-password",
                       "variableName": "wlan_password",
                       "placeholder": "8+ characters",
-                      "defaultValue": "openwrt123"
+                      "defaultValue": "password"
                     }
                   ]
                 }
