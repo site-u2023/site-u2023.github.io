@@ -685,7 +685,7 @@ function findLuciPackages(packageList) {
                     luciName = pkg.substring(5); // "luci-" を除去
                 } else if (pkg.startsWith('luci-ssl')) {
                     // luci-ssl は特別扱いしない
-                    continue;
+                    return;
                 } else {
                     // その他のluciパッケージ
                     luciName = pkg.substring(5);
