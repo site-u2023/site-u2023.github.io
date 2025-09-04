@@ -181,45 +181,106 @@ async function loadSetupConfig() {
 
 // setup.json → HTML描画
 function renderSetupConfig(config) {
-    const container = document.querySelector('#dynamic-config-sections');
-    if (!container) return;
-    container.innerHTML = ''; // 初期化
+   const container = document.querySelector('#dynamic-config-sections');
+   if (!container) return;
+   container.innerHTML = '';
 
-    config.categories.forEach(category => {
-        const section = document.createElement('section');
-        section.className = 'config-section';
+   config.categories.forEach(category => {
+       const section = document.createElement('section');
+       section.className = 'config-section';
 
-        const h4 = document.createElement('h4');
-        h4.textContent = category.name;
-        section.appendChild(h4);
+       const h3 = document.createElement('h3');
+       h3.textContent = category.name;
+       section.appendChild(h3);
 
-        category.packages.forEach(pkg => {
-            // input-group
-            if (pkg.type === 'input-group' && pkg.fields) {
-                pkg.fields.forEach(field => {
-                    const row = document.createElement('div');
-                    row.className = 'row';
+       category.packages.forEach(pkg => {
+           buildField(section, pkg);
+       });
 
-                    const label = document.createElement('label');
-                    label.textContent = field.label || field.id;
-                    label.setAttribute('for', field.id);
-                    row.appendChild(label);
+       container.appendChild(section);
+   });
+}
 
-                    const input = document.createElement('input');
-                    input.id = field.id;
-                    input.type = field.type || 'text';
-                    if (field.placeholder) input.placeholder = field.placeholder;
-                    if (field.defaultValue) input.value = field.defaultValue;
-                    row.appendChild(input);
+function buildField(parent, pkg) {
+   switch (pkg.type) {
+       case 'input-group':
+           pkg.fields.forEach(field => {
+               const row = document.createElement('div');
+               row.className = field.class || 'row';
 
-                    section.appendChild(row);
-                });
-            }
-            // select / radio-group なども同様に分岐して生成
-        });
+               const label = document.createElement('label');
+               label.textContent = field.label || field.id;
+               label.setAttribute('for', field.id);
+               if (field.labelClass) label.className = field.labelClass;
+               row.appendChild(label);
 
-        container.appendChild(section);
-    });
+               const input = document.createElement('input');
+               input.id = field.id;
+               input.type = field.type || 'text';
+               if (field.placeholder) input.placeholder = field.placeholder;
+               if (field.defaultValue) input.value = field.defaultValue;
+               if (field.inputClass) input.className = field.inputClass;
+               row.appendChild(input);
+
+               parent.appendChild(row);
+           });
+           break;
+
+       case 'select':
+           const rowSel = document.createElement('div');
+           rowSel.className = pkg.class || 'row';
+           const labelSel = document.createElement('label');
+           labelSel.textContent = pkg.label || pkg.id;
+           labelSel.setAttribute('for', pkg.id);
+           rowSel.appendChild(labelSel);
+           const select = document.createElement('select');
+           select.id = pkg.id;
+           pkg.options.forEach(opt => {
+               const option = document.createElement('option');
+               option.value = opt.value;
+               option.textContent = opt.label;
+               if (opt.selected || opt.value === pkg.defaultValue) option.selected = true;
+               select.appendChild(option);
+           });
+           rowSel.appendChild(select);
+           parent.appendChild(rowSel);
+           break;
+
+       case 'radio-group':
+           const wrapRadio = document.createElement('div');
+           wrapRadio.className = pkg.class || 'radio-group';
+           const labelRadio = document.createElement('div');
+           labelRadio.textContent = pkg.label || pkg.id;
+           wrapRadio.appendChild(labelRadio);
+           pkg.options.forEach(opt => {
+               const radioLabel = document.createElement('label');
+               const radio = document.createElement('input');
+               radio.type = 'radio';
+               radio.name = pkg.variableName || pkg.id;
+               radio.value = opt.value;
+               if (opt.checked || opt.value === pkg.defaultValue) radio.checked = true;
+               radioLabel.appendChild(radio);
+               radioLabel.appendChild(document.createTextNode(opt.label));
+               wrapRadio.appendChild(radioLabel);
+           });
+           parent.appendChild(wrapRadio);
+           break;
+
+       case 'conditional-section':
+           const condWrap = document.createElement('div');
+           condWrap.id = pkg.id;
+           condWrap.className = 'conditional-section';
+           pkg.children.forEach(child => buildField(condWrap, child));
+           parent.appendChild(condWrap);
+           break;
+
+       case 'info-display':
+           const info = document.createElement('div');
+           info.id = pkg.id;
+           info.textContent = pkg.content || '';
+           parent.appendChild(info);
+           break;
+   }
 }
 
 // setup.jsonからフォーム構造を生成
