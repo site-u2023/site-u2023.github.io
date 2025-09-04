@@ -1,574 +1,110 @@
 {
-  "formSections": [
+  "categories": [
     {
-      "id": "commands-container",
-      "type": "commands",
-      "className": "commands-container config-section",
-      "title": "Add commands",
-      "description": "Add custom shell commands that run on first boot.",
-      "fields": [
-        {
-          "id": "command",
-          "type": "text",
-          "placeholder": "Type commands",
-          "variableName": "custom_commands",
-          "autocomplete": true
-        }
+      "id": "general",
+      "name": "General Settings",
+      "description": "Basic system and device configuration",
+      "packages": [
+        {"id": "language", "name": "Language", "selector": "#aios-language"},
+        {"id": "country", "name": "Country", "selector": "#aios-country", "apiMapping": "country"},
+        {"id": "timezone", "name": "Timezone", "selector": "#aios-timezone", "apiMapping": "timezone"},
+        {"id": "zonename", "name": "Zone Name", "selector": "#aios-zonename", "apiMapping": "zonename"},
+        {"id": "device-name", "name": "Device Name", "selector": "#aios-device-name"},
+        {"id": "root-password", "name": "Root Password", "selector": "#aios-root-password"},
+        {"id": "lan-ipv4", "name": "LAN IPv4", "selector": "#aios-lan-ipv4"},
+        {"id": "lan-ipv6", "name": "LAN IPv6", "selector": "#aios-lan-ipv6"},
+        {"id": "ssh-interface", "name": "SSH Interface", "selector": "#aios-ssh-interface"},
+        {"id": "ssh-port", "name": "SSH Port", "selector": "#aios-ssh-port"},
+        {"id": "flow-offloading", "name": "Flow Offloading", "selector": "#aios-flow-offloading"},
+        {"id": "backup-path", "name": "Backup Path", "selector": "#aios-backup-path"}
       ]
     },
     {
-      "id": "basic-config",
-      "type": "section",
-      "className": "config-section",
-      "title": "Basic Configuration",
-      "fields": [
-        {
-          "id": "aios-language",
-          "label": "Language",
-          "type": "select",
-          "variableName": "language",
-          "defaultValue": "ja",
-          "options": [
-            {"value": "ar", "label": "العربية (Arabic)"},
-            {"value": "bg", "label": "Български (Bulgarian)"},
-            {"value": "ca", "label": "Català (Catalan)"},
-            {"value": "cs", "label": "Čeština (Czech)"},
-            {"value": "da", "label": "Dansk (Danish)"},
-            {"value": "de", "label": "Deutsch (German)"},
-            {"value": "el", "label": "Ελληνικά (Greek)"},
-            {"value": "en", "label": "English"},
-            {"value": "es", "label": "Español (Spanish)"},
-            {"value": "fi", "label": "Suomi (Finnish)"},
-            {"value": "fr", "label": "Français (French)"},
-            {"value": "he", "label": "עברית (Hebrew)"},
-            {"value": "hu", "label": "Magyar (Hungarian)"},
-            {"value": "it", "label": "Italiano (Italian)"},
-            {"value": "ja", "label": "日本語 (Japanese)"},
-            {"value": "ko", "label": "한국어 (Korean)"},
-            {"value": "lt", "label": "Lietuvių (Lithuanian)"},
-            {"value": "ms", "label": "Bahasa Melayu (Malay)"},
-            {"value": "nl", "label": "Nederlands (Dutch)"},
-            {"value": "no", "label": "Norsk (Norwegian)"},
-            {"value": "pl", "label": "Polski (Polish)"},
-            {"value": "pt", "label": "Português (Portuguese)"},
-            {"value": "pt_br", "label": "Português do Brasil (Portuguese Brazil)"},
-            {"value": "ro", "label": "Română (Romanian)"},
-            {"value": "ru", "label": "Русский (Russian)"},
-            {"value": "sk", "label": "Slovenčina (Slovak)"},
-            {"value": "sv", "label": "Svenska (Swedish)"},
-            {"value": "tr", "label": "Türkçe (Turkish)"},
-            {"value": "uk", "label": "Українська (Ukrainian)"},
-            {"value": "vi", "label": "Tiếng Việt (Vietnamese)"},
-            {"value": "zh_cn", "label": "简体中文 (Chinese Simplified)"},
-            {"value": "zh_tw", "label": "繁體中文 (Chinese Traditional)"}
-          ]
-        },
-        {
-          "id": "aios-country",
-          "label": "Country",
-          "type": "text",
-          "variableName": "country",
-          "defaultValue": "",
-          "placeholder": "00",
-          "maxLength": 2,
-          "apiMapping": "country"
-        },
-        {
-          "id": "aios-timezone",
-          "label": "Timezone",
-          "type": "text",
-          "variableName": "timezone",
-          "defaultValue": "",
-          "placeholder": "UTC",
-          "apiMapping": "timezone"
-        },
-        {
-          "id": "aios-zonename",
-          "label": "Zonename",
-          "type": "text",
-          "variableName": "zonename",
-          "defaultValue": "",
-          "placeholder": "UTC",
-          "apiMapping": "zonename"
-        },
-        {
-          "id": "aios-device-name",
-          "label": "Device name",
-          "type": "text",
-          "variableName": "device_name",
-          "defaultValue": "",
-          "placeholder": "OpenWrt"
-        },
-        {
-          "id": "aios-root-password",
-          "label": "Root password",
-          "type": "text",
-          "variableName": "root_password",
-          "defaultValue": "",
-          "placeholder": "8+ characters"
-        },
-        {
-          "id": "aios-lan-ipv4",
-          "label": "LAN IPv4 Address",
-          "type": "text",
-          "variableName": "lan_ip_address",
-          "defaultValue": "",
-          "placeholder": "192.168.1.1"
-        },
-        {
-          "id": "aios-lan-ipv6",
-          "label": "LAN IPv6 Address",
-          "type": "text",
-          "variableName": "lan_ipv6_address",
-          "defaultValue": "",
-          "placeholder": "fd00::1/64"
-        },
-        {
-          "id": "aios-ssh-interface",
-          "label": "SSH Interface",
-          "type": "text",
-          "variableName": "ssh_interface",
-          "defaultValue": "lan",
-          "placeholder": "lan",
-          "hint": "Network interface for SSH access"
-        },
-        {
-          "id": "aios-ssh-port",
-          "label": "SSH Port",
-          "type": "number",
-          "variableName": "ssh_port",
-          "defaultValue": "",
-          "placeholder": "22",
-          "min": 1,
-          "max": 65535,
-          "hint": "Port number for SSH access"
-        },
-        {
-          "id": "aios-flow-offloading",
-          "label": "Flow offloading type",
-          "type": "select",
-          "variableName": "flow_offloading_type",
-          "defaultValue": "",
-          "options": [
-            {"value": "", "label": "Disabled"},
-            {"value": "software", "label": "Software flow offloading"},
-            {"value": "hardware", "label": "Hardware flow offloading"}
-          ]
-        },
-        {
-          "id": "aios-backup-path",
-          "label": "Restore Backup Path",
-          "type": "text",
-          "variableName": "backup_path",
-          "defaultValue": "/root/backup.tar.gz",
-          "placeholder": "/root/backup.tar.gz",
-          "hint": "Path to backup file for restore"
-        }
+      "id": "wifi",
+      "name": "Wi-Fi Settings",
+      "description": "Wireless network configuration",
+      "packages": [
+        {"id": "wifi-ssid", "name": "SSID", "selector": "#aios-wifi-ssid", "variableName": "wlan_ssid"},
+        {"id": "wifi-password", "name": "Password", "selector": "#aios-wifi-password", "variableName": "wlan_password"},
+        {"id": "wifi-mobility-domain", "name": "Mobility Domain", "selector": "#aios-wifi-mobility-domain", "variableName": "mobility_domain"},
+        {"id": "wifi-snr", "name": "SNR Threshold", "selector": "#aios-wifi-snr", "variableName": "snr"},
+        {"id": "wifi-mode", "name": "Wi-Fi Mode", "selector": "input[name='wifi_mode']"}
       ]
     },
     {
-      "id": "wifi-config",
-      "type": "section",
-      "className": "config-section",
-      "title": "Wi-Fi Configuration",
-      "fields": [
+      "id": "connection",
+      "name": "Internet Connection",
+      "description": "Select the type of internet connection",
+      "packages": [
         {
-          "id": "wifi-mode",
-          "label": "Wi-Fi Mode",
-          "type": "radio-group",
-          "variableName": "wifi_mode",
-          "defaultValue": "standard",
-          "options": [
-            {"value": "standard", "label": "Standard"},
-            {"value": "usteer", "label": "Usteer"},
-            {"value": "disabled", "label": "Disabled"}
-          ],
-          "onChange": "handleWifiModeChange"
-        }
-      ],
-      "subSections": [
-        {
-          "id": "wifi-options-container",
-          "showWhen": {"wifi-mode": ["standard", "usteer"]},
-          "fields": [
+          "id": "connection-type",
+          "name": "Connection Type",
+          "selector": "input[name='connectionType']",
+          "children": [
             {
-              "id": "aios-wifi-ssid",
-              "label": "Wi-Fi SSID",
-              "type": "text",
-              "variableName": "wlan_ssid",
-              "defaultValue": "OpenWrt",
-              "placeholder": "OpenWrt"
+              "id": "auto",
+              "name": "AUTO",
+              "children": []
             },
             {
-              "id": "aios-wifi-password",
-              "label": "Wi-Fi Password",
-              "type": "text",
-              "variableName": "wlan_password",
-              "defaultValue": "password",
-              "placeholder": "8+ characters"
+              "id": "dhcp",
+              "name": "DHCP",
+              "children": []
+            },
+            {
+              "id": "pppoe",
+              "name": "PPPoE",
+              "children": [
+                {"id": "pppoe-username", "name": "Username", "selector": "#pppoe-username"},
+                {"id": "pppoe-password", "name": "Password", "selector": "#pppoe-password"}
+              ]
+            },
+            {
+              "id": "dslite",
+              "name": "DS-Lite",
+              "children": [
+                 {"id": "dslite-aftr-address", "name": "AFTR Address", "selector": "#dslite-aftr-address", "apiMapping": "aftr"}
+              ]
+            },
+            {
+              "id": "mape",
+              "name": "MAP-E",
+              "children": [
+                {"id": "mape-br", "name": "BR", "selector": "#mape-br", "variableName": "mape_br", "apiMapping": "mape.brIpv6Address"},
+                {"id": "mape-ealen", "name": "EALEN", "selector": "#mape-ealen", "variableName": "mape_ealen", "apiMapping": "mape.eaBitLength"},
+                {"id": "mape-ipv4-prefix", "name": "IPv4 Prefix", "selector": "#mape-ipv4-prefix", "variableName": "mape_ipv4_prefix", "apiMapping": "mape.ipv4Prefix"},
+                {"id": "mape-ipv4-prefixlen", "name": "IPv4 Prefix Length", "selector": "#mape-ipv4-prefixlen", "variableName": "mape_ipv4_prefixlen", "apiMapping": "mape.ipv4PrefixLength"},
+                {"id": "mape-ipv6-prefix", "name": "IPv6 Prefix", "selector": "#mape-ipv6-prefix", "variableName": "mape_ipv6_prefix", "apiMapping": "mape.ipv6Prefix"},
+                {"id": "mape-ipv6-prefixlen", "name": "IPv6 Prefix Length", "selector": "#mape-ipv6-prefixlen", "variableName": "mape_ipv6_prefixlen", "apiMapping": "mape.ipv6PrefixLength"},
+                {"id": "mape-psid-offset", "name": "PSID Offset", "selector": "#mape-psid-offset", "variableName": "mape_psid_offset", "apiMapping": "mape.psIdOffset"},
+                {"id": "mape-psidlen", "name": "PSID Length", "selector": "#mape-psidlen", "variableName": "mape_psidlen", "apiMapping": "mape.psidlen"},
+                {"id": "mape-gua-prefix", "name": "GUA Prefix", "selector": "#mape-gua-prefix", "variableName": "mape_gua_prefix", "apiMapping": "mape.ipv6PrefixWith64"}
+              ]
+            },
+            {
+              "id": "ap",
+              "name": "AP",
+              "children": [
+                {"id": "ap-ip-address", "name": "IP Address", "selector": "#ap-ip-address"},
+                {"id": "ap-gateway", "name": "Gateway", "selector": "#ap-gateway"}
+              ]
             }
           ]
         },
-        {
-          "id": "usteer-options",
-          "showWhen": {"wifi-mode": ["usteer"]},
-          "fields": [
-            {
-              "id": "aios-wifi-mobility-domain",
-              "label": "Mobility Domain",
-              "type": "text",
-              "variableName": "mobility_domain",
-              "defaultValue": "4f57",
-              "placeholder": "4f57",
-              "maxLength": 4,
-              "pattern": "[0-9A-Fa-f]{4}",
-              "hint": "4-digit hex (e.g. 4f57)"
-            },
-            {
-              "id": "aios-wifi-snr",
-              "label": "Min SNR",
-              "type": "text",
-              "variableName": "snr",
-              "defaultValue": "30 15 5",
-              "placeholder": "30 15 5",
-              "hint": "SNR values in band order"
-            }
-          ]
-        }
+        {"id": "net-optimizer", "name": "Net Optimizer", "selector": "input[name='netOptimizer']"}
       ]
     },
     {
-      "id": "internet-config",
-      "type": "section",
-      "className": "config-section",
-      "title": "Internet Connection",
-      "fields": [
-        {
-          "id": "connectionType",
-          "label": "Connection type",
-          "type": "radio-group",
-          "variableName": "connection_type",
-          "defaultValue": "auto",
-          "options": [
-            {"value": "auto", "label": "AUTO"},
-            {"value": "dhcp", "label": "DHCP"},
-            {"value": "pppoe", "label": "PPPoE"},
-            {"value": "dslite", "label": "DS-Lite"},
-            {"value": "mape", "label": "MAP-E"},
-            {"value": "ap", "label": "AP"}
-          ],
-          "onChange": "handleConnectionTypeChange"
-        }
-      ],
-      "connectionTypes": {
-        "auto": {
-          "id": "auto-section",
-          "className": "connection-config",
-          "type": "info",
-          "description": "Automatically detects and configures your internet connection type.",
-          "infoId": "auto-info",
-          "infoText": "Detecting connection type..."
-        },
-        "dhcp": {
-          "id": "dhcp-section",
-          "className": "connection-config",
-          "type": "info",
-          "infoId": "dhcp-info",
-          "infoText": "DHCP"
-        },
-        "pppoe": {
-          "id": "pppoe-section",
-          "className": "connection-config",
-          "fields": [
-            {
-              "id": "pppoe-username",
-              "label": "Username",
-              "type": "text",
-              "variableName": "pppoe_username",
-              "defaultValue": "",
-              "placeholder": "Username"
-            },
-            {
-              "id": "pppoe-password",
-              "label": "Password",
-              "type": "password",
-              "variableName": "pppoe_password",
-              "defaultValue": "",
-              "placeholder": "Password"
-            }
-          ]
-        },
-        "dslite": {
-          "id": "dslite-section",
-          "className": "connection-config",
-          "fields": [
-            {
-              "id": "dslite-aftr",
-              "label": "AFTR Type",
-              "type": "select",
-              "variableName": "dslite_aftr",
-              "defaultValue": "transix",
-              "options": [
-                {"value": "transix", "label": "gw.transix.jp"},
-                {"value": "xpass", "label": "gw.xpass.jp"},
-                {"value": "v6option", "label": "gw.v6option.jp"}
-              ]
-            },
-            {
-              "id": "dslite-region",
-              "label": "Region",
-              "type": "select",
-              "variableName": "dslite_region",
-              "defaultValue": "east",
-              "options": [
-                {"value": "east", "label": "East Japan"},
-                {"value": "west", "label": "West Japan"}
-              ]
-            },
-            {
-              "id": "dslite-aftr-address",
-              "label": "AFTR IPv6 Address",
-              "type": "text",
-              "variableName": "dslite_aftr_address",
-              "defaultValue": "2404:8e00::feed:100",
-              "placeholder": "2404:8e00::feed:100",
-              "apiMapping": "aftr"
-            }
-          ]
-        },
-        "mape": {
-          "id": "mape-section",
-          "className": "connection-config",
-          "fields": [
-            {
-              "id": "mapeType",
-              "label": "Type",
-              "type": "radio-group",
-              "variableName": "mape_type",
-              "defaultValue": "gua",
-              "options": [
-                {"value": "gua", "label": "GUA"},
-                {"value": "pd", "label": "PD"}
-              ]
-            },
-            {
-              "id": "mape-br",
-              "label": "BR",
-              "type": "text",
-              "variableName": "mape_br",
-              "defaultValue": "",
-              "placeholder": "2001:db8::1",
-              "apiMapping": "mape.brIpv6Address"
-            },
-            {
-              "id": "mape-ealen",
-              "label": "EA-len",
-              "type": "number",
-              "variableName": "mape_ealen",
-              "defaultValue": "",
-              "placeholder": "16",
-              "apiMapping": "mape.eaBitLength"
-            },
-            {
-              "id": "mape-ipv4-prefix",
-              "label": "IPv4 Prefix",
-              "type": "text",
-              "variableName": "mape_ipv4_prefix",
-              "defaultValue": "",
-              "placeholder": "",
-              "apiMapping": "mape.ipv4Prefix"
-            },
-            {
-              "id": "mape-ipv4-prefixlen",
-              "label": "IPv4 Prefix Length",
-              "type": "number",
-              "variableName": "mape_ipv4_prefixlen",
-              "defaultValue": "",
-              "placeholder": "24",
-              "apiMapping": "mape.ipv4PrefixLength"
-            },
-            {
-              "id": "mape-ipv6-prefix",
-              "label": "IPv6 Prefix",
-              "type": "text",
-              "variableName": "mape_ipv6_prefix",
-              "defaultValue": "",
-              "placeholder": "",
-              "apiMapping": "mape.ipv6Prefix"
-            },
-            {
-              "id": "mape-ipv6-prefixlen",
-              "label": "IPv6 Prefix Length",
-              "type": "number",
-              "variableName": "mape_ipv6_prefixlen",
-              "defaultValue": "",
-              "placeholder": "32",
-              "apiMapping": "mape.ipv6PrefixLength"
-            },
-            {
-              "id": "mape-psid-offset",
-              "label": "PSID Offset",
-              "type": "number",
-              "variableName": "mape_psid_offset",
-              "defaultValue": "",
-              "placeholder": "6",
-              "apiMapping": "mape.psIdOffset"
-            },
-            {
-              "id": "mape-psidlen",
-              "label": "PSID Length",
-              "type": "number",
-              "variableName": "mape_psidlen",
-              "defaultValue": "",
-              "placeholder": "6",
-              "apiMapping": "mape.psidlen"
-            },
-            {
-              "id": "mape-gua-prefix",
-              "label": "GUA Prefix",
-              "type": "text",
-              "variableName": "mape_gua_prefix",
-              "defaultValue": "",
-              "placeholder": "",
-              "apiMapping": "mape.ipv6PrefixWith64",
-              "showWhen": {"mapeType": ["gua"]}
-            }
-          ]
-        },
-        "ap": {
-          "id": "ap-section",
-          "className": "connection-config",
-          "fields": [
-            {
-              "id": "ap-ip-address",
-              "label": "IP Address",
-              "type": "text",
-              "variableName": "ap_ip_address",
-              "defaultValue": "192.168.1.2",
-              "placeholder": "192.168.1.2"
-            },
-            {
-              "id": "ap-gateway",
-              "label": "Gateway",
-              "type": "text",
-              "variableName": "ap_gateway",
-              "defaultValue": "192.168.1.1",
-              "placeholder": "192.168.1.1"
-            }
-          ]
-        }
-      }
-    },
-    {
-      "id": "tuning-config",
-      "type": "section",
-      "className": "config-section",
-      "title": "Tuning",
-      "fields": [
-        {
-          "id": "netOptimizer",
-          "label": "Dynamic Network Optimizer",
-          "type": "radio-group",
-          "variableName": "net_optimizer",
-          "defaultValue": "auto",
-          "options": [
-            {"value": "auto", "label": "AUTO"},
-            {"value": "manual", "label": "Manual"},
-            {"value": "disabled", "label": "Disabled"}
-          ],
-          "onChange": "handleNetOptimizerChange"
-        }
-      ],
-      "optimizerTypes": {
-        "auto": {
-          "id": "netopt-auto-section",
-          "className": "connection-config",
-          "type": "info",
-          "description": "Auto mode adjusts parameters based on system resources"
-        },
-        "manual": {
-          "id": "netopt-manual-section",
-          "className": "connection-config",
-          "fields": [
-            {
-              "id": "netopt-rmem",
-              "label": "TCP Read Memory",
-              "type": "text",
-              "variableName": "netopt_rmem",
-              "defaultValue": "",
-              "placeholder": "4096 131072 8388608",
-              "hint": "min default max (bytes)"
-            },
-            {
-              "id": "netopt-wmem",
-              "label": "TCP Write Memory",
-              "type": "text",
-              "variableName": "netopt_wmem",
-              "defaultValue": "",
-              "placeholder": "4096 131072 8388608",
-              "hint": "min default max (bytes)"
-            },
-            {
-              "id": "netopt-conntrack",
-              "label": "Connection Tracking Max",
-              "type": "number",
-              "variableName": "netopt_conntrack",
-              "defaultValue": "",
-              "placeholder": "131072",
-              "min": 1024
-            },
-            {
-              "id": "netopt-backlog",
-              "label": "Network Device Backlog",
-              "type": "number",
-              "variableName": "netopt_backlog",
-              "defaultValue": "",
-              "placeholder": "5000",
-              "min": 100
-            },
-            {
-              "id": "netopt-somaxconn",
-              "label": "Socket Max Connections",
-              "type": "number",
-              "variableName": "netopt_somaxconn",
-              "defaultValue": "",
-              "placeholder": "16384",
-              "min": 128
-            },
-            {
-              "id": "netopt-congestion",
-              "label": "TCP Congestion Control",
-              "type": "select",
-              "variableName": "netopt_congestion",
-              "defaultValue": "cubic",
-              "options": [
-                {"value": "cubic", "label": "cubic (default)"},
-                {"value": "bbr", "label": "bbr"},
-                {"value": "reno", "label": "reno"}
-              ]
-            }
-          ]
-        },
-        "disabled": {
-          "id": "netopt-disabled-section",
-          "className": "connection-config",
-          "type": "info",
-          "description": "Network optimization will be disabled"
-        }
-      }
-    },
-    {
-      "id": "uci-defaults-details",
-      "type": "details",
-      "className": "config-section",
-      "title": "UCI-defaults (Boot configuration script)",
-      "fields": [
-        {
-          "id": "uci-defaults-content",
-          "type": "textarea",
-          "variableName": "uci_defaults",
-          "autoResize": true
-        }
+      "id": "netopt",
+      "name": "Network Optimization",
+      "description": "Tuning system network parameters",
+      "packages": [
+        {"id": "rmem", "name": "Receive Memory", "selector": "#netopt-rmem", "variableName": "netopt_rmem"},
+        {"id": "wmem", "name": "Write Memory", "selector": "#netopt-wmem", "variableName": "netopt_wmem"},
+        {"id": "conntrack", "name": "Conntrack Max", "selector": "#netopt-conntrack", "variableName": "netopt_conntrack"},
+        {"id": "backlog", "name": "Backlog", "selector": "#netopt-backlog", "variableName": "netopt_backlog"},
+        {"id": "somaxconn", "name": "SOMAXCONN", "selector": "#netopt-somaxconn", "variableName": "netopt_somaxconn"},
+        {"id": "congestion", "name": "Congestion Control", "selector": "#netopt-congestion", "variableName": "netopt_congestion"}
       ]
     }
   ]
