@@ -459,7 +459,7 @@ function handleWifiModeChange(e) {
     
     if (mode === 'disabled') {
         hide(wifiOptionsContainer);
-        // Wi-Fiフィールドをクリア
+        // Disabled時のみフィールドをクリア
         ['aios-wifi-ssid', 'aios-wifi-password', 'aios-wifi-mobility-domain', 'aios-wifi-snr']
             .forEach(id => {
                 const el = document.querySelector(`#${id}`);
@@ -469,13 +469,10 @@ function handleWifiModeChange(e) {
         show(wifiOptionsContainer);
         if (mode === 'usteer') {
             show(usteerOptions);
+            // Usteer選択時はクリアしない（HTMLの初期値を保持）
         } else {
             hide(usteerOptions);
-            // Usteerフィールドをクリア
-            ['aios-wifi-mobility-domain', 'aios-wifi-snr'].forEach(id => {
-                const el = document.querySelector(`#${id}`);
-                if (el) el.value = '';
-            });
+            // Standard選択時もクリアしない（HTMLの初期値を保持）
         }
     }
     
