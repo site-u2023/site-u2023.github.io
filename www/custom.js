@@ -2029,10 +2029,7 @@ function updateCustomCommands() {
 // ==================== フォーム監視 ====================
 
 function setupFormWatchers() {
-    console.log('setupFormWatchers called');
-    
     if (!formStructure.fields) {
-        console.log('Form structure not ready, skipping watchers');
         return;
     }
     
@@ -2164,8 +2161,6 @@ function resizePostinstTextarea() {
     
     textarea.style.height = 'auto';
     textarea.style.height = textarea.scrollHeight + 'px';
-    
-    console.log('Postinst textarea auto-resized');
 }
 
 function initDeviceTranslation() {
