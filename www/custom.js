@@ -23,10 +23,11 @@ window.updateImages = function(version, mobj) {
     if (originalUpdateImages) originalUpdateImages(version, mobj);
 
     // current_device が元コード側で確定済みかの確認と可用性チェック
-    console.log('current_device after originalUpdateImages:', current_device);
-    isLanguageAvailable(current_language).then(avail => {
-        console.log(`Language ${current_language} available:`, avail);
+    const langCode = (current_language || 'en').replace('_', '-').toLowerCase();
+    isPackageAvailable(`luci-i18n-base-${langCode}`, 'luci').then(avail => {
+    console.log(`Base language package for ${langCode} available:`, avail);
     });
+
     
     // パッケージリスト設定後にリサイズ
     if (mobj && "manifest" in mobj === false) {
@@ -273,10 +274,11 @@ async function handleMainLanguageChange(e) {
     let newLanguage = e.target.value;
     console.log(`Main language changed from "${selectedLanguage}" to "${newLanguage}"`);
 
-    if (!(await isLanguageAvailable(newLanguage))) {
-        console.warn(`Language ${newLanguage} not available, fallback to ${config.fallback_language}`);
-        newLanguage = config.fallback_language;
-        e.target.value = config.fallback_language;
+    const langCode = newLanguage.replace('_', '-').toLowerCase();
+    if (!(await isPackageAvailable(`luci-i18n-base-${langCode}`, 'luci'))) {
+    console.warn(`Base language package for ${langCode} not available, fallback to ${config.fallback_language}`);
+    newLanguage = config.fallback_language;
+    e.target.value = config.fallback_language;
     }
     
     selectedLanguage = newLanguage;
@@ -362,8 +364,9 @@ async function handleCustomLanguageChange(e) {
     let newLanguage = e.target.value;
     console.log(`Custom language changed from "${selectedLanguage}" to "${newLanguage}"`);
 
-    if (!(await isLanguageAvailable(newLanguage))) {
-        console.warn(`Language ${newLanguage} not available, fallback to ${config.fallback_language}`);
+    const langCode = newLanguage.replace('_', '-').toLowerCase();
+    if (!(await isPackageAvailable(`luci-i18n-base-${langCode}`, 'luci'))) {
+        console.warn(`Base language package for ${langCode} not available, fallback to ${config.fallback_language}`);
         newLanguage = config.fallback_language;
         e.target.value = config.fallback_language;
     }
