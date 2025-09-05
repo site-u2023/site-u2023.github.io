@@ -12,6 +12,7 @@ let formStructure = {};
 let cachedApiInfo = null;
 let defaultFieldValues = {}; // デフォルト値保存用
 let dynamicPackages = new Set(); // 動的パッケージ管理用
+let selectedLanguage = '';
 let languageDelegatedBound = false; // 言語セレクタの委任リスナーがバインド済みか
 
 // ==================== 初期化処理 ====================
