@@ -44,7 +44,10 @@ var config = {
 
   // LuCI OPKG 検索エンドポイント
   // opkg_search_url: "https://openwrt.org/packages/pkgdata/{pkg}"
-  opkg_search_url: "https://downloads.openwrt.org/releases/{version}/packages/{target}/{subtarget}/{feed}/Packages"
+  opkg_search_url: "https://downloads.openwrt.org/releases/{version}/packages/{target}/{subtarget}/{feed}/Packages",
+
+  // LuCI APK 検索エンドポイント
+  akp_search_url: "https://downloads.openwrt.org/snapshots/packages/{target}/{subtarget}/{feed}/package.adb"
 };
 
 // Language
