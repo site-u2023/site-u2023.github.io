@@ -46,6 +46,9 @@ var config = {
 // Language
 current_language = "en";
 
+// Fallback language
+fallback_language = "en";
+
 // カスタム機能の自動読み込み
 (function() {
   // custom.jsを動的に読み込み
