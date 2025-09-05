@@ -43,7 +43,7 @@
                     {"value": "no", "label": "Norsk (Norwegian)"},
                     {"value": "pl", "label": "Polski (Polish)"},
                     {"value": "pt", "label": "Português (Portuguese)"},
-                    {"value": "pt_br", "label": "Português do Brasil (Portuguese Brazil)"},
+                    {"value": "pt-br", "label": "Português do Brasil (Portuguese Brazil)"},
                     {"value": "ro", "label": "Română (Romanian)"},
                     {"value": "ru", "label": "Русский (Russian)"},
                     {"value": "sk", "label": "Slovenčina (Slovak)"},
@@ -51,8 +51,8 @@
                     {"value": "tr", "label": "Türkçe (Turkish)"},
                     {"value": "uk", "label": "Українська (Ukrainian)"},
                     {"value": "vi", "label": "Tiếng Việt (Vietnamese)"},
-                    {"value": "zh_cn", "label": "简体中文 (Chinese Simplified)"},
-                    {"value": "zh_tw", "label": "繁體中文 (Chinese Traditional)"}
+                    {"value": "zh-cn", "label": "简体中文 (Chinese Simplified)"},
+                    {"value": "zh-tw", "label": "繁體中文 (Chinese Traditional)"}
                   ]
                 },
                 {
