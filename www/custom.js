@@ -20,6 +20,11 @@ let selectedLanguage = ''; // 選択された言語
 const originalUpdateImages = window.updateImages;
 window.updateImages = function(version, mobj) {
     if (originalUpdateImages) originalUpdateImages(version, mobj);
+
+    // current_device をセット
+    isLanguageAvailable(current_language).then(avail => {
+        console.log(`Language ${current_language} available:`, avail);
+    });
     
     // パッケージリスト設定後にリサイズ
     if (mobj && "manifest" in mobj === false) {
@@ -285,18 +290,11 @@ async function isLanguageAvailable(langCode) {
         const packagesJsonUrl =
             `${config.image_url}/releases/${current_device.version}/packages/${current_device.target}/luci/Packages.json`;
 
-        console.log(`Checking: ${packagesJsonUrl}`);
-
         const resp = await fetch(packagesJsonUrl, { cache: 'no-store' });
-        if (!resp.ok) {
-            return false;
-        }
+        if (!resp.ok) return false;
 
         const data = await resp.json();
-        if (!Array.isArray(data.packages)) {
-            console.warn("Unexpected Packages.json format");
-            return false;
-        }
+        if (!Array.isArray(data.packages)) return false;
 
         return data.packages.some(p => p.Package === pkgName);
 
@@ -305,7 +303,6 @@ async function isLanguageAvailable(langCode) {
         return false;
     }
 }
-
 
 async function handleCustomLanguageChange(e) {
     const savedValues = preserveInputValues();
