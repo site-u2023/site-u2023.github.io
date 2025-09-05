@@ -48,7 +48,7 @@ var config = {
   opkg_search_url: "https://downloads.openwrt.org/releases/{version}/packages/{arch}/{feed}/Packages",
 
   // LuCI APK 検索エンドポイント
-  // sample: https://downloads.openwrt.org/snapshots/packages/aarch64_cortex-a53/packages/index.json
+  // https://downloads.openwrt.org/snapshots/packages/aarch64_cortex-a53/packages/index.json
   apk_search_url: "https://downloads.openwrt.org/snapshots/packages/{arch}/{feed}/index.json"
 };
 
