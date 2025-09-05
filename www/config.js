@@ -40,7 +40,10 @@ var config = {
   packages_db_url: "packages/packages.json",
 
   // setup.sh database URL
-  setup_db_url: "uci-defaults/setup.json"
+  setup_db_url: "uci-defaults/setup.json",
+
+  // LuCI OPKG 検索エンドポイント
+  opkg_search_url: "/cgi-bin/luci/admin/system/opkg?query={pkg}"
 };
 
 // Language
