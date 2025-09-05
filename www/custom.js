@@ -269,7 +269,6 @@ async function handleMainLanguageChange(e) {
         updateSetupJsonPackages();
         updatePackageListFromSelector();
         updateVariableDefinitions();
-
         restoreInputValues(savedValues);
     }, 50);
 }
@@ -322,7 +321,6 @@ async function handleCustomLanguageChange(e) {
         updateSetupJsonPackages();
         updatePackageListFromSelector();
         updateVariableDefinitions();
-
         restoreInputValues(savedValues);
     }, 50);
 }
