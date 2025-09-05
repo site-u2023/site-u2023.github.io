@@ -256,6 +256,19 @@ async function handleMainLanguageChange(e) {
     }, 50);
 }
 
+async function isLanguageAvailable(langCode) {
+    try {
+        const pkgName = `luci-i18n-base-${langCode}`;
+        const url = config.opkg_search_url.replace("{pkg}", encodeURIComponent(pkgName));
+        const resp = await fetch(url);
+        const text = await resp.text();
+        return text.includes(pkgName);
+    } catch (err) {
+        console.error('Language availability check failed:', err);
+        return false;
+    }
+}
+
 async function handleCustomLanguageChange(e) {
     let newLanguage = e.target.value;
     console.log(`Custom language changed from "${selectedLanguage}" to "${newLanguage}"`);
@@ -267,7 +280,14 @@ async function handleCustomLanguageChange(e) {
     }
 
     selectedLanguage = newLanguage;
-    
+
+    // メインフォーム側の言語セレクターと同期
+    const mainLanguageSelect = document.querySelector('#main-language');
+    if (mainLanguageSelect && mainLanguageSelect.value !== selectedLanguage) {
+        mainLanguageSelect.value = selectedLanguage;
+        console.log('Main language selector synced');
+    }
+
     updateLanguagePackageImmediate();
     setTimeout(() => {
         updateSetupJsonPackages();
