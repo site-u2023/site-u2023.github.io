@@ -12,7 +12,7 @@ let formStructure = {};
 let cachedApiInfo = null;
 let defaultFieldValues = {}; // デフォルト値保存用
 let dynamicPackages = new Set(); // 動的パッケージ管理用
-let selectedLanguage = ''; // 選択された言語
+let languageDelegatedBound = false; // 言語セレクタの委任リスナーがバインド済みか
 
 // ==================== 初期化処理 ====================
 
@@ -21,7 +21,8 @@ const originalUpdateImages = window.updateImages;
 window.updateImages = function(version, mobj) {
     if (originalUpdateImages) originalUpdateImages(version, mobj);
 
-    // current_device をセット
+    // current_device が元コード側で確定済みかの確認と可用性チェック
+    console.log('current_device after originalUpdateImages:', current_device);
     isLanguageAvailable(current_language).then(avail => {
         console.log(`Language ${current_language} available:`, avail);
     });
@@ -164,7 +165,7 @@ function reinitializeFeatures() {
     
     console.log('reinitializeFeatures called');
     
-    // 言語セレクター設定を最初に実行（DOM再生成対応）
+    // 言語セレクター設定（初期値の取り直しと同期・即時反映のみ
     const mainLanguageSelect = document.querySelector('#languages-select');
     if (mainLanguageSelect) {
         mainLanguageSelect.removeEventListener('change', handleMainLanguageChange);
@@ -203,6 +204,22 @@ function extractLanguagesFromHTML() {
     return languages;
 }
 
+// 言語セレクターの委任リスナーを一度だけバインド
+function ensureLanguageDelegatedListeners() {
+    if (languageDelegatedBound) return;
+    document.addEventListener('change', async (e) => {
+        const t = e.target;
+        if (!t) return;
+        if (t.id === 'languages-select') {
+            await handleMainLanguageChange(e);
+        } else if (t.id === 'aios-language') {
+            await handleCustomLanguageChange(e);
+        }
+    }, true); // capture=true で差し替え直後でも確実に拾う
+    languageDelegatedBound = true;
+    console.log('Language delegated listeners bound');
+}
+
 function setupLanguageSelector() {
     console.log('setupLanguageSelector called');
     
@@ -214,25 +231,14 @@ function setupLanguageSelector() {
         selectedLanguage = current_language || 'en';
     }
     console.log('Initial selected language:', selectedLanguage);
-    
-    // メインの言語セレクター監視を設定
-    if (mainLanguageSelect) {
-        // 既存のリスナーを削除
-        mainLanguageSelect.removeEventListener('change', handleMainLanguageChange);
-        // 新しいリスナーを追加
-        mainLanguageSelect.addEventListener('change', handleMainLanguageChange);
-        
-        console.log('Main language selector listener attached');
-    }
-    
-    // カスタムフォーム内の言語セレクター設定
+
+    // イベントは委任で一度だけ張る
+    ensureLanguageDelegatedListeners();
+
+    // カスタムフォーム内の言語セレクターを同期
     const customLanguageSelect = document.querySelector('#aios-language');
     if (customLanguageSelect) {
-        // 既存のリスナーを削除
-        customLanguageSelect.removeEventListener('change', handleCustomLanguageChange);
-        // 新しいリスナーを追加
-        customLanguageSelect.addEventListener('change', handleCustomLanguageChange);
-        
+
         // メインセレクターと同期
         if (selectedLanguage && customLanguageSelect.value !== selectedLanguage) {
             customLanguageSelect.value = selectedLanguage;
