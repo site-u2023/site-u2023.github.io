@@ -719,11 +719,6 @@ function updateLanguagePackageImmediate() {
     }
 }
 
-// 修正されたupdateLanguagePackage関数（後方互換性のため残す）
-function updateLanguagePackage() {
-    updateLanguagePackageImmediate();
-}
-
 function getCurrentPackageListExcludingLanguages() {
     const packages = new Set();
     
