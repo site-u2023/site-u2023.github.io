@@ -296,30 +296,48 @@ async function handleMainLanguageChange(e) {
     }, 50);
 }
 
-// 言語パッケージ存在チェック（公式 Packages）
+// 言語パッケージ存在チェック（opkg / apk 両対応）
 async function isLanguageAvailable(langCode) {
     try {
-        if (!current_device?.version || !current_device?.target || !current_device?.subtarget) {
+        if (!current_device?.version || !current_device?.target) {
             console.warn("current_device not set:", current_device);
             return false;
         }
 
         const pkgName = `luci-i18n-base-${langCode}`;
+        let packagesUrl;
 
-        // config のテンプレートから存在確認 URL を生成
-        const packagesUrl = config.opkg_search_url
-            .replace('{version}', current_device.version)
-            .replace('{target}', current_device.target)
-            .replace('{subtarget}', current_device.subtarget);
+        // SNAPSHOT（apk）判定
+        if (current_device.version.includes('SNAPSHOT') && config.apk_search_url) {
+            packagesUrl = config.apk_search_url
+                .replace('{target}', current_device.target) // target_subtarget 一体型
+                .replace('{feed}', 'luci');
 
-        const resp = await fetch(packagesUrl, { cache: 'no-store' });
-        if (!resp.ok) {
-            console.warn(`Packages file not found: ${packagesUrl}`);
-            return false;
+            const resp = await fetch(packagesUrl, { cache: 'no-store' });
+            if (!resp.ok) {
+                console.warn(`APK index.json not found: ${packagesUrl}`);
+                return false;
+            }
+
+            const data = await resp.json();
+            return Array.isArray(data.packages) &&
+                   data.packages.some(p => p.name === pkgName);
+
+        } else {
+            packagesUrl = config.opkg_search_url
+                .replace('{version}', current_device.version)
+                .replace('{target}', current_device.target) // target_subtarget 一体型
+                .replace('{feed}', 'luci');
+
+            const resp = await fetch(packagesUrl, { cache: 'no-store' });
+            if (!resp.ok) {
+                console.warn(`Packages file not found: ${packagesUrl}`);
+                return false;
+            }
+
+            const text = await resp.text();
+            return text.split('\n').some(line => line.trim() === `Package: ${pkgName}`);
         }
-
-        const text = await resp.text();
-        return text.split('\n').some(line => line.trim() === `Package: ${pkgName}`);
 
     } catch (err) {
         console.error('Language availability check failed:', err);
