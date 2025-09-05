@@ -218,9 +218,9 @@ async function handleMainLanguageChange(e) {
     console.log(`Main language changed from "${selectedLanguage}" to "${newLanguage}"`);
 
     if (!(await isLanguageAvailable(newLanguage))) {
-        console.warn(`Language ${newLanguage} not available, fallback to ${config.current_language}`);
-        newLanguage = config.current_language;
-        e.target.value = config.current_language;
+        console.warn(`Language ${newLanguage} not available, fallback to ${config.fallback_language}`);
+        newLanguage = config.fallback_language;
+        e.target.value = config.fallback_language;
     }
     
     selectedLanguage = newLanguage;
@@ -245,9 +245,9 @@ async function handleCustomLanguageChange(e) {
     console.log(`Custom language changed from "${selectedLanguage}" to "${newLanguage}"`);
 
     if (!(await isLanguageAvailable(newLanguage))) {
-        console.warn(`Language ${newLanguage} not available, fallback to ${config.current_language}`);
-        newLanguage = config.current_language;
-        e.target.value = config.current_language;
+        console.warn(`Language ${newLanguage} not available, fallback to ${config.fallback_language}`);
+        newLanguage = config.fallback_language;
+        e.target.value = config.fallback_language;
     }
 
     selectedLanguage = newLanguage;
