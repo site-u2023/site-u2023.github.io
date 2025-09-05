@@ -164,8 +164,19 @@ function reinitializeFeatures() {
     
     console.log('reinitializeFeatures called');
     
-    // 言語セレクター設定を最初に実行
-    setupLanguageSelector();
+    // 言語セレクター設定を最初に実行（DOM再生成対応）
+    const mainLanguageSelect = document.querySelector('#languages-select');
+    if (mainLanguageSelect) {
+        mainLanguageSelect.removeEventListener('change', handleMainLanguageChange);
+        mainLanguageSelect.addEventListener('change', handleMainLanguageChange);
+    }
+    const customLanguageSelect = document.querySelector('#aios-language');
+    if (customLanguageSelect) {
+        customLanguageSelect.removeEventListener('change', handleCustomLanguageChange);
+        customLanguageSelect.addEventListener('change', handleCustomLanguageChange);
+    }
+    // 初回と同じく即時反映
+    updateLanguagePackageImmediate();
     
     setupEventListeners();
     
