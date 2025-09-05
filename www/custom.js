@@ -214,7 +214,7 @@ function setupLanguageSelector() {
 }
 
 async function handleMainLanguageChange(e) {
-    const newLanguage = e.target.value;
+    let newLanguage = e.target.value;
     console.log(`Main language changed from "${selectedLanguage}" to "${newLanguage}"`);
 
     if (!(await isLanguageAvailable(newLanguage))) {
@@ -232,10 +232,7 @@ async function handleMainLanguageChange(e) {
         console.log('Custom language selector synced');
     }
     
-    // 言語パッケージを即座に更新
     updateLanguagePackageImmediate();
-    
-    // その後、他のパッケージも更新
     setTimeout(() => {
         updateSetupJsonPackages();
         updatePackageListFromSelector();
@@ -243,11 +240,11 @@ async function handleMainLanguageChange(e) {
     }, 50);
 }
 
-function handleCustomLanguageChange(e) {
-    const newLanguage = e.target.value;
+async function handleCustomLanguageChange(e) {
+    let newLanguage = e.target.value;
     console.log(`Custom language changed from "${selectedLanguage}" to "${newLanguage}"`);
 
-    if (!isLanguageAvailable(newLanguage)) {
+    if (!(await isLanguageAvailable(newLanguage))) {
         console.warn(`Language ${newLanguage} not available, fallback to en`);
         newLanguage = 'en';
         e.target.value = 'en';
@@ -259,17 +256,12 @@ function handleCustomLanguageChange(e) {
     const mainLanguageSelect = document.querySelector('#languages-select');
     if (mainLanguageSelect && mainLanguageSelect.value !== selectedLanguage) {
         mainLanguageSelect.value = selectedLanguage;
-        
-        // メインセレクターの変更イベントを発火（翻訳処理のため）
         const changeEvent = new Event('change');
         mainLanguageSelect.dispatchEvent(changeEvent);
         console.log('Main language selector synced and event dispatched');
     }
     
-    // 言語パッケージを即座に更新
     updateLanguagePackageImmediate();
-    
-    // その後、他のパッケージも更新
     setTimeout(() => {
         updateSetupJsonPackages();
         updatePackageListFromSelector();
