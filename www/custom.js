@@ -170,6 +170,22 @@ function reinitializeFeatures() {
 }
 
 // ==================== 言語セレクター設定 ====================
+function extractLanguagesFromHTML() {
+    const select = document.querySelector('#languages-select');
+    if (!select) {
+        console.warn('languages-select not found');
+        return [];
+    }
+
+    const options = Array.from(select.querySelectorAll('option'));
+    const languages = options.map(opt => ({
+        value: opt.value,
+        label: opt.textContent
+    }));
+
+    console.log('Extracted languages from HTML:', languages.length);
+    return languages;
+}
 
 function setupLanguageSelector() {
     console.log('setupLanguageSelector called');
