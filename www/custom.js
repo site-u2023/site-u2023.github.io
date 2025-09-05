@@ -87,12 +87,16 @@ async function initializeCustomFeatures(asuSection, temp) {
         fetchAndDisplayIspInfo()
     ]);
     
-    // 依存関係のある初期化
+    // 依存関係のある初期化（順序重要）
     setupEventListeners();
     loadUciDefaultsTemplate();
     initDeviceTranslation();
+    
+    // 言語セレクター設定（パッケージ処理の前に実行）
+    setupLanguageSelector();
+    
+    // フォーム監視設定
     setupFormWatchers();
-    setupLanguageSelector(); // 言語セレクター設定を追加
     
     customInitialized = true;
 }
@@ -153,8 +157,13 @@ function cleanupExistingCustomElements() {
 function reinitializeFeatures() {
     if (!document.querySelector('#asu')) return;
     
+    console.log('reinitializeFeatures called');
+    
+    // 言語セレクター設定を最初に実行
+    setupLanguageSelector();
+    
     setupEventListeners();
-    setupLanguageSelector(); // 言語セレクター再設定を追加
+    
     if (PACKAGE_DB) generatePackageSelector();
     fetchAndDisplayIspInfo();
     if (cachedApiInfo) updateAutoConnectionInfo(cachedApiInfo);
@@ -165,21 +174,31 @@ function reinitializeFeatures() {
 function setupLanguageSelector() {
     console.log('setupLanguageSelector called');
     
-    // メインの言語セレクター（ヘッダー）
+    // 現在の言語を正確に取得
     const mainLanguageSelect = document.querySelector('#languages-select');
     if (mainLanguageSelect) {
+        selectedLanguage = mainLanguageSelect.value || current_language || 'en';
+    } else {
+        selectedLanguage = current_language || 'en';
+    }
+    console.log('Initial selected language:', selectedLanguage);
+    
+    // メインの言語セレクター監視を設定
+    if (mainLanguageSelect) {
+        // 既存のリスナーを削除
         mainLanguageSelect.removeEventListener('change', handleMainLanguageChange);
+        // 新しいリスナーを追加
         mainLanguageSelect.addEventListener('change', handleMainLanguageChange);
         
-        // 現在の選択値を取得
-        selectedLanguage = mainLanguageSelect.value || current_language || 'en';
-        console.log('Main language selector initialized:', selectedLanguage);
+        console.log('Main language selector listener attached');
     }
     
-    // カスタムフォーム内の言語セレクター
+    // カスタムフォーム内の言語セレクター設定
     const customLanguageSelect = document.querySelector('#aios-language');
     if (customLanguageSelect) {
+        // 既存のリスナーを削除
         customLanguageSelect.removeEventListener('change', handleCustomLanguageChange);
+        // 新しいリスナーを追加
         customLanguageSelect.addEventListener('change', handleCustomLanguageChange);
         
         // メインセレクターと同期
@@ -187,31 +206,42 @@ function setupLanguageSelector() {
             customLanguageSelect.value = selectedLanguage;
         }
         
-        console.log('Custom language selector initialized:', customLanguageSelect.value);
+        console.log('Custom language selector initialized and synced');
     }
     
-    // 初回パッケージリスト更新
-    updatePackageListFromDynamicSources();
+    // 初回言語パッケージ更新（重要：最初に実行）
+    updateLanguagePackageImmediate();
 }
 
 function handleMainLanguageChange(e) {
-    selectedLanguage = e.target.value;
-    console.log('Main language changed to:', selectedLanguage);
+    const newLanguage = e.target.value;
+    console.log(`Main language changed from "${selectedLanguage}" to "${newLanguage}"`);
+    
+    selectedLanguage = newLanguage;
     
     // カスタムフォーム内の言語セレクターと同期
     const customLanguageSelect = document.querySelector('#aios-language');
     if (customLanguageSelect && customLanguageSelect.value !== selectedLanguage) {
         customLanguageSelect.value = selectedLanguage;
+        console.log('Custom language selector synced');
     }
     
-    // パッケージリスト更新
-    updatePackageListFromDynamicSources();
-    updateVariableDefinitions();
+    // 言語パッケージを即座に更新
+    updateLanguagePackageImmediate();
+    
+    // その後、他のパッケージも更新
+    setTimeout(() => {
+        updateSetupJsonPackages();
+        updatePackageListFromSelector();
+        updateVariableDefinitions();
+    }, 50);
 }
 
 function handleCustomLanguageChange(e) {
-    selectedLanguage = e.target.value;
-    console.log('Custom language changed to:', selectedLanguage);
+    const newLanguage = e.target.value;
+    console.log(`Custom language changed from "${selectedLanguage}" to "${newLanguage}"`);
+    
+    selectedLanguage = newLanguage;
     
     // メインの言語セレクターと同期
     const mainLanguageSelect = document.querySelector('#languages-select');
@@ -221,11 +251,18 @@ function handleCustomLanguageChange(e) {
         // メインセレクターの変更イベントを発火（翻訳処理のため）
         const changeEvent = new Event('change');
         mainLanguageSelect.dispatchEvent(changeEvent);
+        console.log('Main language selector synced and event dispatched');
     }
     
-    // パッケージリスト更新
-    updatePackageListFromDynamicSources();
-    updateVariableDefinitions();
+    // 言語パッケージを即座に更新
+    updateLanguagePackageImmediate();
+    
+    // その後、他のパッケージも更新
+    setTimeout(() => {
+        updateSetupJsonPackages();
+        updatePackageListFromSelector();
+        updateVariableDefinitions();
+    }, 50);
 }
 
 // ==================== setup.json 処理 ====================
@@ -564,8 +601,10 @@ function handleRadioChange(e) {
         }
     }
     
-    // パッケージリストを更新
-    updatePackageListFromDynamicSources();
+    // パッケージリストを段階的に更新
+    updateSetupJsonPackages();
+    updateLanguagePackageImmediate();
+    updatePackageListFromSelector();
     updateVariableDefinitions();
 }
 
@@ -574,11 +613,11 @@ function handleRadioChange(e) {
 function updatePackageListFromDynamicSources() {
     console.log('updatePackageListFromDynamicSources called');
     
-    // 言語パッケージの処理
-    updateLanguagePackage();
-    
-    // setup.jsonのpackages要素の処理
+    // setup.jsonのpackages要素の処理を先に実行
     updateSetupJsonPackages();
+    
+    // 言語パッケージの処理は後で実行
+    updateLanguagePackageImmediate();
     
     // メインのパッケージリスト更新
     updatePackageListFromSelector();
@@ -586,36 +625,45 @@ function updatePackageListFromDynamicSources() {
     console.log('Dynamic packages updated:', Array.from(dynamicPackages));
 }
 
-function updateLanguagePackage() {
-    // 全ての既存言語パッケージを削除（dynamicPackagesとテキストエリアの両方から）
+// 言語パッケージの即座更新
+function updateLanguagePackageImmediate() {
+    console.log('updateLanguagePackageImmediate called, selectedLanguage:', selectedLanguage);
+    
+    // 既存の言語パッケージをdynamicPackagesから削除
+    const languagePackagesToRemove = [];
+    for (const pkg of dynamicPackages) {
+        if (pkg.startsWith('luci-i18n-')) {
+            languagePackagesToRemove.push(pkg);
+        }
+    }
+    
+    languagePackagesToRemove.forEach(pkg => {
+        dynamicPackages.delete(pkg);
+        console.log(`Removed language package from dynamics: ${pkg}`);
+    });
+    
+    // テキストエリアからも言語パッケージを削除
     const textarea = document.querySelector('#asu-packages');
     if (textarea) {
         const currentPackages = split(textarea.value);
         const filteredPackages = currentPackages.filter(pkg => !pkg.startsWith('luci-i18n-'));
         textarea.value = filteredPackages.join(' ');
+        console.log('Removed language packages from textarea');
     }
-    
-    // dynamicPackagesからも削除
-    const toDelete = [];
-    for (const pkg of dynamicPackages) {
-        if (pkg.startsWith('luci-i18n-')) {
-            toDelete.push(pkg);
-        }
-    }
-    toDelete.forEach(pkg => {
-        dynamicPackages.delete(pkg);
-        console.log(`Removed language package: ${pkg}`);
-    });
     
     // 新しい言語パッケージを追加（英語以外の場合）
     if (selectedLanguage && selectedLanguage !== 'en') {
         const langCode = selectedLanguage.replace('_', '-').toLowerCase();
+        console.log(`Adding language packages for: ${langCode}`);
         
         // 現在のパッケージリストを取得（言語パッケージを除く）
         const currentPackages = getCurrentPackageListExcludingLanguages();
+        console.log('Current packages (excluding language):', currentPackages.length);
         
         // luciパッケージを検出して対応する言語パッケージを追加
         const luciPackages = findLuciPackages(currentPackages);
+        console.log('Found LuCI packages:', luciPackages);
+        
         luciPackages.forEach(luciPkg => {
             const languagePackage = `luci-i18n-${luciPkg}-${langCode}`;
             dynamicPackages.add(languagePackage);
@@ -626,7 +674,16 @@ function updateLanguagePackage() {
         const baseLanguagePackage = `luci-i18n-base-${langCode}`;
         dynamicPackages.add(baseLanguagePackage);
         console.log(`Added base language package: ${baseLanguagePackage}`);
+        
+        console.log(`Total language packages added: ${luciPackages.length + 1}`);
+    } else {
+        console.log('English selected or no language, no language packages added');
     }
+}
+
+// 修正されたupdateLanguagePackage関数（後方互換性のため残す）
+function updateLanguagePackage() {
+    updateLanguagePackageImmediate();
 }
 
 function getCurrentPackageListExcludingLanguages() {
@@ -1159,8 +1216,10 @@ function handleConnectionTypeChange(e) {
         }
     });
     
-    // 動的パッケージ更新
-    updatePackageListFromDynamicSources();
+    // パッケージ更新を段階的に実行
+    updateSetupJsonPackages();
+    updateLanguagePackageImmediate();
+    updatePackageListFromSelector();
     updateVariableDefinitions();
 }
 
@@ -1183,8 +1242,10 @@ function handleNetOptimizerChange(e) {
         }
     });
     
-    // 動的パッケージ更新
-    updatePackageListFromDynamicSources();
+    // パッケージ更新を段階的に実行
+    updateSetupJsonPackages();
+    updateLanguagePackageImmediate();
+    updatePackageListFromSelector();
     updateVariableDefinitions();
 }
 
@@ -1231,8 +1292,10 @@ function handleWifiModeChange(e) {
         }
     }
     
-    // 動的パッケージ更新
-    updatePackageListFromDynamicSources();
+    // パッケージ更新を段階的に実行
+    updateSetupJsonPackages();
+    updateLanguagePackageImmediate();
+    updatePackageListFromSelector();
     updateVariableDefinitions();
 }
 
@@ -1610,6 +1673,8 @@ function handlePackageSelection(e) {
         updateVariableDefinitions();
     }
     
+    // パッケージ選択変更時も言語パッケージを更新
+    updateLanguagePackageImmediate();
     updatePackageListFromSelector();
 }
 
