@@ -46,7 +46,7 @@ var config = {
   opkg_search_url: "/cgi-bin/luci/admin/system/opkg?query={pkg}",
 
   // Fallback language
-  fallback_language = "en";
+  fallback_language: "en";
 };
 
 // Language
