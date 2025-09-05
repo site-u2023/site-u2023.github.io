@@ -296,7 +296,7 @@ async function handleMainLanguageChange(e) {
     }, 50);
 }
 
-// 言語パッケージ存在チェック（公式 Packages.json）
+// 言語パッケージ存在チェック（公式 Packages）
 async function isLanguageAvailable(langCode) {
     try {
         if (!current_device?.version || !current_device?.target) {
@@ -305,16 +305,20 @@ async function isLanguageAvailable(langCode) {
         }
 
         const pkgName = `luci-i18n-base-${langCode}`;
-        const packagesJsonUrl =
-            `${config.image_url}/releases/${current_device.version}/packages/${current_device.target}/luci/Packages.json`;
+        const packagesUrl =
+            `${config.image_url}/releases/${current_device.version}/packages/${current_device.target}/luci/Packages`;
 
-        const resp = await fetch(packagesJsonUrl, { cache: 'no-store' });
-        if (!resp.ok) return false;
+        const resp = await fetch(packagesUrl, { cache: 'no-store' });
+        if (!resp.ok) {
+            console.warn(`Packages file not found: ${packagesUrl}`);
+            return false;
+        }
 
-        const data = await resp.json();
-        if (!Array.isArray(data.packages)) return false;
-
-        return data.packages.some(p => p.Package === pkgName);
+        const text = await resp.text();
+        // Packages ファイルは空行区切りのパッケージ情報
+        // "Package: <name>" 行を探す
+        const found = text.split('\n').some(line => line.trim() === `Package: ${pkgName}`);
+        return found;
 
     } catch (err) {
         console.error('Language availability check failed:', err);
