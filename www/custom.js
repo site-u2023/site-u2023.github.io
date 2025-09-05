@@ -1900,7 +1900,7 @@ function initDeviceTranslation() {
     } else if (select.querySelector(`[value="${short}"]`)) {
         select.value = short;
     } else {
-        select.value = current_language;
+        select.value = window.current_language || 'en';
     }
 }
 
