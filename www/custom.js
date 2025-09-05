@@ -15,20 +15,36 @@ let dynamicPackages = new Set(); // 動的パッケージ管理用
 let selectedLanguage = '';
 let languageDelegatedBound = false; // 言語セレクタの委任リスナーがバインド済みか
 
-// ==================== 初期化処理 ====================
+// ==================== アーキテクチャ解決関数 ====================
+async function getArchForCurrentDevice() {
+    // current_deviceに保存されているarch_packagesを返す
+    if (!current_device?.arch) {
+        console.warn('current_device.arch not available');
+        return null;
+    }
+    return current_device.arch;
+}
 
+// ==================== 初期化処理 ====================
 // 元の updateImages をフック
 const originalUpdateImages = window.updateImages;
 window.updateImages = function(version, mobj) {
     if (originalUpdateImages) originalUpdateImages(version, mobj);
 
-    // current_device が元コード側で確定済みかの確認と可用性チェック
-    const langCode = (current_language || 'en').replace('_', '-').toLowerCase();
-    isPackageAvailable(`luci-i18n-base-${langCode}`, 'luci').then(avail => {
-    console.log(`Base language package for ${langCode} available:`, avail);
-    });
+    // arch_packagesをcurrent_deviceに保存（重要！）
+    if (mobj && mobj.arch_packages && current_device) {
+        current_device.arch = mobj.arch_packages;
+        console.log('Architecture saved to current_device:', current_device.arch);
+    }
 
-    
+    // current_device が元コード側で確定済みかの確認と可用性チェック
+    if (current_device?.arch) {
+        const langCode = (current_language || 'en').replace('_', '-').toLowerCase();
+        isPackageAvailable(`luci-i18n-base-${langCode}`, 'luci').then(avail => {
+            console.log(`Base language package for ${langCode} available:`, avail);
+        });
+    }
+
     // パッケージリスト設定後にリサイズ
     if (mobj && "manifest" in mobj === false) {
         setTimeout(() => resizePostinstTextarea(), 100);
@@ -317,7 +333,7 @@ async function isPackageAvailable(pkgName, feed) {
             return false;
         }
 
-        const arch = await getArchForCurrentDevice?.();
+        const arch = await getArchForCurrentDevice();
         if (!arch) {
             console.warn("arch resolve failed for target:", current_device.target);
             return false;
