@@ -299,14 +299,18 @@ async function handleMainLanguageChange(e) {
 // 言語パッケージ存在チェック（公式 Packages）
 async function isLanguageAvailable(langCode) {
     try {
-        if (!current_device?.version || !current_device?.target) {
+        if (!current_device?.version || !current_device?.target || !current_device?.subtarget) {
             console.warn("current_device not set:", current_device);
             return false;
         }
 
         const pkgName = `luci-i18n-base-${langCode}`;
-        const packagesUrl =
-            `${config.image_url}/releases/${current_device.version}/packages/${current_device.target}/luci/Packages`;
+
+        // config のテンプレートから存在確認 URL を生成
+        const packagesUrl = config.opkg_search_url
+            .replace('{version}', current_device.version)
+            .replace('{target}', current_device.target)
+            .replace('{subtarget}', current_device.subtarget);
 
         const resp = await fetch(packagesUrl, { cache: 'no-store' });
         if (!resp.ok) {
@@ -315,10 +319,7 @@ async function isLanguageAvailable(langCode) {
         }
 
         const text = await resp.text();
-        // Packages ファイルは空行区切りのパッケージ情報
-        // "Package: <name>" 行を探す
-        const found = text.split('\n').some(line => line.trim() === `Package: ${pkgName}`);
-        return found;
+        return text.split('\n').some(line => line.trim() === `Package: ${pkgName}`);
 
     } catch (err) {
         console.error('Language availability check failed:', err);
