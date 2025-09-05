@@ -31,17 +31,22 @@ const originalUpdateImages = window.updateImages;
 window.updateImages = function(version, mobj) {
     if (originalUpdateImages) originalUpdateImages(version, mobj);
 
+    // デバッグ：mobjの内容を確認
+    console.log('updateImages called with mobj:', mobj);
+    if (mobj) {
+        console.log('mobj.arch_packages:', mobj.arch_packages);
+        console.log('current_device before:', current_device);
+    }
+
     // arch_packagesをcurrent_deviceに保存（重要！）
     if (mobj && mobj.arch_packages && current_device) {
         current_device.arch = mobj.arch_packages;
         console.log('Architecture saved to current_device:', current_device.arch);
-    }
-
-    // current_device が元コード側で確定済みかの確認と可用性チェック
-    if (current_device?.arch) {
-        const langCode = (current_language || 'en').replace('_', '-').toLowerCase();
-        isPackageAvailable(`luci-i18n-base-${langCode}`, 'luci').then(avail => {
-            console.log(`Base language package for ${langCode} available:`, avail);
+    } else {
+        console.log('Failed to save arch:', {
+            hasMobj: !!mobj,
+            hasArchPackages: !!(mobj && mobj.arch_packages),
+            hasCurrentDevice: !!current_device
         });
     }
 
@@ -243,12 +248,22 @@ function setupLanguageSelector() {
     
     // 現在の言語を正確に取得（フォールバック付き）
     const mainLanguageSelect = document.querySelector('#languages-select');
+    console.log('mainLanguageSelect value:', mainLanguageSelect?.value);
+    console.log('current_language:', current_language);
+    console.log('config.default_language:', config?.default_language);
+    
     if (mainLanguageSelect && mainLanguageSelect.value) {
         selectedLanguage = mainLanguageSelect.value;
     } else if (current_language) {
         selectedLanguage = current_language;
     } else {
-        selectedLanguage = config.default_language || 'en';
+        selectedLanguage = 'en'; // ハードコードされたフォールバック
+    }
+    
+    // selectedLanguageが空やundefinedの場合の追加チェック
+    if (!selectedLanguage || selectedLanguage === 'undefined') {
+        selectedLanguage = 'en';
+        console.warn('selectedLanguage was empty/undefined, forced to en');
     }
     
     console.log('Initial selected language:', selectedLanguage);
@@ -380,6 +395,14 @@ async function handleCustomLanguageChange(e) {
     const savedValues = preserveInputValues();
 
     let newLanguage = e.target.value;
+
+    // 空の値やundefinedを防ぐ
+    if (!newLanguage || newLanguage === 'undefined' || newLanguage === '') {
+        console.warn('Invalid language value:', newLanguage, 'using fallback');
+        newLanguage = 'en';
+        e.target.value = 'en';
+    }
+    
     console.log(`Custom language changed from "${selectedLanguage}" to "${newLanguage}"`);
 
     const langCode = newLanguage.replace('_', '-').toLowerCase();
