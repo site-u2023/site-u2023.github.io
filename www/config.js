@@ -48,14 +48,14 @@ var config = {
   opkg_search_url: "https://downloads.openwrt.org/releases/{version}/packages/{arch}/{feed}/Packages",
   // LuCI APK 検索エンドポイント
   // https://downloads.openwrt.org/snapshots/packages/aarch64_cortex-a53/packages/index.json
-  apk_search_url: "https://downloads.openwrt.org/snapshots/packages/{arch}/{feed}/index.json"
+  apk_search_url: "https://downloads.openwrt.org/snapshots/packages/{arch}/{feed}/index.json",
+  
+  // フォールバック言語（重要！）
+  fallback_language: "en"
 };
 
 // Language
 current_language = "en";
-
-// Fallback language
-fallback_language = "en";
 
 // カスタム機能の自動読み込み
 (function() {
