@@ -251,6 +251,13 @@ async function handleCustomLanguageChange(e) {
     }
 
     selectedLanguage = newLanguage;
+
+    // ▼ 新規：メインの言語ボタンのテキストを直接更新
+    const customOption = e.target.options[e.target.selectedIndex];
+    const languagesButton = document.querySelector("#languages-button");
+    if (languagesButton && customOption) {
+        languagesButton.textContent = customOption.text.replace(/ \(.*/, "");
+    }
     
     // メインの言語セレクターと同期
     const mainLanguageSelect = document.querySelector('#languages-select');
@@ -1927,6 +1934,22 @@ function hookOriginalFunctions() {
     if (typeof setup_uci_defaults === 'function' && !originalSetupUciDefaults) {
         originalSetupUciDefaults = setup_uci_defaults;
         window.setup_uci_defaults = customSetupUciDefaults;
+    }
+
+    const mainLanguageSelect = document.querySelector("#languages-select");
+    if (mainLanguageSelect) {
+        mainLanguageSelect.onchange = function () {
+            const select = this;
+            const option = select.options[select.selectedIndex];
+
+            if (option) {
+                document.querySelector("#languages-button").textContent = option.text.replace(/ \(.*/, "");
+                translate(option.value);
+            } else if (select.value) {
+                translate(select.value);
+            }
+        };
+        mainLanguageSelect.onchange();
     }
 }
 
