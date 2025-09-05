@@ -268,15 +268,6 @@ async function handleCustomLanguageChange(e) {
 
     selectedLanguage = newLanguage;
     
-    // メインの言語セレクターと同期
-    const mainLanguageSelect = document.querySelector('#languages-select');
-    if (mainLanguageSelect && mainLanguageSelect.value !== selectedLanguage) {
-        mainLanguageSelect.value = selectedLanguage;
-        const changeEvent = new Event('change');
-        mainLanguageSelect.dispatchEvent(changeEvent);
-        console.log('Main language selector synced and event dispatched');
-    }
-    
     updateLanguagePackageImmediate();
     setTimeout(() => {
         updateSetupJsonPackages();
