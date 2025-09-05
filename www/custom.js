@@ -213,9 +213,15 @@ function setupLanguageSelector() {
     updateLanguagePackageImmediate();
 }
 
-function handleMainLanguageChange(e) {
+async function handleMainLanguageChange(e) {
     const newLanguage = e.target.value;
     console.log(`Main language changed from "${selectedLanguage}" to "${newLanguage}"`);
+
+    if (!(await isLanguageAvailable(newLanguage))) {
+        console.warn(`Language ${newLanguage} not available, fallback to en`);
+        newLanguage = 'en';
+        e.target.value = 'en';
+    }
     
     selectedLanguage = newLanguage;
     
@@ -240,7 +246,13 @@ function handleMainLanguageChange(e) {
 function handleCustomLanguageChange(e) {
     const newLanguage = e.target.value;
     console.log(`Custom language changed from "${selectedLanguage}" to "${newLanguage}"`);
-    
+
+    if (!isLanguageAvailable(newLanguage)) {
+        console.warn(`Language ${newLanguage} not available, fallback to en`);
+        newLanguage = 'en';
+        e.target.value = 'en';
+    }
+
     selectedLanguage = newLanguage;
     
     // メインの言語セレクターと同期
@@ -263,6 +275,15 @@ function handleCustomLanguageChange(e) {
         updatePackageListFromSelector();
         updateVariableDefinitions();
     }, 50);
+}
+
+async function isLanguageAvailable(lang) {
+    try {
+        const resp = await fetch(`langs/${lang}.json`, { method: 'HEAD' });
+        return resp.ok;
+    } catch (err) {
+        return false;
+    }
 }
 
 // ==================== setup.json 処理 ====================
