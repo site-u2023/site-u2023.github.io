@@ -13,6 +13,7 @@ let cachedApiInfo = null;
 let defaultFieldValues = {}; // デフォルト値保存用
 let dynamicPackages = new Set(); // 動的パッケージ管理用
 let selectedLanguage = ''; // 選択された言語
+let languageUpdateInProgress = false; // 言語更新中フラグ
 
 // ==================== 初期化処理 ====================
 
@@ -93,7 +94,7 @@ async function initializeCustomFeatures(asuSection, temp) {
     initDeviceTranslation();
     
     // 言語セレクター設定（パッケージ処理の前に実行）
-    setupLanguageSelector();
+    LanguageManager.init();
     
     // フォーム監視設定
     setupFormWatchers();
@@ -160,7 +161,7 @@ function reinitializeFeatures() {
     console.log('reinitializeFeatures called');
     
     // 言語セレクター設定を最初に実行
-    setupLanguageSelector();
+    LanguageManager.init();
     
     setupEventListeners();
     
@@ -187,91 +188,137 @@ function extractLanguagesFromHTML() {
     return languages;
 }
 
-function setupLanguageSelector() {
-    console.log('setupLanguageSelector called');
-    
-    // 現在の言語を正確に取得
-    const mainLanguageSelect = document.querySelector('#languages-select');
-    if (mainLanguageSelect) {
-        selectedLanguage = mainLanguageSelect.value || current_language || 'en';
-    } else {
-        selectedLanguage = current_language || 'en';
-    }
-    console.log('Initial selected language:', selectedLanguage);
-    
-    // メインの言語セレクター監視を設定
-    if (mainLanguageSelect) {
-        // 既存のリスナーを削除
-        mainLanguageSelect.removeEventListener('change', handleMainLanguageChange);
-        // 新しいリスナーを追加
-        mainLanguageSelect.addEventListener('change', handleMainLanguageChange);
+// 統合言語管理システム（新規追加）
+const LanguageManager = {
+    // 初期化
+    init() {
+        console.log('LanguageManager.init called');
+        this.setupLanguageDetection();
+        this.setupLanguageSelectors();
+        this.applyInitialLanguage();
+    },
+
+    // 言語自動検出
+    setupLanguageDetection() {
+        const browserLang = (navigator.language || navigator.userLanguage).toLowerCase();
+        const short = browserLang.split("-")[0];
         
-        console.log('Main language selector listener attached');
-    }
-    
-    // カスタムフォーム内の言語セレクター設定
-    const customLanguageSelect = document.querySelector('#aios-language');
-    if (customLanguageSelect) {
-        // 既存のリスナーを削除
-        customLanguageSelect.removeEventListener('change', handleCustomLanguageChange);
-        // 新しいリスナーを追加
-        customLanguageSelect.addEventListener('change', handleCustomLanguageChange);
+        // config.jsのcurrent_languageを優先
+        let detectedLanguage = current_language || 'en';
         
-        // メインセレクターと同期
-        if (selectedLanguage && customLanguageSelect.value !== selectedLanguage) {
-            customLanguageSelect.value = selectedLanguage;
+        // ブラウザ言語が利用可能かチェック
+        const mainSelect = document.querySelector('#languages-select');
+        if (mainSelect) {
+            if (mainSelect.querySelector(`[value="${browserLang}"]`)) {
+                detectedLanguage = browserLang;
+            } else if (mainSelect.querySelector(`[value="${short}"]`)) {
+                detectedLanguage = short;
+            }
         }
         
-        console.log('Custom language selector initialized and synced');
+        selectedLanguage = detectedLanguage;
+        console.log(`Detected language: ${detectedLanguage}`);
+    },
+
+    // 言語セレクター設定（統合版）
+    setupLanguageSelectors() {
+        const mainSelect = document.querySelector('#languages-select');
+        const customSelect = document.querySelector('#aios-language');
+        
+        // メインセレクター設定
+        if (mainSelect) {
+            // 既存のイベントリスナーを完全に削除してから新しいものを追加
+            const newMainSelect = mainSelect.cloneNode(true);
+            mainSelect.parentNode.replaceChild(newMainSelect, mainSelect);
+            
+            newMainSelect.addEventListener('change', (e) => {
+                this.handleLanguageChange(e.target.value, 'main');
+            });
+            
+            console.log('Main language selector configured');
+        }
+        
+        // カスタムセレクター設定
+        if (customSelect) {
+            // カスタムセレクターを再構築
+            this.rebuildCustomLanguageSelector(customSelect);
+            
+            customSelect.addEventListener('change', (e) => {
+                this.handleLanguageChange(e.target.value, 'custom');
+            });
+            
+            console.log('Custom language selector configured');
+        }
+    },
+
+    // 言語変更ハンドラー（統合版）
+    async handleLanguageChange(newLanguage, source) {
+        if (languageUpdateInProgress) {
+            console.log('Language update in progress, skipping');
+            return;
+        }
+        
+        languageUpdateInProgress = true;
+        console.log(`Language change from ${source}: ${selectedLanguage} -> ${newLanguage}`);
+        
+        try {
+            // フォーム値を保存
+            const savedValues = this.preserveInputValues();
+            
+            // 言語の有効性をチェック
+            const isValid = await this.isLanguageAvailable(newLanguage);
+            if (!isValid) {
+                console.warn(`Language ${newLanguage} not available, fallback to ${config.fallback_language || 'en'}`);
+                newLanguage = config.fallback_language || 'en';
+            }
+            
+            // 言語を更新
+            selectedLanguage = newLanguage;
+            
+            // 両方のセレクターを同期
+            this.syncLanguageSelectors(newLanguage, source);
+            
+            // メインの翻訳システムをトリガー（index.jsの関数）
+            if (typeof translate === 'function') {
+                translate(newLanguage);
+            }
+            
+            // 言語パッケージの更新
+            this.updateLanguagePackages();
+            
+            // その他の更新処理
+            setTimeout(() => {
+                updateSetupJsonPackages();
+                updatePackageListFromSelector();
+                updateVariableDefinitions();
+                this.restoreInputValues(savedValues);
+                languageUpdateInProgress = false;
+            }, 100);
+            
+            console.log(`Language successfully changed to: ${newLanguage}`);
+            
+        } catch (error) {
+            console.error('Error during language change:', error);
+            languageUpdateInProgress = false;
+        }
+    },
+
+    // 言語セレクター同期
+    syncLanguageSelectors(language, source) {
+        const mainSelect = document.querySelector('#languages-select');
+        const customSelect = document.querySelector('#aios-language');
+        
+        if (source !== 'main' && mainSelect && mainSelect.value !== language) {
+            mainSelect.value = language;
+            console.log('Synced main selector');
+        }
+        
+        if (source !== 'custom' && customSelect && customSelect.value !== language) {
+            customSelect.value = language;
+            console.log('Synced custom selector');
+        }
     }
-    
-    // 初回言語パッケージ更新（重要：最初に実行）
-    updateLanguagePackageImmediate();
-}
-
-function preserveInputValues() {
-    const values = {};
-    document.querySelectorAll('input, textarea, select').forEach(el => {
-        if (el.id) values[el.id] = el.value;
-    });
-    return values;
-}
-
-function restoreInputValues(values) {
-    Object.keys(values).forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.value = values[id];
-    });
-}
-
-async function handleMainLanguageChange(e) {
-    const savedValues = preserveInputValues();
-
-    let newLanguage = e.target.value;
-    console.log(`Main language changed from "${selectedLanguage}" to "${newLanguage}"`);
-
-    if (!(await isLanguageAvailable(newLanguage))) {
-        console.warn(`Language ${newLanguage} not available, fallback to ${config.fallback_language}`);
-        newLanguage = config.fallback_language;
-        e.target.value = config.fallback_language;
-    }
-    
-    selectedLanguage = newLanguage;
-    
-    const customLanguageSelect = document.querySelector('#aios-language');
-    if (customLanguageSelect && customLanguageSelect.value !== selectedLanguage) {
-        customLanguageSelect.value = selectedLanguage;
-        console.log('Custom language selector synced');
-    }
-    
-    updateLanguagePackageImmediate();
-    setTimeout(() => {
-        updateSetupJsonPackages();
-        updatePackageListFromSelector();
-        updateVariableDefinitions();
-        restoreInputValues(savedValues);
-    }, 50);
-}
+};
 
 async function isLanguageAvailable(langCode) {
     try {
