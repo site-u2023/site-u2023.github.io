@@ -276,15 +276,6 @@ async function handleCustomLanguageChange(e) {
     }, 50);
 }
 
-async function isLanguageAvailable(lang) {
-    try {
-        const resp = await fetch(`langs/${lang}.json`, { method: 'HEAD' });
-        return resp.ok;
-    } catch (err) {
-        return false;
-    }
-}
-
 // ==================== setup.json 処理 ====================
 
 async function loadSetupConfig() {
