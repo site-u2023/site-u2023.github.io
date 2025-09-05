@@ -43,14 +43,14 @@ var config = {
   setup_db_url: "uci-defaults/setup.json",
 
   // LuCI OPKG 検索エンドポイント
-  opkg_search_url: "/cgi-bin/luci/admin/system/opkg?query={pkg}"
+  opkg_search_url: "/cgi-bin/luci/admin/system/opkg?query={pkg}",
+
+  // Fallback language
+  fallback_language = "en";
 };
 
 // Language
 current_language = "en";
-
-// Fallback language
-fallback_language = "en";
 
 // カスタム機能の自動読み込み
 (function() {
