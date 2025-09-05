@@ -225,13 +225,16 @@ function ensureLanguageDelegatedListeners() {
 function setupLanguageSelector() {
     console.log('setupLanguageSelector called');
     
-    // 現在の言語を正確に取得
+    // 現在の言語を正確に取得（フォールバック付き）
     const mainLanguageSelect = document.querySelector('#languages-select');
-    if (mainLanguageSelect) {
-        selectedLanguage = mainLanguageSelect.value || current_language || 'en';
+    if (mainLanguageSelect && mainLanguageSelect.value) {
+        selectedLanguage = mainLanguageSelect.value;
+    } else if (current_language) {
+        selectedLanguage = current_language;
     } else {
-        selectedLanguage = current_language || 'en';
+        selectedLanguage = config.default_language || 'en';
     }
+    
     console.log('Initial selected language:', selectedLanguage);
 
     // イベントは委任で一度だけ張る
@@ -240,7 +243,6 @@ function setupLanguageSelector() {
     // カスタムフォーム内の言語セレクターを同期
     const customLanguageSelect = document.querySelector('#aios-language');
     if (customLanguageSelect) {
-
         // メインセレクターと同期
         if (selectedLanguage && customLanguageSelect.value !== selectedLanguage) {
             customLanguageSelect.value = selectedLanguage;
