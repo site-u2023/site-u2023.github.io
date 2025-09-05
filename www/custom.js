@@ -540,11 +540,18 @@ function buildFormGroup(field) {
 
     let ctrl;
     if (field.type === 'select') {
-        console.log(`Creating select for ${field.id} with ${(field.options || []).length} options`);
+        console.log(`Creating select for ${field.id}`);
         ctrl = document.createElement('select');
         if (field.id) ctrl.id = field.id;
         
-        (field.options || []).forEach(opt => {
+        let optionsSource = [];
+        if (field.id === 'aios-language') {
+            optionsSource = extractLanguagesFromHTML();
+        } else {
+            optionsSource = field.options || [];
+        }
+
+        optionsSource.forEach(opt => {
             const option = document.createElement('option');
             option.value = opt.value;
             option.textContent = opt.label != null ? opt.label : String(opt.value);
