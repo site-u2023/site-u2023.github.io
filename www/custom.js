@@ -273,18 +273,39 @@ async function handleMainLanguageChange(e) {
     }, 50);
 }
 
+// 言語パッケージ存在チェック（公式 Packages.json）
 async function isLanguageAvailable(langCode) {
     try {
+        if (!current_device?.version || !current_device?.target) {
+            console.warn("current_device not set:", current_device);
+            return false;
+        }
+
         const pkgName = `luci-i18n-base-${langCode}`;
-        const url = config.opkg_search_url.replace("{pkg}", encodeURIComponent(pkgName));
-        const resp = await fetch(url);
-        const text = await resp.text();
-        return text.includes(pkgName);
+        const packagesJsonUrl =
+            `${config.image_url}/releases/${current_device.version}/packages/${current_device.target}/luci/Packages.json`;
+
+        console.log(`Checking: ${packagesJsonUrl}`);
+
+        const resp = await fetch(packagesJsonUrl, { cache: 'no-store' });
+        if (!resp.ok) {
+            return false;
+        }
+
+        const data = await resp.json();
+        if (!Array.isArray(data.packages)) {
+            console.warn("Unexpected Packages.json format");
+            return false;
+        }
+
+        return data.packages.some(p => p.Package === pkgName);
+
     } catch (err) {
         console.error('Language availability check failed:', err);
         return false;
     }
 }
+
 
 async function handleCustomLanguageChange(e) {
     const savedValues = preserveInputValues();
