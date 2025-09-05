@@ -229,7 +229,24 @@ function setupLanguageSelector() {
     updateLanguagePackageImmediate();
 }
 
+function preserveInputValues() {
+    const values = {};
+    document.querySelectorAll('input, textarea, select').forEach(el => {
+        if (el.id) values[el.id] = el.value;
+    });
+    return values;
+}
+
+function restoreInputValues(values) {
+    Object.keys(values).forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = values[id];
+    });
+}
+
 async function handleMainLanguageChange(e) {
+    const savedValues = preserveInputValues();
+
     let newLanguage = e.target.value;
     console.log(`Main language changed from "${selectedLanguage}" to "${newLanguage}"`);
 
@@ -241,7 +258,6 @@ async function handleMainLanguageChange(e) {
     
     selectedLanguage = newLanguage;
     
-    // カスタムフォーム内の言語セレクターと同期
     const customLanguageSelect = document.querySelector('#aios-language');
     if (customLanguageSelect && customLanguageSelect.value !== selectedLanguage) {
         customLanguageSelect.value = selectedLanguage;
@@ -253,6 +269,8 @@ async function handleMainLanguageChange(e) {
         updateSetupJsonPackages();
         updatePackageListFromSelector();
         updateVariableDefinitions();
+
+        restoreInputValues(savedValues);
     }, 50);
 }
 
