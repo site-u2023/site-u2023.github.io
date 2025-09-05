@@ -286,22 +286,6 @@ async function isLanguageAvailable(langCode) {
     }
 }
 
-// 共通関数（既に定義済みなら省略可）
-function preserveInputValues() {
-    const values = {};
-    document.querySelectorAll('input, textarea, select').forEach(el => {
-        if (el.id) values[el.id] = el.value;
-    });
-    return values;
-}
-
-function restoreInputValues(values) {
-    Object.keys(values).forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.value = values[id];
-    });
-}
-
 async function handleCustomLanguageChange(e) {
     const savedValues = preserveInputValues();
 
