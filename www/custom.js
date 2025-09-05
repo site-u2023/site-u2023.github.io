@@ -284,7 +284,7 @@ const LanguageManager = {
             }
             
             // 言語パッケージの更新
-            this.updateLanguagePackages();
+            updateLanguagePackageImmediate();
             
             // その他の更新処理
             setTimeout(() => {
@@ -317,44 +317,73 @@ const LanguageManager = {
             customSelect.value = language;
             console.log('Synced custom selector');
         }
+    },
+
+    rebuildCustomLanguageSelector(customSelect) {
+        const mainSelect = document.querySelector('#languages-select');
+        if (!mainSelect) return;
+
+        customSelect.innerHTML = '';
+        Array.from(mainSelect.options).forEach(option => {
+            const newOption = document.createElement('option');
+            newOption.value = option.value;
+            newOption.textContent = option.textContent;
+            customSelect.appendChild(newOption);
+        });
+        console.log('Custom language selector rebuilt');
+    },
+
+    applyInitialLanguage() {
+        if (languageUpdateInProgress) return;
+        
+        console.log(`Applying initial language: ${selectedLanguage}`);
+        
+        const mainSelect = document.querySelector('#languages-select');
+        const customSelect = document.querySelector('#aios-language');
+        
+        if (mainSelect && mainSelect.value !== selectedLanguage) {
+            mainSelect.value = selectedLanguage;
+        }
+        
+        if (customSelect && customSelect.value !== selectedLanguage) {
+            customSelect.value = selectedLanguage;
+        }
+        
+        updateLanguagePackageImmediate();
+    },
+
+    async isLanguageAvailable(langCode) {
+        try {
+            const pkgName = `luci-i18n-base-${langCode}`;
+            const url = config.opkg_search_url?.replace("{pkg}", encodeURIComponent(pkgName));
+            if (!url) return true;
+            
+            const resp = await fetch(url);
+            const text = await resp.text();
+            return text.includes(pkgName);
+        } catch (err) {
+            console.error('Language availability check failed:', err);
+            return true;
+        }
+    },
+
+    preserveInputValues() {
+        const values = {};
+        document.querySelectorAll('input, textarea, select').forEach(el => {
+            if (el.id) values[el.id] = el.value;
+        });
+        return values;
+    },
+
+    restoreInputValues(values) {
+        Object.keys(values).forEach(id => {
+            const el = document.getElementById(id);
+            if (el && el.id !== 'languages-select' && el.id !== 'aios-language') {
+                el.value = values[id];
+            }
+        });
     }
 };
-
-async function isLanguageAvailable(langCode) {
-    try {
-        const pkgName = `luci-i18n-base-${langCode}`;
-        const url = config.opkg_search_url.replace("{pkg}", encodeURIComponent(pkgName));
-        const resp = await fetch(url);
-        const text = await resp.text();
-        return text.includes(pkgName);
-    } catch (err) {
-        console.error('Language availability check failed:', err);
-        return false;
-    }
-}
-
-async function handleCustomLanguageChange(e) {
-    const savedValues = preserveInputValues();
-
-    let newLanguage = e.target.value;
-    console.log(`Custom language changed from "${selectedLanguage}" to "${newLanguage}"`);
-
-    if (!(await isLanguageAvailable(newLanguage))) {
-        console.warn(`Language ${newLanguage} not available, fallback to ${config.fallback_language}`);
-        newLanguage = config.fallback_language;
-        e.target.value = config.fallback_language;
-    }
-    
-    selectedLanguage = newLanguage;
-    
-    updateLanguagePackageImmediate();
-    setTimeout(() => {
-        updateSetupJsonPackages();
-        updatePackageListFromSelector();
-        updateVariableDefinitions();
-        restoreInputValues(savedValues);
-    }, 50);
-}
 
 // ==================== setup.json 処理 ====================
 
