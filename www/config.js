@@ -43,7 +43,7 @@ var config = {
   setup_db_url: "uci-defaults/setup.json",
 
   // LuCI OPKG 検索エンドポイント
-  opkg_search_url: "/cgi-bin/luci/admin/system/opkg?query={pkg}"
+  opkg_search_url: "https://openwrt.org/packages/index/start?dataflt[Name_pkg]~={pkg}"
 };
 
 // Language
