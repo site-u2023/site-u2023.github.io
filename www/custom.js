@@ -297,50 +297,61 @@ async function handleMainLanguageChange(e) {
 }
 
 // 言語パッケージ存在チェック（opkg / apk 両対応）
-async function isLanguageAvailable(langCode) {
+/**
+ * 任意パッケージの存在確認（feed 固定なし）
+ * @param {string} pkgName - 確認するパッケージ名
+ * @param {string} feed    - フィード名（例: "base", "packages", "routing", "telephony", "luci" など）
+ * @returns {Promise<boolean>} 存在すれば true
+ */
+async function isPackageAvailable(pkgName, feed) {
+    if (!pkgName || !feed) {
+        throw new Error("pkgName と feed は必須です");
+    }
     try {
         if (!current_device?.version || !current_device?.target) {
             console.warn("current_device not set:", current_device);
             return false;
         }
 
-        const pkgName = `luci-i18n-base-${langCode}`;
+        const arch = await getArchForCurrentDevice?.();
+        if (!arch) {
+            console.warn("arch resolve failed for target:", current_device.target);
+            return false;
+        }
+
         let packagesUrl;
 
-        // SNAPSHOT（apk）判定
-        if (current_device.version.includes('SNAPSHOT') && config.apk_search_url) {
+        if (current_device.version.includes('SNAPSHOT')) {
             packagesUrl = config.apk_search_url
-                .replace('{target}', current_device.target) // target_subtarget 一体型
-                .replace('{feed}', 'luci');
+                .replace('{arch}', arch)
+                .replace('{feed}', feed);
 
             const resp = await fetch(packagesUrl, { cache: 'no-store' });
-            if (!resp.ok) {
-                console.warn(`APK index.json not found: ${packagesUrl}`);
-                return false;
-            }
+            if (!resp.ok) return false;
 
             const data = await resp.json();
-            return Array.isArray(data.packages) &&
-                   data.packages.some(p => p.name === pkgName);
+            if (Array.isArray(data.packages)) {
+                return data.packages.some(p => p?.name === pkgName);
+            } else if (data.packages && typeof data.packages === 'object') {
+                return Object.prototype.hasOwnProperty.call(data.packages, pkgName);
+            }
+            return false;
 
         } else {
             packagesUrl = config.opkg_search_url
                 .replace('{version}', current_device.version)
-                .replace('{target}', current_device.target) // target_subtarget 一体型
-                .replace('{feed}', 'luci');
+                .replace('{arch}', arch)
+                .replace('{feed}', feed);
 
             const resp = await fetch(packagesUrl, { cache: 'no-store' });
-            if (!resp.ok) {
-                console.warn(`Packages file not found: ${packagesUrl}`);
-                return false;
-            }
+            if (!resp.ok) return false;
 
             const text = await resp.text();
             return text.split('\n').some(line => line.trim() === `Package: ${pkgName}`);
         }
 
     } catch (err) {
-        console.error('Language availability check failed:', err);
+        console.error('Package availability check failed:', err);
         return false;
     }
 }
