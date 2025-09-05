@@ -44,11 +44,12 @@ var config = {
 
   // LuCI OPKG 検索エンドポイント
   // opkg_search_url: "https://openwrt.org/packages/pkgdata/{pkg}"
-  opkg_search_url: "https://downloads.openwrt.org/releases/{version}/packages/{target}/{subtarget}/{feed}/Packages",
+  // https://downloads.openwrt.org/releases/24.10.2/packages/aarch64_cortex-a53/packages/Packages
+  opkg_search_url: "https://downloads.openwrt.org/releases/{version}/packages/{target}/{feed}/Packages",
 
   // LuCI APK 検索エンドポイント
   // sample: https://downloads.openwrt.org/snapshots/packages/aarch64_cortex-a53/packages/index.json
-  akp_search_url: "https://downloads.openwrt.org/snapshots/packages/{target}/{feed}/index.json"
+  apk_search_url: "https://downloads.openwrt.org/snapshots/packages/{target}/{feed}/index.json"
 };
 
 // Language
