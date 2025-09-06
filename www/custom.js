@@ -230,12 +230,11 @@ async function handleMainLanguageChange(e) {
 }
 
 async function handleCustomLanguageChange(e) {
-    selectedLanguage = await validateAndSetLanguage(e.target.value);
-    console.log('Language changed to:', selectedLanguage);
+    const newLang = e.target.value || config?.fallback_language || 'en';
+    console.log('Language changed to:', newLang);
     
-    await updateLanguagePackage();
-    updatePackageListFromSelector();
-    updateVariableDefinitions();
+    // index.js側のtranslate()を呼んで統一制御
+    translate(newLang);
     
     console.log('Language change processing completed');
 }
@@ -1807,24 +1806,16 @@ function customSetupUciDefaults() {
         .catch(err => showAlert(err.message));
 }
 
-async function customTranslate(lang) {
+function customTranslate(lang) {
     console.log('customTranslate called with:', lang);
     
     if (originalTranslate) {
         originalTranslate(lang);
     }
     
-    // current_languageが更新済みなので、パッケージ存在確認してセット
-    if (current_language !== 'en') {
-        const basePkg = `luci-i18n-base-${current_language}`;
-        if (await isPackageAvailable(basePkg, 'luci')) {
-            selectedLanguage = current_language;
-        } else {
-            selectedLanguage = 'en'; // config.fallback_languageを使用
-        }
-    } else {
-        selectedLanguage = current_language; // 既に'en'
-    }
+    // current_languageが更新済みなので、そのまま使用
+    selectedLanguage = current_language;
+    console.log('Language updated via translate hook:', selectedLanguage);
     
     updateLanguagePackage();
 }
