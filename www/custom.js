@@ -323,6 +323,7 @@ async function handleMainLanguageChange(e) {
         }
     }
     
+    // normalizeLanguageCode は削除
     selectedLanguage = newLanguage;
     
     const customLanguageSelect = document.querySelector('#aios-language');
@@ -404,6 +405,9 @@ async function handleCustomLanguageChange(e) {
         newLanguage = fallback;
         e.target.value = fallback;
     }
+
+    // normalizeLanguageCode は削除
+    selectedLanguage = newLanguage;
     
     // デバイス未選択時は言語パッケージ存在チェックをスキップ
     if (current_device?.arch) {
