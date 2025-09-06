@@ -254,17 +254,24 @@ async function updateLanguagePackage() {
     } else {
         // 実際の存在確認を試行（デバイス未選択時でも）
         try {
-            if (current_device?.arch && await isPackageAvailable(basePkg, 'luci')) {
+            let exists = false;
+            if (current_device?.arch) {
+                exists = await isPackageAvailable(basePkg, 'luci');
+            } else {
+                // デバイス未選択時でも存在確認を試行
+                exists = await isPackageAvailable(basePkg, 'luci');
+            }
+            
+            packageExistsCache.set(basePkg, exists);
+            
+            if (exists) {
                 dynamicPackages.add(basePkg);
-                packageExistsCache.set(basePkg, true);
                 console.log('Added validated base language package:', basePkg);
             } else {
-                console.log('Base language package not available, fallback to English behavior');
-                packageExistsCache.set(basePkg, false);
+                console.log('Base language package not available:', basePkg);
             }
         } catch (err) {
             console.error('Error checking base package:', err);
-            console.log('Fallback to English behavior due to error');
             packageExistsCache.set(basePkg, false);
         }
     }
