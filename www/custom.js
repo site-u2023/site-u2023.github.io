@@ -188,7 +188,7 @@ function setupLanguageSelector() {
         currentLanguage = current_language;
     }
     
-    selectedLanguage = currentLanguage;
+    selectedLanguage = await validateAndSetLanguage(currentLanguage);
     console.log('Selected language for device:', selectedLanguage);
     
     // カスタム言語セレクターを同期（片方向制御）
@@ -210,8 +210,28 @@ function setupLanguageSelector() {
     updateLanguagePackage();
 }
 
+async function validateAndSetLanguage(langCode) {
+    if (!langCode || langCode === 'en') {
+        return 'en';
+    }
+    
+    try {
+        const response = await fetch(`langs/${langCode}.json`);
+        if (response.status === 200) {
+            console.log('Language validated:', langCode);
+            return langCode;
+        } else {
+            console.log('Language not available, fallback to English:', langCode);
+            return 'en';
+        }
+    } catch (err) {
+        console.error('Language validation error:', err);
+        return 'en';
+    }
+}
+
 async function handleMainLanguageChange(e) {
-    selectedLanguage = e.target.value || config?.fallback_language || 'en';
+    selectedLanguage = await validateAndSetLanguage(e.target.value);
     console.log('Main language changed to:', selectedLanguage);
     
     // カスタム言語セレクターも同期
@@ -229,7 +249,7 @@ async function handleMainLanguageChange(e) {
 }
 
 async function handleCustomLanguageChange(e) {
-    selectedLanguage = e.target.value || config?.fallback_language || 'en';
+    selectedLanguage = await validateAndSetLanguage(e.target.value);
     console.log('Language changed to:', selectedLanguage);
     
     await updateLanguagePackage();
