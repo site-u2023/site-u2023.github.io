@@ -1806,14 +1806,22 @@ function customSetupUciDefaults() {
         .catch(err => showAlert(err.message));
 }
 
-function customTranslate(lang) {
+async function customTranslate(lang) {
     console.log('customTranslate called with:', lang);
     
     if (originalTranslate) {
         originalTranslate(lang);
     }
     
-    // current_languageが更新済みなので、そのまま使用
+    // current_languageで実際のパッケージ存在確認
+async function customTranslate(lang) {
+    console.log('customTranslate called with:', lang);
+    
+    if (originalTranslate) {
+        originalTranslate(lang);
+    }
+    
+    // current_languageをそのまま使用（フォールバック処理済み）
     selectedLanguage = current_language;
     console.log('Language updated via translate hook:', selectedLanguage);
     
