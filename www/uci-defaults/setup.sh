@@ -32,8 +32,8 @@ set firewall.@defaults[0].flow_offloading='1'
 set firewall.@defaults[0].flow_offloading_hw='1'
 FLOWHARD_EOF
 [ -n "\${wlan_ssid}" ] && [ -n "\${wlan_password}" ] && [ "\${#wlan_password}" -ge 8 ] && {
-    wireless_cfg="\$(uci -q show wireless)"
-    for radio in \$(printf '%s\n' "\${wireless_cfg}" | grep "wireless\.radio[0-9]*=" | cut -d. -f2 | cut -d= -f1); do
+    wireless_cfg=$(uci -q show wireless)
+    for radio in \$(printf '%s\\n' "\${wireless_cfg}" | grep "wireless\.radio[0-9]*=" | cut -d. -f2 | cut -d= -f1); do
         uci -q batch <<RADIO_EOF
 set wireless.\${radio}.disabled='0'
 set wireless.\${radio}.country="\${country:-00}"
@@ -51,13 +51,13 @@ RADIO_EOF
         else
             ssid="\${wlan_ssid}\${suffix}"
             n=2
-            while printf '%s\n' "\${wireless_cfg}" | grep -q "ssid='\${ssid}'"; do
+            while printf '%s\\n' "\${wireless_cfg}" | grep -q "ssid='\${ssid}'"; do
                 ssid="\${wlan_ssid}\${suffix}\${n}"
                 n=\$((n+1))
             done
         fi
         iface="default_\${radio}"
-        [ -n "\$(uci -q get wireless.\${iface})" ] && {
+        [ -n "$(uci -q get wireless.\${iface})" ] && {
             uci -q batch <<WLAN_EOF
 set wireless.\${iface}.disabled='0'
 set wireless.\${iface}.encryption="\${encryption}"
