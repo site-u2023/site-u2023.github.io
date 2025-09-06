@@ -191,7 +191,7 @@ patch "$MAP_SH" << 'EOF'
  		json_add_string local $(eval "echo \$RULE_${k}_IPV6ADDR")
  		json_add_string remote $(eval "echo \$RULE_${k}_BR")
  		json_add_string link $(eval "echo \$RULE_${k}_PD6IFACE")
-@@ -210,17 +210,44 @@
+@@ -210,17 +210,23 @@
      if [ -z "$(eval "echo \$RULE_${k}_PORTSETS")" ]; then
        json_add_object ""
          json_add_string type nat
@@ -237,19 +237,6 @@ patch "$MAP_SH" << 'EOF'
 +        nft add rule inet mape srcnat ip protocol $proto oifname "map-$cfg" snat ip to $(eval "echo \$RULE_${k}_IPV4ADDR") : numgen inc mod $portcount map { $allports }
 +      done
 +
-+#      for portset in $(eval "echo \$RULE_${k}_PORTSETS"); do
-+#        for proto in icmp tcp udp; do
-+#          json_add_object ""
-+#            json_add_string type nat
-+#            json_add_string target SNAT
-+#            json_add_string family inet
-+#            json_add_string proto "$proto"
-+#            json_add_boolean connlimit_ports 1
-+#            json_add_string snat_ip $(eval "echo \$RULE_${k}_IPV4ADDR")
-+#            json_add_string snat_port "$portset"
-+#          json_close_object
-+#        done
-+#      done
      fi
 EOF
 }
