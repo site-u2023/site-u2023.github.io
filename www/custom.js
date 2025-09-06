@@ -1765,6 +1765,7 @@ function setupFormWatchers() {
 
 let originalBuildAsuRequest = null;
 let originalSetupUciDefaults = null;
+let originalTranslate = null;
 
 function hookOriginalFunctions() {
     if (typeof buildAsuRequest === 'function' && !originalBuildAsuRequest) {
@@ -1775,6 +1776,11 @@ function hookOriginalFunctions() {
     if (typeof setup_uci_defaults === 'function' && !originalSetupUciDefaults) {
         originalSetupUciDefaults = setup_uci_defaults;
         window.setup_uci_defaults = customSetupUciDefaults;
+    }
+
+    if (typeof translate === 'function' && !originalTranslate) {
+        originalTranslate = translate;
+        window.translate = customTranslate;
     }
 }
 
@@ -1799,6 +1805,21 @@ function customSetupUciDefaults() {
             updateVariableDefinitions();
         })
         .catch(err => showAlert(err.message));
+}
+
+function customTranslate(lang) {
+    console.log('customTranslate called with:', lang);
+    
+    if (originalTranslate) {
+        originalTranslate(lang);
+    }
+    
+    // 言語変更後にcustom.js側を更新
+    if (current_language) {
+        selectedLanguage = current_language;
+        updateLanguagePackage();
+        console.log('Language updated via translate hook:', selectedLanguage);
+    }
 }
 
 // ==================== ユーティリティ関数 ====================
