@@ -1,4 +1,4 @@
-// custom.js - OpenWrt カスタム機能（言語処理完全修正版）
+// custom.js - OpenWrt カスタム機能（言語パッケージ完全修正版）
 
 console.log('custom.js loaded');
 
@@ -12,8 +12,7 @@ let formStructure = {};
 let cachedApiInfo = null;
 let defaultFieldValues = {};
 let dynamicPackages = new Set();
-let deviceLanguage = '';  // デバイス用言語（存在確認済み）
-let browserLanguage = '';  // ブラウザ表示用言語
+let selectedLanguage = '';
 
 // ==================== 初期化処理 ====================
 // 元の updateImages をフック
@@ -29,7 +28,7 @@ window.updateImages = function(version, mobj) {
         // デバイス選択時に言語パッケージを即座に更新
         setTimeout(() => {
             console.log('Device selected, updating language packages');
-            updateDeviceLanguagePackages();
+            updateLanguagePackage();
         }, 100);
     }
 
@@ -104,7 +103,7 @@ async function initializeCustomFeatures(asuSection, temp) {
     loadUciDefaultsTemplate();
     
     // 言語セレクター設定（初期言語パッケージ処理を含む）
-    await setupLanguageSelector();
+    setupLanguageSelector();
     
     // フォーム監視設定
     setupFormWatchers();
@@ -175,128 +174,53 @@ function reinitializeFeatures() {
     if (cachedApiInfo) updateAutoConnectionInfo(cachedApiInfo);
 }
 
-// ==================== 言語セレクター設定（完全修正版） ====================
-async function setupLanguageSelector() {
+// ==================== 言語セレクター設定 ====================
+function setupLanguageSelector() {
     const mainLanguageSelect = document.querySelector('#languages-select');
     const customLanguageSelect = document.querySelector('#aios-language');
     const fallback = config?.fallback_language || 'en';
     
-    // ブラウザ表示用言語を取得
-    browserLanguage = fallback;
+    // 現在の言語を決定（優先順位：メイン言語セレクター > current_language > フォールバック）
+    let currentLanguage = fallback;
     if (mainLanguageSelect && mainLanguageSelect.value) {
-        browserLanguage = mainLanguageSelect.value;
+        currentLanguage = mainLanguageSelect.value;
     } else if (current_language) {
-        browserLanguage = current_language;
+        currentLanguage = current_language;
     }
     
-    console.log('Browser language:', browserLanguage);
+    selectedLanguage = currentLanguage;
+    console.log('Selected language for device:', selectedLanguage);
     
-    // デバイス用言語を決定（存在確認付き）
-    deviceLanguage = await validateDeviceLanguage(browserLanguage);
-    console.log('Device language after validation:', deviceLanguage);
+    // カスタム言語セレクターを同期（片方向制御）
+    if (customLanguageSelect && customLanguageSelect.value !== selectedLanguage) {
+        customLanguageSelect.value = selectedLanguage;
+        console.log('Synchronized custom language selector to:', selectedLanguage);
+    }
     
-    // カスタム言語セレクターを設定
+    // イベントリスナー設定（カスタム言語セレクターのみ）
     if (customLanguageSelect) {
-        // デバイス用言語を設定
-        customLanguageSelect.value = deviceLanguage;
-        console.log('Set custom language selector to:', deviceLanguage);
-        
-        // イベントリスナー設定
-        customLanguageSelect.addEventListener('change', handleDeviceLanguageChange);
+        customLanguageSelect.addEventListener('change', handleCustomLanguageChange);
     }
     
-    // メイン言語セレクターのイベントリスナー
-    if (mainLanguageSelect) {
-        mainLanguageSelect.addEventListener('change', handleBrowserLanguageChange);
-    }
-    
-    // 初回言語パッケージ更新
+    // 初回言語パッケージ更新（重要：初期化時に必ず実行）
     console.log('Performing initial language package update');
-    await updateDeviceLanguagePackages();
+    updateLanguagePackage();
 }
 
-// ブラウザ言語変更ハンドラ
-async function handleBrowserLanguageChange(e) {
-    browserLanguage = e.target.value;
-    console.log('Browser language changed to:', browserLanguage);
+async function handleCustomLanguageChange(e) {
+    selectedLanguage = e.target.value || config?.fallback_language || 'en';
+    console.log('Language changed to:', selectedLanguage);
     
-    // デバイス用言語も同期（存在確認付き）
-    const validatedLang = await validateDeviceLanguage(browserLanguage);
-    
-    const customLanguageSelect = document.querySelector('#aios-language');
-    if (customLanguageSelect && customLanguageSelect.value !== validatedLang) {
-        customLanguageSelect.value = validatedLang;
-        deviceLanguage = validatedLang;
-        console.log('Synchronized device language to:', deviceLanguage);
-        
-        await updateDeviceLanguagePackages();
-        updatePackageListFromSelector();
-        updateVariableDefinitions();
-    }
-}
-
-// デバイス言語変更ハンドラ
-async function handleDeviceLanguageChange(e) {
-    const newLang = e.target.value || config?.fallback_language || 'en';
-    console.log('Device language selector changed to:', newLang);
-    
-    // 言語パッケージの存在確認
-    const validatedLang = await validateDeviceLanguage(newLang);
-    
-    if (validatedLang !== newLang) {
-        // 存在しない場合は有効な言語に戻す
-        e.target.value = validatedLang;
-        console.log('Language package not available, reverted to:', validatedLang);
-    }
-    
-    deviceLanguage = validatedLang;
-    console.log('Device language set to:', deviceLanguage);
-    
-    await updateDeviceLanguagePackages();
+    await updateLanguagePackage();
     updatePackageListFromSelector();
     updateVariableDefinitions();
+    
+    console.log('Language change processing completed');
 }
 
-// デバイス言語の検証（存在確認）
-async function validateDeviceLanguage(lang) {
-    console.log('Validating device language:', lang);
-    
-    // 英語は常に有効
-    if (!lang || lang === 'en') {
-        console.log('Language is English or empty, no validation needed');
-        return 'en';
-    }
-    
-    // デバイス情報が不完全な場合はフォールバック
-    if (!current_device?.arch || !current_device?.version) {
-        console.log('Device info incomplete, using fallback');
-        return config?.fallback_language || 'en';
-    }
-    
-    // 基本言語パッケージの存在確認
-    const basePkg = `luci-i18n-base-${lang}`;
-    console.log('Checking base language package:', basePkg);
-    
-    try {
-        if (await isPackageAvailable(basePkg, 'luci')) {
-            console.log('Language package available:', lang);
-            return lang;
-        } else {
-            console.log('Language package not available:', lang);
-            // フォールバック言語を返す
-            const fallback = config?.fallback_language || 'en';
-            console.log('Using fallback language:', fallback);
-            return fallback;
-        }
-    } catch (err) {
-        console.error('Error validating language:', err);
-        return config?.fallback_language || 'en';
-    }
-}
-
-// デバイス用言語パッケージの更新
-async function updateDeviceLanguagePackages() {
-    console.log('updateDeviceLanguagePackages called, deviceLanguage:', deviceLanguage);
+// 言語パッケージの更新（完全修正版）
+async function updateLanguagePackage() {
+    console.log('updateLanguagePackage called, selectedLanguage:', selectedLanguage);
     
     // 既存の言語パッケージを削除
     for (const pkg of Array.from(dynamicPackages)) {
@@ -307,34 +231,48 @@ async function updateDeviceLanguagePackages() {
     }
     
     // 英語の場合は言語パッケージ不要
-    if (!deviceLanguage || deviceLanguage === 'en') {
+    if (!selectedLanguage || selectedLanguage === 'en') {
         console.log('English selected, no language packages needed');
         updatePackageListFromSelector();
         return;
     }
     
-    // デバイス情報の確認
-    if (!current_device?.arch || !current_device?.version) {
-        console.log('Device info incomplete, skipping language packages');
+    // アーキテクチャとバージョンの確認（より詳細なログ）
+    console.log('Current device state:', {
+        arch: current_device?.arch,
+        version: current_device?.version,
+        target: current_device?.target,
+        hasCurrentDevice: !!current_device
+    });
+    
+    // デバイス情報が不完全な場合は基本言語パッケージのみ追加（条件緩和）
+    if (!current_device?.arch) {
+        console.log('Device architecture not available, adding basic language package anyway');
+        const basePkg = `luci-i18n-base-${selectedLanguage}`;
+        dynamicPackages.add(basePkg);
+        console.log('Added basic language package without validation:', basePkg);
         updatePackageListFromSelector();
         return;
     }
     
-    console.log('Processing language packages for:', deviceLanguage);
+    console.log('Device available, checking language packages for arch:', current_device.arch);
     
-    // 基本言語パッケージを追加
-    const basePkg = `luci-i18n-base-${deviceLanguage}`;
+    // 基本言語パッケージをチェック
+    const basePkg = `luci-i18n-base-${selectedLanguage}`;
     console.log('Checking base package:', basePkg);
     
     try {
         if (await isPackageAvailable(basePkg, 'luci')) {
             dynamicPackages.add(basePkg);
-            console.log('Added base language package:', basePkg);
+            console.log('Added validated base language package:', basePkg);
         } else {
             console.log('Base language package not available:', basePkg);
         }
     } catch (err) {
         console.error('Error checking base package:', err);
+        // エラー時でも基本パッケージは追加
+        dynamicPackages.add(basePkg);
+        console.log('Added base language package despite error:', basePkg);
     }
     
     // 現在のパッケージに対応する言語パッケージをチェック
@@ -345,7 +283,7 @@ async function updateDeviceLanguagePackages() {
         if (pkg.startsWith('luci-') && !pkg.startsWith('luci-i18n-')) {
             const luciName = extractLuciName(pkg);
             if (luciName) {
-                const langPkg = `luci-i18n-${luciName}-${deviceLanguage}`;
+                const langPkg = `luci-i18n-${luciName}-${selectedLanguage}`;
                 console.log('Checking LuCI language package:', langPkg);
                 
                 try {
@@ -402,10 +340,10 @@ function getCurrentPackageList() {
 // パッケージ存在チェック
 async function isPackageAvailable(pkgName, feed) {
     if (!pkgName || !feed) {
-        console.log('Missing package name or feed');
         return false;
     }
     
+    // デバイス情報が不完全でも基本的なチェックは行う
     const arch = current_device?.arch;
     const version = current_device?.version;
     
@@ -764,9 +702,9 @@ function handleRadioChange(e) {
     updatePackageListFromDynamicSources();
 }
 
-async function updatePackageListFromDynamicSources() {
+function updatePackageListFromDynamicSources() {
     updateSetupJsonPackages();
-    await updateDeviceLanguagePackages();
+    updateLanguagePackage();
     updatePackageListFromSelector();
     updateVariableDefinitions();
 }
@@ -1005,11 +943,6 @@ function collectFieldsFromPackage(pkg, structure, categoryId) {
 
 function collectFormValues() {
     const values = {};
-    
-    // デバイス言語を追加
-    if (deviceLanguage && deviceLanguage !== 'en') {
-        values['language'] = deviceLanguage;
-    }
     
     Object.values(formStructure.fields).forEach(field => {
         const value = getFieldValue(field.selector);
@@ -1580,7 +1513,7 @@ function createPackageCheckbox(pkg, isChecked = false, isDependency = false) {
     return label;
 }
 
-async function handlePackageSelection(e) {
+function handlePackageSelection(e) {
     const pkg = e.target;
     const isChecked = pkg.checked;
     
@@ -1607,7 +1540,7 @@ async function handlePackageSelection(e) {
         updateVariableDefinitions();
     }
     
-    await updateDeviceLanguagePackages();
+    updateLanguagePackage();
     updatePackageListFromSelector();
 }
 
@@ -1823,7 +1756,6 @@ function setupFormWatchers() {
 
 let originalBuildAsuRequest = null;
 let originalSetupUciDefaults = null;
-let originalTranslate = null;
 
 function hookOriginalFunctions() {
     if (typeof buildAsuRequest === 'function' && !originalBuildAsuRequest) {
@@ -1834,11 +1766,6 @@ function hookOriginalFunctions() {
     if (typeof setup_uci_defaults === 'function' && !originalSetupUciDefaults) {
         originalSetupUciDefaults = setup_uci_defaults;
         window.setup_uci_defaults = customSetupUciDefaults;
-    }
-
-    if (typeof translate === 'function' && !originalTranslate) {
-        originalTranslate = translate;
-        window.translate = customTranslate;
     }
 }
 
@@ -1863,32 +1790,6 @@ function customSetupUciDefaults() {
             updateVariableDefinitions();
         })
         .catch(err => showAlert(err.message));
-}
-
-async function customTranslate(lang) {
-    console.log('customTranslate called with:', lang);
-    
-    if (originalTranslate) {
-        originalTranslate(lang);
-    }
-    
-    // ブラウザ言語を更新
-    browserLanguage = current_language;
-    console.log('Browser language updated via translate hook:', browserLanguage);
-    
-    // デバイス言語の同期確認（存在確認付き）
-    const validatedLang = await validateDeviceLanguage(browserLanguage);
-    if (deviceLanguage !== validatedLang) {
-        deviceLanguage = validatedLang;
-        
-        const customLanguageSelect = document.querySelector('#aios-language');
-        if (customLanguageSelect) {
-            customLanguageSelect.value = deviceLanguage;
-        }
-        
-        console.log('Device language synchronized to:', deviceLanguage);
-        await updateDeviceLanguagePackages();
-    }
 }
 
 // ==================== ユーティリティ関数 ====================
@@ -1954,4 +1855,4 @@ window.addEventListener('unhandledrejection', function(e) {
     console.error('Custom.js Unhandled Promise Rejection:', e.reason);
 });
 
-console.log('custom.js (language processing complete fix) fully loaded and ready');
+console.log('custom.js (language package complete fix) fully loaded and ready');
