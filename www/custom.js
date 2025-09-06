@@ -218,7 +218,11 @@ async function handleCustomLanguageChange(e) {
     console.log('Language change processing completed');
 }
 
-// 言語パッケージの更新（完全修正版）
+
+// 言語パッケージ存在確認キャッシュ
+const packageExistsCache = new Map();
+
+// 言語パッケージの更新（存在確認付き初期化対応版）
 async function updateLanguagePackage() {
     console.log('updateLanguagePackage called, selectedLanguage:', selectedLanguage);
     
@@ -237,7 +241,6 @@ async function updateLanguagePackage() {
         return;
     }
     
-    // アーキテクチャとバージョンの確認（より詳細なログ）
     console.log('Current device state:', {
         arch: current_device?.arch,
         version: current_device?.version,
@@ -245,54 +248,70 @@ async function updateLanguagePackage() {
         hasCurrentDevice: !!current_device
     });
     
-    // デバイス情報が不完全な場合は基本言語パッケージのみ追加（条件緩和）
-    if (!current_device?.arch) {
-        console.log('Device architecture not available, adding basic language package anyway');
-        const basePkg = `luci-i18n-base-${selectedLanguage}`;
-        dynamicPackages.add(basePkg);
-        console.log('Added basic language package without validation:', basePkg);
-        updatePackageListFromSelector();
-        return;
-    }
-    
-    console.log('Device available, checking language packages for arch:', current_device.arch);
-    
-    // 基本言語パッケージをチェック
+    // 基本言語パッケージをチェック（デバイス選択状態に関係なく）
     const basePkg = `luci-i18n-base-${selectedLanguage}`;
     console.log('Checking base package:', basePkg);
     
-    try {
-        if (await isPackageAvailable(basePkg, 'luci')) {
+    // キャッシュチェック
+    if (packageExistsCache.has(basePkg)) {
+        if (packageExistsCache.get(basePkg)) {
             dynamicPackages.add(basePkg);
-            console.log('Added validated base language package:', basePkg);
-        } else {
-            console.log('Base language package not available:', basePkg);
+            console.log('Added cached base language package:', basePkg);
         }
-    } catch (err) {
-        console.error('Error checking base package:', err);
-        // エラー時でも基本パッケージは追加
-        dynamicPackages.add(basePkg);
-        console.log('Added base language package despite error:', basePkg);
+    } else {
+        // 存在確認（デバイス選択時のみ正確な確認、未選択時は基本言語のみ試行）
+        try {
+            let exists = false;
+            if (current_device?.arch) {
+                exists = await isPackageAvailable(basePkg, 'luci');
+            } else {
+                // デバイス未選択時は基本的な言語のみ許可
+                exists = ['ja', 'zh-cn', 'zh-tw', 'de', 'fr', 'es', 'ru', 'ko'].includes(selectedLanguage);
+            }
+            
+            packageExistsCache.set(basePkg, exists);
+            
+            if (exists) {
+                dynamicPackages.add(basePkg);
+                console.log('Added validated base language package:', basePkg);
+            } else {
+                console.log('Base language package not available:', basePkg);
+            }
+        } catch (err) {
+            console.error('Error checking base package:', err);
+            packageExistsCache.set(basePkg, false);
+        }
     }
     
-    // 現在のパッケージに対応する言語パッケージをチェック
-    const currentPackages = getCurrentPackageList();
-    console.log('Current packages for language check:', currentPackages.length);
-    
-    for (const pkg of currentPackages) {
-        if (pkg.startsWith('luci-') && !pkg.startsWith('luci-i18n-')) {
-            const luciName = extractLuciName(pkg);
-            if (luciName) {
-                const langPkg = `luci-i18n-${luciName}-${selectedLanguage}`;
-                console.log('Checking LuCI language package:', langPkg);
-                
-                try {
-                    if (await isPackageAvailable(langPkg, 'luci')) {
-                        dynamicPackages.add(langPkg);
-                        console.log('Added LuCI language package:', langPkg);
+    // デバイス選択時のみLuCIパッケージもチェック
+    if (current_device?.arch) {
+        const currentPackages = getCurrentPackageList();
+        console.log('Current packages for language check:', currentPackages.length);
+        
+        for (const pkg of currentPackages) {
+            if (pkg.startsWith('luci-') && !pkg.startsWith('luci-i18n-')) {
+                const luciName = extractLuciName(pkg);
+                if (luciName) {
+                    const langPkg = `luci-i18n-${luciName}-${selectedLanguage}`;
+                    
+                    if (packageExistsCache.has(langPkg)) {
+                        if (packageExistsCache.get(langPkg)) {
+                            dynamicPackages.add(langPkg);
+                        }
+                    } else {
+                        try {
+                            if (await isPackageAvailable(langPkg, 'luci')) {
+                                dynamicPackages.add(langPkg);
+                                packageExistsCache.set(langPkg, true);
+                                console.log('Added LuCI language package:', langPkg);
+                            } else {
+                                packageExistsCache.set(langPkg, false);
+                            }
+                        } catch (err) {
+                            console.error('Error checking LuCI package:', err);
+                            packageExistsCache.set(langPkg, false);
+                        }
                     }
-                } catch (err) {
-                    console.error('Error checking LuCI package:', err);
                 }
             }
         }
