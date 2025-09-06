@@ -954,7 +954,12 @@ async function init() {
   setup_uci_defaults();
 
   // hide fields
-  updateImages();
+  const initialArch = url_params.get("arch") || "aarch64_cortex-a53"; // 必要に応じて取得元を変更
+  const initialMobj = {
+    arch_packages: initialArch
+  };
+
+updateImages(config.default_version || "24.10.2", initialMobj);
 
   initTranslation();
 }
