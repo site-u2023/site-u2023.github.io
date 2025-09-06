@@ -218,7 +218,7 @@ async function handleCustomLanguageChange(e) {
     console.log('Language change processing completed');
 }
 
-// 言語パッケージの更新（完全修正版）
+// 言語パッケージの更新（厳密版）
 async function updateLanguagePackage() {
     console.log('updateLanguagePackage called, selectedLanguage:', selectedLanguage);
     
@@ -245,12 +245,9 @@ async function updateLanguagePackage() {
         hasCurrentDevice: !!current_device
     });
     
-    // デバイス情報が不完全な場合は基本言語パッケージのみ追加（条件緩和）
+    // デバイス情報が不完全な場合は何も追加しない
     if (!current_device?.arch) {
-        console.log('Device architecture not available, adding basic language package anyway');
-        const basePkg = `luci-i18n-base-${selectedLanguage}`;
-        dynamicPackages.add(basePkg);
-        console.log('Added basic language package without validation:', basePkg);
+        console.log('Device not selected, skipping language package update');
         updatePackageListFromSelector();
         return;
     }
@@ -270,9 +267,6 @@ async function updateLanguagePackage() {
         }
     } catch (err) {
         console.error('Error checking base package:', err);
-        // エラー時でも基本パッケージは追加
-        dynamicPackages.add(basePkg);
-        console.log('Added base language package despite error:', basePkg);
     }
     
     // 現在のパッケージに対応する言語パッケージをチェック
