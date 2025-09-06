@@ -223,38 +223,6 @@ function extractLanguagesFromHTML() {
     return languages;
 }
 
-function normalizeLanguageCode(languageCode) {
-    console.log('normalizeLanguageCode called with:', languageCode);
-    
-    if (!languageCode) return null;
-    
-    const validLanguages = extractLanguagesFromHTML();
-    console.log('validLanguages:', validLanguages);
-    
-    const validCodes = validLanguages.map(lang => lang.value);
-    console.log('validCodes:', validCodes);
-    console.log('checking if validCodes includes:', languageCode);
-    
-    // 元のコードが有効な場合はそのまま使用
-    if (validCodes.includes(languageCode)) {
-        console.log('Found exact match:', languageCode);
-        return languageCode;
-    }
-    
-    // アンダーバーをハイフンに変換してチェック
-    const convertedCode = languageCode.replace('_', '-').toLowerCase();
-    console.log('trying converted code:', convertedCode);
-    
-    if (validCodes.includes(convertedCode)) {
-        console.log('Found converted match:', convertedCode);
-        return convertedCode;
-    }
-    
-    console.log('No match found for:', languageCode);
-    // 両方とも無効な場合は null を返す
-    return null;
-}
-
 // 言語セレクターの委任リスナーを一度だけバインド
 function ensureLanguageDelegatedListeners() {
     if (languageDelegatedBound) return;
@@ -326,16 +294,6 @@ async function handleMainLanguageChange(e) {
     if (!newLanguage || newLanguage === 'undefined' || newLanguage === '') {
         newLanguage = fallback;
         e.target.value = fallback;
-    }
-    
-    // ✅ 修正：事前に言語コード正規化
-    const normalizedLanguage = normalizeLanguageCode(newLanguage);
-    if (!normalizedLanguage) {
-        console.warn(`Invalid language code: ${newLanguage}, fallback to ${fallback}`);
-        newLanguage = fallback;
-        e.target.value = fallback;
-    } else {
-        newLanguage = normalizedLanguage;
     }
     
     // デバイス未選択時は言語パッケージ存在チェックをスキップ
@@ -428,16 +386,6 @@ async function handleCustomLanguageChange(e) {
     if (!newLanguage || newLanguage === 'undefined' || newLanguage === '') {
         newLanguage = fallback;
         e.target.value = fallback;
-    }
-    
-    // ✅ 修正：事前に言語コード正規化
-    const normalizedLanguage = normalizeLanguageCode(newLanguage);
-    if (!normalizedLanguage) {
-        console.warn(`Invalid language code: ${newLanguage}, fallback to ${fallback}`);
-        newLanguage = fallback;
-        e.target.value = fallback;
-    } else {
-        newLanguage = normalizedLanguage;
     }
     
     // デバイス未選択時は言語パッケージ存在チェックをスキップ
@@ -822,63 +770,85 @@ function updatePackageListFromDynamicSources() {
 
 // 言語パッケージの即座更新
 async function updateLanguagePackageImmediate() {
-    // 既存の言語パッケージをdynamicPackagesから削除
-    const languagePackagesToRemove = [];
-    for (const pkg of dynamicPackages) {
-        if (pkg.startsWith('luci-i18n-')) {
-            languagePackagesToRemove.push(pkg);
-        }
+    // 1) 既存の言語パッケージ（luci-i18n-）を dynamicPackages から削除
+    for (const pkg of Array.from(dynamicPackages)) {
+        if (pkg.startsWith('luci-i18n-')) dynamicPackages.delete(pkg);
     }
-    
-    languagePackagesToRemove.forEach(pkg => {
-        dynamicPackages.delete(pkg);
-    });
-    
-    // テキストエリアからも言語パッケージを削除
+
+    // 2) テキストエリア (#asu-packages) からも言語パッケージを除去（表示上の基礎パッケージのみ残す）
     const textarea = document.querySelector('#asu-packages');
     if (textarea) {
         const currentPackages = split(textarea.value);
         const filteredPackages = currentPackages.filter(pkg => !pkg.startsWith('luci-i18n-'));
         textarea.value = filteredPackages.join(' ');
     }
-    
-    // 新しい言語パッケージを追加（英語以外の場合）
-    if (selectedLanguage && selectedLanguage !== 'en') {
-        const langCode = selectedLanguage; // 一切変換しない
-        
-        if (current_device?.arch) {
-            // デバイス選択済み：存在チェックして追加
-            const basePackageExists = await isPackageAvailable(`luci-i18n-base-${langCode}`, 'luci');
-            if (!basePackageExists) {
-                return;
-            }
-            
-            dynamicPackages.add(`luci-i18n-base-${langCode}`);
-            
-            const currentPackages = getCurrentPackageListExcludingLanguages();
-            const luciPackages = findLuciPackages(currentPackages);
-            
-            for (const luciPkg of luciPackages) {
-                const languagePackage = `luci-i18n-${luciPkg}-${langCode}`;
-                const packageExists = await isPackageAvailable(languagePackage, 'luci');
-                
-                if (packageExists) {
-                    dynamicPackages.add(languagePackage);
-                }
-            }
-        } else {
-            // デバイス未選択時はベース言語パッケージのみ追加
-            dynamicPackages.add(`luci-i18n-base-${langCode}`);
-            console.log('Added base language package only:', `luci-i18n-base-${langCode}`);
 
-            // 基本的なLuCIアプリも追加
-            const basicLuciPackages = ['app-firewall'];
-            basicLuciPackages.forEach(luciPkg => {
-                const languagePackage = `luci-i18n-${luciPkg}-${langCode}`;
-                dynamicPackages.add(languagePackage);
-                console.log('Added basic language package:', languagePackage);
-            });
+    // 3) 選択言語が空、または英語なら何もしない
+    if (!selectedLanguage || selectedLanguage === 'en') return;
+
+    // 4) 検証用にハイフン化した言語コードを作る（ただし UI の selectedLanguage は変更しない）
+    const hyphenLang = String(selectedLanguage).replace(/_/g, '-').toLowerCase();
+
+    // 5) デバイス未選択なら検証できないため追加しない（仕様どおり）
+    if (!current_device?.arch) {
+        console.warn('Device not selected — language packages will not be auto-added until device (arch) is selected.');
+        return;
+    }
+
+    // 6) 候補セットを作る（UI の値とハイフン化した値の両方を候補に入れるが UI は変更しない）
+    const candidateSet = new Set();
+    candidateSet.add(`luci-i18n-base-${selectedLanguage}`);
+    if (hyphenLang !== selectedLanguage) candidateSet.add(`luci-i18n-base-${hyphenLang}`);
+
+    const currentPackages = getCurrentPackageListExcludingLanguages();
+    const luciNames = findLuciPackages(currentPackages);
+    luciNames.forEach(name => {
+        candidateSet.add(`luci-i18n-${name}-${selectedLanguage}`);
+        if (hyphenLang !== selectedLanguage) candidateSet.add(`luci-i18n-${name}-${hyphenLang}`);
+    });
+
+    // 7) 候補を逐次公式に問い合わせて「存在するものだけ」 verified に追加する
+    const verified = [];
+    for (const candidate of Array.from(candidateSet)) {
+        if (!candidate) continue;
+
+        // ハイフン化候補（内部検査用）
+        const candidateHyphen = String(candidate).replace(/_/g, '-').toLowerCase();
+        const feed = candidateHyphen.startsWith('luci-') ? 'luci' : 'packages';
+
+        let existsHyphen = false;
+        try {
+            existsHyphen = await isPackageAvailable(candidateHyphen, feed);
+        } catch (err) {
+            existsHyphen = false;
         }
+
+        let existsOrig = false;
+        // hyphen で見つからなければ元の candidate も念のため確認
+        if (!existsHyphen && candidate !== candidateHyphen) {
+            try {
+                existsOrig = await isPackageAvailable(candidate, feed);
+            } catch (err) {
+                existsOrig = false;
+            }
+        }
+
+        if (existsHyphen) {
+            if (!verified.includes(candidateHyphen)) verified.push(candidateHyphen);
+        } else if (existsOrig) {
+            if (!verified.includes(candidate)) verified.push(candidate);
+        }
+        // 見つからなければスキップ（何も追加しない）
+    }
+
+    // 8) verified にある実在パッケージのみ dynamicPackages に追加
+    verified.forEach(pkg => dynamicPackages.add(pkg));
+
+    // 9) textarea に最終反映（既存の非言語パッケージ + dynamicPackages）
+    if (textarea) {
+        const baseList = split(textarea.value).filter(p => !p.startsWith('luci-i18n-'));
+        const finalSet = new Set([...baseList, ...Array.from(dynamicPackages)]);
+        textarea.value = Array.from(finalSet).join(' ');
     }
 }
 
