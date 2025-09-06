@@ -175,7 +175,7 @@ function reinitializeFeatures() {
 }
 
 // ==================== 言語セレクター設定 ====================
-function setupLanguageSelector() {
+async function setupLanguageSelector() {
     const mainLanguageSelect = document.querySelector('#languages-select');
     const customLanguageSelect = document.querySelector('#aios-language');
     const fallback = config?.fallback_language || 'en';
