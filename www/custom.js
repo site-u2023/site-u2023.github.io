@@ -103,7 +103,7 @@ async function initializeCustomFeatures(asuSection, temp) {
     loadUciDefaultsTemplate();
     
     // 言語セレクター設定（初期言語パッケージ処理を含む）
-    setupLanguageSelector();
+    await setupLanguageSelector();
     
     // フォーム監視設定
     setupFormWatchers();
