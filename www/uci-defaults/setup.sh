@@ -180,8 +180,8 @@ MAPE_EOF
 MAP_SH="/lib/netifd/proto/map.sh"
 grep -q '^DONT_SNAT_TO=' "$MAP_SH" || sed -i '1iDONT_SNAT_TO="0"' "$MAP_SH"
 patch "$MAP_SH" << 'EOF'
---- map.sh.txt
-+++ map.sh.new.txt
+--- map.sh
++++ map.sh
 @@ -48,8 +48,8 @@
  		proto_add_tunnel
  		json_add_string mode ipip6
