@@ -1807,19 +1807,26 @@ function customSetupUciDefaults() {
         .catch(err => showAlert(err.message));
 }
 
-function customTranslate(lang) {
+async function customTranslate(lang) {
     console.log('customTranslate called with:', lang);
     
     if (originalTranslate) {
         originalTranslate(lang);
     }
     
-    // 言語変更後にcustom.js側を更新
-    if (current_language) {
-        selectedLanguage = current_language;
-        updateLanguagePackage();
-        console.log('Language updated via translate hook:', selectedLanguage);
+    // current_languageが更新済みなので、パッケージ存在確認してセット
+    if (current_language !== 'en') {
+        const basePkg = `luci-i18n-base-${current_language}`;
+        if (await isPackageAvailable(basePkg, 'luci')) {
+            selectedLanguage = current_language;
+        } else {
+            selectedLanguage = 'en'; // config.fallback_languageを使用
+        }
+    } else {
+        selectedLanguage = current_language; // 既に'en'
     }
+    
+    updateLanguagePackage();
 }
 
 // ==================== ユーティリティ関数 ====================
