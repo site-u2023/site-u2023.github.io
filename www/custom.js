@@ -188,7 +188,8 @@ async function setupLanguageSelector() {
         currentLanguage = current_language;
     }
     
-    selectedLanguage = await validateAndSetLanguage(currentLanguage);
+    translate(currentLanguage);
+    selectedLanguage = current_language;
     console.log('Selected language for device:', selectedLanguage);
     
     // カスタム言語セレクターを同期（片方向制御）
