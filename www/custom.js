@@ -19,7 +19,6 @@ let languageDelegatedBound = false; // 言語セレクタの委任リスナー�
 async function getArchForCurrentDevice() {
     // current_deviceに保存されているarch_packagesを返す
     if (!current_device?.arch) {
-        console.warn('current_device.arch not available');
         return null;
     }
     return current_device.arch;
@@ -186,8 +185,6 @@ function cleanupExistingCustomElements() {
 function reinitializeFeatures() {
     if (!document.querySelector('#asu')) return;
     
-    console.log('reinitializeFeatures called');
-    
     // 言語セレクター設定（初期値の取り直しと同期・即時反映のみ
     const mainLanguageSelect = document.querySelector('#languages-select');
     if (mainLanguageSelect) {
@@ -223,7 +220,6 @@ function extractLanguagesFromHTML() {
         label: opt.textContent
     }));
 
-    console.log('Extracted languages from HTML:', languages.length);
     return languages;
 }
 
@@ -240,33 +236,25 @@ function ensureLanguageDelegatedListeners() {
         }
     }, true); // capture=true で差し替え直後でも確実に拾う
     languageDelegatedBound = true;
-    console.log('Language delegated listeners bound');
 }
 
 function setupLanguageSelector() {
-    console.log('setupLanguageSelector called');
-    
     // 現在の言語を正確に取得（フォールバック付き）
     const mainLanguageSelect = document.querySelector('#languages-select');
-    console.log('mainLanguageSelect value:', mainLanguageSelect?.value);
-    console.log('current_language:', current_language);
-    console.log('config.default_language:', config?.default_language);
+    const fallback = config?.fallback_language || 'en';
     
     if (mainLanguageSelect && mainLanguageSelect.value) {
         selectedLanguage = mainLanguageSelect.value;
     } else if (current_language) {
         selectedLanguage = current_language;
     } else {
-        selectedLanguage = 'en'; // ハードコードされたフォールバック
+        selectedLanguage = fallback;
     }
     
     // selectedLanguageが空やundefinedの場合の追加チェック
-    if (!selectedLanguage || selectedLanguage === 'undefined') {
-        selectedLanguage = 'en';
-        console.warn('selectedLanguage was empty/undefined, forced to en');
+    if (!selectedLanguage || selectedLanguage === 'undefined' || selectedLanguage === '') {
+        selectedLanguage = fallback;
     }
-    
-    console.log('Initial selected language:', selectedLanguage);
 
     // イベントは委任で一度だけ張る
     ensureLanguageDelegatedListeners();
@@ -278,8 +266,6 @@ function setupLanguageSelector() {
         if (selectedLanguage && customLanguageSelect.value !== selectedLanguage) {
             customLanguageSelect.value = selectedLanguage;
         }
-        
-        console.log('Custom language selector initialized and synced');
     }
     
     // 初回言語パッケージ更新（重要：最初に実行）
@@ -303,15 +289,22 @@ function restoreInputValues(values) {
 
 async function handleMainLanguageChange(e) {
     const savedValues = preserveInputValues();
+    const fallback = config?.fallback_language || 'en';
 
     let newLanguage = e.target.value;
-    console.log(`Main language changed from "${selectedLanguage}" to "${newLanguage}"`);
-
-    const langCode = newLanguage.replace('_', '-').toLowerCase();
-    if (!(await isPackageAvailable(`luci-i18n-base-${langCode}`, 'luci'))) {
-    console.warn(`Base language package for ${langCode} not available, fallback to ${config.fallback_language}`);
-    newLanguage = config.fallback_language;
-    e.target.value = config.fallback_language;
+    if (!newLanguage || newLanguage === 'undefined' || newLanguage === '') {
+        newLanguage = fallback;
+        e.target.value = fallback;
+    }
+    
+    // デバイス未選択時は言語パッケージ存在チェックをスキップ
+    if (current_device?.arch) {
+        const langCode = newLanguage.replace('_', '-').toLowerCase();
+        if (!(await isPackageAvailable(`luci-i18n-base-${langCode}`, 'luci'))) {
+            console.warn(`Base language package for ${langCode} not available, fallback to ${fallback}`);
+            newLanguage = fallback;
+            e.target.value = fallback;
+        }
     }
     
     selectedLanguage = newLanguage;
@@ -319,7 +312,6 @@ async function handleMainLanguageChange(e) {
     const customLanguageSelect = document.querySelector('#aios-language');
     if (customLanguageSelect && customLanguageSelect.value !== selectedLanguage) {
         customLanguageSelect.value = selectedLanguage;
-        console.log('Custom language selector synced');
     }
     
     updateLanguagePackageImmediate();
@@ -340,20 +332,15 @@ async function handleMainLanguageChange(e) {
  */
 async function isPackageAvailable(pkgName, feed) {
     if (!pkgName || !feed) {
-        throw new Error("pkgName と feed は必須です");
+        return false;
     }
     try {
-        if (!current_device?.version || !current_device?.target) {
-            console.warn("current_device not set:", current_device);
+        // デバイス未選択時はチェックをスキップ
+        if (!current_device?.version || !current_device?.target || !current_device?.arch) {
             return false;
         }
 
-        const arch = await getArchForCurrentDevice();
-        if (!arch) {
-            console.warn("arch resolve failed for target:", current_device.target);
-            return false;
-        }
-
+        const arch = current_device.arch;
         let packagesUrl;
 
         if (current_device.version.includes('SNAPSHOT')) {
@@ -386,30 +373,30 @@ async function isPackageAvailable(pkgName, feed) {
         }
 
     } catch (err) {
-        console.error('Package availability check failed:', err);
         return false;
     }
 }
 
 async function handleCustomLanguageChange(e) {
     const savedValues = preserveInputValues();
+    const fallback = config?.fallback_language || 'en';
 
     let newLanguage = e.target.value;
 
     // 空の値やundefinedを防ぐ
     if (!newLanguage || newLanguage === 'undefined' || newLanguage === '') {
-        console.warn('Invalid language value:', newLanguage, 'using fallback');
-        newLanguage = 'en';
-        e.target.value = 'en';
+        newLanguage = fallback;
+        e.target.value = fallback;
     }
     
-    console.log(`Custom language changed from "${selectedLanguage}" to "${newLanguage}"`);
-
-    const langCode = newLanguage.replace('_', '-').toLowerCase();
-    if (!(await isPackageAvailable(`luci-i18n-base-${langCode}`, 'luci'))) {
-        console.warn(`Base language package for ${langCode} not available, fallback to ${config.fallback_language}`);
-        newLanguage = config.fallback_language;
-        e.target.value = config.fallback_language;
+    // デバイス未選択時は言語パッケージ存在チェックをスキップ
+    if (current_device?.arch) {
+        const langCode = newLanguage.replace('_', '-').toLowerCase();
+        if (!(await isPackageAvailable(`luci-i18n-base-${langCode}`, 'luci'))) {
+            console.warn(`Base language package for ${langCode} not available, fallback to ${fallback}`);
+            newLanguage = fallback;
+            e.target.value = fallback;
+        }
     }
     
     selectedLanguage = newLanguage;
@@ -732,8 +719,6 @@ function handleRadioChange(e) {
     const radio = e.target;
     const packagesData = radio.getAttribute('data-packages');
     
-    console.log(`Radio changed: ${radio.name} = ${radio.value}`);
-    
     // 同じ名前の他のラジオボタンから動的パッケージを削除
     const sameNameRadios = document.querySelectorAll(`input[name="${radio.name}"]`);
     sameNameRadios.forEach(r => {
@@ -744,7 +729,6 @@ function handleRadioChange(e) {
                     const otherPackages = JSON.parse(otherPackagesData);
                     otherPackages.forEach(pkg => {
                         dynamicPackages.delete(pkg);
-                        console.log(`Removed dynamic package: ${pkg}`);
                     });
                 } catch (err) {
                     console.error('Error parsing other packages data:', err);
@@ -759,7 +743,6 @@ function handleRadioChange(e) {
             const packages = JSON.parse(packagesData);
             packages.forEach(pkg => {
                 dynamicPackages.add(pkg);
-                console.log(`Added dynamic package: ${pkg}`);
             });
         } catch (err) {
             console.error('Error parsing packages data:', err);
@@ -776,8 +759,6 @@ function handleRadioChange(e) {
 // ==================== 動的パッケージ管理（修正版） ====================
 
 function updatePackageListFromDynamicSources() {
-    console.log('updatePackageListFromDynamicSources called');
-    
     // setup.jsonのpackages要素の処理を先に実行
     updateSetupJsonPackages();
     
@@ -786,14 +767,10 @@ function updatePackageListFromDynamicSources() {
     
     // メインのパッケージリスト更新
     updatePackageListFromSelector();
-    
-    console.log('Dynamic packages updated:', Array.from(dynamicPackages));
 }
 
 // 言語パッケージの即座更新
 function updateLanguagePackageImmediate() {
-    console.log('updateLanguagePackageImmediate called, selectedLanguage:', selectedLanguage);
-    
     // 既存の言語パッケージをdynamicPackagesから削除
     const languagePackagesToRemove = [];
     for (const pkg of dynamicPackages) {
@@ -804,7 +781,6 @@ function updateLanguagePackageImmediate() {
     
     languagePackagesToRemove.forEach(pkg => {
         dynamicPackages.delete(pkg);
-        console.log(`Removed language package from dynamics: ${pkg}`);
     });
     
     // テキストエリアからも言語パッケージを削除
@@ -813,36 +789,26 @@ function updateLanguagePackageImmediate() {
         const currentPackages = split(textarea.value);
         const filteredPackages = currentPackages.filter(pkg => !pkg.startsWith('luci-i18n-'));
         textarea.value = filteredPackages.join(' ');
-        console.log('Removed language packages from textarea');
     }
     
     // 新しい言語パッケージを追加（英語以外の場合）
     if (selectedLanguage && selectedLanguage !== 'en') {
         const langCode = selectedLanguage.replace('_', '-').toLowerCase();
-        console.log(`Adding language packages for: ${langCode}`);
         
         // 現在のパッケージリストを取得（言語パッケージを除く）
         const currentPackages = getCurrentPackageListExcludingLanguages();
-        console.log('Current packages (excluding language):', currentPackages.length);
         
         // luciパッケージを検出して対応する言語パッケージを追加
         const luciPackages = findLuciPackages(currentPackages);
-        console.log('Found LuCI packages:', luciPackages);
         
         luciPackages.forEach(luciPkg => {
             const languagePackage = `luci-i18n-${luciPkg}-${langCode}`;
             dynamicPackages.add(languagePackage);
-            console.log(`Added language package: ${languagePackage}`);
         });
         
         // ベース言語パッケージも追加
         const baseLanguagePackage = `luci-i18n-base-${langCode}`;
         dynamicPackages.add(baseLanguagePackage);
-        console.log(`Added base language package: ${baseLanguagePackage}`);
-        
-        console.log(`Total language packages added: ${luciPackages.length + 1}`);
-    } else {
-        console.log('English selected or no language, no language packages added');
     }
 }
 
@@ -910,7 +876,6 @@ function findLuciPackages(packageList) {
                 
                 if (luciName) {
                     luciPackages.add(luciName);
-                    console.log(`Found LuCI package: ${pkg} -> ${luciName}`);
                 }
             }
         }
@@ -933,7 +898,6 @@ function updateSetupJsonPackages() {
                     if (selectedOption && selectedOption.packages) {
                         selectedOption.packages.forEach(pkgName => {
                             dynamicPackages.add(pkgName);
-                            console.log(`Added setup.json package: ${pkgName}`);
                         });
                     }
                     
@@ -942,7 +906,6 @@ function updateSetupJsonPackages() {
                         if (opt.value !== selectedValue && opt.packages) {
                             opt.packages.forEach(pkgName => {
                                 dynamicPackages.delete(pkgName);
-                                console.log(`Removed setup.json package: ${pkgName}`);
                             });
                         }
                     });
@@ -955,7 +918,6 @@ function updateSetupJsonPackages() {
                             if (mapeOption && mapeOption.packages) {
                                 mapeOption.packages.forEach(pkgName => {
                                     dynamicPackages.add(pkgName);
-                                    console.log(`Added AUTO-detected MAP-E package: ${pkgName}`);
                                 });
                             }
                         } else if (cachedApiInfo.aftr) {
@@ -964,7 +926,6 @@ function updateSetupJsonPackages() {
                             if (dsliteOption && dsliteOption.packages) {
                                 dsliteOption.packages.forEach(pkgName => {
                                     dynamicPackages.add(pkgName);
-                                    console.log(`Added AUTO-detected DS-Lite package: ${pkgName}`);
                                 });
                             }
                         }
@@ -1198,7 +1159,6 @@ function getFieldValue(selector) {
 
 function applySpecialFieldLogic(values) {
     const connectionType = getFieldValue('input[name="connection_type"]');
-    console.log('Connection type for filtering:', connectionType);
     
     // 全ての接続タイプのフィールド変数名をリストアップ
     const connectionFieldVars = [
@@ -1236,25 +1196,17 @@ function applySpecialFieldLogic(values) {
                     values.mape_gua_prefix = segments.slice(0, 4).join(':') + '::/64';
                     values.mape_gua_mode = '1';
                 }
-                console.log('AUTO: Applied MAP-E settings from API');
             } else if (cachedApiInfo.aftr) {
                 // DS-Liteの値のみを設定
                 values.dslite_aftr_address = cachedApiInfo.aftr;
-                console.log('AUTO: Applied DS-Lite settings from API');
-            } else {
-                console.log('AUTO: No connection info from API, no connection fields set');
             }
-        } else {
-            console.log('AUTO: No API info available, no connection fields set');
         }
     } else if (connectionType === 'dhcp') {
         // DHCP: 全ての接続関連フィールドを削除
         connectionFieldVars.forEach(key => delete values[key]);
-        console.log('DHCP: Removed all connection fields');
     } else if (connectionType === 'pppoe') {
         // PPPoE: PPPoE以外の接続フィールドを削除
         connectionFieldVars.filter(key => !key.startsWith('pppoe_')).forEach(key => delete values[key]);
-        console.log('PPPoE: Kept only PPPoE fields');
     } else if (connectionType === 'dslite') {
         // DS-Lite: DS-Lite以外の接続フィールドを削除
         connectionFieldVars.filter(key => !key.startsWith('dslite_')).forEach(key => delete values[key]);
@@ -1262,9 +1214,7 @@ function applySpecialFieldLogic(values) {
         // APIから実際の値がある場合は上書き
         if (cachedApiInfo?.aftr) {
             values.dslite_aftr_address = cachedApiInfo.aftr;
-            console.log('DS-Lite: Overrode with API value');
         }
-        console.log('DS-Lite: Kept only DS-Lite fields');
     } else if (connectionType === 'mape') {
         // MAP-E: MAP-E以外の接続フィールドを削除
         connectionFieldVars.filter(key => !key.startsWith('mape_')).forEach(key => delete values[key]);
@@ -1289,21 +1239,17 @@ function applySpecialFieldLogic(values) {
                 values.mape_gua_prefix = segments.slice(0, 4).join(':') + '::/64';
                 values.mape_gua_mode = '1';
             }
-            console.log('MAP-E: Overrode with API values');
         }
         
         // MAP-E GUAモード設定
         const mapeType = getFieldValue('input[name="mape_type"]');
         if (mapeType === 'gua') values.mape_gua_mode = '1';
-        console.log('MAP-E: Kept only MAP-E fields');
     } else if (connectionType === 'ap') {
         // AP: AP以外の接続フィールドを削除
         connectionFieldVars.filter(key => !key.startsWith('ap_')).forEach(key => delete values[key]);
-        console.log('AP: Kept only AP fields');
     } else {
         // 未知の接続タイプ: 全ての接続フィールドを削除
         connectionFieldVars.forEach(key => delete values[key]);
-        console.log('Unknown connection type: Removed all connection fields');
     }
     
     // Wi-Fiモード処理
@@ -1328,15 +1274,11 @@ function applySpecialFieldLogic(values) {
         ['enable_netopt', 'netopt_rmem', 'netopt_wmem', 'netopt_conntrack', 'netopt_backlog', 'netopt_somaxconn', 'netopt_congestion']
             .forEach(key => delete values[key]);
     }
-    
-    console.log('Final values after filtering:', Object.keys(values));
 }
 
 // ==================== イベントハンドラ（完全修正版） ====================
 
 function setupEventListeners() {
-    console.log('setupEventListeners called');
-    
     const radioGroups = {
         'connection_type': handleConnectionTypeChange,
         'net_optimizer': handleNetOptimizerChange,
@@ -1351,7 +1293,6 @@ function setupEventListeners() {
         
         const checked = document.querySelector(`input[name="${name}"]:checked`);
         if (checked) {
-            console.log(`Initial state for ${name}: ${checked.value}`);
             handler({ target: checked });
         }
     });
@@ -1359,7 +1300,6 @@ function setupEventListeners() {
 
 function handleConnectionTypeChange(e) {
     const selectedType = e.target.value;
-    console.log('Connection type changed to:', selectedType);
     
     const sections = ['auto', 'dhcp', 'pppoe', 'dslite', 'mape', 'ap'];
     sections.forEach(type => {
@@ -1385,7 +1325,6 @@ function handleConnectionTypeChange(e) {
 
 function handleNetOptimizerChange(e) {
     const mode = e.target.value;
-    console.log('Net optimizer changed to:', mode);
     
     ['auto', 'manual', 'disabled'].forEach(m => {
         const section = document.querySelector(`#netopt-${m}-section`);
@@ -1424,14 +1363,12 @@ function restoreManualDefaults() {
         const el = document.querySelector(`#${id}`);
         if (el && !el.value) { // 空の場合のみデフォルト値を設定
             el.value = defaultValue;
-            console.log(`Restored default for ${id}: ${defaultValue}`);
         }
     });
 }
 
 function handleWifiModeChange(e) {
     const mode = e.target.value;
-    console.log('WiFi mode changed to:', mode);
     
     const wifiOptionsContainer = document.querySelector("#wifi-options-container");
     const usteerOptions = document.querySelector("#usteer-options");
@@ -1466,7 +1403,6 @@ function clearWifiFields() {
             const el = document.querySelector(`#${id}`);
             if (el) {
                 el.value = '';
-                console.log(`Cleared field: ${id}`);
             }
         });
 }
@@ -1484,7 +1420,6 @@ function restoreWifiDefaults() {
         const el = document.querySelector(`#${id}`);
         if (el && !el.value) { // 空の場合のみデフォルト値を設定
             el.value = defaultValue;
-            console.log(`Restored WiFi default for ${id}: ${defaultValue}`);
         }
     });
 }
@@ -1873,9 +1808,6 @@ function updatePackageListFromSelector() {
         const newList = [...new Set([...nonSelectorPkgs, ...checkedPkgs])];
         
         textarea.value = newList.join(' ');
-        
-        console.log(`Updated package list: ${newList.length} packages`);
-        console.log('Dynamic packages included:', Array.from(dynamicPackages));
     }
 }
 
@@ -1920,7 +1852,6 @@ async function fetchDevicePackages() {
 // ==================== UCI-defaults処理 ====================
 
 function loadUciDefaultsTemplate() {
-    console.log('loadUciDefaultsTemplate called');
     const textarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
     if (!textarea || !config?.uci_defaults_setup_url) return;
 
@@ -1941,7 +1872,6 @@ function loadUciDefaultsTemplate() {
             textarea.value = text;
             updateVariableDefinitions();
             autoResize();
-            console.log('setup.sh loaded successfully');
         })
         .catch(err => console.error('Failed to load setup.sh:', err));
 }
@@ -1949,7 +1879,6 @@ function loadUciDefaultsTemplate() {
 function updateVariableDefinitions() {
     const textarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
     if (!textarea) {
-        console.log('UCI defaults textarea not found');
         return;
     }
     
@@ -1981,10 +1910,6 @@ function updateVariableDefinitions() {
         
         const lines = textarea.value.split('\n').length;
         textarea.rows = lines + 1;
-        
-        console.log('Variable definitions updated:', Object.keys(values).length, 'variables');
-    } else {
-        console.log('Variable definition markers not found in content');
     }
 }
 
