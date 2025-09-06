@@ -246,7 +246,7 @@ async function updateLanguagePackage() {
     
     console.log('Device available, checking language packages for arch:', current_device.arch);
     
-    // 基本言語パッケージをチェック（selectedLanguageをそのまま使用）
+    // 基本言語パッケージをチェック
     const basePkg = `luci-i18n-base-${selectedLanguage}`;
     console.log('Checking base package:', basePkg);
     
