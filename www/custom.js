@@ -120,7 +120,6 @@ async function initializeCustomFeatures(asuSection, temp) {
     // 依存関係のある初期化（順序重要）
     setupEventListeners();
     loadUciDefaultsTemplate();
-    initDeviceTranslation();
     
     // 言語セレクター設定（パッケージ処理の前に実行）
     setupLanguageSelector();
