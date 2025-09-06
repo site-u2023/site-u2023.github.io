@@ -38,7 +38,7 @@ FLOWHARD_EOF
 set wireless.\${radio}.disabled='0'
 set wireless.\${radio}.country="\${country:-00}"
 RADIO_EOF
-        band=\$(uci -q get wireless.\${radio}.band)
+        band=$(uci -q get wireless.\${radio}.band)
         case "\${band}" in
             2g) suffix="-2g"; encryption='psk-mixed'; nasid_suffix='-2g'; band_snr="\$(echo \${snr} | cut -d' ' -f1)" ;;
             5g) suffix="-5g"; encryption='sae-mixed'; nasid_suffix='-5g'; band_snr="\$(echo \${snr} | cut -d' ' -f2)" ;;
