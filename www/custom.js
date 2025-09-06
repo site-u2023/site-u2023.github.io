@@ -218,7 +218,6 @@ async function handleCustomLanguageChange(e) {
     console.log('Language change processing completed');
 }
 
-
 // 言語パッケージ存在確認キャッシュ
 const packageExistsCache = new Map();
 
@@ -241,6 +240,13 @@ async function updateLanguagePackage() {
         return;
     }
     
+    console.log('Current device state:', {
+        arch: current_device?.arch,
+        version: current_device?.version,
+        target: current_device?.target,
+        hasCurrentDevice: !!current_device
+    });
+    
     // 基本言語パッケージをチェック（デバイス選択状態に関係なく）
     const basePkg = `luci-i18n-base-${selectedLanguage}`;
     console.log('Checking base package:', basePkg);
@@ -252,13 +258,10 @@ async function updateLanguagePackage() {
             console.log('Added cached base language package:', basePkg);
         }
     } else {
-        // 実際の存在確認を試行（デバイス未選択時でも）
+        // 存在確認（デバイス選択時のみ正確な確認、未選択時は基本言語のみ試行）
         try {
             let exists = false;
             if (current_device?.arch) {
-                exists = await isPackageAvailable(basePkg, 'luci');
-            } else {
-                // デバイス未選択時でも存在確認を試行
                 exists = await isPackageAvailable(basePkg, 'luci');
             }
             
