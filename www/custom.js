@@ -834,7 +834,6 @@ async function updateLanguagePackageImmediate() {
         }
     }
     
-    console.log('Removing language packages:', languagePackagesToRemove);
     languagePackagesToRemove.forEach(pkg => {
         dynamicPackages.delete(pkg);
     });
@@ -848,57 +847,55 @@ async function updateLanguagePackageImmediate() {
     }
     
     // 新しい言語パッケージを追加（英語以外の場合）
-    console.log('Check if should add packages - selectedLanguage:', selectedLanguage, 'not en:', selectedLanguage !== 'en');
-    
     if (selectedLanguage && selectedLanguage !== 'en') {
-        console.log('Language is not English, checking device...');
-        
-        if (!current_device?.arch) {
-            console.log('Device arch not available, returning early');
-            return;
-        }
-        
-        console.log('Device arch available:', current_device.arch);
-        
         const langCode = selectedLanguage.toLowerCase();
-        console.log('Using langCode:', langCode);
+        console.log('Processing language packages for:', langCode);
         
-        // ベース言語パッケージの存在を事前チェック
-        console.log('Checking base package existence...');
-        const basePackageExists = await isPackageAvailable(`luci-i18n-base-${langCode}`, 'luci');
-        console.log('Base package exists:', basePackageExists);
-        
-        if (!basePackageExists) {
-            console.log('Base package does not exist, returning early');
-            return;
-        }
-        
-        // ベース言語パッケージを追加
-        const baseLanguagePackage = `luci-i18n-base-${langCode}`;
-        dynamicPackages.add(baseLanguagePackage);
-        console.log('Added base language package:', baseLanguagePackage);
-        
-        // 現在のパッケージリストを取得（言語パッケージを除く）
-        const currentPackages = getCurrentPackageListExcludingLanguages();
-        console.log('Current packages (excluding languages):', currentPackages);
-        
-        // luciパッケージを検出して対応する言語パッケージを追加
-        const luciPackages = findLuciPackages(currentPackages);
-        console.log('Found LUCI packages:', luciPackages);
-        
-        for (const luciPkg of luciPackages) {
-            const languagePackage = `luci-i18n-${luciPkg}-${langCode}`;
-            console.log('Checking package:', languagePackage);
+        // デバイス選択済みの場合のみ存在チェック、未選択時は仮追加
+        if (current_device?.arch) {
+            console.log('Device selected, checking package existence...');
             
-            const packageExists = await isPackageAvailable(languagePackage, 'luci');
-            console.log('Package exists:', packageExists);
-            
-            if (packageExists) {
-                dynamicPackages.add(languagePackage);
-                console.log('Added language package:', languagePackage);
-            } else {
-                console.log('Package does not exist, skipping:', languagePackage);
+            // ベース言語パッケージの存在を事前チェック
+            const basePackageExists = await isPackageAvailable(`luci-i18n-base-${langCode}`, 'luci');
+            if (!basePackageExists) {
+                console.log('Base package does not exist, skipping all language packages');
+                return;
             }
+            
+            // ベース言語パッケージを追加
+            dynamicPackages.add(`luci-i18n-base-${langCode}`);
+            console.log('Added base language package:', `luci-i18n-base-${langCode}`);
+            
+            // 現在のパッケージリストを取得（言語パッケージを除く）
+            const currentPackages = getCurrentPackageListExcludingLanguages();
+            const luciPackages = findLuciPackages(currentPackages);
+            
+            // 各パッケージを存在チェック後に追加
+            for (const luciPkg of luciPackages) {
+                const languagePackage = `luci-i18n-${luciPkg}-${langCode}`;
+                const packageExists = await isPackageAvailable(languagePackage, 'luci');
+                
+                if (packageExists) {
+                    dynamicPackages.add(languagePackage);
+                    console.log('Added language package:', languagePackage);
+                } else {
+                    console.log('Package does not exist:', languagePackage);
+                }
+            }
+        } else {
+            console.log('Device not selected, adding basic language packages without existence check...');
+            
+            // デバイス未選択時は基本的な言語パッケージのみ追加
+            dynamicPackages.add(`luci-i18n-base-${langCode}`);
+            console.log('Added base language package (unchecked):', `luci-i18n-base-${langCode}`);
+            
+            // 基本的なLuCIアプリの言語パッケージも追加
+            const basicLuciPackages = ['app-firewall', 'app-opkg'];
+            basicLuciPackages.forEach(luciPkg => {
+                const languagePackage = `luci-i18n-${luciPkg}-${langCode}`;
+                dynamicPackages.add(languagePackage);
+                console.log('Added basic language package (unchecked):', languagePackage);
+            });
         }
     } else {
         console.log('Language is English or not set, skipping language packages');
