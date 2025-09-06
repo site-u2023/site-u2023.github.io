@@ -239,33 +239,49 @@ function ensureLanguageDelegatedListeners() {
 }
 
 function setupLanguageSelector() {
-    // 現在の言語を正確に取得（フォールバック付き）
     const mainLanguageSelect = document.querySelector('#languages-select');
+    const customLanguageSelect = document.querySelector('#aios-language');
     const fallback = config?.fallback_language || 'en';
-    
-    if (mainLanguageSelect && mainLanguageSelect.value) {
-        selectedLanguage = mainLanguageSelect.value;
-    } else if (current_language) {
-        selectedLanguage = current_language;
-    } else {
-        selectedLanguage = fallback;
+    let determinedLanguage = '';
+
+    // 優先順位1: ブラウザの言語設定から利用可能な言語を探す
+    const navLong = (navigator.language || navigator.userLanguage).toLowerCase();
+    const navShort = navLong.split('-')[0];
+    const options = mainLanguageSelect ? Array.from(mainLanguageSelect.options).map(o => o.value) : [];
+
+    if (options.includes(navLong)) {
+        determinedLanguage = navLong;
+    } else if (options.includes(navShort)) {
+        determinedLanguage = navShort;
+    }
+
+    // 優先順位2: 既存のセレクタの値、またはグローバル変数から取得
+    if (!determinedLanguage) {
+        if (mainLanguageSelect && mainLanguageSelect.value) {
+            determinedLanguage = mainLanguageSelect.value;
+        } else if (current_language) {
+            determinedLanguage = current_language;
+        } else {
+            determinedLanguage = fallback;
+        }
     }
     
-    // selectedLanguageが空やundefinedの場合の追加チェック
-    if (!selectedLanguage || selectedLanguage === 'undefined' || selectedLanguage === '') {
-        selectedLanguage = fallback;
+    // 最終的なフォールバック
+    if (!determinedLanguage || determinedLanguage === 'undefined' || determinedLanguage === '') {
+        determinedLanguage = fallback;
     }
+
+    selectedLanguage = determinedLanguage;
 
     // イベントは委任で一度だけ張る
     ensureLanguageDelegatedListeners();
 
-    // カスタムフォーム内の言語セレクターを同期
-    const customLanguageSelect = document.querySelector('#aios-language');
-    if (customLanguageSelect) {
-        // メインセレクターと同期
-        if (selectedLanguage && customLanguageSelect.value !== selectedLanguage) {
-            customLanguageSelect.value = selectedLanguage;
-        }
+    // 両方の言語セレクターの値を決定した言語で同期
+    if (mainLanguageSelect && mainLanguageSelect.value !== selectedLanguage) {
+        mainLanguageSelect.value = selectedLanguage;
+    }
+    if (customLanguageSelect && customLanguageSelect.value !== selectedLanguage) {
+        customLanguageSelect.value = selectedLanguage;
     }
     
     // 初回言語パッケージ更新（重要：最初に実行）
@@ -400,6 +416,12 @@ async function handleCustomLanguageChange(e) {
     
     selectedLanguage = newLanguage;
     
+    // メインの言語セレクターも同期する
+    const mainLanguageSelect = document.querySelector('#languages-select');
+    if (mainLanguageSelect && mainLanguageSelect.value !== selectedLanguage) {
+        mainLanguageSelect.value = selectedLanguage;
+    }
+
     await updateLanguagePackageImmediate();
     setTimeout(() => {
         updateSetupJsonPackages();
@@ -2126,22 +2148,6 @@ function resizePostinstTextarea() {
     
     textarea.style.height = 'auto';
     textarea.style.height = textarea.scrollHeight + 'px';
-}
-
-function initDeviceTranslation() {
-    const select = document.querySelector("#aios-language");
-    if (!select) return;
-
-    const long = (navigator.language || navigator.userLanguage).toLowerCase();
-    const short = long.split("-")[0];
-
-    if (select.querySelector(`[value="${long}"]`)) {
-        select.value = long;
-    } else if (select.querySelector(`[value="${short}"]`)) {
-        select.value = short;
-    } else {
-        select.value = current_language;
-    }
 }
 
 // ==================== デバッグ用ヘルパー関数 ====================
