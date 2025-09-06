@@ -223,6 +223,29 @@ function extractLanguagesFromHTML() {
     return languages;
 }
 
+function normalizeLanguageCode(languageCode) {
+    if (!languageCode) return null;
+    
+    // アンダーバーを含む言語コードは基本的に存在しないため、
+    // まず正確な言語コードかチェック
+    const validLanguages = extractLanguagesFromHTML();
+    const validCodes = validLanguages.map(lang => lang.value);
+    
+    // 元のコードが有効な場合はそのまま使用
+    if (validCodes.includes(languageCode)) {
+        return languageCode;
+    }
+    
+    // アンダーバーをハイフンに変換してチェック
+    const convertedCode = languageCode.replace('_', '-').toLowerCase();
+    if (validCodes.includes(convertedCode)) {
+        return convertedCode;
+    }
+    
+    // 両方とも無効な場合は null を返す
+    return null;
+}
+
 // 言語セレクターの委任リスナーを一度だけバインド
 function ensureLanguageDelegatedListeners() {
     if (languageDelegatedBound) return;
@@ -290,17 +313,26 @@ function restoreInputValues(values) {
 async function handleMainLanguageChange(e) {
     const savedValues = preserveInputValues();
     const fallback = config?.fallback_language || 'en';
-
     let newLanguage = e.target.value;
     if (!newLanguage || newLanguage === 'undefined' || newLanguage === '') {
         newLanguage = fallback;
         e.target.value = fallback;
     }
     
+    // ✅ 修正：事前に言語コード正規化
+    const normalizedLanguage = normalizeLanguageCode(newLanguage);
+    if (!normalizedLanguage) {
+        console.warn(`Invalid language code: ${newLanguage}, fallback to ${fallback}`);
+        newLanguage = fallback;
+        e.target.value = fallback;
+    } else {
+        newLanguage = normalizedLanguage;
+    }
+    
     // デバイス未選択時は言語パッケージ存在チェックをスキップ
     if (current_device?.arch) {
-        const langCode = newLanguage.replace('_', '-').toLowerCase();
-        if (!(await isPackageAvailable(`luci-i18n-base-${langCode}`, 'luci'))) {
+        const langCode = newLanguage.toLowerCase();
+        if (langCode !== 'en' && !(await isPackageAvailable(`luci-i18n-base-${langCode}`, 'luci'))) {
             console.warn(`Base language package for ${langCode} not available, fallback to ${fallback}`);
             newLanguage = fallback;
             e.target.value = fallback;
@@ -314,7 +346,7 @@ async function handleMainLanguageChange(e) {
         customLanguageSelect.value = selectedLanguage;
     }
     
-    updateLanguagePackageImmediate();
+    await updateLanguagePackageImmediate();
     setTimeout(() => {
         updateSetupJsonPackages();
         updatePackageListFromSelector();
@@ -770,7 +802,7 @@ function updatePackageListFromDynamicSources() {
 }
 
 // 言語パッケージの即座更新
-function updateLanguagePackageImmediate() {
+async function updateLanguagePackageImmediate() {
     // 既存の言語パッケージをdynamicPackagesから削除
     const languagePackagesToRemove = [];
     for (const pkg of dynamicPackages) {
@@ -793,7 +825,21 @@ function updateLanguagePackageImmediate() {
     
     // 新しい言語パッケージを追加（英語以外の場合）
     if (selectedLanguage && selectedLanguage !== 'en') {
+        if (!current_device?.arch) {
+            return;
+        }
+        
         const langCode = selectedLanguage.replace('_', '-').toLowerCase();
+        
+        // ベース言語パッケージの存在を事前チェック
+        const basePackageExists = await isPackageAvailable(`luci-i18n-base-${langCode}`, 'luci');
+        if (!basePackageExists) {
+            return;
+        }
+        
+        // ベース言語パッケージを追加
+        const baseLanguagePackage = `luci-i18n-base-${langCode}`;
+        dynamicPackages.add(baseLanguagePackage);
         
         // 現在のパッケージリストを取得（言語パッケージを除く）
         const currentPackages = getCurrentPackageListExcludingLanguages();
@@ -801,14 +847,14 @@ function updateLanguagePackageImmediate() {
         // luciパッケージを検出して対応する言語パッケージを追加
         const luciPackages = findLuciPackages(currentPackages);
         
-        luciPackages.forEach(luciPkg => {
+        for (const luciPkg of luciPackages) {
             const languagePackage = `luci-i18n-${luciPkg}-${langCode}`;
-            dynamicPackages.add(languagePackage);
-        });
-        
-        // ベース言語パッケージも追加
-        const baseLanguagePackage = `luci-i18n-base-${langCode}`;
-        dynamicPackages.add(baseLanguagePackage);
+            const packageExists = await isPackageAvailable(languagePackage, 'luci');
+            
+            if (packageExists) {
+                dynamicPackages.add(languagePackage);
+            }
+        }
     }
 }
 
