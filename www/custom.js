@@ -867,9 +867,17 @@ async function updateLanguagePackageImmediate() {
                 }
             }
         } else {
-            // ✅ 修正：デバイス未選択時はベース言語パッケージのみ追加
+            // デバイス未選択時はベース言語パッケージのみ追加
             dynamicPackages.add(`luci-i18n-base-${langCode}`);
             console.log('Added base language package only:', `luci-i18n-base-${langCode}`);
+
+            // 基本的なLuCIアプリも追加
+            const basicLuciPackages = ['app-firewall'];
+            basicLuciPackages.forEach(luciPkg => {
+                const languagePackage = `luci-i18n-${luciPkg}-${langCode}`;
+                dynamicPackages.add(languagePackage);
+                console.log('Added basic language package:', languagePackage);
+            });
         }
     }
 }
