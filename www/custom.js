@@ -103,7 +103,7 @@ async function initializeCustomFeatures(asuSection, temp) {
     loadUciDefaultsTemplate();
     
     // 言語セレクター設定（初期言語パッケージ処理を含む）
-    await setupLanguageSelector();
+    setupLanguageSelector();
     
     // フォーム監視設定
     setupFormWatchers();
@@ -209,26 +209,6 @@ async function setupLanguageSelector() {
     // 初回言語パッケージ更新（重要：初期化時に必ず実行）
     console.log('Performing initial language package update');
     updateLanguagePackage();
-}
-
-async function validateAndSetLanguage(langCode) {
-    if (!langCode || langCode === 'en') {
-        return 'en';
-    }
-    
-    try {
-        const response = await fetch(`langs/${langCode}.json`);
-        if (response.status === 200) {
-            console.log('Language validated:', langCode);
-            return langCode;
-        } else {
-            console.log('Language not available, fallback to English:', langCode);
-            return 'en';
-        }
-    } catch (err) {
-        console.error('Language validation error:', err);
-        return 'en';
-    }
 }
 
 async function handleMainLanguageChange(e) {
