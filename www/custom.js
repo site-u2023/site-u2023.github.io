@@ -421,10 +421,20 @@ async function handleCustomLanguageChange(e) {
         e.target.value = fallback;
     }
     
+    // ✅ 修正：事前に言語コード正規化
+    const normalizedLanguage = normalizeLanguageCode(newLanguage);
+    if (!normalizedLanguage) {
+        console.warn(`Invalid language code: ${newLanguage}, fallback to ${fallback}`);
+        newLanguage = fallback;
+        e.target.value = fallback;
+    } else {
+        newLanguage = normalizedLanguage;
+    }
+    
     // デバイス未選択時は言語パッケージ存在チェックをスキップ
     if (current_device?.arch) {
-        const langCode = newLanguage.replace('_', '-').toLowerCase();
-        if (!(await isPackageAvailable(`luci-i18n-base-${langCode}`, 'luci'))) {
+        const langCode = newLanguage.toLowerCase();
+        if (langCode !== 'en' && !(await isPackageAvailable(`luci-i18n-base-${langCode}`, 'luci'))) {
             console.warn(`Base language package for ${langCode} not available, fallback to ${fallback}`);
             newLanguage = fallback;
             e.target.value = fallback;
@@ -433,7 +443,7 @@ async function handleCustomLanguageChange(e) {
     
     selectedLanguage = newLanguage;
     
-    updateLanguagePackageImmediate();
+    await updateLanguagePackageImmediate();
     setTimeout(() => {
         updateSetupJsonPackages();
         updatePackageListFromSelector();
@@ -829,7 +839,7 @@ async function updateLanguagePackageImmediate() {
             return;
         }
         
-        const langCode = selectedLanguage.replace('_', '-').toLowerCase();
+        const langCode = selectedLanguage.toLowerCase();
         
         // ベース言語パッケージの存在を事前チェック
         const basePackageExists = await isPackageAvailable(`luci-i18n-base-${langCode}`, 'luci');
