@@ -14,6 +14,7 @@ let defaultFieldValues = {}; // デフォルト値保存用
 let dynamicPackages = new Set(); // 動的パッケージ管理用
 let selectedLanguage = '';
 let languageDelegatedBound = false; // 言語セレクタの委任リスナーがバインド済みか
+let savedArch = null; // アーキテクチャ情報を独自に保存する変数
 
 // ==================== アーキテクチャ解決関数 ====================
 async function getArchForCurrentDevice() {
@@ -40,7 +41,8 @@ window.updateImages = function(version, mobj) {
     // arch_packagesをcurrent_deviceに保存（重要！）
     if (mobj && mobj.arch_packages && current_device) {
         current_device.arch = mobj.arch_packages;
-        console.log('Architecture saved to current_device:', current_device.arch);
+        savedArch = mobj.arch_packages; // 独自変数にもアーキテクチャ情報を保存
+        console.log('Architecture saved to current_device and savedArch:', savedArch);
     } else {
         console.log('Failed to save arch:', {
             hasMobj: !!mobj,
@@ -792,6 +794,13 @@ function updatePackageListFromDynamicSources() {
 
 // 言語パッケージの即座更新
 async function updateLanguagePackageImmediate() {
+    // ★★★ 修正箇所 ★★★
+    // 処理の開始前に、current_device.archが消えていたら復元する
+    if (current_device && !current_device.arch && savedArch) {
+        console.log('Restoring architecture from savedArch to current_device...');
+        current_device.arch = savedArch;
+    }
+
     // 1) 既存の言語パッケージ（luci-i18n-）を dynamicPackages から削除
     for (const pkg of Array.from(dynamicPackages)) {
         if (pkg.startsWith('luci-i18n-')) dynamicPackages.delete(pkg);
