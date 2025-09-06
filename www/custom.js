@@ -246,7 +246,8 @@ async function updateLanguagePackage() {
     
     console.log('Device available, checking language packages for arch:', current_device.arch);
     
-    const packageLangCode = selectedLanguage;
+    // 言語コードをOpenWrtパッケージ名形式に変換（_を-に、小文字化）
+    const packageLangCode = selectedLanguage.replace(/_/g, '-').toLowerCase();
     console.log('Converted language code for packages:', packageLangCode);
     
     // 基本言語パッケージをチェック
