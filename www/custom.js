@@ -218,7 +218,7 @@ async function handleCustomLanguageChange(e) {
     console.log('Language change processing completed');
 }
 
-// 言語パッケージの更新（正しい修正版）
+// 言語パッケージの更新（完全修正版）
 async function updateLanguagePackage() {
     console.log('updateLanguagePackage called, selectedLanguage:', selectedLanguage);
     
@@ -237,21 +237,28 @@ async function updateLanguagePackage() {
         return;
     }
     
-    // デバイス情報の確認
-    if (!current_device?.arch || !current_device?.version) {
-        console.log('Device not selected, skipping language package update');
+    // アーキテクチャとバージョンの確認（より詳細なログ）
+    console.log('Current device state:', {
+        arch: current_device?.arch,
+        version: current_device?.version,
+        target: current_device?.target,
+        hasCurrentDevice: !!current_device
+    });
+    
+    // デバイス情報が不完全な場合は基本言語パッケージのみ追加（条件緩和）
+    if (!current_device?.arch) {
+        console.log('Device architecture not available, adding basic language package anyway');
+        const basePkg = `luci-i18n-base-${selectedLanguage}`;
+        dynamicPackages.add(basePkg);
+        console.log('Added basic language package without validation:', basePkg);
         updatePackageListFromSelector();
         return;
     }
     
     console.log('Device available, checking language packages for arch:', current_device.arch);
     
-    // 言語コードをOpenWrtパッケージ名形式に変換（_を-に、小文字化）
-    const packageLangCode = selectedLanguage.replace(/_/g, '-').toLowerCase();
-    console.log('Converted language code for packages:', packageLangCode);
-    
     // 基本言語パッケージをチェック
-    const basePkg = `luci-i18n-base-${packageLangCode}`;
+    const basePkg = `luci-i18n-base-${selectedLanguage}`;
     console.log('Checking base package:', basePkg);
     
     try {
@@ -263,6 +270,9 @@ async function updateLanguagePackage() {
         }
     } catch (err) {
         console.error('Error checking base package:', err);
+        // エラー時でも基本パッケージは追加
+        dynamicPackages.add(basePkg);
+        console.log('Added base language package despite error:', basePkg);
     }
     
     // 現在のパッケージに対応する言語パッケージをチェック
@@ -273,7 +283,7 @@ async function updateLanguagePackage() {
         if (pkg.startsWith('luci-') && !pkg.startsWith('luci-i18n-')) {
             const luciName = extractLuciName(pkg);
             if (luciName) {
-                const langPkg = `luci-i18n-${luciName}-${packageLangCode}`;
+                const langPkg = `luci-i18n-${luciName}-${selectedLanguage}`;
                 console.log('Checking LuCI language package:', langPkg);
                 
                 try {
