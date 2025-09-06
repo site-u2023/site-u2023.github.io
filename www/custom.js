@@ -224,24 +224,33 @@ function extractLanguagesFromHTML() {
 }
 
 function normalizeLanguageCode(languageCode) {
+    console.log('normalizeLanguageCode called with:', languageCode);
+    
     if (!languageCode) return null;
     
-    // アンダーバーを含む言語コードは基本的に存在しないため、
-    // まず正確な言語コードかチェック
     const validLanguages = extractLanguagesFromHTML();
+    console.log('validLanguages:', validLanguages);
+    
     const validCodes = validLanguages.map(lang => lang.value);
+    console.log('validCodes:', validCodes);
+    console.log('checking if validCodes includes:', languageCode);
     
     // 元のコードが有効な場合はそのまま使用
     if (validCodes.includes(languageCode)) {
+        console.log('Found exact match:', languageCode);
         return languageCode;
     }
     
     // アンダーバーをハイフンに変換してチェック
     const convertedCode = languageCode.replace('_', '-').toLowerCase();
+    console.log('trying converted code:', convertedCode);
+    
     if (validCodes.includes(convertedCode)) {
+        console.log('Found converted match:', convertedCode);
         return convertedCode;
     }
     
+    console.log('No match found for:', languageCode);
     // 両方とも無効な場合は null を返す
     return null;
 }
