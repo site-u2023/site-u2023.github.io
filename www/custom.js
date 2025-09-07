@@ -1622,9 +1622,9 @@ function handlePackageSelection(e) {
 
 function updatePackageListFromSelector() {
     console.log('updatePackageListFromSelector called');
-    
+
     const checkedPkgs = new Set();
-    
+
     // パッケージセレクターから選択されたパッケージ
     document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
         const pkgName = cb.getAttribute('data-package');
@@ -1632,42 +1632,32 @@ function updatePackageListFromSelector() {
             checkedPkgs.add(pkgName);
         }
     });
-    
+
     // 動的パッケージ（言語パッケージを含む）を追加
     dynamicPackages.forEach(pkg => {
         checkedPkgs.add(pkg);
     });
 
-    // デバイス初期パッケージを必ず追加
-    if (devicePackages && devicePackages.length > 0) {
-        devicePackages.forEach(pkgObj => {
-            // devicePackagesは {id, name, hidden} 形式
-            const pkgName = typeof pkgObj === 'string' ? pkgObj : pkgObj.name;
-            if (pkgName) {
-                checkedPkgs.add(pkgName);
-            }
-        });
-    }
+    // devicePackages の追加は初期化時だけ（この関数では混ぜない）
 
     console.log('Checked packages from selector:', Array.from(checkedPkgs).filter(p => !p.startsWith('luci-i18n-')));
     console.log('Language packages from dynamic:', Array.from(checkedPkgs).filter(p => p.startsWith('luci-i18n-')));
-    
+
     const textarea = document.querySelector('#asu-packages');
     if (textarea) {
-        const currentPackages = split(textarea.value);
+        // checkedPkgs のみで上書き（未選択は消す）
+        textarea.value = Array.from(checkedPkgs).join(' ');
+    }
+}
 
-        // セレクターで管理されていない、かつ動的でもない、かつ言語パッケージでもないパッケージを保持
-        const nonSelectorPkgs = currentPackages.filter(pkg => {
-            const hasInSelector = document.querySelector(`.package-selector-checkbox[data-package="${pkg}"]`);
-            const hasInDynamic = dynamicPackages.has(pkg);
-            const isLanguagePkg = pkg.startsWith('luci-i18n-');
-            return !hasInSelector && !hasInDynamic && !isLanguagePkg;
-        });
-
-        // devicePackagesも含めて、最低限必須を常に維持
-        const newList = [...new Set([...nonSelectorPkgs, ...checkedPkgs])];
-
-        textarea.value = newList.join(' ');
+// devicePackages 初期値セット用（デバイス選択時に呼ぶ専用関数例）
+function setDevicePackagesInitial() {
+    const textarea = document.querySelector('#asu-packages');
+    if (textarea && devicePackages && devicePackages.length > 0) {
+        const initialPkgs = devicePackages.map(pkgObj =>
+            typeof pkgObj === 'string' ? pkgObj : pkgObj.name
+        ).filter(Boolean);
+        textarea.value = initialPkgs.join(' ');
     }
 }
 
