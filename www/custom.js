@@ -1291,12 +1291,6 @@ function applyIspAutoConfig(apiInfo) {
             
             let value = getNestedValue(apiInfo, field.apiMapping);
 
-            if (field.apiMapping === 'ipv6' && apiInfo.ipv6) {
-                const fullAddress = apiInfo.ipv6;
-                const segments = fullAddress.split(':');
-                value = segments.slice(0, 4).join(':') + '::/64';
-            }
-
             if (value !== null && value !== undefined && value !== '') {
                 const element = document.querySelector(field.selector);
                 if (element) {
