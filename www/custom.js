@@ -118,7 +118,6 @@ function replaceAsuSection(asuSection, temp) {
     
     const customPackages = temp.querySelector('#custom-packages-section details');
     const customScripts = temp.querySelector('#custom-scripts-section details');
-
     if (customPackages) {
         customPackages.id = 'custom-packages-details';
         newDiv.appendChild(customPackages);
@@ -128,6 +127,11 @@ function replaceAsuSection(asuSection, temp) {
         newDiv.appendChild(customScripts);
     }
 
+    const existingPackagesTextarea = asuSection.querySelector('#asu-packages');
+    if (existingPackagesTextarea) {
+        newDiv.appendChild(existingPackagesTextarea.cloneNode(true));
+    }
+    
     // index.jsが期待する全てのDOM要素を追加
     newDiv.insertAdjacentHTML('beforeend', `
         <br>
