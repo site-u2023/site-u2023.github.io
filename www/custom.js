@@ -127,12 +127,6 @@ function replaceAsuSection(asuSection, temp) {
         newDiv.appendChild(customScripts);
     }
     
-    // Postinstを正しい位置に配置
-    const existingPackagesTextarea = asuSection.querySelector('#asu-packages');
-    if (existingPackagesTextarea) {
-        newDiv.appendChild(existingPackagesTextarea.cloneNode(true));
-    }
-    
     // index.jsが期待する全てのDOM要素を追加
     newDiv.insertAdjacentHTML('beforeend', `
         <br>
@@ -159,6 +153,12 @@ function replaceAsuSection(asuSection, temp) {
     `);
     
     asuSection.parentNode.replaceChild(newDiv, asuSection);
+
+    // Postinstを正しい位置に配置
+    const existingPackagesTextarea = asuSection.querySelector('#asu-packages');
+    if (existingPackagesTextarea) {
+        newDiv.appendChild(existingPackagesTextarea.cloneNode(true));
+    }
 }
 
 // 拡張情報セクション挿入
