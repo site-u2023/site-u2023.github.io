@@ -1291,10 +1291,8 @@ function applyIspAutoConfig(apiInfo) {
             
             let value = getNestedValue(apiInfo, field.apiMapping);
 
-            if (field.apiMapping === 'ipv6' && apiInfo.ipv6) {
-                const fullAddress = apiInfo.ipv6;
-                const segments = fullAddress.split(':');
-                value = segments.slice(0, 4).join(':') + '::/64';
+            if (field.variableName === 'mape_gua_prefix' && values && values.mape_gua_prefix) {
+                value = values.mape_gua_prefix;
             }
 
             if (value !== null && value !== undefined && value !== '') {
