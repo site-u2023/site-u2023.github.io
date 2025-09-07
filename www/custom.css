@@ -1,140 +1,73 @@
 /* ===== OpenWrt Custom Firmware Selector - Extended Styles ===== */
-/* Organized with CSS Variables for better maintainability */
+/* Inherits from index.css - extends base styles without overriding core functionality */
 
 :root {
-  /* ===== OpenWrt Brand Colors ===== */
+  /* OpenWrt Brand Colors */
   --owrt-blue: #00B5E2;
-  --owrt-blue-hover: #038fc6;
   --owrt-navy: #002B49;
   --owrt-black: #231F20;
   --owrt-gray: #212322;
   --owrt-white: #FFFFFF;
   
-  /* ===== Base Settings from index.css ===== */
-  --input-bg-light: #f1f1f1;
-  --input-bg-dark: #313135;
-  --input-padding: 0.8em;
-  --input-border: 0.06em solid transparent;
-  --input-border-radius: 0.2em;
-  --input-border-width: 0.06em;
-  --container-border-radius: 0.25em;
-  --box-shadow-default: 0em 0.06em 0.19em 0em rgba(0, 0, 0, 0.2),
-                        0em 0.06em 0.06em 0em rgba(0, 0, 0, 0.14),
-                        0em 0.125em 0.06em -0.06em rgba(0, 0, 0, 0.12);
-  
-  /* ===== Form Elements ===== */
-  --form-element-width: 100%;  /* 統一: 90% → 100% */
-  --form-gap: 1em;
-  --form-row-gap: 1em;
-  --form-label-margin: 0.25em;
-  --form-small-margin: 0.25em;
-  
-  /* ===== Typography ===== */
-  --font-size-base: inherit;
-  --font-size-small: 0.875em;
-  --font-size-tiny: 0.8em;
-  --font-weight-normal: 400;
-  --font-weight-medium: 500;
-  --line-height-base: 1.5;
-  
-  /* ===== Spacing System ===== */
-  --spacing-xs: 0.25em;
-  --spacing-sm: 0.5em;
-  --spacing-md: 1em;
-  --spacing-lg: 1.5em;
-  --spacing-xl: 2em;
-  
-  /* ===== Layout ===== */
-  --grid-min-width: 200px;
-  --grid-min-width-package: 250px;
-  --grid-gap: 0.75em;
-  --section-margin: 1.5em;
-  --section-padding: 1em;
-  
-  /* ===== Transitions ===== */
-  --transition-default: 0.2s ease;
-  --transition-slow: 0.3s ease;
-  --animation-fadeIn: fadeIn 0.3s ease-in-out;
-  
-  /* ===== Light Mode Colors ===== */
+  /* Extended Light Mode Colors */
   --bg-main: #f5f5f5;
   --bg-section: #fff;
   --bg-item: #fafafa;
   --bg-item-hover: #f0f0f0;
   --bg-details: #f9f9f9;
   --bg-warning: #fff3cd;
-  --bg-info: #e3f2fd;
-  --bg-input: var(--input-bg-light);
   
   --border-main: #e0e0e0;
   --border-connection: #dee2e6;
   --border-warning: #ffeaa7;
-  --border-info: var(--owrt-blue);
   
   --text-main: #000;
   --text-secondary: #666;
   --text-muted: #6c757d;
   --text-header: #333;
   --text-small: #999;
-  --text-white: #fff;
-  
-  /* ===== ISP Info Colors ===== */
-  --isp-info-bg: var(--owrt-blue);
-  --isp-info-text: var(--owrt-white);
-  --isp-info-padding: 0.5em 1.5em;
-  --isp-info-margin: 0.25em 0;
-  
-  /* ===== Progress Bar ===== */
-  --progress-bg: #e0e0e0;
-  --progress-fill: var(--owrt-blue);
-  --progress-height: 20px;
-  --progress-radius: 10px;
+
+  /* Base settings - Real values inherited from index.css */
+  --input-padding: 0.8em;
+  --input-border: 0.06em solid transparent;
+  --input-border-radius: 0.2em;
+  --input-bg-light: #f1f1f1;
+  --input-bg-dark: #313135;
+  --container-border-radius: 0.25em;
 }
 
-/* ===== Dark Mode Variables ===== */
+/* Extended Dark Mode Colors */
 @media (prefers-color-scheme: dark) {
   :root {
-    /* Dark Mode Colors */
     --bg-main: #18181b;
-    --bg-section: #252528;
+    --bg-section: #252528;  /* matches index.css container > div */
     --bg-item: #2a2a2d;
     --bg-item-hover: #3a3a3e;
     --bg-details: #2a2a2d;
     --bg-warning: #3d3319;
-    --bg-info: #1a3a4a;
-    --bg-input: var(--input-bg-dark);
     
-    --border-main: #444;
+    --border-main: #444;  /* matches index.css border colors */
     --border-connection: #444;
     --border-warning: #5a4d1f;
-    --border-info: #0080b3;
     
     --text-main: #d0d0d0;
     --text-secondary: #999;
     --text-muted: #999;
     --text-header: #d0d0d0;
     --text-small: #999;
-    
-    /* Dark Mode ISP Info */
-    --isp-info-bg: #1a3a4a;
-    
-    /* Dark Mode Progress */
-    --progress-bg: #444;
-    --progress-fill: #0080b3;
   }
 }
 
-/* ===== Base Form Elements ===== */
+/* ===== Extended Form Elements (inherits base input styles) ===== */
 input[type="checkbox"],
 input[type="radio"] {
   accent-color: var(--owrt-blue);
 }
 
-/* ===== Form Layout ===== */
 .form-row {
   display: flex;
-  gap: var(--form-row-gap);
-  margin-bottom: var(--spacing-md);
+  gap: 1em;
+  margin-bottom: 1em;
 }
 
 .form-group {
@@ -143,66 +76,93 @@ input[type="radio"] {
 
 .form-group label {
   display: block;
-  margin-bottom: var(--form-label-margin);
-  font-weight: var(--font-weight-medium);
+  margin-bottom: 0.25em;
+  font-weight: 500;
 }
 
-/* ===== Unified Form Elements ===== */
+/* Extend base input styles from index.css without overriding */
 .form-group input:not(.autocomplete > input):not(#versions),
 .form-group select:not(#versions),
-.form-group textarea,
+.form-group textarea {
+  /* Inherit base styles and extend */
+  width: 100%;
+  box-sizing: border-box; 
+  margin: 0;
+  background-color: var(--bg-input, #f1f1f1); /* fallback to index.css value */
+  color: var(--text-main);
+  resize: both;
+  
+  padding: 0.8em; /* matches index.css input padding */
+  font-size: inherit;
+  line-height: inherit;
+  border: 0.06em solid transparent; /* matches index.css */
+  border-radius: 0.2em; /* matches index.css */
+}
+
+/* New selectors that don't conflict with index.css */
 #package-search,
 #command,
 #uci-defaults-content,
 #postinst-content,
 #asu-packages {
-  width: var(--form-element-width);
+  width: 90%;
   margin: 0;
   padding: var(--input-padding);
   border: var(--input-border);
-  border-radius: var(--input-border-radius);
-  background-color: var(--bg-input);
+  background-color: var(--input-bg-current);
   color: var(--text-main);
-  font-size: var(--font-size-base);
-  line-height: inherit;
-  box-sizing: border-box;
+  border-radius: var(--input-border-radius);
+  font-size: inherit;
   resize: both;
+}
+
+@media (prefers-color-scheme: dark) {
+  .form-group input:not(.autocomplete > input):not(#versions),
+  .form-group select:not(#versions),
+  .form-group textarea,
+  #package-search,
+  #command,
+  #uci-defaults-content,
+  #postinst-content,
+  #asu-packages {
+    background-color: var(--bg-input, #313135); /* matches index.css dark mode */
+    color: var(--text-main);
+  }
 }
 
 .form-group small {
   display: block;
-  margin-top: var(--form-small-margin);
+  margin-top: 0.25em;
   color: var(--text-muted);
-  font-size: var(--font-size-small);
+  font-size: 0.875em;
 }
 
 /* ===== Radio Groups ===== */
 .radio-group {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--spacing-md);
-  margin-top: var(--spacing-sm);
+  gap: 1em;
+  margin-top: 0.5em;
 }
 
 .radio-group label {
   display: flex;
   align-items: center;
-  gap: var(--spacing-xs);
+  gap: 0.25em;
   cursor: pointer;
   white-space: nowrap;
 }
 
 /* ===== Details/Summary Styling ===== */
 details {
-  margin-top: var(--spacing-md);
+  margin-top: 1em;
 }
 
 details summary {
   cursor: pointer;
-  padding: var(--grid-gap) 0;
+  padding: 0.75em 0;
   user-select: none;
   color: inherit;
-  transition: color var(--transition-default);
 }
 
 details summary:hover {
@@ -214,7 +174,7 @@ details summary h4,
 details summary h5 {
   display: inline;
   margin: 0;
-  font-weight: var(--font-weight-medium);
+  font-weight: 500;
 }
 
 details[open] summary {
@@ -223,56 +183,67 @@ details[open] summary {
 
 #packages-details,
 #scripts-details {
-  margin-top: var(--section-margin);
-  padding: var(--section-padding);
+  margin-top: 1.5em;
+  padding: 1em;
   background-color: var(--bg-details);
-  border-radius: var(--container-border-radius);
+  border-radius: 0.25em;
 }
 
 #postinst-details,
 #uci-defaults-details {
-  padding: 0 var(--section-padding) var(--section-padding) var(--section-padding);
+  padding: 0 1em 1em 1em;
 }
 
-/* ===== ISP Information Display ===== */
+/* ===== ISP Information Display (extends base styling) ===== */
 #isp-info-row,
 #isp-timezone-row,
 #isp-isp-row,
 #isp-as-row,
 #isp-ip-row,
 #isp-connection-row {
-  background-color: var(--isp-info-bg);
-  color: var(--isp-info-text);
-  margin: var(--isp-info-margin);
-  padding: var(--isp-info-padding);
-  border-radius: var(--input-border-radius);
+  background-color: var(--owrt-blue);
+  color: var(--owrt-white);
+  margin: 0.25em 0;
+  padding: 0.5em 1.5em;
+  border-radius: 0.2em; /* matches index.css border-radius */
+}
+
+@media (prefers-color-scheme: dark) {
+  #isp-info-row,
+  #isp-timezone-row,
+  #isp-isp-row,
+  #isp-as-row,
+  #isp-ip-row,
+  #isp-connection-row {
+    background-color: #1a3a4a; /* darker variant for better contrast */
+  }
 }
 
 /* ===== Package Selector ===== */
 #package-search-autocomplete {
   position: relative;
-  margin-bottom: var(--section-margin);
+  margin-bottom: 1.5em;
 }
 
 #package-categories {
-  margin: var(--spacing-md) 0;
+  margin: 1em 0;
 }
 
 /* ===== Feature Grid Components ===== */
 .feature-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(var(--grid-min-width), 1fr));
-  gap: var(--grid-gap);
-  margin-top: var(--spacing-md);
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.75em;
+  margin-top: 1em;
 }
 
 .feature-item {
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-sm);
-  border-radius: var(--input-border-radius);
-  transition: background-color var(--transition-default);
+  gap: 0.5em;
+  padding: 0.5em;
+  border-radius: 0.2em; /* matches index.css */
+  transition: background-color 0.2s;
 }
 
 .feature-item:hover {
@@ -287,27 +258,30 @@ details[open] summary {
 .feature-item label {
   margin: 0;
   cursor: pointer;
-  font-weight: var(--font-weight-normal);
+  font-weight: normal;
 }
 
 .system-management-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: var(--spacing-sm);
-  margin-top: var(--spacing-md);
+  gap: 0.5em;
+  margin-top: 1em;
 }
 
-/* ===== Section Containers ===== */
+/* ===== Section Containers (extends base container styles) ===== */
 .config-section,
 .package-category,
 #postinst-details,
 #uci-defaults-details {
-  margin: 0 0 var(--section-margin) 0;
-  padding: 0 var(--section-padding) var(--section-padding) var(--section-padding);
+  margin: 0 0 1.5em 0;
+  padding: 0 1em 1em 1em;
   background-color: var(--bg-section);
   border: 1px solid var(--border-main);
-  border-radius: var(--container-border-radius);
-  box-shadow: var(--box-shadow-default);
+  border-radius: 0.25em; /* matches index.css container border-radius */
+  /* inherit box-shadow pattern from index.css */
+  box-shadow: 0em 0.06em 0.19em 0em rgba(0, 0, 0, 0.2),
+              0em 0.06em 0.06em 0em rgba(0, 0, 0, 0.14),
+              0em 0.125em 0.06em -0.06em rgba(0, 0, 0, 0.12);
   color: var(--text-main);
 }
 
@@ -315,34 +289,34 @@ details[open] summary {
 .package-category h4,
 #postinst-details h4,
 #uci-defaults-details h4 {
-  margin-top: var(--spacing-md);
-  margin-bottom: var(--spacing-md);
+  margin-top: 1em;
+  margin-bottom: 1em;
   color: inherit;
 }
 
 details summary h4 {
   display: inline;
   margin: 0;
-  font-weight: var(--font-weight-medium);
+  font-weight: 500;
 }
 
 .package-category-description,
 .package-description {
-  margin-bottom: var(--spacing-md);
+  margin-bottom: 1em;
   color: var(--text-secondary);
-  font-size: var(--font-size-small);
+  font-size: 0.9em;
 }
 
 .package-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(var(--grid-min-width-package), 1fr));
-  gap: var(--grid-gap);
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 0.75em;
 }
 
 .package-item {
-  padding: var(--spacing-sm);
-  border-radius: var(--input-border-radius);
-  transition: background-color var(--transition-default);
+  padding: 0.5em;
+  border-radius: 0.2em;
+  transition: background-color 0.2s;
 }
 
 .package-item:hover {
@@ -352,7 +326,7 @@ details summary h4 {
 .package-item label {
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
+  gap: 0.5em;
   cursor: pointer;
 }
 
@@ -364,7 +338,7 @@ details summary h4 {
 .package-link {
   color: var(--owrt-blue);
   text-decoration: none;
-  font-weight: var(--font-weight-medium);
+  font-weight: 500;
 }
 
 .package-link:hover {
@@ -372,16 +346,16 @@ details summary h4 {
 }
 
 .package-dependent {
-  margin-left: var(--section-margin);
+  margin-left: 1.5em;
 }
 
 /* ===== Connection Type Sections ===== */
 #manual-connection-section {
-  margin-top: var(--spacing-md);
-  padding: var(--section-padding);
+  margin-top: 1em;
+  padding: 1em;
   background-color: var(--bg-warning);
   border: 1px solid var(--border-warning);
-  border-radius: var(--container-border-radius);
+  border-radius: 0.25em;
 }
 
 #auto-section,
@@ -390,11 +364,11 @@ details summary h4 {
 #dslite-section,
 #mape-section,
 #ap-section {
-  margin-top: var(--spacing-md);
-  padding: var(--section-padding);
+  margin-top: 1em;
+  padding: 1em;
   background-color: transparent;
   border: 1px solid var(--border-connection);
-  border-radius: var(--container-border-radius);
+  border-radius: 0.25em;
 }
 
 #internet-config {
@@ -408,16 +382,16 @@ details summary h4 {
 }
 
 #commands-autocomplete .command {
-  margin-bottom: var(--spacing-sm);
+  margin-bottom: 0.5em;
 }
 
 /* ===== Build Progress Indicator ===== */
 .build-progress {
-  margin: var(--spacing-md) 0;
-  padding: var(--section-padding);
-  background-color: var(--bg-info);
-  border: 1px solid var(--border-info);
-  border-radius: var(--container-border-radius);
+  margin: 1em 0;
+  padding: 1em;
+  background-color: #e3f2fd;
+  border: 1px solid var(--owrt-blue);
+  border-radius: 0.25em;
   display: none;
 }
 
@@ -427,20 +401,35 @@ details summary h4 {
 
 .progress-bar {
   width: 100%;
-  height: var(--progress-height);
-  background-color: var(--progress-bg);
-  border-radius: var(--progress-radius);
+  height: 20px;
+  background-color: #e0e0e0;
+  border-radius: 10px;
   overflow: hidden;
-  margin-top: var(--spacing-sm);
+  margin-top: 0.5em;
 }
 
 .progress-bar-fill {
   height: 100%;
-  background-color: var(--progress-fill);
-  transition: width var(--transition-slow);
+  background-color: var(--owrt-blue);
+  transition: width 0.3s ease;
 }
 
-/* ===== Responsive Design ===== */
+@media (prefers-color-scheme: dark) {
+  .build-progress {
+    background-color: #1a3a4a;
+    border-color: #0080b3; /* matches index.css dark header */
+  }
+  
+  .progress-bar {
+    background-color: #444; /* matches index.css dark border */
+  }
+  
+  .progress-bar-fill {
+    background-color: #0080b3;
+  }
+}
+
+/* ===== Responsive Design (extends base responsive patterns) ===== */
 @media (max-width: 600px) {
   .form-row {
     flex-direction: column;
@@ -460,13 +449,13 @@ details summary h4 {
   
   #packages-details,
   #scripts-details {
-    padding: var(--spacing-sm);
+    padding: 0.5em;
   }
 
   .radio-group {
     flex-direction: column;
     align-items: flex-start;
-    gap: var(--spacing-sm);
+    gap: 0.5em;
   }
 
   .form-group label,
@@ -481,25 +470,23 @@ details summary h4 {
 }
 
 .text-small {
-  font-size: var(--font-size-small);
+  font-size: 0.875em;
 }
 
-/* Margin utilities */
-.mt-1 { margin-top: var(--spacing-sm); }
-.mt-2 { margin-top: var(--spacing-md); }
-.mt-3 { margin-top: var(--spacing-lg); }
-.mb-1 { margin-bottom: var(--spacing-sm); }
-.mb-2 { margin-bottom: var(--spacing-md); }
-.mb-3 { margin-bottom: var(--spacing-lg); }
+.mt-1 { margin-top: 0.5em; }
+.mt-2 { margin-top: 1em; }
+.mt-3 { margin-top: 1.5em; }
+.mb-1 { margin-bottom: 0.5em; }
+.mb-2 { margin-bottom: 1em; }
+.mb-3 { margin-bottom: 1.5em; }
 
-/* Padding utilities */
-.p-1 { padding: var(--spacing-sm); }
-.p-2 { padding: var(--spacing-md); }
-.p-3 { padding: var(--spacing-lg); }
+.p-1 { padding: 0.5em; }
+.p-2 { padding: 1em; }
+.p-3 { padding: 1.5em; }
 
-/* ===== Animation ===== */
+/* ===== Animation (extends base transition patterns) ===== */
 details[open] > summary ~ * {
-  animation: var(--animation-fadeIn);
+  animation: fadeIn 0.3s ease-in-out;
 }
 
 @keyframes fadeIn {
@@ -511,18 +498,4 @@ details[open] > summary ~ * {
     opacity: 1;
     transform: translateY(0);
   }
-}
-
-/* ===== Info Display ===== */
-.info-display {
-  padding: var(--section-padding);
-  background-color: var(--bg-item);
-  border-radius: var(--input-border-radius);
-  margin-top: var(--spacing-sm);
-  white-space: pre-line;
-}
-
-/* ===== Hide Class (index.css compatibility) ===== */
-.hide {
-  display: none !important;
 }
