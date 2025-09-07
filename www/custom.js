@@ -1202,33 +1202,19 @@ function handleConnectionTypeChange(e) {
         if (section) {
             if (type === selectedType) {
                 show(section);
-
                 if (type === 'auto' && cachedApiInfo) {
                     updateAutoConnectionInfo(cachedApiInfo);
-
-                } else if (type === 'mape') {
-                    // MAP-E選択時の処理
-                    const mapeTypeRadio = document.querySelector('input[name="mape_type"]:checked');
+                    } else if (type === 'mape' && cachedApiInfo) {
+                    // MAP-E選択時にGUA prefixを設定
                     const guaPrefixField = document.querySelector('#mape-gua-prefix');
-                    if (guaPrefixField) {
-                        const formGroup = guaPrefixField.closest('.form-group');
-                        if (mapeTypeRadio && mapeTypeRadio.value === 'pd') {
-                            // PDが選択されている場合は非表示
-                            if (formGroup) formGroup.style.display = 'none';
-                        } else {
-                            // GUAが選択されているか、デフォルトの場合
-                            if (formGroup) formGroup.style.display = '';
-                            if (cachedApiInfo?.ipv6 && !guaPrefixField.value) {
-                                const guaPrefix = generateGuaPrefixFromFullAddress(cachedApiInfo);
-                                if (guaPrefix) {
-                                    guaPrefixField.value = guaPrefix;
-                                    console.log('GUA prefix set for MAP-E:', guaPrefix);
-                                }
-                            }
+                    if (guaPrefixField && cachedApiInfo.ipv6) {
+                        const guaPrefix = generateGuaPrefixFromFullAddress(cachedApiInfo);
+                        if (guaPrefix && !guaPrefixField.value) {
+                            guaPrefixField.value = guaPrefix;
+                            console.log('GUA prefix set for MAP-E:', guaPrefix);
                         }
                     }
                 }
-
             } else {
                 hide(section);
             }
