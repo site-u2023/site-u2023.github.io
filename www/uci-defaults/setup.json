@@ -446,6 +446,7 @@
                   "selector": "#mape-gua-extra",
                   "variableName": "mape_gua_extra",
                   "placeholder": "optional for GUA",
+                  "apiMapping": "mape.guaExtraValue",
                   "showWhen": {"field": "mape_type", "values": ["gua"]}
                 }          
               ]
