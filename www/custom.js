@@ -565,12 +565,6 @@ function buildField(parent, pkg) {
             condWrap.className = 'conditional-section';
             condWrap.style.display = 'none';
 
-            if (pkg.name) {
-                const h5 = document.createElement('h5');
-                h5.textContent = pkg.name;
-                condWrap.appendChild(h5);
-            }
-
             (pkg.children || []).forEach(child => {
                 buildField(condWrap, child);
             });
