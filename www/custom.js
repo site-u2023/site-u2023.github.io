@@ -635,8 +635,15 @@ function buildFormGroup(field) {
         if (field.id) ctrl.id = field.id;
         if (field.placeholder) ctrl.placeholder = field.placeholder;
         
-        if (field.defaultValue !== null && field.defaultValue !== undefined) {
+        // 初期値設定の改善：デフォルト値があり、かつAPIマッピングがある場合の処理
+        if (field.defaultValue !== null && field.defaultValue !== undefined && field.defaultValue !== '') {
             ctrl.value = field.defaultValue;
+        } else if (field.apiMapping && cachedApiInfo) {
+            // APIから値を取得して設定
+            const apiValue = getNestedValue(cachedApiInfo, field.apiMapping);
+            if (apiValue !== null && apiValue !== undefined && apiValue !== '') {
+                ctrl.value = apiValue;
+            }
         }
         
         if (field.min != null) ctrl.min = field.min;
@@ -996,8 +1003,19 @@ function applySpecialFieldLogic(values) {
                 values.mape_psid_offset = cachedApiInfo.mape.psIdOffset;
                 values.mape_psidlen = cachedApiInfo.mape.psidlen;
                 
+                // GUA prefixの自動設定を改善
                 if (cachedApiInfo.ipv6) {
                     const segments = cachedApiInfo.ipv6.split(':');
+                    const guaPrefix = segments.slice(0, 4).join(':') + '::/64';
+                    values.mape_gua_prefix = guaPrefix;
+                    values.mape_gua_mode = '1';
+                } else if (cachedApiInfo.mape.ipv6Prefix) {
+                    // IPv6 prefixからGUA prefixを生成
+                    const prefix = cachedApiInfo.mape.ipv6Prefix;
+                    const segments = prefix.split(':');
+                    while (segments.length < 4) {
+                        segments.push('0');
+                    }
                     values.mape_gua_prefix = segments.slice(0, 4).join(':') + '::/64';
                     values.mape_gua_mode = '1';
                 }
@@ -1018,6 +1036,7 @@ function applySpecialFieldLogic(values) {
     } else if (connectionType === 'mape') {
         connectionFieldVars.filter(key => !key.startsWith('mape_')).forEach(key => delete values[key]);
         
+        // MAP-E設定の改善
         if (cachedApiInfo?.mape?.brIpv6Address) {
             values.mape_br = cachedApiInfo.mape.brIpv6Address;
             values.mape_ealen = cachedApiInfo.mape.eaBitLength;
@@ -1028,7 +1047,12 @@ function applySpecialFieldLogic(values) {
             values.mape_psid_offset = cachedApiInfo.mape.psIdOffset;
             values.mape_psidlen = cachedApiInfo.mape.psidlen;
             
-            if (cachedApiInfo.mape.ipv6Prefix) {
+            // GUA prefix設定の改善
+            if (cachedApiInfo.ipv6) {
+                const segments = cachedApiInfo.ipv6.split(':');
+                values.mape_gua_prefix = segments.slice(0, 4).join(':') + '::/64';
+                values.mape_gua_mode = '1';
+            } else if (cachedApiInfo.mape.ipv6Prefix) {
                 const prefix = cachedApiInfo.mape.ipv6Prefix;
                 const segments = prefix.split(':');
                 while (segments.length < 4) {
@@ -1040,13 +1064,23 @@ function applySpecialFieldLogic(values) {
         }
         
         const mapeType = getFieldValue('input[name="mape_type"]');
-        if (mapeType === 'gua') values.mape_gua_mode = '1';
+        if (mapeType === 'gua') {
+            values.mape_gua_mode = '1';
+            
+            // GUAタイプの場合、フィールドの値がない場合はデフォルト値を設定
+            const currentGUAValue = getFieldValue('#mape-gua-prefix');
+            if (!currentGUAValue && !values.mape_gua_prefix) {
+                // デフォルト値を設定（例：標準的なGUA prefix）
+                values.mape_gua_prefix = '2001:db8:1:2::/64';
+            }
+        }
     } else if (connectionType === 'ap') {
         connectionFieldVars.filter(key => !key.startsWith('ap_')).forEach(key => delete values[key]);
     } else {
         connectionFieldVars.forEach(key => delete values[key]);
     }
     
+    // Wi-Fi設定の処理
     const wifiMode = getFieldValue('input[name="wifi_mode"]');
     if (wifiMode === 'disabled') {
         ['wlan_ssid', 'wlan_password', 'enable_usteer', 'mobility_domain', 'snr']
@@ -1058,6 +1092,7 @@ function applySpecialFieldLogic(values) {
         values.enable_usteer = '1';
     }
     
+    // ネットワーク最適化の処理
     const netOptimizer = getFieldValue('input[name="net_optimizer"]');
     if (netOptimizer === 'auto') {
         values.enable_netopt = '1';
