@@ -859,16 +859,22 @@ function walkConfig(config, fn) {
 }
 
 function getRows(group) {
-    if (Array.isArray(group.rows) && group.rows.length) {
-        return group.rows.map(r => ({ columns: Array.isArray(r.columns) ? r.columns : [] }));
-    }
-    const fields = Array.isArray(group.fields) ? group.fields : [];
     const rows = [];
-    for (let i = 0; i < fields.length; i += 2) {
-        const cols = [fields[i]];
-        if (fields[i + 1]) cols.push(fields[i + 1]);
-        rows.push({ columns: cols });
+    const COLUMNS_PER_ROW = 2; // デフォルト2列レイアウト
+    const fields = group.fields || [];
+    
+    // フィールドをグループ化
+    for (let i = 0; i < fields.length; i += COLUMNS_PER_ROW) {
+        const columns = [];
+        
+        // 指定列数分のフィールドを追加
+        for (let j = 0; j < COLUMNS_PER_ROW && (i + j) < fields.length; j++) {
+            columns.push(fields[i + j]);
+        }
+        
+        rows.push({ columns: columns });
     }
+    
     return rows;
 }
 
