@@ -86,7 +86,20 @@ async function initializeCustomFeatures(asuSection, temp) {
     }
 
     cleanupExistingCustomElements();
+
+     // 既存のパッケージテキストエリアを保持
+    const existingPackagesTextarea = asuSection.querySelector('#asu-packages');
+    
     replaceAsuSection(asuSection, temp);
+
+    // Postinstを正しい位置に配置
+    if (existingPackagesTextarea) {
+        const newAsuSection = document.querySelector('#asu');
+        if (newAsuSection) {
+            newAsuSection.appendChild(existingPackagesTextarea.cloneNode(true));
+        }
+    }
+    
     insertExtendedInfo(temp);
     
     // 設定とデータを並列で読み込み
