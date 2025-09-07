@@ -438,7 +438,16 @@
                   "variableName": "mape_psidlen",
                   "placeholder": "6",
                   "apiMapping": "mape.psidlen"
-                }
+                },
+                {
+                  "id": "mape-gua-extra",
+                  "label": "GUA Extra Field",
+                  "type": "text",
+                  "selector": "#mape-gua-extra",
+                  "variableName": "mape_gua_extra",
+                  "placeholder": "optional for GUA",
+                  "showWhen": {"field": "mape_type", "values": ["gua"]}
+                }          
               ]
             }
           ]
