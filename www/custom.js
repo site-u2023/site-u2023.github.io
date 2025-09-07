@@ -494,6 +494,19 @@ function renderSetupConfig(config) {
             applyIspAutoConfig(cachedApiInfo);
             console.log('Reapplied ISP config after form render');
         }
+        
+        // MAP-Eタイプの初期状態を処理
+        const mapeTypeRadio = document.querySelector('input[name="mape_type"]:checked');
+        if (mapeTypeRadio && mapeTypeRadio.value === 'pd') {
+            const guaPrefixField = document.querySelector('#mape-gua-prefix');
+            if (guaPrefixField) {
+                const formGroup = guaPrefixField.closest('.form-group');
+                if (formGroup) {
+                    formGroup.style.display = 'none';
+                    console.log('Initial PD mode: GUA prefix hidden');
+                }
+            }
+        }
     }, 100);
 }
 
@@ -1184,7 +1197,7 @@ function handleConnectionTypeChange(e) {
     const selectedType = e.target.value;
     
     const sections = ['auto', 'dhcp', 'pppoe', 'dslite', 'mape', 'ap'];
-sections.forEach(type => {
+    sections.forEach(type => {
         const section = document.querySelector(`#${type}-section`);
         if (section) {
             if (type === selectedType) {
