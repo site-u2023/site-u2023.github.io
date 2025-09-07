@@ -186,9 +186,8 @@ patch "$MAP_SH" << 'EOF'
 --- b/lib/netifd/proto/map.sh
 @@
 -#!/bin/sh
-+[ -n "$INCLUDE_ONLY" ] || {
-+#!/bin/sh
-+DONT_SNAT_TO="0"
++[#!/bin/sh
++DONT_SNAT_TO="0"]
 @@
 -		json_add_int mtu "${mtu:-1280}"
 +		json_add_int mtu "${mtu:-1460}"
