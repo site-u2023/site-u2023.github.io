@@ -1622,9 +1622,9 @@ function handlePackageSelection(e) {
 
 function updatePackageListFromSelector() {
     console.log('updatePackageListFromSelector called');
-    
+
     const checkedPkgs = new Set();
-    
+
     // パッケージセレクターから選択されたパッケージ
     document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
         const pkgName = cb.getAttribute('data-package');
@@ -1632,30 +1632,19 @@ function updatePackageListFromSelector() {
             checkedPkgs.add(pkgName);
         }
     });
-    
+
     // 動的パッケージ（言語パッケージを含む）を追加
     dynamicPackages.forEach(pkg => {
         checkedPkgs.add(pkg);
     });
-    
+
     console.log('Checked packages from selector:', Array.from(checkedPkgs).filter(p => !p.startsWith('luci-i18n-')));
     console.log('Language packages from dynamic:', Array.from(checkedPkgs).filter(p => p.startsWith('luci-i18n-')));
-    
+
     const textarea = document.querySelector('#asu-packages');
     if (textarea) {
-        const currentPackages = split(textarea.value);
-        
-        // セレクターで管理されていない、かつ動的でもない、かつ言語パッケージでもないパッケージを保持
-        const nonSelectorPkgs = currentPackages.filter(pkg => {
-            const hasInSelector = document.querySelector(`.package-selector-checkbox[data-package="${pkg}"]`);
-            const hasInDynamic = dynamicPackages.has(pkg);
-            const isLanguagePkg = pkg.startsWith('luci-i18n-');
-            return !hasInSelector && !hasInDynamic && !isLanguagePkg;
-        });
-        
-        const newList = [...new Set([...nonSelectorPkgs, ...checkedPkgs])];
-        
-        textarea.value = newList.join(' ');
+        // checkedPkgs のみで上書き（未選択は消す）
+        textarea.value = Array.from(checkedPkgs).join(' ');
     }
 }
 
