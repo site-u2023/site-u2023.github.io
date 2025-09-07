@@ -126,7 +126,8 @@ function replaceAsuSection(asuSection, temp) {
         customScripts.id = 'custom-scripts-details';
         newDiv.appendChild(customScripts);
     }
-
+    
+    // Postinstを正しい位置に配置
     const existingPackagesTextarea = asuSection.querySelector('#asu-packages');
     if (existingPackagesTextarea) {
         newDiv.appendChild(existingPackagesTextarea.cloneNode(true));
