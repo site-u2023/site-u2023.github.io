@@ -1160,13 +1160,6 @@ function setupEventListeners() {
             updateVariableDefinitions();
         });
     });
-    
-    // カスタムスクリプトセクションの展開/折りたたみハンドラーを追加
-    const customScriptsDetails = document.querySelector('#custom-scripts-details');
-    if (customScriptsDetails) {
-        customScriptsDetails.removeEventListener('toggle', handleCustomScriptsToggle);
-        customScriptsDetails.addEventListener('toggle', handleCustomScriptsToggle);
-    }
 }
 
 function handleConnectionTypeChange(e) {
@@ -1629,9 +1622,9 @@ function handlePackageSelection(e) {
 
 function updatePackageListFromSelector() {
     console.log('updatePackageListFromSelector called');
-    
+
     const checkedPkgs = new Set();
-    
+
     // パッケージセレクターから選択されたパッケージ
     document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
         const pkgName = cb.getAttribute('data-package');
@@ -1639,19 +1632,19 @@ function updatePackageListFromSelector() {
             checkedPkgs.add(pkgName);
         }
     });
-    
+
     // 動的パッケージ（言語パッケージを含む）を追加
     dynamicPackages.forEach(pkg => {
         checkedPkgs.add(pkg);
     });
-    
+
     console.log('Checked packages from selector:', Array.from(checkedPkgs).filter(p => !p.startsWith('luci-i18n-')));
     console.log('Language packages from dynamic:', Array.from(checkedPkgs).filter(p => p.startsWith('luci-i18n-')));
-    
+
     const textarea = document.querySelector('#asu-packages');
     if (textarea) {
         const currentPackages = split(textarea.value);
-        
+
         // セレクターで管理されていない、かつ動的でもない、かつ言語パッケージでもないパッケージを保持
         const nonSelectorPkgs = currentPackages.filter(pkg => {
             const hasInSelector = document.querySelector(`.package-selector-checkbox[data-package="${pkg}"]`);
@@ -1659,11 +1652,16 @@ function updatePackageListFromSelector() {
             const isLanguagePkg = pkg.startsWith('luci-i18n-');
             return !hasInSelector && !hasInDynamic && !isLanguagePkg;
         });
-        
+
         const newList = [...new Set([...nonSelectorPkgs, ...checkedPkgs])];
-        
-        console.log('Final package list:', newList);
-        textarea.value = newList.join(' ');
+
+        // 変更点：空リストの場合は上書きしない
+        if (newList.length > 0) {
+            textarea.value = newList.join(' ');
+        } else {
+            // 何も選択されていない場合は元の値を保持
+            console.log('No packages selected, textarea unchanged');
+        }
     }
 }
 
