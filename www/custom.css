@@ -61,7 +61,7 @@
 /* ===== Extended Form Elements (inherits base input styles) ===== */
 input[type="checkbox"],
 input[type="radio"] {
-  accent-color: var(--accent-form-control);
+  accent-color: var(--owrt-blue);
 }
 
 .form-row {
