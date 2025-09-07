@@ -447,7 +447,7 @@
                   "variableName": "mape_gua_prefix",
                   "placeholder": "optional for GUA",
                   "defaultValue": "",
-                  "apiMapping": "mape.ipv6PrefixWith64",
+                  "apiMapping": "ipv6",
                   "description": "IPv6 GUA prefix with /64 suffix"
                 }          
               ]
