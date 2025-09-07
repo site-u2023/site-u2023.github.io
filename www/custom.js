@@ -1004,19 +1004,9 @@ function applySpecialFieldLogic(values) {
                 values.mape_psidlen = cachedApiInfo.mape.psidlen;
                 
                 // GUA prefixの自動設定を改善
-                if (cachedApiInfo.ipv6) {
-                    const segments = cachedApiInfo.ipv6.split(':');
-                    const guaPrefix = segments.slice(0, 4).join(':') + '::/64';
+                const guaPrefix = generateGuaPrefixFromFullAddress(cachedApiInfo);
+                if (guaPrefix) {
                     values.mape_gua_prefix = guaPrefix;
-                    values.mape_gua_mode = '1';
-                } else if (cachedApiInfo.mape.ipv6Prefix) {
-                    // IPv6 prefixからGUA prefixを生成
-                    const prefix = cachedApiInfo.mape.ipv6Prefix;
-                    const segments = prefix.split(':');
-                    while (segments.length < 4) {
-                        segments.push('0');
-                    }
-                    values.mape_gua_prefix = segments.slice(0, 4).join(':') + '::/64';
                     values.mape_gua_mode = '1';
                 }
             } else if (cachedApiInfo.aftr) {
@@ -1048,17 +1038,9 @@ function applySpecialFieldLogic(values) {
             values.mape_psidlen = cachedApiInfo.mape.psidlen;
             
             // GUA prefix設定の改善
-            if (cachedApiInfo.ipv6) {
-                const segments = cachedApiInfo.ipv6.split(':');
-                values.mape_gua_prefix = segments.slice(0, 4).join(':') + '::/64';
-                values.mape_gua_mode = '1';
-            } else if (cachedApiInfo.mape.ipv6Prefix) {
-                const prefix = cachedApiInfo.mape.ipv6Prefix;
-                const segments = prefix.split(':');
-                while (segments.length < 4) {
-                    segments.push('0');
-                }
-                values.mape_gua_prefix = segments.slice(0, 4).join(':') + '::/64';
+            const guaPrefix = generateGuaPrefixFromFullAddress(cachedApiInfo);
+            if (guaPrefix) {
+                values.mape_gua_prefix = guaPrefix;
                 values.mape_gua_mode = '1';
             }
         }
@@ -1291,9 +1273,11 @@ function applyIspAutoConfig(apiInfo) {
             
             let value = getNestedValue(apiInfo, field.apiMapping);
 
-            if (field.variableName === 'mape_gua_prefix' && cachedApiInfo && cachedApiInfo.ipv6) {
-                const segments = cachedApiInfo.ipv6.split(':');
-                value = segments.slice(0, 4).join(':') + '::/64';
+            if (field.variableName === 'mape_gua_prefix') {
+                const guaPrefix = generateGuaPrefixFromFullAddress(cachedApiInfo);
+                if (guaPrefix) {
+                    value = guaPrefix;
+                }
             }
 
             if (value !== null && value !== undefined && value !== '') {
@@ -1818,6 +1802,14 @@ function customSetupUciDefaults() {
 }
 
 // ==================== ユーティリティ関数 ====================
+
+function generateGuaPrefixFromFullAddress(apiInfo) {
+    if (apiInfo?.ipv6) {
+        const segments = apiInfo.ipv6.split(':');
+        return segments.slice(0, 4).join(':') + '::/64';
+    }
+    return null;
+}
 
 function show(el) {
     const e = typeof el === 'string' ? document.querySelector(el) : el;
