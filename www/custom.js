@@ -1275,11 +1275,21 @@ function applyIspAutoConfig(apiInfo) {
             }
         }
     });
-    
+
     updateAutoConnectionInfo(apiInfo);
     updatePackageListFromDynamicSources();
     updateVariableDefinitions();
 }
+
+// ★ mape_type 切り替え時にも再実行
+document.querySelectorAll('[name="mape_type"]').forEach(el => {
+    el.addEventListener('change', function() {
+        if (typeof window.ispInfo !== 'undefined') {
+            applyIspAutoConfig(window.ispInfo);
+        }
+    });
+});
+
 
 function updateAutoConnectionInfo(apiInfo) {
     const autoInfo = document.querySelector('#auto-info');
