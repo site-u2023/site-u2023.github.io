@@ -715,22 +715,24 @@ function handleRadioChange(e) {
     }
     
     // MAP-Eタイプ切り替え時の特別処理
+// MAP-Eタイプ切り替え時の特別処理
     if (radio.name === 'mape_type') {
         const guaPrefixField = document.querySelector('#mape-gua-prefix');
         if (guaPrefixField) {
+            const formGroup = guaPrefixField.closest('.form-group');
             if (radio.value === 'pd') {
-                // PDモードの場合はGUA prefixをクリア
+                // PDモードの場合はGUA prefixフィールドを非表示
                 guaPrefixField.value = '';
-                guaPrefixField.disabled = true;
-                console.log('PD mode: GUA prefix cleared');
+                if (formGroup) formGroup.style.display = 'none';
+                console.log('PD mode: GUA prefix hidden');
             } else if (radio.value === 'gua') {
-                // GUAモードの場合は有効化してGUA prefixを設定
-                guaPrefixField.disabled = false;
+                // GUAモードの場合は表示してGUA prefixを設定
+                if (formGroup) formGroup.style.display = '';
                 if (cachedApiInfo?.ipv6) {
                     const guaPrefix = generateGuaPrefixFromFullAddress(cachedApiInfo);
                     if (guaPrefix) {
                         guaPrefixField.value = guaPrefix;
-                        console.log('GUA mode: GUA prefix set');
+                        console.log('GUA mode: GUA prefix shown');
                     }
                 }
             }
