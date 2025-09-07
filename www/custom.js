@@ -115,7 +115,7 @@ function replaceAsuSection(asuSection, temp) {
     newDiv.id = 'asu';
     newDiv.className = asuSection.className;
     newDiv.style.width = '100%';
-
+    
     const customPackages = temp.querySelector('#custom-packages-section details');
     const customScripts = temp.querySelector('#custom-scripts-section details');
 
@@ -128,34 +128,22 @@ function replaceAsuSection(asuSection, temp) {
         newDiv.appendChild(customScripts);
     }
 
-    // --- asu-packages を復元（元の位置を保持する） ---
-    let existingPackagesTextarea = asuSection.querySelector('#asu-packages');
-    if (!existingPackagesTextarea) {
-        existingPackagesTextarea = document.createElement('textarea');
-        existingPackagesTextarea.id = 'asu-packages';
-        existingPackagesTextarea.style.width = '100%';
-        existingPackagesTextarea.rows = 4;
-    }
-    // ★ custom-packages の直後に挿入
-    if (newDiv.querySelector('#custom-packages-details')) {
-        newDiv.querySelector('#custom-packages-details')
-              .insertAdjacentElement('afterend', existingPackagesTextarea);
-    } else {
-        newDiv.appendChild(existingPackagesTextarea);
-    }
-
-    // --- 残りのUI ---
+    // index.jsが期待する全てのDOM要素を追加
     newDiv.insertAdjacentHTML('beforeend', `
         <br>
         <div id="asu-buildstatus" class="hide">
             <span></span>
             <div id="asu-log" class="hide">
                 <details>
-                    <summary><code>STDERR</code></summary>
+                    <summary>
+                        <code>STDERR</code>
+                    </summary>
                     <pre id="asu-stderr"></pre>
                 </details>
                 <details>
-                    <summary><code>STDOUT</code></summary>
+                    <summary>
+                        <code>STDOUT</code>
+                    </summary>
                     <pre id="asu-stdout"></pre>
                 </details>
             </div>
@@ -164,7 +152,7 @@ function replaceAsuSection(asuSection, temp) {
             <span></span><span class="tr-request-build">REQUEST BUILD</span>
         </a>
     `);
-
+    
     asuSection.parentNode.replaceChild(newDiv, asuSection);
 }
 
