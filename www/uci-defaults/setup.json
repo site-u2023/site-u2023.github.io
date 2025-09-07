@@ -235,7 +235,7 @@
             {"value": "dhcp", "label": "DHCP"},
             {"value": "pppoe", "label": "PPPoE"},
             {"value": "dslite", "label": "DS-Lite", "packages": ["ds-lite"]},
-            {"value": "mape", "label": "MAP-E", "packages": ["map"]},
+            {"value": "mape", "label": "MAP-E", "packages": ["map", "patch"]},
             {"value": "ap", "label": "AP"}
           ]
         },
