@@ -177,13 +177,13 @@ set firewall.@zone[1].mtu_fix='1'
 MAPE_EOF
 [ -n "${mape_gua_mode}" ] && uci -q set network.${MAPE6}.ip6prefix="${mape_gua_prefix}"
 # github.com/fakemanhk/openwrt-jp-ipoe
-cp /lib/netifd/proto/map.sh /lib/netifd/proto/map.sh.${DATE}.bak
 MAP_SH="/lib/netifd/proto/map.sh"
+cp "$MAP_SH" "$MAP_SH".bak
 sed -i '/^DONT_SNAT_TO=/d' "$MAP_SH"
 grep -q '^DONT_SNAT_TO=' "$MAP_SH" || sed -i '1a DONT_SNAT_TO="0"' "$MAP_SH"
-patch "$MAP_SH" << 'EOF'
-*** a/lib/netifd/proto/map.sh
---- b/lib/netifd/proto/map.sh
+patch "$MAP_SH" << 'MAP_SH_EOF'
+*** /lib/netifd/proto/map.sh
+--- /lib/netifd/proto/map.sh
 @@
 -#!/bin/sh
 +[#!/bin/sh
@@ -214,7 +214,7 @@ patch "$MAP_SH" << 'EOF'
 +        for proto in icmp tcp udp; do
 +           nft add rule inet mape srcnat ip protocol $proto oifname "map-$cfg" counter packets 0 bytes 0 snat ip to $(eval "echo \$RULE_${k}_IPV4ADDR") : numgen inc mod $portcount map { $allports }
 +       done
-EOF
+MAP_SH_EOF
 }
 [ -n "${ap_ip_address}" ] && {
     uci -q batch <<AP_EOF
