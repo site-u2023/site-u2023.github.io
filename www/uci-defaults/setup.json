@@ -22,13 +22,14 @@
                   "defaultValue": "en"
                 },
                 {
-                  "id": "aios-device-name",
-                  "label": "Device name",
+                  "id": "aios-country",
+                  "label": "Country",
                   "type": "text",
-                  "selector": "#aios-device-name",
-                  "variableName": "device_name",
-                  "placeholder": "OpenWrt",
-                  "defaultValue": ""
+                  "selector": "#aios-country",
+                  "variableName": "country",
+                  "placeholder": "00",
+                  "maxlength": 2,
+                  "apiMapping": "country"
                 }
               ]
             }
@@ -42,16 +43,6 @@
             {
               "columns": [
                 {
-                  "id": "aios-country",
-                  "label": "Country",
-                  "type": "text",
-                  "selector": "#aios-country",
-                  "variableName": "country",
-                  "placeholder": "00",
-                  "maxlength": 2,
-                  "apiMapping": "country"
-                },
-                {
                   "id": "aios-timezone",
                   "label": "Timezone",
                   "type": "text",
@@ -59,6 +50,15 @@
                   "variableName": "timezone",
                   "placeholder": "UTC",
                   "apiMapping": "timezone"
+                },
+                {
+                  "id": "aios-zonename",
+                  "label": "Zonename",
+                  "type": "text",
+                  "selector": "#aios-zonename",
+                  "variableName": "zonename",
+                  "placeholder": "UTC",
+                  "apiMapping": "zonename"
                 }
               ]
             }
@@ -72,13 +72,13 @@
             {
               "columns": [
                 {
-                  "id": "aios-zonename",
-                  "label": "Zonename",
+                  "id": "aios-device-name",
+                  "label": "Device name",
                   "type": "text",
-                  "selector": "#aios-zonename",
-                  "variableName": "zonename",
-                  "placeholder": "UTC",
-                  "apiMapping": "zonename"
+                  "selector": "#aios-device-name",
+                  "variableName": "device_name",
+                  "placeholder": "OpenWrt",
+                  "defaultValue": ""
                 },
                 {
                   "id": "aios-root-password",
