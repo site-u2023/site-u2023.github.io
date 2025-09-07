@@ -455,7 +455,7 @@ details summary h4 {
 
   .form-group label,
   .form-row label:not(.radio-group label) {
-    white-space: normal;
+    white-space: nowrap;
   }
 }
 
