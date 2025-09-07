@@ -1160,13 +1160,6 @@ function setupEventListeners() {
             updateVariableDefinitions();
         });
     });
-
-    // カスタムスクリプトセクションの展開/折りたたみハンドラーを追加
-    const customScriptsDetails = document.querySelector('#custom-scripts-details');
-    if (customScriptsDetails) {
-        customScriptsDetails.removeEventListener('toggle', handleCustomScriptsToggle);
-        customScriptsDetails.addEventListener('toggle', handleCustomScriptsToggle);
-    }
 }
 
 function handleConnectionTypeChange(e) {
