@@ -153,12 +153,6 @@ function replaceAsuSection(asuSection, temp) {
     `);
     
     asuSection.parentNode.replaceChild(newDiv, asuSection);
-
-    // Postinstを正しい位置に配置
-    const existingPackagesTextarea = asuSection.querySelector('#asu-packages');
-    if (existingPackagesTextarea) {
-        newDiv.appendChild(existingPackagesTextarea.cloneNode(true));
-    }
 }
 
 // 拡張情報セクション挿入
