@@ -714,6 +714,29 @@ function handleRadioChange(e) {
         }
     }
     
+    // MAP-Eタイプ切り替え時の特別処理
+    if (radio.name === 'mape_type') {
+        const guaPrefixField = document.querySelector('#mape-gua-prefix');
+        if (guaPrefixField) {
+            if (radio.value === 'pd') {
+                // PDモードの場合はGUA prefixをクリア
+                guaPrefixField.value = '';
+                guaPrefixField.disabled = true;
+                console.log('PD mode: GUA prefix cleared');
+            } else if (radio.value === 'gua') {
+                // GUAモードの場合は有効化してGUA prefixを設定
+                guaPrefixField.disabled = false;
+                if (cachedApiInfo?.ipv6) {
+                    const guaPrefix = generateGuaPrefixFromFullAddress(cachedApiInfo);
+                    if (guaPrefix) {
+                        guaPrefixField.value = guaPrefix;
+                        console.log('GUA mode: GUA prefix set');
+                    }
+                }
+            }
+        }
+    }
+    
     updatePackageListFromDynamicSources();
 }
 
@@ -1168,16 +1191,13 @@ sections.forEach(type => {
                 if (type === 'auto' && cachedApiInfo) {
                     updateAutoConnectionInfo(cachedApiInfo);
                     } else if (type === 'mape' && cachedApiInfo) {
-                    // MAP-E選択時、GUAタイプの場合のみGUA prefixを設定
-                    const mapeType = getFieldValue('input[name="mape_type"]:checked');
-                    if (mapeType === 'gua' || !mapeType) {  // デフォルトはGUA
-                        const guaPrefixField = document.querySelector('#mape-gua-prefix');
-                        if (guaPrefixField && cachedApiInfo.ipv6) {
-                            const guaPrefix = generateGuaPrefixFromFullAddress(cachedApiInfo);
-                            if (guaPrefix) {
-                                guaPrefixField.value = guaPrefix;
-                                console.log('GUA prefix set for MAP-E:', guaPrefix);
-                            }
+                    // MAP-E選択時にGUA prefixを設定
+                    const guaPrefixField = document.querySelector('#mape-gua-prefix');
+                    if (guaPrefixField && cachedApiInfo.ipv6) {
+                        const guaPrefix = generateGuaPrefixFromFullAddress(cachedApiInfo);
+                        if (guaPrefix && !guaPrefixField.value) {
+                            guaPrefixField.value = guaPrefix;
+                            console.log('GUA prefix set for MAP-E:', guaPrefix);
                         }
                     }
                 }
