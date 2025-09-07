@@ -176,19 +176,14 @@ set firewall.@zone[1].masq='1'
 set firewall.@zone[1].mtu_fix='1'
 MAPE_EOF
 [ -n "${mape_gua_mode}" ] && uci -q set network.${MAPE6}.ip6prefix="${mape_gua_prefix}"
-cp /lib/netifd/proto/map.sh /lib/netifd/proto/map.sh.${DATE}.bak
 # github.com/fakemanhk/openwrt-jp-ipoe
+cp /lib/netifd/proto/map.sh /lib/netifd/proto/map.sh.${DATE}.bak
 MAP_SH="/lib/netifd/proto/map.sh"
-grep -q '^DONT_SNAT_TO=' "$MAP_SH" || sed -i '1iDONT_SNAT_TO="0"' "$MAP_SH"
+sed -i '1,5{/^DONT_SNAT_TO=/d}' "$MAP_SH"
+grep -q '^DONT_SNAT_TO=' "$MAP_SH" || sed -i '1a DONT_SNAT_TO="0"' "$MAP_SH"
 patch "$MAP_SH" << 'EOF'
 --- map.sh
 +++ map.sh
-@@ -1,4 +1,5 @@
- #!/bin/sh
-+DONT_SNAT_TO="0"
- # map.sh - IPv4-in-IPv6 tunnel backend
- #
- # Author: Steven Barth <cyrus@openwrt.org>
 @@ -79,7 +80,7 @@
         proto_add_tunnel
         json_add_string mode ipip6
@@ -228,15 +223,14 @@ patch "$MAP_SH" << 'EOF'
 +         for x in $(seq $startport $endport); do
 +           if ! echo "$DONT_SNAT_TO" | tr ' ' '\n' | grep -qw $x; then
 +             allports="$allports $portcount : $x , "
-+             portcount=`expr $portcount + 1`
++             portcount=$((portcount + 1))
 +           fi
 +         done
 +       done
 +       allports=${allports%??}
 +
 +       nft add table inet mape
-+       nft add chain inet mape srcnat {type nat hook postrouting priority 0; policy accept; }
-+       local counter=0
++       nft add chain inet mape srcnat { type nat hook postrouting priority 0; policy accept; }
 +       for proto in icmp tcp udp; do
 +         nft add rule inet mape srcnat ip protocol $proto oifname "map-$cfg" \
 +           counter packets 0 bytes 0 \
