@@ -26,6 +26,14 @@
   --text-muted: #6c757d;
   --text-header: #333;
   --text-small: #999;
+
+  /* Base settings - Real values inherited from index.css */
+  --input-padding: 0.8em;
+  --input-border: 0.06em solid transparent;
+  --input-border-radius: 0.2em;
+  --input-bg-light: #f1f1f1;
+  --input-bg-dark: #313135;
+  --container-border-radius: 0.25em;
 }
 
 /* Extended Dark Mode Colors */
