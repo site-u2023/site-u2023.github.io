@@ -179,64 +179,92 @@ MAPE_EOF
 # github.com/fakemanhk/openwrt-jp-ipoe
 cp /lib/netifd/proto/map.sh /lib/netifd/proto/map.sh.${DATE}.bak
 MAP_SH="/lib/netifd/proto/map.sh"
-sed -i '1,5{/^DONT_SNAT_TO=/d}' "$MAP_SH"
+sed -i '/^DONT_SNAT_TO=/d' "$MAP_SH"
 grep -q '^DONT_SNAT_TO=' "$MAP_SH" || sed -i '1a DONT_SNAT_TO="0"' "$MAP_SH"
 patch "$MAP_SH" << 'EOF'
---- map.sh
-+++ map.sh
-@@ -79,7 +80,7 @@
-        proto_add_tunnel
-        json_add_string mode ipip6
--       json_add_int mtu "${mtu:-1280}"
-+       json_add_int mtu "${mtu:-1460}"
-        json_add_int ttl "${ttl:-64}"
-        json_add_string local $(eval "echo \$RULE_${k}_IPV6ADDR")
-        json_add_string remote $(eval "echo \$RULE_${k}_BR")
-        json_add_string link $(eval "echo \$RULE_${k}_PD6IFACE")
-@@ -210,23 +211,33 @@
-      if [ -z "$(eval "echo \$RULE_${k}_PORTSETS")" ]; then
-        json_add_object ""
-          json_add_string type nat
-          json_add_string target SNAT
-          json_add_string family inet
-          json_add_string snat_ip $(eval "echo \$RULE_${k}_IPV4ADDR")
-        json_close_object
-      else
--       for portset in $(eval "echo \$RULE_${k}_PORTSETS"); do
+*** a/lib/netifd/proto/map.sh
+--- b/lib/netifd/proto/map.sh
+@@
+-#!/bin/sh
++[ -n "$INCLUDE_ONLY" ] || {
++#!/bin/sh
++DONT_SNAT_TO="0"
+@@
+-		json_add_int mtu "${mtu:-1280}"
++		json_add_int mtu "${mtu:-1460}"
+@@
+-	  if [ -z "$(eval "echo \$RULE_${k}_PORTSETS")" ]; then
+-	    json_add_object ""
+-	      json_add_string type nat
+-	      json_add_string target SNAT
+-	      json_add_string family inet
+-	      json_add_string snat_ip $(eval "echo \$RULE_${k}_IPV4ADDR")
+-	    json_close_object
+-	  else
+-	    for portset in $(eval "echo \$RULE_${k}_PORTSETS"); do
 -              for proto in icmp tcp udp; do
--           json_add_object ""
--             json_add_string type nat
--             json_add_string target SNAT
--             json_add_string family inet
--             json_add_string proto "$proto"
+-	        json_add_object ""
+-	          json_add_string type nat
+-	          json_add_string target SNAT
+-	          json_add_string family inet
+-	          json_add_string proto "$proto"
 -                  json_add_boolean connlimit_ports 1
 -                  json_add_string snat_ip $(eval "echo \$RULE_${k}_IPV4ADDR")
 -                  json_add_string snat_port "$portset"
--           json_close_object
+-	        json_close_object
 -              done
--       done
-+       local portcount=0
-+       local allports=""
-+       for portset in $(eval "echo \$RULE_${k}_PORTSETS"); do
-+         local startport=$(echo $portset | cut -d'-' -f1)
-+         local endport=$(echo $portset | cut -d'-' -f2)
-+         for x in $(seq $startport $endport); do
-+           if ! echo "$DONT_SNAT_TO" | tr ' ' '\n' | grep -qw $x; then
-+             allports="$allports $portcount : $x , "
-+             portcount=$((portcount + 1))
-+           fi
-+         done
-+       done
-+       allports=${allports%??}
+-	    done
+-	  fi
++	  if [ -z "$(eval "echo \$RULE_${k}_PORTSETS")" ]; then
++	    json_add_object ""
++	      json_add_string type nat
++	      json_add_string target SNAT
++	      json_add_string family inet
++	      json_add_string snat_ip $(eval "echo \$RULE_${k}_IPV4ADDR")
++	    json_close_object
++	  else
++	    local portcount=0
++	    local map_elems=""
++	    local sep=""
++	    for portset in $(eval "echo \$RULE_${k}_PORTSETS"); do
++	      startport=$(echo $portset | cut -d'-' -f1)
++	      endport=$(echo $portset | cut -d'-' -f2)
++	      for x in $(seq "$startport" "$endport"); do
++	        if ! echo "$DONT_SNAT_TO" | tr ' ' '\n' | grep -qw "$x"; then
++	          map_elems="$map_elems$sep$portcount : $x"
++	          sep=", "
++	          portcount=$((portcount + 1))
++	        fi
++	      done
++	    done
 +
-+       nft add table inet mape
-+       nft add chain inet mape srcnat { type nat hook postrouting priority 0; policy accept; }
-+       for proto in icmp tcp udp; do
-+         nft add rule inet mape srcnat ip protocol $proto oifname "map-$cfg" \
-+           counter packets 0 bytes 0 \
-+           snat ip to $(eval "echo \$RULE_${k}_IPV4ADDR") : numgen inc mod $portcount map { $allports }
-+       done
-      fi
++	    if [ "$portcount" -le 0 ] || ! command -v nft >/dev/null 2>&1; then
++	      json_add_object ""
++	        json_add_string type nat
++	        json_add_string target SNAT
++	        json_add_string family inet
++	        json_add_string snat_ip $(eval "echo \$RULE_${k}_IPV4ADDR")
++	      json_close_object
++	    else
++	      snat_ip=$(eval "echo \$RULE_${k}_IPV4ADDR")
++	      nft list table inet mape >/dev/null 2>&1 || nft add table inet mape
++	      nft list chain inet mape srcnat >/dev/null 2>&1 || \
++	        nft add chain inet mape srcnat '{ type nat hook postrouting priority 0 ; policy accept ; }'
++
++	      for proto in icmp tcp udp; do
++	        nft list chain inet mape srcnat 2>/dev/null | \
++	          grep -F "oifname \"map-$cfg\"" | grep -F "snat ip to $snat_ip" | grep -F "ip protocol $proto" >/dev/null 2>&1
++	        if [ "$?" -ne 0 ]; then
++	          nft add rule inet mape srcnat \
++	            ip protocol "$proto" oifname "map-$cfg" \
++	            counter packets 0 bytes 0 \
++	            snat ip to "$snat_ip" : \
++	            numgen inc mod $portcount map "{ $map_elems }"
++	        fi
++	      done
++	    fi
++	  fi
+*** End Patch
 EOF
 }
 [ -n "${ap_ip_address}" ] && {
