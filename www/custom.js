@@ -1633,40 +1633,31 @@ function updatePackageListFromSelector() {
         }
     });
     
-    // 動的パッケージ（言語パッケージを含む）を追加
+    // 動的パッケージ（言語パッケージ、接続タイプパッケージなど）を追加
     dynamicPackages.forEach(pkg => {
         checkedPkgs.add(pkg);
     });
-
-    // デバイス初期パッケージを必ず追加
-    if (devicePackages && devicePackages.length > 0) {
-        devicePackages.forEach(pkgObj => {
-            // devicePackagesは {id, name, hidden} 形式
-            const pkgName = typeof pkgObj === 'string' ? pkgObj : pkgObj.name;
-            if (pkgName) {
-                checkedPkgs.add(pkgName);
-            }
-        });
-    }
-
+    
     console.log('Checked packages from selector:', Array.from(checkedPkgs).filter(p => !p.startsWith('luci-i18n-')));
     console.log('Language packages from dynamic:', Array.from(checkedPkgs).filter(p => p.startsWith('luci-i18n-')));
     
     const textarea = document.querySelector('#asu-packages');
     if (textarea) {
         const currentPackages = split(textarea.value);
-
+        
         // セレクターで管理されていない、かつ動的でもない、かつ言語パッケージでもないパッケージを保持
+        // これにより手動で追加されたパッケージやカスタムパッケージが保持される
         const nonSelectorPkgs = currentPackages.filter(pkg => {
             const hasInSelector = document.querySelector(`.package-selector-checkbox[data-package="${pkg}"]`);
             const hasInDynamic = dynamicPackages.has(pkg);
             const isLanguagePkg = pkg.startsWith('luci-i18n-');
             return !hasInSelector && !hasInDynamic && !isLanguagePkg;
         });
-
-        // devicePackagesも含めて、最低限必須を常に維持
+        
+        // 最終的なパッケージリスト：選択されたもの + 動的パッケージ + 手動追加されたもの
         const newList = [...new Set([...nonSelectorPkgs, ...checkedPkgs])];
-
+        
+        console.log('Final package list:', newList);
         textarea.value = newList.join(' ');
     }
 }
