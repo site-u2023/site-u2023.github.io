@@ -652,27 +652,18 @@ function buildFormGroup(field) {
         ctrl = document.createElement('input');
         ctrl.type = field.type || 'text';
         if (field.id) ctrl.id = field.id;
-        if (field.placeholder) ctrl.placeholder = field.placeholder;
-        
-        // 初期値設定の改善：GUA prefix 特別処理を追加
-        if (field.variableName === 'mape_gua_prefix' && cachedApiInfo) {
-            // GUA prefix の特別処理
-            const guaPrefix = generateGuaPrefixFromFullAddress(cachedApiInfo);
-            if (guaPrefix) {
-                ctrl.value = guaPrefix;
-            } else if (field.defaultValue !== null && field.defaultValue !== undefined && field.defaultValue !== '') {
-                ctrl.value = field.defaultValue;
-            }
-        } else if (field.defaultValue !== null && field.defaultValue !== undefined && field.defaultValue !== '') {
+        if (field.placeholder) ctrl.placeholder = field.placeholder;        
+        if (field.defaultValue !== null && field.defaultValue !== undefined && field.defaultValue !== '') {
             ctrl.value = field.defaultValue;
         } else if (field.apiMapping && cachedApiInfo) {
-            // APIから値を取得して設定
             const apiValue = getNestedValue(cachedApiInfo, field.apiMapping);
             if (apiValue !== null && apiValue !== undefined && apiValue !== '') {
                 ctrl.value = apiValue;
             }
         }
-        
+        if (field.variableName === 'mape_gua_prefix') {
+            setGuaPrefixIfAvailable();
+        }        
         if (field.min != null) ctrl.min = field.min;
         if (field.max != null) ctrl.max = field.max;
         if (field.maxlength != null) ctrl.maxLength = field.maxlength;
@@ -729,26 +720,7 @@ function handleRadioChange(e) {
     
     // MAP-Eタイプ切り替え時の特別処理
     if (radio.name === 'mape_type') {
-        const guaPrefixField = document.querySelector('#mape-gua-prefix');
-        if (guaPrefixField) {
-            const formGroup = guaPrefixField.closest('.form-group');
-            if (radio.value === 'pd') {
-                // PDモードの場合はGUA prefixフィールドを非表示
-                guaPrefixField.value = '';
-                if (formGroup) formGroup.style.display = 'none';
-                console.log('PD mode: GUA prefix hidden');
-            } else if (radio.value === 'gua') {
-                // GUAモードの場合は表示してGUA prefixを設定
-                if (formGroup) formGroup.style.display = '';
-                if (cachedApiInfo?.ipv6) {
-                    const guaPrefix = generateGuaPrefixFromFullAddress(cachedApiInfo);
-                    if (guaPrefix) {
-                        guaPrefixField.value = guaPrefix;
-                        console.log('GUA mode: GUA prefix shown');
-                    }
-                }
-            }
-        }
+        toggleGuaPrefixVisibility(radio.value);
     }
     
     updatePackageListFromDynamicSources();
@@ -1168,30 +1140,8 @@ function setupEventListeners() {
     
     // MAP-Eタイプ切り替えハンドラーを追加
     document.querySelectorAll('input[name="mape_type"]').forEach(radio => {
-        radio.addEventListener('change', (e) => {
-            const guaPrefixField = document.querySelector('#mape-gua-prefix');
-            if (!guaPrefixField) return;
-
-            const formGroup = guaPrefixField.closest('.form-group');
-            
-            if (e.target.value === 'pd') {
-                // PDモードの場合はGUA prefixをクリア＋無効化＋非表示
-                guaPrefixField.value = '';
-                guaPrefixField.disabled = true;
-                if (formGroup) formGroup.style.display = 'none';
-                console.log('PD mode: GUA prefix cleared & hidden');
-            } else if (e.target.value === 'gua') {
-                // GUAモードの場合は有効化＋表示＋GUA prefixを設定
-                guaPrefixField.disabled = false;
-                if (formGroup) formGroup.style.display = '';
-                if (cachedApiInfo?.ipv6) {
-                    const guaPrefix = generateGuaPrefixFromFullAddress(cachedApiInfo);
-                    if (guaPrefix) {
-                        guaPrefixField.value = guaPrefix;
-                        console.log('GUA mode: GUA prefix set & shown');
-                    }
-                }
-            }
+        radio.addEventListener('change', e => {
+            toggleGuaPrefixVisibility(e.target.value);
             updateVariableDefinitions();
         });
     });
@@ -1327,18 +1277,8 @@ async function fetchAndDisplayIspInfo() {
         displayIspInfo(apiInfo);
         applyIspAutoConfig(apiInfo);
         updateAutoConnectionInfo(apiInfo);
-        
-        // GUA prefix フィールドを明示的に更新
-        if (apiInfo?.ipv6) {
-            const guaPrefix = generateGuaPrefixFromFullAddress(apiInfo);
-            if (guaPrefix) {
-                const guaPrefixField = document.querySelector('#mape-gua-prefix');
-                if (guaPrefixField) {
-                    guaPrefixField.value = guaPrefix;
-                    console.log('GUA prefix set from ISP info:', guaPrefix);
-                }
-            }
-        }
+        setGuaPrefixIfAvailable();       
+
     } catch (err) {
         console.error('Failed to fetch ISP info:', err);
         const autoInfo = document.querySelector('#auto-info');
@@ -1400,16 +1340,7 @@ function applyIspAutoConfig(apiInfo) {
         }
     });
     
-    // GUA prefix フィールドを直接更新（フォールバック処理）
-    const guaPrefixField = document.querySelector('#mape-gua-prefix');
-    if (guaPrefixField && apiInfo?.ipv6) {
-        const guaPrefix = generateGuaPrefixFromFullAddress(apiInfo);
-        if (guaPrefix && !guaPrefixField.value) {
-            guaPrefixField.value = guaPrefix;
-            console.log('GUA prefix set directly:', guaPrefix);
-        }
-    }
-    
+    setGuaPrefixIfAvailable();    
     updateAutoConnectionInfo(apiInfo);
     updatePackageListFromDynamicSources();
     updateVariableDefinitions();
@@ -1981,6 +1912,32 @@ function resizePostinstTextarea() {
     
     textarea.style.height = 'auto';
     textarea.style.height = textarea.scrollHeight + 'px';
+}
+
+function setGuaPrefixIfAvailable() {
+    const guaPrefixField = document.querySelector('#mape-gua-prefix');
+    if (!guaPrefixField || !cachedApiInfo?.ipv6) return;
+    const guaPrefix = generateGuaPrefixFromFullAddress(cachedApiInfo);
+    if (guaPrefix) {
+        guaPrefixField.value = guaPrefix;
+        console.log('GUA prefix set:', guaPrefix);
+    }
+}
+
+function toggleGuaPrefixVisibility(mode) {
+    const guaPrefixField = document.querySelector('#mape-gua-prefix');
+    if (!guaPrefixField) return;
+    const formGroup = guaPrefixField.closest('.form-group');
+    if (mode === 'pd') {
+        guaPrefixField.value = '';
+        guaPrefixField.disabled = true;
+        if (formGroup) formGroup.style.display = 'none';
+        console.log('PD mode: GUA prefix hidden');
+    } else if (mode === 'gua') {
+        guaPrefixField.disabled = false;
+        if (formGroup) formGroup.style.display = '';
+        setGuaPrefixIfAvailable();
+    }
 }
 
 // ==================== エラーハンドリング ====================
