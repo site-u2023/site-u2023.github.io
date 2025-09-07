@@ -115,25 +115,6 @@ function replaceAsuSection(asuSection, temp) {
     newDiv.id = 'asu';
     newDiv.className = asuSection.className;
     newDiv.style.width = '100%';
-    
-    const customPackages = temp.querySelector('#custom-packages-section details');
-    const customScripts = temp.querySelector('#custom-scripts-section details');
-
-    if (customPackages) {
-        customPackages.id = 'custom-packages-details';
-        newDiv.appendChild(customPackages);
-    }
-    if (customScripts) {
-        customScripts.id = 'custom-scripts-details';
-        newDiv.appendChild(customScripts);
-    }
-
-    // index.jsが期待する全てのDOM要素を追加
-function replaceAsuSection(asuSection, temp) {
-    const newDiv = document.createElement('div');
-    newDiv.id = 'asu';
-    newDiv.className = asuSection.className;
-    newDiv.style.width = '100%';
 
     const customPackages = temp.querySelector('#custom-packages-section details');
     const customScripts = temp.querySelector('#custom-scripts-section details');
