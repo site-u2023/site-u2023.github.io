@@ -366,7 +366,6 @@
               "id": "mape-fields",
               "name": "MAP-E Settings",
               "type": "input-group",
-              "showWhen": {"field": "mape_type", "values": ["gua"]},
               "fields": [
                 {
                   "id": "mape-br",
