@@ -1291,7 +1291,7 @@ function applyIspAutoConfig(apiInfo) {
             
             let value = getNestedValue(apiInfo, field.apiMapping);
 
-            if (field.apiMapping === 'mape.ipv6PrefixWith64' && apiInfo.mape?.ipv6Prefix) {
+            if (field.apiMapping === 'ipv6' && apiInfo.mape?.ipv6Prefix) {
                 const prefix = apiInfo.mape.ipv6Prefix;
                 if (!prefix.includes('/')) {
                     const segments = prefix.split(':');
