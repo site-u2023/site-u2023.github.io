@@ -1291,8 +1291,9 @@ function applyIspAutoConfig(apiInfo) {
             
             let value = getNestedValue(apiInfo, field.apiMapping);
 
-            if (field.variableName === 'mape_gua_prefix' && values && values.mape_gua_prefix) {
-                value = values.mape_gua_prefix;
+            if (field.variableName === 'mape_gua_prefix' && cachedApiInfo && cachedApiInfo.ipv6) {
+                const segments = cachedApiInfo.ipv6.split(':');
+                value = segments.slice(0, 4).join(':') + '::/64';
             }
 
             if (value !== null && value !== undefined && value !== '') {
