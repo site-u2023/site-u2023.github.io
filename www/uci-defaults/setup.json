@@ -441,13 +441,14 @@
                 },
                 {
                   "id": "mape-gua-extra",
-                  "label": "GUA Extra Field",
+                  "label": "GUA Prefix",
                   "type": "text",
-                  "selector": "#mape-gua-extra",
-                  "variableName": "mape_gua_extra",
+                  "selector": "#mape-gua-prefix",
+                  "variableName": "mape_gua_prefix",
                   "placeholder": "optional for GUA",
-                  "apiMapping": "mape.guaExtraValue",
-                  "showWhen": {"field": "mape_type", "values": ["gua"]}
+                  "defaultValue": "",
+                  "apiMapping": "mape.ipv6PrefixWith64",
+                  "description": "IPv6 GUA prefix with /64 suffix"
                 }          
               ]
             }
