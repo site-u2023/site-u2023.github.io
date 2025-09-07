@@ -1,18 +1,17 @@
 /* ===== OpenWrt Custom Firmware Selector - Extended Styles ===== */
-/* Inherits from index.css */
+/* Inherits from index.css - extends base styles without overriding core functionality */
 
 :root {
-  /* OpenWrt公式カラー */
+  /* OpenWrt Brand Colors */
   --owrt-blue: #00B5E2;
   --owrt-navy: #002B49;
   --owrt-black: #231F20;
   --owrt-gray: #212322;
   --owrt-white: #FFFFFF;
   
-  /* ライトモード用カラー */
+  /* Extended Light Mode Colors */
   --bg-main: #f5f5f5;
   --bg-section: #fff;
-  --bg-input: #f1f1f1;  /* index.cssと同じ */
   --bg-item: #fafafa;
   --bg-item-hover: #f0f0f0;
   --bg-details: #f9f9f9;
@@ -29,18 +28,17 @@
   --text-small: #999;
 }
 
-/* ダークモード用カラー */
+/* Extended Dark Mode Colors */
 @media (prefers-color-scheme: dark) {
   :root {
     --bg-main: #18181b;
-    --bg-section: #252528;  /* index.cssのcontainer > divと同じ */
-    --bg-input: #313135;  /* index.cssと同じ */
+    --bg-section: #252528;  /* matches index.css container > div */
     --bg-item: #2a2a2d;
     --bg-item-hover: #3a3a3e;
     --bg-details: #2a2a2d;
     --bg-warning: #3d3319;
     
-    --border-main: #444;
+    --border-main: #444;  /* matches index.css border colors */
     --border-connection: #444;
     --border-warning: #5a4d1f;
     
@@ -52,7 +50,7 @@
   }
 }
 
-/* ===== Form Elements ===== */
+/* ===== Extended Form Elements (inherits base input styles) ===== */
 .form-row {
   display: flex;
   gap: 1em;
@@ -69,10 +67,19 @@
   font-weight: 500;
 }
 
-/* ===== Custom Form Elements ===== */
-.form-group input,
-.form-group select,
-.form-group textarea,
+/* Extend base input styles from index.css without overriding */
+.form-group input:not(.autocomplete > input):not(#versions),
+.form-group select:not(#versions),
+.form-group textarea {
+  /* Inherit base styles and extend */
+  width: 90%;
+  margin: 0;
+  background-color: var(--bg-input, #f1f1f1); /* fallback to index.css value */
+  color: var(--text-main);
+  resize: both;
+}
+
+/* New selectors that don't conflict with index.css */
 #package-search,
 #command,
 #uci-defaults-content,
@@ -80,13 +87,27 @@
 #asu-packages {
   width: 90%;
   margin: 0;
-  padding: 0.8em;
-  border: 0.06em solid transparent;
-  background-color: var(--bg-input);
+  padding: 0.8em; /* matches index.css input padding */
+  border: 0.06em solid transparent; /* matches index.css */
+  background-color: var(--bg-input, #f1f1f1);
   color: var(--text-main);
-  border-radius: 0.2em;
+  border-radius: 0.2em; /* matches index.css */
   font-size: inherit;
   resize: both;
+}
+
+@media (prefers-color-scheme: dark) {
+  .form-group input:not(.autocomplete > input):not(#versions),
+  .form-group select:not(#versions),
+  .form-group textarea,
+  #package-search,
+  #command,
+  #uci-defaults-content,
+  #postinst-content,
+  #asu-packages {
+    background-color: var(--bg-input, #313135); /* matches index.css dark mode */
+    color: var(--text-main);
+  }
 }
 
 .form-group small {
@@ -138,7 +159,7 @@ details summary h5 {
 
 details[open] summary {
   margin-bottom: 1em;
-  border-bottom-color: var(--border-main);
+  border-bottom: 1px solid var(--border-main);
 }
 
 #packages-details,
@@ -154,7 +175,7 @@ details[open] summary {
   padding: 0 1em 1em 1em;
 }
 
-/* ===== ISP Information Display ===== */
+/* ===== ISP Information Display (extends base styling) ===== */
 #isp-info-row,
 #isp-timezone-row,
 #isp-isp-row,
@@ -165,7 +186,7 @@ details[open] summary {
   color: var(--owrt-white);
   margin: 0.25em 0;
   padding: 0.5em 1.5em;
-  border-radius: 0.2em;
+  border-radius: 0.2em; /* matches index.css border-radius */
 }
 
 @media (prefers-color-scheme: dark) {
@@ -175,7 +196,7 @@ details[open] summary {
   #isp-as-row,
   #isp-ip-row,
   #isp-connection-row {
-    background-color: #1a3a4a;
+    background-color: #1a3a4a; /* darker variant for better contrast */
   }
 }
 
@@ -189,7 +210,7 @@ details[open] summary {
   margin: 1em 0;
 }
 
-/* ===== 統一されたフィーチャーグリッド ===== */
+/* ===== Feature Grid Components ===== */
 .feature-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -202,7 +223,7 @@ details[open] summary {
   align-items: center;
   gap: 0.5em;
   padding: 0.5em;
-  border-radius: 0.2em;
+  border-radius: 0.2em; /* matches index.css */
   transition: background-color 0.2s;
 }
 
@@ -228,7 +249,7 @@ details[open] summary {
   margin-top: 1em;
 }
 
-/* ===== 統一されたセクションコンテナ ===== */
+/* ===== Section Containers (extends base container styles) ===== */
 .config-section,
 .package-category,
 #postinst-details,
@@ -237,8 +258,11 @@ details[open] summary {
   padding: 0 1em 1em 1em;
   background-color: var(--bg-section);
   border: 1px solid var(--border-main);
-  border-radius: 0.25em;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  border-radius: 0.25em; /* matches index.css container border-radius */
+  /* inherit box-shadow pattern from index.css */
+  box-shadow: 0em 0.06em 0.19em 0em rgba(0, 0, 0, 0.2),
+              0em 0.06em 0.06em 0em rgba(0, 0, 0, 0.14),
+              0em 0.125em 0.06em -0.06em rgba(0, 0, 0, 0.12);
   color: var(--text-main);
 }
 
@@ -248,7 +272,7 @@ details[open] summary {
 #uci-defaults-details h4 {
   margin-top: 1em;
   margin-bottom: 1em;
-  color: inherit;  /* 親要素から継承 */
+  color: inherit;
 }
 
 details summary h4 {
@@ -342,7 +366,51 @@ details summary h4 {
   margin-bottom: 0.5em;
 }
 
-/* ===== Responsive Design ===== */
+/* ===== Build Progress Indicator ===== */
+.build-progress {
+  margin: 1em 0;
+  padding: 1em;
+  background-color: #e3f2fd;
+  border: 1px solid var(--owrt-blue);
+  border-radius: 0.25em;
+  display: none;
+}
+
+.build-progress.active {
+  display: block;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 20px;
+  background-color: #e0e0e0;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-top: 0.5em;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background-color: var(--owrt-blue);
+  transition: width 0.3s ease;
+}
+
+@media (prefers-color-scheme: dark) {
+  .build-progress {
+    background-color: #1a3a4a;
+    border-color: #0080b3; /* matches index.css dark header */
+  }
+  
+  .progress-bar {
+    background-color: #444; /* matches index.css dark border */
+  }
+  
+  .progress-bar-fill {
+    background-color: #0080b3;
+  }
+}
+
+/* ===== Responsive Design (extends base responsive patterns) ===== */
 @media (max-width: 600px) {
   .form-row {
     flex-direction: column;
@@ -397,7 +465,7 @@ details summary h4 {
 .p-2 { padding: 1em; }
 .p-3 { padding: 1.5em; }
 
-/* ===== Animation ===== */
+/* ===== Animation (extends base transition patterns) ===== */
 details[open] > summary ~ * {
   animation: fadeIn 0.3s ease-in-out;
 }
@@ -410,49 +478,5 @@ details[open] > summary ~ * {
   to {
     opacity: 1;
     transform: translateY(0);
-  }
-}
-
-/* ===== Build Progress Indicator ===== */
-.build-progress {
-  margin: 1em 0;
-  padding: 1em;
-  background-color: #e3f2fd;
-  border: 1px solid var(--owrt-blue);
-  border-radius: 0.25em;
-  display: none;
-}
-
-.build-progress.active {
-  display: block;
-}
-
-.progress-bar {
-  width: 100%;
-  height: 20px;
-  background-color: #e0e0e0;
-  border-radius: 10px;
-  overflow: hidden;
-  margin-top: 0.5em;
-}
-
-.progress-bar-fill {
-  height: 100%;
-  background-color: var(--owrt-blue);
-  transition: width 0.3s ease;
-}
-
-@media (prefers-color-scheme: dark) {
-  .build-progress {
-    background-color: #1a3a4a;
-    border-color: #0080b3;
-  }
-  
-  .progress-bar {
-    background-color: #444;
-  }
-  
-  .progress-bar-fill {
-    background-color: #0080b3;
   }
 }
