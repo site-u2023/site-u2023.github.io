@@ -1,4 +1,4 @@
-// custom.js - OpenWrt カスタム機能（言語パッケージ完全修正版）
+// custom.js - OpenWrt カスタム機能（ビルド処理修正版）
 
 console.log('custom.js loaded');
 
@@ -89,8 +89,6 @@ async function initializeCustomFeatures(asuSection, temp) {
     replaceAsuSection(asuSection, temp);
     insertExtendedInfo(temp);
     
-    hookOriginalFunctions();
-    
     // 設定とデータを並列で読み込み
     await Promise.all([
         loadSetupConfig(),
@@ -111,7 +109,7 @@ async function initializeCustomFeatures(asuSection, temp) {
     customInitialized = true;
 }
 
-// #asuセクションを置き換え
+// #asuセクションを置き換え（修正版：index.jsが期待するDOM要素を全て保持）
 function replaceAsuSection(asuSection, temp) {
     const newDiv = document.createElement('div');
     newDiv.id = 'asu';
@@ -130,9 +128,26 @@ function replaceAsuSection(asuSection, temp) {
         newDiv.appendChild(customScripts);
     }
 
+    // index.jsが期待する全てのDOM要素を追加
     newDiv.insertAdjacentHTML('beforeend', `
         <br>
-        <div id="asu-buildstatus" class="hide"><span></span></div>
+        <div id="asu-buildstatus" class="hide">
+            <span></span>
+            <div id="asu-log" class="hide">
+                <details>
+                    <summary>
+                        <code>STDERR</code>
+                    </summary>
+                    <pre id="asu-stderr"></pre>
+                </details>
+                <details>
+                    <summary>
+                        <code>STDOUT</code>
+                    </summary>
+                    <pre id="asu-stdout"></pre>
+                </details>
+            </div>
+        </div>
         <a href="javascript:buildAsuRequest()" class="custom-link">
             <span></span><span class="tr-request-build">REQUEST BUILD</span>
         </a>
@@ -1813,46 +1828,6 @@ function setupFormWatchers() {
     updateVariableDefinitions();
 }
 
-// ==================== オリジナル関数フック ====================
-
-let originalBuildAsuRequest = null;
-let originalSetupUciDefaults = null;
-
-function hookOriginalFunctions() {
-    if (typeof buildAsuRequest === 'function' && !originalBuildAsuRequest) {
-        originalBuildAsuRequest = buildAsuRequest;
-        window.buildAsuRequest = customBuildAsuRequest;
-    }
-
-    if (typeof setup_uci_defaults === 'function' && !originalSetupUciDefaults) {
-        originalSetupUciDefaults = setup_uci_defaults;
-        window.setup_uci_defaults = customSetupUciDefaults;
-    }
-}
-
-function customBuildAsuRequest(request_hash) {
-    console.log('customBuildAsuRequest called with:', request_hash);
-
-    if (originalBuildAsuRequest) originalBuildAsuRequest(request_hash);
-}
-
-function customSetupUciDefaults() {
-    console.log('customSetupUciDefaults called');
-    const textarea = document.querySelector("#uci-defaults-content");
-    if (!textarea || !config?.uci_defaults_setup_url) return;
-
-    fetch(config.uci_defaults_setup_url)
-        .then(r => { 
-            if (!r.ok) throw new Error(r.statusText); 
-            return r.text(); 
-        })
-        .then(text => {
-            textarea.value = text;
-            updateVariableDefinitions();
-        })
-        .catch(err => showAlert(err.message));
-}
-
 // ==================== ユーティリティ関数 ====================
 
 function generateGuaPrefixFromFullAddress(apiInfo) {
@@ -1950,4 +1925,4 @@ window.addEventListener('unhandledrejection', function(e) {
     console.error('Custom.js Unhandled Promise Rejection:', e.reason);
 });
 
-console.log('custom.js (language package complete fix) fully loaded and ready');
+console.log('custom.js (build process fixed) fully loaded and ready');
