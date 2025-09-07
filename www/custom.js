@@ -107,6 +107,16 @@ async function initializeCustomFeatures(asuSection, temp) {
     setupFormWatchers();
     
     customInitialized = true;
+
+    const postinstDetails = document.querySelector('#custom-packages-details');
+    if (postinstDetails) {
+        postinstDetails.addEventListener('toggle', () => {
+            if (postinstDetails.open) {
+                const textarea = document.querySelector('#asu-packages');
+                if (textarea) textarea.focus();
+            }
+        });
+    }
 }
 
 // #asuセクションを置き換え（修正版：index.jsが期待するDOM要素を全て保持）
