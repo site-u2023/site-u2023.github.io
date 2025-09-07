@@ -78,9 +78,11 @@
   color: var(--text-main);
   resize: both;
   
-  padding: inherit;
+  padding: 0.8em; /* matches index.css input padding */
   font-size: inherit;
   line-height: inherit;
+  border: 0.06em solid transparent; /* matches index.css */
+  border-radius: 0.2em; /* matches index.css */
 }
 
 /* New selectors that don't conflict with index.css */
