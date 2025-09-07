@@ -996,12 +996,8 @@ function applySpecialFieldLogic(values) {
                 values.mape_psid_offset = cachedApiInfo.mape.psIdOffset;
                 values.mape_psidlen = cachedApiInfo.mape.psidlen;
                 
-                if (cachedApiInfo.mape.ipv6Prefix) {
-                    const prefix = cachedApiInfo.mape.ipv6Prefix;
-                    const segments = prefix.split(':');
-                    while (segments.length < 4) {
-                        segments.push('0');
-                    }
+                if (cachedApiInfo.ipv6) {
+                    const segments = cachedApiInfo.ipv6.split(':');
                     values.mape_gua_prefix = segments.slice(0, 4).join(':') + '::/64';
                     values.mape_gua_mode = '1';
                 }
