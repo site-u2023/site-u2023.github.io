@@ -1171,20 +1171,24 @@ function setupEventListeners() {
         radio.addEventListener('change', (e) => {
             const guaPrefixField = document.querySelector('#mape-gua-prefix');
             if (!guaPrefixField) return;
+
+            const formGroup = guaPrefixField.closest('.form-group');
             
             if (e.target.value === 'pd') {
-                // PDモードの場合はGUA prefixをクリア
+                // PDモードの場合はGUA prefixをクリア＋無効化＋非表示
                 guaPrefixField.value = '';
                 guaPrefixField.disabled = true;
-                console.log('PD mode: GUA prefix cleared');
+                if (formGroup) formGroup.style.display = 'none';
+                console.log('PD mode: GUA prefix cleared & hidden');
             } else if (e.target.value === 'gua') {
-                // GUAモードの場合は有効化してGUA prefixを設定
+                // GUAモードの場合は有効化＋表示＋GUA prefixを設定
                 guaPrefixField.disabled = false;
+                if (formGroup) formGroup.style.display = '';
                 if (cachedApiInfo?.ipv6) {
                     const guaPrefix = generateGuaPrefixFromFullAddress(cachedApiInfo);
                     if (guaPrefix) {
                         guaPrefixField.value = guaPrefix;
-                        console.log('GUA mode: GUA prefix set');
+                        console.log('GUA mode: GUA prefix set & shown');
                     }
                 }
             }
