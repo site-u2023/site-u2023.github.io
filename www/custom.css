@@ -85,7 +85,7 @@ input[type="radio"] {
 .form-group select:not(#versions),
 .form-group textarea {
   /* Inherit base styles and extend */
-  width: 90%;
+  width: 100%;
   box-sizing: border-box; 
   margin: 0;
   background-color: var(--bg-input, #f1f1f1); /* fallback to index.css value */
