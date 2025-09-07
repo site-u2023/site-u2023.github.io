@@ -1161,17 +1161,11 @@ function setupEventListeners() {
         });
     });
     
-    const postinstDetails = document.querySelector('#custom-scripts-details');
-    if (postinstDetails) {
-        postinstDetails.addEventListener('toggle', () => {
-            if (postinstDetails.open) {
-                const textarea = document.querySelector('#asu-packages');
-                if (textarea) {
-                    textarea.focus();
-                    console.log('Postinst textarea focused');
-                }
-            }
-        });
+    // カスタムスクリプトセクションの展開/折りたたみハンドラーを追加
+    const customScriptsDetails = document.querySelector('#custom-scripts-details');
+    if (customScriptsDetails) {
+        customScriptsDetails.removeEventListener('toggle', handleCustomScriptsToggle);
+        customScriptsDetails.addEventListener('toggle', handleCustomScriptsToggle);
     }
 }
 
