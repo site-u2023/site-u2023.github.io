@@ -440,7 +440,7 @@
                   "apiMapping": "mape.psidlen"
                 },
                 {
-                  "id": "mape-gua-extra",
+                  "id": "mape-gua-prefix",
                   "label": "GUA Prefix",
                   "type": "text",
                   "selector": "#mape-gua-prefix",
