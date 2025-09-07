@@ -1160,20 +1160,6 @@ function setupEventListeners() {
             updateVariableDefinitions();
         });
     });
-
-    // ★ Postinst 展開時にフォーカスを返すハンドラーを追加
-    const postinstDetails = document.querySelector('#custom-packages-details');
-    if (postinstDetails) {
-        postinstDetails.addEventListener('toggle', () => {
-            if (postinstDetails.open) {
-                const textarea = document.querySelector('#asu-packages');
-                if (textarea) {
-                    textarea.focus();
-                    console.log('Postinst textarea focused');
-                }
-            }
-        });
-    }
 }
 
 function handleConnectionTypeChange(e) {
