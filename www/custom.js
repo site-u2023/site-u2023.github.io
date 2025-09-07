@@ -488,6 +488,12 @@ function renderSetupConfig(config) {
     
     setTimeout(() => {
         initConditionalSections(config);
+        
+        // ISP情報が既にある場合は再適用（GUA prefix を含む）
+        if (cachedApiInfo) {
+            applyIspAutoConfig(cachedApiInfo);
+            console.log('Reapplied ISP config after form render');
+        }
     }, 100);
 }
 
@@ -635,8 +641,16 @@ function buildFormGroup(field) {
         if (field.id) ctrl.id = field.id;
         if (field.placeholder) ctrl.placeholder = field.placeholder;
         
-        // 初期値設定の改善：デフォルト値があり、かつAPIマッピングがある場合の処理
-        if (field.defaultValue !== null && field.defaultValue !== undefined && field.defaultValue !== '') {
+        // 初期値設定の改善：GUA prefix 特別処理を追加
+        if (field.variableName === 'mape_gua_prefix' && cachedApiInfo) {
+            // GUA prefix の特別処理
+            const guaPrefix = generateGuaPrefixFromFullAddress(cachedApiInfo);
+            if (guaPrefix) {
+                ctrl.value = guaPrefix;
+            } else if (field.defaultValue !== null && field.defaultValue !== undefined && field.defaultValue !== '') {
+                ctrl.value = field.defaultValue;
+            }
+        } else if (field.defaultValue !== null && field.defaultValue !== undefined && field.defaultValue !== '') {
             ctrl.value = field.defaultValue;
         } else if (field.apiMapping && cachedApiInfo) {
             // APIから値を取得して設定
@@ -1008,6 +1022,7 @@ function applySpecialFieldLogic(values) {
                 if (guaPrefix) {
                     values.mape_gua_prefix = guaPrefix;
                     values.mape_gua_mode = '1';
+                    console.log('Applied GUA prefix in auto mode:', guaPrefix);
                 }
             } else if (cachedApiInfo.aftr) {
                 values.dslite_aftr_address = cachedApiInfo.aftr;
@@ -1042,6 +1057,7 @@ function applySpecialFieldLogic(values) {
             if (guaPrefix) {
                 values.mape_gua_prefix = guaPrefix;
                 values.mape_gua_mode = '1';
+                console.log('Applied GUA prefix in MAP-E mode:', guaPrefix);
             }
         }
         
@@ -1049,11 +1065,17 @@ function applySpecialFieldLogic(values) {
         if (mapeType === 'gua') {
             values.mape_gua_mode = '1';
             
-            // GUAタイプの場合、フィールドの値がない場合はデフォルト値を設定
+            // GUAタイプの場合、フィールドの値を取得または生成
             const currentGUAValue = getFieldValue('#mape-gua-prefix');
-            if (!currentGUAValue && !values.mape_gua_prefix) {
-                // デフォルト値を設定（例：標準的なGUA prefix）
-                values.mape_gua_prefix = '2001:db8:1:2::/64';
+            if (currentGUAValue) {
+                values.mape_gua_prefix = currentGUAValue;
+            } else if (!values.mape_gua_prefix && cachedApiInfo?.ipv6) {
+                // フィールドが空の場合は再生成
+                const guaPrefix = generateGuaPrefixFromFullAddress(cachedApiInfo);
+                if (guaPrefix) {
+                    values.mape_gua_prefix = guaPrefix;
+                    console.log('Generated GUA prefix for empty field:', guaPrefix);
+                }
             }
         }
     } else if (connectionType === 'ap') {
@@ -1112,13 +1134,23 @@ function handleConnectionTypeChange(e) {
     const selectedType = e.target.value;
     
     const sections = ['auto', 'dhcp', 'pppoe', 'dslite', 'mape', 'ap'];
-    sections.forEach(type => {
+sections.forEach(type => {
         const section = document.querySelector(`#${type}-section`);
         if (section) {
             if (type === selectedType) {
                 show(section);
                 if (type === 'auto' && cachedApiInfo) {
                     updateAutoConnectionInfo(cachedApiInfo);
+                } else if (type === 'mape' && cachedApiInfo) {
+                    // MAP-E選択時にGUA prefixを設定
+                    const guaPrefixField = document.querySelector('#mape-gua-prefix');
+                    if (guaPrefixField && cachedApiInfo.ipv6) {
+                        const guaPrefix = generateGuaPrefixFromFullAddress(cachedApiInfo);
+                        if (guaPrefix && !guaPrefixField.value) {
+                            guaPrefixField.value = guaPrefix;
+                            console.log('GUA prefix set for MAP-E:', guaPrefix);
+                        }
+                    }
                 }
             } else {
                 hide(section);
@@ -1227,7 +1259,19 @@ async function fetchAndDisplayIspInfo() {
         cachedApiInfo = apiInfo;
         displayIspInfo(apiInfo);
         applyIspAutoConfig(apiInfo);
-        updateAutoConnectionInfo(apiInfo);  
+        updateAutoConnectionInfo(apiInfo);
+        
+        // GUA prefix フィールドを明示的に更新
+        if (apiInfo?.ipv6) {
+            const guaPrefix = generateGuaPrefixFromFullAddress(apiInfo);
+            if (guaPrefix) {
+                const guaPrefixField = document.querySelector('#mape-gua-prefix');
+                if (guaPrefixField) {
+                    guaPrefixField.value = guaPrefix;
+                    console.log('GUA prefix set from ISP info:', guaPrefix);
+                }
+            }
+        }
     } catch (err) {
         console.error('Failed to fetch ISP info:', err);
         const autoInfo = document.querySelector('#auto-info');
@@ -1288,6 +1332,16 @@ function applyIspAutoConfig(apiInfo) {
             }
         }
     });
+    
+    // GUA prefix フィールドを直接更新（フォールバック処理）
+    const guaPrefixField = document.querySelector('#mape-gua-prefix');
+    if (guaPrefixField && apiInfo?.ipv6) {
+        const guaPrefix = generateGuaPrefixFromFullAddress(apiInfo);
+        if (guaPrefix && !guaPrefixField.value) {
+            guaPrefixField.value = guaPrefix;
+            console.log('GUA prefix set directly:', guaPrefix);
+        }
+    }
     
     updateAutoConnectionInfo(apiInfo);
     updatePackageListFromDynamicSources();
