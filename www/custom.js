@@ -128,19 +128,23 @@ function replaceAsuSection(asuSection, temp) {
         newDiv.appendChild(customScripts);
     }
 
-    // ★ ここで元の #asu-packages を確保
-    const existingPackagesTextarea = asuSection.querySelector('#asu-packages');
-    if (existingPackagesTextarea) {
-        newDiv.appendChild(existingPackagesTextarea);  // 移植
+    // --- asu-packages を復元（元の位置を保持する） ---
+    let existingPackagesTextarea = asuSection.querySelector('#asu-packages');
+    if (!existingPackagesTextarea) {
+        existingPackagesTextarea = document.createElement('textarea');
+        existingPackagesTextarea.id = 'asu-packages';
+        existingPackagesTextarea.style.width = '100%';
+        existingPackagesTextarea.rows = 4;
+    }
+    // ★ custom-packages の直後に挿入
+    if (newDiv.querySelector('#custom-packages-details')) {
+        newDiv.querySelector('#custom-packages-details')
+              .insertAdjacentElement('afterend', existingPackagesTextarea);
     } else {
-        // 無い場合は新規に作る
-        const textarea = document.createElement('textarea');
-        textarea.id = 'asu-packages';
-        textarea.style.width = '100%';
-        textarea.rows = 4;
-        newDiv.appendChild(textarea);
+        newDiv.appendChild(existingPackagesTextarea);
     }
 
+    // --- 残りのUI ---
     newDiv.insertAdjacentHTML('beforeend', `
         <br>
         <div id="asu-buildstatus" class="hide">
