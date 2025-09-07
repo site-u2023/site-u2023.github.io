@@ -105,7 +105,8 @@ input[type="radio"] {
 #uci-defaults-content,
 #postinst-content,
 #asu-packages {
-  width: 90%;
+  width: 100%;
+  box-sizing: border-box;
   margin: 0;
   padding: var(--input-padding);
   border: var(--input-border);
