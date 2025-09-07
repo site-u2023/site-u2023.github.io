@@ -715,7 +715,6 @@ function handleRadioChange(e) {
     }
     
     // MAP-Eタイプ切り替え時の特別処理
-// MAP-Eタイプ切り替え時の特別処理
     if (radio.name === 'mape_type') {
         const guaPrefixField = document.querySelector('#mape-gua-prefix');
         if (guaPrefixField) {
