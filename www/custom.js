@@ -1565,10 +1565,10 @@ function createPackageCategory(category) {
     if (!hasVisiblePackages) return null;
     
     const title = document.createElement('h4');
-    if (category.class) {
-        category.class.split(/\s+/).forEach(c => title.classList.add(c));
-    }
     title.textContent = category.name;
+    if (category.class) {
+        title.classList.add(category.class);
+    }
     categoryDiv.appendChild(title);
  
     if (category.description) {
