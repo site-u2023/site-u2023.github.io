@@ -267,19 +267,27 @@ function setupLanguageSelector() {
 
 async function loadCustomTranslations(lang) {
     if (!lang) {
-        lang = (navigator.language || 'en').split('-')[0];
+        lang = (navigator.language || config.fallback_language).split('-')[0];
     }
-    selectedLanguage = lang; // グローバル更新
+    selectedLanguage = lang;
 
     const customLangFile = `langs/custom.${lang}.json`;
     try {
         const resp = await fetch(customLangFile, { cache: 'no-store' });
-        if (!resp.ok) return;
 
-        const customMap = await resp.json();
-        customLanguageMap = customMap; // グローバルに保持
+        if (!resp.ok) {
+            if (lang !== config.fallback_language) {
+                return loadCustomTranslations(config.fallback_language);
+            }
+            return;
+        }
 
+        const text = await resp.text();
+        const customMap = JSON.parse(text);
+
+        customLanguageMap = customMap;
         Object.assign(current_language_json, customMap);
+
         for (const tr in customMap) {
             document.querySelectorAll(`.${tr}`).forEach(e => {
                 if ('placeholder' in e) {
@@ -290,7 +298,9 @@ async function loadCustomTranslations(lang) {
             });
         }
     } catch (err) {
-        console.error(`Failed to load custom translation: ${err}`);
+        if (lang !== config.fallback_language) {
+            return loadCustomTranslations(config.fallback_language);
+        }
     }
 }
 
