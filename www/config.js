@@ -22,12 +22,12 @@ var config = {
   info_url: "https://openwrt.org/start?q={title}&do=search",
   
   // Package search URL (optional)
-  // package_url: "https://openwrt.org/start?do=search&q={id}",
-  package_url: "https://openwrt.org/start?do=search&q={id}&_=" + Date.now(),
+  package_url: "https://openwrt.org/start?do=search&q={id}",
+  // package_url: "https://openwrt.org/start?do=search&q={id}&_=" + Date.now(),
   
   // Attended Sysupgrade Server support (optional)
-  // asu_url: "https://sysupgrade.openwrt.org",
-  asu_url: "https://sysupgrade.openwrt.org?_=" + Date.now(),
+  asu_url: "https://sysupgrade.openwrt.org",
+  // asu_url: "https://sysupgrade.openwrt.org?_=" + Date.now(),
   asu_extra_packages: ["luci"],
 
   // 最小サポートバージョン（任意）
