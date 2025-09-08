@@ -354,7 +354,7 @@ async function handleCustomLanguageChange(e) {
     console.log('Device language change processing completed');
 }
 
-// 言語パッケージ更新とPostinst更新を統合した関数
+// 言語パッケージ更新とPostinst更新を統合した関数（新規追加）
 async function updateLanguagePackageAndPostinst() {
     console.log('updateLanguagePackageAndPostinst called for:', selectedLanguage);
     
@@ -412,79 +412,12 @@ async function updateLanguagePackageAndPostinst() {
     console.log('Final dynamic packages:', Array.from(dynamicPackages));
     
     // Postinstのテキストエリアを必ず更新
-    updatePackageListFromSelector();
+    updatePackageListFromSelectorForced();
 }
 
-// updateImages フックの修正版
-const originalUpdateImages = window.updateImages;
-window.updateImages = function(version, mobj) {
-    if (originalUpdateImages) originalUpdateImages(version, mobj);
-
-    // arch_packagesをcurrent_deviceに保存
-    if (mobj && mobj.arch_packages) {
-        if (!current_device) current_device = {};
-        current_device.arch = mobj.arch_packages;
-        current_device.version = version;
-        console.log('Architecture saved:', mobj.arch_packages);
-    }
-
-    // デバイス固有パッケージを保存（重要）
-    if (mobj && "manifest" in mobj === false) {
-        deviceDefaultPackages = mobj.default_packages || [];
-        deviceDevicePackages = mobj.device_packages || [];
-        extraPackages = config.asu_extra_packages || [];
-        
-        console.log('Device packages saved:', {
-            default: deviceDefaultPackages.length,
-            device: deviceDevicePackages.length,
-            extra: extraPackages.length
-        });
-        
-        // 初期パッケージリストを設定
-        const initialPackages = deviceDefaultPackages
-            .concat(deviceDevicePackages)
-            .concat(extraPackages);
-        
-        const textarea = document.querySelector('#asu-packages');
-        if (textarea) {
-            textarea.value = initialPackages.join(' ');
-            console.log('Initial packages set:', initialPackages.length);
-        }
-        
-        // パッケージリスト設定後にリサイズ
-        setTimeout(() => resizePostinstTextarea(), 100);
-    }
-    
-    // 初回のみカスタムHTMLを読み込み
-    if (!customHTMLLoaded) {
-        console.log("Loading custom.html");
-        loadCustomHTML();
-        customHTMLLoaded = true;
-    } else if (customInitialized && current_device?.arch) {
-        // 既に初期化済みでデバイスが選択された場合、言語パッケージを強制更新
-        console.log("Device changed, updating language packages and postinst");
-        
-        // メイン言語セレクターから現在の言語を取得
-        const mainLanguageSelect = document.querySelector('#languages-select');
-        const currentLang = mainLanguageSelect?.value || current_language || 'en';
-        
-        // カスタム言語セレクターを同期
-        const customLanguageSelect = document.querySelector('#aios-language');
-        if (customLanguageSelect && customLanguageSelect.value !== currentLang) {
-            customLanguageSelect.value = currentLang;
-        }
-        
-        selectedLanguage = currentLang;
-        console.log("Force updating language packages for:", currentLang);
-        
-        // 言語パッケージとPostinstを必ず更新（デバイス変更時）
-        updateLanguagePackageAndPostinst();
-    }
-};
-
 // パッケージリスト更新の修正版（必ずテキストエリアを更新）
-function updatePackageListFromSelector() {
-    console.log('updatePackageListFromSelector called');
+function updatePackageListFromSelectorForced() {
+    console.log('updatePackageListFromSelectorForced called');
     
     // 基本パッケージセット（デバイス固有パッケージ）を準備
     const basePackages = new Set();
@@ -548,25 +481,23 @@ function updatePackageListFromSelector() {
     // テキストエリアを必ず更新
     if (textarea) {
         const newValue = uniquePackages.join(' ');
-        if (textarea.value !== newValue) {  // 実際に変更がある場合のみ更新
-            textarea.value = newValue;
-            console.log('Package list updated in textarea:', uniquePackages.length, 'packages');
-            
-            // テキストエリアのリサイズを強制実行
-            resizePostinstTextarea();
-            
-            // 少し遅延を入れて再度リサイズ（確実に反映させるため）
-            setTimeout(() => {
-                resizePostinstTextarea();
-            }, 50);
-        }
+        textarea.value = newValue;
+        console.log('Package list updated in textarea:', uniquePackages.length, 'packages');
+        
+        // テキストエリアのリサイズを強制実行
+        forceResizePostinstTextarea();
+        
+        // 少し遅延を入れて再度リサイズ（確実に反映させるため）
+        setTimeout(() => {
+            forceResizePostinstTextarea();
+        }, 50);
     } else {
         console.warn('Textarea #asu-packages not found');
     }
 }
 
-// テキストエリアリサイズ関数の改良版
-function resizePostinstTextarea() {
+// テキストエリアリサイズ関数の改良版（既存関数との衝突回避）
+function forceResizePostinstTextarea() {
     const textarea = document.querySelector("#asu-packages");
     if (!textarea) {
         console.warn('Textarea #asu-packages not found for resize');
@@ -581,7 +512,7 @@ function resizePostinstTextarea() {
     console.log('Textarea resized to:', newHeight + 'px');
 }
 
-// 動的更新関数の修正版
+// 動的更新関数の修正版（既存の関数名を使用して上書き）
 function updatePackageListFromDynamicSources() {
     updateSetupJsonPackages();
     updateLanguagePackageAndPostinst();  // 統合関数を使用
