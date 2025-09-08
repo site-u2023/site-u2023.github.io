@@ -1696,19 +1696,14 @@ function updatePackageListFromSelector() {
         textarea.value = uniquePackages.join(' ');
         console.log('Package list updated in textarea');
 
-        // 総合計 = 文字数 + 単語数（空白数）
         const totalChars = textarea.value.length;
-        const wordCount = uniquePackages.length;
-        const totalCount = totalChars + wordCount;
-    
-        // 現在の幅をAUTOで取得
         const currentWidth = textarea.clientWidth;
-        const charWidth = 8; // 概算文字幅
-        const charsPerLine = Math.floor(currentWidth / charWidth);
+        const charsPerLine = Math.floor(currentWidth / 8); // 文字幅は固定
+        const requiredLines = Math.ceil(totalChars / charsPerLine);
     
-        // 総合計を幅で割る
-        const requiredLines = Math.ceil(totalCount / charsPerLine);
-        textarea.style.height = (requiredLines * 20) + 'px';
+        // 行数だけ計算して、あとはAUTOに任せる
+        textarea.style.height = 'auto';
+        textarea.rows = Math.max(3, requiredLines);
     }
 }
 
