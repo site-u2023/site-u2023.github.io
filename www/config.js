@@ -1,3 +1,4 @@
+
 /* exported config */
 
 var config = {
@@ -21,24 +22,24 @@ var config = {
   info_url: "https://openwrt.org/start?q={title}&do=search",
   
   // Package search URL (optional)
-  package_url: "https://openwrt.org/start?do=search&q={id}&_=" + Date.now(),
+  package_url: "https://openwrt.org/start?do=search&q={id}",
 
   // Attended Sysupgrade Server support (optional)
-  asu_url: "https://sysupgrade.openwrt.org?_=" + Date.now(),
+  asu_url: "https://sysupgrade.openwrt.org",
   asu_extra_packages: ["luci"],
 
   // 最小サポートバージョン（任意）
   min_version: "21.02.0",
 
   // Auto-configuration API URL
-  auto_config_api_url: "https://auto-config.site-u.workers.dev/?_=" + Date.now(),
-  
+  auto_config_api_url: "https://auto-config.site-u.workers.dev/",
+
   // UCI-defaults setup.sh URL
   uci_defaults_setup_url: "uci-defaults/setup.sh",
-  
+
   // Package database URL
   packages_db_url: "packages/packages.json",
-  
+
   // setup.sh database URL
   setup_db_url: "uci-defaults/setup.json",
 
