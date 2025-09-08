@@ -1,0 +1,14 @@
+{
+    "tr-postinst": "Postinst（パッケージインストールスクリプト）"
+    "tr-uci": "UCI-defaults (ブート設定スクリプト)"
+
+    "tr-extended-info": "地域とISP情報",
+    "tr-notice": "お知らせ",
+    "tr-country": "地域",
+    "tr-timezone": "時間帯",
+    "tr-zonename": "地域名",
+    "tr-isp": "ISP",
+    "tr-as": "AS",
+    "tr-ip-address": "IPアドレス",
+    "tr-method": "接続方式"
+}
