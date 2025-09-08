@@ -1,4 +1,4 @@
-// custom.js - OpenWrt カスタム機能
+// custom.js - OpenWrt カスタム機能（i18n言語パッケージ修正版）
 
 console.log('custom.js loaded');
 
@@ -2026,4 +2026,4 @@ window.addEventListener('unhandledrejection', function(e) {
     console.error('Custom.js Unhandled Promise Rejection:', e.reason);
 });
 
-console.log('custom.js (i18n language package fixed) fully loaded and ready');
+console.log('custom.js (device language i18n package management) fully loaded and ready');
