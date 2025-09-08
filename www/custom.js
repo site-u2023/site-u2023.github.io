@@ -130,7 +130,9 @@ async function initializeCustomFeatures(asuSection, temp) {
     
     // 言語セレクター設定（初期言語パッケージ処理を含む）
     setupLanguageSelector();
-    loadCustomTranslations(selectedLanguage);
+    
+    // カスタム翻訳を読み込み（初期言語に基づいて）
+    await loadCustomTranslations(selectedLanguage);
     
     // フォーム監視設定
     setupFormWatchers();
