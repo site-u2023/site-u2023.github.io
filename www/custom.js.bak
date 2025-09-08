@@ -1,4 +1,4 @@
-// custom.js - OpenWrt カスタム機能（ビルド処理修正版）
+// custom.js - OpenWrt カスタム機能（デバイスパッケージ管理修正版）
 
 console.log('custom.js loaded');
 
@@ -6,13 +6,17 @@ console.log('custom.js loaded');
 let customInitialized = false;
 let customHTMLLoaded = false;
 let PACKAGE_DB = null;
-let devicePackages = [];
 let setupConfig = null;
 let formStructure = {};
 let cachedApiInfo = null;
 let defaultFieldValues = {};
 let dynamicPackages = new Set();
 let selectedLanguage = '';
+
+// デバイス固有パッケージ管理（重要：これらを常に維持）
+let deviceDefaultPackages = [];  // mobj.default_packages
+let deviceDevicePackages = [];   // mobj.device_packages  
+let extraPackages = [];           // config.asu_extra_packages
 
 // ==================== 初期化処理 ====================
 // 元の updateImages をフック
@@ -32,8 +36,31 @@ window.updateImages = function(version, mobj) {
         }, 100);
     }
 
-    // パッケージリスト設定後にリサイズ
+    // デバイス固有パッケージを保存（重要）
     if (mobj && "manifest" in mobj === false) {
+        // デバイス固有パッケージを保存
+        deviceDefaultPackages = mobj.default_packages || [];
+        deviceDevicePackages = mobj.device_packages || [];
+        extraPackages = config.asu_extra_packages || [];
+        
+        console.log('Device packages saved:', {
+            default: deviceDefaultPackages.length,
+            device: deviceDevicePackages.length,
+            extra: extraPackages.length
+        });
+        
+        // 初期パッケージリストを設定（index.jsの処理を維持）
+        const initialPackages = deviceDefaultPackages
+            .concat(deviceDevicePackages)
+            .concat(extraPackages);
+        
+        const textarea = document.querySelector('#asu-packages');
+        if (textarea) {
+            textarea.value = initialPackages.join(' ');
+            console.log('Initial packages set:', initialPackages.length);
+        }
+        
+        // パッケージリスト設定後にリサイズ
         setTimeout(() => resizePostinstTextarea(), 100);
     }
     
@@ -329,17 +356,29 @@ function extractLuciName(pkg) {
 function getCurrentPackageList() {
     const packages = new Set();
     
+    // デバイス初期パッケージを必ず含める
+    deviceDefaultPackages.forEach(pkg => packages.add(pkg));
+    deviceDevicePackages.forEach(pkg => packages.add(pkg));
+    extraPackages.forEach(pkg => packages.add(pkg));
+    
     // パッケージセレクターから選択されたパッケージ
     document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
         const pkgName = cb.getAttribute('data-package');
         if (pkgName) packages.add(pkgName);
     });
     
-    // テキストエリアから既存パッケージ
+    // テキストエリアから既存パッケージ（デバイス初期パッケージ以外）
     const textarea = document.querySelector('#asu-packages');
     if (textarea) {
         const textPackages = split(textarea.value);
-        textPackages.forEach(pkg => packages.add(pkg));
+        textPackages.forEach(pkg => {
+            // デバイス初期パッケージでなければ追加
+            if (!deviceDefaultPackages.includes(pkg) && 
+                !deviceDevicePackages.includes(pkg) && 
+                !extraPackages.includes(pkg)) {
+                packages.add(pkg);
+            }
+        });
     }
     
     // 動的パッケージ（非言語パッケージのみ）
@@ -1405,7 +1444,6 @@ async function loadPackageDatabase() {
         PACKAGE_DB = await response.json();
         console.log('Package database loaded:', PACKAGE_DB);
         
-        await fetchDevicePackages();
         generatePackageSelector();
         
         return PACKAGE_DB;
@@ -1423,37 +1461,8 @@ function generatePackageSelector() {
     
     container.innerHTML = '';
     
-    const availablePackages = new Set();
-    
-    if (!devicePackages || devicePackages.length === 0) {
-        PACKAGE_DB.categories.forEach(cat => {
-            cat.packages.forEach(pkg => {
-                availablePackages.add(pkg.name);
-                if (pkg.dependencies) {
-                    pkg.dependencies.forEach(dep => {
-                        const depPkg = findPackageById(dep);
-                        if (depPkg) availablePackages.add(depPkg.name);
-                    });
-                }
-            });
-        });
-    } else {
-        devicePackages.forEach(p => {
-            availablePackages.add(typeof p === 'string' ? p : p.name);
-        });
-    }
-    
-    const depIds = new Set();
-    PACKAGE_DB.categories.forEach(cat => {
-        cat.packages.forEach(pkg => {
-            if (Array.isArray(pkg.dependencies)) {
-                pkg.dependencies.forEach(d => depIds.add(d));
-            }
-        });
-    });
-    
     PACKAGE_DB.categories.forEach(category => {
-        const categoryDiv = createPackageCategory(category, availablePackages, depIds);
+        const categoryDiv = createPackageCategory(category);
         if (categoryDiv) {
             container.appendChild(categoryDiv);
         }
@@ -1463,7 +1472,7 @@ function generatePackageSelector() {
     console.log(`Generated ${PACKAGE_DB.categories.length} package categories`);
 }
 
-function createPackageCategory(category, availablePackages, depIds) {
+function createPackageCategory(category) {
     const categoryDiv = document.createElement('div');
     categoryDiv.className = 'package-category';
     categoryDiv.setAttribute('data-category-id', category.id);
@@ -1474,13 +1483,9 @@ function createPackageCategory(category, availablePackages, depIds) {
     let hasVisiblePackages = false;
     
     category.packages.forEach(pkg => {
-        if (pkg.hidden) return;
-        
-        if (depIds.has(pkg.id) && !pkg.hidden === false) return;
-        
-        if (availablePackages.size === 0 || availablePackages.has(pkg.name)) {
+        if (!pkg.hidden) {
             hasVisiblePackages = true;
-            const packageItem = createPackageItem(pkg, availablePackages);
+            const packageItem = createPackageItem(pkg);
             packageGrid.appendChild(packageItem);
         }
     });
@@ -1502,7 +1507,7 @@ function createPackageCategory(category, availablePackages, depIds) {
     return categoryDiv;
 }
 
-function createPackageItem(pkg, availablePackages) {
+function createPackageItem(pkg) {
     const packageItem = document.createElement('div');
     packageItem.className = 'package-item';
     packageItem.setAttribute('data-package-id', pkg.id);
@@ -1517,13 +1522,9 @@ function createPackageItem(pkg, availablePackages) {
         pkg.dependencies.forEach(depId => {
             const depPkg = findPackageById(depId);
             if (depPkg && !depPkg.hidden) {
-                const depName = depPkg.name || depId;
-                
-                if (availablePackages.size === 0 || availablePackages.has(depName)) {
-                    const depCheckbox = createPackageCheckbox(depPkg, pkg.checked || false, true);
-                    depCheckbox.classList.add('package-dependent');
-                    depContainer.appendChild(depCheckbox);
-                }
+                const depCheckbox = createPackageCheckbox(depPkg, pkg.checked || false, true);
+                depCheckbox.classList.add('package-dependent');
+                depContainer.appendChild(depCheckbox);
             }
         });
         
@@ -1623,51 +1624,77 @@ function handlePackageSelection(e) {
 function updatePackageListFromSelector() {
     console.log('updatePackageListFromSelector called');
     
-    const checkedPkgs = new Set();
+    // 基本パッケージセット（デバイス固有パッケージ）を準備
+    const basePackages = new Set();
     
-    // パッケージセレクターから選択されたパッケージ
+    // デバイス固有パッケージを必ず含める（最重要）
+    deviceDefaultPackages.forEach(pkg => basePackages.add(pkg));
+    deviceDevicePackages.forEach(pkg => basePackages.add(pkg));
+    extraPackages.forEach(pkg => basePackages.add(pkg));
+    
+    console.log('Device base packages:', {
+        default: deviceDefaultPackages.length,
+        device: deviceDevicePackages.length,
+        extra: extraPackages.length,
+        total: basePackages.size
+    });
+    
+    // チェックされたパッケージを追加
+    const checkedPackages = new Set();
     document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
         const pkgName = cb.getAttribute('data-package');
         if (pkgName) {
-            checkedPkgs.add(pkgName);
+            checkedPackages.add(pkgName);
         }
     });
     
-    // 動的パッケージ（言語パッケージを含む）を追加
-    dynamicPackages.forEach(pkg => {
-        checkedPkgs.add(pkg);
-    });
-
-    // デバイス初期パッケージを必ず追加
-    if (devicePackages && devicePackages.length > 0) {
-        devicePackages.forEach(pkgObj => {
-            // devicePackagesは {id, name, hidden} 形式
-            const pkgName = typeof pkgObj === 'string' ? pkgObj : pkgObj.name;
-            if (pkgName) {
-                checkedPkgs.add(pkgName);
-            }
-        });
-    }
-
-    console.log('Checked packages from selector:', Array.from(checkedPkgs).filter(p => !p.startsWith('luci-i18n-')));
-    console.log('Language packages from dynamic:', Array.from(checkedPkgs).filter(p => p.startsWith('luci-i18n-')));
+    console.log('Checked packages from selector:', checkedPackages.size);
     
+    // 動的パッケージ（言語パッケージを含む）を追加
+    const dynamicPackagesList = Array.from(dynamicPackages);
+    console.log('Dynamic packages (including language):', dynamicPackagesList.length);
+    
+    // テキストエリアから既存パッケージを取得（デバイス固有パッケージ以外）
+    const manualPackages = new Set();
     const textarea = document.querySelector('#asu-packages');
     if (textarea) {
         const currentPackages = split(textarea.value);
-
-        // セレクターで管理されていない、かつ動的でもない、かつ言語パッケージでもないパッケージを保持
-        const nonSelectorPkgs = currentPackages.filter(pkg => {
-            const hasInSelector = document.querySelector(`.package-selector-checkbox[data-package="${pkg}"]`);
-            const hasInDynamic = dynamicPackages.has(pkg);
-            const isLanguagePkg = pkg.startsWith('luci-i18n-');
-            return !hasInSelector && !hasInDynamic && !isLanguagePkg;
+        currentPackages.forEach(pkg => {
+            // デバイス固有パッケージ、チェックボックス管理パッケージ、動的パッケージ以外を保持
+            if (!basePackages.has(pkg) && 
+                !checkedPackages.has(pkg) && 
+                !dynamicPackages.has(pkg) &&
+                !document.querySelector(`.package-selector-checkbox[data-package="${pkg}"]`)) {
+                manualPackages.add(pkg);
+            }
         });
-
-        // devicePackagesも含めて、最低限必須を常に維持
-        const newList = [...new Set([...nonSelectorPkgs, ...checkedPkgs])];
-
-        textarea.value = newList.join(' ');
+    }
+    
+    console.log('Manual packages (user typed):', manualPackages.size);
+    
+    // 全てのパッケージを統合（順序：デバイス固有 → チェック済み → 動的 → 手動）
+    const finalPackages = [
+        ...basePackages,      // デバイス固有パッケージ（必須）
+        ...checkedPackages,   // チェックボックスで選択されたパッケージ
+        ...dynamicPackages,   // 動的パッケージ（言語パッケージなど）
+        ...manualPackages     // 手動で入力されたパッケージ
+    ];
+    
+    // 重複を削除
+    const uniquePackages = [...new Set(finalPackages)];
+    
+    console.log('Final package list:', {
+        base: basePackages.size,
+        checked: checkedPackages.size,
+        dynamic: dynamicPackages.size,
+        manual: manualPackages.size,
+        total: uniquePackages.length
+    });
+    
+    // テキストエリアを更新
+    if (textarea) {
+        textarea.value = uniquePackages.join(' ');
+        console.log('Package list updated in textarea');
     }
 }
 
@@ -1679,33 +1706,6 @@ function findPackageById(id) {
         if (pkg) return pkg;
     }
     return null;
-}
-
-async function fetchDevicePackages() {
-    try {
-        const allPackages = [];
-        
-        if (PACKAGE_DB) {
-            PACKAGE_DB.categories.forEach(cat => {
-                cat.packages.forEach(pkg => {
-                    allPackages.push({
-                        id: pkg.id,
-                        name: pkg.name,
-                        hidden: pkg.hidden
-                    });
-                });
-            });
-        }
-        
-        devicePackages = allPackages;
-        console.log(`Device packages loaded: ${devicePackages.length} packages`);
-        return devicePackages;
-        
-    } catch (err) {
-        console.error('Failed to fetch device packages:', err);
-        devicePackages = [];
-        return [];
-    }
 }
 
 // ==================== UCI-defaults処理 ====================
@@ -1936,4 +1936,4 @@ window.addEventListener('unhandledrejection', function(e) {
     console.error('Custom.js Unhandled Promise Rejection:', e.reason);
 });
 
-console.log('custom.js (build process fixed) fully loaded and ready');
+console.log('custom.js (device package management fixed) fully loaded and ready');
