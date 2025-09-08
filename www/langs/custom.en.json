@@ -87,6 +87,20 @@
     "tr-bbr": "BBR",
     "tr-reno": "Reno",
     "tr-disabled-mode": "Disabled Mode",
-    "tr-optimization-disabled": "Optimization Disabled"
+    "tr-optimization-disabled": "Optimization Disabled",
+
+    "tr-basic-system-features": "Basic System Features",
+    "tr-system-management": "System Management",
+    "tr-network-management": "Network Management",
+    "tr-wifi-management": "Wi-Fi Management",
+    "tr-modem-support": "Modem Support",
+    "tr-security-tools": "Security Tools",
+    "tr-system-monitoring": "System Monitoring",
+    "tr-diagnostic-tools": "Network Diagnostic Tools",
+    "tr-system-tools": "System Administration Tools",
+    "tr-themes-dashboard": "Themes and Dashboard",
+    "tr-utilities": "Utilities",
+    "tr-usb-storage": "USB Storage Support",
+    "tr-file-sharing": "File Sharing"
 }
     
