@@ -58,7 +58,7 @@ var config = {
 };
 
 // Language
-current_language = current_language || "en";
+current_language = "en";
 
 // カスタム機能の自動読み込み
 (function() {
