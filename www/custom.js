@@ -685,7 +685,7 @@ function buildField(parent, pkg) {
                     textSpan.classList.add(opt.class);
                 }
                 lbl.appendChild(radio);
-                lbl.appendChild(document.createTextNode(' ' + (opt.label != null ? opt.label : String(opt.value))));
+                lbl.appendChild(textSpan);
                 radioWrap.appendChild(lbl);
             });
 
