@@ -61,17 +61,19 @@ window.updateImages = function(version, mobj) {
         setTimeout(() => resizePostinstTextarea(), 100);
     }
     
-    // カスタム要素が存在しない場合のみ初期化
-    if (!document.querySelector('#custom-packages-details')) {
-        if (!customHTMLLoaded) {
-            console.log("Loading custom.html");
-            loadCustomHTML();
-            customHTMLLoaded = true;
-        }
-    } else {
-        // 既に存在する場合は言語パッケージのみ更新
-        if (current_device?.arch && selectedLanguage && selectedLanguage !== 'en') {
-            console.log("Device changed, updating language packages");
+// 初回のみカスタムHTMLを読み込み、初期化済みフラグで管理
+    if (!customInitialized && !customHTMLLoaded) {
+        console.log("Loading custom.html");
+        loadCustomHTML();
+        customHTMLLoaded = true;
+    } else if (customInitialized && current_device?.arch) {
+        // 既に初期化済みでデバイス変更時
+        const mainLanguageSelect = document.querySelector('#languages-select');
+        const currentLang = mainLanguageSelect?.value || selectedLanguage || 'ja';
+        
+        if (currentLang !== 'en') {
+            selectedLanguage = currentLang;
+            console.log("Device changed, updating language packages for:", currentLang);
             updateLanguagePackage();
         }
     }
@@ -109,15 +111,17 @@ function waitForAsuAndInit(temp, retry = 50) {
 async function initializeCustomFeatures(asuSection, temp) {
     console.log('initializeCustomFeatures called');
     
-    // 既に初期化済みなら何もしない
-    if (customInitialized || document.querySelector('#custom-packages-details')) {
-        console.log('Already initialized, skipping completely');
+    if (customInitialized) {
+        console.log('Already initialized, skipping');
         return;
     }
 
-    cleanupExistingCustomElements();
-    replaceAsuSection(asuSection, temp);
-    insertExtendedInfo(temp);
+    // DOM要素が既に存在する場合は置き換えない
+    if (!document.querySelector('#custom-packages-details')) {
+        cleanupExistingCustomElements();
+        replaceAsuSection(asuSection, temp);
+        insertExtendedInfo(temp);
+    }
     
     // 設定とデータを並列で読み込み
     await Promise.all([
@@ -293,9 +297,12 @@ function setupLanguageSelector() {
         customLanguageSelect.addEventListener('change', handleCustomLanguageChange);
     }
     
-    // 初回言語パッケージ更新（重要：初期化時に必ず実行）
+// 初回言語パッケージ更新（重要：初期化時に必ず実行）
     console.log('Performing initial language package update');
-    updateLanguagePackage();
+    // デバイス情報がある場合のみ言語パッケージを追加
+    if (current_device?.arch && selectedLanguage && selectedLanguage !== 'en') {
+        updateLanguagePackage();
+    }
 }
 
 // メイン言語セレクター変更ハンドラー（新規追加）
@@ -382,14 +389,12 @@ async function handleCustomLanguageChange(e) {
 
 // 言語パッケージの更新（完全修正版）
 async function updateLanguagePackage() {
-    // selectedLanguageが未設定の場合はメイン言語から取得
-    if (!selectedLanguage) {
-        const mainLanguageSelect = document.querySelector('#languages-select');
-        if (mainLanguageSelect && mainLanguageSelect.value) {
-            selectedLanguage = mainLanguageSelect.value;
-        } else {
-            selectedLanguage = current_language || config?.fallback_language || 'en';
-        }
+    // メイン言語セレクターから現在の言語を取得（常に最新を取る）
+    const mainLanguageSelect = document.querySelector('#languages-select');
+    if (mainLanguageSelect && mainLanguageSelect.value) {
+        selectedLanguage = mainLanguageSelect.value;
+    } else if (!selectedLanguage) {
+        selectedLanguage = current_language || config?.fallback_language || 'en';
     }
     
     console.log('updateLanguagePackage called, selectedLanguage:', selectedLanguage);
