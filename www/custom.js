@@ -35,10 +35,18 @@ window.updateImages = function(version, mobj) {
 
     // デバイス固有パッケージを保存（重要）
     if (mobj && "manifest" in mobj === false) {
+        // デバイス固有パッケージを保存
         deviceDefaultPackages = mobj.default_packages || [];
         deviceDevicePackages = mobj.device_packages || [];
         extraPackages = config.asu_extra_packages || [];
         
+        console.log('Device packages saved:', {
+            default: deviceDefaultPackages.length,
+            device: deviceDevicePackages.length,
+            extra: extraPackages.length
+        });
+        
+        // 初期パッケージリストを設定（index.jsの処理を維持）
         const initialPackages = deviceDefaultPackages
             .concat(deviceDevicePackages)
             .concat(extraPackages);
@@ -46,19 +54,24 @@ window.updateImages = function(version, mobj) {
         const textarea = document.querySelector('#asu-packages');
         if (textarea) {
             textarea.value = initialPackages.join(' ');
+            console.log('Initial packages set:', initialPackages.length);
         }
+        
+        // パッケージリスト設定後にリサイズ
+        setTimeout(() => resizePostinstTextarea(), 100);
     }
     
-    // カスタム機能が初期化されていない場合のみ初期化
-    if (!customInitialized) {
+    // カスタム要素が存在しない場合のみ初期化
+    if (!document.querySelector('#custom-packages-details')) {
         if (!customHTMLLoaded) {
             console.log("Loading custom.html");
             loadCustomHTML();
             customHTMLLoaded = true;
         }
     } else {
-        // 既に初期化済みの場合は、言語パッケージの更新のみ
-        if (selectedLanguage && selectedLanguage !== 'en') {
+        // 既に存在する場合は言語パッケージのみ更新
+        if (current_device?.arch && selectedLanguage && selectedLanguage !== 'en') {
+            console.log("Device changed, updating language packages");
             updateLanguagePackage();
         }
     }
@@ -353,23 +366,23 @@ async function loadCustomTranslations(lang) {
 async function handleCustomLanguageChange(e) {
     const newLanguage = e.target.value || config?.fallback_language || 'en';
     
-    // 言語が実際に変更された場合のみ処理
-    if (selectedLanguage !== newLanguage) {
-        selectedLanguage = newLanguage;
-        window.selectedLanguage = newLanguage; // グローバルスコープにも設定
-        console.log('Language changed to:', selectedLanguage);
-        
-        await updateLanguagePackage();
-        updatePackageListFromSelector();
-        updateVariableDefinitions();
-        
-        console.log('Language change processing completed');
+    // 実際に変更された場合のみ処理
+    if (selectedLanguage === newLanguage) {
+        return;
     }
+    
+    selectedLanguage = newLanguage;
+    console.log('Language changed to:', selectedLanguage);
+    
+    await updateLanguagePackage();
+    updateVariableDefinitions();
+    
+    console.log('Language change processing completed');
 }
 
 // 言語パッケージの更新（完全修正版）
 async function updateLanguagePackage() {
-    // selectedLanguageが未設定の場合は初期化
+    // selectedLanguageが未設定の場合はメイン言語から取得
     if (!selectedLanguage) {
         const mainLanguageSelect = document.querySelector('#languages-select');
         if (mainLanguageSelect && mainLanguageSelect.value) {
@@ -392,6 +405,13 @@ async function updateLanguagePackage() {
     // 英語の場合は言語パッケージ不要
     if (!selectedLanguage || selectedLanguage === 'en') {
         console.log('English selected, no language packages needed');
+        updatePackageListFromSelector();
+        return;
+    }
+    
+    // デバイス情報があるかチェック
+    if (!current_device?.arch) {
+        console.log('Device architecture not available, skipping language packages');
         updatePackageListFromSelector();
         return;
     }
