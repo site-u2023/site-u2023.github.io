@@ -313,7 +313,7 @@
                 {
                   "id": "pppoe-username",
                   "label": "Username",
-                  "class": "tr-username",
+                  "class": "tr-pppoe-username",
                   "type": "text",
                   "selector": "#pppoe-username",
                   "variableName": "pppoe_username",
@@ -322,7 +322,7 @@
                 {
                   "id": "pppoe-password",
                   "label": "Password",
-                  "class": "tr-password",
+                  "class": "tr-pppoe-password",
                   "type": "password",
                   "selector": "#pppoe-password",
                   "variableName": "pppoe_password",
@@ -348,7 +348,7 @@
                 {
                   "id": "dslite-aftr-type",
                   "label": "AFTR Type",
-                  "class": "tr-aftr-type",
+                  "class": "tr-dslite-aftr-type",
                   "type": "select",
                   "selector": "#dslite-aftr-type",
                   "variableName": "dslite_aftr_type",
@@ -359,12 +359,12 @@
                   ]
                 },
                 {
-                  "id": "dslite-region",
-                  "label": "Region",
-                  "class": "tr-region",
+                  "id": "dslite-area",
+                  "label": "Area",
+                  "class": "tr-dslite-area",
                   "type": "select",
-                  "selector": "#dslite-region",
-                  "variableName": "dslite_region",
+                  "selector": "#dslite-area",
+                  "variableName": "dslite_area",
                   "options": [
                     {"value": "east", "label": "East Japan", "class": "tr-east-japan"},
                     {"value": "west", "label": "West Japan", "class": "tr-west-japan"}
@@ -373,7 +373,7 @@
                 {
                   "id": "dslite-aftr-address",
                   "label": "AFTR IPv6 Address",
-                  "class": "tr-aftr-ipv6-address",
+                  "class": "tr-dslite-aftr-ipv6-address",
                   "type": "text",
                   "selector": "#dslite-aftr-address",
                   "variableName": "dslite_aftr_address",
@@ -388,7 +388,7 @@
         {
           "id": "mape-section",
           "name": "MAP-E",
-          "class": "tr-map-e",
+          "class": "tr-mape",
           "type": "conditional-section",
           "showWhen": {"field": "connection_type", "values": ["mape"]},
           "children": [
@@ -406,7 +406,7 @@
             {
               "id": "mape-fields",
               "name": "MAP-E Settings",
-              "class": "tr-map-e-settings",
+              "class": "tr-mape-settings",
               "type": "input-group",
               "fields": [
                 {
