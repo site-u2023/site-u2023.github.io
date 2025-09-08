@@ -373,7 +373,7 @@
                   "type": "text",
                   "selector": "#mape-br",
                   "variableName": "mape_br",
-                  "placeholder": "2001:db8::1",
+                  "placeholder": "2001:380:a120::9",
                   "apiMapping": "mape.brIpv6Address"
                 },
                 {
@@ -382,7 +382,7 @@
                   "type": "number",
                   "selector": "#mape-ealen",
                   "variableName": "mape_ealen",
-                  "placeholder": "16",
+                  "placeholder": "18",
                   "apiMapping": "mape.eaBitLength"
                 },
                 {
@@ -400,7 +400,7 @@
                   "type": "number",
                   "selector": "#mape-ipv4-prefixlen",
                   "variableName": "mape_ipv4_prefixlen",
-                  "placeholder": "24",
+                  "placeholder": "20",
                   "apiMapping": "mape.ipv4PrefixLength"
                 },
                 {
@@ -418,7 +418,7 @@
                   "type": "number",
                   "selector": "#mape-ipv6-prefixlen",
                   "variableName": "mape_ipv6_prefixlen",
-                  "placeholder": "32",
+                  "placeholder": "38",
                   "apiMapping": "mape.ipv6PrefixLength"
                 },
                 {
