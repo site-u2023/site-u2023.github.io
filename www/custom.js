@@ -1725,7 +1725,7 @@ function loadUciDefaultsTemplate() {
 
     function autoResize() {
         const lines = textarea.value.split('\n').length;
-        textarea.style.height = (lines * 1.2) + 'em';
+        textarea.style.height = (lines * 1.1) + 'em';
     }
 
     textarea.addEventListener('input', autoResize);
