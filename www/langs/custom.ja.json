@@ -87,5 +87,19 @@
     "tr-bbr": "BBR",
     "tr-reno": "Reno",
     "tr-disabled-mode": "無効モード",
-    "tr-optimization-disabled": "最適化無効"
+    "tr-optimization-disabled": "最適化無効",
+
+    "tr-basic-system-features": "基本システム機能",
+    "tr-system-management": "システム管理",
+    "tr-network-management": "ネットワーク管理",
+    "tr-wifi-management": "Wi‑Fi管理",
+    "tr-modem-support": "モデム対応",
+    "tr-security-tools": "セキュリティツール",
+    "tr-system-monitoring": "システム監視",
+    "tr-diagnostic-tools": "ネットワーク診断ツール",
+    "tr-system-tools": "システム管理ツール",
+    "tr-themes-dashboard": "テーマとダッシュボード",
+    "tr-utilities": "ユーティリティ",
+    "tr-usb-storage": "USBストレージ対応",
+    "tr-file-sharing": "ファイル共有"
 }
