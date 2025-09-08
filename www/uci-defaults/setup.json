@@ -260,8 +260,8 @@
             {"value": "auto", "label": "AUTO", "class": "tr-auto", "checked": true},
             {"value": "dhcp", "label": "DHCP", "class": "tr-dhcp"},
             {"value": "pppoe", "label": "PPPoE", "class": "tr-pppoe"},
-            {"value": "dslite", "label": "DS-Lite", "class": "tr-ds-lite", "packages": ["ds-lite"]},
-            {"value": "mape", "label": "MAP-E", "class": "tr-map-e", "packages": ["map"]},
+            {"value": "dslite", "label": "DS-Lite", "class": "tr-dslite", "packages": ["ds-lite"]},
+            {"value": "mape", "label": "MAP-E", "class": "tr-mape", "packages": ["map"]},
             {"value": "ap", "label": "AP", "class": "tr-ap"}
           ]
         },
@@ -335,14 +335,14 @@
         {
           "id": "dslite-section",
           "name": "DS-Lite",
-          "class": "tr-ds-lite",
+          "class": "tr-dslite",
           "type": "conditional-section",
           "showWhen": {"field": "connection_type", "values": ["dslite"]},
           "children": [
             {
               "id": "dslite-fields",
               "name": "DS-Lite Settings",
-              "class": "tr-ds-lite-settings",
+              "class": "tr-dslite-settings",
               "type": "input-group",
               "fields": [
                 {
