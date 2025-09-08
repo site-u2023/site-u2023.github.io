@@ -3,7 +3,9 @@
     "tr-custom-defaults": "初回起動時に実行されるスクリプト (uci-defaults)",
     "tr-postinst": "Postinst（パッケージインストールスクリプト）",
     "tr-uci": "UCI-defaults（ブート設定スクリプト）",
-
+    "tr-package-search": "パッケージ検索",
+    "tr-tr-add-commands": "コマンド追加",
+    
     "tr-extended-info": "地域とISP情報",
     "tr-notice": "お知らせ",
     "tr-country": "地域",
