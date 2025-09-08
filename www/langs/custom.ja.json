@@ -4,7 +4,7 @@
     "tr-postinst": "Postinst（パッケージインストールスクリプト）",
     "tr-uci": "UCI-defaults（ブート設定スクリプト）",
     "tr-package-search": "パッケージ検索",
-    "tr-tr-add-commands": "コマンド追加",
+    "tr-add-commands": "コマンド追加",
     
     "tr-extended-info": "地域とISP情報",
     "tr-notice": "お知らせ",
