@@ -43,14 +43,4 @@
     "tr-container-setup": "Setup container",
     "tr-packages": "Installed Packages",
     "tr-defaults": "Script to run on first boot (uci-defaults)",
-    
-    "tr-extended-info": "Location & ISP Information",
-    "tr-notice": "Notice",
-    "tr-country": "Country",
-    "tr-timezone": "Timezone",
-    "tr-zonename": "Zonename",
-    "tr-isp": "ISP",
-    "tr-as": "AS",
-    "tr-ip-address": "IP Address",
-    "tr-method": "Method"
 }
