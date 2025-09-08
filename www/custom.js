@@ -25,16 +25,22 @@ const originalUpdateImages = window.updateImages;
 window.updateImages = function(version, mobj) {
     if (originalUpdateImages) originalUpdateImages(version, mobj);
 
-    // arch_packagesをcurrent_deviceに保存
-    if (mobj && mobj.arch_packages && current_device) {
+    // arch_packagesをcurrent_deviceに保存（current_deviceがない場合は作成）
+    if (mobj && mobj.arch_packages) {
+        if (!current_device) {
+            current_device = {};
+        }
         current_device.arch = mobj.arch_packages;
+        current_device.version = version || current_device.version;
         console.log('Architecture saved:', mobj.arch_packages);
         
-        // デバイス選択時に言語パッケージを即座に更新
-        setTimeout(() => {
-            console.log('Device selected, updating language packages');
-            updateLanguagePackage();
-        }, 100);
+        // デバイス選択時に言語パッケージを更新（selectedLanguageが設定されている場合のみ）
+        if (selectedLanguage && selectedLanguage !== 'en') {
+            setTimeout(() => {
+                console.log('Device selected, updating language packages');
+                updateLanguagePackage();
+            }, 100);
+        }
     }
 
     // デバイス固有パッケージを保存（重要）
@@ -265,7 +271,9 @@ function setupLanguageSelector() {
         currentLanguage = current_language;
     }
     
+    // グローバル変数を確実に設定
     selectedLanguage = currentLanguage;
+    window.selectedLanguage = currentLanguage; // グローバルスコープにも設定
     console.log('Selected language for device:', selectedLanguage);
     
     // カスタム言語セレクターを同期（片方向制御）
@@ -360,18 +368,34 @@ async function loadCustomTranslations(lang) {
 }
 
 async function handleCustomLanguageChange(e) {
-    selectedLanguage = e.target.value || config?.fallback_language || 'en';
-    console.log('Language changed to:', selectedLanguage);
+    const newLanguage = e.target.value || config?.fallback_language || 'en';
     
-    await updateLanguagePackage();
-    updatePackageListFromSelector();
-    updateVariableDefinitions();
-    
-    console.log('Language change processing completed');
+    // 言語が実際に変更された場合のみ処理
+    if (selectedLanguage !== newLanguage) {
+        selectedLanguage = newLanguage;
+        window.selectedLanguage = newLanguage; // グローバルスコープにも設定
+        console.log('Language changed to:', selectedLanguage);
+        
+        await updateLanguagePackage();
+        updatePackageListFromSelector();
+        updateVariableDefinitions();
+        
+        console.log('Language change processing completed');
+    }
 }
 
 // 言語パッケージの更新（完全修正版）
 async function updateLanguagePackage() {
+    // selectedLanguageが未設定の場合は初期化
+    if (!selectedLanguage) {
+        const mainLanguageSelect = document.querySelector('#languages-select');
+        if (mainLanguageSelect && mainLanguageSelect.value) {
+            selectedLanguage = mainLanguageSelect.value;
+        } else {
+            selectedLanguage = current_language || config?.fallback_language || 'en';
+        }
+    }
+    
     console.log('updateLanguagePackage called, selectedLanguage:', selectedLanguage);
     
     // 既存の言語パッケージを削除
@@ -909,7 +933,6 @@ function handleRadioChange(e) {
 
 function updatePackageListFromDynamicSources() {
     updateSetupJsonPackages();
-    updateLanguagePackage();
     updatePackageListFromSelector();
     updateVariableDefinitions();
 }
