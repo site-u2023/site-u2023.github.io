@@ -1695,6 +1695,15 @@ function updatePackageListFromSelector() {
     if (textarea) {
         textarea.value = uniquePackages.join(' ');
         console.log('Package list updated in textarea');
+
+        // 動的サイズ調整
+        const packageString = textarea.value;
+        const textareaWidth = textarea.clientWidth;
+        const charWidth = 8; // 概算文字幅
+        const charsPerLine = Math.floor((textareaWidth - 20) / charWidth);
+        const requiredLines = Math.ceil(packageString.length / charsPerLine);
+        
+        textarea.style.height = Math.max(3, requiredLines + 1);
     }
 }
 
@@ -1716,7 +1725,7 @@ function loadUciDefaultsTemplate() {
 
     function autoResize() {
         const lines = textarea.value.split('\n').length;
-        textarea.rows = lines + 1;
+        textarea.style.height = lines + 1;
     }
 
     textarea.addEventListener('input', autoResize);
