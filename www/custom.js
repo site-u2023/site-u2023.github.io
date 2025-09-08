@@ -536,9 +536,9 @@ async function isPackageAvailable(pkgName, feed) {
         return false;
     }
     
-    // デバイス情報が不完全でも基本的なチェックは行う
+    // デバイス情報を確認
     const arch = current_device?.arch;
-    const version = current_device?.version;
+    const version = current_device?.version || $("#versions").value;
     
     if (!arch || !version) {
         console.log('Missing device info for package check:', { arch, version });
