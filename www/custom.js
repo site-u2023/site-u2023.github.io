@@ -25,38 +25,20 @@ const originalUpdateImages = window.updateImages;
 window.updateImages = function(version, mobj) {
     if (originalUpdateImages) originalUpdateImages(version, mobj);
 
-    // arch_packagesをcurrent_deviceに保存（current_deviceがない場合は作成）
+    // arch_packagesをcurrent_deviceに保存
     if (mobj && mobj.arch_packages) {
-        if (!current_device) {
-            current_device = {};
-        }
+        if (!current_device) current_device = {};
         current_device.arch = mobj.arch_packages;
-        current_device.version = version || current_device.version;
+        current_device.version = version;
         console.log('Architecture saved:', mobj.arch_packages);
-        
-        // デバイス選択時に言語パッケージを更新（selectedLanguageが設定されている場合のみ）
-        if (selectedLanguage && selectedLanguage !== 'en') {
-            setTimeout(() => {
-                console.log('Device selected, updating language packages');
-                updateLanguagePackage();
-            }, 100);
-        }
     }
 
     // デバイス固有パッケージを保存（重要）
     if (mobj && "manifest" in mobj === false) {
-        // デバイス固有パッケージを保存
         deviceDefaultPackages = mobj.default_packages || [];
         deviceDevicePackages = mobj.device_packages || [];
         extraPackages = config.asu_extra_packages || [];
         
-        console.log('Device packages saved:', {
-            default: deviceDefaultPackages.length,
-            device: deviceDevicePackages.length,
-            extra: extraPackages.length
-        });
-        
-        // 初期パッケージリストを設定（index.jsの処理を維持）
         const initialPackages = deviceDefaultPackages
             .concat(deviceDevicePackages)
             .concat(extraPackages);
@@ -64,21 +46,21 @@ window.updateImages = function(version, mobj) {
         const textarea = document.querySelector('#asu-packages');
         if (textarea) {
             textarea.value = initialPackages.join(' ');
-            console.log('Initial packages set:', initialPackages.length);
         }
-        
-        // パッケージリスト設定後にリサイズ
-        setTimeout(() => resizePostinstTextarea(), 100);
     }
     
-    // 初回のみ custom.html を読み込む
-    if (!customHTMLLoaded) {
-        console.log("Loading custom.html");
-        loadCustomHTML();
-        customHTMLLoaded = true;
+    // カスタム機能が初期化されていない場合のみ初期化
+    if (!customInitialized) {
+        if (!customHTMLLoaded) {
+            console.log("Loading custom.html");
+            loadCustomHTML();
+            customHTMLLoaded = true;
+        }
     } else {
-        console.log("Reinitializing features");
-        reinitializeFeatures();
+        // 既に初期化済みの場合は、言語パッケージの更新のみ
+        if (selectedLanguage && selectedLanguage !== 'en') {
+            updateLanguagePackage();
+        }
     }
 };
 
@@ -114,8 +96,9 @@ function waitForAsuAndInit(temp, retry = 50) {
 async function initializeCustomFeatures(asuSection, temp) {
     console.log('initializeCustomFeatures called');
     
-    if (customInitialized) {
-        console.log('Already initialized, skipping');
+    // 既に初期化済みなら何もしない
+    if (customInitialized || document.querySelector('#custom-packages-details')) {
+        console.log('Already initialized, skipping completely');
         return;
     }
 
