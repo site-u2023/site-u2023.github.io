@@ -31,6 +31,9 @@
     "tr-wi-fi-mode": "Wi-Fiモード",
     "tr-wi-fi-ssid": "Wi-Fi SSID",
     "tr-wi-fi-password": "Wi-Fiパスワード",
+    "tr-mobility-domain": "モビリティドメイン",
+    "tr-min-snr" "ミニマムSNR",
+    
     "tr-standard": "標準",
     "tr-usteer": "Usteer",
     "tr-disabled": "無効",
