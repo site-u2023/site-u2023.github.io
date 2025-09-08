@@ -521,7 +521,7 @@
                 {
                   "id": "ap-ip-address",
                   "label": "IP Address",
-                  "class": "tr-ip-address",
+                  "class": "tr-ap-ip-address",
                   "type": "text",
                   "selector": "#ap-ip-address",
                   "variableName": "ap_ip_address",
@@ -531,7 +531,7 @@
                 {
                   "id": "ap-gateway",
                   "label": "Gateway",
-                  "class": "tr-gateway",
+                  "class": "tr-ap-gateway",
                   "type": "text",
                   "selector": "#ap-gateway",
                   "variableName": "ap_gateway",
