@@ -1696,14 +1696,19 @@ function updatePackageListFromSelector() {
         textarea.value = uniquePackages.join(' ');
         console.log('Package list updated in textarea');
 
-        // 動的サイズ調整
-        const packageString = textarea.value;
-        const textareaWidth = textarea.clientWidth;
+        // 総合計 = 文字数 + 単語数（空白数）
+        const totalChars = textarea.value.length;
+        const wordCount = uniquePackages.length;
+        const totalCount = totalChars + wordCount;
+    
+        // 現在の幅をAUTOで取得
+        const currentWidth = textarea.clientWidth;
         const charWidth = 8; // 概算文字幅
-        const charsPerLine = Math.floor((textareaWidth - 20) / charWidth);
-        const requiredLines = Math.ceil(packageString.length / charsPerLine);
-        
-        textarea.style.height = Math.max(3, requiredLines + 1);
+        const charsPerLine = Math.floor(currentWidth / charWidth);
+    
+        // 総合計を幅で割る
+        const requiredLines = Math.ceil(totalCount / charsPerLine);
+        textarea.style.height = (requiredLines * 20) + 'px';
     }
 }
 
@@ -1725,9 +1730,7 @@ function loadUciDefaultsTemplate() {
 
     function autoResize() {
         const lines = textarea.value.split('\n').length;
-        const computedStyle = getComputedStyle(textarea);
-        const lineHeight = parseFloat(computedStyle.lineHeight)
-        textarea.style.height = (lines * lineHeight) + 'px';
+        textarea.style.height = 'auto';
     }
 
     textarea.addEventListener('input', autoResize);
