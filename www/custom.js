@@ -1683,27 +1683,14 @@ function updatePackageListFromSelector() {
     // 重複を削除
     const uniquePackages = [...new Set(finalPackages)];
     
-    console.log('Final package list:', {
-        base: basePackages.size,
-        checked: checkedPackages.size,
-        dynamic: dynamicPackages.size,
-        manual: manualPackages.size,
-        total: uniquePackages.length
-    });
-    
     // テキストエリアを更新
     if (textarea) {
         textarea.value = uniquePackages.join(' ');
         console.log('Package list updated in textarea');
 
-        const totalChars = textarea.value.length;
-        const currentWidth = textarea.clientWidth;
-        const charsPerLine = Math.floor(currentWidth / 8); // 文字幅は固定
-        const requiredLines = Math.ceil(totalChars / charsPerLine);
-    
-        // 行数だけ計算して、あとはAUTOに任せる
+        // シンプルに高さを自動調整
         textarea.style.height = 'auto';
-        textarea.rows = Math.max(3, requiredLines);
+        textarea.style.height = textarea.scrollHeight + 'px';
     }
 }
 
