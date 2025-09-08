@@ -395,7 +395,7 @@
             {
               "id": "mape-type",
               "name": "Type",
-              "class": "tr-type",
+              "class": "tr-mape-type",
               "type": "radio-group",
               "variableName": "mape_type",
               "options": [
