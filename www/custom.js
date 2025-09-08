@@ -654,6 +654,7 @@ function buildField(parent, pkg) {
             if (pkg.name || pkg.label) {
                 const legend = document.createElement('div');
                 legend.className = 'form-label';
+                if (pkg.class) legend.classList.add(pkg.class);
                 legend.textContent = pkg.name || pkg.label;
                 group.appendChild(legend);
             }
