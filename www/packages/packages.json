@@ -3,6 +3,7 @@
     {
       "id": "basic-system",
       "name": "Basic System Features",
+      "class": "tr-basic-system-features",
       "description": "Terminal access and file transfer tools",
       "packages": [
         {
@@ -29,6 +30,7 @@
     {
       "id": "system-management",
       "name": "System Management",
+      "class": "tr-system-management",
       "description": "CPU interrupt balancing for multi-core systems",
       "packages": [
         {
@@ -41,6 +43,7 @@
     {
       "id": "network-management",
       "name": "Network Management",
+      "class": "tr-network-management",
       "description": "QoS, bandwidth monitoring, Wi-Fi scheduling, and network utilities",
       "packages": [
         {
@@ -98,6 +101,7 @@
     {
       "id": "wifi-management",
       "name": "Wi-Fi Management",
+      "class": "tr-wifi-management",
       "description": "Wi-Fi scheduling, roaming optimization, and wireless utilities",
       "packages": [
         {
@@ -113,6 +117,7 @@
     {
       "id": "modem-support",
       "name": "Modem Support",
+      "class": "tr-modem-support",
       "description": "4G/5G modem management (ModemManager includes SMS support)",
       "packages": [
         {
@@ -162,6 +167,7 @@
     {
       "id": "security-tools",
       "name": "Security Tools",
+      "class": "tr-security-tools",
       "description": "Intrusion prevention and IP blocking tools",
       "packages": [
         {
@@ -181,6 +187,7 @@
     {
       "id": "system-monitoring",
       "name": "System Monitoring",
+      "class": "tr-system-monitoring",
       "description": "System watchdog and network monitoring",
       "packages": [
         {
@@ -192,6 +199,7 @@
     {
       "id": "diagnostic-tools",
       "name": "Network Diagnostic Tools",
+      "class": "tr-diagnostic-tools",
       "description": "Network testing, monitoring, analysis and DNS troubleshooting tools",
       "packages": [
         {
@@ -250,6 +258,7 @@
     {
       "id": "system-tools",
       "name": "System Administration Tools",
+      "class": "tr-system-tools",
       "description": "Terminal enhancements, debugging, file management and HTTP client tools",
       "packages": [
         {
@@ -297,6 +306,7 @@
     {
       "id": "themes-dashboard",
       "name": "Themes and Dashboard",
+      "class": "tr-themes-dashboard",
       "description": "UI themes and dashboard improvements",
       "packages": [
         {
@@ -321,6 +331,7 @@
     {
       "id": "utilities",
       "name": "Utilities",
+      "class": "tr-utilities",
       "description": "System upgrade, VPN and media server utilities",
       "packages": [
         {
@@ -378,6 +389,7 @@
     {
       "id": "usb-storage",
       "name": "USB Storage Support",
+      "class": "tr-usb-storage",
       "description": "USB storage kernel module and filesystem tools",
       "packages": [
         {
@@ -494,6 +506,7 @@
     {
       "id": "file-sharing",
       "name": "File Sharing",
+      "class": "tr-file-sharing",
       "description": "SMB/CIFS file sharing server",
       "packages": [
         {
