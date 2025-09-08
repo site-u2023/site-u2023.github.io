@@ -66,15 +66,17 @@ window.updateImages = function(version, mobj) {
         console.log("Loading custom.html");
         loadCustomHTML();
         customHTMLLoaded = true;
-    } else if (customInitialized && current_device?.arch) {
-        // 既に初期化済みでデバイス変更時
-        const mainLanguageSelect = document.querySelector('#languages-select');
-        const currentLang = mainLanguageSelect?.value || selectedLanguage || 'ja';
-        
-        if (currentLang !== 'en') {
-            selectedLanguage = currentLang;
-            console.log("Device changed, updating language packages for:", currentLang);
-            updateLanguagePackage();
+    } else if (customInitialized) {
+        // 既に初期化済みの場合、archが設定されたら言語パッケージを更新
+        if (current_device?.arch) {
+            const mainLanguageSelect = document.querySelector('#languages-select');
+            const currentLang = mainLanguageSelect?.value || selectedLanguage || 'ja';
+            
+            if (currentLang !== 'en') {
+                selectedLanguage = currentLang;
+                console.log("Device changed, updating language packages for:", currentLang);
+                updateLanguagePackage();
+            }
         }
     }
 };
@@ -297,10 +299,10 @@ function setupLanguageSelector() {
         customLanguageSelect.addEventListener('change', handleCustomLanguageChange);
     }
     
-// 初回言語パッケージ更新（重要：初期化時に必ず実行）
+    // 初回言語パッケージ更新（重要：初期化時に必ず実行）
     console.log('Performing initial language package update');
-    // デバイス情報がある場合のみ言語パッケージを追加
-    if (current_device?.arch && selectedLanguage && selectedLanguage !== 'en') {
+    // 言語が英語以外なら、デバイス情報の有無に関わらず言語パッケージ処理を実行
+    if (selectedLanguage && selectedLanguage !== 'en') {
         updateLanguagePackage();
     }
 }
