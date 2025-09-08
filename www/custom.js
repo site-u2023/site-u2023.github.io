@@ -26,11 +26,15 @@ window.updateImages = function(version, mobj) {
     if (originalUpdateImages) originalUpdateImages(version, mobj);
 
     // arch_packagesをcurrent_deviceに保存
-    if (mobj && mobj.arch_packages) {
-        if (!current_device) current_device = {};
+    if (mobj && mobj.arch_packages && current_device) {
         current_device.arch = mobj.arch_packages;
-        current_device.version = version;
         console.log('Architecture saved:', mobj.arch_packages);
+        
+        // デバイス選択時に言語パッケージを即座に更新
+        setTimeout(() => {
+            console.log('Device selected, updating language packages');
+            updateLanguagePackage();
+        }, 100);
     }
 
     // デバイス固有パッケージを保存（重要）
@@ -61,23 +65,14 @@ window.updateImages = function(version, mobj) {
         setTimeout(() => resizePostinstTextarea(), 100);
     }
     
-// 初回のみカスタムHTMLを読み込み、初期化済みフラグで管理
-    if (!customInitialized && !customHTMLLoaded) {
+    // 初回のみ custom.html を読み込む
+    if (!customHTMLLoaded) {
         console.log("Loading custom.html");
         loadCustomHTML();
         customHTMLLoaded = true;
-    } else if (customInitialized) {
-        // 既に初期化済みの場合、archが設定されたら言語パッケージを更新
-        if (current_device?.arch) {
-            const mainLanguageSelect = document.querySelector('#languages-select');
-            const currentLang = mainLanguageSelect?.value || selectedLanguage || 'ja';
-            
-            if (currentLang !== 'en') {
-                selectedLanguage = currentLang;
-                console.log("Device changed, updating language packages for:", currentLang);
-                updateLanguagePackage();
-            }
-        }
+    } else {
+        console.log("Reinitializing features");
+        reinitializeFeatures();
     }
 };
 
@@ -118,12 +113,9 @@ async function initializeCustomFeatures(asuSection, temp) {
         return;
     }
 
-    // DOM要素が既に存在する場合は置き換えない
-    if (!document.querySelector('#custom-packages-details')) {
-        cleanupExistingCustomElements();
-        replaceAsuSection(asuSection, temp);
-        insertExtendedInfo(temp);
-    }
+    cleanupExistingCustomElements();
+    replaceAsuSection(asuSection, temp);
+    insertExtendedInfo(temp);
     
     // 設定とデータを並列で読み込み
     await Promise.all([
@@ -138,9 +130,7 @@ async function initializeCustomFeatures(asuSection, temp) {
     
     // 言語セレクター設定（初期言語パッケージ処理を含む）
     setupLanguageSelector();
-    
-    // カスタム翻訳を読み込み（初期言語に基づいて）
-    await loadCustomTranslations(selectedLanguage);
+    loadCustomTranslations(selectedLanguage);
     
     // フォーム監視設定
     setupFormWatchers();
@@ -227,23 +217,6 @@ function reinitializeFeatures() {
     fetchAndDisplayIspInfo();
     if (cachedApiInfo) updateAutoConnectionInfo(cachedApiInfo);
 
-    // メイン言語セレクターとの同期を再設定
-    const mainLanguageSelect = document.querySelector('#languages-select');
-    const customLanguageSelect = document.querySelector('#aios-language');
-    
-    if (mainLanguageSelect && customLanguageSelect) {
-        // 現在のメイン言語をデバイス言語に同期
-        const currentMainLanguage = mainLanguageSelect.value || config?.fallback_language || 'en';
-        if (customLanguageSelect.value !== currentMainLanguage) {
-            customLanguageSelect.value = currentMainLanguage;
-            selectedLanguage = currentMainLanguage;
-            console.log('Re-synchronized language on reinit:', currentMainLanguage);
-            
-            // 言語パッケージも更新
-            updateLanguagePackage();
-        }
-    }
-
     if (customLanguageMap && Object.keys(customLanguageMap).length) {
         Object.assign(current_language_json, customLanguageMap);
         for (const tr in customLanguageMap) {
@@ -273,9 +246,7 @@ function setupLanguageSelector() {
         currentLanguage = current_language;
     }
     
-    // グローバル変数を確実に設定
     selectedLanguage = currentLanguage;
-    window.selectedLanguage = currentLanguage; // グローバルスコープにも設定
     console.log('Selected language for device:', selectedLanguage);
     
     // カスタム言語セレクターを同期（片方向制御）
@@ -284,53 +255,14 @@ function setupLanguageSelector() {
         console.log('Synchronized custom language selector to:', selectedLanguage);
     }
     
-    // イベントリスナー設定
-    
-    // メイン言語セレクターの変更を監視（ブラウザ用言語 → デバイス用言語の同期）
-    if (mainLanguageSelect) {
-        // 既存のリスナーを削除してから追加（重複防止）
-        mainLanguageSelect.removeEventListener('change', handleMainLanguageChange);
-        mainLanguageSelect.addEventListener('change', handleMainLanguageChange);
-    }
-    
-    // カスタム言語セレクターの変更を監視（デバイス用言語の変更）
+    // イベントリスナー設定（カスタム言語セレクターのみ）
     if (customLanguageSelect) {
-        customLanguageSelect.removeEventListener('change', handleCustomLanguageChange);
         customLanguageSelect.addEventListener('change', handleCustomLanguageChange);
     }
     
     // 初回言語パッケージ更新（重要：初期化時に必ず実行）
     console.log('Performing initial language package update');
-    // 言語が英語以外なら、デバイス情報の有無に関わらず言語パッケージ処理を実行
-    if (selectedLanguage && selectedLanguage !== 'en') {
-        updateLanguagePackage();
-    }
-}
-
-// メイン言語セレクター変更ハンドラー（新規追加）
-async function handleMainLanguageChange(e) {
-    const newLanguage = e.target.value || config?.fallback_language || 'en';
-    console.log('Main language changed to:', newLanguage);
-    
-    // グローバル変数を更新
-    selectedLanguage = newLanguage;
-    
-    // カスタム言語セレクターを同期（片方向制御）
-    const customLanguageSelect = document.querySelector('#aios-language');
-    if (customLanguageSelect && customLanguageSelect.value !== newLanguage) {
-        customLanguageSelect.value = newLanguage;
-        console.log('Synchronized custom language selector to:', newLanguage);
-    }
-    
-    // カスタム翻訳を再読み込み
-    await loadCustomTranslations(newLanguage);
-    
-    // 言語パッケージを更新
-    await updateLanguagePackage();
-    updatePackageListFromSelector();
-    updateVariableDefinitions();
-    
-    console.log('Main language change processing completed');
+    updateLanguagePackage();
 }
 
 async function loadCustomTranslations(lang) {
@@ -373,17 +305,11 @@ async function loadCustomTranslations(lang) {
 }
 
 async function handleCustomLanguageChange(e) {
-    const newLanguage = e.target.value || config?.fallback_language || 'en';
-    
-    // 実際に変更された場合のみ処理
-    if (selectedLanguage === newLanguage) {
-        return;
-    }
-    
-    selectedLanguage = newLanguage;
+    selectedLanguage = e.target.value || config?.fallback_language || 'en';
     console.log('Language changed to:', selectedLanguage);
     
     await updateLanguagePackage();
+    updatePackageListFromSelector();
     updateVariableDefinitions();
     
     console.log('Language change processing completed');
@@ -391,14 +317,6 @@ async function handleCustomLanguageChange(e) {
 
 // 言語パッケージの更新（完全修正版）
 async function updateLanguagePackage() {
-    // メイン言語セレクターから現在の言語を取得（常に最新を取る）
-    const mainLanguageSelect = document.querySelector('#languages-select');
-    if (mainLanguageSelect && mainLanguageSelect.value) {
-        selectedLanguage = mainLanguageSelect.value;
-    } else if (!selectedLanguage) {
-        selectedLanguage = current_language || config?.fallback_language || 'en';
-    }
-    
     console.log('updateLanguagePackage called, selectedLanguage:', selectedLanguage);
     
     // 既存の言語パッケージを削除
@@ -412,13 +330,6 @@ async function updateLanguagePackage() {
     // 英語の場合は言語パッケージ不要
     if (!selectedLanguage || selectedLanguage === 'en') {
         console.log('English selected, no language packages needed');
-        updatePackageListFromSelector();
-        return;
-    }
-    
-    // デバイス情報があるかチェック
-    if (!current_device?.arch) {
-        console.log('Device architecture not available, skipping language packages');
         updatePackageListFromSelector();
         return;
     }
@@ -943,6 +854,7 @@ function handleRadioChange(e) {
 
 function updatePackageListFromDynamicSources() {
     updateSetupJsonPackages();
+    updateLanguagePackage();
     updatePackageListFromSelector();
     updateVariableDefinitions();
 }
@@ -1654,11 +1566,8 @@ function createPackageCategory(category) {
     
     const title = document.createElement('h4');
     title.textContent = category.name;
-    if (category.class) {
-        title.classList.add(category.class);
-    }
     categoryDiv.appendChild(title);
- 
+    
     if (category.description) {
         const description = document.createElement('div');
         description.className = 'package-category-description';
