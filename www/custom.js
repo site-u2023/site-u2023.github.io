@@ -575,8 +575,10 @@ function renderSetupConfig(config) {
 
         const h4 = document.createElement('h4');
         h4.textContent = category.name || category.id || '';
+        if (category.class) {
+            h4.classList.add(category.class);
+        }
         section.appendChild(h4);
-
         if (category.description) {
             const desc = document.createElement('p');
             desc.className = 'package-category-description';
@@ -675,7 +677,12 @@ function buildField(parent, pkg) {
                 }
                 
                 radio.addEventListener('change', handleRadioChange);
-                
+
+                const textSpan = document.createElement('span');
+                textSpan.textContent = ' ' + (opt.label != null ? opt.label : String(opt.value));
+                if (opt.class) {
+                    textSpan.classList.add(opt.class);
+                }
                 lbl.appendChild(radio);
                 lbl.appendChild(document.createTextNode(' ' + (opt.label != null ? opt.label : String(opt.value))));
                 radioWrap.appendChild(lbl);
@@ -705,6 +712,9 @@ function buildField(parent, pkg) {
             const infoDiv = document.createElement('div');
             infoDiv.id = pkg.id;
             infoDiv.className = 'info-display';
+            if (pkg.class) {
+                infoDiv.classList.add(pkg.class);
+            }
             infoDiv.style.padding = '1em';
             infoDiv.style.backgroundColor = 'var(--bg-item)';
             infoDiv.style.borderRadius = '0.2em';
@@ -726,6 +736,9 @@ function buildFormGroup(field) {
     const label = document.createElement('label');
     label.textContent = field.label || field.name || field.id || '';
     if (field.id) label.setAttribute('for', field.id);
+    if (field.class) {
+        label.classList.add(field.class);
+    }
     group.appendChild(label);
 
     let ctrl;
@@ -750,6 +763,9 @@ function buildFormGroup(field) {
             const option = document.createElement('option');
             option.value = opt.value;
             option.textContent = opt.label != null ? opt.label : String(opt.value);
+            if (opt.class) {
+                option.classList.add(opt.class);
+            }
             if (opt.selected || (field.defaultValue != null && opt.value === field.defaultValue)) {
                 option.selected = true;
             }
