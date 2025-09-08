@@ -1695,15 +1695,6 @@ function updatePackageListFromSelector() {
     if (textarea) {
         textarea.value = uniquePackages.join(' ');
         console.log('Package list updated in textarea');
-
-        // ここで動的にrows計算
-        const packageString = textarea.value;
-        const textareaWidth = textarea.clientWidth;
-        const charWidth = 8; // 概算文字幅
-        const charsPerLine = Math.floor((textareaWidth - 20) / charWidth);
-        const requiredLines = Math.ceil(packageString.length / charsPerLine);
-        
-        textarea.rows = Math.max(3, requiredLines + 1);
     }
 }
 
@@ -1724,9 +1715,8 @@ function loadUciDefaultsTemplate() {
     if (!textarea || !config?.uci_defaults_setup_url) return;
 
     function autoResize() {
-        // setup.shテンプレートは固定行数なので、実際の行数で計算
-        const actualLines = textarea.value.split('\n').length;
-        textarea.rows = actualLines;  // 余分な+1を削除、実行数そのまま
+        const lines = textarea.value.split('\n').length;
+        textarea.rows = lines + 1;
     }
 
     textarea.addEventListener('input', autoResize);
@@ -1740,7 +1730,7 @@ function loadUciDefaultsTemplate() {
         .then(text => {
             textarea.value = text;
             updateVariableDefinitions();
-            autoResize();  // setup.shの確定行数で正確に設定
+            autoResize();
         })
         .catch(err => console.error('Failed to load setup.sh:', err));
 }
