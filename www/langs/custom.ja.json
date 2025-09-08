@@ -1,6 +1,6 @@
 {
-    "tr-postinst": "Postinst（パッケージインストールスクリプト）"
-    "tr-uci": "UCI-defaults (ブート設定スクリプト)"
+    "tr-postinst": "Postinst（パッケージインストールスクリプト）",
+    "tr-uci": "UCI-defaults (ブート設定スクリプト)",
 
     "tr-extended-info": "地域とISP情報",
     "tr-notice": "お知らせ",
