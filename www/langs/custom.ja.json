@@ -41,20 +41,20 @@
     "tr-mape": "MAP-E",
     "tr-ap": "APモード",
 
-    "tr-auto-detection" "AUTO",
+    "tr-auto-detection": "AUTO",
     
-    "tr-dhcp" "DHCP",
-    
-    "tr-pppoe": "PPPoE",
+    "tr-dhcp": "DHCP",
+
+    "tr-pppoe-credentials": "PPPoE",
     "tr-pppoe-username": "ユーザー名",
     "tr-pppoe-password": "パスワード",
 
-    "tr-dslite": "DS-Lite",
+    "tr-ds-lite-settings": "DS-Lite",
     "tr-dslite-aftr-type": "AFTRタイプ",
     "tr-dslite-area": "エリア",
     "tr-dslite-aftr-ipv6-address": "AFTR IPv6アドレス",
 
-    "tr-mape": "MAP-E",
+    "tr-mape-type": "MAP-E",
     "tr-br": "BR",
     "tr-ea-len": "EAレンジ",
     "tr-ipv4-prefix-length": "IPv4プレフィックス",
