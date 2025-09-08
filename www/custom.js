@@ -1694,6 +1694,32 @@ function updatePackageListFromSelector() {
     // テキストエリアを更新
     if (textarea) {
         textarea.value = uniquePackages.join(' ');
+        
+        // 動的行数調整（DOM更新後に実行）
+        setTimeout(() => {
+            const packageString = textarea.value;
+            const textareaWidth = textarea.getBoundingClientRect().width || textarea.offsetWidth;
+            
+            if (textareaWidth > 0) {
+                const charWidth = 8; // 概算文字幅
+                const charsPerLine = Math.floor((textareaWidth - 20) / charWidth);
+                const requiredLines = Math.ceil(packageString.length / charsPerLine);
+                
+                textarea.rows = Math.max(3, requiredLines);
+                console.log('Package textarea resized:', {
+                    width: textareaWidth,
+                    chars: packageString.length,
+                    lines: requiredLines,
+                    rows: textarea.rows
+                });
+            } else {
+                // 幅が取得できない場合は文字数ベースで概算
+                const estimatedLines = Math.ceil(packageString.length / 80);
+                textarea.rows = Math.max(3, estimatedLines);
+                console.log('Package textarea fallback resize:', estimatedLines, 'rows');
+            }
+        }, 50);
+        
         console.log('Package list updated in textarea');
     }
 }
@@ -1715,8 +1741,10 @@ function loadUciDefaultsTemplate() {
     if (!textarea || !config?.uci_defaults_setup_url) return;
 
     function autoResize() {
-        const lines = textarea.value.split('\n').length;
-        textarea.rows = lines + 1;
+        // 変数定義更新後の実際の行数で計算
+        const actualLines = textarea.value.split('\n').length;
+        textarea.rows = actualLines; // 余分な+1を削除
+        console.log('UCI-defaults resized to', actualLines, 'rows');
     }
 
     textarea.addEventListener('input', autoResize);
@@ -1729,8 +1757,8 @@ function loadUciDefaultsTemplate() {
         })
         .then(text => {
             textarea.value = text;
-            updateVariableDefinitions();
-            autoResize();
+            updateVariableDefinitions(); // 変数定義を先に更新
+            setTimeout(autoResize, 50);   // 変数定義更新後にリサイズ
         })
         .catch(err => console.error('Failed to load setup.sh:', err));
 }
@@ -1767,8 +1795,12 @@ function updateVariableDefinitions() {
         
         textarea.value = beforeSection + newSection + afterSection;
         
-        const lines = textarea.value.split('\n').length;
-        textarea.rows = lines + 1;
+        // 変数定義更新後に行数を再計算
+        setTimeout(() => {
+            const actualLines = textarea.value.split('\n').length;
+            textarea.rows = actualLines;
+            console.log('UCI-defaults resized after variable update:', actualLines, 'rows');
+        }, 10);
     }
 }
 
