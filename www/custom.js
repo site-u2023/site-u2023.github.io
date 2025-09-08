@@ -12,6 +12,7 @@ let cachedApiInfo = null;
 let defaultFieldValues = {};
 let dynamicPackages = new Set();
 let selectedLanguage = '';
+let customLanguageMap = {};
 
 // デバイス固有パッケージ管理（重要：これらを常に維持）
 let deviceDefaultPackages = [];  // mobj.default_packages
@@ -129,6 +130,7 @@ async function initializeCustomFeatures(asuSection, temp) {
     
     // 言語セレクター設定（初期言語パッケージ処理を含む）
     setupLanguageSelector();
+    loadCustomTranslations(selectedLanguage);
     
     // フォーム監視設定
     setupFormWatchers();
@@ -214,6 +216,20 @@ function reinitializeFeatures() {
     if (PACKAGE_DB) generatePackageSelector();
     fetchAndDisplayIspInfo();
     if (cachedApiInfo) updateAutoConnectionInfo(cachedApiInfo);
+
+    if (customLanguageMap && Object.keys(customLanguageMap).length) {
+        Object.assign(current_language_json, customLanguageMap);
+        for (const tr in customLanguageMap) {
+            document.querySelectorAll(`.${tr}`).forEach(e => {
+                if ('placeholder' in e) {
+                    e.placeholder = customLanguageMap[tr];
+                } else {
+                    e.innerText = customLanguageMap[tr];
+                }
+            });
+        }
+        console.log('Custom translations reapplied after reinit');
+    }
 }
 
 // ==================== 言語セレクター設定 ====================
@@ -247,6 +263,35 @@ function setupLanguageSelector() {
     // 初回言語パッケージ更新（重要：初期化時に必ず実行）
     console.log('Performing initial language package update');
     updateLanguagePackage();
+}
+
+async function loadCustomTranslations(lang) {
+    if (!lang) {
+        lang = (navigator.language || 'en').split('-')[0];
+    }
+    selectedLanguage = lang; // グローバル更新
+
+    const customLangFile = `logs/custom.${lang}.json`;
+    try {
+        const resp = await fetch(customLangFile, { cache: 'no-store' });
+        if (!resp.ok) return;
+
+        const customMap = await resp.json();
+        customLanguageMap = customMap; // グローバルに保持
+
+        Object.assign(current_language_json, customMap);
+        for (const tr in customMap) {
+            document.querySelectorAll(`.${tr}`).forEach(e => {
+                if ('placeholder' in e) {
+                    e.placeholder = customMap[tr];
+                } else {
+                    e.innerText = customMap[tr];
+                }
+            });
+        }
+    } catch (err) {
+        console.error(`Failed to load custom translation: ${err}`);
+    }
 }
 
 async function handleCustomLanguageChange(e) {
