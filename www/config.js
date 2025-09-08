@@ -22,8 +22,7 @@ var config = {
   info_url: "https://openwrt.org/start?q={title}&do=search",
   
   // Package search URL (optional)
-  // package_url: "https://openwrt.org/start?do=search&q={id}",
-  package_url: "https://openwrt.org/start?do=search&q={id}&_=" + Date.now(),
+  package_url: "https://openwrt.org/start?do=search&q={id}",
   
   // Attended Sysupgrade Server support (optional)
   asu_url: "https://sysupgrade.openwrt.org",
@@ -34,8 +33,7 @@ var config = {
   min_version: "21.02.0",
 
   // Auto-configuration API URL
-  // auto_config_api_url: "https://auto-config.site-u.workers.dev/",
-  auto_config_api_url: "https://auto-config.site-u.workers.dev/?_=" + Date.now(),
+  auto_config_api_url: "https://auto-config.site-u.workers.dev/",
   
   // UCI-defaults setup.sh URL
   uci_defaults_setup_url: "uci-defaults/setup.sh",
@@ -49,13 +47,11 @@ var config = {
   // LuCI OPKG 検索エンドポイント
   // opkg_search_url: "https://openwrt.org/packages/pkgdata/{pkg}"
   // https://downloads.openwrt.org/releases/24.10.2/packages/aarch64_cortex-a53/packages/Packages
-  // opkg_search_url: "https://downloads.openwrt.org/releases/{version}/packages/{arch}/{feed}/Packages",
-  opkg_search_url: "https://downloads.openwrt.org/releases/{version}/packages/{arch}/{feed}/Packages?_=" + Date.now(),
+  opkg_search_url: "https://downloads.openwrt.org/releases/{version}/packages/{arch}/{feed}/Packages",
   
   // LuCI APK 検索エンドポイント
   // https://downloads.openwrt.org/snapshots/packages/aarch64_cortex-a53/packages/index.json
-  // apk_search_url: "https://downloads.openwrt.org/snapshots/packages/{arch}/{feed}/index.json",
-  apk_search_url: "https://downloads.openwrt.org/snapshots/packages/{arch}/{feed}/index.json?_=" + Date.now(),
+  apk_search_url: "https://downloads.openwrt.org/snapshots/packages/{arch}/{feed}/index.json",
   
   // フォールバック言語（重要！）
   fallback_language: "en"
