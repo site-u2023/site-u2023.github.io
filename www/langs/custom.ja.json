@@ -19,7 +19,7 @@
     "tr-basic-configuration": "基本設定",
     "tr-language": "言語",
     "tr-device-name": "デバイス名",
-    "tr-root-password": "Rootパスワード",
+    "tr-root-password": "ルートパスワード",
     "tr-lan-ipv4-address" : "LAN IPv4アドレス",
     "tr-lan-ipv6-address": "LAN IPv6アドレス",
     "tr-ssh-interface": "SSHインターフェース",
