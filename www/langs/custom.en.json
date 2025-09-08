@@ -1,6 +1,6 @@
 {
-    "tr-postinst": "Postinst (Package installation script)"
-    "tr-uci": "UCI-defaults (Boot configuration script)"
+    "tr-postinst": "Postinst (Package installation script)",
+    "tr-uci": "UCI-defaults (Boot configuration script)",
 
     "tr-extended-info": "Location & ISP Information",
     "tr-notice": "Notice",
