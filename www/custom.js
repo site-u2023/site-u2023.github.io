@@ -1632,6 +1632,13 @@ function updatePackageListFromSelector() {
     deviceDevicePackages.forEach(pkg => basePackages.add(pkg));
     extraPackages.forEach(pkg => basePackages.add(pkg));
     
+    console.log('Device base packages:', {
+        default: deviceDefaultPackages.length,
+        device: deviceDevicePackages.length,
+        extra: extraPackages.length,
+        total: basePackages.size
+    });
+    
     // チェックされたパッケージを追加
     const checkedPackages = new Set();
     document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
@@ -1641,8 +1648,11 @@ function updatePackageListFromSelector() {
         }
     });
     
+    console.log('Checked packages from selector:', checkedPackages.size);
+    
     // 動的パッケージ（言語パッケージを含む）を追加
     const dynamicPackagesList = Array.from(dynamicPackages);
+    console.log('Dynamic packages (including language):', dynamicPackagesList.length);
     
     // テキストエリアから既存パッケージを取得（デバイス固有パッケージ以外）
     const manualPackages = new Set();
@@ -1660,50 +1670,30 @@ function updatePackageListFromSelector() {
         });
     }
     
-    // 全てのパッケージを統合
+    console.log('Manual packages (user typed):', manualPackages.size);
+    
+    // 全てのパッケージを統合（順序：デバイス固有 → チェック済み → 動的 → 手動）
     const finalPackages = [
-        ...basePackages,
-        ...checkedPackages,
-        ...dynamicPackages,
-        ...manualPackages
+        ...basePackages,      // デバイス固有パッケージ（必須）
+        ...checkedPackages,   // チェックボックスで選択されたパッケージ
+        ...dynamicPackages,   // 動的パッケージ（言語パッケージなど）
+        ...manualPackages     // 手動で入力されたパッケージ
     ];
     
     // 重複を削除
     const uniquePackages = [...new Set(finalPackages)];
     
+    console.log('Final package list:', {
+        base: basePackages.size,
+        checked: checkedPackages.size,
+        dynamic: dynamicPackages.size,
+        manual: manualPackages.size,
+        total: uniquePackages.length
+    });
+    
     // テキストエリアを更新
     if (textarea) {
         textarea.value = uniquePackages.join(' ');
-        
-        // 動的高さ調整（style.heightで制御）
-        setTimeout(() => {
-            const packageString = textarea.value;
-            const textareaWidth = textarea.getBoundingClientRect().width || textarea.offsetWidth;
-            
-            if (textareaWidth > 0) {
-                const charWidth = 8; // 概算文字幅
-                const charsPerLine = Math.floor((textareaWidth - 20) / charWidth);
-                const requiredLines = Math.ceil(packageString.length / charsPerLine);
-                const minLines = 3;
-                const finalLines = Math.max(minLines, requiredLines);
-                
-                const lineHeight = 1.4; // em単位
-                textarea.style.height = (finalLines * lineHeight) + 'em';
-                
-                console.log('Package textarea resized:', {
-                    width: textareaWidth,
-                    chars: packageString.length,
-                    lines: finalLines,
-                    height: textarea.style.height
-                });
-            } else {
-                // 幅が取得できない場合は文字数ベースで概算
-                const estimatedLines = Math.max(3, Math.ceil(packageString.length / 80));
-                textarea.style.height = (estimatedLines * 1.4) + 'em';
-                console.log('Package textarea fallback resize:', estimatedLines, 'lines');
-            }
-        }, 50);
-        
         console.log('Package list updated in textarea');
     }
 }
@@ -1725,10 +1715,8 @@ function loadUciDefaultsTemplate() {
     if (!textarea || !config?.uci_defaults_setup_url) return;
 
     function autoResize() {
-        const actualLines = textarea.value.split('\n').length;
-        const lineHeight = 1.4; // em単位
-        textarea.style.height = (actualLines * lineHeight) + 'em';
-        console.log('UCI-defaults resized to', actualLines, 'lines =', textarea.style.height);
+        const lines = textarea.value.split('\n').length;
+        textarea.rows = lines + 1;
     }
 
     textarea.addEventListener('input', autoResize);
@@ -1742,7 +1730,7 @@ function loadUciDefaultsTemplate() {
         .then(text => {
             textarea.value = text;
             updateVariableDefinitions();
-            setTimeout(autoResize, 50);  // ← 動く
+            autoResize();
         })
         .catch(err => console.error('Failed to load setup.sh:', err));
 }
@@ -1779,13 +1767,8 @@ function updateVariableDefinitions() {
         
         textarea.value = beforeSection + newSection + afterSection;
         
-        // 変数定義更新後にheightで再計算
-        setTimeout(() => {
-            const actualLines = textarea.value.split('\n').length;
-            const lineHeight = 1.4;
-            textarea.style.height = (actualLines * lineHeight) + 'em';
-            console.log('UCI-defaults resized after variable update:', actualLines, 'lines');
-        }, 10);
+        const lines = textarea.value.split('\n').length;
+        textarea.rows = lines + 1;
     }
 }
 
