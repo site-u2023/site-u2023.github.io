@@ -50,7 +50,7 @@
     "tr-pppoe-username": "ユーザー名",
     "tr-pppoe-password": "パスワード",
 
-    "tr-ds-lite-settings": "DS-Lite設定",
+    "tr-dslite-settings": "DS-Lite設定",
     "tr-dslite-aftr-type": "AFTRタイプ",
     "tr-dslite-area": "エリア",
     "tr-dslite-aftr-ipv6-address": "AFTR IPv6アドレス",
