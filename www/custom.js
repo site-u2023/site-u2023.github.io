@@ -342,9 +342,11 @@ async function handleMainLanguageChange(e) {
 
 async function loadCustomTranslations(lang) {
     if (!lang) {
-        lang = (navigator.language || config.fallback_language).split('-')[0];
+        lang = selectedLanguage || (navigator.language || config.fallback_language).split('-')[0];
     }
-    selectedLanguage = lang;
+    
+    // selectedLanguageを更新しない（これが問題の原因）
+    // selectedLanguage = lang;  // この行を削除
 
     const customLangFile = `langs/custom.${lang}.json`;
     try {
