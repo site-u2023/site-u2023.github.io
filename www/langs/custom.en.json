@@ -3,7 +3,9 @@
     "tr-custom-defaults": "Script to run on first boot (uci-defaults)",
     "tr-postinst": "Postinst (Package installation script)",
     "tr-uci": "UCI-defaults (Boot configuration script)",
-
+    "tr-package-search": "Package Search",
+    "tr-tr-add-commands": "Add commands",
+    
     "tr-extended-info": "Location & ISP Information",
     "tr-notice": "Notice",
     "tr-country": "Country",
