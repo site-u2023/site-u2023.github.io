@@ -271,7 +271,7 @@ async function loadCustomTranslations(lang) {
     }
     selectedLanguage = lang; // グローバル更新
 
-    const customLangFile = `logs/custom.${lang}.json`;
+    const customLangFile = `langs/custom.${lang}.json`;
     try {
         const resp = await fetch(customLangFile, { cache: 'no-store' });
         if (!resp.ok) return;
