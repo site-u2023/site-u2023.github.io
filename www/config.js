@@ -24,7 +24,6 @@ var config = {
   package_url: "https://openwrt.org/start?do=search&q={id}&_=" + Date.now(),
 
   // Attended Sysupgrade Server support (optional)
-  asu_url: "https://sysupgrade.openwrt.org",
   asu_url: "https://sysupgrade.openwrt.org?_=" + Date.now(),
   asu_extra_packages: ["luci"],
 
@@ -38,10 +37,10 @@ var config = {
   uci_defaults_setup_url: "uci-defaults/setup.sh",
   
   // Package database URL
-  packages_db_url: "packages/packages.json",
-
+  packages_db_url: "packages/packages.json?_=" + Date.now(),
+  
   // setup.sh database URL
-  setup_db_url: "uci-defaults/setup.json",
+  setup_db_url: "uci-defaults/setup.json?_=" + Date.now(),
 
   // LuCI OPKG 検索エンドポイント
   // opkg_search_url: "https://openwrt.org/packages/pkgdata/{pkg}"
