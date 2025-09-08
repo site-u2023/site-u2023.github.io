@@ -1,4 +1,4 @@
-// custom.js - OpenWrt カスタム機能（デバイスパッケージ管理修正版）
+// custom.js - OpenWrt カスタム機能（言語セレクター修正版）
 
 console.log('custom.js loaded');
 
@@ -127,7 +127,7 @@ async function initializeCustomFeatures(asuSection, temp) {
     setupEventListeners();
     loadUciDefaultsTemplate();
     
-    // 言語セレクター設定（初期言語パッケージ処理を含む）
+    // 言語セレクター設定（修正版：イベントリスナー追加）
     setupLanguageSelector();
     
     // フォーム監視設定
@@ -239,9 +239,11 @@ function setupLanguageSelector() {
         console.log('Synchronized custom language selector to:', selectedLanguage);
     }
     
-    // イベントリスナー設定（カスタム言語セレクターのみ）
+    // イベントリスナー設定（カスタム言語セレクターのみ） - 修正箇所
     if (customLanguageSelect) {
+        customLanguageSelect.removeEventListener('change', handleCustomLanguageChange);
         customLanguageSelect.addEventListener('change', handleCustomLanguageChange);
+        console.log('Custom language selector event listener attached');
     }
     
     // 初回言語パッケージ更新（重要：初期化時に必ず実行）
@@ -279,15 +281,7 @@ async function updateLanguagePackage() {
         return;
     }
     
-    // アーキテクチャとバージョンの確認（より詳細なログ）
-    console.log('Current device state:', {
-        arch: current_device?.arch,
-        version: current_device?.version,
-        target: current_device?.target,
-        hasCurrentDevice: !!current_device
-    });
-    
-    // デバイス情報が不完全な場合は基本言語パッケージのみ追加（条件緩和）
+    // デバイス情報が不完全な場合は基本言語パッケージのみ追加
     if (!current_device?.arch) {
         console.log('Device architecture not available, adding basic language package anyway');
         const basePkg = `luci-i18n-base-${selectedLanguage}`;
