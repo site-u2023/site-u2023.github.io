@@ -219,6 +219,23 @@ function reinitializeFeatures() {
     fetchAndDisplayIspInfo();
     if (cachedApiInfo) updateAutoConnectionInfo(cachedApiInfo);
 
+    // メイン言語セレクターとの同期を再設定
+    const mainLanguageSelect = document.querySelector('#languages-select');
+    const customLanguageSelect = document.querySelector('#aios-language');
+    
+    if (mainLanguageSelect && customLanguageSelect) {
+        // 現在のメイン言語をデバイス言語に同期
+        const currentMainLanguage = mainLanguageSelect.value || config?.fallback_language || 'en';
+        if (customLanguageSelect.value !== currentMainLanguage) {
+            customLanguageSelect.value = currentMainLanguage;
+            selectedLanguage = currentMainLanguage;
+            console.log('Re-synchronized language on reinit:', currentMainLanguage);
+            
+            // 言語パッケージも更新
+            updateLanguagePackage();
+        }
+    }
+
     if (customLanguageMap && Object.keys(customLanguageMap).length) {
         Object.assign(current_language_json, customLanguageMap);
         for (const tr in customLanguageMap) {
@@ -257,14 +274,50 @@ function setupLanguageSelector() {
         console.log('Synchronized custom language selector to:', selectedLanguage);
     }
     
-    // イベントリスナー設定（カスタム言語セレクターのみ）
+    // イベントリスナー設定
+    
+    // メイン言語セレクターの変更を監視（ブラウザ用言語 → デバイス用言語の同期）
+    if (mainLanguageSelect) {
+        // 既存のリスナーを削除してから追加（重複防止）
+        mainLanguageSelect.removeEventListener('change', handleMainLanguageChange);
+        mainLanguageSelect.addEventListener('change', handleMainLanguageChange);
+    }
+    
+    // カスタム言語セレクターの変更を監視（デバイス用言語の変更）
     if (customLanguageSelect) {
+        customLanguageSelect.removeEventListener('change', handleCustomLanguageChange);
         customLanguageSelect.addEventListener('change', handleCustomLanguageChange);
     }
     
     // 初回言語パッケージ更新（重要：初期化時に必ず実行）
     console.log('Performing initial language package update');
     updateLanguagePackage();
+}
+
+// メイン言語セレクター変更ハンドラー（新規追加）
+async function handleMainLanguageChange(e) {
+    const newLanguage = e.target.value || config?.fallback_language || 'en';
+    console.log('Main language changed to:', newLanguage);
+    
+    // グローバル変数を更新
+    selectedLanguage = newLanguage;
+    
+    // カスタム言語セレクターを同期（片方向制御）
+    const customLanguageSelect = document.querySelector('#aios-language');
+    if (customLanguageSelect && customLanguageSelect.value !== newLanguage) {
+        customLanguageSelect.value = newLanguage;
+        console.log('Synchronized custom language selector to:', newLanguage);
+    }
+    
+    // カスタム翻訳を再読み込み
+    await loadCustomTranslations(newLanguage);
+    
+    // 言語パッケージを更新
+    await updateLanguagePackage();
+    updatePackageListFromSelector();
+    updateVariableDefinitions();
+    
+    console.log('Main language change processing completed');
 }
 
 async function loadCustomTranslations(lang) {
