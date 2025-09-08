@@ -1566,6 +1566,9 @@ function createPackageCategory(category) {
     
     const title = document.createElement('h4');
     title.textContent = category.name;
+    if (category.class) {
+        title.classList.add(category.class);
+    }
     categoryDiv.appendChild(title);
     
     if (category.description) {
