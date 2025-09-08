@@ -1,4 +1,6 @@
 {
+    "tr-custom-packages": "Installed Packages",
+    "tr-custom-defaults": "Script to run on first boot (uci-defaults)",
     "tr-postinst": "Postinst (Package installation script)",
     "tr-uci": "UCI-defaults (Boot configuration script)",
 
