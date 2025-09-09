@@ -1697,7 +1697,7 @@ function createPackageItem(pkg) {
         
         pkg.dependencies.forEach(depId => {
             const depPkg = findPackageById(depId);
-            if (depPkg && !depPkg.hidden) {
+            if (depPkg) {
                 const depCheckbox = createPackageCheckbox(depPkg, pkg.checked || false, true);
                 depCheckbox.classList.add('package-dependent');
                 depContainer.appendChild(depCheckbox);
@@ -1743,9 +1743,7 @@ function createPackageCheckbox(pkg, isChecked = false, isDependency = false) {
         checkbox.checked = true;
     }
     
-    if (!isDependency) {
-        checkbox.addEventListener('change', handlePackageSelection);
-    }
+    checkbox.addEventListener('change', handlePackageSelection);
     
     if (config?.package_url) {
         const link = document.createElement('a');
