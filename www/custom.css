@@ -245,11 +245,6 @@ details[open] summary {
   border-bottom: none;
 }
 
-#custom-packages-section,
-#custom-scripts-section {
-  margin-left: 0 !important;
-}
-
 #packages-details,
 #scripts-details {
   margin-top: 1.5em;
