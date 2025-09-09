@@ -47,28 +47,14 @@ let extraPackages = [];           // config.asu_extra_packages
 const originalUpdateImages = window.updateImages;
 window.updateImages = function(version, mobj) {
     if (originalUpdateImages) originalUpdateImages(version, mobj);
-    
-    if (mobj) {
-        // デバイス情報全体をキャッシュ
-        cachedDeviceInfo = {
-            version: version,
-            mobj: mobj,
-            arch: mobj.arch_packages,
-            target: mobj.target,
-            id: mobj.id,
-            defaultPackages: mobj.default_packages || [],
-            devicePackages: mobj.device_packages || [],
-            timestamp: Date.now()
-        };
-        
-        // current_deviceも更新
+
+    // arch_packagesをcurrent_deviceとキャッシュに保存
+    if (mobj && mobj.arch_packages) {
         if (!current_device) current_device = {};
-        Object.assign(current_device, {
-            arch: mobj.arch_packages,
-            version: version,
-            target: mobj.target,
-            id: mobj.id
-        });
+        current_device.arch = mobj.arch_packages;
+        current_device.version = version;
+        cachedDeviceArch = mobj.arch_packages; // ← キャッシュにも保存
+        console.log('Architecture saved:', mobj.arch_packages);
     }
 
     // デバイス固有パッケージを保存（重要）
