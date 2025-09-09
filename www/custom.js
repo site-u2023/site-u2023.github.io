@@ -129,47 +129,223 @@ function waitForAsuAndInit(temp, retry = 50) {
     }
 }
 
-// メイン初期化
-async function initializeCustomFeatures(asuSection, temp) {
-    console.log('initializeCustomFeatures called');
+// パッケージ検索実行
+async function searchPackages(query, inputElement) {
+    console.log('searchPackages called with query:', query);
     
-    if (customInitialized) {
-        console.log('Already initialized, skipping');
+    const arch = current_device?.arch || cachedDeviceArch;
+    const version = current_device?.version || document.querySelector('#versions')?.value;
+    
+    if (!arch || !version) {
+        console.log('No device selected, using local search');
+        searchLocalPackages(query, inputElement);
         return;
     }
+    
+    const allResults = new Set();
+    const feeds = ['base', 'packages', 'luci', 'routing', 'telephony'];  // 全フィード検索
+    
+    // 並列検索で高速化
+    const searchPromises = feeds.map(async (feed) => {
+        try {
+            console.log(`Searching in feed: ${feed}`);
+            const results = await searchInFeed(query, feed, version, arch);
+            return results;
+        } catch (err) {
+            console.error(`Error searching ${feed}:`, err);
+            return [];
+        }
+    });
+    
+    // 全フィードの結果を待つ
+    const allFeedResults = await Promise.all(searchPromises);
+    
+    // 結果を統合
+    allFeedResults.forEach(feedResults => {
+        feedResults.forEach(pkg => allResults.add(pkg));
+    });
+    
+    // ソート（完全一致→前方一致→部分一致）
+    const sortedResults = Array.from(allResults).sort((a, b) => {
+        const queryLower = query.toLowerCase();
+        const aLower = a.toLowerCase();
+        const bLower = b.toLowerCase();
+        
+        // 完全一致を最優先
+        if (aLower === queryLower && bLower !== queryLower) return -1;
+        if (bLower === queryLower && aLower !== queryLower) return 1;
+        
+        // 前方一致を次に優先
+        if (aLower.startsWith(queryLower) && !bLower.startsWith(queryLower)) return -1;
+        if (bLower.startsWith(queryLower) && !aLower.startsWith(queryLower)) return 1;
+        
+        // それ以外はアルファベット順
+        return a.localeCompare(b);
+    });
+    
+    console.log(`Found ${sortedResults.length} packages total from all feeds`);
+    
+    showPackageSearchResults(sortedResults, inputElement);
+}
 
-    // DOM要素が既に存在する場合は置き換えない
-    if (!document.querySelector('#custom-packages-details')) {
-        cleanupExistingCustomElements();
-        replaceAsuSection(asuSection, temp);
-        insertExtendedInfo(temp);
+// フィード内検索（説明文も検索対象に追加）
+async function searchInFeed(query, feed, version, arch) {
+    console.log(`searchInFeed: ${feed}, query: ${query}`);
+    
+    try {
+        if (version.includes('SNAPSHOT')) {
+            // APK形式
+            const url = config.apk_search_url
+                .replace('{arch}', arch)
+                .replace('{feed}', feed);
+            
+            console.log('Fetching APK index:', url);
+            const resp = await fetch(url);
+            if (!resp.ok) {
+                console.log(`Feed ${feed} not available (${resp.status})`);
+                return [];
+            }
+            
+            const data = await resp.json();
+            const results = [];
+            
+            if (data.packages && typeof data.packages === 'object') {
+                Object.entries(data.packages).forEach(([name, pkg]) => {
+                    // パッケージ名で検索
+                    if (name.toLowerCase().includes(query.toLowerCase())) {
+                        results.push(name);
+                    }
+                    // 説明文でも検索（存在する場合）
+                    else if (pkg.description && 
+                             pkg.description.toLowerCase().includes(query.toLowerCase())) {
+                        results.push(name);
+                    }
+                });
+            }
+            
+            console.log(`Found ${results.length} packages in ${feed} (APK)`);
+            return results;
+        } else {
+            // OPKG形式
+            const url = config.opkg_search_url
+                .replace('{version}', version)
+                .replace('{arch}', arch)
+                .replace('{feed}', feed);
+            
+            console.log('Fetching OPKG packages:', url);
+            const resp = await fetch(url);
+            if (!resp.ok) {
+                console.log(`Feed ${feed} not available (${resp.status})`);
+                return [];
+            }
+            
+            const text = await resp.text();
+            const results = new Set();  // 重複防止用
+            const lines = text.split('\n');
+            
+            let currentPackage = null;
+            let inDescription = false;
+            
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                
+                if (line.startsWith('Package: ')) {
+                    currentPackage = line.substring(9).trim();
+                    inDescription = false;
+                    
+                    // パッケージ名で検索
+                    if (currentPackage.toLowerCase().includes(query.toLowerCase())) {
+                        results.add(currentPackage);
+                    }
+                } else if (line.startsWith('Description: ')) {
+                    inDescription = true;
+                    const desc = line.substring(13).trim();
+                    
+                    // 説明文の1行目で検索
+                    if (currentPackage && desc.toLowerCase().includes(query.toLowerCase())) {
+                        results.add(currentPackage);
+                    }
+                } else if (inDescription && line.startsWith(' ')) {
+                    // 説明文の続き行で検索
+                    if (currentPackage && line.toLowerCase().includes(query.toLowerCase())) {
+                        results.add(currentPackage);
+                    }
+                } else if (line === '') {
+                    // パッケージ区切り
+                    currentPackage = null;
+                    inDescription = false;
+                }
+            }
+            
+            console.log(`Found ${results.size} packages in ${feed} (OPKG)`);
+            return Array.from(results);
+        }
+    } catch (err) {
+        console.error(`searchInFeed error for ${feed}:`, err);
+        return [];
+    }
+}
+
+// 検索結果表示（表示数は制限するが、検索結果は全て保持）
+function showPackageSearchResults(results, inputElement) {
+    console.log('showPackageSearchResults:', results.length, 'total results');
+    
+    clearPackageSearchResults();
+    
+    if (!results || results.length === 0) return;
+    
+    const container = document.getElementById('package-search-autocomplete');
+    if (!container) return;
+    
+    const resultsDiv = document.createElement('div');
+    resultsDiv.className = 'package-search-results';
+    resultsDiv.style.cssText = `
+        position: absolute;
+        background: white;
+        border: 1px solid #ccc;
+        max-height: 200px;
+        overflow-y: auto;
+        width: 100%;
+        z-index: 1000;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    `;
+    
+    results.forEach(pkgName => {
+        const item = document.createElement('div');
+        item.textContent = pkgName;
+        item.style.cssText = `
+            padding: 8px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+        `;
+        
+        item.onmouseover = () => item.style.backgroundColor = '#f0f0f0';
+        item.onmouseout = () => item.style.backgroundColor = '';
+        
+        item.onclick = () => {
+            console.log('Package selected:', pkgName);
+            addSearchedPackage(pkgName);
+            inputElement.value = '';
+            clearPackageSearchResults();
+        };
+        
+        resultsDiv.appendChild(item);
+    });
+    
+    // 結果が表示数を超える場合は通知
+    if (results.length > displayLimit) {
+        const moreItem = document.createElement('div');
+        moreItem.textContent = `... and ${results.length - displayLimit} more packages`;
+        moreItem.style.cssText = `
+            padding: 8px;
+            color: #666;
+            font-style: italic;
+            background: #f5f5f5;
+        `;
+        resultsDiv.appendChild(moreItem);
     }
     
-    // 設定とデータを並列で読み込み
-    await Promise.all([
-        loadSetupConfig(),
-        loadPackageDatabase(),
-        fetchAndDisplayIspInfo()
-    ]);
-    
-    // 依存関係のある初期化（順序重要）
-    setupEventListeners();
-    loadUciDefaultsTemplate();
-    
-    // 言語セレクター設定（初期言語パッケージ処理を含む）
-    setupLanguageSelector();
-    
-    // パッケージ検索機能を初期化（追加）
-    setupPackageSearch();
-    console.log('Package search initialized');
-    
-    // カスタム翻訳を読み込み（初期言語に基づいて）
-    await loadCustomTranslations(selectedLanguage);
-    
-    // フォーム監視設定
-    setupFormWatchers();
-    
-    customInitialized = true;
+    container.appendChild(resultsDiv);
 }
 
 // ==================== パッケージ検索機能（追加） ====================
