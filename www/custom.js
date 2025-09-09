@@ -1872,7 +1872,10 @@ function updatePackageListFromSelector() {
             });
         }
 
-        // シンプルに高さを自動調整
+
+        // 内容行数に合わせて rows を更新
+        const lines = textarea.value.split('\n').length;
+        textarea.rows = lines;
         textarea.style.height = 'auto';
         textarea.style.height = textarea.scrollHeight + 'px';
     }
@@ -1909,6 +1912,9 @@ function loadUciDefaultsTemplate() {
         })
         .then(text => {
             textarea.value = text;
+            // ── 内容行数に合わせて rows を更新
+            const lines = textarea.value.split('\n').length;
+            textarea.rows = lines;
             updateVariableDefinitions();
             autoResize();
         })
@@ -1947,8 +1953,9 @@ function updateVariableDefinitions() {
         
         textarea.value = beforeSection + newSection + afterSection;
         
+        // ── 差し替え後の行数に合わせて rows を更新
         const lines = textarea.value.split('\n').length;
-        textarea.rows = lines + 1;
+        textarea.rows = lines;
     }
 }
 
@@ -1983,8 +1990,9 @@ function updateCustomCommands() {
         
         textarea.value = beforeSection + newSection + afterSection;
         
+        // ── コマンド差し替え後の行数に合わせて rows を更新
         const lines = textarea.value.split('\n').length;
-        textarea.rows = lines + 1;
+        textarea.rows = lines;
     }
 }
 
@@ -2076,6 +2084,9 @@ function resizePostinstTextarea() {
     const textarea = document.querySelector("#asu-packages");
     if (!textarea) return;
     
+    // 内容行数に合わせて rows を更新
+    const lines = textarea.value.split('\n').length;
+    textarea.rows = lines;
     textarea.style.height = 'auto';
     textarea.style.height = textarea.scrollHeight + 'px';
 }
