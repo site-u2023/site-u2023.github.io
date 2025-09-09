@@ -340,7 +340,7 @@ function searchLocalPackages(query, inputElement) {
     showPackageSearchResults(results, inputElement);
 }
 
-// 検索結果表示（無制限版）
+// 検索結果表示（CSS分離版・無制限版）
 function showPackageSearchResults(results, inputElement) {
     console.log('showPackageSearchResults:', results.length, 'results');
     
@@ -352,30 +352,12 @@ function showPackageSearchResults(results, inputElement) {
     if (!container) return;
     
     const resultsDiv = document.createElement('div');
-    resultsDiv.className = 'package-search-results';
-    resultsDiv.style.cssText = `
-        position: absolute;
-        background: white;
-        border: 1px solid #ccc;
-        max-height: 200px;
-        overflow-y: auto;
-        width: 100%;
-        z-index: 1000;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    `;
+    resultsDiv.className = 'package-search-results'; // CSSクラスのみ使用
     
     // 制限を削除：全ての結果を表示
     results.forEach(pkgName => {
         const item = document.createElement('div');
         item.textContent = pkgName;
-        item.style.cssText = `
-            padding: 8px;
-            cursor: pointer;
-            border-bottom: 1px solid #eee;
-        `;
-        
-        item.onmouseover = () => item.style.backgroundColor = '#f0f0f0';
-        item.onmouseout = () => item.style.backgroundColor = '';
         
         item.onclick = () => {
             console.log('Package selected:', pkgName);
