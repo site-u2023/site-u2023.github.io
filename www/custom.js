@@ -1,4 +1,4 @@
-// custom.js - OpenWrt カスタム機能（言語パッケージ初期化修正版）
+// custom.js - OpenWrt カスタム機能（言語変更時Postinst更新修正版）
 
 console.log('custom.js loaded');
 
@@ -334,8 +334,6 @@ async function handleMainLanguageChange(e) {
     
     // 言語パッケージを更新
     await updateLanguagePackage();
-    updatePackageListFromSelector();
-    updateVariableDefinitions();
     
     console.log('Main language change processing completed');
 }
@@ -381,24 +379,32 @@ async function loadCustomTranslations(lang) {
     }
 }
 
+// カスタム言語セレクター変更ハンドラー（修正版）
 async function handleCustomLanguageChange(e) {
     const newLanguage = e.target.value || config?.fallback_language || 'en';
     
     // 実際に変更された場合のみ処理
     if (selectedLanguage === newLanguage) {
+        console.log('Language not changed, skipping update');
         return;
     }
     
     selectedLanguage = newLanguage;
-    console.log('Language changed to:', selectedLanguage);
+    console.log('Custom language changed to:', selectedLanguage);
     
+    // カスタム翻訳を読み込み
+    await loadCustomTranslations(selectedLanguage);
+    
+    // 言語パッケージを更新してPostinstに反映（重要：ここが修正ポイント）
     await updateLanguagePackage();
+    
+    // 変数定義も更新
     updateVariableDefinitions();
     
-    console.log('Language change processing completed');
+    console.log('Custom language change processing completed');
 }
 
-// 言語パッケージの更新（完全修正版）
+// 言語パッケージの更新（Postinst反映修正版）
 async function updateLanguagePackage() {
     // メイン言語セレクターから現在の言語を取得（常に最新を取る）
     const mainLanguageSelect = document.querySelector('#languages-select');
@@ -411,16 +417,22 @@ async function updateLanguagePackage() {
     console.log('updateLanguagePackage called, selectedLanguage:', selectedLanguage);
     
     // 既存の言語パッケージを削除
+    const removedPackages = [];
     for (const pkg of Array.from(dynamicPackages)) {
         if (pkg.startsWith('luci-i18n-')) {
             dynamicPackages.delete(pkg);
-            console.log('Removed language package:', pkg);
+            removedPackages.push(pkg);
         }
+    }
+    
+    if (removedPackages.length > 0) {
+        console.log('Removed language packages:', removedPackages);
     }
     
     // 英語の場合は言語パッケージ不要
     if (!selectedLanguage || selectedLanguage === 'en') {
         console.log('English selected, no language packages needed');
+        // Postinstテキストエリアを更新（重要）
         updatePackageListFromSelector();
         return;
     }
@@ -432,6 +444,7 @@ async function updateLanguagePackage() {
         // デバイス未選択でも基本言語パッケージは追加
         console.log('Device not selected yet, adding basic language package anyway:', basePkg);
         dynamicPackages.add(basePkg);
+        // Postinstテキストエリアを更新（重要）
         updatePackageListFromSelector();
         return;
     }
@@ -462,6 +475,7 @@ async function updateLanguagePackage() {
     const currentPackages = getCurrentPackageList();
     console.log('Current packages for language check:', currentPackages.length);
     
+    const addedLangPackages = [];
     for (const pkg of currentPackages) {
         if (pkg.startsWith('luci-') && !pkg.startsWith('luci-i18n-')) {
             const luciName = extractLuciName(pkg);
@@ -472,6 +486,7 @@ async function updateLanguagePackage() {
                 try {
                     if (await isPackageAvailable(langPkg, 'luci')) {
                         dynamicPackages.add(langPkg);
+                        addedLangPackages.push(langPkg);
                         console.log('Added LuCI language package:', langPkg);
                     }
                 } catch (err) {
@@ -481,8 +496,13 @@ async function updateLanguagePackage() {
         }
     }
     
+    console.log('Added language packages:', addedLangPackages);
     console.log('Final dynamic packages:', Array.from(dynamicPackages));
+    
+    // Postinstテキストエリアを更新（重要：必ず実行）
     updatePackageListFromSelector();
+    
+    console.log('Language package update completed with Postinst update');
 }
 
 function extractLuciName(pkg) {
@@ -940,8 +960,7 @@ function handleRadioChange(e) {
 
 function updatePackageListFromDynamicSources() {
     updateSetupJsonPackages();
-    updateLanguagePackage();
-    updatePackageListFromSelector();
+    updateLanguagePackage();  // 言語パッケージも更新（これによりPostinstが更新される）
     updateVariableDefinitions();
 }
 
@@ -1779,9 +1798,9 @@ function handlePackageSelection(e) {
     }
     
     updateLanguagePackage();
-    updatePackageListFromSelector();
 }
 
+// パッケージリスト更新（Postinstテキストエリアへの反映）
 function updatePackageListFromSelector() {
     console.log('updatePackageListFromSelector called');
     
@@ -1846,8 +1865,17 @@ function updatePackageListFromSelector() {
     
     // テキストエリアを更新
     if (textarea) {
+        const oldValue = textarea.value;
         textarea.value = uniquePackages.join(' ');
-        console.log('Package list updated in textarea');
+        
+        // 値が変更された場合のみログ出力
+        if (oldValue !== textarea.value) {
+            console.log('Package list updated in textarea:', {
+                before: split(oldValue).length,
+                after: uniquePackages.length,
+                changed: oldValue !== textarea.value
+            });
+        }
 
         // シンプルに高さを自動調整
         textarea.style.height = 'auto';
@@ -2093,4 +2121,4 @@ window.addEventListener('unhandledrejection', function(e) {
     console.error('Custom.js Unhandled Promise Rejection:', e.reason);
 });
 
-console.log('custom.js (language package initialization fixed) fully loaded and ready');
+console.log('custom.js (Postinst update on language change fixed) fully loaded and ready');
