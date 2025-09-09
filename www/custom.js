@@ -1861,16 +1861,17 @@ function updatePackageListFromSelector() {
     const dynamicPackagesList = Array.from(dynamicPackages);
     console.log('Dynamic packages (including language):', dynamicPackagesList);
     
-    // テキストエリアから既存パッケージを取得（デバイス固有パッケージ以外）
+    // テキストエリアから既存パッケージを取得（言語パッケージ以外を保持）
     const manualPackages = new Set();
     const textarea = document.querySelector('#asu-packages');
     if (textarea) {
         const currentPackages = split(textarea.value);
         currentPackages.forEach(pkg => {
-            // デバイス固有パッケージ、チェックボックス管理パッケージ、動的パッケージ以外を保持
+            // 言語パッケージは除外し、その他の手動パッケージのみ保持
             if (!basePackages.has(pkg) && 
                 !checkedPackages.has(pkg) && 
                 !dynamicPackages.has(pkg) &&
+                !pkg.startsWith('luci-i18n-') &&  // 言語パッケージ除外
                 !document.querySelector(`.package-selector-checkbox[data-package="${pkg}"]`)) {
                 manualPackages.add(pkg);
             }
