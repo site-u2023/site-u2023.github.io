@@ -425,59 +425,104 @@ async function handleCustomLanguageChange(e) {
 
 // 言語パッケージの更新（Postinst反映修正版）
 async function updateLanguagePackage() {
-    const selectedLanguage = document.querySelector('#device-language')?.value || config.fallback_language || 'en';
+    // デバイス用言語セレクターから現在の言語を取得
+    const customLanguageSelect = document.querySelector('#aios-language');
+    if (customLanguageSelect && customLanguageSelect.value) {
+        selectedLanguage = customLanguageSelect.value;
+    } else if (!selectedLanguage) {
+        selectedLanguage = current_language || config?.fallback_language || 'en';
+    }
+    
     console.log('updateLanguagePackage called, selectedLanguage:', selectedLanguage);
-
+    
     // 既存の言語パッケージを削除
+    const removedPackages = [];
     for (const pkg of Array.from(dynamicPackages)) {
         if (pkg.startsWith('luci-i18n-')) {
             dynamicPackages.delete(pkg);
+            removedPackages.push(pkg);
         }
     }
-
-    if (selectedLanguage !== 'en') {
-        const addedLangPackages = [];
-
-        // base パッケージ
-        const baseLangPkg = `luci-i18n-base-${selectedLanguage}`;
-        let baseCheck = await isPackageAvailable(baseLangPkg, 'luci');
-        if (baseCheck === true || baseCheck === null) {   // null なら追加する
-            dynamicPackages.add(baseLangPkg);
-            addedLangPackages.push(baseLangPkg);
+    
+    if (removedPackages.length > 0) {
+        console.log('Removed language packages:', removedPackages);
+    }
+    
+    // 英語の場合は言語パッケージ削除のみ実行
+    if (!selectedLanguage || selectedLanguage === 'en') {
+        console.log('English selected, all language packages removed');
+        // Postinstテキストエリアを更新（重要）
+        updatePackageListFromSelector();
+        return;
+    }
+    
+    // デバイス情報が無い場合でも基本言語パッケージは追加
+    const basePkg = `luci-i18n-base-${selectedLanguage}`;
+    
+    if (!current_device?.arch) {
+        // デバイス未選択でも基本言語パッケージは追加
+        console.log('Device not selected yet, adding basic language package anyway:', basePkg);
+        dynamicPackages.add(basePkg);
+        // Postinstテキストエリアを更新（重要）
+        updatePackageListFromSelector();
+        return;
+    }
+    
+    // デバイス情報がある場合の処理
+    console.log('Device available, checking language packages for arch:', current_device.arch);
+    
+    // 基本言語パッケージをチェック
+    console.log('Checking base package:', basePkg);
+    
+    try {
+        if (await isPackageAvailable(basePkg, 'luci')) {
+            dynamicPackages.add(basePkg);
+            console.log('Added validated base language package:', basePkg);
+        } else {
+            // 利用不可でも追加（ビルド時にASUがハンドリング）
+            dynamicPackages.add(basePkg);
+            console.log('Added base language package (not validated):', basePkg);
         }
-
-        // LuCI パッケージ → 言語パッケージ
-        const currentPackages = getCurrentPackageList();
-        for (const pkg of currentPackages) {
-            if (!pkg.startsWith('luci-')) continue;
-            if (pkg.startsWith('luci-i18n-')) continue;
-
-            const namePart = pkg.replace(/^luci-/, '').replace(/^app-/, '');
-            const i18nPkg = `luci-i18n-${namePart}-${selectedLanguage}`;
-
-            let check = await isPackageAvailable(i18nPkg, 'luci');
-            if (check === true || check === null) {   // null なら追加する
-                dynamicPackages.add(i18nPkg);
-                addedLangPackages.push(i18nPkg);
+    } catch (err) {
+        console.error('Error checking base package:', err);
+        // エラー時でも基本パッケージは追加
+        dynamicPackages.add(basePkg);
+        console.log('Added base language package despite error:', basePkg);
+    }
+    
+    // 現在のパッケージに対応する言語パッケージをチェック
+    const currentPackages = getCurrentPackageList();
+    console.log('Current packages for language check:', currentPackages.length);
+    
+    const addedLangPackages = [];
+    for (const pkg of currentPackages) {
+        if (pkg.startsWith('luci-') && !pkg.startsWith('luci-i18n-')) {
+            const luciName = extractLuciName(pkg);
+            if (luciName) {
+                const langPkg = `luci-i18n-${luciName}-${selectedLanguage}`;
+                console.log('Checking LuCI language package:', langPkg);
+                
+                try {
+                    if (await isPackageAvailable(langPkg, 'luci')) {
+                        dynamicPackages.add(langPkg);
+                        addedLangPackages.push(langPkg);
+                        console.log('Added LuCI language package:', langPkg);
+                    }
+                } catch (err) {
+                    console.error('Error checking LuCI package:', err);
+                }
             }
         }
-
-        console.log('Added language packages:', addedLangPackages);
-    } else {
-        console.log('English selected, no language packages added');
     }
-
-    // Postinst 更新
-    const textarea = document.querySelector('#asu-packages');
-    if (textarea) {
-        const baseList = getCurrentPackageList();
-        const dynList  = Array.from(dynamicPackages);
-        const finalPackages = Array.from(new Set([...baseList, ...dynList]));
-        textarea.value = finalPackages.join(' ');
-        console.log('asu-packages updated with language packages:', finalPackages);
-    }
+    
+    console.log('Added language packages:', addedLangPackages);
+    console.log('Final dynamic packages:', Array.from(dynamicPackages));
+    
+    // Postinstテキストエリアを更新（重要：必ず実行）
+    updatePackageListFromSelector();
+    
+    console.log('Language package update completed with Postinst update');
 }
-
 
 function extractLuciName(pkg) {
     if (pkg === 'luci') return 'base';
