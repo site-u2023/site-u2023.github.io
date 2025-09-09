@@ -485,6 +485,11 @@ function applyCustomTranslations(map) {
     }
 }
 
+function triggerPackageUpdate() {
+    updateLanguagePackage();
+    updateVariableDefinitions();
+}
+
 function extractLuciName(pkg) {
     if (pkg === 'luci') return 'base';
 
@@ -943,9 +948,9 @@ function handleRadioChange(e) {
 
 function updatePackageListFromDynamicSources() {
     updateSetupJsonPackages();
-    updateLanguagePackage();  // 言語パッケージも更新（これによりPostinstが更新される）
-    updateVariableDefinitions();
+    triggerPackageUpdate();
 }
+
 
 function updateSetupJsonPackages() {
     if (!setupConfig) return;
@@ -1788,7 +1793,7 @@ function handlePackageSelection(e) {
         updateVariableDefinitions();
     }
     
-    updateLanguagePackage();
+    triggerPackageUpdate();
 }
 
 // パッケージリスト更新（Postinstテキストエリアへの反映）
