@@ -2075,7 +2075,7 @@ function updateAutoConnectionInfo(apiInfo) {
         infoText += `AFTR: ${apiInfo.aftr}`;
     } else if (apiInfo) {
         infoText = 'Detected: DHCP/PPPoE\n';
-        infoText += '\u00A00Standard connection will be used';
+        infoText += '\u00A0Standard connection will be used';
     } else {
         infoText = 'No connection information available\n';
         infoText += '\u00A0Please select connection type manually';
