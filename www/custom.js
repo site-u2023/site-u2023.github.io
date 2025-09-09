@@ -518,10 +518,15 @@ async function updateLanguagePackage() {
     console.log('Added language packages:', addedLangPackages);
     console.log('Final dynamic packages:', Array.from(dynamicPackages));
     
-    // Postinstテキストエリアを更新（重要：必ず実行）
-    updatePackageListFromSelector();
-    
-    console.log('Language package update completed with Postinst update');
+    // Postinst (asu-packages) を必ず更新
+    const textarea = document.querySelector('#asu-packages');
+    if (textarea) {
+        const finalPackages = Array.from(getCurrentPackageList().concat(dynamicPackages));
+        textarea.value = finalPackages.join(' ');
+        console.log('asu-packages updated with language packages:', finalPackages.length);
+    }
+
+    console.log('Language package update completed and Postinst synchronized');
 }
 
 function extractLuciName(pkg) {
