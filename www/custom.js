@@ -2063,28 +2063,28 @@ function updateAutoConnectionInfo(apiInfo) {
     let infoText = '';
     
     if (apiInfo?.mape?.brIpv6Address) {
-        infoText = '🌐\u00A0Detected: MAP-E\n';
-        infoText += `\u00A0\u00A0\u00A0\u00A0\u00A0BR: ${apiInfo.mape.brIpv6Address}\n`;
-        infoText += `\u00A0\u00A0\u00A0\u00A0\u00A0EA-len: ${apiInfo.mape.eaBitLength}\n`;
-        infoText += `\u00A0\u00A0\u00A0\u00A0\u00A0IPv4 Prefix: ${apiInfo.mape.ipv4Prefix}/${apiInfo.mape.ipv4PrefixLength}\n`;
-        infoText += `\u00A0\u00A0\u00A0\u00A0\u00A0IPv6 Prefix: ${apiInfo.mape.ipv6Prefix}/${apiInfo.mape.ipv6PrefixLength}\n`;
-        infoText += `\u00A0\u00A0\u00A0\u00A0\u00A0PSID: offset=${apiInfo.mape.psIdOffset}\n`;
-        infoText += `\u00A0\u00A0\u00A0\u00A0\u00A0PSID: length=${apiInfo.mape.psidlen}`;
+        infoText = 'Detected: MAP-E\n';
+        infoText += `\u00A0BR: ${apiInfo.mape.brIpv6Address}\n`;
+        infoText += `\u00A0EA-len: ${apiInfo.mape.eaBitLength}\n`;
+        infoText += `\u00A0IPv4 Prefix: ${apiInfo.mape.ipv4Prefix}/${apiInfo.mape.ipv4PrefixLength}\n`;
+        infoText += `\u00A0IPv6 Prefix: ${apiInfo.mape.ipv6Prefix}/${apiInfo.mape.ipv6PrefixLength}\n`;
+        infoText += `\u00A0PSID: offset=${apiInfo.mape.psIdOffset}\n`;
+        infoText += `\u00A0PSID: length=${apiInfo.mape.psidlen}`;
     } else if (apiInfo?.aftr) {
-        infoText = '🌐\u00A0Detected: DS-Lite\n';
-        infoText += `\u00A0\u00A0\u00A0\u00A0\u00A0AFTR: ${apiInfo.aftr}`;
+        infoText = 'Detected: DS-Lite\n';
+        infoText += `AFTR: ${apiInfo.aftr}`;
     } else if (apiInfo) {
-        infoText = '🌐\u00A0Detected: DHCP/PPPoE\n';
-        infoText += '\u00A0\u00A0\u00A0\u00A0\u00A0Standard connection will be used';
+        infoText = 'Detected: DHCP/PPPoE\n';
+        infoText += '\u00A00Standard connection will be used';
     } else {
-        infoText = '⚠\u00A0No connection information available\n';
-        infoText += '\u00A0\u00A0\u00A0\u00A0\u00A0Please select connection type manually';
+        infoText = 'No connection information available\n';
+        infoText += '\u00A0Please select connection type manually';
     }
 
     if (apiInfo?.isp) {
         infoText += `\n\n🌐\u00A0ISP: ${apiInfo.isp}`;
         if (apiInfo.as) {
-            infoText += `\n\u00A0\u00A0\u00A0\u00A0\u00A0AS: ${apiInfo.as}`;
+            infoText += `\n🌐\u00A0AS: ${apiInfo.as}`;
         }
     }
     
