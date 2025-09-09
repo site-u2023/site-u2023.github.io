@@ -521,11 +521,18 @@ async function updateLanguagePackage() {
     // Postinst (asu-packages) を必ず更新
     const textarea = document.querySelector('#asu-packages');
     if (textarea) {
-        const finalPackages = Array.from(getCurrentPackageList().concat(dynamicPackages));
-        textarea.value = finalPackages.join(' ');
+        // Postinst (asu-packages) を必ず更新
+        const textarea = document.querySelector('#asu-packages');
+        if (textarea) {
+            const baseList = getCurrentPackageList();
+            const dynList  = Array.from(dynamicPackages);  // Set → Array
+            const finalPackages = [...baseList, ...dynList]; // スプレッドでマージ
+
+            textarea.value = finalPackages.join(' ');
+            console.log('asu-packages updated with language packages:', finalPackages);
+        }
         console.log('asu-packages updated with language packages:', finalPackages.length);
     }
-
     console.log('Language package update completed and Postinst synchronized');
 }
 
