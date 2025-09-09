@@ -129,17 +129,6 @@ input[type="radio"] {
   transition: all 0.2s ease;
 }
 
-.multi-input-item:focus {
-  outline: none;
-  border-color: var(--owrt-blue);
-  box-shadow: 0 0 0 2px rgba(0, 181, 226, 0.1);
-}
-
-.multi-input-item[data-confirmed="true"] {
-  background-color: rgba(0, 181, 226, 0.1);
-  border-color: var(--owrt-blue);
-}
-
 .multi-input-item:placeholder-shown:not(:focus) {
   opacity: 0.6;
 }
@@ -182,11 +171,6 @@ input[type="radio"] {
   .multi-input-item {
     background-color: #313135;
     color: #d0d0d0;
-  }
-  
-  .multi-input-item[data-confirmed="true"] {
-    background-color: rgba(0, 128, 179, 0.2);
-    border-color: #0080b3;
   }
   
   .package-search-results {
