@@ -534,11 +534,10 @@ function showPackageSearchResults(results, inputElement) {
         const item = document.createElement('div');
         item.textContent = pkgName;
         
-        item.onclick = () => {
-            console.log('Package selected:', pkgName);
+        item.onmousedown = (e) => {
+            e.preventDefault(); // blurイベントの発生を防止
             
-            // blur処理をスキップするフラグを設定
-            inputElement.dataset.skipBlur = 'true';
+            console.log('Package selected:', pkgName);
             
             // プログラム的変更フラグを設定
             inputElement.dataset.programmaticChange = 'true';
@@ -561,7 +560,7 @@ function showPackageSearchResults(results, inputElement) {
             // 変更通知
             packageSearchManager.options.onChange(packageSearchManager.getAllValues());
         };
-        
+  
         resultsDiv.appendChild(item);
     });
     
