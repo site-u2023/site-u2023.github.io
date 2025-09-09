@@ -229,8 +229,8 @@ class MultiInputManager {
             this.removeInput(input);
         }
         
-        // 最後のインプットに値がある場合、新しいインプットを追加
-        if (value && index === this.inputs.length - 1) {
+        // 最後のインプットに値がある場合、新しいインプットを追加（confirmed済みは除外）
+        if (value && index === this.inputs.length - 1 && !input.getAttribute('data-confirmed')) {
             this.addInput('', false);
         }
     }
@@ -534,7 +534,7 @@ function showPackageSearchResults(results, inputElement) {
         const item = document.createElement('div');
         item.textContent = pkgName;
         
-    item.onclick = () => {
+        item.onclick = () => {
             console.log('Package selected:', pkgName);
             
             // blur処理をスキップするフラグを設定
@@ -550,8 +550,9 @@ function showPackageSearchResults(results, inputElement) {
             // パッケージ追加
             addSearchedPackage(pkgName);
             
-            // 新しいインプットボックスを追加
-            if (packageSearchManager) {
+            // 現在の入力が最後の入力の場合のみ新しい入力を追加
+            const inputIndex = packageSearchManager.inputs.indexOf(inputElement);
+            if (inputIndex === packageSearchManager.inputs.length - 1) {
                 packageSearchManager.addInput('', true);
             }
             
