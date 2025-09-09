@@ -196,6 +196,11 @@ function replaceAsuSection(asuSection, temp) {
         newDiv.appendChild(customScripts);
     }
 
+    // setup.jsonベースの動的設定セクションを追加
+    const dynamicConfigDiv = document.createElement('div');
+    dynamicConfigDiv.id = 'dynamic-config-sections';
+    newDiv.appendChild(dynamicConfigDiv);
+
     // index.jsが期待する全てのDOM要素を追加
     newDiv.insertAdjacentHTML('beforeend', `
         <br>
