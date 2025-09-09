@@ -378,10 +378,10 @@ function setupPackageSearch() {
             removeSearchedPackage(packageName);
         },
         onChange: (values) => {
-            console.log('Package list changed:', values);
+            // console.log('Package list changed:', values);
         },
         autocomplete: (query, inputElement) => {
-            console.log('Searching for packages:', query);
+            // console.log('Searching for packages:', query);
             searchPackages(query, inputElement);
         }
     });
@@ -415,7 +415,7 @@ function removeSearchedPackage(packageName) {
 
 // パッケージ検索実行
 async function searchPackages(query, inputElement) {
-    console.log('searchPackages called with query:', query);
+    // console.log('searchPackages called with query:', query);
     
     const arch = current_device?.arch || cachedDeviceArch;
     const version = current_device?.version || document.querySelector('#versions')?.value;
@@ -425,7 +425,7 @@ async function searchPackages(query, inputElement) {
     
     for (const feed of feeds) {
         try {
-            console.log(`Searching in feed: ${feed}`);
+            // console.log(`Searching in feed: ${feed}`);
             const results = await searchInFeed(query, feed, version, arch);
             results.forEach(pkg => allResults.add(pkg));
         } catch (err) {
@@ -458,7 +458,7 @@ async function searchPackages(query, inputElement) {
 
 // フィード内検索
 async function searchInFeed(query, feed, version, arch) {
-    console.log(`searchInFeed: ${feed}, query: ${query}`);
+    // console.log(`searchInFeed: ${feed}, query: ${query}`);
     
     try {
         if (version.includes('SNAPSHOT')) {
@@ -467,7 +467,7 @@ async function searchInFeed(query, feed, version, arch) {
                 .replace('{arch}', arch)
                 .replace('{feed}', feed);
             
-            console.log('Fetching APK index:', url);
+            // console.log('Fetching APK index:', url);
             const resp = await fetch(url);
             if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
             
@@ -490,7 +490,7 @@ async function searchInFeed(query, feed, version, arch) {
                 .replace('{arch}', arch)
                 .replace('{feed}', feed);
             
-            console.log('Fetching OPKG packages:', url);
+            // console.log('Fetching OPKG packages:', url);
             const resp = await fetch(url);
             if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
             
@@ -517,7 +517,7 @@ async function searchInFeed(query, feed, version, arch) {
 
 // 検索結果表示（CSS分離版・無制限版）
 function showPackageSearchResults(results, inputElement) {
-    console.log('showPackageSearchResults:', results.length, 'results');
+    // console.log('showPackageSearchResults:', results.length, 'results');
     
     clearPackageSearchResults();
     
@@ -816,7 +816,7 @@ async function updateLanguagePackage() {
         selectedLanguage = current_language || config?.fallback_language || 'en';
     }
 
-    console.log('updateLanguagePackage called, selectedLanguage:', selectedLanguage);
+    // console.log('updateLanguagePackage called, selectedLanguage:', selectedLanguage);
 
     // 既存の言語パッケージを一旦全て削除
     const removedPackages = [];
@@ -828,7 +828,7 @@ async function updateLanguagePackage() {
     }
 
     if (removedPackages.length > 0) {
-        console.log('Removed old language packages:', removedPackages);
+        // console.log('Removed old language packages:', removedPackages);
     }
 
     // 英語が選択されているか、デバイス情報がない場合は、パッケージを追加せずに終了
@@ -845,13 +845,13 @@ async function updateLanguagePackage() {
     }
     
     // デバイス情報がある場合の処理
-    console.log('Device available, checking language packages for arch:', hasArch);
+    // console.log('Device available, checking language packages for arch:', hasArch);
     
     const basePkg = `luci-i18n-base-${selectedLanguage}`;
     const addedLangPackages = new Set();
 
     // 基本言語パッケージをチェックして追加
-    console.log('Checking base package:', basePkg);
+    // console.log('Checking base package:', basePkg);
     try {
         if (await isPackageAvailable(basePkg, 'luci')) {
             dynamicPackages.add(basePkg);
@@ -866,7 +866,7 @@ async function updateLanguagePackage() {
 
     // 現在の選択済みパッケージに対応する言語パッケージをチェックして追加
     const currentPackages = getCurrentPackageList();
-    console.log('Checking language packages for', currentPackages.length, 'selected packages.');
+    // console.log('Checking language packages for', currentPackages.length, 'selected packages.');
 
     const checkPromises = [];
     for (const pkg of currentPackages) {
@@ -877,7 +877,7 @@ async function updateLanguagePackage() {
                 
                 // Promiseを作成して並列でチェック
                 const promise = (async () => {
-                    console.log('Checking LuCI language package:', langPkg);
+                    // console.log('Checking LuCI language package:', langPkg);
                     try {
                         if (await isPackageAvailable(langPkg, 'luci')) {
                             dynamicPackages.add(langPkg);
@@ -1849,7 +1849,7 @@ function setupCommandsInput() {
             console.log('Command removed:', command);
         },
         onChange: (values) => {
-            console.log('Commands changed:', values);
+            // console.log('Commands changed:', values);
             updateCustomCommands();
         }
     });
@@ -2279,7 +2279,7 @@ function handlePackageSelection(e) {
 
 // パッケージリスト更新（Postinstテキストエリアへの反映）
 function updatePackageListFromSelector() {
-    console.log('updatePackageListFromSelector called');
+    // console.log('updatePackageListFromSelector called');
     
     // 基本パッケージセット（デバイス固有パッケージ）を準備
     const basePackages = new Set();
@@ -2289,12 +2289,12 @@ function updatePackageListFromSelector() {
     deviceDevicePackages.forEach(pkg => basePackages.add(pkg));
     extraPackages.forEach(pkg => basePackages.add(pkg));
     
-    console.log('Device base packages:', {
-        default: deviceDefaultPackages.length,
-        device: deviceDevicePackages.length,
-        extra: extraPackages.length,
-        total: basePackages.size
-    });
+    // console.log('Device base packages:', {
+    //     default: deviceDefaultPackages.length,
+    //     device: deviceDevicePackages.length,
+    //     extra: extraPackages.length,
+    //     total: basePackages.size
+    // });
     
     // チェックされたパッケージを追加
     const checkedPackages = new Set();
@@ -2305,11 +2305,11 @@ function updatePackageListFromSelector() {
         }
     });
     
-    console.log('Checked packages from selector:', checkedPackages.size);
+    // console.log('Checked packages from selector:', checkedPackages.size);
     
     // 動的パッケージ（言語パッケージを含む）を追加
     const dynamicPackagesList = Array.from(dynamicPackages);
-    console.log('Dynamic packages (including language):', dynamicPackagesList);
+    // console.log('Dynamic packages (including language):', dynamicPackagesList);
     
     // テキストエリアから既存パッケージを取得（言語パッケージ以外を保持）
     const manualPackages = new Set();
@@ -2328,7 +2328,7 @@ function updatePackageListFromSelector() {
         });
     }
     
-    console.log('Manual packages (user typed):', manualPackages.size);
+    // console.log('Manual packages (user typed):', manualPackages.size);
     
     // 全てのパッケージを統合（順序：デバイス固有 → チェック済み → 動的 → 手動）
     const finalPackages = [
