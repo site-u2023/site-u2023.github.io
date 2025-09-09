@@ -404,23 +404,20 @@ async function handleCustomLanguageChange(e) {
     
     // 実際に変更された場合のみ処理
     if (selectedLanguage === newLanguage) {
-        console.log('Language not changed, skipping update');
+        console.log('Device language not changed, skipping update');
         return;
     }
     
     selectedLanguage = newLanguage;
-    console.log('Custom language changed to:', selectedLanguage);
+    console.log('Device language changed to:', selectedLanguage);
     
-    // カスタム翻訳を読み込み
-    await loadCustomTranslations(selectedLanguage);
-    
-    // 言語パッケージを更新してPostinstに反映（重要：ここが修正ポイント）
+    // 言語パッケージを更新してPostinstに反映
     await updateLanguagePackage();
     
     // 変数定義も更新
     updateVariableDefinitions();
     
-    console.log('Custom language change processing completed');
+    console.log('Device language change processing completed');
 }
 
 // 言語パッケージの更新（Postinst反映修正版）
