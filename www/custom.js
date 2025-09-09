@@ -1137,8 +1137,6 @@ function buildFormGroup(field) {
 function handleRadioChange(e) {
     const radio = e.target;
     const packagesData = radio.getAttribute('data-packages');
-    
-    // 同じ名前の他のラジオボタンから動的パッケージを削除
     const sameNameRadios = document.querySelectorAll(`input[name="${radio.name}"]`);
     sameNameRadios.forEach(r => {
         if (r !== radio) {
@@ -1149,6 +1147,16 @@ function handleRadioChange(e) {
                     otherPackages.forEach(pkg => {
                         dynamicPackages.delete(pkg);
                     });
+                    // ← 新規：テキストエリアからも削除
+                    const ta = document.querySelector('#asu-packages');
+                    if (ta) {
+                        const current = split(ta.value);
+                        const cleaned = current.filter(p => !otherPackages.includes(p));
+                        if (cleaned.length !== current.length) {
+                            ta.value = cleaned.join(' ');
+                            resizePostinstTextarea();
+                        }
+                    }           
                 } catch (err) {
                     console.error('Error parsing other packages data:', err);
                 }
