@@ -198,14 +198,20 @@ class MultiInputManager {
     
     handleInput(e, input) {
         const value = input.value.trim();
-        
+    
         // オートコンプリート処理
         if (this.options.autocomplete && value.length >= 2) {
             this.options.autocomplete(value, input);
         }
-        
-        // コールバック実行
-        this.options.onChange(this.getAllValues());
+    
+        // 候補選択によるプログラム的な値変更の場合はログ化をスキップ
+        if (!input.dataset.programmaticChange) {
+            // コールバック実行
+            this.options.onChange(this.getAllValues());
+        }
+    
+        // フラグをクリア
+        delete input.dataset.programmaticChange;
     }
     
     handleBlur(e, input) {
@@ -524,9 +530,26 @@ function showPackageSearchResults(results, inputElement) {
         
         item.onclick = () => {
             console.log('Package selected:', pkgName);
+            
+            // プログラム的変更フラグを設定
+            inputElement.dataset.programmaticChange = 'true';
+            inputElement.value = pkgName;
+            
+            // 手動でconfirmedマークを設定
+            inputElement.setAttribute('data-confirmed', 'true');
+            
+            // パッケージ追加
             addSearchedPackage(pkgName);
-            inputElement.value = '';
+            
+            // 新しいインプットボックスを追加
+            if (packageSearchManager) {
+                packageSearchManager.addInput('', true);
+            }
+            
             clearPackageSearchResults();
+            
+            // 変更通知
+            packageSearchManager.options.onChange(packageSearchManager.getAllValues());
         };
         
         resultsDiv.appendChild(item);
