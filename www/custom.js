@@ -229,44 +229,34 @@ function setupPackageSearch() {
 
 // パッケージ検索実行
 async function searchPackages(query, inputElement) {
-  console.log('searchPackages called with query:', query);
-
-  // arch_packages 情報（配列 or オブジェクト）を一意に取得
-  const archData = current_device?.arch || cachedDeviceArch;
-  if (!archData) {
-    console.warn('arch_packages 情報がありません、検索をスキップします');
-    return;
-  }
-
-  // バージョン取得
-  const version = current_device?.version
-    || document.querySelector('#versions')?.value;
-  if (!version) {
-    console.warn('version がありません、検索をスキップします');
-    return;
-  }
-
-  // feeds を配列 or オブジェクトのキー一覧で生成
-  const feeds = Array.isArray(archData)
-    ? archData
-    : Object.keys(archData);
-
-  const allResults = new Set();
-
-  // 並列で全フィードを検索
-  await Promise.all(feeds.map(async feed => {
-    try {
-      console.log(`Searching in feed: ${feed}`);
-      const names = await searchInFeed(query, feed, version, archData);
-      names.forEach(n => allResults.add(n));
-    } catch (err) {
-      console.error(`Error searching feed=${feed}:`, err);
+    console.log('searchPackages called with query:', query);
+    
+    const arch = current_device?.arch || cachedDeviceArch;
+    const version = current_device?.version || document.querySelector('#versions')?.value;
+    
+    if (!arch || !version) {
+        console.log('No device selected, using local search');
+        searchLocalPackages(query, inputElement);
+        return;
     }
-  }));
-
-  const sorted = Array.from(allResults).sort();
-  console.log(`Found ${sorted.length} packages`);
-  showPackageSearchResults(sorted, inputElement);
+    
+    const allResults = new Set();
+    const feeds = ['packages', 'luci'];  // まずは主要なフィードのみ
+    
+    for (const feed of feeds) {
+        try {
+            console.log(`Searching in feed: ${feed}`);
+            const results = await searchInFeed(query, feed, version, arch);
+            results.forEach(pkg => allResults.add(pkg));
+        } catch (err) {
+            console.error(`Error searching ${feed}:`, err);
+        }
+    }
+    
+    const sortedResults = Array.from(allResults).sort();
+    console.log(`Found ${sortedResults.length} packages`);
+    
+    showPackageSearchResults(sortedResults, inputElement);
 }
 
 // フィード内検索
@@ -326,6 +316,28 @@ async function searchInFeed(query, feed, version, arch) {
         console.error('searchInFeed error:', err);
         return [];
     }
+}
+
+// ローカル検索（フォールバック）
+function searchLocalPackages(query, inputElement) {
+    console.log('searchLocalPackages:', query);
+    
+    if (!PACKAGE_DB) {
+        console.log('Package DB not loaded');
+        return;
+    }
+    
+    const results = [];
+    PACKAGE_DB.categories.forEach(category => {
+        category.packages.forEach(pkg => {
+            if (pkg.name && pkg.name.toLowerCase().includes(query.toLowerCase())) {
+                results.push(pkg.name);
+            }
+        });
+    });
+    
+    console.log(`Found ${results.length} local packages`);
+    showPackageSearchResults(results, inputElement);
 }
 
 // 検索結果表示（CSS分離版・無制限版）
