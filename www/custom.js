@@ -258,16 +258,7 @@ function reinitializeFeatures() {
     console.log('Re-synchronized language on reinit:', currentMainLanguage);
 
     if (customLanguageMap && Object.keys(customLanguageMap).length) {
-        Object.assign(current_language_json, customLanguageMap);
-        for (const tr in customLanguageMap) {
-            document.querySelectorAll(`.${tr}`).forEach(e => {
-                if ('placeholder' in e) {
-                    e.placeholder = customLanguageMap[tr];
-                } else {
-                    e.innerText = customLanguageMap[tr];
-                }
-            });
-        }
+        applyCustomTranslations(customLanguageMap);
         console.log('Custom translations reapplied after reinit');
     }
 }
@@ -350,19 +341,8 @@ async function loadCustomTranslations(lang) {
 
         const text = await resp.text();
         const customMap = JSON.parse(text);
-
         customLanguageMap = customMap;
-        Object.assign(current_language_json, customMap);
-
-        for (const tr in customMap) {
-            document.querySelectorAll(`.${tr}`).forEach(e => {
-                if ('placeholder' in e) {
-                    e.placeholder = customMap[tr];
-                } else {
-                    e.innerText = customMap[tr];
-                }
-            });
-        }
+        applyCustomTranslations(customLanguageMap);
     } catch (err) {
         if (lang !== config.fallback_language) {
             return loadCustomTranslations(config.fallback_language);
@@ -489,6 +469,20 @@ async function updateLanguagePackage() {
     updatePackageListFromSelector();
 
     console.log('Language package update completed.');
+}
+
+function applyCustomTranslations(map) {
+    if (!map || typeof map !== 'object') return;
+    Object.assign(current_language_json, map);
+    for (const tr in map) {
+        document.querySelectorAll(`.${tr}`).forEach(e => {
+            if ('placeholder' in e) {
+                e.placeholder = map[tr];
+            } else {
+                e.innerText = map[tr];
+            }
+        });
+    }
 }
 
 function extractLuciName(pkg) {
