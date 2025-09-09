@@ -715,10 +715,9 @@ function applyCustomTranslations(map) {
     }
 }
 
-async function triggerPackageUpdate() {
-    await updateLanguagePackage();        // 言語パッケージの追加・削除完了
-    updateVariableDefinitions();          // UCI-defaults 変数定義更新
-    resizePostinstTextarea();
+function triggerPackageUpdate() {
+    updateLanguagePackage();
+    updateVariableDefinitions();
 }
 
 function extractLuciName(pkg) {
@@ -1147,7 +1146,17 @@ function handleRadioChange(e) {
                     const otherPackages = JSON.parse(otherPackagesData);
                     otherPackages.forEach(pkg => {
                         dynamicPackages.delete(pkg);
-                    });          
+                    });
+                    // ← 新規：テキストエリアからも削除
+                    const ta = document.querySelector('#asu-packages');
+                    if (ta) {
+                        const current = split(ta.value);
+                        const cleaned = current.filter(p => !otherPackages.includes(p));
+                        if (cleaned.length !== current.length) {
+                            ta.value = cleaned.join(' ');
+                            resizePostinstTextarea();
+                        }
+                    }           
                 } catch (err) {
                     console.error('Error parsing other packages data:', err);
                 }
@@ -1170,13 +1179,16 @@ function handleRadioChange(e) {
     // MAP-Eタイプ切り替え時の特別処理
     if (radio.name === 'mape_type') {
         toggleGuaPrefixVisibility(radio.value);
-    }  
+    }
+    
     updatePackageListFromDynamicSources();
 }
 
+function updatePackageListFromDynamicSources() {
     updateSetupJsonPackages();
-    return triggerPackageUpdate();
+    triggerPackageUpdate();
 }
+
 
 function updateSetupJsonPackages() {
     if (!setupConfig) return;
