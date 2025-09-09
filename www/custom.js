@@ -218,6 +218,12 @@ class MultiInputManager {
         const value = input.value.trim();
         const index = this.inputs.indexOf(input);
         
+        // 候補選択による処理中はスキップ
+        if (input.dataset.skipBlur) {
+            delete input.dataset.skipBlur;
+            return;
+        }
+        
         // 値が空で、最後のインプットでない場合は削除
         if (value === '' && this.inputs.length > 1 && index !== this.inputs.length - 1) {
             this.removeInput(input);
@@ -528,8 +534,11 @@ function showPackageSearchResults(results, inputElement) {
         const item = document.createElement('div');
         item.textContent = pkgName;
         
-        item.onclick = () => {
+    item.onclick = () => {
             console.log('Package selected:', pkgName);
+            
+            // blur処理をスキップするフラグを設定
+            inputElement.dataset.skipBlur = 'true';
             
             // プログラム的変更フラグを設定
             inputElement.dataset.programmaticChange = 'true';
