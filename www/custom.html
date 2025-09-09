@@ -43,83 +43,62 @@
         </div>
     </div>
 
-    <!-- Enhanced Package Selector with Dynamic Input Fields -->
+    <!-- Enhanced Package Selector -->
     <div id="custom-packages-section">
         <details id="packages-details">
             <summary>
                 <h3 class="tr-custom-packages">Installed Packages</h3>
             </summary>
             <div id="package-selector-config">
-                <!-- Package Search Section -->
                 <div class="package-search-container config-section">
-                    <h4 class="tr-package-search">Package Search & Selection</h4>
-                    <p class="text-muted">Search and select packages from the database. Selected packages will be automatically added to your installation list.</p>
+                    <h4 class="tr-package-search">Package Search</h4>
+                    <p class="text-muted">Select extra packages to install. They'll be added to the list below.</p>
                     <div id="package-search-autocomplete" class="autocomplete">
                         <input type="text"
                             id="package-search"
-                            placeholder="Type package name to search..."
+                            placeholder="Type package name"
                             autocomplete="off"
                             spellcheck="false"
                             autocapitalize="off">
                     </div>
                 </div>
                 
-                <!-- Package Categories (Database-driven selection) -->
                 <div id="package-categories">
                     <!-- packages.jsonから動的に生成される -->
                 </div>
                 
-                <!-- Dynamic Package Input Section -->
-                <div class="config-section">
-                    <h4 class="tr-installed-packages">Installed Packages</h4>
-                    <p class="text-muted">Enter package names manually or use the search above. Press Enter to confirm each package and add a new input field.</p>
-                    
-                    <div id="installed-packages-section">
-                        <div id="installed-packages-container" class="dynamic-input-container">
-                            <!-- 動的に生成される入力フィールド -->
-                        </div>
-                        <button type="button" id="add-package-field" class="add-field-btn">
-                            <span>+ Add Package Field</span>
-                        </button>
-                    </div>
-                </div>
-                
-                <!-- Hidden traditional textarea for compatibility -->
-                <details id="postinst-details" class="config-section" style="display: none;">
+                <details id="postinst-details" class="config-section">
                     <summary>
-                        <h4 class="tr-postinst">Package List (Internal)</h4>
+                        <h4 class="tr-postinst">Postinst (Package installation script)</h4>
                     </summary>
                     <textarea
                         id="asu-packages"
                         autocomplete="off"
                         spellcheck="false"
                         autocapitalize="off"
-                        readonly
                     ></textarea>
                 </details>
             </div>
         </details>
     </div>
 
-    <!-- Scripts Configuration with Dynamic Input Fields -->
+    <!-- Scripts Configuration -->
     <div id="custom-scripts-section">
         <details id="scripts-details">
             <summary>
                 <h3 class="tr-custom-defaults">Script to run on first boot (uci-defaults)</h3>
             </summary>
-            <div id="scripts-config">        
-                
-                <!-- Dynamic Postinst Scripts Section -->
-                <div class="config-section">
-                    <h4 class="tr-postinst-scripts">Postinst (Package installation script)</h4>
-                    <p class="text-muted">Enter multi-line installation scripts. Press Ctrl+Enter to confirm each script and add a new input field.</p>
-                    
-                    <div id="postinst-scripts-section">
-                        <div id="postinst-scripts-container" class="dynamic-input-container">
-                            <!-- 動的に生成される入力フィールド -->
-                        </div>
-                            <span>+ Add Script Field</span>
-                        </button>
+            <div id="scripts-config">
+                <div class="commands-container config-section">
+                    <h4 class="tr-add-commands">Add commands</h4>
+                    <p class="text-muted">Add custom shell commands that run on first boot.</p>
+                    <div id="commands-autocomplete" class="autocomplete">
+                        <input type="text"
+                            id="command"
+                            placeholder="Type commands"
+                            autocomplete="off"
+                            spellcheck="false"
+                            autocapitalize="off">
                     </div>
                 </div>
                 
@@ -134,13 +113,11 @@
                         <h4 class="tr-uci">UCI-defaults (Boot configuration script)</h4>
                     </summary>
                     <div id="uci-defaults-group">
-                        <p class="text-muted">This is the complete script that will run on first boot. It includes all your configurations and custom commands above.</p>
                         <textarea
                             id="uci-defaults-content"
                             autocomplete="off"
                             spellcheck="false"
                             autocapitalize="off"
-                            rows="20"
                         ></textarea>
                     </div>
                 </details>
