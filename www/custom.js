@@ -1983,18 +1983,16 @@ function createPackageInputField(container, initialValue = '') {
         updatePackageListFromDynamicFields();
     });
     
-    const removeButton = document.createElement('button');
-    removeButton.type = 'button';
-    removeButton.className = 'remove-field-btn';
-    removeButton.textContent = '×';
-    removeButton.title = 'Remove this field';
-    
-    removeButton.addEventListener('click', () => {
-        removePackageInputField(group, container);
+    // 空になったら自動削除の処理を追加
+    input.addEventListener('input', (e) => {
+        const value = e.target.value.trim();
+        if (!value && container.children.length > 1) {
+            input.remove();
+        }
+        updatePackageListFromDynamicFields();
     });
-    
-    group.appendChild(input);
-    group.appendChild(removeButton);
+
+    container.appendChild(input);
     container.appendChild(group);
     
     // 最初のフィールドの場合はフォーカス
@@ -2011,49 +2009,38 @@ function createPackageInputField(container, initialValue = '') {
  * @param {string} initialValue 初期値
  */
 function createPostinstInputField(container, initialValue = '') {
-    const group = document.createElement('div');
-    group.className = 'dynamic-input-group';
-    
     const textarea = document.createElement('textarea');
     textarea.value = initialValue;
     textarea.placeholder = 'Enter postinst script commands...';
     textarea.className = 'postinst-input-field';
     textarea.rows = 3;
     
-    // エンターキー確定処理（Ctrl+Enterで確定）
-    textarea.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && e.ctrlKey) {
+    // エンターキー確定処理（通常のEnterで確定）
+    textarea.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
             e.preventDefault();
-            handlePostinstInputConfirm(textarea, container);
+            const value = textarea.value.trim();
+            if (value) {
+                createPostinstInputField(container, '');
+            }
         }
     });
     
-    // 自動リサイズ
+    // 内容削除で自動削除
     textarea.addEventListener('input', () => {
-        adjustTextareaHeight(textarea.id || 'temp');
+        const value = textarea.value.trim();
+        if (!value && container.children.length > 1) {
+            textarea.remove();
+        }
         updatePostinstFromDynamicFields();
     });
     
-    const removeButton = document.createElement('button');
-    removeButton.type = 'button';
-    removeButton.className = 'remove-field-btn';
-    removeButton.textContent = '×';
-    removeButton.title = 'Remove this field';
-    
-    removeButton.addEventListener('click', () => {
-        removePostinstInputField(group, container);
-    });
-    
-    group.appendChild(textarea);
-    group.appendChild(removeButton);
-    container.appendChild(group);
+    container.appendChild(textarea);
     
     // 最初のフィールドの場合はフォーカス
     if (container.children.length === 1) {
         textarea.focus();
     }
-    
-    return group;
 }
 
 /**
