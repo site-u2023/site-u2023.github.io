@@ -479,15 +479,11 @@ async function updateLanguagePackage() {
             dynamicPackages.add(basePkg);
             console.log('Added validated base language package:', basePkg);
         } else {
-            // 利用不可でも追加（ビルド時にASUがハンドリング）
-            dynamicPackages.add(basePkg);
-            console.log('Added base language package (not validated):', basePkg);
+            console.log('Base language package not available:', basePkg);
         }
     } catch (err) {
         console.error('Error checking base package:', err);
-        // エラー時でも基本パッケージは追加
-        dynamicPackages.add(basePkg);
-        console.log('Added base language package despite error:', basePkg);
+        console.log('Could not verify base language package:', basePkg);
     }
     
     // 現在のパッケージに対応する言語パッケージをチェック
