@@ -459,9 +459,6 @@ async function updateLanguagePackage() {
     // デバイス情報がある場合のみ言語パッケージ処理
     const basePkg = `luci-i18n-base-${selectedLanguage}`;
 
-    // デバイス情報がある場合のみ言語パッケージ処理
-    const basePkg = `luci-i18n-base-${selectedLanguage}`;
-
     // デバイス情報がない場合は存在確認できないため何も追加しない
     if (!current_device?.arch) {
         console.log('Device not selected, cannot validate packages - no language packages added');
