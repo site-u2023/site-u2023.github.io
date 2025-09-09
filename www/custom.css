@@ -278,7 +278,7 @@ details[open] summary {
 #packages-details,
 #scripts-details {
   margin-top: 1.5em;
-  padding: 0;
+  padding: 1em;
   background-color: var(--bg-details);
   border-radius: 0.25em;
 }
@@ -538,7 +538,7 @@ details summary h4 {
   
   #packages-details,
   #scripts-details {
-    padding: 0;
+    padding: 0.5em;
   }
 
   .radio-group {
@@ -598,4 +598,3 @@ details[open] > summary ~ * {
     transform: translateY(0);
   }
 }
-
