@@ -325,12 +325,6 @@ function setupLanguageSelector() {
         mainLanguageSelect.addEventListener('change', handleMainLanguageChange);
     }
     
-    // カスタム言語セレクターの変更を監視（デバイス用言語の変更）
-    if (customLanguageSelect) {
-        customLanguageSelect.removeEventListener('change', handleCustomLanguageChange);
-        customLanguageSelect.addEventListener('change', handleCustomLanguageChange);
-    }
-    
     // 初回言語パッケージ更新（重要：必ず実行）
     console.log('Performing initial language package update for:', selectedLanguage);
     if (selectedLanguage && selectedLanguage !== 'en') {
