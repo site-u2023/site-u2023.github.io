@@ -894,7 +894,11 @@ function buildFormGroup(field) {
             ctrl.appendChild(option);
         });
         
-        ctrl.addEventListener('change', updatePackageListFromDynamicSources);
+        if (field.id === 'aios-language') {
+            ctrl.addEventListener('change', handleCustomLanguageChange);
+        } else {
+            ctrl.addEventListener('change', updatePackageListFromDynamicSources);
+        }
     } else {
         ctrl = document.createElement('input');
         ctrl.type = field.type || 'text';
