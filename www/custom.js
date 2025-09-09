@@ -539,9 +539,14 @@ function getCurrentPackageList() {
     return Array.from(packages);
 }
 
-// パッケージ存在チェック
-async function isPackageAvailable(pkgName, feed) {
-    if (!pkgName || !feed) {
+// パッケージ存在チェック（検索機能も統合）
+async function isPackageAvailable(pkgName, feed, searchMode = false) {
+    if (!feed) {
+        return false;
+    }
+    
+    // 検索モードの場合はクエリ、通常モードはパッケージ名
+    if (!searchMode && !pkgName) {
         return false;
     }
     
@@ -551,9 +556,8 @@ async function isPackageAvailable(pkgName, feed) {
     
     if (!arch || !version) {
         console.log('Missing device info for package check:', { arch, version });
-        return false;
+        return searchMode ? [] : false;
     }
-    
     
     try {
         let packagesUrl;
@@ -563,44 +567,307 @@ async function isPackageAvailable(pkgName, feed) {
                 .replace('{arch}', arch)
                 .replace('{feed}', feed);
             
-            console.log('Checking APK URL:', packagesUrl);
-            
             const resp = await fetch(packagesUrl, { cache: 'no-store' });
             if (!resp.ok) {
-                console.log('APK fetch failed:', resp.status);
-                return false;
+                return searchMode ? [] : false;
             }
             
             const data = await resp.json();
-            if (Array.isArray(data.packages)) {
-                return data.packages.some(p => p?.name === pkgName);
-            } else if (data.packages && typeof data.packages === 'object') {
-                return Object.prototype.hasOwnProperty.call(data.packages, pkgName);
+            
+            if (searchMode) {
+                // 検索モード：マッチするパッケージのリストを返す
+                const results = [];
+                const query = pkgName.toLowerCase();
+                
+                if (Array.isArray(data.packages)) {
+                    data.packages.forEach(p => {
+                        if (p?.name && p.name.toLowerCase().includes(query)) {
+                            results.push(p.name);
+                        }
+                    });
+                } else if (data.packages && typeof data.packages === 'object') {
+                    Object.keys(data.packages).forEach(name => {
+                        if (name.toLowerCase().includes(query)) {
+                            results.push(name);
+                        }
+                    });
+                }
+                return results;
+            } else {
+                // 通常モード：存在確認
+                if (Array.isArray(data.packages)) {
+                    return data.packages.some(p => p?.name === pkgName);
+                } else if (data.packages && typeof data.packages === 'object') {
+                    return Object.prototype.hasOwnProperty.call(data.packages, pkgName);
+                }
+                return false;
             }
-            return false;
         } else {
             packagesUrl = config.opkg_search_url
                 .replace('{version}', version)
                 .replace('{arch}', arch)
                 .replace('{feed}', feed);
             
-            console.log('Checking OPKG URL:', packagesUrl);
-            
             const resp = await fetch(packagesUrl, { cache: 'no-store' });
             if (!resp.ok) {
-                console.log('OPKG fetch failed:', resp.status);
-                return false;
+                return searchMode ? [] : false;
             }
             
             const text = await resp.text();
-            const found = text.split('\n').some(line => line.trim() === `Package: ${pkgName}`);
-            console.log('Package check result for', pkgName, ':', found);
-            return found;
+            
+            if (searchMode) {
+                // 検索モード：OPKG形式をパースして検索
+                const results = [];
+                const query = pkgName.toLowerCase();
+                const lines = text.split('\n');
+                let currentPackage = null;
+                
+                for (const line of lines) {
+                    if (line.startsWith('Package: ')) {
+                        currentPackage = line.substring(9).trim();
+                        if (currentPackage.toLowerCase().includes(query)) {
+                            results.push(currentPackage);
+                        }
+                    } else if (line.startsWith('Description: ') && currentPackage) {
+                        const description = line.substring(13).trim();
+                        // 説明文にマッチしたら追加（重複チェック）
+                        if (description.toLowerCase().includes(query) && 
+                            !results.includes(currentPackage)) {
+                            results.push(currentPackage);
+                        }
+                        currentPackage = null;
+                    }
+                }
+                return results;
+            } else {
+                // 通常モード：存在確認
+                const found = text.split('\n').some(line => line.trim() === `Package: ${pkgName}`);
+                return found;
+            }
         }
     } catch (err) {
         console.error('Package availability check error:', err);
-        return false;
+        return searchMode ? [] : false;
     }
+}
+
+// ==================== パッケージ検索機能（既存関数を流用） ====================
+let packageSearchTimer = null;
+let packageSearchCache = new Map();
+
+// パッケージ検索の初期化
+function setupPackageSearch() {
+    const searchInput = document.getElementById('package-search');
+    const searchContainer = document.getElementById('package-search-autocomplete');
+    
+    if (!searchInput || !searchContainer) return;
+    
+    // 検索入力イベント
+    searchInput.addEventListener('input', function(e) {
+        clearTimeout(packageSearchTimer);
+        const query = e.target.value.trim();
+        
+        if (query.length < 2) {
+            clearSearchResults();
+            return;
+        }
+        
+        packageSearchTimer = setTimeout(() => {
+            performPackageSearch(query, searchInput);
+        }, 300);
+    });
+    
+    // Enter キーで追加
+    searchInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const value = e.target.value.trim();
+            if (value) {
+                addPackageToTextarea(value);
+                e.target.value = '';
+                clearSearchResults();
+                createAdditionalSearchInput();
+            }
+        }
+    });
+}
+
+// パッケージ検索実行（既存のisPackageAvailableを使用）
+async function performPackageSearch(query, inputElement) {
+    // キャッシュチェック
+    const arch = current_device?.arch || cachedDeviceArch;
+    const version = current_device?.version || $("#versions").value;
+    const cacheKey = `${version}-${arch}-${query}`;
+    
+    if (packageSearchCache.has(cacheKey)) {
+        displaySearchResults(packageSearchCache.get(cacheKey), inputElement);
+        return;
+    }
+    
+    const allResults = new Set();
+    const feeds = ['base', 'packages', 'luci', 'routing', 'telephony'];
+    
+    // 各フィードを並列検索（既存関数を使用）
+    const searchPromises = feeds.map(async (feed) => {
+        const results = await isPackageAvailable(query, feed, true);
+        results.forEach(pkg => allResults.add(pkg));
+    });
+    
+    await Promise.all(searchPromises);
+    
+    // 結果をソート（完全一致→前方一致→部分一致）
+    const sortedResults = Array.from(allResults).sort((a, b) => {
+        const queryLower = query.toLowerCase();
+        const aLower = a.toLowerCase();
+        const bLower = b.toLowerCase();
+        
+        // 完全一致
+        if (aLower === queryLower && bLower !== queryLower) return -1;
+        if (bLower === queryLower && aLower !== queryLower) return 1;
+        
+        // 前方一致
+        if (aLower.startsWith(queryLower) && !bLower.startsWith(queryLower)) return -1;
+        if (bLower.startsWith(queryLower) && !aLower.startsWith(queryLower)) return 1;
+        
+        return a.localeCompare(b);
+    });
+    
+    // キャッシュに保存
+    packageSearchCache.set(cacheKey, sortedResults);
+    
+    displaySearchResults(sortedResults, inputElement);
+}
+
+// 検索結果を表示
+function displaySearchResults(results, inputElement) {
+    clearSearchResults();
+    
+    if (!results || results.length === 0) return;
+    
+    const container = inputElement.closest('.autocomplete') || 
+                     document.getElementById('package-search-autocomplete');
+    if (!container) return;
+    
+    const resultsDiv = document.createElement('div');
+    resultsDiv.className = 'package-search-results';
+    resultsDiv.style.cssText = `
+        position: absolute;
+        top: ${inputElement.offsetTop + inputElement.offsetHeight}px;
+        left: ${inputElement.offsetLeft}px;
+        width: ${inputElement.offsetWidth}px;
+        max-height: 200px;
+        overflow-y: auto;
+        background: var(--bg-main, #fff);
+        border: 1px solid var(--border-color, #ccc);
+        border-top: none;
+        z-index: 1000;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    `;
+    
+    results.slice(0, 20).forEach(pkgName => {
+        const item = document.createElement('div');
+        item.textContent = pkgName;
+        item.style.cssText = `
+            padding: 8px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid var(--border-light, #eee);
+        `;
+        
+        item.addEventListener('mouseenter', () => {
+            item.style.backgroundColor = 'var(--bg-hover, #f0f0f0)';
+        });
+        
+        item.addEventListener('mouseleave', () => {
+            item.style.backgroundColor = '';
+        });
+        
+        item.addEventListener('click', () => {
+            inputElement.value = pkgName;
+            addPackageToTextarea(pkgName);
+            inputElement.value = '';
+            clearSearchResults();
+            createAdditionalSearchInput();
+        });
+        
+        resultsDiv.appendChild(item);
+    });
+    
+    container.appendChild(resultsDiv);
+}
+
+// 検索結果をクリア
+function clearSearchResults() {
+    document.querySelectorAll('.package-search-results').forEach(el => el.remove());
+}
+
+// テキストエリアにパッケージを追加
+function addPackageToTextarea(packageName) {
+    const textarea = document.getElementById('asu-packages');
+    if (!textarea) return;
+    
+    const currentPackages = split(textarea.value);
+    
+    if (!currentPackages.includes(packageName)) {
+        currentPackages.push(packageName);
+        textarea.value = currentPackages.join(' ');
+        
+        // 高さ自動調整
+        textarea.style.height = 'auto';
+        textarea.style.height = textarea.scrollHeight + 'px';
+        
+        // 言語パッケージチェック
+        if (packageName.startsWith('luci-') && !packageName.startsWith('luci-i18n-')) {
+            updateLanguagePackage();
+        }
+    }
+}
+
+// 追加の検索入力ボックスを作成
+function createAdditionalSearchInput() {
+    const container = document.getElementById('package-search-autocomplete');
+    if (!container) return;
+    
+    // 空の入力ボックスがあれば作成しない
+    if (container.querySelector('input[value=""]')) return;
+    
+    const newInput = document.createElement('input');
+    newInput.type = 'text';
+    newInput.className = 'form-control package-search-additional';
+    newInput.placeholder = 'Type package name';
+    newInput.style.cssText = document.getElementById('package-search').style.cssText;
+    newInput.style.marginTop = '8px';
+    
+    // 同じイベントハンドラーを設定
+    newInput.addEventListener('input', function(e) {
+        clearTimeout(packageSearchTimer);
+        const query = e.target.value.trim();
+        
+        if (query.length < 2) {
+            clearSearchResults();
+            return;
+        }
+        
+        packageSearchTimer = setTimeout(() => {
+            performPackageSearch(query, newInput);
+        }, 300);
+    });
+    
+    newInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const value = e.target.value.trim();
+            if (value) {
+                addPackageToTextarea(value);
+                e.target.remove();
+                createAdditionalSearchInput();
+            }
+        } else if (e.key === 'Backspace' && !e.target.value) {
+            e.target.remove();
+        }
+    });
+    
+    container.appendChild(newInput);
+    newInput.focus();
 }
 
 // ==================== setup.json 処理 ====================
