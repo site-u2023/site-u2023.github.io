@@ -234,14 +234,8 @@ async function searchPackages(query, inputElement) {
     const arch = current_device?.arch || cachedDeviceArch;
     const version = current_device?.version || document.querySelector('#versions')?.value;
     
-    if (!arch || !version) {
-        console.log('No device selected, using local search');
-        searchLocalPackages(query, inputElement);
-        return;
-    }
-    
     const allResults = new Set();
-    const feeds = ['packages', 'luci'];  // まずは主要なフィードのみ
+    const feeds = ['packages', 'luci', 'kmods'];
     
     for (const feed of feeds) {
         try {
@@ -316,28 +310,6 @@ async function searchInFeed(query, feed, version, arch) {
         console.error('searchInFeed error:', err);
         return [];
     }
-}
-
-// ローカル検索（フォールバック）
-function searchLocalPackages(query, inputElement) {
-    console.log('searchLocalPackages:', query);
-    
-    if (!PACKAGE_DB) {
-        console.log('Package DB not loaded');
-        return;
-    }
-    
-    const results = [];
-    PACKAGE_DB.categories.forEach(category => {
-        category.packages.forEach(pkg => {
-            if (pkg.name && pkg.name.toLowerCase().includes(query.toLowerCase())) {
-                results.push(pkg.name);
-            }
-        });
-    });
-    
-    console.log(`Found ${results.length} local packages`);
-    showPackageSearchResults(results, inputElement);
 }
 
 // 検索結果表示（CSS分離版・無制限版）
