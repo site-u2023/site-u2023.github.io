@@ -456,16 +456,10 @@ async function updateLanguagePackage() {
         return;
     }
     
-    // デバイス情報が無い場合でも基本言語パッケージは追加
-    const basePkg = `luci-i18n-base-${selectedLanguage}`;
-    
-    if (!current_device?.arch) {
-        // デバイス未選択でも基本言語パッケージは追加
-        console.log('Device not selected yet, adding basic language package anyway:', basePkg);
-        dynamicPackages.add(basePkg);
-        // Postinstテキストエリアを更新（重要）
-        updatePackageListFromSelector();
-        return;
+    // デバイス情報がある場合のみ言語パッケージ処理
+    if (current_device?.arch) {
+        const basePkg = `luci-i18n-base-${selectedLanguage}`;
+        // 存在確認付きで言語パッケージ追加処理
     }
     
     // デバイス情報がある場合の処理
