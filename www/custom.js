@@ -2190,14 +2190,15 @@ function updatePostinstFromDynamicFields() {
  * パッケージ自動補完機能の設定
  */
 function setupPackageAutocomplete(input) {
-    if (!PACKAGE_DB) return;
+    if (!PACKAGE_DB || !input || !input.parentNode) return;  // ← null チェック追加
     
     const wrapper = document.createElement('div');
     wrapper.style.position = 'relative';
     wrapper.style.display = 'inline-block';
     wrapper.style.width = '100%';
     
-    input.parentNode.insertBefore(wrapper, input);
+    const parent = input.parentNode;  // ← parentNode を変数に保存
+    parent.insertBefore(wrapper, input);
     wrapper.appendChild(input);
     
     const suggestions = document.createElement('div');
