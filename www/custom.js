@@ -2066,19 +2066,19 @@ function updateAutoConnectionInfo(apiInfo) {
     if (apiInfo?.isp) {
         infoText += `\n\n🌐\u00A0ISP: ${apiInfo.isp}`;
         if (apiInfo.as) {
-            infoText += ` (${apiInfo.as})`;
+            infoText += `\n\u00A0\u00A0\u00A0\u00A0AS: ${apiInfo.as}`;
         }
     }
     
     // 接続タイプ情報を追記（+= を使用）
     if (apiInfo?.mape?.brIpv6Address) {
-        // infoTextが空でなければ改行を追加
-        infoText += (infoText ? '\n' : '') + '\u00A0\u00A0Detected: MAP-E\n';
+        infoText = '\u00A0\u00A0Detected: MAP-E\n';
         infoText += `\u00A0\u00A0\u00A0\u00A0BR: ${apiInfo.mape.brIpv6Address}\n`;
         infoText += `\u00A0\u00A0\u00A0\u00A0EA-len: ${apiInfo.mape.eaBitLength}\n`;
         infoText += `\u00A0\u00A0\u00A0\u00A0IPv4 Prefix: ${apiInfo.mape.ipv4Prefix}/${apiInfo.mape.ipv4PrefixLength}\n`;
         infoText += `\u00A0\u00A0\u00A0\u00A0IPv6 Prefix: ${apiInfo.mape.ipv6Prefix}/${apiInfo.mape.ipv6PrefixLength}\n`;
-        infoText += `\u00A0\u00A0\u00A0\u00A0PSID: offset=${apiInfo.mape.psIdOffset}, length=${apiInfo.mape.psidlen}`;
+        infoText += `\u00A0\u00A0\u00A0\u00A0PSID: offset=${apiInfo.mape.psIdOffset}\n`;
+        infoText += `\u00A0\u00A0\u00A0\u00A0PSID: length=${apiInfo.mape.psidlen}`;
     } else if (apiInfo?.aftr) {
         infoText += (infoText ? '\n' : '') + '\u00A0\u00A0Detected: DS-Lite\n';
         infoText += `\u00A0\u00A0\u00A0\u00A0AFTR: ${apiInfo.aftr}`;
