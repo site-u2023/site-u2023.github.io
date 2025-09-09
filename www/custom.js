@@ -197,7 +197,7 @@ class MultiInputManager {
     }
     
     handleInput(e, input) {
-        const value = input.value.trim();
+        const value = input.value; 
         
         // オートコンプリート処理
         if (this.options.autocomplete && value.length >= 2) {
@@ -205,7 +205,8 @@ class MultiInputManager {
         }
         
         // コールバック実行
-        this.options.onChange(this.getAllValues());
+        const allValues = this.inputs.map(i => i.value);
+        this.options.onChange(allValues);
     }
     
     handleBlur(e, input) {
