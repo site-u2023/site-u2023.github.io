@@ -197,18 +197,18 @@ class MultiInputManager {
     }
     
     handleInput(e, input) {
-        const value = input.value; 
-        
-        // オートコンプリート処理
+        const value = input.value; // trimは不要
+        console.log("Current input value:", value);
+
         if (this.options.autocomplete && value.length >= 2) {
             this.options.autocomplete(value, input);
         }
-        
-        // コールバック実行
+
+        // コールバック実行（未確定の入力も含む）
         const allValues = this.inputs.map(i => i.value);
         this.options.onChange(allValues);
     }
-    
+
     handleBlur(e, input) {
         const value = input.value.trim();
         const index = this.inputs.indexOf(input);
