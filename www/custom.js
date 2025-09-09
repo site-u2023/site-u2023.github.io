@@ -235,7 +235,7 @@ async function searchPackages(query, inputElement) {
     const version = current_device?.version || document.querySelector('#versions')?.value;
     
     const allResults = new Set();
-    const feeds = ['packages', 'luci', 'kmods'];
+    const feeds = ['packages', 'luci'];
     
     for (const feed of feeds) {
         try {
