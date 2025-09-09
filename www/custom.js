@@ -426,10 +426,10 @@ async function handleCustomLanguageChange(e) {
 
 // 言語パッケージの更新（Postinst反映修正版）
 async function updateLanguagePackage() {
-    // メイン言語セレクターから現在の言語を取得（常に最新を取る）
-    const mainLanguageSelect = document.querySelector('#languages-select');
-    if (mainLanguageSelect && mainLanguageSelect.value) {
-        selectedLanguage = mainLanguageSelect.value;
+    // デバイス用言語セレクターから現在の言語を取得
+    const customLanguageSelect = document.querySelector('#aios-language');
+    if (customLanguageSelect && customLanguageSelect.value) {
+        selectedLanguage = customLanguageSelect.value;
     } else if (!selectedLanguage) {
         selectedLanguage = current_language || config?.fallback_language || 'en';
     }
@@ -449,9 +449,9 @@ async function updateLanguagePackage() {
         console.log('Removed language packages:', removedPackages);
     }
     
-    // 英語の場合は言語パッケージ不要
+    // 英語の場合は言語パッケージ削除のみ実行
     if (!selectedLanguage || selectedLanguage === 'en') {
-        console.log('English selected, no language packages needed');
+        console.log('English selected, all language packages removed');
         // Postinstテキストエリアを更新（重要）
         updatePackageListFromSelector();
         return;
