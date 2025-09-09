@@ -1233,6 +1233,14 @@ function collectFormValues() {
         }
     });
     
+    // 言語設定を確実に取得
+    if (!values.language) {
+        const languageValue = getFieldValue('#aios-language') || selectedLanguage || 'en';
+        if (languageValue && languageValue !== 'en') {
+            values.language = languageValue;
+        }
+    }
+    
     applySpecialFieldLogic(values);
     
     return values;
