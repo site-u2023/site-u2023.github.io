@@ -559,6 +559,16 @@ details summary h4 {
   border-bottom: none;
 }
 
+.package-suggestion-item.selected {
+  background-color: var(--bg-item-hover) !important;
+}
+
+.dynamic-input-group input:focus,
+.dynamic-input-group textarea:focus {
+  outline: 2px solid var(--owrt-blue);
+  outline-offset: 1px;
+}
+
 /* ===== Utility Classes ===== */
 .text-muted {
   color: var(--text-muted);
