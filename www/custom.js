@@ -20,8 +20,6 @@
 // 処理関数: updateLanguagePackage()
 // 用途: OpenWrtデバイスにインストールする言語パッケージ
 
-// custom.js - OpenWrt カスタム機能（言語変更時Postinst更新修正版）
-
 console.log('custom.js loaded');
 
 // ==================== グローバル変数 ====================
