@@ -1275,23 +1275,27 @@ function applySpecialFieldLogic(values) {
             values.dslite_aftr_address = cachedApiInfo.aftr;
         }
     } else if (connectionType === 'mape') {
-        // 他接続タイプの値をクリア
         connectionFieldVars.filter(key => !key.startsWith('mape_')).forEach(key => delete values[key]);
         
-        // MAP-E設定の改善（IP/EAM 関連値のみ設定）
+        // MAP-E設定の改善
         if (cachedApiInfo?.mape?.brIpv6Address) {
-            values.mape_br             = cachedApiInfo.mape.brIpv6Address;
-            values.mape_ealen          = cachedApiInfo.mape.eaBitLength;
-            values.mape_ipv4_prefix    = cachedApiInfo.mape.ipv4Prefix;
+            values.mape_br = cachedApiInfo.mape.brIpv6Address;
+            values.mape_ealen = cachedApiInfo.mape.eaBitLength;
+            values.mape_ipv4_prefix = cachedApiInfo.mape.ipv4Prefix;
             values.mape_ipv4_prefixlen = cachedApiInfo.mape.ipv4PrefixLength;
-            values.mape_ipv6_prefix    = cachedApiInfo.mape.ipv6Prefix;
+            values.mape_ipv6_prefix = cachedApiInfo.mape.ipv6Prefix;
             values.mape_ipv6_prefixlen = cachedApiInfo.mape.ipv6PrefixLength;
-            values.mape_psid_offset    = cachedApiInfo.mape.psIdOffset;
-            values.mape_psidlen        = cachedApiInfo.mape.psidlen;
-            // GUA prefix は共通ヘルパーに委譲
-            fillGuaPrefixValues(values);
+            values.mape_psid_offset = cachedApiInfo.mape.psIdOffset;
+            values.mape_psidlen = cachedApiInfo.mape.psidlen;
+            
+            // GUA prefix設定の改善
+            const guaPrefix = generateGuaPrefixFromFullAddress(cachedApiInfo);
+            if (guaPrefix) {
+                values.mape_gua_prefix = guaPrefix;
+                values.mape_gua_mode = '1';
+                console.log('Applied GUA prefix in MAP-E mode:', guaPrefix);
+            }
         }
-    }
         
         const mapeType = getFieldValue('input[name="mape_type"]');
         if (mapeType === 'gua') {
@@ -1381,9 +1385,16 @@ function handleConnectionTypeChange(e) {
                 show(section);
                 if (type === 'auto' && cachedApiInfo) {
                     updateAutoConnectionInfo(cachedApiInfo);
-            } else if (type === 'mape' && cachedApiInfo) {
-                // MAP-E選択時は共通関数でGUA prefixを設定
-                setGuaPrefixIfAvailable();
+                    } else if (type === 'mape' && cachedApiInfo) {
+                    // MAP-E選択時にGUA prefixを設定
+                    const guaPrefixField = document.querySelector('#mape-gua-prefix');
+                    if (guaPrefixField && cachedApiInfo.ipv6) {
+                        const guaPrefix = generateGuaPrefixFromFullAddress(cachedApiInfo);
+                        if (guaPrefix && !guaPrefixField.value) {
+                            guaPrefixField.value = guaPrefix;
+                            console.log('GUA prefix set for MAP-E:', guaPrefix);
+                        }
+                    }
                 }
             } else {
                 hide(section);
@@ -1539,6 +1550,13 @@ function applyIspAutoConfig(apiInfo) {
             }
             
             let value = getNestedValue(apiInfo, field.apiMapping);
+
+            if (field.variableName === 'mape_gua_prefix') {
+                const guaPrefix = generateGuaPrefixFromFullAddress(cachedApiInfo);
+                if (guaPrefix) {
+                    value = guaPrefix;
+                }
+            }
 
             if (value !== null && value !== undefined && value !== '') {
                 const element = document.querySelector(field.selector);
