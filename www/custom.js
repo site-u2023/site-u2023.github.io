@@ -352,7 +352,7 @@ function showPackageSearchResults(results, inputElement) {
     if (!container) return;
     
     const resultsDiv = document.createElement('div');
-    resultsDiv.className = 'package-search-results'; // CSSクラスのみ使用
+    resultsDiv.className = 'package-search-results';
     
     // 制限を削除：全ての結果を表示
     results.forEach(pkgName => {
