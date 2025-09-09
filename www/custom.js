@@ -231,39 +231,42 @@ function setupPackageSearch() {
 async function searchPackages(query, inputElement) {
   console.log('searchPackages called with query:', query);
 
+  // arch_packages 情報（配列 or オブジェクト）を一意に取得
   const archData = current_device?.arch || cachedDeviceArch;
   if (!archData) {
-    console.warn('No arch info available, skipping package search');
+    console.warn('arch_packages 情報がありません、検索をスキップします');
     return;
   }
 
+  // バージョン取得
   const version = current_device?.version
     || document.querySelector('#versions')?.value;
   if (!version) {
-    console.warn('No version selected, skipping package search');
+    console.warn('version がありません、検索をスキップします');
     return;
   }
 
+  // feeds を配列 or オブジェクトのキー一覧で生成
   const feeds = Array.isArray(archData)
     ? archData
     : Object.keys(archData);
 
   const allResults = new Set();
 
+  // 並列で全フィードを検索
   await Promise.all(feeds.map(async feed => {
     try {
       console.log(`Searching in feed: ${feed}`);
-      const results = await searchInFeed(query, feed, version, archData);
-      results.forEach(name => allResults.add(name));
+      const names = await searchInFeed(query, feed, version, archData);
+      names.forEach(n => allResults.add(n));
     } catch (err) {
-      console.error(`Error searching ${feed}:`, err);
+      console.error(`Error searching feed=${feed}:`, err);
     }
   }));
 
-  const sortedResults = Array.from(allResults).sort();
-  console.log(`Found ${sortedResults.length} packages`);
-
-  showPackageSearchResults(sortedResults, inputElement);
+  const sorted = Array.from(allResults).sort();
+  console.log(`Found ${sorted.length} packages`);
+  showPackageSearchResults(sorted, inputElement);
 }
 
 // フィード内検索
