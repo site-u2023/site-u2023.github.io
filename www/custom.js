@@ -425,114 +425,65 @@ async function handleCustomLanguageChange(e) {
 
 // 言語パッケージの更新（Postinst反映修正版）
 async function updateLanguagePackage() {
-    // デバイス用言語セレクターから現在の言語を取得
-    const customLanguageSelect = document.querySelector('#aios-language');
-    if (customLanguageSelect && customLanguageSelect.value) {
-        selectedLanguage = customLanguageSelect.value;
-    } else if (!selectedLanguage) {
-        selectedLanguage = current_language || config?.fallback_language || 'en';
-    }
-    
+    const selectedLanguage = document.querySelector('#device-language')?.value || config.fallback_language || 'en';
     console.log('updateLanguagePackage called, selectedLanguage:', selectedLanguage);
-    
+
     // 既存の言語パッケージを削除
-    const removedPackages = [];
     for (const pkg of Array.from(dynamicPackages)) {
         if (pkg.startsWith('luci-i18n-')) {
             dynamicPackages.delete(pkg);
-            removedPackages.push(pkg);
         }
     }
-    
-    if (removedPackages.length > 0) {
-        console.log('Removed language packages:', removedPackages);
-    }
-    
-    // 英語の場合は言語パッケージ削除のみ実行
-    if (!selectedLanguage || selectedLanguage === 'en') {
+
+    // 英語なら終了
+    if (selectedLanguage === 'en') {
         console.log('English selected, all language packages removed');
-        // Postinstテキストエリアを更新（重要）
-        updatePackageListFromSelector();
-        return;
-    }
-    
-    // デバイス情報が無い場合でも基本言語パッケージは追加
-    const basePkg = `luci-i18n-base-${selectedLanguage}`;
-    
-    if (!current_device?.arch) {
-        // デバイス未選択でも基本言語パッケージは追加
-        console.log('Device not selected yet, adding basic language package anyway:', basePkg);
-        dynamicPackages.add(basePkg);
-        // Postinstテキストエリアを更新（重要）
-        updatePackageListFromSelector();
-        return;
-    }
-    
-    // デバイス情報がある場合の処理
-    console.log('Device available, checking language packages for arch:', current_device.arch);
-    
-    // 基本言語パッケージをチェック
-    console.log('Checking base package:', basePkg);
-    
-    try {
-        if (await isPackageAvailable(basePkg, 'luci')) {
-            dynamicPackages.add(basePkg);
-            console.log('Added validated base language package:', basePkg);
+    } else {
+        const addedLangPackages = [];
+
+        // base パッケージ
+        const baseLangPkg = `luci-i18n-base-${selectedLanguage}`;
+        if (await isPackageAvailable(baseLangPkg, 'luci')) {
+            dynamicPackages.add(baseLangPkg);
+            addedLangPackages.push(baseLangPkg);
+            console.log('Added base language package:', baseLangPkg);
         } else {
-            // 利用不可でも追加（ビルド時にASUがハンドリング）
-            dynamicPackages.add(basePkg);
-            console.log('Added base language package (not validated):', basePkg);
+            console.warn('Base language package not found:', baseLangPkg);
         }
-    } catch (err) {
-        console.error('Error checking base package:', err);
-        // エラー時でも基本パッケージは追加
-        dynamicPackages.add(basePkg);
-        console.log('Added base language package despite error:', basePkg);
-    }
-    
-    // 現在のパッケージに対応する言語パッケージをチェック
-    const currentPackages = getCurrentPackageList();
-    console.log('Current packages for language check:', currentPackages.length);
-    
-    const addedLangPackages = [];
-    for (const pkg of currentPackages) {
-        if (pkg.startsWith('luci-') && !pkg.startsWith('luci-i18n-')) {
-            const luciName = extractLuciName(pkg);
-            if (luciName) {
-                const langPkg = `luci-i18n-${luciName}-${selectedLanguage}`;
-                console.log('Checking LuCI language package:', langPkg);
-                
-                try {
-                    if (await isPackageAvailable(langPkg, 'luci')) {
-                        dynamicPackages.add(langPkg);
-                        addedLangPackages.push(langPkg);
-                        console.log('Added LuCI language package:', langPkg);
-                    }
-                } catch (err) {
-                    console.error('Error checking LuCI package:', err);
-                }
+
+        // 現在のパッケージリストから LuCI 系を対象に i18n パッケージを作成
+        const currentPackages = getCurrentPackageList();
+
+        for (const pkg of currentPackages) {
+            if (!pkg.startsWith('luci-')) continue;
+            if (pkg.startsWith('luci-i18n-')) continue; // 既に言語パッケージならスキップ
+
+            // luci-app-ttyd → ttyd
+            const namePart = pkg.replace(/^luci-/, '').replace(/^app-/, '');
+            const i18nPkg = `luci-i18n-${namePart}-${selectedLanguage}`;
+
+            if (await isPackageAvailable(i18nPkg, 'luci')) {
+                dynamicPackages.add(i18nPkg);
+                addedLangPackages.push(i18nPkg);
+                console.log('Added language package:', i18nPkg);
+            } else {
+                console.warn('Language package not found:', i18nPkg);
             }
         }
+
+        console.log('Added language packages:', addedLangPackages);
     }
-    
-    console.log('Added language packages:', addedLangPackages);
-    console.log('Final dynamic packages:', Array.from(dynamicPackages));
-    
-    // Postinst (asu-packages) を必ず更新
+
+    // Postinst (asu-packages) を更新
     const textarea = document.querySelector('#asu-packages');
     if (textarea) {
-        // Postinst (asu-packages) を必ず更新
-        const textarea = document.querySelector('#asu-packages');
-        if (textarea) {
-            const baseList = getCurrentPackageList();
-            const dynList  = Array.from(dynamicPackages);  // Set → Array
-            const finalPackages = [...baseList, ...dynList]; // スプレッドでマージ
-
-            textarea.value = finalPackages.join(' ');
-            console.log('asu-packages updated with language packages:', finalPackages);
-        }
-        console.log('asu-packages updated with language packages:', finalPackages.length);
+        const baseList = getCurrentPackageList();
+        const dynList  = Array.from(dynamicPackages);
+        const finalPackages = Array.from(new Set([...baseList, ...dynList]));
+        textarea.value = finalPackages.join(' ');
+        console.log('asu-packages updated with language packages:', finalPackages);
     }
+
     console.log('Language package update completed and Postinst synchronized');
 }
 
