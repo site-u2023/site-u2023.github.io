@@ -159,6 +159,10 @@ async function initializeCustomFeatures(asuSection, temp) {
     // 言語セレクター設定（初期言語パッケージ処理を含む）
     setupLanguageSelector();
     
+    // パッケージ検索機能を初期化（追加）
+    setupPackageSearch();
+    console.log('Package search initialized');
+    
     // カスタム翻訳を読み込み（初期言語に基づいて）
     await loadCustomTranslations(selectedLanguage);
     
@@ -167,6 +171,215 @@ async function initializeCustomFeatures(asuSection, temp) {
     
     customInitialized = true;
 }
+
+// ==================== パッケージ検索機能（追加） ====================
+function setupPackageSearch() {
+    console.log('setupPackageSearch called');
+    
+    const searchInput = document.getElementById('package-search');
+    const searchContainer = document.getElementById('package-search-autocomplete');
+    
+    if (!searchInput) {
+        console.log('package-search input not found');
+        return;
+    }
+    
+    if (!searchContainer) {
+        console.log('package-search-autocomplete container not found');
+        return;
+    }
+    
+    console.log('Setting up package search events');
+    
+    let searchTimer = null;
+    
+    // 検索入力イベント
+    searchInput.addEventListener('input', function(e) {
+        console.log('Package search input:', e.target.value);
+        clearTimeout(searchTimer);
+        const query = e.target.value.trim();
+        
+        if (query.length < 2) {
+            clearPackageSearchResults();
+            return;
+        }
+        
+        searchTimer = setTimeout(() => {
+            console.log('Searching for packages:', query);
+            searchPackages(query, searchInput);
+        }, 300);
+    });
+    
+    // Enter キーで追加
+    searchInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const value = e.target.value.trim();
+            if (value) {
+                console.log('Adding package via Enter:', value);
+                addSearchedPackage(value);
+                e.target.value = '';
+                clearPackageSearchResults();
+            }
+        }
+    });
+    
+    console.log('Package search setup complete');
+}
+
+// パッケージ検索実行
+async function searchPackages(query, inputElement) {
+    console.log('searchPackages called with query:', query);
+    
+    const arch = current_device?.arch || cachedDeviceArch;
+    const version = current_device?.version || document.querySelector('#versions')?.value;
+    
+    const allResults = new Set();
+    const feeds = ['packages', 'luci', 'kmods'];
+    
+    for (const feed of feeds) {
+        try {
+            console.log(`Searching in feed: ${feed}`);
+            const results = await searchInFeed(query, feed, version, arch);
+            results.forEach(pkg => allResults.add(pkg));
+        } catch (err) {
+            console.error(`Error searching ${feed}:`, err);
+        }
+    }
+    
+    const sortedResults = Array.from(allResults).sort();
+    console.log(`Found ${sortedResults.length} packages`);
+    
+    showPackageSearchResults(sortedResults, inputElement);
+}
+
+// フィード内検索
+async function searchInFeed(query, feed, version, arch) {
+    console.log(`searchInFeed: ${feed}, query: ${query}`);
+    
+    try {
+        if (version.includes('SNAPSHOT')) {
+            // APK形式
+            const url = config.apk_search_url
+                .replace('{arch}', arch)
+                .replace('{feed}', feed);
+            
+            console.log('Fetching APK index:', url);
+            const resp = await fetch(url);
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            
+            const data = await resp.json();
+            const results = [];
+            
+            if (data.packages && typeof data.packages === 'object') {
+                Object.keys(data.packages).forEach(name => {
+                    if (name.toLowerCase().includes(query.toLowerCase())) {
+                        results.push(name);
+                    }
+                });
+            }
+            
+            return results;
+        } else {
+            // OPKG形式
+            const url = config.opkg_search_url
+                .replace('{version}', version)
+                .replace('{arch}', arch)
+                .replace('{feed}', feed);
+            
+            console.log('Fetching OPKG packages:', url);
+            const resp = await fetch(url);
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            
+            const text = await resp.text();
+            const results = [];
+            const lines = text.split('\n');
+            
+            for (const line of lines) {
+                if (line.startsWith('Package: ')) {
+                    const pkgName = line.substring(9).trim();
+                    if (pkgName.toLowerCase().includes(query.toLowerCase())) {
+                        results.push(pkgName);
+                    }
+                }
+            }
+            
+            return results;
+        }
+    } catch (err) {
+        console.error('searchInFeed error:', err);
+        return [];
+    }
+}
+
+// 検索結果表示（CSS分離版・無制限版）
+function showPackageSearchResults(results, inputElement) {
+    console.log('showPackageSearchResults:', results.length, 'results');
+    
+    clearPackageSearchResults();
+    
+    if (!results || results.length === 0) return;
+    
+    const container = document.getElementById('package-search-autocomplete');
+    if (!container) return;
+    
+    const resultsDiv = document.createElement('div');
+    resultsDiv.className = 'package-search-results';
+    
+    // 制限を削除：全ての結果を表示
+    results.forEach(pkgName => {
+        const item = document.createElement('div');
+        item.textContent = pkgName;
+        
+        item.onclick = () => {
+            console.log('Package selected:', pkgName);
+            addSearchedPackage(pkgName);
+            inputElement.value = '';
+            clearPackageSearchResults();
+        };
+        
+        resultsDiv.appendChild(item);
+    });
+    
+    container.appendChild(resultsDiv);
+}
+
+// 検索結果クリア
+function clearPackageSearchResults() {
+    const results = document.querySelectorAll('.package-search-results');
+    results.forEach(el => el.remove());
+}
+
+// パッケージ追加
+function addSearchedPackage(packageName) {
+    console.log('addSearchedPackage:', packageName);
+    
+    const textarea = document.getElementById('asu-packages');
+    if (!textarea) {
+        console.log('asu-packages textarea not found');
+        return;
+    }
+    
+    const currentPackages = split(textarea.value);
+    
+    if (!currentPackages.includes(packageName)) {
+        currentPackages.push(packageName);
+        textarea.value = currentPackages.join(' ');
+        
+        // 高さ調整
+        textarea.style.height = 'auto';
+        textarea.style.height = textarea.scrollHeight + 'px';
+        
+        console.log('Package added to textarea:', packageName);
+    }
+}
+
+// クリックで検索結果を閉じる
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('#package-search-autocomplete')) {
+        clearPackageSearchResults();
+    }
+});
 
 // #asuセクションを置き換え（修正版：index.jsが期待するDOM要素を全て保持）
 function replaceAsuSection(asuSection, temp) {
