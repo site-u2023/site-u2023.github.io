@@ -31,6 +31,7 @@ let PACKAGE_DB = null;
 let setupConfig = null;
 let formStructure = {};
 let cachedApiInfo = null;
+let cachedDeviceArch = null;
 let defaultFieldValues = {};
 let dynamicPackages = new Set();
 let selectedLanguage = '';
@@ -47,11 +48,12 @@ const originalUpdateImages = window.updateImages;
 window.updateImages = function(version, mobj) {
     if (originalUpdateImages) originalUpdateImages(version, mobj);
 
-    // arch_packagesをcurrent_deviceに保存
+    // arch_packagesをcurrent_deviceとキャッシュに保存
     if (mobj && mobj.arch_packages) {
         if (!current_device) current_device = {};
         current_device.arch = mobj.arch_packages;
         current_device.version = version;
+        cachedDeviceArch = mobj.arch_packages; // ← キャッシュにも保存
         console.log('Architecture saved:', mobj.arch_packages);
     }
 
@@ -451,8 +453,9 @@ async function updateLanguagePackage() {
     }
 
     // 英語が選択されているか、デバイス情報がない場合は、パッケージを追加せずに終了
-    if (!selectedLanguage || selectedLanguage === 'en' || !current_device?.arch) {
-        if (!current_device?.arch) {
+    const hasArch = current_device?.arch || cachedDeviceArch;
+    if (!selectedLanguage || selectedLanguage === 'en' || !hasArch) {
+        if (!hasArch) {
             console.log('Device not selected. Skipping language package addition.');
         } else {
             console.log('English selected, no language packages will be added.');
@@ -463,7 +466,7 @@ async function updateLanguagePackage() {
     }
     
     // デバイス情報がある場合の処理
-    console.log('Device available, checking language packages for arch:', current_device.arch);
+    console.log('Device available, checking language packages for arch:', hasArch);
     
     const basePkg = `luci-i18n-base-${selectedLanguage}`;
     const addedLangPackages = new Set();
@@ -581,13 +584,14 @@ async function isPackageAvailable(pkgName, feed) {
     }
     
     // デバイス情報を確認
-    const arch = current_device?.arch;
+    const arch = current_device?.arch || cachedDeviceArch;
     const version = current_device?.version || $("#versions").value;
     
     if (!arch || !version) {
         console.log('Missing device info for package check:', { arch, version });
         return false;
     }
+    
     
     try {
         let packagesUrl;
