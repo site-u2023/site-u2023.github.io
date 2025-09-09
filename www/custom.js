@@ -456,11 +456,11 @@ async function updateLanguagePackage() {
         return;
     }
     
-    // デバイス情報が無い場合でも基本言語パッケージは追加
+    // デバイス情報が無い場合でも基本言語パッケージは追加＜＜無いんだから追加しないよな？
     const basePkg = `luci-i18n-base-${selectedLanguage}`;
     
     if (!current_device?.arch) {
-        // デバイス未選択でも基本言語パッケージは追加
+        // デバイス未選択でも基本言語パッケージは追加＜＜＜未選択なら追加しないよな？
         console.log('Device not selected yet, adding basic language package anyway:', basePkg);
         dynamicPackages.add(basePkg);
         // Postinstテキストエリアを更新（重要）
@@ -479,13 +479,13 @@ async function updateLanguagePackage() {
             dynamicPackages.add(basePkg);
             console.log('Added validated base language package:', basePkg);
         } else {
-            // 利用不可でも追加（ビルド時にASUがハンドリング）
+            // 利用不可でも追加（ビルド時にASUがハンドリング）　＜＜何馬鹿な事言ってる訳？利用不可なら一切追加するわけないよな？
             dynamicPackages.add(basePkg);
             console.log('Added base language package (not validated):', basePkg);
         }
     } catch (err) {
         console.error('Error checking base package:', err);
-        // エラー時でも基本パッケージは追加
+        // エラー時でも基本パッケージは追加＜＜＜エラーなら一切追加するわけないよな？
         dynamicPackages.add(basePkg);
         console.log('Added base language package despite error:', basePkg);
     }
