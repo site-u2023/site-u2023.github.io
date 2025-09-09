@@ -99,8 +99,53 @@ input[type="radio"] {
   border-radius: 0.2em; /* matches index.css */
 }
 
-/* New selectors that don't conflict with index.css */
-#package-search,
+/* ===== Package Search Container ===== */
+#package-search-autocomplete {
+  position: relative;
+  margin-bottom: 1.5em;
+}
+
+/* Package Search Input - inherits from index.css .autocomplete > input */
+#package-search {
+  border: 0.06em solid transparent;
+  background-color: #f1f1f1;
+  padding: 0.8em;
+  margin-right: 0;
+  border-radius: 0.2em;
+  font-size: inherit;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Package Search Results - inherits from index.css .autocomplete-items */
+.package-search-results {
+  position: absolute;
+  border: 0.1em solid #d4d4d4;
+  border-bottom: none;
+  font-size: inherit;
+  border-top: none;
+  z-index: 99;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background-color: #fff;
+  max-height: 200px;
+  overflow-y: auto;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.package-search-results div {
+  padding: 0.8em;
+  cursor: pointer;
+  border-bottom: 0.1em solid #d4d4d4;
+}
+
+.package-search-results div:hover {
+  background-color: #00a3e1;
+  color: #fff;
+}
+
+/* Other form elements - keep existing styles */
 #command,
 #uci-defaults-content,
 #postinst-content,
@@ -117,15 +162,34 @@ input[type="radio"] {
 }
 
 @media (prefers-color-scheme: dark) {
+  #package-search {
+    background-color: #313135;
+    color: #d0d0d0;
+  }
+  
+  .package-search-results {
+    background-color: #252528;
+    border-color: #444;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  }
+  
+  .package-search-results div {
+    border-color: #444;
+  }
+  
+  .package-search-results div:hover {
+    background-color: #0080b3;
+    color: #fff;
+  }
+  
   .form-group input:not(.autocomplete > input):not(#versions),
   .form-group select:not(#versions),
   .form-group textarea,
-  #package-search,
   #command,
   #uci-defaults-content,
   #postinst-content,
   #asu-packages {
-    background-color: var(--bg-input, #313135); /* matches index.css dark mode */
+    background-color: var(--bg-input, #313135);
     color: var(--text-main);
   }
 }
