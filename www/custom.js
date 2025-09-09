@@ -25,7 +25,7 @@ console.log('custom.js loaded');
 // ==================== グローバル変数 ====================
 let customInitialized = false;
 let customHTMLLoaded = false;
-let PACKAGE_DB = null;
+let packagesLocaldata = null;
 let setupConfig = null;
 let formStructure = {};
 let cachedApiInfo = null;
@@ -246,7 +246,7 @@ function reinitializeFeatures() {
     
     setupEventListeners();
     
-    if (PACKAGE_DB) generatePackageSelector();
+    if (packagesLocaldata) generatePackageSelector();
     fetchAndDisplayIspInfo();
     if (cachedApiInfo) updateAutoConnectionInfo(cachedApiInfo);
 
@@ -1612,12 +1612,12 @@ async function loadPackageDatabase() {
         const url = config?.packages_db_url || 'packages/packages.json';
         const response = await fetch(url);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        PACKAGE_DB = await response.json();
-        console.log('Package database loaded:', PACKAGE_DB);
+        packagesLocaldata = await response.json();
+        console.log('Package database loaded:', packagesLocaldata);
         
         generatePackageSelector();
         
-        return PACKAGE_DB;
+        return packagesLocaldata;
     } catch (err) {
         console.error('Failed to load package database:', err);
         return null;
@@ -1626,13 +1626,13 @@ async function loadPackageDatabase() {
 
 function generatePackageSelector() {
     const container = document.querySelector('#package-categories');
-    if (!container || !PACKAGE_DB) {
+    if (!container || !packagesLocaldata) {
         return;
     }
     
     container.innerHTML = '';
     
-    PACKAGE_DB.categories.forEach(category => {
+    packagesLocaldata.categories.forEach(category => {
         const categoryDiv = createPackageCategory(category);
         if (categoryDiv) {
             container.appendChild(categoryDiv);
@@ -1640,7 +1640,7 @@ function generatePackageSelector() {
     });
     
     updatePackageListFromSelector();
-    console.log(`Generated ${PACKAGE_DB.categories.length} package categories`);
+    console.log(`Generated ${packagesLocaldata.categories.length} package categories`);
 }
 
 function createPackageCategory(category) {
@@ -1879,9 +1879,9 @@ function updatePackageListFromSelector() {
 }
 
 function findPackageById(id) {
-    if (!PACKAGE_DB) return null;
+    if (!packagesLocaldata) return null;
     
-    for (const category of PACKAGE_DB.categories) {
+    for (const category of packagesLocaldata.categories) {
         const pkg = category.packages.find(p => p.id === id);
         if (pkg) return pkg;
     }
