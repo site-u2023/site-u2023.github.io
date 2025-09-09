@@ -99,25 +99,52 @@ input[type="radio"] {
   border-radius: 0.2em; /* matches index.css */
 }
 
-/* ===== Package Search Container ===== */
-#package-search-autocomplete {
-  position: relative;
-  margin-bottom: 1.5em;
+/* ===== Multi Input Container (Package Search & Commands) ===== */
+.multi-input-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+  min-height: 2.5em;
+  padding: 0.5em;
+  background-color: var(--bg-item);
+  border: 1px solid var(--border-main);
+  border-radius: 0.2em;
 }
 
-/* Package Search Input - inherits from index.css .autocomplete > input */
-#package-search {
+.multi-input-wrapper {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.multi-input-item {
+  flex: 1;
   border: 0.06em solid transparent;
   background-color: #f1f1f1;
-  padding: 0.8em;
-  margin-right: 0;
+  padding: 0.6em;
   border-radius: 0.2em;
   font-size: inherit;
   width: 100%;
   box-sizing: border-box;
+  transition: all 0.2s ease;
 }
 
-/* Package Search Results - inherits from index.css .autocomplete-items */
+.multi-input-item:focus {
+  outline: none;
+  border-color: var(--owrt-blue);
+  box-shadow: 0 0 0 2px rgba(0, 181, 226, 0.1);
+}
+
+.multi-input-item[data-confirmed="true"] {
+  background-color: rgba(0, 181, 226, 0.1);
+  border-color: var(--owrt-blue);
+}
+
+.multi-input-item:placeholder-shown:not(:focus) {
+  opacity: 0.6;
+}
+
+/* Package Search Autocomplete Results */
 .package-search-results {
   position: absolute;
   border: 0.1em solid #d4d4d4;
@@ -125,7 +152,7 @@ input[type="radio"] {
   font-size: inherit;
   border-top: none;
   z-index: 99;
-  top: 100%;
+  top: calc(100% + 2px);
   left: 0;
   right: 0;
   background-color: #fff;
@@ -145,6 +172,45 @@ input[type="radio"] {
   color: #fff;
 }
 
+/* Dark mode support for multi-input */
+@media (prefers-color-scheme: dark) {
+  .multi-input-container {
+    background-color: var(--bg-item);
+    border-color: #444;
+  }
+  
+  .multi-input-item {
+    background-color: #313135;
+    color: #d0d0d0;
+  }
+  
+  .multi-input-item[data-confirmed="true"] {
+    background-color: rgba(0, 128, 179, 0.2);
+    border-color: #0080b3;
+  }
+  
+  .package-search-results {
+    background-color: #252528;
+    border-color: #444;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  }
+  
+  .package-search-results div {
+    border-color: #444;
+  }
+  
+  .package-search-results div:hover {
+    background-color: #0080b3;
+    color: #fff;
+  }
+}
+
+/* Package Search Container - Remains for compatibility */
+#package-search-autocomplete {
+  position: relative;
+  margin-bottom: 1.5em;
+}
+
 /* Other form elements - keep existing styles */
 #command,
 #uci-defaults-content,
@@ -162,26 +228,6 @@ input[type="radio"] {
 }
 
 @media (prefers-color-scheme: dark) {
-  #package-search {
-    background-color: #313135;
-    color: #d0d0d0;
-  }
-  
-  .package-search-results {
-    background-color: #252528;
-    border-color: #444;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-  }
-  
-  .package-search-results div {
-    border-color: #444;
-  }
-  
-  .package-search-results div:hover {
-    background-color: #0080b3;
-    color: #fff;
-  }
-  
   .form-group input:not(.autocomplete > input):not(#versions),
   .form-group select:not(#versions),
   .form-group textarea,
@@ -284,11 +330,6 @@ details[open] summary {
 }
 
 /* ===== Package Selector ===== */
-#package-search-autocomplete {
-  position: relative;
-  margin-bottom: 1.5em;
-}
-
 #package-categories {
   margin: 1em 0;
 }
@@ -525,6 +566,16 @@ details summary h4 {
   .form-group label,
   .form-row label:not(.radio-group label) {
     white-space: nowrap;
+  }
+  
+  .multi-input-container {
+    padding: 0.3em;
+    gap: 0.3em;
+  }
+  
+  .multi-input-item {
+    padding: 0.5em;
+    font-size: 0.9em;
   }
 }
 
