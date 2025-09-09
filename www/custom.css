@@ -248,6 +248,7 @@ details[open] summary {
 #packages-details,
 #scripts-details {
   margin-top: 1.5em;
+  margin-left: 0;
   padding: 1em;
   background-color: var(--bg-details);
   border-radius: 0.25em;
