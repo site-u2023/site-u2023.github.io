@@ -1697,7 +1697,7 @@ function createPackageItem(pkg) {
         
         pkg.dependencies.forEach(depId => {
             const depPkg = findPackageById(depId);
-            if (depPkg && !depPkg.hidden) {
+            if (depPkg) {
                 const depCheckbox = createPackageCheckbox(depPkg, pkg.checked || false, true);
                 depCheckbox.classList.add('package-dependent');
                 depContainer.appendChild(depCheckbox);
