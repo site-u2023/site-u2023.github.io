@@ -423,6 +423,8 @@ async function handleCustomLanguageChange(e) {
     console.log('Custom language change processing completed');
 }
 
+// custom.js L.619-
+
 // 言語パッケージの更新（Postinst反映修正版）
 async function updateLanguagePackage() {
     // デバイス用言語セレクターから現在の言語を取得
@@ -432,10 +434,10 @@ async function updateLanguagePackage() {
     } else if (!selectedLanguage) {
         selectedLanguage = current_language || config?.fallback_language || 'en';
     }
-    
+
     console.log('updateLanguagePackage called, selectedLanguage:', selectedLanguage);
-    
-    // 既存の言語パッケージを削除
+
+    // 既存の言語パッケージを一旦全て削除
     const removedPackages = [];
     for (const pkg of Array.from(dynamicPackages)) {
         if (pkg.startsWith('luci-i18n-')) {
@@ -443,27 +445,19 @@ async function updateLanguagePackage() {
             removedPackages.push(pkg);
         }
     }
-    
+
     if (removedPackages.length > 0) {
-        console.log('Removed language packages:', removedPackages);
+        console.log('Removed old language packages:', removedPackages);
     }
-    
-    // 英語の場合は言語パッケージ削除のみ実行
-    if (!selectedLanguage || selectedLanguage === 'en') {
-        console.log('English selected, all language packages removed');
-        // Postinstテキストエリアを更新（重要）
-        updatePackageListFromSelector();
-        return;
-    }
-    
-    // デバイス情報が無い場合でも基本言語パッケージは追加＜＜無いんだから追加しないよな？
-    const basePkg = `luci-i18n-base-${selectedLanguage}`;
-    
-    if (!current_device?.arch) {
-        // デバイス未選択でも基本言語パッケージは追加＜＜＜未選択なら追加しないよな？
-        console.log('Device not selected yet, adding basic language package anyway:', basePkg);
-        dynamicPackages.add(basePkg);
-        // Postinstテキストエリアを更新（重要）
+
+    // 英語が選択されているか、デバイス情報がない場合は、パッケージを追加せずに終了
+    if (!selectedLanguage || selectedLanguage === 'en' || !current_device?.arch) {
+        if (!current_device?.arch) {
+            console.log('Device not selected. Skipping language package addition.');
+        } else {
+            console.log('English selected, no language packages will be added.');
+        }
+        // Postinstテキストエリアを更新して、削除した言語パッケージを反映
         updatePackageListFromSelector();
         return;
     }
@@ -471,65 +465,74 @@ async function updateLanguagePackage() {
     // デバイス情報がある場合の処理
     console.log('Device available, checking language packages for arch:', current_device.arch);
     
-    // 基本言語パッケージをチェック
+    const basePkg = `luci-i18n-base-${selectedLanguage}`;
+    const addedLangPackages = new Set();
+
+    // 基本言語パッケージをチェックして追加
     console.log('Checking base package:', basePkg);
-    
     try {
         if (await isPackageAvailable(basePkg, 'luci')) {
             dynamicPackages.add(basePkg);
+            addedLangPackages.add(basePkg);
             console.log('Added validated base language package:', basePkg);
         } else {
-            // 利用不可でも追加（ビルド時にASUがハンドリング）　＜＜何馬鹿な事言ってる訳？利用不可なら一切追加するわけないよな？
-            dynamicPackages.add(basePkg);
-            console.log('Added base language package (not validated):', basePkg);
+            console.warn('Base language package not available, skipping:', basePkg);
         }
     } catch (err) {
         console.error('Error checking base package:', err);
-        // エラー時でも基本パッケージは追加＜＜＜エラーなら一切追加するわけないよな？
-        dynamicPackages.add(basePkg);
-        console.log('Added base language package despite error:', basePkg);
     }
-    
-    // 現在のパッケージに対応する言語パッケージをチェック
+
+    // 現在の選択済みパッケージに対応する言語パッケージをチェックして追加
     const currentPackages = getCurrentPackageList();
-    console.log('Current packages for language check:', currentPackages.length);
-    
-    const addedLangPackages = [];
+    console.log('Checking language packages for', currentPackages.length, 'selected packages.');
+
+    const checkPromises = [];
     for (const pkg of currentPackages) {
         if (pkg.startsWith('luci-') && !pkg.startsWith('luci-i18n-')) {
             const luciName = extractLuciName(pkg);
             if (luciName) {
                 const langPkg = `luci-i18n-${luciName}-${selectedLanguage}`;
-                console.log('Checking LuCI language package:', langPkg);
                 
-                try {
-                    if (await isPackageAvailable(langPkg, 'luci')) {
-                        dynamicPackages.add(langPkg);
-                        addedLangPackages.push(langPkg);
-                        console.log('Added LuCI language package:', langPkg);
+                // Promiseを作成して並列でチェック
+                const promise = (async () => {
+                    console.log('Checking LuCI language package:', langPkg);
+                    try {
+                        if (await isPackageAvailable(langPkg, 'luci')) {
+                            dynamicPackages.add(langPkg);
+                            addedLangPackages.add(langPkg);
+                            console.log('Added validated LuCI language package:', langPkg);
+                        } else {
+                             console.log('Optional LuCI language package not available, skipping:', langPkg);
+                        }
+                    } catch (err) {
+                        console.error('Error checking LuCI package:', err);
                     }
-                } catch (err) {
-                    console.error('Error checking LuCI package:', err);
-                }
+                })();
+                checkPromises.push(promise);
             }
         }
     }
+
+    // すべてのパッケージチェックが完了するのを待つ
+    await Promise.all(checkPromises);
     
-    console.log('Added language packages:', addedLangPackages);
-    console.log('Final dynamic packages:', Array.from(dynamicPackages));
-    
+    console.log('Total added language packages:', Array.from(addedLangPackages));
+    console.log('Final dynamic packages set:', Array.from(dynamicPackages));
+
     // Postinstテキストエリアを更新（重要：必ず実行）
     updatePackageListFromSelector();
-    
-    console.log('Language package update completed with Postinst update');
+
+    console.log('Language package update completed.');
 }
 
 function extractLuciName(pkg) {
     if (pkg === 'luci') return 'base';
-    if (pkg.startsWith('luci-app-')) return pkg.substring(5);
-    if (pkg.startsWith('luci-mod-')) return pkg.substring(5);
-    if (pkg.startsWith('luci-theme-')) return pkg.substring(5);
-    if (pkg.startsWith('luci-proto-')) return pkg.substring(5);
+
+    // "luci-app-", "luci-mod-", "luci-theme-", "luci-proto-" のプレフィックスを除去
+    const prefixMatch = pkg.match(/^luci-(?:app|mod|theme|proto)-(.+)$/);
+    if (prefixMatch && prefixMatch[1]) {
+        return prefixMatch[1];
+    }
     return null;
 }
 
