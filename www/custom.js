@@ -835,9 +835,9 @@ async function updateLanguagePackage() {
     const hasArch = current_device?.arch || cachedDeviceArch;
     if (!selectedLanguage || selectedLanguage === 'en' || !hasArch) {
         if (!hasArch) {
-            console.log('Device not selected. Skipping language package addition.');
+            // console.log('Device not selected. Skipping language package addition.');
         } else {
-            console.log('English selected, no language packages will be added.');
+            // console.log('English selected, no language packages will be added.');
         }
         // Postinstテキストエリアを更新して、削除した言語パッケージを反映
         updatePackageListFromSelector();
@@ -856,9 +856,9 @@ async function updateLanguagePackage() {
         if (await isPackageAvailable(basePkg, 'luci')) {
             dynamicPackages.add(basePkg);
             addedLangPackages.add(basePkg);
-            console.log('Added validated base language package:', basePkg);
+            // console.log('Added validated base language package:', basePkg);
         } else {
-            console.warn('Base language package not available, skipping:', basePkg);
+            // console.warn('Base language package not available, skipping:', basePkg);
         }
     } catch (err) {
         console.error('Error checking base package:', err);
@@ -898,8 +898,8 @@ async function updateLanguagePackage() {
     // すべてのパッケージチェックが完了するのを待つ
     await Promise.all(checkPromises);
     
-    console.log('Total added language packages:', Array.from(addedLangPackages));
-    console.log('Final dynamic packages set:', Array.from(dynamicPackages));
+    // console.log('Total added language packages:', Array.from(addedLangPackages));
+    // console.log('Final dynamic packages set:', Array.from(dynamicPackages));
 
     // Postinstテキストエリアを更新（重要：必ず実行）
     updatePackageListFromSelector();
@@ -1702,7 +1702,7 @@ function applySpecialFieldLogic(values) {
                 if (guaPrefix) {
                     values.mape_gua_prefix = guaPrefix;
                     values.mape_gua_mode = '1';
-                    console.log('Applied GUA prefix in auto mode:', guaPrefix);
+                    // console.log('Applied GUA prefix in auto mode:', guaPrefix);
                 }
             } else if (cachedApiInfo.aftr) {
                 values.dslite_aftr_address = cachedApiInfo.aftr;
@@ -2348,11 +2348,11 @@ function updatePackageListFromSelector() {
         
         // 値が変更された場合のみログ出力
         if (oldValue !== textarea.value) {
-            console.log('Package list updated in textarea:', {
-                before: split(oldValue).length,
-                after: uniquePackages.length,
-                changed: oldValue !== textarea.value
-            });
+            // console.log('Package list updated in textarea:', {
+            //     before: split(oldValue).length,
+            //     after: uniquePackages.length,
+            //     changed: oldValue !== textarea.value
+            // });
         }
 
         // シンプルに高さを自動調整
@@ -2563,7 +2563,7 @@ function setGuaPrefixIfAvailable() {
     const guaPrefix = generateGuaPrefixFromFullAddress(cachedApiInfo);
     if (guaPrefix) {
         guaPrefixField.value = guaPrefix;
-        console.log('GUA prefix set:', guaPrefix);
+        // console.log('GUA prefix set:', guaPrefix);
     }
 }
 
