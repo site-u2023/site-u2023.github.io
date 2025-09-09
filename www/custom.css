@@ -385,22 +385,6 @@ details summary h4 {
   margin-bottom: 0.5em;
 }
 
-/* ===== TagInput 用スタイル ===== */
-.autocomplete .tag-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5em;
-  margin-top: 0.5em;
-}
-
-.autocomplete .tag-list .tag {
-  background-color: var(--owrt-blue);
-  color: var(--owrt-white);
-  padding: 0.3em 0.6em;
-  border-radius: 0.2em;
-  font-size: 0.9em;
-}
-
 /* ===== Build Progress Indicator ===== */
 .build-progress {
   margin: 1em 0;
