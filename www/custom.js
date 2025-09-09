@@ -57,6 +57,14 @@ window.updateImages = function(version, mobj) {
         console.log('Architecture saved:', mobj.arch_packages);
     }
 
+    // kmods 用トークン（kernel ABI hash）を保存
+    if (mobj && mobj.target && mobj.subtarget && mobj.kmod) {
+        current_device.target   = mobj.target;
+        current_device.subtarget= mobj.subtarget;
+        current_device.kmod     = mobj.kmod;
+        console.log('Kernel token saved:', mobj.kmod);
+    }
+
     // デバイス固有パッケージを保存（重要）
     if (mobj && "manifest" in mobj === false) {
         // デバイス固有パッケージを保存
@@ -235,7 +243,7 @@ async function searchPackages(query, inputElement) {
     const version = current_device?.version || document.querySelector('#versions')?.value;
     
     const allResults = new Set();
-    const feeds = ['packages', 'luci'];
+    const feeds = ['packages', 'luci', 'kmods'];
     
     for (const feed of feeds) {
         try {
@@ -275,6 +283,32 @@ async function searchInFeed(query, feed, version, arch) {
     console.log(`searchInFeed: ${feed}, query: ${query}`);
     
     try {
+        if (feed === 'kmods') {
+            const { target, subtarget, kmod } = current_device || {};
+            if (!target || !subtarget || !kmod) {
+                console.warn('kmods URL情報が不足');
+                return [];
+            }
+            const url = config.kmods_search_url
+                .replace('{version}',  version)
+                .replace('{target}',   target)
+                .replace('{subtarget}',subtarget)
+                .replace('{kmod}',     kmod);
+            console.log('Fetching kmods Packages:', url);
+            const resp = await fetch(url, { cache: 'no-store' });
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            const text = await resp.text();
+            const results = [];
+            text.split('\n').forEach(line => {
+                if (line.startsWith('Package: ')) {
+                    const pkg = line.slice(9).trim();
+                    if (pkg.toLowerCase().includes(query.toLowerCase())) {
+                        results.push(pkg);
+                    }
+                }
+            });
+            return results;
+        }
         if (version.includes('SNAPSHOT')) {
             // APK形式
             const url = config.apk_search_url
