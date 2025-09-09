@@ -235,7 +235,7 @@ async function searchPackages(query, inputElement) {
     const version = current_device?.version || document.querySelector('#versions')?.value;
     
     const allResults = new Set();
-    const feeds = ['packages', 'luci'];
+    const feeds = ['packages', 'luci', 'kmods'];
     
     for (const feed of feeds) {
         try {
@@ -247,7 +247,24 @@ async function searchPackages(query, inputElement) {
         }
     }
     
-    const sortedResults = Array.from(allResults).sort();
+    const sortedResults = Array.from(allResults).sort((a, b) => {
+        const q = query.toLowerCase();
+        const aLower = a.toLowerCase();
+        const bLower = b.toLowerCase();
+        
+        // 完全一致を最上位に
+        const aExact = (aLower === q);
+        const bExact = (bLower === q);
+        if (aExact && !bExact) return -1;
+        if (bExact && !aExact) return 1;
+
+        // 完全一致同士 → 名前順
+        if (aExact && bExact) return a.localeCompare(b);
+
+        // 部分一致同士 → 名前順
+        return a.localeCompare(b);
+    });
+
     console.log(`Found ${sortedResults.length} packages`);
     
     showPackageSearchResults(sortedResults, inputElement);
