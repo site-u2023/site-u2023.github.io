@@ -1743,9 +1743,7 @@ function createPackageCheckbox(pkg, isChecked = false, isDependency = false) {
         checkbox.checked = true;
     }
     
-    if (!isDependency) {
-        checkbox.addEventListener('change', handlePackageSelection);
-    }
+    checkbox.addEventListener('change', handlePackageSelection);
     
     if (config?.package_url) {
         const link = document.createElement('a');
