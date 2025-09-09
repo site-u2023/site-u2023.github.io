@@ -404,20 +404,23 @@ async function handleCustomLanguageChange(e) {
     
     // 実際に変更された場合のみ処理
     if (selectedLanguage === newLanguage) {
-        console.log('Device language not changed, skipping update');
+        console.log('Language not changed, skipping update');
         return;
     }
     
     selectedLanguage = newLanguage;
-    console.log('Device language changed to:', selectedLanguage);
+    console.log('Custom language changed to:', selectedLanguage);
     
-    // 言語パッケージを更新してPostinstに反映
+    // カスタム翻訳を読み込み
+    await loadCustomTranslations(selectedLanguage);
+    
+    // 言語パッケージを更新してPostinstに反映（重要：ここが修正ポイント）
     await updateLanguagePackage();
     
     // 変数定義も更新
     updateVariableDefinitions();
     
-    console.log('Device language change processing completed');
+    console.log('Custom language change processing completed');
 }
 
 // 言語パッケージの更新（Postinst反映修正版）
@@ -452,32 +455,39 @@ async function updateLanguagePackage() {
         updatePackageListFromSelector();
         return;
     }
-
-    // デバイス情報がある場合のみ言語パッケージ処理
+    
+    // デバイス情報が無い場合でも基本言語パッケージは追加
     const basePkg = `luci-i18n-base-${selectedLanguage}`;
-
-    // デバイス情報がない場合は存在確認できないため何も追加しない
+    
     if (!current_device?.arch) {
-        console.log('Device not selected, cannot validate packages - no language packages added');
+        // デバイス未選択でも基本言語パッケージは追加
+        console.log('Device not selected yet, adding basic language package anyway:', basePkg);
+        dynamicPackages.add(basePkg);
+        // Postinstテキストエリアを更新（重要）
         updatePackageListFromSelector();
         return;
     }
-
+    
     // デバイス情報がある場合の処理
     console.log('Device available, checking language packages for arch:', current_device.arch);
-
+    
     // 基本言語パッケージをチェック
     console.log('Checking base package:', basePkg);
-
+    
     try {
         if (await isPackageAvailable(basePkg, 'luci')) {
             dynamicPackages.add(basePkg);
             console.log('Added validated base language package:', basePkg);
         } else {
-            console.log('Base language package not available, falling back to English:', basePkg);
+            // 利用不可でも追加（ビルド時にASUがハンドリング）
+            dynamicPackages.add(basePkg);
+            console.log('Added base language package (not validated):', basePkg);
         }
     } catch (err) {
-        console.error('Error checking base package, falling back to English:', err);
+        console.error('Error checking base package:', err);
+        // エラー時でも基本パッケージは追加
+        dynamicPackages.add(basePkg);
+        console.log('Added base language package despite error:', basePkg);
     }
     
     // 現在のパッケージに対応する言語パッケージをチェック
@@ -888,11 +898,7 @@ function buildFormGroup(field) {
             ctrl.appendChild(option);
         });
         
-        if (field.id === 'aios-language') {
-            ctrl.addEventListener('change', handleCustomLanguageChange);
-        } else {
-            ctrl.addEventListener('change', updatePackageListFromDynamicSources);
-        }
+        ctrl.addEventListener('change', updatePackageListFromDynamicSources);
     } else {
         ctrl = document.createElement('input');
         ctrl.type = field.type || 'text';
