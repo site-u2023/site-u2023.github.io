@@ -229,28 +229,41 @@ function setupPackageSearch() {
 
 // パッケージ検索実行
 async function searchPackages(query, inputElement) {
-    console.log('searchPackages called with query:', query);
-    
-    const arch = current_device?.arch || cachedDeviceArch;
-    const version = current_device?.version || document.querySelector('#versions')?.value;
-    
-    const arch = current_device?.arch || cachedDeviceArch || {};
-    const feeds = Array.isArray(arch) ? arch : Object.keys(arch);
+  console.log('searchPackages called with query:', query);
 
-    for (const feed of feeds) {
-        try {
-            console.log(`Searching in feed: ${feed}`);
-            const results = await searchInFeed(query, feed, version, arch);
-            results.forEach(pkg => allResults.add(pkg));
-        } catch (err) {
-            console.error(`Error searching ${feed}:`, err);
-        }
+  const archData = current_device?.arch || cachedDeviceArch;
+  if (!archData) {
+    console.warn('No arch info available, skipping package search');
+    return;
+  }
+
+  const version = current_device?.version
+    || document.querySelector('#versions')?.value;
+  if (!version) {
+    console.warn('No version selected, skipping package search');
+    return;
+  }
+
+  const feeds = Array.isArray(archData)
+    ? archData
+    : Object.keys(archData);
+
+  const allResults = new Set();
+
+  await Promise.all(feeds.map(async feed => {
+    try {
+      console.log(`Searching in feed: ${feed}`);
+      const results = await searchInFeed(query, feed, version, archData);
+      results.forEach(name => allResults.add(name));
+    } catch (err) {
+      console.error(`Error searching ${feed}:`, err);
     }
-    
-    const sortedResults = Array.from(allResults).sort();
-    console.log(`Found ${sortedResults.length} packages`);
-    
-    showPackageSearchResults(sortedResults, inputElement);
+  }));
+
+  const sortedResults = Array.from(allResults).sort();
+  console.log(`Found ${sortedResults.length} packages`);
+
+  showPackageSearchResults(sortedResults, inputElement);
 }
 
 // フィード内検索
