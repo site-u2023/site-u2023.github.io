@@ -20,12 +20,14 @@
 // 処理関数: updateLanguagePackage()
 // 用途: OpenWrtデバイスにインストールする言語パッケージ
 
+// custom.js - OpenWrt カスタム機能（言語変更時Postinst更新修正版）
+
 console.log('custom.js loaded');
 
 // ==================== グローバル変数 ====================
 let customInitialized = false;
 let customHTMLLoaded = false;
-let packagesLocaldata = null;
+let PACKAGE_DB = null;
 let setupConfig = null;
 let formStructure = {};
 let cachedApiInfo = null;
@@ -246,7 +248,7 @@ function reinitializeFeatures() {
     
     setupEventListeners();
     
-    if (packagesLocaldata) generatePackageSelector();
+    if (PACKAGE_DB) generatePackageSelector();
     fetchAndDisplayIspInfo();
     if (cachedApiInfo) updateAutoConnectionInfo(cachedApiInfo);
 
@@ -1612,12 +1614,12 @@ async function loadPackageDatabase() {
         const url = config?.packages_db_url || 'packages/packages.json';
         const response = await fetch(url);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        packagesLocaldata = await response.json();
-        console.log('Package database loaded:', packagesLocaldata);
+        PACKAGE_DB = await response.json();
+        console.log('Package database loaded:', PACKAGE_DB);
         
         generatePackageSelector();
         
-        return packagesLocaldata;
+        return PACKAGE_DB;
     } catch (err) {
         console.error('Failed to load package database:', err);
         return null;
@@ -1626,13 +1628,13 @@ async function loadPackageDatabase() {
 
 function generatePackageSelector() {
     const container = document.querySelector('#package-categories');
-    if (!container || !packagesLocaldata) {
+    if (!container || !PACKAGE_DB) {
         return;
     }
     
     container.innerHTML = '';
     
-    packagesLocaldata.categories.forEach(category => {
+    PACKAGE_DB.categories.forEach(category => {
         const categoryDiv = createPackageCategory(category);
         if (categoryDiv) {
             container.appendChild(categoryDiv);
@@ -1640,7 +1642,7 @@ function generatePackageSelector() {
     });
     
     updatePackageListFromSelector();
-    console.log(`Generated ${packagesLocaldata.categories.length} package categories`);
+    console.log(`Generated ${PACKAGE_DB.categories.length} package categories`);
 }
 
 function createPackageCategory(category) {
@@ -1872,19 +1874,16 @@ function updatePackageListFromSelector() {
             });
         }
 
-
-        // 内容行数に合わせて rows を更新
-        const lines = textarea.value.split('\n').length;
-        textarea.rows = lines;
+        // シンプルに高さを自動調整
         textarea.style.height = 'auto';
         textarea.style.height = textarea.scrollHeight + 'px';
     }
 }
 
 function findPackageById(id) {
-    if (!packagesLocaldata) return null;
+    if (!PACKAGE_DB) return null;
     
-    for (const category of packagesLocaldata.categories) {
+    for (const category of PACKAGE_DB.categories) {
         const pkg = category.packages.find(p => p.id === id);
         if (pkg) return pkg;
     }
@@ -1912,9 +1911,6 @@ function loadUciDefaultsTemplate() {
         })
         .then(text => {
             textarea.value = text;
-            // ── 内容行数に合わせて rows を更新
-            const lines = textarea.value.split('\n').length;
-            textarea.rows = lines;
             updateVariableDefinitions();
             autoResize();
         })
@@ -1953,9 +1949,8 @@ function updateVariableDefinitions() {
         
         textarea.value = beforeSection + newSection + afterSection;
         
-        // ── 差し替え後の行数に合わせて rows を更新
         const lines = textarea.value.split('\n').length;
-        textarea.rows = lines;
+        textarea.rows = lines + 1;
     }
 }
 
@@ -1990,9 +1985,8 @@ function updateCustomCommands() {
         
         textarea.value = beforeSection + newSection + afterSection;
         
-        // ── コマンド差し替え後の行数に合わせて rows を更新
         const lines = textarea.value.split('\n').length;
-        textarea.rows = lines;
+        textarea.rows = lines + 1;
     }
 }
 
@@ -2084,9 +2078,6 @@ function resizePostinstTextarea() {
     const textarea = document.querySelector("#asu-packages");
     if (!textarea) return;
     
-    // 内容行数に合わせて rows を更新
-    const lines = textarea.value.split('\n').length;
-    textarea.rows = lines;
     textarea.style.height = 'auto';
     textarea.style.height = textarea.scrollHeight + 'px';
 }
