@@ -52,6 +52,9 @@ var config = {
   // LuCI APK 検索エンドポイント
   // https://downloads.openwrt.org/snapshots/packages/aarch64_cortex-a53/packages/index.json
   apk_search_url: "https://downloads.openwrt.org/snapshots/packages/{arch}/{feed}/index.json",
+
+// kmods 検索エンドポイント（kernel ABI hash を含む）
+  kmods_search_url: "https://downloads.openwrt.org/releases/{version}/targets/{target}/{subtarget}/kmods/{kmod}/Packages",
   
   // フォールバック言語（重要！）
   fallback_language: "en"
