@@ -42,6 +42,10 @@ let deviceDefaultPackages = [];  // mobj.default_packages
 let deviceDevicePackages = [];   // mobj.device_packages  
 let extraPackages = [];           // config.asu_extra_packages
 
+// マルチインプットマネージャー用
+let packageSearchManager = null;
+let commandsManager = null;
+
 // ==================== 初期化処理 ====================
 // 元の updateImages をフック
 const originalUpdateImages = window.updateImages;
@@ -100,6 +104,166 @@ window.updateImages = function(version, mobj) {
         console.log("Force updating language packages for:", currentLang);
     }
 };
+
+// ==================== 共通マルチインプット管理機能 ====================
+class MultiInputManager {
+    constructor(containerId, options = {}) {
+        this.container = document.getElementById(containerId);
+        if (!this.container) {
+            console.error(`Container ${containerId} not found`);
+            return;
+        }
+        
+        this.options = {
+            placeholder: options.placeholder || 'Type and press Enter',
+            className: options.className || 'multi-input-item',
+            onAdd: options.onAdd || (() => {}),
+            onRemove: options.onRemove || (() => {}),
+            onChange: options.onChange || (() => {}),
+            autocomplete: options.autocomplete || null
+        };
+        
+        this.inputs = [];
+        this.init();
+    }
+    
+    init() {
+        // コンテナをクリア
+        this.container.innerHTML = '';
+        this.container.className = 'multi-input-container';
+        
+        // 初期インプットボックスを追加
+        this.addInput('', true);
+    }
+    
+    addInput(value = '', focus = false) {
+        const inputWrapper = document.createElement('div');
+        inputWrapper.className = 'multi-input-wrapper';
+        
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = this.options.className;
+        input.placeholder = this.options.placeholder;
+        input.value = value;
+        input.autocomplete = 'off';
+        input.spellcheck = false;
+        input.autocapitalize = 'off';
+        
+        // イベントリスナー設定
+        input.addEventListener('keydown', (e) => this.handleKeyDown(e, input));
+        input.addEventListener('input', (e) => this.handleInput(e, input));
+        input.addEventListener('blur', (e) => this.handleBlur(e, input));
+        
+        inputWrapper.appendChild(input);
+        this.container.appendChild(inputWrapper);
+        this.inputs.push(input);
+        
+        if (focus) {
+            setTimeout(() => input.focus(), 10);
+        }
+        
+        if (value) {
+            this.options.onAdd(value);
+        }
+        
+        return input;
+    }
+    
+    handleKeyDown(e, input) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const value = input.value.trim();
+            
+            if (value) {
+                // 現在の値を確定
+                input.setAttribute('data-confirmed', 'true');
+                
+                // 新しいインプットボックスを追加
+                this.addInput('', true);
+                
+                // コールバック実行
+                this.options.onChange(this.getAllValues());
+            }
+        } else if (e.key === 'Backspace' && input.value === '' && this.inputs.length > 1) {
+            // 空のインプットでBackspaceを押した場合、前のインプットにフォーカス
+            const index = this.inputs.indexOf(input);
+            if (index > 0) {
+                this.inputs[index - 1].focus();
+                // カーソルを末尾に設定
+                const prevInput = this.inputs[index - 1];
+                prevInput.setSelectionRange(prevInput.value.length, prevInput.value.length);
+            }
+        }
+    }
+    
+    handleInput(e, input) {
+        const value = input.value.trim();
+        
+        // オートコンプリート処理
+        if (this.options.autocomplete && value.length >= 2) {
+            this.options.autocomplete(value, input);
+        }
+        
+        // コールバック実行
+        this.options.onChange(this.getAllValues());
+    }
+    
+    handleBlur(e, input) {
+        const value = input.value.trim();
+        const index = this.inputs.indexOf(input);
+        
+        // 値が空で、最後のインプットでない場合は削除
+        if (value === '' && this.inputs.length > 1 && index !== this.inputs.length - 1) {
+            this.removeInput(input);
+        }
+        
+        // 最後のインプットに値がある場合、新しいインプットを追加
+        if (value && index === this.inputs.length - 1) {
+            this.addInput('', false);
+        }
+    }
+    
+    removeInput(input) {
+        const index = this.inputs.indexOf(input);
+        if (index > -1 && this.inputs.length > 1) {
+            const value = input.value.trim();
+            
+            // DOMから削除
+            input.parentElement.remove();
+            
+            // 配列から削除
+            this.inputs.splice(index, 1);
+            
+            // コールバック実行
+            if (value) {
+                this.options.onRemove(value);
+            }
+            this.options.onChange(this.getAllValues());
+        }
+    }
+    
+    getAllValues() {
+        return this.inputs
+            .map(input => input.value.trim())
+            .filter(value => value !== '');
+    }
+    
+    setValues(values) {
+        // 全てクリア
+        this.container.innerHTML = '';
+        this.inputs = [];
+        
+        // 値を設定
+        if (values && values.length > 0) {
+            values.forEach(value => {
+                this.addInput(value, false);
+            });
+        }
+        
+        // 最後に空のインプットを追加
+        this.addInput('', false);
+    }
+}
 
 // custom.html 読み込み
 async function loadCustomHTML() {
@@ -176,55 +340,65 @@ async function initializeCustomFeatures(asuSection, temp) {
 function setupPackageSearch() {
     console.log('setupPackageSearch called');
     
-    const searchInput = document.getElementById('package-search');
     const searchContainer = document.getElementById('package-search-autocomplete');
-    
-    if (!searchInput) {
-        console.log('package-search input not found');
-        return;
-    }
     
     if (!searchContainer) {
         console.log('package-search-autocomplete container not found');
         return;
     }
     
-    console.log('Setting up package search events');
+    // 既存のインプットを削除
+    const oldInput = document.getElementById('package-search');
+    if (oldInput) {
+        oldInput.remove();
+    }
     
-    let searchTimer = null;
-    
-    // 検索入力イベント
-    searchInput.addEventListener('input', function(e) {
-        console.log('Package search input:', e.target.value);
-        clearTimeout(searchTimer);
-        const query = e.target.value.trim();
-        
-        if (query.length < 2) {
-            clearPackageSearchResults();
-            return;
-        }
-        
-        searchTimer = setTimeout(() => {
+    // マルチインプットマネージャーを初期化
+    packageSearchManager = new MultiInputManager('package-search-autocomplete', {
+        placeholder: 'Type package name and press Enter',
+        className: 'multi-input-item package-search-input',
+        onAdd: (packageName) => {
+            console.log('Package added:', packageName);
+            addSearchedPackage(packageName);
+        },
+        onRemove: (packageName) => {
+            console.log('Package removed:', packageName);
+            removeSearchedPackage(packageName);
+        },
+        onChange: (values) => {
+            console.log('Package list changed:', values);
+        },
+        autocomplete: (query, inputElement) => {
             console.log('Searching for packages:', query);
-            searchPackages(query, searchInput);
-        }, 300);
-    });
-    
-    // Enter キーで追加
-    searchInput.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            const value = e.target.value.trim();
-            if (value) {
-                console.log('Adding package via Enter:', value);
-                addSearchedPackage(value);
-                e.target.value = '';
-                clearPackageSearchResults();
-            }
+            searchPackages(query, inputElement);
         }
     });
     
     console.log('Package search setup complete');
+}
+
+// パッケージ削除関数を追加
+function removeSearchedPackage(packageName) {
+    console.log('removeSearchedPackage:', packageName);
+    
+    const textarea = document.getElementById('asu-packages');
+    if (!textarea) {
+        console.log('asu-packages textarea not found');
+        return;
+    }
+    
+    const currentPackages = split(textarea.value);
+    const filteredPackages = currentPackages.filter(pkg => pkg !== packageName);
+    
+    if (currentPackages.length !== filteredPackages.length) {
+        textarea.value = filteredPackages.join(' ');
+        
+        // 高さ調整
+        textarea.style.height = 'auto';
+        textarea.style.height = textarea.scrollHeight + 'px';
+        
+        console.log('Package removed from textarea:', packageName);
+    }
 }
 
 // パッケージ検索実行
@@ -1610,6 +1784,45 @@ function setupEventListeners() {
             updateVariableDefinitions();
         });
     });
+    
+    // コマンド入力のマルチインプット化
+    setupCommandsInput();
+}
+
+// コマンド入力設定関数を追加
+function setupCommandsInput() {
+    console.log('setupCommandsInput called');
+    
+    const commandsContainer = document.getElementById('commands-autocomplete');
+    
+    if (!commandsContainer) {
+        console.log('commands-autocomplete container not found');
+        return;
+    }
+    
+    // 既存のインプットを削除
+    const oldInput = document.getElementById('command');
+    if (oldInput) {
+        oldInput.remove();
+    }
+    
+    // マルチインプットマネージャーを初期化
+    commandsManager = new MultiInputManager('commands-autocomplete', {
+        placeholder: 'Type command and press Enter',
+        className: 'multi-input-item command-input',
+        onAdd: (command) => {
+            console.log('Command added:', command);
+        },
+        onRemove: (command) => {
+            console.log('Command removed:', command);
+        },
+        onChange: (values) => {
+            console.log('Commands changed:', values);
+            updateCustomCommands();
+        }
+    });
+    
+    console.log('Commands input setup complete');
 }
 
 function handleConnectionTypeChange(e) {
@@ -2203,8 +2416,8 @@ function updateCustomCommands() {
     const textarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
     if (!textarea) return;
     
-    const commandInput = document.querySelector("#command");
-    const customCommands = commandInput?.value || '';
+    // マルチインプットマネージャーから値を取得
+    const customCommands = commandsManager ? commandsManager.getAllValues().join('\n') : '';
     
     let content = textarea.value;
     
@@ -2247,12 +2460,6 @@ function setupFormWatchers() {
             });
         }
     });
-    
-    const commandInput = document.querySelector("#command");
-    if (commandInput) {
-        commandInput.removeEventListener('input', updateCustomCommands);
-        commandInput.addEventListener('input', updateCustomCommands);
-    }
     
     updateVariableDefinitions();
 }
@@ -2354,4 +2561,4 @@ window.addEventListener('unhandledrejection', function(e) {
     console.error('Custom.js Unhandled Promise Rejection:', e.reason);
 });
 
-console.log('custom.js (Postinst update on language change fixed) fully loaded and ready');
+console.log('custom.js (Multi-input version) fully loaded and ready');
