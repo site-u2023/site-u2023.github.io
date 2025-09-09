@@ -6,7 +6,9 @@
 // 用途: ブラウザのUI表示言語変更
 //
 // 2. デバイス用言語システム
-// セレクター: #aios-language (custom.html内で動的生成)
+// セレクター: #aios-language (setup.jsonで定義、custom.jsで動的生成)
+// オプション: custom.jsが#languages-selectのoption要素を全てコピーして生成
+// ※setup.jsonにoptionsが無いため、custom.jsが#languages-selectから選択肢を複製する
 // 言語ファイル: langs/custom.en.json, langs/custom.ja.json など（カスタムファイル）
 // 変数: selectedLanguage, customLanguageMap
 // 処理関数: loadCustomTranslations() (custom.js)
