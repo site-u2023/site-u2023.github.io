@@ -164,8 +164,110 @@ async function initializeCustomFeatures(asuSection, temp) {
     
     // フォーム監視設定
     setupFormWatchers();
+
+    // タグ入力コンポーネントの初期化
+    setupTagInputs();
     
     customInitialized = true;
+}
+
+// …省略…
+
+async function initializeCustomFeatures(asuSection, temp) {
+  console.log('initializeCustomFeatures called');
+  
+  if (customInitialized) {
+    console.log('Already initialized, skipping');
+    return;
+  }
+
+  // …各種初期化処理…
+
+  // フォーム監視設定
+  setupFormWatchers();
+
+  // タグ入力コンポーネントの初期化
+  setupTagInputs();
+
+  customInitialized = true;
+}
+
+// ==================== タグ入力コンポーネント ====================
+class TagInput {
+  constructor(container, input) {
+    this.container = container;
+    this.input = input;
+    this.tags = [];
+    this._init();
+  }
+
+  _init() {
+    // 一覧表示用要素
+    this.list = document.createElement('div');
+    this.list.className = 'tag-list';
+    this.container.appendChild(this.list);
+
+    // Enterでトグル(追加／削除)
+    this.input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const value = this.input.value.trim();
+        if (!value) return;
+
+        if (this.tags.includes(value)) {
+          this._removeTag(value);
+        } else {
+          this._addTag(value);
+        }
+        this.input.value = '';
+      }
+    });
+  }
+
+  // タグを追加して再描画
+  _addTag(text) {
+    this.tags.push(text);
+    this._render();
+    this._dispatchChange();
+  }
+
+  // 指定テキストのタグを削除して再描画
+  _removeTag(text) {
+    this.tags = this.tags.filter(t => t !== text);
+    this._render();
+    this._dispatchChange();
+  }
+
+  // タグ一覧をDOMに反映
+  _render() {
+    this.list.innerHTML = '';
+    for (const text of this.tags) {
+      const span = document.createElement('span');
+      span.className = 'tag';
+      span.textContent = text;
+      this.list.appendChild(span);
+    }
+  }
+
+  // 外部通知用イベント
+  _dispatchChange() {
+    const evt = new CustomEvent('tagsChanged', { detail: this.tags });
+    this.container.dispatchEvent(evt);
+  }
+}
+
+// #package-search と #command に TagInput を適用
+function setupTagInputs() {
+  [
+    { containerId: 'package-search-autocomplete', inputId: 'package-search' },
+    { containerId: 'commands-autocomplete',      inputId: 'command'       }
+  ].forEach(({ containerId, inputId }) => {
+    const container = document.getElementById(containerId);
+    const input     = document.getElementById(inputId);
+    if (container && input) {
+      new TagInput(container, input);
+    }
+  });
 }
 
 // #asuセクションを置き換え（修正版：index.jsが期待するDOM要素を全て保持）
