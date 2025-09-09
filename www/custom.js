@@ -340,7 +340,7 @@ function searchLocalPackages(query, inputElement) {
     showPackageSearchResults(results, inputElement);
 }
 
-// 検索結果表示
+// 検索結果表示（無制限版）
 function showPackageSearchResults(results, inputElement) {
     console.log('showPackageSearchResults:', results.length, 'results');
     
@@ -364,7 +364,8 @@ function showPackageSearchResults(results, inputElement) {
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     `;
     
-    results.slice(0, 20).forEach(pkgName => {
+    // 制限を削除：全ての結果を表示
+    results.forEach(pkgName => {
         const item = document.createElement('div');
         item.textContent = pkgName;
         item.style.cssText = `
