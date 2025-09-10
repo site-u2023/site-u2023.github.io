@@ -2215,10 +2215,10 @@ function createPackageCheckbox(pkg, isChecked = false, isDependency = false) {
     
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
-    checkbox.id = `pkg-${pkg.id}`;
+    checkbox.id = `pkg-${pkg.uniqueId || pkg.id}`; 
     checkbox.className = 'form-check-input package-selector-checkbox';
     checkbox.setAttribute('data-package', pkg.id);   // id
-    checkbox.setAttribute('data-package-id', pkg.id);
+    checkbox.setAttribute('data-unique-id', pkg.uniqueId || pkg.id); 
     
     if (pkg.dependencies) {
         checkbox.setAttribute('data-dependencies', pkg.dependencies.join(','));
@@ -2258,7 +2258,7 @@ function handlePackageSelection(e) {
         dependencies.split(',').forEach(depName => {  // depNameは表示名
             const depPkg = findPackageById(depName);  // 表示名でパッケージを検索
             if (depPkg) {
-                const depCheckbox = document.querySelector(`[data-package="${depPkg.name}"]`);  // パッケージのnameでチェックボックスを探す
+                const depCheckbox = document.querySelector(`[data-unique-id="${depPkg.uniqueId || depPkg.id}"]`);  // パッケージのnameでチェックボックスを探す
                 if (depCheckbox) {
                     depCheckbox.checked = isChecked;
                     
