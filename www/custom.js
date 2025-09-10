@@ -33,7 +33,7 @@ window.addEventListener('load', () => {
 // ==================== グローバル変数 ====================
 let customInitialized = false;
 let customHTMLLoaded = false;
-let PACKAGE_DB = null;
+let packagesJson = null;
 let setupConfig = null;
 let formStructure = {};
 let cachedApiInfo = null;
@@ -685,7 +685,7 @@ function reinitializeFeatures() {
     
     setupEventListeners();
     
-    if (PACKAGE_DB) generatePackageSelector();
+    if (packagesJson) generatePackageSelector();
     fetchAndDisplayIspInfo();
     if (cachedApiInfo) updateAutoConnectionInfo(cachedApiInfo);
 
@@ -2099,12 +2099,12 @@ async function loadPackageDatabase() {
         const url = config?.packages_db_url || 'packages/packages.json';
         const response = await fetch(url);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        PACKAGE_DB = await response.json();
-        console.log('Package database loaded:', PACKAGE_DB);
+        packagesJson = await response.json();
+        console.log('Package database loaded:', packagesJson);
         
         generatePackageSelector();
         
-        return PACKAGE_DB;
+        return packagesJson;
     } catch (err) {
         console.error('Failed to load package database:', err);
         return null;
@@ -2113,13 +2113,13 @@ async function loadPackageDatabase() {
 
 function generatePackageSelector() {
     const container = document.querySelector('#package-categories');
-    if (!container || !PACKAGE_DB) {
+    if (!container || !packagesJson) {
         return;
     }
     
     container.innerHTML = '';
     
-    PACKAGE_DB.categories.forEach(category => {
+    packagesJson.categories.forEach(category => {
         const categoryDiv = createPackageCategory(category);
         if (categoryDiv) {
             container.appendChild(categoryDiv);
@@ -2127,7 +2127,7 @@ function generatePackageSelector() {
     });
     
     updatePackageListFromSelector();
-    console.log(`Generated ${PACKAGE_DB.categories.length} package categories`);
+    console.log(`Generated ${packagesJson.categories.length} package categories`);
 }
 
 function createPackageCategory(category) {
@@ -2370,9 +2370,9 @@ function updatePackageListFromSelector() {
 }
 
 function findPackageById(id) {
-    if (!PACKAGE_DB) return null;
+    if (!packagesJson) return null;
     
-    for (const category of PACKAGE_DB.categories) {
+    for (const category of packagesJson.categories) {
         const pkg = category.packages.find(p => p.uniqueId === id || p.id === id);
         if (pkg) return pkg;
     }
