@@ -1717,8 +1717,22 @@ function applySpecialFieldLogic(values) {
         connectionFieldVars.filter(key => !key.startsWith('dslite_')).forEach(key => delete values[key]);
         
         if (cachedApiInfo?.aftr) {
+        values.dslite_aftr_type    = cachedApiInfo.aftr.aftrType || '';
+        values.dslite_area         = cachedApiInfo.aftr.jurisdiction || '';
+        values.dslite_aftr_address = cachedApiInfo.aftr.aftrIpv6Address || '';
+    }
+        // UIから3変数を個別に確実に拾う
+        const uiType  = getFieldValue('#dslite-aftr-type');
+        const uiArea  = getFieldValue('#dslite-area');
+        const uiAddr  = getFieldValue('#dslite-aftr-address');
+        if (uiType) values.dslite_aftr_type = uiType;
+        if (uiArea) values.dslite_area = uiArea;
+        // アドレスはAPIがあればAPI優先、無ければUI
+        if (cachedApiInfo?.aftr) {
             values.dslite_aftr_address = cachedApiInfo.aftr;
-        }
+        } else if (uiAddr) {
+            values.dslite_aftr_address = uiAddr;
+        }        
     } else if (connectionType === 'mape') {
         connectionFieldVars.filter(key => !key.startsWith('mape_')).forEach(key => delete values[key]);
         
@@ -1810,14 +1824,45 @@ function setupEventListeners() {
         }
     });
     
-    // MAP-Eタイプ切り替えハンドラーを追加
+    // MAP-Eタイプ切り替え
     document.querySelectorAll('input[name="mape_type"]').forEach(radio => {
         radio.addEventListener('change', e => {
             toggleGuaPrefixVisibility(e.target.value);
             updateVariableDefinitions();
         });
     });
-    
+
+    // DS-Lite: ISP(aftr_type) × Area 変更で AFTR アドレスを自動補完
+    const aftrType = document.querySelector('#dslite-aftr-type');
+    const aftrArea = document.querySelector('#dslite-area');
+    const aftrAddr = document.querySelector('#dslite-aftr-address');
+
+    function computeAftrAddress(type, area) {
+        // 必要に応じて実際の命名規則/固定IPに置き換えてください
+        const map = {
+            transix:  { east: 'gw.transix.jp',  west: 'gw.transix.jp'  },
+            xpass:    { east: 'gw.xpass.jp',    west: 'gw.xpass.jp'    },
+            v6option: { east: 'gw.v6option.jp', west: 'gw.v6option.jp' }
+        };
+        return map[type]?.[area] || '';
+    }
+
+    function syncAftrAddress(force = false) {
+        if (!aftrType || !aftrArea || !aftrAddr) return;
+        const computed = computeAftrAddress(aftrType.value, aftrArea.value);
+        if (!computed) return;
+        // 初期化時は空のときのみ補完、選択変更時は強制上書き
+        if (force || !aftrAddr.value) {
+            aftrAddr.value = computed;
+            updateVariableDefinitions();
+        }
+    }
+
+    if (aftrType) aftrType.addEventListener('change', () => syncAftrAddress(true));
+    if (aftrArea) aftrArea.addEventListener('change', () => syncAftrAddress(true));
+    // 初期化（AFTRアドレスが空なら一度だけ補完）
+    setTimeout(() => syncAftrAddress(false), 0);
+   
     // コマンド入力のマルチインプット化
     setupCommandsInput();
 }
