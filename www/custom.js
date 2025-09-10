@@ -2207,7 +2207,7 @@ function createPackageItem(pkg) {
 function createPackageCheckbox(pkg, isChecked = false, isDependency = false) {
     const label = document.createElement('label');
     label.className = 'form-check-label';
-    label.setAttribute('for', `pkg-${pkg.id}`);
+    label.setAttribute('for', `pkg-${pkg.uniqueId || pkg.id}`);
     label.style.display = 'flex';
     label.style.alignItems = 'center';
     label.style.gap = '0.5em';
@@ -2267,7 +2267,7 @@ function handlePackageSelection(e) {
                         depDeps.split(',').forEach(subDepName => {
                             const subDepPkg = findPackageById(subDepName);
                             if (subDepPkg) {
-                                const subDepCheckbox = document.querySelector(`#pkg-${subDepPkg.id}`);
+                                const subDepCheckbox = document.querySelector(`[data-unique-id="${subDepPkg.uniqueId || subDepPkg.id}"]`);
                                 if (subDepCheckbox) subDepCheckbox.checked = true;
                             }
                         });
@@ -2373,7 +2373,7 @@ function findPackageById(id) {
     if (!PACKAGE_DB) return null;
     
     for (const category of PACKAGE_DB.categories) {
-        const pkg = category.packages.find(p => p.name === id);
+        const pkg = category.packages.find(p => p.uniqueId === id || p.id === id);
         if (pkg) return pkg;
     }
     return null;
