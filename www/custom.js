@@ -2217,7 +2217,7 @@ function createPackageCheckbox(pkg, isChecked = false, isDependency = false) {
     checkbox.type = 'checkbox';
     checkbox.id = `pkg-${pkg.id}`;
     checkbox.className = 'form-check-input package-selector-checkbox';
-    checkbox.setAttribute('data-package', pkg.name);  // name
+    checkbox.setAttribute('data-package', pkg.id);   // id
     checkbox.setAttribute('data-package-id', pkg.id);
     
     if (pkg.dependencies) {
