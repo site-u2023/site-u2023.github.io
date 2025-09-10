@@ -321,11 +321,13 @@
         },
         {
           "id": "luci-theme-material",
-          "name": "luci-theme-material"
+          "name": "luci-theme-material",
+          "hidden": true
         },
         {
           "id": "luci-theme-openwrt-2020",
-          "name": "luci-theme-openwrt-2020"
+          "name": "luci-theme-openwrt-2020",
+          "hidden": true
         }
       ]
     },
