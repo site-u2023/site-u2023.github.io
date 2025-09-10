@@ -23,13 +23,11 @@
 console.log('custom.js loaded');
 
 // OFSバージョン
-document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(() => {
-        const el = document.getElementById('ofs-version');
-        if (el) {
-            el.innerText = ofs_version;
-        }
-    }, 0);
+window.addEventListener('load', () => {
+    const el = document.getElementById('ofs-version');
+    if (el && typeof custom_ofs_version !== 'undefined') {
+        el.innerText = custom_ofs_version;
+    }
 });
 
 // ==================== グローバル変数 ====================
