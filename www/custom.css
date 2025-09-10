@@ -263,7 +263,14 @@ details summary:hover {
   color: var(--owrt-blue);
 }
 
-details summary h3,
+
+details summary h3 {
+  display: inline;
+  margin: 0;
+  font-weight: 500;
+  margin-left: -1em;
+}
+
 details summary h4,
 details summary h5 {
   display: inline;
@@ -271,15 +278,16 @@ details summary h5 {
   font-weight: 500;
 }
 
-details[open] summary {
-  border-bottom: none;
+details:has(summary h3) summary {
+  list-style: none;
 }
 
-/* h3の左寄せ - display:blockにして動作させる */
-#packages-details summary h3,
-#scripts-details summary h3 {
-  display: block;
-  margin-left: -1.2em;
+details:has(summary h3) summary::-webkit-details-marker {
+  display: none;
+}
+
+details[open] summary {
+  border-bottom: none;
 }
 
 #packages-details,
