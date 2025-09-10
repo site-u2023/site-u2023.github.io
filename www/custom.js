@@ -33,7 +33,7 @@ window.addEventListener('load', () => {
 // ==================== グローバル変数 ====================
 let customInitialized = false;
 let customHTMLLoaded = false;
-let packagesJson = null;
+let PACKAGE_DB = null;
 let setupConfig = null;
 let formStructure = {};
 let cachedApiInfo = null;
@@ -333,13 +333,6 @@ async function initializeCustomFeatures(asuSection, temp) {
         loadPackageDatabase(),
         fetchAndDisplayIspInfo()
     ]);
-
-    // ラジオボタンのchangeイベント
-    document.querySelectorAll('input[name="connection_type"]').forEach(radio => {
-        radio.addEventListener('change', () => {
-            applyIspAutoConfig(cachedApiInfo);
-        });
-    });
     
     // 依存関係のある初期化（順序重要）
     setupEventListeners();
@@ -692,16 +685,8 @@ function reinitializeFeatures() {
     
     setupEventListeners();
     
-    if (packagesJson) generatePackageSelector();
+    if (PACKAGE_DB) generatePackageSelector();
     fetchAndDisplayIspInfo();
-
-    // ラジオボタンの change イベントを再登録
-    document.querySelectorAll('input[name="connection_type"]').forEach(radio => {
-        radio.addEventListener('change', () => {
-            applyIspAutoConfig(cachedApiInfo);
-        });
-    });
-    
     if (cachedApiInfo) updateAutoConnectionInfo(cachedApiInfo);
 
     // メイン言語セレクターとの同期を再設定
@@ -2035,48 +2020,38 @@ function displayIspInfo(apiInfo) {
 
 function applyIspAutoConfig(apiInfo) {
     if (!apiInfo || !formStructure.fields) return;
-
+    
     const connectionType = getFieldValue('input[name="connection_type"]');
-
-    // 接続タイプごとのフィールドIDマッピング
-    const connectionFields = {
-        dslite: ['dslite-aftr-type', 'dslite-area', 'dslite-aftr-address'],
-        mape: [
-            'mape-br', 'mape-ealen', 'mape-ipv4-prefix', 'mape-ipv4-prefixlen',
-            'mape-ipv6-prefix', 'mape-ipv6-prefixlen', 'mape-psid-offset',
-            'mape-psidlen', 'mape-gua-prefix'
-        ],
-        pppoe: ['pppoe-username', 'pppoe-password'],
-        ap: ['ap-ip-address', 'ap-gateway']
-    };
-
+    
     Object.values(formStructure.fields).forEach(field => {
-        if (!field.apiMapping) return;
-
-        // このフィールドが接続固有かどうかを判定
-        const isConnectionField = Object.values(connectionFields).flat().includes(field.id);
-        if (isConnectionField) {
-            // AUTO か、選択中のタイプに含まれるフィールドのみ許可
-            if (connectionType !== 'auto'
-                && !connectionFields[connectionType]?.includes(field.id)) {
+        if (field.apiMapping) {
+            const isConnectionField = ['dslite', 'mape', 'ap', 'pppoe'].some(type => 
+                formStructure.connectionTypes[type]?.includes(field.id)
+            );
+            
+            if (isConnectionField && connectionType !== 'auto') {
                 return;
             }
-        }
+            
+            let value = getNestedValue(apiInfo, field.apiMapping);
 
-        let value = getNestedValue(apiInfo, field.apiMapping);
+            if (field.variableName === 'mape_gua_prefix') {
+                const guaPrefix = generateGuaPrefixFromFullAddress(cachedApiInfo);
+                if (guaPrefix) {
+                    value = guaPrefix;
+                }
+            }
 
-        if (field.variableName === 'mape_gua_prefix') {
-            const guaPrefix = generateGuaPrefixFromFullAddress(cachedApiInfo);
-            if (guaPrefix) value = guaPrefix;
-        }
-
-        if (value != null && value !== '') {
-            const el = document.querySelector(field.selector);
-            if (el) el.value = value;
+            if (value !== null && value !== undefined && value !== '') {
+                const element = document.querySelector(field.selector);
+                if (element) {
+                    element.value = value;
+                }
+            }
         }
     });
-
-    setGuaPrefixIfAvailable();
+    
+    setGuaPrefixIfAvailable();    
     updateAutoConnectionInfo(apiInfo);
     updatePackageListFromDynamicSources();
     updateVariableDefinitions();
@@ -2124,38 +2099,53 @@ async function loadPackageDatabase() {
         const url = config?.packages_db_url || 'packages/packages.json';
         const response = await fetch(url);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        packagesJson = await response.json();
-        console.log('Package database loaded:', packagesJson);
+        PACKAGE_DB = await response.json();
+        console.log('Package database loaded:', PACKAGE_DB);
         
-        generatePackageSelector();
+        await generatePackageSelector();  // awaitを追加
         
-        return packagesJson;
+        return PACKAGE_DB;
     } catch (err) {
         console.error('Failed to load package database:', err);
         return null;
     }
 }
 
-function generatePackageSelector() {
+async function generatePackageSelector() {
     const container = document.querySelector('#package-categories');
-    if (!container || !packagesJson) {
+    if (!container || !PACKAGE_DB) {
         return;
     }
     
     container.innerHTML = '';
     
-    packagesJson.categories.forEach(category => {
-        const categoryDiv = createPackageCategory(category);
+    // ローディング表示
+    const loadingDiv = document.createElement('div');
+    loadingDiv.textContent = 'Checking available packages...';
+    loadingDiv.style.padding = '1em';
+    loadingDiv.style.fontStyle = 'italic';
+    container.appendChild(loadingDiv);
+    
+    const categoryElements = [];
+    
+    for (const category of PACKAGE_DB.categories) {
+        const categoryDiv = await createPackageCategory(category);
         if (categoryDiv) {
-            container.appendChild(categoryDiv);
+            categoryElements.push(categoryDiv);
         }
-    });
+    }
+    
+    // ローディング表示を削除
+    container.innerHTML = '';
+    
+    // カテゴリを追加
+    categoryElements.forEach(el => container.appendChild(el));
     
     updatePackageListFromSelector();
-    console.log(`Generated ${packagesJson.categories.length} package categories`);
+    console.log(`Generated ${categoryElements.length} package categories with available packages`);
 }
 
-function createPackageCategory(category) {
+async function createPackageCategory(category) {
     const categoryDiv = document.createElement('div');
     categoryDiv.className = 'package-category';
     categoryDiv.setAttribute('data-category-id', category.id);
@@ -2165,13 +2155,15 @@ function createPackageCategory(category) {
     
     let hasVisiblePackages = false;
     
-    category.packages.forEach(pkg => {
+    for (const pkg of category.packages) {
         if (!pkg.hidden) {
-            hasVisiblePackages = true;
-            const packageItem = createPackageItem(pkg);
-            packageGrid.appendChild(packageItem);
+            const packageItem = await createPackageItem(pkg);
+            if (packageItem) {
+                hasVisiblePackages = true;
+                packageGrid.appendChild(packageItem);
+            }
         }
-    });
+    }
     
     if (!hasVisiblePackages) return null;
     
@@ -2192,8 +2184,34 @@ function createPackageCategory(category) {
     categoryDiv.appendChild(packageGrid);
     return categoryDiv;
 }
- 
-function createPackageItem(pkg) {
+
+async function createPackageItem(pkg) {
+    // パッケージ名からフィードを判定
+    let feed = 'packages';
+    if (pkg.id.startsWith('luci-')) {
+        feed = 'luci';
+    } else if (pkg.id.startsWith('kmod-')) {
+        feed = 'base';  // kmodはbaseフィードにある可能性
+    }
+    
+    // メインパッケージの存在確認
+    const isMainAvailable = await isPackageAvailable(pkg.id, feed);
+    if (!isMainAvailable && !pkg.hidden) {
+        // packagesで見つからない場合、他のフィードも試す
+        const alternativeFeeds = feed === 'packages' ? ['luci', 'base'] : ['packages', 'base'];
+        let found = false;
+        for (const altFeed of alternativeFeeds) {
+            if (await isPackageAvailable(pkg.id, altFeed)) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            console.log(`Package not available in any feed: ${pkg.id}`);
+            return null;
+        }
+    }
+    
     const packageItem = document.createElement('div');
     packageItem.className = 'package-item';
     packageItem.setAttribute('data-package-id', pkg.id);
@@ -2205,14 +2223,25 @@ function createPackageItem(pkg) {
         const depContainer = document.createElement('div');
         depContainer.className = 'package-dependencies';
         
-        pkg.dependencies.forEach(depId => {
+        for (const depId of pkg.dependencies) {
             const depPkg = findPackageById(depId);
             if (depPkg) {
-                const depCheckbox = createPackageCheckbox(depPkg, pkg.checked || false, true);
-                depCheckbox.classList.add('package-dependent');
-                depContainer.appendChild(depCheckbox);
+                // 依存パッケージも同様にフィード判定
+                let depFeed = 'packages';
+                if (depPkg.id.startsWith('luci-')) {
+                    depFeed = 'luci';
+                } else if (depPkg.id.startsWith('kmod-')) {
+                    depFeed = 'base';
+                }
+                
+                const isDepAvailable = await isPackageAvailable(depPkg.id, depFeed);
+                if (isDepAvailable || depPkg.hidden) {
+                    const depCheckbox = createPackageCheckbox(depPkg, pkg.checked || false, true);
+                    depCheckbox.classList.add('package-dependent');
+                    depContainer.appendChild(depCheckbox);
+                }
             }
-        });
+        }
         
         if (depContainer.children.length > 0) {
             packageItem.appendChild(depContainer);
@@ -2220,7 +2249,7 @@ function createPackageItem(pkg) {
     }
     
     if (pkg.enableVar) {
-        const checkbox = packageItem.querySelector(`#pkg-${pkg.id}`);
+        const checkbox = packageItem.querySelector(`#pkg-${pkg.uniqueId || pkg.id}`);
         if (checkbox) {
             checkbox.setAttribute('data-enable-var', pkg.enableVar);
         }
@@ -2395,9 +2424,9 @@ function updatePackageListFromSelector() {
 }
 
 function findPackageById(id) {
-    if (!packagesJson) return null;
+    if (!PACKAGE_DB) return null;
     
-    for (const category of packagesJson.categories) {
+    for (const category of PACKAGE_DB.categories) {
         const pkg = category.packages.find(p => p.uniqueId === id || p.id === id);
         if (pkg) return pkg;
     }
