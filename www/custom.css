@@ -263,7 +263,14 @@ details summary:hover {
   color: var(--owrt-blue);
 }
 
-details summary h3,
+
+details summary h3 {
+  display: inline;
+  margin: 0;
+  margin-left: -1.5em;
+  font-weight: 500;
+}
+
 details summary h4,
 details summary h5 {
   display: inline;
