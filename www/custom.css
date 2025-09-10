@@ -258,7 +258,6 @@ details summary {
   padding: 0.75em 0;
   user-select: none;
   color: inherit;
-  margin-left: -1.2em;
 }
 
 details summary:hover {
@@ -268,6 +267,7 @@ details summary:hover {
 details summary h3 {
   display: inline;
   margin: 0;
+  margin-left: -1.2em;
   font-weight: 500;
 }
 
@@ -276,7 +276,6 @@ details summary h5 {
   display: inline;
   margin: 0;
   font-weight: 500;
-  margin-left: 1.2em;
 }
 
 details[open] summary {
