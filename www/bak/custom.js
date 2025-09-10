@@ -629,11 +629,6 @@ function replaceAsuSection(asuSection, temp) {
         newDiv.appendChild(customScripts);
     }
 
-    // setup.jsonベースの動的設定セクションを追加
-    const dynamicConfigDiv = document.createElement('div');
-    dynamicConfigDiv.id = 'dynamic-config-sections';
-    newDiv.appendChild(dynamicConfigDiv);
-
     // index.jsが期待する全てのDOM要素を追加
     newDiv.insertAdjacentHTML('beforeend', `
         <br>
@@ -2088,9 +2083,9 @@ function updateAutoConnectionInfo(apiInfo) {
     }
 
     if (apiInfo?.isp) {
-        infoText += `\n\n🌐\u00A0ISP: ${apiInfo.isp}`;
+        infoText += `\n\nISP: ${apiInfo.isp}`;
         if (apiInfo.as) {
-            infoText += `\n🌐\u00A0AS: ${apiInfo.as}`;
+            infoText += `\nAS: ${apiInfo.as}`;
         }
     }
     
@@ -2237,16 +2232,16 @@ function createPackageCheckbox(pkg, isChecked = false, isDependency = false) {
     
     if (config?.package_url) {
         const link = document.createElement('a');
-        link.href = config.package_url.replace("{id}", encodeURIComponent(pkg.id));
+        link.href = config.package_url.replace("{id}", encodeURIComponent(pkg.name));
         link.target = '_blank';
         link.className = 'package-link';
-        link.textContent = pkg.name || pkg.id;
+        link.textContent = pkg.id || pkg.name;
         link.onclick = (e) => e.stopPropagation();
         label.appendChild(checkbox);
         label.appendChild(link);
     } else {
         const span = document.createElement('span');
-        span.textContent = pkg.name || pkg.id;
+        span.textContent = pkg.id || pkg.name;
         label.appendChild(checkbox);
         label.appendChild(span);
     }
