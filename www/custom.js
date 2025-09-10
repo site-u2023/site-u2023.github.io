@@ -2102,7 +2102,7 @@ async function loadPackageDatabase() {
         PACKAGE_DB = await response.json();
         console.log('Package database loaded:', PACKAGE_DB);
         
-        generatePackageSelector();
+        await generatePackageSelector();  // awaitを追加
         
         return PACKAGE_DB;
     } catch (err) {
@@ -2111,7 +2111,7 @@ async function loadPackageDatabase() {
     }
 }
 
-function generatePackageSelector() {
+async function generatePackageSelector() {
     const container = document.querySelector('#package-categories');
     if (!container || !PACKAGE_DB) {
         return;
@@ -2119,18 +2119,33 @@ function generatePackageSelector() {
     
     container.innerHTML = '';
     
-    PACKAGE_DB.categories.forEach(category => {
-        const categoryDiv = createPackageCategory(category);
+    // ローディング表示
+    const loadingDiv = document.createElement('div');
+    loadingDiv.textContent = 'Checking available packages...';
+    loadingDiv.style.padding = '1em';
+    loadingDiv.style.fontStyle = 'italic';
+    container.appendChild(loadingDiv);
+    
+    const categoryElements = [];
+    
+    for (const category of PACKAGE_DB.categories) {
+        const categoryDiv = await createPackageCategory(category);
         if (categoryDiv) {
-            container.appendChild(categoryDiv);
+            categoryElements.push(categoryDiv);
         }
-    });
+    }
+    
+    // ローディング表示を削除
+    container.innerHTML = '';
+    
+    // カテゴリを追加
+    categoryElements.forEach(el => container.appendChild(el));
     
     updatePackageListFromSelector();
-    console.log(`Generated ${PACKAGE_DB.categories.length} package categories`);
+    console.log(`Generated ${categoryElements.length} package categories with available packages`);
 }
 
-function createPackageCategory(category) {
+async function createPackageCategory(category) {
     const categoryDiv = document.createElement('div');
     categoryDiv.className = 'package-category';
     categoryDiv.setAttribute('data-category-id', category.id);
@@ -2140,13 +2155,15 @@ function createPackageCategory(category) {
     
     let hasVisiblePackages = false;
     
-    category.packages.forEach(pkg => {
+    for (const pkg of category.packages) {
         if (!pkg.hidden) {
-            hasVisiblePackages = true;
-            const packageItem = createPackageItem(pkg);
-            packageGrid.appendChild(packageItem);
+            const packageItem = await createPackageItem(pkg);
+            if (packageItem) {
+                hasVisiblePackages = true;
+                packageGrid.appendChild(packageItem);
+            }
         }
-    });
+    }
     
     if (!hasVisiblePackages) return null;
     
@@ -2167,8 +2184,16 @@ function createPackageCategory(category) {
     categoryDiv.appendChild(packageGrid);
     return categoryDiv;
 }
- 
-function createPackageItem(pkg) {
+
+async function createPackageItem(pkg) {
+    // メインパッケージの存在確認
+    const isMainAvailable = await isPackageAvailable(pkg.id, 'packages');
+    if (!isMainAvailable && !pkg.hidden) {
+        // hiddenでないパッケージが存在しない場合は表示しない
+        console.log(`Package not available, skipping: ${pkg.id}`);
+        return null;
+    }
+    
     const packageItem = document.createElement('div');
     packageItem.className = 'package-item';
     packageItem.setAttribute('data-package-id', pkg.id);
@@ -2180,14 +2205,18 @@ function createPackageItem(pkg) {
         const depContainer = document.createElement('div');
         depContainer.className = 'package-dependencies';
         
-        pkg.dependencies.forEach(depId => {
+        for (const depId of pkg.dependencies) {
             const depPkg = findPackageById(depId);
             if (depPkg) {
-                const depCheckbox = createPackageCheckbox(depPkg, pkg.checked || false, true);
-                depCheckbox.classList.add('package-dependent');
-                depContainer.appendChild(depCheckbox);
+                // 依存パッケージの存在確認
+                const isDepAvailable = await isPackageAvailable(depPkg.id, 'packages');
+                if (isDepAvailable || depPkg.hidden) {
+                    const depCheckbox = createPackageCheckbox(depPkg, pkg.checked || false, true);
+                    depCheckbox.classList.add('package-dependent');
+                    depContainer.appendChild(depCheckbox);
+                }
             }
-        });
+        }
         
         if (depContainer.children.length > 0) {
             packageItem.appendChild(depContainer);
@@ -2195,7 +2224,7 @@ function createPackageItem(pkg) {
     }
     
     if (pkg.enableVar) {
-        const checkbox = packageItem.querySelector(`#pkg-${pkg.id}`);
+        const checkbox = packageItem.querySelector(`#pkg-${pkg.uniqueId || pkg.id}`);
         if (checkbox) {
             checkbox.setAttribute('data-enable-var', pkg.enableVar);
         }
