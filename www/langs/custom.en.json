@@ -1,4 +1,5 @@
 {
+    "tr-load": "Download OpenWrt custom firmware for your device",
     "tr-custom-packages": "Installed Packages",
     "tr-custom-defaults": "Script executed on first boot (uci-defaults)",
     "tr-postinst": "Postinst (Package Installation Script)",
