@@ -2088,9 +2088,9 @@ function updateAutoConnectionInfo(apiInfo) {
     }
 
     if (apiInfo?.isp) {
-        infoText += `\n\n🌐\u00A0ISP: ${apiInfo.isp}`;
+        infoText += `\n\nISP: ${apiInfo.isp}`;
         if (apiInfo.as) {
-            infoText += `\n🌐\u00A0AS: ${apiInfo.as}`;
+            infoText += `\nAS: ${apiInfo.as}`;
         }
     }
     
