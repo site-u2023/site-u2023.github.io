@@ -342,11 +342,6 @@
           "name": "attendedsysupgrade-common"
         },
         {
-          "id": "luci-app-wireguard",
-          "name": "luci-app-wireguard",
-          "dependencies": ["wireguard-tools"]
-        },
-        {
           "id": "luci-proto-wireguard",
           "name": "luci-proto-wireguard",
           "dependencies": ["wireguard-tools"]
