@@ -2367,7 +2367,7 @@ function findPackageById(id) {
     if (!PACKAGE_DB) return null;
     
     for (const category of PACKAGE_DB.categories) {
-        const pkg = category.packages.find(p => p.id === id);
+        const pkg = category.packages.find(p => p.name === id);
         if (pkg) return pkg;
     }
     return null;
