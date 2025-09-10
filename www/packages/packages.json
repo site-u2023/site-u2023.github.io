@@ -353,7 +353,7 @@
         },
         {
           "id": "wireguard-tools",
-          "name": "wireguard-tools"
+          "name": "wireguard-tools",
           "hidden": true
         },
         {
