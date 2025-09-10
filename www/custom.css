@@ -267,7 +267,6 @@ details summary:hover {
 details summary h3 {
   display: inline;
   margin: 0;
-  margin-left: -1.5em;
   font-weight: 500;
 }
 
@@ -276,6 +275,14 @@ details summary h5 {
   display: inline;
   margin: 0;
   font-weight: 500;
+}
+
+details:has(summary h3) summary {
+  list-style: none;
+}
+
+details:has(summary h3) summary::-webkit-details-marker {
+  display: none;
 }
 
 details[open] summary {
