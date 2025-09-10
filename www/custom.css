@@ -254,6 +254,7 @@ details {
 }
 
 details summary {
+  display: inline;
   margin: 0;
   font-weight: 500;
   cursor: pointer;
@@ -267,13 +268,11 @@ details summary:hover {
 }
 
 details summary h3 {
-  display: inline;
-  margin-inline-start: -1.2em;
+  margin-left: -1.2em;
 }
 
 details summary h4,
 details summary h5 {
-  display: inline;
 }
 
 details[open] summary {
