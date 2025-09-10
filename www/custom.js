@@ -1398,6 +1398,7 @@ function handleRadioChange(e) {
 
 function updatePackageListFromDynamicSources() {
     updateSetupJsonPackages();
+    updateVariableDefinitions(); // 即座に変数定義を更新
     triggerPackageUpdate();
 }
 
@@ -1650,7 +1651,8 @@ function collectConnectionFields(pkg, structure) {
     if (pkg.type === 'conditional-section' && pkg.id) {
         const connectionType = pkg.id.replace('-section', '');
         if (structure.connectionTypes[connectionType]) {
-            collectFieldVariables(pkg, structure.connectionTypes[connectionType]);
+            // このセクション内の全フィールドを収集
+            collectAllFieldsInSection(pkg, structure.connectionTypes[connectionType]);
         }
     }
     
@@ -1658,6 +1660,35 @@ function collectConnectionFields(pkg, structure) {
     if (pkg.children) {
         pkg.children.forEach(child => {
             collectConnectionFields(child, structure);
+        });
+    }
+}
+
+// 新規追加：セクション内の全フィールドを再帰的に収集
+function collectAllFieldsInSection(pkg, targetArray) {
+    // input-group内のフィールドを収集
+    if (pkg.type === 'input-group' && pkg.fields) {
+        pkg.fields.forEach(field => {
+            if (field.variableName && !targetArray.includes(field.variableName)) {
+                targetArray.push(field.variableName);
+            }
+        });
+    }
+    
+    // radio-groupの変数名も収集
+    if (pkg.type === 'radio-group' && pkg.variableName && !targetArray.includes(pkg.variableName)) {
+        targetArray.push(pkg.variableName);
+    }
+    
+    // 個別フィールドの変数名を収集
+    if (pkg.variableName && !targetArray.includes(pkg.variableName)) {
+        targetArray.push(pkg.variableName);
+    }
+    
+    // 子要素も再帰的に処理
+    if (pkg.children) {
+        pkg.children.forEach(child => {
+            collectAllFieldsInSection(child, targetArray);
         });
     }
 }
@@ -1958,7 +1989,11 @@ function setupEventListeners() {
     Object.entries(radioGroups).forEach(([name, handler]) => {
         document.querySelectorAll(`input[name="${name}"]`).forEach(radio => {
             radio.removeEventListener('change', handler);
-            radio.addEventListener('change', handler);
+            radio.addEventListener('change', (e) => {
+                handler(e);
+                // ラジオボタン変更時に即座に変数定義を更新
+                updateVariableDefinitions();
+            });
         });
         
         const checked = document.querySelector(`input[name="${name}"]:checked`);
@@ -2026,7 +2061,7 @@ function handleConnectionTypeChange(e) {
                 show(section);
                 if (type === 'auto' && cachedApiInfo) {
                     updateAutoConnectionInfo(cachedApiInfo);
-                    } else if (type === 'mape' && cachedApiInfo) {
+                } else if (type === 'mape' && cachedApiInfo) {
                     // MAP-E選択時にGUA prefixを設定
                     const guaPrefixField = document.querySelector('#mape-gua-prefix');
                     if (guaPrefixField && cachedApiInfo.ipv6) {
@@ -2043,6 +2078,8 @@ function handleConnectionTypeChange(e) {
         }
     });
     
+    // 接続タイプ変更時に即座に変数定義を更新
+    updateVariableDefinitions();
     updatePackageListFromDynamicSources();
 }
 
