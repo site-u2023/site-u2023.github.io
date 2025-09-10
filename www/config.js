@@ -16,8 +16,8 @@ var config = {
   image_url: "https://downloads.openwrt.org",
 
   // Insert snapshot versions (optional)
-  // show_snapshots: true,
-  show_snapshots: false,
+  // show_snapshots: false,
+  show_snapshots: true,
     
   // Info link URL (optional)
   info_url: "https://openwrt.org/start?q={title}&do=search",
