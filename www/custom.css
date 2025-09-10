@@ -275,13 +275,11 @@ details[open] summary {
   border-bottom: none;
 }
 
-/* h3を含むdetailsの調整 */
-details:has(summary h3) summary {
-  padding-left: 1.5em;
-}
-
-details summary h3 {
-  margin-left: -1.5em;
+/* h3の左寄せ - シンプルに解決 */
+#packages-details summary,
+#scripts-details summary {
+  text-indent: -1.2em;
+  padding-left: 1.2em;
 }
 
 #packages-details,
