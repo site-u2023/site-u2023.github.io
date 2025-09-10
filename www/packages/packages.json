@@ -346,21 +346,23 @@
         {
           "id": "luci-app-wireguard",
           "name": "luci-app-wireguard",
-          "dependencies": ["wireguard-tools (app)"]
+          "dependencies": ["wireguard-tools-app"]
         },
         {
           "id": "wireguard-tools",
-          "name": "wireguard-tools (app)",
+          "name": "wireguard-tools",
+          "uniqueId": "wireguard-tools-app",
           "hidden": true
         },
         {
           "id": "luci-proto-wireguard",
           "name": "luci-proto-wireguard",
-          "dependencies": ["wireguard-tools (proto)"]
+          "dependencies": ["wireguard-tools-proto"]
         },
         {
           "id": "wireguard-tools",
           "name": "wireguard-tools (proto)",
+          "uniqueId": "wireguard-tools-proto",
           "hidden": true
         },
         {
