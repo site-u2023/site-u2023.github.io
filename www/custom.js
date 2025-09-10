@@ -1052,6 +1052,11 @@ async function loadSetupConfig() {
         console.log('Setup config loaded:', setupConfig);
         
         formStructure = generateFormStructure(setupConfig);
+        console.log('Form structure generated:', {
+            connectionTypes: formStructure.connectionTypes,
+            wifiModes: formStructure.wifiModes,
+            netOptimizerModes: formStructure.netOptimizerModes
+        });
         storeDefaultValues(setupConfig);
         renderSetupConfig(setupConfig);
         
@@ -1581,11 +1586,56 @@ function generateFormStructure(config) {
         fields: {},           
         connectionTypes: {},  
         categories: {},       
-        fieldMapping: {}      
+        fieldMapping: {},
+        wifiModes: {},        // Wi-Fiモード別フィールド
+        netOptimizerModes: {} // ネットワーク最適化モード別フィールド
+    };
+    
+    // 接続タイプを初期化
+    structure.connectionTypes = {
+        auto: [],
+        dhcp: [], 
+        pppoe: [],
+        dslite: [],
+        mape: [],
+        ap: []
+    };
+    
+    // Wi-Fiモード別フィールドを初期化
+    structure.wifiModes = {
+        disabled: [],
+        standard: [],
+        usteer: []
+    };
+    
+    // ネットワーク最適化モード別フィールドを初期化
+    structure.netOptimizerModes = {
+        auto: [],
+        manual: [],
+        disabled: []
     };
     
     config.categories.forEach(category => {
         structure.categories[category.id] = [];
+        
+        // インターネット接続カテゴリの場合、接続タイプ別にフィールドを収集
+        if (category.id === 'internet-config') {
+            category.packages.forEach(pkg => {
+                collectConnectionFields(pkg, structure);
+            });
+        }
+        // Wi-Fi設定カテゴリの場合
+        else if (category.id === 'wifi-config') {
+            category.packages.forEach(pkg => {
+                collectWifiFields(pkg, structure);
+            });
+        }
+        // チューニングカテゴリの場合
+        else if (category.id === 'tuning-config') {
+            category.packages.forEach(pkg => {
+                collectTuningFields(pkg, structure);
+            });
+        }
         
         category.packages.forEach(pkg => {
             collectFieldsFromPackage(pkg, structure, category.id);
@@ -1593,6 +1643,103 @@ function generateFormStructure(config) {
     });
     
     return structure;
+}
+
+function collectConnectionFields(pkg, structure) {
+    // 条件付きセクション内のフィールドを収集
+    if (pkg.type === 'conditional-section' && pkg.id) {
+        const connectionType = pkg.id.replace('-section', '');
+        if (structure.connectionTypes[connectionType]) {
+            collectFieldVariables(pkg, structure.connectionTypes[connectionType]);
+        }
+    }
+    
+    // 子要素も再帰的に処理
+    if (pkg.children) {
+        pkg.children.forEach(child => {
+            collectConnectionFields(child, structure);
+        });
+    }
+}
+
+function collectWifiFields(pkg, structure) {
+    // Wi-Fiモード用のフィールドを収集
+    if (pkg.id === 'wifi-basic-fields') {
+        // 基本Wi-Fiフィールド（SSID、パスワード）
+        collectFieldVariables(pkg, structure.wifiModes.disabled);
+        // enable_usteerも追加
+        structure.wifiModes.disabled.push('enable_usteer');
+    } else if (pkg.id === 'usteer-fields') {
+        // Usteer専用フィールド（mobility_domain、snr）
+        const usteerFields = [];
+        collectFieldVariables(pkg, usteerFields);
+        // standardモードで削除、disabledモードでも削除
+        usteerFields.forEach(field => {
+            structure.wifiModes.standard.push(field);
+            structure.wifiModes.disabled.push(field);
+        });
+    }
+    
+    if (pkg.children) {
+        pkg.children.forEach(child => {
+            collectWifiFields(child, structure);
+        });
+    }
+}
+
+function collectTuningFields(pkg, structure) {
+    // ネットワーク最適化モード用のフィールドを収集
+    if (pkg.id === 'netopt-fields') {
+        // manualモードのフィールドをautoモードとdisabledモードの削除対象に追加
+        const manualFields = [];
+        collectFieldVariables(pkg, manualFields);
+        manualFields.forEach(field => {
+            structure.netOptimizerModes.auto.push(field);
+            structure.netOptimizerModes.disabled.push(field);
+        });
+        // enable_netoptもdisabledモードの削除対象に追加
+        if (!structure.netOptimizerModes.disabled.includes('enable_netopt')) {
+            structure.netOptimizerModes.disabled.push('enable_netopt');
+        }
+    }
+    
+    if (pkg.children) {
+        pkg.children.forEach(child => {
+            collectTuningFields(child, structure);
+        });
+    }
+}
+
+function collectFieldVariables(pkg, targetArray) {
+    // フィールドから変数名を収集
+    if (pkg.type === 'input-group' && pkg.fields) {
+        pkg.fields.forEach(field => {
+            if (field.variableName && !targetArray.includes(field.variableName)) {
+                targetArray.push(field.variableName);
+            }
+        });
+    }
+    
+    // radio-groupやselectなどの変数名も収集
+    if (pkg.variableName && !targetArray.includes(pkg.variableName)) {
+        targetArray.push(pkg.variableName);
+    }
+    
+    // 個別フィールドの変数名を収集
+    if (pkg.fields) {
+        pkg.fields.forEach(field => {
+            if (field.variableName && !targetArray.includes(field.variableName)) {
+                targetArray.push(field.variableName);
+            }
+        });
+    }
+    
+    // 子要素も再帰的に処理
+    if (pkg.children) {
+        pkg.children.forEach(child => {
+            collectFieldVariables(child, targetArray);
+        });
+    }
 }
 
 function collectFieldsFromPackage(pkg, structure, categoryId) {
@@ -1762,11 +1909,11 @@ function applySpecialFieldLogic(values) {
         allConnectionFields.forEach(key => delete values[key]);
     }
 
-    // Wi-Fi設定の処理（JSON駆動）
+// Wi-Fi設定の処理（JSON駆動）
     const wifiMode = getFieldValue('input[name="wifi_mode"]');
     const wifiFields = formStructure?.wifiModes || {
-        disabled: ['wlan_ssid', 'wlan_password', 'enable_usteer', 'mobility_domain', 'snr'],
-        standard: ['enable_usteer', 'mobility_domain', 'snr'],
+        disabled: [],
+        standard: [],
         usteer: []
     };
 
@@ -1781,15 +1928,21 @@ function applySpecialFieldLogic(values) {
     // ネットワーク最適化の処理（JSON駆動）
     const netOptimizer = getFieldValue('input[name="net_optimizer"]');
     const netOptFields = formStructure?.netOptimizerModes || {
-        auto: ['netopt_rmem', 'netopt_wmem', 'netopt_conntrack', 'netopt_backlog', 'netopt_somaxconn', 'netopt_congestion'],
-        disabled: ['enable_netopt', 'netopt_rmem', 'netopt_wmem', 'netopt_conntrack', 'netopt_backlog', 'netopt_somaxconn', 'netopt_congestion']
+        auto: [],
+        manual: [],
+        disabled: []
     };
 
     if (netOptimizer === 'auto') {
         values.enable_netopt = '1';
         netOptFields.auto.forEach(key => delete values[key]);
     } else if (netOptimizer === 'disabled') {
+        // enable_netoptも含めて削除
+        delete values['enable_netopt'];
         netOptFields.disabled.forEach(key => delete values[key]);
+    } else if (netOptimizer === 'manual') {
+        values.enable_netopt = '1';
+        // manualモードでは削除するフィールドなし（全て保持）
     }
 }
 
