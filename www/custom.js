@@ -2100,9 +2100,8 @@ async function loadPackageDatabase() {
         const response = await fetch(url);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         PACKAGE_DB = await response.json();
-        console.log('Package database loaded:', PACKAGE_DB);
-        
-        await generatePackageSelector();  // awaitを追加
+        renderPackageCategoriesFast(PACKAGE_DB);
+        generatePackageSelectorAvailability();
         
         return PACKAGE_DB;
     } catch (err) {
@@ -2194,24 +2193,7 @@ async function createPackageItem(pkg) {
         feed = 'base';  // kmodはbaseフィードにある可能性
     }
     
-    // メインパッケージの存在確認
-    const isMainAvailable = await isPackageAvailable(pkg.id, feed);
-    if (!isMainAvailable && !pkg.hidden) {
-        // packagesで見つからない場合、他のフィードも試す
-        const alternativeFeeds = feed === 'packages' ? ['luci', 'base'] : ['packages', 'base'];
-        let found = false;
-        for (const altFeed of alternativeFeeds) {
-            if (await isPackageAvailable(pkg.id, altFeed)) {
-                found = true;
-                break;
-            }
-        }
-        if (!found) {
-            console.log(`Package not available in any feed: ${pkg.id}`);
-            return null;
-        }
-    }
-    
+    // ----- 即時レンダリング用のパッケージ要素作成 -----
     const packageItem = document.createElement('div');
     packageItem.className = 'package-item';
     packageItem.setAttribute('data-package-id', pkg.id);
@@ -2254,6 +2236,23 @@ async function createPackageItem(pkg) {
             checkbox.setAttribute('data-enable-var', pkg.enableVar);
         }
     }
+
+    // ----- バックグラウンドで存在チェックし、なければ削除 -----
+    (async () => {
+        const ok = await isPackageAvailable(pkg.id, feed);
+        if (!ok) {
+            // 他フィードも試す
+            const altFeeds = feed === 'packages' ? ['luci', 'base'] : ['packages', 'base'];
+            const results = await Promise.all(
+                altFeeds.map(f => isPackageAvailable(pkg.id, f))
+            );
+            if (!results.includes(true)) {
+                packageItem.remove();
+                console.log('Removed unavailable package:', pkg.id);
+                updatePackageListFromSelector();
+            }
+        }
+    })();
     
     return packageItem;
 }
