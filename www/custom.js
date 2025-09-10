@@ -26,8 +26,8 @@ console.log('custom.js loaded');
 document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
         const el = document.getElementById('ofs-version');
-        if (el && typeof CUSTOM_OFS_VERSION !== 'undefined') {
-            el.innerText = CUSTOM_OFS_VERSION;
+        if (el) {
+            el.innerText = ofs_version;
         }
     }, 0);
 });
