@@ -25,13 +25,20 @@
 console.log('custom.js loaded');
 
 // OFSバージョン
-if (typeof ofs_version !== 'undefined' && ofs_version === "%GIT_VERSION%" && config.ofs_version) {
+if (config.ofs_version) {
     fetch(config.ofs_version)
         .then(r => r.json())
         .then(d => {
-            window.ofs_version = d.sha.substring(0, 7);
+            if (d && d.tag_name) {
+                window.ofs_version = `OFS ${d.tag_name}`;
+                const el = document.getElementById('ofs-version');
+                if (el) el.innerText = `OFS ${d.tag_name}`;
+            }
+        })
+        .catch(e => {
+            console.error('Failed to fetch latest release:', e);
             const el = document.getElementById('ofs-version');
-            if (el) el.innerText = d.sha.substring(0, 7);
+            if (el) el.innerText = 'OFS N/A';
         });
 }
 
