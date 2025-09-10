@@ -34,7 +34,7 @@ var config = {
   min_version: "21.02.0",
 
   // OFSバージョン
-  ofs_version: "https://api.github.com/repos/openwrt/firmware-selector-openwrt-org/releases/latest", 
+  ofs_version: "OFS v5.0.3-1-ge6fb8f75",
   
   // Auto-configuration API URL
   auto_config_api_url: "https://auto-config.site-u.workers.dev/",
