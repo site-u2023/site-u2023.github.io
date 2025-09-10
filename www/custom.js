@@ -2217,7 +2217,7 @@ function createPackageCheckbox(pkg, isChecked = false, isDependency = false) {
     checkbox.type = 'checkbox';
     checkbox.id = `pkg-${pkg.id}`;
     checkbox.className = 'form-check-input package-selector-checkbox';
-    checkbox.setAttribute('data-package', pkg.name);
+    checkbox.setAttribute('data-package', pkg.id);  // 変更: name → id
     checkbox.setAttribute('data-package-id', pkg.id);
     
     if (pkg.dependencies) {
@@ -2232,16 +2232,16 @@ function createPackageCheckbox(pkg, isChecked = false, isDependency = false) {
     
     if (config?.package_url) {
         const link = document.createElement('a');
-        link.href = config.package_url.replace("{id}", encodeURIComponent(pkg.name));
+        link.href = config.package_url.replace("{id}", encodeURIComponent(pkg.id));  // 変更: pkg.id（内部名）でURL構築
         link.target = '_blank';
         link.className = 'package-link';
-        link.textContent = pkg.id || pkg.name;
+        link.textContent = pkg.name || pkg.id;  // 変更: name（表示名）を表示
         link.onclick = (e) => e.stopPropagation();
         label.appendChild(checkbox);
         label.appendChild(link);
     } else {
         const span = document.createElement('span');
-        span.textContent = pkg.id || pkg.name;
+        span.textContent = pkg.name || pkg.id;  // 変更: name（表示名）を表示
         label.appendChild(checkbox);
         label.appendChild(span);
     }
