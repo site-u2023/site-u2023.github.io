@@ -253,10 +253,6 @@ details {
 }
 
 details summary {
-  display: flex;  
-  align-items: center;  
-  justify-content: flex-start;
-  gap: 0.5em; 
   cursor: pointer;
   padding: 0.75em 0;
   user-select: none;
@@ -267,17 +263,12 @@ details summary:hover {
   color: var(--owrt-blue);
 }
 
-details summary h3 {
-  display: block;
+details summary h3,
+details summary h4,
+details summary h5 {
+  display: inline;
   margin: 0;
   font-weight: 500;
-}
-
-details summary h4, 
-details summary h5 { 
-  display: inline; 
-  margin: 0; 
-  font-weight: 500; 
 }
 
 details[open] summary {
