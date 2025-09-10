@@ -254,7 +254,7 @@ details {
 
 details summary {
   cursor: pointer;
-  padding: 0.75em 0;
+  padding: 1em 0;
   user-select: none;
   color: inherit;
 }
