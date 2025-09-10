@@ -694,6 +694,14 @@ function reinitializeFeatures() {
     
     if (packagesJson) generatePackageSelector();
     fetchAndDisplayIspInfo();
+
+    // ラジオボタンの change イベントを再登録
+    document.querySelectorAll('input[name="connection_type"]').forEach(radio => {
+        radio.addEventListener('change', () => {
+            applyIspAutoConfig(cachedApiInfo);
+        });
+    });
+    
     if (cachedApiInfo) updateAutoConnectionInfo(cachedApiInfo);
 
     // メイン言語セレクターとの同期を再設定
