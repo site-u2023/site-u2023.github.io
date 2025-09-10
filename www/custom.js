@@ -333,6 +333,13 @@ async function initializeCustomFeatures(asuSection, temp) {
         loadPackageDatabase(),
         fetchAndDisplayIspInfo()
     ]);
+
+    // ラジオボタンのchangeイベント
+    document.querySelectorAll('input[name="connection_type"]').forEach(radio => {
+        radio.addEventListener('change', () => {
+            applyIspAutoConfig(cachedApiInfo);
+        });
+    });
     
     // 依存関係のある初期化（順序重要）
     setupEventListeners();
