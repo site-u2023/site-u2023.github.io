@@ -1412,7 +1412,7 @@ function updateSetupJsonPackages() {
                 if (!selectedValue) return;
 
                 if (pkg.variableName === 'connection_type') {
-                    // インターネット接続方式は排他的
+                    // インターネット接続方式は常に排他的
                     if (selectedValue === 'auto') {
                         if (cachedApiInfo?.mape?.brIpv6Address) {
                             addPackagesFor(pkg, 'mape');
