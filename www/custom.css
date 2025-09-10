@@ -255,7 +255,6 @@ details {
 
 details summary {
   display: inline;
-  margin: 0;
   font-weight: 500;
   cursor: pointer;
   padding: 0.75em 0;
