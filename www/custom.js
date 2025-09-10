@@ -2167,7 +2167,7 @@ function createPackageCategory(category) {
     categoryDiv.appendChild(packageGrid);
     return categoryDiv;
 }
-
+ 
 function createPackageItem(pkg) {
     const packageItem = document.createElement('div');
     packageItem.className = 'package-item';
@@ -2217,7 +2217,7 @@ function createPackageCheckbox(pkg, isChecked = false, isDependency = false) {
     checkbox.type = 'checkbox';
     checkbox.id = `pkg-${pkg.id}`;
     checkbox.className = 'form-check-input package-selector-checkbox';
-    checkbox.setAttribute('data-package', pkg.id);  // 変更: name → id
+    checkbox.setAttribute('data-package', pkg.name);  // name
     checkbox.setAttribute('data-package-id', pkg.id);
     
     if (pkg.dependencies) {
@@ -2258,7 +2258,7 @@ function handlePackageSelection(e) {
         dependencies.split(',').forEach(depName => {  // depNameは表示名
             const depPkg = findPackageById(depName);  // 表示名でパッケージを検索
             if (depPkg) {
-                const depCheckbox = document.querySelector(`#pkg-${depPkg.id}`);  // パッケージのidでチェックボックスを探す
+                const depCheckbox = document.querySelector(`[data-package="${depPkg.name}"]`);  // パッケージのnameでチェックボックスを探す
                 if (depCheckbox) {
                     depCheckbox.checked = isChecked;
                     
