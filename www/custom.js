@@ -1838,11 +1838,19 @@ function setupEventListeners() {
     const aftrAddr = document.querySelector('#dslite-aftr-address');
 
     function computeAftrAddress(type, area) {
-        // 必要に応じて実際の命名規則/固定IPに置き換えてください
         const map = {
-            transix:  { east: 'gw.transix.jp',  west: 'gw.transix.jp'  },
-            xpass:    { east: 'gw.xpass.jp',    west: 'gw.xpass.jp'    },
-            v6option: { east: 'gw.v6option.jp', west: 'gw.v6option.jp' }
+            transix: {
+                east: '2404:8e00::feed:100',
+                west: '2404:8e01::feed:100'
+            },
+            xpass: {
+                east: '2404:8e02::feed:100',
+                west: '2404:8e03::feed:100'
+            },
+            v6option: {
+                east: '2404:8e04::feed:100',
+                west: '2404:8e05::feed:100'
+            }
         };
         return map[type]?.[area] || '';
     }
