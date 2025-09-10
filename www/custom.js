@@ -1677,7 +1677,7 @@ function applySpecialFieldLogic(values) {
     
     const connectionFieldVars = [
         'pppoe_username', 'pppoe_password',
-        'dslite_aftr_type', 'dslite_region', 'dslite_aftr_address', 
+        'dslite_aftr_type', 'dslite_area', 'dslite_aftr_address',
         'mape_br', 'mape_ealen', 'mape_ipv4_prefix', 'mape_ipv4_prefixlen',
         'mape_ipv6_prefix', 'mape_ipv6_prefixlen', 'mape_psid_offset', 'mape_psidlen',
         'mape_gua_prefix', 'mape_gua_mode', 'mape_type',
@@ -1705,8 +1705,8 @@ function applySpecialFieldLogic(values) {
                     values.mape_gua_mode = '1';
                     // console.log('Applied GUA prefix in auto mode:', guaPrefix);
                 }
-            } else if (cachedApiInfo.aftr) {
-                values.dslite_aftr_address = cachedApiInfo.aftr;
+            } else if (cachedApiInfo.aftr?.aftrIpv6Address) {
+                values.dslite_aftr_address = cachedApiInfo.aftr.aftrIpv6Address;
             }
         }
     } else if (connectionType === 'dhcp') {
@@ -1717,10 +1717,10 @@ function applySpecialFieldLogic(values) {
         connectionFieldVars.filter(key => !key.startsWith('dslite_')).forEach(key => delete values[key]);
         
         if (cachedApiInfo?.aftr) {
-        values.dslite_aftr_type    = cachedApiInfo.aftr.aftrType || '';
-        values.dslite_area         = cachedApiInfo.aftr.jurisdiction || '';
-        values.dslite_aftr_address = cachedApiInfo.aftr.aftrIpv6Address || '';
-    }
+            values.dslite_aftr_type    = cachedApiInfo.aftr.aftrType || '';
+            values.dslite_area         = cachedApiInfo.aftr.jurisdiction || '';
+            values.dslite_aftr_address = cachedApiInfo.aftr.aftrIpv6Address || '';
+        }
         // UIから3変数を個別に確実に拾う
         const uiType  = getFieldValue('#dslite-aftr-type');
         const uiArea  = getFieldValue('#dslite-area');
@@ -1728,8 +1728,8 @@ function applySpecialFieldLogic(values) {
         if (uiType) values.dslite_aftr_type = uiType;
         if (uiArea) values.dslite_area = uiArea;
         // アドレスはAPIがあればAPI優先、無ければUI
-        if (cachedApiInfo?.aftr) {
-            values.dslite_aftr_address = cachedApiInfo.aftr;
+        if (cachedApiInfo?.aftr?.aftrIpv6Address) {
+            values.dslite_aftr_address = cachedApiInfo.aftr.aftrIpv6Address;
         } else if (uiAddr) {
             values.dslite_aftr_address = uiAddr;
         }        
@@ -2453,41 +2453,44 @@ function loadUciDefaultsTemplate() {
 
 function updateVariableDefinitions() {
     const textarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
-    if (!textarea) {
-        return;
-    }
-    
+    if (!textarea) return;
+
     const values = collectFormValues();
-    
+
+    let emissionValues = { ...values };
+    const connType = getFieldValue('input[name="connection_type"]');
+    if (connType === 'dslite') {
+        emissionValues = {};
+        if (values.dslite_aftr_address) {
+            emissionValues.dslite_aftr_address = values.dslite_aftr_address;
+        }
+    }
+
     document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
         const enableVar = cb.getAttribute('data-enable-var');
         if (enableVar) {
-            values[enableVar] = '1';
+            emissionValues[enableVar] = '1';
         }
     });
-    
-    const variableDefinitions = generateVariableDefinitions(values);
-    
+
+    const variableDefinitions = generateVariableDefinitions(emissionValues);
+
+    // 以下は既存のテキストエリア更新処理
     let content = textarea.value;
-    
     const beginMarker = '# BEGIN_VARIABLE_DEFINITIONS';
     const endMarker = '# END_VARIABLE_DEFINITIONS';
-    
     const beginIndex = content.indexOf(beginMarker);
     const endIndex = content.indexOf(endMarker);
-    
+
     if (beginIndex !== -1 && endIndex !== -1) {
         const beforeSection = content.substring(0, beginIndex + beginMarker.length);
         const afterSection = content.substring(endIndex);
         const newSection = variableDefinitions ? '\n' + variableDefinitions + '\n' : '\n';
-        
         textarea.value = beforeSection + newSection + afterSection;
-        
-        const lines = textarea.value.split('\n').length;
-        textarea.rows = lines + 1;
+        textarea.rows = textarea.value.split('\n').length + 1;
     }
 }
-
+    
 function generateVariableDefinitions(values) {
     const lines = [];
     Object.entries(values).forEach(([key, value]) => {
