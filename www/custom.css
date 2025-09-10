@@ -276,7 +276,7 @@ details summary h5 {
   display: inline;
   margin: 0;
   font-weight: 500;
-  margin-left: 0;
+  margin-left: 1.2em;
 }
 
 details[open] summary {
