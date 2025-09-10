@@ -2460,10 +2460,8 @@ function updateVariableDefinitions() {
     let emissionValues = { ...values };
     const connType = getFieldValue('input[name="connection_type"]');
     if (connType === 'dslite') {
-        emissionValues = {};
-        if (values.dslite_aftr_address) {
-            emissionValues.dslite_aftr_address = values.dslite_aftr_address;
-        }
+        delete emissionValues.dslite_aftr_type;
+        delete emissionValues.dslite_area;
     }
 
     document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
