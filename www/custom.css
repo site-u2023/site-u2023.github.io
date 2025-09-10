@@ -254,12 +254,15 @@ details {
 }
 
 details summary {
+  margin-top: 1em;
+  margin-bottom: 1em;
+  color: inherit;
   display: inline;
+  margin:   0;
   font-weight: 500;
   cursor: pointer;
   padding: 0.75em 0;
   user-select: none;
-  color: inherit;
 }
 
 details summary:hover {
