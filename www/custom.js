@@ -1427,6 +1427,12 @@ function updateSetupJsonPackages() {
 
                     // AUTO時の特別処理（排他的）
                     if (selectedValue === 'auto') {
+                        // まず全インターネット接続方式のパッケージを削除
+                        pkg.options.forEach(opt => {
+                            if (opt.packages) {
+                                opt.packages.forEach(pkgName => dynamicPackages.delete(pkgName));
+                            }
+                        });
                         if (cachedApiInfo?.mape?.brIpv6Address) {
                             // MAP-E優先
                             const mapeOption = pkg.options.find(opt => opt.value === 'mape');
