@@ -65,7 +65,7 @@ var config = {
 current_language = "en";
 
 // OFSバージョン
-const CUSTOM_OFS_VERSION = "v5.0.3-1-ge6fb8f75";
+var ofs_version = "v5.0.3-1-ge6fb8f75";
     
 // カスタム機能の自動読み込み
 (function() {
