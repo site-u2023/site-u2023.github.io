@@ -20,9 +20,15 @@
 // 処理関数: updateLanguagePackage()
 // 用途: OpenWrtデバイスにインストールする言語パッケージ
 
-// custom.js - OpenWrt カスタム機能（言語変更時Postinst更新修正版）
-
 console.log('custom.js loaded');
+
+// OFSバージョン
+window.addEventListener('load', () => {
+    const el = document.getElementById('ofs-version');
+    if (el && typeof custom_ofs_version !== 'undefined') {
+        el.innerText = custom_ofs_version;
+    }
+});
 
 // ==================== グローバル変数 ====================
 let customInitialized = false;
@@ -41,6 +47,10 @@ let customLanguageMap = {};
 let deviceDefaultPackages = [];  // mobj.default_packages
 let deviceDevicePackages = [];   // mobj.device_packages  
 let extraPackages = [];           // config.asu_extra_packages
+
+// マルチインプットマネージャー用
+let packageSearchManager = null;
+let commandsManager = null;
 
 // ==================== 初期化処理 ====================
 // 元の updateImages をフック
@@ -100,6 +110,178 @@ window.updateImages = function(version, mobj) {
         console.log("Force updating language packages for:", currentLang);
     }
 };
+
+// ==================== 共通マルチインプット管理機能 ====================
+class MultiInputManager {
+    constructor(containerId, options = {}) {
+        this.container = document.getElementById(containerId);
+        if (!this.container) {
+            console.error(`Container ${containerId} not found`);
+            return;
+        }
+        
+        this.options = {
+            placeholder: options.placeholder || 'Type and press Enter',
+            className: options.className || 'multi-input-item',
+            onAdd: options.onAdd || (() => {}),
+            onRemove: options.onRemove || (() => {}),
+            onChange: options.onChange || (() => {}),
+            autocomplete: options.autocomplete || null
+        };
+        
+        this.inputs = [];
+        this.init();
+    }
+    
+    init() {
+        // コンテナをクリア
+        this.container.innerHTML = '';
+        this.container.className = 'multi-input-container';
+        
+        // 初期インプットボックスを追加
+        this.addInput('', true);
+    }
+    
+    addInput(value = '', focus = false) {
+        const inputWrapper = document.createElement('div');
+        inputWrapper.className = 'multi-input-wrapper';
+        
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = this.options.className;
+        input.placeholder = this.options.placeholder;
+        input.value = value;
+        input.autocomplete = 'off';
+        input.spellcheck = false;
+        input.autocapitalize = 'off';
+        
+        // イベントリスナー設定
+        input.addEventListener('keydown', (e) => this.handleKeyDown(e, input));
+        input.addEventListener('input', (e) => this.handleInput(e, input));
+        input.addEventListener('blur', (e) => this.handleBlur(e, input));
+        
+        inputWrapper.appendChild(input);
+        this.container.appendChild(inputWrapper);
+        this.inputs.push(input);
+        
+        if (focus) {
+            setTimeout(() => input.focus(), 10);
+        }
+        
+        if (value) {
+            this.options.onAdd(value);
+        }
+        
+        return input;
+    }
+    
+    handleKeyDown(e, input) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const value = input.value.trim();
+            
+            if (value) {
+                // 現在の値を確定
+                input.setAttribute('data-confirmed', 'true');
+                
+                // 新しいインプットボックスを追加
+                this.addInput('', true);
+                
+                // コールバック実行
+                this.options.onChange(this.getAllValues());
+            }
+        } else if (e.key === 'Backspace' && input.value === '' && this.inputs.length > 1) {
+            // 空のインプットでBackspaceを押した場合、前のインプットにフォーカス
+            const index = this.inputs.indexOf(input);
+            if (index > 0) {
+                this.inputs[index - 1].focus();
+                // カーソルを末尾に設定
+                const prevInput = this.inputs[index - 1];
+                prevInput.setSelectionRange(prevInput.value.length, prevInput.value.length);
+            }
+        }
+    }
+    
+    handleInput(e, input) {
+        const value = input.value.trim();
+    
+        // オートコンプリート処理
+        if (this.options.autocomplete && value.length >= 2) {
+            this.options.autocomplete(value, input);
+        }
+    
+        // 候補選択によるプログラム的な値変更の場合はログ化をスキップ
+        if (!input.dataset.programmaticChange) {
+            // コールバック実行
+            this.options.onChange(this.getAllValues());
+        }
+    
+        // フラグをクリア
+        delete input.dataset.programmaticChange;
+    }
+    
+    handleBlur(e, input) {
+        const value = input.value.trim();
+        const index = this.inputs.indexOf(input);
+        
+        // 候補選択による処理中はスキップ
+        if (input.dataset.skipBlur) {
+            delete input.dataset.skipBlur;
+            return;
+        }
+        
+        // 値が空で、最後のインプットでない場合は削除
+        if (value === '' && this.inputs.length > 1 && index !== this.inputs.length - 1) {
+            this.removeInput(input);
+        }
+        
+        // 最後のインプットに値がある場合、新しいインプットを追加（confirmed済みは除外）
+        if (value && index === this.inputs.length - 1 && !input.getAttribute('data-confirmed')) {
+            this.addInput('', false);
+        }
+    }
+    
+    removeInput(input) {
+        const index = this.inputs.indexOf(input);
+        if (index > -1 && this.inputs.length > 1) {
+            const value = input.value.trim();
+            
+            // DOMから削除
+            input.parentElement.remove();
+            
+            // 配列から削除
+            this.inputs.splice(index, 1);
+            
+            // コールバック実行
+            if (value) {
+                this.options.onRemove(value);
+            }
+            this.options.onChange(this.getAllValues());
+        }
+    }
+    
+    getAllValues() {
+        return this.inputs
+            .map(input => input.value.trim())
+            .filter(value => value !== '');
+    }
+    
+    setValues(values) {
+        // 全てクリア
+        this.container.innerHTML = '';
+        this.inputs = [];
+        
+        // 値を設定
+        if (values && values.length > 0) {
+            values.forEach(value => {
+                this.addInput(value, false);
+            });
+        }
+        
+        // 最後に空のインプットを追加
+        this.addInput('', false);
+    }
+}
 
 // custom.html 読み込み
 async function loadCustomHTML() {
@@ -176,60 +358,70 @@ async function initializeCustomFeatures(asuSection, temp) {
 function setupPackageSearch() {
     console.log('setupPackageSearch called');
     
-    const searchInput = document.getElementById('package-search');
     const searchContainer = document.getElementById('package-search-autocomplete');
-    
-    if (!searchInput) {
-        console.log('package-search input not found');
-        return;
-    }
     
     if (!searchContainer) {
         console.log('package-search-autocomplete container not found');
         return;
     }
     
-    console.log('Setting up package search events');
+    // 既存のインプットを削除
+    const oldInput = document.getElementById('package-search');
+    if (oldInput) {
+        oldInput.remove();
+    }
     
-    let searchTimer = null;
-    
-    // 検索入力イベント
-    searchInput.addEventListener('input', function(e) {
-        console.log('Package search input:', e.target.value);
-        clearTimeout(searchTimer);
-        const query = e.target.value.trim();
-        
-        if (query.length < 2) {
-            clearPackageSearchResults();
-            return;
-        }
-        
-        searchTimer = setTimeout(() => {
-            console.log('Searching for packages:', query);
-            searchPackages(query, searchInput);
-        }, 300);
-    });
-    
-    // Enter キーで追加
-    searchInput.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            const value = e.target.value.trim();
-            if (value) {
-                console.log('Adding package via Enter:', value);
-                addSearchedPackage(value);
-                e.target.value = '';
-                clearPackageSearchResults();
-            }
+    // マルチインプットマネージャーを初期化
+    packageSearchManager = new MultiInputManager('package-search-autocomplete', {
+        placeholder: 'Type package name and press Enter',
+        className: 'multi-input-item package-search-input',
+        onAdd: (packageName) => {
+            console.log('Package added:', packageName);
+            addSearchedPackage(packageName);
+        },
+        onRemove: (packageName) => {
+            console.log('Package removed:', packageName);
+            removeSearchedPackage(packageName);
+        },
+        onChange: (values) => {
+            // console.log('Package list changed:', values);
+        },
+        autocomplete: (query, inputElement) => {
+            // console.log('Searching for packages:', query);
+            searchPackages(query, inputElement);
         }
     });
     
     console.log('Package search setup complete');
 }
 
+// パッケージ削除関数を追加
+function removeSearchedPackage(packageName) {
+    console.log('removeSearchedPackage:', packageName);
+    
+    const textarea = document.getElementById('asu-packages');
+    if (!textarea) {
+        console.log('asu-packages textarea not found');
+        return;
+    }
+    
+    const currentPackages = split(textarea.value);
+    const filteredPackages = currentPackages.filter(pkg => pkg !== packageName);
+    
+    if (currentPackages.length !== filteredPackages.length) {
+        textarea.value = filteredPackages.join(' ');
+        
+        // 高さ調整
+        textarea.style.height = 'auto';
+        textarea.style.height = textarea.scrollHeight + 'px';
+        
+        console.log('Package removed from textarea:', packageName);
+    }
+}
+
 // パッケージ検索実行
 async function searchPackages(query, inputElement) {
-    console.log('searchPackages called with query:', query);
+    // console.log('searchPackages called with query:', query);
     
     const arch = current_device?.arch || cachedDeviceArch;
     const version = current_device?.version || document.querySelector('#versions')?.value;
@@ -239,7 +431,7 @@ async function searchPackages(query, inputElement) {
     
     for (const feed of feeds) {
         try {
-            console.log(`Searching in feed: ${feed}`);
+            // console.log(`Searching in feed: ${feed}`);
             const results = await searchInFeed(query, feed, version, arch);
             results.forEach(pkg => allResults.add(pkg));
         } catch (err) {
@@ -272,7 +464,7 @@ async function searchPackages(query, inputElement) {
 
 // フィード内検索
 async function searchInFeed(query, feed, version, arch) {
-    console.log(`searchInFeed: ${feed}, query: ${query}`);
+    // console.log(`searchInFeed: ${feed}, query: ${query}`);
     
     try {
         if (version.includes('SNAPSHOT')) {
@@ -281,7 +473,7 @@ async function searchInFeed(query, feed, version, arch) {
                 .replace('{arch}', arch)
                 .replace('{feed}', feed);
             
-            console.log('Fetching APK index:', url);
+            // console.log('Fetching APK index:', url);
             const resp = await fetch(url);
             if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
             
@@ -304,7 +496,7 @@ async function searchInFeed(query, feed, version, arch) {
                 .replace('{arch}', arch)
                 .replace('{feed}', feed);
             
-            console.log('Fetching OPKG packages:', url);
+            // console.log('Fetching OPKG packages:', url);
             const resp = await fetch(url);
             if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
             
@@ -331,7 +523,7 @@ async function searchInFeed(query, feed, version, arch) {
 
 // 検索結果表示（CSS分離版・無制限版）
 function showPackageSearchResults(results, inputElement) {
-    console.log('showPackageSearchResults:', results.length, 'results');
+    // console.log('showPackageSearchResults:', results.length, 'results');
     
     clearPackageSearchResults();
     
@@ -348,13 +540,33 @@ function showPackageSearchResults(results, inputElement) {
         const item = document.createElement('div');
         item.textContent = pkgName;
         
-        item.onclick = () => {
+        item.onmousedown = (e) => {
+            e.preventDefault(); // blurイベントの発生を防止
+            
             console.log('Package selected:', pkgName);
+            
+            // プログラム的変更フラグを設定
+            inputElement.dataset.programmaticChange = 'true';
+            inputElement.value = pkgName;
+            
+            // 手動でconfirmedマークを設定
+            inputElement.setAttribute('data-confirmed', 'true');
+            
+            // パッケージ追加
             addSearchedPackage(pkgName);
-            inputElement.value = '';
+            
+            // 現在の入力が最後の入力の場合のみ新しい入力を追加
+            const inputIndex = packageSearchManager.inputs.indexOf(inputElement);
+            if (inputIndex === packageSearchManager.inputs.length - 1) {
+                packageSearchManager.addInput('', true);
+            }
+            
             clearPackageSearchResults();
+            
+            // 変更通知
+            packageSearchManager.options.onChange(packageSearchManager.getAllValues());
         };
-        
+  
         resultsDiv.appendChild(item);
     });
     
@@ -610,7 +822,7 @@ async function updateLanguagePackage() {
         selectedLanguage = current_language || config?.fallback_language || 'en';
     }
 
-    console.log('updateLanguagePackage called, selectedLanguage:', selectedLanguage);
+    // console.log('updateLanguagePackage called, selectedLanguage:', selectedLanguage);
 
     // 既存の言語パッケージを一旦全て削除
     const removedPackages = [];
@@ -622,16 +834,16 @@ async function updateLanguagePackage() {
     }
 
     if (removedPackages.length > 0) {
-        console.log('Removed old language packages:', removedPackages);
+        // console.log('Removed old language packages:', removedPackages);
     }
 
     // 英語が選択されているか、デバイス情報がない場合は、パッケージを追加せずに終了
     const hasArch = current_device?.arch || cachedDeviceArch;
     if (!selectedLanguage || selectedLanguage === 'en' || !hasArch) {
         if (!hasArch) {
-            console.log('Device not selected. Skipping language package addition.');
+            // console.log('Device not selected. Skipping language package addition.');
         } else {
-            console.log('English selected, no language packages will be added.');
+            // console.log('English selected, no language packages will be added.');
         }
         // Postinstテキストエリアを更新して、削除した言語パッケージを反映
         updatePackageListFromSelector();
@@ -639,20 +851,20 @@ async function updateLanguagePackage() {
     }
     
     // デバイス情報がある場合の処理
-    console.log('Device available, checking language packages for arch:', hasArch);
+    // console.log('Device available, checking language packages for arch:', hasArch);
     
     const basePkg = `luci-i18n-base-${selectedLanguage}`;
     const addedLangPackages = new Set();
 
     // 基本言語パッケージをチェックして追加
-    console.log('Checking base package:', basePkg);
+    // console.log('Checking base package:', basePkg);
     try {
         if (await isPackageAvailable(basePkg, 'luci')) {
             dynamicPackages.add(basePkg);
             addedLangPackages.add(basePkg);
-            console.log('Added validated base language package:', basePkg);
+            // console.log('Added validated base language package:', basePkg);
         } else {
-            console.warn('Base language package not available, skipping:', basePkg);
+            // console.warn('Base language package not available, skipping:', basePkg);
         }
     } catch (err) {
         console.error('Error checking base package:', err);
@@ -660,7 +872,7 @@ async function updateLanguagePackage() {
 
     // 現在の選択済みパッケージに対応する言語パッケージをチェックして追加
     const currentPackages = getCurrentPackageList();
-    console.log('Checking language packages for', currentPackages.length, 'selected packages.');
+    // console.log('Checking language packages for', currentPackages.length, 'selected packages.');
 
     const checkPromises = [];
     for (const pkg of currentPackages) {
@@ -671,7 +883,7 @@ async function updateLanguagePackage() {
                 
                 // Promiseを作成して並列でチェック
                 const promise = (async () => {
-                    console.log('Checking LuCI language package:', langPkg);
+                    // console.log('Checking LuCI language package:', langPkg);
                     try {
                         if (await isPackageAvailable(langPkg, 'luci')) {
                             dynamicPackages.add(langPkg);
@@ -692,8 +904,8 @@ async function updateLanguagePackage() {
     // すべてのパッケージチェックが完了するのを待つ
     await Promise.all(checkPromises);
     
-    console.log('Total added language packages:', Array.from(addedLangPackages));
-    console.log('Final dynamic packages set:', Array.from(dynamicPackages));
+    // console.log('Total added language packages:', Array.from(addedLangPackages));
+    // console.log('Final dynamic packages set:', Array.from(dynamicPackages));
 
     // Postinstテキストエリアを更新（重要：必ず実行）
     updatePackageListFromSelector();
@@ -1137,8 +1349,6 @@ function buildFormGroup(field) {
 function handleRadioChange(e) {
     const radio = e.target;
     const packagesData = radio.getAttribute('data-packages');
-    
-    // 同じ名前の他のラジオボタンから動的パッケージを削除
     const sameNameRadios = document.querySelectorAll(`input[name="${radio.name}"]`);
     sameNameRadios.forEach(r => {
         if (r !== radio) {
@@ -1149,6 +1359,16 @@ function handleRadioChange(e) {
                     otherPackages.forEach(pkg => {
                         dynamicPackages.delete(pkg);
                     });
+                    // ← 新規：テキストエリアからも削除
+                    const ta = document.querySelector('#asu-packages');
+                    if (ta) {
+                        const current = split(ta.value);
+                        const cleaned = current.filter(p => !otherPackages.includes(p));
+                        if (cleaned.length !== current.length) {
+                            ta.value = cleaned.join(' ');
+                            resizePostinstTextarea();
+                        }
+                    }           
                 } catch (err) {
                     console.error('Error parsing other packages data:', err);
                 }
@@ -1488,7 +1708,7 @@ function applySpecialFieldLogic(values) {
                 if (guaPrefix) {
                     values.mape_gua_prefix = guaPrefix;
                     values.mape_gua_mode = '1';
-                    console.log('Applied GUA prefix in auto mode:', guaPrefix);
+                    // console.log('Applied GUA prefix in auto mode:', guaPrefix);
                 }
             } else if (cachedApiInfo.aftr) {
                 values.dslite_aftr_address = cachedApiInfo.aftr;
@@ -1602,6 +1822,45 @@ function setupEventListeners() {
             updateVariableDefinitions();
         });
     });
+    
+    // コマンド入力のマルチインプット化
+    setupCommandsInput();
+}
+
+// コマンド入力設定関数を追加
+function setupCommandsInput() {
+    console.log('setupCommandsInput called');
+    
+    const commandsContainer = document.getElementById('commands-autocomplete');
+    
+    if (!commandsContainer) {
+        console.log('commands-autocomplete container not found');
+        return;
+    }
+    
+    // 既存のインプットを削除
+    const oldInput = document.getElementById('command');
+    if (oldInput) {
+        oldInput.remove();
+    }
+    
+    // マルチインプットマネージャーを初期化
+    commandsManager = new MultiInputManager('commands-autocomplete', {
+        placeholder: 'Type command and press Enter',
+        className: 'multi-input-item command-input',
+        onAdd: (command) => {
+            console.log('Command added:', command);
+        },
+        onRemove: (command) => {
+            console.log('Command removed:', command);
+        },
+        onChange: (values) => {
+            // console.log('Commands changed:', values);
+            updateCustomCommands();
+        }
+    });
+    
+    console.log('Commands input setup complete');
 }
 
 function handleConnectionTypeChange(e) {
@@ -1806,31 +2065,32 @@ function applyIspAutoConfig(apiInfo) {
 function updateAutoConnectionInfo(apiInfo) {
     const autoInfo = document.querySelector('#auto-info');
     if (!autoInfo) return;
-    
+
     let infoText = '';
     
     if (apiInfo?.mape?.brIpv6Address) {
-        infoText = '🌐 Detected: MAP-E\n';
-        infoText += `   BR: ${apiInfo.mape.brIpv6Address}\n`;
-        infoText += `   EA-len: ${apiInfo.mape.eaBitLength}\n`;
-        infoText += `   IPv4 Prefix: ${apiInfo.mape.ipv4Prefix}/${apiInfo.mape.ipv4PrefixLength}\n`;
-        infoText += `   IPv6 Prefix: ${apiInfo.mape.ipv6Prefix}/${apiInfo.mape.ipv6PrefixLength}\n`;
-        infoText += `   PSID: offset=${apiInfo.mape.psIdOffset}, length=${apiInfo.mape.psidlen}`;
+        infoText = 'Detected: MAP-E\n';
+        infoText += `\u00A0BR: ${apiInfo.mape.brIpv6Address}\n`;
+        infoText += `\u00A0EA-len: ${apiInfo.mape.eaBitLength}\n`;
+        infoText += `\u00A0IPv4 Prefix: ${apiInfo.mape.ipv4Prefix}/${apiInfo.mape.ipv4PrefixLength}\n`;
+        infoText += `\u00A0IPv6 Prefix: ${apiInfo.mape.ipv6Prefix}/${apiInfo.mape.ipv6PrefixLength}\n`;
+        infoText += `\u00A0PSID: offset=${apiInfo.mape.psIdOffset}\n`;
+        infoText += `\u00A0PSID: length=${apiInfo.mape.psidlen}`;
     } else if (apiInfo?.aftr) {
-        infoText = '🌐 Detected: DS-Lite\n';
-        infoText += `   AFTR: ${apiInfo.aftr}`;
+        infoText = 'Detected: DS-Lite\n';
+        infoText += `AFTR: ${apiInfo.aftr}`;
     } else if (apiInfo) {
-        infoText = '🌐 Detected: DHCP/PPPoE\n';
-        infoText += '   Standard connection will be used';
+        infoText = 'Detected: DHCP/PPPoE\n';
+        infoText += '\u00A0Standard connection will be used';
     } else {
-        infoText = '⚠ No connection information available\n';
-        infoText += '   Please select connection type manually';
+        infoText = 'No connection information available\n';
+        infoText += '\u00A0Please select connection type manually';
     }
-    
+
     if (apiInfo?.isp) {
-        infoText += `\n\n📡 ISP: ${apiInfo.isp}`;
+        infoText += `\n\n🌐\u00A0ISP: ${apiInfo.isp}`;
         if (apiInfo.as) {
-            infoText += ` (${apiInfo.as})`;
+            infoText += `\n🌐\u00A0AS: ${apiInfo.as}`;
         }
     }
     
@@ -2026,7 +2286,7 @@ function handlePackageSelection(e) {
 
 // パッケージリスト更新（Postinstテキストエリアへの反映）
 function updatePackageListFromSelector() {
-    console.log('updatePackageListFromSelector called');
+    // console.log('updatePackageListFromSelector called');
     
     // 基本パッケージセット（デバイス固有パッケージ）を準備
     const basePackages = new Set();
@@ -2036,12 +2296,12 @@ function updatePackageListFromSelector() {
     deviceDevicePackages.forEach(pkg => basePackages.add(pkg));
     extraPackages.forEach(pkg => basePackages.add(pkg));
     
-    console.log('Device base packages:', {
-        default: deviceDefaultPackages.length,
-        device: deviceDevicePackages.length,
-        extra: extraPackages.length,
-        total: basePackages.size
-    });
+    // console.log('Device base packages:', {
+    //     default: deviceDefaultPackages.length,
+    //     device: deviceDevicePackages.length,
+    //     extra: extraPackages.length,
+    //     total: basePackages.size
+    // });
     
     // チェックされたパッケージを追加
     const checkedPackages = new Set();
@@ -2052,11 +2312,11 @@ function updatePackageListFromSelector() {
         }
     });
     
-    console.log('Checked packages from selector:', checkedPackages.size);
+    // console.log('Checked packages from selector:', checkedPackages.size);
     
     // 動的パッケージ（言語パッケージを含む）を追加
     const dynamicPackagesList = Array.from(dynamicPackages);
-    console.log('Dynamic packages (including language):', dynamicPackagesList);
+    // console.log('Dynamic packages (including language):', dynamicPackagesList);
     
     // テキストエリアから既存パッケージを取得（言語パッケージ以外を保持）
     const manualPackages = new Set();
@@ -2075,7 +2335,7 @@ function updatePackageListFromSelector() {
         });
     }
     
-    console.log('Manual packages (user typed):', manualPackages.size);
+    // console.log('Manual packages (user typed):', manualPackages.size);
     
     // 全てのパッケージを統合（順序：デバイス固有 → チェック済み → 動的 → 手動）
     const finalPackages = [
@@ -2095,11 +2355,11 @@ function updatePackageListFromSelector() {
         
         // 値が変更された場合のみログ出力
         if (oldValue !== textarea.value) {
-            console.log('Package list updated in textarea:', {
-                before: split(oldValue).length,
-                after: uniquePackages.length,
-                changed: oldValue !== textarea.value
-            });
+            // console.log('Package list updated in textarea:', {
+            //     before: split(oldValue).length,
+            //     after: uniquePackages.length,
+            //     changed: oldValue !== textarea.value
+            // });
         }
 
         // シンプルに高さを自動調整
@@ -2195,8 +2455,8 @@ function updateCustomCommands() {
     const textarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
     if (!textarea) return;
     
-    const commandInput = document.querySelector("#command");
-    const customCommands = commandInput?.value || '';
+    // マルチインプットマネージャーから値を取得
+    const customCommands = commandsManager ? commandsManager.getAllValues().join('\n') : '';
     
     let content = textarea.value;
     
@@ -2239,12 +2499,6 @@ function setupFormWatchers() {
             });
         }
     });
-    
-    const commandInput = document.querySelector("#command");
-    if (commandInput) {
-        commandInput.removeEventListener('input', updateCustomCommands);
-        commandInput.addEventListener('input', updateCustomCommands);
-    }
     
     updateVariableDefinitions();
 }
@@ -2316,7 +2570,7 @@ function setGuaPrefixIfAvailable() {
     const guaPrefix = generateGuaPrefixFromFullAddress(cachedApiInfo);
     if (guaPrefix) {
         guaPrefixField.value = guaPrefix;
-        console.log('GUA prefix set:', guaPrefix);
+        // console.log('GUA prefix set:', guaPrefix);
     }
 }
 
@@ -2346,4 +2600,4 @@ window.addEventListener('unhandledrejection', function(e) {
     console.error('Custom.js Unhandled Promise Rejection:', e.reason);
 });
 
-console.log('custom.js (Postinst update on language change fixed) fully loaded and ready');
+console.log('custom.js (Multi-input version) fully loaded and ready');
