@@ -62,8 +62,8 @@
           "dependencies": ["collectd (app-statistics)", "rrdtool1"]
         },
         {
-          "id": "collectd (app-statistics)",
-          "name": "collectd",
+          "id": "collectd",
+          "name": "collectd (app-statistics)",
           "hidden": true
         },
         {
@@ -88,8 +88,8 @@
           "name": "luci-app-ddns"
         },
         {
-          "id": "luci-app-mwan3 (iptables)",
-          "name": "luci-app-mwan3",
+          "id": "luci-app-mwan3",
+          "name": "luci-app-mwan3 (iptables)",
           "dependencies": ["mwan3"]
         },
         {
@@ -209,8 +209,8 @@
           "dependencies": ["collectd (htop)", "collectd-mod-thermal"]
         },
         {
-          "id": "collectd (htop)",
-          "name": "collectd",
+          "id": "collectd",
+          "name": "collectd (htop)",
           "hidden": true
         },
         {
@@ -347,8 +347,8 @@
           "dependencies": ["wireguard-tools"]
         },
         {
-          "id": "wireguard-tools (app)",
-          "name": "wireguard-tools",
+          "id": "wireguard-tools",
+          "name": "wireguard-tools (app)",
           "hidden": true
         },
         {
@@ -357,8 +357,8 @@
           "dependencies": ["wireguard-tools"]
         },
         {
-          "id": "wireguard-tools (proto)",
-          "name": "wireguard-tools",
+          "id": "wireguard-tools",
+          "name": "wireguard-tools (proto)",
           "hidden": true
         },
         {
@@ -370,8 +370,8 @@
           "name": "tailscale"
         },
         {
-          "id": "luci-app-dockerman (iptables)",
-          "name": "luci-app-dockerman",
+          "id": "luci-app-dockerman",
+          "name": "luci-app-dockerman (iptables)",
           "dependencies": ["docker-compose"]
         },
         {
