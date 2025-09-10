@@ -522,6 +522,10 @@ details summary h4 {
 
 /* ===== Responsive Design (extends base responsive patterns) ===== */
 @media (max-width: 600px) {
+  .row {
+    padding-left: 0.2em;
+  }
+  
   .form-row {
     flex-direction: column;
   }
