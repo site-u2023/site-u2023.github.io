@@ -25,7 +25,6 @@
 console.log('custom.js loaded');
 
 // OFSバージョン
-window.ofs_version = ofs_version;
 const el = document.getElementById('ofs-version');
 if (el) {
     el.innerText = ofs_version;
