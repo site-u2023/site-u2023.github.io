@@ -242,48 +242,33 @@ input[type="radio"] {
 .radio-group label {
   display: flex;
   align-items: center;
-  gap: 0.5em;
-  padding: 0.5em 0;
+  gap: 0.25em;
   cursor: pointer;
   white-space: nowrap;
 }
 
 /* ===== Details/Summary Styling ===== */
 details {
-  margin-top: 0;
-}
-details + details {
   margin-top: 1em;
 }
 
 details summary {
-  list-style: none;
-  margin:   0;
-  padding: 0.75em 0;
-  color: inherit;
   cursor: pointer;
+  padding: 0.75em 0;
   user-select: none;
-}
-
-details summary::-webkit-details-marker,
-details summary::marker {
-  display: none;
+  color: inherit;
 }
 
 details summary:hover {
   color: var(--owrt-blue);
 }
 
-details summary h3 {
-  margin-left: -1.2em;
-}
-
+details summary h3,
 details summary h4,
 details summary h5 {
-  margin-block-start: 1em;
-  margin-block-end:   1em;
-  font-weight:        500;
-  color: inherit;
+  display: inline;
+  margin: 0;
+  font-weight: 500;
 }
 
 details[open] summary {
@@ -535,20 +520,6 @@ details summary h4 {
 
 /* ===== Responsive Design (extends base responsive patterns) ===== */
 @media (max-width: 600px) {
-  .row {
-    padding-left: 0.2em;
-  }
-
-  .radio-group label {
-    padding: 0.5em 0;
-    align-items: center;
-  }
-  
-  .col2 {
-    word-break: break-word;
-    font-size: 0.9em;
-  }
-  
   .form-row {
     flex-direction: column;
   }
