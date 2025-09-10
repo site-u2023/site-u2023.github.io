@@ -1402,22 +1402,21 @@ function updatePackageListFromDynamicSources() {
     triggerPackageUpdate();
 }
 
-
 function updateSetupJsonPackages() {
     if (!setupConfig) return;
-    
+
     setupConfig.categories.forEach(category => {
         category.packages.forEach(pkg => {
             if (pkg.type === 'radio-group' && pkg.variableName) {
                 const selectedValue = getFieldValue(`input[name="${pkg.variableName}"]:checked`);
                 if (selectedValue) {
                     const selectedOption = pkg.options.find(opt => opt.value === selectedValue);
-                    if (selectedOption && selectedOption.packages) {
+                    if (selectedOption?.packages) {
                         selectedOption.packages.forEach(pkgName => {
                             dynamicPackages.add(pkgName);
                         });
                     }
-                    
+
                     pkg.options.forEach(opt => {
                         if (opt.value !== selectedValue && opt.packages) {
                             opt.packages.forEach(pkgName => {
@@ -1425,15 +1424,16 @@ function updateSetupJsonPackages() {
                             });
                         }
                     });
-                    
-                    // AUTO時の特別処理
-                        if (cachedApiInfo.mape?.brIpv6Address) {
+
+                    // AUTO時の特別処理（排他的）
+                    if (selectedValue === 'auto') {
+                        if (cachedApiInfo?.mape?.brIpv6Address) {
                             // MAP-E優先
                             const mapeOption = pkg.options.find(opt => opt.value === 'mape');
                             if (mapeOption?.packages) {
                                 mapeOption.packages.forEach(pkgName => dynamicPackages.add(pkgName));
                             }
-                        } else if (cachedApiInfo.aftr) {
+                        } else if (cachedApiInfo?.aftr) {
                             // DS-Lite
                             const dsliteOption = pkg.options.find(opt => opt.value === 'dslite');
                             if (dsliteOption?.packages) {
