@@ -6,4 +6,4 @@ https://site-u.pages.dev/
 
 ### OpenWrt Custom Firmware Selector
 
-https://site-u.pages.dev/build/
+https://site-u.pages.dev/www/
