@@ -25,21 +25,10 @@
 console.log('custom.js loaded');
 
 // OFSバージョン
-if (config.ofs_version) {
-    fetch(config.ofs_version)
-        .then(r => r.json())
-        .then(d => {
-            if (d && d.tag_name) {
-                window.ofs_version = `OFS ${d.tag_name}`;
-                const el = document.getElementById('ofs-version');
-                if (el) el.innerText = `OFS ${d.tag_name}`;
-            }
-        })
-        .catch(e => {
-            console.error('Failed to fetch latest release:', e);
-            const el = document.getElementById('ofs-version');
-            if (el) el.innerText = 'OFS N/A';
-        });
+window.ofs_version = ofs_version;
+const el = document.getElementById('ofs-version');
+if (el) {
+    el.innerText = ofs_version;
 }
 
 // ==================== グローバル変数 ====================
