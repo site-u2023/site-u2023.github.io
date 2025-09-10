@@ -2020,38 +2020,48 @@ function displayIspInfo(apiInfo) {
 
 function applyIspAutoConfig(apiInfo) {
     if (!apiInfo || !formStructure.fields) return;
-    
+
     const connectionType = getFieldValue('input[name="connection_type"]');
-    
+
+    // 接続タイプごとのフィールドIDマッピング
+    const connectionFields = {
+        dslite: ['dslite-aftr-type', 'dslite-area', 'dslite-aftr-address'],
+        mape: [
+            'mape-br', 'mape-ealen', 'mape-ipv4-prefix', 'mape-ipv4-prefixlen',
+            'mape-ipv6-prefix', 'mape-ipv6-prefixlen', 'mape-psid-offset',
+            'mape-psidlen', 'mape-gua-prefix'
+        ],
+        pppoe: ['pppoe-username', 'pppoe-password'],
+        ap: ['ap-ip-address', 'ap-gateway']
+    };
+
     Object.values(formStructure.fields).forEach(field => {
-        if (field.apiMapping) {
-            const isConnectionField = ['dslite', 'mape', 'ap', 'pppoe'].some(type => 
-                formStructure.connectionTypes[type]?.includes(field.id)
-            );
-            
-            if (isConnectionField && connectionType !== 'auto') {
+        if (!field.apiMapping) return;
+
+        // このフィールドが接続固有かどうかを判定
+        const isConnectionField = Object.values(connectionFields).flat().includes(field.id);
+        if (isConnectionField) {
+            // AUTO か、選択中のタイプに含まれるフィールドのみ許可
+            if (connectionType !== 'auto'
+                && !connectionFields[connectionType]?.includes(field.id)) {
                 return;
             }
-            
-            let value = getNestedValue(apiInfo, field.apiMapping);
+        }
 
-            if (field.variableName === 'mape_gua_prefix') {
-                const guaPrefix = generateGuaPrefixFromFullAddress(cachedApiInfo);
-                if (guaPrefix) {
-                    value = guaPrefix;
-                }
-            }
+        let value = getNestedValue(apiInfo, field.apiMapping);
 
-            if (value !== null && value !== undefined && value !== '') {
-                const element = document.querySelector(field.selector);
-                if (element) {
-                    element.value = value;
-                }
-            }
+        if (field.variableName === 'mape_gua_prefix') {
+            const guaPrefix = generateGuaPrefixFromFullAddress(cachedApiInfo);
+            if (guaPrefix) value = guaPrefix;
+        }
+
+        if (value != null && value !== '') {
+            const el = document.querySelector(field.selector);
+            if (el) el.value = value;
         }
     });
-    
-    setGuaPrefixIfAvailable();    
+
+    setGuaPrefixIfAvailable();
     updateAutoConnectionInfo(apiInfo);
     updatePackageListFromDynamicSources();
     updateVariableDefinitions();
