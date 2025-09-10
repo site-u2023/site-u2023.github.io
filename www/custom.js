@@ -2232,16 +2232,16 @@ function createPackageCheckbox(pkg, isChecked = false, isDependency = false) {
     
     if (config?.package_url) {
         const link = document.createElement('a');
-        link.href = config.package_url.replace("{id}", encodeURIComponent(pkg.id));
+        link.href = config.package_url.replace("{id}", encodeURIComponent(pkg.name));
         link.target = '_blank';
         link.className = 'package-link';
-        link.textContent = pkg.name || pkg.id;
+        link.textContent = pkg.id || pkg.name;
         link.onclick = (e) => e.stopPropagation();
         label.appendChild(checkbox);
         label.appendChild(link);
     } else {
         const span = document.createElement('span');
-        span.textContent = pkg.name || pkg.id;
+        span.textContent = pkg.id || pkg.name;
         label.appendChild(checkbox);
         label.appendChild(span);
     }
