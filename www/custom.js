@@ -670,6 +670,17 @@ function insertExtendedInfo(temp) {
         imageLink.closest('.row').insertAdjacentElement('afterend', extendedInfo);
         show('#extended-build-info');
     }
+    // カスタム表示を黒背景の下に追記
+    const footer = document.createElement("div");
+    footer.style.cssText = "text-align:center; padding:10px; color:#aaa; font-size:14px;";
+    footer.innerHTML = `
+        このサイトは <b>site-u2023 Custom Build</b> です。公式サイトではありません。<br>
+        ベース: OpenWrt Firmware Selector (OFS)
+    `;
+    const container = document.querySelector("#extended-build-info");
+    if (container) {
+        container.appendChild(footer);
+    }
 }
 
 // 既存要素クリーンアップ
