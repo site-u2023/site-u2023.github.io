@@ -2255,17 +2255,23 @@ function handlePackageSelection(e) {
     
     const dependencies = pkg.getAttribute('data-dependencies');
     if (dependencies) {
-        dependencies.split(',').forEach(depId => {
-            const depCheckbox = document.querySelector(`#pkg-${depId}`);
-            if (depCheckbox) {
-                depCheckbox.checked = isChecked;
-                
-                const depDeps = depCheckbox.getAttribute('data-dependencies');
-                if (depDeps && isChecked) {
-                    depDeps.split(',').forEach(subDepId => {
-                        const subDepCheckbox = document.querySelector(`#pkg-${subDepId}`);
-                        if (subDepCheckbox) subDepCheckbox.checked = true;
-                    });
+        dependencies.split(',').forEach(depName => {  // depNameは表示名
+            const depPkg = findPackageById(depName);  // 表示名でパッケージを検索
+            if (depPkg) {
+                const depCheckbox = document.querySelector(`#pkg-${depPkg.id}`);  // パッケージのidでチェックボックスを探す
+                if (depCheckbox) {
+                    depCheckbox.checked = isChecked;
+                    
+                    const depDeps = depCheckbox.getAttribute('data-dependencies');
+                    if (depDeps && isChecked) {
+                        depDeps.split(',').forEach(subDepName => {
+                            const subDepPkg = findPackageById(subDepName);
+                            if (subDepPkg) {
+                                const subDepCheckbox = document.querySelector(`#pkg-${subDepPkg.id}`);
+                                if (subDepCheckbox) subDepCheckbox.checked = true;
+                            }
+                        });
+                    }
                 }
             }
         });
