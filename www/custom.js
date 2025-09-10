@@ -1427,20 +1427,23 @@ function updateSetupJsonPackages() {
                     });
                     
                     // AUTO時の特別処理
-                    if (pkg.variableName === 'connection_type' && selectedValue === 'auto' && cachedApiInfo) {
                         if (cachedApiInfo.mape?.brIpv6Address) {
+                            // MAP-E優先
                             const mapeOption = pkg.options.find(opt => opt.value === 'mape');
-                            if (mapeOption && mapeOption.packages) {
-                                mapeOption.packages.forEach(pkgName => {
-                                    dynamicPackages.add(pkgName);
-                                });
+                            if (mapeOption?.packages) {
+                                mapeOption.packages.forEach(pkgName => dynamicPackages.add(pkgName));
                             }
                         } else if (cachedApiInfo.aftr) {
+                            // DS-Lite
                             const dsliteOption = pkg.options.find(opt => opt.value === 'dslite');
-                            if (dsliteOption && dsliteOption.packages) {
-                                dsliteOption.packages.forEach(pkgName => {
-                                    dynamicPackages.add(pkgName);
-                                });
+                            if (dsliteOption?.packages) {
+                                dsliteOption.packages.forEach(pkgName => dynamicPackages.add(pkgName));
+                            }
+                        } else {
+                            // 両方null → setup.json の defaultValue を適用
+                            const autoOption = pkg.options.find(opt => opt.value === pkg.defaultValue);
+                            if (autoOption?.packages) {
+                                autoOption.packages.forEach(pkgName => dynamicPackages.add(pkgName));
                             }
                         }
                     }
