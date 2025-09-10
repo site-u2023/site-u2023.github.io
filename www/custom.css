@@ -268,7 +268,7 @@ details summary:hover {
 
 details summary h3 {
   display: inline;
-  margin-left: -1.2em;
+  left: -1.2em;
 }
 
 details summary h4,
