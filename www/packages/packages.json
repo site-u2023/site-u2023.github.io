@@ -59,11 +59,12 @@
         {
           "id": "luci-app-statistics",
           "name": "luci-app-statistics",
-          "dependencies": ["collectd (app-statistics)", "rrdtool1"]
+          "dependencies": ["collectd-app-statistics", "rrdtool1"]
         },
         {
           "id": "collectd",
-          "name": "collectd (app-statistics)",
+          "name": "collectd",
+          "uniqueId": "collectd-app-statistics",
           "hidden": true
         },
         {
@@ -206,11 +207,12 @@
         {
           "id": "htop",
           "name": "htop",
-          "dependencies": ["collectd (htop)", "collectd-mod-thermal"]
+          "dependencies": ["collectd-htop", "collectd-mod-thermal"]
         },
         {
           "id": "collectd",
-          "name": "collectd (htop)",
+          "name": "collectd",
+          "uniqueId": "collectd-htop", 
           "hidden": true
         },
         {
