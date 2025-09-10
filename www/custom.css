@@ -264,10 +264,6 @@ details summary:hover {
   color: var(--owrt-blue);
 }
 
-details summary h3 {
-  margin-left: -1.2em;
-}
-
 details summary h3,
 details summary h4,
 details summary h5 {
@@ -276,6 +272,9 @@ details summary h5 {
   font-weight: 500;
 }
 
+details summary h3 {
+  margin-left: -1.2em;
+}
 details[open] summary {
   border-bottom: none;
 }
