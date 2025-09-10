@@ -88,13 +88,14 @@
           "name": "luci-app-ddns"
         },
         {
-          "id": "mwan3",
-          "name": "mwan3"
-        },
-        {
           "id": "luci-app-mwan3 (iptables)",
           "name": "luci-app-mwan3",
           "dependencies": ["mwan3"]
+        },
+        {
+          "id": "mwan3",
+          "name": "mwan3",
+          "hidden": true
         }
       ]
     },
