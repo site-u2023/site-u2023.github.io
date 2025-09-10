@@ -265,19 +265,21 @@ details summary:hover {
   color: var(--owrt-blue);
 }
 
-details summary h3,
+details summary h3 {
+  display: inline;
+  margin: 0;
+  font-weight: 500;
+  margin-block-start: 0;
+  margin-block-end:   0;
+  margin-inline-start: -1.2em;
+}
+
 details summary h4,
 details summary h5 {
   display: inline;
   margin: 0;
   font-weight: 500;
-}
-
-details summary h3 {
-  display: inline;
-  margin-inline-start: -1.2em;
-  margin-block-start: 0;
-  margin-block-end:   0;
+  margin-inline-start: 0;
 }
 
 details[open] summary {
