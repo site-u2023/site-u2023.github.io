@@ -250,6 +250,9 @@ input[type="radio"] {
 
 /* ===== Details/Summary Styling ===== */
 details {
+  margin-top: 0;
+}
+details + details {
   margin-top: 1em;
 }
 
