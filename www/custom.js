@@ -24,6 +24,17 @@
 
 console.log('custom.js loaded');
 
+// OFSバージョン
+if (typeof ofs_version !== 'undefined' && ofs_version === "%GIT_VERSION%" && config.ofs_version) {
+    fetch(config.ofs_version)
+        .then(r => r.json())
+        .then(d => {
+            window.ofs_version = d.sha.substring(0, 7);
+            const el = document.getElementById('ofs-version');
+            if (el) el.innerText = d.sha.substring(0, 7);
+        });
+}
+
 // ==================== グローバル変数 ====================
 let customInitialized = false;
 let customHTMLLoaded = false;
