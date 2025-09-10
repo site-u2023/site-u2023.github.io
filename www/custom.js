@@ -1052,11 +1052,6 @@ async function loadSetupConfig() {
         console.log('Setup config loaded:', setupConfig);
         
         formStructure = generateFormStructure(setupConfig);
-        console.log('Form structure generated:', {
-            connectionTypes: formStructure.connectionTypes,
-            wifiModes: formStructure.wifiModes,
-            netOptimizerModes: formStructure.netOptimizerModes
-        });
         storeDefaultValues(setupConfig);
         renderSetupConfig(setupConfig);
         
@@ -1398,54 +1393,55 @@ function handleRadioChange(e) {
 
 function updatePackageListFromDynamicSources() {
     updateSetupJsonPackages();
-    updateVariableDefinitions(); // 即座に変数定義を更新
     triggerPackageUpdate();
 }
 
+
 function updateSetupJsonPackages() {
     if (!setupConfig) return;
-
+    
     setupConfig.categories.forEach(category => {
         category.packages.forEach(pkg => {
             if (pkg.type === 'radio-group' && pkg.variableName) {
                 const selectedValue = getFieldValue(`input[name="${pkg.variableName}"]:checked`);
-                if (!selectedValue) return;
-
-                if (pkg.variableName === 'connection_type') {
-                    // インターネット接続方式は常に排他的
-                    if (selectedValue === 'auto') {
-                        if (cachedApiInfo?.mape?.brIpv6Address) {
-                            addPackagesFor(pkg, 'mape');
-                        } else if (cachedApiInfo?.aftr) {
-                            addPackagesFor(pkg, 'dslite');
-                        } else {
-                            addPackagesFor(pkg, pkg.defaultValue);
-                        }
-                    } else {
-                        addPackagesFor(pkg, selectedValue);
-                    }
-                } else {
-                    // 他の入力項目は従来通り動的追加削除
+                if (selectedValue) {
                     const selectedOption = pkg.options.find(opt => opt.value === selectedValue);
-                    if (selectedOption?.packages) {
-                        selectedOption.packages.forEach(pkgName => dynamicPackages.add(pkgName));
+                    if (selectedOption && selectedOption.packages) {
+                        selectedOption.packages.forEach(pkgName => {
+                            dynamicPackages.add(pkgName);
+                        });
                     }
+                    
                     pkg.options.forEach(opt => {
                         if (opt.value !== selectedValue && opt.packages) {
-                            opt.packages.forEach(pkgName => dynamicPackages.delete(pkgName));
+                            opt.packages.forEach(pkgName => {
+                                dynamicPackages.delete(pkgName);
+                            });
                         }
                     });
+                    
+                    // AUTO時の特別処理
+                    if (pkg.variableName === 'connection_type' && selectedValue === 'auto' && cachedApiInfo) {
+                        if (cachedApiInfo.mape?.brIpv6Address) {
+                            const mapeOption = pkg.options.find(opt => opt.value === 'mape');
+                            if (mapeOption && mapeOption.packages) {
+                                mapeOption.packages.forEach(pkgName => {
+                                    dynamicPackages.add(pkgName);
+                                });
+                            }
+                        } else if (cachedApiInfo.aftr) {
+                            const dsliteOption = pkg.options.find(opt => opt.value === 'dslite');
+                            if (dsliteOption && dsliteOption.packages) {
+                                dsliteOption.packages.forEach(pkgName => {
+                                    dynamicPackages.add(pkgName);
+                                });
+                            }
+                        }
+                    }
                 }
             }
         });
     });
-}
-
-function addPackagesFor(pkg, value) {
-    const opt = pkg.options.find(o => o.value === value);
-    if (opt?.packages) {
-        opt.packages.forEach(pkgName => dynamicPackages.add(pkgName));
-    }
 }
 
 // 条件表示の初期化
@@ -1585,56 +1581,11 @@ function generateFormStructure(config) {
         fields: {},           
         connectionTypes: {},  
         categories: {},       
-        fieldMapping: {},
-        wifiModes: {},        // Wi-Fiモード別フィールド
-        netOptimizerModes: {} // ネットワーク最適化モード別フィールド
-    };
-    
-    // 接続タイプを初期化
-    structure.connectionTypes = {
-        auto: [],
-        dhcp: [], 
-        pppoe: [],
-        dslite: [],
-        mape: [],
-        ap: []
-    };
-    
-    // Wi-Fiモード別フィールドを初期化
-    structure.wifiModes = {
-        disabled: [],
-        standard: [],
-        usteer: []
-    };
-    
-    // ネットワーク最適化モード別フィールドを初期化
-    structure.netOptimizerModes = {
-        auto: [],
-        manual: [],
-        disabled: []
+        fieldMapping: {}      
     };
     
     config.categories.forEach(category => {
         structure.categories[category.id] = [];
-        
-        // インターネット接続カテゴリの場合、接続タイプ別にフィールドを収集
-        if (category.id === 'internet-config') {
-            category.packages.forEach(pkg => {
-                collectConnectionFields(pkg, structure);
-            });
-        }
-        // Wi-Fi設定カテゴリの場合
-        else if (category.id === 'wifi-config') {
-            category.packages.forEach(pkg => {
-                collectWifiFields(pkg, structure);
-            });
-        }
-        // チューニングカテゴリの場合
-        else if (category.id === 'tuning-config') {
-            category.packages.forEach(pkg => {
-                collectTuningFields(pkg, structure);
-            });
-        }
         
         category.packages.forEach(pkg => {
             collectFieldsFromPackage(pkg, structure, category.id);
@@ -1642,133 +1593,6 @@ function generateFormStructure(config) {
     });
     
     return structure;
-}
-
-function collectConnectionFields(pkg, structure) {
-    // 条件付きセクション内のフィールドを収集
-    if (pkg.type === 'conditional-section' && pkg.id) {
-        const connectionType = pkg.id.replace('-section', '');
-        if (structure.connectionTypes[connectionType]) {
-            // このセクション内の全フィールドを収集
-            collectAllFieldsInSection(pkg, structure.connectionTypes[connectionType]);
-        }
-    }
-    
-    // 子要素も再帰的に処理
-    if (pkg.children) {
-        pkg.children.forEach(child => {
-            collectConnectionFields(child, structure);
-        });
-    }
-}
-
-// 新規追加：セクション内の全フィールドを再帰的に収集
-function collectAllFieldsInSection(pkg, targetArray) {
-    // input-group内のフィールドを収集
-    if (pkg.type === 'input-group' && pkg.fields) {
-        pkg.fields.forEach(field => {
-            if (field.variableName && !targetArray.includes(field.variableName)) {
-                targetArray.push(field.variableName);
-            }
-        });
-    }
-    
-    // radio-groupの変数名も収集
-    if (pkg.type === 'radio-group' && pkg.variableName && !targetArray.includes(pkg.variableName)) {
-        targetArray.push(pkg.variableName);
-    }
-    
-    // 個別フィールドの変数名を収集
-    if (pkg.variableName && !targetArray.includes(pkg.variableName)) {
-        targetArray.push(pkg.variableName);
-    }
-    
-    // 子要素も再帰的に処理
-    if (pkg.children) {
-        pkg.children.forEach(child => {
-            collectAllFieldsInSection(child, targetArray);
-        });
-    }
-}
-
-function collectWifiFields(pkg, structure) {
-    // Wi-Fiモード用のフィールドを収集
-    if (pkg.id === 'wifi-basic-fields') {
-        // 基本Wi-Fiフィールド（SSID、パスワード）
-        collectFieldVariables(pkg, structure.wifiModes.disabled);
-        // enable_usteerも追加
-        structure.wifiModes.disabled.push('enable_usteer');
-    } else if (pkg.id === 'usteer-fields') {
-        // Usteer専用フィールド（mobility_domain、snr）
-        const usteerFields = [];
-        collectFieldVariables(pkg, usteerFields);
-        // standardモードで削除、disabledモードでも削除
-        usteerFields.forEach(field => {
-            structure.wifiModes.standard.push(field);
-            structure.wifiModes.disabled.push(field);
-        });
-    }
-    
-    if (pkg.children) {
-        pkg.children.forEach(child => {
-            collectWifiFields(child, structure);
-        });
-    }
-}
-
-function collectTuningFields(pkg, structure) {
-    // ネットワーク最適化モード用のフィールドを収集
-    if (pkg.id === 'netopt-fields') {
-        // manualモードのフィールドをautoモードとdisabledモードの削除対象に追加
-        const manualFields = [];
-        collectFieldVariables(pkg, manualFields);
-        manualFields.forEach(field => {
-            structure.netOptimizerModes.auto.push(field);
-            structure.netOptimizerModes.disabled.push(field);
-        });
-        // enable_netoptもdisabledモードの削除対象に追加
-        if (!structure.netOptimizerModes.disabled.includes('enable_netopt')) {
-            structure.netOptimizerModes.disabled.push('enable_netopt');
-        }
-    }
-    
-    if (pkg.children) {
-        pkg.children.forEach(child => {
-            collectTuningFields(child, structure);
-        });
-    }
-}
-
-function collectFieldVariables(pkg, targetArray) {
-    // フィールドから変数名を収集
-    if (pkg.type === 'input-group' && pkg.fields) {
-        pkg.fields.forEach(field => {
-            if (field.variableName && !targetArray.includes(field.variableName)) {
-                targetArray.push(field.variableName);
-            }
-        });
-    }
-    
-    // radio-groupやselectなどの変数名も収集
-    if (pkg.variableName && !targetArray.includes(pkg.variableName)) {
-        targetArray.push(pkg.variableName);
-    }
-    
-    // 個別フィールドの変数名を収集
-    if (pkg.fields) {
-        pkg.fields.forEach(field => {
-            if (field.variableName && !targetArray.includes(field.variableName)) {
-                targetArray.push(field.variableName);
-            }
-        });
-    }
-    
-    // 子要素も再帰的に処理
-    if (pkg.children) {
-        pkg.children.forEach(child => {
-            collectFieldVariables(child, targetArray);
-        });
-    }
 }
 
 function collectFieldsFromPackage(pkg, structure, categoryId) {
@@ -1850,22 +1674,19 @@ function getFieldValue(selector) {
 
 function applySpecialFieldLogic(values) {
     const connectionType = getFieldValue('input[name="connection_type"]');
-
-    // 接続タイプ別フィールド一覧を JSON から取得
-    const getConnectionFieldVars = (type) => {
-        if (!formStructure?.connectionTypes) return [];
-        if (!type) {
-            // 全タイプの全フィールド
-            return Object.values(formStructure.connectionTypes).flat();
-        }
-        return formStructure.connectionTypes[type] || [];
-    };
-
-    const allConnectionFields = getConnectionFieldVars();
-
+    
+    const connectionFieldVars = [
+        'pppoe_username', 'pppoe_password',
+        'dslite_aftr_type', 'dslite_region', 'dslite_aftr_address', 
+        'mape_br', 'mape_ealen', 'mape_ipv4_prefix', 'mape_ipv4_prefixlen',
+        'mape_ipv6_prefix', 'mape_ipv6_prefixlen', 'mape_psid_offset', 'mape_psidlen',
+        'mape_gua_prefix', 'mape_gua_mode', 'mape_type',
+        'ap_ip_address', 'ap_gateway'
+    ];
+    
     if (connectionType === 'auto') {
-        allConnectionFields.forEach(key => delete values[key]);
-
+        connectionFieldVars.forEach(key => delete values[key]);
+        
         if (cachedApiInfo) {
             if (cachedApiInfo.mape?.brIpv6Address) {
                 values.mape_br = cachedApiInfo.mape.brIpv6Address;
@@ -1876,29 +1697,32 @@ function applySpecialFieldLogic(values) {
                 values.mape_ipv6_prefixlen = cachedApiInfo.mape.ipv6PrefixLength;
                 values.mape_psid_offset = cachedApiInfo.mape.psIdOffset;
                 values.mape_psidlen = cachedApiInfo.mape.psidlen;
-
+                
+                // GUA prefixの自動設定を改善
                 const guaPrefix = generateGuaPrefixFromFullAddress(cachedApiInfo);
                 if (guaPrefix) {
                     values.mape_gua_prefix = guaPrefix;
                     values.mape_gua_mode = '1';
+                    // console.log('Applied GUA prefix in auto mode:', guaPrefix);
                 }
             } else if (cachedApiInfo.aftr) {
                 values.dslite_aftr_address = cachedApiInfo.aftr;
             }
         }
     } else if (connectionType === 'dhcp') {
-        allConnectionFields.forEach(key => delete values[key]);
+        connectionFieldVars.forEach(key => delete values[key]);
     } else if (connectionType === 'pppoe') {
-        allConnectionFields.filter(key => !key.startsWith('pppoe_')).forEach(key => delete values[key]);
+        connectionFieldVars.filter(key => !key.startsWith('pppoe_')).forEach(key => delete values[key]);
     } else if (connectionType === 'dslite') {
-        allConnectionFields.filter(key => !key.startsWith('dslite_')).forEach(key => delete values[key]);
-
+        connectionFieldVars.filter(key => !key.startsWith('dslite_')).forEach(key => delete values[key]);
+        
         if (cachedApiInfo?.aftr) {
             values.dslite_aftr_address = cachedApiInfo.aftr;
         }
     } else if (connectionType === 'mape') {
-        allConnectionFields.filter(key => !key.startsWith('mape_')).forEach(key => delete values[key]);
-
+        connectionFieldVars.filter(key => !key.startsWith('mape_')).forEach(key => delete values[key]);
+        
+        // MAP-E設定の改善
         if (cachedApiInfo?.mape?.brIpv6Address) {
             values.mape_br = cachedApiInfo.mape.brIpv6Address;
             values.mape_ealen = cachedApiInfo.mape.eaBitLength;
@@ -1908,7 +1732,8 @@ function applySpecialFieldLogic(values) {
             values.mape_ipv6_prefixlen = cachedApiInfo.mape.ipv6PrefixLength;
             values.mape_psid_offset = cachedApiInfo.mape.psIdOffset;
             values.mape_psidlen = cachedApiInfo.mape.psidlen;
-
+            
+            // GUA prefix設定の改善
             const guaPrefix = generateGuaPrefixFromFullAddress(cachedApiInfo);
             if (guaPrefix) {
                 values.mape_gua_prefix = guaPrefix;
@@ -1916,15 +1741,17 @@ function applySpecialFieldLogic(values) {
                 console.log('Applied GUA prefix in MAP-E mode:', guaPrefix);
             }
         }
-
+        
         const mapeType = getFieldValue('input[name="mape_type"]');
         if (mapeType === 'gua') {
             values.mape_gua_mode = '1';
-
+            
+            // GUAタイプの場合、フィールドの値を取得または生成
             const currentGUAValue = getFieldValue('#mape-gua-prefix');
             if (currentGUAValue) {
                 values.mape_gua_prefix = currentGUAValue;
             } else if (!values.mape_gua_prefix && cachedApiInfo?.ipv6) {
+                // フィールドが空の場合は再生成
                 const guaPrefix = generateGuaPrefixFromFullAddress(cachedApiInfo);
                 if (guaPrefix) {
                     values.mape_gua_prefix = guaPrefix;
@@ -1933,45 +1760,32 @@ function applySpecialFieldLogic(values) {
             }
         }
     } else if (connectionType === 'ap') {
-        allConnectionFields.filter(key => !key.startsWith('ap_')).forEach(key => delete values[key]);
+        connectionFieldVars.filter(key => !key.startsWith('ap_')).forEach(key => delete values[key]);
     } else {
-        allConnectionFields.forEach(key => delete values[key]);
+        connectionFieldVars.forEach(key => delete values[key]);
     }
-
-// Wi-Fi設定の処理（JSON駆動）
+    
+    // Wi-Fi設定の処理
     const wifiMode = getFieldValue('input[name="wifi_mode"]');
-    const wifiFields = formStructure?.wifiModes || {
-        disabled: [],
-        standard: [],
-        usteer: []
-    };
-
     if (wifiMode === 'disabled') {
-        wifiFields.disabled.forEach(key => delete values[key]);
+        ['wlan_ssid', 'wlan_password', 'enable_usteer', 'mobility_domain', 'snr']
+            .forEach(key => delete values[key]);
     } else if (wifiMode === 'standard') {
-        wifiFields.standard.forEach(key => delete values[key]);
+        ['enable_usteer', 'mobility_domain', 'snr']
+            .forEach(key => delete values[key]);
     } else if (wifiMode === 'usteer') {
         values.enable_usteer = '1';
     }
-
-    // ネットワーク最適化の処理（JSON駆動）
+    
+    // ネットワーク最適化の処理
     const netOptimizer = getFieldValue('input[name="net_optimizer"]');
-    const netOptFields = formStructure?.netOptimizerModes || {
-        auto: [],
-        manual: [],
-        disabled: []
-    };
-
     if (netOptimizer === 'auto') {
         values.enable_netopt = '1';
-        netOptFields.auto.forEach(key => delete values[key]);
+        ['netopt_rmem', 'netopt_wmem', 'netopt_conntrack', 'netopt_backlog', 'netopt_somaxconn', 'netopt_congestion']
+            .forEach(key => delete values[key]);
     } else if (netOptimizer === 'disabled') {
-        // enable_netoptも含めて削除
-        delete values['enable_netopt'];
-        netOptFields.disabled.forEach(key => delete values[key]);
-    } else if (netOptimizer === 'manual') {
-        values.enable_netopt = '1';
-        // manualモードでは削除するフィールドなし（全て保持）
+        ['enable_netopt', 'netopt_rmem', 'netopt_wmem', 'netopt_conntrack', 'netopt_backlog', 'netopt_somaxconn', 'netopt_congestion']
+            .forEach(key => delete values[key]);
     }
 }
 
@@ -1987,11 +1801,7 @@ function setupEventListeners() {
     Object.entries(radioGroups).forEach(([name, handler]) => {
         document.querySelectorAll(`input[name="${name}"]`).forEach(radio => {
             radio.removeEventListener('change', handler);
-            radio.addEventListener('change', (e) => {
-                handler(e);
-                // ラジオボタン変更時に即座に変数定義を更新
-                updateVariableDefinitions();
-            });
+            radio.addEventListener('change', handler);
         });
         
         const checked = document.querySelector(`input[name="${name}"]:checked`);
@@ -2059,7 +1869,7 @@ function handleConnectionTypeChange(e) {
                 show(section);
                 if (type === 'auto' && cachedApiInfo) {
                     updateAutoConnectionInfo(cachedApiInfo);
-                } else if (type === 'mape' && cachedApiInfo) {
+                    } else if (type === 'mape' && cachedApiInfo) {
                     // MAP-E選択時にGUA prefixを設定
                     const guaPrefixField = document.querySelector('#mape-gua-prefix');
                     if (guaPrefixField && cachedApiInfo.ipv6) {
@@ -2076,8 +1886,6 @@ function handleConnectionTypeChange(e) {
         }
     });
     
-    // 接続タイプ変更時に即座に変数定義を更新
-    updateVariableDefinitions();
     updatePackageListFromDynamicSources();
 }
 
