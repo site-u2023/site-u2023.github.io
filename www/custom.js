@@ -2186,12 +2186,30 @@ async function createPackageCategory(category) {
 }
 
 async function createPackageItem(pkg) {
+    // パッケージ名からフィードを判定
+    let feed = 'packages';
+    if (pkg.id.startsWith('luci-')) {
+        feed = 'luci';
+    } else if (pkg.id.startsWith('kmod-')) {
+        feed = 'base';  // kmodはbaseフィードにある可能性
+    }
+    
     // メインパッケージの存在確認
-    const isMainAvailable = await isPackageAvailable(pkg.id, 'packages');
+    const isMainAvailable = await isPackageAvailable(pkg.id, feed);
     if (!isMainAvailable && !pkg.hidden) {
-        // hiddenでないパッケージが存在しない場合は表示しない
-        console.log(`Package not available, skipping: ${pkg.id}`);
-        return null;
+        // packagesで見つからない場合、他のフィードも試す
+        const alternativeFeeds = feed === 'packages' ? ['luci', 'base'] : ['packages', 'base'];
+        let found = false;
+        for (const altFeed of alternativeFeeds) {
+            if (await isPackageAvailable(pkg.id, altFeed)) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            console.log(`Package not available in any feed: ${pkg.id}`);
+            return null;
+        }
     }
     
     const packageItem = document.createElement('div');
@@ -2208,8 +2226,15 @@ async function createPackageItem(pkg) {
         for (const depId of pkg.dependencies) {
             const depPkg = findPackageById(depId);
             if (depPkg) {
-                // 依存パッケージの存在確認
-                const isDepAvailable = await isPackageAvailable(depPkg.id, 'packages');
+                // 依存パッケージも同様にフィード判定
+                let depFeed = 'packages';
+                if (depPkg.id.startsWith('luci-')) {
+                    depFeed = 'luci';
+                } else if (depPkg.id.startsWith('kmod-')) {
+                    depFeed = 'base';
+                }
+                
+                const isDepAvailable = await isPackageAvailable(depPkg.id, depFeed);
                 if (isDepAvailable || depPkg.hidden) {
                     const depCheckbox = createPackageCheckbox(depPkg, pkg.checked || false, true);
                     depCheckbox.classList.add('package-dependent');
