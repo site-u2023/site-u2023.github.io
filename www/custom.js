@@ -1409,50 +1409,43 @@ function updateSetupJsonPackages() {
         category.packages.forEach(pkg => {
             if (pkg.type === 'radio-group' && pkg.variableName) {
                 const selectedValue = getFieldValue(`input[name="${pkg.variableName}"]:checked`);
-                if (selectedValue) {
+
+                if (!selectedValue) return;
+
+                if (selectedValue === 'auto') {
+                    // AUTO時は最初から何も追加せず、優先順位で1方式だけ追加
+                    if (cachedApiInfo?.mape?.brIpv6Address) {
+                        // MAP-E優先
+                        const mapeOption = pkg.options.find(opt => opt.value === 'mape');
+                        if (mapeOption?.packages) {
+                            mapeOption.packages.forEach(pkgName => dynamicPackages.add(pkgName));
+                        }
+                    } else if (cachedApiInfo?.aftr) {
+                        // DS-Lite
+                        const dsliteOption = pkg.options.find(opt => opt.value === 'dslite');
+                        if (dsliteOption?.packages) {
+                            dsliteOption.packages.forEach(pkgName => dynamicPackages.add(pkgName));
+                        }
+                    } else {
+                        // 両方null → setup.json の defaultValue を適用
+                        const autoOption = pkg.options.find(opt => opt.value === pkg.defaultValue);
+                        if (autoOption?.packages) {
+                            autoOption.packages.forEach(pkgName => dynamicPackages.add(pkgName));
+                        }
+                    }
+                } else {
+                    // AUTO以外は従来通り、その方式だけ追加
                     const selectedOption = pkg.options.find(opt => opt.value === selectedValue);
                     if (selectedOption?.packages) {
-                        selectedOption.packages.forEach(pkgName => {
-                            dynamicPackages.add(pkgName);
-                        });
+                        selectedOption.packages.forEach(pkgName => dynamicPackages.add(pkgName));
                     }
 
+                    // 他方式のパッケージは削除
                     pkg.options.forEach(opt => {
                         if (opt.value !== selectedValue && opt.packages) {
-                            opt.packages.forEach(pkgName => {
-                                dynamicPackages.delete(pkgName);
-                            });
+                            opt.packages.forEach(pkgName => dynamicPackages.delete(pkgName));
                         }
                     });
-
-                    // AUTO時の特別処理（排他的）
-                    if (selectedValue === 'auto') {
-                        // まず全インターネット接続方式のパッケージを削除
-                        pkg.options.forEach(opt => {
-                            if (opt.packages) {
-                                opt.packages.forEach(pkgName => dynamicPackages.delete(pkgName));
-                            }
-                        });
-                        if (cachedApiInfo?.mape?.brIpv6Address) {
-                            // MAP-E優先
-                            const mapeOption = pkg.options.find(opt => opt.value === 'mape');
-                            if (mapeOption?.packages) {
-                                mapeOption.packages.forEach(pkgName => dynamicPackages.add(pkgName));
-                            }
-                        } else if (cachedApiInfo?.aftr) {
-                            // DS-Lite
-                            const dsliteOption = pkg.options.find(opt => opt.value === 'dslite');
-                            if (dsliteOption?.packages) {
-                                dsliteOption.packages.forEach(pkgName => dynamicPackages.add(pkgName));
-                            }
-                        } else {
-                            // 両方null → setup.json の defaultValue を適用
-                            const autoOption = pkg.options.find(opt => opt.value === pkg.defaultValue);
-                            if (autoOption?.packages) {
-                                autoOption.packages.forEach(pkgName => dynamicPackages.add(pkgName));
-                            }
-                        }
-                    }
                 }
             }
         });
