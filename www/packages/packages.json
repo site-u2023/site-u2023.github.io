@@ -59,10 +59,10 @@
         {
           "id": "luci-app-statistics",
           "name": "luci-app-statistics",
-          "dependencies": ["collectd", "rrdtool1"]
+          "dependencies": ["collectd (app-statistics)", "rrdtool1"]
         },
         {
-          "id": "collectd",
+          "id": "collectd (app-statistics)",
           "name": "collectd",
           "hidden": true
         },
@@ -206,10 +206,10 @@
         {
           "id": "htop",
           "name": "htop",
-          "dependencies": ["collectd-htop", "collectd-mod-thermal"]
+          "dependencies": ["collectd (htop)", "collectd-mod-thermal"]
         },
         {
-          "id": "collectd-htop",
+          "id": "collectd (htop)",
           "name": "collectd",
           "hidden": true
         },
@@ -347,7 +347,7 @@
           "dependencies": ["wireguard-tools"]
         },
         {
-          "id": "wireguard-tools-app",
+          "id": "wireguard-tools (app)",
           "name": "wireguard-tools",
           "hidden": true
         },
@@ -357,7 +357,7 @@
           "dependencies": ["wireguard-tools"]
         },
         {
-          "id": "wireguard-tools-proto",
+          "id": "wireguard-tools (proto)",
           "name": "wireguard-tools",
           "hidden": true
         },
