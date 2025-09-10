@@ -2167,7 +2167,7 @@ function createPackageCategory(category) {
     categoryDiv.appendChild(packageGrid);
     return categoryDiv;
 }
-
+ 
 function createPackageItem(pkg) {
     const packageItem = document.createElement('div');
     packageItem.className = 'package-item';
@@ -2207,7 +2207,7 @@ function createPackageItem(pkg) {
 function createPackageCheckbox(pkg, isChecked = false, isDependency = false) {
     const label = document.createElement('label');
     label.className = 'form-check-label';
-    label.setAttribute('for', `pkg-${pkg.id}`);
+    label.setAttribute('for', `pkg-${pkg.uniqueId || pkg.id}`);
     label.style.display = 'flex';
     label.style.alignItems = 'center';
     label.style.gap = '0.5em';
@@ -2215,10 +2215,10 @@ function createPackageCheckbox(pkg, isChecked = false, isDependency = false) {
     
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
-    checkbox.id = `pkg-${pkg.id}`;
+    checkbox.id = `pkg-${pkg.uniqueId || pkg.id}`; 
     checkbox.className = 'form-check-input package-selector-checkbox';
-    checkbox.setAttribute('data-package', pkg.name);
-    checkbox.setAttribute('data-package-id', pkg.id);
+    checkbox.setAttribute('data-package', pkg.id);   // id
+    checkbox.setAttribute('data-unique-id', pkg.uniqueId || pkg.id); 
     
     if (pkg.dependencies) {
         checkbox.setAttribute('data-dependencies', pkg.dependencies.join(','));
@@ -2232,16 +2232,16 @@ function createPackageCheckbox(pkg, isChecked = false, isDependency = false) {
     
     if (config?.package_url) {
         const link = document.createElement('a');
-        link.href = config.package_url.replace("{id}", encodeURIComponent(pkg.name));
+        link.href = config.package_url.replace("{id}", encodeURIComponent(pkg.id));  // 変更: pkg.id（内部名）でURL構築
         link.target = '_blank';
         link.className = 'package-link';
-        link.textContent = pkg.id || pkg.name;
+        link.textContent = pkg.name || pkg.id;  // 変更: name（表示名）を表示
         link.onclick = (e) => e.stopPropagation();
         label.appendChild(checkbox);
         label.appendChild(link);
     } else {
         const span = document.createElement('span');
-        span.textContent = pkg.id || pkg.name;
+        span.textContent = pkg.name || pkg.id;  // 変更: name（表示名）を表示
         label.appendChild(checkbox);
         label.appendChild(span);
     }
@@ -2255,17 +2255,23 @@ function handlePackageSelection(e) {
     
     const dependencies = pkg.getAttribute('data-dependencies');
     if (dependencies) {
-        dependencies.split(',').forEach(depId => {
-            const depCheckbox = document.querySelector(`#pkg-${depId}`);
-            if (depCheckbox) {
-                depCheckbox.checked = isChecked;
-                
-                const depDeps = depCheckbox.getAttribute('data-dependencies');
-                if (depDeps && isChecked) {
-                    depDeps.split(',').forEach(subDepId => {
-                        const subDepCheckbox = document.querySelector(`#pkg-${subDepId}`);
-                        if (subDepCheckbox) subDepCheckbox.checked = true;
-                    });
+        dependencies.split(',').forEach(depName => {  // depNameは表示名
+            const depPkg = findPackageById(depName);  // 表示名でパッケージを検索
+            if (depPkg) {
+                const depCheckbox = document.querySelector(`[data-unique-id="${depPkg.uniqueId || depPkg.id}"]`);  // パッケージのnameでチェックボックスを探す
+                if (depCheckbox) {
+                    depCheckbox.checked = isChecked;
+                    
+                    const depDeps = depCheckbox.getAttribute('data-dependencies');
+                    if (depDeps && isChecked) {
+                        depDeps.split(',').forEach(subDepName => {
+                            const subDepPkg = findPackageById(subDepName);
+                            if (subDepPkg) {
+                                const subDepCheckbox = document.querySelector(`[data-unique-id="${subDepPkg.uniqueId || subDepPkg.id}"]`);
+                                if (subDepCheckbox) subDepCheckbox.checked = true;
+                            }
+                        });
+                    }
                 }
             }
         });
@@ -2367,7 +2373,7 @@ function findPackageById(id) {
     if (!PACKAGE_DB) return null;
     
     for (const category of PACKAGE_DB.categories) {
-        const pkg = category.packages.find(p => p.id === id);
+        const pkg = category.packages.find(p => p.uniqueId === id || p.id === id);
         if (pkg) return pkg;
     }
     return null;
