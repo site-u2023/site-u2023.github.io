@@ -2100,8 +2100,9 @@ async function loadPackageDatabase() {
         const response = await fetch(url);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         PACKAGE_DB = await response.json();
-        renderPackageCategoriesFast(PACKAGE_DB);
-        generatePackageSelectorAvailability();
+        console.log('Package database loaded:', PACKAGE_DB);
+        
+        generatePackageSelector();
         
         return PACKAGE_DB;
     } catch (err) {
@@ -2110,7 +2111,7 @@ async function loadPackageDatabase() {
     }
 }
 
-async function generatePackageSelector() {
+function generatePackageSelector() {
     const container = document.querySelector('#package-categories');
     if (!container || !PACKAGE_DB) {
         return;
@@ -2118,33 +2119,18 @@ async function generatePackageSelector() {
     
     container.innerHTML = '';
     
-    // ローディング表示
-    const loadingDiv = document.createElement('div');
-    loadingDiv.textContent = 'Checking available packages...';
-    loadingDiv.style.padding = '1em';
-    loadingDiv.style.fontStyle = 'italic';
-    container.appendChild(loadingDiv);
-    
-    const categoryElements = [];
-    
-    for (const category of PACKAGE_DB.categories) {
-        const categoryDiv = await createPackageCategory(category);
+    PACKAGE_DB.categories.forEach(category => {
+        const categoryDiv = createPackageCategory(category);
         if (categoryDiv) {
-            categoryElements.push(categoryDiv);
+            container.appendChild(categoryDiv);
         }
-    }
-    
-    // ローディング表示を削除
-    container.innerHTML = '';
-    
-    // カテゴリを追加
-    categoryElements.forEach(el => container.appendChild(el));
+    });
     
     updatePackageListFromSelector();
-    console.log(`Generated ${categoryElements.length} package categories with available packages`);
+    console.log(`Generated ${PACKAGE_DB.categories.length} package categories`);
 }
 
-async function createPackageCategory(category) {
+function createPackageCategory(category) {
     const categoryDiv = document.createElement('div');
     categoryDiv.className = 'package-category';
     categoryDiv.setAttribute('data-category-id', category.id);
@@ -2154,15 +2140,13 @@ async function createPackageCategory(category) {
     
     let hasVisiblePackages = false;
     
-    for (const pkg of category.packages) {
+    category.packages.forEach(pkg => {
         if (!pkg.hidden) {
-            const packageItem = await createPackageItem(pkg);
-            if (packageItem) {
-                hasVisiblePackages = true;
-                packageGrid.appendChild(packageItem);
-            }
+            hasVisiblePackages = true;
+            const packageItem = createPackageItem(pkg);
+            packageGrid.appendChild(packageItem);
         }
-    }
+    });
     
     if (!hasVisiblePackages) return null;
     
@@ -2183,17 +2167,8 @@ async function createPackageCategory(category) {
     categoryDiv.appendChild(packageGrid);
     return categoryDiv;
 }
-
-async function createPackageItem(pkg) {
-    // パッケージ名からフィードを判定
-    let feed = 'packages';
-    if (pkg.id.startsWith('luci-')) {
-        feed = 'luci';
-    } else if (pkg.id.startsWith('kmod-')) {
-        feed = 'base';  // kmodはbaseフィードにある可能性
-    }
-    
-    // ----- 即時レンダリング用のパッケージ要素作成 -----
+ 
+function createPackageItem(pkg) {
     const packageItem = document.createElement('div');
     packageItem.className = 'package-item';
     packageItem.setAttribute('data-package-id', pkg.id);
@@ -2205,25 +2180,14 @@ async function createPackageItem(pkg) {
         const depContainer = document.createElement('div');
         depContainer.className = 'package-dependencies';
         
-        for (const depId of pkg.dependencies) {
+        pkg.dependencies.forEach(depId => {
             const depPkg = findPackageById(depId);
             if (depPkg) {
-                // 依存パッケージも同様にフィード判定
-                let depFeed = 'packages';
-                if (depPkg.id.startsWith('luci-')) {
-                    depFeed = 'luci';
-                } else if (depPkg.id.startsWith('kmod-')) {
-                    depFeed = 'base';
-                }
-                
-                const isDepAvailable = await isPackageAvailable(depPkg.id, depFeed);
-                if (isDepAvailable || depPkg.hidden) {
-                    const depCheckbox = createPackageCheckbox(depPkg, pkg.checked || false, true);
-                    depCheckbox.classList.add('package-dependent');
-                    depContainer.appendChild(depCheckbox);
-                }
+                const depCheckbox = createPackageCheckbox(depPkg, pkg.checked || false, true);
+                depCheckbox.classList.add('package-dependent');
+                depContainer.appendChild(depCheckbox);
             }
-        }
+        });
         
         if (depContainer.children.length > 0) {
             packageItem.appendChild(depContainer);
@@ -2231,28 +2195,11 @@ async function createPackageItem(pkg) {
     }
     
     if (pkg.enableVar) {
-        const checkbox = packageItem.querySelector(`#pkg-${pkg.uniqueId || pkg.id}`);
+        const checkbox = packageItem.querySelector(`#pkg-${pkg.id}`);
         if (checkbox) {
             checkbox.setAttribute('data-enable-var', pkg.enableVar);
         }
     }
-
-    // ----- バックグラウンドで存在チェックし、なければ削除 -----
-    (async () => {
-        const ok = await isPackageAvailable(pkg.id, feed);
-        if (!ok) {
-            // 他フィードも試す
-            const altFeeds = feed === 'packages' ? ['luci', 'base'] : ['packages', 'base'];
-            const results = await Promise.all(
-                altFeeds.map(f => isPackageAvailable(pkg.id, f))
-            );
-            if (!results.includes(true)) {
-                packageItem.remove();
-                console.log('Removed unavailable package:', pkg.id);
-                updatePackageListFromSelector();
-            }
-        }
-    })();
     
     return packageItem;
 }
