@@ -1821,10 +1821,10 @@ const netOptimizer = getFieldValue('input[name="net_optimizer"]');
 if (setupConfig) {
     const tuningCategory = setupConfig.categories.find(cat => cat.id === 'tuning-config');
     if (tuningCategory) {
-        const netOptimizerConfig = tuningCategory.packages.find(pkg => 
+        const netOptimizerConfig = tuningCategory.packages.find(pkg =>
             pkg.variableName === 'net_optimizer'
         );
-        
+
         if (netOptimizerConfig) {
             const selectedOption = netOptimizerConfig.options.find(opt => opt.value === netOptimizer);
             if (selectedOption) {
@@ -1835,6 +1835,16 @@ if (setupConfig) {
                 // includeFieldsの特別処理
                 if (selectedOption.includeFields?.includes('enable_netopt')) {
                     values.enable_netopt = '1';
+                }
+
+                // 選択モードのフィールド値を反映
+                if (selectedOption.fields) {
+                    selectedOption.fields.forEach(fieldId => {
+                        const val = getFieldValue(`#${fieldId}`);
+                        if (val !== null && val !== undefined && val !== '') {
+                            values[fieldId] = val;
+                        }
+                    });
                 }
             }
         }
