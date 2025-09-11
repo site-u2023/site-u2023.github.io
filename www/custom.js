@@ -1680,6 +1680,8 @@ function getFieldValue(selector) {
 }
 
 // ==================== フォーム値処理（JSONドリブン版） ====================
+
+// ==================== フォーム値処理（JSONドリブン版） ====================
 function applySpecialFieldLogic(values) {
     const connectionType = getFieldValue('input[name="connection_type"]');
     
@@ -1789,53 +1791,81 @@ function applySpecialFieldLogic(values) {
             }
         }
     }
-}
     
-// Wi‑Fi設定の処理
-const wifiMode = getFieldValue('input[name="wifi_mode"]');
-const wifiCategory = setupConfig?.categories.find(cat => cat.id === 'wifi-config');
-const wifiModeConfig = wifiCategory?.packages.find(pkg => pkg.variableName === 'wifi_mode');
-const wifiSelected = wifiModeConfig?.options.find(opt => opt.value === wifiMode);
-
-if (wifiSelected) {
-    if (wifiSelected.excludeFields) {
-        wifiSelected.excludeFields.forEach(key => delete values[key]);
-    }
-    if (wifiSelected.includeFields) {
-        wifiSelected.includeFields.forEach(key => {
-            if (key === 'enable_usteer' && wifiMode === 'usteer') {
-                values.enable_usteer = '1';
-                return;
-            }
-            const val = getFieldValue(`[name="${key}"], #${key}`);
-            if (val) values[key] = val;
+    // Wi‑Fi設定の処理（改善版）
+    const wifiMode = getFieldValue('input[name="wifi_mode"]');
+    
+    if (wifiMode === 'disabled') {
+        // disabledの場合、WiFi関連フィールドを全て削除
+        ['wlan_ssid', 'wlan_password', 'enable_usteer', 'mobility_domain', 'snr'].forEach(key => {
+            delete values[key];
         });
+    } else if (wifiMode === 'standard') {
+        // standardの場合、基本フィールドのみ保持
+        const ssid = getFieldValue('#aios-wifi-ssid');
+        const password = getFieldValue('#aios-wifi-password');
+        
+        if (ssid) values.wlan_ssid = ssid;
+        if (password) values.wlan_password = password;
+        
+        // Usteer固有フィールドを削除
+        delete values.enable_usteer;
+        delete values.mobility_domain;
+        delete values.snr;
+    } else if (wifiMode === 'usteer') {
+        // usteerの場合、全てのフィールドを保持
+        const ssid = getFieldValue('#aios-wifi-ssid');
+        const password = getFieldValue('#aios-wifi-password');
+        const mobility = getFieldValue('#aios-wifi-mobility-domain');
+        const snr = getFieldValue('#aios-wifi-snr');
+        
+        if (ssid) values.wlan_ssid = ssid;
+        if (password) values.wlan_password = password;
+        if (mobility) values.mobility_domain = mobility;
+        if (snr) values.snr = snr;
+        values.enable_usteer = '1';
     }
-}
 
-// Tuning設定の処理
-const netOptimizer = getFieldValue('input[name="net_optimizer"]');
-const tuningCategory = setupConfig?.categories.find(cat => cat.id === 'tuning-config');
-const netOptimizerConfig = tuningCategory?.packages.find(pkg => pkg.variableName === 'net_optimizer');
-const tuningSelected = netOptimizerConfig?.options.find(opt => opt.value === netOptimizer);
-
-if (tuningSelected) {
-    if (tuningSelected.excludeFields) {
-        tuningSelected.excludeFields.forEach(key => delete values[key]);
-    }
-    if (tuningSelected.includeFields) {
-        tuningSelected.includeFields.forEach(key => {
-            if (key === 'enable_netopt') {
-                values.enable_netopt = '1';
-                return;
-            }
-            const val = getFieldValue(`[name="${key}"], #${key}`);
-            if (val) values[key] = val;
+    // Tuning設定の処理（改善版）
+    const netOptimizer = getFieldValue('input[name="net_optimizer"]');
+    
+    if (netOptimizer === 'disabled') {
+        // disabledの場合、最適化関連フィールドを全て削除
+        ['enable_netopt', 'netopt_rmem', 'netopt_wmem', 'netopt_conntrack', 
+         'netopt_backlog', 'netopt_somaxconn', 'netopt_congestion'].forEach(key => {
+            delete values[key];
         });
+    } else if (netOptimizer === 'auto') {
+        // autoの場合、enable_netoptのみ設定
+        values.enable_netopt = '1';
+        
+        // 手動設定フィールドを削除
+        ['netopt_rmem', 'netopt_wmem', 'netopt_conntrack', 
+         'netopt_backlog', 'netopt_somaxconn', 'netopt_congestion'].forEach(key => {
+            delete values[key];
+        });
+    } else if (netOptimizer === 'manual') {
+        // manualの場合、全てのフィールドを保持
+        values.enable_netopt = '1';
+        
+        const rmem = getFieldValue('#netopt-rmem');
+        const wmem = getFieldValue('#netopt-wmem');
+        const conntrack = getFieldValue('#netopt-conntrack');
+        const backlog = getFieldValue('#netopt-backlog');
+        const somaxconn = getFieldValue('#netopt-somaxconn');
+        const congestion = getFieldValue('#netopt-congestion');
+        
+        if (rmem) values.netopt_rmem = rmem;
+        if (wmem) values.netopt_wmem = wmem;
+        if (conntrack) values.netopt_conntrack = conntrack;
+        if (backlog) values.netopt_backlog = backlog;
+        if (somaxconn) values.netopt_somaxconn = somaxconn;
+        if (congestion) values.netopt_congestion = congestion;
     }
 }
 
 // ==================== イベントハンドラ（JSONドリブン版） ====================
+
 function setupEventListeners() {
     const radioGroups = {
         'connection_type': handleConnectionTypeChange,
