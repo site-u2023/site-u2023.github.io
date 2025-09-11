@@ -30,6 +30,7 @@
               "selector": "#aios-country",
               "variableName": "country",
               "placeholder": "00",
+              "defaultValue": "JP",
               "maxlength": 2,
               "apiMapping": "country"
             },
@@ -41,6 +42,7 @@
               "selector": "#aios-timezone",
               "variableName": "timezone",
               "placeholder": "UTC",
+              "defaultValue": "JST-9",
               "apiMapping": "timezone"
             },
             {
@@ -51,6 +53,7 @@
               "selector": "#aios-zonename",
               "variableName": "zonename",
               "placeholder": "UTC",
+              "defaultValue": "Asia/Tokyo",
               "apiMapping": "zonename"
             },
             {
@@ -60,7 +63,8 @@
               "type": "text",
               "selector": "#aios-device-name",
               "variableName": "device_name",
-              "placeholder": "OpenWrt"
+              "placeholder": "OpenWrt",
+              "defaultValue": "OpenWrt"
             },
             {
               "id": "aios-root-password",
@@ -78,7 +82,8 @@
               "type": "text",
               "selector": "#aios-lan-ipv4",
               "variableName": "lan_ip_address",
-              "placeholder": "192.168.1.1"
+              "placeholder": "192.168.1.1",
+              "defaultValue": "192.168.1.1"
             },
             {
               "id": "aios-lan-ipv6",
@@ -87,7 +92,8 @@
               "type": "text",
               "selector": "#aios-lan-ipv6",
               "variableName": "lan_ipv6_address",
-              "placeholder": "fd00::1/64"
+              "placeholder": "fd00::1/64",
+              "defaultValue": "fd00::1/64"
             },
             {
               "id": "aios-ssh-interface",
@@ -108,6 +114,7 @@
               "selector": "#aios-ssh-port",
               "variableName": "ssh_port",
               "placeholder": "22",
+              "defaultValue": "22",
               "min": 1,
               "max": 65535,
               "description": "Port number for SSH access"
@@ -153,12 +160,13 @@
           "class": "tr-wi-fi-mode",
           "type": "radio-group",
           "variableName": "wifi_mode",
-          "defaultValue": "disabled",
+          "defaultValue": "standard",
           "options": [
             {
               "value": "standard",
               "label": "Standard",
               "class": "tr-standard",
+              "checked": true,
               "includeFields": ["wlan_ssid", "wlan_password"],
               "excludeFields": ["enable_usteer", "mobility_domain", "snr"]
             },
@@ -174,7 +182,6 @@
               "value": "disabled",
               "label": "Disabled",
               "class": "tr-disabled",
-              "checked": true,
               "includeFields": [],
               "excludeFields": ["wlan_ssid", "wlan_password", "enable_usteer", "mobility_domain", "snr"]
             }
@@ -200,7 +207,8 @@
                   "type": "text",
                   "selector": "#aios-wifi-ssid",
                   "variableName": "wlan_ssid",
-                  "placeholder": "OpenWrt"
+                  "placeholder": "OpenWrt",
+                  "defaultValue": "OpenWrt"
                 },
                 {
                   "id": "aios-wifi-password",
@@ -234,6 +242,7 @@
                       "selector": "#aios-wifi-mobility-domain",
                       "variableName": "mobility_domain",
                       "placeholder": "4f57",
+                      "defaultValue": "4f57",
                       "maxlength": 4,
                       "pattern": "[0-9A-Fa-f]{4}",
                       "description": "4-digit hex (e.g. 4f57)"
@@ -246,6 +255,7 @@
                       "selector": "#aios-wifi-snr",
                       "variableName": "snr",
                       "placeholder": "30 15 5",
+                      "defaultValue": "30 15 5",
                       "description": "SNR values in band order"
                     }
                   ]
@@ -595,12 +605,13 @@
           "class": "tr-dynamic-network-optimizer",
           "type": "radio-group",
           "variableName": "net_optimizer",
-          "defaultValue": "disabled",
+          "defaultValue": "auto",
           "options": [
             {
               "value": "auto",
               "label": "AUTO",
               "class": "tr-auto",
+              "checked": true,
               "includeFields": ["enable_netopt"],
               "excludeFields": ["netopt_rmem", "netopt_wmem", "netopt_conntrack", "netopt_backlog", "netopt_somaxconn", "netopt_congestion"]
             },
@@ -615,7 +626,6 @@
               "value": "disabled",
               "label": "Disabled",
               "class": "tr-disabled",
-              "checked": true,
               "includeFields": [],
               "excludeFields": ["enable_netopt", "netopt_rmem", "netopt_wmem", "netopt_conntrack", "netopt_backlog", "netopt_somaxconn", "netopt_congestion"]
             }
@@ -658,6 +668,7 @@
                   "selector": "#netopt-rmem",
                   "variableName": "netopt_rmem",
                   "placeholder": "4096 131072 8388608",
+                  "defaultValue": "4096 131072 8388608",
                   "description": "min default max (bytes)"
                 },
                 {
@@ -668,6 +679,7 @@
                   "selector": "#netopt-wmem",
                   "variableName": "netopt_wmem",
                   "placeholder": "4096 131072 8388608",
+                  "defaultValue": "4096 131072 8388608",
                   "description": "min default max (bytes)"
                 },
                 {
@@ -678,6 +690,7 @@
                   "selector": "#netopt-conntrack",
                   "variableName": "netopt_conntrack",
                   "placeholder": "131072",
+                  "defaultValue": "131072",
                   "min": 1024
                 },
                 {
@@ -688,6 +701,7 @@
                   "selector": "#netopt-backlog",
                   "variableName": "netopt_backlog",
                   "placeholder": "5000",
+                  "defaultValue": "5000",
                   "min": 100
                 },
                 {
@@ -698,6 +712,7 @@
                   "selector": "#netopt-somaxconn",
                   "variableName": "netopt_somaxconn",
                   "placeholder": "16384",
+                  "defaultValue": "16384",
                   "min": 128
                 },
                 {
