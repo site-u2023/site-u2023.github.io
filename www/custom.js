@@ -290,19 +290,6 @@ function updatePackageListToTextarea() {
     }
 }
 
-// 旧関数を新統合関数へリダイレクト（互換性維持）
-function updatePackageListFromSelector() {
-    updateAllPackageState('selector');
-}
-
-function updatePackageListFromDynamicSources() {
-    updateAllPackageState('dynamic');
-}
-
-async function updateLanguagePackage() {
-    await updateAllPackageState('language');
-}
-
 // ==================== 共通マルチインプット管理機能 ====================
 class MultiInputManager {
     constructor(containerId, options = {}) {
