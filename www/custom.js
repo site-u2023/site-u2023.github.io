@@ -1837,13 +1837,18 @@ if (setupConfig) {
                     values.enable_netopt = '1';
                 }
 
-                // 選択モードのフィールド値を反映
-                if (selectedOption.fields) {
+                // AUTOモード時は netopt_* を削除
+                if (netOptimizer === 'auto') {
+                    Object.keys(values)
+                        .filter(k => k.startsWith('netopt_') && k !== 'enable_netopt')
+                        .forEach(k => delete values[k]);
+                }
+
+                // MANUALモード時のみフィールド値を反映
+                if (netOptimizer === 'manual' && selectedOption.fields) {
                     selectedOption.fields.forEach(fieldId => {
                         const val = getFieldValue(`#${fieldId}`);
-                        if (val !== null && val !== undefined && val !== '') {
-                            values[fieldId] = val;
-                        }
+                        if (val) values[fieldId] = val;
                     });
                 }
             }
