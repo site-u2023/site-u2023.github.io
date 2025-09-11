@@ -1796,10 +1796,7 @@ const wifiMode = getFieldValue('input[name="wifi_mode"]');
 if (setupConfig) {
     const wifiCategory = setupConfig.categories.find(cat => cat.id === 'wifi-config');
     if (wifiCategory) {
-        const wifiModeConfig = wifiCategory.packages.find(pkg => 
-            pkg.variableName === 'wifi_mode'
-        );
-        
+        const wifiModeConfig = wifiCategory.packages.find(pkg => pkg.variableName === 'wifi_mode');
         if (wifiModeConfig) {
             const selectedOption = wifiModeConfig.options.find(opt => opt.value === wifiMode);
             if (selectedOption) {
@@ -1807,9 +1804,24 @@ if (setupConfig) {
                 if (selectedOption.excludeFields) {
                     selectedOption.excludeFields.forEach(key => delete values[key]);
                 }
-                // includeFieldsの特別処理
-                if (selectedOption.includeFields?.includes('enable_usteer')) {
-                    values.enable_usteer = '1';
+                // includeFieldsを処理
+                if (selectedOption.includeFields) {
+                    selectedOption.includeFields.forEach(key => {
+                        // enable_usteer は Usteer モードのときだけセット
+                        if (key === 'enable_usteer') {
+                            if (wifiMode === 'usteer') {
+                                values.enable_usteer = '1';
+                            } else {
+                                delete values.enable_usteer;
+                            }
+                            return; // 他の処理はスキップ
+                        }
+                        // 通常フィールドは値を取得してセット
+                        const val = getFieldValue(`[name="${key}"], #${key}`);
+                        if (val !== null && val !== undefined && val !== '') {
+                            values[key] = val;
+                        }
+                    });
                 }
             }
         }
