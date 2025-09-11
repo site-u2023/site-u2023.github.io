@@ -907,11 +907,6 @@ function applyCustomTranslations(map) {
     }
 }
 
-function triggerPackageUpdate() {
-    updateLanguagePackage();
-    updateVariableDefinitions();
-}
-
 function extractLuciName(pkg) {
     if (pkg === 'luci') return 'base';
 
@@ -1457,7 +1452,7 @@ function initConditionalSections(config) {
         const keys = [key, key.replace(/-/g, '_'), key.replace(/_/g, '-')];
 
         for (const k of keys) {
-            const radios = document.querySelectorAll(`input[type="radio"][name="${cssEscape(k)}"]`);
+            const radios = document.querySelectorAll(`input[type="radio"][name="${CSS.escape(k)}"]`);
             if (radios.length) {
                 const r = Array.from(radios).find(x => x.checked);
                 if (r) return r.value;
@@ -1467,7 +1462,7 @@ function initConditionalSections(config) {
         for (const k of keys) {
             const byId = document.getElementById(k);
             if (byId) return byId.value;
-            const byName = document.querySelector(`[name="${cssEscape(k)}"]`);
+            const byName = document.querySelector(`[name="${CSS.escape(k)}"]`);
             if (byName) return byName.value;
         }
         return '';
@@ -1479,13 +1474,13 @@ function findControlsByKey(key) {
     const controls = [];
     
     for (const k of keys) {
-        const radios = document.querySelectorAll(`input[type="radio"][name="${cssEscape(k)}"]`);
+        const radios = document.querySelectorAll(`input[type="radio"][name="${CSS.escape(k)}"]`);
         controls.push(...radios);
         
         const byId = document.getElementById(k);
         if (byId) controls.push(byId);
         
-        const byName = document.querySelectorAll(`[name="${cssEscape(k)}"]`);
+        const byName = document.querySelectorAll(`[name="${CSS.escape(k)}"]`);
         controls.push(...byName);
     }
     
@@ -1554,10 +1549,6 @@ function getRows(group) {
     }
     
     return rows;
-}
-
-function cssEscape(s) {
-    return String(s).replace(/"/g, '\\"');
 }
 
 function generateFormStructure(config) {
