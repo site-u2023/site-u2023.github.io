@@ -1886,43 +1886,15 @@ function setupDsliteAddressComputation() {
 
     // JSONからアドレスマッピングを取得
     function getAddressMap() {
-        if (!setupConfig) return null;
-        
         const internetCategory = setupConfig.categories.find(cat => cat.id === 'internet-config');
-        if (!internetCategory) return null;
-        
         const dsliteSection = internetCategory.packages.find(pkg => pkg.id === 'dslite-section');
-        if (!dsliteSection?.children) return null;
-        
         const dsliteFields = dsliteSection.children.find(child => child.id === 'dslite-fields');
-        if (!dsliteFields?.fields) return null;
-        
         const aftrTypeField = dsliteFields.fields.find(field => field.id === 'dslite-aftr-type');
-        return aftrTypeField?.computeField?.addressMap || null;
+        return aftrTypeField.computeField.addressMap;
     }
 
     function computeAftrAddress(type, area) {
         const addressMap = getAddressMap();
-        if (!addressMap) {
-            // フォールバック（JSONが読み込まれていない場合）
-            console.warn('Address map not found in JSON, using fallback');
-            const fallbackMap = {
-                transix: {
-                    east: '2404:8e00::feed:100',
-                    west: '2404:8e01::feed:100'
-                },
-                xpass: {
-                    east: '2404:8e02::feed:100',
-                    west: '2404:8e03::feed:100'
-                },
-                v6option: {
-                    east: '2404:8e04::feed:100',
-                    west: '2404:8e05::feed:100'
-                }
-            };
-            return fallbackMap[type]?.[area] || '';
-        }
-        
         return addressMap[type]?.[area] || '';
     }
 
@@ -1948,14 +1920,7 @@ function setupDsliteAddressComputation() {
 function handleConnectionTypeChange(e) {
     const selectedType = e.target.value;
     
-    // JSONから接続タイプの設定を取得
-    if (!setupConfig) {
-        console.warn('Setup config not loaded');
-        return;
-    }
-    
     const internetCategory = setupConfig.categories.find(cat => cat.id === 'internet-config');
-    if (!internetCategory) return;
     
     // 全ての接続タイプセクションを処理
     internetCategory.packages.forEach(pkg => {
@@ -1994,14 +1959,7 @@ function handleConnectionTypeChange(e) {
 function handleNetOptimizerChange(e) {
     const mode = e.target.value;
     
-    // JSONから設定を取得
-    if (!setupConfig) {
-        console.warn('Setup config not loaded');
-        return;
-    }
-    
     const tuningCategory = setupConfig.categories.find(cat => cat.id === 'tuning-config');
-    if (!tuningCategory) return;
     
     // ネットワーク最適化関連のセクションを処理
     tuningCategory.packages.forEach(pkg => {
@@ -2030,43 +1988,14 @@ function handleNetOptimizerChange(e) {
 function handleWifiModeChange(e) {
     const mode = e.target.value;
     
-    // JSONから設定を取得
-    if (!setupConfig) {
-        console.warn('Setup config not loaded');
-        // フォールバック処理
-        const wifiOptionsContainer = document.querySelector("#wifi-options-container");
-        const usteerOptions = document.querySelector("#usteer-options");
-        
-        if (mode === 'disabled') {
-            hide(wifiOptionsContainer);
-            clearWifiFields();
-        } else {
-            show(wifiOptionsContainer);
-            restoreWifiDefaults();
-            
-            if (mode === 'usteer') {
-                show(usteerOptions);
-            } else {
-                hide(usteerOptions);
-            }
-        }
-        
-        updatePackageListFromDynamicSources();
-        return;
-    }
-    
     const wifiCategory = setupConfig.categories.find(cat => cat.id === 'wifi-config');
-    if (!wifiCategory) return;
     
     // Wi-Fiモード設定を取得
     const wifiModeConfig = wifiCategory.packages.find(pkg => 
         pkg.variableName === 'wifi_mode'
     );
     
-    if (!wifiModeConfig) return;
-    
     const selectedOption = wifiModeConfig.options.find(opt => opt.value === mode);
-    if (!selectedOption) return;
     
     // Wi-Fi関連のセクションを処理
     wifiCategory.packages.forEach(pkg => {
@@ -2111,43 +2040,9 @@ function handleWifiModeChange(e) {
 
 // デフォルト値復元（JSONドリブン）
 function restoreManualDefaults() {
-    // JSONから手動モードのデフォルト値を取得
-    if (!setupConfig) {
-        console.warn('Setup config not loaded, using fallback defaults');
-        // フォールバックとして既存の値を使用
-        const fallbackDefaults = {
-            'netopt-rmem': '4096 131072 8388608',
-            'netopt-wmem': '4096 131072 8388608',
-            'netopt-conntrack': '131072',
-            'netopt-backlog': '5000',
-            'netopt-somaxconn': '16384',
-            'netopt-congestion': 'cubic'
-        };
-        
-        Object.entries(fallbackDefaults).forEach(([id, defaultValue]) => {
-            const el = document.querySelector(`#${id}`);
-            if (el && !el.value) {
-                el.value = defaultValue;
-            }
-        });
-        return;
-    }
-    
-    // JSONからデフォルト値を取得
     const tuningCategory = setupConfig.categories.find(cat => cat.id === 'tuning-config');
-    if (!tuningCategory) return;
-    
-    const manualSection = tuningCategory.packages.find(pkg => 
-        pkg.id === 'netopt-manual-section'
-    );
-    
-    if (!manualSection?.children) return;
-    
-    const netoptFields = manualSection.children.find(child => 
-        child.id === 'netopt-fields'
-    );
-    
-    if (!netoptFields?.fields) return;
+    const manualSection = tuningCategory.packages.find(pkg => pkg.id === 'netopt-manual-section');
+    const netoptFields = manualSection.children.find(child => child.id === 'netopt-fields');
     
     // JSONで定義されたデフォルト値を適用
     netoptFields.fields.forEach(field => {
@@ -2161,29 +2056,7 @@ function restoreManualDefaults() {
 }
 
 function restoreWifiDefaults() {
-    // JSONからWi-Fiのデフォルト値を取得
-    if (!setupConfig) {
-        console.warn('Setup config not loaded, using fallback defaults');
-        // フォールバックとして既存の値を使用
-        const fallbackDefaults = {
-            'aios-wifi-ssid': 'OpenWrt',
-            'aios-wifi-password': 'password',
-            'aios-wifi-mobility-domain': '4f57',
-            'aios-wifi-snr': '30 15 5'
-        };
-        
-        Object.entries(fallbackDefaults).forEach(([id, defaultValue]) => {
-            const el = document.querySelector(`#${id}`);
-            if (el && !el.value) {
-                el.value = defaultValue;
-            }
-        });
-        return;
-    }
-    
-    // JSONからデフォルト値を取得
     const wifiCategory = setupConfig.categories.find(cat => cat.id === 'wifi-config');
-    if (!wifiCategory) return;
     
     // Wi-Fiフィールドを探す
     function findWifiFields(pkg) {
@@ -2218,22 +2091,7 @@ function restoreWifiDefaults() {
 }
 
 function clearWifiFields() {
-    // JSONからWi-Fiフィールドを取得してクリア
-    if (!setupConfig) {
-        // フォールバック：既知のフィールドIDをクリア
-        ['aios-wifi-ssid', 'aios-wifi-password', 'aios-wifi-mobility-domain', 'aios-wifi-snr']
-            .forEach(id => {
-                const el = document.querySelector(`#${id}`);
-                if (el) {
-                    el.value = '';
-                }
-            });
-        return;
-    }
-    
-    // JSONからWi-Fiフィールドを探す
     const wifiCategory = setupConfig.categories.find(cat => cat.id === 'wifi-config');
-    if (!wifiCategory) return;
     
     // Wi-Fiフィールドを再帰的に探す
     function findAndClearWifiFields(pkg) {
@@ -2259,7 +2117,7 @@ function clearWifiFields() {
     });
 }
 
-console.log('custom.js (JSON-driven version) fully loaded and ready');
+console.log('custom.js (JSON-driven clean version) fully loaded and ready');
 
 // ==================== ISP情報処理 ====================
 
