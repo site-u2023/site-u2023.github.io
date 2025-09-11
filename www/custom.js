@@ -1876,6 +1876,42 @@ function setupEventListeners() {
     setupCommandsInput();
 }
 
+// コマンド入力設定関数を追加
+function setupCommandsInput() {
+    console.log('setupCommandsInput called');
+    
+    const commandsContainer = document.getElementById('commands-autocomplete');
+    
+    if (!commandsContainer) {
+        console.log('commands-autocomplete container not found');
+        return;
+    }
+    
+    // 既存のインプットを削除
+    const oldInput = document.getElementById('command');
+    if (oldInput) {
+        oldInput.remove();
+    }
+    
+    // マルチインプットマネージャーを初期化
+    commandsManager = new MultiInputManager('commands-autocomplete', {
+        placeholder: 'Type command and press Enter',
+        className: 'multi-input-item command-input',
+        onAdd: (command) => {
+            console.log('Command added:', command);
+        },
+        onRemove: (command) => {
+            console.log('Command removed:', command);
+        },
+        onChange: (values) => {
+            // console.log('Commands changed:', values);
+            updateCustomCommands();
+        }
+    });
+    
+    console.log('Commands input setup complete');
+}
+
 // DS-LiteのAFTRアドレス計算を独立関数化（JSONドリブン）
 function setupDsliteAddressComputation() {
     const aftrType = document.querySelector('#dslite-aftr-type');
