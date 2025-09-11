@@ -1800,25 +1800,19 @@ if (setupConfig) {
         if (wifiModeConfig) {
             const selectedOption = wifiModeConfig.options.find(opt => opt.value === wifiMode);
             if (selectedOption) {
-                if (selectedOption.excludeFields) {
-                    selectedOption.excludeFields.forEach(key => delete values[key]);
-                }
                 if (selectedOption.includeFields) {
                     selectedOption.includeFields.forEach(key => {
                         if (key === 'enable_usteer') {
                             if (wifiMode === 'usteer') {
                                 values.enable_usteer = '1';
-                            } else {
-                                delete values.enable_usteer;
                             }
                             return;
                         }
                         const val = getFieldValue(`[name="${key}"], #${key}`);
                         if (val) {
                             values[key] = val;
-                        } else {
-                            delete values[key];
                         }
+                        // 値が空なら何も書かない
                     });
                 }
             }
