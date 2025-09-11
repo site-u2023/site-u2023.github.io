@@ -11,8 +11,8 @@ window.addEventListener('load', () => {
     
     // リンク先を更新
     const linkEl = versionEl?.closest('a');
-    if (linkEl && typeof custom_ofs_link !== 'undefined') {
-        linkEl.href = custom_ofs_link;
+    if (linkEl && typeof custom_ofs_url !== 'undefined') {
+        linkEl.href = custom_ofs_url;
         linkEl.target = "_blank";
     }
 });
@@ -1109,7 +1109,7 @@ async function isPackageAvailable(pkgName, feed) {
 // ==================== setup.json 処理 ====================
 async function loadSetupConfig() {
     try {
-        const url = config?.setup_db_url || 'uci-defaults/setup.json';
+        const url = config?.setup_db_path || 'uci-defaults/setup.json';
         const response = await fetch(url + '?t=' + Date.now());
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         
@@ -2353,7 +2353,7 @@ function updateAutoConnectionInfo(apiInfo) {
 
 async function loadPackageDatabase() {
     try {
-        const url = config?.packages_db_url || 'packages/packages.json';
+        const url = config?.packages_db_path || 'packages/packages.json';
         const response = await fetch(url);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         PACKAGE_DB = await response.json();
