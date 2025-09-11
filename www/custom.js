@@ -529,8 +529,10 @@ async function initializeCustomFeatures(asuSection, temp) {
         loadPackageDatabase()
     ]);
 
-    // UI描画（infoConfig を必ず渡す）
+    // 先にUI描画して formStructure を構築
     renderSetupConfig(infoConfig);
+
+    // UI生成後にパッケージUIを生成（ここで updateAllPackageState が安全に動く）
     generatePackageSelector();
 
     // UI生成後にISP情報取得
