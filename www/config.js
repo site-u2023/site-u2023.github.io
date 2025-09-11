@@ -34,6 +34,9 @@ var config = {
   
   // Auto-configuration API URL
   auto_config_api_url: "https://auto-config.site-u.workers.dev/",
+
+  // information URL
+  information_url: "uci-defaults/information.json",
   
   // UCI-defaults setup.sh URL
   uci_defaults_setup_url: "uci-defaults/setup.sh",
