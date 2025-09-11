@@ -35,18 +35,15 @@ var config = {
   
   // Auto-configuration API URL
   auto_config_api_url: "https://auto-config.site-u.workers.dev/",
-
-  // information URL
-  information_url: "uci-defaults/information.json",
   
   // UCI-defaults setup.sh URL
-  uci_defaults_setup_url: "uci-defaults/setup.sh",
+  information_path: "auto-config/information.json",
 
   // Package database URL
-  packages_db_url: "packages/packages.json",
+  packages_db_path: "packages/packages.json",
 
   // setup.sh database URL
-  setup_db_url: "uci-defaults/setup.json",
+  setup_db_path: "uci-defaults/setup.json",
 
   // LuCI OPKG 検索エンドポイント
   // opkg_search_url: "https://openwrt.org/packages/pkgdata/{pkg}"
@@ -69,7 +66,7 @@ current_language = "en";
 
 // OFSバージョン
 const custom_ofs_version = "v5.1.0-json-driven";
-const custom_ofs_link = "https://github.com/site-u2023/site-u2023.github.io/tree/main/www";
+const custom_ofs_url = "https://github.com/site-u2023/site-u2023.github.io/tree/main/www";
 
 // カスタム機能の自動読み込み
 (function() {
