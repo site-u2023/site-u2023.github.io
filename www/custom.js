@@ -1782,6 +1782,8 @@ function applySpecialFieldLogic(values) {
                                 values.mape_gua_prefix = guaPrefix;
                             }
                         }
+                    } else if (mapeType === 'pd') {
+                        delete values.mape_gua_prefix;
                     }
                 }
             }
