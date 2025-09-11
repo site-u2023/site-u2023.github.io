@@ -217,7 +217,7 @@
                   "type": "text",
                   "selector": "#aios-wifi-password",
                   "variableName": "wlan_password",
-                  "placeholder": "8+ characters"
+                  "placeholder": "8+ characters",
                   "defaultValue": "password"
                 }
               ]
