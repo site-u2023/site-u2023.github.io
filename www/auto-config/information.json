@@ -1,95 +1,99 @@
 {
-  "id": "extended-build-info",
-  "name": "Extended Build Info",
-  "class": "tr-extended-build-info",
-  "description": "ISP情報表示",
-  "type": "form-section",
-  "packages": [
+  "categories": [
     {
-      "id": "location-isp-info",
-      "name": "Location & ISP Information",
-      "class": "tr-location-isp-information",
-      "type": "info-display",
-      "fields": [
+      "id": "extended-build-info",
+      "name": "Extended Build Info",
+      "class": "tr-extended-info",
+      "description": "Location & ISP Information",
+      "type": "form-section",
+      "packages": [
         {
-          "id": "auto-config-notice",
-          "label": "Notice",
-          "class": "tr-notice",
-          "type": "display",
-          "selector": "#auto-config-notice",
-          "variableName": "notice",
-          "defaultValue": "",
-          "apiMapping": "notice"
-        },
-        {
-          "id": "auto-config-country",
-          "label": "Country",
-          "class": "tr-country",
-          "type": "display",
-          "selector": "#auto-config-country",
-          "variableName": "country",
-          "defaultValue": "",
-          "apiMapping": "country"
-        },
-        {
-          "id": "auto-config-timezone",
-          "label": "Timezone",
-          "class": "tr-timezone",
-          "type": "display",
-          "selector": "#auto-config-timezone",
-          "variableName": "timezone",
-          "defaultValue": "",
-          "apiMapping": "timezone"
-        },
-        {
-          "id": "auto-config-zonename",
-          "label": "Zonename",
-          "class": "tr-zonename",
-          "type": "display",
-          "selector": "#auto-config-zonename",
-          "variableName": "zonename",
-          "defaultValue": "",
-          "apiMapping": "zonename"
-        },
-        {
-          "id": "auto-config-isp",
-          "label": "ISP",
-          "class": "tr-isp",
-          "type": "display",
-          "selector": "#auto-config-isp",
-          "variableName": "isp",
-          "defaultValue": "",
-          "apiMapping": "isp"
-        },
-        {
-          "id": "auto-config-as",
-          "label": "AS",
-          "class": "tr-as",
-          "type": "display",
-          "selector": "#auto-config-as",
-          "variableName": "as",
-          "defaultValue": "",
-          "apiMapping": "as"
-        },
-        {
-          "id": "auto-config-ip",
-          "label": "IP Address",
-          "class": "tr-ip-address",
-          "type": "display",
-          "selector": "#auto-config-ip",
-          "variableName": "ip_address",
-          "defaultValue": "",
-          "apiMapping": "ipv4,ipv6"
-        },
-        {
-          "id": "auto-config-method",
-          "label": "Method",
-          "class": "tr-method",
-          "type": "display",
-          "selector": "#auto-config-method",
-          "variableName": "method",
-          "defaultValue": "",
-          "apiMapping": "aftr,mape"
+          "id": "location-isp-info",
+          "name": "Location & ISP Information",
+          "class": "tr-extended-info",
+          "type": "info-display",
+          "fields": [
+            {
+              "id": "auto-config-notice",
+              "label": "Notice",
+              "class": "tr-notice",
+              "type": "display",
+              "selector": "#auto-config-notice",
+              "variableName": "notice",
+              "defaultValue": "",
+              "apiMapping": "notice"
+            },
+            {
+              "id": "auto-config-country",
+              "label": "Country",
+              "class": "tr-country",
+              "type": "display",
+              "selector": "#auto-config-country",
+              "variableName": "country",
+              "defaultValue": "",
+              "apiMapping": "country"
+            },
+            {
+              "id": "auto-config-timezone",
+              "label": "Timezone",
+              "class": "tr-timezone",
+              "type": "display",
+              "selector": "#auto-config-timezone",
+              "variableName": "timezone",
+              "defaultValue": "",
+              "apiMapping": "timezone"
+            },
+            {
+              "id": "auto-config-zonename",
+              "label": "Zonename",
+              "class": "tr-zonename",
+              "type": "display",
+              "selector": "#auto-config-zonename",
+              "variableName": "zonename",
+              "defaultValue": "",
+              "apiMapping": "zonename"
+            },
+            {
+              "id": "auto-config-isp",
+              "label": "ISP",
+              "class": "tr-isp",
+              "type": "display",
+              "selector": "#auto-config-isp",
+              "variableName": "isp",
+              "defaultValue": "",
+              "apiMapping": "isp"
+            },
+            {
+              "id": "auto-config-as",
+              "label": "AS",
+              "class": "tr-as",
+              "type": "display",
+              "selector": "#auto-config-as",
+              "variableName": "as",
+              "defaultValue": "",
+              "apiMapping": "as"
+            },
+            {
+              "id": "auto-config-ip",
+              "label": "IP Address",
+              "class": "tr-ip-address",
+              "type": "display",
+              "selector": "#auto-config-ip",
+              "variableName": "ip_address",
+              "defaultValue": "",
+              "apiMapping": "ipv4,ipv6"
+            },
+            {
+              "id": "auto-config-method",
+              "label": "Method",
+              "class": "tr-method",
+              "type": "display",
+              "selector": "#auto-config-method",
+              "variableName": "method",
+              "defaultValue": "",
+              "apiMapping": "aftr,mape"
+            }
+          ]
         }
       ]
     }
