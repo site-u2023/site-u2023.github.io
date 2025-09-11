@@ -2249,21 +2249,33 @@ console.log('custom.js (JSON-driven clean version) fully loaded and ready');
 
 async function fetchAndDisplayIspInfo() {
     if (!config?.auto_config_api_url) return;
-    
+
     try {
         const response = await fetch(config.auto_config_api_url);
         const apiInfo = await response.json();
+
+        // 回線種別判定
+        if (apiInfo.mape?.brIpv6Address) {
+            apiInfo.method = "MAP-E";
+        } else if (apiInfo.aftr) {
+            apiInfo.method = "DS-Lite";
+        } else {
+            apiInfo.method = "DHCP/PPPoE";
+        }
+
         cachedApiInfo = apiInfo;
-        displayIspInfo(apiInfo);
+
+        // JSONドリブンUIに反映
         applyIspAutoConfig(apiInfo);
+
         updateAutoConnectionInfo(apiInfo);
-        setGuaPrefixIfAvailable();       
+        setGuaPrefixIfAvailable();
 
     } catch (err) {
-        console.error('Failed to fetch ISP info:', err);
-        const autoInfo = document.querySelector('#auto-info');
+        console.error("Failed to fetch ISP info:", err);
+        const autoInfo = document.querySelector("#auto-info");
         if (autoInfo) {
-            autoInfo.textContent = 'Failed to detect connection type.\nPlease select manually.';
+            autoInfo.textContent = "Failed to detect connection type.\nPlease select manually.";
         }
     }
 }
