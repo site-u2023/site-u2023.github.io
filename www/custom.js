@@ -1800,9 +1800,11 @@ if (setupConfig) {
         if (wifiModeConfig) {
             const selectedOption = wifiModeConfig.options.find(opt => opt.value === wifiMode);
             if (selectedOption) {
+                // includeFields にある項目だけ反映
                 if (selectedOption.includeFields) {
                     selectedOption.includeFields.forEach(key => {
                         if (key === 'enable_usteer') {
+                            // usteer モードのときだけセット
                             if (wifiMode === 'usteer') {
                                 values.enable_usteer = '1';
                             }
@@ -1815,6 +1817,10 @@ if (setupConfig) {
                         // 値が空なら何も書かない
                     });
                 }
+                // excludeFields にある項目は削除
+                if (selectedOption.excludeFields) {
+                    selectedOption.excludeFields.forEach(key => delete values[key]);
+                }
             }
         }
     }
@@ -1825,34 +1831,27 @@ const netOptimizer = getFieldValue('input[name="net_optimizer"]');
 if (setupConfig) {
     const tuningCategory = setupConfig.categories.find(cat => cat.id === 'tuning-config');
     if (tuningCategory) {
-        const netOptimizerConfig = tuningCategory.packages.find(pkg =>
-            pkg.variableName === 'net_optimizer'
-        );
-
+        const netOptimizerConfig = tuningCategory.packages.find(pkg => pkg.variableName === 'net_optimizer');
         if (netOptimizerConfig) {
             const selectedOption = netOptimizerConfig.options.find(opt => opt.value === netOptimizer);
             if (selectedOption) {
-                // excludeFieldsを処理
+                // excludeFields にある項目は削除
                 if (selectedOption.excludeFields) {
                     selectedOption.excludeFields.forEach(key => delete values[key]);
                 }
-                // includeFieldsの特別処理
-                if (selectedOption.includeFields?.includes('enable_netopt')) {
-                    values.enable_netopt = '1';
-                }
 
-                // AUTOモード時は netopt_* を削除
-                if (netOptimizer === 'auto') {
-                    Object.keys(values)
-                        .filter(k => k.startsWith('netopt_') && k !== 'enable_netopt')
-                        .forEach(k => delete values[k]);
-                }
-
-                // MANUALモード時のみフィールド値を反映
-                if (netOptimizer === 'manual' && selectedOption.fields) {
-                    selectedOption.fields.forEach(fieldId => {
-                        const val = getFieldValue(`#${fieldId}`);
-                        if (val) values[fieldId] = val;
+                // includeFields にある項目だけ反映
+                if (selectedOption.includeFields) {
+                    selectedOption.includeFields.forEach(key => {
+                        if (key === 'enable_netopt') {
+                            // AUTO と Manual は enable_netopt をセット
+                            values.enable_netopt = '1';
+                            return;
+                        }
+                        const val = getFieldValue(`[name="${key}"], #${key}`);
+                        if (val) {
+                            values[key] = val;
+                        }
                     });
                 }
             }
