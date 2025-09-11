@@ -916,10 +916,7 @@ function setupLanguageSelector() {
     
     // 初回言語パッケージ更新（重要：必ず実行）
     console.log('Performing initial language package update for:', selectedLanguage);
-    if (selectedLanguage && selectedLanguage !== 'en') {
-        // 英語以外の場合は必ず言語パッケージを追加
-        updateAllPackageState('initial-language');
-    }
+    updateAllPackageState('initial-language');
 }
 
 function syncLanguageSelectors(newLang) {
@@ -1974,7 +1971,7 @@ function handleMapeTypeChange(e) {
     }
     
     // setup.shを更新
-    updateVariableDefinitions();
+    updateAllPackageState('mape-type');
 }
 
 // DS-Lite AFTR計算（個別処理に変更）
@@ -2330,7 +2327,6 @@ function applyIspAutoConfig(apiInfo) {
     setGuaPrefixIfAvailable();    
     updateAutoConnectionInfo(apiInfo);
     updateAllPackageState('isp-auto-config');
-    updateVariableDefinitions();
 }
 
 function updateAutoConnectionInfo(apiInfo) {
