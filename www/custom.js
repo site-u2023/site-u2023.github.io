@@ -516,13 +516,13 @@ async function initializeCustomFeatures(asuSection, temp) {
     }
     
     // 設定とデータを並列で読み込み
-    await Promise.all([
+    const [setupConfig] = await Promise.all([
         loadSetupConfig(),
-        loadPackageDatabase(),
+        loadPackageDatabase()
     ]);
 
-    // UI描画（ここで setup.json の内容がDOM化される）
-    renderSetupConfig();
+    // UI描画（setupConfig を必ず渡す）
+    renderSetupConfig(setupConfig);
     renderPackagesConfig();
 
     // UI生成後にISP情報取得
