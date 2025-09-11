@@ -518,7 +518,7 @@ async function initializeCustomFeatures(asuSection, temp) {
     if (!document.querySelector('#custom-packages-details')) {
         cleanupExistingCustomElements();
         replaceAsuSection(asuSection, temp);
-        insertExtendedInfo(temp);
+        await insertExtendedInfo(temp);  // async/awaitに変更
     }
     
     // 設定とデータを並列で読み込み
