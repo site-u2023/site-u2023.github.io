@@ -1,24 +1,3 @@
-// 1. ブラウザUI用言語システム
-// セレクター: #languages-select (index.html)
-// 言語ファイル: langs/en.json, langs/ja.json など（通常のファイル）
-// 変数: current_language, current_language_json
-// 処理関数: translate() (index.js)
-// 用途: ブラウザのUI表示言語変更
-//
-// 2. デバイス用言語システム
-// セレクター: #aios-language (setup.jsonで定義、custom.jsで動的生成)
-// オプション: custom.jsが#languages-selectのoption要素を全てコピーして生成
-// ※setup.jsonにoptionsが無いため、custom.jsが#languages-selectから選択肢を複製する
-// 言語ファイル: langs/custom.en.json, langs/custom.ja.json など（カスタムファイル）
-// 変数: selectedLanguage, customLanguageMap
-// 処理関数: loadCustomTranslations() (custom.js)
-// 用途: OpenWrtデバイスの言語パッケージ + カスタム翻訳
-//
-// 3. 言語パッケージシステム
-// パッケージ: luci-i18n-base-ja, luci-i18n-app-*-ja など
-// 管理変数: dynamicPackages
-// 処理関数: updateLanguagePackage()
-// 用途: OpenWrtデバイスにインストールする言語パッケージ
 
 console.log('custom.js loaded');
 
