@@ -41,7 +41,6 @@ window.addEventListener('load', () => {
 // ==================== グローバル変数 ====================
 let customInitialized = false;
 let customHTMLLoaded = false;
-let PACKAGE_DB = null;
 let setupConfig = null;
 let formStructure = {};
 let cachedApiInfo = null;
@@ -338,7 +337,6 @@ async function initializeCustomFeatures(asuSection, temp) {
     // 設定とデータを並列で読み込み
     await Promise.all([
         loadSetupConfig(),
-        loadPackageDatabase(),
         fetchAndDisplayIspInfo()
     ]);
     
@@ -685,27 +683,6 @@ function cleanupExistingCustomElements() {
                 console.log(`Removed existing ${selector}`);
             }
         });
-}
-
-// 再初期化処理
-function reinitializeFeatures() {
-    if (!document.querySelector('#asu')) return;
-    
-    setupEventListeners();
-    
-    if (PACKAGE_DB) generatePackageSelector();
-    fetchAndDisplayIspInfo();
-    if (cachedApiInfo) updateAutoConnectionInfo(cachedApiInfo);
-
-    // メイン言語セレクターとの同期を再設定
-    const currentMainLanguage = document.querySelector('#languages-select')?.value || config?.fallback_language || 'en';
-    syncLanguageSelectors(currentMainLanguage);
-    console.log('Re-synchronized language on reinit:', currentMainLanguage);
-
-    if (customLanguageMap && Object.keys(customLanguageMap).length) {
-        applyCustomTranslations(customLanguageMap);
-        console.log('Custom translations reapplied after reinit');
-    }
 }
 
 // ==================== 言語セレクター設定 ====================
@@ -2349,42 +2326,6 @@ function updateAutoConnectionInfo(apiInfo) {
 
 // ==================== パッケージ管理 ====================
 
-async function loadPackageDatabase() {
-    try {
-        const url = config?.packages_db_url || 'packages/packages.json';
-        const response = await fetch(url);
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        PACKAGE_DB = await response.json();
-        console.log('Package database loaded:', PACKAGE_DB);
-        
-        generatePackageSelector();
-        
-        return PACKAGE_DB;
-    } catch (err) {
-        console.error('Failed to load package database:', err);
-        return null;
-    }
-}
-
-function generatePackageSelector() {
-    const container = document.querySelector('#package-categories');
-    if (!container || !PACKAGE_DB) {
-        return;
-    }
-    
-    container.innerHTML = '';
-    
-    PACKAGE_DB.categories.forEach(category => {
-        const categoryDiv = createPackageCategory(category);
-        if (categoryDiv) {
-            container.appendChild(categoryDiv);
-        }
-    });
-    
-    updatePackageListFromSelector();
-    console.log(`Generated ${PACKAGE_DB.categories.length} package categories`);
-}
-
 function createPackageCategory(category) {
     const categoryDiv = document.createElement('div');
     categoryDiv.className = 'package-category';
@@ -2622,16 +2563,6 @@ function updatePackageListFromSelector() {
         textarea.style.height = 'auto';
         textarea.style.height = textarea.scrollHeight + 'px';
     }
-}
-
-function findPackageById(id) {
-    if (!PACKAGE_DB) return null;
-    
-    for (const category of PACKAGE_DB.categories) {
-        const pkg = category.packages.find(p => p.uniqueId === id || p.id === id);
-        if (pkg) return pkg;
-    }
-    return null;
 }
 
 // ==================== UCI-defaults処理 ====================
