@@ -1,5 +1,4 @@
 {
-    "tr-load": "デバイス用のOpenWrtカスタムファームウェアをダウンロード",
     "tr-custom-packages": "インストールされたパッケージ",
     "tr-custom-defaults": "初回起動時に実行されるスクリプト (uci-defaults)",
     "tr-postinst": "Postinst（パッケージインストールスクリプト）",
