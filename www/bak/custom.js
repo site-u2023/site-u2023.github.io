@@ -1677,7 +1677,7 @@ function applySpecialFieldLogic(values) {
     
     const connectionFieldVars = [
         'pppoe_username', 'pppoe_password',
-        'dslite_aftr_type', 'dslite_region', 'dslite_aftr_address', 
+        'dslite_aftr_type', 'dslite_area', 'dslite_aftr_address',
         'mape_br', 'mape_ealen', 'mape_ipv4_prefix', 'mape_ipv4_prefixlen',
         'mape_ipv6_prefix', 'mape_ipv6_prefixlen', 'mape_psid_offset', 'mape_psidlen',
         'mape_gua_prefix', 'mape_gua_mode', 'mape_type',
@@ -1705,8 +1705,8 @@ function applySpecialFieldLogic(values) {
                     values.mape_gua_mode = '1';
                     // console.log('Applied GUA prefix in auto mode:', guaPrefix);
                 }
-            } else if (cachedApiInfo.aftr) {
-                values.dslite_aftr_address = cachedApiInfo.aftr;
+            } else if (cachedApiInfo.aftr?.aftrIpv6Address) {
+                values.dslite_aftr_address = cachedApiInfo.aftr.aftrIpv6Address;
             }
         }
     } else if (connectionType === 'dhcp') {
@@ -1717,8 +1717,22 @@ function applySpecialFieldLogic(values) {
         connectionFieldVars.filter(key => !key.startsWith('dslite_')).forEach(key => delete values[key]);
         
         if (cachedApiInfo?.aftr) {
-            values.dslite_aftr_address = cachedApiInfo.aftr;
+            values.dslite_aftr_type    = cachedApiInfo.aftr.aftrType || '';
+            values.dslite_area         = cachedApiInfo.aftr.jurisdiction || '';
+            values.dslite_aftr_address = cachedApiInfo.aftr.aftrIpv6Address || '';
         }
+        // UIから3変数を個別に確実に拾う
+        const uiType  = getFieldValue('#dslite-aftr-type');
+        const uiArea  = getFieldValue('#dslite-area');
+        const uiAddr  = getFieldValue('#dslite-aftr-address');
+        if (uiType) values.dslite_aftr_type = uiType;
+        if (uiArea) values.dslite_area = uiArea;
+        // アドレスはAPIがあればAPI優先、無ければUI
+        if (cachedApiInfo?.aftr?.aftrIpv6Address) {
+            values.dslite_aftr_address = cachedApiInfo.aftr.aftrIpv6Address;
+        } else if (uiAddr) {
+            values.dslite_aftr_address = uiAddr;
+        }        
     } else if (connectionType === 'mape') {
         connectionFieldVars.filter(key => !key.startsWith('mape_')).forEach(key => delete values[key]);
         
@@ -1810,14 +1824,53 @@ function setupEventListeners() {
         }
     });
     
-    // MAP-Eタイプ切り替えハンドラーを追加
+    // MAP-Eタイプ切り替え
     document.querySelectorAll('input[name="mape_type"]').forEach(radio => {
         radio.addEventListener('change', e => {
             toggleGuaPrefixVisibility(e.target.value);
             updateVariableDefinitions();
         });
     });
-    
+
+    // DS-Lite: ISP(aftr_type) × Area 変更で AFTR アドレスを自動補完
+    const aftrType = document.querySelector('#dslite-aftr-type');
+    const aftrArea = document.querySelector('#dslite-area');
+    const aftrAddr = document.querySelector('#dslite-aftr-address');
+
+    function computeAftrAddress(type, area) {
+        const map = {
+            transix: {
+                east: '2404:8e00::feed:100',
+                west: '2404:8e01::feed:100'
+            },
+            xpass: {
+                east: '2404:8e02::feed:100',
+                west: '2404:8e03::feed:100'
+            },
+            v6option: {
+                east: '2404:8e04::feed:100',
+                west: '2404:8e05::feed:100'
+            }
+        };
+        return map[type]?.[area] || '';
+    }
+
+    function syncAftrAddress(force = false) {
+        if (!aftrType || !aftrArea || !aftrAddr) return;
+        const computed = computeAftrAddress(aftrType.value, aftrArea.value);
+        if (!computed) return;
+        // 初期化時は空のときのみ補完、選択変更時は強制上書き
+        if (force || !aftrAddr.value) {
+            aftrAddr.value = computed;
+            updateVariableDefinitions();
+        }
+    }
+
+    if (aftrType) aftrType.addEventListener('change', () => syncAftrAddress(true));
+    if (aftrArea) aftrArea.addEventListener('change', () => syncAftrAddress(true));
+    // 初期化（AFTRアドレスが空なら一度だけ補完）
+    setTimeout(() => syncAftrAddress(false), 0);
+   
     // コマンド入力のマルチインプット化
     setupCommandsInput();
 }
@@ -2408,41 +2461,42 @@ function loadUciDefaultsTemplate() {
 
 function updateVariableDefinitions() {
     const textarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
-    if (!textarea) {
-        return;
-    }
-    
+    if (!textarea) return;
+
     const values = collectFormValues();
-    
+
+    let emissionValues = { ...values };
+    const connType = getFieldValue('input[name="connection_type"]');
+    if (connType === 'dslite') {
+        delete emissionValues.dslite_aftr_type;
+        delete emissionValues.dslite_area;
+    }
+
     document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
         const enableVar = cb.getAttribute('data-enable-var');
         if (enableVar) {
-            values[enableVar] = '1';
+            emissionValues[enableVar] = '1';
         }
     });
-    
-    const variableDefinitions = generateVariableDefinitions(values);
-    
+
+    const variableDefinitions = generateVariableDefinitions(emissionValues);
+
+    // 以下は既存のテキストエリア更新処理
     let content = textarea.value;
-    
     const beginMarker = '# BEGIN_VARIABLE_DEFINITIONS';
     const endMarker = '# END_VARIABLE_DEFINITIONS';
-    
     const beginIndex = content.indexOf(beginMarker);
     const endIndex = content.indexOf(endMarker);
-    
+
     if (beginIndex !== -1 && endIndex !== -1) {
         const beforeSection = content.substring(0, beginIndex + beginMarker.length);
         const afterSection = content.substring(endIndex);
         const newSection = variableDefinitions ? '\n' + variableDefinitions + '\n' : '\n';
-        
         textarea.value = beforeSection + newSection + afterSection;
-        
-        const lines = textarea.value.split('\n').length;
-        textarea.rows = lines + 1;
+        textarea.rows = textarea.value.split('\n').length + 1;
     }
 }
-
+    
 function generateVariableDefinitions(values) {
     const lines = [];
     Object.entries(values).forEach(([key, value]) => {
