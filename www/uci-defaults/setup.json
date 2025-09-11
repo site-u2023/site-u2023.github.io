@@ -30,7 +30,7 @@
               "selector": "#aios-country",
               "variableName": "country",
               "placeholder": "00",
-              "defaultValue": "JP",
+              "defaultValue": "00",
               "maxlength": 2,
               "apiMapping": "country"
             },
@@ -42,7 +42,7 @@
               "selector": "#aios-timezone",
               "variableName": "timezone",
               "placeholder": "UTC",
-              "defaultValue": "JST-9",
+              "defaultValue": "UTC",
               "apiMapping": "timezone"
             },
             {
@@ -53,7 +53,7 @@
               "selector": "#aios-zonename",
               "variableName": "zonename",
               "placeholder": "UTC",
-              "defaultValue": "Asia/Tokyo",
+              "defaultValue": "UTC",
               "apiMapping": "zonename"
             },
             {
