@@ -1791,7 +1791,7 @@ function applySpecialFieldLogic(values) {
     }
 }
     
-// Wi‑Fi設定の処理（JSONドリブン）
+// Wi‑Fi設定の処理
 const wifiMode = getFieldValue('input[name="wifi_mode"]');
 const wifiCategory = setupConfig?.categories.find(cat => cat.id === 'wifi-config');
 const wifiModeConfig = wifiCategory?.packages.find(pkg => pkg.variableName === 'wifi_mode');
@@ -1813,7 +1813,7 @@ if (wifiSelected) {
     }
 }
 
-// ネットワーク最適化の処理（JSONドリブン）
+// Tuning設定の処理
 const netOptimizer = getFieldValue('input[name="net_optimizer"]');
 const tuningCategory = setupConfig?.categories.find(cat => cat.id === 'tuning-config');
 const netOptimizerConfig = tuningCategory?.packages.find(pkg => pkg.variableName === 'net_optimizer');
