@@ -1372,9 +1372,9 @@ function handleRadioChange(e) {
 
 function updatePackageListFromDynamicSources() {
     updateSetupJsonPackages();
-    triggerPackageUpdate();
+    updateLanguagePackage();
+    updateVariableDefinitions();
 }
-
 
 function updateSetupJsonPackages() {
     if (!setupConfig) return;
@@ -2464,12 +2464,7 @@ function handlePackageSelection(e) {
         });
     }
     
-    const enableVar = pkg.getAttribute('data-enable-var');
-    if (enableVar) {
-        updateVariableDefinitions();
-    }
-    
-    triggerPackageUpdate();
+    updateVariableDefinitions();
 }
 
 // パッケージリスト更新（Postinstテキストエリアへの反映）
