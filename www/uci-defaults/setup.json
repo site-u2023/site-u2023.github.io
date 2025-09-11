@@ -158,8 +158,8 @@
           "type": "radio-group",
           "variableName": "wifi_mode",
           "options": [
-            {"value": "standard", "label": "Standard", "class": "tr-standard", "checked": true, "excludeFields": ["enable_usteer", "mobility_domain", "snr"]},
-            {"value": "usteer", "label": "Usteer", "class": "tr-usteer", "packages": ["luci-app-usteer"], "includeFields": ["enable_usteer", "mobility_domain", "snr"]},
+            {"value": "standard", "label": "Standard", "class": "tr-standard", "checked": true, "includeFields": ["wlan_ssid", "wlan_password"]},
+            {"value": "usteer", "label": "Usteer", "class": "tr-usteer", "packages": ["luci-app-usteer"], "includeFields": ["wlan_ssid", "wlan_password", "enable_usteer", "mobility_domain", "snr"]},
             {"value": "disabled", "label": "Disabled", "class": "tr-disabled", "excludeFields": ["wlan_ssid", "wlan_password", "enable_usteer", "mobility_domain", "snr"]}
           ]
         },
@@ -570,7 +570,7 @@
         }
       ]
     },
-    {
+{
       "id": "tuning-config",
       "name": "Tuning",
       "class": "tr-tuning",
