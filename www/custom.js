@@ -1,3 +1,24 @@
+// 1. ブラウザUI用言語システム
+// セレクター: #languages-select (index.html)
+// 言語ファイル: langs/en.json, langs/ja.json など（通常のファイル）
+// 変数: current_language, current_language_json
+// 処理関数: translate() (index.js)
+// 用途: ブラウザのUI表示言語変更
+//
+// 2. デバイス用言語システム
+// セレクター: #aios-language (setup.jsonで定義、custom.jsで動的生成)
+// オプション: custom.jsが#languages-selectのoption要素を全てコピーして生成
+// ※setup.jsonにoptionsが無いため、custom.jsが#languages-selectから選択肢を複製する
+// 言語ファイル: langs/custom.en.json, langs/custom.ja.json など（カスタムファイル）
+// 変数: selectedLanguage, customLanguageMap
+// 処理関数: loadCustomTranslations() (custom.js)
+// 用途: OpenWrtデバイスの言語パッケージ + カスタム翻訳
+//
+// 3. 言語パッケージシステム
+// パッケージ: luci-i18n-base-ja, luci-i18n-app-*-ja など
+// 管理変数: dynamicPackages
+// 処理関数: updateLanguagePackage()
+// 用途: OpenWrtデバイスにインストールする言語パッケージ
 
 console.log('custom.js loaded');
 
@@ -20,6 +41,7 @@ window.addEventListener('load', () => {
 // ==================== グローバル変数 ====================
 let customInitialized = false;
 let customHTMLLoaded = false;
+let PACKAGE_DB = null;
 let setupConfig = null;
 let formStructure = {};
 let cachedApiInfo = null;
@@ -316,6 +338,7 @@ async function initializeCustomFeatures(asuSection, temp) {
     // 設定とデータを並列で読み込み
     await Promise.all([
         loadSetupConfig(),
+        loadPackageDatabase(),
         fetchAndDisplayIspInfo()
     ]);
     
@@ -664,6 +687,27 @@ function cleanupExistingCustomElements() {
         });
 }
 
+// 再初期化処理
+function reinitializeFeatures() {
+    if (!document.querySelector('#asu')) return;
+    
+    setupEventListeners();
+    
+    if (PACKAGE_DB) generatePackageSelector();
+    fetchAndDisplayIspInfo();
+    if (cachedApiInfo) updateAutoConnectionInfo(cachedApiInfo);
+
+    // メイン言語セレクターとの同期を再設定
+    const currentMainLanguage = document.querySelector('#languages-select')?.value || config?.fallback_language || 'en';
+    syncLanguageSelectors(currentMainLanguage);
+    console.log('Re-synchronized language on reinit:', currentMainLanguage);
+
+    if (customLanguageMap && Object.keys(customLanguageMap).length) {
+        applyCustomTranslations(customLanguageMap);
+        console.log('Custom translations reapplied after reinit');
+    }
+}
+
 // ==================== 言語セレクター設定 ====================
 function setupLanguageSelector() {
     const mainLanguageSelect = document.querySelector('#languages-select');
@@ -884,6 +928,11 @@ function applyCustomTranslations(map) {
             }
         });
     }
+}
+
+function triggerPackageUpdate() {
+    updateLanguagePackage();
+    updateVariableDefinitions();
 }
 
 function extractLuciName(pkg) {
@@ -1351,9 +1400,9 @@ function handleRadioChange(e) {
 
 function updatePackageListFromDynamicSources() {
     updateSetupJsonPackages();
-    updateLanguagePackage();
-    updateVariableDefinitions();
+    triggerPackageUpdate();
 }
+
 
 function updateSetupJsonPackages() {
     if (!setupConfig) return;
@@ -1431,7 +1480,7 @@ function initConditionalSections(config) {
         const keys = [key, key.replace(/-/g, '_'), key.replace(/_/g, '-')];
 
         for (const k of keys) {
-            const radios = document.querySelectorAll(`input[type="radio"][name="${CSS.escape(k)}"]`);
+            const radios = document.querySelectorAll(`input[type="radio"][name="${cssEscape(k)}"]`);
             if (radios.length) {
                 const r = Array.from(radios).find(x => x.checked);
                 if (r) return r.value;
@@ -1441,7 +1490,7 @@ function initConditionalSections(config) {
         for (const k of keys) {
             const byId = document.getElementById(k);
             if (byId) return byId.value;
-            const byName = document.querySelector(`[name="${CSS.escape(k)}"]`);
+            const byName = document.querySelector(`[name="${cssEscape(k)}"]`);
             if (byName) return byName.value;
         }
         return '';
@@ -1453,13 +1502,13 @@ function findControlsByKey(key) {
     const controls = [];
     
     for (const k of keys) {
-        const radios = document.querySelectorAll(`input[type="radio"][name="${CSS.escape(k)}"]`);
+        const radios = document.querySelectorAll(`input[type="radio"][name="${cssEscape(k)}"]`);
         controls.push(...radios);
         
         const byId = document.getElementById(k);
         if (byId) controls.push(byId);
         
-        const byName = document.querySelectorAll(`[name="${CSS.escape(k)}"]`);
+        const byName = document.querySelectorAll(`[name="${cssEscape(k)}"]`);
         controls.push(...byName);
     }
     
@@ -1528,6 +1577,10 @@ function getRows(group) {
     }
     
     return rows;
+}
+
+function cssEscape(s) {
+    return String(s).replace(/"/g, '\\"');
 }
 
 function generateFormStructure(config) {
@@ -1939,16 +1992,40 @@ function setupDsliteAddressComputation() {
     aftrType.addEventListener('change', () => {
         syncAftrAddress(true);
         // DS-Lite用の特別処理（UI制御フィールドをクリア）
-        updateVariableDefinitions({ dsliteCleanup: true });
+        updateVariableDefinitionsWithDsliteCleanup();
     });
     
     aftrArea.addEventListener('change', () => {
         syncAftrAddress(true);
         // DS-Lite用の特別処理
-        updateVariableDefinitions({ dsliteCleanup: true });
+        updateVariableDefinitionsWithDsliteCleanup();
     });
     
     setTimeout(() => syncAftrAddress(false), 0);
+}
+
+// DS-Lite専用のupdateVariableDefinitions
+function updateVariableDefinitionsWithDsliteCleanup() {
+    const textarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
+    if (!textarea) return;
+    
+    const values = collectFormValues();
+    let emissionValues = { ...values };
+    
+    // DS-Lite: UI制御用フィールドを削除
+    delete emissionValues.dslite_aftr_type;
+    delete emissionValues.dslite_area;
+    
+    // パッケージの有効化変数を追加
+    document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
+        const enableVar = cb.getAttribute('data-enable-var');
+        if (enableVar) {
+            emissionValues[enableVar] = '1';
+        }
+    });
+    
+    const variableDefinitions = generateVariableDefinitions(emissionValues);
+    updateTextareaContent(textarea, variableDefinitions);
 }
 
 // 接続タイプ変更ハンドラ（JSONドリブン）
@@ -2272,6 +2349,161 @@ function updateAutoConnectionInfo(apiInfo) {
 
 // ==================== パッケージ管理 ====================
 
+async function loadPackageDatabase() {
+    try {
+        const url = config?.packages_db_url || 'packages/packages.json';
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        PACKAGE_DB = await response.json();
+        console.log('Package database loaded:', PACKAGE_DB);
+        
+        generatePackageSelector();
+        
+        return PACKAGE_DB;
+    } catch (err) {
+        console.error('Failed to load package database:', err);
+        return null;
+    }
+}
+
+function generatePackageSelector() {
+    const container = document.querySelector('#package-categories');
+    if (!container || !PACKAGE_DB) {
+        return;
+    }
+    
+    container.innerHTML = '';
+    
+    PACKAGE_DB.categories.forEach(category => {
+        const categoryDiv = createPackageCategory(category);
+        if (categoryDiv) {
+            container.appendChild(categoryDiv);
+        }
+    });
+    
+    updatePackageListFromSelector();
+    console.log(`Generated ${PACKAGE_DB.categories.length} package categories`);
+}
+
+function createPackageCategory(category) {
+    const categoryDiv = document.createElement('div');
+    categoryDiv.className = 'package-category';
+    categoryDiv.setAttribute('data-category-id', category.id);
+    
+    const packageGrid = document.createElement('div');
+    packageGrid.className = 'package-grid';
+    
+    let hasVisiblePackages = false;
+    
+    category.packages.forEach(pkg => {
+        if (!pkg.hidden) {
+            hasVisiblePackages = true;
+            const packageItem = createPackageItem(pkg);
+            packageGrid.appendChild(packageItem);
+        }
+    });
+    
+    if (!hasVisiblePackages) return null;
+    
+    const title = document.createElement('h4');
+    title.textContent = category.name;
+    if (category.class) {
+        title.classList.add(category.class);
+    }
+    categoryDiv.appendChild(title);
+ 
+    if (category.description) {
+        const description = document.createElement('div');
+        description.className = 'package-category-description';
+        description.textContent = category.description;
+        categoryDiv.appendChild(description);
+    }
+    
+    categoryDiv.appendChild(packageGrid);
+    return categoryDiv;
+}
+ 
+function createPackageItem(pkg) {
+    const packageItem = document.createElement('div');
+    packageItem.className = 'package-item';
+    packageItem.setAttribute('data-package-id', pkg.id);
+    
+    const mainCheckbox = createPackageCheckbox(pkg, pkg.checked || false);
+    packageItem.appendChild(mainCheckbox);
+    
+    if (pkg.dependencies && Array.isArray(pkg.dependencies)) {
+        const depContainer = document.createElement('div');
+        depContainer.className = 'package-dependencies';
+        
+        pkg.dependencies.forEach(depId => {
+            const depPkg = findPackageById(depId);
+            if (depPkg) {
+                const depCheckbox = createPackageCheckbox(depPkg, pkg.checked || false, true);
+                depCheckbox.classList.add('package-dependent');
+                depContainer.appendChild(depCheckbox);
+            }
+        });
+        
+        if (depContainer.children.length > 0) {
+            packageItem.appendChild(depContainer);
+        }
+    }
+    
+    if (pkg.enableVar) {
+        const checkbox = packageItem.querySelector(`#pkg-${pkg.id}`);
+        if (checkbox) {
+            checkbox.setAttribute('data-enable-var', pkg.enableVar);
+        }
+    }
+    
+    return packageItem;
+}
+
+function createPackageCheckbox(pkg, isChecked = false, isDependency = false) {
+    const label = document.createElement('label');
+    label.className = 'form-check-label';
+    label.setAttribute('for', `pkg-${pkg.uniqueId || pkg.id}`);
+    label.style.display = 'flex';
+    label.style.alignItems = 'center';
+    label.style.gap = '0.5em';
+    label.style.cursor = 'pointer';
+    
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.id = `pkg-${pkg.uniqueId || pkg.id}`; 
+    checkbox.className = 'form-check-input package-selector-checkbox';
+    checkbox.setAttribute('data-package', pkg.id);   // id
+    checkbox.setAttribute('data-unique-id', pkg.uniqueId || pkg.id); 
+    
+    if (pkg.dependencies) {
+        checkbox.setAttribute('data-dependencies', pkg.dependencies.join(','));
+    }
+    
+    if (isChecked) {
+        checkbox.checked = true;
+    }
+    
+    checkbox.addEventListener('change', handlePackageSelection);
+    
+    if (config?.package_url) {
+        const link = document.createElement('a');
+        link.href = config.package_url.replace("{id}", encodeURIComponent(pkg.id));  // 変更: pkg.id（内部名）でURL構築
+        link.target = '_blank';
+        link.className = 'package-link';
+        link.textContent = pkg.name || pkg.id;  // 変更: name（表示名）を表示
+        link.onclick = (e) => e.stopPropagation();
+        label.appendChild(checkbox);
+        label.appendChild(link);
+    } else {
+        const span = document.createElement('span');
+        span.textContent = pkg.name || pkg.id;  // 変更: name（表示名）を表示
+        label.appendChild(checkbox);
+        label.appendChild(span);
+    }
+    
+    return label;
+}
+
 function handlePackageSelection(e) {
     const pkg = e.target;
     const isChecked = pkg.checked;
@@ -2300,7 +2532,12 @@ function handlePackageSelection(e) {
         });
     }
     
-    updateVariableDefinitions();
+    const enableVar = pkg.getAttribute('data-enable-var');
+    if (enableVar) {
+        updateVariableDefinitions();
+    }
+    
+    triggerPackageUpdate();
 }
 
 // パッケージリスト更新（Postinstテキストエリアへの反映）
@@ -2387,6 +2624,16 @@ function updatePackageListFromSelector() {
     }
 }
 
+function findPackageById(id) {
+    if (!PACKAGE_DB) return null;
+    
+    for (const category of PACKAGE_DB.categories) {
+        const pkg = category.packages.find(p => p.uniqueId === id || p.id === id);
+        if (pkg) return pkg;
+    }
+    return null;
+}
+
 // ==================== UCI-defaults処理 ====================
 
 function loadUciDefaultsTemplate() {
@@ -2414,19 +2661,13 @@ function loadUciDefaultsTemplate() {
         .catch(err => console.error('Failed to load setup.sh:', err));
 }
 
-function updateVariableDefinitions(options = {}) {
+function updateVariableDefinitions() {
     const textarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
     if (!textarea) return;
-
+    
     const values = collectFormValues();
     let emissionValues = { ...values };
-
-    // DS-Lite用に除外するフィールド
-    if (options.dsliteCleanup) {
-        delete emissionValues.dslite_aftr_type;
-        delete emissionValues.dslite_area;
-    }
-
+    
     // パッケージの有効化変数を追加
     document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
         const enableVar = cb.getAttribute('data-enable-var');
@@ -2434,7 +2675,7 @@ function updateVariableDefinitions(options = {}) {
             emissionValues[enableVar] = '1';
         }
     });
-
+    
     const variableDefinitions = generateVariableDefinitions(emissionValues);
     updateTextareaContent(textarea, variableDefinitions);
 
@@ -2611,6 +2852,14 @@ function setValue(selector, val) {
         } else {
             el.innerText = val;
         }
+    }
+}
+
+function showAlert(message) {
+    const alertEl = document.querySelector("#alert");
+    if (alertEl) {
+        alertEl.innerText = message;
+        show(alertEl);
     }
 }
 
