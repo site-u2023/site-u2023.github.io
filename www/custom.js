@@ -2436,9 +2436,22 @@ function updateVariableDefinitions(options = {}) {
     });
 
     const variableDefinitions = generateVariableDefinitions(emissionValues);
-
-    // 重複していた範囲置換処理は updateTextareaContent() に集約
     updateTextareaContent(textarea, variableDefinitions);
+
+    // 以下は既存のテキストエリア更新処理
+    let content = textarea.value;
+    const beginMarker = '# BEGIN_VARIABLE_DEFINITIONS';
+    const endMarker = '# END_VARIABLE_DEFINITIONS';
+    const beginIndex = content.indexOf(beginMarker);
+    const endIndex = content.indexOf(endMarker);
+
+    if (beginIndex !== -1 && endIndex !== -1) {
+        const beforeSection = content.substring(0, beginIndex + beginMarker.length);
+        const afterSection = content.substring(endIndex);
+        const newSection = variableDefinitions ? '\n' + variableDefinitions + '\n' : '\n';
+        textarea.value = beforeSection + newSection + afterSection;
+        textarea.rows = textarea.value.split('\n').length + 1;
+    }
 }
 
 // テキストエリア更新の共通処理
