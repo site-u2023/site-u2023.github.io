@@ -1041,7 +1041,6 @@ async function isPackageAvailable(pkgName, feed) {
 }
 
 // ==================== setup.json 処理 ====================
-
 async function loadSetupConfig() {
     try {
         const url = config?.setup_db_url || 'uci-defaults/setup.json';
@@ -1049,13 +1048,13 @@ async function loadSetupConfig() {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         
         setupConfig = await response.json();
-        console.log('Setup config loaded:', setupConfig);
+        console.log('Setup config loaded (JSON-driven mode):', setupConfig);
         
         formStructure = generateFormStructure(setupConfig);
         storeDefaultValues(setupConfig);
         renderSetupConfig(setupConfig);
         
-        console.log('Setup config rendered successfully');
+        console.log('Setup config rendered successfully with JSON-driven features');
         return setupConfig;
     } catch (err) {
         console.error('Failed to load setup.json:', err);
@@ -1672,20 +1671,32 @@ function getFieldValue(selector) {
     return element.value;
 }
 
+// ==================== フォーム値処理（JSONドリブン版） ====================
 function applySpecialFieldLogic(values) {
     const connectionType = getFieldValue('input[name="connection_type"]');
     
-    const connectionFieldVars = [
-        'pppoe_username', 'pppoe_password',
-        'dslite_aftr_type', 'dslite_area', 'dslite_aftr_address',
-        'mape_br', 'mape_ealen', 'mape_ipv4_prefix', 'mape_ipv4_prefixlen',
-        'mape_ipv6_prefix', 'mape_ipv6_prefixlen', 'mape_psid_offset', 'mape_psidlen',
-        'mape_gua_prefix', 'mape_gua_mode', 'mape_type',
-        'ap_ip_address', 'ap_gateway'
-    ];
+    // JSONから接続タイプ別のフィールドを取得
+    const allConnectionFields = [];
+    
+    if (setupConfig) {
+        // Internet Connectionカテゴリを取得
+        const internetCategory = setupConfig.categories.find(cat => cat.id === 'internet-config');
+        if (internetCategory) {
+            // 各接続タイプセクションからconnectionFieldsを収集
+            internetCategory.packages.forEach(pkg => {
+                if (pkg.type === 'conditional-section' && pkg.connectionFields) {
+                    allConnectionFields.push(...pkg.connectionFields);
+                }
+            });
+        }
+    }
+    
+    // 全ての接続関連フィールドをクリア
+    const uniqueConnectionFields = [...new Set(allConnectionFields)];
     
     if (connectionType === 'auto') {
-        connectionFieldVars.forEach(key => delete values[key]);
+        // AUTO時：全接続フィールドを削除してからAPI情報を適用
+        uniqueConnectionFields.forEach(key => delete values[key]);
         
         if (cachedApiInfo) {
             if (cachedApiInfo.mape?.brIpv6Address) {
@@ -1698,113 +1709,139 @@ function applySpecialFieldLogic(values) {
                 values.mape_psid_offset = cachedApiInfo.mape.psIdOffset;
                 values.mape_psidlen = cachedApiInfo.mape.psidlen;
                 
-                // GUA prefixの自動設定を改善
                 const guaPrefix = generateGuaPrefixFromFullAddress(cachedApiInfo);
                 if (guaPrefix) {
                     values.mape_gua_prefix = guaPrefix;
                     values.mape_gua_mode = '1';
-                    // console.log('Applied GUA prefix in auto mode:', guaPrefix);
                 }
             } else if (cachedApiInfo.aftr?.aftrIpv6Address) {
                 values.dslite_aftr_address = cachedApiInfo.aftr.aftrIpv6Address;
             }
         }
-    } else if (connectionType === 'dhcp') {
-        connectionFieldVars.forEach(key => delete values[key]);
-    } else if (connectionType === 'pppoe') {
-        connectionFieldVars.filter(key => !key.startsWith('pppoe_')).forEach(key => delete values[key]);
-    } else if (connectionType === 'dslite') {
-        connectionFieldVars.filter(key => !key.startsWith('dslite_')).forEach(key => delete values[key]);
-        
-        if (cachedApiInfo?.aftr) {
-            values.dslite_aftr_type    = cachedApiInfo.aftr.aftrType || '';
-            values.dslite_area         = cachedApiInfo.aftr.jurisdiction || '';
-            values.dslite_aftr_address = cachedApiInfo.aftr.aftrIpv6Address || '';
-        }
-        // UIから3変数を個別に確実に拾う
-        const uiType  = getFieldValue('#dslite-aftr-type');
-        const uiArea  = getFieldValue('#dslite-area');
-        const uiAddr  = getFieldValue('#dslite-aftr-address');
-        if (uiType) values.dslite_aftr_type = uiType;
-        if (uiArea) values.dslite_area = uiArea;
-        // アドレスはAPIがあればAPI優先、無ければUI
-        if (cachedApiInfo?.aftr?.aftrIpv6Address) {
-            values.dslite_aftr_address = cachedApiInfo.aftr.aftrIpv6Address;
-        } else if (uiAddr) {
-            values.dslite_aftr_address = uiAddr;
-        }        
-    } else if (connectionType === 'mape') {
-        connectionFieldVars.filter(key => !key.startsWith('mape_')).forEach(key => delete values[key]);
-        
-        // MAP-E設定の改善
-        if (cachedApiInfo?.mape?.brIpv6Address) {
-            values.mape_br = cachedApiInfo.mape.brIpv6Address;
-            values.mape_ealen = cachedApiInfo.mape.eaBitLength;
-            values.mape_ipv4_prefix = cachedApiInfo.mape.ipv4Prefix;
-            values.mape_ipv4_prefixlen = cachedApiInfo.mape.ipv4PrefixLength;
-            values.mape_ipv6_prefix = cachedApiInfo.mape.ipv6Prefix;
-            values.mape_ipv6_prefixlen = cachedApiInfo.mape.ipv6PrefixLength;
-            values.mape_psid_offset = cachedApiInfo.mape.psIdOffset;
-            values.mape_psidlen = cachedApiInfo.mape.psidlen;
+    } else {
+        // 選択された接続タイプのセクションを探す
+        const internetCategory = setupConfig?.categories.find(cat => cat.id === 'internet-config');
+        if (internetCategory) {
+            const selectedSection = internetCategory.packages.find(pkg => 
+                pkg.type === 'conditional-section' && 
+                pkg.showWhen?.values?.includes(connectionType)
+            );
             
-            // GUA prefix設定の改善
-            const guaPrefix = generateGuaPrefixFromFullAddress(cachedApiInfo);
-            if (guaPrefix) {
-                values.mape_gua_prefix = guaPrefix;
-                values.mape_gua_mode = '1';
-                console.log('Applied GUA prefix in MAP-E mode:', guaPrefix);
-            }
-        }
-        
-        const mapeType = getFieldValue('input[name="mape_type"]');
-        if (mapeType === 'gua') {
-            values.mape_gua_mode = '1';
-            
-            // GUAタイプの場合、フィールドの値を取得または生成
-            const currentGUAValue = getFieldValue('#mape-gua-prefix');
-            if (currentGUAValue) {
-                values.mape_gua_prefix = currentGUAValue;
-            } else if (!values.mape_gua_prefix && cachedApiInfo?.ipv6) {
-                // フィールドが空の場合は再生成
-                const guaPrefix = generateGuaPrefixFromFullAddress(cachedApiInfo);
-                if (guaPrefix) {
-                    values.mape_gua_prefix = guaPrefix;
-                    console.log('Generated GUA prefix for empty field:', guaPrefix);
+            if (selectedSection?.connectionFields) {
+                // 選択されたタイプ以外のフィールドを削除
+                uniqueConnectionFields.forEach(key => {
+                    if (!selectedSection.connectionFields.includes(key)) {
+                        delete values[key];
+                    }
+                });
+                
+                // 特定タイプ別の追加処理
+                if (connectionType === 'dslite') {
+                    if (cachedApiInfo?.aftr) {
+                        values.dslite_aftr_type = cachedApiInfo.aftr.aftrType || '';
+                        values.dslite_area = cachedApiInfo.aftr.jurisdiction || '';
+                        values.dslite_aftr_address = cachedApiInfo.aftr.aftrIpv6Address || '';
+                    }
+                    
+                    const uiType = getFieldValue('#dslite-aftr-type');
+                    const uiArea = getFieldValue('#dslite-area');
+                    const uiAddr = getFieldValue('#dslite-aftr-address');
+                    if (uiType) values.dslite_aftr_type = uiType;
+                    if (uiArea) values.dslite_area = uiArea;
+                    if (cachedApiInfo?.aftr?.aftrIpv6Address) {
+                        values.dslite_aftr_address = cachedApiInfo.aftr.aftrIpv6Address;
+                    } else if (uiAddr) {
+                        values.dslite_aftr_address = uiAddr;
+                    }
+                } else if (connectionType === 'mape') {
+                    if (cachedApiInfo?.mape?.brIpv6Address) {
+                        values.mape_br = cachedApiInfo.mape.brIpv6Address;
+                        values.mape_ealen = cachedApiInfo.mape.eaBitLength;
+                        values.mape_ipv4_prefix = cachedApiInfo.mape.ipv4Prefix;
+                        values.mape_ipv4_prefixlen = cachedApiInfo.mape.ipv4PrefixLength;
+                        values.mape_ipv6_prefix = cachedApiInfo.mape.ipv6Prefix;
+                        values.mape_ipv6_prefixlen = cachedApiInfo.mape.ipv6PrefixLength;
+                        values.mape_psid_offset = cachedApiInfo.mape.psIdOffset;
+                        values.mape_psidlen = cachedApiInfo.mape.psidlen;
+                        
+                        const guaPrefix = generateGuaPrefixFromFullAddress(cachedApiInfo);
+                        if (guaPrefix) {
+                            values.mape_gua_prefix = guaPrefix;
+                            values.mape_gua_mode = '1';
+                        }
+                    }
+                    
+                    const mapeType = getFieldValue('input[name="mape_type"]');
+                    if (mapeType === 'gua') {
+                        values.mape_gua_mode = '1';
+                        
+                        const currentGUAValue = getFieldValue('#mape-gua-prefix');
+                        if (currentGUAValue) {
+                            values.mape_gua_prefix = currentGUAValue;
+                        } else if (!values.mape_gua_prefix && cachedApiInfo?.ipv6) {
+                            const guaPrefix = generateGuaPrefixFromFullAddress(cachedApiInfo);
+                            if (guaPrefix) {
+                                values.mape_gua_prefix = guaPrefix;
+                            }
+                        }
+                    }
                 }
             }
         }
-    } else if (connectionType === 'ap') {
-        connectionFieldVars.filter(key => !key.startsWith('ap_')).forEach(key => delete values[key]);
-    } else {
-        connectionFieldVars.forEach(key => delete values[key]);
     }
     
-    // Wi-Fi設定の処理
+    // Wi-Fi設定の処理（JSONドリブン）
     const wifiMode = getFieldValue('input[name="wifi_mode"]');
-    if (wifiMode === 'disabled') {
-        ['wlan_ssid', 'wlan_password', 'enable_usteer', 'mobility_domain', 'snr']
-            .forEach(key => delete values[key]);
-    } else if (wifiMode === 'standard') {
-        ['enable_usteer', 'mobility_domain', 'snr']
-            .forEach(key => delete values[key]);
-    } else if (wifiMode === 'usteer') {
-        values.enable_usteer = '1';
+    if (setupConfig) {
+        const wifiCategory = setupConfig.categories.find(cat => cat.id === 'wifi-config');
+        if (wifiCategory) {
+            const wifiModeConfig = wifiCategory.packages.find(pkg => 
+                pkg.variableName === 'wifi_mode'
+            );
+            
+            if (wifiModeConfig) {
+                const selectedOption = wifiModeConfig.options.find(opt => opt.value === wifiMode);
+                if (selectedOption) {
+                    // excludeFieldsを処理
+                    if (selectedOption.excludeFields) {
+                        selectedOption.excludeFields.forEach(key => delete values[key]);
+                    }
+                    // includeFieldsの特別処理
+                    if (selectedOption.includeFields?.includes('enable_usteer')) {
+                        values.enable_usteer = '1';
+                    }
+                }
+            }
+        }
     }
     
-    // ネットワーク最適化の処理
+    // ネットワーク最適化の処理（JSONドリブン）
     const netOptimizer = getFieldValue('input[name="net_optimizer"]');
-    if (netOptimizer === 'auto') {
-        values.enable_netopt = '1';
-        ['netopt_rmem', 'netopt_wmem', 'netopt_conntrack', 'netopt_backlog', 'netopt_somaxconn', 'netopt_congestion']
-            .forEach(key => delete values[key]);
-    } else if (netOptimizer === 'disabled') {
-        ['enable_netopt', 'netopt_rmem', 'netopt_wmem', 'netopt_conntrack', 'netopt_backlog', 'netopt_somaxconn', 'netopt_congestion']
-            .forEach(key => delete values[key]);
+    if (setupConfig) {
+        const tuningCategory = setupConfig.categories.find(cat => cat.id === 'tuning-config');
+        if (tuningCategory) {
+            const netOptimizerConfig = tuningCategory.packages.find(pkg => 
+                pkg.variableName === 'net_optimizer'
+            );
+            
+            if (netOptimizerConfig) {
+                const selectedOption = netOptimizerConfig.options.find(opt => opt.value === netOptimizer);
+                if (selectedOption) {
+                    // excludeFieldsを処理
+                    if (selectedOption.excludeFields) {
+                        selectedOption.excludeFields.forEach(key => delete values[key]);
+                    }
+                    // includeFieldsの特別処理
+                    if (selectedOption.includeFields?.includes('enable_netopt')) {
+                        values.enable_netopt = '1';
+                    }
+                }
+            }
+        }
     }
 }
 
-// ==================== イベントハンドラ ====================
-
+// ==================== イベントハンドラ（JSONドリブン版） ====================
 function setupEventListeners() {
     const radioGroups = {
         'connection_type': handleConnectionTypeChange,
@@ -1832,33 +1869,67 @@ function setupEventListeners() {
         });
     });
 
-    // DS-Lite: ISP(aftr_type) × Area 変更で AFTR アドレスを自動補完
+    // DS-Lite: JSONベースのAFTRアドレス自動補完
+    setupDsliteAddressComputation();
+   
+    // コマンド入力のマルチインプット化
+    setupCommandsInput();
+}
+
+// DS-LiteのAFTRアドレス計算を独立関数化（JSONドリブン）
+function setupDsliteAddressComputation() {
     const aftrType = document.querySelector('#dslite-aftr-type');
     const aftrArea = document.querySelector('#dslite-area');
     const aftrAddr = document.querySelector('#dslite-aftr-address');
 
+    if (!aftrType || !aftrArea || !aftrAddr) return;
+
+    // JSONからアドレスマッピングを取得
+    function getAddressMap() {
+        if (!setupConfig) return null;
+        
+        const internetCategory = setupConfig.categories.find(cat => cat.id === 'internet-config');
+        if (!internetCategory) return null;
+        
+        const dsliteSection = internetCategory.packages.find(pkg => pkg.id === 'dslite-section');
+        if (!dsliteSection?.children) return null;
+        
+        const dsliteFields = dsliteSection.children.find(child => child.id === 'dslite-fields');
+        if (!dsliteFields?.fields) return null;
+        
+        const aftrTypeField = dsliteFields.fields.find(field => field.id === 'dslite-aftr-type');
+        return aftrTypeField?.computeField?.addressMap || null;
+    }
+
     function computeAftrAddress(type, area) {
-        const map = {
-            transix: {
-                east: '2404:8e00::feed:100',
-                west: '2404:8e01::feed:100'
-            },
-            xpass: {
-                east: '2404:8e02::feed:100',
-                west: '2404:8e03::feed:100'
-            },
-            v6option: {
-                east: '2404:8e04::feed:100',
-                west: '2404:8e05::feed:100'
-            }
-        };
-        return map[type]?.[area] || '';
+        const addressMap = getAddressMap();
+        if (!addressMap) {
+            // フォールバック（JSONが読み込まれていない場合）
+            console.warn('Address map not found in JSON, using fallback');
+            const fallbackMap = {
+                transix: {
+                    east: '2404:8e00::feed:100',
+                    west: '2404:8e01::feed:100'
+                },
+                xpass: {
+                    east: '2404:8e02::feed:100',
+                    west: '2404:8e03::feed:100'
+                },
+                v6option: {
+                    east: '2404:8e04::feed:100',
+                    west: '2404:8e05::feed:100'
+                }
+            };
+            return fallbackMap[type]?.[area] || '';
+        }
+        
+        return addressMap[type]?.[area] || '';
     }
 
     function syncAftrAddress(force = false) {
-        if (!aftrType || !aftrArea || !aftrAddr) return;
         const computed = computeAftrAddress(aftrType.value, aftrArea.value);
         if (!computed) return;
+        
         // 初期化時は空のときのみ補完、選択変更時は強制上書き
         if (force || !aftrAddr.value) {
             aftrAddr.value = computed;
@@ -1866,63 +1937,40 @@ function setupEventListeners() {
         }
     }
 
-    if (aftrType) aftrType.addEventListener('change', () => syncAftrAddress(true));
-    if (aftrArea) aftrArea.addEventListener('change', () => syncAftrAddress(true));
+    aftrType.addEventListener('change', () => syncAftrAddress(true));
+    aftrArea.addEventListener('change', () => syncAftrAddress(true));
+    
     // 初期化（AFTRアドレスが空なら一度だけ補完）
     setTimeout(() => syncAftrAddress(false), 0);
-   
-    // コマンド入力のマルチインプット化
-    setupCommandsInput();
 }
 
-// コマンド入力設定関数を追加
-function setupCommandsInput() {
-    console.log('setupCommandsInput called');
-    
-    const commandsContainer = document.getElementById('commands-autocomplete');
-    
-    if (!commandsContainer) {
-        console.log('commands-autocomplete container not found');
-        return;
-    }
-    
-    // 既存のインプットを削除
-    const oldInput = document.getElementById('command');
-    if (oldInput) {
-        oldInput.remove();
-    }
-    
-    // マルチインプットマネージャーを初期化
-    commandsManager = new MultiInputManager('commands-autocomplete', {
-        placeholder: 'Type command and press Enter',
-        className: 'multi-input-item command-input',
-        onAdd: (command) => {
-            console.log('Command added:', command);
-        },
-        onRemove: (command) => {
-            console.log('Command removed:', command);
-        },
-        onChange: (values) => {
-            // console.log('Commands changed:', values);
-            updateCustomCommands();
-        }
-    });
-    
-    console.log('Commands input setup complete');
-}
-
+// 接続タイプ変更ハンドラ（JSONドリブン）
 function handleConnectionTypeChange(e) {
     const selectedType = e.target.value;
     
-    const sections = ['auto', 'dhcp', 'pppoe', 'dslite', 'mape', 'ap'];
-    sections.forEach(type => {
-        const section = document.querySelector(`#${type}-section`);
-        if (section) {
-            if (type === selectedType) {
+    // JSONから接続タイプの設定を取得
+    if (!setupConfig) {
+        console.warn('Setup config not loaded');
+        return;
+    }
+    
+    const internetCategory = setupConfig.categories.find(cat => cat.id === 'internet-config');
+    if (!internetCategory) return;
+    
+    // 全ての接続タイプセクションを処理
+    internetCategory.packages.forEach(pkg => {
+        if (pkg.type === 'conditional-section' && pkg.showWhen?.field === 'connection_type') {
+            const section = document.querySelector(`#${pkg.id}`);
+            if (!section) return;
+            
+            // showWhen.valuesに基づいて表示/非表示を制御
+            if (pkg.showWhen.values?.includes(selectedType)) {
                 show(section);
-                if (type === 'auto' && cachedApiInfo) {
+                
+                // 特定タイプ別の追加処理
+                if (selectedType === 'auto' && cachedApiInfo) {
                     updateAutoConnectionInfo(cachedApiInfo);
-                    } else if (type === 'mape' && cachedApiInfo) {
+                } else if (selectedType === 'mape' && cachedApiInfo) {
                     // MAP-E選択時にGUA prefixを設定
                     const guaPrefixField = document.querySelector('#mape-gua-prefix');
                     if (guaPrefixField && cachedApiInfo.ipv6) {
@@ -1942,15 +1990,31 @@ function handleConnectionTypeChange(e) {
     updatePackageListFromDynamicSources();
 }
 
+// ネットワーク最適化変更ハンドラ（JSONドリブン）
 function handleNetOptimizerChange(e) {
     const mode = e.target.value;
     
-    ['auto', 'manual', 'disabled'].forEach(m => {
-        const section = document.querySelector(`#netopt-${m}-section`);
-        if (section) {
-            if (m === mode) {
+    // JSONから設定を取得
+    if (!setupConfig) {
+        console.warn('Setup config not loaded');
+        return;
+    }
+    
+    const tuningCategory = setupConfig.categories.find(cat => cat.id === 'tuning-config');
+    if (!tuningCategory) return;
+    
+    // ネットワーク最適化関連のセクションを処理
+    tuningCategory.packages.forEach(pkg => {
+        if (pkg.type === 'conditional-section' && pkg.showWhen?.field === 'net_optimizer') {
+            const section = document.querySelector(`#${pkg.id}`);
+            if (!section) return;
+            
+            // showWhen.valuesに基づいて表示/非表示を制御
+            if (pkg.showWhen.values?.includes(mode)) {
                 show(section);
-                if (m === 'manual') {
+                
+                // 手動モードの場合はデフォルト値を復元
+                if (mode === 'manual') {
                     restoreManualDefaults();
                 }
             } else {
@@ -1962,72 +2026,240 @@ function handleNetOptimizerChange(e) {
     updatePackageListFromDynamicSources();
 }
 
-function restoreManualDefaults() {
-    const manualFields = {
-        'netopt-rmem': '4096 131072 8388608',
-        'netopt-wmem': '4096 131072 8388608',
-        'netopt-conntrack': '131072',
-        'netopt-backlog': '5000',
-        'netopt-somaxconn': '16384',
-        'netopt-congestion': 'cubic'
-    };
-    
-    Object.entries(manualFields).forEach(([id, defaultValue]) => {
-        const el = document.querySelector(`#${id}`);
-        if (el && !el.value) {
-            el.value = defaultValue;
-        }
-    });
-}
-
+// Wi-Fiモード変更ハンドラ（JSONドリブン）
 function handleWifiModeChange(e) {
     const mode = e.target.value;
     
-    const wifiOptionsContainer = document.querySelector("#wifi-options-container");
-    const usteerOptions = document.querySelector("#usteer-options");
+    // JSONから設定を取得
+    if (!setupConfig) {
+        console.warn('Setup config not loaded');
+        // フォールバック処理
+        const wifiOptionsContainer = document.querySelector("#wifi-options-container");
+        const usteerOptions = document.querySelector("#usteer-options");
+        
+        if (mode === 'disabled') {
+            hide(wifiOptionsContainer);
+            clearWifiFields();
+        } else {
+            show(wifiOptionsContainer);
+            restoreWifiDefaults();
+            
+            if (mode === 'usteer') {
+                show(usteerOptions);
+            } else {
+                hide(usteerOptions);
+            }
+        }
+        
+        updatePackageListFromDynamicSources();
+        return;
+    }
     
+    const wifiCategory = setupConfig.categories.find(cat => cat.id === 'wifi-config');
+    if (!wifiCategory) return;
+    
+    // Wi-Fiモード設定を取得
+    const wifiModeConfig = wifiCategory.packages.find(pkg => 
+        pkg.variableName === 'wifi_mode'
+    );
+    
+    if (!wifiModeConfig) return;
+    
+    const selectedOption = wifiModeConfig.options.find(opt => opt.value === mode);
+    if (!selectedOption) return;
+    
+    // Wi-Fi関連のセクションを処理
+    wifiCategory.packages.forEach(pkg => {
+        if (pkg.type === 'conditional-section') {
+            const section = document.querySelector(`#${pkg.id}`);
+            if (!section) return;
+            
+            // showWhenに基づいて表示/非表示を制御
+            if (pkg.showWhen?.values?.includes(mode)) {
+                show(section);
+                
+                // 子要素も再帰的に処理
+                if (pkg.children) {
+                    pkg.children.forEach(child => {
+                        if (child.type === 'conditional-section') {
+                            const childSection = document.querySelector(`#${child.id}`);
+                            if (childSection) {
+                                if (child.showWhen?.values?.includes(mode)) {
+                                    show(childSection);
+                                } else {
+                                    hide(childSection);
+                                }
+                            }
+                        }
+                    });
+                }
+            } else {
+                hide(section);
+            }
+        }
+    });
+    
+    // モード別の特別処理
     if (mode === 'disabled') {
-        hide(wifiOptionsContainer);
         clearWifiFields();
     } else {
-        show(wifiOptionsContainer);
         restoreWifiDefaults();
-        
-        if (mode === 'usteer') {
-            show(usteerOptions);
-        } else {
-            hide(usteerOptions);
-        }
     }
     
     updatePackageListFromDynamicSources();
 }
 
-function clearWifiFields() {
-    ['aios-wifi-ssid', 'aios-wifi-password', 'aios-wifi-mobility-domain', 'aios-wifi-snr']
-        .forEach(id => {
+// デフォルト値復元（JSONドリブン）
+function restoreManualDefaults() {
+    // JSONから手動モードのデフォルト値を取得
+    if (!setupConfig) {
+        console.warn('Setup config not loaded, using fallback defaults');
+        // フォールバックとして既存の値を使用
+        const fallbackDefaults = {
+            'netopt-rmem': '4096 131072 8388608',
+            'netopt-wmem': '4096 131072 8388608',
+            'netopt-conntrack': '131072',
+            'netopt-backlog': '5000',
+            'netopt-somaxconn': '16384',
+            'netopt-congestion': 'cubic'
+        };
+        
+        Object.entries(fallbackDefaults).forEach(([id, defaultValue]) => {
             const el = document.querySelector(`#${id}`);
-            if (el) {
-                el.value = '';
+            if (el && !el.value) {
+                el.value = defaultValue;
             }
         });
-}
-
-function restoreWifiDefaults() {
-    const wifiDefaults = {
-        'aios-wifi-ssid': 'OpenWrt',
-        'aios-wifi-password': 'password',
-        'aios-wifi-mobility-domain': '4f57',
-        'aios-wifi-snr': '30 15 5'
-    };
+        return;
+    }
     
-    Object.entries(wifiDefaults).forEach(([id, defaultValue]) => {
-        const el = document.querySelector(`#${id}`);
-        if (el && !el.value) {
-            el.value = defaultValue;
+    // JSONからデフォルト値を取得
+    const tuningCategory = setupConfig.categories.find(cat => cat.id === 'tuning-config');
+    if (!tuningCategory) return;
+    
+    const manualSection = tuningCategory.packages.find(pkg => 
+        pkg.id === 'netopt-manual-section'
+    );
+    
+    if (!manualSection?.children) return;
+    
+    const netoptFields = manualSection.children.find(child => 
+        child.id === 'netopt-fields'
+    );
+    
+    if (!netoptFields?.fields) return;
+    
+    // JSONで定義されたデフォルト値を適用
+    netoptFields.fields.forEach(field => {
+        if (field.defaultValue !== undefined && field.defaultValue !== null) {
+            const el = document.querySelector(field.selector || `#${field.id}`);
+            if (el && !el.value) {
+                el.value = field.defaultValue;
+            }
         }
     });
 }
+
+function restoreWifiDefaults() {
+    // JSONからWi-Fiのデフォルト値を取得
+    if (!setupConfig) {
+        console.warn('Setup config not loaded, using fallback defaults');
+        // フォールバックとして既存の値を使用
+        const fallbackDefaults = {
+            'aios-wifi-ssid': 'OpenWrt',
+            'aios-wifi-password': 'password',
+            'aios-wifi-mobility-domain': '4f57',
+            'aios-wifi-snr': '30 15 5'
+        };
+        
+        Object.entries(fallbackDefaults).forEach(([id, defaultValue]) => {
+            const el = document.querySelector(`#${id}`);
+            if (el && !el.value) {
+                el.value = defaultValue;
+            }
+        });
+        return;
+    }
+    
+    // JSONからデフォルト値を取得
+    const wifiCategory = setupConfig.categories.find(cat => cat.id === 'wifi-config');
+    if (!wifiCategory) return;
+    
+    // Wi-Fiフィールドを探す
+    function findWifiFields(pkg) {
+        const fields = [];
+        
+        if (pkg.type === 'input-group' && pkg.fields) {
+            fields.push(...pkg.fields);
+        } else if (pkg.children) {
+            pkg.children.forEach(child => {
+                fields.push(...findWifiFields(child));
+            });
+        }
+        
+        return fields;
+    }
+    
+    // 全てのWi-Fiフィールドを収集
+    const allWifiFields = [];
+    wifiCategory.packages.forEach(pkg => {
+        allWifiFields.push(...findWifiFields(pkg));
+    });
+    
+    // デフォルト値を適用
+    allWifiFields.forEach(field => {
+        if (field.defaultValue !== undefined && field.defaultValue !== null) {
+            const el = document.querySelector(field.selector || `#${field.id}`);
+            if (el && !el.value) {
+                el.value = field.defaultValue;
+            }
+        }
+    });
+}
+
+function clearWifiFields() {
+    // JSONからWi-Fiフィールドを取得してクリア
+    if (!setupConfig) {
+        // フォールバック：既知のフィールドIDをクリア
+        ['aios-wifi-ssid', 'aios-wifi-password', 'aios-wifi-mobility-domain', 'aios-wifi-snr']
+            .forEach(id => {
+                const el = document.querySelector(`#${id}`);
+                if (el) {
+                    el.value = '';
+                }
+            });
+        return;
+    }
+    
+    // JSONからWi-Fiフィールドを探す
+    const wifiCategory = setupConfig.categories.find(cat => cat.id === 'wifi-config');
+    if (!wifiCategory) return;
+    
+    // Wi-Fiフィールドを再帰的に探す
+    function findAndClearWifiFields(pkg) {
+        if (pkg.type === 'input-group' && pkg.fields) {
+            pkg.fields.forEach(field => {
+                const el = document.querySelector(field.selector || `#${field.id}`);
+                if (el) {
+                    el.value = '';
+                }
+            });
+        } else if (pkg.children) {
+            pkg.children.forEach(child => {
+                findAndClearWifiFields(child);
+            });
+        }
+    }
+    
+    // Wi-Fiモード設定以外のフィールドをクリア
+    wifiCategory.packages.forEach(pkg => {
+        if (pkg.variableName !== 'wifi_mode') {
+            findAndClearWifiFields(pkg);
+        }
+    });
+}
+
+console.log('custom.js (JSON-driven version) fully loaded and ready');
 
 // ==================== ISP情報処理 ====================
 
