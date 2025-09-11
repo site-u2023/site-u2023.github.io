@@ -1789,51 +1789,50 @@ function applySpecialFieldLogic(values) {
     }
 }
     
-    // Wi-Fi設定の処理（JSONドリブン）
-    const wifiMode = getFieldValue('input[name="wifi_mode"]');
-    if (setupConfig) {
-        const wifiCategory = setupConfig.categories.find(cat => cat.id === 'wifi-config');
-        if (wifiCategory) {
-            const wifiModeConfig = wifiCategory.packages.find(pkg => 
-                pkg.variableName === 'wifi_mode'
-            );
-            
-            if (wifiModeConfig) {
-                const selectedOption = wifiModeConfig.options.find(opt => opt.value === wifiMode);
-                if (selectedOption) {
-                    // excludeFieldsを処理
-                    if (selectedOption.excludeFields) {
-                        selectedOption.excludeFields.forEach(key => delete values[key]);
-                    }
-                    // includeFieldsの特別処理
-                    if (selectedOption.includeFields?.includes('enable_usteer')) {
-                        values.enable_usteer = '1';
-                    }
+// Wi-Fi設定の処理（JSONドリブン）
+const wifiMode = getFieldValue('input[name="wifi_mode"]');
+if (setupConfig) {
+    const wifiCategory = setupConfig.categories.find(cat => cat.id === 'wifi-config');
+    if (wifiCategory) {
+        const wifiModeConfig = wifiCategory.packages.find(pkg => 
+            pkg.variableName === 'wifi_mode'
+        );
+        
+        if (wifiModeConfig) {
+            const selectedOption = wifiModeConfig.options.find(opt => opt.value === wifiMode);
+            if (selectedOption) {
+                // excludeFieldsを処理
+                if (selectedOption.excludeFields) {
+                    selectedOption.excludeFields.forEach(key => delete values[key]);
+                }
+                // includeFieldsの特別処理
+                if (selectedOption.includeFields?.includes('enable_usteer')) {
+                    values.enable_usteer = '1';
                 }
             }
         }
     }
-    
-    // ネットワーク最適化の処理（JSONドリブン）
-    const netOptimizer = getFieldValue('input[name="net_optimizer"]');
-    if (setupConfig) {
-        const tuningCategory = setupConfig.categories.find(cat => cat.id === 'tuning-config');
-        if (tuningCategory) {
-            const netOptimizerConfig = tuningCategory.packages.find(pkg => 
-                pkg.variableName === 'net_optimizer'
-            );
-            
-            if (netOptimizerConfig) {
-                const selectedOption = netOptimizerConfig.options.find(opt => opt.value === netOptimizer);
-                if (selectedOption) {
-                    // excludeFieldsを処理
-                    if (selectedOption.excludeFields) {
-                        selectedOption.excludeFields.forEach(key => delete values[key]);
-                    }
-                    // includeFieldsの特別処理
-                    if (selectedOption.includeFields?.includes('enable_netopt')) {
-                        values.enable_netopt = '1';
-                    }
+}
+
+// ネットワーク最適化の処理（JSONドリブン）
+const netOptimizer = getFieldValue('input[name="net_optimizer"]');
+if (setupConfig) {
+    const tuningCategory = setupConfig.categories.find(cat => cat.id === 'tuning-config');
+    if (tuningCategory) {
+        const netOptimizerConfig = tuningCategory.packages.find(pkg => 
+            pkg.variableName === 'net_optimizer'
+        );
+        
+        if (netOptimizerConfig) {
+            const selectedOption = netOptimizerConfig.options.find(opt => opt.value === netOptimizer);
+            if (selectedOption) {
+                // excludeFieldsを処理
+                if (selectedOption.excludeFields) {
+                    selectedOption.excludeFields.forEach(key => delete values[key]);
+                }
+                // includeFieldsの特別処理
+                if (selectedOption.includeFields?.includes('enable_netopt')) {
+                    values.enable_netopt = '1';
                 }
             }
         }
