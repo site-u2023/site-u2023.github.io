@@ -1791,7 +1791,7 @@ function applySpecialFieldLogic(values) {
     }
 }
     
-// Wi-Fi設定の処理（JSONドリブン）
+// Wi‑Fi設定の処理（JSONドリブン）
 const wifiMode = getFieldValue('input[name="wifi_mode"]');
 if (setupConfig) {
     const wifiCategory = setupConfig.categories.find(cat => cat.id === 'wifi-config');
@@ -1800,26 +1800,22 @@ if (setupConfig) {
         if (wifiModeConfig) {
             const selectedOption = wifiModeConfig.options.find(opt => opt.value === wifiMode);
             if (selectedOption) {
+                // excludeFields にある項目は先に削除
+                if (selectedOption.excludeFields) {
+                    selectedOption.excludeFields.forEach(key => delete values[key]);
+                }
                 // includeFields にある項目だけ反映
                 if (selectedOption.includeFields) {
                     selectedOption.includeFields.forEach(key => {
                         if (key === 'enable_usteer') {
-                            // usteer モードのときだけセット
                             if (wifiMode === 'usteer') {
                                 values.enable_usteer = '1';
                             }
                             return;
                         }
                         const val = getFieldValue(`[name="${key}"], #${key}`);
-                        if (val) {
-                            values[key] = val;
-                        }
-                        // 値が空なら何も書かない
+                        if (val) values[key] = val;
                     });
-                }
-                // excludeFields にある項目は削除
-                if (selectedOption.excludeFields) {
-                    selectedOption.excludeFields.forEach(key => delete values[key]);
                 }
             }
         }
@@ -1835,23 +1831,19 @@ if (setupConfig) {
         if (netOptimizerConfig) {
             const selectedOption = netOptimizerConfig.options.find(opt => opt.value === netOptimizer);
             if (selectedOption) {
-                // excludeFields にある項目は削除
+                // excludeFields にある項目は先に削除
                 if (selectedOption.excludeFields) {
                     selectedOption.excludeFields.forEach(key => delete values[key]);
                 }
-
                 // includeFields にある項目だけ反映
                 if (selectedOption.includeFields) {
                     selectedOption.includeFields.forEach(key => {
                         if (key === 'enable_netopt') {
-                            // AUTO と Manual は enable_netopt をセット
                             values.enable_netopt = '1';
                             return;
                         }
                         const val = getFieldValue(`[name="${key}"], #${key}`);
-                        if (val) {
-                            values[key] = val;
-                        }
+                        if (val) values[key] = val;
                     });
                 }
             }
