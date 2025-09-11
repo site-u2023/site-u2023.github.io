@@ -20,7 +20,7 @@
               "type": "select",
               "selector": "#aios-language",
               "variableName": "language",
-              "defaultValue": "en"
+              "defaultValue": ""
             },
             {
               "id": "aios-country",
@@ -547,6 +547,7 @@
                   "variableName": "mape_gua_prefix",
                   "placeholder": "optional for GUA",
                   "apiMapping": "ipv6",
+                  "placeholder": "",
                   "description": "IPv6 GUA prefix with /64 suffix"
                 }
               ]
