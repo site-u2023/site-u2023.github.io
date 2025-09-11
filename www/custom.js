@@ -233,8 +233,20 @@ async function updateLanguagePackageCore() {
     await Promise.all(checkPromises);
 }
 
+// Postinst（packages.json）側の出口関数
+function applyPackageList(packages) {
+    const textarea = document.querySelector('#asu-packages');
+    if (textarea) {
+        textarea.value = packages.join(' ');
+        textarea.style.height = 'auto';
+        textarea.style.height = textarea.scrollHeight + 'px';
+    }
+}
+
 // Core関数3: Postinstテキストエリア更新（最終的な統合）
-function updatePackageListToTextarea() {
+function updatePackageListToTextarea(source = 'unknown') {
+    console.log(`updatePackageListToTextarea called from: ${source}`);
+
     // 基本パッケージセット（デバイス固有パッケージ）を準備
     const basePackages = new Set();
     
@@ -280,14 +292,11 @@ function updatePackageListToTextarea() {
     // 重複を削除
     const uniquePackages = [...new Set(finalPackages)];
     
-    // テキストエリアを更新
-    if (textarea) {
-        textarea.value = uniquePackages.join(' ');
-        
-        // シンプルに高さを自動調整
-        textarea.style.height = 'auto';
-        textarea.style.height = textarea.scrollHeight + 'px';
-    }
+    // テキストエリアを更新 (出口関数で Postinst 側に反映)
+    applyPackageList(uniquePackages);
+
+    console.log(`Postinst package list updated: ${uniquePackages.length} packages`);
+    console.log('Final Postinst package list:', uniquePackages);
 }
 
 // ==================== 共通マルチインプット管理機能 ====================
