@@ -499,14 +499,6 @@ function waitForAsuAndInit(temp, retry = 50) {
     }
 }
 
-async function loadInformationConfig() {
-    const res = await fetch(config.information_url);
-    if (!res.ok) {
-        throw new Error(`Failed to load information.json: ${res.status}`);
-    }
-    return await res.json();
-}
-
 // メイン初期化
 async function initializeCustomFeatures(asuSection, temp) {
     console.log('initializeCustomFeatures called');
@@ -523,32 +515,28 @@ async function initializeCustomFeatures(asuSection, temp) {
         insertExtendedInfo(temp);
     }
     
-    // 1) information.json を読み込み → UI描画（ここで formStructure 構築）
-    const infoConfig = await loadInformationConfig();
-    renderSetupConfig(infoConfig);
-
-    // 2) packages.json を読み込み → パッケージUI生成
-    await loadPackageDatabase();
-    generatePackageSelector(); // この時点で formStructure は存在するので collectFormValues() が安全に動く
-
-    // 3) UI生成後にISP情報取得
-    await fetchAndDisplayIspInfo();
+    // 設定とデータを並列で読み込み
+    await Promise.all([
+        loadSetupConfig(),
+        loadPackageDatabase(),
+        fetchAndDisplayIspInfo()
+    ]);
     
-    // 4) 依存関係のある初期化（順序重要）
+    // 依存関係のある初期化（順序重要）
     setupEventListeners();
     loadUciDefaultsTemplate();
     
-    // 5) 言語セレクター設定（初期言語パッケージ処理を含む）
+    // 言語セレクター設定（初期言語パッケージ処理を含む）
     setupLanguageSelector();
     
-    // 6) パッケージ検索機能を初期化（追加）
+    // パッケージ検索機能を初期化（追加）
     setupPackageSearch();
     console.log('Package search initialized');
     
-    // 7) カスタム翻訳を読み込み（初期言語に基づいて）
+    // カスタム翻訳を読み込み（初期言語に基づいて）
     await loadCustomTranslations(selectedLanguage);
     
-    // 8) フォーム監視設定
+    // フォーム監視設定
     setupFormWatchers();
     
     customInitialized = true;
@@ -2261,33 +2249,21 @@ console.log('custom.js (JSON-driven clean version) fully loaded and ready');
 
 async function fetchAndDisplayIspInfo() {
     if (!config?.auto_config_api_url) return;
-
+    
     try {
         const response = await fetch(config.auto_config_api_url);
         const apiInfo = await response.json();
-
-        // 回線種別判定
-        if (apiInfo.mape?.brIpv6Address) {
-            apiInfo.method = "MAP-E";
-        } else if (apiInfo.aftr) {
-            apiInfo.method = "DS-Lite";
-        } else {
-            apiInfo.method = "DHCP/PPPoE";
-        }
-
         cachedApiInfo = apiInfo;
-
-        // JSONドリブンUIに反映
+        displayIspInfo(apiInfo);
         applyIspAutoConfig(apiInfo);
-
         updateAutoConnectionInfo(apiInfo);
-        setGuaPrefixIfAvailable();
+        setGuaPrefixIfAvailable();       
 
     } catch (err) {
-        console.error("Failed to fetch ISP info:", err);
-        const autoInfo = document.querySelector("#auto-info");
+        console.error('Failed to fetch ISP info:', err);
+        const autoInfo = document.querySelector('#auto-info');
         if (autoInfo) {
-            autoInfo.textContent = "Failed to detect connection type.\nPlease select manually.";
+            autoInfo.textContent = 'Failed to detect connection type.\nPlease select manually.';
         }
     }
 }
