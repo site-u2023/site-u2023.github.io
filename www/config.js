@@ -65,7 +65,8 @@ current_language = "en";
 
 // OFSバージョン
 const custom_ofs_version = "v5.1.0-json-driven";
-    
+const custom_ofs_link = "https://github.com/site-u2023/site-u2023.github.io/tree/main/www";
+
 // カスタム機能の自動読み込み
 (function() {
   // custom.jsを動的に読み込み
