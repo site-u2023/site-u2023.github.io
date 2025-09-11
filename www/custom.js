@@ -1,24 +1,3 @@
-// 1. ブラウザUI用言語システム
-// セレクター: #languages-select (index.html)
-// 言語ファイル: langs/en.json, langs/ja.json など（通常のファイル）
-// 変数: current_language, current_language_json
-// 処理関数: translate() (index.js)
-// 用途: ブラウザのUI表示言語変更
-//
-// 2. デバイス用言語システム
-// セレクター: #aios-language (setup.jsonで定義、custom.jsで動的生成)
-// オプション: custom.jsが#languages-selectのoption要素を全てコピーして生成
-// ※setup.jsonにoptionsが無いため、custom.jsが#languages-selectから選択肢を複製する
-// 言語ファイル: langs/custom.en.json, langs/custom.ja.json など（カスタムファイル）
-// 変数: selectedLanguage, customLanguageMap
-// 処理関数: loadCustomTranslations() (custom.js)
-// 用途: OpenWrtデバイスの言語パッケージ + カスタム翻訳
-//
-// 3. 言語パッケージシステム
-// パッケージ: luci-i18n-base-ja, luci-i18n-app-*-ja など
-// 管理変数: dynamicPackages
-// 処理関数: updateLanguagePackage()
-// 用途: OpenWrtデバイスにインストールする言語パッケージ
 
 console.log('custom.js loaded');
 
@@ -118,6 +97,211 @@ window.updateImages = function(version, mobj) {
         console.log("Force updating language packages for:", currentLang);
     }
 };
+
+// ==================== 統合パッケージ管理システム ====================
+// 新しい統合関数：すべてのパッケージ状態を更新
+async function updateAllPackageState(source = 'unknown') {
+    console.log(`updateAllPackageState called from: ${source}`);
+    
+    // 1. setup.jsonベースのパッケージ更新（ラジオボタンなど）
+    updateSetupJsonPackagesCore();
+    
+    // 2. 言語パッケージの更新（言語セレクター）
+    await updateLanguagePackageCore();
+    
+    // 3. Postinstテキストエリアへの反映（最終的な統合）
+    updatePackageListToTextarea();
+    
+    // 4. setup.sh変数の更新
+    updateVariableDefinitions();
+    
+    console.log('All package state updated successfully');
+}
+
+// Core関数1: setup.jsonベースのパッケージ更新（UI更新なし）
+function updateSetupJsonPackagesCore() {
+    if (!setupConfig) return;
+    
+    setupConfig.categories.forEach(category => {
+        category.packages.forEach(pkg => {
+            if (pkg.type === 'radio-group' && pkg.variableName) {
+                const selectedValue = getFieldValue(`input[name="${pkg.variableName}"]:checked`);
+                if (selectedValue) {
+                    const selectedOption = pkg.options.find(opt => opt.value === selectedValue);
+                    if (selectedOption && selectedOption.packages) {
+                        selectedOption.packages.forEach(pkgName => {
+                            dynamicPackages.add(pkgName);
+                        });
+                    }
+                    
+                    pkg.options.forEach(opt => {
+                        if (opt.value !== selectedValue && opt.packages) {
+                            opt.packages.forEach(pkgName => {
+                                dynamicPackages.delete(pkgName);
+                            });
+                        }
+                    });
+                    
+                    // AUTO時の特別処理
+                    if (pkg.variableName === 'connection_type' && selectedValue === 'auto' && cachedApiInfo) {
+                        if (cachedApiInfo.mape?.brIpv6Address) {
+                            const mapeOption = pkg.options.find(opt => opt.value === 'mape');
+                            if (mapeOption && mapeOption.packages) {
+                                mapeOption.packages.forEach(pkgName => {
+                                    dynamicPackages.add(pkgName);
+                                });
+                            }
+                        } else if (cachedApiInfo.aftr) {
+                            const dsliteOption = pkg.options.find(opt => opt.value === 'dslite');
+                            if (dsliteOption && dsliteOption.packages) {
+                                dsliteOption.packages.forEach(pkgName => {
+                                    dynamicPackages.add(pkgName);
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    });
+}
+
+// Core関数2: 言語パッケージ更新（UI更新なし）
+async function updateLanguagePackageCore() {
+    // デバイス用言語セレクターから現在の言語を取得
+    const customLanguageSelect = document.querySelector('#aios-language');
+    if (customLanguageSelect && customLanguageSelect.value) {
+        selectedLanguage = customLanguageSelect.value;
+    } else if (!selectedLanguage) {
+        selectedLanguage = current_language || config?.fallback_language || 'en';
+    }
+
+    // 既存の言語パッケージを一旦全て削除
+    const removedPackages = [];
+    for (const pkg of Array.from(dynamicPackages)) {
+        if (pkg.startsWith('luci-i18n-')) {
+            dynamicPackages.delete(pkg);
+            removedPackages.push(pkg);
+        }
+    }
+
+    // 英語が選択されているか、デバイス情報がない場合は終了
+    const hasArch = current_device?.arch || cachedDeviceArch;
+    if (!selectedLanguage || selectedLanguage === 'en' || !hasArch) {
+        return;
+    }
+    
+    const basePkg = `luci-i18n-base-${selectedLanguage}`;
+    const addedLangPackages = new Set();
+
+    // 基本言語パッケージをチェックして追加
+    try {
+        if (await isPackageAvailable(basePkg, 'luci')) {
+            dynamicPackages.add(basePkg);
+            addedLangPackages.add(basePkg);
+        }
+    } catch (err) {
+        console.error('Error checking base package:', err);
+    }
+
+    // 現在の選択済みパッケージに対応する言語パッケージをチェックして追加
+    const currentPackages = getCurrentPackageList();
+    const checkPromises = [];
+    
+    for (const pkg of currentPackages) {
+        if (pkg.startsWith('luci-') && !pkg.startsWith('luci-i18n-')) {
+            const luciName = extractLuciName(pkg);
+            if (luciName) {
+                const langPkg = `luci-i18n-${luciName}-${selectedLanguage}`;
+                
+                const promise = (async () => {
+                    try {
+                        if (await isPackageAvailable(langPkg, 'luci')) {
+                            dynamicPackages.add(langPkg);
+                            addedLangPackages.add(langPkg);
+                            console.log('Added validated LuCI language package:', langPkg);
+                        }
+                    } catch (err) {
+                        console.error('Error checking LuCI package:', err);
+                    }
+                })();
+                checkPromises.push(promise);
+            }
+        }
+    }
+
+    await Promise.all(checkPromises);
+}
+
+// Core関数3: Postinstテキストエリア更新（最終的な統合）
+function updatePackageListToTextarea() {
+    // 基本パッケージセット（デバイス固有パッケージ）を準備
+    const basePackages = new Set();
+    
+    // デバイス固有パッケージを必ず含める（最重要）
+    deviceDefaultPackages.forEach(pkg => basePackages.add(pkg));
+    deviceDevicePackages.forEach(pkg => basePackages.add(pkg));
+    extraPackages.forEach(pkg => basePackages.add(pkg));
+    
+    // チェックされたパッケージを追加
+    const checkedPackages = new Set();
+    document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
+        const pkgName = cb.getAttribute('data-package');
+        if (pkgName) {
+            checkedPackages.add(pkgName);
+        }
+    });
+    
+    // テキストエリアから既存パッケージを取得（言語パッケージ以外を保持）
+    const manualPackages = new Set();
+    const textarea = document.querySelector('#asu-packages');
+    if (textarea) {
+        const currentPackages = split(textarea.value);
+        currentPackages.forEach(pkg => {
+            // 言語パッケージは除外し、その他の手動パッケージのみ保持
+            if (!basePackages.has(pkg) && 
+                !checkedPackages.has(pkg) && 
+                !dynamicPackages.has(pkg) &&
+                !pkg.startsWith('luci-i18n-') &&
+                !document.querySelector(`.package-selector-checkbox[data-package="${pkg}"]`)) {
+                manualPackages.add(pkg);
+            }
+        });
+    }
+    
+    // 全てのパッケージを統合（順序：デバイス固有 → チェック済み → 動的 → 手動）
+    const finalPackages = [
+        ...basePackages,      // デバイス固有パッケージ（必須）
+        ...checkedPackages,   // チェックボックスで選択されたパッケージ
+        ...dynamicPackages,   // 動的パッケージ（言語パッケージなど）
+        ...manualPackages     // 手動で入力されたパッケージ
+    ];
+    
+    // 重複を削除
+    const uniquePackages = [...new Set(finalPackages)];
+    
+    // テキストエリアを更新
+    if (textarea) {
+        textarea.value = uniquePackages.join(' ');
+        
+        // シンプルに高さを自動調整
+        textarea.style.height = 'auto';
+        textarea.style.height = textarea.scrollHeight + 'px';
+    }
+}
+
+// 旧関数を新統合関数へリダイレクト（互換性維持）
+function updatePackageListFromSelector() {
+    updateAllPackageState('selector');
+}
+
+function updatePackageListFromDynamicSources() {
+    updateAllPackageState('dynamic');
+}
+
+async function updateLanguagePackage() {
+    await updateAllPackageState('language');
+}
 
 // ==================== 共通マルチインプット管理機能 ====================
 class MultiInputManager {
@@ -734,7 +918,7 @@ function setupLanguageSelector() {
     console.log('Performing initial language package update for:', selectedLanguage);
     if (selectedLanguage && selectedLanguage !== 'en') {
         // 英語以外の場合は必ず言語パッケージを追加
-        updateLanguagePackage();
+        updateAllPackageState('initial-language');
     }
 }
 
@@ -751,7 +935,7 @@ function syncLanguageSelectors(newLang) {
     }
 
     selectedLanguage = newLang;
-    updateLanguagePackage();
+    updateAllPackageState('sync-language');
 }
 
 // メイン言語セレクター変更ハンドラー（新規追加）
@@ -811,109 +995,6 @@ async function handleCustomLanguageChange(e) {
     updateVariableDefinitions();
 
     console.log('Custom language change processing completed');
-}
-
-// custom.js L.619-
-
-// 言語パッケージの更新（Postinst反映修正版）
-async function updateLanguagePackage() {
-    // デバイス用言語セレクターから現在の言語を取得
-    const customLanguageSelect = document.querySelector('#aios-language');
-    if (customLanguageSelect && customLanguageSelect.value) {
-        selectedLanguage = customLanguageSelect.value;
-    } else if (!selectedLanguage) {
-        selectedLanguage = current_language || config?.fallback_language || 'en';
-    }
-
-    // console.log('updateLanguagePackage called, selectedLanguage:', selectedLanguage);
-
-    // 既存の言語パッケージを一旦全て削除
-    const removedPackages = [];
-    for (const pkg of Array.from(dynamicPackages)) {
-        if (pkg.startsWith('luci-i18n-')) {
-            dynamicPackages.delete(pkg);
-            removedPackages.push(pkg);
-        }
-    }
-
-    if (removedPackages.length > 0) {
-        // console.log('Removed old language packages:', removedPackages);
-    }
-
-    // 英語が選択されているか、デバイス情報がない場合は、パッケージを追加せずに終了
-    const hasArch = current_device?.arch || cachedDeviceArch;
-    if (!selectedLanguage || selectedLanguage === 'en' || !hasArch) {
-        if (!hasArch) {
-            // console.log('Device not selected. Skipping language package addition.');
-        } else {
-            // console.log('English selected, no language packages will be added.');
-        }
-        // Postinstテキストエリアを更新して、削除した言語パッケージを反映
-        updatePackageListFromSelector();
-        return;
-    }
-    
-    // デバイス情報がある場合の処理
-    // console.log('Device available, checking language packages for arch:', hasArch);
-    
-    const basePkg = `luci-i18n-base-${selectedLanguage}`;
-    const addedLangPackages = new Set();
-
-    // 基本言語パッケージをチェックして追加
-    // console.log('Checking base package:', basePkg);
-    try {
-        if (await isPackageAvailable(basePkg, 'luci')) {
-            dynamicPackages.add(basePkg);
-            addedLangPackages.add(basePkg);
-            // console.log('Added validated base language package:', basePkg);
-        } else {
-            // console.warn('Base language package not available, skipping:', basePkg);
-        }
-    } catch (err) {
-        console.error('Error checking base package:', err);
-    }
-
-    // 現在の選択済みパッケージに対応する言語パッケージをチェックして追加
-    const currentPackages = getCurrentPackageList();
-    // console.log('Checking language packages for', currentPackages.length, 'selected packages.');
-
-    const checkPromises = [];
-    for (const pkg of currentPackages) {
-        if (pkg.startsWith('luci-') && !pkg.startsWith('luci-i18n-')) {
-            const luciName = extractLuciName(pkg);
-            if (luciName) {
-                const langPkg = `luci-i18n-${luciName}-${selectedLanguage}`;
-                
-                // Promiseを作成して並列でチェック
-                const promise = (async () => {
-                    // console.log('Checking LuCI language package:', langPkg);
-                    try {
-                        if (await isPackageAvailable(langPkg, 'luci')) {
-                            dynamicPackages.add(langPkg);
-                            addedLangPackages.add(langPkg);
-                            console.log('Added validated LuCI language package:', langPkg);
-                        } else {
-                             console.log('Optional LuCI language package not available, skipping:', langPkg);
-                        }
-                    } catch (err) {
-                        console.error('Error checking LuCI package:', err);
-                    }
-                })();
-                checkPromises.push(promise);
-            }
-        }
-    }
-
-    // すべてのパッケージチェックが完了するのを待つ
-    await Promise.all(checkPromises);
-    
-    // console.log('Total added language packages:', Array.from(addedLangPackages));
-    // console.log('Final dynamic packages set:', Array.from(dynamicPackages));
-
-    // Postinstテキストエリアを更新（重要：必ず実行）
-    updatePackageListFromSelector();
-
-    console.log('Language package update completed.');
 }
 
 function applyCustomTranslations(map) {
@@ -1306,7 +1387,7 @@ function buildFormGroup(field) {
             ctrl.appendChild(option);
         });
         
-        ctrl.addEventListener('change', updatePackageListFromDynamicSources);
+        ctrl.addEventListener('change', () => updateAllPackageState('form-field'));
     } else {
         ctrl = document.createElement('input');
         ctrl.type = field.type || 'text';
@@ -1328,7 +1409,7 @@ function buildFormGroup(field) {
         if (field.maxlength != null) ctrl.maxLength = field.maxlength;
         if (field.pattern != null) ctrl.pattern = field.pattern;
         
-        ctrl.addEventListener('input', updatePackageListFromDynamicSources);
+        ctrl.addEventListener('input', () => updateAllPackageState('form-field'));
     }
     
     group.appendChild(ctrl);
@@ -1390,60 +1471,7 @@ function handleRadioChange(e) {
         toggleGuaPrefixVisibility(radio.value);
     }
     
-    updatePackageListFromDynamicSources();
-}
-
-function updatePackageListFromDynamicSources() {
-    updateSetupJsonPackages();
-    updateLanguagePackage();
-    updateVariableDefinitions();
-}
-
-function updateSetupJsonPackages() {
-    if (!setupConfig) return;
-    
-    setupConfig.categories.forEach(category => {
-        category.packages.forEach(pkg => {
-            if (pkg.type === 'radio-group' && pkg.variableName) {
-                const selectedValue = getFieldValue(`input[name="${pkg.variableName}"]:checked`);
-                if (selectedValue) {
-                    const selectedOption = pkg.options.find(opt => opt.value === selectedValue);
-                    if (selectedOption && selectedOption.packages) {
-                        selectedOption.packages.forEach(pkgName => {
-                            dynamicPackages.add(pkgName);
-                        });
-                    }
-                    
-                    pkg.options.forEach(opt => {
-                        if (opt.value !== selectedValue && opt.packages) {
-                            opt.packages.forEach(pkgName => {
-                                dynamicPackages.delete(pkgName);
-                            });
-                        }
-                    });
-                    
-                    // AUTO時の特別処理
-                    if (pkg.variableName === 'connection_type' && selectedValue === 'auto' && cachedApiInfo) {
-                        if (cachedApiInfo.mape?.brIpv6Address) {
-                            const mapeOption = pkg.options.find(opt => opt.value === 'mape');
-                            if (mapeOption && mapeOption.packages) {
-                                mapeOption.packages.forEach(pkgName => {
-                                    dynamicPackages.add(pkgName);
-                                });
-                            }
-                        } else if (cachedApiInfo.aftr) {
-                            const dsliteOption = pkg.options.find(opt => opt.value === 'dslite');
-                            if (dsliteOption && dsliteOption.packages) {
-                                dsliteOption.packages.forEach(pkgName => {
-                                    dynamicPackages.add(pkgName);
-                                });
-                            }
-                        }
-                    }
-                }
-            }
-        });
-    });
+    updateAllPackageState('radio-change');
 }
 
 // 条件表示の初期化
@@ -1673,8 +1701,6 @@ function getFieldValue(selector) {
     }
     return element.value;
 }
-
-// ==================== フォーム値処理（JSONドリブン版） ====================
 
 // ==================== フォーム値処理（JSONドリブン版） ====================
 function applySpecialFieldLogic(values) {
@@ -2059,7 +2085,7 @@ function handleConnectionTypeChange(e) {
         }
     });
     
-    updatePackageListFromDynamicSources();
+    updateAllPackageState('connection-type');
 }
 
 // ネットワーク最適化変更ハンドラ（JSONドリブン）
@@ -2088,7 +2114,7 @@ function handleNetOptimizerChange(e) {
         }
     });
     
-    updatePackageListFromDynamicSources();
+    updateAllPackageState('net-optimizer');
 }
 
 // Wi-Fiモード変更ハンドラ（JSONドリブン）
@@ -2142,7 +2168,7 @@ function handleWifiModeChange(e) {
         restoreWifiDefaults();
     }
     
-    updatePackageListFromDynamicSources();
+    updateAllPackageState('wifi-mode');
 }
 
 // デフォルト値復元（JSONドリブン）
@@ -2303,7 +2329,7 @@ function applyIspAutoConfig(apiInfo) {
     
     setGuaPrefixIfAvailable();    
     updateAutoConnectionInfo(apiInfo);
-    updatePackageListFromDynamicSources();
+    updateAllPackageState('isp-auto-config');
     updateVariableDefinitions();
 }
 
@@ -2376,7 +2402,7 @@ function generatePackageSelector() {
         }
     });
     
-    updatePackageListFromSelector();
+    updateAllPackageState('package-selector-init');
     console.log(`Generated ${PACKAGE_DB.categories.length} package categories`);
 }
 
@@ -2526,92 +2552,7 @@ function handlePackageSelection(e) {
             }
         });
     }
-    updatePackageListFromDynamicSources();
-}
-
-
-// パッケージリスト更新（Postinstテキストエリアへの反映）
-function updatePackageListFromSelector() {
-    // console.log('updatePackageListFromSelector called');
-    
-    // 基本パッケージセット（デバイス固有パッケージ）を準備
-    const basePackages = new Set();
-    
-    // デバイス固有パッケージを必ず含める（最重要）
-    deviceDefaultPackages.forEach(pkg => basePackages.add(pkg));
-    deviceDevicePackages.forEach(pkg => basePackages.add(pkg));
-    extraPackages.forEach(pkg => basePackages.add(pkg));
-    
-    // console.log('Device base packages:', {
-    //     default: deviceDefaultPackages.length,
-    //     device: deviceDevicePackages.length,
-    //     extra: extraPackages.length,
-    //     total: basePackages.size
-    // });
-    
-    // チェックされたパッケージを追加
-    const checkedPackages = new Set();
-    document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
-        const pkgName = cb.getAttribute('data-package');
-        if (pkgName) {
-            checkedPackages.add(pkgName);
-        }
-    });
-    
-    // console.log('Checked packages from selector:', checkedPackages.size);
-    
-    // 動的パッケージ（言語パッケージを含む）を追加
-    const dynamicPackagesList = Array.from(dynamicPackages);
-    // console.log('Dynamic packages (including language):', dynamicPackagesList);
-    
-    // テキストエリアから既存パッケージを取得（言語パッケージ以外を保持）
-    const manualPackages = new Set();
-    const textarea = document.querySelector('#asu-packages');
-    if (textarea) {
-        const currentPackages = split(textarea.value);
-        currentPackages.forEach(pkg => {
-            // 言語パッケージは除外し、その他の手動パッケージのみ保持
-            if (!basePackages.has(pkg) && 
-                !checkedPackages.has(pkg) && 
-                !dynamicPackages.has(pkg) &&
-                !pkg.startsWith('luci-i18n-') &&  // 言語パッケージ除外
-                !document.querySelector(`.package-selector-checkbox[data-package="${pkg}"]`)) {
-                manualPackages.add(pkg);
-            }
-        });
-    }
-    
-    // console.log('Manual packages (user typed):', manualPackages.size);
-    
-    // 全てのパッケージを統合（順序：デバイス固有 → チェック済み → 動的 → 手動）
-    const finalPackages = [
-        ...basePackages,      // デバイス固有パッケージ（必須）
-        ...checkedPackages,   // チェックボックスで選択されたパッケージ
-        ...dynamicPackages,   // 動的パッケージ（言語パッケージなど）
-        ...manualPackages     // 手動で入力されたパッケージ
-    ];
-    
-    // 重複を削除
-    const uniquePackages = [...new Set(finalPackages)];
-    
-    // テキストエリアを更新
-    if (textarea) {
-        const oldValue = textarea.value;
-        textarea.value = uniquePackages.join(' ');
-        
-        // 値が変更された場合のみログ出力
-        if (oldValue !== textarea.value) {
-            // console.log('Package list updated in textarea:', {
-            //     before: split(oldValue).length,
-            //     after: uniquePackages.length,
-            //     changed: oldValue !== textarea.value
-            // });
-        }
-
-        // シンプルに高さを自動調整
-        textarea.style.height = 'auto';
-        textarea.style.height = textarea.scrollHeight + 'px';
-    }
+    updateAllPackageState('package-selection');
 }
 
 function findPackageById(id) {
@@ -2890,4 +2831,4 @@ window.addEventListener('unhandledrejection', function(e) {
     console.error('Custom.js Unhandled Promise Rejection:', e.reason);
 });
 
-console.log('custom.js (Multi-input version) fully loaded and ready');
+console.log('custom.js (Integrated Package Management Version) fully loaded and ready');
