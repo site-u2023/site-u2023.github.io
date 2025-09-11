@@ -11,11 +11,11 @@
     "tr-notice": "Notice",
     "tr-country": "Area",
     "tr-timezone": "Timezone",
-    "tr-zonename": "Region Name",
+    "tr-zonename": "Zonename",
     "tr-isp": "ISP",
     "tr-as": "AS Number",
     "tr-ip-address": "Address",
-    "tr-method": "Connection Method",
+    "tr-method": "Method",
 
     "tr-basic-configuration": "Basic Configuration",
     "tr-language": "Language",
