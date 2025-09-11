@@ -519,8 +519,14 @@ async function initializeCustomFeatures(asuSection, temp) {
     await Promise.all([
         loadSetupConfig(),
         loadPackageDatabase(),
-        fetchAndDisplayIspInfo()
     ]);
+
+    // UI描画（ここで setup.json の内容がDOM化される）
+    renderSetupConfig();
+    renderPackagesConfig();
+
+    // UI生成後にISP情報取得
+    await fetchAndDisplayIspInfo();
     
     // 依存関係のある初期化（順序重要）
     setupEventListeners();
