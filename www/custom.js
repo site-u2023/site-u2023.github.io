@@ -1960,40 +1960,16 @@ function setupDsliteAddressComputation() {
     aftrType.addEventListener('change', () => {
         syncAftrAddress(true);
         // DS-Lite用の特別処理（UI制御フィールドをクリア）
-        updateVariableDefinitionsWithDsliteCleanup();
+        updateVariableDefinitions({ dsliteCleanup: true });
     });
     
     aftrArea.addEventListener('change', () => {
         syncAftrAddress(true);
         // DS-Lite用の特別処理
-        updateVariableDefinitionsWithDsliteCleanup();
+        updateVariableDefinitions({ dsliteCleanup: true });
     });
     
     setTimeout(() => syncAftrAddress(false), 0);
-}
-
-// DS-Lite専用のupdateVariableDefinitions
-function updateVariableDefinitionsWithDsliteCleanup() {
-    const textarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
-    if (!textarea) return;
-    
-    const values = collectFormValues();
-    let emissionValues = { ...values };
-    
-    // DS-Lite: UI制御用フィールドを削除
-    delete emissionValues.dslite_aftr_type;
-    delete emissionValues.dslite_area;
-    
-    // パッケージの有効化変数を追加
-    document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
-        const enableVar = cb.getAttribute('data-enable-var');
-        if (enableVar) {
-            emissionValues[enableVar] = '1';
-        }
-    });
-    
-    const variableDefinitions = generateVariableDefinitions(emissionValues);
-    updateTextareaContent(textarea, variableDefinitions);
 }
 
 // 接続タイプ変更ハンドラ（JSONドリブン）
@@ -2578,13 +2554,19 @@ function loadUciDefaultsTemplate() {
         .catch(err => console.error('Failed to load setup.sh:', err));
 }
 
-function updateVariableDefinitions() {
+function updateVariableDefinitions(options = {}) {
     const textarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
     if (!textarea) return;
-    
+
     const values = collectFormValues();
     let emissionValues = { ...values };
-    
+
+    // DS-Lite用に除外するフィールド
+    if (options.dsliteCleanup) {
+        delete emissionValues.dslite_aftr_type;
+        delete emissionValues.dslite_area;
+    }
+
     // パッケージの有効化変数を追加
     document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
         const enableVar = cb.getAttribute('data-enable-var');
@@ -2592,7 +2574,7 @@ function updateVariableDefinitions() {
             emissionValues[enableVar] = '1';
         }
     });
-    
+
     const variableDefinitions = generateVariableDefinitions(emissionValues);
     updateTextareaContent(textarea, variableDefinitions);
 
