@@ -2526,7 +2526,7 @@ function handlePackageSelection(e) {
             }
         });
     }
-    updateVariableDefinitions();
+    updatePackageListFromDynamicSources();
 }
 
 
