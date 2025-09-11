@@ -1687,10 +1687,8 @@ function applySpecialFieldLogic(values) {
     const allConnectionFields = [];
     
     if (setupConfig) {
-        // Internet Connectionカテゴリを取得
         const internetCategory = setupConfig.categories.find(cat => cat.id === 'internet-config');
         if (internetCategory) {
-            // 各接続タイプセクションからconnectionFieldsを収集
             internetCategory.packages.forEach(pkg => {
                 if (pkg.type === 'conditional-section' && pkg.connectionFields) {
                     allConnectionFields.push(...pkg.connectionFields);
@@ -1703,7 +1701,6 @@ function applySpecialFieldLogic(values) {
     const uniqueConnectionFields = [...new Set(allConnectionFields)];
     
     if (connectionType === 'auto') {
-        // AUTO時：全接続フィールドを削除してからAPI情報を適用
         uniqueConnectionFields.forEach(key => delete values[key]);
         
         if (cachedApiInfo) {
@@ -1720,14 +1717,12 @@ function applySpecialFieldLogic(values) {
                 const guaPrefix = generateGuaPrefixFromFullAddress(cachedApiInfo);
                 if (guaPrefix) {
                     values.mape_gua_prefix = guaPrefix;
-                    values.mape_gua_mode = '1';
                 }
             } else if (cachedApiInfo.aftr?.aftrIpv6Address) {
                 values.dslite_aftr_address = cachedApiInfo.aftr.aftrIpv6Address;
             }
         }
     } else {
-        // 選択された接続タイプのセクションを探す
         const internetCategory = setupConfig?.categories.find(cat => cat.id === 'internet-config');
         if (internetCategory) {
             const selectedSection = internetCategory.packages.find(pkg => 
@@ -1736,14 +1731,12 @@ function applySpecialFieldLogic(values) {
             );
             
             if (selectedSection?.connectionFields) {
-                // 選択されたタイプ以外のフィールドを削除
                 uniqueConnectionFields.forEach(key => {
                     if (!selectedSection.connectionFields.includes(key)) {
                         delete values[key];
                     }
                 });
                 
-                // 特定タイプ別の追加処理
                 if (connectionType === 'dslite') {
                     if (cachedApiInfo?.aftr) {
                         values.dslite_aftr_type = cachedApiInfo.aftr.aftrType || '';
@@ -1775,14 +1768,11 @@ function applySpecialFieldLogic(values) {
                         const guaPrefix = generateGuaPrefixFromFullAddress(cachedApiInfo);
                         if (guaPrefix) {
                             values.mape_gua_prefix = guaPrefix;
-                            values.mape_gua_mode = '1';
                         }
                     }
                     
                     const mapeType = getFieldValue('input[name="mape_type"]');
                     if (mapeType === 'gua') {
-                        values.mape_gua_mode = '1';
-                        
                         const currentGUAValue = getFieldValue('#mape-gua-prefix');
                         if (currentGUAValue) {
                             values.mape_gua_prefix = currentGUAValue;
@@ -1797,6 +1787,7 @@ function applySpecialFieldLogic(values) {
             }
         }
     }
+}
     
     // Wi-Fi設定の処理（JSONドリブン）
     const wifiMode = getFieldValue('input[name="wifi_mode"]');
