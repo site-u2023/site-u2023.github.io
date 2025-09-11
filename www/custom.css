@@ -562,6 +562,17 @@ details summary h4 {
     gap: 0.5em;
   }
 
+  .radio-group label {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    white-space: normal;
+  }
+
+  .radio-group input[type="radio"] {
+    flex-shrink: 0;
+  }
+
   .form-group label,
   .form-row label:not(.radio-group label) {
     white-space: nowrap;
@@ -575,6 +586,11 @@ details summary h4 {
   .multi-input-item {
     padding: 0.5em;
     font-size: 0.9em;
+  }
+
+  details summary h3 {
+    margin-left: 0;
+    padding-left: 1em;
   }
 }
 
