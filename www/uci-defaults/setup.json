@@ -585,7 +585,7 @@
           "variableName": "net_optimizer",
           "options": [
             {"value": "auto", "label": "AUTO", "class": "tr-auto", "checked": true, "includeFields": ["enable_netopt"], "excludeFields": ["netopt_rmem", "netopt_wmem", "netopt_conntrack", "netopt_backlog", "netopt_somaxconn", "netopt_congestion"]},
-            {"value": "manual", "label": "Manual", "class": "tr-manual", "includeFields": ["netopt_rmem", "netopt_wmem", "netopt_conntrack", "netopt_backlog", "netopt_somaxconn", "netopt_congestion"], "excludeFields": ["enable_netopt"]},
+            {"value": "manual", "label": "Manual", "class": "tr-manual", "includeFields": ["enable_netopt", "netopt_rmem", "netopt_wmem", "netopt_conntrack", "netopt_backlog", "netopt_somaxconn", "netopt_congestion"]},
             {"value": "disabled", "label": "Disabled", "class": "tr-disabled", "excludeFields": ["enable_netopt", "netopt_rmem", "netopt_wmem", "netopt_conntrack", "netopt_backlog", "netopt_somaxconn", "netopt_congestion"]}
           ]
         },
