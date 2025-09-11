@@ -811,9 +811,11 @@ function replaceAsuSection(asuSection, temp) {
     newDiv.className = asuSection.className;
     newDiv.style.width = '100%';
     
+    // custom.htmlから必要な要素を移動
     const customPackages = temp.querySelector('#custom-packages-section details');
     const customScripts = temp.querySelector('#custom-scripts-section details');
-
+    const buildElements = temp.querySelector('#asu-build-elements');
+    
     if (customPackages) {
         customPackages.id = 'custom-packages-details';
         newDiv.appendChild(customPackages);
@@ -822,31 +824,12 @@ function replaceAsuSection(asuSection, temp) {
         customScripts.id = 'custom-scripts-details';
         newDiv.appendChild(customScripts);
     }
-
-    // index.jsが期待する全てのDOM要素を追加
-    newDiv.insertAdjacentHTML('beforeend', `
-        <br>
-        <div id="asu-buildstatus" class="hide">
-            <span></span>
-            <div id="asu-log" class="hide">
-                <details>
-                    <summary>
-                        <code>STDERR</code>
-                    </summary>
-                    <pre id="asu-stderr"></pre>
-                </details>
-                <details>
-                    <summary>
-                        <code>STDOUT</code>
-                    </summary>
-                    <pre id="asu-stdout"></pre>
-                </details>
-            </div>
-        </div>
-        <a href="javascript:buildAsuRequest()" class="custom-link">
-            <span></span><span class="tr-request-build">REQUEST BUILD</span>
-        </a>
-    `);
+    if (buildElements) {
+        // 子要素を直接追加（wrapperは不要）
+        while (buildElements.firstChild) {
+            newDiv.appendChild(buildElements.firstChild);
+        }
+    }
     
     asuSection.parentNode.replaceChild(newDiv, asuSection);
 }
