@@ -26,6 +26,7 @@ var config = {
   
   // Attended Sysupgrade Server support (optional)
   asu_url: "https://sysupgrade.openwrt.org",
+  
   // asu_url: "https://sysupgrade.openwrt.org?_=" + Date.now(),
   asu_extra_packages: ["luci"],
 
