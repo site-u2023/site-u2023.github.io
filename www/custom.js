@@ -499,6 +499,14 @@ function waitForAsuAndInit(temp, retry = 50) {
     }
 }
 
+async function loadInformationConfig() {
+    const res = await fetch(config.information_url);
+    if (!res.ok) {
+        throw new Error(`Failed to load information.json: ${res.status}`);
+    }
+    return await res.json();
+}
+
 // メイン初期化
 async function initializeCustomFeatures(asuSection, temp) {
     console.log('initializeCustomFeatures called');
@@ -515,14 +523,14 @@ async function initializeCustomFeatures(asuSection, temp) {
         insertExtendedInfo(temp);
     }
     
-    // 設定とデータを並列で読み込み
-    const [setupConfig] = await Promise.all([
-        loadSetupConfig(),
+    // 設定とデータを並列で読み込み（setupConfig → infoConfig に差し替え）
+    const [infoConfig] = await Promise.all([
+        loadInformationConfig(),
         loadPackageDatabase()
     ]);
 
-    // UI描画（setupConfig を必ず渡す）
-    renderSetupConfig(setupConfig);
+    // UI描画（infoConfig を必ず渡す）
+    renderSetupConfig(infoConfig);
     generatePackageSelector();
 
     // UI生成後にISP情報取得
