@@ -60,8 +60,7 @@
               "type": "text",
               "selector": "#aios-device-name",
               "variableName": "device_name",
-              "placeholder": "OpenWrt",
-              "defaultValue": ""
+              "placeholder": "OpenWrt"
             },
             {
               "id": "aios-root-password",
@@ -70,8 +69,7 @@
               "type": "text",
               "selector": "#aios-root-password",
               "variableName": "root_password",
-              "placeholder": "8+ characters",
-              "defaultValue": ""
+              "placeholder": "8+ characters"
             },
             {
               "id": "aios-lan-ipv4",
@@ -80,8 +78,7 @@
               "type": "text",
               "selector": "#aios-lan-ipv4",
               "variableName": "lan_ip_address",
-              "placeholder": "192.168.1.1",
-              "defaultValue": ""
+              "placeholder": "192.168.1.1"
             },
             {
               "id": "aios-lan-ipv6",
@@ -111,7 +108,6 @@
               "selector": "#aios-ssh-port",
               "variableName": "ssh_port",
               "placeholder": "22",
-              "defaultValue": "",
               "min": 1,
               "max": 65535,
               "description": "Port number for SSH access"
@@ -157,10 +153,31 @@
           "class": "tr-wi-fi-mode",
           "type": "radio-group",
           "variableName": "wifi_mode",
+          "defaultValue": "disabled",
           "options": [
-            {"value": "standard", "label": "Standard", "class": "tr-standard", "checked": true, "includeFields": ["wlan_ssid", "wlan_password"]},
-            {"value": "usteer", "label": "Usteer", "class": "tr-usteer", "packages": ["luci-app-usteer"], "includeFields": ["wlan_ssid", "wlan_password", "enable_usteer", "mobility_domain", "snr"]},
-            {"value": "disabled", "label": "Disabled", "class": "tr-disabled", "excludeFields": ["wlan_ssid", "wlan_password", "enable_usteer", "mobility_domain", "snr"]}
+            {
+              "value": "standard",
+              "label": "Standard",
+              "class": "tr-standard",
+              "includeFields": ["wlan_ssid", "wlan_password"],
+              "excludeFields": ["enable_usteer", "mobility_domain", "snr"]
+            },
+            {
+              "value": "usteer",
+              "label": "Usteer",
+              "class": "tr-usteer",
+              "packages": ["luci-app-usteer"],
+              "includeFields": ["wlan_ssid", "wlan_password", "enable_usteer", "mobility_domain", "snr"],
+              "excludeFields": []
+            },
+            {
+              "value": "disabled",
+              "label": "Disabled",
+              "class": "tr-disabled",
+              "checked": true,
+              "includeFields": [],
+              "excludeFields": ["wlan_ssid", "wlan_password", "enable_usteer", "mobility_domain", "snr"]
+            }
           ]
         },
         {
@@ -183,8 +200,7 @@
                   "type": "text",
                   "selector": "#aios-wifi-ssid",
                   "variableName": "wlan_ssid",
-                  "placeholder": "OpenWrt",
-                  "defaultValue": "OpenWrt"
+                  "placeholder": "OpenWrt"
                 },
                 {
                   "id": "aios-wifi-password",
@@ -193,8 +209,7 @@
                   "type": "text",
                   "selector": "#aios-wifi-password",
                   "variableName": "wlan_password",
-                  "placeholder": "8+ characters",
-                  "defaultValue": "password"
+                  "placeholder": "8+ characters"
                 }
               ]
             },
@@ -219,7 +234,6 @@
                       "selector": "#aios-wifi-mobility-domain",
                       "variableName": "mobility_domain",
                       "placeholder": "4f57",
-                      "defaultValue": "4f57",
                       "maxlength": 4,
                       "pattern": "[0-9A-Fa-f]{4}",
                       "description": "4-digit hex (e.g. 4f57)"
@@ -232,7 +246,6 @@
                       "selector": "#aios-wifi-snr",
                       "variableName": "snr",
                       "placeholder": "30 15 5",
-                      "defaultValue": "30 15 5",
                       "description": "SNR values in band order"
                     }
                   ]
@@ -522,7 +535,6 @@
                   "selector": "#mape-gua-prefix",
                   "variableName": "mape_gua_prefix",
                   "placeholder": "optional for GUA",
-                  "defaultValue": "",
                   "apiMapping": "ipv6",
                   "description": "IPv6 GUA prefix with /64 suffix"
                 }
@@ -570,7 +582,7 @@
         }
       ]
     },
-{
+    {
       "id": "tuning-config",
       "name": "Tuning",
       "class": "tr-tuning",
@@ -583,10 +595,30 @@
           "class": "tr-dynamic-network-optimizer",
           "type": "radio-group",
           "variableName": "net_optimizer",
+          "defaultValue": "disabled",
           "options": [
-            {"value": "auto", "label": "AUTO", "class": "tr-auto", "checked": true, "includeFields": ["enable_netopt"], "excludeFields": ["netopt_rmem", "netopt_wmem", "netopt_conntrack", "netopt_backlog", "netopt_somaxconn", "netopt_congestion"]},
-            {"value": "manual", "label": "Manual", "class": "tr-manual", "includeFields": ["enable_netopt", "netopt_rmem", "netopt_wmem", "netopt_conntrack", "netopt_backlog", "netopt_somaxconn", "netopt_congestion"]},
-            {"value": "disabled", "label": "Disabled", "class": "tr-disabled", "excludeFields": ["enable_netopt", "netopt_rmem", "netopt_wmem", "netopt_conntrack", "netopt_backlog", "netopt_somaxconn", "netopt_congestion"]}
+            {
+              "value": "auto",
+              "label": "AUTO",
+              "class": "tr-auto",
+              "includeFields": ["enable_netopt"],
+              "excludeFields": ["netopt_rmem", "netopt_wmem", "netopt_conntrack", "netopt_backlog", "netopt_somaxconn", "netopt_congestion"]
+            },
+            {
+              "value": "manual",
+              "label": "Manual",
+              "class": "tr-manual",
+              "includeFields": ["enable_netopt", "netopt_rmem", "netopt_wmem", "netopt_conntrack", "netopt_backlog", "netopt_somaxconn", "netopt_congestion"],
+              "excludeFields": []
+            },
+            {
+              "value": "disabled",
+              "label": "Disabled",
+              "class": "tr-disabled",
+              "checked": true,
+              "includeFields": [],
+              "excludeFields": ["enable_netopt", "netopt_rmem", "netopt_wmem", "netopt_conntrack", "netopt_backlog", "netopt_somaxconn", "netopt_congestion"]
+            }
           ]
         },
         {
@@ -626,7 +658,6 @@
                   "selector": "#netopt-rmem",
                   "variableName": "netopt_rmem",
                   "placeholder": "4096 131072 8388608",
-                  "defaultValue": "4096 131072 8388608",
                   "description": "min default max (bytes)"
                 },
                 {
@@ -637,7 +668,6 @@
                   "selector": "#netopt-wmem",
                   "variableName": "netopt_wmem",
                   "placeholder": "4096 131072 8388608",
-                  "defaultValue": "4096 131072 8388608",
                   "description": "min default max (bytes)"
                 },
                 {
@@ -648,7 +678,6 @@
                   "selector": "#netopt-conntrack",
                   "variableName": "netopt_conntrack",
                   "placeholder": "131072",
-                  "defaultValue": "131072",
                   "min": 1024
                 },
                 {
@@ -659,7 +688,6 @@
                   "selector": "#netopt-backlog",
                   "variableName": "netopt_backlog",
                   "placeholder": "5000",
-                  "defaultValue": "5000",
                   "min": 100
                 },
                 {
@@ -670,7 +698,6 @@
                   "selector": "#netopt-somaxconn",
                   "variableName": "netopt_somaxconn",
                   "placeholder": "16384",
-                  "defaultValue": "16384",
                   "min": 128
                 },
                 {
@@ -680,7 +707,6 @@
                   "type": "select",
                   "selector": "#netopt-congestion",
                   "variableName": "netopt_congestion",
-                  "defaultValue": "cubic",
                   "options": [
                     {"value": "cubic", "label": "cubic (default)", "class": "tr-cubic-default", "selected": true},
                     {"value": "bbr", "label": "bbr", "class": "tr-bbr"},
