@@ -263,12 +263,11 @@ details summary:hover {
   color: var(--owrt-blue);
 }
 
-
 details summary h3 {
   display: inline;
   margin: 0;
   font-weight: 500;
-  margin-left: -1em;
+  margin-left: 0; /* 修正: モバイルで消えないように0に変更 */
 }
 
 details summary h4,
@@ -556,10 +555,29 @@ details summary h4 {
     padding: 0.5em;
   }
 
+  /* 修正: ラジオボタンのレスポンシブ対応 */
   .radio-group {
     flex-direction: column;
     align-items: flex-start;
     gap: 0.5em;
+  }
+
+  /* 修正: ラジオボタンのラベルの整列 */
+  .radio-group label {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    white-space: normal;
+    min-height: 1.5em;
+    padding: 0.25em 0;
+  }
+
+  /* 修正: ラジオボタン自体のスタイル */
+  .radio-group input[type="radio"] {
+    flex-shrink: 0;
+    width: 1.2em;
+    height: 1.2em;
+    margin: 0;
   }
 
   .form-group label,
@@ -575,6 +593,60 @@ details summary h4 {
   .multi-input-item {
     padding: 0.5em;
     font-size: 0.9em;
+  }
+
+  /* 修正: h3の展開リンクの行頭の潰れを解決 */
+  details summary h3 {
+    margin-left: 0; /* モバイルでもマイナスマージンを使わない */
+    padding-left: 0;
+  }
+
+  /* 修正: details要素のパディング調整 */
+  details summary {
+    padding: 0.75em 0;
+  }
+
+  /* 修正: セクションコンテナのモバイル対応 */
+  .config-section,
+  .package-category,
+  #postinst-details,
+  #uci-defaults-details {
+    margin: 0 0 1em 0;
+    padding: 0 0.75em 0.75em 0.75em;
+  }
+
+  /* 修正: ISP情報表示のモバイル対応 */
+  #isp-info-row,
+  #isp-timezone-row,
+  #isp-isp-row,
+  #isp-as-row,
+  #isp-ip-row,
+  #isp-connection-row {
+    padding: 0.5em 1em;
+    font-size: 0.9em;
+    word-break: break-all; /* 長いテキストの改行対応 */
+  }
+}
+
+/* ===== 超小画面対応 (320px未満) ===== */
+@media (max-width: 320px) {
+  .radio-group label {
+    font-size: 0.9em;
+  }
+
+  .multi-input-item {
+    font-size: 0.85em;
+    padding: 0.4em;
+  }
+
+  #isp-info-row,
+  #isp-timezone-row,
+  #isp-isp-row,
+  #isp-as-row,
+  #isp-ip-row,
+  #isp-connection-row {
+    padding: 0.4em 0.8em;
+    font-size: 0.85em;
   }
 }
 
