@@ -40,10 +40,10 @@ set wireless.${radio}.country="${country:-00}"
 RADIO_EOF
         band=$(uci -q get wireless.${radio}.band)
         case "${band}" in
-            2g) suffix="-2g"; encryption='psk-mixed'; nasid_suffix='-2g'; band_snr="$(echo ${snr} | cut -d' ' -f1)" ;;
-            5g) suffix="-5g"; encryption='sae-mixed'; nasid_suffix='-5g'; band_snr="$(echo ${snr} | cut -d' ' -f2)" ;;
-            6g) suffix="-6g"; encryption='sae';        nasid_suffix='-6g'; band_snr="$(echo ${snr} | cut -d' ' -f3)" ;;
-            *)  suffix="";    encryption='psk-mixed';  nasid_suffix='';    band_snr="0" ;;
+            2g) suffix="-2g"; encryption='psk-mixed'; nasid_suffix='-2g'; band_snr="$(echo ${snr:-30 15 5} | cut -d' ' -f1)" ;;
+            5g) suffix="-5g"; encryption='sae-mixed'; nasid_suffix='-5g'; band_snr="$(echo ${snr:-30 15 5} | cut -d' ' -f2)" ;;
+            6g) suffix="-6g"; encryption='sae';        nasid_suffix='-6g'; band_snr="$(echo ${snr:-30 15 5} | cut -d' ' -f3)" ;;
+            *)  suffix="";    encryption='psk-mixed';  nasid_suffix='';    band_snr="20" ;;
         esac
         
         if [ -n "${enable_usteer}" ]; then
@@ -72,7 +72,7 @@ set wireless.${iface}.ieee80211r='1'
 set wireless.${iface}.mobility_domain="${mobility_domain:-4f57}"
 set wireless.${iface}.ft_over_ds='1'
 set wireless.${iface}.nasid="${wlan_ssid}${nasid_suffix}"
-set wireless.${iface}.usteer_min_snr="${band_snr:-20}"
+set wireless.${iface}.usteer_min_snr="${band_snr}"
 set wireless.${iface}.ieee80211k='1'
 set wireless.${iface}.ieee80211v='1'
 USTEER_EOF
@@ -448,13 +448,26 @@ uci commit 2>/dev/null
 C=/etc/sysctl.d/99-net-opt.conf
 M=$(awk '/MemTotal/{print int($2/1024)}' /proc/meminfo)
 P=$(grep -c ^processor /proc/cpuinfo)
-if [ $M -ge 3072 ]; then R=16777216 W=16777216 TR="4096 262144 16777216" TW=$TR CT=262144 NB=5000 SC=16384
-elif [ $M -ge 1536 ]; then R=8388608 W=8388608 TR="4096 131072 8388608" TW=$TR CT=131072 NB=2500 SC=8192
-elif [ $M -ge 512 ]; then R=4194304 W=4194304 TR="4096 65536 4194304" TW=$TR CT=65536 NB=1000 SC=4096
-else exit 0; fi
-[ $P -gt 4 ] && { NB=$((NB*2)); SC=$((SC*2)); }
-[ $P -gt 2 ] && [ $P -le 4 ] && { NB=$((NB*3/2)); SC=$((SC*3/2)); }
-printf "net.core.rmem_max=%s\nnet.core.wmem_max=%s\nnet.ipv4.tcp_rmem=%s\nnet.ipv4.tcp_wmem=%s\nnet.ipv4.tcp_congestion_control=cubic\nnet.ipv4.tcp_fastopen=3\nnet.netfilter.nf_conntrack_max=%s\nnet.core.netdev_max_backlog=%s\nnet.core.somaxconn=%s\n" "$R" "$W" "$TR" "$TW" "$CT" "$NB" "$SC" > $C
+RMEM=${netopt_rmem:-}
+WMEM=${netopt_wmem:-}
+TR=${netopt_rmem:-}
+TW=${netopt_wmem:-}
+CT=${netopt_conntrack:-}
+NB=${netopt_backlog:-}
+SC=${netopt_somaxconn:-}
+CONG=${netopt_congestion:-cubic}
+if [ -z "$RMEM" ] || [ -z "$WMEM" ]; then
+    if [ $M -ge 3072 ]; then R=16777216 W=16777216 TR="4096 262144 16777216" TW=$TR CT=262144 NB=5000 SC=16384
+    elif [ $M -ge 1536 ]; then R=8388608 W=8388608 TR="4096 131072 8388608" TW=$TR CT=131072 NB=2500 SC=8192
+    elif [ $M -ge 512 ]; then R=4194304 W=4194304 TR="4096 65536 4194304" TW=$TR CT=65536 NB=1000 SC=4096
+    else exit 0; fi
+    [ $P -gt 4 ] && { NB=$((NB*2)); SC=$((SC*2)); }
+    [ $P -gt 2 ] && [ $P -le 4 ] && { NB=$((NB*3/2)); SC=$((SC*3/2)); }
+else
+    R=$(echo $RMEM | cut -d' ' -f3)
+    W=$(echo $WMEM | cut -d' ' -f3)
+fi
+printf "net.core.rmem_max=%s\nnet.core.wmem_max=%s\nnet.ipv4.tcp_rmem=%s\nnet.ipv4.tcp_wmem=%s\nnet.ipv4.tcp_congestion_control=%s\nnet.ipv4.tcp_fastopen=3\nnet.netfilter.nf_conntrack_max=%s\nnet.core.netdev_max_backlog=%s\nnet.core.somaxconn=%s\n" "$R" "$W" "$TR" "$TW" "$CONG" "$CT" "$NB" "$SC" > $C
 sysctl -p $C
 cat > /etc/rc.local <<'RESET_EOF'
 exit 0
