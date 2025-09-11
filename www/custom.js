@@ -192,16 +192,22 @@ async function updateLanguagePackageCore() {
     }
     
     const basePkg = `luci-i18n-base-${selectedLanguage}`;
+    const firewallPkg = `luci-i18n-firewall-${selectedLanguage}`;
     const addedLangPackages = new Set();
 
-    // 基本言語パッケージをチェックして追加
+    // 基本言語パッケージ + firewall をチェックして追加
     try {
         if (await isPackageAvailable(basePkg, 'luci')) {
             dynamicPackages.add(basePkg);
             addedLangPackages.add(basePkg);
         }
+
+        if (await isPackageAvailable(firewallPkg, 'luci')) {
+            dynamicPackages.add(firewallPkg);
+            addedLangPackages.add(firewallPkg);
+        }
     } catch (err) {
-        console.error('Error checking base package:', err);
+        console.error('Error checking base/firewall package:', err);
     }
 
     // 現在の選択済みパッケージに対応する言語パッケージをチェックして追加
