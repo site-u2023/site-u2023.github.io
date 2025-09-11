@@ -523,7 +523,7 @@ async function initializeCustomFeatures(asuSection, temp) {
 
     // UI描画（setupConfig を必ず渡す）
     renderSetupConfig(setupConfig);
-    renderPackagesConfig();
+    generatePackageSelector();
 
     // UI生成後にISP情報取得
     await fetchAndDisplayIspInfo();
