@@ -1914,11 +1914,15 @@ function handleMapeTypeChange(e) {
     // GUA prefix の表示/非表示制御
     toggleGuaPrefixVisibility(mapeType);
     
-    // PDモードの場合、GUA prefixフィールドをクリア
+    // PDモードの場合、GUA prefixフィールドと値をクリア
     if (mapeType === 'pd') {
         const guaPrefixField = document.querySelector('#mape-gua-prefix');
         if (guaPrefixField) {
             guaPrefixField.value = '';
+        }
+        // values からも削除
+        if (typeof values === 'object') {
+            delete values.mape_gua_prefix;
         }
     }
     
