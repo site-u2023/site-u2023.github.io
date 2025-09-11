@@ -24,9 +24,17 @@ console.log('custom.js loaded');
 
 // OFSバージョン
 window.addEventListener('load', () => {
-    const el = document.getElementById('ofs-version');
-    if (el && typeof custom_ofs_version !== 'undefined') {
-        el.innerText = custom_ofs_version;
+    // バージョンテキストを更新
+    const versionEl = document.getElementById('ofs-version');
+    if (versionEl && typeof custom_ofs_version !== 'undefined') {
+        versionEl.innerText = custom_ofs_version;
+    }
+    
+    // リンク先を更新
+    const linkEl = versionEl?.closest('a');
+    if (linkEl && typeof custom_ofs_link !== 'undefined') {
+        linkEl.href = custom_ofs_link;
+        linkEl.target = "_blank";
     }
 });
 
