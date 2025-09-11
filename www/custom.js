@@ -523,36 +523,32 @@ async function initializeCustomFeatures(asuSection, temp) {
         insertExtendedInfo(temp);
     }
     
-    // 設定とデータを並列で読み込み（setupConfig → infoConfig に差し替え）
-    const [infoConfig] = await Promise.all([
-        loadInformationConfig(),
-        loadPackageDatabase()
-    ]);
-
-    // 先にUI描画して formStructure を構築
+    // 1) information.json を読み込み → UI描画（ここで formStructure 構築）
+    const infoConfig = await loadInformationConfig();
     renderSetupConfig(infoConfig);
 
-    // UI生成後にパッケージUIを生成（ここで updateAllPackageState が安全に動く）
-    generatePackageSelector();
+    // 2) packages.json を読み込み → パッケージUI生成
+    await loadPackageDatabase();
+    generatePackageSelector(); // この時点で formStructure は存在するので collectFormValues() が安全に動く
 
-    // UI生成後にISP情報取得
+    // 3) UI生成後にISP情報取得
     await fetchAndDisplayIspInfo();
     
-    // 依存関係のある初期化（順序重要）
+    // 4) 依存関係のある初期化（順序重要）
     setupEventListeners();
     loadUciDefaultsTemplate();
     
-    // 言語セレクター設定（初期言語パッケージ処理を含む）
+    // 5) 言語セレクター設定（初期言語パッケージ処理を含む）
     setupLanguageSelector();
     
-    // パッケージ検索機能を初期化（追加）
+    // 6) パッケージ検索機能を初期化（追加）
     setupPackageSearch();
     console.log('Package search initialized');
     
-    // カスタム翻訳を読み込み（初期言語に基づいて）
+    // 7) カスタム翻訳を読み込み（初期言語に基づいて）
     await loadCustomTranslations(selectedLanguage);
     
-    // フォーム監視設定
+    // 8) フォーム監視設定
     setupFormWatchers();
     
     customInitialized = true;
