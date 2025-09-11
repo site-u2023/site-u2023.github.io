@@ -175,7 +175,7 @@ add_list firewall.@zone[1].network="${MAPE6}"
 set firewall.@zone[1].masq='1'
 set firewall.@zone[1].mtu_fix='1'
 MAPE_EOF
-[ -n "${mape_gua_mode}" ] && uci -q set network.${MAPE6}.ip6prefix="${mape_gua_prefix}"
+[ -n "${mape_gua_prefix}" ] && uci -q set network.${MAPE6}.ip6prefix="${mape_gua_prefix}"
 MAP_SH="/lib/netifd/proto/map.sh"
 cp "$MAP_SH" "$MAP_SH".bak
 cat << 'MAP_SH_EOF' > "$MAP_SH"
