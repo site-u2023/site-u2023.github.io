@@ -1869,12 +1869,9 @@ function setupEventListeners() {
         }
     });
     
-    // MAP-Eタイプ切り替え
+    // MAP-Eタイプ切り替え（個別処理）
     document.querySelectorAll('input[name="mape_type"]').forEach(radio => {
-        radio.addEventListener('change', e => {
-            toggleGuaPrefixVisibility(e.target.value);
-            updateVariableDefinitions();
-        });
+        radio.addEventListener('change', handleMapeTypeChange);
     });
 
     // DS-Lite: JSONベースのAFTRアドレス自動補完
@@ -1884,43 +1881,26 @@ function setupEventListeners() {
     setupCommandsInput();
 }
 
-// コマンド入力設定関数を追加
-function setupCommandsInput() {
-    console.log('setupCommandsInput called');
+// MAP-Eタイプ変更ハンドラ（新規追加）
+function handleMapeTypeChange(e) {
+    const mapeType = e.target.value;
     
-    const commandsContainer = document.getElementById('commands-autocomplete');
+    // GUA prefix の表示/非表示制御
+    toggleGuaPrefixVisibility(mapeType);
     
-    if (!commandsContainer) {
-        console.log('commands-autocomplete container not found');
-        return;
-    }
-    
-    // 既存のインプットを削除
-    const oldInput = document.getElementById('command');
-    if (oldInput) {
-        oldInput.remove();
-    }
-    
-    // マルチインプットマネージャーを初期化
-    commandsManager = new MultiInputManager('commands-autocomplete', {
-        placeholder: 'Type command and press Enter',
-        className: 'multi-input-item command-input',
-        onAdd: (command) => {
-            console.log('Command added:', command);
-        },
-        onRemove: (command) => {
-            console.log('Command removed:', command);
-        },
-        onChange: (values) => {
-            // console.log('Commands changed:', values);
-            updateCustomCommands();
+    // PDモードの場合、GUA prefixフィールドをクリア
+    if (mapeType === 'pd') {
+        const guaPrefixField = document.querySelector('#mape-gua-prefix');
+        if (guaPrefixField) {
+            guaPrefixField.value = '';
         }
-    });
+    }
     
-    console.log('Commands input setup complete');
+    // setup.shを更新
+    updateVariableDefinitions();
 }
 
-// DS-LiteのAFTRアドレス計算を独立関数化（JSONドリブン）
+// DS-Lite AFTR計算（個別処理に変更）
 function setupDsliteAddressComputation() {
     const aftrType = document.querySelector('#dslite-aftr-type');
     const aftrArea = document.querySelector('#dslite-area');
@@ -1946,18 +1926,50 @@ function setupDsliteAddressComputation() {
         const computed = computeAftrAddress(aftrType.value, aftrArea.value);
         if (!computed) return;
         
-        // 初期化時は空のときのみ補完、選択変更時は強制上書き
         if (force || !aftrAddr.value) {
             aftrAddr.value = computed;
             updateVariableDefinitions();
         }
     }
 
-    aftrType.addEventListener('change', () => syncAftrAddress(true));
-    aftrArea.addEventListener('change', () => syncAftrAddress(true));
+    // DS-Lite個別のイベントハンドラ
+    aftrType.addEventListener('change', () => {
+        syncAftrAddress(true);
+        // DS-Lite用の特別処理（UI制御フィールドをクリア）
+        updateVariableDefinitionsWithDsliteCleanup();
+    });
     
-    // 初期化（AFTRアドレスが空なら一度だけ補完）
+    aftrArea.addEventListener('change', () => {
+        syncAftrAddress(true);
+        // DS-Lite用の特別処理
+        updateVariableDefinitionsWithDsliteCleanup();
+    });
+    
     setTimeout(() => syncAftrAddress(false), 0);
+}
+
+// DS-Lite専用のupdateVariableDefinitions
+function updateVariableDefinitionsWithDsliteCleanup() {
+    const textarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
+    if (!textarea) return;
+    
+    const values = collectFormValues();
+    let emissionValues = { ...values };
+    
+    // DS-Lite: UI制御用フィールドを削除
+    delete emissionValues.dslite_aftr_type;
+    delete emissionValues.dslite_area;
+    
+    // パッケージの有効化変数を追加
+    document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
+        const enableVar = cb.getAttribute('data-enable-var');
+        if (enableVar) {
+            emissionValues[enableVar] = '1';
+        }
+    });
+    
+    const variableDefinitions = generateVariableDefinitions(emissionValues);
+    updateTextareaContent(textarea, variableDefinitions);
 }
 
 // 接続タイプ変更ハンドラ（JSONドリブン）
@@ -2596,24 +2608,20 @@ function loadUciDefaultsTemplate() {
 function updateVariableDefinitions() {
     const textarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
     if (!textarea) return;
-
+    
     const values = collectFormValues();
-
     let emissionValues = { ...values };
-    const connType = getFieldValue('input[name="connection_type"]');
-    if (connType === 'dslite') {
-        delete emissionValues.dslite_aftr_type;
-        delete emissionValues.dslite_area;
-    }
-
+    
+    // パッケージの有効化変数を追加
     document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
         const enableVar = cb.getAttribute('data-enable-var');
         if (enableVar) {
             emissionValues[enableVar] = '1';
         }
     });
-
+    
     const variableDefinitions = generateVariableDefinitions(emissionValues);
+    updateTextareaContent(textarea, variableDefinitions);
 
     // 以下は既存のテキストエリア更新処理
     let content = textarea.value;
@@ -2630,7 +2638,24 @@ function updateVariableDefinitions() {
         textarea.rows = textarea.value.split('\n').length + 1;
     }
 }
+
+// テキストエリア更新の共通処理
+function updateTextareaContent(textarea, variableDefinitions) {
+    let content = textarea.value;
+    const beginMarker = '# BEGIN_VARIABLE_DEFINITIONS';
+    const endMarker = '# END_VARIABLE_DEFINITIONS';
+    const beginIndex = content.indexOf(beginMarker);
+    const endIndex = content.indexOf(endMarker);
     
+    if (beginIndex !== -1 && endIndex !== -1) {
+        const beforeSection = content.substring(0, beginIndex + beginMarker.length);
+        const afterSection = content.substring(endIndex);
+        const newSection = variableDefinitions ? '\n' + variableDefinitions + '\n' : '\n';
+        textarea.value = beforeSection + newSection + afterSection;
+        textarea.rows = textarea.value.split('\n').length + 1;
+    }
+}
+
 function generateVariableDefinitions(values) {
     const lines = [];
     Object.entries(values).forEach(([key, value]) => {
