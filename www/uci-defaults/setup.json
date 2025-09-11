@@ -1,23 +1,6 @@
 {
   "categories": [
     {
-      "id": "isp-info",
-      "name": "Location & ISP Information",
-      "class": "tr-extended-info",
-      "description": "Auto-detected connection type and location details",
-      "type": "form-section",
-      "packages": [
-        { "id": "isp-notice",   "type": "info-display", "apiMapping": "notice" },
-        { "id": "isp-country",  "type": "info-display", "apiMapping": "country" },
-        { "id": "isp-timezone", "type": "info-display", "apiMapping": "timezone" },
-        { "id": "isp-zonename", "type": "info-display", "apiMapping": "zonename" },
-        { "id": "isp-name",     "type": "info-display", "apiMapping": "isp" },
-        { "id": "isp-as",       "type": "info-display", "apiMapping": "as" },
-        { "id": "isp-ip",       "type": "info-display", "apiMapping": "ipv4" },
-        { "id": "isp-method",   "type": "info-display", "apiMapping": "method" }
-      ]
-    },
-    {
       "id": "basic-config",
       "name": "Basic Configuration",
       "class": "tr-basic-configuration",
