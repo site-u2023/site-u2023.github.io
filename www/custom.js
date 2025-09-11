@@ -930,10 +930,10 @@ function applyCustomTranslations(map) {
     }
 }
 
-function triggerPackageUpdate() {
-    updateLanguagePackage();
-    updateVariableDefinitions();
-}
+// function triggerPackageUpdate() {
+//     updateLanguagePackage();
+//     updateVariableDefinitions();
+// }
 
 function extractLuciName(pkg) {
     if (pkg === 'luci') return 'base';
@@ -1400,9 +1400,9 @@ function handleRadioChange(e) {
 
 function updatePackageListFromDynamicSources() {
     updateSetupJsonPackages();
-    triggerPackageUpdate();
+    updateLanguagePackage();
+    updateVariableDefinitions();
 }
-
 
 function updateSetupJsonPackages() {
     if (!setupConfig) return;
@@ -2510,10 +2510,10 @@ function handlePackageSelection(e) {
     
     const dependencies = pkg.getAttribute('data-dependencies');
     if (dependencies) {
-        dependencies.split(',').forEach(depName => {  // depNameは表示名
-            const depPkg = findPackageById(depName);  // 表示名でパッケージを検索
+        dependencies.split(',').forEach(depName => {
+            const depPkg = findPackageById(depName);
             if (depPkg) {
-                const depCheckbox = document.querySelector(`[data-unique-id="${depPkg.uniqueId || depPkg.id}"]`);  // パッケージのnameでチェックボックスを探す
+                const depCheckbox = document.querySelector(`[data-unique-id="${depPkg.uniqueId || depPkg.id}"]`);
                 if (depCheckbox) {
                     depCheckbox.checked = isChecked;
                     
@@ -2531,14 +2531,9 @@ function handlePackageSelection(e) {
             }
         });
     }
-    
-    const enableVar = pkg.getAttribute('data-enable-var');
-    if (enableVar) {
-        updateVariableDefinitions();
-    }
-    
-    triggerPackageUpdate();
+    updateVariableDefinitions();
 }
+
 
 // パッケージリスト更新（Postinstテキストエリアへの反映）
 function updatePackageListFromSelector() {
