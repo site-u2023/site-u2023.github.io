@@ -1793,61 +1793,45 @@ function applySpecialFieldLogic(values) {
     
 // Wi‑Fi設定の処理（JSONドリブン）
 const wifiMode = getFieldValue('input[name="wifi_mode"]');
-if (setupConfig) {
-    const wifiCategory = setupConfig.categories.find(cat => cat.id === 'wifi-config');
-    if (wifiCategory) {
-        const wifiModeConfig = wifiCategory.packages.find(pkg => pkg.variableName === 'wifi_mode');
-        if (wifiModeConfig) {
-            const selectedOption = wifiModeConfig.options.find(opt => opt.value === wifiMode);
-            if (selectedOption) {
-                // excludeFields にある項目は先に削除
-                if (selectedOption.excludeFields) {
-                    selectedOption.excludeFields.forEach(key => delete values[key]);
-                }
-                // includeFields にある項目だけ反映
-                if (selectedOption.includeFields) {
-                    selectedOption.includeFields.forEach(key => {
-                        if (key === 'enable_usteer') {
-                            if (wifiMode === 'usteer') {
-                                values.enable_usteer = '1';
-                            }
-                            return;
-                        }
-                        const val = getFieldValue(`[name="${key}"], #${key}`);
-                        if (val) values[key] = val;
-                    });
-                }
+const wifiCategory = setupConfig?.categories.find(cat => cat.id === 'wifi-config');
+const wifiModeConfig = wifiCategory?.packages.find(pkg => pkg.variableName === 'wifi_mode');
+const wifiSelected = wifiModeConfig?.options.find(opt => opt.value === wifiMode);
+
+if (wifiSelected) {
+    if (wifiSelected.excludeFields) {
+        wifiSelected.excludeFields.forEach(key => delete values[key]);
+    }
+    if (wifiSelected.includeFields) {
+        wifiSelected.includeFields.forEach(key => {
+            if (key === 'enable_usteer' && wifiMode === 'usteer') {
+                values.enable_usteer = '1';
+                return;
             }
-        }
+            const val = getFieldValue(`[name="${key}"], #${key}`);
+            if (val) values[key] = val;
+        });
     }
 }
 
 // ネットワーク最適化の処理（JSONドリブン）
 const netOptimizer = getFieldValue('input[name="net_optimizer"]');
-if (setupConfig) {
-    const tuningCategory = setupConfig.categories.find(cat => cat.id === 'tuning-config');
-    if (tuningCategory) {
-        const netOptimizerConfig = tuningCategory.packages.find(pkg => pkg.variableName === 'net_optimizer');
-        if (netOptimizerConfig) {
-            const selectedOption = netOptimizerConfig.options.find(opt => opt.value === netOptimizer);
-            if (selectedOption) {
-                // excludeFields にある項目は先に削除
-                if (selectedOption.excludeFields) {
-                    selectedOption.excludeFields.forEach(key => delete values[key]);
-                }
-                // includeFields にある項目だけ反映
-                if (selectedOption.includeFields) {
-                    selectedOption.includeFields.forEach(key => {
-                        if (key === 'enable_netopt') {
-                            values.enable_netopt = '1';
-                            return;
-                        }
-                        const val = getFieldValue(`[name="${key}"], #${key}`);
-                        if (val) values[key] = val;
-                    });
-                }
+const tuningCategory = setupConfig?.categories.find(cat => cat.id === 'tuning-config');
+const netOptimizerConfig = tuningCategory?.packages.find(pkg => pkg.variableName === 'net_optimizer');
+const tuningSelected = netOptimizerConfig?.options.find(opt => opt.value === netOptimizer);
+
+if (tuningSelected) {
+    if (tuningSelected.excludeFields) {
+        tuningSelected.excludeFields.forEach(key => delete values[key]);
+    }
+    if (tuningSelected.includeFields) {
+        tuningSelected.includeFields.forEach(key => {
+            if (key === 'enable_netopt') {
+                values.enable_netopt = '1';
+                return;
             }
-        }
+            const val = getFieldValue(`[name="${key}"], #${key}`);
+            if (val) values[key] = val;
+        });
     }
 }
 
