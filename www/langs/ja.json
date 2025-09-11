@@ -5,7 +5,7 @@
     "tr-customize": "インストールされたパッケージ、初回起動時のスクリプトのカスタマイズ",
     "tr-request-build": "ビルドをリクエスト",
     "tr-not-found": "モデルが見つかりませんでした！",
-    "tr-load": "デバイス用のOpenWrtファームウェアをダウンロード",
+    "tr-load": "デバイス用のOpenWrtカスタムファームウェアをダウンロード",
     "tr-message": "名前またはモデル名を入力し、リリースビルドまたは \"snapshot\" ビルドを選択します。",
     "tr-version-build": "このビルドについて",
     "tr-links": "リンク",
