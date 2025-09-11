@@ -2746,10 +2746,27 @@ function setupFormWatchers() {
 
 // ==================== ユーティリティ関数 ====================
 
+// GUA用プレフィックスを生成
 function generateGuaPrefixFromFullAddress(apiInfo) {
-    if (apiInfo?.ipv6) {
-        const segments = apiInfo.ipv6.split(':');
-        return segments.slice(0, 4).join(':') + '::/64';
+    if (!apiInfo?.ipv6) return null;
+
+    const ipv6 = apiInfo.ipv6.toLowerCase();
+
+    // 除外条件（ループバック・未指定・リンクローカル・ULA・doc用）
+    if (ipv6.startsWith('::1') ||        // ループバック
+        ipv6 === '::' ||                 // 未指定
+        ipv6.startsWith('fe80:') ||      // リンクローカル
+        ipv6.startsWith('fc') ||         // ULA
+        ipv6.startsWith('fd') ||         // ULA
+        ipv6.startsWith('ff') ||         // マルチキャスト
+        ipv6.startsWith('2001:db8:') ||  // ドキュメンテーション
+        ipv6.startsWith('fec0:')) {      // 廃止サイトローカル（保険）
+        return null;
+    }
+    
+    const segments = ipv6.split(':');
+    if (segments.length >= 4) {
+        return `${segments[0]}:${segments[1]}:${segments[2]}:${segments[3]}::/64`;
     }
     return null;
 }
