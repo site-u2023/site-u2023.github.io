@@ -930,11 +930,6 @@ function applyCustomTranslations(map) {
     }
 }
 
-// function triggerPackageUpdate() {
-//     updateLanguagePackage();
-//     updateVariableDefinitions();
-// }
-
 function extractLuciName(pkg) {
     if (pkg === 'luci') return 'base';
 
