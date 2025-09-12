@@ -578,21 +578,22 @@ async function initializeCustomFeatures(asuSection, temp) {
     // フォーム監視設定
     setupFormWatchers();
 
-    // initializeCustomFeatures の末尾
+// パッケージセレクタ生成
+    generatePackageSelector();
+
+    // 統合パッケージ状態の初期化（初期値を確実に反映）
+    console.log('Performing initial package state update');
+    await updateAllPackageState('initial-state');
+
+    // 最後にISP自動設定の適用（変更があった場合のみ追加更新）
     let changed = false;
     if (window.autoConfigData) {
         changed = applyIspAutoConfig(window.autoConfigData);
     }
 
-    // パッケージセレクタ生成
-    generatePackageSelector();
-
-    // 最初の統合更新（変更があった場合のみ）
     if (changed) {
-        console.log('All data and UI ready, updating package state');
-        updateAllPackageState('isp-auto-config');
-    } else {
-        console.log('All data and UI ready, no changes from auto-config');
+        console.log('ISP auto-config applied, updating package state again');
+        await updateAllPackageState('isp-auto-config');
     }
 
     customInitialized = true;
