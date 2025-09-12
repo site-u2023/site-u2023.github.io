@@ -583,8 +583,8 @@ async function initializeCustomFeatures(asuSection, temp) {
 
     // 統合パッケージ状態の初期化（初期値を確実に反映）
     console.log('Performing initial package state update');
-    await updateAllPackageState('initial-state');
-
+    updateAllPackageState('initial-state');
+    
     // 最後にISP自動設定の適用（変更があった場合のみ追加更新）
     let changed = false;
     if (window.autoConfigData) {
@@ -593,7 +593,7 @@ async function initializeCustomFeatures(asuSection, temp) {
 
     if (changed) {
         console.log('ISP auto-config applied, updating package state again');
-        await updateAllPackageState('isp-auto-config');
+        updateAllPackageState('isp-auto-config');
     }
 
     customInitialized = true;
