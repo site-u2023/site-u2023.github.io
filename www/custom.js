@@ -54,7 +54,7 @@ window.updateImages = function(version, mobj) {
     }
 
     // デバイス固有パッケージを保存（重要）
-    if (mobj && "manifest" in mobj === false) {
+    if (mobj && mobj.default_packages) {   
         // デバイス固有パッケージを保存
         deviceDefaultPackages = mobj.default_packages || [];
         deviceDevicePackages = mobj.device_packages || [];
