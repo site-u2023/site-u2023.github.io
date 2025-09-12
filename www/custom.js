@@ -655,7 +655,6 @@ function setupPackageSearch() {
     console.log('setupPackageSearch called');
     
     const searchContainer = document.getElementById('package-search-autocomplete');
-    
     if (!searchContainer) {
         console.log('package-search-autocomplete container not found');
         return;
@@ -671,21 +670,39 @@ function setupPackageSearch() {
     packageSearchManager = new MultiInputManager('package-search-autocomplete', {
         placeholder: 'Type package name and press Enter',
         className: 'multi-input-item package-search-input',
+
         onAdd: (packageName) => {
-            console.log('Package added:', packageName);
-            // 動的にパッケージリストを更新
+            console.log('Package added via search:', packageName);
+            // 実行直前にUIセレクターから最新のデバイス用言語を取得して補正
+            const customSelect = document.getElementById('aios-language');
+            if (customSelect && customSelect.value && config.device_language !== customSelect.value) {
+                console.log(`setupPackageSearch/onAdd: device_language corrected from ${config.device_language} to ${customSelect.value}`);
+                config.device_language = customSelect.value;
+            }
             updateAllPackageState('package-search-add');
         },
+
         onRemove: (packageName) => {
-            console.log('Package removed:', packageName);
-            // 動的にパッケージリストを更新
+            console.log('Package removed via search:', packageName);
+            const customSelect = document.getElementById('aios-language');
+            if (customSelect && customSelect.value && config.device_language !== customSelect.value) {
+                console.log(`setupPackageSearch/onRemove: device_language corrected from ${config.device_language} to ${customSelect.value}`);
+                config.device_language = customSelect.value;
+            }
             updateAllPackageState('package-search-remove');
         },
+
         onChange: (values) => {
-            // console.log('Package list changed:', values);
+            console.log('Package search list changed:', values);
+            const customSelect = document.getElementById('aios-language');
+            if (customSelect && customSelect.value && config.device_language !== customSelect.value) {
+                console.log(`setupPackageSearch/onChange: device_language corrected from ${config.device_language} to ${customSelect.value}`);
+                config.device_language = customSelect.value;
+            }
+            updateAllPackageState('package-search-change');
         },
+
         autocomplete: (query, inputElement) => {
-            // console.log('Searching for packages:', query);
             searchPackages(query, inputElement);
         }
     });
@@ -1490,7 +1507,7 @@ function buildFormGroup(field) {
             ctrl.appendChild(option);
         });
 
-        // 言語セレクターは専用ハンドラーのみ
+        // 言語セレクターは専用ハンドラーのみ、それ以外は汎用リスナーを付ける
         if (field.id !== 'aios-language' && field.id !== 'languages-select') {
             ctrl.addEventListener('change', () => updateAllPackageState('form-field'));
         }
@@ -1515,7 +1532,7 @@ function buildFormGroup(field) {
         if (field.maxlength != null) ctrl.maxLength = field.maxlength;
         if (field.pattern != null) ctrl.pattern = field.pattern;
         
-        // 言語セレクター以外の input のみ汎用リスナーを付ける
+        // 言語セレクター以外の input は汎用リスナーを付ける
         if (field.id !== 'aios-language' && field.id !== 'languages-select') {
             ctrl.addEventListener('input', () => updateAllPackageState('form-field'));
         }
