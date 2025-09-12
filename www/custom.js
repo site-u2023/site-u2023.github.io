@@ -28,6 +28,7 @@ let defaultFieldValues = {};
 let dynamicPackages = new Set();
 let selectedLanguage = '';
 let customLanguageMap = {};
+let knownSelectablePackages = null;
 
 // デバイス固有パッケージ管理（重要：これらを常に維持）
 let deviceDefaultPackages = [];  // mobj.default_packages
@@ -309,12 +310,14 @@ function updatePackageListToTextarea(source = 'unknown') {
     if (textarea) {
         const currentPackages = split(textarea.value);
         currentPackages.forEach(pkg => {
-            // 既知のパッケージ以外を手動パッケージとして保持
+            // UI管理対象（packages.json に載っている）パッケージは manual に残さない
+            const isKnownUiPkg = knownSelectablePackages && knownSelectablePackages.has(pkg);
             if (!basePackages.has(pkg) &&
                 !checkedPackages.has(pkg) &&
                 !searchedPackages.has(pkg) &&
                 !dynamicPackages.has(pkg) &&
-                !pkg.startsWith('luci-i18n-')) {
+                !pkg.startsWith('luci-i18n-') &&
+                !isKnownUiPkg) {
                 manualPackages.add(pkg);
             }
         });
@@ -2468,6 +2471,17 @@ async function loadPackageDatabase() {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         packagesJson = await response.json();
         console.log('Package database loaded:', packagesJson);
+
+        // knownSelectablePackages を構築（UI管理対象は manualPackages として保持しない）
+        knownSelectablePackages = new Set();
+        if (packagesJson?.categories) {
+            packagesJson.categories.forEach(category => {
+                (category.packages || []).forEach(pkg => {
+                    if (pkg?.id) knownSelectablePackages.add(pkg.id);
+                    // uniqueId 経由で指される hidden/依存も id に入れるため、id を基準にする
+                });
+            });
+        }
         
         return packagesJson;
     } catch (err) {
@@ -2641,7 +2655,7 @@ function handlePackageSelection(e) {
             }
         });
     }
-    updateAllPackageState('package-selection');
+    updateAllPackageState('force-update');
 }
 
 function findPackageById(id) {
