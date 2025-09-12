@@ -330,11 +330,11 @@ const langCode = config.device_language || config?.fallback_language || 'en';
 const includeLangPack = langCode && langCode !== 'en';
 
 if (includeLangPack) {
-    // まず既存の言語パック（対象言語のみ）を全セットから削除
+    // まず既存の全言語パックを全セットから削除
     const allSets = [basePackages, checkedPackages, searchedPackages, manualPackages, dynamicPackages];
     allSets.forEach(set => {
         Array.from(set).forEach(pkg => {
-            if (pkg.startsWith('luci-i18n-') && pkg.endsWith(`-${langCode}`)) {
+            if (pkg.startsWith('luci-i18n-')) {
                 set.delete(pkg);
             }
         });
