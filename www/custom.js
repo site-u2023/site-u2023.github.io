@@ -176,7 +176,7 @@ async function updateLanguagePackageCore() {
         selectedLanguage = current_language || config?.fallback_language || 'en';
     }
 
-    // 既存の言語パッケージを一旦全て削除（テキストエリアからも）
+    // 既存の言語パッケージを一旦全て削除
     const removedPackages = [];
     for (const pkg of Array.from(dynamicPackages)) {
         if (pkg.startsWith('luci-i18n-')) {
