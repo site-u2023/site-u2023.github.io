@@ -132,13 +132,6 @@ async function updateAllPackageState(source = 'unknown') {
 
     console.log(`updateAllPackageState called from: ${source}`);
 
-    // 実行直前にUIセレクターから最新のデバイス用言語を取得して補正
-    const customSelect = document.getElementById('aios-language');
-    if (customSelect && customSelect.value && config.device_language !== customSelect.value) {
-        console.log(`updateAllPackageState: device_language corrected from ${config.device_language} to ${customSelect.value}`);
-        config.device_language = customSelect.value;
-    }
-    
     // 1. setup.jsonベースのパッケージ更新
     updateSetupJsonPackagesCore();
 
