@@ -275,7 +275,6 @@ function updatePackageListToTextarea(source = 'unknown') {
     const basePackages = new Set();
 
     // デバイス固有パッケージを必ず含める（最重要）
-    // CRITICAL FIX: Check if device packages are available before proceeding
     if (deviceDefaultPackages.length === 0 && deviceDevicePackages.length === 0 && extraPackages.length === 0) {
         console.warn('updatePackageListToTextarea: Device packages not loaded yet, skipping update from:', source);
         return;
@@ -331,14 +330,33 @@ function updatePackageListToTextarea(source = 'unknown') {
         });
     }
 
-    // 全てのパッケージを統合（順序：デバイス固有 → チェック済み → 検索 → 動的 → 手動）
-    const finalPackages = [
-        ...basePackages,      // デバイス固有パッケージ（必須）
-        ...checkedPackages,   // チェックボックスで選択されたパッケージ
-        ...searchedPackages,  // 検索で追加されたパッケージ
-        ...dynamicPackages,   // 動的パッケージ（言語パッケージなど）
-        ...manualPackages     // 手動で入力されたパッケージ
-    ];
+    // ===== 言語パックの追加・削除処理 =====
+    const langCode = document.querySelector('#languages-select')?.value || current_language || 'en';
+    const includeLangPack = langCode && langCode !== 'en';
+
+    if (includeLangPack) {
+        // まず既存の言語パック（対象言語のみ）を全セットから削除
+        const allSets = [basePackages, checkedPackages, searchedPackages, manualPackages, dynamicPackages];
+        allSets.forEach(set => {
+            Array.from(set).forEach(pkg => {
+                if (pkg.startsWith('luci-i18n-') && pkg.endsWith(`-${langCode}`)) {
+                    set.delete(pkg);
+                }
+            });
+        });
+
+        // チェックされているパッケージに対応する言語パックを追加
+        checkedPackages.forEach(pkg => {
+            const i18nPkg = `luci-i18n-${pkg}-${langCode}`;
+            if (!basePackages.has(i18nPkg) &&
+                !checkedPackages.has(i18nPkg) &&
+                !searchedPackages.has(i18nPkg) &&
+                !manualPackages.has(i18nPkg) &&
+                !dynamicPackages.has(i18nPkg)) {
+                dynamicPackages.add(i18nPkg);
+            }
+        });
+    }
 
     // 重複を削除
     const uniquePackages = [...new Set(finalPackages)];
