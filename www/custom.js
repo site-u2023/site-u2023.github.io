@@ -20,7 +20,7 @@ window.addEventListener('load', () => {
 // ==================== グローバル変数 ====================
 let customInitialized = false;
 let customHTMLLoaded = false;
-let PACKAGE_DB = null;
+let packagesJson = null;
 let setupConfig = null;
 let formStructure = {};
 let cachedApiInfo = null;
@@ -845,7 +845,7 @@ async function insertExtendedInfo(temp) {
     
     // information.jsonから構造を読み込み
     try {
-        const infoUrl = config?.information_pass || 'auto-config/information.json';
+        const infoUrl = config?.information_url || 'auto-config/information.json';
         const response = await fetch(infoUrl + '?t=' + Date.now());
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         
@@ -853,7 +853,7 @@ async function insertExtendedInfo(temp) {
         console.log('Information config loaded:', infoConfig);
         
         // ISP情報セクションを動的生成
-        container.innerHTML = '';
+        extendedInfo.innerHTML = '';  // ← containerではなくextendedInfo
         
         infoConfig.categories.forEach(category => {
             const h3 = document.createElement('h3');
@@ -890,7 +890,6 @@ async function insertExtendedInfo(temp) {
         
     } catch (err) {
         console.error('Failed to load information.json:', err);
-        // JSONが読めない場合は何もしない（フォールバック不要）
     }
 }
 
@@ -912,7 +911,7 @@ function reinitializeFeatures() {
     
     setupEventListeners();
     
-    if (PACKAGE_DB) generatePackageSelector();
+    if (packagesJson) generatePackageSelector();
     fetchAndDisplayIspInfo();
     if (cachedApiInfo) updateAutoConnectionInfo(cachedApiInfo);
 
@@ -2406,12 +2405,12 @@ async function loadPackageDatabase() {
         const url = config?.packages_db_path || 'packages/packages.json';
         const response = await fetch(url);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        PACKAGE_DB = await response.json();
-        console.log('Package database loaded:', PACKAGE_DB);
+        packagesJson = await response.json();
+        console.log('Package database loaded:', packagesJson);
         
         generatePackageSelector();
         
-        return PACKAGE_DB;
+        return packagesJson;
     } catch (err) {
         console.error('Failed to load package database:', err);
         return null;
@@ -2420,13 +2419,13 @@ async function loadPackageDatabase() {
 
 function generatePackageSelector() {
     const container = document.querySelector('#package-categories');
-    if (!container || !PACKAGE_DB) {
+    if (!container || !packagesJson) {
         return;
     }
     
     container.innerHTML = '';
     
-    PACKAGE_DB.categories.forEach(category => {
+    packagesJson.categories.forEach(category => {
         const categoryDiv = createPackageCategory(category);
         if (categoryDiv) {
             container.appendChild(categoryDiv);
@@ -2434,7 +2433,7 @@ function generatePackageSelector() {
     });
     
     updateAllPackageState('package-selector-init');
-    console.log(`Generated ${PACKAGE_DB.categories.length} package categories`);
+    console.log(`Generated ${packagesJson.categories.length} package categories`);
 }
 
 function createPackageCategory(category) {
@@ -2587,9 +2586,9 @@ function handlePackageSelection(e) {
 }
 
 function findPackageById(id) {
-    if (!PACKAGE_DB) return null;
+    if (!packagesJson) return null;
     
-    for (const category of PACKAGE_DB.categories) {
+    for (const category of packagesJson.categories) {
         const pkg = category.packages.find(p => p.uniqueId === id || p.id === id);
         if (pkg) return pkg;
     }
