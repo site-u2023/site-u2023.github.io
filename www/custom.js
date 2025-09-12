@@ -806,28 +806,27 @@ document.addEventListener('click', function(e) {
 
 // #asuセクションを置き換え（修正版：index.jsが期待するDOM要素を全て保持）
 function replaceAsuSection(asuSection, temp) {
-    const newDiv = document.createElement('div');
-    newDiv.id = 'asu';
-    newDiv.className = asuSection.className;
-    newDiv.style.width = '100%';
+    // 元の#asuの内容をクリア（構造は保持）
+    asuSection.innerHTML = '';
+    asuSection.style.width = '100%';
     
     // custom.htmlから必要な要素を移動
     const customPackages = temp.querySelector('#custom-packages-section details');
     const customScripts = temp.querySelector('#custom-scripts-section details');
     const buildElements = temp.querySelector('#asu-build-elements');
-    
+
     if (customPackages) {
         customPackages.id = 'custom-packages-details';
-        newDiv.appendChild(customPackages);
+        asuSection.appendChild(customPackages);
     }
     if (customScripts) {
         customScripts.id = 'custom-scripts-details';
-        newDiv.appendChild(customScripts);
+        asuSection.appendChild(customScripts);
     }
     if (buildElements) {
-        // 子要素を直接追加（wrapperは不要）
+        // 子要素を直接追加
         while (buildElements.firstChild) {
-            newDiv.appendChild(buildElements.firstChild);
+            asuSection.appendChild(buildElements.firstChild);
         }
     }
     
