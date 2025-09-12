@@ -118,13 +118,19 @@ async function updateAllPackageState(source = 'unknown') {
     // 1. setup.jsonベースのパッケージ更新
     updateSetupJsonPackagesCore();
 
-    // 2. 言語パッケージの更新
+    // 2. チェック済みパッケージを収集
+    document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
+        const pkg = cb.getAttribute('data-package');
+        if (pkg) dynamicPackages.add(pkg);
+    });
+    
+    // 3. 言語パッケージの更新
     await updateLanguagePackageCore();
 
-    // 3. Postinstテキストエリアへの反映（差分検知付き）
+    // 4. Postinstテキストエリアへの反映（差分検知付き）
     updatePackageListToTextarea(source);
 
-    // 4. setup.sh変数の更新
+    // 5. setup.sh変数の更新
     updateVariableDefinitions();
 
     console.log('All package state updated successfully');
@@ -581,6 +587,9 @@ async function initializeCustomFeatures(asuSection, temp) {
     // パッケージセレクタ生成
     generatePackageSelector();
 
+    // 初期のチェック状態を反映
+    updateAllPackageState('initial-selection');
+    
     // 最初の統合更新（変更があった場合のみ）
     if (changed) {
         console.log('All data and UI ready, updating package state');
