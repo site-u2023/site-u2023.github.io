@@ -75,8 +75,6 @@ window.updateImages = function(version, mobj) {
         if (textarea) {
             textarea.value = initialPackages.join(' ');
             console.log('Initial packages set in textarea:', initialPackages);
-
-            console.log('[updateImages] initialPackages:', initialPackages);
             
             // Force resize after setting value
             setTimeout(() => {
@@ -115,17 +113,12 @@ let lastFormStateHash = null;
 
 // Fix for updateAllPackageState - add safety check
 async function updateAllPackageState(source = 'unknown') {
-
-    console.log(`[updateAllPackageState] start from: ${source}`);
-    
     // CRITICAL FIX: Don't proceed if device packages aren't loaded yet
-    if (source !== 'package-selection' && source !== 'force-update') {
-        if (!customInitialized && (deviceDefaultPackages.length === 0 && deviceDevicePackages.length === 0)) {
-            console.log('Device packages not ready, deferring update from:', source);
-            return;
-        }
+    if (!customInitialized && (deviceDefaultPackages.length === 0 && deviceDevicePackages.length === 0)) {
+        console.log('updateAllPackageState: Device packages not ready, deferring update from:', source);
+        return;
     }
-    
+
     // 現在のフォーム状態を収集
     const currentState = collectFormValues();
     const hash = JSON.stringify(currentState);
@@ -151,10 +144,6 @@ async function updateAllPackageState(source = 'unknown') {
     updateVariableDefinitions();
 
     console.log('All package state updated successfully');
-
-    console.log(`[updateAllPackageState] end from: ${source}`, {
-        dynamic: Array.from(dynamicPackages)
-    });
 }
 
 // Core関数1: setup.jsonベースのパッケージ更新（UI更新なし）
@@ -282,9 +271,6 @@ async function updateLanguagePackageCore() {
 let lastPackageListHash = null;
 
 function updatePackageListToTextarea(source = 'unknown') {
-
-    console.log(`[updatePackageListToTextarea] start from: ${source}`);
-    
     // 基本パッケージセット（デバイス固有パッケージ）を準備
     const basePackages = new Set();
 
@@ -317,18 +303,29 @@ function updatePackageListToTextarea(source = 'unknown') {
         searchValues.forEach(pkg => searchedPackages.add(pkg));
     }
 
+    // 既知のUI管理パッケージ集合を事前に構築
+    const knownSelectablePackages = new Set();
+    if (packagesJson?.categories) {
+        packagesJson.categories.forEach(cat => {
+            (cat.packages || []).forEach(pkg => {
+                if (pkg.id) knownSelectablePackages.add(pkg.id);
+            });
+        });
+    }
+
     // テキストエリアから既存パッケージを取得（上記以外の手動入力パッケージを保持）
     const manualPackages = new Set();
     const textarea = document.querySelector('#asu-packages');
     if (textarea) {
         const currentPackages = split(textarea.value);
         currentPackages.forEach(pkg => {
-            // 既知のパッケージ以外を手動パッケージとして保持
+            // UI管理対象は manual に残さない
             if (!basePackages.has(pkg) &&
                 !checkedPackages.has(pkg) &&
                 !searchedPackages.has(pkg) &&
                 !dynamicPackages.has(pkg) &&
-                !pkg.startsWith('luci-i18n-')) {
+                !pkg.startsWith('luci-i18n-') &&
+                !knownSelectablePackages.has(pkg)) {
                 manualPackages.add(pkg);
             }
         });
@@ -373,16 +370,6 @@ function updatePackageListToTextarea(source = 'unknown') {
     
     console.log(`Postinst package list updated: ${uniquePackages.length} packages`);
     console.log('Final Postinst package list:', uniquePackages);
-
-    console.log('[updatePackageListToTextarea] sets', {
-        base: Array.from(basePackages),
-        checked: Array.from(checkedPackages),
-        searched: Array.from(searchedPackages),
-        dynamic: Array.from(dynamicPackages),
-        manual: Array.from(manualPackages)
-    });
-
-    console.log(`[updatePackageListToTextarea] final list (${uniquePackages.length}):`, uniquePackages);
 }
 
 // ==================== 共通マルチインプット管理機能 ====================
@@ -2639,9 +2626,6 @@ function createPackageCheckbox(pkg, isChecked = false, isDependency = false) {
 }
 
 function handlePackageSelection(e) {
-
-    console.log('[handlePackageSelection] start', e.target.dataset.package, e.target.checked);
-    
     const pkg = e.target;
     const isChecked = pkg.checked;
     
@@ -2669,8 +2653,6 @@ function handlePackageSelection(e) {
         });
     }
     updateAllPackageState('force-update');
-
-    console.log('[handlePackageSelection] end checked:', Array.from(document.querySelectorAll('.package-selector-checkbox:checked')).map(cb => cb.dataset.package));
 }
 
 function findPackageById(id) {
