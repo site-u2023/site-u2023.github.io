@@ -25,7 +25,7 @@ let formStructure = {};
 let cachedApiInfo = null;
 let cachedDeviceArch = null;
 let defaultFieldValues = {};
-let dynamicPackages = new Set();
+// let dynamicPackages = new Set(); // 廃止
 let selectedLanguage = '';
 let customLanguageMap = {};
 
@@ -41,7 +41,7 @@ let commandsManager = null;
 // ==================== 初期化処理 ====================
 // 元の updateImages をフック
 const originalUpdateImages = window.updateImages;
-window.updateImages = function(version, mobj) {
+window.updateImages = async function(version, mobj) { // asyncに変更
     if (originalUpdateImages) originalUpdateImages(version, mobj);
 
     // arch_packagesをcurrent_deviceとキャッシュに保存
@@ -65,6 +65,14 @@ window.updateImages = function(version, mobj) {
             device: deviceDevicePackages.length,
             extra: extraPackages.length
         });
+
+        // 統一システムにデバイス固有パッケージを登録
+        const basePackages = [...deviceDefaultPackages, ...deviceDevicePackages, ...extraPackages];
+        for (const pkg of basePackages) {
+            if (!unifiedPackageRegistry.has(pkg)) {
+                await addUnifiedPackage(pkg, 'device-initial');
+            }
+        }
         
         // SECOND: Apply to textarea immediately after saving
         const initialPackages = deviceDefaultPackages
@@ -108,94 +116,185 @@ window.updateImages = function(version, mobj) {
     }
 };
 
-// ==================== 統合パッケージ管理システム ====================
-// 前回のフォーム状態ハッシュを保持
-let lastFormStateHash = null;
+// ==================== 統一パッケージ管理システム ====================
+// LuCIパッケージと言語パッケージを常にセットで管理
 
-// Fix for updateAllPackageState - add safety check
-async function updateAllPackageState(source = 'unknown') {
-    // CRITICAL FIX: Don't proceed if device packages aren't loaded yet
-    if (!customInitialized && (deviceDefaultPackages.length === 0 && deviceDevicePackages.length === 0)) {
-        console.log('updateAllPackageState: Device packages not ready, deferring update from:', source);
-        return;
-    }
+// 管理対象パッケージセット（LuCIと言語パックを一体管理）
+let unifiedPackageRegistry = new Map(); // key: packageName, value: { base: string, language: string|null }
 
-    // 現在のフォーム状態を収集
-    const currentState = collectFormValues();
-    const hash = JSON.stringify(currentState);
+// 現在のデバイス言語
+let currentDeviceLanguage = 'en';
 
-    // 前回と同じ状態ならスキップ（device package loading は例外）
-    if (hash === lastFormStateHash && !source.includes('device') && !source.includes('force')) {
-        return;
-    }
-    lastFormStateHash = hash;
-
-    console.log(`updateAllPackageState called from: ${source}`);
-
-    // 1. setup.jsonベースの仮想チェックボックス操作
-    updateSetupJsonPackagesCore();
-
-    // 2. 言語パッケージの更新
-    await updateLanguagePackageCore();
-
-    // 3. Postinstテキストエリアへの反映（差分検知付き）
-    updatePackageListToTextarea(source);
-
-    // 4. setup.sh変数の更新
-    updateVariableDefinitions();
-
-    console.log('All package state updated successfully');
+// LuCIパッケージ判定
+function isLuciPackage(packageName) {
+    return packageName.startsWith('luci-') && !packageName.startsWith('luci-i18n-');
 }
 
-// Core関数1: setup.jsonベースの仮想チェックボックス操作（修正版）
-function updateSetupJsonPackagesCore() {
-    if (!setupConfig) return;
+// LuCI名抽出
+function extractLuciName(pkg) {
+    if (pkg === 'luci') return 'base';
+    const prefixMatch = pkg.match(/^luci-(?:app|mod|theme|proto)-(.+)$/);
+    return prefixMatch?.[1] || null;
+}
+
+// 言語パッケージ名生成
+function generateLanguagePackageName(luciPackage, language) {
+    if (!language || language === 'en') return null;
+    const luciName = extractLuciName(luciPackage);
+    if (!luciName) return null;
+    return `luci-i18n-${luciName}-${language}`;
+}
+
+// 統一パッケージ追加（LuCIなら自動で言語パックも管理）
+async function addUnifiedPackage(packageName, source = 'unknown') {
+    console.log(`[Unified] Adding package: ${packageName} from ${source}`);
     
+    if (isLuciPackage(packageName)) {
+        // LuCIパッケージの場合、言語パックと一体管理
+        const langPackage = await getLuciLanguagePackage(packageName);
+        unifiedPackageRegistry.set(packageName, {
+            base: packageName,
+            language: langPackage
+        });
+        console.log(`[Unified] Registered LuCI package with language: ${packageName} + ${langPackage || 'none'}`);
+    } else if (!packageName.startsWith('luci-i18n-')) {
+        // 非LuCI、非言語パッケージ
+        unifiedPackageRegistry.set(packageName, {
+            base: packageName,
+            language: null
+        });
+        console.log(`[Unified] Registered non-LuCI package: ${packageName}`);
+    }
+    // 言語パッケージ単体は直接登録しない（LuCIパッケージ経由で管理）
+}
+
+// 統一パッケージ削除（LuCIなら言語パックも自動削除）
+function removeUnifiedPackage(packageName, source = 'unknown') {
+    console.log(`[Unified] Removing package: ${packageName} from ${source}`);
+    
+    if (unifiedPackageRegistry.has(packageName)) {
+        const entry = unifiedPackageRegistry.get(packageName);
+        console.log(`[Unified] Unregistered package: ${packageName}${entry.language ? ' + ' + entry.language : ''}`);
+        unifiedPackageRegistry.delete(packageName);
+    }
+}
+
+// LuCIパッケージの言語パッケージ取得
+async function getLuciLanguagePackage(luciPackage) {
+    const language = config.device_language || currentDeviceLanguage;
+    if (language === 'en') return null;
+    
+    const langPackage = generateLanguagePackageName(luciPackage, language);
+    if (!langPackage) return null;
+    
+    try {
+        const isAvailable = await isPackageAvailable(langPackage, 'luci');
+        return isAvailable ? langPackage : null;
+    } catch (err) {
+        console.error(`[Unified] Error checking language package ${langPackage}:`, err);
+        return null;
+    }
+}
+
+// 言語変更時の全パッケージ再構築
+async function rebuildLanguagePackages() {
+    const newLanguage = config.device_language || currentDeviceLanguage;
+    console.log(`[Unified] Rebuilding all language packages for: ${newLanguage}`);
+    currentDeviceLanguage = newLanguage;
+    
+    // 全LuCIパッケージの言語パックを更新
+    const updates = [];
+    for (const [packageName, entry] of unifiedPackageRegistry.entries()) {
+        if (isLuciPackage(packageName)) {
+            updates.push(updateLanguagePackageEntry(packageName, entry));
+        }
+    }
+    
+    await Promise.all(updates);
+    console.log(`[Unified] Language rebuild complete for ${unifiedPackageRegistry.size} packages`);
+}
+
+// 個別エントリの言語パッケージ更新
+async function updateLanguagePackageEntry(packageName, entry) {
+    const oldLang = entry.language;
+    const newLang = await getLuciLanguagePackage(packageName);
+    
+    if (oldLang !== newLang) {
+        entry.language = newLang;
+        console.log(`[Unified] Updated language package for ${packageName}: ${oldLang || 'none'} -> ${newLang || 'none'}`);
+    }
+}
+
+// 全管理パッケージ取得（基本+言語）
+function getAllManagedPackages() {
+    const packages = new Set();
+    
+    for (const entry of unifiedPackageRegistry.values()) {
+        packages.add(entry.base);
+        if (entry.language) {
+            packages.add(entry.language);
+        }
+    }
+    
+    return Array.from(packages);
+}
+
+// Core関数1の置き換え: setup.jsonベースの仮想チェックボックス操作
+async function updateSetupJsonPackagesCoreUnified() {
+    if (!setupConfig) return;
+
+    const promises = [];
+
     setupConfig.categories.forEach(category => {
         category.packages.forEach(pkg => {
             if (pkg.type === 'radio-group' && pkg.variableName) {
                 const selectedValue = getFieldValue(`input[name="${pkg.variableName}"]:checked`);
                 if (selectedValue) {
-                    console.log(`Radio group ${pkg.variableName} selected: ${selectedValue}`);
-                    
-                    // 全ての選択肢を先にリセット
+                    console.log(`[Unified] Radio group ${pkg.variableName} selected: ${selectedValue}`);
+
                     pkg.options.forEach(opt => {
-                        if (opt.value !== selectedValue) {
-                            // 非選択状態のパッケージを無効化
-                            toggleVirtualPackagesByType(pkg.variableName, opt.value, false);
+                        const isSelected = (opt.value === selectedValue);
+                        if (opt.packages) {
+                            opt.packages.forEach(pkgId => {
+                                // 状態が変化する可能性のあるものだけを処理
+                                const pkgData = findPackageById(pkgId);
+                                if(pkgData) {
+                                    const checkbox = document.querySelector(`[data-package="${pkgId}"], [data-unique-id="${pkgData.uniqueId || pkgData.id}"]`);
+                                    if(checkbox && checkbox.checked !== isSelected) {
+                                         promises.push(toggleVirtualPackageUnified(pkgId, isSelected));
+                                    }
+                                }
+                            });
                         }
                     });
                     
-                    // 選択されたオプションのパッケージを有効化
-                    toggleVirtualPackagesByType(pkg.variableName, selectedValue, true);
-                    
-                    // AUTO時の特別処理
                     if (pkg.variableName === 'connection_type' && selectedValue === 'auto' && cachedApiInfo) {
-                        console.log('AUTO mode with API info, applying specific packages');
+                        // 既存のMAP/DS-Liteパッケージを一旦無効化
+                        promises.push(toggleVirtualPackageUnified('map', false));
+                        promises.push(toggleVirtualPackageUnified('ds-lite', false));
+                        // 条件に合う方を有効化
                         if (cachedApiInfo.mape?.brIpv6Address) {
-                            console.log('Enabling MAP-E package');
-                            toggleVirtualPackage('map', true);
+                            promises.push(toggleVirtualPackageUnified('map', true));
                         } else if (cachedApiInfo.aftr) {
-                            console.log('Enabling DS-Lite package');
-                            toggleVirtualPackage('ds-lite', true);
+                            promises.push(toggleVirtualPackageUnified('ds-lite', true));
                         }
                     }
                 }
             }
         });
     });
+
+    await Promise.all(promises);
 }
 
-// 仮想パッケージチェックボックス操作関数（修正版 - ログ追加）
-function toggleVirtualPackage(packageId, enabled) {
-    // packages.jsonから隠しパッケージも含めて検索
+// 仮想パッケージ操作（統一版）
+async function toggleVirtualPackageUnified(packageId, enabled) {
     const pkg = findPackageById(packageId);
     if (!pkg) {
-        console.warn(`Virtual package not found in packages.json: ${packageId}`);
+        console.warn(`[Unified] Virtual package not found: ${packageId}`);
         return;
     }
     
-    // uniqueIdがある場合はそれを使用、なければidを使用
     const searchId = pkg.uniqueId || pkg.id;
     const checkbox = document.querySelector(`[data-package="${packageId}"], [data-unique-id="${searchId}"]`);
     
@@ -204,281 +303,184 @@ function toggleVirtualPackage(packageId, enabled) {
         checkbox.checked = enabled;
         
         if (wasChecked !== enabled) {
-            console.log(`Virtual package ${packageId} (${searchId}): ${enabled ? 'enabled' : 'disabled'}`);
+            const packageName = pkg.id;
+            console.log(`[Unified] Virtual package ${packageId}: ${enabled ? 'enabled' : 'disabled'}`);
             
-            // 依存関係も処理
+            if (enabled) {
+                // 追加時: LuCIなら言語パックも自動追加
+                await addUnifiedPackage(packageName, 'virtual-package');
+            } else {
+                // 削除時: LuCIなら言語パックも自動削除
+                removeUnifiedPackage(packageName, 'virtual-package');
+            }
+            
+            // 依存関係処理
             const dependencies = checkbox.getAttribute('data-dependencies');
             if (dependencies && enabled) {
-                dependencies.split(',').forEach(depId => {
+                for (const depId of dependencies.split(',')) {
                     const depPkg = findPackageById(depId);
                     if (depPkg) {
-                        const depSearchId = depPkg.uniqueId || depPkg.id;
-                        const depCheckbox = document.querySelector(`[data-package="${depId}"], [data-unique-id="${depSearchId}"]`);
-                        if (depCheckbox) {
-                            depCheckbox.checked = true;
-                            console.log(`Virtual dependency ${depId}: enabled`);
-                        }
+                        await toggleVirtualPackageUnified(depId, true);
                     }
-                });
+                }
             }
         }
     } else {
-        console.warn(`Checkbox not found for virtual package: ${packageId} (searched: ${searchId})`);
+        console.warn(`[Unified] Checkbox not found for: ${packageId}`);
     }
 }
 
-// タイプ別仮想パッケージ操作関数（修正版 - ログ追加）
-function toggleVirtualPackagesByType(type, value, enabled) {
-    const packageMap = {
-        'connection_type': {
-            'mape': ['map'],
-            'dslite': ['ds-lite']
-        },
-        'wifi_mode': {
-            'usteer': ['usteer-from-setup']
-        }
-    };
+// チェックボックス変更ハンドラ（統一版）
+async function handlePackageSelectionUnified(e) {
+    const checkbox = e.target;
+    const packageName = checkbox.getAttribute('data-package');
+    const isChecked = checkbox.checked;
     
-    const packages = packageMap[type]?.[value];
-    if (packages) {
-        console.log(`Toggle packages for ${type}=${value}: ${packages.join(', ')} -> ${enabled}`);
-        packages.forEach(pkgId => {
-            toggleVirtualPackage(pkgId, enabled);
-        });
+    if (!packageName) return;
+    
+    console.log(`[Unified] Checkbox changed: ${packageName} = ${isChecked}`);
+    
+    if (isChecked) {
+        await addUnifiedPackage(packageName, 'checkbox');
     } else {
-        console.log(`No virtual packages defined for ${type}=${value}`);
-    }
-}
-
-// Core関数2: 言語パッケージ更新（UI更新なし）
-async function updateLanguagePackageCore() {
-    // デバイス用言語セレクターから現在の言語を取得
-    selectedLanguage = config.device_language || config?.fallback_language || 'en';
-    
-    console.log(`Language package update - Selected language: ${selectedLanguage}`);
-
-    // 既存の言語パッケージを一旦全て削除
-    const removedPackages = [];
-    for (const pkg of Array.from(dynamicPackages)) {
-        if (pkg.startsWith('luci-i18n-')) {
-            dynamicPackages.delete(pkg);
-            removedPackages.push(pkg);
-        }
+        removeUnifiedPackage(packageName, 'checkbox');
     }
     
-    if (removedPackages.length > 0) {
-        console.log('Removed old language packages:', removedPackages);
-    }
-
-    // 英語が選択されているか、デバイス情報がない場合は終了
-    const hasArch = current_device?.arch || cachedDeviceArch;
-    if (!selectedLanguage || selectedLanguage === 'en' || !hasArch) {
-        console.log('Skipping language packages - English or no arch info');
-        return;
-    }
-    
-    // 現在の全パッケージリスト（LuCIパッケージ検出用）
-    const currentPackages = getCurrentPackageListForLanguage();
-    console.log(`Checking language packages for ${currentPackages.length} packages`);
-    
-    const addedLangPackages = new Set();
-    
-    // 基本言語パッケージをチェック
-    const basePkg = `luci-i18n-base-${selectedLanguage}`;
-    const firewallPkg = `luci-i18n-firewall-${selectedLanguage}`;
-    
-    try {
-        if (await isPackageAvailable(basePkg, 'luci')) {
-            dynamicPackages.add(basePkg);
-            addedLangPackages.add(basePkg);
-            console.log('Added base language package:', basePkg);
-        }
-
-        if (await isPackageAvailable(firewallPkg, 'luci')) {
-            dynamicPackages.add(firewallPkg);
-            addedLangPackages.add(firewallPkg);
-            console.log('Added firewall language package:', firewallPkg);
-        }
-    } catch (err) {
-        console.error('Error checking base/firewall package:', err);
-    }
-
-    // 全LuCIパッケージに対する言語パッケージを並行チェック
-    const checkPromises = [];
-    
-    for (const pkg of currentPackages) {
-        if (pkg.startsWith('luci-') && !pkg.startsWith('luci-i18n-')) {
-            const luciName = extractLuciName(pkg);
-            if (luciName) {
-                const langPkg = `luci-i18n-${luciName}-${selectedLanguage}`;
-                
-                const promise = (async () => {
-                    try {
-                        if (await isPackageAvailable(langPkg, 'luci')) {
-                            dynamicPackages.add(langPkg);
-                            addedLangPackages.add(langPkg);
-                            console.log(`Added LuCI language package: ${langPkg} for ${pkg}`);
-                        }
-                    } catch (err) {
-                        console.error(`Error checking LuCI package ${langPkg}:`, err);
+    // 依存関係処理
+    const dependencies = checkbox.getAttribute('data-dependencies');
+    if (dependencies) {
+        for (const depId of dependencies.split(',')) {
+            const depPkg = findPackageById(depId);
+            if (depPkg) {
+                const depCheckbox = document.querySelector(`[data-unique-id="${depPkg.uniqueId || depPkg.id}"]`);
+                if (depCheckbox) {
+                    depCheckbox.checked = isChecked;
+                    if (isChecked) {
+                        await addUnifiedPackage(depPkg.id, 'dependency');
+                    } else {
+                        removeUnifiedPackage(depPkg.id, 'dependency');
                     }
-                })();
-                checkPromises.push(promise);
+                }
             }
         }
     }
-
-    await Promise.all(checkPromises);
     
-    if (addedLangPackages.size > 0) {
-        console.log(`Language package update complete: ${addedLangPackages.size} packages added`);
-    }
+    updateAllPackageState('unified-checkbox');
 }
 
-// LuCI言語パッケージ用の完全なパッケージリスト取得（新規追加）
-function getCurrentPackageListForLanguage() {
-    const packages = new Set();
-    
-    // デバイス初期パッケージ
-    deviceDefaultPackages.forEach(pkg => packages.add(pkg));
-    deviceDevicePackages.forEach(pkg => packages.add(pkg));
-    extraPackages.forEach(pkg => packages.add(pkg));
-    
-    // パッケージセレクターから選択されたパッケージ（隠しパッケージ含む）
-    document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
-        const pkgName = cb.getAttribute('data-package');
-        if (pkgName) packages.add(pkgName);
-    });
-    
-    // 検索で追加されたパッケージ
-    if (packageSearchManager) {
-        const searchValues = packageSearchManager.getAllValues();
-        searchValues.forEach(pkg => packages.add(pkg));
+// パッケージ検索の追加/削除（統一版）
+async function handleSearchPackageUnified(packageName, action) {
+    if (action === 'add') {
+        await addUnifiedPackage(packageName, 'search');
+    } else if (action === 'remove') {
+        removeUnifiedPackage(packageName, 'search');
     }
+    updateAllPackageState('unified-search');
+}
+
+// Core関数3の置き換え: Postinstテキストエリア更新
+function updatePackageListToTextareaUnified(source = 'unknown') {
+    const basePackages = new Set([
+        ...deviceDefaultPackages,
+        ...deviceDevicePackages,
+        ...extraPackages
+    ]);
+
+    // 統一レジストリから全パッケージ取得（基本+言語）
+    const managedPackages = getAllManagedPackages();
     
-    // 仮想パッケージ（setup.jsonドリブン）- 言語パッケージ以外
-    for (const pkg of dynamicPackages) {
-        if (!pkg.startsWith('luci-i18n-')) {
-            packages.add(pkg);
-        }
-    }
+    // 検索パッケージ
+    const searchedPackages = new Set(packageSearchManager ? packageSearchManager.getAllValues() : []);
     
-    // テキストエリアから既存パッケージ（手動追加分）
+    // テキストエリアの手動入力パッケージ
     const textarea = document.querySelector('#asu-packages');
-    if (textarea) {
-        const textPackages = split(textarea.value);
-        textPackages.forEach(pkg => {
-            if (!pkg.startsWith('luci-i18n-')) {
-                packages.add(pkg);
-            }
-        });
-    }
-    
-    return Array.from(packages);
-}
-
-// Core関数3: Postinstテキストエリア更新（最終的な統合・差分検知付き）
-let lastPackageListHash = null;
-
-function updatePackageListToTextarea(source = 'unknown') {
-    // 基本パッケージセット（デバイス固有パッケージ）を準備
-    const basePackages = new Set();
-
-    // デバイス固有パッケージを必ず含める（最重要）
-    if (deviceDefaultPackages.length === 0 && deviceDevicePackages.length === 0 && extraPackages.length === 0) {
-        console.warn('updatePackageListToTextarea: Device packages not loaded yet, skipping update from:', source);
-        return;
-    }
-
-    deviceDefaultPackages.forEach(pkg => basePackages.add(pkg));
-    deviceDevicePackages.forEach(pkg => basePackages.add(pkg));
-    extraPackages.forEach(pkg => basePackages.add(pkg));
-
-    console.log(`Base device packages loaded: default=${deviceDefaultPackages.length}, device=${deviceDevicePackages.length}, extra=${extraPackages.length}`);
-
-    // チェックされたパッケージを追加
-    const checkedPackages = new Set();
-    document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
-        const pkgName = cb.getAttribute('data-package');
-        if (pkgName) {
-            checkedPackages.add(pkgName);
-        }
-    });
-
-    // 検索で追加されたパッケージを取得
-    const searchedPackages = new Set();
-    if (packageSearchManager) {
-        const searchValues = packageSearchManager.getAllValues();
-        searchValues.forEach(pkg => searchedPackages.add(pkg));
-    }
-
-    // 既知のUI管理パッケージ集合を事前に構築
-    const knownSelectablePackages = new Set();
-    if (packagesJson?.categories) {
-        packagesJson.categories.forEach(cat => {
-            (cat.packages || []).forEach(pkg => {
-                if (pkg.id) knownSelectablePackages.add(pkg.id);
-            });
-        });
-    }
-
-    // テキストエリアから既存パッケージを取得（上記以外の手動入力パッケージを保持）
     const manualPackages = new Set();
-    const textarea = document.querySelector('#asu-packages');
     if (textarea) {
-        const currentPackages = split(textarea.value);
-        currentPackages.forEach(pkg => {
-            // UI管理対象は manual に残さない
-            if (!basePackages.has(pkg) &&
-                !checkedPackages.has(pkg) &&
+        const current = split(textarea.value);
+        current.forEach(pkg => {
+            if (!basePackages.has(pkg) && 
+                !managedPackages.includes(pkg) && 
                 !searchedPackages.has(pkg) &&
-                !dynamicPackages.has(pkg) &&
-                !pkg.startsWith('luci-i18n-') &&
-                !knownSelectablePackages.has(pkg)) {
+                !pkg.startsWith('luci-i18n-')) {
                 manualPackages.add(pkg);
             }
         });
     }
-
-// ===== 最終パッケージリスト構築 =====
-const finalPackages = [
-    ...basePackages,
-    ...checkedPackages,
-    ...searchedPackages,
-    ...dynamicPackages,
-    ...manualPackages
-];
-
-// 重複を削除
-const uniquePackages = [...new Set(finalPackages)];
-
-// 差分検知（前回と同じならスキップ）
-const currentHash = JSON.stringify(uniquePackages);
-if (currentHash === lastPackageListHash && source !== 'force-update') {
-    console.log('updatePackageListToTextarea: No changes detected, skipping update from:', source);
-    return;
-}
-lastPackageListHash = currentHash;
-
-// ログと更新処理
-console.log(`updatePackageListToTextarea called from: ${source}`);
-console.log(`Package breakdown:`, {
-    base: basePackages.size,
-    checked: checkedPackages.size,
-    searched: searchedPackages.size,
-    dynamic: dynamicPackages.size,
-    manual: manualPackages.size,
-    total: uniquePackages.length
-});
-
-if (textarea) {
-    textarea.value = uniquePackages.join(' ');
-    textarea.style.height = 'auto';
-    textarea.style.height = textarea.scrollHeight + 'px';
+    
+    // 最終リスト構築
+    const finalPackages = [
+        ...basePackages,
+        ...managedPackages,
+        ...searchedPackages,
+        ...manualPackages
+    ];
+    
+    const uniquePackages = [...new Set(finalPackages)];
+    
+    console.log(`[Unified] Package list update from ${source}:`, {
+        base: basePackages.size,
+        managed: managedPackages.length,
+        searched: searchedPackages.size,
+        manual: manualPackages.size,
+        total: uniquePackages.length
+    });
+    
+    if (textarea) {
+        textarea.value = uniquePackages.join(' ');
+        textarea.style.height = 'auto';
+        textarea.style.height = textarea.scrollHeight + 'px';
+    }
 }
 
-console.log(`Postinst package list updated: ${uniquePackages.length} packages`);
-console.log('Final Postinst package list:', uniquePackages);
+
+// 初期化時の移行処理
+async function initializeUnifiedSystem() {
+    console.log('[Unified] Initializing unified package management system');
+    
+    // 既存のチェック済みパッケージを統一管理に移行
+    const checkboxes = document.querySelectorAll('.package-selector-checkbox:checked');
+    for (const checkbox of checkboxes) {
+        const packageName = checkbox.getAttribute('data-package');
+        if (packageName && !unifiedPackageRegistry.has(packageName)) {
+            await addUnifiedPackage(packageName, 'initial-checked');
+        }
+    }
+}
+
+
+// 前回のフォーム状態ハッシュを保持
+let lastFormStateHash = null;
+
+// 統合パッケージ管理のメイン関数
+async function updateAllPackageState(source = 'unknown') {
+    // 現在のフォーム状態を収集
+    const currentState = collectFormValues();
+    const hash = JSON.stringify(currentState);
+
+    // 前回と同じ状態ならスキップ（device package loading や force は例外）
+    if (hash === lastFormStateHash && !source.includes('device') && !source.includes('force')) {
+        return;
+    }
+    lastFormStateHash = hash;
+
+    console.log(`[Unified] updateAllPackageState called from: ${source}`);
+
+    // 言語が変更されたかチェックし、必要なら全言語パッケージを再構築
+    const newLanguage = config.device_language || config?.fallback_language || 'en';
+    if (newLanguage !== currentDeviceLanguage) {
+        await rebuildLanguagePackages();
+    }
+    
+    // 1. setup.jsonベースの仮想チェックボックス操作
+    await updateSetupJsonPackagesCoreUnified();
+
+    // 2. Postinstテキストエリアへの反映（差分検知付き）
+    updatePackageListToTextareaUnified(source);
+
+    // 3. setup.sh変数の更新
+    updateVariableDefinitions();
+
+    console.log('[Unified] All package state updated successfully');
 }
 
 // ==================== 共通マルチインプット管理機能 ====================
@@ -735,6 +737,9 @@ async function initializeCustomFeatures(asuSection, temp) {
     // パッケージセレクタ生成
     generatePackageSelector();
 
+    // 統一パッケージシステムを初期化（チェック済みパッケージを移行）
+    await initializeUnifiedSystem();
+
     // CRITICAL FIX: Force apply device packages if they exist
     if (deviceDefaultPackages.length > 0 || deviceDevicePackages.length > 0 || extraPackages.length > 0) {
         console.log('Force applying existing device packages');
@@ -749,17 +754,13 @@ async function initializeCustomFeatures(asuSection, temp) {
         }
     }
 
-    // 最初の統合更新（変更があった場合のみ）
-    if (changed) {
-        console.log('All data and UI ready, updating package state');
-        updateAllPackageState('isp-auto-config');
-    } else {
-        console.log('All data and UI ready, no changes from auto-config');
-        // CRITICAL FIX: Always force update to ensure device packages are included
-        setTimeout(() => {
-            updateAllPackageState('force-device-packages');
-        }, 200);
-    }
+    // 最初の統合更新
+    console.log('All data and UI ready, performing initial package state update');
+    // auto-configによる変更有無に関わらず、初回更新を強制実行
+    setTimeout(() => {
+        updateAllPackageState('initialization-complete');
+    }, 200);
+
 
     customInitialized = true;
 }
@@ -785,15 +786,13 @@ function setupPackageSearch() {
     packageSearchManager = new MultiInputManager('package-search-autocomplete', {
         placeholder: 'Type package name and press Enter',
         className: 'multi-input-item package-search-input',
-        onAdd: (packageName) => {
+        onAdd: async (packageName) => { // asyncに変更
             console.log('Package added:', packageName);
-            // 動的にパッケージリストを更新
-            updateAllPackageState('package-search-add');
+            await handleSearchPackageUnified(packageName, 'add');
         },
         onRemove: (packageName) => {
             console.log('Package removed:', packageName);
-            // 動的にパッケージリストを更新
-            updateAllPackageState('package-search-remove');
+            handleSearchPackageUnified(packageName, 'remove');
         },
         onChange: (values) => {
             // console.log('Package list changed:', values);
@@ -950,7 +949,10 @@ function showPackageSearchResults(results, inputElement) {
             
             // 変更通知とパッケージリスト更新
             packageSearchManager.options.onChange(packageSearchManager.getAllValues());
-            updateAllPackageState('package-selected');
+            // onAddコールバックが非同期なので、それを直接呼び出す
+            if (packageSearchManager.options.onAdd) {
+                packageSearchManager.options.onAdd(pkgName);
+            }
         };
   
         resultsDiv.appendChild(item);
@@ -1013,7 +1015,6 @@ function replaceAsuSection(asuSection, temp) {
                 </details>
             </div>
         </div>
-        <!-- index.js用の隠しパッケージリスト -->
         <textarea id="asu-packages" style="display:none;"></textarea>
         <a href="javascript:buildAsuRequest()" class="custom-link">
             <span></span><span class="tr-request-build">REQUEST BUILD</span>
@@ -1117,7 +1118,8 @@ function setupLanguageSelector() {
     if (mainLanguageSelect) mainLanguageSelect.value = current_language;
     if (customLanguageSelect) customLanguageSelect.value = config.device_language;
 
-    window.selectedLanguage = config.device_language;
+    // window.selectedLanguage = config.device_language;
+    currentDeviceLanguage = config.device_language; // 統一システムの言語変数を初期化
     console.log('Selected language for device:', config.device_language);
 
     // イベント登録は最後に行う（初期同期後）
@@ -1166,6 +1168,7 @@ async function handleMainLanguageChange(e) {
 
     // 片方向同期：ユーザー操作のときだけ device_language を同期
     config.device_language = current_language;
+    syncDeviceLanguageSelector(current_language);
 
     console.log('Main language changed to:', current_language, '(device_language updated)');
     updateAllPackageState('browser-language-changed');
@@ -1225,17 +1228,6 @@ function applyCustomTranslations(map) {
     }
 }
 
-function extractLuciName(pkg) {
-    if (pkg === 'luci') return 'base';
-
-    // "luci-app-", "luci-mod-", "luci-theme-", "luci-proto-" のプレフィックスを除去
-    const prefixMatch = pkg.match(/^luci-(?:app|mod|theme|proto)-(.+)$/);
-    if (prefixMatch && prefixMatch[1]) {
-        return prefixMatch[1];
-    }
-    return null;
-}
-
 function getCurrentPackageList() {
     const packages = new Set();
     
@@ -1269,12 +1261,9 @@ function getCurrentPackageList() {
         });
     }
     
-    // 動的パッケージ（非言語パッケージのみ）
-    for (const pkg of dynamicPackages) {
-        if (!pkg.startsWith('luci-i18n-')) {
-            packages.add(pkg);
-        }
-    }
+    // 統一レジストリから取得
+    const managed = getAllManagedPackages();
+    managed.forEach(pkg => packages.add(pkg));
     
     return Array.from(packages);
 }
@@ -1301,11 +1290,11 @@ async function isPackageAvailable(pkgName, feed) {
                 .replace('{arch}', arch)
                 .replace('{feed}', feed);
             
-            console.log('Checking APK URL:', packagesUrl);
+            // console.log('Checking APK URL:', packagesUrl);
             
             const resp = await fetch(packagesUrl, { cache: 'no-store' });
             if (!resp.ok) {
-                console.log('APK fetch failed:', resp.status);
+                // console.log('APK fetch failed:', resp.status);
                 return false;
             }
             
@@ -1322,17 +1311,17 @@ async function isPackageAvailable(pkgName, feed) {
                 .replace('{arch}', arch)
                 .replace('{feed}', feed);
             
-            console.log('Checking OPKG URL:', packagesUrl);
+            // console.log('Checking OPKG URL:', packagesUrl);
             
             const resp = await fetch(packagesUrl, { cache: 'no-store' });
             if (!resp.ok) {
-                console.log('OPKG fetch failed:', resp.status);
+                // console.log('OPKG fetch failed:', resp.status);
                 return false;
             }
             
             const text = await resp.text();
             const found = text.split('\n').some(line => line.trim() === `Package: ${pkgName}`);
-            console.log('Package check result for', pkgName, ':', found);
+            // console.log('Package check result for', pkgName, ':', found);
             return found;
         }
     } catch (err) {
@@ -1884,7 +1873,7 @@ function getFieldValue(selector) {
 
 // ==================== フォーム値処理（JSONドリブン版） ====================
 function applySpecialFieldLogic(values) {
-    const connectionType = getFieldValue('input[name="connection_type"]');
+    const connectionType = getFieldValue('input[name="connection_type"]:checked');
     
     // JSONから接続タイプ別のフィールドを取得
     const allConnectionFields = [];
@@ -1974,7 +1963,7 @@ function applySpecialFieldLogic(values) {
                         }
                     }
                     
-                    const mapeType = getFieldValue('input[name="mape_type"]');
+                    const mapeType = getFieldValue('input[name="mape_type"]:checked');
                     if (mapeType === 'gua') {
                         const currentGUAValue = getFieldValue('#mape-gua-prefix');
                         if (currentGUAValue) {
@@ -1994,7 +1983,7 @@ function applySpecialFieldLogic(values) {
     }
     
     // Wi‑Fi設定の処理（改善版）
-    const wifiMode = getFieldValue('input[name="wifi_mode"]');
+    const wifiMode = getFieldValue('input[name="wifi_mode"]:checked');
     
     if (wifiMode === 'disabled') {
         // disabledの場合、WiFi関連フィールドを全て削除
@@ -2028,7 +2017,7 @@ function applySpecialFieldLogic(values) {
     }
 
     // Tuning設定の処理（改善版）
-    const netOptimizer = getFieldValue('input[name="net_optimizer"]');
+    const netOptimizer = getFieldValue('input[name="net_optimizer"]:checked');
     
     if (netOptimizer === 'disabled') {
         // disabledの場合、最適化関連フィールドを全て削除
@@ -2484,7 +2473,7 @@ function applyIspAutoConfig(apiInfo) {
     }
 
     // connection_type 未設定時の誤判定回避（未設定なら auto と同等扱い）
-    const rawType = getFieldValue('input[name="connection_type"]');
+    const rawType = getFieldValue('input[name="connection_type"]:checked');
     const connectionType = (rawType === null || rawType === undefined || rawType === '') ? 'auto' : rawType;
 
     let mutated = false;
@@ -2607,7 +2596,7 @@ function generatePackageSelector() {
         }
     });
     
-    updateAllPackageState('package-selector-init');
+    // updateAllPackageState('package-selector-init'); // 後のinitializeで実行
     console.log(`Generated ${packagesJson.categories.length} package categories (including hidden)`);
 }
 
@@ -2638,7 +2627,7 @@ function createHiddenPackageCheckbox(pkg) {
         checkbox.setAttribute('data-enable-var', pkg.enableVar);
     }
     
-    checkbox.addEventListener('change', handlePackageSelection);
+    checkbox.addEventListener('change', handlePackageSelectionUnified);
     
     hiddenContainer.appendChild(checkbox);
     
@@ -2710,7 +2699,7 @@ function createPackageItem(pkg) {
     }
     
     if (pkg.enableVar) {
-        const checkbox = packageItem.querySelector(`#pkg-${pkg.id}`);
+        const checkbox = packageItem.querySelector(`#pkg-${pkg.uniqueId || pkg.id}`);
         if (checkbox) {
             checkbox.setAttribute('data-enable-var', pkg.enableVar);
         }
@@ -2743,7 +2732,7 @@ function createPackageCheckbox(pkg, isChecked = false, isDependency = false) {
         checkbox.checked = true;
     }
     
-    checkbox.addEventListener('change', handlePackageSelection);
+    checkbox.addEventListener('change', handlePackageSelectionUnified);
     
     if (config?.package_url) {
         const link = document.createElement('a');
@@ -2762,36 +2751,6 @@ function createPackageCheckbox(pkg, isChecked = false, isDependency = false) {
     }
     
     return label;
-}
-
-function handlePackageSelection(e) {
-    const pkg = e.target;
-    const isChecked = pkg.checked;
-    
-    const dependencies = pkg.getAttribute('data-dependencies');
-    if (dependencies) {
-        dependencies.split(',').forEach(depName => {
-            const depPkg = findPackageById(depName);
-            if (depPkg) {
-                const depCheckbox = document.querySelector(`[data-unique-id="${depPkg.uniqueId || depPkg.id}"]`);
-                if (depCheckbox) {
-                    depCheckbox.checked = isChecked;
-                    
-                    const depDeps = depCheckbox.getAttribute('data-dependencies');
-                    if (depDeps && isChecked) {
-                        depDeps.split(',').forEach(subDepName => {
-                            const subDepPkg = findPackageById(subDepName);
-                            if (subDepPkg) {
-                                const subDepCheckbox = document.querySelector(`[data-unique-id="${subDepPkg.uniqueId || subDepPkg.id}"]`);
-                                if (subDepCheckbox) subDepCheckbox.checked = true;
-                            }
-                        });
-                    }
-                }
-            }
-        });
-    }
-    updateAllPackageState('force-update');
 }
 
 function findPackageById(id) {
@@ -2962,26 +2921,41 @@ function setupFormWatchers() {
 
 // IPv6 が特定の CIDR に含まれるかを判定（簡易版）
 function inCidr(ipv6, cidr) {
-    const [prefix, bits] = cidr.split('/');
-    const addrBin = ipv6ToBinary(ipv6);
-    const prefixBin = ipv6ToBinary(prefix);
-    return addrBin.substring(0, bits) === prefixBin.substring(0, bits);
+    try {
+        const [prefix, bitsStr] = cidr.split('/');
+        const bits = parseInt(bitsStr, 10);
+        if (isNaN(bits) || bits < 0 || bits > 128) return false;
+        
+        const addrBin = ipv6ToBinary(ipv6);
+        const prefixBin = ipv6ToBinary(prefix);
+        
+        if (!addrBin || !prefixBin) return false;
+
+        return addrBin.substring(0, bits) === prefixBin.substring(0, bits);
+    } catch (e) {
+        console.error(`inCidr error:`, e);
+        return false;
+    }
 }
 
 // IPv6文字列 → 128bitバイナリ文字列
 function ipv6ToBinary(ipv6) {
-    // 短縮表記展開
-    const full = ipv6.split('::').reduce((acc, part, i, arr) => {
-        const segs = part.split(':').filter(Boolean);
-        if (i === 0) {
-            return segs;
-        } else {
-            const missing = 8 - (arr[0].split(':').filter(Boolean).length + segs.length);
-            return acc.concat(Array(missing).fill('0'), segs);
-        }
-    }, []).map(s => s.padStart(4, '0'));
-    // 16進 → 2進
-    return full.map(seg => parseInt(seg, 16).toString(2).padStart(16, '0')).join('');
+    if (!ipv6 || typeof ipv6 !== 'string') return null;
+    
+    let hextets = ipv6.split(':');
+    
+    if (ipv6.includes('::')) {
+        const parts = ipv6.split('::');
+        const left = parts[0].split(':').filter(Boolean);
+        const right = parts[1].split(':').filter(Boolean);
+        const missing = Array(8 - left.length - right.length).fill('0');
+        hextets = [...left, ...missing, ...right];
+    }
+
+    if (hextets.length !== 8) hextets = ipv6.split(':').map(h => h || '0');
+    if (hextets.length !== 8) return null;
+
+    return hextets.map(h => parseInt(h, 16).toString(2).padStart(16, '0')).join('');
 }
 
 // GUA用プレフィックスを生成（RFC準拠）
@@ -3005,7 +2979,15 @@ function generateGuaPrefixFromFullAddress(apiInfo) {
     if (excludeCidrs.some(cidr => inCidr(ipv6, cidr))) return null;
 
     // /64 プレフィックス生成
-    const segments = ipv6.split(':');
+    let segments = ipv6.split(':');
+    if (ipv6.includes('::')) {
+        const parts = ipv6.split('::');
+        const left = parts[0].split(':').filter(Boolean);
+        const right = parts[1].split(':').filter(Boolean);
+        const missing = Array(8 - left.length - right.length).fill('0');
+        segments = [...left, ...missing, ...right];
+    }
+    
     if (segments.length >= 4) {
         return `${segments[0]}:${segments[1]}:${segments[2]}:${segments[3]}::/64`;
     }
