@@ -326,34 +326,6 @@ function updatePackageListToTextarea(source = 'unknown') {
         });
     }
 
-// ===== 言語パックの追加・削除処理 =====
-const langCode = config.device_language || config?.fallback_language || 'en';
-const includeLangPack = langCode && langCode !== 'en';
-
-if (includeLangPack) {
-    // 既存の全言語パックを全セットから削除（混在防止）
-    const allSets = [basePackages, checkedPackages, searchedPackages, manualPackages, dynamicPackages];
-    allSets.forEach(set => {
-        Array.from(set).forEach(pkg => {
-            if (pkg.startsWith('luci-i18n-')) {
-                set.delete(pkg);
-            }
-        });
-    });
-
-    // チェックされているパッケージに対応する言語パックを追加
-    checkedPackages.forEach(pkg => {
-        const i18nPkg = `luci-i18n-${pkg}-${langCode}`;
-        if (!basePackages.has(i18nPkg) &&
-            !checkedPackages.has(i18nPkg) &&
-            !searchedPackages.has(i18nPkg) &&
-            !manualPackages.has(i18nPkg) &&
-            !dynamicPackages.has(i18nPkg)) {
-            dynamicPackages.add(i18nPkg);
-        }
-    });
-}
-
 // ===== 最終パッケージリスト構築 =====
 const finalPackages = [
     ...basePackages,
@@ -634,8 +606,8 @@ async function initializeCustomFeatures(asuSection, temp) {
     setupPackageSearch();
     console.log('Package search initialized');
 
-    // カスタム翻訳を読み込み（初期言語に基づいて）
-    await loadCustomTranslations(selectedLanguage);
+    // カスタム翻訳を読み込み（UIは常に current_language で）
+    await loadCustomTranslations(current_language);
 
     // フォーム監視設定
     setupFormWatchers();
@@ -1063,13 +1035,22 @@ function syncDeviceLanguageSelector(lang) {
 
 // メイン言語セレクター変更ハンドラー（ブラウザ用 → デバイス用に片方向同期）
 async function handleMainLanguageChange(e) {
-    const newLanguage = e.target.value || config?.fallback_language || 'en';
+    const newLanguage = e?.target?.value || config?.fallback_language || 'en';
     if (newLanguage === current_language) return;
 
+    // ユーザー操作のみ許可（プログラム変更では device_language を触らない）
+    if (e && e.isTrusted !== true) {
+        current_language = newLanguage;
+        await loadCustomTranslations(current_language);
+        console.log('Main language changed programmatically to:', current_language, '(device_language not touched)');
+        return;
+    }
+
+    // ユーザー操作
     current_language = newLanguage;
     await loadCustomTranslations(current_language);
 
-    // デバイス用は値だけ更新（セレクターは直接触らない）
+    // 片方向同期：ユーザー操作のときだけ device_language を同期
     config.device_language = current_language;
 
     console.log('Main language changed to:', current_language, '(device_language updated)');
@@ -1508,8 +1489,11 @@ function buildFormGroup(field) {
             }
             ctrl.appendChild(option);
         });
-        
-        ctrl.addEventListener('change', () => updateAllPackageState('form-field'));
+
+        // 言語セレクターは専用ハンドラーのみ
+        if (field.id !== 'aios-language' && field.id !== 'languages-select') {
+            ctrl.addEventListener('change', () => updateAllPackageState('form-field'));
+        }
     } else {
         ctrl = document.createElement('input');
         ctrl.type = field.type || 'text';
@@ -1531,7 +1515,10 @@ function buildFormGroup(field) {
         if (field.maxlength != null) ctrl.maxLength = field.maxlength;
         if (field.pattern != null) ctrl.pattern = field.pattern;
         
-        ctrl.addEventListener('input', () => updateAllPackageState('form-field'));
+        // 言語セレクター以外の input のみ汎用リスナーを付ける
+        if (field.id !== 'aios-language' && field.id !== 'languages-select') {
+            ctrl.addEventListener('input', () => updateAllPackageState('form-field'));
+        }
     }
     
     group.appendChild(ctrl);
