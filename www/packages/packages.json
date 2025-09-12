@@ -534,6 +534,34 @@
           "hidden": true
         }
       ]
+    },
+    {
+      "id": "setup-driven-packages",
+      "name": "Setup-driven Packages",
+      "class": "tr-setup-driven-packages",
+      "description": "Packages automatically managed by setup.json configuration",
+      "hidden": true,
+      "packages": [
+        {
+          "id": "map",
+          "name": "map",
+          "hidden": true,
+          "description": "MAP-E support package"
+        },
+        {
+          "id": "ds-lite", 
+          "name": "ds-lite",
+          "hidden": true,
+          "description": "DS-Lite support package"
+        },
+        {
+          "id": "luci-app-usteer-setup",
+          "name": "luci-app-usteer",
+          "uniqueId": "usteer-from-setup",
+          "hidden": true,
+          "description": "Usteer package managed by Wi-Fi setup"
+        }
+      ]
     }
   ]
 }
