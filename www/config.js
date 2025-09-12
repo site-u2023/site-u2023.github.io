@@ -68,16 +68,73 @@ current_language = "en";
 const custom_ofs_version = "v5.1.0-json-driven";
 const custom_ofs_url = "https://github.com/site-u2023/site-u2023.github.io/tree/main/www";
 
-// カスタム機能の自動読み込み
+// === Prefetch: auto-config ===
+window.autoConfigPromise = (function () {
+  const url = config.auto_config_api_url;
+  if (!url) return Promise.resolve(null);
+  return fetch(url, { cache: "no-store" })
+    .then(r => r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`)))
+    .then(data => {
+      window.autoConfigData = data;
+      window.dispatchEvent(new CustomEvent("auto-config-ready", { detail: data }));
+      console.log("Auto-config data loaded:", data);
+      return data;
+    })
+    .catch(err => { console.error("Auto-config fetch failed:", err); return null; });
+})();
+
+// === Prefetch: custom.html ===
+window.customHtmlPromise = fetch("custom.html", { cache: "no-store" })
+  .then(r => r.ok ? r.text() : Promise.reject(new Error(`HTTP ${r.status}`)))
+  .then(html => {
+    window.customHtmlContent = html;
+    window.dispatchEvent(new CustomEvent("custom-html-ready", { detail: html }));
+    console.log("custom.html loaded");
+    return html;
+  })
+  .catch(err => { console.error("custom.html fetch failed:", err); return null; });
+
+// === Prefetch: information.json ===
+window.informationPromise = fetch(config.information_path, { cache: "no-store" })
+  .then(r => r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`)))
+  .then(json => {
+    window.informationData = json;
+    window.dispatchEvent(new CustomEvent("information-ready", { detail: json }));
+    console.log("information.json loaded");
+    return json;
+  })
+  .catch(err => { console.error("information.json fetch failed:", err); return null; });
+
+// === Prefetch: setup.json ===
+window.setupJsonPromise = fetch(config.setup_db_path + "?t=" + Date.now(), { cache: "no-store" })
+  .then(r => r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`)))
+  .then(json => {
+    window.setupJsonData = json;
+    window.dispatchEvent(new CustomEvent("setup-json-ready", { detail: json }));
+    console.log("setup.json loaded");
+    return json;
+  })
+  .catch(err => { console.error("setup.json fetch failed:", err); return null; });
+
+// === Prefetch: packages.json ===
+window.packagesDbPromise = fetch(config.packages_db_path, { cache: "no-store" })
+  .then(r => r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`)))
+  .then(json => {
+    window.packagesDbData = json;
+    window.dispatchEvent(new CustomEvent("packages-db-ready", { detail: json }));
+    console.log("packages.json loaded");
+    return json;
+  })
+  .catch(err => { console.error("packages.json fetch failed:", err); return null; });
+
+// === Load custom.js and custom.css ===
 (function() {
-  // custom.jsを動的に読み込み
   const customScript = document.createElement('script');
   customScript.src = 'custom.js';
   document.head.appendChild(customScript);
-  
-  // custom.cssを動的に読み込み
+
   const customCSS = document.createElement('link');
   customCSS.rel = 'stylesheet';
   customCSS.href = 'custom.css';
   document.head.appendChild(customCSS);
-})();
+})(); 
