@@ -58,7 +58,7 @@ var config = {
   kmods_search_url: "https://downloads.openwrt.org/releases/{version}/targets/{target}/{subtarget}/kmods/{kmod}/Packages",
 
   // デバイス言語
-  device_language: ""
+  device_language: "",
     
   // フォールバック言語（重要！）
   fallback_language: "en"
