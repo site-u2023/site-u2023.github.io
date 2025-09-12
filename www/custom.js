@@ -550,18 +550,22 @@ async function initializeCustomFeatures(asuSection, temp) {
     // フォーム監視設定
     setupFormWatchers();
 
-    // auto-config データがあれば UI に反映
-    if (window.autoConfigData) {
-        console.log('Applying auto-config data to UI');
-        applyIspAutoConfig(window.autoConfigData);
-    }
+// initializeCustomFeatures の末尾
+let changed = false;
+if (window.autoConfigData) {
+    changed = applyIspAutoConfig(window.autoConfigData);
+}
 
-    // UI構築と外部データが揃った段階でパッケージセレクタ生成
-    generatePackageSelector();
+// パッケージセレクタ生成
+generatePackageSelector();
 
-    // ここで初めて updateAllPackageState を呼ぶ
+// 最初の統合更新（変更があった場合のみ）
+if (changed) {
     console.log('All data and UI ready, updating package state');
-    updateAllPackageState();
+    safeUpdateAllPackageState('isp-auto-config');
+} else {
+    console.log('All data and UI ready, no changes from auto-config');
+}
 
     customInitialized = true;
 }
@@ -2371,48 +2375,53 @@ function applyIspAutoConfig(apiInfo) {
     // API情報またはフォーム構造が未定義なら安全にスキップ
     if (!apiInfo || !formStructure || !formStructure.fields) {
         console.warn('applyIspAutoConfig: formStructure not ready, skipping');
-        return;
+        return false;
     }
-    
-    const connectionType = getFieldValue('input[name="connection_type"]');
-    
+
+    // connection_type 未設定時の誤判定回避（未設定なら auto と同等扱い）
+    const rawType = getFieldValue('input[name="connection_type"]');
+    const connectionType = (rawType === null || rawType === undefined || rawType === '') ? 'auto' : rawType;
+
+    let mutated = false;
+
     Object.values(formStructure.fields).forEach(field => {
         if (!field.apiMapping) return;
 
-        const isConnectionField = ['dslite', 'mape', 'ap', 'pppoe'].some(type => 
+        const isConnectionField = ['dslite', 'mape', 'ap', 'pppoe'].some(type =>
             formStructure.connectionTypes[type]?.includes(field.id)
         );
-        
+
+        // 接続関連フィールドは auto 以外では反映しない
         if (isConnectionField && connectionType !== 'auto') {
             return;
         }
-        
+
         let value = getNestedValue(apiInfo, field.apiMapping);
 
+        // mape_gua_prefix は cachedApiInfo から再生成が優先
         if (field.variableName === 'mape_gua_prefix') {
             const guaPrefix = generateGuaPrefixFromFullAddress(cachedApiInfo);
-            if (guaPrefix) {
-                value = guaPrefix;
-            }
+            if (guaPrefix) value = guaPrefix;
         }
 
         if (value !== null && value !== undefined && value !== '') {
             const element = document.querySelector(field.selector);
-            if (element) {
+            if (element && element.value !== String(value)) {
                 element.value = value;
+                mutated = true;
             }
         }
     });
-    
-    setGuaPrefixIfAvailable();    
-    updateAutoConnectionInfo(apiInfo);
 
-    // UI構築が完了している場合のみパッケージ状態更新
-    if (formStructure && formStructure.fields) {
-        updateAllPackageState('isp-auto-config');
-    } else {
-        console.warn('applyIspAutoConfig: skipped updateAllPackageState due to incomplete formStructure');
+    // 付随情報の更新（UI値に依存するため、反映があった場合のみ）
+    if (mutated) {
+        setGuaPrefixIfAvailable();
+        updateAutoConnectionInfo(apiInfo);
     }
+
+    // ここでは updateAllPackageState を呼ばない（多重呼び出しの根を断つ）
+    // 呼び出し元で safeUpdateAllPackageState('isp-auto-config') を1回だけ実行すること
+    return mutated;
 }
 
 function updateAutoConnectionInfo(apiInfo) {
