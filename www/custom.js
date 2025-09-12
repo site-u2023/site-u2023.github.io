@@ -830,7 +830,7 @@ function replaceAsuSection(asuSection, temp) {
         }
     }
     
-    asuSection.parentNode.replaceChild(newDiv, asuSection);
+    asuSection.parentNode.replaceChild(temp, asuSection);
 }
 
 // 拡張情報セクション挿入（JSON駆動で動的生成）
