@@ -56,7 +56,10 @@ var config = {
 
 // kmods 検索エンドポイント（kernel ABI hash を含む）
   kmods_search_url: "https://downloads.openwrt.org/releases/{version}/targets/{target}/{subtarget}/kmods/{kmod}/Packages",
-  
+
+  // デバイス言語
+  device_language: ""
+    
   // フォールバック言語（重要！）
   fallback_language: "en"
 };
