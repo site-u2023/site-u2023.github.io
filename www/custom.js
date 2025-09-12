@@ -147,7 +147,7 @@ async function updateAllPackageState(source = 'unknown') {
     console.log('All package state updated successfully');
 }
 
-// Core関数1: setup.jsonベースの仮想チェックボックス操作（新実装）
+// Core関数1: setup.jsonベースの仮想チェックボックス操作（修正版）
 function updateSetupJsonPackagesCore() {
     if (!setupConfig) return;
     
@@ -156,6 +156,8 @@ function updateSetupJsonPackagesCore() {
             if (pkg.type === 'radio-group' && pkg.variableName) {
                 const selectedValue = getFieldValue(`input[name="${pkg.variableName}"]:checked`);
                 if (selectedValue) {
+                    console.log(`Radio group ${pkg.variableName} selected: ${selectedValue}`);
+                    
                     // 全ての選択肢を先にリセット
                     pkg.options.forEach(opt => {
                         if (opt.value !== selectedValue) {
@@ -169,9 +171,12 @@ function updateSetupJsonPackagesCore() {
                     
                     // AUTO時の特別処理
                     if (pkg.variableName === 'connection_type' && selectedValue === 'auto' && cachedApiInfo) {
+                        console.log('AUTO mode with API info, applying specific packages');
                         if (cachedApiInfo.mape?.brIpv6Address) {
+                            console.log('Enabling MAP-E package');
                             toggleVirtualPackage('map', true);
                         } else if (cachedApiInfo.aftr) {
+                            console.log('Enabling DS-Lite package');
                             toggleVirtualPackage('ds-lite', true);
                         }
                     }
@@ -181,31 +186,48 @@ function updateSetupJsonPackagesCore() {
     });
 }
 
-// 仮想パッケージチェックボックス操作関数（新規追加）
+// 仮想パッケージチェックボックス操作関数（修正版 - ログ追加）
 function toggleVirtualPackage(packageId, enabled) {
-    const checkbox = document.querySelector(`[data-package="${packageId}"]`);
+    // packages.jsonから隠しパッケージも含めて検索
+    const pkg = findPackageById(packageId);
+    if (!pkg) {
+        console.warn(`Virtual package not found in packages.json: ${packageId}`);
+        return;
+    }
+    
+    // uniqueIdがある場合はそれを使用、なければidを使用
+    const searchId = pkg.uniqueId || pkg.id;
+    const checkbox = document.querySelector(`[data-package="${packageId}"], [data-unique-id="${searchId}"]`);
+    
     if (checkbox) {
         const wasChecked = checkbox.checked;
         checkbox.checked = enabled;
         
         if (wasChecked !== enabled) {
-            console.log(`Virtual package ${packageId}: ${enabled ? 'enabled' : 'disabled'}`);
+            console.log(`Virtual package ${packageId} (${searchId}): ${enabled ? 'enabled' : 'disabled'}`);
             
             // 依存関係も処理
             const dependencies = checkbox.getAttribute('data-dependencies');
             if (dependencies && enabled) {
                 dependencies.split(',').forEach(depId => {
-                    const depCheckbox = document.querySelector(`[data-package="${depId}"]`);
-                    if (depCheckbox) {
-                        depCheckbox.checked = true;
+                    const depPkg = findPackageById(depId);
+                    if (depPkg) {
+                        const depSearchId = depPkg.uniqueId || depPkg.id;
+                        const depCheckbox = document.querySelector(`[data-package="${depId}"], [data-unique-id="${depSearchId}"]`);
+                        if (depCheckbox) {
+                            depCheckbox.checked = true;
+                            console.log(`Virtual dependency ${depId}: enabled`);
+                        }
                     }
                 });
             }
         }
+    } else {
+        console.warn(`Checkbox not found for virtual package: ${packageId} (searched: ${searchId})`);
     }
 }
 
-// タイプ別仮想パッケージ操作関数（新規追加）
+// タイプ別仮想パッケージ操作関数（修正版 - ログ追加）
 function toggleVirtualPackagesByType(type, value, enabled) {
     const packageMap = {
         'connection_type': {
@@ -219,9 +241,12 @@ function toggleVirtualPackagesByType(type, value, enabled) {
     
     const packages = packageMap[type]?.[value];
     if (packages) {
+        console.log(`Toggle packages for ${type}=${value}: ${packages.join(', ')} -> ${enabled}`);
         packages.forEach(pkgId => {
             toggleVirtualPackage(pkgId, enabled);
         });
+    } else {
+        console.log(`No virtual packages defined for ${type}=${value}`);
     }
 }
 
@@ -229,6 +254,8 @@ function toggleVirtualPackagesByType(type, value, enabled) {
 async function updateLanguagePackageCore() {
     // デバイス用言語セレクターから現在の言語を取得
     selectedLanguage = config.device_language || config?.fallback_language || 'en';
+    
+    console.log(`Language package update - Selected language: ${selectedLanguage}`);
 
     // 既存の言語パッケージを一旦全て削除
     const removedPackages = [];
@@ -238,34 +265,45 @@ async function updateLanguagePackageCore() {
             removedPackages.push(pkg);
         }
     }
+    
+    if (removedPackages.length > 0) {
+        console.log('Removed old language packages:', removedPackages);
+    }
 
     // 英語が選択されているか、デバイス情報がない場合は終了
     const hasArch = current_device?.arch || cachedDeviceArch;
     if (!selectedLanguage || selectedLanguage === 'en' || !hasArch) {
+        console.log('Skipping language packages - English or no arch info');
         return;
     }
     
+    // 現在の全パッケージリスト（LuCIパッケージ検出用）
+    const currentPackages = getCurrentPackageListForLanguage();
+    console.log(`Checking language packages for ${currentPackages.length} packages`);
+    
+    const addedLangPackages = new Set();
+    
+    // 基本言語パッケージをチェック
     const basePkg = `luci-i18n-base-${selectedLanguage}`;
     const firewallPkg = `luci-i18n-firewall-${selectedLanguage}`;
-    const addedLangPackages = new Set();
-
-    // 基本言語パッケージ + firewall をチェックして追加
+    
     try {
         if (await isPackageAvailable(basePkg, 'luci')) {
             dynamicPackages.add(basePkg);
             addedLangPackages.add(basePkg);
+            console.log('Added base language package:', basePkg);
         }
 
         if (await isPackageAvailable(firewallPkg, 'luci')) {
             dynamicPackages.add(firewallPkg);
             addedLangPackages.add(firewallPkg);
+            console.log('Added firewall language package:', firewallPkg);
         }
     } catch (err) {
         console.error('Error checking base/firewall package:', err);
     }
 
-    // 現在の選択済みパッケージに対応する言語パッケージをチェックして追加
-    const currentPackages = getCurrentPackageList();
+    // 全LuCIパッケージに対する言語パッケージを並行チェック
     const checkPromises = [];
     
     for (const pkg of currentPackages) {
@@ -279,10 +317,10 @@ async function updateLanguagePackageCore() {
                         if (await isPackageAvailable(langPkg, 'luci')) {
                             dynamicPackages.add(langPkg);
                             addedLangPackages.add(langPkg);
-                            console.log('Added validated LuCI language package:', langPkg);
+                            console.log(`Added LuCI language package: ${langPkg} for ${pkg}`);
                         }
                     } catch (err) {
-                        console.error('Error checking LuCI package:', err);
+                        console.error(`Error checking LuCI package ${langPkg}:`, err);
                     }
                 })();
                 checkPromises.push(promise);
@@ -291,6 +329,52 @@ async function updateLanguagePackageCore() {
     }
 
     await Promise.all(checkPromises);
+    
+    if (addedLangPackages.size > 0) {
+        console.log(`Language package update complete: ${addedLangPackages.size} packages added`);
+    }
+}
+
+// LuCI言語パッケージ用の完全なパッケージリスト取得（新規追加）
+function getCurrentPackageListForLanguage() {
+    const packages = new Set();
+    
+    // デバイス初期パッケージ
+    deviceDefaultPackages.forEach(pkg => packages.add(pkg));
+    deviceDevicePackages.forEach(pkg => packages.add(pkg));
+    extraPackages.forEach(pkg => packages.add(pkg));
+    
+    // パッケージセレクターから選択されたパッケージ（隠しパッケージ含む）
+    document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
+        const pkgName = cb.getAttribute('data-package');
+        if (pkgName) packages.add(pkgName);
+    });
+    
+    // 検索で追加されたパッケージ
+    if (packageSearchManager) {
+        const searchValues = packageSearchManager.getAllValues();
+        searchValues.forEach(pkg => packages.add(pkg));
+    }
+    
+    // 仮想パッケージ（setup.jsonドリブン）- 言語パッケージ以外
+    for (const pkg of dynamicPackages) {
+        if (!pkg.startsWith('luci-i18n-')) {
+            packages.add(pkg);
+        }
+    }
+    
+    // テキストエリアから既存パッケージ（手動追加分）
+    const textarea = document.querySelector('#asu-packages');
+    if (textarea) {
+        const textPackages = split(textarea.value);
+        textPackages.forEach(pkg => {
+            if (!pkg.startsWith('luci-i18n-')) {
+                packages.add(pkg);
+            }
+        });
+    }
+    
+    return Array.from(packages);
 }
 
 // Core関数3: Postinstテキストエリア更新（最終的な統合・差分検知付き）
@@ -2495,6 +2579,7 @@ async function loadPackageDatabase() {
     }
 }
 
+// パッケージセレクタ生成（隠しパッケージのチェックボックス生成追加）
 function generatePackageSelector() {
     const container = document.querySelector('#package-categories');
     if (!container || !packagesJson) {
@@ -2504,9 +2589,15 @@ function generatePackageSelector() {
     container.innerHTML = '';
     
     packagesJson.categories.forEach(category => {
-        // 隠しカテゴリをスキップ
+        // 隠しカテゴリの処理
         if (category.hidden) {
-            console.log(`Skipping hidden category: ${category.id}`);
+            console.log(`Processing hidden category: ${category.id}`);
+            // 隠しパッケージのチェックボックスを生成（非表示）
+            category.packages.forEach(pkg => {
+                if (pkg.hidden) {
+                    createHiddenPackageCheckbox(pkg);
+                }
+            });
             return;
         }
         
@@ -2517,7 +2608,41 @@ function generatePackageSelector() {
     });
     
     updateAllPackageState('package-selector-init');
-    console.log(`Generated ${packagesJson.categories.length} package categories`);
+    console.log(`Generated ${packagesJson.categories.length} package categories (including hidden)`);
+}
+
+// 隠しパッケージのチェックボックス生成（新規追加）
+function createHiddenPackageCheckbox(pkg) {
+    // 隠しコンテナを探すか作成
+    let hiddenContainer = document.querySelector('#hidden-packages-container');
+    if (!hiddenContainer) {
+        hiddenContainer = document.createElement('div');
+        hiddenContainer.id = 'hidden-packages-container';
+        hiddenContainer.style.display = 'none';
+        document.body.appendChild(hiddenContainer);
+    }
+    
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.id = `pkg-${pkg.uniqueId || pkg.id}`;
+    checkbox.className = 'package-selector-checkbox';
+    checkbox.setAttribute('data-package', pkg.id);
+    checkbox.setAttribute('data-unique-id', pkg.uniqueId || pkg.id);
+    checkbox.style.display = 'none';
+    
+    if (pkg.dependencies) {
+        checkbox.setAttribute('data-dependencies', pkg.dependencies.join(','));
+    }
+    
+    if (pkg.enableVar) {
+        checkbox.setAttribute('data-enable-var', pkg.enableVar);
+    }
+    
+    checkbox.addEventListener('change', handlePackageSelection);
+    
+    hiddenContainer.appendChild(checkbox);
+    
+    console.log(`Created hidden checkbox for: ${pkg.id} (${pkg.uniqueId || pkg.id})`);
 }
 
 function createPackageCategory(category) {
