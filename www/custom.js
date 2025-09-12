@@ -479,30 +479,21 @@ class MultiInputManager {
 
 // custom.html 読み込み
 async function loadCustomHTML() {
-    try {
-        const response = await fetch('custom.html?t=' + Date.now());
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const html = await response.text();
-        console.log('custom.html loaded');
+    const html = await fetch('custom.html?t=' + Date.now()).then(r => r.text());
+    const temp = document.createElement('div');
+    temp.innerHTML = html;
 
-        const temp = document.createElement('div');
-        temp.innerHTML = html;
-        waitForAsuAndInit(temp);
-    } catch (err) {
-        console.error('Failed to load custom.html:', err);
-    }
-}
-
-// #asu が存在するまで待機
-function waitForAsuAndInit(temp, retry = 50) {
     const asuSection = document.querySelector('#asu');
-    if (asuSection) {
-        initializeCustomFeatures(asuSection, temp);
-    } else if (retry > 0) {
-        setTimeout(() => waitForAsuAndInit(temp, retry - 1), 50);
-    } else {
-        console.warn('#asu not found after waiting');
-    }
+    replaceAsuSection(asuSection, temp);
+
+    await new Promise(requestAnimationFrame);
+
+    await waitForElement('#dynamic-config-sections');
+    await waitForElement('#commands-autocomplete');
+    await waitForElement('#package-search-autocomplete');
+
+    await initializeCustomFeatures(asuSection, temp);
+    await insertExtendedInfo(temp);
 }
 
 // メイン初期化
