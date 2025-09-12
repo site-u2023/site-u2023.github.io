@@ -851,13 +851,63 @@ function replaceAsuSection(asuSection, temp) {
     asuSection.parentNode.replaceChild(newDiv, asuSection);
 }
 
-// 拡張情報セクション挿入
-function insertExtendedInfo(temp) {
+// 拡張情報セクション挿入（JSON駆動で動的生成）
+async function insertExtendedInfo(temp) {
     const extendedInfo = temp.querySelector('#extended-build-info');
     const imageLink = document.querySelector('#image-link');
-    if (extendedInfo && imageLink && !document.querySelector('#extended-build-info')) {
+    
+    if (!extendedInfo || !imageLink || document.querySelector('#extended-build-info')) {
+        return;
+    }
+    
+    // information.jsonから構造を読み込み
+    try {
+        const infoUrl = config?.information_url || 'auto-config/information.json';
+        const response = await fetch(infoUrl + '?t=' + Date.now());
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
+        const infoConfig = await response.json();
+        console.log('Information config loaded:', infoConfig);
+        
+        // ISP情報セクションを動的生成
+        container.innerHTML = '';
+        
+        infoConfig.categories.forEach(category => {
+            const h3 = document.createElement('h3');
+            h3.textContent = category.name;
+            if (category.class) h3.classList.add(category.class);
+            extendedInfo.appendChild(h3);
+            
+            category.packages.forEach(pkg => {
+                if (pkg.fields) {
+                    pkg.fields.forEach(field => {
+                        const row = document.createElement('div');
+                        row.className = 'row';
+                        
+                        const col1 = document.createElement('div');
+                        col1.className = 'col1';
+                        if (field.class) col1.classList.add(field.class);
+                        col1.textContent = field.label;
+                        
+                        const col2 = document.createElement('div');
+                        col2.className = 'col2';
+                        col2.id = field.id;
+                        
+                        row.appendChild(col1);
+                        row.appendChild(col2);
+                        extendedInfo.appendChild(row);
+                    });
+                }
+            });
+        });
+        
+        // DOMに挿入
         imageLink.closest('.row').insertAdjacentElement('afterend', extendedInfo);
         show('#extended-build-info');
+        
+    } catch (err) {
+        console.error('Failed to load information.json:', err);
+        // JSONが読めない場合は何もしない（フォールバック不要）
     }
 }
 
