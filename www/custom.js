@@ -211,7 +211,7 @@ async function updateLanguagePackageCore() {
     }
 
     // 現在の選択済みパッケージに対応する言語パッケージをチェックして追加
-    const currentPackages = getCurrentPackageListExcludingLanguages();
+    const currentPackages = getCurrentPackageList();
     const checkPromises = [];
     
     for (const pkg of currentPackages) {
@@ -1021,7 +1021,7 @@ function extractLuciName(pkg) {
     return null;
 }
 
-function getCurrentPackageListExcludingLanguages() {
+function getCurrentPackageList() {
     const packages = new Set();
     
     // デバイス初期パッケージを必ず含める
@@ -1041,7 +1041,7 @@ function getCurrentPackageListExcludingLanguages() {
         const textPackages = split(textarea.value);
         textPackages.forEach(pkg => {
             // 言語パッケージとデバイス初期パッケージを除外
-            if (!pkg.startsWith('luci-i18n-') &&
+            if (!pkg.startsWith('luci-i18n-') &&  // ← この行を追加
                 !deviceDefaultPackages.includes(pkg) && 
                 !deviceDevicePackages.includes(pkg) && 
                 !extraPackages.includes(pkg)) {
