@@ -151,9 +151,7 @@ async function updateAllPackageState(source = 'unknown') {
     console.log('All package state updated successfully');
 
     console.log(`[updateAllPackageState] end from: ${source}`, {
-        checked: Array.from(checkedPackages),
-        dynamic: Array.from(dynamicPackages),
-        manual: Array.from(manualPackages)
+        dynamic: Array.from(dynamicPackages)
     });
 }
 
@@ -374,7 +372,15 @@ function updatePackageListToTextarea(source = 'unknown') {
     console.log(`Postinst package list updated: ${uniquePackages.length} packages`);
     console.log('Final Postinst package list:', uniquePackages);
 
-    console.log(`[updatePackageListToTextarea] final list (${finalList.length}):`, finalList);
+    console.log('[updatePackageListToTextarea] sets', {
+        base: Array.from(basePackages),
+        checked: Array.from(checkedPackages),
+        searched: Array.from(searchedPackages),
+        dynamic: Array.from(dynamicPackages),
+        manual: Array.from(manualPackages)
+    });
+
+    console.log(`[updatePackageListToTextarea] final list (${uniquePackages.length}):`, uniquePackages);
 }
 
 // ==================== 共通マルチインプット管理機能 ====================
