@@ -2599,7 +2599,7 @@ function handlePackageSelection(e) {
         });
     }
     
-    // 統合パッケージ状態を更新
+    // 統合パッケージ状態を更新（重要：これが抜けていた）
     console.log('Package selection changed:', pkg.getAttribute('data-package'), 'checked:', isChecked);
     updateAllPackageState('package-selection');
 }
