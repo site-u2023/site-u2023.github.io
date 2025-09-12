@@ -330,64 +330,73 @@ function updatePackageListToTextarea(source = 'unknown') {
         });
     }
 
-    // ===== 言語パックの追加・削除処理 =====
-    const langCode = document.querySelector('#languages-select')?.value || current_language || 'en';
-    const includeLangPack = langCode && langCode !== 'en';
+// ===== 言語パックの追加・削除処理 =====
+const langCode = document.querySelector('#languages-select')?.value || current_language || 'en';
+const includeLangPack = langCode && langCode !== 'en';
 
-    if (includeLangPack) {
-        // まず既存の言語パック（対象言語のみ）を全セットから削除
-        const allSets = [basePackages, checkedPackages, searchedPackages, manualPackages, dynamicPackages];
-        allSets.forEach(set => {
-            Array.from(set).forEach(pkg => {
-                if (pkg.startsWith('luci-i18n-') && pkg.endsWith(`-${langCode}`)) {
-                    set.delete(pkg);
-                }
-            });
-        });
-
-        // チェックされているパッケージに対応する言語パックを追加
-        checkedPackages.forEach(pkg => {
-            const i18nPkg = `luci-i18n-${pkg}-${langCode}`;
-            if (!basePackages.has(i18nPkg) &&
-                !checkedPackages.has(i18nPkg) &&
-                !searchedPackages.has(i18nPkg) &&
-                !manualPackages.has(i18nPkg) &&
-                !dynamicPackages.has(i18nPkg)) {
-                dynamicPackages.add(i18nPkg);
+if (includeLangPack) {
+    // まず既存の言語パック（対象言語のみ）を全セットから削除
+    const allSets = [basePackages, checkedPackages, searchedPackages, manualPackages, dynamicPackages];
+    allSets.forEach(set => {
+        Array.from(set).forEach(pkg => {
+            if (pkg.startsWith('luci-i18n-') && pkg.endsWith(`-${langCode}`)) {
+                set.delete(pkg);
             }
         });
-    }
-
-    // 重複を削除
-    const uniquePackages = [...new Set(finalPackages)];
-
-    // 差分検知（前回と同じならスキップ）
-    const currentHash = JSON.stringify(uniquePackages);
-    if (currentHash === lastPackageListHash && source !== 'force-update') {
-        console.log('updatePackageListToTextarea: No changes detected, skipping update from:', source);
-        return;
-    }
-    lastPackageListHash = currentHash;
-
-    // ログと更新処理
-    console.log(`updatePackageListToTextarea called from: ${source}`);
-    console.log(`Package breakdown:`, {
-        base: basePackages.size,
-        checked: checkedPackages.size,
-        searched: searchedPackages.size,
-        dynamic: dynamicPackages.size,
-        manual: manualPackages.size,
-        total: uniquePackages.length
     });
-    
-    if (textarea) {
-        textarea.value = uniquePackages.join(' ');
-        textarea.style.height = 'auto';
-        textarea.style.height = textarea.scrollHeight + 'px';
-    }
-    
-    console.log(`Postinst package list updated: ${uniquePackages.length} packages`);
-    console.log('Final Postinst package list:', uniquePackages);
+
+    // チェックされているパッケージに対応する言語パックを追加
+    checkedPackages.forEach(pkg => {
+        const i18nPkg = `luci-i18n-${pkg}-${langCode}`;
+        if (!basePackages.has(i18nPkg) &&
+            !checkedPackages.has(i18nPkg) &&
+            !searchedPackages.has(i18nPkg) &&
+            !manualPackages.has(i18nPkg) &&
+            !dynamicPackages.has(i18nPkg)) {
+            dynamicPackages.add(i18nPkg);
+        }
+    });
+}
+
+// ===== 最終パッケージリスト構築 =====
+const finalPackages = [
+    ...basePackages,
+    ...checkedPackages,
+    ...searchedPackages,
+    ...dynamicPackages,
+    ...manualPackages
+];
+
+// 重複を削除
+const uniquePackages = [...new Set(finalPackages)];
+
+// 差分検知（前回と同じならスキップ）
+const currentHash = JSON.stringify(uniquePackages);
+if (currentHash === lastPackageListHash && source !== 'force-update') {
+    console.log('updatePackageListToTextarea: No changes detected, skipping update from:', source);
+    return;
+}
+lastPackageListHash = currentHash;
+
+// ログと更新処理
+console.log(`updatePackageListToTextarea called from: ${source}`);
+console.log(`Package breakdown:`, {
+    base: basePackages.size,
+    checked: checkedPackages.size,
+    searched: searchedPackages.size,
+    dynamic: dynamicPackages.size,
+    manual: manualPackages.size,
+    total: uniquePackages.length
+});
+
+if (textarea) {
+    textarea.value = uniquePackages.join(' ');
+    textarea.style.height = 'auto';
+    textarea.style.height = textarea.scrollHeight + 'px';
+}
+
+console.log(`Postinst package list updated: ${uniquePackages.length} packages`);
+console.log('Final Postinst package list:', uniquePackages);
 }
 
 // ==================== 共通マルチインプット管理機能 ====================
