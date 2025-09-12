@@ -1075,8 +1075,7 @@ function getCurrentPackageList() {
         const textPackages = split(textarea.value);
         textPackages.forEach(pkg => {
             // デバイス初期パッケージでなければ追加
-            if (!pkg.startsWith('luci-i18n-') &&  // ← この1行を追加
-                !deviceDefaultPackages.includes(pkg) && 
+            if (!deviceDefaultPackages.includes(pkg) && 
                 !deviceDevicePackages.includes(pkg) && 
                 !extraPackages.includes(pkg)) {
                 packages.add(pkg);
