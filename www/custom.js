@@ -176,13 +176,21 @@ async function updateLanguagePackageCore() {
         selectedLanguage = current_language || config?.fallback_language || 'en';
     }
 
-    // 既存の言語パッケージを一旦全て削除
+    // 既存の言語パッケージを一旦全て削除（テキストエリアからも）
     const removedPackages = [];
     for (const pkg of Array.from(dynamicPackages)) {
         if (pkg.startsWith('luci-i18n-')) {
             dynamicPackages.delete(pkg);
             removedPackages.push(pkg);
         }
+    }
+
+    // テキストエリアからも言語パッケージを削除
+    const textarea = document.querySelector('#asu-packages');
+    if (textarea) {
+        const currentPackages = split(textarea.value);
+        const filteredPackages = currentPackages.filter(pkg => !pkg.startsWith('luci-i18n-'));
+        textarea.value = filteredPackages.join('\n');
     }
 
     // 英語が選択されているか、デバイス情報がない場合は終了
