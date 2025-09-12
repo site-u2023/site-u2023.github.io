@@ -11,8 +11,8 @@ window.addEventListener('load', () => {
     
     // リンク先を更新
     const linkEl = versionEl?.closest('a');
-    if (linkEl && typeof custom_ofs_url !== 'undefined') {
-        linkEl.href = custom_ofs_url;
+    if (linkEl && typeof custom_ofs_link !== 'undefined') {
+        linkEl.href = custom_ofs_link;
         linkEl.target = "_blank";
     }
 });
@@ -20,7 +20,7 @@ window.addEventListener('load', () => {
 // ==================== グローバル変数 ====================
 let customInitialized = false;
 let customHTMLLoaded = false;
-let packagesJson = null;
+let PACKAGE_DB = null;
 let setupConfig = null;
 let formStructure = {};
 let cachedApiInfo = null;
@@ -518,7 +518,7 @@ async function initializeCustomFeatures(asuSection, temp) {
     if (!document.querySelector('#custom-packages-details')) {
         cleanupExistingCustomElements();
         replaceAsuSection(asuSection, temp);
-        await insertExtendedInfo(temp);  // async/awaitに変更
+        insertExtendedInfo(temp);
     }
     
     // 設定とデータを並列で読み込み
@@ -806,86 +806,58 @@ document.addEventListener('click', function(e) {
 
 // #asuセクションを置き換え（修正版：index.jsが期待するDOM要素を全て保持）
 function replaceAsuSection(asuSection, temp) {
-    if (!asuSection) return;
-    asuSection.style.width = '100%';
+    const newDiv = document.createElement('div');
+    newDiv.id = 'asu';
+    newDiv.className = asuSection.className;
+    newDiv.style.width = '100%';
+    
+    const customPackages = temp.querySelector('#custom-packages-section details');
+    const customScripts = temp.querySelector('#custom-scripts-section details');
 
-    ['#packages-details', '#scripts-details', '#extended-build-info']
-      .forEach(sel => {
-          const el = document.querySelector(sel);
-          if (el) el.remove();
-      });
-
-    const packagesDetails = temp.querySelector('#packages-details');
-    const scriptsDetails  = temp.querySelector('#scripts-details');
-    const buildElements   = temp.querySelector('#asu-build-elements');
-
-    if (packagesDetails) asuSection.appendChild(packagesDetails);
-    if (scriptsDetails)  asuSection.appendChild(scriptsDetails);
-
-    if (buildElements) {
-        while (buildElements.firstChild) {
-            asuSection.appendChild(buildElements.firstChild);
-        }
+    if (customPackages) {
+        customPackages.id = 'custom-packages-details';
+        newDiv.appendChild(customPackages);
     }
+    if (customScripts) {
+        customScripts.id = 'custom-scripts-details';
+        newDiv.appendChild(customScripts);
+    }
+
+    // index.jsが期待する全てのDOM要素を追加
+    newDiv.insertAdjacentHTML('beforeend', `
+        <br>
+        <div id="asu-buildstatus" class="hide">
+            <span></span>
+            <div id="asu-log" class="hide">
+                <details>
+                    <summary>
+                        <code>STDERR</code>
+                    </summary>
+                    <pre id="asu-stderr"></pre>
+                </details>
+                <details>
+                    <summary>
+                        <code>STDOUT</code>
+                    </summary>
+                    <pre id="asu-stdout"></pre>
+                </details>
+            </div>
+        </div>
+        <a href="javascript:buildAsuRequest()" class="custom-link">
+            <span></span><span class="tr-request-build">REQUEST BUILD</span>
+        </a>
+    `);
+    
+    asuSection.parentNode.replaceChild(newDiv, asuSection);
 }
 
-
-// 拡張情報セクション挿入（JSON駆動で動的生成）
-async function insertExtendedInfo(temp) {
+// 拡張情報セクション挿入
+function insertExtendedInfo(temp) {
     const extendedInfo = temp.querySelector('#extended-build-info');
     const imageLink = document.querySelector('#image-link');
-    
-    if (!extendedInfo || !imageLink || document.querySelector('#extended-build-info')) {
-        return;
-    }
-    
-    // information.jsonから構造を読み込み
-    try {
-        const infoUrl = config?.information_url || 'auto-config/information.json';
-        const response = await fetch(infoUrl + '?t=' + Date.now());
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        
-        const infoConfig = await response.json();
-        console.log('Information config loaded:', infoConfig);
-        
-        // ISP情報セクションを動的生成
-        extendedInfo.innerHTML = '';  // ← containerではなくextendedInfo
-        
-        infoConfig.categories.forEach(category => {
-            const h3 = document.createElement('h3');
-            h3.textContent = category.name;
-            if (category.class) h3.classList.add(category.class);
-            extendedInfo.appendChild(h3);
-            
-            category.packages.forEach(pkg => {
-                if (pkg.fields) {
-                    pkg.fields.forEach(field => {
-                        const row = document.createElement('div');
-                        row.className = 'row';
-                        
-                        const col1 = document.createElement('div');
-                        col1.className = 'col1';
-                        if (field.class) col1.classList.add(field.class);
-                        col1.textContent = field.label;
-                        
-                        const col2 = document.createElement('div');
-                        col2.className = 'col2';
-                        col2.id = field.id;
-                        
-                        row.appendChild(col1);
-                        row.appendChild(col2);
-                        extendedInfo.appendChild(row);
-                    });
-                }
-            });
-        });
-        
-        // DOMに挿入
+    if (extendedInfo && imageLink && !document.querySelector('#extended-build-info')) {
         imageLink.closest('.row').insertAdjacentElement('afterend', extendedInfo);
         show('#extended-build-info');
-        
-    } catch (err) {
-        console.error('Failed to load information.json:', err);
     }
 }
 
@@ -907,7 +879,7 @@ function reinitializeFeatures() {
     
     setupEventListeners();
     
-    if (packagesJson) generatePackageSelector();
+    if (PACKAGE_DB) generatePackageSelector();
     fetchAndDisplayIspInfo();
     if (cachedApiInfo) updateAutoConnectionInfo(cachedApiInfo);
 
@@ -1154,7 +1126,7 @@ async function isPackageAvailable(pkgName, feed) {
 // ==================== setup.json 処理 ====================
 async function loadSetupConfig() {
     try {
-        const url = config?.setup_db_path || 'uci-defaults/setup.json';
+        const url = config?.setup_db_url || 'uci-defaults/setup.json';
         const response = await fetch(url + '?t=' + Date.now());
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         
@@ -2398,15 +2370,15 @@ function updateAutoConnectionInfo(apiInfo) {
 
 async function loadPackageDatabase() {
     try {
-        const url = config?.packages_db_path || 'packages/packages.json';
+        const url = config?.packages_db_url || 'packages/packages.json';
         const response = await fetch(url);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        packagesJson = await response.json();
-        console.log('Package database loaded:', packagesJson);
+        PACKAGE_DB = await response.json();
+        console.log('Package database loaded:', PACKAGE_DB);
         
         generatePackageSelector();
         
-        return packagesJson;
+        return PACKAGE_DB;
     } catch (err) {
         console.error('Failed to load package database:', err);
         return null;
@@ -2415,13 +2387,13 @@ async function loadPackageDatabase() {
 
 function generatePackageSelector() {
     const container = document.querySelector('#package-categories');
-    if (!container || !packagesJson) {
+    if (!container || !PACKAGE_DB) {
         return;
     }
     
     container.innerHTML = '';
     
-    packagesJson.categories.forEach(category => {
+    PACKAGE_DB.categories.forEach(category => {
         const categoryDiv = createPackageCategory(category);
         if (categoryDiv) {
             container.appendChild(categoryDiv);
@@ -2429,7 +2401,7 @@ function generatePackageSelector() {
     });
     
     updateAllPackageState('package-selector-init');
-    console.log(`Generated ${packagesJson.categories.length} package categories`);
+    console.log(`Generated ${PACKAGE_DB.categories.length} package categories`);
 }
 
 function createPackageCategory(category) {
@@ -2582,9 +2554,9 @@ function handlePackageSelection(e) {
 }
 
 function findPackageById(id) {
-    if (!packagesJson) return null;
+    if (!PACKAGE_DB) return null;
     
-    for (const category of packagesJson.categories) {
+    for (const category of PACKAGE_DB.categories) {
         const pkg = category.packages.find(p => p.uniqueId === id || p.id === id);
         if (pkg) return pkg;
     }
