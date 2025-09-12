@@ -79,12 +79,6 @@ window.updateImages = function(version, mobj) {
         
         // パッケージリスト設定後にリサイズ
         setTimeout(() => resizePostinstTextarea(), 100);
-        
-        // カスタム機能が初期化済みの場合、統合パッケージ更新を実行
-        if (customInitialized) {
-            console.log('Device changed after initialization, updating all package state');
-            setTimeout(() => updateAllPackageState('device-change'), 200);
-        }
     }
     
     // 初回のみカスタムHTMLを読み込み
