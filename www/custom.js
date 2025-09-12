@@ -2563,22 +2563,28 @@ function createPackageCheckbox(pkg, isChecked = false, isDependency = false) {
 function handlePackageSelection(e) {
     const pkg = e.target;
     const isChecked = pkg.checked;
-    
+    const pkgName = pkg.getAttribute('data-package');
+
+    // ===== 依存パッケージの連動処理 =====
     const dependencies = pkg.getAttribute('data-dependencies');
     if (dependencies) {
         dependencies.split(',').forEach(depName => {
             const depPkg = findPackageById(depName);
             if (depPkg) {
-                const depCheckbox = document.querySelector(`[data-unique-id="${depPkg.uniqueId || depPkg.id}"]`);
+                const depCheckbox = document.querySelector(
+                    `[data-unique-id="${depPkg.uniqueId || depPkg.id}"]`
+                );
                 if (depCheckbox) {
                     depCheckbox.checked = isChecked;
-                    
+
                     const depDeps = depCheckbox.getAttribute('data-dependencies');
                     if (depDeps && isChecked) {
                         depDeps.split(',').forEach(subDepName => {
                             const subDepPkg = findPackageById(subDepName);
                             if (subDepPkg) {
-                                const subDepCheckbox = document.querySelector(`[data-unique-id="${subDepPkg.uniqueId || subDepPkg.id}"]`);
+                                const subDepCheckbox = document.querySelector(
+                                    `[data-unique-id="${subDepPkg.uniqueId || subDepPkg.id}"]`
+                                );
                                 if (subDepCheckbox) subDepCheckbox.checked = true;
                             }
                         });
@@ -2587,6 +2593,46 @@ function handlePackageSelection(e) {
             }
         });
     }
+
+    // ===== チェックが外された時の削除処理 =====
+    if (!isChecked && pkgName) {
+        try {
+            // 本体パッケージを削除
+            const ta = document.querySelector('#asu-packages');
+            if (ta) {
+                let current = split(ta.value);
+                current = current.filter(p => p !== pkgName);
+                ta.value = current.join(' ');
+            }
+
+            // i18n パッケージ削除
+            const luciName = extractLuciName(pkgName);
+            if (luciName) {
+                // dynamicPackages から削除
+                for (const dp of Array.from(dynamicPackages)) {
+                    if (dp.startsWith(`luci-i18n-${luciName}-`)) {
+                        dynamicPackages.delete(dp);
+                        console.log('Removed dynamic i18n due to package uncheck:', dp);
+                    }
+                }
+
+                // textarea から削除
+                if (ta) {
+                    let current = split(ta.value);
+                    current = current.filter(p => !p.startsWith(`luci-i18n-${luciName}-`));
+                    ta.value = current.join(' ');
+                    if (typeof resizePostinstTextarea === 'function') {
+                        resizePostinstTextarea();
+                    }
+                    console.log('Removed i18n entries from textarea for:', luciName);
+                }
+            }
+        } catch (err) {
+            console.error('Error while removing package + i18n for', pkgName, err);
+        }
+    }
+
+    // ===== 状態更新 =====
     updateAllPackageState('package-selection');
 }
 
