@@ -99,22 +99,35 @@ window.updateImages = function(version, mobj) {
 };
 
 // ==================== 統合パッケージ管理システム ====================
-// 新しい統合関数：すべてのパッケージ状態を更新
-async function updateAllPackageState(source = 'unknown') {
+// 前回のフォーム状態ハッシュを保持
+let lastFormStateHash = null;
+
+// 差分検知付きの安全なパッケージ状態更新
+async function safeUpdateAllPackageState(source = 'unknown') {
+    // 現在のフォーム状態を収集
+    const currentState = collectFormValues();
+    const hash = JSON.stringify(currentState);
+
+    // 前回と同じ状態ならスキップ
+    if (hash === lastFormStateHash) {
+        return;
+    }
+    lastFormStateHash = hash;
+
     console.log(`updateAllPackageState called from: ${source}`);
-    
-    // 1. setup.jsonベースのパッケージ更新（ラジオボタンなど）
+
+    // 1. setup.jsonベースのパッケージ更新
     updateSetupJsonPackagesCore();
-    
-    // 2. 言語パッケージの更新（言語セレクター）
+
+    // 2. 言語パッケージの更新
     await updateLanguagePackageCore();
-    
-    // 3. Postinstテキストエリアへの反映（最終的な統合）
-    updatePackageListToTextarea();
-    
+
+    // 3. Postinstテキストエリアへの反映（差分検知付き）
+    updatePackageListToTextarea(source);
+
     // 4. setup.sh変数の更新
     updateVariableDefinitions();
-    
+
     console.log('All package state updated successfully');
 }
 
@@ -249,18 +262,18 @@ function applyPackageList(packages) {
     }
 }
 
-// Core関数3: Postinstテキストエリア更新（最終的な統合）
-function updatePackageListToTextarea(source = 'unknown') {
-    console.log(`updatePackageListToTextarea called from: ${source}`);
+// Core関数3: Postinstテキストエリア更新（最終的な統合・差分検知付き）
+let lastPackageListHash = null;
 
+function updatePackageListToTextarea(source = 'unknown') {
     // 基本パッケージセット（デバイス固有パッケージ）を準備
     const basePackages = new Set();
-    
+
     // デバイス固有パッケージを必ず含める（最重要）
     deviceDefaultPackages.forEach(pkg => basePackages.add(pkg));
     deviceDevicePackages.forEach(pkg => basePackages.add(pkg));
     extraPackages.forEach(pkg => basePackages.add(pkg));
-    
+
     // チェックされたパッケージを追加
     const checkedPackages = new Set();
     document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
@@ -269,7 +282,7 @@ function updatePackageListToTextarea(source = 'unknown') {
             checkedPackages.add(pkgName);
         }
     });
-    
+
     // テキストエリアから既存パッケージを取得（言語パッケージ以外を保持）
     const manualPackages = new Set();
     const textarea = document.querySelector('#asu-packages');
@@ -277,8 +290,8 @@ function updatePackageListToTextarea(source = 'unknown') {
         const currentPackages = split(textarea.value);
         currentPackages.forEach(pkg => {
             // 言語パッケージは除外し、その他の手動パッケージのみ保持
-            if (!basePackages.has(pkg) && 
-                !checkedPackages.has(pkg) && 
+            if (!basePackages.has(pkg) &&
+                !checkedPackages.has(pkg) &&
                 !dynamicPackages.has(pkg) &&
                 !pkg.startsWith('luci-i18n-') &&
                 !document.querySelector(`.package-selector-checkbox[data-package="${pkg}"]`)) {
@@ -286,7 +299,7 @@ function updatePackageListToTextarea(source = 'unknown') {
             }
         });
     }
-    
+
     // 全てのパッケージを統合（順序：デバイス固有 → チェック済み → 動的 → 手動）
     const finalPackages = [
         ...basePackages,      // デバイス固有パッケージ（必須）
@@ -294,13 +307,20 @@ function updatePackageListToTextarea(source = 'unknown') {
         ...dynamicPackages,   // 動的パッケージ（言語パッケージなど）
         ...manualPackages     // 手動で入力されたパッケージ
     ];
-    
+
     // 重複を削除
     const uniquePackages = [...new Set(finalPackages)];
-    
-    // テキストエリアを更新 (出口関数で Postinst 側に反映)
-    applyPackageList(uniquePackages);
 
+    // 差分検知（前回と同じならスキップ）
+    const currentHash = JSON.stringify(uniquePackages);
+    if (currentHash === lastPackageListHash) {
+        return; // 更新もログも出さない
+    }
+    lastPackageListHash = currentHash;
+
+    // ログと更新処理
+    console.log(`updatePackageListToTextarea called from: ${source}`);
+    applyPackageList(uniquePackages);
     console.log(`Postinst package list updated: ${uniquePackages.length} packages`);
     console.log('Final Postinst package list:', uniquePackages);
 }
