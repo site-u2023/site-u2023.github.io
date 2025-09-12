@@ -1069,25 +1069,28 @@ function syncDeviceLanguageSelector(lang) {
     selectedLanguage = lang;
 }
 
-// メイン言語セレクター変更ハンドラー（ブラウザ用 → デバイス用に片方向同期）
-async function handleMainLanguageChange(e) {
+// カスタム言語セレクター変更ハンドラー（デバイス用 → UIは変えない）
+async function handleCustomLanguageChange(e) {
     const newLanguage = e.target.value || config?.fallback_language || 'en';
 
-    // 1. ブラウザ用（UI表示）を更新
-    current_language = newLanguage;
-    syncBrowserLanguageSelector(current_language); // #languages-select のみ更新
+    if (config.device_language === newLanguage) {
+        console.log('Device language not changed, skipping update');
+        return;
+    }
 
-    // UI翻訳はブラウザ用言語でのみロード（custom.js.json は current_language 固定）
-    await loadCustomTranslations(current_language);
-
-    // 2. 片方向同期：ブラウザ用の変更をデバイス用にも反映
-    config.device_language = current_language;
+    // デバイス用のみ更新（UI表示用の current_language は触らない）
+    config.device_language = newLanguage;
     syncDeviceLanguageSelector(config.device_language); // #aios-language のみ更新
 
-    console.log('Main language changed to:', current_language, '(device_language updated)');
+    console.log('Custom device language changed to:', config.device_language);
 
-    // 3. デバイス用パッケージ更新（UI翻訳には影響しない）
-    updateAllPackageState('browser-language-changed');
+    // UI翻訳は変えないので loadCustomTranslations は呼ばない
+    updateVariableDefinitions();
+
+    // デバイス用パッケージリストを再構築
+    updateAllPackageState('device-language-changed');
+
+    console.log('Custom language change processing completed');
 }
 
 async function loadCustomTranslations(lang) {
