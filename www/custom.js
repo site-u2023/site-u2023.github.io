@@ -479,21 +479,42 @@ class MultiInputManager {
 
 // custom.html 読み込み
 async function loadCustomHTML() {
-    const html = await fetch('custom.html?t=' + Date.now()).then(r => r.text());
-    const temp = document.createElement('div');
-    temp.innerHTML = html;
+    try {
+        const response = await fetch('custom.html?t=' + Date.now());
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const html = await response.text();
+        console.log('custom.html loaded');
 
-    const asuSection = document.querySelector('#asu');
-    replaceAsuSection(asuSection, temp);
+        const temp = document.createElement('div');
+        temp.innerHTML = html;
 
-    await new Promise(requestAnimationFrame);
+        const asuSection = document.querySelector('#asu');
+        replaceAsuSection(asuSection, temp);
 
-    await waitForElement('#dynamic-config-sections');
-    await waitForElement('#commands-autocomplete');
-    await waitForElement('#package-search-autocomplete');
+        // DOM反映を保証
+        await new Promise(requestAnimationFrame);
 
-    await initializeCustomFeatures(asuSection, temp);
-    await insertExtendedInfo(temp);
+        // 必要要素が揃うまで待機（別関数なし）
+        const start = performance.now();
+        const timeout = 2000;
+        while (performance.now() - start < timeout) {
+            const hasAllChildren =
+                document.querySelector('#dynamic-config-sections') &&
+                document.querySelector('#commands-autocomplete') &&
+                document.querySelector('#package-search-autocomplete');
+            if (asuSection && hasAllChildren) {
+                await initializeCustomFeatures(asuSection, temp);
+                await insertExtendedInfo(temp);
+                return;
+            }
+            await new Promise(r => setTimeout(r, 50));
+        }
+
+        console.warn('#asu or required children not found within timeout');
+
+    } catch (err) {
+        console.error('Failed to load custom.html:', err);
+    }
 }
 
 // メイン初期化
