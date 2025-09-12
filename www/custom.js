@@ -505,10 +505,10 @@ function waitForAsuAndInit(temp, retry = 50) {
     }
 }
 
-// メイン初期化
+// メイン初期化（修正版：依存データ＋UI構築完了後に updateAllPackageState 実行）
 async function initializeCustomFeatures(asuSection, temp) {
     console.log('initializeCustomFeatures called');
-    
+
     if (customInitialized) {
         console.log('Already initialized, skipping');
         return;
@@ -520,31 +520,41 @@ async function initializeCustomFeatures(asuSection, temp) {
         replaceAsuSection(asuSection, temp);
         insertExtendedInfo(temp);
     }
-    
-    // 設定とデータを並列で読み込み
+
+    // 外部データと設定を並列で読み込み
     await Promise.all([
-        loadSetupConfig(),
-        loadPackageDatabase(),
-        fetchAndDisplayIspInfo()
+        // config.js 側で先行開始している Promise を利用
+        window.autoConfigPromise,       // auto-config.site-u.workers.dev
+        window.informationPromise,      // information.json
+        window.packagesDbPromise,       // packages.json
+        window.setupJsonPromise,        // setup.json
+        loadSetupConfig(),              // 既存処理
+        loadPackageDatabase(),          // 既存処理
+        fetchAndDisplayIspInfo()        // 既存処理
     ]);
-    
+
     // 依存関係のある初期化（順序重要）
     setupEventListeners();
     loadUciDefaultsTemplate();
-    
+
     // 言語セレクター設定（初期言語パッケージ処理を含む）
     setupLanguageSelector();
-    
-    // パッケージ検索機能を初期化（追加）
+
+    // パッケージ検索機能を初期化
     setupPackageSearch();
     console.log('Package search initialized');
-    
+
     // カスタム翻訳を読み込み（初期言語に基づいて）
     await loadCustomTranslations(selectedLanguage);
-    
+
     // フォーム監視設定
     setupFormWatchers();
-    
+
+    // ここで初めて updateAllPackageState を呼ぶ
+    // → UI構造も外部データも揃っているので collectFormValues() が安全に動く
+    console.log('All data and UI ready, updating package state');
+    updateAllPackageState();
+
     customInitialized = true;
 }
 
