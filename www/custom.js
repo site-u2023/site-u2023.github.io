@@ -487,57 +487,21 @@ async function loadCustomHTML() {
 
         const temp = document.createElement('div');
         temp.innerHTML = html;
-
-        const asuSection = document.querySelector('#asu');
-        replaceAsuSection(asuSection, temp);
-
-        // DOM反映を保証
-        await new Promise(requestAnimationFrame);
-
-        // 必要要素が揃うまで待機
-        const start = performance.now();
-        const timeout = 2000;
-        while (performance.now() - start < timeout) {
-            const ready =
-                document.querySelector('#dynamic-config-sections') &&
-                document.querySelector('#commands-autocomplete') &&
-                document.querySelector('#package-search-autocomplete');
-            if (ready) break;
-            await new Promise(r => setTimeout(r, 50));
-        }
-
-        // 初期化
-        await initializeCustomFeatures(asuSection, temp);
-        await insertExtendedInfo(temp);
-
+        waitForAsuAndInit(temp);
     } catch (err) {
         console.error('Failed to load custom.html:', err);
     }
 }
 
-function replaceAsuSection(asuSection, temp) {
-    if (!asuSection) return;
-    asuSection.style.width = '100%';
-
-    // 元IDを持つ既存要素を削除
-    ['#packages-details', '#scripts-details', '#extended-build-info']
-      .forEach(sel => {
-          const el = document.querySelector(sel);
-          if (el) el.remove();
-      });
-
-    // custom.html から取り出し（IDはそのまま）
-    const packagesDetails = temp.querySelector('#packages-details');
-    const scriptsDetails  = temp.querySelector('#scripts-details');
-    const buildElements   = temp.querySelector('#asu-build-elements');
-
-    if (packagesDetails) asuSection.appendChild(packagesDetails);
-    if (scriptsDetails)  asuSection.appendChild(scriptsDetails);
-
-    if (buildElements) {
-        while (buildElements.firstChild) {
-            asuSection.appendChild(buildElements.firstChild);
-        }
+// #asu が存在するまで待機
+function waitForAsuAndInit(temp, retry = 50) {
+    const asuSection = document.querySelector('#asu');
+    if (asuSection) {
+        initializeCustomFeatures(asuSection, temp);
+    } else if (retry > 0) {
+        setTimeout(() => waitForAsuAndInit(temp, retry - 1), 50);
+    } else {
+        console.warn('#asu not found after waiting');
     }
 }
 
