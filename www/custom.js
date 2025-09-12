@@ -86,7 +86,17 @@ window.updateImages = function(version, mobj) {
         // THIRD: Trigger package state update to sync with dynamic packages
         if (customInitialized) {
             setTimeout(() => {
-                updateAllPackageState('device-packages-loaded');
+                // 差分スキップ回避のため force-update を使用
+                updateAllPackageState('force-update');
+
+                // device-packages-loaded 後に UI と textarea の状態を同期
+                const textarea = document.querySelector('#asu-packages');
+                if (textarea) {
+                    const pkgList = textarea.value.split(/\s+/).filter(Boolean);
+                    document.querySelectorAll('.package-selector-checkbox').forEach(cb => {
+                        cb.checked = pkgList.includes(cb.dataset.package);
+                    });
+                }
             }, 100);
         }
     }
@@ -2641,7 +2651,7 @@ function handlePackageSelection(e) {
             }
         });
     }
-    updateAllPackageState('package-selection');
+    updateAllPackageState('force-update');
 }
 
 function findPackageById(id) {
