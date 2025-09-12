@@ -824,7 +824,7 @@ function replaceAsuSection(asuSection, temp) {
         newDiv.appendChild(customScripts);
     }
 
-    // index.jsが期待する全てのDOM要素を直接追加
+    // index.jsが期待する全てのDOM要素を直接追加（隠しテキストエリアを含む）
     const buildElements = document.createElement('div');
     buildElements.innerHTML = `
         <br>
@@ -845,6 +845,8 @@ function replaceAsuSection(asuSection, temp) {
                 </details>
             </div>
         </div>
+        <!-- index.js用の隠しパッケージリスト -->
+        <textarea id="asu-packages" style="display:none;"></textarea>
         <a href="javascript:buildAsuRequest()" class="custom-link">
             <span></span><span class="tr-request-build">REQUEST BUILD</span>
         </a>
