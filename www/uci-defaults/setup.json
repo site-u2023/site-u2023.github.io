@@ -174,7 +174,6 @@
               "value": "usteer",
               "label": "Usteer",
               "class": "tr-usteer",
-              "packages": ["luci-app-usteer"],
               "includeFields": ["wlan_ssid", "wlan_password", "enable_usteer", "mobility_domain", "snr"],
               "excludeFields": []
             },
@@ -284,8 +283,8 @@
             {"value": "auto", "label": "AUTO", "class": "tr-auto", "checked": true},
             {"value": "dhcp", "label": "DHCP", "class": "tr-dhcp"},
             {"value": "pppoe", "label": "PPPoE", "class": "tr-pppoe"},
-            {"value": "dslite", "label": "DS-Lite", "class": "tr-dslite", "packages": ["ds-lite"]},
-            {"value": "mape", "label": "MAP-E", "class": "tr-mape", "packages": ["map"]},
+            {"value": "dslite", "label": "DS-Lite", "class": "tr-dslite"},
+            {"value": "mape", "label": "MAP-E", "class": "tr-mape"},
             {"value": "ap", "label": "AP", "class": "tr-ap"}
           ]
         },
