@@ -1035,14 +1035,13 @@ function getCurrentPackageList() {
         if (pkgName) packages.add(pkgName);
     });
     
-    // テキストエリアから既存パッケージ（言語パッケージを除外）
+    // テキストエリアから既存パッケージ（デバイス初期パッケージ以外）
     const textarea = document.querySelector('#asu-packages');
     if (textarea) {
         const textPackages = split(textarea.value);
         textPackages.forEach(pkg => {
-            // 言語パッケージとデバイス初期パッケージを除外
-            if (!pkg.startsWith('luci-i18n-') &&  // ← この行を追加
-                !deviceDefaultPackages.includes(pkg) && 
+            // デバイス初期パッケージでなければ追加
+            if (!deviceDefaultPackages.includes(pkg) && 
                 !deviceDevicePackages.includes(pkg) && 
                 !extraPackages.includes(pkg)) {
                 packages.add(pkg);
