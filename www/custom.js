@@ -119,11 +119,13 @@ async function updateAllPackageState(source = 'unknown') {
     console.log(`[updateAllPackageState] start from: ${source}`);
     
     // CRITICAL FIX: Don't proceed if device packages aren't loaded yet
-    if (!customInitialized && (deviceDefaultPackages.length === 0 && deviceDevicePackages.length === 0)) {
-        console.log('updateAllPackageState: Device packages not ready, deferring update from:', source);
-        return;
+    if (source !== 'package-selection' && source !== 'force-update') {
+        if (!customInitialized && (deviceDefaultPackages.length === 0 && deviceDevicePackages.length === 0)) {
+            console.log('Device packages not ready, deferring update from:', source);
+            return;
+        }
     }
-
+    
     // 現在のフォーム状態を収集
     const currentState = collectFormValues();
     const hash = JSON.stringify(currentState);
@@ -2666,7 +2668,7 @@ function handlePackageSelection(e) {
             }
         });
     }
-    updateAllPackageState('package-selection');
+    updateAllPackageState('force-update');
 
     console.log('[handlePackageSelection] end checked:', Array.from(document.querySelectorAll('.package-selector-checkbox:checked')).map(cb => cb.dataset.package));
 }
