@@ -870,7 +870,7 @@ async function insertExtendedInfo(temp) {
         console.log('Information config loaded:', infoConfig);
         
         // ISP情報セクションを動的生成
-        extendedInfo.innerHTML = '';  // ← containerではなくextendedInfo
+        extendedInfo.innerHTML = '';
         
         infoConfig.categories.forEach(category => {
             const h3 = document.createElement('h3');
