@@ -870,7 +870,7 @@ async function insertExtendedInfo(temp) {
         console.log('Information config loaded:', infoConfig);
         
         // ISP情報セクションを動的生成
-        extendedInfo.innerHTML = '';  // ← containerではなくextendedInfo
+        container.innerHTML = '';
         
         infoConfig.categories.forEach(category => {
             const h3 = document.createElement('h3');
@@ -907,6 +907,7 @@ async function insertExtendedInfo(temp) {
         
     } catch (err) {
         console.error('Failed to load information.json:', err);
+        // JSONが読めない場合は何もしない（フォールバック不要）
     }
 }
 
