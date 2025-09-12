@@ -2534,7 +2534,8 @@ function createPackageCheckbox(pkg, isChecked = false, isDependency = false) {
 function handlePackageSelection(e) {
     const pkg = e.target;
     const isChecked = pkg.checked;
-    
+    const pkgName = pkg.getAttribute('data-package');
+
     const dependencies = pkg.getAttribute('data-dependencies');
     if (dependencies) {
         dependencies.split(',').forEach(depName => {
@@ -2543,7 +2544,7 @@ function handlePackageSelection(e) {
                 const depCheckbox = document.querySelector(`[data-unique-id="${depPkg.uniqueId || depPkg.id}"]`);
                 if (depCheckbox) {
                     depCheckbox.checked = isChecked;
-                    
+
                     const depDeps = depCheckbox.getAttribute('data-dependencies');
                     if (depDeps && isChecked) {
                         depDeps.split(',').forEach(subDepName => {
@@ -2558,6 +2559,39 @@ function handlePackageSelection(e) {
             }
         });
     }
+
+    if (!isChecked && pkgName) {
+        try {
+            const luciName = extractLuciName(pkgName);
+            if (luciName) {
+                for (const dp of Array.from(dynamicPackages)) {
+                    if (typeof dp === 'string' && dp.startsWith(`luci-i18n-${luciName}-`)) {
+                        dynamicPackages.delete(dp);
+                        console.log('Removed dynamic i18n due to package uncheck:', dp);
+                    }
+                }
+
+                const ta = document.querySelector('#asu-packages');
+                if (ta) {
+                    const current = split(ta.value);
+                    const cleaned = current.filter(p => !(typeof p === 'string' && p.startsWith(`luci-i18n-${luciName}-`)));
+                    if (cleaned.length !== current.length) {
+                        ta.value = cleaned.join(' ');
+                        if (typeof resizePostinstTextarea === 'function') {
+                            resizePostinstTextarea();
+                        } else {
+                            ta.style.height = 'auto';
+                            ta.style.height = ta.scrollHeight + 'px';
+                        }
+                        console.log('Removed i18n entries from textarea for:', luciName);
+                    }
+                }
+            }
+        } catch (err) {
+            console.error('Error while removing i18n for unchecked package', pkgName, err);
+        }
+    }
+
     updateAllPackageState('package-selection');
 }
 
