@@ -2553,38 +2553,35 @@ function handlePackageSelection(e) {
     }
 
     if (!isChecked && pkgName) {
-        try {
-            const luciName = extractLuciName(pkgName);
-            if (luciName) {
-                for (const dp of Array.from(dynamicPackages)) {
-                    if (typeof dp === 'string' && dp.startsWith(`luci-i18n-${luciName}-`)) {
-                        dynamicPackages.delete(dp);
-                        console.log('Removed dynamic i18n due to package uncheck:', dp);
-                    }
-                }
+    try {
+        // 本体パッケージ自体を削除
+        const ta = document.querySelector('#asu-packages');
+        if (ta) {
+            let current = split(ta.value);
+            current = current.filter(p => p !== pkgName);
+            ta.value = current.join(' ');
+        }
 
-                const ta = document.querySelector('#asu-packages');
-                if (ta) {
-                    const current = split(ta.value);
-                    const cleaned = current.filter(p => !(typeof p === 'string' && p.startsWith(`luci-i18n-${luciName}-`)));
-                    if (cleaned.length !== current.length) {
-                        ta.value = cleaned.join(' ');
-                        if (typeof resizePostinstTextarea === 'function') {
-                            resizePostinstTextarea();
-                        } else {
-                            ta.style.height = 'auto';
-                            ta.style.height = ta.scrollHeight + 'px';
-                        }
-                        console.log('Removed i18n entries from textarea for:', luciName);
-                    }
+        const luciName = extractLuciName(pkgName);
+        if (luciName) {
+            // i18n パッケージも削除
+            for (const dp of Array.from(dynamicPackages)) {
+                if (dp.startsWith(`luci-i18n-${luciName}-`)) {
+                    dynamicPackages.delete(dp);
+                    console.log('Removed dynamic i18n due to package uncheck:', dp);
                 }
             }
-        } catch (err) {
-            console.error('Error while removing i18n for unchecked package', pkgName, err);
+            if (ta) {
+                let current = split(ta.value);
+                current = current.filter(p => !p.startsWith(`luci-i18n-${luciName}-`));
+                ta.value = current.join(' ');
+                resizePostinstTextarea();
+                console.log('Removed i18n entries from textarea for:', luciName);
+            }
         }
+    } catch (err) {
+        console.error('Error while removing package + i18n for', pkgName, err);
     }
-
-    updateAllPackageState('package-selection');
 }
 
 function findPackageById(id) {
