@@ -2649,10 +2649,20 @@ function loadUciDefaultsTemplate() {
 function updateVariableDefinitions() {
     const textarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
     if (!textarea) return;
-    
-    const values = collectFormValues();
+
+    // collectFormValues が未定義や空を返す場合は安全にスキップ
+    const values = collectFormValues && typeof collectFormValues === 'function'
+        ? collectFormValues()
+        : null;
+
+    if (!values || typeof values !== 'object' || Object.keys(values).length === 0) {
+        // 外部データ未取得などで値が空の場合は後で再実行できるようにログだけ残す
+        console.warn("updateVariableDefinitions: values 未取得のためスキップ");
+        return;
+    }
+
     let emissionValues = { ...values };
-    
+
     // パッケージの有効化変数を追加
     document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
         const enableVar = cb.getAttribute('data-enable-var');
@@ -2660,7 +2670,7 @@ function updateVariableDefinitions() {
             emissionValues[enableVar] = '1';
         }
     });
-    
+
     const variableDefinitions = generateVariableDefinitions(emissionValues);
     updateTextareaContent(textarea, variableDefinitions);
 }
