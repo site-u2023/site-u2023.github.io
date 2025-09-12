@@ -261,57 +261,64 @@ function applyPackageList(packages) {
 function updatePackageListToTextarea(source = 'unknown') {
     console.log(`updatePackageListToTextarea called from: ${source}`);
 
-    // 基本パッケージセット（デバイス固有パッケージ）を準備
+    // 基本パッケージセット（デバイス固有パッケージ）
     const basePackages = new Set();
-    
-    // デバイス固有パッケージを必ず含める（最重要）
     deviceDefaultPackages.forEach(pkg => basePackages.add(pkg));
     deviceDevicePackages.forEach(pkg => basePackages.add(pkg));
     extraPackages.forEach(pkg => basePackages.add(pkg));
-    
-    // チェックされたパッケージを追加
+
+    // チェックされたパッケージを収集
     const checkedPackages = new Set();
     document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
         const pkgName = cb.getAttribute('data-package');
-        if (pkgName) {
-            checkedPackages.add(pkgName);
-        }
+        if (pkgName) checkedPackages.add(pkgName);
     });
-    
-    // テキストエリアから既存パッケージを取得（言語パッケージ以外を保持）
+
+    // 動的パッケージ
+    const dynamic = new Set(dynamicPackages);
+
+    // 既存パッケージを取得（manual入力分）
     const manualPackages = new Set();
     const textarea = document.querySelector('#asu-packages');
     if (textarea) {
         const currentPackages = split(textarea.value);
         currentPackages.forEach(pkg => {
-            // 言語パッケージは除外し、その他の手動パッケージのみ保持
-            if (!basePackages.has(pkg) && 
-                !checkedPackages.has(pkg) && 
-                !dynamicPackages.has(pkg) &&
+            // 未チェック or 動的でないものは削除対象
+            if (!basePackages.has(pkg) &&
+                !checkedPackages.has(pkg) &&
+                !dynamic.has(pkg) &&
                 !pkg.startsWith('luci-i18n-') &&
                 !document.querySelector(`.package-selector-checkbox[data-package="${pkg}"]`)) {
                 manualPackages.add(pkg);
             }
         });
     }
-    
-    // 全てのパッケージを統合（順序：デバイス固有 → チェック済み → 動的 → 手動）
+
+    // ---- 追加処理 ----
+    // チェックを外したパッケージを強制的に削除
+    if (textarea) {
+        const current = split(textarea.value);
+        const cleaned = current.filter(pkg =>
+            basePackages.has(pkg) || checkedPackages.has(pkg) || dynamic.has(pkg) || manualPackages.has(pkg)
+        );
+        textarea.value = cleaned.join(' ');
+    }
+
+    // 統合
     const finalPackages = [
-        ...basePackages,      // デバイス固有パッケージ（必須）
-        ...checkedPackages,   // チェックボックスで選択されたパッケージ
-        ...dynamicPackages,   // 動的パッケージ（言語パッケージなど）
-        ...manualPackages     // 手動で入力されたパッケージ
+        ...basePackages,
+        ...checkedPackages,
+        ...dynamic,
+        ...manualPackages
     ];
-    
-    // 重複を削除
     const uniquePackages = [...new Set(finalPackages)];
-    
-    // テキストエリアを更新 (出口関数で Postinst 側に反映)
+
     applyPackageList(uniquePackages);
 
     console.log(`Postinst package list updated: ${uniquePackages.length} packages`);
     console.log('Final Postinst package list:', uniquePackages);
 }
+
 
 // ==================== 共通マルチインプット管理機能 ====================
 class MultiInputManager {
