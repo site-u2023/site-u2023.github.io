@@ -75,6 +75,8 @@ window.updateImages = function(version, mobj) {
         if (textarea) {
             textarea.value = initialPackages.join(' ');
             console.log('Initial packages set in textarea:', initialPackages);
+
+            console.log('[updateImages] initialPackages:', initialPackages);
             
             // Force resize after setting value
             setTimeout(() => {
@@ -113,6 +115,9 @@ let lastFormStateHash = null;
 
 // Fix for updateAllPackageState - add safety check
 async function updateAllPackageState(source = 'unknown') {
+
+    console.log(`[updateAllPackageState] start from: ${source}`);
+    
     // CRITICAL FIX: Don't proceed if device packages aren't loaded yet
     if (!customInitialized && (deviceDefaultPackages.length === 0 && deviceDevicePackages.length === 0)) {
         console.log('updateAllPackageState: Device packages not ready, deferring update from:', source);
@@ -144,6 +149,12 @@ async function updateAllPackageState(source = 'unknown') {
     updateVariableDefinitions();
 
     console.log('All package state updated successfully');
+
+    console.log(`[updateAllPackageState] end from: ${source}`, {
+        checked: Array.from(checkedPackages),
+        dynamic: Array.from(dynamicPackages),
+        manual: Array.from(manualPackages)
+    });
 }
 
 // Core関数1: setup.jsonベースのパッケージ更新（UI更新なし）
@@ -271,6 +282,9 @@ async function updateLanguagePackageCore() {
 let lastPackageListHash = null;
 
 function updatePackageListToTextarea(source = 'unknown') {
+
+    console.log(`[updatePackageListToTextarea] start from: ${source}`);
+    
     // 基本パッケージセット（デバイス固有パッケージ）を準備
     const basePackages = new Set();
 
@@ -359,6 +373,8 @@ function updatePackageListToTextarea(source = 'unknown') {
     
     console.log(`Postinst package list updated: ${uniquePackages.length} packages`);
     console.log('Final Postinst package list:', uniquePackages);
+
+    console.log(`[updatePackageListToTextarea] final list (${finalList.length}):`, finalList);
 }
 
 // ==================== 共通マルチインプット管理機能 ====================
@@ -2615,6 +2631,9 @@ function createPackageCheckbox(pkg, isChecked = false, isDependency = false) {
 }
 
 function handlePackageSelection(e) {
+
+    console.log('[handlePackageSelection] start', e.target.dataset.package, e.target.checked);
+    
     const pkg = e.target;
     const isChecked = pkg.checked;
     
@@ -2642,6 +2661,8 @@ function handlePackageSelection(e) {
         });
     }
     updateAllPackageState('package-selection');
+
+    console.log('[handlePackageSelection] end checked:', Array.from(document.querySelectorAll('.package-selector-checkbox:checked')).map(cb => cb.dataset.package));
 }
 
 function findPackageById(id) {
