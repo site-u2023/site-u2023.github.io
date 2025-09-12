@@ -1,4 +1,3 @@
-
 console.log('custom.js loaded');
 
 // OFSバージョン
@@ -50,7 +49,7 @@ window.updateImages = function(version, mobj) {
         if (!current_device) current_device = {};
         current_device.arch = mobj.arch_packages;
         current_device.version = version;
-        cachedDeviceArch = mobj.arch_packages; // ← キャッシュにも保存
+        cachedDeviceArch = mobj.arch_packages;
         console.log('Architecture saved:', mobj.arch_packages);
     }
 
@@ -102,7 +101,7 @@ window.updateImages = function(version, mobj) {
 // 前回のフォーム状態ハッシュを保持
 let lastFormStateHash = null;
 
-// 差分検知付きのパッケージ状態更新（関数名は変更しない）
+// 差分検知付きのパッケージ状態更新
 async function updateAllPackageState(source = 'unknown') {
     // 現在のフォーム状態を収集
     const currentState = collectFormValues();
@@ -252,16 +251,6 @@ async function updateLanguagePackageCore() {
     await Promise.all(checkPromises);
 }
 
-// Postinst（packages.json）側の出口関数
-function applyPackageList(packages) {
-    const textarea = document.querySelector('#asu-packages');
-    if (textarea) {
-        textarea.value = packages.join(' ');
-        textarea.style.height = 'auto';
-        textarea.style.height = textarea.scrollHeight + 'px';
-    }
-}
-
 // Core関数3: Postinstテキストエリア更新（最終的な統合・差分検知付き）
 let lastPackageListHash = null;
 
@@ -283,27 +272,35 @@ function updatePackageListToTextarea(source = 'unknown') {
         }
     });
 
-    // テキストエリアから既存パッケージを取得（言語パッケージ以外を保持）
+    // 検索で追加されたパッケージを取得
+    const searchedPackages = new Set();
+    if (packageSearchManager) {
+        const searchValues = packageSearchManager.getAllValues();
+        searchValues.forEach(pkg => searchedPackages.add(pkg));
+    }
+
+    // テキストエリアから既存パッケージを取得（上記以外の手動入力パッケージを保持）
     const manualPackages = new Set();
     const textarea = document.querySelector('#asu-packages');
     if (textarea) {
         const currentPackages = split(textarea.value);
         currentPackages.forEach(pkg => {
-            // 言語パッケージは除外し、その他の手動パッケージのみ保持
+            // 既知のパッケージ以外を手動パッケージとして保持
             if (!basePackages.has(pkg) &&
                 !checkedPackages.has(pkg) &&
+                !searchedPackages.has(pkg) &&
                 !dynamicPackages.has(pkg) &&
-                !pkg.startsWith('luci-i18n-') &&
-                !document.querySelector(`.package-selector-checkbox[data-package="${pkg}"]`)) {
+                !pkg.startsWith('luci-i18n-')) {
                 manualPackages.add(pkg);
             }
         });
     }
 
-    // 全てのパッケージを統合（順序：デバイス固有 → チェック済み → 動的 → 手動）
+    // 全てのパッケージを統合（順序：デバイス固有 → チェック済み → 検索 → 動的 → 手動）
     const finalPackages = [
         ...basePackages,      // デバイス固有パッケージ（必須）
         ...checkedPackages,   // チェックボックスで選択されたパッケージ
+        ...searchedPackages,  // 検索で追加されたパッケージ
         ...dynamicPackages,   // 動的パッケージ（言語パッケージなど）
         ...manualPackages     // 手動で入力されたパッケージ
     ];
@@ -314,13 +311,19 @@ function updatePackageListToTextarea(source = 'unknown') {
     // 差分検知（前回と同じならスキップ）
     const currentHash = JSON.stringify(uniquePackages);
     if (currentHash === lastPackageListHash) {
-        return; // 更新もログも出さない
+        return;
     }
     lastPackageListHash = currentHash;
 
     // ログと更新処理
     console.log(`updatePackageListToTextarea called from: ${source}`);
-    applyPackageList(uniquePackages);
+    
+    if (textarea) {
+        textarea.value = uniquePackages.join(' ');
+        textarea.style.height = 'auto';
+        textarea.style.height = textarea.scrollHeight + 'px';
+    }
+    
     console.log(`Postinst package list updated: ${uniquePackages.length} packages`);
     console.log('Final Postinst package list:', uniquePackages);
 }
@@ -525,7 +528,7 @@ function waitForAsuAndInit(temp, retry = 50) {
     }
 }
 
-// メイン初期化（修正版：依存データ＋UI構築完了後に updateAllPackageState 実行）
+// メイン初期化
 async function initializeCustomFeatures(asuSection, temp) {
     console.log('initializeCustomFeatures called');
 
@@ -543,7 +546,6 @@ async function initializeCustomFeatures(asuSection, temp) {
 
     // 外部データと設定を並列で読み込み
     await Promise.all([
-        // config.js 側で先行開始している Promise を利用
         window.autoConfigPromise,       // auto-config.site-u.workers.dev
         window.informationPromise,      // information.json
         window.packagesDbPromise,       // packages.json
@@ -570,27 +572,27 @@ async function initializeCustomFeatures(asuSection, temp) {
     // フォーム監視設定
     setupFormWatchers();
 
-// initializeCustomFeatures の末尾
-let changed = false;
-if (window.autoConfigData) {
-    changed = applyIspAutoConfig(window.autoConfigData);
-}
+    // initializeCustomFeatures の末尾
+    let changed = false;
+    if (window.autoConfigData) {
+        changed = applyIspAutoConfig(window.autoConfigData);
+    }
 
-// パッケージセレクタ生成
-generatePackageSelector();
+    // パッケージセレクタ生成
+    generatePackageSelector();
 
-// 最初の統合更新（変更があった場合のみ）
-if (changed) {
-    console.log('All data and UI ready, updating package state');
-    updateAllPackageState('isp-auto-config');
-} else {
-    console.log('All data and UI ready, no changes from auto-config');
-}
+    // 最初の統合更新（変更があった場合のみ）
+    if (changed) {
+        console.log('All data and UI ready, updating package state');
+        updateAllPackageState('isp-auto-config');
+    } else {
+        console.log('All data and UI ready, no changes from auto-config');
+    }
 
     customInitialized = true;
 }
 
-// ==================== パッケージ検索機能（追加） ====================
+// ==================== パッケージ検索機能 ====================
 function setupPackageSearch() {
     console.log('setupPackageSearch called');
     
@@ -613,11 +615,13 @@ function setupPackageSearch() {
         className: 'multi-input-item package-search-input',
         onAdd: (packageName) => {
             console.log('Package added:', packageName);
-            addSearchedPackage(packageName);
+            // 動的にパッケージリストを更新
+            updateAllPackageState('package-search-add');
         },
         onRemove: (packageName) => {
             console.log('Package removed:', packageName);
-            removeSearchedPackage(packageName);
+            // 動的にパッケージリストを更新
+            updateAllPackageState('package-search-remove');
         },
         onChange: (values) => {
             // console.log('Package list changed:', values);
@@ -629,30 +633,6 @@ function setupPackageSearch() {
     });
     
     console.log('Package search setup complete');
-}
-
-// パッケージ削除関数を追加
-function removeSearchedPackage(packageName) {
-    console.log('removeSearchedPackage:', packageName);
-    
-    const textarea = document.getElementById('asu-packages');
-    if (!textarea) {
-        console.log('asu-packages textarea not found');
-        return;
-    }
-    
-    const currentPackages = split(textarea.value);
-    const filteredPackages = currentPackages.filter(pkg => pkg !== packageName);
-    
-    if (currentPackages.length !== filteredPackages.length) {
-        textarea.value = filteredPackages.join(' ');
-        
-        // 高さ調整
-        textarea.style.height = 'auto';
-        textarea.style.height = textarea.scrollHeight + 'px';
-        
-        console.log('Package removed from textarea:', packageName);
-    }
 }
 
 // パッケージ検索実行
@@ -757,7 +737,7 @@ async function searchInFeed(query, feed, version, arch) {
     }
 }
 
-// 検索結果表示（CSS分離版・無制限版）
+// 検索結果表示
 function showPackageSearchResults(results, inputElement) {
     // console.log('showPackageSearchResults:', results.length, 'results');
     
@@ -771,7 +751,7 @@ function showPackageSearchResults(results, inputElement) {
     const resultsDiv = document.createElement('div');
     resultsDiv.className = 'package-search-results';
     
-    // 制限を削除：全ての結果を表示
+    // 全ての結果を表示
     results.forEach(pkgName => {
         const item = document.createElement('div');
         item.textContent = pkgName;
@@ -788,9 +768,6 @@ function showPackageSearchResults(results, inputElement) {
             // 手動でconfirmedマークを設定
             inputElement.setAttribute('data-confirmed', 'true');
             
-            // パッケージ追加
-            addSearchedPackage(pkgName);
-            
             // 現在の入力が最後の入力の場合のみ新しい入力を追加
             const inputIndex = packageSearchManager.inputs.indexOf(inputElement);
             if (inputIndex === packageSearchManager.inputs.length - 1) {
@@ -799,8 +776,9 @@ function showPackageSearchResults(results, inputElement) {
             
             clearPackageSearchResults();
             
-            // 変更通知
+            // 変更通知とパッケージリスト更新
             packageSearchManager.options.onChange(packageSearchManager.getAllValues());
+            updateAllPackageState('package-selected');
         };
   
         resultsDiv.appendChild(item);
@@ -813,30 +791,6 @@ function showPackageSearchResults(results, inputElement) {
 function clearPackageSearchResults() {
     const results = document.querySelectorAll('.package-search-results');
     results.forEach(el => el.remove());
-}
-
-// パッケージ追加
-function addSearchedPackage(packageName) {
-    console.log('addSearchedPackage:', packageName);
-    
-    const textarea = document.getElementById('asu-packages');
-    if (!textarea) {
-        console.log('asu-packages textarea not found');
-        return;
-    }
-    
-    const currentPackages = split(textarea.value);
-    
-    if (!currentPackages.includes(packageName)) {
-        currentPackages.push(packageName);
-        textarea.value = currentPackages.join(' ');
-        
-        // 高さ調整
-        textarea.style.height = 'auto';
-        textarea.style.height = textarea.scrollHeight + 'px';
-        
-        console.log('Package added to textarea:', packageName);
-    }
 }
 
 // クリックで検索結果を閉じる
@@ -971,27 +925,6 @@ function cleanupExistingCustomElements() {
         });
 }
 
-// 再初期化処理
-function reinitializeFeatures() {
-    if (!document.querySelector('#asu')) return;
-    
-    setupEventListeners();
-    
-    if (packagesJson) generatePackageSelector();
-    fetchAndDisplayIspInfo();
-    if (cachedApiInfo) updateAutoConnectionInfo(cachedApiInfo);
-
-    // メイン言語セレクターとの同期を再設定
-    const currentMainLanguage = document.querySelector('#languages-select')?.value || config?.fallback_language || 'en';
-    syncLanguageSelectors(currentMainLanguage);
-    console.log('Re-synchronized language on reinit:', currentMainLanguage);
-
-    if (customLanguageMap && Object.keys(customLanguageMap).length) {
-        applyCustomTranslations(customLanguageMap);
-        console.log('Custom translations reapplied after reinit');
-    }
-}
-
 // ==================== 言語セレクター設定 ====================
 function setupLanguageSelector() {
     const mainLanguageSelect = document.querySelector('#languages-select');
@@ -1035,7 +968,7 @@ function syncLanguageSelectors(newLang) {
     updateAllPackageState('sync-language');
 }
 
-// メイン言語セレクター変更ハンドラー（新規追加）
+// メイン言語セレクター変更ハンドラー
 async function handleMainLanguageChange(e) {
     const newLanguage = e.target.value || config?.fallback_language || 'en';
     console.log('Main language changed to:', newLanguage);
@@ -1051,9 +984,6 @@ async function loadCustomTranslations(lang) {
         lang = selectedLanguage || (navigator.language || config.fallback_language).split('-')[0];
     }
     
-    // selectedLanguageを更新しない（これが問題の原因）
-    // selectedLanguage = lang;  // この行を削除
-
     const customLangFile = `langs/custom.${lang}.json`;
     try {
         const resp = await fetch(customLangFile, { cache: 'no-store' });
@@ -1076,7 +1006,7 @@ async function loadCustomTranslations(lang) {
     }
 }
 
-// カスタム言語セレクター変更ハンドラー（修正版）
+// カスタム言語セレクター変更ハンドラー
 async function handleCustomLanguageChange(e) {
     const newLanguage = e.target.value || config?.fallback_language || 'en';
 
@@ -1132,6 +1062,12 @@ function getCurrentPackageList() {
         const pkgName = cb.getAttribute('data-package');
         if (pkgName) packages.add(pkgName);
     });
+    
+    // 検索で追加されたパッケージ
+    if (packageSearchManager) {
+        const searchValues = packageSearchManager.getAllValues();
+        searchValues.forEach(pkg => packages.add(pkg));
+    }
     
     // テキストエリアから既存パッケージ（デバイス初期パッケージ以外）
     const textarea = document.querySelector('#asu-packages');
@@ -1534,16 +1470,6 @@ function handleRadioChange(e) {
                     otherPackages.forEach(pkg => {
                         dynamicPackages.delete(pkg);
                     });
-                    // ← 新規：テキストエリアからも削除
-                    const ta = document.querySelector('#asu-packages');
-                    if (ta) {
-                        const current = split(ta.value);
-                        const cleaned = current.filter(p => !otherPackages.includes(p));
-                        if (cleaned.length !== current.length) {
-                            ta.value = cleaned.join(' ');
-                            resizePostinstTextarea();
-                        }
-                    }           
                 } catch (err) {
                     console.error('Error parsing other packages data:', err);
                 }
@@ -2038,9 +1964,11 @@ function setupCommandsInput() {
         className: 'multi-input-item command-input',
         onAdd: (command) => {
             console.log('Command added:', command);
+            updateCustomCommands();
         },
         onRemove: (command) => {
             console.log('Command removed:', command);
+            updateCustomCommands();
         },
         onChange: (values) => {
             // console.log('Commands changed:', values);
@@ -2615,16 +2543,16 @@ function createPackageCheckbox(pkg, isChecked = false, isDependency = false) {
     
     if (config?.package_url) {
         const link = document.createElement('a');
-        link.href = config.package_url.replace("{id}", encodeURIComponent(pkg.id));  // 変更: pkg.id（内部名）でURL構築
+        link.href = config.package_url.replace("{id}", encodeURIComponent(pkg.id));
         link.target = '_blank';
         link.className = 'package-link';
-        link.textContent = pkg.name || pkg.id;  // 変更: name（表示名）を表示
+        link.textContent = pkg.name || pkg.id;
         link.onclick = (e) => e.stopPropagation();
         label.appendChild(checkbox);
         label.appendChild(link);
     } else {
         const span = document.createElement('span');
-        span.textContent = pkg.name || pkg.id;  // 変更: name（表示名）を表示
+        span.textContent = pkg.name || pkg.id;
         label.appendChild(checkbox);
         label.appendChild(span);
     }
@@ -2676,27 +2604,47 @@ function findPackageById(id) {
 
 function loadUciDefaultsTemplate() {
     const textarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
-    if (!textarea || !config?.uci_defaults_setup_path) return;
+    const templatePath = config?.uci_defaults_setup_path || 'uci-defaults/setup.sh';
+    
+    if (!textarea) {
+        console.error('UCI-defaults textarea not found');
+        return;
+    }
 
     function autoResize() {
         const lines = textarea.value.split('\n').length;
         textarea.style.height = 'auto';
+        textarea.style.height = `${lines * 1.5}em`;
     }
 
     textarea.addEventListener('input', autoResize);
     textarea.addEventListener('paste', () => setTimeout(autoResize, 10));
 
-    fetch(config.uci_defaults_setup_path)
+    // setup.shを読み込み
+    fetch(templatePath + '?t=' + Date.now())
         .then(r => { 
-            if (!r.ok) throw new Error(r.statusText); 
+            if (!r.ok) throw new Error(`Failed to load setup.sh: ${r.statusText}`); 
             return r.text(); 
         })
         .then(text => {
             textarea.value = text;
+            console.log('setup.sh loaded successfully');
             updateVariableDefinitions();
             autoResize();
         })
-        .catch(err => console.error('Failed to load setup.sh:', err));
+        .catch(err => {
+            console.error('Failed to load setup.sh:', err);
+            // フォールバックとして最小限のテンプレートを設定
+            textarea.value = `#!/bin/sh
+# BEGIN_VARIABLE_DEFINITIONS
+# END_VARIABLE_DEFINITIONS
+
+# BEGIN_CUSTOM_COMMANDS
+# END_CUSTOM_COMMANDS
+
+exit 0`;
+            autoResize();
+        });
 }
 
 function updateVariableDefinitions() {
@@ -2808,7 +2756,6 @@ function setupFormWatchers() {
 
 // ==================== ユーティリティ関数 ====================
 
-// GUA用プレフィックスを生成
 // IPv6 が特定の CIDR に含まれるかを判定（簡易版）
 function inCidr(ipv6, cidr) {
     const [prefix, bits] = cidr.split('/');
@@ -2948,4 +2895,4 @@ window.addEventListener('unhandledrejection', function(e) {
     console.error('Custom.js Unhandled Promise Rejection:', e.reason);
 });
 
-console.log('custom.js (Integrated Package Management Version) fully loaded and ready');
+console.log('custom.js (Postinst Dynamic Management & setup.sh Fixed Version) fully loaded and ready');
