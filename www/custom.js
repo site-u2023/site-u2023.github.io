@@ -197,12 +197,7 @@ function updateSetupJsonPackagesCore() {
 // Core関数2: 言語パッケージ更新（UI更新なし）
 async function updateLanguagePackageCore() {
     // デバイス用言語セレクターから現在の言語を取得
-    const customLanguageSelect = document.querySelector('#aios-language');
-    if (customLanguageSelect && customLanguageSelect.value) {
-        selectedLanguage = customLanguageSelect.value;
-    } else if (!selectedLanguage) {
-        selectedLanguage = current_language || config?.fallback_language || 'en';
-    }
+    selectedLanguage = config.device_language || config?.fallback_language || 'en';
 
     // 既存の言語パッケージを一旦全て削除
     const removedPackages = [];
@@ -331,7 +326,7 @@ function updatePackageListToTextarea(source = 'unknown') {
     }
 
 // ===== 言語パックの追加・削除処理 =====
-const langCode = document.querySelector('#languages-select')?.value || current_language || 'en';
+const langCode = config.device_language || config?.fallback_language || 'en';
 const includeLangPack = langCode && langCode !== 'en';
 
 if (includeLangPack) {
@@ -1022,25 +1017,26 @@ function setupLanguageSelector() {
     const mainLanguageSelect = document.querySelector('#languages-select');
     const customLanguageSelect = document.querySelector('#aios-language');
     const fallback = config?.fallback_language || 'en';
-    
-    // 現在のデバイス用言語を決定（ブラウザ言語とは独立）
-    let deviceLanguage = fallback;
-    if (current_language) {
-        deviceLanguage = current_language;
+
+    // 初期デバイス用言語を決定（空ならブラウザ用かフォールバック）
+    if (!config.device_language) {
+        config.device_language = current_language || fallback;
     }
-    
-    // グローバル変数を確実に設定（デバイス用言語）
-    syncLanguageSelectors(deviceLanguage);
-    window.selectedLanguage = deviceLanguage;
-    console.log('Selected language for device:', deviceLanguage);
+
+    syncLanguageSelectors(config.device_language);
+    window.selectedLanguage = config.device_language;
+    console.log('Selected language for device:', config.device_language);
 
     if (mainLanguageSelect) {
         mainLanguageSelect.removeEventListener('change', handleMainLanguageChange);
         mainLanguageSelect.addEventListener('change', handleMainLanguageChange);
     }
-    
-    // 初回言語パッケージ更新（重要：必ず実行）
-    console.log('Performing initial language package update for:', selectedLanguage);
+    if (customLanguageSelect) {
+        customLanguageSelect.removeEventListener('change', handleCustomLanguageChange);
+        customLanguageSelect.addEventListener('change', handleCustomLanguageChange);
+    }
+
+    console.log('Performing initial language package update for:', config.device_language);
     updateAllPackageState('initial-language');
 }
 
@@ -1063,10 +1059,12 @@ function syncLanguageSelectors(newLang) {
 // メイン言語セレクター変更ハンドラー
 async function handleMainLanguageChange(e) {
     const newLanguage = e.target.value || config?.fallback_language || 'en';
-    console.log('Main language changed to:', newLanguage);
+    current_language = newLanguage;
+    config.device_language = newLanguage; // 片方向同期
+    console.log('Main language changed to:', current_language, '(device_language updated)');
 
-    syncLanguageSelectors(newLanguage);
-    await loadCustomTranslations(newLanguage);
+    syncLanguageSelectors(config.device_language);
+    await loadCustomTranslations(current_language);
 
     console.log('Main language change processing completed');
 }
@@ -1102,15 +1100,16 @@ async function loadCustomTranslations(lang) {
 async function handleCustomLanguageChange(e) {
     const newLanguage = e.target.value || config?.fallback_language || 'en';
 
-    if (selectedLanguage === newLanguage) {
-        console.log('Language not changed, skipping update');
+    if (config.device_language === newLanguage) {
+        console.log('Device language not changed, skipping update');
         return;
     }
 
-    syncLanguageSelectors(newLanguage);
-    console.log('Custom language changed to:', newLanguage);
+    config.device_language = newLanguage; // current_language は触らない
+    console.log('Custom device language changed to:', config.device_language);
 
-    await loadCustomTranslations(newLanguage);
+    syncLanguageSelectors(config.device_language);
+    await loadCustomTranslations(config.device_language);
     updateVariableDefinitions();
 
     console.log('Custom language change processing completed');
