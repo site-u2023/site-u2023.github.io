@@ -850,82 +850,13 @@ function replaceAsuSection(asuSection, temp) {
         </a>
     `;
     
+    // 子要素を追加
     while (buildElements.firstChild) {
         newDiv.appendChild(buildElements.firstChild);
     }
     
     asuSection.parentNode.replaceChild(newDiv, asuSection);
 }
-
-// === ADDED: 補足ノートの挿入ユーティリティ ===
-function appendAsuErrorNote(message) {
-    const status = document.querySelector('#asu-buildstatus');
-    if (!status) return;
-
-    // 重複挿入防止
-    if (status.querySelector('.asu-error-note')) return;
-
-    const note = document.createElement('div');
-    note.className = 'asu-error-note';
-    note.style.marginTop = '0.5em';
-    note.style.color = 'var(--text)';
-    note.style.background = 'var(--bg-item)';
-    note.style.borderRadius = '0.2em';
-    note.style.padding = '0.5em 0.6em';
-    note.style.fontSize = '0.95em';
-    note.textContent = message;
-
-    status.appendChild(note);
-}
-
-// === ADDED: 赤帯とSTDERRを監視して補足を出す ===
-function setupAsuErrorNoteObserver() {
-    const statusSpan = document.querySelector('#asu-buildstatus > span');
-    const stderr = document.querySelector('#asu-stderr');
-    const statusRoot = document.querySelector('#asu-buildstatus');
-
-    if (!statusSpan || !stderr || !statusRoot) return;
-
-    // 状態テキスト監視（赤帯の文言更新）
-    const statusObserver = new MutationObserver(() => {
-        const text = (statusSpan.textContent || '').trim().toLowerCase();
-        const errText = (stderr.textContent || '').toLowerCase();
-        if (text === 'init' && errText.includes('disk quota exceeded')) {
-            appendAsuErrorNote(
-                'Server-side build error: Disk quota exceeded. This is a temporary infrastructure issue — please try again later.'
-            );
-        }
-    });
-
-    statusObserver.observe(statusSpan, { childList: true, characterData: true, subtree: true });
-
-    // STDERR監視（ログが後から入る場合にも対応）
-    const stderrObserver = new MutationObserver(() => {
-        const text = (statusSpan.textContent || '').trim().toLowerCase();
-        const errText = (stderr.textContent || '').toLowerCase();
-        if (text === 'init' && errText.includes('disk quota exceeded')) {
-            appendAsuErrorNote(
-                'Server-side build error: Disk quota exceeded. This is a temporary infrastructure issue — please try again later.'
-            );
-        }
-    });
-
-    stderrObserver.observe(stderr, { childList: true, characterData: true, subtree: true });
-
-    // 初期一回チェック（既に値が入っている場合）
-    const initialStatus = (statusSpan.textContent || '').trim().toLowerCase();
-    const initialErr = (stderr.textContent || '').toLowerCase();
-    if (initialStatus === 'init' && initialErr.includes('disk quota exceeded')) {
-        appendAsuErrorNote(
-            'Server-side build error: Disk quota exceeded. This is a temporary infrastructure issue — please try again later.'
-        );
-    }
-}
-
-// === ADDED: 初期化の最後で監視を起動 ===
-// 既存: initializeCustomFeatures の末尾（customInitialized = true; の直前か直後）に1行追加
-// 既存関数本体は変更せず、その直後に次の1行を追加してください:
-setupAsuErrorNoteObserver();
 
 // 拡張情報セクション挿入（JSON駆動で動的生成）
 async function insertExtendedInfo(temp) {
