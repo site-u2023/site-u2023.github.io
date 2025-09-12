@@ -818,32 +818,29 @@ document.addEventListener('click', function(e) {
 
 // #asuセクションを置き換え（修正版：index.jsが期待するDOM要素を全て保持）
 function replaceAsuSection(asuSection, temp) {
-    // 元の#asuの内容をクリア（構造は保持）
-    asuSection.innerHTML = '';
+    if (!asuSection) return;
     asuSection.style.width = '100%';
-    
-    // custom.htmlから必要な要素を移動
-    const customPackages = temp.querySelector('#custom-packages-section details');
-    const customScripts = temp.querySelector('#custom-scripts-section details');
-    const buildElements = temp.querySelector('#asu-build-elements');
 
-    if (customPackages) {
-        customPackages.id = 'custom-packages-details';
-        asuSection.appendChild(customPackages);
-    }
-    if (customScripts) {
-        customScripts.id = 'custom-scripts-details';
-        asuSection.appendChild(customScripts);
-    }
+    ['#packages-details', '#scripts-details', '#extended-build-info']
+      .forEach(sel => {
+          const el = document.querySelector(sel);
+          if (el) el.remove();
+      });
+
+    const packagesDetails = temp.querySelector('#packages-details');
+    const scriptsDetails  = temp.querySelector('#scripts-details');
+    const buildElements   = temp.querySelector('#asu-build-elements');
+
+    if (packagesDetails) asuSection.appendChild(packagesDetails);
+    if (scriptsDetails)  asuSection.appendChild(scriptsDetails);
+
     if (buildElements) {
-        // 子要素を直接追加
         while (buildElements.firstChild) {
             asuSection.appendChild(buildElements.firstChild);
         }
     }
-    
-    asuSection.parentNode.replaceChild(temp, asuSection);
 }
+
 
 // 拡張情報セクション挿入（JSON駆動で動的生成）
 async function insertExtendedInfo(temp) {
