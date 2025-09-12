@@ -494,26 +494,50 @@ async function loadCustomHTML() {
         // DOM反映を保証
         await new Promise(requestAnimationFrame);
 
-        // 必要要素が揃うまで待機（別関数なし）
+        // 必要要素が揃うまで待機
         const start = performance.now();
         const timeout = 2000;
         while (performance.now() - start < timeout) {
-            const hasAllChildren =
+            const ready =
                 document.querySelector('#dynamic-config-sections') &&
                 document.querySelector('#commands-autocomplete') &&
                 document.querySelector('#package-search-autocomplete');
-            if (asuSection && hasAllChildren) {
-                await initializeCustomFeatures(asuSection, temp);
-                await insertExtendedInfo(temp);
-                return;
-            }
+            if (ready) break;
             await new Promise(r => setTimeout(r, 50));
         }
 
-        console.warn('#asu or required children not found within timeout');
+        // 初期化
+        await initializeCustomFeatures(asuSection, temp);
+        await insertExtendedInfo(temp);
 
     } catch (err) {
         console.error('Failed to load custom.html:', err);
+    }
+}
+
+function replaceAsuSection(asuSection, temp) {
+    if (!asuSection) return;
+    asuSection.style.width = '100%';
+
+    // 元IDを持つ既存要素を削除
+    ['#packages-details', '#scripts-details', '#extended-build-info']
+      .forEach(sel => {
+          const el = document.querySelector(sel);
+          if (el) el.remove();
+      });
+
+    // custom.html から取り出し（IDはそのまま）
+    const packagesDetails = temp.querySelector('#packages-details');
+    const scriptsDetails  = temp.querySelector('#scripts-details');
+    const buildElements   = temp.querySelector('#asu-build-elements');
+
+    if (packagesDetails) asuSection.appendChild(packagesDetails);
+    if (scriptsDetails)  asuSection.appendChild(scriptsDetails);
+
+    if (buildElements) {
+        while (buildElements.firstChild) {
+            asuSection.appendChild(buildElements.firstChild);
+        }
     }
 }
 
