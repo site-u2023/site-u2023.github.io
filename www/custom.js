@@ -132,7 +132,7 @@ async function updateAllPackageState(source = 'unknown') {
 
     console.log(`updateAllPackageState called from: ${source}`);
 
-    // 1. setup.jsonベースのパッケージ更新
+    // 1. setup.jsonベースの仮想チェックボックス操作
     updateSetupJsonPackagesCore();
 
     // 2. 言語パッケージの更新
@@ -147,7 +147,7 @@ async function updateAllPackageState(source = 'unknown') {
     console.log('All package state updated successfully');
 }
 
-// Core関数1: setup.jsonベースのパッケージ更新（UI更新なし）
+// Core関数1: setup.jsonベースの仮想チェックボックス操作（新実装）
 function updateSetupJsonPackagesCore() {
     if (!setupConfig) return;
     
@@ -156,43 +156,73 @@ function updateSetupJsonPackagesCore() {
             if (pkg.type === 'radio-group' && pkg.variableName) {
                 const selectedValue = getFieldValue(`input[name="${pkg.variableName}"]:checked`);
                 if (selectedValue) {
-                    const selectedOption = pkg.options.find(opt => opt.value === selectedValue);
-                    if (selectedOption && selectedOption.packages) {
-                        selectedOption.packages.forEach(pkgName => {
-                            dynamicPackages.add(pkgName);
-                        });
-                    }
-                    
+                    // 全ての選択肢を先にリセット
                     pkg.options.forEach(opt => {
-                        if (opt.value !== selectedValue && opt.packages) {
-                            opt.packages.forEach(pkgName => {
-                                dynamicPackages.delete(pkgName);
-                            });
+                        if (opt.value !== selectedValue) {
+                            // 非選択状態のパッケージを無効化
+                            toggleVirtualPackagesByType(pkg.variableName, opt.value, false);
                         }
                     });
+                    
+                    // 選択されたオプションのパッケージを有効化
+                    toggleVirtualPackagesByType(pkg.variableName, selectedValue, true);
                     
                     // AUTO時の特別処理
                     if (pkg.variableName === 'connection_type' && selectedValue === 'auto' && cachedApiInfo) {
                         if (cachedApiInfo.mape?.brIpv6Address) {
-                            const mapeOption = pkg.options.find(opt => opt.value === 'mape');
-                            if (mapeOption && mapeOption.packages) {
-                                mapeOption.packages.forEach(pkgName => {
-                                    dynamicPackages.add(pkgName);
-                                });
-                            }
+                            toggleVirtualPackage('map', true);
                         } else if (cachedApiInfo.aftr) {
-                            const dsliteOption = pkg.options.find(opt => opt.value === 'dslite');
-                            if (dsliteOption && dsliteOption.packages) {
-                                dsliteOption.packages.forEach(pkgName => {
-                                    dynamicPackages.add(pkgName);
-                                });
-                            }
+                            toggleVirtualPackage('ds-lite', true);
                         }
                     }
                 }
             }
         });
     });
+}
+
+// 仮想パッケージチェックボックス操作関数（新規追加）
+function toggleVirtualPackage(packageId, enabled) {
+    const checkbox = document.querySelector(`[data-package="${packageId}"]`);
+    if (checkbox) {
+        const wasChecked = checkbox.checked;
+        checkbox.checked = enabled;
+        
+        if (wasChecked !== enabled) {
+            console.log(`Virtual package ${packageId}: ${enabled ? 'enabled' : 'disabled'}`);
+            
+            // 依存関係も処理
+            const dependencies = checkbox.getAttribute('data-dependencies');
+            if (dependencies && enabled) {
+                dependencies.split(',').forEach(depId => {
+                    const depCheckbox = document.querySelector(`[data-package="${depId}"]`);
+                    if (depCheckbox) {
+                        depCheckbox.checked = true;
+                    }
+                });
+            }
+        }
+    }
+}
+
+// タイプ別仮想パッケージ操作関数（新規追加）
+function toggleVirtualPackagesByType(type, value, enabled) {
+    const packageMap = {
+        'connection_type': {
+            'mape': ['map'],
+            'dslite': ['ds-lite']
+        },
+        'wifi_mode': {
+            'usteer': ['usteer-from-setup']
+        }
+    };
+    
+    const packages = packageMap[type]?.[value];
+    if (packages) {
+        packages.forEach(pkgId => {
+            toggleVirtualPackage(pkgId, enabled);
+        });
+    }
 }
 
 // Core関数2: 言語パッケージ更新（UI更新なし）
@@ -1386,10 +1416,6 @@ function buildField(parent, pkg) {
                 radio.name = pkg.variableName || pkg.id;
                 radio.value = opt.value;
                 
-                if (opt.packages && Array.isArray(opt.packages)) {
-                    radio.setAttribute('data-packages', JSON.stringify(opt.packages));
-                }
-                
                 if (opt.checked || (pkg.defaultValue != null && opt.value === pkg.defaultValue)) {
                     radio.checked = true;
                 }
@@ -1535,35 +1561,6 @@ function buildFormGroup(field) {
 
 function handleRadioChange(e) {
     const radio = e.target;
-    const packagesData = radio.getAttribute('data-packages');
-    const sameNameRadios = document.querySelectorAll(`input[name="${radio.name}"]`);
-    sameNameRadios.forEach(r => {
-        if (r !== radio) {
-            const otherPackagesData = r.getAttribute('data-packages');
-            if (otherPackagesData) {
-                try {
-                    const otherPackages = JSON.parse(otherPackagesData);
-                    otherPackages.forEach(pkg => {
-                        dynamicPackages.delete(pkg);
-                    });
-                } catch (err) {
-                    console.error('Error parsing other packages data:', err);
-                }
-            }
-        }
-    });
-    
-    // 選択されたラジオボタンの動的パッケージを追加
-    if (packagesData) {
-        try {
-            const packages = JSON.parse(packagesData);
-            packages.forEach(pkg => {
-                dynamicPackages.add(pkg);
-            });
-        } catch (err) {
-            console.error('Error parsing packages data:', err);
-        }
-    }
     
     // MAP-Eタイプ切り替え時の特別処理
     if (radio.name === 'mape_type') {
@@ -2507,6 +2504,12 @@ function generatePackageSelector() {
     container.innerHTML = '';
     
     packagesJson.categories.forEach(category => {
+        // 隠しカテゴリをスキップ
+        if (category.hidden) {
+            console.log(`Skipping hidden category: ${category.id}`);
+            return;
+        }
+        
         const categoryDiv = createPackageCategory(category);
         if (categoryDiv) {
             container.appendChild(categoryDiv);
@@ -2971,4 +2974,4 @@ window.addEventListener('unhandledrejection', function(e) {
     console.error('Custom.js Unhandled Promise Rejection:', e.reason);
 });
 
-console.log('custom.js (Postinst Dynamic Management & setup.sh Fixed Version) fully loaded and ready');
+console.log('custom.js (Unified Virtual Package Management System) fully loaded and ready');
