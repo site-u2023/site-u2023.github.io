@@ -553,7 +553,7 @@ async function initializeCustomFeatures(asuSection, temp) {
     // auto-config データがあれば UI に反映
     if (window.autoConfigData) {
         console.log('Applying auto-config data to UI');
-        applyAutoConfigData(window.autoConfigData);
+        applyIspAutoConfig(window.autoConfigData);
     }
 
     // ここで初めて updateAllPackageState を呼ぶ
