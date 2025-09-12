@@ -587,6 +587,10 @@ async function initializeCustomFeatures(asuSection, temp) {
         updateAllPackageState('isp-auto-config');
     } else {
         console.log('All data and UI ready, no changes from auto-config');
+        // 変更がなくても、デバイスパッケージは確実に反映
+        setTimeout(() => {
+            updatePackageListToTextarea('initial-sync');
+        }, 200);
     }
 
     customInitialized = true;
