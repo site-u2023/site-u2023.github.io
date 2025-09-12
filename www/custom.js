@@ -1013,6 +1013,7 @@ function cleanupExistingCustomElements() {
         });
 }
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ==================== 言語セレクター設定 ====================
 function setupLanguageSelector() {
     const mainLanguageSelect = document.querySelector('#languages-select');   // ブラウザ用
@@ -1024,9 +1025,9 @@ function setupLanguageSelector() {
         current_language = (navigator.language || fallback).split('-')[0];
     }
 
-    // 初期デバイス用言語が未設定ならフォールバック
+    // 初期デバイス用言語が未設定なら、最初だけブラウザ用をコピー
     if (!config.device_language) {
-        config.device_language = current_language; // 最初だけコピー
+        config.device_language = current_language;
     }
 
     // それぞれ独立して同期（相互に触らない）
@@ -1069,6 +1070,27 @@ function syncDeviceLanguageSelector(lang) {
     selectedLanguage = lang;
 }
 
+// メイン言語セレクター変更ハンドラー（ブラウザ用 → デバイス用に片方向同期）
+async function handleMainLanguageChange(e) {
+    const newLanguage = e.target.value || config?.fallback_language || 'en';
+
+    // ブラウザ用（UI表示）を更新
+    current_language = newLanguage;
+    syncBrowserLanguageSelector(current_language); // #languages-select のみ更新
+
+    // UI翻訳はブラウザ用言語でのみロード（custom.js.json は current_language 固定）
+    await loadCustomTranslations(current_language);
+
+    // 片方向同期：ブラウザ用の変更をデバイス用にも反映
+    config.device_language = current_language;
+    syncDeviceLanguageSelector(config.device_language); // #aios-language のみ更新
+
+    console.log('Main language changed to:', current_language, '(device_language updated)');
+
+    // デバイス用パッケージ更新
+    updateAllPackageState('browser-language-changed');
+}
+
 // カスタム言語セレクター変更ハンドラー（デバイス用 → UIは変えない）
 async function handleCustomLanguageChange(e) {
     const newLanguage = e.target.value || config?.fallback_language || 'en';
@@ -1094,8 +1116,9 @@ async function handleCustomLanguageChange(e) {
 }
 
 async function loadCustomTranslations(lang) {
+    // UI翻訳は必ず current_language を使う
     if (!lang) {
-        lang = selectedLanguage || (navigator.language || config.fallback_language).split('-')[0];
+        lang = current_language || (navigator.language || config.fallback_language).split('-')[0];
     }
     
     const customLangFile = `langs/custom.${lang}.json`;
@@ -1118,30 +1141,6 @@ async function loadCustomTranslations(lang) {
             return loadCustomTranslations(config.fallback_language);
         }
     }
-}
-
-// カスタム言語セレクター変更ハンドラー（デバイス用 → UIは変えない）
-async function handleCustomLanguageChange(e) {
-    const newLanguage = e.target.value || config?.fallback_language || 'en';
-
-    if (config.device_language === newLanguage) {
-        console.log('Device language not changed, skipping update');
-        return;
-    }
-
-    // デバイス用のみ更新（UI表示用の current_language は触らない）
-    config.device_language = e.target.value || fallback;
-    syncDeviceLanguageSelector(config.device_language); // #aios-language のみ更新
-
-    console.log('Custom device language changed to:', config.device_language);
-
-    // UI翻訳は変えないので loadCustomTranslations は呼ばない
-    updateVariableDefinitions();
-
-    // デバイス用パッケージリストを再構築
-    updateAllPackageState('device-language-changed');
-
-    console.log('Custom language change processing completed');
 }
 
 function applyCustomTranslations(map) {
@@ -1194,7 +1193,6 @@ function getCurrentPackageList() {
     if (textarea) {
         const textPackages = split(textarea.value);
         textPackages.forEach(pkg => {
-            // デバイス初期パッケージでなければ追加
             if (!deviceDefaultPackages.includes(pkg) && 
                 !deviceDevicePackages.includes(pkg) && 
                 !extraPackages.includes(pkg)) {
@@ -1219,7 +1217,6 @@ async function isPackageAvailable(pkgName, feed) {
         return false;
     }
     
-    // デバイス情報を確認
     const arch = current_device?.arch || cachedDeviceArch;
     const version = current_device?.version || $("#versions").value;
     
@@ -1227,7 +1224,6 @@ async function isPackageAvailable(pkgName, feed) {
         console.log('Missing device info for package check:', { arch, version });
         return false;
     }
-    
     
     try {
         let packagesUrl;
