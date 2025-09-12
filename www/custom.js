@@ -211,7 +211,7 @@ async function updateLanguagePackageCore() {
     }
 
     // 現在の選択済みパッケージに対応する言語パッケージをチェックして追加
-    const currentPackages = getCurrentPackageList();
+    const currentPackages = getCurrentPackageListExcludingLanguages();
     const checkPromises = [];
     
     for (const pkg of currentPackages) {
@@ -1021,7 +1021,7 @@ function extractLuciName(pkg) {
     return null;
 }
 
-function getCurrentPackageList() {
+function getCurrentPackageListExcludingLanguages() {
     const packages = new Set();
     
     // デバイス初期パッケージを必ず含める
@@ -1035,13 +1035,14 @@ function getCurrentPackageList() {
         if (pkgName) packages.add(pkgName);
     });
     
-    // テキストエリアから既存パッケージ（デバイス初期パッケージ以外）
+    // テキストエリアから既存パッケージ（言語パッケージを除外）
     const textarea = document.querySelector('#asu-packages');
     if (textarea) {
         const textPackages = split(textarea.value);
         textPackages.forEach(pkg => {
-            // デバイス初期パッケージでなければ追加
-            if (!deviceDefaultPackages.includes(pkg) && 
+            // 言語パッケージとデバイス初期パッケージを除外
+            if (!pkg.startsWith('luci-i18n-') &&
+                !deviceDefaultPackages.includes(pkg) && 
                 !deviceDevicePackages.includes(pkg) && 
                 !extraPackages.includes(pkg)) {
                 packages.add(pkg);
