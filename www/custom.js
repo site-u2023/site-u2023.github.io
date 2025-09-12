@@ -20,7 +20,7 @@ window.addEventListener('load', () => {
 // ==================== グローバル変数 ====================
 let customInitialized = false;
 let customHTMLLoaded = false;
-let PACKAGE_DB = null;
+let packagesJson = null;
 let setupConfig = null;
 let formStructure = {};
 let cachedApiInfo = null;
@@ -879,7 +879,7 @@ function reinitializeFeatures() {
     
     setupEventListeners();
     
-    if (PACKAGE_DB) generatePackageSelector();
+    if (packagesJson) generatePackageSelector();
     fetchAndDisplayIspInfo();
     if (cachedApiInfo) updateAutoConnectionInfo(cachedApiInfo);
 
@@ -1126,7 +1126,7 @@ async function isPackageAvailable(pkgName, feed) {
 // ==================== setup.json 処理 ====================
 async function loadSetupConfig() {
     try {
-        const url = config?.setup_db_url || 'uci-defaults/setup.json';
+        const url = config?.setup_db_path || 'uci-defaults/setup.json';
         const response = await fetch(url + '?t=' + Date.now());
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         
@@ -2370,15 +2370,15 @@ function updateAutoConnectionInfo(apiInfo) {
 
 async function loadPackageDatabase() {
     try {
-        const url = config?.packages_db_url || 'packages/packages.json';
+        const url = config?.packages_db_path || 'packages/packages.json';
         const response = await fetch(url);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        PACKAGE_DB = await response.json();
-        console.log('Package database loaded:', PACKAGE_DB);
+        packagesJson = await response.json();
+        console.log('Package database loaded:', packagesJson);
         
         generatePackageSelector();
         
-        return PACKAGE_DB;
+        return packagesJson;
     } catch (err) {
         console.error('Failed to load package database:', err);
         return null;
@@ -2387,13 +2387,13 @@ async function loadPackageDatabase() {
 
 function generatePackageSelector() {
     const container = document.querySelector('#package-categories');
-    if (!container || !PACKAGE_DB) {
+    if (!container || !packagesJson) {
         return;
     }
     
     container.innerHTML = '';
     
-    PACKAGE_DB.categories.forEach(category => {
+    packagesJson.categories.forEach(category => {
         const categoryDiv = createPackageCategory(category);
         if (categoryDiv) {
             container.appendChild(categoryDiv);
@@ -2401,7 +2401,7 @@ function generatePackageSelector() {
     });
     
     updateAllPackageState('package-selector-init');
-    console.log(`Generated ${PACKAGE_DB.categories.length} package categories`);
+    console.log(`Generated ${packagesJson.categories.length} package categories`);
 }
 
 function createPackageCategory(category) {
@@ -2554,9 +2554,9 @@ function handlePackageSelection(e) {
 }
 
 function findPackageById(id) {
-    if (!PACKAGE_DB) return null;
+    if (!packagesJson) return null;
     
-    for (const category of PACKAGE_DB.categories) {
+    for (const category of packagesJson.categories) {
         const pkg = category.packages.find(p => p.uniqueId === id || p.id === id);
         if (pkg) return pkg;
     }
@@ -2567,7 +2567,7 @@ function findPackageById(id) {
 
 function loadUciDefaultsTemplate() {
     const textarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
-    if (!textarea || !config?.uci_defaults_setup_url) return;
+    if (!textarea || !config?.uci_defaults_setup_path) return;
 
     function autoResize() {
         const lines = textarea.value.split('\n').length;
@@ -2577,7 +2577,7 @@ function loadUciDefaultsTemplate() {
     textarea.addEventListener('input', autoResize);
     textarea.addEventListener('paste', () => setTimeout(autoResize, 10));
 
-    fetch(config.uci_defaults_setup_url)
+    fetch(config.uci_defaults_setup_path)
         .then(r => { 
             if (!r.ok) throw new Error(r.statusText); 
             return r.text(); 
