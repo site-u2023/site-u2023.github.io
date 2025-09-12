@@ -862,7 +862,7 @@ async function insertExtendedInfo(temp) {
     
     // information.jsonから構造を読み込み
     try {
-        const infoUrl = config?.information_url || 'auto-config/information.json';
+        const infoUrl = config?.information_path || 'auto-config/information.json';
         const response = await fetch(infoUrl + '?t=' + Date.now());
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         
