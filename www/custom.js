@@ -804,13 +804,14 @@ document.addEventListener('click', function(e) {
     }
 });
 
-// #asuセクションを置き換え（修正版：index.jsが期待するDOM要素を全て保持）
+// #asuセクションを置き換え（index.js互換要素を維持）
 function replaceAsuSection(asuSection, temp) {
     const newDiv = document.createElement('div');
     newDiv.id = 'asu';
     newDiv.className = asuSection.className;
     newDiv.style.width = '100%';
     
+    // custom.htmlから必要な要素を移動
     const customPackages = temp.querySelector('#custom-packages-section details');
     const customScripts = temp.querySelector('#custom-scripts-section details');
 
@@ -823,8 +824,9 @@ function replaceAsuSection(asuSection, temp) {
         newDiv.appendChild(customScripts);
     }
 
-    // index.jsが期待する全てのDOM要素を追加
-    newDiv.insertAdjacentHTML('beforeend', `
+    // index.jsが期待する全てのDOM要素を直接追加
+    const buildElements = document.createElement('div');
+    buildElements.innerHTML = `
         <br>
         <div id="asu-buildstatus" class="hide">
             <span></span>
@@ -846,7 +848,12 @@ function replaceAsuSection(asuSection, temp) {
         <a href="javascript:buildAsuRequest()" class="custom-link">
             <span></span><span class="tr-request-build">REQUEST BUILD</span>
         </a>
-    `);
+    `;
+    
+    // 子要素を追加
+    while (buildElements.firstChild) {
+        newDiv.appendChild(buildElements.firstChild);
+    }
     
     asuSection.parentNode.replaceChild(newDiv, asuSection);
 }
