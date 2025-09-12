@@ -972,7 +972,11 @@ function syncLanguageSelectors(newLang) {
     }
 
     selectedLanguage = newLang;
-    updateAllPackageState('sync-language');
+    
+    // 言語変更時に統合パッケージ更新を実行（重要）
+    if (customInitialized) {
+        updateAllPackageState('sync-language');
+    }
 }
 
 // メイン言語セレクター変更ハンドラー
