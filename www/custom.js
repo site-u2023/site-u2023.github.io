@@ -550,6 +550,12 @@ async function initializeCustomFeatures(asuSection, temp) {
     // フォーム監視設定
     setupFormWatchers();
 
+    // auto-config データがあれば UI に反映
+    if (window.autoConfigData) {
+        console.log('Applying auto-config data to UI');
+        applyAutoConfigData(window.autoConfigData);
+    }
+
     // ここで初めて updateAllPackageState を呼ぶ
     // → UI構造も外部データも揃っているので collectFormValues() が安全に動く
     console.log('All data and UI ready, updating package state');
