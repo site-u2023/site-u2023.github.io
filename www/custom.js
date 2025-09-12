@@ -2575,6 +2575,7 @@ function handlePackageSelection(e) {
     const pkg = e.target;
     const isChecked = pkg.checked;
     
+    // 依存関係の処理
     const dependencies = pkg.getAttribute('data-dependencies');
     if (dependencies) {
         dependencies.split(',').forEach(depName => {
@@ -2598,6 +2599,9 @@ function handlePackageSelection(e) {
             }
         });
     }
+    
+    // 統合パッケージ状態を更新（重要：これが抜けていた）
+    console.log('Package selection changed:', pkg.getAttribute('data-package'), 'checked:', isChecked);
     updateAllPackageState('package-selection');
 }
 
