@@ -102,8 +102,8 @@ window.updateImages = function(version, mobj) {
 // 前回のフォーム状態ハッシュを保持
 let lastFormStateHash = null;
 
-// 差分検知付きの安全なパッケージ状態更新
-async function safeUpdateAllPackageState(source = 'unknown') {
+// 差分検知付きのパッケージ状態更新（関数名は変更しない）
+async function updateAllPackageState(source = 'unknown') {
     // 現在のフォーム状態を収集
     const currentState = collectFormValues();
     const hash = JSON.stringify(currentState);
@@ -582,7 +582,7 @@ generatePackageSelector();
 // 最初の統合更新（変更があった場合のみ）
 if (changed) {
     console.log('All data and UI ready, updating package state');
-    safeUpdateAllPackageState('isp-auto-config');
+    updateAllPackageState('isp-auto-config');
 } else {
     console.log('All data and UI ready, no changes from auto-config');
 }
@@ -2439,8 +2439,6 @@ function applyIspAutoConfig(apiInfo) {
         updateAutoConnectionInfo(apiInfo);
     }
 
-    // ここでは updateAllPackageState を呼ばない（多重呼び出しの根を断つ）
-    // 呼び出し元で safeUpdateAllPackageState('isp-auto-config') を1回だけ実行すること
     return mutated;
 }
 
