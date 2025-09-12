@@ -79,6 +79,12 @@ window.updateImages = function(version, mobj) {
         
         // パッケージリスト設定後にリサイズ
         setTimeout(() => resizePostinstTextarea(), 100);
+        
+        // カスタム機能が初期化済みの場合、統合パッケージ更新を実行
+        if (customInitialized) {
+            console.log('Device changed after initialization, updating all package state');
+            setTimeout(() => updateAllPackageState('device-change'), 200);
+        }
     }
     
     // 初回のみカスタムHTMLを読み込み
@@ -572,21 +578,22 @@ async function initializeCustomFeatures(asuSection, temp) {
     // フォーム監視設定
     setupFormWatchers();
 
-    // initializeCustomFeatures の末尾
+    // パッケージセレクタ生成
+    generatePackageSelector();
+
+    // 統合パッケージ状態の初期化（初期値を確実に反映）
+    console.log('Performing initial package state update');
+    await updateAllPackageState('initial-state');
+
+    // 最後にISP自動設定の適用（変更があった場合のみ追加更新）
     let changed = false;
     if (window.autoConfigData) {
         changed = applyIspAutoConfig(window.autoConfigData);
     }
 
-    // パッケージセレクタ生成
-    generatePackageSelector();
-
-    // 最初の統合更新（変更があった場合のみ）
     if (changed) {
-        console.log('All data and UI ready, updating package state');
-        updateAllPackageState('isp-auto-config');
-    } else {
-        console.log('All data and UI ready, no changes from auto-config');
+        console.log('ISP auto-config applied, updating package state again');
+        await updateAllPackageState('isp-auto-config');
     }
 
     customInitialized = true;
@@ -965,7 +972,11 @@ function syncLanguageSelectors(newLang) {
     }
 
     selectedLanguage = newLang;
-    updateAllPackageState('sync-language');
+    
+    // 言語変更時に統合パッケージ更新を実行（重要）
+    if (customInitialized) {
+        updateAllPackageState('sync-language');
+    }
 }
 
 // メイン言語セレクター変更ハンドラー
@@ -2564,6 +2575,7 @@ function handlePackageSelection(e) {
     const pkg = e.target;
     const isChecked = pkg.checked;
     
+    // 依存関係の処理
     const dependencies = pkg.getAttribute('data-dependencies');
     if (dependencies) {
         dependencies.split(',').forEach(depName => {
@@ -2587,6 +2599,9 @@ function handlePackageSelection(e) {
             }
         });
     }
+    
+    // 統合パッケージ状態を更新（重要：これが抜けていた）
+    console.log('Package selection changed:', pkg.getAttribute('data-package'), 'checked:', isChecked);
     updateAllPackageState('package-selection');
 }
 
