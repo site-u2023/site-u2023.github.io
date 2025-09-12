@@ -556,8 +556,10 @@ async function initializeCustomFeatures(asuSection, temp) {
         applyIspAutoConfig(window.autoConfigData);
     }
 
+    // UI構築と外部データが揃った段階でパッケージセレクタ生成
+    generatePackageSelector();
+
     // ここで初めて updateAllPackageState を呼ぶ
-    // → UI構造も外部データも揃っているので collectFormValues() が安全に動く
     console.log('All data and UI ready, updating package state');
     updateAllPackageState();
 
@@ -2366,41 +2368,51 @@ function displayIspInfo(apiInfo) {
 }
 
 function applyIspAutoConfig(apiInfo) {
-    if (!apiInfo || !formStructure.fields) return;
+    // API情報またはフォーム構造が未定義なら安全にスキップ
+    if (!apiInfo || !formStructure || !formStructure.fields) {
+        console.warn('applyIspAutoConfig: formStructure not ready, skipping');
+        return;
+    }
     
     const connectionType = getFieldValue('input[name="connection_type"]');
     
     Object.values(formStructure.fields).forEach(field => {
-        if (field.apiMapping) {
-            const isConnectionField = ['dslite', 'mape', 'ap', 'pppoe'].some(type => 
-                formStructure.connectionTypes[type]?.includes(field.id)
-            );
-            
-            if (isConnectionField && connectionType !== 'auto') {
-                return;
-            }
-            
-            let value = getNestedValue(apiInfo, field.apiMapping);
+        if (!field.apiMapping) return;
 
-            if (field.variableName === 'mape_gua_prefix') {
-                const guaPrefix = generateGuaPrefixFromFullAddress(cachedApiInfo);
-                if (guaPrefix) {
-                    value = guaPrefix;
-                }
-            }
+        const isConnectionField = ['dslite', 'mape', 'ap', 'pppoe'].some(type => 
+            formStructure.connectionTypes[type]?.includes(field.id)
+        );
+        
+        if (isConnectionField && connectionType !== 'auto') {
+            return;
+        }
+        
+        let value = getNestedValue(apiInfo, field.apiMapping);
 
-            if (value !== null && value !== undefined && value !== '') {
-                const element = document.querySelector(field.selector);
-                if (element) {
-                    element.value = value;
-                }
+        if (field.variableName === 'mape_gua_prefix') {
+            const guaPrefix = generateGuaPrefixFromFullAddress(cachedApiInfo);
+            if (guaPrefix) {
+                value = guaPrefix;
+            }
+        }
+
+        if (value !== null && value !== undefined && value !== '') {
+            const element = document.querySelector(field.selector);
+            if (element) {
+                element.value = value;
             }
         }
     });
     
     setGuaPrefixIfAvailable();    
     updateAutoConnectionInfo(apiInfo);
-    updateAllPackageState('isp-auto-config');
+
+    // UI構築が完了している場合のみパッケージ状態更新
+    if (formStructure && formStructure.fields) {
+        updateAllPackageState('isp-auto-config');
+    } else {
+        console.warn('applyIspAutoConfig: skipped updateAllPackageState due to incomplete formStructure');
+    }
 }
 
 function updateAutoConnectionInfo(apiInfo) {
@@ -2447,8 +2459,6 @@ async function loadPackageDatabase() {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         packagesJson = await response.json();
         console.log('Package database loaded:', packagesJson);
-        
-        generatePackageSelector();
         
         return packagesJson;
     } catch (err) {
