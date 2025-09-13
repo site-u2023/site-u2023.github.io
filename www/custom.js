@@ -883,7 +883,8 @@ function replaceAsuSection(asuSection, temp) {
         <br>
         <!-- 固有表示領域 -->
         <div id="asu-server-status" class="tr-asu-status"></div>
-
+        
+        <br>
         <div id="asu-buildstatus" class="hide">
             <span></span>
             <div id="asu-log" class="hide">
