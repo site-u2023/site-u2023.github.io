@@ -2528,6 +2528,7 @@ function clearWifiFields() {
 console.log('custom.js (JSON-driven clean version) fully loaded and ready');
 
 // ==================== ISP情報処理 ====================
+// ==================== ISP情報処理（シンプル版） ====================
 
 async function fetchAndDisplayIspInfo() {
     if (!config?.auto_config_api_url) return;
