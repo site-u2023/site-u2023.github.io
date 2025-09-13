@@ -107,10 +107,12 @@ async function updateAllPackageState(source = 'unknown') {
     const currentState = collectFormValues();
     const hash = JSON.stringify(currentState);
 
-    // 前回と同じ状態ならスキップ
     if (hash === lastFormStateHash) {
         return;
     }
+    if (hash === lastFormStateHash && source === 'form-field') {
+        return;
+    }    
     lastFormStateHash = hash;
 
     console.log(`updateAllPackageState called from: ${source}`);
