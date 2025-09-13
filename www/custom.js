@@ -923,22 +923,27 @@ function replaceAsuSection(asuSection, temp) {
             const response = await fetch(asuUrl, { method: 'HEAD', cache: 'no-store' });
 
             if (response.ok) {
+                // 正常応答 (HTTP 200)
                 statusEl.textContent = "ASU server reachable. Status: " + response.status;
-                statusEl.className = "tr-asu-status";
+                statusEl.className = "tr-asu-status-200";
                 statusEl.style.color = 'green';
-            } else {
+            } else if (response.status === 500) {
                 statusEl.textContent = "ASU server responded but returned error. Status: " + response.status;
-                statusEl.className = "tr-asu-status";
+                statusEl.className = "tr-asu-status-500";
                 statusEl.style.color = 'orange';
+            } else {
+                statusEl.textContent = "ASU server responded with unexpected status: " + response.status;
+                statusEl.className = "tr-asu-status-unreachable";
+                statusEl.style.color = 'red';
             }
         } catch (err) {
             statusEl.textContent = "Failed to reach ASU server: " + err;
-            statusEl.className = "tr-asu-status";
+            statusEl.className = "tr-asu-status-networkfail";
             statusEl.style.color = 'red';
         }
     })();
 }
-
+ 
 async function insertExtendedInfo(temp) {
     const extendedInfo = temp.querySelector('#extended-build-info');
     const imageLink = document.querySelector('#image-link');
