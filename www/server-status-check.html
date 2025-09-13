@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>ASUチェック</title>
+<title>ASU Check</title>
 <style>
   body { font-family: sans-serif; padding: 2em; }
   .status { font-weight: bold; margin-top: 1em; }
@@ -13,9 +13,9 @@
 </head>
 <body>
 
-<h1>ASUサーバー状態チェック</h1>
+<h1>ASU Server Status Check</h1>
 <p id="asu-url"></p>
-<p id="asu-status" class="status">チェック中…</p>
+<p id="asu-status" class="status">Checking...</p>
 
 <script>
 /* exported config */
@@ -28,16 +28,17 @@ document.getElementById('asu-url').textContent = "ASU URL: " + config.asu_url;
 (async function checkASU() {
     const statusEl = document.getElementById('asu-status');
     try {
+        // Send a HEAD request to check server availability
         const response = await fetch(config.asu_url, { method: 'HEAD', cache: 'no-store' });
         if (response.ok) {
-            statusEl.textContent = "✅ ASUサーバーは到達可能です。ステータス: " + response.status;
+            statusEl.textContent = "🌐 ASU server is reachable. Status: " + response.status;
             statusEl.className = "status ok";
         } else {
-            statusEl.textContent = "⚠️ ASUサーバーは応答しましたがエラーが返されました。ステータス: " + response.status;
+            statusEl.textContent = "⚠️ ASU server responded with an error. Status: " + response.status;
             statusEl.className = "status warn";
         }
     } catch (err) {
-        statusEl.textContent = "❌ ASUサーバーに到達できません: " + err;
+        statusEl.textContent = "❌ Unable to reach ASU server: " + err;
         statusEl.className = "status fail";
     }
 })();
