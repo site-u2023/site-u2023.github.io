@@ -364,7 +364,7 @@
           "class": "tr-dslite",
           "type": "conditional-section",
           "showWhen": {"field": "connection_type", "values": ["dslite"]},
-          "connectionFields": ["dslite_aftr_type", "dslite_area", "dslite_aftr_address"],
+          "connectionFields": ["dslite_aftr_address"],
           "children": [
             {
               "id": "dslite-fields",
@@ -379,6 +379,7 @@
                   "type": "select",
                   "selector": "#dslite-aftr-type",
                   "variableName": "dslite_aftr_type",
+                  "excludeFromOutput": true,
                   "options": [
                     {"value": "transix", "label": "gw.transix.jp", "class": "tr-gwtransixjp"},
                     {"value": "xpass", "label": "gw.xpass.jp", "class": "tr-gwxpassjp"},
@@ -410,6 +411,7 @@
                   "type": "select",
                   "selector": "#dslite-area",
                   "variableName": "dslite_area",
+                  "excludeFromOutput": true,
                   "options": [
                     {"value": "east", "label": "East Japan", "class": "tr-east-japan"},
                     {"value": "west", "label": "West Japan", "class": "tr-west-japan"}
@@ -583,173 +585,4 @@
                   "class": "tr-ap-gateway",
                   "type": "text",
                   "selector": "#ap-gateway",
-                  "variableName": "ap_gateway",
-                  "placeholder": "192.168.1.1",
-                  "defaultValue": "192.168.1.1"
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "tuning-config",
-      "name": "Tuning",
-      "class": "tr-tuning",
-      "description": "System performance and network optimization",
-      "type": "form-section",
-      "packages": [
-        {
-          "id": "net-optimizer",
-          "name": "Dynamic Network Optimizer",
-          "class": "tr-dynamic-network-optimizer",
-          "type": "radio-group",
-          "variableName": "net_optimizer",
-          "defaultValue": "auto",
-          "options": [
-            {
-              "value": "auto",
-              "label": "AUTO",
-              "class": "tr-auto",
-              "checked": true,
-              "includeFields": ["enable_netopt"],
-              "excludeFields": ["netopt_rmem", "netopt_wmem", "netopt_conntrack", "netopt_backlog", "netopt_somaxconn", "netopt_congestion"]
-            },
-            {
-              "value": "manual",
-              "label": "Manual",
-              "class": "tr-manual",
-              "includeFields": ["enable_netopt", "netopt_rmem", "netopt_wmem", "netopt_conntrack", "netopt_backlog", "netopt_somaxconn", "netopt_congestion"],
-              "excludeFields": []
-            },
-            {
-              "value": "disabled",
-              "label": "Disabled",
-              "class": "tr-disabled",
-              "includeFields": [],
-              "excludeFields": ["enable_netopt", "netopt_rmem", "netopt_wmem", "netopt_conntrack", "netopt_backlog", "netopt_somaxconn", "netopt_congestion"]
-            }
-          ]
-        },
-        {
-          "id": "netopt-auto-section",
-          "name": "AUTO Mode",
-          "class": "tr-auto-mode",
-          "type": "conditional-section",
-          "showWhen": {"field": "net_optimizer", "values": ["auto"]},
-          "children": [
-            {
-              "id": "netopt-auto-info",
-              "name": "Auto Optimization",
-              "class": "tr-auto-optimization",
-              "type": "info-display",
-              "content": "Auto mode adjusts parameters based on system resources (Memory, CPU cores, etc.)"
-            }
-          ]
-        },
-        {
-          "id": "netopt-manual-section",
-          "name": "Manual Mode",
-          "class": "tr-manual-mode",
-          "type": "conditional-section",
-          "showWhen": {"field": "net_optimizer", "values": ["manual"]},
-          "children": [
-            {
-              "id": "netopt-fields",
-              "name": "Manual Settings",
-              "class": "tr-manual-settings",
-              "type": "input-group",
-              "fields": [
-                {
-                  "id": "netopt-rmem",
-                  "label": "TCP Read Memory",
-                  "class": "tr-tcp-read-memory",
-                  "type": "text",
-                  "selector": "#netopt-rmem",
-                  "variableName": "netopt_rmem",
-                  "placeholder": "4096 131072 8388608",
-                  "defaultValue": "4096 131072 8388608",
-                  "description": "min default max (bytes)"
-                },
-                {
-                  "id": "netopt-wmem",
-                  "label": "TCP Write Memory",
-                  "class": "tr-tcp-write-memory",
-                  "type": "text",
-                  "selector": "#netopt-wmem",
-                  "variableName": "netopt_wmem",
-                  "placeholder": "4096 131072 8388608",
-                  "defaultValue": "4096 131072 8388608",
-                  "description": "min default max (bytes)"
-                },
-                {
-                  "id": "netopt-conntrack",
-                  "label": "Connection Tracking Max",
-                  "class": "tr-connection-tracking-max",
-                  "type": "number",
-                  "selector": "#netopt-conntrack",
-                  "variableName": "netopt_conntrack",
-                  "placeholder": "131072",
-                  "defaultValue": "131072",
-                  "min": 1024
-                },
-                {
-                  "id": "netopt-backlog",
-                  "label": "Network Device Backlog",
-                  "class": "tr-network-device-backlog",
-                  "type": "number",
-                  "selector": "#netopt-backlog",
-                  "variableName": "netopt_backlog",
-                  "placeholder": "5000",
-                  "defaultValue": "5000",
-                  "min": 100
-                },
-                {
-                  "id": "netopt-somaxconn",
-                  "label": "Socket Max Connections",
-                  "class": "tr-socket-max-connections",
-                  "type": "number",
-                  "selector": "#netopt-somaxconn",
-                  "variableName": "netopt_somaxconn",
-                  "placeholder": "16384",
-                  "defaultValue": "16384",
-                  "min": 128
-                },
-                {
-                  "id": "netopt-congestion",
-                  "label": "TCP Congestion Control",
-                  "class": "tr-tcp-congestion-control",
-                  "type": "select",
-                  "selector": "#netopt-congestion",
-                  "variableName": "netopt_congestion",
-                  "options": [
-                    {"value": "cubic", "label": "cubic (default)", "class": "tr-cubic-default", "selected": true},
-                    {"value": "bbr", "label": "bbr", "class": "tr-bbr"},
-                    {"value": "reno", "label": "reno", "class": "tr-reno"}
-                  ]
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "id": "netopt-disabled-section",
-          "name": "Disabled Mode",
-          "class": "tr-disabled-mode",
-          "type": "conditional-section",
-          "showWhen": {"field": "net_optimizer", "values": ["disabled"]},
-          "children": [
-            {
-              "id": "netopt-disabled-info",
-              "name": "Optimization Disabled",
-              "class": "tr-optimization-disabled",
-              "type": "info-display",
-              "content": "Network optimization will be disabled"
-            }
-          ]
-        }
-      ]
-    }
-  ]
-}
+                  "variableName": "ap_gateway
