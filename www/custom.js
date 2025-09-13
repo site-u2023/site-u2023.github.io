@@ -2159,6 +2159,7 @@ function handleMapeTypeChange(e) {
     updateAllPackageState('mape-type');
 }
 
+// DS-Lite AFTR計算（個別処理に変更）
 function setupDsliteAddressComputation() {
     const aftrType = document.querySelector('#dslite-aftr-type');
     const aftrArea = document.querySelector('#dslite-area');
@@ -2166,6 +2167,7 @@ function setupDsliteAddressComputation() {
 
     if (!aftrType || !aftrArea || !aftrAddr) return;
 
+    // JSONからアドレスマッピングを取得
     function getAddressMap() {
         const internetCategory = setupConfig.categories.find(cat => cat.id === 'internet-config');
         const dsliteSection = internetCategory.packages.find(pkg => pkg.id === 'dslite-section');
@@ -2185,21 +2187,48 @@ function setupDsliteAddressComputation() {
         
         if (force || !aftrAddr.value) {
             aftrAddr.value = computed;
-            // 汎用的な updateVariableDefinitions を呼び出し
             updateVariableDefinitions();
         }
     }
 
+    // DS-Lite個別のイベントハンドラ
     aftrType.addEventListener('change', () => {
         syncAftrAddress(true);
-        updateVariableDefinitions();
+        // DS-Lite用の特別処理（UI制御フィールドをクリア）
+        updateVariableDefinitionsWithDsliteCleanup();
     });
     
     aftrArea.addEventListener('change', () => {
         syncAftrAddress(true);
+        // DS-Lite用の特別処理
+        updateVariableDefinitionsWithDsliteCleanup();
     });
     
     setTimeout(() => syncAftrAddress(false), 0);
+}
+
+// DS-Lite専用のupdateVariableDefinitions
+function updateVariableDefinitionsWithDsliteCleanup() {
+    const textarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
+    if (!textarea) return;
+    
+    const values = collectFormValues();
+    let emissionValues = { ...values };
+    
+    // DS-Lite: UI制御用フィールドを削除
+    delete emissionValues.dslite_aftr_type;
+    delete emissionValues.dslite_area;
+    
+    // パッケージの有効化変数を追加
+    document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
+        const enableVar = cb.getAttribute('data-enable-var');
+        if (enableVar) {
+            emissionValues[enableVar] = '1';
+        }
+    });
+    
+    const variableDefinitions = generateVariableDefinitions(emissionValues);
+    updateTextareaContent(textarea, variableDefinitions);
 }
 
 // 接続タイプ変更ハンドラ（JSONドリブン）
@@ -2208,17 +2237,21 @@ function handleConnectionTypeChange(e) {
     
     const internetCategory = setupConfig.categories.find(cat => cat.id === 'internet-config');
     
+    // 全ての接続タイプセクションを処理
     internetCategory.packages.forEach(pkg => {
         if (pkg.type === 'conditional-section' && pkg.showWhen?.field === 'connection_type') {
             const section = document.querySelector(`#${pkg.id}`);
             if (!section) return;
             
+            // showWhen.valuesに基づいて表示/非表示を制御
             if (pkg.showWhen.values?.includes(selectedType)) {
                 show(section);
                 
+                // 特定タイプ別の追加処理
                 if (selectedType === 'auto' && cachedApiInfo) {
                     updateAutoConnectionInfo(cachedApiInfo);
                 } else if (selectedType === 'mape' && cachedApiInfo) {
+                    // MAP-E選択時にGUA prefixを設定
                     const guaPrefixField = document.querySelector('#mape-gua-prefix');
                     if (guaPrefixField && cachedApiInfo.ipv6) {
                         const guaPrefix = generateGuaPrefixFromFullAddress(cachedApiInfo);
@@ -2819,66 +2852,30 @@ exit 0`;
 function updateVariableDefinitions() {
     const textarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
     if (!textarea) return;
-    
-    const values = collectFormValues();
+
+    // collectFormValues が未定義や空を返す場合は安全にスキップ
+    const values = collectFormValues && typeof collectFormValues === 'function'
+        ? collectFormValues()
+        : null;
+
+    if (!values || typeof values !== 'object' || Object.keys(values).length === 0) {
+        // 外部データ未取得などで値が空の場合は後で再実行できるようにログだけ残す
+        console.warn("updateVariableDefinitions: values 未取得のためスキップ");
+        return;
+    }
+
     let emissionValues = { ...values };
-    
-    // JSONに基づく除外フィールドの処理（新規追加）
-    emissionValues = filterExcludedFields(emissionValues);
-    
-    // 既存の処理
+
+    // パッケージの有効化変数を追加
     document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
         const enableVar = cb.getAttribute('data-enable-var');
         if (enableVar) {
             emissionValues[enableVar] = '1';
         }
     });
-    
+
     const variableDefinitions = generateVariableDefinitions(emissionValues);
     updateTextareaContent(textarea, variableDefinitions);
-}
-
-// JSONベースの除外フィールドフィルター
-function filterExcludedFields(values) {
-    const filteredValues = { ...values };
-    
-    // setupConfig から excludeFromOutput: true のフィールドを特定して除外
-    function findExcludedFields(packages) {
-        const excludedFields = [];
-        
-        packages.forEach(pkg => {
-            // input-group の fields をチェック
-            if (pkg.type === 'input-group' && pkg.fields) {
-                pkg.fields.forEach(field => {
-                    if (field.excludeFromOutput === true) {
-                        excludedFields.push(field.variableName);
-                    }
-                });
-            }
-            
-            // children がある場合は再帰的に処理
-            if (pkg.children) {
-                excludedFields.push(...findExcludedFields(pkg.children));
-            }
-        });
-        
-        return excludedFields;
-    }
-    
-    // 全カテゴリから除外フィールドを収集
-    const excludedFields = [];
-    setupConfig.categories.forEach(category => {
-        excludedFields.push(...findExcludedFields(category.packages));
-    });
-    
-    // 除外フィールドを削除
-    excludedFields.forEach(fieldName => {
-        delete filteredValues[fieldName];
-    });
-    
-    console.log('Excluded fields from output:', excludedFields);
-    
-    return filteredValues;
 }
 
 // テキストエリア更新の共通処理
