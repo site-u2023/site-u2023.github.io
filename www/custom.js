@@ -911,7 +911,7 @@ function replaceAsuSection(asuSection, temp) {
     asuSection.parentNode.replaceChild(newDiv, asuSection);
 
     // ==================== ASU生存確認 + 固有表示 ====================
-    (async function checkASU() {
+    setTimeout(async function checkASU() {
         const statusEl = document.getElementById('asu-server-status');
         const asuUrl = config.asu_url || "https://sysupgrade.openwrt.org";
         
@@ -968,7 +968,7 @@ function replaceAsuSection(asuSection, temp) {
             
             console.log('ASU Check - Error text content:', statusEl.textContent);
         }
-    })();
+    }, 0);
 }
  
 async function insertExtendedInfo(temp) {
