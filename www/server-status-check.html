@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>ASUチェック</title>
+<style>
+  body { font-family: sans-serif; padding: 2em; }
+  .status { font-weight: bold; margin-top: 1em; }
+  .ok { color: green; }
+  .warn { color: orange; }
+  .fail { color: red; }
+</style>
+</head>
+<body>
+
+<h1>ASUサーバー状態チェック</h1>
+<p id="asu-url"></p>
+<p id="asu-status" class="status">チェック中…</p>
+
+<script>
+/* exported config */
+var config = {
+  asu_url: "https://sysupgrade.openwrt.org",
+};
+
+document.getElementById('asu-url').textContent = "ASU URL: " + config.asu_url;
+
+(async function checkASU() {
+    const statusEl = document.getElementById('asu-status');
+    try {
+        const response = await fetch(config.asu_url, { method: 'HEAD', cache: 'no-store' });
+        if (response.ok) {
+            statusEl.textContent = "✅ ASUサーバーは到達可能です。ステータス: " + response.status;
+            statusEl.className = "status ok";
+        } else {
+            statusEl.textContent = "⚠️ ASUサーバーは応答しましたがエラーが返されました。ステータス: " + response.status;
+            statusEl.className = "status warn";
+        }
+    } catch (err) {
+        statusEl.textContent = "❌ ASUサーバーに到達できません: " + err;
+        statusEl.className = "status fail";
+    }
+})();
+</script>
+
+</body>
+</html>
