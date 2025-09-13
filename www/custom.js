@@ -335,6 +335,48 @@ async function updateLanguagePackageCore() {
     }
 }
 
+// LuCI言語パッケージ用の完全なパッケージリスト取得
+function getCurrentPackageListForLanguage() {
+    const packages = new Set();
+    
+    // デバイス初期パッケージ
+    deviceDefaultPackages.forEach(pkg => packages.add(pkg));
+    deviceDevicePackages.forEach(pkg => packages.add(pkg));
+    extraPackages.forEach(pkg => packages.add(pkg));
+    
+    // パッケージセレクターから選択されたパッケージ（隠しパッケージ含む）
+    document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
+        const pkgName = cb.getAttribute('data-package');
+        if (pkgName) packages.add(pkgName);
+    });
+    
+    // 検索で追加されたパッケージ
+    if (packageSearchManager) {
+        const searchValues = packageSearchManager.getAllValues();
+        searchValues.forEach(pkg => packages.add(pkg));
+    }
+    
+    // 仮想パッケージ（setup.jsonドリブン）- 言語パッケージ以外
+    for (const pkg of dynamicPackages) {
+        if (!pkg.startsWith('luci-i18n-')) {
+            packages.add(pkg);
+        }
+    }
+    
+    // テキストエリアから既存パッケージ（手動追加分）
+    const textarea = document.querySelector('#asu-packages');
+    if (textarea) {
+        const textPackages = split(textarea.value);
+        textPackages.forEach(pkg => {
+            if (!pkg.startsWith('luci-i18n-')) {
+                packages.add(pkg);
+            }
+        });
+    }
+    
+    return Array.from(packages);
+}
+
 // Core関数3: Postinstテキストエリア更新（最終的な統合・差分検知付き）
 let lastPackageListHash = null;
 
