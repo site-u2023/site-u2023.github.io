@@ -1127,6 +1127,7 @@ function cleanupExistingCustomElements() {
 }
 
 // ==================== 言語セレクター設定 ====================
+// ==================== 言語セレクター設定（フラグなし版） ====================
 function setupLanguageSelector() {
     const mainLanguageSelect = document.querySelector('#languages-select');
     const customLanguageSelect = document.querySelector('#aios-language');
@@ -1153,12 +1154,10 @@ function setupLanguageSelector() {
 
     // イベント登録（初期同期後に行う）
     if (mainLanguageSelect) {
-        // 既存のイベントリスナーを削除してから追加
         mainLanguageSelect.removeEventListener('change', handleMainLanguageChange);
         mainLanguageSelect.addEventListener('change', handleMainLanguageChange);
     }
     if (customLanguageSelect) {
-        // 既存のイベントリスナーを削除してから追加
         customLanguageSelect.removeEventListener('change', handleCustomLanguageChange);
         customLanguageSelect.addEventListener('change', handleCustomLanguageChange);
     }
@@ -1177,13 +1176,18 @@ function syncBrowserLanguageSelector(lang) {
 function syncDeviceLanguageSelector(lang) {
     const customSelect = document.getElementById('aios-language');
     if (lang && customSelect && customSelect.value !== lang) {
-        // プログラム的変更フラグを設定（無限ループ防止）
-        customSelect.dataset.programmaticChange = 'true';
+        // イベントリスナーを一時削除
+        customSelect.removeEventListener('change', handleCustomLanguageChange);
+        
+        // 値を変更
         customSelect.value = lang;
-        delete customSelect.dataset.programmaticChange;
+        
+        // イベントリスナーを再追加
+        customSelect.addEventListener('change', handleCustomLanguageChange);
+        
         console.log('Device language selector synced to:', lang);
     }
-    // デバイス言語の表示用スナップショット（UI内で使うだけ）
+    // デバイス言語の表示用スナップショット
     selectedLanguage = lang;
 }
 
@@ -1192,7 +1196,7 @@ async function handleMainLanguageChange(e) {
     const newLanguage = e?.target?.value || config?.fallback_language || 'en';
     if (newLanguage === current_language) return;
 
-    // プログラム的変更かユーザー操作かを判定
+    // ユーザー操作かプログラム変更かを判定
     const isUserAction = e && e.isTrusted === true;
     
     console.log('Main language change:', {
@@ -1203,7 +1207,6 @@ async function handleMainLanguageChange(e) {
     });
 
     // ブラウザ用言語を更新
-    const oldLanguage = current_language;
     current_language = newLanguage;
     
     // UI翻訳を更新
@@ -1214,7 +1217,7 @@ async function handleMainLanguageChange(e) {
         const oldDeviceLanguage = config.device_language;
         config.device_language = current_language;
         
-        // デバイス用セレクターを同期
+        // デバイス用セレクターを同期（イベントリスナー制御で無限ループ防止）
         syncDeviceLanguageSelector(config.device_language);
         
         console.log('Language sync completed:', {
@@ -1228,19 +1231,12 @@ async function handleMainLanguageChange(e) {
             updateAllPackageState('browser-language-changed');
         }
     } else {
-        // プログラム的変更の場合は、device_languageには触らない
         console.log('Programmatic change - device language not affected:', config.device_language);
     }
 }
 
 // カスタム言語セレクター変更ハンドラー（デバイス用 → ブラウザ用は同期しない）
 async function handleCustomLanguageChange(e) {
-    // プログラム的変更の場合はスキップ（無限ループ防止）
-    if (e.target.dataset.programmaticChange) {
-        console.log('Device language programmatic change detected, skipping handler');
-        return;
-    }
-    
     const newLanguage = e.target.value || config?.fallback_language || 'en';
     if (newLanguage === config.device_language) return;
 
