@@ -923,7 +923,6 @@ function replaceAsuSection(asuSection, temp) {
             const response = await fetch(asuUrl, { method: 'HEAD', cache: 'no-store' });
 
             if (response.ok) {
-                // 正常応答 (HTTP 200)
                 statusEl.textContent = "ASU server reachable. Status: " + response.status;
                 statusEl.className = "tr-asu-status-200";
                 statusEl.style.color = 'green';
