@@ -912,54 +912,57 @@ function replaceAsuSection(asuSection, temp) {
 
     asuSection.parentNode.replaceChild(newDiv, asuSection);
 
-    // ==================== ビルド関数 ====================
-    window.buildAsuRequest = async function() {
-        const packages = document.getElementById('asu-packages').value || [];
-        const buildStatusEl = document.getElementById('asu-buildstatus');
-        const stderrEl = document.getElementById('asu-stderr');
-        const stdoutEl = document.getElementById('asu-stdout');
-        const errorEl = document.getElementById('asu-error-details');
+// ==================== ビルド関数 ====================
+function replaceAsuSection(asuSection, temp) {
+    const newDiv = document.createElement('div');
+    newDiv.id = 'asu';
+    newDiv.className = asuSection.className;
+    newDiv.style.width = '100%';
+    
+    const customPackages = temp.querySelector('#custom-packages-section details');
+    const customScripts = temp.querySelector('#custom-scripts-section details');
 
-        buildStatusEl.classList.remove('hide');
-        stderrEl.textContent = '';
-        stdoutEl.textContent = '';
-        errorEl.textContent = '';
-        document.getElementById('asu-log').classList.add('hide');
-
-        try {
-            // POSTでビルドリクエスト送信
-            const res = await fetch('https://sysupgrade.openwrt.org/api/v1/build/', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ packages })
-            });
-            const json = await res.json();
-            const requestHash = json.request_hash;
-
-            // 1回だけ Build API 取得
-            const statusRes = await fetch(`https://sysupgrade.openwrt.org/api/v1/build/${requestHash}`);
-            const statusJson = await statusRes.json();
-
-            buildStatusEl.querySelector('span').textContent =
-                `Stage: ${statusJson.detail}, Container: ${statusJson.imagebuilder_status}, Status: ${statusJson.status}`;
-
-            if (statusJson.status >= 400) {
-                stderrEl.textContent = statusJson.error || '';
-                stdoutEl.textContent = JSON.stringify(statusJson.request, null, 2);
-                document.getElementById('asu-log').classList.remove('hide');
-
-                // 簡単に原因を抽出
-                if (statusJson.error.includes('Disk quota exceeded')) {
-                    errorEl.textContent = 'Server storage full: requires maintenance.';
-                } else {
-                    const lines = statusJson.error.split('\n');
-                    errorEl.textContent = lines[lines.length-1];
-                }
-            }
-        } catch(err) {
-            buildStatusEl.querySelector('span').textContent = 'Build request failed: ' + err;
-        }
+    if (customPackages) {
+        customPackages.id = 'custom-packages-details';
+        newDiv.appendChild(customPackages);
     }
+    if (customScripts) {
+        customScripts.id = 'custom-scripts-details';
+        newDiv.appendChild(customScripts);
+    }
+
+    const buildElements = document.createElement('div');
+    buildElements.innerHTML = `
+        <br>
+        <div id="asu-buildstatus" class="hide">
+            <span></span>
+            <div id="asu-log" class="hide">
+                <details>
+                    <summary>
+                        <code>STDERR</code>
+                    </summary>
+                    <pre id="asu-stderr"></pre>
+                </details>
+                <details>
+                    <summary>
+                        <code>STDOUT</code>
+                    </summary>
+                    <pre id="asu-stdout"></pre>
+                </details>
+            </div>
+        </div>
+        <!-- index.js用の隠しパッケージリスト -->
+        <textarea id="asu-packages" style="display:none;"></textarea>
+        <a href="javascript:buildAsuRequest()" class="custom-link">
+            <span></span><span class="tr-request-build">REQUEST BUILD</span>
+        </a>
+    `;
+    
+    while (buildElements.firstChild) {
+        newDiv.appendChild(buildElements.firstChild);
+    }
+    
+    asuSection.parentNode.replaceChild(newDiv, asuSection);
 }
  
 async function insertExtendedInfo(temp) {
