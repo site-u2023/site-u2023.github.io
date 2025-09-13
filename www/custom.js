@@ -1126,26 +1126,23 @@ function cleanupExistingCustomElements() {
         });
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ==================== 言語セレクター設定 ====================
 function setupLanguageSelector() {
     const mainLanguageSelect = document.querySelector('#languages-select');
     const customLanguageSelect = document.querySelector('#aios-language');
     const fallback = config?.fallback_language || 'en';
 
-    if (!current_language) {
-        current_language = (navigator.language || fallback).split('-')[0];
-    }
-    if (!config.device_language) {
-        config.device_language = current_language; // 最初だけコピー
-    }
+    // --- 初期化時は必ず両方同じ値にする ---
+    const initLang = (navigator.language || fallback).split('-')[0];
+    current_language = initLang;
+    config.device_language = initLang;
 
     // 初期同期（イベント登録前に実行）
     if (mainLanguageSelect) mainLanguageSelect.value = current_language;
     if (customLanguageSelect) customLanguageSelect.value = config.device_language;
 
     window.selectedLanguage = config.device_language;
-    console.log('Selected language for device:', config.device_language);
+    console.log('Initial languages set to:', current_language);
 
     // イベント登録は最後に行う（初期同期後）
     if (mainLanguageSelect) {
