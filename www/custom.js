@@ -1271,9 +1271,14 @@ function renderSetupConfig(config) {
                 }
             }
         }
+        document.querySelectorAll('.package-selector-checkbox').forEach(cb => {
+            cb.addEventListener('change', () => {
+                updateAllPackageState('package-checkbox');
+            });
+        });
     }, 100);
 }
-
+        
 function buildField(parent, pkg) {
     switch (pkg.type) {
         case 'input-group': {
