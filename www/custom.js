@@ -1668,7 +1668,21 @@ function collectFieldsFromPackage(pkg, structure, categoryId) {
         structure.categories[categoryId].push(pkg.id);
         structure.fieldMapping[pkg.selector] = fieldInfo;
     }
-    
+
+    // register any radio-group so collectFormValues() picks up its change
+    if (pkg.type === 'radio-group' && pkg.variableName) {
+        const sel = `input[name="${pkg.variableName}"]:checked`;
+        const rInfo = {
+            id:           pkg.id,
+            selector:     sel,
+            variableName: pkg.variableName,
+            defaultValue: pkg.defaultValue
+        };
+        structure.fields[pkg.variableName] = rInfo;
+        structure.categories[categoryId].push(pkg.variableName);
+        structure.fieldMapping[sel] = rInfo;
+    }
+
     if (pkg.children) {
         pkg.children.forEach(child => {
             collectFieldsFromPackage(child, structure, categoryId);
