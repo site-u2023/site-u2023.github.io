@@ -708,89 +708,6 @@ function waitForAsuAndInit(temp, retry = 50) {
     }
 }
 
-
-// Fix for initializeCustomFeatures - ensure device packages are applied
-async function initializeCustomFeatures(asuSection, temp) {
-    console.log('initializeCustomFeatures called');
-
-    if (customInitialized) {
-        console.log('Already initialized, skipping');
-        return;
-    }
-
-    // DOM要素が既に存在する場合は置き換えない
-    if (!document.querySelector('#custom-packages-details')) {
-        cleanupExistingCustomElements();
-        replaceAsuSection(asuSection, temp);
-        insertExtendedInfo(temp);
-    }
-
-    // 外部データと設定を並列で読み込み
-    await Promise.all([
-        window.autoConfigPromise,       // auto-config.site-u.workers.dev
-        window.informationPromise,      // information.json
-        window.packagesDbPromise,       // packages.json
-        window.setupJsonPromise,        // setup.json
-        loadSetupConfig(),              // 既存処理
-        loadPackageDatabase(),          // 既存処理
-        fetchAndDisplayIspInfo()        // 既存処理
-    ]);
-
-    // 依存関係のある初期化（順序重要）
-    setupEventListeners();
-    loadUciDefaultsTemplate();
-
-    // 言語セレクター設定（初期言語パッケージ処理を含む）
-    setupLanguageSelector();
-
-    // パッケージ検索機能を初期化
-    setupPackageSearch();
-    console.log('Package search initialized');
-
-    // カスタム翻訳を読み込み（UIは常に current_language で）
-    await loadCustomTranslations(current_language);
-
-    // フォーム監視設定
-    setupFormWatchers();
-
-    // initializeCustomFeatures の末尾
-    let changed = false;
-    if (window.autoConfigData) {
-        changed = applyIspAutoConfig(window.autoConfigData);
-    }
-
-    // パッケージセレクタ生成
-    generatePackageSelector();
-
-    // CRITICAL FIX: Force apply device packages if they exist
-    if (deviceDefaultPackages.length > 0 || deviceDevicePackages.length > 0 || extraPackages.length > 0) {
-        console.log('Force applying existing device packages');
-        const initialPackages = deviceDefaultPackages
-            .concat(deviceDevicePackages)
-            .concat(extraPackages);
-        
-        const textarea = document.querySelector('#asu-packages');
-        if (textarea && initialPackages.length > 0) {
-            textarea.value = initialPackages.join(' ');
-            console.log('Device packages force applied:', initialPackages);
-        }
-    }
-
-    // 最初の統合更新（変更があった場合のみ）
-    if (changed) {
-        console.log('All data and UI ready, updating package state');
-        updateAllPackageState('isp-auto-config');
-    } else {
-        console.log('All data and UI ready, no changes from auto-config');
-        // CRITICAL FIX: Always force update to ensure device packages are included
-        setTimeout(() => {
-            updateAllPackageState('force-device-packages');
-        }, 200);
-    }
-
-    customInitialized = true;
-}
-
 // ==================== パッケージ検索機能 ====================
 function setupPackageSearch() {
     console.log('setupPackageSearch called');
@@ -2545,11 +2462,7 @@ async function fetchAndDisplayIspInfo() {
         
         console.log('ISP info fetched:', apiInfo);
         
-        // 情報取得完了 → 即座に表示を試行
         displayIspInfoIfReady();
-        
-        // フォーム値への適用
-        applyIspAutoConfig(apiInfo);
         updateAutoConnectionInfo(apiInfo);
         setGuaPrefixIfAvailable();
 
@@ -2706,8 +2619,8 @@ async function initializeCustomFeatures(asuSection, temp) {
 
     // initializeCustomFeatures の末尾
     let changed = false;
-    if (window.autoConfigData) {
-        changed = applyIspAutoConfig(window.autoConfigData);
+    if (window.autoConfigData || cachedApiInfo) {
+        changed = applyIspAutoConfig(window.autoConfigData || cachedApiInfo);  // ← ここで実行
     }
 
     // パッケージセレクタ生成
