@@ -105,7 +105,8 @@
     "tr-usb-storage": "USBストレージ対応",
     "tr-file-sharing": "ファイル共有",
 
-    "tr-asu-status-ok": "ASU サーバーに接続可能です。ステータス: ",
-    "tr-asu-status-error": "ASU サーバーは応答しましたが、エラーを返しました。ステータス: ",
-    "tr-asu-status-fail": "ASU サーバーに到達できませんでした: "
+    "tr-asu-status-200": "ASU サーバーに接続可能です。ステータス: ",
+    "tr-asu-status-500": "ASU サーバーは応答しましたが、内部エラーです。ステータス: ",
+    "tr-asu-status-unreachable": "ASU サーバーには到達しましたが、異常応答です。ステータス: ",
+    "tr-asu-status-networkfail": "ASU サーバーに到達できませんでした: "
 }
