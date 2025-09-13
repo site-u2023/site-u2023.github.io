@@ -344,7 +344,6 @@ async function updateLanguagePackageCore() {
 }
 
 // LuCI言語パッケージ用の完全なパッケージリスト取得
-// LuCI言語パッケージ用の完全なパッケージリスト取得
 function getCurrentPackageListForLanguage() {
     const packages = new Set();
     
@@ -354,6 +353,7 @@ function getCurrentPackageListForLanguage() {
     extraPackages.forEach(pkg => packages.add(pkg));
     
     // パッケージセレクターから選択されたパッケージ（隠しパッケージ含む）
+    // チェックされているもののみを取得
     document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
         const pkgName = cb.getAttribute('data-package');
         const uniqueId = cb.getAttribute('data-unique-id');
@@ -380,12 +380,19 @@ function getCurrentPackageListForLanguage() {
         }
     }
     
-    // テキストエリアから既存パッケージ（手動追加分）
+    // テキストエリアからは手動追加分のみ取得（チェックボックス管理のパッケージは除外）
+    const checkedPackageSet = new Set();
+    document.querySelectorAll('.package-selector-checkbox').forEach(cb => {
+        const pkgName = cb.getAttribute('data-package');
+        if (pkgName) checkedPackageSet.add(pkgName);
+    });
+    
     const textarea = document.querySelector('#asu-packages');
     if (textarea) {
         const textPackages = split(textarea.value);
         textPackages.forEach(pkg => {
-            if (!pkg.startsWith('luci-i18n-')) {
+            // チェックボックス管理外のパッケージのみ追加
+            if (!pkg.startsWith('luci-i18n-') && !checkedPackageSet.has(pkg)) {
                 packages.add(pkg);
             }
         });
@@ -445,13 +452,16 @@ function updatePackageListToTextarea(source = 'unknown') {
     if (textarea) {
         const currentPackages = split(textarea.value);
         currentPackages.forEach(pkg => {
-            // UI管理対象は manual に残さない
+            // UI管理対象は manual に残さない（チェックボックス管理のパッケージを確実に除外）
+            const isCheckboxManaged = document.querySelector(`.package-selector-checkbox[data-package="${pkg}"]`) !== null;
+        
             if (!basePackages.has(pkg) &&
                 !checkedPackages.has(pkg) &&
                 !searchedPackages.has(pkg) &&
                 !dynamicPackages.has(pkg) &&
                 !pkg.startsWith('luci-i18n-') &&
-                !knownSelectablePackages.has(pkg)) {
+                !knownSelectablePackages.has(pkg) &&
+                !isCheckboxManaged) {
                 manualPackages.add(pkg);
             }
         });
