@@ -918,59 +918,23 @@ function replaceAsuSection(asuSection, temp) {
     (async function checkASU() {
         const statusEl = document.getElementById('asu-server-status');
         const asuUrl = config.asu_url || "https://sysupgrade.openwrt.org";
-        
-        console.log('ASU Check - Starting check for URL:', asuUrl);
 
-        function tr(key) {
-            return (typeof current_language_json === 'object' && current_language_json[key]) ? current_language_json[key] : key;
-        }
-        
         try {
             const response = await fetch(asuUrl, { method: 'HEAD', cache: 'no-store' });
-            
-            console.log('ASU Check - Response received:', {
-                status: response.status,
-                ok: response.ok,
-                statusText: response.statusText
-            });
-            
+
             if (response.ok) {
-                console.log('ASU Check - Response OK, status:', response.status);
-                statusEl.className = "tr-asu-status-200";
-                statusEl.textContent = tr("tr-asu-status-200");
-                statusEl.textContent = statusEl.textContent.replace("{status}", response.status);
+                statusEl.textContent = "ASU server reachable. Status: " + response.status;
+                statusEl.className = "tr-asu-status";
                 statusEl.style.color = 'green';
-            } else if (response.status === 500) {
-                console.log('ASU Check - Server error 500');
-                statusEl.className = "tr-asu-status-500";
-                statusEl.textContent = tr("tr-asu-status-500");
-                statusEl.textContent = statusEl.textContent.replace("{status}", response.status);
-                statusEl.style.color = 'orange';
             } else {
-                console.log('ASU Check - Unexpected status:', response.status);
-                statusEl.className = "tr-asu-status-unreachable";
-                statusEl.textContent = tr("tr-asu-status-unreachable");
-                statusEl.textContent = statusEl.textContent.replace("{status}", response.status);
-                statusEl.style.color = 'red';
+                statusEl.textContent = "ASU server responded but returned error. Status: " + response.status;
+                statusEl.className = "tr-asu-status";
+                statusEl.style.color = 'orange';
             }
-            
-            console.log('ASU Check - Final text content:', statusEl.textContent);
-            
         } catch (err) {
-            console.error('ASU Check - Fetch failed:', err);
-            console.log('ASU Check - Error details:', {
-                name: err.name,
-                message: err.message,
-                status: err.status
-            });
-            
-            const errorInfo = err.status || err.message || err;
-            statusEl.className = "tr-asu-status-networkfail";
-            statusEl.textContent = tr("tr-asu-status-networkfail");
-            statusEl.textContent = statusEl.textContent.replace("{error}", errorInfo);
+            statusEl.textContent = "Failed to reach ASU server: " + err;
+            statusEl.className = "tr-asu-status";
             statusEl.style.color = 'red';
-            
-            console.log('ASU Check - Error text content:', statusEl.textContent);
         }
     })();
 }
