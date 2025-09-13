@@ -857,13 +857,15 @@ document.addEventListener('click', function(e) {
     }
 });
 
+// ==================== REQUEST BUILD 以降の表示 ====================
 function replaceAsuSection(asuSection, temp) {
     const newDiv = document.createElement('div');
     newDiv.id = 'asu';
     newDiv.className = asuSection.className;
     newDiv.style.width = '100%';
     
-        const customPackages = temp.querySelector('#custom-packages-section details');
+    // カスタムパッケージとスクリプトを追加
+    const customPackages = temp.querySelector('#custom-packages-section details');
     const customScripts = temp.querySelector('#custom-scripts-section details');
 
     if (customPackages) {
@@ -875,9 +877,13 @@ function replaceAsuSection(asuSection, temp) {
         newDiv.appendChild(customScripts);
     }
 
-        const buildElements = document.createElement('div');
+    // ビルド領域と固有表示領域を作成
+    const buildElements = document.createElement('div');
     buildElements.innerHTML = `
         <br>
+        <!-- 固有表示領域 -->
+        <div id="asu-server-status" class="tr-asu-status"></div>
+
         <div id="asu-buildstatus" class="hide">
             <span></span>
             <div id="asu-log" class="hide">
@@ -895,18 +901,41 @@ function replaceAsuSection(asuSection, temp) {
                 </details>
             </div>
         </div>
-        <!-- index.js用の隠しパッケージリスト -->
         <textarea id="asu-packages" style="display:none;"></textarea>
         <a href="javascript:buildAsuRequest()" class="custom-link">
             <span></span><span class="tr-request-build">REQUEST BUILD</span>
         </a>
     `;
-    
-        while (buildElements.firstChild) {
+
+    while (buildElements.firstChild) {
         newDiv.appendChild(buildElements.firstChild);
     }
-    
+
     asuSection.parentNode.replaceChild(newDiv, asuSection);
+
+    // ==================== ASU生存確認 + 固有表示 ====================
+    (async function checkASU() {
+        const statusEl = document.getElementById('asu-server-status');
+        const asuUrl = config.asu_url || "https://sysupgrade.openwrt.org";
+
+        try {
+            const response = await fetch(asuUrl, { method: 'HEAD', cache: 'no-store' });
+
+            if (response.ok) {
+                statusEl.textContent = "ASU server reachable. Status: " + response.status;
+                statusEl.className = "tr-asu-status";
+                statusEl.style.color = 'green';
+            } else {
+                statusEl.textContent = "ASU server responded but returned error. Status: " + response.status;
+                statusEl.className = "tr-asu-status";
+                statusEl.style.color = 'orange';
+            }
+        } catch (err) {
+            statusEl.textContent = "Failed to reach ASU server: " + err;
+            statusEl.className = "tr-asu-status";
+            statusEl.style.color = 'red';
+        }
+    })();
 }
 
 async function insertExtendedInfo(temp) {
