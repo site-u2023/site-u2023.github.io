@@ -867,7 +867,6 @@ function replaceAsuSection(asuSection, temp) {
     // カスタムパッケージとスクリプトを追加
     const customPackages = temp.querySelector('#custom-packages-section details');
     const customScripts = temp.querySelector('#custom-scripts-section details');
-
     if (customPackages) {
         customPackages.id = 'custom-packages-details';
         newDiv.appendChild(customPackages);
@@ -876,7 +875,6 @@ function replaceAsuSection(asuSection, temp) {
         customScripts.id = 'custom-scripts-details';
         newDiv.appendChild(customScripts);
     }
-
     // ビルド領域と固有表示領域を作成
     const buildElements = document.createElement('div');
     buildElements.innerHTML = `
@@ -907,38 +905,58 @@ function replaceAsuSection(asuSection, temp) {
             <span></span><span class="tr-request-build">REQUEST BUILD</span>
         </a>
     `;
-
     while (buildElements.firstChild) {
         newDiv.appendChild(buildElements.firstChild);
     }
-
     asuSection.parentNode.replaceChild(newDiv, asuSection);
-
     // ==================== ASU生存確認 + 固有表示 ====================
     (async function checkASU() {
         const statusEl = document.getElementById('asu-server-status');
         const asuUrl = config.asu_url || "https://sysupgrade.openwrt.org";
-
+        
+        console.log('ASU Check - Starting check for URL:', asuUrl);
+        
         try {
             const response = await fetch(asuUrl, { method: 'HEAD', cache: 'no-store' });
-
+            
+            console.log('ASU Check - Response received:', {
+                status: response.status,
+                ok: response.ok,
+                statusText: response.statusText
+            });
+            
             if (response.ok) {
+                console.log('ASU Check - Response OK, status:', response.status);
                 statusEl.textContent = "ASU server reachable. Status: " + response.status;
                 statusEl.className = "tr-asu-status-200";
                 statusEl.style.color = 'green';
             } else if (response.status === 500) {
+                console.log('ASU Check - Server error 500');
                 statusEl.textContent = "ASU server responded but returned error. Status: " + response.status;
                 statusEl.className = "tr-asu-status-500";
                 statusEl.style.color = 'orange';
             } else {
+                console.log('ASU Check - Unexpected status:', response.status);
                 statusEl.textContent = "ASU server responded with unexpected status: " + response.status;
                 statusEl.className = "tr-asu-status-unreachable";
                 statusEl.style.color = 'red';
             }
+            
+            console.log('ASU Check - Final text content:', statusEl.textContent);
+            
         } catch (err) {
-            statusEl.textContent = "Failed to reach ASU server: " + err;
+            console.error('ASU Check - Fetch failed:', err);
+            console.log('ASU Check - Error details:', {
+                name: err.name,
+                message: err.message,
+                status: err.status
+            });
+            
+            statusEl.textContent = "Failed to reach ASU server: " + (err.status || err.message || err);
             statusEl.className = "tr-asu-status-networkfail";
             statusEl.style.color = 'red';
+            
+            console.log('ASU Check - Error text content:', statusEl.textContent);
         }
     })();
 }
