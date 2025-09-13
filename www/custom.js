@@ -1695,25 +1695,27 @@ function collectFieldsFromPackage(pkg, structure, categoryId) {
 // ==================== フォーム値処理 ====================
 
 function collectFormValues() {
-    const values = {};
-    
-    Object.values(formStructure.fields).forEach(field => {
-        const value = getFieldValue(field.selector);
-        
-        if (value !== null && value !== undefined && value !== "") {
-            values[field.variableName] = value;
-        }
-    });
-    
-    // 言語設定を確実に取得
-    if (!values.language) {
-        const languageValue = getFieldValue('#aios-language') || selectedLanguage || 'en';
-        if (languageValue && languageValue !== 'en') {
-            values.language = languageValue;
-        }
+    // formStructure が未初期化の場合は空オブジェクトを返す
+    if (!formStructure || !formStructure.fields) {
+        console.warn('formStructure not ready, returning empty values');
+        return {};
     }
     
-    applySpecialFieldLogic(values);
+    const values = {};
+    
+    try {
+        Object.values(formStructure.fields).forEach(field => {
+            if (field?.selector) {
+                const element = document.querySelector(field.selector);
+                if (element) {
+                    values[field.variableName] = element.value || '';
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Error in collectFormValues:', error);
+        return {};
+    }
     
     return values;
 }
@@ -2048,8 +2050,7 @@ function setupDsliteAddressComputation() {
     
     aftrArea.addEventListener('change', () => {
         syncAftrAddress(true);
-        // DS-Lite用の特別処理
-        updateVariableDefinitionsWithDsliteCleanup();
+        updateVariableDefinitions();
     });
     
     setTimeout(() => syncAftrAddress(false), 0);
@@ -2061,21 +2062,17 @@ function handleConnectionTypeChange(e) {
     
     const internetCategory = setupConfig.categories.find(cat => cat.id === 'internet-config');
     
-    // 全ての接続タイプセクションを処理
     internetCategory.packages.forEach(pkg => {
         if (pkg.type === 'conditional-section' && pkg.showWhen?.field === 'connection_type') {
             const section = document.querySelector(`#${pkg.id}`);
             if (!section) return;
             
-            // showWhen.valuesに基づいて表示/非表示を制御
             if (pkg.showWhen.values?.includes(selectedType)) {
                 show(section);
                 
-                // 特定タイプ別の追加処理
                 if (selectedType === 'auto' && cachedApiInfo) {
                     updateAutoConnectionInfo(cachedApiInfo);
                 } else if (selectedType === 'mape' && cachedApiInfo) {
-                    // MAP-E選択時にGUA prefixを設定
                     const guaPrefixField = document.querySelector('#mape-gua-prefix');
                     if (guaPrefixField && cachedApiInfo.ipv6) {
                         const guaPrefix = generateGuaPrefixFromFullAddress(cachedApiInfo);
@@ -2649,6 +2646,49 @@ function updateVariableDefinitions() {
     const variableDefinitions = generateVariableDefinitions(emissionValues);
     updateTextareaContent(textarea, variableDefinitions);
 }
+
+function filterExcludedFields(values) {
+    const filteredValues = { ...values };
+    
+    // setupConfig から excludeFromOutput: true のフィールドを特定して除外
+    function findExcludedFields(packages) {
+        const excludedFields = [];
+        
+        packages.forEach(pkg => {
+            // input-group の fields をチェック
+            if (pkg.type === 'input-group' && pkg.fields) {
+                pkg.fields.forEach(field => {
+                    if (field.excludeFromOutput === true) {
+                        excludedFields.push(field.variableName);
+                    }
+                });
+            }
+            
+            // children がある場合は再帰的に処理
+            if (pkg.children) {
+                excludedFields.push(...findExcludedFields(pkg.children));
+            }
+        });
+        
+        return excludedFields;
+    }
+    
+    // 全カテゴリから除外フィールドを収集
+    const excludedFields = [];
+    setupConfig.categories.forEach(category => {
+        excludedFields.push(...findExcludedFields(category.packages));
+    });
+    
+    // 除外フィールドを削除
+    excludedFields.forEach(fieldName => {
+        delete filteredValues[fieldName];
+    });
+    
+    console.log('Excluded fields from output:', excludedFields);
+    
+    return filteredValues;
+}
+
 // テキストエリア更新の共通処理
 function updateTextareaContent(textarea, variableDefinitions) {
     let content = textarea.value;
