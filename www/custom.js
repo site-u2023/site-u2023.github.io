@@ -886,16 +886,16 @@ function replaceAsuSection(asuSection, temp) {
             <span></span>
             <div id="asu-log" class="hide">
                 <details>
-                    <summary>
-                        <code>STDERR</code>
-                    </summary>
+                    <summary><code>STDERR</code></summary>
                     <pre id="asu-stderr"></pre>
                 </details>
                 <details>
-                    <summary>
-                        <code>STDOUT</code>
-                    </summary>
+                    <summary><code>STDOUT</code></summary>
                     <pre id="asu-stdout"></pre>
+                </details>
+                <details>
+                    <summary><code>ERROR DETAILS</code></summary>
+                    <pre id="asu-error-details"></pre>
                 </details>
             </div>
         </div>
@@ -906,12 +906,60 @@ function replaceAsuSection(asuSection, temp) {
         </a>
     `;
     
-    // 子要素を追加
     while (buildElements.firstChild) {
         newDiv.appendChild(buildElements.firstChild);
     }
-    
+
     asuSection.parentNode.replaceChild(newDiv, asuSection);
+
+    // ==================== ビルド関数 ====================
+    window.buildAsuRequest = async function() {
+        const packages = document.getElementById('asu-packages').value || [];
+        const buildStatusEl = document.getElementById('asu-buildstatus');
+        const stderrEl = document.getElementById('asu-stderr');
+        const stdoutEl = document.getElementById('asu-stdout');
+        const errorEl = document.getElementById('asu-error-details');
+
+        buildStatusEl.classList.remove('hide');
+        stderrEl.textContent = '';
+        stdoutEl.textContent = '';
+        errorEl.textContent = '';
+        document.getElementById('asu-log').classList.add('hide');
+
+        try {
+            // POSTでビルドリクエスト送信
+            const res = await fetch('https://sysupgrade.openwrt.org/api/v1/build/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ packages })
+            });
+            const json = await res.json();
+            const requestHash = json.request_hash;
+
+            // 1回だけ Build API 取得
+            const statusRes = await fetch(`https://sysupgrade.openwrt.org/api/v1/build/${requestHash}`);
+            const statusJson = await statusRes.json();
+
+            buildStatusEl.querySelector('span').textContent =
+                `Stage: ${statusJson.detail}, Container: ${statusJson.imagebuilder_status}, Status: ${statusJson.status}`;
+
+            if (statusJson.status >= 400) {
+                stderrEl.textContent = statusJson.error || '';
+                stdoutEl.textContent = JSON.stringify(statusJson.request, null, 2);
+                document.getElementById('asu-log').classList.remove('hide');
+
+                // 簡単に原因を抽出
+                if (statusJson.error.includes('Disk quota exceeded')) {
+                    errorEl.textContent = 'Server storage full: requires maintenance.';
+                } else {
+                    const lines = statusJson.error.split('\n');
+                    errorEl.textContent = lines[lines.length-1];
+                }
+            }
+        } catch(err) {
+            buildStatusEl.querySelector('span').textContent = 'Build request failed: ' + err;
+        }
+    }
 }
  
 async function insertExtendedInfo(temp) {
