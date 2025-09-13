@@ -917,7 +917,6 @@ function replaceAsuSection(asuSection, temp) {
         
         console.log('ASU Check - Starting check for URL:', asuUrl);
 
-        // 翻訳キーに対して {status}/{error} を置換
         function tr(key, replacements = {}) {
             let text = (typeof current_language_json === 'object' && current_language_json[key]) ? current_language_json[key] : key;
             for (const [ph, val] of Object.entries(replacements)) {
