@@ -2043,8 +2043,7 @@ function setupDsliteAddressComputation() {
     // DS-Lite個別のイベントハンドラ
     aftrType.addEventListener('change', () => {
         syncAftrAddress(true);
-        // DS-Lite用の特別処理（UI制御フィールドをクリア）
-        updateVariableDefinitionsWithDsliteCleanup();
+        updateVariableDefinitions();
     });
     
     aftrArea.addEventListener('change', () => {
@@ -2054,30 +2053,6 @@ function setupDsliteAddressComputation() {
     });
     
     setTimeout(() => syncAftrAddress(false), 0);
-}
-
-// DS-Lite専用のupdateVariableDefinitions
-function updateVariableDefinitionsWithDsliteCleanup() {
-    const textarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
-    if (!textarea) return;
-    
-    const values = collectFormValues();
-    let emissionValues = { ...values };
-    
-    // DS-Lite: UI制御用フィールドを削除
-    delete emissionValues.dslite_aftr_type;
-    delete emissionValues.dslite_area;
-    
-    // パッケージの有効化変数を追加
-    document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
-        const enableVar = cb.getAttribute('data-enable-var');
-        if (enableVar) {
-            emissionValues[enableVar] = '1';
-        }
-    });
-    
-    const variableDefinitions = generateVariableDefinitions(emissionValues);
-    updateTextareaContent(textarea, variableDefinitions);
 }
 
 // 接続タイプ変更ハンドラ（JSONドリブン）
@@ -2656,32 +2631,24 @@ exit 0`;
 function updateVariableDefinitions() {
     const textarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
     if (!textarea) return;
-
-    // collectFormValues が未定義や空を返す場合は安全にスキップ
-    const values = collectFormValues && typeof collectFormValues === 'function'
-        ? collectFormValues()
-        : null;
-
-    if (!values || typeof values !== 'object' || Object.keys(values).length === 0) {
-        // 外部データ未取得などで値が空の場合は後で再実行できるようにログだけ残す
-        console.warn("updateVariableDefinitions: values 未取得のためスキップ");
-        return;
-    }
-
+    
+    const values = collectFormValues();
     let emissionValues = { ...values };
-
-    // パッケージの有効化変数を追加
+    
+    // JSONに基づく除外フィールドの処理（新規追加）
+    emissionValues = filterExcludedFields(emissionValues);
+    
+    // 既存の処理
     document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
         const enableVar = cb.getAttribute('data-enable-var');
         if (enableVar) {
             emissionValues[enableVar] = '1';
         }
     });
-
+    
     const variableDefinitions = generateVariableDefinitions(emissionValues);
     updateTextareaContent(textarea, variableDefinitions);
 }
-
 // テキストエリア更新の共通処理
 function updateTextareaContent(textarea, variableDefinitions) {
     let content = textarea.value;
