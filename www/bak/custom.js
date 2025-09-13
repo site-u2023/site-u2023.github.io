@@ -1126,7 +1126,6 @@ function cleanupExistingCustomElements() {
         });
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ==================== 言語セレクター設定 ====================
 function setupLanguageSelector() {
     const mainLanguageSelect = document.querySelector('#languages-select');
