@@ -2529,6 +2529,12 @@ console.log('custom.js (JSON-driven clean version) fully loaded and ready');
 
 // ==================== ISP情報処理 ====================
 
+function getConnectionType(apiInfo) {
+    if (apiInfo?.mape?.brIpv6Address) return 'MAP-E';
+    if (apiInfo?.aftr) return 'DS-Lite';
+    return 'DHCP/PPPoE';
+}
+
 async function fetchAndDisplayIspInfo() {
     if (!config?.auto_config_api_url) return;
     
@@ -2537,9 +2543,9 @@ async function fetchAndDisplayIspInfo() {
         const apiInfo = await response.json();
         cachedApiInfo = apiInfo;
         
-        console.log('ISP info fetched and cached:', apiInfo);
+        console.log('ISP info fetched:', apiInfo);
         
-        // DOM要素が存在すれば即座に表示
+        // 情報取得完了 → 即座に表示を試行
         displayIspInfoIfReady();
         
         // フォーム値への適用
@@ -2556,21 +2562,20 @@ async function fetchAndDisplayIspInfo() {
     }
 }
 
-// ISP情報表示（DOM要素存在時のみ）
+// ISP情報表示（情報とDOM両方準備完了時のみ）
 function displayIspInfoIfReady() {
+    // 情報取得未満 → 何もしない
     if (!cachedApiInfo) {
-        console.log('No cached ISP info available');
         return false;
     }
     
-    // 最初の要素をチェック（他の要素も同時に生成されるため）
+    // DOM要素未準備 → 何もしない
     const firstElement = document.querySelector('#auto-config-country');
     if (!firstElement) {
-        console.log('ISP info DOM elements not ready yet');
         return false;
     }
     
-    // 全要素が存在するので表示実行
+    // 両方準備完了 → 即座に表示
     displayIspInfo(cachedApiInfo);
     console.log('ISP info displayed');
     return true;
@@ -2586,9 +2591,7 @@ function displayIspInfo(apiInfo) {
     setValue("#auto-config-as", apiInfo.as || "Unknown");
     setValue("#auto-config-ip", [apiInfo.ipv4, apiInfo.ipv6].filter(Boolean).join(" / ") || "Unknown");
 
-    let wanType = "DHCP/PPPoE";
-    if (apiInfo.mape?.brIpv6Address) wanType = "MAP-E";
-    else if (apiInfo.aftr) wanType = "DS-Lite";
+    const wanType = getConnectionType(apiInfo);
     setValue("#auto-config-method", wanType);
     setValue("#auto-config-notice", apiInfo.notice || "");
     
@@ -2793,10 +2796,10 @@ function applyIspAutoConfig(apiInfo) {
 function updateAutoConnectionInfo(apiInfo) {
     const autoInfo = document.querySelector('#auto-info');
     if (!autoInfo) return;
-
     let infoText = '';
     
-    if (apiInfo?.mape?.brIpv6Address) {
+    const connectionType = getConnectionType(apiInfo);
+    if (connectionType === 'MAP-E') {
         infoText = 'Detected: MAP-E\n';
         infoText += `\u00A0BR: ${apiInfo.mape.brIpv6Address}\n`;
         infoText += `\u00A0EA-len: ${apiInfo.mape.eaBitLength}\n`;
@@ -2804,17 +2807,14 @@ function updateAutoConnectionInfo(apiInfo) {
         infoText += `\u00A0IPv6 Prefix: ${apiInfo.mape.ipv6Prefix}/${apiInfo.mape.ipv6PrefixLength}\n`;
         infoText += `\u00A0PSID: offset=${apiInfo.mape.psIdOffset}\n`;
         infoText += `\u00A0PSID: length=${apiInfo.mape.psidlen}`;
-    } else if (apiInfo?.aftr) {
+    } else if (connectionType === 'DS-Lite') {
         infoText = 'Detected: DS-Lite\n';
         infoText += `AFTR: ${apiInfo.aftr}`;
-    } else if (apiInfo) {
+    } else {
         infoText = 'Detected: DHCP/PPPoE\n';
         infoText += '\u00A0Standard connection will be used';
-    } else {
-        infoText = 'No connection information available\n';
-        infoText += '\u00A0Please select connection type manually';
     }
-
+    
     if (apiInfo?.isp) {
         infoText += `\n\nISP: ${apiInfo.isp}`;
         if (apiInfo.as) {
