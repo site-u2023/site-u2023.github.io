@@ -972,65 +972,6 @@ function replaceAsuSection(asuSection, temp) {
     asuSection.parentNode.replaceChild(newDiv, asuSection);
 }
 
-// 拡張情報セクション挿入（JSON駆動で動的生成）
-async function insertExtendedInfo(temp) {
-    const extendedInfo = temp.querySelector('#extended-build-info');
-    const imageLink = document.querySelector('#image-link');
-    
-    if (!extendedInfo || !imageLink || document.querySelector('#extended-build-info')) {
-        return;
-    }
-    
-    // information.jsonから構造を読み込み
-    try {
-        const infoUrl = config?.information_path || 'auto-config/information.json';
-        const response = await fetch(infoUrl + '?t=' + Date.now());
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        
-        const infoConfig = await response.json();
-        console.log('Information config loaded:', infoConfig);
-        
-        // ISP情報セクションを動的生成
-        extendedInfo.innerHTML = '';
-        
-        infoConfig.categories.forEach(category => {
-            const h3 = document.createElement('h3');
-            h3.textContent = category.name;
-            if (category.class) h3.classList.add(category.class);
-            extendedInfo.appendChild(h3);
-            
-            category.packages.forEach(pkg => {
-                if (pkg.fields) {
-                    pkg.fields.forEach(field => {
-                        const row = document.createElement('div');
-                        row.className = 'row';
-                        
-                        const col1 = document.createElement('div');
-                        col1.className = 'col1';
-                        if (field.class) col1.classList.add(field.class);
-                        col1.textContent = field.label;
-                        
-                        const col2 = document.createElement('div');
-                        col2.className = 'col2';
-                        col2.id = field.id;
-                        
-                        row.appendChild(col1);
-                        row.appendChild(col2);
-                        extendedInfo.appendChild(row);
-                    });
-                }
-            });
-        });
-        
-        // DOMに挿入
-        imageLink.closest('.row').insertAdjacentElement('afterend', extendedInfo);
-        show('#extended-build-info');
-        
-    } catch (err) {
-        console.error('Failed to load information.json:', err);
-    }
-}
-
 // 既存要素クリーンアップ
 function cleanupExistingCustomElements() {
     ['#custom-packages-details', '#custom-scripts-details', '#extended-build-info']
@@ -1044,7 +985,6 @@ function cleanupExistingCustomElements() {
 }
 
 // ==================== 言語セレクター設定 ====================
-// ==================== 言語セレクター設定（フラグなし版） ====================
 function setupLanguageSelector() {
     const mainLanguageSelect = document.querySelector('#languages-select');
     const customLanguageSelect = document.querySelector('#aios-language');
@@ -2745,62 +2685,6 @@ function setGuaPrefixIfAvailable() {
     if (guaPrefix) {
         guaPrefixField.value = guaPrefix;
     }
-}
-
-function getNestedValue(obj, path) {
-    return path.split('.').reduce((current, key) => current?.[key], obj);
-}
-
-// IPv6 が特定の CIDR に含まれるかを判定（簡易版）
-function inCidr(ipv6, cidr) {
-    const [prefix, bits] = cidr.split('/');
-    const addrBin = ipv6ToBinary(ipv6);
-    const prefixBin = ipv6ToBinary(prefix);
-    return addrBin.substring(0, bits) === prefixBin.substring(0, bits);
-}
-
-// IPv6文字列 → 128bitバイナリ文字列
-function ipv6ToBinary(ipv6) {
-    // 短縮表記展開
-    const full = ipv6.split('::').reduce((acc, part, i, arr) => {
-        const segs = part.split(':').filter(Boolean);
-        if (i === 0) {
-            return segs;
-        } else {
-            const missing = 8 - (arr[0].split(':').filter(Boolean).length + segs.length);
-            return acc.concat(Array(missing).fill('0'), segs);
-        }
-    }, []).map(s => s.padStart(4, '0'));
-    // 16進 → 2進
-    return full.map(seg => parseInt(seg, 16).toString(2).padStart(16, '0')).join('');
-}
-
-// GUA用プレフィックスを生成（RFC準拠）
-function generateGuaPrefixFromFullAddress(apiInfo) {
-    if (!apiInfo?.ipv6) return null;
-    const ipv6 = apiInfo.ipv6.toLowerCase();
-
-    // GUA範囲
-    if (!inCidr(ipv6, '2000::/3')) return null;
-
-    // 除外リスト（RFC/IANA準拠）
-    const excludeCidrs = [
-        '2001:db8::/32',  // ドキュメンテーション
-        '2002::/16',      // 6to4
-        '2001::/32',      // Teredo
-        '2001:20::/28',   // ORCHIDv2
-        '2001:2::/48',    // ベンチマーク
-        '2001:3::/32',    // AMT
-        '2001:4:112::/48' // AS112-v6
-    ];
-    if (excludeCidrs.some(cidr => inCidr(ipv6, cidr))) return null;
-
-    // /64 プレフィックス生成
-    const segments = ipv6.split(':');
-    if (segments.length >= 4) {
-        return `${segments[0]}:${segments[1]}:${segments[2]}:${segments[3]}::/64`;
-    }
-    return null;
 }
 
 // ==================== パッケージ管理 ====================
