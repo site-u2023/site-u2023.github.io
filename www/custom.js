@@ -118,11 +118,10 @@ async function updateAllPackageState(source = 'unknown') {
     // 1. setup.jsonベースのパッケージ更新
     updateSetupJsonPackagesCore();
 
-    // 2. 言語パッケージの更新
-    await updateLanguagePackageCore();
+    // 2. 言語パッケージの更新は updatePackageListToTextarea に統合
 
     // 3. Postinstテキストエリアへの反映（差分検知付き）
-    updatePackageListToTextarea(source);
+    await updatePackageListToTextarea(source);
 
     // 4. setup.sh変数の更新
     updateVariableDefinitions();
@@ -178,83 +177,10 @@ function updateSetupJsonPackagesCore() {
     });
 }
 
-// Core関数2: 言語パッケージ更新（UI更新なし）
-async function updateLanguagePackageCore() {
-    // デバイス用言語セレクターから現在の言語を取得
-    const customLanguageSelect = document.querySelector('#aios-language');
-    if (customLanguageSelect && customLanguageSelect.value) {
-        selectedLanguage = customLanguageSelect.value;
-    } else if (!selectedLanguage) {
-        selectedLanguage = current_language || config?.fallback_language || 'en';
-    }
-
-    // 既存の言語パッケージを一旦全て削除
-    const removedPackages = [];
-    for (const pkg of Array.from(dynamicPackages)) {
-        if (pkg.startsWith('luci-i18n-')) {
-            dynamicPackages.delete(pkg);
-            removedPackages.push(pkg);
-        }
-    }
-
-    // 英語が選択されているか、デバイス情報がない場合は終了
-    const hasArch = current_device?.arch || cachedDeviceArch;
-    if (!selectedLanguage || selectedLanguage === 'en' || !hasArch) {
-        return;
-    }
-    
-    const basePkg = `luci-i18n-base-${selectedLanguage}`;
-    const firewallPkg = `luci-i18n-firewall-${selectedLanguage}`;
-    const addedLangPackages = new Set();
-
-    // 基本言語パッケージ + firewall をチェックして追加
-    try {
-        if (await isPackageAvailable(basePkg, 'luci')) {
-            dynamicPackages.add(basePkg);
-            addedLangPackages.add(basePkg);
-        }
-
-        if (await isPackageAvailable(firewallPkg, 'luci')) {
-            dynamicPackages.add(firewallPkg);
-            addedLangPackages.add(firewallPkg);
-        }
-    } catch (err) {
-        console.error('Error checking base/firewall package:', err);
-    }
-
-    // 現在の選択済みパッケージに対応する言語パッケージをチェックして追加
-    const currentPackages = getCurrentPackageList();
-    const checkPromises = [];
-    
-    for (const pkg of currentPackages) {
-        if (pkg.startsWith('luci-') && !pkg.startsWith('luci-i18n-')) {
-            const luciName = extractLuciName(pkg);
-            if (luciName) {
-                const langPkg = `luci-i18n-${luciName}-${selectedLanguage}`;
-                
-                const promise = (async () => {
-                    try {
-                        if (await isPackageAvailable(langPkg, 'luci')) {
-                            dynamicPackages.add(langPkg);
-                            addedLangPackages.add(langPkg);
-                            console.log('Added validated LuCI language package:', langPkg);
-                        }
-                    } catch (err) {
-                        console.error('Error checking LuCI package:', err);
-                    }
-                })();
-                checkPromises.push(promise);
-            }
-        }
-    }
-
-    await Promise.all(checkPromises);
-}
-
-// Core関数3: Postinstテキストエリア更新（最終的な統合・差分検知付き）
+// Core関数2: Postinstテキストエリア更新（最終的な統合・差分検知付き）
 let lastPackageListHash = null;
 
-function updatePackageListToTextarea(source = 'unknown') {
+async function updatePackageListToTextarea(source = 'unknown') {
     // 基本パッケージセット（デバイス固有パッケージ）を準備
     const basePackages = new Set();
 
@@ -279,30 +205,44 @@ function updatePackageListToTextarea(source = 'unknown') {
         searchValues.forEach(pkg => searchedPackages.add(pkg));
     }
 
+    // 動的パッケージ (setup.json由来)
+    const setupJsonBasedPackages = new Set(dynamicPackages);
+
+    // 現時点での全パッケージを一時的に統合（i18n生成のため）
+    const tempCombinedPackages = new Set([
+        ...basePackages,
+        ...checkedPackages,
+        ...searchedPackages,
+        ...setupJsonBasedPackages
+    ]);
+
     // テキストエリアから既存パッケージを取得（上記以外の手動入力パッケージを保持）
     const manualPackages = new Set();
     const textarea = document.querySelector('#asu-packages');
     if (textarea) {
-        const currentPackages = split(textarea.value);
-        currentPackages.forEach(pkg => {
-            // 既知のパッケージ以外を手動パッケージとして保持
-            if (!basePackages.has(pkg) &&
-                !checkedPackages.has(pkg) &&
-                !searchedPackages.has(pkg) &&
-                !dynamicPackages.has(pkg) &&
-                !pkg.startsWith('luci-i18n-')) {
+        const currentPackagesInTextarea = split(textarea.value);
+        currentPackagesInTextarea.forEach(pkg => {
+            // 既知のパッケージ以外を手動パッケージとして保持（古い言語パッケージは除外）
+            if (!tempCombinedPackages.has(pkg) && !pkg.startsWith('luci-i18n-')) {
                 manualPackages.add(pkg);
             }
         });
+        
+        // 手動パッケージも i18n 生成の対象に含める
+        manualPackages.forEach(pkg => tempCombinedPackages.add(pkg));
     }
+    
+    // LuCIパッケージに対応する言語パッケージを動的に生成
+    const languagePackages = await generateLanguagePackages(Array.from(tempCombinedPackages));
 
-    // 全てのパッケージを統合（順序：デバイス固有 → チェック済み → 検索 → 動的 → 手動）
+    // 全てのパッケージを統合（順序：デバイス固有 → チェック済み → 検索 → 動的 → 言語 → 手動）
     const finalPackages = [
-        ...basePackages,      // デバイス固有パッケージ（必須）
-        ...checkedPackages,   // チェックボックスで選択されたパッケージ
-        ...searchedPackages,  // 検索で追加されたパッケージ
-        ...dynamicPackages,   // 動的パッケージ（言語パッケージなど）
-        ...manualPackages     // 手動で入力されたパッケージ
+        ...basePackages,            // デバイス固有パッケージ（必須）
+        ...checkedPackages,         // チェックボックスで選択されたパッケージ
+        ...searchedPackages,        // 検索で追加されたパッケージ
+        ...setupJsonBasedPackages,  // 動的パッケージ（setup.json由来）
+        ...languagePackages,        // 動的に生成された言語パッケージ
+        ...manualPackages           // 手動で入力されたパッケージ
     ];
 
     // 重複を削除
@@ -326,6 +266,66 @@ function updatePackageListToTextarea(source = 'unknown') {
     
     console.log(`Postinst package list updated: ${uniquePackages.length} packages`);
     console.log('Final Postinst package list:', uniquePackages);
+}
+
+// 新規追加: LuCIパッケージに対応する言語パッケージを動的に生成する
+async function generateLanguagePackages(currentPackages) {
+    // 常に最新の言語設定を取得
+    const currentLangSelect = document.querySelector('#aios-language');
+    if (currentLangSelect && currentLangSelect.value) {
+        selectedLanguage = currentLangSelect.value;
+    } else if (!selectedLanguage) {
+        selectedLanguage = current_language || config?.fallback_language || 'en';
+    }
+
+    const lang = selectedLanguage;
+    const langPackages = new Set();
+    const hasArch = current_device?.arch || cachedDeviceArch;
+
+    // 英語が選択されているか、デバイス情報がない場合は空のセットを返す
+    if (!lang || lang === 'en' || !hasArch) {
+        return langPackages;
+    }
+
+    // 基本言語パッケージ + firewall をチェックして追加
+    const basePkg = `luci-i18n-base-${lang}`;
+    const firewallPkg = `luci-i18n-firewall-${lang}`;
+    
+    try {
+        if (await isPackageAvailable(basePkg, 'luci')) {
+            langPackages.add(basePkg);
+        }
+        if (await isPackageAvailable(firewallPkg, 'luci')) {
+            langPackages.add(firewallPkg);
+        }
+    } catch (err) {
+        console.error('Error checking base/firewall language package:', err);
+    }
+
+    // 現在の選択済みパッケージに対応する言語パッケージをチェックして追加
+    const checkPromises = currentPackages
+        .filter(pkg => pkg.startsWith('luci-') && !pkg.startsWith('luci-i18n-'))
+        .map(pkg => {
+            const luciName = extractLuciName(pkg);
+            if (!luciName) return null;
+            
+            const langPkg = `luci-i18n-${luciName}-${lang}`;
+            return (async () => {
+                try {
+                    if (await isPackageAvailable(langPkg, 'luci')) {
+                        langPackages.add(langPkg);
+                    }
+                } catch (err) {
+                    // console.error(`Error checking LuCI package ${langPkg}:`, err);
+                }
+            })();
+        })
+        .filter(Boolean); // null を除去
+
+    await Promise.all(checkPromises);
+    
+    console.log(`Generated ${langPackages.size} language packages for '${lang}'`);
+    return langPackages;
 }
 
 // ==================== 共通マルチインプット管理機能 ====================
