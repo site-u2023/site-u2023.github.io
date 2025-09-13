@@ -107,12 +107,10 @@ async function updateAllPackageState(source = 'unknown') {
     const currentState = collectFormValues();
     const hash = JSON.stringify(currentState);
 
+    // 前回と同じ状態ならスキップ
     if (hash === lastFormStateHash) {
         return;
     }
-    if (hash === lastFormStateHash && source === 'form-field') {
-        return;
-    }    
     lastFormStateHash = hash;
 
     console.log(`updateAllPackageState called from: ${source}`);
@@ -1670,21 +1668,7 @@ function collectFieldsFromPackage(pkg, structure, categoryId) {
         structure.categories[categoryId].push(pkg.id);
         structure.fieldMapping[pkg.selector] = fieldInfo;
     }
-
-    // register any radio-group so collectFormValues() picks up its change
-    if (pkg.type === 'radio-group' && pkg.variableName) {
-        const sel = `input[name="${pkg.variableName}"]:checked`;
-        const rInfo = {
-            id:           pkg.id,
-            selector:     sel,
-            variableName: pkg.variableName,
-            defaultValue: pkg.defaultValue
-        };
-        structure.fields[pkg.variableName] = rInfo;
-        structure.categories[categoryId].push(pkg.variableName);
-        structure.fieldMapping[sel] = rInfo;
-    }
-
+    
     if (pkg.children) {
         pkg.children.forEach(child => {
             collectFieldsFromPackage(child, structure, categoryId);
@@ -1711,27 +1695,25 @@ function collectFieldsFromPackage(pkg, structure, categoryId) {
 // ==================== フォーム値処理 ====================
 
 function collectFormValues() {
-    // formStructure が未初期化の場合は空オブジェクトを返す
-    if (!formStructure || !formStructure.fields) {
-        console.warn('formStructure not ready, returning empty values');
-        return {};
-    }
-    
     const values = {};
     
-    try {
-        Object.values(formStructure.fields).forEach(field => {
-            if (field?.selector) {
-                const element = document.querySelector(field.selector);
-                if (element) {
-                    values[field.variableName] = element.value || '';
-                }
-            }
-        });
-    } catch (error) {
-        console.error('Error in collectFormValues:', error);
-        return {};
+    Object.values(formStructure.fields).forEach(field => {
+        const value = getFieldValue(field.selector);
+        
+        if (value !== null && value !== undefined && value !== "") {
+            values[field.variableName] = value;
+        }
+    });
+    
+    // 言語設定を確実に取得
+    if (!values.language) {
+        const languageValue = getFieldValue('#aios-language') || selectedLanguage || 'en';
+        if (languageValue && languageValue !== 'en') {
+            values.language = languageValue;
+        }
     }
+    
+    applySpecialFieldLogic(values);
     
     return values;
 }
@@ -2061,15 +2043,41 @@ function setupDsliteAddressComputation() {
     // DS-Lite個別のイベントハンドラ
     aftrType.addEventListener('change', () => {
         syncAftrAddress(true);
-        updateVariableDefinitions();
+        // DS-Lite用の特別処理（UI制御フィールドをクリア）
+        updateVariableDefinitionsWithDsliteCleanup();
     });
     
     aftrArea.addEventListener('change', () => {
         syncAftrAddress(true);
-        updateVariableDefinitions();
+        // DS-Lite用の特別処理
+        updateVariableDefinitionsWithDsliteCleanup();
     });
     
     setTimeout(() => syncAftrAddress(false), 0);
+}
+
+// DS-Lite専用のupdateVariableDefinitions
+function updateVariableDefinitionsWithDsliteCleanup() {
+    const textarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
+    if (!textarea) return;
+    
+    const values = collectFormValues();
+    let emissionValues = { ...values };
+    
+    // DS-Lite: UI制御用フィールドを削除
+    delete emissionValues.dslite_aftr_type;
+    delete emissionValues.dslite_area;
+    
+    // パッケージの有効化変数を追加
+    document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
+        const enableVar = cb.getAttribute('data-enable-var');
+        if (enableVar) {
+            emissionValues[enableVar] = '1';
+        }
+    });
+    
+    const variableDefinitions = generateVariableDefinitions(emissionValues);
+    updateTextareaContent(textarea, variableDefinitions);
 }
 
 // 接続タイプ変更ハンドラ（JSONドリブン）
@@ -2078,17 +2086,21 @@ function handleConnectionTypeChange(e) {
     
     const internetCategory = setupConfig.categories.find(cat => cat.id === 'internet-config');
     
+    // 全ての接続タイプセクションを処理
     internetCategory.packages.forEach(pkg => {
         if (pkg.type === 'conditional-section' && pkg.showWhen?.field === 'connection_type') {
             const section = document.querySelector(`#${pkg.id}`);
             if (!section) return;
             
+            // showWhen.valuesに基づいて表示/非表示を制御
             if (pkg.showWhen.values?.includes(selectedType)) {
                 show(section);
                 
+                // 特定タイプ別の追加処理
                 if (selectedType === 'auto' && cachedApiInfo) {
                     updateAutoConnectionInfo(cachedApiInfo);
                 } else if (selectedType === 'mape' && cachedApiInfo) {
+                    // MAP-E選択時にGUA prefixを設定
                     const guaPrefixField = document.querySelector('#mape-gua-prefix');
                     if (guaPrefixField && cachedApiInfo.ipv6) {
                         const guaPrefix = generateGuaPrefixFromFullAddress(cachedApiInfo);
@@ -2644,65 +2656,30 @@ exit 0`;
 function updateVariableDefinitions() {
     const textarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
     if (!textarea) return;
-    
-    const values = collectFormValues();
+
+    // collectFormValues が未定義や空を返す場合は安全にスキップ
+    const values = collectFormValues && typeof collectFormValues === 'function'
+        ? collectFormValues()
+        : null;
+
+    if (!values || typeof values !== 'object' || Object.keys(values).length === 0) {
+        // 外部データ未取得などで値が空の場合は後で再実行できるようにログだけ残す
+        console.warn("updateVariableDefinitions: values 未取得のためスキップ");
+        return;
+    }
+
     let emissionValues = { ...values };
-    
-    // JSONに基づく除外フィールドの処理（新規追加）
-    emissionValues = filterExcludedFields(emissionValues);
-    
-    // 既存の処理
+
+    // パッケージの有効化変数を追加
     document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
         const enableVar = cb.getAttribute('data-enable-var');
         if (enableVar) {
             emissionValues[enableVar] = '1';
         }
     });
-    
+
     const variableDefinitions = generateVariableDefinitions(emissionValues);
     updateTextareaContent(textarea, variableDefinitions);
-}
-
-function filterExcludedFields(values) {
-    const filteredValues = { ...values };
-    
-    // setupConfig から excludeFromOutput: true のフィールドを特定して除外
-    function findExcludedFields(packages) {
-        const excludedFields = [];
-        
-        packages.forEach(pkg => {
-            // input-group の fields をチェック
-            if (pkg.type === 'input-group' && pkg.fields) {
-                pkg.fields.forEach(field => {
-                    if (field.excludeFromOutput === true) {
-                        excludedFields.push(field.variableName);
-                    }
-                });
-            }
-            
-            // children がある場合は再帰的に処理
-            if (pkg.children) {
-                excludedFields.push(...findExcludedFields(pkg.children));
-            }
-        });
-        
-        return excludedFields;
-    }
-    
-    // 全カテゴリから除外フィールドを収集
-    const excludedFields = [];
-    setupConfig.categories.forEach(category => {
-        excludedFields.push(...findExcludedFields(category.packages));
-    });
-    
-    // 除外フィールドを削除
-    excludedFields.forEach(fieldName => {
-        delete filteredValues[fieldName];
-    });
-    
-    console.log('Excluded fields from output:', excludedFields);
-    
-    return filteredValues;
 }
 
 // テキストエリア更新の共通処理
