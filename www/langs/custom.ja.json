@@ -103,5 +103,9 @@
     "tr-themes-dashboard": "テーマとダッシュボード",
     "tr-utilities": "ユーティリティ",
     "tr-usb-storage": "USBストレージ対応",
-    "tr-file-sharing": "ファイル共有"
+    "tr-file-sharing": "ファイル共有",
+
+    "tr-asu-status-ok": "ASU サーバーに接続可能です。ステータス: ",
+    "tr-asu-status-error": "ASU サーバーは応答しましたが、エラーを返しました。ステータス: ",
+    "tr-asu-status-fail": "ASU サーバーに到達できませんでした: "
 }
