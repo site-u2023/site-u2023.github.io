@@ -1,249 +1,565 @@
 {
   "categories": [
     {
-      "id": "basic-config",
-      "name": "Basic Configuration",
-      "class": "tr-basic-configuration",
-      "description": "Basic system and device configuration",
-      "type": "form-section",
+      "id": "basic-system",
+      "name": "Basic System Features",
+      "class": "tr-basic-system-features",
+      "description": "Terminal access and file transfer tools",
       "packages": [
         {
-          "id": "basic-fields",
-          "name": "Basic Configuration Fields",
-          "class": "tr-basic-configuration-fields",
-          "type": "input-group",
-          "fields": [
-            {
-              "id": "aios-language",
-              "label": "Language",
-              "class": "tr-language",
-              "type": "select",
-              "selector": "#aios-language",
-              "variableName": "language",
-              "defaultValue": ""
-            },
-            {
-              "id": "aios-country",
-              "label": "Country",
-              "class": "tr-country",
-              "type": "text",
-              "selector": "#aios-country",
-              "variableName": "country",
-              "placeholder": "00",
-              "defaultValue": "00",
-              "maxlength": 2,
-              "apiMapping": "country"
-            },
-            {
-              "id": "aios-timezone",
-              "label": "Timezone",
-              "class": "tr-timezone",
-              "type": "text",
-              "selector": "#aios-timezone",
-              "variableName": "timezone",
-              "placeholder": "UTC",
-              "defaultValue": "UTC",
-              "apiMapping": "timezone"
-            },
-            {
-              "id": "aios-zonename",
-              "label": "Zonename",
-              "class": "tr-zonename",
-              "type": "text",
-              "selector": "#aios-zonename",
-              "variableName": "zonename",
-              "placeholder": "UTC",
-              "defaultValue": "UTC",
-              "apiMapping": "zonename"
-            },
-            {
-              "id": "aios-device-name",
-              "label": "Device name",
-              "class": "tr-device-name",
-              "type": "text",
-              "selector": "#aios-device-name",
-              "variableName": "device_name",
-              "placeholder": "OpenWrt",
-              "defaultValue": ""
-            },
-            {
-              "id": "aios-root-password",
-              "label": "Root password",
-              "class": "tr-root-password",
-              "type": "text",
-              "selector": "#aios-root-password",
-              "variableName": "root_password",
-              "placeholder": "8+ characters"
-            },
-            {
-              "id": "aios-lan-ipv4",
-              "label": "LAN IPv4 Address",
-              "class": "tr-lan-ipv4-address",
-              "type": "text",
-              "selector": "#aios-lan-ipv4",
-              "variableName": "lan_ip_address",
-              "placeholder": "192.168.1.1",
-              "defaultValue": ""
-            },
-            {
-              "id": "aios-lan-ipv6",
-              "label": "LAN IPv6 Address",
-              "class": "tr-lan-ipv6-address",
-              "type": "text",
-              "selector": "#aios-lan-ipv6",
-              "variableName": "lan_ipv6_address",
-              "placeholder": "fd00::1/64",
-              "defaultValue": ""
-            },
-            {
-              "id": "aios-ssh-interface",
-              "label": "SSH Interface",
-              "class": "tr-ssh-interface",
-              "type": "text",
-              "selector": "#aios-ssh-interface",
-              "variableName": "ssh_interface",
-              "placeholder": "lan",
-              "defaultValue": "lan",
-              "description": "Network interface for SSH access"
-            },
-            {
-              "id": "aios-ssh-port",
-              "label": "SSH Port",
-              "class": "tr-ssh-port",
-              "type": "number",
-              "selector": "#aios-ssh-port",
-              "variableName": "ssh_port",
-              "placeholder": "22",
-              "defaultValue": "",
-              "min": 1,
-              "max": 65535,
-              "description": "Port number for SSH access"
-            },
-            {
-              "id": "aios-flow-offloading",
-              "label": "Flow offloading type",
-              "class": "tr-flow-offloading-type",
-              "type": "select",
-              "selector": "#aios-flow-offloading",
-              "variableName": "flow_offloading_type",
-              "options": [
-                {"value": "", "label": "Disabled", "class": "tr-disabled", "selected": true},
-                {"value": "software", "label": "Software flow offloading", "class": "tr-software-flow-offloading"},
-                {"value": "hardware", "label": "Hardware flow offloading", "class": "tr-hardware-flow-offloading"}
-              ]
-            },
-            {
-              "id": "aios-backup-path",
-              "label": "Restore Backup Path",
-              "class": "tr-restore-backup-path",
-              "type": "text",
-              "selector": "#aios-backup-path",
-              "variableName": "backup_path",
-              "placeholder": "/root/backup.tar.gz",
-              "defaultValue": "/root/backup.tar.gz",
-              "description": "Path to backup file for restore"
-            }
-          ]
+          "id": "luci-app-ttyd",
+          "name": "luci-app-ttyd",
+          "enableVar": "enable_ttyd",
+          "checked": true
+        },
+        {
+          "id": "openssh-sftp-server",
+          "name": "openssh-sftp-server",
+          "checked": true
+        },
+        {
+          "id": "luci-app-commands",
+          "name": "luci-app-commands"
+        },
+        {
+          "id": "luci-app-filebrowser",
+          "name": "luci-app-filebrowser"
         }
       ]
     },
     {
-      "id": "internet-config",
-      "name": "Internet Connection",
-      "class": "tr-internet-connection",
-      "description": "Configure your internet connection type",
-      "type": "form-section",
+      "id": "system-management",
+      "name": "System Management",
+      "class": "tr-system-management",
+      "description": "CPU interrupt balancing for multi-core systems",
       "packages": [
         {
-          "id": "connection-type",
-          "name": "Connection type",
-          "class": "tr-connection-type",
-          "type": "radio-group",
-          "variableName": "connection_type",
-          "options": [
-            {"value": "auto", "label": "AUTO", "class": "tr-auto", "checked": true},
-            {"value": "dhcp", "label": "DHCP", "class": "tr-dhcp"},
-            {"value": "pppoe", "label": "PPPoE", "class": "tr-pppoe"},
-            {"value": "dslite", "label": "DS-Lite", "class": "tr-dslite"},
-            {"value": "mape", "label": "MAP-E", "class": "tr-mape"},
-            {"value": "ap", "label": "AP", "class": "tr-ap"}
+          "id": "luci-app-irqbalance",
+          "name": "luci-app-irqbalance",
+          "enableVar": "enable_irqbalance"
+        }
+      ]
+    },
+    {
+      "id": "network-management",
+      "name": "Network Management",
+      "class": "tr-network-management",
+      "description": "QoS, bandwidth monitoring, Wi-Fi scheduling, and network utilities",
+      "packages": [
+        {
+          "id": "luci-app-sqm",
+          "name": "luci-app-sqm",
+          "dependencies": ["tc-full"]
+        },
+        {
+          "id": "tc-full",
+          "name": "tc-full",
+          "hidden": true
+        },
+        {
+          "id": "luci-app-statistics",
+          "name": "luci-app-statistics",
+          "dependencies": ["collectd-app-statistics", "rrdtool1"]
+        },
+        {
+          "id": "collectd",
+          "name": "collectd",
+          "uniqueId": "collectd-app-statistics",
+          "hidden": true
+        },
+        {
+          "id": "rrdtool1",
+          "name": "rrdtool1",
+          "hidden": true
+        },
+        {
+          "id": "luci-app-nlbwmon",
+          "name": "luci-app-nlbwmon"
+        },
+        {
+          "id": "luci-app-vnstat2",
+          "name": "luci-app-vnstat2"
+        },
+        {
+          "id": "luci-app-wol",
+          "name": "luci-app-wol"
+        },
+        {
+          "id": "luci-app-ddns",
+          "name": "luci-app-ddns"
+        },
+        {
+          "id": "luci-app-mwan3",
+          "name": "luci-app-mwan3 (iptables)",
+          "dependencies": ["mwan3"]
+        },
+        {
+          "id": "mwan3",
+          "name": "mwan3",
+          "hidden": true
+        }
+      ]
+    },
+    {
+      "id": "wifi-management",
+      "name": "Wi-Fi Management",
+      "class": "tr-wifi-management",
+      "description": "Wi-Fi scheduling, roaming optimization, and wireless utilities",
+      "packages": [
+        {
+          "id": "luci-app-usteer",
+          "name": "luci-app-usteer"
+        },
+        {
+          "id": "wifischedule",
+          "name": "wifischedule"
+        }
+      ]
+    },
+    {
+      "id": "modem-support",
+      "name": "Modem Support",
+      "class": "tr-modem-support",
+      "description": "4G/5G modem management (ModemManager includes SMS support)",
+      "packages": [
+        {
+          "id": "luci-proto-modemmanager",
+          "name": "luci-proto-modemmanager",
+          "dependencies": [
+            "kmod-usb-wdm",
+            "kmod-usb-net-cdc-mbim",
+            "kmod-usb-net-qmi-wwan",
+            "uqmi",
+            "mbim-utils",
+            "screen"
           ]
         },
         {
-          "id": "dslite-section",
-          "name": "DS-Lite",
-          "class": "tr-dslite",
-          "type": "conditional-section",
-          "showWhen": {"field": "connection_type", "values": ["dslite"]},
-          "connectionFields": ["dslite_aftr_address"],
-          "children": [
-            {
-              "id": "dslite-fields",
-              "name": "DS-Lite Settings",
-              "class": "tr-dslite-settings",
-              "type": "input-group",
-              "fields": [
-                {
-                  "id": "dslite-aftr-type",
-                  "label": "AFTR Type",
-                  "class": "tr-dslite-aftr-type",
-                  "type": "select",
-                  "selector": "#dslite-aftr-type",
-                  "variableName": "dslite_aftr_type",
-                  "excludeFromOutput": true,
-                  "options": [
-                    {"value": "transix", "label": "gw.transix.jp", "class": "tr-gwtransixjp"},
-                    {"value": "xpass", "label": "gw.xpass.jp", "class": "tr-gwxpassjp"},
-                    {"value": "v6option", "label": "gw.v6option.jp", "class": "tr-gwv6optionjp"}
-                  ],
-                  "computeField": {
-                    "targetField": "dslite-aftr-address",
-                    "dependsOn": ["dslite-area"],
-                    "addressMap": {
-                      "transix": {
-                        "east": "2404:8e00::feed:100",
-                        "west": "2404:8e01::feed:100"
-                      },
-                      "xpass": {
-                        "east": "2404:8e02::feed:100",
-                        "west": "2404:8e03::feed:100"
-                      },
-                      "v6option": {
-                        "east": "2404:8e04::feed:100",
-                        "west": "2404:8e05::feed:100"
-                      }
-                    }
-                  }
-                },
-                {
-                  "id": "dslite-area",
-                  "label": "Area",
-                  "class": "tr-dslite-area",
-                  "type": "select",
-                  "selector": "#dslite-area",
-                  "variableName": "dslite_area",
-                  "excludeFromOutput": true,
-                  "options": [
-                    {"value": "east", "label": "East Japan", "class": "tr-east-japan"},
-                    {"value": "west", "label": "West Japan", "class": "tr-west-japan"}
-                  ],
-                  "computeTrigger": true
-                },
-                {
-                  "id": "dslite-aftr-address",
-                  "label": "AFTR IPv6 Address",
-                  "class": "tr-dslite-aftr-ipv6-address",
-                  "type": "text",
-                  "selector": "#dslite-aftr-address",
-                  "variableName": "dslite_aftr_address",
-                  "placeholder": "2404:8e00::feed:100",
-                  "defaultValue": "2404:8e00::feed:100",
-                  "apiMapping": "aftr",
-                  "computed": true
-                }
-              ]
-            }
+          "id": "kmod-usb-wdm",
+          "name": "kmod-usb-wdm",
+          "hidden": true
+        },
+        {
+          "id": "kmod-usb-net-cdc-mbim",
+          "name": "kmod-usb-net-cdc-mbim",
+          "hidden": true
+        },
+        {
+          "id": "kmod-usb-net-qmi-wwan",
+          "name": "kmod-usb-net-qmi-wwan",
+          "hidden": true
+        },
+        {
+          "id": "uqmi",
+          "name": "uqmi",
+          "hidden": true
+        },
+        {
+          "id": "mbim-utils",
+          "name": "mbim-utils",
+          "hidden": true
+        },
+        {
+          "id": "screen",
+          "name": "screen",
+          "hidden": true
+        }
+      ]
+    },
+    {
+      "id": "security-tools",
+      "name": "Security Tools",
+      "class": "tr-security-tools",
+      "description": "Intrusion prevention and IP blocking tools",
+      "packages": [
+        {
+          "id": "fail2ban",
+          "name": "fail2ban"
+        },
+        {
+          "id": "banip",
+          "name": "banip"
+        },
+        {
+          "id": "luci-app-acme",
+          "name": "luci-app-acme"
+        }
+      ]
+    },
+    {
+      "id": "system-monitoring",
+      "name": "System Monitoring",
+      "class": "tr-system-monitoring",
+      "description": "System watchdog and network monitoring",
+      "packages": [
+        {
+          "id": "luci-app-watchcat",
+          "name": "luci-app-watchcat"
+        }
+      ]
+    },
+    {
+      "id": "diagnostic-tools",
+      "name": "Network Diagnostic Tools",
+      "class": "tr-diagnostic-tools",
+      "description": "Network testing, monitoring, analysis and DNS troubleshooting tools",
+      "packages": [
+        {
+          "id": "htop",
+          "name": "htop",
+          "dependencies": ["collectd-htop", "collectd-mod-thermal"]
+        },
+        {
+          "id": "collectd",
+          "name": "collectd",
+          "uniqueId": "collectd-htop", 
+          "hidden": true
+        },
+        {
+          "id": "collectd-mod-thermal",
+          "name": "collectd-mod-thermal",
+          "hidden": true
+        },
+        {
+          "id": "mtr-nojson",
+          "name": "mtr-nojson"
+        },
+        {
+          "id": "nmap",
+          "name": "nmap"
+        },
+        {
+          "id": "tcpdump",
+          "name": "tcpdump"
+        },
+        {
+          "id": "iperf3",
+          "name": "iperf3"
+        },
+        {
+          "id": "speedtest-netperf",
+          "name": "speedtest-netperf"
+        },
+        {
+          "id": "iftop",
+          "name": "iftop"
+        },
+        {
+          "id": "bwm-ng",
+          "name": "bwm-ng"
+        },
+        {
+          "id": "bind-dig",
+          "name": "bind-dig"
+        },
+        {
+          "id": "drill",
+          "name": "drill"
+        }
+      ]
+    },
+    {
+      "id": "system-tools",
+      "name": "System Administration Tools",
+      "class": "tr-system-tools",
+      "description": "Terminal enhancements, debugging, file management and HTTP client tools",
+      "packages": [
+        {
+          "id": "tmux",
+          "name": "tmux"
+        },
+        {
+          "id": "nano-plus",
+          "name": "nano-plus"
+        },
+        {
+          "id": "vim-fuller",
+          "name": "vim-fuller"
+        },
+        {
+          "id": "lsof",
+          "name": "lsof"
+        },
+        {
+          "id": "strace",
+          "name": "strace"
+        },
+        {
+          "id": "rsync",
+          "name": "rsync"
+        },
+        {
+          "id": "tree",
+          "name": "tree"
+        },
+        {
+          "id": "curl",
+          "name": "curl"
+        },
+        {
+          "id": "wget-ssl",
+          "name": "wget-ssl"
+        },
+        {
+          "id": "netdata",
+          "name": "netdata"
+        }
+      ]
+    },
+    {
+      "id": "themes-dashboard",
+      "name": "Themes and Dashboard",
+      "class": "tr-themes-dashboard",
+      "description": "UI themes and dashboard improvements",
+      "packages": [
+        {
+          "id": "luci-mod-dashboard",
+          "name": "luci-mod-dashboard"
+        },
+        {
+          "id": "luci-theme-openwrt",
+          "name": "luci-theme-openwrt",
+          "dependencies": ["luci-theme-material", "luci-theme-openwrt-2020"]
+        },
+        {
+          "id": "luci-theme-material",
+          "name": "luci-theme-material",
+          "hidden": true
+        },
+        {
+          "id": "luci-theme-openwrt-2020",
+          "name": "luci-theme-openwrt-2020",
+          "hidden": true
+        }
+      ]
+    },
+    {
+      "id": "utilities",
+      "name": "Utilities",
+      "class": "tr-utilities",
+      "description": "System upgrade, VPN and media server utilities",
+      "packages": [
+        {
+          "id": "attendedsysupgrade-common",
+          "name": "attendedsysupgrade-common"
+        },
+        {
+          "id": "luci-app-wireguard",
+          "name": "luci-app-wireguard",
+          "dependencies": ["wireguard-tools-app"]
+        },
+        {
+          "id": "wireguard-tools",
+          "name": "wireguard-tools",
+          "uniqueId": "wireguard-tools-app",
+          "hidden": true
+        },
+        {
+          "id": "luci-proto-wireguard",
+          "name": "luci-proto-wireguard",
+          "dependencies": ["wireguard-tools-proto"]
+        },
+        {
+          "id": "wireguard-tools",
+          "name": "wireguard-tools",
+          "uniqueId": "wireguard-tools-proto",
+          "hidden": true
+        },
+        {
+          "id": "zerotier",
+          "name": "zerotier"
+        },
+        {
+          "id": "tailscale",
+          "name": "tailscale"
+        },
+        {
+          "id": "luci-app-dockerman",
+          "name": "luci-app-dockerman (iptables)",
+          "dependencies": ["docker-compose"]
+        },
+        {
+          "id": "docker-compose",
+          "name": "docker-compose",
+          "dependencies": ["docker"],
+          "hidden": true
+        },
+        {
+          "id": "docker",
+          "name": "docker",
+          "hidden": true
+        },
+        {
+          "id": "luci-app-openvpn",
+          "name": "luci-app-openvpn"
+        },
+        {
+          "id": "luci-app-minidlna",
+          "name": "luci-app-minidlna"
+        }
+      ]
+    },
+    {
+      "id": "usb-storage",
+      "name": "USB Storage Support",
+      "class": "tr-usb-storage",
+      "description": "USB storage kernel module and filesystem tools",
+      "packages": [
+        {
+          "id": "kmod-usb-storage",
+          "name": "kmod-usb-storage",
+          "dependencies": [
+            "block-mount",
+            "kmod-usb-storage-uas",
+            "usbutils",
+            "libblkid1",
+            "gdisk"
           ]
+        },
+        {
+          "id": "block-mount",
+          "name": "block-mount",
+          "hidden": true
+        },
+        {
+          "id": "kmod-usb-storage-uas",
+          "name": "kmod-usb-storage-uas",
+          "hidden": true
+        },
+        {
+          "id": "usbutils",
+          "name": "usbutils",
+          "hidden": true
+        },
+        {
+          "id": "libblkid1",
+          "name": "libblkid1",
+          "hidden": true
+        },
+        {
+          "id": "gdisk",
+          "name": "gdisk",
+          "hidden": true
+        },
+        {
+          "id": "dosfstools",
+          "name": "dosfstools",
+          "dependencies": ["kmod-fs-vfat"]
+        },
+        {
+          "id": "kmod-fs-vfat",
+          "name": "kmod-fs-vfat",
+          "hidden": true
+        },
+        {
+          "id": "e2fsprogs",
+          "name": "e2fsprogs",
+          "dependencies": ["kmod-fs-ext4"]
+        },
+        {
+          "id": "kmod-fs-ext4",
+          "name": "kmod-fs-ext4",
+          "hidden": true
+        },
+        {
+          "id": "f2fs-tools",
+          "name": "f2fs-tools",
+          "dependencies": ["kmod-fs-f2fs"]
+        },
+        {
+          "id": "kmod-fs-f2fs",
+          "name": "kmod-fs-f2fs",
+          "hidden": true
+        },
+        {
+          "id": "exfat-fsck",
+          "name": "exfat-fsck",
+          "dependencies": ["kmod-fs-exfat"]
+        },
+        {
+          "id": "kmod-fs-exfat",
+          "name": "kmod-fs-exfat",
+          "hidden": true
+        },
+        {
+          "id": "ntfs-3g",
+          "name": "ntfs-3g",
+          "dependencies": ["kmod-fs-ntfs3"]
+        },
+        {
+          "id": "kmod-fs-ntfs3",
+          "name": "kmod-fs-ntfs3",
+          "hidden": true
+        },
+        {
+          "id": "hfsfsck",
+          "name": "hfsfsck",
+          "dependencies": ["kmod-fs-hfs", "kmod-fs-hfsplus"]
+        },
+        {
+          "id": "kmod-fs-hfs",
+          "name": "kmod-fs-hfs",
+          "hidden": true
+        },
+        {
+          "id": "kmod-fs-hfsplus",
+          "name": "kmod-fs-hfsplus",
+          "hidden": true
+        },
+        {
+          "id": "luci-app-hd-idle",
+          "name": "luci-app-hd-idle"
+        },
+        {
+          "id": "kmod-usb-ledtrig-usbport",
+          "name": "kmod-usb-ledtrig-usbport"
+        }
+      ]
+    },
+    {
+      "id": "file-sharing",
+      "name": "File Sharing",
+      "class": "tr-file-sharing",
+      "description": "SMB/CIFS file sharing server",
+      "packages": [
+        {
+          "id": "luci-app-samba4",
+          "name": "luci-app-samba4",
+          "dependencies": ["wsdd2"],
+          "enableVar": "enable_samba4"
+        },
+        {
+          "id": "wsdd2",
+          "name": "wsdd2",
+          "hidden": true
+        }
+      ]
+    },
+    {
+      "id": "setup-driven-packages",
+      "name": "Setup-driven Packages",
+      "class": "tr-setup-driven-packages",
+      "description": "Packages automatically managed by setup.json configuration",
+      "hidden": true,
+      "packages": [
+        {
+          "id": "map",
+          "name": "map",
+          "hidden": true,
+          "description": "MAP-E support package"
+        },
+        {
+          "id": "ds-lite", 
+          "name": "ds-lite",
+          "hidden": true,
+          "description": "DS-Lite support package"
+        },
+        {
+          "id": "luci-app-usteer-setup",
+          "name": "luci-app-usteer",
+          "uniqueId": "usteer-from-setup",
+          "hidden": true,
+          "description": "Usteer package managed by Wi-Fi setup"
         }
       ]
     }
