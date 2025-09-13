@@ -909,12 +909,22 @@ function replaceAsuSection(asuSection, temp) {
         newDiv.appendChild(buildElements.firstChild);
     }
     asuSection.parentNode.replaceChild(newDiv, asuSection);
+
     // ==================== ASU生存確認 + 固有表示 ====================
     (async function checkASU() {
         const statusEl = document.getElementById('asu-server-status');
         const asuUrl = config.asu_url || "https://sysupgrade.openwrt.org";
         
         console.log('ASU Check - Starting check for URL:', asuUrl);
+
+        // 翻訳キーに対して {status}/{error} を置換
+        function tr(key, replacements = {}) {
+            let text = (typeof current_language_json === 'object' && current_language_json[key]) ? current_language_json[key] : key;
+            for (const [ph, val] of Object.entries(replacements)) {
+                text = text.replace(new RegExp(`\\{${ph}\\}`, 'g'), String(val));
+            }
+            return text;
+        }
         
         try {
             const response = await fetch(asuUrl, { method: 'HEAD', cache: 'no-store' });
@@ -927,18 +937,18 @@ function replaceAsuSection(asuSection, temp) {
             
             if (response.ok) {
                 console.log('ASU Check - Response OK, status:', response.status);
-                statusEl.textContent = "ASU server reachable. Status: " + response.status;
                 statusEl.className = "tr-asu-status-200";
+                statusEl.textContent = tr("tr-asu-status-200", { status: response.status });
                 statusEl.style.color = 'green';
             } else if (response.status === 500) {
                 console.log('ASU Check - Server error 500');
-                statusEl.textContent = "ASU server responded but returned error. Status: " + response.status;
                 statusEl.className = "tr-asu-status-500";
+                statusEl.textContent = tr("tr-asu-status-500", { status: response.status });
                 statusEl.style.color = 'orange';
             } else {
                 console.log('ASU Check - Unexpected status:', response.status);
-                statusEl.textContent = "ASU server responded with unexpected status: " + response.status;
                 statusEl.className = "tr-asu-status-unreachable";
+                statusEl.textContent = tr("tr-asu-status-unreachable", { status: response.status });
                 statusEl.style.color = 'red';
             }
             
@@ -952,14 +962,10 @@ function replaceAsuSection(asuSection, temp) {
                 status: err.status
             });
             
-            statusEl.textContent = "Failed to reach ASU server: " + (err.status || err.message || err);
+            const errorInfo = err.status || err.message || err;
             statusEl.className = "tr-asu-status-networkfail";
+            statusEl.textContent = tr("tr-asu-status-networkfail", { error: errorInfo });
             statusEl.style.color = 'red';
-            // 翻訳後にエラー情報を置換
-            setTimeout(() => {
-                const errorInfo = err.status || err.message || err;
-                statusEl.textContent = statusEl.textContent.replace('{error}', errorInfo);
-            }, 100);
             
             console.log('ASU Check - Error text content:', statusEl.textContent);
         }
