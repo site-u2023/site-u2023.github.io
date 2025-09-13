@@ -148,6 +148,126 @@
       ]
     },
     {
+      "id": "wifi-config",
+      "name": "Wi-Fi Configuration",
+      "class": "tr-wi-fi-configuration",
+      "description": "Wireless network configuration",
+      "type": "form-section",
+      "packages": [
+        {
+          "id": "wifi-mode",
+          "name": "Wi-Fi Mode",
+          "class": "tr-wi-fi-mode",
+          "type": "radio-group",
+          "variableName": "wifi_mode",
+          "defaultValue": "standard",
+          "options": [
+            {
+              "value": "standard",
+              "label": "Standard",
+              "class": "tr-standard",
+              "checked": true,
+              "includeFields": ["wlan_ssid", "wlan_password"],
+              "excludeFields": ["enable_usteer", "mobility_domain", "snr"]
+            },
+            {
+              "value": "usteer",
+              "label": "Usteer",
+              "class": "tr-usteer",
+              "packages": ["luci-app-usteer"],
+              "includeFields": ["wlan_ssid", "wlan_password", "enable_usteer", "mobility_domain", "snr"],
+              "excludeFields": []
+            },
+            {
+              "value": "disabled",
+              "label": "Disabled",
+              "class": "tr-disabled",
+              "includeFields": [],
+              "excludeFields": ["wlan_ssid", "wlan_password", "enable_usteer", "mobility_domain", "snr"]
+            }
+          ]
+        },
+        {
+          "id": "wifi-options-container",
+          "name": "Wi-Fi Options",
+          "class": "tr-wi-fi-options",
+          "type": "conditional-section",
+          "showWhen": {"field": "wifi_mode", "values": ["standard", "usteer"]},
+          "children": [
+            {
+              "id": "wifi-basic-fields",
+              "name": "Basic Wi-Fi Settings",
+              "class": "tr-basic-wi-fi-settings",
+              "type": "input-group",
+              "fields": [
+                {
+                  "id": "aios-wifi-ssid",
+                  "label": "Wi-Fi SSID",
+                  "class": "tr-wi-fi-ssid",
+                  "type": "text",
+                  "selector": "#aios-wifi-ssid",
+                  "variableName": "wlan_ssid",
+                  "placeholder": "OpenWrt",
+                  "defaultValue": "OpenWrt"
+                },
+                {
+                  "id": "aios-wifi-password",
+                  "label": "Wi-Fi Password",
+                  "class": "tr-wi-fi-password",
+                  "type": "text",
+                  "selector": "#aios-wifi-password",
+                  "variableName": "wlan_password",
+                  "placeholder": "8+ characters",
+                  "defaultValue": "password"
+                }
+              ]
+            },
+            {
+              "id": "usteer-options",
+              "name": "Usteer Options",
+              "class": "tr-usteer-options",
+              "type": "conditional-section",
+              "showWhen": {"field": "wifi_mode", "values": ["usteer"]},
+              "children": [
+                {
+                  "id": "usteer-fields",
+                  "name": "Usteer Settings",
+                  "class": "tr-usteer-settings",
+                  "type": "input-group",
+                  "fields": [
+                    {
+                      "id": "aios-wifi-mobility-domain",
+                      "label": "Mobility Domain",
+                      "class": "tr-mobility-domain",
+                      "type": "text",
+                      "selector": "#aios-wifi-mobility-domain",
+                      "variableName": "mobility_domain",
+                      "placeholder": "4f57",
+                      "defaultValue": "4f57",
+                      "maxlength": 4,
+                      "pattern": "[0-9A-Fa-f]{4}",
+                      "description": "4-digit hex (e.g. 4f57)"
+                    },
+                    {
+                      "id": "aios-wifi-snr",
+                      "label": "Min SNR",
+                      "class": "tr-min-snr",
+                      "type": "text",
+                      "selector": "#aios-wifi-snr",
+                      "variableName": "snr",
+                      "placeholder": "30 15 5",
+                      "defaultValue": "30 15 5",
+                      "description": "SNR values in band order"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
       "id": "internet-config",
       "name": "Internet Connection",
       "class": "tr-internet-connection",
