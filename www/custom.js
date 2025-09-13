@@ -955,6 +955,11 @@ function replaceAsuSection(asuSection, temp) {
             statusEl.textContent = "Failed to reach ASU server: " + (err.status || err.message || err);
             statusEl.className = "tr-asu-status-networkfail";
             statusEl.style.color = 'red';
+            // 翻訳後にエラー情報を置換
+            setTimeout(() => {
+                const errorInfo = err.status || err.message || err;
+                statusEl.textContent = statusEl.textContent.replace('{error}', errorInfo);
+            }, 100);
             
             console.log('ASU Check - Error text content:', statusEl.textContent);
         }
