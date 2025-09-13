@@ -656,6 +656,22 @@ async function initializeCustomFeatures(asuSection, temp) {
     customInitialized = true;
 }
 
+async function updateAllPackageState(source = 'unknown') {
+    console.log(`updateAllPackageState called from: ${source}`);
+
+    // managedPackages + managedLanguagePackages を dynamicPackages に反映
+    dynamicPackages.clear();
+    getAllManagedPackages().forEach(pkg => dynamicPackages.add(pkg));
+
+    // 言語パッケージ同期（統合版）
+    await updateLanguagePackageCoreUnified();
+
+    // Postinst テキストエリア更新
+    updatePackageListToTextarea(source);
+
+    console.log('All package state updated successfully (unified)');
+}
+
 // ==================== パッケージ検索機能 ====================
 function setupPackageSearch() {
     console.log('setupPackageSearch called');
