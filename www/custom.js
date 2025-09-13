@@ -187,6 +187,7 @@ function updateSetupJsonPackagesCore() {
 }
 
 // 仮想パッケージチェックボックス操作関数
+// 仮想パッケージチェックボックス操作関数（新規追加）
 function toggleVirtualPackage(packageId, enabled) {
     // packages.jsonから隠しパッケージも含めて検索
     const pkg = findPackageById(packageId);
@@ -206,11 +207,6 @@ function toggleVirtualPackage(packageId, enabled) {
         if (wasChecked !== enabled) {
             console.log(`Virtual package ${packageId} (${searchId}): ${enabled ? 'enabled' : 'disabled'}`);
             
-            // LuCIパッケージの場合、言語パックも同時に処理
-            if (searchId.startsWith('luci-') || searchId === 'usteer-from-setup') {
-                handleLuciLanguagePackage(searchId, enabled);
-            }
-            
             // 依存関係も処理
             const dependencies = checkbox.getAttribute('data-dependencies');
             if (dependencies && enabled) {
@@ -222,11 +218,6 @@ function toggleVirtualPackage(packageId, enabled) {
                         if (depCheckbox) {
                             depCheckbox.checked = true;
                             console.log(`Virtual dependency ${depId}: enabled`);
-                            
-                            // 依存パッケージがLuCIの場合も言語パック処理
-                            if (depId.startsWith('luci-')) {
-                                handleLuciLanguagePackage(depId, true);
-                            }
                         }
                     }
                 });
@@ -234,45 +225,6 @@ function toggleVirtualPackage(packageId, enabled) {
         }
     } else {
         console.warn(`Checkbox not found for virtual package: ${packageId} (searched: ${searchId})`);
-    }
-}
-
-// LuCIパッケージの言語パック処理
-async function handleLuciLanguagePackage(packageId, enabled) {
-    const lang = config.device_language || config?.fallback_language || 'en';
-    if (!lang || lang === 'en') return;
-    
-    const hasArch = current_device?.arch || cachedDeviceArch;
-    if (!hasArch) return;
-    
-    let luciName = null;
-    
-    if (packageId === 'usteer-from-setup') {
-        luciName = 'usteer';
-    } else if (packageId.startsWith('luci-')) {
-        luciName = extractLuciName(packageId);
-    }
-    
-    if (!luciName) return;
-    
-    const langPkg = `luci-i18n-${luciName}-${lang}`;
-    
-    if (enabled) {
-        // 言語パックを追加
-        try {
-            if (await isPackageAvailable(langPkg, 'luci')) {
-                dynamicPackages.add(langPkg);
-                console.log(`Added language package: ${langPkg} for ${packageId}`);
-            }
-        } catch (err) {
-            console.error(`Error checking language package ${langPkg}:`, err);
-        }
-    } else {
-        // 言語パックを削除
-        if (dynamicPackages.has(langPkg)) {
-            dynamicPackages.delete(langPkg);
-            console.log(`Removed language package: ${langPkg} for ${packageId}`);
-        }
     }
 }
 
@@ -2835,12 +2787,6 @@ function createPackageCheckbox(pkg, isChecked = false, isDependency = false) {
 function handlePackageSelection(e) {
     const pkg = e.target;
     const isChecked = pkg.checked;
-    const packageId = pkg.getAttribute('data-package');
-    
-    // LuCIパッケージの場合、言語パックも同時に処理
-    if (packageId && packageId.startsWith('luci-')) {
-        handleLuciLanguagePackage(packageId, isChecked);
-    }
     
     const dependencies = pkg.getAttribute('data-dependencies');
     if (dependencies) {
@@ -2851,25 +2797,13 @@ function handlePackageSelection(e) {
                 if (depCheckbox) {
                     depCheckbox.checked = isChecked;
                     
-                    // 依存パッケージがLuCIの場合も言語パック処理
-                    if (depName.startsWith('luci-')) {
-                        handleLuciLanguagePackage(depName, isChecked);
-                    }
-                    
                     const depDeps = depCheckbox.getAttribute('data-dependencies');
                     if (depDeps && isChecked) {
                         depDeps.split(',').forEach(subDepName => {
                             const subDepPkg = findPackageById(subDepName);
                             if (subDepPkg) {
                                 const subDepCheckbox = document.querySelector(`[data-unique-id="${subDepPkg.uniqueId || subDepPkg.id}"]`);
-                                if (subDepCheckbox) {
-                                    subDepCheckbox.checked = true;
-                                    
-                                    // サブ依存パッケージがLuCIの場合も言語パック処理
-                                    if (subDepName.startsWith('luci-')) {
-                                        handleLuciLanguagePackage(subDepName, true);
-                                    }
-                                }
+                                if (subDepCheckbox) subDepCheckbox.checked = true;
                             }
                         });
                     }
