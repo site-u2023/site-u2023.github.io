@@ -118,16 +118,28 @@ window.updateImages = function(version, mobj) {
         }
     }
 
-    // デバイス固有パッケージを保存（重要）
+// デバイス固有パッケージを保存（重要）
 if (mobj && "manifest" in mobj === false) {
     // FIRST: Save device packages to global variables
     deviceDefaultPackages = mobj.default_packages || [];
     deviceDevicePackages = mobj.device_packages || [];
     extraPackages = config.asu_extra_packages || [];
     
-    // vendor を current_device に確実に設定
-    if (mobj.target && current_device) {
+    // current_deviceが新しく作られた場合に備えて再設定
+    if (!current_device) current_device = {};
+    
+    // vendor情報を必ず設定（index.jsでリセットされる可能性があるため）
+    if (mobj.target) {
         current_device.vendor = mobj.target;
+        current_device.target = mobj.target;
+    }
+    // versionも必ず設定
+    if (version) {
+        current_device.version = version;
+    }
+    // archも必ず設定
+    if (mobj.arch_packages) {
+        current_device.arch = mobj.arch_packages;
     }
     
     console.log('Device packages saved:', {
@@ -3415,7 +3427,7 @@ async function buildKmodsUrl(version, vendor, isSnapshot) {
         .replace('{vendor}', vendor);
 
     console.log('Fetching kmods index:', indexUrl);
-    const resp = await fetch(indexUrl, { cache: 'force-cache' });
+    const resp = await fetch(indexUrl, { cache: 'no-store' });
     if (!resp.ok) throw new Error(`Failed to fetch kmods index: HTTP ${resp.status} for ${indexUrl}`); 
     const html = await resp.text();
     const matches = [...html.matchAll(/href="([^/]+)\/"/g)].map(m => m[1]);
