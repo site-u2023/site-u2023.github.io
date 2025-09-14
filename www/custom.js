@@ -16,6 +16,18 @@ window.addEventListener('load', () => {
     }
 });
 
+(function() {
+  const origUpdateImages = window.updateImages;
+  window.updateImages = function(version, mobj) {
+    if (mobj) {
+      const parts = (mobj.target || '').split('/');
+      mobj.vendor = parts[0] || 'unknown';
+      mobj.subtarget = parts[1] || '';
+    }
+    return origUpdateImages.apply(this, arguments);
+  };
+})();
+
 // ==================== グローバル変数 ====================
 let customInitialized = false;
 let customHTMLLoaded = false;
