@@ -1406,64 +1406,38 @@ async function isPackageAvailable(pkgName, feed) {
 }
 
 // パッケージリスト全体の存在確認（並列処理版）
-async function verifyAllPackages() {  
+async function verifyAllPackages() {    
     const arch = current_device?.arch || cachedDeviceArch;
-    const version = current_device?.version;
-    const vendor = current_device?.vendor;
-
-    // 必須情報チェック
-    if (!packagesJson || !arch || !version || !vendor) {
-        console.warn('Skipping package verification: device info incomplete', { arch, version, vendor });
+    if (!packagesJson || !arch) {
+        console.log('Cannot verify packages: missing data');
         return;
     }
     
     const startTime = Date.now();
     console.log('Starting package verification...');
-
-    // 全パッケージを収集（feed フィルタリング付き）
+    
+    // 全パッケージを収集
     const packagesToVerify = [];
-
+    
     packagesJson.categories.forEach(category => {
         category.packages.forEach(pkg => {
-            const feed = guessFeedForPackage(pkg.id);
-
-            // feed フィルタリング
-            if (!feed) return; // feed 判定不可は除外
-            if (feed === 'kmods' && !vendor) return; // vendor 未確定なら除外
-            if (version.includes('SNAPSHOT')) {
-                // SNAPSHOT は APK 系と kmods のみ
-                if (!(feed === 'kmods' || feedType(feed) === 'apk')) return;
-            } else {
-                // リリース版は OPKG 系と kmods のみ
-                if (!(feed === 'kmods' || feedType(feed) === 'opkg')) return;
-            }
-
-            // メインパッケージ
+            // 隠しパッケージも確認対象に含める（仮想パッケージチェックボックス用）
             packagesToVerify.push({ 
                 id: pkg.id, 
                 uniqueId: pkg.uniqueId || pkg.id,
-                feed,
+                feed: guessFeedForPackage(pkg.id),
                 hidden: pkg.hidden || false,
                 checked: pkg.checked || false
             });
-
-            // 依存パッケージ
+            
             if (pkg.dependencies) {
                 pkg.dependencies.forEach(depId => {
                     const depPkg = findPackageById(depId);
                     if (depPkg) {
-                        const depFeed = guessFeedForPackage(depPkg.id);
-                        if (!depFeed) return;
-                        if (depFeed === 'kmods' && !vendor) return;
-                        if (version.includes('SNAPSHOT')) {
-                            if (!(depFeed === 'kmods' || feedType(depFeed) === 'apk')) return;
-                        } else {
-                            if (!(depFeed === 'kmods' || feedType(depFeed) === 'opkg')) return;
-                        }
                         packagesToVerify.push({ 
                             id: depPkg.id,
                             uniqueId: depPkg.uniqueId || depPkg.id,
-                            feed: depFeed,
+                            feed: guessFeedForPackage(depPkg.id),
                             hidden: depPkg.hidden || false,
                             isDependency: true
                         });
@@ -1472,8 +1446,6 @@ async function verifyAllPackages() {
             }
         });
     });
-
-    console.log(`Collected ${packagesToVerify.length} packages to verify`, packagesToVerify);
     
     // 重複を除去
     const uniquePackages = Array.from(new Set(packagesToVerify.map(p => `${p.id}:${p.feed}`)))
