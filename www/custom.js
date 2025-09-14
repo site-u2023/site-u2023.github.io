@@ -47,161 +47,139 @@ let packageSearchManager = null;
 let commandsManager = null;
 
 // ==================== 初期化処理 ====================
-// 元の updateImages をフック
 const originalUpdateImages = window.updateImages;
+
+// target → vendor/subtarget 分離ユーティリティ
+function applyTargetStructure(mobj) {
+    if (!mobj || !mobj.target) return { vendor: 'unknown', subtarget: '' };
+    const parts = mobj.target.split('/');
+    return {
+        vendor: parts[0] || 'unknown',
+        subtarget: parts[1] || ''
+    };
+}
+
 window.updateImages = function(version, mobj) {
     if (originalUpdateImages) originalUpdateImages(version, mobj);
-    // [TRACE] 呼び出し時の引数確認（optional chaining 不使用）
+
     console.log('[TRACE] updateImages called with:', {
         version: version,
-        mobj_vendor: mobj && mobj.vendor,
-        mobj_target: mobj && mobj.target,
-        mobj_subtarget: mobj && mobj.subtarget,
-        mobj_arch_packages: mobj && mobj.arch_packages
+        target: mobj && mobj.target,
+        subtarget: mobj && mobj.subtarget,
+        arch: mobj && mobj.arch_packages,
+        id: mobj && mobj.id
     });
 
-    // デバイスが変更された場合、パッケージ存在確認キャッシュをクリア
     const oldArch = cachedDeviceArch;
     const oldVersion = current_device && current_device.version;
-    
-    // arch_packagesをcurrent_deviceとキャッシュに保存
+
     if (mobj && mobj.arch_packages) {
         if (!current_device) current_device = {};
+
         current_device.arch = mobj.arch_packages;
         current_device.version = version;
-        
-        // vendor情報を正しく設定（targetはmediatek/filogicの形式）
-        if (mobj.target) {
-            // targetが"mediatek/filogic"の形式の場合、そのまま使用
-            current_device.vendor = mobj.target;
-            current_device.target = mobj.target;
-            current_device.subtarget = mobj.subtarget || '';
-            // [TRACE] vendor セット経路を記録
-            console.log('[TRACE] vendor set from mobj.target:', current_device.vendor);
-        } else if (!current_device.vendor) {
-            // フォールバック
-            current_device.vendor = 'unknown';
-            console.warn('[WARN] vendor missing, set to "unknown"');
-        }
-
-        // 追加：既存のcurrent_deviceプロパティも保持
-        if (mobj.id) current_device.id = mobj.id;
-        
         cachedDeviceArch = mobj.arch_packages;
-        console.log('Architecture saved:', mobj.arch_packages, 'Vendor:', current_device.vendor, 'Target:', mobj.target);
-        console.log('Full current_device:', current_device); // デバッグ用
-        
-        // デバイスが変更された場合、キャッシュをクリア
+
+        const { vendor, subtarget } = applyTargetStructure(mobj);
+        current_device.vendor = vendor;
+        current_device.subtarget = subtarget;
+        current_device.target = mobj.target || '';
+        if (mobj.id) current_device.id = mobj.id;
+
+        console.log('[TRACE] vendor/subtarget applied:', {
+            vendor: current_device.vendor,
+            subtarget: current_device.subtarget
+        });
+        console.log('[TRACE] current_device initialized:', current_device);
+
         if (oldArch !== mobj.arch_packages || oldVersion !== version) {
-            console.log('Device changed, clearing all caches');
+            console.log('[TRACE] Device changed, clearing caches');
             packageAvailabilityCache.clear();
             feedCacheMap.clear();
-            
-            // vendor が設定されているか確認してからパッケージ検証を実行
+
             setTimeout(function() {
-                // vendor チェック（current_deviceを再確認）
                 if (!current_device || !current_device.vendor) {
-                    console.warn('No vendor information available, some kmods packages may not be verified');
-                    console.log('Current device state:', current_device);
+                    console.warn('[WARN] No vendor info, kmods may not verify');
+                    console.log('[TRACE] current_device state:', current_device);
                 }
-                
+
                 const indicator = document.querySelector('#package-loading-indicator');
                 if (indicator) {
                     indicator.style.display = 'block';
                     const span = indicator.querySelector('span');
                     if (span) span.className = 'tr-checking-packages';
                 }
-                
+
                 verifyAllPackages().then(function() {
-                    if (indicator) {
-                        indicator.style.display = 'none';
-                    }
-                    console.log('Package verification completed after device change');
+                    if (indicator) indicator.style.display = 'none';
+                    console.log('[TRACE] Package verification complete');
                 }).catch(function(err) {
-                    console.error('Package verification failed after device change:', err);
+                    console.error('[ERROR] Package verification failed:', err);
                     if (indicator) {
                         indicator.innerHTML = '<span class="tr-package-check-failed">Package availability check failed</span>';
-                        setTimeout(function() {
-                            indicator.style.display = 'none';
-                        }, 3000);
+                        setTimeout(() => { indicator.style.display = 'none'; }, 3000);
                     }
                 });
             }, 100);
         }
     }
 
-// デバイス固有パッケージを保存（重要）
-if (mobj && "manifest" in mobj === false) {
-    // FIRST: Save device packages to global variables
-    deviceDefaultPackages = mobj.default_packages || [];
-    deviceDevicePackages = mobj.device_packages || [];
-    extraPackages = config.asu_extra_packages || [];
-    
-    // current_deviceが新しく作られた場合に備えて再設定
-    if (!current_device) current_device = {};
-    
-    // vendor情報を必ず設定（index.jsでリセットされる可能性があるため）
-    if (mobj.target) {
-        current_device.vendor = mobj.target;
-        current_device.target = mobj.target;
-        // [TRACE] vendor 再セット経路を記録
-        console.log('[TRACE] vendor ensured from mobj.target (manifest=false path):', current_device.vendor);
-    }
-    // versionも必ず設定
-    if (version) {
-        current_device.version = version;
-    }
-    // archも必ず設定
-    if (mobj.arch_packages) {
-        current_device.arch = mobj.arch_packages;
-    }
-    
-    console.log('Device packages saved:', {
-        default: deviceDefaultPackages.length,
-        device: deviceDevicePackages.length,
-        extra: extraPackages.length,
-        vendor: current_device && current_device.vendor
-    });
-        
-        // SECOND: Apply to textarea immediately after saving
+    if (mobj && "manifest" in mobj === false) {
+        deviceDefaultPackages = mobj.default_packages || [];
+        deviceDevicePackages = mobj.device_packages || [];
+        extraPackages = config.asu_extra_packages || [];
+
+        if (!current_device) current_device = {};
+
+        const { vendor, subtarget } = applyTargetStructure(mobj);
+        current_device.vendor = vendor;
+        current_device.subtarget = subtarget;
+        current_device.target = mobj.target || '';
+        current_device.version = version || current_device.version;
+        current_device.arch = mobj.arch_packages || current_device.arch;
+
+        console.log('[TRACE] vendor/subtarget ensured (manifest=false):', {
+            vendor: current_device.vendor,
+            subtarget: current_device.subtarget
+        });
+
+        console.log('[TRACE] Device packages saved:', {
+            default: deviceDefaultPackages.length,
+            device: deviceDevicePackages.length,
+            extra: extraPackages.length,
+            vendor: current_device.vendor
+        });
+
         const initialPackages = deviceDefaultPackages
             .concat(deviceDevicePackages)
             .concat(extraPackages);
-        
+
         const textarea = document.querySelector('#asu-packages');
         if (textarea) {
             textarea.value = initialPackages.join(' ');
-            console.log('Initial packages set in textarea:', initialPackages);
-            
-            // Force resize after setting value
-            setTimeout(function() {
+            console.log('[TRACE] Initial packages set:', initialPackages);
+            setTimeout(() => {
                 textarea.style.height = 'auto';
                 textarea.style.height = textarea.scrollHeight + 'px';
             }, 50);
         }
-        
-        // THIRD: Trigger package state update to sync with dynamic packages
+
         if (customInitialized) {
-            setTimeout(function() {
+            setTimeout(() => {
                 updateAllPackageState('device-packages-loaded');
             }, 100);
         }
     }
-    
-    // 初回のみカスタムHTMLを読み込み
+
     if (!customHTMLLoaded) {
-        console.log("Loading custom.html");
+        console.log('[TRACE] Loading custom.html');
         loadCustomHTML();
         customHTMLLoaded = true;
     } else if (customInitialized && current_device && current_device.arch) {
-        // 既に初期化済みでデバイスが選択された場合、言語パッケージを強制更新
-        console.log("Device changed, updating language packages");
-
-        // デバイス用は config.device_language を唯一参照
         const deviceLang = config.device_language || (config && config.fallback_language) || 'en';
-        syncDeviceLanguageSelector(deviceLang); // デバイス用セレクターのみ同期
-        updateAllPackageState('device-changed-force'); // 必要なら明示的に
-        console.log("Force updating language packages for:", deviceLang);
+        console.log('[TRACE] Updating language packages for:', deviceLang);
+        syncDeviceLanguageSelector(deviceLang);
+        updateAllPackageState('device-changed-force');
     }
 };
 
