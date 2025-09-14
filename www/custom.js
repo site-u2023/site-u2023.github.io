@@ -1353,17 +1353,9 @@ async function isPackageAvailable(pkgName, feed) {
     const version = current_device?.version || $("#versions").value;
     const vendor = current_device?.vendor;
 
-    // feedごとの必須情報チェック
-    if (feed === 'kmods') {
-        if (!vendor) {
-            console.warn('Vendor not set yet for kmods check, skipping:', pkgName);
-            return false;
-        }
-    } else {
-        if (!arch || !version) {
-            console.warn('Missing arch/version for feed check:', { feed, arch, version });
-            return false;
-        }
+    if (!arch || !version) {
+        console.log('Missing device info for package check:', { arch, version });
+        return false;
     }
 
     const cacheKey = `${version}:${arch}:${feed}:${pkgName}`;
@@ -1373,18 +1365,25 @@ async function isPackageAvailable(pkgName, feed) {
 
     try {
         let packagesUrl;
-        const isSnapshot = version.includes('SNAPSHOT');
+        let result = false;
 
         if (feed === 'kmods') {
-            // kmods URLはvendorベース
-            packagesUrl = await buildKmodsUrl(version, vendor, isSnapshot);
-        } else if (isSnapshot) {
-            // SNAPSHOTはapk_search_url
+            // vendorが必須
+            if (!vendor) {
+                console.log('Missing vendor for kmods check');
+                packageAvailabilityCache.set(cacheKey, false);
+                return false;
+            }
+            packagesUrl = await buildKmodsUrl(version, vendor, version.includes('SNAPSHOT'));
+
+            // ★ ここで実際に組み立てたURLを出力
+            console.log(`[DEBUG] kmods packagesUrl: ${packagesUrl}`);
+
+        } else if (version.includes('SNAPSHOT')) {
             packagesUrl = config.apk_search_url
                 .replace('{arch}', arch)
                 .replace('{feed}', feed);
         } else {
-            // リリースはopkg_search_url
             packagesUrl = config.opkg_search_url
                 .replace('{version}', version)
                 .replace('{arch}', arch)
@@ -1392,10 +1391,8 @@ async function isPackageAvailable(pkgName, feed) {
         }
 
         const resp = await fetch(packagesUrl, { cache: 'force-cache' });
-        let result = false;
-
         if (resp.ok) {
-            if (isSnapshot) {
+            if (version.includes('SNAPSHOT') || (feed === 'kmods' && version.includes('SNAPSHOT'))) {
                 const data = await resp.json();
                 if (Array.isArray(data.packages)) {
                     result = data.packages.some(p => p?.name === pkgName);
