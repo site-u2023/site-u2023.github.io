@@ -118,17 +118,23 @@ window.updateImages = function(version, mobj) {
     }
 
     // デバイス固有パッケージを保存（重要）
-    if (mobj && "manifest" in mobj === false) {
-        // FIRST: Save device packages to global variables
-        deviceDefaultPackages = mobj.default_packages || [];
-        deviceDevicePackages = mobj.device_packages || [];
-        extraPackages = config.asu_extra_packages || [];
-        
-        console.log('Device packages saved:', {
-            default: deviceDefaultPackages.length,
-            device: deviceDevicePackages.length,
-            extra: extraPackages.length
-        });
+if (mobj && "manifest" in mobj === false) {
+    // FIRST: Save device packages to global variables
+    deviceDefaultPackages = mobj.default_packages || [];
+    deviceDevicePackages = mobj.device_packages || [];
+    extraPackages = config.asu_extra_packages || [];
+    
+    // vendor を current_device に確実に設定
+    if (mobj.target && current_device) {
+        current_device.vendor = mobj.target;
+    }
+    
+    console.log('Device packages saved:', {
+        default: deviceDefaultPackages.length,
+        device: deviceDevicePackages.length,
+        extra: extraPackages.length,
+        vendor: current_device?.vendor
+    });
         
         // SECOND: Apply to textarea immediately after saving
         const initialPackages = deviceDefaultPackages
