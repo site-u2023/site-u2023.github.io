@@ -1347,17 +1347,23 @@ function guessFeedForPackage(pkgName) {
 
 // パッケージ存在チェック（キャッシュ対応版）
 async function isPackageAvailable(pkgName, feed) {
-    if (!pkgName || !feed) {
-        return false;
-    }
+    if (!pkgName || !feed) return false;
 
     const arch = current_device?.arch || cachedDeviceArch;
     const version = current_device?.version || $("#versions").value;
     const vendor = current_device?.vendor;
 
-    if (!arch || !version) {
-        console.log('Missing device info for package check:', { arch, version });
-        return false;
+    // feedごとの必須情報チェック
+    if (feed === 'kmods') {
+        if (!vendor) {
+            console.warn('Vendor not set yet for kmods check, skipping:', pkgName);
+            return false;
+        }
+    } else {
+        if (!arch || !version) {
+            console.warn('Missing arch/version for feed check:', { feed, arch, version });
+            return false;
+        }
     }
 
     const cacheKey = `${version}:${arch}:${feed}:${pkgName}`;
@@ -1367,21 +1373,18 @@ async function isPackageAvailable(pkgName, feed) {
 
     try {
         let packagesUrl;
-        let result = false;
+        const isSnapshot = version.includes('SNAPSHOT');
 
         if (feed === 'kmods') {
-            // vendorが必須
-            if (!vendor) {
-                console.log('Missing vendor for kmods check');
-                packageAvailabilityCache.set(cacheKey, false);
-                return false;
-            }
-            packagesUrl = await buildKmodsUrl(version, vendor, version.includes('SNAPSHOT'));
-        } else if (version.includes('SNAPSHOT')) {
+            // kmods URLはvendorベース
+            packagesUrl = await buildKmodsUrl(version, vendor, isSnapshot);
+        } else if (isSnapshot) {
+            // SNAPSHOTはapk_search_url
             packagesUrl = config.apk_search_url
                 .replace('{arch}', arch)
                 .replace('{feed}', feed);
         } else {
+            // リリースはopkg_search_url
             packagesUrl = config.opkg_search_url
                 .replace('{version}', version)
                 .replace('{arch}', arch)
@@ -1389,8 +1392,10 @@ async function isPackageAvailable(pkgName, feed) {
         }
 
         const resp = await fetch(packagesUrl, { cache: 'force-cache' });
+        let result = false;
+
         if (resp.ok) {
-            if (version.includes('SNAPSHOT') || feed === 'kmods' && version.includes('SNAPSHOT')) {
+            if (isSnapshot) {
                 const data = await resp.json();
                 if (Array.isArray(data.packages)) {
                     result = data.packages.some(p => p?.name === pkgName);
