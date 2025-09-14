@@ -66,6 +66,31 @@ window.updateImages = function(version, mobj) {
             console.log('Device changed, clearing all caches');
             packageAvailabilityCache.clear();
             feedCacheMap.clear();
+
+            // アーキテクチャが確定/変更されたので、パッケージの存在確認を実行
+            setTimeout(() => {
+                const indicator = document.querySelector('#package-loading-indicator');
+                if (indicator) {
+                    indicator.style.display = 'block';
+                    const span = indicator.querySelector('span');
+                    if (span) span.className = 'tr-checking-packages';
+                }
+                
+                verifyAllPackages().then(() => {
+                    if (indicator) {
+                        indicator.style.display = 'none';
+                    }
+                    console.log('Package verification completed after device change');
+                }).catch(err => {
+                    console.error('Package verification failed after device change:', err);
+                    if (indicator) {
+                        indicator.innerHTML = '<span class="tr-package-check-failed">Package availability check failed</span>';
+                        setTimeout(() => {
+                            indicator.style.display = 'none';
+                        }, 3000);
+                    }
+                });
+            }, 100);
         }
     }
 
