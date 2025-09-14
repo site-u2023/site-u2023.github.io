@@ -61,18 +61,22 @@ window.updateImages = function(version, mobj) {
         current_device.arch = mobj.arch_packages;
         current_device.version = version;
         
-        // vendor を mobj.target から取得（重要：必ず設定する）
+        // vendor を target/subtarget 形式で必ず設定（空値で上書きしない）
         if (mobj.target && mobj.subtarget) {
             current_device.vendor = `${mobj.target}/${mobj.subtarget}`;
+            current_device.target = mobj.target;
+            current_device.subtarget = mobj.subtarget;
         } else if (mobj.target) {
-            current_device.vendor = mobj.target;
-        } else {
+            current_device.vendor = current_device.vendor || mobj.target;
+            current_device.target = current_device.target || mobj.target;
+        } else if (!current_device.vendor) {
+            // フォールバック: arch_packages から推測
             const parts = mobj.arch_packages.split('/');
             current_device.vendor = parts.length > 1
                 ? `${parts[0]}/${parts[1]}`
                 : parts[0].split('_')[0];
         }
- 
+
         // 追加：既存のcurrent_deviceプロパティも保持
         if (mobj.id) current_device.id = mobj.id;
         
