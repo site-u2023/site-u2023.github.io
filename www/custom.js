@@ -1250,6 +1250,20 @@ function getCurrentPackageList() {
     return Array.from(packages);
 }
 
+function guessFeedForPackage(pkgName) {
+    if (!pkgName) return 'packages';
+    
+    if (pkgName.startsWith('luci-') || pkgName.includes('luci')) {
+        return 'luci';
+    }
+    
+    if (pkgName.startsWith('kmod-')) {
+        return 'kmods';
+    }
+    
+    return 'packages';
+}
+
 // パッケージ存在チェック（キャッシュ対応版）
 async function isPackageAvailable(pkgName, feed) {
     if (!pkgName || !feed) {
