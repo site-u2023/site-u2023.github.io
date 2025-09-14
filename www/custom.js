@@ -61,20 +61,15 @@ window.updateImages = function(version, mobj) {
         current_device.arch = mobj.arch_packages;
         current_device.version = version;
         
-        // vendor を target/subtarget 形式で必ず設定（空値で上書きしない）
-        if (mobj.target && mobj.subtarget) {
-            current_device.vendor = `${mobj.target}/${mobj.subtarget}`;
+        // vendor情報を正しく設定（targetはmediatek/filogicの形式）
+        if (mobj.target) {
+            // targetが"mediatek/filogic"の形式の場合、そのまま使用
+            current_device.vendor = mobj.target;
             current_device.target = mobj.target;
-            current_device.subtarget = mobj.subtarget;
-        } else if (mobj.target) {
-            current_device.vendor = current_device.vendor || mobj.target;
-            current_device.target = current_device.target || mobj.target;
+            current_device.subtarget = mobj.subtarget || '';
         } else if (!current_device.vendor) {
-            // フォールバック: arch_packages から推測
-            const parts = mobj.arch_packages.split('/');
-            current_device.vendor = parts.length > 1
-                ? `${parts[0]}/${parts[1]}`
-                : parts[0].split('_')[0];
+            // フォールバック
+            current_device.vendor = 'unknown';
         }
 
         // 追加：既存のcurrent_deviceプロパティも保持
@@ -3420,7 +3415,7 @@ async function buildKmodsUrl(version, vendor, isSnapshot) {
         .replace('{vendor}', vendor);
 
     console.log('Fetching kmods index:', indexUrl);
-    const resp = await fetch(indexUrl, { cache: 'no-store' });
+    const resp = await fetch(indexUrl, { cache: 'force-cache' });
     if (!resp.ok) throw new Error(`Failed to fetch kmods index: HTTP ${resp.status} for ${indexUrl}`); 
     const html = await resp.text();
     const matches = [...html.matchAll(/href="([^/]+)\/"/g)].map(m => m[1]);
