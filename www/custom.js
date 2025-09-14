@@ -29,6 +29,11 @@ let dynamicPackages = new Set();
 let selectedLanguage = '';
 let customLanguageMap = {};
 
+// パッケージ存在確認キャッシュ（初回確認後は再利用）
+const packageAvailabilityCache = new Map();
+// フィード全体のキャッシュ（検索高速化用）
+const feedCacheMap = new Map();
+
 // デバイス固有パッケージ管理（重要：これらを常に維持）
 let deviceDefaultPackages = [];  // mobj.default_packages
 let deviceDevicePackages = [];   // mobj.device_packages  
@@ -44,6 +49,10 @@ const originalUpdateImages = window.updateImages;
 window.updateImages = function(version, mobj) {
     if (originalUpdateImages) originalUpdateImages(version, mobj);
 
+// デバイスが変更された場合、パッケージ存在確認キャッシュをクリア
+    const oldArch = cachedDeviceArch;
+    const oldVersion = current_device?.version;
+    
     // arch_packagesをcurrent_deviceとキャッシュに保存
     if (mobj && mobj.arch_packages) {
         if (!current_device) current_device = {};
@@ -51,6 +60,13 @@ window.updateImages = function(version, mobj) {
         current_device.version = version;
         cachedDeviceArch = mobj.arch_packages;
         console.log('Architecture saved:', mobj.arch_packages);
+        
+        // デバイスが変更された場合、キャッシュをクリア
+        if (oldArch !== mobj.arch_packages || oldVersion !== version) {
+            console.log('Device changed, clearing all caches');
+            packageAvailabilityCache.clear();
+            feedCacheMap.clear();
+        }
     }
 
     // デバイス固有パッケージを保存（重要）
@@ -794,59 +810,64 @@ async function searchPackages(query, inputElement) {
     showPackageSearchResults(sortedResults, inputElement);
 }
 
-// フィード内検索
+// フィード内検索（キャッシュ機能付き）
 async function searchInFeed(query, feed, version, arch) {
     // console.log(`searchInFeed: ${feed}, query: ${query}`);
     
+    const cacheKey = `${version}:${arch}:${feed}`;
+    
     try {
-        if (version.includes('SNAPSHOT')) {
-            // APK形式
-            const url = config.apk_search_url
-                .replace('{arch}', arch)
-                .replace('{feed}', feed);
-            
-            // console.log('Fetching APK index:', url);
-            const resp = await fetch(url);
-            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-            
-            const data = await resp.json();
-            const results = [];
-            
-            if (data.packages && typeof data.packages === 'object') {
-                Object.keys(data.packages).forEach(name => {
-                    if (name.toLowerCase().includes(query.toLowerCase())) {
-                        results.push(name);
-                    }
-                });
-            }
-            
-            return results;
+        let packages = [];
+        
+        // キャッシュチェック
+        if (feedCacheMap.has(cacheKey)) {
+            packages = feedCacheMap.get(cacheKey);
         } else {
-            // OPKG形式
-            const url = config.opkg_search_url
-                .replace('{version}', version)
-                .replace('{arch}', arch)
-                .replace('{feed}', feed);
-            
-            // console.log('Fetching OPKG packages:', url);
-            const resp = await fetch(url);
-            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-            
-            const text = await resp.text();
-            const results = [];
-            const lines = text.split('\n');
-            
-            for (const line of lines) {
-                if (line.startsWith('Package: ')) {
-                    const pkgName = line.substring(9).trim();
-                    if (pkgName.toLowerCase().includes(query.toLowerCase())) {
-                        results.push(pkgName);
+            if (version.includes('SNAPSHOT')) {
+                // APK形式
+                const url = config.apk_search_url
+                    .replace('{arch}', arch)
+                    .replace('{feed}', feed);
+                
+                const resp = await fetch(url, { cache: 'force-cache' });
+                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                
+                const data = await resp.json();
+                
+                if (data.packages && typeof data.packages === 'object') {
+                    packages = Object.keys(data.packages);
+                }
+            } else {
+                // OPKG形式
+                const url = config.opkg_search_url
+                    .replace('{version}', version)
+                    .replace('{arch}', arch)
+                    .replace('{feed}', feed);
+                
+                const resp = await fetch(url, { cache: 'force-cache' });
+                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                
+                const text = await resp.text();
+                const lines = text.split('\n');
+                
+                for (const line of lines) {
+                    if (line.startsWith('Package: ')) {
+                        const pkgName = line.substring(9).trim();
+                        packages.push(pkgName);
                     }
                 }
             }
             
-            return results;
+            // キャッシュに保存
+            feedCacheMap.set(cacheKey, packages);
         }
+        
+        // クエリにマッチするパッケージをフィルタリング
+        const results = packages.filter(pkgName => 
+            pkgName.toLowerCase().includes(query.toLowerCase())
+        );
+        
+        return results;
     } catch (err) {
         console.error('searchInFeed error:', err);
         return [];
@@ -1229,7 +1250,7 @@ function getCurrentPackageList() {
     return Array.from(packages);
 }
 
-// パッケージ存在チェック
+// パッケージ存在チェック（キャッシュ対応版）
 async function isPackageAvailable(pkgName, feed) {
     if (!pkgName || !feed) {
         return false;
@@ -1243,51 +1264,213 @@ async function isPackageAvailable(pkgName, feed) {
         return false;
     }
     
+    // キャッシュキーを生成
+    const cacheKey = `${version}:${arch}:${feed}:${pkgName}`;
+    
+    // キャッシュに存在する場合は即座に返す
+    if (packageAvailabilityCache.has(cacheKey)) {
+        return packageAvailabilityCache.get(cacheKey);
+    }
+    
     try {
         let packagesUrl;
+        let result = false;
         
         if (version.includes('SNAPSHOT')) {
             packagesUrl = config.apk_search_url
                 .replace('{arch}', arch)
                 .replace('{feed}', feed);
             
-            console.log('Checking APK URL:', packagesUrl);
-            
-            const resp = await fetch(packagesUrl, { cache: 'no-store' });
-            if (!resp.ok) {
-                console.log('APK fetch failed:', resp.status);
-                return false;
+            const resp = await fetch(packagesUrl, { cache: 'force-cache' });
+            if (resp.ok) {
+                const data = await resp.json();
+                if (Array.isArray(data.packages)) {
+                    result = data.packages.some(p => p?.name === pkgName);
+                } else if (data.packages && typeof data.packages === 'object') {
+                    result = Object.prototype.hasOwnProperty.call(data.packages, pkgName);
+                }
             }
-            
-            const data = await resp.json();
-            if (Array.isArray(data.packages)) {
-                return data.packages.some(p => p?.name === pkgName);
-            } else if (data.packages && typeof data.packages === 'object') {
-                return Object.prototype.hasOwnProperty.call(data.packages, pkgName);
-            }
-            return false;
         } else {
             packagesUrl = config.opkg_search_url
                 .replace('{version}', version)
                 .replace('{arch}', arch)
                 .replace('{feed}', feed);
             
-            console.log('Checking OPKG URL:', packagesUrl);
-            
-            const resp = await fetch(packagesUrl, { cache: 'no-store' });
-            if (!resp.ok) {
-                console.log('OPKG fetch failed:', resp.status);
-                return false;
+            const resp = await fetch(packagesUrl, { cache: 'force-cache' });
+            if (resp.ok) {
+                const text = await resp.text();
+                result = text.split('\n').some(line => line.trim() === `Package: ${pkgName}`);
             }
-            
-            const text = await resp.text();
-            const found = text.split('\n').some(line => line.trim() === `Package: ${pkgName}`);
-            console.log('Package check result for', pkgName, ':', found);
-            return found;
         }
+        
+        // 結果をキャッシュに保存
+        packageAvailabilityCache.set(cacheKey, result);
+        return result;
     } catch (err) {
         console.error('Package availability check error:', err);
+        // エラー時もキャッシュして、再試行を防ぐ
+        packageAvailabilityCache.set(cacheKey, false);
         return false;
+    }
+}
+
+// パッケージリスト全体の存在確認（並列処理版）
+async function verifyAllPackages() {
+    if (!packagesJson || !current_device?.arch) {
+        console.log('Cannot verify packages: missing data');
+        return;
+    }
+    
+    const startTime = Date.now();
+    console.log('Starting package verification...');
+    
+    // 全パッケージを収集
+    const packagesToVerify = [];
+    
+    packagesJson.categories.forEach(category => {
+        category.packages.forEach(pkg => {
+            // 隠しパッケージも確認対象に含める（仮想パッケージチェックボックス用）
+            packagesToVerify.push({ 
+                id: pkg.id, 
+                uniqueId: pkg.uniqueId || pkg.id,
+                feed: guessFeedForPackage(pkg.id),
+                hidden: pkg.hidden || false,
+                checked: pkg.checked || false
+            });
+            
+            if (pkg.dependencies) {
+                pkg.dependencies.forEach(depId => {
+                    const depPkg = findPackageById(depId);
+                    if (depPkg) {
+                        packagesToVerify.push({ 
+                            id: depPkg.id,
+                            uniqueId: depPkg.uniqueId || depPkg.id,
+                            feed: guessFeedForPackage(depPkg.id),
+                            hidden: depPkg.hidden || false,
+                            isDependency: true
+                        });
+                    }
+                });
+            }
+        });
+    });
+    
+    // 重複を除去
+    const uniquePackages = Array.from(new Set(packagesToVerify.map(p => `${p.id}:${p.feed}`)))
+        .map(key => {
+            const [id, feed] = key.split(':');
+            const pkg = packagesToVerify.find(p => p.id === id && p.feed === feed);
+            return pkg;
+        });
+    
+    console.log(`Verifying ${uniquePackages.length} unique packages...`);
+    
+    // バッチサイズを定義（一度に処理するパッケージ数）
+    const BATCH_SIZE = 10;
+    const batches = [];
+    
+    for (let i = 0; i < uniquePackages.length; i += BATCH_SIZE) {
+        batches.push(uniquePackages.slice(i, i + BATCH_SIZE));
+    }
+    
+    let unavailableCount = 0;
+    let checkedUnavailable = [];
+    
+    // バッチごとに並列処理
+    for (const batch of batches) {
+        const promises = batch.map(async pkg => {
+            const isAvailable = await isPackageAvailable(pkg.id, pkg.feed);
+            
+            // 隠しパッケージでない場合のみUIを更新
+            if (!pkg.hidden) {
+                updatePackageAvailabilityUI(pkg.uniqueId, isAvailable);
+            }
+            
+            if (!isAvailable) {
+                unavailableCount++;
+                // 初期チェック済みで利用不可のパッケージを記録
+                if (pkg.checked) {
+                    checkedUnavailable.push(pkg.id);
+                }
+            }
+            
+            return { id: pkg.id, uniqueId: pkg.uniqueId, available: isAvailable };
+        });
+        
+        // バッチの完了を待つ
+        await Promise.all(promises);
+    }
+    
+    const elapsedTime = Date.now() - startTime;
+    console.log(`Package verification completed in ${elapsedTime}ms`);
+    console.log(`${unavailableCount} packages are not available for this device`);
+    
+    if (checkedUnavailable.length > 0) {
+        console.warn('The following pre-selected packages are not available:', checkedUnavailable);
+    }
+}
+
+// パッケージ利用可能性に基づいてUIを更新
+function updatePackageAvailabilityUI(uniqueId, isAvailable) {
+    const checkbox = document.querySelector(`#pkg-${uniqueId}`);
+    if (!checkbox) return;
+    
+    // パッケージアイテム全体を取得（メインパッケージと依存関係を含む）
+    const packageItem = checkbox.closest('.package-item');
+    if (!packageItem) {
+        // 依存関係パッケージの場合はラベルを非表示
+        const label = checkbox.closest('label');
+        if (label) {
+            if (!isAvailable) {
+                label.style.display = 'none';
+                // チェックボックスも無効化
+                checkbox.checked = false;
+                checkbox.disabled = true;
+            } else {
+                label.style.display = '';
+                checkbox.disabled = false;
+            }
+        }
+        return;
+    }
+    
+    if (!isAvailable) {
+        // 利用不可のパッケージは完全に非表示
+        packageItem.style.display = 'none';
+        // チェックボックスも無効化
+        checkbox.checked = false;
+        checkbox.disabled = true;
+        
+        // 依存関係のチェックボックスも無効化
+        const depCheckboxes = packageItem.querySelectorAll('.package-dependent input[type="checkbox"]');
+        depCheckboxes.forEach(depCb => {
+            depCb.checked = false;
+            depCb.disabled = true;
+        });
+    } else {
+        // 利用可能なパッケージは表示
+        packageItem.style.display = '';
+        checkbox.disabled = false;
+    }
+    
+    // カテゴリ内に表示されているパッケージがあるか確認
+    updateCategoryVisibility(packageItem);
+}
+
+// カテゴリの表示/非表示を更新
+function updateCategoryVisibility(packageItem) {
+    const category = packageItem?.closest('.package-category');
+    if (!category) return;
+    
+    // カテゴリ内の表示されているパッケージを数える
+    const visiblePackages = category.querySelectorAll('.package-item:not([style*="display: none"])');
+    
+    if (visiblePackages.length === 0) {
+        // 表示するパッケージがない場合はカテゴリ全体を非表示
+        category.style.display = 'none';
+    } else {
+        // 表示するパッケージがある場合はカテゴリを表示
+        category.style.display = '';
     }
 }
 
@@ -2712,6 +2895,16 @@ function generatePackageSelector() {
     
     container.innerHTML = '';
     
+    // 初期表示時のローディング表示を追加
+    const loadingDiv = document.createElement('div');
+    loadingDiv.id = 'package-loading-indicator';
+    loadingDiv.style.display = 'none';
+    loadingDiv.style.padding = '1em';
+    loadingDiv.style.textAlign = 'center';
+    loadingDiv.style.color = 'var(--text-muted)';
+    loadingDiv.innerHTML = '<span class="tr-checking-packages">Checking package availability...</span>';
+    container.appendChild(loadingDiv);
+    
     packagesJson.categories.forEach(category => {
         // 隠しカテゴリの処理
         if (category.hidden) {
@@ -2733,6 +2926,36 @@ function generatePackageSelector() {
     
     updateAllPackageState('package-selector-init');
     console.log(`Generated ${packagesJson.categories.length} package categories (including hidden)`);
+    
+    // パッケージ存在確認を非同期で実行（表示を妨げない）
+    if (current_device?.arch) {
+        // 100ms遅延させて、UIレンダリングを優先
+        setTimeout(() => {
+            // ローディング表示を開始
+            const indicator = document.querySelector('#package-loading-indicator');
+            if (indicator) {
+                indicator.style.display = 'block';
+            }
+            
+            verifyAllPackages().then(() => {
+                // ローディング表示を非表示
+                if (indicator) {
+                    indicator.style.display = 'none';
+                }
+                console.log('Package verification completed');
+            }).catch(err => {
+                console.error('Package verification failed:', err);
+                if (indicator) {
+                    indicator.innerHTML = '<span class="tr-package-check-failed">Package availability check failed</span>';
+                    setTimeout(() => {
+                        indicator.style.display = 'none';
+                    }, 3000);
+                }
+            });
+        }, 100);
+    } else {
+        console.log('Device architecture not available, skipping package verification');
+    }
 }
 
 function createHiddenPackageCheckbox(pkg) {
