@@ -57,11 +57,11 @@ var config = {
 
   // kmods 検索エンドポイント（OPKG用: リリース版）
   // 例: https://downloads.openwrt.org/releases/24.10.2/targets/mediatek/filogic/kmods/5.15.137-1-xxxxxxxx/Packages
-  kmods_opkg_search_url: "https://downloads.openwrt.org/releases/{version}/packages/{arch}/{feed}/{kmod}/Packages",
+  kmods_opkg_search_url: "https://downloads.openwrt.org/releases/{version}/packages/{arch}/kmods/{kmod}/Packages",
 
   // kmods 検索エンドポイント（APK用: SNAPSHOT版）
   // 例: https://downloads.openwrt.org/snapshots/targets/mediatek/filogic/kmods/5.15.137-1-xxxxxxxx/index.json
-  kmods_apk_search_url: "https://downloads.openwrt.org/snapshots/packages/{arch}/{feed}/{kmod}/index.json",
+  kmods_apk_search_url: "https://downloads.openwrt.org/snapshots/packages/{arch}/kmods/{kmod}/index.json",
   
   // デバイス言語
   device_language: "",
