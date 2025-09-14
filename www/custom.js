@@ -907,28 +907,31 @@ async function searchInFeed(query, feed, version, arch) {
         } else {
             let url;
             if (feed === 'kmods') {
-                console.log('[DEBUG] vendor value at entry:', vendor);
+                console.log('[DEBUG] vendor value at entry:', vendor); // vendorの中身を確認
                 // vendorが必須
                 if (!vendor) {
-                    console.log('Missing vendor for kmods search');
+                    console.warn('[WARN] Missing vendor for kmods search');
                     return [];
                 }
                 url = await buildKmodsUrl(version, vendor, version.includes('SNAPSHOT'));
+                console.log('[DEBUG] kmods search URL:', url); // 実際に組み立てたURLを出力
             } else if (version.includes('SNAPSHOT')) {
                 url = config.apk_search_url
                     .replace('{arch}', arch)
                     .replace('{feed}', feed);
+                console.log('[DEBUG] snapshot search URL:', url);
             } else {
                 url = config.opkg_search_url
                     .replace('{version}', version)
                     .replace('{arch}', arch)
                     .replace('{feed}', feed);
+                console.log('[DEBUG] opkg search URL:', url);
             }
 
             const resp = await fetch(url, { cache: 'force-cache' });
             if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
 
-            if (version.includes('SNAPSHOT') || feed === 'kmods' && version.includes('SNAPSHOT')) {
+            if (version.includes('SNAPSHOT') || (feed === 'kmods' && version.includes('SNAPSHOT'))) {
                 const data = await resp.json();
                 if (data.packages && typeof data.packages === 'object') {
                     packages = Object.keys(data.packages);
