@@ -907,6 +907,7 @@ async function searchInFeed(query, feed, version, arch) {
         } else {
             let url;
             if (feed === 'kmods') {
+                console.log('[DEBUG] vendor value at entry:', vendor);
                 // vendorが必須
                 if (!vendor) {
                     console.log('Missing vendor for kmods search');
@@ -1368,6 +1369,7 @@ async function isPackageAvailable(pkgName, feed) {
         let result = false;
 
         if (feed === 'kmods') {
+            console.log('[DEBUG] vendor value at entry:', vendor);
             // vendorが必須
             if (!vendor) {
                 console.log('Missing vendor for kmods check');
