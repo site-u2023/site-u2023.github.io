@@ -62,13 +62,12 @@ window.updateImages = function(version, mobj) {
         current_device.arch = mobj.arch_packages;
         current_device.version = version;
 
-        // vendor を targets配下の1階層目として確定
-        // mobj.target があればそれを使う、なければ arch から推測
-        if (mobj.target && mobj.subtarget) {
-            current_device.vendor = `${mobj.target}/${mobj.subtarget}`;
-        } else if (mobj.target) {
+        // vendor を mobj.target から取得（targetが "mediatek/filogic" のような形式）
+        if (mobj.target) {
             current_device.vendor = mobj.target;
+            current_device.target = mobj.target;
         } else {
+            // フォールバック: arch_packages から推測
             const parts = mobj.arch_packages.split('/');
             current_device.vendor = parts.length > 1 ? `${parts[0]}/${parts[1]}` : parts[0].split('_')[0];
         }
@@ -813,9 +812,21 @@ async function searchPackages(query, inputElement) {
     
     const arch = current_device?.arch || cachedDeviceArch;
     const version = current_device?.version || document.querySelector('#versions')?.value;
+    const vendor = current_device?.vendor;
     
     const allResults = new Set();
-    const feeds = ['packages', 'luci'];
+    
+    // kmod-で始まる場合はkmodsフィードのみ検索
+    // それ以外は通常のフィードを検索
+    let feeds;
+    if (query.toLowerCase().startsWith('kmod-')) {
+        feeds = vendor ? ['kmods'] : [];
+        if (feeds.length === 0) {
+            console.log('Cannot search kmods without vendor information');
+        }
+    } else {
+        feeds = ['packages', 'luci'];
+    }
     
     for (const feed of feeds) {
         try {
@@ -852,8 +863,7 @@ async function searchPackages(query, inputElement) {
 
 // フィード内検索（キャッシュ機能付き）
 async function searchInFeed(query, feed, version, arch) {
-    const target = current_device?.target;
-    const subtarget = current_device?.subtarget;
+    const vendor = current_device?.vendor;
     const cacheKey = `${version}:${arch}:${feed}`;
 
     try {
@@ -864,13 +874,18 @@ async function searchInFeed(query, feed, version, arch) {
         } else {
             let url;
             if (feed === 'kmods') {
-                packagesUrl = await buildKmodsUrl(version, current_device.vendor, version.includes('SNAPSHOT'));
+                // vendorが必須
+                if (!vendor) {
+                    console.log('Missing vendor for kmods search');
+                    return [];
+                }
+                url = await buildKmodsUrl(version, vendor, version.includes('SNAPSHOT'));
             } else if (version.includes('SNAPSHOT')) {
-                packagesUrl = config.apk_search_url
+                url = config.apk_search_url
                     .replace('{arch}', arch)
                     .replace('{feed}', feed);
             } else {
-                packagesUrl = config.opkg_search_url
+                url = config.opkg_search_url
                     .replace('{version}', version)
                     .replace('{arch}', arch)
                     .replace('{feed}', feed);
@@ -1304,8 +1319,7 @@ async function isPackageAvailable(pkgName, feed) {
 
     const arch = current_device?.arch || cachedDeviceArch;
     const version = current_device?.version || $("#versions").value;
-    const target = current_device?.target;
-    const subtarget = current_device?.subtarget;
+    const vendor = current_device?.vendor;
 
     if (!arch || !version) {
         console.log('Missing device info for package check:', { arch, version });
@@ -1322,7 +1336,13 @@ async function isPackageAvailable(pkgName, feed) {
         let result = false;
 
         if (feed === 'kmods') {
-            packagesUrl = await buildKmodsUrl(version, current_device.vendor, version.includes('SNAPSHOT'));
+            // vendorが必須
+            if (!vendor) {
+                console.log('Missing vendor for kmods check');
+                packageAvailabilityCache.set(cacheKey, false);
+                return false;
+            }
+            packagesUrl = await buildKmodsUrl(version, vendor, version.includes('SNAPSHOT'));
         } else if (version.includes('SNAPSHOT')) {
             packagesUrl = config.apk_search_url
                 .replace('{arch}', arch)
@@ -3353,6 +3373,10 @@ function setupFormWatchers() {
 // ==================== ユーティリティ関数 ====================
 
 async function buildKmodsUrl(version, vendor, isSnapshot) {
+    if (!version || !vendor) {
+        throw new Error(`Missing required parameters for kmods URL: version=${version}, vendor=${vendor}`);
+    }
+    
     const cacheKey = `${version}|${vendor}|${isSnapshot ? 'S' : 'R'}`;
 
     if (kmodsTokenCache && kmodsTokenCacheKey === cacheKey) {
@@ -3368,9 +3392,9 @@ async function buildKmodsUrl(version, vendor, isSnapshot) {
         .replace('{version}', version)
         .replace('{vendor}', vendor);
 
+    console.log('Fetching kmods index:', indexUrl);
     const resp = await fetch(indexUrl, { cache: 'no-store' });
-    if (!resp.ok) throw new Error(`Failed to fetch kmods index: HTTP ${resp.status}`);
-
+    if (!resp.ok) throw new Error(`Failed to fetch kmods index: HTTP ${resp.status} for ${indexUrl}`); 
     const html = await resp.text();
     const matches = [...html.matchAll(/href="([^/]+)\/"/g)].map(m => m[1]);
     if (!matches.length) throw new Error("kmods token not found");
