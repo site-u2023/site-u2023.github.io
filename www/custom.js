@@ -28,6 +28,8 @@ let defaultFieldValues = {};
 let dynamicPackages = new Set();
 let selectedLanguage = '';
 let customLanguageMap = {};
+let kmodsTokenCache = null;
+let packagesUrl;
 
 // パッケージ存在確認キャッシュ（初回確認後は再利用）
 const packageAvailabilityCache = new Map();
@@ -837,62 +839,54 @@ async function searchPackages(query, inputElement) {
 
 // フィード内検索（キャッシュ機能付き）
 async function searchInFeed(query, feed, version, arch) {
-    // console.log(`searchInFeed: ${feed}, query: ${query}`);
-    
+    const target = current_device?.target;
+    const subtarget = current_device?.subtarget;
     const cacheKey = `${version}:${arch}:${feed}`;
-    
+
     try {
         let packages = [];
-        
-        // キャッシュチェック
+
         if (feedCacheMap.has(cacheKey)) {
             packages = feedCacheMap.get(cacheKey);
         } else {
-            if (version.includes('SNAPSHOT')) {
-                // APK形式
-                const url = config.apk_search_url
+            let url;
+            if (feed === 'kmods') {
+                url = await buildKmodsUrl(version, arch, feed, target, subtarget);
+            } else if (version.includes('SNAPSHOT')) {
+                url = config.apk_search_url
                     .replace('{arch}', arch)
                     .replace('{feed}', feed);
-                
-                const resp = await fetch(url, { cache: 'force-cache' });
-                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-                
+            } else {
+                url = config.opkg_search_url
+                    .replace('{version}', version)
+                    .replace('{arch}', arch)
+                    .replace('{feed}', feed);
+            }
+
+            const resp = await fetch(url, { cache: 'force-cache' });
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+
+            if (version.includes('SNAPSHOT') || feed === 'kmods' && version.includes('SNAPSHOT')) {
                 const data = await resp.json();
-                
                 if (data.packages && typeof data.packages === 'object') {
                     packages = Object.keys(data.packages);
                 }
             } else {
-                // OPKG形式
-                const url = config.opkg_search_url
-                    .replace('{version}', version)
-                    .replace('{arch}', arch)
-                    .replace('{feed}', feed);
-                
-                const resp = await fetch(url, { cache: 'force-cache' });
-                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-                
                 const text = await resp.text();
                 const lines = text.split('\n');
-                
                 for (const line of lines) {
                     if (line.startsWith('Package: ')) {
-                        const pkgName = line.substring(9).trim();
-                        packages.push(pkgName);
+                        packages.push(line.substring(9).trim());
                     }
                 }
             }
-            
-            // キャッシュに保存
+
             feedCacheMap.set(cacheKey, packages);
         }
-        
-        // クエリにマッチするパッケージをフィルタリング
-        const results = packages.filter(pkgName => 
+
+        return packages.filter(pkgName =>
             pkgName.toLowerCase().includes(query.toLowerCase())
         );
-        
-        return results;
     } catch (err) {
         console.error('searchInFeed error:', err);
         return [];
@@ -1294,60 +1288,59 @@ async function isPackageAvailable(pkgName, feed) {
     if (!pkgName || !feed) {
         return false;
     }
-    
+
     const arch = current_device?.arch || cachedDeviceArch;
     const version = current_device?.version || $("#versions").value;
-    
+    const target = current_device?.target;
+    const subtarget = current_device?.subtarget;
+
     if (!arch || !version) {
         console.log('Missing device info for package check:', { arch, version });
         return false;
     }
-    
-    // キャッシュキーを生成
+
     const cacheKey = `${version}:${arch}:${feed}:${pkgName}`;
-    
-    // キャッシュに存在する場合は即座に返す
     if (packageAvailabilityCache.has(cacheKey)) {
         return packageAvailabilityCache.get(cacheKey);
     }
-    
+
     try {
         let packagesUrl;
         let result = false;
-        
-        if (version.includes('SNAPSHOT')) {
+
+        if (feed === 'kmods') {
+            // kmods専用URL生成
+            packagesUrl = await buildKmodsUrl(version, arch, feed, target, subtarget);
+        } else if (version.includes('SNAPSHOT')) {
             packagesUrl = config.apk_search_url
                 .replace('{arch}', arch)
                 .replace('{feed}', feed);
-            
-            const resp = await fetch(packagesUrl, { cache: 'force-cache' });
-            if (resp.ok) {
+        } else {
+            packagesUrl = config.opkg_search_url
+                .replace('{version}', version)
+                .replace('{arch}', arch)
+                .replace('{feed}', feed);
+        }
+
+        const resp = await fetch(packagesUrl, { cache: 'force-cache' });
+        if (resp.ok) {
+            if (version.includes('SNAPSHOT') || feed === 'kmods' && version.includes('SNAPSHOT')) {
                 const data = await resp.json();
                 if (Array.isArray(data.packages)) {
                     result = data.packages.some(p => p?.name === pkgName);
                 } else if (data.packages && typeof data.packages === 'object') {
                     result = Object.prototype.hasOwnProperty.call(data.packages, pkgName);
                 }
-            }
-        } else {
-            packagesUrl = config.opkg_search_url
-                .replace('{version}', version)
-                .replace('{arch}', arch)
-                .replace('{feed}', feed);
-            
-            const resp = await fetch(packagesUrl, { cache: 'force-cache' });
-            if (resp.ok) {
+            } else {
                 const text = await resp.text();
                 result = text.split('\n').some(line => line.trim() === `Package: ${pkgName}`);
             }
         }
-        
-        // 結果をキャッシュに保存
+
         packageAvailabilityCache.set(cacheKey, result);
         return result;
     } catch (err) {
         console.error('Package availability check error:', err);
-        // エラー時もキャッシュして、再試行を防ぐ
         packageAvailabilityCache.set(cacheKey, false);
         return false;
     }
@@ -3346,6 +3339,30 @@ function setupFormWatchers() {
 }
 
 // ==================== ユーティリティ関数 ====================
+
+// kmods URL を生成（リリース版 / SNAPSHOT 両対応）
+async function buildKmodsUrl(version, arch, feed, target, subtarget) {
+    const isSnapshot = version.includes('SNAPSHOT');
+
+    if (!kmodsTokenCache) {
+        const indexUrl = isSnapshot
+            ? `https://downloads.openwrt.org/snapshots/targets/${target}/${subtarget}/kmods/`
+            : `https://downloads.openwrt.org/releases/${version}/targets/${target}/${subtarget}/kmods/`;
+
+        const resp = await fetch(indexUrl, { cache: 'no-store' });
+        const html = await resp.text();
+        const matches = [...html.matchAll(/href="([^/]+)\/"/g)].map(m => m[1]);
+        if (!matches.length) throw new Error("kmods token not found");
+        matches.sort();
+        kmodsTokenCache = matches[matches.length - 1];
+    }
+
+    return (isSnapshot ? config.kmods_apk_search_url : config.kmods_opkg_search_url)
+        .replace('{version}', version)
+        .replace('{arch}', arch)
+        .replace('{feed}', feed)
+        .replace('{kmod}', kmodsTokenCache);
+}
 
 // IPv6 が特定の CIDR に含まれるかを判定（簡易版）
 function inCidr(ipv6, cidr) {
