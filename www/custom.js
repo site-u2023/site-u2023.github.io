@@ -51,11 +51,12 @@ let commandsManager = null;
 const originalUpdateImages = window.updateImages;
 window.updateImages = function(version, mobj) {
     if (originalUpdateImages) originalUpdateImages(version, mobj);
-// デバイスが変更された場合、パッケージ存在確認キャッシュをクリア
+
+    // デバイスが変更された場合、パッケージ存在確認キャッシュをクリア
     const oldArch = cachedDeviceArch;
     const oldVersion = current_device?.version;
     
-// arch_packagesをcurrent_deviceとキャッシュに保存
+    // arch_packagesをcurrent_deviceとキャッシュに保存
     if (mobj && mobj.arch_packages) {
         if (!current_device) current_device = {};
         current_device.arch = mobj.arch_packages;
@@ -90,14 +91,13 @@ window.updateImages = function(version, mobj) {
             packageAvailabilityCache.clear();
             feedCacheMap.clear();
             
-            // vendor が設定されているか確認してからパッケージ検証を実行
+            // vendor / arch / version が揃っている場合のみパッケージ検証を実行
             setTimeout(() => {
-                // vendor チェック（current_deviceを再確認）
-                if (!current_device || !current_device.vendor) {
-                    console.warn('No vendor information available, some kmods packages may not be verified');
-                    console.log('Current device state:', current_device);
+                if (!current_device?.arch || !current_device?.version || !current_device?.vendor) {
+                    console.warn('Device info incomplete, delaying verification', current_device);
+                    return; // 情報が揃うまでスキップ
                 }
-                
+
                 const indicator = document.querySelector('#package-loading-indicator');
                 if (indicator) {
                     indicator.style.display = 'block';
