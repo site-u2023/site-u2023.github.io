@@ -55,12 +55,13 @@ window.updateImages = function(version, mobj) {
     const oldArch = cachedDeviceArch;
     const oldVersion = current_device?.version;
     
-    // arch_packagesをcurrent_deviceとキャッシュに保存
+// arch_packagesをcurrent_deviceとキャッシュに保存
     if (mobj && mobj.arch_packages) {
         if (!current_device) current_device = {};
         current_device.arch = mobj.arch_packages;
         current_device.version = version;
-        // vendor を mobj.target から取得（targetが "mediatek/filogic" のような形式）
+        
+        // vendor を mobj.target から取得（重要：必ず設定する）
         if (mobj.target) {
             current_device.vendor = mobj.target;
             current_device.target = mobj.target;
@@ -69,8 +70,13 @@ window.updateImages = function(version, mobj) {
             const parts = mobj.arch_packages.split('/');
             current_device.vendor = parts.length > 1 ? `${parts[0]}/${parts[1]}` : parts[0].split('_')[0];
         }
+        
+        // 追加：既存のcurrent_deviceプロパティも保持
+        if (mobj.id) current_device.id = mobj.id;
+        
         cachedDeviceArch = mobj.arch_packages;
         console.log('Architecture saved:', mobj.arch_packages, 'Vendor:', current_device.vendor, 'Target:', mobj.target);
+        console.log('Full current_device:', current_device); // デバッグ用
         
         // デバイスが変更された場合、キャッシュをクリア
         if (oldArch !== mobj.arch_packages || oldVersion !== version) {
