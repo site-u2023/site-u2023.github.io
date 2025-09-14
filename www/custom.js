@@ -29,6 +29,7 @@ let dynamicPackages = new Set();
 let selectedLanguage = '';
 let customLanguageMap = {};
 let kmodsTokenCache = null;
+let kmodsTokenCacheKey = null;
 let packagesUrl;
 
 // パッケージ存在確認キャッシュ（初回確認後は再利用）
@@ -3340,12 +3341,14 @@ function setupFormWatchers() {
 
 // ==================== ユーティリティ関数 ====================
 
-async function buildKmodsUrl(version, arch, isSnapshot) {
-    if (!kmodsTokenCache) {
+async function buildKmodsUrl(version, vender, isSnapshot) {
+    const cacheKey = `${version}|${vender}|${isSnapshot ? 'S' : 'R'}`;
+
+    if (!kmodsTokenCache || kmodsTokenCacheKey !== cacheKey) {
         const indexTpl = isSnapshot ? config.kmods_apk_index_url : config.kmods_opkg_index_url;
         const indexUrl = indexTpl
             .replace('{version}', version)
-            .replace('{arch}', arch);
+            .replace('{vender}', vender);
 
         const resp = await fetch(indexUrl, { cache: 'no-store' });
         if (!resp.ok) throw new Error(`Failed to fetch kmods index: HTTP ${resp.status}`);
@@ -3356,12 +3359,13 @@ async function buildKmodsUrl(version, arch, isSnapshot) {
 
         matches.sort();
         kmodsTokenCache = matches[matches.length - 1];
+        kmodsTokenCacheKey = cacheKey;
     }
 
     const searchTpl = isSnapshot ? config.kmods_apk_search_url : config.kmods_opkg_search_url;
     return searchTpl
         .replace('{version}', version)
-        .replace('{arch}', arch)
+        .replace('{vender}', vender)
         .replace('{kmod}', kmodsTokenCache);
 }
 
