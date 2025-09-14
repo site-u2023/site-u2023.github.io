@@ -1282,10 +1282,6 @@ function guessFeedForPackage(pkgName) {
         return 'luci';
     }
     
-    if (pkgName.startsWith('kmod-')) {
-        return 'kmods';
-    }
-    
     return 'packages';
 }
 
