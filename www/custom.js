@@ -51,7 +51,6 @@ let commandsManager = null;
 const originalUpdateImages = window.updateImages;
 window.updateImages = function(version, mobj) {
     if (originalUpdateImages) originalUpdateImages(version, mobj);
-
 // デバイスが変更された場合、パッケージ存在確認キャッシュをクリア
     const oldArch = cachedDeviceArch;
     const oldVersion = current_device?.version;
@@ -61,7 +60,6 @@ window.updateImages = function(version, mobj) {
         if (!current_device) current_device = {};
         current_device.arch = mobj.arch_packages;
         current_device.version = version;
-
         // vendor を mobj.target から取得（targetが "mediatek/filogic" のような形式）
         if (mobj.target) {
             current_device.vendor = mobj.target;
@@ -71,18 +69,22 @@ window.updateImages = function(version, mobj) {
             const parts = mobj.arch_packages.split('/');
             current_device.vendor = parts.length > 1 ? `${parts[0]}/${parts[1]}` : parts[0].split('_')[0];
         }
-
         cachedDeviceArch = mobj.arch_packages;
-        console.log('Architecture saved:', mobj.arch_packages, 'Vendor:', current_device.vendor);
+        console.log('Architecture saved:', mobj.arch_packages, 'Vendor:', current_device.vendor, 'Target:', mobj.target);
         
         // デバイスが変更された場合、キャッシュをクリア
         if (oldArch !== mobj.arch_packages || oldVersion !== version) {
             console.log('Device changed, clearing all caches');
             packageAvailabilityCache.clear();
             feedCacheMap.clear();
-
-            // アーキテクチャが確定/変更されたので、パッケージの存在確認を実行
+            
+            // vendor が設定されているか確認してからパッケージ検証を実行
             setTimeout(() => {
+                // vendor チェック
+                if (!current_device.vendor) {
+                    console.warn('No vendor information available, some kmods packages may not be verified');
+                }
+                
                 const indicator = document.querySelector('#package-loading-indicator');
                 if (indicator) {
                     indicator.style.display = 'block';
@@ -1300,12 +1302,13 @@ function getCurrentPackageList() {
 function guessFeedForPackage(pkgName) {
     if (!pkgName) return 'packages';
     
-    if (pkgName.startsWith('luci-') || pkgName.includes('luci')) {
-        return 'luci';
-    }
-    
+    // kmod- パッケージは kmods フィードにある
     if (pkgName.startsWith('kmod-')) {
         return 'kmods';
+    }
+    
+    if (pkgName.startsWith('luci-')) {
+        return 'luci';
     }
     
     return 'packages';
