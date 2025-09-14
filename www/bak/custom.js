@@ -708,89 +708,6 @@ function waitForAsuAndInit(temp, retry = 50) {
     }
 }
 
-
-// Fix for initializeCustomFeatures - ensure device packages are applied
-async function initializeCustomFeatures(asuSection, temp) {
-    console.log('initializeCustomFeatures called');
-
-    if (customInitialized) {
-        console.log('Already initialized, skipping');
-        return;
-    }
-
-    // DOM要素が既に存在する場合は置き換えない
-    if (!document.querySelector('#custom-packages-details')) {
-        cleanupExistingCustomElements();
-        replaceAsuSection(asuSection, temp);
-        insertExtendedInfo(temp);
-    }
-
-    // 外部データと設定を並列で読み込み
-    await Promise.all([
-        window.autoConfigPromise,       // auto-config.site-u.workers.dev
-        window.informationPromise,      // information.json
-        window.packagesDbPromise,       // packages.json
-        window.setupJsonPromise,        // setup.json
-        loadSetupConfig(),              // 既存処理
-        loadPackageDatabase(),          // 既存処理
-        fetchAndDisplayIspInfo()        // 既存処理
-    ]);
-
-    // 依存関係のある初期化（順序重要）
-    setupEventListeners();
-    loadUciDefaultsTemplate();
-
-    // 言語セレクター設定（初期言語パッケージ処理を含む）
-    setupLanguageSelector();
-
-    // パッケージ検索機能を初期化
-    setupPackageSearch();
-    console.log('Package search initialized');
-
-    // カスタム翻訳を読み込み（UIは常に current_language で）
-    await loadCustomTranslations(current_language);
-
-    // フォーム監視設定
-    setupFormWatchers();
-
-    // initializeCustomFeatures の末尾
-    let changed = false;
-    if (window.autoConfigData) {
-        changed = applyIspAutoConfig(window.autoConfigData);
-    }
-
-    // パッケージセレクタ生成
-    generatePackageSelector();
-
-    // CRITICAL FIX: Force apply device packages if they exist
-    if (deviceDefaultPackages.length > 0 || deviceDevicePackages.length > 0 || extraPackages.length > 0) {
-        console.log('Force applying existing device packages');
-        const initialPackages = deviceDefaultPackages
-            .concat(deviceDevicePackages)
-            .concat(extraPackages);
-        
-        const textarea = document.querySelector('#asu-packages');
-        if (textarea && initialPackages.length > 0) {
-            textarea.value = initialPackages.join(' ');
-            console.log('Device packages force applied:', initialPackages);
-        }
-    }
-
-    // 最初の統合更新（変更があった場合のみ）
-    if (changed) {
-        console.log('All data and UI ready, updating package state');
-        updateAllPackageState('isp-auto-config');
-    } else {
-        console.log('All data and UI ready, no changes from auto-config');
-        // CRITICAL FIX: Always force update to ensure device packages are included
-        setTimeout(() => {
-            updateAllPackageState('force-device-packages');
-        }, 200);
-    }
-
-    customInitialized = true;
-}
-
 // ==================== パッケージ検索機能 ====================
 function setupPackageSearch() {
     console.log('setupPackageSearch called');
@@ -1055,65 +972,6 @@ function replaceAsuSection(asuSection, temp) {
     asuSection.parentNode.replaceChild(newDiv, asuSection);
 }
 
-// 拡張情報セクション挿入（JSON駆動で動的生成）
-async function insertExtendedInfo(temp) {
-    const extendedInfo = temp.querySelector('#extended-build-info');
-    const imageLink = document.querySelector('#image-link');
-    
-    if (!extendedInfo || !imageLink || document.querySelector('#extended-build-info')) {
-        return;
-    }
-    
-    // information.jsonから構造を読み込み
-    try {
-        const infoUrl = config?.information_path || 'auto-config/information.json';
-        const response = await fetch(infoUrl + '?t=' + Date.now());
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        
-        const infoConfig = await response.json();
-        console.log('Information config loaded:', infoConfig);
-        
-        // ISP情報セクションを動的生成
-        extendedInfo.innerHTML = '';
-        
-        infoConfig.categories.forEach(category => {
-            const h3 = document.createElement('h3');
-            h3.textContent = category.name;
-            if (category.class) h3.classList.add(category.class);
-            extendedInfo.appendChild(h3);
-            
-            category.packages.forEach(pkg => {
-                if (pkg.fields) {
-                    pkg.fields.forEach(field => {
-                        const row = document.createElement('div');
-                        row.className = 'row';
-                        
-                        const col1 = document.createElement('div');
-                        col1.className = 'col1';
-                        if (field.class) col1.classList.add(field.class);
-                        col1.textContent = field.label;
-                        
-                        const col2 = document.createElement('div');
-                        col2.className = 'col2';
-                        col2.id = field.id;
-                        
-                        row.appendChild(col1);
-                        row.appendChild(col2);
-                        extendedInfo.appendChild(row);
-                    });
-                }
-            });
-        });
-        
-        // DOMに挿入
-        imageLink.closest('.row').insertAdjacentElement('afterend', extendedInfo);
-        show('#extended-build-info');
-        
-    } catch (err) {
-        console.error('Failed to load information.json:', err);
-    }
-}
-
 // 既存要素クリーンアップ
 function cleanupExistingCustomElements() {
     ['#custom-packages-details', '#custom-scripts-details', '#extended-build-info']
@@ -1127,7 +985,6 @@ function cleanupExistingCustomElements() {
 }
 
 // ==================== 言語セレクター設定 ====================
-// ==================== 言語セレクター設定（フラグなし版） ====================
 function setupLanguageSelector() {
     const mainLanguageSelect = document.querySelector('#languages-select');
     const customLanguageSelect = document.querySelector('#aios-language');
@@ -2529,6 +2386,12 @@ console.log('custom.js (JSON-driven clean version) fully loaded and ready');
 
 // ==================== ISP情報処理 ====================
 
+function getConnectionType(apiInfo) {
+    if (apiInfo?.mape?.brIpv6Address) return 'MAP-E';
+    if (apiInfo?.aftr) return 'DS-Lite';
+    return 'DHCP/PPPoE';
+}
+
 async function fetchAndDisplayIspInfo() {
     if (!config?.auto_config_api_url) return;
     
@@ -2536,10 +2399,12 @@ async function fetchAndDisplayIspInfo() {
         const response = await fetch(config.auto_config_api_url);
         const apiInfo = await response.json();
         cachedApiInfo = apiInfo;
-        displayIspInfo(apiInfo);
-        applyIspAutoConfig(apiInfo);
+        
+        console.log('ISP info fetched:', apiInfo);
+        
+        displayIspInfoIfReady();
         updateAutoConnectionInfo(apiInfo);
-        setGuaPrefixIfAvailable();       
+        setGuaPrefixIfAvailable();
 
     } catch (err) {
         console.error('Failed to fetch ISP info:', err);
@@ -2548,6 +2413,25 @@ async function fetchAndDisplayIspInfo() {
             autoInfo.textContent = 'Failed to detect connection type.\nPlease select manually.';
         }
     }
+}
+
+// ISP情報表示（情報とDOM両方準備完了時のみ）
+function displayIspInfoIfReady() {
+    // 情報取得未満 → 何もしない
+    if (!cachedApiInfo) {
+        return false;
+    }
+    
+    // DOM要素未準備 → 何もしない
+    const firstElement = document.querySelector('#auto-config-country');
+    if (!firstElement) {
+        return false;
+    }
+    
+    // 両方準備完了 → 即座に表示
+    displayIspInfo(cachedApiInfo);
+    console.log('ISP info displayed');
+    return true;
 }
 
 function displayIspInfo(apiInfo) {
@@ -2560,13 +2444,155 @@ function displayIspInfo(apiInfo) {
     setValue("#auto-config-as", apiInfo.as || "Unknown");
     setValue("#auto-config-ip", [apiInfo.ipv4, apiInfo.ipv6].filter(Boolean).join(" / ") || "Unknown");
 
-    let wanType = "DHCP/PPPoE";
-    if (apiInfo.mape?.brIpv6Address) wanType = "MAP-E";
-    else if (apiInfo.aftr) wanType = "DS-Lite";
+    const wanType = getConnectionType(apiInfo);
     setValue("#auto-config-method", wanType);
     setValue("#auto-config-notice", apiInfo.notice || "");
     
     show("#extended-build-info");
+}
+
+// 拡張情報セクション挿入（JSON駆動で動的生成）
+async function insertExtendedInfo(temp) {
+    const extendedInfo = temp.querySelector('#extended-build-info');
+    const imageLink = document.querySelector('#image-link');
+    
+    if (!extendedInfo || !imageLink || document.querySelector('#extended-build-info')) {
+        return;
+    }
+    
+    // information.jsonから構造を読み込み
+    try {
+        const infoUrl = config?.information_path || 'auto-config/information.json';
+        const response = await fetch(infoUrl + '?t=' + Date.now());
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
+        const infoConfig = await response.json();
+        console.log('Information config loaded:', infoConfig);
+        
+        // ISP情報セクションを動的生成
+        extendedInfo.innerHTML = '';
+        
+        infoConfig.categories.forEach(category => {
+            const h3 = document.createElement('h3');
+            h3.textContent = category.name;
+            if (category.class) h3.classList.add(category.class);
+            extendedInfo.appendChild(h3);
+            
+            category.packages.forEach(pkg => {
+                if (pkg.fields) {
+                    pkg.fields.forEach(field => {
+                        const row = document.createElement('div');
+                        row.className = 'row';
+                        
+                        const col1 = document.createElement('div');
+                        col1.className = 'col1';
+                        if (field.class) col1.classList.add(field.class);
+                        col1.textContent = field.label;
+                        
+                        const col2 = document.createElement('div');
+                        col2.className = 'col2';
+                        col2.id = field.id;
+                        
+                        row.appendChild(col1);
+                        row.appendChild(col2);
+                        extendedInfo.appendChild(row);
+                    });
+                }
+            });
+        });
+        
+        // DOMに挿入
+        imageLink.closest('.row').insertAdjacentElement('afterend', extendedInfo);
+        
+        // DOM要素準備完了後、ISP情報を表示
+        console.log('Extended info DOM elements created');
+        displayIspInfoIfReady();
+        
+    } catch (err) {
+        console.error('Failed to load information.json:', err);
+    }
+}
+
+// initializeCustomFeatures内での呼び出し修正
+async function initializeCustomFeatures(asuSection, temp) {
+    console.log('initializeCustomFeatures called');
+
+    if (customInitialized) {
+        console.log('Already initialized, skipping');
+        return;
+    }
+
+    // DOM要素が既に存在する場合は置き換えない
+    if (!document.querySelector('#custom-packages-details')) {
+        cleanupExistingCustomElements();
+        replaceAsuSection(asuSection, temp);
+        await insertExtendedInfo(temp);  // 拡張情報セクション挿入（ISP表示含む）
+    }
+
+    // 外部データと設定を並列で読み込み
+    await Promise.all([
+        window.autoConfigPromise,       // auto-config.site-u.workers.dev
+        window.informationPromise,      // information.json
+        window.packagesDbPromise,       // packages.json
+        window.setupJsonPromise,        // setup.json
+        loadSetupConfig(),              // 既存処理
+        loadPackageDatabase(),          // 既存処理
+        fetchAndDisplayIspInfo()        // ISP情報取得
+    ]);
+
+    // 依存関係のある初期化（順序重要）
+    setupEventListeners();
+    loadUciDefaultsTemplate();
+
+    // 言語セレクター設定（初期言語パッケージ処理を含む）
+    setupLanguageSelector();
+
+    // パッケージ検索機能を初期化
+    setupPackageSearch();
+    console.log('Package search initialized');
+
+    // カスタム翻訳を読み込み（UIは常に current_language で）
+    await loadCustomTranslations(current_language);
+
+    // フォーム監視設定
+    setupFormWatchers();
+
+    // initializeCustomFeatures の末尾
+    let changed = false;
+    if (window.autoConfigData || cachedApiInfo) {
+        changed = applyIspAutoConfig(window.autoConfigData || cachedApiInfo);  // ← ここで実行
+    }
+
+    // パッケージセレクタ生成
+    generatePackageSelector();
+
+    // CRITICAL FIX: Force apply device packages if they exist
+    if (deviceDefaultPackages.length > 0 || deviceDevicePackages.length > 0 || extraPackages.length > 0) {
+        console.log('Force applying existing device packages');
+        const initialPackages = deviceDefaultPackages
+            .concat(deviceDevicePackages)
+            .concat(extraPackages);
+        
+        const textarea = document.querySelector('#asu-packages');
+        if (textarea && initialPackages.length > 0) {
+            textarea.value = initialPackages.join(' ');
+            console.log('Device packages force applied:', initialPackages);
+        }
+    }
+
+    // 最初の統合更新（変更があった場合のみ）
+    if (changed) {
+        console.log('All data and UI ready, updating package state');
+        updateAllPackageState('isp-auto-config');
+    } else {
+        console.log('All data and UI ready, no changes from auto-config');
+        // CRITICAL FIX: Always force update to ensure device packages are included
+        setTimeout(() => {
+            updateAllPackageState('force-device-packages');
+        }, 200);
+    }
+
+    customInitialized = true;
 }
 
 function applyIspAutoConfig(apiInfo) {
@@ -2623,10 +2649,10 @@ function applyIspAutoConfig(apiInfo) {
 function updateAutoConnectionInfo(apiInfo) {
     const autoInfo = document.querySelector('#auto-info');
     if (!autoInfo) return;
-
     let infoText = '';
     
-    if (apiInfo?.mape?.brIpv6Address) {
+    const connectionType = getConnectionType(apiInfo);
+    if (connectionType === 'MAP-E') {
         infoText = 'Detected: MAP-E\n';
         infoText += `\u00A0BR: ${apiInfo.mape.brIpv6Address}\n`;
         infoText += `\u00A0EA-len: ${apiInfo.mape.eaBitLength}\n`;
@@ -2634,17 +2660,14 @@ function updateAutoConnectionInfo(apiInfo) {
         infoText += `\u00A0IPv6 Prefix: ${apiInfo.mape.ipv6Prefix}/${apiInfo.mape.ipv6PrefixLength}\n`;
         infoText += `\u00A0PSID: offset=${apiInfo.mape.psIdOffset}\n`;
         infoText += `\u00A0PSID: length=${apiInfo.mape.psidlen}`;
-    } else if (apiInfo?.aftr) {
+    } else if (connectionType === 'DS-Lite') {
         infoText = 'Detected: DS-Lite\n';
         infoText += `AFTR: ${apiInfo.aftr}`;
-    } else if (apiInfo) {
+    } else {
         infoText = 'Detected: DHCP/PPPoE\n';
         infoText += '\u00A0Standard connection will be used';
-    } else {
-        infoText = 'No connection information available\n';
-        infoText += '\u00A0Please select connection type manually';
     }
-
+    
     if (apiInfo?.isp) {
         infoText += `\n\nISP: ${apiInfo.isp}`;
         if (apiInfo.as) {
@@ -2653,6 +2676,15 @@ function updateAutoConnectionInfo(apiInfo) {
     }
     
     autoInfo.textContent = infoText;
+}
+
+function setGuaPrefixIfAvailable() {
+    const guaPrefixField = document.querySelector('#mape-gua-prefix');
+    if (!guaPrefixField || !cachedApiInfo?.ipv6) return;
+    const guaPrefix = generateGuaPrefixFromFullAddress(cachedApiInfo);
+    if (guaPrefix) {
+        guaPrefixField.value = guaPrefix;
+    }
 }
 
 // ==================== パッケージ管理 ====================
