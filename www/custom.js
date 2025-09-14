@@ -1330,7 +1330,8 @@ async function isPackageAvailable(pkgName, feed) {
 
 // パッケージリスト全体の存在確認（並列処理版）
 async function verifyAllPackages() {
-    if (!packagesJson || !current_device?.arch) {
+    const arch = current_device?.arch || cachedDeviceArch;
+    if (!packagesJson || !arch) {
         console.log('Cannot verify packages: missing data');
         return;
     }
@@ -2942,7 +2943,8 @@ function generatePackageSelector() {
     console.log(`Generated ${packagesJson.categories.length} package categories (including hidden)`);
     
     // パッケージ存在確認を非同期で実行（表示を妨げない）
-    if (current_device?.arch) {
+    const arch = current_device?.arch || cachedDeviceArch;
+    if (arch) {
         // 100ms遅延させて、UIレンダリングを優先
         setTimeout(() => {
             // ローディング表示を開始
