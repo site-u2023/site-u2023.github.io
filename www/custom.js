@@ -50,27 +50,43 @@ let commandsManager = null;
 // 元の updateImages をフック
 const originalUpdateImages = window.updateImages;
 window.updateImages = function(version, mobj) {
+    console.log('[TRACE] updateImages called with:', {
+        version,
+        mobj_vendor: mobj?.vendor,
+        mobj_target: mobj?.target,
+        mobj_subtarget: mobj?.subtarget,
+        mobj_arch_packages: mobj?.arch_packages
+    });
+
     if (originalUpdateImages) originalUpdateImages(version, mobj);
-// デバイスが変更された場合、パッケージ存在確認キャッシュをクリア
+
+    // デバイスが変更された場合、パッケージ存在確認キャッシュをクリア
     const oldArch = cachedDeviceArch;
     const oldVersion = current_device?.version;
-    
-// arch_packagesをcurrent_deviceとキャッシュに保存
+
+    // arch_packagesをcurrent_deviceとキャッシュに保存
     if (mobj && mobj.arch_packages) {
         if (!current_device) current_device = {};
         current_device.arch = mobj.arch_packages;
         current_device.version = version;
-        
-        // vendor情報を正しく設定（targetはmediatek/filogicの形式）
+
+        // vendor情報を正しく設定（targetは mediatek/filogic の形式）
         if (mobj.target) {
-            // targetが"mediatek/filogic"の形式の場合、そのまま使用
-            current_device.vendor = mobj.target;
+            current_device.vendor = mobj.target; // そのまま使用
             current_device.target = mobj.target;
             current_device.subtarget = mobj.subtarget || '';
+            console.log('[TRACE] vendor set from mobj.target:', current_device.vendor);
+        } else if (mobj.vendor) {
+            current_device.vendor = mobj.vendor;
+            console.log('[TRACE] vendor set from mobj.vendor:', current_device.vendor);
         } else if (!current_device.vendor) {
             // フォールバック
             current_device.vendor = 'unknown';
+            console.warn('[WARN] vendor missing, set to "unknown"');
         }
+    }
+
+    console.log('[TRACE] current_device after updateImages:', current_device);
 
         // 追加：既存のcurrent_deviceプロパティも保持
         if (mobj.id) current_device.id = mobj.id;
