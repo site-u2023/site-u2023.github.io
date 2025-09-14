@@ -80,9 +80,10 @@ window.updateImages = function(version, mobj) {
             
             // vendor が設定されているか確認してからパッケージ検証を実行
             setTimeout(() => {
-                // vendor チェック
-                if (!current_device.vendor) {
+                // vendor チェック（current_deviceを再確認）
+                if (!current_device || !current_device.vendor) {
                     console.warn('No vendor information available, some kmods packages may not be verified');
+                    console.log('Current device state:', current_device);
                 }
                 
                 const indicator = document.querySelector('#package-loading-indicator');
@@ -813,8 +814,13 @@ async function searchPackages(query, inputElement) {
     // console.log('searchPackages called with query:', query);
     
     const arch = current_device?.arch || cachedDeviceArch;
-    const version = current_device?.version || document.querySelector('#versions')?.value;
+    const version = current_device?.version || document.querySelector("#versions")?.value;
     const vendor = current_device?.vendor;
+    
+    // デバッグ用ログ
+    if (pkgName.startsWith('kmod-') && !vendor) {
+        console.log('isPackageAvailable - current_device:', current_device);
+    }
     
     const allResults = new Set();
     
