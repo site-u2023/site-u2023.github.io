@@ -3340,27 +3340,28 @@ function setupFormWatchers() {
 
 // ==================== ユーティリティ関数 ====================
 
-// kmods URL を生成（リリース版 / SNAPSHOT 両対応）
-async function buildKmodsUrl(version, arch, feed, target, subtarget) {
-    const isSnapshot = version.includes('SNAPSHOT');
-
+async function buildKmodsUrl(version, arch, isSnapshot) {
     if (!kmodsTokenCache) {
-        const indexUrl = isSnapshot
-            ? `https://downloads.openwrt.org/snapshots/targets/${target}/${subtarget}/kmods/`
-            : `https://downloads.openwrt.org/releases/${version}/targets/${target}/${subtarget}/kmods/`;
+        const indexTpl = isSnapshot ? config.kmods_apk_index_url : config.kmods_opkg_index_url;
+        const indexUrl = indexTpl
+            .replace('{version}', version)
+            .replace('{arch}', arch);
 
         const resp = await fetch(indexUrl, { cache: 'no-store' });
+        if (!resp.ok) throw new Error(`Failed to fetch kmods index: HTTP ${resp.status}`);
+
         const html = await resp.text();
         const matches = [...html.matchAll(/href="([^/]+)\/"/g)].map(m => m[1]);
         if (!matches.length) throw new Error("kmods token not found");
+
         matches.sort();
         kmodsTokenCache = matches[matches.length - 1];
     }
 
-    return (isSnapshot ? config.kmods_apk_search_url : config.kmods_opkg_search_url)
+    const searchTpl = isSnapshot ? config.kmods_apk_search_url : config.kmods_opkg_search_url;
+    return searchTpl
         .replace('{version}', version)
         .replace('{arch}', arch)
-        .replace('{feed}', feed)
         .replace('{kmod}', kmodsTokenCache);
 }
 
