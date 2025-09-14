@@ -64,12 +64,13 @@ window.updateImages = function(version, mobj) {
 
         // vendor を targets配下の1階層目として確定
         // mobj.target があればそれを使う、なければ arch から推測
-        if (mobj.target) {
+        if (mobj.target && mobj.subtarget) {
+            current_device.vendor = `${mobj.target}/${mobj.subtarget}`;
+        } else if (mobj.target) {
             current_device.vendor = mobj.target;
         } else {
-            // arch が "mediatek/filogic" のような場合は split
             const parts = mobj.arch_packages.split('/');
-            current_device.vendor = parts.length > 1 ? parts[0] : parts[0].split('_')[0];
+            current_device.vendor = parts.length > 1 ? `${parts[0]}/${parts[1]}` : parts[0].split('_')[0];
         }
 
         cachedDeviceArch = mobj.arch_packages;
@@ -863,13 +864,13 @@ async function searchInFeed(query, feed, version, arch) {
         } else {
             let url;
             if (feed === 'kmods') {
-                url = await buildKmodsUrl(version, current_device.vendor, version.includes('SNAPSHOT'));
+                packagesUrl = await buildKmodsUrl(version, current_device.vendor, version.includes('SNAPSHOT'));
             } else if (version.includes('SNAPSHOT')) {
-                url = config.apk_search_url
+                packagesUrl = config.apk_search_url
                     .replace('{arch}', arch)
                     .replace('{feed}', feed);
             } else {
-                url = config.opkg_search_url
+                packagesUrl = config.opkg_search_url
                     .replace('{version}', version)
                     .replace('{arch}', arch)
                     .replace('{feed}', feed);
@@ -3352,19 +3353,31 @@ function setupFormWatchers() {
 // ==================== ユーティリティ関数 ====================
 
 async function buildKmodsUrl(version, vendor, isSnapshot) {
-    if (!kmodsTokenCache) {
-        const indexTpl = isSnapshot ? config.kmods_apk_index_url : config.kmods_opkg_index_url;
-        const indexUrl = indexTpl
-            .replace('{version}', version)
-            .replace('{vendor}', vendor);
+    const cacheKey = `${version}|${vendor}|${isSnapshot ? 'S' : 'R'}`;
 
-        const resp = await fetch(indexUrl, { cache: 'no-store' });
-        const html = await resp.text();
-        const matches = [...html.matchAll(/href="([^/]+)\/"/g)].map(m => m[1]);
-        if (!matches.length) throw new Error("kmods token not found");
-        matches.sort();
-        kmodsTokenCache = matches[matches.length - 1];
+    if (kmodsTokenCache && kmodsTokenCacheKey === cacheKey) {
+        const searchTpl = isSnapshot ? config.kmods_apk_search_url : config.kmods_opkg_search_url;
+        return searchTpl
+            .replace('{version}', version)
+            .replace('{vendor}', vendor)
+            .replace('{kmod}', kmodsTokenCache);
     }
+
+    const indexTpl = isSnapshot ? config.kmods_apk_index_url : config.kmods_opkg_index_url;
+    const indexUrl = indexTpl
+        .replace('{version}', version)
+        .replace('{vendor}', vendor);
+
+    const resp = await fetch(indexUrl, { cache: 'no-store' });
+    if (!resp.ok) throw new Error(`Failed to fetch kmods index: HTTP ${resp.status}`);
+
+    const html = await resp.text();
+    const matches = [...html.matchAll(/href="([^/]+)\/"/g)].map(m => m[1]);
+    if (!matches.length) throw new Error("kmods token not found");
+
+    matches.sort();
+    kmodsTokenCache = matches[matches.length - 1];
+    kmodsTokenCacheKey = cacheKey;
 
     const searchTpl = isSnapshot ? config.kmods_apk_search_url : config.kmods_opkg_search_url;
     return searchTpl
