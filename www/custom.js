@@ -28,10 +28,9 @@ let defaultFieldValues = {};
 let dynamicPackages = new Set();
 let selectedLanguage = '';
 let customLanguageMap = {};
-let packagesUrl;
-let cachedVendor = null;
 let kmodsTokenCache = null;
 let kmodsTokenCacheKey = null;
+let packagesUrl;
 
 // パッケージ存在確認キャッシュ（初回確認後は再利用）
 const packageAvailabilityCache = new Map();
@@ -822,7 +821,7 @@ async function searchPackages(query, inputElement) {
     
     const arch = current_device?.arch || cachedDeviceArch;
     const version = current_device?.version || document.querySelector("#versions")?.value;
-    const vendor = current_device?.vendor || cachedVendor;  // キャッシュから取得
+    const vendor = current_device?.vendor;
     
     // デバッグ用ログ
     if (pkgName.startsWith('kmod-') && !vendor) {
@@ -878,7 +877,7 @@ async function searchPackages(query, inputElement) {
 
 // フィード内検索（キャッシュ機能付き）
 async function searchInFeed(query, feed, version, arch) {
-    const vendor = current_device?.vendor || cachedVendor;  // キャッシュから取得
+    const vendor = current_device?.vendor;
     const cacheKey = `${version}:${arch}:${feed}`;
 
     try {
@@ -1334,8 +1333,8 @@ async function isPackageAvailable(pkgName, feed) {
     }
 
     const arch = current_device?.arch || cachedDeviceArch;
-    const version = current_device?.version || document.querySelector("#versions")?.value;
-    const vendor = current_device?.vendor || cachedVendor;  // キャッシュから取得
+    const version = current_device?.version || $("#versions").value;
+    const vendor = current_device?.vendor;
 
     if (!arch || !version) {
         console.log('Missing device info for package check:', { arch, version });
