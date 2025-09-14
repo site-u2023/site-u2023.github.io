@@ -1340,6 +1340,10 @@ function guessFeedForPackage(pkgName) {
 
 // パッケージ存在チェック（キャッシュ対応版）
 async function isPackageAvailable(pkgName, feed) {
+    if (!current_device?.arch || !current_device?.version || !current_device?.vendor) {
+        console.warn('Skipping package verification: device info incomplete', current_device);
+        return false;
+    }
     if (!pkgName || !feed) {
         return false;
     }
@@ -1407,6 +1411,10 @@ async function isPackageAvailable(pkgName, feed) {
 
 // パッケージリスト全体の存在確認（並列処理版）
 async function verifyAllPackages() {
+    if (!current_device?.arch || !current_device?.version || !current_device?.vendor) {
+        console.warn('Skipping package verification: device info incomplete', current_device);
+        return;
+    }    
     const arch = current_device?.arch || cachedDeviceArch;
     if (!packagesJson || !arch) {
         console.log('Cannot verify packages: missing data');
