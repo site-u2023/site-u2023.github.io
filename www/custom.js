@@ -1340,10 +1340,6 @@ function guessFeedForPackage(pkgName) {
 
 // パッケージ存在チェック（キャッシュ対応版）
 async function isPackageAvailable(pkgName, feed) {
-    if (!current_device?.arch || !current_device?.version || !current_device?.vendor) {
-        console.warn('Skipping package verification: device info incomplete', current_device);
-        return false;
-    }
     if (!pkgName || !feed) {
         return false;
     }
@@ -1410,42 +1406,64 @@ async function isPackageAvailable(pkgName, feed) {
 }
 
 // パッケージリスト全体の存在確認（並列処理版）
-async function verifyAllPackages() {
-    if (!current_device?.arch || !current_device?.version || !current_device?.vendor) {
-        console.warn('Skipping package verification: device info incomplete', current_device);
-        return;
-    }    
+async function verifyAllPackages() {  
     const arch = current_device?.arch || cachedDeviceArch;
-    if (!packagesJson || !arch) {
-        console.log('Cannot verify packages: missing data');
+    const version = current_device?.version;
+    const vendor = current_device?.vendor;
+
+    // 必須情報チェック
+    if (!packagesJson || !arch || !version || !vendor) {
+        console.warn('Skipping package verification: device info incomplete', { arch, version, vendor });
         return;
     }
     
     const startTime = Date.now();
     console.log('Starting package verification...');
-    
-    // 全パッケージを収集
+
+    // 全パッケージを収集（feed フィルタリング付き）
     const packagesToVerify = [];
-    
+
     packagesJson.categories.forEach(category => {
         category.packages.forEach(pkg => {
-            // 隠しパッケージも確認対象に含める（仮想パッケージチェックボックス用）
+            const feed = guessFeedForPackage(pkg.id);
+
+            // feed フィルタリング
+            if (!feed) return; // feed 判定不可は除外
+            if (feed === 'kmods' && !vendor) return; // vendor 未確定なら除外
+            if (version.includes('SNAPSHOT')) {
+                // SNAPSHOT は APK 系と kmods のみ
+                if (!(feed === 'kmods' || feedType(feed) === 'apk')) return;
+            } else {
+                // リリース版は OPKG 系と kmods のみ
+                if (!(feed === 'kmods' || feedType(feed) === 'opkg')) return;
+            }
+
+            // メインパッケージ
             packagesToVerify.push({ 
                 id: pkg.id, 
                 uniqueId: pkg.uniqueId || pkg.id,
-                feed: guessFeedForPackage(pkg.id),
+                feed,
                 hidden: pkg.hidden || false,
                 checked: pkg.checked || false
             });
-            
+
+            // 依存パッケージ
             if (pkg.dependencies) {
                 pkg.dependencies.forEach(depId => {
                     const depPkg = findPackageById(depId);
                     if (depPkg) {
+                        const depFeed = guessFeedForPackage(depPkg.id);
+                        if (!depFeed) return;
+                        if (depFeed === 'kmods' && !vendor) return;
+                        if (version.includes('SNAPSHOT')) {
+                            if (!(depFeed === 'kmods' || feedType(depFeed) === 'apk')) return;
+                        } else {
+                            if (!(depFeed === 'kmods' || feedType(depFeed) === 'opkg')) return;
+                        }
                         packagesToVerify.push({ 
                             id: depPkg.id,
                             uniqueId: depPkg.uniqueId || depPkg.id,
-                            feed: guessFeedForPackage(depPkg.id),
+                            feed: depFeed,
                             hidden: depPkg.hidden || false,
                             isDependency: true
                         });
@@ -1454,6 +1472,8 @@ async function verifyAllPackages() {
             }
         });
     });
+
+    console.log(`Collected ${packagesToVerify.length} packages to verify`, packagesToVerify);
     
     // 重複を除去
     const uniquePackages = Array.from(new Set(packagesToVerify.map(p => `${p.id}:${p.feed}`)))
