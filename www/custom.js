@@ -86,7 +86,7 @@ window.updateImages = function(version, mobj) {
             packageAvailabilityCache.clear();
             feedCacheMap.clear();
 
-            setTimeout(function() {
+            requestAnimationFrame(() => {
                 const vendor = getVendor();
                 if (!vendor) {
                     console.warn('[WARN] No vendor info, kmods may not verify');
@@ -107,10 +107,10 @@ window.updateImages = function(version, mobj) {
                     console.error('[ERROR] Package verification failed:', err);
                     if (indicator) {
                         indicator.innerHTML = '<span class="tr-package-check-failed">Package availability check failed</span>';
-                        setTimeout(() => { indicator.style.display = 'none'; }, 3000);
+                        indicator.addEventListener('click', () => { indicator.style.display = 'none'; }, { once: true });
                     }
                 });
-            }, 100);
+            });
         }
     }
 
@@ -140,16 +140,18 @@ window.updateImages = function(version, mobj) {
         if (textarea) {
             textarea.value = initialPackages.join(' ');
             console.log('[TRACE] Initial packages set:', initialPackages);
-            setTimeout(() => {
-                textarea.style.height = 'auto';
-                textarea.style.height = textarea.scrollHeight + 'px';
-            }, 50);
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    textarea.style.height = 'auto';
+                    textarea.style.height = textarea.scrollHeight + 'px';
+                });
+            });
         }
 
         if (customInitialized) {
-            setTimeout(() => {
+            requestAnimationFrame(() => {
                 updateAllPackageState('device-packages-loaded');
-            }, 100);
+            });
         }
     }
 
