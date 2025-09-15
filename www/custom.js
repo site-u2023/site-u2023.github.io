@@ -1270,6 +1270,7 @@ async function isPackageAvailable(pkgName, feed) {
     }
 }
 
+// ==================== パッケージ存在確認 ====================
 async function verifyAllPackages() {    
     const arch = current_device?.arch || cachedDeviceArch;
     if (!packagesJson || !arch) {
@@ -1322,9 +1323,9 @@ async function verifyAllPackages() {
     if ('connection' in navigator && typeof navigator.connection.downlink === 'number') {
         const speedMbps = navigator.connection.downlink;
         BATCH_SIZE = Math.min(20, Math.max(2, Math.round(speedMbps * 2)));
-        console.log(`[INFO] Network downlink: ${speedMbps} Mbps → batch size = ${BATCH_SIZE}`);
+        console.log(`[INFO] Network downlink: ${speedMbps} Mbps → concurrency = ${BATCH_SIZE}`);
     } else {
-        console.log(`[INFO] Network Information API not supported → batch size = ${BATCH_SIZE}`);
+        console.log(`[INFO] Network Information API not supported → concurrency = ${BATCH_SIZE}`);
     }
 
     const batches = [];
@@ -1334,14 +1335,9 @@ async function verifyAllPackages() {
     
     let unavailableCount = 0;
     let checkedUnavailable = [];
-
-    let activeSessions = 0;
     
     for (const batch of batches) {
-        console.log(`[DEBUG] Starting batch with ${batch.length} requests`);
         const promises = batch.map(async pkg => {
-            activeSessions++;
-            console.log(`[DEBUG] Active sessions: ${activeSessions}`);
             const isAvailable = await isPackageAvailable(pkg.id, pkg.feed);
             
             if (!pkg.hidden) {
@@ -1354,8 +1350,6 @@ async function verifyAllPackages() {
                     checkedUnavailable.push(pkg.id);
                 }
             }
-            activeSessions--;
-            console.log(`[DEBUG] Active sessions: ${activeSessions}`);
             
             return { id: pkg.id, uniqueId: pkg.uniqueId, available: isAvailable };
         });
