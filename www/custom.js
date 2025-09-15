@@ -141,6 +141,7 @@ window.updateImages = function(version, mobj) {
             textarea.value = initialPackages.join(' ');
             console.log('[TRACE] Initial packages set:', initialPackages);
             setTimeout(() => {
+                const lines = textarea.value.split('\n').length;
                 textarea.style.height = 'auto';
                 textarea.style.height = textarea.scrollHeight + 'px';
             }, 50);
