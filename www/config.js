@@ -49,25 +49,19 @@ var config = {
   
   // LuCI OPKG 検索エンドポイント
   // https://downloads.openwrt.org/releases/24.10.2/packages/aarch64_cortex-a53/packages/Packages
-  // opkg_search_url: "https://downloads.openwrt.org/releases/{version}/packages/{arch}/{feed}/Packages",
   opkg_search_url: "https://downloads.openwrt.org/releases/{version}/packages/{arch}/{feed}/Packages",
   
   // LuCI APK 検索エンドポイント
   // https://downloads.openwrt.org/snapshots/packages/aarch64_cortex-a53/packages/index.json
-  // apk_search_url: "https://downloads.openwrt.org/snapshots/packages/{arch}/{feed}/index.json",
   apk_search_url: "https://downloads.openwrt.org/snapshots/packages/{arch}/{feed}/index.json",
 
   // kmods 検索エンドポイント（OPKG用: リリース版）
   // 例: https://downloads.openwrt.org/releases/24.10.2/targets/mediatek/filogic/kmods/5.15.137-1-xxxxxxxx/Packages
-  // kmods_opkg_search_url: "https://downloads.openwrt.org/releases/{version}/packages/{arch}/kmods/{kmod}/Packages",
-  // kmods_opkg_index_url: "https://downloads.openwrt.org/releases/{version}/targets/{version}/kmods/",
   kmods_opkg_index_url:  "https://downloads.openwrt.org/releases/{version}/targets/{vendor}/{subtarget}/kmods/",
   kmods_opkg_search_url: "https://downloads.openwrt.org/releases/{version}/targets/{vendor}/{subtarget}/kmods/{kmod}/Packages",
   
   // kmods 検索エンドポイント（APK用: SNAPSHOT版）
   // 例: https://downloads.openwrt.org/snapshots/targets/mediatek/filogic/kmods/5.15.137-1-xxxxxxxx/index.json
-  // kmods_apk_search_url: "https://downloads.openwrt.org/snapshots/packages/{arch}/kmods/{kmod}/index.json",
-  // kmods_apk_index_url: "https://downloads.openwrt.org/snapshots/targets/{version}/kmods/",
   kmods_apk_index_url:   "https://downloads.openwrt.org/snapshots/targets/{vendor}/{subtarget}/kmods/",
   kmods_apk_search_url:  "https://downloads.openwrt.org/snapshots/targets/{vendor}/{subtarget}/kmods/{kmod}/index.json", 
   
