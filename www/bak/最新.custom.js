@@ -1,14 +1,11 @@
 console.log('custom.js loaded');
 
-// OFSバージョン
 window.addEventListener('load', () => {
-    // バージョンテキストを更新
     const versionEl = document.getElementById('ofs-version');
     if (versionEl && typeof custom_ofs_version !== 'undefined') {
         versionEl.innerText = custom_ofs_version;
     }
     
-    // リンク先を更新
     const linkEl = versionEl?.closest('a');
     if (linkEl && typeof custom_ofs_link !== 'undefined') {
         linkEl.href = custom_ofs_link;
@@ -28,144 +25,158 @@ let defaultFieldValues = {};
 let dynamicPackages = new Set();
 let selectedLanguage = '';
 let customLanguageMap = {};
+let kmodsTokenCache = null;
+let kmodsTokenCacheKey = null;
+let packagesUrl;
 
-// パッケージ存在確認キャッシュ（初回確認後は再利用）
 const packageAvailabilityCache = new Map();
-// フィード全体のキャッシュ（検索高速化用）
 const feedCacheMap = new Map();
 
-// デバイス固有パッケージ管理（重要：これらを常に維持）
 let deviceDefaultPackages = [];  // mobj.default_packages
 let deviceDevicePackages = [];   // mobj.device_packages  
 let extraPackages = [];           // config.asu_extra_packages
 
-// マルチインプットマネージャー用
 let packageSearchManager = null;
 let commandsManager = null;
 
+// ==================== Vendor動的取得ヘルパー ====================
+function getVendor() {
+    if (current_device?.target) {
+        const parts = current_device.target.split('/');
+        return parts[0] || null;
+    }
+    return null;
+}
+
+function getSubtarget() {
+    if (current_device?.target) {
+        const parts = current_device.target.split('/');
+        return parts[1] || '';
+    }
+    return '';
+}
+
 // ==================== 初期化処理 ====================
-// 元の updateImages をフック
 const originalUpdateImages = window.updateImages;
+
 window.updateImages = function(version, mobj) {
     if (originalUpdateImages) originalUpdateImages(version, mobj);
 
-// デバイスが変更された場合、パッケージ存在確認キャッシュをクリア
     const oldArch = cachedDeviceArch;
-    const oldVersion = current_device?.version;
-    
-    // arch_packagesをcurrent_deviceとキャッシュに保存
+    const oldVersion = current_device && current_device.version;
+
     if (mobj && mobj.arch_packages) {
         if (!current_device) current_device = {};
+
         current_device.arch = mobj.arch_packages;
         current_device.version = version;
         cachedDeviceArch = mobj.arch_packages;
-        console.log('Architecture saved:', mobj.arch_packages);
-        
-        // デバイスが変更された場合、キャッシュをクリア
+
+        current_device.target = mobj.target || '';
+        if (mobj.id) current_device.id = mobj.id;
+
+        console.log('[TRACE] current_device updated:', {
+            ...current_device,
+            vendor: getVendor(),
+            subtarget: getSubtarget()
+        });
+
         if (oldArch !== mobj.arch_packages || oldVersion !== version) {
-            console.log('Device changed, clearing all caches');
+            console.log('[TRACE] Device changed, clearing caches');
             packageAvailabilityCache.clear();
             feedCacheMap.clear();
 
-            // アーキテクチャが確定/変更されたので、パッケージの存在確認を実行
-            setTimeout(() => {
+            setTimeout(function() {
+                const vendor = getVendor();
+                if (!vendor) {
+                    console.warn('[WARN] No vendor info, kmods may not verify');
+                    console.log('[TRACE] current_device state:', current_device);
+                }
+
                 const indicator = document.querySelector('#package-loading-indicator');
                 if (indicator) {
                     indicator.style.display = 'block';
                     const span = indicator.querySelector('span');
                     if (span) span.className = 'tr-checking-packages';
                 }
-                
-                verifyAllPackages().then(() => {
-                    if (indicator) {
-                        indicator.style.display = 'none';
-                    }
-                    console.log('Package verification completed after device change');
-                }).catch(err => {
-                    console.error('Package verification failed after device change:', err);
+
+                verifyAllPackages().then(function() {
+                    if (indicator) indicator.style.display = 'none';
+                    console.log('[TRACE] Package verification complete');
+                }).catch(function(err) {
+                    console.error('[ERROR] Package verification failed:', err);
                     if (indicator) {
                         indicator.innerHTML = '<span class="tr-package-check-failed">Package availability check failed</span>';
-                        setTimeout(() => {
-                            indicator.style.display = 'none';
-                        }, 3000);
+                        setTimeout(() => { indicator.style.display = 'none'; }, 3000);
                     }
                 });
             }, 100);
         }
     }
 
-    // デバイス固有パッケージを保存（重要）
     if (mobj && "manifest" in mobj === false) {
-        // FIRST: Save device packages to global variables
         deviceDefaultPackages = mobj.default_packages || [];
         deviceDevicePackages = mobj.device_packages || [];
         extraPackages = config.asu_extra_packages || [];
-        
-        console.log('Device packages saved:', {
+
+        if (!current_device) current_device = {};
+
+        current_device.target = mobj.target || '';
+        current_device.version = version || current_device.version;
+        current_device.arch = mobj.arch_packages || current_device.arch;
+
+        console.log('[TRACE] Device packages saved:', {
             default: deviceDefaultPackages.length,
             device: deviceDevicePackages.length,
-            extra: extraPackages.length
+            extra: extraPackages.length,
+            vendor: getVendor()
         });
-        
-        // SECOND: Apply to textarea immediately after saving
+
         const initialPackages = deviceDefaultPackages
             .concat(deviceDevicePackages)
             .concat(extraPackages);
-        
+
         const textarea = document.querySelector('#asu-packages');
         if (textarea) {
             textarea.value = initialPackages.join(' ');
-            console.log('Initial packages set in textarea:', initialPackages);
-            
-            // Force resize after setting value
+            console.log('[TRACE] Initial packages set:', initialPackages);
             setTimeout(() => {
                 textarea.style.height = 'auto';
                 textarea.style.height = textarea.scrollHeight + 'px';
             }, 50);
         }
-        
-        // THIRD: Trigger package state update to sync with dynamic packages
+
         if (customInitialized) {
             setTimeout(() => {
                 updateAllPackageState('device-packages-loaded');
             }, 100);
         }
     }
-    
-    // 初回のみカスタムHTMLを読み込み
+
     if (!customHTMLLoaded) {
-        console.log("Loading custom.html");
+        console.log('[TRACE] Loading custom.html');
         loadCustomHTML();
         customHTMLLoaded = true;
-    } else if (customInitialized && current_device?.arch) {
-        // 既に初期化済みでデバイスが選択された場合、言語パッケージを強制更新
-        console.log("Device changed, updating language packages");
-
-        // デバイス用は config.device_language を唯一参照
-        const deviceLang = config.device_language || config?.fallback_language || 'en';
-        syncDeviceLanguageSelector(deviceLang); // デバイス用セレクターのみ同期
-        updateAllPackageState('device-changed-force'); // 必要なら明示的に
-        console.log("Force updating language packages for:", deviceLang);
+    } else if (customInitialized && current_device && current_device.arch) {
+        const deviceLang = config.device_language || (config && config.fallback_language) || 'en';
+        console.log('[TRACE] Updating language packages for:', deviceLang);
+        syncDeviceLanguageSelector(deviceLang);
+        updateAllPackageState('device-changed-force');
     }
 };
 
 // ==================== 統合パッケージ管理システム ====================
-// 前回のフォーム状態ハッシュを保持
 let lastFormStateHash = null;
 
-// Fix for updateAllPackageState - add safety check
 async function updateAllPackageState(source = 'unknown') {
-    // CRITICAL FIX: Don't proceed if device packages aren't loaded yet
     if (!customInitialized && (deviceDefaultPackages.length === 0 && deviceDevicePackages.length === 0)) {
         console.log('updateAllPackageState: Device packages not ready, deferring update from:', source);
         return;
     }
 
-    // 現在のフォーム状態を収集
     const currentState = collectFormValues();
     const hash = JSON.stringify(currentState);
 
-    // 前回と同じ状態ならスキップ（device package loading は例外）
     if (hash === lastFormStateHash && !source.includes('device') && !source.includes('force')) {
         return;
     }
@@ -173,22 +184,17 @@ async function updateAllPackageState(source = 'unknown') {
 
     console.log(`updateAllPackageState called from: ${source}`);
 
-    // 1. setup.jsonベースの仮想チェックボックス操作
     updateSetupJsonPackagesCore();
 
-    // 2. 言語パッケージの更新
     await updateLanguagePackageCore();
 
-    // 3. Postinstテキストエリアへの反映（差分検知付き）
     updatePackageListToTextarea(source);
 
-    // 4. setup.sh変数の更新
     updateVariableDefinitions();
 
     console.log('All package state updated successfully');
 }
 
-// Core関数1: setup.jsonベースの仮想チェックボックス操作（新実装）
 function updateSetupJsonPackagesCore() {
     if (!setupConfig) return;
     
@@ -199,18 +205,14 @@ function updateSetupJsonPackagesCore() {
                 if (selectedValue) {
                     console.log(`Radio group ${pkg.variableName} selected: ${selectedValue}`);
                     
-                    // 全ての選択肢を先にリセット
                     pkg.options.forEach(opt => {
                         if (opt.value !== selectedValue) {
-                            // 非選択状態のパッケージを無効化
                             toggleVirtualPackagesByType(pkg.variableName, opt.value, false);
                         }
                     });
                     
-                    // 選択されたオプションのパッケージを有効化
                     toggleVirtualPackagesByType(pkg.variableName, selectedValue, true);
                     
-                    // AUTO時の特別処理
                     if (pkg.variableName === 'connection_type' && selectedValue === 'auto' && cachedApiInfo) {
                         console.log('AUTO mode with API info, applying specific packages');
                         if (cachedApiInfo.mape?.brIpv6Address) {
@@ -227,17 +229,13 @@ function updateSetupJsonPackagesCore() {
     });
 }
 
-// 仮想パッケージチェックボックス操作関数
-// 仮想パッケージチェックボックス操作関数（新規追加）
 function toggleVirtualPackage(packageId, enabled) {
-    // packages.jsonから隠しパッケージも含めて検索
     const pkg = findPackageById(packageId);
     if (!pkg) {
         console.warn(`Virtual package not found in packages.json: ${packageId}`);
         return;
     }
     
-    // uniqueIdがある場合はそれを使用、なければidを使用
     const searchId = pkg.uniqueId || pkg.id;
     const checkbox = document.querySelector(`[data-package="${packageId}"], [data-unique-id="${searchId}"]`);
     
@@ -248,7 +246,6 @@ function toggleVirtualPackage(packageId, enabled) {
         if (wasChecked !== enabled) {
             console.log(`Virtual package ${packageId} (${searchId}): ${enabled ? 'enabled' : 'disabled'}`);
             
-            // 依存関係も処理
             const dependencies = checkbox.getAttribute('data-dependencies');
             if (dependencies && enabled) {
                 dependencies.split(',').forEach(depId => {
@@ -269,7 +266,6 @@ function toggleVirtualPackage(packageId, enabled) {
     }
 }
 
-// タイプ別仮想パッケージ操作関数（新規追加）
 function toggleVirtualPackagesByType(type, value, enabled) {
     const packageMap = {
         'connection_type': {
@@ -292,14 +288,11 @@ function toggleVirtualPackagesByType(type, value, enabled) {
     }
 }
 
-// Core関数2: 言語パッケージ更新（UI更新なし）
 async function updateLanguagePackageCore() {
-    // デバイス用言語セレクターから現在の言語を取得
     selectedLanguage = config.device_language || config?.fallback_language || 'en';
     
     console.log(`Language package update - Selected language: ${selectedLanguage}`);
 
-    // 既存の言語パッケージを一旦全て削除
     const removedPackages = [];
     for (const pkg of Array.from(dynamicPackages)) {
         if (pkg.startsWith('luci-i18n-')) {
@@ -312,20 +305,17 @@ async function updateLanguagePackageCore() {
         console.log('Removed old language packages:', removedPackages);
     }
 
-    // 英語が選択されているか、デバイス情報がない場合は終了
     const hasArch = current_device?.arch || cachedDeviceArch;
     if (!selectedLanguage || selectedLanguage === 'en' || !hasArch) {
         console.log('Skipping language packages - English or no arch info');
         return;
     }
     
-    // 現在の全パッケージリスト（LuCIパッケージ検出用）
     const currentPackages = getCurrentPackageListForLanguage();
     console.log(`Checking language packages for ${currentPackages.length} packages`);
     
     const addedLangPackages = new Set();
     
-    // 基本言語パッケージをチェック
     const basePkg = `luci-i18n-base-${selectedLanguage}`;
     const firewallPkg = `luci-i18n-firewall-${selectedLanguage}`;
     
@@ -345,17 +335,14 @@ async function updateLanguagePackageCore() {
         console.error('Error checking base/firewall package:', err);
     }
 
-    // 全LuCIパッケージに対する言語パッケージを並行チェック
     const checkPromises = [];
     
     for (const pkg of currentPackages) {
-        // 通常のLuCIパッケージと仮想パッケージの両方を処理
         let luciName = null;
         
         if (pkg.startsWith('luci-') && !pkg.startsWith('luci-i18n-')) {
             luciName = extractLuciName(pkg);
         } else if (pkg === 'usteer-from-setup') {
-            // 仮想パッケージの特別処理
             luciName = 'usteer';
         }
         
@@ -384,44 +371,36 @@ async function updateLanguagePackageCore() {
     }
 }
 
-// LuCI言語パッケージ用の完全なパッケージリスト取得
 function getCurrentPackageListForLanguage() {
     const packages = new Set();
     
-    // デバイス初期パッケージ
     deviceDefaultPackages.forEach(pkg => packages.add(pkg));
     deviceDevicePackages.forEach(pkg => packages.add(pkg));
     extraPackages.forEach(pkg => packages.add(pkg));
     
-    // パッケージセレクターから選択されたパッケージ（隠しパッケージ含む）
-    // チェックされているもののみを取得
     document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
         const pkgName = cb.getAttribute('data-package');
         const uniqueId = cb.getAttribute('data-unique-id');
         
         if (pkgName) {
             packages.add(pkgName);
-            // uniqueIdも追加（usteer-from-setupなど）
             if (uniqueId && uniqueId !== pkgName) {
                 packages.add(uniqueId);
             }
         }
     });
     
-    // 検索で追加されたパッケージ
     if (packageSearchManager) {
         const searchValues = packageSearchManager.getAllValues();
         searchValues.forEach(pkg => packages.add(pkg));
     }
     
-    // 仮想パッケージ（setup.jsonドリブン）- 言語パッケージ以外
     for (const pkg of dynamicPackages) {
         if (!pkg.startsWith('luci-i18n-')) {
             packages.add(pkg);
         }
     }
     
-    // テキストエリアからは手動追加分のみ取得（チェックボックス管理のパッケージは除外）
     const checkedPackageSet = new Set();
     document.querySelectorAll('.package-selector-checkbox').forEach(cb => {
         const pkgName = cb.getAttribute('data-package');
@@ -432,7 +411,6 @@ function getCurrentPackageListForLanguage() {
     if (textarea) {
         const textPackages = split(textarea.value);
         textPackages.forEach(pkg => {
-            // チェックボックス管理外のパッケージのみ追加
             if (!pkg.startsWith('luci-i18n-') && !checkedPackageSet.has(pkg)) {
                 packages.add(pkg);
             }
@@ -442,14 +420,11 @@ function getCurrentPackageListForLanguage() {
     return Array.from(packages);
 }
 
-// Core関数3: Postinstテキストエリア更新（最終的な統合・差分検知付き）
 let lastPackageListHash = null;
 
 function updatePackageListToTextarea(source = 'unknown') {
-    // 基本パッケージセット（デバイス固有パッケージ）を準備
     const basePackages = new Set();
 
-    // デバイス固有パッケージを必ず含める（最重要）
     if (deviceDefaultPackages.length === 0 && deviceDevicePackages.length === 0 && extraPackages.length === 0) {
         console.warn('updatePackageListToTextarea: Device packages not loaded yet, skipping update from:', source);
         return;
@@ -461,7 +436,6 @@ function updatePackageListToTextarea(source = 'unknown') {
 
     console.log(`Base device packages loaded: default=${deviceDefaultPackages.length}, device=${deviceDevicePackages.length}, extra=${extraPackages.length}`);
 
-    // チェックされたパッケージを追加
     const checkedPackages = new Set();
     document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
         const pkgName = cb.getAttribute('data-package');
@@ -470,14 +444,12 @@ function updatePackageListToTextarea(source = 'unknown') {
         }
     });
 
-    // 検索で追加されたパッケージを取得
     const searchedPackages = new Set();
     if (packageSearchManager) {
         const searchValues = packageSearchManager.getAllValues();
         searchValues.forEach(pkg => searchedPackages.add(pkg));
     }
 
-    // 既知のUI管理パッケージ集合を事前に構築
     const knownSelectablePackages = new Set();
     if (packagesJson?.categories) {
         packagesJson.categories.forEach(cat => {
@@ -487,13 +459,11 @@ function updatePackageListToTextarea(source = 'unknown') {
         });
     }
 
-    // テキストエリアから既存パッケージを取得（上記以外の手動入力パッケージを保持）
     const manualPackages = new Set();
     const textarea = document.querySelector('#asu-packages');
     if (textarea) {
         const currentPackages = split(textarea.value);
         currentPackages.forEach(pkg => {
-            // UI管理対象は manual に残さない（チェックボックス管理のパッケージを確実に除外）
             const isCheckboxManaged = document.querySelector(`.package-selector-checkbox[data-package="${pkg}"]`) !== null;
         
             if (!basePackages.has(pkg) &&
@@ -508,45 +478,42 @@ function updatePackageListToTextarea(source = 'unknown') {
         });
     }
 
-// ===== 最終パッケージリスト構築 =====
-const finalPackages = [
-    ...basePackages,
-    ...checkedPackages,
-    ...searchedPackages,
-    ...dynamicPackages,
-    ...manualPackages
-];
+    // ===== 最終パッケージリスト構築 =====
+    const finalPackages = [
+        ...basePackages,
+        ...checkedPackages,
+        ...searchedPackages,
+        ...dynamicPackages,
+        ...manualPackages
+    ];
 
-// 重複を削除
-const uniquePackages = [...new Set(finalPackages)];
+    const uniquePackages = [...new Set(finalPackages)];
 
-// 差分検知（前回と同じならスキップ）
-const currentHash = JSON.stringify(uniquePackages);
-if (currentHash === lastPackageListHash && source !== 'force-update') {
-    console.log('updatePackageListToTextarea: No changes detected, skipping update from:', source);
-    return;
-}
-lastPackageListHash = currentHash;
+    const currentHash = JSON.stringify(uniquePackages);
+    if (currentHash === lastPackageListHash && source !== 'force-update') {
+        console.log('updatePackageListToTextarea: No changes detected, skipping update from:', source);
+        return;
+    }
+    lastPackageListHash = currentHash;
 
-// ログと更新処理
-console.log(`updatePackageListToTextarea called from: ${source}`);
-console.log(`Package breakdown:`, {
-    base: basePackages.size,
-    checked: checkedPackages.size,
-    searched: searchedPackages.size,
-    dynamic: dynamicPackages.size,
-    manual: manualPackages.size,
-    total: uniquePackages.length
-});
+    console.log(`updatePackageListToTextarea called from: ${source}`);
+    console.log(`Package breakdown:`, {
+        base: basePackages.size,
+        checked: checkedPackages.size,
+        searched: searchedPackages.size,
+        dynamic: dynamicPackages.size,
+        manual: manualPackages.size,
+        total: uniquePackages.length
+    });
 
-if (textarea) {
-    textarea.value = uniquePackages.join(' ');
-    textarea.style.height = 'auto';
-    textarea.style.height = textarea.scrollHeight + 'px';
-}
+    if (textarea) {
+        textarea.value = uniquePackages.join(' ');
+        textarea.style.height = 'auto';
+        textarea.style.height = textarea.scrollHeight + 'px';
+    }
 
-console.log(`Postinst package list updated: ${uniquePackages.length} packages`);
-console.log('Final Postinst package list:', uniquePackages);
+    console.log(`Postinst package list updated: ${uniquePackages.length} packages`);
+    console.log('Final Postinst package list:', uniquePackages);
 }
 
 // ==================== 共通マルチインプット管理機能 ====================
@@ -572,11 +539,9 @@ class MultiInputManager {
     }
     
     init() {
-        // コンテナをクリア
         this.container.innerHTML = '';
         this.container.className = 'multi-input-container';
         
-        // 初期インプットボックスを追加
         this.addInput('', true);
     }
     
@@ -593,7 +558,6 @@ class MultiInputManager {
         input.spellcheck = false;
         input.autocapitalize = 'off';
         
-        // イベントリスナー設定
         input.addEventListener('keydown', (e) => this.handleKeyDown(e, input));
         input.addEventListener('input', (e) => this.handleInput(e, input));
         input.addEventListener('blur', (e) => this.handleBlur(e, input));
@@ -619,21 +583,16 @@ class MultiInputManager {
             const value = input.value.trim();
             
             if (value) {
-                // 現在の値を確定
                 input.setAttribute('data-confirmed', 'true');
                 
-                // 新しいインプットボックスを追加
                 this.addInput('', true);
                 
-                // コールバック実行
                 this.options.onChange(this.getAllValues());
             }
         } else if (e.key === 'Backspace' && input.value === '' && this.inputs.length > 1) {
-            // 空のインプットでBackspaceを押した場合、前のインプットにフォーカス
             const index = this.inputs.indexOf(input);
             if (index > 0) {
                 this.inputs[index - 1].focus();
-                // カーソルを末尾に設定
                 const prevInput = this.inputs[index - 1];
                 prevInput.setSelectionRange(prevInput.value.length, prevInput.value.length);
             }
@@ -643,18 +602,14 @@ class MultiInputManager {
     handleInput(e, input) {
         const value = input.value.trim();
     
-        // オートコンプリート処理
         if (this.options.autocomplete && value.length >= 2) {
             this.options.autocomplete(value, input);
         }
     
-        // 候補選択によるプログラム的な値変更の場合はログ化をスキップ
         if (!input.dataset.programmaticChange) {
-            // コールバック実行
             this.options.onChange(this.getAllValues());
         }
     
-        // フラグをクリア
         delete input.dataset.programmaticChange;
     }
     
@@ -662,18 +617,15 @@ class MultiInputManager {
         const value = input.value.trim();
         const index = this.inputs.indexOf(input);
         
-        // 候補選択による処理中はスキップ
         if (input.dataset.skipBlur) {
             delete input.dataset.skipBlur;
             return;
         }
         
-        // 値が空で、最後のインプットでない場合は削除
         if (value === '' && this.inputs.length > 1 && index !== this.inputs.length - 1) {
             this.removeInput(input);
         }
         
-        // 最後のインプットに値がある場合、新しいインプットを追加（confirmed済みは除外）
         if (value && index === this.inputs.length - 1 && !input.getAttribute('data-confirmed')) {
             this.addInput('', false);
         }
@@ -684,13 +636,10 @@ class MultiInputManager {
         if (index > -1 && this.inputs.length > 1) {
             const value = input.value.trim();
             
-            // DOMから削除
             input.parentElement.remove();
             
-            // 配列から削除
             this.inputs.splice(index, 1);
             
-            // コールバック実行
             if (value) {
                 this.options.onRemove(value);
             }
@@ -705,23 +654,19 @@ class MultiInputManager {
     }
     
     setValues(values) {
-        // 全てクリア
         this.container.innerHTML = '';
         this.inputs = [];
         
-        // 値を設定
         if (values && values.length > 0) {
             values.forEach(value => {
                 this.addInput(value, false);
             });
         }
         
-        // 最後に空のインプットを追加
         this.addInput('', false);
     }
 }
 
-// custom.html 読み込み
 async function loadCustomHTML() {
     try {
         const response = await fetch('custom.html?t=' + Date.now());
@@ -737,7 +682,6 @@ async function loadCustomHTML() {
     }
 }
 
-// #asu が存在するまで待機
 function waitForAsuAndInit(temp, retry = 50) {
     const asuSection = document.querySelector('#asu');
     if (asuSection) {
@@ -760,31 +704,25 @@ function setupPackageSearch() {
         return;
     }
     
-    // 既存のインプットを削除
     const oldInput = document.getElementById('package-search');
     if (oldInput) {
         oldInput.remove();
     }
     
-    // マルチインプットマネージャーを初期化
     packageSearchManager = new MultiInputManager('package-search-autocomplete', {
         placeholder: 'Type package name and press Enter',
         className: 'multi-input-item package-search-input',
         onAdd: (packageName) => {
             console.log('Package added:', packageName);
-            // 動的にパッケージリストを更新
             updateAllPackageState('package-search-add');
         },
         onRemove: (packageName) => {
             console.log('Package removed:', packageName);
-            // 動的にパッケージリストを更新
             updateAllPackageState('package-search-remove');
         },
         onChange: (values) => {
-            // console.log('Package list changed:', values);
         },
         autocomplete: (query, inputElement) => {
-            // console.log('Searching for packages:', query);
             searchPackages(query, inputElement);
         }
     });
@@ -792,19 +730,31 @@ function setupPackageSearch() {
     console.log('Package search setup complete');
 }
 
-// パッケージ検索実行
 async function searchPackages(query, inputElement) {
-    // console.log('searchPackages called with query:', query);
     
     const arch = current_device?.arch || cachedDeviceArch;
-    const version = current_device?.version || document.querySelector('#versions')?.value;
+    const version = current_device?.version || document.querySelector("#versions")?.value;
+    const vendor = getVendor();
+    
+    if (query.toLowerCase().startsWith('kmod-') && !vendor) {
+        console.log('searchPackages - current_device:', current_device);
+        console.log('searchPackages - vendor not available');
+    }
     
     const allResults = new Set();
-    const feeds = ['packages', 'luci'];
+    
+    let feeds;
+    if (query.toLowerCase().startsWith('kmod-')) {
+        feeds = vendor ? ['kmods'] : [];
+        if (feeds.length === 0) {
+            console.log('Cannot search kmods without vendor information');
+        }
+    } else {
+        feeds = ['packages', 'luci'];
+    }
     
     for (const feed of feeds) {
         try {
-            // console.log(`Searching in feed: ${feed}`);
             const results = await searchInFeed(query, feed, version, arch);
             results.forEach(pkg => allResults.add(pkg));
         } catch (err) {
@@ -817,16 +767,13 @@ async function searchPackages(query, inputElement) {
         const aLower = a.toLowerCase();
         const bLower = b.toLowerCase();
         
-        // 完全一致を最上位に
         const aExact = (aLower === q);
         const bExact = (bLower === q);
         if (aExact && !bExact) return -1;
         if (bExact && !aExact) return 1;
 
-        // 完全一致同士 → 名前順
         if (aExact && bExact) return a.localeCompare(b);
 
-        // 部分一致同士 → 名前順
         return a.localeCompare(b);
     });
 
@@ -835,73 +782,69 @@ async function searchPackages(query, inputElement) {
     showPackageSearchResults(sortedResults, inputElement);
 }
 
-// フィード内検索（キャッシュ機能付き）
 async function searchInFeed(query, feed, version, arch) {
-    // console.log(`searchInFeed: ${feed}, query: ${query}`);
-    
+    const vendor = getVendor();
     const cacheKey = `${version}:${arch}:${feed}`;
-    
+
     try {
         let packages = [];
-        
-        // キャッシュチェック
+
         if (feedCacheMap.has(cacheKey)) {
             packages = feedCacheMap.get(cacheKey);
         } else {
-            if (version.includes('SNAPSHOT')) {
-                // APK形式
-                const url = config.apk_search_url
+            let url;
+            if (feed === 'kmods') {
+                console.log('[DEBUG] vendor value:', vendor);
+                if (!vendor) {
+                    console.warn('[WARN] Missing vendor for kmods search');
+                    return [];
+                }
+                url = await buildKmodsUrl(version, vendor, version.includes('SNAPSHOT'));
+                console.log('[DEBUG] kmods search URL:', url);
+            } else if (version.includes('SNAPSHOT')) {
+                url = config.apk_search_url
                     .replace('{arch}', arch)
                     .replace('{feed}', feed);
-                
-                const resp = await fetch(url, { cache: 'force-cache' });
-                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-                
+                console.log('[DEBUG] snapshot search URL:', url);
+            } else {
+                url = config.opkg_search_url
+                    .replace('{version}', version)
+                    .replace('{arch}', arch)
+                    .replace('{feed}', feed);
+                console.log('[DEBUG] opkg search URL:', url);
+            }
+
+            const resp = await fetch(url, { cache: 'force-cache' });
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+
+            if (version.includes('SNAPSHOT') || (feed === 'kmods' && version.includes('SNAPSHOT'))) {
                 const data = await resp.json();
-                
                 if (data.packages && typeof data.packages === 'object') {
                     packages = Object.keys(data.packages);
                 }
             } else {
-                // OPKG形式
-                const url = config.opkg_search_url
-                    .replace('{version}', version)
-                    .replace('{arch}', arch)
-                    .replace('{feed}', feed);
-                
-                const resp = await fetch(url, { cache: 'force-cache' });
-                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-                
                 const text = await resp.text();
                 const lines = text.split('\n');
-                
                 for (const line of lines) {
                     if (line.startsWith('Package: ')) {
-                        const pkgName = line.substring(9).trim();
-                        packages.push(pkgName);
+                        packages.push(line.substring(9).trim());
                     }
                 }
             }
-            
-            // キャッシュに保存
+
             feedCacheMap.set(cacheKey, packages);
         }
-        
-        // クエリにマッチするパッケージをフィルタリング
-        const results = packages.filter(pkgName => 
+
+        return packages.filter(pkgName =>
             pkgName.toLowerCase().includes(query.toLowerCase())
         );
-        
-        return results;
     } catch (err) {
         console.error('searchInFeed error:', err);
         return [];
     }
 }
 
-// 検索結果表示
 function showPackageSearchResults(results, inputElement) {
-    // console.log('showPackageSearchResults:', results.length, 'results');
     
     clearPackageSearchResults();
     
@@ -913,24 +856,20 @@ function showPackageSearchResults(results, inputElement) {
     const resultsDiv = document.createElement('div');
     resultsDiv.className = 'package-search-results';
     
-    // 全ての結果を表示
     results.forEach(pkgName => {
         const item = document.createElement('div');
         item.textContent = pkgName;
         
         item.onmousedown = (e) => {
-            e.preventDefault(); // blurイベントの発生を防止
+            e.preventDefault();
             
             console.log('Package selected:', pkgName);
             
-            // プログラム的変更フラグを設定
             inputElement.dataset.programmaticChange = 'true';
             inputElement.value = pkgName;
             
-            // 手動でconfirmedマークを設定
             inputElement.setAttribute('data-confirmed', 'true');
             
-            // 現在の入力が最後の入力の場合のみ新しい入力を追加
             const inputIndex = packageSearchManager.inputs.indexOf(inputElement);
             if (inputIndex === packageSearchManager.inputs.length - 1) {
                 packageSearchManager.addInput('', true);
@@ -938,7 +877,6 @@ function showPackageSearchResults(results, inputElement) {
             
             clearPackageSearchResults();
             
-            // 変更通知とパッケージリスト更新
             packageSearchManager.options.onChange(packageSearchManager.getAllValues());
             updateAllPackageState('package-selected');
         };
@@ -949,27 +887,23 @@ function showPackageSearchResults(results, inputElement) {
     container.appendChild(resultsDiv);
 }
 
-// 検索結果クリア
 function clearPackageSearchResults() {
     const results = document.querySelectorAll('.package-search-results');
     results.forEach(el => el.remove());
 }
 
-// クリックで検索結果を閉じる
 document.addEventListener('click', function(e) {
     if (!e.target.closest('#package-search-autocomplete')) {
         clearPackageSearchResults();
     }
 });
 
-// #asuセクションを置き換え（index.js互換要素を維持）
 function replaceAsuSection(asuSection, temp) {
     const newDiv = document.createElement('div');
     newDiv.id = 'asu';
     newDiv.className = asuSection.className;
     newDiv.style.width = '100%';
     
-    // custom.htmlから必要な要素を移動
     const customPackages = temp.querySelector('#custom-packages-section details');
     const customScripts = temp.querySelector('#custom-scripts-section details');
 
@@ -982,7 +916,6 @@ function replaceAsuSection(asuSection, temp) {
         newDiv.appendChild(customScripts);
     }
 
-    // index.jsが期待する全てのDOM要素を直接追加（隠しテキストエリアを含む）
     const buildElements = document.createElement('div');
     buildElements.innerHTML = `
         <br>
@@ -1010,7 +943,6 @@ function replaceAsuSection(asuSection, temp) {
         </a>
     `;
     
-    // 子要素を追加
     while (buildElements.firstChild) {
         newDiv.appendChild(buildElements.firstChild);
     }
@@ -1018,7 +950,6 @@ function replaceAsuSection(asuSection, temp) {
     asuSection.parentNode.replaceChild(newDiv, asuSection);
 }
 
-// 既存要素クリーンアップ
 function cleanupExistingCustomElements() {
     ['#custom-packages-details', '#custom-scripts-details', '#extended-build-info']
         .forEach(selector => {
@@ -1036,15 +967,13 @@ function setupLanguageSelector() {
     const customLanguageSelect = document.querySelector('#aios-language');
     const fallback = config?.fallback_language || 'en';
 
-    // 初期言語設定
     if (!current_language) {
         current_language = (navigator.language || fallback).split('-')[0];
     }
     if (!config.device_language) {
-        config.device_language = current_language; // 最初だけコピー
+        config.device_language = current_language;
     }
 
-    // 初期同期（イベント登録前に実行）
     if (mainLanguageSelect) {
         mainLanguageSelect.value = current_language;
     }
@@ -1055,7 +984,6 @@ function setupLanguageSelector() {
     window.selectedLanguage = config.device_language;
     console.log('Language setup - Browser:', current_language, 'Device:', config.device_language);
 
-    // イベント登録（初期同期後に行う）
     if (mainLanguageSelect) {
         mainLanguageSelect.removeEventListener('change', handleMainLanguageChange);
         mainLanguageSelect.addEventListener('change', handleMainLanguageChange);
@@ -1079,27 +1007,21 @@ function syncBrowserLanguageSelector(lang) {
 function syncDeviceLanguageSelector(lang) {
     const customSelect = document.getElementById('aios-language');
     if (lang && customSelect && customSelect.value !== lang) {
-        // イベントリスナーを一時削除
         customSelect.removeEventListener('change', handleCustomLanguageChange);
         
-        // 値を変更
         customSelect.value = lang;
         
-        // イベントリスナーを再追加
         customSelect.addEventListener('change', handleCustomLanguageChange);
         
         console.log('Device language selector synced to:', lang);
     }
-    // デバイス言語の表示用スナップショット
     selectedLanguage = lang;
 }
 
-// メイン言語セレクター変更ハンドラー（ブラウザ用 → デバイス用に片方向同期）
 async function handleMainLanguageChange(e) {
     const newLanguage = e?.target?.value || config?.fallback_language || 'en';
     if (newLanguage === current_language) return;
 
-    // ユーザー操作かプログラム変更かを判定
     const isUserAction = e && e.isTrusted === true;
     
     console.log('Main language change:', {
@@ -1109,18 +1031,14 @@ async function handleMainLanguageChange(e) {
         willSyncDevice: isUserAction
     });
 
-    // ブラウザ用言語を更新
     current_language = newLanguage;
     
-    // UI翻訳を更新
     await loadCustomTranslations(current_language);
 
     if (isUserAction) {
-        // ユーザー操作の場合のみ、デバイス用を同期（片方向同期）
         const oldDeviceLanguage = config.device_language;
         config.device_language = current_language;
         
-        // デバイス用セレクターを同期（イベントリスナー制御で無限ループ防止）
         syncDeviceLanguageSelector(config.device_language);
         
         console.log('Language sync completed:', {
@@ -1129,7 +1047,6 @@ async function handleMainLanguageChange(e) {
             changed: oldDeviceLanguage !== config.device_language
         });
         
-        // パッケージ状態を更新（デバイス言語が変更された場合のみ）
         if (oldDeviceLanguage !== config.device_language) {
             updateAllPackageState('browser-language-changed');
         }
@@ -1138,7 +1055,6 @@ async function handleMainLanguageChange(e) {
     }
 }
 
-// カスタム言語セレクター変更ハンドラー（デバイス用 → ブラウザ用は同期しない）
 async function handleCustomLanguageChange(e) {
     const newLanguage = e.target.value || config?.fallback_language || 'en';
     if (newLanguage === config.device_language) return;
@@ -1153,18 +1069,14 @@ async function handleCustomLanguageChange(e) {
         note: 'Browser language intentionally not synced (one-way sync only)'
     });
 
-    // デバイス言語の表示用スナップショットを更新
     selectedLanguage = config.device_language;
 
-    // setup.shの変数定義を更新
     updateVariableDefinitions();
     
-    // パッケージ状態を更新
     updateAllPackageState('device-language-changed');
 }
 
 async function loadCustomTranslations(lang) {
-    // UI翻訳は必ず current_language を使う
     if (!lang) {
         lang = current_language || (navigator.language || config.fallback_language).split('-')[0];
     }
@@ -1199,10 +1111,8 @@ async function loadCustomTranslations(lang) {
 function applyCustomTranslations(map) {
     if (!map || typeof map !== 'object') return;
     
-    // current_language_jsonに統合
     Object.assign(current_language_json, map);
     
-    // DOMに適用
     for (const tr in map) {
         document.querySelectorAll(`.${tr}`).forEach(e => {
             if ('placeholder' in e) {
@@ -1219,12 +1129,10 @@ function applyCustomTranslations(map) {
 function extractLuciName(pkg) {
     if (pkg === 'luci') return 'base';
     
-    // 特別なマッピング
     if (pkg === 'usteer-from-setup' || pkg === 'luci-app-usteer-setup') {
         return 'usteer';
     }
 
-    // "luci-app-", "luci-mod-", "luci-theme-", "luci-proto-" のプレフィックスを除去
     const prefixMatch = pkg.match(/^luci-(?:app|mod|theme|proto)-(.+)$/);
     if (prefixMatch && prefixMatch[1]) {
         return prefixMatch[1];
@@ -1235,24 +1143,20 @@ function extractLuciName(pkg) {
 function getCurrentPackageList() {
     const packages = new Set();
     
-    // デバイス初期パッケージを必ず含める
     deviceDefaultPackages.forEach(pkg => packages.add(pkg));
     deviceDevicePackages.forEach(pkg => packages.add(pkg));
     extraPackages.forEach(pkg => packages.add(pkg));
     
-    // パッケージセレクターから選択されたパッケージ
     document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
         const pkgName = cb.getAttribute('data-package');
         if (pkgName) packages.add(pkgName);
     });
     
-    // 検索で追加されたパッケージ
     if (packageSearchManager) {
         const searchValues = packageSearchManager.getAllValues();
         searchValues.forEach(pkg => packages.add(pkg));
     }
     
-    // テキストエリアから既存パッケージ（デバイス初期パッケージ以外）
     const textarea = document.querySelector('#asu-packages');
     if (textarea) {
         const textPackages = split(textarea.value);
@@ -1265,7 +1169,6 @@ function getCurrentPackageList() {
         });
     }
     
-    // 動的パッケージ（非言語パッケージのみ）
     for (const pkg of dynamicPackages) {
         if (!pkg.startsWith('luci-i18n-')) {
             packages.add(pkg);
@@ -1278,79 +1181,87 @@ function getCurrentPackageList() {
 function guessFeedForPackage(pkgName) {
     if (!pkgName) return 'packages';
     
-    if (pkgName.startsWith('luci-') || pkgName.includes('luci')) {
+    if (pkgName.startsWith('kmod-')) {
+        return 'kmods';
+    }
+    
+    if (pkgName.startsWith('luci-')) {
         return 'luci';
     }
     
     return 'packages';
 }
 
-// パッケージ存在チェック（キャッシュ対応版）
 async function isPackageAvailable(pkgName, feed) {
-    if (!pkgName || !feed) {
-        return false;
-    }
-    
+    if (!pkgName || !feed) return false;
+
     const arch = current_device?.arch || cachedDeviceArch;
     const version = current_device?.version || $("#versions").value;
-    
+    const vendor = getVendor();
+    const subtarget = getSubtarget();
+
     if (!arch || !version) {
         console.log('Missing device info for package check:', { arch, version });
         return false;
     }
-    
-    // キャッシュキーを生成
+
     const cacheKey = `${version}:${arch}:${feed}:${pkgName}`;
-    
-    // キャッシュに存在する場合は即座に返す
     if (packageAvailabilityCache.has(cacheKey)) {
         return packageAvailabilityCache.get(cacheKey);
     }
-    
+
     try {
         let packagesUrl;
         let result = false;
-        
-        if (version.includes('SNAPSHOT')) {
+
+        if (feed === 'kmods') {
+            console.log('[DEBUG] vendor value:', vendor);
+            console.log('[DEBUG] subtarget value:', subtarget);
+            if (!vendor || !subtarget) {
+                console.log('Missing vendor or subtarget for kmods check');
+                packageAvailabilityCache.set(cacheKey, false);
+                return false;
+            }
+            packagesUrl = await buildKmodsUrl(version, vendor, version.includes('SNAPSHOT'));
+
+            console.log(`[DEBUG] kmods packagesUrl: ${packagesUrl}`);
+
+        } else if (version.includes('SNAPSHOT')) {
             packagesUrl = config.apk_search_url
                 .replace('{arch}', arch)
                 .replace('{feed}', feed);
-            
-            const resp = await fetch(packagesUrl, { cache: 'force-cache' });
-            if (resp.ok) {
+        } else {
+            packagesUrl = config.opkg_search_url
+                .replace('{version}', version)
+                .replace('{arch}', arch)
+                .replace('{feed}', feed);
+        }
+
+        const resp = await fetch(packagesUrl, { cache: 'force-cache' });
+        if (resp.ok) {
+            if (version.includes('SNAPSHOT') || (feed === 'kmods' && version.includes('SNAPSHOT'))) {
                 const data = await resp.json();
                 if (Array.isArray(data.packages)) {
                     result = data.packages.some(p => p?.name === pkgName);
                 } else if (data.packages && typeof data.packages === 'object') {
                     result = Object.prototype.hasOwnProperty.call(data.packages, pkgName);
                 }
-            }
-        } else {
-            packagesUrl = config.opkg_search_url
-                .replace('{version}', version)
-                .replace('{arch}', arch)
-                .replace('{feed}', feed);
-            
-            const resp = await fetch(packagesUrl, { cache: 'force-cache' });
-            if (resp.ok) {
+            } else {
                 const text = await resp.text();
                 result = text.split('\n').some(line => line.trim() === `Package: ${pkgName}`);
             }
         }
-        
-        // 結果をキャッシュに保存
+
         packageAvailabilityCache.set(cacheKey, result);
         return result;
     } catch (err) {
         console.error('Package availability check error:', err);
-        // エラー時もキャッシュして、再試行を防ぐ
         packageAvailabilityCache.set(cacheKey, false);
         return false;
     }
 }
 
-// パッケージリスト全体の存在確認（並列処理版）
-async function verifyAllPackages() {
+async function verifyAllPackages() {    
     const arch = current_device?.arch || cachedDeviceArch;
     if (!packagesJson || !arch) {
         console.log('Cannot verify packages: missing data');
@@ -1360,12 +1271,10 @@ async function verifyAllPackages() {
     const startTime = Date.now();
     console.log('Starting package verification...');
     
-    // 全パッケージを収集
     const packagesToVerify = [];
     
     packagesJson.categories.forEach(category => {
         category.packages.forEach(pkg => {
-            // 隠しパッケージも確認対象に含める（仮想パッケージチェックボックス用）
             packagesToVerify.push({ 
                 id: pkg.id, 
                 uniqueId: pkg.uniqueId || pkg.id,
@@ -1391,7 +1300,6 @@ async function verifyAllPackages() {
         });
     });
     
-    // 重複を除去
     const uniquePackages = Array.from(new Set(packagesToVerify.map(p => `${p.id}:${p.feed}`)))
         .map(key => {
             const [id, feed] = key.split(':');
@@ -1401,7 +1309,6 @@ async function verifyAllPackages() {
     
     console.log(`Verifying ${uniquePackages.length} unique packages...`);
     
-    // バッチサイズを定義（一度に処理するパッケージ数）
     const BATCH_SIZE = 10;
     const batches = [];
     
@@ -1412,19 +1319,16 @@ async function verifyAllPackages() {
     let unavailableCount = 0;
     let checkedUnavailable = [];
     
-    // バッチごとに並列処理
     for (const batch of batches) {
         const promises = batch.map(async pkg => {
             const isAvailable = await isPackageAvailable(pkg.id, pkg.feed);
             
-            // 隠しパッケージでない場合のみUIを更新
             if (!pkg.hidden) {
                 updatePackageAvailabilityUI(pkg.uniqueId, isAvailable);
             }
             
             if (!isAvailable) {
                 unavailableCount++;
-                // 初期チェック済みで利用不可のパッケージを記録
                 if (pkg.checked) {
                     checkedUnavailable.push(pkg.id);
                 }
@@ -1433,7 +1337,6 @@ async function verifyAllPackages() {
             return { id: pkg.id, uniqueId: pkg.uniqueId, available: isAvailable };
         });
         
-        // バッチの完了を待つ
         await Promise.all(promises);
     }
     
@@ -1446,20 +1349,16 @@ async function verifyAllPackages() {
     }
 }
 
-// パッケージ利用可能性に基づいてUIを更新
 function updatePackageAvailabilityUI(uniqueId, isAvailable) {
     const checkbox = document.querySelector(`#pkg-${uniqueId}`);
     if (!checkbox) return;
     
-    // パッケージアイテム全体を取得（メインパッケージと依存関係を含む）
     const packageItem = checkbox.closest('.package-item');
     if (!packageItem) {
-        // 依存関係パッケージの場合はラベルを非表示
         const label = checkbox.closest('label');
         if (label) {
             if (!isAvailable) {
                 label.style.display = 'none';
-                // チェックボックスも無効化
                 checkbox.checked = false;
                 checkbox.disabled = true;
             } else {
@@ -1471,41 +1370,32 @@ function updatePackageAvailabilityUI(uniqueId, isAvailable) {
     }
     
     if (!isAvailable) {
-        // 利用不可のパッケージは完全に非表示
         packageItem.style.display = 'none';
-        // チェックボックスも無効化
         checkbox.checked = false;
         checkbox.disabled = true;
         
-        // 依存関係のチェックボックスも無効化
         const depCheckboxes = packageItem.querySelectorAll('.package-dependent input[type="checkbox"]');
         depCheckboxes.forEach(depCb => {
             depCb.checked = false;
             depCb.disabled = true;
         });
     } else {
-        // 利用可能なパッケージは表示
         packageItem.style.display = '';
         checkbox.disabled = false;
     }
     
-    // カテゴリ内に表示されているパッケージがあるか確認
     updateCategoryVisibility(packageItem);
 }
 
-// カテゴリの表示/非表示を更新
 function updateCategoryVisibility(packageItem) {
     const category = packageItem?.closest('.package-category');
     if (!category) return;
     
-    // カテゴリ内の表示されているパッケージを数える
     const visiblePackages = category.querySelectorAll('.package-item:not([style*="display: none"])');
     
     if (visiblePackages.length === 0) {
-        // 表示するパッケージがない場合はカテゴリ全体を非表示
         category.style.display = 'none';
     } else {
-        // 表示するパッケージがある場合はカテゴリを表示
         category.style.display = '';
     }
 }
@@ -1596,17 +1486,15 @@ function renderSetupConfig(config) {
 
         container.appendChild(section);
     });
-    
-    setTimeout(() => {
+
+    requestAnimationFrame(() => {
         initConditionalSections(config);
-        
-        // ISP情報が既にある場合は再適用（GUA prefix を含む）
+
         if (cachedApiInfo) {
             applyIspAutoConfig(cachedApiInfo);
             console.log('Reapplied ISP config after form render');
         }
-        
-        // MAP-Eタイプの初期状態を処理
+
         const mapeTypeRadio = document.querySelector('input[name="mape_type"]:checked');
         if (mapeTypeRadio && mapeTypeRadio.value === 'pd') {
             const guaPrefixField = document.querySelector('#mape-gua-prefix');
@@ -1618,7 +1506,7 @@ function renderSetupConfig(config) {
                 }
             }
         }
-    }, 100);
+    });
 }
 
 function buildField(parent, pkg) {
@@ -1769,7 +1657,6 @@ function buildFormGroup(field) {
             ctrl.appendChild(option);
         });
 
-        // 言語セレクターは専用ハンドラーのみ
         if (field.id !== 'aios-language' && field.id !== 'languages-select') {
             ctrl.addEventListener('change', () => updateAllPackageState('form-field'));
         }
@@ -1794,7 +1681,6 @@ function buildFormGroup(field) {
         if (field.maxlength != null) ctrl.maxLength = field.maxlength;
         if (field.pattern != null) ctrl.pattern = field.pattern;
         
-        // 言語セレクター以外の input のみ汎用リスナーを付ける
         if (field.id !== 'aios-language' && field.id !== 'languages-select') {
             ctrl.addEventListener('input', () => updateAllPackageState('form-field'));
         }
@@ -1815,7 +1701,6 @@ function buildFormGroup(field) {
 function handleRadioChange(e) {
     const radio = e.target;
     
-    // MAP-Eタイプ切り替え時の特別処理
     if (radio.name === 'mape_type') {
         toggleGuaPrefixVisibility(radio.value);
     }
@@ -1823,7 +1708,6 @@ function handleRadioChange(e) {
     updateAllPackageState('radio-change');
 }
 
-// 条件表示の初期化
 function initConditionalSections(config) {
     const conditionals = collectConditionals(config);
     const deps = buildDeps(conditionals);
@@ -1936,11 +1820,9 @@ function getRows(group) {
     const COLUMNS_PER_ROW = 2; // デフォルト2列レイアウト
     const fields = group.fields || [];
     
-    // フィールドをグループ化
     for (let i = 0; i < fields.length; i += COLUMNS_PER_ROW) {
         const columns = [];
         
-        // 指定列数分のフィールドを追加
         for (let j = 0; j < COLUMNS_PER_ROW && (i + j) < fields.length; j++) {
             columns.push(fields[i + j]);
         }
@@ -2025,7 +1907,6 @@ function collectFormValues() {
         }
     });
     
-    // 言語設定を確実に取得
     if (!values.language) {
         const languageValue = getFieldValue('#aios-language') || selectedLanguage || 'en';
         if (languageValue && languageValue !== 'en') {
@@ -2055,7 +1936,6 @@ function getFieldValue(selector) {
 function applySpecialFieldLogic(values) {
     const connectionType = getFieldValue('input[name="connection_type"]');
     
-    // JSONから接続タイプ別のフィールドを取得
     const allConnectionFields = [];
     
     if (setupConfig) {
@@ -2069,7 +1949,6 @@ function applySpecialFieldLogic(values) {
         }
     }
     
-    // 全ての接続関連フィールドをクリア
     const uniqueConnectionFields = [...new Set(allConnectionFields)];
     
     if (connectionType === 'auto') {
@@ -2162,28 +2041,23 @@ function applySpecialFieldLogic(values) {
         }
     }
     
-    // Wi‑Fi設定の処理（改善版）
     const wifiMode = getFieldValue('input[name="wifi_mode"]');
     
     if (wifiMode === 'disabled') {
-        // disabledの場合、WiFi関連フィールドを全て削除
         ['wlan_ssid', 'wlan_password', 'enable_usteer', 'mobility_domain', 'snr'].forEach(key => {
             delete values[key];
         });
     } else if (wifiMode === 'standard') {
-        // standardの場合、基本フィールドのみ保持
         const ssid = getFieldValue('#aios-wifi-ssid');
         const password = getFieldValue('#aios-wifi-password');
         
         if (ssid) values.wlan_ssid = ssid;
         if (password) values.wlan_password = password;
         
-        // Usteer固有フィールドを削除
         delete values.enable_usteer;
         delete values.mobility_domain;
         delete values.snr;
     } else if (wifiMode === 'usteer') {
-        // usteerの場合、全てのフィールドを保持
         const ssid = getFieldValue('#aios-wifi-ssid');
         const password = getFieldValue('#aios-wifi-password');
         const mobility = getFieldValue('#aios-wifi-mobility-domain');
@@ -2196,26 +2070,21 @@ function applySpecialFieldLogic(values) {
         values.enable_usteer = '1';
     }
 
-    // Tuning設定の処理（改善版）
     const netOptimizer = getFieldValue('input[name="net_optimizer"]');
     
     if (netOptimizer === 'disabled') {
-        // disabledの場合、最適化関連フィールドを全て削除
         ['enable_netopt', 'netopt_rmem', 'netopt_wmem', 'netopt_conntrack', 
          'netopt_backlog', 'netopt_somaxconn', 'netopt_congestion'].forEach(key => {
             delete values[key];
         });
     } else if (netOptimizer === 'auto') {
-        // autoの場合、enable_netoptのみ設定
         values.enable_netopt = '1';
         
-        // 手動設定フィールドを削除
         ['netopt_rmem', 'netopt_wmem', 'netopt_conntrack', 
          'netopt_backlog', 'netopt_somaxconn', 'netopt_congestion'].forEach(key => {
             delete values[key];
         });
     } else if (netOptimizer === 'manual') {
-        // manualの場合、全てのフィールドを保持
         values.enable_netopt = '1';
         
         const rmem = getFieldValue('#netopt-rmem');
@@ -2255,19 +2124,15 @@ function setupEventListeners() {
         }
     });
     
-    // MAP-Eタイプ切り替え（個別処理）
     document.querySelectorAll('input[name="mape_type"]').forEach(radio => {
         radio.addEventListener('change', handleMapeTypeChange);
     });
 
-    // DS-Lite: JSONベースのAFTRアドレス自動補完
     setupDsliteAddressComputation();
    
-    // コマンド入力のマルチインプット化
     setupCommandsInput();
 }
 
-// コマンド入力設定関数を追加
 function setupCommandsInput() {
     console.log('setupCommandsInput called');
     
@@ -2278,13 +2143,11 @@ function setupCommandsInput() {
         return;
     }
     
-    // 既存のインプットを削除
     const oldInput = document.getElementById('command');
     if (oldInput) {
         oldInput.remove();
     }
     
-    // マルチインプットマネージャーを初期化
     commandsManager = new MultiInputManager('commands-autocomplete', {
         placeholder: 'Type command and press Enter',
         className: 'multi-input-item command-input',
@@ -2297,7 +2160,6 @@ function setupCommandsInput() {
             updateCustomCommands();
         },
         onChange: (values) => {
-            // console.log('Commands changed:', values);
             updateCustomCommands();
         }
     });
@@ -2305,30 +2167,24 @@ function setupCommandsInput() {
     console.log('Commands input setup complete');
 }
 
-// MAP-Eタイプ変更ハンドラ（新規追加）
 function handleMapeTypeChange(e) {
     const mapeType = e.target.value;
     
-    // GUA prefix の表示/非表示制御
     toggleGuaPrefixVisibility(mapeType);
     
-    // PDモードの場合、GUA prefixフィールドと値をクリア
     if (mapeType === 'pd') {
         const guaPrefixField = document.querySelector('#mape-gua-prefix');
         if (guaPrefixField) {
             guaPrefixField.value = '';
         }
-        // values からも削除
         if (typeof values === 'object') {
             delete values.mape_gua_prefix;
         }
     }
     
-    // setup.shを更新
     updateAllPackageState('mape-type');
 }
 
-// DS-Lite AFTR計算（個別処理に変更）
 function setupDsliteAddressComputation() {
     const aftrType = document.querySelector('#dslite-aftr-type');
     const aftrArea = document.querySelector('#dslite-area');
@@ -2336,7 +2192,6 @@ function setupDsliteAddressComputation() {
 
     if (!aftrType || !aftrArea || !aftrAddr) return;
 
-    // JSONからアドレスマッピングを取得
     function getAddressMap() {
         const internetCategory = setupConfig.categories.find(cat => cat.id === 'internet-config');
         const dsliteSection = internetCategory.packages.find(pkg => pkg.id === 'dslite-section');
@@ -2360,23 +2215,19 @@ function setupDsliteAddressComputation() {
         }
     }
 
-    // DS-Lite個別のイベントハンドラ
     aftrType.addEventListener('change', () => {
         syncAftrAddress(true);
-        // DS-Lite用の特別処理（UI制御フィールドをクリア）
         updateVariableDefinitionsWithDsliteCleanup();
     });
     
     aftrArea.addEventListener('change', () => {
         syncAftrAddress(true);
-        // DS-Lite用の特別処理
         updateVariableDefinitionsWithDsliteCleanup();
     });
     
     setTimeout(() => syncAftrAddress(false), 0);
 }
 
-// DS-Lite専用のupdateVariableDefinitions
 function updateVariableDefinitionsWithDsliteCleanup() {
     const textarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
     if (!textarea) return;
@@ -2384,11 +2235,9 @@ function updateVariableDefinitionsWithDsliteCleanup() {
     const values = collectFormValues();
     let emissionValues = { ...values };
     
-    // DS-Lite: UI制御用フィールドを削除
     delete emissionValues.dslite_aftr_type;
     delete emissionValues.dslite_area;
     
-    // パッケージの有効化変数を追加
     document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
         const enableVar = cb.getAttribute('data-enable-var');
         if (enableVar) {
@@ -2400,27 +2249,22 @@ function updateVariableDefinitionsWithDsliteCleanup() {
     updateTextareaContent(textarea, variableDefinitions);
 }
 
-// 接続タイプ変更ハンドラ（JSONドリブン）
 function handleConnectionTypeChange(e) {
     const selectedType = e.target.value;
     
     const internetCategory = setupConfig.categories.find(cat => cat.id === 'internet-config');
     
-    // 全ての接続タイプセクションを処理
     internetCategory.packages.forEach(pkg => {
         if (pkg.type === 'conditional-section' && pkg.showWhen?.field === 'connection_type') {
             const section = document.querySelector(`#${pkg.id}`);
             if (!section) return;
             
-            // showWhen.valuesに基づいて表示/非表示を制御
             if (pkg.showWhen.values?.includes(selectedType)) {
                 show(section);
                 
-                // 特定タイプ別の追加処理
                 if (selectedType === 'auto' && cachedApiInfo) {
                     updateAutoConnectionInfo(cachedApiInfo);
                 } else if (selectedType === 'mape' && cachedApiInfo) {
-                    // MAP-E選択時にGUA prefixを設定
                     const guaPrefixField = document.querySelector('#mape-gua-prefix');
                     if (guaPrefixField && cachedApiInfo.ipv6) {
                         const guaPrefix = generateGuaPrefixFromFullAddress(cachedApiInfo);
@@ -2439,23 +2283,19 @@ function handleConnectionTypeChange(e) {
     updateAllPackageState('connection-type');
 }
 
-// ネットワーク最適化変更ハンドラ（JSONドリブン）
 function handleNetOptimizerChange(e) {
     const mode = e.target.value;
     
     const tuningCategory = setupConfig.categories.find(cat => cat.id === 'tuning-config');
     
-    // ネットワーク最適化関連のセクションを処理
     tuningCategory.packages.forEach(pkg => {
         if (pkg.type === 'conditional-section' && pkg.showWhen?.field === 'net_optimizer') {
             const section = document.querySelector(`#${pkg.id}`);
             if (!section) return;
             
-            // showWhen.valuesに基づいて表示/非表示を制御
             if (pkg.showWhen.values?.includes(mode)) {
                 show(section);
                 
-                // 手動モードの場合はデフォルト値を復元
                 if (mode === 'manual') {
                     restoreManualDefaults();
                 }
@@ -2468,30 +2308,25 @@ function handleNetOptimizerChange(e) {
     updateAllPackageState('net-optimizer');
 }
 
-// Wi-Fiモード変更ハンドラ（JSONドリブン）
 function handleWifiModeChange(e) {
     const mode = e.target.value;
     
     const wifiCategory = setupConfig.categories.find(cat => cat.id === 'wifi-config');
     
-    // Wi-Fiモード設定を取得
     const wifiModeConfig = wifiCategory.packages.find(pkg => 
         pkg.variableName === 'wifi_mode'
     );
     
     const selectedOption = wifiModeConfig.options.find(opt => opt.value === mode);
     
-    // Wi-Fi関連のセクションを処理
     wifiCategory.packages.forEach(pkg => {
         if (pkg.type === 'conditional-section') {
             const section = document.querySelector(`#${pkg.id}`);
             if (!section) return;
             
-            // showWhenに基づいて表示/非表示を制御
             if (pkg.showWhen?.values?.includes(mode)) {
                 show(section);
                 
-                // 子要素も再帰的に処理
                 if (pkg.children) {
                     pkg.children.forEach(child => {
                         if (child.type === 'conditional-section') {
@@ -2512,7 +2347,6 @@ function handleWifiModeChange(e) {
         }
     });
     
-    // モード別の特別処理
     if (mode === 'disabled') {
         clearWifiFields();
     } else {
@@ -2522,13 +2356,11 @@ function handleWifiModeChange(e) {
     updateAllPackageState('wifi-mode');
 }
 
-// デフォルト値復元（JSONドリブン）
 function restoreManualDefaults() {
     const tuningCategory = setupConfig.categories.find(cat => cat.id === 'tuning-config');
     const manualSection = tuningCategory.packages.find(pkg => pkg.id === 'netopt-manual-section');
     const netoptFields = manualSection.children.find(child => child.id === 'netopt-fields');
     
-    // JSONで定義されたデフォルト値を適用
     netoptFields.fields.forEach(field => {
         if (field.defaultValue !== undefined && field.defaultValue !== null) {
             const el = document.querySelector(field.selector || `#${field.id}`);
@@ -2542,7 +2374,6 @@ function restoreManualDefaults() {
 function restoreWifiDefaults() {
     const wifiCategory = setupConfig.categories.find(cat => cat.id === 'wifi-config');
     
-    // Wi-Fiフィールドを探す
     function findWifiFields(pkg) {
         const fields = [];
         
@@ -2557,13 +2388,11 @@ function restoreWifiDefaults() {
         return fields;
     }
     
-    // 全てのWi-Fiフィールドを収集
     const allWifiFields = [];
     wifiCategory.packages.forEach(pkg => {
         allWifiFields.push(...findWifiFields(pkg));
     });
     
-    // デフォルト値を適用
     allWifiFields.forEach(field => {
         if (field.defaultValue !== undefined && field.defaultValue !== null) {
             const el = document.querySelector(field.selector || `#${field.id}`);
@@ -2577,7 +2406,6 @@ function restoreWifiDefaults() {
 function clearWifiFields() {
     const wifiCategory = setupConfig.categories.find(cat => cat.id === 'wifi-config');
     
-    // Wi-Fiフィールドを再帰的に探す
     function findAndClearWifiFields(pkg) {
         if (pkg.type === 'input-group' && pkg.fields) {
             pkg.fields.forEach(field => {
@@ -2593,7 +2421,6 @@ function clearWifiFields() {
         }
     }
     
-    // Wi-Fiモード設定以外のフィールドをクリア
     wifiCategory.packages.forEach(pkg => {
         if (pkg.variableName !== 'wifi_mode') {
             findAndClearWifiFields(pkg);
@@ -2634,20 +2461,16 @@ async function fetchAndDisplayIspInfo() {
     }
 }
 
-// ISP情報表示（情報とDOM両方準備完了時のみ）
 function displayIspInfoIfReady() {
-    // 情報取得未満 → 何もしない
     if (!cachedApiInfo) {
         return false;
     }
     
-    // DOM要素未準備 → 何もしない
     const firstElement = document.querySelector('#auto-config-country');
     if (!firstElement) {
         return false;
     }
     
-    // 両方準備完了 → 即座に表示
     displayIspInfo(cachedApiInfo);
     console.log('ISP info displayed');
     return true;
@@ -2670,7 +2493,6 @@ function displayIspInfo(apiInfo) {
     show("#extended-build-info");
 }
 
-// 拡張情報セクション挿入（JSON駆動で動的生成）
 async function insertExtendedInfo(temp) {
     const extendedInfo = temp.querySelector('#extended-build-info');
     const imageLink = document.querySelector('#image-link');
@@ -2679,7 +2501,6 @@ async function insertExtendedInfo(temp) {
         return;
     }
     
-    // information.jsonから構造を読み込み
     try {
         const infoUrl = config?.information_path || 'auto-config/information.json';
         const response = await fetch(infoUrl + '?t=' + Date.now());
@@ -2688,7 +2509,6 @@ async function insertExtendedInfo(temp) {
         const infoConfig = await response.json();
         console.log('Information config loaded:', infoConfig);
         
-        // ISP情報セクションを動的生成
         extendedInfo.innerHTML = '';
         
         infoConfig.categories.forEach(category => {
@@ -2720,10 +2540,8 @@ async function insertExtendedInfo(temp) {
             });
         });
         
-        // DOMに挿入
         imageLink.closest('.row').insertAdjacentElement('afterend', extendedInfo);
         
-        // DOM要素準備完了後、ISP情報を表示
         console.log('Extended info DOM elements created');
         displayIspInfoIfReady();
         
@@ -2732,7 +2550,6 @@ async function insertExtendedInfo(temp) {
     }
 }
 
-// initializeCustomFeatures内での呼び出し修正
 async function initializeCustomFeatures(asuSection, temp) {
     console.log('initializeCustomFeatures called');
 
@@ -2741,14 +2558,12 @@ async function initializeCustomFeatures(asuSection, temp) {
         return;
     }
 
-    // DOM要素が既に存在する場合は置き換えない
     if (!document.querySelector('#custom-packages-details')) {
         cleanupExistingCustomElements();
         replaceAsuSection(asuSection, temp);
         await insertExtendedInfo(temp);  // 拡張情報セクション挿入（ISP表示含む）
     }
 
-    // 外部データと設定を並列で読み込み
     await Promise.all([
         window.autoConfigPromise,       // auto-config.site-u.workers.dev
         window.informationPromise,      // information.json
@@ -2759,33 +2574,25 @@ async function initializeCustomFeatures(asuSection, temp) {
         fetchAndDisplayIspInfo()        // ISP情報取得
     ]);
 
-    // 依存関係のある初期化（順序重要）
     setupEventListeners();
     loadUciDefaultsTemplate();
 
-    // 言語セレクター設定（初期言語パッケージ処理を含む）
     setupLanguageSelector();
 
-    // パッケージ検索機能を初期化
     setupPackageSearch();
     console.log('Package search initialized');
 
-    // カスタム翻訳を読み込み（UIは常に current_language で）
     await loadCustomTranslations(current_language);
 
-    // フォーム監視設定
     setupFormWatchers();
 
-    // initializeCustomFeatures の末尾
     let changed = false;
     if (window.autoConfigData || cachedApiInfo) {
         changed = applyIspAutoConfig(window.autoConfigData || cachedApiInfo);  // ← ここで実行
     }
 
-    // パッケージセレクタ生成
     generatePackageSelector();
 
-    // CRITICAL FIX: Force apply device packages if they exist
     if (deviceDefaultPackages.length > 0 || deviceDevicePackages.length > 0 || extraPackages.length > 0) {
         console.log('Force applying existing device packages');
         const initialPackages = deviceDefaultPackages
@@ -2799,29 +2606,31 @@ async function initializeCustomFeatures(asuSection, temp) {
         }
     }
 
-    // 最初の統合更新（変更があった場合のみ）
     if (changed) {
         console.log('All data and UI ready, updating package state');
         updateAllPackageState('isp-auto-config');
     } else {
         console.log('All data and UI ready, no changes from auto-config');
-        // CRITICAL FIX: Always force update to ensure device packages are included
-        setTimeout(() => {
-            updateAllPackageState('force-device-packages');
-        }, 200);
+        const runWhenReady = () => {
+            if ((deviceDefaultPackages && deviceDefaultPackages.length > 0) ||
+                (deviceDevicePackages && deviceDevicePackages.length > 0) ||
+                (extraPackages && extraPackages.length > 0)) {
+                updateAllPackageState('force-device-packages');
+                document.removeEventListener('devicePackagesReady', runWhenReady);
+            }
+        };
+        document.addEventListener('devicePackagesReady', runWhenReady);
     }
 
     customInitialized = true;
 }
 
 function applyIspAutoConfig(apiInfo) {
-    // API情報またはフォーム構造が未定義なら安全にスキップ
     if (!apiInfo || !formStructure || !formStructure.fields) {
         console.warn('applyIspAutoConfig: formStructure not ready, skipping');
         return false;
     }
 
-    // connection_type 未設定時の誤判定回避（未設定なら auto と同等扱い）
     const rawType = getFieldValue('input[name="connection_type"]');
     const connectionType = (rawType === null || rawType === undefined || rawType === '') ? 'auto' : rawType;
 
@@ -2834,14 +2643,12 @@ function applyIspAutoConfig(apiInfo) {
             formStructure.connectionTypes[type]?.includes(field.id)
         );
 
-        // 接続関連フィールドは auto 以外では反映しない
         if (isConnectionField && connectionType !== 'auto') {
             return;
         }
 
         let value = getNestedValue(apiInfo, field.apiMapping);
 
-        // mape_gua_prefix は cachedApiInfo から再生成が優先
         if (field.variableName === 'mape_gua_prefix') {
             const guaPrefix = generateGuaPrefixFromFullAddress(cachedApiInfo);
             if (guaPrefix) value = guaPrefix;
@@ -2856,7 +2663,6 @@ function applyIspAutoConfig(apiInfo) {
         }
     });
 
-    // 付随情報の更新（UI値に依存するため、反映があった場合のみ）
     if (mutated) {
         setGuaPrefixIfAvailable();
         updateAutoConnectionInfo(apiInfo);
@@ -2897,15 +2703,6 @@ function updateAutoConnectionInfo(apiInfo) {
     autoInfo.textContent = infoText;
 }
 
-function setGuaPrefixIfAvailable() {
-    const guaPrefixField = document.querySelector('#mape-gua-prefix');
-    if (!guaPrefixField || !cachedApiInfo?.ipv6) return;
-    const guaPrefix = generateGuaPrefixFromFullAddress(cachedApiInfo);
-    if (guaPrefix) {
-        guaPrefixField.value = guaPrefix;
-    }
-}
-
 // ==================== パッケージ管理 ====================
 
 async function loadPackageDatabase() {
@@ -2931,7 +2728,6 @@ function generatePackageSelector() {
     
     container.innerHTML = '';
     
-    // 初期表示時のローディング表示を追加
     const loadingDiv = document.createElement('div');
     loadingDiv.id = 'package-loading-indicator';
     loadingDiv.style.display = 'none';
@@ -2942,10 +2738,8 @@ function generatePackageSelector() {
     container.appendChild(loadingDiv);
     
     packagesJson.categories.forEach(category => {
-        // 隠しカテゴリの処理
         if (category.hidden) {
             console.log(`Processing hidden category: ${category.id}`);
-            // 隠しパッケージのチェックボックスを生成（非表示）
             category.packages.forEach(pkg => {
                 if (pkg.hidden) {
                     createHiddenPackageCheckbox(pkg);
@@ -2963,19 +2757,15 @@ function generatePackageSelector() {
     updateAllPackageState('package-selector-init');
     console.log(`Generated ${packagesJson.categories.length} package categories (including hidden)`);
     
-    // パッケージ存在確認を非同期で実行（表示を妨げない）
     const arch = current_device?.arch || cachedDeviceArch;
     if (arch) {
-        // 100ms遅延させて、UIレンダリングを優先
-        setTimeout(() => {
-            // ローディング表示を開始
+        requestAnimationFrame(() => {
             const indicator = document.querySelector('#package-loading-indicator');
             if (indicator) {
                 indicator.style.display = 'block';
             }
-            
+
             verifyAllPackages().then(() => {
-                // ローディング表示を非表示
                 if (indicator) {
                     indicator.style.display = 'none';
                 }
@@ -2989,14 +2779,13 @@ function generatePackageSelector() {
                     }, 3000);
                 }
             });
-        }, 100);
+        });
     } else {
         console.log('Device architecture not available, skipping package verification');
     }
 }
 
 function createHiddenPackageCheckbox(pkg) {
-    // 隠しコンテナを探すか作成
     let hiddenContainer = document.querySelector('#hidden-packages-container');
     if (!hiddenContainer) {
         hiddenContainer = document.createElement('div');
@@ -3201,13 +2990,12 @@ function loadUciDefaultsTemplate() {
     function autoResize() {
         const lines = textarea.value.split('\n').length;
         textarea.style.height = 'auto';
-        textarea.style.height = `${lines * 1.5}em`;
+        textarea.style.height = `${lines * 1}em`;
     }
 
     textarea.addEventListener('input', autoResize);
     textarea.addEventListener('paste', () => setTimeout(autoResize, 10));
 
-    // setup.shを読み込み
     fetch(templatePath + '?t=' + Date.now())
         .then(r => { 
             if (!r.ok) throw new Error(`Failed to load setup.sh: ${r.statusText}`); 
@@ -3221,7 +3009,6 @@ function loadUciDefaultsTemplate() {
         })
         .catch(err => {
             console.error('Failed to load setup.sh:', err);
-            // フォールバックとして最小限のテンプレートを設定
             textarea.value = `#!/bin/sh
 # BEGIN_VARIABLE_DEFINITIONS
 # END_VARIABLE_DEFINITIONS
@@ -3238,20 +3025,17 @@ function updateVariableDefinitions() {
     const textarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
     if (!textarea) return;
 
-    // collectFormValues が未定義や空を返す場合は安全にスキップ
     const values = collectFormValues && typeof collectFormValues === 'function'
         ? collectFormValues()
         : null;
 
     if (!values || typeof values !== 'object' || Object.keys(values).length === 0) {
-        // 外部データ未取得などで値が空の場合は後で再実行できるようにログだけ残す
         console.warn("updateVariableDefinitions: values 未取得のためスキップ");
         return;
     }
 
     let emissionValues = { ...values };
 
-    // パッケージの有効化変数を追加
     document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
         const enableVar = cb.getAttribute('data-enable-var');
         if (enableVar) {
@@ -3263,7 +3047,6 @@ function updateVariableDefinitions() {
     updateTextareaContent(textarea, variableDefinitions);
 }
 
-// テキストエリア更新の共通処理
 function updateTextareaContent(textarea, variableDefinitions) {
     let content = textarea.value;
     const beginMarker = '# BEGIN_VARIABLE_DEFINITIONS';
@@ -3293,7 +3076,6 @@ function updateCustomCommands() {
     const textarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
     if (!textarea) return;
     
-    // マルチインプットマネージャーから値を取得
     const customCommands = commandsManager ? commandsManager.getAllValues().join('\n') : '';
     
     let content = textarea.value;
@@ -3343,7 +3125,52 @@ function setupFormWatchers() {
 
 // ==================== ユーティリティ関数 ====================
 
-// IPv6 が特定の CIDR に含まれるかを判定（簡易版）
+async function buildKmodsUrl(version, vendor, isSnapshot) {
+    if (!version || !vendor) {
+        throw new Error(`Missing required parameters for kmods URL: version=${version}, vendor=${vendor}`);
+    }
+
+    const subtarget = getSubtarget();
+    if (!subtarget) {
+        throw new Error(`Missing subtarget for kmods URL: version=${version}, vendor=${vendor}`);
+    }    
+
+    const cacheKey = `${version}|${vendor}|${isSnapshot ? 'S' : 'R'}`;
+
+    if (kmodsTokenCache && kmodsTokenCacheKey === cacheKey) {
+        const searchTpl = isSnapshot ? config.kmods_apk_search_url : config.kmods_opkg_search_url;
+        return searchTpl
+            .replace('{version}', version)
+            .replace('{vendor}', vendor)
+            .replace('{subtarget}', subtarget)
+            .replace('{kmod}', kmodsTokenCache);
+    }
+
+    const indexTpl = isSnapshot ? config.kmods_apk_index_url : config.kmods_opkg_index_url;
+    const indexUrl = indexTpl
+        .replace('{version}', version)
+        .replace('{vendor}', vendor)
+        .replace('{subtarget}', subtarget);
+    
+    console.log('Fetching kmods index:', indexUrl);
+    const resp = await fetch(indexUrl, { cache: 'no-store' });
+    if (!resp.ok) throw new Error(`Failed to fetch kmods index: HTTP ${resp.status} for ${indexUrl}`); 
+    const html = await resp.text();
+    const matches = [...html.matchAll(/href="([^/]+)\/"/g)].map(m => m[1]);
+    if (!matches.length) throw new Error("kmods token not found");
+
+    matches.sort();
+    kmodsTokenCache = matches[matches.length - 1];
+    kmodsTokenCacheKey = cacheKey;
+
+    const searchTpl = isSnapshot ? config.kmods_apk_search_url : config.kmods_opkg_search_url;
+    return searchTpl
+        .replace('{version}', version)
+        .replace('{vendor}', vendor)
+        .replace('{subtarget}', subtarget)
+        .replace('{kmod}', kmodsTokenCache);
+}
+
 function inCidr(ipv6, cidr) {
     const [prefix, bits] = cidr.split('/');
     const addrBin = ipv6ToBinary(ipv6);
@@ -3351,9 +3178,7 @@ function inCidr(ipv6, cidr) {
     return addrBin.substring(0, bits) === prefixBin.substring(0, bits);
 }
 
-// IPv6文字列 → 128bitバイナリ文字列
 function ipv6ToBinary(ipv6) {
-    // 短縮表記展開
     const full = ipv6.split('::').reduce((acc, part, i, arr) => {
         const segs = part.split(':').filter(Boolean);
         if (i === 0) {
@@ -3363,19 +3188,15 @@ function ipv6ToBinary(ipv6) {
             return acc.concat(Array(missing).fill('0'), segs);
         }
     }, []).map(s => s.padStart(4, '0'));
-    // 16進 → 2進
     return full.map(seg => parseInt(seg, 16).toString(2).padStart(16, '0')).join('');
 }
 
-// GUA用プレフィックスを生成（RFC準拠）
 function generateGuaPrefixFromFullAddress(apiInfo) {
     if (!apiInfo?.ipv6) return null;
     const ipv6 = apiInfo.ipv6.toLowerCase();
 
-    // GUA範囲
     if (!inCidr(ipv6, '2000::/3')) return null;
 
-    // 除外リスト（RFC/IANA準拠）
     const excludeCidrs = [
         '2001:db8::/32',  // ドキュメンテーション
         '2002::/16',      // 6to4
@@ -3387,7 +3208,6 @@ function generateGuaPrefixFromFullAddress(apiInfo) {
     ];
     if (excludeCidrs.some(cidr => inCidr(ipv6, cidr))) return null;
 
-    // /64 プレフィックス生成
     const segments = ipv6.split(':');
     if (segments.length >= 4) {
         return `${segments[0]}:${segments[1]}:${segments[2]}:${segments[3]}::/64`;
@@ -3422,14 +3242,6 @@ function setValue(selector, val) {
     }
 }
 
-function showAlert(message) {
-    const alertEl = document.querySelector("#alert");
-    if (alertEl) {
-        alertEl.innerText = message;
-        show(alertEl);
-    }
-}
-
 function split(str) {
     return str.match(/[^\s,]+/g) || [];
 }
@@ -3438,21 +3250,12 @@ function getNestedValue(obj, path) {
     return path.split('.').reduce((current, key) => current?.[key], obj);
 }
 
-function resizePostinstTextarea() {
-    const textarea = document.querySelector("#asu-packages");
-    if (!textarea) return;
-    
-    textarea.style.height = 'auto';
-    textarea.style.height = textarea.scrollHeight + 'px';
-}
-
 function setGuaPrefixIfAvailable() {
     const guaPrefixField = document.querySelector('#mape-gua-prefix');
     if (!guaPrefixField || !cachedApiInfo?.ipv6) return;
     const guaPrefix = generateGuaPrefixFromFullAddress(cachedApiInfo);
     if (guaPrefix) {
         guaPrefixField.value = guaPrefix;
-        // console.log('GUA prefix set:', guaPrefix);
     }
 }
 
@@ -3474,12 +3277,10 @@ function toggleGuaPrefixVisibility(mode) {
 
 // ==================== エラーハンドリング ====================
 
-window.addEventListener('error', function(e) {
-    console.error('Custom.js Error:', e.error);
-});
-
-window.addEventListener('unhandledrejection', function(e) {
-    console.error('Custom.js Unhandled Promise Rejection:', e.reason);
-});
+if (window.DEBUG_MODE) {
+    ['error', 'unhandledrejection'].forEach(event => {
+        window.addEventListener(event, e => console.error(`Custom.js ${event}:`, e.reason || e.error));
+    });
+}
 
 console.log('custom.js (Unified Virtual Package Management System) fully loaded and ready');
