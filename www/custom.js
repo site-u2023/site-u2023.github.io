@@ -3430,7 +3430,7 @@ async function buildKmodsUrl(version, vendor, isSnapshot) {
     const indexTpl = isSnapshot ? config.kmods_apk_index_url : config.kmods_opkg_index_url;
     const indexUrl = indexTpl
         .replace('{version}', version)
-        .replace('{vendor}', vendor);
+        .replace('{vendor}', vendor)
         .replace('{vendor}', `${vendor}/${subtarget}`);
     
     console.log('Fetching kmods index:', indexUrl);
