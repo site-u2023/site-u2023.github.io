@@ -86,7 +86,7 @@ window.updateImages = function(version, mobj) {
             packageAvailabilityCache.clear();
             feedCacheMap.clear();
 
-            setTimeout(function() {
+            requestAnimationFrame(() => {
                 const vendor = getVendor();
                 if (!vendor) {
                     console.warn('[WARN] No vendor info, kmods may not verify');
@@ -107,10 +107,10 @@ window.updateImages = function(version, mobj) {
                     console.error('[ERROR] Package verification failed:', err);
                     if (indicator) {
                         indicator.innerHTML = '<span class="tr-package-check-failed">Package availability check failed</span>';
-                        setTimeout(() => { indicator.style.display = 'none'; }, 3000);
+                        indicator.addEventListener('click', () => { indicator.style.display = 'none'; }, { once: true });
                     }
                 });
-            }, 100);
+            });
         }
     }
 
@@ -140,16 +140,18 @@ window.updateImages = function(version, mobj) {
         if (textarea) {
             textarea.value = initialPackages.join(' ');
             console.log('[TRACE] Initial packages set:', initialPackages);
-            setTimeout(() => {
-                textarea.style.height = 'auto';
-                textarea.style.height = textarea.scrollHeight + 'px';
-            }, 50);
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    textarea.style.height = 'auto';
+                    textarea.style.height = textarea.scrollHeight + 'px';
+                });
+            });
         }
 
         if (customInitialized) {
-            setTimeout(() => {
+            requestAnimationFrame(() => {
                 updateAllPackageState('device-packages-loaded');
-            }, 100);
+            });
         }
     }
 
@@ -567,7 +569,7 @@ class MultiInputManager {
         this.inputs.push(input);
         
         if (focus) {
-            setTimeout(() => input.focus(), 10);
+            requestAnimationFrame(() => input.focus());
         }
         
         if (value) {
@@ -682,15 +684,22 @@ async function loadCustomHTML() {
     }
 }
 
-function waitForAsuAndInit(temp, retry = 50) {
+function waitForAsuAndInit(temp) {
     const asuSection = document.querySelector('#asu');
     if (asuSection) {
         initializeCustomFeatures(asuSection, temp);
-    } else if (retry > 0) {
-        setTimeout(() => waitForAsuAndInit(temp, retry - 1), 50);
-    } else {
-        console.warn('#asu not found after waiting');
+        return;
     }
+
+    const observer = new MutationObserver(() => {
+        const found = document.querySelector('#asu');
+        if (found) {
+            observer.disconnect();
+            initializeCustomFeatures(found, temp);
+        }
+    });
+
+    observer.observe(document.body, { childList: true, subtree: true });
 }
 
 // ==================== パッケージ検索機能 ====================
@@ -1261,6 +1270,7 @@ async function isPackageAvailable(pkgName, feed) {
     }
 }
 
+// ==================== パッケージ存在確認 ====================
 async function verifyAllPackages() {    
     const arch = current_device?.arch || cachedDeviceArch;
     if (!packagesJson || !arch) {
@@ -1309,9 +1319,16 @@ async function verifyAllPackages() {
     
     console.log(`Verifying ${uniquePackages.length} unique packages...`);
     
-    const BATCH_SIZE = 10;
+    let BATCH_SIZE = 10;
+    if ('connection' in navigator && typeof navigator.connection.downlink === 'number') {
+        const speedMbps = navigator.connection.downlink;
+        BATCH_SIZE = Math.min(25, Math.max(2, Math.round(speedMbps * 2)));
+        console.log(`[INFO] Network downlink: ${speedMbps} Mbps → concurrency = ${BATCH_SIZE}`);
+    } else {
+        console.log(`[INFO] Network Information API not supported → concurrency = ${BATCH_SIZE}`);
+    }
+
     const batches = [];
-    
     for (let i = 0; i < uniquePackages.length; i += BATCH_SIZE) {
         batches.push(uniquePackages.slice(i, i + BATCH_SIZE));
     }
@@ -2225,7 +2242,7 @@ function setupDsliteAddressComputation() {
         updateVariableDefinitionsWithDsliteCleanup();
     });
     
-    setTimeout(() => syncAftrAddress(false), 0);
+    queueMicrotask(() => syncAftrAddress(false));
 }
 
 function updateVariableDefinitionsWithDsliteCleanup() {
@@ -2774,9 +2791,9 @@ function generatePackageSelector() {
                 console.error('Package verification failed:', err);
                 if (indicator) {
                     indicator.innerHTML = '<span class="tr-package-check-failed">Package availability check failed</span>';
-                    setTimeout(() => {
+                    indicator.addEventListener('click', () => {
                         indicator.style.display = 'none';
-                    }, 3000);
+                    }, { once: true });
                 }
             });
         });
@@ -2994,7 +3011,9 @@ function loadUciDefaultsTemplate() {
     }
 
     textarea.addEventListener('input', autoResize);
-    textarea.addEventListener('paste', () => setTimeout(autoResize, 10));
+    textarea.addEventListener('paste', () => {
+        requestAnimationFrame(autoResize);
+    });
 
     fetch(templatePath + '?t=' + Date.now())
         .then(r => { 
