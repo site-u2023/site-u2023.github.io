@@ -2961,15 +2961,6 @@ function updateAutoConnectionInfo(apiInfo) {
     autoInfo.textContent = infoText;
 }
 
-function setGuaPrefixIfAvailable() {
-    const guaPrefixField = document.querySelector('#mape-gua-prefix');
-    if (!guaPrefixField || !cachedApiInfo?.ipv6) return;
-    const guaPrefix = generateGuaPrefixFromFullAddress(cachedApiInfo);
-    if (guaPrefix) {
-        guaPrefixField.value = guaPrefix;
-    }
-}
-
 // ==================== パッケージ管理 ====================
 
 async function loadPackageDatabase() {
@@ -3532,28 +3523,12 @@ function setValue(selector, val) {
     }
 }
 
-function showAlert(message) {
-    const alertEl = document.querySelector("#alert");
-    if (alertEl) {
-        alertEl.innerText = message;
-        show(alertEl);
-    }
-}
-
 function split(str) {
     return str.match(/[^\s,]+/g) || [];
 }
 
 function getNestedValue(obj, path) {
     return path.split('.').reduce((current, key) => current?.[key], obj);
-}
-
-function resizePostinstTextarea() {
-    const textarea = document.querySelector("#asu-packages");
-    if (!textarea) return;
-    
-    textarea.style.height = 'auto';
-    textarea.style.height = textarea.scrollHeight + 'px';
 }
 
 function setGuaPrefixIfAvailable() {
@@ -3584,12 +3559,10 @@ function toggleGuaPrefixVisibility(mode) {
 
 // ==================== エラーハンドリング ====================
 
-window.addEventListener('error', function(e) {
-    console.error('Custom.js Error:', e.error);
-});
-
-window.addEventListener('unhandledrejection', function(e) {
-    console.error('Custom.js Unhandled Promise Rejection:', e.reason);
-});
+if (window.DEBUG_MODE) {
+    ['error', 'unhandledrejection'].forEach(event => {
+        window.addEventListener(event, e => console.error(`Custom.js ${event}:`, e.reason || e.error));
+    });
+}
 
 console.log('custom.js (Unified Virtual Package Management System) fully loaded and ready');
