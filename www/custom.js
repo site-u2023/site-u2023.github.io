@@ -899,7 +899,7 @@ async function verifyAllPackages() {
     for (let i = 0; i < uniquePackages.length; i += BATCH_SIZE) {
         const batch = uniquePackages.slice(i, i + BATCH_SIZE);
         await Promise.all(batch.map(async pkg => {
-            const isAvailable = await isPackageAvailable(pkg.id, pkg.feed);
+            await isPackageAvailable(pkgName, feed, current_version, current_arch);
             if (!pkg.hidden) {
                 updatePackageAvailabilityUI(pkg.uniqueId, isAvailable);
             }
