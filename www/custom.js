@@ -1322,7 +1322,7 @@ async function verifyAllPackages() {
     let BATCH_SIZE = 10;
     if ('connection' in navigator && typeof navigator.connection.downlink === 'number') {
         const speedMbps = navigator.connection.downlink;
-        BATCH_SIZE = Math.min(20, Math.max(2, Math.round(speedMbps * 2)));
+        BATCH_SIZE = Math.min(25, Math.max(2, Math.round(speedMbps * 2)));
         console.log(`[INFO] Network downlink: ${speedMbps} Mbps → concurrency = ${BATCH_SIZE}`);
     } else {
         console.log(`[INFO] Network Information API not supported → concurrency = ${BATCH_SIZE}`);
