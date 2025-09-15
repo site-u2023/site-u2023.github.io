@@ -569,7 +569,7 @@ class MultiInputManager {
         this.inputs.push(input);
         
         if (focus) {
-            setTimeout(() => input.focus(), 10);
+            requestAnimationFrame(() => input.focus());
         }
         
         if (value) {
@@ -684,15 +684,22 @@ async function loadCustomHTML() {
     }
 }
 
-function waitForAsuAndInit(temp, retry = 50) {
+function waitForAsuAndInit(temp) {
     const asuSection = document.querySelector('#asu');
     if (asuSection) {
         initializeCustomFeatures(asuSection, temp);
-    } else if (retry > 0) {
-        setTimeout(() => waitForAsuAndInit(temp, retry - 1), 50);
-    } else {
-        console.warn('#asu not found after waiting');
+        return;
     }
+
+    const observer = new MutationObserver(() => {
+        const found = document.querySelector('#asu');
+        if (found) {
+            observer.disconnect();
+            initializeCustomFeatures(found, temp);
+        }
+    });
+
+    observer.observe(document.body, { childList: true, subtree: true });
 }
 
 // ==================== パッケージ検索機能 ====================
@@ -2227,7 +2234,7 @@ function setupDsliteAddressComputation() {
         updateVariableDefinitionsWithDsliteCleanup();
     });
     
-    setTimeout(() => syncAftrAddress(false), 0);
+    queueMicrotask(() => syncAftrAddress(false));
 }
 
 function updateVariableDefinitionsWithDsliteCleanup() {
@@ -2776,9 +2783,9 @@ function generatePackageSelector() {
                 console.error('Package verification failed:', err);
                 if (indicator) {
                     indicator.innerHTML = '<span class="tr-package-check-failed">Package availability check failed</span>';
-                    setTimeout(() => {
+                    indicator.addEventListener('click', () => {
                         indicator.style.display = 'none';
-                    }, 3000);
+                    }, { once: true });
                 }
             });
         });
@@ -2996,7 +3003,9 @@ function loadUciDefaultsTemplate() {
     }
 
     textarea.addEventListener('input', autoResize);
-    textarea.addEventListener('paste', () => setTimeout(autoResize, 10));
+    textarea.addEventListener('paste', () => {
+        requestAnimationFrame(autoResize);
+    });
 
     fetch(templatePath + '?t=' + Date.now())
         .then(r => { 
