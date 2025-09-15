@@ -3409,14 +3409,19 @@ async function buildKmodsUrl(version, vendor, isSnapshot) {
     if (!version || !vendor) {
         throw new Error(`Missing required parameters for kmods URL: version=${version}, vendor=${vendor}`);
     }
-    
+
+    const subtarget = getSubtarget();
+    if (!subtarget) {
+        throw new Error(`Missing subtarget for kmods URL: version=${version}, vendor=${vendor}`);
+    }    
+
     const cacheKey = `${version}|${vendor}|${isSnapshot ? 'S' : 'R'}`;
 
     if (kmodsTokenCache && kmodsTokenCacheKey === cacheKey) {
         const searchTpl = isSnapshot ? config.kmods_apk_search_url : config.kmods_opkg_search_url;
         return searchTpl
             .replace('{version}', version)
-            .replace('{vendor}', vendor)
+            .replace('{vendor}', `${vendor}/${subtarget}`)
             .replace('{kmod}', kmodsTokenCache);
     }
 
