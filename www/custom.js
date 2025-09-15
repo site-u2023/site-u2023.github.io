@@ -50,11 +50,14 @@ let lastPackageListHash = null;
 const getVendor = () => current_device?.target?.split('/')[0] || null;
 const getSubtarget = () => current_device?.target?.split('/')[1] || '';
 const splitPackages = str => str.match(/[^\s,]+/g) || [];
-const show = el => {
+
+// 名前を変更して衝突を防止
+const showElement = el => {
     const e = typeof el === 'string' ? document.querySelector(el) : el;
     if (e) { e.classList.remove('hide'); e.style.display = ''; }
 };
-const hide = el => {
+
+const hideElement = el => {
     const e = typeof el === 'string' ? document.querySelector(el) : el;
     if (e) { e.classList.add('hide'); e.style.display = 'none'; }
 };
@@ -1571,7 +1574,7 @@ function handleConnectionTypeChange(e) {
                     setGuaPrefixIfAvailable();
                 }
             } else {
-                hide(section);
+                hideElement(section);
             }
         }
     });
@@ -1596,7 +1599,7 @@ function handleNetOptimizerChange(e) {
                     restoreManualDefaults();
                 }
             } else {
-                hide(section);
+                hideElement(section);
             }
         }
     });
@@ -1836,7 +1839,7 @@ function displayIspInfo(apiInfo) {
     setValue("#auto-config-method", getConnectionType(apiInfo));
     setValue("#auto-config-notice", apiInfo.notice || "");
     
-    show("#extended-build-info");
+    showElement("#extended-build-info");
 }
 
 function getConnectionType(apiInfo) {
