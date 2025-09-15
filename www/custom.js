@@ -1334,9 +1334,14 @@ async function verifyAllPackages() {
     
     let unavailableCount = 0;
     let checkedUnavailable = [];
+
+    let activeSessions = 0;
     
     for (const batch of batches) {
+        console.log(`[DEBUG] Starting batch with ${batch.length} requests`);
         const promises = batch.map(async pkg => {
+            activeSessions++;
+            console.log(`[DEBUG] Active sessions: ${activeSessions}`);
             const isAvailable = await isPackageAvailable(pkg.id, pkg.feed);
             
             if (!pkg.hidden) {
@@ -1349,6 +1354,8 @@ async function verifyAllPackages() {
                     checkedUnavailable.push(pkg.id);
                 }
             }
+            activeSessions--;
+            console.log(`[DEBUG] Active sessions: ${activeSessions}`);
             
             return { id: pkg.id, uniqueId: pkg.uniqueId, available: isAvailable };
         });
