@@ -628,15 +628,10 @@ async function searchInFeed(query, feed, version, arch) {
         const resp = await fetch(url, { cache: 'force-cache' });
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
 
-        if (feed === 'kmods') {
-            const data = await resp.json();
-            packages = data.packages ? Object.keys(data.packages) : [];
-        } else {
-            const text = await resp.text();
-            packages = text.split('\n')
-                .filter(line => line.startsWith('Package: '))
-                .map(line => line.substring(9).trim());
-        }
+        const text = await resp.text();
+        packages = text.split('\n')
+            .filter(line => line.startsWith('Package: '))
+            .map(line => line.substring(9).trim());
 
         feedCacheMap.set(cacheKey, packages);
     }
@@ -845,13 +840,12 @@ async function isPackageAvailable(pkgName, feed, version, arch) {
         const resp = await fetch(url, { cache: 'force-cache' });
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
 
+        const text = await resp.text();
         let result = false;
 
         if (feed === 'kmods') {
-            const data = await resp.json();
-            result = data.packages && Object.prototype.hasOwnProperty.call(data.packages, pkgName);
+            result = text.split('\n').some(line => line.trim() === `Package: ${pkgName}`);
         } else {
-            const text = await resp.text();
             result = text.split('\n').some(line => line.trim() === `Package: ${pkgName}`);
         }
 
