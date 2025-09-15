@@ -141,9 +141,8 @@ window.updateImages = function(version, mobj) {
             textarea.value = initialPackages.join(' ');
             console.log('[TRACE] Initial packages set:', initialPackages);
             setTimeout(() => {
-                const lines = textarea.value.split('\n').length;
                 textarea.style.height = 'auto';
-                textarea.style.height = `${lines * 1.2}em`;
+                textarea.style.height = textarea.scrollHeight + 'px';
             }, 50);
         }
 
@@ -2989,8 +2988,9 @@ function loadUciDefaultsTemplate() {
     }
 
     function autoResize() {
-    textarea.style.height = 'auto';
-    textarea.style.height = textarea.scrollHeight + 'px';
+        const lines = textarea.value.split('\n').length;
+        textarea.style.height = 'auto';
+        textarea.style.height = textarea.scrollHeight + 'px';
     }
 
     textarea.addEventListener('input', autoResize);
