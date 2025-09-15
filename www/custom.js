@@ -49,7 +49,7 @@ let lastPackageListHash = null;
 // ==================== ヘルパー関数 ====================
 const getVendor = () => current_device?.target?.split('/')[0] || null;
 const getSubtarget = () => current_device?.target?.split('/')[1] || '';
-const split = str => str.match(/[^\s,]+/g) || [];
+const splitPackages = str => str.match(/[^\s,]+/g) || [];
 const show = el => {
     const e = typeof el === 'string' ? document.querySelector(el) : el;
     if (e) { e.classList.remove('hide'); e.style.display = ''; }
@@ -293,7 +293,7 @@ function updatePackageListToTextarea(source = 'unknown') {
     const textarea = document.querySelector('#asu-packages');
     if (textarea) {
         const knownPackages = new Set([...packages]);
-        split(textarea.value).forEach(pkg => {
+        splitPackages(textarea.value).forEach(pkg => {
             if (!knownPackages.has(pkg) && !pkg.startsWith('luci-i18n-')) {
                 packages.add(pkg);
             }
