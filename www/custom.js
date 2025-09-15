@@ -61,7 +61,7 @@ const hideElement = el => {
     const e = typeof el === 'string' ? document.querySelector(el) : el;
     if (e) { e.classList.add('hide'); e.style.display = 'none'; }
 };
-const setValue = (selector, val) => {
+const setElementValue = (selector, val) => {
     const el = document.querySelector(selector);
     if (el) el[el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' ? 'value' : 'innerText'] = val;
 };
@@ -1830,14 +1830,14 @@ function displayIspInfoIfReady() {
 function displayIspInfo(apiInfo) {
     if (!apiInfo) return;
     
-    setValue("#auto-config-country", apiInfo.country || "Unknown");
-    setValue("#auto-config-timezone", apiInfo.timezone || "Unknown");
-    setValue("#auto-config-zonename", apiInfo.zonename || "Unknown");
-    setValue("#auto-config-isp", apiInfo.isp || "Unknown");
-    setValue("#auto-config-as", apiInfo.as || "Unknown");
-    setValue("#auto-config-ip", [apiInfo.ipv4, apiInfo.ipv6].filter(Boolean).join(" / ") || "Unknown");
-    setValue("#auto-config-method", getConnectionType(apiInfo));
-    setValue("#auto-config-notice", apiInfo.notice || "");
+    setElementValue("#auto-config-country", apiInfo.country || "Unknown");
+    setElementValue("#auto-config-timezone", apiInfo.timezone || "Unknown");
+    setElementValue("#auto-config-zonename", apiInfo.zonename || "Unknown");
+    setElementValue("#auto-config-isp", apiInfo.isp || "Unknown");
+    setElementValue("#auto-config-as", apiInfo.as || "Unknown");
+    setElementValue("#auto-config-ip", [apiInfo.ipv4, apiInfo.ipv6].filter(Boolean).join(" / ") || "Unknown");
+    setElementValue("#auto-config-method", getConnectionType(apiInfo));
+    setElementValue("#auto-config-notice", apiInfo.notice || "");
     
     showElement("#extended-build-info");
 }
