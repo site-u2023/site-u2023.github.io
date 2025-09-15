@@ -2988,9 +2988,8 @@ function loadUciDefaultsTemplate() {
     }
 
     function autoResize() {
-        const lines = textarea.value.split('\n').length;
-        textarea.style.height = 'auto';
-        textarea.style.height = `${lines * 1.5}em`;
+    textarea.style.height = 'auto';
+    textarea.style.height = textarea.scrollHeight + 'px';
     }
 
     textarea.addEventListener('input', autoResize);
