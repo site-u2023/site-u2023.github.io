@@ -1374,7 +1374,7 @@ async function isPackageAvailable(pkgName, feed) {
                 packageAvailabilityCache.set(cacheKey, false);
                 return false;
             }
-            packagesUrl = await buildKmodsUrl(version, `${vendor}/${subtarget}`, version.includes('SNAPSHOT'));
+            packagesUrl = await buildKmodsUrl(version, vendor, version.includes('SNAPSHOT'));
 
             console.log(`[DEBUG] kmods packagesUrl: ${packagesUrl}`);
 
@@ -3423,15 +3423,16 @@ async function buildKmodsUrl(version, vendor, isSnapshot) {
         const searchTpl = isSnapshot ? config.kmods_apk_search_url : config.kmods_opkg_search_url;
         return searchTpl
             .replace('{version}', version)
-            .replace('{vendor}', `${vendor}/${subtarget}`)
+            .replace('{vendor}', vendor)
+            .replace('{subtarget}', subtarget)
             .replace('{kmod}', kmodsTokenCache);
     }
 
     const indexTpl = isSnapshot ? config.kmods_apk_index_url : config.kmods_opkg_index_url;
     const indexUrl = indexTpl
         .replace('{version}', version)
-        .replace('{vendor}', `${vendor}/${subtarget}`)
-        .replace('{vendor}', `${vendor}/${subtarget}`);
+        .replace('{vendor}', vendor)
+        .replace('{subtarget}', subtarget);
     
     console.log('Fetching kmods index:', indexUrl);
     const resp = await fetch(indexUrl, { cache: 'no-store' });
@@ -3447,7 +3448,8 @@ async function buildKmodsUrl(version, vendor, isSnapshot) {
     const searchTpl = isSnapshot ? config.kmods_apk_search_url : config.kmods_opkg_search_url;
     return searchTpl
         .replace('{version}', version)
-        .replace('{vendor}', `${vendor}/${subtarget}`)
+        .replace('{vendor}', vendor)
+        .replace('{subtarget}', subtarget)
         .replace('{kmod}', kmodsTokenCache);
 }
 
