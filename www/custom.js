@@ -142,7 +142,7 @@ window.updateImages = function(version, mobj) {
             console.log('[TRACE] Initial packages set:', initialPackages);
             setTimeout(() => {
                 textarea.style.height = 'auto';
-                textarea.style.height = textarea.scrollHeight + 'px';
+                textarea.style.height = `${lines * 1.2}em`;
             }, 50);
         }
 
