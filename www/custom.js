@@ -825,6 +825,11 @@ function getCurrentPackageList() {
 // ==================== パッケージ検証 ====================
 async function isPackageAvailable(pkgName, feed, version, arch) {
     try {
+        if (!version) {
+            console.warn("isPackageAvailable called without version:", { pkgName, feed, arch });
+            return false;
+        }
+
         let url;
         if (feed === 'kmods') {
             const vendor = getVendor();
