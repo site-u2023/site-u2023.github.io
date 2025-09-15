@@ -143,7 +143,7 @@ window.updateImages = function(version, mobj) {
             setTimeout(() => {
                 const lines = textarea.value.split('\n').length;
                 textarea.style.height = 'auto';
-                textarea.style.height = textarea.scrollHeight + 'px';
+                textarea.style.height = `${lines * 1.2}em`;
             }, 50);
         }
 
