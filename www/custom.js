@@ -823,55 +823,34 @@ function getCurrentPackageList() {
 }
 
 // ==================== パッケージ検証 ====================
-async function isPackageAvailable(pkgName, feed) {
-    if (!pkgName || !feed) return false;
-
-    const arch = current_device?.arch || cachedDeviceArch;
-    const version = current_device?.version || $("#versions").value;
-    const vendor = getVendor();
-
-    if (!arch || !version) return false;
-
-    const cacheKey = `${version}:${arch}:${feed}:${pkgName}`;
-    if (packageAvailabilityCache.has(cacheKey)) {
-        return packageAvailabilityCache.get(cacheKey);
-    }
-
+async function isPackageAvailable(pkgName, feed, version, arch) {
     try {
-        let packagesUrl;
-        
+        let url;
         if (feed === 'kmods') {
-            if (!vendor || !getSubtarget()) {
-                packageAvailabilityCache.set(cacheKey, false);
-                return false;
-            }
-            packagesUrl = await buildKmodsUrl(version, vendor, version.includes('SNAPSHOT'));
+            const vendor = getVendor();
+            if (!vendor) return false;
+            url = await buildKmodsUrl(version, vendor, version.includes('SNAPSHOT'));
         } else {
             const template = version.includes('SNAPSHOT') ? config.apk_search_url : config.opkg_search_url;
-            packagesUrl = template.replace('{version}', version).replace('{arch}', arch).replace('{feed}', feed);
+            url = template.replace('{version}', version).replace('{arch}', arch).replace('{feed}', feed);
         }
 
-        const resp = await fetch(packagesUrl, { cache: 'force-cache' });
-        if (!resp.ok) {
-            packageAvailabilityCache.set(cacheKey, false);
-            return false;
-        }
+        const resp = await fetch(url, { cache: 'force-cache' });
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
 
         let result = false;
 
-    if (feed === 'kmods') {
-        const data = await resp.json();
-        result = data.packages && Object.prototype.hasOwnProperty.call(data.packages, pkgName);
-    } else {
-        const text = await resp.text();
-        result = text.split('\n').some(line => line.trim() === `Package: ${pkgName}`);
-    }
-        
-        packageAvailabilityCache.set(cacheKey, result);
+        if (feed === 'kmods') {
+            const data = await resp.json();
+            result = data.packages && Object.prototype.hasOwnProperty.call(data.packages, pkgName);
+        } else {
+            const text = await resp.text();
+            result = text.split('\n').some(line => line.trim() === `Package: ${pkgName}`);
+        }
+
         return result;
     } catch (err) {
-        console.error('Package availability check error:', err);
-        packageAvailabilityCache.set(cacheKey, false);
+        console.error("Package availability check error:", err);
         return false;
     }
 }
