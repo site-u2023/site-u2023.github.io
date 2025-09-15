@@ -62,14 +62,6 @@ const originalUpdateImages = window.updateImages;
 window.updateImages = function(version, mobj) {
     if (originalUpdateImages) originalUpdateImages(version, mobj);
 
-    console.log('[TRACE] updateImages called with:', {
-        version: version,
-        target: mobj && mobj.target,
-        subtarget: mobj && mobj.subtarget,
-        arch: mobj && mobj.arch_packages,
-        id: mobj && mobj.id
-    });
-
     const oldArch = cachedDeviceArch;
     const oldVersion = current_device && current_device.version;
 
