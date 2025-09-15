@@ -858,14 +858,15 @@ async function isPackageAvailable(pkgName, feed) {
         }
 
         let result = false;
-        if (version.includes('SNAPSHOT') || feed === 'kmods') {
-            const data = await resp.json();
-            result = data.packages && Object.prototype.hasOwnProperty.call(data.packages, pkgName);
-        } else {
-            const text = await resp.text();
-            result = text.split('\n').some(line => line.trim() === `Package: ${pkgName}`);
-        }
 
+    if (feed === 'kmods') {
+        const data = await resp.json();
+        result = data.packages && Object.prototype.hasOwnProperty.call(data.packages, pkgName);
+    } else {
+        const text = await resp.text();
+        result = text.split('\n').some(line => line.trim() === `Package: ${pkgName}`);
+    }
+        
         packageAvailabilityCache.set(cacheKey, result);
         return result;
     } catch (err) {
