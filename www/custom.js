@@ -1348,7 +1348,8 @@ async function isPackageAvailable(pkgName, feed) {
 
     const arch = current_device?.arch || cachedDeviceArch;
     const version = current_device?.version || $("#versions").value;
-    const vendor = getVendor();  // 動的に取得
+    const vendor = getVendor();      // 動的に取得
+    const subtarget = getSubtarget(); // ★ 追加
 
     if (!arch || !version) {
         console.log('Missing device info for package check:', { arch, version });
@@ -1366,13 +1367,14 @@ async function isPackageAvailable(pkgName, feed) {
 
         if (feed === 'kmods') {
             console.log('[DEBUG] vendor value:', vendor);
+            console.log('[DEBUG] subtarget value:', subtarget);
             // vendorが必須
-            if (!vendor) {
-                console.log('Missing vendor for kmods check');
+            if (!vendor || !subtarget) {
+                console.log('Missing vendor or subtarget for kmods check');
                 packageAvailabilityCache.set(cacheKey, false);
                 return false;
             }
-            packagesUrl = await buildKmodsUrl(version, vendor, version.includes('SNAPSHOT'));
+            packagesUrl = await buildKmodsUrl(version, `${vendor}/${subtarget}`, version.includes('SNAPSHOT'));
 
             console.log(`[DEBUG] kmods packagesUrl: ${packagesUrl}`);
 
@@ -3429,7 +3431,8 @@ async function buildKmodsUrl(version, vendor, isSnapshot) {
     const indexUrl = indexTpl
         .replace('{version}', version)
         .replace('{vendor}', vendor);
-
+        .replace('{vendor}', `${vendor}/${subtarget}`);
+    
     console.log('Fetching kmods index:', indexUrl);
     const resp = await fetch(indexUrl, { cache: 'no-store' });
     if (!resp.ok) throw new Error(`Failed to fetch kmods index: HTTP ${resp.status} for ${indexUrl}`); 
