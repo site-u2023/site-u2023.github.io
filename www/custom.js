@@ -3430,7 +3430,7 @@ async function buildKmodsUrl(version, vendor, isSnapshot) {
     const indexTpl = isSnapshot ? config.kmods_apk_index_url : config.kmods_opkg_index_url;
     const indexUrl = indexTpl
         .replace('{version}', version)
-        .replace('{vendor}', vendor)
+        .replace('{vendor}', `${vendor}/${subtarget}`)
         .replace('{vendor}', `${vendor}/${subtarget}`);
     
     console.log('Fetching kmods index:', indexUrl);
@@ -3447,7 +3447,7 @@ async function buildKmodsUrl(version, vendor, isSnapshot) {
     const searchTpl = isSnapshot ? config.kmods_apk_search_url : config.kmods_opkg_search_url;
     return searchTpl
         .replace('{version}', version)
-        .replace('{vendor}', vendor)
+        .replace('{vendor}', `${vendor}/${subtarget}`)
         .replace('{kmod}', kmodsTokenCache);
 }
 
