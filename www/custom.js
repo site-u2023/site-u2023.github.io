@@ -85,8 +85,8 @@ window.updateImages = function(version, mobj) {
 
         console.log('[TRACE] current_device updated:', {
             ...current_device,
-            vendor: getVendor(),  // 動的に取得
-            subtarget: getSubtarget()  // 動的に取得
+            vendor: getVendor(),
+            subtarget: getSubtarget()
         });
 
         if (oldArch !== mobj.arch_packages || oldVersion !== version) {
@@ -137,7 +137,7 @@ window.updateImages = function(version, mobj) {
             default: deviceDefaultPackages.length,
             device: deviceDevicePackages.length,
             extra: extraPackages.length,
-            vendor: getVendor()  // 動的に取得
+            vendor: getVendor()
         });
 
         const initialPackages = deviceDefaultPackages
@@ -742,7 +742,7 @@ async function searchPackages(query, inputElement) {
     
     const arch = current_device?.arch || cachedDeviceArch;
     const version = current_device?.version || document.querySelector("#versions")?.value;
-    const vendor = getVendor();  // 動的に取得
+    const vendor = getVendor();
     
     if (query.toLowerCase().startsWith('kmod-') && !vendor) {
         console.log('searchPackages - current_device:', current_device);
@@ -791,7 +791,7 @@ async function searchPackages(query, inputElement) {
 }
 
 async function searchInFeed(query, feed, version, arch) {
-    const vendor = getVendor();  // 動的に取得
+    const vendor = getVendor();
     const cacheKey = `${version}:${arch}:${feed}`;
 
     try {
@@ -869,7 +869,7 @@ function showPackageSearchResults(results, inputElement) {
         item.textContent = pkgName;
         
         item.onmousedown = (e) => {
-            e.preventDefault(); // blurイベントの発生を防止
+            e.preventDefault();
             
             console.log('Package selected:', pkgName);
             
@@ -979,7 +979,7 @@ function setupLanguageSelector() {
         current_language = (navigator.language || fallback).split('-')[0];
     }
     if (!config.device_language) {
-        config.device_language = current_language; // 最初だけコピー
+        config.device_language = current_language;
     }
 
     if (mainLanguageSelect) {
@@ -1205,8 +1205,8 @@ async function isPackageAvailable(pkgName, feed) {
 
     const arch = current_device?.arch || cachedDeviceArch;
     const version = current_device?.version || $("#versions").value;
-    const vendor = getVendor();      // 動的に取得
-    const subtarget = getSubtarget(); // ★ 追加
+    const vendor = getVendor();
+    const subtarget = getSubtarget();
 
     if (!arch || !version) {
         console.log('Missing device info for package check:', { arch, version });
@@ -2619,9 +2619,15 @@ async function initializeCustomFeatures(asuSection, temp) {
         updateAllPackageState('isp-auto-config');
     } else {
         console.log('All data and UI ready, no changes from auto-config');
-        setTimeout(() => {
-            updateAllPackageState('force-device-packages');
-        }, 200);
+        const runWhenReady = () => {
+            if ((deviceDefaultPackages && deviceDefaultPackages.length > 0) ||
+                (deviceDevicePackages && deviceDevicePackages.length > 0) ||
+                (extraPackages && extraPackages.length > 0)) {
+                updateAllPackageState('force-device-packages');
+                document.removeEventListener('devicePackagesReady', runWhenReady);
+            }
+        };
+        document.addEventListener('devicePackagesReady', runWhenReady);
     }
 
     customInitialized = true;
