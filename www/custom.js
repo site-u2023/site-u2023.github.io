@@ -51,7 +51,6 @@ const getVendor = () => current_device?.target?.split('/')[0] || null;
 const getSubtarget = () => current_device?.target?.split('/')[1] || '';
 const splitPackages = str => str.match(/[^\s,]+/g) || [];
 
-// 名前を変更して衝突を防止
 const showElement = el => {
     const e = typeof el === 'string' ? document.querySelector(el) : el;
     if (e) { e.classList.remove('hide'); e.style.display = ''; }
@@ -89,14 +88,12 @@ window.updateImages = function(version, mobj) {
         current_device.target = mobj.target || '';
         if (mobj.id) current_device.id = mobj.id;
 
-        // vendor/subtarget設定
         if (mobj.target) {
             const parts = mobj.target.split('/');
             mobj.vendor = parts[0] || 'unknown';
             mobj.subtarget = parts[1] || '';
         }
 
-        // アーキテクチャ変更時のキャッシュクリア
         if (oldArch !== mobj.arch_packages || oldVersion !== version) {
             packageAvailabilityCache.clear();
             feedCacheMap.clear();
@@ -119,7 +116,6 @@ window.updateImages = function(version, mobj) {
             }
         }
 
-        // パッケージリストの保存
         if (!("manifest" in mobj)) {
             deviceDefaultPackages = mobj.default_packages || [];
             deviceDevicePackages = mobj.device_packages || [];
@@ -141,7 +137,6 @@ window.updateImages = function(version, mobj) {
         }
     }
 
-    // カスタムHTML読み込み
     if (!customHTMLLoaded) {
         loadCustomHTML();
         customHTMLLoaded = true;
@@ -166,16 +161,12 @@ async function updateAllPackageState(source = 'unknown') {
     }
     lastFormStateHash = hash;
 
-    // Setup.json パッケージ更新
     updateSetupJsonPackages();
     
-    // 言語パッケージ更新
     await updateLanguagePackages();
     
-    // パッケージリスト更新
     updatePackageListToTextarea(source);
     
-    // 変数定義更新
     updateVariableDefinitions();
 }
 
@@ -188,7 +179,6 @@ function updateSetupJsonPackages() {
                 const selectedValue = getFieldValue(`input[name="${pkg.variableName}"]:checked`);
                 if (!selectedValue) return;
                 
-                // パッケージトグル処理
                 const packageMap = {
                     'connection_type': { 'mape': ['map'], 'dslite': ['ds-lite'] },
                     'wifi_mode': { 'usteer': ['usteer-from-setup'] }
@@ -199,7 +189,6 @@ function updateSetupJsonPackages() {
                     packages.forEach(pkgId => toggleVirtualPackage(pkgId, true));
                 }
                 
-                // AUTO接続時の特別処理
                 if (pkg.variableName === 'connection_type' && selectedValue === 'auto' && cachedApiInfo) {
                     if (cachedApiInfo.mape?.brIpv6Address) {
                         toggleVirtualPackage('map', true);
@@ -238,7 +227,6 @@ function toggleVirtualPackage(packageId, enabled) {
 async function updateLanguagePackages() {
     selectedLanguage = config.device_language || config?.fallback_language || 'en';
     
-    // 既存の言語パッケージを削除
     Array.from(dynamicPackages).filter(pkg => pkg.startsWith('luci-i18n-')).forEach(pkg => dynamicPackages.delete(pkg));
     
     if (!selectedLanguage || selectedLanguage === 'en' || !current_device?.arch) return;
@@ -248,13 +236,11 @@ async function updateLanguagePackages() {
     const version = current_device?.version || document.querySelector("#versions")?.value || '';
     const arch = current_device?.arch || cachedDeviceArch || '';
     
-    // 基本言語パッケージ
     const basePkgs = [`luci-i18n-base-${selectedLanguage}`, `luci-i18n-firewall-${selectedLanguage}`];
     for (const pkg of basePkgs) {
         if (await isPackageAvailable(pkg, 'luci', version, arch)) langPackages.add(pkg);
     }
     
-    // LuCI言語パッケージ
     const checkPromises = currentPackages
         .filter(pkg => pkg.startsWith('luci-') && !pkg.startsWith('luci-i18n-'))
         .map(async pkg => {
@@ -280,21 +266,17 @@ function updatePackageListToTextarea(source = 'unknown') {
         ...extraPackages
     ]);
 
-    // チェックされたパッケージ
     document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
         const pkgName = cb.getAttribute('data-package');
         if (pkgName) packages.add(pkgName);
     });
 
-    // 検索されたパッケージ
     if (packageSearchManager) {
         packageSearchManager.getAllValues().forEach(pkg => packages.add(pkg));
     }
 
-    // 動的パッケージ
     dynamicPackages.forEach(pkg => packages.add(pkg));
 
-    // 手動追加パッケージ
     const textarea = document.querySelector('#asu-packages');
     if (textarea) {
         const knownPackages = new Set([...packages]);
