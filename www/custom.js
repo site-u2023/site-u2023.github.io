@@ -1486,15 +1486,15 @@ function renderSetupConfig(config) {
 
         container.appendChild(section);
     });
-    
-    setTimeout(() => {
+
+    requestAnimationFrame(() => {
         initConditionalSections(config);
-        
+
         if (cachedApiInfo) {
             applyIspAutoConfig(cachedApiInfo);
             console.log('Reapplied ISP config after form render');
         }
-        
+
         const mapeTypeRadio = document.querySelector('input[name="mape_type"]:checked');
         if (mapeTypeRadio && mapeTypeRadio.value === 'pd') {
             const guaPrefixField = document.querySelector('#mape-gua-prefix');
@@ -1506,7 +1506,7 @@ function renderSetupConfig(config) {
                 }
             }
         }
-    }, 100);
+    });
 }
 
 function buildField(parent, pkg) {
@@ -2759,12 +2759,12 @@ function generatePackageSelector() {
     
     const arch = current_device?.arch || cachedDeviceArch;
     if (arch) {
-        setTimeout(() => {
+        requestAnimationFrame(() => {
             const indicator = document.querySelector('#package-loading-indicator');
             if (indicator) {
                 indicator.style.display = 'block';
             }
-            
+
             verifyAllPackages().then(() => {
                 if (indicator) {
                     indicator.style.display = 'none';
@@ -2779,7 +2779,7 @@ function generatePackageSelector() {
                     }, 3000);
                 }
             });
-        }, 100);
+        });
     } else {
         console.log('Device architecture not available, skipping package verification');
     }
