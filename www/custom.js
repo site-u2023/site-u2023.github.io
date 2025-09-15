@@ -142,7 +142,7 @@ window.updateImages = function(version, mobj) {
             console.log('[TRACE] Initial packages set:', initialPackages);
             setTimeout(() => {
                 textarea.style.height = 'auto';
-                textarea.style.height = `${lines * 1.2}em`;
+                textarea.style.height = textarea.scrollHeight + 'px';
             }, 50);
         }
 
@@ -2990,7 +2990,7 @@ function loadUciDefaultsTemplate() {
     function autoResize() {
         const lines = textarea.value.split('\n').length;
         textarea.style.height = 'auto';
-        textarea.style.height = textarea.scrollHeight + 'px';
+        textarea.style.height = `${lines * 1.5}em`;
     }
 
     textarea.addEventListener('input', autoResize);
