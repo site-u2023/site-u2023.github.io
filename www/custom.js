@@ -626,7 +626,7 @@ async function searchInFeed(query, feed, version, arch) {
         const resp = await fetch(url, { cache: 'force-cache' });
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
 
-        if (version.includes('SNAPSHOT') || feed === 'kmods') {
+        if (feed === 'kmods') {
             const data = await resp.json();
             packages = data.packages ? Object.keys(data.packages) : [];
         } else {
