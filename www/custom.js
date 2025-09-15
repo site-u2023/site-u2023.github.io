@@ -1318,9 +1318,16 @@ async function verifyAllPackages() {
     
     console.log(`Verifying ${uniquePackages.length} unique packages...`);
     
-    const BATCH_SIZE = 10;
+    let BATCH_SIZE = 10;
+    if ('connection' in navigator && typeof navigator.connection.downlink === 'number') {
+        const speedMbps = navigator.connection.downlink;
+        BATCH_SIZE = Math.min(20, Math.max(2, Math.round(speedMbps * 2)));
+        console.log(`[INFO] Network downlink: ${speedMbps} Mbps → batch size = ${BATCH_SIZE}`);
+    } else {
+        console.log(`[INFO] Network Information API not supported → batch size = ${BATCH_SIZE}`);
+    }
+
     const batches = [];
-    
     for (let i = 0; i < uniquePackages.length; i += BATCH_SIZE) {
         batches.push(uniquePackages.slice(i, i + BATCH_SIZE));
     }
