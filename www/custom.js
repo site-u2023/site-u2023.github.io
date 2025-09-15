@@ -245,11 +245,13 @@ async function updateLanguagePackages() {
     
     const currentPackages = getCurrentPackageList();
     const langPackages = new Set();
+    const version = current_device?.version || document.querySelector("#versions")?.value || '';
+    const arch = current_device?.arch || cachedDeviceArch || '';
     
     // 基本言語パッケージ
     const basePkgs = [`luci-i18n-base-${selectedLanguage}`, `luci-i18n-firewall-${selectedLanguage}`];
     for (const pkg of basePkgs) {
-        if (await isPackageAvailable(pkg, 'luci')) langPackages.add(pkg);
+        if (await isPackageAvailable(pkg, 'luci', version, arch)) langPackages.add(pkg);
     }
     
     // LuCI言語パッケージ
@@ -259,7 +261,7 @@ async function updateLanguagePackages() {
             const luciName = extractLuciName(pkg);
             if (luciName) {
                 const langPkg = `luci-i18n-${luciName}-${selectedLanguage}`;
-                if (await isPackageAvailable(langPkg, 'luci')) langPackages.add(langPkg);
+                if (await isPackageAvailable(langPkg, 'luci', version, arch)) langPackages.add(langPkg);
             }
         });
     
@@ -864,6 +866,7 @@ async function verifyAllPackages() {
     const arch = current_device?.arch || cachedDeviceArch;
     if (!packagesJson || !arch) return;
     
+    const version = current_device?.version || document.querySelector("#versions")?.value || '';
     const packagesToVerify = [];
     
     packagesJson.categories.forEach(category => {
@@ -899,7 +902,7 @@ async function verifyAllPackages() {
     for (let i = 0; i < uniquePackages.length; i += BATCH_SIZE) {
         const batch = uniquePackages.slice(i, i + BATCH_SIZE);
         await Promise.all(batch.map(async pkg => {
-            const isAvailable = await isPackageAvailable(pkg.id, pkg.feed);
+            const isAvailable = await isPackageAvailable(pkg.id, pkg.feed, version, arch);
             if (!pkg.hidden) {
                 updatePackageAvailabilityUI(pkg.uniqueId, isAvailable);
             }
