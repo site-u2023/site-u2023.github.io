@@ -2117,6 +2117,25 @@ function applySpecialFieldLogic(values) {
         if (backlog) values.netopt_backlog = backlog;
         if (somaxconn) values.netopt_somaxconn = somaxconn;
         if (congestion) values.netopt_congestion = congestion;
+
+    const dnsmasqMode = getFieldValue('input[name="enable_dnsmasq"]:checked');
+
+    if (dnsmasqMode === 'disabled') {
+        delete values.enable_dnsmasq;
+        delete values.dnsmasq_cache;
+        delete values.dnsmasq_negcache;
+
+    } else if (dnsmasqMode === 'auto') {
+        values.enable_dnsmasq = '1';
+        delete values.dnsmasq_cache;
+        delete values.dnsmasq_negcache;
+
+    } else if (dnsmasqMode === 'manual') {
+        values.enable_dnsmasq = '1';
+        const cacheSize = getFieldValue('#dnsmasq-cache');
+        const negCache = getFieldValue('#dnsmasq-negcache');
+        if (cacheSize) values.dnsmasq_cache = cacheSize;
+        if (negCache) values.dnsmasq_negcache = negCache;
     }
 }
 
