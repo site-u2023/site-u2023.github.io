@@ -30,11 +30,9 @@ set system.ntp.enabled='1'
 set system.ntp.enable_server='1'
 set system.ntp.interface='lan'
 delete system.ntp.server
-add_list system.ntp.server="0.${CC}${NTP}"
-add_list system.ntp.server="1.${CC}${NTP}"
-add_list system.ntp.server="2${NTP}"
-add_list system.ntp.server="3${NTP}"
 NTP_EOF
+for i in 0 1; do uci add_list system.ntp.server="${i}.${CC}${NTP}"; done
+for i in 2 3; do uci add_list system.ntp.server="${i}${NTP}"; done
 [ -n "${enable_log}" ] && uci -q batch <<'LOG_EOF'
 set system.@system[0].log_size='32'
 set system.@system[0].conloglevel='1'
