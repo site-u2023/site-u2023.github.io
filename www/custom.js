@@ -576,6 +576,7 @@ class MultiInputManager {
         }
         
         if (value) {
+            input.setAttribute('data-confirmed', 'true');
             this.options.onAdd(value);
         }
         
