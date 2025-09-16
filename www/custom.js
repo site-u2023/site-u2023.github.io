@@ -2625,15 +2625,7 @@ async function initializeCustomFeatures(asuSection, temp) {
 
     let changed = false;
     if (window.autoConfigData || cachedApiInfo) {
-        requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-                changed = applyIspAutoConfig(window.autoConfigData || cachedApiInfo);
-                if (changed) {
-                    console.log('ISP auto-config applied, updating package state');
-                    updateAllPackageState('isp-auto-config');
-                }
-            });
-        });
+        changed = applyIspAutoConfig(window.autoConfigData || cachedApiInfo);  // ← ここで実行
     }
 
     generatePackageSelector();
@@ -2677,68 +2669,28 @@ function applyIspAutoConfig(apiInfo) {
     }
 
     const rawType = getFieldValue('input[name="connection_type"]');
-    const currentConnectionType = (rawType === null || rawType === undefined || rawType === '') ? 'auto' : rawType;
+    const connectionType = (rawType === null || rawType === undefined || rawType === '') ? 'auto' : rawType;
+
     let mutated = false;
-
-    let detectedType = 'dhcp';
-    if (apiInfo.mape?.brIpv6Address) {
-        detectedType = 'mape';
-    } else if (apiInfo.aftr?.aftrIpv6Address) {
-        detectedType = 'dslite';
-    }
-
-    if (currentConnectionType === 'auto') {
-        updateAutoConnectionInfo(apiInfo);
-        
-        if (detectedType === 'mape' && apiInfo.mape) {
-            const mapeFields = {
-                '#mape-br': apiInfo.mape.brIpv6Address,
-                '#mape-ealen': apiInfo.mape.eaBitLength,
-                '#mape-ipv4-prefix': apiInfo.mape.ipv4Prefix,
-                '#mape-ipv4-prefixlen': apiInfo.mape.ipv4PrefixLength,
-                '#mape-ipv6-prefix': apiInfo.mape.ipv6Prefix,
-                '#mape-ipv6-prefixlen': apiInfo.mape.ipv6PrefixLength,
-                '#mape-psid-offset': apiInfo.mape.psIdOffset,
-                '#mape-psidlen': apiInfo.mape.psidlen
-            };
-            
-            Object.entries(mapeFields).forEach(([selector, value]) => {
-                const element = document.querySelector(selector);
-                if (element && value !== null && value !== undefined) {
-                    element.value = String(value);
-                    mutated = true;
-                }
-            });
-            
-            const guaPrefix = generateGuaPrefixFromFullAddress(apiInfo);
-            if (guaPrefix) {
-                const guaElement = document.querySelector('#mape-gua-prefix');
-                if (guaElement) {
-                    guaElement.value = guaPrefix;
-                    mutated = true;
-                }
-            }
-        } else if (detectedType === 'dslite' && apiInfo.aftr) {
-            const dsliteFields = {
-                '#dslite-aftr-type': apiInfo.aftr.aftrType || '',
-                '#dslite-area': apiInfo.aftr.jurisdiction || '',
-                '#dslite-aftr-address': apiInfo.aftr.aftrIpv6Address
-            };
-            
-            Object.entries(dsliteFields).forEach(([selector, value]) => {
-                const element = document.querySelector(selector);
-                if (element && value) {
-                    element.value = String(value);
-                    mutated = true;
-                }
-            });
-        }
-    }
 
     Object.values(formStructure.fields).forEach(field => {
         if (!field.apiMapping) return;
 
+        const isConnectionField = ['dslite', 'mape', 'ap', 'pppoe'].some(type =>
+            formStructure.connectionTypes[type]?.includes(field.id)
+        );
+
+        if (isConnectionField && connectionType !== 'auto') {
+            return;
+        }
+
         let value = getNestedValue(apiInfo, field.apiMapping);
+
+        if (field.variableName === 'mape_gua_prefix') {
+            const guaPrefix = generateGuaPrefixFromFullAddress(cachedApiInfo);
+            if (guaPrefix) value = guaPrefix;
+        }
+
         if (value !== null && value !== undefined && value !== '') {
             const element = document.querySelector(field.selector);
             if (element && element.value !== String(value)) {
@@ -2749,7 +2701,8 @@ function applyIspAutoConfig(apiInfo) {
     });
 
     if (mutated) {
-        updateVariableDefinitions();
+        setGuaPrefixIfAvailable();
+        updateAutoConnectionInfo(apiInfo);
     }
 
     return mutated;
