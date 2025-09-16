@@ -109,4 +109,12 @@
     "tr-asu-status-500": "ASU サーバーは応答しましたが、内部エラーです。ステータス: {status}",
     "tr-asu-status-unreachable": "ASU サーバーには到達しましたが、異常応答です。ステータス: {status}",
     "tr-asu-status-networkfail": "ASU サーバーに到達できませんでした: {error}"
+    
+    "tr-dnsmasq-settings": "DNS サーバー設定",
+    "tr-dnsmasq-mode": "DNS サーバーモード",
+    "tr-dnsmasq-auto": "自動",
+    "tr-dnsmasq-manual": "手動",
+    "tr-dnsmasq-disabled": "無効",
+    "tr-dnsmasq-cache": "キャッシュサイズ",
+    "tr-dnsmasq-negcache": "ネガティブキャッシュ"
 }
