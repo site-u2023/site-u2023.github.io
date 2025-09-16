@@ -22,7 +22,7 @@ MNT="/mnt/sda"
 exec >/tmp/setup.log 2>&1
 [ -n "${enable_notes}" ] && uci -q batch <<NOTES_EOF
 set system.@system[0].description="${DATE}"
-set system.@system[0].notes="site-u.pages.dev/build"
+set system.@system[0].notes="site-u.pages.dev"
 NOTES_EOF
 [ -n "${enable_ntp}" ] && uci -q batch <<NTP_EOF
 set system.ntp=timeserver
