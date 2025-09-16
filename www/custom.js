@@ -211,7 +211,6 @@ function toggleVirtualPackage(packageId, enabled) {
     if (checkbox) {
         checkbox.checked = enabled;
         
-        // 依存関係処理
         if (enabled && checkbox.getAttribute('data-dependencies')) {
             checkbox.getAttribute('data-dependencies').split(',').forEach(depId => {
                 const depPkg = findPackageById(depId);
@@ -840,9 +839,10 @@ async function isPackageAvailable(pkgName, feed, version, arch) {
 
 async function verifyAllPackages() {
     const arch = current_device?.arch || cachedDeviceArch;
-    if (!packagesJson || !arch) return;
-    
     const version = current_device?.version || document.querySelector("#versions")?.value || '';
+    
+    if (!packagesJson || !arch || !version) return;
+    
     const packagesToVerify = [];
     
     packagesJson.categories.forEach(category => {
