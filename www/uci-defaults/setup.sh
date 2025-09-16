@@ -20,13 +20,17 @@ uci -q batch <<SYSTEM_EOF
 set system.@system[0].description="${DATE}"
 set system.@system[0].notes="site-u.pages.dev/build"
 SYSTEM_EOF
-[ -n "${enable_ntp_pool}" ] && uci set system.ntp.server="0.${CC}${NTP}" "1.${CC}${NTP}" "2${NTP}" "3${NTP}"
+[ -n "${enable_ntp_pool}" ] && uci -q batch <<EOF
+set system.ntp.server="0.${CC}${NTP}" "1.${CC}${NTP}" "2${NTP}" "3${NTP}"
+set system.ntp.enable_server='1'
+EOF
 [ -n "${enable_log}" ] && {
     uci -q batch <<'LOG_EOF'
 set system.@system[0].log_size='32'
 set system.@system[0].log_file=''
 set system.@system[0].log_remote='0'
-set system.@system[0].log_level='5'
+set system.@system[0].log_level='0'
+set system.@system[0].cronloglevel='0'
 LOG_EOF
 }
 [ -n "${enable_diag}" ] && {
