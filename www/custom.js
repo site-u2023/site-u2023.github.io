@@ -2117,7 +2117,8 @@ function applySpecialFieldLogic(values) {
         if (backlog) values.netopt_backlog = backlog;
         if (somaxconn) values.netopt_somaxconn = somaxconn;
         if (congestion) values.netopt_congestion = congestion;
-
+    }
+    
     const dnsmasqMode = getFieldValue('input[name="enable_dnsmasq"]:checked');
 
     if (dnsmasqMode === 'disabled') {
