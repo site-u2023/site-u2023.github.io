@@ -901,7 +901,7 @@
             {
               "id": "dnsmasq-auto-info",
               "name": "Auto Optimization",
-              "class": "Automatic Optimization",
+              "class": "tr-dnsmasq-auto-optimization",
               "type": "info-display",
               "content": "In AUTO mode, the cache size is automatically optimized based on the system's memory size."
             }
