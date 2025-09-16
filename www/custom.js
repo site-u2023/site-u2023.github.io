@@ -1340,9 +1340,7 @@ async function verifyAllPackages() {
         const promises = batch.map(async pkg => {
             const isAvailable = await isPackageAvailable(pkg.id, pkg.feed);
             
-            if (!pkg.hidden) {
-                updatePackageAvailabilityUI(pkg.uniqueId, isAvailable);
-            }
+            updatePackageAvailabilityUI(pkg.uniqueId, isAvailable);
             
             if (!isAvailable) {
                 unavailableCount++;
