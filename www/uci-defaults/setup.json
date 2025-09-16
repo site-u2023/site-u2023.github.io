@@ -783,7 +783,7 @@
                   "selector": "#dnsmasq-cache",
                   "variableName": "dnsmasq_cache",
                   "placeholder": "10000",
-                  "defaultValue": "",
+                  "defaultValue": "10000",
                   "description": "Number of DNS cache entries"
                 },
                 {
@@ -794,10 +794,26 @@
                   "selector": "#dnsmasq-negcache",
                   "variableName": "dnsmasq_negcache",
                   "placeholder": "0",
-                  "defaultValue": "",
+                  "defaultValue": "0",
                   "description": "0 to disable, >0 to enable"
                 }
               ]
+            }
+          ]
+        },
+        {
+          "id": "dnsmasq-auto-section",
+          "name": "Auto DNS Settings",
+          "class": "tr-dnsmasq-auto-settings",
+          "type": "conditional-section",
+          "showWhen": { "field": "enable_dnsmasq", "values": ["auto"] },
+          "children": [
+            {
+              "id": "dnsmasq-auto-info",
+              "name": "Auto Optimization",
+              "class": "tr-auto-optimization",
+              "type": "info-display",
+              "content": "In AUTO mode, the cache size is automatically optimized based on the system's memory size."
             }
           ]
         }
