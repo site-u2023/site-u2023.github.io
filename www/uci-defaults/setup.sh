@@ -29,28 +29,23 @@ set system.ntp=timeserver
 set system.ntp.enabled='1'
 set system.ntp.enable_server='1'
 set system.ntp.interface='lan'
-del_list system.ntp.server
+delete system.ntp.server
 add_list system.ntp.server="0.${CC}${NTP}"
 add_list system.ntp.server="1.${CC}${NTP}"
 add_list system.ntp.server="2${NTP}"
 add_list system.ntp.server="3${NTP}"
 NTP_EOF
-}
-[ -n "${enable_log}" ] && {
-    uci -q batch <<'LOG_EOF'
+[ -n "${enable_log}" ] && uci -q batch <<'LOG_EOF'
 set system.@system[0].log_size='32'
 set system.@system[0].conloglevel='1'
 set system.@system[0].cronloglevel='9'
 LOG_EOF
-}
-[ -n "${enable_diag}" ] && {
-    uci -q batch <<DIAG_EOF
+[ -n "${enable_diag}" ] && uci -q batch <<DIAG_EOF
 set luci.diag=diag
 set luci.diag.ping='${DIAG}'
 set luci.diag.route='${DIAG}'
 set luci.diag.dns='${DIAG}'
 DIAG_EOF
-}
 [ -n "${device_name}" ] && uci -q set system.@system[0].hostname="${device_name}"
 [ -n "${root_password}" ] && printf '%s\n%s\n' "${root_password}" "${root_password}" | passwd >/dev/null
 [ -n "${lan_ip_address}" ] && uci -q set network.lan.ipaddr="${lan_ip_address}"
@@ -486,9 +481,6 @@ set dhcp.@dnsmasq[0].cachesize='${CACHE_SIZE}'
 set dhcp.@dnsmasq[0].nonegcache='1'
 DNSMASQ_EOF
 }
-# BEGIN_CUSTOM_COMMANDS
-# END_CUSTOM_COMMANDS
-uci commit 2>/dev/null
 [ -n "${enable_netopt}" ] && { cat > /etc/rc.local <<'EOF'
 #!/bin/sh
 C=/etc/sysctl.d/99-net-opt.conf
@@ -521,6 +513,9 @@ RESET_EOF
 exit 0
 EOF
 }
+# BEGIN_CUSTOM_COMMANDS
+# END_CUSTOM_COMMANDS
+uci commit 2>/dev/null
 [ -n "${backup_path}" ] && sysupgrade -q -k -b "${backup_path}"
 echo "All done!"
 exit 0
