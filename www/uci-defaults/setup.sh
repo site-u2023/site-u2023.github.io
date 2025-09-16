@@ -468,14 +468,18 @@ set samba4.sambashare.create_mask='0777'
 set samba4.sambashare.dir_mask='0777'
 SAMBA_EOF
 [ -n "${enable_dnsmasq}" ] && {
-    M=$(awk '/MemTotal/{print int($2/1024)}' /proc/meminfo)
-    if   [ "$M" -ge 1024 ]; then CACHE_SIZE=10000
-    elif [ "$M" -ge 512  ]; then CACHE_SIZE=5000
-    else CACHE_SIZE=1000
+    CACHE_SIZE="${dnsmasq_cache:-}"
+    NEG_CACHE="${dnsmasq_negcache:-1}"
+    if [ -z "$CACHE_SIZE" ]; then
+        M=$(awk '/MemTotal/{print int($2/1024)}' /proc/meminfo)
+        if   [ "$M" -ge 1024 ]; then CACHE_SIZE=10000
+        elif [ "$M" -ge 512  ]; then CACHE_SIZE=5000
+        else CACHE_SIZE=1000
+        fi
     fi
     uci -q batch <<DNSMASQ_EOF
 set dhcp.@dnsmasq[0].cachesize='${CACHE_SIZE}'
-set dhcp.@dnsmasq[0].nonegcache='1'
+set dhcp.@dnsmasq[0].nonegcache='${NEG_CACHE}'
 DNSMASQ_EOF
 }
 [ -n "${enable_netopt}" ] && { cat > /etc/rc.local <<'EOF'
