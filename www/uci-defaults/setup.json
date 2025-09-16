@@ -882,7 +882,7 @@
                   "variableName": "dnsmasq_negcache",
                   "placeholder": "0",
                   "defaultValue": "0",
-                  "description": "0 to disable, >0 to enable"
+                  "description": "0 = disable, >0 = N sec"
                 }
               ]
             }
