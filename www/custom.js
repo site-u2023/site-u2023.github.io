@@ -449,7 +449,10 @@ function updatePackageListToTextarea(source = 'unknown') {
     const searchedPackages = new Set();
     if (packageSearchManager) {
         const searchValues = packageSearchManager.getAllValues();
+        console.log('PackageSearchManager values:', searchValues); // デバッグ用
         searchValues.forEach(pkg => searchedPackages.add(pkg));
+    } else {
+        console.warn('PackageSearchManager is not initialized'); // デバッグ用
     }
 
     const knownSelectablePackages = new Set();
