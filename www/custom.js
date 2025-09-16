@@ -2625,7 +2625,15 @@ async function initializeCustomFeatures(asuSection, temp) {
 
     let changed = false;
     if (window.autoConfigData || cachedApiInfo) {
-        changed = applyIspAutoConfig(window.autoConfigData || cachedApiInfo);  // ← ここで実行
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                changed = applyIspAutoConfig(window.autoConfigData || cachedApiInfo);
+                if (changed) {
+                    console.log('ISP auto-config applied, updating package state');
+                    updateAllPackageState('isp-auto-config');
+                }
+            });
+        });
     }
 
     generatePackageSelector();
@@ -2669,9 +2677,71 @@ function applyIspAutoConfig(apiInfo) {
     }
 
     const rawType = getFieldValue('input[name="connection_type"]');
-    const connectionType = (rawType === null || rawType === undefined || rawType === '') ? 'auto' : rawType;
-
+    const currentConnectionType = (rawType === null || rawType === undefined || rawType === '') ? 'auto' : rawType;
     let mutated = false;
+
+    if (currentConnectionType === 'auto') {
+        let detectedType = 'dhcp';
+        
+        if (apiInfo.mape?.brIpv6Address) {
+            detectedType = 'mape';
+        } else if (apiInfo.aftr?.aftrIpv6Address) {
+            detectedType = 'dslite';
+        }
+        
+        const targetRadio = document.querySelector(`input[name="connection_type"][value="${detectedType}"]`);
+        if (targetRadio) {
+            targetRadio.checked = true;
+            handleConnectionTypeChange({ target: targetRadio });
+            mutated = true;
+        }
+    }
+
+    if (apiInfo.mape?.brIpv6Address) {
+        const mapeFields = {
+            '#mape-br': apiInfo.mape.brIpv6Address,
+            '#mape-ealen': apiInfo.mape.eaBitLength,
+            '#mape-ipv4-prefix': apiInfo.mape.ipv4Prefix,
+            '#mape-ipv4-prefixlen': apiInfo.mape.ipv4PrefixLength,
+            '#mape-ipv6-prefix': apiInfo.mape.ipv6Prefix,
+            '#mape-ipv6-prefixlen': apiInfo.mape.ipv6PrefixLength,
+            '#mape-psid-offset': apiInfo.mape.psIdOffset,
+            '#mape-psidlen': apiInfo.mape.psidlen
+        };
+        
+        Object.entries(mapeFields).forEach(([selector, value]) => {
+            const element = document.querySelector(selector);
+            if (element && value !== null && value !== undefined) {
+                element.value = String(value);
+                mutated = true;
+            }
+        });
+        
+        const guaPrefix = generateGuaPrefixFromFullAddress(apiInfo);
+        if (guaPrefix) {
+            const guaElement = document.querySelector('#mape-gua-prefix');
+            if (guaElement) {
+                guaElement.value = guaPrefix;
+                mutated = true;
+            }
+        }
+    }
+
+    if (apiInfo.aftr?.aftrIpv6Address) {
+        const dsliteFields = {
+            '#dslite-aftr-type': apiInfo.aftr.aftrType || '',
+            '#dslite-area': apiInfo.aftr.jurisdiction || '',
+            '#dslite-aftr-address': apiInfo.aftr.aftrIpv6Address
+        };
+        
+        Object.entries(dsliteFields).forEach(([selector, value]) => {
+            const element = document.querySelector(selector);
+            if (element && value) {
+                element.value = String(value);
+                mutated = true;
+            }
+        });
+    }
 
     Object.values(formStructure.fields).forEach(field => {
         if (!field.apiMapping) return;
@@ -2680,16 +2750,11 @@ function applyIspAutoConfig(apiInfo) {
             formStructure.connectionTypes[type]?.includes(field.id)
         );
 
-        if (isConnectionField && connectionType !== 'auto') {
+        if (isConnectionField && currentConnectionType !== 'auto') {
             return;
         }
 
         let value = getNestedValue(apiInfo, field.apiMapping);
-
-        if (field.variableName === 'mape_gua_prefix') {
-            const guaPrefix = generateGuaPrefixFromFullAddress(cachedApiInfo);
-            if (guaPrefix) value = guaPrefix;
-        }
 
         if (value !== null && value !== undefined && value !== '') {
             const element = document.querySelector(field.selector);
@@ -2701,8 +2766,8 @@ function applyIspAutoConfig(apiInfo) {
     });
 
     if (mutated) {
-        setGuaPrefixIfAvailable();
         updateAutoConnectionInfo(apiInfo);
+        updateVariableDefinitions();
     }
 
     return mutated;
