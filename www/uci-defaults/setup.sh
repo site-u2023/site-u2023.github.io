@@ -31,7 +31,8 @@ set system.ntp.enable_server='1'
 set system.ntp.interface='lan'
 delete system.ntp.server
 NTP_EOF
-for s in "0.${CC}${NTP}" "1.${CC}${NTP}" "2${NTP}" "3${NTP}"; do
+CC_LC=$(printf '%s' "$CC" | tr 'A-Z' 'a-z')
+for s in "0.${CC_LC}${NTP}" "1.${CC_LC}${NTP}" "2${NTP}" "3${NTP}"; do
     uci add_list system.ntp.server="$s"
 done
 [ -n "${enable_log}" ] && uci -q batch <<'LOG_EOF'
@@ -468,8 +469,7 @@ set samba4.sambashare.dir_mask='0777'
 SAMBA_EOF
 [ -n "${enable_dnsmasq}" ] && {
     M=$(awk '/MemTotal/{print int($2/1024)}' /proc/meminfo)
-    if   [ "$M" -ge 3072 ]; then CACHE_SIZE=20000
-    elif [ "$M" -ge 1024 ]; then CACHE_SIZE=10000
+    if   [ "$M" -ge 1024 ]; then CACHE_SIZE=10000
     elif [ "$M" -ge 512  ]; then CACHE_SIZE=5000
     else CACHE_SIZE=1000
     fi
