@@ -127,9 +127,22 @@
               "selector": "#aios-flow-offloading",
               "variableName": "flow_offloading_type",
               "options": [
-                {"value": "", "label": "Disabled", "class": "tr-disabled", "selected": true},
-                {"value": "software", "label": "Software flow offloading", "class": "tr-software-flow-offloading"},
-                {"value": "hardware", "label": "Hardware flow offloading", "class": "tr-hardware-flow-offloading"}
+                {
+                  "value": "",
+                  "label": "Disabled",
+                  "class": "tr-disabled",
+                  "selected": true
+                },
+                {
+                  "value": "software",
+                  "label": "Software flow offloading",
+                  "class": "tr-software-flow-offloading"
+                },
+                {
+                  "value": "hardware",
+                  "label": "Hardware flow offloading",
+                  "class": "tr-hardware-flow-offloading"
+                }
               ]
             },
             {
@@ -191,7 +204,10 @@
           "name": "Wi-Fi Options",
           "class": "tr-wi-fi-options",
           "type": "conditional-section",
-          "showWhen": {"field": "wifi_mode", "values": ["standard", "usteer"]},
+          "showWhen": {
+            "field": "wifi_mode",
+            "values": ["standard", "usteer"]
+          },
           "children": [
             {
               "id": "wifi-basic-fields",
@@ -226,7 +242,10 @@
               "name": "Usteer Options",
               "class": "tr-usteer-options",
               "type": "conditional-section",
-              "showWhen": {"field": "wifi_mode", "values": ["usteer"]},
+              "showWhen": {
+                "field": "wifi_mode",
+                "values": ["usteer"]
+              },
               "children": [
                 {
                   "id": "usteer-fields",
@@ -280,12 +299,17 @@
           "type": "radio-group",
           "variableName": "connection_type",
           "options": [
-            {"value": "auto", "label": "AUTO", "class": "tr-auto", "checked": true},
-            {"value": "dhcp", "label": "DHCP", "class": "tr-dhcp"},
-            {"value": "pppoe", "label": "PPPoE", "class": "tr-pppoe"},
-            {"value": "dslite", "label": "DS-Lite", "class": "tr-dslite"},
-            {"value": "mape", "label": "MAP-E", "class": "tr-mape"},
-            {"value": "ap", "label": "AP", "class": "tr-ap"}
+            {
+              "value": "auto",
+              "label": "AUTO",
+              "class": "tr-auto",
+              "checked": true
+            },
+            { "value": "dhcp", "label": "DHCP", "class": "tr-dhcp" },
+            { "value": "pppoe", "label": "PPPoE", "class": "tr-pppoe" },
+            { "value": "dslite", "label": "DS-Lite", "class": "tr-dslite" },
+            { "value": "mape", "label": "MAP-E", "class": "tr-mape" },
+            { "value": "ap", "label": "AP", "class": "tr-ap" }
           ]
         },
         {
@@ -293,7 +317,10 @@
           "name": "AUTO Detection",
           "class": "tr-auto-detection",
           "type": "conditional-section",
-          "showWhen": {"field": "connection_type", "values": ["auto"]},
+          "showWhen": {
+            "field": "connection_type",
+            "values": ["auto"]
+          },
           "connectionFields": [],
           "children": [
             {
@@ -310,7 +337,10 @@
           "name": "DHCP",
           "class": "tr-dhcp",
           "type": "conditional-section",
-          "showWhen": {"field": "connection_type", "values": ["dhcp"]},
+          "showWhen": {
+            "field": "connection_type",
+            "values": ["dhcp"]
+          },
           "connectionFields": [],
           "children": [
             {
@@ -327,7 +357,10 @@
           "name": "PPPoE",
           "class": "tr-pppoe",
           "type": "conditional-section",
-          "showWhen": {"field": "connection_type", "values": ["pppoe"]},
+          "showWhen": {
+            "field": "connection_type",
+            "values": ["pppoe"]
+          },
           "connectionFields": ["pppoe_username", "pppoe_password"],
           "children": [
             {
@@ -363,7 +396,10 @@
           "name": "DS-Lite",
           "class": "tr-dslite",
           "type": "conditional-section",
-          "showWhen": {"field": "connection_type", "values": ["dslite"]},
+          "showWhen": {
+            "field": "connection_type",
+            "values": ["dslite"]
+          },
           "connectionFields": ["dslite_aftr_type", "dslite_area", "dslite_aftr_address"],
           "children": [
             {
@@ -380,9 +416,21 @@
                   "selector": "#dslite-aftr-type",
                   "variableName": "dslite_aftr_type",
                   "options": [
-                    {"value": "transix", "label": "gw.transix.jp", "class": "tr-gwtransixjp"},
-                    {"value": "xpass", "label": "gw.xpass.jp", "class": "tr-gwxpassjp"},
-                    {"value": "v6option", "label": "gw.v6option.jp", "class": "tr-gwv6optionjp"}
+                    {
+                      "value": "transix",
+                      "label": "gw.transix.jp",
+                      "class": "tr-gwtransixjp"
+                    },
+                    {
+                      "value": "xpass",
+                      "label": "gw.xpass.jp",
+                      "class": "tr-gwxpassjp"
+                    },
+                    {
+                      "value": "v6option",
+                      "label": "gw.v6option.jp",
+                      "class": "tr-gwv6optionjp"
+                    }
                   ],
                   "computeField": {
                     "targetField": "dslite-aftr-address",
@@ -411,8 +459,16 @@
                   "selector": "#dslite-area",
                   "variableName": "dslite_area",
                   "options": [
-                    {"value": "east", "label": "East Japan", "class": "tr-east-japan"},
-                    {"value": "west", "label": "West Japan", "class": "tr-west-japan"}
+                    {
+                      "value": "east",
+                      "label": "East Japan",
+                      "class": "tr-east-japan"
+                    },
+                    {
+                      "value": "west",
+                      "label": "West Japan",
+                      "class": "tr-west-japan"
+                    }
                   ],
                   "computeTrigger": true
                 },
@@ -437,7 +493,10 @@
           "name": "MAP-E",
           "class": "tr-mape",
           "type": "conditional-section",
-          "showWhen": {"field": "connection_type", "values": ["mape"]},
+          "showWhen": {
+            "field": "connection_type",
+            "values": ["mape"]
+          },
           "connectionFields": ["mape_br", "mape_ealen", "mape_ipv4_prefix", "mape_ipv4_prefixlen", "mape_ipv6_prefix", "mape_ipv6_prefixlen", "mape_psid_offset", "mape_psidlen", "mape_gua_prefix", "mape_gua_mode", "mape_type"],
           "children": [
             {
@@ -447,8 +506,13 @@
               "type": "radio-group",
               "variableName": "mape_type",
               "options": [
-                {"value": "gua", "label": "GUA", "class": "tr-gua", "checked": true},
-                {"value": "pd", "label": "PD", "class": "tr-pd"}
+                {
+                  "value": "gua",
+                  "label": "GUA",
+                  "class": "tr-gua",
+                  "checked": true
+                },
+                { "value": "pd", "label": "PD", "class": "tr-pd" }
               ]
             },
             {
@@ -546,7 +610,6 @@
                   "variableName": "mape_gua_prefix",
                   "placeholder": "optional for GUA",
                   "apiMapping": "ipv6",
-                  "placeholder": "",
                   "description": "IPv6 GUA prefix with /64 suffix"
                 }
               ]
@@ -558,7 +621,10 @@
           "name": "AP Mode",
           "class": "tr-ap-mode",
           "type": "conditional-section",
-          "showWhen": {"field": "connection_type", "values": ["ap"]},
+          "showWhen": {
+            "field": "connection_type",
+            "values": ["ap"]
+          },
           "connectionFields": ["ap_ip_address", "ap_gateway"],
           "children": [
             {
@@ -637,7 +703,10 @@
           "name": "AUTO Mode",
           "class": "tr-auto-mode",
           "type": "conditional-section",
-          "showWhen": {"field": "net_optimizer", "values": ["auto"]},
+          "showWhen": {
+            "field": "net_optimizer",
+            "values": ["auto"]
+          },
           "children": [
             {
               "id": "netopt-auto-info",
@@ -653,7 +722,10 @@
           "name": "Manual Mode",
           "class": "tr-manual-mode",
           "type": "conditional-section",
-          "showWhen": {"field": "net_optimizer", "values": ["manual"]},
+          "showWhen": {
+            "field": "net_optimizer",
+            "values": ["manual"]
+          },
           "children": [
             {
               "id": "netopt-fields",
@@ -724,9 +796,14 @@
                   "selector": "#netopt-congestion",
                   "variableName": "netopt_congestion",
                   "options": [
-                    {"value": "cubic", "label": "cubic (default)", "class": "tr-cubic-default", "selected": true},
-                    {"value": "bbr", "label": "bbr", "class": "tr-bbr"},
-                    {"value": "reno", "label": "reno", "class": "tr-reno"}
+                    {
+                      "value": "cubic",
+                      "label": "cubic (default)",
+                      "class": "tr-cubic-default",
+                      "selected": true
+                    },
+                    { "value": "bbr", "label": "bbr", "class": "tr-bbr" },
+                    { "value": "reno", "label": "reno", "class": "tr-reno" }
                   ]
                 }
               ]
@@ -738,7 +815,10 @@
           "name": "Disabled Mode",
           "class": "tr-disabled-mode",
           "type": "conditional-section",
-          "showWhen": { "field": "net_optimizer", "values": ["disabled"] },
+          "showWhen": {
+            "field": "net_optimizer",
+            "values": ["disabled"]
+          },
           "children": [
             {
               "id": "netopt-disabled-info",
@@ -757,7 +837,11 @@
           "variableName": "enable_dnsmasq",
           "defaultValue": "auto",
           "options": [
-            { "value": "auto", "label": "Automatic", "class": "tr-dnsmasq-auto" },
+            {
+              "value": "auto",
+              "label": "Automatic",
+              "class": "tr-dnsmasq-auto"
+            },
             { "value": "manual", "label": "Manual", "class": "tr-dnsmasq-manual" },
             { "value": "disabled", "label": "Disabled", "class": "tr-dnsmasq-disabled" }
           ]
@@ -767,7 +851,10 @@
           "name": "Manual DNS Settings",
           "class": "tr-dnsmasq-manual-settings",
           "type": "conditional-section",
-          "showWhen": { "field": "enable_dnsmasq", "values": ["manual"] },
+          "showWhen": {
+            "field": "enable_dnsmasq",
+            "values": ["manual"]
+          },
           "children": [
             {
               "id": "dnsmasq-fields",
@@ -806,7 +893,10 @@
           "name": "Auto DNS Settings",
           "class": "tr-dnsmasq-auto-settings",
           "type": "conditional-section",
-          "showWhen": { "field": "enable_dnsmasq", "values": ["auto"] },
+          "showWhen": {
+            "field": "enable_dnsmasq",
+            "values": ["auto"]
+          },
           "children": [
             {
               "id": "dnsmasq-auto-info",
@@ -814,6 +904,25 @@
               "class": "tr-auto-optimization",
               "type": "info-display",
               "content": "In AUTO mode, the cache size is automatically optimized based on the system's memory size."
+            }
+          ]
+        },
+        {
+          "id": "dnsmasq-disabled-section",
+          "name": "Disabled DNS Settings",
+          "class": "tr-dnsmasq-disabled-settings",
+          "type": "conditional-section",
+          "showWhen": {
+            "field": "enable_dnsmasq",
+            "values": ["disabled"]
+          },
+          "children": [
+            {
+              "id": "dnsmasq-disabled-info",
+              "name": "Optimization Disabled",
+              "class": "tr-optimization-disabled",
+              "type": "info-display",
+              "content": "DNS optimization will be disabled."
             }
           ]
         }
