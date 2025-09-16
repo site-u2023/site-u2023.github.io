@@ -1,10 +1,10 @@
 #!/bin/sh
 # BEGIN_VARIABLE_DEFINITIONS
 # END_VARIABLE_DEFINITIONS
-enable_notes="on"
-enable_ntp="on"
-enable_log="on"
-enable_diag="on"
+enable_notes="1"
+enable_ntp="1"
+enable_log="1"
+enable_diag="1"
 DATE="$(date '+%Y-%m-%d %H:%M')"
 LAN="$(uci -q get network.lan.device || echo lan)"
 WAN="$(uci -q get network.wan.device || echo wan)"
@@ -25,16 +25,22 @@ set system.@system[0].description="${DATE}"
 set system.@system[0].notes="site-u.pages.dev/build"
 NOTES_EOF
 [ -n "${enable_ntp}" ] && uci -q batch <<NTP_EOF
-set system.ntp.server="0.${CC}${NTP}" "1.${CC}${NTP}" "2${NTP}" "3${NTP}"
+set system.ntp=timeserver
+set system.ntp.enabled='1'
 set system.ntp.enable_server='1'
+set system.ntp.interface='lan'
+del_list system.ntp.server
+add_list system.ntp.server="0.${CC}${NTP}"
+add_list system.ntp.server="1.${CC}${NTP}"
+add_list system.ntp.server="2${NTP}"
+add_list system.ntp.server="3${NTP}"
 NTP_EOF
+}
 [ -n "${enable_log}" ] && {
     uci -q batch <<'LOG_EOF'
 set system.@system[0].log_size='32'
-set system.@system[0].log_file=''
-set system.@system[0].log_remote='0'
-set system.@system[0].log_level='0'
-set system.@system[0].cronloglevel='0'
+set system.@system[0].conloglevel='1'
+set system.@system[0].cronloglevel='9'
 LOG_EOF
 }
 [ -n "${enable_diag}" ] && {
@@ -42,7 +48,7 @@ LOG_EOF
 set luci.diag=diag
 set luci.diag.ping='${DIAG}'
 set luci.diag.route='${DIAG}'
-set luci.diag.nslookup='${DIAG}'
+set luci.diag.dns='${DIAG}'
 DIAG_EOF
 }
 [ -n "${device_name}" ] && uci -q set system.@system[0].hostname="${device_name}"
@@ -477,7 +483,7 @@ SAMBA_EOF
     fi
     uci -q batch <<DNSMASQ_EOF
 set dhcp.@dnsmasq[0].cachesize='${CACHE_SIZE}'
-set dhcp.@dnsmasq[0].no-negcache='1'
+set dhcp.@dnsmasq[0].nonegcache='1'
 DNSMASQ_EOF
 }
 # BEGIN_CUSTOM_COMMANDS
