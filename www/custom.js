@@ -536,8 +536,7 @@ class MultiInputManager {
             autocomplete: options.autocomplete || null
         };
         
-        this.values = [];  // 値を直接管理
-        this.currentInput = null;
+        this.inputs = [];
         this.init();
     }
     
@@ -545,11 +544,10 @@ class MultiInputManager {
         this.container.innerHTML = '';
         this.container.className = 'multi-input-container';
         
-        this.renderItems();
-        this.createMainInput();
+        this.addInput('', true);
     }
     
-    createMainInput() {
+    addInput(value = '', focus = false) {
         const inputWrapper = document.createElement('div');
         inputWrapper.className = 'multi-input-wrapper';
         
@@ -557,99 +555,117 @@ class MultiInputManager {
         input.type = 'text';
         input.className = this.options.className;
         input.placeholder = this.options.placeholder;
+        input.value = value;
         input.autocomplete = 'off';
         input.spellcheck = false;
         input.autocapitalize = 'off';
         
-        input.addEventListener('keydown', (e) => this.handleKeyDown(e));
-        input.addEventListener('input', (e) => this.handleInput(e));
+        input.addEventListener('keydown', (e) => this.handleKeyDown(e, input));
+        input.addEventListener('input', (e) => this.handleInput(e, input));
+        input.addEventListener('blur', (e) => this.handleBlur(e, input));
         
         inputWrapper.appendChild(input);
         this.container.appendChild(inputWrapper);
-        this.currentInput = input;
+        this.inputs.push(input);
+        
+        if (focus) {
+            requestAnimationFrame(() => input.focus());
+        }
+        
+        if (value) {
+            this.options.onAdd(value);
+        }
         
         return input;
     }
     
-    renderItems() {
-        // 既存のアイテムを表示（削除ボタン付き）
-        const existingItems = this.container.querySelectorAll('.multi-input-item-display');
-        existingItems.forEach(item => item.remove());
-        
-        this.values.forEach((value, index) => {
-            const itemDiv = document.createElement('div');
-            itemDiv.className = 'multi-input-item-display';
-            itemDiv.style.display = 'inline-flex';
-            itemDiv.style.alignItems = 'center';
-            itemDiv.style.padding = '0.3em 0.5em';
-            itemDiv.style.margin = '0.2em';
-            itemDiv.style.backgroundColor = '#f0f0f0';
-            itemDiv.style.borderRadius = '0.2em';
-            
-            const textSpan = document.createElement('span');
-            textSpan.textContent = value;
-            textSpan.style.marginRight = '0.5em';
-            
-            const removeBtn = document.createElement('button');
-            removeBtn.textContent = '×';
-            removeBtn.style.border = 'none';
-            removeBtn.style.background = 'none';
-            removeBtn.style.cursor = 'pointer';
-            removeBtn.style.padding = '0 0.3em';
-            removeBtn.style.fontSize = '1.2em';
-            removeBtn.onclick = () => this.removeValue(index);
-            
-            itemDiv.appendChild(textSpan);
-            itemDiv.appendChild(removeBtn);
-            
-            this.container.insertBefore(itemDiv, this.container.lastChild);
-        });
-    }
-    
-    handleKeyDown(e) {
+    handleKeyDown(e, input) {
         if (e.key === 'Enter') {
             e.preventDefault();
-            const value = this.currentInput.value.trim();
+            const value = input.value.trim();
             
-            if (value && !this.values.includes(value)) {
-                this.addValue(value);
-                this.currentInput.value = '';
+            if (value) {
+                input.setAttribute('data-confirmed', 'true');
+                
+                this.addInput('', true);
+                
+                this.options.onChange(this.getAllValues());
+            }
+        } else if (e.key === 'Backspace' && input.value === '' && this.inputs.length > 1) {
+            const index = this.inputs.indexOf(input);
+            if (index > 0) {
+                this.inputs[index - 1].focus();
+                const prevInput = this.inputs[index - 1];
+                prevInput.setSelectionRange(prevInput.value.length, prevInput.value.length);
             }
         }
     }
     
-    handleInput(e) {
-        const value = this.currentInput.value.trim();
-        
+    handleInput(e, input) {
+        const value = input.value.trim();
+    
         if (this.options.autocomplete && value.length >= 2) {
-            this.options.autocomplete(value, this.currentInput);
+            this.options.autocomplete(value, input);
+        }
+    
+        if (!input.dataset.programmaticChange) {
+            this.options.onChange(this.getAllValues());
+        }
+    
+        delete input.dataset.programmaticChange;
+    }
+    
+    handleBlur(e, input) {
+        const value = input.value.trim();
+        const index = this.inputs.indexOf(input);
+        
+        if (input.dataset.skipBlur) {
+            delete input.dataset.skipBlur;
+            return;
+        }
+        
+        if (value === '' && this.inputs.length > 1 && index !== this.inputs.length - 1) {
+            this.removeInput(input);
+        }
+        
+        if (value && index === this.inputs.length - 1 && !input.getAttribute('data-confirmed')) {
+            this.addInput('', false);
         }
     }
     
-    addValue(value) {
-        if (!value || this.values.includes(value)) return;
-        
-        this.values.push(value);
-        this.renderItems();
-        this.options.onAdd(value);
-        this.options.onChange(this.values);
-    }
-    
-    removeValue(index) {
-        const value = this.values[index];
-        this.values.splice(index, 1);
-        this.renderItems();
-        this.options.onRemove(value);
-        this.options.onChange(this.values);
+    removeInput(input) {
+        const index = this.inputs.indexOf(input);
+        if (index > -1 && this.inputs.length > 1) {
+            const value = input.value.trim();
+            
+            input.parentElement.remove();
+            
+            this.inputs.splice(index, 1);
+            
+            if (value) {
+                this.options.onRemove(value);
+            }
+            this.options.onChange(this.getAllValues());
+        }
     }
     
     getAllValues() {
-        return [...this.values];
+        return this.inputs
+            .map(input => input.value.trim())
+            .filter(value => value !== '');
     }
     
     setValues(values) {
-        this.values = [...(values || [])];
-        this.renderItems();
+        this.container.innerHTML = '';
+        this.inputs = [];
+        
+        if (values && values.length > 0) {
+            values.forEach(value => {
+                this.addInput(value, false);
+            });
+        }
+        
+        this.addInput('', false);
     }
 }
 
@@ -855,14 +871,22 @@ function showPackageSearchResults(results, inputElement) {
         
         item.onmousedown = (e) => {
             e.preventDefault();
-    
+            
             console.log('Package selected:', pkgName);
-    
-            packageSearchManager.addValue(pkgName);
-            packageSearchManager.currentInput.value = '';
-    
+            
+            inputElement.dataset.programmaticChange = 'true';
+            inputElement.value = pkgName;
+            
+            inputElement.setAttribute('data-confirmed', 'true');
+            
+            const inputIndex = packageSearchManager.inputs.indexOf(inputElement);
+            if (inputIndex === packageSearchManager.inputs.length - 1) {
+                packageSearchManager.addInput('', true);
+            }
+            
             clearPackageSearchResults();
-    
+            
+            packageSearchManager.options.onChange(packageSearchManager.getAllValues());
             updateAllPackageState('package-selected');
         };
   
