@@ -313,7 +313,7 @@ async function updateLanguagePackageCore() {
         return;
     }
     
-    const currentPackages = getCurrentPackageListForLanguage();
+    const currentPackages = getCurrentPackageList({ includeUniqueIds: true });
     console.log(`Checking language packages for ${currentPackages.length} packages`);
     
     const addedLangPackages = new Set();
@@ -371,55 +371,6 @@ async function updateLanguagePackageCore() {
     if (addedLangPackages.size > 0) {
         console.log(`Language package update complete: ${addedLangPackages.size} packages added`);
     }
-}
-
-function getCurrentPackageListForLanguage() {
-    const packages = new Set();
-    
-    deviceDefaultPackages.forEach(pkg => packages.add(pkg));
-    deviceDevicePackages.forEach(pkg => packages.add(pkg));
-    extraPackages.forEach(pkg => packages.add(pkg));
-    
-    document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
-        const pkgName = cb.getAttribute('data-package');
-        const uniqueId = cb.getAttribute('data-unique-id');
-        
-        if (pkgName) {
-            packages.add(pkgName);
-            if (uniqueId && uniqueId !== pkgName) {
-                packages.add(uniqueId);
-            }
-        }
-    });
-    
-    if (packageSearchManager) {
-        const searchValues = packageSearchManager.getAllValues();
-        searchValues.forEach(pkg => packages.add(pkg));
-    }
-    
-    for (const pkg of dynamicPackages) {
-        if (!pkg.startsWith('luci-i18n-')) {
-            packages.add(pkg);
-        }
-    }
-    
-    const checkedPackageSet = new Set();
-    document.querySelectorAll('.package-selector-checkbox').forEach(cb => {
-        const pkgName = cb.getAttribute('data-package');
-        if (pkgName) checkedPackageSet.add(pkgName);
-    });
-    
-    const textarea = document.querySelector('#asu-packages');
-    if (textarea) {
-        const textPackages = split(textarea.value);
-        textPackages.forEach(pkg => {
-            if (!pkg.startsWith('luci-i18n-') && !checkedPackageSet.has(pkg)) {
-                packages.add(pkg);
-            }
-        });
-    }
-    
-    return Array.from(packages);
 }
 
 let lastPackageListHash = null;
@@ -1149,7 +1100,10 @@ function extractLuciName(pkg) {
     return null;
 }
 
-function getCurrentPackageList() {
+function getCurrentPackageList(options = {}) {
+    const includeUniqueIds = options.includeUniqueIds || false;
+    const includeTextareaManual = options.includeTextareaManual !== false;
+    
     const packages = new Set();
     
     deviceDefaultPackages.forEach(pkg => packages.add(pkg));
@@ -1158,7 +1112,14 @@ function getCurrentPackageList() {
     
     document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
         const pkgName = cb.getAttribute('data-package');
-        if (pkgName) packages.add(pkgName);
+        const uniqueId = cb.getAttribute('data-unique-id');
+        
+        if (pkgName) {
+            packages.add(pkgName);
+            if (includeUniqueIds && uniqueId && uniqueId !== pkgName) {
+                packages.add(uniqueId);
+            }
+        }
     });
     
     if (packageSearchManager) {
@@ -1166,21 +1127,30 @@ function getCurrentPackageList() {
         searchValues.forEach(pkg => packages.add(pkg));
     }
     
-    const textarea = document.querySelector('#asu-packages');
-    if (textarea) {
-        const textPackages = split(textarea.value);
-        textPackages.forEach(pkg => {
-            if (!deviceDefaultPackages.includes(pkg) && 
-                !deviceDevicePackages.includes(pkg) && 
-                !extraPackages.includes(pkg)) {
-                packages.add(pkg);
-            }
-        });
-    }
-    
     for (const pkg of dynamicPackages) {
         if (!pkg.startsWith('luci-i18n-')) {
             packages.add(pkg);
+        }
+    }
+    
+    if (includeTextareaManual) {
+        const checkedPackageSet = new Set();
+        document.querySelectorAll('.package-selector-checkbox').forEach(cb => {
+            const pkgName = cb.getAttribute('data-package');
+            if (pkgName) checkedPackageSet.add(pkgName);
+        });
+        
+        const textarea = document.querySelector('#asu-packages');
+        if (textarea) {
+            const textPackages = split(textarea.value);
+            textPackages.forEach(pkg => {
+                if (!pkg.startsWith('luci-i18n-') && !checkedPackageSet.has(pkg) &&
+                    !deviceDefaultPackages.includes(pkg) && 
+                    !deviceDevicePackages.includes(pkg) && 
+                    !extraPackages.includes(pkg)) {
+                    packages.add(pkg);
+                }
+            });
         }
     }
     
@@ -3292,7 +3262,7 @@ function setValue(selector, val) {
 function split(str) {
     return str.match(/[^\s,]+/g) || [];
 }
-
+    
 function getNestedValue(obj, path) {
     return path.split('.').reduce((current, key) => current?.[key], obj);
 }
