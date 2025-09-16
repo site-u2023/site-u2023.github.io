@@ -71,8 +71,7 @@ RADIO_EOF
             5g) suffix="-5g"; encryption='sae-mixed'; nasid_suffix='-5g'; band_snr="$(echo ${snr:-30 15 5} | cut -d' ' -f2)" ;;
             6g) suffix="-6g"; encryption='sae';        nasid_suffix='-6g'; band_snr="$(echo ${snr:-30 15 5} | cut -d' ' -f3)" ;;
             *)  suffix="";    encryption='psk-mixed';  nasid_suffix='';    band_snr="20" ;;
-        esac
-        
+        esac      
         if [ -n "${enable_usteer}" ]; then
             ssid="${wlan_ssid}"
         else
