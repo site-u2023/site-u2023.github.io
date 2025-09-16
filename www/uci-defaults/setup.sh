@@ -435,7 +435,6 @@ set network.${AP6}.proto='dhcpv6'
 set network.${AP6}.device="@${AP}"
 set network.${AP6}.reqaddress='try'
 set network.${AP6}.reqprefix='no'
-set network.${AP6}.type='bridge'
 AP_EOF
     [ -n "$(uci -q get wireless.default_radio0)" ] && uci -q set wireless.default_radio0.network="${AP}"
     [ -n "$(uci -q get wireless.default_radio1)" ] && uci -q set wireless.default_radio1.network="${AP}"
