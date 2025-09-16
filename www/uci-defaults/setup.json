@@ -815,7 +815,10 @@
           "name": "Disabled Mode",
           "class": "tr-disabled-mode",
           "type": "conditional-section",
-          "showWhen": { "field": "net_optimizer", "values": ["disabled"] },
+          "showWhen": {
+            "field": "net_optimizer",
+            "values": ["disabled"]
+          },
           "children": [
             {
               "id": "netopt-disabled-info",
@@ -827,13 +830,6 @@
           ]
         },
         {
-          "id": "dnsmasq-spacing",
-          "name": "",
-          "class": "tr-dnsmasq-spacing",
-          "type": "info-display",
-          "content": ""
-        },
-        {
           "id": "dnsmasq-mode",
           "name": "DNS Server Settings",
           "class": "tr-dnsmasq-settings",
@@ -841,11 +837,15 @@
           "variableName": "enable_dnsmasq",
           "defaultValue": "auto",
           "options": [
-            { "value": "auto", "label": "Automatic", "class": "tr-dnsmasq-auto" },
+            {
+              "value": "auto",
+              "label": "Automatic",
+              "class": "tr-dnsmasq-auto"
+            },
             { "value": "manual", "label": "Manual", "class": "tr-dnsmasq-manual" },
             { "value": "disabled", "label": "Disabled", "class": "tr-dnsmasq-disabled" }
           ]
-        },       
+        },
         {
           "id": "dnsmasq-manual-section",
           "name": "Manual DNS Settings",
