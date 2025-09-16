@@ -555,7 +555,7 @@
           "description": "DS-Lite support package"
         },
         {
-          "id": "luci-app-usteer-setup",
+          "id": "luci-app-usteer",
           "name": "luci-app-usteer",
           "uniqueId": "usteer-from-setup",
           "hidden": true,
