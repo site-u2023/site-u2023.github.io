@@ -105,17 +105,17 @@
     "tr-usb-storage": "USB Storage Support",
     "tr-file-sharing": "File Sharing",
 
-    "tr-asu-status-200": "ASU server is reachable. Status: ",
-    "tr-asu-status-500": "ASU server responded with an internal error. Status: ",
-    "tr-asu-status-unreachable": "ASU server responded with an unexpected status: ",
-    "tr-asu-status-networkfail": "Failed to reach the ASU server: "
-
     "tr-dnsmasq-settings": "DNS Server Settings",
     "tr-dnsmasq-mode": "DNS Server Mode",
     "tr-auto": "Automatic",
     "tr-manual": "Manual",
     "tr-disabled": "Disabled",
     "tr-dnsmasq-cache": "Cache Size",
-    "tr-dnsmasq-negcache": "Negative Cache"
+    "tr-dnsmasq-negcache": "Negative Cache",
+
+    "tr-asu-status-200": "ASU server is reachable. Status: ",
+    "tr-asu-status-500": "ASU server responded with an internal error. Status: ",
+    "tr-asu-status-unreachable": "ASU server responded with an unexpected status: ",
+    "tr-asu-status-networkfail": "Failed to reach the ASU server: "
 }
     
