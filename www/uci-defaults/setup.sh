@@ -4,6 +4,9 @@
 DATE="$(date '+%Y-%m-%d %H:%M')"
 LAN="$(uci -q get network.lan.device || echo lan)"
 WAN="$(uci -q get network.wan.device || echo wan)"
+DIAG="one.one.one.one"
+NTP=".pool.ntp.org"
+CC="${country:-00}"
 DSL="dsl"
 DSL6="dsl6"
 MAPE="mape"
@@ -17,6 +20,23 @@ uci -q batch <<SYSTEM_EOF
 set system.@system[0].description="${DATE}"
 set system.@system[0].notes="site-u.pages.dev/build"
 SYSTEM_EOF
+[ -n "${enable_ntp_pool}" ] && uci set system.ntp.server="0.${CC}${NTP}" "1.${CC}${NTP}" "2${NTP}" "3${NTP}"
+[ -n "${enable_log}" ] && {
+    uci -q batch <<'LOG_EOF'
+set system.@system[0].log_size='32'
+set system.@system[0].log_file=''
+set system.@system[0].log_remote='0'
+set system.@system[0].log_level='5'
+LOG_EOF
+}
+[ -n "${enable_diag}" ] && {
+    uci -q batch <<DIAG_EOF
+set luci.diag=diag
+set luci.diag.ping='${DIAG}'
+set luci.diag.route='${DIAG}'
+set luci.diag.nslookup='${DIAG}'
+DIAG_EOF
+}
 [ -n "${device_name}" ] && uci -q set system.@system[0].hostname="${device_name}"
 [ -n "${root_password}" ] && printf '%s\n%s\n' "${root_password}" "${root_password}" | passwd >/dev/null
 [ -n "${lan_ip_address}" ] && uci -q set network.lan.ipaddr="${lan_ip_address}"
@@ -36,7 +56,7 @@ FLOWHARD_EOF
     for radio in $(printf '%s\n' "${wireless_cfg}" | grep "wireless\.radio[0-9]*=" | cut -d. -f2 | cut -d= -f1); do
         uci -q batch <<RADIO_EOF
 set wireless.${radio}.disabled='0'
-set wireless.${radio}.country="${country:-00}"
+set wireless.${radio}.country="${CC}"
 RADIO_EOF
         band=$(uci -q get wireless.${radio}.band)
         case "${band}" in
