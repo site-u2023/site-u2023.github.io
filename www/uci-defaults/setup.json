@@ -747,48 +747,49 @@
               "type": "info-display",
               "content": "Network optimization will be disabled"
             },
+        {
+          "id": "dnsmasq-mode",
+          "name": "DNS Server Mode",
+          "class": "tr-dnsmasq-mode",
+          "type": "radio-group",
+          "variableName": "enable_dnsmasq",
+          "defaultValue": "auto",
+          "options": [
+            { "value": "auto", "label": "Automatic", "class": "tr-auto", "checked": true },
+            { "value": "manual", "label": "Manual", "class": "tr-manual" },
+            { "value": "disabled", "label": "Disabled", "class": "tr-disabled" }
+          ]
+        },
+        {
+          "id": "dnsmasq-manual-section",
+          "name": "DNS Manual Settings",
+          "class": "tr-dnsmasq-manual",
+          "type": "conditional-section",
+          "showWhen": { "field": "enable_dnsmasq", "values": ["manual"] },
+          "children": [
             {
-              "id": "dnsmasq-settings",
-              "name": "DNS Server Settings",
-              "class": "tr-dnsmasq-settings",
-              "type": "conditional-section",
-              "showWhen": {
-                "field": "enable_dnsmasq",
-                "values": ["auto", "manual", "disabled"]
-              },
-              "connectionFields": ["dnsmasq_cache", "dnsmasq_negcache"],
+              "id": "dnsmasq-fields",
+              "name": "DNS Parameters",
+              "class": "tr-dnsmasq-fields",
+              "type": "input-group",
               "fields": [
-                {
-                  "id": "enable-dnsmasq",
-                  "label": "DNS Server Mode",
-                  "type": "radio-group",
-                  "variableName": "enable_dnsmasq",
-                  "defaultValue": "auto",
-                  "options": [
-                    { "value": "auto", "label": "Automatic" },
-                    { "value": "manual", "label": "Manual" },
-                    { "value": "disabled", "label": "Disabled" }
-                  ]
-                },
                 {
                   "id": "dnsmasq-cache",
                   "label": "Cache Size",
-                  "type": "input",
+                  "type": "text",
                   "selector": "#dnsmasq-cache",
                   "variableName": "dnsmasq_cache",
-                  "defaultValue": "",
-                  "description": "Number of DNS cache entries",
-                  "showWhen": { "field": "enable_dnsmasq", "values": ["manual"] }
+                  "placeholder": "e.g. 10000",
+                  "defaultValue": ""
                 },
                 {
                   "id": "dnsmasq-negcache",
                   "label": "Negative Cache",
-                  "type": "input",
+                  "type": "text",
                   "selector": "#dnsmasq-negcache",
                   "variableName": "dnsmasq_negcache",
-                  "defaultValue": "",
-                  "description": "0 to disable, >0 to enable",
-                  "showWhen": { "field": "enable_dnsmasq", "values": ["manual"] }
+                  "placeholder": "0 to disable, >0 to enable",
+                  "defaultValue": ""
                 }
               ]
             }
