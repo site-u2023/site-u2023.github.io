@@ -919,8 +919,8 @@
           "children": [
             {
               "id": "dnsmasq-disabled-info",
-              "name": "Optimization Disabled",
-              "class": "tr-optimization-disabled",
+              "name": "DNS Optimization Disabled",
+              "class": "tr-dnsmasq-optimization-disabled",
               "type": "info-display",
               "content": "DNS optimization will be disabled."
             }
