@@ -111,7 +111,7 @@
     "tr-dnsmasq-manual": "手動",
     "tr-dnsmasq-disabled": "無効",
     "tr-dnsmasq-cache": "キャッシュサイズ",
-    "tr-dnsmasq-negcache": "ネガティブキャッシュ".
+    "tr-dnsmasq-negcache": "ネガティブキャッシュ",
 
     "tr-asu-status-200": "ASU サーバーに接続可能です。ステータス: {status}",
     "tr-asu-status-500": "ASU サーバーは応答しましたが、内部エラーです。ステータス: {status}",
