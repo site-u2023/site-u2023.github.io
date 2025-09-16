@@ -440,6 +440,18 @@ set samba4.sambashare.inherit_owner='yes'
 set samba4.sambashare.create_mask='0777'
 set samba4.sambashare.dir_mask='0777'
 SAMBA_EOF
+[ -n "${enable_dnsmasq}" ] && {
+    M=$(awk '/MemTotal/{print int($2/1024)}' /proc/meminfo)
+    if   [ "$M" -ge 3072 ]; then CACHE_SIZE=20000
+    elif [ "$M" -ge 1024 ]; then CACHE_SIZE=10000
+    elif [ "$M" -ge 512  ]; then CACHE_SIZE=5000
+    else CACHE_SIZE=1000
+    fi
+    uci -q batch <<DNSMASQ_EOF
+set dhcp.@dnsmasq[0].cachesize='${CACHE_SIZE}'
+set dhcp.@dnsmasq[0].no-negcache='1'
+DNSMASQ_EOF
+}
 # BEGIN_CUSTOM_COMMANDS
 # END_CUSTOM_COMMANDS
 uci commit 2>/dev/null
