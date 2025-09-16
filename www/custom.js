@@ -2133,8 +2133,18 @@ function applySpecialFieldLogic(values) {
         values.enable_dnsmasq = '1';
         const cacheSize = getFieldValue('#dnsmasq-cache');
         const negCache = getFieldValue('#dnsmasq-negcache');
-        if (cacheSize) values.dnsmasq_cache = cacheSize;
-        if (negCache) values.dnsmasq_negcache = negCache;
+
+        if (cacheSize) {
+            values.dnsmasq_cache = cacheSize;
+        } else {
+            delete values.dnsmasq_cache;
+        }
+
+        if (negCache) {
+            values.dnsmasq_negcache = negCache;
+        } else {
+            delete values.dnsmasq_negcache;
+        }
     }
 }
 
