@@ -20,7 +20,7 @@ uci -q batch <<SYSTEM_EOF
 set system.@system[0].description="${DATE}"
 set system.@system[0].notes="site-u.pages.dev/build"
 SYSTEM_EOF
-[ -n "${enable_ntp_pool}" ] && uci -q batch <<EOF
+[ -n "${enable_ntp}" ] && uci -q batch <<EOF
 set system.ntp.server="0.${CC}${NTP}" "1.${CC}${NTP}" "2${NTP}" "3${NTP}"
 set system.ntp.enable_server='1'
 EOF
