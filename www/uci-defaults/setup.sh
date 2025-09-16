@@ -1,4 +1,8 @@
 #!/bin/sh
+enable_notes="on"
+enable_ntp="on"
+enable_log="on"
+enable_diag="on"
 # BEGIN_VARIABLE_DEFINITIONS
 # END_VARIABLE_DEFINITIONS
 DATE="$(date '+%Y-%m-%d %H:%M')"
@@ -16,14 +20,14 @@ AP6="ap6"
 NAS="openwrt"
 MNT="/mnt/sda"
 exec >/tmp/setup.log 2>&1
-uci -q batch <<SYSTEM_EOF
+[ -n "${enable_notes}" ] && uci -q batch <<NOTES_EOF
 set system.@system[0].description="${DATE}"
 set system.@system[0].notes="site-u.pages.dev/build"
-SYSTEM_EOF
-[ -n "${enable_ntp}" ] && uci -q batch <<EOF
+NOTES_EOF
+[ -n "${enable_ntp}" ] && uci -q batch <<NTP_EOF
 set system.ntp.server="0.${CC}${NTP}" "1.${CC}${NTP}" "2${NTP}" "3${NTP}"
 set system.ntp.enable_server='1'
-EOF
+NTP_EOF
 [ -n "${enable_log}" ] && {
     uci -q batch <<'LOG_EOF'
 set system.@system[0].log_size='32'
