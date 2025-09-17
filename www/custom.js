@@ -448,13 +448,14 @@ function getCurrentPackageListForLanguage() {
 
 let lastPackageListHash = null;
 
-// 関数外に前回UI選択状態を保持する変数を追加
 let prevUISelections = new Set();
 
 function updatePackageListToTextarea(source = 'unknown') {
     const basePackages = new Set();
 
-    if (deviceDefaultPackages.length === 0 && deviceDevicePackages.length === 0 && extraPackages.length === 0) {
+    if (deviceDefaultPackages.length === 0 &&
+        deviceDevicePackages.length === 0 &&
+        extraPackages.length === 0) {
         console.warn('updatePackageListToTextarea: Device packages not loaded yet, skipping update from:', source);
         return;
     }
@@ -468,17 +469,15 @@ function updatePackageListToTextarea(source = 'unknown') {
     const checkedPackages = new Set();
     document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
         const pkgName = cb.getAttribute('data-package');
-        if (pkgName) {
-            checkedPackages.add(pkgName);
-        }
+        if (pkgName) checkedPackages.add(pkgName);
     });
 
     const searchedPackages = new Set();
     if (packageSearchManager) {
-        const searchValues = packageSearchManager.getAllValues()
+        packageSearchManager.getAllValues()
             .map(v => v.trim())
-            .filter(v => v.length > 0);
-        searchValues.forEach(pkg => searchedPackages.add(pkg));
+            .filter(v => v.length > 0)
+            .forEach(pkg => searchedPackages.add(pkg));
         console.log('PackageSearchManager values (normalized):', [...searchedPackages]);
     } else {
         console.warn('PackageSearchManager is not initialized');
@@ -521,17 +520,14 @@ function updatePackageListToTextarea(source = 'unknown') {
                 !knownSelectablePackages.has(pkg) &&
                 !isCheckboxManaged &&
                 !isSubstringOfConfirmed &&
-                // ★ 前回UI選択にあったが今回外されたものは manual に残さない
                 !(prevUISelections.has(pkg) && !currentUISelections.has(pkg))) {
                 manualPackages.add(pkg);
             }
         });
 
-        // ★ 今回のUI選択状態を保存
         prevUISelections = currentUISelections;
     }
 
-    // ===== 最終パッケージリスト構築 =====
     const finalPackages = [
         ...basePackages,
         ...checkedPackages,
