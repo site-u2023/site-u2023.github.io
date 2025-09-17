@@ -24,10 +24,8 @@ let cachedDeviceArch = null;
 let defaultFieldValues = {};
 let dynamicPackages = new Set();
 let selectedLanguage = '';
-let customLanguageMap = {};
 let kmodsTokenCache = null;
 let kmodsTokenCacheKey = null;
-let packagesUrl;
 
 const packageAvailabilityCache = new Map();
 const feedCacheMap = new Map();
@@ -511,23 +509,29 @@ function updatePackageListToTextarea(source = 'unknown') {
             ...searchedPackages
         ]);
 
-        currentPackages.forEach(pkg => {
-            const isCheckboxManaged = document.querySelector(`.package-selector-checkbox[data-package="${pkg}"]`) !== null;
-            const isSubstringOfConfirmed = [...confirmedSet].some(cpkg => cpkg.length > pkg.length && cpkg.includes(pkg));
+        currentPackages
+            .map(v => v.trim())
+            .filter(v => v.length > 0)
+            .forEach(pkg => {
+                const isCheckboxManaged = document.querySelector(`.package-selector-checkbox[data-package="${pkg}"]`) !== null;
 
-            if (!confirmedSet.has(pkg) &&
-                !pkg.startsWith('luci-i18n-') &&
-                !knownSelectablePackages.has(pkg) &&
-                !isCheckboxManaged &&
-                !isSubstringOfConfirmed &&
-                !(prevUISelections.has(pkg) && !currentUISelections.has(pkg))) {
-                manualPackages.add(pkg);
-            }
-        });
+                const isSubstringOfConfirmed = [...confirmedSet].some(
+                    cpkg => cpkg.length > pkg.length && cpkg.includes(pkg)
+                );
+
+                if (!confirmedSet.has(pkg) &&
+                    !pkg.startsWith('luci-i18n-') &&
+                    !knownSelectablePackages.has(pkg) &&
+                    !isCheckboxManaged &&
+                    !isSubstringOfConfirmed &&
+                    !(prevUISelections.has(pkg) && !currentUISelections.has(pkg))) {
+                    manualPackages.add(pkg);
+                }
+            });
 
         prevUISelections = currentUISelections;
     }
-
+    
     const finalPackages = [
         ...basePackages,
         ...checkedPackages,
@@ -1154,10 +1158,7 @@ async function loadCustomTranslations(lang) {
             return;
         }
 
-        const text = await resp.text();
-        const customMap = JSON.parse(text);
-        customLanguageMap = customMap;
-        applyCustomTranslations(customLanguageMap);
+        applyCustomTranslations(JSON.parse(await resp.text()));
         
         console.log(`Custom translations loaded for UI language: ${lang}`);
     } catch (err) {
