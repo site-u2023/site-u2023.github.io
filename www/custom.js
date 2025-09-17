@@ -61,6 +61,156 @@ const CustomUtils = {
             return parts[1] || '';
         }
         return '';
+    },
+
+    buildKmodsUrl: async function(version, vendor, isSnapshot) {
+        if (!version || !vendor) {
+            throw new Error(`Missing required parameters for kmods URL: version=${version}, vendor=${vendor}`);
+        }
+    
+        const subtarget = this.getSubtarget();
+        if (!subtarget) {
+            throw new Error(`Missing subtarget for kmods URL: version=${version}, vendor=${vendor}`);
+        }    
+    
+        const cacheKey = `${version}|${vendor}|${isSnapshot ? 'S' : 'R'}`;
+    
+        if (kmodsTokenCache && kmodsTokenCacheKey === cacheKey) {
+            const searchTpl = isSnapshot ? config.kmods_apk_search_url : config.kmods_opkg_search_url;
+            return searchTpl
+                .replace('{version}', version)
+                .replace('{vendor}', vendor)
+                .replace('{subtarget}', subtarget)
+                .replace('{kmod}', kmodsTokenCache);
+        }
+    
+        const indexTpl = isSnapshot ? config.kmods_apk_index_url : config.kmods_opkg_index_url;
+        const indexUrl = indexTpl
+            .replace('{version}', version)
+            .replace('{vendor}', vendor)
+            .replace('{subtarget}', subtarget);
+        
+        console.log('Fetching kmods index:', indexUrl);
+        const resp = await fetch(indexUrl, { cache: 'no-store' });
+        if (!resp.ok) throw new Error(`Failed to fetch kmods index: HTTP ${resp.status} for ${indexUrl}`); 
+        const html = await resp.text();
+        const matches = [...html.matchAll(/href="([^/]+)\/"/g)].map(m => m[1]);
+        if (!matches.length) throw new Error("kmods token not found");
+    
+        matches.sort();
+        kmodsTokenCache = matches[matches.length - 1];
+        kmodsTokenCacheKey = cacheKey;
+    
+        const searchTpl = isSnapshot ? config.kmods_apk_search_url : config.kmods_opkg_search_url;
+        return searchTpl
+            .replace('{version}', version)
+            .replace('{vendor}', vendor)
+            .replace('{subtarget}', subtarget)
+            .replace('{kmod}', kmodsTokenCache);
+    },
+    
+    inCidr: function(ipv6, cidr) {
+        const [prefix, bits] = cidr.split('/');
+        const addrBin = this.ipv6ToBinary(ipv6);
+        const prefixBin = this.ipv6ToBinary(prefix);
+        return addrBin.substring(0, bits) === prefixBin.substring(0, bits);
+    },
+    
+    ipv6ToBinary: function(ipv6) {
+        const full = ipv6.split('::').reduce((acc, part, i, arr) => {
+            const segs = part.split(':').filter(Boolean);
+            if (i === 0) {
+                return segs;
+            } else {
+                const missing = 8 - (arr[0].split(':').filter(Boolean).length + segs.length);
+                return acc.concat(Array(missing).fill('0'), segs);
+            }
+        }, []).map(s => s.padStart(4, '0'));
+        return full.map(seg => parseInt(seg, 16).toString(2).padStart(16, '0')).join('');
+    },
+    
+    generateGuaPrefixFromFullAddress: function(apiInfo) {
+        if (!apiInfo?.ipv6) return null;
+        const ipv6 = apiInfo.ipv6.toLowerCase();
+    
+        if (!this.inCidr(ipv6, '2000::/3')) return null;
+    
+        const excludeCidrs = [
+            '2001:db8::/32',  // ドキュメンテーション
+            '2002::/16',      // 6to4
+            '2001::/32',      // Teredo
+            '2001:20::/28',   // ORCHIDv2
+            '2001:2::/48',    // ベンチマーク
+            '2001:3::/32',    // AMT
+            '2001:4:112::/48' // AS112-v6
+        ];
+        if (excludeCidrs.some(cidr => this.inCidr(ipv6, cidr))) return null;
+    
+        const segments = ipv6.split(':');
+        if (segments.length >= 4) {
+            return `${segments[0]}:${segments[1]}:${segments[2]}:${segments[3]}::/64`;
+        }
+        return null;
+    },
+    
+    show: function(el) {
+        const e = typeof el === 'string' ? document.querySelector(el) : el;
+        if (e) {
+            e.classList.remove('hide');
+            e.style.display = '';
+        }
+    },
+    
+    hide: function(el) {
+        const e = typeof el === 'string' ? document.querySelector(el) : el;
+        if (e) {
+            e.classList.add('hide');
+            e.style.display = 'none';
+        }
+    },
+    
+    setValue: function(selector, val) {
+        const el = document.querySelector(selector);
+        if (el) {
+            if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+                el.value = val;
+            } else {
+                el.innerText = val;
+            }
+        }
+    },
+    
+    split: function(str) {
+        return str.match(/[^\s,]+/g) || [];
+    },
+    
+    getNestedValue: function(obj, path) {
+        return path.split('.').reduce((current, key) => current?.[key], obj);
+    },
+    
+    setGuaPrefixIfAvailable: function() {
+        const guaPrefixField = document.querySelector('#mape-gua-prefix');
+        if (!guaPrefixField || !cachedApiInfo?.ipv6) return;
+        const guaPrefix = this.generateGuaPrefixFromFullAddress(cachedApiInfo);
+        if (guaPrefix) {
+            guaPrefixField.value = guaPrefix;
+        }
+    },
+    
+    toggleGuaPrefixVisibility: function(mode) {
+        const guaPrefixField = document.querySelector('#mape-gua-prefix');
+        if (!guaPrefixField) return;
+        const formGroup = guaPrefixField.closest('.form-group');
+        if (mode === 'pd') {
+            guaPrefixField.value = '';
+            guaPrefixField.disabled = true;
+            if (formGroup) formGroup.style.display = 'none';
+            console.log('PD mode: GUA prefix hidden');
+        } else if (mode === 'gua') {
+            guaPrefixField.disabled = false;
+            if (formGroup) formGroup.style.display = '';
+            this.setGuaPrefixIfAvailable();
+        }
     }
 };
 
@@ -443,7 +593,7 @@ function getCurrentPackageListForLanguage() {
     
     const textarea = document.querySelector('#asu-packages');
     if (textarea) {
-        const textPackages = split(textarea.value);
+        const textPackages = CustomUtils.split(textarea.value);
         textPackages.forEach(pkg => {
             if (!pkg.startsWith('luci-i18n-') && !checkedPackageSet.has(pkg)) {
                 packages.add(pkg);
@@ -503,7 +653,7 @@ function updatePackageListToTextarea(source = 'unknown') {
     const manualPackages = new Set();
     const textarea = document.querySelector('#asu-packages');
     if (textarea) {
-        const currentPackages = split(textarea.value)
+        const currentPackages = CustomUtils.split(textarea.value)
             .map(v => v.trim())
             .filter(v => v.length > 0);
 
@@ -870,7 +1020,7 @@ async function searchInFeed(query, feed, version, arch) {
                     console.warn('[WARN] Missing vendor for kmods search');
                     return [];
                 }
-                url = await buildKmodsUrl(version, vendor, version.includes('SNAPSHOT'));
+                url = await CustomUtils.buildKmodsUrl(version, vendor, version.includes('SNAPSHOT'));
                 console.log('[DEBUG] kmods search URL:', url);
             } else if (version.includes('SNAPSHOT')) {
                 url = config.apk_search_url
@@ -1229,7 +1379,7 @@ function getCurrentPackageList() {
     
     const textarea = document.querySelector('#asu-packages');
     if (textarea) {
-        const textPackages = split(textarea.value);
+        const textPackages = CustomUtils.split(textarea.value);
         textPackages.forEach(pkg => {
             if (!deviceDefaultPackages.includes(pkg) && 
                 !deviceDevicePackages.includes(pkg) && 
@@ -1292,7 +1442,7 @@ async function isPackageAvailable(pkgName, feed) {
                 packageAvailabilityCache.set(cacheKey, false);
                 return false;
             }
-            packagesUrl = await buildKmodsUrl(version, vendor, version.includes('SNAPSHOT'));
+            packagesUrl = await CustomUtils.buildKmodsUrl(version, vendor, version.includes('SNAPSHOT'));
 
             console.log(`[DEBUG] kmods packagesUrl: ${packagesUrl}`);
 
@@ -1744,13 +1894,13 @@ function buildFormGroup(field) {
         if (field.defaultValue !== null && field.defaultValue !== undefined && field.defaultValue !== '') {
             ctrl.value = field.defaultValue;
         } else if (field.apiMapping && cachedApiInfo) {
-            const apiValue = getNestedValue(cachedApiInfo, field.apiMapping);
+            const apiValue = CustomUtils.getNestedValue(cachedApiInfo, field.apiMapping);
             if (apiValue !== null && apiValue !== undefined && apiValue !== '') {
                 ctrl.value = apiValue;
             }
         }
         if (field.variableName === 'mape_gua_prefix') {
-            setGuaPrefixIfAvailable();
+            CustomUtils.setGuaPrefixIfAvailable();
         }        
         if (field.min != null) ctrl.min = field.min;
         if (field.max != null) ctrl.max = field.max;
@@ -1778,7 +1928,7 @@ function handleRadioChange(e) {
     const radio = e.target;
     
     if (radio.name === 'mape_type') {
-        toggleGuaPrefixVisibility(radio.value);
+        CustomUtils.toggleGuaPrefixVisibility(radio.value);
     }
     
     updateAllPackageState('radio-change');
@@ -2041,7 +2191,7 @@ function applySpecialFieldLogic(values) {
                 values.mape_psid_offset = cachedApiInfo.mape.psIdOffset;
                 values.mape_psidlen = cachedApiInfo.mape.psidlen;
                 
-                const guaPrefix = generateGuaPrefixFromFullAddress(cachedApiInfo);
+                const guaPrefix = CustomUtils.generateGuaPrefixFromFullAddress(cachedApiInfo);
                 if (guaPrefix) {
                     values.mape_gua_prefix = guaPrefix;
                 }
@@ -2092,7 +2242,7 @@ function applySpecialFieldLogic(values) {
                         values.mape_psid_offset = cachedApiInfo.mape.psIdOffset;
                         values.mape_psidlen = cachedApiInfo.mape.psidlen;
                         
-                        const guaPrefix = generateGuaPrefixFromFullAddress(cachedApiInfo);
+                        const guaPrefix = CustomUtils.generateGuaPrefixFromFullAddress(cachedApiInfo);
                         if (guaPrefix) {
                             values.mape_gua_prefix = guaPrefix;
                         }
@@ -2104,7 +2254,7 @@ function applySpecialFieldLogic(values) {
                         if (currentGUAValue) {
                             values.mape_gua_prefix = currentGUAValue;
                         } else if (!values.mape_gua_prefix && cachedApiInfo?.ipv6) {
-                            const guaPrefix = generateGuaPrefixFromFullAddress(cachedApiInfo);
+                            const guaPrefix = CustomUtils.generateGuaPrefixFromFullAddress(cachedApiInfo);
                             if (guaPrefix) {
                                 values.mape_gua_prefix = guaPrefix;
                             }
@@ -2276,7 +2426,7 @@ function setupCommandsInput() {
 function handleMapeTypeChange(e) {
     const mapeType = e.target.value;
     
-    toggleGuaPrefixVisibility(mapeType);
+    CustomUtils.toggleGuaPrefixVisibility(mapeType);
     
     if (mapeType === 'pd') {
         const guaPrefixField = document.querySelector('#mape-gua-prefix');
@@ -2366,14 +2516,14 @@ function handleConnectionTypeChange(e) {
             if (!section) return;
             
             if (pkg.showWhen.values?.includes(selectedType)) {
-                show(section);
+                CustomUtils.show(section);
                 
                 if (selectedType === 'auto' && cachedApiInfo) {
                     updateAutoConnectionInfo(cachedApiInfo);
                 } else if (selectedType === 'mape' && cachedApiInfo) {
                     const guaPrefixField = document.querySelector('#mape-gua-prefix');
                     if (guaPrefixField && cachedApiInfo.ipv6) {
-                        const guaPrefix = generateGuaPrefixFromFullAddress(cachedApiInfo);
+                        const guaPrefix = CustomUtils.generateGuaPrefixFromFullAddress(cachedApiInfo);
                         if (guaPrefix && !guaPrefixField.value) {
                             guaPrefixField.value = guaPrefix;
                             console.log('GUA prefix set for MAP-E:', guaPrefix);
@@ -2381,7 +2531,7 @@ function handleConnectionTypeChange(e) {
                     }
                 }
             } else {
-                hide(section);
+                CustomUtils.hide(section);
             }
         }
     });
@@ -2400,13 +2550,13 @@ function handleNetOptimizerChange(e) {
             if (!section) return;
             
             if (pkg.showWhen.values?.includes(mode)) {
-                show(section);
+                CustomUtils.show(section);
                 
                 if (mode === 'manual') {
                     restoreManualDefaults();
                 }
             } else {
-                hide(section);
+                CustomUtils.hide(section);
             }
         }
     });
@@ -2431,7 +2581,7 @@ function handleWifiModeChange(e) {
             if (!section) return;
             
             if (pkg.showWhen?.values?.includes(mode)) {
-                show(section);
+                CustomUtils.show(section);
                 
                 if (pkg.children) {
                     pkg.children.forEach(child => {
@@ -2439,16 +2589,16 @@ function handleWifiModeChange(e) {
                             const childSection = document.querySelector(`#${child.id}`);
                             if (childSection) {
                                 if (child.showWhen?.values?.includes(mode)) {
-                                    show(childSection);
+                                    CustomUtils.show(childSection);
                                 } else {
-                                    hide(childSection);
+                                    CustomUtils.hide(childSection);
                                 }
                             }
                         }
                     });
                 }
             } else {
-                hide(section);
+                CustomUtils.hide(section);
             }
         }
     });
@@ -2556,7 +2706,7 @@ async function fetchAndDisplayIspInfo() {
         
         displayIspInfoIfReady();
         updateAutoConnectionInfo(apiInfo);
-        setGuaPrefixIfAvailable();
+        CustomUtils.setGuaPrefixIfAvailable();
 
     } catch (err) {
         console.error('Failed to fetch ISP info:', err);
@@ -2585,18 +2735,18 @@ function displayIspInfoIfReady() {
 function displayIspInfo(apiInfo) {
     if (!apiInfo) return;
     
-    setValue("#auto-config-country", apiInfo.country || "Unknown");
-    setValue("#auto-config-timezone", apiInfo.timezone || "Unknown");
-    setValue("#auto-config-zonename", apiInfo.zonename || "Unknown");
-    setValue("#auto-config-isp", apiInfo.isp || "Unknown");
-    setValue("#auto-config-as", apiInfo.as || "Unknown");
-    setValue("#auto-config-ip", [apiInfo.ipv4, apiInfo.ipv6].filter(Boolean).join(" / ") || "Unknown");
+    CustomUtils.setValue("#auto-config-country", apiInfo.country || "Unknown");
+    CustomUtils.setValue("#auto-config-timezone", apiInfo.timezone || "Unknown");
+    CustomUtils.setValue("#auto-config-zonename", apiInfo.zonename || "Unknown");
+    CustomUtils.setValue("#auto-config-isp", apiInfo.isp || "Unknown");
+    CustomUtils.setValue("#auto-config-as", apiInfo.as || "Unknown");
+    CustomUtils.setValue("#auto-config-ip", [apiInfo.ipv4, apiInfo.ipv6].filter(Boolean).join(" / ") || "Unknown");
 
     const wanType = getConnectionType(apiInfo);
-    setValue("#auto-config-method", wanType);
-    setValue("#auto-config-notice", apiInfo.notice || "");
+    CustomUtils.setValue("#auto-config-method", wanType);
+    CustomUtils.setValue("#auto-config-notice", apiInfo.notice || "");
     
-    show("#extended-build-info");
+    CustomUtils.show("#extended-build-info");
 }
 
 async function insertExtendedInfo(temp) {
@@ -2753,10 +2903,10 @@ function applyIspAutoConfig(apiInfo) {
             return;
         }
 
-        let value = getNestedValue(apiInfo, field.apiMapping);
+        let value = CustomUtils.getNestedValue(apiInfo, field.apiMapping);
 
         if (field.variableName === 'mape_gua_prefix') {
-            const guaPrefix = generateGuaPrefixFromFullAddress(cachedApiInfo);
+            const guaPrefix = CustomUtils.generateGuaPrefixFromFullAddress(cachedApiInfo);
             if (guaPrefix) value = guaPrefix;
         }
 
@@ -2770,7 +2920,7 @@ function applyIspAutoConfig(apiInfo) {
     });
 
     if (mutated) {
-        setGuaPrefixIfAvailable();
+        CustomUtils.setGuaPrefixIfAvailable();
         updateAutoConnectionInfo(apiInfo);
     }
 
@@ -3229,158 +3379,6 @@ function setupFormWatchers() {
     });
     
     updateVariableDefinitions();
-}
-
-// ==================== ユーティリティ関数 ====================
-
-async function buildKmodsUrl(version, vendor, isSnapshot) {
-    if (!version || !vendor) {
-        throw new Error(`Missing required parameters for kmods URL: version=${version}, vendor=${vendor}`);
-    }
-
-    const subtarget = CustomUtils.getSubtarget();
-    if (!subtarget) {
-        throw new Error(`Missing subtarget for kmods URL: version=${version}, vendor=${vendor}`);
-    }    
-
-    const cacheKey = `${version}|${vendor}|${isSnapshot ? 'S' : 'R'}`;
-
-    if (kmodsTokenCache && kmodsTokenCacheKey === cacheKey) {
-        const searchTpl = isSnapshot ? config.kmods_apk_search_url : config.kmods_opkg_search_url;
-        return searchTpl
-            .replace('{version}', version)
-            .replace('{vendor}', vendor)
-            .replace('{subtarget}', subtarget)
-            .replace('{kmod}', kmodsTokenCache);
-    }
-
-    const indexTpl = isSnapshot ? config.kmods_apk_index_url : config.kmods_opkg_index_url;
-    const indexUrl = indexTpl
-        .replace('{version}', version)
-        .replace('{vendor}', vendor)
-        .replace('{subtarget}', subtarget);
-    
-    console.log('Fetching kmods index:', indexUrl);
-    const resp = await fetch(indexUrl, { cache: 'no-store' });
-    if (!resp.ok) throw new Error(`Failed to fetch kmods index: HTTP ${resp.status} for ${indexUrl}`); 
-    const html = await resp.text();
-    const matches = [...html.matchAll(/href="([^/]+)\/"/g)].map(m => m[1]);
-    if (!matches.length) throw new Error("kmods token not found");
-
-    matches.sort();
-    kmodsTokenCache = matches[matches.length - 1];
-    kmodsTokenCacheKey = cacheKey;
-
-    const searchTpl = isSnapshot ? config.kmods_apk_search_url : config.kmods_opkg_search_url;
-    return searchTpl
-        .replace('{version}', version)
-        .replace('{vendor}', vendor)
-        .replace('{subtarget}', subtarget)
-        .replace('{kmod}', kmodsTokenCache);
-}
-
-function inCidr(ipv6, cidr) {
-    const [prefix, bits] = cidr.split('/');
-    const addrBin = ipv6ToBinary(ipv6);
-    const prefixBin = ipv6ToBinary(prefix);
-    return addrBin.substring(0, bits) === prefixBin.substring(0, bits);
-}
-
-function ipv6ToBinary(ipv6) {
-    const full = ipv6.split('::').reduce((acc, part, i, arr) => {
-        const segs = part.split(':').filter(Boolean);
-        if (i === 0) {
-            return segs;
-        } else {
-            const missing = 8 - (arr[0].split(':').filter(Boolean).length + segs.length);
-            return acc.concat(Array(missing).fill('0'), segs);
-        }
-    }, []).map(s => s.padStart(4, '0'));
-    return full.map(seg => parseInt(seg, 16).toString(2).padStart(16, '0')).join('');
-}
-
-function generateGuaPrefixFromFullAddress(apiInfo) {
-    if (!apiInfo?.ipv6) return null;
-    const ipv6 = apiInfo.ipv6.toLowerCase();
-
-    if (!inCidr(ipv6, '2000::/3')) return null;
-
-    const excludeCidrs = [
-        '2001:db8::/32',  // ドキュメンテーション
-        '2002::/16',      // 6to4
-        '2001::/32',      // Teredo
-        '2001:20::/28',   // ORCHIDv2
-        '2001:2::/48',    // ベンチマーク
-        '2001:3::/32',    // AMT
-        '2001:4:112::/48' // AS112-v6
-    ];
-    if (excludeCidrs.some(cidr => inCidr(ipv6, cidr))) return null;
-
-    const segments = ipv6.split(':');
-    if (segments.length >= 4) {
-        return `${segments[0]}:${segments[1]}:${segments[2]}:${segments[3]}::/64`;
-    }
-    return null;
-}
-
-function show(el) {
-    const e = typeof el === 'string' ? document.querySelector(el) : el;
-    if (e) {
-        e.classList.remove('hide');
-        e.style.display = '';
-    }
-}
-
-function hide(el) {
-    const e = typeof el === 'string' ? document.querySelector(el) : el;
-    if (e) {
-        e.classList.add('hide');
-        e.style.display = 'none';
-    }
-}
-
-function setValue(selector, val) {
-    const el = document.querySelector(selector);
-    if (el) {
-        if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
-            el.value = val;
-        } else {
-            el.innerText = val;
-        }
-    }
-}
-
-function split(str) {
-    return str.match(/[^\s,]+/g) || [];
-}
-
-function getNestedValue(obj, path) {
-    return path.split('.').reduce((current, key) => current?.[key], obj);
-}
-
-function setGuaPrefixIfAvailable() {
-    const guaPrefixField = document.querySelector('#mape-gua-prefix');
-    if (!guaPrefixField || !cachedApiInfo?.ipv6) return;
-    const guaPrefix = generateGuaPrefixFromFullAddress(cachedApiInfo);
-    if (guaPrefix) {
-        guaPrefixField.value = guaPrefix;
-    }
-}
-
-function toggleGuaPrefixVisibility(mode) {
-    const guaPrefixField = document.querySelector('#mape-gua-prefix');
-    if (!guaPrefixField) return;
-    const formGroup = guaPrefixField.closest('.form-group');
-    if (mode === 'pd') {
-        guaPrefixField.value = '';
-        guaPrefixField.disabled = true;
-        if (formGroup) formGroup.style.display = 'none';
-        console.log('PD mode: GUA prefix hidden');
-    } else if (mode === 'gua') {
-        guaPrefixField.disabled = false;
-        if (formGroup) formGroup.style.display = '';
-        setGuaPrefixIfAvailable();
-    }
 }
 
 // ==================== エラーハンドリング ====================
