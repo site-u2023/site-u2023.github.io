@@ -1026,7 +1026,6 @@ async function searchInFeed(query, feed, version, arch) {
 }
 
 function showPackageSearchResults(results, inputElement) {
-    
     clearPackageSearchResults();
     
     if (!results || results.length === 0) return;
@@ -1034,41 +1033,49 @@ function showPackageSearchResults(results, inputElement) {
     const container = document.getElementById('package-search-autocomplete');
     if (!container) return;
     
+    const resultsDiv = createSearchResultsContainer(results, inputElement);
+    container.appendChild(resultsDiv);
+}
+
+function createSearchResultsContainer(results, inputElement) {
     const resultsDiv = document.createElement('div');
     resultsDiv.className = 'package-search-results';
     
     results.forEach(pkgName => {
-        const item = document.createElement('div');
-        item.textContent = pkgName;
-        
-        item.onmousedown = (e) => {
-            e.preventDefault();
-            
-            console.log('Package selected:', pkgName);
-            
-            try {  // ここにtryを追加
-                inputElement.dataset.programmaticChange = 'true';
-                inputElement.value = pkgName;
-                
-                inputElement.setAttribute('data-confirmed', 'true');
-                
-                const inputIndex = packageSearchManager.inputs.indexOf(inputElement);
-                if (inputIndex === packageSearchManager.inputs.length - 1) {
-                    packageSearchManager.addInput('', true);
-                }
-                
-                clearPackageSearchResults();
-                packageSearchManager.options.onChange(packageSearchManager.getAllValues());
-                updateAllPackageState('package-selected');
-            } catch (error) {
-                console.error('Error in package selection:', error);
-            }
-        };
-  
+        const item = createSearchResultItem(pkgName, inputElement);
         resultsDiv.appendChild(item);
     });
     
-    container.appendChild(resultsDiv);
+    return resultsDiv;
+}
+
+function createSearchResultItem(pkgName, inputElement) {
+    const item = document.createElement('div');
+    item.textContent = pkgName;
+    item.onmousedown = (e) => handlePackageSelect(e, pkgName, inputElement);
+    return item;
+}
+
+function handlePackageSelect(e, pkgName, inputElement) {
+    e.preventDefault();
+    console.log('Package selected:', pkgName);
+    
+    try {
+        inputElement.dataset.programmaticChange = 'true';
+        inputElement.value = pkgName;
+        inputElement.setAttribute('data-confirmed', 'true');
+        
+        const inputIndex = packageSearchManager.inputs.indexOf(inputElement);
+        if (inputIndex === packageSearchManager.inputs.length - 1) {
+            packageSearchManager.addInput('', true);
+        }
+        
+        clearPackageSearchResults();
+        packageSearchManager.options.onChange(packageSearchManager.getAllValues());
+        updateAllPackageState('package-selected');
+    } catch (error) {
+        console.error('Error in package selection:', error);
+    }
 }
 
 function clearPackageSearchResults() {
