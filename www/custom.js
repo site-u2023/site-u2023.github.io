@@ -1449,33 +1449,102 @@ async function isPackageAvailable(pkgName, feed) {
 }
 
 // ==================== パッケージ存在確認 ====================
-async function verifyAllPackages() {    
+const availabilityIndexCache = new Map(); // key: `${version}:${arch}:${vendor}:${subtarget}:${isSnapshot}`, val: { packages:Set, luci:Set, kmods:Set }
+
+async function fetchFeedSet(feed, deviceInfo) {
+    const url = await buildPackageUrl(feed, deviceInfo);
+    const isSnapshot = deviceInfo.isSnapshot || (feed === 'kmods' && deviceInfo.isSnapshot);
+    const resp = await fetch(url, { cache: 'force-cache' });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status} for ${feed} at ${url}`);
+
+    if (isSnapshot) {
+        const data = await resp.json();
+        if (Array.isArray(data.packages)) {
+            return new Set(data.packages.map(p => p?.name).filter(Boolean));
+        } else if (data.packages && typeof data.packages === 'object') {
+            return new Set(Object.keys(data.packages));
+        }
+        return new Set();
+    } else {
+        const text = await resp.text();
+        const names = text.split('\n')
+            .filter(line => line.startsWith('Package: '))
+            .map(line => line.substring(9).trim())
+            .filter(Boolean);
+        return new Set(names);
+    }
+}
+
+async function buildAvailabilityIndex(deviceInfo, neededFeeds) {
+    const cacheKey = [
+        deviceInfo.version,
+        deviceInfo.arch,
+        deviceInfo.vendor || '',
+        deviceInfo.subtarget || '',
+        deviceInfo.isSnapshot ? 'S' : 'R'
+    ].join(':');
+
+    const cached = availabilityIndexCache.get(cacheKey);
+    if (cached) return cached;
+
+    const index = { packages: new Set(), luci: new Set(), kmods: new Set() };
+    const tasks = [];
+
+    if (neededFeeds.has('packages')) {
+        tasks.push(fetchFeedSet('packages', deviceInfo).then(set => index.packages = set).catch(() => (index.packages = new Set())));
+    }
+    if (neededFeeds.has('luci')) {
+        tasks.push(fetchFeedSet('luci', deviceInfo).then(set => index.luci = set).catch(() => (index.luci = new Set())));
+    }
+
+    if (neededFeeds.has('kmods')) {
+        if (!deviceInfo.vendor || !deviceInfo.subtarget) {
+            console.warn('[WARN] kmods feed required but vendor/subtarget missing; kmod checks will fail-open=false');
+            index.kmods = new Set();
+        } else {
+            tasks.push(fetchFeedSet('kmods', deviceInfo).then(set => index.kmods = set).catch(() => (index.kmods = new Set())));
+        }
+    }
+
+    await Promise.all(tasks);
+    availabilityIndexCache.set(cacheKey, index);
+    return index;
+}
+
+function isAvailableInIndex(pkgName, feed, index) {
+    switch (feed) {
+        case 'packages': return index.packages.has(pkgName);
+        case 'luci':     return index.luci.has(pkgName);
+        case 'kmods':    return index.kmods.has(pkgName);
+        default:         return false;
+    }
+}
+
+async function verifyAllPackages() {
     const arch = current_device?.arch || cachedDeviceArch;
     if (!packagesJson || !arch) {
         console.log('Cannot verify packages: missing data');
         return;
     }
-    
+
     const startTime = Date.now();
     console.log('Starting package verification...');
-    
+
     const packagesToVerify = [];
-    
     packagesJson.categories.forEach(category => {
         category.packages.forEach(pkg => {
-            packagesToVerify.push({ 
-                id: pkg.id, 
+            packagesToVerify.push({
+                id: pkg.id,
                 uniqueId: pkg.uniqueId || pkg.id,
                 feed: guessFeedForPackage(pkg.id),
                 hidden: pkg.hidden || false,
                 checked: pkg.checked || false
             });
-            
             if (pkg.dependencies) {
                 pkg.dependencies.forEach(depId => {
                     const depPkg = findPackageById(depId);
                     if (depPkg) {
-                        packagesToVerify.push({ 
+                        packagesToVerify.push({
                             id: depPkg.id,
                             uniqueId: depPkg.uniqueId || depPkg.id,
                             feed: guessFeedForPackage(depPkg.id),
@@ -1487,56 +1556,37 @@ async function verifyAllPackages() {
             }
         });
     });
-    
+
     const uniquePackages = Array.from(new Set(packagesToVerify.map(p => `${p.id}:${p.feed}`)))
         .map(key => {
             const [id, feed] = key.split(':');
             const pkg = packagesToVerify.find(p => p.id === id && p.feed === feed);
             return pkg;
         });
-    
+
     console.log(`Verifying ${uniquePackages.length} unique packages...`);
-    
-    let BATCH_SIZE = 10;
-    if ('connection' in navigator && typeof navigator.connection.downlink === 'number') {
-        const speedMbps = navigator.connection.downlink;
-        BATCH_SIZE = Math.min(25, Math.max(2, Math.round(speedMbps * 2)));
-        console.log(`[INFO] Network downlink: ${speedMbps} Mbps → concurrency = ${BATCH_SIZE}`);
-    } else {
-        console.log(`[INFO] Network Information API not supported → concurrency = ${BATCH_SIZE}`);
+
+    const deviceInfo = getDeviceInfo();
+    const neededFeeds = new Set(uniquePackages.map(p => p.feed));
+    const index = await buildAvailabilityIndex(deviceInfo, neededFeeds);
+
+    let unavailableCount = 0;
+    const checkedUnavailable = [];
+
+    for (const pkg of uniquePackages) {
+        const available = isAvailableInIndex(pkg.id, pkg.feed, index);
+        updatePackageAvailabilityUI(pkg.uniqueId, available);
+
+        if (!available) {
+            unavailableCount++;
+            if (pkg.checked) checkedUnavailable.push(pkg.id);
+        }
     }
 
-    const batches = [];
-    for (let i = 0; i < uniquePackages.length; i += BATCH_SIZE) {
-        batches.push(uniquePackages.slice(i, i + BATCH_SIZE));
-    }
-    
-    let unavailableCount = 0;
-    let checkedUnavailable = [];
-    
-    for (const batch of batches) {
-        const promises = batch.map(async pkg => {
-            const isAvailable = await isPackageAvailable(pkg.id, pkg.feed);
-            
-            updatePackageAvailabilityUI(pkg.uniqueId, isAvailable);
-            
-            if (!isAvailable) {
-                unavailableCount++;
-                if (pkg.checked) {
-                    checkedUnavailable.push(pkg.id);
-                }
-            }
-            
-            return { id: pkg.id, uniqueId: pkg.uniqueId, available: isAvailable };
-        });
-        
-        await Promise.all(promises);
-    }
-    
     const elapsedTime = Date.now() - startTime;
     console.log(`Package verification completed in ${elapsedTime}ms`);
     console.log(`${unavailableCount} packages are not available for this device`);
-    
+
     if (checkedUnavailable.length > 0) {
         console.warn('The following pre-selected packages are not available:', checkedUnavailable);
     }
