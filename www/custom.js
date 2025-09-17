@@ -3281,8 +3281,13 @@ const domCache = {
     }
 };
 
+let cachedUciTextarea = null;
+
 function updateVariableDefinitions() {
-    const textarea = domCache.getUciDefaultsTextarea();
+    if (!cachedUciTextarea) {
+        cachedUciTextarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
+    }
+    const textarea = cachedUciTextarea;
     if (!textarea) return;
 
     const values = collectFormValues && typeof collectFormValues === 'function'
@@ -3296,7 +3301,7 @@ function updateVariableDefinitions() {
 
     let emissionValues = { ...values };
 
-    domCache.getCheckedPackages().forEach(cb => {
+    document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
         const enableVar = cb.getAttribute('data-enable-var');
         if (enableVar) {
             emissionValues[enableVar] = '1';
