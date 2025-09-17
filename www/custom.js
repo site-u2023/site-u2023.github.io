@@ -363,36 +363,36 @@ async function updateAllPackageState(source = 'unknown') {
 
 function updateSetupJsonPackagesCore() {
     if (!setupConfig) return;
-    
-    setupConfig.categories.forEach(category => {
-        category.packages.forEach(pkg => {
-            if (pkg.type === 'radio-group' && pkg.variableName) {
-                const selectedValue = getFieldValue(`input[name="${pkg.variableName}"]:checked`);
-                if (selectedValue) {
-                    console.log(`Radio group ${pkg.variableName} selected: ${selectedValue}`);
-                    
-                    pkg.options.forEach(opt => {
-                        if (opt.value !== selectedValue) {
-                            toggleVirtualPackagesByType(pkg.variableName, opt.value, false);
-                        }
-                    });
-                    
-                    toggleVirtualPackagesByType(pkg.variableName, selectedValue, true);
-                    
-                    if (pkg.variableName === 'connection_type' && selectedValue === 'auto' && cachedApiInfo) {
-                        console.log('AUTO mode with API info, applying specific packages');
-                        if (cachedApiInfo.mape?.brIpv6Address) {
-                            console.log('Enabling MAP-E package');
-                            toggleVirtualPackage('map', true);
-                        } else if (cachedApiInfo.aftr) {
-                            console.log('Enabling DS-Lite package');
-                            toggleVirtualPackage('ds-lite', true);
-                        }
-                    }
-                }
-            }
+
+    function handleRadioGroup(pkg) {
+        const selectedValue = getFieldValue(`input[name="${pkg.variableName}"]:checked`);
+        if (!selectedValue) return;
+
+        console.log(`Radio group ${pkg.variableName} selected: ${selectedValue}`);
+
+        pkg.options.forEach(opt => {
+            const enable = (opt.value === selectedValue);
+            toggleVirtualPackagesByType(pkg.variableName, opt.value, enable);
         });
-    });
+
+        if (pkg.variableName === 'connection_type' && selectedValue === 'auto' && cachedApiInfo) {
+            console.log('AUTO mode with API info, applying specific packages');
+            if (cachedApiInfo.mape?.brIpv6Address) {
+                console.log('Enabling MAP-E package');
+                toggleVirtualPackage('map', true);
+            } else if (cachedApiInfo.aftr) {
+                console.log('Enabling DS-Lite package');
+                toggleVirtualPackage('ds-lite', true);
+            }
+        }
+    }
+
+    for (const category of setupConfig.categories) {
+        for (const pkg of category.packages) {
+            if (pkg.type !== 'radio-group' || !pkg.variableName) continue;
+            handleRadioGroup(pkg);
+        }
+    }
 }
 
 function toggleVirtualPackage(packageId, enabled) {
