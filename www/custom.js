@@ -553,7 +553,7 @@ function getCurrentPackageListForLanguage() {
         ...extraPackages
     ]);
 
-    domCache.getCheckedPackages().forEach(cb => {
+    document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
         const name = cb.getAttribute('data-package');
         const uid = cb.getAttribute('data-unique-id');
         if (name) out.add(name);
@@ -574,7 +574,7 @@ function getCurrentPackageListForLanguage() {
         if (n) allSelectable.add(n);
     });
 
-    const textarea = domCache.getAsuPackagesTextarea();
+    const textarea = document.querySelector('#asu-packages');
     if (textarea) {
         for (const name of CustomUtils.split(textarea.value)) {
             if (!name.startsWith('luci-i18n-') && !allSelectable.has(name)) out.add(name);
@@ -586,27 +586,6 @@ function getCurrentPackageListForLanguage() {
 
 let lastPackageListHash = null;
 let prevUISelections = new Set();
-
-// 既存のdomCacheに追加
-const domCache = {
-    uciDefaultsTextarea: null,
-    asuPackagesTextarea: null,
-    getUciDefaultsTextarea() {
-        if (!this.uciDefaultsTextarea) {
-            this.uciDefaultsTextarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
-        }
-        return this.uciDefaultsTextarea;
-    },
-    getAsuPackagesTextarea() {
-        if (!this.asuPackagesTextarea) {
-            this.asuPackagesTextarea = document.querySelector('#asu-packages');
-        }
-        return this.asuPackagesTextarea;
-    },
-    getCheckedPackages() {
-        return document.querySelectorAll('.package-selector-checkbox:checked');
-    }
-};
 
 function updatePackageListToTextarea(source = 'unknown') {
     if (!deviceDefaultPackages.length && !deviceDevicePackages.length && !extraPackages.length) {
@@ -637,7 +616,7 @@ function updatePackageListToTextarea(source = 'unknown') {
     console.log(`Base device packages: default=${deviceDefaultPackages.length}, device=${deviceDevicePackages.length}, extra=${extraPackages.length}`);
 
     const checkedPackages = new Set();
-    domCache.getCheckedPackages().forEach(cb => {
+    document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
         const pkgName = cb.getAttribute('data-package');
         if (pkgName) checkedPackages.add(pkgName);
     });
@@ -658,7 +637,7 @@ function updatePackageListToTextarea(source = 'unknown') {
     });
 
     const manualPackages = new Set();
-    const textarea = domCache.getAsuPackagesTextarea();
+    const textarea = document.querySelector('#asu-packages');
     
     if (textarea) {
         const currentTextareaPackages = normalizePackages(textarea.value);
@@ -3267,27 +3246,8 @@ exit 0`;
         });
 }
 
-// DOM要素キャッシュ用オブジェクト
-const domCache = {
-    uciDefaultsTextarea: null,
-    getUciDefaultsTextarea() {
-        if (!this.uciDefaultsTextarea) {
-            this.uciDefaultsTextarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
-        }
-        return this.uciDefaultsTextarea;
-    },
-    getCheckedPackages() {
-        return document.querySelectorAll('.package-selector-checkbox:checked');
-    }
-};
-
-let cachedUciTextarea = null;
-
 function updateVariableDefinitions() {
-    if (!cachedUciTextarea) {
-        cachedUciTextarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
-    }
-    const textarea = cachedUciTextarea;
+    const textarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
     if (!textarea) return;
 
     const values = collectFormValues && typeof collectFormValues === 'function'
