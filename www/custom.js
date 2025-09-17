@@ -175,19 +175,35 @@ let lastFormStateHash = null;
 async function updateAllPackageState(source = 'unknown') {
     if (!customInitialized && (deviceDefaultPackages.length === 0 && deviceDevicePackages.length === 0)) {
         console.log('updateAllPackageState: Device packages not ready, deferring update from:', source);
-        
+
         document.addEventListener('devicePackagesReady', () => {
             console.log('Re-running updateAllPackageState after device packages ready (source was:', source, ')');
             updateAllPackageState('force-update');
         }, { once: true });
-        
+
         return;
     }
 
     const currentState = collectFormValues();
-    const hash = JSON.stringify(currentState);
 
-    if (hash === lastFormStateHash && !source.includes('device') && !source.includes('force')) {
+    const searchValues = packageSearchManager ? packageSearchManager.getAllValues() : [];
+    const hashPayload = {
+        form: currentState,
+        search: searchValues,
+    };
+    const hash = JSON.stringify(hashPayload);
+
+    const forceSources = new Set([
+        'package-selected',
+        'package-search-change',
+        'package-search-add',
+        'package-search-remove'
+    ]);
+
+    if (hash === lastFormStateHash &&
+        !source.includes('device') &&
+        !source.includes('force') &&
+        !forceSources.has(source)) {
         return;
     }
     lastFormStateHash = hash;
