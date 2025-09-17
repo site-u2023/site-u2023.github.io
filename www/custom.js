@@ -999,56 +999,40 @@ async function searchPackages(query, inputElement) {
 }
 
 async function searchInFeed(query, feed, version, arch) {
-    const vendor = CustomUtils.getVendor();
+    const deviceInfo = getDeviceInfo();
     const cacheKey = `${version}:${arch}:${feed}`;
 
     try {
         let packages = [];
 
-        if (feedCacheMap.has(cacheKey)) {
-            packages = feedCacheMap.get(cacheKey);
-        } else {
-            let url;
-            if (feed === 'kmods') {
-                console.log('[DEBUG] vendor value:', vendor);
-                if (!vendor) {
-                    console.warn('[WARN] Missing vendor for kmods search');
-                    return [];
-                }
-                url = await CustomUtils.buildKmodsUrl(version, vendor, version.includes('SNAPSHOT'));
-                console.log('[DEBUG] kmods search URL:', url);
-            } else if (version.includes('SNAPSHOT')) {
-                url = config.apk_search_url
-                    .replace('{arch}', arch)
-                    .replace('{feed}', feed);
-                console.log('[DEBUG] snapshot search URL:', url);
-            } else {
-                url = config.opkg_search_url
-                    .replace('{version}', version)
-                    .replace('{arch}', arch)
-                    .replace('{feed}', feed);
-                console.log('[DEBUG] opkg search URL:', url);
-            }
+        if (!feedCacheMap.has(cacheKey)) {
+            const url = await buildPackageUrl(feed, { 
+                version, 
+                arch, 
+                vendor: deviceInfo.vendor,
+                subtarget: deviceInfo.subtarget,
+                isSnapshot: version.includes('SNAPSHOT')
+            });
+            
+            console.log(`[DEBUG] Search URL for ${feed}: ${url}`);
 
             const resp = await fetch(url, { cache: 'force-cache' });
             if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
 
-            if (version.includes('SNAPSHOT') || (feed === 'kmods' && version.includes('SNAPSHOT'))) {
+            const isSnapshot = version.includes('SNAPSHOT');
+            if (isSnapshot) {
                 const data = await resp.json();
-                if (data.packages && typeof data.packages === 'object') {
-                    packages = Object.keys(data.packages);
-                }
+                packages = data.packages ? Object.keys(data.packages) : [];
             } else {
                 const text = await resp.text();
-                const lines = text.split('\n');
-                for (const line of lines) {
-                    if (line.startsWith('Package: ')) {
-                        packages.push(line.substring(9).trim());
-                    }
-                }
+                packages = text.split('\n')
+                    .filter(line => line.startsWith('Package: '))
+                    .map(line => line.substring(9).trim());
             }
 
             feedCacheMap.set(cacheKey, packages);
+        } else {
+            packages = feedCacheMap.get(cacheKey);
         }
 
         return packages.filter(pkgName =>
@@ -1407,65 +1391,72 @@ function guessFeedForPackage(pkgName) {
     return 'packages';
 }
 
+function getDeviceInfo() {
+    return {
+        arch: current_device?.arch || cachedDeviceArch,
+        version: current_device?.version || document.querySelector("#versions")?.value,
+        vendor: CustomUtils.getVendor(),
+        subtarget: CustomUtils.getSubtarget(),
+        isSnapshot: (current_device?.version || document.querySelector("#versions")?.value || '').includes('SNAPSHOT')
+    };
+}
+
+async function buildPackageUrl(feed, deviceInfo) {
+    const { version, arch, vendor, subtarget, isSnapshot } = deviceInfo;
+    
+    if (feed === 'kmods') {
+        if (!vendor || !subtarget) {
+            throw new Error('Missing vendor or subtarget for kmods');
+        }
+        return await CustomUtils.buildKmodsUrl(version, vendor, isSnapshot);
+    }
+    
+    const template = isSnapshot ? config.apk_search_url : config.opkg_search_url;
+    return template
+        .replace('{version}', version)
+        .replace('{arch}', arch)
+        .replace('{feed}', feed);
+}
+
+function parsePackageList(responseData, pkgName, isSnapshot) {
+    if (isSnapshot) {
+        if (Array.isArray(responseData.packages)) {
+            return responseData.packages.some(p => p?.name === pkgName);
+        } else if (responseData.packages && typeof responseData.packages === 'object') {
+            return Object.prototype.hasOwnProperty.call(responseData.packages, pkgName);
+        }
+        return false;
+    } else {
+        return responseData.split('\n').some(line => line.trim() === `Package: ${pkgName}`);
+    }
+}
+
 async function isPackageAvailable(pkgName, feed) {
     if (!pkgName || !feed) return false;
 
-    const arch = current_device?.arch || cachedDeviceArch;
-    const version = current_device?.version || $("#versions").value;
-    const vendor = CustomUtils.getVendor();
-    const subtarget = CustomUtils.getSubtarget();
-
-    if (!arch || !version) {
-        console.log('Missing device info for package check:', { arch, version });
+    const deviceInfo = getDeviceInfo();
+    if (!deviceInfo.arch || !deviceInfo.version) {
+        console.log('Missing device info for package check:', deviceInfo);
         return false;
     }
 
-    const cacheKey = `${version}:${arch}:${feed}:${pkgName}`;
+    const cacheKey = `${deviceInfo.version}:${deviceInfo.arch}:${feed}:${pkgName}`;
     if (packageAvailabilityCache.has(cacheKey)) {
         return packageAvailabilityCache.get(cacheKey);
     }
 
     try {
-        let packagesUrl;
-        let result = false;
-
-        if (feed === 'kmods') {
-            console.log('[DEBUG] vendor value:', vendor);
-            console.log('[DEBUG] subtarget value:', subtarget);
-            if (!vendor || !subtarget) {
-                console.log('Missing vendor or subtarget for kmods check');
-                packageAvailabilityCache.set(cacheKey, false);
-                return false;
-            }
-            packagesUrl = await CustomUtils.buildKmodsUrl(version, vendor, version.includes('SNAPSHOT'));
-
-            console.log(`[DEBUG] kmods packagesUrl: ${packagesUrl}`);
-
-        } else if (version.includes('SNAPSHOT')) {
-            packagesUrl = config.apk_search_url
-                .replace('{arch}', arch)
-                .replace('{feed}', feed);
-        } else {
-            packagesUrl = config.opkg_search_url
-                .replace('{version}', version)
-                .replace('{arch}', arch)
-                .replace('{feed}', feed);
-        }
+        const packagesUrl = await buildPackageUrl(feed, deviceInfo);
+        console.log(`[DEBUG] Checking package ${pkgName} at: ${packagesUrl}`);
 
         const resp = await fetch(packagesUrl, { cache: 'force-cache' });
-        if (resp.ok) {
-            if (version.includes('SNAPSHOT') || (feed === 'kmods' && version.includes('SNAPSHOT'))) {
-                const data = await resp.json();
-                if (Array.isArray(data.packages)) {
-                    result = data.packages.some(p => p?.name === pkgName);
-                } else if (data.packages && typeof data.packages === 'object') {
-                    result = Object.prototype.hasOwnProperty.call(data.packages, pkgName);
-                }
-            } else {
-                const text = await resp.text();
-                result = text.split('\n').some(line => line.trim() === `Package: ${pkgName}`);
-            }
+        if (!resp.ok) {
+            throw new Error(`HTTP ${resp.status}`);
         }
+
+        const isSnapshot = deviceInfo.isSnapshot || (feed === 'kmods' && deviceInfo.isSnapshot);
+        const data = isSnapshot ? await resp.json() : await resp.text();
+        const result = parsePackageList(data, pkgName, isSnapshot);
 
         packageAvailabilityCache.set(cacheKey, result);
         return result;
