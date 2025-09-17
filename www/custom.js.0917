@@ -121,6 +121,8 @@ window.updateImages = function(version, mobj) {
 
         if (!current_device) current_device = {};
 
+        document.dispatchEvent(new Event('devicePackagesReady'));
+        
         current_device.target = mobj.target || '';
         current_device.version = version || current_device.version;
         current_device.arch = mobj.arch_packages || current_device.arch;
@@ -173,13 +175,35 @@ let lastFormStateHash = null;
 async function updateAllPackageState(source = 'unknown') {
     if (!customInitialized && (deviceDefaultPackages.length === 0 && deviceDevicePackages.length === 0)) {
         console.log('updateAllPackageState: Device packages not ready, deferring update from:', source);
+
+        document.addEventListener('devicePackagesReady', () => {
+            console.log('Re-running updateAllPackageState after device packages ready (source was:', source, ')');
+            updateAllPackageState('force-update');
+        }, { once: true });
+
         return;
     }
 
     const currentState = collectFormValues();
-    const hash = JSON.stringify(currentState);
 
-    if (hash === lastFormStateHash && !source.includes('device') && !source.includes('force')) {
+    const searchValues = packageSearchManager ? packageSearchManager.getAllValues() : [];
+    const hashPayload = {
+        form: currentState,
+        search: searchValues,
+    };
+    const hash = JSON.stringify(hashPayload);
+
+    const forceSources = new Set([
+        'package-selected',
+        'package-search-change',
+        'package-search-add',
+        'package-search-remove'
+    ]);
+
+    if (hash === lastFormStateHash &&
+        !source.includes('device') &&
+        !source.includes('force') &&
+        !forceSources.has(source)) {
         return;
     }
     lastFormStateHash = hash;
@@ -424,10 +448,14 @@ function getCurrentPackageListForLanguage() {
 
 let lastPackageListHash = null;
 
+let prevUISelections = new Set();
+
 function updatePackageListToTextarea(source = 'unknown') {
     const basePackages = new Set();
 
-    if (deviceDefaultPackages.length === 0 && deviceDevicePackages.length === 0 && extraPackages.length === 0) {
+    if (deviceDefaultPackages.length === 0 &&
+        deviceDevicePackages.length === 0 &&
+        extraPackages.length === 0) {
         console.warn('updatePackageListToTextarea: Device packages not loaded yet, skipping update from:', source);
         return;
     }
@@ -441,15 +469,18 @@ function updatePackageListToTextarea(source = 'unknown') {
     const checkedPackages = new Set();
     document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
         const pkgName = cb.getAttribute('data-package');
-        if (pkgName) {
-            checkedPackages.add(pkgName);
-        }
+        if (pkgName) checkedPackages.add(pkgName);
     });
 
     const searchedPackages = new Set();
     if (packageSearchManager) {
-        const searchValues = packageSearchManager.getAllValues();
-        searchValues.forEach(pkg => searchedPackages.add(pkg));
+        packageSearchManager.getAllValues()
+            .map(v => v.trim())
+            .filter(v => v.length > 0)
+            .forEach(pkg => searchedPackages.add(pkg));
+        console.log('PackageSearchManager values (normalized):', [...searchedPackages]);
+    } else {
+        console.warn('PackageSearchManager is not initialized');
     }
 
     const knownSelectablePackages = new Set();
@@ -464,23 +495,39 @@ function updatePackageListToTextarea(source = 'unknown') {
     const manualPackages = new Set();
     const textarea = document.querySelector('#asu-packages');
     if (textarea) {
-        const currentPackages = split(textarea.value);
+        const currentPackages = split(textarea.value)
+            .map(v => v.trim())
+            .filter(v => v.length > 0);
+
+        const confirmedSet = new Set([
+            ...basePackages,
+            ...checkedPackages,
+            ...searchedPackages,
+            ...dynamicPackages
+        ]);
+
+        const currentUISelections = new Set([
+            ...checkedPackages,
+            ...searchedPackages
+        ]);
+
         currentPackages.forEach(pkg => {
             const isCheckboxManaged = document.querySelector(`.package-selector-checkbox[data-package="${pkg}"]`) !== null;
-        
-            if (!basePackages.has(pkg) &&
-                !checkedPackages.has(pkg) &&
-                !searchedPackages.has(pkg) &&
-                !dynamicPackages.has(pkg) &&
+            const isSubstringOfConfirmed = [...confirmedSet].some(cpkg => cpkg.length > pkg.length && cpkg.includes(pkg));
+
+            if (!confirmedSet.has(pkg) &&
                 !pkg.startsWith('luci-i18n-') &&
                 !knownSelectablePackages.has(pkg) &&
-                !isCheckboxManaged) {
+                !isCheckboxManaged &&
+                !isSubstringOfConfirmed &&
+                !(prevUISelections.has(pkg) && !currentUISelections.has(pkg))) {
                 manualPackages.add(pkg);
             }
         });
+
+        prevUISelections = currentUISelections;
     }
 
-    // ===== 最終パッケージリスト構築 =====
     const finalPackages = [
         ...basePackages,
         ...checkedPackages,
@@ -730,6 +777,7 @@ function setupPackageSearch() {
             updateAllPackageState('package-search-remove');
         },
         onChange: (values) => {
+            updateAllPackageState('package-search-change');
         },
         autocomplete: (query, inputElement) => {
             searchPackages(query, inputElement);
@@ -874,20 +922,23 @@ function showPackageSearchResults(results, inputElement) {
             
             console.log('Package selected:', pkgName);
             
-            inputElement.dataset.programmaticChange = 'true';
-            inputElement.value = pkgName;
-            
-            inputElement.setAttribute('data-confirmed', 'true');
-            
-            const inputIndex = packageSearchManager.inputs.indexOf(inputElement);
-            if (inputIndex === packageSearchManager.inputs.length - 1) {
-                packageSearchManager.addInput('', true);
+            try {  // ここにtryを追加
+                inputElement.dataset.programmaticChange = 'true';
+                inputElement.value = pkgName;
+                
+                inputElement.setAttribute('data-confirmed', 'true');
+                
+                const inputIndex = packageSearchManager.inputs.indexOf(inputElement);
+                if (inputIndex === packageSearchManager.inputs.length - 1) {
+                    packageSearchManager.addInput('', true);
+                }
+                
+                clearPackageSearchResults();
+                packageSearchManager.options.onChange(packageSearchManager.getAllValues());
+                updateAllPackageState('package-selected');
+            } catch (error) {
+                console.error('Error in package selection:', error);
             }
-            
-            clearPackageSearchResults();
-            
-            packageSearchManager.options.onChange(packageSearchManager.getAllValues());
-            updateAllPackageState('package-selected');
         };
   
         resultsDiv.appendChild(item);
@@ -1340,9 +1391,7 @@ async function verifyAllPackages() {
         const promises = batch.map(async pkg => {
             const isAvailable = await isPackageAvailable(pkg.id, pkg.feed);
             
-            if (!pkg.hidden) {
-                updatePackageAvailabilityUI(pkg.uniqueId, isAvailable);
-            }
+            updatePackageAvailabilityUI(pkg.uniqueId, isAvailable);
             
             if (!isAvailable) {
                 unavailableCount++;
@@ -2117,6 +2166,36 @@ function applySpecialFieldLogic(values) {
         if (backlog) values.netopt_backlog = backlog;
         if (somaxconn) values.netopt_somaxconn = somaxconn;
         if (congestion) values.netopt_congestion = congestion;
+    }
+    
+    const dnsmasqMode = getFieldValue('input[name="enable_dnsmasq"]:checked');
+
+    if (dnsmasqMode === 'disabled') {
+        delete values.enable_dnsmasq;
+        delete values.dnsmasq_cache;
+        delete values.dnsmasq_negcache;
+
+    } else if (dnsmasqMode === 'auto') {
+        values.enable_dnsmasq = '1';
+        delete values.dnsmasq_cache;
+        delete values.dnsmasq_negcache;
+
+    } else if (dnsmasqMode === 'manual') {
+        values.enable_dnsmasq = '1';
+        const cacheSize = getFieldValue('#dnsmasq-cache');
+        const negCache = getFieldValue('#dnsmasq-negcache');
+
+        if (cacheSize) {
+            values.dnsmasq_cache = cacheSize;
+        } else {
+            delete values.dnsmasq_cache;
+        }
+
+        if (negCache) {
+            values.dnsmasq_negcache = negCache;
+        } else {
+            delete values.dnsmasq_negcache;
+        }
     }
 }
 
