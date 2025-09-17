@@ -214,6 +214,47 @@ const CustomUtils = {
     }
 };
 
+// ==================== DOM要素キャッシュマネージャー ====================
+const DOMCache = {
+    cache: new Map(),
+    
+    get(selector, forceRefresh = false) {
+        if (!forceRefresh && this.cache.has(selector)) {
+            const cached = this.cache.get(selector);
+            if (document.contains(cached)) {
+                return cached;
+            }
+        }
+        
+        const element = document.querySelector(selector);
+        if (element) {
+            this.cache.set(selector, element);
+        }
+        return element;
+    },
+    
+    getAll(selector, forceRefresh = false) {
+        const cacheKey = `all:${selector}`;
+        if (!forceRefresh && this.cache.has(cacheKey)) {
+            return this.cache.get(cacheKey);
+        }
+        
+        const elements = document.querySelectorAll(selector);
+        const array = Array.from(elements);
+        this.cache.set(cacheKey, array);
+        return array;
+    },
+    
+    clear(selector = null) {
+        if (selector) {
+            this.cache.delete(selector);
+            this.cache.delete(`all:${selector}`);
+        } else {
+            this.cache.clear();
+        }
+    }
+};
+
 // ==================== 初期化処理 ====================
 const originalUpdateImages = window.updateImages;
 
@@ -608,35 +649,23 @@ let lastPackageListHash = null;
 let prevUISelections = new Set();
 
 function updatePackageListToTextarea(source = 'unknown') {
-    if (!deviceDefaultPackages.length && !deviceDevicePackages.length && !extraPackages.length) {
+    const basePackages = new Set();
+
+    if (deviceDefaultPackages.length === 0 &&
+        deviceDevicePackages.length === 0 &&
+        extraPackages.length === 0) {
         console.warn('updatePackageListToTextarea: Device packages not loaded yet, skipping update from:', source);
         return;
     }
 
-    const normalizePackages = (values) => {
-        if (!values) return [];
-        return (Array.isArray(values) ? values : CustomUtils.split(values))
-            .map(v => v.trim())
-            .filter(v => v.length > 0);
-    };
+    deviceDefaultPackages.forEach(pkg => basePackages.add(pkg));
+    deviceDevicePackages.forEach(pkg => basePackages.add(pkg));
+    extraPackages.forEach(pkg => basePackages.add(pkg));
 
-    const addToSet = (targetSet, sources) => {
-        sources.forEach(source => {
-            normalizePackages(source).forEach(pkg => targetSet.add(pkg));
-        });
-        return targetSet;
-    };
-
-    const basePackages = addToSet(new Set(), [
-        deviceDefaultPackages,
-        deviceDevicePackages,
-        extraPackages
-    ]);
-
-    console.log(`Base device packages: default=${deviceDefaultPackages.length}, device=${deviceDevicePackages.length}, extra=${extraPackages.length}`);
+    console.log(`Base device packages loaded: default=${deviceDefaultPackages.length}, device=${deviceDevicePackages.length}, extra=${extraPackages.length}`);
 
     const checkedPackages = new Set();
-    document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
+    DOMCache.getAll('.package-selector-checkbox:checked').forEach(cb => {
         const pkgName = cb.getAttribute('data-package');
         if (pkgName) checkedPackages.add(pkgName);
     });
@@ -657,7 +686,7 @@ function updatePackageListToTextarea(source = 'unknown') {
     });
 
     const manualPackages = new Set();
-    const textarea = document.querySelector('#asu-packages');
+    const textarea = DOMCache.get('#asu-packages');
     
     if (textarea) {
         const currentTextareaPackages = normalizePackages(textarea.value);
@@ -697,10 +726,11 @@ function updatePackageListToTextarea(source = 'unknown') {
         total: uniquePackages.length
     });
 
-    if (textarea) {
-        textarea.value = uniquePackages.join(' ');
-        textarea.style.height = 'auto';
-        textarea.style.height = textarea.scrollHeight + 'px';
+    const textareaElement = DOMCache.get('#asu-packages');
+    if (textareaElement) {
+        textareaElement.value = uniquePackages.join(' ');
+        textareaElement.style.height = 'auto';
+        textareaElement.style.height = textareaElement.scrollHeight + 'px';
     }
 
     console.log(`Postinst package list updated: ${uniquePackages.length} packages`);
@@ -1165,8 +1195,8 @@ function cleanupExistingCustomElements() {
 
 // ==================== 言語セレクター設定 ====================
 function setupLanguageSelector() {
-    const mainLanguageSelect = document.querySelector('#languages-select');
-    const customLanguageSelect = document.querySelector('#aios-language');
+    const mainLanguageSelect = DOMCache.get('#languages-select');
+    const customLanguageSelect = DOMCache.get('#aios-language');
     const fallback = config?.fallback_language || 'en';
 
     if (!current_language) {
@@ -1207,7 +1237,7 @@ function syncBrowserLanguageSelector(lang) {
 }
 
 function syncDeviceLanguageSelector(lang) {
-    const customSelect = document.getElementById('aios-language');
+    const customSelect = DOMCache.get('#aios-language');
     if (lang && customSelect && customSelect.value !== lang) {
         customSelect.removeEventListener('change', handleCustomLanguageChange);
         
@@ -2556,7 +2586,7 @@ function handleConnectionTypeChange(e) {
             if (value === 'auto' && cachedApiInfo) {
                 updateAutoConnectionInfo(cachedApiInfo);
             } else if (value === 'mape' && cachedApiInfo) {
-                const guaPrefixField = document.querySelector('#mape-gua-prefix');
+                const guaPrefixField = DOMCache.get('#mape-gua-prefix');
                 if (guaPrefixField && cachedApiInfo.ipv6) {
                     const guaPrefix = CustomUtils.generateGuaPrefixFromFullAddress(cachedApiInfo);
                     if (guaPrefix && !guaPrefixField.value) {
@@ -2914,7 +2944,7 @@ function applyIspAutoConfig(apiInfo) {
 }
 
 function updateAutoConnectionInfo(apiInfo) {
-    const autoInfo = document.querySelector('#auto-info');
+    const autoInfo = DOMCache.get('#auto-info');
     if (!autoInfo) return;
     let infoText = '';
     
