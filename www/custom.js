@@ -605,24 +605,35 @@ function getCurrentPackageListForLanguage() {
 }
 
 let lastPackageListHash = null;
-
 let prevUISelections = new Set();
 
 function updatePackageListToTextarea(source = 'unknown') {
-    const basePackages = new Set();
-
-    if (deviceDefaultPackages.length === 0 &&
-        deviceDevicePackages.length === 0 &&
-        extraPackages.length === 0) {
+    if (!deviceDefaultPackages.length && !deviceDevicePackages.length && !extraPackages.length) {
         console.warn('updatePackageListToTextarea: Device packages not loaded yet, skipping update from:', source);
         return;
     }
 
-    deviceDefaultPackages.forEach(pkg => basePackages.add(pkg));
-    deviceDevicePackages.forEach(pkg => basePackages.add(pkg));
-    extraPackages.forEach(pkg => basePackages.add(pkg));
+    const normalizePackages = (values) => {
+        if (!values) return [];
+        return (Array.isArray(values) ? values : CustomUtils.split(values))
+            .map(v => v.trim())
+            .filter(v => v.length > 0);
+    };
 
-    console.log(`Base device packages loaded: default=${deviceDefaultPackages.length}, device=${deviceDevicePackages.length}, extra=${extraPackages.length}`);
+    const addToSet = (targetSet, sources) => {
+        sources.forEach(source => {
+            normalizePackages(source).forEach(pkg => targetSet.add(pkg));
+        });
+        return targetSet;
+    };
+
+    const basePackages = addToSet(new Set(), [
+        deviceDefaultPackages,
+        deviceDevicePackages,
+        extraPackages
+    ]);
+
+    console.log(`Base device packages: default=${deviceDefaultPackages.length}, device=${deviceDevicePackages.length}, extra=${extraPackages.length}`);
 
     const checkedPackages = new Set();
     document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
@@ -630,77 +641,45 @@ function updatePackageListToTextarea(source = 'unknown') {
         if (pkgName) checkedPackages.add(pkgName);
     });
 
-    const searchedPackages = new Set();
-    if (packageSearchManager) {
-        packageSearchManager.getAllValues()
-            .map(v => v.trim())
-            .filter(v => v.length > 0)
-            .forEach(pkg => searchedPackages.add(pkg));
-        console.log('PackageSearchManager values (normalized):', [...searchedPackages]);
-    } else {
-        console.warn('PackageSearchManager is not initialized');
+    const searchedPackages = new Set(
+        packageSearchManager ? normalizePackages(packageSearchManager.getAllValues()) : []
+    );
+    
+    if (searchedPackages.size > 0) {
+        console.log('PackageSearchManager values:', [...searchedPackages]);
     }
 
     const knownSelectablePackages = new Set();
-    if (packagesJson?.categories) {
-        packagesJson.categories.forEach(cat => {
-            (cat.packages || []).forEach(pkg => {
-                if (pkg.id) knownSelectablePackages.add(pkg.id);
-            });
+    packagesJson?.categories?.forEach(cat => {
+        cat.packages?.forEach(pkg => {
+            if (pkg.id) knownSelectablePackages.add(pkg.id);
         });
-    }
+    });
 
     const manualPackages = new Set();
     const textarea = document.querySelector('#asu-packages');
+    
     if (textarea) {
-        const currentPackages = CustomUtils.split(textarea.value)
-            .map(v => v.trim())
-            .filter(v => v.length > 0);
+        const currentTextareaPackages = normalizePackages(textarea.value);
+        const confirmedSet = new Set([...basePackages, ...checkedPackages, ...searchedPackages, ...dynamicPackages]);
+        const currentUISelections = new Set([...checkedPackages, ...searchedPackages]);
 
-        const confirmedSet = new Set([
-            ...basePackages,
-            ...checkedPackages,
-            ...searchedPackages,
-            ...dynamicPackages
-        ]);
-
-        const currentUISelections = new Set([
-            ...checkedPackages,
-            ...searchedPackages
-        ]);
-
-        currentPackages
-            .map(v => v.trim())
-            .filter(v => v.length > 0)
-            .forEach(pkg => {
-                const isCheckboxManaged = document.querySelector(`.package-selector-checkbox[data-package="${pkg}"]`) !== null;
-
-                const isSubstringOfConfirmed = [...confirmedSet].some(
-                    cpkg => cpkg.length > pkg.length && cpkg.includes(pkg)
-                );
-
-                if (!confirmedSet.has(pkg) &&
-                    !pkg.startsWith('luci-i18n-') &&
-                    !knownSelectablePackages.has(pkg) &&
-                    !isCheckboxManaged &&
-                    !isSubstringOfConfirmed &&
-                    !(prevUISelections.has(pkg) && !currentUISelections.has(pkg))) {
-                    manualPackages.add(pkg);
-                }
-            });
+        currentTextareaPackages.forEach(pkg => {
+            if (isManualPackage(pkg, confirmedSet, knownSelectablePackages, currentUISelections)) {
+                manualPackages.add(pkg);
+            }
+        });
 
         prevUISelections = currentUISelections;
     }
-    
-    const finalPackages = [
+
+    const uniquePackages = [...new Set([
         ...basePackages,
         ...checkedPackages,
         ...searchedPackages,
         ...dynamicPackages,
         ...manualPackages
-    ];
-
-    const uniquePackages = [...new Set(finalPackages)];
+    ])];
 
     const currentHash = JSON.stringify(uniquePackages);
     if (currentHash === lastPackageListHash && source !== 'force-update') {
@@ -709,8 +688,7 @@ function updatePackageListToTextarea(source = 'unknown') {
     }
     lastPackageListHash = currentHash;
 
-    console.log(`updatePackageListToTextarea called from: ${source}`);
-    console.log(`Package breakdown:`, {
+    console.log(`updatePackageListToTextarea from: ${source}`, {
         base: basePackages.size,
         checked: checkedPackages.size,
         searched: searchedPackages.size,
@@ -726,7 +704,24 @@ function updatePackageListToTextarea(source = 'unknown') {
     }
 
     console.log(`Postinst package list updated: ${uniquePackages.length} packages`);
-    console.log('Final Postinst package list:', uniquePackages);
+}
+
+function isManualPackage(pkg, confirmedSet, knownSelectablePackages, currentUISelections) {
+    if (confirmedSet.has(pkg)) return false;
+    if (pkg.startsWith('luci-i18n-')) return false;
+    if (knownSelectablePackages.has(pkg)) return false;
+    
+    const isCheckboxManaged = document.querySelector(`.package-selector-checkbox[data-package="${pkg}"]`) !== null;
+    if (isCheckboxManaged) return false;
+    
+    const isSubstringOfConfirmed = [...confirmedSet].some(
+        cpkg => cpkg.length > pkg.length && cpkg.includes(pkg)
+    );
+    if (isSubstringOfConfirmed) return false;
+    
+    if (prevUISelections.has(pkg) && !currentUISelections.has(pkg)) return false;
+    
+    return true;
 }
 
 // ==================== 共通マルチインプット管理機能 ====================
