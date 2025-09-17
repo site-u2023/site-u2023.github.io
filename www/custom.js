@@ -611,102 +611,163 @@ let lastPackageListHash = null;
 let prevUISelections = new Set();
 
 function updatePackageListToTextarea(source = 'unknown') {
-    if (!deviceDefaultPackages.length && !deviceDevicePackages.length && !extraPackages.length) {
+    if (!areDevicePackagesLoaded()) {
         console.warn('updatePackageListToTextarea: Device packages not loaded yet, skipping update from:', source);
         return;
     }
 
-    const normalizePackages = (values) => {
+    const packageSets = collectAllPackageSets();
+    
+    const manualPackages = detectManualPackages(packageSets);
+    
+    const uniquePackages = mergeAllPackages(packageSets, manualPackages);
+
+    if (!hasPackageListChanged(uniquePackages, source)) {
+        console.log('updatePackageListToTextarea: No changes detected, skipping update from:', source);
+        return;
+    }
+
+    logPackageStats(source, packageSets, manualPackages, uniquePackages);
+
+    updatePackageTextarea(uniquePackages);
+
+    console.log(`Postinst package list updated: ${uniquePackages.length} packages`);
+}
+
+function areDevicePackagesLoaded() {
+    return deviceDefaultPackages.length > 0 || 
+           deviceDevicePackages.length > 0 || 
+           extraPackages.length > 0;
+}
+
+function collectAllPackageSets() {
+    const normalizePackages = createPackageNormalizer();
+    
+    return {
+        base: collectBasePackages(normalizePackages),
+        checked: collectCheckedPackages(),
+        searched: collectSearchedPackages(normalizePackages),
+        dynamic: dynamicPackages,
+        knownSelectable: collectKnownSelectablePackages()
+    };
+}
+
+function createPackageNormalizer() {
+    return (values) => {
         if (!values) return [];
         return (Array.isArray(values) ? values : CustomUtils.split(values))
             .map(v => v.trim())
             .filter(v => v.length > 0);
     };
+}
 
-    const addToSet = (targetSet, sources) => {
-        sources.forEach(source => {
-            normalizePackages(source).forEach(pkg => targetSet.add(pkg));
-        });
-        return targetSet;
-    };
-
-    const basePackages = addToSet(new Set(), [
-        deviceDefaultPackages,
-        deviceDevicePackages,
-        extraPackages
-    ]);
-
+function collectBasePackages(normalizePackages) {
+    const baseSet = new Set();
+    const sources = [deviceDefaultPackages, deviceDevicePackages, extraPackages];
+    
+    sources.forEach(source => {
+        normalizePackages(source).forEach(pkg => baseSet.add(pkg));
+    });
+    
     console.log(`Base device packages: default=${deviceDefaultPackages.length}, device=${deviceDevicePackages.length}, extra=${extraPackages.length}`);
+    return baseSet;
+}
 
-    const checkedPackages = new Set();
+function collectCheckedPackages() {
+    const checkedSet = new Set();
     document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
         const pkgName = cb.getAttribute('data-package');
-        if (pkgName) checkedPackages.add(pkgName);
+        if (pkgName) checkedSet.add(pkgName);
     });
+    return checkedSet;
+}
 
-    const searchedPackages = new Set(
+function collectSearchedPackages(normalizePackages) {
+    const searchedSet = new Set(
         packageSearchManager ? normalizePackages(packageSearchManager.getAllValues()) : []
     );
     
-    if (searchedPackages.size > 0) {
-        console.log('PackageSearchManager values:', [...searchedPackages]);
+    if (searchedSet.size > 0) {
+        console.log('PackageSearchManager values:', [...searchedSet]);
     }
+    return searchedSet;
+}
 
-    const knownSelectablePackages = new Set();
+function collectKnownSelectablePackages() {
+    const knownSet = new Set();
     packagesJson?.categories?.forEach(cat => {
         cat.packages?.forEach(pkg => {
-            if (pkg.id) knownSelectablePackages.add(pkg.id);
+            if (pkg.id) knownSet.add(pkg.id);
         });
     });
+    return knownSet;
+}
 
-    const manualPackages = new Set();
+function detectManualPackages(packageSets) {
+    const manualSet = new Set();
     const textarea = document.querySelector('#asu-packages');
     
-    if (textarea) {
-        const currentTextareaPackages = normalizePackages(textarea.value);
-        const confirmedSet = new Set([...basePackages, ...checkedPackages, ...searchedPackages, ...dynamicPackages]);
-        const currentUISelections = new Set([...checkedPackages, ...searchedPackages]);
+    if (!textarea) return manualSet;
+    
+    const normalizePackages = createPackageNormalizer();
+    const currentTextareaPackages = normalizePackages(textarea.value);
+    const confirmedSet = new Set([
+        ...packageSets.base,
+        ...packageSets.checked,
+        ...packageSets.searched,
+        ...packageSets.dynamic
+    ]);
+    const currentUISelections = new Set([...packageSets.checked, ...packageSets.searched]);
 
-        currentTextareaPackages.forEach(pkg => {
-            if (isManualPackage(pkg, confirmedSet, knownSelectablePackages, currentUISelections)) {
-                manualPackages.add(pkg);
-            }
-        });
+    currentTextareaPackages.forEach(pkg => {
+        if (isManualPackage(pkg, confirmedSet, packageSets.knownSelectable, currentUISelections)) {
+            manualSet.add(pkg);
+        }
+    });
 
-        prevUISelections = currentUISelections;
-    }
+    prevUISelections = currentUISelections;
+    return manualSet;
+}
 
-    const uniquePackages = [...new Set([
-        ...basePackages,
-        ...checkedPackages,
-        ...searchedPackages,
-        ...dynamicPackages,
+function mergeAllPackages(packageSets, manualPackages) {
+    return [...new Set([
+        ...packageSets.base,
+        ...packageSets.checked,
+        ...packageSets.searched,
+        ...packageSets.dynamic,
         ...manualPackages
     ])];
+}
 
+function hasPackageListChanged(uniquePackages, source) {
     const currentHash = JSON.stringify(uniquePackages);
-    if (currentHash === lastPackageListHash && source !== 'force-update') {
-        console.log('updatePackageListToTextarea: No changes detected, skipping update from:', source);
-        return;
+    const hasChanged = currentHash !== lastPackageListHash || source === 'force-update';
+    
+    if (hasChanged) {
+        lastPackageListHash = currentHash;
     }
-    lastPackageListHash = currentHash;
+    
+    return hasChanged;
+}
 
+function logPackageStats(source, packageSets, manualPackages, uniquePackages) {
     console.log(`updatePackageListToTextarea from: ${source}`, {
-        base: basePackages.size,
-        checked: checkedPackages.size,
-        searched: searchedPackages.size,
-        dynamic: dynamicPackages.size,
+        base: packageSets.base.size,
+        checked: packageSets.checked.size,
+        searched: packageSets.searched.size,
+        dynamic: packageSets.dynamic.size,
         manual: manualPackages.size,
         total: uniquePackages.length
     });
+}
 
-    if (textarea) {
-        textarea.value = uniquePackages.join(' ');
-        textarea.style.height = 'auto';
-        textarea.style.height = textarea.scrollHeight + 'px';
-    }
-
-    console.log(`Postinst package list updated: ${uniquePackages.length} packages`);
+function updatePackageTextarea(uniquePackages) {
+    const textarea = document.querySelector('#asu-packages');
+    if (!textarea) return;
+    
+    textarea.value = uniquePackages.join(' ');
+    textarea.style.height = 'auto';
+    textarea.style.height = textarea.scrollHeight + 'px';
 }
 
 function isManualPackage(pkg, confirmedSet, knownSelectablePackages, currentUISelections) {
