@@ -24,10 +24,8 @@ let cachedDeviceArch = null;
 let defaultFieldValues = {};
 let dynamicPackages = new Set();
 let selectedLanguage = '';
-let customLanguageMap = {};
 let kmodsTokenCache = null;
 let kmodsTokenCacheKey = null;
-let packagesUrl;
 
 const packageAvailabilityCache = new Map();
 const feedCacheMap = new Map();
@@ -1160,10 +1158,7 @@ async function loadCustomTranslations(lang) {
             return;
         }
 
-        const text = await resp.text();
-        const customMap = JSON.parse(text);
-        customLanguageMap = customMap;
-        applyCustomTranslations(customLanguageMap);
+        applyCustomTranslations(JSON.parse(await resp.text()));
         
         console.log(`Custom translations loaded for UI language: ${lang}`);
     } catch (err) {
