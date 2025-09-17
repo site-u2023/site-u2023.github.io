@@ -448,6 +448,9 @@ function getCurrentPackageListForLanguage() {
 
 let lastPackageListHash = null;
 
+// 関数外に前回UI選択状態を保持する変数を追加
+let prevUISelections = new Set();
+
 function updatePackageListToTextarea(source = 'unknown') {
     const basePackages = new Set();
 
@@ -472,14 +475,13 @@ function updatePackageListToTextarea(source = 'unknown') {
 
     const searchedPackages = new Set();
     if (packageSearchManager) {
-        // ★ 入力値を正規化（空文字・未確定値・重複除去）
         const searchValues = packageSearchManager.getAllValues()
             .map(v => v.trim())
             .filter(v => v.length > 0);
         searchValues.forEach(pkg => searchedPackages.add(pkg));
-        console.log('PackageSearchManager values (normalized):', [...searchedPackages]); // デバッグ用
+        console.log('PackageSearchManager values (normalized):', [...searchedPackages]);
     } else {
-        console.warn('PackageSearchManager is not initialized'); // デバッグ用
+        console.warn('PackageSearchManager is not initialized');
     }
 
     const knownSelectablePackages = new Set();
@@ -491,34 +493,43 @@ function updatePackageListToTextarea(source = 'unknown') {
         });
     }
 
-const manualPackages = new Set();
-const textarea = document.querySelector('#asu-packages');
-if (textarea) {
-    const currentPackages = split(textarea.value)
-        .map(v => v.trim())
-        .filter(v => v.length > 0);
+    const manualPackages = new Set();
+    const textarea = document.querySelector('#asu-packages');
+    if (textarea) {
+        const currentPackages = split(textarea.value)
+            .map(v => v.trim())
+            .filter(v => v.length > 0);
 
-    const confirmedSet = new Set([
-        ...basePackages,
-        ...checkedPackages,
-        ...searchedPackages,
-        ...dynamicPackages
-    ]);
+        const confirmedSet = new Set([
+            ...basePackages,
+            ...checkedPackages,
+            ...searchedPackages,
+            ...dynamicPackages
+        ]);
 
-    currentPackages.forEach(pkg => {
-        const isCheckboxManaged = document.querySelector(`.package-selector-checkbox[data-package="${pkg}"]`) !== null;
+        const currentUISelections = new Set([
+            ...checkedPackages,
+            ...searchedPackages
+        ]);
 
-        const isSubstringOfConfirmed = [...confirmedSet].some(cpkg => cpkg.length > pkg.length && cpkg.includes(pkg));
+        currentPackages.forEach(pkg => {
+            const isCheckboxManaged = document.querySelector(`.package-selector-checkbox[data-package="${pkg}"]`) !== null;
+            const isSubstringOfConfirmed = [...confirmedSet].some(cpkg => cpkg.length > pkg.length && cpkg.includes(pkg));
 
-        if (!confirmedSet.has(pkg) &&
-            !pkg.startsWith('luci-i18n-') &&
-            !knownSelectablePackages.has(pkg) &&
-            !isCheckboxManaged &&
-            !isSubstringOfConfirmed) {
-            manualPackages.add(pkg);
-        }
-    });
-}
+            if (!confirmedSet.has(pkg) &&
+                !pkg.startsWith('luci-i18n-') &&
+                !knownSelectablePackages.has(pkg) &&
+                !isCheckboxManaged &&
+                !isSubstringOfConfirmed &&
+                // ★ 前回UI選択にあったが今回外されたものは manual に残さない
+                !(prevUISelections.has(pkg) && !currentUISelections.has(pkg))) {
+                manualPackages.add(pkg);
+            }
+        });
+
+        // ★ 今回のUI選択状態を保存
+        prevUISelections = currentUISelections;
+    }
 
     // ===== 最終パッケージリスト構築 =====
     const finalPackages = [
