@@ -165,11 +165,12 @@ const CustomUtils = {
     },
     
     toggleVisibility(el, show = true) {
-        const e = typeof el === 'string' ? document.querySelector(el) : el;
-        if (!e) return;
-
-        e.classList.toggle('hide', !show);
-        e.style.display = show ? '' : 'none';
+        const element = (typeof el === 'string') ? document.querySelector(el) : el;
+        if (!element) return;
+        
+        const isVisible = Boolean(show);
+        element.classList.toggle('hide', !isVisible);
+        element.style.display = isVisible ? '' : 'none';
     },
 
     show(el) { this.toggleVisibility(el, true); },
