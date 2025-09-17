@@ -491,24 +491,34 @@ function updatePackageListToTextarea(source = 'unknown') {
         });
     }
 
-    const manualPackages = new Set();
-    const textarea = document.querySelector('#asu-packages');
-    if (textarea) {
-        const currentPackages = split(textarea.value);
-        currentPackages.forEach(pkg => {
-            const isCheckboxManaged = document.querySelector(`.package-selector-checkbox[data-package="${pkg}"]`) !== null;
-        
-            if (!basePackages.has(pkg) &&
-                !checkedPackages.has(pkg) &&
-                !searchedPackages.has(pkg) &&
-                !dynamicPackages.has(pkg) &&
-                !pkg.startsWith('luci-i18n-') &&
-                !knownSelectablePackages.has(pkg) &&
-                !isCheckboxManaged) {
-                manualPackages.add(pkg);
-            }
-        });
-    }
+const manualPackages = new Set();
+const textarea = document.querySelector('#asu-packages');
+if (textarea) {
+    const currentPackages = split(textarea.value)
+        .map(v => v.trim())
+        .filter(v => v.length > 0);
+
+    const confirmedSet = new Set([
+        ...basePackages,
+        ...checkedPackages,
+        ...searchedPackages,
+        ...dynamicPackages
+    ]);
+
+    currentPackages.forEach(pkg => {
+        const isCheckboxManaged = document.querySelector(`.package-selector-checkbox[data-package="${pkg}"]`) !== null;
+
+        const isSubstringOfConfirmed = [...confirmedSet].some(cpkg => cpkg.length > pkg.length && cpkg.includes(pkg));
+
+        if (!confirmedSet.has(pkg) &&
+            !pkg.startsWith('luci-i18n-') &&
+            !knownSelectablePackages.has(pkg) &&
+            !isCheckboxManaged &&
+            !isSubstringOfConfirmed) {
+            manualPackages.add(pkg);
+        }
+    });
+}
 
     // ===== 最終パッケージリスト構築 =====
     const finalPackages = [
