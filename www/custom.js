@@ -2369,28 +2369,30 @@ function setupEventListeners() {
     const radioGroups = {
         'connection_type': handleConnectionTypeChange,
         'net_optimizer': handleNetOptimizerChange,
-        'wifi_mode': handleWifiModeChange
+        'wifi_mode': handleWifiModeChange,
+        'mape_type': handleMapeTypeChange
     };
     
     Object.entries(radioGroups).forEach(([name, handler]) => {
-        document.querySelectorAll(`input[name="${name}"]`).forEach(radio => {
-            radio.removeEventListener('change', handler);
-            radio.addEventListener('change', handler);
-        });
-        
+        attachRadioListeners(name, handler, name !== 'mape_type');
+    });
+
+    setupDsliteAddressComputation();
+    setupCommandsInput();
+}
+
+function attachRadioListeners(name, handler, triggerInitial = true) {
+    document.querySelectorAll(`input[name="${name}"]`).forEach(radio => {
+        radio.removeEventListener('change', handler);
+        radio.addEventListener('change', handler);
+    });
+    
+    if (triggerInitial) {
         const checked = document.querySelector(`input[name="${name}"]:checked`);
         if (checked) {
             handler({ target: checked });
         }
-    });
-    
-    document.querySelectorAll('input[name="mape_type"]').forEach(radio => {
-        radio.addEventListener('change', handleMapeTypeChange);
-    });
-
-    setupDsliteAddressComputation();
-   
-    setupCommandsInput();
+    }
 }
 
 function setupCommandsInput() {
@@ -3363,26 +3365,33 @@ function updateCustomCommands() {
 // ==================== フォーム監視 ====================
 
 function setupFormWatchers() {
-    if (!formStructure.fields) {
-        return;
-    }
+    if (!formStructure.fields) return;
     
     Object.values(formStructure.fields).forEach(field => {
         if (field.selector) {
-            document.querySelectorAll(field.selector).forEach(element => {
-                element.removeEventListener('input', updateVariableDefinitions);
-                element.removeEventListener('change', updateVariableDefinitions);
-                
-                if (element.type === 'radio' || element.type === 'checkbox' || element.tagName === 'SELECT') {
-                    element.addEventListener('change', updateVariableDefinitions);
-                } else {
-                    element.addEventListener('input', updateVariableDefinitions);
-                }
-            });
+            attachFieldListeners(field.selector, updateVariableDefinitions);
         }
     });
     
     updateVariableDefinitions();
+}
+
+function attachFieldListeners(selector, handler) {
+    document.querySelectorAll(selector).forEach(element => {
+        const eventType = getElementEventType(element);
+        
+        element.removeEventListener('input', handler);
+        element.removeEventListener('change', handler);
+        
+        element.addEventListener(eventType, handler);
+    });
+}
+
+function getElementEventType(element) {
+    if (element.type === 'radio' || element.type === 'checkbox' || element.tagName === 'SELECT') {
+        return 'change';
+    }
+    return 'input';
 }
 
 // ==================== エラーハンドリング ====================
