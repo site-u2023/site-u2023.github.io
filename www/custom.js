@@ -2502,30 +2502,22 @@ function updateVariableDefinitionsWithDsliteCleanup() {
     updateTextareaContent(textarea, variableDefinitions);
 }
 
-function handleConnectionTypeChange(e) {
-    const selectedType = e.target.value;
+function handleConditionalSectionChange(categoryId, fieldName, selectedValue, options = {}) {
+    const category = setupConfig.categories.find(cat => cat.id === categoryId);
+    if (!category) return;
     
-    const internetCategory = setupConfig.categories.find(cat => cat.id === 'internet-config');
-    
-    internetCategory.packages.forEach(pkg => {
-        if (pkg.type === 'conditional-section' && pkg.showWhen?.field === 'connection_type') {
+    category.packages.forEach(pkg => {
+        if (pkg.type === 'conditional-section' && pkg.showWhen?.field === fieldName) {
             const section = document.querySelector(`#${pkg.id}`);
             if (!section) return;
             
-            if (pkg.showWhen.values?.includes(selectedType)) {
+            const shouldShow = pkg.showWhen.values?.includes(selectedValue);
+            
+            if (shouldShow) {
                 CustomUtils.show(section);
                 
-                if (selectedType === 'auto' && cachedApiInfo) {
-                    updateAutoConnectionInfo(cachedApiInfo);
-                } else if (selectedType === 'mape' && cachedApiInfo) {
-                    const guaPrefixField = document.querySelector('#mape-gua-prefix');
-                    if (guaPrefixField && cachedApiInfo.ipv6) {
-                        const guaPrefix = CustomUtils.generateGuaPrefixFromFullAddress(cachedApiInfo);
-                        if (guaPrefix && !guaPrefixField.value) {
-                            guaPrefixField.value = guaPrefix;
-                            console.log('GUA prefix set for MAP-E:', guaPrefix);
-                        }
-                    }
+                if (pkg.children && options.processChildren) {
+                    processNestedSections(pkg.children, fieldName, selectedValue);
                 }
             } else {
                 CustomUtils.hide(section);
@@ -2533,80 +2525,77 @@ function handleConnectionTypeChange(e) {
         }
     });
     
-    updateAllPackageState('connection-type');
+    if (options.customHandler) {
+        options.customHandler(selectedValue);
+    }
+    
+    updateAllPackageState(options.updateSource || fieldName);
+}
+
+function processNestedSections(children, fieldName, selectedValue) {
+    children.forEach(child => {
+        if (child.type === 'conditional-section') {
+            const childSection = document.querySelector(`#${child.id}`);
+            if (childSection) {
+                if (child.showWhen?.values?.includes(selectedValue)) {
+                    CustomUtils.show(childSection);
+                } else {
+                    CustomUtils.hide(childSection);
+                }
+            }
+        }
+    });
+}
+
+function handleConnectionTypeChange(e) {
+    const selectedType = e.target.value;
+    
+    handleConditionalSectionChange('internet-config', 'connection_type', selectedType, {
+        updateSource: 'connection-type',
+        customHandler: (value) => {
+            if (value === 'auto' && cachedApiInfo) {
+                updateAutoConnectionInfo(cachedApiInfo);
+            } else if (value === 'mape' && cachedApiInfo) {
+                const guaPrefixField = document.querySelector('#mape-gua-prefix');
+                if (guaPrefixField && cachedApiInfo.ipv6) {
+                    const guaPrefix = CustomUtils.generateGuaPrefixFromFullAddress(cachedApiInfo);
+                    if (guaPrefix && !guaPrefixField.value) {
+                        guaPrefixField.value = guaPrefix;
+                        console.log('GUA prefix set for MAP-E:', guaPrefix);
+                    }
+                }
+            }
+        }
+    });
 }
 
 function handleNetOptimizerChange(e) {
     const mode = e.target.value;
     
-    const tuningCategory = setupConfig.categories.find(cat => cat.id === 'tuning-config');
-    
-    tuningCategory.packages.forEach(pkg => {
-        if (pkg.type === 'conditional-section' && pkg.showWhen?.field === 'net_optimizer') {
-            const section = document.querySelector(`#${pkg.id}`);
-            if (!section) return;
-            
-            if (pkg.showWhen.values?.includes(mode)) {
-                CustomUtils.show(section);
-                
-                if (mode === 'manual') {
-                    restoreManualDefaults();
-                }
-            } else {
-                CustomUtils.hide(section);
+    handleConditionalSectionChange('tuning-config', 'net_optimizer', mode, {
+        updateSource: 'net-optimizer',
+        customHandler: (value) => {
+            if (value === 'manual') {
+                restoreManualDefaults();
             }
         }
     });
-    
-    updateAllPackageState('net-optimizer');
 }
 
 function handleWifiModeChange(e) {
     const mode = e.target.value;
     
-    const wifiCategory = setupConfig.categories.find(cat => cat.id === 'wifi-config');
-    
-    const wifiModeConfig = wifiCategory.packages.find(pkg => 
-        pkg.variableName === 'wifi_mode'
-    );
-    
-    const selectedOption = wifiModeConfig.options.find(opt => opt.value === mode);
-    
-    wifiCategory.packages.forEach(pkg => {
-        if (pkg.type === 'conditional-section') {
-            const section = document.querySelector(`#${pkg.id}`);
-            if (!section) return;
-            
-            if (pkg.showWhen?.values?.includes(mode)) {
-                CustomUtils.show(section);
-                
-                if (pkg.children) {
-                    pkg.children.forEach(child => {
-                        if (child.type === 'conditional-section') {
-                            const childSection = document.querySelector(`#${child.id}`);
-                            if (childSection) {
-                                if (child.showWhen?.values?.includes(mode)) {
-                                    CustomUtils.show(childSection);
-                                } else {
-                                    CustomUtils.hide(childSection);
-                                }
-                            }
-                        }
-                    });
-                }
+    handleConditionalSectionChange('wifi-config', 'wifi_mode', mode, {
+        processChildren: true,
+        updateSource: 'wifi-mode',
+        customHandler: (value) => {
+            if (value === 'disabled') {
+                clearWifiFields();
             } else {
-                CustomUtils.hide(section);
+                restoreWifiDefaults();
             }
         }
     });
-    
-    if (mode === 'disabled') {
-        clearWifiFields();
-    } else {
-        restoreWifiDefaults();
-    }
-    
-    updateAllPackageState('wifi-mode');
 }
 
 function restoreManualDefaults() {
