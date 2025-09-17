@@ -888,9 +888,12 @@ function showPackageSearchResults(results, inputElement) {
             }
             
             clearPackageSearchResults();
-            
+
             packageSearchManager.options.onChange(packageSearchManager.getAllValues());
             updateAllPackageState('package-selected');
+        } catch (error) {
+            console.error('Error in package selection:', error);
+        }
         };
   
         resultsDiv.appendChild(item);
