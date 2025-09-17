@@ -121,6 +121,8 @@ window.updateImages = function(version, mobj) {
 
         if (!current_device) current_device = {};
 
+        document.dispatchEvent(new Event('devicePackagesReady'));
+        
         current_device.target = mobj.target || '';
         current_device.version = version || current_device.version;
         current_device.arch = mobj.arch_packages || current_device.arch;
@@ -173,6 +175,12 @@ let lastFormStateHash = null;
 async function updateAllPackageState(source = 'unknown') {
     if (!customInitialized && (deviceDefaultPackages.length === 0 && deviceDevicePackages.length === 0)) {
         console.log('updateAllPackageState: Device packages not ready, deferring update from:', source);
+        
+        document.addEventListener('devicePackagesReady', () => {
+            console.log('Re-running updateAllPackageState after device packages ready (source was:', source, ')');
+            updateAllPackageState('force-update');
+        }, { once: true });
+        
         return;
     }
 
