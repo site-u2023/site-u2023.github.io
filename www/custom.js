@@ -587,6 +587,27 @@ function getCurrentPackageListForLanguage() {
 let lastPackageListHash = null;
 let prevUISelections = new Set();
 
+// 既存のdomCacheに追加
+const domCache = {
+    uciDefaultsTextarea: null,
+    asuPackagesTextarea: null,
+    getUciDefaultsTextarea() {
+        if (!this.uciDefaultsTextarea) {
+            this.uciDefaultsTextarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
+        }
+        return this.uciDefaultsTextarea;
+    },
+    getAsuPackagesTextarea() {
+        if (!this.asuPackagesTextarea) {
+            this.asuPackagesTextarea = document.querySelector('#asu-packages');
+        }
+        return this.asuPackagesTextarea;
+    },
+    getCheckedPackages() {
+        return document.querySelectorAll('.package-selector-checkbox:checked');
+    }
+};
+
 function updatePackageListToTextarea(source = 'unknown') {
     if (!deviceDefaultPackages.length && !deviceDevicePackages.length && !extraPackages.length) {
         console.warn('updatePackageListToTextarea: Device packages not loaded yet, skipping update from:', source);
@@ -616,7 +637,7 @@ function updatePackageListToTextarea(source = 'unknown') {
     console.log(`Base device packages: default=${deviceDefaultPackages.length}, device=${deviceDevicePackages.length}, extra=${extraPackages.length}`);
 
     const checkedPackages = new Set();
-    document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
+    domCache.getCheckedPackages().forEach(cb => {
         const pkgName = cb.getAttribute('data-package');
         if (pkgName) checkedPackages.add(pkgName);
     });
@@ -637,7 +658,7 @@ function updatePackageListToTextarea(source = 'unknown') {
     });
 
     const manualPackages = new Set();
-    const textarea = document.querySelector('#asu-packages');
+    const textarea = domCache.getAsuPackagesTextarea();
     
     if (textarea) {
         const currentTextareaPackages = normalizePackages(textarea.value);
@@ -3246,8 +3267,22 @@ exit 0`;
         });
 }
 
+// DOM要素キャッシュ用オブジェクト
+const domCache = {
+    uciDefaultsTextarea: null,
+    getUciDefaultsTextarea() {
+        if (!this.uciDefaultsTextarea) {
+            this.uciDefaultsTextarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
+        }
+        return this.uciDefaultsTextarea;
+    },
+    getCheckedPackages() {
+        return document.querySelectorAll('.package-selector-checkbox:checked');
+    }
+};
+
 function updateVariableDefinitions() {
-    const textarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
+    const textarea = domCache.getUciDefaultsTextarea();
     if (!textarea) return;
 
     const values = collectFormValues && typeof collectFormValues === 'function'
@@ -3261,7 +3296,7 @@ function updateVariableDefinitions() {
 
     let emissionValues = { ...values };
 
-    document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
+    domCache.getCheckedPackages().forEach(cb => {
         const enableVar = cb.getAttribute('data-enable-var');
         if (enableVar) {
             emissionValues[enableVar] = '1';
