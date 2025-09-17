@@ -733,6 +733,7 @@ function setupPackageSearch() {
             updateAllPackageState('package-search-remove');
         },
         onChange: (values) => {
+            updateAllPackageState('package-search-change');
         },
         autocomplete: (query, inputElement) => {
             searchPackages(query, inputElement);
