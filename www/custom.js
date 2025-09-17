@@ -331,38 +331,69 @@ window.updateImages = function(version, mobj) {
 let lastFormStateHash = null;
 
 async function updateAllPackageState(source = 'unknown') {
-    if (!customInitialized && deviceDefaultPackages.length === 0 && deviceDevicePackages.length === 0) {
-        console.log('updateAllPackageState: Device packages not ready, deferring update from:', source);
-        document.addEventListener('devicePackagesReady', () => {
-            console.log('Re-running updateAllPackageState after device packages ready (source was:', source, ')');
-            updateAllPackageState('force-update');
-        }, { once: true });
+    if (!isDevicePackagesReady()) {
+        deferUpdateUntilReady(source);
         return;
     }
 
+    const stateChange = detectStateChange(source);
+    if (!stateChange.shouldUpdate) return;
+
+    console.log(`updateAllPackageState called from: ${source}`);
+
+    await executePackageUpdates(source);
+
+    console.log('All package state updated successfully');
+}
+
+function isDevicePackagesReady() {
+    return customInitialized || 
+           deviceDefaultPackages.length > 0 || 
+           deviceDevicePackages.length > 0;
+}
+
+function deferUpdateUntilReady(source) {
+    console.log('updateAllPackageState: Device packages not ready, deferring update from:', source);
+    document.addEventListener('devicePackagesReady', () => {
+        console.log('Re-running updateAllPackageState after device packages ready (source was:', source, ')');
+        updateAllPackageState('force-update');
+    }, { once: true });
+}
+
+function detectStateChange(source) {
     const formValues = collectFormValues();
     const searchValues = packageSearchManager ? packageSearchManager.getAllValues() : [];
     const hash = JSON.stringify({ form: formValues, search: searchValues });
 
+    const isForced = isForceUpdate(source);
+    const hasChanged = hash !== lastFormStateHash;
+
+    if (isForced || hasChanged) {
+        lastFormStateHash = hash;
+        return { shouldUpdate: true, hash };
+    }
+
+    return { shouldUpdate: false, hash };
+}
+
+function isForceUpdate(source) {
     const forceSources = new Set([
         'package-selected',
         'package-search-change',
         'package-search-add',
         'package-search-remove'
     ]);
-    const isForced = source.includes('device') || source.includes('force') || forceSources.has(source);
+    
+    return source.includes('device') || 
+           source.includes('force') || 
+           forceSources.has(source);
+}
 
-    if (!isForced && hash === lastFormStateHash) return;
-    lastFormStateHash = hash;
-
-    console.log(`updateAllPackageState called from: ${source}`);
-
+async function executePackageUpdates(source) {
     updateSetupJsonPackagesCore();
     await updateLanguagePackageCore();
     updatePackageListToTextarea(source);
     updateVariableDefinitions();
-
-    console.log('All package state updated successfully');
 }
 
 function updateSetupJsonPackagesCore() {
