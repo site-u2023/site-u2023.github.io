@@ -327,25 +327,18 @@ window.updateImages = function(version, mobj) {
 let lastFormStateHash = null;
 
 async function updateAllPackageState(source = 'unknown') {
-    if (!customInitialized && (deviceDefaultPackages.length === 0 && deviceDevicePackages.length === 0)) {
+    if (!customInitialized && deviceDefaultPackages.length === 0 && deviceDevicePackages.length === 0) {
         console.log('updateAllPackageState: Device packages not ready, deferring update from:', source);
-
         document.addEventListener('devicePackagesReady', () => {
             console.log('Re-running updateAllPackageState after device packages ready (source was:', source, ')');
             updateAllPackageState('force-update');
         }, { once: true });
-
         return;
     }
 
-    const currentState = collectFormValues();
-
+    const formValues = collectFormValues();
     const searchValues = packageSearchManager ? packageSearchManager.getAllValues() : [];
-    const hashPayload = {
-        form: currentState,
-        search: searchValues,
-    };
-    const hash = JSON.stringify(hashPayload);
+    const hash = JSON.stringify({ form: formValues, search: searchValues });
 
     const forceSources = new Set([
         'package-selected',
@@ -353,23 +346,16 @@ async function updateAllPackageState(source = 'unknown') {
         'package-search-add',
         'package-search-remove'
     ]);
+    const isForced = source.includes('device') || source.includes('force') || forceSources.has(source);
 
-    if (hash === lastFormStateHash &&
-        !source.includes('device') &&
-        !source.includes('force') &&
-        !forceSources.has(source)) {
-        return;
-    }
+    if (!isForced && hash === lastFormStateHash) return;
     lastFormStateHash = hash;
 
     console.log(`updateAllPackageState called from: ${source}`);
 
     updateSetupJsonPackagesCore();
-
     await updateLanguagePackageCore();
-
     updatePackageListToTextarea(source);
-
     updateVariableDefinitions();
 
     console.log('All package state updated successfully');
@@ -415,57 +401,54 @@ function toggleVirtualPackage(packageId, enabled) {
         console.warn(`Virtual package not found in packages.json: ${packageId}`);
         return;
     }
-    
+
     const searchId = pkg.uniqueId || pkg.id;
-    const checkbox = document.querySelector(`[data-package="${packageId}"], [data-unique-id="${searchId}"]`);
-    
-    if (checkbox) {
-        const wasChecked = checkbox.checked;
-        checkbox.checked = enabled;
-        
-        if (wasChecked !== enabled) {
-            console.log(`Virtual package ${packageId} (${searchId}): ${enabled ? 'enabled' : 'disabled'}`);
-            
-            const dependencies = checkbox.getAttribute('data-dependencies');
-            if (dependencies && enabled) {
-                dependencies.split(',').forEach(depId => {
-                    const depPkg = findPackageById(depId);
-                    if (depPkg) {
-                        const depSearchId = depPkg.uniqueId || depPkg.id;
-                        const depCheckbox = document.querySelector(`[data-package="${depId}"], [data-unique-id="${depSearchId}"]`);
-                        if (depCheckbox) {
-                            depCheckbox.checked = true;
-                            console.log(`Virtual dependency ${depId}: enabled`);
-                        }
-                    }
-                });
-            }
-        }
-    } else {
+    const getCheckbox = (id, sid) =>
+        document.querySelector(`[data-package="${id}"], [data-unique-id="${sid}"]`);
+
+    const checkbox = getCheckbox(packageId, searchId);
+    if (!checkbox) {
         console.warn(`Checkbox not found for virtual package: ${packageId} (searched: ${searchId})`);
+        return;
+    }
+
+    const wasChecked = checkbox.checked;
+    if (wasChecked === enabled) return;
+
+    checkbox.checked = enabled;
+    console.log(`Virtual package ${packageId} (${searchId}): ${enabled ? 'enabled' : 'disabled'}`);
+
+    if (!enabled) return;
+
+    const dependencies = checkbox.getAttribute('data-dependencies');
+    if (!dependencies) return;
+
+    for (const depId of dependencies.split(',')) {
+        const depPkg = findPackageById(depId);
+        if (!depPkg) continue;
+        const depSearchId = depPkg.uniqueId || depPkg.id;
+        const depCheckbox = getCheckbox(depId, depSearchId);
+        if (depCheckbox && !depCheckbox.checked) {
+            depCheckbox.checked = true;
+            console.log(`Virtual dependency ${depId}: enabled`);
+        }
     }
 }
 
 function toggleVirtualPackagesByType(type, value, enabled) {
     const packageMap = {
-        'connection_type': {
-            'mape': ['map'],
-            'dslite': ['ds-lite']
-        },
-        'wifi_mode': {
-            'usteer': ['usteer-from-setup']
-        }
+        connection_type: { mape: ['map'], dslite: ['ds-lite'] },
+        wifi_mode: { usteer: ['usteer-from-setup'] }
     };
-    
-    const packages = packageMap[type]?.[value];
-    if (packages) {
-        console.log(`Toggle packages for ${type}=${value}: ${packages.join(', ')} -> ${enabled}`);
-        packages.forEach(pkgId => {
-            toggleVirtualPackage(pkgId, enabled);
-        });
-    } else {
+
+    const targets = packageMap[type]?.[value];
+    if (!targets || targets.length === 0) {
         console.log(`No virtual packages defined for ${type}=${value}`);
+        return;
     }
+
+    console.log(`Toggle packages for ${type}=${value}: ${targets.join(', ')} -> ${enabled}`);
+    for (const pkgId of targets) toggleVirtualPackage(pkgId, enabled);
 }
 
 async function updateLanguagePackageCore() {
@@ -552,52 +535,41 @@ async function updateLanguagePackageCore() {
 }
 
 function getCurrentPackageListForLanguage() {
-    const packages = new Set();
-    
-    deviceDefaultPackages.forEach(pkg => packages.add(pkg));
-    deviceDevicePackages.forEach(pkg => packages.add(pkg));
-    extraPackages.forEach(pkg => packages.add(pkg));
-    
+    const out = new Set([
+        ...deviceDefaultPackages,
+        ...deviceDevicePackages,
+        ...extraPackages
+    ]);
+
     document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
-        const pkgName = cb.getAttribute('data-package');
-        const uniqueId = cb.getAttribute('data-unique-id');
-        
-        if (pkgName) {
-            packages.add(pkgName);
-            if (uniqueId && uniqueId !== pkgName) {
-                packages.add(uniqueId);
-            }
-        }
+        const name = cb.getAttribute('data-package');
+        const uid = cb.getAttribute('data-unique-id');
+        if (name) out.add(name);
+        if (uid && uid !== name) out.add(uid);
     });
-    
+
     if (packageSearchManager) {
-        const searchValues = packageSearchManager.getAllValues();
-        searchValues.forEach(pkg => packages.add(pkg));
+        for (const name of packageSearchManager.getAllValues()) out.add(name);
     }
-    
-    for (const pkg of dynamicPackages) {
-        if (!pkg.startsWith('luci-i18n-')) {
-            packages.add(pkg);
-        }
+
+    for (const name of dynamicPackages) {
+        if (!name.startsWith('luci-i18n-')) out.add(name);
     }
-    
-    const checkedPackageSet = new Set();
+
+    const allSelectable = new Set();
     document.querySelectorAll('.package-selector-checkbox').forEach(cb => {
-        const pkgName = cb.getAttribute('data-package');
-        if (pkgName) checkedPackageSet.add(pkgName);
+        const n = cb.getAttribute('data-package');
+        if (n) allSelectable.add(n);
     });
-    
+
     const textarea = document.querySelector('#asu-packages');
     if (textarea) {
-        const textPackages = CustomUtils.split(textarea.value);
-        textPackages.forEach(pkg => {
-            if (!pkg.startsWith('luci-i18n-') && !checkedPackageSet.has(pkg)) {
-                packages.add(pkg);
-            }
-        });
+        for (const name of CustomUtils.split(textarea.value)) {
+            if (!name.startsWith('luci-i18n-') && !allSelectable.has(name)) out.add(name);
+        }
     }
-    
-    return Array.from(packages);
+
+    return Array.from(out);
 }
 
 let lastPackageListHash = null;
@@ -999,41 +971,42 @@ async function searchInFeed(query, feed, version, arch) {
     const cacheKey = `${version}:${arch}:${feed}`;
 
     try {
-        let packages = [];
-
         if (!feedCacheMap.has(cacheKey)) {
-            const url = await buildPackageUrl(feed, { 
-                version, 
-                arch, 
+            const url = await buildPackageUrl(feed, {
+                version, arch,
                 vendor: deviceInfo.vendor,
                 subtarget: deviceInfo.subtarget,
                 isSnapshot: version.includes('SNAPSHOT')
             });
-            
-            console.log(`[DEBUG] Search URL for ${feed}: ${url}`);
 
+            console.log(`[DEBUG] Search URL for ${feed}: ${url}`);
             const resp = await fetch(url, { cache: 'force-cache' });
             if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
 
             const isSnapshot = version.includes('SNAPSHOT');
+            const packages = isSnapshot
+                ? (() => {
+                    const data = resp.clone ? null : null;
+                    return null;
+                })()
+                : null;
+
+            let list = [];
             if (isSnapshot) {
                 const data = await resp.json();
-                packages = data.packages ? Object.keys(data.packages) : [];
+                list = data.packages ? Object.keys(data.packages) : [];
             } else {
                 const text = await resp.text();
-                packages = text.split('\n')
+                list = text.split('\n')
                     .filter(line => line.startsWith('Package: '))
                     .map(line => line.substring(9).trim());
             }
-
-            feedCacheMap.set(cacheKey, packages);
-        } else {
-            packages = feedCacheMap.get(cacheKey);
+            feedCacheMap.set(cacheKey, list);
         }
 
-        return packages.filter(pkgName =>
-            pkgName.toLowerCase().includes(query.toLowerCase())
-        );
+        const packages = feedCacheMap.get(cacheKey) || [];
+        const q = query.toLowerCase();
+        return packages.filter(name => name.toLowerCase().includes(q));
     } catch (err) {
         console.error('searchInFeed error:', err);
         return [];
