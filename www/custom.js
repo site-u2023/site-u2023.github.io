@@ -94,7 +94,18 @@ const CustomUtils = {
         const resp = await fetch(indexUrl, { cache: 'no-store' });
         if (!resp.ok) throw new Error(`Failed to fetch kmods index: HTTP ${resp.status} for ${indexUrl}`); 
         const html = await resp.text();
-        const matches = [...html.matchAll(/href="([^/]+)\/"/g)].map(m => m[1]);
+
+        let matches = [...html.matchAll(/href="([^/]+)\//g)].map(m => m[1]);
+        matches = matches.filter(token =>
+            token &&
+            typeof token === 'string' &&
+            !/^\s*$/.test(token) &&      // 空白・改行のみを除外
+            !token.startsWith('#') &&    // アンカー
+            !token.startsWith('?') &&    // クエリ
+            !token.startsWith('.') &&    // 隠しディレクトリ
+            /^[\w.-]+$/.test(token)      // 許可パターン（英数/_/./-）
+        );
+
         if (!matches.length) throw new Error("kmods token not found");
     
         matches.sort();
