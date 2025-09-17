@@ -877,23 +877,23 @@ function showPackageSearchResults(results, inputElement) {
             
             console.log('Package selected:', pkgName);
             
-            inputElement.dataset.programmaticChange = 'true';
-            inputElement.value = pkgName;
-            
-            inputElement.setAttribute('data-confirmed', 'true');
-            
-            const inputIndex = packageSearchManager.inputs.indexOf(inputElement);
-            if (inputIndex === packageSearchManager.inputs.length - 1) {
-                packageSearchManager.addInput('', true);
+            try {  // ここにtryを追加
+                inputElement.dataset.programmaticChange = 'true';
+                inputElement.value = pkgName;
+                
+                inputElement.setAttribute('data-confirmed', 'true');
+                
+                const inputIndex = packageSearchManager.inputs.indexOf(inputElement);
+                if (inputIndex === packageSearchManager.inputs.length - 1) {
+                    packageSearchManager.addInput('', true);
+                }
+                
+                clearPackageSearchResults();
+                packageSearchManager.options.onChange(packageSearchManager.getAllValues());
+                updateAllPackageState('package-selected');
+            } catch (error) {
+                console.error('Error in package selection:', error);
             }
-            
-            clearPackageSearchResults();
-
-            packageSearchManager.options.onChange(packageSearchManager.getAllValues());
-            updateAllPackageState('package-selected');
-        } catch (error) {
-            console.error('Error in package selection:', error);
-        }
         };
   
         resultsDiv.appendChild(item);
