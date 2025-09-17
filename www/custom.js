@@ -576,7 +576,6 @@ class MultiInputManager {
         }
         
         if (value) {
-            input.setAttribute('data-confirmed', 'true');
             this.options.onAdd(value);
         }
         
@@ -734,6 +733,7 @@ function setupPackageSearch() {
             updateAllPackageState('package-search-remove');
         },
         onChange: (values) => {
+            updateAllPackageState('package-search-change');
         },
         autocomplete: (query, inputElement) => {
             searchPackages(query, inputElement);
