@@ -128,46 +128,18 @@ const CustomUtils = {
     },
     
     ipv6ToBinary: function(ipv6) {
-        if (typeof ipv6 !== 'string' || ipv6.length === 0) return null;
-
-        if (ipv6.includes('.')) {
-            const lastColon = ipv6.lastIndexOf(':');
-            if (lastColon === -1) return null;
-            const ipv4Part = ipv6.slice(lastColon + 1);
-            const ipv4Octets = ipv4Part.split('.').map(o => parseInt(o, 10));
-            if (ipv4Octets.length !== 4 || ipv4Octets.some(o => isNaN(o) || o < 0 || o > 255)) return null;
-            const ipv4Hex = [
-                ((ipv4Octets[0] << 8) | ipv4Octets[1]).toString(16),
-                ((ipv4Octets[2] << 8) | ipv4Octets[3]).toString(16)
-            ];
-            ipv6 = ipv6.slice(0, lastColon) + ':' + ipv4Hex.join(':');
-        }
-
-        const parts = ipv6.split('::');
-        if (parts.length > 2) return null;
-
-        let head = parts[0] ? parts[0].split(':').filter(Boolean) : [];
-        let tail = parts.length === 2 && parts[1] ? parts[1].split(':').filter(Boolean) : [];
-
-        const validateBlock = b => /^[0-9a-f]{1,4}$/i.test(b);
-        if (!head.every(validateBlock) || !tail.every(validateBlock)) return null;
-
-        const missing = 8 - (head.length + tail.length);
-        if (missing < 0) return null;
-
-        const full = [
-            ...head,
-            ...Array(missing).fill('0'),
-            ...tail
-        ];
-
-        if (full.length !== 8) return null;
-
-        return full
-            .map(h => parseInt(h, 16).toString(2).padStart(16, '0'))
-            .join('');
+        const full = ipv6.split('::').reduce((acc, part, i, arr) => {
+            const segs = part.split(':').filter(Boolean);
+            if (i === 0) {
+                return segs;
+            } else {
+                const missing = 8 - (arr[0].split(':').filter(Boolean).length + segs.length);
+                return acc.concat(Array(missing).fill('0'), segs);
+            }
+        }, []).map(s => s.padStart(4, '0'));
+        return full.map(seg => parseInt(seg, 16).toString(2).padStart(16, '0')).join('');
     },
-
+    
     generateGuaPrefixFromFullAddress: function(apiInfo) {
         if (!apiInfo?.ipv6) return null;
         const ipv6 = apiInfo.ipv6.toLowerCase();
