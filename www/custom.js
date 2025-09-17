@@ -532,7 +532,8 @@ function updatePackageListToTextarea(source = 'unknown') {
             });
 
         prevUISelections = currentUISelections;
-
+    }
+    
     const finalPackages = [
         ...basePackages,
         ...checkedPackages,
