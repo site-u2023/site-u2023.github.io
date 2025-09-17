@@ -1951,31 +1951,13 @@ function initConditionalSections(config) {
 
     function evaluateAll() {
         for (const cond of conditionals) {
-            const visible = evaluateShowWhen(cond.showWhen, getControlValue);
+            const visible = evaluateShowWhen(cond.showWhen, (key) => {
+                return getFieldValue(key, { tryVariants: true, returnDefault: '' });
+            });
             const el = document.getElementById(cond.id);
             if (!el) continue;
             el.style.display = visible ? '' : 'none';
         }
-    }
-
-    function getControlValue(key) {
-        const keys = [key, key.replace(/-/g, '_'), key.replace(/_/g, '-')];
-
-        for (const k of keys) {
-            const radios = document.querySelectorAll(`input[type="radio"][name="${cssEscape(k)}"]`);
-            if (radios.length) {
-                const r = Array.from(radios).find(x => x.checked);
-                if (r) return r.value;
-            }
-        }
-        
-        for (const k of keys) {
-            const byId = document.getElementById(k);
-            if (byId) return byId.value;
-            const byName = document.querySelector(`[name="${cssEscape(k)}"]`);
-            if (byName) return byName.value;
-        }
-        return '';
     }
 }
 
@@ -2145,17 +2127,44 @@ function collectFormValues() {
     return values;
 }
 
-function getFieldValue(selector) {
-    const element = document.querySelector(selector);
-    if (!element) return null;
+function getFieldValue(selector, options = {}) {
+    // オプション: { tryVariants: false, returnDefault: null }
+    const tryVariants = options.tryVariants || false;
+    const returnDefault = options.returnDefault !== undefined ? options.returnDefault : null;
     
+    let element = null;
+    
+    if (tryVariants && typeof selector === 'string') {
+        // key名のバリエーションを試す（_と-の変換）
+        const keys = [selector, selector.replace(/-/g, '_'), selector.replace(/_/g, '-')];
+        for (const k of keys) {
+            // ラジオボタンを優先チェック
+            const radios = document.querySelectorAll(`input[type="radio"][name="${cssEscape(k)}"]`);
+            if (radios.length) {
+                const checked = Array.from(radios).find(x => x.checked);
+                if (checked) return checked.value;
+            }
+            
+            // ID/name属性で検索
+            element = document.getElementById(k) || document.querySelector(`[name="${cssEscape(k)}"]`);
+            if (element) break;
+        }
+    } else {
+        // 通常のセレクター検索
+        element = typeof selector === 'string' ? document.querySelector(selector) : selector;
+    }
+    
+    if (!element) return returnDefault;
+    
+    // 要素タイプ別の値取得
     if (element.type === 'radio') {
         const checked = document.querySelector(`input[name="${element.name}"]:checked`);
-        return checked?.value;
+        return checked ? checked.value : returnDefault;
     } else if (element.type === 'checkbox') {
-        return element.checked ? element.value : null;
+        return element.checked ? (element.value || 'on') : returnDefault;
     }
-    return element.value;
+    
+    return element.value !== undefined ? element.value : returnDefault;
 }
 
 // ==================== フォーム値処理（JSONドリブン版） ====================
