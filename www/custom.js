@@ -37,22 +37,32 @@ let extraPackages = [];           // config.asu_extra_packages
 let packageSearchManager = null;
 let commandsManager = null;
 
-// ==================== Vendor動的取得ヘルパー ====================
-function getVendor() {
-    if (current_device?.target) {
-        const parts = current_device.target.split('/');
-        return parts[0] || null;
-    }
-    return null;
-}
+// ==================== ユーティリティ ====================
+const CustomUtils = {
+    /**
+     * 現在選択されているデバイスのベンダー名を取得します。
+     * @returns {string|null} ベンダー名、または取得できない場合はnull
+     */
+    getVendor: function() {
+        if (current_device?.target) {
+            const parts = current_device.target.split('/');
+            return parts[0] || null;
+        }
+        return null;
+    },
 
-function getSubtarget() {
-    if (current_device?.target) {
-        const parts = current_device.target.split('/');
-        return parts[1] || '';
+    /**
+     * 現在選択されているデバイスのサブターゲット名を取得します。
+     * @returns {string} サブターゲット名
+     */
+    getSubtarget: function() {
+        if (current_device?.target) {
+            const parts = current_device.target.split('/');
+            return parts[1] || '';
+        }
+        return '';
     }
-    return '';
-}
+};
 
 // ==================== 初期化処理 ====================
 const originalUpdateImages = window.updateImages;
@@ -75,8 +85,8 @@ window.updateImages = function(version, mobj) {
 
         console.log('[TRACE] current_device updated:', {
             ...current_device,
-            vendor: getVendor(),
-            subtarget: getSubtarget()
+            vendor: CustomUtils.getVendor(),
+            subtarget: CustomUtils.getSubtarget()
         });
 
         if (oldArch !== mobj.arch_packages || oldVersion !== version) {
@@ -85,7 +95,7 @@ window.updateImages = function(version, mobj) {
             feedCacheMap.clear();
 
             requestAnimationFrame(() => {
-                const vendor = getVendor();
+                const vendor = CustomUtils.getVendor();
                 if (!vendor) {
                     console.warn('[WARN] No vendor info, kmods may not verify');
                     console.log('[TRACE] current_device state:', current_device);
@@ -129,7 +139,7 @@ window.updateImages = function(version, mobj) {
             default: deviceDefaultPackages.length,
             device: deviceDevicePackages.length,
             extra: extraPackages.length,
-            vendor: getVendor()
+            vendor: CustomUtils.getVendor()
         });
 
         const initialPackages = deviceDefaultPackages
@@ -795,7 +805,7 @@ async function searchPackages(query, inputElement) {
     
     const arch = current_device?.arch || cachedDeviceArch;
     const version = current_device?.version || document.querySelector("#versions")?.value;
-    const vendor = getVendor();
+    const vendor = CustomUtils.getVendor();
     
     if (query.toLowerCase().startsWith('kmod-') && !vendor) {
         console.log('searchPackages - current_device:', current_device);
@@ -844,7 +854,7 @@ async function searchPackages(query, inputElement) {
 }
 
 async function searchInFeed(query, feed, version, arch) {
-    const vendor = getVendor();
+    const vendor = CustomUtils.getVendor();
     const cacheKey = `${version}:${arch}:${feed}`;
 
     try {
@@ -1000,7 +1010,6 @@ function replaceAsuSection(asuSection, temp) {
                 </details>
             </div>
         </div>
-        <!-- index.js用の隠しパッケージリスト -->
         <textarea id="asu-packages" style="display:none;"></textarea>
         <a href="javascript:buildAsuRequest()" class="custom-link">
             <span></span><span class="tr-request-build">REQUEST BUILD</span>
@@ -1258,8 +1267,8 @@ async function isPackageAvailable(pkgName, feed) {
 
     const arch = current_device?.arch || cachedDeviceArch;
     const version = current_device?.version || $("#versions").value;
-    const vendor = getVendor();
-    const subtarget = getSubtarget();
+    const vendor = CustomUtils.getVendor();
+    const subtarget = CustomUtils.getSubtarget();
 
     if (!arch || !version) {
         console.log('Missing device info for package check:', { arch, version });
@@ -3229,7 +3238,7 @@ async function buildKmodsUrl(version, vendor, isSnapshot) {
         throw new Error(`Missing required parameters for kmods URL: version=${version}, vendor=${vendor}`);
     }
 
-    const subtarget = getSubtarget();
+    const subtarget = CustomUtils.getSubtarget();
     if (!subtarget) {
         throw new Error(`Missing subtarget for kmods URL: version=${version}, vendor=${vendor}`);
     }    
