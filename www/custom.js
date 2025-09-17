@@ -1046,7 +1046,7 @@ function showPackageSearchResults(results, inputElement) {
             
             console.log('Package selected:', pkgName);
             
-            try {  // ここにtryを追加
+            try {
                 inputElement.dataset.programmaticChange = 'true';
                 inputElement.value = pkgName;
                 
@@ -2082,7 +2082,7 @@ function walkConfig(config, fn) {
 
 function getRows(group) {
     const rows = [];
-    const COLUMNS_PER_ROW = 2; // デフォルト2列レイアウト
+    const COLUMNS_PER_ROW = 2;
     const fields = group.fields || [];
     
     for (let i = 0; i < fields.length; i += COLUMNS_PER_ROW) {
@@ -2185,35 +2185,29 @@ function collectFormValues() {
 }
 
 function getFieldValue(selector, options = {}) {
-    // オプション: { tryVariants: false, returnDefault: null }
     const tryVariants = options.tryVariants || false;
     const returnDefault = options.returnDefault !== undefined ? options.returnDefault : null;
     
     let element = null;
     
     if (tryVariants && typeof selector === 'string') {
-        // key名のバリエーションを試す（_と-の変換）
         const keys = [selector, selector.replace(/-/g, '_'), selector.replace(/_/g, '-')];
         for (const k of keys) {
-            // ラジオボタンを優先チェック
             const radios = document.querySelectorAll(`input[type="radio"][name="${cssEscape(k)}"]`);
             if (radios.length) {
                 const checked = Array.from(radios).find(x => x.checked);
                 if (checked) return checked.value;
             }
             
-            // ID/name属性で検索
             element = document.getElementById(k) || document.querySelector(`[name="${cssEscape(k)}"]`);
             if (element) break;
         }
     } else {
-        // 通常のセレクター検索
         element = typeof selector === 'string' ? document.querySelector(selector) : selector;
     }
     
     if (!element) return returnDefault;
     
-    // 要素タイプ別の値取得
     if (element.type === 'radio') {
         const checked = document.querySelector(`input[name="${element.name}"]:checked`);
         return checked ? checked.value : returnDefault;
@@ -2901,7 +2895,7 @@ async function initializeCustomFeatures(asuSection, temp) {
 
     let changed = false;
     if (window.autoConfigData || cachedApiInfo) {
-        changed = applyIspAutoConfig(window.autoConfigData || cachedApiInfo);  // ← ここで実行
+        changed = applyIspAutoConfig(window.autoConfigData || cachedApiInfo);
     }
 
     generatePackageSelector();
