@@ -1412,6 +1412,55 @@ function parsePackageList(responseData, pkgName, isSnapshot) {
     }
 }
 
+const feedPackageSetCache = new Map(); 
+// key: `${version}:${arch}:${vendor}:${subtarget}:${isSnapshot}:${feed}`
+// val: Set<string>
+
+async function getFeedPackageSet(feed, deviceInfo) {
+    const key = [
+        deviceInfo.version,
+        deviceInfo.arch,
+        deviceInfo.vendor || '',
+        deviceInfo.subtarget || '',
+        deviceInfo.isSnapshot ? 'S' : 'R',
+        feed
+    ].join(':');
+
+    if (feedPackageSetCache.has(key)) {
+        return feedPackageSetCache.get(key);
+    }
+
+    const url = await buildPackageUrl(feed, deviceInfo);
+    console.log(`[DEBUG] Fetching feed index for ${feed} at: ${url}`);
+
+    const resp = await fetch(url, { cache: 'force-cache' });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+
+    const isSnapshot = deviceInfo.isSnapshot || (feed === 'kmods' && deviceInfo.isSnapshot);
+    let pkgSet;
+
+    if (isSnapshot) {
+        const data = await resp.json();
+        if (Array.isArray(data.packages)) {
+            pkgSet = new Set(data.packages.map(p => p?.name).filter(Boolean));
+        } else if (data.packages && typeof data.packages === 'object') {
+            pkgSet = new Set(Object.keys(data.packages));
+        } else {
+            pkgSet = new Set();
+        }
+    } else {
+        const text = await resp.text();
+        const names = text.split('\n')
+            .filter(line => line.startsWith('Package: '))
+            .map(line => line.substring(9).trim())
+            .filter(Boolean);
+        pkgSet = new Set(names);
+    }
+
+    feedPackageSetCache.set(key, pkgSet);
+    return pkgSet;
+}
+
 async function isPackageAvailable(pkgName, feed) {
     if (!pkgName || !feed) return false;
 
@@ -1427,17 +1476,8 @@ async function isPackageAvailable(pkgName, feed) {
     }
 
     try {
-        const packagesUrl = await buildPackageUrl(feed, deviceInfo);
-        console.log(`[DEBUG] Checking package ${pkgName} at: ${packagesUrl}`);
-
-        const resp = await fetch(packagesUrl, { cache: 'force-cache' });
-        if (!resp.ok) {
-            throw new Error(`HTTP ${resp.status}`);
-        }
-
-        const isSnapshot = deviceInfo.isSnapshot || (feed === 'kmods' && deviceInfo.isSnapshot);
-        const data = isSnapshot ? await resp.json() : await resp.text();
-        const result = parsePackageList(data, pkgName, isSnapshot);
+        const pkgSet = await getFeedPackageSet(feed, deviceInfo);
+        const result = pkgSet.has(pkgName);
 
         packageAvailabilityCache.set(cacheKey, result);
         return result;
