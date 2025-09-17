@@ -39,16 +39,24 @@ let commandsManager = null;
 
 // ==================== ユーティリティ ====================
 const CustomUtils = {
+    /**
+     * 現在選択されているデバイスのベンダー名を取得します。
+     * @returns {string|null} ベンダー名、または取得できない場合はnull
+     */
     getVendor() {
-        const target = current_device?.target; // @returns {string|null} ベンダー名、または取得できない場合はnull
+        const target = current_device?.target;
         if (!target) return null;
 
         const [vendor] = target.split('/');
         return vendor || null;
     },
 
+    /**
+     * 現在選択されているデバイスのサブターゲット名を取得します。
+     * @returns {string} サブターゲット名
+     */
     getSubtarget() {
-        const target = current_device?.target; // @returns {string} サブターゲット名
+        const target = current_device?.target;
         if (!target) return '';
 
         const [, subtarget] = target.split('/');
@@ -331,69 +339,38 @@ window.updateImages = function(version, mobj) {
 let lastFormStateHash = null;
 
 async function updateAllPackageState(source = 'unknown') {
-    if (!isDevicePackagesReady()) {
-        deferUpdateUntilReady(source);
+    if (!customInitialized && deviceDefaultPackages.length === 0 && deviceDevicePackages.length === 0) {
+        console.log('updateAllPackageState: Device packages not ready, deferring update from:', source);
+        document.addEventListener('devicePackagesReady', () => {
+            console.log('Re-running updateAllPackageState after device packages ready (source was:', source, ')');
+            updateAllPackageState('force-update');
+        }, { once: true });
         return;
     }
 
-    const stateChange = detectStateChange(source);
-    if (!stateChange.shouldUpdate) return;
-
-    console.log(`updateAllPackageState called from: ${source}`);
-
-    await executePackageUpdates(source);
-
-    console.log('All package state updated successfully');
-}
-
-function isDevicePackagesReady() {
-    return customInitialized || 
-           deviceDefaultPackages.length > 0 || 
-           deviceDevicePackages.length > 0;
-}
-
-function deferUpdateUntilReady(source) {
-    console.log('updateAllPackageState: Device packages not ready, deferring update from:', source);
-    document.addEventListener('devicePackagesReady', () => {
-        console.log('Re-running updateAllPackageState after device packages ready (source was:', source, ')');
-        updateAllPackageState('force-update');
-    }, { once: true });
-}
-
-function detectStateChange(source) {
     const formValues = collectFormValues();
     const searchValues = packageSearchManager ? packageSearchManager.getAllValues() : [];
     const hash = JSON.stringify({ form: formValues, search: searchValues });
 
-    const isForced = isForceUpdate(source);
-    const hasChanged = hash !== lastFormStateHash;
-
-    if (isForced || hasChanged) {
-        lastFormStateHash = hash;
-        return { shouldUpdate: true, hash };
-    }
-
-    return { shouldUpdate: false, hash };
-}
-
-function isForceUpdate(source) {
     const forceSources = new Set([
         'package-selected',
         'package-search-change',
         'package-search-add',
         'package-search-remove'
     ]);
-    
-    return source.includes('device') || 
-           source.includes('force') || 
-           forceSources.has(source);
-}
+    const isForced = source.includes('device') || source.includes('force') || forceSources.has(source);
 
-async function executePackageUpdates(source) {
+    if (!isForced && hash === lastFormStateHash) return;
+    lastFormStateHash = hash;
+
+    console.log(`updateAllPackageState called from: ${source}`);
+
     updateSetupJsonPackagesCore();
     await updateLanguagePackageCore();
     updatePackageListToTextarea(source);
     updateVariableDefinitions();
+
+    console.log('All package state updated successfully');
 }
 
 function updateSetupJsonPackagesCore() {
@@ -611,163 +588,102 @@ let lastPackageListHash = null;
 let prevUISelections = new Set();
 
 function updatePackageListToTextarea(source = 'unknown') {
-    if (!areDevicePackagesLoaded()) {
+    if (!deviceDefaultPackages.length && !deviceDevicePackages.length && !extraPackages.length) {
         console.warn('updatePackageListToTextarea: Device packages not loaded yet, skipping update from:', source);
         return;
     }
 
-    const packageSets = collectAllPackageSets();
-    
-    const manualPackages = detectManualPackages(packageSets);
-    
-    const uniquePackages = mergeAllPackages(packageSets, manualPackages);
-
-    if (!hasPackageListChanged(uniquePackages, source)) {
-        console.log('updatePackageListToTextarea: No changes detected, skipping update from:', source);
-        return;
-    }
-
-    logPackageStats(source, packageSets, manualPackages, uniquePackages);
-
-    updatePackageTextarea(uniquePackages);
-
-    console.log(`Postinst package list updated: ${uniquePackages.length} packages`);
-}
-
-function areDevicePackagesLoaded() {
-    return deviceDefaultPackages.length > 0 || 
-           deviceDevicePackages.length > 0 || 
-           extraPackages.length > 0;
-}
-
-function collectAllPackageSets() {
-    const normalizePackages = createPackageNormalizer();
-    
-    return {
-        base: collectBasePackages(normalizePackages),
-        checked: collectCheckedPackages(),
-        searched: collectSearchedPackages(normalizePackages),
-        dynamic: dynamicPackages,
-        knownSelectable: collectKnownSelectablePackages()
-    };
-}
-
-function createPackageNormalizer() {
-    return (values) => {
+    const normalizePackages = (values) => {
         if (!values) return [];
         return (Array.isArray(values) ? values : CustomUtils.split(values))
             .map(v => v.trim())
             .filter(v => v.length > 0);
     };
-}
 
-function collectBasePackages(normalizePackages) {
-    const baseSet = new Set();
-    const sources = [deviceDefaultPackages, deviceDevicePackages, extraPackages];
-    
-    sources.forEach(source => {
-        normalizePackages(source).forEach(pkg => baseSet.add(pkg));
-    });
-    
+    const addToSet = (targetSet, sources) => {
+        sources.forEach(source => {
+            normalizePackages(source).forEach(pkg => targetSet.add(pkg));
+        });
+        return targetSet;
+    };
+
+    const basePackages = addToSet(new Set(), [
+        deviceDefaultPackages,
+        deviceDevicePackages,
+        extraPackages
+    ]);
+
     console.log(`Base device packages: default=${deviceDefaultPackages.length}, device=${deviceDevicePackages.length}, extra=${extraPackages.length}`);
-    return baseSet;
-}
 
-function collectCheckedPackages() {
-    const checkedSet = new Set();
+    const checkedPackages = new Set();
     document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
         const pkgName = cb.getAttribute('data-package');
-        if (pkgName) checkedSet.add(pkgName);
+        if (pkgName) checkedPackages.add(pkgName);
     });
-    return checkedSet;
-}
 
-function collectSearchedPackages(normalizePackages) {
-    const searchedSet = new Set(
+    const searchedPackages = new Set(
         packageSearchManager ? normalizePackages(packageSearchManager.getAllValues()) : []
     );
     
-    if (searchedSet.size > 0) {
-        console.log('PackageSearchManager values:', [...searchedSet]);
+    if (searchedPackages.size > 0) {
+        console.log('PackageSearchManager values:', [...searchedPackages]);
     }
-    return searchedSet;
-}
 
-function collectKnownSelectablePackages() {
-    const knownSet = new Set();
+    const knownSelectablePackages = new Set();
     packagesJson?.categories?.forEach(cat => {
         cat.packages?.forEach(pkg => {
-            if (pkg.id) knownSet.add(pkg.id);
+            if (pkg.id) knownSelectablePackages.add(pkg.id);
         });
     });
-    return knownSet;
-}
 
-function detectManualPackages(packageSets) {
-    const manualSet = new Set();
+    const manualPackages = new Set();
     const textarea = document.querySelector('#asu-packages');
     
-    if (!textarea) return manualSet;
-    
-    const normalizePackages = createPackageNormalizer();
-    const currentTextareaPackages = normalizePackages(textarea.value);
-    const confirmedSet = new Set([
-        ...packageSets.base,
-        ...packageSets.checked,
-        ...packageSets.searched,
-        ...packageSets.dynamic
-    ]);
-    const currentUISelections = new Set([...packageSets.checked, ...packageSets.searched]);
+    if (textarea) {
+        const currentTextareaPackages = normalizePackages(textarea.value);
+        const confirmedSet = new Set([...basePackages, ...checkedPackages, ...searchedPackages, ...dynamicPackages]);
+        const currentUISelections = new Set([...checkedPackages, ...searchedPackages]);
 
-    currentTextareaPackages.forEach(pkg => {
-        if (isManualPackage(pkg, confirmedSet, packageSets.knownSelectable, currentUISelections)) {
-            manualSet.add(pkg);
-        }
-    });
+        currentTextareaPackages.forEach(pkg => {
+            if (isManualPackage(pkg, confirmedSet, knownSelectablePackages, currentUISelections)) {
+                manualPackages.add(pkg);
+            }
+        });
 
-    prevUISelections = currentUISelections;
-    return manualSet;
-}
+        prevUISelections = currentUISelections;
+    }
 
-function mergeAllPackages(packageSets, manualPackages) {
-    return [...new Set([
-        ...packageSets.base,
-        ...packageSets.checked,
-        ...packageSets.searched,
-        ...packageSets.dynamic,
+    const uniquePackages = [...new Set([
+        ...basePackages,
+        ...checkedPackages,
+        ...searchedPackages,
+        ...dynamicPackages,
         ...manualPackages
     ])];
-}
 
-function hasPackageListChanged(uniquePackages, source) {
     const currentHash = JSON.stringify(uniquePackages);
-    const hasChanged = currentHash !== lastPackageListHash || source === 'force-update';
-    
-    if (hasChanged) {
-        lastPackageListHash = currentHash;
+    if (currentHash === lastPackageListHash && source !== 'force-update') {
+        console.log('updatePackageListToTextarea: No changes detected, skipping update from:', source);
+        return;
     }
-    
-    return hasChanged;
-}
+    lastPackageListHash = currentHash;
 
-function logPackageStats(source, packageSets, manualPackages, uniquePackages) {
     console.log(`updatePackageListToTextarea from: ${source}`, {
-        base: packageSets.base.size,
-        checked: packageSets.checked.size,
-        searched: packageSets.searched.size,
-        dynamic: packageSets.dynamic.size,
+        base: basePackages.size,
+        checked: checkedPackages.size,
+        searched: searchedPackages.size,
+        dynamic: dynamicPackages.size,
         manual: manualPackages.size,
         total: uniquePackages.length
     });
-}
 
-function updatePackageTextarea(uniquePackages) {
-    const textarea = document.querySelector('#asu-packages');
-    if (!textarea) return;
-    
-    textarea.value = uniquePackages.join(' ');
-    textarea.style.height = 'auto';
-    textarea.style.height = textarea.scrollHeight + 'px';
+    if (textarea) {
+        textarea.value = uniquePackages.join(' ');
+        textarea.style.height = 'auto';
+        textarea.style.height = textarea.scrollHeight + 'px';
+    }
+
+    console.log(`Postinst package list updated: ${uniquePackages.length} packages`);
 }
 
 function isManualPackage(pkg, confirmedSet, knownSelectablePackages, currentUISelections) {
@@ -1110,6 +1026,7 @@ async function searchInFeed(query, feed, version, arch) {
 }
 
 function showPackageSearchResults(results, inputElement) {
+    
     clearPackageSearchResults();
     
     if (!results || results.length === 0) return;
@@ -1117,49 +1034,41 @@ function showPackageSearchResults(results, inputElement) {
     const container = document.getElementById('package-search-autocomplete');
     if (!container) return;
     
-    const resultsDiv = createSearchResultsContainer(results, inputElement);
-    container.appendChild(resultsDiv);
-}
-
-function createSearchResultsContainer(results, inputElement) {
     const resultsDiv = document.createElement('div');
     resultsDiv.className = 'package-search-results';
     
     results.forEach(pkgName => {
-        const item = createSearchResultItem(pkgName, inputElement);
+        const item = document.createElement('div');
+        item.textContent = pkgName;
+        
+        item.onmousedown = (e) => {
+            e.preventDefault();
+            
+            console.log('Package selected:', pkgName);
+            
+            try {  // ここにtryを追加
+                inputElement.dataset.programmaticChange = 'true';
+                inputElement.value = pkgName;
+                
+                inputElement.setAttribute('data-confirmed', 'true');
+                
+                const inputIndex = packageSearchManager.inputs.indexOf(inputElement);
+                if (inputIndex === packageSearchManager.inputs.length - 1) {
+                    packageSearchManager.addInput('', true);
+                }
+                
+                clearPackageSearchResults();
+                packageSearchManager.options.onChange(packageSearchManager.getAllValues());
+                updateAllPackageState('package-selected');
+            } catch (error) {
+                console.error('Error in package selection:', error);
+            }
+        };
+  
         resultsDiv.appendChild(item);
     });
     
-    return resultsDiv;
-}
-
-function createSearchResultItem(pkgName, inputElement) {
-    const item = document.createElement('div');
-    item.textContent = pkgName;
-    item.onmousedown = (e) => handlePackageSelect(e, pkgName, inputElement);
-    return item;
-}
-
-function handlePackageSelect(e, pkgName, inputElement) {
-    e.preventDefault();
-    console.log('Package selected:', pkgName);
-    
-    try {
-        inputElement.dataset.programmaticChange = 'true';
-        inputElement.value = pkgName;
-        inputElement.setAttribute('data-confirmed', 'true');
-        
-        const inputIndex = packageSearchManager.inputs.indexOf(inputElement);
-        if (inputIndex === packageSearchManager.inputs.length - 1) {
-            packageSearchManager.addInput('', true);
-        }
-        
-        clearPackageSearchResults();
-        packageSearchManager.options.onChange(packageSearchManager.getAllValues());
-        updateAllPackageState('package-selected');
-    } catch (error) {
-        console.error('Error in package selection:', error);
-    }
+    container.appendChild(resultsDiv);
 }
 
 function clearPackageSearchResults() {
