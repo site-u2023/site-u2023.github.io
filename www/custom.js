@@ -553,7 +553,7 @@ function getCurrentPackageListForLanguage() {
         ...extraPackages
     ]);
 
-    document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
+    domCache.getCheckedPackages().forEach(cb => {
         const name = cb.getAttribute('data-package');
         const uid = cb.getAttribute('data-unique-id');
         if (name) out.add(name);
@@ -574,7 +574,7 @@ function getCurrentPackageListForLanguage() {
         if (n) allSelectable.add(n);
     });
 
-    const textarea = document.querySelector('#asu-packages');
+    const textarea = domCache.getAsuPackagesTextarea();
     if (textarea) {
         for (const name of CustomUtils.split(textarea.value)) {
             if (!name.startsWith('luci-i18n-') && !allSelectable.has(name)) out.add(name);
