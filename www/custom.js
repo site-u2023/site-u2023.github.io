@@ -39,24 +39,16 @@ let commandsManager = null;
 
 // ==================== ユーティリティ ====================
 const CustomUtils = {
-    /**
-     * 現在選択されているデバイスのベンダー名を取得します。
-     * @returns {string|null} ベンダー名、または取得できない場合はnull
-     */
     getVendor() {
-        const target = current_device?.target;
+        const target = current_device?.target; // @returns {string|null} ベンダー名、または取得できない場合はnull
         if (!target) return null;
 
         const [vendor] = target.split('/');
         return vendor || null;
     },
 
-    /**
-     * 現在選択されているデバイスのサブターゲット名を取得します。
-     * @returns {string} サブターゲット名
-     */
     getSubtarget() {
-        const target = current_device?.target;
+        const target = current_device?.target; // @returns {string} サブターゲット名
         if (!target) return '';
 
         const [, subtarget] = target.split('/');
