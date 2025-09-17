@@ -511,22 +511,27 @@ function updatePackageListToTextarea(source = 'unknown') {
             ...searchedPackages
         ]);
 
-        currentPackages.forEach(pkg => {
-            const isCheckboxManaged = document.querySelector(`.package-selector-checkbox[data-package="${pkg}"]`) !== null;
-            const isSubstringOfConfirmed = [...confirmedSet].some(cpkg => cpkg.length > pkg.length && cpkg.includes(pkg));
+        currentPackages
+            .map(v => v.trim())
+            .filter(v => v.length > 0)
+            .forEach(pkg => {
+                const isCheckboxManaged = document.querySelector(`.package-selector-checkbox[data-package="${pkg}"]`) !== null;
 
-            if (!confirmedSet.has(pkg) &&
-                !pkg.startsWith('luci-i18n-') &&
-                !knownSelectablePackages.has(pkg) &&
-                !isCheckboxManaged &&
-                !isSubstringOfConfirmed &&
-                !(prevUISelections.has(pkg) && !currentUISelections.has(pkg))) {
-                manualPackages.add(pkg);
-            }
-        });
+                const isSubstringOfConfirmed = [...confirmedSet].some(
+                    cpkg => cpkg.length > pkg.length && cpkg.includes(pkg)
+                );
+
+                if (!confirmedSet.has(pkg) &&
+                    !pkg.startsWith('luci-i18n-') &&
+                    !knownSelectablePackages.has(pkg) &&
+                    !isCheckboxManaged &&
+                    !isSubstringOfConfirmed &&
+                    !(prevUISelections.has(pkg) && !currentUISelections.has(pkg))) {
+                    manualPackages.add(pkg);
+                }
+            });
 
         prevUISelections = currentUISelections;
-    }
 
     const finalPackages = [
         ...basePackages,
