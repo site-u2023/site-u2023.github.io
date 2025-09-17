@@ -43,24 +43,24 @@ const CustomUtils = {
      * 現在選択されているデバイスのベンダー名を取得します。
      * @returns {string|null} ベンダー名、または取得できない場合はnull
      */
-    getVendor: function() {
-        if (current_device?.target) {
-            const parts = current_device.target.split('/');
-            return parts[0] || null;
-        }
-        return null;
+    getVendor() {
+        const target = current_device?.target;
+        if (!target) return null;
+
+        const [vendor] = target.split('/');
+        return vendor || null;
     },
 
     /**
      * 現在選択されているデバイスのサブターゲット名を取得します。
      * @returns {string} サブターゲット名
      */
-    getSubtarget: function() {
-        if (current_device?.target) {
-            const parts = current_device.target.split('/');
-            return parts[1] || '';
-        }
-        return '';
+    getSubtarget() {
+        const target = current_device?.target;
+        if (!target) return '';
+
+        const [, subtarget] = target.split('/');
+        return subtarget || '';
     },
 
     buildKmodsUrl: async function(version, vendor, isSnapshot) {
@@ -153,41 +153,37 @@ const CustomUtils = {
         return null;
     },
     
-    show: function(el) {
+    toggleVisibility(el, show = true) {
         const e = typeof el === 'string' ? document.querySelector(el) : el;
-        if (e) {
-            e.classList.remove('hide');
-            e.style.display = '';
-        }
+        if (!e) return;
+
+        e.classList.toggle('hide', !show);
+        e.style.display = show ? '' : 'none';
     },
-    
-    hide: function(el) {
-        const e = typeof el === 'string' ? document.querySelector(el) : el;
-        if (e) {
-            e.classList.add('hide');
-            e.style.display = 'none';
-        }
-    },
-    
-    setValue: function(selector, val) {
+
+    show(el) { this.toggleVisibility(el, true); },
+    hide(el) { this.toggleVisibility(el, false); },
+
+    setValue(selector, val) {
         const el = document.querySelector(selector);
-        if (el) {
-            if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
-                el.value = val;
-            } else {
-                el.innerText = val;
-            }
+        if (!el) return;
+
+        if (['INPUT', 'TEXTAREA'].includes(el.tagName)) {
+            el.value = val;
+        } else {
+            el.textContent = val;
         }
     },
-    
-    split: function(str) {
-        return str.match(/[^\s,]+/g) || [];
+
+    split(str = '') {
+        return str.trim().match(/[^\s,]+/g) || [];
     },
-    
-    getNestedValue: function(obj, path) {
+
+    getNestedValue(obj, path) {
+        if (!obj || !path) return undefined;
         return path.split('.').reduce((current, key) => current?.[key], obj);
     },
-    
+
     setGuaPrefixIfAvailable: function() {
         const guaPrefixField = document.querySelector('#mape-gua-prefix');
         if (!guaPrefixField || !cachedApiInfo?.ipv6) return;
