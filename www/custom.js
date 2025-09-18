@@ -232,6 +232,29 @@ const CustomUtils = {
             UI.updateElement(guaPrefixField, { value: guaPrefix });
         }
     },
+    
+    toggleVisibility(el, show = true) {
+        const element = (typeof el === 'string') ? document.querySelector(el) : el;
+        if (!element) return;
+        
+        const isVisible = Boolean(show);
+        element.classList.toggle('hide', !isVisible);
+        element.style.display = isVisible ? '' : 'none';
+    },
+
+    show(el) { this.toggleVisibility(el, true); },
+    hide(el) { this.toggleVisibility(el, false); },
+
+    setValue(selector, val) {
+        const el = document.querySelector(selector);
+        if (!el) return;
+
+        if (['INPUT', 'TEXTAREA'].includes(el.tagName)) {
+            el.value = val;
+        } else {
+            el.textContent = val;
+        }
+    },
 
     split(str = '') {
         return str.trim().match(/[^\s,]+/g) || [];
@@ -240,6 +263,21 @@ const CustomUtils = {
     getNestedValue(obj, path) {
         if (!obj || !path) return undefined;
         return path.split('.').reduce((current, key) => current?.[key], obj);
+    },
+
+    restoreManualDefaults: function() {
+        const tuningCategory = state.config.setup.categories.find(cat => cat.id === 'tuning-config');
+        const manualSection = tuningCategory.packages.find(pkg => pkg.id === 'netopt-manual-section');
+        const netoptFields = manualSection.children.find(child => child.id === 'netopt-fields');
+    
+        netoptFields.fields.forEach(field => {
+            if (field.defaultValue !== undefined && field.defaultValue !== null) {
+                const el = document.querySelector(field.selector || `#${field.id}`);
+                if (el && !el.value) {
+                    UI.updateElement(el, { value: field.defaultValue });
+                }
+            }
+        });
     },
 
     restoreWifiDefaults: function() {
@@ -356,10 +394,6 @@ function getEl(key, selector) {
     return state.cache.domElements.get(key);
 }
 
-function clearDomCache() {
-    state.cache.domElements.clear();
-}
-
 // ==================== 初期化処理 ====================
 const originalUpdateImages = window.updateImages;
 
@@ -467,23 +501,15 @@ window.updateImages = function(version, mobj) {
 };
 
 // ==================== 統合パッケージ管理システム ====================
-
-let _updateAllRequested = false;
-
 async function updateAllPackageState(source = 'unknown') {
-    if (!_updateAllRequested) {
-        _updateAllRequested = true;
-        return new Promise(resolve => {
-            requestAnimationFrame(async () => {
-                _updateAllRequested = false;
-                await _updateAllPackageState(source);
-                resolve();
-            });
-        });
+    if (!state.ui.initialized && state.packages.default.length === 0 && state.packages.device.length === 0) {
+        console.log('updateAllPackageState: Device packages not ready, deferring update from:', source);
+        document.addEventListener('devicePackagesReady', () => {
+            console.log('Re-running updateAllPackageState after device packages ready (source was:', source, ')');
+            updateAllPackageState('force-update');
+        }, { once: true });
+        return;
     }
-}
-
-async function _updateAllPackageState(source = 'unknown') {
 
     const formValues = collectFormValues();
     const searchValues = state.ui.managers.packageSearch ? state.ui.managers.packageSearch.getAllValues() : [];
@@ -721,11 +747,12 @@ function getCurrentPackageListForLanguage() {
     return Array.from(out);
 }
 
-document.addEventListener('devicePackagesReady', () => {
-    updatePackageListToTextarea('initial-load');
-}, { once: true });
-
 function updatePackageListToTextarea(source = 'unknown') {
+    if (!state.packages.default.length && !state.packages.device.length && !state.packages.extra.length) {
+        console.warn('updatePackageListToTextarea: Device packages not loaded yet, skipping update from:', source);
+        return;
+    }
+
     const normalizePackages = (values) => {
         if (!values) return [];
         return (Array.isArray(values) ? values : CustomUtils.split(values))
@@ -758,7 +785,7 @@ function updatePackageListToTextarea(source = 'unknown') {
         state.ui.managers.packageSearch ? normalizePackages(state.ui.managers.packageSearch.getAllValues()) : []
     );
     
-    if (window.DEBUG_MODE && searchedPackages.size > 0) {
+    if (searchedPackages.size > 0) {
         console.log('PackageSearchManager values:', [...searchedPackages]);
     }
 
@@ -1258,7 +1285,6 @@ function replaceAsuSection(asuSection, temp) {
     }
     
     asuSection.parentNode.replaceChild(newDiv, asuSection);
-    clearDomCache();
 }
 
 function cleanupExistingCustomElements() {
@@ -1448,6 +1474,44 @@ function extractLuciName(pkg) {
     return null;
 }
 
+function getCurrentPackageList() {
+    const packages = new Set();
+    
+    state.packages.default.forEach(pkg => packages.add(pkg));
+    state.packages.device.forEach(pkg => packages.add(pkg));
+    state.packages.extra.forEach(pkg => packages.add(pkg));
+    
+    document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
+        const pkgName = cb.getAttribute('data-package');
+        if (pkgName) packages.add(pkgName);
+    });
+    
+    if (state.ui.managers.packageSearch) {
+        const searchValues = state.ui.managers.packageSearch.getAllValues();
+        searchValues.forEach(pkg => packages.add(pkg));
+    }
+    
+    const textarea = document.querySelector('#asu-packages');
+    if (textarea) {
+        const textPackages = CustomUtils.split(textarea.value);
+        textPackages.forEach(pkg => {
+            if (!state.packages.default.includes(pkg) && 
+                !state.packages.device.includes(pkg) && 
+                !state.packages.extra.includes(pkg)) {
+                packages.add(pkg);
+            }
+        });
+    }
+    
+    for (const pkg of state.packages.dynamic) {
+        if (!pkg.startsWith('luci-i18n-')) {
+            packages.add(pkg);
+        }
+    }
+    
+    return Array.from(packages);
+}
+
 function guessFeedForPackage(pkgName) {
     if (!pkgName) return 'packages';
     
@@ -1487,6 +1551,19 @@ async function buildPackageUrl(feed, deviceInfo) {
         .replace('{version}', version)
         .replace('{arch}', arch)
         .replace('{feed}', feed);
+}
+
+function parsePackageList(responseData, pkgName, isSnapshot) {
+    if (isSnapshot) {
+        if (Array.isArray(responseData.packages)) {
+            return responseData.packages.some(p => p?.name === pkgName);
+        } else if (responseData.packages && typeof responseData.packages === 'object') {
+            return Object.prototype.hasOwnProperty.call(responseData.packages, pkgName);
+        }
+        return false;
+    } else {
+        return responseData.split('\n').some(line => line.trim() === `Package: ${pkgName}`);
+    }
 }
 
 async function getFeedPackageSet(feed, deviceInfo) {
@@ -1811,7 +1888,6 @@ function renderSetupConfig(config) {
     }
     
     container.innerHTML = '';
-    clearDomCache();
     console.log('Container cleared, rebuilding...');
 
     (config.categories || []).forEach((category, categoryIndex) => {
@@ -2658,13 +2734,13 @@ function handleConditionalSectionChange(categoryId, fieldName, selectedValue, op
             const shouldShow = pkg.showWhen.values?.includes(selectedValue);
             
             if (shouldShow) {
-                UI.updateElement(section, { show: true });
+                CustomUtils.show(section);
                 
                 if (pkg.children && options.processChildren) {
                     processNestedSections(pkg.children, fieldName, selectedValue);
                 }
             } else {
-                UI.updateElement(section, { show: false });
+                CustomUtils.hide(section);
             }
         }
     });
@@ -2682,9 +2758,9 @@ function processNestedSections(children, fieldName, selectedValue) {
             const childSection = document.querySelector(`#${child.id}`);
             if (childSection) {
                 if (child.showWhen?.values?.includes(selectedValue)) {
-                    UI.updateElement(childSection, { show: true });
+                    CustomUtils.show(childSection);
                 } else {
-                    UI.updateElement(childSection, { show: false });
+                    CustomUtils.hide(childSection);
                 }
             }
         }
@@ -2894,7 +2970,7 @@ async function initializeCustomFeatures(asuSection, temp) {
 
     cleanupExistingCustomElements();
     replaceAsuSection(asuSection, temp);
-
+    
     if (!document.querySelector('#extended-build-info')) {
         await insertExtendedInfo(temp);
     }
@@ -2902,7 +2978,7 @@ async function initializeCustomFeatures(asuSection, temp) {
     if (state.apiInfo) {
         displayIspInfoIfReady();
     }
-
+    
     await Promise.all([
         window.autoConfigPromise,
         window.informationPromise,
@@ -2915,7 +2991,9 @@ async function initializeCustomFeatures(asuSection, temp) {
 
     setupEventListeners();
     loadUciDefaultsTemplate();
+
     setupLanguageSelector();
+
     setupPackageSearch();
     console.log('Package search initialized');
 
@@ -2930,17 +3008,7 @@ async function initializeCustomFeatures(asuSection, temp) {
 
     generatePackageSelector();
 
-    ['map', 'ds-lite', 'usteer-from-setup'].forEach(id => {
-        const pkg = findPackageById(id);
-        if (pkg) {
-            createHiddenPackageCheckbox(pkg);
-            console.log(`[Custom] Hidden checkbox created for virtual package: ${id}`);
-        }
-    });
-
-    if (state.packages.default.length > 0 ||
-        state.packages.device.length > 0 ||
-        state.packages.extra.length > 0) {
+    if (state.packages.default.length > 0 || state.packages.device.length > 0 || state.packages.extra.length > 0) {
         console.log('Force applying existing device packages');
         const initialPackages = state.packages.default
             .concat(state.packages.device)
@@ -2958,7 +3026,15 @@ async function initializeCustomFeatures(asuSection, temp) {
         updateAllPackageState('isp-auto-config');
     } else {
         console.log('All data and UI ready, no changes from auto-config');
-        updateAllPackageState('init');
+        const runWhenReady = () => {
+            if ((state.packages.default && state.packages.default.length > 0) ||
+                (state.packages.device && state.packages.device.length > 0) ||
+                (state.packages.extra && state.packages.extra.length > 0)) {
+                updateAllPackageState('force-device-packages');
+                document.removeEventListener('devicePackagesReady', runWhenReady);
+            }
+        };
+        document.addEventListener('devicePackagesReady', runWhenReady);
     }
 
     state.ui.initialized = true;
@@ -3074,51 +3150,71 @@ async function loadPackageDatabase() {
 }
 
 function generatePackageSelector() {
-    const container = document.querySelector('#package-selector-container');
-    if (!container) return;
-
+    const container = document.querySelector('#package-categories');
+    if (!container || !state.packages.json) {
+        return;
+    }
+    
     container.innerHTML = '';
-
-    const categories = state.packages.json?.categories || [];
-    let visibleCount = 0;
-
-    categories.forEach(cat => {
-        if (cat.id === 'setup-driven-packages') {
+    
+    const loadingDiv = document.createElement('div');
+    loadingDiv.id = 'package-loading-indicator';
+    UI.updateElement(loadingDiv, { show: false });
+    loadingDiv.style.padding = '1em';
+    loadingDiv.style.textAlign = 'center';
+    loadingDiv.style.color = 'var(--text-muted)';
+    loadingDiv.innerHTML = '<span class="tr-checking-packages">Checking package availability...</span>';
+    container.appendChild(loadingDiv);
+    
+    state.packages.json.categories.forEach(category => {
+        if (category.hidden) {
+            console.log(`Processing hidden category: ${category.id}`);
+            category.packages.forEach(pkg => {
+                if (pkg.hidden) {
+                    createHiddenPackageCheckbox(pkg);
+                }
+            });
             return;
         }
-
-        const categoryEl = document.createElement('div');
-        categoryEl.classList.add('package-category');
-
-        const headerEl = document.createElement('h3');
-        headerEl.textContent = cat.name || cat.id;
-        categoryEl.appendChild(headerEl);
-
-        const listEl = document.createElement('div');
-        listEl.classList.add('package-list');
-
-        (cat.packages || []).forEach(pkg => {
-            const checkbox = document.createElement('input');
-            checkbox.type = 'checkbox';
-            checkbox.classList.add('package-selector-checkbox');
-            checkbox.dataset.package = pkg.id;
-            checkbox.id = `pkg-${pkg.id}`;
-
-            const label = document.createElement('label');
-            label.setAttribute('for', `pkg-${pkg.id}`);
-            label.textContent = pkg.name || pkg.id;
-
-            listEl.appendChild(checkbox);
-            listEl.appendChild(label);
-        });
-
-        categoryEl.appendChild(listEl);
-        container.appendChild(categoryEl);
-
-        visibleCount++;
+        
+        const categoryDiv = createPackageCategory(category);
+        if (categoryDiv) {
+            container.appendChild(categoryDiv);
+        }
     });
+    
+    updateAllPackageState('package-selector-init');
+    console.log(`Generated ${state.packages.json.categories.length} package categories (including hidden)`);
+    
+    const arch = state.device.arch;
+    if (arch) {
+        requestAnimationFrame(() => {
+            const indicator = document.querySelector('#package-loading-indicator');
+            if (indicator) {
+                UI.updateElement(indicator, { show: true });
+            }
 
-    console.log(`Generated ${visibleCount} visible package categories (hidden already handled)`);
+            verifyAllPackages().then(() => {
+                if (indicator) {
+                    UI.updateElement(indicator, { show: false });
+                }
+                console.log('Package verification completed');
+            }).catch(err => {
+                console.error('Package verification failed:', err);
+                if (indicator) {
+                    UI.updateElement(indicator, {
+                        html: '<span class="tr-package-check-failed">Package availability check failed</span>',
+                        show: true
+                    });
+                    indicator.addEventListener('click', () => {
+                        UI.updateElement(indicator, { show: false });
+                    }, { once: true });
+                }
+            });
+        });
+    } else {
+        console.log('Device architecture not available, skipping package verification');
+    }
 }
 
 function createHiddenPackageCheckbox(pkg) {
