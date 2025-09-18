@@ -440,6 +440,7 @@ AP_EOF
     [ -n "$(uci -q get wireless.default_radio2)" ] && uci -q set wireless.default_radio2.network="${AP}"
     [ -x /etc/init.d/odhcpd ] && /etc/init.d/odhcpd disable
     [ -x /etc/init.d/dnsmasq ] && /etc/init.d/dnsmasq disable  
+    uci -q delete firewall
     [ -x /etc/init.d/firewall ] && /etc/init.d/firewall disable
 }
 [ -n "${enable_ttyd}" ] && uci -q batch <<TTYD_EOF
