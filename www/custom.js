@@ -1,11 +1,11 @@
 console.log('custom.js loaded');
 
 window.addEventListener('load', () => {
-    if (typeof custom_ofs_version !== 'undefined') {
+    const versionEl = document.getElementById('ofs-version');
+    if (versionEl && typeof custom_ofs_version !== 'undefined') {
         UI.updateElement('ofs-version', { text: custom_ofs_version });
     }
-});
-    
+
     const linkEl = versionEl?.closest('a');
     if (linkEl && typeof custom_ofs_link !== 'undefined') {
         linkEl.href = custom_ofs_link;
@@ -267,11 +267,11 @@ const CustomUtils = {
         if (mode === 'pd') {
             guaPrefixField.value = '';
             guaPrefixField.disabled = true;
-            if (formGroup) formGroup.style.display = 'none';
+            if (formGroup) UI.updateElement(formGroup, { show: false });
             console.log('PD mode: GUA prefix hidden');
         } else if (mode === 'gua') {
             guaPrefixField.disabled = false;
-            if (formGroup) formGroup.style.display = '';
+            if (formGroup) UI.updateElement(formGroup, { show: true });
             this.setGuaPrefixIfAvailable();
         }
     }
@@ -310,19 +310,24 @@ window.updateImages = function(version, mobj) {
 
                 const indicator = document.querySelector('#package-loading-indicator');
                 if (indicator) {
-                    indicator.style.display = 'block';
+                    UI.updateElement(indicator, { show: true });
                     const span = indicator.querySelector('span');
                     if (span) span.className = 'tr-checking-packages';
                 }
 
                 verifyAllPackages().then(function() {
-                    if (indicator) indicator.style.display = 'none';
+                    if (indicator) UI.updateElement(indicator, { show: false });
                     console.log('[TRACE] Package verification complete');
                 }).catch(function(err) {
                     console.error('[ERROR] Package verification failed:', err);
                     if (indicator) {
-                        UI.updateElement(indicator, { html: '<span class="tr-package-check-failed">Package availability check failed</span>' });
-                        indicator.addEventListener('click', () => { indicator.style.display = 'none'; }, { once: true });
+                        UI.updateElement(indicator, {
+                            html: '<span class="tr-package-check-failed">Package availability check failed</span>',
+                            show: true
+                        });
+                        indicator.addEventListener('click', () => {
+                            UI.updateElement(indicator, { show: false });
+                        }, { once: true });
                     }
                 });
             });
@@ -1671,7 +1676,7 @@ function updatePackageAvailabilityUI(uniqueId, isAvailable) {
                 checkbox.checked = false;
                 checkbox.disabled = true;
             } else {
-                label.style.display = '';
+                UI.updateElement(label, { show: true });
                 checkbox.disabled = false;
             }
         }
@@ -1679,7 +1684,7 @@ function updatePackageAvailabilityUI(uniqueId, isAvailable) {
     }
     
     if (!isAvailable) {
-        packageItem.style.display = 'none';
+        UI.updateElement(packageItem, { show: false });
         checkbox.checked = false;
         checkbox.disabled = true;
         
@@ -1689,7 +1694,7 @@ function updatePackageAvailabilityUI(uniqueId, isAvailable) {
             depCb.disabled = true;
         });
     } else {
-        packageItem.style.display = '';
+        UI.updateElement(packageItem, { show: true });
         checkbox.disabled = false;
     }
     
@@ -1703,10 +1708,11 @@ function updateCategoryVisibility(packageItem) {
     const visiblePackages = category.querySelectorAll('.package-item:not([style*="display: none"])');
     
     if (visiblePackages.length === 0) {
-        category.style.display = 'none';
+        UI.updateElement(category, { show: false });
     } else {
-        category.style.display = '';
+        UI.updateElement(category, { show: true });
     }
+
 }
 
 // ==================== setup.json 処理 ====================
@@ -3118,6 +3124,7 @@ function generatePackageSelector() {
         });
     } else {
         console.log('Device architecture not available, skipping package verification');
+    }
 }
 
 function createHiddenPackageCheckbox(pkg) {
