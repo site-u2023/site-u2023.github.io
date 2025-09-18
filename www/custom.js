@@ -76,11 +76,11 @@ const state = {
 };
 
 // グローバル変数の互換性維持（段階的移行用）
-let current_device = state.device;
-let cachedApiInfo = state.apiInfo;
-let packagesJson = state.packages.json;
-let setupConfig = state.config.setup;
-let selectedLanguage = state.ui.language.selected;
+// let current_device = state.device;
+// let cachedApiInfo = state.apiInfo;
+// let packagesJson = state.packages.json;
+// let setupConfig = state.config.setup;
+// let selectedLanguage = state.ui.language.selected;
 
 // ==================== ユーティリティ ====================
 const CustomUtils = {
