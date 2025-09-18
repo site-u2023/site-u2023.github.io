@@ -2595,21 +2595,19 @@ function setupCommandsInput() {
 
 function handleMapeTypeChange(e) {
     const mapeType = e.target.value;
-    
+
     CustomUtils.toggleGuaPrefixVisibility(mapeType);
-    
+
     if (mapeType === 'pd') {
         const guaPrefixField = document.querySelector('#mape-gua-prefix');
         if (guaPrefixField) {
-            guaPrefixField.value = '';
-        }
-        if (typeof values === 'object') {
-            delete values.mape_gua_prefix;
+            UI.updateElement(guaPrefixField, { value: '' });
         }
     }
-    
+
     updateAllPackageState('mape-type');
 }
+
 
 function setupDsliteAddressComputation() {
     const aftrType = document.querySelector('#dslite-aftr-type');
