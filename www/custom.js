@@ -1,9 +1,9 @@
 console.log('custom.js loaded');
 
 window.addEventListener('load', () => {
-    const versionEl = getDOM('ofsVersion');
+    const versionEl = document.getElementById('ofs-version');
     if (versionEl && typeof custom_ofs_version !== 'undefined') {
-        UI.updateElement(versionEl, { text: custom_ofs_version });
+        UI.updateElement('ofs-version', { text: custom_ofs_version });
     }
 
     const linkEl = versionEl?.closest('a');
@@ -80,154 +80,12 @@ const state = {
     }
 };
 
-// ==================== DOM要素定義（一元管理） ====================
-const DOMSelectors = {
-    // ASU関連
-    asuPackages: '#asu-packages',
-    asuBuildStatus: '#asu-buildstatus',
-    asuStderr: '#asu-stderr',
-    asuStdout: '#asu-stdout',
-    asuLog: '#asu-log',
-    asuSection: '#asu',
-    
-    // UCI Defaults関連
-    uciDefaultsContent: '#custom-scripts-details #uci-defaults-content',
-    customScriptsDetails: '#custom-scripts-details',
-    customPackagesDetails: '#custom-packages-details',
-    
-    // 言語関連
-    languagesSelect: '#languages-select',
-    aiosLanguage: '#aios-language',
-    
-    // バージョン・モデル関連
-    versions: '#versions',
-    imageLink: '#image-link',
-    
-    // パッケージ関連
-    packageCategories: '#package-categories',
-    packageSearchAutocomplete: '#package-search-autocomplete',
-    packageSearch: '#package-search',
-    packageLoadingIndicator: '#package-loading-indicator',
-    hiddenPackagesContainer: '#hidden-packages-container',
-    
-    // コマンド関連
-    commandsAutocomplete: '#commands-autocomplete',
-    command: '#command',
-    
-    // 接続タイプ関連
-    connectionTypeRadio: 'input[name="connection_type"]',
-    connectionTypeChecked: 'input[name="connection_type"]:checked',
-    
-    // MAP-E関連
-    mapeGuaPrefix: '#mape-gua-prefix',
-    mapeTypeRadio: 'input[name="mape_type"]',
-    
-    // DS-Lite関連
-    dsliteAftrType: '#dslite-aftr-type',
-    dsliteArea: '#dslite-area',
-    dsliteAftrAddress: '#dslite-aftr-address',
-    
-    // WiFi関連
-    wifiModeRadio: 'input[name="wifi_mode"]',
-    aiosWifiSsid: '#aios-wifi-ssid',
-    aiosWifiPassword: '#aios-wifi-password',
-    aiosWifiMobilityDomain: '#aios-wifi-mobility-domain',
-    aiosWifiSnr: '#aios-wifi-snr',
-
-    // ネットワーク最適化関連
-    netOptimizerRadio: 'input[name="net_optimizer"]',
-    netoptRmem: '#netopt-rmem',
-    netoptWmem: '#netopt-wmem',
-    netoptConntrack: '#netopt-conntrack',
-    netoptBacklog: '#netopt-backlog',
-    netoptSomaxconn: '#netopt-somaxconn',
-    netoptCongestion: '#netopt-congestion',
-    
-    // DNSmasq関連
-    dnsmasqModeRadio: 'input[name="enable_dnsmasq"]',
-    dnsmasqCache: '#dnsmasq-cache',
-    dnsmasqNegcache: '#dnsmasq-negcache',
-    
-    // ISP情報関連
-    autoConfigCountry: '#auto-config-country',
-    autoConfigTimezone: '#auto-config-timezone',
-    autoConfigZonename: '#auto-config-zonename',
-    autoConfigIsp: '#auto-config-isp',
-    autoConfigAs: '#auto-config-as',
-    autoConfigIp: '#auto-config-ip',
-    autoConfigMethod: '#auto-config-method',
-    autoConfigNotice: '#auto-config-notice',
-    extendedBuildInfo: '#extended-build-info',
-    
-    // セクション関連
-    autoInfo: '#auto-info',
-    dynamicConfigSections: '#dynamic-config-sections',
-    
-    // チェックボックス関連（クラスセレクター）
-    packageSelectorCheckbox: '.package-selector-checkbox',
-    packageSelectorCheckboxChecked: '.package-selector-checkbox:checked',
-    packageSearchResults: '.package-search-results',
-    
-    // OFS Version
-    ofsVersion: '#ofs-version'
-};
-
-// DOM要素取得関数（キャッシュ付き）
-function getDOM(key) {
-    const selector = DOMSelectors[key];
-    if (!selector) {
-        console.warn(`DOM selector not found for key: ${key}`);
-        return null;
-    }
-    
-    if (!state.cache.domElements.has(key)) {
-        const element = document.querySelector(selector);
-        // nullもキャッシュして、存在しない要素への再クエリを防ぐ
-        state.cache.domElements.set(key, element);
-    }
-    return state.cache.domElements.get(key);
-}
-
-function getAllDOM(key) {
-    const selector = DOMSelectors[key];
-    if (!selector) {
-        console.warn(`DOM selector not found for key: ${key}`);
-        return [];
-    }
-    
-    const cacheKey = key + '_all';
-    if (!state.cache.domElements.has(cacheKey)) {
-        const elements = document.querySelectorAll(selector);
-        state.cache.domElements.set(cacheKey, Array.from(elements));
-    }
-    return state.cache.domElements.get(cacheKey);
-}
-
-// キャッシュクリア（DOM構造が変更された時用）
-function clearDOMCache(keys = null) {
-    if (keys) {
-        // 特定のキーのみクリア
-        if (Array.isArray(keys)) {
-            keys.forEach(key => {
-                state.cache.domElements.delete(key);
-                state.cache.domElements.delete(key + '_all');
-            });
-        } else {
-            state.cache.domElements.delete(keys);
-            state.cache.domElements.delete(keys + '_all');
-        }
-    } else {
-        // 全てクリア
-        state.cache.domElements.clear();
-    }
-}
-
 // ==================== ユーティリティ ====================
 
 const UI = {
     updateElement(idOrEl, opts = {}) {
         const el = typeof idOrEl === 'string'
-            ? document.getElementById(idOrEl) // Note: ID文字列での直接指定は残す
+            ? document.getElementById(idOrEl)
             : idOrEl;
         if (!el) return;
 
@@ -367,7 +225,7 @@ const CustomUtils = {
     },
 
     setGuaPrefixIfAvailable: function() {
-        const guaPrefixField = getDOM('mapeGuaPrefix');
+        const guaPrefixField = getEl('mapeGuaPrefix', '#mape-gua-prefix');
         if (!guaPrefixField || !state.apiInfo?.ipv6) return;
         const guaPrefix = this.generateGuaPrefixFromFullAddress(state.apiInfo);
         if (guaPrefix) {
@@ -453,7 +311,7 @@ const CustomUtils = {
         });
     },
     
-    clearWifiFields: function() {
+clearWifiFields: function() {
         const wifiCategory = state.config.setup.categories.find(cat => cat.id === 'wifi-config');
         if (!wifiCategory) return;
 
@@ -529,6 +387,13 @@ function restoreDefaultsFromJSON(sectionId) {
     restoreFields(section);
 }
 
+function getEl(key, selector) {
+    if (!state.cache.domElements.has(key)) {
+        state.cache.domElements.set(key, document.querySelector(selector));
+    }
+    return state.cache.domElements.get(key);
+}
+
 // ==================== 初期化処理 ====================
 const originalUpdateImages = window.updateImages;
 
@@ -554,14 +419,13 @@ window.updateImages = function(version, mobj) {
             console.log('[TRACE] Device changed, clearing caches');
             state.cache.packageAvailability.clear();
             state.cache.feed.clear();
-            clearDOMCache(); // DOMキャッシュもクリア
 
             requestAnimationFrame(() => {
                 if (!state.device.vendor) {
                     console.warn('[WARN] No vendor info, kmods may not verify');
                 }
 
-                const indicator = getDOM('packageLoadingIndicator');
+                const indicator = document.querySelector('#package-loading-indicator');
                 if (indicator) {
                     UI.updateElement(indicator, { show: true });
                     const span = indicator.querySelector('span');
@@ -605,7 +469,7 @@ window.updateImages = function(version, mobj) {
             .concat(state.packages.device)
             .concat(state.packages.extra);
 
-        const textarea = getDOM('asuPackages');
+        const textarea = document.querySelector('#asu-packages');
         if (textarea) {
             UI.updateElement(textarea, { value: initialPackages.join(' ') });
             console.log('[TRACE] Initial packages set:', initialPackages);
@@ -852,7 +716,7 @@ function getCurrentPackageListForLanguage() {
         ...state.packages.extra
     ]);
 
-    getAllDOM('packageSelectorCheckboxChecked').forEach(cb => {
+    document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
         const name = cb.getAttribute('data-package');
         const uid = cb.getAttribute('data-unique-id');
         if (name) out.add(name);
@@ -868,12 +732,12 @@ function getCurrentPackageListForLanguage() {
     }
 
     const allSelectable = new Set();
-    getAllDOM('packageSelectorCheckbox').forEach(cb => {
+    document.querySelectorAll('.package-selector-checkbox').forEach(cb => {
         const n = cb.getAttribute('data-package');
         if (n) allSelectable.add(n);
     });
 
-    const textarea = getDOM('asuPackages');
+    const textarea = document.querySelector('#asu-packages');
     if (textarea) {
         for (const name of CustomUtils.split(textarea.value)) {
             if (!name.startsWith('luci-i18n-') && !allSelectable.has(name)) out.add(name);
@@ -912,7 +776,7 @@ function updatePackageListToTextarea(source = 'unknown') {
     console.log(`Base device packages: default=${state.packages.default.length}, device=${state.packages.device.length}, extra=${state.packages.extra.length}`);
 
     const checkedPackages = new Set();
-    getAllDOM('packageSelectorCheckboxChecked').forEach(cb => {
+    document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
         const pkgName = cb.getAttribute('data-package');
         if (pkgName) checkedPackages.add(pkgName);
     });
@@ -933,7 +797,7 @@ function updatePackageListToTextarea(source = 'unknown') {
     });
 
     const manualPackages = new Set();
-    const textarea = getDOM('asuPackages');
+    const textarea = document.querySelector('#asu-packages');
     
     if (textarea) {
         const currentTextareaPackages = normalizePackages(textarea.value);
@@ -1167,14 +1031,14 @@ async function loadCustomHTML() {
 }
 
 function waitForAsuAndInit(temp) {
-    const asuSection = getDOM('asuSection');
+    const asuSection = document.querySelector('#asu');
     if (asuSection) {
         initializeCustomFeatures(asuSection, temp);
         return;
     }
 
     const observer = new MutationObserver(() => {
-        const found = getDOM('asuSection');
+        const found = document.querySelector('#asu');
         if (found) {
             observer.disconnect();
             initializeCustomFeatures(found, temp);
@@ -1188,14 +1052,14 @@ function waitForAsuAndInit(temp) {
 function setupPackageSearch() {
     console.log('setupPackageSearch called');
     
-    const searchContainer = getDOM('packageSearchAutocomplete');
+    const searchContainer = document.getElementById('package-search-autocomplete');
     
     if (!searchContainer) {
         console.log('package-search-autocomplete container not found');
         return;
     }
     
-    const oldInput = getDOM('packageSearch');
+    const oldInput = document.getElementById('package-search');
     if (oldInput) {
         oldInput.remove();
     }
@@ -1225,7 +1089,7 @@ function setupPackageSearch() {
 async function searchPackages(query, inputElement) {
     
     const arch = state.device.arch;
-    const version = state.device.version || getDOM('versions')?.value;
+    const version = state.device.version || document.querySelector("#versions")?.value;
     const vendor = state.device.vendor;
     
     if (query.toLowerCase().startsWith('kmod-') && !vendor) {
@@ -1321,7 +1185,7 @@ function showPackageSearchResults(results, inputElement) {
     
     if (!results || results.length === 0) return;
     
-    const container = getDOM('packageSearchAutocomplete');
+    const container = document.getElementById('package-search-autocomplete');
     if (!container) return;
     
     const resultsDiv = document.createElement('div');
@@ -1362,11 +1226,12 @@ function showPackageSearchResults(results, inputElement) {
 }
 
 function clearPackageSearchResults() {
-    getAllDOM('packageSearchResults').forEach(el => el.remove());
+    const results = document.querySelectorAll('.package-search-results');
+    results.forEach(el => el.remove());
 }
 
 document.addEventListener('click', function(e) {
-    if (!e.target.closest(DOMSelectors.packageSearchAutocomplete)) {
+    if (!e.target.closest('#package-search-autocomplete')) {
         clearPackageSearchResults();
     }
 });
@@ -1420,25 +1285,23 @@ function replaceAsuSection(asuSection, temp) {
     }
     
     asuSection.parentNode.replaceChild(newDiv, asuSection);
-    clearDOMCache(['asuSection']); // asuSectionが置き換えられたのでキャッシュをクリア
 }
 
 function cleanupExistingCustomElements() {
-    ['customPackagesDetails', 'customScriptsDetails', 'extendedBuildInfo']
-        .forEach(key => {
-            const element = getDOM(key);
+    ['#custom-packages-details', '#custom-scripts-details', '#extended-build-info']
+        .forEach(selector => {
+            const element = document.querySelector(selector);
             if (element) {
                 element.remove();
-                clearDOMCache([key]); // 削除したのでキャッシュもクリア
-                console.log(`Removed existing ${DOMSelectors[key]}`);
+                console.log(`Removed existing ${selector}`);
             }
         });
 }
 
 // ==================== 言語セレクター設定 ====================
 function setupLanguageSelector() {
-    const mainLanguageSelect = getDOM('languagesSelect');
-    const customLanguageSelect = getDOM('aiosLanguage');
+    const mainLanguageSelect = document.querySelector('#languages-select');
+    const customLanguageSelect = document.querySelector('#aios-language');
     const fallback = config?.fallback_language || 'en';
 
     if (!current_language) {
@@ -1471,7 +1334,7 @@ function setupLanguageSelector() {
 }
 
 function syncBrowserLanguageSelector(lang) {
-    const mainSelect = getDOM('languagesSelect');
+    const mainSelect = document.getElementById('languages-select');
     if (lang && mainSelect && mainSelect.value !== lang) {
         mainSelect.value = lang;
         console.log('Browser language selector synced to:', lang);
@@ -1479,7 +1342,7 @@ function syncBrowserLanguageSelector(lang) {
 }
 
 function syncDeviceLanguageSelector(lang) {
-    const customSelect = getDOM('aiosLanguage');
+    const customSelect = document.getElementById('aios-language');
     if (lang && customSelect && customSelect.value !== lang) {
         customSelect.removeEventListener('change', handleCustomLanguageChange);
         
@@ -1618,7 +1481,7 @@ function getCurrentPackageList() {
     state.packages.device.forEach(pkg => packages.add(pkg));
     state.packages.extra.forEach(pkg => packages.add(pkg));
     
-    getAllDOM('packageSelectorCheckboxChecked').forEach(cb => {
+    document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
         const pkgName = cb.getAttribute('data-package');
         if (pkgName) packages.add(pkgName);
     });
@@ -1628,7 +1491,7 @@ function getCurrentPackageList() {
         searchValues.forEach(pkg => packages.add(pkg));
     }
     
-    const textarea = getDOM('asuPackages');
+    const textarea = document.querySelector('#asu-packages');
     if (textarea) {
         const textPackages = CustomUtils.split(textarea.value);
         textPackages.forEach(pkg => {
@@ -1664,14 +1527,12 @@ function guessFeedForPackage(pkgName) {
 }
 
 function getDeviceInfo() {
-    const versionEl = getDOM('versions');
-    const version = state.device.version || versionEl?.value || '';
     return {
         arch: state.device.arch,
-        version: version,
+        version: state.device.version || document.querySelector("#versions")?.value,
         vendor: state.device.vendor,
         subtarget: state.device.subtarget,
-        isSnapshot: version.includes('SNAPSHOT')
+        isSnapshot: (state.device.version || document.querySelector("#versions")?.value || '').includes('SNAPSHOT')
     };
 }
 
@@ -2020,7 +1881,7 @@ function storeDefaultValues(config) {
 }
 
 function renderSetupConfig(config) {
-    const container = getDOM('dynamicConfigSections');
+    const container = document.querySelector('#dynamic-config-sections');
     if (!container) {
         console.error('#dynamic-config-sections not found');
         return;
@@ -2069,7 +1930,7 @@ function renderSetupConfig(config) {
 
         const mapeTypeRadio = document.querySelector('input[name="mape_type"]:checked');
         if (mapeTypeRadio && mapeTypeRadio.value === 'pd') {
-            const guaPrefixField = getDOM('mapeGuaPrefix');
+            const guaPrefixField = getEl('mapeGuaPrefix', '#mape-gua-prefix');
             if (guaPrefixField) {
                 UI.updateElement(guaPrefixField, { show: false });
                 console.log('Initial PD mode: GUA prefix hidden');
@@ -2204,7 +2065,7 @@ function buildFormGroup(field) {
         
         let optionsSource = [];
         if (field.id === 'aios-language') {
-            const select = getDOM('languagesSelect');
+            const select = document.querySelector('#languages-select');
             if (select) {
                 optionsSource = Array.from(select.querySelectorAll('option')).map(opt => ({
                     value: opt.value,
@@ -2500,7 +2361,7 @@ function getFieldValue(selector, options = {}) {
 
 // ==================== フォーム値処理（JSONドリブン版） ====================
 function applySpecialFieldLogic(values) {
-    const connectionType = getFieldValue(DOMSelectors.connectionTypeChecked);
+    const connectionType = getFieldValue('input[name="connection_type"]');
     
     const allConnectionFields = [];
     
@@ -2561,9 +2422,9 @@ function applySpecialFieldLogic(values) {
                         values.dslite_aftr_address = state.apiInfo.aftr.aftrIpv6Address || '';
                     }
                     
-                    const uiType = getFieldValue(getDOM('dsliteAftrType'));
-                    const uiArea = getFieldValue(getDOM('dsliteArea'));
-                    const uiAddr = getFieldValue(getDOM('dsliteAftrAddress'));
+                    const uiType = getFieldValue('#dslite-aftr-type');
+                    const uiArea = getFieldValue('#dslite-area');
+                    const uiAddr = getFieldValue('#dslite-aftr-address');
                     if (uiType) values.dslite_aftr_type = uiType;
                     if (uiArea) values.dslite_area = uiArea;
                     if (state.apiInfo?.aftr?.aftrIpv6Address) {
@@ -2588,9 +2449,9 @@ function applySpecialFieldLogic(values) {
                         }
                     }
                     
-                    const mapeType = getFieldValue(document.querySelector('input[name="mape_type"]:checked'));
+                    const mapeType = getFieldValue('input[name="mape_type"]');
                     if (mapeType === 'gua') {
-                        const currentGUAValue = getFieldValue(getDOM('mapeGuaPrefix'));
+                        const currentGUAValue = getFieldValue('#mape-gua-prefix');
                         if (currentGUAValue) {
                             values.mape_gua_prefix = currentGUAValue;
                         } else if (!values.mape_gua_prefix && state.apiInfo?.ipv6) {
@@ -2607,15 +2468,15 @@ function applySpecialFieldLogic(values) {
         }
     }
     
-    const wifiMode = getFieldValue(getDOM('wifiModeChecked'));
+    const wifiMode = getFieldValue('input[name="wifi_mode"]');
     
     if (wifiMode === 'disabled') {
         ['wlan_ssid', 'wlan_password', 'enable_usteer', 'mobility_domain', 'snr'].forEach(key => {
             delete values[key];
         });
     } else if (wifiMode === 'standard') {
-        const ssid = getFieldValue(getDOM('aiosWifiSsid'));
-        const password = getFieldValue(getDOM('aiosWifiPassword'));
+        const ssid = getFieldValue('#aios-wifi-ssid');
+        const password = getFieldValue('#aios-wifi-password');
         
         if (ssid) values.wlan_ssid = ssid;
         if (password) values.wlan_password = password;
@@ -2624,10 +2485,10 @@ function applySpecialFieldLogic(values) {
         delete values.mobility_domain;
         delete values.snr;
     } else if (wifiMode === 'usteer') {
-        const ssid = getFieldValue(getDOM('aiosWifiSsid'));
-        const password = getFieldValue(getDOM('aiosWifiPassword'));
-        const mobility = getFieldValue(getDOM('aiosWifiMobilityDomain'));
-        const snr = getFieldValue(getDOM('aiosWifiSnr'));
+        const ssid = getFieldValue('#aios-wifi-ssid');
+        const password = getFieldValue('#aios-wifi-password');
+        const mobility = getFieldValue('#aios-wifi-mobility-domain');
+        const snr = getFieldValue('#aios-wifi-snr');
         
         if (ssid) values.wlan_ssid = ssid;
         if (password) values.wlan_password = password;
@@ -2636,7 +2497,7 @@ function applySpecialFieldLogic(values) {
         values.enable_usteer = '1';
     }
 
-    const netOptimizer = getFieldValue(getDOM('netOptimizerChecked'));
+    const netOptimizer = getFieldValue('input[name="net_optimizer"]');
     
     if (netOptimizer === 'disabled') {
         ['enable_netopt', 'netopt_rmem', 'netopt_wmem', 'netopt_conntrack', 
@@ -2653,12 +2514,12 @@ function applySpecialFieldLogic(values) {
     } else if (netOptimizer === 'manual') {
         values.enable_netopt = '1';
         
-        const rmem = getFieldValue(getDOM('netoptRmem'));
-        const wmem = getFieldValue(getDOM('netoptWmem'));
-        const conntrack = getFieldValue(getDOM('netoptConntrack'));
-        const backlog = getFieldValue(getDOM('netoptBacklog'));
-        const somaxconn = getFieldValue(getDOM('netoptSomaxconn'));
-        const congestion = getFieldValue(getDOM('netoptCongestion'));
+        const rmem = getFieldValue('#netopt-rmem');
+        const wmem = getFieldValue('#netopt-wmem');
+        const conntrack = getFieldValue('#netopt-conntrack');
+        const backlog = getFieldValue('#netopt-backlog');
+        const somaxconn = getFieldValue('#netopt-somaxconn');
+        const congestion = getFieldValue('#netopt-congestion');
         
         if (rmem) values.netopt_rmem = rmem;
         if (wmem) values.netopt_wmem = wmem;
@@ -2668,7 +2529,7 @@ function applySpecialFieldLogic(values) {
         if (congestion) values.netopt_congestion = congestion;
     }
     
-    const dnsmasqMode = getFieldValue(getDOM('dnsmasqModeChecked'));
+    const dnsmasqMode = getFieldValue('input[name="enable_dnsmasq"]:checked');
 
     if (dnsmasqMode === 'disabled') {
         delete values.enable_dnsmasq;
@@ -2682,8 +2543,8 @@ function applySpecialFieldLogic(values) {
 
     } else if (dnsmasqMode === 'manual') {
         values.enable_dnsmasq = '1';
-        const cacheSize = getFieldValue(getDOM('dnsmasqCache'));
-        const negCache = getFieldValue(getDOM('dnsmasqNegcache'));
+        const cacheSize = getFieldValue('#dnsmasq-cache');
+        const negCache = getFieldValue('#dnsmasq-negcache');
 
         if (cacheSize) {
             values.dnsmasq_cache = cacheSize;
@@ -2735,14 +2596,14 @@ function attachRadioListeners(name, handler, triggerInitial = true) {
 function setupCommandsInput() {
     console.log('setupCommandsInput called');
 
-    const commandsContainer = getDOM('commandsAutocomplete');
+    const commandsContainer = document.getElementById('commands-autocomplete');
 
     if (!commandsContainer) {
         console.log('commands-autocomplete container not found');
         return;
     }
 
-    const oldInput = getDOM('command');
+    const oldInput = document.getElementById('command');
     if (oldInput) {
         oldInput.remove();
     }
@@ -2798,9 +2659,9 @@ function handleMapeTypeChange(e) {
 }
 
 function setupDsliteAddressComputation() {
-    const aftrType = getDOM('dsliteAftrType');
-    const aftrArea = getDOM('dsliteArea');
-    const aftrAddr = getDOM('dsliteAftrAddress');
+    const aftrType = document.querySelector('#dslite-aftr-type');
+    const aftrArea = document.querySelector('#dslite-area');
+    const aftrAddr = document.querySelector('#dslite-aftr-address');
 
     if (!aftrType || !aftrArea || !aftrAddr) return;
 
@@ -2841,7 +2702,7 @@ function setupDsliteAddressComputation() {
 }
 
 function updateVariableDefinitionsWithDsliteCleanup() {
-    const textarea = getDOM('uciDefaultsContent');
+    const textarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
     if (!textarea) return;
     
     const values = collectFormValues();
@@ -2850,7 +2711,7 @@ function updateVariableDefinitionsWithDsliteCleanup() {
     delete emissionValues.dslite_aftr_type;
     delete emissionValues.dslite_area;
     
-    getAllDOM('packageSelectorCheckboxChecked').forEach(cb => {
+    document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
         const enableVar = cb.getAttribute('data-enable-var');
         if (enableVar) {
             emissionValues[enableVar] = '1';
@@ -2915,7 +2776,7 @@ function handleConnectionTypeChange(e) {
             if (value === 'auto' && state.apiInfo) {
                 updateAutoConnectionInfo(state.apiInfo);
             } else if (value === 'mape' && state.apiInfo) {
-                const guaPrefixField = getDOM('mapeGuaPrefix');
+                const guaPrefixField = getEl('mapeGuaPrefix', '#mape-gua-prefix');
                 if (guaPrefixField && state.apiInfo.ipv6) {
                     const guaPrefix = CustomUtils.generateGuaPrefixFromFullAddress(state.apiInfo);
                     if (guaPrefix && !guaPrefixField.value) {
@@ -2996,7 +2857,7 @@ async function fetchAndDisplayIspInfo() {
 
     } catch (err) {
         console.error('Failed to fetch ISP info:', err);
-        const autoInfo = getDOM('autoInfo');
+        const autoInfo = document.querySelector('#auto-info');
         if (autoInfo) {
             autoInfo.textContent = 'Failed to detect connection type.\nPlease select manually.';
         }
@@ -3008,14 +2869,14 @@ function displayIspInfoIfReady() {
         return false;
     }
     
-    const firstElement = getDOM('autoConfigCountry');
+    const firstElement = document.querySelector('#auto-config-country');
     if (!firstElement) {
         return false;
     }
     
     displayIspInfo(state.apiInfo);
 
-    const extInfo = getDOM('extendedBuildInfo');
+    const extInfo = document.querySelector('#extended-build-info');
     if (extInfo) {
         extInfo.classList.remove('hide');
         extInfo.style.display = 'block';
@@ -3028,25 +2889,25 @@ function displayIspInfoIfReady() {
 function displayIspInfo(apiInfo) {
     if (!apiInfo) return;
 
-    UI.updateElement(getDOM('autoConfigCountry'), { text: apiInfo.country || "Unknown" });
-    UI.updateElement(getDOM('autoConfigTimezone'), { text: apiInfo.timezone || "Unknown" });
-    UI.updateElement(getDOM('autoConfigZonename'), { text: apiInfo.zonename || "Unknown" });
-    UI.updateElement(getDOM('autoConfigIsp'), { text: apiInfo.isp || "Unknown" });
-    UI.updateElement(getDOM('autoConfigAs'), { text: apiInfo.as || "Unknown" });
-    UI.updateElement(getDOM('autoConfigIp'), { text: [apiInfo.ipv4, apiInfo.ipv6].filter(Boolean).join(" / ") || "Unknown" });
+    UI.updateElement("auto-config-country", { text: apiInfo.country || "Unknown" });
+    UI.updateElement("auto-config-timezone", { text: apiInfo.timezone || "Unknown" });
+    UI.updateElement("auto-config-zonename", { text: apiInfo.zonename || "Unknown" });
+    UI.updateElement("auto-config-isp", { text: apiInfo.isp || "Unknown" });
+    UI.updateElement("auto-config-as", { text: apiInfo.as || "Unknown" });
+    UI.updateElement("auto-config-ip", { text: [apiInfo.ipv4, apiInfo.ipv6].filter(Boolean).join(" / ") || "Unknown" });
 
     const wanType = getConnectionType(apiInfo);
-    UI.updateElement(getDOM('autoConfigMethod'), { text: wanType });
-    UI.updateElement(getDOM('autoConfigNotice'), { text: apiInfo.notice || "" });
+    UI.updateElement("auto-config-method", { text: wanType });
+    UI.updateElement("auto-config-notice", { text: apiInfo.notice || "" });
 
-    UI.updateElement(getDOM('extendedBuildInfo'), { show: true });
+    UI.updateElement("extended-build-info", { show: true });
 }
 
 async function insertExtendedInfo(temp) {
     const extendedInfo = temp.querySelector('#extended-build-info');
-    const imageLink = getDOM('imageLink');
+    const imageLink = document.querySelector('#image-link');
     
-    if (!extendedInfo || !imageLink || getDOM('extendedBuildInfo')) {
+    if (!extendedInfo || !imageLink || document.querySelector('#extended-build-info')) {
         return;
     }
     
@@ -3090,7 +2951,6 @@ async function insertExtendedInfo(temp) {
         });
         
         imageLink.closest('.row').insertAdjacentElement('afterend', extendedInfo);
-        clearDOMCache(['extendedBuildInfo']); // DOMに追加したのでキャッシュをクリア
         
         console.log('Extended info DOM elements created');
         displayIspInfoIfReady();
@@ -3111,7 +2971,7 @@ async function initializeCustomFeatures(asuSection, temp) {
     cleanupExistingCustomElements();
     replaceAsuSection(asuSection, temp);
     
-    if (!getDOM('extendedBuildInfo')) {
+    if (!document.querySelector('#extended-build-info')) {
         await insertExtendedInfo(temp);
     }
 
@@ -3154,7 +3014,7 @@ async function initializeCustomFeatures(asuSection, temp) {
             .concat(state.packages.device)
             .concat(state.packages.extra);
 
-        const textarea = getDOM('asuPackages');
+        const textarea = document.querySelector('#asu-packages');
         if (textarea && initialPackages.length > 0) {
             UI.updateElement(textarea, { value: initialPackages.join(' ') });
             console.log('Device packages force applied:', initialPackages);
@@ -3186,7 +3046,7 @@ function applyIspAutoConfig(apiInfo) {
         return false;
     }
 
-    const rawType = getFieldValue(getDOM('connectionTypeChecked'));
+    const rawType = getFieldValue('input[name="connection_type"]');
     const connectionType = (rawType === null || rawType === undefined || rawType === '') ? 'auto' : rawType;
 
     let mutated = false;
@@ -3227,7 +3087,7 @@ function applyIspAutoConfig(apiInfo) {
 }
 
 function updateAutoConnectionInfo(apiInfo) {
-    const autoInfo = getDOM('autoInfo');
+    const autoInfo = document.querySelector('#auto-info');
     if (!autoInfo) return;
 
     let infoText = '';
@@ -3257,7 +3117,7 @@ function updateAutoConnectionInfo(apiInfo) {
             } catch (e) {}
         }
         if (!gua) {
-            const guaField = getDOM('mapeGuaPrefix');
+            const guaField = document.querySelector('#mape-gua-prefix');
             if (guaField && guaField.value) gua = guaField.value;
         }
         if (gua) {
@@ -3290,7 +3150,7 @@ async function loadPackageDatabase() {
 }
 
 function generatePackageSelector() {
-    const container = getDOM('packageCategories');
+    const container = document.querySelector('#package-categories');
     if (!container || !state.packages.json) {
         return;
     }
@@ -3305,7 +3165,6 @@ function generatePackageSelector() {
     loadingDiv.style.color = 'var(--text-muted)';
     loadingDiv.innerHTML = '<span class="tr-checking-packages">Checking package availability...</span>';
     container.appendChild(loadingDiv);
-    clearDOMCache(['packageLoadingIndicator']); // DOMに追加したのでキャッシュをクリア
     
     state.packages.json.categories.forEach(category => {
         if (category.hidden) {
@@ -3330,7 +3189,7 @@ function generatePackageSelector() {
     const arch = state.device.arch;
     if (arch) {
         requestAnimationFrame(() => {
-            const indicator = getDOM('packageLoadingIndicator');
+            const indicator = document.querySelector('#package-loading-indicator');
             if (indicator) {
                 UI.updateElement(indicator, { show: true });
             }
@@ -3359,13 +3218,12 @@ function generatePackageSelector() {
 }
 
 function createHiddenPackageCheckbox(pkg) {
-    let hiddenContainer = getDOM('hiddenPackagesContainer');
+    let hiddenContainer = document.querySelector('#hidden-packages-container');
     if (!hiddenContainer) {
         hiddenContainer = document.createElement('div');
         hiddenContainer.id = 'hidden-packages-container';
         UI.updateElement(hiddenContainer, { show: false });
         document.body.appendChild(hiddenContainer);
-        clearDOMCache(['hiddenPackagesContainer']); // DOMに追加したのでキャッシュをクリア
     }
     
     const checkbox = document.createElement('input');
@@ -3553,7 +3411,7 @@ function findPackageById(id) {
 // ==================== UCI-defaults処理 ====================
 
 function loadUciDefaultsTemplate() {
-    const textarea = getDOM('uciDefaultsContent');
+    const textarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
     const templatePath = config?.uci_defaults_setup_path || 'uci-defaults/setup.sh';
     
     if (!textarea) {
@@ -3598,7 +3456,7 @@ exit 0`;
 }
 
 function updateVariableDefinitions() {
-    const textarea = getDOM('uciDefaultsContent');
+    const textarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
     if (!textarea) return;
 
     const values = collectFormValues && typeof collectFormValues === 'function'
@@ -3612,7 +3470,7 @@ function updateVariableDefinitions() {
 
     let emissionValues = { ...values };
 
-    getAllDOM('packageSelectorCheckboxChecked').forEach(cb => {
+    document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
         const enableVar = cb.getAttribute('data-enable-var');
         if (enableVar) {
             emissionValues[enableVar] = '1';
@@ -3649,7 +3507,7 @@ function generateVariableDefinitions(values) {
 }
 
 function updateCustomCommands() {
-    const textarea = getDOM('uciDefaultsContent');
+    const textarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
     if (!textarea) return;
     
     const customCommands = state.ui.managers.commands ? state.ui.managers.commands.getAllValues().join('\n') : '';
