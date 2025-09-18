@@ -2691,9 +2691,9 @@ function processNestedSections(children, fieldName, selectedValue) {
             const childSection = document.querySelector(`#${child.id}`);
             if (childSection) {
                 if (child.showWhen?.values?.includes(selectedValue)) {
-                    CustomUtils.show(childSection);
+                    UI.updateElement(childSection, { show: true });
                 } else {
-                    CustomUtils.hide(childSection);
+                    UI.updateElement(childSection, { show: false });
                 }
             }
         }
