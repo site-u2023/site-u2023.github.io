@@ -2894,7 +2894,7 @@ async function initializeCustomFeatures(asuSection, temp) {
 
     cleanupExistingCustomElements();
     replaceAsuSection(asuSection, temp);
-    
+
     if (!document.querySelector('#extended-build-info')) {
         await insertExtendedInfo(temp);
     }
@@ -2902,7 +2902,7 @@ async function initializeCustomFeatures(asuSection, temp) {
     if (state.apiInfo) {
         displayIspInfoIfReady();
     }
-    
+
     await Promise.all([
         window.autoConfigPromise,
         window.informationPromise,
@@ -2913,11 +2913,11 @@ async function initializeCustomFeatures(asuSection, temp) {
         fetchAndDisplayIspInfo()
     ]);
 
+    setupHiddenPackageCheckboxes();
+
     setupEventListeners();
     loadUciDefaultsTemplate();
-
     setupLanguageSelector();
-
     setupPackageSearch();
     console.log('Package search initialized');
 
@@ -2932,7 +2932,9 @@ async function initializeCustomFeatures(asuSection, temp) {
 
     generatePackageSelector();
 
-    if (state.packages.default.length > 0 || state.packages.device.length > 0 || state.packages.extra.length > 0) {
+    if (state.packages.default.length > 0 ||
+        state.packages.device.length > 0 ||
+        state.packages.extra.length > 0) {
         console.log('Force applying existing device packages');
         const initialPackages = state.packages.default
             .concat(state.packages.device)
@@ -2950,15 +2952,7 @@ async function initializeCustomFeatures(asuSection, temp) {
         updateAllPackageState('isp-auto-config');
     } else {
         console.log('All data and UI ready, no changes from auto-config');
-        const runWhenReady = () => {
-            if ((state.packages.default && state.packages.default.length > 0) ||
-                (state.packages.device && state.packages.device.length > 0) ||
-                (state.packages.extra && state.packages.extra.length > 0)) {
-                updateAllPackageState('force-device-packages');
-                document.removeEventListener('devicePackagesReady', runWhenReady);
-            }
-        };
-        document.addEventListener('devicePackagesReady', runWhenReady);
+        updateAllPackageState('init');
     }
 
     state.ui.initialized = true;
@@ -3074,71 +3068,51 @@ async function loadPackageDatabase() {
 }
 
 function generatePackageSelector() {
-    const container = document.querySelector('#package-categories');
-    if (!container || !state.packages.json) {
-        return;
-    }
-    
+    const container = document.querySelector('#package-selector-container');
+    if (!container) return;
+
     container.innerHTML = '';
-    
-    const loadingDiv = document.createElement('div');
-    loadingDiv.id = 'package-loading-indicator';
-    UI.updateElement(loadingDiv, { show: false });
-    loadingDiv.style.padding = '1em';
-    loadingDiv.style.textAlign = 'center';
-    loadingDiv.style.color = 'var(--text-muted)';
-    loadingDiv.innerHTML = '<span class="tr-checking-packages">Checking package availability...</span>';
-    container.appendChild(loadingDiv);
-    
-    state.packages.json.categories.forEach(category => {
-        if (category.hidden) {
-            console.log(`Processing hidden category: ${category.id}`);
-            category.packages.forEach(pkg => {
-                if (pkg.hidden) {
-                    createHiddenPackageCheckbox(pkg);
-                }
-            });
+
+    const categories = state.packages.json?.categories || [];
+    let visibleCount = 0;
+
+    categories.forEach(cat => {
+        if (cat.id === 'setup-driven-packages') {
             return;
         }
-        
-        const categoryDiv = createPackageCategory(category);
-        if (categoryDiv) {
-            container.appendChild(categoryDiv);
-        }
-    });
-    
-    updateAllPackageState('package-selector-init');
-    console.log(`Generated ${state.packages.json.categories.length} package categories (including hidden)`);
-    
-    const arch = state.device.arch;
-    if (arch) {
-        requestAnimationFrame(() => {
-            const indicator = document.querySelector('#package-loading-indicator');
-            if (indicator) {
-                UI.updateElement(indicator, { show: true });
-            }
 
-            verifyAllPackages().then(() => {
-                if (indicator) {
-                    UI.updateElement(indicator, { show: false });
-                }
-                console.log('Package verification completed');
-            }).catch(err => {
-                console.error('Package verification failed:', err);
-                if (indicator) {
-                    UI.updateElement(indicator, {
-                        html: '<span class="tr-package-check-failed">Package availability check failed</span>',
-                        show: true
-                    });
-                    indicator.addEventListener('click', () => {
-                        UI.updateElement(indicator, { show: false });
-                    }, { once: true });
-                }
-            });
+        const categoryEl = document.createElement('div');
+        categoryEl.classList.add('package-category');
+
+        const headerEl = document.createElement('h3');
+        headerEl.textContent = cat.name || cat.id;
+        categoryEl.appendChild(headerEl);
+
+        const listEl = document.createElement('div');
+        listEl.classList.add('package-list');
+
+        (cat.packages || []).forEach(pkg => {
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.classList.add('package-selector-checkbox');
+            checkbox.dataset.package = pkg.id;
+            checkbox.id = `pkg-${pkg.id}`;
+
+            const label = document.createElement('label');
+            label.setAttribute('for', `pkg-${pkg.id}`);
+            label.textContent = pkg.name || pkg.id;
+
+            listEl.appendChild(checkbox);
+            listEl.appendChild(label);
         });
-    } else {
-        console.log('Device architecture not available, skipping package verification');
-    }
+
+        categoryEl.appendChild(listEl);
+        container.appendChild(categoryEl);
+
+        visibleCount++;
+    });
+
+    console.log(`Generated ${visibleCount} visible package categories (hidden already handled)`);
 }
 
 function createHiddenPackageCheckbox(pkg) {
