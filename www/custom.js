@@ -327,7 +327,7 @@ const CustomUtils = {
         }
     },
     
-    clearWifiFields: function() {
+clearWifiFields: function() {
         const wifiCategory = state.config.setup.categories.find(cat => cat.id === 'wifi-config');
         if (!wifiCategory) return;
 
@@ -354,15 +354,60 @@ const CustomUtils = {
     }
 };
 
+function restoreDefaultsFromJSON(sectionId) {
+    function findSection(config, targetId) {
+        for (const category of config.categories) {
+            for (const pkg of category.packages) {
+                if (pkg.id === targetId) return pkg;
+                if (pkg.children) {
+                    for (const child of pkg.children) {
+                        const found = findSectionRecursive(child, targetId);
+                        if (found) return found;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+    
+    function findSectionRecursive(node, targetId) {
+        if (node.id === targetId) return node;
+        if (node.children) {
+            for (const child of node.children) {
+                const found = findSectionRecursive(child, targetId);
+                if (found) return found;
+            }
+        }
+        return null;
+    }
+    
+    const section = findSection(state.config.setup, sectionId);
+    if (!section) return;
+    
+    function restoreFields(node) {
+        if (node.fields) {
+            node.fields.forEach(field => {
+                if (field.defaultValue !== undefined && field.defaultValue !== null) {
+                    const el = document.querySelector(field.selector || `#${field.id}`);
+                    if (el && !el.value) {
+                        UI.updateElement(el, { value: field.defaultValue });
+                    }
+                }
+            });
+        }
+        if (node.children) {
+            node.children.forEach(restoreFields);
+        }
+    }
+    
+    restoreFields(section);
+}
+
 function getEl(key, selector) {
     if (!state.cache.domElements.has(key)) {
         state.cache.domElements.set(key, document.querySelector(selector));
     }
     return state.cache.domElements.get(key);
-}
-
-function clearDomCache() {
-    state.cache.domElements.clear();
 }
 
 // ==================== 初期化処理 ====================
@@ -1933,52 +1978,50 @@ function buildField(parent, pkg) {
             break;
         }
 
-        case 'radio-group': {
-            const row = document.createElement('div');
-            row.className = 'form-row';
+case 'radio-group': {
+    const row = document.createElement('div');
+    row.className = 'form-row';
 
-            const group = document.createElement('div');
-            group.className = 'form-group';
+    const group = document.createElement('div');
+    group.className = 'form-group';
 
-            if (pkg.name || pkg.label) {
-                const legend = document.createElement('div');
-                legend.className = 'form-label';
-                if (pkg.class) legend.classList.add(pkg.class);
-                legend.textContent = pkg.name || pkg.label;
-                group.appendChild(legend);
-            }
+    if (pkg.name || pkg.label) {
+        const legend = document.createElement('div');
+        legend.className = 'form-label';
+        if (pkg.class) legend.classList.add(pkg.class);
+        legend.textContent = pkg.name || pkg.label;
+        group.appendChild(legend);
+    }
 
-            const radioWrap = document.createElement('div');
-            radioWrap.className = 'radio-group';
-            
-            (pkg.options || []).forEach(opt => {
-                const lbl = document.createElement('label');
-                const radio = document.createElement('input');
-                radio.type = 'radio';
-                radio.name = pkg.variableName || pkg.id;
-                radio.value = opt.value;
-                
-                if (opt.checked || (pkg.defaultValue != null && opt.value === pkg.defaultValue)) {
-                    radio.checked = true;
-                }
-                
-                radio.addEventListener('change', handleRadioChange);
-
-                const textSpan = document.createElement('span');
-                textSpan.textContent = ' ' + (opt.label != null ? opt.label : String(opt.value));
-                if (opt.class) {
-                    textSpan.classList.add(opt.class);
-                }
-                lbl.appendChild(radio);
-                lbl.appendChild(textSpan);
-                radioWrap.appendChild(lbl);
-            });
-
-            group.appendChild(radioWrap);
-            row.appendChild(group);
-            parent.appendChild(row);
-            break;
+    const radioWrap = document.createElement('div');
+    radioWrap.className = 'radio-group';
+    
+    (pkg.options || []).forEach(opt => {
+        const lbl = document.createElement('label');
+        const radio = document.createElement('input');
+        radio.type = 'radio';
+        radio.name = pkg.variableName || pkg.id;
+        radio.value = opt.value;
+        
+        if (opt.checked || (pkg.defaultValue != null && opt.value === pkg.defaultValue)) {
+            radio.checked = true;
         }
+
+        const textSpan = document.createElement('span');
+        textSpan.textContent = ' ' + (opt.label != null ? opt.label : String(opt.value));
+        if (opt.class) {
+            textSpan.classList.add(opt.class);
+        }
+        lbl.appendChild(radio);
+        lbl.appendChild(textSpan);
+        radioWrap.appendChild(lbl);
+    });
+
+    group.appendChild(radioWrap);
+    row.appendChild(group);
+    parent.appendChild(row);
+    break;
+}
 
         case 'conditional-section': {
             const condWrap = document.createElement('div');
@@ -2101,16 +2144,6 @@ function buildFormGroup(field) {
     }
 
     return group;
-}
-
-function handleRadioChange(e) {
-    const radio = e.target;
-    
-    if (radio.name === 'mape_type') {
-        CustomUtils.toggleGuaPrefixVisibility(radio.value);
-    }
-    
-    updateAllPackageState('radio-change');
 }
 
 function initConditionalSections(config) {
@@ -2548,11 +2581,12 @@ function setupEventListeners() {
         'connection_type': handleConnectionTypeChange,
         'net_optimizer': handleNetOptimizerChange,
         'wifi_mode': handleWifiModeChange,
-        'mape_type': handleMapeTypeChange
+        'mape_type': handleMapeTypeChange,
+        'enable_dnsmasq': handleDnsmasqChange
     };
     
     Object.entries(radioGroups).forEach(([name, handler]) => {
-        attachRadioListeners(name, handler, name !== 'mape_type');
+        attachRadioListeners(name, handler, true);
     });
 
     setupDsliteAddressComputation();
@@ -2761,7 +2795,7 @@ function handleNetOptimizerChange(e) {
         updateSource: 'net-optimizer',
         customHandler: (value) => {
             if (value === 'manual') {
-                CustomUtils.restoreManualDefaults();
+                restoreDefaultsFromJSON('netopt-manual-section');
             }
         }
     });
@@ -2778,6 +2812,19 @@ function handleWifiModeChange(e) {
                 CustomUtils.clearWifiFields();
             } else {
                 CustomUtils.restoreWifiDefaults();
+            }
+        }
+    });
+}
+
+function handleDnsmasqChange(e) {
+    const mode = e.target.value;
+    
+    handleConditionalSectionChange('tuning-config', 'enable_dnsmasq', mode, {
+        updateSource: 'dnsmasq-mode',
+        customHandler: (value) => {
+            if (value === 'manual') {
+                restoreDefaultsFromJSON('dnsmasq-manual-section');
             }
         }
     });
