@@ -2830,6 +2830,13 @@ function displayIspInfoIfReady() {
     }
     
     displayIspInfo(state.apiInfo);
+
+    const extInfo = document.querySelector('#extended-build-info');
+    if (extInfo) {
+        extInfo.classList.remove('hide');
+        extInfo.style.display = 'block';
+    }
+    
     console.log('ISP info displayed');
     return true;
 }
@@ -2916,12 +2923,17 @@ async function initializeCustomFeatures(asuSection, temp) {
         return;
     }
 
-    if (!document.querySelector('#custom-packages-details')) {
-        cleanupExistingCustomElements();
-        replaceAsuSection(asuSection, temp);
+    cleanupExistingCustomElements();
+    replaceAsuSection(asuSection, temp);
+    
+    if (!document.querySelector('#extended-build-info')) {
         await insertExtendedInfo(temp);
     }
 
+    if (state.apiInfo) {
+        displayIspInfoIfReady();
+    }
+    
     await Promise.all([
         window.autoConfigPromise,
         window.informationPromise,
