@@ -2930,6 +2930,14 @@ async function initializeCustomFeatures(asuSection, temp) {
 
     generatePackageSelector();
 
+    ['map', 'ds-lite', 'usteer-from-setup'].forEach(id => {
+        const pkg = findPackageById(id);
+        if (pkg) {
+            createHiddenPackageCheckbox(pkg);
+            console.log(`[Custom] Hidden checkbox created for virtual package: ${id}`);
+        }
+    });
+
     if (state.packages.default.length > 0 ||
         state.packages.device.length > 0 ||
         state.packages.extra.length > 0) {
