@@ -2310,8 +2310,9 @@ function collectFormValues() {
     Object.values(state.config.formStructure.fields).forEach(field => {
         const value = getFieldValue(field.selector);
         
+        // languageフィールドの場合、enは除外
         if (field.variableName === 'language' && value === 'en') {
-            continue;
+            return; // forEach内ではcontinueではなくreturn
         }
         
         if (value !== null && value !== undefined && value !== "") {
