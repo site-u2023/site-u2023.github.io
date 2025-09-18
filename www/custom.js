@@ -232,29 +232,6 @@ const CustomUtils = {
             UI.updateElement(guaPrefixField, { value: guaPrefix });
         }
     },
-    
-    toggleVisibility(el, show = true) {
-        const element = (typeof el === 'string') ? document.querySelector(el) : el;
-        if (!element) return;
-        
-        const isVisible = Boolean(show);
-        element.classList.toggle('hide', !isVisible);
-        element.style.display = isVisible ? '' : 'none';
-    },
-
-    show(el) { this.toggleVisibility(el, true); },
-    hide(el) { this.toggleVisibility(el, false); },
-
-    setValue(selector, val) {
-        const el = document.querySelector(selector);
-        if (!el) return;
-
-        if (['INPUT', 'TEXTAREA'].includes(el.tagName)) {
-            el.value = val;
-        } else {
-            el.textContent = val;
-        }
-    },
 
     split(str = '') {
         return str.trim().match(/[^\s,]+/g) || [];
@@ -263,21 +240,6 @@ const CustomUtils = {
     getNestedValue(obj, path) {
         if (!obj || !path) return undefined;
         return path.split('.').reduce((current, key) => current?.[key], obj);
-    },
-
-    restoreManualDefaults: function() {
-        const tuningCategory = state.config.setup.categories.find(cat => cat.id === 'tuning-config');
-        const manualSection = tuningCategory.packages.find(pkg => pkg.id === 'netopt-manual-section');
-        const netoptFields = manualSection.children.find(child => child.id === 'netopt-fields');
-    
-        netoptFields.fields.forEach(field => {
-            if (field.defaultValue !== undefined && field.defaultValue !== null) {
-                const el = document.querySelector(field.selector || `#${field.id}`);
-                if (el && !el.value) {
-                    UI.updateElement(el, { value: field.defaultValue });
-                }
-            }
-        });
     },
 
     restoreWifiDefaults: function() {
@@ -394,6 +356,10 @@ function getEl(key, selector) {
     return state.cache.domElements.get(key);
 }
 
+function clearDomCache() {
+    state.cache.domElements.clear();
+}
+
 // ==================== 初期化処理 ====================
 const originalUpdateImages = window.updateImages;
 
@@ -501,7 +467,23 @@ window.updateImages = function(version, mobj) {
 };
 
 // ==================== 統合パッケージ管理システム ====================
+
+let _updateAllRequested = false;
+
 async function updateAllPackageState(source = 'unknown') {
+    if (!_updateAllRequested) {
+        _updateAllRequested = true;
+        return new Promise(resolve => {
+            requestAnimationFrame(async () => {
+                _updateAllRequested = false;
+                await _updateAllPackageState(source);
+                resolve();
+            });
+        });
+    }
+}
+
+async function _updateAllPackageState(source = 'unknown') {
     if (!state.ui.initialized && state.packages.default.length === 0 && state.packages.device.length === 0) {
         console.log('updateAllPackageState: Device packages not ready, deferring update from:', source);
         document.addEventListener('devicePackagesReady', () => {
@@ -785,7 +767,7 @@ function updatePackageListToTextarea(source = 'unknown') {
         state.ui.managers.packageSearch ? normalizePackages(state.ui.managers.packageSearch.getAllValues()) : []
     );
     
-    if (searchedPackages.size > 0) {
+    if (window.DEBUG_MODE && searchedPackages.size > 0) {
         console.log('PackageSearchManager values:', [...searchedPackages]);
     }
 
@@ -1285,6 +1267,7 @@ function replaceAsuSection(asuSection, temp) {
     }
     
     asuSection.parentNode.replaceChild(newDiv, asuSection);
+    clearDomCache();
 }
 
 function cleanupExistingCustomElements() {
@@ -1474,44 +1457,6 @@ function extractLuciName(pkg) {
     return null;
 }
 
-function getCurrentPackageList() {
-    const packages = new Set();
-    
-    state.packages.default.forEach(pkg => packages.add(pkg));
-    state.packages.device.forEach(pkg => packages.add(pkg));
-    state.packages.extra.forEach(pkg => packages.add(pkg));
-    
-    document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
-        const pkgName = cb.getAttribute('data-package');
-        if (pkgName) packages.add(pkgName);
-    });
-    
-    if (state.ui.managers.packageSearch) {
-        const searchValues = state.ui.managers.packageSearch.getAllValues();
-        searchValues.forEach(pkg => packages.add(pkg));
-    }
-    
-    const textarea = document.querySelector('#asu-packages');
-    if (textarea) {
-        const textPackages = CustomUtils.split(textarea.value);
-        textPackages.forEach(pkg => {
-            if (!state.packages.default.includes(pkg) && 
-                !state.packages.device.includes(pkg) && 
-                !state.packages.extra.includes(pkg)) {
-                packages.add(pkg);
-            }
-        });
-    }
-    
-    for (const pkg of state.packages.dynamic) {
-        if (!pkg.startsWith('luci-i18n-')) {
-            packages.add(pkg);
-        }
-    }
-    
-    return Array.from(packages);
-}
-
 function guessFeedForPackage(pkgName) {
     if (!pkgName) return 'packages';
     
@@ -1551,19 +1496,6 @@ async function buildPackageUrl(feed, deviceInfo) {
         .replace('{version}', version)
         .replace('{arch}', arch)
         .replace('{feed}', feed);
-}
-
-function parsePackageList(responseData, pkgName, isSnapshot) {
-    if (isSnapshot) {
-        if (Array.isArray(responseData.packages)) {
-            return responseData.packages.some(p => p?.name === pkgName);
-        } else if (responseData.packages && typeof responseData.packages === 'object') {
-            return Object.prototype.hasOwnProperty.call(responseData.packages, pkgName);
-        }
-        return false;
-    } else {
-        return responseData.split('\n').some(line => line.trim() === `Package: ${pkgName}`);
-    }
 }
 
 async function getFeedPackageSet(feed, deviceInfo) {
@@ -1888,6 +1820,7 @@ function renderSetupConfig(config) {
     }
     
     container.innerHTML = '';
+    clearDomCache();
     console.log('Container cleared, rebuilding...');
 
     (config.categories || []).forEach((category, categoryIndex) => {
@@ -2734,13 +2667,13 @@ function handleConditionalSectionChange(categoryId, fieldName, selectedValue, op
             const shouldShow = pkg.showWhen.values?.includes(selectedValue);
             
             if (shouldShow) {
-                CustomUtils.show(section);
+                UI.updateElement(section, { show: true });
                 
                 if (pkg.children && options.processChildren) {
                     processNestedSections(pkg.children, fieldName, selectedValue);
                 }
             } else {
-                CustomUtils.hide(section);
+                UI.updateElement(section, { show: false });
             }
         }
     });
