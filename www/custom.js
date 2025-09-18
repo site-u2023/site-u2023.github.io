@@ -2310,17 +2310,14 @@ function collectFormValues() {
     Object.values(state.config.formStructure.fields).forEach(field => {
         const value = getFieldValue(field.selector);
         
+        if (field.variableName === 'language' && value === 'en') {
+            continue;
+        }
+        
         if (value !== null && value !== undefined && value !== "") {
             values[field.variableName] = value;
         }
     });
-    
-    if (!values.language) {
-        const languageValue = getFieldValue('#aios-language') || state.ui.language.selected || 'en';
-        if (languageValue && languageValue !== 'en') {
-            values.language = languageValue;
-        }
-    }
     
     applySpecialFieldLogic(values);
     
