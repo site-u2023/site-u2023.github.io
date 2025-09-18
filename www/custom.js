@@ -251,21 +251,27 @@ const CustomUtils = {
         return path.split('.').reduce((current, key) => current?.[key], obj);
     },
 
-    setGuaPrefixIfAvailable: function() {
-        const guaPrefixField = document.querySelector('#mape-gua-prefix');
-        if (!guaPrefixField || !state.apiInfo?.ipv6) return;
-        const guaPrefix = this.generateGuaPrefixFromFullAddress(state.apiInfo);
-        if (guaPrefix) {
-            guaPrefixField.value = guaPrefix;
-        }
-    },
+    function restoreManualDefaults() {
+        const tuningCategory = state.config.setup.categories.find(cat => cat.id === 'tuning-config');
+        const manualSection = tuningCategory.packages.find(pkg => pkg.id === 'netopt-manual-section');
+        const netoptFields = manualSection.children.find(child => child.id === 'netopt-fields');
+    
+        netoptFields.fields.forEach(field => {
+            if (field.defaultValue !== undefined && field.defaultValue !== null) {
+                const el = document.querySelector(field.selector || `#${field.id}`);
+                if (el && !el.value) {
+                    UI.updateElement(el, { value: field.defaultValue });
+                }
+            }
+        });
+    }
     
     toggleGuaPrefixVisibility: function(mode) {
         const guaPrefixField = document.querySelector('#mape-gua-prefix');
         if (!guaPrefixField) return;
         const formGroup = guaPrefixField.closest('.form-group');
         if (mode === 'pd') {
-            guaPrefixField.value = '';
+            UI.updateElement(guaPrefixField, { value: '' });
             guaPrefixField.disabled = true;
             if (formGroup) UI.updateElement(formGroup, { show: false });
             console.log('PD mode: GUA prefix hidden');
@@ -1816,7 +1822,7 @@ function renderSetupConfig(config) {
             if (guaPrefixField) {
                 const formGroup = guaPrefixField.closest('.form-group');
                 if (formGroup) {
-                    formGroup.style.display = 'none';
+                    UI.updateElement(formGroup, { show: false });
                     console.log('Initial PD mode: GUA prefix hidden');
                 }
             }
@@ -1898,7 +1904,7 @@ function buildField(parent, pkg) {
             const condWrap = document.createElement('div');
             condWrap.id = pkg.id;
             condWrap.className = 'conditional-section';
-            condWrap.style.display = 'none';
+            UI.updateElement(condWrap, { show: false });
 
             (pkg.children || []).forEach(child => {
                 buildField(condWrap, child);
@@ -1979,18 +1985,22 @@ function buildFormGroup(field) {
         ctrl = document.createElement('input');
         ctrl.type = field.type || 'text';
         if (field.id) ctrl.id = field.id;
-        if (field.placeholder) ctrl.placeholder = field.placeholder;        
+        if (field.placeholder) ctrl.placeholder = field.placeholder;
+        let setValue = null;
         if (field.defaultValue !== null && field.defaultValue !== undefined && field.defaultValue !== '') {
-            ctrl.value = field.defaultValue;
+            setValue = field.defaultValue;
         } else if (field.apiMapping && state.apiInfo) {
             const apiValue = CustomUtils.getNestedValue(state.apiInfo, field.apiMapping);
             if (apiValue !== null && apiValue !== undefined && apiValue !== '') {
-                ctrl.value = apiValue;
+                setValue = apiValue;
             }
+        }
+        if (setValue !== null) {
+            UI.updateElement(ctrl, { value: setValue });
         }
         if (field.variableName === 'mape_gua_prefix') {
             CustomUtils.setGuaPrefixIfAvailable();
-        }        
+        }       
         if (field.min != null) ctrl.min = field.min;
         if (field.max != null) ctrl.max = field.max;
         if (field.maxlength != null) ctrl.maxLength = field.maxlength;
@@ -2704,39 +2714,7 @@ function restoreManualDefaults() {
         if (field.defaultValue !== undefined && field.defaultValue !== null) {
             const el = document.querySelector(field.selector || `#${field.id}`);
             if (el && !el.value) {
-                el.value = field.defaultValue;
-            }
-        }
-    });
-}
-
-function restoreWifiDefaults() {
-    const wifiCategory = state.config.setup.categories.find(cat => cat.id === 'wifi-config');
-    
-    function findWifiFields(pkg) {
-        const fields = [];
-        
-        if (pkg.type === 'input-group' && pkg.fields) {
-            fields.push(...pkg.fields);
-        } else if (pkg.children) {
-            pkg.children.forEach(child => {
-                fields.push(...findWifiFields(child));
-            });
-        }
-        
-        return fields;
-    }
-    
-    const allWifiFields = [];
-    wifiCategory.packages.forEach(pkg => {
-        allWifiFields.push(...findWifiFields(pkg));
-    });
-    
-    allWifiFields.forEach(field => {
-        if (field.defaultValue !== undefined && field.defaultValue !== null) {
-            const el = document.querySelector(field.selector || `#${field.id}`);
-            if (el && !el.value) {
-                el.value = field.defaultValue;
+                UI.updateElement(el, { value: field.defaultValue });
             }
         }
     });
@@ -2750,7 +2728,32 @@ function clearWifiFields() {
             pkg.fields.forEach(field => {
                 const el = document.querySelector(field.selector || `#${field.id}`);
                 if (el) {
-                    el.value = '';
+                    UI.updateElement(el, { value: '' });
+                }
+            });
+        } else if (pkg.children) {
+            pkg.children.forEach(child => {
+                findAndClearWifiFields(child);
+            });
+        }
+    }
+    
+    wifiCategory.packages.forEach(pkg => {
+        if (pkg.variableName !== 'wifi_mode') {
+            findAndClearWifiFields(pkg);
+        }
+    });
+}
+
+function clearWifiFields() {
+    const wifiCategory = state.config.setup.categories.find(cat => cat.id === 'wifi-config');
+    
+    function findAndClearWifiFields(pkg) {
+        if (pkg.type === 'input-group' && pkg.fields) {
+            pkg.fields.forEach(field => {
+                const el = document.querySelector(field.selector || `#${field.id}`);
+                if (el) {
+                    UI.updateElement(el, { value: '' });
                 }
             });
         } else if (pkg.children) {
@@ -2996,7 +2999,7 @@ function applyIspAutoConfig(apiInfo) {
         if (value !== null && value !== undefined && value !== '') {
             const element = document.querySelector(field.selector);
             if (element && element.value !== String(value)) {
-                element.value = value;
+                UI.updateElement(element, { value: value });
                 mutated = true;
             }
         }
@@ -3069,7 +3072,7 @@ function generatePackageSelector() {
     
     const loadingDiv = document.createElement('div');
     loadingDiv.id = 'package-loading-indicator';
-    loadingDiv.style.display = 'none';
+    UI.updateElement(loadingDiv, { show: false });
     loadingDiv.style.padding = '1em';
     loadingDiv.style.textAlign = 'center';
     loadingDiv.style.color = 'var(--text-muted)';
@@ -3132,7 +3135,7 @@ function createHiddenPackageCheckbox(pkg) {
     if (!hiddenContainer) {
         hiddenContainer = document.createElement('div');
         hiddenContainer.id = 'hidden-packages-container';
-        hiddenContainer.style.display = 'none';
+        UI.updateElement(hiddenContainer, { show: false });
         document.body.appendChild(hiddenContainer);
     }
     
@@ -3142,7 +3145,7 @@ function createHiddenPackageCheckbox(pkg) {
     checkbox.className = 'package-selector-checkbox';
     checkbox.setAttribute('data-package', pkg.id);
     checkbox.setAttribute('data-unique-id', pkg.uniqueId || pkg.id);
-    checkbox.style.display = 'none';
+    UI.updateElement(checkbox, { show: false });
     
     if (pkg.dependencies) {
         checkbox.setAttribute('data-dependencies', pkg.dependencies.join(','));
