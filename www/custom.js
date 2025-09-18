@@ -314,7 +314,7 @@ const CustomUtils = {
     toggleGuaPrefixVisibility: function(mode) {
         const guaPrefixField = getEl('mapeGuaPrefix', '#mape-gua-prefix');
         if (!guaPrefixField) return;
-        const formGroup = guaPrefixField.closest('.form-group');
+        const formGroup = guaPrefixField.closest('.tr-gua-prefix') || guaPrefixField.closest('.form-group');
         if (mode === 'pd') {
             UI.updateElement(guaPrefixField, { value: '' });
             guaPrefixField.disabled = true;
@@ -1903,7 +1903,7 @@ function renderSetupConfig(config) {
         if (mapeTypeRadio && mapeTypeRadio.value === 'pd') {
             const guaPrefixField = getEl('mapeGuaPrefix', '#mape-gua-prefix');
             if (guaPrefixField) {
-                const formGroup = guaPrefixField.closest('.form-group');
+                const formGroup = guaPrefixField.closest('.tr-gua-prefix') || guaPrefixField.closest('.form-group');
                 if (formGroup) {
                     UI.updateElement(formGroup, { show: false });
                     console.log('Initial PD mode: GUA prefix hidden');
