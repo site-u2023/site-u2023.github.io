@@ -2311,16 +2311,11 @@ function collectFormValues() {
         const value = getFieldValue(field.selector);
         
         if (value !== null && value !== undefined && value !== "") {
-            values[field.variableName] = value;
+            if (!(field.variableName === 'language' && value === 'en')) {
+                values[field.variableName] = value;
+            }
         }
     });
-    
-    if (!values.language) {
-        const languageValue = getFieldValue('#aios-language') || state.ui.language.selected || 'en';
-        if (languageValue && languageValue !== 'en') {
-            values.language = languageValue;
-        }
-    }
     
     applySpecialFieldLogic(values);
     
