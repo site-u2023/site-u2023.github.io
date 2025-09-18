@@ -218,6 +218,15 @@ const CustomUtils = {
         }
         return null;
     },
+
+    setGuaPrefixIfAvailable: function() {
+        const guaPrefixField = document.querySelector('#mape-gua-prefix');
+        if (!guaPrefixField || !state.apiInfo?.ipv6) return;
+        const guaPrefix = this.generateGuaPrefixFromFullAddress(state.apiInfo);
+        if (guaPrefix) {
+            UI.updateElement(guaPrefixField, { value: guaPrefix });
+        }
+    },
     
     toggleVisibility(el, show = true) {
         const element = (typeof el === 'string') ? document.querySelector(el) : el;
