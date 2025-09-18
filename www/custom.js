@@ -2311,7 +2311,7 @@ function collectFormValues() {
         const value = getFieldValue(field.selector);
         
         if (field.variableName === 'language' && value === 'en') {
-            return;
+            continue;
         }
         
         if (value !== null && value !== undefined && value !== "") {
@@ -3460,10 +3460,10 @@ function updateVariableDefinitions() {
 
     const values = collectFormValues && typeof collectFormValues === 'function'
         ? collectFormValues()
-        : null;
+        : {};
 
-    if (!values || typeof values !== 'object' || Object.keys(values).length === 0) {
-        console.warn("updateVariableDefinitions: values 未取得のためスキップ");
+    if (values === null || values === undefined || typeof values !== 'object') {
+        console.warn("updateVariableDefinitions: values collection failed");
         return;
     }
 
