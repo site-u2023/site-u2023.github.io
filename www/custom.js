@@ -1,10 +1,10 @@
 console.log('custom.js loaded');
 
 window.addEventListener('load', () => {
-    const versionEl = document.getElementById('ofs-version');
-    if (versionEl && typeof custom_ofs_version !== 'undefined') {
-        versionEl.innerText = custom_ofs_version;
+    if (typeof custom_ofs_version !== 'undefined') {
+        UI.updateElement('ofs-version', { text: custom_ofs_version });
     }
+});
     
     const linkEl = versionEl?.closest('a');
     if (linkEl && typeof custom_ofs_link !== 'undefined') {
@@ -76,6 +76,32 @@ const state = {
 };
 
 // ==================== ユーティリティ ====================
+
+const UI = {
+    updateElement(idOrEl, opts = {}) {
+        const el = typeof idOrEl === 'string'
+            ? document.getElementById(idOrEl)
+            : idOrEl;
+        if (!el) return;
+
+        if ('show' in opts) {
+            el.style.display = opts.show ? '' : 'none';
+        }
+        if ('text' in opts) {
+            el.textContent = opts.text;
+        }
+        if ('html' in opts) {
+            el.innerHTML = opts.html;
+        }
+        if ('value' in opts) {
+            el.value = opts.value;
+        }
+        if ('disabled' in opts) {
+            el.disabled = !!opts.disabled;
+        }
+    }
+};
+
 const CustomUtils = {
     getVendor() {
         return state.device.vendor;
@@ -295,7 +321,7 @@ window.updateImages = function(version, mobj) {
                 }).catch(function(err) {
                     console.error('[ERROR] Package verification failed:', err);
                     if (indicator) {
-                        indicator.innerHTML = '<span class="tr-package-check-failed">Package availability check failed</span>';
+                        UI.updateElement(indicator, { html: '<span class="tr-package-check-failed">Package availability check failed</span>' });
                         indicator.addEventListener('click', () => { indicator.style.display = 'none'; }, { once: true });
                     }
                 });
@@ -323,7 +349,7 @@ window.updateImages = function(version, mobj) {
 
         const textarea = document.querySelector('#asu-packages');
         if (textarea) {
-            textarea.value = initialPackages.join(' ');
+            UI.updateElement(textarea, { value: initialPackages.join(' ') });
             console.log('[TRACE] Initial packages set:', initialPackages);
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
@@ -1641,7 +1667,7 @@ function updatePackageAvailabilityUI(uniqueId, isAvailable) {
         const label = checkbox.closest('label');
         if (label) {
             if (!isAvailable) {
-                label.style.display = 'none';
+                UI.updateElement(label, { show: false });
                 checkbox.checked = false;
                 checkbox.disabled = true;
             } else {
@@ -2785,19 +2811,19 @@ function displayIspInfoIfReady() {
 
 function displayIspInfo(apiInfo) {
     if (!apiInfo) return;
-    
-    CustomUtils.setValue("#auto-config-country", apiInfo.country || "Unknown");
-    CustomUtils.setValue("#auto-config-timezone", apiInfo.timezone || "Unknown");
-    CustomUtils.setValue("#auto-config-zonename", apiInfo.zonename || "Unknown");
-    CustomUtils.setValue("#auto-config-isp", apiInfo.isp || "Unknown");
-    CustomUtils.setValue("#auto-config-as", apiInfo.as || "Unknown");
-    CustomUtils.setValue("#auto-config-ip", [apiInfo.ipv4, apiInfo.ipv6].filter(Boolean).join(" / ") || "Unknown");
+
+    UI.updateElement("auto-config-country", { text: apiInfo.country || "Unknown" });
+    UI.updateElement("auto-config-timezone", { text: apiInfo.timezone || "Unknown" });
+    UI.updateElement("auto-config-zonename", { text: apiInfo.zonename || "Unknown" });
+    UI.updateElement("auto-config-isp", { text: apiInfo.isp || "Unknown" });
+    UI.updateElement("auto-config-as", { text: apiInfo.as || "Unknown" });
+    UI.updateElement("auto-config-ip", { text: [apiInfo.ipv4, apiInfo.ipv6].filter(Boolean).join(" / ") || "Unknown" });
 
     const wanType = getConnectionType(apiInfo);
-    CustomUtils.setValue("#auto-config-method", wanType);
-    CustomUtils.setValue("#auto-config-notice", apiInfo.notice || "");
-    
-    CustomUtils.show("#extended-build-info");
+    UI.updateElement("auto-config-method", { text: wanType });
+    UI.updateElement("auto-config-notice", { text: apiInfo.notice || "" });
+
+    UI.updateElement("extended-build-info", { show: true });
 }
 
 async function insertExtendedInfo(temp) {
@@ -3069,27 +3095,29 @@ function generatePackageSelector() {
         requestAnimationFrame(() => {
             const indicator = document.querySelector('#package-loading-indicator');
             if (indicator) {
-                indicator.style.display = 'block';
+                UI.updateElement(indicator, { show: true });
             }
 
             verifyAllPackages().then(() => {
                 if (indicator) {
-                    indicator.style.display = 'none';
+                    UI.updateElement(indicator, { show: false });
                 }
                 console.log('Package verification completed');
             }).catch(err => {
                 console.error('Package verification failed:', err);
                 if (indicator) {
-                    indicator.innerHTML = '<span class="tr-package-check-failed">Package availability check failed</span>';
+                    UI.updateElement(indicator, {
+                        html: '<span class="tr-package-check-failed">Package availability check failed</span>',
+                        show: true
+                    });
                     indicator.addEventListener('click', () => {
-                        indicator.style.display = 'none';
+                        UI.updateElement(indicator, { show: false });
                     }, { once: true });
                 }
             });
         });
     } else {
         console.log('Device architecture not available, skipping package verification');
-    }
 }
 
 function createHiddenPackageCheckbox(pkg) {
