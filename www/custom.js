@@ -265,7 +265,7 @@ const CustomUtils = {
             }
         });
     },
-    
+     
     toggleGuaPrefixVisibility: function(mode) {
         const guaPrefixField = document.querySelector('#mape-gua-prefix');
         if (!guaPrefixField) return;
