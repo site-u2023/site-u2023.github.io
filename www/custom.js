@@ -2045,7 +2045,7 @@ function initConditionalSections(config) {
             });
             const el = document.getElementById(cond.id);
             if (!el) continue;
-            el.style.display = visible ? '' : 'none';
+            UI.updateElement(el, { show: visible });
         }
     }
 }
@@ -2937,10 +2937,10 @@ async function initializeCustomFeatures(asuSection, temp) {
         const initialPackages = state.packages.default
             .concat(state.packages.device)
             .concat(state.packages.extra);
-        
+
         const textarea = document.querySelector('#asu-packages');
         if (textarea && initialPackages.length > 0) {
-            textarea.value = initialPackages.join(' ');
+            UI.updateElement(textarea, { value: initialPackages.join(' ') });
             console.log('Device packages force applied:', initialPackages);
         }
     }
