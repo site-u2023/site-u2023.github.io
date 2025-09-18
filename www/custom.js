@@ -1895,6 +1895,7 @@ function renderSetupConfig(config) {
 
         if (state.apiInfo) {
             applyIspAutoConfig(state.apiInfo);
+            displayIspInfo(state.apiInfo);
             console.log('Reapplied ISP config after form render');
         }
 
