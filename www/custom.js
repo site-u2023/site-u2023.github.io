@@ -487,7 +487,6 @@ function toggleVirtualPackagesByType(type, value, enabled) {
 
 async function updateLanguagePackageCore() {
     state.ui.language.selected = config.device_language || config?.fallback_language || 'en';
-    selectedLanguage = state.ui.language.selected; // 互換性
     
     console.log(`Language package update - Selected language: ${state.ui.language.selected}`);
 
@@ -1173,7 +1172,6 @@ function setupLanguageSelector() {
     }
 
     state.ui.language.selected = config.device_language;
-    selectedLanguage = state.ui.language.selected; // 互換性
 
     if (mainLanguageSelect) {
         mainLanguageSelect.value = current_language;
@@ -1214,7 +1212,6 @@ function syncDeviceLanguageSelector(lang) {
         console.log('Device language selector synced to:', lang);
     }
     state.ui.language.selected = lang;
-    selectedLanguage = lang; // 互換性
 }
 
 async function handleMainLanguageChange(e) {
@@ -1263,7 +1260,6 @@ async function handleCustomLanguageChange(e) {
     const oldDeviceLanguage = state.ui.language.selected;
     config.device_language = newLanguage;
     state.ui.language.selected = newLanguage;
-    selectedLanguage = newLanguage; // 互換性
     
     console.log('Device language change:', {
         newLanguage,
@@ -1702,7 +1698,6 @@ async function loadSetupConfig() {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         
         state.config.setup = await response.json();
-        setupConfig = state.config.setup; // 互換性
         console.log('Setup config loaded (JSON-driven mode):', state.config.setup);
         
         state.config.formStructure = generateFormStructure(state.config.setup);
@@ -2764,7 +2759,6 @@ async function fetchAndDisplayIspInfo() {
         const response = await fetch(config.auto_config_api_url);
         const apiInfo = await response.json();
         state.apiInfo = apiInfo;
-        cachedApiInfo = apiInfo; // 互換性
         
         console.log('ISP info fetched:', apiInfo);
         
@@ -2943,7 +2937,6 @@ async function initializeCustomFeatures(asuSection, temp) {
     }
 
     state.ui.initialized = true;
-    customInitialized = true; // 互換性
 }
 
 function applyIspAutoConfig(apiInfo) {
@@ -3032,7 +3025,6 @@ async function loadPackageDatabase() {
         const response = await fetch(url);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         state.packages.json = await response.json();
-        packagesJson = state.packages.json; // 互換性
         console.log('Package database loaded:', state.packages.json);
         
         return state.packages.json;
