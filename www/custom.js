@@ -484,14 +484,6 @@ async function updateAllPackageState(source = 'unknown') {
 }
 
 async function _updateAllPackageState(source = 'unknown') {
-    if (!state.ui.initialized && state.packages.default.length === 0 && state.packages.device.length === 0) {
-        console.log('updateAllPackageState: Device packages not ready, deferring update from:', source);
-        document.addEventListener('devicePackagesReady', () => {
-            console.log('Re-running updateAllPackageState after device packages ready (source was:', source, ')');
-            updateAllPackageState('force-update');
-        }, { once: true });
-        return;
-    }
 
     const formValues = collectFormValues();
     const searchValues = state.ui.managers.packageSearch ? state.ui.managers.packageSearch.getAllValues() : [];
@@ -729,12 +721,11 @@ function getCurrentPackageListForLanguage() {
     return Array.from(out);
 }
 
-function updatePackageListToTextarea(source = 'unknown') {
-    if (!state.packages.default.length && !state.packages.device.length && !state.packages.extra.length) {
-        console.warn('updatePackageListToTextarea: Device packages not loaded yet, skipping update from:', source);
-        return;
-    }
+document.addEventListener('devicePackagesReady', () => {
+    updatePackageListToTextarea('initial-load');
+}, { once: true });
 
+function updatePackageListToTextarea(source = 'unknown') {
     const normalizePackages = (values) => {
         if (!values) return [];
         return (Array.isArray(values) ? values : CustomUtils.split(values))
