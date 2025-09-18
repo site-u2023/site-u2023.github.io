@@ -2310,10 +2310,12 @@ function collectFormValues() {
     Object.values(state.config.formStructure.fields).forEach(field => {
         const value = getFieldValue(field.selector);
         
+        if (field.variableName === 'language' && value === 'en') {
+            return;
+        }
+        
         if (value !== null && value !== undefined && value !== "") {
-            if (!(field.variableName === 'language' && value === 'en')) {
-                values[field.variableName] = value;
-            }
+            values[field.variableName] = value;
         }
     });
     
