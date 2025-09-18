@@ -11,6 +11,10 @@ window.addEventListener('load', () => {
         linkEl.href = custom_ofs_link;
         linkEl.target = "_blank";
     }
+
+    if (state.apiInfo) {
+        displayIspInfoIfReady();
+    }
 });
 
 // ==================== 状態管理（一元化） ====================
