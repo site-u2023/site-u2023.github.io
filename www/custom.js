@@ -2930,17 +2930,11 @@ async function initializeCustomFeatures(asuSection, temp) {
 
     generatePackageSelector();
 
-    const virtualPackages = (state.setupJson?.virtualPackages || [])
-        .map(p => p.id)
-        .filter(Boolean);
-
-    virtualPackages.forEach(id => {
+    ['map', 'ds-lite', 'usteer-from-setup'].forEach(id => {
         const pkg = findPackageById(id);
         if (pkg) {
             createHiddenPackageCheckbox(pkg);
             console.log(`[Custom] Hidden checkbox created for virtual package: ${id}`);
-        } else {
-            console.warn(`[Custom] Virtual package ID in setup.json not found in package DB: ${id}`);
         }
     });
 
