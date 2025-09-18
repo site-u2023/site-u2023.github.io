@@ -71,7 +71,8 @@ const state = {
         availabilityIndex: new Map(),
         lastFormStateHash: null,
         lastPackageListHash: null,
-        prevUISelections: new Set()
+        prevUISelections: new Set(),
+        domElements: new Map()
     }
 };
 
@@ -220,7 +221,7 @@ const CustomUtils = {
     },
 
     setGuaPrefixIfAvailable: function() {
-        const guaPrefixField = document.querySelector('#mape-gua-prefix');
+        const guaPrefixField = getEl('mapeGuaPrefix', '#mape-gua-prefix');
         if (!guaPrefixField || !state.apiInfo?.ipv6) return;
         const guaPrefix = this.generateGuaPrefixFromFullAddress(state.apiInfo);
         if (guaPrefix) {
@@ -307,7 +308,7 @@ const CustomUtils = {
     },
     
     toggleGuaPrefixVisibility: function(mode) {
-        const guaPrefixField = document.querySelector('#mape-gua-prefix');
+        const guaPrefixField = getEl('mapeGuaPrefix', '#mape-gua-prefix');
         if (!guaPrefixField) return;
         const formGroup = guaPrefixField.closest('.form-group');
         if (mode === 'pd') {
@@ -348,6 +349,17 @@ const CustomUtils = {
         });
     }
 };
+
+function getEl(key, selector) {
+    if (!state.cache.domElements.has(key)) {
+        state.cache.domElements.set(key, document.querySelector(selector));
+    }
+    return state.cache.domElements.get(key);
+}
+
+function clearDomCache() {
+    state.cache.domElements.clear();
+}
 
 // ==================== 初期化処理 ====================
 const originalUpdateImages = window.updateImages;
@@ -1884,7 +1896,7 @@ function renderSetupConfig(config) {
 
         const mapeTypeRadio = document.querySelector('input[name="mape_type"]:checked');
         if (mapeTypeRadio && mapeTypeRadio.value === 'pd') {
-            const guaPrefixField = document.querySelector('#mape-gua-prefix');
+            const guaPrefixField = getEl('mapeGuaPrefix', '#mape-gua-prefix');
             if (guaPrefixField) {
                 const formGroup = guaPrefixField.closest('.form-group');
                 if (formGroup) {
@@ -2599,7 +2611,7 @@ function handleMapeTypeChange(e) {
     CustomUtils.toggleGuaPrefixVisibility(mapeType);
 
     if (mapeType === 'pd') {
-        const guaPrefixField = document.querySelector('#mape-gua-prefix');
+        const guaPrefixField = getEl('mapeGuaPrefix', '#mape-gua-prefix');
         if (guaPrefixField) {
             UI.updateElement(guaPrefixField, { value: '' });
         }
@@ -2727,7 +2739,7 @@ function handleConnectionTypeChange(e) {
             if (value === 'auto' && state.apiInfo) {
                 updateAutoConnectionInfo(state.apiInfo);
             } else if (value === 'mape' && state.apiInfo) {
-                const guaPrefixField = document.querySelector('#mape-gua-prefix');
+                const guaPrefixField = getEl('mapeGuaPrefix', '#mape-gua-prefix');
                 if (guaPrefixField && state.apiInfo.ipv6) {
                     const guaPrefix = CustomUtils.generateGuaPrefixFromFullAddress(state.apiInfo);
                     if (guaPrefix && !guaPrefixField.value) {
