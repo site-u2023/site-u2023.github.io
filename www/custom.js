@@ -274,7 +274,38 @@ const CustomUtils = {
             }
         });
     },
-     
+
+    restoreWifiDefaults: function() {
+        const wifiCategory = state.config.setup.categories.find(cat => cat.id === 'wifi-config');
+        if (!wifiCategory) return;
+
+        function findWifiFields(pkg) {
+            const fields = [];
+            if (pkg.type === 'input-group' && pkg.fields) {
+                fields.push(...pkg.fields);
+            } else if (pkg.children) {
+                pkg.children.forEach(child => {
+                    fields.push(...findWifiFields(child));
+                });
+            }
+            return fields;
+        }
+
+        const allWifiFields = [];
+        wifiCategory.packages.forEach(pkg => {
+            allWifiFields.push(...findWifiFields(pkg));
+        });
+
+        allWifiFields.forEach(field => {
+            if (field.defaultValue !== undefined && field.defaultValue !== null) {
+                const el = document.querySelector(field.selector || `#${field.id}`);
+                if (el && !el.value) {
+                    UI.updateElement(el, { value: field.defaultValue });
+                }
+            }
+        });
+    },
+    
     toggleGuaPrefixVisibility: function(mode) {
         const guaPrefixField = document.querySelector('#mape-gua-prefix');
         if (!guaPrefixField) return;
@@ -2708,7 +2739,7 @@ function handleWifiModeChange(e) {
             if (value === 'disabled') {
                 clearWifiFields();
             } else {
-                restoreWifiDefaults();
+                CustomUtils.restoreWifiDefaults();
             }
         }
     });
