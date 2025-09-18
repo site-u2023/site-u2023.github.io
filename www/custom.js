@@ -2128,23 +2128,20 @@ function cssEscape(s) {
 
 function generateFormStructure(config) {
     const structure = {
-        fields: {},           
-        connectionTypes: {},  
-        categories: {},       
-        fieldMapping: {}      
+        fields: {},
+        connectionTypes: {},
+        categories: {},
+        fieldMapping: {}
     };
-    
+
     config.categories.forEach(category => {
         structure.categories[category.id] = [];
-        
+
         category.packages.forEach(pkg => {
             collectFieldsFromPackage(pkg, structure, category.id);
         });
     });
-    
-    // 互換性維持
-    formStructure = structure;
-    
+
     return structure;
 }
 
@@ -2480,19 +2477,19 @@ function attachRadioListeners(name, handler, triggerInitial = true) {
 
 function setupCommandsInput() {
     console.log('setupCommandsInput called');
-    
+
     const commandsContainer = document.getElementById('commands-autocomplete');
-    
+
     if (!commandsContainer) {
         console.log('commands-autocomplete container not found');
         return;
     }
-    
+
     const oldInput = document.getElementById('command');
     if (oldInput) {
         oldInput.remove();
     }
-    
+
     state.ui.managers.commands = new MultiInputManager('commands-autocomplete', {
         placeholder: 'Type command and press Enter',
         className: 'multi-input-item command-input',
@@ -2508,10 +2505,7 @@ function setupCommandsInput() {
             updateCustomCommands();
         }
     });
-    
-    // 互換性維持
-    commandsManager = state.ui.managers.commands;
-    
+
     console.log('Commands input setup complete');
 }
 
