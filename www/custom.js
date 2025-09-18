@@ -314,15 +314,15 @@ const CustomUtils = {
     toggleGuaPrefixVisibility: function(mode) {
         const guaPrefixField = getEl('mapeGuaPrefix', '#mape-gua-prefix');
         if (!guaPrefixField) return;
-        const formGroup = guaPrefixField.closest('.tr-gua-prefix') || guaPrefixField.closest('.form-group');
+
         if (mode === 'pd') {
             UI.updateElement(guaPrefixField, { value: '' });
             guaPrefixField.disabled = true;
-            if (formGroup) UI.updateElement(formGroup, { show: false });
+            UI.updateElement(guaPrefixField, { show: false });
             console.log('PD mode: GUA prefix hidden');
         } else if (mode === 'gua') {
             guaPrefixField.disabled = false;
-            if (formGroup) UI.updateElement(formGroup, { show: true });
+            UI.updateElement(guaPrefixField, { show: true });
             this.setGuaPrefixIfAvailable();
         }
     },
@@ -1903,11 +1903,8 @@ function renderSetupConfig(config) {
         if (mapeTypeRadio && mapeTypeRadio.value === 'pd') {
             const guaPrefixField = getEl('mapeGuaPrefix', '#mape-gua-prefix');
             if (guaPrefixField) {
-                const formGroup = guaPrefixField.closest('.tr-gua-prefix') || guaPrefixField.closest('.form-group');
-                if (formGroup) {
-                    UI.updateElement(formGroup, { show: false });
-                    console.log('Initial PD mode: GUA prefix hidden');
-                }
+                UI.updateElement(guaPrefixField, { show: false });
+                console.log('Initial PD mode: GUA prefix hidden');
             }
         }
     });
