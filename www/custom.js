@@ -320,6 +320,32 @@ const CustomUtils = {
             if (formGroup) UI.updateElement(formGroup, { show: true });
             this.setGuaPrefixIfAvailable();
         }
+    },
+    
+    clearWifiFields: function() {
+        const wifiCategory = state.config.setup.categories.find(cat => cat.id === 'wifi-config');
+        if (!wifiCategory) return;
+
+        function findAndClearWifiFields(pkg) {
+            if (pkg.type === 'input-group' && pkg.fields) {
+                pkg.fields.forEach(field => {
+                    const el = document.querySelector(field.selector || `#${field.id}`);
+                    if (el) {
+                        UI.updateElement(el, { value: '' });
+                    }
+                });
+            } else if (pkg.children) {
+                pkg.children.forEach(child => {
+                    findAndClearWifiFields(child);
+                });
+            }
+        }
+
+        wifiCategory.packages.forEach(pkg => {
+            if (pkg.variableName !== 'wifi_mode') {
+                findAndClearWifiFields(pkg);
+            }
+        });
     }
 };
 
@@ -2723,7 +2749,7 @@ function handleNetOptimizerChange(e) {
         updateSource: 'net-optimizer',
         customHandler: (value) => {
             if (value === 'manual') {
-                restoreManualDefaults();
+                CustomUtils.restoreManualDefaults();
             }
         }
     });
@@ -2737,75 +2763,10 @@ function handleWifiModeChange(e) {
         updateSource: 'wifi-mode',
         customHandler: (value) => {
             if (value === 'disabled') {
-                clearWifiFields();
+                CustomUtils.clearWifiFields();
             } else {
                 CustomUtils.restoreWifiDefaults();
             }
-        }
-    });
-}
-
-function restoreManualDefaults() {
-    const tuningCategory = state.config.setup.categories.find(cat => cat.id === 'tuning-config');
-    const manualSection = tuningCategory.packages.find(pkg => pkg.id === 'netopt-manual-section');
-    const netoptFields = manualSection.children.find(child => child.id === 'netopt-fields');
-    
-    netoptFields.fields.forEach(field => {
-        if (field.defaultValue !== undefined && field.defaultValue !== null) {
-            const el = document.querySelector(field.selector || `#${field.id}`);
-            if (el && !el.value) {
-                UI.updateElement(el, { value: field.defaultValue });
-            }
-        }
-    });
-}
-
-function clearWifiFields() {
-    const wifiCategory = state.config.setup.categories.find(cat => cat.id === 'wifi-config');
-    
-    function findAndClearWifiFields(pkg) {
-        if (pkg.type === 'input-group' && pkg.fields) {
-            pkg.fields.forEach(field => {
-                const el = document.querySelector(field.selector || `#${field.id}`);
-                if (el) {
-                    UI.updateElement(el, { value: '' });
-                }
-            });
-        } else if (pkg.children) {
-            pkg.children.forEach(child => {
-                findAndClearWifiFields(child);
-            });
-        }
-    }
-    
-    wifiCategory.packages.forEach(pkg => {
-        if (pkg.variableName !== 'wifi_mode') {
-            findAndClearWifiFields(pkg);
-        }
-    });
-}
-
-function clearWifiFields() {
-    const wifiCategory = state.config.setup.categories.find(cat => cat.id === 'wifi-config');
-    
-    function findAndClearWifiFields(pkg) {
-        if (pkg.type === 'input-group' && pkg.fields) {
-            pkg.fields.forEach(field => {
-                const el = document.querySelector(field.selector || `#${field.id}`);
-                if (el) {
-                    UI.updateElement(el, { value: '' });
-                }
-            });
-        } else if (pkg.children) {
-            pkg.children.forEach(child => {
-                findAndClearWifiFields(child);
-            });
-        }
-    }
-    
-    wifiCategory.packages.forEach(pkg => {
-        if (pkg.variableName !== 'wifi_mode') {
-            findAndClearWifiFields(pkg);
         }
     });
 }
