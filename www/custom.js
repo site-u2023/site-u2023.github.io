@@ -3456,59 +3456,21 @@ if (window.DEBUG_MODE) {
 
 // ==================== 互換性維持 ====================
 
-// グローバル変数の更新を監視
+// グローバル変数の読み取り専用互換レイヤー
 Object.defineProperty(window, 'current_device', {
-    get() { return state.device; },
-    set(value) { 
-        state.device = value;
-        console.log('current_device updated (via global):', value);
-    }
+    get() { return state.device; }
 });
 
 Object.defineProperty(window, 'cachedApiInfo', {
-    get() { return state.apiInfo; },
-    set(value) { 
-        state.apiInfo = value;
-        console.log('cachedApiInfo updated (via global):', value);
-    }
+    get() { return state.apiInfo; }
 });
 
 Object.defineProperty(window, 'packagesJson', {
-    get() { return state.packages.json; },
-    set(value) { 
-        state.packages.json = value;
-        console.log('packagesJson updated (via global):', value);
-    }
+    get() { return state.packages.json; }
 });
 
 Object.defineProperty(window, 'setupConfig', {
-    get() { return state.config.setup; },
-    set(value) { 
-        state.config.setup = value;
-        console.log('setupConfig updated (via global):', value);
-    }
+    get() { return state.config.setup; }
 });
-
-// グローバル変数エイリアス（読み取り専用）
-const cachedDeviceArch = state.device.arch;
-const formStructure = state.config.formStructure;
-const defaultFieldValues = state.config.defaultValues;
-const dynamicPackages = state.packages.dynamic;
-const customInitialized = state.ui.initialized;
-const customHTMLLoaded = state.ui.htmlLoaded;
-const packageSearchManager = state.ui.managers.packageSearch;
-const commandsManager = state.ui.managers.commands;
-const kmodsTokenCache = state.cache.kmods.token;
-const kmodsTokenCacheKey = state.cache.kmods.key;
-const packageAvailabilityCache = state.cache.packageAvailability;
-const feedCacheMap = state.cache.feed;
-const lastFormStateHash = state.cache.lastFormStateHash;
-const lastPackageListHash = state.cache.lastPackageListHash;
-const prevUISelections = state.cache.prevUISelections;
-
-// グローバル配列エイリアス
-const deviceDefaultPackages = state.packages.default;
-const deviceDevicePackages = state.packages.device;
-const extraPackages = state.packages.extra;
 
 console.log('custom.js (Unified State Management System) fully loaded and ready');
