@@ -13,46 +13,90 @@ window.addEventListener('load', () => {
     }
 });
 
-// ==================== グローバル変数 ====================
-let customInitialized = false;
-let customHTMLLoaded = false;
-let packagesJson = null;
-let setupConfig = null;
-let formStructure = {};
-let cachedApiInfo = null;
-let cachedDeviceArch = null;
-let defaultFieldValues = {};
-let dynamicPackages = new Set();
-let selectedLanguage = '';
-let kmodsTokenCache = null;
-let kmodsTokenCacheKey = null;
+// ==================== 状態管理（一元化） ====================
+const state = {
+    // デバイス情報
+    device: {
+        arch: null,
+        version: null,
+        target: null,
+        vendor: null,
+        subtarget: null,
+        id: null
+    },
+    
+    // API情報
+    apiInfo: null,
+    
+    // パッケージ情報
+    packages: {
+        json: null,          // packages.json
+        default: [],         // mobj.default_packages
+        device: [],          // mobj.device_packages
+        extra: [],           // config.asu_extra_packages
+        dynamic: new Set(),  // 動的に追加されるパッケージ
+        selected: new Set()  // 選択されたパッケージ
+    },
+    
+    // 設定情報
+    config: {
+        setup: null,         // setup.json
+        formStructure: {},   // フォーム構造
+        defaultValues: {}    // デフォルト値
+    },
+    
+    // UI状態
+    ui: {
+        initialized: false,
+        htmlLoaded: false,
+        language: {
+            selected: '',         // デバイス言語
+            current: ''          // UI言語
+        },
+        managers: {
+            packageSearch: null,
+            commands: null
+        }
+    },
+    
+    // キャッシュ
+    cache: {
+        kmods: {
+            token: null,
+            key: null
+        },
+        packageAvailability: new Map(),
+        feed: new Map(),
+        feedPackageSet: new Map(),
+        availabilityIndex: new Map(),
+        lastFormStateHash: null,
+        lastPackageListHash: null,
+        prevUISelections: new Set()
+    }
+};
 
-const packageAvailabilityCache = new Map();
-const feedCacheMap = new Map();
-
-let deviceDefaultPackages = [];  // mobj.default_packages
-let deviceDevicePackages = [];   // mobj.device_packages  
-let extraPackages = [];           // config.asu_extra_packages
-
-let packageSearchManager = null;
-let commandsManager = null;
+// グローバル変数の互換性維持（段階的移行用）
+let current_device = state.device;
+let cachedApiInfo = state.apiInfo;
+let packagesJson = state.packages.json;
+let setupConfig = state.config.setup;
+let selectedLanguage = state.ui.language.selected;
 
 // ==================== ユーティリティ ====================
 const CustomUtils = {
     getVendor() {
-        const target = current_device?.target; // @returns {string|null} ベンダー名、または取得できない場合はnull
-        if (!target) return null;
-
-        const [vendor] = target.split('/');
-        return vendor || null;
+        return state.device.vendor;
     },
 
     getSubtarget() {
-        const target = current_device?.target; // @returns {string} サブターゲット名
-        if (!target) return '';
+        return state.device.subtarget;
+    },
 
-        const [, subtarget] = target.split('/');
-        return subtarget || '';
+    updateDeviceInfo(target) {
+        if (!target) return;
+        const [vendor, subtarget] = target.split('/');
+        state.device.vendor = vendor || null;
+        state.device.subtarget = subtarget || '';
     },
 
     buildKmodsUrl: async function(version, vendor, isSnapshot) {
@@ -67,13 +111,13 @@ const CustomUtils = {
     
         const cacheKey = `${version}|${vendor}|${isSnapshot ? 'S' : 'R'}`;
     
-        if (kmodsTokenCache && kmodsTokenCacheKey === cacheKey) {
+        if (state.cache.kmods.token && state.cache.kmods.key === cacheKey) {
             const searchTpl = isSnapshot ? config.kmods_apk_search_url : config.kmods_opkg_search_url;
             return searchTpl
                 .replace('{version}', version)
                 .replace('{vendor}', vendor)
                 .replace('{subtarget}', subtarget)
-                .replace('{kmod}', kmodsTokenCache);
+                .replace('{kmod}', state.cache.kmods.token);
         }
     
         const indexTpl = isSnapshot ? config.kmods_apk_index_url : config.kmods_opkg_index_url;
@@ -91,25 +135,25 @@ const CustomUtils = {
         matches = matches.filter(token =>
             token &&
             typeof token === 'string' &&
-            !/^\s*$/.test(token) &&      // 空白・改行のみを除外
-            !token.startsWith('#') &&    // アンカー
-            !token.startsWith('?') &&    // クエリ
-            !token.startsWith('.') &&    // 隠しディレクトリ
-            /^[\w.-]+$/.test(token)      // 許可パターン（英数/_/./-）
+            !/^\s*$/.test(token) &&
+            !token.startsWith('#') &&
+            !token.startsWith('?') &&
+            !token.startsWith('.') &&
+            /^[\w.-]+$/.test(token)
         );
 
         if (!matches.length) throw new Error("kmods token not found");
     
         matches.sort();
-        kmodsTokenCache = matches[matches.length - 1];
-        kmodsTokenCacheKey = cacheKey;
+        state.cache.kmods.token = matches[matches.length - 1];
+        state.cache.kmods.key = cacheKey;
     
         const searchTpl = isSnapshot ? config.kmods_apk_search_url : config.kmods_opkg_search_url;
         return searchTpl
             .replace('{version}', version)
             .replace('{vendor}', vendor)
             .replace('{subtarget}', subtarget)
-            .replace('{kmod}', kmodsTokenCache);
+            .replace('{kmod}', state.cache.kmods.token);
     },
     
     inCidr: function(ipv6, cidr) {
@@ -139,13 +183,13 @@ const CustomUtils = {
         if (!this.inCidr(ipv6, '2000::/3')) return null;
     
         const excludeCidrs = [
-            '2001:db8::/32',  // ドキュメンテーション
-            '2002::/16',      // 6to4
-            '2001::/32',      // Teredo
-            '2001:20::/28',   // ORCHIDv2
-            '2001:2::/48',    // ベンチマーク
-            '2001:3::/32',    // AMT
-            '2001:4:112::/48' // AS112-v6
+            '2001:db8::/32',
+            '2002::/16',
+            '2001::/32',
+            '2001:20::/28',
+            '2001:2::/48',
+            '2001:3::/32',
+            '2001:4:112::/48'
         ];
         if (excludeCidrs.some(cidr => this.inCidr(ipv6, cidr))) return null;
     
@@ -190,8 +234,8 @@ const CustomUtils = {
 
     setGuaPrefixIfAvailable: function() {
         const guaPrefixField = document.querySelector('#mape-gua-prefix');
-        if (!guaPrefixField || !cachedApiInfo?.ipv6) return;
-        const guaPrefix = this.generateGuaPrefixFromFullAddress(cachedApiInfo);
+        if (!guaPrefixField || !state.apiInfo?.ipv6) return;
+        const guaPrefix = this.generateGuaPrefixFromFullAddress(state.apiInfo);
         if (guaPrefix) {
             guaPrefixField.value = guaPrefix;
         }
@@ -220,35 +264,33 @@ const originalUpdateImages = window.updateImages;
 window.updateImages = function(version, mobj) {
     if (originalUpdateImages) originalUpdateImages(version, mobj);
 
-    const oldArch = cachedDeviceArch;
-    const oldVersion = current_device && current_device.version;
+    const oldArch = state.device.arch;
+    const oldVersion = state.device.version;
 
     if (mobj && mobj.arch_packages) {
-        if (!current_device) current_device = {};
+        state.device.arch = mobj.arch_packages;
+        state.device.version = version;
+        state.device.target = mobj.target || '';
+        state.device.id = mobj.id || state.device.id;
+        
+        CustomUtils.updateDeviceInfo(mobj.target);
 
-        current_device.arch = mobj.arch_packages;
-        current_device.version = version;
-        cachedDeviceArch = mobj.arch_packages;
+        // 互換性維持
+        current_device = state.device;
+        cachedDeviceArch = state.device.arch;
 
-        current_device.target = mobj.target || '';
-        if (mobj.id) current_device.id = mobj.id;
-
-        console.log('[TRACE] current_device updated:', {
-            ...current_device,
-            vendor: CustomUtils.getVendor(),
-            subtarget: CustomUtils.getSubtarget()
+        console.log('[TRACE] device updated:', {
+            ...state.device
         });
 
         if (oldArch !== mobj.arch_packages || oldVersion !== version) {
             console.log('[TRACE] Device changed, clearing caches');
-            packageAvailabilityCache.clear();
-            feedCacheMap.clear();
+            state.cache.packageAvailability.clear();
+            state.cache.feed.clear();
 
             requestAnimationFrame(() => {
-                const vendor = CustomUtils.getVendor();
-                if (!vendor) {
+                if (!state.device.vendor) {
                     console.warn('[WARN] No vendor info, kmods may not verify');
-                    console.log('[TRACE] current_device state:', current_device);
                 }
 
                 const indicator = document.querySelector('#package-loading-indicator');
@@ -273,28 +315,27 @@ window.updateImages = function(version, mobj) {
     }
 
     if (mobj && "manifest" in mobj === false) {
-        deviceDefaultPackages = mobj.default_packages || [];
-        deviceDevicePackages = mobj.device_packages || [];
-        extraPackages = config.asu_extra_packages || [];
+        state.packages.default = mobj.default_packages || [];
+        state.packages.device = mobj.device_packages || [];
+        state.packages.extra = config.asu_extra_packages || [];
 
-        if (!current_device) current_device = {};
+        // 互換性維持
+        deviceDefaultPackages = state.packages.default;
+        deviceDevicePackages = state.packages.device;
+        extraPackages = state.packages.extra;
 
         document.dispatchEvent(new Event('devicePackagesReady'));
-        
-        current_device.target = mobj.target || '';
-        current_device.version = version || current_device.version;
-        current_device.arch = mobj.arch_packages || current_device.arch;
 
         console.log('[TRACE] Device packages saved:', {
-            default: deviceDefaultPackages.length,
-            device: deviceDevicePackages.length,
-            extra: extraPackages.length,
-            vendor: CustomUtils.getVendor()
+            default: state.packages.default.length,
+            device: state.packages.device.length,
+            extra: state.packages.extra.length,
+            vendor: state.device.vendor
         });
 
-        const initialPackages = deviceDefaultPackages
-            .concat(deviceDevicePackages)
-            .concat(extraPackages);
+        const initialPackages = state.packages.default
+            .concat(state.packages.device)
+            .concat(state.packages.extra);
 
         const textarea = document.querySelector('#asu-packages');
         if (textarea) {
@@ -308,19 +349,19 @@ window.updateImages = function(version, mobj) {
             });
         }
 
-        if (customInitialized) {
+        if (state.ui.initialized) {
             requestAnimationFrame(() => {
                 updateAllPackageState('device-packages-loaded');
             });
         }
     }
 
-    if (!customHTMLLoaded) {
+    if (!state.ui.htmlLoaded) {
         console.log('[TRACE] Loading custom.html');
         loadCustomHTML();
-        customHTMLLoaded = true;
-    } else if (customInitialized && current_device && current_device.arch) {
-        const deviceLang = config.device_language || (config && config.fallback_language) || 'en';
+        state.ui.htmlLoaded = true;
+    } else if (state.ui.initialized && state.device.arch) {
+        const deviceLang = config.device_language || config?.fallback_language || 'en';
         console.log('[TRACE] Updating language packages for:', deviceLang);
         syncDeviceLanguageSelector(deviceLang);
         updateAllPackageState('device-changed-force');
@@ -328,10 +369,8 @@ window.updateImages = function(version, mobj) {
 };
 
 // ==================== 統合パッケージ管理システム ====================
-let lastFormStateHash = null;
-
 async function updateAllPackageState(source = 'unknown') {
-    if (!customInitialized && deviceDefaultPackages.length === 0 && deviceDevicePackages.length === 0) {
+    if (!state.ui.initialized && state.packages.default.length === 0 && state.packages.device.length === 0) {
         console.log('updateAllPackageState: Device packages not ready, deferring update from:', source);
         document.addEventListener('devicePackagesReady', () => {
             console.log('Re-running updateAllPackageState after device packages ready (source was:', source, ')');
@@ -341,7 +380,7 @@ async function updateAllPackageState(source = 'unknown') {
     }
 
     const formValues = collectFormValues();
-    const searchValues = packageSearchManager ? packageSearchManager.getAllValues() : [];
+    const searchValues = state.ui.managers.packageSearch ? state.ui.managers.packageSearch.getAllValues() : [];
     const hash = JSON.stringify({ form: formValues, search: searchValues });
 
     const forceSources = new Set([
@@ -352,8 +391,8 @@ async function updateAllPackageState(source = 'unknown') {
     ]);
     const isForced = source.includes('device') || source.includes('force') || forceSources.has(source);
 
-    if (!isForced && hash === lastFormStateHash) return;
-    lastFormStateHash = hash;
+    if (!isForced && hash === state.cache.lastFormStateHash) return;
+    state.cache.lastFormStateHash = hash;
 
     console.log(`updateAllPackageState called from: ${source}`);
 
@@ -366,7 +405,7 @@ async function updateAllPackageState(source = 'unknown') {
 }
 
 function updateSetupJsonPackagesCore() {
-    if (!setupConfig) return;
+    if (!state.config.setup) return;
 
     function handleRadioGroup(pkg) {
         const selectedValue = getFieldValue(`input[name="${pkg.variableName}"]:checked`);
@@ -379,19 +418,19 @@ function updateSetupJsonPackagesCore() {
             toggleVirtualPackagesByType(pkg.variableName, opt.value, enable);
         });
 
-        if (pkg.variableName === 'connection_type' && selectedValue === 'auto' && cachedApiInfo) {
+        if (pkg.variableName === 'connection_type' && selectedValue === 'auto' && state.apiInfo) {
             console.log('AUTO mode with API info, applying specific packages');
-            if (cachedApiInfo.mape?.brIpv6Address) {
+            if (state.apiInfo.mape?.brIpv6Address) {
                 console.log('Enabling MAP-E package');
                 toggleVirtualPackage('map', true);
-            } else if (cachedApiInfo.aftr) {
+            } else if (state.apiInfo.aftr) {
                 console.log('Enabling DS-Lite package');
                 toggleVirtualPackage('ds-lite', true);
             }
         }
     }
 
-    for (const category of setupConfig.categories) {
+    for (const category of state.config.setup.categories) {
         for (const pkg of category.packages) {
             if (pkg.type !== 'radio-group' || !pkg.variableName) continue;
             handleRadioGroup(pkg);
@@ -456,14 +495,15 @@ function toggleVirtualPackagesByType(type, value, enabled) {
 }
 
 async function updateLanguagePackageCore() {
-    selectedLanguage = config.device_language || config?.fallback_language || 'en';
+    state.ui.language.selected = config.device_language || config?.fallback_language || 'en';
+    selectedLanguage = state.ui.language.selected; // 互換性
     
-    console.log(`Language package update - Selected language: ${selectedLanguage}`);
+    console.log(`Language package update - Selected language: ${state.ui.language.selected}`);
 
     const removedPackages = [];
-    for (const pkg of Array.from(dynamicPackages)) {
+    for (const pkg of Array.from(state.packages.dynamic)) {
         if (pkg.startsWith('luci-i18n-')) {
-            dynamicPackages.delete(pkg);
+            state.packages.dynamic.delete(pkg);
             removedPackages.push(pkg);
         }
     }
@@ -472,8 +512,8 @@ async function updateLanguagePackageCore() {
         console.log('Removed old language packages:', removedPackages);
     }
 
-    const hasArch = current_device?.arch || cachedDeviceArch;
-    if (!selectedLanguage || selectedLanguage === 'en' || !hasArch) {
+    const hasArch = state.device.arch;
+    if (!state.ui.language.selected || state.ui.language.selected === 'en' || !hasArch) {
         console.log('Skipping language packages - English or no arch info');
         return;
     }
@@ -483,18 +523,18 @@ async function updateLanguagePackageCore() {
     
     const addedLangPackages = new Set();
     
-    const basePkg = `luci-i18n-base-${selectedLanguage}`;
-    const firewallPkg = `luci-i18n-firewall-${selectedLanguage}`;
+    const basePkg = `luci-i18n-base-${state.ui.language.selected}`;
+    const firewallPkg = `luci-i18n-firewall-${state.ui.language.selected}`;
     
     try {
         if (await isPackageAvailable(basePkg, 'luci')) {
-            dynamicPackages.add(basePkg);
+            state.packages.dynamic.add(basePkg);
             addedLangPackages.add(basePkg);
             console.log('Added base language package:', basePkg);
         }
 
         if (await isPackageAvailable(firewallPkg, 'luci')) {
-            dynamicPackages.add(firewallPkg);
+            state.packages.dynamic.add(firewallPkg);
             addedLangPackages.add(firewallPkg);
             console.log('Added firewall language package:', firewallPkg);
         }
@@ -514,12 +554,12 @@ async function updateLanguagePackageCore() {
         }
         
         if (luciName) {
-            const langPkg = `luci-i18n-${luciName}-${selectedLanguage}`;
+            const langPkg = `luci-i18n-${luciName}-${state.ui.language.selected}`;
             
             const promise = (async () => {
                 try {
                     if (await isPackageAvailable(langPkg, 'luci')) {
-                        dynamicPackages.add(langPkg);
+                        state.packages.dynamic.add(langPkg);
                         addedLangPackages.add(langPkg);
                         console.log(`Added LuCI language package: ${langPkg} for ${pkg}`);
                     }
@@ -540,9 +580,9 @@ async function updateLanguagePackageCore() {
 
 function getCurrentPackageListForLanguage() {
     const out = new Set([
-        ...deviceDefaultPackages,
-        ...deviceDevicePackages,
-        ...extraPackages
+        ...state.packages.default,
+        ...state.packages.device,
+        ...state.packages.extra
     ]);
 
     document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
@@ -552,11 +592,11 @@ function getCurrentPackageListForLanguage() {
         if (uid && uid !== name) out.add(uid);
     });
 
-    if (packageSearchManager) {
-        for (const name of packageSearchManager.getAllValues()) out.add(name);
+    if (state.ui.managers.packageSearch) {
+        for (const name of state.ui.managers.packageSearch.getAllValues()) out.add(name);
     }
 
-    for (const name of dynamicPackages) {
+    for (const name of state.packages.dynamic) {
         if (!name.startsWith('luci-i18n-')) out.add(name);
     }
 
@@ -576,11 +616,8 @@ function getCurrentPackageListForLanguage() {
     return Array.from(out);
 }
 
-let lastPackageListHash = null;
-let prevUISelections = new Set();
-
 function updatePackageListToTextarea(source = 'unknown') {
-    if (!deviceDefaultPackages.length && !deviceDevicePackages.length && !extraPackages.length) {
+    if (!state.packages.default.length && !state.packages.device.length && !state.packages.extra.length) {
         console.warn('updatePackageListToTextarea: Device packages not loaded yet, skipping update from:', source);
         return;
     }
@@ -600,12 +637,12 @@ function updatePackageListToTextarea(source = 'unknown') {
     };
 
     const basePackages = addToSet(new Set(), [
-        deviceDefaultPackages,
-        deviceDevicePackages,
-        extraPackages
+        state.packages.default,
+        state.packages.device,
+        state.packages.extra
     ]);
 
-    console.log(`Base device packages: default=${deviceDefaultPackages.length}, device=${deviceDevicePackages.length}, extra=${extraPackages.length}`);
+    console.log(`Base device packages: default=${state.packages.default.length}, device=${state.packages.device.length}, extra=${state.packages.extra.length}`);
 
     const checkedPackages = new Set();
     document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
@@ -614,7 +651,7 @@ function updatePackageListToTextarea(source = 'unknown') {
     });
 
     const searchedPackages = new Set(
-        packageSearchManager ? normalizePackages(packageSearchManager.getAllValues()) : []
+        state.ui.managers.packageSearch ? normalizePackages(state.ui.managers.packageSearch.getAllValues()) : []
     );
     
     if (searchedPackages.size > 0) {
@@ -622,7 +659,7 @@ function updatePackageListToTextarea(source = 'unknown') {
     }
 
     const knownSelectablePackages = new Set();
-    packagesJson?.categories?.forEach(cat => {
+    state.packages.json?.categories?.forEach(cat => {
         cat.packages?.forEach(pkg => {
             if (pkg.id) knownSelectablePackages.add(pkg.id);
         });
@@ -633,7 +670,7 @@ function updatePackageListToTextarea(source = 'unknown') {
     
     if (textarea) {
         const currentTextareaPackages = normalizePackages(textarea.value);
-        const confirmedSet = new Set([...basePackages, ...checkedPackages, ...searchedPackages, ...dynamicPackages]);
+        const confirmedSet = new Set([...basePackages, ...checkedPackages, ...searchedPackages, ...state.packages.dynamic]);
         const currentUISelections = new Set([...checkedPackages, ...searchedPackages]);
 
         currentTextareaPackages.forEach(pkg => {
@@ -642,29 +679,29 @@ function updatePackageListToTextarea(source = 'unknown') {
             }
         });
 
-        prevUISelections = currentUISelections;
+        state.cache.prevUISelections = currentUISelections;
     }
 
     const uniquePackages = [...new Set([
         ...basePackages,
         ...checkedPackages,
         ...searchedPackages,
-        ...dynamicPackages,
+        ...state.packages.dynamic,
         ...manualPackages
     ])];
 
     const currentHash = JSON.stringify(uniquePackages);
-    if (currentHash === lastPackageListHash && source !== 'force-update') {
+    if (currentHash === state.cache.lastPackageListHash && source !== 'force-update') {
         console.log('updatePackageListToTextarea: No changes detected, skipping update from:', source);
         return;
     }
-    lastPackageListHash = currentHash;
+    state.cache.lastPackageListHash = currentHash;
 
     console.log(`updatePackageListToTextarea from: ${source}`, {
         base: basePackages.size,
         checked: checkedPackages.size,
         searched: searchedPackages.size,
-        dynamic: dynamicPackages.size,
+        dynamic: state.packages.dynamic.size,
         manual: manualPackages.size,
         total: uniquePackages.length
     });
@@ -691,7 +728,7 @@ function isManualPackage(pkg, confirmedSet, knownSelectablePackages, currentUISe
     );
     if (isSubstringOfConfirmed) return false;
     
-    if (prevUISelections.has(pkg) && !currentUISelections.has(pkg)) return false;
+    if (state.cache.prevUISelections.has(pkg) && !currentUISelections.has(pkg)) return false;
     
     return true;
 }
@@ -896,7 +933,7 @@ function setupPackageSearch() {
         oldInput.remove();
     }
     
-    packageSearchManager = new MultiInputManager('package-search-autocomplete', {
+    state.ui.managers.packageSearch = new MultiInputManager('package-search-autocomplete', {
         placeholder: 'Type package name and press Enter',
         className: 'multi-input-item package-search-input',
         onAdd: (packageName) => {
@@ -915,17 +952,20 @@ function setupPackageSearch() {
         }
     });
     
+    // 互換性維持
+    packageSearchManager = state.ui.managers.packageSearch;
+    
     console.log('Package search setup complete');
 }
 
 async function searchPackages(query, inputElement) {
     
-    const arch = current_device?.arch || cachedDeviceArch;
-    const version = current_device?.version || document.querySelector("#versions")?.value;
-    const vendor = CustomUtils.getVendor();
+    const arch = state.device.arch;
+    const version = state.device.version || document.querySelector("#versions")?.value;
+    const vendor = state.device.vendor;
     
     if (query.toLowerCase().startsWith('kmod-') && !vendor) {
-        console.log('searchPackages - current_device:', current_device);
+        console.log('searchPackages - device state:', state.device);
         console.log('searchPackages - vendor not available');
     }
     
@@ -975,7 +1015,7 @@ async function searchInFeed(query, feed, version, arch) {
     const cacheKey = `${version}:${arch}:${feed}`;
 
     try {
-        if (!feedCacheMap.has(cacheKey)) {
+        if (!state.cache.feed.has(cacheKey)) {
             const url = await buildPackageUrl(feed, {
                 version, arch,
                 vendor: deviceInfo.vendor,
@@ -988,12 +1028,6 @@ async function searchInFeed(query, feed, version, arch) {
             if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
 
             const isSnapshot = version.includes('SNAPSHOT');
-            const packages = isSnapshot
-                ? (() => {
-                    const data = resp.clone ? null : null;
-                    return null;
-                })()
-                : null;
 
             let list = [];
             if (isSnapshot) {
@@ -1005,10 +1039,10 @@ async function searchInFeed(query, feed, version, arch) {
                     .filter(line => line.startsWith('Package: '))
                     .map(line => line.substring(9).trim());
             }
-            feedCacheMap.set(cacheKey, list);
+            state.cache.feed.set(cacheKey, list);
         }
 
-        const packages = feedCacheMap.get(cacheKey) || [];
+        const packages = state.cache.feed.get(cacheKey) || [];
         const q = query.toLowerCase();
         return packages.filter(name => name.toLowerCase().includes(q));
     } catch (err) {
@@ -1044,13 +1078,13 @@ function showPackageSearchResults(results, inputElement) {
                 
                 inputElement.setAttribute('data-confirmed', 'true');
                 
-                const inputIndex = packageSearchManager.inputs.indexOf(inputElement);
-                if (inputIndex === packageSearchManager.inputs.length - 1) {
-                    packageSearchManager.addInput('', true);
+                const inputIndex = state.ui.managers.packageSearch.inputs.indexOf(inputElement);
+                if (inputIndex === state.ui.managers.packageSearch.inputs.length - 1) {
+                    state.ui.managers.packageSearch.addInput('', true);
                 }
                 
                 clearPackageSearchResults();
-                packageSearchManager.options.onChange(packageSearchManager.getAllValues());
+                state.ui.managers.packageSearch.options.onChange(state.ui.managers.packageSearch.getAllValues());
                 updateAllPackageState('package-selected');
             } catch (error) {
                 console.error('Error in package selection:', error);
@@ -1143,21 +1177,24 @@ function setupLanguageSelector() {
     const fallback = config?.fallback_language || 'en';
 
     if (!current_language) {
-        current_language = (navigator.language || fallback).split('-')[0];
+        current_language = (navigator.language || navigator.userLanguage).toLowerCase().split('-')[0];
+        state.ui.language.current = current_language;
     }
     if (!config.device_language) {
         config.device_language = current_language;
     }
 
+    state.ui.language.selected = config.device_language;
+    selectedLanguage = state.ui.language.selected; // 互換性
+
     if (mainLanguageSelect) {
         mainLanguageSelect.value = current_language;
     }
     if (customLanguageSelect) {
-        customLanguageSelect.value = config.device_language;
+        customLanguageSelect.value = state.ui.language.selected;
     }
 
-    window.selectedLanguage = config.device_language;
-    console.log('Language setup - Browser:', current_language, 'Device:', config.device_language);
+    console.log('Language setup - Browser:', current_language, 'Device:', state.ui.language.selected);
 
     if (mainLanguageSelect) {
         mainLanguageSelect.removeEventListener('change', handleMainLanguageChange);
@@ -1167,8 +1204,6 @@ function setupLanguageSelector() {
         customLanguageSelect.removeEventListener('change', handleCustomLanguageChange);
         customLanguageSelect.addEventListener('change', handleCustomLanguageChange);
     }
-
-    updateAllPackageState('initial-language');
 }
 
 function syncBrowserLanguageSelector(lang) {
@@ -1190,7 +1225,8 @@ function syncDeviceLanguageSelector(lang) {
         
         console.log('Device language selector synced to:', lang);
     }
-    selectedLanguage = lang;
+    state.ui.language.selected = lang;
+    selectedLanguage = lang; // 互換性
 }
 
 async function handleMainLanguageChange(e) {
@@ -1207,35 +1243,39 @@ async function handleMainLanguageChange(e) {
     });
 
     current_language = newLanguage;
+    state.ui.language.current = newLanguage;
     
     await loadCustomTranslations(current_language);
 
     if (isUserAction) {
-        const oldDeviceLanguage = config.device_language;
+        const oldDeviceLanguage = state.ui.language.selected;
         config.device_language = current_language;
+        state.ui.language.selected = current_language;
         
-        syncDeviceLanguageSelector(config.device_language);
+        syncDeviceLanguageSelector(state.ui.language.selected);
         
         console.log('Language sync completed:', {
             browser: current_language,
-            device: config.device_language,
-            changed: oldDeviceLanguage !== config.device_language
+            device: state.ui.language.selected,
+            changed: oldDeviceLanguage !== state.ui.language.selected
         });
         
-        if (oldDeviceLanguage !== config.device_language) {
+        if (oldDeviceLanguage !== state.ui.language.selected) {
             updateAllPackageState('browser-language-changed');
         }
     } else {
-        console.log('Programmatic change - device language not affected:', config.device_language);
+        console.log('Programmatic change - device language not affected:', state.ui.language.selected);
     }
 }
 
 async function handleCustomLanguageChange(e) {
     const newLanguage = e.target.value || config?.fallback_language || 'en';
-    if (newLanguage === config.device_language) return;
+    if (newLanguage === state.ui.language.selected) return;
 
-    const oldDeviceLanguage = config.device_language;
+    const oldDeviceLanguage = state.ui.language.selected;
     config.device_language = newLanguage;
+    state.ui.language.selected = newLanguage;
+    selectedLanguage = newLanguage; // 互換性
     
     console.log('Device language change:', {
         newLanguage,
@@ -1244,10 +1284,7 @@ async function handleCustomLanguageChange(e) {
         note: 'Browser language intentionally not synced (one-way sync only)'
     });
 
-    selectedLanguage = config.device_language;
-
     updateVariableDefinitions();
-    
     updateAllPackageState('device-language-changed');
 }
 
@@ -1315,17 +1352,17 @@ function extractLuciName(pkg) {
 function getCurrentPackageList() {
     const packages = new Set();
     
-    deviceDefaultPackages.forEach(pkg => packages.add(pkg));
-    deviceDevicePackages.forEach(pkg => packages.add(pkg));
-    extraPackages.forEach(pkg => packages.add(pkg));
+    state.packages.default.forEach(pkg => packages.add(pkg));
+    state.packages.device.forEach(pkg => packages.add(pkg));
+    state.packages.extra.forEach(pkg => packages.add(pkg));
     
     document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
         const pkgName = cb.getAttribute('data-package');
         if (pkgName) packages.add(pkgName);
     });
     
-    if (packageSearchManager) {
-        const searchValues = packageSearchManager.getAllValues();
+    if (state.ui.managers.packageSearch) {
+        const searchValues = state.ui.managers.packageSearch.getAllValues();
         searchValues.forEach(pkg => packages.add(pkg));
     }
     
@@ -1333,15 +1370,15 @@ function getCurrentPackageList() {
     if (textarea) {
         const textPackages = CustomUtils.split(textarea.value);
         textPackages.forEach(pkg => {
-            if (!deviceDefaultPackages.includes(pkg) && 
-                !deviceDevicePackages.includes(pkg) && 
-                !extraPackages.includes(pkg)) {
+            if (!state.packages.default.includes(pkg) && 
+                !state.packages.device.includes(pkg) && 
+                !state.packages.extra.includes(pkg)) {
                 packages.add(pkg);
             }
         });
     }
     
-    for (const pkg of dynamicPackages) {
+    for (const pkg of state.packages.dynamic) {
         if (!pkg.startsWith('luci-i18n-')) {
             packages.add(pkg);
         }
@@ -1366,11 +1403,11 @@ function guessFeedForPackage(pkgName) {
 
 function getDeviceInfo() {
     return {
-        arch: current_device?.arch || cachedDeviceArch,
-        version: current_device?.version || document.querySelector("#versions")?.value,
-        vendor: CustomUtils.getVendor(),
-        subtarget: CustomUtils.getSubtarget(),
-        isSnapshot: (current_device?.version || document.querySelector("#versions")?.value || '').includes('SNAPSHOT')
+        arch: state.device.arch,
+        version: state.device.version || document.querySelector("#versions")?.value,
+        vendor: state.device.vendor,
+        subtarget: state.device.subtarget,
+        isSnapshot: (state.device.version || document.querySelector("#versions")?.value || '').includes('SNAPSHOT')
     };
 }
 
@@ -1404,10 +1441,6 @@ function parsePackageList(responseData, pkgName, isSnapshot) {
     }
 }
 
-const feedPackageSetCache = new Map(); 
-// key: `${version}:${arch}:${vendor}:${subtarget}:${isSnapshot}:${feed}`
-// val: Set<string>
-
 async function getFeedPackageSet(feed, deviceInfo) {
     const key = [
         deviceInfo.version,
@@ -1418,8 +1451,8 @@ async function getFeedPackageSet(feed, deviceInfo) {
         feed
     ].join(':');
 
-    if (feedPackageSetCache.has(key)) {
-        return feedPackageSetCache.get(key);
+    if (state.cache.feedPackageSet.has(key)) {
+        return state.cache.feedPackageSet.get(key);
     }
 
     const url = await buildPackageUrl(feed, deviceInfo);
@@ -1449,7 +1482,7 @@ async function getFeedPackageSet(feed, deviceInfo) {
         pkgSet = new Set(names);
     }
 
-    feedPackageSetCache.set(key, pkgSet);
+    state.cache.feedPackageSet.set(key, pkgSet);
     return pkgSet;
 }
 
@@ -1463,26 +1496,24 @@ async function isPackageAvailable(pkgName, feed) {
     }
 
     const cacheKey = `${deviceInfo.version}:${deviceInfo.arch}:${feed}:${pkgName}`;
-    if (packageAvailabilityCache.has(cacheKey)) {
-        return packageAvailabilityCache.get(cacheKey);
+    if (state.cache.packageAvailability.has(cacheKey)) {
+        return state.cache.packageAvailability.get(cacheKey);
     }
 
     try {
         const pkgSet = await getFeedPackageSet(feed, deviceInfo);
         const result = pkgSet.has(pkgName);
 
-        packageAvailabilityCache.set(cacheKey, result);
+        state.cache.packageAvailability.set(cacheKey, result);
         return result;
     } catch (err) {
         console.error('Package availability check error:', err);
-        packageAvailabilityCache.set(cacheKey, false);
+        state.cache.packageAvailability.set(cacheKey, false);
         return false;
     }
 }
 
 // ==================== パッケージ存在確認 ====================
-const availabilityIndexCache = new Map(); // key: `${version}:${arch}:${vendor}:${subtarget}:${isSnapshot}`, val: { packages:Set, luci:Set, kmods:Set }
-
 async function fetchFeedSet(feed, deviceInfo) {
     const url = await buildPackageUrl(feed, deviceInfo);
     const isSnapshot = deviceInfo.isSnapshot || (feed === 'kmods' && deviceInfo.isSnapshot);
@@ -1516,7 +1547,7 @@ async function buildAvailabilityIndex(deviceInfo, neededFeeds) {
         deviceInfo.isSnapshot ? 'S' : 'R'
     ].join(':');
 
-    const cached = availabilityIndexCache.get(cacheKey);
+    const cached = state.cache.availabilityIndex.get(cacheKey);
     if (cached) return cached;
 
     const index = { packages: new Set(), luci: new Set(), kmods: new Set() };
@@ -1539,7 +1570,7 @@ async function buildAvailabilityIndex(deviceInfo, neededFeeds) {
     }
 
     await Promise.all(tasks);
-    availabilityIndexCache.set(cacheKey, index);
+    state.cache.availabilityIndex.set(cacheKey, index);
     return index;
 }
 
@@ -1553,8 +1584,8 @@ function isAvailableInIndex(pkgName, feed, index) {
 }
 
 async function verifyAllPackages() {
-    const arch = current_device?.arch || cachedDeviceArch;
-    if (!packagesJson || !arch) {
+    const arch = state.device.arch;
+    if (!state.packages.json || !arch) {
         console.log('Cannot verify packages: missing data');
         return;
     }
@@ -1563,7 +1594,7 @@ async function verifyAllPackages() {
     console.log('Starting package verification...');
 
     const packagesToVerify = [];
-    packagesJson.categories.forEach(category => {
+    state.packages.json.categories.forEach(category => {
         category.packages.forEach(pkg => {
             packagesToVerify.push({
                 id: pkg.id,
@@ -1682,15 +1713,16 @@ async function loadSetupConfig() {
         const response = await fetch(url + '?t=' + Date.now());
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         
-        setupConfig = await response.json();
-        console.log('Setup config loaded (JSON-driven mode):', setupConfig);
+        state.config.setup = await response.json();
+        setupConfig = state.config.setup; // 互換性
+        console.log('Setup config loaded (JSON-driven mode):', state.config.setup);
         
-        formStructure = generateFormStructure(setupConfig);
-        storeDefaultValues(setupConfig);
-        renderSetupConfig(setupConfig);
+        state.config.formStructure = generateFormStructure(state.config.setup);
+        storeDefaultValues(state.config.setup);
+        renderSetupConfig(state.config.setup);
         
         console.log('Setup config rendered successfully with JSON-driven features');
-        return setupConfig;
+        return state.config.setup;
     } catch (err) {
         console.error('Failed to load setup.json:', err);
         return null;
@@ -1698,11 +1730,11 @@ async function loadSetupConfig() {
 }
 
 function storeDefaultValues(config) {
-    defaultFieldValues = {};
+    state.config.defaultValues = {};
     
     function walkFields(pkg) {
         if (pkg.defaultValue !== undefined && pkg.id) {
-            defaultFieldValues[pkg.id] = pkg.defaultValue;
+            state.config.defaultValues[pkg.id] = pkg.defaultValue;
         }
         if (pkg.children) {
             pkg.children.forEach(walkFields);
@@ -1720,7 +1752,7 @@ function storeDefaultValues(config) {
         category.packages.forEach(walkFields);
     });
     
-    console.log('Default values stored:', defaultFieldValues);
+    console.log('Default values stored:', state.config.defaultValues);
 }
 
 function renderSetupConfig(config) {
@@ -1765,8 +1797,8 @@ function renderSetupConfig(config) {
     requestAnimationFrame(() => {
         initConditionalSections(config);
 
-        if (cachedApiInfo) {
-            applyIspAutoConfig(cachedApiInfo);
+        if (state.apiInfo) {
+            applyIspAutoConfig(state.apiInfo);
             console.log('Reapplied ISP config after form render');
         }
 
@@ -1942,8 +1974,8 @@ function buildFormGroup(field) {
         if (field.placeholder) ctrl.placeholder = field.placeholder;        
         if (field.defaultValue !== null && field.defaultValue !== undefined && field.defaultValue !== '') {
             ctrl.value = field.defaultValue;
-        } else if (field.apiMapping && cachedApiInfo) {
-            const apiValue = CustomUtils.getNestedValue(cachedApiInfo, field.apiMapping);
+        } else if (field.apiMapping && state.apiInfo) {
+            const apiValue = CustomUtils.getNestedValue(state.apiInfo, field.apiMapping);
             if (apiValue !== null && apiValue !== undefined && apiValue !== '') {
                 ctrl.value = apiValue;
             }
@@ -2110,6 +2142,9 @@ function generateFormStructure(config) {
         });
     });
     
+    // 互換性維持
+    formStructure = structure;
+    
     return structure;
 }
 
@@ -2156,7 +2191,7 @@ function collectFieldsFromPackage(pkg, structure, categoryId) {
 function collectFormValues() {
     const values = {};
     
-    Object.values(formStructure.fields).forEach(field => {
+    Object.values(state.config.formStructure.fields).forEach(field => {
         const value = getFieldValue(field.selector);
         
         if (value !== null && value !== undefined && value !== "") {
@@ -2165,7 +2200,7 @@ function collectFormValues() {
     });
     
     if (!values.language) {
-        const languageValue = getFieldValue('#aios-language') || selectedLanguage || 'en';
+        const languageValue = getFieldValue('#aios-language') || state.ui.language.selected || 'en';
         if (languageValue && languageValue !== 'en') {
             values.language = languageValue;
         }
@@ -2216,8 +2251,8 @@ function applySpecialFieldLogic(values) {
     
     const allConnectionFields = [];
     
-    if (setupConfig) {
-        const internetCategory = setupConfig.categories.find(cat => cat.id === 'internet-config');
+    if (state.config.setup) {
+        const internetCategory = state.config.setup.categories.find(cat => cat.id === 'internet-config');
         if (internetCategory) {
             internetCategory.packages.forEach(pkg => {
                 if (pkg.type === 'conditional-section' && pkg.connectionFields) {
@@ -2232,27 +2267,27 @@ function applySpecialFieldLogic(values) {
     if (connectionType === 'auto') {
         uniqueConnectionFields.forEach(key => delete values[key]);
         
-        if (cachedApiInfo) {
-            if (cachedApiInfo.mape?.brIpv6Address) {
-                values.mape_br = cachedApiInfo.mape.brIpv6Address;
-                values.mape_ealen = cachedApiInfo.mape.eaBitLength;
-                values.mape_ipv4_prefix = cachedApiInfo.mape.ipv4Prefix;
-                values.mape_ipv4_prefixlen = cachedApiInfo.mape.ipv4PrefixLength;
-                values.mape_ipv6_prefix = cachedApiInfo.mape.ipv6Prefix;
-                values.mape_ipv6_prefixlen = cachedApiInfo.mape.ipv6PrefixLength;
-                values.mape_psid_offset = cachedApiInfo.mape.psIdOffset;
-                values.mape_psidlen = cachedApiInfo.mape.psidlen;
+        if (state.apiInfo) {
+            if (state.apiInfo.mape?.brIpv6Address) {
+                values.mape_br = state.apiInfo.mape.brIpv6Address;
+                values.mape_ealen = state.apiInfo.mape.eaBitLength;
+                values.mape_ipv4_prefix = state.apiInfo.mape.ipv4Prefix;
+                values.mape_ipv4_prefixlen = state.apiInfo.mape.ipv4PrefixLength;
+                values.mape_ipv6_prefix = state.apiInfo.mape.ipv6Prefix;
+                values.mape_ipv6_prefixlen = state.apiInfo.mape.ipv6PrefixLength;
+                values.mape_psid_offset = state.apiInfo.mape.psIdOffset;
+                values.mape_psidlen = state.apiInfo.mape.psidlen;
                 
-                const guaPrefix = CustomUtils.generateGuaPrefixFromFullAddress(cachedApiInfo);
+                const guaPrefix = CustomUtils.generateGuaPrefixFromFullAddress(state.apiInfo);
                 if (guaPrefix) {
                     values.mape_gua_prefix = guaPrefix;
                 }
-            } else if (cachedApiInfo.aftr?.aftrIpv6Address) {
-                values.dslite_aftr_address = cachedApiInfo.aftr.aftrIpv6Address;
+            } else if (state.apiInfo.aftr?.aftrIpv6Address) {
+                values.dslite_aftr_address = state.apiInfo.aftr.aftrIpv6Address;
             }
         }
     } else {
-        const internetCategory = setupConfig?.categories.find(cat => cat.id === 'internet-config');
+        const internetCategory = state.config.setup?.categories.find(cat => cat.id === 'internet-config');
         if (internetCategory) {
             const selectedSection = internetCategory.packages.find(pkg => 
                 pkg.type === 'conditional-section' && 
@@ -2267,10 +2302,10 @@ function applySpecialFieldLogic(values) {
                 });
                 
                 if (connectionType === 'dslite') {
-                    if (cachedApiInfo?.aftr) {
-                        values.dslite_aftr_type = cachedApiInfo.aftr.aftrType || '';
-                        values.dslite_area = cachedApiInfo.aftr.jurisdiction || '';
-                        values.dslite_aftr_address = cachedApiInfo.aftr.aftrIpv6Address || '';
+                    if (state.apiInfo?.aftr) {
+                        values.dslite_aftr_type = state.apiInfo.aftr.aftrType || '';
+                        values.dslite_area = state.apiInfo.aftr.jurisdiction || '';
+                        values.dslite_aftr_address = state.apiInfo.aftr.aftrIpv6Address || '';
                     }
                     
                     const uiType = getFieldValue('#dslite-aftr-type');
@@ -2278,23 +2313,23 @@ function applySpecialFieldLogic(values) {
                     const uiAddr = getFieldValue('#dslite-aftr-address');
                     if (uiType) values.dslite_aftr_type = uiType;
                     if (uiArea) values.dslite_area = uiArea;
-                    if (cachedApiInfo?.aftr?.aftrIpv6Address) {
-                        values.dslite_aftr_address = cachedApiInfo.aftr.aftrIpv6Address;
+                    if (state.apiInfo?.aftr?.aftrIpv6Address) {
+                        values.dslite_aftr_address = state.apiInfo.aftr.aftrIpv6Address;
                     } else if (uiAddr) {
                         values.dslite_aftr_address = uiAddr;
                     }
                 } else if (connectionType === 'mape') {
-                    if (cachedApiInfo?.mape?.brIpv6Address) {
-                        values.mape_br = cachedApiInfo.mape.brIpv6Address;
-                        values.mape_ealen = cachedApiInfo.mape.eaBitLength;
-                        values.mape_ipv4_prefix = cachedApiInfo.mape.ipv4Prefix;
-                        values.mape_ipv4_prefixlen = cachedApiInfo.mape.ipv4PrefixLength;
-                        values.mape_ipv6_prefix = cachedApiInfo.mape.ipv6Prefix;
-                        values.mape_ipv6_prefixlen = cachedApiInfo.mape.ipv6PrefixLength;
-                        values.mape_psid_offset = cachedApiInfo.mape.psIdOffset;
-                        values.mape_psidlen = cachedApiInfo.mape.psidlen;
+                    if (state.apiInfo?.mape?.brIpv6Address) {
+                        values.mape_br = state.apiInfo.mape.brIpv6Address;
+                        values.mape_ealen = state.apiInfo.mape.eaBitLength;
+                        values.mape_ipv4_prefix = state.apiInfo.mape.ipv4Prefix;
+                        values.mape_ipv4_prefixlen = state.apiInfo.mape.ipv4PrefixLength;
+                        values.mape_ipv6_prefix = state.apiInfo.mape.ipv6Prefix;
+                        values.mape_ipv6_prefixlen = state.apiInfo.mape.ipv6PrefixLength;
+                        values.mape_psid_offset = state.apiInfo.mape.psIdOffset;
+                        values.mape_psidlen = state.apiInfo.mape.psidlen;
                         
-                        const guaPrefix = CustomUtils.generateGuaPrefixFromFullAddress(cachedApiInfo);
+                        const guaPrefix = CustomUtils.generateGuaPrefixFromFullAddress(state.apiInfo);
                         if (guaPrefix) {
                             values.mape_gua_prefix = guaPrefix;
                         }
@@ -2305,8 +2340,8 @@ function applySpecialFieldLogic(values) {
                         const currentGUAValue = getFieldValue('#mape-gua-prefix');
                         if (currentGUAValue) {
                             values.mape_gua_prefix = currentGUAValue;
-                        } else if (!values.mape_gua_prefix && cachedApiInfo?.ipv6) {
-                            const guaPrefix = CustomUtils.generateGuaPrefixFromFullAddress(cachedApiInfo);
+                        } else if (!values.mape_gua_prefix && state.apiInfo?.ipv6) {
+                            const guaPrefix = CustomUtils.generateGuaPrefixFromFullAddress(state.apiInfo);
                             if (guaPrefix) {
                                 values.mape_gua_prefix = guaPrefix;
                             }
@@ -2458,7 +2493,7 @@ function setupCommandsInput() {
         oldInput.remove();
     }
     
-    commandsManager = new MultiInputManager('commands-autocomplete', {
+    state.ui.managers.commands = new MultiInputManager('commands-autocomplete', {
         placeholder: 'Type command and press Enter',
         className: 'multi-input-item command-input',
         onAdd: (command) => {
@@ -2473,6 +2508,9 @@ function setupCommandsInput() {
             updateCustomCommands();
         }
     });
+    
+    // 互換性維持
+    commandsManager = state.ui.managers.commands;
     
     console.log('Commands input setup complete');
 }
@@ -2503,7 +2541,7 @@ function setupDsliteAddressComputation() {
     if (!aftrType || !aftrArea || !aftrAddr) return;
 
     function getAddressMap() {
-        const internetCategory = setupConfig.categories.find(cat => cat.id === 'internet-config');
+        const internetCategory = state.config.setup.categories.find(cat => cat.id === 'internet-config');
         const dsliteSection = internetCategory.packages.find(pkg => pkg.id === 'dslite-section');
         const dsliteFields = dsliteSection.children.find(child => child.id === 'dslite-fields');
         const aftrTypeField = dsliteFields.fields.find(field => field.id === 'dslite-aftr-type');
@@ -2560,7 +2598,7 @@ function updateVariableDefinitionsWithDsliteCleanup() {
 }
 
 function handleConditionalSectionChange(categoryId, fieldName, selectedValue, options = {}) {
-    const category = setupConfig.categories.find(cat => cat.id === categoryId);
+    const category = state.config.setup.categories.find(cat => cat.id === categoryId);
     if (!category) return;
     
     category.packages.forEach(pkg => {
@@ -2610,12 +2648,12 @@ function handleConnectionTypeChange(e) {
     handleConditionalSectionChange('internet-config', 'connection_type', selectedType, {
         updateSource: 'connection-type',
         customHandler: (value) => {
-            if (value === 'auto' && cachedApiInfo) {
-                updateAutoConnectionInfo(cachedApiInfo);
-            } else if (value === 'mape' && cachedApiInfo) {
+            if (value === 'auto' && state.apiInfo) {
+                updateAutoConnectionInfo(state.apiInfo);
+            } else if (value === 'mape' && state.apiInfo) {
                 const guaPrefixField = document.querySelector('#mape-gua-prefix');
-                if (guaPrefixField && cachedApiInfo.ipv6) {
-                    const guaPrefix = CustomUtils.generateGuaPrefixFromFullAddress(cachedApiInfo);
+                if (guaPrefixField && state.apiInfo.ipv6) {
+                    const guaPrefix = CustomUtils.generateGuaPrefixFromFullAddress(state.apiInfo);
                     if (guaPrefix && !guaPrefixField.value) {
                         guaPrefixField.value = guaPrefix;
                         console.log('GUA prefix set for MAP-E:', guaPrefix);
@@ -2656,7 +2694,7 @@ function handleWifiModeChange(e) {
 }
 
 function restoreManualDefaults() {
-    const tuningCategory = setupConfig.categories.find(cat => cat.id === 'tuning-config');
+    const tuningCategory = state.config.setup.categories.find(cat => cat.id === 'tuning-config');
     const manualSection = tuningCategory.packages.find(pkg => pkg.id === 'netopt-manual-section');
     const netoptFields = manualSection.children.find(child => child.id === 'netopt-fields');
     
@@ -2671,7 +2709,7 @@ function restoreManualDefaults() {
 }
 
 function restoreWifiDefaults() {
-    const wifiCategory = setupConfig.categories.find(cat => cat.id === 'wifi-config');
+    const wifiCategory = state.config.setup.categories.find(cat => cat.id === 'wifi-config');
     
     function findWifiFields(pkg) {
         const fields = [];
@@ -2703,7 +2741,7 @@ function restoreWifiDefaults() {
 }
 
 function clearWifiFields() {
-    const wifiCategory = setupConfig.categories.find(cat => cat.id === 'wifi-config');
+    const wifiCategory = state.config.setup.categories.find(cat => cat.id === 'wifi-config');
     
     function findAndClearWifiFields(pkg) {
         if (pkg.type === 'input-group' && pkg.fields) {
@@ -2743,7 +2781,8 @@ async function fetchAndDisplayIspInfo() {
     try {
         const response = await fetch(config.auto_config_api_url);
         const apiInfo = await response.json();
-        cachedApiInfo = apiInfo;
+        state.apiInfo = apiInfo;
+        cachedApiInfo = apiInfo; // 互換性
         
         console.log('ISP info fetched:', apiInfo);
         
@@ -2761,7 +2800,7 @@ async function fetchAndDisplayIspInfo() {
 }
 
 function displayIspInfoIfReady() {
-    if (!cachedApiInfo) {
+    if (!state.apiInfo) {
         return false;
     }
     
@@ -2770,7 +2809,7 @@ function displayIspInfoIfReady() {
         return false;
     }
     
-    displayIspInfo(cachedApiInfo);
+    displayIspInfo(state.apiInfo);
     console.log('ISP info displayed');
     return true;
 }
@@ -2852,7 +2891,7 @@ async function insertExtendedInfo(temp) {
 async function initializeCustomFeatures(asuSection, temp) {
     console.log('initializeCustomFeatures called');
 
-    if (customInitialized) {
+    if (state.ui.initialized) {
         console.log('Already initialized, skipping');
         return;
     }
@@ -2860,17 +2899,17 @@ async function initializeCustomFeatures(asuSection, temp) {
     if (!document.querySelector('#custom-packages-details')) {
         cleanupExistingCustomElements();
         replaceAsuSection(asuSection, temp);
-        await insertExtendedInfo(temp);  // 拡張情報セクション挿入（ISP表示含む）
+        await insertExtendedInfo(temp);
     }
 
     await Promise.all([
-        window.autoConfigPromise,       // auto-config.site-u.workers.dev
-        window.informationPromise,      // information.json
-        window.packagesDbPromise,       // packages.json
-        window.setupJsonPromise,        // setup.json
-        loadSetupConfig(),              // 既存処理
-        loadPackageDatabase(),          // 既存処理
-        fetchAndDisplayIspInfo()        // ISP情報取得
+        window.autoConfigPromise,
+        window.informationPromise,
+        window.packagesDbPromise,
+        window.setupJsonPromise,
+        loadSetupConfig(),
+        loadPackageDatabase(),
+        fetchAndDisplayIspInfo()
     ]);
 
     setupEventListeners();
@@ -2886,17 +2925,17 @@ async function initializeCustomFeatures(asuSection, temp) {
     setupFormWatchers();
 
     let changed = false;
-    if (window.autoConfigData || cachedApiInfo) {
-        changed = applyIspAutoConfig(window.autoConfigData || cachedApiInfo);
+    if (window.autoConfigData || state.apiInfo) {
+        changed = applyIspAutoConfig(window.autoConfigData || state.apiInfo);
     }
 
     generatePackageSelector();
 
-    if (deviceDefaultPackages.length > 0 || deviceDevicePackages.length > 0 || extraPackages.length > 0) {
+    if (state.packages.default.length > 0 || state.packages.device.length > 0 || state.packages.extra.length > 0) {
         console.log('Force applying existing device packages');
-        const initialPackages = deviceDefaultPackages
-            .concat(deviceDevicePackages)
-            .concat(extraPackages);
+        const initialPackages = state.packages.default
+            .concat(state.packages.device)
+            .concat(state.packages.extra);
         
         const textarea = document.querySelector('#asu-packages');
         if (textarea && initialPackages.length > 0) {
@@ -2911,9 +2950,9 @@ async function initializeCustomFeatures(asuSection, temp) {
     } else {
         console.log('All data and UI ready, no changes from auto-config');
         const runWhenReady = () => {
-            if ((deviceDefaultPackages && deviceDefaultPackages.length > 0) ||
-                (deviceDevicePackages && deviceDevicePackages.length > 0) ||
-                (extraPackages && extraPackages.length > 0)) {
+            if ((state.packages.default && state.packages.default.length > 0) ||
+                (state.packages.device && state.packages.device.length > 0) ||
+                (state.packages.extra && state.packages.extra.length > 0)) {
                 updateAllPackageState('force-device-packages');
                 document.removeEventListener('devicePackagesReady', runWhenReady);
             }
@@ -2921,11 +2960,12 @@ async function initializeCustomFeatures(asuSection, temp) {
         document.addEventListener('devicePackagesReady', runWhenReady);
     }
 
-    customInitialized = true;
+    state.ui.initialized = true;
+    customInitialized = true; // 互換性
 }
 
 function applyIspAutoConfig(apiInfo) {
-    if (!apiInfo || !formStructure || !formStructure.fields) {
+    if (!apiInfo || !state.config.formStructure || !state.config.formStructure.fields) {
         console.warn('applyIspAutoConfig: formStructure not ready, skipping');
         return false;
     }
@@ -2935,11 +2975,11 @@ function applyIspAutoConfig(apiInfo) {
 
     let mutated = false;
 
-    Object.values(formStructure.fields).forEach(field => {
+    Object.values(state.config.formStructure.fields).forEach(field => {
         if (!field.apiMapping) return;
 
         const isConnectionField = ['dslite', 'mape', 'ap', 'pppoe'].some(type =>
-            formStructure.connectionTypes[type]?.includes(field.id)
+            state.config.formStructure.connectionTypes[type]?.includes(field.id)
         );
 
         if (isConnectionField && connectionType !== 'auto') {
@@ -2949,7 +2989,7 @@ function applyIspAutoConfig(apiInfo) {
         let value = CustomUtils.getNestedValue(apiInfo, field.apiMapping);
 
         if (field.variableName === 'mape_gua_prefix') {
-            const guaPrefix = CustomUtils.generateGuaPrefixFromFullAddress(cachedApiInfo);
+            const guaPrefix = CustomUtils.generateGuaPrefixFromFullAddress(state.apiInfo);
             if (guaPrefix) value = guaPrefix;
         }
 
@@ -3009,10 +3049,11 @@ async function loadPackageDatabase() {
         const url = config?.packages_db_path || 'packages/packages.json';
         const response = await fetch(url);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        packagesJson = await response.json();
-        console.log('Package database loaded:', packagesJson);
+        state.packages.json = await response.json();
+        packagesJson = state.packages.json; // 互換性
+        console.log('Package database loaded:', state.packages.json);
         
-        return packagesJson;
+        return state.packages.json;
     } catch (err) {
         console.error('Failed to load package database:', err);
         return null;
@@ -3021,7 +3062,7 @@ async function loadPackageDatabase() {
 
 function generatePackageSelector() {
     const container = document.querySelector('#package-categories');
-    if (!container || !packagesJson) {
+    if (!container || !state.packages.json) {
         return;
     }
     
@@ -3036,7 +3077,7 @@ function generatePackageSelector() {
     loadingDiv.innerHTML = '<span class="tr-checking-packages">Checking package availability...</span>';
     container.appendChild(loadingDiv);
     
-    packagesJson.categories.forEach(category => {
+    state.packages.json.categories.forEach(category => {
         if (category.hidden) {
             console.log(`Processing hidden category: ${category.id}`);
             category.packages.forEach(pkg => {
@@ -3054,9 +3095,9 @@ function generatePackageSelector() {
     });
     
     updateAllPackageState('package-selector-init');
-    console.log(`Generated ${packagesJson.categories.length} package categories (including hidden)`);
+    console.log(`Generated ${state.packages.json.categories.length} package categories (including hidden)`);
     
-    const arch = current_device?.arch || cachedDeviceArch;
+    const arch = state.device.arch;
     if (arch) {
         requestAnimationFrame(() => {
             const indicator = document.querySelector('#package-loading-indicator');
@@ -3203,7 +3244,7 @@ function createPackageCheckbox(pkg, isChecked = false, isDependency = false) {
     checkbox.type = 'checkbox';
     checkbox.id = `pkg-${pkg.uniqueId || pkg.id}`; 
     checkbox.className = 'form-check-input package-selector-checkbox';
-    checkbox.setAttribute('data-package', pkg.id);   // id
+    checkbox.setAttribute('data-package', pkg.id);
     checkbox.setAttribute('data-unique-id', pkg.uniqueId || pkg.id); 
     
     if (pkg.dependencies) {
@@ -3266,9 +3307,9 @@ function handlePackageSelection(e) {
 }
 
 function findPackageById(id) {
-    if (!packagesJson) return null;
+    if (!state.packages.json) return null;
     
-    for (const category of packagesJson.categories) {
+    for (const category of state.packages.json.categories) {
         const pkg = category.packages.find(p => p.uniqueId === id || p.id === id);
         if (pkg) return pkg;
     }
@@ -3377,7 +3418,7 @@ function updateCustomCommands() {
     const textarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
     if (!textarea) return;
     
-    const customCommands = commandsManager ? commandsManager.getAllValues().join('\n') : '';
+    const customCommands = state.ui.managers.commands ? state.ui.managers.commands.getAllValues().join('\n') : '';
     
     let content = textarea.value;
     
@@ -3402,9 +3443,9 @@ function updateCustomCommands() {
 // ==================== フォーム監視 ====================
 
 function setupFormWatchers() {
-    if (!formStructure.fields) return;
+    if (!state.config.formStructure.fields) return;
     
-    Object.values(formStructure.fields).forEach(field => {
+    Object.values(state.config.formStructure.fields).forEach(field => {
         if (field.selector) {
             attachFieldListeners(field.selector, updateVariableDefinitions);
         }
@@ -3439,4 +3480,61 @@ if (window.DEBUG_MODE) {
     });
 }
 
-console.log('custom.js (Unified Virtual Package Management System) fully loaded and ready');
+// ==================== 互換性維持 ====================
+
+// グローバル変数の更新を監視
+Object.defineProperty(window, 'current_device', {
+    get() { return state.device; },
+    set(value) { 
+        state.device = value;
+        console.log('current_device updated (via global):', value);
+    }
+});
+
+Object.defineProperty(window, 'cachedApiInfo', {
+    get() { return state.apiInfo; },
+    set(value) { 
+        state.apiInfo = value;
+        console.log('cachedApiInfo updated (via global):', value);
+    }
+});
+
+Object.defineProperty(window, 'packagesJson', {
+    get() { return state.packages.json; },
+    set(value) { 
+        state.packages.json = value;
+        console.log('packagesJson updated (via global):', value);
+    }
+});
+
+Object.defineProperty(window, 'setupConfig', {
+    get() { return state.config.setup; },
+    set(value) { 
+        state.config.setup = value;
+        console.log('setupConfig updated (via global):', value);
+    }
+});
+
+// グローバル変数エイリアス（読み取り専用）
+const cachedDeviceArch = state.device.arch;
+const formStructure = state.config.formStructure;
+const defaultFieldValues = state.config.defaultValues;
+const dynamicPackages = state.packages.dynamic;
+const customInitialized = state.ui.initialized;
+const customHTMLLoaded = state.ui.htmlLoaded;
+const packageSearchManager = state.ui.managers.packageSearch;
+const commandsManager = state.ui.managers.commands;
+const kmodsTokenCache = state.cache.kmods.token;
+const kmodsTokenCacheKey = state.cache.kmods.key;
+const packageAvailabilityCache = state.cache.packageAvailability;
+const feedCacheMap = state.cache.feed;
+const lastFormStateHash = state.cache.lastFormStateHash;
+const lastPackageListHash = state.cache.lastPackageListHash;
+const prevUISelections = state.cache.prevUISelections;
+
+// グローバル配列エイリアス
+const deviceDefaultPackages = state.packages.default;
+const deviceDevicePackages = state.packages.device;
+const extraPackages = state.packages.extra;
+
+console.log('custom.js (Unified State Management System) fully loaded and ready');
