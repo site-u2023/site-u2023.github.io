@@ -251,7 +251,7 @@ const CustomUtils = {
         return path.split('.').reduce((current, key) => current?.[key], obj);
     },
 
-    function restoreManualDefaults() {
+    restoreManualDefaults: function() {
         const tuningCategory = state.config.setup.categories.find(cat => cat.id === 'tuning-config');
         const manualSection = tuningCategory.packages.find(pkg => pkg.id === 'netopt-manual-section');
         const netoptFields = manualSection.children.find(child => child.id === 'netopt-fields');
