@@ -3453,24 +3453,3 @@ if (window.DEBUG_MODE) {
         window.addEventListener(event, e => console.error(`Custom.js ${event}:`, e.reason || e.error));
     });
 }
-
-// ==================== 互換性維持 ====================
-
-// グローバル変数の読み取り専用互換レイヤー
-Object.defineProperty(window, 'current_device', {
-    get() { return state.device; }
-});
-
-Object.defineProperty(window, 'cachedApiInfo', {
-    get() { return state.apiInfo; }
-});
-
-Object.defineProperty(window, 'packagesJson', {
-    get() { return state.packages.json; }
-});
-
-Object.defineProperty(window, 'setupConfig', {
-    get() { return state.config.setup; }
-});
-
-console.log('custom.js (Unified State Management System) fully loaded and ready');
