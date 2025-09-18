@@ -311,22 +311,6 @@ const CustomUtils = {
         });
     },
     
-    toggleGuaPrefixVisibility: function(mode) {
-        const guaPrefixField = getEl('mapeGuaPrefix', '#mape-gua-prefix');
-        if (!guaPrefixField) return;
-
-        if (mode === 'pd') {
-            UI.updateElement(guaPrefixField, { value: '' });
-            guaPrefixField.disabled = true;
-            UI.updateElement(guaPrefixField, { show: false });
-            console.log('PD mode: GUA prefix hidden');
-        } else if (mode === 'gua') {
-            guaPrefixField.disabled = false;
-            UI.updateElement(guaPrefixField, { show: true });
-            this.setGuaPrefixIfAvailable();
-        }
-    },
-    
 clearWifiFields: function() {
         const wifiCategory = state.config.setup.categories.find(cat => cat.id === 'wifi-config');
         if (!wifiCategory) return;
@@ -1967,6 +1951,10 @@ function buildField(parent, pkg) {
                 (row.columns || []).forEach((col, colIndex) => {
                     const groupEl = buildFormGroup(col);
                     if (groupEl) {
+                        if (col.variableName === 'mape_gua_prefix') {
+                            groupEl.setAttribute('data-show-when', 'mape_type:gua');
+                            groupEl.style.display = 'none';
+                        }
                         rowEl.appendChild(groupEl);
                     }
                 });
@@ -2643,19 +2631,34 @@ function setupCommandsInput() {
 
 function handleMapeTypeChange(e) {
     const mapeType = e.target.value;
-
-    CustomUtils.toggleGuaPrefixVisibility(mapeType);
-
-    if (mapeType === 'pd') {
-        const guaPrefixField = getEl('mapeGuaPrefix', '#mape-gua-prefix');
-        if (guaPrefixField) {
-            UI.updateElement(guaPrefixField, { value: '' });
+    
+    document.querySelectorAll('[data-show-when^="mape_type:"]').forEach(el => {
+        const condition = el.getAttribute('data-show-when');
+        const expectedValue = condition.split(':')[1];
+        if (mapeType === expectedValue) {
+            el.style.display = '';
+            if (mapeType === 'gua') {
+                const field = el.querySelector('#mape-gua-prefix');
+                if (field && state.apiInfo?.ipv6) {
+                    const guaPrefix = CustomUtils.generateGuaPrefixFromFullAddress(state.apiInfo);
+                    if (guaPrefix && !field.value) {
+                        field.value = guaPrefix;
+                    }
+                }
+            }
+        } else {
+            el.style.display = 'none';
+            if (mapeType === 'pd') {
+                const field = el.querySelector('#mape-gua-prefix');
+                if (field) {
+                    field.value = '';
+                }
+            }
         }
-    }
+    });
 
     updateAllPackageState('mape-type');
 }
-
 
 function setupDsliteAddressComputation() {
     const aftrType = document.querySelector('#dslite-aftr-type');
