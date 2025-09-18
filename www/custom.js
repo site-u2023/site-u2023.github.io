@@ -3044,11 +3044,20 @@ function applyIspAutoConfig(apiInfo) {
 function updateAutoConnectionInfo(apiInfo) {
     const autoInfo = document.querySelector('#auto-info');
     if (!autoInfo) return;
+
     let infoText = '';
-    
+
+    if (apiInfo?.isp) {
+        infoText += `ISP: ${apiInfo.isp}\n`;
+        if (apiInfo.as) {
+            infoText += `AS: ${apiInfo.as}\n`;
+        }
+    }
+
     const connectionType = getConnectionType(apiInfo);
+    infoText += `Detected: ${connectionType}\n`;
+
     if (connectionType === 'MAP-E') {
-        infoText = 'Detected: MAP-E\n';
         infoText += `\u00A0BR: ${apiInfo.mape.brIpv6Address}\n`;
         infoText += `\u00A0EA-len: ${apiInfo.mape.eaBitLength}\n`;
         infoText += `\u00A0IPv4 Prefix: ${apiInfo.mape.ipv4Prefix}/${apiInfo.mape.ipv4PrefixLength}\n`;
@@ -3056,20 +3065,15 @@ function updateAutoConnectionInfo(apiInfo) {
         infoText += `\u00A0PSID: offset=${apiInfo.mape.psIdOffset}\n`;
         infoText += `\u00A0PSID: length=${apiInfo.mape.psidlen}`;
     } else if (connectionType === 'DS-Lite') {
-        infoText = 'Detected: DS-Lite\n';
         infoText += `AFTR: ${apiInfo.aftr}`;
     } else {
-        infoText = 'Detected: DHCP/PPPoE\n';
         infoText += '\u00A0Standard connection will be used';
     }
-    
-    if (apiInfo?.isp) {
-        infoText += `\n\nISP: ${apiInfo.isp}`;
-        if (apiInfo.as) {
-            infoText += `\nAS: ${apiInfo.as}`;
-        }
+
+    if (apiInfo.guaPrefix) {
+        infoText += `\nGUA Prefix: ${apiInfo.guaPrefix}`;
     }
-    
+
     autoInfo.textContent = infoText;
 }
 
