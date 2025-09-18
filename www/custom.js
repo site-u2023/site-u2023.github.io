@@ -3069,8 +3069,7 @@ function updateAutoConnectionInfo(apiInfo) {
         if (!gua) {
             try {
                 gua = CustomUtils.generateGuaPrefixFromFullAddress(state.apiInfo || apiInfo) || null;
-            } catch (e) {
-            }
+            } catch (e) {}
         }
         if (!gua) {
             const guaField = document.querySelector('#mape-gua-prefix');
