@@ -275,10 +275,6 @@ window.updateImages = function(version, mobj) {
         
         CustomUtils.updateDeviceInfo(mobj.target);
 
-        // 互換性維持
-        current_device = state.device;
-        cachedDeviceArch = state.device.arch;
-
         console.log('[TRACE] device updated:', {
             ...state.device
         });
@@ -318,11 +314,6 @@ window.updateImages = function(version, mobj) {
         state.packages.default = mobj.default_packages || [];
         state.packages.device = mobj.device_packages || [];
         state.packages.extra = config.asu_extra_packages || [];
-
-        // 互換性維持
-        deviceDefaultPackages = state.packages.default;
-        deviceDevicePackages = state.packages.device;
-        extraPackages = state.packages.extra;
 
         document.dispatchEvent(new Event('devicePackagesReady'));
 
@@ -951,9 +942,6 @@ function setupPackageSearch() {
             searchPackages(query, inputElement);
         }
     });
-    
-    // 互換性維持
-    packageSearchManager = state.ui.managers.packageSearch;
     
     console.log('Package search setup complete');
 }
