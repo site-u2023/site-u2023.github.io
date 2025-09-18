@@ -3076,7 +3076,7 @@ function updateAutoConnectionInfo(apiInfo) {
             if (guaField && guaField.value) gua = guaField.value;
         }
         if (gua) {
-            infoText += `\nGUA Prefix: ${gua}`;
+            infoText += `\u00A0GUA: ${gua}`;
         }
     } else if (connectionType === 'DS-Lite') {
         infoText += `AFTR: ${apiInfo.aftr}`;
