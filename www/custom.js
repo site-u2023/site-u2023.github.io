@@ -2913,8 +2913,6 @@ async function initializeCustomFeatures(asuSection, temp) {
         fetchAndDisplayIspInfo()
     ]);
 
-    setupHiddenPackageCheckboxes();
-
     setupEventListeners();
     loadUciDefaultsTemplate();
     setupLanguageSelector();
