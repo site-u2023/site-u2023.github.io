@@ -3053,7 +3053,7 @@ function updateAutoConnectionInfo(apiInfo) {
             infoText += `AS: ${apiInfo.as}\n`;
         }
     }
-
+    
     const connectionType = getConnectionType(apiInfo);
     infoText += `Detected: ${connectionType}\n`;
 
@@ -3064,14 +3064,25 @@ function updateAutoConnectionInfo(apiInfo) {
         infoText += `\u00A0IPv6 Prefix: ${apiInfo.mape.ipv6Prefix}/${apiInfo.mape.ipv6PrefixLength}\n`;
         infoText += `\u00A0PSID: offset=${apiInfo.mape.psIdOffset}\n`;
         infoText += `\u00A0PSID: length=${apiInfo.mape.psidlen}`;
+
+        let gua = apiInfo.guaPrefix;
+        if (!gua) {
+            try {
+                gua = CustomUtils.generateGuaPrefixFromFullAddress(state.apiInfo || apiInfo) || null;
+            } catch (e) {
+            }
+        }
+        if (!gua) {
+            const guaField = document.querySelector('#mape-gua-prefix');
+            if (guaField && guaField.value) gua = guaField.value;
+        }
+        if (gua) {
+            infoText += `\nGUA Prefix: ${gua}`;
+        }
     } else if (connectionType === 'DS-Lite') {
         infoText += `AFTR: ${apiInfo.aftr}`;
     } else {
         infoText += '\u00A0Standard connection will be used';
-    }
-
-    if (apiInfo.guaPrefix) {
-        infoText += `\nGUA Prefix: ${apiInfo.guaPrefix}`;
     }
 
     autoInfo.textContent = infoText;
