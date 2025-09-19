@@ -114,6 +114,8 @@
     "tr-dnsmasq-negcache": "Negative Cache",
     "tr-dnsmasq-auto-optimization": "Automatic Optimization",
     "tr-dnsmasq-optimization-disabled": "Optimization Disabled",
+
+    "tr-feedback-link": "Forum",
     
     "tr-asu-status-200": "ASU server is reachable. Status: ",
     "tr-asu-status-500": "ASU server responded with an internal error. Status: ",
