@@ -3,21 +3,19 @@ console.log('custom.js loaded');
 window.addEventListener('load', () => {
   function updateLink(element, text, href) {
     if (!element) return;
-    if (typeof text !== 'undefined') element.textContent = text;
-    if (typeof href !== 'undefined') {
+    if (text) element.textContent = text;
+    if (href) {
       element.href = href;
       element.target = '_blank';
     }
+    element.style.display = 'inline';
   }
 
   const versionLink = document.getElementById('ofs-version')?.closest('a');
   updateLink(versionLink, custom_ofs_version, custom_ofs_link);
 
   const forumLink = document.getElementById('custom-feedback-link');
-  if (forumLink) {
-    updateLink(forumLink, custom_feedback_text, custom_feedback_link);
-    forumLink.style.display = 'inline';
-  }
+  updateLink(forumLink, custom_feedback_text, custom_feedback_link);
 
   if (state.apiInfo) {
     displayIspInfoIfReady();
