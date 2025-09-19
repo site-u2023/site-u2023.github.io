@@ -2904,10 +2904,14 @@ function displayIspInfo(apiInfo) {
 }
 
 async function insertExtendedInfo(temp) {
-    const extendedInfo = temp.querySelector('#extended-build-info');
-    const imageLink = document.querySelector('#image-link');
+    if (document.querySelector('#extended-build-info')) {
+        console.log('Extended info already exists');
+        return;
+    }
     
-    if (!extendedInfo || !imageLink || document.querySelector('#extended-build-info')) {
+    const imageLink = document.querySelector('#image-link');
+    if (!imageLink) {
+        console.log('Image link element not found');
         return;
     }
     
@@ -2919,7 +2923,9 @@ async function insertExtendedInfo(temp) {
         const infoConfig = await response.json();
         console.log('Information config loaded:', infoConfig);
         
-        extendedInfo.innerHTML = '';
+        const extendedInfo = document.createElement('div');
+        extendedInfo.id = 'extended-build-info';
+        extendedInfo.className = 'hide';
         
         infoConfig.categories.forEach(category => {
             const h3 = document.createElement('h3');
@@ -2952,8 +2958,11 @@ async function insertExtendedInfo(temp) {
         
         imageLink.closest('.row').insertAdjacentElement('afterend', extendedInfo);
         
-        console.log('Extended info DOM elements created');
-        displayIspInfoIfReady();
+        console.log('Extended info DOM elements created from information.json');
+        
+        if (state.apiInfo) {
+            displayIspInfo(state.apiInfo);
+        }
         
     } catch (err) {
         console.error('Failed to load information.json:', err);
