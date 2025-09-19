@@ -3331,11 +3331,7 @@ function createPackageCheckbox(pkg, isChecked = false, isDependency = false) {
     const label = document.createElement('label');
     label.className = 'form-check-label';
     label.setAttribute('for', `pkg-${pkg.uniqueId || pkg.id}`);
-    label.style.display = 'flex';
-    label.style.alignItems = 'center';
-    label.style.gap = '0.5em';
-    label.style.cursor = 'pointer';
-    
+
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
     checkbox.id = `pkg-${pkg.uniqueId || pkg.id}`; 
