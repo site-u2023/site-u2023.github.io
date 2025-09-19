@@ -1,20 +1,20 @@
 console.log('custom.js loaded');
 
-function updateLink(element, text, href) {
-  if (!element) return;
-  if (typeof text !== 'undefined') element.textContent = text;
-  if (typeof href !== 'undefined') {
-    element.href = href;
-    element.target = '_blank';
-
-    element.addEventListener('click', e => {
-      e.preventDefault();
-      window.open(href, '_blank');
-    });
+window.addEventListener('load', () => {
+  function updateLink(element, text, href) {
+    if (!element) return;
+    if (typeof text !== 'undefined') element.textContent = text;
+    if (typeof href !== 'undefined') {
+      element.href = href;
+      element.target = '_blank';
+    }
   }
 
   const versionLink = document.getElementById('ofs-version')?.closest('a');
-  updateLink(versionLink, '', custom_ofs_link);
+  if (versionLink && typeof custom_ofs_link !== 'undefined') {
+    versionLink.href = custom_ofs_link;
+    versionLink.target = '_blank';
+  }
 
   const feedbackLink = document.querySelector('a[href*="feedback"], a.tr-feedback');
   updateLink(feedbackLink, custom_feedback_text, custom_feedback_link);
