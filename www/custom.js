@@ -2840,7 +2840,9 @@ async function fetchAndDisplayIspInfo() {
     if (!config?.auto_config_api_url) return;
     
     try {
-        const response = await fetch(config.auto_config_api_url);
+        const response = await fetch(config.auto_config_api_url + '?t=' + Date.now(), {
+            cache: 'no-store'
+        });
         const apiInfo = await response.json();
         state.apiInfo = apiInfo;
         
