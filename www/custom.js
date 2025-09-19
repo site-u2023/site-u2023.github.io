@@ -1,25 +1,21 @@
 console.log('custom.js loaded');
 
 window.addEventListener('load', () => {
-  // 共通リンク更新関数
   function updateLink(element, text, href) {
     if (!element) return;
     if (typeof text !== 'undefined') element.textContent = text;
     if (typeof href !== 'undefined') {
       element.href = href;
-      element.target = '_blank'; // 必ず新規タブ
+      element.target = '_blank';
     }
   }
 
-  // versionリンク更新（テキストは非表示）
   const versionLink = document.getElementById('ofs-version')?.closest('a');
-  updateLink(versionLink, '', custom_ofs_link); // テキストは空にする
+  updateLink(versionLink, '', custom_ofs_link);
 
-  // feedback/Forumリンク更新
   const feedbackLink = document.querySelector('a[href*="feedback"], a.tr-feedback');
   updateLink(feedbackLink, custom_feedback_text, custom_feedback_link);
 
-  // API情報がある場合にISP情報を表示
   if (state.apiInfo) {
     displayIspInfoIfReady();
   }
