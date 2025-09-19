@@ -11,10 +11,7 @@ window.addEventListener('load', () => {
   }
 
   const versionLink = document.getElementById('ofs-version')?.closest('a');
-  if (versionLink && typeof custom_ofs_link !== 'undefined') {
-    versionLink.href = custom_ofs_link;
-    versionLink.target = '_blank';
-  }
+  updateLink(versionLink, custom_ofs_version, custom_ofs_link);
 
   const feedbackLink = document.querySelector('a[href*="feedback"], a.tr-feedback');
   updateLink(feedbackLink, custom_feedback_text, custom_feedback_link);
