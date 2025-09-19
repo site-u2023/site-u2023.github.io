@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OpenWrt Custom Components</title>
-    <link rel="stylesheet" href="custom.css">
 </head>
 <body>
     <!-- Extended Build Info Section - ISP情報表示はinformation.jsonから動的生成 -->
@@ -39,7 +38,6 @@
                     </summary>
                     <textarea
                         id="asu-packages"
-                        class="hidden"
                         autocomplete="off"
                         spellcheck="false"
                         autocapitalize="off"
@@ -91,35 +89,5 @@
             </div>
         </details>
     </div>
-
-    <!-- ASU Section 静的化 -->
-    <div id="asu">
-        <details id="custom-packages-details">
-            <!-- #custom-packages-section の details を移動 -->
-        </details>
-        <details id="custom-scripts-details">
-            <!-- #custom-scripts-section の details を移動 -->
-        </details>
-
-        <div id="asu-buildstatus" class="hide">
-            <span></span>
-            <div id="asu-log" class="hide">
-                <details>
-                    <summary><code>STDERR</code></summary>
-                    <pre id="asu-stderr"></pre>
-                </details>
-                <details>
-                    <summary><code>STDOUT</code></summary>
-                    <pre id="asu-stdout"></pre>
-                </details>
-            </div>
-        </div>
-
-        <a href="javascript:buildAsuRequest()" class="custom-link">
-            <span></span><span class="tr-request-build">REQUEST BUILD</span>
-        </a>
-    </div>
-
-    <script src="custom.js"></script>
 </body>
 </html>
