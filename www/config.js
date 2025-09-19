@@ -80,7 +80,7 @@ const custom_ofs_version = "site-u2023.github.io";
 const custom_ofs_link    = "https://github.com/site-u2023/site-u2023.github.io";
 // フィードバックリンク
 const custom_feedback_text = "Forum";
-const custom_feedback_link = "https://forum.openwrt.org/t/builder-custom-firmware-selector-openwrt-org/240446/7";
+const custom_feedback_link = "https://forum.openwrt.org/t/builder-custom-firmware-selector-openwrt-org";
 
 // カスタム機能の自動読み込み
 (function() {
