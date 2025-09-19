@@ -2026,20 +2026,15 @@ case 'radio-group': {
         }
 
         case 'info-display': {
-            const infoDiv = document.createElement('div');
-            infoDiv.id = pkg.id;
-            infoDiv.className = 'info-display';
-            if (pkg.class) {
-                infoDiv.classList.add(pkg.class);
-            }
-            infoDiv.style.padding = '1em';
-            infoDiv.style.backgroundColor = 'var(--bg-item)';
-            infoDiv.style.borderRadius = '0.2em';
-            infoDiv.style.marginTop = '0.5em';
-            infoDiv.style.whiteSpace = 'pre-line';
-            infoDiv.textContent = pkg.content || '';
-            parent.appendChild(infoDiv);
-            break;
+          const infoDiv = document.createElement('div');
+          infoDiv.id = pkg.id;
+          infoDiv.className = 'info-display';
+          if (pkg.class) {
+              infoDiv.classList.add(pkg.class);
+          }
+          infoDiv.textContent = pkg.content || '';
+          parent.appendChild(infoDiv);
+          break;
         }
     }
 }
