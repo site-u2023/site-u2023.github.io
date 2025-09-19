@@ -1,20 +1,24 @@
 console.log('custom.js loaded');
 
 window.addEventListener('load', () => {
-    const versionEl = document.getElementById('ofs-version');
-    if (versionEl && typeof custom_ofs_version !== 'undefined') {
-        UI.updateElement('ofs-version', { text: custom_ofs_version });
+  function updateLink(element, text, href) {
+    if (!element) return;
+    if (typeof text !== 'undefined') element.textContent = text;
+    if (typeof href !== 'undefined') {
+      element.href = href;
+      element.target = '_blank';
     }
+  }
 
-    const linkEl = versionEl?.closest('a');
-    if (linkEl && typeof custom_ofs_link !== 'undefined') {
-        linkEl.href = custom_ofs_link;
-        linkEl.target = "_blank";
-    }
+  const versionLink = document.getElementById('ofs-version')?.closest('a');
+  updateLink(versionLink, custom_ofs_version, custom_ofs_link);
 
-    if (state.apiInfo) {
-        displayIspInfoIfReady();
-    }
+  const feedbackLink = document.querySelector('a[href*="feedback"], a.tr-feedback');
+  updateLink(feedbackLink, custom_feedback_text, custom_feedback_link);
+
+  if (state.apiInfo) {
+    displayIspInfoIfReady();
+  }
 });
 
 // ==================== 状態管理（一元化） ====================
