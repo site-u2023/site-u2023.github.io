@@ -2,9 +2,9 @@
   "categories": [
     {
       "id": "extended-build-info",
-      "name": "Extended Build Info",
+      "name": "Location & ISP Information",
       "class": "tr-extended-info",
-      "description": "Location & ISP Information",
+      "description": "Location and ISP information from auto-config API",
       "type": "form-section",
       "packages": [
         {
@@ -81,7 +81,8 @@
               "selector": "#auto-config-ip",
               "variableName": "ip_address",
               "defaultValue": "",
-              "apiMapping": "ipv4,ipv6"
+              "apiMapping": "ipv4,ipv6",
+              "note": "IPv4 and IPv6 addresses are combined"
             },
             {
               "id": "auto-config-method",
@@ -91,7 +92,8 @@
               "selector": "#auto-config-method",
               "variableName": "method",
               "defaultValue": "",
-              "apiMapping": "aftr,mape"
+              "apiMapping": "mape,aftr",
+              "note": "Connection method determined from mape or aftr presence"
             }
           ]
         }
