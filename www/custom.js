@@ -1,16 +1,18 @@
 console.log('custom.js loaded');
 
 window.addEventListener('load', () => {
-  const versionLink = document.getElementById('ofs-version')?.closest('a');
-  if (versionLink && typeof custom_ofs_link !== 'undefined') {
-    versionLink.href = custom_ofs_link;
-    versionLink.target = '_blank'; 
+  const link = document.getElementById('ofs-version')?.closest('a');
+  if (link && typeof custom_ofs_link !== 'undefined') {
+    link.href = custom_ofs_link;
+    link.target = '_blank';
   }
-
-  if (state.apiInfo) {
-    displayIspInfoIfReady();
-  }
+  document.getElementById('ofs-version')?.textContent = '';
 });
+
+window.addEventListener('load', () => {
+  if (state.apiInfo) displayIspInfoIfReady();
+});
+
 
 // ==================== 状態管理（一元化） ====================
 const state = {
