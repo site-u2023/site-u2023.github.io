@@ -1,4 +1,298 @@
 {
+  "config": {
+    "packageMappings": {
+      "connection_type": {
+        "mape": ["map"],
+        "dslite": ["ds-lite"]
+      },
+      "wifi_mode": {
+        "usteer": ["usteer-from-setup"]
+      }
+    },
+    
+    "ipv6": {
+      "excludeCidrs": [
+        "2001:db8::/32",
+        "2002::/16",
+        "2001::/32",
+        "2001:20::/28",
+        "2001:2::/48",
+        "2001:3::/32",
+        "2001:4:112::/48"
+      ],
+      "guaPrefixCheck": "2000::/3"
+    },
+    
+    "languagePackages": {
+      "basePackagePrefix": "luci-i18n-base-",
+      "firewallPackagePrefix": "luci-i18n-firewall-",
+      "packagePattern": "luci-i18n-{module}-{language}",
+      "excludeLanguage": "en"
+    },
+    
+    "feedRules": {
+      "patterns": [
+        { "prefix": "kmod-", "feed": "kmods" },
+        { "prefix": "luci-", "feed": "luci" }
+      ],
+      "defaultFeed": "packages"
+    },
+    
+    "uiConfig": {
+      "classNames": {
+        "packageCategory": "package-category",
+        "packageGrid": "package-grid",
+        "packageItem": "package-item",
+        "packageDependencies": "package-dependencies",
+        "packageDependent": "package-dependent",
+        "multiInputContainer": "multi-input-container",
+        "multiInputWrapper": "multi-input-wrapper",
+        "multiInputItem": "multi-input-item",
+        "packageSearchInput": "multi-input-item package-search-input",
+        "commandInput": "multi-input-item command-input",
+        "packageSearchResults": "package-search-results",
+        "conditionalSection": "conditional-section",
+        "formRow": "form-row",
+        "formGroup": "form-group",
+        "formLabel": "form-label",
+        "radioGroup": "radio-group",
+        "infoDisplay": "info-display",
+        "configSection": "config-section",
+        "packageCheckbox": "form-check-input package-selector-checkbox",
+        "packageLink": "package-link"
+      },
+      
+      "defaults": {
+        "multiInputPlaceholder": "Type and press Enter",
+        "packageSearchPlaceholder": "Type package name and press Enter",
+        "commandInputPlaceholder": "Type command and press Enter",
+        "columnsPerRow": 2,
+        "packageUrlTemplate": "{id}",
+        "autocompleteMinLength": 2,
+        "autoResizeTextarea": true,
+        "maxSearchResults": 50
+      },
+      
+      "indicators": {
+        "packageLoading": {
+          "id": "package-loading-indicator",
+          "messages": {
+            "checking": "Checking package availability...",
+            "failed": "Package availability check failed"
+          }
+        },
+        "buildStatus": {
+          "id": "asu-buildstatus",
+          "logId": "asu-log",
+          "stderrId": "asu-stderr",
+          "stdoutId": "asu-stdout"
+        }
+      }
+    },
+    
+    "eventMappings": {
+      "radioGroups": {
+        "connection_type": {
+          "handler": "handleConnectionTypeChange",
+          "triggerInitial": true
+        },
+        "net_optimizer": {
+          "handler": "handleNetOptimizerChange",
+          "triggerInitial": true
+        },
+        "wifi_mode": {
+          "handler": "handleWifiModeChange",
+          "triggerInitial": true
+        },
+        "mape_type": {
+          "handler": "handleMapeTypeChange",
+          "triggerInitial": true
+        },
+        "enable_dnsmasq": {
+          "handler": "handleDnsmasqChange",
+          "triggerInitial": true
+        }
+      },
+      
+      "inputFields": {
+        "dslite-aftr-type": {
+          "event": "change",
+          "handler": "syncAftrAddress",
+          "force": true
+        },
+        "dslite-area": {
+          "event": "change",
+          "handler": "syncAftrAddress",
+          "force": true
+        }
+      }
+    },
+    
+    "connectionTypes": {
+      "detection": {
+        "mape": {
+          "check": "mape.brIpv6Address",
+          "displayName": "MAP-E"
+        },
+        "dslite": {
+          "check": "aftr",
+          "displayName": "DS-Lite"
+        },
+        "default": {
+          "displayName": "DHCP/PPPoE"
+        }
+      },
+      
+      "sections": [
+        "auto-section",
+        "dhcp-section",
+        "pppoe-section",
+        "dslite-section",
+        "mape-section",
+        "ap-section"
+      ],
+      
+      "autoMessages": {
+        "detecting": "Detecting connection type...",
+        "standardConnection": "Standard connection will be used"
+      }
+    },
+    
+    "luciNameMappings": {
+      "special": {
+        "luci": "base",
+        "usteer-from-setup": "usteer",
+        "luci-app-usteer-setup": "usteer"
+      },
+      "pattern": "^luci-(?:app|mod|theme|proto)-(.+)$"
+    },
+    
+    "uciDefaults": {
+      "markers": {
+        "variableDefinitions": {
+          "begin": "# BEGIN_VARIABLE_DEFINITIONS",
+          "end": "# END_VARIABLE_DEFINITIONS"
+        },
+        "customCommands": {
+          "begin": "# BEGIN_CUSTOM_COMMANDS",
+          "end": "# END_CUSTOM_COMMANDS"
+        }
+      },
+      "scriptPath": "uci-defaults/setup.sh",
+      "template": "#!/bin/sh\n# BEGIN_VARIABLE_DEFINITIONS\n# END_VARIABLE_DEFINITIONS\n\n# BEGIN_CUSTOM_COMMANDS\n# END_CUSTOM_COMMANDS\n\nexit 0"
+    },
+    
+    "cacheKeyFormats": {
+      "availability": "{version}:{arch}:{feed}:{package}",
+      "feedSet": "{version}:{arch}:{vendor}:{subtarget}:{snapshot}:{feed}",
+      "kmodsToken": "{version}|{vendor}|{snapshot}",
+      "searchFeed": "{version}:{arch}:{feed}"
+    },
+    
+    "validation": {
+      "wifiPassword": {
+        "minLength": 8,
+        "maxLength": 63,
+        "errorMessages": {
+          "tooShort": "Password must be at least 8 characters",
+          "tooLong": "Password must be 63 characters or less"
+        }
+      },
+      "ssid": {
+        "maxLength": 32,
+        "errorMessage": "SSID must be 32 characters or less"
+      },
+      "mobilityDomain": {
+        "pattern": "^[a-f0-9]{4}$",
+        "errorMessage": "Must be 4-digit hex (e.g. 4f57)"
+      },
+      "sshPort": {
+        "min": 1,
+        "max": 65535,
+        "errorMessage": "Port must be between 1 and 65535"
+      }
+    },
+    
+    "apiMappings": {
+      "timezone": "timezone",
+      "zonename": "zonename",
+      "country": "country",
+      "isp": "isp",
+      "as": "as",
+      "ipv4": "ipv4",
+      "ipv6": "ipv6",
+      "notice": "notice",
+      "mape": {
+        "br": "mape.brIpv6Address",
+        "ealen": "mape.eaBitLength",
+        "ipv4Prefix": "mape.ipv4Prefix",
+        "ipv4PrefixLen": "mape.ipv4PrefixLength",
+        "ipv6Prefix": "mape.ipv6Prefix",
+        "ipv6PrefixLen": "mape.ipv6PrefixLength",
+        "psidOffset": "mape.psIdOffset",
+        "psidLen": "mape.psidlen"
+      },
+      "dslite": {
+        "aftr": "aftr.aftrIpv6Address",
+        "type": "aftr.aftrType",
+        "area": "aftr.jurisdiction"
+      },
+      "guaPrefix": {
+        "source": "ipv6",
+        "compute": "generateGuaPrefix"
+      }
+    },
+    
+    "urls": {
+      "setupDb": "uci-defaults/setup.json",
+      "packagesDb": "packages/packages.json",
+      "information": "auto-config/information.json",
+      "customHtml": "custom.html",
+      "autoConfigApi": "/api/auto-config",
+      "packageUrl": "https://openwrt.org/packages/{id}",
+      "customTranslations": "langs/custom.{lang}.json"
+    },
+    
+    "domSelectors": {
+      "packageCategories": "#package-categories",
+      "asuPackages": "#asu-packages",
+      "customScriptsDetails": "#custom-scripts-details",
+      "uciDefaultsContent": "#uci-defaults-content",
+      "dynamicConfigSections": "#dynamic-config-sections",
+      "extendedBuildInfo": "#extended-build-info",
+      "packageSearchAutocomplete": "#package-search-autocomplete",
+      "commandsAutocomplete": "#commands-autocomplete",
+      "hiddenPackagesContainer": "#hidden-packages-container",
+      "imageLink": "#image-link",
+      "ofsVersion": "#ofs-version",
+      "feedbackLink": "a.tr-feedback-link"
+    },
+    
+    "updateSources": {
+      "formField": "form-field",
+      "packageSelected": "package-selected",
+      "packageSearchAdd": "package-search-add",
+      "packageSearchRemove": "package-search-remove",
+      "packageSearchChange": "package-search-change",
+      "connectionType": "connection-type",
+      "netOptimizer": "net-optimizer",
+      "wifiMode": "wifi-mode",
+      "mapeType": "mape-type",
+      "dnsmasqMode": "dnsmasq-mode",
+      "devicePackagesReady": "device-packages-ready",
+      "deviceChanged": "device-changed",
+      "deviceLanguageChanged": "device-language-changed",
+      "browserLanguageChanged": "browser-language-changed",
+      "ispAutoConfig": "isp-auto-config",
+      "forceUpdate": "force-update",
+      "packageSelectorInit": "package-selector-init"
+    },
+    
+    "debugMode": false,
+    "enableLogging": true,
+    "logLevel": "info"
+  },
+  
   "categories": [
     {
       "id": "basic-config",
@@ -20,7 +314,8 @@
               "type": "select",
               "selector": "#aios-language",
               "variableName": "language",
-              "defaultValue": ""
+              "defaultValue": "",
+              "syncWithBrowser": false
             },
             {
               "id": "aios-country",
@@ -181,21 +476,24 @@
               "class": "tr-standard",
               "checked": true,
               "includeFields": ["wlan_ssid", "wlan_password"],
-              "excludeFields": ["enable_usteer", "mobility_domain", "snr"]
+              "excludeFields": ["enable_usteer", "mobility_domain", "snr"],
+              "virtualPackages": []
             },
             {
               "value": "usteer",
               "label": "Usteer",
               "class": "tr-usteer",
               "includeFields": ["wlan_ssid", "wlan_password", "enable_usteer", "mobility_domain", "snr"],
-              "excludeFields": []
+              "excludeFields": [],
+              "virtualPackages": ["usteer-from-setup"]
             },
             {
               "value": "disabled",
               "label": "Disabled",
               "class": "tr-disabled",
               "includeFields": [],
-              "excludeFields": ["wlan_ssid", "wlan_password", "enable_usteer", "mobility_domain", "snr"]
+              "excludeFields": ["wlan_ssid", "wlan_password", "enable_usteer", "mobility_domain", "snr"],
+              "virtualPackages": []
             }
           ]
         },
@@ -223,7 +521,8 @@
                   "selector": "#aios-wifi-ssid",
                   "variableName": "wlan_ssid",
                   "placeholder": "OpenWrt",
-                  "defaultValue": "OpenWrt"
+                  "defaultValue": "OpenWrt",
+                  "maxlength": 32
                 },
                 {
                   "id": "aios-wifi-password",
@@ -233,7 +532,9 @@
                   "selector": "#aios-wifi-password",
                   "variableName": "wlan_password",
                   "placeholder": "8+ characters",
-                  "defaultValue": "password"
+                  "defaultValue": "password",
+                  "minlength": 8,
+                  "maxlength": 63
                 }
               ]
             },
@@ -303,13 +604,39 @@
               "value": "auto",
               "label": "AUTO",
               "class": "tr-auto",
-              "checked": true
+              "checked": true,
+              "virtualPackages": []
             },
-            { "value": "dhcp", "label": "DHCP", "class": "tr-dhcp" },
-            { "value": "pppoe", "label": "PPPoE", "class": "tr-pppoe" },
-            { "value": "dslite", "label": "DS-Lite", "class": "tr-dslite" },
-            { "value": "mape", "label": "MAP-E", "class": "tr-mape" },
-            { "value": "ap", "label": "AP", "class": "tr-ap" }
+            {
+              "value": "dhcp",
+              "label": "DHCP",
+              "class": "tr-dhcp",
+              "virtualPackages": []
+            },
+            {
+              "value": "pppoe",
+              "label": "PPPoE",
+              "class": "tr-pppoe",
+              "virtualPackages": []
+            },
+            {
+              "value": "dslite",
+              "label": "DS-Lite",
+              "class": "tr-dslite",
+              "virtualPackages": ["ds-lite"]
+            },
+            {
+              "value": "mape",
+              "label": "MAP-E",
+              "class": "tr-mape",
+              "virtualPackages": ["map"]
+            },
+            {
+              "value": "ap",
+              "label": "AP",
+              "class": "tr-ap",
+              "virtualPackages": []
+            }
           ]
         },
         {
