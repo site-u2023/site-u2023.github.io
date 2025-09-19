@@ -2903,46 +2903,47 @@ async function insertExtendedInfo(temp) {
         console.log('Extended info already exists');
         return;
     }
-    
+
     const imageLink = document.querySelector('#image-link');
     if (!imageLink) {
         console.log('Image link element not found');
         return;
     }
-    
+
     try {
         const infoUrl = config?.information_path || 'auto-config/information.json';
         const response = await fetch(infoUrl + '?t=' + Date.now());
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        
+
         const infoConfig = await response.json();
         console.log('Information config loaded:', infoConfig);
-        
+
         const extendedInfo = document.createElement('div');
         extendedInfo.id = 'extended-build-info';
         extendedInfo.className = 'hide';
-        
+
         infoConfig.categories.forEach(category => {
             const h3 = document.createElement('h3');
             h3.textContent = category.name;
             if (category.class) h3.classList.add(category.class);
             extendedInfo.appendChild(h3);
-            
+
             category.packages.forEach(pkg => {
                 if (pkg.fields) {
                     pkg.fields.forEach(field => {
                         const row = document.createElement('div');
                         row.className = 'row';
-                        
+
                         const col1 = document.createElement('div');
                         col1.className = 'col1';
                         if (field.class) col1.classList.add(field.class);
                         col1.textContent = field.label;
-                        
+
                         const col2 = document.createElement('div');
                         col2.className = 'col2';
                         col2.id = field.id;
-                        
+                        col2.textContent = current_language_json?.['tr-loading'] || 'Loading...';
+
                         row.appendChild(col1);
                         row.appendChild(col2);
                         extendedInfo.appendChild(row);
@@ -2950,15 +2951,15 @@ async function insertExtendedInfo(temp) {
                 }
             });
         });
-        
+
         imageLink.closest('.row').insertAdjacentElement('afterend', extendedInfo);
-        
+
         console.log('Extended info DOM elements created from information.json');
-        
+
         if (state.apiInfo) {
             displayIspInfo(state.apiInfo);
         }
-        
+
     } catch (err) {
         console.error('Failed to load information.json:', err);
     }
