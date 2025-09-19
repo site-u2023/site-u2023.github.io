@@ -10,10 +10,10 @@ window.addEventListener('load', () => {
     }
   }
 
-  const versionLink = document.getElementById('ofs-version')?.closest('a');
-  updateLink(versionLink, custom_ofs_version, custom_ofs_link);
+  const ofsLink = document.querySelector('#ofs-version')?.closest('a');
+  updateLink(ofsLink, custom_ofs_version, custom_ofs_link);
 
-  const feedbackLink = document.querySelector('a#custom-feedback') || document.querySelector('a[href*="openwrt.org"]');
+  const feedbackLink = document.querySelector('a.tr-feedback-link');
   updateLink(feedbackLink, custom_feedback_text, custom_feedback_link);
 });
 
