@@ -1,18 +1,29 @@
 console.log('custom.js loaded');
 
 window.addEventListener('load', () => {
-  const link = document.getElementById('ofs-version')?.closest('a');
-  if (link && typeof custom_ofs_link !== 'undefined') {
-    link.href = custom_ofs_link;
-    link.target = '_blank';
+  // 共通リンク更新関数
+  function updateLink(element, text, href) {
+    if (!element) return;
+    if (typeof text !== 'undefined') element.textContent = text;
+    if (typeof href !== 'undefined') {
+      element.href = href;
+      element.target = '_blank'; // 必ず新規タブ
+    }
   }
-  document.getElementById('ofs-version')?.textContent = '';
-});
 
-window.addEventListener('load', () => {
-  if (state.apiInfo) displayIspInfoIfReady();
-});
+  // versionリンク更新（テキストは非表示）
+  const versionLink = document.getElementById('ofs-version')?.closest('a');
+  updateLink(versionLink, '', custom_ofs_link); // テキストは空にする
 
+  // feedback/Forumリンク更新
+  const feedbackLink = document.querySelector('a[href*="feedback"], a.tr-feedback');
+  updateLink(feedbackLink, custom_feedback_text, custom_feedback_link);
+
+  // API情報がある場合にISP情報を表示
+  if (state.apiInfo) {
+    displayIspInfoIfReady();
+  }
+});
 
 // ==================== 状態管理（一元化） ====================
 const state = {
