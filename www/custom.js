@@ -1,13 +1,16 @@
 console.log('custom.js loaded');
 
-window.addEventListener('load', () => {
-  function updateLink(element, text, href) {
-    if (!element) return;
-    if (typeof text !== 'undefined') element.textContent = text;
-    if (typeof href !== 'undefined') {
-      element.href = href;
-      element.target = '_blank';
-    }
+function updateLink(element, text, href) {
+  if (!element) return;
+  if (typeof text !== 'undefined') element.textContent = text;
+  if (typeof href !== 'undefined') {
+    element.href = href;
+    element.target = '_blank';
+
+    element.addEventListener('click', e => {
+      e.preventDefault();
+      window.open(href, '_blank');
+    });
   }
 
   const versionLink = document.getElementById('ofs-version')?.closest('a');
