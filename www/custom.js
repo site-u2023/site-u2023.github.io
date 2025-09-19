@@ -4,12 +4,7 @@ window.addEventListener('load', () => {
   const versionLink = document.getElementById('ofs-version')?.closest('a');
   if (versionLink && typeof custom_ofs_link !== 'undefined') {
     versionLink.href = custom_ofs_link;
-    versionLink.target = '_blank';
-  }
-
-  const versionEl = document.getElementById('ofs-version');
-  if (versionEl && typeof custom_ofs_version !== 'undefined') {
-    UI.updateElement('ofs-version', { text: custom_ofs_version });
+    versionLink.target = '_blank'; 
   }
 
   if (state.apiInfo) {
