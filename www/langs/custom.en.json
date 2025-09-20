@@ -108,9 +108,9 @@
 
     "tr-dnsmasq-settings": "DNS Server Optimization",
     "tr-dnsmasq-mode": "DNS Server Mode",
-    "tr-auto": "Automatic",
-    "tr-manual": "Manual",
-    "tr-disabled": "Disabled",
+    "tr-dnsmasq-auto": "Automatic",
+    "tr-dnsmasq-manual": "Manual",
+    "tr-dnsmasq-disabled": "Disabled",
     "tr-dnsmasq-cache": "Cache Size",
     "tr-dnsmasq-negcache": "Negative Cache",
     "tr-dnsmasq-auto-optimization": "Automatic Optimization",
