@@ -628,9 +628,6 @@ async function updateLanguagePackageCore() {
     if (!langCfg) {
         throw new Error('languagePackages config missing in setup.json');
     }
-    if (!langCfg.packagePattern || typeof langCfg.packagePattern !== 'string') {
-        throw new Error('languagePackages.packagePattern missing in setup.json');
-    }
 
     console.log(`Language package update - Selected language: ${lang}`);
 
@@ -657,51 +654,54 @@ async function updateLanguagePackageCore() {
 
     const addedLangPackages = new Set();
 
-    const prefixEntries = Object.entries(langCfg).filter(
-        ([k, v]) => typeof v === 'string' && k.endsWith('PackagePrefix')
-    );
+    const basePkg = `${langCfg.basePackagePrefix}${lang}`;
+    const firewallPkg = `${langCfg.firewallPackagePrefix}${lang}`;
 
-    for (const [, prefix] of prefixEntries) {
-        const name = `${prefix}${lang}`;
-        try {
-            if (await isPackageAvailable(name, 'luci')) {
-                state.packages.dynamic.add(name);
-                addedLangPackages.add(name);
-                console.log('Added language package from prefix:', name);
-            }
-        } catch (err) {
-            console.error('Error checking language package from prefix:', name, err);
+    try {
+        if (await isPackageAvailable(basePkg, 'luci')) {
+            state.packages.dynamic.add(basePkg);
+            addedLangPackages.add(basePkg);
+            console.log('Added base language package:', basePkg);
         }
+
+        if (await isPackageAvailable(firewallPkg, 'luci')) {
+            state.packages.dynamic.add(firewallPkg);
+            addedLangPackages.add(firewallPkg);
+            console.log('Added firewall language package:', firewallPkg);
+        }
+    } catch (err) {
+        console.error('Error checking base/firewall package:', err);
     }
 
     const checkPromises = [];
+
     for (const pkg of currentPackages) {
-        let moduleName = null;
+        let luciName = null;
 
         if (pkg.startsWith('luci-') && !pkg.startsWith('luci-i18n-')) {
-            moduleName = extractLuciName(pkg);
+            luciName = extractLuciName(pkg);
         } else if (pkg === 'usteer-from-setup') {
-            moduleName = 'usteer';
+            luciName = 'usteer';
         }
 
-        if (!moduleName) continue;
+        if (luciName) {
+            const langPkg = langCfg.packagePattern
+                .replace('{module}', luciName)
+                .replace('{language}', lang);
 
-        const langPkg = langCfg.packagePattern
-            .replace('{module}', moduleName)
-            .replace('{language}', lang);
-
-        const promise = (async () => {
-            try {
-                if (await isPackageAvailable(langPkg, 'luci')) {
-                    state.packages.dynamic.add(langPkg);
-                    addedLangPackages.add(langPkg);
-                    console.log(`Added LuCI language package: ${langPkg} for ${pkg}`);
+            const promise = (async () => {
+                try {
+                    if (await isPackageAvailable(langPkg, 'luci')) {
+                        state.packages.dynamic.add(langPkg);
+                        addedLangPackages.add(langPkg);
+                        console.log(`Added LuCI language package: ${langPkg} for ${pkg}`);
+                    }
+                } catch (err) {
+                    console.error(`Error checking LuCI package ${langPkg}:`, err);
                 }
-            } catch (err) {
-                console.error(`Error checking LuCI package ${langPkg}:`, err);
-            }
-        })();
-        checkPromises.push(promise);
+            })();
+            checkPromises.push(promise);
+        }
     }
 
     await Promise.all(checkPromises);
