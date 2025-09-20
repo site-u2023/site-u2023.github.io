@@ -2729,11 +2729,22 @@ function handleConditionalSectionChange(categoryId, fieldName, selectedValue, op
             const shouldShow = pkg.showWhen.values?.includes(selectedValue);
             
             if (shouldShow) {
-                CustomUtils.show(section);
-                
+                section.innerHTML = '';
+                buildField(section, pkg);
+
+                if (typeof applyCustomTranslations === 'function') {
+                    applyCustomTranslations(current_language_json);
+                }
+
+                if (pkg.variableName && eventMappings?.[pkg.type]) {
+                    attachFieldEvents?.(pkg);
+                }
+
                 if (pkg.children && options.processChildren) {
                     processNestedSections(pkg.children, fieldName, selectedValue);
                 }
+
+                CustomUtils.show(section);
             } else {
                 CustomUtils.hide(section);
             }
