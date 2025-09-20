@@ -1762,32 +1762,13 @@ async function verifyAllPackages() {
         }
     }
 
-for (const pkg of uniquePackages) {
+    for (const pkg of uniquePackages) {
         const available = isAvailableInIndex(pkg.id, pkg.feed, index);
         updatePackageAvailabilityUI(pkg.uniqueId, available);
 
         if (!available) {
             unavailableCount++;
             if (pkg.checked) checkedUnavailable.push(pkg.id);
-        }
-        
-        const available = isAvailableInIndex(pkg.id, pkg.feed, index);
-        
-        let allDepsAvailable = true;
-        if (pkg.dependencies) {
-            allDepsAvailable = pkg.dependencies.every(depId => {
-                const depPkg = findPackageById(depId);
-                return depPkg && isAvailableInIndex(depPkg.id, guessFeedForPackage(depPkg.id), index);
-            });
-        }
-        
-        const finalAvailable = available && allDepsAvailable;
-        
-        if (finalAvailable) {
-            updatePackageAvailabilityUI(pkg.uniqueId, true);
-        } else {
-            hidePackageWithDependencies(pkg.id);
-            unavailableCount++;
         }
     }
 
