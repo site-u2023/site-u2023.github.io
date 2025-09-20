@@ -1720,7 +1720,7 @@ async function verifyAllPackages() {
     const startTime = Date.now();
     console.log('Starting package verification...');
 
-    const packagesToVerify = [];
+const packagesToVerify = [];
     state.packages.json.categories.forEach(category => {
         category.packages.forEach(pkg => {
             packagesToVerify.push({
@@ -1728,11 +1728,31 @@ async function verifyAllPackages() {
                 uniqueId: pkg.uniqueId || pkg.id,
                 feed: guessFeedForPackage(pkg.id),
                 hidden: pkg.hidden || false,
-                checked: pkg.checked || false,
-                dependencies: pkg.dependencies || []
+                checked: pkg.checked || false
             });
+            if (pkg.dependencies) {
+                pkg.dependencies.forEach(depId => {
+                    const depPkg = findPackageById(depId);
+                    if (depPkg) {
+                        packagesToVerify.push({
+                            id: depPkg.id,
+                            uniqueId: depPkg.uniqueId || depPkg.id,
+                            feed: guessFeedForPackage(depPkg.id),
+                            hidden: depPkg.hidden || false,
+                            isDependency: true
+                        });
+                    }
+                });
+            }
         });
     });
+
+    const uniquePackages = Array.from(new Set(packagesToVerify.map(p => `${p.id}:${p.feed}`)))
+        .map(key => {
+            const [id, feed] = key.split(':');
+            const pkg = packagesToVerify.find(p => p.id === id && p.feed === feed);
+            return pkg;
+        });
 
     console.log(`Verifying ${uniquePackages.length} unique packages...`);
 
