@@ -1793,10 +1793,8 @@ function updatePackageAvailabilityUI(uniqueId, isAvailable) {
             if (!isAvailable) {
                 UI.updateElement(label, { show: false });
                 checkbox.checked = false;
-                checkbox.disabled = true;
             } else {
                 UI.updateElement(label, { show: true });
-                checkbox.disabled = false;
             }
         }
         return;
@@ -1805,16 +1803,13 @@ function updatePackageAvailabilityUI(uniqueId, isAvailable) {
     if (!isAvailable) {
         UI.updateElement(packageItem, { show: false });
         checkbox.checked = false;
-        checkbox.disabled = true;
         
         const depCheckboxes = packageItem.querySelectorAll('.package-dependent input[type="checkbox"]');
         depCheckboxes.forEach(depCb => {
             depCb.checked = false;
-            depCb.disabled = true;
         });
     } else {
         UI.updateElement(packageItem, { show: true });
-        checkbox.disabled = false;
     }
     
     updateCategoryVisibility(packageItem);
