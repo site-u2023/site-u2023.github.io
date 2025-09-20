@@ -517,13 +517,16 @@
         {
           "id": "kmod-usb-net-rndis",
           "name": "kmod-usb-net-rndis",
-          "dependencies": ["kmod-usb-gadget-eth"],
-          "enableVar": "enable_usb_rndis"
+          "dependencies": ["kmod-usb-net-cdc-ether"]
+        },
+        {
+          "id": "kmod-usb-net-cdc-ether",
+          "name": "kmod-usb-net-cdc-ether",
+          "hidden": true
         },
         {
           "id": "kmod-usb-gadget-eth",
-          "name": "kmod-usb-gadget-eth",
-          "hidden": true
+          "name": "kmod-usb-gadget-eth"
         }
       ]
     },
