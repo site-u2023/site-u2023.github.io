@@ -3133,6 +3133,21 @@ async function initializeCustomFeatures(asuSection, temp) {
 
     setupLanguageSelector();
 
+    const langConfig = state.config.setup?.config?.languagePackages || {};
+    const defaultLang = langConfig.defaultLanguage || 'ja';
+    const excludeLang = langConfig.excludeLanguage || 'en';
+
+    const langInput = document.querySelector('input[name="language"], select[name="language"]');
+    if (langInput) {
+        if (!langInput.value || langInput.value === excludeLang) {
+            langInput.value = defaultLang;
+            // state にも反映
+            if (!state.formValues) state.formValues = {};
+            state.formValues.language = defaultLang;
+            console.log("Language default applied:", defaultLang);
+        }
+    }
+
     setupPackageSearch();
     console.log('Package search initialized');
 
@@ -3646,8 +3661,17 @@ function updateVariableDefinitions() {
         }
     });
 
-    const variableDefinitions = generateVariableDefinitions(emissionValues);
+    const { language_packages, ...uciValues } = emissionValues;
+
+    const variableDefinitions = generateVariableDefinitions(uciValues);
     updateTextareaContent(textarea, variableDefinitions);
+
+    if (language_packages) {
+        state.packageSelections = [
+            ...(state.packageSelections || []),
+            ...language_packages
+        ];
+    }
 }
 
 function updateTextareaContent(textarea, variableDefinitions) {
