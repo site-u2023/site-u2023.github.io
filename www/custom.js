@@ -1765,7 +1765,17 @@ async function verifyAllPackages() {
 
     for (const pkg of uniquePackages) {
         const available = isAvailableInIndex(pkg.id, pkg.feed, index);
-        updatePackageAvailabilityUI(pkg.uniqueId, available);
+        
+        if (pkg.isDependency) {
+            const parentPkg = findParentOfDependency(pkg.id);
+            if (parentPkg && !isAvailableInIndex(parentPkg.id, guessFeedForPackage(parentPkg.id), index)) {
+                updatePackageAvailabilityUI(pkg.uniqueId, false);
+            } else {
+                updatePackageAvailabilityUI(pkg.uniqueId, available);
+            }
+        } else {
+            updatePackageAvailabilityUI(pkg.uniqueId, available);
+        }
 
         if (!available) {
             unavailableCount++;
