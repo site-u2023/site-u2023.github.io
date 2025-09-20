@@ -1790,26 +1790,29 @@ function updatePackageAvailabilityUI(uniqueId, isAvailable) {
     if (!packageItem) {
         const label = checkbox.closest('label');
         if (label) {
-            if (!isAvailable) {
-                UI.updateElement(label, { show: false });
-                checkbox.checked = false;
-            } else {
-                UI.updateElement(label, { show: true });
-            }
+            UI.updateElement(label, { show: isAvailable });
+            if (!isAvailable) checkbox.checked = false;
         }
         return;
     }
     
-    if (!isAvailable) {
-        UI.updateElement(packageItem, { show: false });
-        checkbox.checked = false;
-        
-        const depCheckboxes = packageItem.querySelectorAll('.package-dependent input[type="checkbox"]');
-        depCheckboxes.forEach(depCb => {
-            depCb.checked = false;
-        });
+    const isMainPackage = !checkbox.closest('.package-dependent');
+    
+    if (isMainPackage) {
+        if (isAvailable) {
+            UI.updateElement(packageItem, { show: true });
+        } else {
+            UI.updateElement(packageItem, { show: false });
+            checkbox.checked = false;
+            const depCheckboxes = packageItem.querySelectorAll('.package-dependent input[type="checkbox"]');
+            depCheckboxes.forEach(depCb => depCb.checked = false);
+        }
     } else {
-        UI.updateElement(packageItem, { show: true });
+        const depLabel = checkbox.closest('label');
+        if (depLabel) {
+            UI.updateElement(depLabel, { show: isAvailable });
+            if (!isAvailable) checkbox.checked = false;
+        }
     }
     
     updateCategoryVisibility(packageItem);
