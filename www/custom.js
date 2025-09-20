@@ -1762,7 +1762,7 @@ async function verifyAllPackages() {
         }
     }
 
-    for (const pkg of uniquePackages) {
+for (const pkg of uniquePackages) {
         const available = isAvailableInIndex(pkg.id, pkg.feed, index);
         updatePackageAvailabilityUI(pkg.uniqueId, available);
 
