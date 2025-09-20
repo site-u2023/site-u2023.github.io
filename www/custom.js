@@ -1720,7 +1720,7 @@ async function verifyAllPackages() {
     const startTime = Date.now();
     console.log('Starting package verification...');
 
-const packagesToVerify = [];
+    const packagesToVerify = [];
     state.packages.json.categories.forEach(category => {
         category.packages.forEach(pkg => {
             packagesToVerify.push({
@@ -1762,25 +1762,6 @@ const packagesToVerify = [];
 
     let unavailableCount = 0;
     const checkedUnavailable = [];
-
-// 共通関数：親子パッケージを全て非表示にする
-    function hidePackageWithDependencies(mainPackageId) {
-        const mainPkg = findPackageById(mainPackageId);
-        if (!mainPkg) return;
-        
-        // メインパッケージを非表示
-        updatePackageAvailabilityUI(mainPkg.uniqueId || mainPkg.id, false);
-        
-        // 依存関係も全て非表示
-        if (mainPkg.dependencies) {
-            mainPkg.dependencies.forEach(depId => {
-                const depPkg = findPackageById(depId);
-                if (depPkg) {
-                    updatePackageAvailabilityUI(depPkg.uniqueId || depPkg.id, false);
-                }
-            });
-        }
-    }
 
     for (const pkg of uniquePackages) {
         const available = isAvailableInIndex(pkg.id, pkg.feed, index);
