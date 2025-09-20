@@ -133,7 +133,11 @@ const CustomUtils = {
             throw new Error(`Missing subtarget for kmods URL: version=${version}, vendor=${vendor}`);
         }    
     
-        const cacheKey = `${version}|${vendor}|${isSnapshot ? 'S' : 'R'}`;
+        const keyFormat = state.config.setup?.config?.cacheKeyFormats?.kmodsToken || '{version}|{vendor}|{snapshot}';
+        const cacheKey = keyFormat
+            .replace('{version}', version)
+            .replace('{vendor}', vendor)
+            .replace('{snapshot}', isSnapshot ? 'S' : 'R');
     
         if (state.cache.kmods.token && state.cache.kmods.key === cacheKey) {
             const searchTpl = isSnapshot ? config.kmods_apk_search_url : config.kmods_opkg_search_url;
@@ -204,9 +208,11 @@ const CustomUtils = {
         if (!apiInfo?.ipv6) return null;
         const ipv6 = apiInfo.ipv6.toLowerCase();
     
-        if (!this.inCidr(ipv6, '2000::/3')) return null;
+        const ipv6Config = state.config.setup?.config?.ipv6;
+        const guaPrefixCheck = ipv6Config?.guaPrefixCheck || '2000::/3';
+        if (!this.inCidr(ipv6, guaPrefixCheck)) return null;
     
-        const excludeCidrs = [
+        const excludeCidrs = ipv6Config?.excludeCidrs || [
             '2001:db8::/32',
             '2002::/16',
             '2001::/32',
@@ -311,7 +317,7 @@ const CustomUtils = {
         });
     },
     
-clearWifiFields: function() {
+    clearWifiFields: function() {
         const wifiCategory = state.config.setup.categories.find(cat => cat.id === 'wifi-config');
         if (!wifiCategory) return;
 
@@ -515,11 +521,12 @@ async function updateAllPackageState(source = 'unknown') {
     const searchValues = state.ui.managers.packageSearch ? state.ui.managers.packageSearch.getAllValues() : [];
     const hash = JSON.stringify({ form: formValues, search: searchValues });
 
+    const updateSources = state.config.setup?.config?.updateSources || {};
     const forceSources = new Set([
-        'package-selected',
-        'package-search-change',
-        'package-search-add',
-        'package-search-remove'
+        updateSources.packageSelected || 'package-selected',
+        updateSources.packageSearchChange || 'package-search-change',
+        updateSources.packageSearchAdd || 'package-search-add',
+        updateSources.packageSearchRemove || 'package-search-remove'
     ]);
     const isForced = source.includes('device') || source.includes('force') || forceSources.has(source);
 
@@ -539,6 +546,8 @@ async function updateAllPackageState(source = 'unknown') {
 function updateSetupJsonPackagesCore() {
     if (!state.config.setup) return;
 
+    const packageMappings = state.config.setup?.config?.packageMappings || {};
+
     function handleRadioGroup(pkg) {
         const selectedValue = getFieldValue(`input[name="${pkg.variableName}"]:checked`);
         if (!selectedValue) return;
@@ -552,12 +561,18 @@ function updateSetupJsonPackagesCore() {
 
         if (pkg.variableName === 'connection_type' && selectedValue === 'auto' && state.apiInfo) {
             console.log('AUTO mode with API info, applying specific packages');
-            if (state.apiInfo.mape?.brIpv6Address) {
+            const connectionTypes = state.config.setup?.config?.connectionTypes?.detection || {};
+            
+            if (state.apiInfo.mape?.brIpv6Address && packageMappings.connection_type?.mape) {
                 console.log('Enabling MAP-E package');
-                toggleVirtualPackage('map', true);
-            } else if (state.apiInfo.aftr) {
+                packageMappings.connection_type.mape.forEach(pkgId => {
+                    toggleVirtualPackage(pkgId, true);
+                });
+            } else if (state.apiInfo.aftr && packageMappings.connection_type?.dslite) {
                 console.log('Enabling DS-Lite package');
-                toggleVirtualPackage('ds-lite', true);
+                packageMappings.connection_type.dslite.forEach(pkgId => {
+                    toggleVirtualPackage(pkgId, true);
+                });
             }
         }
     }
@@ -611,10 +626,7 @@ function toggleVirtualPackage(packageId, enabled) {
 }
 
 function toggleVirtualPackagesByType(type, value, enabled) {
-    const packageMap = {
-        connection_type: { mape: ['map'], dslite: ['ds-lite'] },
-        wifi_mode: { usteer: ['usteer-from-setup'] }
-    };
+    const packageMap = state.config.setup?.config?.packageMappings || {};
 
     const targets = packageMap[type]?.[value];
     if (!targets || targets.length === 0) {
@@ -627,13 +639,17 @@ function toggleVirtualPackagesByType(type, value, enabled) {
 }
 
 async function updateLanguagePackageCore() {
-    state.ui.language.selected = config.device_language || config?.fallback_language || 'en';
+    const languageConfig = state.config.setup?.config?.languagePackages || {};
+    const excludeLanguage = languageConfig.excludeLanguage || 'en';
+    
+    state.ui.language.selected = config.device_language || config?.fallback_language || excludeLanguage;
     
     console.log(`Language package update - Selected language: ${state.ui.language.selected}`);
 
     const removedPackages = [];
+    const basePrefix = languageConfig.basePackagePrefix || 'luci-i18n-';
     for (const pkg of Array.from(state.packages.dynamic)) {
-        if (pkg.startsWith('luci-i18n-')) {
+        if (pkg.startsWith(basePrefix)) {
             state.packages.dynamic.delete(pkg);
             removedPackages.push(pkg);
         }
@@ -644,8 +660,8 @@ async function updateLanguagePackageCore() {
     }
 
     const hasArch = state.device.arch;
-    if (!state.ui.language.selected || state.ui.language.selected === 'en' || !hasArch) {
-        console.log('Skipping language packages - English or no arch info');
+    if (!state.ui.language.selected || state.ui.language.selected === excludeLanguage || !hasArch) {
+        console.log(`Skipping language packages - ${excludeLanguage} or no arch info`);
         return;
     }
     
@@ -654,8 +670,8 @@ async function updateLanguagePackageCore() {
     
     const addedLangPackages = new Set();
     
-    const basePkg = `luci-i18n-base-${state.ui.language.selected}`;
-    const firewallPkg = `luci-i18n-firewall-${state.ui.language.selected}`;
+    const basePkg = `${languageConfig.basePackagePrefix}base-${state.ui.language.selected}`;
+    const firewallPkg = `${languageConfig.firewallPackagePrefix}firewall-${state.ui.language.selected}`;
     
     try {
         if (await isPackageAvailable(basePkg, 'luci')) {
@@ -674,18 +690,21 @@ async function updateLanguagePackageCore() {
     }
 
     const checkPromises = [];
+    const packagePattern = languageConfig.packagePattern || 'luci-i18n-{module}-{language}';
     
     for (const pkg of currentPackages) {
         let luciName = null;
         
-        if (pkg.startsWith('luci-') && !pkg.startsWith('luci-i18n-')) {
+        if (pkg.startsWith('luci-') && !pkg.startsWith(basePrefix)) {
             luciName = extractLuciName(pkg);
         } else if (pkg === 'usteer-from-setup') {
             luciName = 'usteer';
         }
         
         if (luciName) {
-            const langPkg = `luci-i18n-${luciName}-${state.ui.language.selected}`;
+            const langPkg = packagePattern
+                .replace('{module}', luciName)
+                .replace('{language}', state.ui.language.selected);
             
             const promise = (async () => {
                 try {
@@ -728,7 +747,9 @@ function getCurrentPackageListForLanguage() {
     }
 
     for (const name of state.packages.dynamic) {
-        if (!name.startsWith('luci-i18n-')) out.add(name);
+        const languageConfig = state.config.setup?.config?.languagePackages || {};
+        const basePrefix = languageConfig.basePackagePrefix || 'luci-i18n-';
+        if (!name.startsWith(basePrefix)) out.add(name);
     }
 
     const allSelectable = new Set();
@@ -739,8 +760,10 @@ function getCurrentPackageListForLanguage() {
 
     const textarea = document.querySelector('#asu-packages');
     if (textarea) {
+        const languageConfig = state.config.setup?.config?.languagePackages || {};
+        const basePrefix = languageConfig.basePackagePrefix || 'luci-i18n-';
         for (const name of CustomUtils.split(textarea.value)) {
-            if (!name.startsWith('luci-i18n-') && !allSelectable.has(name)) out.add(name);
+            if (!name.startsWith(basePrefix) && !allSelectable.has(name)) out.add(name);
         }
     }
 
@@ -822,7 +845,8 @@ function updatePackageListToTextarea(source = 'unknown') {
     ])];
 
     const currentHash = JSON.stringify(uniquePackages);
-    if (currentHash === state.cache.lastPackageListHash && source !== 'force-update') {
+    const updateSources = state.config.setup?.config?.updateSources || {};
+    if (currentHash === state.cache.lastPackageListHash && source !== (updateSources.forceUpdate || 'force-update')) {
         console.log('updatePackageListToTextarea: No changes detected, skipping update from:', source);
         return;
     }
@@ -848,7 +872,10 @@ function updatePackageListToTextarea(source = 'unknown') {
 
 function isManualPackage(pkg, confirmedSet, knownSelectablePackages, currentUISelections) {
     if (confirmedSet.has(pkg)) return false;
-    if (pkg.startsWith('luci-i18n-')) return false;
+    
+    const languageConfig = state.config.setup?.config?.languagePackages || {};
+    const basePrefix = languageConfig.basePackagePrefix || 'luci-i18n-';
+    if (pkg.startsWith(basePrefix)) return false;
     if (knownSelectablePackages.has(pkg)) return false;
     
     const isCheckboxManaged = document.querySelector(`.package-selector-checkbox[data-package="${pkg}"]`) !== null;
@@ -873,8 +900,10 @@ class MultiInputManager {
             return;
         }
         
+        const uiDefaults = state.config.setup?.config?.uiConfig?.defaults || {};
+        
         this.options = {
-            placeholder: options.placeholder || 'Type and press Enter',
+            placeholder: options.placeholder || uiDefaults.multiInputPlaceholder || 'Type and press Enter',
             className: options.className || 'multi-input-item',
             onAdd: options.onAdd || (() => {}),
             onRemove: options.onRemove || (() => {}),
@@ -888,14 +917,16 @@ class MultiInputManager {
     
     init() {
         this.container.innerHTML = '';
-        this.container.className = 'multi-input-container';
+        const classNames = state.config.setup?.config?.uiConfig?.classNames || {};
+        this.container.className = classNames.multiInputContainer || 'multi-input-container';
         
         this.addInput('', true);
     }
     
     addInput(value = '', focus = false) {
+        const classNames = state.config.setup?.config?.uiConfig?.classNames || {};
         const inputWrapper = document.createElement('div');
-        inputWrapper.className = 'multi-input-wrapper';
+        inputWrapper.className = classNames.multiInputWrapper || 'multi-input-wrapper';
         
         const input = document.createElement('input');
         input.type = 'text';
@@ -949,8 +980,11 @@ class MultiInputManager {
     
     handleInput(e, input) {
         const value = input.value.trim();
-    
-        if (this.options.autocomplete && value.length >= 2) {
+        
+        const uiDefaults = state.config.setup?.config?.uiConfig?.defaults || {};
+        const minLength = uiDefaults.autocompleteMinLength || 2;
+        
+        if (this.options.autocomplete && value.length >= minLength) {
             this.options.autocomplete(value, input);
         }
     
@@ -1017,7 +1051,8 @@ class MultiInputManager {
 
 async function loadCustomHTML() {
     try {
-        const response = await fetch('custom.html?t=' + Date.now());
+        const customHtmlUrl = state.config.setup?.config?.urls?.customHtml || 'custom.html';
+        const response = await fetch(customHtmlUrl + '?t=' + Date.now());
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const html = await response.text();
         console.log('custom.html loaded');
@@ -1052,6 +1087,7 @@ function waitForAsuAndInit(temp) {
 function setupPackageSearch() {
     console.log('setupPackageSearch called');
     
+    const domSelectors = state.config.setup?.config?.domSelectors || {};
     const searchContainer = document.getElementById('package-search-autocomplete');
     
     if (!searchContainer) {
@@ -1064,19 +1100,23 @@ function setupPackageSearch() {
         oldInput.remove();
     }
     
+    const uiDefaults = state.config.setup?.config?.uiConfig?.defaults || {};
+    const classNames = state.config.setup?.config?.uiConfig?.classNames || {};
+    const updateSources = state.config.setup?.config?.updateSources || {};
+    
     state.ui.managers.packageSearch = new MultiInputManager('package-search-autocomplete', {
-        placeholder: 'Type package name and press Enter',
-        className: 'multi-input-item package-search-input',
+        placeholder: uiDefaults.packageSearchPlaceholder || 'Type package name and press Enter',
+        className: classNames.packageSearchInput || 'multi-input-item package-search-input',
         onAdd: (packageName) => {
             console.log('Package added:', packageName);
-            updateAllPackageState('package-search-add');
+            updateAllPackageState(updateSources.packageSearchAdd || 'package-search-add');
         },
         onRemove: (packageName) => {
             console.log('Package removed:', packageName);
-            updateAllPackageState('package-search-remove');
+            updateAllPackageState(updateSources.packageSearchRemove || 'package-search-remove');
         },
         onChange: (values) => {
-            updateAllPackageState('package-search-change');
+            updateAllPackageState(updateSources.packageSearchChange || 'package-search-change');
         },
         autocomplete: (query, inputElement) => {
             searchPackages(query, inputElement);
@@ -1140,7 +1180,11 @@ async function searchPackages(query, inputElement) {
 
 async function searchInFeed(query, feed, version, arch) {
     const deviceInfo = getDeviceInfo();
-    const cacheKey = `${version}:${arch}:${feed}`;
+    const cacheKeyFormat = state.config.setup?.config?.cacheKeyFormats?.searchFeed || '{version}:{arch}:{feed}';
+    const cacheKey = cacheKeyFormat
+        .replace('{version}', version)
+        .replace('{arch}', arch)
+        .replace('{feed}', feed);
 
     try {
         if (!state.cache.feed.has(cacheKey)) {
@@ -1188,8 +1232,11 @@ function showPackageSearchResults(results, inputElement) {
     const container = document.getElementById('package-search-autocomplete');
     if (!container) return;
     
+    const classNames = state.config.setup?.config?.uiConfig?.classNames || {};
+    const updateSources = state.config.setup?.config?.updateSources || {};
+    
     const resultsDiv = document.createElement('div');
-    resultsDiv.className = 'package-search-results';
+    resultsDiv.className = classNames.packageSearchResults || 'package-search-results';
     
     results.forEach(pkgName => {
         const item = document.createElement('div');
@@ -1213,7 +1260,7 @@ function showPackageSearchResults(results, inputElement) {
                 
                 clearPackageSearchResults();
                 state.ui.managers.packageSearch.options.onChange(state.ui.managers.packageSearch.getAllValues());
-                updateAllPackageState('package-selected');
+                updateAllPackageState(updateSources.packageSelected || 'package-selected');
             } catch (error) {
                 console.error('Error in package selection:', error);
             }
@@ -1226,7 +1273,9 @@ function showPackageSearchResults(results, inputElement) {
 }
 
 function clearPackageSearchResults() {
-    const results = document.querySelectorAll('.package-search-results');
+    const classNames = state.config.setup?.config?.uiConfig?.classNames || {};
+    const className = classNames.packageSearchResults || 'package-search-results';
+    const results = document.querySelectorAll('.' + className.replace(' ', '.'));
     results.forEach(el => el.remove());
 }
 
@@ -1387,7 +1436,8 @@ async function handleMainLanguageChange(e) {
         });
         
         if (oldDeviceLanguage !== state.ui.language.selected) {
-            updateAllPackageState('browser-language-changed');
+            const updateSources = state.config.setup?.config?.updateSources || {};
+            updateAllPackageState(updateSources.browserLanguageChanged || 'browser-language-changed');
         }
     } else {
         console.log('Programmatic change - device language not affected:', state.ui.language.selected);
@@ -1410,7 +1460,8 @@ async function handleCustomLanguageChange(e) {
     });
 
     updateVariableDefinitions();
-    updateAllPackageState('device-language-changed');
+    const updateSources = state.config.setup?.config?.updateSources || {};
+    updateAllPackageState(updateSources.deviceLanguageChanged || 'device-language-changed');
 }
 
 async function loadCustomTranslations(lang) {
@@ -1418,9 +1469,11 @@ async function loadCustomTranslations(lang) {
         lang = current_language || (navigator.language || config.fallback_language).split('-')[0];
     }
     
-    const customLangFile = `langs/custom.${lang}.json`;
+    const translationUrl = (state.config.setup?.config?.urls?.customTranslations || 'langs/custom.{lang}.json')
+        .replace('{lang}', lang);
+    
     try {
-        const resp = await fetch(customLangFile, { cache: 'no-store' });
+        const resp = await fetch(translationUrl, { cache: 'no-store' });
 
         if (!resp.ok) {
             if (lang !== config.fallback_language) {
@@ -1461,13 +1514,14 @@ function applyCustomTranslations(map) {
 }
 
 function extractLuciName(pkg) {
-    if (pkg === 'luci') return 'base';
+    const luciMappings = state.config.setup?.config?.luciNameMappings || {};
     
-    if (pkg === 'usteer-from-setup' || pkg === 'luci-app-usteer-setup') {
-        return 'usteer';
+    if (luciMappings.special?.[pkg]) {
+        return luciMappings.special[pkg];
     }
 
-    const prefixMatch = pkg.match(/^luci-(?:app|mod|theme|proto)-(.+)$/);
+    const pattern = luciMappings.pattern || '^luci-(?:app|mod|theme|proto)-(.+)$';
+    const prefixMatch = pkg.match(new RegExp(pattern));
     if (prefixMatch && prefixMatch[1]) {
         return prefixMatch[1];
     }
@@ -1503,8 +1557,10 @@ function getCurrentPackageList() {
         });
     }
     
+    const languageConfig = state.config.setup?.config?.languagePackages || {};
+    const basePrefix = languageConfig.basePackagePrefix || 'luci-i18n-';
     for (const pkg of state.packages.dynamic) {
-        if (!pkg.startsWith('luci-i18n-')) {
+        if (!pkg.startsWith(basePrefix)) {
             packages.add(pkg);
         }
     }
@@ -1515,15 +1571,19 @@ function getCurrentPackageList() {
 function guessFeedForPackage(pkgName) {
     if (!pkgName) return 'packages';
     
-    if (pkgName.startsWith('kmod-')) {
-        return 'kmods';
+    const feedRules = state.config.setup?.config?.feedRules || {};
+    const patterns = feedRules.patterns || [
+        { prefix: 'kmod-', feed: 'kmods' },
+        { prefix: 'luci-', feed: 'luci' }
+    ];
+    
+    for (const pattern of patterns) {
+        if (pkgName.startsWith(pattern.prefix)) {
+            return pattern.feed;
+        }
     }
     
-    if (pkgName.startsWith('luci-')) {
-        return 'luci';
-    }
-    
-    return 'packages';
+    return feedRules.defaultFeed || 'packages';
 }
 
 function getDeviceInfo() {
@@ -1567,14 +1627,15 @@ function parsePackageList(responseData, pkgName, isSnapshot) {
 }
 
 async function getFeedPackageSet(feed, deviceInfo) {
-    const key = [
-        deviceInfo.version,
-        deviceInfo.arch,
-        deviceInfo.vendor || '',
-        deviceInfo.subtarget || '',
-        deviceInfo.isSnapshot ? 'S' : 'R',
-        feed
-    ].join(':');
+    const cacheKeyFormat = state.config.setup?.config?.cacheKeyFormats?.feedSet || 
+        '{version}:{arch}:{vendor}:{subtarget}:{snapshot}:{feed}';
+    const key = cacheKeyFormat
+        .replace('{version}', deviceInfo.version)
+        .replace('{arch}', deviceInfo.arch)
+        .replace('{vendor}', deviceInfo.vendor || '')
+        .replace('{subtarget}', deviceInfo.subtarget || '')
+        .replace('{snapshot}', deviceInfo.isSnapshot ? 'S' : 'R')
+        .replace('{feed}', feed);
 
     if (state.cache.feedPackageSet.has(key)) {
         return state.cache.feedPackageSet.get(key);
@@ -1620,7 +1681,14 @@ async function isPackageAvailable(pkgName, feed) {
         return false;
     }
 
-    const cacheKey = `${deviceInfo.version}:${deviceInfo.arch}:${feed}:${pkgName}`;
+    const cacheKeyFormat = state.config.setup?.config?.cacheKeyFormats?.availability || 
+        '{version}:{arch}:{feed}:{package}';
+    const cacheKey = cacheKeyFormat
+        .replace('{version}', deviceInfo.version)
+        .replace('{arch}', deviceInfo.arch)
+        .replace('{feed}', feed)
+        .replace('{package}', pkgName);
+        
     if (state.cache.packageAvailability.has(cacheKey)) {
         return state.cache.packageAvailability.get(cacheKey);
     }
@@ -1664,13 +1732,14 @@ async function fetchFeedSet(feed, deviceInfo) {
 }
 
 async function buildAvailabilityIndex(deviceInfo, neededFeeds) {
-    const cacheKey = [
-        deviceInfo.version,
-        deviceInfo.arch,
-        deviceInfo.vendor || '',
-        deviceInfo.subtarget || '',
-        deviceInfo.isSnapshot ? 'S' : 'R'
-    ].join(':');
+    const cacheKeyFormat = state.config.setup?.config?.cacheKeyFormats?.feedSet || 
+        '{version}:{arch}:{vendor}:{subtarget}:{snapshot}';
+    const cacheKey = cacheKeyFormat
+        .replace('{version}', deviceInfo.version)
+        .replace('{arch}', deviceInfo.arch)
+        .replace('{vendor}', deviceInfo.vendor || '')
+        .replace('{subtarget}', deviceInfo.subtarget || '')
+        .replace('{snapshot}', deviceInfo.isSnapshot ? 'S' : 'R');
 
     const cached = state.cache.availabilityIndex.get(cacheKey);
     if (cached) return cached;
@@ -1835,7 +1904,7 @@ function updateCategoryVisibility(packageItem) {
 // ==================== setup.json 処理 ====================
 async function loadSetupConfig() {
     try {
-        const url = config?.setup_db_path || 'uci-defaults/setup.json';
+        const url = state.config.setup?.config?.urls?.setupDb || config?.setup_db_path || 'uci-defaults/setup.json';
         const response = await fetch(url + '?t=' + Date.now());
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         
@@ -1881,7 +1950,8 @@ function storeDefaultValues(config) {
 }
 
 function renderSetupConfig(config) {
-    const container = document.querySelector('#dynamic-config-sections');
+    const domSelectors = state.config.setup?.config?.domSelectors || {};
+    const container = document.querySelector(domSelectors.dynamicConfigSections || '#dynamic-config-sections');
     if (!container) {
         console.error('#dynamic-config-sections not found');
         return;
@@ -1890,9 +1960,11 @@ function renderSetupConfig(config) {
     container.innerHTML = '';
     console.log('Container cleared, rebuilding...');
 
+    const classNames = state.config.setup?.config?.uiConfig?.classNames || {};
+
     (config.categories || []).forEach((category, categoryIndex) => {
         const section = document.createElement('div');
-        section.className = 'config-section';
+        section.className = classNames.configSection || 'config-section';
         section.id = category.id;
 
         const h4 = document.createElement('h4');
@@ -1940,13 +2012,15 @@ function renderSetupConfig(config) {
 }
 
 function buildField(parent, pkg) {
+    const classNames = state.config.setup?.config?.uiConfig?.classNames || {};
+    
     switch (pkg.type) {
         case 'input-group': {
             const rows = getRows(pkg);
             
             rows.forEach((row, rowIndex) => {
                 const rowEl = document.createElement('div');
-                rowEl.className = 'form-row';
+                rowEl.className = classNames.formRow || 'form-row';
                 
                 (row.columns || []).forEach((col, colIndex) => {
                     const groupEl = buildFormGroup(col);
@@ -1966,55 +2040,55 @@ function buildField(parent, pkg) {
             break;
         }
 
-case 'radio-group': {
-    const row = document.createElement('div');
-    row.className = 'form-row';
+        case 'radio-group': {
+            const row = document.createElement('div');
+            row.className = classNames.formRow || 'form-row';
 
-    const group = document.createElement('div');
-    group.className = 'form-group';
+            const group = document.createElement('div');
+            group.className = classNames.formGroup || 'form-group';
 
-    if (pkg.name || pkg.label) {
-        const legend = document.createElement('div');
-        legend.className = 'form-label';
-        if (pkg.class) legend.classList.add(pkg.class);
-        legend.textContent = pkg.name || pkg.label;
-        group.appendChild(legend);
-    }
+            if (pkg.name || pkg.label) {
+                const legend = document.createElement('div');
+                legend.className = classNames.formLabel || 'form-label';
+                if (pkg.class) legend.classList.add(pkg.class);
+                legend.textContent = pkg.name || pkg.label;
+                group.appendChild(legend);
+            }
 
-    const radioWrap = document.createElement('div');
-    radioWrap.className = 'radio-group';
-    
-    (pkg.options || []).forEach(opt => {
-        const lbl = document.createElement('label');
-        const radio = document.createElement('input');
-        radio.type = 'radio';
-        radio.name = pkg.variableName || pkg.id;
-        radio.value = opt.value;
-        
-        if (opt.checked || (pkg.defaultValue != null && opt.value === pkg.defaultValue)) {
-            radio.checked = true;
+            const radioWrap = document.createElement('div');
+            radioWrap.className = classNames.radioGroup || 'radio-group';
+            
+            (pkg.options || []).forEach(opt => {
+                const lbl = document.createElement('label');
+                const radio = document.createElement('input');
+                radio.type = 'radio';
+                radio.name = pkg.variableName || pkg.id;
+                radio.value = opt.value;
+                
+                if (opt.checked || (pkg.defaultValue != null && opt.value === pkg.defaultValue)) {
+                    radio.checked = true;
+                }
+
+                const textSpan = document.createElement('span');
+                textSpan.textContent = ' ' + (opt.label != null ? opt.label : String(opt.value));
+                if (opt.class) {
+                    textSpan.classList.add(opt.class);
+                }
+                lbl.appendChild(radio);
+                lbl.appendChild(textSpan);
+                radioWrap.appendChild(lbl);
+            });
+
+            group.appendChild(radioWrap);
+            row.appendChild(group);
+            parent.appendChild(row);
+            break;
         }
-
-        const textSpan = document.createElement('span');
-        textSpan.textContent = ' ' + (opt.label != null ? opt.label : String(opt.value));
-        if (opt.class) {
-            textSpan.classList.add(opt.class);
-        }
-        lbl.appendChild(radio);
-        lbl.appendChild(textSpan);
-        radioWrap.appendChild(lbl);
-    });
-
-    group.appendChild(radioWrap);
-    row.appendChild(group);
-    parent.appendChild(row);
-    break;
-}
 
         case 'conditional-section': {
             const condWrap = document.createElement('div');
             condWrap.id = pkg.id;
-            condWrap.className = 'conditional-section';
+            condWrap.className = classNames.conditionalSection || 'conditional-section';
             UI.updateElement(condWrap, { show: false });
 
             (pkg.children || []).forEach(child => {
@@ -2026,15 +2100,20 @@ case 'radio-group': {
         }
 
         case 'info-display': {
-          const infoDiv = document.createElement('div');
-          infoDiv.id = pkg.id;
-          infoDiv.className = 'info-display';
-          if (pkg.class) {
-              infoDiv.classList.add(pkg.class);
-          }
-          infoDiv.textContent = pkg.content || '';
-          parent.appendChild(infoDiv);
-          break;
+            const infoDiv = document.createElement('div');
+            infoDiv.id = pkg.id;
+            infoDiv.className = classNames.infoDisplay || 'info-display';
+            if (pkg.class) {
+                infoDiv.classList.add(pkg.class);
+            }
+            infoDiv.style.padding = '1em';
+            infoDiv.style.backgroundColor = 'var(--bg-item)';
+            infoDiv.style.borderRadius = '0.2em';
+            infoDiv.style.marginTop = '0.5em';
+            infoDiv.style.whiteSpace = 'pre-line';
+            infoDiv.textContent = pkg.content || '';
+            parent.appendChild(infoDiv);
+            break;
         }
     }
 }
@@ -2042,8 +2121,9 @@ case 'radio-group': {
 function buildFormGroup(field) {
     if (!field) return null;
 
+    const classNames = state.config.setup?.config?.uiConfig?.classNames || {};
     const group = document.createElement('div');
-    group.className = 'form-group';
+    group.className = classNames.formGroup || 'form-group';
 
     const label = document.createElement('label');
     label.textContent = field.label || field.name || field.id || '';
@@ -2220,7 +2300,8 @@ function walkConfig(config, fn) {
 
 function getRows(group) {
     const rows = [];
-    const COLUMNS_PER_ROW = 2;
+    const uiDefaults = state.config.setup?.config?.uiConfig?.defaults || {};
+    const COLUMNS_PER_ROW = uiDefaults.columnsPerRow || 2;
     const fields = group.fields || [];
     
     for (let i = 0; i < fields.length; i += COLUMNS_PER_ROW) {
@@ -2247,6 +2328,11 @@ function generateFormStructure(config) {
         categories: {},
         fieldMapping: {}
     };
+
+    const connectionSections = state.config.setup?.config?.connectionTypes?.sections || [
+        'auto-section', 'dhcp-section', 'pppoe-section', 
+        'dslite-section', 'mape-section', 'ap-section'
+    ];
 
     config.categories.forEach(category => {
         structure.categories[category.id] = [];
@@ -2290,7 +2376,8 @@ function collectFieldsFromPackage(pkg, structure, categoryId) {
     }
     
     if (pkg.id === 'connection-type' && pkg.variableName === 'connection_type') {
-        const connectionSections = ['auto-section', 'dhcp-section', 'pppoe-section', 'dslite-section', 'mape-section', 'ap-section'];
+        const connectionSections = state.config.setup?.config?.connectionTypes?.sections || 
+            ['auto-section', 'dhcp-section', 'pppoe-section', 'dslite-section', 'mape-section', 'ap-section'];
         connectionSections.forEach(sectionId => {
             structure.connectionTypes[sectionId.replace('-section', '')] = [];
         });
@@ -2305,9 +2392,11 @@ function collectFormValues() {
     Object.values(state.config.formStructure.fields).forEach(field => {
         const value = getFieldValue(field.selector);
         
-        // languageフィールドの場合、enは除外
-        if (field.variableName === 'language' && value === 'en') {
-            return; // forEach内ではcontinueではなくreturn
+        // languageフィールドの場合、excludeLanguageの値は除外
+        const languageConfig = state.config.setup?.config?.languagePackages || {};
+        const excludeLanguage = languageConfig.excludeLanguage || 'en';
+        if (field.variableName === 'language' && value === excludeLanguage) {
+            return;
         }
         
         if (value !== null && value !== undefined && value !== "") {
@@ -2376,8 +2465,12 @@ function applySpecialFieldLogic(values) {
     if (connectionType === 'auto') {
         uniqueConnectionFields.forEach(key => delete values[key]);
         
+        const packageMappings = state.config.setup?.config?.packageMappings || {};
+        const connectionTypes = state.config.setup?.config?.connectionTypes?.detection || {};
+        
         if (state.apiInfo) {
             if (state.apiInfo.mape?.brIpv6Address) {
+                const apiMappings = state.config.setup?.config?.apiMappings?.mape || {};
                 values.mape_br = state.apiInfo.mape.brIpv6Address;
                 values.mape_ealen = state.apiInfo.mape.eaBitLength;
                 values.mape_ipv4_prefix = state.apiInfo.mape.ipv4Prefix;
@@ -2558,16 +2651,12 @@ function applySpecialFieldLogic(values) {
 // ==================== イベントハンドラ（JSONドリブン版） ====================
 
 function setupEventListeners() {
-    const radioGroups = {
-        'connection_type': handleConnectionTypeChange,
-        'net_optimizer': handleNetOptimizerChange,
-        'wifi_mode': handleWifiModeChange,
-        'mape_type': handleMapeTypeChange,
-        'enable_dnsmasq': handleDnsmasqChange
-    };
+    const eventMappings = state.config.setup?.config?.eventMappings || {};
+    const radioGroups = eventMappings.radioGroups || {};
     
-    Object.entries(radioGroups).forEach(([name, handler]) => {
-        attachRadioListeners(name, handler, true);
+    Object.entries(radioGroups).forEach(([name, config]) => {
+        const handler = window[config.handler] || (() => {});
+        attachRadioListeners(name, handler, config.triggerInitial !== false);
     });
 
     setupDsliteAddressComputation();
@@ -2591,6 +2680,7 @@ function attachRadioListeners(name, handler, triggerInitial = true) {
 function setupCommandsInput() {
     console.log('setupCommandsInput called');
 
+    const domSelectors = state.config.setup?.config?.domSelectors || {};
     const commandsContainer = document.getElementById('commands-autocomplete');
 
     if (!commandsContainer) {
@@ -2603,9 +2693,12 @@ function setupCommandsInput() {
         oldInput.remove();
     }
 
+    const uiDefaults = state.config.setup?.config?.uiConfig?.defaults || {};
+    const classNames = state.config.setup?.config?.uiConfig?.classNames || {};
+
     state.ui.managers.commands = new MultiInputManager('commands-autocomplete', {
-        placeholder: 'Type command and press Enter',
-        className: 'multi-input-item command-input',
+        placeholder: uiDefaults.commandInputPlaceholder || 'Type command and press Enter',
+        className: classNames.commandInput || 'multi-input-item command-input',
         onAdd: (command) => {
             console.log('Command added:', command);
             updateCustomCommands();
@@ -2650,7 +2743,8 @@ function handleMapeTypeChange(e) {
         }
     });
 
-    updateAllPackageState('mape-type');
+    const updateSources = state.config.setup?.config?.updateSources || {};
+    updateAllPackageState(updateSources.mapeType || 'mape-type');
 }
 
 function setupDsliteAddressComputation() {
@@ -2697,7 +2791,9 @@ function setupDsliteAddressComputation() {
 }
 
 function updateVariableDefinitionsWithDsliteCleanup() {
-    const textarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
+    const domSelectors = state.config.setup?.config?.domSelectors || {};
+    const selector = domSelectors.uciDefaultsContent || '#uci-defaults-content';
+    const textarea = document.querySelector(`#custom-scripts-details ${selector}`);
     if (!textarea) return;
     
     const values = collectFormValues();
@@ -2764,9 +2860,10 @@ function processNestedSections(children, fieldName, selectedValue) {
 
 function handleConnectionTypeChange(e) {
     const selectedType = e.target.value;
+    const updateSources = state.config.setup?.config?.updateSources || {};
     
     handleConditionalSectionChange('internet-config', 'connection_type', selectedType, {
-        updateSource: 'connection-type',
+        updateSource: updateSources.connectionType || 'connection-type',
         customHandler: (value) => {
             if (value === 'auto' && state.apiInfo) {
                 updateAutoConnectionInfo(state.apiInfo);
@@ -2786,9 +2883,10 @@ function handleConnectionTypeChange(e) {
 
 function handleNetOptimizerChange(e) {
     const mode = e.target.value;
+    const updateSources = state.config.setup?.config?.updateSources || {};
     
     handleConditionalSectionChange('tuning-config', 'net_optimizer', mode, {
-        updateSource: 'net-optimizer',
+        updateSource: updateSources.netOptimizer || 'net-optimizer',
         customHandler: (value) => {
             if (value === 'manual') {
                 restoreDefaultsFromJSON('netopt-manual-section');
@@ -2799,10 +2897,11 @@ function handleNetOptimizerChange(e) {
 
 function handleWifiModeChange(e) {
     const mode = e.target.value;
+    const updateSources = state.config.setup?.config?.updateSources || {};
     
     handleConditionalSectionChange('wifi-config', 'wifi_mode', mode, {
         processChildren: true,
-        updateSource: 'wifi-mode',
+        updateSource: updateSources.wifiMode || 'wifi-mode',
         customHandler: (value) => {
             if (value === 'disabled') {
                 CustomUtils.clearWifiFields();
@@ -2815,9 +2914,10 @@ function handleWifiModeChange(e) {
 
 function handleDnsmasqChange(e) {
     const mode = e.target.value;
+    const updateSources = state.config.setup?.config?.updateSources || {};
     
     handleConditionalSectionChange('tuning-config', 'enable_dnsmasq', mode, {
-        updateSource: 'dnsmasq-mode',
+        updateSource: updateSources.dnsmasqMode || 'dnsmasq-mode',
         customHandler: (value) => {
             if (value === 'manual') {
                 restoreDefaultsFromJSON('dnsmasq-manual-section');
@@ -2831,16 +2931,19 @@ console.log('custom.js (JSON-driven clean version) fully loaded and ready');
 // ==================== ISP情報処理 ====================
 
 function getConnectionType(apiInfo) {
-    if (apiInfo?.mape?.brIpv6Address) return 'MAP-E';
-    if (apiInfo?.aftr) return 'DS-Lite';
-    return 'DHCP/PPPoE';
+    const connectionTypes = state.config.setup?.config?.connectionTypes?.detection || {};
+    
+    if (apiInfo?.mape?.brIpv6Address) return connectionTypes.mape?.displayName || 'MAP-E';
+    if (apiInfo?.aftr) return connectionTypes.dslite?.displayName || 'DS-Lite';
+    return connectionTypes.default?.displayName || 'DHCP/PPPoE';
 }
 
 async function fetchAndDisplayIspInfo() {
-    if (!config?.auto_config_api_url) return;
+    const apiUrl = state.config.setup?.config?.urls?.autoConfigApi || config?.auto_config_api_url;
+    if (!apiUrl) return;
     
     try {
-        const response = await fetch(config.auto_config_api_url);
+        const response = await fetch(apiUrl);
         const apiInfo = await response.json();
         state.apiInfo = apiInfo;
         
@@ -2854,7 +2957,8 @@ async function fetchAndDisplayIspInfo() {
         console.error('Failed to fetch ISP info:', err);
         const autoInfo = document.querySelector('#auto-info');
         if (autoInfo) {
-            autoInfo.textContent = 'Failed to detect connection type.\nPlease select manually.';
+            const autoMessages = state.config.setup?.config?.connectionTypes?.autoMessages || {};
+            autoInfo.textContent = autoMessages.failedDetection || 'Failed to detect connection type.\nPlease select manually.';
         }
     }
 }
@@ -2871,7 +2975,8 @@ function displayIspInfoIfReady() {
     
     displayIspInfo(state.apiInfo);
 
-    const extInfo = document.querySelector('#extended-build-info');
+    const domSelectors = state.config.setup?.config?.domSelectors || {};
+    const extInfo = document.querySelector(domSelectors.extendedBuildInfo || '#extended-build-info');
     if (extInfo) {
         extInfo.classList.remove('hide');
         extInfo.style.display = 'block';
@@ -2895,55 +3000,56 @@ function displayIspInfo(apiInfo) {
     UI.updateElement("auto-config-method", { text: wanType });
     UI.updateElement("auto-config-notice", { text: apiInfo.notice || "" });
 
-    UI.updateElement("extended-build-info", { show: true });
+    const domSelectors = state.config.setup?.config?.domSelectors || {};
+    UI.updateElement(domSelectors.extendedBuildInfo || "extended-build-info", { show: true });
 }
 
 async function insertExtendedInfo(temp) {
-    if (document.querySelector('#extended-build-info')) {
+    const domSelectors = state.config.setup?.config?.domSelectors || {};
+    if (document.querySelector(domSelectors.extendedBuildInfo || '#extended-build-info')) {
         console.log('Extended info already exists');
         return;
     }
-
-    const imageLink = document.querySelector('#image-link');
+    
+    const imageLink = document.querySelector(domSelectors.imageLink || '#image-link');
     if (!imageLink) {
         console.log('Image link element not found');
         return;
     }
-
+    
     try {
-        const infoUrl = config?.information_path || 'auto-config/information.json';
+        const infoUrl = state.config.setup?.config?.urls?.information || config?.information_path || 'auto-config/information.json';
         const response = await fetch(infoUrl + '?t=' + Date.now());
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
+        
         const infoConfig = await response.json();
         console.log('Information config loaded:', infoConfig);
-
+        
         const extendedInfo = document.createElement('div');
         extendedInfo.id = 'extended-build-info';
         extendedInfo.className = 'hide';
-
+        
         infoConfig.categories.forEach(category => {
             const h3 = document.createElement('h3');
             h3.textContent = category.name;
             if (category.class) h3.classList.add(category.class);
             extendedInfo.appendChild(h3);
-
+            
             category.packages.forEach(pkg => {
                 if (pkg.fields) {
                     pkg.fields.forEach(field => {
                         const row = document.createElement('div');
                         row.className = 'row';
-
+                        
                         const col1 = document.createElement('div');
                         col1.className = 'col1';
                         if (field.class) col1.classList.add(field.class);
                         col1.textContent = field.label;
-
+                        
                         const col2 = document.createElement('div');
                         col2.className = 'col2';
                         col2.id = field.id;
-                        col2.textContent = current_language_json?.['tr-loading'] || 'Loading...';
-
+                        
                         row.appendChild(col1);
                         row.appendChild(col2);
                         extendedInfo.appendChild(row);
@@ -2951,15 +3057,15 @@ async function insertExtendedInfo(temp) {
                 }
             });
         });
-
+        
         imageLink.closest('.row').insertAdjacentElement('afterend', extendedInfo);
-
+        
         console.log('Extended info DOM elements created from information.json');
-
+        
         if (state.apiInfo) {
             displayIspInfo(state.apiInfo);
         }
-
+        
     } catch (err) {
         console.error('Failed to load information.json:', err);
     }
@@ -2976,7 +3082,8 @@ async function initializeCustomFeatures(asuSection, temp) {
     cleanupExistingCustomElements();
     replaceAsuSection(asuSection, temp);
     
-    if (!document.querySelector('#extended-build-info')) {
+    const domSelectors = state.config.setup?.config?.domSelectors || {};
+    if (!document.querySelector(domSelectors.extendedBuildInfo || '#extended-build-info')) {
         await insertExtendedInfo(temp);
     }
 
@@ -3019,23 +3126,25 @@ async function initializeCustomFeatures(asuSection, temp) {
             .concat(state.packages.device)
             .concat(state.packages.extra);
 
-        const textarea = document.querySelector('#asu-packages');
+        const domSelectors = state.config.setup?.config?.domSelectors || {};
+        const textarea = document.querySelector(domSelectors.asuPackages || '#asu-packages');
         if (textarea && initialPackages.length > 0) {
             UI.updateElement(textarea, { value: initialPackages.join(' ') });
             console.log('Device packages force applied:', initialPackages);
         }
     }
 
+    const updateSources = state.config.setup?.config?.updateSources || {};
     if (changed) {
         console.log('All data and UI ready, updating package state');
-        updateAllPackageState('isp-auto-config');
+        updateAllPackageState(updateSources.ispAutoConfig || 'isp-auto-config');
     } else {
         console.log('All data and UI ready, no changes from auto-config');
         const runWhenReady = () => {
             if ((state.packages.default && state.packages.default.length > 0) ||
                 (state.packages.device && state.packages.device.length > 0) ||
                 (state.packages.extra && state.packages.extra.length > 0)) {
-                updateAllPackageState('force-device-packages');
+                updateAllPackageState(updateSources.forceDevicePackages || 'force-device-packages');
                 document.removeEventListener('devicePackagesReady', runWhenReady);
             }
         };
@@ -3059,7 +3168,9 @@ function applyIspAutoConfig(apiInfo) {
     Object.values(state.config.formStructure.fields).forEach(field => {
         if (!field.apiMapping) return;
 
-        const isConnectionField = ['dslite', 'mape', 'ap', 'pppoe'].some(type =>
+        const connectionSections = state.config.setup?.config?.connectionTypes?.sections || 
+            ['dslite', 'mape', 'ap', 'pppoe'];
+        const isConnectionField = connectionSections.some(type =>
             state.config.formStructure.connectionTypes[type]?.includes(field.id)
         );
 
@@ -3107,7 +3218,7 @@ function updateAutoConnectionInfo(apiInfo) {
     const connectionType = getConnectionType(apiInfo);
     infoText += `Detected: ${connectionType}\n`;
 
-    if (connectionType === 'MAP-E') {
+    if (connectionType.includes('MAP-E')) {
         infoText += `\u00A0BR: ${apiInfo.mape.brIpv6Address}\n`;
         infoText += `\u00A0EA-len: ${apiInfo.mape.eaBitLength}\n`;
         infoText += `\u00A0IPv4 Prefix: ${apiInfo.mape.ipv4Prefix}/${apiInfo.mape.ipv4PrefixLength}\n`;
@@ -3128,10 +3239,11 @@ function updateAutoConnectionInfo(apiInfo) {
         if (gua) {
             infoText += `\n\u00A0GUA: ${gua}`;
         }
-    } else if (connectionType === 'DS-Lite') {
+    } else if (connectionType.includes('DS-Lite')) {
         infoText += `AFTR: ${apiInfo.aftr}`;
     } else {
-        infoText += '\u00A0Standard connection will be used';
+        const autoMessages = state.config.setup?.config?.connectionTypes?.autoMessages || {};
+        infoText += autoMessages.standardConnection || '\u00A0Standard connection will be used';
     }
 
     autoInfo.textContent = infoText;
@@ -3141,7 +3253,7 @@ function updateAutoConnectionInfo(apiInfo) {
 
 async function loadPackageDatabase() {
     try {
-        const url = config?.packages_db_path || 'packages/packages.json';
+        const url = state.config.setup?.config?.urls?.packagesDb || config?.packages_db_path || 'packages/packages.json';
         const response = await fetch(url);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         state.packages.json = await response.json();
@@ -3155,20 +3267,24 @@ async function loadPackageDatabase() {
 }
 
 function generatePackageSelector() {
-    const container = document.querySelector('#package-categories');
+    const domSelectors = state.config.setup?.config?.domSelectors || {};
+    const container = document.querySelector(domSelectors.packageCategories || '#package-categories');
     if (!container || !state.packages.json) {
         return;
     }
     
     container.innerHTML = '';
     
+    const indicators = state.config.setup?.config?.uiConfig?.indicators || {};
+    const loadingIndicator = indicators.packageLoading || {};
+    
     const loadingDiv = document.createElement('div');
-    loadingDiv.id = 'package-loading-indicator';
+    loadingDiv.id = loadingIndicator.id || 'package-loading-indicator';
     UI.updateElement(loadingDiv, { show: false });
     loadingDiv.style.padding = '1em';
     loadingDiv.style.textAlign = 'center';
     loadingDiv.style.color = 'var(--text-muted)';
-    loadingDiv.innerHTML = '<span class="tr-checking-packages">Checking package availability...</span>';
+    loadingDiv.innerHTML = `<span class="tr-checking-packages">${loadingIndicator.messages?.checking || 'Checking package availability...'}</span>`;
     container.appendChild(loadingDiv);
     
     state.packages.json.categories.forEach(category => {
@@ -3188,13 +3304,14 @@ function generatePackageSelector() {
         }
     });
     
-    updateAllPackageState('package-selector-init');
+    const updateSources = state.config.setup?.config?.updateSources || {};
+    updateAllPackageState(updateSources.packageSelectorInit || 'package-selector-init');
     console.log(`Generated ${state.packages.json.categories.length} package categories (including hidden)`);
     
     const arch = state.device.arch;
     if (arch) {
         requestAnimationFrame(() => {
-            const indicator = document.querySelector('#package-loading-indicator');
+            const indicator = document.querySelector(`#${loadingIndicator.id || 'package-loading-indicator'}`);
             if (indicator) {
                 UI.updateElement(indicator, { show: true });
             }
@@ -3208,7 +3325,7 @@ function generatePackageSelector() {
                 console.error('Package verification failed:', err);
                 if (indicator) {
                     UI.updateElement(indicator, {
-                        html: '<span class="tr-package-check-failed">Package availability check failed</span>',
+                        html: `<span class="tr-package-check-failed">${loadingIndicator.messages?.failed || 'Package availability check failed'}</span>`,
                         show: true
                     });
                     indicator.addEventListener('click', () => {
@@ -3223,7 +3340,8 @@ function generatePackageSelector() {
 }
 
 function createHiddenPackageCheckbox(pkg) {
-    let hiddenContainer = document.querySelector('#hidden-packages-container');
+    const domSelectors = state.config.setup?.config?.domSelectors || {};
+    let hiddenContainer = document.querySelector(domSelectors.hiddenPackagesContainer || '#hidden-packages-container');
     if (!hiddenContainer) {
         hiddenContainer = document.createElement('div');
         hiddenContainer.id = 'hidden-packages-container';
@@ -3231,10 +3349,12 @@ function createHiddenPackageCheckbox(pkg) {
         document.body.appendChild(hiddenContainer);
     }
     
+    const classNames = state.config.setup?.config?.uiConfig?.classNames || {};
+    
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
     checkbox.id = `pkg-${pkg.uniqueId || pkg.id}`;
-    checkbox.className = 'package-selector-checkbox';
+    checkbox.className = classNames.packageCheckbox || 'package-selector-checkbox';
     checkbox.setAttribute('data-package', pkg.id);
     checkbox.setAttribute('data-unique-id', pkg.uniqueId || pkg.id);
     UI.updateElement(checkbox, { show: false });
@@ -3255,12 +3375,14 @@ function createHiddenPackageCheckbox(pkg) {
 }
 
 function createPackageCategory(category) {
+    const classNames = state.config.setup?.config?.uiConfig?.classNames || {};
+    
     const categoryDiv = document.createElement('div');
-    categoryDiv.className = 'package-category';
+    categoryDiv.className = classNames.packageCategory || 'package-category';
     categoryDiv.setAttribute('data-category-id', category.id);
     
     const packageGrid = document.createElement('div');
-    packageGrid.className = 'package-grid';
+    packageGrid.className = classNames.packageGrid || 'package-grid';
     
     let hasVisiblePackages = false;
     
@@ -3293,8 +3415,10 @@ function createPackageCategory(category) {
 }
  
 function createPackageItem(pkg) {
+    const classNames = state.config.setup?.config?.uiConfig?.classNames || {};
+    
     const packageItem = document.createElement('div');
-    packageItem.className = 'package-item';
+    packageItem.className = classNames.packageItem || 'package-item';
     packageItem.setAttribute('data-package-id', pkg.id);
     
     const mainCheckbox = createPackageCheckbox(pkg, pkg.checked || false);
@@ -3302,13 +3426,13 @@ function createPackageItem(pkg) {
     
     if (pkg.dependencies && Array.isArray(pkg.dependencies)) {
         const depContainer = document.createElement('div');
-        depContainer.className = 'package-dependencies';
+        depContainer.className = classNames.packageDependencies || 'package-dependencies';
         
         pkg.dependencies.forEach(depId => {
             const depPkg = findPackageById(depId);
             if (depPkg) {
                 const depCheckbox = createPackageCheckbox(depPkg, pkg.checked || false, true);
-                depCheckbox.classList.add('package-dependent');
+                depCheckbox.classList.add(classNames.packageDependent || 'package-dependent');
                 depContainer.appendChild(depCheckbox);
             }
         });
@@ -3329,14 +3453,21 @@ function createPackageItem(pkg) {
 }
 
 function createPackageCheckbox(pkg, isChecked = false, isDependency = false) {
+    const classNames = state.config.setup?.config?.uiConfig?.classNames || {};
+    const packageUrlTemplate = state.config.setup?.config?.urls?.packageUrl || config?.package_url;
+    
     const label = document.createElement('label');
     label.className = 'form-check-label';
     label.setAttribute('for', `pkg-${pkg.uniqueId || pkg.id}`);
-
+    label.style.display = 'flex';
+    label.style.alignItems = 'center';
+    label.style.gap = '0.5em';
+    label.style.cursor = 'pointer';
+    
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
     checkbox.id = `pkg-${pkg.uniqueId || pkg.id}`; 
-    checkbox.className = 'form-check-input package-selector-checkbox';
+    checkbox.className = classNames.packageCheckbox || 'form-check-input package-selector-checkbox';
     checkbox.setAttribute('data-package', pkg.id);
     checkbox.setAttribute('data-unique-id', pkg.uniqueId || pkg.id); 
     
@@ -3350,11 +3481,11 @@ function createPackageCheckbox(pkg, isChecked = false, isDependency = false) {
     
     checkbox.addEventListener('change', handlePackageSelection);
     
-    if (config?.package_url) {
+    if (packageUrlTemplate) {
         const link = document.createElement('a');
-        link.href = config.package_url.replace("{id}", encodeURIComponent(pkg.id));
+        link.href = packageUrlTemplate.replace("{id}", encodeURIComponent(pkg.id));
         link.target = '_blank';
-        link.className = 'package-link';
+        link.className = classNames.packageLink || 'package-link';
         link.textContent = pkg.name || pkg.id;
         link.onclick = (e) => e.stopPropagation();
         label.appendChild(checkbox);
@@ -3396,7 +3527,8 @@ function handlePackageSelection(e) {
             }
         });
     }
-    updateAllPackageState('force-update');
+    const updateSources = state.config.setup?.config?.updateSources || {};
+    updateAllPackageState(updateSources.forceUpdate || 'force-update');
 }
 
 function findPackageById(id) {
@@ -3412,8 +3544,11 @@ function findPackageById(id) {
 // ==================== UCI-defaults処理 ====================
 
 function loadUciDefaultsTemplate() {
-    const textarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
-    const templatePath = config?.uci_defaults_setup_path || 'uci-defaults/setup.sh';
+    const domSelectors = state.config.setup?.config?.domSelectors || {};
+    const uciDefaults = state.config.setup?.config?.uciDefaults || {};
+    
+    const textarea = document.querySelector(`#custom-scripts-details ${domSelectors.uciDefaultsContent || '#uci-defaults-content'}`);
+    const templatePath = uciDefaults.scriptPath || config?.uci_defaults_setup_path || 'uci-defaults/setup.sh';
     
     if (!textarea) {
         console.error('UCI-defaults textarea not found');
@@ -3426,10 +3561,13 @@ function loadUciDefaultsTemplate() {
         textarea.style.height = `${lines * 1}em`;
     }
 
-    textarea.addEventListener('input', autoResize);
-    textarea.addEventListener('paste', () => {
-        requestAnimationFrame(autoResize);
-    });
+    const autoResizeEnabled = state.config.setup?.config?.uiConfig?.defaults?.autoResizeTextarea !== false;
+    if (autoResizeEnabled) {
+        textarea.addEventListener('input', autoResize);
+        textarea.addEventListener('paste', () => {
+            requestAnimationFrame(autoResize);
+        });
+    }
 
     fetch(templatePath + '?t=' + Date.now())
         .then(r => { 
@@ -3440,11 +3578,11 @@ function loadUciDefaultsTemplate() {
             textarea.value = text;
             console.log('setup.sh loaded successfully');
             updateVariableDefinitions();
-            autoResize();
+            if (autoResizeEnabled) autoResize();
         })
         .catch(err => {
             console.error('Failed to load setup.sh:', err);
-            textarea.value = `#!/bin/sh
+            const template = uciDefaults.template || `#!/bin/sh
 # BEGIN_VARIABLE_DEFINITIONS
 # END_VARIABLE_DEFINITIONS
 
@@ -3452,12 +3590,15 @@ function loadUciDefaultsTemplate() {
 # END_CUSTOM_COMMANDS
 
 exit 0`;
-            autoResize();
+            textarea.value = template;
+            if (autoResizeEnabled) autoResize();
         });
 }
 
 function updateVariableDefinitions() {
-    const textarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
+    const domSelectors = state.config.setup?.config?.domSelectors || {};
+    const selector = domSelectors.uciDefaultsContent || '#uci-defaults-content';
+    const textarea = document.querySelector(`#custom-scripts-details ${selector}`);
     if (!textarea) return;
 
     const values = collectFormValues && typeof collectFormValues === 'function'
@@ -3484,8 +3625,10 @@ function updateVariableDefinitions() {
 
 function updateTextareaContent(textarea, variableDefinitions) {
     let content = textarea.value;
-    const beginMarker = '# BEGIN_VARIABLE_DEFINITIONS';
-    const endMarker = '# END_VARIABLE_DEFINITIONS';
+    const uciDefaults = state.config.setup?.config?.uciDefaults || {};
+    const markers = uciDefaults.markers?.variableDefinitions || {};
+    const beginMarker = markers.begin || '# BEGIN_VARIABLE_DEFINITIONS';
+    const endMarker = markers.end || '# END_VARIABLE_DEFINITIONS';
     const beginIndex = content.indexOf(beginMarker);
     const endIndex = content.indexOf(endMarker);
     
@@ -3508,15 +3651,19 @@ function generateVariableDefinitions(values) {
 }
 
 function updateCustomCommands() {
-    const textarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
+    const domSelectors = state.config.setup?.config?.domSelectors || {};
+    const selector = domSelectors.uciDefaultsContent || '#uci-defaults-content';
+    const textarea = document.querySelector(`#custom-scripts-details ${selector}`);
     if (!textarea) return;
     
     const customCommands = state.ui.managers.commands ? state.ui.managers.commands.getAllValues().join('\n') : '';
     
     let content = textarea.value;
     
-    const beginMarker = '# BEGIN_CUSTOM_COMMANDS';
-    const endMarker = '# END_CUSTOM_COMMANDS';
+    const uciDefaults = state.config.setup?.config?.uciDefaults || {};
+    const markers = uciDefaults.markers?.customCommands || {};
+    const beginMarker = markers.begin || '# BEGIN_CUSTOM_COMMANDS';
+    const endMarker = markers.end || '# END_CUSTOM_COMMANDS';
     
     const beginIndex = content.indexOf(beginMarker);
     const endIndex = content.indexOf(endMarker);
@@ -3567,7 +3714,8 @@ function getElementEventType(element) {
 
 // ==================== エラーハンドリング ====================
 
-if (window.DEBUG_MODE) {
+const debugMode = state.config.setup?.config?.debugMode || window.DEBUG_MODE;
+if (debugMode) {
     ['error', 'unhandledrejection'].forEach(event => {
         window.addEventListener(event, e => console.error(`Custom.js ${event}:`, e.reason || e.error));
     });
