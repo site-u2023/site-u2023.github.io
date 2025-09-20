@@ -2330,7 +2330,7 @@ function generateFormStructure(config) {
     };
 
     const connectionSections = state.config.setup?.config?.connectionTypes?.sections || [
-        'auto-section', 'dhcp-section', 'pppoe-section', 
+        'auto-section', 'dhcp-section', 'pppoe-section',
         'dslite-section', 'mape-section', 'ap-section'
     ];
 
@@ -2394,23 +2394,26 @@ function collectFormValues() {
         console.warn("collectFormValues: formStructure.fields is not available");
         return values;
     }
-    
+
     Object.values(formStructure.fields).forEach(field => {
         const value = getFieldValue(field.selector);
-        
+
         const languageConfig = state.config.setup?.config?.languagePackages || {};
         const excludeLanguage = languageConfig.excludeLanguage || 'en';
-        if (field.variableName === 'language' && value === excludeLanguage) {
-            return;
+
+        if (field.variableName === 'language') {
+            if (!value || value === excludeLanguage) {
+                return;
+            }
         }
-        
+
         if (value !== null && value !== undefined && value !== "") {
             values[field.variableName] = value;
         }
     });
-    
+
     applySpecialFieldLogic(values);
-    
+
     return values;
 }
 
@@ -2449,6 +2452,7 @@ function getFieldValue(selector, options = {}) {
 }
 
 // ==================== フォーム値処理（JSONドリブン版） ====================
+
 function applySpecialFieldLogic(values) {
     const connectionType = getFieldValue('input[name="connection_type"]');
     
@@ -2475,7 +2479,6 @@ function applySpecialFieldLogic(values) {
         
         if (state.apiInfo) {
             if (state.apiInfo.mape?.brIpv6Address) {
-                const apiMappings = state.config.setup?.config?.apiMappings?.mape || {};
                 values.mape_br = state.apiInfo.mape.brIpv6Address;
                 values.mape_ealen = state.apiInfo.mape.eaBitLength;
                 values.mape_ipv4_prefix = state.apiInfo.mape.ipv4Prefix;
@@ -2649,6 +2652,25 @@ function applySpecialFieldLogic(values) {
             values.dnsmasq_negcache = negCache;
         } else {
             delete values.dnsmasq_negcache;
+        }
+    }
+
+    // 言語処理追加
+    const langValue = values.language;
+    if (langValue) {
+        const languageConfig = state.config.setup?.config?.languagePackages || {};
+        const excludeLanguage = languageConfig.excludeLanguage || 'en';
+
+        if (langValue !== excludeLanguage) {
+            const basePrefix = languageConfig.basePackagePrefix || "luci-i18n-base-";
+            const firewallPrefix = languageConfig.firewallPackagePrefix || "luci-i18n-firewall-";
+            const pattern = languageConfig.packagePattern || "luci-i18n-{module}-{language}";
+
+            values.language_packages = [
+                `${basePrefix}${langValue}`,
+                `${firewallPrefix}${langValue}`,
+                pattern.replace("{module}", "setup").replace("{language}", langValue)
+            ];
         }
     }
 }
