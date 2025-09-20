@@ -1089,7 +1089,6 @@ function setupPackageSearch() {
 }
 
 async function searchPackages(query, inputElement) {
-    
     const arch = state.device.arch;
     const version = state.device.version || document.querySelector("#versions")?.value;
     const vendor = state.device.vendor;
@@ -1108,7 +1107,7 @@ async function searchPackages(query, inputElement) {
             console.log('Cannot search kmods without vendor information');
         }
     } else {
-        feeds = ['packages', 'luci'];
+        feeds = ['base', 'packages', 'luci'];
     }
     
     for (const feed of feeds) {
@@ -1129,9 +1128,7 @@ async function searchPackages(query, inputElement) {
         const bExact = (bLower === q);
         if (aExact && !bExact) return -1;
         if (bExact && !aExact) return 1;
-
         if (aExact && bExact) return a.localeCompare(b);
-
         return a.localeCompare(b);
     });
 
