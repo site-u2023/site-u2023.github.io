@@ -2334,11 +2334,11 @@ function generateFormStructure(config) {
         'dslite-section', 'mape-section', 'ap-section'
     ];
 
-    config.categories.forEach(category => {
+    (config.categories || []).forEach(category => {
         structure.categories[category.id] = [];
 
-        category.packages.forEach(pkg => {
-            collectFieldsFromPackage(pkg, structure, categoryId);
+        (category.packages || []).forEach(pkg => {
+            collectFieldsFromPackage(pkg, structure, category.id);
         });
     });
 
@@ -2388,11 +2388,16 @@ function collectFieldsFromPackage(pkg, structure, categoryId) {
 
 function collectFormValues() {
     const values = {};
+    const formStructure = state.config.formStructure;
+
+    if (!formStructure || !formStructure.fields) {
+        console.warn("collectFormValues: formStructure.fields is not available");
+        return values;
+    }
     
-    Object.values(state.config.formStructure.fields).forEach(field => {
+    Object.values(formStructure.fields).forEach(field => {
         const value = getFieldValue(field.selector);
         
-        // languageフィールドの場合、excludeLanguageの値は除外
         const languageConfig = state.config.setup?.config?.languagePackages || {};
         const excludeLanguage = languageConfig.excludeLanguage || 'en';
         if (field.variableName === 'language' && value === excludeLanguage) {
