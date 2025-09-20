@@ -513,7 +513,7 @@
         {
           "id": "kmod-usb-ledtrig-usbport",
           "name": "kmod-usb-ledtrig-usbport"
-        }
+        },
         {
           "id": "kmod-usb-net-rndis",
           "name": "kmod-usb-net-rndis",
