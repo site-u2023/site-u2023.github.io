@@ -608,12 +608,12 @@ function toggleVirtualPackage(packageId, enabled) {
 }
 
 function toggleVirtualPackagesByType(type, value, enabled) {
-    const packageMap = {
-        connection_type: { mape: ['map'], dslite: ['ds-lite'] },
-        wifi_mode: { usteer: ['usteer-from-setup'] }
-    };
+    const mappings =
+        state?.config?.setup?.config?.packageMappings ||
+        config?.packageMappings ||
+        {};
 
-    const targets = packageMap[type]?.[value];
+    const targets = mappings?.[type]?.[value];
     if (!targets || targets.length === 0) {
         console.log(`No virtual packages defined for ${type}=${value}`);
         return;
