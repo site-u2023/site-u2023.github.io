@@ -514,6 +514,17 @@
           "id": "kmod-usb-ledtrig-usbport",
           "name": "kmod-usb-ledtrig-usbport"
         }
+        {
+          "id": "kmod-usb-net-rndis",
+          "name": "kmod-usb-net-rndis",
+          "dependencies": ["kmod-usb-gadget-eth"],
+          "enableVar": "enable_usb_rndis"
+        },
+        {
+          "id": "kmod-usb-gadget-eth",
+          "name": "kmod-usb-gadget-eth",
+          "hidden": true
+        }
       ]
     },
     {
