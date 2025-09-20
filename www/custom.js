@@ -203,20 +203,17 @@ const CustomUtils = {
     generateGuaPrefixFromFullAddress: function(apiInfo) {
         if (!apiInfo?.ipv6) return null;
         const ipv6 = apiInfo.ipv6.toLowerCase();
-    
-        if (!this.inCidr(ipv6, '2000::/3')) return null;
-    
-        const excludeCidrs = [
-            '2001:db8::/32',
-            '2002::/16',
-            '2001::/32',
-            '2001:20::/28',
-            '2001:2::/48',
-            '2001:3::/32',
-            '2001:4:112::/48'
-        ];
-        if (excludeCidrs.some(cidr => this.inCidr(ipv6, cidr))) return null;
-    
+
+        const ipv6Config = state?.config?.setup?.config?.ipv6 || config?.ipv6;
+        if (!ipv6Config) return null;
+
+        if (!this.inCidr(ipv6, ipv6Config.guaPrefixCheck)) return null;
+
+        if (Array.isArray(ipv6Config.excludeCidrs) &&
+            ipv6Config.excludeCidrs.some(cidr => this.inCidr(ipv6, cidr))) {
+            return null;
+        }
+
         const segments = ipv6.split(':');
         if (segments.length >= 4) {
             return `${segments[0]}:${segments[1]}:${segments[2]}:${segments[3]}::/64`;
