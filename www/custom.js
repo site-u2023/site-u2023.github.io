@@ -2729,8 +2729,7 @@ function handleConditionalSectionChange(categoryId, fieldName, selectedValue, op
             const shouldShow = pkg.showWhen.values?.includes(selectedValue);
             
             if (shouldShow) {
-                section.innerHTML = '';
-                buildField(pkg, section);
+                CustomUtils.show(section);
                 
                 if (pkg.children && options.processChildren) {
                     processNestedSections(pkg.children, fieldName, selectedValue);
