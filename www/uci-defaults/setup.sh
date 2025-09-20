@@ -5,6 +5,7 @@ enable_notes="1"
 enable_ntp="1"
 enable_log="1"
 enable_diag="1"
+enable_usb_gadget=""
 DATE="$(date '+%Y-%m-%d %H:%M')"
 LAN="$(uci -q get network.lan.device || echo lan)"
 WAN="$(uci -q get network.wan.device || echo wan)"
@@ -117,6 +118,12 @@ set usteer.@usteer[0].max_snr='80'
 set usteer.@usteer[0].signal_diff_threshold='10'
 USTEERCFG_EOF
     fi
+}
+[ -n "${enable_usb_gadget}" ] && {
+    [ -f /boot/config.txt ] && ! grep -q '^dtoverlay=dwc2' /boot/config.txt && echo 'dtoverlay=dwc2' >> /boot/config.txt
+    [ -f /boot/cmdline.txt ] && ! grep -q 'modules-load=.*dwc2,g_ether' /boot/cmdline.txt && sed -i 's/\(root=[^ ]*\)/\1 modules-load=dwc2,g_ether/' /boot/cmdline.txt
+    echo g_ether > /etc/modules.d/99-gadget
+    [ -n "$(uci -q get network.@device[0])" ] && ! uci -q get network.@device[0].ports | grep -q "usb0" && uci add_list network.@device[0].ports='usb0'
 }
 [ -n "${pppoe_username}" ] && [ -n "${pppoe_password}" ] && uci -q batch <<PPPOE_EOF
 set network.wan.proto='pppoe'
