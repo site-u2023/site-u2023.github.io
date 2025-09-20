@@ -1107,7 +1107,7 @@ async function searchPackages(query, inputElement) {
             console.log('Cannot search kmods without vendor information');
         }
     } else {
-        feeds = ['base', 'packages', 'luci'];
+        feeds = ['base', 'packages', 'luci', 'routing', 'telephony'];
     }
     
     for (const feed of feeds) {
@@ -1545,6 +1545,17 @@ async function buildPackageUrl(feed, deviceInfo) {
         return await CustomUtils.buildKmodsUrl(version, vendor, isSnapshot);
     }
     
+    if (feed === 'target') {
+        if (!vendor || !subtarget) {
+            throw new Error('Missing vendor or subtarget for target packages');
+        }
+        const template = isSnapshot ? config.apk_search_url : config.opkg_search_url;
+        return template
+            .replace('{version}', version)
+            .replace('{arch}', arch)
+            .replace('{feed}', `../../targets/${vendor}/${subtarget}/packages`);
+    }
+    
     const template = isSnapshot ? config.apk_search_url : config.opkg_search_url;
     return template
         .replace('{version}', version)
@@ -1674,7 +1685,7 @@ async function buildAvailabilityIndex(deviceInfo, neededFeeds) {
     const cached = state.cache.availabilityIndex.get(cacheKey);
     if (cached) return cached;
 
-    const index = { packages: new Set(), luci: new Set(), kmods: new Set() };
+    const index = { packages: new Set(), luci: new Set(), kmods: new Set(), base: new Set(), target: new Set() };
     const tasks = [];
 
     if (neededFeeds.has('packages')) {
@@ -1683,13 +1694,23 @@ async function buildAvailabilityIndex(deviceInfo, neededFeeds) {
     if (neededFeeds.has('luci')) {
         tasks.push(fetchFeedSet('luci', deviceInfo).then(set => index.luci = set).catch(() => (index.luci = new Set())));
     }
-
+    if (neededFeeds.has('base')) {
+        tasks.push(fetchFeedSet('base', deviceInfo).then(set => index.base = set).catch(() => (index.base = new Set())));
+    }
     if (neededFeeds.has('kmods')) {
         if (!deviceInfo.vendor || !deviceInfo.subtarget) {
             console.warn('[WARN] kmods feed required but vendor/subtarget missing; kmod checks will fail-open=false');
             index.kmods = new Set();
         } else {
             tasks.push(fetchFeedSet('kmods', deviceInfo).then(set => index.kmods = set).catch(() => (index.kmods = new Set())));
+        }
+    }
+    if (neededFeeds.has('target')) {
+        if (!deviceInfo.vendor || !deviceInfo.subtarget) {
+            console.warn('[WARN] target feed required but vendor/subtarget missing');
+            index.target = new Set();
+        } else {
+            tasks.push(fetchFeedSet('target', deviceInfo).then(set => index.target = set).catch(() => (index.target = new Set())));
         }
     }
 
