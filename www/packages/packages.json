@@ -526,7 +526,13 @@
         },
         {
           "id": "kmod-usb-gadget-eth",
-          "name": "kmod-usb-gadget-eth"
+          "name": "kmod-usb-gadget-eth",
+          "dependencies": ["kmod-usb-dwc2"]
+        },
+        {
+          "id": "kmod-usb-dwc2",
+          "name": "kmod-usb-dwc2",
+          "hidden": true
         }
       ]
     },
