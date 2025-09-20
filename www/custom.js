@@ -1711,9 +1711,20 @@ function isAvailableInIndex(pkgName, feed, index) {
 }
 
 async function verifyAllPackages() {
+    if (!state.packages.json) {
+        console.log('Waiting for packages.json...');
+        await new Promise(resolve => {
+            const check = () => {
+                if (state.packages.json) resolve();
+                else setTimeout(check, 100);
+            };
+            check();
+        });
+    }
+    
     const arch = state.device.arch;
-    if (!state.packages.json || !arch) {
-        console.log('Cannot verify packages: missing data');
+    if (!arch) {
+        console.log('No device arch available');
         return;
     }
 
