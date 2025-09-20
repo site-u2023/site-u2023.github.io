@@ -1089,7 +1089,6 @@ function setupPackageSearch() {
 }
 
 async function searchPackages(query, inputElement) {
-    
     const arch = state.device.arch;
     const version = state.device.version || document.querySelector("#versions")?.value;
     const vendor = state.device.vendor;
@@ -1108,7 +1107,7 @@ async function searchPackages(query, inputElement) {
             console.log('Cannot search kmods without vendor information');
         }
     } else {
-        feeds = ['packages', 'luci'];
+        feeds = ['base', 'packages', 'luci', 'routing', 'telephony'];
     }
     
     for (const feed of feeds) {
@@ -1129,9 +1128,7 @@ async function searchPackages(query, inputElement) {
         const bExact = (bLower === q);
         if (aExact && !bExact) return -1;
         if (bExact && !aExact) return 1;
-
         if (aExact && bExact) return a.localeCompare(b);
-
         return a.localeCompare(b);
     });
 
@@ -1548,6 +1545,17 @@ async function buildPackageUrl(feed, deviceInfo) {
         return await CustomUtils.buildKmodsUrl(version, vendor, isSnapshot);
     }
     
+    if (feed === 'target') {
+        if (!vendor || !subtarget) {
+            throw new Error('Missing vendor or subtarget for target packages');
+        }
+        const template = isSnapshot ? config.apk_search_url : config.opkg_search_url;
+        return template
+            .replace('{version}', version)
+            .replace('{arch}', arch)
+            .replace('{feed}', `../../targets/${vendor}/${subtarget}/packages`);
+    }
+    
     const template = isSnapshot ? config.apk_search_url : config.opkg_search_url;
     return template
         .replace('{version}', version)
@@ -1677,7 +1685,7 @@ async function buildAvailabilityIndex(deviceInfo, neededFeeds) {
     const cached = state.cache.availabilityIndex.get(cacheKey);
     if (cached) return cached;
 
-    const index = { packages: new Set(), luci: new Set(), kmods: new Set() };
+    const index = { packages: new Set(), luci: new Set(), kmods: new Set(), base: new Set(), target: new Set() };
     const tasks = [];
 
     if (neededFeeds.has('packages')) {
@@ -1686,13 +1694,23 @@ async function buildAvailabilityIndex(deviceInfo, neededFeeds) {
     if (neededFeeds.has('luci')) {
         tasks.push(fetchFeedSet('luci', deviceInfo).then(set => index.luci = set).catch(() => (index.luci = new Set())));
     }
-
+    if (neededFeeds.has('base')) {
+        tasks.push(fetchFeedSet('base', deviceInfo).then(set => index.base = set).catch(() => (index.base = new Set())));
+    }
     if (neededFeeds.has('kmods')) {
         if (!deviceInfo.vendor || !deviceInfo.subtarget) {
             console.warn('[WARN] kmods feed required but vendor/subtarget missing; kmod checks will fail-open=false');
             index.kmods = new Set();
         } else {
             tasks.push(fetchFeedSet('kmods', deviceInfo).then(set => index.kmods = set).catch(() => (index.kmods = new Set())));
+        }
+    }
+    if (neededFeeds.has('target')) {
+        if (!deviceInfo.vendor || !deviceInfo.subtarget) {
+            console.warn('[WARN] target feed required but vendor/subtarget missing');
+            index.target = new Set();
+        } else {
+            tasks.push(fetchFeedSet('target', deviceInfo).then(set => index.target = set).catch(() => (index.target = new Set())));
         }
     }
 
@@ -1702,12 +1720,11 @@ async function buildAvailabilityIndex(deviceInfo, neededFeeds) {
 }
 
 function isAvailableInIndex(pkgName, feed, index) {
-    switch (feed) {
-        case 'packages': return index.packages.has(pkgName);
-        case 'luci':     return index.luci.has(pkgName);
-        case 'kmods':    return index.kmods.has(pkgName);
-        default:         return false;
-    }
+    return index.packages.has(pkgName) || 
+           index.luci.has(pkgName) || 
+           index.base.has(pkgName) || 
+           index.target.has(pkgName) || 
+           index.kmods.has(pkgName);
 }
 
 async function verifyAllPackages() {
@@ -1757,7 +1774,10 @@ async function verifyAllPackages() {
     console.log(`Verifying ${uniquePackages.length} unique packages...`);
 
     const deviceInfo = getDeviceInfo();
-    const neededFeeds = new Set(uniquePackages.map(p => p.feed));
+    const neededFeeds = new Set(['base', 'packages', 'luci', 'target']);
+    if (uniquePackages.some(p => p.feed === 'kmods')) {
+        neededFeeds.add('kmods');
+    }
     const index = await buildAvailabilityIndex(deviceInfo, neededFeeds);
 
     let unavailableCount = 0;
@@ -1790,31 +1810,29 @@ function updatePackageAvailabilityUI(uniqueId, isAvailable) {
     if (!packageItem) {
         const label = checkbox.closest('label');
         if (label) {
-            if (!isAvailable) {
-                UI.updateElement(label, { show: false });
-                checkbox.checked = false;
-                checkbox.disabled = true;
-            } else {
-                UI.updateElement(label, { show: true });
-                checkbox.disabled = false;
-            }
+            UI.updateElement(label, { show: isAvailable });
+            if (!isAvailable) checkbox.checked = false;
         }
         return;
     }
     
-    if (!isAvailable) {
-        UI.updateElement(packageItem, { show: false });
-        checkbox.checked = false;
-        checkbox.disabled = true;
-        
-        const depCheckboxes = packageItem.querySelectorAll('.package-dependent input[type="checkbox"]');
-        depCheckboxes.forEach(depCb => {
-            depCb.checked = false;
-            depCb.disabled = true;
-        });
+    const isMainPackage = !checkbox.closest('.package-dependent');
+    
+    if (isMainPackage) {
+        if (isAvailable) {
+            UI.updateElement(packageItem, { show: true });
+        } else {
+            UI.updateElement(packageItem, { show: false });
+            checkbox.checked = false;
+            const depCheckboxes = packageItem.querySelectorAll('.package-dependent input[type="checkbox"]');
+            depCheckboxes.forEach(depCb => depCb.checked = false);
+        }
     } else {
-        UI.updateElement(packageItem, { show: true });
-        checkbox.disabled = false;
+        const depLabel = checkbox.closest('label');
+        if (depLabel) {
+            UI.updateElement(depLabel, { show: isAvailable });
+            if (!isAvailable) checkbox.checked = false;
+        }
     }
     
     updateCategoryVisibility(packageItem);
