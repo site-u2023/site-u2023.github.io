@@ -501,11 +501,6 @@ window.updateImages = function(version, mobj) {
 };
 
 // ==================== 統合パッケージ管理システム ====================
-document.addEventListener('browserLanguageChanged', () => {
-    console.log('[TRACE] Browser language changed, updating UI');
-    updateAllPackageState('browser-language-changed');
-});
-
 async function updateAllPackageState(source = 'unknown') {
     if (!state.ui.initialized && state.packages.default.length === 0 && state.packages.device.length === 0) {
         console.log('updateAllPackageState: Device packages not ready, deferring update from:', source);
