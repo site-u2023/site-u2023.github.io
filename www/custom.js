@@ -1348,38 +1348,27 @@ function cleanupExistingCustomElements() {
 }
 
 // ==================== 言語セレクター設定 ====================
+
 function setupLanguageSelector() {
-    const mainLanguageSelect = document.querySelector('#languages-select');
-    const customLanguageSelect = document.querySelector('#aios-language');
-    const fallback = config?.fallback_language || 'en';
+    const langConfig = state.config.setup?.config?.languagePackages || {};
+    const defaultLang = langConfig.defaultLanguage || 'ja';
+    const excludeLang = langConfig.excludeLanguage || 'en';
 
-    if (!current_language) {
-        current_language = (navigator.language || navigator.userLanguage).toLowerCase().split('-')[0];
-        state.ui.language.current = current_language;
-    }
-    if (!config.device_language) {
-        config.device_language = current_language;
-    }
+    const langInput = document.querySelector('input[name="language"], select[name="language"]');
+    if (!langInput) return;
 
-    state.ui.language.selected = config.device_language;
-
-    if (mainLanguageSelect) {
-        mainLanguageSelect.value = current_language;
-    }
-    if (customLanguageSelect) {
-        customLanguageSelect.value = state.ui.language.selected;
+    if (!langInput.value || langInput.value === excludeLang) {
+        langInput.value = defaultLang;
+        if (!state.formValues) state.formValues = {};
+        state.formValues.language = defaultLang;
+        console.log("Language default applied by setupLanguageSelector:", defaultLang);
     }
 
-    console.log('Language setup - Browser:', current_language, 'Device:', state.ui.language.selected);
-
-    if (mainLanguageSelect) {
-        mainLanguageSelect.removeEventListener('change', handleMainLanguageChange);
-        mainLanguageSelect.addEventListener('change', handleMainLanguageChange);
-    }
-    if (customLanguageSelect) {
-        customLanguageSelect.removeEventListener('change', handleCustomLanguageChange);
-        customLanguageSelect.addEventListener('change', handleCustomLanguageChange);
-    }
+    langInput.addEventListener('change', (e) => {
+        if (!state.formValues) state.formValues = {};
+        state.formValues.language = e.target.value;
+        console.log("Language changed:", e.target.value);
+    });
 }
 
 function syncBrowserLanguageSelector(lang) {
@@ -3132,21 +3121,6 @@ async function initializeCustomFeatures(asuSection, temp) {
     loadUciDefaultsTemplate();
 
     setupLanguageSelector();
-
-    const langConfig = state.config.setup?.config?.languagePackages || {};
-    const defaultLang = langConfig.defaultLanguage || 'ja';
-    const excludeLang = langConfig.excludeLanguage || 'en';
-
-    const langInput = document.querySelector('input[name="language"], select[name="language"]');
-    if (langInput) {
-        if (!langInput.value || langInput.value === excludeLang) {
-            langInput.value = defaultLang;
-            // state にも反映
-            if (!state.formValues) state.formValues = {};
-            state.formValues.language = defaultLang;
-            console.log("Language default applied:", defaultLang);
-        }
-    }
 
     setupPackageSearch();
     console.log('Package search initialized');
