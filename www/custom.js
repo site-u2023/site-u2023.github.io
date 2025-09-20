@@ -1763,7 +1763,13 @@ async function verifyAllPackages() {
     }
 
     for (const pkg of uniquePackages) {
-        if (pkg.isDependency) continue;
+        const available = isAvailableInIndex(pkg.id, pkg.feed, index);
+        updatePackageAvailabilityUI(pkg.uniqueId, available);
+
+        if (!available) {
+            unavailableCount++;
+            if (pkg.checked) checkedUnavailable.push(pkg.id);
+        }
         
         const available = isAvailableInIndex(pkg.id, pkg.feed, index);
         
