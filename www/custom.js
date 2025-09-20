@@ -1720,12 +1720,11 @@ async function buildAvailabilityIndex(deviceInfo, neededFeeds) {
 }
 
 function isAvailableInIndex(pkgName, feed, index) {
-    switch (feed) {
-        case 'packages': return index.packages.has(pkgName);
-        case 'luci':     return index.luci.has(pkgName);
-        case 'kmods':    return index.kmods.has(pkgName);
-        default:         return false;
-    }
+    return index.packages.has(pkgName) || 
+           index.luci.has(pkgName) || 
+           index.base.has(pkgName) || 
+           index.target.has(pkgName) || 
+           index.kmods.has(pkgName);
 }
 
 async function verifyAllPackages() {
@@ -1775,7 +1774,10 @@ async function verifyAllPackages() {
     console.log(`Verifying ${uniquePackages.length} unique packages...`);
 
     const deviceInfo = getDeviceInfo();
-    const neededFeeds = new Set(uniquePackages.map(p => p.feed));
+    const neededFeeds = new Set(['base', 'packages', 'luci', 'target']);
+    if (uniquePackages.some(p => p.feed === 'kmods')) {
+        neededFeeds.add('kmods');
+    }
     const index = await buildAvailabilityIndex(deviceInfo, neededFeeds);
 
     let unavailableCount = 0;
