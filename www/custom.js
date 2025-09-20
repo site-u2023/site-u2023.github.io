@@ -667,15 +667,14 @@ async function updateLanguagePackageCore() {
     
     const currentPackages = getCurrentPackageListForLanguage();
     console.log(`Checking language packages for ${currentPackages.length} packages`);
-    const addedLangPackages = new Set();
     
-    const basePrefix = languageConfig.basePackagePrefix || 'luci-i18n-';
+    const addedLangPackages = new Set();
     
     const basePkg = `${basePrefix}base-${state.ui.language.selected}`;
     const firewallPkg = `${basePrefix}firewall-${state.ui.language.selected}`;
     
     try {
-        if (await isPackageAvailable(basePkg, 'luci')) {    
+        if (await isPackageAvailable(basePkg, 'luci')) {
             state.packages.dynamic.add(basePkg);
             addedLangPackages.add(basePkg);
             console.log('Added base language package:', basePkg);
