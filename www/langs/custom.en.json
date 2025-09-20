@@ -106,7 +106,7 @@
     "tr-usb-storage": "USB Storage Support",
     "tr-file-sharing": "File Sharing",
 
-    "tr-dnsmasq-settings": "DNS Server Settings",
+    "tr-dnsmasq-settings": "DNS Server Optimization",
     "tr-dnsmasq-mode": "DNS Server Mode",
     "tr-auto": "Automatic",
     "tr-manual": "Manual",
