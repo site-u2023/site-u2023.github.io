@@ -2822,9 +2822,6 @@ function handleDnsmasqChange(e) {
             if (value === 'manual') {
                 restoreDefaultsFromJSON('dnsmasq-manual-section');
             }
-            if (typeof applyCustomTranslations === 'function') {
-                applyCustomTranslations(current_language_json);
-            }
         }
     });
 }
