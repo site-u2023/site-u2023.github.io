@@ -608,10 +608,7 @@ function toggleVirtualPackage(packageId, enabled) {
 }
 
 function toggleVirtualPackagesByType(type, value, enabled) {
-    const mappings =
-        state?.config?.setup?.config?.packageMappings ||
-        config?.packageMappings ||
-        {};
+    const mappings = state.config.setup.config.packageMappings;
 
     const targets = mappings?.[type]?.[value];
     if (!targets || targets.length === 0) {
