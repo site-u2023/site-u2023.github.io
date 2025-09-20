@@ -1728,31 +1728,11 @@ async function verifyAllPackages() {
                 uniqueId: pkg.uniqueId || pkg.id,
                 feed: guessFeedForPackage(pkg.id),
                 hidden: pkg.hidden || false,
-                checked: pkg.checked || false
+                checked: pkg.checked || false,
+                dependencies: pkg.dependencies || []
             });
-            if (pkg.dependencies) {
-                pkg.dependencies.forEach(depId => {
-                    const depPkg = findPackageById(depId);
-                    if (depPkg) {
-                        packagesToVerify.push({
-                            id: depPkg.id,
-                            uniqueId: depPkg.uniqueId || depPkg.id,
-                            feed: guessFeedForPackage(depPkg.id),
-                            hidden: depPkg.hidden || false,
-                            isDependency: true
-                        });
-                    }
-                });
-            }
         });
     });
-
-    const uniquePackages = Array.from(new Set(packagesToVerify.map(p => `${p.id}:${p.feed}`)))
-        .map(key => {
-            const [id, feed] = key.split(':');
-            const pkg = packagesToVerify.find(p => p.id === id && p.feed === feed);
-            return pkg;
-        });
 
     console.log(`Verifying ${uniquePackages.length} unique packages...`);
 
@@ -1763,13 +1743,45 @@ async function verifyAllPackages() {
     let unavailableCount = 0;
     const checkedUnavailable = [];
 
-    for (const pkg of uniquePackages) {
-        const available = isAvailableInIndex(pkg.id, pkg.feed, index);
-        updatePackageAvailabilityUI(pkg.uniqueId, available);
+// 共通関数：親子パッケージを全て非表示にする
+    function hidePackageWithDependencies(mainPackageId) {
+        const mainPkg = findPackageById(mainPackageId);
+        if (!mainPkg) return;
+        
+        // メインパッケージを非表示
+        updatePackageAvailabilityUI(mainPkg.uniqueId || mainPkg.id, false);
+        
+        // 依存関係も全て非表示
+        if (mainPkg.dependencies) {
+            mainPkg.dependencies.forEach(depId => {
+                const depPkg = findPackageById(depId);
+                if (depPkg) {
+                    updatePackageAvailabilityUI(depPkg.uniqueId || depPkg.id, false);
+                }
+            });
+        }
+    }
 
-        if (!available) {
+    for (const pkg of uniquePackages) {
+        if (pkg.isDependency) continue;
+        
+        const available = isAvailableInIndex(pkg.id, pkg.feed, index);
+        
+        let allDepsAvailable = true;
+        if (pkg.dependencies) {
+            allDepsAvailable = pkg.dependencies.every(depId => {
+                const depPkg = findPackageById(depId);
+                return depPkg && isAvailableInIndex(depPkg.id, guessFeedForPackage(depPkg.id), index);
+            });
+        }
+        
+        const finalAvailable = available && allDepsAvailable;
+        
+        if (finalAvailable) {
+            updatePackageAvailabilityUI(pkg.uniqueId, true);
+        } else {
+            hidePackageWithDependencies(pkg.id);
             unavailableCount++;
-            if (pkg.checked) checkedUnavailable.push(pkg.id);
         }
     }
 
