@@ -27,7 +27,7 @@
       "basePackagePrefix": "luci-i18n-base-",
       "opkgPackagePrefix": "luci-i18n-opkg-",
       "firewallPackagePrefix": "luci-i18n-firewall-",
-      "packagePattern": "luci-i18n-{module}-{language}",
+      "packagePattern": "luci-i18n-{module}-{language}"
     },
     
     "feedRules": {
