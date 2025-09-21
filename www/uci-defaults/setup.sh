@@ -21,7 +21,7 @@ NAS="openwrt"
 MNT="/mnt/sda"
 exec >/tmp/setup.log 2>&1
 disable_wan() {
-    uci -q batch <<DISABLE_WAN_EOF
+    uci -q batch <<'DISABLE_WAN_EOF'
 set network.wan.disabled='1'
 set network.wan.auto='0'
 set network.wan6.disabled='1'
@@ -29,7 +29,7 @@ set network.wan6.auto='0'
 DISABLE_WAN_EOF
 }
 dhcp_relay() {
-    uci -q batch <<DHCP_RELAY_EOF
+    uci -q batch <<'DHCP_RELAY_EOF'
 set dhcp.$1=dhcp
 set dhcp.$1.interface="$1"
 set dhcp.$1.master='1'
@@ -44,7 +44,7 @@ set dhcp.lan.force='1'
 DHCP_RELAY_EOF
 }
 firewall_wan() {
-    uci -q batch <<FIREWALL_WAN_EOF
+    uci -q batch <<'FIREWALL_WAN_EOF'
 del_list firewall.@zone[1].network="wan"
 del_list firewall.@zone[1].network="wan6"
 add_list firewall.@zone[1].network="$1"
@@ -57,7 +57,7 @@ FIREWALL_WAN_EOF
 set system.@system[0].description="${DATE}"
 set system.@system[0].notes="site-u.pages.dev"
 NOTES_EOF
-[ -n "${enable_ntp}" ] && uci -q batch <<NTP_EOF
+[ -n "${enable_ntp}" ] && uci -q batch <<'NTP_EOF'
 set system.ntp=timeserver
 set system.ntp.enabled='1'
 set system.ntp.enable_server='1'
@@ -89,15 +89,15 @@ DIAG_EOF
 [ -n "${ssh_interface}" ] && uci -q set dropbear.@dropbear[0].Interface="${ssh_interface}"
 [ -n "${ssh_port}" ] && uci -q set dropbear.@dropbear[0].Port="${ssh_port}"
 [ "${flow_offloading_type}" = "software" ] && uci -q set firewall.@defaults[0].flow_offloading='1'
-[ "${flow_offloading_type}" = "hardware" ] && uci -q batch <<FLOWHARD_EOF
+[ "${flow_offloading_type}" = "hardware" ] && uci -q batch <<'FLOWHARD_EOF'
 set firewall.@defaults[0].flow_offloading='1'
 set firewall.@defaults[0].flow_offloading_hw='1'
 FLOWHARD_EOF
 [ -n "${enable_usb_gadget}" ] && {
     [ -f /boot/config.txt ] && ! grep -q 'dtoverlay=dwc2' /boot/config.txt && echo 'dtoverlay=dwc2' >> /boot/config.txt
     [ -f /boot/cmdline.txt ] && sed -i 's/rootwait/& modules-load=dwc2,g_ether/' /boot/cmdline.txt
-    echo g_ether > /etc/modules.d/99-gadget
-    uci -q batch <<GADGET_EOF
+    echo -e "dwc2\ng_ether" > /etc/modules.d/99-gadget
+    uci -q batch <<'GADGET_EOF'
 set network.lan.type='bridge'
 add_list network.lan.device='usb0'
 GADGET_EOF
@@ -150,7 +150,7 @@ USTEER_EOF
         }
     done
     if [ -n "${enable_usteer}" ]; then
-        uci -q batch <<USTEERCFG_EOF
+        uci -q batch <<'USTEERCFG_EOF'
 set usteer.@usteer[0].band_steering='1'
 set usteer.@usteer[0].load_balancing='1'
 set usteer.@usteer[0].sta_block_timeout='300'
@@ -446,11 +446,11 @@ AP_EOF
     uci -q delete firewall
     [ -x /etc/init.d/firewall ] && /etc/init.d/firewall disable
 }
-[ -n "${enable_ttyd}" ] && uci -q batch <<TTYD_EOF
+[ -n "${enable_ttyd}" ] && uci -q batch <<'TTYD_EOF'
 set ttyd.@ttyd[0].ipv6='1'
 set ttyd.@ttyd[0].command='/bin/login -f root'
 TTYD_EOF
-[ -n "${enable_irqbalance}" ] && uci -q batch <<IRQ_EOF
+[ -n "${enable_irqbalance}" ] && uci -q batch <<'IRQ_EOF'
 set irqbalance.irqbalance=irqbalance
 set irqbalance.irqbalance.enabled='1'
 IRQ_EOF
