@@ -156,7 +156,7 @@ USTEERCFG_EOF
     [ -f /boot/config.txt ] && ! grep -q '^dtoverlay=dwc2' /boot/config.txt && echo 'dtoverlay=dwc2' >> /boot/config.txt
     [ -f /boot/cmdline.txt ] && ! grep -q 'modules-load=.*dwc2,g_ether' /boot/cmdline.txt && sed -i 's/\(root=[^ ]*\)/\1 modules-load=dwc2,g_ether/' /boot/cmdline.txt
     echo g_ether > /etc/modules.d/99-gadget
-    uci add_list network.lan.device='usb0'
+	uci add_list network.${LAN}.ports='usb0'
     modprobe dwc2 2>/dev/null
     modprobe g_ether 2>/dev/null
 }
