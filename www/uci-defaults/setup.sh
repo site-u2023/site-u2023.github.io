@@ -469,22 +469,7 @@ set samba4.sambashare.inherit_owner='yes'
 set samba4.sambashare.create_mask='0777'
 set samba4.sambashare.dir_mask='0777'
 SAMBA_EOF
-[ -n "${enable_dnsmasq}" ] && {
-    CACHE_SIZE="${dnsmasq_cache:-}"
-    NEG_CACHE="${dnsmasq_negcache:-1}"
-    if [ -z "$CACHE_SIZE" ]; then
-        M=$(awk '/MemTotal/{print int($2/1024)}' /proc/meminfo)
-        if   [ "$M" -ge 1024 ]; then CACHE_SIZE=10000
-        elif [ "$M" -ge 512  ]; then CACHE_SIZE=5000
-        else CACHE_SIZE=1000
-        fi
-    fi
-    uci -q batch <<DNSMASQ_EOF
-set dhcp.@dnsmasq[0].cachesize='${CACHE_SIZE}'
-set dhcp.@dnsmasq[0].nonegcache='${NEG_CACHE}'
-DNSMASQ_EOF
-}
-[ -n "${enable_netopt}" ] && M=$(awk '/MemTotal/{print int($2/1024)}' /proc/meminfo) && [ "$M" -ge 512 ] && {
+[ -n "${enable_netopt}" ] && M=$(awk '/MemTotal/{print int($2/1024)}' /proc/meminfo) && [ "$M" -ge 448 ] && {
     C=/etc/sysctl.d/99-net-opt.conf
     P=$(grep -c ^processor /proc/cpuinfo)
     RMEM=${netopt_rmem:-}
@@ -496,9 +481,9 @@ DNSMASQ_EOF
     SC=${netopt_somaxconn:-}
     CONG=${netopt_congestion:-cubic}
     if [ -z "$RMEM" ] || [ -z "$WMEM" ]; then
-        if   [ $M -ge 3072 ]; then R=16777216 W=16777216 TR="4096 262144 16777216" TW=$TR CT=262144 NB=5000 SC=16384
-        elif [ $M -ge 1536 ]; then R=8388608  W=8388608  TR="4096 131072 8388608"  TW=$TR CT=131072 NB=2500 SC=8192
-        elif [ $M -ge 512  ]; then R=4194304  W=4194304  TR="4096 65536  4194304"  TW=$TR CT=65536  NB=1000 SC=4096
+        if   [ $M -ge 2944 ]; then R=16777216 W=16777216 TR="4096 262144 16777216" TW=$TR CT=262144 NB=5000 SC=16384
+        elif [ $M -ge 1408 ]; then R=8388608  W=8388608  TR="4096 131072 8388608"  TW=$TR CT=131072 NB=2500 SC=8192
+        elif [ $M -ge  448 ]; then R=4194304  W=4194304  TR="4096 65536  4194304"  TW=$TR CT=65536  NB=1000 SC=4096
         fi
         [ $P -gt 4 ] && { NB=$((NB*2));   SC=$((SC*2)); }
         [ $P -gt 2 ] && [ $P -le 4 ] && { NB=$((NB*3/2)); SC=$((SC*3/2)); }
@@ -509,6 +494,21 @@ DNSMASQ_EOF
     printf "net.core.rmem_max=%s\nnet.core.wmem_max=%s\nnet.ipv4.tcp_rmem=%s\nnet.ipv4.tcp_wmem=%s\nnet.ipv4.tcp_congestion_control=%s\nnet.ipv4.tcp_fastopen=3\nnet.netfilter.nf_conntrack_max=%s\nnet.core.netdev_max_backlog=%s\nnet.core.somaxconn=%s\n" \
     "$R" "$W" "$TR" "$TW" "$CONG" "$CT" "$NB" "$SC" > "$C"
     sysctl -p "$C"
+}
+[ -n "${enable_dnsmasq}" ] && {
+    CACHE_SIZE="${dnsmasq_cache:-}"
+    NEG_CACHE="${dnsmasq_negcache:-1}"
+    if [ -z "$CACHE_SIZE" ]; then
+        M=$(awk '/MemTotal/{print int($2/1024)}' /proc/meminfo)
+        if   [ "$M" -ge 896 ]; then CACHE_SIZE=10000
+        elif [ "$M" -ge 448 ]; then CACHE_SIZE=5000
+        elif [ "$M" -ge 240 ]; then CACHE_SIZE=1000
+        fi
+    fi
+    uci -q batch <<DNSMASQ_EOF
+set dhcp.@dnsmasq[0].cachesize='${CACHE_SIZE}'
+set dhcp.@dnsmasq[0].nonegcache='${NEG_CACHE}'
+DNSMASQ_EOF
 }
 # BEGIN_CUSTOM_COMMANDS
 # END_CUSTOM_COMMANDS
