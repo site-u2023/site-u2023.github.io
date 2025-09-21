@@ -463,6 +463,12 @@ set samba4.sambashare.inherit_owner='yes'
 set samba4.sambashare.create_mask='0777'
 set samba4.sambashare.dir_mask='0777'
 SAMBA_EOF
+[ -n "${enable_usb_gadget}" ] && {
+    [ -f /boot/config.txt ] && ! grep -q 'dtoverlay=dwc2' /boot/config.txt && echo 'dtoverlay=dwc2' >> /boot/config.txt
+    [ -f /boot/cmdline.txt ] && sed -i 's/rootwait/& modules-load=dwc2,g_ether/' /boot/cmdline.txt
+    printf '%s\n%s\n' "dwc2" "g_ether" > /etc/modules.d/99-gadget
+	uci add_list network.lan.device='usb0'
+}
 [ -n "${enable_netopt}" ] && [ "$MEM" -ge 448 ] && {
     C=/etc/sysctl.d/99-net-opt.conf
     P=$(grep -c ^processor /proc/cpuinfo)
@@ -502,15 +508,6 @@ SAMBA_EOF
 set dhcp.@dnsmasq[0].cachesize='${CACHE_SIZE}'
 set dhcp.@dnsmasq[0].nonegcache='${NEG_CACHE}'
 DNSMASQ_EOF
-}
-[ -n "${enable_usb_gadget}" ] && {
-    [ -f /boot/config.txt ] && ! grep -q 'dtoverlay=dwc2' /boot/config.txt && echo 'dtoverlay=dwc2' >> /boot/config.txt
-    [ -f /boot/cmdline.txt ] && sed -i 's/rootwait/& modules-load=dwc2,g_ether/' /boot/cmdline.txt
-    printf '%s\n%s\n' "dwc2" "g_ether" > /etc/modules.d/99-gadget
-	uci -q batch <<'GADGET_EOF'
-add_list network.lan.device='usb0'
-set network.lan.type='bridge'
-GADGET_EOF
 }
 # BEGIN_CUSTOM_COMMANDS
 # END_CUSTOM_COMMANDS
