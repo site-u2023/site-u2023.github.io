@@ -96,11 +96,9 @@ FLOWHARD_EOF
 [ -n "${enable_usb_gadget}" ] && {
     [ -f /boot/config.txt ] && ! grep -q 'dtoverlay=dwc2' /boot/config.txt && echo 'dtoverlay=dwc2' >> /boot/config.txt
     [ -f /boot/cmdline.txt ] && sed -i 's/rootwait/& modules-load=dwc2,g_ether/' /boot/cmdline.txt
-    printf "dwc2\ng_ether\n" > /etc/modules.d/99-gadget
-    uci -q batch <<'GADGET_EOF'
-add_list network.lan.device='usb0'
-set network.lan.type='bridge'
-GADGET_EOF
+    printf '%s\n%s\n' "dwc2" "g_ether" > /etc/modules.d/99-gadget
+    uci add_list network.lan.device='usb0'
+	uci set network.lan.type='bridge'
 }
 [ -n "${wlan_ssid}" ] && [ -n "${wlan_password}" ] && [ "${#wlan_password}" -ge 8 ] && {
     wireless_cfg=$(uci -q show wireless)
