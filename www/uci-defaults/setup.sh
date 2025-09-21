@@ -19,7 +19,7 @@ AP="ap"
 AP6="ap6"
 NAS="openwrt"
 MNT="/mnt/sda"
-MEMORY=$(awk '/MemTotal/{print int($2/1024)}' /proc/meminfo)
+MEM=$(awk '/MemTotal/{print int($2/1024)}' /proc/meminfo)
 exec >/tmp/setup.log 2>&1
 disable_wan() {
     uci -q batch <<'DISABLE_WAN_EOF'
