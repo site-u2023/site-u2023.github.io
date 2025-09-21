@@ -11,7 +11,7 @@ LAN="$(uci -q get network.lan.device || echo lan)"
 WAN="$(uci -q get network.wan.device || echo wan)"
 DIAG="one.one.one.one"
 NTP=".pool.ntp.org"
-CC="${country:-00}"
+COUNTRY="${country:-00}"
 DSL="dsl"
 DSL6="dsl6"
 MAPE="mape"
@@ -32,8 +32,8 @@ set system.ntp.enable_server='1'
 set system.ntp.interface='lan'
 delete system.ntp.server
 NTP_EOF
-CC_LC=$(printf '%s' "$CC" | tr 'A-Z' 'a-z')
-for s in "0.${CC_LC}${NTP}" "1.${CC_LC}${NTP}" "2${NTP}" "3${NTP}"; do
+COUNTRY_LC=$(printf '%s' "$COUNTRY" | tr 'A-Z' 'a-z')
+for s in "0.${COUNTRY_LC}${NTP}" "1.${COUNTRY_LC}${NTP}" "2${NTP}" "3${NTP}"; do
     uci add_list system.ntp.server="$s"
 done
 [ -n "${enable_log}" ] && uci -q batch <<'LOG_EOF'
@@ -66,7 +66,7 @@ FLOWHARD_EOF
     for radio in $(printf '%s\n' "${wireless_cfg}" | grep "wireless\.radio[0-9]*=" | cut -d. -f2 | cut -d= -f1); do
         uci -q batch <<RADIO_EOF
 set wireless.${radio}.disabled='0'
-set wireless.${radio}.country="${CC}"
+set wireless.${radio}.country="${COUNTRY}"
 RADIO_EOF
         band=$(uci -q get wireless.${radio}.band)
         case "${band}" in
