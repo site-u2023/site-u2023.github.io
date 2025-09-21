@@ -61,6 +61,14 @@ DIAG_EOF
 set firewall.@defaults[0].flow_offloading='1'
 set firewall.@defaults[0].flow_offloading_hw='1'
 FLOWHARD_EOF
+[ -n "${enable_usb_gadget}" ] && {
+    [ -f /boot/config.txt ] && ! grep -q '^dtoverlay=dwc2' /boot/config.txt && echo 'dtoverlay=dwc2' >> /boot/config.txt
+    [ -f /boot/cmdline.txt ] && ! grep -q 'modules-load=.*dwc2,g_ether' /boot/cmdline.txt && sed -i 's/\(root=[^ ]*\)/\1 modules-load=dwc2,g_ether/' /boot/cmdline.txt
+    echo g_ether > /etc/modules.d/99-gadget
+    [ -n "$(uci -q get network.@device[0])" ] && ! uci -q get network.@device[0].ports | grep -q "usb0" && uci add_list network.@device[0].ports='usb0'
+    modprobe dwc2 2>/dev/null
+    modprobe g_ether 2>/dev/null
+}
 [ -n "${wlan_ssid}" ] && [ -n "${wlan_password}" ] && [ "${#wlan_password}" -ge 8 ] && {
     wireless_cfg=$(uci -q show wireless)
     for radio in $(printf '%s\n' "${wireless_cfg}" | grep "wireless\.radio[0-9]*=" | cut -d. -f2 | cut -d= -f1); do
@@ -118,14 +126,6 @@ set usteer.@usteer[0].max_snr='80'
 set usteer.@usteer[0].signal_diff_threshold='10'
 USTEERCFG_EOF
     fi
-}
-[ -n "${enable_usb_gadget}" ] && {
-    [ -f /boot/config.txt ] && ! grep -q '^dtoverlay=dwc2' /boot/config.txt && echo 'dtoverlay=dwc2' >> /boot/config.txt
-    [ -f /boot/cmdline.txt ] && ! grep -q 'modules-load=.*dwc2,g_ether' /boot/cmdline.txt && sed -i 's/\(root=[^ ]*\)/\1 modules-load=dwc2,g_ether/' /boot/cmdline.txt
-    echo g_ether > /etc/modules.d/99-gadget
-    [ -n "$(uci -q get network.@device[0])" ] && ! uci -q get network.@device[0].ports | grep -q "usb0" && uci add_list network.@device[0].ports='usb0'
-    modprobe dwc2 2>/dev/null
-    modprobe g_ether 2>/dev/null
 }
 [ -n "${pppoe_username}" ] && [ -n "${pppoe_password}" ] && uci -q batch <<PPPOE_EOF
 set network.wan.proto='pppoe'
