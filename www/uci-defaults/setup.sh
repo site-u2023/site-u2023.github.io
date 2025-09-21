@@ -99,7 +99,7 @@ FLOWHARD_EOF
     for radio in $(printf '%s\n' "${wireless_cfg}" | grep "wireless\.radio[0-9]*=" | cut -d. -f2 | cut -d= -f1); do
         uci -q batch <<RADIO_EOF
 set wireless.${radio}.disabled='0'
-set wireless.${radio}.country="${CC}"
+set wireless.${radio}.country="${COUNTRY}"
 RADIO_EOF
         band=$(uci -q get wireless.${radio}.band)
         case "${band}" in
@@ -157,6 +157,8 @@ USTEERCFG_EOF
     [ -f /boot/cmdline.txt ] && ! grep -q 'modules-load=.*dwc2,g_ether' /boot/cmdline.txt && sed -i 's/\(root=[^ ]*\)/\1 modules-load=dwc2,g_ether/' /boot/cmdline.txt
     echo g_ether > /etc/modules.d/99-gadget
     [ -n "$(uci -q get network.@device[0])" ] && ! uci -q get network.@device[0].ports | grep -q "usb0" && uci add_list network.@device[0].ports='usb0'
+    modprobe dwc2 2>/dev/null
+    modprobe g_ether 2>/dev/null
 }
 [ -n "${pppoe_username}" ] && [ -n "${pppoe_password}" ] && uci -q batch <<PPPOE_EOF
 set network.wan.proto='pppoe'
@@ -484,37 +486,32 @@ set dhcp.@dnsmasq[0].cachesize='${CACHE_SIZE}'
 set dhcp.@dnsmasq[0].nonegcache='${NEG_CACHE}'
 DNSMASQ_EOF
 }
-[ -n "${enable_netopt}" ] && { cat > /etc/rc.local <<'EOF'
-#!/bin/sh
-C=/etc/sysctl.d/99-net-opt.conf
-M=$(awk '/MemTotal/{print int($2/1024)}' /proc/meminfo)
-P=$(grep -c ^processor /proc/cpuinfo)
-RMEM=${netopt_rmem:-}
-WMEM=${netopt_wmem:-}
-TR=${netopt_rmem:-}
-TW=${netopt_wmem:-}
-CT=${netopt_conntrack:-}
-NB=${netopt_backlog:-}
-SC=${netopt_somaxconn:-}
-CONG=${netopt_congestion:-cubic}
-if [ -z "$RMEM" ] || [ -z "$WMEM" ]; then
-    if [ $M -ge 3072 ]; then R=16777216 W=16777216 TR="4096 262144 16777216" TW=$TR CT=262144 NB=5000 SC=16384
-    elif [ $M -ge 1536 ]; then R=8388608 W=8388608 TR="4096 131072 8388608" TW=$TR CT=131072 NB=2500 SC=8192
-    elif [ $M -ge 512 ]; then R=4194304 W=4194304 TR="4096 65536 4194304" TW=$TR CT=65536 NB=1000 SC=4096
-    else exit 0; fi
-    [ $P -gt 4 ] && { NB=$((NB*2)); SC=$((SC*2)); }
-    [ $P -gt 2 ] && [ $P -le 4 ] && { NB=$((NB*3/2)); SC=$((SC*3/2)); }
-else
-    R=$(echo $RMEM | cut -d' ' -f3)
-    W=$(echo $WMEM | cut -d' ' -f3)
-fi
-printf "net.core.rmem_max=%s\nnet.core.wmem_max=%s\nnet.ipv4.tcp_rmem=%s\nnet.ipv4.tcp_wmem=%s\nnet.ipv4.tcp_congestion_control=%s\nnet.ipv4.tcp_fastopen=3\nnet.netfilter.nf_conntrack_max=%s\nnet.core.netdev_max_backlog=%s\nnet.core.somaxconn=%s\n" "$R" "$W" "$TR" "$TW" "$CONG" "$CT" "$NB" "$SC" > $C
-sysctl -p $C
-cat > /etc/rc.local <<'RESET_EOF'
-exit 0
-RESET_EOF
-exit 0
-EOF
+[ -n "${enable_netopt}" ] && {
+    C=/etc/sysctl.d/99-net-opt.conf
+    M=$(awk '/MemTotal/{print int($2/1024)}' /proc/meminfo)
+    P=$(grep -c ^processor /proc/cpuinfo)
+    RMEM=${netopt_rmem:-}
+    WMEM=${netopt_wmem:-}
+    TR=${netopt_rmem:-}
+    TW=${netopt_wmem:-}
+    CT=${netopt_conntrack:-}
+    NB=${netopt_backlog:-}
+    SC=${netopt_somaxconn:-}
+    CONG=${netopt_congestion:-cubic}
+    if [ -z "$RMEM" ] || [ -z "$WMEM" ]; then
+        if   [ $M -ge 3072 ]; then R=16777216 W=16777216 TR="4096 262144 16777216" TW=$TR CT=262144 NB=5000 SC=16384
+        elif [ $M -ge 1536 ]; then R=8388608  W=8388608  TR="4096 131072 8388608"  TW=$TR CT=131072 NB=2500 SC=8192
+        elif [ $M -ge 512  ]; then R=4194304  W=4194304  TR="4096 65536  4194304"  TW=$TR CT=65536  NB=1000 SC=4096
+        fi
+        [ $P -gt 4 ] && { NB=$((NB*2));   SC=$((SC*2)); }
+        [ $P -gt 2 ] && [ $P -le 4 ] && { NB=$((NB*3/2)); SC=$((SC*3/2)); }
+    else
+        R=$(echo "$RMEM" | cut -d' ' -f3)
+        W=$(echo "$WMEM" | cut -d' ' -f3)
+    fi
+    printf "net.core.rmem_max=%s\nnet.core.wmem_max=%s\nnet.ipv4.tcp_rmem=%s\nnet.ipv4.tcp_wmem=%s\nnet.ipv4.tcp_congestion_control=%s\nnet.ipv4.tcp_fastopen=3\nnet.netfilter.nf_conntrack_max=%s\nnet.core.netdev_max_backlog=%s\nnet.core.somaxconn=%s\n" \
+    "$R" "$W" "$TR" "$TW" "$CONG" "$CT" "$NB" "$SC" > "$C"
+    sysctl -p "$C"
 }
 # BEGIN_CUSTOM_COMMANDS
 # END_CUSTOM_COMMANDS
