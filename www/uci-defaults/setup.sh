@@ -467,7 +467,7 @@ SAMBA_EOF
     [ -f /boot/config.txt ] && ! grep -q 'dtoverlay=dwc2' /boot/config.txt && echo 'dtoverlay=dwc2' >> /boot/config.txt
     [ -f /boot/cmdline.txt ] && sed -i 's/rootwait/& modules-load=dwc2,g_ether/' /boot/cmdline.txt
     printf '%s\n%s\n' "dwc2" "g_ether" > /etc/modules.d/99-gadget
-	sed -i '/^exit 0/i [ -d /sys/class/net/usb0 ] && { uci add_list network.'"${LAN}"'.ports="usb0"; uci commit network; sed -i "/usb0/d" /etc/rc.local; }' /etc/rc.local
+	sed -i '/^exit 0/i [ -d /sys/class/net/usb0 ] && { uci add_list network.@device[0].ports="usb0"; uci commit network; sed -i "/usb0/d" /etc/rc.local; }' /etc/rc.local
 }
 [ -n "${enable_netopt}" ] && [ "$MEM" -ge 400 ] && {
     C=/etc/sysctl.d/99-net-opt.conf
