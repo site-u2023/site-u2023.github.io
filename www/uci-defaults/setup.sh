@@ -157,8 +157,6 @@ USTEERCFG_EOF
     [ -f /boot/cmdline.txt ] && ! grep -q 'modules-load=.*dwc2,g_ether' /boot/cmdline.txt && sed -i 's/\(root=[^ ]*\)/\1 modules-load=dwc2,g_ether/' /boot/cmdline.txt
     echo g_ether > /etc/modules.d/99-gadget
 	uci add_list network.${LAN}.ports='usb0'
-    modprobe dwc2 2>/dev/null
-    modprobe g_ether 2>/dev/null
 }
 [ -n "${pppoe_username}" ] && [ -n "${pppoe_password}" ] && uci -q batch <<PPPOE_EOF
 set network.wan.proto='pppoe'
