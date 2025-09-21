@@ -436,9 +436,9 @@ set network.${AP6}.device="@${AP}"
 set network.${AP6}.reqaddress='try'
 set network.${AP6}.reqprefix='no'
 AP_EOF
-    [ -n "$(uci -q get wireless.default_radio0)" ] && uci -q set wireless.default_radio0.network="${AP}"
-    [ -n "$(uci -q get wireless.default_radio1)" ] && uci -q set wireless.default_radio1.network="${AP}"
-    [ -n "$(uci -q get wireless.default_radio2)" ] && uci -q set wireless.default_radio2.network="${AP}"
+    for r in 0 1 2; do
+    	[ -n "$(uci -q get wireless.default_radio$r)" ] && uci -q set wireless.default_radio$r.network="${AP}"
+	done
     [ -x /etc/init.d/odhcpd ] && /etc/init.d/odhcpd disable
     [ -x /etc/init.d/dnsmasq ] && /etc/init.d/dnsmasq disable  
     uci -q delete firewall
