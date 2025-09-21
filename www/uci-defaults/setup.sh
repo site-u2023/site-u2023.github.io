@@ -495,7 +495,7 @@ SAMBA_EOF
     "$R" "$W" "$TR" "$TW" "$CONG" "$CT" "$NB" "$SC" > "$C"
     sysctl -p "$C"
 }
-[ -n "${enable_dnsmasq}" ] && {
+[ -n "${enable_dnsmasq}" ] && [ "$MEM" -ge 200 ] && {
     CACHE_SIZE="${dnsmasq_cache:-}"
     NEG_CACHE="${dnsmasq_negcache:-1}"
     if [ -z "$CACHE_SIZE" ]; then
