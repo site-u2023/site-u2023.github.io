@@ -95,11 +95,14 @@ set firewall.@defaults[0].flow_offloading_hw='1'
 FLOWHARD_EOF
 [ -n "${enable_usb_gadget}" ] && {
     [ -f /boot/config.txt ] && ! grep -q 'dtoverlay=dwc2' /boot/config.txt && echo 'dtoverlay=dwc2' >> /boot/config.txt
-    [ -f /boot/cmdline.txt ] && ! grep -q 'modules-load=dwc2,g_ether' /boot/cmdline.txt && sed -i 's/rootwait/& modules-load=dwc2,g_ether/' /boot/cmdline.txt
+    [ -f /boot/cmdline.txt ] && sed -i 's/rootwait/& modules-load=dwc2,g_ether/' /boot/cmdline.txt
     echo g_ether > /etc/modules.d/99-gadget
-    modprobe dwc2 2>/dev/null
+	modprobe dwc2 2>/dev/null
     modprobe g_ether 2>/dev/null
-    uci add_list network.lan.device='usb0'
+    uci -q batch <<GADGET_EOF
+set network.lan.type='bridge'
+add_list network.lan.device='usb0'
+GADGET_EOF
 }
 [ -n "${wlan_ssid}" ] && [ -n "${wlan_password}" ] && [ "${#wlan_password}" -ge 8 ] && {
     wireless_cfg=$(uci -q show wireless)
