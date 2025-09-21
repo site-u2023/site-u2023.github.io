@@ -165,9 +165,7 @@ function buildAsuRequest(request_hash) {
             setTimeout(buildAsuRequest.bind(null, mobj.request_hash), 5000);
           });
           break;
-        case 400: // bad request
-        case 422: // bad package
-        case 500: // build failed
+        default: // Anything else is considered an error.
           response.json().then((mobj) => {
             if ("stderr" in mobj) {
               $("#asu-stderr").innerText = mobj.stderr;
@@ -571,16 +569,6 @@ function updateImages(version, mobj) {
   $$("#download-extras2 *").forEach((e) => e.remove());
 
   if (mobj) {
-    // vendor/subtarget 分離処理を追加
-    if (mobj.target) {
-      const parts = mobj.target.split('/');
-      mobj.vendor = parts[0] || 'unknown';
-      mobj.subtarget = parts[1] || '';
-    } else {
-      mobj.vendor = 'unknown';
-      mobj.subtarget = '';
-    }
-
     if ("asu_image_url" in mobj) {
       // ASU override
       mobj.image_folder = mobj.asu_image_url;
@@ -667,9 +655,11 @@ function updateImages(version, mobj) {
     }
 
     if ("manifest" in mobj === false) {
+      // Not ASU. Hide fields.
       $("#asu").open = false;
       hide("#asu-log");
       hide("#asu-buildstatus");
+      // Pre-select ASU packages.
       $("#asu-packages").value = mobj.default_packages
         .concat(mobj.device_packages)
         .concat(config.asu_extra_packages || [])
@@ -678,6 +668,7 @@ function updateImages(version, mobj) {
 
     translate();
 
+    // set current selection in URL
     if (isAnyDeviceSelected()) {
       history.replaceState(
         null,
