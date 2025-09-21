@@ -10,7 +10,7 @@ DATE="$(date '+%Y-%m-%d %H:%M')"
 LAN="$(uci -q get network.lan.device || echo lan)"
 WAN="$(uci -q get network.wan.device || echo wan)"
 DIAG="one.one.one.one"
-NTP=".pool.ntp.org"
+NTP_DOMAIN=".pool.ntp.org"
 COUNTRY="${country:-00}"
 DSL="dsl"
 DSL6="dsl6"
@@ -66,7 +66,7 @@ set system.ntp.interface='lan'
 delete system.ntp.server
 NTP_EOF
 COUNTRY_LC=$(printf '%s' "$COUNTRY" | tr 'A-Z' 'a-z')
-for s in "0.${COUNTRY_LC}${NTP}" "1.${COUNTRY_LC}${NTP}" "2${NTP}" "3${NTP}"; do
+for s in "0.${COUNTRY_LC}${NTP_DOMAIN}" "1.${COUNTRY_LC}${NTP_DOMAIN}" "2${NTP_DOMAIN}" "3${NTP_DOMAIN}"; do
     uci add_list system.ntp.server="$s"
 done
 [ -n "${enable_log}" ] && uci -q batch <<'LOG_EOF'
