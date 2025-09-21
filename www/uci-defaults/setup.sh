@@ -484,9 +484,8 @@ set dhcp.@dnsmasq[0].cachesize='${CACHE_SIZE}'
 set dhcp.@dnsmasq[0].nonegcache='${NEG_CACHE}'
 DNSMASQ_EOF
 }
-[ -n "${enable_netopt}" ] && {
+[ -n "${enable_netopt}" ] && M=$(awk '/MemTotal/{print int($2/1024)}' /proc/meminfo) && [ "$M" -ge 512 ] && {
     C=/etc/sysctl.d/99-net-opt.conf
-    M=$(awk '/MemTotal/{print int($2/1024)}' /proc/meminfo)
     P=$(grep -c ^processor /proc/cpuinfo)
     RMEM=${netopt_rmem:-}
     WMEM=${netopt_wmem:-}
