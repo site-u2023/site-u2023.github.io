@@ -21,15 +21,15 @@ NAS="openwrt"
 MNT="/mnt/sda"
 exec >/tmp/setup.log 2>&1
 disable_wan() {
-    uci -q batch <<EOF
+    uci -q batch <<DISABLE_WAN_EOF
 set network.wan.disabled='1'
 set network.wan.auto='0'
 set network.wan6.disabled='1'
 set network.wan6.auto='0'
-EOF
+DISABLE_WAN_EOF
 }
-setup_dhcp_relay() {
-    uci -q batch <<EOF
+dhcp_relay() {
+    uci -q batch <<DHCP_RELAY_EOF
 set dhcp.$1=dhcp
 set dhcp.$1.interface="$1"
 set dhcp.$1.master='1'
@@ -41,17 +41,17 @@ set dhcp.lan.ra='relay'
 set dhcp.lan.dhcpv6='relay'
 set dhcp.lan.ndp='relay'
 set dhcp.lan.force='1'
-EOF
+DHCP_RELAY_EOF
 }
-setup_firewall_wan() {
-    uci -q batch <<EOF
+firewall_wan() {
+    uci -q batch <<FIREWALL_WAN_EOF
 del_list firewall.@zone[1].network="wan"
 del_list firewall.@zone[1].network="wan6"
 add_list firewall.@zone[1].network="$1"
 add_list firewall.@zone[1].network="$2"
 set firewall.@zone[1].masq='1'
 set firewall.@zone[1].mtu_fix='1'
-EOF
+FIREWALL_WAN_EOF
 }
 [ -n "${enable_notes}" ] && uci -q batch <<NOTES_EOF
 set system.@system[0].description="${DATE}"
@@ -180,8 +180,8 @@ set network.${DSL}.tunlink="${DSL6}"
 set network.${DSL}.mtu='1460'
 set network.${DSL}.encaplimit='ignore'
 DSLITE_EOF
-    setup_dhcp_relay "${DSL6}"
-    setup_firewall_wan "${DSL}" "${DSL6}"
+    dhcp_relay "${DSL6}"
+    firewall_wan "${DSL}" "${DSL6}"
 }
 [ -n "${mape_br}" ] && [ -n "${mape_ealen}" ] && {
     disable_wan
@@ -207,8 +207,8 @@ set network.${MAPE}.encaplimit='ignore'
 set network.${MAPE}.legacymap='1'
 set network.${MAPE}.tunlink="${MAPE6}"
 MAPE_EOF
-    setup_dhcp_relay "${MAPE6}"
-    setup_firewall_wan "${MAPE}" "${MAPE6}"
+    dhcp_relay "${MAPE6}"
+    firewall_wan "${MAPE}" "${MAPE6}"
 [ -n "${mape_gua_prefix}" ] && uci -q set network.${MAPE6}.ip6prefix="${mape_gua_prefix}"
 MAP_SH="/lib/netifd/proto/map.sh"
 cp "$MAP_SH" "$MAP_SH".bak
