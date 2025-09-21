@@ -469,7 +469,7 @@ SAMBA_EOF
     printf '%s\n%s\n' "dwc2" "g_ether" > /etc/modules.d/99-gadget
 	uci add_list network.lan.device='usb0'
 }
-[ -n "${enable_netopt}" ] && [ "$MEM" -ge 448 ] && {
+[ -n "${enable_netopt}" ] && [ "$MEM" -ge 400 ] && {
     C=/etc/sysctl.d/99-net-opt.conf
     P=$(grep -c ^processor /proc/cpuinfo)
     RMEM=${netopt_rmem:-}
