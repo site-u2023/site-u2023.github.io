@@ -97,8 +97,6 @@ FLOWHARD_EOF
     [ -f /boot/config.txt ] && ! grep -q 'dtoverlay=dwc2' /boot/config.txt && echo 'dtoverlay=dwc2' >> /boot/config.txt
     [ -f /boot/cmdline.txt ] && sed -i 's/rootwait/& modules-load=dwc2,g_ether/' /boot/cmdline.txt
     echo g_ether > /etc/modules.d/99-gadget
-	modprobe dwc2 2>/dev/null
-    modprobe g_ether 2>/dev/null
     uci -q batch <<GADGET_EOF
 set network.lan.type='bridge'
 add_list network.lan.device='usb0'
