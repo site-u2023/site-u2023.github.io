@@ -473,7 +473,7 @@ SAMBA_EOF
     printf '%s\n%s\n' "dwc2" "g_ether" > /etc/modules.d/99-gadget
     sed -i '/^exit 0/i [ -d /sys/class/net/usb0 ] && { uci add_list network.@device[0].ports="usb0"; uci commit network; sed -i "/usb0/d" /etc/rc.local; }' /etc/rc.local
 }
-[ -n "${enable_netopt}" ] && [ "$MEM" -ge 400 ] && {
+[ -n "${enable_netopt}" ] {
     C=/etc/sysctl.d/99-net-opt.conf
     P=$(grep -c ^processor /proc/cpuinfo)
     RMEM=${netopt_rmem:-}
@@ -499,7 +499,7 @@ SAMBA_EOF
     "$R" "$W" "$TR" "$TW" "$CONG" "$CT" "$NB" "$SC" > "$C"
     sysctl -p "$C"
 }
-[ -n "${enable_dnsmasq}" ] && [ "$MEM" -ge 200 ] && {
+[ -n "${enable_dnsmasq}" ] && {
     CACHE_SIZE="${dnsmasq_cache:-}"
     NEG_CACHE="${dnsmasq_negcache:-1}"
     if [ -z "$CACHE_SIZE" ]; then
