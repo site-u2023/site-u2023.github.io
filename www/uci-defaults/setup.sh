@@ -528,7 +528,7 @@ uci commit 2>/dev/null
         f2fs)
             fsck.f2fs -f /dev/mmcblk0p2
             resize.f2fs /dev/mmcblk0p2 ;;
-        *) echo "skip: unsupported fs";;
+        *) echo skip ;;
     esac
 }
 echo "All done!"
