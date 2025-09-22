@@ -504,13 +504,13 @@ uci commit 2>/dev/null
     parted -s /dev/mmcblk0 resizepart 2 100%
     case "$(blkid -o value -s TYPE /dev/mmcblk0p2 2>/dev/null)" in
         ext4)
-            mount -o remount,ro /
-            tune2fs -O^resize_inode /dev/mmcblk0p2
-            fsck.ext4 -y /dev/mmcblk0p2
-            resize2fs /dev/mmcblk0p2 ;;
+            /bin/mount -o remount,ro /
+            /sbin/tune2fs -O^resize_inode /dev/mmcblk0p2
+            /sbin/fsck.ext4 -y /dev/mmcblk0p2
+            /sbin/resize2fs /dev/mmcblk0p2 ;;
         f2fs)
-            fsck.f2fs -f /dev/mmcblk0p2
-            resize.f2fs /dev/mmcblk0p2 ;;
+            /usr/sbin/fsck.f2fs -f /dev/mmcblk0p2
+            /usr/sbin/resize.f2fs /dev/mmcblk0p2 ;;
         *) echo skip ;;
     esac
 }
