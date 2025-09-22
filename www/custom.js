@@ -2681,11 +2681,7 @@ function setupDsliteAddressComputation() {
     if (!aftrType || !aftrArea || !aftrAddr) return;
 
     function getAddressMap() {
-        const internetCategory = state.config.setup.categories.find(cat => cat.id === 'internet-config');
-        const dsliteSection = internetCategory.packages.find(pkg => pkg.id === 'dslite-section');
-        const dsliteFields = dsliteSection.children.find(child => child.id === 'dslite-fields');
-        const aftrTypeField = dsliteFields.fields.find(field => field.id === 'dslite-aftr-type');
-        return aftrTypeField.computeField.addressMap;
+        return state.config.setup.config.dsliteAddressMap;
     }
 
     function computeAftrAddress(type, area) {
@@ -2784,14 +2780,15 @@ function processNestedSections(children, fieldName, selectedValue) {
 
 function handleConnectionTypeChange(e) {
     const selectedType = e.target.value;
+    const connTypes = state.config.setup.config.connectionTypeStrings;
     
-    handleConditionalSectionChange('internet-config', 'connection_type', selectedType, {
-        updateSource: 'connection-type',
+    handleConditionalSectionChange(connTypes.categoryId, connTypes.fieldName, selectedType, {
+        updateSource: connTypes.updateSource,
         customHandler: (value) => {
-            if (value === 'auto' && state.apiInfo) {
+            if (value === connTypes.autoValue && state.apiInfo) {
                 updateAutoConnectionInfo(state.apiInfo);
-            } else if (value === 'mape' && state.apiInfo) {
-                const guaPrefixField = getEl('mapeGuaPrefix', '#mape-gua-prefix');
+            } else if (value === connTypes.mapeValue && state.apiInfo) {
+                const guaPrefixField = getEl('mapeGuaPrefix', connTypes.mapeGuaPrefixSelector);
                 if (guaPrefixField && state.apiInfo.ipv6) {
                     const guaPrefix = CustomUtils.generateGuaPrefixFromFullAddress(state.apiInfo);
                     if (guaPrefix && !guaPrefixField.value) {
@@ -2806,12 +2803,13 @@ function handleConnectionTypeChange(e) {
 
 function handleNetOptimizerChange(e) {
     const mode = e.target.value;
+    const cfg = state.config.setup.config.netOptimizerStrings;
     
-    handleConditionalSectionChange('tuning-config', 'net_optimizer', mode, {
-        updateSource: 'net-optimizer',
+    handleConditionalSectionChange(cfg.categoryId, cfg.fieldName, mode, {
+        updateSource: cfg.updateSource,
         customHandler: (value) => {
-            if (value === 'manual') {
-                restoreDefaultsFromJSON('netopt-manual-section');
+            if (value === cfg.manualValue) {
+                restoreDefaultsFromJSON(cfg.manualSectionId);
             }
         }
     });
@@ -2819,12 +2817,13 @@ function handleNetOptimizerChange(e) {
 
 function handleWifiModeChange(e) {
     const mode = e.target.value;
+    const cfg = state.config.setup.config.wifiModeStrings;
     
-    handleConditionalSectionChange('wifi-config', 'wifi_mode', mode, {
+    handleConditionalSectionChange(cfg.categoryId, cfg.fieldName, mode, {
         processChildren: true,
-        updateSource: 'wifi-mode',
+        updateSource: cfg.updateSource,
         customHandler: (value) => {
-            if (value === 'disabled') {
+            if (value === cfg.disabledValue) {
                 CustomUtils.clearWifiFields();
             } else {
                 CustomUtils.restoreWifiDefaults();
@@ -2835,12 +2834,13 @@ function handleWifiModeChange(e) {
 
 function handleDnsmasqChange(e) {
     const mode = e.target.value;
+    const cfg = state.config.setup.config.dnsmasqStrings;
     
-    handleConditionalSectionChange('tuning-config', 'enable_dnsmasq', mode, {
-        updateSource: 'dnsmasq-mode',
+    handleConditionalSectionChange(cfg.categoryId, cfg.fieldName, mode, {
+        updateSource: cfg.updateSource,
         customHandler: (value) => {
-            if (value === 'manual') {
-                restoreDefaultsFromJSON('dnsmasq-manual-section');
+            if (value === cfg.manualValue) {
+                restoreDefaultsFromJSON(cfg.manualSectionId);
             }
         }
     });
