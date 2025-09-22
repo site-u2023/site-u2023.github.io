@@ -5,7 +5,6 @@ enable_notes="1"
 enable_ntp="1"
 enable_log="1"
 enable_diag="1"
-enable_sd_resize=""
 DATE="$(date '+%Y-%m-%d %H:%M')"
 LAN="$(uci -q get network.lan.device || echo lan)"
 WAN="$(uci -q get network.wan.device || echo wan)"
@@ -518,6 +517,52 @@ DNSMASQ_EOF
 # END_CUSTOM_COMMANDS
 uci commit 2>/dev/null
 [ -n "${backup_path}" ] && sysupgrade -q -k -b "${backup_path}"
-[ -n "${enable_sd_resize}" ] && parted -s /dev/mmcblk0 resizepart 2 100%
+[ -n "${enable_sd_resize}" ] && {
+    parted -s /dev/mmcblk0 resizepart 2 100%
+    case "$(blkid -o value -s TYPE /dev/mmcblk0p2 2>/dev/null)" in
+        ext4)
+            mount -o remount,ro /
+            tune2fs -O^resize_inode /dev/mmcblk0p2
+            fsck.ext4 -y /dev/mmcblk0p2
+            resize2fs /dev/mmcblk0p2 ;;
+        f2fs)
+            fsck.f2fs -f /dev/mmcblk0p2
+            resize.f2fs /dev/mmcblk0p2 ;;
+        *) echo "skip: unsupported fs";;
+    esac
+}
+[ -n "${enable_sd_resize}" ] && {
+    parted -s /dev/mmcblk0 resizepart 2 100%
+    FS_TYPE=$(blkid -o value -s TYPE /dev/mmcblk0p2 2>/dev/null)
+    case "$FS_TYPE" in
+        ext4)
+            mount -o remount,ro /
+            tune2fs -O^resize_inode /dev/mmcblk0p2
+            fsck.ext4 -y /dev/mmcblk0p2
+            resize2fs /dev/mmcblk0p2 ;;
+        f2fs)
+            fsck.f2fs -f /dev/mmcblk0p2
+            resize.f2fs /dev/mmcblk0p2 ;;
+        *) echo skip;;
+    esac
+}
+[ -n "${enable_sd_resize}" ] && {
+    ROOT_PART=$(mount | awk '$3=="/"{print $1}')
+    DEV=$(echo "$ROOT_PART" | sed 's/[0-9]*$//')
+    PART_NUM=$(echo "$ROOT_PART" | grep -o '[0-9]*$')
+    parted -s "$DEV" resizepart "$PART_NUM" 100%
+    FS_TYPE=$(blkid -o value -s TYPE "$ROOT_PART" 2>/dev/null)
+    case "$FS_TYPE" in
+        ext4)
+            mount -o remount,ro /
+            tune2fs -O^resize_inode "$ROOT_PART"
+            fsck.ext4 -y "$ROOT_PART"
+            resize2fs "$ROOT_PART" ;;
+        f2fs)
+            fsck.f2fs -f "$ROOT_PART"
+            resize.f2fs "$ROOT_PART" ;;
+        *) echo skip ;;
+    esac
+}
 echo "All done!"
 exit 0
