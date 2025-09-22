@@ -30,7 +30,7 @@ set network.wan6.auto='0'
 DISABLE_WAN_EOF
 }
 dhcp_relay() {
-    uci -q batch <<'DHCP_RELAY_EOF'
+    uci -q batch <<DHCP_RELAY_EOF
 set dhcp.$1=dhcp
 set dhcp.$1.interface="$1"
 set dhcp.$1.master='1'
@@ -45,7 +45,7 @@ set dhcp.lan.force='1'
 DHCP_RELAY_EOF
 }
 firewall_wan() {
-    uci -q batch <<'FIREWALL_WAN_EOF'
+    uci -q batch <<FIREWALL_WAN_EOF
 del_list firewall.@zone[1].network="wan"
 del_list firewall.@zone[1].network="wan6"
 add_list firewall.@zone[1].network="$1"
@@ -473,7 +473,7 @@ SAMBA_EOF
     printf '%s\n%s\n' "dwc2" "g_ether" > /etc/modules.d/99-gadget
     sed -i '/^exit 0/i [ -d /sys/class/net/usb0 ] && { uci add_list network.@device[0].ports="usb0"; uci commit network; sed -i "/usb0/d" /etc/rc.local; }' /etc/rc.local
 }
-[ -n "${enable_netopt}" ] {
+[ -n "${enable_netopt}" ] && {
     C=/etc/sysctl.d/99-net-opt.conf
     P=$(grep -c ^processor /proc/cpuinfo)
     RMEM=${netopt_rmem:-}
