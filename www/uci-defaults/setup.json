@@ -128,53 +128,6 @@
       }
     },
     
-    "dsliteAddressMap": {
-      "transix": {
-        "east": "2404:8e00::feed:100",
-        "west": "2404:8e01::feed:100"
-      },
-      "xpass": {
-        "east": "2404:8e02::feed:100",
-        "west": "2404:8e03::feed:100"
-      },
-      "v6option": {
-        "east": "2404:8e04::feed:100",
-        "west": "2404:8e05::feed:100"
-      }
-    },
-
-    "connectionTypeStrings": {
-      "categoryId": "internet-config",
-      "fieldName": "connection_type",
-      "updateSource": "connection-type",
-      "autoValue": "auto",
-      "mapeValue": "mape",
-      "mapeGuaPrefixSelector": "#mape-gua-prefix"
-    },
-
-    "netOptimizerStrings": {
-      "categoryId": "tuning-config",
-      "fieldName": "net_optimizer",
-      "updateSource": "net-optimizer",
-      "manualValue": "manual",
-      "manualSectionId": "netopt-manual-section"
-    },
-    
-    "wifiModeStrings": {
-      "categoryId": "wifi-config",
-      "fieldName": "wifi_mode",
-      "updateSource": "wifi-mode",
-      "disabledValue": "disabled"
-    },
-    
-    "dnsmasqStrings": {
-      "categoryId": "tuning-config",
-      "fieldName": "enable_dnsmasq",
-      "updateSource": "dnsmasq-mode",
-      "manualValue": "manual",
-      "manualSectionId": "dnsmasq-manual-section"
-    },
-    
     "connectionTypes": {
       "detection": {
         "mape": {
@@ -808,7 +761,21 @@
                   ],
                   "computeField": {
                     "targetField": "dslite-aftr-address",
-                    "dependsOn": ["dslite-area"]
+                    "dependsOn": ["dslite-area"],
+                    "addressMap": {
+                      "transix": {
+                        "east": "2404:8e00::feed:100",
+                        "west": "2404:8e01::feed:100"
+                      },
+                      "xpass": {
+                        "east": "2404:8e02::feed:100",
+                        "west": "2404:8e03::feed:100"
+                      },
+                      "v6option": {
+                        "east": "2404:8e04::feed:100",
+                        "west": "2404:8e05::feed:100"
+                      }
+                    }
                   }
                 },
                 {
