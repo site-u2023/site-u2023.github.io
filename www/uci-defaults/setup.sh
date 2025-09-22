@@ -5,6 +5,7 @@ enable_notes="1"
 enable_ntp="1"
 enable_log="1"
 enable_diag="1"
+enable_sd_resize=""
 DATE="$(date '+%Y-%m-%d %H:%M')"
 LAN="$(uci -q get network.lan.device || echo lan)"
 WAN="$(uci -q get network.wan.device || echo wan)"
@@ -517,5 +518,6 @@ DNSMASQ_EOF
 # END_CUSTOM_COMMANDS
 uci commit 2>/dev/null
 [ -n "${backup_path}" ] && sysupgrade -q -k -b "${backup_path}"
+[ -n "${enable_sd_resize}" ] && parted -s /dev/mmcblk0 resizepart 2 100%
 echo "All done!"
 exit 0
