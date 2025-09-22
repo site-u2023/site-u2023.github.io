@@ -2681,7 +2681,11 @@ function setupDsliteAddressComputation() {
     if (!aftrType || !aftrArea || !aftrAddr) return;
 
     function getAddressMap() {
-        return state.config.setup.config.dsliteAddressMap;
+        const internetCategory = state.config.setup.categories.find(cat => cat.id === 'internet-config');
+        const dsliteSection = internetCategory.packages.find(pkg => pkg.id === 'dslite-section');
+        const dsliteFields = dsliteSection.children.find(child => child.id === 'dslite-fields');
+        const aftrTypeField = dsliteFields.fields.find(field => field.id === 'dslite-aftr-type');
+        return aftrTypeField.computeField.addressMap;
     }
 
     function computeAftrAddress(type, area) {
@@ -2780,15 +2784,14 @@ function processNestedSections(children, fieldName, selectedValue) {
 
 function handleConnectionTypeChange(e) {
     const selectedType = e.target.value;
-    const connTypes = state.config.setup.config.connectionTypeStrings;
     
-    handleConditionalSectionChange(connTypes.categoryId, connTypes.fieldName, selectedType, {
-        updateSource: connTypes.updateSource,
+    handleConditionalSectionChange('internet-config', 'connection_type', selectedType, {
+        updateSource: 'connection-type',
         customHandler: (value) => {
-            if (value === connTypes.autoValue && state.apiInfo) {
+            if (value === 'auto' && state.apiInfo) {
                 updateAutoConnectionInfo(state.apiInfo);
-            } else if (value === connTypes.mapeValue && state.apiInfo) {
-                const guaPrefixField = getEl('mapeGuaPrefix', connTypes.mapeGuaPrefixSelector);
+            } else if (value === 'mape' && state.apiInfo) {
+                const guaPrefixField = getEl('mapeGuaPrefix', '#mape-gua-prefix');
                 if (guaPrefixField && state.apiInfo.ipv6) {
                     const guaPrefix = CustomUtils.generateGuaPrefixFromFullAddress(state.apiInfo);
                     if (guaPrefix && !guaPrefixField.value) {
@@ -2803,13 +2806,12 @@ function handleConnectionTypeChange(e) {
 
 function handleNetOptimizerChange(e) {
     const mode = e.target.value;
-    const cfg = state.config.setup.config.netOptimizerStrings;
     
-    handleConditionalSectionChange(cfg.categoryId, cfg.fieldName, mode, {
-        updateSource: cfg.updateSource,
+    handleConditionalSectionChange('tuning-config', 'net_optimizer', mode, {
+        updateSource: 'net-optimizer',
         customHandler: (value) => {
-            if (value === cfg.manualValue) {
-                restoreDefaultsFromJSON(cfg.manualSectionId);
+            if (value === 'manual') {
+                restoreDefaultsFromJSON('netopt-manual-section');
             }
         }
     });
@@ -2817,13 +2819,12 @@ function handleNetOptimizerChange(e) {
 
 function handleWifiModeChange(e) {
     const mode = e.target.value;
-    const cfg = state.config.setup.config.wifiModeStrings;
     
-    handleConditionalSectionChange(cfg.categoryId, cfg.fieldName, mode, {
+    handleConditionalSectionChange('wifi-config', 'wifi_mode', mode, {
         processChildren: true,
-        updateSource: cfg.updateSource,
+        updateSource: 'wifi-mode',
         customHandler: (value) => {
-            if (value === cfg.disabledValue) {
+            if (value === 'disabled') {
                 CustomUtils.clearWifiFields();
             } else {
                 CustomUtils.restoreWifiDefaults();
@@ -2834,13 +2835,12 @@ function handleWifiModeChange(e) {
 
 function handleDnsmasqChange(e) {
     const mode = e.target.value;
-    const cfg = state.config.setup.config.dnsmasqStrings;
     
-    handleConditionalSectionChange(cfg.categoryId, cfg.fieldName, mode, {
-        updateSource: cfg.updateSource,
+    handleConditionalSectionChange('tuning-config', 'enable_dnsmasq', mode, {
+        updateSource: 'dnsmasq-mode',
         customHandler: (value) => {
-            if (value === cfg.manualValue) {
-                restoreDefaultsFromJSON(cfg.manualSectionId);
+            if (value === 'manual') {
+                restoreDefaultsFromJSON('dnsmasq-manual-section');
             }
         }
     });
