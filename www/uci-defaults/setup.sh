@@ -463,6 +463,10 @@ set samba4.sambashare.inherit_owner='yes'
 set samba4.sambashare.create_mask='0777'
 set samba4.sambashare.dir_mask='0777'
 SAMBA_EOF
+[ -n "${enable_usb_rndis}" ] && {
+    printf '%s\n%s\n' "rndis_host" "cdc_ether" > /etc/modules.d/99-usb-net
+	uci add_list network.@device[0].ports='usb0'
+}
 [ -n "${enable_usb_gadget}" ] && [ -d /boot ] && {
     ! grep -q 'dtoverlay=dwc2' /boot/config.txt && echo 'dtoverlay=dwc2' >> /boot/config.txt
     sed -i 's/rootwait/& modules-load=dwc2,g_ether/' /boot/cmdline.txt
