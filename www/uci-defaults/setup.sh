@@ -446,23 +446,6 @@ TTYD_EOF
 set irqbalance.irqbalance=irqbalance
 set irqbalance.irqbalance.enabled='1'
 IRQ_EOF
-[ -n "${enable_samba4}" ] && uci -q batch <<SAMBA_EOF
-set samba4.@samba[0]=samba
-set samba4.@samba[0].workgroup='WORKGROUP'
-set samba4.@samba[0].charset='UTF-8'
-set samba4.@samba[0].description='Samba on OpenWRT'
-set samba4.@samba[0].enable_extra_tuning='1'
-set samba4.@samba[0].interface='lan'
-set samba4.sambashare=sambashare
-set samba4.sambashare.name="${NAS}"
-set samba4.sambashare.path="${MNT}"
-set samba4.sambashare.read_only='no'
-set samba4.sambashare.force_root='1'
-set samba4.sambashare.guest_ok='yes'
-set samba4.sambashare.inherit_owner='yes'
-set samba4.sambashare.create_mask='0777'
-set samba4.sambashare.dir_mask='0777'
-SAMBA_EOF
 [ -n "${enable_usb_rndis}" ] && {
     printf '%s\n%s\n' "rndis_host" "cdc_ether" > /etc/modules.d/99-usb-net
 	uci add_list network.@device[0].ports='usb0'
