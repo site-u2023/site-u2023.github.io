@@ -517,7 +517,8 @@
         {
           "id": "kmod-usb-net-rndis",
           "name": "kmod-usb-net-rndis",
-          "dependencies": ["kmod-usb-net-cdc-ether"]
+          "dependencies": ["kmod-usb-net-cdc-ether"],
+          "enableVar": "enable_usb_rndis"
         },
         {
           "id": "kmod-usb-net-cdc-ether",
@@ -527,7 +528,6 @@
         {
           "id": "kmod-usb-gadget-eth",
           "name": "kmod-usb-gadget-eth",
-          "dependencies": ["kmod-usb-dwc2"],
           "dependencies": ["kmod-usb-dwc2"],
           "enableVar": "enable_usb_gadget"
         },
