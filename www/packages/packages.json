@@ -535,6 +535,11 @@
           "id": "kmod-usb-dwc2",
           "name": "kmod-usb-dwc2",
           "hidden": true
+        },
+        {
+          "id": "resize2fs",
+          "name": "resize2fs",
+          "enableVar": "enable_sd_resize"
         }
       ]
     },
