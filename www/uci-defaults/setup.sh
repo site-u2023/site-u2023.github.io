@@ -450,6 +450,23 @@ IRQ_EOF
     printf '%s\n%s\n' "rndis_host" "cdc_ether" > /etc/modules.d/99-usb-net
 	uci add_list network.@device[0].ports='usb0'
 }
+[ -n "${enable_samba4}" ] && uci -q batch <<SAMBA_EOF
+set samba4.@samba[0]=samba
+set samba4.@samba[0].workgroup='WORKGROUP'
+set samba4.@samba[0].charset='UTF-8'
+set samba4.@samba[0].description='Samba on OpenWRT'
+set samba4.@samba[0].enable_extra_tuning='1'
+set samba4.@samba[0].interface='lan'
+set samba4.sambashare=sambashare
+set samba4.sambashare.name="${NAS}"
+set samba4.sambashare.path="${MNT}"
+set samba4.sambashare.read_only='no'
+set samba4.sambashare.force_root='1'
+set samba4.sambashare.guest_ok='yes'
+set samba4.sambashare.inherit_owner='yes'
+set samba4.sambashare.create_mask='0777'
+set samba4.sambashare.dir_mask='0777'
+SAMBA_EOF
 [ -n "${enable_usb_gadget}" ] && [ -d /boot ] && {
     ! grep -q 'dtoverlay=dwc2' /boot/config.txt && echo 'dtoverlay=dwc2' >> /boot/config.txt
     sed -i 's/rootwait/& modules-load=dwc2,g_ether/' /boot/cmdline.txt
@@ -500,19 +517,5 @@ DNSMASQ_EOF
 # END_CUSTOM_COMMANDS
 uci commit 2>/dev/null
 [ -n "${backup_path}" ] && sysupgrade -q -k -b "${backup_path}"
-[ -n "${enable_sd_resize}" ] && {
-    parted -s /dev/mmcblk0 resizepart 2 100%
-    case "$(blkid -o value -s TYPE /dev/mmcblk0p2 2>/dev/null)" in
-        ext4)
-            /bin/mount -o remount,ro /
-            /sbin/tune2fs -O^resize_inode /dev/mmcblk0p2
-            /sbin/fsck.ext4 -y /dev/mmcblk0p2
-            /sbin/resize2fs /dev/mmcblk0p2 ;;
-        f2fs)
-            /usr/sbin/fsck.f2fs -f /dev/mmcblk0p2
-            /usr/sbin/resize.f2fs /dev/mmcblk0p2 ;;
-        *) echo skip ;;
-    esac
-}
 echo "All done!"
 exit 0
