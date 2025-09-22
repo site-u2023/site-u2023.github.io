@@ -539,7 +539,18 @@
         {
           "id": "resize2fs",
           "name": "resize2fs",
+          "dependencies": ["parted", "f2fs-tools"],
           "enableVar": "enable_sd_resize"
+        },
+        {
+          "id": "parted",
+          "name": "parted",
+          "hidden": true
+        },
+        {
+          "id": "f2fs-tools",
+          "name": "f2fs-tools",
+          "hidden": true
         }
       ]
     },
