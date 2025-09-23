@@ -3132,7 +3132,7 @@ function updateAutoConnectionInfo(apiInfo) {
     }
     
     const connectionType = getConnectionType(apiInfo);
-    infoText += `${current_language_json['tr-auto-detection'] || 'Detected:'} 
+    infoText += `${current_language_json['tr-auto-detection'] || 'Detected:'} ${connectionType}\n`;
 
     if (connectionType === 'MAP-E') {
         infoText += `------------------------------------------------------\n`;
