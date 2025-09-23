@@ -3146,8 +3146,8 @@ function updateAutoConnectionInfo(apiInfo) {
         infoText += `(config-softwire)# map-version draft\n`;
         infoText += `(config-softwire)# rule <0-65535> ipv4-prefix ${apiInfo.mape.ipv4Prefix}/${apiInfo.mape.ipv4PrefixLength} ipv6-prefix ${apiInfo.mape.ipv6Prefix}/${apiInfo.mape.ipv6PrefixLength} [ea-length ${apiInfo.mape.eaBitLength}|psid-length ${apiInfo.mape.psidlen}] [offset ${apiInfo.mape.psIdOffset}] [forwarding]\n`;
         infoText += `\n`;
-        infoText += `Powered by https://ipv4.web.fc2.com/map-e.html`;
-
+        infoText += `Powered by https://ipv4.web.fc2.com/map-e.html\n`;
+        
         let gua = apiInfo.guaPrefix;
         if (!gua) {
             try {
@@ -3159,7 +3159,7 @@ function updateAutoConnectionInfo(apiInfo) {
             if (guaField && guaField.value) gua = guaField.value;
         }
         if (gua) {
-            infoText += `\n\u00A0GUA: ${gua}`;
+            infoText += `GUA: ${gua}`;
         }
     } else if (connectionType === 'DS-Lite') {
         infoText += `------------------------------------------------------\n`;
