@@ -1391,6 +1391,13 @@ async function handleMainLanguageChange(e) {
     } else {
         console.log('Programmatic change - device language not affected:', state.ui.language.selected);
     }
+
+    if (typeof updateAutoConnectionInfo === 'function') {
+        const info = state.autoConfig?.info || state.apiInfo;
+        if (info) {
+            updateAutoConnectionInfo(info);
+        }
+    }
 }
 
 async function handleCustomLanguageChange(e) {
