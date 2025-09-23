@@ -3136,7 +3136,6 @@ function updateAutoConnectionInfo(apiInfo) {
       
         infoText += `------------------------------------------------------\n`;
         infoText += `${current_language_json['tr-mape-notice1'] || 'Note: Actual values may differ.'}\n`;
-        infoText += `${current_language_json['tr-mape-notice2'] || 'Note: Ports 1-1023 are privileged ports. Please check with your ISP for details.'}\n`;
         infoText += `------------------------------------------------------\n`;
         infoText += `option peeraddr ${apiInfo.mape.brIpv6Address}\n`;
         infoText += `option ipaddr ${apiInfo.mape.ipv4Prefix}\n`;
