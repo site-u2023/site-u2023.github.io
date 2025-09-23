@@ -3184,7 +3184,8 @@ function updateAutoConnectionInfo(apiInfo) {
         infoText += `------------------------------------------------------\n`;
         infoText += `Powered by https://ipv4.web.fc2.com/map-e.html`;
     } else {
-        infoText += '\u00A0Standard connection will be used';
+        infoText += `${current_language_json['tr-auto-detection'] || 'Auto Detection:'} ${connectionType}\n`;
+        infoText += `${current_language_json['tr-standard-notice'] || 'Standard connection will be used'}`;
     }
 
     autoInfo.textContent = infoText;
