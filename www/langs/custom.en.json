@@ -56,11 +56,13 @@
     "tr-ds-lite-settings": "DS-Lite Settings",
     "tr-dslite-aftr-type": "AFTR Type",
     "tr-dslite-area": "Area",
-    "tr-dslite-aftr-ipv6-address": "AFTR IPv6 Address",
+    "tr-dslite-aftr-ipv6-address": "AFTR Address",
+    "tr-dslite-notice1": "Note: Actual values may differ.",
 
     "tr-mape-type": "MAP-E Settings",
-    "tr-br": "BR",
+    "tr-br": "Peer Address (BR)",
     "tr-ea-len": "EA Length",
+    "tr-ipv4-prefix": "IPv4 Address",
     "tr-ipv4-prefix-length": "IPv4 Prefix Length",
     "tr-ipv4-prefix-range": "IPv4 Prefix Range",
     "tr-ipv6-prefix": "IPv6 Prefix",
@@ -68,6 +70,8 @@
     "tr-psid-offset": "PSID Offset",
     "tr-psid-length": "PSID Length",
     "tr-gua-prefix": "GUA Prefix",
+    "tr-mape-notice1": "Note: Actual values may differ.",
+    "tr-mape-notice2": "Note: Ports 1-1023 are privileged ports. Please check with your ISP for details.",
 
     "tr-ap-network-settings": "AP Network Settings",
     "tr-ap-ip-address": "IP Address",
@@ -123,4 +127,3 @@
     "tr-asu-status-unreachable": "ASU server responded with an unexpected status: ",
     "tr-asu-status-networkfail": "Failed to reach the ASU server: "
 }
-    
