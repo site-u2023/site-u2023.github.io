@@ -3128,12 +3128,25 @@ function updateAutoConnectionInfo(apiInfo) {
     infoText += `Detected: ${connectionType}\n`;
 
     if (connectionType === 'MAP-E') {
-        infoText += `\u00A0BR: ${apiInfo.mape.brIpv6Address}\n`;
-        infoText += `\u00A0EA-len: ${apiInfo.mape.eaBitLength}\n`;
-        infoText += `\u00A0IPv4 Prefix: ${apiInfo.mape.ipv4Prefix}/${apiInfo.mape.ipv4PrefixLength}\n`;
-        infoText += `\u00A0IPv6 Prefix: ${apiInfo.mape.ipv6Prefix}/${apiInfo.mape.ipv6PrefixLength}\n`;
-        infoText += `\u00A0PSID: offset=${apiInfo.mape.psIdOffset}\n`;
-        infoText += `\u00A0PSID: length=${apiInfo.mape.psidlen}`;
+        infoText += `------------------------------------------------------\n`;
+        infoText += `${current_language_json['tr-mape-notice1'] || 'Note: Actual values may differ.'}\n`;
+        infoText += `${current_language_json['tr-mape-notice2'] || 'Note: Ports 1-1023 are privileged ports. Please check with your ISP for details.'}\n`;
+        infoText += `------------------------------------------------------\n`;
+        infoText += `option peeraddr ${apiInfo.mape.brIpv6Address}\n`;
+        infoText += `option ipaddr ${apiInfo.mape.ipv4Prefix}\n`;
+        infoText += `option ip4prefixlen ${apiInfo.mape.ipv4PrefixLength}\n`;
+        infoText += `option ip6prefix ${apiInfo.mape.ipv6Prefix}\n`;
+        infoText += `option ip6prefixlen ${apiInfo.mape.ipv6PrefixLength}\n`;
+        infoText += `option ealen ${apiInfo.mape.eaBitLength}\n`;
+        infoText += `option psidlen ${apiInfo.mape.psidlen}\n`;
+        infoText += `option offset ${apiInfo.mape.psIdOffset}\n`;
+        infoText += `\n`;
+        infoText += `export LEGACY=1\n`;
+        infoText += `------------------------------------------------------\n`;
+        infoText += `(config-softwire)# map-version draft\n`;
+        infoText += `(config-softwire)# rule <0-65535> ipv4-prefix ${apiInfo.mape.ipv4Prefix}/${apiInfo.mape.ipv4PrefixLength} ipv6-prefix ${apiInfo.mape.ipv6Prefix}/${apiInfo.mape.ipv6PrefixLength} [ea-length ${apiInfo.mape.eaBitLength}|psid-length ${apiInfo.mape.psidlen}] [offset ${apiInfo.mape.psIdOffset}] [forwarding]\n`;
+        infoText += `\n`;
+        infoText += `Powered by https://ipv4.web.fc2.com/map-e.html`;
 
         let gua = apiInfo.guaPrefix;
         if (!gua) {
@@ -3149,7 +3162,20 @@ function updateAutoConnectionInfo(apiInfo) {
             infoText += `\n\u00A0GUA: ${gua}`;
         }
     } else if (connectionType === 'DS-Lite') {
-        infoText += `AFTR: ${apiInfo.aftr}`;
+        infoText += `------------------------------------------------------\n`;
+        infoText += `${current_language_json['tr-dslite-notice1'] || 'Note: Actual values may differ.'}\n`;
+        infoText += `------------------------------------------------------\n`;
+        if (apiInfo.aftr?.aftrIpv6Address) {
+            infoText += `option aftr_addr ${apiInfo.aftr.aftrIpv6Address}\n`;
+        }
+        if (apiInfo.aftr?.aftrType) {
+            infoText += `option aftr_type ${apiInfo.aftr.aftrType}\n`;
+        }
+        if (apiInfo.aftr?.jurisdiction) {
+            infoText += `option area ${apiInfo.aftr.jurisdiction}\n`;
+        }
+        infoText += `------------------------------------------------------\n`;
+        infoText += `Powered by https://ipv4.web.fc2.com/map-e.html`;
     } else {
         infoText += '\u00A0Standard connection will be used';
     }
