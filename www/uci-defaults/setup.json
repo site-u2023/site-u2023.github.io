@@ -801,7 +801,7 @@
                 },
                 {
                   "id": "dslite-aftr-address",
-                  "label": "AFTR IPv6 Address",
+                  "label": "AFTR Address",
                   "class": "tr-dslite-aftr-ipv6-address",
                   "type": "text",
                   "selector": "#dslite-aftr-address",
@@ -850,7 +850,7 @@
               "fields": [
                 {
                   "id": "mape-br",
-                  "label": "BR",
+                  "label": "Peer Address (BR)",
                   "class": "tr-br",
                   "type": "text",
                   "selector": "#mape-br",
@@ -870,7 +870,7 @@
                 },
                 {
                   "id": "mape-ipv4-prefix",
-                  "label": "IPv4 Prefix",
+                  "label": "IPv4 Address",
                   "class": "tr-ipv4-prefix",
                   "type": "text",
                   "selector": "#mape-ipv4-prefix",
