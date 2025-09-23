@@ -1394,9 +1394,7 @@ async function handleMainLanguageChange(e) {
 
     if (typeof updateAutoConnectionInfo === 'function') {
         const info = state.autoConfig?.info || state.apiInfo;
-        if (info) {
-            updateAutoConnectionInfo(info);
-        }
+        if (info) updateAutoConnectionInfo(info);
     }
 }
 
