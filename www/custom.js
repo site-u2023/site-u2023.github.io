@@ -3132,9 +3132,10 @@ function updateAutoConnectionInfo(apiInfo) {
     }
     
     const connectionType = getConnectionType(apiInfo);
-    infoText += `${current_language_json['tr-auto-detection'] || 'Auto Detection:'} ${connectionType}\n`;
 
     if (connectionType === 'MAP-E') {
+        infoText += `${current_language_json['tr-auto-detection'] || 'Auto Detection:'} ${connectionType}\n`;
+      
         infoText += `------------------------------------------------------\n`;
         infoText += `${current_language_json['tr-mape-notice1'] || 'Note: Actual values may differ.'}\n`;
         infoText += `${current_language_json['tr-mape-notice2'] || 'Note: Ports 1-1023 are privileged ports. Please check with your ISP for details.'}\n`;
@@ -3169,6 +3170,8 @@ function updateAutoConnectionInfo(apiInfo) {
             infoText += `GUA: ${gua}`;
         }
     } else if (connectionType === 'DS-Lite') {
+        infoText += `${current_language_json['tr-auto-detection'] || 'Auto Detection:'} ${connectionType}\n`;
+      
         infoText += `------------------------------------------------------\n`;
         infoText += `${current_language_json['tr-dslite-notice1'] || 'Note: Actual values may differ.'}\n`;
         infoText += `------------------------------------------------------\n`;
