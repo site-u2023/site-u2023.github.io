@@ -849,7 +849,7 @@ function updatePackageListToTextarea(source = 'unknown') {
         console.log('DEBUG: first 3 packages:', uniquePackages.slice(0, 3));
         
         for (const pkg of uniquePackages) {
-            const sizeCacheKey = `${state.device.version}:${state.device.arch}:${pkg}`;
+            const sizeCacheKey = `${state.version}:${state.target}:${pkg}`;
             const size = state.cache.packageSizes.get(sizeCacheKey);
             
             packagesWithSizes.push(pkg);
