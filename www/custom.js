@@ -859,7 +859,7 @@ function updatePackageListToTextarea(source = 'unknown') {
                     totalBytes += size;
                 }
             } else {
-                packagesWithSizes.push(`${pkg}: ? KB`);
+                packagesWithSizes.push(pkg);
             }
         }
         
@@ -3477,8 +3477,11 @@ function createPackageCheckbox(pkg, isChecked = false, isDependency = false) {
         link.className = 'package-link';
         const sizeCacheKey = `${state.device.version}:${state.device.arch}:${pkg.id}`;
         const size = state.cache.packageSizes.get(sizeCacheKey);
-        const sizeText = size ? `: ${(size/1024).toFixed(1)} KB` : '';
-        link.textContent = (pkg.name || pkg.id) + sizeText;
+        let label = pkg.name || pkg.id;
+        if (size) {
+        label += `: ${(size/1024).toFixed(1)} KB`;
+        }
+        link.textContent = label;
         link.onclick = (e) => e.stopPropagation();
         label.appendChild(checkbox);
         label.appendChild(link);
