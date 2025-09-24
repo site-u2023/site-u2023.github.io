@@ -867,7 +867,8 @@ function updatePackageListToTextarea(source = 'unknown') {
         const totalSizeEl = document.querySelector('#postinst-total-size');
         if (totalSizeEl) {
             const totalKB = (totalBytes / 1024).toFixed(1);
-            totalSizeEl.textContent = `Added: ${totalKB} KB`;
+            const addedText = current_language_json?.['tr-added-size'] || 'Added';
+            totalSizeEl.innerHTML = `<span class="tr-added-size">${addedText}</span>: ${totalKB} KB`;
         }
     }
 
