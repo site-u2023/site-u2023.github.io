@@ -3319,6 +3319,7 @@ function generatePackageSelector() {
                     UI.updateElement(indicator, { show: false });
                 }
                 console.log('Package verification completed');
+				updatePackageListToTextarea('force-update-initial-sizes');
             }).catch(err => {
                 console.error('Package verification failed:', err);
                 if (indicator) {
