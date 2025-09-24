@@ -851,30 +851,21 @@ function updatePackageListToTextarea(source = 'unknown') {
         for (const pkg of uniquePackages) {
             const sizeCacheKey = `${state.device.version}:${state.device.arch}:${pkg}`;
             const size = state.cache.packageSizes.get(sizeCacheKey);
-            
             if (size > 0) {
-                const kb = (size / 1024).toFixed(1);
-                packagesWithSizes.push(`${pkg}: ${kb} KB`);
-                if (!basePackages.has(pkg)) {
                     totalBytes += size;
                 }
-            } else {
-                packagesWithSizes.push(`${pkg}: ? KB`);
             }
         }
         
         console.log('DEBUG: packagesWithSizes first 3 entries:', packagesWithSizes.slice(0, 3));
         
-        textarea.value = packagesWithSizes.join('\n');
+        textarea.value = packagesWithSizes.join(' ');
         textarea.style.height = 'auto';
         textarea.style.height = textarea.scrollHeight + 'px';
         
-        const totalSizeEl = document.querySelector('#postinst-total-size');
-        if (totalSizeEl) {
-            const totalKB = (totalBytes / 1024).toFixed(1);
-            const addedText = current_language_json?.['tr-added-size'] || 'Added';
-            totalSizeEl.innerHTML = `<span class="tr-added-size">${addedText}</span>: ${totalKB} KB`;
-        }
+        const totalKB = (totalBytes / 1024).toFixed(1);
+        const addedText = current_language_json?.['tr-added-size'] || 'Added';
+        totalSizeEl.innerHTML = `<span class="tr-added-size">${addedText}</span>: ${totalKB} KB`;
     }
 
     console.log(`Postinst package list updated: ${uniquePackages.length} packages`);
