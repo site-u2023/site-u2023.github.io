@@ -850,8 +850,8 @@ function updatePackageListToTextarea(source = 'unknown') {
         let totalBytes = 0;
         const packagesWithSizes = [];
         
-        if (state.cache.packageSizes.size === 0 && from !== 'package-verification-with-sizes') {
-            console.log(`[TRACE] Package sizes not loaded yet, showing packages without sizes (from: ${from})`);
+        if (state.cache.packageSizes.size === 0 && source !== 'package-verification-with-sizes') {
+            console.log(`[TRACE] Package sizes not loaded yet, showing packages without sizes (from: ${source})`);
         }
         
         for (const pkg of uniquePackages) {
