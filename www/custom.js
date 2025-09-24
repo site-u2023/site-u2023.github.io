@@ -845,9 +845,6 @@ function updatePackageListToTextarea(source = 'unknown') {
         let totalBytes = 0;
         const packagesWithSizes = [];
         
-        console.log('DEBUG: packageSizes cache size:', state.cache.packageSizes.size);
-        console.log('DEBUG: first 3 packages:', uniquePackages.slice(0, 3));
-        
         for (const pkg of uniquePackages) {
             const sizeCacheKey = `${state.device.version}:${state.device.arch}:${pkg}`;
             const size = state.cache.packageSizes.get(sizeCacheKey);
@@ -863,11 +860,12 @@ function updatePackageListToTextarea(source = 'unknown') {
             }
         }
         
-        console.log('DEBUG: packagesWithSizes first 3 entries:', packagesWithSizes.slice(0, 3));
-        
+        console.log('DEBUG: Setting textarea value to:', packagesWithSizes.slice(0, 5));
         textarea.value = packagesWithSizes.join('\n');
+        console.log('DEBUG: Textarea value after setting:', textarea.value.split('\n').slice(0, 5));
         textarea.style.height = 'auto';
         textarea.style.height = textarea.scrollHeight + 'px';
+        console.log('DEBUG: Final textarea element:', textarea);
         
         const totalSizeEl = document.querySelector('#postinst-total-size');
         if (totalSizeEl) {
