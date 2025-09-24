@@ -843,7 +843,7 @@ function updatePackageListToTextarea(source = 'unknown') {
     if (textarea) {
         const basePackages = new Set([...state.packages.default, ...state.packages.device, ...state.packages.extra]);
         let totalBytes = 0;
-        const packagesList = [];
+        const packagesWithSizes = [];
         
         console.log('DEBUG: packageSizes cache size:', state.cache.packageSizes.size);
         console.log('DEBUG: first 3 packages:', uniquePackages.slice(0, 3));
@@ -852,15 +852,18 @@ function updatePackageListToTextarea(source = 'unknown') {
             const sizeCacheKey = `${state.device.version}:${state.device.arch}:${pkg}`;
             const size = state.cache.packageSizes.get(sizeCacheKey);
             
-			packagesList.push(pkg);
-        	if (typeof size === 'number' && size > 0 && !basePackages.has(pkg)) {
-            	totalBytes += size;
-        	}
-    	}
+            if (size > 0) {
+                const kb = (size / 1024).toFixed(1);
+                packagesWithSizes.push(pkg);
+                if (!basePackages.has(pkg)) {
+                    totalBytes += size;
+                }
+            }
+        }
         
-		console.log('DEBUG: packages first 3 entries:', packagesList.slice(0, 3));
+        console.log('DEBUG: packagesWithSizes first 3 entries:', packagesWithSizes.slice(0, 3));
         
-        textarea.value = packagesList.join(' ');
+        textarea.value = packagesWithSizes.join(' ');
         textarea.style.height = 'auto';
         textarea.style.height = textarea.scrollHeight + 'px';
         
@@ -1199,7 +1202,7 @@ async function searchInFeed(query, feed, version, arch) {
                     } else if (line.startsWith('Size: ') && currentPackage) {
                         const size = parseInt(line.substring(6).trim());
                         if (size > 0) {
-                            const sizeCacheKey = `${state.device.version}:${state.device.arch}:${currentPackage}`;
+                            const sizeCacheKey = `${version}:${arch}:${currentPackage}`;
                             state.cache.packageSizes.set(sizeCacheKey, size);
                         }
                     }
@@ -3319,7 +3322,6 @@ function generatePackageSelector() {
                     UI.updateElement(indicator, { show: false });
                 }
                 console.log('Package verification completed');
-				updatePackageListToTextarea('force-update-initial-sizes');
             }).catch(err => {
                 console.error('Package verification failed:', err);
                 if (indicator) {
