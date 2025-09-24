@@ -751,6 +751,13 @@ function getCurrentPackageListForLanguage() {
 }
 
 function updatePackageListToTextarea(source = 'unknown') {
+    const totalSizeEl = document.querySelector('#postinst-total-size');
+    if (totalSizeEl && !totalSizeEl.dataset.initialized) {
+        const addedText = current_language_json?.['tr-added-size'] || 'Added';
+        totalSizeEl.innerHTML = `<span class="tr-added-size">${addedText}</span>: 0 KB`;
+        totalSizeEl.dataset.initialized = 'true';
+    }
+
     if (!state.packages.default.length && !state.packages.device.length && !state.packages.extra.length) {
         console.warn('updatePackageListToTextarea: Device packages not loaded yet, skipping update from:', source);
         return;
@@ -841,7 +848,6 @@ function updatePackageListToTextarea(source = 'unknown') {
     });
 
     if (textarea) {
-        // 合計サイズ算出は保持（サイズキャッシュがあれば合算）、しかし textarea にはパッケージ名のみを空白区切りで設定する
         const baseSet = new Set([...state.packages.default, ...state.packages.device, ...state.packages.extra]);
         let totalBytes = 0;
         for (const pkg of uniquePackages) {
@@ -852,12 +858,10 @@ function updatePackageListToTextarea(source = 'unknown') {
             }
         }
 
-        // textarea にはパッケージ名のみ（空白区切り）
         textarea.value = uniquePackages.join(' ');
         textarea.style.height = 'auto';
         textarea.style.height = textarea.scrollHeight + 'px';
 
-        const totalSizeEl = document.querySelector('#postinst-total-size');
         if (totalSizeEl) {
             const totalKB = (totalBytes / 1024).toFixed(1);
             const addedText = current_language_json?.['tr-added-size'] || 'Added';
