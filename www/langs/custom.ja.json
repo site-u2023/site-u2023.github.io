@@ -5,6 +5,7 @@
     "tr-uci": "UCI-defaults（ブート設定スクリプト）",
     "tr-package-search": "パッケージ検索",
     "tr-add-commands": "コマンド追加",
+    "tr-added-size": "追加分",
     
     "tr-extended-info": "地域とISP情報",
     "tr-loading": "読み込み中…",
