@@ -3586,15 +3586,7 @@ function handlePackageSelection(e) {
             }
         });
     }
-    const pkgName = e.target.getAttribute('data-package');
-    if (pkgName && !state.cache.packageSizes.has(`${state.device.version}:${state.device.arch}:${pkgName}`)) {
-        const feed = guessFeedForPackage(pkgName);
-        searchInFeed(pkgName.substring(0, 3), feed, state.device.version, state.device.arch).then(() => {
-            updatePackageListToTextarea('package-size-loaded');
-        });
-    } else {
-        updateAllPackageState('force-update');
-    }
+    updateAllPackageState('package-selection');
 }
 
 function findPackageById(id) {
