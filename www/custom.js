@@ -400,11 +400,6 @@ window.updateImages = function(version, mobj) {
 
     const oldArch = state.device.arch;
     const oldVersion = state.device.version;
-    
-    if (mobj && "manifest" in mobj === false && typeof updatePackageListToTextarea === 'function' && state.ui.initialized) {
-        console.log('[TRACE] Re-applying package list with sizes after index.js override');
-        updatePackageListToTextarea('after-index-override');
-    }
 
     if (mobj && mobj.arch_packages) {
         state.device.arch = mobj.arch_packages;
@@ -856,17 +851,21 @@ function updatePackageListToTextarea(source = 'unknown') {
         for (const pkg of uniquePackages) {
             const sizeCacheKey = `${state.device.version}:${state.device.arch}:${pkg}`;
             const size = state.cache.packageSizes.get(sizeCacheKey);
-          
-            packagesWithSizes.push(pkg);
-
-            if (size > 0 && !basePackages.has(pkg)) {
-              totalBytes += size;
+            
+            if (size > 0) {
+                const kb = (size / 1024).toFixed(1);
+                packagesWithSizes.push(`${pkg}: ${kb} KB`);
+                if (!basePackages.has(pkg)) {
+                    totalBytes += size;
+                }
+            } else {
+                packagesWithSizes.push(`${pkg}: ? KB`);
             }
         }
-      
+        
         console.log('DEBUG: packagesWithSizes first 3 entries:', packagesWithSizes.slice(0, 3));
         
-        textarea.value = packagesWithSizes.join(' ');
+        textarea.value = packagesWithSizes.join('\n');
         textarea.style.height = 'auto';
         textarea.style.height = textarea.scrollHeight + 'px';
         
@@ -3450,48 +3449,44 @@ function createPackageItem(pkg) {
 }
 
 function createPackageCheckbox(pkg, isChecked = false, isDependency = false) {
-    const labelEl = document.createElement('label');
-    labelEl.className = 'form-check-label';
-    labelEl.setAttribute('for', `pkg-${pkg.uniqueId || pkg.id}`);
+    const label = document.createElement('label');
+    label.className = 'form-check-label';
+    label.setAttribute('for', `pkg-${pkg.uniqueId || pkg.id}`);
 
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
-    checkbox.id = `pkg-${pkg.uniqueId || pkg.id}`;
+    checkbox.id = `pkg-${pkg.uniqueId || pkg.id}`; 
     checkbox.className = 'form-check-input package-selector-checkbox';
     checkbox.setAttribute('data-package', pkg.id);
-    checkbox.setAttribute('data-unique-id', pkg.uniqueId || pkg.id);
-
+    checkbox.setAttribute('data-unique-id', pkg.uniqueId || pkg.id); 
+    
     if (pkg.dependencies) {
         checkbox.setAttribute('data-dependencies', pkg.dependencies.join(','));
     }
-
+    
     if (isChecked) {
         checkbox.checked = true;
     }
-
+    
     checkbox.addEventListener('change', handlePackageSelection);
-
-    const sizeCacheKey = `${state.device.version}:${state.device.arch}:${pkg.id}`;
-    const size = state.cache.packageSizes.get(sizeCacheKey);
-    const sizeText = size ? `: ${(size/1024).toFixed(1)} KB` : '';
-
+    
     if (config?.package_url) {
         const link = document.createElement('a');
         link.href = config.package_url.replace("{id}", encodeURIComponent(pkg.id));
         link.target = '_blank';
         link.className = 'package-link';
-        link.textContent = (pkg.name || pkg.id) + sizeText;
+        link.textContent = pkg.name || pkg.id;
         link.onclick = (e) => e.stopPropagation();
-        labelEl.appendChild(checkbox);
-        labelEl.appendChild(link);
+        label.appendChild(checkbox);
+        label.appendChild(link);
     } else {
         const span = document.createElement('span');
-        span.textContent = (pkg.name || pkg.id) + sizeText;
-        labelEl.appendChild(checkbox);
-        labelEl.appendChild(span);
+        span.textContent = pkg.name || pkg.id;
+        label.appendChild(checkbox);
+        label.appendChild(span);
     }
-
-    return labelEl;
+    
+    return label;
 }
 
 function handlePackageSelection(e) {
