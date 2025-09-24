@@ -340,8 +340,8 @@
       "description": "System upgrade, VPN and media server utilities",
       "packages": [
         {
-          "id": "attendedsysupgrade-common",
-          "name": "attendedsysupgrade-common"
+          "id": "luci-app-attendedsysupgrade",
+          "name": "luci-app-attendedsysupgrade"
         },
         {
           "id": "luci-app-wireguard",
