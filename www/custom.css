@@ -309,12 +309,10 @@ details[open] summary {
     align-items: center;
 }
 
-/* Additional Package Info - Always visible */
+/* Additional Package Info - Always visible even when details is closed */
 .additional-package-info {
-    display: flex;
-    align-items: center;
-    gap: 0.5em;
-    padding: 0.5em 1em;
+    display: block !important;
+    padding: 0.75em 1em;
     margin-top: 0.5em;
     background-color: var(--bg-item);
     border: 1px solid var(--border-main);
