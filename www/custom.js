@@ -852,14 +852,10 @@ function updatePackageListToTextarea(source = 'unknown') {
             const sizeCacheKey = `${state.device.version}:${state.device.arch}:${pkg}`;
             const size = state.cache.packageSizes.get(sizeCacheKey);
             
-            if (size > 0) {
-                const kb = (size / 1024).toFixed(1);
-                packagesWithSizes.push(pkg);
-                if (!basePackages.has(pkg)) {
-                    totalBytes += size;
-                }
-            } else {
-                packagesWithSizes.push(pkg);
+            packagesWithSizes.push(pkg);
+
+            if (size && size > 0 && !basePackages.has(pkg)) {
+                totalBytes += size;
             }
         }
         
