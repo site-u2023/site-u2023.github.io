@@ -76,7 +76,8 @@ const state = {
         lastFormStateHash: null,
         lastPackageListHash: null,
         prevUISelections: new Set(),
-        domElements: new Map()
+        domElements: new Map(),
+        packageSizes: new Map()
     }
 };
 
@@ -840,9 +841,40 @@ function updatePackageListToTextarea(source = 'unknown') {
     });
 
     if (textarea) {
-        textarea.value = uniquePackages.join(' ');
+        const basePackages = new Set([...state.packages.default, ...state.packages.device, ...state.packages.extra]);
+        let totalBytes = 0;
+        const packagesWithSizes = [];
+        
+        console.log('DEBUG: packageSizes cache size:', state.cache.packageSizes.size);
+        console.log('DEBUG: first 3 packages:', uniquePackages.slice(0, 3));
+        
+        for (const pkg of uniquePackages) {
+            const sizeCacheKey = `${state.device.version}:${state.device.arch}:${pkg}`;
+            const size = state.cache.packageSizes.get(sizeCacheKey);
+            
+            if (size > 0) {
+                const kb = (size / 1024).toFixed(1);
+                packagesWithSizes.push(`${pkg}: ${kb} KB`);
+                if (!basePackages.has(pkg)) {
+                    totalBytes += size;
+                }
+            } else {
+                packagesWithSizes.push(`${pkg}: ? KB`);
+            }
+        }
+        
+        console.log('DEBUG: packagesWithSizes first 3 entries:', packagesWithSizes.slice(0, 3));
+        
+        textarea.value = packagesWithSizes.join('\n');
         textarea.style.height = 'auto';
         textarea.style.height = textarea.scrollHeight + 'px';
+        
+        const totalSizeEl = document.querySelector('#postinst-total-size');
+        if (totalSizeEl) {
+            const totalKB = (totalBytes / 1024).toFixed(1);
+            const addedText = current_language_json?.['tr-added-size'] || 'Added';
+            totalSizeEl.innerHTML = `<span class="tr-added-size">${addedText}</span>: ${totalKB} KB`;
+        }
     }
 
     console.log(`Postinst package list updated: ${uniquePackages.length} packages`);
@@ -1162,9 +1194,21 @@ async function searchInFeed(query, feed, version, arch) {
                 list = data.packages ? Object.keys(data.packages) : [];
             } else {
                 const text = await resp.text();
-                list = text.split('\n')
-                    .filter(line => line.startsWith('Package: '))
-                    .map(line => line.substring(9).trim());
+                const lines = text.split('\n');
+                let currentPackage = null;
+                
+                for (const line of lines) {
+                    if (line.startsWith('Package: ')) {
+                        currentPackage = line.substring(9).trim();
+                        list.push(currentPackage);
+                    } else if (line.startsWith('Size: ') && currentPackage) {
+                        const size = parseInt(line.substring(6).trim());
+                        if (size > 0) {
+                            const sizeCacheKey = `${version}:${arch}:${currentPackage}`;
+                            state.cache.packageSizes.set(sizeCacheKey, size);
+                        }
+                    }
+                }
             }
             state.cache.feed.set(cacheKey, list);
         }
@@ -1390,6 +1434,11 @@ async function handleMainLanguageChange(e) {
         }
     } else {
         console.log('Programmatic change - device language not affected:', state.ui.language.selected);
+    }
+
+    if (typeof updateAutoConnectionInfo === 'function') {
+        const info = state.autoConfig?.info || state.apiInfo;
+        if (info) updateAutoConnectionInfo(info);
     }
 }
 
@@ -1660,16 +1709,36 @@ async function fetchFeedSet(feed, deviceInfo) {
         if (Array.isArray(data.packages)) {
             return new Set(data.packages.map(p => p?.name).filter(Boolean));
         } else if (data.packages && typeof data.packages === 'object') {
+            for (const pkgName of Object.keys(data.packages)) {
+                const pkgData = data.packages[pkgName];
+                if (pkgData && pkgData.size) {
+                    const sizeCacheKey = `${deviceInfo.version}:${deviceInfo.arch}:${pkgName}`;
+                    state.cache.packageSizes.set(sizeCacheKey, pkgData.size);
+                }
+            }
             return new Set(Object.keys(data.packages));
         }
         return new Set();
     } else {
         const text = await resp.text();
-        const names = text.split('\n')
-            .filter(line => line.startsWith('Package: '))
-            .map(line => line.substring(9).trim())
-            .filter(Boolean);
-        return new Set(names);
+        const lines = text.split('\n');
+        const names = [];
+        let currentPackage = null;
+        
+        for (const line of lines) {
+            if (line.startsWith('Package: ')) {
+                currentPackage = line.substring(9).trim();
+                names.push(currentPackage);
+            } else if (line.startsWith('Size: ') && currentPackage) {
+                const size = parseInt(line.substring(6).trim());
+                if (size > 0) {
+                    const sizeCacheKey = `${deviceInfo.version}:${deviceInfo.arch}:${currentPackage}`;
+                    state.cache.packageSizes.set(sizeCacheKey, size);
+                }
+            }
+        }
+        
+        return new Set(names.filter(Boolean));
     }
 }
 
@@ -1800,6 +1869,8 @@ async function verifyAllPackages() {
     if (checkedUnavailable.length > 0) {
         console.warn('The following pre-selected packages are not available:', checkedUnavailable);
     }
+    
+    updatePackageListToTextarea('package-verification-with-sizes');
 }
 
 function updatePackageAvailabilityUI(uniqueId, isAvailable) {
@@ -3125,16 +3196,29 @@ function updateAutoConnectionInfo(apiInfo) {
     }
     
     const connectionType = getConnectionType(apiInfo);
-    infoText += `Detected: ${connectionType}\n`;
 
     if (connectionType === 'MAP-E') {
-        infoText += `\u00A0BR: ${apiInfo.mape.brIpv6Address}\n`;
-        infoText += `\u00A0EA-len: ${apiInfo.mape.eaBitLength}\n`;
-        infoText += `\u00A0IPv4 Prefix: ${apiInfo.mape.ipv4Prefix}/${apiInfo.mape.ipv4PrefixLength}\n`;
-        infoText += `\u00A0IPv6 Prefix: ${apiInfo.mape.ipv6Prefix}/${apiInfo.mape.ipv6PrefixLength}\n`;
-        infoText += `\u00A0PSID: offset=${apiInfo.mape.psIdOffset}\n`;
-        infoText += `\u00A0PSID: length=${apiInfo.mape.psidlen}`;
-
+        infoText += `${current_language_json['tr-auto-detection'] || 'Auto Detection:'} ${connectionType}\n`;
+      
+        infoText += `------------------------------------------------------\n`;
+        infoText += `${current_language_json['tr-mape-notice1'] || 'Note: Actual values may differ.'}\n`;
+        infoText += `------------------------------------------------------\n`;
+        infoText += `option peeraddr ${apiInfo.mape.brIpv6Address}\n`;
+        infoText += `option ipaddr ${apiInfo.mape.ipv4Prefix}\n`;
+        infoText += `option ip4prefixlen ${apiInfo.mape.ipv4PrefixLength}\n`;
+        infoText += `option ip6prefix ${apiInfo.mape.ipv6Prefix}\n`;
+        infoText += `option ip6prefixlen ${apiInfo.mape.ipv6PrefixLength}\n`;
+        infoText += `option ealen ${apiInfo.mape.eaBitLength}\n`;
+        infoText += `option psidlen ${apiInfo.mape.psidlen}\n`;
+        infoText += `option offset ${apiInfo.mape.psIdOffset}\n`;
+        infoText += `\n`;
+        infoText += `export LEGACY=1\n`;
+        infoText += `------------------------------------------------------\n`;
+        infoText += `(config-softwire)# map-version draft\n`;
+        infoText += `(config-softwire)# rule <0-65535> ipv4-prefix ${apiInfo.mape.ipv4Prefix}/${apiInfo.mape.ipv4PrefixLength} ipv6-prefix ${apiInfo.mape.ipv6Prefix}/${apiInfo.mape.ipv6PrefixLength} [ea-length ${apiInfo.mape.eaBitLength}|psid-length ${apiInfo.mape.psidlen}] [offset ${apiInfo.mape.psIdOffset}] [forwarding]\n`;
+        infoText += `\n`;
+        infoText += `Powered by https://ipv4.web.fc2.com/map-e.html\n`;
+        
         let gua = apiInfo.guaPrefix;
         if (!gua) {
             try {
@@ -3146,12 +3230,28 @@ function updateAutoConnectionInfo(apiInfo) {
             if (guaField && guaField.value) gua = guaField.value;
         }
         if (gua) {
-            infoText += `\n\u00A0GUA: ${gua}`;
+            infoText += `GUA: ${gua}`;
         }
     } else if (connectionType === 'DS-Lite') {
-        infoText += `AFTR: ${apiInfo.aftr}`;
+        infoText += `${current_language_json['tr-auto-detection'] || 'Auto Detection:'} ${connectionType}\n`;
+      
+        infoText += `------------------------------------------------------\n`;
+        infoText += `${current_language_json['tr-dslite-notice1'] || 'Note: Actual values may differ.'}\n`;
+        infoText += `------------------------------------------------------\n`;
+        if (apiInfo.aftr?.aftrIpv6Address) {
+            infoText += `option aftr_addr ${apiInfo.aftr.aftrIpv6Address}\n`;
+        }
+        if (apiInfo.aftr?.aftrType) {
+            infoText += `option aftr_type ${apiInfo.aftr.aftrType}\n`;
+        }
+        if (apiInfo.aftr?.jurisdiction) {
+            infoText += `option area ${apiInfo.aftr.jurisdiction}\n`;
+        }
+        infoText += `------------------------------------------------------\n`;
+        infoText += `Powered by https://ipv4.web.fc2.com/map-e.html`;
     } else {
-        infoText += '\u00A0Standard connection will be used';
+        infoText += `${current_language_json['tr-auto-detection'] || 'Auto Detection:'} ${connectionType}\n`;
+        infoText += `${current_language_json['tr-standard-notice'] || 'Standard connection will be used'}`;
     }
 
     autoInfo.textContent = infoText;
