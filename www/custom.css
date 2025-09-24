@@ -309,6 +309,10 @@ details[open] summary {
     align-items: center;
 }
 
+#postinst-additional-info {
+    display: block !important;
+}
+
 /* Additional Package Info - Always visible even when details is closed */
 .additional-package-info {
     display: block !important;
