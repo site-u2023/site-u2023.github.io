@@ -309,6 +309,20 @@ details[open] summary {
     align-items: center;
 }
 
+/* Additional Package Info - Always visible */
+.additional-package-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    padding: 0.5em 1em;
+    margin-top: 0.5em;
+    background-color: var(--bg-item);
+    border: 1px solid var(--border-main);
+    border-radius: 0.2em;
+    font-size: 0.9em;
+    color: var(--text-secondary);
+}
+
 #postinst-total-size {
     font-size: 0.9em;
     color: var(--text-muted);
