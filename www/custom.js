@@ -876,8 +876,20 @@ function updatePackageListToTextarea(source = 'unknown') {
         total: uniquePackages.length
     });
 
-if (textarea) {
-        textarea.value = uniquePackages.join(' ');
+    if (textarea) {
+        const packagesWithSizes = [];
+        for (const pkg of uniquePackages) {
+            const sizeCacheKey = `${state.device.version}:${state.device.arch}:${pkg}`;
+            const size = state.cache.packageSizes.get(sizeCacheKey);
+            
+            if (size && size > 0) {
+                packagesWithSizes.push(`${pkg}: ${formatPackageSize(size)}`);
+            } else {
+                packagesWithSizes.push(`${pkg}: ? KB`);
+            }
+        }
+        
+        textarea.value = packagesWithSizes.join('\n');
         textarea.style.height = 'auto';
         textarea.style.height = textarea.scrollHeight + 'px';
         
@@ -1876,6 +1888,9 @@ async function verifyAllPackages() {
     if (checkedUnavailable.length > 0) {
         console.warn('The following pre-selected packages are not available:', checkedUnavailable);
     }
+    
+    updatePackageListToTextarea('package-verification-complete');
+    updatePostinstTotalSize();
 }
 
 function updatePackageAvailabilityUI(uniqueId, isAvailable) {
@@ -3521,7 +3536,15 @@ function handlePackageSelection(e) {
             }
         });
     }
-    updateAllPackageState('force-update');
+    const pkgName = e.target.getAttribute('data-package');
+    if (pkgName && !state.cache.packageSizes.has(`${state.device.version}:${state.device.arch}:${pkgName}`)) {
+        const feed = guessFeedForPackage(pkgName);
+        searchInFeed(pkgName.substring(0, 3), feed, state.device.version, state.device.arch).then(() => {
+            updatePackageListToTextarea('package-size-loaded');
+        });
+    } else {
+        updateAllPackageState('force-update');
+    }
 }
 
 function findPackageById(id) {
