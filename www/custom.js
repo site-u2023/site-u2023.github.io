@@ -917,7 +917,8 @@ function updatePostinstTotalSize() {
     if (!totalSizeEl) return;
     
     const totalSize = calculateAddedPackagesSize();
-    totalSizeEl.textContent = `Added: ${totalSize}`;
+    const addedText = current_language_json?.['tr-added-size'] || 'Added';
+    totalSizeEl.innerHTML = `<span class="tr-added-size">${addedText}</span>: ${totalSize}`;
 }
 
 function isManualPackage(pkg, confirmedSet, knownSelectablePackages, currentUISelections) {
