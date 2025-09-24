@@ -1703,16 +1703,36 @@ async function fetchFeedSet(feed, deviceInfo) {
         if (Array.isArray(data.packages)) {
             return new Set(data.packages.map(p => p?.name).filter(Boolean));
         } else if (data.packages && typeof data.packages === 'object') {
+            for (const pkgName of Object.keys(data.packages)) {
+                const pkgData = data.packages[pkgName];
+                if (pkgData && pkgData.size) {
+                    const sizeCacheKey = `${deviceInfo.version}:${deviceInfo.arch}:${pkgName}`;
+                    state.cache.packageSizes.set(sizeCacheKey, pkgData.size);
+                }
+            }
             return new Set(Object.keys(data.packages));
         }
         return new Set();
     } else {
         const text = await resp.text();
-        const names = text.split('\n')
-            .filter(line => line.startsWith('Package: '))
-            .map(line => line.substring(9).trim())
-            .filter(Boolean);
-        return new Set(names);
+        const lines = text.split('\n');
+        const names = [];
+        let currentPackage = null;
+        
+        for (const line of lines) {
+            if (line.startsWith('Package: ')) {
+                currentPackage = line.substring(9).trim();
+                names.push(currentPackage);
+            } else if (line.startsWith('Size: ') && currentPackage) {
+                const size = parseInt(line.substring(6).trim());
+                if (size > 0) {
+                    const sizeCacheKey = `${deviceInfo.version}:${deviceInfo.arch}:${currentPackage}`;
+                    state.cache.packageSizes.set(sizeCacheKey, size);
+                }
+            }
+        }
+        
+        return new Set(names.filter(Boolean));
     }
 }
 
@@ -1843,6 +1863,8 @@ async function verifyAllPackages() {
     if (checkedUnavailable.length > 0) {
         console.warn('The following pre-selected packages are not available:', checkedUnavailable);
     }
+    
+    updatePackageListToTextarea('package-verification-with-sizes');
 }
 
 function updatePackageAvailabilityUI(uniqueId, isAvailable) {
