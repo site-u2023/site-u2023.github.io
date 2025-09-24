@@ -83,42 +83,6 @@ const state = {
 
 // ==================== ユーティリティ ====================
 
-function formatPackageSize(bytes) {
-    if (!bytes || bytes <= 0) return "? KB";
-    const kb = bytes / 1024;
-    if (kb < 1) return "< 1 KB";
-    if (kb < 100) return kb.toFixed(1) + " KB";
-    if (kb < 1024) return Math.round(kb) + " KB";
-    const mb = kb / 1024;
-    return mb.toFixed(1) + " MB";
-}
-
-function calculateAddedPackagesSize() {
-    const textarea = document.querySelector('#asu-packages');
-    if (!textarea) return "0 KB";
-    
-    let totalBytes = 0;
-    const basePackages = new Set([
-        ...state.packages.default,
-        ...state.packages.device,
-        ...state.packages.extra
-    ]);
-    
-    const allPackages = CustomUtils.split(textarea.value);
-    
-    for (const pkg of allPackages) {
-        if (!basePackages.has(pkg)) {
-            const cacheKey = `${state.device.version}:${state.device.arch}:${pkg}`;
-            const size = state.cache.packageSizes.get(cacheKey);
-            if (size && size > 0) {
-                totalBytes += size;
-            }
-        }
-    }
-    
-    return formatPackageSize(totalBytes);
-}
-
 const UI = {
     updateElement(idOrEl, opts = {}) {
         const el = typeof idOrEl === 'string'
@@ -1792,22 +1756,57 @@ async function fetchFeedSet(feed, deviceInfo) {
     const resp = await fetch(url, { cache: 'force-cache' });
     if (!resp.ok) throw new Error(`HTTP ${resp.status} for ${feed} at ${url}`);
 
+    const { version, arch } = deviceInfo;
+    let pkgSet;
+
     if (isSnapshot) {
         const data = await resp.json();
-        if (Array.isArray(data.packages)) {
-            return new Set(data.packages.map(p => p?.name).filter(Boolean));
-        } else if (data.packages && typeof data.packages === 'object') {
-            return new Set(Object.keys(data.packages));
+        const packages = data.packages || {};
+        
+        if (Array.isArray(packages)) {
+            pkgSet = new Set(packages.map(p => p?.name).filter(Boolean));
+            for (const pkgData of packages) {
+                if (pkgData && pkgData.name && pkgData.size) {
+                    const sizeCacheKey = `${version}:${arch}:${pkgData.name}`;
+                    state.cache.packageSizes.set(sizeCacheKey, pkgData.size);
+                }
+            }
+        } else if (typeof packages === 'object') {
+            pkgSet = new Set(Object.keys(packages));
+            for (const pkgName of pkgSet) {
+                const pkgData = packages[pkgName];
+                if (pkgData && pkgData.size) {
+                    const sizeCacheKey = `${version}:${arch}:${pkgName}`;
+                    state.cache.packageSizes.set(sizeCacheKey, pkgData.size);
+                }
+            }
+        } else {
+            pkgSet = new Set();
         }
-        return new Set();
     } else {
         const text = await resp.text();
-        const names = text.split('\n')
-            .filter(line => line.startsWith('Package: '))
-            .map(line => line.substring(9).trim())
-            .filter(Boolean);
-        return new Set(names);
+        const lines = text.split('\n');
+        const names = [];
+        let currentPackage = null;
+        
+        for (const line of lines) {
+            if (line.startsWith('Package: ')) {
+                currentPackage = line.substring(9).trim();
+                if (currentPackage) {
+                    names.push(currentPackage);
+                }
+            } else if (line.startsWith('Size: ') && currentPackage) {
+                const size = parseInt(line.substring(6).trim(), 10);
+                if (!isNaN(size) && size > 0) {
+                    const sizeCacheKey = `${version}:${arch}:${currentPackage}`;
+                    state.cache.packageSizes.set(sizeCacheKey, size);
+                }
+                currentPackage = null; 
+            }
+        }
+        pkgSet = new Set(names);
     }
+    return pkgSet;
 }
 
 async function buildAvailabilityIndex(deviceInfo, neededFeeds) {
