@@ -3130,6 +3130,8 @@ async function initializeCustomFeatures(asuSection, temp) {
     }
 
     state.ui.initialized = true;
+
+    updatePackageListToTextarea('initial-load');
 }
 
 function applyIspAutoConfig(apiInfo) {
