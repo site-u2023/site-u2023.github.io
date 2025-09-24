@@ -851,14 +851,18 @@ function updatePackageListToTextarea(source = 'unknown') {
         for (const pkg of uniquePackages) {
             const sizeCacheKey = `${state.device.version}:${state.device.arch}:${pkg}`;
             const size = state.cache.packageSizes.get(sizeCacheKey);
-            
-            packagesWithSizes.push(pkg);
 
-            if (size && size > 0 && !basePackages.has(pkg)) {
-                totalBytes += size;
+            if (size > 0) {
+                const kb = (size / 1024).toFixed(1);
+                packagesWithSizes.push(pkg);
+                if (!basePackages.has(pkg)) {
+                    totalBytes += size;
+                }
+            } else {
+                packagesWithSizes.push(pkg);
             }
         }
-        
+      
         console.log('DEBUG: packagesWithSizes first 3 entries:', packagesWithSizes.slice(0, 3));
         
         textarea.value = packagesWithSizes.join(' ');
