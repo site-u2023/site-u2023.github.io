@@ -77,7 +77,8 @@ const state = {
         lastPackageListHash: null,
         prevUISelections: new Set(),
         domElements: new Map(),
-        packageSizes: new Map()
+        packageSizes: new Map(),
+        sizesReady: false
     }
 };
 
@@ -755,7 +756,10 @@ function updatePackageListToTextarea(source = 'unknown') {
         console.warn('updatePackageListToTextarea: Device packages not loaded yet, skipping update from:', source);
         return;
     }
-
+    if (!state.cache.sizesReady && source !== 'force-update' && source !== 'force-update-initial-sizes') {
+        console.log('Sizes not ready; deferring initial updatePackageListToTextarea from:', source);
+        return;
+    }
     const normalizePackages = (values) => {
         if (!values) return [];
         return (Array.isArray(values) ? values : CustomUtils.split(values))
@@ -851,9 +855,7 @@ function updatePackageListToTextarea(source = 'unknown') {
         for (const pkg of uniquePackages) {
             const sizeCacheKey = `${state.device.version}:${state.device.arch}:${pkg}`;
             const size = state.cache.packageSizes.get(sizeCacheKey);
-
             packagesWithSizes.push(pkg);
-
             if (size > 0 && !basePackages.has(pkg)) {
                 totalBytes += size;
             }
@@ -1167,7 +1169,7 @@ async function searchPackages(query, inputElement) {
 
 async function searchInFeed(query, feed, version, arch) {
     const deviceInfo = getDeviceInfo();
-    const cacheKey = `${version}:${arch}:${feed}`;
+    const cacheKey = `${deviceInfo.version}:${deviceInfo.arch}:${feed}`;
 
     try {
         if (!state.cache.feed.has(cacheKey)) {
@@ -1200,9 +1202,9 @@ async function searchInFeed(query, feed, version, arch) {
                     } else if (line.startsWith('Size: ') && currentPackage) {
                         const size = parseInt(line.substring(6).trim());
                         if (size > 0) {
-                            const sizeCacheKey = `${version}:${arch}:${currentPackage}`;
+                            const sizeCacheKey = `${deviceInfo.version}:${deviceInfo.arch}:${currentPackage}`;
                             state.cache.packageSizes.set(sizeCacheKey, size);
-                        }
+                         }
                     }
                 }
             }
@@ -3320,6 +3322,8 @@ function generatePackageSelector() {
                     UI.updateElement(indicator, { show: false });
                 }
                 console.log('Package verification completed');
+                state.cache.sizesReady = true;
+                updatePackageListToTextarea('force-update-initial-sizes'); 
             }).catch(err => {
                 console.error('Package verification failed:', err);
                 if (indicator) {
