@@ -1199,7 +1199,7 @@ async function searchInFeed(query, feed, version, arch) {
                     } else if (line.startsWith('Size: ') && currentPackage) {
                         const size = parseInt(line.substring(6).trim());
                         if (size > 0) {
-                            const sizeCacheKey = `${version}:${arch}:${currentPackage}`;
+                            const sizeCacheKey = `${state.device.version}:${state.device.arch}:${currentPackage}`;
                             state.cache.packageSizes.set(sizeCacheKey, size);
                         }
                     }
