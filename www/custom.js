@@ -3449,50 +3449,48 @@ function createPackageItem(pkg) {
 }
 
 function createPackageCheckbox(pkg, isChecked = false, isDependency = false) {
-    const label = document.createElement('label');
-    label.className = 'form-check-label';
-    label.setAttribute('for', `pkg-${pkg.uniqueId || pkg.id}`);
+    const labelEl = document.createElement('label');
+    labelEl.className = 'form-check-label';
+    labelEl.setAttribute('for', `pkg-${pkg.uniqueId || pkg.id}`);
 
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
-    checkbox.id = `pkg-${pkg.uniqueId || pkg.id}`; 
+    checkbox.id = `pkg-${pkg.uniqueId || pkg.id}`;
     checkbox.className = 'form-check-input package-selector-checkbox';
     checkbox.setAttribute('data-package', pkg.id);
-    checkbox.setAttribute('data-unique-id', pkg.uniqueId || pkg.id); 
-    
+    checkbox.setAttribute('data-unique-id', pkg.uniqueId || pkg.id);
+
     if (pkg.dependencies) {
         checkbox.setAttribute('data-dependencies', pkg.dependencies.join(','));
     }
-    
+
     if (isChecked) {
         checkbox.checked = true;
     }
-    
+
     checkbox.addEventListener('change', handlePackageSelection);
-    
+
+    const sizeCacheKey = `${state.device.version}:${state.device.arch}:${pkg.id}`;
+    const size = state.cache.packageSizes.get(sizeCacheKey);
+    const sizeText = size ? `: ${(size/1024).toFixed(1)} KB` : '';
+
     if (config?.package_url) {
         const link = document.createElement('a');
         link.href = config.package_url.replace("{id}", encodeURIComponent(pkg.id));
         link.target = '_blank';
         link.className = 'package-link';
-        const sizeCacheKey = `${state.device.version}:${state.device.arch}:${pkg.id}`;
-        const size = state.cache.packageSizes.get(sizeCacheKey);
-        let label = pkg.name || pkg.id;
-        if (size) {
-        label += `: ${(size/1024).toFixed(1)} KB`;
-        }
-        link.textContent = label;
+        link.textContent = (pkg.name || pkg.id) + sizeText;
         link.onclick = (e) => e.stopPropagation();
-        label.appendChild(checkbox);
-        label.appendChild(link);
+        labelEl.appendChild(checkbox);
+        labelEl.appendChild(link);
     } else {
         const span = document.createElement('span');
-        span.textContent = pkg.name || pkg.id;
-        label.appendChild(checkbox);
-        label.appendChild(span);
+        span.textContent = (pkg.name || pkg.id) + sizeText;
+        labelEl.appendChild(checkbox);
+        labelEl.appendChild(span);
     }
-    
-    return label;
+
+    return labelEl;
 }
 
 function handlePackageSelection(e) {
