@@ -300,33 +300,7 @@ details[open] summary {
 
 #postinst-details,
 #uci-defaults-details {
-    padding: 0 1em 1em 1em;
-}
-
-#postinst-details summary {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-#postinst-total-size {
-    margin-left: auto;
-    font-weight: normal;
-    font-size: 0.9em;
-    color: var(--text-muted);
-}
-
-#postinst-details summary {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-#postinst-total-size {
-    margin-left: auto;
-    font-weight: normal;
-    font-size: 0.9em;
-    color: var(--text-muted);
+  padding: 0 1em 1em 1em;
 }
 
 /* ===== ISP Information Display (extends base styling) ===== */
