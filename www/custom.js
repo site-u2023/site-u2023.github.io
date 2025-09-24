@@ -877,20 +877,7 @@ function updatePackageListToTextarea(source = 'unknown') {
     });
 
 if (textarea) {
-        const packagesWithSizes = [];
-        for (const pkg of uniquePackages) {
-            const sizeCacheKey = `${state.device.version}:${state.device.arch}:${pkg}`;
-            const size = state.cache.packageSizes.get(sizeCacheKey);
-            
-            if (size && size > 0) {
-                packagesWithSizes.push(`${pkg}: ${formatPackageSize(size)}`);
-            } else {
-                fetchPackageSize(pkg);
-                packagesWithSizes.push(`${pkg}: ? KB`);
-            }
-        }
-        
-        textarea.value = packagesWithSizes.join('\n');
+        textarea.value = uniquePackages.join(' ');
         textarea.style.height = 'auto';
         textarea.style.height = textarea.scrollHeight + 'px';
         
@@ -898,18 +885,6 @@ if (textarea) {
     }
 
     console.log(`Postinst package list updated: ${uniquePackages.length} packages`);
-}
-
-async function fetchPackageSize(pkgName) {
-    if (!state.device.arch || !state.device.version) return;
-    
-    const feed = guessFeedForPackage(pkgName);
-    try {
-        await searchInFeed(pkgName, feed, state.device.version, state.device.arch);
-        updatePackageListToTextarea('package-size-fetched');
-    } catch (err) {
-        console.error(`Failed to fetch size for ${pkgName}:`, err);
-    }
 }
 
 function updatePostinstTotalSize() {
@@ -1835,6 +1810,8 @@ async function verifyAllPackages() {
 
     const startTime = Date.now();
     console.log('Starting package verification...');
+    
+    state.cache.packageSizes.clear();
 
     const packagesToVerify = [];
     state.packages.json.categories.forEach(category => {
