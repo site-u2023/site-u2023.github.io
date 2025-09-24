@@ -63,7 +63,7 @@ const state = {
         }
     },
     
-    // キャッシュ
+// キャッシュ
     cache: {
         kmods: {
             token: null,
@@ -76,11 +76,48 @@ const state = {
         lastFormStateHash: null,
         lastPackageListHash: null,
         prevUISelections: new Set(),
-        domElements: new Map()
+        domElements: new Map(),
+        packageSizes: new Map()
     }
 };
 
 // ==================== ユーティリティ ====================
+
+function formatPackageSize(bytes) {
+    if (!bytes || bytes <= 0) return "? KB";
+    const kb = bytes / 1024;
+    if (kb < 1) return "< 1 KB";
+    if (kb < 100) return kb.toFixed(1) + " KB";
+    if (kb < 1024) return Math.round(kb) + " KB";
+    const mb = kb / 1024;
+    return mb.toFixed(1) + " MB";
+}
+
+function calculateAddedPackagesSize() {
+    const textarea = document.querySelector('#asu-packages');
+    if (!textarea) return "0 KB";
+    
+    let totalBytes = 0;
+    const basePackages = new Set([
+        ...state.packages.default,
+        ...state.packages.device,
+        ...state.packages.extra
+    ]);
+    
+    const allPackages = CustomUtils.split(textarea.value);
+    
+    for (const pkg of allPackages) {
+        if (!basePackages.has(pkg)) {
+            const cacheKey = `${state.device.version}:${state.device.arch}:${pkg}`;
+            const size = state.cache.packageSizes.get(cacheKey);
+            if (size && size > 0) {
+                totalBytes += size;
+            }
+        }
+    }
+    
+    return formatPackageSize(totalBytes);
+}
 
 const UI = {
     updateElement(idOrEl, opts = {}) {
@@ -839,13 +876,48 @@ function updatePackageListToTextarea(source = 'unknown') {
         total: uniquePackages.length
     });
 
-    if (textarea) {
-        textarea.value = uniquePackages.join(' ');
+if (textarea) {
+        const packagesWithSizes = [];
+        for (const pkg of uniquePackages) {
+            const sizeCacheKey = `${state.device.version}:${state.device.arch}:${pkg}`;
+            const size = state.cache.packageSizes.get(sizeCacheKey);
+            
+            if (size && size > 0) {
+                packagesWithSizes.push(`${pkg}: ${formatPackageSize(size)}`);
+            } else {
+                fetchPackageSize(pkg);
+                packagesWithSizes.push(`${pkg}: ? KB`);
+            }
+        }
+        
+        textarea.value = packagesWithSizes.join('\n');
         textarea.style.height = 'auto';
         textarea.style.height = textarea.scrollHeight + 'px';
+        
+        updatePostinstTotalSize();
     }
 
     console.log(`Postinst package list updated: ${uniquePackages.length} packages`);
+}
+
+async function fetchPackageSize(pkgName) {
+    if (!state.device.arch || !state.device.version) return;
+    
+    const feed = guessFeedForPackage(pkgName);
+    try {
+        await searchInFeed(pkgName, feed, state.device.version, state.device.arch);
+        updatePackageListToTextarea('package-size-fetched');
+    } catch (err) {
+        console.error(`Failed to fetch size for ${pkgName}:`, err);
+    }
+}
+
+function updatePostinstTotalSize() {
+    const totalSizeEl = document.querySelector('#postinst-total-size');
+    if (!totalSizeEl) return;
+    
+    const totalSize = calculateAddedPackagesSize();
+    totalSizeEl.textContent = `Added: ${totalSize}`;
 }
 
 function isManualPackage(pkg, confirmedSet, knownSelectablePackages, currentUISelections) {
@@ -1159,12 +1231,33 @@ async function searchInFeed(query, feed, version, arch) {
             let list = [];
             if (isSnapshot) {
                 const data = await resp.json();
-                list = data.packages ? Object.keys(data.packages) : [];
+                if (data.packages) {
+                    list = Object.keys(data.packages);
+                    for (const pkgName of list) {
+                        const pkgData = data.packages[pkgName];
+                        if (pkgData && pkgData.size) {
+                            const sizeCacheKey = `${version}:${arch}:${pkgName}`;
+                            state.cache.packageSizes.set(sizeCacheKey, pkgData.size);
+                        }
+                    }
+                }
             } else {
                 const text = await resp.text();
-                list = text.split('\n')
-                    .filter(line => line.startsWith('Package: '))
-                    .map(line => line.substring(9).trim());
+                const lines = text.split('\n');
+                let currentPackage = null;
+                
+                for (const line of lines) {
+                    if (line.startsWith('Package: ')) {
+                        currentPackage = line.substring(9).trim();
+                        list.push(currentPackage);
+                    } else if (line.startsWith('Size: ') && currentPackage) {
+                        const size = parseInt(line.substring(6).trim());
+                        if (size > 0) {
+                            const sizeCacheKey = `${version}:${arch}:${currentPackage}`;
+                            state.cache.packageSizes.set(sizeCacheKey, size);
+                        }
+                    }
+                }
             }
             state.cache.feed.set(cacheKey, list);
         }
