@@ -850,6 +850,10 @@ function updatePackageListToTextarea(source = 'unknown') {
         let totalBytes = 0;
         const packagesWithSizes = [];
         
+        if (state.cache.packageSizes.size === 0 && from !== 'package-verification-with-sizes') {
+            console.log(`[TRACE] Package sizes not loaded yet, showing packages without sizes (from: ${from})`);
+        }
+        
         for (const pkg of uniquePackages) {
             const sizeCacheKey = `${state.device.version}:${state.device.arch}:${pkg}`;
             const size = state.cache.packageSizes.get(sizeCacheKey);
@@ -861,7 +865,11 @@ function updatePackageListToTextarea(source = 'unknown') {
                     totalBytes += size;
                 }
             } else {
-                packagesWithSizes.push(`${pkg}: ? KB`);
+                if (state.cache.packageSizes.size > 0) {
+                    packagesWithSizes.push(`${pkg}: ? KB`);
+                } else {
+                    packagesWithSizes.push(pkg);
+                }
             }
         }
         
