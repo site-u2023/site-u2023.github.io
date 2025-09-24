@@ -1862,7 +1862,7 @@ async function verifyAllPackages() {
         console.warn('The following pre-selected packages are not available:', checkedUnavailable);
     }
     
-    updatePackageListToTextarea('package-verification-with-sizes');
+    updatePackageListToTextarea('package-verification-complete');
 }
 
 function updatePackageAvailabilityUI(uniqueId, isAvailable) {
