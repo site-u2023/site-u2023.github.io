@@ -316,11 +316,10 @@ details[open] summary {
 /* Additional Package Info - Always visible even when details is closed */
 .additional-package-info {
     display: block !important;
-    padding: 0.75em 1em;
-    margin-top: 0.5em;
-    background-color: var(--bg-item);
-    border: 1px solid var(--border-main);
-    border-radius: 0.2em;
+    padding: 0;
+    margin-top: 0.75em;
+    background-color: transparent;
+    border: none;
     font-size: 0.9em;
     color: var(--text-secondary);
 }
