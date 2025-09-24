@@ -400,11 +400,6 @@ window.updateImages = function(version, mobj) {
 
     const oldArch = state.device.arch;
     const oldVersion = state.device.version;
-    
-    if (mobj && "manifest" in mobj === false && typeof updatePackageListToTextarea === 'function' && state.ui.initialized) {
-        console.log('[TRACE] Re-applying package list with sizes after index.js override');
-        updatePackageListToTextarea('after-index-override');
-    }
 
     if (mobj && mobj.arch_packages) {
         state.device.arch = mobj.arch_packages;
@@ -850,9 +845,8 @@ function updatePackageListToTextarea(source = 'unknown') {
         let totalBytes = 0;
         const packagesWithSizes = [];
         
-        if (state.cache.packageSizes.size === 0 && from !== 'package-verification-with-sizes') {
-            console.log(`[TRACE] Package sizes not loaded yet, showing packages without sizes (from: ${from})`);
-        }
+        console.log('DEBUG: packageSizes cache size:', state.cache.packageSizes.size);
+        console.log('DEBUG: first 3 packages:', uniquePackages.slice(0, 3));
         
         for (const pkg of uniquePackages) {
             const sizeCacheKey = `${state.device.version}:${state.device.arch}:${pkg}`;
@@ -865,20 +859,15 @@ function updatePackageListToTextarea(source = 'unknown') {
                     totalBytes += size;
                 }
             } else {
-                if (state.cache.packageSizes.size > 0) {
-                    packagesWithSizes.push(`${pkg}: ? KB`);
-                } else {
-                    packagesWithSizes.push(pkg);
-                }
+                packagesWithSizes.push(`${pkg}: ? KB`);
             }
         }
         
-        console.log('DEBUG: Setting textarea value to:', packagesWithSizes.slice(0, 5));
+        console.log('DEBUG: packagesWithSizes first 3 entries:', packagesWithSizes.slice(0, 3));
+        
         textarea.value = packagesWithSizes.join('\n');
-        console.log('DEBUG: Textarea value after setting:', textarea.value.split('\n').slice(0, 5));
         textarea.style.height = 'auto';
         textarea.style.height = textarea.scrollHeight + 'px';
-        console.log('DEBUG: Final textarea element:', textarea);
         
         const totalSizeEl = document.querySelector('#postinst-total-size');
         if (totalSizeEl) {
