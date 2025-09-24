@@ -853,10 +853,10 @@ function updatePackageListToTextarea(source = 'unknown') {
             const size = state.cache.packageSizes.get(sizeCacheKey);
             
 			packagesList.push(pkg);
-			if (size > 0 && !basePackages.has(pkg)) {
-				totalBytes += size;
-			}
-        }
+        	if (typeof size === 'number' && size > 0 && !basePackages.has(pkg)) {
+            	totalBytes += size;
+        	}
+    	}
         
 		console.log('DEBUG: packages first 3 entries:', packagesList.slice(0, 3));
         
