@@ -862,7 +862,7 @@ function updatePackageListToTextarea(source = 'unknown') {
         
         console.log('DEBUG: packagesWithSizes first 3 entries:', packagesWithSizes.slice(0, 3));
         
-        textarea.value = packagesWithSizes.join('\n');
+        textarea.value = packagesWithSizes.join(' ');
         textarea.style.height = 'auto';
         textarea.style.height = textarea.scrollHeight + 'px';
         
