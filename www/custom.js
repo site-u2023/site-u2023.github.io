@@ -787,7 +787,7 @@ function updatePackageListToTextarea(source = 'unknown') {
     const searchedPackages = new Set(
         state.ui.managers.packageSearch ? normalizePackages(state.ui.managers.packageSearch.getAllValues()) : []
     );
-    
+
     if (searchedPackages.size > 0) {
         console.log('PackageSearchManager values:', [...searchedPackages]);
     }
@@ -801,7 +801,7 @@ function updatePackageListToTextarea(source = 'unknown') {
 
     const manualPackages = new Set();
     const textarea = document.querySelector('#asu-packages');
-    
+
     if (textarea) {
         const currentTextareaPackages = normalizePackages(textarea.value);
         const confirmedSet = new Set([...basePackages, ...checkedPackages, ...searchedPackages, ...state.packages.dynamic]);
@@ -841,31 +841,22 @@ function updatePackageListToTextarea(source = 'unknown') {
     });
 
     if (textarea) {
+        // 合計サイズ算出は保持（サイズキャッシュがあれば合算）、しかし textarea にはパッケージ名のみを空白区切りで設定する
         const baseSet = new Set([...state.packages.default, ...state.packages.device, ...state.packages.extra]);
         let totalBytes = 0;
-        const packagesWithSizes = [];
-        
-        console.log('DEBUG: packageSizes cache size:', state.cache.packageSizes.size);
-        console.log('DEBUG: first 3 packages:', uniquePackages.slice(0, 3));
-        
         for (const pkg of uniquePackages) {
             const sizeCacheKey = `${state.device.version}:${state.device.arch}:${pkg}`;
             const size = state.cache.packageSizes.get(sizeCacheKey);
-            if (typeof size === 'number' && size > 0) {
-                const kb = (size / 1024).toFixed(1);
-                packagesWithSizes.push(`${pkg}: ${kb} KB`);
-                if (!baseSet.has(pkg)) totalBytes += size;
-            } else {
-                packagesWithSizes.push(`${pkg}: ? KB`);
+            if (typeof size === 'number' && size > 0 && !baseSet.has(pkg)) {
+                totalBytes += size;
             }
         }
-        
-        console.log('DEBUG: packagesWithSizes first 3 entries:', packagesWithSizes.slice(0, 3));
-        
-        textarea.value = packagesWithSizes.join(' ');
+
+        // textarea にはパッケージ名のみ（空白区切り）
+        textarea.value = uniquePackages.join(' ');
         textarea.style.height = 'auto';
         textarea.style.height = textarea.scrollHeight + 'px';
-        
+
         const totalSizeEl = document.querySelector('#postinst-total-size');
         if (totalSizeEl) {
             const totalKB = (totalBytes / 1024).toFixed(1);
