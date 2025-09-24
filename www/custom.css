@@ -300,7 +300,18 @@ details[open] summary {
 
 #postinst-details,
 #uci-defaults-details {
-  padding: 0 1em 1em 1em;
+    padding: 0 1em 1em 1em;
+}
+
+#postinst-details summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#postinst-total-size {
+    font-size: 0.9em;
+    color: var(--text-muted);
 }
 
 /* ===== ISP Information Display (extends base styling) ===== */
