@@ -858,9 +858,9 @@ function updatePackageListToTextarea(source = 'unknown') {
 			}
         }
         
-        console.log('DEBUG: packages first 3 entries:', packagesList.slice(0, 3));
+		console.log('DEBUG: packages first 3 entries:', packagesList.slice(0, 3));
         
-        textarea.value = packagesWithSizes.join(' ');
+        textarea.value = packagesList.join(' ');
         textarea.style.height = 'auto';
         textarea.style.height = textarea.scrollHeight + 'px';
         
