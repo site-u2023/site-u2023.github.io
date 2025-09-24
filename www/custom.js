@@ -751,13 +751,6 @@ function getCurrentPackageListForLanguage() {
 }
 
 function updatePackageListToTextarea(source = 'unknown') {
-    const totalSizeEl = document.querySelector('#postinst-total-size');
-    if (totalSizeEl && !totalSizeEl.dataset.initialized) {
-        const addedText = current_language_json?.['tr-added-size'] || 'Added';
-        totalSizeEl.innerHTML = `<span class="tr-added-size">${addedText}</span>: 0 KB`;
-        totalSizeEl.dataset.initialized = 'true';
-    }
-
     if (!state.packages.default.length && !state.packages.device.length && !state.packages.extra.length) {
         console.warn('updatePackageListToTextarea: Device packages not loaded yet, skipping update from:', source);
         return;
@@ -832,7 +825,7 @@ function updatePackageListToTextarea(source = 'unknown') {
     ])];
 
     const currentHash = JSON.stringify(uniquePackages);
-    if (currentHash === state.cache.lastPackageListHash && source !== 'force-update') {
+    if (currentHash === state.cache.lastPackageListHash && source !== 'force-update' && source !== 'package-verification-complete') {
         console.log('updatePackageListToTextarea: No changes detected, skipping update from:', source);
         return;
     }
@@ -849,11 +842,13 @@ function updatePackageListToTextarea(source = 'unknown') {
 
     if (textarea) {
         const baseSet = new Set([...state.packages.default, ...state.packages.device, ...state.packages.extra]);
+        const addedPackages = uniquePackages.filter(pkg => !baseSet.has(pkg));
+        
         let totalBytes = 0;
-        for (const pkg of uniquePackages) {
+        for (const pkg of addedPackages) {
             const sizeCacheKey = `${state.device.version}:${state.device.arch}:${pkg}`;
             const size = state.cache.packageSizes.get(sizeCacheKey);
-            if (typeof size === 'number' && size > 0 && !baseSet.has(pkg)) {
+            if (typeof size === 'number' && size > 0) {
                 totalBytes += size;
             }
         }
@@ -862,6 +857,7 @@ function updatePackageListToTextarea(source = 'unknown') {
         textarea.style.height = 'auto';
         textarea.style.height = textarea.scrollHeight + 'px';
 
+        const totalSizeEl = document.querySelector('#postinst-total-size');
         if (totalSizeEl) {
             const totalKB = (totalBytes / 1024).toFixed(1);
             const addedText = current_language_json?.['tr-added-size'] || 'Added';
@@ -3409,7 +3405,7 @@ function createPackageItem(pkg) {
     packageItem.className = 'package-item';
     packageItem.setAttribute('data-package-id', pkg.id);
     
-    const mainCheckbox = createPackageCheckbox(pkg, pkg.checked || false);
+    const mainCheckbox = createPackageCheckbox(pkg, pkg.checked === true);
     packageItem.appendChild(mainCheckbox);
     
     if (pkg.dependencies && Array.isArray(pkg.dependencies)) {
@@ -3419,7 +3415,7 @@ function createPackageItem(pkg) {
         pkg.dependencies.forEach(depId => {
             const depPkg = findPackageById(depId);
             if (depPkg) {
-                const depCheckbox = createPackageCheckbox(depPkg, pkg.checked || false, true);
+                const depCheckbox = createPackageCheckbox(depPkg, pkg.checked === true, true);
                 depCheckbox.classList.add('package-dependent');
                 depContainer.appendChild(depCheckbox);
             }
@@ -3431,7 +3427,7 @@ function createPackageItem(pkg) {
     }
     
     if (pkg.enableVar) {
-        const checkbox = packageItem.querySelector(`#pkg-${pkg.id}`);
+        const checkbox = packageItem.querySelector(`#pkg-${pkg.uniqueId || pkg.id}`);
         if (checkbox) {
             checkbox.setAttribute('data-enable-var', pkg.enableVar);
         }
