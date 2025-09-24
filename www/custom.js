@@ -582,6 +582,8 @@ async function updateAllPackageState(source = 'unknown') {
     updatePackageListToTextarea(source);
     updateVariableDefinitions();
 
+    updatePostinstTotalSize();
+
     console.log('All package state updated successfully');
 }
 
