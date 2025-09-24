@@ -854,7 +854,7 @@ function updatePackageListToTextarea(source = 'unknown') {
             
             if (size > 0) {
                 const kb = (size / 1024).toFixed(1);
-                packagesWithSizes.push(`${pkg}: ${kb} KB`);
+                packagesWithSizes.push(pkg);
                 if (!basePackages.has(pkg)) {
                     totalBytes += size;
                 }
@@ -865,7 +865,7 @@ function updatePackageListToTextarea(source = 'unknown') {
         
         console.log('DEBUG: packagesWithSizes first 3 entries:', packagesWithSizes.slice(0, 3));
         
-        textarea.value = packagesWithSizes.join('\n');
+        textarea.value = packagesWithSizes.join(' ');
         textarea.style.height = 'auto';
         textarea.style.height = textarea.scrollHeight + 'px';
         
@@ -3475,7 +3475,10 @@ function createPackageCheckbox(pkg, isChecked = false, isDependency = false) {
         link.href = config.package_url.replace("{id}", encodeURIComponent(pkg.id));
         link.target = '_blank';
         link.className = 'package-link';
-        link.textContent = pkg.name || pkg.id;
+        const sizeCacheKey = `${state.device.version}:${state.device.arch}:${pkg.id}`;
+        const size = state.cache.packageSizes.get(sizeCacheKey);
+        const sizeText = size ? ` (${(size/1024).toFixed(1)} KB)` : '';
+        link.textContent = (pkg.name || pkg.id) + sizeText;
         link.onclick = (e) => e.stopPropagation();
         label.appendChild(checkbox);
         label.appendChild(link);
