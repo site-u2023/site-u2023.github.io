@@ -144,6 +144,57 @@ const UI = {
     }
 };
 
+function formatPackageSize(bytes) {
+    if (!bytes || bytes <= 0) return "? KB";
+    const kb = bytes / 1024;
+    if (kb < 1) return "< 1 KB";
+    if (kb < 100) return kb.toFixed(1) + " KB";
+    if (kb < 1024) return Math.round(kb) + " KB";
+    const mb = kb / 1024;
+    return mb.toFixed(1) + " MB";
+}
+
+function calculateAddedPackagesSize() {
+    const textarea = document.querySelector('#asu-packages');
+    if (!textarea) return "0 KB";
+    
+    let totalBytes = 0;
+    const basePackages = new Set([
+        ...state.packages.default,
+        ...state.packages.device,
+        ...state.packages.extra
+    ]);
+    
+    const lines = textarea.value.split('\n');
+    
+    for (const line of lines) {
+        const match = line.match(/^([^:]+):/);
+        const pkg = match ? match[1].trim() : line.trim();
+        
+        if (pkg && !basePackages.has(pkg)) {
+            const sizeCacheKey = `${state.device.version}:${state.device.arch}:${pkg}`;
+            const size = state.cache.packageSizes.get(sizeCacheKey);
+            if (size && size > 0) {
+                totalBytes += size;
+            }
+        }
+    }
+    
+    return formatPackageSize(totalBytes);
+}
+
+function updatePostinstTotalSize() {
+    const totalSizeEl = document.querySelector('#postinst-total-size');
+    if (!totalSizeEl) {
+        console.log('postinst-total-size element not found');
+        return;
+    }
+    
+    const totalSize = calculateAddedPackagesSize();
+    const addedText = current_language_json?.['tr-added-size'] || 'Added';
+    totalSizeEl.innerHTML = `<span class="tr-added-size">${addedText}</span>: ${totalSize}`;
+}
+
 const CustomUtils = {
     getVendor() {
         return state.device.vendor;
