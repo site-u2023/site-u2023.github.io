@@ -63,7 +63,7 @@ const state = {
         }
     },
     
-// キャッシュ
+    // キャッシュ
     cache: {
         kmods: {
             token: null,
@@ -76,8 +76,7 @@ const state = {
         lastFormStateHash: null,
         lastPackageListHash: null,
         prevUISelections: new Set(),
-        domElements: new Map(),
-        packageSizes: new Map()
+        domElements: new Map()
     }
 };
 
@@ -107,57 +106,6 @@ const UI = {
         }
     }
 };
-
-function formatPackageSize(bytes) {
-    if (!bytes || bytes <= 0) return "? KB";
-    const kb = bytes / 1024;
-    if (kb < 1) return "< 1 KB";
-    if (kb < 100) return kb.toFixed(1) + " KB";
-    if (kb < 1024) return Math.round(kb) + " KB";
-    const mb = kb / 1024;
-    return mb.toFixed(1) + " MB";
-}
-
-function calculateAddedPackagesSize() {
-    const textarea = document.querySelector('#asu-packages');
-    if (!textarea) return "0 KB";
-    
-    let totalBytes = 0;
-    const basePackages = new Set([
-        ...state.packages.default,
-        ...state.packages.device,
-        ...state.packages.extra
-    ]);
-    
-    const lines = textarea.value.split('\n');
-    
-    for (const line of lines) {
-        const match = line.match(/^([^:]+):/);
-        const pkg = match ? match[1].trim() : line.trim();
-        
-        if (pkg && !basePackages.has(pkg)) {
-            const sizeCacheKey = `${state.device.version}:${state.device.arch}:${pkg}`;
-            const size = state.cache.packageSizes.get(sizeCacheKey);
-            if (size && size > 0) {
-                totalBytes += size;
-            }
-        }
-    }
-    
-    return formatPackageSize(totalBytes);
-}
-
-function updatePostinstTotalSize() {
-    const totalSizeEl = document.querySelector('#postinst-total-size');
-    if (!totalSizeEl) {
-        console.log('postinst-total-size element not found');
-        return;
-    }
-    
-    const totalSize = calculateAddedPackagesSize();
-    const addedText = current_language_json?.['tr-added-size'] || 'Added';
-    totalSizeEl.innerHTML = `<span class="tr-added-size">${addedText}</span>: ${totalSize}`;
-}
 
 const CustomUtils = {
     getVendor() {
@@ -582,8 +530,6 @@ async function updateAllPackageState(source = 'unknown') {
     updatePackageListToTextarea(source);
     updateVariableDefinitions();
 
-    updatePostinstTotalSize();
-
     console.log('All package state updated successfully');
 }
 
@@ -894,35 +840,12 @@ function updatePackageListToTextarea(source = 'unknown') {
     });
 
     if (textarea) {
-        const packagesWithSizes = [];
-        for (const pkg of uniquePackages) {
-            const sizeCacheKey = `${state.device.version}:${state.device.arch}:${pkg}`;
-            const size = state.cache.packageSizes.get(sizeCacheKey);
-            
-            if (size && size > 0) {
-                packagesWithSizes.push(`${pkg}: ${formatPackageSize(size)}`);
-            } else {
-                packagesWithSizes.push(`${pkg}: ? KB`);
-            }
-        }
-        
-        textarea.value = packagesWithSizes.join('\n');
+        textarea.value = uniquePackages.join(' ');
         textarea.style.height = 'auto';
         textarea.style.height = textarea.scrollHeight + 'px';
-        
-        updatePostinstTotalSize();
     }
 
     console.log(`Postinst package list updated: ${uniquePackages.length} packages`);
-}
-
-function updatePostinstTotalSize() {
-    const totalSizeEl = document.querySelector('#postinst-total-size');
-    if (!totalSizeEl) return;
-    
-    const totalSize = calculateAddedPackagesSize();
-    const addedText = current_language_json?.['tr-added-size'] || 'Added';
-    totalSizeEl.innerHTML = `<span class="tr-added-size">${addedText}</span>: ${totalSize}`;
 }
 
 function isManualPackage(pkg, confirmedSet, knownSelectablePackages, currentUISelections) {
@@ -1236,33 +1159,12 @@ async function searchInFeed(query, feed, version, arch) {
             let list = [];
             if (isSnapshot) {
                 const data = await resp.json();
-                if (data.packages) {
-                    list = Object.keys(data.packages);
-                    for (const pkgName of list) {
-                        const pkgData = data.packages[pkgName];
-                        if (pkgData && pkgData.size) {
-                            const sizeCacheKey = `${version}:${arch}:${pkgName}`;
-                            state.cache.packageSizes.set(sizeCacheKey, pkgData.size);
-                        }
-                    }
-                }
+                list = data.packages ? Object.keys(data.packages) : [];
             } else {
                 const text = await resp.text();
-                const lines = text.split('\n');
-                let currentPackage = null;
-                
-                for (const line of lines) {
-                    if (line.startsWith('Package: ')) {
-                        currentPackage = line.substring(9).trim();
-                        list.push(currentPackage);
-                    } else if (line.startsWith('Size: ') && currentPackage) {
-                        const size = parseInt(line.substring(6).trim());
-                        if (size > 0) {
-                            const sizeCacheKey = `${version}:${arch}:${currentPackage}`;
-                            state.cache.packageSizes.set(sizeCacheKey, size);
-                        }
-                    }
-                }
+                list = text.split('\n')
+                    .filter(line => line.startsWith('Package: '))
+                    .map(line => line.substring(9).trim());
             }
             state.cache.feed.set(cacheKey, list);
         }
@@ -1758,57 +1660,22 @@ async function fetchFeedSet(feed, deviceInfo) {
     const resp = await fetch(url, { cache: 'force-cache' });
     if (!resp.ok) throw new Error(`HTTP ${resp.status} for ${feed} at ${url}`);
 
-    const { version, arch } = deviceInfo;
-    let pkgSet;
-
     if (isSnapshot) {
         const data = await resp.json();
-        const packages = data.packages || {};
-        
-        if (Array.isArray(packages)) {
-            pkgSet = new Set(packages.map(p => p?.name).filter(Boolean));
-            for (const pkgData of packages) {
-                if (pkgData && pkgData.name && pkgData.size) {
-                    const sizeCacheKey = `${version}:${arch}:${pkgData.name}`;
-                    state.cache.packageSizes.set(sizeCacheKey, pkgData.size);
-                }
-            }
-        } else if (typeof packages === 'object') {
-            pkgSet = new Set(Object.keys(packages));
-            for (const pkgName of pkgSet) {
-                const pkgData = packages[pkgName];
-                if (pkgData && pkgData.size) {
-                    const sizeCacheKey = `${version}:${arch}:${pkgName}`;
-                    state.cache.packageSizes.set(sizeCacheKey, pkgData.size);
-                }
-            }
-        } else {
-            pkgSet = new Set();
+        if (Array.isArray(data.packages)) {
+            return new Set(data.packages.map(p => p?.name).filter(Boolean));
+        } else if (data.packages && typeof data.packages === 'object') {
+            return new Set(Object.keys(data.packages));
         }
+        return new Set();
     } else {
         const text = await resp.text();
-        const lines = text.split('\n');
-        const names = [];
-        let currentPackage = null;
-        
-        for (const line of lines) {
-            if (line.startsWith('Package: ')) {
-                currentPackage = line.substring(9).trim();
-                if (currentPackage) {
-                    names.push(currentPackage);
-                }
-            } else if (line.startsWith('Size: ') && currentPackage) {
-                const size = parseInt(line.substring(6).trim(), 10);
-                if (!isNaN(size) && size > 0) {
-                    const sizeCacheKey = `${version}:${arch}:${currentPackage}`;
-                    state.cache.packageSizes.set(sizeCacheKey, size);
-                }
-                currentPackage = null; 
-            }
-        }
-        pkgSet = new Set(names);
+        const names = text.split('\n')
+            .filter(line => line.startsWith('Package: '))
+            .map(line => line.substring(9).trim())
+            .filter(Boolean);
+        return new Set(names);
     }
-    return pkgSet;
 }
 
 async function buildAvailabilityIndex(deviceInfo, neededFeeds) {
@@ -1874,8 +1741,6 @@ async function verifyAllPackages() {
 
     const startTime = Date.now();
     console.log('Starting package verification...');
-    
-    state.cache.packageSizes.clear();
 
     const packagesToVerify = [];
     state.packages.json.categories.forEach(category => {
@@ -1940,9 +1805,6 @@ async function verifyAllPackages() {
     if (checkedUnavailable.length > 0) {
         console.warn('The following pre-selected packages are not available:', checkedUnavailable);
     }
-    
-    updatePackageListToTextarea('package-verification-complete');
-    updatePostinstTotalSize();
 }
 
 function updatePackageAvailabilityUI(uniqueId, isAvailable) {
@@ -3588,7 +3450,7 @@ function handlePackageSelection(e) {
             }
         });
     }
-    updateAllPackageState('package-selection');
+    updateAllPackageState('force-update');
 }
 
 function findPackageById(id) {
