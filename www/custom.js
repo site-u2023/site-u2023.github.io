@@ -3229,7 +3229,6 @@ function updateAutoConnectionInfo(apiInfo) {
             infoText += `option area ${apiInfo.aftr.jurisdiction}<br>`;
         }
         infoText += `<hr>`;
-        infoText += `<div style="text-align: center;"><a href="https://ipv4.web.fc2.com/map-e.html" target="_blank">Powered by https://ipv4.web.fc2.com/map-e.html</a></div>`;
     } else {
         infoText += `${current_language_json['tr-auto-detection'] || 'Auto Detection:'} ${connectionType}<br>`;
         infoText += `${current_language_json['tr-standard-notice'] || 'Standard connection will be used'}`;
