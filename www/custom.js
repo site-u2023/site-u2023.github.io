@@ -3599,9 +3599,27 @@ function loadUciDefaultsTemplate() {
         textarea.style.height = `${lines * 1}em`;
     }
 
-    textarea.addEventListener('input', autoResize);
+    function updateFileSize(text) {
+        const lines = text.split('\n').length;
+        const bytes = new Blob([text]).size;
+        const kb = (bytes / 1024).toFixed(1);
+        
+        const sizeElement = document.querySelector('#uci-defaults-size');
+        if (sizeElement) {
+            sizeElement.textContent = `${lines} lines · ${kb} KB`;
+        }
+    }
+
+    textarea.addEventListener('input', () => {
+        autoResize();
+        updateFileSize(textarea.value);
+    });
+    
     textarea.addEventListener('paste', () => {
-        requestAnimationFrame(autoResize);
+        requestAnimationFrame(() => {
+            autoResize();
+            updateFileSize(textarea.value);
+        });
     });
 
     fetch(templatePath + '?t=' + Date.now())
@@ -3612,12 +3630,13 @@ function loadUciDefaultsTemplate() {
         .then(text => {
             textarea.value = text;
             console.log('setup.sh loaded successfully');
+            updateFileSize(text);
             updateVariableDefinitions();
             autoResize();
         })
         .catch(err => {
             console.error('Failed to load setup.sh:', err);
-            textarea.value = `#!/bin/sh
+            const defaultText = `#!/bin/sh
 # BEGIN_VARIABLE_DEFINITIONS
 # END_VARIABLE_DEFINITIONS
 
@@ -3625,6 +3644,8 @@ function loadUciDefaultsTemplate() {
 # END_CUSTOM_COMMANDS
 
 exit 0`;
+            textarea.value = defaultText;
+            updateFileSize(defaultText);
             autoResize();
         });
 }
@@ -3668,6 +3689,14 @@ function updateTextareaContent(textarea, variableDefinitions) {
         const newSection = variableDefinitions ? '\n' + variableDefinitions + '\n' : '\n';
         textarea.value = beforeSection + newSection + afterSection;
         textarea.rows = textarea.value.split('\n').length + 1;
+        
+        const lines = textarea.value.split('\n').length;
+        const bytes = new Blob([textarea.value]).size;
+        const kb = (bytes / 1024).toFixed(1);
+        const sizeElement = document.querySelector('#uci-defaults-size');
+        if (sizeElement) {
+            sizeElement.textContent = `${lines} lines · ${kb} KB`;
+        }
     }
 }
 
