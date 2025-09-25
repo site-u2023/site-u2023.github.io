@@ -1189,7 +1189,17 @@ async function searchInFeed(query, feed, version, arch) {
             let list = [];
             if (isSnapshot) {
                 const data = await resp.json();
-                list = data.packages ? Object.keys(data.packages) : [];
+                if (data.packages && typeof data.packages === 'object') {
+                    for (const [pkgName, pkgData] of Object.entries(data.packages)) {
+                        list.push(pkgName);
+                        if (pkgData && typeof pkgData.size === 'number' && pkgData.size > 0) {
+                            const sizeCacheKey = `${version}:${arch}:${pkgName}`;
+                            state.cache.packageSizes.set(sizeCacheKey, pkgData.size);
+                        }
+                    }
+                } else {
+                    list = [];
+                }
             } else {
                 const text = await resp.text();
                 const lines = text.split('\n');
@@ -1868,7 +1878,42 @@ async function verifyAllPackages() {
         console.warn('The following pre-selected packages are not available:', checkedUnavailable);
     }
     
+    updatePackageSizeDisplay();
+    
     updatePackageListToTextarea('package-verification-complete');
+}
+
+function updatePackageSizeDisplay() {
+    if (!state.device.version || !state.device.arch) return;
+    
+    document.querySelectorAll('.package-selector-checkbox').forEach(checkbox => {
+        const packageId = checkbox.getAttribute('data-package');
+        if (!packageId) return;
+        
+        const label = checkbox.closest('label');
+        if (!label) return;
+        
+        const packageName = label.getAttribute('data-package-name');
+        if (!packageName) return;
+        
+        const sizeCacheKey = `${state.device.version}:${state.device.arch}:${packageId}`;
+        const sizeBytes = state.cache.packageSizes.get(sizeCacheKey);
+        
+        const textElement = label.querySelector('a.package-link') || label.querySelector('span');
+        if (!textElement) return;
+        
+        const currentText = textElement.textContent;
+        const baseText = currentText.split(':')[0];
+
+        if (typeof sizeBytes === 'number' && sizeBytes > 0) {
+            const sizeKB = (sizeBytes / 1024).toFixed(1);
+            textElement.textContent = `${baseText}: ${sizeKB} KB`;
+        } else {
+            textElement.textContent = baseText;
+        }
+    });
+    
+    console.log('Package size display updated');
 }
 
 function updatePackageAvailabilityUI(uniqueId, isAvailable) {
@@ -3330,6 +3375,12 @@ function generatePackageSelector() {
     } else {
         console.log('Device architecture not available, skipping package verification');
     }
+    
+    if (state.cache.packageSizes.size > 0) {
+        requestAnimationFrame(() => {
+            updatePackageSizeDisplay();
+        });
+    }
 }
 
 function createHiddenPackageCheckbox(pkg) {
@@ -3459,22 +3510,34 @@ function createPackageCheckbox(pkg, isChecked = false, isDependency = false) {
     }
     
     checkbox.addEventListener('change', handlePackageSelection);
+
+    let sizeText = '';
+    if (state.device.version && state.device.arch) {
+        const sizeCacheKey = `${state.device.version}:${state.device.arch}:${pkg.id}`;
+        const sizeBytes = state.cache.packageSizes.get(sizeCacheKey);
+        if (typeof sizeBytes === 'number' && sizeBytes > 0) {
+            const sizeKB = (sizeBytes / 1024).toFixed(1);
+            sizeText = `: ${sizeKB} KB`;
+        }
+    }
     
     if (config?.package_url) {
         const link = document.createElement('a');
         link.href = config.package_url.replace("{id}", encodeURIComponent(pkg.id));
         link.target = '_blank';
         link.className = 'package-link';
-        link.textContent = pkg.name || pkg.id;
+        link.textContent = (pkg.name || pkg.id) + sizeText;
         link.onclick = (e) => e.stopPropagation();
         label.appendChild(checkbox);
         label.appendChild(link);
     } else {
         const span = document.createElement('span');
-        span.textContent = pkg.name || pkg.id;
+        span.textContent = (pkg.name || pkg.id) + sizeText;
         label.appendChild(checkbox);
         label.appendChild(span);
     }
+    
+    label.setAttribute('data-package-name', pkg.name || pkg.id);
     
     return label;
 }
