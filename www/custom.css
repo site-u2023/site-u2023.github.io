@@ -627,7 +627,6 @@ details summary h4 {
 
   details summary h3 {
     margin: 0;
-    margin-left: -1.2em;
   }
 
   details:has(summary h3) summary {
