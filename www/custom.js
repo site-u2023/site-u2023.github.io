@@ -840,7 +840,7 @@ function updatePackageListToTextarea(source = 'unknown') {
         total: uniquePackages.length
     });
 
-    if (textarea) {
+if (textarea) {
         const baseSet = new Set([...state.packages.default, ...state.packages.device, ...state.packages.extra]);
         const addedPackages = uniquePackages.filter(pkg => !baseSet.has(pkg));
         
@@ -853,14 +853,25 @@ function updatePackageListToTextarea(source = 'unknown') {
             }
         }
 
+        let baseBytes = 0;
+        for (const pkg of [...state.packages.default, ...state.packages.device, ...state.packages.extra]) {
+            const sizeCacheKey = `${state.device.version}:${state.device.arch}:${pkg}`;
+            const size = state.cache.packageSizes.get(sizeCacheKey);
+            if (typeof size === 'number' && size > 0) {
+                baseBytes += size;
+            }
+        }
+
         textarea.value = uniquePackages.join(' ');
         textarea.style.height = 'auto';
         textarea.style.height = textarea.scrollHeight + 'px';
 
-        const totalSizeEl = document.querySelector('#postinst-total-size');
-        if (totalSizeEl) {
-            const totalKB = (totalBytes / 1024).toFixed(1);
-            totalSizeEl.textContent = `${totalKB} KB`;
+        const sizeBreakdownEl = document.querySelector('#package-size-breakdown');
+        if (sizeBreakdownEl) {
+            const baseKB = (baseBytes / 1024).toFixed(1);
+            const addedKB = (totalBytes / 1024).toFixed(1);
+            const totalMB = ((baseBytes + totalBytes) / (1024 * 1024)).toFixed(1);
+            sizeBreakdownEl.textContent = `${current_language_json['tr-base-size'] || 'Base Packages'}: ${baseKB} KB / ${current_language_json['tr-added-size'] || 'Added Packages'}: ${addedKB} KB / ${current_language_json['tr-total-size'] || 'Total'}: ${totalMB} MB`;
         }
     }
 
