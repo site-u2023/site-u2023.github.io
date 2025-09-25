@@ -298,11 +298,6 @@ details[open] summary {
   border-radius: 0.25em;
 }
 
-#postinst-details,
-#uci-defaults-details {
-    padding: 0 1em 1em 1em;
-}
-
 #postinst-details summary {
     display: block;
 }
@@ -402,19 +397,9 @@ details[open] summary {
 
 /* ===== Section Containers (extends base container styles) ===== */
 .config-section,
-.package-category,
-#postinst-details,
-#uci-defaults-details {
-  margin: 0 0 1.5em 0;
-  padding: 0 1em 1em 1em;
-  background-color: var(--bg-section);
-  border: 1px solid var(--border-main);
-  border-radius: 0.25em; /* matches index.css container border-radius */
-  /* inherit box-shadow pattern from index.css */
-  box-shadow: 0em 0.06em 0.19em 0em rgba(0, 0, 0, 0.2),
-              0em 0.06em 0.06em 0em rgba(0, 0, 0, 0.14),
-              0em 0.125em 0.06em -0.06em rgba(0, 0, 0, 0.12);
-  color: var(--text-main);
+.package-category {
+  margin-bottom: 1.5em;
+  padding: 1em;
 }
 
 .config-section h4,
