@@ -627,6 +627,9 @@ details summary h4 {
 
   details summary h3 {
     margin-left: 0;
+  }
+
+  details:has(summary h3) summary {
     padding-left: 0;
   }
 }
