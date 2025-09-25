@@ -88,15 +88,15 @@ input[type="radio"] {
   width: 100%;
   box-sizing: border-box; 
   margin: 0;
-  background-color: var(--bg-input, #f1f1f1); /* fallback to index.css value */
+  background-color: var(--input-bg-light);
   color: var(--text-main);
   resize: both;
   
-  padding: 0.8em; /* matches index.css input padding */
+  padding: var(--input-padding);
   font-size: inherit;
   line-height: inherit;
-  border: 0.06em solid transparent; /* matches index.css */
-  border-radius: 0.2em; /* matches index.css */
+  border: var(--input-border);
+  border-radius: var(--input-border-radius);
 }
 
 /* ===== Multi Input Container (Package Search & Commands) ===== */
@@ -119,10 +119,10 @@ input[type="radio"] {
 
 .multi-input-item {
   flex: 1;
-  border: 0.06em solid transparent;
-  background-color: #f1f1f1;
+  border: var(--input-border);
+  background-color: var(--input-bg-light);
   padding: var(--input-padding);
-  border-radius: 0.2em;
+  border-radius: var(--input-border-radius);
   font-size: inherit;
   width: 100%;
   box-sizing: border-box;
@@ -169,8 +169,8 @@ input[type="radio"] {
   }
   
   .multi-input-item {
-    background-color: #313135;
-    color: #d0d0d0;
+    background-color: var(--input-bg-dark);
+    color: var(--text-main);
   }
   
   .package-search-results {
@@ -219,7 +219,7 @@ input[type="radio"] {
   #uci-defaults-content,
   #postinst-content,
   #asu-packages {
-    background-color: var(--bg-input, #313135);
+    background-color: var(--input-bg-dark);
     color: var(--text-main);
   }
 }
@@ -620,8 +620,8 @@ details summary h4 {
   }
   
   .multi-input-item {
-    padding: 0.5em;
-    font-size: 0.9em;
+    padding: var(--input-padding);
+    font-size: inherit;
   }
 
   details summary h3 {
