@@ -571,6 +571,10 @@
           "id": "wsdd2",
           "name": "wsdd2",
           "hidden": true
+        },
+        {
+          "id": "luci-app-transmission",
+          "name": "luci-app-transmission"
         }
       ]
     },
