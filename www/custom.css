@@ -204,7 +204,7 @@ input[type="radio"] {
   margin: 0;
   padding: var(--input-padding);
   border: var(--input-border);
-  background-color: var(--input-bg-current);
+  background-color: var(--input-bg-light);
   color: var(--text-main);
   border-radius: var(--input-border-radius);
   font-size: inherit;
