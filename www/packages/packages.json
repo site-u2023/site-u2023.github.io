@@ -177,8 +177,8 @@
           "name": "fail2ban"
         },
         {
-          "id": "banip",
-          "name": "banip"
+          "id": "luci-app-banip",
+          "name": "luci-app-banip"
         },
         {
           "id": "luci-app-acme",
