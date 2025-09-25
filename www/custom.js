@@ -3210,9 +3210,9 @@ function updateAutoConnectionInfo(apiInfo) {
         infoText += `<br>`;
         infoText += `export LEGACY=1<br>`;
         infoText += `<hr>`;
-        infoText += `(config-softwire)# map-version draft<br>`;
-        infoText += `(config-softwire)# rule <0-65535> ipv4-prefix ${apiInfo.mape.ipv4Prefix}/${apiInfo.mape.ipv4PrefixLength} ipv6-prefix ${apiInfo.mape.ipv6Prefix}/${apiInfo.mape.ipv6PrefixLength} [ea-length ${apiInfo.mape.eaBitLength}|psid-length ${apiInfo.mape.psidlen}] [offset ${apiInfo.mape.psIdOffset}] [forwarding]<br>`;
-        infoText += `<hr>`;
+        infoText += `<span style="color:DarkBlue">(config-softwire)#</span> <strong style="color:DarkBlue">map-version</strong> <span style="color:blue">draft</span><br>`;
+        infoText += `<span style="color:DarkBlue">(config-softwire)#</span> <strong style="color:DarkBlue">rule</strong> <span style="color:blue">&lt;0-65535&gt;</span> <strong style="color:DarkBlue">ipv4-prefix</strong> <span style="color:blue">${apiInfo.mape.ipv4Prefix}/${apiInfo.mape.ipv4PrefixLength}</span> <strong style="color:DarkBlue">ipv6-prefix</strong> <span style="color:blue">${apiInfo.mape.ipv6Prefix}/${apiInfo.mape.ipv6PrefixLength}</span> [<strong style="color:DarkBlue">ea-length</strong> <span style="color:blue">${apiInfo.mape.eaBitLength}</span>|<strong style="color:DarkBlue">psid-length</strong> <span style="color:lime">${apiInfo.mape.psidlen}</span>] [<strong style="color:DarkBlue">offset</strong> <span style="color:blue">${apiInfo.mape.psIdOffset}</span>] [<strong style="color:DarkBlue">forwarding</strong>]<br>`;
+        infoText += `<hr>`;
         infoText += `<div style="text-align: center;"><a href="https://ipv4.web.fc2.com/map-e.html" target="_blank">Powered by https://ipv4.web.fc2.com/map-e.html</a></div>`;
     } else if (connectionType === 'DS-Lite') {
         infoText += `${current_language_json['tr-auto-detection'] || 'Auto Detection:'} ${connectionType}<br>`;
