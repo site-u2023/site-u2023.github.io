@@ -3172,9 +3172,7 @@ function applyIspAutoConfig(apiInfo) {
 function updateAutoConnectionInfo(apiInfo) {
     const autoInfo = document.querySelector('#auto-info');
     if (!autoInfo) return;
-
     let infoText = '';
-
     if (apiInfo?.isp) {
         infoText += `ISP: ${apiInfo.isp}\n`;
         if (apiInfo.as) {
@@ -3183,29 +3181,7 @@ function updateAutoConnectionInfo(apiInfo) {
     }
     
     const connectionType = getConnectionType(apiInfo);
-
     if (connectionType === 'MAP-E') {
-        infoText += `${current_language_json['tr-auto-detection'] || 'Auto Detection:'} ${connectionType}\n`;
-      
-        infoText += `------------------------------------------------------\n`;
-        infoText += `${current_language_json['tr-mape-notice1'] || 'Note: Actual values may differ.'}\n`;
-        infoText += `------------------------------------------------------\n`;
-        infoText += `option peeraddr ${apiInfo.mape.brIpv6Address}\n`;
-        infoText += `option ipaddr ${apiInfo.mape.ipv4Prefix}\n`;
-        infoText += `option ip4prefixlen ${apiInfo.mape.ipv4PrefixLength}\n`;
-        infoText += `option ip6prefix ${apiInfo.mape.ipv6Prefix}\n`;
-        infoText += `option ip6prefixlen ${apiInfo.mape.ipv6PrefixLength}\n`;
-        infoText += `option ealen ${apiInfo.mape.eaBitLength}\n`;
-        infoText += `option psidlen ${apiInfo.mape.psidlen}\n`;
-        infoText += `option offset ${apiInfo.mape.psIdOffset}\n`;
-        infoText += `\n`;
-        infoText += `export LEGACY=1\n`;
-        infoText += `------------------------------------------------------\n`;
-        infoText += `(config-softwire)# map-version draft\n`;
-        infoText += `(config-softwire)# rule <0-65535> ipv4-prefix ${apiInfo.mape.ipv4Prefix}/${apiInfo.mape.ipv4PrefixLength} ipv6-prefix ${apiInfo.mape.ipv6Prefix}/${apiInfo.mape.ipv6PrefixLength} [ea-length ${apiInfo.mape.eaBitLength}|psid-length ${apiInfo.mape.psidlen}] [offset ${apiInfo.mape.psIdOffset}] [forwarding]\n`;
-        infoText += `\n`;
-        infoText += `Powered by https://ipv4.web.fc2.com/map-e.html\n`;
-        
         let gua = apiInfo.guaPrefix;
         if (!gua) {
             try {
@@ -3216,15 +3192,35 @@ function updateAutoConnectionInfo(apiInfo) {
             const guaField = document.querySelector('#mape-gua-prefix');
             if (guaField && guaField.value) gua = guaField.value;
         }
+        
+        infoText += `${current_language_json['tr-auto-detection'] || 'Auto Detection:'} ${connectionType}\n`;
+      
+        infoText += `──────────────────────────────────────────────────────\n`;
+        infoText += `${current_language_json['tr-mape-notice1'] || 'Note: Actual values may differ.'}\n`;
+        infoText += `option peeraddr ${apiInfo.mape.brIpv6Address}\n`;
+        infoText += `option ipaddr ${apiInfo.mape.ipv4Prefix}\n`;
+        infoText += `option ip4prefixlen ${apiInfo.mape.ipv4PrefixLength}\n`;
+        infoText += `option ip6prefix ${apiInfo.mape.ipv6Prefix}\n`;
+        infoText += `option ip6prefixlen ${apiInfo.mape.ipv6PrefixLength}\n`;
+        infoText += `option ealen ${apiInfo.mape.eaBitLength}\n`;
+        infoText += `option psidlen ${apiInfo.mape.psidlen}\n`;
+        infoText += `option offset ${apiInfo.mape.psIdOffset}\n`;
         if (gua) {
-            infoText += `GUA: ${gua}`;
+            infoText += `option ip6prefix_gua ${gua}\n`;
         }
+        infoText += `\n`;
+        infoText += `export LEGACY=1\n`;
+        infoText += `──────────────────────────────────────────────────────\n`;
+        infoText += `(config-softwire)# map-version draft\n`;
+        infoText += `(config-softwire)# rule <0-65535> ipv4-prefix ${apiInfo.mape.ipv4Prefix}/${apiInfo.mape.ipv4PrefixLength} ipv6-prefix ${apiInfo.mape.ipv6Prefix}/${apiInfo.mape.ipv6PrefixLength} [ea-length ${apiInfo.mape.eaBitLength}|psid-length ${apiInfo.mape.psidlen}] [offset ${apiInfo.mape.psIdOffset}] [forwarding]\n`;
+        infoText += `\n`;
+        infoText += `Powered by https://ipv4.web.fc2.com/map-e.html`;
     } else if (connectionType === 'DS-Lite') {
         infoText += `${current_language_json['tr-auto-detection'] || 'Auto Detection:'} ${connectionType}\n`;
       
-        infoText += `------------------------------------------------------\n`;
+        infoText += `──────────────────────────────────────────────────────\n`;
         infoText += `${current_language_json['tr-dslite-notice1'] || 'Note: Actual values may differ.'}\n`;
-        infoText += `------------------------------------------------------\n`;
+        infoText += `──────────────────────────────────────────────────────\n`;
         if (apiInfo.aftr?.aftrIpv6Address) {
             infoText += `option aftr_addr ${apiInfo.aftr.aftrIpv6Address}\n`;
         }
@@ -3234,13 +3230,12 @@ function updateAutoConnectionInfo(apiInfo) {
         if (apiInfo.aftr?.jurisdiction) {
             infoText += `option area ${apiInfo.aftr.jurisdiction}\n`;
         }
-        infoText += `------------------------------------------------------\n`;
+        infoText += `──────────────────────────────────────────────────────\n`;
         infoText += `Powered by https://ipv4.web.fc2.com/map-e.html`;
     } else {
         infoText += `${current_language_json['tr-auto-detection'] || 'Auto Detection:'} ${connectionType}\n`;
         infoText += `${current_language_json['tr-standard-notice'] || 'Standard connection will be used'}`;
     }
-
     autoInfo.textContent = infoText;
 }
 
