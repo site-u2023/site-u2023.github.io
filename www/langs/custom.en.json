@@ -5,7 +5,9 @@
     "tr-uci": "UCI-defaults (Boot Configuration Script)",
     "tr-package-search": "Package Search",
     "tr-add-commands": "Add Command",
+    "tr-base-size": "Base Packages",
     "tr-added-size": "Additional Package",
+    "tr-total-size": "Total",
     
     "tr-extended-info": "Region and ISP Information",
     "tr-loading": "Loading...",
