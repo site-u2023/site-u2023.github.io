@@ -863,13 +863,15 @@ if (textarea) {
         textarea.value = uniquePackages.join(' ');
         textarea.style.height = 'auto';
         textarea.style.height = textarea.scrollHeight + 'px';
-
         const sizeBreakdownEl = document.querySelector('#package-size-breakdown');
         if (sizeBreakdownEl) {
             const baseKB = (baseBytes / 1024).toFixed(1);
+            const baseMB = (baseBytes / (1024 * 1024)).toFixed(1);     
             const addedKB = (totalBytes / 1024).toFixed(1);
+            const addedMB = (totalBytes / (1024 * 1024)).toFixed(1);
+            const totalKB = ((baseBytes + totalBytes) / 1024).toFixed(1);
             const totalMB = ((baseBytes + totalBytes) / (1024 * 1024)).toFixed(1);
-            sizeBreakdownEl.textContent = `${current_language_json['tr-base-size'] || 'Base Packages'}: ${baseKB} KB / ${current_language_json['tr-added-size'] || 'Added Packages'}: ${addedKB} KB / ${current_language_json['tr-total-size'] || 'Total'}: ${totalMB} MB`;
+            sizeBreakdownEl.textContent = `${current_language_json['tr-base-size'] || 'Base Packages'}: ${baseMB} MB (${baseKB} KB) / ${current_language_json['tr-added-size'] || 'Added Packages'}: ${addedMB} MB (${addedKB} KB) / ${current_language_json['tr-total-size'] || 'Total'}: ${totalMB} MB (${totalKB} KB)`;
         }
     }
 
