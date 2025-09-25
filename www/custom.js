@@ -3195,7 +3195,7 @@ function updateAutoConnectionInfo(apiInfo) {
         
         infoText += `${current_language_json['tr-auto-detection'] || 'Auto Detection:'} ${connectionType}\n`;
       
-        infoText += `──────────────────────────────────────────────────────\n`;
+        infoText += `<hr>\n`;
         infoText += `${current_language_json['tr-mape-notice1'] || 'Note: Actual values may differ.'}\n`;
         infoText += `option peeraddr ${apiInfo.mape.brIpv6Address}\n`;
         infoText += `option ipaddr ${apiInfo.mape.ipv4Prefix}\n`;
@@ -3210,7 +3210,7 @@ function updateAutoConnectionInfo(apiInfo) {
         }
         infoText += `\n`;
         infoText += `export LEGACY=1\n`;
-        infoText += `──────────────────────────────────────────────────────\n`;
+        infoText += `<hr>\n`;
         infoText += `(config-softwire)# map-version draft\n`;
         infoText += `(config-softwire)# rule <0-65535> ipv4-prefix ${apiInfo.mape.ipv4Prefix}/${apiInfo.mape.ipv4PrefixLength} ipv6-prefix ${apiInfo.mape.ipv6Prefix}/${apiInfo.mape.ipv6PrefixLength} [ea-length ${apiInfo.mape.eaBitLength}|psid-length ${apiInfo.mape.psidlen}] [offset ${apiInfo.mape.psIdOffset}] [forwarding]\n`;
         infoText += `\n`;
@@ -3218,9 +3218,9 @@ function updateAutoConnectionInfo(apiInfo) {
     } else if (connectionType === 'DS-Lite') {
         infoText += `${current_language_json['tr-auto-detection'] || 'Auto Detection:'} ${connectionType}\n`;
       
-        infoText += `──────────────────────────────────────────────────────\n`;
+        infoText += `<hr>\n`;
         infoText += `${current_language_json['tr-dslite-notice1'] || 'Note: Actual values may differ.'}\n`;
-        infoText += `──────────────────────────────────────────────────────\n`;
+        infoText += `<hr>\n`;
         if (apiInfo.aftr?.aftrIpv6Address) {
             infoText += `option aftr_addr ${apiInfo.aftr.aftrIpv6Address}\n`;
         }
@@ -3230,8 +3230,8 @@ function updateAutoConnectionInfo(apiInfo) {
         if (apiInfo.aftr?.jurisdiction) {
             infoText += `option area ${apiInfo.aftr.jurisdiction}\n`;
         }
-        infoText += `──────────────────────────────────────────────────────\n`;
-        infoText += `Powered by https://ipv4.web.fc2.com/map-e.html`;
+        infoText += `<hr>\n`;
+        infoText += `Powered by <a href="https://ipv4.web.fc2.com/map-e.html" target="_blank">https://ipv4.web.fc2.com/map-e.html</a>`;
     } else {
         infoText += `${current_language_json['tr-auto-detection'] || 'Auto Detection:'} ${connectionType}\n`;
         infoText += `${current_language_json['tr-standard-notice'] || 'Standard connection will be used'}`;
