@@ -3195,7 +3195,7 @@ function updateAutoConnectionInfo(apiInfo) {
         
         infoText += `${current_language_json['tr-auto-detection'] || 'Auto Detection:'} ${connectionType}<br>`;
         infoText += `<hr>`;
-        infoText += `<h4>${current_language_json['tr-mape-notice1'] || 'Note: Actual values may differ.'}</h4>`;
+        infoText += `<p>${current_language_json['tr-mape-notice1'] || 'Note: Actual values may differ.'}</p>`;
         infoText += `option peeraddr ${apiInfo.mape.brIpv6Address}<br>`;
         infoText += `option ipaddr ${apiInfo.mape.ipv4Prefix}<br>`;
         infoText += `option ip4prefixlen ${apiInfo.mape.ipv4PrefixLength}<br>`;
