@@ -3266,8 +3266,8 @@ function updateAutoConnectionInfo(apiInfo) {
         infoText += `<br>`;
         infoText += `export LEGACY=1<br>`;
         infoText += `<hr>`;
-        infoText += `<span style="color:Green">(config-softwire)#</span> <strong>map-version draft</strong><br>`;
-        infoText += `<span style="color:Green">(config-softwire)#</span> <strong>rule <span style="color:blue">&lt;0-65535&gt;</span> ipv4-prefix <span style="color:blue">${apiInfo.mape.ipv4Prefix}/${apiInfo.mape.ipv4PrefixLength}</span> ipv6-prefix <span style="color:blue">${apiInfo.mape.ipv6Prefix}/${apiInfo.mape.ipv6PrefixLength}</span></strong> [ea-length <span style="color:blue">${apiInfo.mape.eaBitLength}</span>|psid-length <span style="color:blue">${apiInfo.mape.psidlen}</span>] [offset <span style="color:blue">${apiInfo.mape.psIdOffset}</span>] [forwarding]<br>`;
+        infoText += `<span style="color:blue">(config-softwire)#</span> <strong>map-version draft</strong><br>`;
+        infoText += `<span style="color:blue">(config-softwire)#</span> <strong>rule <span style="color:blue">&lt;0-65535&gt;</span> ipv4-prefix <span style="color:blue">${apiInfo.mape.ipv4Prefix}/${apiInfo.mape.ipv4PrefixLength}</span> ipv6-prefix <span style="color:blue">${apiInfo.mape.ipv6Prefix}/${apiInfo.mape.ipv6PrefixLength}</span></strong> [ea-length <span style="color:blue">${apiInfo.mape.eaBitLength}</span>|psid-length <span style="color:blue">${apiInfo.mape.psidlen}</span>] [offset <span style="color:blue">${apiInfo.mape.psIdOffset}</span>] [forwarding]<br>`;
         infoText += `<hr>`;
         infoText += `<div style="text-align: center;"><a href="https://ipv4.web.fc2.com/map-e.html" target="_blank">Powered by config-softwire</a></div>`;     
     } else if (connectionType === 'DS-Lite') {
