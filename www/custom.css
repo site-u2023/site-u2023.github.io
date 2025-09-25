@@ -306,13 +306,13 @@ details[open] summary {
 #postinst-details summary {
     display: block;
 }
+
 #postinst-details summary h4 {
     display: block;
-    margin-bottom: 0.5em;
 }
+
 #postinst-additional-info {
     display: block !important;
-    margin-bottom: 0.5em;
 }
 
 /* Additional Package Info - Always visible even when details is closed */
