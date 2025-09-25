@@ -3210,7 +3210,7 @@ function updateAutoConnectionInfo(apiInfo) {
         infoText += `<br>`;
         infoText += `export LEGACY=1<br>`;
         infoText += `<hr>`;
-        infoText += `<span style="color:DarkBlue">(config-softwire)#</span> map-version <span style="color:blue">draft</span><br>`;
+        infoText += `<span style="color:DarkBlue">(config-softwire)#</span> <strong>map-version draft</strong><br>`;
         infoText += `<span style="color:DarkBlue">(config-softwire)#</span> rule <span style="color:blue">&lt;0-65535&gt;</span> <strong>ipv4-prefix</strong> <span style="color:blue">${apiInfo.mape.ipv4Prefix}/${apiInfo.mape.ipv4PrefixLength}</span> <strong>ipv6-prefix</strong> <span style="color:blue">${apiInfo.mape.ipv6Prefix}/${apiInfo.mape.ipv6PrefixLength}</span> [<strong>ea-length</strong> <span style="color:blue">${apiInfo.mape.eaBitLength}</span>|<strong>psid-length</strong> <span style="color:lime">${apiInfo.mape.psidlen}</span>] [<strong>offset</strong> <span style="color:blue">${apiInfo.mape.psIdOffset}</span>] [<strong>forwarding</strong>]<br>`;
         infoText += `<hr>`;
         infoText += `<div style="text-align: center;"><a href="https://ipv4.web.fc2.com/map-e.html" target="_blank">Powered by https://ipv4.web.fc2.com/map-e.html</a></div>`;
