@@ -121,7 +121,7 @@ input[type="radio"] {
   flex: 1;
   border: 0.06em solid transparent;
   background-color: #f1f1f1;
-  padding: 0.6em;
+  padding: var(--input-padding);
   border-radius: 0.2em;
   font-size: inherit;
   width: 100%;
