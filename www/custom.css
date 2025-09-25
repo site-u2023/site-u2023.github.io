@@ -84,7 +84,6 @@ input[type="radio"] {
 .form-group input:not(.autocomplete > input):not(#versions),
 .form-group select:not(#versions),
 .form-group textarea {
-  /* Inherit base styles and extend */
   width: 100%;
   box-sizing: border-box; 
   margin: 0;
@@ -94,7 +93,7 @@ input[type="radio"] {
   
   padding: var(--input-padding);
   font-size: inherit;
-  line-height: inherit;
+  line-height: normal;
   border: var(--input-border);
   border-radius: var(--input-border-radius);
 }
@@ -124,6 +123,7 @@ input[type="radio"] {
   padding: var(--input-padding);
   border-radius: var(--input-border-radius);
   font-size: inherit;
+  line-height: normal;
   width: 100%;
   box-sizing: border-box;
   transition: all 0.2s ease;
@@ -136,7 +136,7 @@ input[type="radio"] {
 /* Package Search Autocomplete Results */
 .package-search-results {
   position: absolute;
-  border: 0.1em solid #d4d4d4;
+  border: var(--input-border);
   border-bottom: none;
   font-size: inherit;
   border-top: none;
@@ -144,16 +144,16 @@ input[type="radio"] {
   top: calc(100% + 2px);
   left: 0;
   right: 0;
-  background-color: #fff;
+  background-color: var(--bg-section);
   max-height: 200px;
   overflow-y: auto;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .package-search-results div {
-  padding: 0.8em;
+  padding: var(--input-padding);
   cursor: pointer;
-  border-bottom: 0.1em solid #d4d4d4;
+  border-bottom: var(--input-border);
 }
 
 .package-search-results div:hover {
@@ -174,13 +174,13 @@ input[type="radio"] {
   }
   
   .package-search-results {
-    background-color: #252528;
-    border-color: #444;
+    background-color: var(--bg-section);
+    border-color: var(--border-main);
     box-shadow: 0 2px 4px rgba(0,0,0,0.3);
   }
   
   .package-search-results div {
-    border-color: #444;
+    border-color: var(--border-main);
   }
   
   .package-search-results div:hover {
@@ -208,6 +208,7 @@ input[type="radio"] {
   color: var(--text-main);
   border-radius: var(--input-border-radius);
   font-size: inherit;
+  line-height: normal;
   resize: both;
 }
 
