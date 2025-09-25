@@ -3195,8 +3195,8 @@ function updateAutoConnectionInfo(apiInfo) {
         
         infoText += `${current_language_json['tr-auto-detection'] || 'Auto Detection:'} ${connectionType}\n`;
       
-        infoText += `<hr>\n`;
-        infoText += `${current_language_json['tr-mape-notice1'] || 'Note: Actual values may differ.'}\n`;
+        infoText += `<hr>`;
+        infoText += `<h4>${current_language_json['tr-mape-notice1'] || 'Note: Actual values may differ.'}</h4>`;
         infoText += `option peeraddr ${apiInfo.mape.brIpv6Address}\n`;
         infoText += `option ipaddr ${apiInfo.mape.ipv4Prefix}\n`;
         infoText += `option ip4prefixlen ${apiInfo.mape.ipv4PrefixLength}\n`;
@@ -3230,8 +3230,8 @@ function updateAutoConnectionInfo(apiInfo) {
         if (apiInfo.aftr?.jurisdiction) {
             infoText += `option area ${apiInfo.aftr.jurisdiction}\n`;
         }
-        infoText += `<hr>\n`;
-        infoText += `<br>Powered by <a href="https://ipv4.web.fc2.com/map-e.html" target="_blank">https://ipv4.web.fc2.com/map-e.html</a>`;
+        infoText += `<hr>`;
+        infoText += `<div style="text-align: center;"><a href="https://ipv4.web.fc2.com/map-e.html" target="_blank">Powered by https://ipv4.web.fc2.com/map-e.html</a></div>`;
     } else {
         infoText += `${current_language_json['tr-auto-detection'] || 'Auto Detection:'} ${connectionType}\n`;
         infoText += `${current_language_json['tr-standard-notice'] || 'Standard connection will be used'}`;
