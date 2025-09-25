@@ -871,7 +871,7 @@ if (textarea) {
             const addedMB = (totalBytes / (1024 * 1024)).toFixed(1);
             const totalKB = ((baseBytes + totalBytes) / 1024).toFixed(1);
             const totalMB = ((baseBytes + totalBytes) / (1024 * 1024)).toFixed(1);
-            sizeBreakdownEl.textContent = `${current_language_json['tr-base-size'] || 'Base Packages'}: ${baseMB} MB (${baseKB} KB) / ${current_language_json['tr-added-size'] || 'Added Packages'}: ${addedMB} MB (${addedKB} KB) / ${current_language_json['tr-total-size'] || 'Total'}: ${totalMB} MB (${totalKB} KB)`;
+            sizeBreakdownEl.textContent = `${current_language_json['tr-base-size'] || 'Base'}: ${baseMB} MB (${baseKB} KB) + ${current_language_json['tr-added-size'] || 'Added'}: ${addedMB} MB (${addedKB} KB) = ${current_language_json['tr-total-size'] || 'Total'}: ${totalMB} MB (${totalKB} KB)`;
         }
     }
 
