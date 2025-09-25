@@ -331,6 +331,34 @@ details[open] summary {
     color: var(--text-muted);
 }
 
+/* ファイルサイズ情報表示 */
+.file-size-info {
+    display: block !important;
+    margin-top: 0.5em;
+    font-size: 0.85em;
+    color: var(--text-muted);
+    font-weight: normal;
+}
+
+#uci-defaults-size {
+    color: var(--text-secondary);
+}
+
+/* detailsが閉じていても表示 */
+#uci-defaults-details summary .file-size-info {
+    display: block !important;
+}
+
+#uci-defaults-details summary {
+    display: flex;
+    flex-direction: column;
+}
+
+#uci-defaults-details summary h4 {
+    margin: 0;
+    display: block;
+}
+
 /* ===== ISP Information Display (extends base styling) ===== */
 #isp-info-row,
 #isp-timezone-row,
