@@ -626,11 +626,12 @@ details summary h4 {
   }
 
   details summary h3 {
-    margin-left: 0;
+    margin: 0;
+    margin-left: -1.2em;
   }
 
   details:has(summary h3) summary {
-    padding-left: 0;
+    list-style: none;
   }
 }
 
