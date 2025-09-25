@@ -3236,7 +3236,7 @@ function updateAutoConnectionInfo(apiInfo) {
         infoText += `${current_language_json['tr-auto-detection'] || 'Auto Detection:'} ${connectionType}\n`;
         infoText += `${current_language_json['tr-standard-notice'] || 'Standard connection will be used'}`;
     }
-    autoInfo.textContent = infoText;
+    autoInfo.innerHTML = infoText;
 }
 
 // ==================== パッケージ管理 ====================
