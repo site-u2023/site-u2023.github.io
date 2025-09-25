@@ -164,8 +164,8 @@ input[type="radio"] {
 /* Dark mode support for multi-input */
 @media (prefers-color-scheme: dark) {
   .multi-input-container {
-    background-color: var(--bg-item);
-    border-color: #444;
+    background-color: transparent;
+    border-color: transparent;
   }
   
   .multi-input-item {
@@ -613,8 +613,9 @@ details summary h4 {
     white-space: nowrap;
   }
   
+@media (max-width: 600px) {
   .multi-input-container {
-    padding: 0.3em;
+    padding: 0;
     gap: 0.3em;
   }
   
