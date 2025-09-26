@@ -102,15 +102,15 @@ DIAG_EOF
 set wireless.${radio}.disabled='0'
 set wireless.${radio}.country="${COUNTRY}"
 RADIO_EOF
+        band=$(uci -q get wireless.${radio}.band) 
         set -- 30 15 5
-		case "${band}" in
-		2g) e='psk-mixed';s=1;;
-		5g) e='sae-mixed';s=2;;
-		6g) e='sae';s=3;;
-		*) e='psk-mixed';s=0;;
-		esac
-		suffix=${band:+-$band}
-		band_snr=${!s:-20}  
+        case "${band}" in
+        2g) encryption='psk-mixed';nasid_suffix='-2g';band_snr=$1;;
+        5g) encryption='sae-mixed';nasid_suffix='-5g';band_snr=$2;;
+        6g) encryption='sae';nasid_suffix='-6g';band_snr=$3;;
+        *) encryption='psk-mixed';nasid_suffix='';band_snr=20;;
+        esac
+        suffix=${band:+-$band}
         if [ -n "${enable_usteer}" ]; then
             ssid="${wlan_ssid}"
         else
