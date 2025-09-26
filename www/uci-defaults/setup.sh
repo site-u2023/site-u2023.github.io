@@ -5,11 +5,11 @@ enable_notes="1"
 enable_ntp="1"
 enable_log="1"
 enable_diag="1"
-U() { uci -q set "$@"; }
-B() { uci -q batch; }
-A() { uci add_list "$@"; }
-D() { uci -q delete "$@"; }
-DL() { uci del_list "$@"; }
+SET() { uci -q set "$@"; }
+BAT() { uci -q batch; }
+ADD() { uci add_list "$@"; }
+DEL() { uci -q delete "$@"; }
+DELLIST() { uci del_list "$@"; }
 DATE="$(date '+%Y-%m-%d %H:%M')"
 LAN="$(uci -q get network.lan.device || echo lan)"
 WAN="$(uci -q get network.wan.device || echo wan)"
@@ -27,85 +27,85 @@ MNT="/mnt/sda"
 MEM=$(awk '/MemTotal/{print int($2/1024)}' /proc/meminfo)
 exec >/tmp/setup.log 2>&1
 disable_wan() {
-    B <<EOF
-U network.wan.disabled='1'
-U network.wan.auto='0'
-U network.wan6.disabled='1'
-U network.wan6.auto='0'
+    BAT <<EOF
+SET network.wan.disabled='1'
+SET network.wan.auto='0'
+SET network.wan6.disabled='1'
+SET network.wan6.auto='0'
 EOF
 }
 dhcp_relay() {
-    B <<EOF
-U dhcp.$1=dhcp
-U dhcp.$1.interface="$1"
-U dhcp.$1.master='1'
-U dhcp.$1.ra='relay'
-U dhcp.$1.dhcpv6='relay'
-U dhcp.$1.ndp='relay'
-U dhcp.$1.ignore='1'
-U dhcp.lan.ra='relay'
-U dhcp.lan.dhcpv6='relay'
-U dhcp.lan.ndp='relay'
-U dhcp.lan.force='1'
+    BAT <<EOF
+SET dhcp.$1=dhcp
+SET dhcp.$1.interface="$1"
+SET dhcp.$1.master='1'
+SET dhcp.$1.ra='relay'
+SET dhcp.$1.dhcpv6='relay'
+SET dhcp.$1.ndp='relay'
+SET dhcp.$1.ignore='1'
+SET dhcp.lan.ra='relay'
+SET dhcp.lan.dhcpv6='relay'
+SET dhcp.lan.ndp='relay'
+SET dhcp.lan.force='1'
 EOF
 }
 firewall_wan() {
-    B <<EOF
-DL firewall.@zone[1].network="wan"
-DL firewall.@zone[1].network="wan6"
-A firewall.@zone[1].network="$1"
-A firewall.@zone[1].network="$2"
-U firewall.@zone[1].masq='1'
-U firewall.@zone[1].mtu_fix='1'
+    BAT <<EOF
+DELLIST firewall.@zone[1].network="wan"
+DELLIST firewall.@zone[1].network="wan6"
+ADD firewall.@zone[1].network="$1"
+ADD firewall.@zone[1].network="$2"
+SET firewall.@zone[1].masq='1'
+SET firewall.@zone[1].mtu_fix='1'
 EOF
 }
-[ -n "${enable_notes}" ] && B <<EOF
-U system.@system[0].description="${DATE}"
-U system.@system[0].notes="site-u.pages.dev"
+[ -n "${enable_notes}" ] && BAT <<EOF
+SET system.@system[0].description="${DATE}"
+SET system.@system[0].notes="site-u.pages.dev"
 EOF
-[ -n "${enable_ntp}" ] && B <<EOF
-U system.ntp=timeserver
-U system.ntp.enabled='1'
-U system.ntp.enable_server='1'
-U system.ntp.interface='lan'
-D system.ntp.server
+[ -n "${enable_ntp}" ] && BAT <<EOF
+SET system.ntp=timeserver
+SET system.ntp.enabled='1'
+SET system.ntp.enable_server='1'
+SET system.ntp.interface='lan'
+DEL system.ntp.server
 EOF
 COUNTRY_LC=$(printf '%s' "$COUNTRY" | tr 'A-Z' 'a-z')
 for i in 0 1 2 3; do
     s="${i:0:2}.${COUNTRY_LC}${NTP_DOMAIN}"
     [ $i -gt 1 ] && s="${i}${NTP_DOMAIN}"
-    A system.ntp.server="$s"
+    ADD system.ntp.server="$s"
 done
-[ -n "${enable_log}" ] && B <<EOF
-U system.@system[0].log_size='32'
-U system.@system[0].conloglevel='1'
-U system.@system[0].cronloglevel='9'
+[ -n "${enable_log}" ] && BAT <<EOF
+SET system.@system[0].log_size='32'
+SET system.@system[0].conloglevel='1'
+SET system.@system[0].cronloglevel='9'
 EOF
-[ -n "${enable_diag}" ] && B <<EOF
-U luci.diag=diag
-U luci.diag.ping='${DIAG}'
-U luci.diag.route='${DIAG}'
-U luci.diag.dns='${DIAG}'
+[ -n "${enable_diag}" ] && BAT <<EOF
+SET luci.diag=diag
+SET luci.diag.ping='${DIAG}'
+SET luci.diag.route='${DIAG}'
+SET luci.diag.dns='${DIAG}'
 EOF
-[ -n "${device_name}" ] && U system.@system[0].hostname="${device_name}"
+[ -n "${device_name}" ] && SET system.@system[0].hostname="${device_name}"
 [ -n "${root_password}" ] && printf '%s\n%s\n' "${root_password}" "${root_password}" | passwd >/dev/null
-[ -n "${lan_ip_address}" ] && U network.lan.ipaddr="${lan_ip_address}"
-[ -n "${lan_ipv6_address}" ] && U network.lan.ip6addr="${lan_ipv6_address}"
-[ -n "${language}" ] && U system.@system[0].language="${language}"
-[ -n "${timezone}" ] && U system.@system[0].timezone="${timezone}"
-[ -n "${zonename}" ] && U system.@system[0].zonename="${zonename}"
-[ -n "${ssh_interface}" ] && U dropbear.@dropbear[0].Interface="${ssh_interface}"
-[ -n "${ssh_port}" ] && U dropbear.@dropbear[0].Port="${ssh_port}"
+[ -n "${lan_ip_address}" ] && SET network.lan.ipaddr="${lan_ip_address}"
+[ -n "${lan_ipv6_address}" ] && SET network.lan.ip6addr="${lan_ipv6_address}"
+[ -n "${language}" ] && SET system.@system[0].language="${language}"
+[ -n "${timezone}" ] && SET system.@system[0].timezone="${timezone}"
+[ -n "${zonename}" ] && SET system.@system[0].zonename="${zonename}"
+[ -n "${ssh_interface}" ] && SET dropbear.@dropbear[0].Interface="${ssh_interface}"
+[ -n "${ssh_port}" ] && SET dropbear.@dropbear[0].Port="${ssh_port}"
 [ -n "${flow_offloading_type}" ] && {
-    U firewall.@defaults[0].flow_offloading='1'
-    [ "${flow_offloading_type}" = "hardware" ] && U firewall.@defaults[0].flow_offloading_hw='1'
+    SET firewall.@defaults[0].flow_offloading='1'
+    [ "${flow_offloading_type}" = "hardware" ] && SET firewall.@defaults[0].flow_offloading_hw='1'
 }
 [ -n "${wlan_ssid}" ] && [ -n "${wlan_password}" ] && [ "${#wlan_password}" -ge 8 ] && {
     wireless_cfg=$(uci -q show wireless)
     for radio in $(printf '%s\n' "${wireless_cfg}" | grep "wireless\.radio[0-9]*=" | cut -d. -f2 | cut -d= -f1); do
-        B <<EOF
-U wireless.${radio}.disabled='0'
-U wireless.${radio}.country="${COUNTRY}"
+        BAT <<EOF
+SET wireless.${radio}.disabled='0'
+SET wireless.${radio}.country="${COUNTRY}"
 EOF
         band=$(uci -q get wireless.${radio}.band) 
         set -- 30 15 5
@@ -128,88 +128,88 @@ EOF
         fi
         iface="default_${radio}"
         [ -n "$(uci -q get wireless.${iface})" ] && {
-            B <<EOF
-U wireless.${iface}.disabled='0'
-U wireless.${iface}.encryption="${encryption}"
-U wireless.${iface}.ssid="${ssid}"
-U wireless.${iface}.key="${wlan_password}"
+            BAT <<EOF
+SET wireless.${iface}.disabled='0'
+SET wireless.${iface}.encryption="${encryption}"
+SET wireless.${iface}.ssid="${ssid}"
+SET wireless.${iface}.key="${wlan_password}"
 EOF
             if [ -n "${enable_usteer}" ]; then
-                B <<EOF
-U wireless.${iface}.isolate='1'
-U wireless.${iface}.ocv='1'
-U wireless.${iface}.ieee80211r='1'
-U wireless.${iface}.mobility_domain="${mobility_domain:-4f57}"
-U wireless.${iface}.ft_over_ds='1'
-U wireless.${iface}.nasid="${wlan_ssid}${nasid_suffix}"
-U wireless.${iface}.usteer_min_snr="${band_snr}"
-U wireless.${iface}.ieee80211k='1'
-U wireless.${iface}.ieee80211v='1'
+                BAT <<EOF
+SET wireless.${iface}.isolate='1'
+SET wireless.${iface}.ocv='1'
+SET wireless.${iface}.ieee80211r='1'
+SET wireless.${iface}.mobility_domain="${mobility_domain:-4f57}"
+SET wireless.${iface}.ft_over_ds='1'
+SET wireless.${iface}.nasid="${wlan_ssid}${nasid_suffix}"
+SET wireless.${iface}.usteer_min_snr="${band_snr}"
+SET wireless.${iface}.ieee80211k='1'
+SET wireless.${iface}.ieee80211v='1'
 EOF
             fi
         }
     done
     if [ -n "${enable_usteer}" ]; then
-        B <<EOF
-U usteer.@usteer[0].band_steering='1'
-U usteer.@usteer[0].load_balancing='1'
-U usteer.@usteer[0].sta_block_timeout='300'
-U usteer.@usteer[0].min_snr='20'
-U usteer.@usteer[0].max_snr='80'
-U usteer.@usteer[0].signal_diff_threshold='10'
+        BAT <<EOF
+SET usteer.@usteer[0].band_steering='1'
+SET usteer.@usteer[0].load_balancing='1'
+SET usteer.@usteer[0].sta_block_timeout='300'
+SET usteer.@usteer[0].min_snr='20'
+SET usteer.@usteer[0].max_snr='80'
+SET usteer.@usteer[0].signal_diff_threshold='10'
 EOF
     fi
 }
-[ -n "${pppoe_username}" ] && [ -n "${pppoe_password}" ] && B <<EOF
-U network.wan.proto='pppoe'
-U network.wan.username="${pppoe_username}"
-U network.wan.password="${pppoe_password}"
+[ -n "${pppoe_username}" ] && [ -n "${pppoe_password}" ] && BAT <<EOF
+SET network.wan.proto='pppoe'
+SET network.wan.username="${pppoe_username}"
+SET network.wan.password="${pppoe_password}"
 EOF
 [ -n "${dslite_aftr_address}" ] && {
     disable_wan
-    B <<EOF
-U network.${DSL6}=interface
-U network.${DSL6}.proto='dhcpv6'
-U network.${DSL6}.device="${WAN}"
-U network.${DSL6}.reqaddress='try'
-U network.${DSL6}.reqprefix='auto'
-U network.${DSL}=interface
-U network.${DSL}.proto='dslite'
-U network.${DSL}.peeraddr="${dslite_aftr_address}"
-U network.${DSL}.tunlink="${DSL6}"
-U network.${DSL}.mtu='1460'
-U network.${DSL}.encaplimit='ignore'
+    BAT <<EOF
+SET network.${DSL6}=interface
+SET network.${DSL6}.proto='dhcpv6'
+SET network.${DSL6}.device="${WAN}"
+SET network.${DSL6}.reqaddress='try'
+SET network.${DSL6}.reqprefix='auto'
+SET network.${DSL}=interface
+SET network.${DSL}.proto='dslite'
+SET network.${DSL}.peeraddr="${dslite_aftr_address}"
+SET network.${DSL}.tunlink="${DSL6}"
+SET network.${DSL}.mtu='1460'
+SET network.${DSL}.encaplimit='ignore'
 EOF
     dhcp_relay "${DSL6}"
     firewall_wan "${DSL}" "${DSL6}"
 }
 [ -n "${mape_br}" ] && [ -n "${mape_ealen}" ] && {
     disable_wan
-    B <<EOF
-U network.${MAPE6}=interface
-U network.${MAPE6}.proto='dhcpv6'
-U network.${MAPE6}.device="${WAN}"
-U network.${MAPE6}.reqaddress='try'
-U network.${MAPE6}.reqprefix='auto'
-U network.${MAPE}=interface
-U network.${MAPE}.proto='map'
-U network.${MAPE}.maptype='map-e'
-U network.${MAPE}.peeraddr="${mape_br}"
-U network.${MAPE}.ipaddr="${mape_ipv4_prefix}"
-U network.${MAPE}.ip4prefixlen="${mape_ipv4_prefixlen}"
-U network.${MAPE}.ip6prefix="${mape_ipv6_prefix}"
-U network.${MAPE}.ip6prefixlen="${mape_ipv6_prefixlen}"
-U network.${MAPE}.ealen="${mape_ealen}"
-U network.${MAPE}.psidlen="${mape_psidlen}"
-U network.${MAPE}.offset="${mape_psid_offset}"
-U network.${MAPE}.mtu='1460'
-U network.${MAPE}.encaplimit='ignore'
-U network.${MAPE}.legacymap='1'
-U network.${MAPE}.tunlink="${MAPE6}"
+    BAT <<EOF
+SET network.${MAPE6}=interface
+SET network.${MAPE6}.proto='dhcpv6'
+SET network.${MAPE6}.device="${WAN}"
+SET network.${MAPE6}.reqaddress='try'
+SET network.${MAPE6}.reqprefix='auto'
+SET network.${MAPE}=interface
+SET network.${MAPE}.proto='map'
+SET network.${MAPE}.maptype='map-e'
+SET network.${MAPE}.peeraddr="${mape_br}"
+SET network.${MAPE}.ipaddr="${mape_ipv4_prefix}"
+SET network.${MAPE}.ip4prefixlen="${mape_ipv4_prefixlen}"
+SET network.${MAPE}.ip6prefix="${mape_ipv6_prefix}"
+SET network.${MAPE}.ip6prefixlen="${mape_ipv6_prefixlen}"
+SET network.${MAPE}.ealen="${mape_ealen}"
+SET network.${MAPE}.psidlen="${mape_psidlen}"
+SET network.${MAPE}.offset="${mape_psid_offset}"
+SET network.${MAPE}.mtu='1460'
+SET network.${MAPE}.encaplimit='ignore'
+SET network.${MAPE}.legacymap='1'
+SET network.${MAPE}.tunlink="${MAPE6}"
 EOF
     dhcp_relay "${MAPE6}"
     firewall_wan "${MAPE}" "${MAPE6}"
-[ -n "${mape_gua_prefix}" ] && U network.${MAPE6}.ip6prefix="${mape_gua_prefix}"
+[ -n "${mape_gua_prefix}" ] && SET network.${MAPE6}.ip6prefix="${mape_gua_prefix}"
 MAP_SH="/lib/netifd/proto/map.sh"
 cp "$MAP_SH" "$MAP_SH".bak
 cat << 'MAP_SH_EOF' > "$MAP_SH"
@@ -423,63 +423,63 @@ MAP_SH_EOF
 }
 [ -n "${ap_ip_address}" ] && {
     disable_wan
-    B <<EOF
-U network.${AP}=interface
-U network.${AP}.proto='static'
-U network.${AP}.device="${LAN}"
-U network.${AP}.ipaddr="${ap_ip_address}"
-U network.${AP}.netmask='255.255.255.0'
-U network.${AP}.gateway="${ap_gateway}"
-U network.${AP}.dns="${ap_gateway}"
-U network.${AP}.delegate='0'
-U network.${AP6}=interface
-U network.${AP6}.proto='dhcpv6'
-U network.${AP6}.device="@${AP}"
-U network.${AP6}.reqaddress='try'
-U network.${AP6}.reqprefix='no'
+    BAT <<EOF
+SET network.${AP}=interface
+SET network.${AP}.proto='static'
+SET network.${AP}.device="${LAN}"
+SET network.${AP}.ipaddr="${ap_ip_address}"
+SET network.${AP}.netmask='255.255.255.0'
+SET network.${AP}.gateway="${ap_gateway}"
+SET network.${AP}.dns="${ap_gateway}"
+SET network.${AP}.delegate='0'
+SET network.${AP6}=interface
+SET network.${AP6}.proto='dhcpv6'
+SET network.${AP6}.device="@${AP}"
+SET network.${AP6}.reqaddress='try'
+SET network.${AP6}.reqprefix='no'
 EOF
     for r in 0 1 2; do
-    	[ -n "$(uci -q get wireless.default_radio$r)" ] && U wireless.default_radio$r.network="${AP}"
+    	[ -n "$(uci -q get wireless.default_radio$r)" ] && SET wireless.default_radio$r.network="${AP}"
 	done
     [ -x /etc/init.d/odhcpd ] && /etc/init.d/odhcpd disable
     [ -x /etc/init.d/dnsmasq ] && /etc/init.d/dnsmasq disable  
-    D firewall
+    DEL firewall
     [ -x /etc/init.d/firewall ] && /etc/init.d/firewall disable
 }
-[ -n "${enable_ttyd}" ] && B <<EOF
-U ttyd.@ttyd[0].ipv6='1'
-U ttyd.@ttyd[0].command='/bin/login -f root'
+[ -n "${enable_ttyd}" ] && BAT <<EOF
+SET ttyd.@ttyd[0].ipv6='1'
+SET ttyd.@ttyd[0].command='/bin/login -f root'
 EOF
-[ -n "${enable_irqbalance}" ] && B <<EOF
-U irqbalance.irqbalance=irqbalance
-U irqbalance.irqbalance.enabled='1'
+[ -n "${enable_irqbalance}" ] && BAT <<EOF
+SET irqbalance.irqbalance=irqbalance
+SET irqbalance.irqbalance.enabled='1'
 EOF
-[ -n "${enable_samba4}" ] && B <<EOF
-U samba4.@samba[0]=samba
-U samba4.@samba[0].workgroup='WORKGROUP'
-U samba4.@samba[0].charset='UTF-8'
-U samba4.@samba[0].description='Samba on OpenWRT'
-U samba4.@samba[0].enable_extra_tuning='1'
-U samba4.@samba[0].interface='lan'
-U samba4.sambashare=sambashare
-U samba4.sambashare.name="${NAS}"
-U samba4.sambashare.path="${MNT}"
-U samba4.sambashare.read_only='no'
-U samba4.sambashare.force_root='1'
-U samba4.sambashare.guest_ok='yes'
-U samba4.sambashare.inherit_owner='yes'
-U samba4.sambashare.create_mask='0777'
-U samba4.sambashare.dir_mask='0777'
+[ -n "${enable_samba4}" ] && BAT <<EOF
+SET samba4.@samba[0]=samba
+SET samba4.@samba[0].workgroup='WORKGROUP'
+SET samba4.@samba[0].charset='UTF-8'
+SET samba4.@samba[0].description='Samba on OpenWRT'
+SET samba4.@samba[0].enable_extra_tuning='1'
+SET samba4.@samba[0].interface='lan'
+SET samba4.sambashare=sambashare
+SET samba4.sambashare.name="${NAS}"
+SET samba4.sambashare.path="${MNT}"
+SET samba4.sambashare.read_only='no'
+SET samba4.sambashare.force_root='1'
+SET samba4.sambashare.guest_ok='yes'
+SET samba4.sambashare.inherit_owner='yes'
+SET samba4.sambashare.create_mask='0777'
+SET samba4.sambashare.dir_mask='0777'
 EOF
 [ -n "${enable_usb_rndis}" ] && {
     printf '%s\n%s\n' "rndis_host" "cdc_ether" > /etc/modules.d/99-usb-net
-	A network.@device[0].ports='usb0'
+	ADD network.@device[0].ports='usb0'
 }
 [ -n "${enable_usb_gadget}" ] && [ -d /boot ] && {
     ! grep -q 'dtoverlay=dwc2' /boot/config.txt && echo 'dtoverlay=dwc2' >> /boot/config.txt
     sed -i 's/rootwait/& modules-load=dwc2,g_ether/' /boot/cmdline.txt
     printf '%s\n%s\n' "dwc2" "g_ether" > /etc/modules.d/99-gadget
-    sed -i '/^exit 0/i [ -d /sys/class/net/usb0 ] && { A network.@device[0].ports="usb0"; uci commit network; sed -i "/usb0/d" /etc/rc.local; }' /etc/rc.local
+    sed -i '/^exit 0/i [ -d /sys/class/net/usb0 ] && { ADD network.@device[0].ports="usb0"; uci commit network; sed -i "/usb0/d" /etc/rc.local; }' /etc/rc.local
 }
 [ -n "${enable_netopt}" ] && {
     C=/etc/sysctl.d/99-net-opt.conf
@@ -516,9 +516,9 @@ EOF
         elif [ "$MEM" -ge 200 ]; then CACHE_SIZE=1000
         fi
     fi
-    B <<EOF
-U dhcp.@dnsmasq[0].cachesize='${CACHE_SIZE}'
-U dhcp.@dnsmasq[0].nonegcache='${NEG_CACHE}'
+    BAT <<EOF
+SET dhcp.@dnsmasq[0].cachesize='${CACHE_SIZE}'
+SET dhcp.@dnsmasq[0].nonegcache='${NEG_CACHE}'
 EOF
 }
 # BEGIN_CMDS
