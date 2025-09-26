@@ -1,12 +1,15 @@
 #!/bin/sh
 # BEGIN_VARS
 # END_VARS
-U() { uci -q set "$@"; }
-B() { uci -q batch; }
 enable_notes="1"
 enable_ntp="1"
 enable_log="1"
 enable_diag="1"
+U() { uci -q set "$@"; }
+B() { uci -q batch; }
+A() { uci add_list "$@"; }
+D() { uci -q delete "$@"; }
+DL() { uci del_list "$@"; }
 DATE="$(date '+%Y-%m-%d %H:%M')"
 LAN="$(uci -q get network.lan.device || echo lan)"
 WAN="$(uci -q get network.wan.device || echo wan)"
@@ -24,15 +27,15 @@ MNT="/mnt/sda"
 MEM=$(awk '/MemTotal/{print int($2/1024)}' /proc/meminfo)
 exec >/tmp/setup.log 2>&1
 disable_wan() {
-    B <<'DISABLE_WAN_EOF'
+    B <<EOF
 U network.wan.disabled='1'
 U network.wan.auto='0'
 U network.wan6.disabled='1'
 U network.wan6.auto='0'
-DISABLE_WAN_EOF
+EOF
 }
 dhcp_relay() {
-    B <<DHCP_RELAY_EOF
+    B <<EOF
 U dhcp.$1=dhcp
 U dhcp.$1.interface="$1"
 U dhcp.$1.master='1'
@@ -44,46 +47,46 @@ U dhcp.lan.ra='relay'
 U dhcp.lan.dhcpv6='relay'
 U dhcp.lan.ndp='relay'
 U dhcp.lan.force='1'
-DHCP_RELAY_EOF
+EOF
 }
 firewall_wan() {
-    B <<FIREWALL_WAN_EOF
-del_list firewall.@zone[1].network="wan"
-del_list firewall.@zone[1].network="wan6"
-add_list firewall.@zone[1].network="$1"
-add_list firewall.@zone[1].network="$2"
+    B <<EOF
+DL firewall.@zone[1].network="wan"
+DL firewall.@zone[1].network="wan6"
+A firewall.@zone[1].network="$1"
+A firewall.@zone[1].network="$2"
 U firewall.@zone[1].masq='1'
 U firewall.@zone[1].mtu_fix='1'
-FIREWALL_WAN_EOF
+EOF
 }
-[ -n "${enable_notes}" ] && B <<NOTES_EOF
+[ -n "${enable_notes}" ] && B <<EOF
 U system.@system[0].description="${DATE}"
 U system.@system[0].notes="site-u.pages.dev"
-NOTES_EOF
-[ -n "${enable_ntp}" ] && B <<'NTP_EOF'
+EOF
+[ -n "${enable_ntp}" ] && B <<EOF
 U system.ntp=timeserver
 U system.ntp.enabled='1'
 U system.ntp.enable_server='1'
 U system.ntp.interface='lan'
-delete system.ntp.server
-NTP_EOF
+D system.ntp.server
+EOF
 COUNTRY_LC=$(printf '%s' "$COUNTRY" | tr 'A-Z' 'a-z')
 for i in 0 1 2 3; do
     s="${i:0:2}.${COUNTRY_LC}${NTP_DOMAIN}"
     [ $i -gt 1 ] && s="${i}${NTP_DOMAIN}"
-    uci add_list system.ntp.server="$s"
+    A system.ntp.server="$s"
 done
-[ -n "${enable_log}" ] && B <<'LOG_EOF'
+[ -n "${enable_log}" ] && B <<EOF
 U system.@system[0].log_size='32'
 U system.@system[0].conloglevel='1'
 U system.@system[0].cronloglevel='9'
-LOG_EOF
-[ -n "${enable_diag}" ] && B <<DIAG_EOF
+EOF
+[ -n "${enable_diag}" ] && B <<EOF
 U luci.diag=diag
 U luci.diag.ping='${DIAG}'
 U luci.diag.route='${DIAG}'
 U luci.diag.dns='${DIAG}'
-DIAG_EOF
+EOF
 [ -n "${device_name}" ] && U system.@system[0].hostname="${device_name}"
 [ -n "${root_password}" ] && printf '%s\n%s\n' "${root_password}" "${root_password}" | passwd >/dev/null
 [ -n "${lan_ip_address}" ] && U network.lan.ipaddr="${lan_ip_address}"
@@ -100,10 +103,10 @@ DIAG_EOF
 [ -n "${wlan_ssid}" ] && [ -n "${wlan_password}" ] && [ "${#wlan_password}" -ge 8 ] && {
     wireless_cfg=$(uci -q show wireless)
     for radio in $(printf '%s\n' "${wireless_cfg}" | grep "wireless\.radio[0-9]*=" | cut -d. -f2 | cut -d= -f1); do
-        B <<RADIO_EOF
+        B <<EOF
 U wireless.${radio}.disabled='0'
 U wireless.${radio}.country="${COUNTRY}"
-RADIO_EOF
+EOF
         band=$(uci -q get wireless.${radio}.band) 
         set -- 30 15 5
         case "${band}" in
@@ -125,14 +128,14 @@ RADIO_EOF
         fi
         iface="default_${radio}"
         [ -n "$(uci -q get wireless.${iface})" ] && {
-            B <<WLAN_EOF
+            B <<EOF
 U wireless.${iface}.disabled='0'
 U wireless.${iface}.encryption="${encryption}"
 U wireless.${iface}.ssid="${ssid}"
 U wireless.${iface}.key="${wlan_password}"
-WLAN_EOF
+EOF
             if [ -n "${enable_usteer}" ]; then
-                B <<USTEER_EOF
+                B <<EOF
 U wireless.${iface}.isolate='1'
 U wireless.${iface}.ocv='1'
 U wireless.${iface}.ieee80211r='1'
@@ -142,29 +145,29 @@ U wireless.${iface}.nasid="${wlan_ssid}${nasid_suffix}"
 U wireless.${iface}.usteer_min_snr="${band_snr}"
 U wireless.${iface}.ieee80211k='1'
 U wireless.${iface}.ieee80211v='1'
-USTEER_EOF
+EOF
             fi
         }
     done
     if [ -n "${enable_usteer}" ]; then
-        B <<'USTEERCFG_EOF'
+        B <<EOF
 U usteer.@usteer[0].band_steering='1'
 U usteer.@usteer[0].load_balancing='1'
 U usteer.@usteer[0].sta_block_timeout='300'
 U usteer.@usteer[0].min_snr='20'
 U usteer.@usteer[0].max_snr='80'
 U usteer.@usteer[0].signal_diff_threshold='10'
-USTEERCFG_EOF
+EOF
     fi
 }
-[ -n "${pppoe_username}" ] && [ -n "${pppoe_password}" ] && B <<PPPOE_EOF
+[ -n "${pppoe_username}" ] && [ -n "${pppoe_password}" ] && B <<EOF
 U network.wan.proto='pppoe'
 U network.wan.username="${pppoe_username}"
 U network.wan.password="${pppoe_password}"
-PPPOE_EOF
+EOF
 [ -n "${dslite_aftr_address}" ] && {
     disable_wan
-    B <<DSLITE_EOF
+    B <<EOF
 U network.${DSL6}=interface
 U network.${DSL6}.proto='dhcpv6'
 U network.${DSL6}.device="${WAN}"
@@ -176,13 +179,13 @@ U network.${DSL}.peeraddr="${dslite_aftr_address}"
 U network.${DSL}.tunlink="${DSL6}"
 U network.${DSL}.mtu='1460'
 U network.${DSL}.encaplimit='ignore'
-DSLITE_EOF
+EOF
     dhcp_relay "${DSL6}"
     firewall_wan "${DSL}" "${DSL6}"
 }
 [ -n "${mape_br}" ] && [ -n "${mape_ealen}" ] && {
     disable_wan
-    B <<MAPE_EOF
+    B <<EOF
 U network.${MAPE6}=interface
 U network.${MAPE6}.proto='dhcpv6'
 U network.${MAPE6}.device="${WAN}"
@@ -203,7 +206,7 @@ U network.${MAPE}.mtu='1460'
 U network.${MAPE}.encaplimit='ignore'
 U network.${MAPE}.legacymap='1'
 U network.${MAPE}.tunlink="${MAPE6}"
-MAPE_EOF
+EOF
     dhcp_relay "${MAPE6}"
     firewall_wan "${MAPE}" "${MAPE6}"
 [ -n "${mape_gua_prefix}" ] && U network.${MAPE6}.ip6prefix="${mape_gua_prefix}"
@@ -420,7 +423,7 @@ MAP_SH_EOF
 }
 [ -n "${ap_ip_address}" ] && {
     disable_wan
-    B <<AP_EOF
+    B <<EOF
 U network.${AP}=interface
 U network.${AP}.proto='static'
 U network.${AP}.device="${LAN}"
@@ -434,24 +437,24 @@ U network.${AP6}.proto='dhcpv6'
 U network.${AP6}.device="@${AP}"
 U network.${AP6}.reqaddress='try'
 U network.${AP6}.reqprefix='no'
-AP_EOF
+EOF
     for r in 0 1 2; do
     	[ -n "$(uci -q get wireless.default_radio$r)" ] && U wireless.default_radio$r.network="${AP}"
 	done
     [ -x /etc/init.d/odhcpd ] && /etc/init.d/odhcpd disable
     [ -x /etc/init.d/dnsmasq ] && /etc/init.d/dnsmasq disable  
-    uci -q delete firewall
+    D firewall
     [ -x /etc/init.d/firewall ] && /etc/init.d/firewall disable
 }
-[ -n "${enable_ttyd}" ] && B <<'TTYD_EOF'
+[ -n "${enable_ttyd}" ] && B <<EOF
 U ttyd.@ttyd[0].ipv6='1'
 U ttyd.@ttyd[0].command='/bin/login -f root'
-TTYD_EOF
-[ -n "${enable_irqbalance}" ] && B <<'IRQ_EOF'
+EOF
+[ -n "${enable_irqbalance}" ] && B <<EOF
 U irqbalance.irqbalance=irqbalance
 U irqbalance.irqbalance.enabled='1'
-IRQ_EOF
-[ -n "${enable_samba4}" ] && B <<SAMBA_EOF
+EOF
+[ -n "${enable_samba4}" ] && B <<EOF
 U samba4.@samba[0]=samba
 U samba4.@samba[0].workgroup='WORKGROUP'
 U samba4.@samba[0].charset='UTF-8'
@@ -467,16 +470,16 @@ U samba4.sambashare.guest_ok='yes'
 U samba4.sambashare.inherit_owner='yes'
 U samba4.sambashare.create_mask='0777'
 U samba4.sambashare.dir_mask='0777'
-SAMBA_EOF
+EOF
 [ -n "${enable_usb_rndis}" ] && {
     printf '%s\n%s\n' "rndis_host" "cdc_ether" > /etc/modules.d/99-usb-net
-	uci add_list network.@device[0].ports='usb0'
+	A network.@device[0].ports='usb0'
 }
 [ -n "${enable_usb_gadget}" ] && [ -d /boot ] && {
     ! grep -q 'dtoverlay=dwc2' /boot/config.txt && echo 'dtoverlay=dwc2' >> /boot/config.txt
     sed -i 's/rootwait/& modules-load=dwc2,g_ether/' /boot/cmdline.txt
     printf '%s\n%s\n' "dwc2" "g_ether" > /etc/modules.d/99-gadget
-    sed -i '/^exit 0/i [ -d /sys/class/net/usb0 ] && { uci add_list network.@device[0].ports="usb0"; uci commit network; sed -i "/usb0/d" /etc/rc.local; }' /etc/rc.local
+    sed -i '/^exit 0/i [ -d /sys/class/net/usb0 ] && { A network.@device[0].ports="usb0"; uci commit network; sed -i "/usb0/d" /etc/rc.local; }' /etc/rc.local
 }
 [ -n "${enable_netopt}" ] && {
     C=/etc/sysctl.d/99-net-opt.conf
@@ -513,10 +516,10 @@ SAMBA_EOF
         elif [ "$MEM" -ge 200 ]; then CACHE_SIZE=1000
         fi
     fi
-    B <<DNSMASQ_EOF
+    B <<EOF
 U dhcp.@dnsmasq[0].cachesize='${CACHE_SIZE}'
 U dhcp.@dnsmasq[0].nonegcache='${NEG_CACHE}'
-DNSMASQ_EOF
+EOF
 }
 # BEGIN_CMDS
 # END_CMDS
