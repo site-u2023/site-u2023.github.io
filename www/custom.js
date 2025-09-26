@@ -773,6 +773,7 @@ function updatePackageListToTextarea(source = 'unknown') {
     const basePackages = addToSet(new Set(), [
         state.packages.default,
         state.packages.device,
+        state.packages.extra,
     ]);
 
     console.log(`Base device packages: default=${state.packages.default.length}, device=${state.packages.device.length}, extra=${state.packages.extra.length}`);
