@@ -3606,7 +3606,15 @@ function loadUciDefaultsTemplate() {
     
         const sizeElement = document.querySelector('#uci-defaults-size');
         if (sizeElement) {
-            sizeElement.textContent = `${lines} lines · ${kb} KB`;
+            sizeElement.textContent = `setup.sh = ${lines} lines - ${kb} KB`;
+        
+            if (bytes > 20480) {
+                sizeElement.style.color = '#ff0000';
+            } else if (bytes > 20378) {
+                sizeElement.style.color = '#ff8800';
+            } else {
+                sizeElement.style.color = '';
+            }
         }
     }
 
