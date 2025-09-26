@@ -647,9 +647,6 @@ async function updateLanguagePackageCore() {
     }
 
     const hasArch = state.device.arch;
-
-    state.packages.dynamic.add('luci');
-    console.log('Added LuCI package: luci');
   
     if (!lang || lang === config.fallback_language || !hasArch) {
         console.log('Skipping language packages - fallback language or no arch info');
