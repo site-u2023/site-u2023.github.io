@@ -3602,15 +3602,15 @@ function loadUciDefaultsTemplate() {
     function updateFileSize(text) {
         const lines = text.replace(/\n$/, '').split('\n').length;
         const bytes = new Blob([text]).size;
-        const kb = bytes / 1024;
+        const kb = (bytes / 1024).toFixed(1);
 
         const sizeElement = document.querySelector('#uci-defaults-size');
         if (sizeElement) {
-            sizeElement.textContent = `setup.sh = ${lines} lines - ${kb.toFixed(1)} KB`;
+            sizeElement.textContent = `setup.sh = ${lines} lines - ${bytes} bytes (${kb.toFixed(1)} KB)`;
 
-            if (kb > 20) {
+            if (bytes > 20480) {
                 sizeElement.style.color = '#ff0000';
-            } else if (kb >= 19.9) {
+            } else if (bytes >= 20378) {
                 sizeElement.style.color = '#ff8800';
             } else {
                 sizeElement.style.color = '#00cc00';
