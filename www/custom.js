@@ -622,6 +622,8 @@ function toggleVirtualPackagesByType(type, value, enabled) {
 }
 
 async function updateLanguagePackageCore() {
+    state.packages.dynamic.add('luci');
+  
     state.ui.language.selected = config.device_language || config.fallback_language || 'en';
     const lang = state.ui.language.selected;
 
