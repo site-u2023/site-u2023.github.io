@@ -3584,6 +3584,25 @@ function findPackageById(id) {
 
 // ==================== UCI-defaults処理 ====================
 
+function updateFileSize(text) {
+    const lines = text.replace(/\n$/, '').split('\n').length;
+    const bytes = new Blob([text]).size;
+    const kb = (bytes / 1024).toFixed(1);
+
+    const sizeElement = document.querySelector('#uci-defaults-size');
+    if (sizeElement) {
+        sizeElement.textContent = `setup.sh = ${lines} lines - ${kb} KB`;
+
+        if (bytes > 20480) {
+            sizeElement.style.color = '#ff0000';
+        } else if (bytes > 20378) {
+            sizeElement.style.color = '#ff8800';
+        } else {
+            sizeElement.style.color = '';
+        }
+    }
+}
+
 function loadUciDefaultsTemplate() {
     const textarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
     const templatePath = config?.uci_defaults_setup_path || 'uci-defaults/setup.sh';
@@ -3597,25 +3616,6 @@ function loadUciDefaultsTemplate() {
         const lines = textarea.value.split('\n').length;
         textarea.style.height = 'auto';
         textarea.style.height = `${lines * 1}em`;
-    }
-
-    function updateFileSize(text) {
-        const lines = text.replace(/\n$/, '').split('\n').length;
-        const bytes = new Blob([text]).size;
-        const kb = (bytes / 1024).toFixed(1);
-    
-        const sizeElement = document.querySelector('#uci-defaults-size');
-        if (sizeElement) {
-            sizeElement.textContent = `setup.sh = ${lines} lines - ${kb} KB`;
-        
-            if (bytes > 20480) {
-                sizeElement.style.color = '#ff0000';
-            } else if (bytes > 20378) {
-                sizeElement.style.color = '#ff8800';
-            } else {
-                sizeElement.style.color = '';
-            }
-        }
     }
 
     textarea.addEventListener('input', () => {
