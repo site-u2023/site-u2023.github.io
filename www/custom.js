@@ -588,6 +588,11 @@ async function updateLanguagePackageCore() {
         console.log(`Added mandatory package from asu_extra_packages: ${pkg}`);
     }
 
+    if (!state.packages.dynamic.has('luci')) {
+        state.packages.dynamic.add('luci');
+        console.log('Added LuCI package: luci');
+    }
+  
     const removedPackages = [];
     for (const pkg of Array.from(state.packages.dynamic)) {
         if (pkg.startsWith('luci-i18n-')) {
