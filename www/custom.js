@@ -3662,8 +3662,8 @@ exit 0`;
 
 function updateTextareaContent(textarea, variableDefinitions) {
     let content = textarea.value;
-    const beginMarker = '# BEGIN_VARIABLE_DEFINITIONS';
-    const endMarker = '# END_VARIABLE_DEFINITIONS';
+    const beginMarker = '# BEGIN_VARS';
+    const endMarker = '# END_VARS';
     const beginIndex = content.indexOf(beginMarker);
     const endIndex = content.indexOf(endMarker);
     
@@ -3686,8 +3686,8 @@ function updateCustomCommands() {
     
     let content = textarea.value;
     
-    const beginMarker = '# BEGIN_CUSTOM_COMMANDS';
-    const endMarker = '# END_CUSTOM_COMMANDS';
+    const beginMarker = '# BEGIN_CMDS';
+    const endMarker = '# END_CMDS';
     
     const beginIndex = content.indexOf(beginMarker);
     const endIndex = content.indexOf(endMarker);
