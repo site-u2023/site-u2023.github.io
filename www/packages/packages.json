@@ -89,6 +89,10 @@
           "name": "luci-app-ddns"
         },
         {
+          "id": "luci-app-tor",
+          "name": "luci-app-tor"         
+        },
+        {
           "id": "luci-app-mwan3",
           "name": "luci-app-mwan3 (iptables)",
           "dependencies": ["mwan3"]
