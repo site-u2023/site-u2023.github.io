@@ -568,59 +568,6 @@ function updateSetupJsonPackagesCore() {
     }
 }
 
-function toggleVirtualPackage(packageId, enabled) {
-    const pkg = findPackageById(packageId);
-    if (!pkg) {
-        console.warn(`Virtual package not found in packages.json: ${packageId}`);
-        return;
-    }
-
-    const searchId = pkg.uniqueId || pkg.id;
-    const getCheckbox = (id, sid) =>
-        document.querySelector(`[data-package="${id}"], [data-unique-id="${sid}"]`);
-
-    const checkbox = getCheckbox(packageId, searchId);
-    if (!checkbox) {
-        console.warn(`Checkbox not found for virtual package: ${packageId} (searched: ${searchId})`);
-        return;
-    }
-
-    const wasChecked = checkbox.checked;
-    if (wasChecked === enabled) return;
-
-    checkbox.checked = enabled;
-    console.log(`Virtual package ${packageId} (${searchId}): ${enabled ? 'enabled' : 'disabled'}`);
-
-    if (!enabled) return;
-
-    const dependencies = checkbox.getAttribute('data-dependencies');
-    if (!dependencies) return;
-
-    for (const depId of dependencies.split(',')) {
-        const depPkg = findPackageById(depId);
-        if (!depPkg) continue;
-        const depSearchId = depPkg.uniqueId || depPkg.id;
-        const depCheckbox = getCheckbox(depId, depSearchId);
-        if (depCheckbox && !depCheckbox.checked) {
-            depCheckbox.checked = true;
-            console.log(`Virtual dependency ${depId}: enabled`);
-        }
-    }
-}
-
-function toggleVirtualPackagesByType(type, value, enabled) {
-    const mappings = state.config.setup.config.packageMappings;
-
-    const targets = mappings?.[type]?.[value];
-    if (!targets || targets.length === 0) {
-        console.log(`No virtual packages defined for ${type}=${value}`);
-        return;
-    }
-
-    console.log(`Toggle packages for ${type}=${value}: ${targets.join(', ')} -> ${enabled}`);
-    for (const pkgId of targets) toggleVirtualPackage(pkgId, enabled);
-}
-
 async function updateLanguagePackageCore() {
     state.ui.language.selected = config.device_language || config.fallback_language || 'en';
     const lang = state.ui.language.selected;
@@ -653,6 +600,9 @@ async function updateLanguagePackageCore() {
     }
 
     const hasArch = state.device.arch;
+
+    state.packages.dynamic.add('luci');
+    console.log('Added LuCI package: luci');
 
     if (!lang || lang === config.fallback_language || !hasArch) {
         console.log('Skipping language packages - fallback language or no arch info');
