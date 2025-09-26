@@ -340,10 +340,6 @@ details[open] summary {
     font-weight: normal;
 }
 
-#uci-defaults-size {
-    color: var(--text-secondary);
-}
-
 /* detailsが閉じていても表示 */
 #uci-defaults-details summary .file-size-info {
     display: block !important;
