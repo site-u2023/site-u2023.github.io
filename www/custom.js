@@ -3697,13 +3697,23 @@ function updateTextareaContent(textarea, variableDefinitions) {
         const newSection = variableDefinitions ? '\n' + variableDefinitions + '\n' : '\n';
         textarea.value = beforeSection + newSection + afterSection;
         textarea.rows = textarea.value.split('\n').length + 1;
-        
-        const lines = textarea.value.replace(/\n$/, '').split('\n').length;
-        const bytes = new Blob([textarea.value]).size;
+
+        const text = textarea.value;
+        const lines = text.replace(/\n$/, '').split('\n').length;
+        const bytes = new Blob([text]).size;
         const kb = (bytes / 1024).toFixed(1);
+
         const sizeElement = document.querySelector('#uci-defaults-size');
         if (sizeElement) {
-            sizeElement.textContent = `${lines} lines · ${kb} KB`;
+            sizeElement.textContent = `setup.sh = ${lines} lines - ${kb} KB`;
+            
+            if (bytes > 20480) {
+                sizeElement.style.color = '#ff0000';
+            } else if (bytes > 18432) {
+                sizeElement.style.color = '#ff8800';
+            } else {
+                sizeElement.style.color = '';
+            }
         }
     }
 }
