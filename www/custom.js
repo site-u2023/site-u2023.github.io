@@ -3606,7 +3606,7 @@ function loadUciDefaultsTemplate() {
     
         const sizeElement = document.querySelector('#uci-defaults-size');
         if (sizeElement) {
-            sizeElement.textContent = `setup.sh = ${lines} lines - ${kb} KB`;
+            sizeElement.textContent = `setup.sh = ${lines} lines - ${bytes} bytes (${kb.toFixed(1)} KB)`;
         
             if (bytes > 20480) {
                 sizeElement.style.color = '#ff0000';
@@ -3703,7 +3703,7 @@ function updateTextareaContent(textarea, variableDefinitions) {
         const bytes = new Blob([text]).size;
         const kb = (bytes / 1024).toFixed(1);
 
-        const sizeElement = document.querySelector('#uci-defaults-size');
+        sizeElement.textContent = `setup.sh = ${lines} lines - ${bytes} bytes (${kb.toFixed(1)} KB)`;
         if (sizeElement) {
             sizeElement.textContent = `setup.sh = ${lines} lines - ${kb} KB`;
             
@@ -3754,7 +3754,7 @@ function updateCustomCommands() {
         const lineCount = textarea.value.replace(/\n$/, '').split('\n').length;
         const bytes = new Blob([textarea.value]).size;
         const kb = (bytes / 1024).toFixed(1);
-        const sizeElement = document.querySelector('#uci-defaults-size');
+        sizeElement.textContent = `setup.sh = ${lines} lines - ${bytes} bytes (${kb.toFixed(1)} KB)`;
         if (sizeElement) {
             sizeElement.textContent = `setup.sh = ${lines} lines - ${kb} KB`;
             
