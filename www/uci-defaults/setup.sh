@@ -209,6 +209,7 @@ MAP_SH="/lib/netifd/proto/map.sh"
 cp "$MAP_SH" "$MAP_SH".bak
 cat << 'MAP_SH_EOF' > "$MAP_SH"
 #!/bin/sh
+# github.com/fakemanhk/openwrt-jp-ipoe
 DONT_SNAT_TO="0"
 [ -n "$INCLUDE_ONLY" ] || {
 	. /lib/functions.sh
