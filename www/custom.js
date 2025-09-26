@@ -622,8 +622,6 @@ function toggleVirtualPackagesByType(type, value, enabled) {
 }
 
 async function updateLanguagePackageCore() {
-    state.packages.dynamic.add('luci');
-  
     state.ui.language.selected = config.device_language || config.fallback_language || 'en';
     const lang = state.ui.language.selected;
 
@@ -636,6 +634,11 @@ async function updateLanguagePackageCore() {
     }
 
     console.log(`Language package update - Selected language: ${lang}`);
+
+    if (!state.packages.dynamic.has('luci')) {
+        state.packages.dynamic.add('luci');
+        console.log('[TRACE] Added mandatory LuCI package before removing i18n');
+    }
 
     const removedPackages = [];
     for (const pkg of Array.from(state.packages.dynamic)) {
