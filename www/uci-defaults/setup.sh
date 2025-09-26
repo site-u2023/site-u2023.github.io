@@ -1,6 +1,6 @@
 #!/bin/sh
-# BEGIN_VARIABLE_DEFINITIONS
-# END_VARIABLE_DEFINITIONS
+# BEGIN_VARS
+# END_VARS
 enable_notes="1"
 enable_ntp="1"
 enable_log="1"
@@ -206,7 +206,6 @@ MAP_SH="/lib/netifd/proto/map.sh"
 cp "$MAP_SH" "$MAP_SH".bak
 cat << 'MAP_SH_EOF' > "$MAP_SH"
 #!/bin/sh
-# github.com/fakemanhk/openwrt-jp-ipoe
 DONT_SNAT_TO="0"
 [ -n "$INCLUDE_ONLY" ] || {
 	. /lib/functions.sh
@@ -513,8 +512,8 @@ set dhcp.@dnsmasq[0].cachesize='${CACHE_SIZE}'
 set dhcp.@dnsmasq[0].nonegcache='${NEG_CACHE}'
 DNSMASQ_EOF
 }
-# BEGIN_CUSTOM_COMMANDS
-# END_CUSTOM_COMMANDS
+# BEGIN_CMDS
+# END_CMDS
 uci commit 2>/dev/null
 [ -n "${backup_path}" ] && sysupgrade -q -k -b "${backup_path}"
 echo "All done!"
