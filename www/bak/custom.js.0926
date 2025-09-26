@@ -773,7 +773,6 @@ function updatePackageListToTextarea(source = 'unknown') {
     const basePackages = addToSet(new Set(), [
         state.packages.default,
         state.packages.device,
-        state.packages.extra
     ]);
 
     console.log(`Base device packages: default=${state.packages.default.length}, device=${state.packages.device.length}, extra=${state.packages.extra.length}`);
@@ -840,28 +839,39 @@ function updatePackageListToTextarea(source = 'unknown') {
         total: uniquePackages.length
     });
 
-    if (textarea) {
-        const baseSet = new Set([...state.packages.default, ...state.packages.device, ...state.packages.extra]);
-        const addedPackages = uniquePackages.filter(pkg => !baseSet.has(pkg));
-        
-        let totalBytes = 0;
-        for (const pkg of addedPackages) {
-            const sizeCacheKey = `${state.device.version}:${state.device.arch}:${pkg}`;
-            const size = state.cache.packageSizes.get(sizeCacheKey);
-            if (typeof size === 'number' && size > 0) {
-                totalBytes += size;
-            }
+if (textarea) {
+    const baseSet = new Set([...state.packages.default, ...state.packages.device]);  // extraを削除
+    const addedPackages = uniquePackages.filter(pkg => !baseSet.has(pkg));
+    
+    let totalBytes = 0;
+    for (const pkg of addedPackages) {
+        const sizeCacheKey = `${state.device.version}:${state.device.arch}:${pkg}`;
+        const size = state.cache.packageSizes.get(sizeCacheKey);
+        if (typeof size === 'number' && size > 0) {
+            totalBytes += size;
         }
+    }
+    let baseBytes = 0;
+    for (const pkg of [...state.packages.default, ...state.packages.device]) {  // extraを削除
+        const sizeCacheKey = `${state.device.version}:${state.device.arch}:${pkg}`;
+        const size = state.cache.packageSizes.get(sizeCacheKey);
+        if (typeof size === 'number' && size > 0) {
+            baseBytes += size;
+        }
+    }
 
         textarea.value = uniquePackages.join(' ');
         textarea.style.height = 'auto';
         textarea.style.height = textarea.scrollHeight + 'px';
-
-        const totalSizeEl = document.querySelector('#postinst-total-size');
-        if (totalSizeEl) {
-            const totalKB = (totalBytes / 1024).toFixed(1);
-            const addedText = current_language_json?.['tr-added-size'] || 'Added';
-            totalSizeEl.innerHTML = `<span class="tr-added-size">${addedText}</span>: ${totalKB} KB`;
+        const sizeBreakdownEl = document.querySelector('#package-size-breakdown');
+        if (sizeBreakdownEl) {
+            const baseKB = (baseBytes / 1024).toFixed(1);
+            const baseMB = (baseBytes / (1024 * 1024)).toFixed(1);     
+            const addedKB = (totalBytes / 1024).toFixed(1);
+            const addedMB = (totalBytes / (1024 * 1024)).toFixed(1);
+            const totalKB = ((baseBytes + totalBytes) / 1024).toFixed(1);
+            const totalMB = ((baseBytes + totalBytes) / (1024 * 1024)).toFixed(1);
+            sizeBreakdownEl.textContent = `${current_language_json['tr-base-size'] || 'Base'}: ${baseMB} MB (${baseKB} KB) + ${current_language_json['tr-added-size'] || 'Added'}: ${addedMB} MB (${addedKB} KB) = ${current_language_json['tr-total-size'] || 'Total'}: ${totalMB} MB (${totalKB} KB)`;
         }
     }
 
@@ -1179,7 +1189,17 @@ async function searchInFeed(query, feed, version, arch) {
             let list = [];
             if (isSnapshot) {
                 const data = await resp.json();
-                list = data.packages ? Object.keys(data.packages) : [];
+                if (data.packages && typeof data.packages === 'object') {
+                    for (const [pkgName, pkgData] of Object.entries(data.packages)) {
+                        list.push(pkgName);
+                        if (pkgData && typeof pkgData.size === 'number' && pkgData.size > 0) {
+                            const sizeCacheKey = `${version}:${arch}:${pkgName}`;
+                            state.cache.packageSizes.set(sizeCacheKey, pkgData.size);
+                        }
+                    }
+                } else {
+                    list = [];
+                }
             } else {
                 const text = await resp.text();
                 const lines = text.split('\n');
@@ -1858,7 +1878,42 @@ async function verifyAllPackages() {
         console.warn('The following pre-selected packages are not available:', checkedUnavailable);
     }
     
+    updatePackageSizeDisplay();
+    
     updatePackageListToTextarea('package-verification-complete');
+}
+
+function updatePackageSizeDisplay() {
+    if (!state.device.version || !state.device.arch) return;
+    
+    document.querySelectorAll('.package-selector-checkbox').forEach(checkbox => {
+        const packageId = checkbox.getAttribute('data-package');
+        if (!packageId) return;
+        
+        const label = checkbox.closest('label');
+        if (!label) return;
+        
+        const packageName = label.getAttribute('data-package-name');
+        if (!packageName) return;
+        
+        const sizeCacheKey = `${state.device.version}:${state.device.arch}:${packageId}`;
+        const sizeBytes = state.cache.packageSizes.get(sizeCacheKey);
+        
+        const textElement = label.querySelector('a.package-link') || label.querySelector('span');
+        if (!textElement) return;
+        
+        const currentText = textElement.textContent;
+        const baseText = currentText.split(':')[0];
+
+        if (typeof sizeBytes === 'number' && sizeBytes > 0) {
+            const sizeKB = (sizeBytes / 1024).toFixed(1);
+            textElement.textContent = `${baseText}: ${sizeKB} KB`;
+        } else {
+            textElement.textContent = baseText;
+        }
+    });
+    
+    console.log('Package size display updated');
 }
 
 function updatePackageAvailabilityUI(uniqueId, isAvailable) {
@@ -3173,40 +3228,16 @@ function applyIspAutoConfig(apiInfo) {
 function updateAutoConnectionInfo(apiInfo) {
     const autoInfo = document.querySelector('#auto-info');
     if (!autoInfo) return;
-
     let infoText = '';
-
     if (apiInfo?.isp) {
-        infoText += `ISP: ${apiInfo.isp}\n`;
+        infoText += `ISP: ${apiInfo.isp}<br>`;
         if (apiInfo.as) {
-            infoText += `AS: ${apiInfo.as}\n`;
+            infoText += `AS: ${apiInfo.as}<br>`;
         }
     }
     
     const connectionType = getConnectionType(apiInfo);
-
     if (connectionType === 'MAP-E') {
-        infoText += `${current_language_json['tr-auto-detection'] || 'Auto Detection:'} ${connectionType}\n`;
-      
-        infoText += `------------------------------------------------------\n`;
-        infoText += `${current_language_json['tr-mape-notice1'] || 'Note: Actual values may differ.'}\n`;
-        infoText += `------------------------------------------------------\n`;
-        infoText += `option peeraddr ${apiInfo.mape.brIpv6Address}\n`;
-        infoText += `option ipaddr ${apiInfo.mape.ipv4Prefix}\n`;
-        infoText += `option ip4prefixlen ${apiInfo.mape.ipv4PrefixLength}\n`;
-        infoText += `option ip6prefix ${apiInfo.mape.ipv6Prefix}\n`;
-        infoText += `option ip6prefixlen ${apiInfo.mape.ipv6PrefixLength}\n`;
-        infoText += `option ealen ${apiInfo.mape.eaBitLength}\n`;
-        infoText += `option psidlen ${apiInfo.mape.psidlen}\n`;
-        infoText += `option offset ${apiInfo.mape.psIdOffset}\n`;
-        infoText += `\n`;
-        infoText += `export LEGACY=1\n`;
-        infoText += `------------------------------------------------------\n`;
-        infoText += `(config-softwire)# map-version draft\n`;
-        infoText += `(config-softwire)# rule <0-65535> ipv4-prefix ${apiInfo.mape.ipv4Prefix}/${apiInfo.mape.ipv4PrefixLength} ipv6-prefix ${apiInfo.mape.ipv6Prefix}/${apiInfo.mape.ipv6PrefixLength} [ea-length ${apiInfo.mape.eaBitLength}|psid-length ${apiInfo.mape.psidlen}] [offset ${apiInfo.mape.psIdOffset}] [forwarding]\n`;
-        infoText += `\n`;
-        infoText += `Powered by https://ipv4.web.fc2.com/map-e.html\n`;
-        
         let gua = apiInfo.guaPrefix;
         if (!gua) {
             try {
@@ -3217,32 +3248,48 @@ function updateAutoConnectionInfo(apiInfo) {
             const guaField = document.querySelector('#mape-gua-prefix');
             if (guaField && guaField.value) gua = guaField.value;
         }
+        
+        infoText += `${current_language_json['tr-auto-detection'] || 'Auto Detection:'} ${connectionType}<br>`;
+        infoText += `<hr>`;
+        infoText += `<p>${current_language_json['tr-mape-notice1'] || 'Note: Actual values may differ.'}</p>`;
+        infoText += `option peeraddr ${apiInfo.mape.brIpv6Address}<br>`;
+        infoText += `option ipaddr ${apiInfo.mape.ipv4Prefix}<br>`;
+        infoText += `option ip4prefixlen ${apiInfo.mape.ipv4PrefixLength}<br>`;
+        infoText += `option ip6prefix ${apiInfo.mape.ipv6Prefix}<br>`;
+        infoText += `option ip6prefixlen ${apiInfo.mape.ipv6PrefixLength}<br>`;
+        infoText += `option ealen ${apiInfo.mape.eaBitLength}<br>`;
+        infoText += `option psidlen ${apiInfo.mape.psidlen}<br>`;
+        infoText += `option offset ${apiInfo.mape.psIdOffset}<br>`;
         if (gua) {
-            infoText += `GUA: ${gua}`;
+            infoText += `option ip6prefix_gua ${gua}<br>`;
         }
+        infoText += `<br>`;
+        infoText += `export LEGACY=1<br>`;
+        infoText += `<hr>`;
+        infoText += `(config-softwire)# <strong>map-version draft</strong><br>`;
+        infoText += `(config-softwire)# <strong>rule &lt;0-65535&gt; ipv4-prefix ${apiInfo.mape.ipv4Prefix}/${apiInfo.mape.ipv4PrefixLength} ipv6-prefix ${apiInfo.mape.ipv6Prefix}/${apiInfo.mape.ipv6PrefixLength}</strong> [ea-length ${apiInfo.mape.eaBitLength}|psid-length ${apiInfo.mape.psidlen}] [offset ${apiInfo.mape.psIdOffset}] [forwarding]<br>`;
+        infoText += `<hr>`;
+        infoText += `<div style="text-align: center;"><a href="https://ipv4.web.fc2.com/map-e.html" target="_blank">Powered by config-softwire</a></div>`;     
     } else if (connectionType === 'DS-Lite') {
-        infoText += `${current_language_json['tr-auto-detection'] || 'Auto Detection:'} ${connectionType}\n`;
-      
-        infoText += `------------------------------------------------------\n`;
-        infoText += `${current_language_json['tr-dslite-notice1'] || 'Note: Actual values may differ.'}\n`;
-        infoText += `------------------------------------------------------\n`;
+        infoText += `${current_language_json['tr-auto-detection'] || 'Auto Detection:'} ${connectionType}<br>`;
+        infoText += `<hr>`;
+        infoText += `<h4>${current_language_json['tr-dslite-notice1'] || 'Note: Actual values may differ.'}</h4>`;
+        infoText += `<hr>`;
         if (apiInfo.aftr?.aftrIpv6Address) {
-            infoText += `option aftr_addr ${apiInfo.aftr.aftrIpv6Address}\n`;
+            infoText += `option aftr_addr ${apiInfo.aftr.aftrIpv6Address}<br>`;
         }
         if (apiInfo.aftr?.aftrType) {
-            infoText += `option aftr_type ${apiInfo.aftr.aftrType}\n`;
+            infoText += `option aftr_type ${apiInfo.aftr.aftrType}<br>`;
         }
         if (apiInfo.aftr?.jurisdiction) {
-            infoText += `option area ${apiInfo.aftr.jurisdiction}\n`;
+            infoText += `option area ${apiInfo.aftr.jurisdiction}<br>`;
         }
-        infoText += `------------------------------------------------------\n`;
-        infoText += `Powered by https://ipv4.web.fc2.com/map-e.html`;
+        infoText += `<hr>`;
     } else {
-        infoText += `${current_language_json['tr-auto-detection'] || 'Auto Detection:'} ${connectionType}\n`;
+        infoText += `${current_language_json['tr-auto-detection'] || 'Auto Detection:'} ${connectionType}<br>`;
         infoText += `${current_language_json['tr-standard-notice'] || 'Standard connection will be used'}`;
     }
-
-    autoInfo.textContent = infoText;
+    autoInfo.innerHTML = infoText;
 }
 
 // ==================== パッケージ管理 ====================
@@ -3327,6 +3374,12 @@ function generatePackageSelector() {
         });
     } else {
         console.log('Device architecture not available, skipping package verification');
+    }
+    
+    if (state.cache.packageSizes.size > 0) {
+        requestAnimationFrame(() => {
+            updatePackageSizeDisplay();
+        });
     }
 }
 
@@ -3457,22 +3510,34 @@ function createPackageCheckbox(pkg, isChecked = false, isDependency = false) {
     }
     
     checkbox.addEventListener('change', handlePackageSelection);
+
+    let sizeText = '';
+    if (state.device.version && state.device.arch) {
+        const sizeCacheKey = `${state.device.version}:${state.device.arch}:${pkg.id}`;
+        const sizeBytes = state.cache.packageSizes.get(sizeCacheKey);
+        if (typeof sizeBytes === 'number' && sizeBytes > 0) {
+            const sizeKB = (sizeBytes / 1024).toFixed(1);
+            sizeText = `: ${sizeKB} KB`;
+        }
+    }
     
     if (config?.package_url) {
         const link = document.createElement('a');
         link.href = config.package_url.replace("{id}", encodeURIComponent(pkg.id));
         link.target = '_blank';
         link.className = 'package-link';
-        link.textContent = pkg.name || pkg.id;
+        link.textContent = (pkg.name || pkg.id) + sizeText;
         link.onclick = (e) => e.stopPropagation();
         label.appendChild(checkbox);
         label.appendChild(link);
     } else {
         const span = document.createElement('span');
-        span.textContent = pkg.name || pkg.id;
+        span.textContent = (pkg.name || pkg.id) + sizeText;
         label.appendChild(checkbox);
         label.appendChild(span);
     }
+    
+    label.setAttribute('data-package-name', pkg.name || pkg.id);
     
     return label;
 }
@@ -3519,6 +3584,27 @@ function findPackageById(id) {
 
 // ==================== UCI-defaults処理 ====================
 
+function updateUciDefaultsFileSize(text) {
+    const lines = text.replace(/\n$/, '').split('\n').length;
+    const bytes = new Blob([text]).size;
+    const kb = (bytes / 1024).toFixed(1);
+    
+    const sizeElement = document.querySelector('#uci-defaults-size');
+    if (sizeElement) {
+        sizeElement.textContent = `setup.sh = ${lines} lines - ${bytes} bytes: ${kb} KB`;
+        
+        if (bytes > 20480) {
+            sizeElement.style.color = '#ff0000';
+        } else if (bytes > 20377) {
+            sizeElement.style.color = '#ff8800';
+        } else {
+            sizeElement.style.color = '#00cc00';
+        }
+    }
+    
+    return lines;
+}
+
 function loadUciDefaultsTemplate() {
     const textarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
     const templatePath = config?.uci_defaults_setup_path || 'uci-defaults/setup.sh';
@@ -3534,9 +3620,16 @@ function loadUciDefaultsTemplate() {
         textarea.style.height = `${lines * 1}em`;
     }
 
-    textarea.addEventListener('input', autoResize);
+    textarea.addEventListener('input', () => {
+        autoResize();
+        updateUciDefaultsFileSize(textarea.value);
+    });
+    
     textarea.addEventListener('paste', () => {
-        requestAnimationFrame(autoResize);
+        requestAnimationFrame(() => {
+            autoResize();
+            updateUciDefaultsFileSize(textarea.value);
+        });
     });
 
     fetch(templatePath + '?t=' + Date.now())
@@ -3547,21 +3640,68 @@ function loadUciDefaultsTemplate() {
         .then(text => {
             textarea.value = text;
             console.log('setup.sh loaded successfully');
+            updateUciDefaultsFileSize(text);
             updateVariableDefinitions();
             autoResize();
         })
         .catch(err => {
             console.error('Failed to load setup.sh:', err);
-            textarea.value = `#!/bin/sh
-# BEGIN_VARIABLE_DEFINITIONS
-# END_VARIABLE_DEFINITIONS
+            const defaultText = `#!/bin/sh
+# BEGIN_VARS
+# END_VARS
 
-# BEGIN_CUSTOM_COMMANDS
-# END_CUSTOM_COMMANDS
+# BEGIN_CMDS
+# END_CMDS
 
 exit 0`;
+            textarea.value = defaultText;
+            updateUciDefaultsFileSize(defaultText);
             autoResize();
         });
+}
+
+function updateTextareaContent(textarea, variableDefinitions) {
+    let content = textarea.value;
+    const beginMarker = '# BEGIN_VARS';
+    const endMarker = '# END_VARS';
+    const beginIndex = content.indexOf(beginMarker);
+    const endIndex = content.indexOf(endMarker);
+    
+    if (beginIndex !== -1 && endIndex !== -1) {
+        const beforeSection = content.substring(0, beginIndex + beginMarker.length);
+        const afterSection = content.substring(endIndex);
+        const newSection = variableDefinitions ? '\n' + variableDefinitions + '\n' : '\n';
+        textarea.value = beforeSection + newSection + afterSection;
+        
+        const lines = updateUciDefaultsFileSize(textarea.value);
+        textarea.rows = lines + 1;
+    }
+}
+
+function updateCustomCommands() {
+    const textarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
+    if (!textarea) return;
+    
+    const customCommands = state.ui.managers.commands ? state.ui.managers.commands.getAllValues().join('\n') : '';
+    
+    let content = textarea.value;
+    
+    const beginMarker = '# BEGIN_CMDS';
+    const endMarker = '# END_CMDS';
+    
+    const beginIndex = content.indexOf(beginMarker);
+    const endIndex = content.indexOf(endMarker);
+    
+    if (beginIndex !== -1 && endIndex !== -1) {
+        const beforeSection = content.substring(0, beginIndex + beginMarker.length);
+        const afterSection = content.substring(endIndex);
+        const newSection = customCommands ? '\n' + customCommands + '\n' : '\n';
+        
+        textarea.value = beforeSection + newSection + afterSection;
+        
+        const lines = updateUciDefaultsFileSize(textarea.value);
+        textarea.rows = lines + 1;
+    }
 }
 
 function updateVariableDefinitions() {
@@ -3590,22 +3730,6 @@ function updateVariableDefinitions() {
     updateTextareaContent(textarea, variableDefinitions);
 }
 
-function updateTextareaContent(textarea, variableDefinitions) {
-    let content = textarea.value;
-    const beginMarker = '# BEGIN_VARIABLE_DEFINITIONS';
-    const endMarker = '# END_VARIABLE_DEFINITIONS';
-    const beginIndex = content.indexOf(beginMarker);
-    const endIndex = content.indexOf(endMarker);
-    
-    if (beginIndex !== -1 && endIndex !== -1) {
-        const beforeSection = content.substring(0, beginIndex + beginMarker.length);
-        const afterSection = content.substring(endIndex);
-        const newSection = variableDefinitions ? '\n' + variableDefinitions + '\n' : '\n';
-        textarea.value = beforeSection + newSection + afterSection;
-        textarea.rows = textarea.value.split('\n').length + 1;
-    }
-}
-
 function generateVariableDefinitions(values) {
     const lines = [];
     Object.entries(values).forEach(([key, value]) => {
@@ -3613,32 +3737,6 @@ function generateVariableDefinitions(values) {
         lines.push(`${key}='${escapedValue}'`);
     });
     return lines.join('\n');
-}
-
-function updateCustomCommands() {
-    const textarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
-    if (!textarea) return;
-    
-    const customCommands = state.ui.managers.commands ? state.ui.managers.commands.getAllValues().join('\n') : '';
-    
-    let content = textarea.value;
-    
-    const beginMarker = '# BEGIN_CUSTOM_COMMANDS';
-    const endMarker = '# END_CUSTOM_COMMANDS';
-    
-    const beginIndex = content.indexOf(beginMarker);
-    const endIndex = content.indexOf(endMarker);
-    
-    if (beginIndex !== -1 && endIndex !== -1) {
-        const beforeSection = content.substring(0, beginIndex + beginMarker.length);
-        const afterSection = content.substring(endIndex);
-        const newSection = customCommands ? '\n' + customCommands + '\n' : '\n';
-        
-        textarea.value = beforeSection + newSection + afterSection;
-        
-        const lines = textarea.value.split('\n').length;
-        textarea.rows = lines + 1;
-    }
 }
 
 // ==================== フォーム監視 ====================
