@@ -352,6 +352,10 @@
           "name": "luci-app-attendedsysupgrade"
         },
         {
+          "id": "owut",
+          "name": "owut",
+        },
+        {
           "id": "luci-app-wireguard",
           "name": "luci-app-wireguard",
           "dependencies": ["wireguard-tools-app"]
