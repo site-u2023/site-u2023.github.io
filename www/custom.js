@@ -3599,65 +3599,6 @@ function loadUciDefaultsTemplate() {
         textarea.style.height = `${lines * 1}em`;
     }
 
-    function updateFileSize(text) {
-        const lines = text.replace(/\n$/, '').split('\n').length;
-        const bytes = new Blob([text]).size;
-        const kb = (bytes / 1024).toFixed(1);
-    
-        const sizeElement = document.querySelector('#uci-defaults-size');
-        if (sizeElement) {
-            sizeElement.textContent = `setup.sh = ${lines} lines - ${kb} KB`;
-        
-            if (bytes > 20480) {
-                sizeElement.style.color = '#ff0000';
-            } else if (bytes > 20378) {
-                sizeElement.style.color = '#ff8800';
-            } else {
-                sizeElement.style.color = '#00cc00';
-            }
-        }
-    }
-
-    textarea.addEventListener('input', () => {
-        autoResize();
-        updateFileSize(textarea.value);
-    });
-    
-    textarea.addEventListener('paste', () => {
-        requestAnimationFrame(() => {
-            autoResize();
-            updateFileSize(textarea.value);
-        });
-    });
-
-    fetch(templatePath + '?t=' + Date.now())
-        .then(r => { 
-            if (!r.ok) throw new Error(`Failed to load setup.sh: ${r.statusText}`); 
-            return r.text(); 
-        })
-        .then(text => {
-            textarea.value = text;
-            console.log('setup.sh loaded successfully');
-            updateFileSize(text);
-            updateVariableDefinitions();
-            autoResize();
-        })
-        .catch(err => {
-            console.error('Failed to load setup.sh:', err);
-            const defaultText = `#!/bin/sh
-# BEGIN_VARIABLE_DEFINITIONS
-# END_VARIABLE_DEFINITIONS
-
-# BEGIN_CUSTOM_COMMANDS
-# END_CUSTOM_COMMANDS
-
-exit 0`;
-            textarea.value = defaultText;
-            updateFileSize(defaultText);
-            autoResize();
-        });
-}
-
 function updateVariableDefinitions() {
     const textarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
     if (!textarea) return;
