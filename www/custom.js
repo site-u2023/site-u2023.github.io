@@ -3597,7 +3597,7 @@ function updateUciDefaultsFileSize(text) {
         
         if (bytes > 20480) {
             sizeElement.style.color = '#ff0000';
-        } else if (bytes > 19968) {
+        } else if (bytes > 20070) {
             sizeElement.style.color = '#ff8800';
         } else {
             sizeElement.style.color = '#00cc00';
