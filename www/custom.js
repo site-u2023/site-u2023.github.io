@@ -841,7 +841,8 @@ function updatePackageListToTextarea(source = 'unknown') {
     });
 
 if (textarea) {
-    const baseSet = new Set([...state.packages.default, ...state.packages.device]);  // extraを削除
+    const baseSet = new Set([...state.packages.default, ...state.packages.device, ...state.packages.extra]);
+  
     const addedPackages = uniquePackages.filter(pkg => !baseSet.has(pkg));
     
     let totalBytes = 0;
@@ -853,7 +854,7 @@ if (textarea) {
         }
     }
     let baseBytes = 0;
-    for (const pkg of [...state.packages.default, ...state.packages.device]) {  // extraを削除
+    for (const pkg of [...state.packages.default, ...state.packages.device, ...state.packages.extra]) {
         const sizeCacheKey = `${state.device.version}:${state.device.arch}:${pkg}`;
         const size = state.cache.packageSizes.get(sizeCacheKey);
         if (typeof size === 'number' && size > 0) {
