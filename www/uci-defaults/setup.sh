@@ -66,7 +66,9 @@ set system.ntp.interface='lan'
 delete system.ntp.server
 NTP_EOF
 COUNTRY_LC=$(printf '%s' "$COUNTRY" | tr 'A-Z' 'a-z')
-for s in "0.${COUNTRY_LC}${NTP_DOMAIN}" "1.${COUNTRY_LC}${NTP_DOMAIN}" "2${NTP_DOMAIN}" "3${NTP_DOMAIN}"; do
+for i in 0 1 2 3; do
+    s="${i:0:2}.${COUNTRY_LC}${NTP_DOMAIN}"
+    [ $i -gt 1 ] && s="${i}${NTP_DOMAIN}"
     uci add_list system.ntp.server="$s"
 done
 [ -n "${enable_log}" ] && uci -q batch <<'LOG_EOF'
@@ -89,11 +91,10 @@ DIAG_EOF
 [ -n "${zonename}" ] && uci -q set system.@system[0].zonename="${zonename}"
 [ -n "${ssh_interface}" ] && uci -q set dropbear.@dropbear[0].Interface="${ssh_interface}"
 [ -n "${ssh_port}" ] && uci -q set dropbear.@dropbear[0].Port="${ssh_port}"
-[ "${flow_offloading_type}" = "software" ] && uci -q set firewall.@defaults[0].flow_offloading='1'
-[ "${flow_offloading_type}" = "hardware" ] && uci -q batch <<'FLOWHARD_EOF'
-set firewall.@defaults[0].flow_offloading='1'
-set firewall.@defaults[0].flow_offloading_hw='1'
-FLOWHARD_EOF
+[ -n "${flow_offloading_type}" ] && {
+    uci -q set firewall.@defaults[0].flow_offloading='1'
+    [ "${flow_offloading_type}" = "hardware" ] && uci -q set firewall.@defaults[0].flow_offloading_hw='1'
+}
 [ -n "${wlan_ssid}" ] && [ -n "${wlan_password}" ] && [ "${#wlan_password}" -ge 8 ] && {
     wireless_cfg=$(uci -q show wireless)
     for radio in $(printf '%s\n' "${wireless_cfg}" | grep "wireless\.radio[0-9]*=" | cut -d. -f2 | cut -d= -f1); do
@@ -101,13 +102,15 @@ FLOWHARD_EOF
 set wireless.${radio}.disabled='0'
 set wireless.${radio}.country="${COUNTRY}"
 RADIO_EOF
-        band=$(uci -q get wireless.${radio}.band)
-        case "${band}" in
-            2g) suffix="-2g"; encryption='psk-mixed'; nasid_suffix='-2g'; band_snr="$(echo ${snr:-30 15 5} | cut -d' ' -f1)" ;;
-            5g) suffix="-5g"; encryption='sae-mixed'; nasid_suffix='-5g'; band_snr="$(echo ${snr:-30 15 5} | cut -d' ' -f2)" ;;
-            6g) suffix="-6g"; encryption='sae';        nasid_suffix='-6g'; band_snr="$(echo ${snr:-30 15 5} | cut -d' ' -f3)" ;;
-            *)  suffix="";    encryption='psk-mixed';  nasid_suffix='';    band_snr="20" ;;
-        esac      
+        set -- 30 15 5
+		case "${band}" in
+		2g) e='psk-mixed';s=1;;
+		5g) e='sae-mixed';s=2;;
+		6g) e='sae';s=3;;
+		*) e='psk-mixed';s=0;;
+		esac
+		suffix=${band:+-$band}
+		band_snr=${!s:-20}  
         if [ -n "${enable_usteer}" ]; then
             ssid="${wlan_ssid}"
         else
