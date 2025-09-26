@@ -3688,6 +3688,7 @@ function updateTextareaContent(textarea, variableDefinitions) {
     const beginMarker = '# BEGIN_VARIABLE_DEFINITIONS';
     const endMarker = '# END_VARIABLE_DEFINITIONS';
     replaceSectionAndUpdate(textarea, beginMarker, endMarker, variableDefinitions);
+    updateFileSize(textarea.value);
 }
 
 function generateVariableDefinitions(values) {
@@ -3708,6 +3709,7 @@ function updateCustomCommands() {
     const beginMarker = '# BEGIN_CUSTOM_COMMANDS';
     const endMarker = '# END_CUSTOM_COMMANDS';
     replaceSectionAndUpdate(textarea, beginMarker, endMarker, customCommands);
+    updateFileSize(textarea.value);
 }
 
 function replaceSectionAndUpdate(textarea, beginMarker, endMarker, newContent) {
