@@ -3647,11 +3647,11 @@ function loadUciDefaultsTemplate() {
         .catch(err => {
             console.error('Failed to load setup.sh:', err);
             const defaultText = `#!/bin/sh
-# BEGIN_VARIABLE_DEFINITIONS
-# END_VARIABLE_DEFINITIONS
+# BEGIN_VARS
+# END_VARS
 
-# BEGIN_CUSTOM_COMMANDS
-# END_CUSTOM_COMMANDS
+# BEGIN_CMDS
+# END_CMDS
 
 exit 0`;
             textarea.value = defaultText;
