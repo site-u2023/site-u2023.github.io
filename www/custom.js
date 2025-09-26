@@ -3709,7 +3709,7 @@ function updateTextareaContent(textarea, variableDefinitions) {
             
             if (bytes > 20480) {
                 sizeElement.style.color = '#ff0000';
-            } else if (bytes > 18432) {
+            } else if (bytes > 20378) {
                 sizeElement.style.color = '#ff8800';
             } else {
                 sizeElement.style.color = '';
