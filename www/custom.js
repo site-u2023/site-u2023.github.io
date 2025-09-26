@@ -3603,14 +3603,14 @@ function loadUciDefaultsTemplate() {
         const lines = text.replace(/\n$/, '').split('\n').length;
         const bytes = new Blob([text]).size;
         const kb = (bytes / 1024).toFixed(1);
-
+    
         const sizeElement = document.querySelector('#uci-defaults-size');
         if (sizeElement) {
-            sizeElement.textContent = `setup.sh = ${lines} lines - ${bytes} bytes (${kb.toFixed(1)} KB)`;
-
+            sizeElement.textContent = `setup.sh = ${lines} lines - ${kb} KB`;
+        
             if (bytes > 20480) {
                 sizeElement.style.color = '#ff0000';
-            } else if (bytes >= 20378) {
+            } else if (bytes > 20378) {
                 sizeElement.style.color = '#ff8800';
             } else {
                 sizeElement.style.color = '#00cc00';
@@ -3690,7 +3690,7 @@ function updateTextareaContent(textarea, variableDefinitions) {
     const endMarker = '# END_VARIABLE_DEFINITIONS';
     const beginIndex = content.indexOf(beginMarker);
     const endIndex = content.indexOf(endMarker);
-
+    
     if (beginIndex !== -1 && endIndex !== -1) {
         const beforeSection = content.substring(0, beginIndex + beginMarker.length);
         const afterSection = content.substring(endIndex);
@@ -3698,7 +3698,23 @@ function updateTextareaContent(textarea, variableDefinitions) {
         textarea.value = beforeSection + newSection + afterSection;
         textarea.rows = textarea.value.split('\n').length + 1;
 
-        updateFileSize(textarea.value);
+        const text = textarea.value;
+        const lines = text.replace(/\n$/, '').split('\n').length;
+        const bytes = new Blob([text]).size;
+        const kb = (bytes / 1024).toFixed(1);
+
+        const sizeElement = document.querySelector('#uci-defaults-size');
+        if (sizeElement) {
+            sizeElement.textContent = `setup.sh = ${lines} lines - ${kb} KB`;
+            
+            if (bytes > 20480) {
+                sizeElement.style.color = '#ff0000';
+            } else if (bytes > 20378) {
+                sizeElement.style.color = '#ff8800';
+            } else {
+                sizeElement.style.color = '#00cc00';
+            }
+        }
     }
 }
 
@@ -3714,26 +3730,34 @@ function generateVariableDefinitions(values) {
 function updateCustomCommands() {
     const textarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
     if (!textarea) return;
-
-    const customCommands = state.ui.managers.commands
-        ? state.ui.managers.commands.getAllValues().join('\n')
-        : '';
-
+    
+    const customCommands = state.ui.managers.commands ? state.ui.managers.commands.getAllValues().join('\n') : '';
+    
     let content = textarea.value;
+    
     const beginMarker = '# BEGIN_CUSTOM_COMMANDS';
     const endMarker = '# END_CUSTOM_COMMANDS';
+    
     const beginIndex = content.indexOf(beginMarker);
     const endIndex = content.indexOf(endMarker);
-
+    
     if (beginIndex !== -1 && endIndex !== -1) {
         const beforeSection = content.substring(0, beginIndex + beginMarker.length);
         const afterSection = content.substring(endIndex);
         const newSection = customCommands ? '\n' + customCommands + '\n' : '\n';
-
+        
         textarea.value = beforeSection + newSection + afterSection;
-        textarea.rows = textarea.value.split('\n').length + 1;
-
-        updateFileSize(textarea.value);
+        
+        const lines = textarea.value.split('\n').length;
+        textarea.rows = lines + 1;
+        
+        const lineCount = textarea.value.replace(/\n$/, '').split('\n').length;
+        const bytes = new Blob([textarea.value]).size;
+        const kb = (bytes / 1024).toFixed(1);
+        const sizeElement = document.querySelector('#uci-defaults-size');
+        if (sizeElement) {
+            sizeElement.textContent = `${lineCount} lines · ${kb} KB`;
+        }
     }
 }
 
