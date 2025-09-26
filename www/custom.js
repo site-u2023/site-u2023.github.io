@@ -3153,7 +3153,7 @@ async function initializeCustomFeatures(asuSection, temp) {
             .concat(state.packages.device)
             .concat(state.packages.extra);
 
-        const textarea = document.querySelector("#uci-defaults-details #uci-defaults-content");
+        const textarea = document.querySelector('#asu-packages');
         if (textarea && initialPackages.length > 0) {
             UI.updateElement(textarea, { value: initialPackages.join(' ') });
             console.log('Device packages force applied:', initialPackages);
