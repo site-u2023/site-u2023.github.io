@@ -3607,11 +3607,10 @@ function loadUciDefaultsTemplate() {
         const sizeElement = document.querySelector('#uci-defaults-size');
         if (sizeElement) {
             sizeElement.textContent = `setup.sh = ${lines} lines - ${kb} KB`;
-
-            const kb = bytes / 1024;
-            if (kb >= 20.0) {
+        
+            if (bytes > 20480) {
                 sizeElement.style.color = '#ff0000';
-            } else if (kb >= 19.9) {
+            } else if (bytes >= 20378) {
                 sizeElement.style.color = '#ff8800';
             } else {
                 sizeElement.style.color = '#00cc00';
@@ -3708,10 +3707,9 @@ function updateTextareaContent(textarea, variableDefinitions) {
         if (sizeElement) {
             sizeElement.textContent = `setup.sh = ${lines} lines - ${kb} KB`;
             
-            const kb = bytes / 1024;
-            if (kb >= 20.0) {
+            if (bytes > 20480) {
                 sizeElement.style.color = '#ff0000';
-            } else if (kb >= 19.9) {
+            } else if (bytes >= 20378) {
                 sizeElement.style.color = '#ff8800';
             } else {
                 sizeElement.style.color = '#00cc00';
