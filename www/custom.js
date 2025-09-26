@@ -3596,7 +3596,7 @@ function loadUciDefaultsTemplate() {
     function autoResize() {
         const lines = textarea.value.split('\n').length;
         textarea.style.height = 'auto';
-        textarea.style.height = `${lines * 1}em`;
+        textarea.style.height = `${lines}em`;
     }
 
     function updateFileSize(text) {
@@ -3613,7 +3613,7 @@ function loadUciDefaultsTemplate() {
             } else if (bytes > 20378) {
                 sizeElement.style.color = '#ff8800';
             } else {
-                sizeElement.style.color = '';
+                sizeElement.style.color = '#00cc00';
             }
         }
     }
@@ -3685,16 +3685,41 @@ function updateVariableDefinitions() {
 }
 
 function updateTextareaContent(textarea, variableDefinitions) {
-    let content = textarea.value;
     const beginMarker = '# BEGIN_VARIABLE_DEFINITIONS';
     const endMarker = '# END_VARIABLE_DEFINITIONS';
+    replaceSectionAndUpdate(textarea, beginMarker, endMarker, variableDefinitions);
+}
+
+function generateVariableDefinitions(values) {
+    return Object.entries(values).map(([key, value]) => {
+        const escapedValue = value.toString().replace(/'/g, "'\"'\"'");
+        return `${key}='${escapedValue}'`;
+    }).join('\n');
+}
+
+function updateCustomCommands() {
+    const textarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
+    if (!textarea) return;
+    
+    const customCommands = state.ui.managers.commands
+        ? state.ui.managers.commands.getAllValues().join('\n')
+        : '';
+
+    const beginMarker = '# BEGIN_CUSTOM_COMMANDS';
+    const endMarker = '# END_CUSTOM_COMMANDS';
+    replaceSectionAndUpdate(textarea, beginMarker, endMarker, customCommands);
+}
+
+function replaceSectionAndUpdate(textarea, beginMarker, endMarker, newContent) {
+    let content = textarea.value;
     const beginIndex = content.indexOf(beginMarker);
     const endIndex = content.indexOf(endMarker);
     
     if (beginIndex !== -1 && endIndex !== -1) {
         const beforeSection = content.substring(0, beginIndex + beginMarker.length);
         const afterSection = content.substring(endIndex);
-        const newSection = variableDefinitions ? '\n' + variableDefinitions + '\n' : '\n';
+        const newSection = newContent ? '\n' + newContent + '\n' : '\n';
+        
         textarea.value = beforeSection + newSection + afterSection;
         textarea.rows = textarea.value.split('\n').length + 1;
         
@@ -3704,49 +3729,6 @@ function updateTextareaContent(textarea, variableDefinitions) {
         const sizeElement = document.querySelector('#uci-defaults-size');
         if (sizeElement) {
             sizeElement.textContent = `${lines} lines · ${kb} KB`;
-        }
-    }
-}
-
-function generateVariableDefinitions(values) {
-    const lines = [];
-    Object.entries(values).forEach(([key, value]) => {
-        const escapedValue = value.toString().replace(/'/g, "'\"'\"'");
-        lines.push(`${key}='${escapedValue}'`);
-    });
-    return lines.join('\n');
-}
-
-function updateCustomCommands() {
-    const textarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
-    if (!textarea) return;
-    
-    const customCommands = state.ui.managers.commands ? state.ui.managers.commands.getAllValues().join('\n') : '';
-    
-    let content = textarea.value;
-    
-    const beginMarker = '# BEGIN_CUSTOM_COMMANDS';
-    const endMarker = '# END_CUSTOM_COMMANDS';
-    
-    const beginIndex = content.indexOf(beginMarker);
-    const endIndex = content.indexOf(endMarker);
-    
-    if (beginIndex !== -1 && endIndex !== -1) {
-        const beforeSection = content.substring(0, beginIndex + beginMarker.length);
-        const afterSection = content.substring(endIndex);
-        const newSection = customCommands ? '\n' + customCommands + '\n' : '\n';
-        
-        textarea.value = beforeSection + newSection + afterSection;
-        
-        const lines = textarea.value.split('\n').length;
-        textarea.rows = lines + 1;
-        
-        const lineCount = textarea.value.replace(/\n$/, '').split('\n').length;
-        const bytes = new Blob([textarea.value]).size;
-        const kb = (bytes / 1024).toFixed(1);
-        const sizeElement = document.querySelector('#uci-defaults-size');
-        if (sizeElement) {
-            sizeElement.textContent = `${lineCount} lines · ${kb} KB`;
         }
     }
 }
