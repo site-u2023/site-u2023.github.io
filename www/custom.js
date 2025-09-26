@@ -3698,13 +3698,7 @@ function updateTextareaContent(textarea, variableDefinitions) {
         textarea.value = beforeSection + newSection + afterSection;
         textarea.rows = textarea.value.split('\n').length + 1;
         
-        const lines = textarea.value.replace(/\n$/, '').split('\n').length;
-        const bytes = new Blob([textarea.value]).size;
-        const kb = (bytes / 1024).toFixed(1);
-        const sizeElement = document.querySelector('#uci-defaults-size');
-        if (sizeElement) {
-            sizeElement.textContent = `${lines} lines · ${kb} KB`;
-        }
+        updateFileSize(textarea.value);
     }
 }
 
