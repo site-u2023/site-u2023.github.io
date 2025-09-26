@@ -113,6 +113,10 @@
         {
           "id": "luci-app-wifischedule",
           "name": "luci-app-wifischedule"
+        },
+        {
+          "id": "luci-app-travelmate",
+          "name": "luci-app-travelmate"
         }
       ]
     },
