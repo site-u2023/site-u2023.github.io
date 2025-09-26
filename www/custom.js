@@ -3591,7 +3591,7 @@ function updateUciDefaultsFileSize(text) {
     
     const sizeElement = document.querySelector('#uci-defaults-size');
     if (sizeElement) {
-        sizeElement.textContent = `setup.sh = ${lines} lines - ${kb} KB`;
+        sizeElement.textContent = `setup.sh = ${lines} lines - ${bytes} bytes: ${kb} KB`;
         
         if (bytes > 20480) {
             sizeElement.style.color = '#ff0000';
