@@ -621,7 +621,7 @@ function toggleVirtualPackagesByType(type, value, enabled) {
     for (const pkgId of targets) toggleVirtualPackage(pkgId, enabled);
 }
 
-async function updateLanguagePackageCore() {
+async function updateLanguagePackageCore() {  
     state.ui.language.selected = config.device_language || config.fallback_language || 'en';
     const lang = state.ui.language.selected;
 
@@ -648,6 +648,9 @@ async function updateLanguagePackageCore() {
 
     const hasArch = state.device.arch;
 
+    state.packages.dynamic.add('luci');
+    console.log('Added LuCI package: luci');
+  
     if (!lang || lang === config.fallback_language || !hasArch) {
         console.log('Skipping language packages - fallback language or no arch info');
         return;
