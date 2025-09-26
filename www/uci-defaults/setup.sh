@@ -116,7 +116,7 @@ EOF
         *) encryption='psk-mixed';nasid_suffix='';band_snr=20;;
         esac
         suffix=${band:+-$band}
-        if [ -n "${enable_usteer}" ]; then
+        if [ -n "${enable_usteer}" ] && [ -n "${wlan_ssid}" ] && [ -n "${wlan_password}" ]; then
             ssid="${wlan_ssid}"
         else
             ssid="${wlan_ssid}${suffix}"
@@ -134,7 +134,7 @@ SET wireless.${iface}.encryption="${encryption}"
 SET wireless.${iface}.ssid="${ssid}"
 SET wireless.${iface}.key="${wlan_password}"
 EOF
-            if [ -n "${enable_usteer}" ]; then
+            if [ -n "${enable_usteer}" ] && [ -n "${wlan_ssid}" ] && [ -n "${wlan_password}" ]; then
                 BAT <<EOF
 SET wireless.${iface}.isolate='1'
 SET wireless.${iface}.ocv='1'
@@ -149,7 +149,7 @@ EOF
             fi
         }
     done
-    if [ -n "${enable_usteer}" ]; then
+    if [ -n "${enable_usteer}" ] && [ -n "${wlan_ssid}" ] && [ -n "${wlan_password}" ]; then
         BAT <<EOF
 SET usteer.@usteer[0].band_steering='1'
 SET usteer.@usteer[0].load_balancing='1'
