@@ -486,7 +486,7 @@ SET network.usb0.device='usb0'
 EOF
     ADD network.@device[0].ports='usb0'
 	ADD firewall.@zone[0].network='usb0'
-	cho 'modprobe dwc2;modprobe g_ether;/etc/init.d/network reload;rm /etc/rc.local' > /etc/rc.local
+	echo 'modprobe dwc2;modprobe g_ether;/etc/init.d/network reload;echo "exit 0" > /etc/rc.local;exit 0' > /etc/rc.local
 }
 [ -n "${enable_netopt}" ] && {
     C=/etc/sysctl.d/99-net-opt.conf
