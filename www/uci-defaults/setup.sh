@@ -479,7 +479,14 @@ EOF
     ! grep -q 'dtoverlay=dwc2' /boot/config.txt && echo 'dtoverlay=dwc2' >> /boot/config.txt
     sed -i 's/rootwait/& modules-load=dwc2,g_ether/' /boot/cmdline.txt
     printf '%s\n%s\n' "dwc2" "g_ether" > /etc/modules.d/99-gadget
-    sed -i '/exit 0/i uci add_list network.@device[0].ports=usb0;uci add_list firewall.@zone[0].network=usb0;uci commit' /etc/rc.local
+    BAT <<EOF
+SET network.usb0=interface
+SET network.usb0.proto='none'
+SET network.usb0.device='usb0'
+EOF
+    ADD network.@device[0].ports='usb0'
+	ADD firewall.@zone[0].network='usb0'
+	cho 'modprobe dwc2;modprobe g_ether;/etc/init.d/network reload;rm /etc/rc.local' > /etc/rc.local
 }
 [ -n "${enable_netopt}" ] && {
     C=/etc/sysctl.d/99-net-opt.conf
