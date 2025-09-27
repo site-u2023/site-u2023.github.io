@@ -481,10 +481,10 @@ EOF
     printf '%s\n%s\n' "dwc2" "g_ether" > /etc/modules.d/99-gadget
     BAT <<EOF
 SET network.usb0=interface
-SET network.usb0.proto='none'
 SET network.usb0.device='usb0'
-SET network.lan.device='${LAN} usb0'
 EOF
+    ADD firewall.@zone[0].network='usb0'
+	sed -i '/exit 0/i modprobe dwc2;modprobe g_ether;/etc/init.d/network reload;sed -i "/modprobe dwc2/d;/modprobe g_ether/d;/network reload/d" /etc/rc.local' /etc/rc.local
 }
 [ -n "${enable_netopt}" ] && {
     C=/etc/sysctl.d/99-net-opt.conf
