@@ -479,7 +479,10 @@ EOF
     ! grep -q 'dtoverlay=dwc2' /boot/config.txt && echo 'dtoverlay=dwc2' >> /boot/config.txt
     sed -i 's/rootwait/& modules-load=dwc2,g_ether/' /boot/cmdline.txt
     printf '%s\n%s\n' "dwc2" "g_ether" > /etc/modules.d/99-gadget
-    SET network.usb0.device='usb0'
+    BAT <<EOF
+SET network.usb0=interface
+SET network.usb0.device='usb0'
+EOF
     ADD network.@device[0].ports='usb0'
     ADD firewall.@zone[0].network='usb0'
 }
