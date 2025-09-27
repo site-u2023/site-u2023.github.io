@@ -479,7 +479,12 @@ EOF
     ! grep -q 'dtoverlay=dwc2' /boot/config.txt && echo 'dtoverlay=dwc2' >> /boot/config.txt
     sed -i 's/rootwait/& modules-load=dwc2,g_ether/' /boot/cmdline.txt
     printf '%s\n%s\n' "dwc2" "g_ether" > /etc/modules.d/99-gadget
-	ADD network.@device[0].ports='usb0'
+    BAT <<EOF
+SET network.usb0=interface
+SET network.usb0.proto='none'
+SET network.usb0.device='usb0'
+EOF
+    ADD network.@device[0].ports='usb0'
 }
 [ -n "${enable_netopt}" ] && {
     C=/etc/sysctl.d/99-net-opt.conf
