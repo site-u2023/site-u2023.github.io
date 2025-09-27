@@ -481,6 +481,7 @@ EOF
     printf '%s\n%s\n' "dwc2" "g_ether" > /etc/modules.d/99-gadget
     BAT <<EOF
 SET network.usb0=interface
+SET network.usb0.proto='none'
 SET network.usb0.device='usb0'
 EOF
     ADD network.@device[0].ports='usb0'
