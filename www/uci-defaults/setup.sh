@@ -483,9 +483,8 @@ EOF
 SET network.usb0=interface
 SET network.usb0.proto='none'
 SET network.usb0.device='usb0'
+SET network.lan.device='${LAN} usb0'
 EOF
-    ADD network.@device[0].ports='usb0'
-    ADD firewall.@zone[0].network='usb0'
 }
 [ -n "${enable_netopt}" ] && {
     C=/etc/sysctl.d/99-net-opt.conf
