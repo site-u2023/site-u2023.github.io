@@ -86,15 +86,12 @@ const state = {
 const UI = {
     updateElement(idOrEl, opts = {}) {
         const el = typeof idOrEl === 'string'
-            ? (idOrEl.startsWith('#') || idOrEl.startsWith('.') 
-                ? document.querySelector(idOrEl) 
-                : document.getElementById(idOrEl))
+            ? document.getElementById(idOrEl)
             : idOrEl;
         if (!el) return;
 
         if ('show' in opts) {
             el.style.display = opts.show ? '' : 'none';
-            el.classList.toggle('hide', !opts.show);
         }
         if ('text' in opts) {
             el.textContent = opts.text;
@@ -103,24 +100,11 @@ const UI = {
             el.innerHTML = opts.html;
         }
         if ('value' in opts) {
-            if (['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName)) {
-                el.value = opts.value;
-            } else {
-                el.textContent = opts.value;
-            }
+            el.value = opts.value;
         }
         if ('disabled' in opts) {
             el.disabled = !!opts.disabled;
         }
-        return el;
-    },
-    
-    show(el) {
-        return this.updateElement(el, { show: true });
-    },
-    
-    hide(el) {
-        return this.updateElement(el, { show: false });
     }
 };
 
@@ -244,6 +228,29 @@ const CustomUtils = {
         const guaPrefix = this.generateGuaPrefixFromFullAddress(state.apiInfo);
         if (guaPrefix) {
             UI.updateElement(guaPrefixField, { value: guaPrefix });
+        }
+    },
+    
+    toggleVisibility(el, show = true) {
+        const element = (typeof el === 'string') ? document.querySelector(el) : el;
+        if (!element) return;
+        
+        const isVisible = Boolean(show);
+        element.classList.toggle('hide', !isVisible);
+        element.style.display = isVisible ? '' : 'none';
+    },
+
+    show(el) { this.toggleVisibility(el, true); },
+    hide(el) { this.toggleVisibility(el, false); },
+
+    setValue(selector, val) {
+        const el = document.querySelector(selector);
+        if (!el) return;
+
+        if (['INPUT', 'TEXTAREA'].includes(el.tagName)) {
+            el.value = val;
+        } else {
+            el.textContent = val;
         }
     },
 
