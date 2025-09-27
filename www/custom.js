@@ -3121,10 +3121,6 @@ async function initializeCustomFeatures(asuSection, temp) {
     }
     
     await Promise.all([
-        window.autoConfigPromise,
-        window.informationPromise,
-        window.packagesDbPromise,
-        window.setupJsonPromise,
         loadSetupConfig(),
         loadPackageDatabase(),
         fetchAndDisplayIspInfo()
