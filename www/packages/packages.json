@@ -356,6 +356,10 @@
           "name": "owut"
         },
         {
+          "id": "auc",
+          "name": "auc"
+        },
+        {
           "id": "luci-app-wireguard",
           "name": "luci-app-wireguard",
           "dependencies": ["wireguard-tools-app"]
