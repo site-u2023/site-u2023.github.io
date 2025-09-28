@@ -349,18 +349,15 @@
       "packages": [
         {
           "id": "luci-app-attendedsysupgrade",
-          "name": "luci-app-attendedsysupgrade",
-          "dependencies": ["owut", "auc"]
+          "name": "luci-app-attendedsysupgrade"
         },
         {
           "id": "owut",
-          "name": "owut",
-          "hidden": true
+          "name": "owut"
         },
         {
           "id": "auc",
-          "name": "auc",
-          "hidden": true
+          "name": "auc"
         },
         {
           "id": "luci-app-wireguard",
