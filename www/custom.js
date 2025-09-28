@@ -880,11 +880,11 @@ if (textarea) {
         const sizeBreakdownEl = document.querySelector('#package-size-breakdown');
         if (sizeBreakdownEl) {
             const baseKB = (baseBytes / 1024).toFixed(1);
-            const baseMB = (baseBytes / (1024 * 1024)).toFixed(1);     
+            const baseMB = (baseBytes / (1024 * 1024)).toFixed(3);     
             const addedKB = (totalBytes / 1024).toFixed(1);
-            const addedMB = (totalBytes / (1024 * 1024)).toFixed(1);
+            const addedMB = (totalBytes / (1024 * 1024)).toFixed(3);
             const totalKB = ((baseBytes + totalBytes) / 1024).toFixed(1);
-            const totalMB = ((baseBytes + totalBytes) / (1024 * 1024)).toFixed(1);
+            const totalMB = ((baseBytes + totalBytes) / (1024 * 1024)).toFixed(3);
             sizeBreakdownEl.textContent = `${current_language_json['tr-base-size'] || 'Base'}: ${baseMB} MB (${baseKB} KB) + ${current_language_json['tr-added-size'] || 'Added'}: ${addedMB} MB (${addedKB} KB) = ${current_language_json['tr-total-size'] || 'Total'}: ${totalMB} MB (${totalKB} KB)`;
         }
     }
@@ -3599,7 +3599,7 @@ function findPackageById(id) {
 function updateUciDefaultsFileSize(text) {
     const lines = text.replace(/\n$/, '').split('\n').length;
     const bytes = new Blob([text]).size;
-    const kb = (bytes / 1024).toFixed(1);
+    const kb = (bytes / 1024).toFixed(4);
     
     const sizeElement = document.querySelector('#uci-defaults-size');
     if (sizeElement) {
