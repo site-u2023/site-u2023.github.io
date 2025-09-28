@@ -400,6 +400,7 @@ window.updateImages = function(version, mobj) {
 
     const oldArch = state.device.arch;
     const oldVersion = state.device.version;
+    const oldDeviceId = state.device.id;
 
     if (mobj && mobj.arch_packages) {
         state.device.arch = mobj.arch_packages;
@@ -410,13 +411,24 @@ window.updateImages = function(version, mobj) {
         CustomUtils.updateDeviceInfo(mobj.target);
 
         console.log('[TRACE] device updated:', {
-            ...state.device
+            ...state.device,
+            oldDeviceId: oldDeviceId
         });
 
-        if (oldArch !== mobj.arch_packages || oldVersion !== version) {
-            console.log('[TRACE] Device changed, clearing caches');
+        if (oldArch !== mobj.arch_packages || oldVersion !== version || oldDeviceId !== mobj.id) {
+            console.log('[TRACE] Device changed, clearing caches (device ID changed from', oldDeviceId, 'to', mobj.id, ')');
+            
             state.cache.packageAvailability.clear();
             state.cache.feed.clear();
+            state.cache.feedPackageSet.clear();
+            state.cache.availabilityIndex.clear();
+            
+            document.querySelectorAll('.package-item').forEach(item => {
+                item.style.display = '';
+            });
+            document.querySelectorAll('.package-category').forEach(cat => {
+                cat.style.display = '';
+            });
 
             requestAnimationFrame(() => {
                 if (!state.device.vendor) {
