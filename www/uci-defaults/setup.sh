@@ -84,9 +84,9 @@ firewall_wan() {
 [ -n "${enable_diag}" ] && {
     local SEC=luci
     SET diag=diag
-    SET diag.ping='${DIAG}'
-    SET diag.route='${DIAG}'
-    SET diag.dns='${DIAG}'
+    SET diag.ping="${DIAG}"
+    SET diag.route="${DIAG}"
+    SET diag.dns="${DIAG}"
 }
 [ -n "${device_name}" ] && { local SEC=system; SET @system[0].hostname="${device_name}"; }
 [ -n "${root_password}" ] && printf '%s\n%s\n' "${root_password}" "${root_password}" | passwd >/dev/null
@@ -521,8 +521,8 @@ EOF
         elif [ "$MEM" -ge 200 ]; then CACHE_SIZE=1000
         fi
     fi
-    SET @dnsmasq[0].cachesize='${CACHE_SIZE}'
-    SET @dnsmasq[0].nonegcache='${NEG_CACHE}'
+    SET @dnsmasq[0].cachesize="${CACHE_SIZE}"
+    SET @dnsmasq[0].nonegcache="${NEG_CACHE}"
 }
 # BEGIN_CMDS
 # END_CMDS
