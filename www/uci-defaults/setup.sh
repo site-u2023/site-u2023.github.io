@@ -35,6 +35,7 @@ SET network.wan6.auto='0'
 EOF
 }
 dhcp_relay() {
+    BAT <<EOF
 SET dhcp.$1=dhcp
 SET dhcp.$1.interface="$1"
 SET dhcp.$1.master='1'
@@ -46,14 +47,17 @@ SET dhcp.lan.ra='relay'
 SET dhcp.lan.dhcpv6='relay'
 SET dhcp.lan.ndp='relay'
 SET dhcp.lan.force='1'
+EOF
 }
 firewall_wan() {
 DELLIST firewall.@zone[1].network="wan"
 DELLIST firewall.@zone[1].network="wan6"
 ADDLIST firewall.@zone[1].network="$1"
 ADDLIST firewall.@zone[1].network="$2" 
+    BAT <<EOF
 SET firewall.@zone[1].masq='1'
 SET firewall.@zone[1].mtu_fix='1'
+EOF
 }
 [ -n "${enable_notes}" ] && BAT <<EOF
 SET system.@system[0].description="${DATE}"
