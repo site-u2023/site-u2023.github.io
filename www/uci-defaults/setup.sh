@@ -5,10 +5,10 @@ enable_notes="1"
 enable_ntp="1"
 enable_log="1"
 enable_diag="1"
-SET() { uci -q set "$@"; }
 BAT() { uci -q batch; }
-ADD() { uci add_list "$@"; }
+SET() { uci -q set "$@"; }
 DEL() { uci -q delete "$@"; }
+ADDLIST() { uci add_list "$@"; }
 DELLIST() { uci del_list "$@"; }
 DATE="$(date '+%Y-%m-%d %H:%M')"
 LAN="$(uci -q get network.lan.device || echo lan)"
@@ -35,7 +35,6 @@ SET network.wan6.auto='0'
 EOF
 }
 dhcp_relay() {
-    BAT <<EOF
 SET dhcp.$1=dhcp
 SET dhcp.$1.interface="$1"
 SET dhcp.$1.master='1'
@@ -47,17 +46,14 @@ SET dhcp.lan.ra='relay'
 SET dhcp.lan.dhcpv6='relay'
 SET dhcp.lan.ndp='relay'
 SET dhcp.lan.force='1'
-EOF
 }
 firewall_wan() {
-    BAT <<EOF
 DELLIST firewall.@zone[1].network="wan"
 DELLIST firewall.@zone[1].network="wan6"
-ADD firewall.@zone[1].network="$1"
-ADD firewall.@zone[1].network="$2" 
+ADDLIST firewall.@zone[1].network="$1"
+ADDLIST firewall.@zone[1].network="$2" 
 SET firewall.@zone[1].masq='1'
 SET firewall.@zone[1].mtu_fix='1'
-EOF
 }
 [ -n "${enable_notes}" ] && BAT <<EOF
 SET system.@system[0].description="${DATE}"
@@ -74,7 +70,7 @@ COUNTRY_LC=$(printf '%s' "$COUNTRY" | tr 'A-Z' 'a-z')
 for i in 0 1 2 3; do
     s="${i:0:2}.${COUNTRY_LC}${NTP_DOMAIN}"
     [ $i -gt 1 ] && s="${i}${NTP_DOMAIN}"
-    ADD system.ntp.server="$s"
+    ADDLIST system.ntp.server="$s"
 done
 [ -n "${enable_log}" ] && BAT <<EOF
 SET system.@system[0].log_size='32'
@@ -473,13 +469,13 @@ SET samba4.sambashare.dir_mask='0777'
 EOF
 [ -n "${enable_usb_rndis}" ] && {
     printf '%s\n%s\n' "rndis_host" "cdc_ether" > /etc/modules.d/99-usb-net
-	ADD network.@device[0].ports='usb0'
+	ADDLIST network.@device[0].ports='usb0'
 }
 [ -n "${enable_usb_gadget}" ] && [ -d /boot ] && {
     echo 'dtoverlay=dwc2' >> /boot/config.txt
     sed -i 's/\(root=[^ ]*\)/\1 modules-load=dwc2,g_ether/' /boot/cmdline.txt
     printf '%s\n%s\n' "dwc2" "g_ether" > /etc/modules.d/99-gadget
-    ADD network.@device[0].ports='usb0'
+    ADDLIST network.@device[0].ports='usb0'
 }
 [ -n "${enable_netopt}" ] && {
     C=/etc/sysctl.d/99-net-opt.conf
