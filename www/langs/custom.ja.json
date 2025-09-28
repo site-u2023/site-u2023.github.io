@@ -126,7 +126,7 @@
     "tr-feedback-link": "フォーラム",
 
     "tr-package-size-note": "※ 言語及び依存パッケージは含まれません",
-    "tr-uci-size-limit": "※ ASUサーバー上限: 20480 bytes: 20.00 KB",
+    "tr-uci-size-limit": "※ ファイルサイズ上限: 20480 bytes: 20.00 KB",
     
     "tr-asu-status-200": "ASU サーバーに接続可能です。ステータス: {status}",
     "tr-asu-status-500": "ASU サーバーは応答しましたが、内部エラーです。ステータス: {status}",
