@@ -543,7 +543,7 @@
         },
         {
           "id": "kmod-usb-gadget-eth",
-          "name": "kmod-usb-gadget-eth",
+          "name": "kmod-usb-gadget-eth (requires reboot)",
           "dependencies": ["kmod-usb-dwc2"],
           "enableVar": "enable_usb_gadget"
         },
