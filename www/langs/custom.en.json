@@ -125,6 +125,9 @@
 
     "tr-feedback-link": "Forum",
 
+    "tr-package-size-note": "Language and dependency packages are not included",
+    "tr-uci-size-limit": "ASU limit: 20480 bytes: 20.00 KB",
+    
     "tr-asu-status-200": "ASU server is reachable. Status: ",
     "tr-asu-status-500": "ASU server responded with an internal error. Status: ",
     "tr-asu-status-unreachable": "ASU server responded with an unexpected status: ",
