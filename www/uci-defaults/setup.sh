@@ -51,8 +51,7 @@ EOF
 }
 firewall_wan() {
     BAT <<EOF
-DELLIST firewall.@zone[1].network="wan"
-DELLIST firewall.@zone[1].network="wan6"
+DEL firewall.@zone[1].network
 ADD firewall.@zone[1].network="$1"
 ADD firewall.@zone[1].network="$2"
 SET firewall.@zone[1].masq='1'
