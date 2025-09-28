@@ -477,8 +477,12 @@ EOF
 }
 [ -n "${enable_usb_gadget}" ] && [ -d /boot ] && {
     ! grep -q '^dtoverlay=dwc2' /boot/config.txt && echo 'dtoverlay=dwc2' >> /boot/config.txt
-    ! grep -q 'modules-load=.*dwc2,g_ether' /boot/cmdline.txt && sed -i 's/\(root=[^ ]*\)/\1 modules-load=dwc2,g_ether/' /boot/cmdline.txt
+   	sed -i 's/\(root=[^ ]*\)/\1 modules-load=dwc2,g_ether/' /boot/cmdline.txt
     printf '%s\n%s\n' "dwc2" "g_ether" > /etc/modules.d/99-gadget
+    SET network.usb0=interface
+    SET network.usb0.device='usb0'
+    ADD network.@device[0].ports='usb0'
+    ADD firewall.@zone[0].network='usb0'
 }
 [ -n "${enable_netopt}" ] && {
     C=/etc/sysctl.d/99-net-opt.conf
