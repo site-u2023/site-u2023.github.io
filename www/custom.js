@@ -879,11 +879,11 @@ if (textarea) {
         textarea.style.height = textarea.scrollHeight + 'px';
         const sizeBreakdownEl = document.querySelector('#package-size-breakdown');
         if (sizeBreakdownEl) {
-            const baseKB = (baseBytes / 1024).toFixed(2);
+            const baseKB = Math.round(baseBytes / 1024);
             const baseMB = (baseBytes / (1024 * 1024)).toFixed(2);     
-            const addedKB = (totalBytes / 1024).toFixed(2);
+            const addedKB = Math.round(totalBytes / 1024);
             const addedMB = (totalBytes / (1024 * 1024)).toFixed(2);
-            const totalKB = ((baseBytes + totalBytes) / 1024).toFixed(2);
+            const totalKB = Math.round((baseBytes + totalBytes) / 1024);
             const totalMB = ((baseBytes + totalBytes) / (1024 * 1024)).toFixed(2);
             sizeBreakdownEl.textContent = `${current_language_json['tr-base-size'] || 'Base'}: ${baseMB} MB (${baseKB} KB) + ${current_language_json['tr-added-size'] || 'Added'}: ${addedMB} MB (${addedKB} KB) = ${current_language_json['tr-total-size'] || 'Total'}: ${totalMB} MB (${totalKB} KB)`;
         }
