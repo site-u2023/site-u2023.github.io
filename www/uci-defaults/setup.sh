@@ -25,14 +25,12 @@ NAS="openwrt"
 MNT="/mnt/sda"
 MEM=$(awk '/MemTotal/{print int($2/1024)}' /proc/meminfo)
 exec >/tmp/setup.log 2>&1
-
 disable_wan() {
     SET network.wan.disabled='1'
     SET network.wan.auto='0'
     SET network.wan6.disabled='1'
     SET network.wan6.auto='0'
 }
-
 dhcp_relay() {
     SET dhcp.$1=dhcp
     SET dhcp.$1.interface="$1"
@@ -46,7 +44,6 @@ dhcp_relay() {
     SET dhcp.lan.ndp='relay'
     SET dhcp.lan.force='1'
 }
-
 firewall_wan() {
     DELLIST firewall.@zone[1].network="wan"
     DELLIST firewall.@zone[1].network="wan6"
@@ -55,12 +52,10 @@ firewall_wan() {
     SET firewall.@zone[1].masq='1'
     SET firewall.@zone[1].mtu_fix='1'
 }
-
 [ -n "${enable_notes}" ] && {
     SET system.@system[0].description="${DATE}"
     SET system.@system[0].notes="site-u.pages.dev"
 }
-
 [ -n "${enable_ntp}" ] && {
     SET system.ntp=timeserver
     SET system.ntp.enabled='1'
@@ -74,20 +69,17 @@ firewall_wan() {
         ADDLIST system.ntp.server="$s"
     done
 }
-
 [ -n "${enable_log}" ] && {
     SET system.@system[0].log_size='32'
     SET system.@system[0].conloglevel='1'
     SET system.@system[0].cronloglevel='9'
 }
-
 [ -n "${enable_diag}" ] && {
     SET luci.diag=diag
     SET luci.diag.ping='${DIAG}'
     SET luci.diag.route='${DIAG}'
     SET luci.diag.dns='${DIAG}'
 }
-
 [ -n "${device_name}" ] && SET system.@system[0].hostname="${device_name}"
 [ -n "${root_password}" ] && printf '%s\n%s\n' "${root_password}" "${root_password}" | passwd >/dev/null
 [ -n "${lan_ip_address}" ] && SET network.lan.ipaddr="${lan_ip_address}"
@@ -97,12 +89,10 @@ firewall_wan() {
 [ -n "${zonename}" ] && SET system.@system[0].zonename="${zonename}"
 [ -n "${ssh_interface}" ] && SET dropbear.@dropbear[0].Interface="${ssh_interface}"
 [ -n "${ssh_port}" ] && SET dropbear.@dropbear[0].Port="${ssh_port}"
-
 [ -n "${flow_offloading_type}" ] && {
     SET firewall.@defaults[0].flow_offloading='1'
     [ "${flow_offloading_type}" = "hardware" ] && SET firewall.@defaults[0].flow_offloading_hw='1'
 }
-
 [ -n "${wlan_ssid}" ] && [ -n "${wlan_password}" ] && [ "${#wlan_password}" -ge 8 ] && {
     wireless_cfg=$(uci -q show wireless)
     for radio in $(printf '%s\n' "${wireless_cfg}" | grep "wireless\.radio[0-9]*=" | cut -d. -f2 | cut -d= -f1); do
@@ -155,13 +145,11 @@ firewall_wan() {
         SET usteer.@usteer[0].signal_diff_threshold='10'
     fi
 }
-
 [ -n "${pppoe_username}" ] && [ -n "${pppoe_password}" ] && {
     SET network.wan.proto='pppoe'
     SET network.wan.username="${pppoe_username}"
     SET network.wan.password="${pppoe_password}"
 }
-
 [ -n "${dslite_aftr_address}" ] && {
     disable_wan
     SET network.${DSL6}=interface
@@ -178,7 +166,6 @@ firewall_wan() {
     dhcp_relay "${DSL6}"
     firewall_wan "${DSL}" "${DSL6}"
 }
-
 [ -n "${mape_br}" ] && [ -n "${mape_ealen}" ] && {
     disable_wan
     SET network.${MAPE6}=interface
@@ -415,7 +402,6 @@ proto_map_init_config() {
 }
 EOF
 }
-
 [ -n "${ap_ip_address}" ] && {
     disable_wan
     SET network.${AP}=interface
@@ -439,17 +425,14 @@ EOF
     DEL firewall
     [ -x /etc/init.d/firewall ] && /etc/init.d/firewall disable
 }
-
 [ -n "${enable_ttyd}" ] && {
     SET ttyd.@ttyd[0].ipv6='1'
     SET ttyd.@ttyd[0].command='/bin/login -f root'
 }
-
 [ -n "${enable_irqbalance}" ] && {
     SET irqbalance.irqbalance=irqbalance
     SET irqbalance.irqbalance.enabled='1'
 }
-
 [ -n "${enable_samba4}" ] && {
     SET samba4.@samba[0]=samba
     SET samba4.@samba[0].workgroup='WORKGROUP'
@@ -467,19 +450,16 @@ EOF
     SET samba4.sambashare.create_mask='0777'
     SET samba4.sambashare.dir_mask='0777'
 }
-
 [ -n "${enable_usb_rndis}" ] && {
     printf '%s\n%s\n' "rndis_host" "cdc_ether" > /etc/modules.d/99-usb-net
     ADDLIST network.@device[0].ports='usb0'
 }
-
 [ -n "${enable_usb_gadget}" ] && [ -d /boot ] && {
     echo 'dtoverlay=dwc2' >> /boot/config.txt
     sed -i 's/\(root=[^ ]*\)/\1 modules-load=dwc2,g_ether/' /boot/cmdline.txt
     printf '%s\n%s\n' "dwc2" "g_ether" > /etc/modules.d/99-gadget
     ADDLIST network.@device[0].ports='usb0'
 }
-
 [ -n "${enable_netopt}" ] && {
     C=/etc/sysctl.d/99-net-opt.conf
     P=$(grep -c ^processor /proc/cpuinfo)
@@ -506,7 +486,6 @@ EOF
     "$R" "$W" "$TR" "$TW" "$CONG" "$CT" "$NB" "$SC" > "$C"
     sysctl -p "$C"
 }
-
 [ -n "${enable_dnsmasq}" ] && {
     CACHE_SIZE="${dnsmasq_cache:-}"
     NEG_CACHE="${dnsmasq_negcache:-1}"
@@ -519,7 +498,6 @@ EOF
     SET dhcp.@dnsmasq[0].cachesize='${CACHE_SIZE}'
     SET dhcp.@dnsmasq[0].nonegcache='${NEG_CACHE}'
 }
-
 # BEGIN_CMDS
 # END_CMDS
 uci commit 2>/dev/null
