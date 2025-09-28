@@ -14,7 +14,7 @@ DATE="$(date '+%Y-%m-%d %H:%M')"
 LAN="$(uci -q get network.lan.device || echo lan)"
 WAN="$(uci -q get network.wan.device || echo wan)"
 DIAG="one.one.one.one"
-NTP_DOMAIN=".pool.ntp.org"
+NTPDOMAIN=".pool.ntp.org"
 COUNTRY="${country:-00}"
 DSL="dsl"
 DSL6="dsl6"
@@ -72,8 +72,8 @@ DEL system.ntp.server
 EOF
 COUNTRY_LC=$(printf '%s' "$COUNTRY" | tr 'A-Z' 'a-z')
 for i in 0 1 2 3; do
-    s="${i:0:2}.${COUNTRY_LC}${NTP_DOMAIN}"
-    [ $i -gt 1 ] && s="${i}${NTP_DOMAIN}"
+    s="${i:0:2}.${COUNTRY_LC}${NTPDOMAIN}"
+    [ $i -gt 1 ] && s="${i}${NTPDOMAIN}"
     ADDLIST system.ntp.server="$s"
 done
 [ -n "${enable_log}" ] && BAT <<EOF
