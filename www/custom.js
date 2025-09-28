@@ -1206,9 +1206,10 @@ async function searchInFeed(query, feed, version, arch) {
                 if (data.packages && typeof data.packages === 'object') {
                     for (const [pkgName, pkgData] of Object.entries(data.packages)) {
                         list.push(pkgName);
-                        if (pkgData && typeof pkgData.size === 'number' && pkgData.size > 0) {
+                        const size = pkgData?.installed_size || pkgData?.size || 0;
+                        if (typeof size === 'number' && size > 0) {
                             const sizeCacheKey = `${version}:${arch}:${pkgName}`;
-                            state.cache.packageSizes.set(sizeCacheKey, pkgData.size);
+                            state.cache.packageSizes.set(sizeCacheKey, size);
                         }
                     }
                 } else {
@@ -1733,9 +1734,10 @@ async function fetchFeedSet(feed, deviceInfo) {
         } else if (data.packages && typeof data.packages === 'object') {
             for (const pkgName of Object.keys(data.packages)) {
                 const pkgData = data.packages[pkgName];
-                if (pkgData && pkgData.size) {
+                const size = pkgData?.installed_size || pkgData?.size || 0;
+                if (typeof size === 'number' && size > 0) {
                     const sizeCacheKey = `${deviceInfo.version}:${deviceInfo.arch}:${pkgName}`;
-                    state.cache.packageSizes.set(sizeCacheKey, pkgData.size);
+                    state.cache.packageSizes.set(sizeCacheKey, size);
                 }
             }
             return new Set(Object.keys(data.packages));
