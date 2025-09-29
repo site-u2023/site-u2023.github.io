@@ -133,6 +133,24 @@ a.bordered-element:hover {
     color: inherit;
 }
 
+.explanation-box {
+    display: block;
+    background-color: transparent;
+    color: var(--text-color);
+    border: none;
+    border-radius: 0.3em;
+    padding: 0.8em 1em;
+    box-sizing: border-box;
+    margin-bottom: 0.8em;
+}
+
+.explanation-box p {
+    margin: 0;
+    font-size: 0.9em;
+    line-height: 1.4;
+    color: inherit;
+}
+
 /* ── 各コンテンツセクション ── */
 .content-section {
     background-color: var(--block-bg);
