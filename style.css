@@ -108,7 +108,17 @@ ul {
     text-decoration: none;
     transition: background-color 0.2s ease, color 0.2s ease;
     margin-bottom: 0.8em;
+    cursor: default;
+}
+
+/* リンク要素の場合のみホバー効果を適用 */
+a.bordered-element {
     cursor: pointer;
+}
+
+a.bordered-element:hover {
+    background-color: var(--hover-bg);
+    color: var(--hover-text);
 }
 
 .bordered-element:hover {
