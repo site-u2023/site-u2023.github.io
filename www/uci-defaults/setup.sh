@@ -312,6 +312,62 @@ sed -i '/if \[ -z "\$(eval "echo \\$RULE_\${k}_PORTSETS")"/,/^[[:space:]]*fi$/c\
     SET file_url.action='block'
     SET file_url.enabled='1'
 }
+[ -n "${enable_adguardhome}" ] && {
+    LAN="$(uci -q get network.lan.device || echo br-lan)"
+    DNS_PORT="53"
+    DNS_BACKUP_PORT="54"
+    NET_ADDR=$(ip -4 -o addr show dev "$LAN" scope global 2>/dev/null | awk 'NR==1{sub(/\/.*/,"",$4); print $4}') 
+    HAS_V6=0
+    V6_ADDR=$(ip -6 -o addr show dev "$LAN" scope global 2>/dev/null | grep -v temporary | awk 'match($4,/^2/){sub(/\/.*/,"",$4); print $4; exit}')
+    if [ -n "$V6_ADDR" ]; then
+        V6_FIRST=$(echo "$V6_ADDR" | cut -d: -f1)
+        V6_DEC=$((0x$V6_FIRST))
+        if [ $V6_DEC -ge $((0x2000)) ] && [ $V6_DEC -lt $((0x4000)) ]; then
+            HAS_V6=1
+            NET_ADDR6_LIST=$(ip -6 -o addr show dev "$LAN" scope global 2>/dev/null | grep -v temporary | awk 'match($4,/^2/){sub(/\/.*/,"",$4); print $4;}')
+        fi
+    fi  
+    if [ -n "$NET_ADDR" ] && [ "$HAS_V6" = "1" ]; then
+        FAMILY_TYPE=any
+    elif [ -n "$NET_ADDR" ]; then
+        FAMILY_TYPE=ipv4
+    elif [ "$HAS_V6" = "1" ]; then
+        FAMILY_TYPE=ipv6
+    fi  
+    local SEC=dhcp
+    SET @dnsmasq[0].noresolv='1'
+    SET @dnsmasq[0].cachesize='0'
+    SET @dnsmasq[0].rebind_protection='0'
+    SET @dnsmasq[0].port="${DNS_BACKUP_PORT}"
+    SET @dnsmasq[0].domain='lan'
+    SET @dnsmasq[0].local='/lan/'
+    SET @dnsmasq[0].expandhosts='1'
+    DEL @dnsmasq[0].server
+    ADDLIST @dnsmasq[0].server="127.0.0.1#${DNS_PORT}"
+    ADDLIST @dnsmasq[0].server="::1#${DNS_PORT}"
+    DEL lan.dhcp_option
+    ADDLIST lan.dhcp_option="6,${NET_ADDR}"
+    DEL lan.dhcp_option6
+    if [ "$HAS_V6" = "1" ]; then
+        for ip in $NET_ADDR6_LIST; do
+            ADDLIST lan.dhcp_option6="option6:dns=[${ip}]"
+        done
+    fi
+    if [ -n "$FAMILY_TYPE" ]; then
+        local SEC=firewall
+        DEL adguardhome_dns_53
+        SET adguardhome_dns_53=redirect
+        SET adguardhome_dns_53.name="AdGuardHome DNS"
+        SET adguardhome_dns_53.family="${FAMILY_TYPE}"
+        SET adguardhome_dns_53.src='lan'
+        SET adguardhome_dns_53.dest='lan'
+        ADDLIST adguardhome_dns_53.proto='tcp'
+        ADDLIST adguardhome_dns_53.proto='udp'
+        SET adguardhome_dns_53.src_dport="${DNS_PORT}"
+        SET adguardhome_dns_53.dest_port="${DNS_PORT}"
+        SET adguardhome_dns_53.target='DNAT'
+    fi
+}
 [ -n "${enable_usb_rndis}" ] && {
     printf '%s\n%s\n' "rndis_host" "cdc_ether" > /etc/modules.d/99-usb-net
     local SEC=network
