@@ -242,34 +242,6 @@ sed -i '/if \[ -z "\$(eval "echo \\$RULE_\${k}_PORTSETS")"/,/^[[:space:]]*fi$/c\
 			nft add rule inet mape srcnat ip protocol $proto oifname "map-$cfg" counter packets 0 bytes 0 snat ip to $(eval "echo \\$RULE_${k}_IPV4ADDR") : numgen inc mod $portcount map { $allports }\
 	    done\
 	  fi' "$MAP_SH"
-	  if [ -z "$(eval "echo \\$RULE_${k}_PORTSETS")" ]; then\
-	    json_add_object ""\
-	      json_add_string type nat\
-	      json_add_string target SNAT\
-	      json_add_string family inet\
-	      json_add_string snat_ip $(eval "echo \\$RULE_${k}_IPV4ADDR")\
-	    json_close_object\
-	  else\
-	    local portcount=0\
-	    local allports=""\
-	    for portset in $(eval "echo \\$RULE_${k}_PORTSETS"); do\
-		local startport=$(echo $portset | cut -d'"'"'-'"'"' -f1)\
-		local endport=$(echo $portset | cut -d'"'"'-'"'"' -f2)\
-		for x in $(seq $startport $endport); do\
-			if ! echo "$DONT_SNAT_TO" | tr '"'"' '"'"' '"'"'\\n'"'"' | grep -qw $x; then\
-				allports="$allports $portcount : $x , "\
-				portcount=`expr $portcount + 1`\
-			fi\
-		done\
-	    done\
-		allports=${allports%??}\
-            nft add table inet mape\
-            nft add chain inet mape srcnat {type nat hook postrouting priority 0\\; policy accept\\; }\
-	    local counter=0\
-        for proto in icmp tcp udp; do\
-			nft add rule inet mape srcnat ip protocol $proto oifname "map-$cfg" counter packets 0 bytes 0 snat ip to $(eval "echo \\$RULE_${k}_IPV4ADDR") : numgen inc mod $portcount map { $allports }\
-	    done\
-	  fi' "$MAP_SH"
 }
 [ -n "${ap_ip_address}" ] && {
     disable_wan
