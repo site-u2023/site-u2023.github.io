@@ -607,8 +607,8 @@
           "enableVar": "enable_adblock_fast"
         },
         {
-          "id": "tofukko-filter-japan",
-          "name": "Tofukko Japan Filter",
+          "id": "japan-tofukko-filter",
+          "name": "Japan Tofukko Filter",
           "enableVar": "enable_tofukko_filter",
           "hidden": true,
           "virtual": true
