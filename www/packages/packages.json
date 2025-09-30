@@ -610,7 +610,8 @@
           "id": "tofukko-filter-japan",
           "name": "Tofukko Japan Filter",
           "enableVar": "enable_tofukko_filter",
-          "hidden": true
+          "hidden": true,
+          "virtual": true
         }
       ]
     },
