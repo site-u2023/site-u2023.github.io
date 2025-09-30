@@ -616,6 +616,22 @@
       ]
     },
     {
+      "id": "dns-privacy",
+      "name": "DNS Privacy",
+      "class": "tr-dns-privacy",
+      "description": "DNS over HTTPS (DoH) and DNS over TLS (DoT) - Manual LuCI configuration required",
+      "packages": [
+        {
+          "id": "https-dns-proxy",
+          "name": "https-dns-proxy (DoH)"
+        },
+        {
+          "id": "stubby",
+          "name": "stubby (DoT)"
+        }
+      ]
+    },
+    {
       "id": "setup-driven-packages",
       "name": "Setup-driven Packages",
       "class": "tr-setup-driven-packages",
