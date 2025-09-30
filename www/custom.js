@@ -793,7 +793,14 @@ function updatePackageListToTextarea(source = 'unknown') {
     const checkedPackages = new Set();
     document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
         const pkgName = cb.getAttribute('data-package');
-        if (pkgName) checkedPackages.add(pkgName);
+        if (!pkgName) return;
+
+        const pkgInfo = findPackageById(pkgName);
+        if (pkgInfo && pkgInfo.virtual) {
+            console.log(`Skipping virtual package for opkg: ${pkgName}`);
+            return;
+        }
+        checkedPackages.add(pkgName);
     });
 
     const searchedPackages = new Set(
