@@ -307,10 +307,10 @@ sed -i '/if \[ -z "\$(eval "echo \\$RULE_\${k}_PORTSETS")"/,/^[[:space:]]*fi$/c\
 }
 [ -n "${enable_tofukko_filter}" ] && [ -n "${enable_adblock_fast}" ] && {
     local SEC=adblock-fast
-    SET file_url=file_url
-    SET file_url.url='https://raw.githubusercontent.com/tofukko/filter/master/Adblock_Plus_list.txt'
-    SET file_url.action='block'
-    SET file_url.enabled='1'
+    SET tofukko.name='Tofukko Filter'
+    SET tofukko.url='https://raw.githubusercontent.com/tofukko/filter/master/Adblock_Plus_list.txt'
+    SET tofukko.action='block'
+    SET tofukko.enabled='1'
 }
 [ -n "${enable_usb_rndis}" ] && {
     printf '%s\n%s\n' "rndis_host" "cdc_ether" > /etc/modules.d/99-usb-net
