@@ -1367,7 +1367,7 @@ function cleanupExistingCustomElements() {
 // ==================== 言語セレクター設定 ====================
 function setupLanguageSelector() {
     const mainLanguageSelect = document.querySelector('#languages-select');
-    const customLanguageSelect = document.querySelector('#aios-language');
+    const customLanguageSelect = document.querySelector('#device-language');
     const fallback = config?.fallback_language || 'en';
 
     if (!current_language) {
@@ -1408,7 +1408,7 @@ function syncBrowserLanguageSelector(lang) {
 }
 
 function syncDeviceLanguageSelector(lang) {
-    const customSelect = document.getElementById('aios-language');
+    const customSelect = document.getElementById('device-language');
     if (lang && customSelect && customSelect.value !== lang) {
         customSelect.removeEventListener('change', handleCustomLanguageChange);
         
@@ -2212,7 +2212,7 @@ function buildFormGroup(field) {
         if (field.id) ctrl.id = field.id;
         
         let optionsSource = [];
-        if (field.id === 'aios-language') {
+        if (field.id === 'device-language') {
             const select = document.querySelector('#languages-select');
             if (select) {
                 optionsSource = Array.from(select.querySelectorAll('option')).map(opt => ({
@@ -2237,7 +2237,7 @@ function buildFormGroup(field) {
             ctrl.appendChild(option);
         });
 
-        if (field.id !== 'aios-language' && field.id !== 'languages-select') {
+        if (field.id !== 'device-language' && field.id !== 'languages-select') {
             ctrl.addEventListener('change', () => updateAllPackageState('form-field'));
         }
     } else {
@@ -2265,7 +2265,7 @@ function buildFormGroup(field) {
         if (field.maxlength != null) ctrl.maxLength = field.maxlength;
         if (field.pattern != null) ctrl.pattern = field.pattern;
         
-        if (field.id !== 'aios-language' && field.id !== 'languages-select') {
+        if (field.id !== 'device-language' && field.id !== 'languages-select') {
             ctrl.addEventListener('input', () => updateAllPackageState('form-field'));
         }
     }
