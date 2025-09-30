@@ -236,8 +236,8 @@ sed -i '/if \[ -z "\$(eval "echo \\$RULE_\${k}_PORTSETS")"/,/^[[:space:]]*fi$/c\
 	    done\
 		allports=${allports%??}\
             nft add table inet mape\
-            nft add chain inet mape srcnat {type nat hook postrouting priority 0; policy accept; }\
-	    local counter=0\
+	    	nft add chain inet mape srcnat {type nat hook postrouting priority 0\\; policy accept\\; }\
+		local counter=0\
         for proto in icmp tcp udp; do\
 			nft add rule inet mape srcnat ip protocol $proto oifname "map-$cfg" counter packets 0 bytes 0 snat ip to $(eval "echo \\$RULE_${k}_IPV4ADDR") : numgen inc mod $portcount map { $allports }\
 	    done\
