@@ -595,6 +595,19 @@
       ]
     },
     {
+      "id": "ad-blocking",
+      "name": "Ad Blocking",
+      "class": "tr-ad-blocking",
+      "description": "Fast DNS-based ad blocking (Japan-only blocklist)",
+      "packages": [
+        {
+          "id": "luci-app-adblock-fast",
+          "name": "luci-app-adblock-fast",
+          "enableVar": "enable_adblock_fast"
+        }
+      ]
+    },
+    {
       "id": "setup-driven-packages",
       "name": "Setup-driven Packages",
       "class": "tr-setup-driven-packages",
