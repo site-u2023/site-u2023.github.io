@@ -603,12 +603,14 @@
         {
           "id": "luci-app-adblock-fast",
           "name": "luci-app-adblock-fast",
+          "dependencies": ["tofukko-filter-japan"],
           "enableVar": "enable_adblock_fast"
         },
         {
           "id": "tofukko-filter-japan",
           "name": "Tofukko Japan Filter",
-          "enableVar": "enable_tofukko_filter"
+          "enableVar": "enable_tofukko_filter",
+          "hidden": true
         }
       ]
     },
