@@ -305,7 +305,7 @@ sed -i '/if \[ -z "\$(eval "echo \\$RULE_\${k}_PORTSETS")"/,/^[[:space:]]*fi$/c\
     SET config.enabled='1'
     SET config.procd_trigger_wan6='1'
 }
-[ -n "${enable_tofukko_filter}" ] && {
+[ -n "${enable_tofukko_filter}" ] && [ -n "${enable_adblock_fast}" ] && {
     local SEC=adblock-fast
     SET file_url=file_url
     SET file_url.url='https://raw.githubusercontent.com/tofukko/filter/master/Adblock_Plus_list.txt'
