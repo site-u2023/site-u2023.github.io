@@ -1838,7 +1838,8 @@ async function verifyAllPackages() {
                 uniqueId: pkg.uniqueId || pkg.id,
                 feed: guessFeedForPackage(pkg.id),
                 hidden: pkg.hidden || false,
-                checked: pkg.checked || false
+                checked: pkg.checked || false,
+                virtual: pkg.virtual || false  // ← 追加
             });
             if (pkg.dependencies) {
                 pkg.dependencies.forEach(depId => {
@@ -1862,7 +1863,8 @@ async function verifyAllPackages() {
             const [id, feed] = key.split(':');
             const pkg = packagesToVerify.find(p => p.id === id && p.feed === feed);
             return pkg;
-        });
+        })
+        .filter(pkg => !pkg.virtual);
 
     console.log(`Verifying ${uniquePackages.length} unique packages...`);
 
