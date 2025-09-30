@@ -304,13 +304,13 @@ sed -i '/if \[ -z "\$(eval "echo \\$RULE_\${k}_PORTSETS")"/,/^[[:space:]]*fi$/c\
     local SEC=adblock-fast
     SET config.enabled='1'
     SET config.procd_trigger_wan6='1'
-}
-[ -n "${enable_tofukko_filter}" ] && [ -n "${enable_adblock_fast}" ] && {
-    local SEC=adblock-fast
-    SET tofukko.name='Tofukko Filter'
-    SET tofukko.url='https://raw.githubusercontent.com/tofukko/filter/master/Adblock_Plus_list.txt'
-    SET tofukko.action='block'
-    SET tofukko.enabled='1'
+    [ -n "${enable_tofukko_filter}" ] && {
+        local IDX=$(uci add "$SEC" file_url)
+        SET "$IDX".name='Tofukko Filter'
+        SET "$IDX".url='https://raw.githubusercontent.com/tofukko/filter/master/Adblock_Plus_list.txt'
+        SET "$IDX".action='block'
+        SET "$IDX".enabled='1'
+    }
 }
 [ -n "${enable_usb_rndis}" ] && {
     printf '%s\n%s\n' "rndis_host" "cdc_ether" > /etc/modules.d/99-usb-net
