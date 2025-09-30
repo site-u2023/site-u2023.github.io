@@ -1850,7 +1850,8 @@ async function verifyAllPackages() {
                             uniqueId: depPkg.uniqueId || depPkg.id,
                             feed: guessFeedForPackage(depPkg.id),
                             hidden: depPkg.hidden || false,
-                            isDependency: true
+                            isDependency: true,
+                            virtual: depPkg.virtual || false
                         });
                     }
                 });
