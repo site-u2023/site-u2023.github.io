@@ -612,11 +612,6 @@
           "enableVar": "enable_tofukko_filter",
           "hidden": true,
           "virtual": true
-        },
-        {
-          "id": "adguardhome",
-          "name": "adguardhome",
-          "enableVar": "enable_adguardhome"
         }
       ]
     },
