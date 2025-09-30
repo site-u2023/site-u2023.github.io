@@ -1839,7 +1839,7 @@ async function verifyAllPackages() {
                 feed: guessFeedForPackage(pkg.id),
                 hidden: pkg.hidden || false,
                 checked: pkg.checked || false,
-                virtual: pkg.virtual || false  // ← 追加
+                virtual: pkg.virtual || false
             });
             if (pkg.dependencies) {
                 pkg.dependencies.forEach(depId => {
