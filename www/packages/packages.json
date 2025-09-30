@@ -398,13 +398,11 @@
       "description": "USB storage kernel module and filesystem tools",
       "packages": [
         {
-          "id": "kmod-usb-storage",
-          "name": "kmod-usb-storage",
+          "id": "kmod-usb-storage-uas",
+          "name": "kmod-usb-storage-uas",
           "dependencies": [
             "block-mount",
-            "kmod-usb-storage-uas",
             "usbutils",
-            "libblkid1",
             "gdisk"
           ]
         },
@@ -414,18 +412,8 @@
           "hidden": true
         },
         {
-          "id": "kmod-usb-storage-uas",
-          "name": "kmod-usb-storage-uas",
-          "hidden": true
-        },
-        {
           "id": "usbutils",
           "name": "usbutils",
-          "hidden": true
-        },
-        {
-          "id": "libblkid1",
-          "name": "libblkid1",
           "hidden": true
         },
         {
