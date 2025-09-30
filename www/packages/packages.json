@@ -253,16 +253,8 @@
           "name": "iftop"
         },
         {
-          "id": "bwm-ng",
-          "name": "bwm-ng"
-        },
-        {
           "id": "bind-dig",
           "name": "bind-dig"
-        },
-        {
-          "id": "drill",
-          "name": "drill"
         }
       ]
     },
@@ -281,32 +273,16 @@
           "name": "nano-plus"
         },
         {
-          "id": "vim-fuller",
-          "name": "vim-fuller"
-        },
-        {
           "id": "lsof",
           "name": "lsof"
-        },
-        {
-          "id": "strace",
-          "name": "strace"
         },
         {
           "id": "rsync",
           "name": "rsync"
         },
         {
-          "id": "tree",
-          "name": "tree"
-        },
-        {
           "id": "curl",
           "name": "curl"
-        },
-        {
-          "id": "wget-ssl",
-          "name": "wget-ssl"
         },
         {
           "id": "netdata",
