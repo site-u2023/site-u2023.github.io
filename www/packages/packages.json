@@ -598,7 +598,7 @@
       "id": "ad-blocking",
       "name": "Ad Blocking",
       "class": "tr-ad-blocking",
-      "description": "Fast DNS-based ad blocking with optional Japan-specific blocklist",
+      "description": "DNS-based ad blocking and content filtering",
       "packages": [
         {
           "id": "luci-app-adblock-fast",
@@ -612,6 +612,11 @@
           "enableVar": "enable_tofukko_filter",
           "hidden": true,
           "virtual": true
+        },
+        {
+          "id": "adguardhome",
+          "name": "adguardhome",
+          "enableVar": "enable_adguardhome"
         }
       ]
     },
