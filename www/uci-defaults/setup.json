@@ -309,11 +309,11 @@
           "type": "input-group",
           "fields": [
             {
-              "id": "aios-language",
+              "id": "device-language",
               "label": "Language",
               "class": "tr-language",
               "type": "select",
-              "selector": "#aios-language",
+              "selector": "#device-language",
               "variableName": "language",
               "defaultValue": "",
               "syncWithBrowser": false
