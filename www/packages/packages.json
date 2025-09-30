@@ -622,8 +622,8 @@
       "description": "DNS over HTTPS (DoH) and DNS over TLS (DoT) - Manual LuCI configuration required",
       "packages": [
         {
-          "id": "https-dns-proxy",
-          "name": "https-dns-proxy (DoH)"
+          "id": "luci-app-https-dns-proxy",
+          "name": "luci-app-https-dns-proxy (DoH)"
         },
         {
           "id": "stubby",
