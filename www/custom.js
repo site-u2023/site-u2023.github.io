@@ -2814,163 +2814,54 @@ function updatePackageSizeDisplay() {
 
 // ==================== OpenWrt ToH JSON ====================
 let tohDataCache = null;
-let tohFetchInProgress = false;
-let tohFetchPromise = null;
 
 async function fetchToHData() {
     if (tohDataCache) return tohDataCache;
     
-    if (tohFetchInProgress && tohFetchPromise) {
-        return tohFetchPromise;
-    }
-    
-    tohFetchInProgress = true;
-    tohFetchPromise = (async () => {
-        const timeout = 10000;
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), timeout);
-        
-        try {
-            const response = await fetch(config.device_info_url, {
-                cache: 'force-cache',
-                signal: controller.signal
-            });
-            clearTimeout(timeoutId);
-            
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            tohDataCache = await response.json();
-            console.log('ToH data loaded:', tohDataCache.entries?.length || 0, 'devices');
-            return tohDataCache;
-        } catch (err) {
-            clearTimeout(timeoutId);
-            if (err.name === 'AbortError') {
-                console.error('ToH fetch timeout after 10s');
-            } else {
-                console.error('Failed to fetch ToH data:', err);
-            }
-            return null;
-        } finally {
-            tohFetchInProgress = false;
-            tohFetchPromise = null;
-        }
-    })();
-    
-    return tohFetchPromise;
-}
-
-async function getCPUCoresFromToH(deviceId, target, forceReload = false) {
-    if (forceReload) {
-        tohDataCache = null;
-    }
-
-    let data = null;
-    const maxRetries = 3;
-    const retryDelay = 3000;
-    const backoffMultiplier = 1.5;
-
-    for (let attempt = 0; attempt < maxRetries; attempt++) {
-        try {
-            data = await fetchToHData();
-            if (data && Array.isArray(data.entries) && Array.isArray(data.columns)) {
-                break;
-            }
-        } catch (err) {
-            console.warn(`ToH fetch error (attempt ${attempt + 1}/${maxRetries}):`, err);
-        }
-        
-        if (attempt < maxRetries - 1) {
-            const delay = retryDelay * Math.pow(backoffMultiplier, attempt);
-            console.log(`Retrying ToH fetch in ${delay}ms...`);
-            await new Promise(r => setTimeout(r, delay));
-        }
-    }
-
-    if (!data || !Array.isArray(data.entries) || !Array.isArray(data.columns)) {
-        console.error('ToH data unavailable after retries - IRQBalance auto-check skipped');
+    try {
+        const response = await fetch(config.device_info_url, { cache: 'force-cache' });
+        if (!response.ok) return null;
+        tohDataCache = await response.json();
+        return tohDataCache;
+    } catch (err) {
+        console.warn('ToH data fetch failed:', err.message);
         return null;
     }
+}
+
+async function updateIrqbalanceByDevice(deviceId, target) {
+    const checkbox = document.querySelector('[data-package="luci-app-irqbalance"]');
+    if (!checkbox) return;
+    
+    const data = await fetchToHData();
+    if (!data?.entries || !data?.columns) return;
 
     const idx = {
         deviceId: data.columns.indexOf('deviceid'),
         target: data.columns.indexOf('target'),
         subtarget: data.columns.indexOf('subtarget'),
-        model: data.columns.indexOf('model'),
-        cpuCores: data.columns.indexOf('cpucores'),
-        cpu: data.columns.indexOf('cpu')
+        cpuCores: data.columns.indexOf('cpucores')
     };
 
     const device = data.entries.find(entry => {
         const entryDeviceId = entry[idx.deviceId];
         const entryTarget = entry[idx.target];
         const entrySubtarget = entry[idx.subtarget];
-        const entryModel = entry[idx.model] || '';
         const fullTarget = entryTarget && entrySubtarget ? `${entryTarget}/${entrySubtarget}` : entryTarget;
-
-        return entryDeviceId === deviceId ||
-               fullTarget === target ||
-               entryModel.toLowerCase().includes(deviceId.toLowerCase());
+        return entryDeviceId === deviceId || fullTarget === target;
     });
 
-    if (!device) {
-        console.log('Device not found in ToH:', deviceId, target);
-        return null;
-    }
+    if (!device) return;
 
-    const cpuCoresRaw = device[idx.cpuCores];
-    if (cpuCoresRaw && !isNaN(cpuCoresRaw)) {
-        const cores = parseInt(cpuCoresRaw, 10);
-        console.log(`CPU cores from ToH (cpucores): ${cores}`);
-        return cores;
-    }
-
-    const cpuInfo = device[idx.cpu] || '';
-    const match = cpuInfo.match(/(\d+)\s*[x×]/i);
-    if (match) {
-        const cores = parseInt(match[1], 10);
-        console.log(`CPU cores from ToH (cpu field): ${cores}`);
-        return cores;
-    }
-
-    console.log('CPU cores not found in ToH data');
-    return null;
-}
-
-async function updateIrqbalanceByDevice(deviceId, target) {
-    console.log(`[IRQBalance] Checking device: ${deviceId}, target: ${target}`);
-    
-    const checkbox = document.querySelector('[data-package="luci-app-irqbalance"]');
-    if (!checkbox) {
-        console.warn('[IRQBalance] Checkbox not found in DOM');
-        return;
-    }
-    
-    let cores = await getCPUCoresFromToH(deviceId, target);
-
-    if (cores === null) {
-        console.log('[IRQBalance] First attempt failed, retrying with cache clear...');
-        cores = await getCPUCoresFromToH(deviceId, target, true);
-    }
-
-    if (cores === null) {
-        console.log('[IRQBalance] Could not determine CPU cores - keeping current state');
-        return;
-    }
-
-    console.log(`[IRQBalance] Device has ${cores} CPU core(s)`);
+    const cores = parseInt(device[idx.cpuCores], 10);
+    if (isNaN(cores)) return;
 
     const shouldBeEnabled = cores >= 2;
     
     if (checkbox.checked !== shouldBeEnabled) {
         checkbox.checked = shouldBeEnabled;
-        console.log(`[IRQBalance] Auto-${shouldBeEnabled ? 'enabled' : 'disabled'} for ${cores} core(s) device`);
-        
         checkbox.dispatchEvent(new Event('change', { bubbles: true }));
-        
-        requestAnimationFrame(() => {
-            updateAllPackageState('irqbalance-auto-check');
-        });
-    } else {
-        console.log(`[IRQBalance] Already ${shouldBeEnabled ? 'enabled' : 'disabled'} - no change needed`);
+        requestAnimationFrame(() => updateAllPackageState('irqbalance-auto-check'));
     }
 }
 
