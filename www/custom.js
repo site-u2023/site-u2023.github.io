@@ -70,6 +70,16 @@ const state = {
         lastPackageListHash: null,
         prevUISelections: new Set(),
         packageSizes: new Map()
+    },
+
+    dom: {
+        textarea: null,
+        sizeBreakdown: null,
+        packageLoadingIndicator: null,
+        dynamicConfigSections: null,
+        packageCategories: null,
+        autoInfo: null,
+        extendedBuildInfo: null
     }
 };
 
@@ -246,6 +256,17 @@ const CustomUtils = {
         return path.split('.').reduce((current, key) => current?.[key], obj);
     }
 };
+
+// ==================== DOM要素キャッシュ ====================
+function cacheFrequentlyUsedElements() {
+    state.dom.textarea = document.querySelector('#asu-packages');
+    state.dom.sizeBreakdown = document.querySelector('#package-size-breakdown');
+    state.dom.packageLoadingIndicator = document.querySelector('#package-loading-indicator');
+    state.dom.dynamicConfigSections = document.querySelector('#dynamic-config-sections');
+    state.dom.packageCategories = document.querySelector('#package-categories');
+    state.dom.autoInfo = document.querySelector('#auto-info');
+    state.dom.extendedBuildInfo = document.querySelector('#extended-build-info');
+}
 
 // ==================== 初期化処理 ====================
 const originalUpdateImages = window.updateImages;
@@ -1014,8 +1035,13 @@ async function updateAllPackageState(source = 'unknown') {
 
     console.log(`updateAllPackageState called from: ${source}`);
 
+    const elements = {
+        textarea: document.querySelector('#asu-packages'),
+        sizeBreakdown: document.querySelector('#package-size-breakdown')
+    };
+
     await updateLanguagePackageCore();
-    updatePackageListToTextarea(source);
+    updatePackageListToTextarea(source, elements);
     updateVariableDefinitions();
 
     console.log('All package state updated successfully');
@@ -1189,7 +1215,7 @@ function updatePackageListToTextarea(source = 'unknown') {
     });
 
     const manualPackages = new Set();
-    const textarea = document.querySelector('#asu-packages');
+    const textarea = state.dom.textarea || document.querySelector('#asu-packages');
 
     if (textarea) {
         const currentTextareaPackages = normalizePackages(textarea.value);
@@ -1233,19 +1259,19 @@ function updatePackageListToTextarea(source = 'unknown') {
         const baseSet = new Set([...state.packages.default, ...state.packages.device, ...state.packages.extra]);
         const addedPackages = uniquePackages.filter(pkg => !baseSet.has(pkg));
         
+        const versionArchPrefix = `${state.device.version}:${state.device.arch}:`;
+        
         let totalBytes = 0;
         for (const pkg of addedPackages) {
-            const sizeCacheKey = `${state.device.version}:${state.device.arch}:${pkg}`;
-            const size = state.cache.packageSizes.get(sizeCacheKey);
+            const size = state.cache.packageSizes.get(versionArchPrefix + pkg);
             if (typeof size === 'number' && size > 0) {
                 totalBytes += size;
             }
         }
         
         let baseBytes = 0;
-        for (const pkg of [...state.packages.default, ...state.packages.device, ...state.packages.extra]) {
-            const sizeCacheKey = `${state.device.version}:${state.device.arch}:${pkg}`;
-            const size = state.cache.packageSizes.get(sizeCacheKey);
+        for (const pkg of baseSet) {
+            const size = state.cache.packageSizes.get(versionArchPrefix + pkg);
             if (typeof size === 'number' && size > 0) {
                 baseBytes += size;
             }
@@ -1255,7 +1281,7 @@ function updatePackageListToTextarea(source = 'unknown') {
         textarea.style.height = 'auto';
         textarea.style.height = textarea.scrollHeight + 'px';
         
-        const sizeBreakdownEl = document.querySelector('#package-size-breakdown');
+        const sizeBreakdownEl = state.dom.sizeBreakdown || document.querySelector('#package-size-breakdown');
         if (sizeBreakdownEl) {
             const baseMB = (baseBytes / (1024 * 1024)).toFixed(2);
             const addedMB = (totalBytes / (1024 * 1024)).toFixed(2);
@@ -3289,6 +3315,8 @@ async function initializeCustomFeatures(asuSection, temp) {
 
     cleanupExistingCustomElements();
     replaceAsuSection(asuSection, temp);
+    
+    cacheFrequentlyUsedElements();
     
     if (!document.querySelector('#extended-build-info')) {
         await insertExtendedInfo(temp);
