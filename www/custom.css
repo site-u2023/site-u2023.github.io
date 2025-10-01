@@ -592,6 +592,10 @@ details summary h4 {
 
 /* ===== Script Section内のフィールドレイアウト（左右50:50） ===== */
 /* 通常フィールド：左にラベル、右にインプット */
+#scripts-details #dynamic-config-sections .form-row {
+  display: block;
+}
+
 #scripts-details #dynamic-config-sections .form-row .form-group {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -599,6 +603,7 @@ details summary h4 {
   column-gap: 1em;
   row-gap: 0.5em;
   align-items: start;
+  width: 100%;
 }
 
 #scripts-details #dynamic-config-sections .form-row .form-group label {
@@ -612,24 +617,32 @@ details summary h4 {
 }
 
 #scripts-details #dynamic-config-sections .form-row .form-group input:not([type="radio"]):not([type="checkbox"]),
-#scripts-details #dynamic-config-sections .form-row .form-group select:not(#versions),
+#scripts-details #dynamic-config-sections .form-row .form-group select:not(#versions):not(#languages-select),
 #scripts-details #dynamic-config-sections .form-row .form-group textarea {
   grid-column: 2;
   grid-row: 1;
   margin: 0;
   width: 100%;
+  box-sizing: border-box;
 }
 
 #scripts-details #dynamic-config-sections .form-row .form-group small {
   grid-column: 1 / -1;
   grid-row: 2;
   margin: 0;
+  padding-left: 0;
 }
 
 /* ラジオグループは例外：従来通りの縦並び */
 #scripts-details #dynamic-config-sections .form-row:has(.radio-group) .form-group {
+  display: block;
+}
+
+#scripts-details #dynamic-config-sections .radio-group {
   display: flex;
   flex-direction: column;
+  gap: 0.5em;
+  margin-top: 0.5em;
 }
 
 /* ===== Responsive Design (extends base responsive patterns) ===== */
@@ -700,24 +713,19 @@ details summary h4 {
 
   /* Script Section：モバイルでは縦並びに戻す */
   #scripts-details #dynamic-config-sections .form-row .form-group {
-    grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column;
   }
   
   #scripts-details #dynamic-config-sections .form-row .form-group label {
-    grid-column: 1;
-    grid-row: 1;
     padding-top: 0;
+    margin-bottom: 0.25em;
   }
   
   #scripts-details #dynamic-config-sections .form-row .form-group input:not([type="radio"]):not([type="checkbox"]),
-  #scripts-details #dynamic-config-sections .form-row .form-group select:not(#versions),
+  #scripts-details #dynamic-config-sections .form-row .form-group select:not(#versions):not(#languages-select),
   #scripts-details #dynamic-config-sections .form-row .form-group textarea {
-    grid-column: 1;
-    grid-row: 2;
-  }
-  
-  #scripts-details #dynamic-config-sections .form-row .form-group small {
-    grid-row: 3;
+    width: 100%;
   }
 }
 
