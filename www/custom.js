@@ -103,6 +103,16 @@ const CustomUtils = {
         state.device.subtarget = subtarget || '';
     },
 
+    createGridContainer(columns = 1) {
+        const container = document.createElement('div');
+        container.className = 'config-items-grid';
+        container.style.display = 'grid';
+        container.style.gridTemplateColumns = `repeat(${columns}, 1fr)`;
+        container.style.gap = '1em';
+        container.style.alignItems = 'start';
+        return container;
+    },
+  
     buildKmodsUrl: async function(version, vendor, isSnapshot) {
         if (!version || !vendor) {
             throw new Error(`Missing required parameters for kmods URL: version=${version}, vendor=${vendor}`);
