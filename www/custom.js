@@ -435,8 +435,6 @@ function renderSetupConfig(config) {
             displayIspInfo(state.apiInfo);
             console.log('Applied ISP config after form render');
         }
-        
-        // パッケージ評価はgeneratePackageSelector()の後で実行される
     });
 }
 
@@ -694,7 +692,6 @@ function setupEventListeners() {
 
     requestAnimationFrame(() => {
         evaluateAllShowWhen();
-        // evaluateInitialPackages()はgeneratePackageSelector()の後で呼ばれる
     });
 }
 
@@ -712,7 +709,6 @@ function evaluateInitialPackages() {
         
         console.log(`Evaluating packages for category: ${category.id}`);
         
-        // カテゴリ内の全ラジオグループの現在値を取得
         const radioValues = {};
         category.items.forEach(item => {
             if (item.type === 'radio-group' && item.variable) {
@@ -724,21 +720,18 @@ function evaluateInitialPackages() {
             }
         });
         
-        // connection_type = "auto" の場合、実際の接続タイプを判定
         let effectiveConnectionType = radioValues.connection_type;
         if (effectiveConnectionType === 'auto' && state.apiInfo) {
             effectiveConnectionType = getConnectionTypeFromApi(state.apiInfo);
             console.log(`  AUTO mode: Using effective type = ${effectiveConnectionType}`);
         }
         
-        // パッケージの条件を評価
         category.packages.forEach(pkg => {
             if (!pkg.when) return;
             
             const shouldEnable = Object.entries(pkg.when).every(([key, value]) => {
                 let actualValue = radioValues[key];
                 
-                // connection_typeの場合、effectiveConnectionTypeを使用
                 if (key === 'connection_type' && radioValues.connection_type === 'auto') {
                     actualValue = effectiveConnectionType;
                 }
@@ -768,7 +761,6 @@ function evaluateInitialPackages() {
     
     console.log('=== evaluateInitialPackages END ===');
     
-    // パッケージ状態を更新
     requestAnimationFrame(() => {
         updateAllPackageState('initial-packages-evaluated');
     });
@@ -777,17 +769,14 @@ function evaluateInitialPackages() {
 function getConnectionTypeFromApi(apiInfo) {
     if (!apiInfo) return 'dhcp';
     
-    // MAP-E判定
     if (apiInfo.mape?.brIpv6Address) {
         return 'mape';
     }
     
-    // DS-Lite判定
     if (apiInfo.aftr?.aftrIpv6Address) {
         return 'dslite';
     }
     
-    // どちらでもない場合はDHCP/PPPoE
     return 'dhcp';
 }
 
@@ -837,7 +826,6 @@ function evaluateShowWhen(condition) {
 function updatePackagesForRadioGroup(radioName, selectedValue) {
     if (!state.config.setup) return;
     
-    // connection_type = "auto" の場合、実際の接続タイプを判定
     let effectiveValue = selectedValue;
     if (radioName === 'connection_type' && selectedValue === 'auto' && state.apiInfo) {
         effectiveValue = getConnectionTypeFromApi(state.apiInfo);
@@ -850,16 +838,13 @@ function updatePackagesForRadioGroup(radioName, selectedValue) {
         category.packages.forEach(pkg => {
             if (!pkg.when) return;
             
-            // このパッケージの条件に、変更されたラジオグループが含まれているかチェック
             const isRelatedToThisRadio = Object.keys(pkg.when).includes(radioName);
             
             if (!isRelatedToThisRadio) {
-                // 関係ないパッケージはスキップ
                 return;
             }
             
             const shouldEnable = Object.entries(pkg.when).every(([key, value]) => {
-                // このラジオグループの条件を評価
                 const valueToCheck = (key === 'connection_type' && selectedValue === 'auto') 
                     ? effectiveValue 
                     : selectedValue;
@@ -1273,20 +1258,16 @@ function collectFormValues() {
 function applySpecialFieldLogic(values) {
     const connectionType = values.connection_type || 'auto';
     
-    // インターネット接続：全接続タイプのフィールドを収集
     const allConnectionFields = collectConnectionFields();
     
-    // 選択された接続タイプのフィールドを取得
     const selectedConnectionFields = getFieldsForConnectionType(connectionType);
     
-    // 選択されていない接続タイプのフィールドを削除
     allConnectionFields.forEach(field => {
         if (!selectedConnectionFields.includes(field)) {
             delete values[field];
         }
     });
     
-    // AUTO時は追加処理
     if (connectionType === 'auto') {
         if (state.apiInfo) {
             if (state.apiInfo.mape?.brIpv6Address) {
@@ -1314,15 +1295,12 @@ function applySpecialFieldLogic(values) {
         }
     }
     
-    // Wi-Fi：全Wi-Fiフィールドを収集
     const allWifiFields = collectWifiFields();
     
     const wifiMode = values.wifi_mode || 'standard';
     
-    // Wi-Fiモード別の必要フィールド
     const selectedWifiFields = getFieldsForWifiMode(wifiMode);
     
-    // 不要なWi-Fiフィールドを削除
     allWifiFields.forEach(field => {
         if (!selectedWifiFields.includes(field)) {
             delete values[field];
@@ -1333,15 +1311,12 @@ function applySpecialFieldLogic(values) {
         values.enable_usteer = '1';
     }
 
-    // Tuning：全Tuningフィールドを収集
     const allNetOptFields = collectNetOptFields();
     
     const netOptimizer = values.net_optimizer || 'auto';
     
-    // NetOptimizerモード別の必要フィールド
     const selectedNetOptFields = getFieldsForNetOptMode(netOptimizer);
     
-    // 不要なNetOptimizerフィールドを削除
     allNetOptFields.forEach(field => {
         if (!selectedNetOptFields.includes(field)) {
             delete values[field];
@@ -1351,8 +1326,7 @@ function applySpecialFieldLogic(values) {
     if (netOptimizer === 'auto' || netOptimizer === 'manual') {
         values.enable_netopt = '1';
     }
-    
-    // DNSmasq
+
     const allDnsmasqFields = collectDnsmasqFields();
     
     const dnsmasqMode = values.enable_dnsmasq || 'auto';
@@ -1370,7 +1344,6 @@ function applySpecialFieldLogic(values) {
     }
 }
 
-// インターネット接続：全フィールドを収集
 function collectConnectionFields() {
     const fields = [];
     const category = state.config.setup?.categories?.find(cat => cat.id === 'internet-connection');
@@ -1391,20 +1364,16 @@ function collectConnectionFields() {
     return fields;
 }
 
-// インターネット接続：選択された接続タイプのフィールドを取得
 function getFieldsForConnectionType(type) {
     const category = state.config.setup?.categories?.find(cat => cat.id === 'internet-connection');
     if (!category) return [];
     
-    // connection_type自体は常に含める
     const fields = ['connection_type'];
     
-    // autoとdhcpは追加フィールドなし
     if (type === 'auto' || type === 'dhcp') {
         return fields;
     }
     
-    // 該当するセクションを探す
     const section = category.items.find(item => 
         item.type === 'section' && 
         item.showWhen && 
@@ -1414,7 +1383,6 @@ function getFieldsForConnectionType(type) {
     
     if (!section || !section.items) return fields;
     
-    // セクション内のフィールドを収集
     section.items.forEach(item => {
         if (item.type === 'field' && item.variable) {
             fields.push(item.variable);
@@ -1426,7 +1394,6 @@ function getFieldsForConnectionType(type) {
     return fields;
 }
 
-// Wi-Fi：全フィールドを収集
 function collectWifiFields() {
     const fields = [];
     const category = state.config.setup?.categories?.find(cat => cat.id === 'wifi-config');
@@ -1441,7 +1408,6 @@ function collectWifiFields() {
     return fields;
 }
 
-// Wi-Fi：選択されたモードのフィールドを取得
 function getFieldsForWifiMode(mode) {
     const fields = ['wifi_mode'];
     
@@ -1449,7 +1415,6 @@ function getFieldsForWifiMode(mode) {
         return fields;
     }
     
-    // standardとusteerは基本フィールド
     fields.push('wlan_ssid', 'wlan_password');
     
     if (mode === 'usteer') {
@@ -1459,7 +1424,6 @@ function getFieldsForWifiMode(mode) {
     return fields;
 }
 
-// Tuning：全NetOptimizerフィールドを収集
 function collectNetOptFields() {
     const fields = [];
     const category = state.config.setup?.categories?.find(cat => cat.id === 'tuning-config');
@@ -1480,7 +1444,6 @@ function collectNetOptFields() {
     return fields;
 }
 
-// Tuning：選択されたモードのフィールドを取得
 function getFieldsForNetOptMode(mode) {
     const fields = ['net_optimizer'];
     
@@ -1496,7 +1459,6 @@ function getFieldsForNetOptMode(mode) {
     return fields;
 }
 
-// Dnsmasq：全フィールドを収集
 function collectDnsmasqFields() {
     const fields = [];
     const category = state.config.setup?.categories?.find(cat => cat.id === 'tuning-config');
@@ -1517,7 +1479,6 @@ function collectDnsmasqFields() {
     return fields;
 }
 
-// Dnsmasq：選択されたモードのフィールドを取得
 function getFieldsForDnsmasqMode(mode) {
     const fields = ['enable_dnsmasq'];
     
@@ -2813,9 +2774,7 @@ function generatePackageSelector() {
     });
     
     console.log(`Generated ${state.packages.json.categories.length} package categories (including hidden)`);
-    
-    // Hidden checkboxが作成された後にパッケージのチェック状態のみ設定
-    // updateAllPackageState()はデバイスパッケージロード後に自動的に呼ばれる
+
     requestAnimationFrame(() => {
         evaluateInitialPackages();
     });
@@ -3200,10 +3159,8 @@ async function initializeCustomFeatures(asuSection, temp) {
         await insertExtendedInfo(temp);
     }
     
-    // CRITICAL: API情報を先に取得してからセットアップを進める
     await fetchAndDisplayIspInfo();
     
-    // API情報取得後、extended-build-infoを表示
     if (state.apiInfo) {
         const extendedInfo = document.querySelector('#extended-build-info');
         if (extendedInfo) {
