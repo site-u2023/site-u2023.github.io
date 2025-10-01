@@ -741,6 +741,12 @@ function evaluateShowWhen(condition) {
 function updatePackagesForRadioGroup(radioName, selectedValue) {
     if (!state.config.setup) return;
     
+    if (radioName === 'connection_type') {
+        console.log('Clearing exclusive connection packages from dynamic set');
+        state.packages.dynamic.delete('map');
+        state.packages.dynamic.delete('ds-lite');
+    }
+    
     for (const category of state.config.setup.categories) {
         if (!category.packages) continue;
         
@@ -756,6 +762,14 @@ function updatePackagesForRadioGroup(radioName, selectedValue) {
             });
             
             toggleVirtualPackage(pkg.id, shouldEnable);
+            
+            if (shouldEnable) {
+                state.packages.dynamic.add(pkg.id);
+                console.log(`Added ${pkg.id} to dynamic packages`);
+            } else {
+                state.packages.dynamic.delete(pkg.id);
+                console.log(`Removed ${pkg.id} from dynamic packages`);
+            }
         });
     }
 }
@@ -778,6 +792,12 @@ function toggleVirtualPackage(packageId, enabled) {
     if (checkbox.checked !== enabled) {
         checkbox.checked = enabled;
         console.log(`Virtual package ${packageId}: ${enabled ? 'enabled' : 'disabled'}`);
+        
+        if (enabled) {
+            state.packages.dynamic.add(packageId);
+        } else {
+            state.packages.dynamic.delete(packageId);
+        }
     }
 }
 
@@ -1014,11 +1034,40 @@ function updatePackageListToTextarea(source = 'unknown') {
         state.cache.prevUISelections = currentUISelections;
     }
 
+    const filteredDynamicPackages = new Set();
+    const connectionType = getFieldValue('input[name="connection_type"]:checked');
+    
+    for (const pkg of state.packages.dynamic) {
+        if (pkg.startsWith('luci-i18n-')) {
+            filteredDynamicPackages.add(pkg);
+            continue;
+        }
+        
+        if (pkg === 'map' || pkg === 'ds-lite') {
+            if (connectionType === 'mape' && pkg === 'map') {
+                filteredDynamicPackages.add(pkg);
+            } else if (connectionType === 'dslite' && pkg === 'ds-lite') {
+                filteredDynamicPackages.add(pkg);
+            } else if (connectionType === 'auto' && state.apiInfo) {
+                if (pkg === 'map' && state.apiInfo.mape?.brIpv6Address) {
+                    filteredDynamicPackages.add(pkg);
+                } else if (pkg === 'ds-lite' && state.apiInfo.aftr) {
+                    filteredDynamicPackages.add(pkg);
+                }
+            }
+            continue;
+        }
+        
+        filteredDynamicPackages.add(pkg);
+    }
+    
+    console.log('Filtered dynamic packages:', [...filteredDynamicPackages]);
+
     const uniquePackages = [...new Set([
         ...basePackages,
         ...checkedPackages,
         ...searchedPackages,
-        ...state.packages.dynamic,
+        ...filteredDynamicPackages,
         ...manualPackages
     ])];
 
@@ -1033,7 +1082,7 @@ function updatePackageListToTextarea(source = 'unknown') {
         base: basePackages.size,
         checked: checkedPackages.size,
         searched: searchedPackages.size,
-        dynamic: state.packages.dynamic.size,
+        dynamic: filteredDynamicPackages.size,
         manual: manualPackages.size,
         total: uniquePackages.length
     });
