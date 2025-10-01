@@ -395,35 +395,6 @@ function renderSetupConfig(config) {
     console.log('Container cleared, rebuilding...');
 
     (config.categories || []).forEach((category) => {
-        const section = document.createElement('div');
-        section.className = 'config-section';
-        section.id = category.id;
-
-        const h4 = document.createElement('h4');
-        h4.textContent = category.title || category.id || '';
-        if (category.class) {
-            h4.classList.add(category.class);
-        }
-        section.appendChild(h4);
-        
-        if (category.description) {
-            const desc = document.createElement('p');
-            desc.className = 'package-category-description';
-            desc.textContent = category.description;
-            section.appendChild(desc);
-        }
-
-        (category.items || []).forEach((item) => {
-            try {
-                const element = buildItem(item);
-                if (element) {
-                    section.appendChild(element);
-                }
-            } catch (error) {
-                console.error(`Error rendering item ${item.id}:`, error);
-            }
-        });
-
         container.appendChild(section);
     });
 
@@ -435,6 +406,8 @@ function renderSetupConfig(config) {
             displayIspInfo(state.apiInfo);
             console.log('Applied ISP config after form render');
         }
+        
+        evaluateSetupPackages();
     });
 }
 
@@ -739,38 +712,60 @@ function evaluateShowWhen(condition) {
 }
 
 function updatePackagesForRadioGroup(radioName, selectedValue) {
+    console.log(`Radio changed: ${radioName} = ${selectedValue}`);
+    
+    evaluateSetupPackages();
+}
+
+function evaluateSetupPackages() {
     if (!state.config.setup) return;
     
-    if (radioName === 'connection_type') {
-        console.log('Clearing exclusive connection packages from dynamic set');
-        state.packages.dynamic.delete('map');
-        state.packages.dynamic.delete('ds-lite');
-    }
+    console.log('Evaluating setup.json packages');
+    
+    const formValues = collectFormValues();
+    const connectionType = formValues.connection_type || getFieldValue('input[name="connection_type"]:checked') || 'auto';
+    
+    console.log('Current connection_type:', connectionType);
     
     for (const category of state.config.setup.categories) {
-        if (!category.packages) continue;
+        if (!category.packages || category.packages.length === 0) continue;
         
-        category.packages.forEach(pkg => {
-            if (!pkg.when) return;
+        for (const pkg of category.packages) {
+            if (!pkg.when) continue;
             
             const shouldEnable = Object.entries(pkg.when).every(([key, value]) => {
-                if (key !== radioName) return true;
-                if (Array.isArray(value)) {
-                    return value.includes(selectedValue);
+                let actualValue = formValues[key] || getFieldValue(`input[name="${key}"]:checked`);
+                
+                if (key === 'connection_type' && actualValue === 'auto' && state.apiInfo) {
+                    if (pkg.id === 'map' && state.apiInfo.mape?.brIpv6Address) {
+                        console.log('AUTO mode detected MAP-E, enabling map package');
+                        return true;
+                    }
+                    if (pkg.id === 'ds-lite' && state.apiInfo.aftr) {
+                        console.log('AUTO mode detected DS-Lite, enabling ds-lite package');
+                        return true;
+                    }
+                    if (pkg.id === 'map' || pkg.id === 'ds-lite') {
+                        return false;
+                    }
                 }
-                return value === selectedValue;
+                
+                if (Array.isArray(value)) {
+                    return value.includes(actualValue);
+                }
+                return value === actualValue;
             });
+            
+            console.log(`Package ${pkg.id}: ${shouldEnable ? 'enabled' : 'disabled'}`);
             
             toggleVirtualPackage(pkg.id, shouldEnable);
             
             if (shouldEnable) {
                 state.packages.dynamic.add(pkg.id);
-                console.log(`Added ${pkg.id} to dynamic packages`);
             } else {
                 state.packages.dynamic.delete(pkg.id);
-                console.log(`Removed ${pkg.id} from dynamic packages`);
             }
-        });
+        }
     }
 }
 
@@ -1611,6 +1606,10 @@ async function fetchAndDisplayIspInfo() {
         displayIspInfo(apiInfo);
         updateAutoConnectionInfo(apiInfo);
         CustomUtils.setGuaPrefixIfAvailable();
+        
+        if (state.config.setup) {
+            evaluateSetupPackages();
+        }
 
     } catch (err) {
         console.error('Failed to fetch ISP info:', err);
@@ -1735,6 +1734,8 @@ function applyIspAutoConfig(apiInfo) {
     if (mutated) {
         CustomUtils.setGuaPrefixIfAvailable();
         updateAutoConnectionInfo(apiInfo);
+        
+        evaluateSetupPackages();
     }
 
     return mutated;
