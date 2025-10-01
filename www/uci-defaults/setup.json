@@ -1,0 +1,748 @@
+{
+  "version": "2.0.0",
+  "description": "Simplified setup configuration - packages.json style",
+  
+  "constants": {
+    "interfaces": {
+      "dsl": "dsl",
+      "dsl6": "dsl6",
+      "mape": "mape",
+      "mape6": "mape6",
+      "ap": "ap",
+      "ap6": "ap6"
+    },
+    "defaults": {
+      "mobility_domain": "4f57",
+      "ntp_domain": ".pool.ntp.org",
+      "lan_ip": "192.168.1.1",
+      "ap_ip": "192.168.1.2",
+      "ap_gateway": "192.168.1.1"
+    },
+    "aftr_map": {
+      "transix": {
+        "east": "2404:8e00::feed:100",
+        "west": "2404:8e01::feed:100"
+      },
+      "xpass": {
+        "east": "2404:8e02::feed:100",
+        "west": "2404:8e03::feed:100"
+      },
+      "v6option": {
+        "east": "2404:8e04::feed:100",
+        "west": "2404:8e05::feed:100"
+      }
+    }
+  },
+  
+  "categories": [
+    {
+      "id": "basic-config",
+      "title": "Basic Configuration",
+      "class": "tr-basic-configuration",
+      "description": "Basic system and device configuration",
+      
+      "items": [
+        {
+          "type": "field",
+          "id": "device-language",
+          "label": "Language",
+          "class": "tr-language",
+          "fieldType": "select",
+          "variable": "language",
+          "default": "",
+          "source": "browser-languages"
+        },
+        {
+          "type": "field",
+          "id": "aios-country",
+          "label": "Country",
+          "class": "tr-country",
+          "fieldType": "text",
+          "variable": "country",
+          "placeholder": "00",
+          "default": "00",
+          "maxlength": 2,
+          "apiSource": "country"
+        },
+        {
+          "type": "field",
+          "id": "aios-timezone",
+          "label": "Timezone",
+          "class": "tr-timezone",
+          "fieldType": "text",
+          "variable": "timezone",
+          "placeholder": "UTC",
+          "default": "UTC",
+          "apiSource": "timezone"
+        },
+        {
+          "type": "field",
+          "id": "aios-zonename",
+          "label": "Zonename",
+          "class": "tr-zonename",
+          "fieldType": "text",
+          "variable": "zonename",
+          "placeholder": "UTC",
+          "default": "UTC",
+          "apiSource": "zonename"
+        },
+        {
+          "type": "field",
+          "id": "aios-device-name",
+          "label": "Device name",
+          "class": "tr-device-name",
+          "fieldType": "text",
+          "variable": "device_name",
+          "placeholder": "OpenWrt"
+        },
+        {
+          "type": "field",
+          "id": "aios-root-password",
+          "label": "Root password",
+          "class": "tr-root-password",
+          "fieldType": "text",
+          "variable": "root_password",
+          "placeholder": "8+ characters"
+        },
+        {
+          "type": "field",
+          "id": "aios-lan-ipv4",
+          "label": "LAN IPv4 Address",
+          "class": "tr-lan-ipv4-address",
+          "fieldType": "text",
+          "variable": "lan_ip_address",
+          "placeholder": "192.168.1.1"
+        },
+        {
+          "type": "field",
+          "id": "aios-lan-ipv6",
+          "label": "LAN IPv6 Address",
+          "class": "tr-lan-ipv6-address",
+          "fieldType": "text",
+          "variable": "lan_ipv6_address",
+          "placeholder": "fd00::1/64"
+        },
+        {
+          "type": "field",
+          "id": "aios-ssh-interface",
+          "label": "SSH Interface",
+          "class": "tr-ssh-interface",
+          "fieldType": "text",
+          "variable": "ssh_interface",
+          "placeholder": "lan",
+          "default": "lan",
+          "description": "Network interface for SSH access"
+        },
+        {
+          "type": "field",
+          "id": "aios-ssh-port",
+          "label": "SSH Port",
+          "class": "tr-ssh-port",
+          "fieldType": "number",
+          "variable": "ssh_port",
+          "placeholder": "22",
+          "min": 1,
+          "max": 65535,
+          "description": "Port number for SSH access"
+        },
+        {
+          "type": "field",
+          "id": "aios-flow-offloading",
+          "label": "Flow offloading type",
+          "class": "tr-flow-offloading-type",
+          "fieldType": "select",
+          "variable": "flow_offloading_type",
+          "options": [
+            {"value": "", "label": "Disabled", "class": "tr-disabled", "selected": true},
+            {"value": "software", "label": "Software flow offloading", "class": "tr-software-flow-offloading"},
+            {"value": "hardware", "label": "Hardware flow offloading", "class": "tr-hardware-flow-offloading"}
+          ]
+        },
+        {
+          "type": "field",
+          "id": "aios-backup-path",
+          "label": "Restore Backup Path",
+          "class": "tr-restore-backup-path",
+          "fieldType": "text",
+          "variable": "backup_path",
+          "placeholder": "/root/backup.tar.gz",
+          "default": "/root/backup.tar.gz",
+          "description": "Path to backup file for restore"
+        }
+      ]
+    },
+    
+    {
+      "id": "wifi-config",
+      "title": "Wi-Fi Configuration",
+      "class": "tr-wi-fi-configuration",
+      "description": "Wireless network configuration",
+      
+      "items": [
+        {
+          "type": "radio-group",
+          "id": "wifi-mode",
+          "title": "Wi-Fi Mode",
+          "class": "tr-wi-fi-mode",
+          "variable": "wifi_mode",
+          "default": "standard",
+          "options": [
+            {"value": "standard", "label": "Standard", "class": "tr-standard"},
+            {"value": "usteer", "label": "Usteer", "class": "tr-usteer"},
+            {"value": "disabled", "label": "Disabled", "class": "tr-disabled"}
+          ]
+        },
+        {
+          "type": "field",
+          "id": "aios-wifi-ssid",
+          "label": "Wi-Fi SSID",
+          "class": "tr-wi-fi-ssid",
+          "fieldType": "text",
+          "variable": "wlan_ssid",
+          "placeholder": "OpenWrt",
+          "default": "OpenWrt",
+          "maxlength": 32,
+          "showWhen": {"wifi_mode": ["standard", "usteer"]}
+        },
+        {
+          "type": "field",
+          "id": "aios-wifi-password",
+          "label": "Wi-Fi Password",
+          "class": "tr-wi-fi-password",
+          "fieldType": "text",
+          "variable": "wlan_password",
+          "placeholder": "8+ characters",
+          "default": "password",
+          "minlength": 8,
+          "maxlength": 63,
+          "showWhen": {"wifi_mode": ["standard", "usteer"]}
+        },
+        {
+          "type": "field",
+          "id": "aios-wifi-mobility-domain",
+          "label": "Mobility Domain",
+          "class": "tr-mobility-domain",
+          "fieldType": "text",
+          "variable": "mobility_domain",
+          "placeholder": "4f57",
+          "default": "4f57",
+          "maxlength": 4,
+          "pattern": "[0-9A-Fa-f]{4}",
+          "description": "4-digit hex (e.g. 4f57)",
+          "showWhen": {"wifi_mode": ["usteer"]}
+        },
+        {
+          "type": "field",
+          "id": "aios-wifi-snr",
+          "label": "Min SNR",
+          "class": "tr-min-snr",
+          "fieldType": "text",
+          "variable": "snr",
+          "placeholder": "30 15 5",
+          "default": "30 15 5",
+          "description": "SNR values in band order",
+          "showWhen": {"wifi_mode": ["usteer"]}
+        }
+      ],
+      
+      "packages": [
+        {
+          "id": "usteer-from-setup",
+          "when": {"wifi_mode": "usteer"}
+        }
+      ]
+    },
+    
+    {
+      "id": "internet-connection",
+      "title": "Internet Connection",
+      "class": "tr-internet-connection",
+      "description": "Configure your internet connection type",
+      
+      "items": [
+        {
+          "type": "radio-group",
+          "id": "connection-type",
+          "title": "Connection type",
+          "class": "tr-connection-type",
+          "variable": "connection_type",
+          "default": "auto",
+          "options": [
+            {"value": "auto", "label": "AUTO", "class": "tr-auto"},
+            {"value": "dhcp", "label": "DHCP", "class": "tr-dhcp"},
+            {"value": "pppoe", "label": "PPPoE", "class": "tr-pppoe"},
+            {"value": "dslite", "label": "DS-Lite", "class": "tr-dslite"},
+            {"value": "mape", "label": "MAP-E", "class": "tr-mape"},
+            {"value": "ap", "label": "AP", "class": "tr-ap"}
+          ]
+        },
+        {
+          "type": "section",
+          "id": "auto-section",
+          "title": "AUTO Detection",
+          "class": "tr-auto-detection",
+          "showWhen": {"connection_type": "auto"},
+          "items": [
+            {
+              "type": "info-display",
+              "id": "auto-info",
+              "class": "tr-auto-detection-information",
+              "content": "Detecting connection type..."
+            }
+          ]
+        },
+        {
+          "type": "section",
+          "id": "dhcp-section",
+          "title": "DHCP",
+          "class": "tr-dhcp",
+          "showWhen": {"connection_type": "dhcp"},
+          "items": [
+            {
+              "type": "info-display",
+              "id": "dhcp-info",
+              "class": "tr-dhcp-information",
+              "content": "DHCP configuration will be applied automatically. No additional settings required."
+            }
+          ]
+        },
+        {
+          "type": "section",
+          "id": "pppoe-section",
+          "title": "PPPoE",
+          "class": "tr-pppoe",
+          "showWhen": {"connection_type": "pppoe"},
+          "items": [
+            {
+              "type": "field",
+              "id": "pppoe-username",
+              "label": "Username",
+              "class": "tr-pppoe-username",
+              "fieldType": "text",
+              "variable": "pppoe_username",
+              "placeholder": "Username"
+            },
+            {
+              "type": "field",
+              "id": "pppoe-password",
+              "label": "Password",
+              "class": "tr-pppoe-password",
+              "fieldType": "password",
+              "variable": "pppoe_password",
+              "placeholder": "Password"
+            }
+          ]
+        },
+        {
+          "type": "section",
+          "id": "dslite-section",
+          "title": "DS-Lite",
+          "class": "tr-dslite",
+          "showWhen": {"connection_type": "dslite"},
+          "items": [
+            {
+              "type": "field",
+              "id": "dslite-aftr-type",
+              "label": "AFTR Type",
+              "class": "tr-dslite-aftr-type",
+              "fieldType": "select",
+              "variable": "dslite_aftr_type",
+              "options": [
+                {"value": "transix", "label": "gw.transix.jp", "class": "tr-gwtransixjp"},
+                {"value": "xpass", "label": "gw.xpass.jp", "class": "tr-gwxpassjp"},
+                {"value": "v6option", "label": "gw.v6option.jp", "class": "tr-gwv6optionjp"}
+              ],
+              "computeTarget": "dslite-aftr-address"
+            },
+            {
+              "type": "field",
+              "id": "dslite-area",
+              "label": "Area",
+              "class": "tr-dslite-area",
+              "fieldType": "select",
+              "variable": "dslite_area",
+              "options": [
+                {"value": "east", "label": "East Japan", "class": "tr-east-japan"},
+                {"value": "west", "label": "West Japan", "class": "tr-west-japan"}
+              ],
+              "computeTarget": "dslite-aftr-address"
+            },
+            {
+              "type": "field",
+              "id": "dslite-aftr-address",
+              "label": "AFTR Address",
+              "class": "tr-dslite-aftr-ipv6-address",
+              "fieldType": "text",
+              "variable": "dslite_aftr_address",
+              "placeholder": "2404:8e00::feed:100",
+              "default": "2404:8e00::feed:100",
+              "apiSource": "aftr.aftrIpv6Address",
+              "computed": {
+                "from": ["dslite_aftr_type", "dslite_area"],
+                "map": "aftr_map"
+              }
+            }
+          ]
+        },
+        {
+          "type": "section",
+          "id": "mape-section",
+          "title": "MAP-E",
+          "class": "tr-mape",
+          "showWhen": {"connection_type": "mape"},
+          "items": [
+            {
+              "type": "radio-group",
+              "id": "mape-type",
+              "title": "Type",
+              "class": "tr-mape-type",
+              "variable": "mape_type",
+              "default": "gua",
+              "options": [
+                {"value": "gua", "label": "GUA", "class": "tr-gua"},
+                {"value": "pd", "label": "PD", "class": "tr-pd"}
+              ]
+            },
+            {
+              "type": "field",
+              "id": "mape-br",
+              "label": "Peer Address (BR)",
+              "class": "tr-br",
+              "fieldType": "text",
+              "variable": "mape_br",
+              "placeholder": "2001:380:a120::9",
+              "apiSource": "mape.brIpv6Address"
+            },
+            {
+              "type": "field",
+              "id": "mape-ealen",
+              "label": "EA-len",
+              "class": "tr-ea-len",
+              "fieldType": "number",
+              "variable": "mape_ealen",
+              "placeholder": "18",
+              "apiSource": "mape.eaBitLength"
+            },
+            {
+              "type": "field",
+              "id": "mape-ipv4-prefix",
+              "label": "IPv4 Address",
+              "class": "tr-ipv4-prefix",
+              "fieldType": "text",
+              "variable": "mape_ipv4_prefix",
+              "placeholder": "",
+              "apiSource": "mape.ipv4Prefix"
+            },
+            {
+              "type": "field",
+              "id": "mape-ipv4-prefixlen",
+              "label": "IPv4 Prefix Length",
+              "class": "tr-ipv4-prefix-length",
+              "fieldType": "number",
+              "variable": "mape_ipv4_prefixlen",
+              "placeholder": "20",
+              "apiSource": "mape.ipv4PrefixLength"
+            },
+            {
+              "type": "field",
+              "id": "mape-ipv6-prefix",
+              "label": "IPv6 Prefix",
+              "class": "tr-ipv6-prefix",
+              "fieldType": "text",
+              "variable": "mape_ipv6_prefix",
+              "placeholder": "",
+              "apiSource": "mape.ipv6Prefix"
+            },
+            {
+              "type": "field",
+              "id": "mape-ipv6-prefixlen",
+              "label": "IPv6 Prefix Length",
+              "class": "tr-ipv6-prefix-length",
+              "fieldType": "number",
+              "variable": "mape_ipv6_prefixlen",
+              "placeholder": "38",
+              "apiSource": "mape.ipv6PrefixLength"
+            },
+            {
+              "type": "field",
+              "id": "mape-psid-offset",
+              "label": "PSID Offset",
+              "class": "tr-psid-offset",
+              "fieldType": "number",
+              "variable": "mape_psid_offset",
+              "placeholder": "6",
+              "apiSource": "mape.psIdOffset"
+            },
+            {
+              "type": "field",
+              "id": "mape-psidlen",
+              "label": "PSID Length",
+              "class": "tr-psid-length",
+              "fieldType": "number",
+              "variable": "mape_psidlen",
+              "placeholder": "6",
+              "apiSource": "mape.psidlen"
+            },
+            {
+              "type": "field",
+              "id": "mape-gua-prefix",
+              "label": "GUA Prefix",
+              "class": "tr-gua-prefix",
+              "fieldType": "text",
+              "variable": "mape_gua_prefix",
+              "placeholder": "optional for GUA",
+              "description": "IPv6 GUA prefix with /64 suffix",
+              "apiSource": "ipv6",
+              "computeFrom": "generateGuaPrefix",
+              "showWhen": {"mape_type": "gua"}
+            }
+          ]
+        },
+        {
+          "type": "section",
+          "id": "ap-section",
+          "title": "AP Mode",
+          "class": "tr-ap-mode",
+          "showWhen": {"connection_type": "ap"},
+          "items": [
+            {
+              "type": "field",
+              "id": "ap-ip-address",
+              "label": "IP Address",
+              "class": "tr-ap-ip-address",
+              "fieldType": "text",
+              "variable": "ap_ip_address",
+              "placeholder": "192.168.1.2",
+              "default": "192.168.1.2"
+            },
+            {
+              "type": "field",
+              "id": "ap-gateway",
+              "label": "Gateway",
+              "class": "tr-ap-gateway",
+              "fieldType": "text",
+              "variable": "ap_gateway",
+              "placeholder": "192.168.1.1",
+              "default": "192.168.1.1"
+            }
+          ]
+        }
+      ],
+      
+      "packages": [
+        {
+          "id": "map",
+          "when": {"connection_type": ["mape", "auto"]}
+        },
+        {
+          "id": "ds-lite",
+          "when": {"connection_type": ["dslite", "auto"]}
+        }
+      ]
+    },
+    
+    {
+      "id": "tuning-config",
+      "title": "Tuning",
+      "class": "tr-tuning",
+      "description": "System performance and network optimization",
+      
+      "items": [
+        {
+          "type": "radio-group",
+          "id": "net-optimizer",
+          "title": "Dynamic Network Optimizer",
+          "class": "tr-dynamic-network-optimizer",
+          "variable": "net_optimizer",
+          "default": "auto",
+          "options": [
+            {"value": "auto", "label": "AUTO", "class": "tr-auto"},
+            {"value": "manual", "label": "Manual", "class": "tr-manual"},
+            {"value": "disabled", "label": "Disabled", "class": "tr-disabled"}
+          ]
+        },
+        {
+          "type": "section",
+          "id": "netopt-auto-section",
+          "title": "AUTO Mode",
+          "class": "tr-auto-mode",
+          "showWhen": {"net_optimizer": "auto"},
+          "items": [
+            {
+              "type": "info-display",
+              "id": "netopt-auto-info",
+              "class": "tr-auto-optimization",
+              "content": "Auto mode adjusts parameters based on system resources (Memory, CPU cores, etc.)"
+            }
+          ]
+        },
+        {
+          "type": "section",
+          "id": "netopt-manual-section",
+          "title": "Manual Mode",
+          "class": "tr-manual-mode",
+          "showWhen": {"net_optimizer": "manual"},
+          "items": [
+            {
+              "type": "field",
+              "id": "netopt-rmem",
+              "label": "TCP Read Memory",
+              "class": "tr-tcp-read-memory",
+              "fieldType": "text",
+              "variable": "netopt_rmem",
+              "placeholder": "4096 131072 8388608",
+              "default": "4096 131072 8388608",
+              "description": "min default max (bytes)"
+            },
+            {
+              "type": "field",
+              "id": "netopt-wmem",
+              "label": "TCP Write Memory",
+              "class": "tr-tcp-write-memory",
+              "fieldType": "text",
+              "variable": "netopt_wmem",
+              "placeholder": "4096 131072 8388608",
+              "default": "4096 131072 8388608",
+              "description": "min default max (bytes)"
+            },
+            {
+              "type": "field",
+              "id": "netopt-conntrack",
+              "label": "Connection Tracking Max",
+              "class": "tr-connection-tracking-max",
+              "fieldType": "number",
+              "variable": "netopt_conntrack",
+              "placeholder": "131072",
+              "default": "131072",
+              "min": 1024
+            },
+            {
+              "type": "field",
+              "id": "netopt-backlog",
+              "label": "Network Device Backlog",
+              "class": "tr-network-device-backlog",
+              "fieldType": "number",
+              "variable": "netopt_backlog",
+              "placeholder": "5000",
+              "default": "5000",
+              "min": 100
+            },
+            {
+              "type": "field",
+              "id": "netopt-somaxconn",
+              "label": "Socket Max Connections",
+              "class": "tr-socket-max-connections",
+              "fieldType": "number",
+              "variable": "netopt_somaxconn",
+              "placeholder": "16384",
+              "default": "16384",
+              "min": 128
+            },
+            {
+              "type": "field",
+              "id": "netopt-congestion",
+              "label": "TCP Congestion Control",
+              "class": "tr-tcp-congestion-control",
+              "fieldType": "select",
+              "variable": "netopt_congestion",
+              "options": [
+                {"value": "cubic", "label": "cubic (default)", "class": "tr-cubic-default", "selected": true},
+                {"value": "bbr", "label": "bbr", "class": "tr-bbr"},
+                {"value": "reno", "label": "reno", "class": "tr-reno"}
+              ]
+            }
+          ]
+        },
+        {
+          "type": "section",
+          "id": "netopt-disabled-section",
+          "title": "Disabled Mode",
+          "class": "tr-disabled-mode",
+          "showWhen": {"net_optimizer": "disabled"},
+          "items": [
+            {
+              "type": "info-display",
+              "id": "netopt-disabled-info",
+              "class": "tr-optimization-disabled",
+              "content": "Network optimization will be disabled"
+            }
+          ]
+        },
+        {
+          "type": "radio-group",
+          "id": "dnsmasq-mode",
+          "title": "DNS Server Settings",
+          "class": "tr-dnsmasq-settings",
+          "variable": "enable_dnsmasq",
+          "default": "auto",
+          "options": [
+            {"value": "auto", "label": "Automatic", "class": "tr-dnsmasq-auto"},
+            {"value": "manual", "label": "Manual", "class": "tr-dnsmasq-manual"},
+            {"value": "disabled", "label": "Disabled", "class": "tr-dnsmasq-disabled"}
+          ]
+        },
+        {
+          "type": "section",
+          "id": "dnsmasq-manual-section",
+          "title": "Manual DNS Settings",
+          "class": "tr-dnsmasq-manual-settings",
+          "showWhen": {"enable_dnsmasq": "manual"},
+          "items": [
+            {
+              "type": "field",
+              "id": "dnsmasq-cache",
+              "label": "Cache Size",
+              "class": "tr-dnsmasq-cache",
+              "fieldType": "number",
+              "variable": "dnsmasq_cache",
+              "placeholder": "10000",
+              "default": "10000",
+              "description": "Number of DNS cache entries"
+            },
+            {
+              "type": "field",
+              "id": "dnsmasq-negcache",
+              "label": "Negative Cache",
+              "class": "tr-dnsmasq-negcache",
+              "fieldType": "number",
+              "variable": "dnsmasq_negcache",
+              "placeholder": "0",
+              "default": "0",
+              "description": "0 = disable, >0 = N sec"
+            }
+          ]
+        },
+        {
+          "type": "section",
+          "id": "dnsmasq-auto-section",
+          "title": "Auto DNS Settings",
+          "class": "tr-dnsmasq-auto-settings",
+          "showWhen": {"enable_dnsmasq": "auto"},
+          "items": [
+            {
+              "type": "info-display",
+              "id": "dnsmasq-auto-info",
+              "class": "tr-dnsmasq-auto-optimization",
+              "content": "In AUTO mode, the cache size is automatically optimized based on the system's memory size."
+            }
+          ]
+        },
+        {
+          "type": "section",
+          "id": "dnsmasq-disabled-section",
+          "title": "Disabled DNS Settings",
+          "class": "tr-dnsmasq-disabled-settings",
+          "showWhen": {"enable_dnsmasq": "disabled"},
+          "items": [
+            {
+              "type": "info-display",
+              "id": "dnsmasq-disabled-info",
+              "class": "tr-dnsmasq-optimization-disabled",
+              "content": "DNS optimization will be disabled."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
