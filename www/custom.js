@@ -2814,22 +2814,48 @@ function updatePackageSizeDisplay() {
 
 // ==================== OpenWrt ToH JSON ====================
 let tohDataCache = null;
+let tohFetchInProgress = false;
+let tohFetchPromise = null;
 
 async function fetchToHData() {
     if (tohDataCache) return tohDataCache;
     
-    try {
-        const response = await fetch(config.device_info_url, {
-            cache: 'force-cache'
-        });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        tohDataCache = await response.json();
-        console.log('ToH data loaded:', tohDataCache.entries?.length || 0, 'devices');
-        return tohDataCache;
-    } catch (err) {
-        console.error('Failed to fetch ToH data:', err);
-        return null;
+    if (tohFetchInProgress && tohFetchPromise) {
+        return tohFetchPromise;
     }
+    
+    tohFetchInProgress = true;
+    tohFetchPromise = (async () => {
+        const timeout = 10000;
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeout);
+        
+        try {
+            const response = await fetch(config.device_info_url, {
+                cache: 'force-cache',
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+            
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            tohDataCache = await response.json();
+            console.log('ToH data loaded:', tohDataCache.entries?.length || 0, 'devices');
+            return tohDataCache;
+        } catch (err) {
+            clearTimeout(timeoutId);
+            if (err.name === 'AbortError') {
+                console.error('ToH fetch timeout after 10s');
+            } else {
+                console.error('Failed to fetch ToH data:', err);
+            }
+            return null;
+        } finally {
+            tohFetchInProgress = false;
+            tohFetchPromise = null;
+        }
+    })();
+    
+    return tohFetchPromise;
 }
 
 async function getCPUCoresFromToH(deviceId, target, forceReload = false) {
@@ -2838,25 +2864,29 @@ async function getCPUCoresFromToH(deviceId, target, forceReload = false) {
     }
 
     let data = null;
-    const retries = 3;
-    const delay = 2000;
+    const maxRetries = 3;
+    const retryDelay = 3000;
+    const backoffMultiplier = 1.5;
 
-    for (let i = 0; i < retries; i++) {
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
         try {
             data = await fetchToHData();
             if (data && Array.isArray(data.entries) && Array.isArray(data.columns)) {
                 break;
             }
         } catch (err) {
-            console.warn(`ToH fetch error (attempt ${i+1}/${retries}):`, err);
+            console.warn(`ToH fetch error (attempt ${attempt + 1}/${maxRetries}):`, err);
         }
-        if (i < retries - 1) {
+        
+        if (attempt < maxRetries - 1) {
+            const delay = retryDelay * Math.pow(backoffMultiplier, attempt);
+            console.log(`Retrying ToH fetch in ${delay}ms...`);
             await new Promise(r => setTimeout(r, delay));
         }
     }
 
     if (!data || !Array.isArray(data.entries) || !Array.isArray(data.columns)) {
-        console.error("ToH data unavailable after retries");
+        console.error('ToH data unavailable after retries - IRQBalance auto-check skipped');
         return null;
     }
 
@@ -2882,39 +2912,70 @@ async function getCPUCoresFromToH(deviceId, target, forceReload = false) {
     });
 
     if (!device) {
-        console.warn('Device not found in ToH:', deviceId, target);
+        console.log('Device not found in ToH:', deviceId, target);
         return null;
     }
 
     const cpuCoresRaw = device[idx.cpuCores];
     if (cpuCoresRaw && !isNaN(cpuCoresRaw)) {
-        return parseInt(cpuCoresRaw, 10);
+        const cores = parseInt(cpuCoresRaw, 10);
+        console.log(`CPU cores from ToH (cpucores): ${cores}`);
+        return cores;
     }
 
     const cpuInfo = device[idx.cpu] || '';
     const match = cpuInfo.match(/(\d+)\s*[x×]/i);
     if (match) {
-        return parseInt(match[1], 10);
+        const cores = parseInt(match[1], 10);
+        console.log(`CPU cores from ToH (cpu field): ${cores}`);
+        return cores;
     }
 
+    console.log('CPU cores not found in ToH data');
     return null;
 }
 
 async function updateIrqbalanceByDevice(deviceId, target) {
+    console.log(`[IRQBalance] Checking device: ${deviceId}, target: ${target}`);
+    
     let cores = await getCPUCoresFromToH(deviceId, target);
 
     if (cores === null) {
+        console.log('[IRQBalance] First attempt failed, retrying with cache clear...');
         cores = await getCPUCoresFromToH(deviceId, target, true);
     }
 
-    if (cores === null || cores < 2) return;
+    if (cores === null) {
+        console.log('[IRQBalance] Could not determine CPU cores - auto-check skipped');
+        return;
+    }
+
+    console.log(`[IRQBalance] Device has ${cores} CPU cores`);
+
+    if (cores < 2) {
+        console.log('[IRQBalance] Single core device - IRQBalance not needed');
+        return;
+    }
 
     const checkbox = document.querySelector('[data-package="luci-app-irqbalance"]');
-    if (checkbox && !checkbox.checked) {
-        checkbox.checked = true;
-        console.log(`IRQBalance auto-enabled: ${cores} cores`);
-        updateAllPackageState('irqbalance-auto-check');
+    if (!checkbox) {
+        console.warn('[IRQBalance] Checkbox not found in DOM');
+        return;
     }
+
+    if (checkbox.checked) {
+        console.log('[IRQBalance] Already enabled by user');
+        return;
+    }
+
+    console.log(`[IRQBalance] Auto-enabling for ${cores} cores device`);
+    checkbox.checked = true;
+    
+    checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+    
+    requestAnimationFrame(() => {
+        updateAllPackageState('irqbalance-auto-enabled');
+    });
 }
 
 // ==================== パッケージデータベース ====================
