@@ -265,6 +265,10 @@ window.updateImages = function(version, mobj) {
 
         console.log('[TRACE] device updated:', state.device);
 
+        if (mobj.id && mobj.target) {
+            updateIrqbalanceByDevice(mobj.id, mobj.target);
+        }        
+      
         if (oldArch !== mobj.arch_packages || oldVersion !== version || oldDeviceId !== mobj.id) {
             console.log('[TRACE] Device changed, clearing caches');
             
@@ -2806,6 +2810,68 @@ function updatePackageSizeDisplay() {
     });
     
     console.log('Package size display updated');
+}
+
+// ==================== OpenWrt ToH JSON ====================
+let tohDataCache = null;
+
+async function fetchToHData() {
+    if (tohDataCache) return tohDataCache;
+    
+    try {
+        const response = await fetch(config.device_info_url, {
+            cache: 'force-cache'
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        tohDataCache = await response.json();
+        console.log('ToH data loaded:', tohDataCache.length, 'devices');
+        return tohDataCache;
+    } catch (err) {
+        console.error('Failed to fetch ToH data:', err);
+        return null;
+    }
+}
+
+async function getCPUCoresFromToH(deviceId, target) {
+    const data = await fetchToHData();
+    if (!data) return null;
+    
+    const device = data.find(d => 
+        d.deviceid === deviceId ||
+        d.target === target ||
+        d.model?.toLowerCase().includes(deviceId.toLowerCase())
+    );
+    
+    if (!device) {
+        console.log('Device not found in ToH:', deviceId, target);
+        return null;
+    }
+    
+    const cpuInfo = device.cpu || device.cpucores || '';
+    
+    const coresMatch = cpuInfo.match(/(\d+)\s*[x×]\s*|(\d+)\s*core/i);
+    
+    if (coresMatch) {
+        const cores = parseInt(coresMatch[1] || coresMatch[2]);
+        console.log(`CPU cores detected: ${cores} for ${deviceId}`);
+        return cores;
+    }
+    
+    console.log('CPU cores not found in device data:', cpuInfo);
+    return null;
+}
+
+async function updateIrqbalanceByDevice(deviceId, target) {
+    const cores = await getCPUCoresFromToH(deviceId, target);
+    
+    if (cores === null || cores < 2) return;
+    
+    const checkbox = document.querySelector('[data-package="luci-app-irqbalance"]');
+    if (checkbox && !checkbox.checked) {
+        checkbox.checked = true;
+        console.log(`IRQBalance auto-enabled: ${cores} cores`);
+        updateAllPackageState('irqbalance-auto-check');
+    }
 }
 
 // ==================== パッケージデータベース ====================
