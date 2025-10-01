@@ -436,8 +436,33 @@ function renderSetupConfig(config) {
             console.log('Applied ISP config after form render');
         }
         
-        // パッケージ評価はgeneratePackageSelector()の後で実行される
+        // 初期値が設定された後、計算フィールドを評価
+        requestAnimationFrame(() => {
+            evaluateAllComputedFields();
+        });
     });
+}
+
+function evaluateAllComputedFields() {
+    console.log('Evaluating all computed fields...');
+    
+    if (!state.config.setup) return;
+    
+    for (const category of state.config.setup.categories) {
+        for (const item of category.items) {
+            if (item.type === 'field' && item.computed) {
+                console.log(`Found computed field: ${item.id}`);
+                computeFieldValue(item.id);
+            } else if (item.type === 'section' && item.items) {
+                for (const subItem of item.items) {
+                    if (subItem.type === 'field' && subItem.computed) {
+                        console.log(`Found computed field in section: ${subItem.id}`);
+                        computeFieldValue(subItem.id);
+                    }
+                }
+            }
+        }
+    }
 }
 
 function buildItem(item) {
@@ -647,28 +672,55 @@ function buildInfoDisplay(item) {
 
 function computeFieldValue(targetFieldId) {
     const targetField = document.getElementById(targetFieldId);
-    if (!targetField) return;
+    if (!targetField) {
+        console.warn(`computeFieldValue: Target field not found: ${targetFieldId}`);
+        return;
+    }
 
     const fieldConfig = findFieldConfig(targetFieldId);
-    if (!fieldConfig || !fieldConfig.computed) return;
+    if (!fieldConfig || !fieldConfig.computed) {
+        console.warn(`computeFieldValue: No computed config for: ${targetFieldId}`);
+        return;
+    }
+
+    console.log(`Computing value for: ${targetFieldId}`);
+    console.log('Computed config:', fieldConfig.computed);
 
     const values = {};
     fieldConfig.computed.from.forEach(fieldId => {
         const el = document.getElementById(fieldId);
-        if (el) values[fieldId] = el.value;
+        if (el) {
+            values[fieldId] = el.value;
+            console.log(`  Source field ${fieldId} = ${el.value}`);
+        } else {
+            console.warn(`  Source field not found: ${fieldId}`);
+        }
     });
 
     const mapName = fieldConfig.computed.map;
     const map = state.config.constants[mapName];
     
-    if (!map) return;
+    console.log(`Using map: ${mapName}`, map);
+    
+    if (!map) {
+        console.warn(`Map not found: ${mapName}`);
+        return;
+    }
 
-    const keys = fieldConfig.computed.from.map(id => id.replace(/^[^-]+-/, ''));
     const value1 = values[fieldConfig.computed.from[0]];
     const value2 = values[fieldConfig.computed.from[1]];
     
+    console.log(`Looking up: map[${value1}][${value2}]`);
+    
     if (map[value1] && map[value1][value2]) {
-        targetField.value = map[value1][value2];
+        const computedValue = map[value1][value2];
+        console.log(`✓ Computed value: ${computedValue}`);
+        targetField.value = computedValue;
+        
+        // 変更イベントを発火して他の処理をトリガー
+        targetField.dispatchEvent(new Event('input', { bubbles: true }));
+    } else {
+        console.warn(`No mapping found for: map[${value1}][${value2}]`);
     }
 }
 
