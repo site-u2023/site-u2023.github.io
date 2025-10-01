@@ -2836,8 +2836,29 @@ async function getCPUCoresFromToH(deviceId, target, forceReload = false) {
     if (forceReload) {
         tohDataCache = null;
     }
-    const data = await fetchToHData();
-    if (!data || !Array.isArray(data.entries) || !Array.isArray(data.columns)) return null;
+
+    let data = null;
+    const retries = 3;
+    const delay = 2000;
+
+    for (let i = 0; i < retries; i++) {
+        try {
+            data = await fetchToHData();
+            if (data && Array.isArray(data.entries) && Array.isArray(data.columns)) {
+                break;
+            }
+        } catch (err) {
+            console.warn(`ToH fetch error (attempt ${i+1}/${retries}):`, err);
+        }
+        if (i < retries - 1) {
+            await new Promise(r => setTimeout(r, delay));
+        }
+    }
+
+    if (!data || !Array.isArray(data.entries) || !Array.isArray(data.columns)) {
+        console.error("ToH data unavailable after retries");
+        return null;
+    }
 
     const idx = {
         deviceId: data.columns.indexOf('deviceid'),
@@ -2853,7 +2874,6 @@ async function getCPUCoresFromToH(deviceId, target, forceReload = false) {
         const entryTarget = entry[idx.target];
         const entrySubtarget = entry[idx.subtarget];
         const entryModel = entry[idx.model] || '';
-
         const fullTarget = entryTarget && entrySubtarget ? `${entryTarget}/${entrySubtarget}` : entryTarget;
 
         return entryDeviceId === deviceId ||
