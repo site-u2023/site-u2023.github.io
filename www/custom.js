@@ -2881,10 +2881,14 @@ async function getCPUCoresFromToH(deviceId, target, forceReload = false) {
 }
 
 async function updateIrqbalanceByDevice(deviceId, target) {
-    const cores = await getCPUCoresFromToH(deviceId, target);
-    
+    let cores = await getCPUCoresFromToH(deviceId, target);
+
+    if (cores === null) {
+        cores = await getCPUCoresFromToH(deviceId, target, true);
+    }
+
     if (cores === null || cores < 2) return;
-    
+
     const checkbox = document.querySelector('[data-package="luci-app-irqbalance"]');
     if (checkbox && !checkbox.checked) {
         checkbox.checked = true;
