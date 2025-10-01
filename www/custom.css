@@ -592,13 +592,14 @@ details summary h4 {
 
 /* ===== Script Section内のフィールドレイアウト（左右50:50） ===== */
 /* 通常フィールド：左にラベル、右にインプット */
-#scripts-details #dynamic-config-sections .form-row {
-  display: block;
+#dynamic-config-sections .form-row {
+  display: block !important;
+  width: 100%;
 }
 
-#scripts-details #dynamic-config-sections .form-row .form-group {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+#dynamic-config-sections .form-group {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
   grid-template-rows: auto auto;
   column-gap: 1em;
   row-gap: 0.5em;
@@ -606,27 +607,27 @@ details summary h4 {
   width: 100%;
 }
 
-#scripts-details #dynamic-config-sections .form-row .form-group label {
+#dynamic-config-sections .form-group label {
   grid-column: 1;
   grid-row: 1;
   margin: 0;
-  padding-top: var(--input-padding);
+  padding-top: 0.8em;
   font-weight: 500;
   align-self: start;
   white-space: normal;
 }
 
-#scripts-details #dynamic-config-sections .form-row .form-group input:not([type="radio"]):not([type="checkbox"]),
-#scripts-details #dynamic-config-sections .form-row .form-group select:not(#versions):not(#languages-select),
-#scripts-details #dynamic-config-sections .form-row .form-group textarea {
-  grid-column: 2;
+#dynamic-config-sections .form-group input:not([type="radio"]):not([type="checkbox"]),
+#dynamic-config-sections .form-group select:not(#versions):not(#languages-select),
+#dynamic-config-sections .form-group textarea {
+  grid-column: 2 !important;
   grid-row: 1;
   margin: 0;
-  width: 100%;
+  width: 100% !important;
   box-sizing: border-box;
 }
 
-#scripts-details #dynamic-config-sections .form-row .form-group small {
+#dynamic-config-sections .form-group small {
   grid-column: 1 / -1;
   grid-row: 2;
   margin: 0;
@@ -634,11 +635,12 @@ details summary h4 {
 }
 
 /* ラジオグループは例外：従来通りの縦並び */
-#scripts-details #dynamic-config-sections .form-row:has(.radio-group) .form-group {
-  display: block;
+#dynamic-config-sections .form-row:has(.radio-group) .form-group {
+  display: block !important;
+  grid-template-columns: none !important;
 }
 
-#scripts-details #dynamic-config-sections .radio-group {
+#dynamic-config-sections .radio-group {
   display: flex;
   flex-direction: column;
   gap: 0.5em;
