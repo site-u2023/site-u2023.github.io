@@ -590,63 +590,6 @@ details summary h4 {
   }
 }
 
-/* ===== Script Section内のフィールドレイアウト（左右50:50） ===== */
-/* 通常フィールド：左にラベル、右にインプット */
-#dynamic-config-sections .form-row {
-  display: block !important;
-  width: 100%;
-}
-
-#dynamic-config-sections .form-group {
-  display: grid !important;
-  grid-template-columns: 1fr 1fr !important;
-  grid-template-rows: auto auto;
-  column-gap: 1em;
-  row-gap: 0.5em;
-  align-items: start;
-  width: 100%;
-}
-
-#dynamic-config-sections .form-group label {
-  grid-column: 1;
-  grid-row: 1;
-  margin: 0;
-  padding-top: 0.8em;
-  font-weight: 500;
-  align-self: start;
-  white-space: normal;
-}
-
-#dynamic-config-sections .form-group input:not([type="radio"]):not([type="checkbox"]),
-#dynamic-config-sections .form-group select:not(#versions):not(#languages-select),
-#dynamic-config-sections .form-group textarea {
-  grid-column: 2 !important;
-  grid-row: 1;
-  margin: 0;
-  width: 100% !important;
-  box-sizing: border-box;
-}
-
-#dynamic-config-sections .form-group small {
-  grid-column: 1 / -1;
-  grid-row: 2;
-  margin: 0;
-  padding-left: 0;
-}
-
-/* ラジオグループは例外：従来通りの縦並び */
-#dynamic-config-sections .form-row:has(.radio-group) .form-group {
-  display: block !important;
-  grid-template-columns: none !important;
-}
-
-#dynamic-config-sections .radio-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5em;
-  margin-top: 0.5em;
-}
-
 /* ===== Responsive Design (extends base responsive patterns) ===== */
 @media (max-width: 800px) {
   .form-row {
@@ -706,28 +649,11 @@ details summary h4 {
   }
 
   details summary h3 {
-    margin-left: 0;
+  margin-left: 0;
   }
 
   details:has(summary h3) summary {
     padding-left: 0;
-  }
-
-  /* Script Section：モバイルでは縦並びに戻す */
-  #scripts-details #dynamic-config-sections .form-row .form-group {
-    display: flex;
-    flex-direction: column;
-  }
-  
-  #scripts-details #dynamic-config-sections .form-row .form-group label {
-    padding-top: 0;
-    margin-bottom: 0.25em;
-  }
-  
-  #scripts-details #dynamic-config-sections .form-row .form-group input:not([type="radio"]):not([type="checkbox"]),
-  #scripts-details #dynamic-config-sections .form-row .form-group select:not(#versions):not(#languages-select),
-  #scripts-details #dynamic-config-sections .form-row .form-group textarea {
-    width: 100%;
   }
 }
 
