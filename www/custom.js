@@ -408,11 +408,14 @@ function renderSetupConfig(config) {
         itemsContainer.style.gap = '1em';
         itemsContainer.style.alignItems = 'start';
 
-        (category.items || []).forEach((item) => {
+        const items = category.items || [];
+        const itemCount = items.length;
+
+        items.forEach((item) => {
             try {
                 const element = buildItem(item);
                 if (element) {
-                    if (item.type === 'radio-group' || item.type === 'section') {
+                    if (itemCount === 1 || item.type === 'radio-group' || item.type === 'section') {
                         element.style.gridColumn = '1 / -1';
                     }
                     itemsContainer.appendChild(element);
@@ -649,13 +652,27 @@ function buildSection(section) {
         wrapper.appendChild(h4);
     }
 
-    (section.items || []).forEach(item => {
+    const columns = state.config.setup.columns || 1;
+    const itemsContainer = document.createElement('div');
+    itemsContainer.style.display = 'grid';
+    itemsContainer.style.gridTemplateColumns = `repeat(${columns}, 1fr)`;
+    itemsContainer.style.gap = '1em';
+    itemsContainer.style.alignItems = 'start';
+
+    const items = section.items || [];
+    const itemCount = items.length;
+
+    items.forEach(item => {
         const element = buildItem(item);
         if (element) {
-            wrapper.appendChild(element);
+            if (itemCount === 1 || item.type === 'radio-group') {
+                element.style.gridColumn = '1 / -1';
+            }
+            itemsContainer.appendChild(element);
         }
     });
 
+    wrapper.appendChild(itemsContainer);
     return wrapper;
 }
 
