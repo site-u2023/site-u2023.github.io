@@ -2834,46 +2834,46 @@ async function fetchToHData() {
 
 async function getCPUCoresFromToH(deviceId, target) {
     const data = await fetchToHData();
-    if (!data || !data.entries || !data.columns) return null;
-    
-    const deviceIdIdx = data.columns.indexOf('deviceid');
-    const targetIdx = data.columns.indexOf('target');
-    const modelIdx = data.columns.indexOf('model');
-    const cpuCoresIdx = data.columns.indexOf('cpucores');
-    const cpuIdx = data.columns.indexOf('cpu');
-    
+    if (!data || !Array.isArray(data.entries) || !Array.isArray(data.columns)) return null;
+
+    const idx = {
+        deviceId: data.columns.indexOf('deviceid'),
+        target: data.columns.indexOf('target'),
+        subtarget: data.columns.indexOf('subtarget'),
+        model: data.columns.indexOf('model'),
+        cpuCores: data.columns.indexOf('cpucores'),
+        cpu: data.columns.indexOf('cpu')
+    };
+
     const device = data.entries.find(entry => {
-        const entryDeviceId = entry[deviceIdIdx];
-        const entryTarget = entry[targetIdx];
-        const entryModel = entry[modelIdx];
-        
+        const entryDeviceId = entry[idx.deviceId];
+        const entryTarget = entry[idx.target];
+        const entrySubtarget = entry[idx.subtarget];
+        const entryModel = entry[idx.model] || '';
+
+        const fullTarget = entryTarget && entrySubtarget ? `${entryTarget}/${entrySubtarget}` : entryTarget;
+
         return entryDeviceId === deviceId ||
-               entryTarget === target ||
-               (entryModel && entryModel.toLowerCase().includes(deviceId.toLowerCase()));
+               fullTarget === target ||
+               entryModel.toLowerCase().includes(deviceId.toLowerCase());
     });
-    
+
     if (!device) {
-        console.log('Device not found in ToH:', deviceId, target);
+        console.warn('Device not found in ToH:', deviceId, target);
         return null;
     }
-    
-    const cpuCores = device[cpuCoresIdx];
-    if (cpuCores && !isNaN(cpuCores)) {
-        const cores = parseInt(cpuCores);
-        console.log(`CPU cores detected: ${cores} for ${deviceId}`);
-        return cores;
+
+    const cpuCoresRaw = device[idx.cpuCores];
+    if (cpuCoresRaw && !isNaN(cpuCoresRaw)) {
+        return parseInt(cpuCoresRaw, 10);
     }
-    
-    const cpuInfo = device[cpuIdx] || '';
-    const coresMatch = cpuInfo.match(/(\d+)\s*[x×]\s*/i);
-    
-    if (coresMatch) {
-        const cores = parseInt(coresMatch[1]);
-        console.log(`CPU cores parsed from CPU field: ${cores} for ${deviceId}`);
-        return cores;
+
+    const cpuInfo = device[idx.cpu] || '';
+    const match = cpuInfo.match(/(\d+)\s*[x×]/i);
+    if (match) {
+        return parseInt(match[1], 10);
     }
-    
-    console.log('CPU cores not found in device data');
+
     return null;
 }
 
