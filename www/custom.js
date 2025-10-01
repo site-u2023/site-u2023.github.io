@@ -1792,19 +1792,6 @@ function updateAutoConnectionInfo(apiInfo) {
     
     const connectionType = getConnectionType(apiInfo);
     
-    // セクションタイトルを更新（複数のセレクタを試す）
-    const autoSectionTitle = document.querySelector('#auto-section h4') || 
-                            document.querySelector('#auto-section .tr-auto-detection') ||
-                            document.querySelector('.conditional-section[id="auto-section"] h4');
-    
-    if (autoSectionTitle) {
-        const baseTitle = current_language_json['tr-auto-detection'] || 'AUTO Detection';
-        autoSectionTitle.textContent = `${baseTitle}: ${connectionType}`;
-        console.log('Title updated:', autoSectionTitle.textContent);
-    } else {
-        console.error('Auto section title not found');
-    }
-    
     let infoText = '';
     if (apiInfo?.isp) {
         infoText += `ISP: ${apiInfo.isp}<br>`;
@@ -1859,7 +1846,16 @@ function updateAutoConnectionInfo(apiInfo) {
     }
     
     autoInfo.innerHTML = infoText;
+    
     applyCustomTranslations(current_language_json);
+    
+    requestAnimationFrame(() => {
+        const autoSectionTitle = document.querySelector('#auto-section h4');
+        if (autoSectionTitle) {
+            const baseTitle = current_language_json['tr-auto-detection'] || 'AUTO Detection';
+            autoSectionTitle.textContent = `${baseTitle}: ${connectionType}`;
+        }
+    });
 }
 
 function applyIspAutoConfig(apiInfo) {
