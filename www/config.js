@@ -64,7 +64,7 @@ var config = {
   kmods_apk_search_url:  "https://downloads.openwrt.org/snapshots/targets/{vendor}/{subtarget}/kmods/{kmod}/index.json", 
 
   // デバイス情報
-  device_info_url: "https://openwrt.org/toh.json"
+  device_info_url: "https://openwrt.org/toh.json",
   
   // デバイス言語
   device_language: "",
