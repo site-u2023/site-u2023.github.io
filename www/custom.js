@@ -2824,7 +2824,7 @@ async function fetchToHData() {
         });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         tohDataCache = await response.json();
-        console.log('ToH data loaded:', tohDataCache.length, 'devices');
+        console.log('ToH data loaded:', tohDataCache.entries?.length || 0, 'devices');
         return tohDataCache;
     } catch (err) {
         console.error('Failed to fetch ToH data:', err);
