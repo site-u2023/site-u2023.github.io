@@ -436,10 +436,7 @@ function renderSetupConfig(config) {
             console.log('Applied ISP config after form render');
         }
         
-        // パッケージ評価は1回だけ実行（state.apiInfoは既に取得済み）
-        requestAnimationFrame(() => {
-            evaluateInitialPackages();
-        });
+        // パッケージ評価はgeneratePackageSelector()の後で実行される
     });
 }
 
@@ -697,7 +694,7 @@ function setupEventListeners() {
 
     requestAnimationFrame(() => {
         evaluateAllShowWhen();
-        evaluateInitialPackages();
+        // evaluateInitialPackages()はgeneratePackageSelector()の後で呼ばれる
     });
 }
 
@@ -2815,8 +2812,13 @@ function generatePackageSelector() {
         }
     });
     
-    updateAllPackageState('package-selector-init');
     console.log(`Generated ${state.packages.json.categories.length} package categories (including hidden)`);
+    
+    // Hidden checkboxが作成された後にパッケージを評価
+    requestAnimationFrame(() => {
+        evaluateInitialPackages();
+        updateAllPackageState('package-selector-init');
+    });
     
     const arch = state.device.arch;
     if (arch) {
