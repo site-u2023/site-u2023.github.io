@@ -44,8 +44,6 @@ var config = {
 
   // setup.sh database URL
   setup_db_path: "uci-defaults/setup.json",
-
-  // opkg_search_url: "https://openwrt.org/packages/pkgdata/{pkg}"
   
   // LuCI OPKG 検索エンドポイント
   // https://downloads.openwrt.org/releases/24.10.2/packages/aarch64_cortex-a53/packages/Packages
@@ -64,6 +62,9 @@ var config = {
   // 例: https://downloads.openwrt.org/snapshots/targets/mediatek/filogic/kmods/5.15.137-1-xxxxxxxx/index.json
   kmods_apk_index_url:   "https://downloads.openwrt.org/snapshots/targets/{vendor}/{subtarget}/kmods/",
   kmods_apk_search_url:  "https://downloads.openwrt.org/snapshots/targets/{vendor}/{subtarget}/kmods/{kmod}/index.json", 
+
+  // デバイス情報
+  device_info_url: "https://openwrt.org/toh.json"
   
   // デバイス言語
   device_language: "",
