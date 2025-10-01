@@ -406,8 +406,6 @@ function renderSetupConfig(config) {
             displayIspInfo(state.apiInfo);
             console.log('Applied ISP config after form render');
         }
-        
-        evaluateSetupPackages();
     });
 }
 
@@ -712,9 +710,25 @@ function evaluateShowWhen(condition) {
 }
 
 function updatePackagesForRadioGroup(radioName, selectedValue) {
-    console.log(`Radio changed: ${radioName} = ${selectedValue}`);
+    if (!state.config.setup) return;
     
-    evaluateSetupPackages();
+    for (const category of state.config.setup.categories) {
+        if (!category.packages) continue;
+        
+        category.packages.forEach(pkg => {
+            if (!pkg.when) return;
+            
+            const shouldEnable = Object.entries(pkg.when).every(([key, value]) => {
+                if (key !== radioName) return true;
+                if (Array.isArray(value)) {
+                    return value.includes(selectedValue);
+                }
+                return value === selectedValue;
+            });
+            
+            toggleVirtualPackage(pkg.id, shouldEnable);
+        });
+    }
 }
 
 function evaluateSetupPackages() {
