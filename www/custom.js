@@ -382,10 +382,6 @@ function renderSetupConfig(config) {
     console.log('Container cleared, rebuilding...');
 
     const columns = config.columns || 1;
-    container.style.display = 'grid';
-    container.style.gridTemplateColumns = `repeat(${columns}, 1fr)`;
-    container.style.gap = '1em';
-    container.style.alignItems = 'start';
 
     (config.categories || []).forEach((category) => {
         const section = document.createElement('div');
@@ -406,24 +402,27 @@ function renderSetupConfig(config) {
             section.appendChild(desc);
         }
 
+        const itemsContainer = document.createElement('div');
+        itemsContainer.style.display = 'grid';
+        itemsContainer.style.gridTemplateColumns = `repeat(${columns}, 1fr)`;
+        itemsContainer.style.gap = '1em';
+        itemsContainer.style.alignItems = 'start';
+
         (category.items || []).forEach((item) => {
             try {
                 const element = buildItem(item);
                 if (element) {
-                    section.appendChild(element);
+                    if (item.type === 'radio-group' || item.type === 'section') {
+                        element.style.gridColumn = '1 / -1';
+                    }
+                    itemsContainer.appendChild(element);
                 }
             } catch (error) {
                 console.error(`Error rendering item ${item.id}:`, error);
             }
         });
 
-        const hasRadioOrSection = category.items.some(item => 
-            item.type === 'radio-group' || item.type === 'section'
-        );
-        if (hasRadioOrSection) {
-            section.style.gridColumn = '1 / -1';
-        }
-
+        section.appendChild(itemsContainer);
         container.appendChild(section);
     });
 
