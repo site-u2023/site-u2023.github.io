@@ -1790,6 +1790,14 @@ function updateAutoConnectionInfo(apiInfo) {
     const autoInfo = document.querySelector('#auto-info');
     if (!autoInfo) return;
     
+    const connectionType = getConnectionType(apiInfo);
+    
+    const autoSectionTitle = document.querySelector('#auto-section h4, #auto-section .tr-auto-detection');
+    if (autoSectionTitle) {
+        const baseTitle = current_language_json['tr-auto-detection'] || 'Auto Detection';
+        autoSectionTitle.textContent = `${baseTitle}: ${connectionType}`;
+    }
+    
     let infoText = '';
     if (apiInfo?.isp) {
         infoText += `ISP: ${apiInfo.isp}<br>`;
@@ -1798,7 +1806,6 @@ function updateAutoConnectionInfo(apiInfo) {
         }
     }
     
-    const connectionType = getConnectionType(apiInfo);
     if (connectionType === 'MAP-E') {
         let gua = CustomUtils.generateGuaPrefixFromFullAddress(apiInfo);
         if (!gua) {
@@ -1806,7 +1813,6 @@ function updateAutoConnectionInfo(apiInfo) {
             if (guaField && guaField.value) gua = guaField.value;
         }
         
-        infoText += `${current_language_json['tr-auto-detection'] || 'Auto Detection:'} ${connectionType}<br>`;
         infoText += `<hr>`;
         infoText += `<p>${current_language_json['tr-mape-notice1'] || 'Note: Actual values may differ.'}</p>`;
         infoText += `option peeraddr ${apiInfo.mape.brIpv6Address}<br>`;
@@ -1828,7 +1834,6 @@ function updateAutoConnectionInfo(apiInfo) {
         infoText += `<hr>`;
         infoText += `<div style="text-align: center;"><a href="https://ipv4.web.fc2.com/map-e.html" target="_blank">Powered by config-softwire</a></div>`;     
     } else if (connectionType === 'DS-Lite') {
-        infoText += `${current_language_json['tr-auto-detection'] || 'Auto Detection:'} ${connectionType}<br>`;
         infoText += `<hr>`;
         infoText += `<h4>${current_language_json['tr-dslite-notice1'] || 'Note: Actual values may differ.'}</h4>`;
         infoText += `<hr>`;
@@ -1843,7 +1848,6 @@ function updateAutoConnectionInfo(apiInfo) {
         }
         infoText += `<hr>`;
     } else {
-        infoText += `${current_language_json['tr-auto-detection'] || 'Auto Detection:'} ${connectionType}<br>`;
         infoText += `${current_language_json['tr-standard-notice'] || 'Standard connection will be used'}`;
     }
     autoInfo.innerHTML = infoText;
