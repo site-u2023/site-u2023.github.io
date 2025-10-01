@@ -434,17 +434,12 @@ function renderSetupConfig(config) {
             applyIspAutoConfig(state.apiInfo);
             displayIspInfo(state.apiInfo);
             console.log('Applied ISP config after form render');
-            
-            // API情報取得後にパッケージを再評価
-            requestAnimationFrame(() => {
-                evaluateInitialPackages();
-            });
-        } else {
-            // API情報がない場合でも初期パッケージを評価
-            requestAnimationFrame(() => {
-                evaluateInitialPackages();
-            });
         }
+        
+        // パッケージ評価は1回だけ実行（state.apiInfoは既に取得済み）
+        requestAnimationFrame(() => {
+            evaluateInitialPackages();
+        });
     });
 }
 
@@ -709,10 +704,16 @@ function setupEventListeners() {
 function evaluateInitialPackages() {
     if (!state.config.setup) return;
     
-    console.log('Evaluating initial packages based on default radio values');
+    console.log('=== evaluateInitialPackages START ===');
+    console.log('API Info available:', !!state.apiInfo);
+    if (state.apiInfo) {
+        console.log('API detected connection type:', getConnectionTypeFromApi(state.apiInfo));
+    }
     
     for (const category of state.config.setup.categories) {
         if (!category.packages || category.packages.length === 0) continue;
+        
+        console.log(`Evaluating packages for category: ${category.id}`);
         
         // カテゴリ内の全ラジオグループの現在値を取得
         const radioValues = {};
@@ -721,35 +722,76 @@ function evaluateInitialPackages() {
                 const checkedRadio = document.querySelector(`input[name="${item.variable}"]:checked`);
                 if (checkedRadio) {
                     radioValues[item.variable] = checkedRadio.value;
+                    console.log(`  Radio value: ${item.variable} = ${checkedRadio.value}`);
                 }
             }
         });
+        
+        // connection_type = "auto" の場合、実際の接続タイプを判定
+        let effectiveConnectionType = radioValues.connection_type;
+        if (effectiveConnectionType === 'auto' && state.apiInfo) {
+            effectiveConnectionType = getConnectionTypeFromApi(state.apiInfo);
+            console.log(`  AUTO mode: Using effective type = ${effectiveConnectionType}`);
+        }
         
         // パッケージの条件を評価
         category.packages.forEach(pkg => {
             if (!pkg.when) return;
             
             const shouldEnable = Object.entries(pkg.when).every(([key, value]) => {
-                const actualValue = radioValues[key];
+                let actualValue = radioValues[key];
+                
+                // connection_typeの場合、effectiveConnectionTypeを使用
+                if (key === 'connection_type' && radioValues.connection_type === 'auto') {
+                    actualValue = effectiveConnectionType;
+                }
+                
                 if (!actualValue) return false;
                 
+                let result;
                 if (Array.isArray(value)) {
-                    return value.includes(actualValue);
+                    result = value.includes(actualValue);
+                } else {
+                    result = value === actualValue;
                 }
-                return value === actualValue;
+                
+                console.log(`    Package ${pkg.id}: ${key}=${actualValue} matches ${JSON.stringify(value)}? ${result}`);
+                return result;
             });
             
             if (shouldEnable) {
-                console.log(`Initial package enabled: ${pkg.id} (condition matched)`);
+                console.log(`  ✓ Enabling package: ${pkg.id}`);
                 toggleVirtualPackage(pkg.id, true);
+            } else {
+                console.log(`  ✗ Disabling package: ${pkg.id}`);
+                toggleVirtualPackage(pkg.id, false);
             }
         });
     }
+    
+    console.log('=== evaluateInitialPackages END ===');
     
     // パッケージ状態を更新
     requestAnimationFrame(() => {
         updateAllPackageState('initial-packages-evaluated');
     });
+}
+
+function getConnectionTypeFromApi(apiInfo) {
+    if (!apiInfo) return 'dhcp';
+    
+    // MAP-E判定
+    if (apiInfo.mape?.brIpv6Address) {
+        return 'mape';
+    }
+    
+    // DS-Lite判定
+    if (apiInfo.aftr?.aftrIpv6Address) {
+        return 'dslite';
+    }
+    
+    // どちらでもない場合はDHCP/PPPoE
+    return 'dhcp';
 }
 
 function handleRadioChange(e) {
@@ -798,6 +840,13 @@ function evaluateShowWhen(condition) {
 function updatePackagesForRadioGroup(radioName, selectedValue) {
     if (!state.config.setup) return;
     
+    // connection_type = "auto" の場合、実際の接続タイプを判定
+    let effectiveValue = selectedValue;
+    if (radioName === 'connection_type' && selectedValue === 'auto' && state.apiInfo) {
+        effectiveValue = getConnectionTypeFromApi(state.apiInfo);
+        console.log(`AUTO mode in radio change: Using effective type = ${effectiveValue}`);
+    }
+    
     for (const category of state.config.setup.categories) {
         if (!category.packages) continue;
         
@@ -806,11 +855,23 @@ function updatePackagesForRadioGroup(radioName, selectedValue) {
             
             const shouldEnable = Object.entries(pkg.when).every(([key, value]) => {
                 if (key !== radioName) return true;
+                
+                // このラジオグループに関連する条件を評価
+                const valueToCheck = (key === 'connection_type' && selectedValue === 'auto') 
+                    ? effectiveValue 
+                    : selectedValue;
+                
                 if (Array.isArray(value)) {
-                    return value.includes(selectedValue);
+                    return value.includes(valueToCheck);
                 }
-                return value === selectedValue;
+                return value === valueToCheck;
             });
+            
+            if (shouldEnable) {
+                console.log(`Package enabled by radio: ${pkg.id} for ${radioName}=${effectiveValue}`);
+            } else {
+                console.log(`Package disabled by radio: ${pkg.id} for ${radioName}=${effectiveValue}`);
+            }
             
             toggleVirtualPackage(pkg.id, shouldEnable);
         });
@@ -1607,7 +1668,10 @@ function getConnectionType(apiInfo) {
 }
 
 async function fetchAndDisplayIspInfo() {
-    if (!config?.auto_config_api_url) return;
+    if (!config?.auto_config_api_url) {
+        console.log('Auto config API URL not configured');
+        return;
+    }
     
     try {
         const response = await fetch(config.auto_config_api_url);
@@ -1639,7 +1703,12 @@ function displayIspInfo(apiInfo) {
     UI.updateElement("auto-config-method", { text: wanType });
     UI.updateElement("auto-config-notice", { text: apiInfo.notice || "" });
 
-    UI.updateElement("extended-build-info", { show: true });
+    const extendedInfo = document.getElementById("extended-build-info");
+    if (extendedInfo) {
+        extendedInfo.classList.remove('hide');
+        extendedInfo.style.display = '';
+        console.log('Extended build info shown');
+    }
 }
 
 function updateAutoConnectionInfo(apiInfo) {
@@ -1743,11 +1812,6 @@ function applyIspAutoConfig(apiInfo) {
     if (mutated) {
         CustomUtils.setGuaPrefixIfAvailable();
         updateAutoConnectionInfo(apiInfo);
-        
-        // API情報適用後にパッケージを再評価
-        requestAnimationFrame(() => {
-            evaluateInitialPackages();
-        });
     }
 
     return mutated;
@@ -3127,15 +3191,22 @@ async function initializeCustomFeatures(asuSection, temp) {
     if (!document.querySelector('#extended-build-info')) {
         await insertExtendedInfo(temp);
     }
-
-    if (state.apiInfo) {
-        displayIspInfo(state.apiInfo);
-    }
     
+    // CRITICAL: API情報を先に取得してからセットアップを進める
+    await fetchAndDisplayIspInfo();
+    
+    // API情報取得後、extended-build-infoを表示
+    if (state.apiInfo) {
+        const extendedInfo = document.querySelector('#extended-build-info');
+        if (extendedInfo) {
+            extendedInfo.classList.remove('hide');
+            console.log('Extended build info displayed');
+        }
+    }
+
     await Promise.all([
         loadSetupConfig(),
-        loadPackageDatabase(),
-        fetchAndDisplayIspInfo()
+        loadPackageDatabase()
     ]);
 
     loadUciDefaultsTemplate();
@@ -3182,6 +3253,8 @@ async function initializeCustomFeatures(asuSection, temp) {
     }
 
     state.ui.initialized = true;
+    
+    console.log('Initialization complete. API Info:', state.apiInfo ? 'Available' : 'Not available');
 }
 
 console.log('custom.js (v2.0 - Simplified) fully loaded and ready');
