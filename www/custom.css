@@ -662,6 +662,14 @@ details summary h4 {
     padding: var(--input-padding);
     font-size: inherit;
   }
+
+  details summary h3 {
+    margin-left: 0;
+  }
+
+  details:has(summary h3) summary {
+    padding-left: 0;
+  }
 }
 
 /* ===== Utility Classes ===== */
