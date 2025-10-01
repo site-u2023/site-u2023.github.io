@@ -241,17 +241,18 @@ input[type="radio"] {
 }
 
 .radio-group label {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 0.5em;
   cursor: pointer;
   white-space: nowrap;
-  line-height: 1;
 }
 
 .radio-group input[type="radio"] {
-  margin: 0;
-  vertical-align: middle;
+  margin: 0 !important;
+  padding: 0 !important;
+  flex-shrink: 0;
+  align-self: center;
 }
 
 /* ===== Details/Summary Styling ===== */
@@ -631,18 +632,17 @@ details summary h4 {
   }
 
   .radio-group label {
-    display: inline-flex;
+    display: flex;
     align-items: center;
     gap: 0.5em;
     white-space: normal;
     margin-bottom: 0.5em;
-    line-height: 1.4;
   }
 
   .radio-group input[type="radio"] {
-    flex-shrink: 0;
     margin: 0;
-    vertical-align: middle;
+    padding: 0;
+    flex-shrink: 0;
   }
 
   .form-group label,
