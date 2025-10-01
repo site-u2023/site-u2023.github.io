@@ -1,7 +1,7 @@
 {
   "version": "2.0.0",
   "description": "Simplified setup configuration - packages.json style",
-  "columns": 2,
+  "columns": 3,
   
   "constants": {
     "interfaces": {
