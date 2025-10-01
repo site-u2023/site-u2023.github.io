@@ -74,9 +74,7 @@ const state = {
     }
 };
 
-// ==================== ユーティリティ ====================
-const UI = {
-    // ==================== 状態管理 ====================
+// ==================== 状態管理 ====================
 const state = {
     device: {
         arch: null,
@@ -136,6 +134,16 @@ const state = {
 // ==================== ユーティリティ ====================
 const UI = {
     updateElement(idOrEl, opts = {}) {
+        const el = typeof idOrEl === 'string' ? document.getElementById(idOrEl) : idOrEl;
+        if (!el) return;
+
+        if ('show' in opts) el.style.display = opts.show ? '' : 'none';
+        if ('text' in opts) el.textContent = opts.text;
+        if ('html' in opts) el.innerHTML = opts.html;
+        if ('value' in opts) el.value = opts.value;
+        if ('disabled' in opts) el.disabled = !!opts.disabled;
+    }
+};
         const el = typeof idOrEl === 'string' ? document.getElementById(idOrEl) : idOrEl;
         if (!el) return;
 
