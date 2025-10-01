@@ -237,25 +237,33 @@ input[type="radio"] {
 
 /* ===== Radio Groups ===== */
 .radio-group {
-  display: flex;
+  display: flex !important;
   flex-wrap: wrap;
   gap: 1em;
   margin-top: 0.5em;
+  grid-template-columns: unset !important;
 }
 
 .radio-group label {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 0.25em;
   cursor: pointer;
   white-space: nowrap;
-  line-height: 1;
-  font-size: inherit;
+  min-height: 1.5em;
 }
 
 .radio-group input[type="radio"] {
-  position: relative;
-  top: 0.1em;
+  width: 1em;
+  height: 1em;
+  margin: 0;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.radio-group span {
+  line-height: 1.5;
+  display: inline-block;
 }
 
 /* ===== Details/Summary Styling ===== */
@@ -635,17 +643,25 @@ details summary h4 {
   }
 
   .radio-group label {
-    display: inline-flex;
+    display: flex;
     align-items: center;
     gap: 0.5em;
     white-space: normal;
     margin-bottom: 0.5em;
-    vertical-align: middle;
-    line-height: normal;
+    min-height: 1.5em;
   }
 
   .radio-group input[type="radio"] {
+    width: 1em;
+    height: 1em;
+    margin: 0;
+    padding: 0;
     flex-shrink: 0;
+  }
+
+  .radio-group span {
+    line-height: 1.5;
+    display: inline-block;
   }
 
   .form-group label,
