@@ -237,10 +237,11 @@ input[type="radio"] {
 
 /* ===== Radio Groups ===== */
 .radio-group {
-  display: flex;
+  display: flex !important;
   flex-wrap: wrap;
   gap: 1em;
   margin-top: 0.5em;
+  grid-template-columns: unset !important;
 }
 
 .radio-group label {
