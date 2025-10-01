@@ -2814,10 +2814,10 @@ function generatePackageSelector() {
     
     console.log(`Generated ${state.packages.json.categories.length} package categories (including hidden)`);
     
-    // Hidden checkboxが作成された後にパッケージを評価
+    // Hidden checkboxが作成された後にパッケージのチェック状態のみ設定
+    // updateAllPackageState()はデバイスパッケージロード後に自動的に呼ばれる
     requestAnimationFrame(() => {
         evaluateInitialPackages();
-        updateAllPackageState('package-selector-init');
     });
     
     const arch = state.device.arch;
