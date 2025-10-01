@@ -241,11 +241,12 @@ input[type="radio"] {
 }
 
 .radio-group label {
-  display: flex;
-  align-items: center;
-  gap: 0.25em;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: start;
+  column-gap: 0.5em;
   cursor: pointer;
-  white-space: nowrap;
+  white-space: normal;  
 }
 
 /* ===== Details/Summary Styling ===== */
