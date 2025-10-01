@@ -69,7 +69,6 @@ const state = {
         lastFormStateHash: null,
         lastPackageListHash: null,
         prevUISelections: new Set(),
-        domElements: new Map(),
         packageSizes: new Map()
     }
 };
@@ -237,13 +236,6 @@ const CustomUtils = {
         return path.split('.').reduce((current, key) => current?.[key], obj);
     }
 };
-
-function getEl(key, selector) {
-    if (!state.cache.domElements.has(key)) {
-        state.cache.domElements.set(key, document.querySelector(selector));
-    }
-    return state.cache.domElements.get(key);
-}
 
 // ==================== 初期化処理 ====================
 const originalUpdateImages = window.updateImages;
