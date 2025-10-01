@@ -595,6 +595,10 @@ details summary h4 {
   .form-row {
     flex-direction: column;
   }
+
+  .config-items-grid {
+    grid-template-columns: 1fr !important;
+  }
   
   .feature-grid {
     grid-template-columns: 1fr;
