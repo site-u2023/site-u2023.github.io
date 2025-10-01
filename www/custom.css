@@ -615,17 +615,16 @@ details summary h4 {
 
   .radio-group {
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
     gap: 0.5em;
-    align-items: center;
+    align-items: flex-start;
   }
   
   .radio-group label {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4em;
-    white-space: nowrap;
-    max-width: 100%;
+    display: block;
+    line-height: 1.4;
+    margin-bottom: 0.3em;
+    word-break: break-word;
   }
 
   .radio-group input[type="radio"] {
