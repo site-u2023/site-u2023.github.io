@@ -434,6 +434,16 @@ function renderSetupConfig(config) {
             applyIspAutoConfig(state.apiInfo);
             displayIspInfo(state.apiInfo);
             console.log('Applied ISP config after form render');
+            
+            // API情報取得後にパッケージを再評価
+            requestAnimationFrame(() => {
+                evaluateInitialPackages();
+            });
+        } else {
+            // API情報がない場合でも初期パッケージを評価
+            requestAnimationFrame(() => {
+                evaluateInitialPackages();
+            });
         }
     });
 }
@@ -692,6 +702,53 @@ function setupEventListeners() {
 
     requestAnimationFrame(() => {
         evaluateAllShowWhen();
+        evaluateInitialPackages();
+    });
+}
+
+function evaluateInitialPackages() {
+    if (!state.config.setup) return;
+    
+    console.log('Evaluating initial packages based on default radio values');
+    
+    for (const category of state.config.setup.categories) {
+        if (!category.packages || category.packages.length === 0) continue;
+        
+        // カテゴリ内の全ラジオグループの現在値を取得
+        const radioValues = {};
+        category.items.forEach(item => {
+            if (item.type === 'radio-group' && item.variable) {
+                const checkedRadio = document.querySelector(`input[name="${item.variable}"]:checked`);
+                if (checkedRadio) {
+                    radioValues[item.variable] = checkedRadio.value;
+                }
+            }
+        });
+        
+        // パッケージの条件を評価
+        category.packages.forEach(pkg => {
+            if (!pkg.when) return;
+            
+            const shouldEnable = Object.entries(pkg.when).every(([key, value]) => {
+                const actualValue = radioValues[key];
+                if (!actualValue) return false;
+                
+                if (Array.isArray(value)) {
+                    return value.includes(actualValue);
+                }
+                return value === actualValue;
+            });
+            
+            if (shouldEnable) {
+                console.log(`Initial package enabled: ${pkg.id} (condition matched)`);
+                toggleVirtualPackage(pkg.id, true);
+            }
+        });
+    }
+    
+    // パッケージ状態を更新
+    requestAnimationFrame(() => {
+        updateAllPackageState('initial-packages-evaluated');
     });
 }
 
@@ -741,12 +798,6 @@ function evaluateShowWhen(condition) {
 function updatePackagesForRadioGroup(radioName, selectedValue) {
     if (!state.config.setup) return;
     
-    if (radioName === 'connection_type') {
-        console.log('Clearing exclusive connection packages from dynamic set');
-        state.packages.dynamic.delete('map');
-        state.packages.dynamic.delete('ds-lite');
-    }
-    
     for (const category of state.config.setup.categories) {
         if (!category.packages) continue;
         
@@ -762,14 +813,6 @@ function updatePackagesForRadioGroup(radioName, selectedValue) {
             });
             
             toggleVirtualPackage(pkg.id, shouldEnable);
-            
-            if (shouldEnable) {
-                state.packages.dynamic.add(pkg.id);
-                console.log(`Added ${pkg.id} to dynamic packages`);
-            } else {
-                state.packages.dynamic.delete(pkg.id);
-                console.log(`Removed ${pkg.id} from dynamic packages`);
-            }
         });
     }
 }
@@ -792,12 +835,6 @@ function toggleVirtualPackage(packageId, enabled) {
     if (checkbox.checked !== enabled) {
         checkbox.checked = enabled;
         console.log(`Virtual package ${packageId}: ${enabled ? 'enabled' : 'disabled'}`);
-        
-        if (enabled) {
-            state.packages.dynamic.add(packageId);
-        } else {
-            state.packages.dynamic.delete(packageId);
-        }
     }
 }
 
@@ -1034,40 +1071,11 @@ function updatePackageListToTextarea(source = 'unknown') {
         state.cache.prevUISelections = currentUISelections;
     }
 
-    const filteredDynamicPackages = new Set();
-    const connectionType = getFieldValue('input[name="connection_type"]:checked');
-    
-    for (const pkg of state.packages.dynamic) {
-        if (pkg.startsWith('luci-i18n-')) {
-            filteredDynamicPackages.add(pkg);
-            continue;
-        }
-        
-        if (pkg === 'map' || pkg === 'ds-lite') {
-            if (connectionType === 'mape' && pkg === 'map') {
-                filteredDynamicPackages.add(pkg);
-            } else if (connectionType === 'dslite' && pkg === 'ds-lite') {
-                filteredDynamicPackages.add(pkg);
-            } else if (connectionType === 'auto' && state.apiInfo) {
-                if (pkg === 'map' && state.apiInfo.mape?.brIpv6Address) {
-                    filteredDynamicPackages.add(pkg);
-                } else if (pkg === 'ds-lite' && state.apiInfo.aftr) {
-                    filteredDynamicPackages.add(pkg);
-                }
-            }
-            continue;
-        }
-        
-        filteredDynamicPackages.add(pkg);
-    }
-    
-    console.log('Filtered dynamic packages:', [...filteredDynamicPackages]);
-
     const uniquePackages = [...new Set([
         ...basePackages,
         ...checkedPackages,
         ...searchedPackages,
-        ...filteredDynamicPackages,
+        ...state.packages.dynamic,
         ...manualPackages
     ])];
 
@@ -1082,7 +1090,7 @@ function updatePackageListToTextarea(source = 'unknown') {
         base: basePackages.size,
         checked: checkedPackages.size,
         searched: searchedPackages.size,
-        dynamic: filteredDynamicPackages.size,
+        dynamic: state.packages.dynamic.size,
         manual: manualPackages.size,
         total: uniquePackages.length
     });
@@ -1735,6 +1743,11 @@ function applyIspAutoConfig(apiInfo) {
     if (mutated) {
         CustomUtils.setGuaPrefixIfAvailable();
         updateAutoConnectionInfo(apiInfo);
+        
+        // API情報適用後にパッケージを再評価
+        requestAnimationFrame(() => {
+            evaluateInitialPackages();
+        });
     }
 
     return mutated;
