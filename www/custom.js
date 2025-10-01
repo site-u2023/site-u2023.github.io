@@ -1814,7 +1814,7 @@ function updateAutoConnectionInfo(apiInfo) {
         }
         
         infoText += `<hr>`;
-        infoText += `<p>${current_language_json['tr-mape-notice1'] || 'Note: Actual values may differ.'}</p>`;
+        infoText += `<p><span class="tr-mape-notice1">Note: Actual values may differ.</span></p>`;
         infoText += `option peeraddr ${apiInfo.mape.brIpv6Address}<br>`;
         infoText += `option ipaddr ${apiInfo.mape.ipv4Prefix}<br>`;
         infoText += `option ip4prefixlen ${apiInfo.mape.ipv4PrefixLength}<br>`;
@@ -1835,7 +1835,7 @@ function updateAutoConnectionInfo(apiInfo) {
         infoText += `<div style="text-align: center;"><a href="https://ipv4.web.fc2.com/map-e.html" target="_blank">Powered by config-softwire</a></div>`;     
     } else if (connectionType === 'DS-Lite') {
         infoText += `<hr>`;
-        infoText += `<h4>${current_language_json['tr-dslite-notice1'] || 'Note: Actual values may differ.'}</h4>`;
+        infoText += `<h4><span class="tr-dslite-notice1">Note: Actual values may differ.</span></h4>`;
         infoText += `<hr>`;
         if (apiInfo.aftr?.aftrIpv6Address) {
             infoText += `option aftr_addr ${apiInfo.aftr.aftrIpv6Address}<br>`;
@@ -1848,9 +1848,12 @@ function updateAutoConnectionInfo(apiInfo) {
         }
         infoText += `<hr>`;
     } else {
-        infoText += `${current_language_json['tr-standard-notice'] || 'Standard connection will be used'}`;
+        infoText += `<span class="tr-standard-notice">Standard connection will be used</span>`;
     }
+    
     autoInfo.innerHTML = infoText;
+    
+    applyCustomTranslations(current_language_json);
 }
 
 function applyIspAutoConfig(apiInfo) {
