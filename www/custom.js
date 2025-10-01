@@ -1152,15 +1152,21 @@ function collectFormValues() {
 function applySpecialFieldLogic(values) {
     const connectionType = values.connection_type || 'auto';
     
+    // インターネット接続：全接続タイプのフィールドを収集
+    const allConnectionFields = collectConnectionFields();
+    
+    // 選択された接続タイプのフィールドを取得
+    const selectedConnectionFields = getFieldsForConnectionType(connectionType);
+    
+    // 選択されていない接続タイプのフィールドを削除
+    allConnectionFields.forEach(field => {
+        if (!selectedConnectionFields.includes(field)) {
+            delete values[field];
+        }
+    });
+    
+    // AUTO時は追加処理
     if (connectionType === 'auto') {
-        const connectionFields = ['pppoe_username', 'pppoe_password', 'dslite_aftr_type', 'dslite_area', 
-                                 'dslite_aftr_address', 'mape_br', 'mape_ealen', 'mape_ipv4_prefix',
-                                 'mape_ipv4_prefixlen', 'mape_ipv6_prefix', 'mape_ipv6_prefixlen',
-                                 'mape_psid_offset', 'mape_psidlen', 'mape_gua_prefix', 'mape_type',
-                                 'ap_ip_address', 'ap_gateway'];
-        
-        connectionFields.forEach(key => delete values[key]);
-        
         if (state.apiInfo) {
             if (state.apiInfo.mape?.brIpv6Address) {
                 values.mape_br = state.apiInfo.mape.brIpv6Address;
@@ -1187,50 +1193,224 @@ function applySpecialFieldLogic(values) {
         }
     }
     
+    // Wi-Fi：全Wi-Fiフィールドを収集
+    const allWifiFields = collectWifiFields();
+    
     const wifiMode = values.wifi_mode || 'standard';
     
-    if (wifiMode === 'disabled') {
-        ['wlan_ssid', 'wlan_password', 'mobility_domain', 'snr'].forEach(key => {
-            delete values[key];
-        });
-    } else if (wifiMode === 'standard') {
-        delete values.mobility_domain;
-        delete values.snr;
-    } else if (wifiMode === 'usteer') {
+    // Wi-Fiモード別の必要フィールド
+    const selectedWifiFields = getFieldsForWifiMode(wifiMode);
+    
+    // 不要なWi-Fiフィールドを削除
+    allWifiFields.forEach(field => {
+        if (!selectedWifiFields.includes(field)) {
+            delete values[field];
+        }
+    });
+    
+    if (wifiMode === 'usteer') {
         values.enable_usteer = '1';
     }
 
+    // Tuning：全Tuningフィールドを収集
+    const allNetOptFields = collectNetOptFields();
+    
     const netOptimizer = values.net_optimizer || 'auto';
     
-    if (netOptimizer === 'disabled') {
-        ['enable_netopt', 'netopt_rmem', 'netopt_wmem', 'netopt_conntrack', 
-         'netopt_backlog', 'netopt_somaxconn', 'netopt_congestion'].forEach(key => {
-            delete values[key];
-        });
-    } else if (netOptimizer === 'auto') {
-        values.enable_netopt = '1';
-        ['netopt_rmem', 'netopt_wmem', 'netopt_conntrack', 
-         'netopt_backlog', 'netopt_somaxconn', 'netopt_congestion'].forEach(key => {
-            delete values[key];
-        });
-    } else if (netOptimizer === 'manual') {
+    // NetOptimizerモード別の必要フィールド
+    const selectedNetOptFields = getFieldsForNetOptMode(netOptimizer);
+    
+    // 不要なNetOptimizerフィールドを削除
+    allNetOptFields.forEach(field => {
+        if (!selectedNetOptFields.includes(field)) {
+            delete values[field];
+        }
+    });
+    
+    if (netOptimizer === 'auto' || netOptimizer === 'manual') {
         values.enable_netopt = '1';
     }
     
+    // DNSmasq
+    const allDnsmasqFields = collectDnsmasqFields();
+    
     const dnsmasqMode = values.enable_dnsmasq || 'auto';
-
-    if (dnsmasqMode === 'disabled') {
-        delete values.enable_dnsmasq;
-        delete values.dnsmasq_cache;
-        delete values.dnsmasq_negcache;
-    } else if (dnsmasqMode === 'auto') {
-        values.enable_dnsmasq = '1';
-        delete values.dnsmasq_cache;
-        delete values.dnsmasq_negcache;
-    } else if (dnsmasqMode === 'manual') {
+    
+    const selectedDnsmasqFields = getFieldsForDnsmasqMode(dnsmasqMode);
+    
+    allDnsmasqFields.forEach(field => {
+        if (!selectedDnsmasqFields.includes(field)) {
+            delete values[field];
+        }
+    });
+    
+    if (dnsmasqMode === 'auto' || dnsmasqMode === 'manual') {
         values.enable_dnsmasq = '1';
     }
 }
+
+// インターネット接続：全フィールドを収集
+function collectConnectionFields() {
+    const fields = [];
+    const category = state.config.setup?.categories?.find(cat => cat.id === 'internet-connection');
+    if (!category) return fields;
+    
+    category.items.forEach(item => {
+        if (item.type === 'section' && item.items) {
+            item.items.forEach(subItem => {
+                if (subItem.type === 'field' && subItem.variable) {
+                    fields.push(subItem.variable);
+                } else if (subItem.type === 'radio-group' && subItem.variable) {
+                    fields.push(subItem.variable);
+                }
+            });
+        }
+    });
+    
+    return fields;
+}
+
+// インターネット接続：選択された接続タイプのフィールドを取得
+function getFieldsForConnectionType(type) {
+    const category = state.config.setup?.categories?.find(cat => cat.id === 'internet-connection');
+    if (!category) return [];
+    
+    // connection_type自体は常に含める
+    const fields = ['connection_type'];
+    
+    // autoとdhcpは追加フィールドなし
+    if (type === 'auto' || type === 'dhcp') {
+        return fields;
+    }
+    
+    // 該当するセクションを探す
+    const section = category.items.find(item => 
+        item.type === 'section' && 
+        item.showWhen && 
+        (item.showWhen.connection_type === type || 
+         (Array.isArray(item.showWhen.connection_type) && item.showWhen.connection_type.includes(type)))
+    );
+    
+    if (!section || !section.items) return fields;
+    
+    // セクション内のフィールドを収集
+    section.items.forEach(item => {
+        if (item.type === 'field' && item.variable) {
+            fields.push(item.variable);
+        } else if (item.type === 'radio-group' && item.variable) {
+            fields.push(item.variable);
+        }
+    });
+    
+    return fields;
+}
+
+// Wi-Fi：全フィールドを収集
+function collectWifiFields() {
+    const fields = [];
+    const category = state.config.setup?.categories?.find(cat => cat.id === 'wifi-config');
+    if (!category) return fields;
+    
+    category.items.forEach(item => {
+        if (item.type === 'field' && item.variable) {
+            fields.push(item.variable);
+        }
+    });
+    
+    return fields;
+}
+
+// Wi-Fi：選択されたモードのフィールドを取得
+function getFieldsForWifiMode(mode) {
+    const fields = ['wifi_mode'];
+    
+    if (mode === 'disabled') {
+        return fields;
+    }
+    
+    // standardとusteerは基本フィールド
+    fields.push('wlan_ssid', 'wlan_password');
+    
+    if (mode === 'usteer') {
+        fields.push('mobility_domain', 'snr');
+    }
+    
+    return fields;
+}
+
+// Tuning：全NetOptimizerフィールドを収集
+function collectNetOptFields() {
+    const fields = [];
+    const category = state.config.setup?.categories?.find(cat => cat.id === 'tuning-config');
+    if (!category) return fields;
+    
+    category.items.forEach(item => {
+        if (item.type === 'section' && item.id && item.id.includes('netopt')) {
+            if (item.items) {
+                item.items.forEach(subItem => {
+                    if (subItem.type === 'field' && subItem.variable) {
+                        fields.push(subItem.variable);
+                    }
+                });
+            }
+        }
+    });
+    
+    return fields;
+}
+
+// Tuning：選択されたモードのフィールドを取得
+function getFieldsForNetOptMode(mode) {
+    const fields = ['net_optimizer'];
+    
+    if (mode === 'disabled') {
+        return fields;
+    }
+    
+    if (mode === 'manual') {
+        fields.push('netopt_rmem', 'netopt_wmem', 'netopt_conntrack', 
+                   'netopt_backlog', 'netopt_somaxconn', 'netopt_congestion');
+    }
+    
+    return fields;
+}
+
+// Dnsmasq：全フィールドを収集
+function collectDnsmasqFields() {
+    const fields = [];
+    const category = state.config.setup?.categories?.find(cat => cat.id === 'tuning-config');
+    if (!category) return fields;
+    
+    category.items.forEach(item => {
+        if (item.type === 'section' && item.id && item.id.includes('dnsmasq')) {
+            if (item.items) {
+                item.items.forEach(subItem => {
+                    if (subItem.type === 'field' && subItem.variable) {
+                        fields.push(subItem.variable);
+                    }
+                });
+            }
+        }
+    });
+    
+    return fields;
+}
+
+// Dnsmasq：選択されたモードのフィールドを取得
+function getFieldsForDnsmasqMode(mode) {
+    const fields = ['enable_dnsmasq'];
+    
+    if (mode === 'disabled') {
+        return fields;
+    }
+    
+    if (mode === 'manual') {
+        fields.push('dnsmasq_cache', 'dnsmasq_negcache');
+    }
+    
+    return fields;
+}
+
 
 // ==================== UCI-defaults処理 ====================
 function updateVariableDefinitions() {
