@@ -1792,19 +1792,6 @@ function updateAutoConnectionInfo(apiInfo) {
     
     const connectionType = getConnectionType(apiInfo);
     
-    const autoSectionTitle = document.querySelector('#auto-section h4');
-    if (autoSectionTitle) {
-        const existingTypeSpan = autoSectionTitle.querySelector('.connection-type-display');
-        if (existingTypeSpan) {
-            existingTypeSpan.remove();
-        }
-        
-        const typeSpan = document.createElement('span');
-        typeSpan.className = 'connection-type-display';
-        typeSpan.textContent = `: ${connectionType}`;
-        autoSectionTitle.appendChild(typeSpan);
-    }
-    
     let infoText = '';
     if (apiInfo?.isp) {
         infoText += `ISP: ${apiInfo.isp}<br>`;
