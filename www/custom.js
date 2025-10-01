@@ -2833,6 +2833,7 @@ async function fetchToHData() {
 }
 
 async function getCPUCoresFromToH(deviceId, target) {
+    tohDataCache = null;
     const data = await fetchToHData();
     if (!data || !Array.isArray(data.entries) || !Array.isArray(data.columns)) return null;
 
