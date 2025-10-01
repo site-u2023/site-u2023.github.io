@@ -403,6 +403,7 @@ function renderSetupConfig(config) {
         }
 
         const itemsContainer = document.createElement('div');
+        itemsContainer.className = 'config-items-grid';
         itemsContainer.style.display = 'grid';
         itemsContainer.style.gridTemplateColumns = `repeat(${columns}, 1fr)`;
         itemsContainer.style.gap = '1em';
@@ -654,6 +655,7 @@ function buildSection(section) {
 
     const columns = state.config.setup.columns || 1;
     const itemsContainer = document.createElement('div');
+    itemsContainer.className = 'config-items-grid';
     itemsContainer.style.display = 'grid';
     itemsContainer.style.gridTemplateColumns = `repeat(${columns}, 1fr)`;
     itemsContainer.style.gap = '1em';
