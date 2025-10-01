@@ -623,7 +623,7 @@ function buildRadioGroup(item) {
         }
 
         const textSpan = document.createElement('span');
-        textSpan.textContent = ' ' + (opt.label || opt.value);
+        textSpan.textContent = opt.label || opt.value;
         if (opt.class) textSpan.classList.add(opt.class);
         
         lbl.appendChild(radio);
