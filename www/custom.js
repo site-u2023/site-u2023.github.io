@@ -853,10 +853,16 @@ function updatePackagesForRadioGroup(radioName, selectedValue) {
         category.packages.forEach(pkg => {
             if (!pkg.when) return;
             
+            // このパッケージの条件に、変更されたラジオグループが含まれているかチェック
+            const isRelatedToThisRadio = Object.keys(pkg.when).includes(radioName);
+            
+            if (!isRelatedToThisRadio) {
+                // 関係ないパッケージはスキップ
+                return;
+            }
+            
             const shouldEnable = Object.entries(pkg.when).every(([key, value]) => {
-                if (key !== radioName) return true;
-                
-                // このラジオグループに関連する条件を評価
+                // このラジオグループの条件を評価
                 const valueToCheck = (key === 'connection_type' && selectedValue === 'auto') 
                     ? effectiveValue 
                     : selectedValue;
