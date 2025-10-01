@@ -398,12 +398,7 @@ function renderSetupConfig(config) {
             section.appendChild(desc);
         }
 
-        const itemsContainer = document.createElement('div');
-        itemsContainer.className = 'config-items-grid';
-        itemsContainer.style.display = 'grid';
-        itemsContainer.style.gridTemplateColumns = `repeat(${columns}, 1fr)`;
-        itemsContainer.style.gap = '1em';
-        itemsContainer.style.alignItems = 'start';
+        const itemsContainer = CustomUtils.createGridContainer(columns);
 
         const items = category.items || [];
         const itemCount = items.length;
@@ -650,12 +645,8 @@ function buildSection(section) {
     }
 
     const columns = state.config.setup.columns || 1;
-    const itemsContainer = document.createElement('div');
-    itemsContainer.className = 'config-items-grid';
-    itemsContainer.style.display = 'grid';
-    itemsContainer.style.gridTemplateColumns = `repeat(${columns}, 1fr)`;
-    itemsContainer.style.gap = '1em';
-    itemsContainer.style.alignItems = 'start';
+    
+    const itemsContainer = CustomUtils.createGridContainer(columns);
 
     const items = section.items || [];
     const itemCount = items.length;
