@@ -241,12 +241,11 @@ input[type="radio"] {
 }
 
 .radio-group label {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  align-items: start;
-  column-gap: 0.5em;
+  display: flex;
+  align-items: center;
+  gap: 0.25em;
   cursor: pointer;
-  white-space: normal;  
+  white-space: nowrap;
 }
 
 /* ===== Details/Summary Styling ===== */
@@ -615,24 +614,23 @@ details summary h4 {
   }
 
   .radio-group {
-    display: flex;
     flex-direction: column;
-    gap: 0.5em;
     align-items: flex-start;
+    gap: 0.5em;
   }
-  
+
   .radio-group label {
     display: flex;
     align-items: flex-start;
-    gap: 0.4em;
+    gap: 0.5em;
+    white-space: normal;
+    margin-bottom: 0.5em;
     line-height: 1.4;
-    margin-bottom: 0.3em;
-    word-break: break-word;
-  }  
+  }
 
   .radio-group input[type="radio"] {
-    margin-top: 0.2em;
     flex-shrink: 0;
+    margin-top: 0.1em;
   }
 
   .form-group label,
