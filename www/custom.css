@@ -590,6 +590,48 @@ details summary h4 {
   }
 }
 
+/* ===== Script Section内のフィールドレイアウト（左右50:50） ===== */
+/* 通常フィールド：左にラベル、右にインプット */
+#scripts-details #dynamic-config-sections .form-row .form-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 1em;
+  row-gap: 0.5em;
+  align-items: start;
+}
+
+#scripts-details #dynamic-config-sections .form-row .form-group label {
+  grid-column: 1;
+  grid-row: 1;
+  margin: 0;
+  padding-top: var(--input-padding);
+  font-weight: 500;
+  align-self: start;
+  white-space: normal;
+}
+
+#scripts-details #dynamic-config-sections .form-row .form-group input:not([type="radio"]):not([type="checkbox"]),
+#scripts-details #dynamic-config-sections .form-row .form-group select:not(#versions),
+#scripts-details #dynamic-config-sections .form-row .form-group textarea {
+  grid-column: 2;
+  grid-row: 1;
+  margin: 0;
+  width: 100%;
+}
+
+#scripts-details #dynamic-config-sections .form-row .form-group small {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  margin: 0;
+}
+
+/* ラジオグループは例外：従来通りの縦並び */
+#scripts-details #dynamic-config-sections .form-row:has(.radio-group) .form-group {
+  display: flex;
+  flex-direction: column;
+}
+
 /* ===== Responsive Design (extends base responsive patterns) ===== */
 @media (max-width: 800px) {
   .form-row {
@@ -649,11 +691,33 @@ details summary h4 {
   }
 
   details summary h3 {
-  margin-left: 0;
+    margin-left: 0;
   }
 
   details:has(summary h3) summary {
     padding-left: 0;
+  }
+
+  /* Script Section：モバイルでは縦並びに戻す */
+  #scripts-details #dynamic-config-sections .form-row .form-group {
+    grid-template-columns: 1fr;
+  }
+  
+  #scripts-details #dynamic-config-sections .form-row .form-group label {
+    grid-column: 1;
+    grid-row: 1;
+    padding-top: 0;
+  }
+  
+  #scripts-details #dynamic-config-sections .form-row .form-group input:not([type="radio"]):not([type="checkbox"]),
+  #scripts-details #dynamic-config-sections .form-row .form-group select:not(#versions),
+  #scripts-details #dynamic-config-sections .form-row .form-group textarea {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  
+  #scripts-details #dynamic-config-sections .form-row .form-group small {
+    grid-row: 3;
   }
 }
 
