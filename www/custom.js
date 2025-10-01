@@ -76,32 +76,18 @@ const state = {
 
 // ==================== ユーティリティ ====================
 const UI = {
-    function updateElement(idOrEl, opts = {}) {
-    const el = typeof idOrEl === 'string'
-        ? document.getElementById(idOrEl)
-        : idOrEl;
-    
-    if (!el) {
-        console.error(`Element not found: ${idOrEl}`);
-        return;
-    }
+    const UI = {
+    updateElement(idOrEl, opts = {}) {
+        const el = typeof idOrEl === 'string' ? document.getElementById(idOrEl) : idOrEl;
+        if (!el) return;
 
-    if ('show' in opts) {
-        el.style.display = opts.show ? '' : 'none';
+        if ('show' in opts) el.style.display = opts.show ? '' : 'none';
+        if ('text' in opts) el.textContent = opts.text;
+        if ('html' in opts) el.innerHTML = opts.html;
+        if ('value' in opts) el.value = opts.value;
+        if ('disabled' in opts) el.disabled = !!opts.disabled;
     }
-    if ('text' in opts) {
-        el.textContent = opts.text;
-    }
-    if ('html' in opts) {
-        el.innerHTML = opts.html;
-    }
-    if ('value' in opts) {
-        el.value = opts.value;
-    }
-    if ('disabled' in opts) {
-        el.disabled = !!opts.disabled;
-    }
-}
+};
 };
 
 const CustomUtils = {
@@ -235,14 +221,10 @@ const CustomUtils = {
     
     toggleVisibility(el, show = true) {
         const element = (typeof el === 'string') ? document.querySelector(el) : el;
-        if (!element) {
-            console.error(`toggleVisibility: Element not found: ${el}`);
-            return;
-        }
+        if (!element) return;
         
-        const isVisible = Boolean(show);
-        element.classList.toggle('hide', !isVisible);
-        element.style.display = isVisible ? '' : 'none';
+        element.classList.toggle('hide', !show);
+        element.style.display = show ? '' : 'none';
     },
 
     show(el) { this.toggleVisibility(el, true); },
@@ -253,10 +235,7 @@ const CustomUtils = {
     },
 
     getNestedValue(obj, path) {
-        if (!obj || !path) {
-            console.error(`getNestedValue: Invalid input - obj: ${!!obj}, path: ${path}`);
-            return undefined;
-        }
+        if (!obj || !path) return undefined;
         return path.split('.').reduce((current, key) => current?.[key], obj);
     }
 };
@@ -754,11 +733,6 @@ function findFieldByVariable(variableName) {
 }
 
 function findFieldConfig(fieldId) {
-    if (!state.config.setup) {
-        console.error('findFieldConfig: setup config not loaded');
-        return null;
-    }
-    
     for (const category of state.config.setup.categories) {
         for (const item of category.items) {
             if (item.id === fieldId) return item;
@@ -769,7 +743,6 @@ function findFieldConfig(fieldId) {
             }
         }
     }
-    console.error(`findFieldConfig: Field not found: ${fieldId}`);
     return null;
 }
 
@@ -846,8 +819,10 @@ function evaluateInitialPackages() {
                 toggleVirtualPackage(pkg.id, false);
             }
         });
-    }    
+    }
+    
     console.log('=== evaluateInitialPackages END ===');
+    
 }
 
 function getConnectionTypeFromApi(apiInfo) {
@@ -1806,15 +1781,7 @@ function updateAutoConnectionInfo(apiInfo) {
 }
 
 function applyIspAutoConfig(apiInfo) {
-    if (!apiInfo) {
-        console.error('applyIspAutoConfig: apiInfo is null');
-        return false;
-    }
-    
-    if (!state.config.setup) {
-        console.error('applyIspAutoConfig: setup config not ready');
-        return false;
-    }
+    if (!apiInfo || !state.config.setup) return false;
 
     let mutated = false;
 
@@ -2863,7 +2830,7 @@ function generatePackageSelector() {
     });
     
     console.log(`Generated ${state.packages.json.categories.length} package categories (including hidden)`);
-    
+  
     requestAnimationFrame(() => {
         evaluateInitialPackages();
     });
