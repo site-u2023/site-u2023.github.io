@@ -241,11 +241,17 @@ input[type="radio"] {
 }
 
 .radio-group label {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 0.5em;
   cursor: pointer;
   white-space: nowrap;
+  line-height: 1;
+}
+
+.radio-group input[type="radio"] {
+  margin: 0;
+  vertical-align: middle;
 }
 
 /* ===== Details/Summary Styling ===== */
@@ -269,6 +275,7 @@ details summary h3 {
   display: inline;
   margin: 0;
   font-weight: 500;
+  margin-left: -1.2em;
 }
 
 details summary h4,
@@ -280,7 +287,6 @@ details summary h5 {
 
 details:has(summary h3) summary {
   list-style: none;
-  padding-left: 0;
 }
 
 details:has(summary h3) summary::-webkit-details-marker {
@@ -625,7 +631,7 @@ details summary h4 {
   }
 
   .radio-group label {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 0.5em;
     white-space: normal;
@@ -635,7 +641,8 @@ details summary h4 {
 
   .radio-group input[type="radio"] {
     flex-shrink: 0;
-    margin-top: 0;
+    margin: 0;
+    vertical-align: middle;
   }
 
   .form-group label,
@@ -651,14 +658,6 @@ details summary h4 {
   .multi-input-item {
     padding: var(--input-padding);
     font-size: inherit;
-  }
-
-  details summary h3 {
-    margin-left: 0;
-  }
-
-  details:has(summary h3) summary {
-    padding-left: 0;
   }
 }
 
