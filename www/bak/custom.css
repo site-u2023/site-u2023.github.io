@@ -84,19 +84,18 @@ input[type="radio"] {
 .form-group input:not(.autocomplete > input):not(#versions),
 .form-group select:not(#versions),
 .form-group textarea {
-  /* Inherit base styles and extend */
   width: 100%;
   box-sizing: border-box; 
   margin: 0;
-  background-color: var(--bg-input, #f1f1f1); /* fallback to index.css value */
+  background-color: var(--input-bg-light);
   color: var(--text-main);
   resize: both;
   
-  padding: 0.8em; /* matches index.css input padding */
+  padding: var(--input-padding);
   font-size: inherit;
-  line-height: inherit;
-  border: 0.06em solid transparent; /* matches index.css */
-  border-radius: 0.2em; /* matches index.css */
+  line-height: normal;
+  border: var(--input-border);
+  border-radius: var(--input-border-radius);
 }
 
 /* ===== Multi Input Container (Package Search & Commands) ===== */
@@ -105,9 +104,9 @@ input[type="radio"] {
   flex-direction: column;
   gap: 0.5em;
   min-height: 2.5em;
-  padding: 0.5em;
-  background-color: var(--bg-item);
-  border: 1px solid var(--border-main);
+  padding: 0;
+  background-color: transparent;
+  border: none;
   border-radius: 0.2em;
 }
 
@@ -119,11 +118,12 @@ input[type="radio"] {
 
 .multi-input-item {
   flex: 1;
-  border: 0.06em solid transparent;
-  background-color: #f1f1f1;
-  padding: 0.6em;
-  border-radius: 0.2em;
+  border: var(--input-border);
+  background-color: var(--input-bg-light);
+  padding: var(--input-padding);
+  border-radius: var(--input-border-radius);
   font-size: inherit;
+  line-height: normal;
   width: 100%;
   box-sizing: border-box;
   transition: all 0.2s ease;
@@ -136,7 +136,7 @@ input[type="radio"] {
 /* Package Search Autocomplete Results */
 .package-search-results {
   position: absolute;
-  border: 0.1em solid #d4d4d4;
+  border: var(--input-border);
   border-bottom: none;
   font-size: inherit;
   border-top: none;
@@ -144,16 +144,16 @@ input[type="radio"] {
   top: calc(100% + 2px);
   left: 0;
   right: 0;
-  background-color: #fff;
+  background-color: var(--bg-section);
   max-height: 200px;
   overflow-y: auto;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .package-search-results div {
-  padding: 0.8em;
+  padding: var(--input-padding);
   cursor: pointer;
-  border-bottom: 0.1em solid #d4d4d4;
+  border-bottom: var(--input-border);
 }
 
 .package-search-results div:hover {
@@ -164,23 +164,23 @@ input[type="radio"] {
 /* Dark mode support for multi-input */
 @media (prefers-color-scheme: dark) {
   .multi-input-container {
-    background-color: var(--bg-item);
-    border-color: #444;
+    background-color: transparent;
+    border-color: transparent;
   }
   
   .multi-input-item {
-    background-color: #313135;
-    color: #d0d0d0;
+    background-color: var(--input-bg-dark);
+    color: var(--text-main);
   }
   
   .package-search-results {
-    background-color: #252528;
-    border-color: #444;
+    background-color: var(--bg-section);
+    border-color: var(--border-main);
     box-shadow: 0 2px 4px rgba(0,0,0,0.3);
   }
   
   .package-search-results div {
-    border-color: #444;
+    border-color: var(--border-main);
   }
   
   .package-search-results div:hover {
@@ -204,10 +204,11 @@ input[type="radio"] {
   margin: 0;
   padding: var(--input-padding);
   border: var(--input-border);
-  background-color: var(--input-bg-current);
+  background-color: var(--input-bg-light);
   color: var(--text-main);
   border-radius: var(--input-border-radius);
   font-size: inherit;
+  line-height: normal;
   resize: both;
 }
 
@@ -219,7 +220,7 @@ input[type="radio"] {
   #uci-defaults-content,
   #postinst-content,
   #asu-packages {
-    background-color: var(--bg-input, #313135);
+    background-color: var(--input-bg-dark);
     color: var(--text-main);
   }
 }
@@ -268,7 +269,7 @@ details summary h3 {
   display: inline;
   margin: 0;
   font-weight: 500;
-  margin-left: -1em;
+  margin-left: -1.2em;
 }
 
 details summary h4,
@@ -298,9 +299,60 @@ details[open] summary {
   border-radius: 0.25em;
 }
 
-#postinst-details,
-#uci-defaults-details {
-  padding: 0 1em 1em 1em;
+#postinst-details summary {
+    display: flex;
+    flex-direction: column;
+    padding: 1em 0;
+}
+
+#postinst-details summary h4 {
+    margin: 0;
+    display: block;
+}
+
+#postinst-additional-info {
+    display: block !important;
+    margin-top: 0.5em;
+}
+
+/* Additional Package Info - Always visible even when details is closed */
+.additional-package-info {
+    display: block !important;
+    padding: 0;
+    margin-top: 0.5em;
+    background-color: transparent;
+    border: none;
+    font-size: 0.9em;
+    color: var(--text-secondary);
+}
+
+#postinst-total-size {
+    font-size: 0.9em;
+    color: var(--text-muted);
+}
+
+/* ファイルサイズ情報表示 */
+.file-size-info {
+    display: block !important;
+    margin-top: 0.5em;
+    font-size: 0.85em;
+    color: var(--text-muted);
+    font-weight: normal;
+}
+
+/* detailsが閉じていても表示 */
+#uci-defaults-details summary .file-size-info {
+    display: block !important;
+}
+
+#uci-defaults-details summary {
+    display: flex;
+    flex-direction: column;
+}
+
+#uci-defaults-details summary h4 {
+    margin: 0;
+    display: block;
 }
 
 /* ===== ISP Information Display (extends base styling) ===== */
@@ -374,15 +426,12 @@ details[open] summary {
 
 /* ===== Section Containers (extends base container styles) ===== */
 .config-section,
-.package-category,
-#postinst-details,
-#uci-defaults-details {
+.package-category {
   margin: 0 0 1.5em 0;
   padding: 0 1em 1em 1em;
   background-color: var(--bg-section);
   border: 1px solid var(--border-main);
-  border-radius: 0.25em; /* matches index.css container border-radius */
-  /* inherit box-shadow pattern from index.css */
+  border-radius: 0.25em;
   box-shadow: 0em 0.06em 0.19em 0em rgba(0, 0, 0, 0.2),
               0em 0.06em 0.06em 0em rgba(0, 0, 0, 0.14),
               0em 0.125em 0.06em -0.06em rgba(0, 0, 0, 0.12);
@@ -409,6 +458,14 @@ details summary h4 {
   margin-bottom: 1em;
   color: var(--text-secondary);
   font-size: 0.9em;
+}
+
+.info-display {
+  padding: 1em;
+  background-color: var(--bg-item);
+  border-radius: 0.2em;
+  margin-top: 0.5em;
+  white-space: pre-line;
 }
 
 .package-grid {
@@ -534,7 +591,7 @@ details summary h4 {
 }
 
 /* ===== Responsive Design (extends base responsive patterns) ===== */
-@media (max-width: 600px) {
+@media (max-width: 800px) {
   .form-row {
     flex-direction: column;
   }
@@ -562,19 +619,41 @@ details summary h4 {
     gap: 0.5em;
   }
 
+  .radio-group label {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5em;
+    white-space: normal;
+    margin-bottom: 0.5em;
+    line-height: 1.4;
+  }
+
+  .radio-group input[type="radio"] {
+    flex-shrink: 0;
+    margin-top: 0.1em;
+  }
+
   .form-group label,
   .form-row label:not(.radio-group label) {
     white-space: nowrap;
   }
   
   .multi-input-container {
-    padding: 0.3em;
+    padding: 0;
     gap: 0.3em;
   }
   
   .multi-input-item {
-    padding: 0.5em;
-    font-size: 0.9em;
+    padding: var(--input-padding);
+    font-size: inherit;
+  }
+
+  details summary h3 {
+  margin-left: 0;
+  }
+
+  details:has(summary h3) summary {
+    padding-left: 0;
   }
 }
 
