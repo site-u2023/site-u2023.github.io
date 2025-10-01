@@ -247,23 +247,25 @@ input[type="radio"] {
 .radio-group label {
   display: flex;
   align-items: center;
-  gap: 0.25em;
+  gap: 0.5em;
   cursor: pointer;
   white-space: nowrap;
-  min-height: 1.5em;
 }
 
 .radio-group input[type="radio"] {
-  width: 1em;
-  height: 1em;
-  margin: 0;
-  padding: 0;
+  width: 16px !important;
+  height: 16px !important;
+  min-width: 16px !important;
+  min-height: 16px !important;
+  max-width: 16px !important;
+  max-height: 16px !important;
+  margin: 0 !important;
+  padding: 0 !important;
   flex-shrink: 0;
 }
 
 .radio-group span {
-  line-height: 1.5;
-  display: inline-block;
+  line-height: 1;
 }
 
 /* ===== Details/Summary Styling ===== */
