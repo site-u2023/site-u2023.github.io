@@ -1820,14 +1820,31 @@ function updateAutoConnectionInfo(apiInfo) {
         if (gua) {
             infoText += `option ip6prefix_gua ${gua}<br>`;
         }
+        infoText += `<br>`;
+        infoText += `export LEGACY=1<br>`;
+        infoText += `<hr>`;
+        infoText += `(config-softwire)# <strong>map-version draft</strong><br>`;
+        infoText += `(config-softwire)# <strong>rule &lt;0-65535&gt; ipv4-prefix ${apiInfo.mape.ipv4Prefix}/${apiInfo.mape.ipv4PrefixLength} ipv6-prefix ${apiInfo.mape.ipv6Prefix}/${apiInfo.mape.ipv6PrefixLength}</strong> [ea-length ${apiInfo.mape.eaBitLength}|psid-length ${apiInfo.mape.psidlen}] [offset ${apiInfo.mape.psIdOffset}] [forwarding]<br>`;
+        infoText += `<hr>`;
+        infoText += `<div style="text-align: center;"><a href="https://ipv4.web.fc2.com/map-e.html" target="_blank">Powered by config-softwire</a></div>`;     
     } else if (connectionType === 'DS-Lite') {
         infoText += `${current_language_json['tr-auto-detection'] || 'Auto Detection:'} ${connectionType}<br>`;
+        infoText += `<hr>`;
+        infoText += `<h4>${current_language_json['tr-dslite-notice1'] || 'Note: Actual values may differ.'}</h4>`;
         infoText += `<hr>`;
         if (apiInfo.aftr?.aftrIpv6Address) {
             infoText += `option aftr_addr ${apiInfo.aftr.aftrIpv6Address}<br>`;
         }
+        if (apiInfo.aftr?.aftrType) {
+            infoText += `option aftr_type ${apiInfo.aftr.aftrType}<br>`;
+        }
+        if (apiInfo.aftr?.jurisdiction) {
+            infoText += `option area ${apiInfo.aftr.jurisdiction}<br>`;
+        }
+        infoText += `<hr>`;
     } else {
         infoText += `${current_language_json['tr-auto-detection'] || 'Auto Detection:'} ${connectionType}<br>`;
+        infoText += `${current_language_json['tr-standard-notice'] || 'Standard connection will be used'}`;
     }
     autoInfo.innerHTML = infoText;
 }
