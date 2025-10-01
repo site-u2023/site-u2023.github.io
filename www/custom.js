@@ -2938,6 +2938,12 @@ async function getCPUCoresFromToH(deviceId, target, forceReload = false) {
 async function updateIrqbalanceByDevice(deviceId, target) {
     console.log(`[IRQBalance] Checking device: ${deviceId}, target: ${target}`);
     
+    const checkbox = document.querySelector('[data-package="luci-app-irqbalance"]');
+    if (!checkbox) {
+        console.warn('[IRQBalance] Checkbox not found in DOM');
+        return;
+    }
+    
     let cores = await getCPUCoresFromToH(deviceId, target);
 
     if (cores === null) {
@@ -2946,36 +2952,26 @@ async function updateIrqbalanceByDevice(deviceId, target) {
     }
 
     if (cores === null) {
-        console.log('[IRQBalance] Could not determine CPU cores - auto-check skipped');
+        console.log('[IRQBalance] Could not determine CPU cores - keeping current state');
         return;
     }
 
-    console.log(`[IRQBalance] Device has ${cores} CPU cores`);
+    console.log(`[IRQBalance] Device has ${cores} CPU core(s)`);
 
-    if (cores < 2) {
-        console.log('[IRQBalance] Single core device - IRQBalance not needed');
-        return;
-    }
-
-    const checkbox = document.querySelector('[data-package="luci-app-irqbalance"]');
-    if (!checkbox) {
-        console.warn('[IRQBalance] Checkbox not found in DOM');
-        return;
-    }
-
-    if (checkbox.checked) {
-        console.log('[IRQBalance] Already enabled by user');
-        return;
-    }
-
-    console.log(`[IRQBalance] Auto-enabling for ${cores} cores device`);
-    checkbox.checked = true;
+    const shouldBeEnabled = cores >= 2;
     
-    checkbox.dispatchEvent(new Event('change', { bubbles: true }));
-    
-    requestAnimationFrame(() => {
-        updateAllPackageState('irqbalance-auto-enabled');
-    });
+    if (checkbox.checked !== shouldBeEnabled) {
+        checkbox.checked = shouldBeEnabled;
+        console.log(`[IRQBalance] Auto-${shouldBeEnabled ? 'enabled' : 'disabled'} for ${cores} core(s) device`);
+        
+        checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+        
+        requestAnimationFrame(() => {
+            updateAllPackageState('irqbalance-auto-check');
+        });
+    } else {
+        console.log(`[IRQBalance] Already ${shouldBeEnabled ? 'enabled' : 'disabled'} - no change needed`);
+    }
 }
 
 // ==================== パッケージデータベース ====================
