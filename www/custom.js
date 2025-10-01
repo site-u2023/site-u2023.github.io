@@ -381,6 +381,12 @@ function renderSetupConfig(config) {
     container.innerHTML = '';
     console.log('Container cleared, rebuilding...');
 
+    const columns = config.columns || 1;
+    container.style.display = 'grid';
+    container.style.gridTemplateColumns = `repeat(${columns}, 1fr)`;
+    container.style.gap = '1em';
+    container.style.alignItems = 'start';
+
     (config.categories || []).forEach((category) => {
         const section = document.createElement('div');
         section.className = 'config-section';
@@ -410,6 +416,13 @@ function renderSetupConfig(config) {
                 console.error(`Error rendering item ${item.id}:`, error);
             }
         });
+
+        const hasRadioOrSection = category.items.some(item => 
+            item.type === 'radio-group' || item.type === 'section'
+        );
+        if (hasRadioOrSection) {
+            section.style.gridColumn = '1 / -1';
+        }
 
         container.appendChild(section);
     });
