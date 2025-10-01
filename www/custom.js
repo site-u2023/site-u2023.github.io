@@ -76,7 +76,64 @@ const state = {
 
 // ==================== ユーティリティ ====================
 const UI = {
-    // ==================== ユーティリティ ====================
+    // ==================== 状態管理 ====================
+const state = {
+    device: {
+        arch: null,
+        version: null,
+        target: null,
+        vendor: null,
+        subtarget: null,
+        id: null
+    },
+    
+    apiInfo: null,
+    
+    packages: {
+        json: null,
+        default: [],
+        device: [],
+        extra: [],
+        dynamic: new Set(),
+        selected: new Set()
+    },
+    
+    config: {
+        setup: null,
+        constants: {}
+    },
+    
+    ui: {
+        initialized: false,
+        htmlLoaded: false,
+        language: {
+            selected: '',
+            current: ''
+        },
+        managers: {
+            packageSearch: null,
+            commands: null
+        }
+    },
+    
+    cache: {
+        kmods: {
+            token: null,
+            key: null
+        },
+        packageAvailability: new Map(),
+        feed: new Map(),
+        feedPackageSet: new Map(),
+        availabilityIndex: new Map(),
+        lastFormStateHash: null,
+        lastPackageListHash: null,
+        prevUISelections: new Set(),
+        domElements: new Map(),
+        packageSizes: new Map()
+    }
+};
+
+// ==================== ユーティリティ ====================
 const UI = {
     updateElement(idOrEl, opts = {}) {
         const el = typeof idOrEl === 'string' ? document.getElementById(idOrEl) : idOrEl;
