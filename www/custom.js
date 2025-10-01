@@ -673,55 +673,75 @@ function buildInfoDisplay(item) {
 function computeFieldValue(targetFieldId) {
     const targetField = document.getElementById(targetFieldId);
     if (!targetField) {
-        console.warn(`computeFieldValue: Target field not found: ${targetFieldId}`);
+        console.error(`computeFieldValue: Target field not found: ${targetFieldId}`);
         return;
     }
 
     const fieldConfig = findFieldConfig(targetFieldId);
     if (!fieldConfig || !fieldConfig.computed) {
-        console.warn(`computeFieldValue: No computed config for: ${targetFieldId}`);
+        console.error(`computeFieldValue: No computed config for: ${targetFieldId}`);
         return;
     }
 
     console.log(`Computing value for: ${targetFieldId}`);
-    console.log('Computed config:', fieldConfig.computed);
 
     const values = {};
-    fieldConfig.computed.from.forEach(fieldId => {
-        const el = document.getElementById(fieldId);
-        if (el) {
-            values[fieldId] = el.value;
-            console.log(`  Source field ${fieldId} = ${el.value}`);
-        } else {
-            console.warn(`  Source field not found: ${fieldId}`);
+    fieldConfig.computed.from.forEach(variableName => {
+        const field = findFieldByVariable(variableName);
+        if (!field) {
+            console.error(`Source field config not found for variable: ${variableName}`);
+            return;
         }
+        
+        const el = document.getElementById(field.id);
+        if (!el) {
+            console.error(`Source field element not found: ${field.id}`);
+            return;
+        }
+        
+        values[variableName] = el.value;
+        console.log(`  ${variableName} = ${el.value}`);
     });
 
     const mapName = fieldConfig.computed.map;
     const map = state.config.constants[mapName];
     
-    console.log(`Using map: ${mapName}`, map);
-    
     if (!map) {
-        console.warn(`Map not found: ${mapName}`);
+        console.error(`Map not found: ${mapName}`);
         return;
     }
 
     const value1 = values[fieldConfig.computed.from[0]];
     const value2 = values[fieldConfig.computed.from[1]];
     
-    console.log(`Looking up: map[${value1}][${value2}]`);
+    console.log(`  map[${value1}][${value2}]`);
     
     if (map[value1] && map[value1][value2]) {
-        const computedValue = map[value1][value2];
-        console.log(`✓ Computed value: ${computedValue}`);
-        targetField.value = computedValue;
-        
-        // 変更イベントを発火して他の処理をトリガー
+        targetField.value = map[value1][value2];
+        console.log(`  → ${targetField.value}`);
         targetField.dispatchEvent(new Event('input', { bubbles: true }));
     } else {
-        console.warn(`No mapping found for: map[${value1}][${value2}]`);
+        console.error(`No mapping found for: map[${value1}][${value2}]`);
     }
+}
+
+function findFieldByVariable(variableName) {
+    if (!state.config.setup) return null;
+    
+    for (const category of state.config.setup.categories) {
+        for (const item of category.items) {
+            if (item.type === 'field' && item.variable === variableName) {
+                return item;
+            } else if (item.type === 'section' && item.items) {
+                for (const subItem of item.items) {
+                    if (subItem.type === 'field' && subItem.variable === variableName) {
+                        return subItem;
+                    }
+                }
+            }
+        }
+    }
+    return null;
 }
 
 function findFieldConfig(fieldId) {
