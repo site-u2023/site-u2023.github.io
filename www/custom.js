@@ -2060,6 +2060,10 @@ async function handleMainLanguageChange(e) {
         }
     }
 
+    if (typeof window.updateImages === 'function' && current_device) {
+        window.updateImages(current_device.version, current_device);
+    }
+
     if (typeof updateAutoConnectionInfo === 'function') {
         const info = state.apiInfo;
         if (info) updateAutoConnectionInfo(info);
