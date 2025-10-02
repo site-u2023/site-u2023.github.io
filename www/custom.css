@@ -320,16 +320,16 @@ details summary::-webkit-details-marker {
 }
 
 /* Details containers */
-#packages-details,
-#scripts-details {
+#custom-packages-details,
+#custom-scripts-details {
   margin-top: 1.5em;
   padding: 1em;
   background-color: var(--bg-details);
   border-radius: 0.25em;
 }
 
-#packages-details > summary,
-#scripts-details > summary {
+#custom-packages-details > summary,
+#custom-scripts-details > summary {
   margin-left: -1.5em;
   padding-left: 1.5em;
 }
@@ -635,8 +635,8 @@ details[open] > summary ~ * {
     grid-template-columns: 1fr;
   }
   
-  #packages-details,
-  #scripts-details {
+  #custom-packages-details,
+  #custom-scripts-details {
     padding: 0.5em;
   }
 
@@ -710,16 +710,14 @@ details[open] > summary ~ * {
   }
 
   /* h3のアコーデオン矢印を表示領域内に収める */
-  #packages-details > summary,
-  #scripts-details > summary {
+  #custom-packages-details > summary,
+  #custom-scripts-details > summary {
     margin-left: 0 !important;
     padding-left: 1em !important;
-    display: list-item !important;
-    list-style: disclosure-closed inside !important;
   }
   
-  #packages-details[open] > summary,
-  #scripts-details[open] > summary {
+  #custom-packages-details[open] > summary,
+  #custom-scripts-details[open] > summary {
     list-style-type: disclosure-open !important;
   }
 }
