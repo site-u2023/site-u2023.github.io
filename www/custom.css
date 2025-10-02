@@ -320,21 +320,21 @@ details summary::-webkit-details-marker {
 }
 
 /* Details containers */
-#custom-packages-details,
-#custom-scripts-details {
+#packages-details,
+#scripts-details {
   margin-top: 1.5em;
   padding: 1em;
   background-color: var(--bg-details);
   border-radius: 0.25em;
 }
 
-#custom-packages-details > summary,
-#custom-scripts-details > summary {
+#packages-details > summary,
+#scripts-details > summary {
   margin-left: -1.5em;
   padding-left: 1.5em;
 }
 
-/* Nested details (Postinst and UCI-defaults) - with working disclosure triangle */
+/* Nested details (Postinst and UCI-defaults) */
 #postinst-details summary,
 #uci-defaults-details summary {
   margin-left: 1em;
@@ -635,8 +635,8 @@ details[open] > summary ~ * {
     grid-template-columns: 1fr;
   }
   
-  #custom-packages-details,
-  #custom-scripts-details {
+  #packages-details,
+  #scripts-details {
     padding: 0.5em;
   }
 
@@ -683,7 +683,6 @@ details[open] > summary ~ * {
     font-size: inherit;
   }
 
-  /* ISP情報を縦並びに */
   .row {
     flex-direction: column;
     padding-left: 0.5em !important;
@@ -709,16 +708,10 @@ details[open] > summary ~ * {
     text-overflow: clip;
   }
 
-  /* h3のアコーデオン矢印を表示領域内に収める */
-  #custom-packages-details > summary,
-  #custom-scripts-details > summary {
+  #packages-details > summary,
+  #scripts-details > summary {
     margin-left: 0 !important;
     padding-left: 1em !important;
-  }
-  
-  #custom-packages-details[open] > summary,
-  #custom-scripts-details[open] > summary {
-    list-style-type: disclosure-open !important;
   }
 }
 
