@@ -715,7 +715,7 @@ details[open] > summary ~ * {
     margin-left: 0 !important;
     padding-left: 1em !important;
     display: list-item !important;
-    list-style: disclosure-closed outside !important;
+    list-style: disclosure-closed inside !important;
   }
   
   #packages-details[open] > summary,
