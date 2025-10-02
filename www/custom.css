@@ -337,10 +337,13 @@ details summary::-webkit-details-marker {
 /* Postinst details specific styling */
 #postinst-details summary {
   padding: 1em 0;
-  margin-left: 1em;
+  margin-left: 1.5em;
+  padding-left: 1.5em;
 }
 
 #postinst-details summary h4 {
+  display: inline-block;
+  margin: 0;
 }
 
 #postinst-additional-info {
@@ -356,10 +359,13 @@ details summary::-webkit-details-marker {
 
 /* UCI defaults details specific styling */
 #uci-defaults-details summary {
-  margin-left: 1em;
+  margin-left: 1.5em;
+  padding-left: 1.5em;
 }
 
 #uci-defaults-details summary h4 {
+  display: inline-block;
+  margin: 0;
 }
 
 #uci-defaults-details summary .file-size-info {
