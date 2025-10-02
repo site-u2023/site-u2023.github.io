@@ -313,16 +313,18 @@ window.updateImages = function(version, mobj) {
                     console.warn('[WARN] No vendor info, kmods may not verify');
                 }
 
-                const indicator = document.querySelector('#package-loading-indicator');
+                const indicator = state.dom.packageLoadingIndicator || document.querySelector('#package-loading-indicator');
                 if (indicator) {
                     UI.updateElement(indicator, { show: true });
                 }
 
-                verifyAllPackages().then(function() {
-                    if (indicator) UI.updateElement(indicator, { show: false });
+                verifyAllPackages().then(() => {
+                    if (indicator) {
+                        UI.updateElement(indicator, { show: false });
+                    }
                     console.log('[TRACE] Package verification complete');
-                }).catch(function(err) {
-                    console.error('[ERROR] Package verification failed:', err);
+                }).catch(err => {
+                    console.error('Package verification failed:', err);
                     if (indicator) {
                         UI.updateElement(indicator, {
                             html: '<span class="tr-package-check-failed">Package availability check failed</span>',
@@ -330,6 +332,8 @@ window.updateImages = function(version, mobj) {
                         });
                     }
                 });
+                
+                updatePackageListToTextarea('version-changed');
             });
         }
     }
