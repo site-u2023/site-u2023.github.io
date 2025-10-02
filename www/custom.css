@@ -265,6 +265,17 @@ input[type="radio"] {
   resize: both;
 }
 
+/* Dark mode support for textarea */
+@media (prefers-color-scheme: dark) {
+  #command,
+  #uci-defaults-content,
+  #postinst-content,
+  #asu-packages {
+    background-color: var(--input-bg-dark);
+    color: var(--text-main);
+  }
+}
+
 /* ===== Details/Summary Styling ===== */
 details {
   margin-top: 1em;
@@ -683,6 +694,7 @@ details[open] > summary ~ * {
     padding-left: 0;
   }
 
+  /* ISP情報を縦並びに */
   .row {
     flex-direction: column;
     padding-left: 0.5em !important;
