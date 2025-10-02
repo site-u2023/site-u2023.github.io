@@ -2111,6 +2111,12 @@ function applyCustomTranslations(map) {
                 e.placeholder = map[tr];
             } else {
                 e.innerText = map[tr];
+                if (tr === 'tr-auto-detection' && state.apiInfo) {
+                    const connectionType = getConnectionType(state.apiInfo);
+                    if (connectionType) {
+                        e.innerText += ' ' + connectionType;
+                    }
+                }
             }
         });
     }
