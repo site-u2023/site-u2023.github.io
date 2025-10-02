@@ -3285,6 +3285,7 @@ function replaceAsuSection(asuSection, temp) {
     
     const customPackages = temp.querySelector('#custom-packages-section details');
     const customScripts = temp.querySelector('#custom-scripts-section details');
+    const buildSection = temp.querySelector('#asu-build-section');
 
     if (customPackages) {
         customPackages.id = 'custom-packages-details';
@@ -3294,35 +3295,10 @@ function replaceAsuSection(asuSection, temp) {
         customScripts.id = 'custom-scripts-details';
         newDiv.appendChild(customScripts);
     }
-
-    const buildElements = document.createElement('div');
-    buildElements.innerHTML = `
-        <br>
-        <div id="asu-buildstatus" class="hide">
-            <span></span>
-            <div id="asu-log" class="hide">
-                <details>
-                    <summary>
-                        <code>STDERR</code>
-                    </summary>
-                    <pre id="asu-stderr"></pre>
-                </details>
-                <details>
-                    <summary>
-                        <code>STDOUT</code>
-                    </summary>
-                    <pre id="asu-stdout"></pre>
-                </details>
-            </div>
-        </div>
-        <textarea id="asu-packages" style="display:none;"></textarea>
-        <a href="javascript:buildAsuRequest()" class="custom-link">
-            <span></span><span class="tr-request-build">REQUEST BUILD</span>
-        </a>
-    `;
-    
-    while (buildElements.firstChild) {
-        newDiv.appendChild(buildElements.firstChild);
+    if (buildSection) {
+        Array.from(buildSection.children).forEach(child => {
+            newDiv.appendChild(child);
+        });
     }
     
     asuSection.parentNode.replaceChild(newDiv, asuSection);
