@@ -49,7 +49,7 @@
     "tr-mape": "MAP-E",
     "tr-ap": "AP Mode",
 
-    "tr-auto-detection": "Auto Detection",
+    "tr-auto-detection": "AUTO Detection: {connectionType}",
     "tr-dhcp": "DHCP",
 
     "tr-pppoe-credentials": "PPPoE Credentials",
