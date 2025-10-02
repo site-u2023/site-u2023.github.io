@@ -1245,7 +1245,7 @@ function updatePackageListToTextarea(source = 'unknown') {
     ])];
 
     const currentHash = JSON.stringify(uniquePackages);
-    if (currentHash === state.cache.lastPackageListHash && source !== 'force-update' && source !== 'package-verification-complete') {
+    if (currentHash === state.cache.lastPackageListHash && source !== 'force-update' && source !== 'package-verification-complete' && source !== 'version-changed') {
         console.log('updatePackageListToTextarea: No changes detected');
         return;
     }
