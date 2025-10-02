@@ -3303,6 +3303,7 @@ function replaceAsuSection(asuSection, temp) {
     const buildSection = temp.querySelector('#asu-build-section');
 
     if (customPackages) {
+        customPackages.id = 'custom-packages-details';
         newDiv.appendChild(customPackages);
     }
     if (customScripts) {
