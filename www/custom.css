@@ -338,7 +338,6 @@ details summary::-webkit-details-marker {
 #postinst-details summary {
   padding: 1em 0;
   margin-left: 1em;
-  padding-left: 0;
 }
 
 #postinst-details summary h4 {
@@ -360,7 +359,6 @@ details summary::-webkit-details-marker {
 /* UCI defaults details specific styling */
 #uci-defaults-details summary {
   margin-left: 1em;
-  padding-left: 0;
 }
 
 #uci-defaults-details summary h4 {
