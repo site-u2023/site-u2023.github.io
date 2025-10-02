@@ -2352,20 +2352,19 @@ async function searchPackages(query, inputElement) {
 }
 
 async function searchInFeed(query, feed, version, arch) {
-    const deviceInfo = {
-        arch: arch,
-        version: version,
-        vendor: state.device.vendor,
-        subtarget: state.device.subtarget,
-        isSnapshot: version.includes('SNAPSHOT')
-    };
-    
+    const deviceInfo = getDeviceInfo();
     const cacheKey = `${version}:${arch}:${feed}`;
 
     try {
         if (!state.cache.feed.has(cacheKey)) {
-            const url = await buildPackageUrl(feed, deviceInfo);
+            const url = await buildPackageUrl(feed, {
+                version, arch,
+                vendor: deviceInfo.vendor,
+                subtarget: deviceInfo.subtarget,
+                isSnapshot: version.includes('SNAPSHOT')
+            });
 
+            console.log(`[DEBUG searchInFeed] Search URL for ${feed}: ${url}`);
             const resp = await fetch(url, { cache: 'force-cache' });
             if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
 
@@ -2374,15 +2373,42 @@ async function searchInFeed(query, feed, version, arch) {
             let list = [];
             if (isSnapshot) {
                 const data = await resp.json();
-                if (data.packages && typeof data.packages === 'object') {
+                
+                // ★★★ デバッグ: 実際のデータ構造を確認 ★★★
+                console.log(`[DEBUG searchInFeed] Feed: ${feed}, Data structure:`, {
+                    isArray: Array.isArray(data.packages),
+                    isObject: typeof data.packages === 'object',
+                    sample: data.packages ? (Array.isArray(data.packages) ? data.packages[0] : Object.values(data.packages)[0]) : null
+                });
+                
+                if (Array.isArray(data.packages)) {
+                    console.log(`[DEBUG searchInFeed] Processing array format`);
+                    for (const pkg of data.packages) {
+                        if (!pkg || !pkg.name) continue;
+                        list.push(pkg.name);
+                        
+                        const size = pkg.installed_size || pkg.installedsize || pkg.size || pkg.Size || pkg['installed-size'] || 0;
+                        
+                        if (list.length <= 3) {
+                            console.log(`[DEBUG searchInFeed Array] Package: ${pkg.name}, Size: ${size}`);
+                        }
+                        
+                        if (typeof size === 'number' && size > 0) {
+                            const sizeCacheKey = `${version}:${arch}:${pkg.name}`;
+                            state.cache.packageSizes.set(sizeCacheKey, size);
+                        }
+                    }
+                } else if (data.packages && typeof data.packages === 'object') {
                     for (const [pkgName, pkgData] of Object.entries(data.packages)) {
                         list.push(pkgName);
-                        const size = pkgData?.installed_size || pkgData?.size || 0;
+                        const size = pkgData?.installed_size || pkgData?.installedsize || pkgData?.size || pkgData?.Size || pkgData?.['installed-size'] || 0;
                         if (typeof size === 'number' && size > 0) {
                             const sizeCacheKey = `${version}:${arch}:${pkgName}`;
                             state.cache.packageSizes.set(sizeCacheKey, size);
                         }
                     }
+                } else {
+                    list = [];
                 }
             } else {
                 const text = await resp.text();
