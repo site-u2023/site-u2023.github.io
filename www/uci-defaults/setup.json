@@ -286,6 +286,12 @@
           "items": [
             {
               "type": "info-display",
+              "id": "auto-connection-method",
+              "class": "tr-auto-connection-method",
+              "content": ""
+            },
+            {
+              "type": "info-display",
               "id": "auto-info",
               "class": "tr-auto-detection-information",
               "content": "Detecting connection type..."
