@@ -714,9 +714,16 @@ details[open] > summary ~ * {
   #custom-packages-details > summary,
   #custom-scripts-details > summary {
     margin-left: 0 !important;
-    padding-left: 1em !important;
+    padding-left: 0 !important;
     display: list-item !important;
     list-style: disclosure-closed outside !important;
+  }
+
+  #custom-packages-details > summary h3,
+  #custom-scripts-details > summary h3 {
+    display: inline-block;
+    vertical-align: middle;
+    margin: 0;
   }
   
   #custom-packages-details[open] > summary,
