@@ -319,21 +319,6 @@ details summary::-webkit-details-marker {
   display: inline-block !important;
 }
 
-/* Details containers */
-#packages-details,
-#scripts-details {
-  margin-top: 1.5em;
-  padding: 1em;
-  background-color: var(--bg-details);
-  border-radius: 0.25em;
-}
-
-#packages-details > summary,
-#scripts-details > summary {
-  margin-left: -1.5em;
-  padding-left: 1.5em;
-}
-
 /* Nested details (Postinst and UCI-defaults) - with working disclosure triangle */
 #postinst-details summary,
 #uci-defaults-details summary {
@@ -646,11 +631,6 @@ details[open] > summary ~ * {
   .package-grid {
     grid-template-columns: 1fr;
   }
-  
-  #packages-details,
-  #scripts-details {
-    padding: 0.5em;
-  }
 
   .radio-group {
     flex-direction: column;
@@ -719,20 +699,6 @@ details[open] > summary ~ * {
     word-break: break-all;
     overflow: visible;
     text-overflow: clip;
-  }
-
-  /* h3のアコーデオン矢印を表示領域内に収める */
-  #packages-details > summary,
-  #scripts-details > summary {
-    margin-left: 0 !important;
-    padding-left: 1em !important;
-    display: list-item !important;
-    list-style: disclosure-closed inside !important;
-  }
-  
-  #packages-details[open] > summary,
-  #scripts-details[open] > summary {
-    list-style-type: disclosure-open !important;
   }
   
   /* h3のアコーデオン矢印を表示領域内に収める */
