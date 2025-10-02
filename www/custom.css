@@ -353,6 +353,11 @@ details summary::-webkit-details-marker {
   padding: 0;
 }
 
+#package-selector-config,
+#scripts-config {
+  margin-left: -1.5em;
+}
+
 #postinst-details summary h4,
 #uci-defaults-details summary h4 {
   display: inline-block;
