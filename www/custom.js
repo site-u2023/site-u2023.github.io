@@ -2732,20 +2732,58 @@ async function fetchFeedSet(feed, deviceInfo) {
 
     if (isSnapshot) {
         const data = await resp.json();
+        
+        // ★★★ デバッグ: 実際のデータ構造を確認 ★★★
+        console.log(`[DEBUG fetchFeedSet] Feed: ${feed}, Data structure:`, {
+            isArray: Array.isArray(data.packages),
+            isObject: typeof data.packages === 'object',
+            keys: data.packages ? Object.keys(data.packages).slice(0, 3) : null,
+            sample: data.packages ? (Array.isArray(data.packages) ? data.packages[0] : Object.values(data.packages)[0]) : null
+        });
+        
         if (Array.isArray(data.packages)) {
+            console.log(`[DEBUG fetchFeedSet] Processing array format, count: ${data.packages.length}`);
             for (const pkg of data.packages) {
                 if (!pkg || !pkg.name) continue;
-                const size = pkg.installed_size || pkg.size || 0;
+                
+                // ★★★ すべての可能なサイズフィールドを確認 ★★★
+                const size = pkg.installed_size || pkg.installedsize || pkg.size || pkg.Size || pkg['installed-size'] || 0;
+                
+                console.log(`[DEBUG fetchFeedSet Array] Package: ${pkg.name}, Size fields:`, {
+                    installed_size: pkg.installed_size,
+                    installedsize: pkg.installedsize,
+                    size: pkg.size,
+                    Size: pkg.Size,
+                    'installed-size': pkg['installed-size'],
+                    finalSize: size
+                });
+                
                 if (typeof size === 'number' && size > 0) {
                     const sizeCacheKey = `${deviceInfo.version}:${deviceInfo.arch}:${pkg.name}`;
                     state.cache.packageSizes.set(sizeCacheKey, size);
+                    console.log(`[DEBUG fetchFeedSet Array] Cached size for ${pkg.name}: ${size} bytes`);
                 }
             }
             return new Set(data.packages.map(p => p?.name).filter(Boolean));
         } else if (data.packages && typeof data.packages === 'object') {
+            console.log(`[DEBUG fetchFeedSet] Processing object format, count: ${Object.keys(data.packages).length}`);
             for (const pkgName of Object.keys(data.packages)) {
                 const pkgData = data.packages[pkgName];
-                const size = pkgData?.installed_size || pkgData?.size || 0;
+                
+                // ★★★ すべての可能なサイズフィールドを確認 ★★★
+                const size = pkgData?.installed_size || pkgData?.installedsize || pkgData?.size || pkgData?.Size || pkgData?.['installed-size'] || 0;
+                
+                if (Object.keys(data.packages).indexOf(pkgName) < 3) {
+                    console.log(`[DEBUG fetchFeedSet Object] Package: ${pkgName}, Size fields:`, {
+                        installed_size: pkgData?.installed_size,
+                        installedsize: pkgData?.installedsize,
+                        size: pkgData?.size,
+                        Size: pkgData?.Size,
+                        'installed-size': pkgData?.['installed-size'],
+                        finalSize: size
+                    });
+                }
+                
                 if (typeof size === 'number' && size > 0) {
                     const sizeCacheKey = `${deviceInfo.version}:${deviceInfo.arch}:${pkgName}`;
                     state.cache.packageSizes.set(sizeCacheKey, size);
