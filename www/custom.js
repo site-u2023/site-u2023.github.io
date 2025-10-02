@@ -1792,6 +1792,11 @@ function updateAutoConnectionInfo(apiInfo) {
     
     const connectionType = getConnectionType(apiInfo);
     
+    const autoSectionTitle = document.querySelector('#auto-section h4');
+    if (autoSectionTitle) {
+        autoSectionTitle.textContent = autoSectionTitle.textContent.replace('{connectionType}', connectionType);
+    }
+    
     let infoText = '';
     if (apiInfo?.isp) {
         infoText += `ISP: ${apiInfo.isp}<br>`;
