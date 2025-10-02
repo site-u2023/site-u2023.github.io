@@ -296,7 +296,6 @@ details summary h3 {
   display: inline;
   margin: 0;
   font-weight: 500;
-  margin-left: -1.2em;
 }
 
 details summary h4,
@@ -304,14 +303,6 @@ details summary h5 {
   display: inline;
   margin: 0;
   font-weight: 500;
-}
-
-details:has(summary h3) summary {
-  list-style: none;
-}
-
-details:has(summary h3) summary::-webkit-details-marker {
-  display: none;
 }
 
 details[open] summary {
@@ -684,14 +675,6 @@ details[open] > summary ~ * {
   .multi-input-item {
     padding: var(--input-padding);
     font-size: inherit;
-  }
-
-  details summary h3 {
-    margin-left: 0;
-  }
-
-  details:has(summary h3) summary {
-    padding-left: 0;
   }
 
   /* ISP情報を縦並びに */
