@@ -376,8 +376,12 @@ details[open] summary {
   background-color: var(--owrt-blue);
   color: var(--owrt-white);
   margin: 0.25em 0;
-  padding: 0.5em 1.5em;
+  padding: 0.5em 1em;
   border-radius: 0.2em;
+  word-wrap: break-word;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -681,6 +685,18 @@ details[open] > summary ~ * {
 
   details:has(summary h3) summary {
     padding-left: 0;
+  }
+
+  /* ISP情報のモバイル対応 */
+  #isp-info-row,
+  #isp-timezone-row,
+  #isp-isp-row,
+  #isp-as-row,
+  #isp-ip-row,
+  #isp-connection-row {
+    padding: 0.5em 0.75em;
+    font-size: 0.9em;
+    line-height: 1.4;
   }
 }
 
