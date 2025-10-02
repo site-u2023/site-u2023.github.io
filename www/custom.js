@@ -2103,6 +2103,13 @@ async function loadCustomTranslations(lang) {
 function applyCustomTranslations(map) {
     if (!map || typeof map !== 'object') return;
     
+    if (state.apiInfo && map['tr-auto-detection']) {
+        const connectionType = getConnectionType(state.apiInfo);
+        if (connectionType) {
+            map['tr-auto-detection'] = map['tr-auto-detection'] + ' ' + connectionType;
+        }
+    }
+    
     Object.assign(current_language_json, map);
     
     for (const tr in map) {
