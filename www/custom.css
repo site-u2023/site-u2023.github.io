@@ -286,9 +286,13 @@ details summary {
   padding: 1em 0 1em 0;
   user-select: none;
   color: inherit;
+  display: list-item !important;
+  list-style: disclosure-closed !important;
+  list-style-position: outside !important;
 }
 
 details[open] summary {
+  list-style: disclosure-open !important;
 }
 
 details summary:hover {
