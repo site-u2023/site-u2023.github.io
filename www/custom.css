@@ -728,6 +728,13 @@ details[open] > summary ~ * {
   #custom-scripts-details > summary {
     margin-left: 0 !important;
     padding-left: 1em !important;
+    display: list-item !important;
+    list-style: disclosure-closed outside !important;
+  }
+  
+  #custom-packages-details[open] > summary,
+  #custom-scripts-details[open] > summary {
+    list-style-type: disclosure-open !important;
   }
 }
 
