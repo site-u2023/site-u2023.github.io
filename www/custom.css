@@ -338,11 +338,18 @@ details summary::-webkit-details-marker {
 #postinst-details summary {
   padding: 1em 0;
   margin-left: 1em;
+  display: list-item !important;
+  list-style: disclosure-closed outside !important;
+}
+
+#postinst-details[open] summary {
+  list-style-type: disclosure-open !important;
 }
 
 #postinst-details summary h4 {
   margin: 0;
-  display: block;
+  display: inline-block;
+  vertical-align: middle;
 }
 
 #postinst-additional-info {
@@ -359,11 +366,18 @@ details summary::-webkit-details-marker {
 /* UCI defaults details specific styling */
 #uci-defaults-details summary {
   margin-left: 1em;
+  display: list-item !important;
+  list-style: disclosure-closed outside !important;
+}
+
+#uci-defaults-details[open] summary {
+  list-style-type: disclosure-open !important;
 }
 
 #uci-defaults-details summary h4 {
   margin: 0;
-  display: block;
+  display: inline-block;
+  vertical-align: middle;
 }
 
 #uci-defaults-details summary .file-size-info {
