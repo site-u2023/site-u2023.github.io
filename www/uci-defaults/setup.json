@@ -280,7 +280,7 @@
         {
           "type": "section",
           "id": "auto-section",
-          "title": "AUTO Detection",
+          "title": "AUTO Detection {connectionType}",
           "class": "tr-auto-detection",
           "showWhen": {"connection_type": "auto"},
           "items": [
