@@ -2047,6 +2047,8 @@ async function handleMainLanguageChange(e) {
     state.ui.language.current = newLanguage;
     
     await loadCustomTranslations(current_language);
+    
+    updatePackageListToTextarea('language-changed');
 
     if (isUserAction) {
         const oldDeviceLanguage = state.ui.language.selected;
@@ -2058,10 +2060,6 @@ async function handleMainLanguageChange(e) {
         if (oldDeviceLanguage !== state.ui.language.selected) {
             updateAllPackageState('browser-language-changed');
         }
-    }
-
-    if (typeof window.updateImages === 'function' && current_device) {
-        window.updateImages(current_device.version, current_device);
     }
 
     if (typeof updateAutoConnectionInfo === 'function') {
