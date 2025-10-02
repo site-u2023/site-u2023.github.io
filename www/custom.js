@@ -1299,12 +1299,11 @@ function updatePackageListToTextarea(source = 'unknown') {
                 if (isSnapshot) {
                     noteEl.classList.remove('tr-package-size-note');
                     noteEl.classList.add('tr-package-size-snapshot-unavailable');
-                    noteEl.innerText = current_language_json['tr-package-size-snapshot-unavailable'];
                 } else {
                     noteEl.classList.remove('tr-package-size-snapshot-unavailable');
                     noteEl.classList.add('tr-package-size-note');
-                    noteEl.innerText = current_language_json['tr-package-size-note'];
                 }
+                applyCustomTranslations(current_language_json);
             }
         }
     }
