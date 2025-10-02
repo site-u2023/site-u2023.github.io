@@ -341,8 +341,8 @@ details summary::-webkit-details-marker {
 }
 
 #postinst-details summary h4 {
-  display: inline-block;
   margin: 0;
+  display: inline;
 }
 
 #postinst-additional-info {
@@ -362,8 +362,8 @@ details summary::-webkit-details-marker {
 }
 
 #uci-defaults-details summary h4 {
-  display: inline-block;
   margin: 0;
+  display: inline;
 }
 
 #uci-defaults-details summary .file-size-info {
