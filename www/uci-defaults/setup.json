@@ -280,16 +280,10 @@
         {
           "type": "section",
           "id": "auto-section",
-          "title": "AUTO Detection {connectionType}",
+          "title": "AUTO Detection",
           "class": "tr-auto-detection",
           "showWhen": {"connection_type": "auto"},
           "items": [
-            {
-              "type": "info-display",
-              "id": "auto-connection-method",
-              "class": "tr-auto-connection-method",
-              "content": ""
-            },
             {
               "type": "info-display",
               "id": "auto-info",
