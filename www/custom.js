@@ -2106,7 +2106,7 @@ function applyCustomTranslations(map) {
     if (state.apiInfo && map['tr-auto-detection']) {
         const connectionType = getConnectionType(state.apiInfo);
         if (connectionType) {
-            map['tr-auto-detection'] = map['tr-auto-detection'] + ' ' + connectionType;
+            map['tr-auto-detection'] = map['tr-auto-detection'] + ': ' + connectionType;
         }
     }
     
