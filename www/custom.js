@@ -1292,16 +1292,18 @@ function updatePackageListToTextarea(source = 'unknown') {
             const baseMB = isSnapshot ? '---' : (baseBytes / (1024 * 1024)).toFixed(2);
             const addedMB = isSnapshot ? '---' : (totalBytes / (1024 * 1024)).toFixed(2);
             const totalMB = isSnapshot ? '---' : ((baseBytes + totalBytes) / (1024 * 1024)).toFixed(2);
-            sizeBreakdownEl.textContent = `${current_language_json['tr-base-size'] || 'Base'}: ${baseMB} MB + ${current_language_json['tr-added-size'] || 'Added'}: ${addedMB} MB = ${current_language_json['tr-total-size'] || 'Total'}: ${totalMB} MB`;
+            sizeBreakdownEl.textContent = `${current_language_json['tr-base-size']}: ${baseMB} MB + ${current_language_json['tr-added-size']}: ${addedMB} MB = ${current_language_json['tr-total-size']}: ${totalMB} MB`;
             
             const noteEl = document.querySelector('#package-size-note');
             if (noteEl) {
                 if (isSnapshot) {
                     noteEl.classList.remove('tr-package-size-note');
                     noteEl.classList.add('tr-package-size-snapshot-unavailable');
+                    noteEl.innerText = current_language_json['tr-package-size-snapshot-unavailable'];
                 } else {
                     noteEl.classList.remove('tr-package-size-snapshot-unavailable');
                     noteEl.classList.add('tr-package-size-note');
+                    noteEl.innerText = current_language_json['tr-package-size-note'];
                 }
             }
         }
