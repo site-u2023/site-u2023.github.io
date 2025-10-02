@@ -1793,8 +1793,8 @@ function updateAutoConnectionInfo(apiInfo) {
     const connectionType = getConnectionType(apiInfo);
     
     const autoSectionTitle = document.querySelector('#auto-section h4');
-    if (autoSectionTitle) {
-        autoSectionTitle.textContent = autoSectionTitle.textContent.split(':')[0] + ': ' + connectionType;
+    if (autoSectionTitle && connectionType) {
+        autoSectionTitle.textContent = `${current_language_json['tr-auto-detection']} ${connectionType}`;
     }
     
     let infoText = '';
