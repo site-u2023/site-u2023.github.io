@@ -350,13 +350,11 @@ details summary::-webkit-details-marker {
 #custom-packages-details,
 #custom-scripts-details {
   margin-top: 1.5em;
-  padding-left: 1.5em;
 }
 
 #custom-packages-details > summary,
 #custom-scripts-details > summary {
-  margin-left: -1.5em;
-  padding-left: 1.5em;
+  list-style-position: inside !important;
 }
 
 #postinst-details summary h4,
