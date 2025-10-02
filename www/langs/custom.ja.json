@@ -8,7 +8,7 @@
     "tr-base-size": "ベース",
     "tr-added-size": "追加",
     "tr-total-size": "総計",
-    "tr-package-size-snapshot-unavailable": "SNAPSHOT版ではパッケージサイズ情報は利用できません",  
+    "tr-package-size-snapshot-unavailable": "※ SNAPSHOT版ではパッケージサイズ情報は利用できません",  
     "tr-package-size-note": "※ 言語及び依存パッケージは含まれません",
     "tr-uci-size-limit": "※ ファイルサイズ上限: 20480 bytes: 20.00 KB",
     
