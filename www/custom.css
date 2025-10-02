@@ -283,9 +283,16 @@ details {
 
 details summary {
   cursor: pointer;
-  padding: 1em 0;
+  padding: 1em 0 1em 0;
   user-select: none;
   color: inherit;
+  display: list-item !important;
+  list-style: disclosure-closed !important;
+  list-style-position: outside !important;
+}
+
+details[open] summary {
+  list-style: disclosure-open !important;
 }
 
 details summary:hover {
@@ -293,20 +300,23 @@ details summary:hover {
 }
 
 details summary h3 {
-  display: inline;
   margin: 0;
   font-weight: 500;
 }
 
 details summary h4,
 details summary h5 {
-  display: inline;
   margin: 0;
   font-weight: 500;
 }
 
 details[open] summary {
   border-bottom: none;
+}
+
+/* Webkit browsers用 */
+details summary::-webkit-details-marker {
+  display: inline-block !important;
 }
 
 /* Details containers */
