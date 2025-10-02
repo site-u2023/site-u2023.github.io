@@ -334,20 +334,20 @@ details summary::-webkit-details-marker {
 
 #custom-packages-details,
 #custom-scripts-details {
-  margin-top: 1.5em;
-  padding-left: 1.5em;
+  margin-top: 2.0em;
+  padding-left: 2.0em;
 }
 
 #custom-packages-details > summary,
 #custom-scripts-details > summary {
-  margin-left: -1.5em;
+  margin-left: -2.0em;
   padding-left: ;
   list-style-position: outside !important;
 }
 
 #package-selector-config,
 #scripts-config {
-  margin-left: -1.5em;
+  margin-left: -2.0em;
 }
 
 #custom-packages-details > summary h3,
