@@ -330,14 +330,12 @@ details summary::-webkit-details-marker {
 
 #packages-details > summary,
 #scripts-details > summary {
-  margin-left: -1em;
-  padding-left: 1em;
+  margin-left: -1.5em;
+  padding-left: 1.5em;
 }
 
 /* Postinst details specific styling */
 #postinst-details summary {
-  display: flex;
-  flex-direction: column;
   padding: 1em 0;
   margin-left: 0;
   padding-left: 0;
@@ -351,6 +349,7 @@ details summary::-webkit-details-marker {
 #postinst-additional-info {
   display: block !important;
   margin-top: 0.5em;
+  margin-left: 1.5em;
 }
 
 #postinst-total-size {
@@ -360,8 +359,6 @@ details summary::-webkit-details-marker {
 
 /* UCI defaults details specific styling */
 #uci-defaults-details summary {
-  display: flex;
-  flex-direction: column;
   margin-left: 0;
   padding-left: 0;
 }
@@ -373,6 +370,8 @@ details summary::-webkit-details-marker {
 
 #uci-defaults-details summary .file-size-info {
   display: block !important;
+  margin-left: 1.5em;
+  margin-top: 0.5em;
 }
 
 /* ===== Additional Info Displays ===== */
