@@ -2122,10 +2122,14 @@ async function loadCustomTranslations(lang) {
 function applyCustomTranslations(map) {
     if (!map || typeof map !== 'object') return;
     
+    if (!state.cache.originalAutoDetectionText) {
+        state.cache.originalAutoDetectionText = map['tr-auto-detection'] || '自動検出';
+    }
+    
     if (state.apiInfo && map['tr-auto-detection']) {
         const connectionType = getConnectionType(state.apiInfo);
         if (connectionType) {
-            map['tr-auto-detection'] = map['tr-auto-detection'] + ': ' + connectionType;
+            map['tr-auto-detection'] = state.cache.originalAutoDetectionText + ': ' + connectionType;
         }
     }
     
