@@ -1792,11 +1792,6 @@ function updateAutoConnectionInfo(apiInfo) {
     
     const connectionType = getConnectionType(apiInfo);
     
-    const autoSectionTitle = document.querySelector('#auto-section h4');
-    if (autoSectionTitle && connectionType) {
-        autoSectionTitle.textContent = autoSectionTitle.textContent + ' ' + connectionType;
-    }
-    
     let infoText = '';
     if (apiInfo?.isp) {
         infoText += `ISP: ${apiInfo.isp}<br>`;
@@ -2118,6 +2113,14 @@ function applyCustomTranslations(map) {
                 e.innerText = map[tr];
             }
         });
+    }
+    
+    if (state.apiInfo) {
+        const connectionType = getConnectionType(state.apiInfo);
+        const autoSectionTitle = document.querySelector('#auto-section h4');
+        if (autoSectionTitle && connectionType) {
+            autoSectionTitle.textContent = autoSectionTitle.textContent + ' ' + connectionType;
+        }
     }
     
     console.log('Custom translations applied to DOM');
