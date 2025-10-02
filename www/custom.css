@@ -328,11 +328,19 @@ details summary::-webkit-details-marker {
   border-radius: 0.25em;
 }
 
+#packages-details > summary,
+#scripts-details > summary {
+  margin-left: -1em;
+  padding-left: 1em;
+}
+
 /* Postinst details specific styling */
 #postinst-details summary {
   display: flex;
   flex-direction: column;
   padding: 1em 0;
+  margin-left: 0;
+  padding-left: 0;
 }
 
 #postinst-details summary h4 {
@@ -354,6 +362,8 @@ details summary::-webkit-details-marker {
 #uci-defaults-details summary {
   display: flex;
   flex-direction: column;
+  margin-left: 0;
+  padding-left: 0;
 }
 
 #uci-defaults-details summary h4 {
