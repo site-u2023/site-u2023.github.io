@@ -342,7 +342,7 @@ details summary::-webkit-details-marker {
 
 #postinst-details summary h4 {
   margin: 0;
-  display: inline;
+  display: block;
 }
 
 #postinst-additional-info {
@@ -363,7 +363,7 @@ details summary::-webkit-details-marker {
 
 #uci-defaults-details summary h4 {
   margin: 0;
-  display: inline;
+  display: block;
 }
 
 #uci-defaults-details summary .file-size-info {
