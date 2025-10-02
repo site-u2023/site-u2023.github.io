@@ -701,7 +701,7 @@ details[open] > summary ~ * {
   }
 
   .col2 {
-    padding-left: 0;
+    padding-left: 1em;
     margin-top: 0.2em;
     word-wrap: break-word;
     word-break: break-all;
