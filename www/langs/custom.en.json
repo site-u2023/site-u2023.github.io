@@ -8,6 +8,9 @@
     "tr-base-size": "Base",
     "tr-added-size": "Added",
     "tr-total-size": "Total",
+    "tr-package-size-snapshot-unavailable": "Package size information is not available for SNAPSHOT builds",
+    "tr-package-size-note": "Note: Language and dependency packages are not included",
+    "tr-uci-size-limit": "Note: File size limit: 20480 bytes: 20.00 KB",
     
     "tr-extended-info": "Region and ISP Information",
     "tr-loading": "Loading...",
@@ -126,11 +129,6 @@
     "tr-dnsmasq-optimization-disabled": "Optimization Disabled",
 
     "tr-feedback-link": "Forum",
-
-    "tr-package-size-snapshot-unavailable": "Package size information is not available for SNAPSHOT builds",
-    
-    "tr-package-size-note": "Note: Language and dependency packages are not included",
-    "tr-uci-size-limit": "Note: File size limit: 20480 bytes: 20.00 KB",
     
     "tr-asu-status-200": "ASU server is reachable. Status: ",
     "tr-asu-status-500": "ASU server responded with an internal error. Status: ",
