@@ -708,6 +708,18 @@ details[open] > summary ~ * {
     overflow: visible;
     text-overflow: clip;
   }
+
+  /* h3のアコーデオン矢印を明示的に表示 */
+  #packages-details > summary,
+  #scripts-details > summary {
+    display: list-item !important;
+    list-style: disclosure-closed outside !important;
+  }
+  
+  #packages-details[open] > summary,
+  #scripts-details[open] > summary {
+    list-style-type: disclosure-open !important;
+  }
 }
 
 /* ===== Utility Classes ===== */
