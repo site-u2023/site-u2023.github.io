@@ -334,10 +334,17 @@ details summary::-webkit-details-marker {
   padding-left: 1.5em;
 }
 
-/* Nested details (Postinst and UCI-defaults) */
+/* Nested details (Postinst and UCI-defaults) - with working disclosure triangle */
 #postinst-details summary,
 #uci-defaults-details summary {
   margin-left: 1em;
+  display: list-item !important;
+  list-style: disclosure-closed outside !important;
+}
+
+#postinst-details[open] summary,
+#uci-defaults-details[open] summary {
+  list-style-type: disclosure-open !important;
 }
 
 #postinst-details summary h4,
