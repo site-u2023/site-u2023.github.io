@@ -1284,13 +1284,13 @@ function updatePackageListToTextarea(source = 'unknown') {
         
         const sizeBreakdownEl = state.dom.sizeBreakdown || document.querySelector('#package-size-breakdown');
         if (sizeBreakdownEl) {
-            const baseMB = (baseBytes / (1024 * 1024)).toFixed(2);
-            const addedMB = (totalBytes / (1024 * 1024)).toFixed(2);
-            const totalMB = ((baseBytes + totalBytes) / (1024 * 1024)).toFixed(2);
+            const isSnapshot = state.device.version && state.device.version.includes('SNAPSHOT');
+            const baseMB = isSnapshot ? '---' : (baseBytes / (1024 * 1024)).toFixed(2);
+            const addedMB = isSnapshot ? '---' : (totalBytes / (1024 * 1024)).toFixed(2);
+            const totalMB = isSnapshot ? '---' : ((baseBytes + totalBytes) / (1024 * 1024)).toFixed(2);
             sizeBreakdownEl.textContent = `${current_language_json['tr-base-size'] || 'Base'}: ${baseMB} MB + ${current_language_json['tr-added-size'] || 'Added'}: ${addedMB} MB = ${current_language_json['tr-total-size'] || 'Total'}: ${totalMB} MB`;
         }
     }
-
     console.log(`Package list updated: ${uniquePackages.length} packages`);
 }
 
