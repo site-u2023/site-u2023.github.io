@@ -299,7 +299,6 @@ window.updateImages = function(version, mobj) {
             state.cache.feed.clear();
             state.cache.feedPackageSet.clear();
             state.cache.availabilityIndex.clear();
-            state.cache.packageSizes.clear();
             
             document.querySelectorAll('.package-item').forEach(item => {
                 item.style.display = '';
