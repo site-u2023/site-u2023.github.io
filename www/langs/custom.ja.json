@@ -127,6 +127,8 @@
 
     "tr-feedback-link": "フォーラム",
 
+    "tr-package-size-snapshot-unavailable": "SNAPSHOT版ではパッケージサイズ情報は利用できません",
+    
     "tr-package-size-note": "※ 言語及び依存パッケージは含まれません",
     "tr-uci-size-limit": "※ ファイルサイズ上限: 20480 bytes: 20.00 KB",
     
