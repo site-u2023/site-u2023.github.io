@@ -1794,7 +1794,7 @@ function updateAutoConnectionInfo(apiInfo) {
     
     const autoSectionTitle = document.querySelector('#auto-section h4');
     if (autoSectionTitle && connectionType) {
-        autoSectionTitle.innerHTML = `<span class="tr-auto-detection">${autoSectionTitle.textContent.replace(connectionType, '').trim()}</span> ${connectionType}`;
+        autoSectionTitle.textContent = autoSectionTitle.textContent + ' ' + connectionType;
     }
     
     let infoText = '';
