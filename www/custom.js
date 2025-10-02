@@ -2115,14 +2115,6 @@ function applyCustomTranslations(map) {
         });
     }
     
-    if (state.apiInfo) {
-        const connectionType = getConnectionType(state.apiInfo);
-        const autoSectionTitle = document.querySelector('#auto-section h4');
-        if (autoSectionTitle && connectionType) {
-            autoSectionTitle.textContent = autoSectionTitle.textContent + ' ' + connectionType;
-        }
-    }
-    
     console.log('Custom translations applied to DOM');
 }
 
