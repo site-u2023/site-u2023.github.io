@@ -726,7 +726,7 @@ details[open] > summary ~ * {
 
   #package-selector-config,
   #scripts-config {
-    margin-left: -1.5em;
+    margin-left: -2.0em;
   }
   
   #custom-packages-details > summary h3,
