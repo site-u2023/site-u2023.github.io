@@ -345,17 +345,17 @@ details summary::-webkit-details-marker {
   list-style-position: outside !important;
 }
 
+#package-selector-config,
+#scripts-config {
+  margin-left: -1.5em;
+}
+
 #custom-packages-details > summary h3,
 #custom-scripts-details > summary h3 {
   display: inline-block;
   vertical-align: middle;
   margin: 0;
   padding: 0;
-}
-
-#package-selector-config,
-#scripts-config {
-  margin-left: -1.5em;
 }
 
 #postinst-details summary h4,
@@ -724,6 +724,11 @@ details[open] > summary ~ * {
     list-style: disclosure-closed outside !important;
   }
 
+  #package-selector-config,
+  #scripts-config {
+    margin-left: -0.5em;
+  }
+  
   #custom-packages-details > summary h3,
   #custom-scripts-details > summary h3 {
     display: inline-block;
