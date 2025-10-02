@@ -6,8 +6,6 @@
     <title>OpenWrt Custom Components</title>
 </head>
 <body>
-    <!-- Extended Build Info Section - ISP情報表示はinformation.jsonから動的生成 -->
-
     <!-- Enhanced Package Selector -->
     <div id="custom-packages-section">
         <details id="packages-details">
@@ -98,6 +96,31 @@
                 </details>
             </div>
         </details>
+    </div>
+
+    <!-- ASU Build Section -->
+    <div id="asu-build-section" style="display:none;">
+        <br>
+        <div id="asu-buildstatus" class="hide">
+            <span></span>
+            <div id="asu-log" class="hide">
+                <details>
+                    <summary>
+                        <code>STDERR</code>
+                    </summary>
+                    <pre id="asu-stderr"></pre>
+                </details>
+                <details>
+                    <summary>
+                        <code>STDOUT</code>
+                    </summary>
+                    <pre id="asu-stdout"></pre>
+                </details>
+            </div>
+        </div>
+        <a href="javascript:buildAsuRequest()" class="custom-link">
+            <span></span><span class="tr-request-build">REQUEST BUILD</span>
+        </a>
     </div>
 </body>
 </html>
