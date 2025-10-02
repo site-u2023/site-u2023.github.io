@@ -320,55 +320,59 @@ details summary::-webkit-details-marker {
 }
 
 /* Details containers */
-#packages-details,
-#scripts-details {
+#custom-packages-details,
+#custom-scripts-details {
   margin-top: 1.5em;
   padding: 1em;
+  padding-left: 0;
   background-color: var(--bg-details);
   border-radius: 0.25em;
 }
 
-#packages-details > summary,
-#scripts-details > summary {
-  margin-left: -1.5em;
-  padding-left: 1.5em;
-}
-
-/* Nested details (Postinst and UCI-defaults) - with working disclosure triangle */
-#postinst-details summary,
-#uci-defaults-details summary {
-  margin-left: 1em;
-  display: list-item !important;
-  list-style: disclosure-closed outside !important;
-}
-
-#postinst-details[open] summary,
-#uci-defaults-details[open] summary {
-  list-style-type: disclosure-open !important;
-}
-
-#custom-packages-details,
-#custom-scripts-details {
-  margin-top: 1.5em;
-}
-
 #custom-packages-details > summary,
 #custom-scripts-details > summary {
-  padding-left: 1.5em;
+  padding-left: 1em;
+  list-style-position: inside !important;
 }
 
-#postinst-details summary h4,
-#uci-defaults-details summary h4 {
-  display: inline-block;
-  vertical-align: middle;
-}
-
-/* Additional info - aligned with h4 text */
-#postinst-additional-info,
-#uci-defaults-details summary .file-size-info {
-  display: block;
-  margin-top: 0.5em;
+/* Postinst details specific styling */
+#postinst-details summary {
+  padding: 1em 0;
   margin-left: 0;
+  padding-left: 0;
+}
+
+#postinst-details summary h4 {
+  margin: 0;
+  display: block;
+}
+
+#postinst-additional-info {
+  display: block !important;
+  margin-top: 0.5em;
+  margin-left: 1.5em;
+}
+
+#postinst-total-size {
+  font-size: 0.9em;
+  color: var(--text-muted);
+}
+
+/* UCI defaults details specific styling */
+#uci-defaults-details summary {
+  margin-left: 0;
+  padding-left: 0;
+}
+
+#uci-defaults-details summary h4 {
+  margin: 0;
+  display: block;
+}
+
+#uci-defaults-details summary .file-size-info {
+  display: block !important;
+  margin-left: 1.5em;
+  margin-top: 0.5em;
 }
 
 /* ===== Additional Info Displays ===== */
@@ -645,9 +649,10 @@ details[open] > summary ~ * {
     grid-template-columns: 1fr;
   }
   
-  #packages-details,
-  #scripts-details {
+  #custom-packages-details,
+  #custom-scripts-details {
     padding: 0.5em;
+    padding-left: 0;
   }
 
   .radio-group {
@@ -719,24 +724,13 @@ details[open] > summary ~ * {
     text-overflow: clip;
   }
 
-  /* h3のアコーデオン矢印を表示領域内に収める */
-  #packages-details > summary,
-  #scripts-details > summary {
+  /* h3のアコーデオン矢印をモバイルで表示 */
+  #custom-packages-details > summary,
+  #custom-scripts-details > summary {
     margin-left: 0 !important;
     padding-left: 1em !important;
     display: list-item !important;
     list-style: disclosure-closed inside !important;
-  }
-  
-  #packages-details[open] > summary,
-  #scripts-details[open] > summary {
-    list-style-type: disclosure-open !important;
-  }
-  
-  /* h3のアコーデオン矢印を表示領域内に収める */
-  #custom-packages-details > summary,
-  #custom-scripts-details > summary {
-    padding-left: 1.5em !important;
   }
   
   #custom-packages-details[open] > summary,
