@@ -1041,7 +1041,7 @@ async function updateAllPackageState(source = 'unknown') {
     };
 
     await updateLanguagePackageCore();
-    await updatePackageListToTextarea(source, elements);
+    updatePackageListToTextarea(source, elements);
     updateVariableDefinitions();
 
     console.log('All package state updated successfully');
@@ -1164,7 +1164,7 @@ function getCurrentPackageListForLanguage() {
     return Array.from(out);
 }
 
-async function updatePackageListToTextarea(source = 'unknown', elements = {}) {
+function updatePackageListToTextarea(source = 'unknown') {
     if (!state.packages.default.length && !state.packages.device.length && !state.packages.extra.length) {
         console.warn('updatePackageListToTextarea: Device packages not loaded yet, skipping update from:', source);
         return;
@@ -1215,7 +1215,7 @@ async function updatePackageListToTextarea(source = 'unknown', elements = {}) {
     });
 
     const manualPackages = new Set();
-    const textarea = elements.textarea || state.dom.textarea || document.querySelector('#asu-packages');
+    const textarea = state.dom.textarea || document.querySelector('#asu-packages');
 
     if (textarea) {
         const currentTextareaPackages = normalizePackages(textarea.value);
@@ -1260,22 +1260,10 @@ async function updatePackageListToTextarea(source = 'unknown', elements = {}) {
         const addedPackages = uniquePackages.filter(pkg => !baseSet.has(pkg));
         
         const versionArchPrefix = `${state.device.version}:${state.device.arch}:`;
-        const isSnapshot = (state.device.version || '').includes('SNAPSHOT');
         
         let totalBytes = 0;
         for (const pkg of addedPackages) {
-            let size = state.cache.packageSizes.get(versionArchPrefix + pkg);
-
-            if (!(typeof size === 'number' && size > 0) && isSnapshot) {
-                try {
-                    const feed = guessFeedForPackage(pkg);
-                    await searchInFeed(pkg, feed, state.device.version, state.device.arch);
-                    size = state.cache.packageSizes.get(versionArchPrefix + pkg);
-                } catch (e) {
-                    console.warn('Failed to fetch size for package', pkg, e);
-                }
-            }
-
+            const size = state.cache.packageSizes.get(versionArchPrefix + pkg);
             if (typeof size === 'number' && size > 0) {
                 totalBytes += size;
             }
@@ -1283,18 +1271,7 @@ async function updatePackageListToTextarea(source = 'unknown', elements = {}) {
         
         let baseBytes = 0;
         for (const pkg of baseSet) {
-            let size = state.cache.packageSizes.get(versionArchPrefix + pkg);
-
-            if (!(typeof size === 'number' && size > 0) && isSnapshot) {
-                try {
-                    const feed = guessFeedForPackage(pkg);
-                    await searchInFeed(pkg, feed, state.device.version, state.device.arch);
-                    size = state.cache.packageSizes.get(versionArchPrefix + pkg);
-                } catch (e) {
-                    console.warn('Failed to fetch size for base package', pkg, e);
-                }
-            }
-
+            const size = state.cache.packageSizes.get(versionArchPrefix + pkg);
             if (typeof size === 'number' && size > 0) {
                 baseBytes += size;
             }
@@ -1304,7 +1281,7 @@ async function updatePackageListToTextarea(source = 'unknown', elements = {}) {
         textarea.style.height = 'auto';
         textarea.style.height = textarea.scrollHeight + 'px';
         
-        const sizeBreakdownEl = elements.sizeBreakdown || state.dom.sizeBreakdown || document.querySelector('#package-size-breakdown');
+        const sizeBreakdownEl = state.dom.sizeBreakdown || document.querySelector('#package-size-breakdown');
         if (sizeBreakdownEl) {
             const baseMB = (baseBytes / (1024 * 1024)).toFixed(2);
             const addedMB = (totalBytes / (1024 * 1024)).toFixed(2);
@@ -2697,7 +2674,7 @@ async function verifyAllPackages() {
     }
     
     updatePackageSizeDisplay();
-    await updatePackageListToTextarea('package-verification-complete');
+    updatePackageListToTextarea('package-verification-complete');
 }
 
 async function buildAvailabilityIndex(deviceInfo, neededFeeds) {
