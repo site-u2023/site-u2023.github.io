@@ -736,7 +736,7 @@ details[open] > summary ~ * {
   /* h3のアコーデオン矢印を表示領域内に収める */
   #custom-packages-details > summary,
   #custom-scripts-details > summary {
-    padding-left: 1em !important;
+    padding-left: 1.5em !important;
   }
   
   #custom-packages-details[open] > summary,
