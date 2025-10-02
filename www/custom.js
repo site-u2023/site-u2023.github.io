@@ -2123,7 +2123,7 @@ function applyCustomTranslations(map) {
     if (!map || typeof map !== 'object') return;
     
     if (!state.cache.originalAutoDetectionText) {
-        state.cache.originalAutoDetectionText = map['tr-auto-detection'] || '自動検出';
+        state.cache.originalAutoDetectionText = map['tr-auto-detection'];
     }
     
     if (state.apiInfo && map['tr-auto-detection']) {
