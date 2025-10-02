@@ -722,6 +722,13 @@ details[open] > summary ~ * {
   #scripts-details[open] > summary {
     list-style-type: disclosure-open !important;
   }
+  
+  /* h3のアコーデオン矢印を表示領域内に収める */
+  #custom-packages-details > summary,
+  #custom-scripts-details > summary {
+    margin-left: 0 !important;
+    padding-left: 1em !important;
+  }
 }
 
 /* ===== Utility Classes ===== */
