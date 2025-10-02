@@ -2732,6 +2732,14 @@ async function fetchFeedSet(feed, deviceInfo) {
     if (isSnapshot) {
         const data = await resp.json();
         if (Array.isArray(data.packages)) {
+            for (const pkg of data.packages) {
+                if (!pkg || !pkg.name) continue;
+                const size = pkg.installed_size || pkg.size || 0;
+                if (typeof size === 'number' && size > 0) {
+                    const sizeCacheKey = `${deviceInfo.version}:${deviceInfo.arch}:${pkg.name}`;
+                    state.cache.packageSizes.set(sizeCacheKey, size);
+                }
+            }
             return new Set(data.packages.map(p => p?.name).filter(Boolean));
         } else if (data.packages && typeof data.packages === 'object') {
             for (const pkgName of Object.keys(data.packages)) {
