@@ -286,7 +286,9 @@ details summary {
   padding: 1em 0 1em 0;
   user-select: none;
   color: inherit;
-  display: list-item !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
   list-style: disclosure-closed !important;
   list-style-position: outside !important;
 }
@@ -306,7 +308,6 @@ details summary h3 {
 
 details summary h4,
 details summary h5 {
-  margin: 0;
   font-weight: 500;
 }
 
@@ -317,6 +318,7 @@ details[open] summary {
 /* Webkit browsers用 */
 details summary::-webkit-details-marker {
   display: inline-block !important;
+  margin-right: 0.5em;
 }
 
 /* Details containers */
@@ -341,8 +343,6 @@ details summary::-webkit-details-marker {
 }
 
 #postinst-details summary h4 {
-  margin: 0;
-  display: block;
 }
 
 #postinst-additional-info {
@@ -362,8 +362,6 @@ details summary::-webkit-details-marker {
 }
 
 #uci-defaults-details summary h4 {
-  margin: 0;
-  display: block;
 }
 
 #uci-defaults-details summary .file-size-info {
