@@ -683,7 +683,6 @@ details[open] > summary ~ * {
     padding-left: 0;
   }
 
-  /* ISP情報を縦並びに */
   .row {
     flex-direction: column;
     padding-left: 0.5em !important;
@@ -697,7 +696,7 @@ details[open] > summary ~ * {
   }
 
   .col1::after {
-    content: "";
+    content: ":";
   }
 
   .col2 {
