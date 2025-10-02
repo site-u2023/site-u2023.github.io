@@ -1289,6 +1289,17 @@ function updatePackageListToTextarea(source = 'unknown') {
             const addedMB = isSnapshot ? '---' : (totalBytes / (1024 * 1024)).toFixed(2);
             const totalMB = isSnapshot ? '---' : ((baseBytes + totalBytes) / (1024 * 1024)).toFixed(2);
             sizeBreakdownEl.textContent = `${current_language_json['tr-base-size'] || 'Base'}: ${baseMB} MB + ${current_language_json['tr-added-size'] || 'Added'}: ${addedMB} MB = ${current_language_json['tr-total-size'] || 'Total'}: ${totalMB} MB`;
+            
+            const noteEl = document.querySelector('#package-size-note');
+            if (noteEl) {
+                if (isSnapshot) {
+                    noteEl.classList.remove('tr-package-size-note');
+                    noteEl.classList.add('tr-package-size-snapshot-unavailable');
+                } else {
+                    noteEl.classList.remove('tr-package-size-snapshot-unavailable');
+                    noteEl.classList.add('tr-package-size-note');
+                }
+            }
         }
     }
     console.log(`Package list updated: ${uniquePackages.length} packages`);
