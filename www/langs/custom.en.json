@@ -127,6 +127,8 @@
 
     "tr-feedback-link": "Forum",
 
+    "tr-package-size-snapshot-unavailable": "Package size information is not available for SNAPSHOT builds",
+    
     "tr-package-size-note": "Note: Language and dependency packages are not included",
     "tr-uci-size-limit": "Note: File size limit: 20480 bytes: 20.00 KB",
     
