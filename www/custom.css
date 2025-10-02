@@ -713,7 +713,7 @@ details[open] > summary ~ * {
   /* h3のアコーデオン矢印を表示領域内に収める */
   #custom-packages-details > summary,
   #custom-scripts-details > summary {
-    margin-left: -1.5em !important;
+    margin-left: -0.5em !important;
     padding-left: 0 !important;
     display: list-item !important;
     list-style: disclosure-closed outside !important;
