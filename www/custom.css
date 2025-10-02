@@ -335,7 +335,6 @@ details summary::-webkit-details-marker {
 #custom-packages-details,
 #custom-scripts-details {
   margin-top: 1.5em;
-  padding-left: 1.5em;
 }
 
 #custom-packages-details > summary,
@@ -710,7 +709,6 @@ details[open] > summary ~ * {
     text-overflow: clip;
   }
   
-  /* h3のアコーデオン矢印を表示領域内に収める */
   #custom-packages-details > summary,
   #custom-scripts-details > summary {
     margin-left: -0.5em !important;
