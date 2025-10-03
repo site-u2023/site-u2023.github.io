@@ -1407,13 +1407,54 @@ function collectFormValues() {
 function applySpecialFieldLogic(values) {
     const connectionType = values.connection_type || 'auto';
 
+    // 接続方式のフラグ設定
+    if (connectionType === 'auto') {
+        // APIがあれば MAP-E または DS-Lite を判別
+        if (state.apiInfo?.mape?.brIpv6Address) {
+            values.mape = '1';
+        } else if (state.apiInfo?.aftr?.aftrIpv6Address) {
+            values.dslite = '1';
+        }
+        // どちらも無ければ → 何もセットしない（DHCP相当）
+    } else if (connectionType === 'dhcp') {
+        // 明示的にDHCPを選んだ場合も → 何もセットしない
+    } else if (connectionType === 'mape') {
+        values.mape = '1';
+    } else if (connectionType === 'dslite') {
+        values.dslite = '1';
+    } else if (connectionType === 'pppoe') {
+        values.pppoe = '1';
+    } else if (connectionType === 'ap') {
+        values.ap = '1';
+    }
+
+    // --- 以下は wifi/netopt/dnsmasq の既存ロジックを残す ---
     const wifiMode = values.wifi_mode || 'standard';
+    if (wifiMode === 'usteer') {
+        values.enable_usteer = '1';
+    }
+
     const netOptimizer = values.net_optimizer || 'auto';
+    if (netOptimizer === 'auto' || netOptimizer === 'manual') {
+        values.enable_netopt = '1';
+    }
+
     const dnsmasqMode = values.enable_dnsmasq || 'auto';
+    if (dnsmasqMode === 'auto' || dnsmasqMode === 'manual') {
+        values.enable_dnsmasq = '1';
+    }
+
+    // 以降、不要フィールド削除のロジックは従来どおり
+    const allConnectionFields = collectConnectionFields();
+    const selectedConnectionFields = getFieldsForConnectionType(connectionType);
+    allConnectionFields.forEach(field => {
+        if (!selectedConnectionFields.includes(field)) {
+            delete values[field];
+        }
+    });
 
     if (connectionType === 'auto') {
         if (state.apiInfo?.mape?.brIpv6Address) {
-            values.mape = '1';
             values.mape_br = state.apiInfo.mape.brIpv6Address;
             values.mape_ealen = state.apiInfo.mape.eaBitLength;
             values.mape_ipv4_prefix = state.apiInfo.mape.ipv4Prefix;
@@ -1428,49 +1469,16 @@ function applySpecialFieldLogic(values) {
                 values.mape_gua_prefix = guaPrefix;
             }
         } else if (state.apiInfo?.aftr?.aftrIpv6Address) {
-            values.dslite = '1';
             values.dslite_aftr_address = state.apiInfo.aftr.aftrIpv6Address;
         }
-
-    } else if (connectionType === 'dhcp') {
-
     } else if (connectionType === 'mape') {
-        values.mape = '1';
         const mapeType = values.mape_type || 'gua';
         if (mapeType === 'pd') {
             delete values.mape_gua_prefix;
         }
-
-    } else if (connectionType === 'dslite') {
-        values.dslite = '1';
-        if (values.dslite_aftr_type || values.dslite_aftr_address) {
-        }
-
-    } else if (connectionType === 'pppoe') {
-        values.pppoe = '1';
-
-    } else if (connectionType === 'ap') {
-        values.ap = '1';
     }
 
-    if (wifiMode === 'usteer') {
-        values.enable_usteer = '1';
-    }
-    if (netOptimizer === 'auto' || netOptimizer === 'manual') {
-        values.enable_netopt = '1';
-    }
-    if (dnsmasqMode === 'auto' || dnsmasqMode === 'manual') {
-        values.enable_dnsmasq = '1';
-    }
-
-    const allConnectionFields = collectConnectionFields();
-    const selectedConnectionFields = getFieldsForConnectionType(connectionType);
-    allConnectionFields.forEach(field => {
-        if (!selectedConnectionFields.includes(field)) {
-            delete values[field];
-        }
-    });
-
+    // wifi/netopt/dnsmasq フィールド削除も従来どおり
     const allWifiFields = collectWifiFields();
     const selectedWifiFields = getFieldsForWifiMode(wifiMode);
     allWifiFields.forEach(field => {
