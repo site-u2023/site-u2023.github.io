@@ -341,11 +341,10 @@ details summary::-webkit-details-marker {
 #custom-packages-details > summary,
 #custom-scripts-details > summary {
   margin-left: -2.0em;
-  padding-left: 0;
+  padding-left: ;
   list-style-position: outside !important;
 }
 
-/* Align parent container to match summary position */
 #package-selector-config,
 #scripts-config {
   margin-left: -2.0em;
@@ -725,7 +724,6 @@ details[open] > summary ~ * {
     list-style: disclosure-closed outside !important;
   }
 
-  /* Align parent container to match summary position (mobile) */
   #package-selector-config,
   #scripts-config {
     margin-left: -2.0em;
