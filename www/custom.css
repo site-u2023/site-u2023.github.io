@@ -341,15 +341,23 @@ details summary::-webkit-details-marker {
 #custom-packages-details > summary,
 #custom-scripts-details > summary {
   margin-left: -2.0em;
-  padding-left: ;
+  padding-left: 0;
   list-style-position: outside !important;
 }
 
+/* Parent container alignment - Simple and consistent */
+/* Note: Ideal values would be auto-calculated based on marker width, but using fixed values for simplicity */
 #package-selector-config,
-#scripts-config,
-#package-categories,
-#dynamic-config-sections {
-  margin-left: -2.0em;
+#scripts-config {
+  margin-left: -1.5em;
+}
+
+/* Align child containers to match summary position */
+#package-selector-config .config-section,
+#package-selector-config .package-category,
+#scripts-config .config-section,
+#scripts-config .package-category {
+  margin-left: -1.5em;
 }
 
 #custom-packages-details > summary h3,
@@ -726,11 +734,18 @@ details[open] > summary ~ * {
     list-style: disclosure-closed outside !important;
   }
 
+  /* Parent container alignment for mobile - adjusted value */
   #package-selector-config,
-  #scripts-config,
-  #package-categories,
-  #dynamic-config-sections {
-    margin-left: -2.0em;
+  #scripts-config {
+    margin-left: -1.0em;
+  }
+  
+  /* Align child containers to match summary position */
+  #package-selector-config .config-section,
+  #package-selector-config .package-category,
+  #scripts-config .config-section,
+  #scripts-config .package-category {
+    margin-left: -1.0em;
   }
   
   #custom-packages-details > summary h3,
