@@ -641,7 +641,7 @@ details[open] > summary ~ * {
 }
 
 /* ===== Responsive Design ===== */
-@media (max-width: 800px) {
+@media (max-width: 600px) {
   .form-row {
     flex-direction: column;
   }
