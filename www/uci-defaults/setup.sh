@@ -156,13 +156,13 @@ firewall_wan() {
         SET @usteer[0].signal_diff_threshold='10'
     fi
 }
-[ -n "${pppoe_username}" ] && [ -n "${pppoe_password}" ] && {
+[ -n "${pppoe}" ] && {
     local SEC=network
     SET wan.proto='pppoe'
     SET wan.username="${pppoe_username}"
     SET wan.password="${pppoe_password}"
 }
-[ -n "${dslite_aftr_address}" ] && {
+[ -n "${dslite}" ] && {
     local SEC=network
     disable_wan
     SET ${DSL6}=interface
@@ -179,7 +179,7 @@ firewall_wan() {
     dhcp_relay "${DSL6}"
     firewall_wan "${DSL}" "${DSL6}"
 }
-[ -n "${mape_br}" ] && [ -n "${mape_ealen}" ] && {
+[ -n "${mape}" ] && {
     local SEC=network
     disable_wan
     SET ${MAPE6}=interface
@@ -243,7 +243,7 @@ sed -i '/if \[ -z "\$(eval "echo \\$RULE_\${k}_PORTSETS")"/,/^[[:space:]]*fi$/c\
 	    done\
 	  fi' "$MAP_SH"
 }
-[ -n "${ap_ip_address}" ] && {
+[ -n "${ap}" ] && {
     disable_wan
     {
         local SEC=network
