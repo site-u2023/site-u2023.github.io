@@ -1368,10 +1368,30 @@ function collectFormValues() {
     
     const connectionSettingFields = getConnectionSettingFields();
     
+    const wifiModeUI = getFieldValue(`input[name="wifi_mode"]:checked`) || 'standard';
+    const netOptUI = getFieldValue(`input[name="net_optimizer"]:checked`) || 'auto';
+    const dnsmasqUI = getFieldValue(`input[name="enable_dnsmasq"]:checked`) || 'auto';
+    
+    const wifiFields = new Set(['wlan_ssid', 'wlan_password', 'mobility_domain', 'snr']);
+    
+    const netOptFields = new Set(['netopt_rmem', 'netopt_wmem', 'netopt_conntrack', 'netopt_backlog', 'netopt_somaxconn', 'netopt_congestion']);
+    
+    const dnsmasqFields = new Set(['dnsmasq_cache', 'dnsmasq_negcache']);
+    
     for (const category of state.config.setup.categories) {
         for (const item of category.items) {
             if (item.type === 'field' && item.variable) {
                 if (connectionSettingFields.has(item.variable)) continue;
+                
+                if (wifiModeUI === 'disabled' && wifiFields.has(item.variable)) continue;
+                
+                if (netOptUI === 'disabled' && netOptFields.has(item.variable)) continue;
+                
+                if (netOptUI === 'auto' && netOptFields.has(item.variable)) continue;
+                
+                if (dnsmasqUI === 'disabled' && dnsmasqFields.has(item.variable)) continue;
+                
+                if (dnsmasqUI === 'auto' && dnsmasqFields.has(item.variable)) continue;
                 
                 const value = getFieldValue(`#${item.id}`);
                 if (value !== null && value !== undefined && value !== "") {
@@ -1391,6 +1411,16 @@ function collectFormValues() {
                 for (const subItem of item.items) {
                     if (subItem.type === 'field' && subItem.variable) {
                         if (connectionSettingFields.has(subItem.variable)) continue;
+                      
+                        if (wifiModeUI === 'disabled' && wifiFields.has(subItem.variable)) continue;
+                        
+                        if (netOptUI === 'disabled' && netOptFields.has(subItem.variable)) continue;
+                        
+                        if (netOptUI === 'auto' && netOptFields.has(subItem.variable)) continue;
+                        
+                        if (dnsmasqUI === 'disabled' && dnsmasqFields.has(subItem.variable)) continue;
+                        
+                        if (dnsmasqUI === 'auto' && dnsmasqFields.has(subItem.variable)) continue;
                         
                         const value = getFieldValue(`#${subItem.id}`);
                         if (value !== null && value !== undefined && value !== "") {
