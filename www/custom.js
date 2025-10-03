@@ -1384,10 +1384,47 @@ function collectFormValues() {
 }
 
 function applySpecialFieldLogic(values) {
-    const connectionType = values.connection_type || 'auto';
+    const connectionType = values.ui_connection_type || 'auto';
+    
+    const orderedValues = {};
+    
+    if (connectionType === 'auto' && state.apiInfo) {
+        if (state.apiInfo.mape?.brIpv6Address) {
+            orderedValues.mape = '1';
+        } else if (state.apiInfo.aftr?.aftrIpv6Address) {
+            orderedValues.dslite = '1';
+        }
+    } else if (connectionType === 'pppoe') {
+        orderedValues.pppoe = '1';
+    } else if (connectionType === 'dslite') {
+        orderedValues.dslite = '1';
+    } else if (connectionType === 'mape') {
+        orderedValues.mape = '1';
+    } else if (connectionType === 'ap') {
+        orderedValues.ap = '1';
+    }
+    
+    const wifiMode = values.ui_wifi_mode || 'standard';
+    if (wifiMode === 'usteer') {
+        orderedValues.enable_usteer = '1';
+    }
+    
+    const netOptimizer = values.ui_net_optimizer || 'auto';
+    if (netOptimizer === 'auto' || netOptimizer === 'manual') {
+        orderedValues.enable_netopt = '1';
+    }
+    
+    const dnsmasqMode = values.enable_dnsmasq || 'auto';
+    if (dnsmasqMode === 'auto' || dnsmasqMode === 'manual') {
+        orderedValues.enable_dnsmasq = '1';
+    }
+    
+    Object.assign(orderedValues, values);
+    
+    Object.keys(values).forEach(key => delete values[key]);
+    Object.assign(values, orderedValues);
     
     const allConnectionFields = collectConnectionFields();
-    
     const selectedConnectionFields = getFieldsForConnectionType(connectionType);
     
     allConnectionFields.forEach(field => {
@@ -1399,7 +1436,6 @@ function applySpecialFieldLogic(values) {
     if (connectionType === 'auto') {
         if (state.apiInfo) {
             if (state.apiInfo.mape?.brIpv6Address) {
-                values.mape = '1';
                 values.mape_br = state.apiInfo.mape.brIpv6Address;
                 values.mape_ealen = state.apiInfo.mape.eaBitLength;
                 values.mape_ipv4_prefix = state.apiInfo.mape.ipv4Prefix;
@@ -1414,28 +1450,17 @@ function applySpecialFieldLogic(values) {
                     values.mape_gua_prefix = guaPrefix;
                 }
             } else if (state.apiInfo.aftr?.aftrIpv6Address) {
-                values.dslite = '1';
                 values.dslite_aftr_address = state.apiInfo.aftr.aftrIpv6Address;
             }
         }
-    } else if (connectionType === 'pppoe') {
-        values.pppoe = '1';
-    } else if (connectionType === 'dslite') {
-        values.dslite = '1';
     } else if (connectionType === 'mape') {
-        values.mape = '1';
         const mapeType = values.mape_type || 'gua';
         if (mapeType === 'pd') {
             delete values.mape_gua_prefix;
         }
-    } else if (connectionType === 'ap') {
-        values.ap = '1';
     }
     
     const allWifiFields = collectWifiFields();
-    
-    const wifiMode = values.wifi_mode || 'standard';
-    
     const selectedWifiFields = getFieldsForWifiMode(wifiMode);
     
     allWifiFields.forEach(field => {
@@ -1444,14 +1469,7 @@ function applySpecialFieldLogic(values) {
         }
     });
     
-    if (wifiMode === 'usteer') {
-        values.enable_usteer = '1';
-    }
-    
     const allNetOptFields = collectNetOptFields();
-    
-    const netOptimizer = values.net_optimizer || 'auto';
-    
     const selectedNetOptFields = getFieldsForNetOptMode(netOptimizer);
     
     allNetOptFields.forEach(field => {
@@ -1460,14 +1478,7 @@ function applySpecialFieldLogic(values) {
         }
     });
     
-    if (netOptimizer === 'auto' || netOptimizer === 'manual') {
-        values.enable_netopt = '1';
-    }
-    
     const allDnsmasqFields = collectDnsmasqFields();
-    
-    const dnsmasqMode = values.enable_dnsmasq || 'auto';
-    
     const selectedDnsmasqFields = getFieldsForDnsmasqMode(dnsmasqMode);
     
     allDnsmasqFields.forEach(field => {
@@ -1475,10 +1486,6 @@ function applySpecialFieldLogic(values) {
             delete values[field];
         }
     });
-    
-    if (dnsmasqMode === 'auto' || dnsmasqMode === 'manual') {
-        values.enable_dnsmasq = '1';
-    }
 }
 
 function collectConnectionFields() {
@@ -1652,10 +1659,9 @@ function updateVariableDefinitions() {
 
 function generateVariableDefinitions(values) {
     const lines = [];
-    const excludeKeys = new Set(['connection_type', 'wifi_mode', 'net_optimizer', 'mape_type']);
     
     Object.entries(values).forEach(([key, value]) => {
-        if (excludeKeys.has(key)) return;
+        if (key.startsWith('ui_')) return;
         if (value === 'disabled' || value === '' || value === null || value === undefined) {
             return;
         }
