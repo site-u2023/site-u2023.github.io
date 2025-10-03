@@ -716,6 +716,12 @@ function buildInfoDisplay(item) {
     div.className = 'info-display';
     if (item.class) div.classList.add(item.class);
     div.textContent = item.content || '';
+    
+    if (item.showWhen) {
+        div.setAttribute('data-show-when', JSON.stringify(item.showWhen));
+        div.style.display = 'none';
+    }
+    
     return div;
 }
 
