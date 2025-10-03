@@ -1384,7 +1384,7 @@ function collectFormValues() {
 }
 
 function applySpecialFieldLogic(values) {
-    const connectionType = values.ui_connection_type || 'auto';
+    const connectionType = values.connection_type || 'auto';
     
     const orderedValues = {};
     
@@ -1404,12 +1404,12 @@ function applySpecialFieldLogic(values) {
         orderedValues.ap = '1';
     }
     
-    const wifiMode = values.ui_wifi_mode || 'standard';
+    const wifiMode = values.wifi_mode || 'standard';
     if (wifiMode === 'usteer') {
         orderedValues.enable_usteer = '1';
     }
     
-    const netOptimizer = values.ui_net_optimizer || 'auto';
+    const netOptimizer = values.net_optimizer || 'auto';
     if (netOptimizer === 'auto' || netOptimizer === 'manual') {
         orderedValues.enable_netopt = '1';
     }
@@ -1660,8 +1660,10 @@ function updateVariableDefinitions() {
 function generateVariableDefinitions(values) {
     const lines = [];
     
+    const excludeKeys = new Set(['wifi_mode', 'connection_type', 'net_optimizer', 'mape_type']);
+    
     Object.entries(values).forEach(([key, value]) => {
-        if (key.startsWith('ui_')) return;
+        if (excludeKeys.has(key)) return;
         if (value === 'disabled' || value === '' || value === null || value === undefined) {
             return;
         }
