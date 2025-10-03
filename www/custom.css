@@ -341,7 +341,7 @@ details summary::-webkit-details-marker {
 #custom-packages-details > summary,
 #custom-scripts-details > summary {
   margin-left: -2.0em;
-  padding-left: 0;
+  padding-left: ;
   list-style-position: outside !important;
 }
 
@@ -485,12 +485,6 @@ details summary::-webkit-details-marker {
   border-radius: 0.2em;
   margin-top: 0.5em;
   white-space: pre-line;
-}
-
-/* Align .config-section to the left edge within package and scripts sections */
-#package-selector-config .config-section,
-#scripts-config .config-section {
-  margin-left: -1em;
 }
 
 /* ===== Package Components ===== */
@@ -745,12 +739,6 @@ details[open] > summary ~ * {
   #custom-packages-details[open] > summary,
   #custom-scripts-details[open] > summary {
     list-style-type: disclosure-open !important;
-  }
-  
-  /* Align .config-section to the left edge within package and scripts sections */
-  #package-selector-config .config-section,
-  #scripts-config .config-section {
-    margin-left: -1em;
   }
 }
 
