@@ -348,7 +348,7 @@ details summary::-webkit-details-marker {
 /* Parent container alignment - Simple and consistent */
 #package-selector-config,
 #scripts-config {
-  margin-left: -3.0em;
+  margin-left: -2.0em;
 }
 
 #custom-packages-details > summary h3,
