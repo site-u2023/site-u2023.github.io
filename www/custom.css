@@ -345,18 +345,9 @@ details summary::-webkit-details-marker {
   list-style-position: outside !important;
 }
 
-/* Parent container alignment - Simple and consistent */
-/* Note: Ideal values would be auto-calculated based on marker width, but using fixed values for simplicity */
+/* Align parent container to match summary position */
 #package-selector-config,
 #scripts-config {
-  margin-left: -1.5em;
-}
-
-/* Align child containers to match summary position */
-#package-selector-config .config-section,
-#package-selector-config .package-category,
-#scripts-config .config-section,
-#scripts-config .package-category {
   margin-left: -1.5em;
 }
 
@@ -477,15 +468,18 @@ details summary::-webkit-details-marker {
 .config-section h4,
 .package-category h4,
 .config-section > *:not(h4),
-.package-category > *:not(h4),
-#postinst-details h4,
-#uci-defaults-details h4 {
+.package-category > *:not(h4) {
   padding-left: 1em;
   padding-right: 1em;
 }
 
 .config-section h4,
-.package-category h4,
+.package-category h4 {
+  margin-top: 1em;
+  margin-bottom: 1em;
+  color: inherit;
+}
+
 #postinst-details h4,
 #uci-defaults-details h4 {
   margin-top: 1em;
@@ -745,17 +739,9 @@ details[open] > summary ~ * {
     list-style: disclosure-closed outside !important;
   }
 
-  /* Parent container alignment for mobile - adjusted value */
+  /* Align parent container to match summary position (mobile) */
   #package-selector-config,
   #scripts-config {
-    margin-left: -1.0em;
-  }
-  
-  /* Align child containers to match summary position */
-  #package-selector-config .config-section,
-  #package-selector-config .package-category,
-  #scripts-config .config-section,
-  #scripts-config .package-category {
     margin-left: -1.0em;
   }
   
