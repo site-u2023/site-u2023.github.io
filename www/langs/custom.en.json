@@ -85,7 +85,7 @@
     "tr-ap-gateway": "Gateway",
 
     "tr-tuning": "Tuning",
-    "tr-dynamic-network-optimizer": "Dynamic Network Optimization",
+    "tr-netopt-optimization": "Dynamic Network Optimization",
     "tr-netopt-optimization-disabled": "Optimization Disabled",
     "tr-manual": "Manual",
     "tr-auto-mode": "Automatic Mode",
