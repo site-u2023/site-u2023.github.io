@@ -185,7 +185,7 @@
           "id": "wifi-mode",
           "title": "Wi-Fi Mode",
           "class": "tr-wi-fi-mode",
-          "variable": "wifi_mode",
+          "variable": "ui_wifi_mode",
           "default": "standard",
           "options": [
             {"value": "standard", "label": "Standard", "class": "tr-standard"},
@@ -266,7 +266,7 @@
           "id": "connection-type",
           "title": "Connection type",
           "class": "tr-connection-type",
-          "variable": "connection_type",
+          "variable": "ui_connection_type",
           "default": "auto",
           "options": [
             {"value": "auto", "label": "AUTO", "class": "tr-auto"},
@@ -397,7 +397,7 @@
               "id": "mape-type",
               "title": "Type",
               "class": "tr-mape-type",
-              "variable": "mape_type",
+              "variable": "ui_mape_type",
               "default": "gua",
               "options": [
                 {"value": "gua", "label": "GUA", "class": "tr-gua"},
@@ -554,7 +554,7 @@
           "id": "net-optimizer",
           "title": "Dynamic Network Optimizer",
           "class": "tr-dynamic-network-optimizer",
-          "variable": "net_optimizer",
+          "variable": "ui_net_optimizer",
           "default": "auto",
           "options": [
             {"value": "auto", "label": "AUTO", "class": "tr-auto"},
