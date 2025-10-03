@@ -468,6 +468,9 @@ function renderSetupConfig(config) {
         
         requestAnimationFrame(() => {
             evaluateAllComputedFields();
+            if (current_language_json) {
+                applyCustomTranslations(current_language_json);
+            }
         });
     });
 }
@@ -902,6 +905,12 @@ function handleRadioChange(e) {
     updatePackagesForRadioGroup(name, value);
     
     updateAllPackageState(`radio-${name}`);
+    
+    if (current_language_json) {
+        requestAnimationFrame(() => {
+            applyCustomTranslations(current_language_json);
+        });
+    }
 }
 
 function evaluateAllShowWhen() {
