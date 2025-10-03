@@ -569,8 +569,6 @@
         {
           "type": "section",
           "id": "netopt-auto-section",
-          "title": "AUTO Mode",
-          "class": "tr-auto-mode",
           "showWhen": {"net_optimizer": "auto"},
           "items": [
             {
@@ -584,8 +582,6 @@
         {
           "type": "section",
           "id": "netopt-manual-section",
-          "title": "Manual Mode",
-          "class": "tr-manual-mode",
           "showWhen": {"net_optimizer": "manual"},
           "items": [
             {
@@ -661,14 +657,11 @@
         {
           "type": "section",
           "id": "netopt-disabled-section",
-          "title": "Disabled Mode",
-          "class": "tr-disabled-mode",
           "showWhen": {"net_optimizer": "disabled"},
           "items": [
             {
               "type": "info-display",
               "id": "netopt-disabled-info",
-              "class": "tr-optimization-disabled",
               "content": "Network optimization will be disabled"
             }
           ]
@@ -689,8 +682,6 @@
         {
           "type": "section",
           "id": "dnsmasq-manual-section",
-          "title": "Manual DNS Settings",
-          "class": "tr-dnsmasq-manual-settings",
           "showWhen": {"enable_dnsmasq": "manual"},
           "items": [
             {
@@ -720,8 +711,6 @@
         {
           "type": "section",
           "id": "dnsmasq-auto-section",
-          "title": "Auto DNS Settings",
-          "class": "tr-dnsmasq-auto-settings",
           "showWhen": {"enable_dnsmasq": "auto"},
           "items": [
             {
@@ -735,7 +724,6 @@
         {
           "type": "section",
           "id": "dnsmasq-disabled-section",
-          "title": "Disabled DNS Settings",
           "class": "tr-dnsmasq-disabled-settings",
           "showWhen": {"enable_dnsmasq": "disabled"},
           "items": [
