@@ -351,6 +351,14 @@ details summary::-webkit-details-marker {
   margin-left: -2.0em;
 }
 
+/* Align child containers to match summary position */
+#package-selector-config .config-section,
+#package-selector-config .package-category,
+#scripts-config .config-section,
+#scripts-config .package-category {
+  margin-left: -2.0em;
+}
+
 #custom-packages-details > summary h3,
 #custom-scripts-details > summary h3 {
   display: inline-block;
@@ -728,6 +736,14 @@ details[open] > summary ~ * {
   /* Parent container alignment for mobile - adjusted value */
   #package-selector-config,
   #scripts-config {
+    margin-left: -1.0em;
+  }
+  
+  /* Align child containers to match summary position */
+  #package-selector-config .config-section,
+  #package-selector-config .package-category,
+  #scripts-config .config-section,
+  #scripts-config .package-category {
     margin-left: -1.0em;
   }
   
