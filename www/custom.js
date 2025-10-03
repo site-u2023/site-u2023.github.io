@@ -1404,97 +1404,34 @@ function collectFormValues() {
     return values;
 }
 
-function applySpecialFieldLogic(values) {
-    const connectionType = values.connection_type || 'auto';
-
-    if (connectionType === 'auto') {
-        if (state.apiInfo?.mape?.brIpv6Address) {
-            values.mape = '1';
-        } else if (state.apiInfo?.aftr?.aftrIpv6Address) {
-            values.dslite = '1';
-        }
-    } else if (connectionType === 'dhcp') {
-    } else if (connectionType === 'mape') {
-        values.mape = '1';
-    } else if (connectionType === 'dslite') {
-        values.dslite = '1';
-    } else if (connectionType === 'pppoe') {
-        values.pppoe = '1';
-    } else if (connectionType === 'ap') {
-        values.ap = '1';
-    }
-
-    const wifiMode = values.wifi_mode || 'standard';
-    if (wifiMode === 'usteer') {
-        values.enable_usteer = '1';
-    }
-
-    const netOptimizer = values.net_optimizer || 'auto';
-    if (netOptimizer === 'auto' || netOptimizer === 'manual') {
-        values.enable_netopt = '1';
-    }
-
-    const dnsmasqMode = values.enable_dnsmasq || 'auto';
-    if (dnsmasqMode === 'auto' || dnsmasqMode === 'manual') {
-        values.enable_dnsmasq = '1';
-    }
-
-    const allConnectionFields = collectConnectionFields();
-    const selectedConnectionFields = getFieldsForConnectionType(connectionType);
-    allConnectionFields.forEach(field => {
-        if (!selectedConnectionFields.includes(field)) {
-            delete values[field];
+function getConnectionSettingFields() {
+    const fields = new Set();
+    
+    connectionCategory.items.forEach(item => {
+        if (item.type === 'section' && item.items) {
+            item.items.forEach(subItem => {
+                if (subItem.type === 'field' && subItem.variable) {
+                    fields.add(subItem.variable);
+                }
+            });
         }
     });
+    
+    return fields;
+}
 
-    if (connectionType === 'auto') {
-        if (state.apiInfo?.mape?.brIpv6Address) {
-            values.mape_br = state.apiInfo.mape.brIpv6Address;
-            values.mape_ealen = state.apiInfo.mape.eaBitLength;
-            values.mape_ipv4_prefix = state.apiInfo.mape.ipv4Prefix;
-            values.mape_ipv4_prefixlen = state.apiInfo.mape.ipv4PrefixLength;
-            values.mape_ipv6_prefix = state.apiInfo.mape.ipv6Prefix;
-            values.mape_ipv6_prefixlen = state.apiInfo.mape.ipv6PrefixLength;
-            values.mape_psid_offset = state.apiInfo.mape.psIdOffset;
-            values.mape_psidlen = state.apiInfo.mape.psidlen;
-
-            const guaPrefix = CustomUtils.generateGuaPrefixFromFullAddress(state.apiInfo);
-            if (guaPrefix) {
-                values.mape_gua_prefix = guaPrefix;
-            }
-        } else if (state.apiInfo?.aftr?.aftrIpv6Address) {
-            values.dslite_aftr_address = state.apiInfo.aftr.aftrIpv6Address;
+function generateVariableDefinitions(orderedPairs) {
+    const lines = [];
+    
+    orderedPairs.forEach(pair => {
+        if (pair.value === 'disabled' || pair.value === '' || pair.value === null || pair.value === undefined) {
+            return;
         }
-    } else if (connectionType === 'mape') {
-        const mapeType = values.mape_type || 'gua';
-        if (mapeType === 'pd') {
-            delete values.mape_gua_prefix;
-        }
-    }
-
-    const allWifiFields = collectWifiFields();
-    const selectedWifiFields = getFieldsForWifiMode(wifiMode);
-    allWifiFields.forEach(field => {
-        if (!selectedWifiFields.includes(field)) {
-            delete values[field];
-        }
+        const escapedValue = pair.value.toString().replace(/'/g, "'\"'\"'");
+        lines.push(`${pair.key}='${escapedValue}'`);
     });
-
-    const allNetOptFields = collectNetOptFields();
-    const selectedNetOptFields = getFieldsForNetOptMode(netOptimizer);
-    allNetOptFields.forEach(field => {
-        if (!selectedNetOptFields.includes(field)) {
-            delete values[field];
-        }
-    });
-
-    const allDnsmasqFields = collectDnsmasqFields();
-    const selectedDnsmasqFields = getFieldsForDnsmasqMode(dnsmasqMode);
-    allDnsmasqFields.forEach(field => {
-        if (!selectedDnsmasqFields.includes(field)) {
-            delete values[field];
-        }
-    });
+    
+    return lines.join('\n');
 }
 
 function collectConnectionFields() {
