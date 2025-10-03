@@ -662,6 +662,7 @@
             {
               "type": "info-display",
               "id": "netopt-disabled-info",
+              "class": "tr-netopt-optimization-disabled",
               "content": "Optimization Disabled"
             }
           ]
