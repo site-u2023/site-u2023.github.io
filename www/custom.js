@@ -1399,6 +1399,7 @@ function applySpecialFieldLogic(values) {
     if (connectionType === 'auto') {
         if (state.apiInfo) {
             if (state.apiInfo.mape?.brIpv6Address) {
+                values.mape = '1';
                 values.mape_br = state.apiInfo.mape.brIpv6Address;
                 values.mape_ealen = state.apiInfo.mape.eaBitLength;
                 values.mape_ipv4_prefix = state.apiInfo.mape.ipv4Prefix;
@@ -1413,14 +1414,22 @@ function applySpecialFieldLogic(values) {
                     values.mape_gua_prefix = guaPrefix;
                 }
             } else if (state.apiInfo.aftr?.aftrIpv6Address) {
+                values.dslite = '1';
                 values.dslite_aftr_address = state.apiInfo.aftr.aftrIpv6Address;
             }
         }
+    } else if (connectionType === 'pppoe') {
+        values.pppoe = '1';
+    } else if (connectionType === 'dslite') {
+        values.dslite = '1';
     } else if (connectionType === 'mape') {
+        values.mape = '1';
         const mapeType = values.mape_type || 'gua';
         if (mapeType === 'pd') {
             delete values.mape_gua_prefix;
         }
+    } else if (connectionType === 'ap') {
+        values.ap = '1';
     }
     
     const allWifiFields = collectWifiFields();
@@ -1438,7 +1447,7 @@ function applySpecialFieldLogic(values) {
     if (wifiMode === 'usteer') {
         values.enable_usteer = '1';
     }
-
+    
     const allNetOptFields = collectNetOptFields();
     
     const netOptimizer = values.net_optimizer || 'auto';
@@ -1643,7 +1652,10 @@ function updateVariableDefinitions() {
 
 function generateVariableDefinitions(values) {
     const lines = [];
+    const excludeKeys = new Set(['connection_type', 'wifi_mode', 'net_optimizer', 'mape_type']);
+    
     Object.entries(values).forEach(([key, value]) => {
+        if (excludeKeys.has(key)) return;
         if (value === 'disabled' || value === '' || value === null || value === undefined) {
             return;
         }
