@@ -454,7 +454,7 @@ details summary::-webkit-details-marker {
 .config-section,
 .package-category {
   margin: 0 0 1.5em 0;
-  padding: 0 0 1em 0;
+  padding: 0 1em 1em 1em;
   background-color: var(--bg-section);
   border: 1px solid var(--border-main);
   border-radius: 0.25em;
@@ -464,22 +464,8 @@ details summary::-webkit-details-marker {
   color: var(--text-main);
 }
 
-/* Add padding to internal elements */
 .config-section h4,
 .package-category h4,
-.config-section > *:not(h4),
-.package-category > *:not(h4) {
-  padding-left: 1em;
-  padding-right: 1em;
-}
-
-.config-section h4,
-.package-category h4 {
-  margin-top: 1em;
-  margin-bottom: 1em;
-  color: inherit;
-}
-
 #postinst-details h4,
 #uci-defaults-details h4 {
   margin-top: 1em;
