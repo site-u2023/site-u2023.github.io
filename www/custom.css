@@ -351,6 +351,14 @@ details summary::-webkit-details-marker {
   margin-left: -2.0em;
 }
 
+/* Offset child containers to compensate for their padding */
+#package-selector-config .config-section,
+#package-selector-config .package-category,
+#scripts-config .config-section,
+#scripts-config .package-category {
+  margin-left: -1em;
+}
+
 #custom-packages-details > summary h3,
 #custom-scripts-details > summary h3 {
   display: inline-block;
@@ -729,6 +737,14 @@ details[open] > summary ~ * {
   #package-selector-config,
   #scripts-config {
     margin-left: -2.0em;
+  }
+  
+  /* Offset child containers to compensate for their padding */
+  #package-selector-config .config-section,
+  #package-selector-config .package-category,
+  #scripts-config .config-section,
+  #scripts-config .package-category {
+    margin-left: -1em;
   }
   
   #custom-packages-details > summary h3,
