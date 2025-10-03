@@ -43,6 +43,7 @@
     "tr-standard": "Standard",
     "tr-usteer": "Usteer",
     "tr-disabled": "Disabled",
+    "tr-wifi-optimization-disabled": "Wi-Fi Disabled",
     
     "tr-internet-connection": "Internet Connection",
     "tr-connection-type": "Connection Type",
@@ -85,6 +86,7 @@
 
     "tr-tuning": "Tuning",
     "tr-dynamic-network-optimizer": "Dynamic Network Optimization",
+    "tr-optimization-disabled": "Optimization Disabled",
     "tr-manual": "Manual",
     "tr-auto-mode": "Automatic Mode",
     "tr-auto-optimization": "Automatic Optimization",
