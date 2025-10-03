@@ -340,12 +340,13 @@ details summary::-webkit-details-marker {
 
 #custom-packages-details > summary,
 #custom-scripts-details > summary {
-  margin-left: -1.5em;
+  margin-left: -2.0em;
   padding-left: 0;
   list-style-position: outside !important;
 }
 
 /* Parent container alignment - Simple and consistent */
+/* Note: Ideal values would be auto-calculated based on marker width, but using fixed values for simplicity */
 #package-selector-config,
 #scripts-config {
   margin-left: -1.5em;
@@ -462,7 +463,7 @@ details summary::-webkit-details-marker {
 .config-section,
 .package-category {
   margin: 0 0 1.5em 0;
-  padding: 0 1em 1em 1em;
+  padding: 0 0 1em 0;
   background-color: var(--bg-section);
   border: 1px solid var(--border-main);
   border-radius: 0.25em;
@@ -470,6 +471,17 @@ details summary::-webkit-details-marker {
               0em 0.06em 0.06em 0em rgba(0, 0, 0, 0.14),
               0em 0.125em 0.06em -0.06em rgba(0, 0, 0, 0.12);
   color: var(--text-main);
+}
+
+/* Add padding to internal elements */
+.config-section h4,
+.package-category h4,
+.config-section > *:not(h4),
+.package-category > *:not(h4),
+#postinst-details h4,
+#uci-defaults-details h4 {
+  padding-left: 1em;
+  padding-right: 1em;
 }
 
 .config-section h4,
