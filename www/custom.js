@@ -1406,49 +1406,38 @@ function collectFormValues() {
 
 function applySpecialFieldLogic(values) {
     const connectionType = values.connection_type || 'auto';
-    const orderedValues = {};
 
-    switch (connectionType) {
-        case 'pppoe':
-            orderedValues.pppoe = '1';
-            break;
-        case 'dslite':
-            orderedValues.dslite = '1';
-            break;
-        case 'mape':
-            orderedValues.mape = '1';
-            break;
-        case 'ap':
-            orderedValues.ap = '1';
-            break;
-        case 'auto':
-        default:
-            if (state.apiInfo?.mape?.brIpv6Address) {
-                orderedValues.mape = '1';
-            } else if (state.apiInfo?.aftr?.aftrIpv6Address) {
-                orderedValues.dslite = '1';
-            }
-            break;
+    if (connectionType === 'auto') {
+        if (state.apiInfo?.mape?.brIpv6Address) {
+            values.mape = '1';
+        } else if (state.apiInfo?.aftr?.aftrIpv6Address) {
+            values.dslite = '1';
+        }
+    } else if (connectionType === 'dhcp') {
+    } else if (connectionType === 'mape') {
+        values.mape = '1';
+    } else if (connectionType === 'dslite') {
+        values.dslite = '1';
+    } else if (connectionType === 'pppoe') {
+        values.pppoe = '1';
+    } else if (connectionType === 'ap') {
+        values.ap = '1';
     }
 
     const wifiMode = values.wifi_mode || 'standard';
     if (wifiMode === 'usteer') {
-        orderedValues.enable_usteer = '1';
+        values.enable_usteer = '1';
     }
 
     const netOptimizer = values.net_optimizer || 'auto';
     if (netOptimizer === 'auto' || netOptimizer === 'manual') {
-        orderedValues.enable_netopt = '1';
+        values.enable_netopt = '1';
     }
 
     const dnsmasqMode = values.enable_dnsmasq || 'auto';
     if (dnsmasqMode === 'auto' || dnsmasqMode === 'manual') {
-        orderedValues.enable_dnsmasq = '1';
+        values.enable_dnsmasq = '1';
     }
-
-    Object.assign(orderedValues, values);
-    Object.keys(values).forEach(key => delete values[key]);
-    Object.assign(values, orderedValues);
 
     const allConnectionFields = collectConnectionFields();
     const selectedConnectionFields = getFieldsForConnectionType(connectionType);
