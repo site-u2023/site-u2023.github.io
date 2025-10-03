@@ -85,8 +85,8 @@
     "tr-ap-gateway": "ゲートウェイ",
 
     "tr-tuning": "チューニング",
-    "tr-dynamic-network-optimizer": "動的ネットワーク最適化",
-    "tr-optimization-disabled": "最適化無効",
+    "tr-netopt-optimization": "動的ネットワーク最適化",
+    "tr-netopt-optimization-disabled": "最適化無効",
     "tr-manual": "手動",
     "tr-auto-mode": "自動モード",
     "tr-auto-optimization": "自動最適化",
