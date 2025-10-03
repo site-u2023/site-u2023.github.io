@@ -348,7 +348,7 @@ details summary::-webkit-details-marker {
 /* Align parent container to match summary position */
 #package-selector-config,
 #scripts-config {
-  margin-left: -1.5em;
+  margin-left: -2.0em;
 }
 
 #custom-packages-details > summary h3,
@@ -728,7 +728,7 @@ details[open] > summary ~ * {
   /* Align parent container to match summary position (mobile) */
   #package-selector-config,
   #scripts-config {
-    margin-left: -1.0em;
+    margin-left: -2.0em;
   }
   
   #custom-packages-details > summary h3,
