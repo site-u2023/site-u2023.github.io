@@ -553,7 +553,7 @@
           "type": "radio-group",
           "id": "net-optimizer",
           "title": "Dynamic Network Optimizer",
-          "class": "tr-dynamic-network-optimizer",
+          "class": "tr-netopt-optimization",
           "variable": "net_optimizer",
           "ui_variable": "ui_net_optimizer",
           "default": "auto",
