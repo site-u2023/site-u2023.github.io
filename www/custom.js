@@ -1854,21 +1854,11 @@ function updateAutoConnectionInfo(apiInfo) {
     const connectionType = getConnectionType(apiInfo);
     
     let infoText = '';
-    
-    if (connectionType === 'MAP-E') {
-        infoText += `<h4 style="color: #00a3e1; margin-top: 0;">検出: MAP-E</h4>`;
-    } else if (connectionType === 'DS-Lite') {
-        infoText += `<h4 style="color: #00a3e1; margin-top: 0;">検出: DS-Lite</h4>`;
-    } else {
-        infoText += `<h4 style="color: #00a3e1; margin-top: 0;">検出: DHCP/PPPoE</h4>`;
-    }
-    
     if (apiInfo?.isp) {
-        infoText += `<p style="margin: 0.5em 0;">ISP: ${apiInfo.isp}`;
+        infoText += `ISP: ${apiInfo.isp}<br>`;
         if (apiInfo.as) {
-            infoText += ` (${apiInfo.as})`;
+            infoText += `AS: ${apiInfo.as}<br>`;
         }
-        infoText += `</p>`;
     }
     
     if (connectionType === 'MAP-E') {
@@ -1880,45 +1870,40 @@ function updateAutoConnectionInfo(apiInfo) {
         
         infoText += `<hr>`;
         infoText += `<p><span class="tr-mape-notice1">Note: Actual values may differ.</span></p>`;
-        infoText += `<pre style="background: rgba(0,0,0,0.2); padding: 1em; border-radius: 0.2em; overflow-x: auto;">`;
-        infoText += `option peeraddr ${apiInfo.mape.brIpv6Address}\n`;
-        infoText += `option ipaddr ${apiInfo.mape.ipv4Prefix}\n`;
-        infoText += `option ip4prefixlen ${apiInfo.mape.ipv4PrefixLength}\n`;
-        infoText += `option ip6prefix ${apiInfo.mape.ipv6Prefix}\n`;
-        infoText += `option ip6prefixlen ${apiInfo.mape.ipv6PrefixLength}\n`;
-        infoText += `option ealen ${apiInfo.mape.eaBitLength}\n`;
-        infoText += `option psidlen ${apiInfo.mape.psidlen}\n`;
-        infoText += `option offset ${apiInfo.mape.psIdOffset}\n`;
+        infoText += `option peeraddr ${apiInfo.mape.brIpv6Address}<br>`;
+        infoText += `option ipaddr ${apiInfo.mape.ipv4Prefix}<br>`;
+        infoText += `option ip4prefixlen ${apiInfo.mape.ipv4PrefixLength}<br>`;
+        infoText += `option ip6prefix ${apiInfo.mape.ipv6Prefix}<br>`;
+        infoText += `option ip6prefixlen ${apiInfo.mape.ipv6PrefixLength}<br>`;
+        infoText += `option ealen ${apiInfo.mape.eaBitLength}<br>`;
+        infoText += `option psidlen ${apiInfo.mape.psidlen}<br>`;
+        infoText += `option offset ${apiInfo.mape.psIdOffset}<br>`;
         if (gua) {
-            infoText += `option ip6prefix_gua ${gua}\n`;
+            infoText += `option ip6prefix_gua ${gua}<br>`;
         }
-        infoText += `\nexport LEGACY=1`;
-        infoText += `</pre>`;
+        infoText += `<br>`;
+        infoText += `export LEGACY=1<br>`;
         infoText += `<hr>`;
-        infoText += `<pre style="background: rgba(0,0,0,0.2); padding: 1em; border-radius: 0.2em; overflow-x: auto;">`;
-        infoText += `(config-softwire)# <strong>map-version draft</strong>\n`;
-        infoText += `(config-softwire)# <strong>rule &lt;0-65535&gt; ipv4-prefix ${apiInfo.mape.ipv4Prefix}/${apiInfo.mape.ipv4PrefixLength} ipv6-prefix ${apiInfo.mape.ipv6Prefix}/${apiInfo.mape.ipv6PrefixLength}</strong> [ea-length ${apiInfo.mape.eaBitLength}|psid-length ${apiInfo.mape.psidlen}] [offset ${apiInfo.mape.psIdOffset}] [forwarding]`;
-        infoText += `</pre>`;
+        infoText += `(config-softwire)# <strong>map-version draft</strong><br>`;
+        infoText += `(config-softwire)# <strong>rule &lt;0-65535&gt; ipv4-prefix ${apiInfo.mape.ipv4Prefix}/${apiInfo.mape.ipv4PrefixLength} ipv6-prefix ${apiInfo.mape.ipv6Prefix}/${apiInfo.mape.ipv6PrefixLength}</strong> [ea-length ${apiInfo.mape.eaBitLength}|psid-length ${apiInfo.mape.psidlen}] [offset ${apiInfo.mape.psIdOffset}] [forwarding]<br>`;
         infoText += `<hr>`;
         infoText += `<div style="text-align: center;"><a href="https://ipv4.web.fc2.com/map-e.html" target="_blank">Powered by config-softwire</a></div>`;     
     } else if (connectionType === 'DS-Lite') {
         infoText += `<hr>`;
-        infoText += `<p><span class="tr-dslite-notice1">Note: Actual values may differ.</span></p>`;
+        infoText += `<h4><span class="tr-dslite-notice1">Note: Actual values may differ.</span></h4>`;
         infoText += `<hr>`;
-        infoText += `<pre style="background: rgba(0,0,0,0.2); padding: 1em; border-radius: 0.2em; overflow-x: auto;">`;
         if (apiInfo.aftr?.aftrIpv6Address) {
-            infoText += `option aftr_addr ${apiInfo.aftr.aftrIpv6Address}\n`;
+            infoText += `option aftr_addr ${apiInfo.aftr.aftrIpv6Address}<br>`;
         }
         if (apiInfo.aftr?.aftrType) {
-            infoText += `option aftr_type ${apiInfo.aftr.aftrType}\n`;
+            infoText += `option aftr_type ${apiInfo.aftr.aftrType}<br>`;
         }
         if (apiInfo.aftr?.jurisdiction) {
-            infoText += `option area ${apiInfo.aftr.jurisdiction}`;
+            infoText += `option area ${apiInfo.aftr.jurisdiction}<br>`;
         }
-        infoText += `</pre>`;
         infoText += `<hr>`;
     } else {
-        infoText += `<p style="margin: 1em 0; color: var(--text-secondary);">標準的なDHCPまたはPPPoE接続が使用されます。</p>`;
+        infoText += `<span class="tr-standard-notice">Standard connection will be used</span>`;
     }
     
     autoInfo.innerHTML = infoText;
