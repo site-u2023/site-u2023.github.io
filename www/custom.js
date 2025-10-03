@@ -1406,73 +1406,75 @@ function collectFormValues() {
 
 function applySpecialFieldLogic(values) {
     const connectionType = values.connection_type || 'auto';
-    
     const orderedValues = {};
-    
-    if (connectionType === 'auto' && state.apiInfo) {
-        if (state.apiInfo.mape?.brIpv6Address) {
-            orderedValues.mape = '1';
-        } else if (state.apiInfo.aftr?.aftrIpv6Address) {
+
+    switch (connectionType) {
+        case 'pppoe':
+            orderedValues.pppoe = '1';
+            break;
+        case 'dslite':
             orderedValues.dslite = '1';
-        }
-    } else if (connectionType === 'pppoe') {
-        orderedValues.pppoe = '1';
-    } else if (connectionType === 'dslite') {
-        orderedValues.dslite = '1';
-    } else if (connectionType === 'mape') {
-        orderedValues.mape = '1';
-    } else if (connectionType === 'ap') {
-        orderedValues.ap = '1';
+            break;
+        case 'mape':
+            orderedValues.mape = '1';
+            break;
+        case 'ap':
+            orderedValues.ap = '1';
+            break;
+        case 'auto':
+        default:
+            if (state.apiInfo?.mape?.brIpv6Address) {
+                orderedValues.mape = '1';
+            } else if (state.apiInfo?.aftr?.aftrIpv6Address) {
+                orderedValues.dslite = '1';
+            }
+            break;
     }
-    
+
     const wifiMode = values.wifi_mode || 'standard';
     if (wifiMode === 'usteer') {
         orderedValues.enable_usteer = '1';
     }
-    
+
     const netOptimizer = values.net_optimizer || 'auto';
     if (netOptimizer === 'auto' || netOptimizer === 'manual') {
         orderedValues.enable_netopt = '1';
     }
-    
+
     const dnsmasqMode = values.enable_dnsmasq || 'auto';
     if (dnsmasqMode === 'auto' || dnsmasqMode === 'manual') {
         orderedValues.enable_dnsmasq = '1';
     }
-    
+
     Object.assign(orderedValues, values);
-    
     Object.keys(values).forEach(key => delete values[key]);
     Object.assign(values, orderedValues);
-    
+
     const allConnectionFields = collectConnectionFields();
     const selectedConnectionFields = getFieldsForConnectionType(connectionType);
-    
     allConnectionFields.forEach(field => {
         if (!selectedConnectionFields.includes(field)) {
             delete values[field];
         }
     });
-    
+
     if (connectionType === 'auto') {
-        if (state.apiInfo) {
-            if (state.apiInfo.mape?.brIpv6Address) {
-                values.mape_br = state.apiInfo.mape.brIpv6Address;
-                values.mape_ealen = state.apiInfo.mape.eaBitLength;
-                values.mape_ipv4_prefix = state.apiInfo.mape.ipv4Prefix;
-                values.mape_ipv4_prefixlen = state.apiInfo.mape.ipv4PrefixLength;
-                values.mape_ipv6_prefix = state.apiInfo.mape.ipv6Prefix;
-                values.mape_ipv6_prefixlen = state.apiInfo.mape.ipv6PrefixLength;
-                values.mape_psid_offset = state.apiInfo.mape.psIdOffset;
-                values.mape_psidlen = state.apiInfo.mape.psidlen;
-                
-                const guaPrefix = CustomUtils.generateGuaPrefixFromFullAddress(state.apiInfo);
-                if (guaPrefix) {
-                    values.mape_gua_prefix = guaPrefix;
-                }
-            } else if (state.apiInfo.aftr?.aftrIpv6Address) {
-                values.dslite_aftr_address = state.apiInfo.aftr.aftrIpv6Address;
+        if (state.apiInfo?.mape?.brIpv6Address) {
+            values.mape_br = state.apiInfo.mape.brIpv6Address;
+            values.mape_ealen = state.apiInfo.mape.eaBitLength;
+            values.mape_ipv4_prefix = state.apiInfo.mape.ipv4Prefix;
+            values.mape_ipv4_prefixlen = state.apiInfo.mape.ipv4PrefixLength;
+            values.mape_ipv6_prefix = state.apiInfo.mape.ipv6Prefix;
+            values.mape_ipv6_prefixlen = state.apiInfo.mape.ipv6PrefixLength;
+            values.mape_psid_offset = state.apiInfo.mape.psIdOffset;
+            values.mape_psidlen = state.apiInfo.mape.psidlen;
+
+            const guaPrefix = CustomUtils.generateGuaPrefixFromFullAddress(state.apiInfo);
+            if (guaPrefix) {
+                values.mape_gua_prefix = guaPrefix;
             }
+        } else if (state.apiInfo?.aftr?.aftrIpv6Address) {
+            values.dslite_aftr_address = state.apiInfo.aftr.aftrIpv6Address;
         }
     } else if (connectionType === 'mape') {
         const mapeType = values.mape_type || 'gua';
@@ -1480,28 +1482,25 @@ function applySpecialFieldLogic(values) {
             delete values.mape_gua_prefix;
         }
     }
-    
+
     const allWifiFields = collectWifiFields();
     const selectedWifiFields = getFieldsForWifiMode(wifiMode);
-    
     allWifiFields.forEach(field => {
         if (!selectedWifiFields.includes(field)) {
             delete values[field];
         }
     });
-    
+
     const allNetOptFields = collectNetOptFields();
     const selectedNetOptFields = getFieldsForNetOptMode(netOptimizer);
-    
     allNetOptFields.forEach(field => {
         if (!selectedNetOptFields.includes(field)) {
             delete values[field];
         }
     });
-    
+
     const allDnsmasqFields = collectDnsmasqFields();
     const selectedDnsmasqFields = getFieldsForDnsmasqMode(dnsmasqMode);
-    
     allDnsmasqFields.forEach(field => {
         if (!selectedDnsmasqFields.includes(field)) {
             delete values[field];
