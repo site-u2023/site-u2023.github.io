@@ -443,7 +443,7 @@ function renderSetupConfig(config) {
             try {
                 const element = buildItem(item);
                 if (element) {
-                    if (itemCount === 1 || item.type === 'radio-group' || item.type === 'section') {
+                    if (itemCount === 1 || item.type === 'radio-group' || item.type === 'info-display') {
                         element.style.gridColumn = '1 / -1';
                     }
                     itemsContainer.appendChild(element);
