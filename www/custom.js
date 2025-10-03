@@ -1407,17 +1407,13 @@ function collectFormValues() {
 function applySpecialFieldLogic(values) {
     const connectionType = values.connection_type || 'auto';
 
-    // 接続方式のフラグ設定
     if (connectionType === 'auto') {
-        // APIがあれば MAP-E または DS-Lite を判別
         if (state.apiInfo?.mape?.brIpv6Address) {
             values.mape = '1';
         } else if (state.apiInfo?.aftr?.aftrIpv6Address) {
             values.dslite = '1';
         }
-        // どちらも無ければ → 何もセットしない（DHCP相当）
     } else if (connectionType === 'dhcp') {
-        // 明示的にDHCPを選んだ場合も → 何もセットしない
     } else if (connectionType === 'mape') {
         values.mape = '1';
     } else if (connectionType === 'dslite') {
@@ -1428,7 +1424,6 @@ function applySpecialFieldLogic(values) {
         values.ap = '1';
     }
 
-    // --- 以下は wifi/netopt/dnsmasq の既存ロジックを残す ---
     const wifiMode = values.wifi_mode || 'standard';
     if (wifiMode === 'usteer') {
         values.enable_usteer = '1';
@@ -1444,7 +1439,6 @@ function applySpecialFieldLogic(values) {
         values.enable_dnsmasq = '1';
     }
 
-    // 以降、不要フィールド削除のロジックは従来どおり
     const allConnectionFields = collectConnectionFields();
     const selectedConnectionFields = getFieldsForConnectionType(connectionType);
     allConnectionFields.forEach(field => {
@@ -1478,7 +1472,6 @@ function applySpecialFieldLogic(values) {
         }
     }
 
-    // wifi/netopt/dnsmasq フィールド削除も従来どおり
     const allWifiFields = collectWifiFields();
     const selectedWifiFields = getFieldsForWifiMode(wifiMode);
     allWifiFields.forEach(field => {
