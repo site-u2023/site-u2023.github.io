@@ -443,7 +443,10 @@ function renderSetupConfig(config) {
             try {
                 const element = buildItem(item);
                 if (element) {
-                    if (itemCount === 1 || item.type === 'radio-group' || item.type === 'info-display') {
+                    if (item.type === 'info-display' || (item.id && item.id.includes('info'))) {
+                        element.style.gridColumn = '1 / -1';
+                    } 
+                    else if (itemCount === 1 || item.type === 'radio-group' || item.type === 'section') {
                         element.style.gridColumn = '1 / -1';
                     }
                     itemsContainer.appendChild(element);
@@ -693,7 +696,10 @@ function buildSection(section) {
     items.forEach(item => {
         const element = buildItem(item);
         if (element) {
-            if (itemCount === 1 || item.type === 'radio-group' || item.type === 'info-display') {
+            if (item.type === 'info-display' || (item.id && item.id.includes('info'))) {
+                element.style.gridColumn = '1 / -1';
+            }
+            else if (itemCount === 1 || item.type === 'radio-group') {
                 element.style.gridColumn = '1 / -1';
             }
             itemsContainer.appendChild(element);
