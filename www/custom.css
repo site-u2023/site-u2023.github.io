@@ -346,7 +346,9 @@ details summary::-webkit-details-marker {
 }
 
 #package-selector-config,
-#scripts-config {
+#scripts-config,
+#package-categories,
+#dynamic-config-sections {
   margin-left: -2.0em;
 }
 
@@ -725,7 +727,9 @@ details[open] > summary ~ * {
   }
 
   #package-selector-config,
-  #scripts-config {
+  #scripts-config,
+  #package-categories,
+  #dynamic-config-sections {
     margin-left: -2.0em;
   }
   
