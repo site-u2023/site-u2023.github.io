@@ -244,6 +244,13 @@
           "default": "30 15 5",
           "description": "SNR values in band order",
           "showWhen": {"wifi_mode": ["usteer"]}
+        },
+        {
+          "type": "info-display",
+          "id": "wifi-disabled-info",
+          "class": "tr-wifi-optimization-disabled",
+          "content": "Wi-Fi will be disabled",
+          "showWhen": {"wifi_mode": "disabled"}
         }
       ],
       
@@ -297,8 +304,6 @@
         {
           "type": "section",
           "id": "dhcp-section",
-          "title": "DHCP",
-          "class": "tr-dhcp",
           "showWhen": {"connection_type": "dhcp"},
           "items": [
             {
@@ -312,8 +317,6 @@
         {
           "type": "section",
           "id": "pppoe-section",
-          "title": "PPPoE",
-          "class": "tr-pppoe",
           "showWhen": {"connection_type": "pppoe"},
           "items": [
             {
@@ -339,8 +342,6 @@
         {
           "type": "section",
           "id": "dslite-section",
-          "title": "DS-Lite",
-          "class": "tr-dslite",
           "showWhen": {"connection_type": "dslite"},
           "items": [
             {
@@ -390,8 +391,6 @@
         {
           "type": "section",
           "id": "mape-section",
-          "title": "MAP-E",
-          "class": "tr-mape",
           "showWhen": {"connection_type": "mape"},
           "items": [
             {
@@ -505,8 +504,6 @@
         {
           "type": "section",
           "id": "ap-section",
-          "title": "AP Mode",
-          "class": "tr-ap-mode",
           "showWhen": {"connection_type": "ap"},
           "items": [
             {
