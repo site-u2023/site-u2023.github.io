@@ -43,6 +43,7 @@
     "tr-standard": "標準",
     "tr-usteer": "Usteer",
     "tr-disabled": "無効",
+    "tr-wifi-optimization-disabled": "Wi-Fi無効",
     
     "tr-internet-connection": "インターネット接続",
     "tr-connection-type": "接続タイプ",
@@ -85,6 +86,7 @@
 
     "tr-tuning": "チューニング",
     "tr-dynamic-network-optimizer": "動的ネットワーク最適化",
+    "tr-optimization-disabled": "最適化無効",
     "tr-manual": "手動",
     "tr-auto-mode": "自動モード",
     "tr-auto-optimization": "自動最適化",
