@@ -662,7 +662,7 @@
             {
               "type": "info-display",
               "id": "netopt-disabled-info",
-              "content": "Network optimization will be disabled"
+              "content": "Optimization Disabled"
             }
           ]
         },
