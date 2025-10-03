@@ -1366,9 +1366,13 @@ function collectFormValues() {
         return values;
     }
     
+    const connectionSettingFields = getConnectionSettingFields();
+    
     for (const category of state.config.setup.categories) {
         for (const item of category.items) {
             if (item.type === 'field' && item.variable) {
+                if (connectionSettingFields.has(item.variable)) continue;
+                
                 const value = getFieldValue(`#${item.id}`);
                 if (value !== null && value !== undefined && value !== "") {
                     if (item.variable === 'language' && value === 'en') {
@@ -1379,11 +1383,15 @@ function collectFormValues() {
             } else if (item.type === 'radio-group' && item.variable) {
                 const value = getFieldValue(`input[name="${item.variable}"]:checked`);
                 if (value !== null && value !== undefined && value !== "") {
-                    values[item.variable] = value;
+                    if (!item.ui_variable) {
+                        values[item.variable] = value;
+                    }
                 }
             } else if (item.type === 'section' && item.items) {
                 for (const subItem of item.items) {
                     if (subItem.type === 'field' && subItem.variable) {
+                        if (connectionSettingFields.has(subItem.variable)) continue;
+                        
                         const value = getFieldValue(`#${subItem.id}`);
                         if (value !== null && value !== undefined && value !== "") {
                             values[subItem.variable] = value;
@@ -1391,7 +1399,9 @@ function collectFormValues() {
                     } else if (subItem.type === 'radio-group' && subItem.variable) {
                         const value = getFieldValue(`input[name="${subItem.variable}"]:checked`);
                         if (value !== null && value !== undefined && value !== "") {
-                            values[subItem.variable] = value;
+                            if (!subItem.ui_variable) {
+                                values[subItem.variable] = value;
+                            }
                         }
                     }
                 }
@@ -1407,6 +1417,14 @@ function collectFormValues() {
 function getConnectionSettingFields() {
     const fields = new Set();
     
+    if (!state.config.setup) return fields;
+    
+    const connectionCategory = state.config.setup.categories.find(
+        cat => cat.id === 'internet-connection'
+    );
+    
+    if (!connectionCategory) return fields;
+    
     connectionCategory.items.forEach(item => {
         if (item.type === 'section' && item.items) {
             item.items.forEach(subItem => {
@@ -1420,18 +1438,106 @@ function getConnectionSettingFields() {
     return fields;
 }
 
-function generateVariableDefinitions(orderedPairs) {
-    const lines = [];
+function applySpecialFieldLogic(values) {
+    const connectionTypeUI = getFieldValue(`input[name="connection_type"]:checked`) || 'auto';
+    let actualConnectionType = connectionTypeUI;
     
-    orderedPairs.forEach(pair => {
-        if (pair.value === 'disabled' || pair.value === '' || pair.value === null || pair.value === undefined) {
-            return;
+    if (connectionTypeUI === 'auto' && state.apiInfo) {
+        if (state.apiInfo.mape?.brIpv6Address) {
+            actualConnectionType = 'mape';
+        } else if (state.apiInfo.aftr?.aftrIpv6Address) {
+            actualConnectionType = 'dslite';
+        } else {
+            actualConnectionType = 'dhcp';
         }
-        const escapedValue = pair.value.toString().replace(/'/g, "'\"'\"'");
-        lines.push(`${pair.key}='${escapedValue}'`);
-    });
+    }
     
-    return lines.join('\n');
+    if (actualConnectionType === 'pppoe') {
+        values.pppoe = '1';
+        const username = getFieldValue('#pppoe-username');
+        const password = getFieldValue('#pppoe-password');
+        if (username) values.pppoe_username = username;
+        if (password) values.pppoe_password = password;
+        
+    } else if (actualConnectionType === 'dslite') {
+        values.dslite = '1';
+        
+        if (connectionTypeUI === 'auto' && state.apiInfo?.aftr) {
+            if (state.apiInfo.aftr.aftrIpv6Address) {
+                values.dslite_aftr_address = state.apiInfo.aftr.aftrIpv6Address;
+            }
+        } else {
+            const aftrType = getFieldValue('#dslite-aftr-type');
+            const area = getFieldValue('#dslite-area');
+            const aftrAddress = getFieldValue('#dslite-aftr-address');
+            if (aftrType) values.dslite_aftr_type = aftrType;
+            if (area) values.dslite_area = area;
+            if (aftrAddress) values.dslite_aftr_address = aftrAddress;
+        }
+        
+    } else if (actualConnectionType === 'mape') {
+        values.mape = '1';
+        
+        if (connectionTypeUI === 'auto' && state.apiInfo?.mape) {
+            values.mape_br = state.apiInfo.mape.brIpv6Address;
+            values.mape_ealen = state.apiInfo.mape.eaBitLength;
+            values.mape_ipv4_prefix = state.apiInfo.mape.ipv4Prefix;
+            values.mape_ipv4_prefixlen = state.apiInfo.mape.ipv4PrefixLength;
+            values.mape_ipv6_prefix = state.apiInfo.mape.ipv6Prefix;
+            values.mape_ipv6_prefixlen = state.apiInfo.mape.ipv6PrefixLength;
+            values.mape_psid_offset = state.apiInfo.mape.psIdOffset;
+            values.mape_psidlen = state.apiInfo.mape.psidlen;
+            
+            const guaPrefix = CustomUtils.generateGuaPrefixFromFullAddress(state.apiInfo);
+            if (guaPrefix) values.mape_gua_prefix = guaPrefix;
+        } else {
+            const br = getFieldValue('#mape-br');
+            const ealen = getFieldValue('#mape-ealen');
+            const ipv4Prefix = getFieldValue('#mape-ipv4-prefix');
+            const ipv4Prefixlen = getFieldValue('#mape-ipv4-prefixlen');
+            const ipv6Prefix = getFieldValue('#mape-ipv6-prefix');
+            const ipv6Prefixlen = getFieldValue('#mape-ipv6-prefixlen');
+            const psidOffset = getFieldValue('#mape-psid-offset');
+            const psidlen = getFieldValue('#mape-psidlen');
+            
+            if (br) values.mape_br = br;
+            if (ealen) values.mape_ealen = ealen;
+            if (ipv4Prefix) values.mape_ipv4_prefix = ipv4Prefix;
+            if (ipv4Prefixlen) values.mape_ipv4_prefixlen = ipv4Prefixlen;
+            if (ipv6Prefix) values.mape_ipv6_prefix = ipv6Prefix;
+            if (ipv6Prefixlen) values.mape_ipv6_prefixlen = ipv6Prefixlen;
+            if (psidOffset) values.mape_psid_offset = psidOffset;
+            if (psidlen) values.mape_psidlen = psidlen;
+            
+            const mapeTypeUI = getFieldValue(`input[name="mape_type"]:checked`) || 'gua';
+            if (mapeTypeUI === 'gua') {
+                const guaPrefixForm = getFieldValue('#mape-gua-prefix');
+                if (guaPrefixForm) values.mape_gua_prefix = guaPrefixForm;
+            }
+        }
+        
+    } else if (actualConnectionType === 'ap') {
+        values.ap = '1';
+        const apIp = getFieldValue('#ap-ip-address');
+        const apGw = getFieldValue('#ap-gateway');
+        if (apIp) values.ap_ip_address = apIp;
+        if (apGw) values.ap_gateway = apGw;
+    }
+    
+    const wifiModeUI = getFieldValue(`input[name="wifi_mode"]:checked`) || 'standard';
+    if (wifiModeUI === 'usteer') {
+        values.enable_usteer = '1';
+    }
+    
+    const netOptUI = getFieldValue(`input[name="net_optimizer"]:checked`) || 'auto';
+    if (netOptUI === 'auto' || netOptUI === 'manual') {
+        values.enable_netopt = '1';
+    }
+    
+    const dnsmasqUI = getFieldValue(`input[name="enable_dnsmasq"]:checked`) || 'auto';
+    if (dnsmasqUI === 'auto' || dnsmasqUI === 'manual') {
+        values.enable_dnsmasq = '1';
+    }
 }
 
 function collectConnectionFields() {
@@ -1606,10 +1712,7 @@ function updateVariableDefinitions() {
 function generateVariableDefinitions(values) {
     const lines = [];
     
-    const excludeKeys = new Set(['wifi_mode', 'connection_type', 'net_optimizer', 'mape_type']);
-    
     Object.entries(values).forEach(([key, value]) => {
-        if (excludeKeys.has(key)) return;
         if (value === 'disabled' || value === '' || value === null || value === undefined) {
             return;
         }
