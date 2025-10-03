@@ -345,9 +345,10 @@ details summary::-webkit-details-marker {
   list-style-position: outside !important;
 }
 
+/* Parent container alignment - Simple and consistent */
 #package-selector-config,
 #scripts-config {
-  margin-left: -2.0em;
+  margin-left: -3.0em;
 }
 
 #custom-packages-details > summary h3,
@@ -485,14 +486,6 @@ details summary::-webkit-details-marker {
   border-radius: 0.2em;
   margin-top: 0.5em;
   white-space: pre-line;
-}
-
-/* Align .config-section and .package-category to the left edge within package and scripts sections */
-#package-selector-config .config-section,
-#package-selector-config .package-category,
-#scripts-config .config-section,
-#scripts-config .package-category {
-  margin-left: -1em;
 }
 
 /* ===== Package Components ===== */
@@ -732,9 +725,10 @@ details[open] > summary ~ * {
     list-style: disclosure-closed outside !important;
   }
 
+  /* Parent container alignment for mobile - adjusted value */
   #package-selector-config,
   #scripts-config {
-    margin-left: -2.0em;
+    margin-left: -1.0em;
   }
   
   #custom-packages-details > summary h3,
@@ -747,14 +741,6 @@ details[open] > summary ~ * {
   #custom-packages-details[open] > summary,
   #custom-scripts-details[open] > summary {
     list-style-type: disclosure-open !important;
-  }
-  
-  /* Align .config-section and .package-category to the left edge within package and scripts sections */
-  #package-selector-config .config-section,
-  #package-selector-config .package-category,
-  #scripts-config .config-section,
-  #scripts-config .package-category {
-    margin-left: -1em;
   }
 }
 
