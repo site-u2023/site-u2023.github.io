@@ -349,7 +349,7 @@
         {
           "id": "luci-proto-wireguard",
           "name": "luci-proto-wireguard",
-          "dependencies": ["wireguard-tools", "luci-app-wireguard"]
+          "dependencies": ["luci-app-wireguard", "wireguard-tools"]
         },
         {
           "id": "luci-app-wireguard",
