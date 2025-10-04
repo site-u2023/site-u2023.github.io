@@ -2905,7 +2905,15 @@ function updatePackageAvailabilityUI(uniqueId, isAvailable) {
         const label = checkbox.closest('label');
         if (label) {
             UI.updateElement(label, { show: isAvailable });
-            if (!isAvailable) checkbox.checked = false;
+            if (!isAvailable) {
+                checkbox.checked = false;
+            } else {
+                // ★★★ 追加：利用可能になったら初期値を復元 ★★★
+                const pkgInfo = findPackageById(checkbox.getAttribute('data-package'));
+                if (pkgInfo && pkgInfo.checked === true) {
+                    checkbox.checked = true;
+                }
+            }
         }
         return;
     }
@@ -2915,6 +2923,17 @@ function updatePackageAvailabilityUI(uniqueId, isAvailable) {
     if (isMainPackage) {
         if (isAvailable) {
             UI.updateElement(packageItem, { show: true });
+            const pkgInfo = findPackageById(checkbox.getAttribute('data-package'));
+            if (pkgInfo && pkgInfo.checked === true) {
+                checkbox.checked = true;
+                const depCheckboxes = packageItem.querySelectorAll('.package-dependent input[type="checkbox"]');
+                depCheckboxes.forEach(depCb => {
+                    const depPkgInfo = findPackageById(depCb.getAttribute('data-package'));
+                    if (depPkgInfo && depPkgInfo.checked === true) {
+                        depCb.checked = true;
+                    }
+                });
+            }
         } else {
             UI.updateElement(packageItem, { show: false });
             checkbox.checked = false;
@@ -2925,7 +2944,14 @@ function updatePackageAvailabilityUI(uniqueId, isAvailable) {
         const depLabel = checkbox.closest('label');
         if (depLabel) {
             UI.updateElement(depLabel, { show: isAvailable });
-            if (!isAvailable) checkbox.checked = false;
+            if (!isAvailable) {
+                checkbox.checked = false;
+            } else {
+                const pkgInfo = findPackageById(checkbox.getAttribute('data-package'));
+                if (pkgInfo && pkgInfo.checked === true) {
+                    checkbox.checked = true;
+                }
+            }
         }
     }
     
