@@ -401,7 +401,7 @@
         },
         {
           "id": "logrotate",
-          "name": "logrotate",
+          "name": "logrotate"
         }   
       ]
     },
