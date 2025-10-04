@@ -255,6 +255,10 @@
         {
           "id": "bind-dig",
           "name": "bind-dig"
+        },
+        {
+          "id": "ethtool",
+          "name": "ethtool"
         }
       ]
     },
@@ -390,7 +394,15 @@
         {
           "id": "luci-app-minidlna",
           "name": "luci-app-minidlna"
-        }
+        },
+        {
+          "id": "smartmontools",
+          "name": "smartmontools",
+        },
+        {
+          "id": "logrotate",
+          "name": "logrotate",
+        }   
       ]
     },
     {
