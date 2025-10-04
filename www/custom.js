@@ -57,7 +57,7 @@ const state = {
         }
     },
     
-cache: {
+    cache: {
         kmods: {
             token: null,
             key: null
@@ -69,10 +69,7 @@ cache: {
         lastFormStateHash: null,
         lastPackageListHash: null,
         prevUISelections: new Set(),
-        packageSizes: new Map(),
-        asuPackages: new Map(),
-        asuValidation: new Map(),
-        lastAsuCheck: null
+        packageSizes: new Map()
     },
 
     dom: {
@@ -289,11 +286,11 @@ window.updateImages = function(version, mobj) {
         
         CustomUtils.updateDeviceInfo(mobj.target);
 
-        console.log('[TRACE] device updated:', state.device);       
+        console.log('[TRACE] device updated:', state.device);
 
         if (mobj.id && mobj.target) {
-            updateDeviceSpecificFeatures(mobj.id, mobj.target);
-        }
+            updateIrqbalanceByDevice(mobj.id, mobj.target);
+        }        
       
         if (oldArch !== mobj.arch_packages || oldVersion !== version || oldDeviceId !== mobj.id) {
             console.log('[TRACE] Device changed, clearing caches');
@@ -2397,7 +2394,7 @@ class MultiInputManager {
 
 // ==================== パッケージ検索 ====================
 function setupPackageSearch() {
-    console.log('setupPackageSearch called (ASU enhanced)');
+    console.log('setupPackageSearch called');
     
     const searchContainer = document.getElementById('package-search-autocomplete');
     
@@ -2426,91 +2423,11 @@ function setupPackageSearch() {
             updateAllPackageState('package-search-change');
         },
         autocomplete: (query, inputElement) => {
-            searchPackagesImproved(query, inputElement);
+            searchPackages(query, inputElement);
         }
     });
     
-    console.log('Package search setup complete (ASU enhanced)');
-}
-
-async function fetchPackagesFromASU(version, target) {
-    const cacheKey = `asu:${version}:${target}`;
-    
-    if (state.cache.asuPackages && state.cache.asuPackages.has(cacheKey)) {
-        console.log('Using cached ASU packages');
-        return state.cache.asuPackages.get(cacheKey);
-    }
-    
-    try {
-        const url = `${config.asu_url}/api/v1/packages/${version}/${target}`;
-        console.log('Fetching packages from ASU API:', url);
-        
-        const response = await fetch(url, { cache: 'force-cache' });
-        if (!response.ok) {
-            throw new Error(`ASU API returned ${response.status}`);
-        }
-        
-        const data = await response.json();
-        
-        const packagesInfo = {
-            packages: new Map(),
-            totalSize: 0
-        };
-        
-        if (data.packages) {
-            for (const [name, info] of Object.entries(data.packages)) {
-                packagesInfo.packages.set(name, {
-                    name: name,
-                    version: info.version || '',
-                    size: info.size || 0,
-                    depends: info.depends || [],
-                    sha256sum: info.sha256sum || ''
-                });
-                
-                const sizeCacheKey = `${version}:${state.device.arch}:${name}`;
-                if (info.size) {
-                    state.cache.packageSizes.set(sizeCacheKey, info.size);
-                }
-            }
-        }
-        
-        if (!state.cache.asuPackages) {
-            state.cache.asuPackages = new Map();
-        }
-        state.cache.asuPackages.set(cacheKey, packagesInfo);
-        
-        console.log(`ASU API: Loaded ${packagesInfo.packages.size} packages`);
-        return packagesInfo;
-        
-    } catch (error) {
-        console.error('Failed to fetch from ASU API, falling back to direct fetch:', error);
-        return await fetchPackagesLegacy(version, target);
-    }
-}
-
-async function fetchPackagesLegacy(version, target) {
-    const feeds = ['base', 'packages', 'luci', 'routing', 'telephony'];
-    const allPackages = new Map();
-    
-    for (const feed of feeds) {
-        try {
-            const packages = await getFeedPackageSet(feed, {
-                version,
-                arch: state.device.arch,
-                vendor: state.device.vendor,
-                subtarget: state.device.subtarget,
-                isSnapshot: version.includes('SNAPSHOT')
-            });
-            
-            packages.forEach(pkg => {
-                allPackages.set(pkg, { name: pkg, size: 0, depends: [] });
-            });
-        } catch (err) {
-            console.error(`Failed to fetch ${feed}:`, err);
-        }
-    }
-    
-    return { packages: allPackages, totalSize: 0 };
+    console.log('Package search setup complete');
 }
 
 async function searchPackages(query, inputElement) {
@@ -2654,118 +2571,6 @@ function showPackageSearchResults(results, inputElement) {
             }
         };
   
-        resultsDiv.appendChild(item);
-    });
-    
-    container.appendChild(resultsDiv);
-}
-
-async function searchPackagesImproved(query, inputElement) {
-    const version = state.device.version || document.querySelector("#versions")?.value;
-    const target = state.device.target;
-    
-    if (!version || !target) {
-        console.warn('Version or target not available');
-        return;
-    }
-    
-    try {
-        const packagesInfo = await fetchPackagesFromASU(version, target);
-        
-        const q = query.toLowerCase();
-        const results = [];
-        
-        packagesInfo.packages.forEach((info, name) => {
-            if (name.toLowerCase().includes(q)) {
-                results.push({
-                    name: name,
-                    size: info.size,
-                    version: info.version
-                });
-            }
-        });
-        
-        results.sort((a, b) => {
-            const aLower = a.name.toLowerCase();
-            const bLower = b.name.toLowerCase();
-            
-            const aExact = (aLower === q);
-            const bExact = (bLower === q);
-            if (aExact && !bExact) return -1;
-            if (bExact && !aExact) return 1;
-            
-            const aPrefix = aLower.startsWith(q);
-            const bPrefix = bLower.startsWith(q);
-            if (aPrefix && !bPrefix) return -1;
-            if (bPrefix && !aPrefix) return 1;
-            
-            return a.name.localeCompare(b.name);
-        });
-        
-        console.log(`Found ${results.length} packages matching "${query}"`);
-        
-        showPackageSearchResultsWithSize(results, inputElement);
-        
-    } catch (error) {
-        console.error('Package search failed:', error);
-        await searchPackages(query, inputElement);
-    }
-}
-
-function showPackageSearchResultsWithSize(results, inputElement) {
-    clearPackageSearchResults();
-    
-    if (!results || results.length === 0) return;
-    
-    const container = document.getElementById('package-search-autocomplete');
-    if (!container) return;
-    
-    const resultsDiv = document.createElement('div');
-    resultsDiv.className = 'package-search-results';
-    
-    results.forEach(pkg => {
-        const item = document.createElement('div');
-        
-        const nameSpan = document.createElement('span');
-        nameSpan.textContent = pkg.name;
-        nameSpan.style.fontWeight = '500';
-        
-        const sizeSpan = document.createElement('span');
-        if (pkg.size > 0) {
-            const sizeKB = (pkg.size / 1024).toFixed(1);
-            sizeSpan.textContent = ` (${sizeKB} KB)`;
-            sizeSpan.style.color = 'var(--text-muted)';
-            sizeSpan.style.fontSize = '0.9em';
-        }
-        
-        item.appendChild(nameSpan);
-        item.appendChild(sizeSpan);
-        
-        item.onmousedown = (e) => {
-            e.preventDefault();
-            
-            console.log('Package selected:', pkg.name, pkg.size > 0 ? `(${(pkg.size / 1024).toFixed(1)} KB)` : '');
-            
-            try {
-                inputElement.dataset.programmaticChange = 'true';
-                inputElement.value = pkg.name;
-                inputElement.setAttribute('data-confirmed', 'true');
-                
-                const inputIndex = state.ui.managers.packageSearch.inputs.indexOf(inputElement);
-                if (inputIndex === state.ui.managers.packageSearch.inputs.length - 1) {
-                    state.ui.managers.packageSearch.addInput('', true);
-                }
-                
-                clearPackageSearchResults();
-                state.ui.managers.packageSearch.options.onChange(
-                    state.ui.managers.packageSearch.getAllValues()
-                );
-                updateAllPackageState('package-selected');
-            } catch (error) {
-                console.error('Error in package selection:', error);
-            }
-        };
-        
         resultsDiv.appendChild(item);
     });
     
@@ -3180,154 +2985,39 @@ async function fetchToHData() {
     }
 }
 
-async function updateDeviceSpecificFeatures(deviceId, target) {
-    console.log('=== updateDeviceSpecificFeatures ===');
-    console.log('Looking for deviceId:', deviceId);
-    console.log('Looking for target:', target);
+async function updateIrqbalanceByDevice(deviceId, target) {
+    const checkbox = document.querySelector('[data-package="luci-app-irqbalance"]');
+    if (!checkbox) return;
     
     const data = await fetchToHData();
-    if (!data?.entries || !data?.columns) {
-        console.error('ToH data not available');
-        return;
-    }
-    
+    if (!data?.entries || !data?.columns) return;
+
     const idx = {
         deviceId: data.columns.indexOf('deviceid'),
         target: data.columns.indexOf('target'),
         subtarget: data.columns.indexOf('subtarget'),
         cpuCores: data.columns.indexOf('cpucores')
     };
-    
-    console.log('Column indices:', idx);
-    
-    let device = data.entries.find(entry => {
-        const entryDeviceId = entry[idx.deviceId];
-        if (!entryDeviceId) return false;
-        
-        const match = entryDeviceId === deviceId || 
-                     entryDeviceId.includes(deviceId) ||
-                     deviceId.includes(entryDeviceId);
-        
-        if (match) {
-            console.log('Device MATCH by ID:', entryDeviceId);
-        }
-        return match;
-    });
-    
-    if (!device) {
-        console.log('Not found by ID, trying target:', target);
-        device = data.entries.find(entry => {
-            const entryTarget = entry[idx.target];
-            const entrySubtarget = entry[idx.subtarget];
-            const fullTarget = entryTarget && entrySubtarget ? `${entryTarget}/${entrySubtarget}` : entryTarget;
-            return fullTarget === target;
-        });
-    }
-    
-    if (!device) {
-        console.error('Device NOT found in ToH database');
-        return;
-    }
-    
-    console.log('Device found:', device[0]);
-    console.log('===================================');
-    
-    updateIrqbalanceFeature(device, idx);
-    
-    updateUsbStorageVisibility(device);
-}
 
-function updateIrqbalanceFeature(device, idx) {
-    const checkbox = document.querySelector('[data-package="luci-app-irqbalance"]');
-    if (!checkbox) return;
-    
+    const device = data.entries.find(entry => {
+        const entryDeviceId = entry[idx.deviceId];
+        const entryTarget = entry[idx.target];
+        const entrySubtarget = entry[idx.subtarget];
+        const fullTarget = entryTarget && entrySubtarget ? `${entryTarget}/${entrySubtarget}` : entryTarget;
+        return entryDeviceId === deviceId || fullTarget === target;
+    });
+
+    if (!device) return;
+
     const cores = parseInt(device[idx.cpuCores], 10);
-    if (isNaN(cores)) {
-        console.log('CPU cores information not available');
-        return;
-    }
-    
+    if (isNaN(cores)) return;
+
     const shouldBeEnabled = cores >= 2;
     
     if (checkbox.checked !== shouldBeEnabled) {
         checkbox.checked = shouldBeEnabled;
         checkbox.dispatchEvent(new Event('change', { bubbles: true }));
-        console.log(`IRQbalance ${shouldBeEnabled ? 'enabled' : 'disabled'} (${cores} cores)`);
         requestAnimationFrame(() => updateAllPackageState('irqbalance-auto-check'));
-    }
-}
-
-function updateUsbStorageVisibility(device) {
-    const usbH4 = document.querySelector('.tr-usb-storage');
-    if (!usbH4) {
-        console.log('USB storage category not found');
-        return;
-    }
-    
-    const usbSection = usbH4.closest('.package-category');
-    if (!usbSection) return;
-    
-    const hasUSB = checkDeviceHasUSB(device);
-    
-    if (hasUSB) {
-        console.log('Device has USB - showing USB storage category');
-        usbSection.style.display = '';
-        usbSection.classList.remove('device-no-usb');
-    } else {
-        console.log('Device has no USB - hiding USB storage category');
-        usbSection.style.display = 'none';
-        usbSection.classList.add('device-no-usb');
-        
-        uncheckUsbStoragePackages(usbSection);
-    }
-}
-
-function checkDeviceHasUSB(device) {
-    console.log('=== USB Check Debug ===');
-    console.log('Device data type:', typeof device);
-    console.log('Device is array:', Array.isArray(device));
-    console.log('Device length:', device?.length);
-    
-    // 最初の10要素を表示
-    if (Array.isArray(device)) {
-        console.log('First 10 elements:');
-        device.slice(0, 10).forEach((item, idx) => {
-            console.log(`  [${idx}]:`, item);
-        });
-        
-        // USB関連データを探す
-        console.log('USB related data:');
-        device.forEach((item, idx) => {
-            const itemStr = JSON.stringify(item).toLowerCase();
-            if (itemStr.includes('usb') || itemStr.includes('otg') || itemStr.includes('2.0') || itemStr.includes('3.0')) {
-                console.log(`  [${idx}]:`, item);
-            }
-        });
-    }
-    
-    const deviceStr = JSON.stringify(device).toLowerCase();
-    console.log('Full device string (first 500 chars):', deviceStr.substring(0, 500));
-    
-    const hasUSB = deviceStr.includes('x 2.0') || 
-                   deviceStr.includes('x 3.0') || 
-                   deviceStr.includes('otg');
-    
-    console.log('USB detection result:', hasUSB);
-    console.log('=== End USB Check ===');
-    
-    return hasUSB;
-}
-
-function uncheckUsbStoragePackages(usbSection) {
-    const checkboxes = usbSection.querySelectorAll('.package-selector-checkbox:checked');
-    if (checkboxes.length > 0) {
-        console.log(`Unchecking ${checkboxes.length} USB storage packages`);
-        checkboxes.forEach(cb => {
-            cb.checked = false;
-            cb.dispatchEvent(new Event('change', { bubbles: true }));
-        });
-        
-        requestAnimationFrame(() => updateAllPackageState('usb-auto-uncheck'));
     }
 }
 
@@ -3387,7 +3077,7 @@ function generatePackageSelector() {
         evaluateInitialPackages();
     });
     
-const arch = state.device.arch;
+    const arch = state.device.arch;
     if (arch) {
         requestAnimationFrame(() => {
             const indicator = document.querySelector('#package-loading-indicator');
@@ -3395,11 +3085,11 @@ const arch = state.device.arch;
                 UI.updateElement(indicator, { show: true });
             }
 
-            verifyAllPackagesImproved().then(() => {
+            verifyAllPackages().then(() => {
                 if (indicator) {
                     UI.updateElement(indicator, { show: false });
                 }
-                console.log('Package verification completed (ASU API)');
+                console.log('Package verification completed');
             }).catch(err => {
                 console.error('Package verification failed:', err);
                 if (indicator) {
@@ -3803,159 +3493,9 @@ async function initializeCustomFeatures(asuSection, temp) {
         document.addEventListener('devicePackagesReady', runWhenReady);
     }
 
-    setupBuildValidation();
-
     state.ui.initialized = true;
     
     console.log('Initialization complete. API Info:', state.apiInfo ? 'Available' : 'Not available');
-}
-
-async function validateBuildConfiguration() {
-    if (!config.asu_url || !state.device.version || !state.device.target) {
-        console.warn('Cannot validate: missing configuration');
-        return { valid: true, warnings: [], errors: [] };
-    }
-    
-    const allPackages = getCurrentPackageListForLanguage();
-    
-    const defaultPackages = new Set([
-        ...state.packages.default,
-        ...state.packages.device,
-        ...state.packages.extra
-    ]);
-    
-    const packagesToValidate = allPackages.filter(pkg => !defaultPackages.has(pkg));
-    
-    console.log('Validating packages:', {
-        total: allPackages.length,
-        default: defaultPackages.size,
-        toValidate: packagesToValidate.length
-    });
-    
-    if (packagesToValidate.length === 0) {
-        console.log('No additional packages to validate');
-        return { valid: true, warnings: [], errors: [] };
-    }
-    
-    const cacheKey = `${state.device.version}:${state.device.target}:${packagesToValidate.join(',')}`;
-    
-    if (state.cache.asuValidation && state.cache.asuValidation.has(cacheKey)) {
-        console.log('Using cached validation result');
-        return state.cache.asuValidation.get(cacheKey);
-    }
-    
-    try {
-        const packagesInfo = await fetchPackagesFromASU(state.device.version, state.device.target);
-        
-        const validation = {
-            valid: true,
-            warnings: [],
-            errors: []
-        };
-        
-        const unavailable = [];
-        packagesToValidate.forEach(pkg => {
-            if (!packagesInfo.packages.has(pkg)) {
-                unavailable.push(pkg);
-            }
-        });
-        
-        if (unavailable.length > 0) {
-            const langPackages = unavailable.filter(pkg => pkg.startsWith('luci-i18n-'));
-            const otherPackages = unavailable.filter(pkg => !pkg.startsWith('luci-i18n-'));
-            
-            if (otherPackages.length > 0) {
-                validation.errors.push(
-                    `The following packages are not available:\n${otherPackages.join(', ')}`
-                );
-                validation.valid = false;
-            }
-            
-            if (langPackages.length > 0) {
-                validation.warnings.push(
-                    `Some language packages are not available: ${langPackages.length} package(s)`
-                );
-            }
-        }
-        
-        let totalSize = 0;
-        packagesToValidate.forEach(pkg => {
-            const info = packagesInfo.packages.get(pkg);
-            if (info && info.size) {
-                totalSize += info.size;
-            }
-        });
-        
-        if (totalSize > 0) {
-            const totalMB = totalSize / (1024 / 1024);
-            if (totalMB > 50) {
-                validation.warnings.push(
-                    `Additional packages total approximately ${totalMB.toFixed(1)} MB. ` +
-                    `Please ensure your device has sufficient storage.`
-                );
-            }
-        }
-        
-        if (!state.cache.asuValidation) {
-            state.cache.asuValidation = new Map();
-        }
-        state.cache.asuValidation.set(cacheKey, validation);
-        
-        console.log('Validation result:', validation);
-        
-        return validation;
-        
-    } catch (error) {
-        console.error('Build validation failed:', error);
-        return {
-            valid: true,
-            warnings: ['Build validation unavailable - proceeding with build'],
-            errors: []
-        };
-    }
-}
-
-function setupBuildValidation() {
-    const buildButton = document.querySelector('a[href="javascript:buildAsuRequest()"]');
-    if (!buildButton) {
-        console.log('Build button not found, will retry...');
-        setTimeout(setupBuildValidation, 500);
-        return;
-    }
-    
-    console.log('Setting up build validation hook');
-    
-    buildButton.removeAttribute('href');
-    buildButton.style.cursor = 'pointer';
-    
-    buildButton.addEventListener('click', async (e) => {
-        e.preventDefault();
-        
-        console.log('Build button clicked, validating...');
-        
-        const validation = await validateBuildConfiguration();
-        
-        if (!validation.valid) {
-            const errorMsg = validation.errors.join('\n');
-            alert(`Build Validation Failed:\n\n${errorMsg}`);
-            console.error('Build validation failed:', validation.errors);
-            return;
-        }
-        
-        if (validation.warnings.length > 0) {
-            const warningMsg = validation.warnings.join('\n');
-            const proceed = confirm(`Build Warnings:\n\n${warningMsg}\n\nDo you want to continue?`);
-            if (!proceed) {
-                console.log('Build cancelled by user');
-                return;
-            }
-        }
-        
-        console.log('Validation passed, starting build...');
-        buildAsuRequest();
-    });
-    
-    console.log('Build validation hook installed');
 }
 
 console.log('custom.js (v2.0 - Simplified) fully loaded and ready');
