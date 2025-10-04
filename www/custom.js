@@ -292,8 +292,7 @@ window.updateImages = function(version, mobj) {
         console.log('[TRACE] device updated:', state.device);
 
         if (mobj.id && mobj.target) {
-            updateIrqbalanceByDevice(mobj.id, mobj.target);
-            updateUsbStorageByDevice(mobj.id, mobj.target);
+            updateDeviceSpecificFeatures(mobj.id, mobj.target);
         }        
       
         if (oldArch !== mobj.arch_packages || oldVersion !== version || oldDeviceId !== mobj.id) {
@@ -3181,20 +3180,17 @@ async function fetchToHData() {
     }
 }
 
-async function updateIrqbalanceByDevice(deviceId, target) {
-    const checkbox = document.querySelector('[data-package="luci-app-irqbalance"]');
-    if (!checkbox) return;
-    
+async function updateDeviceSpecificFeatures(deviceId, target) {
     const data = await fetchToHData();
     if (!data?.entries || !data?.columns) return;
-
+    
     const idx = {
         deviceId: data.columns.indexOf('deviceid'),
         target: data.columns.indexOf('target'),
         subtarget: data.columns.indexOf('subtarget'),
         cpuCores: data.columns.indexOf('cpucores')
     };
-
+    
     const device = data.entries.find(entry => {
         const entryDeviceId = entry[idx.deviceId];
         const entryTarget = entry[idx.target];
@@ -3202,56 +3198,36 @@ async function updateIrqbalanceByDevice(deviceId, target) {
         const fullTarget = entryTarget && entrySubtarget ? `${entryTarget}/${entrySubtarget}` : entryTarget;
         return entryDeviceId === deviceId || fullTarget === target;
     });
-
-    if (!device) return;
-
-    const cores = parseInt(device[idx.cpuCores], 10);
-    if (isNaN(cores)) return;
-
-    const shouldBeEnabled = cores >= 2;
     
-    if (checkbox.checked !== shouldBeEnabled) {
-        checkbox.checked = shouldBeEnabled;
-        checkbox.dispatchEvent(new Event('change', { bubbles: true }));
-        requestAnimationFrame(() => updateAllPackageState('irqbalance-auto-check'));
+    if (!device) return;
+    
+    const checkbox = document.querySelector('[data-package="luci-app-irqbalance"]');
+    if (checkbox) {
+        const cores = parseInt(device[idx.cpuCores], 10);
+        if (!isNaN(cores)) {
+            const shouldBeEnabled = cores >= 2;
+            if (checkbox.checked !== shouldBeEnabled) {
+                checkbox.checked = shouldBeEnabled;
+                checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+                requestAnimationFrame(() => updateAllPackageState('irqbalance-auto-check'));
+            }
+        }
+    }
+    
+    const usbSection = document.querySelector('.tr-usb-storage');
+    if (usbSection) {
+        const hasUSB = device.some(item => 
+            Array.isArray(item) && 
+            item.length > 0 && 
+            typeof item[0] === 'string' && 
+            /\d+x\s+(2\.0|3\.0|OTG)/i.test(item[0])
+        );
+        usbSection.style.display = hasUSB ? '' : 'none';
     }
 }
 
-async function updateUsbStorageByDevice(deviceId, target) {
-    const usbSection = document.querySelector('.tr-usb-storage');
-    if (!usbSection) return;
-    
-    const data = await fetchToHData();
-    if (!data?.entries || !data?.columns) return;
-    
-    const idx = {
-        deviceId: data.columns.indexOf('deviceid'),
-        target: data.columns.indexOf('target'),
-        subtarget: data.columns.indexOf('subtarget')
-    };
-    
-    const device = data.entries.find(entry => {
-        const entryDeviceId = entry[idx.deviceId];
-        const entryTarget = entry[idx.target];
-        const entrySubtarget = entry[idx.subtarget];
-        const fullTarget = entryTarget && entrySubtarget ? `${entryTarget}/${entrySubtarget}` : entryTarget;
-        return entryDeviceId === deviceId || fullTarget === target;
-    });
-    
-    if (!device) return;
-    
-    const hasUSB = device.some(item => 
-        Array.isArray(item) && 
-        item.length > 0 && 
-        typeof item[0] === 'string' && 
-        /\d+x\s+(2\.0|3\.0|OTG)/i.test(item[0])
-    );
-    
-    if (hasUSB) {
-        usbSection.style.display = '';
-    } else {
-        usbSection.style.display = 'none';
-    }
+if (mobj.id && mobj.target) {
+    updateDeviceSpecificFeatures(mobj.id, mobj.target);
 }
 
 // ==================== パッケージデータベース ====================
