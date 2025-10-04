@@ -289,11 +289,15 @@ window.updateImages = function(version, mobj) {
         
         CustomUtils.updateDeviceInfo(mobj.target);
 
-        console.log('[TRACE] device updated:', state.device);
+        console.log('[TRACE] device updated:', state.device);       
 
-        if (mobj.id && mobj.target) {
-            updateDeviceSpecificFeatures(mobj.id, mobj.target);
-        }        
+        if (mobj && mobj.id && mobj.target) {
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    updateDeviceSpecificFeatures(mobj.id, mobj.target);
+                });
+            });
+        }
       
         if (oldArch !== mobj.arch_packages || oldVersion !== version || oldDeviceId !== mobj.id) {
             console.log('[TRACE] Device changed, clearing caches');
@@ -3180,16 +3184,10 @@ async function fetchToHData() {
     }
 }
 
-/**
- * デバイス固有の機能を自動設定
- * - IRQバランス（CPUコア数2以上で自動有効化）
- * - USBストレージサポート（USBポートがある場合のみ表示）
- */
 async function updateDeviceSpecificFeatures(deviceId, target) {
     const data = await fetchToHData();
     if (!data?.entries || !data?.columns) return;
     
-    // 必要な列のインデックスを取得
     const idx = {
         deviceId: data.columns.indexOf('deviceid'),
         target: data.columns.indexOf('target'),
@@ -3199,7 +3197,6 @@ async function updateDeviceSpecificFeatures(deviceId, target) {
         usb30ports: data.columns.indexOf('usb30ports')
     };
     
-    // デバイス情報を検索
     const device = data.entries.find(entry => {
         const entryDeviceId = entry[idx.deviceId];
         const entryTarget = entry[idx.target];
@@ -3215,16 +3212,11 @@ async function updateDeviceSpecificFeatures(deviceId, target) {
     
     console.log('Device found in ToH:', deviceId);
     
-    // === IRQバランスの自動設定 ===
     updateIrqbalanceFeature(device, idx);
     
-    // === USBストレージサポートの表示制御 ===
     updateUsbStorageVisibility(device, idx);
 }
 
-/**
- * IRQバランス機能の自動設定
- */
 function updateIrqbalanceFeature(device, idx) {
     const checkbox = document.querySelector('[data-package="luci-app-irqbalance"]');
     if (!checkbox) return;
