@@ -3701,8 +3701,28 @@ async function validateBuildConfiguration() {
         return { valid: true, warnings: [], errors: [] };
     }
     
-    const packages = getCurrentPackageListForLanguage();
-    const cacheKey = `${state.device.version}:${state.device.target}:${packages.join(',')}`;
+    const allPackages = getCurrentPackageListForLanguage();
+    
+    const defaultPackages = new Set([
+        ...state.packages.default,
+        ...state.packages.device,
+        ...state.packages.extra
+    ]);
+    
+    const packagesToValidate = allPackages.filter(pkg => !defaultPackages.has(pkg));
+    
+    console.log('Validating packages:', {
+        total: allPackages.length,
+        default: defaultPackages.size,
+        toValidate: packagesToValidate.length
+    });
+    
+    if (packagesToValidate.length === 0) {
+        console.log('No additional packages to validate');
+        return { valid: true, warnings: [], errors: [] };
+    }
+    
+    const cacheKey = `${state.device.version}:${state.device.target}:${packagesToValidate.join(',')}`;
     
     if (state.cache.asuValidation && state.cache.asuValidation.has(cacheKey)) {
         console.log('Using cached validation result');
@@ -3719,19 +3739,32 @@ async function validateBuildConfiguration() {
         };
         
         const unavailable = [];
-        packages.forEach(pkg => {
+        packagesToValidate.forEach(pkg => {
             if (!packagesInfo.packages.has(pkg)) {
                 unavailable.push(pkg);
             }
         });
         
         if (unavailable.length > 0) {
-            validation.errors.push(`The following packages are not available: ${unavailable.join(', ')}`);
-            validation.valid = false;
+            const langPackages = unavailable.filter(pkg => pkg.startsWith('luci-i18n-'));
+            const otherPackages = unavailable.filter(pkg => !pkg.startsWith('luci-i18n-'));
+            
+            if (otherPackages.length > 0) {
+                validation.errors.push(
+                    `The following packages are not available:\n${otherPackages.join(', ')}`
+                );
+                validation.valid = false;
+            }
+            
+            if (langPackages.length > 0) {
+                validation.warnings.push(
+                    `Some language packages are not available: ${langPackages.length} package(s)`
+                );
+            }
         }
         
         let totalSize = 0;
-        packages.forEach(pkg => {
+        packagesToValidate.forEach(pkg => {
             const info = packagesInfo.packages.get(pkg);
             if (info && info.size) {
                 totalSize += info.size;
@@ -3739,11 +3772,11 @@ async function validateBuildConfiguration() {
         });
         
         if (totalSize > 0) {
-            const totalMB = totalSize / (1024 * 1024);
+            const totalMB = totalSize / (1024 / 1024);
             if (totalMB > 50) {
                 validation.warnings.push(
-                    `Total package size is approximately ${totalMB.toFixed(1)} MB. ` +
-                    `This may exceed available storage on some devices.`
+                    `Additional packages total approximately ${totalMB.toFixed(1)} MB. ` +
+                    `Please ensure your device has sufficient storage.`
                 );
             }
         }
@@ -3753,13 +3786,15 @@ async function validateBuildConfiguration() {
         }
         state.cache.asuValidation.set(cacheKey, validation);
         
+        console.log('Validation result:', validation);
+        
         return validation;
         
     } catch (error) {
         console.error('Build validation failed:', error);
         return {
             valid: true,
-            warnings: ['Build validation unavailable'],
+            warnings: ['Build validation unavailable - proceeding with build'],
             errors: []
         };
     }
