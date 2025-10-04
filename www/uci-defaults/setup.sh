@@ -59,7 +59,6 @@ firewall_wan() {
     local SEC=system
     SET @system[0].description="${DATE}"
     SET @system[0].notes="site-u.pages.dev"
-	echo " site-u.pages.dev: ${DATE}" >> /etc/banner
 }
 [ -n "${enable_ntp}" ] && {
     local SEC=system
