@@ -3181,35 +3181,60 @@ async function fetchToHData() {
 }
 
 async function updateDeviceSpecificFeatures(deviceId, target) {
+    console.log('=== updateDeviceSpecificFeatures ===');
+    console.log('Looking for deviceId:', deviceId);
+    console.log('Looking for target:', target);
+    
     const data = await fetchToHData();
-    if (!data?.entries || !data?.columns) return;
+    if (!data?.entries || !data?.columns) {
+        console.error('ToH data not available');
+        return;
+    }
     
     const idx = {
         deviceId: data.columns.indexOf('deviceid'),
         target: data.columns.indexOf('target'),
         subtarget: data.columns.indexOf('subtarget'),
-        cpuCores: data.columns.indexOf('cpucores'),
-        usb20ports: data.columns.indexOf('usb20ports'),
-        usb30ports: data.columns.indexOf('usb30ports')
+        cpuCores: data.columns.indexOf('cpucores')
     };
     
+    console.log('Column indices:', idx);
+    
+    // デバイス情報を検索
     const device = data.entries.find(entry => {
         const entryDeviceId = entry[idx.deviceId];
         const entryTarget = entry[idx.target];
         const entrySubtarget = entry[idx.subtarget];
         const fullTarget = entryTarget && entrySubtarget ? `${entryTarget}/${entrySubtarget}` : entryTarget;
-        return entryDeviceId === deviceId || fullTarget === target;
+        
+        const matchById = entryDeviceId === deviceId;
+        const matchByTarget = fullTarget === target;
+        
+        if (matchById || matchByTarget) {
+            console.log('Device MATCH found:');
+            console.log('  Entry deviceId:', entryDeviceId);
+            console.log('  Entry target:', fullTarget);
+            console.log('  Match by ID:', matchById);
+            console.log('  Match by target:', matchByTarget);
+        }
+        
+        return matchById || matchByTarget;
     });
     
     if (!device) {
-        console.log('Device not found in ToH database:', deviceId, target);
+        console.error('Device NOT found in ToH database');
+        console.log('First 5 device IDs in ToH:', 
+            data.entries.slice(0, 5).map(e => e[idx.deviceId]));
         return;
     }
     
-    console.log('Device found in ToH:', deviceId);
+    console.log('Device found, first element:', device[0]);
+    console.log('===================================');
     
+    // === IRQバランスの自動設定 ===
     updateIrqbalanceFeature(device, idx);
     
+    // === USBストレージサポートの表示制御 ===
     updateUsbStorageVisibility(device);
 }
 
