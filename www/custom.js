@@ -2429,58 +2429,79 @@ function setupPackageSearch() {
     console.log('Package search setup complete (ASU enhanced)');
 }
 
-async function fetchPackagesFromASU(version, target) {
-    const cacheKey = `asu:${version}:${target}`;
+async function validatePackagesViaASU(version, target, profile, packages) {
+    const cacheKey = `asu-validate:${version}:${target}:${profile}:${packages.join(',')}`;
     
-    if (state.cache.asuPackages && state.cache.asuPackages.has(cacheKey)) {
-        console.log('Using cached ASU packages');
-        return state.cache.asuPackages.get(cacheKey);
+    if (state.cache.asuValidation && state.cache.asuValidation.has(cacheKey)) {
+        console.log('Using cached ASU validation result');
+        return state.cache.asuValidation.get(cacheKey);
     }
     
     try {
-        const url = `${config.asu_url}/api/v1/packages/${version}/${target}`;
-        console.log('Fetching packages from ASU API:', url);
+        const url = `${config.asu_url}/api/v1/build`;
+        console.log('Validating packages via ASU API:', url);
         
-        const response = await fetch(url, { cache: 'force-cache' });
-        if (!response.ok) {
-            throw new Error(`ASU API returned ${response.status}`);
-        }
-        
-        const data = await response.json();
-        
-        const packagesInfo = {
-            packages: new Map(),
-            totalSize: 0
+        const requestBody = {
+            profile: profile,
+            target: target,
+            version: version,
+            packages: packages,
+            client: "ofs/" + ofs_version
         };
         
-        if (data.packages) {
-            for (const [name, info] of Object.entries(data.packages)) {
-                packagesInfo.packages.set(name, {
-                    name: name,
-                    version: info.version || '',
-                    size: info.size || 0,
-                    depends: info.depends || [],
-                    sha256sum: info.sha256sum || ''
-                });
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestBody),
+            cache: 'no-cache'
+        });
+        
+        let result = {
+            valid: false,
+            warnings: [],
+            errors: [],
+            unavailable: []
+        };
+        
+        if (response.status === 200 || response.status === 202) {
+            result.valid = true;
+            console.log('ASU validation: All packages are available');
+        } else if (response.status === 400 || response.status === 422) {
+            const data = await response.json();
+            
+            if (data.detail) {
+                const detailStr = typeof data.detail === 'string' ? data.detail : JSON.stringify(data.detail);
                 
-                const sizeCacheKey = `${version}:${state.device.arch}:${name}`;
-                if (info.size) {
-                    state.cache.packageSizes.set(sizeCacheKey, info.size);
+                if (detailStr.includes('not found') || detailStr.includes('Package') || detailStr.includes('package')) {
+                    result.errors.push('Some packages are not available for this device/version');
+                    result.valid = false;
+                } else {
+                    result.warnings.push(`Build validation warning: ${detailStr}`);
+                    result.valid = true;
                 }
             }
+        } else {
+            result.warnings.push(`ASU server returned unexpected status: ${response.status}`);
+            result.valid = true;
         }
         
-        if (!state.cache.asuPackages) {
-            state.cache.asuPackages = new Map();
+        if (!state.cache.asuValidation) {
+            state.cache.asuValidation = new Map();
         }
-        state.cache.asuPackages.set(cacheKey, packagesInfo);
+        state.cache.asuValidation.set(cacheKey, result);
         
-        console.log(`ASU API: Loaded ${packagesInfo.packages.size} packages`);
-        return packagesInfo;
+        return result;
         
     } catch (error) {
-        console.error('Failed to fetch from ASU API, falling back to direct fetch:', error);
-        return await fetchPackagesLegacy(version, target);
+        console.error('ASU validation failed:', error);
+        return {
+            valid: true,
+            warnings: ['Package validation unavailable - proceeding with build'],
+            errors: [],
+            unavailable: []
+        };
     }
 }
 
@@ -2666,45 +2687,9 @@ async function searchPackagesImproved(query, inputElement) {
     }
     
     try {
-        const packagesInfo = await fetchPackagesFromASU(version, target);
-        
-        const q = query.toLowerCase();
-        const results = [];
-        
-        packagesInfo.packages.forEach((info, name) => {
-            if (name.toLowerCase().includes(q)) {
-                results.push({
-                    name: name,
-                    size: info.size,
-                    version: info.version
-                });
-            }
-        });
-        
-        results.sort((a, b) => {
-            const aLower = a.name.toLowerCase();
-            const bLower = b.name.toLowerCase();
-            
-            const aExact = (aLower === q);
-            const bExact = (bLower === q);
-            if (aExact && !bExact) return -1;
-            if (bExact && !aExact) return 1;
-            
-            const aPrefix = aLower.startsWith(q);
-            const bPrefix = bLower.startsWith(q);
-            if (aPrefix && !bPrefix) return -1;
-            if (bPrefix && !aPrefix) return 1;
-            
-            return a.name.localeCompare(b.name);
-        });
-        
-        console.log(`Found ${results.length} packages matching "${query}"`);
-        
-        showPackageSearchResultsWithSize(results, inputElement);
-        
+        await searchPackages(query, inputElement);
     } catch (error) {
         console.error('Package search failed:', error);
-        await searchPackages(query, inputElement);
     }
 }
 
@@ -3656,7 +3641,7 @@ async function initializeCustomFeatures(asuSection, temp) {
 }
 
 async function validateBuildConfiguration() {
-    if (!config.asu_url || !state.device.version || !state.device.target) {
+    if (!config.asu_url || !state.device.version || !state.device.target || !state.device.id) {
         console.warn('Cannot validate: missing configuration');
         return { valid: true, warnings: [], errors: [] };
     }
@@ -3674,7 +3659,10 @@ async function validateBuildConfiguration() {
     console.log('Validating packages:', {
         total: allPackages.length,
         default: defaultPackages.size,
-        toValidate: packagesToValidate.length
+        toValidate: packagesToValidate.length,
+        device: state.device.id,
+        target: state.device.target,
+        version: state.device.version
     });
     
     if (packagesToValidate.length === 0) {
@@ -3682,72 +3670,15 @@ async function validateBuildConfiguration() {
         return { valid: true, warnings: [], errors: [] };
     }
     
-    const cacheKey = `${state.device.version}:${state.device.target}:${packagesToValidate.join(',')}`;
-    
-    if (state.cache.asuValidation && state.cache.asuValidation.has(cacheKey)) {
-        console.log('Using cached validation result');
-        return state.cache.asuValidation.get(cacheKey);
-    }
-    
     try {
-        const packagesInfo = await fetchPackagesFromASU(state.device.version, state.device.target);
-        
-        const validation = {
-            valid: true,
-            warnings: [],
-            errors: []
-        };
-        
-        const unavailable = [];
-        packagesToValidate.forEach(pkg => {
-            if (!packagesInfo.packages.has(pkg)) {
-                unavailable.push(pkg);
-            }
-        });
-        
-        if (unavailable.length > 0) {
-            const langPackages = unavailable.filter(pkg => pkg.startsWith('luci-i18n-'));
-            const otherPackages = unavailable.filter(pkg => !pkg.startsWith('luci-i18n-'));
-            
-            if (otherPackages.length > 0) {
-                validation.errors.push(
-                    `The following packages are not available:\n${otherPackages.join(', ')}`
-                );
-                validation.valid = false;
-            }
-            
-            if (langPackages.length > 0) {
-                validation.warnings.push(
-                    `Some language packages are not available: ${langPackages.length} package(s)`
-                );
-            }
-        }
-        
-        let totalSize = 0;
-        packagesToValidate.forEach(pkg => {
-            const info = packagesInfo.packages.get(pkg);
-            if (info && info.size) {
-                totalSize += info.size;
-            }
-        });
-        
-        if (totalSize > 0) {
-            const totalMB = totalSize / (1024 / 1024);
-            if (totalMB > 50) {
-                validation.warnings.push(
-                    `Additional packages total approximately ${totalMB.toFixed(1)} MB. ` +
-                    `Please ensure your device has sufficient storage.`
-                );
-            }
-        }
-        
-        if (!state.cache.asuValidation) {
-            state.cache.asuValidation = new Map();
-        }
-        state.cache.asuValidation.set(cacheKey, validation);
+        const validation = await validatePackagesViaASU(
+            state.device.version,
+            state.device.target,
+            state.device.id,
+            allPackages
+        );
         
         console.log('Validation result:', validation);
-        
         return validation;
         
     } catch (error) {
