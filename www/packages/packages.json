@@ -397,7 +397,7 @@
         },
         {
           "id": "smartmontools",
-          "name": "smartmontools",
+          "name": "smartmontools"
         },
         {
           "id": "logrotate",
