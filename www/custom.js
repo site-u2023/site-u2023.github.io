@@ -3180,17 +3180,26 @@ async function fetchToHData() {
     }
 }
 
+/**
+ * デバイス固有の機能を自動設定
+ * - IRQバランス（CPUコア数2以上で自動有効化）
+ * - USBストレージサポート（USBポートがある場合のみ表示）
+ */
 async function updateDeviceSpecificFeatures(deviceId, target) {
     const data = await fetchToHData();
     if (!data?.entries || !data?.columns) return;
     
+    // 必要な列のインデックスを取得
     const idx = {
         deviceId: data.columns.indexOf('deviceid'),
         target: data.columns.indexOf('target'),
         subtarget: data.columns.indexOf('subtarget'),
-        cpuCores: data.columns.indexOf('cpucores')
+        cpuCores: data.columns.indexOf('cpucores'),
+        usb20ports: data.columns.indexOf('usb20ports'),
+        usb30ports: data.columns.indexOf('usb30ports')
     };
     
+    // デバイス情報を検索
     const device = data.entries.find(entry => {
         const entryDeviceId = entry[idx.deviceId];
         const entryTarget = entry[idx.target];
@@ -3199,33 +3208,111 @@ async function updateDeviceSpecificFeatures(deviceId, target) {
         return entryDeviceId === deviceId || fullTarget === target;
     });
     
-    if (!device) return;
+    if (!device) {
+        console.log('Device not found in ToH database:', deviceId, target);
+        return;
+    }
     
+    console.log('Device found in ToH:', deviceId);
+    
+    // === IRQバランスの自動設定 ===
+    updateIrqbalanceFeature(device, idx);
+    
+    // === USBストレージサポートの表示制御 ===
+    updateUsbStorageVisibility(device, idx);
+}
+
+/**
+ * IRQバランス機能の自動設定
+ */
+function updateIrqbalanceFeature(device, idx) {
     const checkbox = document.querySelector('[data-package="luci-app-irqbalance"]');
-    if (checkbox) {
-        const cores = parseInt(device[idx.cpuCores], 10);
-        if (!isNaN(cores)) {
-            const shouldBeEnabled = cores >= 2;
-            if (checkbox.checked !== shouldBeEnabled) {
-                checkbox.checked = shouldBeEnabled;
-                checkbox.dispatchEvent(new Event('change', { bubbles: true }));
-                requestAnimationFrame(() => updateAllPackageState('irqbalance-auto-check'));
-            }
+    if (!checkbox) return;
+    
+    const cores = parseInt(device[idx.cpuCores], 10);
+    if (isNaN(cores)) {
+        console.log('CPU cores information not available');
+        return;
+    }
+    
+    const shouldBeEnabled = cores >= 2;
+    
+    if (checkbox.checked !== shouldBeEnabled) {
+        checkbox.checked = shouldBeEnabled;
+        checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+        console.log(`IRQbalance ${shouldBeEnabled ? 'enabled' : 'disabled'} (${cores} cores)`);
+        requestAnimationFrame(() => updateAllPackageState('irqbalance-auto-check'));
+    }
+}
+
+function updateUsbStorageVisibility(device, idx) {
+    const usbH4 = document.querySelector('.tr-usb-storage');
+    if (!usbH4) {
+        console.log('USB storage category not found');
+        return;
+    }
+    
+    const usbSection = usbH4.closest('.package-category');
+    if (!usbSection) return;
+    
+    const hasUSB = checkDeviceHasUSB(device, idx);
+    
+    if (hasUSB) {
+        console.log('Device has USB ports - showing USB storage category');
+        usbSection.style.display = '';
+        usbSection.classList.remove('device-no-usb');
+    } else {
+        console.log('Device has no USB ports - hiding USB storage category');
+        usbSection.style.display = 'none';
+        usbSection.classList.add('device-no-usb');
+        
+        uncheckUsbStoragePackages(usbSection);
+    }
+}
+
+function checkDeviceHasUSB(device, idx) {
+    if (idx.usb20ports !== -1 || idx.usb30ports !== -1) {
+        const usb20 = device[idx.usb20ports];
+        const usb30 = device[idx.usb30ports];
+        
+        const hasUsb20 = usb20 && Array.isArray(usb20) && usb20.length > 0 && 
+                        usb20.some(port => port && port !== '-' && /\d+x\s+(2\.0|OTG)/i.test(port));
+        const hasUsb30 = usb30 && Array.isArray(usb30) && usb30.length > 0 && 
+                        usb30.some(port => port && port !== '-' && /\d+x\s+3\.0/i.test(port));
+        
+        if (hasUsb20 || hasUsb30) {
+            console.log('USB ports found via dedicated columns:', { usb20, usb30 });
+            return true;
         }
     }
     
-    const usbH4 = document.querySelector('.tr-usb-storage');
-    if (usbH4) {
-        const usbSection = usbH4.closest('.package-category');
-        if (usbSection) {
-            const hasUSB = device.some(item => 
-                Array.isArray(item) && 
-                item.length > 0 && 
-                typeof item[0] === 'string' && 
-                /\d+x\s+(2\.0|3\.0|OTG)/i.test(item[0])
-            );
-            usbSection.style.display = hasUSB ? '' : 'none';
-        }
+    const hasUSBFallback = device.some(item => {
+        if (!Array.isArray(item) || item.length === 0) return false;
+        
+        return item.some(port => {
+            if (typeof port !== 'string') return false;
+            
+            return /\d+x\s+(2\.0|3\.0|OTG)/i.test(port);
+        });
+    });
+    
+    if (hasUSBFallback) {
+        console.log('USB ports found via fallback scan');
+    }
+    
+    return hasUSBFallback;
+}
+
+function uncheckUsbStoragePackages(usbSection) {
+    const checkboxes = usbSection.querySelectorAll('.package-selector-checkbox:checked');
+    if (checkboxes.length > 0) {
+        console.log(`Unchecking ${checkboxes.length} USB storage packages`);
+        checkboxes.forEach(cb => {
+            cb.checked = false;
+            cb.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+        
+        requestAnimationFrame(() => updateAllPackageState('usb-auto-uncheck'));
     }
 }
 
