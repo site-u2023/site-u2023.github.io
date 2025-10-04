@@ -3259,13 +3259,38 @@ function updateUsbStorageVisibility(device) {
 }
 
 function checkDeviceHasUSB(device) {
+    console.log('=== USB Check Debug ===');
+    console.log('Device data type:', typeof device);
+    console.log('Device is array:', Array.isArray(device));
+    console.log('Device length:', device?.length);
+    
+    // 最初の10要素を表示
+    if (Array.isArray(device)) {
+        console.log('First 10 elements:');
+        device.slice(0, 10).forEach((item, idx) => {
+            console.log(`  [${idx}]:`, item);
+        });
+        
+        // USB関連データを探す
+        console.log('USB related data:');
+        device.forEach((item, idx) => {
+            const itemStr = JSON.stringify(item).toLowerCase();
+            if (itemStr.includes('usb') || itemStr.includes('otg') || itemStr.includes('2.0') || itemStr.includes('3.0')) {
+                console.log(`  [${idx}]:`, item);
+            }
+        });
+    }
+    
     const deviceStr = JSON.stringify(device).toLowerCase();
+    console.log('Full device string (first 500 chars):', deviceStr.substring(0, 500));
     
     const hasUSB = deviceStr.includes('x 2.0') || 
                    deviceStr.includes('x 3.0') || 
                    deviceStr.includes('otg');
     
-    console.log(hasUSB ? 'USB detected' : 'No USB');
+    console.log('USB detection result:', hasUSB);
+    console.log('=== End USB Check ===');
+    
     return hasUSB;
 }
 
