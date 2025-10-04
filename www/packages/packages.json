@@ -337,11 +337,13 @@
         {
           "id": "owut",
           "name": "owut",
+          "checked": true,
           "hidden": true
         },
         {
           "id": "auc",
           "name": "auc",
+          "checked": true,
           "hidden": true
         },
         {
