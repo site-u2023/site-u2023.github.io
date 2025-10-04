@@ -3226,10 +3226,6 @@ async function updateDeviceSpecificFeatures(deviceId, target) {
     }
 }
 
-if (mobj.id && mobj.target) {
-    updateDeviceSpecificFeatures(mobj.id, mobj.target);
-}
-
 // ==================== パッケージデータベース ====================
 async function loadPackageDatabase() {
     try {
