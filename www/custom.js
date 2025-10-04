@@ -3225,7 +3225,7 @@ function generatePackageSelector() {
                 UI.updateElement(indicator, { show: true });
             }
 
-            verifyAllPackagesImproved().then(() => {
+            verifyAllPackages().then(() => {
                 if (indicator) {
                     UI.updateElement(indicator, { show: false });
                 }
@@ -3641,7 +3641,7 @@ async function initializeCustomFeatures(asuSection, temp) {
 }
 
 async function validateBuildConfiguration() {
-    if (!config.asu_url || !state.device.version || !state.device.target || !state.device.id) {
+    if (!config.asu_url || !state.device.version || !state.device.target) {
         console.warn('Cannot validate: missing configuration');
         return { valid: true, warnings: [], errors: [] };
     }
@@ -3659,10 +3659,7 @@ async function validateBuildConfiguration() {
     console.log('Validating packages:', {
         total: allPackages.length,
         default: defaultPackages.size,
-        toValidate: packagesToValidate.length,
-        device: state.device.id,
-        target: state.device.target,
-        version: state.device.version
+        toValidate: packagesToValidate.length
     });
     
     if (packagesToValidate.length === 0) {
@@ -3670,25 +3667,21 @@ async function validateBuildConfiguration() {
         return { valid: true, warnings: [], errors: [] };
     }
     
-    try {
-        const validation = await validatePackagesViaASU(
-            state.device.version,
-            state.device.target,
-            state.device.id,
-            allPackages
+    const validation = {
+        valid: true,
+        warnings: [],
+        errors: []
+    };
+    
+    if (packagesToValidate.length > 20) {
+        validation.warnings.push(
+            `You have selected ${packagesToValidate.length} additional packages. ` +
+            `Please ensure your device has sufficient storage.`
         );
-        
-        console.log('Validation result:', validation);
-        return validation;
-        
-    } catch (error) {
-        console.error('Build validation failed:', error);
-        return {
-            valid: true,
-            warnings: ['Build validation unavailable - proceeding with build'],
-            errors: []
-        };
     }
+    
+    console.log('Validation result:', validation);
+    return validation;
 }
 
 function setupBuildValidation() {
