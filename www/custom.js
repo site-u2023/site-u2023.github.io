@@ -57,7 +57,7 @@ const state = {
         }
     },
     
-    cache: {
+cache: {
         kmods: {
             token: null,
             key: null
@@ -69,7 +69,10 @@ const state = {
         lastFormStateHash: null,
         lastPackageListHash: null,
         prevUISelections: new Set(),
-        packageSizes: new Map()
+        packageSizes: new Map(),
+        asuPackages: new Map(),
+        asuValidation: new Map(),
+        lastAsuCheck: null
     },
 
     dom: {
@@ -2390,7 +2393,7 @@ class MultiInputManager {
 
 // ==================== パッケージ検索 ====================
 function setupPackageSearch() {
-    console.log('setupPackageSearch called');
+    console.log('setupPackageSearch called (ASU enhanced)');
     
     const searchContainer = document.getElementById('package-search-autocomplete');
     
@@ -2419,11 +2422,91 @@ function setupPackageSearch() {
             updateAllPackageState('package-search-change');
         },
         autocomplete: (query, inputElement) => {
-            searchPackages(query, inputElement);
+            searchPackagesImproved(query, inputElement);
         }
     });
     
-    console.log('Package search setup complete');
+    console.log('Package search setup complete (ASU enhanced)');
+}
+
+async function fetchPackagesFromASU(version, target) {
+    const cacheKey = `asu:${version}:${target}`;
+    
+    if (state.cache.asuPackages && state.cache.asuPackages.has(cacheKey)) {
+        console.log('Using cached ASU packages');
+        return state.cache.asuPackages.get(cacheKey);
+    }
+    
+    try {
+        const url = `${config.asu_url}/api/v1/packages/${version}/${target}`;
+        console.log('Fetching packages from ASU API:', url);
+        
+        const response = await fetch(url, { cache: 'force-cache' });
+        if (!response.ok) {
+            throw new Error(`ASU API returned ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        const packagesInfo = {
+            packages: new Map(),
+            totalSize: 0
+        };
+        
+        if (data.packages) {
+            for (const [name, info] of Object.entries(data.packages)) {
+                packagesInfo.packages.set(name, {
+                    name: name,
+                    version: info.version || '',
+                    size: info.size || 0,
+                    depends: info.depends || [],
+                    sha256sum: info.sha256sum || ''
+                });
+                
+                const sizeCacheKey = `${version}:${state.device.arch}:${name}`;
+                if (info.size) {
+                    state.cache.packageSizes.set(sizeCacheKey, info.size);
+                }
+            }
+        }
+        
+        if (!state.cache.asuPackages) {
+            state.cache.asuPackages = new Map();
+        }
+        state.cache.asuPackages.set(cacheKey, packagesInfo);
+        
+        console.log(`ASU API: Loaded ${packagesInfo.packages.size} packages`);
+        return packagesInfo;
+        
+    } catch (error) {
+        console.error('Failed to fetch from ASU API, falling back to direct fetch:', error);
+        return await fetchPackagesLegacy(version, target);
+    }
+}
+
+async function fetchPackagesLegacy(version, target) {
+    const feeds = ['base', 'packages', 'luci', 'routing', 'telephony'];
+    const allPackages = new Map();
+    
+    for (const feed of feeds) {
+        try {
+            const packages = await getFeedPackageSet(feed, {
+                version,
+                arch: state.device.arch,
+                vendor: state.device.vendor,
+                subtarget: state.device.subtarget,
+                isSnapshot: version.includes('SNAPSHOT')
+            });
+            
+            packages.forEach(pkg => {
+                allPackages.set(pkg, { name: pkg, size: 0, depends: [] });
+            });
+        } catch (err) {
+            console.error(`Failed to fetch ${feed}:`, err);
+        }
+    }
+    
+    return { packages: allPackages, totalSize: 0 };
 }
 
 async function searchPackages(query, inputElement) {
@@ -2567,6 +2650,118 @@ function showPackageSearchResults(results, inputElement) {
             }
         };
   
+        resultsDiv.appendChild(item);
+    });
+    
+    container.appendChild(resultsDiv);
+}
+
+async function searchPackagesImproved(query, inputElement) {
+    const version = state.device.version || document.querySelector("#versions")?.value;
+    const target = state.device.target;
+    
+    if (!version || !target) {
+        console.warn('Version or target not available');
+        return;
+    }
+    
+    try {
+        const packagesInfo = await fetchPackagesFromASU(version, target);
+        
+        const q = query.toLowerCase();
+        const results = [];
+        
+        packagesInfo.packages.forEach((info, name) => {
+            if (name.toLowerCase().includes(q)) {
+                results.push({
+                    name: name,
+                    size: info.size,
+                    version: info.version
+                });
+            }
+        });
+        
+        results.sort((a, b) => {
+            const aLower = a.name.toLowerCase();
+            const bLower = b.name.toLowerCase();
+            
+            const aExact = (aLower === q);
+            const bExact = (bLower === q);
+            if (aExact && !bExact) return -1;
+            if (bExact && !aExact) return 1;
+            
+            const aPrefix = aLower.startsWith(q);
+            const bPrefix = bLower.startsWith(q);
+            if (aPrefix && !bPrefix) return -1;
+            if (bPrefix && !aPrefix) return 1;
+            
+            return a.name.localeCompare(b.name);
+        });
+        
+        console.log(`Found ${results.length} packages matching "${query}"`);
+        
+        showPackageSearchResultsWithSize(results, inputElement);
+        
+    } catch (error) {
+        console.error('Package search failed:', error);
+        await searchPackages(query, inputElement);
+    }
+}
+
+function showPackageSearchResultsWithSize(results, inputElement) {
+    clearPackageSearchResults();
+    
+    if (!results || results.length === 0) return;
+    
+    const container = document.getElementById('package-search-autocomplete');
+    if (!container) return;
+    
+    const resultsDiv = document.createElement('div');
+    resultsDiv.className = 'package-search-results';
+    
+    results.forEach(pkg => {
+        const item = document.createElement('div');
+        
+        const nameSpan = document.createElement('span');
+        nameSpan.textContent = pkg.name;
+        nameSpan.style.fontWeight = '500';
+        
+        const sizeSpan = document.createElement('span');
+        if (pkg.size > 0) {
+            const sizeKB = (pkg.size / 1024).toFixed(1);
+            sizeSpan.textContent = ` (${sizeKB} KB)`;
+            sizeSpan.style.color = 'var(--text-muted)';
+            sizeSpan.style.fontSize = '0.9em';
+        }
+        
+        item.appendChild(nameSpan);
+        item.appendChild(sizeSpan);
+        
+        item.onmousedown = (e) => {
+            e.preventDefault();
+            
+            console.log('Package selected:', pkg.name, pkg.size > 0 ? `(${(pkg.size / 1024).toFixed(1)} KB)` : '');
+            
+            try {
+                inputElement.dataset.programmaticChange = 'true';
+                inputElement.value = pkg.name;
+                inputElement.setAttribute('data-confirmed', 'true');
+                
+                const inputIndex = state.ui.managers.packageSearch.inputs.indexOf(inputElement);
+                if (inputIndex === state.ui.managers.packageSearch.inputs.length - 1) {
+                    state.ui.managers.packageSearch.addInput('', true);
+                }
+                
+                clearPackageSearchResults();
+                state.ui.managers.packageSearch.options.onChange(
+                    state.ui.managers.packageSearch.getAllValues()
+                );
+                updateAllPackageState('package-selected');
+            } catch (error) {
+                console.error('Error in package selection:', error);
+            }
+        };
+        
         resultsDiv.appendChild(item);
     });
     
@@ -3045,11 +3240,11 @@ function generatePackageSelector() {
                 UI.updateElement(indicator, { show: true });
             }
 
-            verifyAllPackages().then(() => {
+            verifyAllPackagesImproved().then(() => {
                 if (indicator) {
                     UI.updateElement(indicator, { show: false });
                 }
-                console.log('Package verification completed');
+                console.log('Package verification completed (ASU API)');
             }).catch(err => {
                 console.error('Package verification failed:', err);
                 if (indicator) {
@@ -3453,9 +3648,124 @@ async function initializeCustomFeatures(asuSection, temp) {
         document.addEventListener('devicePackagesReady', runWhenReady);
     }
 
+    setupBuildValidation();
+
     state.ui.initialized = true;
     
     console.log('Initialization complete. API Info:', state.apiInfo ? 'Available' : 'Not available');
+}
+
+async function validateBuildConfiguration() {
+    if (!config.asu_url || !state.device.version || !state.device.target) {
+        console.warn('Cannot validate: missing configuration');
+        return { valid: true, warnings: [], errors: [] };
+    }
+    
+    const packages = getCurrentPackageListForLanguage();
+    const cacheKey = `${state.device.version}:${state.device.target}:${packages.join(',')}`;
+    
+    if (state.cache.asuValidation && state.cache.asuValidation.has(cacheKey)) {
+        console.log('Using cached validation result');
+        return state.cache.asuValidation.get(cacheKey);
+    }
+    
+    try {
+        const packagesInfo = await fetchPackagesFromASU(state.device.version, state.device.target);
+        
+        const validation = {
+            valid: true,
+            warnings: [],
+            errors: []
+        };
+        
+        const unavailable = [];
+        packages.forEach(pkg => {
+            if (!packagesInfo.packages.has(pkg)) {
+                unavailable.push(pkg);
+            }
+        });
+        
+        if (unavailable.length > 0) {
+            validation.errors.push(`The following packages are not available: ${unavailable.join(', ')}`);
+            validation.valid = false;
+        }
+        
+        let totalSize = 0;
+        packages.forEach(pkg => {
+            const info = packagesInfo.packages.get(pkg);
+            if (info && info.size) {
+                totalSize += info.size;
+            }
+        });
+        
+        if (totalSize > 0) {
+            const totalMB = totalSize / (1024 * 1024);
+            if (totalMB > 50) {
+                validation.warnings.push(
+                    `Total package size is approximately ${totalMB.toFixed(1)} MB. ` +
+                    `This may exceed available storage on some devices.`
+                );
+            }
+        }
+        
+        if (!state.cache.asuValidation) {
+            state.cache.asuValidation = new Map();
+        }
+        state.cache.asuValidation.set(cacheKey, validation);
+        
+        return validation;
+        
+    } catch (error) {
+        console.error('Build validation failed:', error);
+        return {
+            valid: true,
+            warnings: ['Build validation unavailable'],
+            errors: []
+        };
+    }
+}
+
+function setupBuildValidation() {
+    const buildButton = document.querySelector('a[href="javascript:buildAsuRequest()"]');
+    if (!buildButton) {
+        console.log('Build button not found, will retry...');
+        setTimeout(setupBuildValidation, 500);
+        return;
+    }
+    
+    console.log('Setting up build validation hook');
+    
+    buildButton.removeAttribute('href');
+    buildButton.style.cursor = 'pointer';
+    
+    buildButton.addEventListener('click', async (e) => {
+        e.preventDefault();
+        
+        console.log('Build button clicked, validating...');
+        
+        const validation = await validateBuildConfiguration();
+        
+        if (!validation.valid) {
+            const errorMsg = validation.errors.join('\n');
+            alert(`Build Validation Failed:\n\n${errorMsg}`);
+            console.error('Build validation failed:', validation.errors);
+            return;
+        }
+        
+        if (validation.warnings.length > 0) {
+            const warningMsg = validation.warnings.join('\n');
+            const proceed = confirm(`Build Warnings:\n\n${warningMsg}\n\nDo you want to continue?`);
+            if (!proceed) {
+                console.log('Build cancelled by user');
+                return;
+            }
+        }
+        
+        console.log('Validation passed, starting build...');
+        buildAsuRequest();
+    });
+    
+    console.log('Build validation hook installed');
 }
 
 console.log('custom.js (v2.0 - Simplified) fully loaded and ready');
