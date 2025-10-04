@@ -298,7 +298,8 @@
       "packages": [
         {
           "id": "luci-mod-dashboard",
-          "name": "luci-mod-dashboard"
+          "name": "luci-mod-dashboard",
+          "checked": true
         },
         {
           "id": "luci-theme-openwrt",
@@ -325,7 +326,8 @@
       "packages": [
         {
           "id": "luci-app-attendedsysupgrade",
-          "name": "luci-app-attendedsysupgrade"
+          "name": "luci-app-attendedsysupgrade",
+          "checked": true
         },
         {
           "id": "owut",
