@@ -91,7 +91,7 @@ firewall_wan() {
 [ -n "${device_name}" ] && { local SEC=system; SET @system[0].hostname="${device_name}"; }
 [ -n "${root_password}" ] && printf '%s\n%s\n' "${root_password}" "${root_password}" | passwd >/dev/null
 [ -n "${lan_ip_address}" ] && { local SEC=network; SET lan.ipaddr="${lan_ip_address}"; }
-[ -n "${lan_ipv6_address}" ] && { local SEC=network; SET lan.ip6addr="${lan_ipv6_address}"; }
+[ -n "${lan_ipv6_address}" ] && { local SEC=network; DEL lan.ip6assign; SET lan.ip6addr="${lan_ipv6_address}"; }
 [ -n "${language}" ] && { local SEC=system; SET @system[0].language="${language}"; }
 [ -n "${timezone}" ] && { local SEC=system; SET @system[0].timezone="${timezone}"; }
 [ -n "${zonename}" ] && { local SEC=system; SET @system[0].zonename="${zonename}"; }
