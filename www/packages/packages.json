@@ -347,14 +347,13 @@
           "hidden": true
         },
         {
-          "id": "luci-app-wireguard",
-          "name": "luci-app-wireguard",
-          "dependencies": ["luci-proto-wireguard"]
-        },
-        {
           "id": "luci-proto-wireguard",
           "name": "luci-proto-wireguard",
-          "dependencies": ["wireguard-tools"],
+          "dependencies": ["wireguard-tools", "luci-app-wireguard"]
+        },
+        {
+          "id": "luci-app-wireguard",
+          "name": "luci-app-wireguard",
           "hidden": true
         },
         {
