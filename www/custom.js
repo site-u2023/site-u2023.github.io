@@ -3260,7 +3260,10 @@ function updateUsbStorageVisibility(device) {
 
 function checkDeviceHasUSB(device) {
     const deviceStr = JSON.stringify(device).toLowerCase();
-    const hasUSB = deviceStr.includes('usb') || deviceStr.includes('otg');
+    
+    const hasUSB = deviceStr.includes('x 2.0') || 
+                   deviceStr.includes('x 3.0') || 
+                   deviceStr.includes('otg');
     
     console.log(hasUSB ? 'USB detected' : 'No USB');
     return hasUSB;
