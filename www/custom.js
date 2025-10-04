@@ -291,12 +291,8 @@ window.updateImages = function(version, mobj) {
 
         console.log('[TRACE] device updated:', state.device);       
 
-        if (mobj && mobj.id && mobj.target) {
-            requestAnimationFrame(() => {
-                requestAnimationFrame(() => {
-                    updateDeviceSpecificFeatures(mobj.id, mobj.target);
-                });
-            });
+        if (mobj.id && mobj.target) {
+            updateDeviceSpecificFeatures(mobj.id, mobj.target);
         }
       
         if (oldArch !== mobj.arch_packages || oldVersion !== version || oldDeviceId !== mobj.id) {
@@ -3214,7 +3210,7 @@ async function updateDeviceSpecificFeatures(deviceId, target) {
     
     updateIrqbalanceFeature(device, idx);
     
-    updateUsbStorageVisibility(device, idx);
+    updateUsbStorageVisibility(device);
 }
 
 function updateIrqbalanceFeature(device, idx) {
@@ -3237,7 +3233,7 @@ function updateIrqbalanceFeature(device, idx) {
     }
 }
 
-function updateUsbStorageVisibility(device, idx) {
+function updateUsbStorageVisibility(device) {
     const usbH4 = document.querySelector('.tr-usb-storage');
     if (!usbH4) {
         console.log('USB storage category not found');
@@ -3247,14 +3243,14 @@ function updateUsbStorageVisibility(device, idx) {
     const usbSection = usbH4.closest('.package-category');
     if (!usbSection) return;
     
-    const hasUSB = checkDeviceHasUSB(device, idx);
+    const hasUSB = checkDeviceHasUSB(device);
     
     if (hasUSB) {
-        console.log('Device has USB ports - showing USB storage category');
+        console.log('Device has USB - showing USB storage category');
         usbSection.style.display = '';
         usbSection.classList.remove('device-no-usb');
     } else {
-        console.log('Device has no USB ports - hiding USB storage category');
+        console.log('Device has no USB - hiding USB storage category');
         usbSection.style.display = 'none';
         usbSection.classList.add('device-no-usb');
         
@@ -3262,37 +3258,12 @@ function updateUsbStorageVisibility(device, idx) {
     }
 }
 
-function checkDeviceHasUSB(device, idx) {
-    if (idx.usb20ports !== -1 || idx.usb30ports !== -1) {
-        const usb20 = device[idx.usb20ports];
-        const usb30 = device[idx.usb30ports];
-        
-        const hasUsb20 = usb20 && Array.isArray(usb20) && usb20.length > 0 && 
-                        usb20.some(port => port && port !== '-' && /\d+x\s+(2\.0|OTG)/i.test(port));
-        const hasUsb30 = usb30 && Array.isArray(usb30) && usb30.length > 0 && 
-                        usb30.some(port => port && port !== '-' && /\d+x\s+3\.0/i.test(port));
-        
-        if (hasUsb20 || hasUsb30) {
-            console.log('USB ports found via dedicated columns:', { usb20, usb30 });
-            return true;
-        }
-    }
+function checkDeviceHasUSB(device) {
+    const deviceStr = JSON.stringify(device).toLowerCase();
+    const hasUSB = deviceStr.includes('usb') || deviceStr.includes('otg');
     
-    const hasUSBFallback = device.some(item => {
-        if (!Array.isArray(item) || item.length === 0) return false;
-        
-        return item.some(port => {
-            if (typeof port !== 'string') return false;
-            
-            return /\d+x\s+(2\.0|3\.0|OTG)/i.test(port);
-        });
-    });
-    
-    if (hasUSBFallback) {
-        console.log('USB ports found via fallback scan');
-    }
-    
-    return hasUSBFallback;
+    console.log(hasUSB ? 'USB detected' : 'No USB');
+    return hasUSB;
 }
 
 function uncheckUsbStoragePackages(usbSection) {
