@@ -3214,15 +3214,18 @@ async function updateDeviceSpecificFeatures(deviceId, target) {
         }
     }
     
-    const usbSection = document.querySelector('.tr-usb-storage');
-    if (usbSection) {
-        const hasUSB = device.some(item => 
-            Array.isArray(item) && 
-            item.length > 0 && 
-            typeof item[0] === 'string' && 
-            /\d+x\s+(2\.0|3\.0|OTG)/i.test(item[0])
-        );
-        usbSection.style.display = hasUSB ? '' : 'none';
+    const usbH4 = document.querySelector('.tr-usb-storage');
+    if (usbH4) {
+        const usbSection = usbH4.closest('.package-category');
+        if (usbSection) {
+            const hasUSB = device.some(item => 
+                Array.isArray(item) && 
+                item.length > 0 && 
+                typeof item[0] === 'string' && 
+                /\d+x\s+(2\.0|3\.0|OTG)/i.test(item[0])
+            );
+            usbSection.style.display = hasUSB ? '' : 'none';
+        }
     }
 }
 
