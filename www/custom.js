@@ -2484,8 +2484,6 @@ async function searchPackages(query, inputElement) {
         if (aExact && bExact) return a.localeCompare(b);
         return a.localeCompare(b);
     });
-
-    console.log(`Found ${sortedResults.length} packages`);
     
     showPackageSearchResults(sortedResults, inputElement);
 }
