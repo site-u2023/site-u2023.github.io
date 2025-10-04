@@ -286,11 +286,7 @@ window.updateImages = function(version, mobj) {
         
         CustomUtils.updateDeviceInfo(mobj.target);
 
-        console.log('[TRACE] device updated:', state.device);
-
-        if (mobj.id && mobj.target) {
-            updateIrqbalanceByDevice(mobj.id, mobj.target);
-        }        
+        console.log('[TRACE] device updated:', state.device);    
       
         if (oldArch !== mobj.arch_packages || oldVersion !== version || oldDeviceId !== mobj.id) {
             console.log('[TRACE] Device changed, clearing caches');
@@ -2982,67 +2978,6 @@ async function fetchToHData() {
     } catch (err) {
         console.warn('ToH data fetch failed:', err.message);
         return null;
-    }
-}
-
-async function updateIrqbalanceByDevice(deviceId, target) {
-    console.log('=== updateIrqbalanceByDevice ===');
-    console.log('Input deviceId:', deviceId);
-    console.log('Input target:', target);
-    
-    const checkbox = document.querySelector('[data-package="luci-app-irqbalance"]');
-    if (!checkbox) return;
-    
-    const data = await fetchToHData();
-    if (!data?.entries || !data?.columns) return;
-    
-    const idx = {
-        deviceId: data.columns.indexOf('deviceid'),
-        target: data.columns.indexOf('target'),
-        subtarget: data.columns.indexOf('subtarget'),
-        cpuCores: data.columns.indexOf('cpucores')
-    };
-    
-    console.log('Column indices:', idx);
-    
-    const device = data.entries.find(entry => {
-        const entryDeviceId = entry[idx.deviceId];
-        const entryTarget = entry[idx.target];
-        const entrySubtarget = entry[idx.subtarget];
-        const fullTarget = entryTarget && entrySubtarget ? `${entryTarget}/${entrySubtarget}` : entryTarget;
-        
-        const matchById = entryDeviceId === deviceId;
-        const matchByTarget = fullTarget === target;
-        
-        if (matchById || matchByTarget) {
-            console.log('MATCH FOUND:');
-            console.log('  Entry deviceId:', entryDeviceId);
-            console.log('  Entry target:', fullTarget);
-            console.log('  Match by ID:', matchById);
-            console.log('  Match by target:', matchByTarget);
-        }
-        
-        return matchById || matchByTarget;
-    });
-    
-    if (!device) {
-        console.log('Device NOT found');
-        return;
-    }
-    
-    console.log('Device found:', device[idx.deviceId]);
-    console.log('CPU cores:', device[idx.cpuCores]);
-    
-    const cores = parseInt(device[idx.cpuCores], 10);
-    if (isNaN(cores)) return;
-    const shouldBeEnabled = cores >= 2;
-    
-    console.log('Should enable IRQbalance:', shouldBeEnabled);
-    
-    if (checkbox.checked !== shouldBeEnabled) {
-        checkbox.checked = shouldBeEnabled;
-        checkbox.dispatchEvent(new Event('change', { bubbles: true }));
-        requestAnimationFrame(() => updateAllPackageState('irqbalance-auto-check'));
     }
 }
 
