@@ -3200,41 +3200,40 @@ async function updateDeviceSpecificFeatures(deviceId, target) {
     
     console.log('Column indices:', idx);
     
-    // デバイス情報を検索
-    const device = data.entries.find(entry => {
+    let device = data.entries.find(entry => {
         const entryDeviceId = entry[idx.deviceId];
-        const entryTarget = entry[idx.target];
-        const entrySubtarget = entry[idx.subtarget];
-        const fullTarget = entryTarget && entrySubtarget ? `${entryTarget}/${entrySubtarget}` : entryTarget;
+        if (!entryDeviceId) return false;
         
-        const matchById = entryDeviceId === deviceId;
-        const matchByTarget = fullTarget === target;
+        const match = entryDeviceId === deviceId || 
+                     entryDeviceId.includes(deviceId) ||
+                     deviceId.includes(entryDeviceId);
         
-        if (matchById || matchByTarget) {
-            console.log('Device MATCH found:');
-            console.log('  Entry deviceId:', entryDeviceId);
-            console.log('  Entry target:', fullTarget);
-            console.log('  Match by ID:', matchById);
-            console.log('  Match by target:', matchByTarget);
+        if (match) {
+            console.log('Device MATCH by ID:', entryDeviceId);
         }
-        
-        return matchById || matchByTarget;
+        return match;
     });
     
     if (!device) {
+        console.log('Not found by ID, trying target:', target);
+        device = data.entries.find(entry => {
+            const entryTarget = entry[idx.target];
+            const entrySubtarget = entry[idx.subtarget];
+            const fullTarget = entryTarget && entrySubtarget ? `${entryTarget}/${entrySubtarget}` : entryTarget;
+            return fullTarget === target;
+        });
+    }
+    
+    if (!device) {
         console.error('Device NOT found in ToH database');
-        console.log('First 5 device IDs in ToH:', 
-            data.entries.slice(0, 5).map(e => e[idx.deviceId]));
         return;
     }
     
-    console.log('Device found, first element:', device[0]);
+    console.log('Device found:', device[0]);
     console.log('===================================');
     
-    // === IRQバランスの自動設定 ===
     updateIrqbalanceFeature(device, idx);
     
-    // === USBストレージサポートの表示制御 ===
     updateUsbStorageVisibility(device);
 }
 
