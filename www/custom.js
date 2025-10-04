@@ -257,6 +257,18 @@ const CustomUtils = {
     }
 };
 
+// ==================== デバイス情報取得 ====================
+function getDeviceInfo() {
+    return {
+        arch: state.device.arch || null,
+        version: state.device.version || null,
+        vendor: state.device.vendor || null,
+        subtarget: state.device.subtarget || null,
+        target: state.device.target || null,
+        id: state.device.id || null
+    };
+}
+
 // ==================== DOM要素キャッシュ ====================
 function cacheFrequentlyUsedElements() {
     state.dom.textarea = document.querySelector('#asu-packages');
