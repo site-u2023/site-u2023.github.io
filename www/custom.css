@@ -226,9 +226,9 @@ input[type="radio"] {
 }
 
 .package-search-results div:hover {
-  color: var(--owrt-blue);
+  background-color: var(--owrt-blue);
+  color: #fff;
 }
-
 /* Dark mode support for autocomplete */
 @media (prefers-color-scheme: dark) {
   .package-search-results {
@@ -242,7 +242,8 @@ input[type="radio"] {
   }
   
   .package-search-results div:hover {
-    color: var(--owrt-blue);
+    background-color: var(--owrt-blue);
+    color: #fff;
   }
 }
 
