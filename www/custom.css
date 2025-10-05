@@ -435,10 +435,6 @@ details summary::-webkit-details-marker {
   transition: background-color 0.2s;
 }
 
-.feature-item:hover {
-  background-color: var(--bg-item-hover);
-}
-
 .feature-item input[type="checkbox"] {
   width: auto;
   margin: 0;
@@ -510,10 +506,6 @@ details summary::-webkit-details-marker {
   padding: 0.5em;
   border-radius: 0.2em;
   transition: background-color 0.2s;
-}
-
-.package-item:hover {
-  background-color: var(--bg-item-hover);
 }
 
 .package-item label,
