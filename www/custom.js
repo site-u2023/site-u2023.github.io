@@ -69,7 +69,8 @@ const state = {
         lastFormStateHash: null,
         lastPackageListHash: null,
         prevUISelections: new Set(),
-        packageSizes: new Map()
+        packageSizes: new Map(),
+        packageDescriptions: new Map() 
     },
 
     dom: {
@@ -2860,6 +2861,106 @@ async function buildAvailabilityIndex(deviceInfo, neededFeeds) {
     return index;
 }
 
+// ==================== パッケージ説明取得関数 ====================
+async function getPackageDescription(pkgName) {
+    const deviceInfo = {
+        arch: state.device.arch,
+        version: state.device.version,
+        vendor: state.device.vendor,
+        subtarget: state.device.subtarget,
+        isSnapshot: (state.device.version || '').includes('SNAPSHOT')
+    };
+    
+    if (!deviceInfo.arch || !deviceInfo.version) {
+        return null;
+    }
+    
+    const cacheKey = `${deviceInfo.version}:${deviceInfo.arch}:${pkgName}`;
+    
+    // キャッシュにあれば返す
+    if (state.cache.packageDescriptions.has(cacheKey)) {
+        return state.cache.packageDescriptions.get(cacheKey);
+    }
+    
+    // どのfeedか推測
+    const feed = guessFeedForPackage(pkgName);
+    
+    try {
+        const url = await buildPackageUrl(feed, deviceInfo);
+        const resp = await fetch(url, { cache: 'force-cache' });
+        if (!resp.ok) return null;
+        
+        const isSnapshot = deviceInfo.isSnapshot || (feed === 'kmods' && deviceInfo.isSnapshot);
+        let description = null;
+        
+        if (isSnapshot) {
+            // APK (SNAPSHOT) の場合
+            const data = await resp.json();
+            let packages = [];
+            
+            if (Array.isArray(data.packages)) {
+                packages = data.packages;
+            } else if (data.packages && typeof data.packages === 'object') {
+                packages = Object.values(data.packages);
+            }
+            
+            const pkg = packages.find(p => p?.name === pkgName);
+            if (pkg && pkg.desc) {
+                description = pkg.desc;
+            }
+        } else {
+            // OPKG (リリース版) の場合
+            const text = await resp.text();
+            const lines = text.split('\n');
+            let currentPackage = null;
+            let currentDescription = '';
+            let inDescription = false;
+            
+            for (const line of lines) {
+                if (line.startsWith('Package: ')) {
+                    // 前のパッケージの説明を保存
+                    if (currentPackage === pkgName && currentDescription) {
+                        description = currentDescription.trim();
+                        break;
+                    }
+                    currentPackage = line.substring(9).trim();
+                    currentDescription = '';
+                    inDescription = false;
+                } else if (line.startsWith('Description: ') && currentPackage === pkgName) {
+                    currentDescription = line.substring(13).trim();
+                    inDescription = true;
+                } else if (inDescription && currentPackage === pkgName) {
+                    if (line.startsWith(' ')) {
+                        // 説明の継続行
+                        currentDescription += '\n' + line.trim();
+                    } else if (line.trim() === '') {
+                        // 空行で説明終了
+                        inDescription = false;
+                    } else if (!line.startsWith(' ')) {
+                        // 新しいフィールドが始まったら終了
+                        break;
+                    }
+                }
+            }
+            
+            // 最後のパッケージの処理
+            if (currentPackage === pkgName && currentDescription) {
+                description = currentDescription.trim();
+            }
+        }
+        
+        // キャッシュに保存
+        if (description) {
+            state.cache.packageDescriptions.set(cacheKey, description);
+        }
+        
+        return description;
+    } catch (err) {
+        console.error('Failed to get package description:', err);
+        return null;
+    }
+}
+
 async function fetchFeedSet(feed, deviceInfo) {
     const url = await buildPackageUrl(feed, deviceInfo);
     const isSnapshot = deviceInfo.isSnapshot || (feed === 'kmods' && deviceInfo.isSnapshot);
@@ -2868,30 +2969,71 @@ async function fetchFeedSet(feed, deviceInfo) {
 
     if (isSnapshot) {
         const data = await resp.json();
+        const names = new Set();
         
         if (Array.isArray(data.packages)) {
-            return new Set(data.packages.map(p => p?.name).filter(Boolean));
+            data.packages.forEach(pkg => {
+                if (pkg && pkg.name) {
+                    names.add(pkg.name);
+                    if (pkg.desc) {
+                        const descKey = `${deviceInfo.version}:${deviceInfo.arch}:${pkg.name}`;
+                        state.cache.packageDescriptions.set(descKey, pkg.desc);
+                    }
+                }
+            });
         } else if (data.packages && typeof data.packages === 'object') {
-            return new Set(Object.keys(data.packages));
+            Object.entries(data.packages).forEach(([name, pkg]) => {
+                names.add(name);
+                if (pkg && pkg.desc) {
+                    const descKey = `${deviceInfo.version}:${deviceInfo.arch}:${name}`;
+                    state.cache.packageDescriptions.set(descKey, pkg.desc);
+                }
+            });
         }
-        return new Set();
+        
+        return names;
     } else {
         const text = await resp.text();
         const lines = text.split('\n');
         const names = [];
         let currentPackage = null;
+        let currentDescription = '';
+        let inDescription = false;
         
         for (const line of lines) {
             if (line.startsWith('Package: ')) {
+                if (currentPackage && currentDescription) {
+                    const descKey = `${deviceInfo.version}:${deviceInfo.arch}:${currentPackage}`;
+                    state.cache.packageDescriptions.set(descKey, currentDescription.trim());
+                }
+                
                 currentPackage = line.substring(9).trim();
                 names.push(currentPackage);
+                currentDescription = '';
+                inDescription = false;
             } else if (line.startsWith('Size: ') && currentPackage) {
                 const size = parseInt(line.substring(6).trim());
                 if (size > 0) {
                     const sizeCacheKey = `${deviceInfo.version}:${deviceInfo.arch}:${currentPackage}`;
                     state.cache.packageSizes.set(sizeCacheKey, size);
                 }
+            } else if (line.startsWith('Description: ') && currentPackage) {
+                currentDescription = line.substring(13).trim();
+                inDescription = true;
+            } else if (inDescription && currentPackage) {
+                if (line.startsWith(' ')) {
+                    currentDescription += '\n' + line.trim();
+                } else if (!line.trim()) {
+                    inDescription = false;
+                } else if (!line.startsWith(' ')) {
+                    inDescription = false;
+                }
             }
+        }
+        
+        if (currentPackage && currentDescription) {
+            const descKey = `${deviceInfo.version}:${deviceInfo.arch}:${currentPackage}`;
+            state.cache.packageDescriptions.set(descKey, currentDescription.trim());
         }
         
         return new Set(names.filter(Boolean));
@@ -3307,6 +3449,40 @@ function createPackageCheckbox(pkg, isChecked = false, isDependency = false) {
         label.appendChild(checkbox);
         label.appendChild(span);
     }
+    
+    const tooltip = document.createElement('div');
+    tooltip.className = 'package-tooltip';
+    tooltip.style.opacity = '0';
+    tooltip.style.visibility = 'hidden';
+    label.appendChild(tooltip);
+    
+    let isTooltipLoaded = false;
+    
+    label.addEventListener('mouseenter', async function() {
+        if (isTooltipLoaded) {
+            tooltip.style.opacity = '1';
+            tooltip.style.visibility = 'visible';
+            return;
+        }
+        
+        const description = await getPackageDescription(pkg.id);
+        if (description) {
+            tooltip.textContent = description;
+            tooltip.style.opacity = '1';
+            tooltip.style.visibility = 'visible';
+            isTooltipLoaded = true;
+        } else {
+            tooltip.textContent = 'No description available';
+            tooltip.style.opacity = '1';
+            tooltip.style.visibility = 'visible';
+            isTooltipLoaded = true;
+        }
+    });
+    
+    label.addEventListener('mouseleave', function() {
+        tooltip.style.opacity = '0';
+        tooltip.style.visibility = 'hidden';
+    });
     
     label.setAttribute('data-package-name', pkg.name || pkg.id);
     
