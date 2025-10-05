@@ -416,87 +416,6 @@ async function loadSetupConfig() {
     }
 }
 
-async function getExternalDescription(url) {
-    if (!url) return null;
-    
-    const cacheKey = `external:${url}`;
-    
-    if (state.cache.packageDescriptions.has(cacheKey)) {
-        return state.cache.packageDescriptions.get(cacheKey);
-    }
-    
-    try {
-        const resp = await fetch(url, { cache: 'force-cache' });
-        if (!resp.ok) return null;
-        
-        const text = await resp.text();
-        
-        state.cache.packageDescriptions.set(cacheKey, text.trim());
-        return text.trim();
-    } catch (err) {
-        console.error('Failed to fetch external description:', err);
-        return null;
-    }
-}
-
-function createTitleWithLink(text, link, className = '') {
-    if (link) {
-        const a = document.createElement('a');
-        a.href = link;
-        a.target = '_blank';
-        a.rel = 'noopener noreferrer';
-        a.className = 'setup-title-link';
-        if (className) a.classList.add(className);
-        a.textContent = text;
-        return a;
-    } else {
-        const span = document.createElement('span');
-        if (className) span.classList.add(className);
-        span.textContent = text;
-        return span;
-    }
-}
-
-function createTitleWithTooltip(text, link, className, descriptionUrl, description) {
-    const wrapper = document.createElement('div');
-    wrapper.className = 'setup-title-wrapper';
-    wrapper.style.position = 'relative';
-    wrapper.style.display = 'inline-block';
-    
-    const titleElement = createTitleWithLink(text, link, className);
-    wrapper.appendChild(titleElement);
-    
-    if (description || descriptionUrl) {
-        const tooltip = document.createElement('div');
-        tooltip.className = 'setup-tooltip';
-        wrapper.appendChild(tooltip);
-        
-        let isTooltipLoaded = false;
-        
-        wrapper.addEventListener('mouseenter', async function() {
-            if (isTooltipLoaded) {
-                return;
-            }
-            
-            let desc = description;
-            
-            if (descriptionUrl && !desc) {
-                desc = await getExternalDescription(descriptionUrl);
-            }
-            
-            if (desc) {
-                tooltip.textContent = desc;
-                isTooltipLoaded = true;
-            } else {
-                tooltip.textContent = 'No description available';
-                isTooltipLoaded = true;
-            }
-        });
-    }
-    
-    return wrapper;
-}
-
 function renderSetupConfig(config) {
     const container = document.querySelector('#dynamic-config-sections');
     if (!container) {
@@ -516,14 +435,23 @@ function renderSetupConfig(config) {
 
         const h4 = document.createElement('h4');
         
-        const titleWithTooltip = createTitleWithTooltip(
-            category.title || category.id || '',
-            category.link,
-            category.class,
-            category.descriptionUrl,
-            category.description
-        );
-        h4.appendChild(titleWithTooltip);
+        if (category.link) {
+            const a = document.createElement('a');
+            a.href = category.link;
+            a.target = '_blank';
+            a.rel = 'noopener noreferrer';
+            a.className = 'linked-title';
+            if (category.class) a.classList.add(category.class);
+            a.textContent = category.title || category.id || '';
+            h4.appendChild(a);
+        } else {
+            if (category.class) h4.classList.add(category.class);
+            h4.textContent = category.title || category.id || '';
+        }
+        
+        if (category.description || category.descriptionUrl) {
+            addTooltip(h4, category.descriptionUrl || category.description);
+        }
         
         section.appendChild(h4);
         
@@ -627,16 +555,28 @@ function buildField(field) {
 
     const label = document.createElement('label');
     
-    const labelContent = createTitleWithTooltip(
-        field.label || field.id || '',
-        field.link,
-        field.class,
-        field.descriptionUrl,
-        field.description
-    );
-    label.appendChild(labelContent);
+    if (field.link) {
+        const a = document.createElement('a');
+        a.href = field.link;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        a.className = 'linked-title';
+        if (field.class) a.classList.add(field.class);
+        a.textContent = field.label || field.id || '';
+        label.appendChild(a);
+    } else {
+        const span = document.createElement('span');
+        if (field.class) span.classList.add(field.class);
+        span.textContent = field.label || field.id || '';
+        label.appendChild(span);
+    }
     
     if (field.id) label.setAttribute('for', field.id);
+    
+    if (field.description || field.descriptionUrl) {
+        addTooltip(label, field.descriptionUrl || field.description);
+    }
+    
     group.appendChild(label);
 
     let ctrl;
@@ -716,6 +656,13 @@ function buildField(field) {
     
     group.appendChild(ctrl);
 
+    if (field.description && !field.descriptionUrl) {
+        const small = document.createElement('small');
+        small.className = 'text-muted';
+        small.textContent = field.description;
+        group.appendChild(small);
+    }
+
     row.appendChild(group);
     return row;
 }
@@ -731,14 +678,25 @@ function buildRadioGroup(item) {
         const legend = document.createElement('div');
         legend.className = 'form-label';
         
-        const titleContent = createTitleWithTooltip(
-            item.title,
-            item.link,
-            item.class,
-            item.descriptionUrl,
-            item.description
-        );
-        legend.appendChild(titleContent);
+        if (item.link) {
+            const a = document.createElement('a');
+            a.href = item.link;
+            a.target = '_blank';
+            a.rel = 'noopener noreferrer';
+            a.className = 'linked-title';
+            if (item.class) a.classList.add(item.class);
+            a.textContent = item.title;
+            legend.appendChild(a);
+        } else {
+            const span = document.createElement('span');
+            if (item.class) span.classList.add(item.class);
+            span.textContent = item.title;
+            legend.appendChild(span);
+        }
+        
+        if (item.description || item.descriptionUrl) {
+            addTooltip(legend, item.descriptionUrl || item.description);
+        }
         
         group.appendChild(legend);
     }
@@ -784,14 +742,23 @@ function buildSection(section) {
     if (section.title) {
         const h4 = document.createElement('h4');
         
-        const titleContent = createTitleWithTooltip(
-            section.title,
-            section.link,
-            section.class,
-            section.descriptionUrl,
-            section.description
-        );
-        h4.appendChild(titleContent);
+        if (section.link) {
+            const a = document.createElement('a');
+            a.href = section.link;
+            a.target = '_blank';
+            a.rel = 'noopener noreferrer';
+            a.className = 'linked-title';
+            if (section.class) a.classList.add(section.class);
+            a.textContent = section.title;
+            h4.appendChild(a);
+        } else {
+            if (section.class) h4.classList.add(section.class);
+            h4.textContent = section.title;
+        }
+        
+        if (section.description || section.descriptionUrl) {
+            addTooltip(h4, section.descriptionUrl || section.description);
+        }
         
         wrapper.appendChild(h4);
     }
@@ -2959,7 +2926,27 @@ async function buildAvailabilityIndex(deviceInfo, neededFeeds) {
 }
 
 // ==================== パッケージ説明取得関数 ====================
-async function getPackageDescription(pkgName) {
+async function getPackageDescription(pkgNameOrUrl) {
+    if (typeof pkgNameOrUrl === 'string' && (pkgNameOrUrl.startsWith('http://') || pkgNameOrUrl.startsWith('https://'))) {
+        const cacheKey = `url:${pkgNameOrUrl}`;
+        
+        if (state.cache.packageDescriptions.has(cacheKey)) {
+            return state.cache.packageDescriptions.get(cacheKey);
+        }
+        
+        try {
+            const resp = await fetch(pkgNameOrUrl, { cache: 'force-cache' });
+            if (!resp.ok) return null;
+            const text = await resp.text();
+            state.cache.packageDescriptions.set(cacheKey, text.trim());
+            return text.trim();
+        } catch (err) {
+            console.error('Failed to fetch external description:', err);
+            return null;
+        }
+    }
+    
+    const pkgName = pkgNameOrUrl;
     const deviceInfo = {
         arch: state.device.arch,
         version: state.device.version,
@@ -2974,12 +2961,10 @@ async function getPackageDescription(pkgName) {
     
     const cacheKey = `${deviceInfo.version}:${deviceInfo.arch}:${pkgName}`;
     
-    // キャッシュにあれば返す
     if (state.cache.packageDescriptions.has(cacheKey)) {
         return state.cache.packageDescriptions.get(cacheKey);
     }
     
-    // どのfeedか推測
     const feed = guessFeedForPackage(pkgName);
     
     try {
@@ -2991,7 +2976,6 @@ async function getPackageDescription(pkgName) {
         let description = null;
         
         if (isSnapshot) {
-            // APK (SNAPSHOT) の場合
             const data = await resp.json();
             let packages = [];
             
@@ -3006,7 +2990,6 @@ async function getPackageDescription(pkgName) {
                 description = pkg.desc;
             }
         } else {
-            // OPKG (リリース版) の場合
             const text = await resp.text();
             const lines = text.split('\n');
             let currentPackage = null;
@@ -3015,7 +2998,6 @@ async function getPackageDescription(pkgName) {
             
             for (const line of lines) {
                 if (line.startsWith('Package: ')) {
-                    // 前のパッケージの説明を保存
                     if (currentPackage === pkgName && currentDescription) {
                         description = currentDescription.trim();
                         break;
@@ -3028,25 +3010,20 @@ async function getPackageDescription(pkgName) {
                     inDescription = true;
                 } else if (inDescription && currentPackage === pkgName) {
                     if (line.startsWith(' ')) {
-                        // 説明の継続行
                         currentDescription += '\n' + line.trim();
                     } else if (line.trim() === '') {
-                        // 空行で説明終了
                         inDescription = false;
                     } else if (!line.startsWith(' ')) {
-                        // 新しいフィールドが始まったら終了
                         break;
                     }
                 }
             }
             
-            // 最後のパッケージの処理
             if (currentPackage === pkgName && currentDescription) {
                 description = currentDescription.trim();
             }
         }
         
-        // キャッシュに保存
         if (description) {
             state.cache.packageDescriptions.set(cacheKey, description);
         }
@@ -3056,6 +3033,29 @@ async function getPackageDescription(pkgName) {
         console.error('Failed to get package description:', err);
         return null;
     }
+}
+
+function addTooltip(element, descriptionSource) {
+    element.style.position = 'relative';
+    
+    const tooltip = document.createElement('div');
+    tooltip.className = 'tooltip';
+    element.appendChild(tooltip);
+    
+    let isTooltipLoaded = false;
+    
+    element.addEventListener('mouseenter', async function() {
+        if (isTooltipLoaded) return;
+        
+        const description = await getPackageDescription(descriptionSource);
+        if (description) {
+            tooltip.textContent = description;
+            isTooltipLoaded = true;
+        } else {
+            tooltip.textContent = 'No description available';
+            isTooltipLoaded = true;
+        }
+    });
 }
 
 async function fetchFeedSet(feed, deviceInfo) {
@@ -3535,7 +3535,7 @@ function createPackageCheckbox(pkg, isChecked = false, isDependency = false) {
         const link = document.createElement('a');
         link.href = config.package_url.replace("{id}", encodeURIComponent(pkg.id));
         link.target = '_blank';
-        link.className = 'package-link';
+        link.className = 'package-link linked-title';
         link.textContent = (pkg.name || pkg.id) + sizeText;
         link.onclick = (e) => e.stopPropagation();
         label.appendChild(checkbox);
@@ -3547,39 +3547,7 @@ function createPackageCheckbox(pkg, isChecked = false, isDependency = false) {
         label.appendChild(span);
     }
     
-    const tooltip = document.createElement('div');
-    tooltip.className = 'package-tooltip';
-    tooltip.style.opacity = '0';
-    tooltip.style.visibility = 'hidden';
-    label.appendChild(tooltip);
-    
-    let isTooltipLoaded = false;
-    
-    label.addEventListener('mouseenter', async function() {
-        if (isTooltipLoaded) {
-            tooltip.style.opacity = '1';
-            tooltip.style.visibility = 'visible';
-            return;
-        }
-        
-        const description = await getPackageDescription(pkg.id);
-        if (description) {
-            tooltip.textContent = description;
-            tooltip.style.opacity = '1';
-            tooltip.style.visibility = 'visible';
-            isTooltipLoaded = true;
-        } else {
-            tooltip.textContent = 'No description available';
-            tooltip.style.opacity = '1';
-            tooltip.style.visibility = 'visible';
-            isTooltipLoaded = true;
-        }
-    });
-    
-    label.addEventListener('mouseleave', function() {
-        tooltip.style.opacity = '0';
-        tooltip.style.visibility = 'hidden';
-    });
+    addTooltip(label, pkg.id);
     
     label.setAttribute('data-package-name', pkg.name || pkg.id);
     
