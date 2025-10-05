@@ -547,12 +547,13 @@ details summary::-webkit-details-marker {
 
 /* ===== 汎用リンクスタイル ===== */
 .linked-title {
-  color: var(--owrt-blue);
+  color: inherit;
   text-decoration: none;
   font-weight: inherit;
 }
 
 .linked-title:hover {
+  color: var(--owrt-blue);
   text-decoration: underline;
 }
 
@@ -606,10 +607,6 @@ details summary::-webkit-details-marker {
 }
 
 @media (prefers-color-scheme: dark) {
-  .linked-title {
-    color: #4da6ff;
-  }
-  
   .tooltip {
     background-color: var(--bg-section);
     border-color: var(--border-main);
