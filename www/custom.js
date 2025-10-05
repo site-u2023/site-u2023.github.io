@@ -554,7 +554,7 @@ function buildField(field) {
     group.className = 'form-group';
 
     const label = document.createElement('label');
-    
+  
     if (field.link) {
         const a = document.createElement('a');
         a.href = field.link;
@@ -2944,6 +2944,10 @@ async function getPackageDescription(pkgNameOrUrl) {
             console.error('Failed to fetch external description:', err);
             return null;
         }
+    }
+    
+    if (typeof pkgNameOrUrl === 'string' && pkgNameOrUrl.includes(' ')) {
+        return pkgNameOrUrl;
     }
     
     const pkgName = pkgNameOrUrl;
