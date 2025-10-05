@@ -40,7 +40,7 @@
       "id": "basic-config",
       "title": "Basic Configuration",
       "class": "tr-basic-configuration",
-      "link": "https://openwrt.org/docs/guide-user/base-system/uci",
+      "link": "https://openwrt.org/docs/guide-user/base-system/start",
       "description": "Basic system and device configuration",
       
       "items": [
@@ -178,7 +178,8 @@
       "id": "wifi-config",
       "title": "Wi-Fi Configuration",
       "class": "tr-wi-fi-configuration",
-      "description": "Wireless network configuration",
+      "link": "https://openwrt.org/docs/guide-user/network/wifi/basic",
+      "description": "Configure wireless network settings including SSID, password, and roaming optimization"
       
       "items": [
         {
@@ -267,6 +268,7 @@
       "id": "internet-connection",
       "title": "Internet Connection",
       "class": "tr-internet-connection",
+      "link": "https://openwrt.org/docs/guide-user/network/start",
       "description": "Configure your internet connection type",
       
       "items": [
