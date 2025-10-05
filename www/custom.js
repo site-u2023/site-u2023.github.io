@@ -3454,14 +3454,12 @@ function createPackageCategory(category) {
     if (category.class) {
         title.classList.add(category.class);
     }
-    categoryDiv.appendChild(title);
- 
-    if (category.description) {
-        const description = document.createElement('div');
-        description.className = 'package-category-description';
-        description.textContent = category.description;
-        categoryDiv.appendChild(description);
+    
+    if (category.description || category.descriptionUrl) {
+        addTooltip(title, category.descriptionUrl || category.description);
     }
+    
+    categoryDiv.appendChild(title);
     
     categoryDiv.appendChild(packageGrid);
     return categoryDiv;
