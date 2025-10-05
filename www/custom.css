@@ -226,8 +226,7 @@ input[type="radio"] {
 }
 
 .package-search-results div:hover {
-  background-color: #00a3e1;
-  color: #fff;
+  color: var(--owrt-blue);
 }
 
 /* Dark mode support for autocomplete */
@@ -243,8 +242,7 @@ input[type="radio"] {
   }
   
   .package-search-results div:hover {
-    background-color: #0080b3;
-    color: #fff;
+    color: var(--owrt-blue);
   }
 }
 
@@ -538,7 +536,7 @@ details summary::-webkit-details-marker {
 }
 
 .package-link:hover {
-  text-decoration: underline;
+  color: var(--owrt-blue);
 }
 
 .package-dependent {
@@ -554,7 +552,6 @@ details summary::-webkit-details-marker {
 
 .linked-title:hover {
   color: var(--owrt-blue);
-  text-decoration: underline;
 }
 
 /* ===== 汎用ツールチップ（Package & Setup 共通） ===== */
