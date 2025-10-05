@@ -416,6 +416,87 @@ async function loadSetupConfig() {
     }
 }
 
+async function getExternalDescription(url) {
+    if (!url) return null;
+    
+    const cacheKey = `external:${url}`;
+    
+    if (state.cache.packageDescriptions.has(cacheKey)) {
+        return state.cache.packageDescriptions.get(cacheKey);
+    }
+    
+    try {
+        const resp = await fetch(url, { cache: 'force-cache' });
+        if (!resp.ok) return null;
+        
+        const text = await resp.text();
+        
+        state.cache.packageDescriptions.set(cacheKey, text.trim());
+        return text.trim();
+    } catch (err) {
+        console.error('Failed to fetch external description:', err);
+        return null;
+    }
+}
+
+function createTitleWithLink(text, link, className = '') {
+    if (link) {
+        const a = document.createElement('a');
+        a.href = link;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        a.className = 'setup-title-link';
+        if (className) a.classList.add(className);
+        a.textContent = text;
+        return a;
+    } else {
+        const span = document.createElement('span');
+        if (className) span.classList.add(className);
+        span.textContent = text;
+        return span;
+    }
+}
+
+function createTitleWithTooltip(text, link, className, descriptionUrl, description) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'setup-title-wrapper';
+    wrapper.style.position = 'relative';
+    wrapper.style.display = 'inline-block';
+    
+    const titleElement = createTitleWithLink(text, link, className);
+    wrapper.appendChild(titleElement);
+    
+    if (description || descriptionUrl) {
+        const tooltip = document.createElement('div');
+        tooltip.className = 'setup-tooltip';
+        wrapper.appendChild(tooltip);
+        
+        let isTooltipLoaded = false;
+        
+        wrapper.addEventListener('mouseenter', async function() {
+            if (isTooltipLoaded) {
+                return;
+            }
+            
+            let desc = description;
+            
+            if (descriptionUrl && !desc) {
+                desc = await getExternalDescription(descriptionUrl);
+            }
+            
+            if (desc) {
+                tooltip.textContent = desc;
+                isTooltipLoaded = true;
+            } else {
+                tooltip.textContent = 'No description available';
+                isTooltipLoaded = true;
+            }
+        });
+    }
+    
+    return wrapper;
+}
+
 function renderSetupConfig(config) {
     const container = document.querySelector('#dynamic-config-sections');
     if (!container) {
@@ -434,19 +515,18 @@ function renderSetupConfig(config) {
         section.id = category.id;
 
         const h4 = document.createElement('h4');
-        h4.textContent = category.title || category.id || '';
-        if (category.class) {
-            h4.classList.add(category.class);
-        }
+        
+        const titleWithTooltip = createTitleWithTooltip(
+            category.title || category.id || '',
+            category.link,
+            category.class,
+            category.descriptionUrl,
+            category.description
+        );
+        h4.appendChild(titleWithTooltip);
+        
         section.appendChild(h4);
         
-        if (category.description) {
-            const desc = document.createElement('p');
-            desc.className = 'package-category-description';
-            desc.textContent = category.description;
-            section.appendChild(desc);
-        }
-
         const itemsContainer = CustomUtils.createGridContainer(columns);
 
         const items = category.items || [];
@@ -546,9 +626,17 @@ function buildField(field) {
     group.className = 'form-group';
 
     const label = document.createElement('label');
-    label.textContent = field.label || field.id || '';
+    
+    const labelContent = createTitleWithTooltip(
+        field.label || field.id || '',
+        field.link,
+        field.class,
+        field.descriptionUrl,
+        field.description
+    );
+    label.appendChild(labelContent);
+    
     if (field.id) label.setAttribute('for', field.id);
-    if (field.class) label.classList.add(field.class);
     group.appendChild(label);
 
     let ctrl;
@@ -628,13 +716,6 @@ function buildField(field) {
     
     group.appendChild(ctrl);
 
-    if (field.description) {
-        const small = document.createElement('small');
-        small.className = 'text-muted';
-        small.textContent = field.description;
-        group.appendChild(small);
-    }
-
     row.appendChild(group);
     return row;
 }
@@ -649,8 +730,16 @@ function buildRadioGroup(item) {
     if (item.title) {
         const legend = document.createElement('div');
         legend.className = 'form-label';
-        if (item.class) legend.classList.add(item.class);
-        legend.textContent = item.title;
+        
+        const titleContent = createTitleWithTooltip(
+            item.title,
+            item.link,
+            item.class,
+            item.descriptionUrl,
+            item.description
+        );
+        legend.appendChild(titleContent);
+        
         group.appendChild(legend);
     }
 
@@ -694,8 +783,16 @@ function buildSection(section) {
 
     if (section.title) {
         const h4 = document.createElement('h4');
-        h4.textContent = section.title;
-        if (section.class) h4.classList.add(section.class);
+        
+        const titleContent = createTitleWithTooltip(
+            section.title,
+            section.link,
+            section.class,
+            section.descriptionUrl,
+            section.description
+        );
+        h4.appendChild(titleContent);
+        
         wrapper.appendChild(h4);
     }
 
