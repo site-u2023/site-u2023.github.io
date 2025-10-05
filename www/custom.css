@@ -9,6 +9,7 @@
   --owrt-black: #231F20;
   --owrt-gray: #212322;
   --owrt-white: #FFFFFF;
+  --owrt-blue-hover: #00a3e1; 
   
   /* Light Mode Colors */
   --bg-main: #f5f5f5;
@@ -226,7 +227,7 @@ input[type="radio"] {
 }
 
 .package-search-results div:hover {
-  background-color: var(--owrt-blue);
+  background-color: var(--owrt-blue-hover);
   color: var(--owrt-white);
 }
 
@@ -243,7 +244,7 @@ input[type="radio"] {
   }
   
   .package-search-results div:hover {
-    background-color: var(--owrt-blue);
+    background-color: var(--owrt-blue-hover);
     color: var(--owrt-white);
   }
 }
