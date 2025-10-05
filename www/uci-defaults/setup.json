@@ -179,7 +179,7 @@
       "title": "Wi-Fi Configuration",
       "class": "tr-wi-fi-configuration",
       "link": "https://openwrt.org/docs/guide-user/network/wifi/basic",
-      "description": "Configure wireless network settings including SSID, password, and roaming optimization"
+      "description": "Configure wireless network settings including SSID, password, and roaming optimization",
       
       "items": [
         {
