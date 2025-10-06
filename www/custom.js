@@ -3904,15 +3904,19 @@ function applyImportedSettings(data) {
         }
     }
     
-    requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-            console.log('Triggering update after import');
-            evaluateAllShowWhen();
-            updateVariableDefinitions();
-            updateCustomCommands();
-            updateAllPackageState('import-complete');
-        });
+    console.log('Executing post-import updates');
+    evaluateAllShowWhen();
+    evaluateAllComputedFields();
+    
+    document.querySelectorAll('input[type="radio"]:checked').forEach(radio => {
+        radio.dispatchEvent(new Event('change', { bubbles: true }));
     });
+    
+    updateVariableDefinitions();
+    updateCustomCommands();
+    updateAllPackageState('import-complete');
+    
+    console.log('Import completed successfully');
 }
 
 // ==================== HTML読み込み ====================
