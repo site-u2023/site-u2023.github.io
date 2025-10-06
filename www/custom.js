@@ -1552,72 +1552,52 @@ function applySpecialFieldLogic(values, importedVars = {}) {
     const connectionTypeUI = getFieldValue(`input[name="connection_type"]:checked`) 
         || importedVars.connection_type 
         || 'auto';
-    let actualConnectionType = connectionTypeUI;
 
-    if (actualConnectionType === 'auto' && state.apiInfo) {
-        if (state.apiInfo.mape?.brIpv6Address) {
-            actualConnectionType = 'mape';
-        } else if (state.apiInfo.aftr?.aftrIpv6Address) {
-            actualConnectionType = 'dslite';
-        } else {
-            actualConnectionType = 'dhcp';
-        }
-    }
-    values.connection_type = actualConnectionType;
+    values.connection_type = connectionTypeUI;
 
-    if (actualConnectionType === 'pppoe') {
+    if (connectionTypeUI === 'pppoe') {
         const username = getFieldValue('#pppoe-username');
         const password = getFieldValue('#pppoe-password');
         if (username) values.pppoe_username = username;
         if (password) values.pppoe_password = password;
-    } else if (actualConnectionType === 'dslite') {
-        if (connectionTypeUI === 'auto' && state.apiInfo?.aftr?.aftrIpv6Address) {
-            values.dslite_aftr_address = state.apiInfo.aftr.aftrIpv6Address;
-        } else {
-            const aftrType = getFieldValue('#dslite-aftr-type');
-            const area = getFieldValue('#dslite-area');
-            const aftrAddress = getFieldValue('#dslite-aftr-address');
-            if (aftrType) values.dslite_aftr_type = aftrType;
-            if (area) values.dslite_area = area;
-            if (aftrAddress) values.dslite_aftr_address = aftrAddress;
+    }
+
+    else if (connectionTypeUI === 'manual-dslite') {
+        const aftrType = getFieldValue('#dslite-aftr-type');
+        const area = getFieldValue('#dslite-area');
+        const aftrAddress = getFieldValue('#dslite-aftr-address');
+        if (aftrType) values.dslite_aftr_type = aftrType;
+        if (area) values.dslite_area = area;
+        if (aftrAddress) values.dslite_aftr_address = aftrAddress;
+    }
+
+    else if (connectionTypeUI === 'manual-mape') {
+        const br = getFieldValue('#mape-br');
+        const ealen = getFieldValue('#mape-ealen');
+        const ipv4Prefix = getFieldValue('#mape-ipv4-prefix');
+        const ipv4Prefixlen = getFieldValue('#mape-ipv4-prefixlen');
+        const ipv6Prefix = getFieldValue('#mape-ipv6-prefix');
+        const ipv6Prefixlen = getFieldValue('#mape-ipv6-prefixlen');
+        const psidOffset = getFieldValue('#mape-psid-offset');
+        const psidlen = getFieldValue('#mape-psidlen');
+        if (br) values.mape_br = br;
+        if (ealen) values.mape_ealen = ealen;
+        if (ipv4Prefix) values.mape_ipv4_prefix = ipv4Prefix;
+        if (ipv4Prefixlen) values.mape_ipv4_prefixlen = ipv4Prefixlen;
+        if (ipv6Prefix) values.mape_ipv6_prefix = ipv6Prefix;
+        if (ipv6Prefixlen) values.mape_ipv6_prefixlen = ipv6Prefixlen;
+        if (psidOffset) values.mape_psid_offset = psidOffset;
+        if (psidlen) values.mape_psidlen = psidlen;
+
+        const mapeTypeUI = getFieldValue(`input[name="mape_type"]:checked`) || 'gua';
+        values.mape_type = importedVars.mape_type || mapeTypeUI;
+        if (values.mape_type === 'gua') {
+            const guaPrefixForm = getFieldValue('#mape-gua-prefix');
+            if (guaPrefixForm) values.mape_gua_prefix = guaPrefixForm;
         }
-    } else if (actualConnectionType === 'mape') {
-        if (connectionTypeUI === 'auto' && state.apiInfo?.mape) {
-            values.mape_br = state.apiInfo.mape.brIpv6Address;
-            values.mape_ealen = state.apiInfo.mape.eaBitLength;
-            values.mape_ipv4_prefix = state.apiInfo.mape.ipv4Prefix;
-            values.mape_ipv4_prefixlen = state.apiInfo.mape.ipv4PrefixLength;
-            values.mape_ipv6_prefix = state.apiInfo.mape.ipv6Prefix;
-            values.mape_ipv6_prefixlen = state.apiInfo.mape.ipv6PrefixLength;
-            values.mape_psid_offset = state.apiInfo.mape.psIdOffset;
-            values.mape_psidlen = state.apiInfo.mape.psidlen;
-            const guaPrefix = CustomUtils.generateGuaPrefixFromFullAddress(state.apiInfo);
-            if (guaPrefix) values.mape_gua_prefix = guaPrefix;
-        } else {
-            const br = getFieldValue('#mape-br');
-            const ealen = getFieldValue('#mape-ealen');
-            const ipv4Prefix = getFieldValue('#mape-ipv4-prefix');
-            const ipv4Prefixlen = getFieldValue('#mape-ipv4-prefixlen');
-            const ipv6Prefix = getFieldValue('#mape-ipv6-prefix');
-            const ipv6Prefixlen = getFieldValue('#mape-ipv6-prefixlen');
-            const psidOffset = getFieldValue('#mape-psid-offset');
-            const psidlen = getFieldValue('#mape-psidlen');
-            if (br) values.mape_br = br;
-            if (ealen) values.mape_ealen = ealen;
-            if (ipv4Prefix) values.mape_ipv4_prefix = ipv4Prefix;
-            if (ipv4Prefixlen) values.mape_ipv4_prefixlen = ipv4Prefixlen;
-            if (ipv6Prefix) values.mape_ipv6_prefix = ipv6Prefix;
-            if (ipv6Prefixlen) values.mape_ipv6_prefixlen = ipv6Prefixlen;
-            if (psidOffset) values.mape_psid_offset = psidOffset;
-            if (psidlen) values.mape_psidlen = psidlen;
-            const mapeTypeUI = getFieldValue(`input[name="mape_type"]:checked`) || 'gua';
-            values.mape_type = importedVars.mape_type || mapeTypeUI;
-            if (values.mape_type === 'gua') {
-                const guaPrefixForm = getFieldValue('#mape-gua-prefix');
-                if (guaPrefixForm) values.mape_gua_prefix = guaPrefixForm;
-            }
-        }
-    } else if (actualConnectionType === 'ap') {
+    }
+
+    else if (connectionTypeUI === 'ap') {
         const apIp = getFieldValue('#ap-ip-address');
         const apGw = getFieldValue('#ap-gateway');
         if (apIp) values.ap_ip_address = apIp;
