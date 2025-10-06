@@ -1,0 +1,38 @@
+# OpenWrt Custom Settings Export
+# Generated: 2025-10-06T14:28:39.399Z
+
+[METADATA]
+device_model=ELECOM WRC-X3200GST3
+device_name=OpenWrt
+language=ja
+export_date=2025-10-06T14:28:39.399Z
+version=1.0
+
+[PACKAGES]
+luci-app-ttyd
+openssh-sftp-server
+luci-mod-dashboard
+luci-app-attendedsysupgrade
+owut
+map
+luci-app-usteer
+
+[VARIABLES]
+language=ja
+country=JP
+timezone=JST-9
+zonename=Asia/Tokyo
+ssh_interface=lan
+flow_offloading_type=hardware
+backup_path=/root/backup.tar.gz
+wifi_mode=usteer
+wlan_ssid=OpenWrt
+wlan_password=password
+mobility_domain=4f57
+snr=30 15 5
+connection_type=auto
+net_optimizer=auto
+enable_dnsmasq=auto
+enable_ttyd=1
+
+[COMMANDS]
