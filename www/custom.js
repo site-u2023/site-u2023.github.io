@@ -299,11 +299,7 @@ window.updateImages = function(version, mobj) {
         
         CustomUtils.updateDeviceInfo(mobj.target);
 
-        console.log('[TRACE] device updated:', state.device);
-
-        if (mobj.id && mobj.target) {
-            updateIrqbalanceByDevice(mobj.id, mobj.target);
-        }        
+        console.log('[TRACE] device updated:', state.device);    
       
         if (oldArch !== mobj.arch_packages || oldVersion !== version || oldDeviceId !== mobj.id) {
             console.log('[TRACE] Device changed, clearing caches');
@@ -3276,42 +3272,6 @@ async function fetchToHData() {
     } catch (err) {
         console.warn('ToH data fetch failed:', err.message);
         return null;
-    }
-}
-
-async function updateIrqbalanceByDevice(deviceId, target) {
-    const checkbox = document.querySelector('[data-package="luci-app-irqbalance"]');
-    if (!checkbox) return;
-    
-    const data = await fetchToHData();
-    if (!data?.entries || !data?.columns) return;
-
-    const idx = {
-        deviceId: data.columns.indexOf('deviceid'),
-        target: data.columns.indexOf('target'),
-        subtarget: data.columns.indexOf('subtarget'),
-        cpuCores: data.columns.indexOf('cpucores')
-    };
-
-    const device = data.entries.find(entry => {
-        const entryDeviceId = entry[idx.deviceId];
-        const entryTarget = entry[idx.target];
-        const entrySubtarget = entry[idx.subtarget];
-        const fullTarget = entryTarget && entrySubtarget ? `${entryTarget}/${entrySubtarget}` : entryTarget;
-        return entryDeviceId === deviceId || fullTarget === target;
-    });
-
-    if (!device) return;
-
-    const cores = parseInt(device[idx.cpuCores], 10);
-    if (isNaN(cores)) return;
-
-    const shouldBeEnabled = cores >= 2;
-    
-    if (checkbox.checked !== shouldBeEnabled) {
-        checkbox.checked = shouldBeEnabled;
-        checkbox.dispatchEvent(new Event('change', { bubbles: true }));
-        requestAnimationFrame(() => updateAllPackageState('irqbalance-auto-check'));
     }
 }
 
