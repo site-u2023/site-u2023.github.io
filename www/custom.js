@@ -3687,6 +3687,8 @@ async function initializeCustomFeatures(asuSection, temp) {
         return;
     }
 
+    injectSettingsBar(temp);
+  
     cleanupExistingCustomElements();
     replaceAsuSection(asuSection, temp);
     
@@ -3760,3 +3762,29 @@ async function initializeCustomFeatures(asuSection, temp) {
 }
 
 console.log('custom.js (v2.0 - Simplified) fully loaded and ready');
+
+// ==================== Settings Import/Export Bar ====================
+function injectSettingsBar(temp) {
+    const header = document.querySelector('header');
+    if (!header) {
+        console.error('Header not found');
+        return;
+    }
+    
+    const template = temp.querySelector('#settings-bar-template');
+    if (!template) {
+        console.error('Settings bar template not found');
+        return;
+    }
+    
+    const settingsBar = template.querySelector('#settings-bar');
+    const fileInput = template.querySelector('#import-file-input');
+    
+    if (settingsBar && fileInput) {
+        header.insertAdjacentElement('afterend', settingsBar.cloneNode(true));
+        document.body.appendChild(fileInput.cloneNode(true));
+        console.log('Settings bar injected');
+        
+        setupImportExport();
+    }
+}
