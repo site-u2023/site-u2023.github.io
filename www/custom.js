@@ -1715,7 +1715,7 @@ function getFieldsForWifiMode(mode) {
     
     fields.push('wlan_ssid', 'wlan_password');
     
-    if (mode === 'usteer') {
+    if (mode === 'luci-app-usteer') {
         fields.push('mobility_domain', 'snr');
     }
     
