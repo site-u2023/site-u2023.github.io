@@ -571,10 +571,10 @@
       ]
     },
     {
-      "id": "ad-blocking",
-      "name": "Ad Blocking",
-      "class": "tr-ad-blocking",
-      "description": "DNS-based ad blocking and content filtering",
+      "id": "dns-privacy",
+      "name": "DNS & Privacy",
+      "class": "tr-dns-privacy",
+      "description": "DNS-based ad blocking and encrypted DNS (DoH/DoT)",
       "packages": [
         {
           "id": "luci-app-adblock-fast",
@@ -588,15 +588,7 @@
           "enableVar": "enable_tofukko_filter",
           "hidden": true,
           "virtual": true
-        }
-      ]
-    },
-    {
-      "id": "dns-privacy",
-      "name": "DNS Privacy",
-      "class": "tr-dns-privacy",
-      "description": "DNS over HTTPS (DoH) and DNS over TLS (DoT) - Manual LuCI configuration required",
-      "packages": [
+        },
         {
           "id": "luci-app-https-dns-proxy",
           "name": "luci-app-https-dns-proxy (DoH)"
