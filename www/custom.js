@@ -1562,7 +1562,7 @@ function applySpecialFieldLogic(values, importedVars = {}) {
         if (password) values.pppoe_password = password;
     }
 
-    else if (connectionTypeUI === 'manual-dslite') {
+    else if (connectionTypeUI === 'dslite') {
         const aftrType = getFieldValue('#dslite-aftr-type');
         const area = getFieldValue('#dslite-area');
         const aftrAddress = getFieldValue('#dslite-aftr-address');
@@ -1571,7 +1571,7 @@ function applySpecialFieldLogic(values, importedVars = {}) {
         if (aftrAddress) values.dslite_aftr_address = aftrAddress;
     }
 
-    else if (connectionTypeUI === 'manual-mape') {
+    else if (connectionTypeUI === 'mape') {
         const br = getFieldValue('#mape-br');
         const ealen = getFieldValue('#mape-ealen');
         const ipv4Prefix = getFieldValue('#mape-ipv4-prefix');
