@@ -1166,7 +1166,6 @@ async function updateLanguagePackageCore() {
     }
 
     const hasArch = state.device.arch;
-  
     if (!lang || lang === config.fallback_language || !hasArch) {
         console.log('Skipping language packages - fallback language or no arch info');
         return;
@@ -1177,7 +1176,7 @@ async function updateLanguagePackageCore() {
 
     const addedLangPackages = new Set();
 
-    const prefixes = ['luci-i18n-base-', 'luci-i18n-opkg-', 'luci-i18n-package-manager-', 'luci-i18n-firewall-'];
+    const prefixes = state.config.setup?.constants?.language_prefixes || [];
 
     for (const prefix of prefixes) {
         const name = `${prefix}${lang}`;
@@ -1198,8 +1197,6 @@ async function updateLanguagePackageCore() {
 
         if (pkg.startsWith('luci-') && !pkg.startsWith('luci-i18n-')) {
             moduleName = extractLuciName(pkg);
-        } else if (pkg === 'usteer-from-setup') {
-            moduleName = 'usteer';
         }
 
         if (!moduleName) continue;
@@ -1428,10 +1425,6 @@ function isManualPackage(pkg, confirmedSet, knownSelectablePackages, currentUISe
 
 function extractLuciName(pkg) {
     if (pkg === 'luci') return 'base';
-    
-    if (pkg === 'usteer-from-setup' || pkg === 'luci-app-usteer-setup') {
-        return 'usteer';
-    }
 
     const prefixMatch = pkg.match(/^luci-(?:app|mod|theme|proto)-(.+)$/);
     if (prefixMatch && prefixMatch[1]) {
