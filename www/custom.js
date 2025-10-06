@@ -3938,10 +3938,11 @@ function applyImportedSettings(data) {
         radio.dispatchEvent(new Event('change', { bubbles: true }));
     });
     
-    updateVariableDefinitions();
-    updateCustomCommands();
-    
-    console.log('Import completed successfully');
+    requestAnimationFrame(() => {
+        updateVariableDefinitions();
+        updateCustomCommands();
+        console.log('Import completed successfully');
+    });
 }
 
 // ==================== HTML読み込み ====================
