@@ -3850,11 +3850,12 @@ function extractCommandsFromSetup() {
 }
 
 function applyImportedSettings(data) {
+    console.log('Applying imported settings:', data);
+    
     if (data.metadata.device_name) {
         const deviceNameField = document.getElementById('aios-device-name');
         if (deviceNameField) {
             deviceNameField.value = data.metadata.device_name;
-            deviceNameField.dispatchEvent(new Event('input', { bubbles: true }));
         }
     }
     
@@ -3864,7 +3865,6 @@ function applyImportedSettings(data) {
             languageField.value = data.metadata.language;
             state.ui.language.selected = data.metadata.language;
             config.device_language = data.metadata.language;
-            languageField.dispatchEvent(new Event('change', { bubbles: true }));
         }
     }
     
@@ -3873,7 +3873,6 @@ function applyImportedSettings(data) {
             const checkbox = document.querySelector(`[data-package="${pkg}"]`);
             if (checkbox && checkbox.type === 'checkbox') {
                 checkbox.checked = true;
-                checkbox.dispatchEvent(new Event('change', { bubbles: true }));
             }
         }
     }
@@ -3889,11 +3888,9 @@ function applyImportedSettings(data) {
                     const radio = document.querySelector(`[name="${key}"][value="${value}"]`);
                     if (radio) {
                         radio.checked = true;
-                        radio.dispatchEvent(new Event('change', { bubbles: true }));
                     }
                 } else {
                     field.value = value;
-                    field.dispatchEvent(new Event('input', { bubbles: true }));
                 }
             }
         }
@@ -3908,9 +3905,13 @@ function applyImportedSettings(data) {
     }
     
     requestAnimationFrame(() => {
-        updateVariableDefinitions();
-        updateCustomCommands();
-        updateAllPackageState('import-complete');
+        requestAnimationFrame(() => {
+            console.log('Triggering update after import');
+            evaluateAllShowWhen();
+            updateVariableDefinitions();
+            updateCustomCommands();
+            updateAllPackageState('import-complete');
+        });
     });
 }
 
