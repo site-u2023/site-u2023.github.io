@@ -1,0 +1,55 @@
+# OpenWrt Custom Settings Export
+# Generated: 2025-10-06T14:16:50.968Z
+
+[METADATA]
+device_model=Bananapi BPi-R4
+device_name=OpenWrt
+language=ja
+export_date=2025-10-06T14:16:50.968Z
+version=1.0
+
+[PACKAGES]
+luci-app-ttyd
+openssh-sftp-server
+luci-app-irqbalance
+ethtool
+luci-mod-dashboard
+luci-app-attendedsysupgrade
+owut
+kmod-usb-storage-uas
+block-mount
+usbutils
+gdisk
+dosfstools
+kmod-fs-vfat
+kmod-fs-ext4
+f2fs-tools
+kmod-fs-f2fs
+exfat-fsck
+kmod-fs-exfat
+ntfs-3g
+kmod-fs-ntfs3
+map
+luci-app-usteer
+
+[VARIABLES]
+language=ja
+country=JP
+timezone=JST-9
+zonename=Asia/Tokyo
+ssh_interface=lan
+flow_offloading_type=hardware
+backup_path=/root/backup.tar.gz
+wifi_mode=usteer
+wlan_ssid=OpenWrt
+wlan_password=password
+mobility_domain=4f57
+snr=30 15 5
+connection_type=auto
+net_optimizer=auto
+enable_dnsmasq=auto
+enable_ttyd=1
+enable_irqbalance=1
+
+[COMMANDS]
+uci set wireless.default_radio1.background_radar=1
