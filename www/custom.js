@@ -1443,36 +1443,36 @@ function extractLuciName(pkg) {
 // ==================== フォーム値収集 ====================
 function collectFormValues() {
     const values = {};
-    
+
     if (!state.config.setup || !state.config.setup.categories) {
         return values;
     }
-    
+
     const connectionSettingFields = getConnectionSettingFields();
 
     const wifiModeUI = getFieldValue(`input[name="wifi_mode"]:checked`) || 'standard';
     const netOptUI = getFieldValue(`input[name="net_optimizer"]:checked`) || 'auto';
     const dnsmasqUI = getFieldValue(`input[name="enable_dnsmasq"]:checked`) || 'auto';
-    
+
     const wifiUsteerFields = new Set(['mobility_domain', 'snr']);
-    
+
     const netOptManualFields = new Set(['netopt_rmem', 'netopt_wmem', 'netopt_conntrack', 'netopt_backlog', 'netopt_somaxconn', 'netopt_congestion']);
-    
+
     const dnsmasqManualFields = new Set(['dnsmasq_cache', 'dnsmasq_negcache']);
-    
+
     for (const category of state.config.setup.categories) {
         for (const item of category.items) {
             if (item.type === 'field' && item.variable) {
                 if (connectionSettingFields.has(item.variable)) continue;
-                
+
                 if (wifiModeUI === 'standard' && wifiUsteerFields.has(item.variable)) continue;
-                
+
                 if (wifiModeUI === 'disabled' && (item.variable === 'wlan_ssid' || item.variable === 'wlan_password' || wifiUsteerFields.has(item.variable))) continue;
-                
+
                 if ((netOptUI === 'auto' || netOptUI === 'disabled') && netOptManualFields.has(item.variable)) continue;
-                
+
                 if ((dnsmasqUI === 'auto' || dnsmasqUI === 'disabled') && dnsmasqManualFields.has(item.variable)) continue;
-                
+
                 const value = getFieldValue(`#${item.id}`);
                 if (value !== null && value !== undefined && value !== "") {
                     if (item.variable === 'language' && value === 'en') {
@@ -1491,15 +1491,15 @@ function collectFormValues() {
                 for (const subItem of item.items) {
                     if (subItem.type === 'field' && subItem.variable) {
                         if (connectionSettingFields.has(subItem.variable)) continue;
-                        
+
                         if (wifiModeUI === 'standard' && wifiUsteerFields.has(subItem.variable)) continue;
-                        
+
                         if (wifiModeUI === 'disabled' && (subItem.variable === 'wlan_ssid' || subItem.variable === 'wlan_password' || wifiUsteerFields.has(subItem.variable))) continue;
-                        
+
                         if ((netOptUI === 'auto' || netOptUI === 'disabled') && netOptManualFields.has(subItem.variable)) continue;
-                        
+
                         if ((dnsmasqUI === 'auto' || dnsmasqUI === 'disabled') && dnsmasqManualFields.has(subItem.variable)) continue;
-                        
+
                         const value = getFieldValue(`#${subItem.id}`);
                         if (value !== null && value !== undefined && value !== "") {
                             values[subItem.variable] = value;
@@ -1516,9 +1516,13 @@ function collectFormValues() {
             }
         }
     }
-    
+
     applySpecialFieldLogic(values);
-    
+
+    if (state.importedVariables && typeof state.importedVariables === 'object') {
+        Object.assign(values, state.importedVariables);
+    }
+
     return values;
 }
 
