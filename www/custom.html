@@ -6,6 +6,21 @@
     <title>OpenWrt Custom Components</title>
 </head>
 <body>
+    <!-- Settings Import/Export Bar (will be injected after header) -->
+    <div id="settings-bar-template" style="display: none;">
+        <div id="settings-bar">
+            <div class="settings-bar-content">
+                <button id="import-settings-btn" class="settings-btn" title="Import Settings">
+                    📥 <span class="tr-import-settings">Import</span>
+                </button>
+                <button id="export-settings-btn" class="settings-btn" title="Export Settings">
+                    📤 <span class="tr-export-settings">Export</span>
+                </button>
+            </div>
+        </div>
+        <input type="file" id="import-file-input" accept=".txt,.ini" style="display: none;">
+    </div>
+
     <!-- Enhanced Package Selector -->
     <div id="custom-packages-section">
         <details id="packages-details">
