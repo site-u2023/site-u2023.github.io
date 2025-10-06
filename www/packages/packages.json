@@ -616,7 +616,7 @@
         },
         {
           "id": "usteer",
-          "name": "usteer",
+          "name": "luci-app-usteer",
           "hidden": true,
           "description": "Usteer package managed by Wi-Fi setup"
         }
