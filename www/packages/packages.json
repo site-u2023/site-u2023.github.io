@@ -111,10 +111,6 @@
       "description": "Wi-Fi scheduling, roaming optimization, and wireless utilities",
       "packages": [
         {
-          "id": "luci-app-usteer",
-          "name": "luci-app-usteer"
-        },
-        {
           "id": "luci-app-wifischedule",
           "name": "luci-app-wifischedule"
         },
