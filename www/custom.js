@@ -1708,17 +1708,13 @@ function collectWifiFields() {
 
 function getFieldsForWifiMode(mode) {
     const fields = ['wifi_mode'];
-    
-    if (mode === 'disabled') {
-        return fields;
-    }
-    
+    if (mode === 'disabled') return fields;
+
     fields.push('wlan_ssid', 'wlan_password');
-    
-    if (mode === 'luci-app-usteer') {
+
+    if (mode === 'usteer') {
         fields.push('mobility_domain', 'snr');
     }
-    
     return fields;
 }
 
