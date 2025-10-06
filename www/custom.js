@@ -3637,6 +3637,7 @@ function setupImportExport() {
 }
 
 function exportSettings() {
+    const deviceModel = document.querySelector('#models')?.value || '';
     const deviceName = getFieldValue('#aios-device-name') || 'OpenWrt';
     const language = state.ui.language.selected || 'en';
     const osVersion = document.querySelector('#versions')?.value || 'SNAPSHOT';
@@ -3650,6 +3651,7 @@ function exportSettings() {
     
     const ini = generateINI({
         metadata: {
+            device_model: deviceModel,
             device_name: deviceName,
             language: language,
             os_version: osVersion,
@@ -3859,6 +3861,14 @@ function applyImportedSettings(data) {
         if (versionSelect) {
             versionSelect.value = data.metadata.os_version;
             versionSelect.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+    }
+    
+    if (data.metadata.device_model) {
+        const modelsInput = document.querySelector('#models');
+        if (modelsInput) {
+            modelsInput.value = data.metadata.device_model;
+            modelsInput.onkeyup({ key: 'Enter', keyCode: 13 });
         }
     }
     
