@@ -3669,13 +3669,14 @@ function buildVariableToFieldMap() {
 function exportSettings() {
     const deviceModel = document.querySelector('#models')?.value || '';
     const deviceName = getFieldValue('#aios-device-name') || 'OpenWrt';
-    const language = state.ui.language.selected || 'en';
     const osVersion = document.querySelector('#versions')?.value || 'SNAPSHOT';
     const now = new Date();
     const timestamp = now.toISOString();
     const dateStr = now.toISOString().replace(/[-:]/g, '').split('.')[0].replace('T', '-');
 
     const deviceId = state.device.id || state.device.target || deviceModel || 'unknown-device';
+
+    const deviceLang = config.device_language || 'en';
 
     const userPackages = extractUserPackages();
     const variables = extractVariablesFromSetup();
@@ -3685,7 +3686,7 @@ function exportSettings() {
         metadata: {
             device_model: deviceModel,
             device_name: deviceName,
-            language: language,
+            language: deviceLang,
             os_version: osVersion,
             export_date: timestamp,
             version: '1.0'
@@ -3695,7 +3696,8 @@ function exportSettings() {
         commands: commands
     });
 
-    const filename = `${deviceId}-${language}-${dateStr}.txt`;
+    const filename = `${deviceId}_${osVersion}_${deviceLang}_${dateStr}.txt`;
+
     const blob = new Blob([ini], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
