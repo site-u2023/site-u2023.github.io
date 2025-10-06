@@ -265,7 +265,7 @@
       "packages": [
         {
           "id": "luci-app-usteer",
-          "when": { "wifi_mode": "luci-app-usteer" }
+          "when": { "wifi_mode": "usteer" }
         }
       ]
     },
