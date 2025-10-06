@@ -1549,13 +1549,10 @@ function getConnectionSettingFields() {
 }
 
 function applySpecialFieldLogic(values, importedVars = {}) {
-    // --- connection_type の決定（モード値で保存） ---
-    const connectionTypeUI = getFieldValue(`input[name="connection_type"]:checked`) 
-        || importedVars.connection_type 
-        || 'auto';
-    let actualConnectionType = connectionTypeUI;
+    const connectionTypeUI = getFieldValue(`input[name="connection_type"]:checked`) || 'auto';
+    let actualConnectionType = importedVars.connection_type || connectionTypeUI;
 
-    if (connectionTypeUI === 'auto' && state.apiInfo) {
+    if (actualConnectionType === 'auto' && state.apiInfo) {
         if (state.apiInfo.mape?.brIpv6Address) {
             actualConnectionType = 'mape';
         } else if (state.apiInfo.aftr?.aftrIpv6Address) {
@@ -1571,12 +1568,9 @@ function applySpecialFieldLogic(values, importedVars = {}) {
         const password = getFieldValue('#pppoe-password');
         if (username) values.pppoe_username = username;
         if (password) values.pppoe_password = password;
-    }
-
-    else if (actualConnectionType === 'dslite') {
-        if (connectionTypeUI === 'auto' && state.apiInfo?.aftr) {
-            if (state.apiInfo.aftr.aftrIpv6Address)
-                values.dslite_aftr_address = state.apiInfo.aftr.aftrIpv6Address;
+    } else if (actualConnectionType === 'dslite') {
+        if (connectionTypeUI === 'auto' && state.apiInfo?.aftr?.aftrIpv6Address) {
+            values.dslite_aftr_address = state.apiInfo.aftr.aftrIpv6Address;
         } else {
             const aftrType = getFieldValue('#dslite-aftr-type');
             const area = getFieldValue('#dslite-area');
@@ -1585,9 +1579,7 @@ function applySpecialFieldLogic(values, importedVars = {}) {
             if (area) values.dslite_area = area;
             if (aftrAddress) values.dslite_aftr_address = aftrAddress;
         }
-    }
-
-    else if (actualConnectionType === 'mape') {
+    } else if (actualConnectionType === 'mape') {
         if (connectionTypeUI === 'auto' && state.apiInfo?.mape) {
             values.mape_br = state.apiInfo.mape.brIpv6Address;
             values.mape_ealen = state.apiInfo.mape.eaBitLength;
@@ -1617,25 +1609,24 @@ function applySpecialFieldLogic(values, importedVars = {}) {
             if (psidOffset) values.mape_psid_offset = psidOffset;
             if (psidlen) values.mape_psidlen = psidlen;
             const mapeTypeUI = getFieldValue(`input[name="mape_type"]:checked`) || 'gua';
-            values.mape_type = mapeTypeUI;
-            if (mapeTypeUI === 'gua') {
+            values.mape_type = importedVars.mape_type || mapeTypeUI;
+            if (values.mape_type === 'gua') {
                 const guaPrefixForm = getFieldValue('#mape-gua-prefix');
                 if (guaPrefixForm) values.mape_gua_prefix = guaPrefixForm;
             }
         }
-    }
-
-    else if (actualConnectionType === 'ap') {
+    } else if (actualConnectionType === 'ap') {
         const apIp = getFieldValue('#ap-ip-address');
         const apGw = getFieldValue('#ap-gateway');
         if (apIp) values.ap_ip_address = apIp;
         if (apGw) values.ap_gateway = apGw;
     }
 
-    // --- Wi-Fi モード（モード値で保存 + manual の追加フィールド） ---
     const wifiModeUI = getFieldValue(`input[name="wifi_mode"]:checked`) || 'standard';
-    values.wifi_mode = wifiModeUI;
-    if (wifiModeUI === 'manual') {
+    const wifiMode = importedVars.wifi_mode || wifiModeUI;
+    values.wifi_mode = wifiMode;
+
+    if (wifiMode === 'manual') {
         const ssid24 = getFieldValue('#wifi-ssid-24');
         const ssid5 = getFieldValue('#wifi-ssid-5');
         const password = getFieldValue('#wifi-password');
@@ -1648,10 +1639,11 @@ function applySpecialFieldLogic(values, importedVars = {}) {
         if (channel5) values.wifi_channel_5 = channel5;
     }
 
-    // --- ネットワーク最適化モード（モード値で保存 + manual の追加フィールド） ---
     const netOptUI = getFieldValue(`input[name="net_optimizer"]:checked`) || 'auto';
-    values.net_optimizer = netOptUI;
-    if (netOptUI === 'manual') {
+    const netOptMode = importedVars.net_optimizer || netOptUI;
+    values.net_optimizer = netOptMode;
+
+    if (netOptMode === 'manual') {
         const rmem = getFieldValue('#netopt-rmem');
         const wmem = getFieldValue('#netopt-wmem');
         const conntrack = getFieldValue('#netopt-conntrack');
@@ -1667,8 +1659,10 @@ function applySpecialFieldLogic(values, importedVars = {}) {
     }
   
     const dnsmasqUI = getFieldValue(`input[name="enable_dnsmasq"]:checked`) || 'auto';
-    values.enable_dnsmasq = dnsmasqUI;
-    if (dnsmasqUI === 'manual') {
+    const dnsmasqMode = importedVars.enable_dnsmasq || dnsmasqUI; // auto | manual | disabled
+    values.enable_dnsmasq = dnsmasqMode;
+
+    if (dnsmasqMode === 'manual') {
         const cache = getFieldValue('#dnsmasq-cache');
         const negcache = getFieldValue('#dnsmasq-negcache');
         if (cache) values.dnsmasq_cache = cache;
