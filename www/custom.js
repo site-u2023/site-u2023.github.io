@@ -3606,6 +3606,309 @@ function setupCommandsInput() {
     console.log('Commands input setup complete');
 }
 
+// ==================== Settings Import/Export ====================
+function setupImportExport() {
+    const importBtn = document.getElementById('import-settings-btn');
+    const exportBtn = document.getElementById('export-settings-btn');
+    const fileInput = document.getElementById('import-file-input');
+    
+    if (!importBtn || !exportBtn || !fileInput) {
+        console.error('Import/Export buttons or file input not found');
+        return;
+    }
+    
+    importBtn.addEventListener('click', () => {
+        fileInput.click();
+    });
+    
+    fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            importSettings(file);
+        }
+        fileInput.value = '';
+    });
+    
+    exportBtn.addEventListener('click', () => {
+        exportSettings();
+    });
+    
+    console.log('Import/Export setup complete');
+}
+
+function exportSettings() {
+    const deviceName = getFieldValue('#aios-device-name') || 'OpenWrt';
+    const language = state.ui.language.selected || 'en';
+    const now = new Date();
+    const timestamp = now.toISOString();
+    const dateStr = now.toISOString().replace(/[-:]/g, '').split('.')[0].replace('T', '-');
+    
+    const userPackages = extractUserPackages();
+    const variables = extractVariablesFromSetup();
+    const commands = extractCommandsFromSetup();
+    
+    const ini = generateINI({
+        metadata: {
+            device_name: deviceName,
+            language: language,
+            export_date: timestamp,
+            version: '1.0'
+        },
+        packages: userPackages,
+        variables: variables,
+        commands: commands
+    });
+    
+    const filename = `${deviceName}-${language}-${dateStr}.txt`;
+    const blob = new Blob([ini], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    console.log('Settings exported:', filename);
+}
+
+function importSettings(file) {
+    const reader = new FileReader();
+    
+    reader.onload = (e) => {
+        try {
+            const content = e.target.result;
+            const data = parseINI(content);
+            
+            if (!data) {
+                alert('Invalid INI format');
+                return;
+            }
+            
+            applyImportedSettings(data);
+            console.log('Settings imported successfully');
+            
+        } catch (err) {
+            console.error('Import error:', err);
+            alert('Failed to import settings: ' + err.message);
+        }
+    };
+    
+    reader.readAsText(file);
+}
+
+function parseINI(content) {
+    const lines = content.split('\n');
+    const data = {
+        metadata: {},
+        packages: [],
+        variables: {},
+        commands: []
+    };
+    
+    let currentSection = null;
+    
+    for (let line of lines) {
+        line = line.trim();
+        
+        if (!line || line.startsWith('#') || line.startsWith(';')) {
+            continue;
+        }
+        
+        if (line.startsWith('[') && line.endsWith(']')) {
+            currentSection = line.slice(1, -1).toLowerCase();
+            continue;
+        }
+        
+        if (currentSection === 'metadata') {
+            const [key, ...valueParts] = line.split('=');
+            const value = valueParts.join('=').trim();
+            if (key && value) {
+                data.metadata[key.trim()] = value;
+            }
+        } else if (currentSection === 'packages') {
+            if (line) {
+                data.packages.push(line);
+            }
+        } else if (currentSection === 'variables') {
+            const [key, ...valueParts] = line.split('=');
+            const value = valueParts.join('=').trim();
+            if (key && value) {
+                data.variables[key.trim()] = value;
+            }
+        } else if (currentSection === 'commands') {
+            if (line) {
+                data.commands.push(line);
+            }
+        }
+    }
+    
+    return data;
+}
+
+function generateINI(data) {
+    let ini = '# OpenWrt Custom Settings Export\n';
+    ini += `# Generated: ${data.metadata.export_date}\n\n`;
+    
+    ini += '[METADATA]\n';
+    for (const [key, value] of Object.entries(data.metadata)) {
+        ini += `${key}=${value}\n`;
+    }
+    ini += '\n';
+    
+    ini += '[PACKAGES]\n';
+    for (const pkg of data.packages) {
+        ini += `${pkg}\n`;
+    }
+    ini += '\n';
+    
+    ini += '[VARIABLES]\n';
+    for (const [key, value] of Object.entries(data.variables)) {
+        ini += `${key}=${value}\n`;
+    }
+    ini += '\n';
+    
+    ini += '[COMMANDS]\n';
+    for (const cmd of data.commands) {
+        ini += `${cmd}\n`;
+    }
+    
+    return ini;
+}
+
+function extractUserPackages() {
+    const basePackages = new Set([
+        ...state.packages.default,
+        ...state.packages.device,
+        ...state.packages.extra
+    ]);
+    
+    const userPackages = [];
+    const currentPackages = getCurrentPackageListForLanguage();
+    
+    for (const pkg of currentPackages) {
+        if (!basePackages.has(pkg) && !pkg.startsWith('luci-i18n-')) {
+            userPackages.push(pkg);
+        }
+    }
+    
+    return userPackages;
+}
+
+function extractVariablesFromSetup() {
+    const textarea = document.querySelector('#uci-defaults-content');
+    if (!textarea) return {};
+    
+    const content = textarea.value;
+    const beginMarker = '# BEGIN_VARS';
+    const endMarker = '# END_VARS';
+    const beginIndex = content.indexOf(beginMarker);
+    const endIndex = content.indexOf(endMarker);
+    
+    if (beginIndex === -1 || endIndex === -1) return {};
+    
+    const varsSection = content.substring(beginIndex + beginMarker.length, endIndex);
+    const lines = varsSection.split('\n');
+    const variables = {};
+    
+    for (let line of lines) {
+        line = line.trim();
+        if (!line || line.startsWith('#')) continue;
+        
+        const match = line.match(/^(\w+)='(.*)'/);
+        if (match) {
+            variables[match[1]] = match[2].replace(/'\"'\"'/g, "'");
+        }
+    }
+    
+    return variables;
+}
+
+function extractCommandsFromSetup() {
+    const textarea = document.querySelector('#uci-defaults-content');
+    if (!textarea) return [];
+    
+    const content = textarea.value;
+    const beginMarker = '# BEGIN_CMDS';
+    const endMarker = '# END_CMDS';
+    const beginIndex = content.indexOf(beginMarker);
+    const endIndex = content.indexOf(endMarker);
+    
+    if (beginIndex === -1 || endIndex === -1) return [];
+    
+    const cmdsSection = content.substring(beginIndex + beginMarker.length, endIndex);
+    const lines = cmdsSection.split('\n');
+    const commands = [];
+    
+    for (let line of lines) {
+        line = line.trim();
+        if (line && !line.startsWith('#')) {
+            commands.push(line);
+        }
+    }
+    
+    return commands;
+}
+
+function applyImportedSettings(data) {
+    if (data.metadata.device_name) {
+        const deviceNameField = document.getElementById('aios-device-name');
+        if (deviceNameField) {
+            deviceNameField.value = data.metadata.device_name;
+        }
+    }
+    
+    if (data.metadata.language) {
+        const languageField = document.getElementById('device-language');
+        if (languageField) {
+            languageField.value = data.metadata.language;
+            state.ui.language.selected = data.metadata.language;
+            config.device_language = data.metadata.language;
+        }
+    }
+    
+    if (data.packages && data.packages.length > 0) {
+        for (const pkg of data.packages) {
+            const checkbox = document.querySelector(`[data-package="${pkg}"]`);
+            if (checkbox && checkbox.type === 'checkbox') {
+                checkbox.checked = true;
+            }
+        }
+        
+        if (state.ui.managers.packageSearch) {
+            const existingPackages = state.ui.managers.packageSearch.getAllValues();
+            const newPackages = [...new Set([...existingPackages, ...data.packages])];
+            state.ui.managers.packageSearch.setValues(newPackages);
+        }
+    }
+    
+    if (data.variables && Object.keys(data.variables).length > 0) {
+        for (const [key, value] of Object.entries(data.variables)) {
+            const field = document.getElementById(key) || 
+                         document.querySelector(`[name="${key}"]`) ||
+                         document.querySelector(`#aios-${key}`);
+            
+            if (field) {
+                if (field.type === 'radio') {
+                    const radio = document.querySelector(`[name="${key}"][value="${value}"]`);
+                    if (radio) radio.checked = true;
+                } else {
+                    field.value = value;
+                }
+            }
+        }
+    }
+    
+    if (data.commands && data.commands.length > 0) {
+        if (state.ui.managers.commands) {
+            const existingCommands = state.ui.managers.commands.getAllValues();
+            const newCommands = [...new Set([...existingCommands, ...data.commands])];
+            state.ui.managers.commands.setValues(newCommands);
+        }
+    }
+    
+    updateAllPackageState('import-complete');
+}
+
 // ==================== HTML読み込み ====================
 async function loadCustomHTML() {
     try {
