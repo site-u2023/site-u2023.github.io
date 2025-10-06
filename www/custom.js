@@ -1483,9 +1483,7 @@ function collectFormValues() {
             } else if (item.type === 'radio-group' && item.variable) {
                 const value = getFieldValue(`input[name="${item.variable}"]:checked`);
                 if (value !== null && value !== undefined && value !== "") {
-                    if (!item.ui_variable) {
-                        values[item.variable] = value;
-                    }
+                    values[item.variable] = value;
                 }
             } else if (item.type === 'section' && item.items) {
                 for (const subItem of item.items) {
@@ -1550,7 +1548,55 @@ function getConnectionSettingFields() {
     return fields;
 }
 
-function applySpecialFieldLogic(values) {
+function applySpecialFieldLogic(values, importedVars = {}) {
+    if (importedVars.mape === '1') {
+        values.connection_type = 'mape';
+        values.mape = '1';
+        const wifiModeUI = getFieldValue(`input[name="wifi_mode"]:checked`) || 'standard';
+        if (wifiModeUI === 'usteer' && !importedVars.enable_usteer) values.enable_usteer = '1';
+        const netOptUI = getFieldValue(`input[name="net_optimizer"]:checked`) || 'auto';
+        if ((netOptUI === 'auto' || netOptUI === 'manual') && !importedVars.enable_netopt) values.enable_netopt = '1';
+        const dnsmasqUI = getFieldValue(`input[name="enable_dnsmasq"]:checked`) || 'auto';
+        if ((dnsmasqUI === 'auto' || dnsmasqUI === 'manual') && !importedVars.enable_dnsmasq) values.enable_dnsmasq = '1';
+        return;
+    }
+    
+    if (importedVars.dslite === '1') {
+        values.connection_type = 'dslite';
+        values.dslite = '1';
+        const wifiModeUI = getFieldValue(`input[name="wifi_mode"]:checked`) || 'standard';
+        if (wifiModeUI === 'usteer' && !importedVars.enable_usteer) values.enable_usteer = '1';
+        const netOptUI = getFieldValue(`input[name="net_optimizer"]:checked`) || 'auto';
+        if ((netOptUI === 'auto' || netOptUI === 'manual') && !importedVars.enable_netopt) values.enable_netopt = '1';
+        const dnsmasqUI = getFieldValue(`input[name="enable_dnsmasq"]:checked`) || 'auto';
+        if ((dnsmasqUI === 'auto' || dnsmasqUI === 'manual') && !importedVars.enable_dnsmasq) values.enable_dnsmasq = '1';
+        return;
+    }
+    
+    if (importedVars.pppoe === '1') {
+        values.connection_type = 'pppoe';
+        values.pppoe = '1';
+        const wifiModeUI = getFieldValue(`input[name="wifi_mode"]:checked`) || 'standard';
+        if (wifiModeUI === 'usteer' && !importedVars.enable_usteer) values.enable_usteer = '1';
+        const netOptUI = getFieldValue(`input[name="net_optimizer"]:checked`) || 'auto';
+        if ((netOptUI === 'auto' || netOptUI === 'manual') && !importedVars.enable_netopt) values.enable_netopt = '1';
+        const dnsmasqUI = getFieldValue(`input[name="enable_dnsmasq"]:checked`) || 'auto';
+        if ((dnsmasqUI === 'auto' || dnsmasqUI === 'manual') && !importedVars.enable_dnsmasq) values.enable_dnsmasq = '1';
+        return;
+    }
+    
+    if (importedVars.ap === '1') {
+        values.connection_type = 'ap';
+        values.ap = '1';
+        const wifiModeUI = getFieldValue(`input[name="wifi_mode"]:checked`) || 'standard';
+        if (wifiModeUI === 'usteer' && !importedVars.enable_usteer) values.enable_usteer = '1';
+        const netOptUI = getFieldValue(`input[name="net_optimizer"]:checked`) || 'auto';
+        if ((netOptUI === 'auto' || netOptUI === 'manual') && !importedVars.enable_netopt) values.enable_netopt = '1';
+        const dnsmasqUI = getFieldValue(`input[name="enable_dnsmasq"]:checked`) || 'auto';
+        if ((dnsmasqUI === 'auto' || dnsmasqUI === 'manual') && !importedVars.enable_dnsmasq) values.enable_dnsmasq = '1';
+        return;
+    }
+    
     const connectionTypeUI = getFieldValue(`input[name="connection_type"]:checked`) || 'auto';
     let actualConnectionType = connectionTypeUI;
     
@@ -1641,14 +1687,6 @@ function applySpecialFieldLogic(values) {
   
     const dnsmasqUI = getFieldValue(`input[name="enable_dnsmasq"]:checked`) || 'auto';
     if (dnsmasqUI === 'auto' || dnsmasqUI === 'manual') values.enable_dnsmasq = '1';
-
-    if (state.importedVariables && typeof state.importedVariables === 'object') {
-        for (const [k, v] of Object.entries(state.importedVariables)) {
-            if (v !== undefined && v !== null && v !== '') {
-                values[k] = v;
-            }
-        }
-    }
 }
 
 function collectConnectionFields() {
