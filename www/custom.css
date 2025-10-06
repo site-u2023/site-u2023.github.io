@@ -871,3 +871,72 @@ details[open] > summary ~ * {
 .p-1 { padding: 0.5em; }
 .p-2 { padding: 1em; }
 .p-3 { padding: 1.5em; }
+
+/* ===== Settings Import/Export Bar ===== */
+#settings-bar {
+    width: 100%;
+    background-color: #002B49;
+    box-shadow: 0em 0.125em 0.25em -0.06em rgba(0, 0, 0, 0.2),
+        0em 0.25em 0.3em 0em rgba(0, 0, 0, 0.14),
+        0em 0.06em 0.625em 0em rgba(0, 0, 0, 0.12);
+    z-index: 1000;
+}
+
+.settings-bar-content {
+    padding: 0.5em 2%;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 0.5em;
+}
+
+.settings-btn {
+    background-color: #00a3e1;
+    color: #fff;
+    border: none;
+    padding: 0.5em 1em;
+    border-radius: 0.25em;
+    cursor: pointer;
+    font-size: inherit;
+    font-family: inherit;
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    transition: background-color 0.2s;
+    box-shadow: 0em 0.06em 0.3em 0em rgba(0, 0, 0, 0.2);
+}
+
+.settings-btn:hover {
+    background-color: #038fc6;
+}
+
+.settings-btn:active {
+    background-color: #0080b3;
+}
+
+@media (prefers-color-scheme: dark) {
+    #settings-bar {
+        background-color: #001a2e;
+    }
+    
+    .settings-btn {
+        background-color: #0080b3;
+    }
+    
+    .settings-btn:hover {
+        background-color: #006a99;
+    }
+}
+
+/* Mobile adjustments */
+@media (min-resolution: 400dpi), (max-width: 600px), (pointer: coarse) {
+    .settings-bar-content {
+        padding: 0.5em 1%;
+        gap: 0.3em;
+    }
+    
+    .settings-btn {
+        padding: 0.4em 0.8em;
+        font-size: 0.9em;
+    }
+}
