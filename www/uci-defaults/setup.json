@@ -255,15 +255,15 @@
           "showWhen": {"wifi_mode": "disabled"}
         }
       ],
-      
+
       "packages": [
         {
-          "id": "usteer-from-setup",
-          "when": {"wifi_mode": "usteer"}
+          "id": "usteer",
+          "when": { "wifi_mode": "usteer" }
         }
       ]
     },
-    
+
     {
       "id": "internet-connection",
       "title": "Internet Connection",
