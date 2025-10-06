@@ -752,8 +752,10 @@ function buildSection(section) {
             a.textContent = section.title;
             h4.appendChild(a);
         } else {
-            if (section.class) h4.classList.add(section.class);
-            h4.textContent = section.title;
+            const span = document.createElement('span');
+            if (section.class) span.classList.add(section.class);
+            span.textContent = section.title;
+            h4.appendChild(span);
         }
         
         if (section.description || section.descriptionUrl) {
@@ -2511,7 +2513,7 @@ function setupPackageSearch() {
         }
     });
     
-    const h4 = document.querySelector('.package-search-container h4.tr-package-search');
+    const h4 = document.querySelector('.package-search-container h4');
     if (h4) {
         addTooltip(h4, "Select extra packages to install. They'll be added to the list below.");
         console.log('Package search tooltip added');
@@ -3456,10 +3458,13 @@ function createPackageCategory(category) {
 if (!hasVisiblePackages) return null;
     
     const title = document.createElement('h4');
-    title.textContent = category.name;
+    const titleText = document.createElement('span');
+    titleText.textContent = category.name;
     if (category.class) {
-        title.classList.add(category.class);
+        titleText.classList.add(category.class);
     }
+    title.appendChild(titleText);
+    
     if (category.description) {
         addTooltip(title, category.description);
     }
@@ -3632,7 +3637,7 @@ function setupCommandsInput() {
         }
     });
 
-    const h4 = document.querySelector('.commands-container h4.tr-add-commands');
+    const h4 = document.querySelector('.commands-container h4');
     if (h4) {
         addTooltip(h4, "Add custom shell commands that run on first boot.");
         console.log('Commands tooltip added');
