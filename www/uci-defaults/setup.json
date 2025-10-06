@@ -32,7 +32,13 @@
         "east": "2404:8e04::feed:100",
         "west": "2404:8e05::feed:100"
       }
-    }
+    },
+    "language_prefixes": [
+      "luci-i18n-base-",
+      "luci-i18n-opkg-",
+      "luci-i18n-package-manager-",
+      "luci-i18n-firewall-"
+    ]
   },
   
   "categories": [
