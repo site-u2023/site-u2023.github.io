@@ -3674,11 +3674,13 @@ function exportSettings() {
     const now = new Date();
     const timestamp = now.toISOString();
     const dateStr = now.toISOString().replace(/[-:]/g, '').split('.')[0].replace('T', '-');
-    
+
+    const deviceId = state.device.id || state.device.target || deviceModel || 'unknown-device';
+
     const userPackages = extractUserPackages();
     const variables = extractVariablesFromSetup();
     const commands = extractCommandsFromSetup();
-    
+
     const ini = generateINI({
         metadata: {
             device_model: deviceModel,
@@ -3692,8 +3694,8 @@ function exportSettings() {
         variables: variables,
         commands: commands
     });
-    
-    const filename = `${deviceName}-${language}-${dateStr}.txt`;
+
+    const filename = `${deviceId}-${language}-${dateStr}.txt`;
     const blob = new Blob([ini], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -3701,7 +3703,7 @@ function exportSettings() {
     a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
-    
+
     console.log('Settings exported:', filename);
 }
 
