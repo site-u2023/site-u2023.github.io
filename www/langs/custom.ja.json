@@ -12,6 +12,9 @@
     "tr-package-size-note": "※ 言語及び依存パッケージは含まれません",
     "tr-uci-size-limit": "※ ファイルサイズ上限: 20480 bytes: 20.00 KB",
     
+    "tr-import-settings": "インポート",
+    "tr-export-settings": "エクスポート",
+    
     "tr-extended-info": "地域とISP情報",
     "tr-loading": "読み込み中…",
     "tr-notice": "お知らせ",
