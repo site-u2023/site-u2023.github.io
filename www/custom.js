@@ -1659,7 +1659,7 @@ function applySpecialFieldLogic(values, importedVars = {}) {
     }
 
     const dnsmasqUI = getFieldValue(`input[name="enable_dnsmasq"]:checked`) || 'auto';
-    const dnsmasqMode = importedVars.enable_dnsmasq || dnsmasqUI;
+    const dnsmasqMode = importedVars.enable_dnsmasq || dnsmasqUI; // auto | manual | disabled
     values.enable_dnsmasq = dnsmasqMode;
     if (dnsmasqMode === 'manual') {
         const cache = getFieldValue('#dnsmasq-cache');
