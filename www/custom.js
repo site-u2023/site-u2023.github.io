@@ -1547,10 +1547,12 @@ function getConnectionSettingFields() {
 }
 
 function applySpecialFieldLogic(values) {
+    const hasImportedValue = (key) => values[key] !== undefined && values[key] !== null && values[key] !== '';
+
     const connectionTypeUI = getFieldValue(`input[name="connection_type"]:checked`) || 'auto';
     let actualConnectionType = connectionTypeUI;
     
-    if (connectionTypeUI === 'auto' && state.apiInfo) {
+    if (connectionTypeUI === 'auto' && state.apiInfo && !hasImportedValue('dslite') && !hasImportedValue('mape')) {
         if (state.apiInfo.mape?.brIpv6Address) {
             actualConnectionType = 'mape';
         } else if (state.apiInfo.aftr?.aftrIpv6Address) {
@@ -1559,18 +1561,19 @@ function applySpecialFieldLogic(values) {
             actualConnectionType = 'dhcp';
         }
     }
-    
+
     if (actualConnectionType === 'pppoe') {
-        values.pppoe = '1';
+        if (!hasImportedValue('pppoe')) values.pppoe = '1';
         const username = getFieldValue('#pppoe-username');
         const password = getFieldValue('#pppoe-password');
-        if (username) values.pppoe_username = username;
-        if (password) values.pppoe_password = password;
+        if (username && !hasImportedValue('pppoe_username')) values.pppoe_username = username;
+        if (password && !hasImportedValue('pppoe_password')) values.pppoe_password = password;
+    }
+
+    else if (actualConnectionType === 'dslite') {
+        if (!hasImportedValue('dslite')) values.dslite = '1';
         
-    } else if (actualConnectionType === 'dslite') {
-        values.dslite = '1';
-        
-        if (connectionTypeUI === 'auto' && state.apiInfo?.aftr) {
+        if (connectionTypeUI === 'auto' && state.apiInfo?.aftr && !hasImportedValue('dslite_aftr_address')) {
             if (state.apiInfo.aftr.aftrIpv6Address) {
                 values.dslite_aftr_address = state.apiInfo.aftr.aftrIpv6Address;
             }
@@ -1578,26 +1581,37 @@ function applySpecialFieldLogic(values) {
             const aftrType = getFieldValue('#dslite-aftr-type');
             const area = getFieldValue('#dslite-area');
             const aftrAddress = getFieldValue('#dslite-aftr-address');
-            if (aftrType) values.dslite_aftr_type = aftrType;
-            if (area) values.dslite_area = area;
-            if (aftrAddress) values.dslite_aftr_address = aftrAddress;
+            if (aftrType && !hasImportedValue('dslite_aftr_type')) values.dslite_aftr_type = aftrType;
+            if (area && !hasImportedValue('dslite_area')) values.dslite_area = area;
+            if (aftrAddress && !hasImportedValue('dslite_aftr_address')) values.dslite_aftr_address = aftrAddress;
         }
-        
-    } else if (actualConnectionType === 'mape') {
-        values.mape = '1';
+    }
+
+    else if (actualConnectionType === 'mape') {
+        if (!hasImportedValue('mape')) values.mape = '1';
         
         if (connectionTypeUI === 'auto' && state.apiInfo?.mape) {
-            values.mape_br = state.apiInfo.mape.brIpv6Address;
-            values.mape_ealen = state.apiInfo.mape.eaBitLength;
-            values.mape_ipv4_prefix = state.apiInfo.mape.ipv4Prefix;
-            values.mape_ipv4_prefixlen = state.apiInfo.mape.ipv4PrefixLength;
-            values.mape_ipv6_prefix = state.apiInfo.mape.ipv6Prefix;
-            values.mape_ipv6_prefixlen = state.apiInfo.mape.ipv6PrefixLength;
-            values.mape_psid_offset = state.apiInfo.mape.psIdOffset;
-            values.mape_psidlen = state.apiInfo.mape.psidlen;
-            
-            const guaPrefix = CustomUtils.generateGuaPrefixFromFullAddress(state.apiInfo);
-            if (guaPrefix) values.mape_gua_prefix = guaPrefix;
+            if (!hasImportedValue('mape_br') && state.apiInfo.mape.brIpv6Address)
+                values.mape_br = state.apiInfo.mape.brIpv6Address;
+            if (!hasImportedValue('mape_ealen') && state.apiInfo.mape.eaBitLength)
+                values.mape_ealen = state.apiInfo.mape.eaBitLength;
+            if (!hasImportedValue('mape_ipv4_prefix') && state.apiInfo.mape.ipv4Prefix)
+                values.mape_ipv4_prefix = state.apiInfo.mape.ipv4Prefix;
+            if (!hasImportedValue('mape_ipv4_prefixlen') && state.apiInfo.mape.ipv4PrefixLength)
+                values.mape_ipv4_prefixlen = state.apiInfo.mape.ipv4PrefixLength;
+            if (!hasImportedValue('mape_ipv6_prefix') && state.apiInfo.mape.ipv6Prefix)
+                values.mape_ipv6_prefix = state.apiInfo.mape.ipv6Prefix;
+            if (!hasImportedValue('mape_ipv6_prefixlen') && state.apiInfo.mape.ipv6PrefixLength)
+                values.mape_ipv6_prefixlen = state.apiInfo.mape.ipv6PrefixLength;
+            if (!hasImportedValue('mape_psid_offset') && state.apiInfo.mape.psIdOffset)
+                values.mape_psid_offset = state.apiInfo.mape.psIdOffset;
+            if (!hasImportedValue('mape_psidlen') && state.apiInfo.mape.psidlen)
+                values.mape_psidlen = state.apiInfo.mape.psidlen;
+
+            if (!hasImportedValue('mape_gua_prefix')) {
+                const guaPrefix = CustomUtils.generateGuaPrefixFromFullAddress(state.apiInfo);
+                if (guaPrefix) values.mape_gua_prefix = guaPrefix;
+            }
         } else {
             const br = getFieldValue('#mape-br');
             const ealen = getFieldValue('#mape-ealen');
@@ -1608,42 +1622,43 @@ function applySpecialFieldLogic(values) {
             const psidOffset = getFieldValue('#mape-psid-offset');
             const psidlen = getFieldValue('#mape-psidlen');
             
-            if (br) values.mape_br = br;
-            if (ealen) values.mape_ealen = ealen;
-            if (ipv4Prefix) values.mape_ipv4_prefix = ipv4Prefix;
-            if (ipv4Prefixlen) values.mape_ipv4_prefixlen = ipv4Prefixlen;
-            if (ipv6Prefix) values.mape_ipv6_prefix = ipv6Prefix;
-            if (ipv6Prefixlen) values.mape_ipv6_prefixlen = ipv6Prefixlen;
-            if (psidOffset) values.mape_psid_offset = psidOffset;
-            if (psidlen) values.mape_psidlen = psidlen;
+            if (br && !hasImportedValue('mape_br')) values.mape_br = br;
+            if (ealen && !hasImportedValue('mape_ealen')) values.mape_ealen = ealen;
+            if (ipv4Prefix && !hasImportedValue('mape_ipv4_prefix')) values.mape_ipv4_prefix = ipv4Prefix;
+            if (ipv4Prefixlen && !hasImportedValue('mape_ipv4_prefixlen')) values.mape_ipv4_prefixlen = ipv4Prefixlen;
+            if (ipv6Prefix && !hasImportedValue('mape_ipv6_prefix')) values.mape_ipv6_prefix = ipv6Prefix;
+            if (ipv6Prefixlen && !hasImportedValue('mape_ipv6_prefixlen')) values.mape_ipv6_prefixlen = ipv6Prefixlen;
+            if (psidOffset && !hasImportedValue('mape_psid_offset')) values.mape_psid_offset = psidOffset;
+            if (psidlen && !hasImportedValue('mape_psidlen')) values.mape_psidlen = psidlen;
             
             const mapeTypeUI = getFieldValue(`input[name="mape_type"]:checked`) || 'gua';
             if (mapeTypeUI === 'gua') {
                 const guaPrefixForm = getFieldValue('#mape-gua-prefix');
-                if (guaPrefixForm) values.mape_gua_prefix = guaPrefixForm;
+                if (guaPrefixForm && !hasImportedValue('mape_gua_prefix')) values.mape_gua_prefix = guaPrefixForm;
             }
         }
-        
-    } else if (actualConnectionType === 'ap') {
-        values.ap = '1';
+    }
+
+    else if (actualConnectionType === 'ap') {
+        if (!hasImportedValue('ap')) values.ap = '1';
         const apIp = getFieldValue('#ap-ip-address');
         const apGw = getFieldValue('#ap-gateway');
-        if (apIp) values.ap_ip_address = apIp;
-        if (apGw) values.ap_gateway = apGw;
+        if (apIp && !hasImportedValue('ap_ip_address')) values.ap_ip_address = apIp;
+        if (apGw && !hasImportedValue('ap_gateway')) values.ap_gateway = apGw;
     }
-    
+
     const wifiModeUI = getFieldValue(`input[name="wifi_mode"]:checked`) || 'standard';
     if (wifiModeUI === 'usteer') {
-        values.enable_usteer = '1';
+        if (!hasImportedValue('enable_usteer')) values.enable_usteer = '1';
     }
-    
+
     const netOptUI = getFieldValue(`input[name="net_optimizer"]:checked`) || 'auto';
-    if (netOptUI === 'auto' || netOptUI === 'manual') {
+    if ((netOptUI === 'auto' || netOptUI === 'manual') && !hasImportedValue('enable_netopt')) {
         values.enable_netopt = '1';
     }
-    
+  
     const dnsmasqUI = getFieldValue(`input[name="enable_dnsmasq"]:checked`) || 'auto';
-    if (dnsmasqUI === 'auto' || dnsmasqUI === 'manual') {
+    if ((dnsmasqUI === 'auto' || dnsmasqUI === 'manual') && !hasImportedValue('enable_dnsmasq')) {
         values.enable_dnsmasq = '1';
     }
 }
