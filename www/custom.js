@@ -3883,10 +3883,10 @@ function extractCommandsFromSetup() {
 
 function applyImportedSettings(data) {
     console.log('Applying imported settings:', data);
-    
+
     const variableToFieldMap = buildVariableToFieldMap();
     console.log('Using variable to field map for import');
-    
+
     if (data.metadata.os_version) {
         const versionSelect = document.querySelector('#versions');
         if (versionSelect) {
@@ -3894,7 +3894,7 @@ function applyImportedSettings(data) {
             versionSelect.dispatchEvent(new Event('change', { bubbles: true }));
         }
     }
-    
+
     if (data.metadata.device_model) {
         const modelsInput = document.querySelector('#models');
         if (modelsInput) {
@@ -3902,14 +3902,14 @@ function applyImportedSettings(data) {
             modelsInput.onkeyup({ key: 'Enter', keyCode: 13 });
         }
     }
-    
+
     if (data.metadata.device_name) {
         const deviceNameField = document.getElementById('aios-device-name');
         if (deviceNameField) {
             deviceNameField.value = data.metadata.device_name;
         }
     }
-    
+
     if (data.metadata.language) {
         const languageField = document.getElementById('device-language');
         if (languageField) {
@@ -3918,7 +3918,7 @@ function applyImportedSettings(data) {
             config.device_language = data.metadata.language;
         }
     }
-    
+  
     if (data.packages && data.packages.length > 0) {
         const textarea = document.querySelector('#asu-packages');
         if (textarea) {
@@ -3926,7 +3926,6 @@ function applyImportedSettings(data) {
             const allPackages = [...new Set([...currentPackages, ...data.packages])];
             textarea.value = allPackages.join(' ');
         }
-        
         for (const pkg of data.packages) {
             const checkbox = document.querySelector(`[data-package="${pkg}"]`);
             if (checkbox && checkbox.type === 'checkbox') {
@@ -3934,56 +3933,57 @@ function applyImportedSettings(data) {
             }
         }
     }
-    
+
     if (data.variables && Object.keys(data.variables).length > 0) {
         for (const [variableName, value] of Object.entries(data.variables)) {
             const fieldId = variableToFieldMap[variableName];
-            
-            if (!fieldId) {
-                console.warn(`No field mapping found for variable: ${variableName}`);
+
+            let field = fieldId ? document.getElementById(fieldId) : null;
+
+            let radio = document.querySelector(`[name="${variableName}"][value="${value}"]`);
+            if (radio && radio.type === 'radio') {
+                radio.checked = true;
+                radio.dispatchEvent(new Event('change', { bubbles: true }));
+                console.log(`Applied radio by name: ${variableName} = ${value}`);
                 continue;
             }
-            
-            const field = document.getElementById(fieldId);
-            
+
+
+            if (field && field.tagName === 'SELECT') {
+                field.value = value;
+                field.dispatchEvent(new Event('change', { bubbles: true }));
+                console.log(`Applied select: ${variableName} (${field.id}) = ${value}`);
+                continue;
+            }
+
             if (field) {
                 if (field.type === 'radio') {
-                    const radio = document.querySelector(`[name="${fieldId}"][value="${value}"]`);
-                    if (radio) {
-                        radio.checked = true;
-                        console.log(`Applied radio: ${variableName} = ${value}`);
-                    }
-                } else {
-                    field.value = value;
-                    console.log(`Applied field: ${variableName} (${fieldId}) = ${value}`);
+                    continue;
                 }
+                field.value = value;
+                field.dispatchEvent(new Event('input', { bubbles: true }));
+                console.log(`Applied field: ${variableName} (${field.id}) = ${value}`);
             } else {
-                const radio = document.querySelector(`[name="${variableName}"][value="${value}"]`);
-                if (radio) {
-                    radio.checked = true;
-                    console.log(`Applied radio by name: ${variableName} = ${value}`);
-                } else {
-                    console.warn(`Field not found: ${variableName} (mapped to ${fieldId})`);
-                }
+                console.warn(`Field not found: ${variableName} (mapped to ${fieldId})`);
             }
         }
     }
-    
+
     if (data.commands && data.commands.length > 0) {
         if (state.ui.managers.commands) {
             state.ui.managers.commands.setValues(data.commands);
         }
     }
-    
+
     console.log('Executing post-import updates');
-    
+
     evaluateAllShowWhen();
     evaluateAllComputedFields();
-    
+
     document.querySelectorAll('input[type="radio"]:checked').forEach(radio => {
         radio.dispatchEvent(new Event('change', { bubbles: true }));
     });
-    
+
     requestAnimationFrame(() => {
         updateVariableDefinitions();
         updateCustomCommands();
