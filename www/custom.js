@@ -1549,8 +1549,10 @@ function getConnectionSettingFields() {
 }
 
 function applySpecialFieldLogic(values, importedVars = {}) {
-    const connectionTypeUI = getFieldValue(`input[name="connection_type"]:checked`) || 'auto';
-    let actualConnectionType = importedVars.connection_type || connectionTypeUI;
+    const connectionTypeUI = getFieldValue(`input[name="connection_type"]:checked`) 
+        || importedVars.connection_type 
+        || 'auto';
+    let actualConnectionType = connectionTypeUI;
 
     if (actualConnectionType === 'auto' && state.apiInfo) {
         if (state.apiInfo.mape?.brIpv6Address) {
@@ -1625,7 +1627,6 @@ function applySpecialFieldLogic(values, importedVars = {}) {
     const wifiModeUI = getFieldValue(`input[name="wifi_mode"]:checked`) || 'standard';
     const wifiMode = importedVars.wifi_mode || wifiModeUI;
     values.wifi_mode = wifiMode;
-
     if (wifiMode === 'manual') {
         const ssid24 = getFieldValue('#wifi-ssid-24');
         const ssid5 = getFieldValue('#wifi-ssid-5');
@@ -1642,7 +1643,6 @@ function applySpecialFieldLogic(values, importedVars = {}) {
     const netOptUI = getFieldValue(`input[name="net_optimizer"]:checked`) || 'auto';
     const netOptMode = importedVars.net_optimizer || netOptUI;
     values.net_optimizer = netOptMode;
-
     if (netOptMode === 'manual') {
         const rmem = getFieldValue('#netopt-rmem');
         const wmem = getFieldValue('#netopt-wmem');
@@ -1657,11 +1657,10 @@ function applySpecialFieldLogic(values, importedVars = {}) {
         if (somaxconn) values.netopt_somaxconn = somaxconn;
         if (congestion) values.netopt_congestion = congestion;
     }
-  
-    const dnsmasqUI = getFieldValue(`input[name="enable_dnsmasq"]:checked`) || 'auto';
-    const dnsmasqMode = importedVars.enable_dnsmasq || dnsmasqUI; // auto | manual | disabled
-    values.enable_dnsmasq = dnsmasqMode;
 
+    const dnsmasqUI = getFieldValue(`input[name="enable_dnsmasq"]:checked`) || 'auto';
+    const dnsmasqMode = importedVars.enable_dnsmasq || dnsmasqUI;
+    values.enable_dnsmasq = dnsmasqMode;
     if (dnsmasqMode === 'manual') {
         const cache = getFieldValue('#dnsmasq-cache');
         const negcache = getFieldValue('#dnsmasq-negcache');
