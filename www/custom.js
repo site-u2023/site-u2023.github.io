@@ -1547,8 +1547,6 @@ function getConnectionSettingFields() {
 }
 
 function applySpecialFieldLogic(values) {
-    const hasImportedValue = (key) => values[key] !== undefined && values[key] !== null && values[key] !== '';
-
     const connectionTypeUI = getFieldValue(`input[name="connection_type"]:checked`) || 'auto';
     let actualConnectionType = connectionTypeUI;
     
@@ -1572,11 +1570,9 @@ function applySpecialFieldLogic(values) {
 
     else if (actualConnectionType === 'dslite') {
         values.dslite = '1';
-        
         if (connectionTypeUI === 'auto' && state.apiInfo?.aftr) {
-            if (state.apiInfo.aftr.aftrIpv6Address) {
+            if (state.apiInfo.aftr.aftrIpv6Address)
                 values.dslite_aftr_address = state.apiInfo.aftr.aftrIpv6Address;
-            }
         } else {
             const aftrType = getFieldValue('#dslite-aftr-type');
             const area = getFieldValue('#dslite-area');
@@ -1589,7 +1585,6 @@ function applySpecialFieldLogic(values) {
 
     else if (actualConnectionType === 'mape') {
         values.mape = '1';
-        
         if (connectionTypeUI === 'auto' && state.apiInfo?.mape) {
             values.mape_br = state.apiInfo.mape.brIpv6Address;
             values.mape_ealen = state.apiInfo.mape.eaBitLength;
