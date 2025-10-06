@@ -3885,7 +3885,6 @@ function applyImportedSettings(data) {
     console.log('Applying imported settings:', data);
 
     const variableToFieldMap = buildVariableToFieldMap();
-    console.log('Using variable to field map for import');
 
     if (data.metadata.os_version) {
         const versionSelect = document.querySelector('#versions');
@@ -3894,7 +3893,6 @@ function applyImportedSettings(data) {
             versionSelect.dispatchEvent(new Event('change', { bubbles: true }));
         }
     }
-
     if (data.metadata.device_model) {
         const modelsInput = document.querySelector('#models');
         if (modelsInput) {
@@ -3902,14 +3900,12 @@ function applyImportedSettings(data) {
             modelsInput.onkeyup({ key: 'Enter', keyCode: 13 });
         }
     }
-
     if (data.metadata.device_name) {
         const deviceNameField = document.getElementById('aios-device-name');
         if (deviceNameField) {
             deviceNameField.value = data.metadata.device_name;
         }
     }
-
     if (data.metadata.language) {
         const languageField = document.getElementById('device-language');
         if (languageField) {
@@ -3918,7 +3914,7 @@ function applyImportedSettings(data) {
             config.device_language = data.metadata.language;
         }
     }
-  
+
     if (data.packages && data.packages.length > 0) {
         const textarea = document.querySelector('#asu-packages');
         if (textarea) {
@@ -3937,34 +3933,33 @@ function applyImportedSettings(data) {
     if (data.variables && Object.keys(data.variables).length > 0) {
         for (const [variableName, value] of Object.entries(data.variables)) {
             const fieldId = variableToFieldMap[variableName];
-
             let field = fieldId ? document.getElementById(fieldId) : null;
+            let handled = false;
 
             let radio = document.querySelector(`[name="${variableName}"][value="${value}"]`);
             if (radio && radio.type === 'radio') {
                 radio.checked = true;
                 radio.dispatchEvent(new Event('change', { bubbles: true }));
-                console.log(`Applied radio by name: ${variableName} = ${value}`);
+                handled = true;
                 continue;
             }
-
 
             if (field && field.tagName === 'SELECT') {
                 field.value = value;
                 field.dispatchEvent(new Event('change', { bubbles: true }));
-                console.log(`Applied select: ${variableName} (${field.id}) = ${value}`);
+                handled = true;
                 continue;
             }
 
-            if (field) {
-                if (field.type === 'radio') {
-                    continue;
-                }
+            if (field && !handled) {
                 field.value = value;
                 field.dispatchEvent(new Event('input', { bubbles: true }));
-                console.log(`Applied field: ${variableName} (${field.id}) = ${value}`);
-            } else {
-                console.warn(`Field not found: ${variableName} (mapped to ${fieldId})`);
+                handled = true;
+                continue;
+            }
+
+            if (!handled) {
+                console.warn(`Field not found for variable: ${variableName} (mapped to ${fieldId})`);
             }
         }
     }
@@ -3975,11 +3970,8 @@ function applyImportedSettings(data) {
         }
     }
 
-    console.log('Executing post-import updates');
-
     evaluateAllShowWhen();
     evaluateAllComputedFields();
-
     document.querySelectorAll('input[type="radio"]:checked').forEach(radio => {
         radio.dispatchEvent(new Event('change', { bubbles: true }));
     });
