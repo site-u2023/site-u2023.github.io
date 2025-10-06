@@ -3636,6 +3636,35 @@ function setupImportExport() {
     console.log('Import/Export setup complete');
 }
 
+function buildVariableToFieldMap() {
+    const map = {};
+    
+    if (!state.config.setup || !state.config.setup.categories) {
+        return map;
+    }
+    
+    for (const category of state.config.setup.categories) {
+        for (const item of category.items) {
+            if (item.type === 'field' && item.variable && item.id) {
+                map[item.variable] = item.id;
+            } else if (item.type === 'radio-group' && item.variable) {
+                map[item.variable] = item.variable;
+            } else if (item.type === 'section' && item.items) {
+                for (const subItem of item.items) {
+                    if (subItem.type === 'field' && subItem.variable && subItem.id) {
+                        map[subItem.variable] = subItem.id;
+                    } else if (subItem.type === 'radio-group' && subItem.variable) {
+                        map[subItem.variable] = subItem.variable;
+                    }
+                }
+            }
+        }
+    }
+    
+    console.log('Variable to field map built:', map);
+    return map;
+}
+
 function exportSettings() {
     const deviceModel = document.querySelector('#models')?.value || '';
     const deviceName = getFieldValue('#aios-device-name') || 'OpenWrt';
@@ -3856,6 +3885,9 @@ function extractCommandsFromSetup() {
 function applyImportedSettings(data) {
     console.log('Applying imported settings:', data);
     
+    const variableToFieldMap = buildVariableToFieldMap();
+    console.log('Using variable to field map for import');
+    
     if (data.metadata.os_version) {
         const versionSelect = document.querySelector('#versions');
         if (versionSelect) {
@@ -3905,19 +3937,34 @@ function applyImportedSettings(data) {
     }
     
     if (data.variables && Object.keys(data.variables).length > 0) {
-        for (const [key, value] of Object.entries(data.variables)) {
-            const field = document.getElementById(key) || 
-                         document.querySelector(`[name="${key}"]`) ||
-                         document.querySelector(`#aios-${key}`);
+        for (const [variableName, value] of Object.entries(data.variables)) {
+            const fieldId = variableToFieldMap[variableName];
+            
+            if (!fieldId) {
+                console.warn(`No field mapping found for variable: ${variableName}`);
+                continue;
+            }
+            
+            const field = document.getElementById(fieldId);
             
             if (field) {
                 if (field.type === 'radio') {
-                    const radio = document.querySelector(`[name="${key}"][value="${value}"]`);
+                    const radio = document.querySelector(`[name="${fieldId}"][value="${value}"]`);
                     if (radio) {
                         radio.checked = true;
+                        console.log(`Applied radio: ${variableName} = ${value}`);
                     }
                 } else {
                     field.value = value;
+                    console.log(`Applied field: ${variableName} (${fieldId}) = ${value}`);
+                }
+            } else {
+                const radio = document.querySelector(`[name="${variableName}"][value="${value}"]`);
+                if (radio) {
+                    radio.checked = true;
+                    console.log(`Applied radio by name: ${variableName} = ${value}`);
+                } else {
+                    console.warn(`Field not found: ${variableName} (mapped to ${fieldId})`);
                 }
             }
         }
