@@ -1842,7 +1842,7 @@ function generateVariableDefinitions(values) {
     const lines = [];
     
     Object.entries(values).forEach(([key, value]) => {
-        if (value === 'disabled' || value === '' || value === null || value === undefined) {
+        if (value === '' || value === null || value === undefined) {
             return;
         }
         const escapedValue = value.toString().replace(/'/g, "'\"'\"'");
