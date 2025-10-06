@@ -2491,7 +2491,12 @@ function setupPackageSearch() {
     if (oldInput) {
         oldInput.remove();
     }
-    
+
+    const h4 = searchContainer.closest('.config-section')?.querySelector('h4.tr-package-search');
+    if (h4 && !h4.querySelector('.tooltip')) {
+        addTooltip(h4, "Select extra packages to install. They'll be added to the list below.");
+    }
+  
     state.ui.managers.packageSearch = new MultiInputManager('package-search-autocomplete', {
         placeholder: 'Type package name and press Enter',
         className: 'multi-input-item package-search-input',
@@ -3447,21 +3452,17 @@ function createPackageCategory(category) {
         }
     });
     
-    if (!hasVisiblePackages) return null;
+if (!hasVisiblePackages) return null;
     
     const title = document.createElement('h4');
     title.textContent = category.name;
     if (category.class) {
         title.classList.add(category.class);
     }
-    categoryDiv.appendChild(title);
- 
     if (category.description) {
-        const description = document.createElement('div');
-        description.className = 'package-category-description';
-        description.textContent = category.description;
-        categoryDiv.appendChild(description);
+        addTooltip(title, category.description);
     }
+    categoryDiv.appendChild(title);
     
     categoryDiv.appendChild(packageGrid);
     return categoryDiv;
@@ -3614,6 +3615,11 @@ function setupCommandsInput() {
         oldInput.remove();
     }
 
+    const h4 = commandsContainer.closest('.config-section')?.querySelector('h4.tr-add-commands');
+    if (h4 && !h4.querySelector('.tooltip')) {
+        addTooltip(h4, "Add custom shell commands that run on first boot.");
+    }
+  
     state.ui.managers.commands = new MultiInputManager('commands-autocomplete', {
         placeholder: 'Type command and press Enter',
         className: 'multi-input-item command-input',
