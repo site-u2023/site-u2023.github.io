@@ -116,8 +116,7 @@
     "tr-utilities": "Utilities",
     "tr-usb-storage": "USB Storage Support",
     "tr-file-sharing": "File Sharing",
-    "tr-ad-blocking": "Ad Blocking",
-    "tr-dns-privacy": "dns-privacy",
+    "tr-dns-privacy": "DNS & Privacy",
     
     "tr-dnsmasq-settings": "DNS Server Optimization",
     "tr-dnsmasq-mode": "DNS Server Mode",
