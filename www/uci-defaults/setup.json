@@ -198,7 +198,7 @@
           "default": "standard",
           "options": [
             {"value": "standard", "label": "Standard", "class": "tr-standard"},
-            {"value": "luci-app-usteer", "label": "Usteer", "class": "tr-usteer"},
+            {"value": "usteer", "label": "Usteer", "class": "tr-usteer"},
             {"value": "disabled", "label": "Disabled", "class": "tr-disabled"}
           ]
         },
@@ -212,7 +212,7 @@
           "placeholder": "OpenWrt",
           "default": "OpenWrt",
           "maxlength": 32,
-          "showWhen": {"wifi_mode": ["standard", "luci-app-usteer"]}
+          "showWhen": {"wifi_mode": ["standard", "usteer"]}
         },
         {
           "type": "field",
@@ -225,7 +225,7 @@
           "default": "password",
           "minlength": 8,
           "maxlength": 63,
-          "showWhen": {"wifi_mode": ["standard", "luci-app-usteer"]}
+          "showWhen": {"wifi_mode": ["standard", "usteer"]}
         },
         {
           "type": "field",
@@ -239,7 +239,7 @@
           "maxlength": 4,
           "pattern": "[0-9A-Fa-f]{4}",
           "description": "4-digit hex (e.g. 4f57)",
-          "showWhen": {"wifi_mode": ["luci-app-usteer"]}
+          "showWhen": {"wifi_mode": ["usteer"]}
         },
         {
           "type": "field",
@@ -251,7 +251,7 @@
           "placeholder": "30 15 5",
           "default": "30 15 5",
           "description": "SNR values in band order",
-          "showWhen": {"wifi_mode": ["luci-app-usteer"]}
+          "showWhen": {"wifi_mode": ["usteer"]}
         },
         {
           "type": "info-display",
