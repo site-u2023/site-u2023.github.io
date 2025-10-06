@@ -615,8 +615,8 @@
           "description": "DS-Lite support package"
         },
         {
-          "id": "luci-app-usteer",
-          "name": "luci-app-usteer",
+          "id": "usteer",
+          "name": "usteer",
           "hidden": true,
           "description": "Usteer package managed by Wi-Fi setup"
         }
