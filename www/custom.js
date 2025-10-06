@@ -3639,6 +3639,7 @@ function setupImportExport() {
 function exportSettings() {
     const deviceName = getFieldValue('#aios-device-name') || 'OpenWrt';
     const language = state.ui.language.selected || 'en';
+    const osVersion = document.querySelector('#versions')?.value || 'SNAPSHOT';
     const now = new Date();
     const timestamp = now.toISOString();
     const dateStr = now.toISOString().replace(/[-:]/g, '').split('.')[0].replace('T', '-');
@@ -3651,6 +3652,7 @@ function exportSettings() {
         metadata: {
             device_name: deviceName,
             language: language,
+            os_version: osVersion,
             export_date: timestamp,
             version: '1.0'
         },
@@ -3852,6 +3854,14 @@ function extractCommandsFromSetup() {
 function applyImportedSettings(data) {
     console.log('Applying imported settings:', data);
     
+    if (data.metadata.os_version) {
+        const versionSelect = document.querySelector('#versions');
+        if (versionSelect) {
+            versionSelect.value = data.metadata.os_version;
+            versionSelect.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+    }
+    
     if (data.metadata.device_name) {
         const deviceNameField = document.getElementById('aios-device-name');
         if (deviceNameField) {
@@ -3869,6 +3879,13 @@ function applyImportedSettings(data) {
     }
     
     if (data.packages && data.packages.length > 0) {
+        const textarea = document.querySelector('#asu-packages');
+        if (textarea) {
+            const currentPackages = CustomUtils.split(textarea.value);
+            const allPackages = [...new Set([...currentPackages, ...data.packages])];
+            textarea.value = allPackages.join(' ');
+        }
+        
         for (const pkg of data.packages) {
             const checkbox = document.querySelector(`[data-package="${pkg}"]`);
             if (checkbox && checkbox.type === 'checkbox') {
@@ -3898,13 +3915,12 @@ function applyImportedSettings(data) {
     
     if (data.commands && data.commands.length > 0) {
         if (state.ui.managers.commands) {
-            const existingCommands = state.ui.managers.commands.getAllValues();
-            const newCommands = [...new Set([...existingCommands, ...data.commands])];
-            state.ui.managers.commands.setValues(newCommands);
+            state.ui.managers.commands.setValues(data.commands);
         }
     }
     
     console.log('Executing post-import updates');
+    
     evaluateAllShowWhen();
     evaluateAllComputedFields();
     
@@ -3914,7 +3930,6 @@ function applyImportedSettings(data) {
     
     updateVariableDefinitions();
     updateCustomCommands();
-    updateAllPackageState('import-complete');
     
     console.log('Import completed successfully');
 }
