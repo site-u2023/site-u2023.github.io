@@ -2515,26 +2515,7 @@ function setupPackageSearch() {
     if (h4) {
         addTooltip(h4, "Select extra packages to install. They'll be added to the list below.");
         console.log('Package search tooltip added');
-    } else {
-        console.warn('Package search h4 not found');
     }
-        placeholder: 'Type package name and press Enter',
-        className: 'multi-input-item package-search-input',
-        onAdd: (packageName) => {
-            console.log('Package added:', packageName);
-            updateAllPackageState('package-search-add');
-        },
-        onRemove: (packageName) => {
-            console.log('Package removed:', packageName);
-            updateAllPackageState('package-search-remove');
-        },
-        onChange: (values) => {
-            updateAllPackageState('package-search-change');
-        },
-        autocomplete: (query, inputElement) => {
-            searchPackages(query, inputElement);
-        }
-    });
     
     console.log('Package search setup complete');
 }
@@ -3655,23 +3636,7 @@ function setupCommandsInput() {
     if (h4) {
         addTooltip(h4, "Add custom shell commands that run on first boot.");
         console.log('Commands tooltip added');
-    } else {
-        console.warn('Commands h4 not found');
     }
-        placeholder: 'Type command and press Enter',
-        className: 'multi-input-item command-input',
-        onAdd: (command) => {
-            console.log('Command added:', command);
-            updateCustomCommands();
-        },
-        onRemove: (command) => {
-            console.log('Command removed:', command);
-            updateCustomCommands();
-        },
-        onChange: (values) => {
-            updateCustomCommands();
-        }
-    });
 
     console.log('Commands input setup complete');
 }
