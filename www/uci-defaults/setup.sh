@@ -102,7 +102,8 @@ firewall_wan() {
     SET @defaults[0].flow_offloading='1'
     [ "${flow_offloading_type}" = "hardware" ] && SET @defaults[0].flow_offloading_hw='1'
 }
-[ -n "${wlan_ssid}" ] && [ -n "${wlan_password}" ] && [ "${#wlan_password}" -ge 8 ] && {
+if { [ "${wifi_mode}" = "standard" ] || [ "${wifi_mode}" = "usteer" ]; } &&
+   [ -n "${wlan_ssid}" ] && [ -n "${wlan_password}" ] && [ "${#wlan_password}" -ge 8 ]; then
     local SEC=wireless
     wireless_cfg=$(uci -q show wireless)
     for radio in $(printf '%s\n' "${wireless_cfg}" | grep "wireless\.radio[0-9]*=" | cut -d. -f2 | cut -d= -f1); do
@@ -111,21 +112,16 @@ firewall_wan() {
         band=$(uci -q get wireless.${radio}.band)
         set -- 30 15 5
         case "${band}" in
-        2g) encryption='psk-mixed';nasid_suffix='-2g';band_snr=$1;;
-        5g) encryption='sae-mixed';nasid_suffix='-5g';band_snr=$2;;
-        6g) encryption='sae';nasid_suffix='-6g';band_snr=$3;;
-        *) encryption='psk-mixed';nasid_suffix='';band_snr=20;;
+            2g) encryption='psk-mixed'; nasid_suffix='-2g'; band_snr=$1;;
+            5g) encryption='sae-mixed'; nasid_suffix='-5g'; band_snr=$2;;
+            6g) encryption='sae'; nasid_suffix='-6g'; band_snr=$3;;
+            *)  encryption='psk-mixed'; nasid_suffix=''; band_snr=20;;
         esac
         suffix=${band:+-$band}
-        if [ -n "${enable_usteer}" ] && [ -n "${wlan_ssid}" ] && [ -n "${wlan_password}" ]; then
+        if [ "${wifi_mode}" = "usteer" ]; then
             ssid="${wlan_ssid}"
         else
             ssid="${wlan_ssid}${suffix}"
-            n=2
-            while printf '%s\n' "${wireless_cfg}" | grep -q "ssid='${ssid}'"; do
-                ssid="${wlan_ssid}${suffix}${n}"
-                n=$((n+1))
-            done
         fi
         iface="default_${radio}"
         [ -n "$(uci -q get wireless.${iface})" ] && {
@@ -133,7 +129,7 @@ firewall_wan() {
             SET ${iface}.encryption="${encryption}"
             SET ${iface}.ssid="${ssid}"
             SET ${iface}.key="${wlan_password}"
-            if [ -n "${enable_usteer}" ] && [ -n "${wlan_ssid}" ] && [ -n "${wlan_password}" ]; then
+            if [ "${wifi_mode}" = "usteer" ]; then
                 SET ${iface}.isolate='1'
                 SET ${iface}.ocv='1'
                 SET ${iface}.ieee80211r='1'
@@ -146,7 +142,7 @@ firewall_wan() {
             fi
         }
     done
-    if [ -n "${enable_usteer}" ] && [ -n "${wlan_ssid}" ] && [ -n "${wlan_password}" ]; then
+    if [ "${wifi_mode}" = "usteer" ]; then
         local SEC=usteer
         SET @usteer[0].band_steering='1'
         SET @usteer[0].load_balancing='1'
@@ -155,14 +151,14 @@ firewall_wan() {
         SET @usteer[0].max_snr='80'
         SET @usteer[0].signal_diff_threshold='10'
     fi
-}
-[ -n "${pppoe}" ] && {
+fi
+if [ "${connection_type}" = "pppoe" ] && [ -n "${pppoe_username}" ]; then
     local SEC=network
     SET wan.proto='pppoe'
     SET wan.username="${pppoe_username}"
-    SET wan.password="${pppoe_password}"
-}
-[ -n "${dslite}" ] && {
+    [ -n "${pppoe_password}" ] && SET wan.password="${pppoe_password}"
+fi
+if [ "${connection_type}" = "dslite" ] && [ -n "${dslite_aftr_address}" ]; then
     local SEC=network
     disable_wan
     SET ${DSL6}=interface
@@ -179,7 +175,7 @@ firewall_wan() {
     dhcp_relay "${DSL6}"
     firewall_wan "${DSL}" "${DSL6}"
 }
-[ -n "${mape}" ] && {
+if [ "${connection_type}" = "mape" ] && [ -n "${mape_br}" ]; then
     local SEC=network
     disable_wan
     SET ${MAPE6}=interface
@@ -243,7 +239,7 @@ sed -i '/if \[ -z "\$(eval "echo \\$RULE_\${k}_PORTSETS")"/,/^[[:space:]]*fi$/c\
 	    done\
 	  fi' "$MAP_SH"
 }
-[ -n "${ap}" ] && {
+if [ "${connection_type}" = "ap" ] && [ -n "${ap_ip_address}" ]; then
     disable_wan
     {
         local SEC=network
@@ -324,7 +320,7 @@ sed -i '/if \[ -z "\$(eval "echo \\$RULE_\${k}_PORTSETS")"/,/^[[:space:]]*fi$/c\
     local SEC=network
     ADDLIST @device[0].ports='usb0'
 }
-[ -n "${enable_netopt}" ] && {
+if [ -n "${net_optimizer}" ]; then
     C=/etc/sysctl.d/99-net-opt.conf
     P=$(grep -c ^processor /proc/cpuinfo)
     RMEM=${netopt_rmem:-}
