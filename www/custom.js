@@ -76,11 +76,7 @@ const state = {
     dom: {
         textarea: null,
         sizeBreakdown: null,
-        packageLoadingIndicator: null,
-        dynamicConfigSections: null,
-        packageCategories: null,
-        autoInfo: null,
-        extendedBuildInfo: null
+        packageLoadingIndicator: null
     }
 };
 
@@ -263,10 +259,6 @@ function cacheFrequentlyUsedElements() {
     state.dom.textarea = document.querySelector('#asu-packages');
     state.dom.sizeBreakdown = document.querySelector('#package-size-breakdown');
     state.dom.packageLoadingIndicator = document.querySelector('#package-loading-indicator');
-    state.dom.dynamicConfigSections = document.querySelector('#dynamic-config-sections');
-    state.dom.packageCategories = document.querySelector('#package-categories');
-    state.dom.autoInfo = document.querySelector('#auto-info');
-    state.dom.extendedBuildInfo = document.querySelector('#extended-build-info');
 }
 
 // ==================== 初期化処理 ====================
