@@ -258,18 +258,6 @@ const CustomUtils = {
     }
 };
 
-// ==================== デバイス情報取得 ====================
-function getDeviceInfo() {
-    return {
-        arch: state.device.arch || null,
-        version: state.device.version || null,
-        vendor: state.device.vendor || null,
-        subtarget: state.device.subtarget || null,
-        target: state.device.target || null,
-        id: state.device.id || null
-    };
-}
-
 // ==================== DOM要素キャッシュ ====================
 function cacheFrequentlyUsedElements() {
     state.dom.textarea = document.querySelector('#asu-packages');
@@ -2548,15 +2536,15 @@ async function searchPackages(query, inputElement) {
 }
 
 async function searchInFeed(query, feed, version, arch) {
-    const deviceInfo = getDeviceInfo();
     const cacheKey = `${version}:${arch}:${feed}`;
 
     try {
         if (!state.cache.feed.has(cacheKey)) {
             const url = await buildPackageUrl(feed, {
-                version, arch,
-                vendor: deviceInfo.vendor,
-                subtarget: deviceInfo.subtarget,
+                version, 
+                arch,
+                vendor: state.device.vendor,
+                subtarget: state.device.subtarget,
                 isSnapshot: version.includes('SNAPSHOT')
             });
 
