@@ -90,11 +90,22 @@ const UI = {
         const el = typeof idOrEl === 'string' ? document.getElementById(idOrEl) : idOrEl;
         if (!el) return;
 
-        if ('show' in opts) el.style.display = opts.show ? '' : 'none';
+        if ('show' in opts) {
+            el.classList.toggle('hide', !opts.show);
+            el.style.display = opts.show ? '' : 'none';
+        }
         if ('text' in opts) el.textContent = opts.text;
         if ('html' in opts) el.innerHTML = opts.html;
         if ('value' in opts) el.value = opts.value;
         if ('disabled' in opts) el.disabled = !!opts.disabled;
+    },
+    
+    show(el) {
+        this.updateElement(el, { show: true });
+    },
+    
+    hide(el) {
+        this.updateElement(el, { show: false });
     }
 };
 
@@ -236,17 +247,6 @@ const CustomUtils = {
             UI.updateElement(guaPrefixField, { value: guaPrefix });
         }
     },
-    
-    toggleVisibility(el, show = true) {
-        const element = (typeof el === 'string') ? document.querySelector(el) : el;
-        if (!element) return;
-        
-        element.classList.toggle('hide', !show);
-        element.style.display = show ? '' : 'none';
-    },
-
-    show(el) { this.toggleVisibility(el, true); },
-    hide(el) { this.toggleVisibility(el, false); },
 
     split(str = '') {
         return str.trim().match(/[^\s,]+/g) || [];
