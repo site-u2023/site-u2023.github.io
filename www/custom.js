@@ -2131,7 +2131,7 @@ class MultiInputManager {
             console.error(`Container ${containerId} not found`);
             return;
         }
-        
+
         this.options = {
             placeholder: options.placeholder || 'Type and press Enter',
             className: options.className || 'multi-input-item',
@@ -2140,21 +2140,21 @@ class MultiInputManager {
             onChange: options.onChange || (() => {}),
             autocomplete: options.autocomplete || null
         };
-        
+
         this.inputs = [];
         this.init();
     }
-    
+
     init() {
         this.container.innerHTML = '';
         this.container.className = 'multi-input-container';
         this.addInput('', true);
     }
-    
+
     addInput(value = '', focus = false) {
         const inputWrapper = document.createElement('div');
         inputWrapper.className = 'multi-input-wrapper';
-        
+
         const input = document.createElement('input');
         input.type = 'text';
         input.className = this.options.className;
@@ -2163,35 +2163,37 @@ class MultiInputManager {
         input.autocomplete = 'off';
         input.spellcheck = false;
         input.autocapitalize = 'off';
-        
+
         input.addEventListener('keydown', (e) => this.handleKeyDown(e, input));
         input.addEventListener('input', (e) => this.handleInput(e, input));
         input.addEventListener('blur', (e) => this.handleBlur(e, input));
-        
+
         inputWrapper.appendChild(input);
         this.container.appendChild(inputWrapper);
         this.inputs.push(input);
-        
+
         if (focus) {
             requestAnimationFrame(() => input.focus());
         }
-        
+
         if (value) {
             this.options.onAdd(value);
         }
-        
+
         return input;
     }
-    
+
     handleKeyDown(e, input) {
         if (e.key === 'Enter') {
             e.preventDefault();
             const value = input.value.trim();
-            
+
             if (value) {
                 input.setAttribute('data-confirmed', 'true');
                 this.addInput('', true);
+
                 this.options.onChange(this.getAllValues());
+                console.log('Package search confirmed:', value);
             }
         } else if (e.key === 'Backspace' && input.value === '' && this.inputs.length > 1) {
             const index = this.inputs.indexOf(input);
@@ -2202,69 +2204,65 @@ class MultiInputManager {
             }
         }
     }
-    
+
     handleInput(e, input) {
         const value = input.value.trim();
-    
+
         if (this.options.autocomplete && value.length >= 2) {
             this.options.autocomplete(value, input);
         }
-    
-        if (!input.dataset.programmaticChange) {
-            this.options.onChange(this.getAllValues());
-        }
-    
+
         delete input.dataset.programmaticChange;
     }
-    
+
     handleBlur(e, input) {
         const value = input.value.trim();
         const index = this.inputs.indexOf(input);
-        
+
         if (input.dataset.skipBlur) {
             delete input.dataset.skipBlur;
             return;
         }
-        
+
         if (value === '' && this.inputs.length > 1 && index !== this.inputs.length - 1) {
             this.removeInput(input);
         }
-        
+
         if (value && index === this.inputs.length - 1 && !input.getAttribute('data-confirmed')) {
             this.addInput('', false);
         }
     }
-    
+
     removeInput(input) {
         const index = this.inputs.indexOf(input);
         if (index > -1 && this.inputs.length > 1) {
             const value = input.value.trim();
             input.parentElement.remove();
             this.inputs.splice(index, 1);
-            
+
             if (value) {
                 this.options.onRemove(value);
             }
             this.options.onChange(this.getAllValues());
         }
     }
-    
+
     getAllValues() {
         return this.inputs
             .map(input => input.value.trim())
             .filter(value => value !== '');
     }
-    
+
     setValues(values) {
         this.container.innerHTML = '';
         this.inputs = [];
-        
+
         if (values && values.length > 0) {
             values.forEach(value => {
                 this.addInput(value, false);
             });
         }
-        
+
         this.addInput('', false);
     }
 }
