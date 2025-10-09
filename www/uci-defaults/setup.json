@@ -45,11 +45,14 @@
         "2001:4:112::/48"
       ]
     },
-    "language_prefixes": [
+    "language_prefixes_release": [
       "luci-i18n-base-",
       "luci-i18n-opkg-",
       "luci-i18n-package-manager-",
       "luci-i18n-firewall-"
+    ],
+    "language_prefixes_snapshot": [
+      "luci-i18n-base-"
     ],
     "export_exclusions": {
       "connection_type": {
