@@ -240,16 +240,8 @@ const CustomUtils = {
         if (!apiInfo?.ipv6) return null;
         const ipv6 = apiInfo.ipv6.toLowerCase();
 
-        const guaPrefixCheck = "2000::/3";
-        const excludeCidrs = [
-            "2001:db8::/32",
-            "2002::/16",
-            "2001::/32",
-            "2001:20::/28",
-            "2001:2::/48",
-            "2001:3::/32",
-            "2001:4:112::/48"
-        ];
+        const guaPrefixCheck = state.config.constants.gua_validation.prefix_check;
+        const excludeCidrs = state.config.constants.gua_validation.exclude_cidrs;
 
         if (!this.inCidr(ipv6, guaPrefixCheck)) return null;
 
