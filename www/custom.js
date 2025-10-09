@@ -1481,7 +1481,32 @@ function collectConnectionConfig(values) {
     const connectionType = getFieldValue(`input[name="connection_type"]:checked`) || 'auto';
 
     if (connectionType === 'auto') {
-        values.connection_type = 'auto';
+        if (state.apiInfo?.mape?.brIpv6Address) {
+            values.mape_br = state.apiInfo.mape.brIpv6Address;
+            values.mape_ealen = state.apiInfo.mape.eaBitLength;
+            values.mape_ipv4_prefix = state.apiInfo.mape.ipv4Prefix;
+            values.mape_ipv4_prefixlen = state.apiInfo.mape.ipv4PrefixLength;
+            values.mape_ipv6_prefix = state.apiInfo.mape.ipv6Prefix;
+            values.mape_ipv6_prefixlen = state.apiInfo.mape.ipv6PrefixLength;
+            values.mape_psid_offset = state.apiInfo.mape.psIdOffset;
+            values.mape_psidlen = state.apiInfo.mape.psidlen;
+            
+            const mapeType = getFieldValue(`input[name="mape_type"]:checked`) || 'gua';
+            if (mapeType === 'gua') {
+                const guaPrefix = getFieldValue('#mape-gua-prefix');
+                if (guaPrefix) {
+                    values.mape_gua_prefix = guaPrefix;
+                }
+            }
+        } else if (state.apiInfo?.aftr?.aftrIpv6Address) {
+            values.dslite_aftr_address = state.apiInfo.aftr.aftrIpv6Address;
+            if (state.apiInfo.aftr.aftrType) {
+                values.dslite_aftr_type = state.apiInfo.aftr.aftrType;
+            }
+            if (state.apiInfo.aftr.jurisdiction) {
+                values.dslite_area = state.apiInfo.aftr.jurisdiction;
+            }
+        }
         
     } else if (connectionType === 'dhcp') {
         values.connection_type = 'dhcp';
@@ -1524,7 +1549,6 @@ function collectConnectionConfig(values) {
 
         const mapeType = getFieldValue(`input[name="mape_type"]:checked`) || 'gua';
         if (mapeType === 'gua') {
-            values.mape_type = 'gua';
             const guaPrefix = getFieldValue('#mape-gua-prefix');
             if (guaPrefix) values.mape_gua_prefix = guaPrefix;
         }
