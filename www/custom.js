@@ -81,6 +81,14 @@ const state = {
 };
 
 // ==================== ユーティリティ ====================
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func(...args), wait);
+    };
+}
+
 const UI = {
     updateElement(idOrEl, opts = {}) {
         const el = typeof idOrEl === 'string' ? document.getElementById(idOrEl) : idOrEl;
@@ -626,7 +634,8 @@ function buildField(field) {
         }
         
         if (field.id !== 'device-language') {
-            ctrl.addEventListener('input', () => updateAllPackageState('form-field'));
+            const debouncedUpdate = debounce(() => updateAllPackageState('form-field'), 500);
+            ctrl.addEventListener('input', debouncedUpdate);
         }
     }
     
@@ -1421,65 +1430,15 @@ function collectFormValues() {
         return values;
     }
 
-    const connectionCategory = state.config.setup.categories.find(cat => cat.id === 'internet-connection');
-    
-    for (const category of state.config.setup.categories) {
-        if (category.id === 'internet-connection') continue;
-        
-        for (const item of category.items) {
-            collectFieldValue(item, values);
-        }
-    }
+    collectBasicConfig(values);
 
-    const connectionType = getFieldValue(`input[name="connection_type"]:checked`) || 'auto';
-    values.connection_type = connectionType;
+    collectWifiConfig(values);
 
-    if (connectionType === 'pppoe') {
-        const username = getFieldValue('#pppoe-username');
-        const password = getFieldValue('#pppoe-password');
-        if (username) values.pppoe_username = username;
-        if (password) values.pppoe_password = password;
-    } else if (connectionType === 'dslite') {
-        collectDsLiteFields(values);
-    } else if (connectionType === 'mape') {
-        collectMapeFields(values);
-    } else if (connectionType === 'ap') {
-        const apIp = getFieldValue('#ap-ip-address');
-        const apGw = getFieldValue('#ap-gateway');
-        if (apIp) values.ap_ip_address = apIp;
-        if (apGw) values.ap_gateway = apGw;
-    }
+    collectConnectionConfig(values);
 
-    const wifiMode = getFieldValue(`input[name="wifi_mode"]:checked`) || 'standard';
-    values.wifi_mode = wifiMode;
-    if (wifiMode !== 'disabled') {
-        const ssid = getFieldValue('#aios-wifi-ssid');
-        const password = getFieldValue('#aios-wifi-password');
-        if (ssid) values.wlan_ssid = ssid;
-        if (password) values.wlan_password = password;
-        
-        if (wifiMode === 'usteer') {
-            const mobility = getFieldValue('#aios-wifi-mobility-domain');
-            const snr = getFieldValue('#aios-wifi-snr');
-            if (mobility) values.mobility_domain = mobility;
-            if (snr) values.snr = snr;
-        }
-    }
+    collectOptimizationConfig(values);
 
-    const netOpt = getFieldValue(`input[name="net_optimizer"]:checked`) || 'auto';
-    values.net_optimizer = netOpt;
-    if (netOpt === 'manual') {
-        collectNetOptFields(values);
-    }
-
-    const dnsmasq = getFieldValue(`input[name="enable_dnsmasq"]:checked`) || 'auto';
-    values.enable_dnsmasq = dnsmasq;
-    if (dnsmasq === 'manual') {
-        const cache = getFieldValue('#dnsmasq-cache');
-        const negcache = getFieldValue('#dnsmasq-negcache');
-        if (cache) values.dnsmasq_cache = cache;
-        if (negcache) values.dnsmasq_negcache = negcache;
-    }
+    collectPackageEnableVars(values);
 
     if (state.importedVariables && typeof state.importedVariables === 'object') {
         Object.assign(values, state.importedVariables);
@@ -1488,73 +1447,169 @@ function collectFormValues() {
     return values;
 }
 
-function collectFieldValue(item, values) {
-    if (item.type === 'field' && item.variable) {
-        const value = getFieldValue(`#${item.id}`);
-        if (value !== null && value !== undefined && value !== "") {
-            if (item.variable === 'language' && value === 'en') return;
-            values[item.variable] = value;
-        }
-    } else if (item.type === 'radio-group' && item.variable && !item.ui_variable) {
-        const value = getFieldValue(`input[name="${item.variable}"]:checked`);
-        if (value !== null && value !== undefined && value !== "") {
-            values[item.variable] = value;
-        }
-    } else if (item.type === 'section' && item.items) {
-        for (const subItem of item.items) {
-            collectFieldValue(subItem, values);
+function collectBasicConfig(values) {
+    const basicCategory = state.config.setup.categories.find(cat => cat.id === 'basic-config');
+    if (!basicCategory) return;
+
+    for (const item of basicCategory.items) {
+        if (item.type === 'field' && item.variable) {
+            const value = getFieldValue(`#${item.id}`);
+            if (value !== null && value !== undefined && value !== "") {
+                if (item.variable === 'language' && value === 'en') continue;
+                values[item.variable] = value;
+            }
         }
     }
 }
 
-function collectDsLiteFields(values) {
-    const aftrType = getFieldValue('#dslite-aftr-type');
-    const area = getFieldValue('#dslite-area');
-    const aftrAddress = getFieldValue('#dslite-aftr-address');
-    if (aftrType) values.dslite_aftr_type = aftrType;
-    if (area) values.dslite_area = area;
-    if (aftrAddress) values.dslite_aftr_address = aftrAddress;
-}
-
-function collectMapeFields(values) {
-    const fields = {
-        'mape-br': 'mape_br',
-        'mape-ealen': 'mape_ealen',
-        'mape-ipv4-prefix': 'mape_ipv4_prefix',
-        'mape-ipv4-prefixlen': 'mape_ipv4_prefixlen',
-        'mape-ipv6-prefix': 'mape_ipv6_prefix',
-        'mape-ipv6-prefixlen': 'mape_ipv6_prefixlen',
-        'mape-psid-offset': 'mape_psid_offset',
-        'mape-psidlen': 'mape_psidlen'
-    };
+function collectWifiConfig(values) {
+    const wifiMode = getFieldValue(`input[name="wifi_mode"]:checked`) || 'standard';
     
-    for (const [fieldId, varName] of Object.entries(fields)) {
-        const value = getFieldValue(`#${fieldId}`);
-        if (value) values[varName] = value;
-    }
+    if (wifiMode === 'disabled') return;
 
-    const mapeType = getFieldValue(`input[name="mape_type"]:checked`) || 'gua';
-    values.mape_type = mapeType;
-    if (mapeType === 'gua') {
-        const guaPrefix = getFieldValue('#mape-gua-prefix');
-        if (guaPrefix) values.mape_gua_prefix = guaPrefix;
+    values.wifi_mode = wifiMode;
+
+    const ssid = getFieldValue('#aios-wifi-ssid');
+    const password = getFieldValue('#aios-wifi-password');
+    
+    if (ssid) values.wlan_ssid = ssid;
+    if (password) values.wlan_password = password;
+
+    if (wifiMode === 'usteer') {
+        const mobility = getFieldValue('#aios-wifi-mobility-domain');
+        const snr = getFieldValue('#aios-wifi-snr');
+        if (mobility) values.mobility_domain = mobility;
+        if (snr) values.snr = snr;
     }
 }
 
-function collectNetOptFields(values) {
-    const fields = {
-        'netopt-rmem': 'netopt_rmem',
-        'netopt-wmem': 'netopt_wmem',
-        'netopt-conntrack': 'netopt_conntrack',
-        'netopt-backlog': 'netopt_backlog',
-        'netopt-somaxconn': 'netopt_somaxconn',
-        'netopt-congestion': 'netopt_congestion'
-    };
-    
-    for (const [fieldId, varName] of Object.entries(fields)) {
-        const value = getFieldValue(`#${fieldId}`);
-        if (value) values[varName] = value;
+function collectConnectionConfig(values) {
+    const connectionType = getFieldValue(`input[name="connection_type"]:checked`) || 'auto';
+
+    if (connectionType === 'auto') {
+        if (state.apiInfo?.mape?.brIpv6Address) {
+            values.connection_type = 'mape';
+            values.mape_br = state.apiInfo.mape.brIpv6Address;
+            values.mape_ealen = state.apiInfo.mape.eaBitLength;
+            values.mape_ipv4_prefix = state.apiInfo.mape.ipv4Prefix;
+            values.mape_ipv4_prefixlen = state.apiInfo.mape.ipv4PrefixLength;
+            values.mape_ipv6_prefix = state.apiInfo.mape.ipv6Prefix;
+            values.mape_ipv6_prefixlen = state.apiInfo.mape.ipv6PrefixLength;
+            values.mape_psid_offset = state.apiInfo.mape.psIdOffset;
+            values.mape_psidlen = state.apiInfo.mape.psidlen;
+            
+            const mapeType = getFieldValue(`input[name="mape_type"]:checked`) || 'gua';
+            if (mapeType === 'gua') {
+                values.mape_type = 'gua';
+                const guaPrefix = getFieldValue('#mape-gua-prefix');
+                if (guaPrefix) {
+                    values.mape_gua_prefix = guaPrefix;
+                }
+            }
+        } else if (state.apiInfo?.aftr?.aftrIpv6Address) {
+            values.connection_type = 'dslite';
+            values.dslite_aftr_address = state.apiInfo.aftr.aftrIpv6Address;
+            if (state.apiInfo.aftr.aftrType) {
+                values.dslite_aftr_type = state.apiInfo.aftr.aftrType;
+            }
+            if (state.apiInfo.aftr.jurisdiction) {
+                values.dslite_area = state.apiInfo.aftr.jurisdiction;
+            }
+        }
+    } else if (connectionType === 'dhcp') {
+    } else if (connectionType === 'pppoe') {
+        values.connection_type = 'pppoe';
+        const username = getFieldValue('#pppoe-username');
+        const password = getFieldValue('#pppoe-password');
+        if (username) values.pppoe_username = username;
+        if (password) values.pppoe_password = password;
+    } else if (connectionType === 'dslite') {
+        values.connection_type = 'dslite';
+        const aftrAddress = getFieldValue('#dslite-aftr-address');
+        if (aftrAddress) values.dslite_aftr_address = aftrAddress;
+        
+        const aftrType = getFieldValue('#dslite-aftr-type');
+        const area = getFieldValue('#dslite-area');
+        if (aftrType) values.dslite_aftr_type = aftrType;
+        if (area) values.dslite_area = area;
+    } else if (connectionType === 'mape') {
+        values.connection_type = 'mape';
+        
+        const fields = {
+            'mape-br': 'mape_br',
+            'mape-ealen': 'mape_ealen',
+            'mape-ipv4-prefix': 'mape_ipv4_prefix',
+            'mape-ipv4-prefixlen': 'mape_ipv4_prefixlen',
+            'mape-ipv6-prefix': 'mape_ipv6_prefix',
+            'mape-ipv6-prefixlen': 'mape_ipv6_prefixlen',
+            'mape-psid-offset': 'mape_psid_offset',
+            'mape-psidlen': 'mape_psidlen'
+        };
+        
+        for (const [fieldId, varName] of Object.entries(fields)) {
+            const value = getFieldValue(`#${fieldId}`);
+            if (value) values[varName] = value;
+        }
+
+        const mapeType = getFieldValue(`input[name="mape_type"]:checked`) || 'gua';
+        if (mapeType === 'gua') {
+            values.mape_type = 'gua';
+            const guaPrefix = getFieldValue('#mape-gua-prefix');
+            if (guaPrefix) values.mape_gua_prefix = guaPrefix;
+        }
+    } else if (connectionType === 'ap') {
+        values.connection_type = 'ap';
+        const apIp = getFieldValue('#ap-ip-address');
+        const apGw = getFieldValue('#ap-gateway');
+        if (apIp) values.ap_ip_address = apIp;
+        if (apGw) values.ap_gateway = apGw;
     }
+}
+
+function collectOptimizationConfig(values) {
+    const netOpt = getFieldValue(`input[name="net_optimizer"]:checked`) || 'auto';
+    
+    if (netOpt === 'disabled') {
+    } else if (netOpt === 'manual') {
+        values.net_optimizer = 'manual';
+        const fields = {
+            'netopt-rmem': 'netopt_rmem',
+            'netopt-wmem': 'netopt_wmem',
+            'netopt-conntrack': 'netopt_conntrack',
+            'netopt-backlog': 'netopt_backlog',
+            'netopt-somaxconn': 'netopt_somaxconn',
+            'netopt-congestion': 'netopt_congestion'
+        };
+        
+        for (const [fieldId, varName] of Object.entries(fields)) {
+            const value = getFieldValue(`#${fieldId}`);
+            if (value) values[varName] = value;
+        }
+    } else {
+        values.net_optimizer = 'auto';
+    }
+
+    const dnsmasq = getFieldValue(`input[name="enable_dnsmasq"]:checked`) || 'auto';
+    
+    if (dnsmasq === 'disabled') {
+    } else if (dnsmasq === 'manual') {
+        values.enable_dnsmasq = 'manual';
+        const cache = getFieldValue('#dnsmasq-cache');
+        const negcache = getFieldValue('#dnsmasq-negcache');
+        if (cache) values.dnsmasq_cache = cache;
+        if (negcache) values.dnsmasq_negcache = negcache;
+    } else {
+        values.enable_dnsmasq = 'auto';
+    }
+}
+
+function collectPackageEnableVars(values) {
+    document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
+        const enableVar = cb.getAttribute('data-enable-var');
+        if (enableVar) {
+            values[enableVar] = '1';
+        }
+    });
 }
 
 // ==================== UCI-defaults処理 ====================
