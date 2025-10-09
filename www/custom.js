@@ -1,21 +1,50 @@
 console.log('custom.js (v2.0 - Simplified) loaded');
 
-window.addEventListener('load', () => {
-  function updateLink(element, text, href) {
-    if (!element) return;
-    if (text) element.textContent = text;
-    if (href) {
-      element.href = href;
-      element.target = '_blank';
+// === CONFIGURATION SWITCH ===
+const CONSOLE_MODE = {
+    log: false,   // 通常ログ
+    info: false,  // 情報
+    warn: false,  // 警告
+    debug: false, // デバッグ
+    error: true   // エラー（常時 true 推奨）
+};
+
+// ===== Console Control Layer =====
+(function() {
+    const original = {
+        log: console.log,
+        warn: console.warn,
+        error: console.error,
+        info: console.info,
+        debug: console.debug
+    };
+
+    const loggingState = { ...CONSOLE_MODE };
+
+    window.ConsoleControl = {
+        set(type, state) {
+            if (type in loggingState) loggingState[type] = !!state;
+        },
+        enableAll() {
+            for (const key in loggingState) loggingState[key] = true;
+        },
+        disableAll() {
+            for (const key in loggingState) loggingState[key] = false;
+            loggingState.error = true;
+        },
+        status() {
+            return { ...loggingState };
+        }
+    };
+
+    for (const [key, fn] of Object.entries(original)) {
+        console[key] = (...args) => {
+            if (loggingState[key]) fn.apply(console, args);
+        };
     }
-  }
 
-  const ofsLink = document.querySelector('#ofs-version')?.closest('a');
-  updateLink(ofsLink, custom_ofs_version, custom_ofs_link);
-
-  const feedbackLink = document.querySelector('a.tr-feedback-link');
-  updateLink(feedbackLink, custom_feedback_text, custom_feedback_link);
-});
+    console.info('[ConsoleControl] Logging control initialized.');
+})();
 
 // ==================== 状態管理 ====================
 const state = {
