@@ -626,7 +626,7 @@ function buildField(field) {
         }
         
         if (field.id !== 'device-language') {
-            ctrl.addEventListener('input', () => updateAllPackageState('form-field'));
+            ctrl.addEventListener('blur', () => updateAllPackageState('form-field'));
         }
     }
     
@@ -1479,86 +1479,67 @@ function collectWifiConfig(values) {
 
 function collectConnectionConfig(values) {
     const connectionType = getFieldValue(`input[name="connection_type"]:checked`) || 'auto';
+    
+    const connectionCategory = state.config.setup?.categories?.find(
+        cat => cat.id === 'internet-connection'
+    );
+    if (!connectionCategory) return;
 
     if (connectionType === 'auto') {
-        if (state.apiInfo?.mape?.brIpv6Address) {
-            values.mape_br = state.apiInfo.mape.brIpv6Address;
-            values.mape_ealen = state.apiInfo.mape.eaBitLength;
-            values.mape_ipv4_prefix = state.apiInfo.mape.ipv4Prefix;
-            values.mape_ipv4_prefixlen = state.apiInfo.mape.ipv4PrefixLength;
-            values.mape_ipv6_prefix = state.apiInfo.mape.ipv6Prefix;
-            values.mape_ipv6_prefixlen = state.apiInfo.mape.ipv6PrefixLength;
-            values.mape_psid_offset = state.apiInfo.mape.psIdOffset;
-            values.mape_psidlen = state.apiInfo.mape.psidlen;
-            
-            const mapeType = getFieldValue(`input[name="mape_type"]:checked`) || 'gua';
-            if (mapeType === 'gua') {
-                const guaPrefix = getFieldValue('#mape-gua-prefix');
-                if (guaPrefix) {
-                    values.mape_gua_prefix = guaPrefix;
-                }
-            }
-        } else if (state.apiInfo?.aftr?.aftrIpv6Address) {
-            values.dslite_aftr_address = state.apiInfo.aftr.aftrIpv6Address;
-            if (state.apiInfo.aftr.aftrType) {
-                values.dslite_aftr_type = state.apiInfo.aftr.aftrType;
-            }
-            if (state.apiInfo.aftr.jurisdiction) {
-                values.dslite_area = state.apiInfo.aftr.jurisdiction;
-            }
+        const actualType = getActualConnectionType();
+        if (actualType) {
+            collectFieldsForConnectionType(actualType, values, true);
         }
-        
     } else if (connectionType === 'dhcp') {
         values.connection_type = 'dhcp';
-        
-    } else if (connectionType === 'pppoe') {
-        values.connection_type = 'pppoe';
-        const username = getFieldValue('#pppoe-username');
-        const password = getFieldValue('#pppoe-password');
-        if (username) values.pppoe_username = username;
-        if (password) values.pppoe_password = password;
-        
-    } else if (connectionType === 'dslite') {
-        values.connection_type = 'dslite';
-        const aftrAddress = getFieldValue('#dslite-aftr-address');
-        if (aftrAddress) values.dslite_aftr_address = aftrAddress;
-        
-        const aftrType = getFieldValue('#dslite-aftr-type');
-        const area = getFieldValue('#dslite-area');
-        if (aftrType) values.dslite_aftr_type = aftrType;
-        if (area) values.dslite_area = area;
-        
-    } else if (connectionType === 'mape') {
-        values.connection_type = 'mape';
-        
-        const fields = {
-            'mape-br': 'mape_br',
-            'mape-ealen': 'mape_ealen',
-            'mape-ipv4-prefix': 'mape_ipv4_prefix',
-            'mape-ipv4-prefixlen': 'mape_ipv4_prefixlen',
-            'mape-ipv6-prefix': 'mape_ipv6_prefix',
-            'mape-ipv6-prefixlen': 'mape_ipv6_prefixlen',
-            'mape-psid-offset': 'mape_psid_offset',
-            'mape-psidlen': 'mape_psidlen'
-        };
-        
-        for (const [fieldId, varName] of Object.entries(fields)) {
-            const value = getFieldValue(`#${fieldId}`);
-            if (value) values[varName] = value;
-        }
+    } else {
+        values.connection_type = connectionType;
+        collectFieldsForConnectionType(connectionType, values, false);
+    }
+}
 
-        const mapeType = getFieldValue(`input[name="mape_type"]:checked`) || 'gua';
-        if (mapeType === 'gua') {
-            const guaPrefix = getFieldValue('#mape-gua-prefix');
-            if (guaPrefix) values.mape_gua_prefix = guaPrefix;
+function getActualConnectionType() {
+    if (state.apiInfo?.mape?.brIpv6Address) return 'mape';
+    if (state.apiInfo?.aftr?.aftrIpv6Address) return 'dslite';
+    return null;
+}
+
+function collectFieldsForConnectionType(type, values, isAutoMode) {
+    const connectionCategory = state.config.setup.categories.find(
+        cat => cat.id === 'internet-connection'
+    );
+    if (!connectionCategory) return;
+
+    const section = connectionCategory.items.find(item =>
+        item.type === 'section' &&
+        item.showWhen?.connection_type === type ||
+        (Array.isArray(item.showWhen?.connection_type) && 
+         item.showWhen.connection_type.includes(type))
+    );
+    
+    if (!section || !section.items) return;
+
+    for (const item of section.items) {
+        if (item.type === 'field' && item.variable) {
+            let value;
+            
+            if (isAutoMode && item.apiSource && state.apiInfo) {
+                value = CustomUtils.getNestedValue(state.apiInfo, item.apiSource);
+            }
+            
+            if (value === null || value === undefined || !isAutoMode) {
+                value = getFieldValue(`#${item.id}`);
+            }
+            
+            if (value !== null && value !== undefined && value !== '') {
+                values[item.variable] = value;
+            }
+        } else if (item.type === 'radio-group' && item.variable && !item.ui_variable) {
+            const value = getFieldValue(`input[name="${item.variable}"]:checked`);
+            if (value !== null && value !== undefined && value !== '') {
+                values[item.variable] = value;
+            }
         }
-        
-    } else if (connectionType === 'ap') {
-        values.connection_type = 'ap';
-        const apIp = getFieldValue('#ap-ip-address');
-        const apGw = getFieldValue('#ap-gateway');
-        if (apIp) values.ap_ip_address = apIp;
-        if (apGw) values.ap_gateway = apGw;
     }
 }
 
