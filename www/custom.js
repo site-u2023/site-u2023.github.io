@@ -81,14 +81,6 @@ const state = {
 };
 
 // ==================== ユーティリティ ====================
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        clearTimeout(timeout);
-        timeout = setTimeout(() => func(...args), wait);
-    };
-}
-
 const UI = {
     updateElement(idOrEl, opts = {}) {
         const el = typeof idOrEl === 'string' ? document.getElementById(idOrEl) : idOrEl;
@@ -634,8 +626,7 @@ function buildField(field) {
         }
         
         if (field.id !== 'device-language') {
-            const debouncedUpdate = debounce(() => updateAllPackageState('form-field'), 500);
-            ctrl.addEventListener('input', debouncedUpdate);
+            ctrl.addEventListener('input', () => updateAllPackageState('form-field'));
         }
     }
     
