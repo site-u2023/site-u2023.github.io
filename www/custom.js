@@ -1486,12 +1486,16 @@ function collectConnectionConfig(values) {
     if (!connectionCategory) return;
 
     if (connectionType === 'auto') {
+        values.connection_type = 'auto';
+        
         const actualType = getActualConnectionType();
         if (actualType) {
             collectFieldsForConnectionType(actualType, values, true);
         }
+        
     } else if (connectionType === 'dhcp') {
         values.connection_type = 'dhcp';
+        
     } else {
         values.connection_type = connectionType;
         collectFieldsForConnectionType(connectionType, values, false);
@@ -1512,9 +1516,9 @@ function collectFieldsForConnectionType(type, values, isAutoMode) {
 
     const section = connectionCategory.items.find(item =>
         item.type === 'section' &&
-        item.showWhen?.connection_type === type ||
-        (Array.isArray(item.showWhen?.connection_type) && 
-         item.showWhen.connection_type.includes(type))
+        (item.showWhen?.connection_type === type ||
+         (Array.isArray(item.showWhen?.connection_type) && 
+          item.showWhen.connection_type.includes(type)))
     );
     
     if (!section || !section.items) return;
@@ -1527,7 +1531,7 @@ function collectFieldsForConnectionType(type, values, isAutoMode) {
                 value = CustomUtils.getNestedValue(state.apiInfo, item.apiSource);
             }
             
-            if (value === null || value === undefined || !isAutoMode) {
+            if ((value === null || value === undefined) && !isAutoMode) {
                 value = getFieldValue(`#${item.id}`);
             }
             
