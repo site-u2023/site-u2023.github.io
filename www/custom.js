@@ -838,7 +838,10 @@ function computeFieldValue(targetFieldId) {
     if (map[value1] && map[value1][value2]) {
         targetField.value = map[value1][value2];
         console.log(`  → ${targetField.value}`);
-        targetField.dispatchEvent(new Event('input', { bubbles: true }));
+
+        if (state.ui.initialized) {
+            updateVariableDefinitions();
+        }
     } else {
         console.error(`No mapping found for: map[${value1}][${value2}]`);
     }
@@ -1487,42 +1490,18 @@ function collectConnectionConfig(values) {
     const connectionType = getFieldValue(`input[name="connection_type"]:checked`) || 'auto';
 
     if (connectionType === 'auto') {
-        if (state.apiInfo?.mape?.brIpv6Address) {
-            values.connection_type = 'mape';
-            values.mape_br = state.apiInfo.mape.brIpv6Address;
-            values.mape_ealen = state.apiInfo.mape.eaBitLength;
-            values.mape_ipv4_prefix = state.apiInfo.mape.ipv4Prefix;
-            values.mape_ipv4_prefixlen = state.apiInfo.mape.ipv4PrefixLength;
-            values.mape_ipv6_prefix = state.apiInfo.mape.ipv6Prefix;
-            values.mape_ipv6_prefixlen = state.apiInfo.mape.ipv6PrefixLength;
-            values.mape_psid_offset = state.apiInfo.mape.psIdOffset;
-            values.mape_psidlen = state.apiInfo.mape.psidlen;
-            
-            const mapeType = getFieldValue(`input[name="mape_type"]:checked`) || 'gua';
-            if (mapeType === 'gua') {
-                values.mape_type = 'gua';
-                const guaPrefix = getFieldValue('#mape-gua-prefix');
-                if (guaPrefix) {
-                    values.mape_gua_prefix = guaPrefix;
-                }
-            }
-        } else if (state.apiInfo?.aftr?.aftrIpv6Address) {
-            values.connection_type = 'dslite';
-            values.dslite_aftr_address = state.apiInfo.aftr.aftrIpv6Address;
-            if (state.apiInfo.aftr.aftrType) {
-                values.dslite_aftr_type = state.apiInfo.aftr.aftrType;
-            }
-            if (state.apiInfo.aftr.jurisdiction) {
-                values.dslite_area = state.apiInfo.aftr.jurisdiction;
-            }
-        }
+        values.connection_type = 'auto';
+        
     } else if (connectionType === 'dhcp') {
+        values.connection_type = 'dhcp';
+        
     } else if (connectionType === 'pppoe') {
         values.connection_type = 'pppoe';
         const username = getFieldValue('#pppoe-username');
         const password = getFieldValue('#pppoe-password');
         if (username) values.pppoe_username = username;
         if (password) values.pppoe_password = password;
+        
     } else if (connectionType === 'dslite') {
         values.connection_type = 'dslite';
         const aftrAddress = getFieldValue('#dslite-aftr-address');
@@ -1532,6 +1511,7 @@ function collectConnectionConfig(values) {
         const area = getFieldValue('#dslite-area');
         if (aftrType) values.dslite_aftr_type = aftrType;
         if (area) values.dslite_area = area;
+        
     } else if (connectionType === 'mape') {
         values.connection_type = 'mape';
         
@@ -1557,6 +1537,7 @@ function collectConnectionConfig(values) {
             const guaPrefix = getFieldValue('#mape-gua-prefix');
             if (guaPrefix) values.mape_gua_prefix = guaPrefix;
         }
+        
     } else if (connectionType === 'ap') {
         values.connection_type = 'ap';
         const apIp = getFieldValue('#ap-ip-address');
