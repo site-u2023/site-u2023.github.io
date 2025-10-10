@@ -1551,6 +1551,10 @@ function collectFieldsForConnectionType(type, values, isAutoMode) {
 
     for (const item of section.items) {
         if (item.type === 'field' && item.variable) {
+            if (item.showWhen && !evaluateShowWhen(item.showWhen)) {
+                continue;
+            }
+            
             let value;
             
             if (isAutoMode && state.apiInfo) {
