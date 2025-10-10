@@ -2,7 +2,7 @@ console.log('custom.js (v2.0 - Simplified) loaded');
 
 // === CONFIGURATION SWITCH ===
 const CONSOLE_MODE = {
-    log: true,   // 通常ログ
+    log: false,   // 通常ログ
     info: false,  // 情報
     warn: false,  // 警告
     debug: false, // デバッグ
