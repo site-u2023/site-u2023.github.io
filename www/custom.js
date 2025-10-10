@@ -1631,17 +1631,21 @@ function collectPackageEnableVars(values) {
 function updateVariableDefinitions() {
     const textarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
     if (!textarea) return;
-
+    
     const values = collectFormValues();
+    
+    if (values.lan_ip_address && !values.lan_ip_address.includes('/')) {
+        values.lan_ip_address += '/24';
+    }
+    
     let emissionValues = { ...values };
-
     document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
         const enableVar = cb.getAttribute('data-enable-var');
         if (enableVar) {
             emissionValues[enableVar] = '1';
         }
     });
-
+    
     const variableDefinitions = generateVariableDefinitions(emissionValues);
     updateTextareaContent(textarea, variableDefinitions);
 }
