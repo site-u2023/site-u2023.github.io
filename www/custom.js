@@ -1893,16 +1893,17 @@ function applyIspAutoConfig(apiInfo) {
                 }
             } else if (item.type === 'section' && item.items) {
                 for (const subItem of item.items) {
-                    if (subItem.type === 'field' && subItem.apiSource && subItem.id) {
-                        const element = document.getElementById(subItem.id);
-                        if (!element) continue;
+                    if (subItem.type === 'field' && subItem.id) {
+                    const element = document.getElementById(subItem.id);
+                    if (!element) continue;
 
-                        let value = CustomUtils.getNestedValue(apiInfo, subItem.apiSource);
-
-                        if (subItem.computeFrom === 'generateGuaPrefix') {
-                            const guaPrefix = CustomUtils.generateGuaPrefixFromFullAddress(apiInfo);
-                            if (guaPrefix) value = guaPrefix;
-                        }
+                    let value = null;
+    
+                    if (subItem.computeFrom === 'generateGuaPrefix') {
+                        value = CustomUtils.generateGuaPrefixFromFullAddress(apiInfo);
+                    } else if (subItem.apiSource) {
+                        value = CustomUtils.getNestedValue(apiInfo, subItem.apiSource);
+                    }
 
                         if (value !== null && value !== undefined && value !== '') {
                             if (element.value !== String(value)) {
