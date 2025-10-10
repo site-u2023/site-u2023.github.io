@@ -1869,21 +1869,22 @@ function updateAutoConnectionInfo(apiInfo) {
 
 function applyIspAutoConfig(apiInfo) {
     if (!apiInfo || !state.config.setup) return false;
-
     let mutated = false;
-
+    
     for (const category of state.config.setup.categories) {
         for (const item of category.items) {
             if (item.type === 'field' && item.id) {
                 const element = document.getElementById(item.id);
                 if (!element) continue;
-
+                
+                let value = null;  // ← これを追加
+                
                 if (item.computeFrom === 'generateGuaPrefix') {
                     value = CustomUtils.generateGuaPrefixFromFullAddress(apiInfo);
                 } else if (item.apiSource) {
                     value = CustomUtils.getNestedValue(apiInfo, item.apiSource);
                 }
-
+                
                 if (value !== null && value !== undefined && value !== '') {
                     if (element.value !== String(value)) {
                         UI.updateElement(element, { value: value });
@@ -1895,15 +1896,15 @@ function applyIspAutoConfig(apiInfo) {
                     if (subItem.type === 'field' && subItem.id) {
                         const element = document.getElementById(subItem.id);
                         if (!element) continue;
-
+                        
                         let value = null;
-
+                        
                         if (subItem.computeFrom === 'generateGuaPrefix') {
                             value = CustomUtils.generateGuaPrefixFromFullAddress(apiInfo);
                         } else if (subItem.apiSource) {
                             value = CustomUtils.getNestedValue(apiInfo, subItem.apiSource);
-                        }}
-
+                        }  // ← この閉じ括弧を1つ削除（余計な } があった）
+                        
                         if (value !== null && value !== undefined && value !== '') {
                             if (element.value !== String(value)) {
                                 UI.updateElement(element, { value: value });
@@ -1915,12 +1916,12 @@ function applyIspAutoConfig(apiInfo) {
             }
         }
     }
-
+    
     if (mutated) {
         CustomUtils.setGuaPrefixIfAvailable();
         updateAutoConnectionInfo(apiInfo);
     }
-
+    
     return mutated;
 }
 
