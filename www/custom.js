@@ -1874,15 +1874,14 @@ function applyIspAutoConfig(apiInfo) {
 
     for (const category of state.config.setup.categories) {
         for (const item of category.items) {
-            if (item.type === 'field' && item.apiSource && item.id) {
+            if (item.type === 'field' && item.id) {
                 const element = document.getElementById(item.id);
                 if (!element) continue;
 
-                let value = CustomUtils.getNestedValue(apiInfo, item.apiSource);
-
                 if (item.computeFrom === 'generateGuaPrefix') {
-                    const guaPrefix = CustomUtils.generateGuaPrefixFromFullAddress(apiInfo);
-                    if (guaPrefix) value = guaPrefix;
+                    value = CustomUtils.generateGuaPrefixFromFullAddress(apiInfo);
+                } else if (item.apiSource) {
+                    value = CustomUtils.getNestedValue(apiInfo, item.apiSource);
                 }
 
                 if (value !== null && value !== undefined && value !== '') {
@@ -1894,16 +1893,16 @@ function applyIspAutoConfig(apiInfo) {
             } else if (item.type === 'section' && item.items) {
                 for (const subItem of item.items) {
                     if (subItem.type === 'field' && subItem.id) {
-                    const element = document.getElementById(subItem.id);
-                    if (!element) continue;
+                        const element = document.getElementById(subItem.id);
+                        if (!element) continue;
 
-                    let value = null;
-    
-                    if (subItem.computeFrom === 'generateGuaPrefix') {
-                        value = CustomUtils.generateGuaPrefixFromFullAddress(apiInfo);
-                    } else if (subItem.apiSource) {
-                        value = CustomUtils.getNestedValue(apiInfo, subItem.apiSource);
-                    }
+                        let value = null;
+
+                        if (subItem.computeFrom === 'generateGuaPrefix') {
+                            value = CustomUtils.generateGuaPrefixFromFullAddress(apiInfo);
+                        } else if (subItem.apiSource) {
+                            value = CustomUtils.getNestedValue(apiInfo, subItem.apiSource);
+                        }}
 
                         if (value !== null && value !== undefined && value !== '') {
                             if (element.value !== String(value)) {
