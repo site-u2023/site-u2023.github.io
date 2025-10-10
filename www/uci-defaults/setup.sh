@@ -174,7 +174,7 @@ if { [ "${connection_type}" = "auto" ] || [ "${connection_type}" = "dslite" ]; }
     SET ${DSL}.encaplimit='ignore'
     dhcp_relay "${DSL6}"
     firewall_wan "${DSL}" "${DSL6}"
-}
+fi
 if { [ "${connection_type}" = "auto" ] || [ "${connection_type}" = "mape" ]; } && [ -n "${mape_br}" ]; then
     local SEC=network
     disable_wan
@@ -238,7 +238,7 @@ sed -i '/if \[ -z "\$(eval "echo \\$RULE_\${k}_PORTSETS")"/,/^[[:space:]]*fi$/c\
 			nft add rule inet mape srcnat ip protocol $proto oifname "map-$cfg" counter packets 0 bytes 0 snat ip to $(eval "echo \\$RULE_${k}_IPV4ADDR") : numgen inc mod $portcount map { $allports }\
 	    done\
 	  fi' "$MAP_SH"
-}
+fi
 if [ "${connection_type}" = "ap" ] && [ -n "${ap_ip_address}" ]; then
     disable_wan
     {
@@ -256,7 +256,7 @@ if [ "${connection_type}" = "ap" ] && [ -n "${ap_ip_address}" ]; then
         SET ${AP6}.device="@${AP}"
         SET ${AP6}.reqaddress='try'
         SET ${AP6}.reqprefix='no'
-    }
+    fi
     {
         local SEC=wireless
         for r in 0 1 2; do
@@ -345,7 +345,7 @@ if [ -n "${net_optimizer}" ]; then
     printf "net.core.rmem_max=%s\nnet.core.wmem_max=%s\nnet.ipv4.tcp_rmem=%s\nnet.ipv4.tcp_wmem=%s\nnet.ipv4.tcp_congestion_control=%s\nnet.ipv4.tcp_fastopen=3\nnet.netfilter.nf_conntrack_max=%s\nnet.core.netdev_max_backlog=%s\nnet.core.somaxconn=%s\n" \
     "$R" "$W" "$TR" "$TW" "$CONG" "$CT" "$NB" "$SC" > "$C"
     sysctl -p "$C"
-}
+fi
 [ -n "${enable_dnsmasq}" ] && {
     local SEC=dhcp
     CACHE_SIZE="${dnsmasq_cache:-}"
