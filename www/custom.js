@@ -1553,8 +1553,12 @@ function collectFieldsForConnectionType(type, values, isAutoMode) {
         if (item.type === 'field' && item.variable) {
             let value;
             
-            if (isAutoMode && item.apiSource && state.apiInfo) {
-                value = CustomUtils.getNestedValue(state.apiInfo, item.apiSource);
+            if (isAutoMode && state.apiInfo) {
+                if (item.computeFrom === 'generateGuaPrefix') {
+                    value = CustomUtils.generateGuaPrefixFromFullAddress(state.apiInfo);
+                } else if (item.apiSource) {
+                    value = CustomUtils.getNestedValue(state.apiInfo, item.apiSource);
+                }
             }
             
             if ((value === null || value === undefined) && !isAutoMode) {
