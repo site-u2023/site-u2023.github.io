@@ -102,8 +102,7 @@ firewall_wan() {
     SET @defaults[0].flow_offloading='1'
     [ "${flow_offloading_type}" = "hardware" ] && SET @defaults[0].flow_offloading_hw='1'
 }
-if { [ "${wifi_mode}" = "standard" ] || [ "${wifi_mode}" = "usteer" ]; } &&
-   [ -n "${wlan_ssid}" ] && [ -n "${wlan_password}" ] && [ "${#wlan_password}" -ge 8 ]; then
+{ [ "${wifi_mode}" = "standard" ] || [ "${wifi_mode}" = "usteer" ]; } && [ -n "${wlan_ssid}" ] && [ -n "${wlan_password}" ] && [ "${#wlan_password}" -ge 8 ] && {
     local SEC=wireless
     wireless_cfg=$(uci -q show wireless)
     for radio in $(printf '%s\n' "${wireless_cfg}" | grep "wireless\.radio[0-9]*=" | cut -d. -f2 | cut -d= -f1); do
@@ -118,18 +117,14 @@ if { [ "${wifi_mode}" = "standard" ] || [ "${wifi_mode}" = "usteer" ]; } &&
             *)  encryption='psk-mixed'; nasid_suffix=''; band_snr=20;;
         esac
         suffix=${band:+-$band}
-        if [ "${wifi_mode}" = "usteer" ]; then
-            ssid="${wlan_ssid}"
-        else
-            ssid="${wlan_ssid}${suffix}"
-        fi
+        [ "${wifi_mode}" = "usteer" ] && ssid="${wlan_ssid}" || ssid="${wlan_ssid}${suffix}"
         iface="default_${radio}"
         [ -n "$(uci -q get wireless.${iface})" ] && {
             SET ${iface}.disabled='0'
             SET ${iface}.encryption="${encryption}"
             SET ${iface}.ssid="${ssid}"
             SET ${iface}.key="${wlan_password}"
-            if [ "${wifi_mode}" = "usteer" ]; then
+            [ "${wifi_mode}" = "usteer" ] && {
                 SET ${iface}.isolate='1'
                 SET ${iface}.ocv='1'
                 SET ${iface}.ieee80211r='1'
@@ -139,10 +134,10 @@ if { [ "${wifi_mode}" = "standard" ] || [ "${wifi_mode}" = "usteer" ]; } &&
                 SET ${iface}.usteer_min_snr="${band_snr}"
                 SET ${iface}.ieee80211k='1'
                 SET ${iface}.ieee80211v='1'
-            fi
+            }
         }
     done
-    if [ "${wifi_mode}" = "usteer" ]; then
+    [ "${wifi_mode}" = "usteer" ] && {
         local SEC=usteer
         SET @usteer[0].band_steering='1'
         SET @usteer[0].load_balancing='1'
@@ -150,15 +145,15 @@ if { [ "${wifi_mode}" = "standard" ] || [ "${wifi_mode}" = "usteer" ]; } &&
         SET @usteer[0].min_snr='20'
         SET @usteer[0].max_snr='80'
         SET @usteer[0].signal_diff_threshold='10'
-    fi
-fi
-if [ "${connection_type}" = "pppoe" ] && [ -n "${pppoe_username}" ]; then
+    }
+}
+[ "${connection_type}" = "pppoe" ] && [ -n "${pppoe_username}" ] && {
     local SEC=network
     SET wan.proto='pppoe'
     SET wan.username="${pppoe_username}"
     [ -n "${pppoe_password}" ] && SET wan.password="${pppoe_password}"
-fi
-if { [ "${connection_type}" = "auto" ] || [ "${connection_type}" = "dslite" ]; } && [ -n "${dslite_aftr_address}" ]; then
+}
+{ [ "${connection_type}" = "auto" ] || [ "${connection_type}" = "dslite" ]; } && [ -n "${dslite_aftr_address}" ] && {
     local SEC=network
     disable_wan
     SET ${DSL6}=interface
@@ -174,8 +169,8 @@ if { [ "${connection_type}" = "auto" ] || [ "${connection_type}" = "dslite" ]; }
     SET ${DSL}.encaplimit='ignore'
     dhcp_relay "${DSL6}"
     firewall_wan "${DSL}" "${DSL6}"
-fi
-if { [ "${connection_type}" = "auto" ] || [ "${connection_type}" = "mape" ]; } && [ -n "${mape_br}" ]; then
+}
+{ [ "${connection_type}" = "auto" ] || [ "${connection_type}" = "mape" ]; } && [ -n "${mape_br}" ] && {
     local SEC=network
     disable_wan
     SET ${MAPE6}=interface
@@ -238,8 +233,8 @@ sed -i '/if \[ -z "\$(eval "echo \\$RULE_\${k}_PORTSETS")"/,/^[[:space:]]*fi$/c\
 			nft add rule inet mape srcnat ip protocol $proto oifname "map-$cfg" counter packets 0 bytes 0 snat ip to $(eval "echo \\$RULE_${k}_IPV4ADDR") : numgen inc mod $portcount map { $allports }\
 	    done\
 	  fi' "$MAP_SH"
-fi
-if [ "${connection_type}" = "ap" ] && [ -n "${ap_ip_address}" ]; then
+}
+[ "${connection_type}" = "ap" ] && [ -n "${ap_ip_address}" ] && {
     disable_wan
     {
         local SEC=network
@@ -256,7 +251,7 @@ if [ "${connection_type}" = "ap" ] && [ -n "${ap_ip_address}" ]; then
         SET ${AP6}.device="@${AP}"
         SET ${AP6}.reqaddress='try'
         SET ${AP6}.reqprefix='no'
-    fi
+    }
     {
         local SEC=wireless
         for r in 0 1 2; do
@@ -320,44 +315,57 @@ if [ "${connection_type}" = "ap" ] && [ -n "${ap_ip_address}" ]; then
     local SEC=network
     ADDLIST @device[0].ports='usb0'
 }
-if [ -n "${net_optimizer}" ]; then
+[ -n "${net_optimizer}" ] && [ "${net_optimizer}" != "disabled" ] && {
     C=/etc/sysctl.d/99-net-opt.conf
     P=$(grep -c ^processor /proc/cpuinfo)
-    RMEM=${netopt_rmem:-}
-    WMEM=${netopt_wmem:-}
-    TR=${netopt_rmem:-}
-    TW=${netopt_wmem:-}
-    CT=${netopt_conntrack:-}
-    NB=${netopt_backlog:-}
-    SC=${netopt_somaxconn:-}
-    CONG=${netopt_congestion:-cubic}
-    if [ -z "$RMEM" ] || [ -z "$WMEM" ]; then
+    
+    [ "${net_optimizer}" = "auto" ] && {
         if   [ $MEM -ge 2400 ]; then R=16777216 W=16777216 TR="4096 262144 16777216" TW=$TR CT=262144 NB=5000 SC=16384
         elif [ $MEM -ge 1200 ]; then R=8388608  W=8388608  TR="4096 131072 8388608"  TW=$TR CT=131072 NB=2500 SC=8192
         elif [ $MEM -ge  400 ]; then R=4194304  W=4194304  TR="4096 65536  4194304"  TW=$TR CT=65536  NB=1000 SC=4096
         fi
         [ $P -gt 4 ] && { NB=$((NB*2));   SC=$((SC*2)); }
         [ $P -gt 2 ] && [ $P -le 4 ] && { NB=$((NB*3/2)); SC=$((SC*3/2)); }
-    else
-        R=$(echo "$RMEM" | cut -d' ' -f3)
-        W=$(echo "$WMEM" | cut -d' ' -f3)
-    fi
+        CONG=cubic
+    }
+    
+    [ "${net_optimizer}" = "manual" ] && {
+        R=$(echo "${netopt_rmem}" | awk '{print $3}')
+        W=$(echo "${netopt_wmem}" | awk '{print $3}')
+        TR="${netopt_rmem}"
+        TW="${netopt_wmem}"
+        CT="${netopt_conntrack}"
+        NB="${netopt_backlog}"
+        SC="${netopt_somaxconn}"
+        CONG="${netopt_congestion:-cubic}"
+    }
+    
     printf "net.core.rmem_max=%s\nnet.core.wmem_max=%s\nnet.ipv4.tcp_rmem=%s\nnet.ipv4.tcp_wmem=%s\nnet.ipv4.tcp_congestion_control=%s\nnet.ipv4.tcp_fastopen=3\nnet.netfilter.nf_conntrack_max=%s\nnet.core.netdev_max_backlog=%s\nnet.core.somaxconn=%s\n" \
     "$R" "$W" "$TR" "$TW" "$CONG" "$CT" "$NB" "$SC" > "$C"
     sysctl -p "$C"
-fi
-[ -n "${enable_dnsmasq}" ] && {
+}
+[ -n "${enable_dnsmasq}" ] && [ "${enable_dnsmasq}" != "disabled" ] && {
     local SEC=dhcp
-    CACHE_SIZE="${dnsmasq_cache:-}"
-    NEG_CACHE="${dnsmasq_negcache:-1}"
-    if [ -z "$CACHE_SIZE" ]; then
+    
+    [ "${enable_dnsmasq}" = "auto" ] && {
         if   [ "$MEM" -ge 800 ]; then CACHE_SIZE=10000
         elif [ "$MEM" -ge 400 ]; then CACHE_SIZE=5000
         elif [ "$MEM" -ge 200 ]; then CACHE_SIZE=1000
         fi
-    fi
+        NEG_CACHE=1
+    }
+    
+    [ "${enable_dnsmasq}" = "manual" ] && {
+        CACHE_SIZE="${dnsmasq_cache}"
+        NEG_CACHE="${dnsmasq_negcache}"
+    }
+    
     SET @dnsmasq[0].cachesize="${CACHE_SIZE}"
     SET @dnsmasq[0].nonegcache="${NEG_CACHE}"
+}
+[ -n "${enable_sd_resize}" ] && {
+    # SD Card resize処理（既存のまま）
+    :
 }
 # BEGIN_CMDS
 # END_CMDS
