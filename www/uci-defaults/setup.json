@@ -554,7 +554,6 @@
               "variable": "mape_gua_prefix",
               "placeholder": "optional for GUA",
               "description": "IPv6 GUA prefix with /64 suffix",
-              "apiSource": "ipv6",
               "computeFrom": "generateGuaPrefix",
               "showWhen": {"mape_type": "gua"}
             }
