@@ -158,7 +158,7 @@ if [ "${connection_type}" = "pppoe" ] && [ -n "${pppoe_username}" ]; then
     SET wan.username="${pppoe_username}"
     [ -n "${pppoe_password}" ] && SET wan.password="${pppoe_password}"
 fi
-if [ "${connection_type}" = "dslite" ]; then
+if { [ "${connection_type}" = "auto" ] || [ "${connection_type}" = "dslite" ]; } && [ -n "${dslite_aftr_address}" ]; then
     local SEC=network
     disable_wan
     SET ${DSL6}=interface
@@ -175,7 +175,7 @@ if [ "${connection_type}" = "dslite" ]; then
     dhcp_relay "${DSL6}"
     firewall_wan "${DSL}" "${DSL6}"
 }
-if [ "${connection_type}" = "mape" ]; then
+if { [ "${connection_type}" = "auto" ] || [ "${connection_type}" = "mape" ]; } && [ -n "${mape_br}" ]; then
     local SEC=network
     disable_wan
     SET ${MAPE6}=interface
