@@ -15,6 +15,15 @@
     "tr-import-settings": "Import",
     "tr-export-settings": "Export",
     
+    "tr-asu-status-checking": "Checking...",
+    "tr-asu-status-online": "Online",
+    "tr-asu-status-offline": "Offline",
+    "tr-asu-status-error": "Error",
+    "tr-asu-status-200": "ASU server is reachable. Status: {status}",
+    "tr-asu-status-500": "ASU server responded with an internal error. Status: {status}",
+    "tr-asu-status-unreachable": "ASU server responded with an unexpected status: {status}",
+    "tr-asu-status-networkfail": "Failed to reach the ASU server: {error}",
+    
     "tr-extended-info": "Region and ISP Information",
     "tr-loading": "Loading...",
     "tr-notice": "Notice",
@@ -131,10 +140,5 @@
     "tr-dnsmasq-auto-optimization": "Automatic Optimization",
     "tr-dnsmasq-optimization-disabled": "Optimization Disabled",
 
-    "tr-feedback-link": "Forum",
-    
-    "tr-asu-status-200": "ASU server is reachable. Status: ",
-    "tr-asu-status-500": "ASU server responded with an internal error. Status: ",
-    "tr-asu-status-unreachable": "ASU server responded with an unexpected status: ",
-    "tr-asu-status-networkfail": "Failed to reach the ASU server: "
+    "tr-feedback-link": "Forum"
 }
