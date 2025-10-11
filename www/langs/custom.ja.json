@@ -15,6 +15,15 @@
     "tr-import-settings": "インポート",
     "tr-export-settings": "エクスポート",
     
+    "tr-asu-status-checking": "確認中...",
+    "tr-asu-status-online": "オンライン",
+    "tr-asu-status-offline": "オフライン",
+    "tr-asu-status-error": "エラー",
+    "tr-asu-status-200": "ASU サーバーに接続可能です。ステータス: {status}",
+    "tr-asu-status-500": "ASU サーバーは応答しましたが、内部エラーです。ステータス: {status}",
+    "tr-asu-status-unreachable": "ASU サーバーには到達しましたが、異常応答です。ステータス: {status}",
+    "tr-asu-status-networkfail": "ASU サーバーに到達できませんでした: {error}",
+    
     "tr-extended-info": "地域とISP情報",
     "tr-loading": "読み込み中…",
     "tr-notice": "お知らせ",
@@ -131,10 +140,5 @@
     "tr-dnsmasq-auto-optimization": "自動最適化",
     "tr-dnsmasq-optimization-disabled": "最適化無効",
 
-    "tr-feedback-link": "フォーラム",
-    
-    "tr-asu-status-200": "ASU サーバーに接続可能です。ステータス: {status}",
-    "tr-asu-status-500": "ASU サーバーは応答しましたが、内部エラーです。ステータス: {status}",
-    "tr-asu-status-unreachable": "ASU サーバーには到達しましたが、異常応答です。ステータス: {status}",
-    "tr-asu-status-networkfail": "ASU サーバーに到達できませんでした: {error}"
+    "tr-feedback-link": "フォーラム"
 }
