@@ -3907,6 +3907,102 @@ function replaceAsuSection(asuSection, temp) {
     asuSection.parentNode.replaceChild(newDiv, asuSection);
 }
 
+// ==================== ASU Server Status Check ====================
+async function checkAsuServerStatus() {
+    const statusIndicator = document.getElementById('asu-status-indicator');
+    const statusText = document.getElementById('asu-status-text');
+    
+    if (!statusIndicator || !statusText) {
+        console.log('ASU status elements not found');
+        return;
+    }
+    
+    if (!config?.asu_url) {
+        console.log('ASU URL not configured');
+        updateAsuStatus('offline', 'ASU not configured');
+        return;
+    }
+    
+    try {
+        statusIndicator.className = 'status-indicator status-checking';
+        statusText.className = 'status-text tr-asu-status-checking';
+        
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        
+        const response = await fetch(config.asu_url + '/api/v1/build', {
+            method: 'HEAD',
+            signal: controller.signal,
+            cache: 'no-store'
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (response.ok || response.status === 405) {
+            updateAsuStatus('online', response.status);
+            console.log('ASU server is online');
+        } else if (response.status >= 500) {
+            updateAsuStatus('error', response.status);
+            console.warn(`ASU server error: HTTP ${response.status}`);
+        } else {
+            updateAsuStatus('offline', response.status);
+            console.warn(`ASU server unexpected status: HTTP ${response.status}`);
+        }
+    } catch (error) {
+        if (error.name === 'AbortError') {
+            updateAsuStatus('offline', 'timeout');
+            console.error('ASU server check timeout');
+        } else {
+            updateAsuStatus('offline', error.message);
+            console.error('ASU server check failed:', error);
+        }
+    }
+}
+
+function updateAsuStatus(status, detail) {
+    const statusIndicator = document.getElementById('asu-status-indicator');
+    const statusText = document.getElementById('asu-status-text');
+    
+    if (!statusIndicator || !statusText) return;
+    
+    statusIndicator.className = `status-indicator status-${status}`;
+    
+    const translationKey = `tr-asu-status-${status}`;
+    statusText.className = `status-text ${translationKey}`;
+    
+    const detailText = detail ? ` (${detail})` : '';
+    
+    if (current_language_json && current_language_json[translationKey]) {
+        const baseText = current_language_json[translationKey];
+        
+        if (status === 'online' && typeof detail === 'number') {
+            statusText.textContent = baseText.replace('{status}', detail);
+        } else if (status === 'error' && typeof detail === 'number') {
+            statusText.textContent = baseText.replace('{status}', detail);
+        } else if (status === 'offline') {
+            if (detail === 'timeout') {
+                statusText.textContent = baseText;
+            } else if (typeof detail === 'number') {
+                statusText.textContent = baseText.replace('{status}', detail);
+            } else {
+                statusText.textContent = baseText.replace('{error}', detail || 'Unknown');
+            }
+        } else {
+            statusText.textContent = baseText;
+        }
+    } else {
+        const statusMap = {
+            checking: 'Checking...',
+            online: `Online${detailText}`,
+            offline: `Offline${detailText}`,
+            error: `Error${detailText}`
+        };
+        statusText.textContent = statusMap[status] || 'Unknown';
+    }
+    
+    console.log(`ASU Status updated: ${status} - ${detail || 'no detail'}`);
+}
+
 // ==================== 初期化 ====================
 async function initializeCustomFeatures(asuSection, temp) {
     console.log('initializeCustomFeatures called');
@@ -3985,6 +4081,8 @@ async function initializeCustomFeatures(asuSection, temp) {
         document.addEventListener('devicePackagesReady', runWhenReady);
     }
 
+    await checkAsuServerStatus();
+    
     state.ui.initialized = true;
     
     console.log('Initialization complete. API Info:', state.apiInfo ? 'Available' : 'Not available');
