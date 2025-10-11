@@ -211,10 +211,18 @@
             let ifLines = [], fiLines = [], forLines = [], doneLines = [];
             let openBrace = 0, closeBrace = 0;
             let openParen = 0, closeParen = 0;
+            let inMultilineSed = false;
 
             lines.forEach((line, idx) => {
                 const lineNum = idx + 1;
-                const codeOnly = removeComments(line);
+                let codeOnly = removeComments(line);
+                
+                // sed -i の複数行文字列内では括弧をカウントしない
+                if (codeOnly.includes('sed -i')) {
+                    // sed -i '...' の中身を除外
+                    codeOnly = codeOnly.replace(/sed -i '([^']*|\\')+'.*/, 'sed -i');
+                    codeOnly = codeOnly.replace(/sed -i "([^"]*|\\")*".*/, 'sed -i');
+                }
                 
                 if (codeOnly.match(/\bif\s/g)) ifLines.push(lineNum);
                 if (codeOnly.match(/\bfi\b/g)) fiLines.push(lineNum);
