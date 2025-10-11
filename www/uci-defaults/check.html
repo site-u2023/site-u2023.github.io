@@ -185,36 +185,53 @@
             document.getElementById('statSuccess').textContent = successes;
         }
 
+        function removeComments(line) {
+            // '#' の前までを抽出（シェルスクリプトのコメント）
+            const commentIdx = line.indexOf('#');
+            if (commentIdx === -1) return line;
+            // ただし、文字列内の # は除外
+            let inSingleQuote = false, inDoubleQuote = false;
+            for (let i = 0; i < line.length; i++) {
+                if (line[i] === "'" && (i === 0 || line[i-1] !== '\\')) inSingleQuote = !inSingleQuote;
+                else if (line[i] === '"' && (i === 0 || line[i-1] !== '\\')) inDoubleQuote = !inDoubleQuote;
+                else if (line[i] === '#' && !inSingleQuote && !inDoubleQuote) {
+                    return line.substring(0, i);
+                }
+            }
+            return line;
+        }
+
         function analyzeScript(content) {
             results.length = 0;
             errors = warnings = infos = successes = 0;
 
             const lines = content.split('\n');
             
-            // 括弧チェック - 行ごとにトラッキング
+            // 括弧チェック
             let ifLines = [], fiLines = [], forLines = [], doneLines = [];
             let openBrace = 0, closeBrace = 0;
             let openParen = 0, closeParen = 0;
 
             lines.forEach((line, idx) => {
                 const lineNum = idx + 1;
+                const codeOnly = removeComments(line);
                 
-                if (line.match(/\bif\s/g)) ifLines.push(lineNum);
-                if (line.match(/\bfi\b/g)) fiLines.push(lineNum);
-                if (line.match(/\bfor\s/g)) forLines.push(lineNum);
-                if (line.match(/\bdone\b/g)) doneLines.push(lineNum);
+                if (codeOnly.match(/\bif\s/g)) ifLines.push(lineNum);
+                if (codeOnly.match(/\bfi\b/g)) fiLines.push(lineNum);
+                if (codeOnly.match(/\bfor\s/g)) forLines.push(lineNum);
+                if (codeOnly.match(/\bdone\b/g)) doneLines.push(lineNum);
                 
-                openBrace += (line.match(/{/g) || []).length;
-                closeBrace += (line.match(/}/g) || []).length;
-                openParen += (line.match(/\(/g) || []).length;
-                closeParen += (line.match(/\)/g) || []).length;
+                openBrace += (codeOnly.match(/{/g) || []).length;
+                closeBrace += (codeOnly.match(/}/g) || []).length;
+                openParen += (codeOnly.match(/\(/g) || []).length;
+                closeParen += (codeOnly.match(/\)/g) || []).length;
 
                 // SET関数チェック
-                if (line.includes('SET ') && !line.trim().startsWith('#')) {
-                    const opens = (line.match(/{/g) || []).length;
-                    const closes = (line.match(/}/g) || []).length;
+                if (codeOnly.includes('SET ') && !codeOnly.trim().startsWith('#')) {
+                    const opens = (codeOnly.match(/{/g) || []).length;
+                    const closes = (codeOnly.match(/}/g) || []).length;
                     if (opens !== closes) {
-                        addResult('warning', 'SET関数の括弧が対応していません', lineNum, line.trim());
+                        addResult('warning', 'SET関数の括弧が対応していません', lineNum, line.trim().substring(0, 60));
                     }
                 }
 
@@ -224,18 +241,19 @@
                 }
 
                 // SEDコマンドの引用符チェック
-                if (line.includes('sed -i')) {
-                    const hasQuotes = /sed -i ['"][^'"]*['"]/.test(line);
+                if (codeOnly.includes('sed -i')) {
+                    const hasQuotes = /sed -i ['"][^'"]*['"]/.test(codeOnly);
                     if (!hasQuotes) {
-                        addResult('warning', 'sedコマンドの引用符が疑わしいです', lineNum, line.trim());
+                        addResult('warning', 'sedコマンドの引用符が疑わしいです', lineNum, line.trim().substring(0, 60));
                     }
                 }
 
                 // ローカル変数チェック
-                if (line.includes('local SEC=')) {
+                if (codeOnly.includes('local SEC=')) {
                     let found = false;
                     for (let i = idx + 1; i < Math.min(idx + 50, lines.length); i++) {
-                        if (lines[i].includes('SET') || lines[i].includes('DEL') || lines[i].includes('ADDLIST')) {
+                        const nextCodeOnly = removeComments(lines[i]);
+                        if (nextCodeOnly.includes('SET') || nextCodeOnly.includes('DEL') || nextCodeOnly.includes('ADDLIST')) {
                             found = true;
                             break;
                         }
