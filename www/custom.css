@@ -60,6 +60,127 @@
   }
 }
 
+/* ===== Settings Import/Export Bar ===== */
+#settings-bar {
+  width: 100%;
+  background-color: #002B49;
+  box-shadow: 0em 0.125em 0.25em -0.06em rgba(0, 0, 0, 0.2),
+    0em 0.25em 0.3em 0em rgba(0, 0, 0, 0.14),
+    0em 0.06em 0.625em 0em rgba(0, 0, 0, 0.12);
+  z-index: 1000;
+}
+
+.settings-bar-content {
+  padding: 0.5em 2%;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 1em;
+}
+
+/* ASU Status Display */
+.asu-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  margin-right: auto;
+  padding: 0.5em 1em;
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 0.25em;
+  font-size: 0.9em;
+}
+
+.status-indicator {
+  font-size: 1.2em;
+  line-height: 1;
+}
+
+.status-text {
+  font-weight: 500;
+  color: #fff;
+}
+
+/* Status Colors */
+.status-checking {
+  color: #ffa500;
+}
+
+.status-online {
+  color: #00ff00;
+}
+
+.status-offline {
+  color: #ff0000;
+}
+
+.status-error {
+  color: #ff6b6b;
+}
+
+.settings-btn {
+  background-color: #00a3e1;
+  color: #fff;
+  border: none;
+  padding: 0.5em 1em;
+  border-radius: 0.25em;
+  cursor: pointer;
+  font-size: inherit;
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  transition: background-color 0.2s;
+  box-shadow: 0em 0.06em 0.3em 0em rgba(0, 0, 0, 0.2);
+}
+
+.settings-btn:hover {
+  background-color: #038fc6;
+}
+
+.settings-btn:active {
+  background-color: #0080b3;
+}
+
+@media (prefers-color-scheme: dark) {
+  #settings-bar {
+    background-color: #001a2e;
+  }
+  
+  .asu-status {
+    background-color: rgba(0, 0, 0, 0.4);
+  }
+  
+  .settings-btn {
+    background-color: #0080b3;
+  }
+  
+  .settings-btn:hover {
+    background-color: #006a99;
+  }
+}
+
+/* Mobile adjustments for Settings Bar */
+@media (min-resolution: 400dpi), (max-width: 600px), (pointer: coarse) {
+  .settings-bar-content {
+    padding: 0.5em 1%;
+    gap: 0.5em;
+    flex-wrap: wrap;
+  }
+  
+  .asu-status {
+    width: 100%;
+    justify-content: center;
+    margin-right: 0;
+    margin-bottom: 0.5em;
+  }
+  
+  .settings-btn {
+    padding: 0.4em 0.8em;
+    font-size: 0.9em;
+    flex: 1;
+  }
+}
+
 /* ===== Form Elements ===== */
 input[type="checkbox"],
 input[type="radio"] {
@@ -112,112 +233,140 @@ input[type="radio"] {
 @media (prefers-color-scheme: dark) {
   .form-group input:not(.autocomplete > input):not(#versions),
   .form-group select:not(#versions),
-  .form-group textarea,
-  #command,
-  #uci-defaults-content,
-  #postinst-content,
-  #asu-packages {
+  .form-group textarea {
     background-color: var(--input-bg-dark);
     color: var(--text-main);
   }
 }
 
-/* ===== Radio Groups ===== */
+/* Radio Group Styles */
 .radio-group {
-  display: flex !important;
+  display: flex;
   flex-wrap: wrap;
   gap: 1em;
-  margin-top: 0.5em;
-  grid-template-columns: unset !important;
 }
 
 .radio-group label {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 0.5em;
   cursor: pointer;
   white-space: nowrap;
+  margin-bottom: 0;
 }
 
 .radio-group input[type="radio"] {
-  width: 16px !important;
-  height: 16px !important;
-  min-width: 16px !important;
-  min-height: 16px !important;
-  max-width: 16px !important;
-  max-height: 16px !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  flex-shrink: 0;
+  width: auto;
+  margin: 0;
 }
 
-.radio-group span {
-  line-height: 1;
+/* Config Items Grid for Internet Connection Type Inputs */
+.config-items-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1em;
+  margin-top: 1em;
 }
 
-/* ===== Multi Input Container (Package Search & Commands) ===== */
+/* Multi Input Container for IPv6 Prefix/DNS */
 .multi-input-container {
   display: flex;
   flex-direction: column;
   gap: 0.5em;
-  min-height: 2.5em;
-  padding: 0;
-  background-color: transparent;
-  border: none;
-  border-radius: 0.2em;
-}
-
-.multi-input-wrapper {
-  display: flex;
-  align-items: center;
-  width: 100%;
+  padding: var(--input-padding);
+  background-color: var(--input-bg-light);
+  border-radius: var(--input-border-radius);
+  border: var(--input-border);
 }
 
 .multi-input-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  padding: 0.25em 0;
+}
+
+.multi-input-item input[type="text"] {
   flex: 1;
+  padding: 0.5em;
+  border: 1px solid var(--border-main);
+  border-radius: 0.2em;
+  background-color: var(--bg-section);
+  color: var(--text-main);
+  font-size: inherit;
+}
+
+.multi-input-item button {
+  padding: 0.5em 0.75em;
+  background-color: var(--owrt-blue);
+  color: white;
+  border: none;
+  border-radius: 0.2em;
+  cursor: pointer;
+  font-size: 0.9em;
+  transition: background-color 0.2s;
+}
+
+.multi-input-item button:hover {
+  background-color: var(--owrt-blue-hover);
+}
+
+@media (prefers-color-scheme: dark) {
+  .multi-input-container {
+    background-color: var(--input-bg-dark);
+  }
+  
+  .multi-input-item input[type="text"] {
+    background-color: var(--bg-item);
+    border-color: var(--border-main);
+  }
+}
+
+/* ===== Package Search ===== */
+/* Autocomplete container */
+.autocomplete {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+}
+
+/* Input field */
+.autocomplete input {
+  width: 100%;
+  padding: var(--input-padding);
   border: var(--input-border);
   background-color: var(--input-bg-light);
-  padding: var(--input-padding);
+  color: var(--text-main);
   border-radius: var(--input-border-radius);
   font-size: inherit;
-  line-height: normal;
-  width: 100%;
-  box-sizing: border-box;
-  transition: all 0.2s ease;
 }
 
-.multi-input-item:placeholder-shown:not(:focus) {
-  opacity: 0.6;
-}
-
-/* Dark mode support for multi-input */
 @media (prefers-color-scheme: dark) {
-  .multi-input-item {
+  .autocomplete input {
     background-color: var(--input-bg-dark);
     color: var(--text-main);
   }
 }
 
-/* ===== Package Search Autocomplete ===== */
-#package-search-autocomplete {
-  position: relative;
-  margin-bottom: 1.5em;
-}
-
+/* Results dropdown */
 .package-search-results {
   position: absolute;
-  border: var(--input-border);
-  border-bottom: none;
-  border-top: none;
-  font-size: inherit;
-  z-index: 99;
-  top: calc(100% + 2px);
+  top: 100%;
   left: 0;
   right: 0;
-  background-color: var(--bg-section);
-  max-height: 200px;
+  max-height: 300px;
   overflow-y: auto;
+  background-color: var(--bg-section);
+  border: 1px solid var(--border-main);
+  border-top: none;
+  border-radius: 0 0 var(--input-border-radius) var(--input-border-radius);
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  z-index: 100;
+  display: none;
+}
+
+.package-search-results.active {
+  display: block;
 }
 
 .package-search-results div {
@@ -549,7 +698,7 @@ details summary::-webkit-details-marker {
   color: var(--owrt-blue);
 }
 
-/* ===== 汎用ツールチップ（Package & Setup 共通） ===== */
+/* ===== 汎用ツールチップ(Package & Setup 共通) ===== */
 .tooltip {
   position: absolute;
   bottom: 100%;
@@ -570,7 +719,8 @@ details summary::-webkit-details-marker {
   z-index: 1000;
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+  transition: opacity 0.3s ease-in-out,
+              visibility 0.3s ease-in-out;
   pointer-events: none;
 }
 
@@ -826,117 +976,4 @@ details[open] > summary ~ * {
   #custom-scripts-details[open] > summary {
     list-style-type: disclosure-open !important;
   }
-
-  /* Tooltip mobile adjustments */
-  .tooltip {
-    bottom: auto;
-    top: 100%;
-    transform: translateY(5px);
-    max-width: 90vw;
-  }
-  
-  .tooltip::before {
-    top: auto;
-    bottom: 100%;
-    border-top-color: transparent;
-    border-bottom-color: var(--border-main);
-  }
-  
-  .tooltip::after {
-    top: auto;
-    bottom: 100%;
-    border-top-color: transparent;
-    border-bottom-color: var(--bg-section);
-    margin-top: 0;
-    margin-bottom: -1px;
-  }
-}
-
-/* ===== Utility Classes ===== */
-.text-muted {
-  color: var(--text-muted);
-}
-
-.text-small {
-  font-size: 0.875em;
-}
-
-.mt-1 { margin-top: 0.5em; }
-.mt-2 { margin-top: 1em; }
-.mt-3 { margin-top: 1.5em; }
-.mb-1 { margin-bottom: 0.5em; }
-.mb-2 { margin-bottom: 1em; }
-.mb-3 { margin-bottom: 1.5em; }
-
-.p-1 { padding: 0.5em; }
-.p-2 { padding: 1em; }
-.p-3 { padding: 1.5em; }
-
-/* ===== Settings Import/Export Bar ===== */
-#settings-bar {
-    width: 100%;
-    background-color: #002B49;
-    box-shadow: 0em 0.125em 0.25em -0.06em rgba(0, 0, 0, 0.2),
-        0em 0.25em 0.3em 0em rgba(0, 0, 0, 0.14),
-        0em 0.06em 0.625em 0em rgba(0, 0, 0, 0.12);
-    z-index: 1000;
-}
-
-.settings-bar-content {
-    padding: 0.5em 2%;
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-    gap: 0.5em;
-}
-
-.settings-btn {
-    background-color: #00a3e1;
-    color: #fff;
-    border: none;
-    padding: 0.5em 1em;
-    border-radius: 0.25em;
-    cursor: pointer;
-    font-size: inherit;
-    font-family: inherit;
-    display: flex;
-    align-items: center;
-    gap: 0.5em;
-    transition: background-color 0.2s;
-    box-shadow: 0em 0.06em 0.3em 0em rgba(0, 0, 0, 0.2);
-}
-
-.settings-btn:hover {
-    background-color: #038fc6;
-}
-
-.settings-btn:active {
-    background-color: #0080b3;
-}
-
-@media (prefers-color-scheme: dark) {
-    #settings-bar {
-        background-color: #001a2e;
-    }
-    
-    .settings-btn {
-        background-color: #0080b3;
-    }
-    
-    .settings-btn:hover {
-        background-color: #006a99;
-    }
-}
-
-/* Mobile adjustments */
-@media (min-resolution: 400dpi), (max-width: 600px), (pointer: coarse) {
-    .settings-bar-content {
-        padding: 0.5em 1%;
-        gap: 0.3em;
-    }
-    
-    .settings-btn {
-        padding: 0.4em 0.8em;
-        font-size: 0.9em;
-    }
 }
