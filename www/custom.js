@@ -2136,25 +2136,33 @@ async function loadCustomTranslations(lang) {
 function applyCustomTranslations(map) {
     if (!map || typeof map !== 'object') return;
     
-    if (!state.cache.originalAutoDetectionText) {
-        state.cache.originalAutoDetectionText = map['tr-auto-detection'];
+    const currentLang = current_language || config.fallback_language || 'en';
+    
+    if (!state.cache.originalAutoDetectionTexts) {
+        state.cache.originalAutoDetectionTexts = {};
     }
     
-    if (state.apiInfo && map['tr-auto-detection']) {
+    if (!state.cache.originalAutoDetectionTexts[currentLang] && map['tr-auto-detection']) {
+        state.cache.originalAutoDetectionTexts[currentLang] = map['tr-auto-detection'];
+    }
+    
+    const translationMap = { ...map };
+    
+    if (state.apiInfo && state.cache.originalAutoDetectionTexts[currentLang]) {
         const connectionType = getConnectionType(state.apiInfo);
         if (connectionType) {
-            map['tr-auto-detection'] = state.cache.originalAutoDetectionText + ': ' + connectionType;
+            translationMap['tr-auto-detection'] = state.cache.originalAutoDetectionTexts[currentLang] + ': ' + connectionType;
         }
     }
     
-    Object.assign(current_language_json, map);
+    Object.assign(current_language_json, translationMap);
     
-    for (const tr in map) {
+    for (const tr in translationMap) {
         document.querySelectorAll(`.${tr}`).forEach(e => {
             if ('placeholder' in e) {
-                e.placeholder = map[tr];
+                e.placeholder = translationMap[tr];
             } else {
-                e.innerText = map[tr];
+                e.innerText = translationMap[tr];
             }
         });
     }
