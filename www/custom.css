@@ -233,140 +233,112 @@ input[type="radio"] {
 @media (prefers-color-scheme: dark) {
   .form-group input:not(.autocomplete > input):not(#versions),
   .form-group select:not(#versions),
-  .form-group textarea {
+  .form-group textarea,
+  #command,
+  #uci-defaults-content,
+  #postinst-content,
+  #asu-packages {
     background-color: var(--input-bg-dark);
     color: var(--text-main);
   }
 }
 
-/* Radio Group Styles */
+/* ===== Radio Groups ===== */
 .radio-group {
-  display: flex;
+  display: flex !important;
   flex-wrap: wrap;
   gap: 1em;
+  margin-top: 0.5em;
+  grid-template-columns: unset !important;
 }
 
 .radio-group label {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 0.5em;
   cursor: pointer;
   white-space: nowrap;
-  margin-bottom: 0;
 }
 
 .radio-group input[type="radio"] {
-  width: auto;
-  margin: 0;
+  width: 16px !important;
+  height: 16px !important;
+  min-width: 16px !important;
+  min-height: 16px !important;
+  max-width: 16px !important;
+  max-height: 16px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  flex-shrink: 0;
 }
 
-/* Config Items Grid for Internet Connection Type Inputs */
-.config-items-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1em;
-  margin-top: 1em;
+.radio-group span {
+  line-height: 1;
 }
 
-/* Multi Input Container for IPv6 Prefix/DNS */
+/* ===== Multi Input Container (Package Search & Commands) ===== */
 .multi-input-container {
   display: flex;
   flex-direction: column;
   gap: 0.5em;
-  padding: var(--input-padding);
-  background-color: var(--input-bg-light);
-  border-radius: var(--input-border-radius);
-  border: var(--input-border);
+  min-height: 2.5em;
+  padding: 0;
+  background-color: transparent;
+  border: none;
+  border-radius: 0.2em;
+}
+
+.multi-input-wrapper {
+  display: flex;
+  align-items: center;
+  width: 100%;
 }
 
 .multi-input-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5em;
-  padding: 0.25em 0;
-}
-
-.multi-input-item input[type="text"] {
   flex: 1;
-  padding: 0.5em;
-  border: 1px solid var(--border-main);
-  border-radius: 0.2em;
-  background-color: var(--bg-section);
-  color: var(--text-main);
-  font-size: inherit;
-}
-
-.multi-input-item button {
-  padding: 0.5em 0.75em;
-  background-color: var(--owrt-blue);
-  color: white;
-  border: none;
-  border-radius: 0.2em;
-  cursor: pointer;
-  font-size: 0.9em;
-  transition: background-color 0.2s;
-}
-
-.multi-input-item button:hover {
-  background-color: var(--owrt-blue-hover);
-}
-
-@media (prefers-color-scheme: dark) {
-  .multi-input-container {
-    background-color: var(--input-bg-dark);
-  }
-  
-  .multi-input-item input[type="text"] {
-    background-color: var(--bg-item);
-    border-color: var(--border-main);
-  }
-}
-
-/* ===== Package Search ===== */
-/* Autocomplete container */
-.autocomplete {
-  position: relative;
-  display: inline-block;
-  width: 100%;
-}
-
-/* Input field */
-.autocomplete input {
-  width: 100%;
-  padding: var(--input-padding);
   border: var(--input-border);
   background-color: var(--input-bg-light);
-  color: var(--text-main);
+  padding: var(--input-padding);
   border-radius: var(--input-border-radius);
   font-size: inherit;
+  line-height: normal;
+  width: 100%;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
 }
 
+.multi-input-item:placeholder-shown:not(:focus) {
+  opacity: 0.6;
+}
+
+/* Dark mode support for multi-input */
 @media (prefers-color-scheme: dark) {
-  .autocomplete input {
+  .multi-input-item {
     background-color: var(--input-bg-dark);
     color: var(--text-main);
   }
 }
 
-/* Results dropdown */
-.package-search-results {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  max-height: 300px;
-  overflow-y: auto;
-  background-color: var(--bg-section);
-  border: 1px solid var(--border-main);
-  border-top: none;
-  border-radius: 0 0 var(--input-border-radius) var(--input-border-radius);
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  z-index: 100;
-  display: none;
+/* ===== Package Search Autocomplete ===== */
+#package-search-autocomplete {
+  position: relative;
+  margin-bottom: 1.5em;
 }
 
-.package-search-results.active {
-  display: block;
+.package-search-results {
+  position: absolute;
+  border: var(--input-border);
+  border-bottom: none;
+  border-top: none;
+  font-size: inherit;
+  z-index: 99;
+  top: calc(100% + 2px);
+  left: 0;
+  right: 0;
+  background-color: var(--bg-section);
+  max-height: 200px;
+  overflow-y: auto;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .package-search-results div {
@@ -698,7 +670,7 @@ details summary::-webkit-details-marker {
   color: var(--owrt-blue);
 }
 
-/* ===== 汎用ツールチップ(Package & Setup 共通) ===== */
+/* ===== 汎用ツールチップ（Package & Setup 共通） ===== */
 .tooltip {
   position: absolute;
   bottom: 100%;
@@ -719,8 +691,7 @@ details summary::-webkit-details-marker {
   z-index: 1000;
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.3s ease-in-out,
-              visibility 0.3s ease-in-out;
+  transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
   pointer-events: none;
 }
 
@@ -976,4 +947,48 @@ details[open] > summary ~ * {
   #custom-scripts-details[open] > summary {
     list-style-type: disclosure-open !important;
   }
+
+  /* Tooltip mobile adjustments */
+  .tooltip {
+    bottom: auto;
+    top: 100%;
+    transform: translateY(5px);
+    max-width: 90vw;
+  }
+  
+  .tooltip::before {
+    top: auto;
+    bottom: 100%;
+    border-top-color: transparent;
+    border-bottom-color: var(--border-main);
+  }
+  
+  .tooltip::after {
+    top: auto;
+    bottom: 100%;
+    border-top-color: transparent;
+    border-bottom-color: var(--bg-section);
+    margin-top: 0;
+    margin-bottom: -1px;
+  }
 }
+
+/* ===== Utility Classes ===== */
+.text-muted {
+  color: var(--text-muted);
+}
+
+.text-small {
+  font-size: 0.875em;
+}
+
+.mt-1 { margin-top: 0.5em; }
+.mt-2 { margin-top: 1em; }
+.mt-3 { margin-top: 1.5em; }
+.mb-1 { margin-bottom: 0.5em; }
+.mb-2 { margin-bottom: 1em; }
+.mb-3 { margin-bottom: 1.5em; }
+
+.p-1 { padding: 0.5em; }
+.p-2 { padding: 1em; }
+.p-3 { padding: 1.5em; }
