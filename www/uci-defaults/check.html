@@ -191,18 +191,19 @@
 
             const lines = content.split('\n');
             
-            // 括弧チェック
-            let ifCount = 0, fiCount = 0, forCount = 0, doneCount = 0;
+            // 括弧チェック - 行ごとにトラッキング
+            let ifLines = [], fiLines = [], forLines = [], doneLines = [];
             let openBrace = 0, closeBrace = 0;
             let openParen = 0, closeParen = 0;
 
             lines.forEach((line, idx) => {
                 const lineNum = idx + 1;
                 
-                ifCount += (line.match(/\bif\s/g) || []).length;
-                fiCount += (line.match(/\bfi\b/g) || []).length;
-                forCount += (line.match(/\bfor\s/g) || []).length;
-                doneCount += (line.match(/\bdone\b/g) || []).length;
+                if (line.match(/\bif\s/g)) ifLines.push(lineNum);
+                if (line.match(/\bfi\b/g)) fiLines.push(lineNum);
+                if (line.match(/\bfor\s/g)) forLines.push(lineNum);
+                if (line.match(/\bdone\b/g)) doneLines.push(lineNum);
+                
                 openBrace += (line.match(/{/g) || []).length;
                 closeBrace += (line.match(/}/g) || []).length;
                 openParen += (line.match(/\(/g) || []).length;
@@ -246,16 +247,16 @@
             });
 
             // チェック結果まとめ
-            if (ifCount === fiCount) {
-                addResult('success', `条件分岐 if/fi: ${ifCount}個のペア`);
+            if (ifLines.length === fiLines.length) {
+                addResult('success', `条件分岐 if/fi: ${ifLines.length}個のペア`);
             } else {
-                addResult('error', `条件分岐が対応していません: if=${ifCount}, fi=${fiCount}`);
+                addResult('error', `条件分岐が対応していません: if=${ifLines.length} (行: ${ifLines.join(',')}), fi=${fiLines.length} (行: ${fiLines.join(',')})`);
             }
 
-            if (forCount === doneCount) {
-                addResult('success', `ループ for/done: ${forCount}個のペア`);
+            if (forLines.length === doneLines.length) {
+                addResult('success', `ループ for/done: ${forLines.length}個のペア`);
             } else {
-                addResult('error', `ループが対応していません: for=${forCount}, done=${doneCount}`);
+                addResult('error', `ループが対応していません: for=${forLines.length} (行: ${forLines.join(',')}), done=${doneLines.length} (行: ${doneLines.join(',')})`);
             }
 
             if (openBrace === closeBrace) {
