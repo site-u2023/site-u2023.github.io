@@ -3930,7 +3930,8 @@ async function checkAsuServerStatus() {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 5000);
         
-        const response = await fetch(config.asu_url + '/json/v1/overview.json', {
+        // /overview を使用（空のHTMLで軽量、判定に最適）
+        const response = await fetch(config.asu_url + '/overview', {
             method: 'GET',
             signal: controller.signal,
             cache: 'no-store'
@@ -3941,11 +3942,9 @@ async function checkAsuServerStatus() {
         if (response.ok) {
             updateAsuStatus('online', response.status);
             console.log('ASU server is online');
-            
         } else if (response.status >= 500) {
             updateAsuStatus('error', response.status);
             console.warn(`ASU server error: HTTP ${response.status}`);
-            
         } else {
             updateAsuStatus('offline', response.status);
             console.warn(`ASU server unexpected status: HTTP ${response.status}`);
