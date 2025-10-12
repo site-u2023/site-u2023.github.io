@@ -46,6 +46,20 @@ const CONSOLE_MODE = {
     console.info('[ConsoleControl] Logging control initialized.');
 })();
 
+// ==================== OFS バージョンとリンクの初期化 ====================
+window.addEventListener('load', () => {
+    const versionEl = document.getElementById('ofs-version');
+    if (versionEl && typeof custom_ofs_version !== 'undefined') {
+        versionEl.innerText = custom_ofs_version;
+    }
+    
+    const linkEl = versionEl?.closest('a');
+    if (linkEl && typeof custom_ofs_link !== 'undefined') {
+        linkEl.href = custom_ofs_link;
+        linkEl.target = "_blank";
+    }
+});
+
 // ==================== 状態管理 ====================
 const state = {
     device: {
