@@ -46,7 +46,7 @@ const CONSOLE_MODE = {
     console.info('[ConsoleControl] Logging control initialized.');
 })();
 
-// ==================== OFS バージョンとリンクの初期化 ====================
+// ==================== バージョンとリンクの初期化 ====================
 window.addEventListener('load', () => {
     const versionEl = document.getElementById('ofs-version');
     if (versionEl && typeof custom_ofs_version !== 'undefined') {
