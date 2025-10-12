@@ -66,6 +66,12 @@ window.addEventListener('load', () => {
     
     const feedbackLink = document.querySelector('.tr-feedback-link');
     if (feedbackLink) {
+        if (typeof custom_feedback_link !== 'undefined') {
+            feedbackLink.href = custom_feedback_link;
+        }
+        if (typeof custom_feedback_text !== 'undefined') {
+            feedbackLink.textContent = custom_feedback_text;
+        }
         feedbackLink.target = "_blank";
     }
 });
