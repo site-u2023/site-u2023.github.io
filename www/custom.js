@@ -3931,14 +3931,14 @@ async function checkAsuServerStatus() {
         const timeoutId = setTimeout(() => controller.abort(), 5000);
         
         const response = await fetch(config.asu_url + '/api/v1/build', {
-            method: 'HEAD',
+            method: 'GET',
             signal: controller.signal,
             cache: 'no-store'
         });
         
         clearTimeout(timeoutId);
         
-        if (response.ok || response.status === 405) {
+        if (response.ok) {
             updateAsuStatus('online', response.status);
             console.log('ASU server is online');
         } else if (response.status >= 500) {
