@@ -57,6 +57,12 @@ window.addEventListener('load', () => {
     if (linkEl && typeof custom_ofs_link !== 'undefined') {
         linkEl.href = custom_ofs_link;
         linkEl.target = "_blank";
+        
+        linkEl.childNodes.forEach(node => {
+            if (node.nodeType === Node.TEXT_NODE) {
+                node.textContent = '';
+            }
+        });
     }
     
     const feedbackLink = document.querySelector('.tr-feedback-link');
