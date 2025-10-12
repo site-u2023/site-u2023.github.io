@@ -3930,7 +3930,7 @@ async function checkAsuServerStatus() {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 5000);
         
-        const response = await fetch(config.asu_url + '/api/v1/build', {
+        const response = await fetch(config.asu_url + '/api/v1/overview', {
             method: 'GET',
             signal: controller.signal,
             cache: 'no-store'
