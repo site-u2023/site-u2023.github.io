@@ -57,22 +57,10 @@ window.addEventListener('load', () => {
     if (linkEl && typeof custom_ofs_link !== 'undefined') {
         linkEl.href = custom_ofs_link;
         linkEl.target = "_blank";
-        
-        linkEl.childNodes.forEach(node => {
-            if (node.nodeType === Node.TEXT_NODE) {
-                node.textContent = '';
-            }
-        });
     }
     
     const feedbackLink = document.querySelector('.tr-feedback-link');
     if (feedbackLink) {
-        if (typeof custom_feedback_link !== 'undefined') {
-            feedbackLink.href = custom_feedback_link;
-        }
-        if (typeof custom_feedback_text !== 'undefined') {
-            feedbackLink.textContent = custom_feedback_text;
-        }
         feedbackLink.target = "_blank";
     }
 });
