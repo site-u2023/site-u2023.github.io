@@ -1,697 +1,807 @@
 # packages.json 解説
-
-## Basic System Features (基本システム機能)
-
-ターミナルアクセスとファイル転送ツール
-
+## 基本システム機能
+### Webターミナル
 <details>
 <summary>luci-app-ttyd</summary>
 
-**Webターミナル**
-- ブラウザから直接ルーターのシェルにアクセス
-- SSH不要でコマンドライン操作が可能
-- デバッグやトラブルシューティングに便利
-</details>
+- ブラウザからルーターのシェルにアクセス
+- SSH不要でコマンドライン操作
 
+</details>
+### SFTPサーバー
 <details>
 <summary>openssh-sftp-server</summary>
 
-**SFTPサーバー**
-- SSH経由で安全にファイル転送
-- WinSCP、FileZilla等のSFTPクライアントで接続可能
-- パスワード認証または鍵認証に対応
-</details>
+- SSH経由でファイル転送
+- SFTPクライアントで接続
+- パスワード認証または鍵認証
 
+</details>
+### カスタムコマンド実行
 <details>
 <summary>luci-app-commands</summary>
 
-**カスタムコマンド実行**
-- よく使うコマンドをLuCI上のボタンとして登録
-- ワンクリックでスクリプトやコマンドを実行
-- 再起動、ログクリア等の定型作業を簡単に
-</details>
+- コマンドをLuCI上のボタンとして登録
+- ワンクリックでスクリプト実行
 
+</details>
+### Webファイルブラウザ
 <details>
 <summary>luci-app-filebrowser</summary>
 
-**Webファイルブラウザ**
 - ブラウザからルーターのファイルシステムを操作
-- アップロード、ダウンロード、編集が可能
-- 設定ファイルの編集に便利
+- アップロード、ダウンロード、編集
+
 </details>
-
-## System Management (システム管理)
-
+## システム管理
+### IRQ割り込みバランサー
 <details>
 <summary>luci-app-irqbalance</summary>
 
-**IRQ割り込みバランサー**
 - マルチコアCPUで割り込み処理を分散
-- CPU負荷を均等化してパフォーマンス向上
-- 4コア以上のデバイスで効果的
+- CPU負荷を均等化
+
 </details>
-
-## Network Management (ネットワーク管理)
-
-QoS、帯域監視、Wi-Fiスケジュール、ネットワークユーティリティ
-
+## ネットワーク管理
+### 帯域制御
 <details>
-<summary>luci-app-sqm (+ tc-full)</summary>
+<summary>luci-app-sqm</summary>
 
-**SQM QoS (Smart Queue Management)**
-- 帯域制御でバッファブロートを防止
-- オンラインゲームやビデオ通話の遅延改善
+SQM QoS
 - アップロード/ダウンロード速度を個別設定
-- **依存**: tc-full (トラフィック制御ツール)
-</details>
+- 依存: tc-full
 
+</details>
+### トラフィック制御ツール
 <details>
-<summary>luci-app-statistics (+ collectd + rrdtool1)</summary>
+<summary>tc-full</summary>
 
-**システム統計グラフ**
-- CPU、メモリ、ネットワークトラフィックをグラフ化
-- 長期的なトレンド分析が可能
-- RRDtoolで時系列データベース管理
-- **依存**: collectd (データ収集), rrdtool1 (グラフ生成)
+- SQMで使用
+
 </details>
+### システム統計グラフ
+<details>
+<summary>luci-app-statistics</summary>
 
+- CPU、メモリ、ネットワークトラフィックをグラフ化
+- 依存: collectd, rrdtool1
+
+</details>
+### データ収集デーモン
+<details>
+<summary>collectd</summary>
+
+- システム統計情報を収集
+
+</details>
+### 時系列データベースとグラフ生成
+<details>
+<summary>rrdtool1</summary>
+
+- 統計データの保存と可視化
+
+</details>
+### 帯域幅モニター
 <details>
 <summary>luci-app-nlbwmon</summary>
 
-**帯域幅モニター (NetLink版)**
 - デバイス・ホスト別の通信量を記録
-- どのデバイスが帯域を使っているか把握
 - 月間・日間の通信量統計
-</details>
 
+</details>
+### vnStat2トラフィック統計
 <details>
 <summary>luci-app-vnstat2</summary>
 
-**vnStat2 トラフィック統計**
-- 長期的なトラフィック統計を保存
+- トラフィック統計を保存
 - 月間、日間、時間別のデータ記録
-- データベース方式で軽量動作
-</details>
 
+</details>
+### LAN内のPCをネットワーク経由で起動
 <details>
 <summary>luci-app-wol</summary>
 
-**Wake on LAN**
-- LAN内のPCをネットワーク経由で起動
-- MACアドレスを登録してワンクリック起動
-- 外出先からルーター経由でPC起動も可能
-</details>
+Wake on LAN
+- MACアドレスを登録
 
+</details>
+### 動的IPアドレスをドメイン名に自動更新
 <details>
 <summary>luci-app-ddns</summary>
 
-**Dynamic DNS**
-- 動的IPアドレスをドメイン名に自動更新
+Dynamic DNS
 - No-IP、DuckDNS等のサービスに対応
-- 外部から自宅サーバーへのアクセスを容易に
-</details>
 
+</details>
+### Tor匿名化ネットワーク
 <details>
 <summary>luci-app-tor</summary>
 
-**Tor匿名化ネットワーク**
-- Torネットワーク経由で匿名通信
-- ルーターレベルでプライバシー保護
-- 特定デバイスのみTor経由も可能
-</details>
+- Tor経由で匿名通信
 
+</details>
+### マルチWAN管理
 <details>
-<summary>luci-app-mwan3 (+ mwan3)</summary>
+<summary>luci-app-mwan3</summary>
 
-**マルチWAN管理 (iptables版)**
-- 複数のWAN回線を束ねて負荷分散
-- フェイルオーバー (回線障害時自動切替)
+- 複数WAN回線を束ねて負荷分散
+- フェイルオーバー（回線障害時自動切替）
 - 回線別ルーティングルール設定
-- **依存**: mwan3 (マルチWANデーモン)
-- **注意**: iptablesベース (nftablesと競合する可能性)
+- 依存: mwan3
+- 注意: iptablesベース
+
 </details>
+### マルチWANデーモン
+<details>
+<summary>mwan3</summary>
 
-## Wi-Fi Management (Wi-Fi管理)
+- 複数WAN回線の管理
 
-Wi-Fiスケジュール、ローミング最適化、無線ユーティリティ
-
+</details>
+## Wi-Fi管理
+### Wi-Fiスケジューラー
 <details>
 <summary>luci-app-wifischedule</summary>
 
-**Wi-Fiスケジューラー**
-- 時間帯別にWi-Fiオン/オフを自動化
-- 夜間・外出時に無線を自動停止して省電力
-- 曜日別スケジュール設定可能
-</details>
+- 時間帯別にWi-Fiオン/オフ自動化
+- 曜日別スケジュール設定
 
+</details>
+### ルーター自身を他のWi-Fiに接続
 <details>
 <summary>luci-app-travelmate</summary>
 
-**Travelmate (Wi-Fiクライアント)**
-- ルーター自身を他のWi-Fiに接続
-- ホテル、カフェ等の公衆Wi-Fiを中継
-- 複数のSSIDを登録して自動接続
+Travelmate
+- 複数SSID登録で自動接続
+
 </details>
-
-## Modem Support (モデムサポート)
-
-4G/5G モデム管理 (ModemManagerはSMS対応)
-
+## モデムサポート
+### ModemManagerプロトコル
 <details>
-<summary>luci-proto-modemmanager (+ 依存パッケージ)</summary>
+<summary>luci-proto-modemmanager</summary>
 
-**ModemManager プロトコル**
 - 4G/5Gモデムをネットワークインターフェースとして管理
 - MBIM、QMI対応モデムをサポート
-- SMS送受信機能も利用可能
-- **依存パッケージ**:
-  - kmod-usb-wdm: USBワイヤレスデバイス管理
-  - kmod-usb-net-cdc-mbim: MBIMプロトコル
-  - kmod-usb-net-qmi-wwan: QMIプロトコル
-  - uqmi: QMI管理ツール
-  - mbim-utils: MBIM管理ツール
-  - screen: ターミナルマルチプレクサ
+- SMS送受信機能
+- 依存: kmod-usb-wdm, kmod-usb-net-cdc-mbim, kmod-usb-net-qmi-wwan, uqmi, mbim-utils, screen
+
 </details>
+### USBワイヤレスデバイス管理カーネルモジュール
+<details>
+<summary>kmod-usb-wdm</summary>
 
-## Security Tools (セキュリティツール)
+- モデム通信に使用
 
-侵入防止とIPブロックツール
+</details>
+### MBIMプロトコルカーネルモジュール
+<details>
+<summary>kmod-usb-net-cdc-mbim</summary>
 
+- 4G/5Gモデム通信
+
+</details>
+### QMIプロトコルカーネルモジュール
+<details>
+<summary>kmod-usb-net-qmi-wwan</summary>
+
+- 4G/5Gモデム通信
+
+</details>
+### QMI管理ツール
+<details>
+<summary>uqmi</summary>
+
+- モデム制御用コマンドラインツール
+
+</details>
+### MBIM管理ツール
+<details>
+<summary>mbim-utils</summary>
+
+- モデム制御用コマンドラインツール
+
+</details>
+### ターミナルマルチプレクサ
+<details>
+<summary>screen</summary>
+
+- セッション管理
+
+</details>
+## セキュリティツール
+### Fail2Ban侵入防止
 <details>
 <summary>fail2ban</summary>
 
-**Fail2Ban 侵入防止**
-- ログを監視して不審なアクセスを検出
+- ログ監視で不審なアクセスを検出
 - 一定回数失敗したIPを自動ブロック
 - SSH、HTTP等のブルートフォース攻撃を防御
-</details>
 
+</details>
+### BanIP IPブロック
 <details>
 <summary>luci-app-banip</summary>
 
-**BanIP IPブロック**
-- 既知の悪意あるIPリストで自動ブロック
-- 各種ブラックリストフィードに対応
-- 国別IP範囲のブロックも可能
-</details>
+- IPリストで自動ブロック
+- ブラックリストフィードに対応
+- 国別IP範囲のブロック
 
+</details>
+### ACME SSL証明書
 <details>
 <summary>luci-app-acme</summary>
 
-**ACME (Let's Encrypt)**
-- 無料SSL証明書の自動取得・更新
-- HTTPSでルーター管理画面にアクセス
+- SSL証明書の自動取得・更新
 - Let's Encrypt、ZeroSSL等に対応
+
 </details>
-
-## System Monitoring (システム監視)
-
-システムウォッチドッグとネットワーク監視
-
+## システム監視
+### Watchcatシステム監視
 <details>
 <summary>luci-app-watchcat</summary>
 
-**Watchcat システム監視**
 - ネットワーク接続を定期的にチェック
 - 接続断が続く場合、自動再起動
 - Pingテストやインターフェース監視
+
 </details>
-
-## Network Diagnostic Tools (ネットワーク診断ツール)
-
-ネットワークテスト、監視、分析、DNSトラブルシューティングツール
-
+## ネットワーク診断ツール
+### htopプロセスモニター
 <details>
-<summary>htop (+ collectd + collectd-mod-thermal)</summary>
+<summary>htop</summary>
 
-**htop プロセスモニター**
 - CPUコア別使用率をリアルタイム表示
 - メモリ、スワップ使用量を視覚化
 - プロセス一覧とソート、検索機能
-- **依存**: collectd (CPU温度取得), collectd-mod-thermal (温度センサー)
-</details>
+- 依存: collectd, collectd-mod-thermal
 
+</details>
+### CPU温度センサーモジュール
+<details>
+<summary>collectd-mod-thermal</summary>
+
+- 温度データの収集
+
+</details>
+### tracerouteとpingを組み合わせ
 <details>
 <summary>mtr-nojson</summary>
 
-**MTR (My TraceRoute)**
-- tracerouteとpingを組み合わせたツール
-- 各ホップのパケットロス率と遅延を表示
-- ネットワーク経路の問題箇所を特定
-</details>
+MTR
+- 各ホップのパケットロス率と遅延表示
 
+</details>
+### Nmapポートスキャナー
 <details>
 <summary>nmap</summary>
 
-**Nmap ポートスキャナー**
 - ネットワーク内のデバイスを検出
 - 開いているポートとサービスを調査
-- セキュリティ監査に使用
-</details>
 
+</details>
+### tcpdumpパケットキャプチャ
 <details>
 <summary>tcpdump</summary>
 
-**tcpdump パケットキャプチャ**
-- ネットワークパケットを詳細にキャプチャ
-- プロトコル解析とトラブルシューティング
-- Wiresharkで開けるpcapファイル出力
-</details>
+- ネットワークパケットをキャプチャ
+- プロトコル解析
+- pcapファイル出力
 
+</details>
+### iPerf3帯域測定
 <details>
 <summary>iperf3</summary>
 
-**iPerf3 帯域測定**
 - ネットワーク帯域幅をテスト
 - TCP/UDP スループット測定
-- 有線LAN、Wi-Fi速度の実測に
-</details>
 
+</details>
+### インターネット速度テスト
 <details>
 <summary>speedtest-netperf</summary>
 
-**Speedtest (netperf版)**
-- インターネット速度テスト
+Speedtest
 - ダウンロード/アップロード速度測定
-- OpenWrt向け軽量実装
-</details>
 
+</details>
+### iftop帯域幅モニター
 <details>
 <summary>iftop</summary>
 
-**iftop 帯域幅モニター**
 - リアルタイムで接続別トラフィック表示
-- どの接続が帯域を使っているか瞬時に把握
 - 送信/受信を個別表示
-</details>
 
+</details>
+### dig DNSクエリツール
 <details>
 <summary>bind-dig</summary>
 
-**dig DNSクエリツール**
-- DNS問い合わせの詳細情報を取得
+- DNS問い合わせツール
 - DNSサーバーの応答テスト
-- レコードタイプ別クエリ (A, AAAA, MX等)
-</details>
+- レコードタイプ別クエリ
 
+</details>
+### ethtoolイーサネット診断
 <details>
 <summary>ethtool</summary>
 
-**ethtool イーサネット診断**
 - イーサネットポートの状態確認
 - リンク速度、デュプレックス設定
-- NICドライバ情報とハードウェア統計
+- NICドライバ情報
+
 </details>
-
-## System Administration Tools (システム管理ツール)
-
-ターミナル強化、デバッグ、ファイル管理、HTTPクライアントツール
-
+## システム管理ツール
+### tmuxターミナルマルチプレクサ
 <details>
 <summary>tmux</summary>
 
-**tmux ターミナルマルチプレクサ**
-- 複数のターミナルセッションを管理
+- ターミナルマルチプレクサ
 - SSH切断してもセッション維持
-- 画面分割で複数コマンドを同時実行
-</details>
+- 画面分割
 
+</details>
+### nanoテキストエディタ
 <details>
 <summary>nano-plus</summary>
 
-**nano テキストエディタ (機能拡張版)**
-- シンプルで使いやすいCLIエディタ
+- テキストエディタ
 - シンタックスハイライト対応
-- 設定ファイルの編集に最適
-</details>
 
+</details>
+### lsofファイル/ポート使用確認
 <details>
 <summary>lsof</summary>
 
-**lsof ファイル/ポート使用確認**
-- どのプロセスがどのファイルを開いているか確認
+- プロセスが開いているファイルを確認
 - ポート使用中のプロセスを特定
-- デバイスがアンマウントできない原因調査に
-</details>
 
+</details>
+### rsyncファイル同期
 <details>
 <summary>rsync</summary>
 
-**rsync ファイル同期**
-- 差分転送で効率的にファイル同期
-- バックアップスクリプト作成に
+- 差分転送でファイル同期
 - SSH経由でリモートサーバーと同期
-</details>
 
+</details>
+### curl HTTPクライアント
 <details>
 <summary>curl</summary>
 
-**curl HTTPクライアント**
 - コマンドラインからHTTP/HTTPS通信
 - API呼び出しやファイルダウンロード
-- スクリプトでのWeb操作に必須
-</details>
 
+</details>
+### netdataリアルタイム監視
 <details>
 <summary>netdata</summary>
 
-**Netdata リアルタイム監視**
-- 美しいWebダッシュボードでシステム監視
+- Webダッシュボードでシステム監視
 - CPU、メモリ、ネットワーク、ディスクI/Oを可視化
-- アラート機能付き
-- **注意**: メモリ使用量が大きいため512MB以上推奨
+- アラート機能
+- 注意: メモリ512MB以上推奨
+
 </details>
-
-## Themes and Dashboard (テーマとダッシュボード)
-
-UIテーマとダッシュボード改善
-
+## テーマとダッシュボード
+### LuCIダッシュボード
 <details>
 <summary>luci-mod-dashboard</summary>
 
-**LuCIダッシュボード**
 - システム状態を一画面で把握
 - CPU、メモリ、接続数、トラフィックを表示
-- カスタマイズ可能なウィジェット
+- ウィジェット
+
 </details>
-
+### OpenWrt公式テーマ
 <details>
-<summary>luci-theme-openwrt (+ material + 2020)</summary>
+<summary>luci-theme-openwrt</summary>
 
-**OpenWrtテーマパック**
-- OpenWrt公式テーマ各種
-- **含まれるテーマ**:
-  - luci-theme-material: マテリアルデザイン
-  - luci-theme-openwrt-2020: 2020版デザイン
-- 好みに応じてテーマ切替可能
 </details>
-
-## Utilities (ユーティリティ)
-
-システムアップグレード、VPN、メディアサーバーユーティリティ
-
+### マテリアルデザインテーマ
 <details>
-<summary>luci-app-attendedsysupgrade (+ owut + auc)</summary>
+<summary>luci-theme-material</summary>
 
-**自動システムアップグレード**
+</details>
+### OpenWrt 2020版テーマ
+<details>
+<summary>luci-theme-openwrt-2020</summary>
+
+</details>
+## ユーティリティ
+### 自動システムアップグレード
+<details>
+<summary>luci-app-attendedsysupgrade</summary>
+
 - LuCI上でファームウェア更新を自動化
 - 現在のパッケージを維持したまま更新
-- カスタムビルドにも対応
-- **依存**:
-  - owut: OpenWrt Update Tool
-  - auc: Attended sysUpgrade Client
-</details>
+- 依存: owut, auc
 
+</details>
+### ファームウェア更新ツール
 <details>
-<summary>luci-proto-wireguard (+ luci-app-wireguard + wireguard-tools)</summary>
+<summary>owut</summary>
 
-**WireGuard VPN**
-- 高速・軽量な最新VPN技術
-- L3 (ネットワーク層) VPN
-- モバイルデバイスとの親和性が高い
-- **依存**:
-  - luci-app-wireguard: LuCI管理画面
-  - wireguard-tools: コマンドラインツール
+OpenWrt Update Tool
+
 </details>
+### システムアップグレードクライアント
+<details>
+<summary>auc</summary>
 
+Attended sysUpgrade Client
+
+</details>
+### WireGuardプロトコル
+<details>
+<summary>luci-proto-wireguard</summary>
+
+- L3 VPN
+- 依存: luci-app-wireguard, wireguard-tools
+
+</details>
+### WireGuard LuCI管理画面
+<details>
+<summary>luci-app-wireguard</summary>
+
+- VPN接続の設定
+
+</details>
+### WireGuardコマンドラインツール
+<details>
+<summary>wireguard-tools</summary>
+
+- wg, wg-quickコマンド
+
+</details>
+### 仮想LANでデバイスを接続
 <details>
 <summary>zerotier</summary>
 
-**ZeroTier SDN**
-- 仮想LANでデバイスを接続
-- 世界中のデバイスを同一ネットワークに
-- NAT越えが簡単
-</details>
+ZeroTier SDN
+- NAT越え
 
+</details>
+### Tailscaleメッシュ VPN
 <details>
 <summary>tailscale</summary>
 
-**Tailscale メッシュVPN**
 - WireGuardベースのメッシュネットワーク
-- 各デバイスが直接接続
-- 簡単なセットアップと管理
+- デバイス間直接接続
+
 </details>
-
+### Docker コンテナ管理
 <details>
-<summary>luci-app-dockerman (+ docker-compose + docker)</summary>
+<summary>luci-app-dockerman</summary>
 
-**Docker コンテナ管理 (iptables版)**
 - LuCI上でDockerコンテナを管理
 - イメージ、コンテナ、ネットワーク、ボリューム操作
-- **依存**:
-  - docker-compose: コンテナオーケストレーション
-  - docker: Dockerエンジン
-- **注意**: iptablesベース、メモリ1GB以上推奨
-</details>
+- 依存: docker-compose, docker
+- 注意: iptablesベース、メモリ1GB以上推奨
 
+</details>
+### コンテナオーケストレーション
+<details>
+<summary>docker-compose</summary>
+
+- 複数コンテナの定義と実行
+
+</details>
+### Dockerエンジン
+<details>
+<summary>docker</summary>
+
+- コンテナ実行環境
+
+</details>
+### サーバー・クライアント両対応
 <details>
 <summary>luci-app-openvpn</summary>
 
-**OpenVPN**
-- 歴史ある信頼性の高いVPN
-- サーバー・クライアント両対応
-- 柔軟な設定が可能
-</details>
+OpenVPN
 
+</details>
+### MiniDLNAメディアサーバー
 <details>
 <summary>luci-app-minidlna</summary>
 
-**MiniDLNA メディアサーバー**
 - DLNA/UPnP-AVメディアサーバー
 - テレビ、ゲーム機で動画・音楽を再生
-- USB HDDをメディアサーバー化
-</details>
 
+</details>
+### S.M.A.R.T.監視ツール
 <details>
 <summary>smartmontools</summary>
 
-**S.M.A.R.T. 監視ツール**
-- HDD/SSDの健康状態を監視
-- 故障予兆を事前に検出
+- ディスクの健康状態を監視
+- S.M.A.R.T.情報の取得
 - ディスク温度、エラーカウント確認
-</details>
 
+</details>
+### ログローテーション
 <details>
 <summary>logrotate</summary>
 
-**ログローテーション**
 - ログファイルを自動で圧縮・削除
 - ディスク容量の節約
-- 古いログの自動アーカイブ
+
 </details>
-
-## USB Storage Support (USBストレージサポート)
-
-USBストレージカーネルモジュールとファイルシステムツール
-
+## USBストレージサポート
+### USB 3.0高速転送モード（UAS）カーネルモジュール
 <details>
-<summary>kmod-usb-storage-uas (+ block-mount + usbutils + gdisk)</summary>
+<summary>kmod-usb-storage-uas</summary>
 
-**USB Storage (UAS対応)**
-- USB 3.0高速転送モード (UAS) サポート
 - USBメモリ、外付けHDD/SSDを認識
-- **依存**:
-  - block-mount: ブロックデバイスマウント管理
-  - usbutils: USB情報表示 (lsusb)
-  - gdisk: GPTパーティション編集
-</details>
+- 依存: block-mount, usbutils, gdisk
 
+</details>
+### ブロックデバイスの自動マウント
 <details>
-<summary>dosfstools (+ kmod-fs-vfat)</summary>
+<summary>block-mount</summary>
 
-**FAT32 ファイルシステム**
-- FAT32フォーマットのUSBドライブ読み書き
-- Windows/Mac/Linuxで共通利用可能
-- **依存**: kmod-fs-vfat (VFATカーネルモジュール)
+- USB/SDカードの自動認識
+
 </details>
-
+### USBデバイス情報表示ツール
 <details>
-<summary>e2fsprogs (+ kmod-fs-ext4)</summary>
+<summary>usbutils</summary>
 
-**ext4 ファイルシステム**
-- Linux標準のext4フォーマット対応
-- ジャーナリング機能で安全性向上
-- **依存**: kmod-fs-ext4 (ext4カーネルモジュール)
+- lsusbコマンド
+
 </details>
-
+### GPTパーティション管理ツール
 <details>
-<summary>f2fs-tools (+ kmod-fs-f2fs)</summary>
+<summary>gdisk</summary>
 
-**F2FS ファイルシステム**
-- フラッシュメモリ最適化FS
-- SDカード、SSDで高速動作
-- **依存**: kmod-fs-f2fs (F2FSカーネルモジュール)
+- パーティションの作成、削除、編集
+
 </details>
-
+### FAT32ファイルシステムツール
 <details>
-<summary>exfat-fsck (+ kmod-fs-exfat)</summary>
+<summary>dosfstools</summary>
 
-**exFAT ファイルシステム**
-- 大容量ファイル対応 (4GB以上)
-- Windows/Mac標準サポート
-- **依存**: kmod-fs-exfat (exFATカーネルモジュール)
+- フォーマット、チェック
+- 依存: kmod-fs-vfat
+
 </details>
-
+### FAT32ファイルシステムカーネルモジュール
 <details>
-<summary>ntfs-3g (+ kmod-fs-ntfs3)</summary>
+<summary>kmod-fs-vfat</summary>
 
-**NTFS ファイルシステム**
-- Windows NTFSの読み書き対応
-- 外付けHDDでよく使用される
-- **依存**: kmod-fs-ntfs3 (NTFS3カーネルモジュール)
+- FAT32の読み書き
+
 </details>
-
+### ext4ファイルシステムツール
 <details>
-<summary>hfsfsck (+ kmod-fs-hfs + kmod-fs-hfsplus)</summary>
+<summary>e2fsprogs</summary>
 
-**HFS/HFS+ ファイルシステム**
-- Mac OS用ファイルシステム対応
-- 古いMacフォーマットのドライブ読み書き
-- **依存**:
-  - kmod-fs-hfs: HFSカーネルモジュール
-  - kmod-fs-hfsplus: HFS+カーネルモジュール
+- フォーマット、チェック、リサイズ
+- 依存: kmod-fs-ext4
+
 </details>
+### ext4ファイルシステムカーネルモジュール
+<details>
+<summary>kmod-fs-ext4</summary>
 
+- ext4の読み書き
+
+</details>
+### F2FSファイルシステムツール
+<details>
+<summary>f2fs-tools</summary>
+
+- フォーマット、チェック
+- 依存: kmod-fs-f2fs
+
+</details>
+### F2FSファイルシステムカーネルモジュール
+<details>
+<summary>kmod-fs-f2fs</summary>
+
+- F2FSの読み書き
+
+</details>
+### exFATファイルシステムチェックツール
+<details>
+<summary>exfat-fsck</summary>
+
+- ファイルシステムの検証と修復
+- 依存: kmod-fs-exfat
+
+</details>
+### exFATファイルシステムカーネルモジュール
+<details>
+<summary>kmod-fs-exfat</summary>
+
+- exFATの読み書き
+
+</details>
+### NTFSファイルシステムツール
+<details>
+<summary>ntfs-3g</summary>
+
+- NTFSの読み書き
+- 依存: kmod-fs-ntfs3
+
+</details>
+### NTFSファイルシステムカーネルモジュール
+<details>
+<summary>kmod-fs-ntfs3</summary>
+
+- NTFSの読み書き
+
+</details>
+### HFS/HFS+ファイルシステムチェックツール
+<details>
+<summary>hfsfsck</summary>
+
+- ファイルシステムの検証と修復
+- 依存: kmod-fs-hfs, kmod-fs-hfsplus
+
+</details>
+### HFSファイルシステムカーネルモジュール
+<details>
+<summary>kmod-fs-hfs</summary>
+
+- HFSの読み書き
+
+</details>
+### HFS+ファイルシステムカーネルモジュール
+<details>
+<summary>kmod-fs-hfsplus</summary>
+
+- HFS+の読み書き
+
+</details>
+### HD-Idleディスク省電力
 <details>
 <summary>luci-app-hd-idle</summary>
 
-**HD-Idle ディスク省電力**
 - 一定時間アクセスがないとHDDをスピンダウン
-- 消費電力削減と騒音低減
-- タイムアウト時間をカスタマイズ可能
-</details>
+- タイムアウト時間設定
 
+</details>
+### USB LEDトリガー
 <details>
 <summary>kmod-usb-ledtrig-usbport</summary>
 
-**USB LEDトリガー**
 - USBポート使用時にLEDを点灯
-- USB機器接続状態を視覚的に確認
-- ルーターのUSB LEDを活用
-</details>
+- USB機器接続状態の視覚的確認
 
+</details>
+### RNDISプロトコルカーネルモジュール
 <details>
-<summary>kmod-usb-net-rndis (+ kmod-usb-net-cdc-ether)</summary>
+<summary>kmod-usb-net-rndis</summary>
 
-**USB RNDIS (テザリング)**
-- スマートフォンのUSBテザリングに対応
-- Android/iPhoneをWANとして使用
-- モバイル回線のバックアップに
-- **依存**: kmod-usb-net-cdc-ether (CDC Ethernetドライバ)
-- **setup.json連携**: `enable_usb_rndis`
+- スマートフォンのUSBテザリング
+- 依存: kmod-usb-net-cdc-ether
+- setup.json連携: enable_usb_rndis
+
 </details>
-
+### CDC Ethernetカーネルモジュール
 <details>
-<summary>kmod-usb-gadget-eth (+ kmod-usb-dwc2)</summary>
+<summary>kmod-usb-net-cdc-ether</summary>
 
-**USB Gadget イーサネット (要再起動)**
-- ルーター自身をUSBイーサネットデバイスとして動作
-- PCのUSBポートに接続してネットワーク共有
-- Raspberry Pi等で使用
-- **依存**: kmod-usb-dwc2 (DWC2 USBコントローラ)
-- **setup.json連携**: `enable_usb_gadget`
-- **注意**: 有効化には再起動が必要
+- USBネットワークデバイス
+
 </details>
-
+### USB Gadget Ethernetカーネルモジュール
 <details>
-<summary>resize2fs (+ parted + f2fs-tools)</summary>
+<summary>kmod-usb-gadget-eth</summary>
 
-**ファイルシステムリサイズ**
-- SDカードの未使用領域を拡張
-- パーティションとFSを同時にリサイズ
-- **依存**:
-  - parted: パーティション編集
-  - f2fs-tools: F2FSリサイズ機能
-- **setup.json連携**: `enable_sd_resize`
+- ルーターをUSBイーサネットデバイスとして動作
+- 依存: kmod-usb-dwc2
+- setup.json連携: enable_usb_gadget
+- 注意: 有効化には再起動が必要
+
 </details>
-
-## File Sharing (ファイル共有)
-
-SMB/CIFSファイル共有サーバー
-
+### DWC2 USBコントローラカーネルモジュール
 <details>
-<summary>luci-app-samba4 (+ wsdd2)</summary>
+<summary>kmod-usb-dwc2</summary>
 
-**Samba4 ファイル共有**
-- Windows互換のファイル共有 (SMB/CIFS)
-- ネットワークドライブとしてマウント可能
-- ゲストアクセスまたは認証設定
-- **依存**: wsdd2 (Windows Service Discovery、ネットワーク上での自動検出)
-- **setup.json連携**: `enable_samba4`
+- USB Gadget機能
+
 </details>
+### ext4ファイルシステムリサイズツール
+<details>
+<summary>resize2fs</summary>
 
+- パーティション拡張
+- 依存: parted, f2fs-tools
+- setup.json連携: enable_sd_resize
+
+</details>
+### パーティション編集ツール
+<details>
+<summary>parted</summary>
+
+- パーティションの作成、削除、リサイズ
+
+</details>
+## ファイル共有
+### Samba4ファイルサーバー
+<details>
+<summary>luci-app-samba4</summary>
+
+- Windows互換のファイル共有（SMB/CIFS）
+- 依存: wsdd2
+- setup.json連携: enable_samba4
+
+</details>
+### Web Services Discoveryデーモン
+<details>
+<summary>wsdd2</summary>
+
+- Windows 10/11のネットワーク探索に対応
+
+</details>
+### TransmissionBitTorrentクライアント
 <details>
 <summary>luci-app-transmission</summary>
 
-**Transmission BitTorrentクライアント**
-- 軽量なBitTorrentダウンロードクライアント
-- USB HDDに直接ダウンロード
+- BitTorrentクライアント
 - Web UIでリモート操作
+
 </details>
-
-## DNS & Privacy (DNS & プライバシー)
-
-DNSベース広告ブロックと暗号化DNS (DoH/DoT)
-
+## DNS & プライバシー
+### 広告ブロック
 <details>
-<summary>luci-app-adblock-fast (+ Tofukko Filter)</summary>
+<summary>luci-app-adblock-fast</summary>
 
-**高速広告ブロック**
 - DNS応答を書き換えて広告をブロック
-- dnsmasq/unboundベースで軽量高速
-- 複数のブロックリストに対応
-- **オプション**: Japan Tofukko Filter (日本向け広告ブロックリスト)
-- **setup.json連携**: 
-  - `enable_adblock_fast`: 広告ブロック有効化
-  - `enable_tofukko_filter`: Tofukkoフィルター追加
-</details>
+- dnsmasq/unboundベース
+- ブロックリストに対応
+- setup.json連携: enable_adblock_fast, enable_tofukko_filter
 
+</details>
+### 日本向け広告ブロックリスト
+<details>
+<summary>japan-tofukko-filter</summary>
+
+- Tofukko Filter
+- setup.json連携: enable_tofukko_filter
+
+</details>
+### HTTPS経由で暗号化DNS通信（DoH）
 <details>
 <summary>luci-app-https-dns-proxy</summary>
 
-**DNS over HTTPS (DoH)**
-- HTTPS経由で暗号化DNS通信
-- ISPによるDNS監視を防ぐ
+DNS over HTTPS
 - Cloudflare、Google、Quad9等のプロバイダに対応
-</details>
 
+</details>
+### TLS経由で暗号化DNS通信（DoT）
 <details>
 <summary>stubby</summary>
 
-**DNS over TLS (DoT)**
-- TLS経由で暗号化DNS通信
-- DoHの代替プロトコル
-- プライバシー保護
+DNS over TLS
+
 </details>
-
-## Setup-driven Packages (Setup連動パッケージ)
-
-setup.json設定により自動管理されるパッケージ
-
+## Setup連動パッケージ
+### MAP-Eプロトコル
 <details>
 <summary>map</summary>
 
-**MAP-E サポート**
-- IPv4 over IPv6 トンネル (MAP-E)
-- 日本のIPv6 IPoE接続に必須
-- setup.jsonで `connection_type: "mape"` 選択時に自動インストール
-</details>
+- IPv4 over IPv6カプセル化方式
+- OCNバーチャルコネクト、v6オプション、NURO光で使用
+- setup.jsonで connection_type: "mape" 選択時に自動インストール
 
+</details>
+### DS-Liteプロトコル
 <details>
 <summary>ds-lite</summary>
 
-**DS-Lite サポート**
-- IPv4 over IPv6 トンネル (DS-Lite)
-- 一部プロバイダのIPv6接続に使用
-- setup.jsonで `connection_type: "dslite"` 選択時に自動インストール
-</details>
+- IPv4 over IPv6カプセル化方式
+- transix、v6プラス、クロスパス等で使用
+- setup.jsonで connection_type: "dslite" 選択時に自動インストール
 
+</details>
+### Usteerバンドステアリング
 <details>
 <summary>luci-app-usteer</summary>
 
-**Usteer バンドステアリング**
-- 複数APでの高速ローミング
+- バンドステアリングとローミング最適化
 - 5GHz帯への自動誘導
 - 負荷分散機能
-- setup.jsonで `wifi_mode: "usteer"` 選択時に自動インストール
+- setup.jsonで wifi_mode: "usteer" 選択時に自動インストール
+
 </details>
