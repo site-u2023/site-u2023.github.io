@@ -200,7 +200,6 @@ MAP_SH="/lib/netifd/proto/map.sh"
 cp "$MAP_SH" "$MAP_SH".bak
 sed -i '1a # github.com/fakemanhk/openwrt-jp-ipoe
 DONT_SNAT_TO="0"' "$MAP_SH"
-sed -i '/\[ -z "\$ip4prefixlen" \] && ip4prefixlen=32/d' "$MAP_SH"
 sed -i 's/mtu:-1280/mtu:-1460/g' "$MAP_SH"
 sed -i '/if \[ -z "\$(eval "echo \\$RULE_\${k}_PORTSETS")"/,/^[[:space:]]*fi$/c if [ -z "$(eval "echo \\$RULE_${k}_PORTSETS")" ]; then
 json_add_object ""
