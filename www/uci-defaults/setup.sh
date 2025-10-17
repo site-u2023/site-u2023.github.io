@@ -203,7 +203,6 @@ firewall_wan() {
     sed -i '137,158d' "$MAP_SH"
     sed -i '136a\
 \
-\t# nftablesルール作成（firewall配列の外）\
 \tif [ -n "$(eval "echo \\$RULE_${k}_PORTSETS")" ]; then\
 \t\tlocal portcount=0\
 \t\tlocal allports=""\
