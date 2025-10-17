@@ -202,31 +202,34 @@ firewall_wan() {
     sed -i 's/mtu:-1280/mtu:-1460/g' "$MAP_SH"
     sed -i '137,158d' "$MAP_SH"
     sed -i '136a\
-\tif [ -n "$(eval "echo \\$RULE_${k}_PORTSETS")" ]; then\
-\t\tlocal portcount=0\
-\t\tlocal allports=""\
-\t\tfor portset in $(eval "echo \\$RULE_${k}_PORTSETS"); do\
-\t\t\tlocal startport=$(echo $portset | cut -d"-" -f1)\
-\t\t\tlocal endport=$(echo $portset | cut -d"-" -f2)\
-\t\t\tfor x in $(seq $startport $endport); do\
-\t\t\t\tif ! echo "$DONT_SNAT_TO" | tr " " "\\n" | grep -qw $x; then\
-\t\t\t\t\tallports="$allports $portcount : $x , "\
-\t\t\t\t\tportcount=`expr $portcount + 1`\
-\t\t\t\tfi\
-\t\t\tdone\
+\t  if [ -z "$(eval "echo \\$RULE_${k}_PORTSETS")" ]; then\
+\t    json_add_object ""\
+\t      json_add_string type nat\
+\t      json_add_string target SNAT\
+\t      json_add_string family inet\
+\t      json_add_string snat_ip $(eval "echo \\$RULE_${k}_IPV4ADDR")\
+\t    json_close_object\
+\t  else\
+\t    local portcount=0\
+\t    local allports=""\
+\t    for portset in $(eval "echo \\$RULE_${k}_PORTSETS"); do\
+\t\tlocal startport=$(echo $portset | cut -d"-" -f1)\
+\t\tlocal endport=$(echo $portset | cut -d"-" -f2)\
+\t\tfor x in $(seq $startport $endport); do\
+\t\t\tif ! echo "$DONT_SNAT_TO" | tr " " "\\n" | grep -qw $x; then\
+\t\t\t\tallports="$allports $portcount : $x , "\
+\t\t\t\tportcount=`expr $portcount + 1`\
+\t\t\tfi\
 \t\tdone\
+\t    done\
 \t\tallports=${allports%??}\
-\t\tif nft list tables | grep -q "table inet mape"; then\
-\t\t\tnft delete table inet mape\
-\t\tfi\
-\t\tnft add table inet mape\
-\t\tnft add chain inet mape srcnat {type nat hook postrouting priority 0\\; policy accept\\; }\
-\t\tfor proto in icmp tcp udp; do\
-\t\t\tnft add rule inet mape srcnat ip protocol $proto oifname "map-$cfg" snat ip to $(eval "echo \\$RULE_${k}_IPV4ADDR") : numgen inc mod $portcount map { $allports }\
-\t\tdone\
-\tfi\
-\
-\tjson_add_array firewall' "$MAP_SH"
+\t    nft add table inet mape\
+\t    nft add chain inet mape srcnat {type nat hook postrouting priority 0\\; policy accept\\; }\
+\t\tlocal counter=0\
+\t    for proto in icmp tcp udp; do\
+\t\t\tnft add rule inet mape srcnat ip protocol $proto oifname "map-$cfg" counter packets 0 bytes 0 snat ip to $(eval "echo \\$RULE_${k}_IPV4ADDR") : numgen inc mod $portcount map { $allports }\
+\t    done\
+\t  fi' "$MAP_SH"
 }
 [ "${connection_type}" = "ap" ] && [ -n "${ap_ip_address}" ] && {
     disable_wan
