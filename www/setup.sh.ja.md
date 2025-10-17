@@ -525,35 +525,36 @@
     # - DONT_SNAT_TO変数で指定されたポートを除外
     # - numgen（番号生成器）を使って利用可能ポートにラウンドロビン分散
     # - icmp/tcp/udpの各プロトコルに対して個別にルール作成
-    sed -i '/if \[ -z "\$(eval "echo \\$RULE_\${k}_PORTSETS")"/,/^[[:space:]]*fi$/c\
-if [ -z "$(eval "echo \\$RULE_${k}_PORTSETS")" ]; then\
-json_add_object ""\
-json_add_string type nat\
-json_add_string target SNAT\
-json_add_string family inet\
-json_add_string snat_ip $(eval "echo \\$RULE_${k}_IPV4ADDR")\
-json_close_object\
-else\
-local portcount=0\
-local allports=""\
-for portset in $(eval "echo \\$RULE_${k}_PORTSETS"); do\
-local startport=$(echo $portset | cut -d"-" -f1)\
-local endport=$(echo $portset | cut -d"-" -f2)\
-for x in $(seq $startport $endport); do\
-if ! echo "$DONT_SNAT_TO" | tr " " "\\n" | grep -qw $x; then\
-allports="$allports $portcount : $x , "\
-portcount=`expr $portcount + 1`\
-fi\
-done\
-done\
-allports=${allports%??}\
-nft add table inet mape\
-nft add chain inet mape srcnat {type nat hook postrouting priority 0; policy accept; }\
-local counter=0\
-for proto in icmp tcp udp; do\
-nft add rule inet mape srcnat ip protocol $proto oifname "map-$cfg" counter packets 0 bytes 0 snat ip to $(eval "echo \\$RULE_${k}_IPV4ADDR") : numgen inc mod $portcount map { $allports }\
-done\
-fi' "$MAP_SH"
+    sed -i '137,158d' "$MAP_SH"
+    sed -i '136a\
+\t  if [ -z "$(eval "echo \\$RULE_${k}_PORTSETS")" ]; then\
+\t    json_add_object ""\
+\t      json_add_string type nat\
+\t      json_add_string target SNAT\
+\t      json_add_string family inet\
+\t      json_add_string snat_ip $(eval "echo \\$RULE_${k}_IPV4ADDR")\
+\t    json_close_object\
+\t  else\
+\t    local portcount=0\
+\t    local allports=""\
+\t    for portset in $(eval "echo \\$RULE_${k}_PORTSETS"); do\
+\t\tlocal startport=$(echo $portset | cut -d"-" -f1)\
+\t\tlocal endport=$(echo $portset | cut -d"-" -f2)\
+\t\tfor x in $(seq $startport $endport); do\
+\t\t\tif ! echo "$DONT_SNAT_TO" | tr " " "\\n" | grep -qw $x; then\
+\t\t\t\tallports="$allports $portcount : $x , "\
+\t\t\t\tportcount=`expr $portcount + 1`\
+\t\t\tfi\
+\t\tdone\
+\t    done\
+\t\tallports=${allports%??}\
+\t    nft add table inet mape\
+\t    nft add chain inet mape srcnat {type nat hook postrouting priority 0\\; policy accept\\; }\
+\t\tlocal counter=0\
+\t    for proto in icmp tcp udp; do\
+\t\t\tnft add rule inet mape srcnat ip protocol $proto oifname "map-$cfg" counter packets 0 bytes 0 snat ip to $(eval "echo \\$RULE_${k}_IPV4ADDR") : numgen inc mod $portcount map { $allports }\
+\t    done\
+\t  fi' "$MAP_SH"
 }
 ```
 
