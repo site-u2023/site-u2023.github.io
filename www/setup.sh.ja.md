@@ -1,50 +1,5 @@
 # setup.sh 解説
 
-### 初期設定変数
-
-<details>
-<summary>初期変数一覧</summary>
-
-```sh
-# 機能有効化フラグ（デフォルト有効）
-enable_notes="1"      # システム情報にメモを追加
-enable_ntp="1"        # NTPサーバー設定
-enable_log="1"        # ログサイズ・レベル設定
-enable_diag="1"       # LuCI診断設定
-
-# UCI操作用ヘルパー関数
-SET() { uci -q set "${SEC}${SEC:+.}" "$@"; }      # 設定値を設定
-DEL() { uci -q delete "${SEC}${SEC:+.}" "$@"; }   # 設定値を削除
-ADDLIST() { uci add_list "${SEC}${SEC:+.}" "$@"; } # リストに追加
-DELLIST() { uci del_list "${SEC}${SEC:+.}" "$@"; } # リストから削除
-
-# システム情報取得
-DATE="$(date '+%Y-%m-%d %H:%M')"                   # 現在日時
-LAN="$(uci -q get network.lan.device || echo lan)" # LANデバイス名
-WAN="$(uci -q get network.wan.device || echo wan)" # WANデバイス名
-DIAG="one.one.one.one"                             # 診断用ドメイン（Cloudflare DNS）
-NTPDOMAIN=".pool.ntp.org"                          # NTPドメインサフィックス
-COUNTRY="${country:-00}"                           # 国コード（デフォルト00）
-
-# インターフェース名定義
-DSL="dsl"       # DS-Lite IPv4インターフェース
-DSL6="dsl6"     # DS-Lite IPv6インターフェース
-MAPE="mape"     # MAP-E IPv4インターフェース
-MAPE6="mape6"   # MAP-E IPv6インターフェース
-AP="ap"         # アクセスポイントモードIPv4
-AP6="ap6"       # アクセスポイントモードIPv6
-
-# その他
-NAS="openwrt"   # Samba共有名
-MNT="/mnt/sda"  # マウントポイント
-MEM=$(awk '/MemTotal/{print int($2/1024)}' /proc/meminfo) # 搭載メモリ(MB)
-
-# ログ出力先設定
-exec >/tmp/setup.log 2>&1
-```
-
-</details>
-
 ### システム情報記録
 
 <details>
@@ -52,6 +7,13 @@ exec >/tmp/setup.log 2>&1
 
 ```sh
 [ -n "${enable_notes}" ] && {
+    # UCI操作用ヘルパー関数
+    SET() { uci -q set "${SEC}${SEC:+.}" "$@"; }
+    DEL() { uci -q delete "${SEC}${SEC:+.}" "$@"; }
+    
+    # このセクション固有の変数
+    DATE="$(date '+%Y-%m-%d %H:%M')"  # 現在日時
+    
     local SEC=system
     # システムの説明フィールドにセットアップ日時を記録
     SET @system[0].description="${DATE}"
@@ -69,6 +31,15 @@ exec >/tmp/setup.log 2>&1
 
 ```sh
 [ -n "${enable_ntp}" ] && {
+    # UCI操作用ヘルパー関数
+    SET() { uci -q set "${SEC}${SEC:+.}" "$@"; }
+    DEL() { uci -q delete "${SEC}${SEC:+.}" "$@"; }
+    ADDLIST() { uci add_list "${SEC}${SEC:+.}" "$@"; }
+    
+    # このセクション固有の変数
+    NTPDOMAIN=".pool.ntp.org"          # NTPドメインサフィックス
+    COUNTRY="${country:-00}"           # 国コード（デフォルト00）
+    
     local SEC=system
     SET ntp=timeserver
     SET ntp.enabled='1'              # NTPクライアント有効化
@@ -97,6 +68,9 @@ exec >/tmp/setup.log 2>&1
 
 ```sh
 [ -n "${enable_log}" ] && {
+    # UCI操作用ヘルパー関数
+    SET() { uci -q set "${SEC}${SEC:+.}" "$@"; }
+    
     local SEC=system
     SET @system[0].log_size='32'      # ログバッファサイズ32KB
     SET @system[0].conloglevel='1'    # コンソールログレベル（ALERT以上）
@@ -113,6 +87,12 @@ exec >/tmp/setup.log 2>&1
 
 ```sh
 [ -n "${enable_diag}" ] && {
+    # UCI操作用ヘルパー関数
+    SET() { uci -q set "${SEC}${SEC:+.}" "$@"; }
+    
+    # このセクション固有の変数
+    DIAG="one.one.one.one"  # 診断用ドメイン（Cloudflare DNS）
+    
     local SEC=luci
     SET diag=diag
     SET diag.ping="${DIAG}"   # ping診断先（1.1.1.1）
@@ -130,6 +110,9 @@ exec >/tmp/setup.log 2>&1
 
 ```sh
 [ -n "${device_name}" ] && {
+    # UCI操作用ヘルパー関数
+    SET() { uci -q set "${SEC}${SEC:+.}" "$@"; }
+    
     local SEC=system
     SET @system[0].hostname="${device_name}" # ホスト名を設定
 }
@@ -157,6 +140,9 @@ exec >/tmp/setup.log 2>&1
 
 ```sh
 [ -n "${lan_ip_address}" ] && {
+    # UCI操作用ヘルパー関数
+    SET() { uci -q set "${SEC}${SEC:+.}" "$@"; }
+    
     local SEC=network
     SET lan.ipaddr="${lan_ip_address}" # LAN側IPアドレスを設定
 }
@@ -171,6 +157,10 @@ exec >/tmp/setup.log 2>&1
 
 ```sh
 [ -n "${lan_ipv6_address}" ] && {
+    # UCI操作用ヘルパー関数
+    SET() { uci -q set "${SEC}${SEC:+.}" "$@"; }
+    DEL() { uci -q delete "${SEC}${SEC:+.}" "$@"; }
+    
     local SEC=network
     DEL lan.ip6assign              # IPv6プレフィックス委譲を無効化
     SET lan.ip6addr="${lan_ipv6_address}" # 固定IPv6アドレスを設定
@@ -186,16 +176,25 @@ exec >/tmp/setup.log 2>&1
 
 ```sh
 [ -n "${language}" ] && {
+    # UCI操作用ヘルパー関数
+    SET() { uci -q set "${SEC}${SEC:+.}" "$@"; }
+    
     local SEC=system
     SET @system[0].language="${language}" # UI言語設定
 }
 
 [ -n "${timezone}" ] && {
+    # UCI操作用ヘルパー関数
+    SET() { uci -q set "${SEC}${SEC:+.}" "$@"; }
+    
     local SEC=system
     SET @system[0].timezone="${timezone}" # タイムゾーン（例: JST-9）
 }
 
 [ -n "${zonename}" ] && {
+    # UCI操作用ヘルパー関数
+    SET() { uci -q set "${SEC}${SEC:+.}" "$@"; }
+    
     local SEC=system
     SET @system[0].zonename="${zonename}" # ゾーン名（例: Asia/Tokyo）
 }
@@ -210,11 +209,17 @@ exec >/tmp/setup.log 2>&1
 
 ```sh
 [ -n "${ssh_interface}" ] && {
+    # UCI操作用ヘルパー関数
+    SET() { uci -q set "${SEC}${SEC:+.}" "$@"; }
+    
     local SEC=dropbear
     SET @dropbear[0].Interface="${ssh_interface}" # SSH待受インターフェース
 }
 
 [ -n "${ssh_port}" ] && {
+    # UCI操作用ヘルパー関数
+    SET() { uci -q set "${SEC}${SEC:+.}" "$@"; }
+    
     local SEC=dropbear
     SET @dropbear[0].Port="${ssh_port}" # SSH待受ポート番号
 }
@@ -229,6 +234,9 @@ exec >/tmp/setup.log 2>&1
 
 ```sh
 [ -n "${flow_offloading_type}" ] && {
+    # UCI操作用ヘルパー関数
+    SET() { uci -q set "${SEC}${SEC:+.}" "$@"; }
+    
     local SEC=firewall
     SET @defaults[0].flow_offloading='1' # ソフトウェアオフローディング有効化
     # ハードウェアオフローディング対応の場合
@@ -247,6 +255,12 @@ exec >/tmp/setup.log 2>&1
 ```sh
 { [ "${wifi_mode}" = "standard" ] || [ "${wifi_mode}" = "usteer" ]; } && 
 [ -n "${wlan_ssid}" ] && [ -n "${wlan_password}" ] && [ "${#wlan_password}" -ge 8 ] && {
+    # UCI操作用ヘルパー関数
+    SET() { uci -q set "${SEC}${SEC:+.}" "$@"; }
+    
+    # このセクション固有の変数
+    COUNTRY="${country:-00}"  # 規制国コード
+    
     local SEC=wireless
     wireless_cfg=$(uci -q show wireless)
     
@@ -313,6 +327,9 @@ exec >/tmp/setup.log 2>&1
 
 ```sh
 [ "${connection_type}" = "pppoe" ] && [ -n "${pppoe_username}" ] && {
+    # UCI操作用ヘルパー関数
+    SET() { uci -q set "${SEC}${SEC:+.}" "$@"; }
+    
     local SEC=network
     SET wan.proto='pppoe'                   # WANプロトコルをPPPoEに変更
     SET wan.username="${pppoe_username}"    # プロバイダユーザー名
@@ -331,6 +348,52 @@ exec >/tmp/setup.log 2>&1
 ```sh
 [ "${connection_type}" = "auto" -o "${connection_type}" = "dslite" ] && 
 [ -n "${dslite_aftr_address}" ] && {
+    # UCI操作用ヘルパー関数
+    SET() { uci -q set "${SEC}${SEC:+.}" "$@"; }
+    ADDLIST() { uci add_list "${SEC}${SEC:+.}" "$@"; }
+    DELLIST() { uci del_list "${SEC}${SEC:+.}" "$@"; }
+    
+    # このセクション固有の変数
+    WAN="$(uci -q get network.wan.device || echo wan)"  # WANデバイス名
+    DSL="dsl"       # DS-Lite IPv4インターフェース
+    DSL6="dsl6"     # DS-Lite IPv6インターフェース
+    
+    # WAN接続を無効化する関数
+    disable_wan() {
+        local SEC=network
+        SET wan.disabled='1'   # WANインターフェース無効化
+        SET wan.auto='0'       # 自動起動無効化
+        SET wan6.disabled='1'  # WAN IPv6無効化
+        SET wan6.auto='0'
+    }
+    
+    # DHCPリレーモードを設定する関数
+    dhcp_relay() {
+        local SEC=dhcp
+        SET $1=dhcp
+        SET $1.interface="$1"
+        SET $1.master='1'           # マスターモード
+        SET $1.ra='relay'           # Router Advertisementリレー
+        SET $1.dhcpv6='relay'       # DHCPv6リレー
+        SET $1.ndp='relay'          # NDPリレー
+        SET $1.ignore='1'           # DHCPサーバー機能無効
+        SET lan.ra='relay'
+        SET lan.dhcpv6='relay'
+        SET lan.ndp='relay'
+        SET lan.force='1'
+    }
+    
+    # ファイアウォールのWANゾーンを変更する関数
+    firewall_wan() {
+        local SEC=firewall
+        DELLIST @zone[1].network="wan"   # 既存のwan/wan6を削除
+        DELLIST @zone[1].network="wan6"
+        ADDLIST @zone[1].network="$1"    # 新しいインターフェースを追加
+        ADDLIST @zone[1].network="$2"
+        SET @zone[1].masq='1'            # NATマスカレード有効化
+        SET @zone[1].mtu_fix='1'         # MTU自動調整有効化
+    }
+    
     local SEC=network
     disable_wan  # 既存WAN設定を無効化
     
@@ -364,6 +427,52 @@ exec >/tmp/setup.log 2>&1
 ```sh
 [ "${connection_type}" = "auto" -o "${connection_type}" = "mape" ] && 
 [ -n "${mape_br}" ] && {
+    # UCI操作用ヘルパー関数
+    SET() { uci -q set "${SEC}${SEC:+.}" "$@"; }
+    ADDLIST() { uci add_list "${SEC}${SEC:+.}" "$@"; }
+    DELLIST() { uci del_list "${SEC}${SEC:+.}" "$@"; }
+    
+    # このセクション固有の変数
+    WAN="$(uci -q get network.wan.device || echo wan)"  # WANデバイス名
+    MAPE="mape"     # MAP-E IPv4インターフェース
+    MAPE6="mape6"   # MAP-E IPv6インターフェース
+    
+    # WAN接続を無効化する関数
+    disable_wan() {
+        local SEC=network
+        SET wan.disabled='1'
+        SET wan.auto='0'
+        SET wan6.disabled='1'
+        SET wan6.auto='0'
+    }
+    
+    # DHCPリレーモードを設定する関数
+    dhcp_relay() {
+        local SEC=dhcp
+        SET $1=dhcp
+        SET $1.interface="$1"
+        SET $1.master='1'
+        SET $1.ra='relay'
+        SET $1.dhcpv6='relay'
+        SET $1.ndp='relay'
+        SET $1.ignore='1'
+        SET lan.ra='relay'
+        SET lan.dhcpv6='relay'
+        SET lan.ndp='relay'
+        SET lan.force='1'
+    }
+    
+    # ファイアウォールのWANゾーンを変更する関数
+    firewall_wan() {
+        local SEC=firewall
+        DELLIST @zone[1].network="wan"
+        DELLIST @zone[1].network="wan6"
+        ADDLIST @zone[1].network="$1"
+        ADDLIST @zone[1].network="$2"
+        SET @zone[1].masq='1'
+        SET @zone[1].mtu_fix='1'
+    }
+    
     local SEC=network
     disable_wan
     
@@ -399,15 +508,23 @@ exec >/tmp/setup.log 2>&1
 
     # map.shスクリプトのパッチ適用（日本IPv6 IPoE対応）
     MAP_SH="/lib/netifd/proto/map.sh"
-    cp "$MAP_SH" "$MAP_SH".bak
+    cp "$MAP_SH" "$MAP_SH".bak  # オリジナルをバックアップ
     
-    # SNAT除外ポート機能追加
+    # SNAT除外ポート機能を追加
+    # ファイル先頭にDONT_SNAT_TO変数を定義（特定ポートをSNATから除外可能にする）
     sed -i '1a # github.com/fakemanhk/openwrt-jp-ipoe\nDONT_SNAT_TO="0"' "$MAP_SH"
-    # ip4prefixlenのデフォルト値削除（共有アドレス対応）
-    sed -i '/\[ -z "\$ip4prefixlen" \] && ip4prefixlen=32/d' "$MAP_SH"
-    # MTU値を1460に変更
+    
+    # MTU値を1280から1460に変更
+    # 理由: IPv6トンネルのオーバーヘッドを考慮した最適値
     sed -i 's/mtu:-1280/mtu:-1460/g' "$MAP_SH"
-    # SNAT処理をnftablesベースに書き換え（ポートマッピング対応）
+    
+    # SNAT処理を完全書き換え（iptablesからnftablesへ移行）
+    # 元のコード: json_add_objectによる単純なSNAT設定
+    # 新しいコード: nftablesを使用した高度なポートマッピング
+    # - PSIDに基づくポート範囲を取得
+    # - DONT_SNAT_TO変数で指定されたポートを除外
+    # - numgen（番号生成器）を使って利用可能ポートにラウンドロビン分散
+    # - icmp/tcp/udpの各プロトコルに対して個別にルール作成
     sed -i '/if \[ -z "\$(eval "echo \\$RULE_\${k}_PORTSETS")"/,/^[[:space:]]*fi$/c\
 if [ -z "$(eval "echo \\$RULE_${k}_PORTSETS")" ]; then\
 json_add_object ""\
@@ -449,6 +566,23 @@ fi' "$MAP_SH"
 
 ```sh
 [ "${connection_type}" = "ap" ] && [ -n "${ap_ip_address}" ] && {
+    # UCI操作用ヘルパー関数
+    SET() { uci -q set "${SEC}${SEC:+.}" "$@"; }
+    
+    # このセクション固有の変数
+    LAN="$(uci -q get network.lan.device || echo lan)"  # LANデバイス名
+    AP="ap"         # アクセスポイントモードIPv4
+    AP6="ap6"       # アクセスポイントモードIPv6
+    
+    # WAN接続を無効化する関数
+    disable_wan() {
+        local SEC=network
+        SET wan.disabled='1'
+        SET wan.auto='0'
+        SET wan6.disabled='1'
+        SET wan6.auto='0'
+    }
+    
     disable_wan  # WAN機能を無効化
     
     {
@@ -497,6 +631,9 @@ fi' "$MAP_SH"
 
 ```sh
 [ -n "${enable_ttyd}" ] && {
+    # UCI操作用ヘルパー関数
+    SET() { uci -q set "${SEC}${SEC:+.}" "$@"; }
+    
     local SEC=ttyd
     SET @ttyd[0].ipv6='1'                     # IPv6対応
     SET @ttyd[0].command='/bin/login -f root' # rootで自動ログイン
@@ -512,6 +649,9 @@ fi' "$MAP_SH"
 
 ```sh
 [ -n "${enable_irqbalance}" ] && {
+    # UCI操作用ヘルパー関数
+    SET() { uci -q set "${SEC}${SEC:+.}" "$@"; }
+    
     local SEC=irqbalance
     SET irqbalance=irqbalance
     SET irqbalance.enabled='1'  # IRQ割り込みを複数CPUに分散
@@ -527,6 +667,13 @@ fi' "$MAP_SH"
 
 ```sh
 [ -n "${enable_samba4}" ] && {
+    # UCI操作用ヘルパー関数
+    SET() { uci -q set "${SEC}${SEC:+.}" "$@"; }
+    
+    # このセクション固有の変数
+    NAS="openwrt"   # Samba共有名
+    MNT="/mnt/sda"  # マウントポイント
+    
     local SEC=samba4
     SET @samba[0]=samba
     SET @samba[0].workgroup='WORKGROUP'              # ワークグループ名
@@ -557,6 +704,9 @@ fi' "$MAP_SH"
 
 ```sh
 [ -n "${enable_adblock_fast}" ] && {
+    # UCI操作用ヘルパー関数
+    SET() { uci -q set "${SEC}${SEC:+.}" "$@"; }
+    
     local SEC=adblock-fast
     SET config.enabled='1'              # 広告ブロック有効化
     SET config.procd_trigger_wan6='1'   # IPv6接続時もトリガー
@@ -581,6 +731,9 @@ fi' "$MAP_SH"
 
 ```sh
 [ -n "${enable_usb_rndis}" ] && {
+    # UCI操作用ヘルパー関数
+    ADDLIST() { uci add_list "${SEC}${SEC:+.}" "$@"; }
+    
     # USBテザリング用カーネルモジュールを自動読込
     printf '%s\n%s\n' "rndis_host" "cdc_ether" > /etc/modules.d/99-usb-net
     local SEC=network
@@ -597,6 +750,9 @@ fi' "$MAP_SH"
 
 ```sh
 [ -n "${enable_usb_gadget}" ] && [ -d /boot ] && {
+    # UCI操作用ヘルパー関数
+    ADDLIST() { uci add_list "${SEC}${SEC:+.}" "$@"; }
+    
     # Raspberry Pi config.txtにdwc2オーバーレイ追加
     echo 'dtoverlay=dwc2' >> /boot/config.txt
     # カーネルコマンドラインにモジュール読込指定
@@ -617,6 +773,8 @@ fi' "$MAP_SH"
 
 ```sh
 [ -n "${net_optimizer}" ] && [ "${net_optimizer}" != "disabled" ] && {
+    # このセクション固有の変数
+    MEM=$(awk '/MemTotal/{print int($2/1024)}' /proc/meminfo)  # 搭載メモリ(MB)
     C=/etc/sysctl.d/99-net-opt.conf
     P=$(grep -c ^processor /proc/cpuinfo)  # CPU数を取得
     
@@ -660,6 +818,12 @@ fi' "$MAP_SH"
 
 ```sh
 [ -n "${enable_dnsmasq}" ] && [ "${enable_dnsmasq}" != "disabled" ] && {
+    # UCI操作用ヘルパー関数
+    SET() { uci -q set "${SEC}${SEC:+.}" "$@"; }
+    
+    # このセクション固有の変数
+    MEM=$(awk '/MemTotal/{print int($2/1024)}' /proc/meminfo)  # 搭載メモリ(MB)
+    
     local SEC=dhcp
     
     # autoモード：メモリ量に応じてキャッシュサイズを自動設定
@@ -692,51 +856,6 @@ fi' "$MAP_SH"
 ```sh
 [ -n "${enable_sd_resize}" ] && {
     :  # 将来の実装用プレースホルダー
-}
-```
-
-</details>
-
-### 補助関数
-
-<details>
-<summary>disable_wan / dhcp_relay / firewall_wan</summary>
-
-```sh
-# WAN接続を無効化する関数
-disable_wan() {
-    local SEC=network
-    SET wan.disabled='1'   # WANインターフェース無効化
-    SET wan.auto='0'       # 自動起動無効化
-    SET wan6.disabled='1'  # WAN IPv6無効化
-    SET wan6.auto='0'
-}
-
-# DHCPリレーモードを設定する関数
-dhcp_relay() {
-    local SEC=dhcp
-    SET $1=dhcp
-    SET $1.interface="$1"
-    SET $1.master='1'           # マスターモード
-    SET $1.ra='relay'           # Router Advertisementリレー
-    SET $1.dhcpv6='relay'       # DHCPv6リレー
-    SET $1.ndp='relay'          # NDPリレー
-    SET $1.ignore='1'           # DHCPサーバー機能無効
-    SET lan.ra='relay'
-    SET lan.dhcpv6='relay'
-    SET lan.ndp='relay'
-    SET lan.force='1'
-}
-
-# ファイアウォールのWANゾーンを変更する関数
-firewall_wan() {
-    local SEC=firewall
-    DELLIST @zone[1].network="wan"   # 既存のwan/wan6を削除
-    DELLIST @zone[1].network="wan6"
-    ADDLIST @zone[1].network="$1"    # 新しいインターフェースを追加
-    ADDLIST @zone[1].network="$2"
-    SET @zone[1].masq='1'            # NATマスカレード有効化
-    SET @zone[1].mtu_fix='1'         # MTU自動調整有効化
 }
 ```
 
