@@ -1,3 +1,17 @@
+const mapRulesData = {
+  "basicMapRules": [
+      {
+          "brIpv6Address": "xxxx:xxxx:xxxx:xxxx::64",
+          "eaBitLength": "xx",
+          "ipv4Prefix": "xxx.xxx.0.0",
+          "ipv4PrefixLength": "xx",
+          "ipv6Prefix": "xxxx:xxxx:xxxx::",
+          "ipv6PrefixLength": "xx",
+          "psIdOffset": "xx"
+      }
+  ]
+};
+
 const dsliteRulesData = {
     "aftrRules": [
       {
@@ -21,20 +35,6 @@ const dsliteRulesData = {
       }
     ]
   };
-
-const mapRulesData = {
-  "basicMapRules": [
-      {
-          "brIpv6Address": "xxxx:xxxx:xxxx:xxxx::64",
-          "eaBitLength": "xx",
-          "ipv4Prefix": "xxx.xxx.0.0",
-          "ipv4PrefixLength": "xx",
-          "ipv6Prefix": "xxxx:xxxx:xxxx::",
-          "ipv6PrefixLength": "xx",
-          "psIdOffset": "xx"
-      }
-  ]
-};
 
 // OpenWrt timezone data mapping
 const openwrtTimezones = {
@@ -244,38 +244,7 @@ function ipv6ToBigInt(ipv6) {
   }
   
   const noticeMessages = {
-    en: "We do not store, share, or track personal information.",
-    ar: "نحن لا نخزن أو نشارك أو نتتبع المعلومات الشخصية.",
-    bg: "Ние не съхраняваме, споделяме или проследяваме лична информация.",
-    ca: "No emmagatzemem, compartim ni seguim informació personal.",
-    cs: "Neukládáme, nesdílíme ani nesledujeme osobní údaje.",
-    da: "Vi gemmer, deler eller sporer ikke personlige oplysninger.",
-    de: "Wir speichern, teilen oder verfolgen keine persönlichen Daten.",
-    el: "Δεν αποθηκεύουμε, κοινοποιούμε ή παρακολουθούμε προσωπικές πληροφορίες.",
-    es: "No almacenamos, compartimos ni rastreamos información personal.",
-    fi: "Emme tallenna, jaa tai seuraa henkilötietoja.",
-    fr: "Nous ne stockons, partageons ou suivons aucune information personnelle.",
-    he: "אנחנו לא שומרים, משתפים או עוקבים אחר מידע אישי.",
-    hu: "Nem tárolunk, osztunk meg vagy követünk személyes adatokat.",
-    it: "Non memorizziamo, condividiamo o tracciamo informazioni personali.",
     ja: "個人情報の保存共有追跡はしません",
-    ko: "개인정보의 저장, 공유 또는 추적은 하지 않습니다.",
-    lt: "Mes nesaugome, nebendriname ir nesekame asmeninės informacijos.",
-    ms: "Kami tidak menyimpan, berkongsi atau menjejaki maklumat peribadi.",
-    nl: "Wij slaan geen persoonlijke gegevens op, delen deze niet of volgen deze niet.",
-    no: "Vi lagrer, deler eller sporer ikke personlig informasjon.",
-    pl: "Nie przechowujemy, nie udostępniamy ani nie śledzimy danych osobowych.",
-    pt: "Não armazenamos, partilhamos ou rastreamos informações pessoais.",
-    pt_br: "Não armazenamos, compartilhamos ou rastreamos informações pessoais.",
-    ro: "Nu stocăm, partajăm sau urmărim informații personale.",
-    ru: "Мы не сохраняем, не передаем и не отслеживаем личную информацию.",
-    sk: "Neukladáme, nezdieľame ani nesledujeme osobné údaje.",
-    sv: "Vi lagrar, delar eller spårar inte personlig information.",
-    tr: "Kişisel bilgileri saklamayız, paylaşmayız veya izlemeyiz.",
-    uk: "Ми не зберігаємо, не передаємо та не відстежуємо особисту інформацію.",
-    vi: "Chúng tôi không lưu trữ, chia sẻ hoặc theo dõi thông tin cá nhân.",
-    zh_cn: "我们不会保存、共享或追踪个人信息。",
-    zh_tw: "我們不會儲存、分享或追蹤個人資訊。"
   };  
 
   function getNotice(langCode) {
@@ -302,36 +271,6 @@ function ipv6ToBigInt(ipv6) {
     const country = (cf && cf.country) ? cf.country.toUpperCase() : '';
     switch (country) {
       case 'JP': return 'ja';
-      case 'CN': return 'zh_cn';
-      case 'TW': return 'zh_tw';
-      case 'HK': return 'zh_tw';
-      case 'MO': return 'zh_tw';
-      case 'BR': return 'pt_br';
-      case 'PT': return 'pt';
-      case 'KR': return 'ko';
-      case 'DE': return 'de';
-      case 'FR': return 'fr';
-      case 'ES': return 'es';
-      case 'IT': return 'it';
-      case 'RU': return 'ru';
-      case 'UA': return 'uk';
-      case 'TR': return 'tr';
-      case 'PL': return 'pl';
-      case 'NL': return 'nl';
-      case 'NO': return 'no';
-      case 'SE': return 'sv';
-      case 'DK': return 'da';
-      case 'FI': return 'fi';
-      case 'CZ': return 'cs';
-      case 'SK': return 'sk';
-      case 'BG': return 'bg';
-      case 'RO': return 'ro';
-      case 'HU': return 'hu';
-      case 'GR': return 'el';
-      case 'IL': return 'he';
-      case 'MY': return 'ms';
-      case 'LT': return 'lt';
-      case 'VN': return 'vi';
       default: return 'en';
     }
   }
