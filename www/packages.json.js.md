@@ -116,7 +116,7 @@
 <details>
 <summary>luci-app-wol</summary>
 
-Wake on LAN
+- Wake on LAN
 - MACアドレスを登録
 
 </details>
@@ -125,7 +125,7 @@ Wake on LAN
 <details>
 <summary>luci-app-ddns</summary>
 
-Dynamic DNS
+- Dynamic DNS
 - No-IP、DuckDNS等のサービスに対応
 
 </details>
@@ -173,7 +173,6 @@ Dynamic DNS
 <details>
 <summary>luci-app-travelmate</summary>
 
-Travelmate
 - 複数SSID登録で自動接続
 
 </details>
@@ -344,7 +343,6 @@ MTR
 <details>
 <summary>speedtest-netperf</summary>
 
-Speedtest
 - ダウンロード/アップロード速度測定
 
 </details>
@@ -483,7 +481,7 @@ Speedtest
 <details>
 <summary>owut</summary>
 
-OpenWrt Update Tool
+- OpenWrt Update Tool
 
 </details>
 
@@ -524,7 +522,6 @@ Attended sysUpgrade Client
 <details>
 <summary>zerotier</summary>
 
-ZeroTier SDN
 - NAT越え
 
 </details>
