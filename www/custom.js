@@ -3418,7 +3418,7 @@ function handlePackageSelection(e) {
             const depPkg = findPackageById(depName);
             if (depPkg) {
                 const depCheckbox = document.querySelector(`[data-unique-id="${depPkg.uniqueId || depPkg.id}"]`);
-                if (depCheckbox) {
+                if (depCheckbox && !depCheckbox.disabled) {
                     depCheckbox.checked = isChecked;
                     
                     const depDeps = depCheckbox.getAttribute('data-dependencies');
@@ -3427,7 +3427,9 @@ function handlePackageSelection(e) {
                             const subDepPkg = findPackageById(subDepName);
                             if (subDepPkg) {
                                 const subDepCheckbox = document.querySelector(`[data-unique-id="${subDepPkg.uniqueId || subDepPkg.id}"]`);
-                                if (subDepCheckbox) subDepCheckbox.checked = true;
+                                if (subDepCheckbox && !subDepCheckbox.disabled) {
+                                    subDepCheckbox.checked = true;
+                                }
                             }
                         });
                     }
