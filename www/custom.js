@@ -1337,6 +1337,11 @@ function updatePackageListToTextarea(source = 'unknown') {
             console.log(`Skipping virtual package: ${pkgName}`);
             return;
         }
+
+        if (cb.disabled) {
+            console.log(`Skipping disabled package: ${pkgName}`);
+            return;
+        }
         
         const packageElement = cb.closest('.package-item') || cb.closest('label');
         if (packageElement && packageElement.style.display === 'none') {
