@@ -3419,9 +3419,7 @@ function handlePackageSelection(e) {
                             const subDepPkg = findPackageById(subDepName);
                             if (subDepPkg) {
                                 const subDepCheckbox = document.querySelector(`[data-unique-id="${subDepPkg.uniqueId || subDepPkg.id}"]`);
-                                if (subDepCheckbox) {
-                                    subDepCheckbox.checked = isChecked;
-                                }
+                                if (subDepCheckbox) subDepCheckbox.checked = true;
                             }
                         });
                     }
@@ -3429,9 +3427,7 @@ function handlePackageSelection(e) {
             }
         });
     }
-    
-    updatePackageSizeDisplay();
-    updatePackageListToTextarea('package-selection');
+    updateAllPackageState('force-update');
 }
 
 function findPackageById(id) {
