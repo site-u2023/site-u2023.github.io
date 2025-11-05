@@ -3039,8 +3039,9 @@ function updatePackageAvailabilityUI(uniqueId, isAvailable) {
             UI.updateElement(label, { show: isAvailable });
             if (!isAvailable) {
                 checkbox.checked = false;
+                checkbox.disabled = true;
             } else {
-                // ★★★ 追加：利用可能になったら初期値を復元 ★★★
+                checkbox.disabled = false;
                 const pkgInfo = findPackageById(checkbox.getAttribute('data-package'));
                 if (pkgInfo && pkgInfo.checked === true) {
                     checkbox.checked = true;
@@ -3055,6 +3056,7 @@ function updatePackageAvailabilityUI(uniqueId, isAvailable) {
     if (isMainPackage) {
         if (isAvailable) {
             UI.updateElement(packageItem, { show: true });
+            checkbox.disabled = false;
             const pkgInfo = findPackageById(checkbox.getAttribute('data-package'));
             if (pkgInfo && pkgInfo.checked === true) {
                 checkbox.checked = true;
@@ -3069,8 +3071,12 @@ function updatePackageAvailabilityUI(uniqueId, isAvailable) {
         } else {
             UI.updateElement(packageItem, { show: false });
             checkbox.checked = false;
+            checkbox.disabled = true;
             const depCheckboxes = packageItem.querySelectorAll('.package-dependent input[type="checkbox"]');
-            depCheckboxes.forEach(depCb => depCb.checked = false);
+            depCheckboxes.forEach(depCb => {
+                depCb.checked = false;
+                depCb.disabled = true;
+            });
         }
     } else {
         const depLabel = checkbox.closest('label');
@@ -3078,7 +3084,9 @@ function updatePackageAvailabilityUI(uniqueId, isAvailable) {
             UI.updateElement(depLabel, { show: isAvailable });
             if (!isAvailable) {
                 checkbox.checked = false;
+                checkbox.disabled = true;
             } else {
+                checkbox.disabled = false;
                 const pkgInfo = findPackageById(checkbox.getAttribute('data-package'));
                 if (pkgInfo && pkgInfo.checked === true) {
                     checkbox.checked = true;
