@@ -932,7 +932,7 @@ function updateTerminalExplanation() {
         case 'aios':
             explanationKey = 'aiosExplanation';
             break;
-        case 'aios_light':
+        case 'aioslight':
             explanationKey = 'aioslightExplanation';
             break;
         case 'ssh':
