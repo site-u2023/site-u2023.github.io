@@ -37,7 +37,7 @@ const DEFAULT_TERMINALS = {
   },
   aioslight: {
     name: 'aios light',
-    command: `mkdir -p ${BASE_DIR} && wget --no-check-certificate -O ${AIOS_LIGHT_PATH} "${AIOS_LIGHT_URL}" && chmod +x ${AIOS_LIGHT_PATH} && ${AIOS_LIGHT_PATH}`
+    command: `mkdir -p ${BASE_DIR} && wget --no-check-certificate -O ${AIOS_LIGHT_PATH} "${PROXY_URL}${AIOS_LIGHT_URL}" && chmod +x ${AIOS_LIGHT_PATH} && ${AIOS_LIGHT_PATH}`
   },
   ssh: {
     name: 'SSH',
