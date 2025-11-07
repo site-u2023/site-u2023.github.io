@@ -140,5 +140,13 @@
     "tr-dnsmasq-auto-optimization": "Automatic Optimization",
     "tr-dnsmasq-optimization-disabled": "Optimization Disabled",
 
-    "tr-feedback-link": "Forum"
+    "tr-feedback-link": "Forum",
+
+    "tr-ui-mode-select": "Select UI mode:",
+    "tr-ui-whiptail": "whiptail (dialog-based TUI)",
+    "tr-ui-simple": "simple (list-based TUI)",
+    "tr-ui-choice": "Choice",
+    "tr-ui-installing": "Installing whiptail...",
+    "tr-ui-install-success": "whiptail installed successfully!",
+    "tr-ui-install-failed": "Failed to install, using simple mode"  
 }
