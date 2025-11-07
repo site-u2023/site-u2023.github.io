@@ -101,7 +101,7 @@ const translations = {
         langJa: '日本語',
         // Terminal Explanations
         aiosExplanation: 'メニュー形式スクリプト',
-        aioslightExplanation: '対話形式簡易版スクリプト',
+        aioslightExplanation: 'メニュー形式簡易版スクリプト',
         sshExplanation: 'SSHログイン',
         // iPhone
         termius: 'Termius (SSH)',
@@ -162,7 +162,7 @@ const translations = {
         langJa: '日本語',
         // Terminal Explanations
         aiosExplanation: 'Menu-based script',
-        aioslightExplanation: 'Interactive simplified script',
+        aioslightExplanation: 'Menu-based simplified script',
         sshExplanation: 'SSH login',
         // iPhone
         termius: 'Termius (SSH)',
