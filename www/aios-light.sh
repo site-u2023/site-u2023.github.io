@@ -93,9 +93,15 @@ download_files() {
     wget -q -O "$PACKAGES_JSON" "$PACKAGES_URL" || return 1
     
     # Download language file based on detected country
+    echo "Downloading language file... (Country: ${ISP_COUNTRY:-Unknown})"
     if [ "$ISP_COUNTRY" = "JP" ]; then
         LANG="ja"
-        wget -q -O "$LANG_JSON" "$LANG_JA_URL" || wget -q -O "$LANG_JSON" "$LANG_EN_URL"
+        if wget -q -O "$LANG_JSON" "$LANG_JA_URL"; then
+            echo "Japanese language file downloaded"
+        else
+            echo "Failed to download Japanese, falling back to English"
+            wget -q -O "$LANG_JSON" "$LANG_EN_URL"
+        fi
     else
         LANG="en"
         wget -q -O "$LANG_JSON" "$LANG_EN_URL"
@@ -403,6 +409,7 @@ screen_package_selection() {
     while true; do
         local checklist_items=""
         
+        # プロセス置換を使用してサブシェル問題を回避
         while read pkg_id; do
             pkg_name=$(get_package_name "$pkg_id")
             [ -z "$pkg_name" ] && pkg_name="$pkg_id"
@@ -417,11 +424,16 @@ screen_package_selection() {
         done < <(get_category_packages "$cat_id")
         
         selected=$(eval "show_checklist '$cat_name' '$(tr 'package-search')' $checklist_items")
+        local exit_code=$?
         
         if [ "$UI_MODE" = "whiptail" ]; then
-            get_category_packages "$cat_id" | while read pkg_id; do
+            # キャンセル時は何もしない
+            [ $exit_code -ne 0 ] && return
+            
+            # 選択をクリアして再設定
+            while read pkg_id; do
                 sed -i "/^${pkg_id}$/d" "$SELECTED_PACKAGES"
-            done
+            done < <(get_category_packages "$cat_id")
             
             for pkg in $selected; do
                 pkg=$(echo "$pkg" | tr -d '"')
@@ -449,11 +461,11 @@ screen_category() {
         local menu_items=""
         local i=1
         
-        get_category_items "$cat_id" | while read item_id; do
+        while read item_id; do
             item_label=$(get_item_label "$cat_id" "$item_id")
             menu_items="$menu_items $i \"$item_label\""
             i=$((i+1))
-        done
+        done < <(get_category_items "$cat_id")
         
         choice=$(eval "show_menu '$cat_title' $menu_items b '$(tr 'feedback-link')'")
         [ "$choice" = "b" -o -z "$choice" ] && return
@@ -495,11 +507,11 @@ handle_item() {
         radio-group)
             local radio_items=""
             local i=1
-            get_radio_options "$cat_id" "$item_id" | while read opt_value; do
+            while read opt_value; do
                 opt_label=$(get_radio_option_label "$cat_id" "$item_id" "$opt_value")
                 radio_items="$radio_items $i \"$opt_label\""
                 i=$((i+1))
-            done
+            done < <(get_radio_options "$cat_id" "$item_id")
             
             selected=$(eval "show_menu '$label' $radio_items")
             selected_value=$(get_radio_options "$cat_id" "$item_id" | sed -n "${selected}p")
@@ -585,11 +597,13 @@ main_menu() {
         local menu_items=""
         local i=1
         
-        get_categories | while read cat_id; do
+        # メニューマップファイルを作成
+        : > /tmp/menu_map
+        while read cat_id; do
             cat_title=$(get_category_title "$cat_id")
-            echo "$i:$cat_id:$cat_title"
+            echo "$i:$cat_id:$cat_title" >> /tmp/menu_map
             i=$((i+1))
-        done > /tmp/menu_map
+        done < <(get_categories)
         
         menu_items="1 \"$(tr 'custom-packages')\""
         i=2
@@ -756,6 +770,10 @@ main() {
     echo ""
     
     select_ui_mode
+    
+    echo ""
+    echo "Starting menu system..."
+    echo ""
     
     main_menu
 }
