@@ -910,6 +910,7 @@ export default {
     // レスポンス構築
     const responsePayload = {
       notice,
+      language: lang,
       ipv4: clientIPv4 || null,
       ipv6: clientIPv6 || null,
       country: cf.country || null,
