@@ -278,8 +278,7 @@ whiptail_basic_settings() {
         case "$choice" in
             1)
                 # Language with auto-detected default
-                default_lang="en"
-                [ -n "$ISP_COUNTRY" ] && [ "$ISP_COUNTRY" = "JP" ] && default_lang="ja"
+                default_lang="${AUTO_LANGUAGE:-en}"
                 lang=$(whiptail --inputbox "Language (e.g., ja, en):" 10 60 "$default_lang" 3>&1 1>&2 2>&3)
                 [ -n "$lang" ] && sed -i "/^language=/d" "$SETUP_VARS" && echo "language='$lang'" >> "$SETUP_VARS"
                 ;;
@@ -685,8 +684,7 @@ simple_basic_settings() {
     echo ""
     
     # Language with auto-detected default
-    default_lang="en"
-    [ -n "$ISP_COUNTRY" ] && [ "$ISP_COUNTRY" = "JP" ] && default_lang="ja"
+    default_lang="${AUTO_LANGUAGE:-en}"
     printf "Language (ja/en) [default: $default_lang]: "
     read lang
     [ -z "$lang" ] && lang="$default_lang"
@@ -1009,6 +1007,7 @@ get_extended_device_info() {
         ISP_IPV6=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.ipv6' 2>/dev/null)
         ISP_COUNTRY=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.country' 2>/dev/null)
         ISP_REGION=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.regionName' 2>/dev/null)
+        AUTO_LANGUAGE=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.language' 2>/dev/null)
         AUTO_TIMEZONE=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.timezone' 2>/dev/null)
         AUTO_ZONENAME=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.zonename' 2>/dev/null)
         
@@ -1050,7 +1049,7 @@ get_extended_device_info() {
 
 # ========== MAIN ==========
 
-main() {
+aios_light_main() {
     clear
     echo "========================================"
     echo "  OpenWrt Device Setup Tool v$VERSION"
@@ -1105,4 +1104,4 @@ main() {
 }
 
 # Run main
-main
+aios_light_main
