@@ -403,7 +403,7 @@ screen_package_selection() {
     while true; do
         local checklist_items=""
         
-        get_category_packages "$cat_id" | while read pkg_id; do
+        while read pkg_id; do
             pkg_name=$(get_package_name "$pkg_id")
             [ -z "$pkg_name" ] && pkg_name="$pkg_id"
             
@@ -414,7 +414,7 @@ screen_package_selection() {
             fi
             
             checklist_items="$checklist_items $pkg_id \"$pkg_name\" $status"
-        done
+        done < <(get_category_packages "$cat_id")
         
         selected=$(eval "show_checklist '$cat_name' '$(tr 'package-search')' $checklist_items")
         
