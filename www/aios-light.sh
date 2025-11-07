@@ -16,6 +16,37 @@ SELECTED_PACKAGES="$CONFIG_DIR/selected_packages.txt"
 SETUP_VARS="$CONFIG_DIR/setup_vars.sh"
 OUTPUT_DIR="/tmp"
 
+# Package manager detection
+PKG_MGR=""
+detect_package_manager() {
+    if command -v opkg >/dev/null 2>&1; then
+        PKG_MGR="opkg"
+    elif command -v apk >/dev/null 2>&1; then
+        PKG_MGR="apk"
+    else
+        echo "Warning: No supported package manager found"
+        PKG_MGR="none"
+    fi
+}
+
+# Install package helper
+install_package() {
+    case "$PKG_MGR" in
+        opkg)
+            opkg update >/dev/null 2>&1
+            opkg install "$@"
+            ;;
+        apk)
+            apk update >/dev/null 2>&1
+            apk add "$@"
+            ;;
+        *)
+            echo "Cannot install packages: no package manager"
+            return 1
+            ;;
+    esac
+}
+
 # Detect UI mode
 UI_MODE=""
 select_ui_mode() {
@@ -29,8 +60,28 @@ select_ui_mode() {
         read choice
         [ "$choice" = "2" ] && UI_MODE="simple" || UI_MODE="whiptail"
     else
-        echo "whiptail not found, using simple menu"
-        UI_MODE="simple"
+        echo "whiptail not found"
+        echo ""
+        echo "Install whiptail for better UI experience?"
+        echo "1) Yes, install whiptail (TUI)"
+        echo "2) No, use simple menu"
+        printf "Choice [2]: "
+        read choice
+        
+        if [ "$choice" = "1" ]; then
+            echo "Installing whiptail..."
+            if install_package whiptail newt; then
+                echo "whiptail installed successfully!"
+                UI_MODE="whiptail"
+                sleep 1
+            else
+                echo "Failed to install whiptail, falling back to simple menu"
+                UI_MODE="simple"
+                sleep 2
+            fi
+        else
+            UI_MODE="simple"
+        fi
     fi
 }
 
@@ -226,13 +277,20 @@ whiptail_basic_settings() {
         
         case "$choice" in
             1)
-                lang=$(whiptail --inputbox "Language (e.g., ja, en):" 10 60 3>&1 1>&2 2>&3)
+                # Language with auto-detected default
+                default_lang="en"
+                [ -n "$ISP_COUNTRY" ] && [ "$ISP_COUNTRY" = "JP" ] && default_lang="ja"
+                lang=$(whiptail --inputbox "Language (e.g., ja, en):" 10 60 "$default_lang" 3>&1 1>&2 2>&3)
                 [ -n "$lang" ] && sed -i "/^language=/d" "$SETUP_VARS" && echo "language='$lang'" >> "$SETUP_VARS"
                 ;;
             2)
-                tz=$(whiptail --inputbox "Timezone (e.g., JST-9, UTC):" 10 60 3>&1 1>&2 2>&3)
+                # Timezone with auto-detected default
+                default_tz="${AUTO_TIMEZONE:-UTC}"
+                tz=$(whiptail --inputbox "Timezone (e.g., JST-9, UTC):" 10 60 "$default_tz" 3>&1 1>&2 2>&3)
                 [ -n "$tz" ] && sed -i "/^timezone=/d" "$SETUP_VARS" && echo "timezone='$tz'" >> "$SETUP_VARS"
-                zonename=$(whiptail --inputbox "Zonename (e.g., Asia/Tokyo):" 10 60 3>&1 1>&2 2>&3)
+                
+                default_zonename="${AUTO_ZONENAME:-UTC}"
+                zonename=$(whiptail --inputbox "Zonename (e.g., Asia/Tokyo):" 10 60 "$default_zonename" 3>&1 1>&2 2>&3)
                 [ -n "$zonename" ] && sed -i "/^zonename=/d" "$SETUP_VARS" && echo "zonename='$zonename'" >> "$SETUP_VARS"
                 ;;
             3)
@@ -375,7 +433,9 @@ whiptail_wifi_config() {
     password=$(whiptail --passwordbox "Wi-Fi Password (8+ chars):" 10 60 3>&1 1>&2 2>&3)
     [ -n "$password" ] && sed -i "/^wlan_password=/d" "$SETUP_VARS" && echo "wlan_password='$password'" >> "$SETUP_VARS"
     
-    country=$(whiptail --inputbox "Country Code (e.g., JP, US):" 10 60 "JP" 3>&1 1>&2 2>&3)
+    # Country code with auto-detected default
+    default_country="${ISP_COUNTRY:-JP}"
+    country=$(whiptail --inputbox "Country Code (e.g., JP, US):" 10 60 "$default_country" 3>&1 1>&2 2>&3)
     [ -n "$country" ] && sed -i "/^country=/d" "$SETUP_VARS" && echo "country='$country'" >> "$SETUP_VARS"
     
     whiptail --msgbox "Wi-Fi settings saved!" 8 40
@@ -516,13 +576,34 @@ simple_device_info() {
 }
 
 simple_package_menu() {
+    # Check if packages.json exists and has categories
+    if [ ! -f "$PACKAGES_JSON" ]; then
+        echo ""
+        echo "Error: packages.json not found!"
+        echo "Please ensure the file is downloaded."
+        printf "Press Enter to continue..."
+        read
+        return
+    fi
+    
     while true; do
         clear
         echo "=== Package Categories ==="
         echo ""
         
+        # Store categories in a temporary variable to avoid subshell issues
+        local categories=$(get_categories)
+        
+        if [ -z "$categories" ]; then
+            echo "Error: No categories found in packages.json"
+            echo ""
+            printf "Press Enter to continue..."
+            read
+            return
+        fi
+        
         local i=1
-        get_categories | while read cat_id; do
+        echo "$categories" | while read cat_id; do
             cat_name=$(get_category_name "$cat_id")
             echo "$i) $cat_name"
             i=$((i+1))
@@ -536,7 +617,7 @@ simple_package_menu() {
         case "$choice" in
             b|B) return ;;
             [0-9]*)
-                selected_cat=$(get_categories | sed -n "${choice}p")
+                selected_cat=$(echo "$categories" | sed -n "${choice}p")
                 if [ -n "$selected_cat" ]; then
                     simple_package_selection "$selected_cat"
                 fi
@@ -603,13 +684,27 @@ simple_basic_settings() {
     echo "=== Basic Settings ==="
     echo ""
     
-    printf "Language (ja/en) [skip=Enter]: "
+    # Language with auto-detected default
+    default_lang="en"
+    [ -n "$ISP_COUNTRY" ] && [ "$ISP_COUNTRY" = "JP" ] && default_lang="ja"
+    printf "Language (ja/en) [default: $default_lang]: "
     read lang
+    [ -z "$lang" ] && lang="$default_lang"
     [ -n "$lang" ] && sed -i "/^language=/d" "$SETUP_VARS" && echo "language='$lang'" >> "$SETUP_VARS"
     
-    printf "Timezone (e.g., JST-9) [skip=Enter]: "
+    # Timezone with auto-detected default
+    default_tz="${AUTO_TIMEZONE:-UTC}"
+    printf "Timezone (e.g., JST-9) [default: $default_tz]: "
     read tz
+    [ -z "$tz" ] && tz="$default_tz"
     [ -n "$tz" ] && sed -i "/^timezone=/d" "$SETUP_VARS" && echo "timezone='$tz'" >> "$SETUP_VARS"
+    
+    # Zonename with auto-detected default
+    default_zonename="${AUTO_ZONENAME:-UTC}"
+    printf "Zonename (e.g., Asia/Tokyo) [default: $default_zonename]: "
+    read zonename
+    [ -z "$zonename" ] && zonename="$default_zonename"
+    [ -n "$zonename" ] && sed -i "/^zonename=/d" "$SETUP_VARS" && echo "zonename='$zonename'" >> "$SETUP_VARS"
     
     printf "Device Name [skip=Enter]: "
     read hostname
@@ -629,6 +724,15 @@ simple_network_config() {
     clear
     echo "=== Network Configuration ==="
     echo ""
+    
+    # Show auto-detected info
+    if [ -n "$DETECTED_CONN_TYPE" ]; then
+        echo "Auto-detected: $DETECTED_CONN_TYPE"
+        [ "$DETECTED_CONN_TYPE" = "MAP-E" ] && [ -n "$MAPE_BR" ] && echo "  MAP-E BR: $MAPE_BR"
+        [ "$DETECTED_CONN_TYPE" = "DS-Lite" ] && [ -n "$DSLITE_AFTR" ] && echo "  DS-Lite AFTR: $DSLITE_AFTR"
+        echo ""
+    fi
+    
     echo "1) DHCP (Auto)"
     echo "2) PPPoE"
     echo "3) DS-Lite"
@@ -654,15 +758,27 @@ simple_network_config() {
             ;;
         3)
             echo "connection_type='dslite'" >> "$SETUP_VARS"
-            printf "AFTR Address: "
+            default_aftr="${DSLITE_AFTR}"
+            printf "AFTR Address [default: $default_aftr]: "
             read aftr
+            [ -z "$aftr" ] && aftr="$default_aftr"
             [ -n "$aftr" ] && echo "dslite_aftr_address='$aftr'" >> "$SETUP_VARS"
             ;;
         4)
             echo "connection_type='mape'" >> "$SETUP_VARS"
-            printf "BR Address: "
+            default_br="${MAPE_BR}"
+            printf "BR Address [default: $default_br]: "
             read br
+            [ -z "$br" ] && br="$default_br"
             [ -n "$br" ] && echo "mape_br='$br'" >> "$SETUP_VARS"
+            # Add other MAP-E parameters with defaults
+            [ -n "$MAPE_IPV4_PREFIX" ] && echo "mape_ipv4_prefix='$MAPE_IPV4_PREFIX'" >> "$SETUP_VARS"
+            [ -n "$MAPE_IPV4_PREFIXLEN" ] && echo "mape_ipv4_prefixlen='$MAPE_IPV4_PREFIXLEN'" >> "$SETUP_VARS"
+            [ -n "$MAPE_IPV6_PREFIX" ] && echo "mape_ipv6_prefix='$MAPE_IPV6_PREFIX'" >> "$SETUP_VARS"
+            [ -n "$MAPE_IPV6_PREFIXLEN" ] && echo "mape_ipv6_prefixlen='$MAPE_IPV6_PREFIXLEN'" >> "$SETUP_VARS"
+            [ -n "$MAPE_EALEN" ] && echo "mape_ealen='$MAPE_EALEN'" >> "$SETUP_VARS"
+            [ -n "$MAPE_PSIDLEN" ] && echo "mape_psidlen='$MAPE_PSIDLEN'" >> "$SETUP_VARS"
+            [ -n "$MAPE_PSID_OFFSET" ] && echo "mape_psid_offset='$MAPE_PSID_OFFSET'" >> "$SETUP_VARS"
             ;;
         5)
             echo "connection_type='ap'" >> "$SETUP_VARS"
@@ -704,8 +820,11 @@ simple_wifi_config() {
     echo ""
     [ -n "$password" ] && sed -i "/^wlan_password=/d" "$SETUP_VARS" && echo "wlan_password='$password'" >> "$SETUP_VARS"
     
-    printf "Country Code (JP/US): "
+    # Country code with auto-detected default
+    default_country="${ISP_COUNTRY:-JP}"
+    printf "Country Code (JP/US) [default: $default_country]: "
     read country
+    [ -z "$country" ] && country="$default_country"
     [ -n "$country" ] && sed -i "/^country=/d" "$SETUP_VARS" && echo "country='$country'" >> "$SETUP_VARS"
     
     echo ""
@@ -799,18 +918,44 @@ simple_review() {
 # ========== COMMON FUNCTIONS ==========
 
 generate_config_files() {
+    # Get language from setup vars
+    language=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+    
     # Generate postinst (package installation script)
     {
         echo "#!/bin/sh"
         echo "# Generated by device-setup.sh v$VERSION"
         echo "# Device: $DEVICE_MODEL ($DEVICE_TARGET)"
         echo ""
-        echo "opkg update"
+        echo "# Detect package manager"
+        echo "if command -v opkg >/dev/null 2>&1; then"
+        echo "    PKG_MGR=opkg"
+        echo "    opkg update"
+        echo "elif command -v apk >/dev/null 2>&1; then"
+        echo "    PKG_MGR=apk"
+        echo "    apk update"
+        echo "else"
+        echo "    echo 'Error: No supported package manager found'"
+        echo "    exit 1"
+        echo "fi"
+        echo ""
+        
+        if [ -n "$language" ]; then
+            echo "# Language packages"
+            echo "PKGS=\"luci-i18n-base-${language} luci-i18n-firewall-${language}\""
+            echo "[ \"\$PKG_MGR\" = \"opkg\" ] && opkg install \$PKGS"
+            echo "[ \"\$PKG_MGR\" = \"apk\" ] && apk add \$PKGS"
+            echo ""
+        fi
+        
         if [ -s "$SELECTED_PACKAGES" ]; then
+            echo "# Selected packages"
             cat "$SELECTED_PACKAGES" | while read pkg; do
-                echo "opkg install $pkg"
+                echo "[ \"\$PKG_MGR\" = \"opkg\" ] && opkg install $pkg"
+                echo "[ \"\$PKG_MGR\" = \"apk\" ] && apk add $pkg"
             done
         fi
+        echo ""
         echo "exit 0"
     } > "$OUTPUT_DIR/postinst"
     chmod +x "$OUTPUT_DIR/postinst"
@@ -910,6 +1055,11 @@ main() {
     echo "========================================"
     echo "  OpenWrt Device Setup Tool v$VERSION"
     echo "========================================"
+    echo ""
+    
+    # Detect package manager first
+    detect_package_manager
+    echo "Package manager: $PKG_MGR"
     echo ""
     
     # Initialize
