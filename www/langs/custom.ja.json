@@ -140,5 +140,13 @@
     "tr-dnsmasq-auto-optimization": "自動最適化",
     "tr-dnsmasq-optimization-disabled": "最適化無効",
 
-    "tr-feedback-link": "フォーラム"
+    "tr-feedback-link": "フォーラム",
+
+    "tr-ui-mode-select": "UIモードを選択:",
+    "tr-ui-whiptail": "whiptail (ダイアログベースTUI)",
+    "tr-ui-simple": "simple (リストベースTUI)",
+    "tr-ui-choice": "選択",
+    "tr-ui-installing": "whiptailをインストール中...",
+    "tr-ui-install-success": "whiptailのインストールに成功しました！",
+    "tr-ui-install-failed": "インストール失敗、simpleモードを使用します"    
 }
