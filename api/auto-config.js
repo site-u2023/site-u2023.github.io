@@ -28,44 +28,6 @@ const JURISDICTION_PREFIXES = {
 };
 
 /**
- * 国コード→言語コードマッピング
- * CloudflareのCF-IPCountryヘッダーから言語を自動判定
- */
-const COUNTRY_TO_LANGUAGE = {
-  'JP': 'ja',
-  'CN': 'zh_cn',
-  'TW': 'zh_tw',
-  'HK': 'zh_tw',
-  'MO': 'zh_tw',
-  'BR': 'pt_br',
-  'PT': 'pt',
-  'KR': 'ko',
-  'DE': 'de',
-  'FR': 'fr',
-  'ES': 'es',
-  'IT': 'it',
-  'RU': 'ru',
-  'UA': 'uk',
-  'TR': 'tr',
-  'PL': 'pl',
-  'NL': 'nl',
-  'NO': 'no',
-  'SE': 'sv',
-  'DK': 'da',
-  'FI': 'fi',
-  'CZ': 'cs',
-  'SK': 'sk',
-  'BG': 'bg',
-  'RO': 'ro',
-  'HU': 'hu',
-  'GR': 'el',
-  'IL': 'he',
-  'MY': 'ms',
-  'LT': 'lt',
-  'VN': 'vi'
-};
-
-/**
  * DS-Lite AFTRルールデータベース
  * IPv6プレフィックスからAFTRタイプを判定
  */
@@ -547,6 +509,44 @@ const openwrtTimezones = {
   'Pacific/Tongatapu': '<+13>-13',
   'Pacific/Wake': '<+12>-12',
   'Pacific/Wallis': '<+12>-12'
+};
+
+/**
+ * 国コード→言語コードマッピング
+ * CloudflareのCF-IPCountryヘッダーから言語を自動判定
+ */
+const COUNTRY_TO_LANGUAGE = {
+  'JP': 'ja',
+  'CN': 'zh_cn',
+  'TW': 'zh_tw',
+  'HK': 'zh_tw',
+  'MO': 'zh_tw',
+  'BR': 'pt_br',
+  'PT': 'pt',
+  'KR': 'ko',
+  'DE': 'de',
+  'FR': 'fr',
+  'ES': 'es',
+  'IT': 'it',
+  'RU': 'ru',
+  'UA': 'uk',
+  'TR': 'tr',
+  'PL': 'pl',
+  'NL': 'nl',
+  'NO': 'no',
+  'SE': 'sv',
+  'DK': 'da',
+  'FI': 'fi',
+  'CZ': 'cs',
+  'SK': 'sk',
+  'BG': 'bg',
+  'RO': 'ro',
+  'HU': 'hu',
+  'GR': 'el',
+  'IL': 'he',
+  'MY': 'ms',
+  'LT': 'lt',
+  'VN': 'vi'
 };
 
 /**
