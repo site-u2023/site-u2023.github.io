@@ -321,7 +321,9 @@ whiptail_network_config() {
             auto_msg="${auto_msg}MAP-E Settings detected:\n"
             auto_msg="${auto_msg}  BR: $MAPE_BR\n"
             auto_msg="${auto_msg}  IPv4: $MAPE_IPV4_PREFIX/$MAPE_IPV4_PREFIXLEN\n"
-            auto_msg="${auto_msg}  IPv6: $MAPE_IPV6_PREFIX/$MAPE_IPV6_PREFIXLEN\n\n"
+            auto_msg="${auto_msg}  IPv6: $MAPE_IPV6_PREFIX/$MAPE_IPV6_PREFIXLEN\n"
+            auto_msg="${auto_msg}  EA-len: $MAPE_EALEN\n"
+            auto_msg="${auto_msg}  PSID: $MAPE_PSIDLEN (offset: $MAPE_PSID_OFFSET)\n\n"
         elif [ "$DETECTED_CONN_TYPE" = "DS-Lite" ] && [ -n "$DSLITE_AFTR" ]; then
             auto_msg="${auto_msg}DS-Lite AFTR: $DSLITE_AFTR\n\n"
         fi
@@ -377,21 +379,44 @@ whiptail_network_config() {
             ;;
         3)
             echo "connection_type='dslite'" >> "$SETUP_VARS"
-            aftr=$(whiptail --inputbox "DS-Lite AFTR Address:" 10 60 "$DSLITE_AFTR" 3>&1 1>&2 2>&3)
+            aftr=$(whiptail --inputbox "DS-Lite AFTR Address:" 10 60 "${DSLITE_AFTR}" 3>&1 1>&2 2>&3)
             [ -n "$aftr" ] && echo "dslite_aftr_address='$aftr'" >> "$SETUP_VARS"
             ;;
         4)
             echo "connection_type='mape'" >> "$SETUP_VARS"
-            br=$(whiptail --inputbox "MAP-E BR Address:" 10 60 "$MAPE_BR" 3>&1 1>&2 2>&3)
+            sed -i "/^mape_/d" "$SETUP_VARS"
+            
+            # BR Address
+            br=$(whiptail --inputbox "MAP-E BR Address:" 10 60 "${MAPE_BR}" 3>&1 1>&2 2>&3)
             [ -n "$br" ] && echo "mape_br='$br'" >> "$SETUP_VARS"
-            # Add other MAP-E parameters with defaults from auto-config
-            [ -n "$MAPE_IPV4_PREFIX" ] && echo "mape_ipv4_prefix='$MAPE_IPV4_PREFIX'" >> "$SETUP_VARS"
-            [ -n "$MAPE_IPV4_PREFIXLEN" ] && echo "mape_ipv4_prefixlen='$MAPE_IPV4_PREFIXLEN'" >> "$SETUP_VARS"
-            [ -n "$MAPE_IPV6_PREFIX" ] && echo "mape_ipv6_prefix='$MAPE_IPV6_PREFIX'" >> "$SETUP_VARS"
-            [ -n "$MAPE_IPV6_PREFIXLEN" ] && echo "mape_ipv6_prefixlen='$MAPE_IPV6_PREFIXLEN'" >> "$SETUP_VARS"
-            [ -n "$MAPE_EALEN" ] && echo "mape_ealen='$MAPE_EALEN'" >> "$SETUP_VARS"
-            [ -n "$MAPE_PSIDLEN" ] && echo "mape_psidlen='$MAPE_PSIDLEN'" >> "$SETUP_VARS"
-            [ -n "$MAPE_PSID_OFFSET" ] && echo "mape_psid_offset='$MAPE_PSID_OFFSET'" >> "$SETUP_VARS"
+            
+            # IPv4 Prefix
+            ipv4_prefix=$(whiptail --inputbox "IPv4 Prefix:" 10 60 "${MAPE_IPV4_PREFIX}" 3>&1 1>&2 2>&3)
+            [ -n "$ipv4_prefix" ] && echo "mape_ipv4_prefix='$ipv4_prefix'" >> "$SETUP_VARS"
+            
+            # IPv4 Prefix Length
+            ipv4_prefixlen=$(whiptail --inputbox "IPv4 Prefix Length:" 10 60 "${MAPE_IPV4_PREFIXLEN}" 3>&1 1>&2 2>&3)
+            [ -n "$ipv4_prefixlen" ] && echo "mape_ipv4_prefixlen='$ipv4_prefixlen'" >> "$SETUP_VARS"
+            
+            # IPv6 Prefix
+            ipv6_prefix=$(whiptail --inputbox "IPv6 Prefix:" 10 60 "${MAPE_IPV6_PREFIX}" 3>&1 1>&2 2>&3)
+            [ -n "$ipv6_prefix" ] && echo "mape_ipv6_prefix='$ipv6_prefix'" >> "$SETUP_VARS"
+            
+            # IPv6 Prefix Length
+            ipv6_prefixlen=$(whiptail --inputbox "IPv6 Prefix Length:" 10 60 "${MAPE_IPV6_PREFIXLEN}" 3>&1 1>&2 2>&3)
+            [ -n "$ipv6_prefixlen" ] && echo "mape_ipv6_prefixlen='$ipv6_prefixlen'" >> "$SETUP_VARS"
+            
+            # EA Length
+            ealen=$(whiptail --inputbox "EA Length:" 10 60 "${MAPE_EALEN}" 3>&1 1>&2 2>&3)
+            [ -n "$ealen" ] && echo "mape_ealen='$ealen'" >> "$SETUP_VARS"
+            
+            # PSID Length
+            psidlen=$(whiptail --inputbox "PSID Length:" 10 60 "${MAPE_PSIDLEN}" 3>&1 1>&2 2>&3)
+            [ -n "$psidlen" ] && echo "mape_psidlen='$psidlen'" >> "$SETUP_VARS"
+            
+            # PSID Offset
+            psid_offset=$(whiptail --inputbox "PSID Offset:" 10 60 "${MAPE_PSID_OFFSET}" 3>&1 1>&2 2>&3)
+            [ -n "$psid_offset" ] && echo "mape_psid_offset='$psid_offset'" >> "$SETUP_VARS"
             ;;
         5)
             echo "connection_type='ap'" >> "$SETUP_VARS"
@@ -717,8 +742,48 @@ simple_network_config() {
     # Show auto-detected info
     if [ -n "$DETECTED_CONN_TYPE" ]; then
         echo "Auto-detected: $DETECTED_CONN_TYPE"
-        [ "$DETECTED_CONN_TYPE" = "MAP-E" ] && [ -n "$MAPE_BR" ] && echo "  MAP-E BR: $MAPE_BR"
-        [ "$DETECTED_CONN_TYPE" = "DS-Lite" ] && [ -n "$DSLITE_AFTR" ] && echo "  DS-Lite AFTR: $DSLITE_AFTR"
+        if [ "$DETECTED_CONN_TYPE" = "MAP-E" ] && [ -n "$MAPE_BR" ]; then
+            echo "  MAP-E BR: $MAPE_BR"
+            echo "  IPv4: $MAPE_IPV4_PREFIX/$MAPE_IPV4_PREFIXLEN"
+            echo "  IPv6: $MAPE_IPV6_PREFIX/$MAPE_IPV6_PREFIXLEN"
+            echo "  EA-len: $MAPE_EALEN"
+            echo "  PSID: $MAPE_PSIDLEN (offset: $MAPE_PSID_OFFSET)"
+        elif [ "$DETECTED_CONN_TYPE" = "DS-Lite" ] && [ -n "$DSLITE_AFTR" ]; then
+            echo "  DS-Lite AFTR: $DSLITE_AFTR"
+        fi
+        echo ""
+        printf "Use auto-detected settings? (y/n): "
+        read use_auto
+        if [ "$use_auto" = "y" -o "$use_auto" = "Y" ]; then
+            if [ "$DETECTED_CONN_TYPE" = "MAP-E" ]; then
+                sed -i "/^connection_type=/d" "$SETUP_VARS"
+                sed -i "/^mape_/d" "$SETUP_VARS"
+                echo "connection_type='mape'" >> "$SETUP_VARS"
+                echo "mape_br='$MAPE_BR'" >> "$SETUP_VARS"
+                echo "mape_ipv4_prefix='$MAPE_IPV4_PREFIX'" >> "$SETUP_VARS"
+                echo "mape_ipv4_prefixlen='$MAPE_IPV4_PREFIXLEN'" >> "$SETUP_VARS"
+                echo "mape_ipv6_prefix='$MAPE_IPV6_PREFIX'" >> "$SETUP_VARS"
+                echo "mape_ipv6_prefixlen='$MAPE_IPV6_PREFIXLEN'" >> "$SETUP_VARS"
+                echo "mape_ealen='$MAPE_EALEN'" >> "$SETUP_VARS"
+                echo "mape_psidlen='$MAPE_PSIDLEN'" >> "$SETUP_VARS"
+                echo "mape_psid_offset='$MAPE_PSID_OFFSET'" >> "$SETUP_VARS"
+                echo ""
+                echo "MAP-E configured automatically!"
+                printf "Press Enter to continue..."
+                read
+                return
+            elif [ "$DETECTED_CONN_TYPE" = "DS-Lite" ]; then
+                sed -i "/^connection_type=/d" "$SETUP_VARS"
+                sed -i "/^dslite_/d" "$SETUP_VARS"
+                echo "connection_type='dslite'" >> "$SETUP_VARS"
+                echo "dslite_aftr_address='$DSLITE_AFTR'" >> "$SETUP_VARS"
+                echo ""
+                echo "DS-Lite configured automatically!"
+                printf "Press Enter to continue..."
+                read
+                return
+            fi
+        fi
         echo ""
     fi
     
@@ -755,19 +820,63 @@ simple_network_config() {
             ;;
         4)
             echo "connection_type='mape'" >> "$SETUP_VARS"
+            sed -i "/^mape_/d" "$SETUP_VARS"
+            
+            # BR Address
             default_br="${MAPE_BR}"
             printf "BR Address [default: $default_br]: "
             read br
             [ -z "$br" ] && br="$default_br"
             [ -n "$br" ] && echo "mape_br='$br'" >> "$SETUP_VARS"
-            # Add other MAP-E parameters with defaults
-            [ -n "$MAPE_IPV4_PREFIX" ] && echo "mape_ipv4_prefix='$MAPE_IPV4_PREFIX'" >> "$SETUP_VARS"
-            [ -n "$MAPE_IPV4_PREFIXLEN" ] && echo "mape_ipv4_prefixlen='$MAPE_IPV4_PREFIXLEN'" >> "$SETUP_VARS"
-            [ -n "$MAPE_IPV6_PREFIX" ] && echo "mape_ipv6_prefix='$MAPE_IPV6_PREFIX'" >> "$SETUP_VARS"
-            [ -n "$MAPE_IPV6_PREFIXLEN" ] && echo "mape_ipv6_prefixlen='$MAPE_IPV6_PREFIXLEN'" >> "$SETUP_VARS"
-            [ -n "$MAPE_EALEN" ] && echo "mape_ealen='$MAPE_EALEN'" >> "$SETUP_VARS"
-            [ -n "$MAPE_PSIDLEN" ] && echo "mape_psidlen='$MAPE_PSIDLEN'" >> "$SETUP_VARS"
-            [ -n "$MAPE_PSID_OFFSET" ] && echo "mape_psid_offset='$MAPE_PSID_OFFSET'" >> "$SETUP_VARS"
+            
+            # IPv4 Prefix
+            default_ipv4="${MAPE_IPV4_PREFIX}"
+            printf "IPv4 Prefix [default: $default_ipv4]: "
+            read ipv4_prefix
+            [ -z "$ipv4_prefix" ] && ipv4_prefix="$default_ipv4"
+            [ -n "$ipv4_prefix" ] && echo "mape_ipv4_prefix='$ipv4_prefix'" >> "$SETUP_VARS"
+            
+            # IPv4 Prefix Length
+            default_ipv4len="${MAPE_IPV4_PREFIXLEN}"
+            printf "IPv4 Prefix Length [default: $default_ipv4len]: "
+            read ipv4_prefixlen
+            [ -z "$ipv4_prefixlen" ] && ipv4_prefixlen="$default_ipv4len"
+            [ -n "$ipv4_prefixlen" ] && echo "mape_ipv4_prefixlen='$ipv4_prefixlen'" >> "$SETUP_VARS"
+            
+            # IPv6 Prefix
+            default_ipv6="${MAPE_IPV6_PREFIX}"
+            printf "IPv6 Prefix [default: $default_ipv6]: "
+            read ipv6_prefix
+            [ -z "$ipv6_prefix" ] && ipv6_prefix="$default_ipv6"
+            [ -n "$ipv6_prefix" ] && echo "mape_ipv6_prefix='$ipv6_prefix'" >> "$SETUP_VARS"
+            
+            # IPv6 Prefix Length
+            default_ipv6len="${MAPE_IPV6_PREFIXLEN}"
+            printf "IPv6 Prefix Length [default: $default_ipv6len]: "
+            read ipv6_prefixlen
+            [ -z "$ipv6_prefixlen" ] && ipv6_prefixlen="$default_ipv6len"
+            [ -n "$ipv6_prefixlen" ] && echo "mape_ipv6_prefixlen='$ipv6_prefixlen'" >> "$SETUP_VARS"
+            
+            # EA Length
+            default_ealen="${MAPE_EALEN}"
+            printf "EA Length [default: $default_ealen]: "
+            read ealen
+            [ -z "$ealen" ] && ealen="$default_ealen"
+            [ -n "$ealen" ] && echo "mape_ealen='$ealen'" >> "$SETUP_VARS"
+            
+            # PSID Length
+            default_psidlen="${MAPE_PSIDLEN}"
+            printf "PSID Length [default: $default_psidlen]: "
+            read psidlen
+            [ -z "$psidlen" ] && psidlen="$default_psidlen"
+            [ -n "$psidlen" ] && echo "mape_psidlen='$psidlen'" >> "$SETUP_VARS"
+            
+            # PSID Offset
+            default_offset="${MAPE_PSID_OFFSET}"
+            printf "PSID Offset [default: $default_offset]: "
+            read psid_offset
+            [ -z "$psid_offset" ] && psid_offset="$default_offset"
+            [ -n "$psid_offset" ] && echo "mape_psid_offset='$psid_offset'" >> "$SETUP_VARS"
             ;;
         5)
             echo "connection_type='ap'" >> "$SETUP_VARS"
