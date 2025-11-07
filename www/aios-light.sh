@@ -914,8 +914,45 @@ simple_review() {
 }
 
 # ========== COMMON FUNCTIONS ==========
+apply_api_defaults() {
+    # 基本設定のみ（ユーザーが未入力の場合にAPI値を使う）
+    [ -n "$AUTO_LANGUAGE" ] && ! grep -q "^language=" "$SETUP_VARS" 2>/dev/null && \
+        echo "language='$AUTO_LANGUAGE'" >> "$SETUP_VARS"
+    
+    [ -n "$AUTO_TIMEZONE" ] && ! grep -q "^timezone=" "$SETUP_VARS" 2>/dev/null && \
+        echo "timezone='$AUTO_TIMEZONE'" >> "$SETUP_VARS"
+    
+    [ -n "$AUTO_ZONENAME" ] && ! grep -q "^zonename=" "$SETUP_VARS" 2>/dev/null && \
+        echo "zonename='$AUTO_ZONENAME'" >> "$SETUP_VARS"
+    
+    [ -n "$ISP_COUNTRY" ] && ! grep -q "^country=" "$SETUP_VARS" 2>/dev/null && \
+        echo "country='$ISP_COUNTRY'" >> "$SETUP_VARS"
+    
+    # MAP-E/DS-Lite: connection_type='auto'が残っている場合のみ
+    # （UIで「Use settings? YES」を選んだ場合は既に'mape'/'dslite'に変更済み）
+    if grep -q "^connection_type='auto'" "$SETUP_VARS" 2>/dev/null; then
+        if [ "$DETECTED_CONN_TYPE" = "MAP-E" ] && [ -n "$MAPE_BR" ]; then
+            sed -i "/^connection_type=/d" "$SETUP_VARS"
+            echo "connection_type='mape'" >> "$SETUP_VARS"
+            echo "mape_br='$MAPE_BR'" >> "$SETUP_VARS"
+            [ -n "$MAPE_IPV4_PREFIX" ] && echo "mape_ipv4_prefix='$MAPE_IPV4_PREFIX'" >> "$SETUP_VARS"
+            [ -n "$MAPE_IPV4_PREFIXLEN" ] && echo "mape_ipv4_prefixlen='$MAPE_IPV4_PREFIXLEN'" >> "$SETUP_VARS"
+            [ -n "$MAPE_IPV6_PREFIX" ] && echo "mape_ipv6_prefix='$MAPE_IPV6_PREFIX'" >> "$SETUP_VARS"
+            [ -n "$MAPE_IPV6_PREFIXLEN" ] && echo "mape_ipv6_prefixlen='$MAPE_IPV6_PREFIXLEN'" >> "$SETUP_VARS"
+            [ -n "$MAPE_EALEN" ] && echo "mape_ealen='$MAPE_EALEN'" >> "$SETUP_VARS"
+            [ -n "$MAPE_PSIDLEN" ] && echo "mape_psidlen='$MAPE_PSIDLEN'" >> "$SETUP_VARS"
+            [ -n "$MAPE_PSID_OFFSET" ] && echo "mape_psid_offset='$MAPE_PSID_OFFSET'" >> "$SETUP_VARS"
+        elif [ "$DETECTED_CONN_TYPE" = "DS-Lite" ] && [ -n "$DSLITE_AFTR" ]; then
+            sed -i "/^connection_type=/d" "$SETUP_VARS"
+            echo "connection_type='dslite'" >> "$SETUP_VARS"
+            echo "dslite_aftr_address='$DSLITE_AFTR'" >> "$SETUP_VARS"
+        fi
+    fi
+}
 
 generate_config_files() {
+
+    apply_api_defaults
     # Get language from setup vars
     language=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
     
