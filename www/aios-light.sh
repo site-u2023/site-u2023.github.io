@@ -53,8 +53,8 @@ select_ui_mode() {
         echo "  1) whiptail (TUI)"
         echo "  2) simple (text)"
         echo ""
-        printf "Choice [1]: "
-        read choice
+        printf "Choice [1]: " >&2
+        read -r choice
         [ "$choice" = "2" ] && UI_MODE="simple" || UI_MODE="whiptail"
     else
         echo "whiptail not found"
@@ -63,8 +63,8 @@ select_ui_mode() {
         echo "  1) Yes"
         echo "  2) No"
         echo ""
-        printf "Choice [2]: "
-        read choice
+        printf "Choice [2]: " >&2
+        read -r choice
         if [ "$choice" = "1" ]; then
             if install_package whiptail newt; then
                 UI_MODE="whiptail"
