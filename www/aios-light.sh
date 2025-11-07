@@ -47,40 +47,31 @@ install_package() {
     esac
 }
 
-# Detect UI mode
-UI_MODE=""
 select_ui_mode() {
-    if command -v whiptail >/dev/null 2>&1; then
-        echo "whiptail detected"
-        echo ""
-        echo "Select UI mode:"
-        echo "1) whiptail (TUI - BIOS style)"
-        echo "2) simple (text menu)"
-        printf "Choice [1]: "
-        read choice
-        [ "$choice" = "2" ] && UI_MODE="simple" || UI_MODE="whiptail"
+    HAS_WHIPTAIL=false
+    command -v whiptail >/dev/null 2>&1 && HAS_WHIPTAIL=true
+    
+    echo "Select UI mode:"
+    echo "1) whiptail (dialog-based TUI)"
+    echo "2) simple (list-based TUI)"
+    
+    printf "Choice [1]: "
+    read choice
+    
+    if [ "$choice" = "2" ]; then
+        UI_MODE="simple"
     else
-        echo "whiptail not found"
-        echo ""
-        echo "Install whiptail for better UI experience?"
-        echo "1) Yes, install whiptail (TUI)"
-        echo "2) No, use simple menu"
-        printf "Choice [2]: "
-        read choice
-        
-        if [ "$choice" = "1" ]; then
+        if [ "$HAS_WHIPTAIL" = false ]; then
             echo "Installing whiptail..."
             if install_package whiptail newt; then
                 echo "whiptail installed successfully!"
                 UI_MODE="whiptail"
-                sleep 1
             else
-                echo "Failed to install whiptail, falling back to simple menu"
+                echo "Failed to install, using simple mode"
                 UI_MODE="simple"
-                sleep 2
             fi
         else
-            UI_MODE="simple"
+            UI_MODE="whiptail"
         fi
     fi
 }
