@@ -585,8 +585,6 @@ whiptail_process_items() {
                 local placeholder=$(get_setup_item_placeholder "$item_id")
                 local fieldtype=$(get_setup_item_fieldtype "$item_id")
                 
-                echo "[DEBUG] field: $item_id, var=$variable" >> /tmp/debug.log
-                
                 local current=$(grep "^${variable}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
                 [ -z "$current" ] && current="$default"
                 
@@ -594,6 +592,16 @@ whiptail_process_items() {
                     aios-country) [ -z "$current" ] && current="${ISP_COUNTRY:-$default}" ;;
                     aios-timezone) [ -z "$current" ] && current="${AUTO_TIMEZONE:-$default}" ;;
                     aios-zonename) [ -z "$current" ] && current="${AUTO_ZONENAME:-$default}" ;;
+                    mape-br) [ -z "$current" ] && current="${MAPE_BR:-$default}" ;;
+                    mape-ealen) [ -z "$current" ] && current="${MAPE_EALEN:-$default}" ;;
+                    mape-ipv4-prefix) [ -z "$current" ] && current="${MAPE_IPV4_PREFIX:-$default}" ;;
+                    mape-ipv4-prefixlen) [ -z "$current" ] && current="${MAPE_IPV4_PREFIXLEN:-$default}" ;;
+                    mape-ipv6-prefix) [ -z "$current" ] && current="${MAPE_IPV6_PREFIX:-$default}" ;;
+                    mape-ipv6-prefixlen) [ -z "$current" ] && current="${MAPE_IPV6_PREFIXLEN:-$default}" ;;
+                    mape-psid-offset) [ -z "$current" ] && current="${MAPE_PSID_OFFSET:-$default}" ;;
+                    mape-psidlen) [ -z "$current" ] && current="${MAPE_PSIDLEN:-$default}" ;;
+                    mape-gua-prefix) [ -z "$current" ] && current="${MAPE_GUA_PREFIX:-$default}" ;;
+                    dslite-aftr-address) [ -z "$current" ] && current="${DSLITE_AFTR:-$default}" ;;
                 esac
                 
                 if [ "$fieldtype" = "select" ]; then
@@ -683,12 +691,17 @@ whiptail_show_network_info() {
     info="${info}\n${tr_method}: ${DETECTED_CONN_TYPE}\n\n"
     
     if [ "$DETECTED_CONN_TYPE" = "MAP-E" ] && [ -n "$MAPE_BR" ]; then
+        if [ -n "$MAPE_GUA_PREFIX" ]; then
+            info="${info}Type: GUA\n"
+            info="${info}GUA Prefix: $MAPE_GUA_PREFIX\n"
+        else
+            info="${info}Type: PD\n"
+        fi
         info="${info}${tr_br}: $MAPE_BR\n"
         [ -n "$MAPE_IPV4_PREFIX" ] && info="${info}${tr_ipv4_prefix}: $MAPE_IPV4_PREFIX/$MAPE_IPV4_PREFIXLEN\n"
         [ -n "$MAPE_IPV6_PREFIX" ] && info="${info}${tr_ipv6_prefix}: $MAPE_IPV6_PREFIX/$MAPE_IPV6_PREFIXLEN\n"
         [ -n "$MAPE_EALEN" ] && info="${info}${tr_ea_len}: $MAPE_EALEN\n"
         [ -n "$MAPE_PSIDLEN" ] && info="${info}${tr_psid_length}: $MAPE_PSIDLEN\n"
-        [ -n "$MAPE_GUA_PREFIX" ] && info="${info}GUA Prefix: $MAPE_GUA_PREFIX\n"
         info="${info}\n${tr_mape_notice}"
     elif [ "$DETECTED_CONN_TYPE" = "DS-Lite" ] && [ -n "$DSLITE_AFTR" ]; then
         info="${info}${tr_aftr}: $DSLITE_AFTR\n"
