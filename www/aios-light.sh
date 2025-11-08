@@ -903,17 +903,7 @@ simple_category_config() {
     echo ""
     
     if [ "$cat_id" = "internet-connection" ]; then
-        if simple_show_network_info; then
-            echo ""
-            printf "Press Enter to continue..."
-            read
-            return 0
-        else
-            sed -i "/^connection_type=/d" "$SETUP_VARS"
-            clear
-            echo "=== $cat_title ==="
-            echo ""
-        fi
+        simple_show_network_info
     fi
     
     process_category_items "$cat_id"
