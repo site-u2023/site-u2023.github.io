@@ -675,18 +675,11 @@ whiptail_process_items() {
 
 whiptail_show_network_info() {
     local tr_auto_detection=$(translate "tr-auto-detection")
-    local tr_method=$(translate "tr-method")
     local tr_isp=$(translate "tr-isp")
     local tr_as=$(translate "tr-as")
-    local tr_country=$(translate "tr-country")
-    local tr_br=$(translate "tr-br")
-    local tr_ipv4_prefix=$(translate "tr-ipv4-prefix")
-    local tr_ipv6_prefix=$(translate "tr-ipv6-prefix")
-    local tr_ea_len=$(translate "tr-ea-len")
-    local tr_psid_length=$(translate "tr-psid-length")
-    local tr_aftr=$(translate "tr-dslite-aftr-ipv6-address")
     local tr_mape_notice=$(translate "tr-mape-notice1")
     local tr_dslite_notice=$(translate "tr-dslite-notice1")
+    local tr_aftr=$(translate "tr-dslite-aftr-ipv6-address")
     
     if [ -z "$DETECTED_CONN_TYPE" ] || [ "$DETECTED_CONN_TYPE" = "Unknown" ]; then
         return 1
@@ -695,20 +688,21 @@ whiptail_show_network_info() {
     local info="${tr_auto_detection}: ${DETECTED_CONN_TYPE}\n\n"
     [ -n "$ISP_NAME" ] && info="${info}${tr_isp}: $ISP_NAME\n"
     [ -n "$ISP_AS" ] && info="${info}${tr_as}: $ISP_AS\n"
-    [ -n "$ISP_REGION" ] && info="${info}${tr_country}: $ISP_REGION, $ISP_COUNTRY\n"
     
-    info="${info}\n${tr_method}: ${DETECTED_CONN_TYPE}\n\n"
+    info="${info}\n${tr_mape_notice}\n\n"
     
     if [ "$DETECTED_CONN_TYPE" = "MAP-E" ] && [ -n "$MAPE_BR" ]; then
-        [ -n "$MAPE_GUA_PREFIX" ] && info="${info}GUA Prefix: $MAPE_GUA_PREFIX\n"
-        info="${info}${tr_br}: $MAPE_BR\n"
-        [ -n "$MAPE_IPV4_PREFIX" ] && info="${info}${tr_ipv4_prefix}: $MAPE_IPV4_PREFIX/$MAPE_IPV4_PREFIXLEN\n"
-        [ -n "$MAPE_IPV6_PREFIX" ] && info="${info}${tr_ipv6_prefix}: $MAPE_IPV6_PREFIX/$MAPE_IPV6_PREFIXLEN\n"
-        [ -n "$MAPE_EALEN" ] && info="${info}${tr_ea_len}: $MAPE_EALEN\n"
-        [ -n "$MAPE_PSIDLEN" ] && info="${info}${tr_psid_length}: $MAPE_PSIDLEN\n"
-        info="${info}\n${tr_mape_notice}"
+        [ -n "$MAPE_GUA_PREFIX" ] && info="${info}option ip6prefix_gua $MAPE_GUA_PREFIX\n"
+        info="${info}option peeraddr $MAPE_BR\n"
+        [ -n "$MAPE_IPV4_PREFIX" ] && info="${info}option ipaddr $MAPE_IPV4_PREFIX\n"
+        [ -n "$MAPE_IPV4_PREFIXLEN" ] && info="${info}option ip4prefixlen $MAPE_IPV4_PREFIXLEN\n"
+        [ -n "$MAPE_IPV6_PREFIX" ] && info="${info}option ip6prefix $MAPE_IPV6_PREFIX\n"
+        [ -n "$MAPE_IPV6_PREFIXLEN" ] && info="${info}option ip6prefixlen $MAPE_IPV6_PREFIXLEN\n"
+        [ -n "$MAPE_EALEN" ] && info="${info}option ealen $MAPE_EALEN\n"
+        [ -n "$MAPE_PSIDLEN" ] && info="${info}option psidlen $MAPE_PSIDLEN\n"
+        [ -n "$MAPE_PSID_OFFSET" ] && info="${info}option offset $MAPE_PSID_OFFSET\n"
     elif [ "$DETECTED_CONN_TYPE" = "DS-Lite" ] && [ -n "$DSLITE_AFTR" ]; then
-        info="${info}${tr_aftr}: $DSLITE_AFTR\n"
+        info="${info}option peeraddr $DSLITE_AFTR\n"
         info="${info}\n${tr_dslite_notice}"
     fi
     
@@ -992,18 +986,11 @@ simple_category_config() {
 
 simple_show_network_info() {
     local tr_auto_detection=$(translate "tr-auto-detection")
-    local tr_method=$(translate "tr-method")
     local tr_isp=$(translate "tr-isp")
     local tr_as=$(translate "tr-as")
-    local tr_country=$(translate "tr-country")
-    local tr_br=$(translate "tr-br")
-    local tr_ipv4_prefix=$(translate "tr-ipv4-prefix")
-    local tr_ipv6_prefix=$(translate "tr-ipv6-prefix")
-    local tr_ea_len=$(translate "tr-ea-len")
-    local tr_psid_length=$(translate "tr-psid-length")
-    local tr_aftr=$(translate "tr-dslite-aftr-ipv6-address")
     local tr_mape_notice=$(translate "tr-mape-notice1")
     local tr_dslite_notice=$(translate "tr-dslite-notice1")
+    local tr_aftr=$(translate "tr-dslite-aftr-ipv6-address")
     
     if [ -z "$DETECTED_CONN_TYPE" ] || [ "$DETECTED_CONN_TYPE" = "Unknown" ]; then
         return 1
@@ -1013,22 +1000,22 @@ simple_show_network_info() {
     echo ""
     [ -n "$ISP_NAME" ] && echo "${tr_isp}: $ISP_NAME"
     [ -n "$ISP_AS" ] && echo "${tr_as}: $ISP_AS"
-    [ -n "$ISP_REGION" ] && echo "${tr_country}: $ISP_REGION, $ISP_COUNTRY"
     echo ""
-    echo "${tr_method}: $DETECTED_CONN_TYPE"
+    echo "${tr_mape_notice}"
     echo ""
     
     if [ "$DETECTED_CONN_TYPE" = "MAP-E" ] && [ -n "$MAPE_BR" ]; then
-        [ -n "$MAPE_GUA_PREFIX" ] && echo "GUA Prefix: $MAPE_GUA_PREFIX"
-        echo "${tr_br}: $MAPE_BR"
-        [ -n "$MAPE_IPV4_PREFIX" ] && echo "${tr_ipv4_prefix}: $MAPE_IPV4_PREFIX/$MAPE_IPV4_PREFIXLEN"
-        [ -n "$MAPE_IPV6_PREFIX" ] && echo "${tr_ipv6_prefix}: $MAPE_IPV6_PREFIX/$MAPE_IPV6_PREFIXLEN"
-        [ -n "$MAPE_EALEN" ] && echo "${tr_ea_len}: $MAPE_EALEN"
-        [ -n "$MAPE_PSIDLEN" ] && echo "${tr_psid_length}: $MAPE_PSIDLEN"
-        echo ""
-        echo "${tr_mape_notice}"
+        [ -n "$MAPE_GUA_PREFIX" ] && echo "option ip6prefix_gua $MAPE_GUA_PREFIX"
+        echo "option peeraddr $MAPE_BR"
+        [ -n "$MAPE_IPV4_PREFIX" ] && echo "option ipaddr $MAPE_IPV4_PREFIX"
+        [ -n "$MAPE_IPV4_PREFIXLEN" ] && echo "option ip4prefixlen $MAPE_IPV4_PREFIXLEN"
+        [ -n "$MAPE_IPV6_PREFIX" ] && echo "option ip6prefix $MAPE_IPV6_PREFIX"
+        [ -n "$MAPE_IPV6_PREFIXLEN" ] && echo "option ip6prefixlen $MAPE_IPV6_PREFIXLEN"
+        [ -n "$MAPE_EALEN" ] && echo "option ealen $MAPE_EALEN"
+        [ -n "$MAPE_PSIDLEN" ] && echo "option psidlen $MAPE_PSIDLEN"
+        [ -n "$MAPE_PSID_OFFSET" ] && echo "option offset $MAPE_PSID_OFFSET"
     elif [ "$DETECTED_CONN_TYPE" = "DS-Lite" ] && [ -n "$DSLITE_AFTR" ]; then
-        echo "${tr_aftr}: $DSLITE_AFTR"
+        echo "option peeraddr $DSLITE_AFTR"
         echo ""
         echo "${tr_dslite_notice}"
     fi
