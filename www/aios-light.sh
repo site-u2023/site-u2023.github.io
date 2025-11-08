@@ -827,7 +827,7 @@ whiptail_review() {
     preview="${preview}\n=== /tmp/setup.sh ===\n"
     preview="${preview}$(head -20 $OUTPUT_DIR/setup.sh.preview 2>/dev/null || echo '(empty)')...\n"
     
-    if whiptail --title "Review Configuration" --yesno "$preview\n\nApply this configuration?" 24 78; then
+    if whiptail --scrolltext --title "Review Configuration" --yesno "$preview\n\nApply this configuration?" 24 78; then
         generate_config_files
         whiptail --msgbox "Executing configuration..." 8 40
         sh "$OUTPUT_DIR/postinst"
