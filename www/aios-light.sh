@@ -372,8 +372,6 @@ whiptail_main_menu() {
         local packages_label=$(translate "tr-custom-packages")
         menu_items="$menu_items $i \"$packages_label\""
         i=$((i+1))
-        menu_items="$menu_items $i \"Device Information\""
-        i=$((i+1))
         menu_items="$menu_items $i \"Review & Generate\""
         i=$((i+1))
         menu_items="$menu_items $i \"Exit\""
@@ -393,8 +391,6 @@ whiptail_main_menu() {
         elif [ "$choice" -eq "$((setup_cat_count+1))" ]; then
             whiptail_package_categories
         elif [ "$choice" -eq "$((setup_cat_count+2))" ]; then
-            whiptail_device_info
-        elif [ "$choice" -eq "$((setup_cat_count+3))" ]; then
             whiptail_review
         else
             exit 0
@@ -406,6 +402,11 @@ whiptail_category_config() {
     local cat_id="$1"
     local cat_title=$(get_setup_category_title "$cat_id")
     local items=$(get_setup_category_items "$cat_id")
+    
+    # Show network information if this is internet-connection category
+    if [ "$cat_id" = "internet-connection" ]; then
+        whiptail_show_network_info
+    fi
     
     for item_id in $items; do
         local item_type=$(get_setup_item_type "$item_id")
@@ -473,20 +474,36 @@ whiptail_category_config() {
     whiptail --msgbox "Settings saved!" 8 40
 }
 
+whiptail_show_network_info() {
+    local info="--- Network Information ---\n\n"
+    [ -n "$ISP_NAME" ] && info="${info}ISP: $ISP_NAME\n"
+    [ -n "$ISP_AS" ] && info="${info}AS: $ISP_AS\n"
+    [ -n "$ISP_IPV6" ] && info="${info}IPv6: $ISP_IPV6\n"
+    [ -n "$ISP_REGION" ] && info="${info}Region: $ISP_REGION, $ISP_COUNTRY\n"
+    
+    if [ -n "$DETECTED_CONN_TYPE" ] && [ "$DETECTED_CONN_TYPE" != "Unknown" ]; then
+        info="${info}\nDetected Connection Type: $DETECTED_CONN_TYPE\n\n"
+        info="${info}Would you like to use AUTO detection?\n"
+        info="${info}(Default connection type is set to AUTO)"
+        
+        if whiptail --title "Internet Connection" --yesno "$info" 18 70; then
+            # User accepted AUTO detection
+            sed -i "/^connection_type=/d" "$SETUP_VARS"
+            echo "connection_type='auto'" >> "$SETUP_VARS"
+        fi
+    else
+        whiptail --title "Internet Connection" --msgbox "$info\nNo connection type detected.\nPlease select manually." 15 70
+    fi
+}
+
 whiptail_device_info() {
     local info="Model: $DEVICE_MODEL\n"
     info="${info}Target: $DEVICE_TARGET\n"
     info="${info}Version: $OPENWRT_VERSION\n"
     [ -n "$DEVICE_MEM" ] && info="${info}Memory: $DEVICE_MEM\n"
     [ -n "$DEVICE_CPU" ] && info="${info}CPU: $DEVICE_CPU\n"
-    info="${info}\n--- Network Information ---\n"
-    [ -n "$ISP_NAME" ] && info="${info}ISP: $ISP_NAME\n"
-    [ -n "$ISP_AS" ] && info="${info}AS: $ISP_AS\n"
-    [ -n "$ISP_IPV6" ] && info="${info}IPv6: $ISP_IPV6\n"
-    [ -n "$ISP_REGION" ] && info="${info}Region: $ISP_REGION, $ISP_COUNTRY\n"
-    [ -n "$DETECTED_CONN_TYPE" ] && info="${info}Detected: $DETECTED_CONN_TYPE\n"
     
-    whiptail --title "Device Information" --msgbox "$info" 20 70
+    whiptail --title "Device Information" --msgbox "$info" 15 70
 }
 
 whiptail_package_categories() {
@@ -586,8 +603,7 @@ simple_main_menu() {
         local setup_cat_count=$(get_setup_categories | wc -l)
         local packages_label=$(translate "tr-custom-packages")
         echo "$((setup_cat_count+1))) $packages_label"
-        echo "$((setup_cat_count+2))) Device Information"
-        echo "$((setup_cat_count+3))) Review & Generate"
+        echo "$((setup_cat_count+2))) Review & Generate"
         echo "q) Exit"
         echo ""
         printf "Choice: "
@@ -602,8 +618,6 @@ simple_main_menu() {
                 elif [ "$choice" -eq "$((setup_cat_count+1))" ]; then
                     simple_package_menu
                 elif [ "$choice" -eq "$((setup_cat_count+2))" ]; then
-                    simple_device_info
-                elif [ "$choice" -eq "$((setup_cat_count+3))" ]; then
                     simple_review
                 fi
                 ;;
@@ -618,6 +632,11 @@ simple_category_config() {
     clear
     echo "=== $cat_title ==="
     echo ""
+    
+    # Show network information if this is internet-connection category
+    if [ "$cat_id" = "internet-connection" ]; then
+        simple_show_network_info
+    fi
     
     local items=$(get_setup_category_items "$cat_id")
     for item_id in $items; do
@@ -692,6 +711,38 @@ simple_category_config() {
     read
 }
 
+simple_show_network_info() {
+    echo "--- Network Information ---"
+    echo ""
+    [ -n "$ISP_NAME" ] && echo "ISP: $ISP_NAME"
+    [ -n "$ISP_AS" ] && echo "AS: $ISP_AS"
+    [ -n "$ISP_IPV6" ] && echo "IPv6: $ISP_IPV6"
+    [ -n "$ISP_REGION" ] && echo "Region: $ISP_REGION, $ISP_COUNTRY"
+    
+    if [ -n "$DETECTED_CONN_TYPE" ] && [ "$DETECTED_CONN_TYPE" != "Unknown" ]; then
+        echo ""
+        echo "Detected Connection Type: $DETECTED_CONN_TYPE"
+        echo ""
+        printf "Use AUTO detection? (y/n) [y]: "
+        read use_auto
+        
+        if [ "$use_auto" != "n" ] && [ "$use_auto" != "N" ]; then
+            sed -i "/^connection_type=/d" "$SETUP_VARS"
+            echo "connection_type='auto'" >> "$SETUP_VARS"
+        fi
+    else
+        echo ""
+        echo "No connection type detected. Please select manually."
+    fi
+    
+    echo ""
+    printf "Press Enter to continue..."
+    read
+    clear
+    echo "=== $(get_setup_category_title 'internet-connection') ==="
+    echo ""
+}
+
 simple_device_info() {
     clear
     echo "=== Device Information ==="
@@ -701,13 +752,6 @@ simple_device_info() {
     echo "Version: $OPENWRT_VERSION"
     [ -n "$DEVICE_MEM" ] && echo "Memory: $DEVICE_MEM"
     [ -n "$DEVICE_CPU" ] && echo "CPU: $DEVICE_CPU"
-    echo ""
-    echo "--- Network Information ---"
-    [ -n "$ISP_NAME" ] && echo "ISP: $ISP_NAME"
-    [ -n "$ISP_AS" ] && echo "AS: $ISP_AS"
-    [ -n "$ISP_IPV6" ] && echo "IPv6: $ISP_IPV6"
-    [ -n "$ISP_REGION" ] && echo "Region: $ISP_REGION, $ISP_COUNTRY"
-    [ -n "$DETECTED_CONN_TYPE" ] && echo "Detected Connection: $DETECTED_CONN_TYPE"
     echo ""
     printf "Press Enter to continue..."
     read
@@ -1081,9 +1125,12 @@ aios_light_main() {
     # NOW we can safely call select_ui_mode with translations available
     select_ui_mode
     
+    # Show device information screen first
     if [ "$UI_MODE" = "whiptail" ]; then
+        whiptail_device_info
         whiptail_main_menu
     else
+        simple_device_info
         simple_main_menu
     fi
 }
