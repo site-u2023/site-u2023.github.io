@@ -57,23 +57,23 @@ select_ui_mode() {
     HAS_WHIPTAIL=false
     command -v whiptail >/dev/null 2>&1 && HAS_WHIPTAIL=true
     
-    echo "Select UI mode:"
-    echo "1) whiptail (dialog-based TUI)"
-    echo "2) simple (list-based TUI)"
+    echo "$(translate 'tr-ui-mode-select')"
+    echo "1) $(translate 'tr-ui-whiptail')"
+    echo "2) $(translate 'tr-ui-simple')"
     
-    printf "Choice [1]: "
+    printf "$(translate 'tr-ui-choice') [1]: "
     read choice
     
     if [ "$choice" = "2" ]; then
         UI_MODE="simple"
     else
         if [ "$HAS_WHIPTAIL" = false ]; then
-            echo "Installing whiptail..."
+            echo "$(translate 'tr-ui-installing')"
             if install_package whiptail newt; then
-                echo "whiptail installed successfully!"
+                echo "$(translate 'tr-ui-install-success')"
                 UI_MODE="whiptail"
             else
-                echo "Failed to install, using simple mode"
+                echo "$(translate 'tr-ui-install-failed')"
                 UI_MODE="simple"
             fi
         else
