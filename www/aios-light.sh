@@ -84,7 +84,10 @@ init() {
     : > "$SELECTED_PACKAGES"
     : > "$SETUP_VARS"
     : > "$TRANSLATION_CACHE"
+    : > /tmp/debug.log
     rm -f "$LANG_JSON"
+    
+    echo "[DEBUG] $(date): Init complete" >> /tmp/debug.log
 }
 
 download_language_json() {
@@ -440,6 +443,9 @@ whiptail_category_config() {
     local cat_id="$1"
     local cat_title=$(get_setup_category_title "$cat_id")
     
+    echo "[DEBUG] === whiptail_category_config START ===" >> /tmp/debug.log
+    echo "[DEBUG] cat_id=$cat_id, title=$cat_title" >> /tmp/debug.log
+    
     if [ "$cat_id" = "internet-connection" ]; then
         if whiptail_show_network_info; then
             whiptail --msgbox "Auto-configuration applied!" 8 40
@@ -447,26 +453,25 @@ whiptail_category_config() {
         fi
     fi
     
-    while true; do
-        whiptail_process_items "$cat_id" ""
-        local processed=$?
-        
-        if [ $processed -eq 0 ]; then
-            whiptail --msgbox "No configuration items to display." 8 50
-            break
-        fi
-        
-        if whiptail --yesno "Configuration completed!\n\nDo you want to modify any settings?" 10 50; then
-            continue
-        else
-            break
-        fi
-    done
+    echo "[DEBUG] Calling whiptail_process_items" >> /tmp/debug.log
+    whiptail_process_items "$cat_id" ""
+    local processed=$?
+    
+    echo "[DEBUG] Items processed: $processed" >> /tmp/debug.log
+    echo "[DEBUG] SETUP_VARS contents:" >> /tmp/debug.log
+    cat "$SETUP_VARS" >> /tmp/debug.log 2>&1
+    echo "[DEBUG] === whiptail_category_config END ===" >> /tmp/debug.log
+    
+    if [ $processed -eq 0 ]; then
+        whiptail --msgbox "No configuration items to display." 8 50
+    fi
 }
 
 whiptail_process_items() {
     local cat_id="$1"
     local parent_items="$2"
+    
+    echo "[DEBUG] whiptail_process_items: cat_id=$cat_id" >> /tmp/debug.log
     
     local items
     if [ -z "$parent_items" ]; then
@@ -475,47 +480,61 @@ whiptail_process_items() {
         items="$parent_items"
     fi
     
+    echo "[DEBUG] Items to process: $items" >> /tmp/debug.log
     local items_processed=0
     
     for item_id in $items; do
+        echo "[DEBUG] Processing item: $item_id" >> /tmp/debug.log
         local item_type=$(get_setup_item_type "$item_id")
+        echo "[DEBUG] Item type: $item_type" >> /tmp/debug.log
         
-        # radio-groupは常に表示（showWhenチェックなし）
-        if [ "$item_type" = "radio-group" ]; then
-            items_processed=$((items_processed + 1))
-            local label=$(get_setup_item_label "$item_id")
-            local variable=$(get_setup_item_variable "$item_id")
-            local default=$(get_setup_item_default "$item_id")
-            
-            local current=$(grep "^${variable}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-            [ -z "$current" ] && current="$default"
-            
-            local options=$(get_setup_item_options "$item_id")
-            local menu_opts=""
-            local i=1
-            for opt in $options; do
-                local opt_label=$(get_setup_item_option_label "$item_id" "$opt")
-                menu_opts="$menu_opts $i \"$opt_label\""
-                i=$((i+1))
-            done
-            
-            value=$(eval "whiptail --title 'Setup' --menu '$label:' 18 60 10 $menu_opts 3>&1 1>&2 2>&3")
-            
-            if [ $? -eq 0 ] && [ -n "$value" ]; then
-                selected_opt=$(echo "$options" | sed -n "${value}p")
-                sed -i "/^${variable}=/d" "$SETUP_VARS"
-                echo "${variable}='${selected_opt}'" >> "$SETUP_VARS"
-            fi
+        # showWhenチェック（すべてのアイテムタイプで実行）
+        if ! should_show_item "$item_id"; then
+            echo "[DEBUG] Item $item_id hidden by showWhen" >> /tmp/debug.log
             continue
         fi
         
-        # その他のアイテムはshowWhenチェック
-        should_show_item "$item_id" || continue
-        
         case "$item_type" in
+            radio-group)
+                items_processed=$((items_processed + 1))
+                local label=$(get_setup_item_label "$item_id")
+                local variable=$(get_setup_item_variable "$item_id")
+                local default=$(get_setup_item_default "$item_id")
+                
+                echo "[DEBUG] radio-group: var=$variable, default=$default" >> /tmp/debug.log
+                
+                local current=$(grep "^${variable}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+                [ -z "$current" ] && current="$default"
+                
+                echo "[DEBUG] Current value: $current" >> /tmp/debug.log
+                
+                local options=$(get_setup_item_options "$item_id")
+                echo "[DEBUG] Options: $options" >> /tmp/debug.log
+                
+                local menu_opts=""
+                local i=1
+                for opt in $options; do
+                    local opt_label=$(get_setup_item_option_label "$item_id" "$opt")
+                    menu_opts="$menu_opts $i \"$opt_label\""
+                    i=$((i+1))
+                done
+                
+                value=$(eval "whiptail --title 'Setup' --menu '$label:' 18 60 10 $menu_opts 3>&1 1>&2 2>&3")
+                
+                if [ $? -eq 0 ] && [ -n "$value" ]; then
+                    selected_opt=$(echo "$options" | sed -n "${value}p")
+                    echo "[DEBUG] Selected: $selected_opt" >> /tmp/debug.log
+                    sed -i "/^${variable}=/d" "$SETUP_VARS"
+                    echo "${variable}='${selected_opt}'" >> "$SETUP_VARS"
+                    echo "[DEBUG] Saved to SETUP_VARS" >> /tmp/debug.log
+                fi
+                ;;
+            
             section)
+                echo "[DEBUG] Processing section: $item_id" >> /tmp/debug.log
                 local nested=$(get_section_nested_items "$item_id")
                 if [ -n "$nested" ]; then
+                    echo "[DEBUG] Nested items: $nested" >> /tmp/debug.log
                     whiptail_process_items "$cat_id" "$nested"
                     items_processed=$((items_processed + $?))
                 fi
@@ -528,6 +547,8 @@ whiptail_process_items() {
                 local default=$(get_setup_item_default "$item_id")
                 local placeholder=$(get_setup_item_placeholder "$item_id")
                 local fieldtype=$(get_setup_item_fieldtype "$item_id")
+                
+                echo "[DEBUG] field: $item_id, var=$variable" >> /tmp/debug.log
                 
                 local current=$(grep "^${variable}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
                 [ -z "$current" ] && current="$default"
@@ -594,6 +615,7 @@ whiptail_process_items() {
         esac
     done
     
+    echo "[DEBUG] Total items processed: $items_processed" >> /tmp/debug.log
     return $items_processed
 }
 
