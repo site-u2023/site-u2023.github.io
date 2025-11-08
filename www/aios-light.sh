@@ -898,25 +898,28 @@ simple_category_config() {
     local cat_id="$1"
     local cat_title=$(get_setup_category_title "$cat_id")
     
-    while true; do
-        clear
-        echo "=== $cat_title ==="
-        echo ""
-        
-        if [ "$cat_id" = "internet-connection" ]; then
-            if simple_show_network_info; then
-                break
-            fi
+    clear
+    echo "=== $cat_title ==="
+    echo ""
+    
+    if [ "$cat_id" = "internet-connection" ]; then
+        if simple_show_network_info; then
+            echo ""
+            printf "Press Enter to continue..."
+            read
+            return 0
+        else
+            sed -i "/^connection_type=/d" "$SETUP_VARS"
+            clear
+            echo "=== $cat_title ==="
+            echo ""
         fi
-        
-        process_category_items "$cat_id"
-        
-        echo ""
-        printf "Continue configuration? (y/n) [n]: "
-        read continue_config
-        
-        [ "$continue_config" != "y" ] && [ "$continue_config" != "Y" ] && break
-    done
+    fi
+    
+    process_category_items "$cat_id"
+    
+    echo "Configuration completed! Press Enter..."
+    read
 }
 
 simple_show_network_info() {
