@@ -911,6 +911,14 @@ process_category_items() {
                     aios-country) [ -z "$current" ] && current="${ISP_COUNTRY:-$default}" ;;
                     aios-timezone) [ -z "$current" ] && current="${AUTO_TIMEZONE:-$default}" ;;
                     aios-zonename) [ -z "$current" ] && current="${AUTO_ZONENAME:-$default}" ;;
+                    dslite-aftr-address)
+                        if [ -z "$current" ]; then
+                            local aftr_type=$(grep "^dslite_aftr_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+                            local area=$(grep "^dslite_area=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+                            local computed=$(compute_dslite_aftr "$aftr_type" "$area")
+                            [ -n "$computed" ] && current="$computed" || current="${DSLITE_AFTR:-$default}"
+                        fi
+                        ;;
                 esac
                 
                 if [ "$fieldtype" = "select" ]; then
@@ -928,6 +936,16 @@ process_category_items() {
                         selected_opt=$(echo "$options" | sed -n "${value}p")
                         sed -i "/^${variable}=/d" "$SETUP_VARS"
                         echo "${variable}='${selected_opt}'" >> "$SETUP_VARS"
+                        
+                        if [ "$item_id" = "dslite-aftr-type" ] || [ "$item_id" = "dslite-area" ]; then
+                            local aftr_type=$(grep "^dslite_aftr_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+                            local area=$(grep "^dslite_area=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+                            local computed=$(compute_dslite_aftr "$aftr_type" "$area")
+                            if [ -n "$computed" ]; then
+                                sed -i "/^dslite_aftr_address=/d" "$SETUP_VARS"
+                                echo "dslite_aftr_address='${computed}'" >> "$SETUP_VARS"
+                            fi
+                        fi
                     fi
                 else
                     printf "$label [${current:-$placeholder}]: "
