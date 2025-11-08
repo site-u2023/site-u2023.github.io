@@ -403,9 +403,11 @@ whiptail_category_config() {
     local cat_title=$(get_setup_category_title "$cat_id")
     local items=$(get_setup_category_items "$cat_id")
     
-    # Show network information if this is internet-connection category
     if [ "$cat_id" = "internet-connection" ]; then
-        whiptail_show_network_info
+        if whiptail_show_network_info; then
+            whiptail --msgbox "Auto-configuration applied!" 8 40
+            return 0
+        fi
     fi
     
     for item_id in $items; do
@@ -416,11 +418,9 @@ whiptail_category_config() {
         local placeholder=$(get_setup_item_placeholder "$item_id")
         local fieldtype=$(get_setup_item_fieldtype "$item_id")
         
-        # Get current value or use default
         local current=$(grep "^${variable}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
         [ -z "$current" ] && current="$default"
         
-        # Handle API source defaults
         case "$item_id" in
             aios-country) [ -z "$current" ] && current="${ISP_COUNTRY:-$default}" ;;
             aios-timezone) [ -z "$current" ] && current="${AUTO_TIMEZONE:-$default}" ;;
@@ -438,7 +438,13 @@ whiptail_category_config() {
                         menu_opts="$menu_opts $i \"$opt_label\""
                         i=$((i+1))
                     done
+                    
                     value=$(eval "whiptail --title '$cat_title' --menu '$label:' 18 60 10 $menu_opts 3>&1 1>&2 2>&3")
+                    
+                    if [ $? -ne 0 ]; then
+                        return 1
+                    fi
+                    
                     if [ -n "$value" ]; then
                         selected_opt=$(echo "$options" | sed -n "${value}p")
                         sed -i "/^${variable}=/d" "$SETUP_VARS"
@@ -446,6 +452,11 @@ whiptail_category_config() {
                     fi
                 else
                     value=$(whiptail --inputbox "$label:" 10 60 "$current" 3>&1 1>&2 2>&3)
+                    
+                    if [ $? -ne 0 ]; then
+                        return 1
+                    fi
+                    
                     if [ -n "$value" ]; then
                         sed -i "/^${variable}=/d" "$SETUP_VARS"
                         echo "${variable}='${value}'" >> "$SETUP_VARS"
@@ -461,7 +472,13 @@ whiptail_category_config() {
                     menu_opts="$menu_opts $i \"$opt_label\""
                     i=$((i+1))
                 done
+                
                 value=$(eval "whiptail --title '$cat_title' --menu '$label:' 18 60 10 $menu_opts 3>&1 1>&2 2>&3")
+                
+                if [ $? -ne 0 ]; then
+                    return 1
+                fi
+                
                 if [ -n "$value" ]; then
                     selected_opt=$(echo "$options" | sed -n "${value}p")
                     sed -i "/^${variable}=/d" "$SETUP_VARS"
@@ -511,6 +528,8 @@ whiptail_show_network_info() {
         info="${info}${tr_aftr}: $DSLITE_AFTR\n"
         info="${info}\n${tr_dslite_notice}"
     fi
+    
+    info="${info}\n\nUse this auto-detected configuration?"
     
     if whiptail --title "$(translate 'tr-internet-connection')" --yesno "$info" 22 70; then
         sed -i "/^connection_type=/d" "$SETUP_VARS"
