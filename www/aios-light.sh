@@ -470,6 +470,8 @@ whiptail_process_items() {
         items="$parent_items"
     fi
     
+    local items_processed=0
+    
     for item_id in $items; do
         should_show_item "$item_id" || continue
         
@@ -482,6 +484,7 @@ whiptail_process_items() {
                 ;;
                 
             field)
+                items_processed=$((items_processed + 1))
                 local label=$(get_setup_item_label "$item_id")
                 local variable=$(get_setup_item_variable "$item_id")
                 local default=$(get_setup_item_default "$item_id")
@@ -525,6 +528,7 @@ whiptail_process_items() {
                 ;;
                 
             radio-group)
+                items_processed=$((items_processed + 1))
                 local label=$(get_setup_item_label "$item_id")
                 local variable=$(get_setup_item_variable "$item_id")
                 local default=$(get_setup_item_default "$item_id")
@@ -551,6 +555,7 @@ whiptail_process_items() {
                 ;;
                 
             info-display)
+                items_processed=$((items_processed + 1))
                 local cat_idx=0
                 local item_idx=0
                 for cid in $(get_setup_categories); do
@@ -577,6 +582,8 @@ whiptail_process_items() {
                 ;;
         esac
     done
+    
+    return $items_processed
 }
 
 whiptail_show_network_info() {
