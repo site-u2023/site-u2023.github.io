@@ -88,6 +88,8 @@ init() {
     : > "$SELECTED_PACKAGES"
     : > "$SETUP_VARS"
     : > "$TRANSLATION_CACHE"
+    # Remove old language file to ensure fresh download
+    rm -f "$LANG_JSON"
 }
 
 # Download language JSON
@@ -95,10 +97,19 @@ download_language_json() {
     local lang="${1:-en}"
     local lang_url="$BASE_URL/www/langs/custom.${lang}.json"
     
-    if [ ! -f "$LANG_JSON" ]; then
-        echo "Downloading language file (${lang})..."
-        if ! wget -q -O "$LANG_JSON" "$lang_url"; then
-            echo "Warning: Failed to download language file"
+    # Always download to ensure we have the correct language
+    echo "Fetching language: ${lang}"
+    if ! wget -q -O "$LANG_JSON" "$lang_url"; then
+        echo "Warning: Failed to download language file for '${lang}'"
+        # Try fallback to English
+        if [ "$lang" != "en" ]; then
+            echo "Attempting fallback to English..."
+            lang_url="$BASE_URL/www/langs/custom.en.json"
+            if ! wget -q -O "$LANG_JSON" "$lang_url"; then
+                echo "Warning: Failed to download English fallback"
+                return 1
+            fi
+        else
             return 1
         fi
     fi
@@ -501,18 +512,6 @@ whiptail_package_selection() {
     local cat_desc=$(get_category_desc "$cat_id")
     local checklist_items="" pkg_id pkg_name status
     
-    while read pkg_id; do
-        pkg_name=$(get_package_name "$pkg_id")
-        [ -z "$pkg_name" ] && pkg_name="$pkg_id"
-        
-        if is_package_selected "$pkg_id"; then
-            status="ON"
-        else
-            status="OFF"
-        fi
-        
-        checklist_items="$checklist_items \"$pkg_id\" \"$pkg_name\" $status"
-    done < <(get_category_packages "$cat_id")
     while read pkg_id; do
         pkg_name=$(get_package_name "$pkg_id")
         [ -z "$pkg_name" ] && pkg_name="$pkg_id"
@@ -1037,6 +1036,7 @@ aios_light_main() {
     
     init
     
+    # FIRST: Get device and ISP information to retrieve AUTO_LANGUAGE
     echo "Detecting device information..."
     get_extended_device_info
     
@@ -1048,8 +1048,16 @@ aios_light_main() {
     [ -n "$DEVICE_CPU" ] && echo "CPU: $DEVICE_CPU"
     [ -n "$ISP_NAME" ] && echo "ISP: $ISP_NAME ($ISP_AS)"
     [ -n "$DETECTED_CONN_TYPE" ] && echo "Detected: $DETECTED_CONN_TYPE"
+    [ -n "$AUTO_LANGUAGE" ] && echo "Language: $AUTO_LANGUAGE"
     echo ""
     
+    # SECOND: Download language file based on AUTO_LANGUAGE
+    echo "Downloading language file..."
+    if ! download_language_json "${AUTO_LANGUAGE:-en}"; then
+        echo "Warning: Using English as fallback language"
+    fi
+    
+    # THIRD: Download setup.json
     echo "Downloading setup.json..."
     if ! download_setup_json; then
         echo "Error: Failed to download setup.json"
@@ -1057,9 +1065,7 @@ aios_light_main() {
         exit 1
     fi
     
-    echo "Downloading language file..."
-    download_language_json "$AUTO_LANGUAGE"
-    
+    # FOURTH: Download packages.json
     echo "Downloading packages.json..."
     if ! download_packages; then
         echo "Warning: Failed to download packages.json"
@@ -1072,6 +1078,7 @@ aios_light_main() {
     
     echo ""
     
+    # NOW we can safely call select_ui_mode with translations available
     select_ui_mode
     
     if [ "$UI_MODE" = "whiptail" ]; then
