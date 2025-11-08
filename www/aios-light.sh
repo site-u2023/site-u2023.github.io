@@ -374,7 +374,7 @@ EOF
         return 1
     fi
     
-    echo "$expected" | grep -qw "$current_val"
+    echo "$expected" | grep -qx "$current_val"
 }
 
 get_section_nested_items() {
