@@ -456,13 +456,11 @@ whiptail_category_config() {
     local cat_id="$1"
     local cat_title=$(get_setup_category_title "$cat_id")
     
-    # For internet-connection, show auto-detect first
     if [ "$cat_id" = "internet-connection" ]; then
         if whiptail_show_network_info; then
-            # User accepted auto-config, we're done
+            whiptail --msgbox "Auto-configuration applied!" 8 40
             return 0
         fi
-        # User rejected auto-config, continue to manual selection below
     fi
     
     # Loop to allow re-processing after radio-group changes
@@ -470,22 +468,11 @@ whiptail_category_config() {
     while [ "$continue_config" = true ]; do
         whiptail_process_items "$cat_id" ""
         
-        # Check if connection_type is 'auto' - if so, show auto-detect again
-        local conn_type=$(grep "^connection_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-        if [ "$cat_id" = "internet-connection" ] && [ "$conn_type" = "auto" ]; then
-            if whiptail_show_network_info; then
-                # User accepted auto-config
-                return 0
-            fi
-            # User rejected, loop back to manual selection
+        # Ask if user wants to review/modify settings
+        if whiptail --yesno "Settings saved!\n\nDo you want to modify any settings?" 10 50; then
             continue_config=true
         else
-            # Ask if user wants to review/modify settings
-            if whiptail --yesno "Settings saved!\n\nDo you want to modify any settings?" 10 50; then
-                continue_config=true
-            else
-                continue_config=false
-            fi
+            continue_config=false
         fi
     done
 }
@@ -959,52 +946,19 @@ simple_category_config() {
     local cat_id="$1"
     local cat_title=$(get_setup_category_title "$cat_id")
     
-    # For internet-connection, show auto-detect first
+    clear
+    echo "=== $cat_title ==="
+    echo ""
+    
+    # Show network information if this is internet-connection category
     if [ "$cat_id" = "internet-connection" ]; then
-        clear
-        echo "=== $cat_title ==="
-        echo ""
-        if simple_show_network_info; then
-            # User accepted auto-config
-            return 0
-        fi
-        # User rejected auto-config, continue to manual selection below
+        simple_show_network_info
     fi
     
-    # Loop to allow re-processing after radio-group changes
-    while true; do
-        clear
-        echo "=== $cat_title ==="
-        echo ""
-        
-        # Process items with showWhen support
-        process_category_items "$cat_id"
-        
-        # Check if connection_type is 'auto' - if so, show auto-detect again
-        local conn_type=$(grep "^connection_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-        if [ "$cat_id" = "internet-connection" ] && [ "$conn_type" = "auto" ]; then
-            clear
-            echo "=== $cat_title ==="
-            echo ""
-            if simple_show_network_info; then
-                # User accepted auto-config
-                return 0
-            fi
-            # User rejected, loop back to manual selection
-            continue
-        fi
-        
-        echo "Settings saved!"
-        echo ""
-        printf "Modify settings? (y/n) [n]: "
-        read modify
-        
-        if [ "$modify" != "y" ] && [ "$modify" != "Y" ]; then
-            break
-        fi
-    done
+    # Process items with showWhen support
+    process_category_items "$cat_id"
     
-    printf "Press Enter to continue..."
+    echo "Settings saved! Press Enter..."
     read
 }
 
