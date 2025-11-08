@@ -1353,7 +1353,7 @@ get_extended_device_info() {
     if [ -d /sys/bus/usb/devices ]; then
         USB_COUNT=$(find /sys/bus/usb/devices -name "idVendor" 2>/dev/null | wc -l)
         if [ "$USB_COUNT" -gt 0 ]; then
-            DEVICE_USB="Yes ($USB_COUNT devices)"
+            DEVICE_USB="$USB_COUNT devices"
         else
             DEVICE_USB="Available"
         fi
