@@ -259,7 +259,7 @@ load_default_packages() {
 
 whiptail_main_menu() {
     while true; do
-        local menu_items i=1 cat_id cat_title
+        local menu_items="" i=1 cat_id cat_title
         
         while read cat_id; do
             cat_title=$(get_setup_category_title "$cat_id")
@@ -387,7 +387,7 @@ whiptail_device_info() {
 }
 
 whiptail_package_categories() {
-    local menu_items i=1 cat_id cat_name
+    local menu_items="" i=1 cat_id cat_name
     
     while read cat_id; do
         cat_name=$(get_category_name "$cat_id")
@@ -407,8 +407,20 @@ whiptail_package_selection() {
     local cat_id="$1"
     local cat_name=$(get_category_name "$cat_id")
     local cat_desc=$(get_category_desc "$cat_id")
-    local checklist_items pkg_id pkg_name status
+    local checklist_items="" pkg_id pkg_name status
     
+    while read pkg_id; do
+        pkg_name=$(get_package_name "$pkg_id")
+        [ -z "$pkg_name" ] && pkg_name="$pkg_id"
+        
+        if is_package_selected "$pkg_id"; then
+            status="ON"
+        else
+            status="OFF"
+        fi
+        
+        checklist_items="$checklist_items \"$pkg_id\" \"$pkg_name\" $status"
+    done < <(get_category_packages "$cat_id")
     while read pkg_id; do
         pkg_name=$(get_package_name "$pkg_id")
         [ -z "$pkg_name" ] && pkg_name="$pkg_id"
