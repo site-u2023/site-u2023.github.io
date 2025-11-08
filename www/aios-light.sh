@@ -469,18 +469,12 @@ whiptail_category_config() {
         fi
     fi
     
-    echo "[DEBUG] First call - processing radio-group" >> /tmp/debug.log
-    whiptail_process_items "$cat_id" ""
-    
-    echo "[DEBUG] SETUP_VARS after first call:" >> /tmp/debug.log
-    cat "$SETUP_VARS" >> /tmp/debug.log 2>&1
-    
-    echo "[DEBUG] Second call - processing sections/fields" >> /tmp/debug.log
+    echo "[DEBUG] Processing all items" >> /tmp/debug.log
     whiptail_process_items "$cat_id" ""
     local processed=$?
     
     echo "[DEBUG] Items processed: $processed" >> /tmp/debug.log
-    echo "[DEBUG] SETUP_VARS after second call:" >> /tmp/debug.log
+    echo "[DEBUG] SETUP_VARS after processing:" >> /tmp/debug.log
     cat "$SETUP_VARS" >> /tmp/debug.log 2>&1
     echo "[DEBUG] === whiptail_category_config END ===" >> /tmp/debug.log
     
