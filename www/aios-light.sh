@@ -1332,6 +1332,10 @@ get_extended_device_info() {
         echo "Successfully downloaded auto-config data"
         
         if [ -f "$AUTO_CONFIG_JSON" ]; then
+            echo "=== AUTO_CONFIG_JSON CONTENT ===" >> /tmp/debug.log
+            cat "$AUTO_CONFIG_JSON" >> /tmp/debug.log
+            echo "================================" >> /tmp/debug.log
+            
             ISP_NAME=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.isp' 2>/dev/null)
             ISP_AS=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.as' 2>/dev/null)
             ISP_IPV6=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.ipv6' 2>/dev/null)
@@ -1350,6 +1354,8 @@ get_extended_device_info() {
             MAPE_PSIDLEN=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.mape.psidlen' 2>/dev/null)
             MAPE_PSID_OFFSET=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.mape.psIdOffset' 2>/dev/null)
             MAPE_GUA_PREFIX=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.mape.guaPrefix' 2>/dev/null)
+            
+            echo "DEBUG: MAPE_GUA_PREFIX='$MAPE_GUA_PREFIX'" >> /tmp/debug.log
             
             DSLITE_AFTR=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.aftr' 2>/dev/null)
             
