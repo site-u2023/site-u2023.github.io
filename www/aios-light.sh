@@ -357,7 +357,9 @@ whiptail_main_menu() {
             i=$((i+1))
         done < <(get_setup_categories)
         
-        menu_items="$menu_items $i \"Configure Packages\""
+        # Fixed menu items
+        local packages_label=$(translate "tr-custom-packages")
+        menu_items="$menu_items $i \"$packages_label\""
         i=$((i+1))
         menu_items="$menu_items $i \"Device Information\""
         i=$((i+1))
@@ -583,7 +585,8 @@ simple_main_menu() {
         done
         
         local setup_cat_count=$(get_setup_categories | wc -l)
-        echo "$((setup_cat_count+1))) Configure Packages"
+        local packages_label=$(translate "tr-custom-packages")
+        echo "$((setup_cat_count+1))) $packages_label"
         echo "$((setup_cat_count+2))) Device Information"
         echo "$((setup_cat_count+3))) Review & Generate"
         echo "q) Exit"
