@@ -540,6 +540,15 @@ whiptail_process_items() {
                 
                 echo "[DEBUG] radio-group: var=$variable, default=$default" >> /tmp/debug.log
                 
+                # MAP-E typeの初期値: GUA Prefixがあればgua、なければpd
+                if [ "$item_id" = "mape-type" ]; then
+                    if [ -n "$MAPE_GUA_PREFIX" ]; then
+                        default="gua"
+                    else
+                        default="pd"
+                    fi
+                fi
+                
                 local current=$(grep "^${variable}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
                 [ -z "$current" ] && current="$default"
                 
