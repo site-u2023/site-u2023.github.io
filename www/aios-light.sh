@@ -512,7 +512,7 @@ whiptail_show_network_info() {
         info="${info}\n${tr_dslite_notice}"
     fi
     
-    if whiptail --title "$(translate 'tr-internet-connection')" --yesno "$info" --yes-button "OK" --no-button "Cancel" 22 70; then
+    if whiptail --title "$(translate 'tr-internet-connection')" --yesno "$info" 22 70; then
         sed -i "/^connection_type=/d" "$SETUP_VARS"
         echo "connection_type='auto'" >> "$SETUP_VARS"
         return 0
