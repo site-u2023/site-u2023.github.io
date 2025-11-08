@@ -1950,7 +1950,7 @@ function applyIspAutoConfig(apiInfo) {
                             value = CustomUtils.generateGuaPrefixFromFullAddress(apiInfo);
                         } else if (subItem.apiSource) {
                             value = CustomUtils.getNestedValue(apiInfo, subItem.apiSource);
-                        }  // ← この閉じ括弧を1つ削除（余計な } があった）
+                        }
                         
                         if (value !== null && value !== undefined && value !== '') {
                             if (element.value !== String(value)) {
