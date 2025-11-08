@@ -480,38 +480,42 @@ whiptail_show_network_info() {
     local tr_isp=$(translate "tr-isp")
     local tr_as=$(translate "tr-as")
     local tr_country=$(translate "tr-country")
-    local tr_notice=$(translate "tr-notice")
+    local tr_br=$(translate "tr-br")
+    local tr_ipv4_prefix=$(translate "tr-ipv4-prefix")
+    local tr_ipv6_prefix=$(translate "tr-ipv6-prefix")
+    local tr_ea_len=$(translate "tr-ea-len")
+    local tr_psid_length=$(translate "tr-psid-length")
+    local tr_aftr=$(translate "tr-dslite-aftr-ipv6-address")
+    local tr_mape_notice=$(translate "tr-mape-notice1")
     local tr_dslite_notice=$(translate "tr-dslite-notice1")
     
-    local info="${tr_auto_detection}: ${DETECTED_CONN_TYPE:-Unknown}\n\n"
+    if [ -z "$DETECTED_CONN_TYPE" ] || [ "$DETECTED_CONN_TYPE" = "Unknown" ]; then
+        return 1
+    fi
+    
+    local info="${tr_auto_detection}: ${DETECTED_CONN_TYPE}\n\n"
     [ -n "$ISP_NAME" ] && info="${info}${tr_isp}: $ISP_NAME\n"
     [ -n "$ISP_AS" ] && info="${info}${tr_as}: $ISP_AS\n"
     [ -n "$ISP_REGION" ] && info="${info}${tr_country}: $ISP_REGION, $ISP_COUNTRY\n"
     
-    if [ -n "$DETECTED_CONN_TYPE" ] && [ "$DETECTED_CONN_TYPE" != "Unknown" ]; then
-        info="${info}\n${tr_method}: ${DETECTED_CONN_TYPE}\n\n"
-        
-        # Show detected parameters based on connection type
-        if [ "$DETECTED_CONN_TYPE" = "MAP-E" ] && [ -n "$MAPE_BR" ]; then
-            info="${info}BR: $MAPE_BR\n"
-            [ -n "$MAPE_IPV4_PREFIX" ] && info="${info}IPv4: $MAPE_IPV4_PREFIX/$MAPE_IPV4_PREFIXLEN\n"
-            [ -n "$MAPE_IPV6_PREFIX" ] && info="${info}IPv6: $MAPE_IPV6_PREFIX/$MAPE_IPV6_PREFIXLEN\n"
-            [ -n "$MAPE_EALEN" ] && info="${info}EA-len: $MAPE_EALEN\n"
-            [ -n "$MAPE_PSIDLEN" ] && info="${info}PSID-len: $MAPE_PSIDLEN\n"
-        elif [ "$DETECTED_CONN_TYPE" = "DS-Lite" ] && [ -n "$DSLITE_AFTR" ]; then
-            local tr_aftr=$(translate "tr-dslite-aftr-ipv6-address")
-            info="${info}${tr_aftr}: $DSLITE_AFTR\n"
-        fi
-        
-        info="${info}\n${tr_notice}: ${tr_dslite_notice}"
-        
-        if whiptail --title "$(translate 'tr-internet-connection')" --yesno "$info" 22 70; then
-            sed -i "/^connection_type=/d" "$SETUP_VARS"
-            echo "connection_type='auto'" >> "$SETUP_VARS"
-            return 0
-        else
-            return 1
-        fi
+    info="${info}\n${tr_method}: ${DETECTED_CONN_TYPE}\n\n"
+    
+    if [ "$DETECTED_CONN_TYPE" = "MAP-E" ] && [ -n "$MAPE_BR" ]; then
+        info="${info}${tr_br}: $MAPE_BR\n"
+        [ -n "$MAPE_IPV4_PREFIX" ] && info="${info}${tr_ipv4_prefix}: $MAPE_IPV4_PREFIX/$MAPE_IPV4_PREFIXLEN\n"
+        [ -n "$MAPE_IPV6_PREFIX" ] && info="${info}${tr_ipv6_prefix}: $MAPE_IPV6_PREFIX/$MAPE_IPV6_PREFIXLEN\n"
+        [ -n "$MAPE_EALEN" ] && info="${info}${tr_ea_len}: $MAPE_EALEN\n"
+        [ -n "$MAPE_PSIDLEN" ] && info="${info}${tr_psid_length}: $MAPE_PSIDLEN\n"
+        info="${info}\n${tr_mape_notice}"
+    elif [ "$DETECTED_CONN_TYPE" = "DS-Lite" ] && [ -n "$DSLITE_AFTR" ]; then
+        info="${info}${tr_aftr}: $DSLITE_AFTR\n"
+        info="${info}\n${tr_dslite_notice}"
+    fi
+    
+    if whiptail --title "$(translate 'tr-internet-connection')" --yesno "$info" 22 70; then
+        sed -i "/^connection_type=/d" "$SETUP_VARS"
+        echo "connection_type='auto'" >> "$SETUP_VARS"
+        return 0
     else
         return 1
     fi
@@ -738,42 +742,49 @@ simple_show_network_info() {
     local tr_isp=$(translate "tr-isp")
     local tr_as=$(translate "tr-as")
     local tr_country=$(translate "tr-country")
-    local tr_notice=$(translate "tr-notice")
+    local tr_br=$(translate "tr-br")
+    local tr_ipv4_prefix=$(translate "tr-ipv4-prefix")
+    local tr_ipv6_prefix=$(translate "tr-ipv6-prefix")
+    local tr_ea_len=$(translate "tr-ea-len")
+    local tr_psid_length=$(translate "tr-psid-length")
+    local tr_aftr=$(translate "tr-dslite-aftr-ipv6-address")
+    local tr_mape_notice=$(translate "tr-mape-notice1")
     local tr_dslite_notice=$(translate "tr-dslite-notice1")
+    
+    if [ -z "$DETECTED_CONN_TYPE" ] || [ "$DETECTED_CONN_TYPE" = "Unknown" ]; then
+        return 1
+    fi
     
     echo "=== ${tr_auto_detection} ==="
     echo ""
     [ -n "$ISP_NAME" ] && echo "${tr_isp}: $ISP_NAME"
     [ -n "$ISP_AS" ] && echo "${tr_as}: $ISP_AS"
     [ -n "$ISP_REGION" ] && echo "${tr_country}: $ISP_REGION, $ISP_COUNTRY"
+    echo ""
+    echo "${tr_method}: $DETECTED_CONN_TYPE"
+    echo ""
     
-    if [ -n "$DETECTED_CONN_TYPE" ] && [ "$DETECTED_CONN_TYPE" != "Unknown" ]; then
+    if [ "$DETECTED_CONN_TYPE" = "MAP-E" ] && [ -n "$MAPE_BR" ]; then
+        echo "${tr_br}: $MAPE_BR"
+        [ -n "$MAPE_IPV4_PREFIX" ] && echo "${tr_ipv4_prefix}: $MAPE_IPV4_PREFIX/$MAPE_IPV4_PREFIXLEN"
+        [ -n "$MAPE_IPV6_PREFIX" ] && echo "${tr_ipv6_prefix}: $MAPE_IPV6_PREFIX/$MAPE_IPV6_PREFIXLEN"
+        [ -n "$MAPE_EALEN" ] && echo "${tr_ea_len}: $MAPE_EALEN"
+        [ -n "$MAPE_PSIDLEN" ] && echo "${tr_psid_length}: $MAPE_PSIDLEN"
         echo ""
-        echo "${tr_method}: $DETECTED_CONN_TYPE"
+        echo "${tr_mape_notice}"
+    elif [ "$DETECTED_CONN_TYPE" = "DS-Lite" ] && [ -n "$DSLITE_AFTR" ]; then
+        echo "${tr_aftr}: $DSLITE_AFTR"
         echo ""
-        
-        # Show detected parameters based on connection type
-        if [ "$DETECTED_CONN_TYPE" = "MAP-E" ] && [ -n "$MAPE_BR" ]; then
-            echo "BR: $MAPE_BR"
-            [ -n "$MAPE_IPV4_PREFIX" ] && echo "IPv4: $MAPE_IPV4_PREFIX/$MAPE_IPV4_PREFIXLEN"
-            [ -n "$MAPE_IPV6_PREFIX" ] && echo "IPv6: $MAPE_IPV6_PREFIX/$MAPE_IPV6_PREFIXLEN"
-            [ -n "$MAPE_EALEN" ] && echo "EA-len: $MAPE_EALEN"
-            [ -n "$MAPE_PSIDLEN" ] && echo "PSID-len: $MAPE_PSIDLEN"
-        elif [ "$DETECTED_CONN_TYPE" = "DS-Lite" ] && [ -n "$DSLITE_AFTR" ]; then
-            local tr_aftr=$(translate "tr-dslite-aftr-ipv6-address")
-            echo "${tr_aftr}: $DSLITE_AFTR"
-        fi
-        
-        echo ""
-        echo "${tr_notice}: ${tr_dslite_notice}"
-        echo ""
-        printf "Use ${tr_auto_detection}? (y/n) [y]: "
-        read use_auto
-        
-        if [ "$use_auto" != "n" ] && [ "$use_auto" != "N" ]; then
-            sed -i "/^connection_type=/d" "$SETUP_VARS"
-            echo "connection_type='auto'" >> "$SETUP_VARS"
-        fi
+        echo "${tr_dslite_notice}"
+    fi
+    
+    echo ""
+    printf "Use ${tr_auto_detection}? (y/n) [y]: "
+    read use_auto
+    
+    if [ "$use_auto" != "n" ] && [ "$use_auto" != "N" ]; then
+        sed -i "/^connection_type=/d" "$SETUP_VARS"
+        echo "connection_type='auto'" >> "$SETUP_VARS"
     fi
     
     echo ""
