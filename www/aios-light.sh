@@ -370,7 +370,7 @@ should_show_item() {
         return 0
     fi
     
-    local var_name=$(echo "$show_when" | sed 's/^{"\([^"]*\)".*/\1/')
+    local var_name=$(echo "$show_when" | sed 's/^{ *"\([^"]*\)".*/\1/')
     echo "[DEBUG] var_name: $var_name" >> /tmp/debug.log
     
     [ -z "$var_name" ] && {
