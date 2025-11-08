@@ -447,14 +447,18 @@ whiptail_category_config() {
         fi
     fi
     
-    local continue_config=true
-    while [ "$continue_config" = true ]; do
-        whiptail_process_items "$cat_id" ""
+    while true; do
+        local items_count=$(whiptail_process_items "$cat_id" "")
         
-        if whiptail --yesno "Settings saved!\n\nDo you want to modify any settings?" 10 50; then
-            continue_config=true
+        if [ "$items_count" -gt 0 ]; then
+            if whiptail --yesno "Configuration completed!\n\nDo you want to modify any settings?" 10 50; then
+                continue
+            else
+                break
+            fi
         else
-            continue_config=false
+            whiptail --msgbox "No configuration items available for this category." 8 50
+            break
         fi
     done
 }
@@ -480,7 +484,10 @@ whiptail_process_items() {
         case "$item_type" in
             section)
                 local nested=$(get_section_nested_items "$item_id")
-                [ -n "$nested" ] && whiptail_process_items "$cat_id" "$nested"
+                if [ -n "$nested" ]; then
+                    local nested_count=$(whiptail_process_items "$cat_id" "$nested")
+                    items_processed=$((items_processed + nested_count))
+                fi
                 ;;
                 
             field)
@@ -897,7 +904,7 @@ simple_category_config() {
     
     process_category_items "$cat_id"
     
-    echo "Settings saved! Press Enter..."
+    echo "Configuration completed! Press Enter..."
     read
 }
 
