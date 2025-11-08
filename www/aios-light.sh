@@ -911,6 +911,15 @@ process_category_items() {
                     aios-country) [ -z "$current" ] && current="${ISP_COUNTRY:-$default}" ;;
                     aios-timezone) [ -z "$current" ] && current="${AUTO_TIMEZONE:-$default}" ;;
                     aios-zonename) [ -z "$current" ] && current="${AUTO_ZONENAME:-$default}" ;;
+                    mape-br) [ -z "$current" ] && current="${MAPE_BR:-$default}" ;;
+                    mape-ealen) [ -z "$current" ] && current="${MAPE_EALEN:-$default}" ;;
+                    mape-ipv4-prefix) [ -z "$current" ] && current="${MAPE_IPV4_PREFIX:-$default}" ;;
+                    mape-ipv4-prefixlen) [ -z "$current" ] && current="${MAPE_IPV4_PREFIXLEN:-$default}" ;;
+                    mape-ipv6-prefix) [ -z "$current" ] && current="${MAPE_IPV6_PREFIX:-$default}" ;;
+                    mape-ipv6-prefixlen) [ -z "$current" ] && current="${MAPE_IPV6_PREFIXLEN:-$default}" ;;
+                    mape-psid-offset) [ -z "$current" ] && current="${MAPE_PSID_OFFSET:-$default}" ;;
+                    mape-psidlen) [ -z "$current" ] && current="${MAPE_PSIDLEN:-$default}" ;;
+                    mape-gua-prefix) [ -z "$current" ] && current="${MAPE_GUA_PREFIX:-$default}" ;;
                     dslite-aftr-address)
                         if [ -z "$current" ]; then
                             local aftr_type=$(grep "^dslite_aftr_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
@@ -963,6 +972,14 @@ process_category_items() {
                 local label=$(get_setup_item_label "$item_id")
                 local variable=$(get_setup_item_variable "$item_id")
                 local default=$(get_setup_item_default "$item_id")
+                
+                if [ "$item_id" = "mape-type" ]; then
+                    if [ -n "$MAPE_GUA_PREFIX" ]; then
+                        default="gua"
+                    else
+                        default="pd"
+                    fi
+                fi
                 
                 local current=$(grep "^${variable}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
                 [ -z "$current" ] && current="$default"
@@ -1039,13 +1056,12 @@ simple_show_network_info() {
     local tr_as=$(translate "tr-as")
     local tr_mape_notice=$(translate "tr-mape-notice1")
     local tr_dslite_notice=$(translate "tr-dslite-notice1")
-    local tr_aftr=$(translate "tr-dslite-aftr-ipv6-address")
     
     if [ -z "$DETECTED_CONN_TYPE" ] || [ "$DETECTED_CONN_TYPE" = "Unknown" ]; then
         return 1
     fi
     
-    echo "=== ${tr_auto_detection} ==="
+    echo "=== ${tr_auto_detection}: ${DETECTED_CONN_TYPE} ==="
     echo ""
     [ -n "$ISP_NAME" ] && echo "${tr_isp}: $ISP_NAME"
     [ -n "$ISP_AS" ] && echo "${tr_as}: $ISP_AS"
