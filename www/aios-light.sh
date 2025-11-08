@@ -463,8 +463,18 @@ whiptail_category_config() {
         fi
     fi
     
-    whiptail_process_items "$cat_id" ""
-    whiptail --msgbox "Settings saved!" 8 40
+    # Loop to allow re-processing after radio-group changes
+    local continue_config=true
+    while [ "$continue_config" = true ]; do
+        whiptail_process_items "$cat_id" ""
+        
+        # Ask if user wants to review/modify settings
+        if whiptail --yesno "Settings saved!\n\nDo you want to modify any settings?" 10 50; then
+            continue_config=true
+        else
+            continue_config=false
+        fi
+    done
 }
 
 whiptail_process_items() {
@@ -936,19 +946,31 @@ simple_category_config() {
     local cat_id="$1"
     local cat_title=$(get_setup_category_title "$cat_id")
     
-    clear
-    echo "=== $cat_title ==="
-    echo ""
+    # Loop to allow re-processing after radio-group changes
+    while true; do
+        clear
+        echo "=== $cat_title ==="
+        echo ""
+        
+        # Show network information if this is internet-connection category
+        if [ "$cat_id" = "internet-connection" ]; then
+            simple_show_network_info
+        fi
+        
+        # Process items with showWhen support
+        process_category_items "$cat_id"
+        
+        echo "Settings saved!"
+        echo ""
+        printf "Modify settings? (y/n) [n]: "
+        read modify
+        
+        if [ "$modify" != "y" ] && [ "$modify" != "Y" ]; then
+            break
+        fi
+    done
     
-    # Show network information if this is internet-connection category
-    if [ "$cat_id" = "internet-connection" ]; then
-        simple_show_network_info
-    fi
-    
-    # Process items with showWhen support
-    process_category_items "$cat_id"
-    
-    echo "Settings saved! Press Enter..."
+    printf "Press Enter to continue..."
     read
 }
 
