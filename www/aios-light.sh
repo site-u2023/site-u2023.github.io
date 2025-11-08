@@ -193,10 +193,8 @@ get_setup_category_items() {
 get_setup_item_type() {
     local item_id="$1"
     
-    # まず通常のレベルで検索
     local result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].type" 2>/dev/null | head -1)
     
-    # 見つからなければネストされたitemsで検索（section内のitems）
     if [ -z "$result" ]; then
         result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].type" 2>/dev/null | head -1)
     fi
@@ -207,11 +205,9 @@ get_setup_item_type() {
 get_setup_item_label() {
     local item_id="$1"
     
-    # まず通常のレベルで検索
     local label=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].label" 2>/dev/null | head -1)
     local class=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].class" 2>/dev/null | head -1)
     
-    # ネストレベルで検索
     if [ -z "$label" ]; then
         label=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].label" 2>/dev/null | head -1)
         class=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].class" 2>/dev/null | head -1)
@@ -271,10 +267,8 @@ get_setup_item_fieldtype() {
 get_setup_item_options() {
     local item_id="$1"
     
-    # 通常レベル
     local result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].options[*].value" 2>/dev/null)
     
-    # ネストレベル
     if [ -z "$result" ]; then
         result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].options[*].value" 2>/dev/null)
     fi
@@ -286,11 +280,9 @@ get_setup_item_option_label() {
     local item_id="$1"
     local value="$2"
     
-    # 通常レベル
     local label=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].options[@.value='$value'].label" 2>/dev/null | head -1)
     local class=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].options[@.value='$value'].class" 2>/dev/null | head -1)
     
-    # ネストレベル
     if [ -z "$label" ]; then
         label=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].options[@.value='$value'].label" 2>/dev/null | head -1)
         class=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].options[@.value='$value'].class" 2>/dev/null | head -1)
@@ -1368,25 +1360,19 @@ detect_gua_prefix() {
     
     [ -z "$ipv6" ] && return 1
     
-    # setup.jsonからprefix_checkを取得
     local prefix_check=$(jsonfilter -i "$SETUP_JSON" -e '@.constants.gua_validation.prefix_check' 2>/dev/null)
     
-    # prefix_check: 2000::/3 の範囲チェック
     local first_hex=$(echo "$ipv6" | cut -d: -f1)
     local first_dec=$((0x$first_hex))
     
-    # 2000::/3 = 0x2000-0x3fff (8192-16383)
     [ $first_dec -lt 8192 ] || [ $first_dec -ge 16384 ] && return 1
     
-    # setup.jsonからexclude_cidrsを取得してチェック
     local exclude_cidrs=$(jsonfilter -i "$SETUP_JSON" -e '@.constants.gua_validation.exclude_cidrs[*]' 2>/dev/null)
     
     for cidr in $exclude_cidrs; do
-        # CIDR表記から prefix/length を分離
         local prefix=$(echo "$cidr" | cut -d/ -f1)
         local length=$(echo "$cidr" | cut -d/ -f2)
         
-        # 簡易マッチング（プレフィックス部分の比較）
         case "$length" in
             16)
                 local check=$(echo "$prefix" | cut -d: -f1)
@@ -1419,7 +1405,6 @@ detect_gua_prefix() {
         esac
     done
     
-    # GUAと判定
     echo "$ipv6" | awk -F: '{print $1":"$2":"$3":"$4"::/64"}'
     return 0
 }
@@ -1463,7 +1448,6 @@ get_extended_device_info() {
             MAPE_PSIDLEN=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.mape.psidlen' 2>/dev/null)
             MAPE_PSID_OFFSET=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.mape.psIdOffset' 2>/dev/null)
             
-            # IPv6アドレスからGUA判定
             MAPE_GUA_PREFIX=$(detect_gua_prefix "$ISP_IPV6")
             
             DSLITE_AFTR=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.aftr' 2>/dev/null)
