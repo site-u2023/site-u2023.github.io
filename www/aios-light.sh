@@ -802,40 +802,89 @@ whiptail_package_selection() {
 whiptail_review() {
     generate_preview_content
     
-    local preview="=== DEVICE ===\nModel: $DEVICE_MODEL\nTarget: $DEVICE_TARGET\n\n"
-    preview="${preview}=== PACKAGES ===\n"
-    if [ -s "$SELECTED_PACKAGES" ]; then
-        while read pkg; do
-            preview="${preview}- $pkg\n"
-        done < "$SELECTED_PACKAGES"
-    else
-        preview="${preview}(none)\n"
-    fi
-    
-    preview="${preview}\n=== CONFIGURATION ===\n"
-    if [ -s "$SETUP_VARS" ]; then
-        while read line; do
-            preview="${preview}$line\n"
-        done < "$SETUP_VARS"
-    else
-        preview="${preview}(none)\n"
-    fi
-    
-    preview="${preview}\n=== /tmp/postinst ===\n"
-    preview="${preview}$(head -20 $OUTPUT_DIR/postinst.preview 2>/dev/null || echo '(empty)')...\n"
-    
-    preview="${preview}\n=== /tmp/setup.sh ===\n"
-    preview="${preview}$(head -20 $OUTPUT_DIR/setup.sh.preview 2>/dev/null || echo '(empty)')...\n"
-    
-    if whiptail --scrolltext --title "Review Configuration" --yesno "$preview\n\nApply this configuration?" 24 78; then
-        generate_config_files
-        whiptail --msgbox "Executing configuration..." 8 40
-        sh "$OUTPUT_DIR/postinst"
-        sh "$OUTPUT_DIR/setup.sh"
-        if whiptail --yesno "Configuration applied!\n\nReboot now?" 10 40; then
-            reboot
+    while true; do
+        local summary="=== DEVICE ===\nModel: $DEVICE_MODEL\nTarget: $DEVICE_TARGET\n\n"
+        summary="${summary}=== PACKAGES ===\n"
+        if [ -s "$SELECTED_PACKAGES" ]; then
+            local pkg_count=$(wc -l < "$SELECTED_PACKAGES")
+            summary="${summary}Total packages: $pkg_count\n"
+        else
+            summary="${summary}(none)\n"
         fi
-    fi
+        
+        summary="${summary}\n=== CONFIGURATION ===\n"
+        if [ -s "$SETUP_VARS" ]; then
+            local var_count=$(wc -l < "$SETUP_VARS")
+            summary="${summary}Total variables: $var_count\n"
+        else
+            summary="${summary}(none)\n"
+        fi
+        
+        choice=$(whiptail --title "Review Configuration" --menu \
+            "$summary\nSelect an option:" 24 78 10 \
+            "1" "View Full Package List" \
+            "2" "View Full Configuration Variables" \
+            "3" "View /tmp/postinst (Package Installation Script)" \
+            "4" "View /tmp/setup.sh (System Configuration Script)" \
+            "5" "Apply Configuration" \
+            "6" "Back to Main Menu" \
+            3>&1 1>&2 2>&3)
+        
+        case "$choice" in
+            1)
+                local pkg_list=""
+                if [ -s "$SELECTED_PACKAGES" ]; then
+                    while read pkg; do
+                        pkg_list="${pkg_list}- ${pkg}\n"
+                    done < "$SELECTED_PACKAGES"
+                else
+                    pkg_list="(none)"
+                fi
+                whiptail --scrolltext --title "Package List" --msgbox "$pkg_list" 24 78
+                ;;
+            2)
+                local var_list=""
+                if [ -s "$SETUP_VARS" ]; then
+                    while read line; do
+                        var_list="${var_list}${line}\n"
+                    done < "$SETUP_VARS"
+                else
+                    var_list="(none)"
+                fi
+                whiptail --scrolltext --title "Configuration Variables" --msgbox "$var_list" 24 78
+                ;;
+            3)
+                if [ -f "$OUTPUT_DIR/postinst.preview" ]; then
+                    whiptail --scrolltext --title "/tmp/postinst" --msgbox "$(cat $OUTPUT_DIR/postinst.preview)" 24 78
+                else
+                    whiptail --msgbox "postinst file not found" 8 40
+                fi
+                ;;
+            4)
+                if [ -f "$OUTPUT_DIR/setup.sh.preview" ]; then
+                    whiptail --scrolltext --title "/tmp/setup.sh" --msgbox "$(cat $OUTPUT_DIR/setup.sh.preview)" 24 78
+                else
+                    whiptail --msgbox "setup.sh file not found" 8 40
+                fi
+                ;;
+            5)
+                if whiptail --title "Confirm" --yesno "Apply this configuration?\n\nThis will:\n1. Install packages via /tmp/postinst\n2. Apply settings via /tmp/setup.sh\n3. Optionally reboot\n\nContinue?" 15 60; then
+                    generate_config_files
+                    whiptail --msgbox "Executing package installation..." 8 50
+                    sh "$OUTPUT_DIR/postinst"
+                    whiptail --msgbox "Applying system configuration..." 8 50
+                    sh "$OUTPUT_DIR/setup.sh"
+                    if whiptail --yesno "Configuration applied successfully!\n\nReboot now?" 10 50; then
+                        reboot
+                    fi
+                    return 0
+                fi
+                ;;
+            6|"")
+                return 0
+                ;;
+        esac
+    done
 }
 
 simple_main_menu() {
@@ -1224,67 +1273,131 @@ simple_package_selection() {
 simple_review() {
     generate_preview_content
     
-    clear
-    echo "=== Configuration Review ==="
-    echo ""
-    echo "DEVICE:"
-    echo "  Model: $DEVICE_MODEL"
-    echo "  Target: $DEVICE_TARGET"
-    echo ""
-    echo "PACKAGES:"
-    if [ -s "$SELECTED_PACKAGES" ]; then
-        cat "$SELECTED_PACKAGES" | while read pkg; do
-            echo "  - $pkg"
-        done
-    else
-        echo "  (none)"
-    fi
-    
-    echo ""
-    echo "CONFIGURATION:"
-    if [ -s "$SETUP_VARS" ]; then
-        cat "$SETUP_VARS" | while read line; do
-            echo "  $line"
-        done
-    else
-        echo "  (none)"
-    fi
-    
-    echo ""
-    echo "=== /tmp/postinst preview ==="
-    head -20 "$OUTPUT_DIR/postinst.preview" 2>/dev/null || echo "(empty)"
-    echo "..."
-    
-    echo ""
-    echo "=== /tmp/setup.sh preview ==="
-    head -20 "$OUTPUT_DIR/setup.sh.preview" 2>/dev/null || echo "(empty)"
-    echo "..."
-    
-    echo ""
-    printf "Apply this configuration? (y/n): "
-    read confirm
-    
-    if [ "$confirm" = "y" -o "$confirm" = "Y" ]; then
-        generate_config_files
+    while true; do
+        clear
+        echo "=== Configuration Review ==="
         echo ""
-        echo "Executing postinst..."
-        sh "$OUTPUT_DIR/postinst"
+        echo "DEVICE:"
+        echo "  Model: $DEVICE_MODEL"
+        echo "  Target: $DEVICE_TARGET"
         echo ""
-        echo "Applying setup..."
-        sh "$OUTPUT_DIR/setup.sh"
-        echo ""
-        echo "Configuration applied!"
-        echo ""
-        printf "Reboot now? (y/n): "
-        read reboot_choice
-        if [ "$reboot_choice" = "y" -o "$reboot_choice" = "Y" ]; then
-            reboot
+        echo "PACKAGES:"
+        if [ -s "$SELECTED_PACKAGES" ]; then
+            echo "  Total: $(wc -l < $SELECTED_PACKAGES) packages"
+        else
+            echo "  (none)"
         fi
-    fi
-    
-    echo ""
-    printf "Press Enter to continue..."
-    read
+        
+        echo ""
+        echo "CONFIGURATION:"
+        if [ -s "$SETUP_VARS" ]; then
+            echo "  Total: $(wc -l < $SETUP_VARS) variables"
+        else
+            echo "  (none)"
+        fi
+        
+        echo ""
+        echo "1) View Full Package List"
+        echo "2) View Full Configuration Variables"
+        echo "3) View /tmp/postinst"
+        echo "4) View /tmp/setup.sh"
+        echo "5) Apply Configuration"
+        echo "b) Back"
+        echo ""
+        printf "Choice: "
+        read choice
+        
+        case "$choice" in
+            1)
+                clear
+                echo "=== Package List ==="
+                echo ""
+                if [ -s "$SELECTED_PACKAGES" ]; then
+                    cat "$SELECTED_PACKAGES" | while read pkg; do
+                        echo "  - $pkg"
+                    done
+                else
+                    echo "  (none)"
+                fi
+                echo ""
+                printf "Press Enter to continue..."
+                read
+                ;;
+            2)
+                clear
+                echo "=== Configuration Variables ==="
+                echo ""
+                if [ -s "$SETUP_VARS" ]; then
+                    cat "$SETUP_VARS"
+                else
+                    echo "  (none)"
+                fi
+                echo ""
+                printf "Press Enter to continue..."
+                read
+                ;;
+            3)
+                clear
+                echo "=== /tmp/postinst ==="
+                echo ""
+                if [ -f "$OUTPUT_DIR/postinst.preview" ]; then
+                    cat "$OUTPUT_DIR/postinst.preview"
+                else
+                    echo "(file not found)"
+                fi
+                echo ""
+                printf "Press Enter to continue..."
+                read
+                ;;
+            4)
+                clear
+                echo "=== /tmp/setup.sh ==="
+                echo ""
+                if [ -f "$OUTPUT_DIR/setup.sh.preview" ]; then
+                    cat "$OUTPUT_DIR/setup.sh.preview"
+                else
+                    echo "(file not found)"
+                fi
+                echo ""
+                printf "Press Enter to continue..."
+                read
+                ;;
+            5)
+                clear
+                echo "=== Apply Configuration ==="
+                echo ""
+                echo "This will:"
+                echo "1. Install packages via /tmp/postinst"
+                echo "2. Apply settings via /tmp/setup.sh"
+                echo "3. Optionally reboot"
+                echo ""
+                printf "Continue? (y/n): "
+                read confirm
+                
+                if [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
+                    generate_config_files
+                    echo ""
+                    echo "Executing postinst..."
+                    sh "$OUTPUT_DIR/postinst"
+                    echo ""
+                    echo "Applying setup..."
+                    sh "$OUTPUT_DIR/setup.sh"
+                    echo ""
+                    echo "Configuration applied successfully!"
+                    echo ""
+                    printf "Reboot now? (y/n): "
+                    read reboot_choice
+                    if [ "$reboot_choice" = "y" ] || [ "$reboot_choice" = "Y" ]; then
+                        reboot
+                    fi
+                    return 0
+                fi
+                ;;
+            b|B)
+                return 0
+                ;;
+        esac
+    done
 }
 
 apply_api_defaults() {
