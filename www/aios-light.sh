@@ -480,35 +480,36 @@ whiptail_process_items() {
     for item_id in $items; do
         local item_type=$(get_setup_item_type "$item_id")
         
-        case "$item_type" in
-            radio-group)
-                items_processed=$((items_processed + 1))
-                local label=$(get_setup_item_label "$item_id")
-                local variable=$(get_setup_item_variable "$item_id")
-                local default=$(get_setup_item_default "$item_id")
-                
-                local current=$(grep "^${variable}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-                [ -z "$current" ] && current="$default"
-                
-                local options=$(get_setup_item_options "$item_id")
-                local menu_opts=""
-                local i=1
-                for opt in $options; do
-                    local opt_label=$(get_setup_item_option_label "$item_id" "$opt")
-                    menu_opts="$menu_opts $i \"$opt_label\""
-                    i=$((i+1))
-                done
-                
-                value=$(eval "whiptail --title 'Setup' --menu '$label:' 18 60 10 $menu_opts 3>&1 1>&2 2>&3")
-                
-                if [ $? -eq 0 ] && [ -n "$value" ]; then
-                    selected_opt=$(echo "$options" | sed -n "${value}p")
-                    sed -i "/^${variable}=/d" "$SETUP_VARS"
-                    echo "${variable}='${selected_opt}'" >> "$SETUP_VARS"
-                fi
-                ;;
-        esac
+        # radio-groupは常に表示（showWhenチェックなし）
+        if [ "$item_type" = "radio-group" ]; then
+            items_processed=$((items_processed + 1))
+            local label=$(get_setup_item_label "$item_id")
+            local variable=$(get_setup_item_variable "$item_id")
+            local default=$(get_setup_item_default "$item_id")
+            
+            local current=$(grep "^${variable}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+            [ -z "$current" ] && current="$default"
+            
+            local options=$(get_setup_item_options "$item_id")
+            local menu_opts=""
+            local i=1
+            for opt in $options; do
+                local opt_label=$(get_setup_item_option_label "$item_id" "$opt")
+                menu_opts="$menu_opts $i \"$opt_label\""
+                i=$((i+1))
+            done
+            
+            value=$(eval "whiptail --title 'Setup' --menu '$label:' 18 60 10 $menu_opts 3>&1 1>&2 2>&3")
+            
+            if [ $? -eq 0 ] && [ -n "$value" ]; then
+                selected_opt=$(echo "$options" | sed -n "${value}p")
+                sed -i "/^${variable}=/d" "$SETUP_VARS"
+                echo "${variable}='${selected_opt}'" >> "$SETUP_VARS"
+            fi
+            continue
+        fi
         
+        # その他のアイテムはshowWhenチェック
         should_show_item "$item_id" || continue
         
         case "$item_type" in
