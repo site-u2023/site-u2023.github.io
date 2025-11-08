@@ -6,13 +6,11 @@
 VERSION="1.0.0"
 BASE_URL="https://site-u.pages.dev"
 PACKAGES_URL="$BASE_URL/www/packages/packages.json"
-SETUP_JSON_URL="$BASE_URL/www/uci-defaults/setup.json"
 SETUP_TEMPLATE_URL="$BASE_URL/www/uci-defaults/setup.sh"
 AUTO_CONFIG_URL="https://auto-config.site-u.workers.dev/"
 
 CONFIG_DIR="/tmp/device-setup"
 PACKAGES_JSON="$CONFIG_DIR/packages.json"
-SETUP_JSON="$CONFIG_DIR/setup.json"
 AUTO_CONFIG_JSON="$CONFIG_DIR/auto_config.json"
 SELECTED_PACKAGES="$CONFIG_DIR/selected_packages.txt"
 SETUP_VARS="$CONFIG_DIR/setup_vars.sh"
@@ -85,18 +83,6 @@ init() {
     : > "$SETUP_VARS"
 }
 
-# Download setup.json
-download_setup_json() {
-    if [ ! -f "$SETUP_JSON" ]; then
-        echo "Downloading setup.json..."
-        if ! wget -q -O "$SETUP_JSON" "$SETUP_JSON_URL"; then
-            echo "Failed to download setup.json"
-            return 1
-        fi
-    fi
-    return 0
-}
-
 # Download packages.json
 download_packages() {
     if [ ! -f "$PACKAGES_JSON" ]; then
@@ -111,101 +97,18 @@ download_packages() {
 
 # Get device info from URL or board
 get_device_info() {
+    # Try to get from current system
     if [ -f /etc/board.json ]; then
         DEVICE_MODEL=$(jsonfilter -i /etc/board.json -e '@.model.name' 2>/dev/null)
         DEVICE_TARGET=$(jsonfilter -i /etc/board.json -e '@.target' 2>/dev/null)
     fi
     
+    # Fallback
     [ -z "$DEVICE_MODEL" ] && DEVICE_MODEL="Unknown"
     [ -z "$DEVICE_TARGET" ] && DEVICE_TARGET="unknown/unknown"
 }
 
-# Setup.json helpers
-get_setup_categories() {
-    jsonfilter -i "$SETUP_JSON" -e '@.categories[*].id' 2>/dev/null | grep -v '^$'
-}
-
-get_setup_category_title() {
-    jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$1'].title" 2>/dev/null
-}
-
-get_setup_category_class() {
-    jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$1'].class" 2>/dev/null
-}
-
-get_setup_category_items() {
-    jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$1'].items[*].id" 2>/dev/null | grep -v '^$'
-}
-
-get_setup_item_type() {
-    jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$1'].type" 2>/dev/null | head -1
-}
-
-get_setup_item_label() {
-    jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$1'].label" 2>/dev/null | head -1
-}
-
-get_setup_item_variable() {
-    jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$1'].variable" 2>/dev/null | head -1
-}
-
-get_setup_item_default() {
-    jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$1'].default" 2>/dev/null | head -1
-}
-
-get_setup_item_placeholder() {
-    jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$1'].placeholder" 2>/dev/null | head -1
-}
-
-get_setup_item_fieldtype() {
-    jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$1'].fieldType" 2>/dev/null | head -1
-}
-
-get_setup_item_options() {
-    local item_id="$1"
-    local cat_idx=0
-    local item_idx=0
-    
-    # Find the category and item indices
-    for cat_id in $(get_setup_categories); do
-        local items=$(get_setup_category_items "$cat_id")
-        local idx=0
-        for itm in $items; do
-            if [ "$itm" = "$item_id" ]; then
-                item_idx=$idx
-                break 2
-            fi
-            idx=$((idx+1))
-        done
-        cat_idx=$((cat_idx+1))
-    done
-    
-    jsonfilter -i "$SETUP_JSON" -e "@.categories[$cat_idx].items[$item_idx].options[*].value" 2>/dev/null
-}
-
-get_setup_item_option_label() {
-    local item_id="$1"
-    local value="$2"
-    local cat_idx=0
-    local item_idx=0
-    
-    for cat_id in $(get_setup_categories); do
-        local items=$(get_setup_category_items "$cat_id")
-        local idx=0
-        for itm in $items; do
-            if [ "$itm" = "$item_id" ]; then
-                item_idx=$idx
-                break 2
-            fi
-            idx=$((idx+1))
-        done
-        cat_idx=$((cat_idx+1))
-    done
-    
-    jsonfilter -i "$SETUP_JSON" -e "@.categories[$cat_idx].items[$item_idx].options[@.value='$value'].label" 2>/dev/null
-}
-
-# Packages.json helpers
+# JSON filter helpers
 get_categories() {
     jsonfilter -i "$PACKAGES_JSON" -e '@.categories[*].id' 2>/dev/null | grep -v '^$'
 }
@@ -259,115 +162,29 @@ load_default_packages() {
 
 whiptail_main_menu() {
     while true; do
-        local menu_items="" i=1 cat_id cat_title
+        choice=$(whiptail --title "OpenWrt Setup Tool v$VERSION - $DEVICE_MODEL" \
+            --menu "Select an option:" 18 70 10 \
+            "1" "Device Information" \
+            "2" "Configure Packages" \
+            "3" "Basic Settings" \
+            "4" "Network Configuration" \
+            "5" "Wi-Fi Setup" \
+            "6" "Advanced Options" \
+            "7" "Review & Generate" \
+            "8" "Exit" \
+            3>&1 1>&2 2>&3)
         
-        while read cat_id; do
-            cat_title=$(get_setup_category_title "$cat_id")
-            menu_items="$menu_items $i \"$cat_title\""
-            i=$((i+1))
-        done < <(get_setup_categories)
-        
-        menu_items="$menu_items $i \"Configure Packages\""
-        i=$((i+1))
-        menu_items="$menu_items $i \"Device Information\""
-        i=$((i+1))
-        menu_items="$menu_items $i \"Review & Generate\""
-        i=$((i+1))
-        menu_items="$menu_items $i \"Exit\""
-        
-        choice=$(eval "whiptail --title 'OpenWrt Setup Tool v$VERSION - $DEVICE_MODEL' \
-            --menu 'Select an option:' 20 70 12 $menu_items 3>&1 1>&2 2>&3")
-        
-        if [ -z "$choice" ]; then
-            exit 0
-        fi
-        
-        # Calculate what was selected
-        local setup_cat_count=$(get_setup_categories | wc -l)
-        if [ "$choice" -le "$setup_cat_count" ]; then
-            selected_cat=$(get_setup_categories | sed -n "${choice}p")
-            whiptail_category_config "$selected_cat"
-        elif [ "$choice" -eq "$((setup_cat_count+1))" ]; then
-            whiptail_package_categories
-        elif [ "$choice" -eq "$((setup_cat_count+2))" ]; then
-            whiptail_device_info
-        elif [ "$choice" -eq "$((setup_cat_count+3))" ]; then
-            whiptail_review
-        else
-            exit 0
-        fi
-    done
-}
-
-whiptail_category_config() {
-    local cat_id="$1"
-    local cat_title=$(get_setup_category_title "$cat_id")
-    local items=$(get_setup_category_items "$cat_id")
-    
-    for item_id in $items; do
-        local item_type=$(get_setup_item_type "$item_id")
-        local label=$(get_setup_item_label "$item_id")
-        local variable=$(get_setup_item_variable "$item_id")
-        local default=$(get_setup_item_default "$item_id")
-        local placeholder=$(get_setup_item_placeholder "$item_id")
-        local fieldtype=$(get_setup_item_fieldtype "$item_id")
-        
-        # Get current value or use default
-        local current=$(grep "^${variable}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-        [ -z "$current" ] && current="$default"
-        
-        # Handle API source defaults
-        case "$item_id" in
-            aios-country) [ -z "$current" ] && current="${ISP_COUNTRY:-$default}" ;;
-            aios-timezone) [ -z "$current" ] && current="${AUTO_TIMEZONE:-$default}" ;;
-            aios-zonename) [ -z "$current" ] && current="${AUTO_ZONENAME:-$default}" ;;
-        esac
-        
-        case "$item_type" in
-            field)
-                if [ "$fieldtype" = "select" ]; then
-                    local options=$(get_setup_item_options "$item_id")
-                    local menu_opts=""
-                    local i=1
-                    for opt in $options; do
-                        local opt_label=$(get_setup_item_option_label "$item_id" "$opt")
-                        menu_opts="$menu_opts $i \"$opt_label\""
-                        i=$((i+1))
-                    done
-                    value=$(eval "whiptail --title '$cat_title' --menu '$label:' 18 60 10 $menu_opts 3>&1 1>&2 2>&3")
-                    if [ -n "$value" ]; then
-                        selected_opt=$(echo "$options" | sed -n "${value}p")
-                        sed -i "/^${variable}=/d" "$SETUP_VARS"
-                        echo "${variable}='${selected_opt}'" >> "$SETUP_VARS"
-                    fi
-                else
-                    value=$(whiptail --inputbox "$label:" 10 60 "$current" 3>&1 1>&2 2>&3)
-                    if [ -n "$value" ]; then
-                        sed -i "/^${variable}=/d" "$SETUP_VARS"
-                        echo "${variable}='${value}'" >> "$SETUP_VARS"
-                    fi
-                fi
-                ;;
-            radio-group)
-                local options=$(get_setup_item_options "$item_id")
-                local menu_opts=""
-                local i=1
-                for opt in $options; do
-                    local opt_label=$(get_setup_item_option_label "$item_id" "$opt")
-                    menu_opts="$menu_opts $i \"$opt_label\""
-                    i=$((i+1))
-                done
-                value=$(eval "whiptail --title '$cat_title' --menu '$label:' 18 60 10 $menu_opts 3>&1 1>&2 2>&3")
-                if [ -n "$value" ]; then
-                    selected_opt=$(echo "$options" | sed -n "${value}p")
-                    sed -i "/^${variable}=/d" "$SETUP_VARS"
-                    echo "${variable}='${selected_opt}'" >> "$SETUP_VARS"
-                fi
-                ;;
+        case "$choice" in
+            1) whiptail_device_info ;;
+            2) whiptail_package_categories ;;
+            3) whiptail_basic_settings ;;
+            4) whiptail_network_config ;;
+            5) whiptail_wifi_config ;;
+            6) whiptail_advanced_options ;;
+            7) whiptail_review ;;
+            8|"") exit 0 ;;
         esac
     done
-    
-    whiptail --msgbox "Settings saved!" 8 40
 }
 
 whiptail_device_info() {
@@ -387,7 +204,7 @@ whiptail_device_info() {
 }
 
 whiptail_package_categories() {
-    local menu_items="" i=1 cat_id cat_name
+    local menu_items i=1 cat_id cat_name
     
     while read cat_id; do
         cat_name=$(get_category_name "$cat_id")
@@ -407,20 +224,8 @@ whiptail_package_selection() {
     local cat_id="$1"
     local cat_name=$(get_category_name "$cat_id")
     local cat_desc=$(get_category_desc "$cat_id")
-    local checklist_items="" pkg_id pkg_name status
+    local checklist_items pkg_id pkg_name status
     
-    while read pkg_id; do
-        pkg_name=$(get_package_name "$pkg_id")
-        [ -z "$pkg_name" ] && pkg_name="$pkg_id"
-        
-        if is_package_selected "$pkg_id"; then
-            status="ON"
-        else
-            status="OFF"
-        fi
-        
-        checklist_items="$checklist_items \"$pkg_id\" \"$pkg_name\" $status"
-    done < <(get_category_packages "$cat_id")
     while read pkg_id; do
         pkg_name=$(get_package_name "$pkg_id")
         [ -z "$pkg_name" ] && pkg_name="$pkg_id"
@@ -444,6 +249,261 @@ whiptail_package_selection() {
     for pkg in $selected; do
         pkg=$(echo "$pkg" | tr -d '"')
         echo "$pkg" >> "$SELECTED_PACKAGES"
+    done
+}
+
+whiptail_basic_settings() {
+    while true; do
+        choice=$(whiptail --title "Basic Settings" --menu "Configure:" 18 60 10 \
+            "1" "Language" \
+            "2" "Timezone/Region" \
+            "3" "Device Name" \
+            "4" "Root Password" \
+            "5" "LAN IPv4 Address" \
+            "6" "LAN IPv6 Address" \
+            "7" "SSH Interface" \
+            "8" "SSH Port" \
+            "9" "Back" \
+            3>&1 1>&2 2>&3)
+        
+        case "$choice" in
+            1)
+                # Language with auto-detected default
+                default_lang="${AUTO_LANGUAGE:-en}"
+                lang=$(whiptail --inputbox "Language (e.g., ja, en):" 10 60 "$default_lang" 3>&1 1>&2 2>&3)
+                [ -n "$lang" ] && sed -i "/^language=/d" "$SETUP_VARS" && echo "language='$lang'" >> "$SETUP_VARS"
+                ;;
+            2)
+                # Timezone with auto-detected default
+                default_tz="${AUTO_TIMEZONE:-UTC}"
+                tz=$(whiptail --inputbox "Timezone (e.g., JST-9, UTC):" 10 60 "$default_tz" 3>&1 1>&2 2>&3)
+                [ -n "$tz" ] && sed -i "/^timezone=/d" "$SETUP_VARS" && echo "timezone='$tz'" >> "$SETUP_VARS"
+                
+                default_zonename="${AUTO_ZONENAME:-UTC}"
+                zonename=$(whiptail --inputbox "Zonename (e.g., Asia/Tokyo):" 10 60 "$default_zonename" 3>&1 1>&2 2>&3)
+                [ -n "$zonename" ] && sed -i "/^zonename=/d" "$SETUP_VARS" && echo "zonename='$zonename'" >> "$SETUP_VARS"
+                ;;
+            3)
+                hostname=$(whiptail --inputbox "Device Name:" 10 60 "OpenWrt" 3>&1 1>&2 2>&3)
+                [ -n "$hostname" ] && sed -i "/^device_name=/d" "$SETUP_VARS" && echo "device_name='$hostname'" >> "$SETUP_VARS"
+                ;;
+            4)
+                password=$(whiptail --passwordbox "Root Password (8+ chars):" 10 60 3>&1 1>&2 2>&3)
+                [ -n "$password" ] && sed -i "/^root_password=/d" "$SETUP_VARS" && echo "root_password='$password'" >> "$SETUP_VARS"
+                ;;
+            5)
+                lan_ip=$(whiptail --inputbox "LAN IPv4 (e.g., 192.168.1.1/24):" 10 60 3>&1 1>&2 2>&3)
+                [ -n "$lan_ip" ] && sed -i "/^lan_ip_address=/d" "$SETUP_VARS" && echo "lan_ip_address='$lan_ip'" >> "$SETUP_VARS"
+                ;;
+            6)
+                lan_ip6=$(whiptail --inputbox "LAN IPv6 (e.g., fd00:1/64):" 10 60 3>&1 1>&2 2>&3)
+                [ -n "$lan_ip6" ] && sed -i "/^lan_ipv6_address=/d" "$SETUP_VARS" && echo "lan_ipv6_address='$lan_ip6'" >> "$SETUP_VARS"
+                ;;
+            7)
+                ssh_if=$(whiptail --inputbox "SSH Interface (e.g., lan):" 10 60 3>&1 1>&2 2>&3)
+                [ -n "$ssh_if" ] && sed -i "/^ssh_interface=/d" "$SETUP_VARS" && echo "ssh_interface='$ssh_if'" >> "$SETUP_VARS"
+                ;;
+            8)
+                ssh_port=$(whiptail --inputbox "SSH Port:" 10 60 "22" 3>&1 1>&2 2>&3)
+                [ -n "$ssh_port" ] && sed -i "/^ssh_port=/d" "$SETUP_VARS" && echo "ssh_port='$ssh_port'" >> "$SETUP_VARS"
+                ;;
+            9|"") return ;;
+        esac
+    done
+}
+
+whiptail_network_config() {
+    # Show auto-detected settings if available
+    local auto_msg=""
+    if [ -n "$DETECTED_CONN_TYPE" ]; then
+        auto_msg="Auto-detected: $DETECTED_CONN_TYPE\n\n"
+        if [ "$DETECTED_CONN_TYPE" = "MAP-E" ] && [ -n "$MAPE_BR" ]; then
+            auto_msg="${auto_msg}MAP-E Settings detected:\n"
+            auto_msg="${auto_msg}  BR: $MAPE_BR\n"
+            auto_msg="${auto_msg}  IPv4: $MAPE_IPV4_PREFIX/$MAPE_IPV4_PREFIXLEN\n"
+            auto_msg="${auto_msg}  IPv6: $MAPE_IPV6_PREFIX/$MAPE_IPV6_PREFIXLEN\n"
+            auto_msg="${auto_msg}  EA-len: $MAPE_EALEN\n"
+            auto_msg="${auto_msg}  PSID: $MAPE_PSIDLEN (offset: $MAPE_PSID_OFFSET)\n\n"
+        elif [ "$DETECTED_CONN_TYPE" = "DS-Lite" ] && [ -n "$DSLITE_AFTR" ]; then
+            auto_msg="${auto_msg}DS-Lite AFTR: $DSLITE_AFTR\n\n"
+        fi
+    fi
+    
+    if [ -n "$auto_msg" ]; then
+        if whiptail --title "Auto-Detected Network" --yesno "${auto_msg}Use these settings?" 18 70; then
+            # Auto-configure based on detection
+            if [ "$DETECTED_CONN_TYPE" = "MAP-E" ]; then
+                sed -i "/^connection_type=/d" "$SETUP_VARS"
+                sed -i "/^mape_/d" "$SETUP_VARS"
+                echo "connection_type='mape'" >> "$SETUP_VARS"
+                echo "mape_br='$MAPE_BR'" >> "$SETUP_VARS"
+                echo "mape_ipv4_prefix='$MAPE_IPV4_PREFIX'" >> "$SETUP_VARS"
+                echo "mape_ipv4_prefixlen='$MAPE_IPV4_PREFIXLEN'" >> "$SETUP_VARS"
+                echo "mape_ipv6_prefix='$MAPE_IPV6_PREFIX'" >> "$SETUP_VARS"
+                echo "mape_ipv6_prefixlen='$MAPE_IPV6_PREFIXLEN'" >> "$SETUP_VARS"
+                echo "mape_ealen='$MAPE_EALEN'" >> "$SETUP_VARS"
+                echo "mape_psidlen='$MAPE_PSIDLEN'" >> "$SETUP_VARS"
+                echo "mape_psid_offset='$MAPE_PSID_OFFSET'" >> "$SETUP_VARS"
+                whiptail --msgbox "MAP-E configured automatically!" 8 50
+                return
+            elif [ "$DETECTED_CONN_TYPE" = "DS-Lite" ]; then
+                sed -i "/^connection_type=/d" "$SETUP_VARS"
+                sed -i "/^dslite_/d" "$SETUP_VARS"
+                echo "connection_type='dslite'" >> "$SETUP_VARS"
+                echo "dslite_aftr_address='$DSLITE_AFTR'" >> "$SETUP_VARS"
+                whiptail --msgbox "DS-Lite configured automatically!" 8 50
+                return
+            fi
+        fi
+    fi
+    
+    # Manual configuration
+    conn_type=$(whiptail --title "Network Configuration" --menu "Connection Type:" 16 60 8 \
+        "1" "DHCP (Auto)" \
+        "2" "PPPoE" \
+        "3" "DS-Lite (IPv4 over IPv6)" \
+        "4" "MAP-E (IPv4 over IPv6)" \
+        "5" "Access Point Mode" \
+        3>&1 1>&2 2>&3)
+    
+    sed -i "/^connection_type=/d" "$SETUP_VARS"
+    
+    case "$conn_type" in
+        1) echo "connection_type='auto'" >> "$SETUP_VARS" ;;
+        2)
+            echo "connection_type='pppoe'" >> "$SETUP_VARS"
+            username=$(whiptail --inputbox "PPPoE Username:" 10 60 3>&1 1>&2 2>&3)
+            [ -n "$username" ] && echo "pppoe_username='$username'" >> "$SETUP_VARS"
+            password=$(whiptail --passwordbox "PPPoE Password:" 10 60 3>&1 1>&2 2>&3)
+            [ -n "$password" ] && echo "pppoe_password='$password'" >> "$SETUP_VARS"
+            ;;
+        3)
+            echo "connection_type='dslite'" >> "$SETUP_VARS"
+            aftr=$(whiptail --inputbox "DS-Lite AFTR Address:" 10 60 "${DSLITE_AFTR}" 3>&1 1>&2 2>&3)
+            [ -n "$aftr" ] && echo "dslite_aftr_address='$aftr'" >> "$SETUP_VARS"
+            ;;
+        4)
+            echo "connection_type='mape'" >> "$SETUP_VARS"
+            sed -i "/^mape_/d" "$SETUP_VARS"
+            
+            # BR Address
+            br=$(whiptail --inputbox "MAP-E BR Address:" 10 60 "${MAPE_BR}" 3>&1 1>&2 2>&3)
+            [ -n "$br" ] && echo "mape_br='$br'" >> "$SETUP_VARS"
+            
+            # IPv4 Prefix
+            ipv4_prefix=$(whiptail --inputbox "IPv4 Prefix:" 10 60 "${MAPE_IPV4_PREFIX}" 3>&1 1>&2 2>&3)
+            [ -n "$ipv4_prefix" ] && echo "mape_ipv4_prefix='$ipv4_prefix'" >> "$SETUP_VARS"
+            
+            # IPv4 Prefix Length
+            ipv4_prefixlen=$(whiptail --inputbox "IPv4 Prefix Length:" 10 60 "${MAPE_IPV4_PREFIXLEN}" 3>&1 1>&2 2>&3)
+            [ -n "$ipv4_prefixlen" ] && echo "mape_ipv4_prefixlen='$ipv4_prefixlen'" >> "$SETUP_VARS"
+            
+            # IPv6 Prefix
+            ipv6_prefix=$(whiptail --inputbox "IPv6 Prefix:" 10 60 "${MAPE_IPV6_PREFIX}" 3>&1 1>&2 2>&3)
+            [ -n "$ipv6_prefix" ] && echo "mape_ipv6_prefix='$ipv6_prefix'" >> "$SETUP_VARS"
+            
+            # IPv6 Prefix Length
+            ipv6_prefixlen=$(whiptail --inputbox "IPv6 Prefix Length:" 10 60 "${MAPE_IPV6_PREFIXLEN}" 3>&1 1>&2 2>&3)
+            [ -n "$ipv6_prefixlen" ] && echo "mape_ipv6_prefixlen='$ipv6_prefixlen'" >> "$SETUP_VARS"
+            
+            # EA Length
+            ealen=$(whiptail --inputbox "EA Length:" 10 60 "${MAPE_EALEN}" 3>&1 1>&2 2>&3)
+            [ -n "$ealen" ] && echo "mape_ealen='$ealen'" >> "$SETUP_VARS"
+            
+            # PSID Length
+            psidlen=$(whiptail --inputbox "PSID Length:" 10 60 "${MAPE_PSIDLEN}" 3>&1 1>&2 2>&3)
+            [ -n "$psidlen" ] && echo "mape_psidlen='$psidlen'" >> "$SETUP_VARS"
+            
+            # PSID Offset
+            psid_offset=$(whiptail --inputbox "PSID Offset:" 10 60 "${MAPE_PSID_OFFSET}" 3>&1 1>&2 2>&3)
+            [ -n "$psid_offset" ] && echo "mape_psid_offset='$psid_offset'" >> "$SETUP_VARS"
+            ;;
+        5)
+            echo "connection_type='ap'" >> "$SETUP_VARS"
+            ip=$(whiptail --inputbox "AP IP Address:" 10 60 3>&1 1>&2 2>&3)
+            [ -n "$ip" ] && echo "ap_ip_address='$ip'" >> "$SETUP_VARS"
+            gateway=$(whiptail --inputbox "Gateway:" 10 60 3>&1 1>&2 2>&3)
+            [ -n "$gateway" ] && echo "ap_gateway='$gateway'" >> "$SETUP_VARS"
+            ;;
+    esac
+    
+    whiptail --msgbox "Network settings saved!" 8 40
+}
+
+whiptail_wifi_config() {
+    mode=$(whiptail --title "Wi-Fi Setup" --menu "Wi-Fi Mode:" 13 60 3 \
+        "1" "Standard (separate SSIDs per band)" \
+        "2" "Usteer (unified SSID with roaming)" \
+        3>&1 1>&2 2>&3)
+    
+    sed -i "/^wifi_mode=/d" "$SETUP_VARS"
+    case "$mode" in
+        1) echo "wifi_mode='standard'" >> "$SETUP_VARS" ;;
+        2) echo "wifi_mode='usteer'" >> "$SETUP_VARS" ;;
+    esac
+    
+    ssid=$(whiptail --inputbox "SSID:" 10 60 3>&1 1>&2 2>&3)
+    [ -n "$ssid" ] && sed -i "/^wlan_ssid=/d" "$SETUP_VARS" && echo "wlan_ssid='$ssid'" >> "$SETUP_VARS"
+    
+    password=$(whiptail --passwordbox "Wi-Fi Password (8+ chars):" 10 60 3>&1 1>&2 2>&3)
+    [ -n "$password" ] && sed -i "/^wlan_password=/d" "$SETUP_VARS" && echo "wlan_password='$password'" >> "$SETUP_VARS"
+    
+    # Country code with auto-detected default
+    default_country="${ISP_COUNTRY:-JP}"
+    country=$(whiptail --inputbox "Country Code (e.g., JP, US):" 10 60 "$default_country" 3>&1 1>&2 2>&3)
+    [ -n "$country" ] && sed -i "/^country=/d" "$SETUP_VARS" && echo "country='$country'" >> "$SETUP_VARS"
+    
+    whiptail --msgbox "Wi-Fi settings saved!" 8 40
+}
+
+whiptail_advanced_options() {
+    while true; do
+        choice=$(whiptail --title "Advanced Options" --menu "Configure:" 16 60 8 \
+            "1" "Flow Offloading" \
+            "2" "Network Optimizer" \
+            "3" "DNS Cache Settings" \
+            "4" "Back" \
+            3>&1 1>&2 2>&3)
+        
+        case "$choice" in
+            1)
+                offload=$(whiptail --menu "Flow Offloading:" 12 60 3 \
+                    "1" "Disabled" \
+                    "2" "Software" \
+                    "3" "Hardware" \
+                    3>&1 1>&2 2>&3)
+                sed -i "/^flow_offloading_type=/d" "$SETUP_VARS"
+                case "$offload" in
+                    2) echo "flow_offloading_type='software'" >> "$SETUP_VARS" ;;
+                    3) echo "flow_offloading_type='hardware'" >> "$SETUP_VARS" ;;
+                esac
+                ;;
+            2)
+                opt=$(whiptail --menu "Network Optimizer:" 12 60 3 \
+                    "1" "Disabled" \
+                    "2" "Auto" \
+                    "3" "Manual" \
+                    3>&1 1>&2 2>&3)
+                sed -i "/^net_optimizer=/d" "$SETUP_VARS"
+                case "$opt" in
+                    2) echo "net_optimizer='auto'" >> "$SETUP_VARS" ;;
+                    3) echo "net_optimizer='manual'" >> "$SETUP_VARS" ;;
+                esac
+                ;;
+            3)
+                dns=$(whiptail --menu "DNS Cache:" 12 60 3 \
+                    "1" "Disabled" \
+                    "2" "Auto" \
+                    "3" "Manual" \
+                    3>&1 1>&2 2>&3)
+                sed -i "/^enable_dnsmasq=/d" "$SETUP_VARS"
+                case "$dns" in
+                    2) echo "enable_dnsmasq='auto'" >> "$SETUP_VARS" ;;
+                    3) echo "enable_dnsmasq='manual'" >> "$SETUP_VARS" ;;
+                esac
+                ;;
+            4|"") return ;;
+        esac
     done
 }
 
@@ -484,120 +544,29 @@ simple_main_menu() {
         echo "  Device: $DEVICE_MODEL"
         echo "========================================"
         echo ""
-        
-        local i=1
-        get_setup_categories | while read cat_id; do
-            cat_title=$(get_setup_category_title "$cat_id")
-            echo "$i) $cat_title"
-            i=$((i+1))
-        done
-        
-        local setup_cat_count=$(get_setup_categories | wc -l)
-        echo "$((setup_cat_count+1))) Configure Packages"
-        echo "$((setup_cat_count+2))) Device Information"
-        echo "$((setup_cat_count+3))) Review & Generate"
+        echo "1) Device Information"
+        echo "2) Configure Packages"
+        echo "3) Basic Settings"
+        echo "4) Network Configuration"
+        echo "5) Wi-Fi Setup"
+        echo "6) Advanced Options"
+        echo "7) Review & Generate"
         echo "q) Exit"
         echo ""
         printf "Choice: "
         read choice
         
         case "$choice" in
+            1) simple_device_info ;;
+            2) simple_package_menu ;;
+            3) simple_basic_settings ;;
+            4) simple_network_config ;;
+            5) simple_wifi_config ;;
+            6) simple_advanced_options ;;
+            7) simple_review ;;
             q|Q) exit 0 ;;
-            *)
-                if [ "$choice" -le "$setup_cat_count" ]; then
-                    selected_cat=$(get_setup_categories | sed -n "${choice}p")
-                    simple_category_config "$selected_cat"
-                elif [ "$choice" -eq "$((setup_cat_count+1))" ]; then
-                    simple_package_menu
-                elif [ "$choice" -eq "$((setup_cat_count+2))" ]; then
-                    simple_device_info
-                elif [ "$choice" -eq "$((setup_cat_count+3))" ]; then
-                    simple_review
-                fi
-                ;;
         esac
     done
-}
-
-simple_category_config() {
-    local cat_id="$1"
-    local cat_title=$(get_setup_category_title "$cat_id")
-    
-    clear
-    echo "=== $cat_title ==="
-    echo ""
-    
-    local items=$(get_setup_category_items "$cat_id")
-    for item_id in $items; do
-        local item_type=$(get_setup_item_type "$item_id")
-        local label=$(get_setup_item_label "$item_id")
-        local variable=$(get_setup_item_variable "$item_id")
-        local default=$(get_setup_item_default "$item_id")
-        local placeholder=$(get_setup_item_placeholder "$item_id")
-        local fieldtype=$(get_setup_item_fieldtype "$item_id")
-        
-        # Get current value
-        local current=$(grep "^${variable}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-        [ -z "$current" ] && current="$default"
-        
-        # Handle API source defaults
-        case "$item_id" in
-            aios-country) [ -z "$current" ] && current="${ISP_COUNTRY:-$default}" ;;
-            aios-timezone) [ -z "$current" ] && current="${AUTO_TIMEZONE:-$default}" ;;
-            aios-zonename) [ -z "$current" ] && current="${AUTO_ZONENAME:-$default}" ;;
-        esac
-        
-        case "$item_type" in
-            field)
-                if [ "$fieldtype" = "select" ]; then
-                    echo "$label:"
-                    local options=$(get_setup_item_options "$item_id")
-                    local i=1
-                    for opt in $options; do
-                        local opt_label=$(get_setup_item_option_label "$item_id" "$opt")
-                        echo "  $i) $opt_label"
-                        i=$((i+1))
-                    done
-                    printf "Choice: "
-                    read value
-                    if [ -n "$value" ]; then
-                        selected_opt=$(echo "$options" | sed -n "${value}p")
-                        sed -i "/^${variable}=/d" "$SETUP_VARS"
-                        echo "${variable}='${selected_opt}'" >> "$SETUP_VARS"
-                    fi
-                else
-                    printf "$label [${current:-$placeholder}]: "
-                    read value
-                    [ -z "$value" ] && value="$current"
-                    if [ -n "$value" ]; then
-                        sed -i "/^${variable}=/d" "$SETUP_VARS"
-                        echo "${variable}='${value}'" >> "$SETUP_VARS"
-                    fi
-                fi
-                ;;
-            radio-group)
-                echo "$label:"
-                local options=$(get_setup_item_options "$item_id")
-                local i=1
-                for opt in $options; do
-                    local opt_label=$(get_setup_item_option_label "$item_id" "$opt")
-                    echo "  $i) $opt_label"
-                    i=$((i+1))
-                done
-                printf "Choice: "
-                read value
-                if [ -n "$value" ]; then
-                    selected_opt=$(echo "$options" | sed -n "${value}p")
-                    sed -i "/^${variable}=/d" "$SETUP_VARS"
-                    echo "${variable}='${selected_opt}'" >> "$SETUP_VARS"
-                fi
-                ;;
-        esac
-        echo ""
-    done
-    
-    echo "Settings saved! Press Enter..."
-    read
 }
 
 simple_device_info() {
@@ -622,9 +591,11 @@ simple_device_info() {
 }
 
 simple_package_menu() {
+    # Check if packages.json exists and has categories
     if [ ! -f "$PACKAGES_JSON" ]; then
         echo ""
         echo "Error: packages.json not found!"
+        echo "Please ensure the file is downloaded."
         printf "Press Enter to continue..."
         read
         return
@@ -635,9 +606,12 @@ simple_package_menu() {
         echo "=== Package Categories ==="
         echo ""
         
+        # Store categories in a temporary variable to avoid subshell issues
         local categories=$(get_categories)
+        
         if [ -z "$categories" ]; then
-            echo "Error: No categories found"
+            echo "Error: No categories found in packages.json"
+            echo ""
             printf "Press Enter to continue..."
             read
             return
@@ -720,6 +694,279 @@ simple_package_selection() {
     done
 }
 
+simple_basic_settings() {
+    clear
+    echo "=== Basic Settings ==="
+    echo ""
+    
+    # Language with auto-detected default
+    default_lang="${AUTO_LANGUAGE:-en}"
+    printf "Language (ja/en) [default: $default_lang]: "
+    read lang
+    [ -z "$lang" ] && lang="$default_lang"
+    [ -n "$lang" ] && sed -i "/^language=/d" "$SETUP_VARS" && echo "language='$lang'" >> "$SETUP_VARS"
+    
+    # Timezone with auto-detected default
+    default_tz="${AUTO_TIMEZONE:-UTC}"
+    printf "Timezone (e.g., JST-9) [default: $default_tz]: "
+    read tz
+    [ -z "$tz" ] && tz="$default_tz"
+    [ -n "$tz" ] && sed -i "/^timezone=/d" "$SETUP_VARS" && echo "timezone='$tz'" >> "$SETUP_VARS"
+    
+    # Zonename with auto-detected default
+    default_zonename="${AUTO_ZONENAME:-UTC}"
+    printf "Zonename (e.g., Asia/Tokyo) [default: $default_zonename]: "
+    read zonename
+    [ -z "$zonename" ] && zonename="$default_zonename"
+    [ -n "$zonename" ] && sed -i "/^zonename=/d" "$SETUP_VARS" && echo "zonename='$zonename'" >> "$SETUP_VARS"
+    
+    printf "Device Name [skip=Enter]: "
+    read hostname
+    [ -n "$hostname" ] && sed -i "/^device_name=/d" "$SETUP_VARS" && echo "device_name='$hostname'" >> "$SETUP_VARS"
+    
+    printf "Root Password [skip=Enter]: "
+    read -s password
+    echo ""
+    [ -n "$password" ] && sed -i "/^root_password=/d" "$SETUP_VARS" && echo "root_password='$password'" >> "$SETUP_VARS"
+    
+    echo ""
+    echo "Settings saved! Press Enter..."
+    read
+}
+
+simple_network_config() {
+    clear
+    echo "=== Network Configuration ==="
+    echo ""
+    
+    # Show auto-detected info
+    if [ -n "$DETECTED_CONN_TYPE" ]; then
+        echo "Auto-detected: $DETECTED_CONN_TYPE"
+        if [ "$DETECTED_CONN_TYPE" = "MAP-E" ] && [ -n "$MAPE_BR" ]; then
+            echo "  MAP-E BR: $MAPE_BR"
+            echo "  IPv4: $MAPE_IPV4_PREFIX/$MAPE_IPV4_PREFIXLEN"
+            echo "  IPv6: $MAPE_IPV6_PREFIX/$MAPE_IPV6_PREFIXLEN"
+            echo "  EA-len: $MAPE_EALEN"
+            echo "  PSID: $MAPE_PSIDLEN (offset: $MAPE_PSID_OFFSET)"
+        elif [ "$DETECTED_CONN_TYPE" = "DS-Lite" ] && [ -n "$DSLITE_AFTR" ]; then
+            echo "  DS-Lite AFTR: $DSLITE_AFTR"
+        fi
+        echo ""
+        printf "Use auto-detected settings? (y/n): "
+        read use_auto
+        if [ "$use_auto" = "y" -o "$use_auto" = "Y" ]; then
+            if [ "$DETECTED_CONN_TYPE" = "MAP-E" ]; then
+                sed -i "/^connection_type=/d" "$SETUP_VARS"
+                sed -i "/^mape_/d" "$SETUP_VARS"
+                echo "connection_type='mape'" >> "$SETUP_VARS"
+                echo "mape_br='$MAPE_BR'" >> "$SETUP_VARS"
+                echo "mape_ipv4_prefix='$MAPE_IPV4_PREFIX'" >> "$SETUP_VARS"
+                echo "mape_ipv4_prefixlen='$MAPE_IPV4_PREFIXLEN'" >> "$SETUP_VARS"
+                echo "mape_ipv6_prefix='$MAPE_IPV6_PREFIX'" >> "$SETUP_VARS"
+                echo "mape_ipv6_prefixlen='$MAPE_IPV6_PREFIXLEN'" >> "$SETUP_VARS"
+                echo "mape_ealen='$MAPE_EALEN'" >> "$SETUP_VARS"
+                echo "mape_psidlen='$MAPE_PSIDLEN'" >> "$SETUP_VARS"
+                echo "mape_psid_offset='$MAPE_PSID_OFFSET'" >> "$SETUP_VARS"
+                echo ""
+                echo "MAP-E configured automatically!"
+                printf "Press Enter to continue..."
+                read
+                return
+            elif [ "$DETECTED_CONN_TYPE" = "DS-Lite" ]; then
+                sed -i "/^connection_type=/d" "$SETUP_VARS"
+                sed -i "/^dslite_/d" "$SETUP_VARS"
+                echo "connection_type='dslite'" >> "$SETUP_VARS"
+                echo "dslite_aftr_address='$DSLITE_AFTR'" >> "$SETUP_VARS"
+                echo ""
+                echo "DS-Lite configured automatically!"
+                printf "Press Enter to continue..."
+                read
+                return
+            fi
+        fi
+        echo ""
+    fi
+    
+    echo "1) DHCP (Auto)"
+    echo "2) PPPoE"
+    echo "3) DS-Lite"
+    echo "4) MAP-E"
+    echo "5) Access Point"
+    echo ""
+    printf "Choice: "
+    read conn_type
+    
+    sed -i "/^connection_type=/d" "$SETUP_VARS"
+    
+    case "$conn_type" in
+        1) echo "connection_type='auto'" >> "$SETUP_VARS" ;;
+        2)
+            echo "connection_type='pppoe'" >> "$SETUP_VARS"
+            printf "Username: "
+            read username
+            [ -n "$username" ] && echo "pppoe_username='$username'" >> "$SETUP_VARS"
+            printf "Password: "
+            read -s password
+            echo ""
+            [ -n "$password" ] && echo "pppoe_password='$password'" >> "$SETUP_VARS"
+            ;;
+        3)
+            echo "connection_type='dslite'" >> "$SETUP_VARS"
+            default_aftr="${DSLITE_AFTR}"
+            printf "AFTR Address [default: $default_aftr]: "
+            read aftr
+            [ -z "$aftr" ] && aftr="$default_aftr"
+            [ -n "$aftr" ] && echo "dslite_aftr_address='$aftr'" >> "$SETUP_VARS"
+            ;;
+        4)
+            echo "connection_type='mape'" >> "$SETUP_VARS"
+            sed -i "/^mape_/d" "$SETUP_VARS"
+            
+            # BR Address
+            default_br="${MAPE_BR}"
+            printf "BR Address [default: $default_br]: "
+            read br
+            [ -z "$br" ] && br="$default_br"
+            [ -n "$br" ] && echo "mape_br='$br'" >> "$SETUP_VARS"
+            
+            # IPv4 Prefix
+            default_ipv4="${MAPE_IPV4_PREFIX}"
+            printf "IPv4 Prefix [default: $default_ipv4]: "
+            read ipv4_prefix
+            [ -z "$ipv4_prefix" ] && ipv4_prefix="$default_ipv4"
+            [ -n "$ipv4_prefix" ] && echo "mape_ipv4_prefix='$ipv4_prefix'" >> "$SETUP_VARS"
+            
+            # IPv4 Prefix Length
+            default_ipv4len="${MAPE_IPV4_PREFIXLEN}"
+            printf "IPv4 Prefix Length [default: $default_ipv4len]: "
+            read ipv4_prefixlen
+            [ -z "$ipv4_prefixlen" ] && ipv4_prefixlen="$default_ipv4len"
+            [ -n "$ipv4_prefixlen" ] && echo "mape_ipv4_prefixlen='$ipv4_prefixlen'" >> "$SETUP_VARS"
+            
+            # IPv6 Prefix
+            default_ipv6="${MAPE_IPV6_PREFIX}"
+            printf "IPv6 Prefix [default: $default_ipv6]: "
+            read ipv6_prefix
+            [ -z "$ipv6_prefix" ] && ipv6_prefix="$default_ipv6"
+            [ -n "$ipv6_prefix" ] && echo "mape_ipv6_prefix='$ipv6_prefix'" >> "$SETUP_VARS"
+            
+            # IPv6 Prefix Length
+            default_ipv6len="${MAPE_IPV6_PREFIXLEN}"
+            printf "IPv6 Prefix Length [default: $default_ipv6len]: "
+            read ipv6_prefixlen
+            [ -z "$ipv6_prefixlen" ] && ipv6_prefixlen="$default_ipv6len"
+            [ -n "$ipv6_prefixlen" ] && echo "mape_ipv6_prefixlen='$ipv6_prefixlen'" >> "$SETUP_VARS"
+            
+            # EA Length
+            default_ealen="${MAPE_EALEN}"
+            printf "EA Length [default: $default_ealen]: "
+            read ealen
+            [ -z "$ealen" ] && ealen="$default_ealen"
+            [ -n "$ealen" ] && echo "mape_ealen='$ealen'" >> "$SETUP_VARS"
+            
+            # PSID Length
+            default_psidlen="${MAPE_PSIDLEN}"
+            printf "PSID Length [default: $default_psidlen]: "
+            read psidlen
+            [ -z "$psidlen" ] && psidlen="$default_psidlen"
+            [ -n "$psidlen" ] && echo "mape_psidlen='$psidlen'" >> "$SETUP_VARS"
+            
+            # PSID Offset
+            default_offset="${MAPE_PSID_OFFSET}"
+            printf "PSID Offset [default: $default_offset]: "
+            read psid_offset
+            [ -z "$psid_offset" ] && psid_offset="$default_offset"
+            [ -n "$psid_offset" ] && echo "mape_psid_offset='$psid_offset'" >> "$SETUP_VARS"
+            ;;
+        5)
+            echo "connection_type='ap'" >> "$SETUP_VARS"
+            printf "AP IP: "
+            read ip
+            [ -n "$ip" ] && echo "ap_ip_address='$ip'" >> "$SETUP_VARS"
+            printf "Gateway: "
+            read gw
+            [ -n "$gw" ] && echo "ap_gateway='$gw'" >> "$SETUP_VARS"
+            ;;
+    esac
+    
+    echo ""
+    echo "Network settings saved! Press Enter..."
+    read
+}
+
+simple_wifi_config() {
+    clear
+    echo "=== Wi-Fi Setup ==="
+    echo ""
+    echo "1) Standard mode"
+    echo "2) Usteer mode"
+    printf "Choice: "
+    read mode
+    
+    sed -i "/^wifi_mode=/d" "$SETUP_VARS"
+    case "$mode" in
+        1) echo "wifi_mode='standard'" >> "$SETUP_VARS" ;;
+        2) echo "wifi_mode='usteer'" >> "$SETUP_VARS" ;;
+    esac
+    
+    printf "SSID: "
+    read ssid
+    [ -n "$ssid" ] && sed -i "/^wlan_ssid=/d" "$SETUP_VARS" && echo "wlan_ssid='$ssid'" >> "$SETUP_VARS"
+    
+    printf "Password: "
+    read -s password
+    echo ""
+    [ -n "$password" ] && sed -i "/^wlan_password=/d" "$SETUP_VARS" && echo "wlan_password='$password'" >> "$SETUP_VARS"
+    
+    # Country code with auto-detected default
+    default_country="${ISP_COUNTRY:-JP}"
+    printf "Country Code (JP/US) [default: $default_country]: "
+    read country
+    [ -z "$country" ] && country="$default_country"
+    [ -n "$country" ] && sed -i "/^country=/d" "$SETUP_VARS" && echo "country='$country'" >> "$SETUP_VARS"
+    
+    echo ""
+    echo "Wi-Fi settings saved! Press Enter..."
+    read
+}
+
+simple_advanced_options() {
+    clear
+    echo "=== Advanced Options ==="
+    echo ""
+    echo "1) Flow Offloading: software/hardware"
+    echo "2) Network Optimizer: auto/manual"
+    echo "3) DNS Cache: auto/manual"
+    echo "b) Back"
+    printf "Choice: "
+    read choice
+    
+    case "$choice" in
+        1)
+            printf "Flow offloading (software/hardware): "
+            read offload
+            sed -i "/^flow_offloading_type=/d" "$SETUP_VARS"
+            [ -n "$offload" ] && echo "flow_offloading_type='$offload'" >> "$SETUP_VARS"
+            ;;
+        2)
+            printf "Network optimizer (auto/manual): "
+            read opt
+            sed -i "/^net_optimizer=/d" "$SETUP_VARS"
+            [ -n "$opt" ] && echo "net_optimizer='$opt'" >> "$SETUP_VARS"
+            ;;
+        3)
+            printf "DNS cache (auto/manual): "
+            read dns
+            sed -i "/^enable_dnsmasq=/d" "$SETUP_VARS"
+            [ -n "$dns" ] && echo "enable_dnsmasq='$dns'" >> "$SETUP_VARS"
+            ;;
+    esac
+    
+    echo ""
+    printf "Press Enter to continue..."
+    read
+}
+
 simple_review() {
     clear
     echo "=== Configuration Review ==="
@@ -767,8 +1014,8 @@ simple_review() {
 }
 
 # ========== COMMON FUNCTIONS ==========
-
 apply_api_defaults() {
+    # 基本設定のみ（ユーザーが未入力の場合にAPI値を使う）
     [ -n "$AUTO_LANGUAGE" ] && ! grep -q "^language=" "$SETUP_VARS" 2>/dev/null && \
         echo "language='$AUTO_LANGUAGE'" >> "$SETUP_VARS"
     
@@ -781,6 +1028,8 @@ apply_api_defaults() {
     [ -n "$ISP_COUNTRY" ] && ! grep -q "^country=" "$SETUP_VARS" 2>/dev/null && \
         echo "country='$ISP_COUNTRY'" >> "$SETUP_VARS"
     
+    # MAP-E/DS-Lite: connection_type='auto'が残っている場合のみ
+    # （UIで「Use settings? YES」を選んだ場合は既に'mape'/'dslite'に変更済み）
     if grep -q "^connection_type='auto'" "$SETUP_VARS" 2>/dev/null; then
         if [ "$DETECTED_CONN_TYPE" = "MAP-E" ] && [ -n "$MAPE_BR" ]; then
             sed -i "/^connection_type=/d" "$SETUP_VARS"
@@ -802,10 +1051,12 @@ apply_api_defaults() {
 }
 
 generate_config_files() {
+
     apply_api_defaults
-    
+    # Get language from setup vars
     language=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
     
+    # Generate postinst (package installation script)
     {
         echo "#!/bin/sh"
         echo "# Generated by device-setup.sh v$VERSION"
@@ -844,6 +1095,7 @@ generate_config_files() {
     } > "$OUTPUT_DIR/postinst"
     chmod +x "$OUTPUT_DIR/postinst"
     
+    # Generate setup.sh (uci-defaults script)
     {
         echo "#!/bin/sh"
         echo "# Generated by device-setup.sh v$VERSION"
@@ -856,6 +1108,7 @@ generate_config_files() {
         echo "# END_VARS"
         echo ""
         
+        # Download and append the template
         if wget -q -O - "$SETUP_TEMPLATE_URL" | sed '1,/^# END_VARS/d' >> "$OUTPUT_DIR/setup.sh.tmp"; then
             cat "$OUTPUT_DIR/setup.sh.tmp" >> "$OUTPUT_DIR/setup.sh"
             rm -f "$OUTPUT_DIR/setup.sh.tmp"
@@ -868,11 +1121,14 @@ generate_config_files() {
     chmod +x "$OUTPUT_DIR/setup.sh"
 }
 
+# Get extended device info
 get_extended_device_info() {
+    # Get board info
     if [ -f /etc/board.json ]; then
         DEVICE_MODEL=$(jsonfilter -i /etc/board.json -e '@.model.name' 2>/dev/null)
         DEVICE_ID=$(jsonfilter -i /etc/board.json -e '@.model.id' 2>/dev/null)
         
+        # Detect target from system
         if [ -f /etc/openwrt_release ]; then
             . /etc/openwrt_release
             DEVICE_TARGET="${DISTRIB_TARGET:-unknown/unknown}"
@@ -880,11 +1136,16 @@ get_extended_device_info() {
         fi
     fi
     
+    # Get ISP and network info from auto-config API
     echo "Fetching ISP information from $AUTO_CONFIG_URL..."
     if wget -q -O "$AUTO_CONFIG_JSON" "$AUTO_CONFIG_URL" 2>/dev/null; then
         echo "Successfully downloaded auto-config data"
         
+        # Debug: Show downloaded JSON
         if [ -f "$AUTO_CONFIG_JSON" ]; then
+            echo "JSON file size: $(wc -c < "$AUTO_CONFIG_JSON") bytes"
+            
+            # Extract all values
             ISP_NAME=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.isp' 2>/dev/null)
             ISP_AS=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.as' 2>/dev/null)
             ISP_IPV6=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.ipv6' 2>/dev/null)
@@ -894,6 +1155,7 @@ get_extended_device_info() {
             AUTO_TIMEZONE=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.timezone' 2>/dev/null)
             AUTO_ZONENAME=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.zonename' 2>/dev/null)
             
+            # Get MAP-E settings if available
             MAPE_BR=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.mape.brIpv6Address' 2>/dev/null)
             MAPE_IPV4_PREFIX=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.mape.ipv4Prefix' 2>/dev/null)
             MAPE_IPV4_PREFIXLEN=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.mape.ipv4PrefixLength' 2>/dev/null)
@@ -903,16 +1165,27 @@ get_extended_device_info() {
             MAPE_PSIDLEN=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.mape.psidlen' 2>/dev/null)
             MAPE_PSID_OFFSET=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.mape.psIdOffset' 2>/dev/null)
             
+            # Get DS-Lite AFTR if available
             DSLITE_AFTR=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.aftr' 2>/dev/null)
             
+            # Debug: Show extracted values
+            echo "Extracted values:"
+            echo "  MAPE_BR: $MAPE_BR"
+            echo "  DSLITE_AFTR: $DSLITE_AFTR"
+            
+            # Determine connection type
             if [ -n "$MAPE_BR" ]; then
                 DETECTED_CONN_TYPE="MAP-E"
+                echo "Detected connection type: MAP-E"
             elif [ -n "$DSLITE_AFTR" ]; then
                 DETECTED_CONN_TYPE="DS-Lite"
+                echo "Detected connection type: DS-Lite"
             else
                 DETECTED_CONN_TYPE="Unknown"
+                echo "Warning: Could not determine connection type"
             fi
         else
+            echo "Error: JSON file not found after download"
             DETECTED_CONN_TYPE="Unknown"
         fi
     else
@@ -920,10 +1193,14 @@ get_extended_device_info() {
         DETECTED_CONN_TYPE="Unknown"
     fi
     
+    # Memory info
     DEVICE_MEM=$(awk '/MemTotal/{printf "%.0f MB", $2/1024}' /proc/meminfo 2>/dev/null)
+    
+    # CPU info
     DEVICE_CPU=$(grep -m1 "model name" /proc/cpuinfo | cut -d: -f2 | xargs 2>/dev/null)
     [ -z "$DEVICE_CPU" ] && DEVICE_CPU=$(grep -m1 "Hardware" /proc/cpuinfo | cut -d: -f2 | xargs 2>/dev/null)
     
+    # Fallbacks
     [ -z "$DEVICE_MODEL" ] && DEVICE_MODEL="Unknown Device"
     [ -z "$DEVICE_TARGET" ] && DEVICE_TARGET="unknown/unknown"
     [ -z "$OPENWRT_VERSION" ] && OPENWRT_VERSION="unknown"
@@ -938,12 +1215,15 @@ aios_light_main() {
     echo "========================================"
     echo ""
     
+    # Detect package manager first
     detect_package_manager
     echo "Package manager: $PKG_MGR"
     echo ""
     
+    # Initialize
     init
     
+    # Get device information
     echo "Detecting device information..."
     get_extended_device_info
     
@@ -957,27 +1237,24 @@ aios_light_main() {
     [ -n "$DETECTED_CONN_TYPE" ] && echo "Detected: $DETECTED_CONN_TYPE"
     echo ""
     
-    echo "Downloading setup.json..."
-    if ! download_setup_json; then
-        echo "Error: Failed to download setup.json"
-        echo "Cannot continue without setup.json"
-        exit 1
-    fi
-    
-    echo "Downloading packages.json..."
+    # Download packages.json
+    echo "Downloading package database..."
     if ! download_packages; then
         echo "Warning: Failed to download packages.json"
-        echo "Package selection will not be available."
+        echo "Some features may not work properly."
         sleep 2
     fi
     
+    # Load default checked packages
     echo "Loading default packages..."
     load_default_packages
     
     echo ""
     
+    # Select UI mode
     select_ui_mode
     
+    # Run appropriate UI
     if [ "$UI_MODE" = "whiptail" ]; then
         whiptail_main_menu
     else
@@ -985,4 +1262,5 @@ aios_light_main() {
     fi
 }
 
+# Run main
 aios_light_main
