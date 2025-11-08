@@ -706,7 +706,7 @@ whiptail_device_info() {
     [ -n "$DEVICE_MEM" ] && info="${info}Memory: $DEVICE_MEM\n"
     [ -n "$DEVICE_CPU" ] && info="${info}CPU: $DEVICE_CPU\n"
     [ -n "$DEVICE_STORAGE" ] && info="${info}Storage: $DEVICE_STORAGE_USED/$DEVICE_STORAGE (${DEVICE_STORAGE_AVAIL} free)\n"
-    [ -n "$DEVICE_USB" ] && info="${info}USB: $DEVICE_USB\n"    
+    [ -n "$DEVICE_USB" ] && info="${info}USB: $DEVICE_USB\n"
     whiptail --title "Device Information" --msgbox "$info" 15 70
 }
 
@@ -1034,6 +1034,8 @@ simple_device_info() {
     echo "Version: $OPENWRT_VERSION"
     [ -n "$DEVICE_MEM" ] && echo "Memory: $DEVICE_MEM"
     [ -n "$DEVICE_CPU" ] && echo "CPU: $DEVICE_CPU"
+    [ -n "$DEVICE_STORAGE" ] && echo "Storage: $DEVICE_STORAGE_USED/$DEVICE_STORAGE (${DEVICE_STORAGE_AVAIL} free)"
+    [ -n "$DEVICE_USB" ] && echo "USB: $DEVICE_USB"
     echo ""
     printf "Press Enter to continue..."
     read
@@ -1349,9 +1351,8 @@ get_extended_device_info() {
     DEVICE_STORAGE_AVAIL=$(df -h / | awk 'NR==2 {print $4}')
     
     if [ -d /sys/bus/usb/devices ]; then
-        EXTERNAL_USB=$(ls -1 /sys/bus/usb/devices | grep -E '^[0-9]+-[0-9]+' | wc -l)
-        USB_COUNT=$(ls -1 /sys/bus/usb/devices | grep -c "^[0-9]")
-        [ "$EXTERNAL_USB" -gt 0 ] && DEVICE_USB="Yes (${EXTERNAL_USB} external)" || DEVICE_USB="Yes (no devices)"
+        EXTERNAL_USB=$(ls -1 /sys/bus/usb/devices 2>/dev/null | grep -E '^[0-9]+-[0-9]+' | wc -l)
+        [ "$EXTERNAL_USB" -gt 0 ] && DEVICE_USB="Yes (${EXTERNAL_USB} external)" || DEVICE_USB="No devices"
     else
         DEVICE_USB="Not available"
     fi
