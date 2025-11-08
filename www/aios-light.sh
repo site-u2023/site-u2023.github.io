@@ -503,21 +503,16 @@ whiptail_show_network_info() {
             info="${info}${tr_aftr}: $DSLITE_AFTR\n"
         fi
         
-        info="${info}\n${tr_notice}: ${tr_dslite_notice}\n\n"
-        info="${info}$(translate 'tr-auto-detection')を使用しますか？"
+        info="${info}\n${tr_notice}: ${tr_dslite_notice}"
         
         if whiptail --title "$(translate 'tr-internet-connection')" --yesno "$info" 22 70; then
-            # User accepted AUTO detection - set to auto mode
             sed -i "/^connection_type=/d" "$SETUP_VARS"
             echo "connection_type='auto'" >> "$SETUP_VARS"
             return 0
         else
-            # User wants to configure manually
             return 1
         fi
     else
-        info="${info}\n接続タイプを検出できませんでした。\n手動で選択してください。"
-        whiptail --title "$(translate 'tr-internet-connection')" --msgbox "$info" 15 70
         return 1
     fi
 }
@@ -772,22 +767,13 @@ simple_show_network_info() {
         echo ""
         echo "${tr_notice}: ${tr_dslite_notice}"
         echo ""
-        printf "この$(translate 'tr-auto-detection')結果を使用しますか? (y/n) [y]: "
+        printf "Use ${tr_auto_detection}? (y/n) [y]: "
         read use_auto
         
         if [ "$use_auto" != "n" ] && [ "$use_auto" != "N" ]; then
             sed -i "/^connection_type=/d" "$SETUP_VARS"
             echo "connection_type='auto'" >> "$SETUP_VARS"
-            echo ""
-            echo "自動検出を使用します。"
-        else
-            echo ""
-            echo "手動で設定してください。"
         fi
-    else
-        echo ""
-        echo "接続タイプを検出できませんでした。"
-        echo "手動で選択してください。"
     fi
     
     echo ""
