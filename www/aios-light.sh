@@ -688,6 +688,7 @@ whiptail_show_network_info() {
         [ -n "$MAPE_IPV6_PREFIX" ] && info="${info}${tr_ipv6_prefix}: $MAPE_IPV6_PREFIX/$MAPE_IPV6_PREFIXLEN\n"
         [ -n "$MAPE_EALEN" ] && info="${info}${tr_ea_len}: $MAPE_EALEN\n"
         [ -n "$MAPE_PSIDLEN" ] && info="${info}${tr_psid_length}: $MAPE_PSIDLEN\n"
+        [ -n "$MAPE_GUA_PREFIX" ] && info="${info}GUA Prefix: $MAPE_GUA_PREFIX\n"
         info="${info}\n${tr_mape_notice}"
     elif [ "$DETECTED_CONN_TYPE" = "DS-Lite" ] && [ -n "$DSLITE_AFTR" ]; then
         info="${info}${tr_aftr}: $DSLITE_AFTR\n"
