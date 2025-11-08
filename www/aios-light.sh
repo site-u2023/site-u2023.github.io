@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="1.0.0"
+VERSION="1.0.1"
 BASE_URL="https://site-u.pages.dev"
 PACKAGES_URL="$BASE_URL/www/packages/packages.json"
 SETUP_JSON_URL="$BASE_URL/www/uci-defaults/setup.json"
@@ -14,11 +14,13 @@ CONFIG_DIR="/tmp/device-setup"
 PACKAGES_JSON="$CONFIG_DIR/packages.json"
 SETUP_JSON="$CONFIG_DIR/setup.json"
 AUTO_CONFIG_JSON="$CONFIG_DIR/auto_config.json"
+LANG_JSON="$CONFIG_DIR/lang.json"
 SELECTED_PACKAGES="$CONFIG_DIR/selected_packages.txt"
 SETUP_VARS="$CONFIG_DIR/setup_vars.sh"
 OUTPUT_DIR="/tmp"
 
-# Package manager detection
+TRANSLATION_CACHE="$CONFIG_DIR/translation_cache.txt"
+
 PKG_MGR=""
 detect_package_manager() {
     if command -v opkg >/dev/null 2>&1; then
@@ -31,7 +33,6 @@ detect_package_manager() {
     fi
 }
 
-# Install package helper
 install_package() {
     case "$PKG_MGR" in
         opkg)
@@ -53,23 +54,23 @@ select_ui_mode() {
     HAS_WHIPTAIL=false
     command -v whiptail >/dev/null 2>&1 && HAS_WHIPTAIL=true
     
-    echo "Select UI mode:"
-    echo "1) whiptail (dialog-based TUI)"
-    echo "2) simple (list-based TUI)"
+    echo "$(translate 'tr-ui-mode-select')"
+    echo "1) $(translate 'tr-ui-whiptail')"
+    echo "2) $(translate 'tr-ui-simple')"
     
-    printf "Choice [1]: "
+    printf "$(translate 'tr-ui-choice') [1]: "
     read choice
     
     if [ "$choice" = "2" ]; then
         UI_MODE="simple"
     else
         if [ "$HAS_WHIPTAIL" = false ]; then
-            echo "Installing whiptail..."
+            echo "$(translate 'tr-ui-installing')"
             if install_package whiptail newt; then
-                echo "whiptail installed successfully!"
+                echo "$(translate 'tr-ui-install-success')"
                 UI_MODE="whiptail"
             else
-                echo "Failed to install, using simple mode"
+                echo "$(translate 'tr-ui-install-failed')"
                 UI_MODE="simple"
             fi
         else
@@ -78,14 +79,60 @@ select_ui_mode() {
     fi
 }
 
-# Initialize
 init() {
     mkdir -p "$CONFIG_DIR"
     : > "$SELECTED_PACKAGES"
     : > "$SETUP_VARS"
+    : > "$TRANSLATION_CACHE"
+    : > /tmp/debug.log
+    rm -f "$LANG_JSON"
+    
+    echo "[DEBUG] $(date): Init complete" >> /tmp/debug.log
 }
 
-# Download setup.json
+download_language_json() {
+    local lang="${1:-en}"
+    local lang_url="$BASE_URL/www/langs/custom.${lang}.json"
+    
+    echo "Fetching language: ${lang}"
+    if ! wget -q -O "$LANG_JSON" "$lang_url"; then
+        echo "Warning: Failed to download language file for '${lang}'"
+        if [ "$lang" != "en" ]; then
+            echo "Attempting fallback to English..."
+            lang_url="$BASE_URL/www/langs/custom.en.json"
+            if ! wget -q -O "$LANG_JSON" "$lang_url"; then
+                echo "Warning: Failed to download English fallback"
+                return 1
+            fi
+        else
+            return 1
+        fi
+    fi
+    return 0
+}
+
+translate() {
+    local key="$1"
+    
+    local cached=$(grep "^${key}=" "$TRANSLATION_CACHE" 2>/dev/null | cut -d= -f2-)
+    if [ -n "$cached" ]; then
+        echo "$cached"
+        return 0
+    fi
+    
+    if [ -f "$LANG_JSON" ]; then
+        local translation=$(jsonfilter -i "$LANG_JSON" -e "@['$key']" 2>/dev/null)
+        if [ -n "$translation" ]; then
+            echo "${key}=${translation}" >> "$TRANSLATION_CACHE"
+            echo "$translation"
+            return 0
+        fi
+    fi
+    
+    echo "$key"
+    return 1
+}
+
 download_setup_json() {
     if [ ! -f "$SETUP_JSON" ]; then
         echo "Downloading setup.json..."
@@ -97,7 +144,6 @@ download_setup_json() {
     return 0
 }
 
-# Download packages.json
 download_packages() {
     if [ ! -f "$PACKAGES_JSON" ]; then
         echo "Downloading packages.json..."
@@ -109,7 +155,6 @@ download_packages() {
     return 0
 }
 
-# Get device info from URL or board
 get_device_info() {
     if [ -f /etc/board.json ]; then
         DEVICE_MODEL=$(jsonfilter -i /etc/board.json -e '@.model.name' 2>/dev/null)
@@ -120,17 +165,19 @@ get_device_info() {
     [ -z "$DEVICE_TARGET" ] && DEVICE_TARGET="unknown/unknown"
 }
 
-# Setup.json helpers
 get_setup_categories() {
     jsonfilter -i "$SETUP_JSON" -e '@.categories[*].id' 2>/dev/null | grep -v '^$'
 }
 
 get_setup_category_title() {
-    jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$1'].title" 2>/dev/null
-}
-
-get_setup_category_class() {
-    jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$1'].class" 2>/dev/null
+    local title=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$1'].title" 2>/dev/null)
+    local class=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$1'].class" 2>/dev/null)
+    
+    if [ -n "$class" ] && [ "${class#tr-}" != "$class" ]; then
+        translate "$class"
+    else
+        echo "$title"
+    fi
 }
 
 get_setup_category_items() {
@@ -138,80 +185,131 @@ get_setup_category_items() {
 }
 
 get_setup_item_type() {
-    jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$1'].type" 2>/dev/null | head -1
+    local item_id="$1"
+    
+    # まず通常のレベルで検索
+    local result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].type" 2>/dev/null | head -1)
+    
+    # 見つからなければネストされたitemsで検索（section内のitems）
+    if [ -z "$result" ]; then
+        result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].type" 2>/dev/null | head -1)
+    fi
+    
+    echo "$result"
 }
 
 get_setup_item_label() {
-    jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$1'].label" 2>/dev/null | head -1
+    local item_id="$1"
+    
+    # まず通常のレベルで検索
+    local label=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].label" 2>/dev/null | head -1)
+    local class=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].class" 2>/dev/null | head -1)
+    
+    # ネストレベルで検索
+    if [ -z "$label" ]; then
+        label=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].label" 2>/dev/null | head -1)
+        class=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].class" 2>/dev/null | head -1)
+    fi
+    
+    if [ -n "$class" ] && [ "${class#tr-}" != "$class" ]; then
+        translate "$class"
+    else
+        echo "$label"
+    fi
 }
 
 get_setup_item_variable() {
-    jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$1'].variable" 2>/dev/null | head -1
+    local item_id="$1"
+    local result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].variable" 2>/dev/null | head -1)
+    
+    if [ -z "$result" ]; then
+        result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].variable" 2>/dev/null | head -1)
+    fi
+    
+    echo "$result"
 }
 
 get_setup_item_default() {
-    jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$1'].default" 2>/dev/null | head -1
+    local item_id="$1"
+    local result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].default" 2>/dev/null | head -1)
+    
+    if [ -z "$result" ]; then
+        result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].default" 2>/dev/null | head -1)
+    fi
+    
+    echo "$result"
 }
 
 get_setup_item_placeholder() {
-    jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$1'].placeholder" 2>/dev/null | head -1
+    local item_id="$1"
+    local result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].placeholder" 2>/dev/null | head -1)
+    
+    if [ -z "$result" ]; then
+        result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].placeholder" 2>/dev/null | head -1)
+    fi
+    
+    echo "$result"
 }
 
 get_setup_item_fieldtype() {
-    jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$1'].fieldType" 2>/dev/null | head -1
+    local item_id="$1"
+    local result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].fieldType" 2>/dev/null | head -1)
+    
+    if [ -z "$result" ]; then
+        result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].fieldType" 2>/dev/null | head -1)
+    fi
+    
+    echo "$result"
 }
 
 get_setup_item_options() {
     local item_id="$1"
-    local cat_idx=0
-    local item_idx=0
     
-    # Find the category and item indices
-    for cat_id in $(get_setup_categories); do
-        local items=$(get_setup_category_items "$cat_id")
-        local idx=0
-        for itm in $items; do
-            if [ "$itm" = "$item_id" ]; then
-                item_idx=$idx
-                break 2
-            fi
-            idx=$((idx+1))
-        done
-        cat_idx=$((cat_idx+1))
-    done
+    # 通常レベル
+    local result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].options[*].value" 2>/dev/null)
     
-    jsonfilter -i "$SETUP_JSON" -e "@.categories[$cat_idx].items[$item_idx].options[*].value" 2>/dev/null
+    # ネストレベル
+    if [ -z "$result" ]; then
+        result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].options[*].value" 2>/dev/null)
+    fi
+    
+    echo "$result"
 }
 
 get_setup_item_option_label() {
     local item_id="$1"
     local value="$2"
-    local cat_idx=0
-    local item_idx=0
     
-    for cat_id in $(get_setup_categories); do
-        local items=$(get_setup_category_items "$cat_id")
-        local idx=0
-        for itm in $items; do
-            if [ "$itm" = "$item_id" ]; then
-                item_idx=$idx
-                break 2
-            fi
-            idx=$((idx+1))
-        done
-        cat_idx=$((cat_idx+1))
-    done
+    # 通常レベル
+    local label=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].options[@.value='$value'].label" 2>/dev/null | head -1)
+    local class=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].options[@.value='$value'].class" 2>/dev/null | head -1)
     
-    jsonfilter -i "$SETUP_JSON" -e "@.categories[$cat_idx].items[$item_idx].options[@.value='$value'].label" 2>/dev/null
+    # ネストレベル
+    if [ -z "$label" ]; then
+        label=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].options[@.value='$value'].label" 2>/dev/null | head -1)
+        class=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].options[@.value='$value'].class" 2>/dev/null | head -1)
+    fi
+    
+    if [ -n "$class" ] && [ "${class#tr-}" != "$class" ]; then
+        translate "$class"
+    else
+        echo "$label"
+    fi
 }
 
-# Packages.json helpers
 get_categories() {
     jsonfilter -i "$PACKAGES_JSON" -e '@.categories[*].id' 2>/dev/null | grep -v '^$'
 }
 
 get_category_name() {
-    jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$1'].name" 2>/dev/null
+    local name=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$1'].name" 2>/dev/null)
+    local class=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$1'].class" 2>/dev/null)
+    
+    if [ -n "$class" ] && [ "${class#tr-}" != "$class" ]; then
+        translate "$class"
+    else
+        echo "$name"
+    fi
 }
 
 get_category_desc() {
@@ -242,7 +340,6 @@ toggle_package() {
     fi
 }
 
-# Load default checked packages
 load_default_packages() {
     local cat_id pkg_id checked
     get_categories | while read cat_id; do
@@ -255,7 +352,70 @@ load_default_packages() {
     done
 }
 
-# ========== WHIPTAIL UI ==========
+should_show_item() {
+    local item_id="$1"
+    local cat_idx=0
+    local item_idx=0
+    
+    for cat_id in $(get_setup_categories); do
+        local items=$(get_setup_category_items "$cat_id")
+        local idx=0
+        for itm in $items; do
+            if [ "$itm" = "$item_id" ]; then
+                item_idx=$idx
+                break 2
+            fi
+            idx=$((idx+1))
+        done
+        cat_idx=$((cat_idx+1))
+    done
+    
+    local show_when=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[$cat_idx].items[$item_idx].showWhen" 2>/dev/null)
+    
+    [ -z "$show_when" ] && return 0
+    
+    local var_name=$(echo "$show_when" | sed 's/^{"\([^"]*\)".*/\1/')
+    [ -z "$var_name" ] && return 0
+    
+    local current_val=$(grep "^${var_name}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+    
+    local expected=$(jsonfilter -e "@.${var_name}[*]" 2>/dev/null <<EOF
+$show_when
+EOF
+)
+    
+    if [ -z "$expected" ]; then
+        expected=$(jsonfilter -e "@.${var_name}" 2>/dev/null <<EOF
+$show_when
+EOF
+)
+        [ "$current_val" = "$expected" ] && return 0
+        return 1
+    fi
+    
+    echo "$expected" | grep -qx "$current_val"
+}
+
+get_section_nested_items() {
+    local item_id="$1"
+    local cat_idx=0
+    local item_idx=0
+    
+    for cat_id in $(get_setup_categories); do
+        local items=$(get_setup_category_items "$cat_id")
+        local idx=0
+        for itm in $items; do
+            if [ "$itm" = "$item_id" ]; then
+                item_idx=$idx
+                break 2
+            fi
+            idx=$((idx+1))
+        done
+        cat_idx=$((cat_idx+1))
+    done
+    
+    jsonfilter -i "$SETUP_JSON" -e "@.categories[$cat_idx].items[$item_idx].items[*].id" 2>/dev/null
+}
 
 whiptail_main_menu() {
     while true; do
@@ -267,9 +427,8 @@ whiptail_main_menu() {
             i=$((i+1))
         done < <(get_setup_categories)
         
-        menu_items="$menu_items $i \"Configure Packages\""
-        i=$((i+1))
-        menu_items="$menu_items $i \"Device Information\""
+        local packages_label=$(translate "tr-custom-packages")
+        menu_items="$menu_items $i \"$packages_label\""
         i=$((i+1))
         menu_items="$menu_items $i \"Review & Generate\""
         i=$((i+1))
@@ -282,7 +441,6 @@ whiptail_main_menu() {
             exit 0
         fi
         
-        # Calculate what was selected
         local setup_cat_count=$(get_setup_categories | wc -l)
         if [ "$choice" -le "$setup_cat_count" ]; then
             selected_cat=$(get_setup_categories | sed -n "${choice}p")
@@ -290,8 +448,6 @@ whiptail_main_menu() {
         elif [ "$choice" -eq "$((setup_cat_count+1))" ]; then
             whiptail_package_categories
         elif [ "$choice" -eq "$((setup_cat_count+2))" ]; then
-            whiptail_device_info
-        elif [ "$choice" -eq "$((setup_cat_count+3))" ]; then
             whiptail_review
         else
             exit 0
@@ -302,29 +458,129 @@ whiptail_main_menu() {
 whiptail_category_config() {
     local cat_id="$1"
     local cat_title=$(get_setup_category_title "$cat_id")
-    local items=$(get_setup_category_items "$cat_id")
+    
+    echo "[DEBUG] === whiptail_category_config START ===" >> /tmp/debug.log
+    echo "[DEBUG] cat_id=$cat_id, title=$cat_title" >> /tmp/debug.log
+    
+    if [ "$cat_id" = "internet-connection" ]; then
+        if whiptail_show_network_info; then
+            whiptail --msgbox "Auto-configuration applied!" 8 40
+            return 0
+        fi
+    fi
+    
+    echo "[DEBUG] First call - processing radio-group" >> /tmp/debug.log
+    whiptail_process_items "$cat_id" ""
+    
+    echo "[DEBUG] SETUP_VARS after first call:" >> /tmp/debug.log
+    cat "$SETUP_VARS" >> /tmp/debug.log 2>&1
+    
+    echo "[DEBUG] Second call - processing sections/fields" >> /tmp/debug.log
+    whiptail_process_items "$cat_id" ""
+    local processed=$?
+    
+    echo "[DEBUG] Items processed: $processed" >> /tmp/debug.log
+    echo "[DEBUG] SETUP_VARS after second call:" >> /tmp/debug.log
+    cat "$SETUP_VARS" >> /tmp/debug.log 2>&1
+    echo "[DEBUG] === whiptail_category_config END ===" >> /tmp/debug.log
+    
+    if [ $processed -eq 0 ]; then
+        whiptail --msgbox "Configuration completed!" 8 50
+    fi
+}
+
+whiptail_process_items() {
+    local cat_id="$1"
+    local parent_items="$2"
+    
+    echo "[DEBUG] whiptail_process_items: cat_id=$cat_id" >> /tmp/debug.log
+    
+    local items
+    if [ -z "$parent_items" ]; then
+        items=$(get_setup_category_items "$cat_id")
+    else
+        items="$parent_items"
+    fi
+    
+    echo "[DEBUG] Items to process: $items" >> /tmp/debug.log
+    local items_processed=0
     
     for item_id in $items; do
+        echo "[DEBUG] Processing item: $item_id" >> /tmp/debug.log
         local item_type=$(get_setup_item_type "$item_id")
-        local label=$(get_setup_item_label "$item_id")
-        local variable=$(get_setup_item_variable "$item_id")
-        local default=$(get_setup_item_default "$item_id")
-        local placeholder=$(get_setup_item_placeholder "$item_id")
-        local fieldtype=$(get_setup_item_fieldtype "$item_id")
+        echo "[DEBUG] Item type: $item_type" >> /tmp/debug.log
         
-        # Get current value or use default
-        local current=$(grep "^${variable}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-        [ -z "$current" ] && current="$default"
-        
-        # Handle API source defaults
-        case "$item_id" in
-            aios-country) [ -z "$current" ] && current="${ISP_COUNTRY:-$default}" ;;
-            aios-timezone) [ -z "$current" ] && current="${AUTO_TIMEZONE:-$default}" ;;
-            aios-zonename) [ -z "$current" ] && current="${AUTO_ZONENAME:-$default}" ;;
-        esac
+        # showWhenチェック（すべてのアイテムタイプで実行）
+        if ! should_show_item "$item_id"; then
+            echo "[DEBUG] Item $item_id hidden by showWhen" >> /tmp/debug.log
+            continue
+        fi
         
         case "$item_type" in
+            radio-group)
+                items_processed=$((items_processed + 1))
+                local label=$(get_setup_item_label "$item_id")
+                local variable=$(get_setup_item_variable "$item_id")
+                local default=$(get_setup_item_default "$item_id")
+                
+                echo "[DEBUG] radio-group: var=$variable, default=$default" >> /tmp/debug.log
+                
+                local current=$(grep "^${variable}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+                [ -z "$current" ] && current="$default"
+                
+                echo "[DEBUG] Current value: $current" >> /tmp/debug.log
+                
+                local options=$(get_setup_item_options "$item_id")
+                echo "[DEBUG] Options: $options" >> /tmp/debug.log
+                
+                local menu_opts=""
+                local i=1
+                for opt in $options; do
+                    local opt_label=$(get_setup_item_option_label "$item_id" "$opt")
+                    menu_opts="$menu_opts $i \"$opt_label\""
+                    i=$((i+1))
+                done
+                
+                value=$(eval "whiptail --title 'Setup' --menu '$label:' 18 60 10 $menu_opts 3>&1 1>&2 2>&3")
+                
+                if [ $? -eq 0 ] && [ -n "$value" ]; then
+                    selected_opt=$(echo "$options" | sed -n "${value}p")
+                    echo "[DEBUG] Selected: $selected_opt" >> /tmp/debug.log
+                    sed -i "/^${variable}=/d" "$SETUP_VARS"
+                    echo "${variable}='${selected_opt}'" >> "$SETUP_VARS"
+                    echo "[DEBUG] Saved to SETUP_VARS" >> /tmp/debug.log
+                fi
+                ;;
+            
+            section)
+                echo "[DEBUG] Processing section: $item_id" >> /tmp/debug.log
+                local nested=$(get_section_nested_items "$item_id")
+                if [ -n "$nested" ]; then
+                    echo "[DEBUG] Nested items: $nested" >> /tmp/debug.log
+                    whiptail_process_items "$cat_id" "$nested"
+                    items_processed=$((items_processed + $?))
+                fi
+                ;;
+                
             field)
+                items_processed=$((items_processed + 1))
+                local label=$(get_setup_item_label "$item_id")
+                local variable=$(get_setup_item_variable "$item_id")
+                local default=$(get_setup_item_default "$item_id")
+                local placeholder=$(get_setup_item_placeholder "$item_id")
+                local fieldtype=$(get_setup_item_fieldtype "$item_id")
+                
+                echo "[DEBUG] field: $item_id, var=$variable" >> /tmp/debug.log
+                
+                local current=$(grep "^${variable}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+                [ -z "$current" ] && current="$default"
+                
+                case "$item_id" in
+                    aios-country) [ -z "$current" ] && current="${ISP_COUNTRY:-$default}" ;;
+                    aios-timezone) [ -z "$current" ] && current="${AUTO_TIMEZONE:-$default}" ;;
+                    aios-zonename) [ -z "$current" ] && current="${AUTO_ZONENAME:-$default}" ;;
+                esac
+                
                 if [ "$fieldtype" = "select" ]; then
                     local options=$(get_setup_item_options "$item_id")
                     local menu_opts=""
@@ -334,40 +590,104 @@ whiptail_category_config() {
                         menu_opts="$menu_opts $i \"$opt_label\""
                         i=$((i+1))
                     done
-                    value=$(eval "whiptail --title '$cat_title' --menu '$label:' 18 60 10 $menu_opts 3>&1 1>&2 2>&3")
-                    if [ -n "$value" ]; then
+                    
+                    value=$(eval "whiptail --title 'Setup' --menu '$label:' 18 60 10 $menu_opts 3>&1 1>&2 2>&3")
+                    
+                    if [ $? -eq 0 ] && [ -n "$value" ]; then
                         selected_opt=$(echo "$options" | sed -n "${value}p")
                         sed -i "/^${variable}=/d" "$SETUP_VARS"
                         echo "${variable}='${selected_opt}'" >> "$SETUP_VARS"
                     fi
                 else
                     value=$(whiptail --inputbox "$label:" 10 60 "$current" 3>&1 1>&2 2>&3)
-                    if [ -n "$value" ]; then
+                    
+                    if [ $? -eq 0 ] && [ -n "$value" ]; then
                         sed -i "/^${variable}=/d" "$SETUP_VARS"
                         echo "${variable}='${value}'" >> "$SETUP_VARS"
                     fi
                 fi
                 ;;
-            radio-group)
-                local options=$(get_setup_item_options "$item_id")
-                local menu_opts=""
-                local i=1
-                for opt in $options; do
-                    local opt_label=$(get_setup_item_option_label "$item_id" "$opt")
-                    menu_opts="$menu_opts $i \"$opt_label\""
-                    i=$((i+1))
+                
+            info-display)
+                items_processed=$((items_processed + 1))
+                local cat_idx=0
+                local item_idx=0
+                for cid in $(get_setup_categories); do
+                    local citems=$(get_setup_category_items "$cid")
+                    local idx=0
+                    for itm in $citems; do
+                        if [ "$itm" = "$item_id" ]; then
+                            item_idx=$idx
+                            break 2
+                        fi
+                        idx=$((idx+1))
+                    done
+                    cat_idx=$((cat_idx+1))
                 done
-                value=$(eval "whiptail --title '$cat_title' --menu '$label:' 18 60 10 $menu_opts 3>&1 1>&2 2>&3")
-                if [ -n "$value" ]; then
-                    selected_opt=$(echo "$options" | sed -n "${value}p")
-                    sed -i "/^${variable}=/d" "$SETUP_VARS"
-                    echo "${variable}='${selected_opt}'" >> "$SETUP_VARS"
+                
+                local content=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[$cat_idx].items[$item_idx].content" 2>/dev/null)
+                local class=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[$cat_idx].items[$item_idx].class" 2>/dev/null)
+                
+                if [ -n "$class" ] && [ "${class#tr-}" != "$class" ]; then
+                    content=$(translate "$class")
                 fi
+                
+                [ -n "$content" ] && whiptail --msgbox "$content" 10 60
                 ;;
         esac
     done
     
-    whiptail --msgbox "Settings saved!" 8 40
+    echo "[DEBUG] Total items processed: $items_processed" >> /tmp/debug.log
+    return $items_processed
+}
+
+whiptail_show_network_info() {
+    local tr_auto_detection=$(translate "tr-auto-detection")
+    local tr_method=$(translate "tr-method")
+    local tr_isp=$(translate "tr-isp")
+    local tr_as=$(translate "tr-as")
+    local tr_country=$(translate "tr-country")
+    local tr_br=$(translate "tr-br")
+    local tr_ipv4_prefix=$(translate "tr-ipv4-prefix")
+    local tr_ipv6_prefix=$(translate "tr-ipv6-prefix")
+    local tr_ea_len=$(translate "tr-ea-len")
+    local tr_psid_length=$(translate "tr-psid-length")
+    local tr_aftr=$(translate "tr-dslite-aftr-ipv6-address")
+    local tr_mape_notice=$(translate "tr-mape-notice1")
+    local tr_dslite_notice=$(translate "tr-dslite-notice1")
+    
+    if [ -z "$DETECTED_CONN_TYPE" ] || [ "$DETECTED_CONN_TYPE" = "Unknown" ]; then
+        return 1
+    fi
+    
+    local info="${tr_auto_detection}: ${DETECTED_CONN_TYPE}\n\n"
+    [ -n "$ISP_NAME" ] && info="${info}${tr_isp}: $ISP_NAME\n"
+    [ -n "$ISP_AS" ] && info="${info}${tr_as}: $ISP_AS\n"
+    [ -n "$ISP_REGION" ] && info="${info}${tr_country}: $ISP_REGION, $ISP_COUNTRY\n"
+    
+    info="${info}\n${tr_method}: ${DETECTED_CONN_TYPE}\n\n"
+    
+    if [ "$DETECTED_CONN_TYPE" = "MAP-E" ] && [ -n "$MAPE_BR" ]; then
+        info="${info}${tr_br}: $MAPE_BR\n"
+        [ -n "$MAPE_IPV4_PREFIX" ] && info="${info}${tr_ipv4_prefix}: $MAPE_IPV4_PREFIX/$MAPE_IPV4_PREFIXLEN\n"
+        [ -n "$MAPE_IPV6_PREFIX" ] && info="${info}${tr_ipv6_prefix}: $MAPE_IPV6_PREFIX/$MAPE_IPV6_PREFIXLEN\n"
+        [ -n "$MAPE_EALEN" ] && info="${info}${tr_ea_len}: $MAPE_EALEN\n"
+        [ -n "$MAPE_PSIDLEN" ] && info="${info}${tr_psid_length}: $MAPE_PSIDLEN\n"
+        info="${info}\n${tr_mape_notice}"
+    elif [ "$DETECTED_CONN_TYPE" = "DS-Lite" ] && [ -n "$DSLITE_AFTR" ]; then
+        info="${info}${tr_aftr}: $DSLITE_AFTR\n"
+        info="${info}\n${tr_dslite_notice}"
+    fi
+    
+    info="${info}\n\nUse this auto-detected configuration?"
+    
+    if whiptail --title "$(translate 'tr-internet-connection')" --yesno "$info" 22 70; then
+        sed -i "/^connection_type=/d" "$SETUP_VARS"
+        echo "connection_type='auto'" >> "$SETUP_VARS"
+        return 0
+    else
+        return 1
+    fi
 }
 
 whiptail_device_info() {
@@ -376,14 +696,8 @@ whiptail_device_info() {
     info="${info}Version: $OPENWRT_VERSION\n"
     [ -n "$DEVICE_MEM" ] && info="${info}Memory: $DEVICE_MEM\n"
     [ -n "$DEVICE_CPU" ] && info="${info}CPU: $DEVICE_CPU\n"
-    info="${info}\n--- Network Information ---\n"
-    [ -n "$ISP_NAME" ] && info="${info}ISP: $ISP_NAME\n"
-    [ -n "$ISP_AS" ] && info="${info}AS: $ISP_AS\n"
-    [ -n "$ISP_IPV6" ] && info="${info}IPv6: $ISP_IPV6\n"
-    [ -n "$ISP_REGION" ] && info="${info}Region: $ISP_REGION, $ISP_COUNTRY\n"
-    [ -n "$DETECTED_CONN_TYPE" ] && info="${info}Detected: $DETECTED_CONN_TYPE\n"
     
-    whiptail --title "Device Information" --msgbox "$info" 20 70
+    whiptail --title "Device Information" --msgbox "$info" 15 70
 }
 
 whiptail_package_categories() {
@@ -421,22 +735,9 @@ whiptail_package_selection() {
         
         checklist_items="$checklist_items \"$pkg_id\" \"$pkg_name\" $status"
     done < <(get_category_packages "$cat_id")
-    while read pkg_id; do
-        pkg_name=$(get_package_name "$pkg_id")
-        [ -z "$pkg_name" ] && pkg_name="$pkg_id"
-        
-        if is_package_selected "$pkg_id"; then
-            status="ON"
-        else
-            status="OFF"
-        fi
-        
-        checklist_items="$checklist_items \"$pkg_id\" \"$pkg_name\" $status"
-    done < <(get_category_packages "$cat_id")
     
     selected=$(eval "whiptail --title '$cat_name' --checklist '$cat_desc (Space=toggle):' 20 70 12 $checklist_items 3>&1 1>&2 2>&3")
     
-    # Update selection for this category
     get_category_packages "$cat_id" | while read pkg_id; do
         sed -i "/^${pkg_id}$/d" "$SELECTED_PACKAGES"
     done
@@ -474,8 +775,6 @@ whiptail_review() {
     fi
 }
 
-# ========== SIMPLE FALLBACK UI ==========
-
 simple_main_menu() {
     while true; do
         clear
@@ -493,9 +792,9 @@ simple_main_menu() {
         done
         
         local setup_cat_count=$(get_setup_categories | wc -l)
-        echo "$((setup_cat_count+1))) Configure Packages"
-        echo "$((setup_cat_count+2))) Device Information"
-        echo "$((setup_cat_count+3))) Review & Generate"
+        local packages_label=$(translate "tr-custom-packages")
+        echo "$((setup_cat_count+1))) $packages_label"
+        echo "$((setup_cat_count+2))) Review & Generate"
         echo "q) Exit"
         echo ""
         printf "Choice: "
@@ -510,8 +809,6 @@ simple_main_menu() {
                 elif [ "$choice" -eq "$((setup_cat_count+1))" ]; then
                     simple_package_menu
                 elif [ "$choice" -eq "$((setup_cat_count+2))" ]; then
-                    simple_device_info
-                elif [ "$choice" -eq "$((setup_cat_count+3))" ]; then
                     simple_review
                 fi
                 ;;
@@ -519,36 +816,44 @@ simple_main_menu() {
     done
 }
 
-simple_category_config() {
+process_category_items() {
     local cat_id="$1"
-    local cat_title=$(get_setup_category_title "$cat_id")
+    local parent_items="$2"
     
-    clear
-    echo "=== $cat_title ==="
-    echo ""
+    local items
+    if [ -z "$parent_items" ]; then
+        items=$(get_setup_category_items "$cat_id")
+    else
+        items="$parent_items"
+    fi
     
-    local items=$(get_setup_category_items "$cat_id")
     for item_id in $items; do
+        should_show_item "$item_id" || continue
+        
         local item_type=$(get_setup_item_type "$item_id")
-        local label=$(get_setup_item_label "$item_id")
-        local variable=$(get_setup_item_variable "$item_id")
-        local default=$(get_setup_item_default "$item_id")
-        local placeholder=$(get_setup_item_placeholder "$item_id")
-        local fieldtype=$(get_setup_item_fieldtype "$item_id")
-        
-        # Get current value
-        local current=$(grep "^${variable}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-        [ -z "$current" ] && current="$default"
-        
-        # Handle API source defaults
-        case "$item_id" in
-            aios-country) [ -z "$current" ] && current="${ISP_COUNTRY:-$default}" ;;
-            aios-timezone) [ -z "$current" ] && current="${AUTO_TIMEZONE:-$default}" ;;
-            aios-zonename) [ -z "$current" ] && current="${AUTO_ZONENAME:-$default}" ;;
-        esac
         
         case "$item_type" in
+            section)
+                local nested=$(get_section_nested_items "$item_id")
+                [ -n "$nested" ] && process_category_items "$cat_id" "$nested"
+                ;;
+                
             field)
+                local label=$(get_setup_item_label "$item_id")
+                local variable=$(get_setup_item_variable "$item_id")
+                local default=$(get_setup_item_default "$item_id")
+                local placeholder=$(get_setup_item_placeholder "$item_id")
+                local fieldtype=$(get_setup_item_fieldtype "$item_id")
+                
+                local current=$(grep "^${variable}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+                [ -z "$current" ] && current="$default"
+                
+                case "$item_id" in
+                    aios-country) [ -z "$current" ] && current="${ISP_COUNTRY:-$default}" ;;
+                    aios-timezone) [ -z "$current" ] && current="${AUTO_TIMEZONE:-$default}" ;;
+                    aios-zonename) [ -z "$current" ] && current="${AUTO_ZONENAME:-$default}" ;;
+                esac
+                
                 if [ "$fieldtype" = "select" ]; then
                     echo "$label:"
                     local options=$(get_setup_item_options "$item_id")
@@ -574,8 +879,17 @@ simple_category_config() {
                         echo "${variable}='${value}'" >> "$SETUP_VARS"
                     fi
                 fi
+                echo ""
                 ;;
+                
             radio-group)
+                local label=$(get_setup_item_label "$item_id")
+                local variable=$(get_setup_item_variable "$item_id")
+                local default=$(get_setup_item_default "$item_id")
+                
+                local current=$(grep "^${variable}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+                [ -z "$current" ] && current="$default"
+                
                 echo "$label:"
                 local options=$(get_setup_item_options "$item_id")
                 local i=1
@@ -591,13 +905,114 @@ simple_category_config() {
                     sed -i "/^${variable}=/d" "$SETUP_VARS"
                     echo "${variable}='${selected_opt}'" >> "$SETUP_VARS"
                 fi
+                echo ""
+                ;;
+                
+            info-display)
+                local cat_idx=0
+                local item_idx=0
+                for cid in $(get_setup_categories); do
+                    local citems=$(get_setup_category_items "$cid")
+                    local idx=0
+                    for itm in $citems; do
+                        if [ "$itm" = "$item_id" ]; then
+                            item_idx=$idx
+                            break 2
+                        fi
+                        idx=$((idx+1))
+                    done
+                    cat_idx=$((cat_idx+1))
+                done
+                
+                local content=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[$cat_idx].items[$item_idx].content" 2>/dev/null)
+                local class=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[$cat_idx].items[$item_idx].class" 2>/dev/null)
+                
+                if [ -n "$class" ] && [ "${class#tr-}" != "$class" ]; then
+                    content=$(translate "$class")
+                fi
+                
+                echo "$content"
+                echo ""
                 ;;
         esac
-        echo ""
     done
+}
+
+simple_category_config() {
+    local cat_id="$1"
+    local cat_title=$(get_setup_category_title "$cat_id")
     
-    echo "Settings saved! Press Enter..."
+    clear
+    echo "=== $cat_title ==="
+    echo ""
+    
+    if [ "$cat_id" = "internet-connection" ]; then
+        simple_show_network_info
+    fi
+    
+    process_category_items "$cat_id"
+    
+    echo "Configuration completed! Press Enter..."
     read
+}
+
+simple_show_network_info() {
+    local tr_auto_detection=$(translate "tr-auto-detection")
+    local tr_method=$(translate "tr-method")
+    local tr_isp=$(translate "tr-isp")
+    local tr_as=$(translate "tr-as")
+    local tr_country=$(translate "tr-country")
+    local tr_br=$(translate "tr-br")
+    local tr_ipv4_prefix=$(translate "tr-ipv4-prefix")
+    local tr_ipv6_prefix=$(translate "tr-ipv6-prefix")
+    local tr_ea_len=$(translate "tr-ea-len")
+    local tr_psid_length=$(translate "tr-psid-length")
+    local tr_aftr=$(translate "tr-dslite-aftr-ipv6-address")
+    local tr_mape_notice=$(translate "tr-mape-notice1")
+    local tr_dslite_notice=$(translate "tr-dslite-notice1")
+    
+    if [ -z "$DETECTED_CONN_TYPE" ] || [ "$DETECTED_CONN_TYPE" = "Unknown" ]; then
+        return 1
+    fi
+    
+    echo "=== ${tr_auto_detection} ==="
+    echo ""
+    [ -n "$ISP_NAME" ] && echo "${tr_isp}: $ISP_NAME"
+    [ -n "$ISP_AS" ] && echo "${tr_as}: $ISP_AS"
+    [ -n "$ISP_REGION" ] && echo "${tr_country}: $ISP_REGION, $ISP_COUNTRY"
+    echo ""
+    echo "${tr_method}: $DETECTED_CONN_TYPE"
+    echo ""
+    
+    if [ "$DETECTED_CONN_TYPE" = "MAP-E" ] && [ -n "$MAPE_BR" ]; then
+        echo "${tr_br}: $MAPE_BR"
+        [ -n "$MAPE_IPV4_PREFIX" ] && echo "${tr_ipv4_prefix}: $MAPE_IPV4_PREFIX/$MAPE_IPV4_PREFIXLEN"
+        [ -n "$MAPE_IPV6_PREFIX" ] && echo "${tr_ipv6_prefix}: $MAPE_IPV6_PREFIX/$MAPE_IPV6_PREFIXLEN"
+        [ -n "$MAPE_EALEN" ] && echo "${tr_ea_len}: $MAPE_EALEN"
+        [ -n "$MAPE_PSIDLEN" ] && echo "${tr_psid_length}: $MAPE_PSIDLEN"
+        echo ""
+        echo "${tr_mape_notice}"
+    elif [ "$DETECTED_CONN_TYPE" = "DS-Lite" ] && [ -n "$DSLITE_AFTR" ]; then
+        echo "${tr_aftr}: $DSLITE_AFTR"
+        echo ""
+        echo "${tr_dslite_notice}"
+    fi
+    
+    echo ""
+    printf "Use ${tr_auto_detection}? (y/n) [y]: "
+    read use_auto
+    
+    if [ "$use_auto" != "n" ] && [ "$use_auto" != "N" ]; then
+        sed -i "/^connection_type=/d" "$SETUP_VARS"
+        echo "connection_type='auto'" >> "$SETUP_VARS"
+    fi
+    
+    echo ""
+    printf "Press Enter to continue..."
+    read
+    clear
+    echo "=== $(get_setup_category_title 'internet-connection') ==="
+    echo ""
 }
 
 simple_device_info() {
@@ -609,13 +1024,6 @@ simple_device_info() {
     echo "Version: $OPENWRT_VERSION"
     [ -n "$DEVICE_MEM" ] && echo "Memory: $DEVICE_MEM"
     [ -n "$DEVICE_CPU" ] && echo "CPU: $DEVICE_CPU"
-    echo ""
-    echo "--- Network Information ---"
-    [ -n "$ISP_NAME" ] && echo "ISP: $ISP_NAME"
-    [ -n "$ISP_AS" ] && echo "AS: $ISP_AS"
-    [ -n "$ISP_IPV6" ] && echo "IPv6: $ISP_IPV6"
-    [ -n "$ISP_REGION" ] && echo "Region: $ISP_REGION, $ISP_COUNTRY"
-    [ -n "$DETECTED_CONN_TYPE" ] && echo "Detected Connection: $DETECTED_CONN_TYPE"
     echo ""
     printf "Press Enter to continue..."
     read
@@ -765,8 +1173,6 @@ simple_review() {
     printf "Press Enter to continue..."
     read
 }
-
-# ========== COMMON FUNCTIONS ==========
 
 apply_api_defaults() {
     [ -n "$AUTO_LANGUAGE" ] && ! grep -q "^language=" "$SETUP_VARS" 2>/dev/null && \
@@ -929,8 +1335,6 @@ get_extended_device_info() {
     [ -z "$OPENWRT_VERSION" ] && OPENWRT_VERSION="unknown"
 }
 
-# ========== MAIN ==========
-
 aios_light_main() {
     clear
     echo "========================================"
@@ -955,7 +1359,13 @@ aios_light_main() {
     [ -n "$DEVICE_CPU" ] && echo "CPU: $DEVICE_CPU"
     [ -n "$ISP_NAME" ] && echo "ISP: $ISP_NAME ($ISP_AS)"
     [ -n "$DETECTED_CONN_TYPE" ] && echo "Detected: $DETECTED_CONN_TYPE"
+    [ -n "$AUTO_LANGUAGE" ] && echo "Language: $AUTO_LANGUAGE"
     echo ""
+    
+    echo "Downloading language file..."
+    if ! download_language_json "${AUTO_LANGUAGE:-en}"; then
+        echo "Warning: Using English as fallback language"
+    fi
     
     echo "Downloading setup.json..."
     if ! download_setup_json; then
@@ -979,8 +1389,10 @@ aios_light_main() {
     select_ui_mode
     
     if [ "$UI_MODE" = "whiptail" ]; then
+        whiptail_device_info
         whiptail_main_menu
     else
+        simple_device_info
         simple_main_menu
     fi
 }
