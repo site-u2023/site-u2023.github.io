@@ -1351,10 +1351,10 @@ get_extended_device_info() {
     DEVICE_STORAGE_AVAIL=$(df -h / | awk 'NR==2 {print $4}')
     
     if [ -d /sys/bus/usb/devices ]; then
-        EXTERNAL_USB=$(ls -1 /sys/bus/usb/devices 2>/dev/null | grep -E '^[0-9]+-[0-9]+' | wc -l)
-        [ "$EXTERNAL_USB" -gt 0 ] && DEVICE_USB="Yes (${EXTERNAL_USB} external)" || DEVICE_USB="No devices"
+        USB_DEVICES=$(find /sys/bus/usb/devices -name "idVendor" | wc -l)
+        [ "$USB_DEVICES" -gt 0 ] && DEVICE_USB="Yes ($USB_DEVICES connected)" || DEVICE_USB="Available (none)"
     else
-        DEVICE_USB="Not available"
+        DEVICE_USB="Not supported"
     fi
 }
 
