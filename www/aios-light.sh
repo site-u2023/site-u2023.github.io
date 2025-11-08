@@ -355,18 +355,31 @@ load_default_packages() {
 should_show_item() {
     local item_id="$1"
     
+    echo "[DEBUG] === should_show_item: $item_id ===" >> /tmp/debug.log
+    
     local show_when=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].showWhen" 2>/dev/null | head -1)
     
     if [ -z "$show_when" ]; then
         show_when=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].showWhen" 2>/dev/null | head -1)
     fi
     
-    [ -z "$show_when" ] && return 0
+    echo "[DEBUG] showWhen raw: $show_when" >> /tmp/debug.log
+    
+    if [ -z "$show_when" ]; then
+        echo "[DEBUG] No showWhen, returning 0 (show)" >> /tmp/debug.log
+        return 0
+    fi
     
     local var_name=$(echo "$show_when" | sed 's/^{"\([^"]*\)".*/\1/')
-    [ -z "$var_name" ] && return 0
+    echo "[DEBUG] var_name: $var_name" >> /tmp/debug.log
+    
+    [ -z "$var_name" ] && {
+        echo "[DEBUG] Empty var_name, returning 0 (show)" >> /tmp/debug.log
+        return 0
+    }
     
     local current_val=$(grep "^${var_name}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+    echo "[DEBUG] current_val: '$current_val'" >> /tmp/debug.log
     
     local expected=$(jsonfilter -e "@.${var_name}[*]" 2>/dev/null <<EOF
 $show_when
@@ -378,11 +391,24 @@ EOF
 $show_when
 EOF
 )
-        [ "$current_val" = "$expected" ] && return 0
-        return 1
+        echo "[DEBUG] expected (single): '$expected'" >> /tmp/debug.log
+        if [ "$current_val" = "$expected" ]; then
+            echo "[DEBUG] Match! returning 0 (show)" >> /tmp/debug.log
+            return 0
+        else
+            echo "[DEBUG] No match, returning 1 (hide)" >> /tmp/debug.log
+            return 1
+        fi
     fi
     
-    echo "$expected" | grep -qx "$current_val"
+    echo "[DEBUG] expected (array): $expected" >> /tmp/debug.log
+    if echo "$expected" | grep -qx "$current_val"; then
+        echo "[DEBUG] Match in array! returning 0 (show)" >> /tmp/debug.log
+        return 0
+    else
+        echo "[DEBUG] No match in array, returning 1 (hide)" >> /tmp/debug.log
+        return 1
+    fi
 }
 
 get_section_nested_items() {
