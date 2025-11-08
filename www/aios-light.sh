@@ -486,6 +486,7 @@ whiptail_category_config() {
                 fi
                 ;;
         esac
+        
     done
     
     whiptail --msgbox "Settings saved!" 8 40
