@@ -1351,12 +1351,7 @@ get_extended_device_info() {
     DEVICE_STORAGE_AVAIL=$(df -h / | awk 'NR==2 {print $4}')
     
     if [ -d /sys/bus/usb/devices ]; then
-        USB_COUNT=$(find /sys/bus/usb/devices -name "idVendor" 2>/dev/null | wc -l)
-        if [ "$USB_COUNT" -gt 0 ]; then
-            DEVICE_USB="$USB_COUNT devices"
-        else
-            DEVICE_USB="Available"
-        fi
+        DEVICE_USB="Available"
     else
         DEVICE_USB="Not available"
     fi
