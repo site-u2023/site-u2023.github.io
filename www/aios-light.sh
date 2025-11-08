@@ -441,9 +441,12 @@ whiptail_category_config() {
     local cat_title=$(get_setup_category_title "$cat_id")
     
     if [ "$cat_id" = "internet-connection" ]; then
-        if whiptail_show_network_info; then
-            whiptail --msgbox "Auto-configuration applied!" 8 40
-            return 0
+        local conn_type=$(grep "^connection_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+        if [ "$conn_type" = "auto" ]; then
+            if whiptail_show_network_info; then
+                whiptail --msgbox "Auto-configuration applied!" 8 40
+                return 0
+            fi
         fi
     fi
     
