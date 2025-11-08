@@ -1349,11 +1349,12 @@ get_extended_device_info() {
     DEVICE_STORAGE_AVAIL=$(df -h / | awk 'NR==2 {print $4}')
     
     if [ -d /sys/bus/usb/devices ]; then
+        EXTERNAL_USB=$(ls -1 /sys/bus/usb/devices | grep -E '^[0-9]+-[0-9]+' | wc -l)
         USB_COUNT=$(ls -1 /sys/bus/usb/devices | grep -c "^[0-9]")
-        [ "$USB_COUNT" -gt 0 ] && DEVICE_USB="Yes ($USB_COUNT devices)" || DEVICE_USB="No devices"
+        [ "$EXTERNAL_USB" -gt 0 ] && DEVICE_USB="Yes (${EXTERNAL_USB} external)" || DEVICE_USB="Yes (no devices)"
     else
         DEVICE_USB="Not available"
-    fi    
+    fi
 }
 
 aios_light_main() {
