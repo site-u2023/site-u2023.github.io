@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="1.0.0"
+VERSION="1.0.1"
 BASE_URL="https://site-u.pages.dev"
 PACKAGES_URL="$BASE_URL/www/packages/packages.json"
 SETUP_JSON_URL="$BASE_URL/www/uci-defaults/setup.json"
@@ -19,10 +19,8 @@ SELECTED_PACKAGES="$CONFIG_DIR/selected_packages.txt"
 SETUP_VARS="$CONFIG_DIR/setup_vars.sh"
 OUTPUT_DIR="/tmp"
 
-# Translation cache
 TRANSLATION_CACHE="$CONFIG_DIR/translation_cache.txt"
 
-# Package manager detection
 PKG_MGR=""
 detect_package_manager() {
     if command -v opkg >/dev/null 2>&1; then
@@ -35,7 +33,6 @@ detect_package_manager() {
     fi
 }
 
-# Install package helper
 install_package() {
     case "$PKG_MGR" in
         opkg)
@@ -82,26 +79,21 @@ select_ui_mode() {
     fi
 }
 
-# Initialize
 init() {
     mkdir -p "$CONFIG_DIR"
     : > "$SELECTED_PACKAGES"
     : > "$SETUP_VARS"
     : > "$TRANSLATION_CACHE"
-    # Remove old language file to ensure fresh download
     rm -f "$LANG_JSON"
 }
 
-# Download language JSON
 download_language_json() {
     local lang="${1:-en}"
     local lang_url="$BASE_URL/www/langs/custom.${lang}.json"
     
-    # Always download to ensure we have the correct language
     echo "Fetching language: ${lang}"
     if ! wget -q -O "$LANG_JSON" "$lang_url"; then
         echo "Warning: Failed to download language file for '${lang}'"
-        # Try fallback to English
         if [ "$lang" != "en" ]; then
             echo "Attempting fallback to English..."
             lang_url="$BASE_URL/www/langs/custom.en.json"
@@ -116,18 +108,15 @@ download_language_json() {
     return 0
 }
 
-# Translate text using tr- prefix class
 translate() {
     local key="$1"
     
-    # Check cache first
     local cached=$(grep "^${key}=" "$TRANSLATION_CACHE" 2>/dev/null | cut -d= -f2-)
     if [ -n "$cached" ]; then
         echo "$cached"
         return 0
     fi
     
-    # Get translation from JSON
     if [ -f "$LANG_JSON" ]; then
         local translation=$(jsonfilter -i "$LANG_JSON" -e "@['$key']" 2>/dev/null)
         if [ -n "$translation" ]; then
@@ -137,12 +126,10 @@ translate() {
         fi
     fi
     
-    # Return key if no translation found
     echo "$key"
     return 1
 }
 
-# Download setup.json
 download_setup_json() {
     if [ ! -f "$SETUP_JSON" ]; then
         echo "Downloading setup.json..."
@@ -154,7 +141,6 @@ download_setup_json() {
     return 0
 }
 
-# Download packages.json
 download_packages() {
     if [ ! -f "$PACKAGES_JSON" ]; then
         echo "Downloading packages.json..."
@@ -166,7 +152,6 @@ download_packages() {
     return 0
 }
 
-# Get device info from URL or board
 get_device_info() {
     if [ -f /etc/board.json ]; then
         DEVICE_MODEL=$(jsonfilter -i /etc/board.json -e '@.model.name' 2>/dev/null)
@@ -177,7 +162,6 @@ get_device_info() {
     [ -z "$DEVICE_TARGET" ] && DEVICE_TARGET="unknown/unknown"
 }
 
-# Setup.json helpers
 get_setup_categories() {
     jsonfilter -i "$SETUP_JSON" -e '@.categories[*].id' 2>/dev/null | grep -v '^$'
 }
@@ -191,10 +175,6 @@ get_setup_category_title() {
     else
         echo "$title"
     fi
-}
-
-get_setup_category_class() {
-    jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$1'].class" 2>/dev/null
 }
 
 get_setup_category_items() {
@@ -253,7 +233,6 @@ get_setup_item_options() {
     local cat_idx=0
     local item_idx=0
     
-    # Find the category and item indices
     for cat_id in $(get_setup_categories); do
         local items=$(get_setup_category_items "$cat_id")
         local idx=0
@@ -299,7 +278,6 @@ get_setup_item_option_label() {
     fi
 }
 
-# Packages.json helpers
 get_categories() {
     jsonfilter -i "$PACKAGES_JSON" -e '@.categories[*].id' 2>/dev/null | grep -v '^$'
 }
@@ -343,7 +321,6 @@ toggle_package() {
     fi
 }
 
-# Load default checked packages
 load_default_packages() {
     local cat_id pkg_id checked
     get_categories | while read cat_id; do
@@ -356,13 +333,11 @@ load_default_packages() {
     done
 }
 
-# Check if item should be shown based on showWhen conditions
 should_show_item() {
     local item_id="$1"
     local cat_idx=0
     local item_idx=0
     
-    # Find indices
     for cat_id in $(get_setup_categories); do
         local items=$(get_setup_category_items "$cat_id")
         local idx=0
@@ -376,41 +351,52 @@ should_show_item() {
         cat_idx=$((cat_idx+1))
     done
     
-    # Get showWhen condition
     local show_when=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[$cat_idx].items[$item_idx].showWhen" 2>/dev/null)
     
-    # If no showWhen, always show
     [ -z "$show_when" ] && return 0
     
-    # Parse showWhen JSON - get variable name (the key)
     local var_name=$(echo "$show_when" | sed 's/^{"\([^"]*\)".*/\1/')
     [ -z "$var_name" ] && return 0
     
-    # Get current value from SETUP_VARS
     local current_val=$(grep "^${var_name}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
     
-    # Get expected values (can be array or single value)
     local expected=$(jsonfilter -e "@.${var_name}[*]" 2>/dev/null <<EOF
 $show_when
 EOF
 )
     
-    # If not an array, try as single value
     if [ -z "$expected" ]; then
         expected=$(jsonfilter -e "@.${var_name}" 2>/dev/null <<EOF
 $show_when
 EOF
 )
-        # Check single value match
         [ "$current_val" = "$expected" ] && return 0
         return 1
     fi
     
-    # Check if current value matches any expected value in array
     echo "$expected" | grep -qw "$current_val"
 }
 
-# ========== WHIPTAIL UI ==========
+get_section_nested_items() {
+    local item_id="$1"
+    local cat_idx=0
+    local item_idx=0
+    
+    for cat_id in $(get_setup_categories); do
+        local items=$(get_setup_category_items "$cat_id")
+        local idx=0
+        for itm in $items; do
+            if [ "$itm" = "$item_id" ]; then
+                item_idx=$idx
+                break 2
+            fi
+            idx=$((idx+1))
+        done
+        cat_idx=$((cat_idx+1))
+    done
+    
+    jsonfilter -i "$SETUP_JSON" -e "@.categories[$cat_idx].items[$item_idx].items[*].id" 2>/dev/null
+}
 
 whiptail_main_menu() {
     while true; do
@@ -422,7 +408,6 @@ whiptail_main_menu() {
             i=$((i+1))
         done < <(get_setup_categories)
         
-        # Fixed menu items
         local packages_label=$(translate "tr-custom-packages")
         menu_items="$menu_items $i \"$packages_label\""
         i=$((i+1))
@@ -437,7 +422,6 @@ whiptail_main_menu() {
             exit 0
         fi
         
-        # Calculate what was selected
         local setup_cat_count=$(get_setup_categories | wc -l)
         if [ "$choice" -le "$setup_cat_count" ]; then
             selected_cat=$(get_setup_categories | sed -n "${choice}p")
@@ -463,12 +447,10 @@ whiptail_category_config() {
         fi
     fi
     
-    # Loop to allow re-processing after radio-group changes
     local continue_config=true
     while [ "$continue_config" = true ]; do
         whiptail_process_items "$cat_id" ""
         
-        # Ask if user wants to review/modify settings
         if whiptail --yesno "Settings saved!\n\nDo you want to modify any settings?" 10 50; then
             continue_config=true
         else
@@ -489,30 +471,13 @@ whiptail_process_items() {
     fi
     
     for item_id in $items; do
-        # Check showWhen condition
         should_show_item "$item_id" || continue
         
         local item_type=$(get_setup_item_type "$item_id")
         
         case "$item_type" in
             section)
-                # Get nested items from section
-                local cat_idx=0
-                local item_idx=0
-                for cid in $(get_setup_categories); do
-                    local citems=$(get_setup_category_items "$cid")
-                    local idx=0
-                    for itm in $citems; do
-                        if [ "$itm" = "$item_id" ]; then
-                            item_idx=$idx
-                            break 2
-                        fi
-                        idx=$((idx+1))
-                    done
-                    cat_idx=$((cat_idx+1))
-                done
-                
-                local nested=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[$cat_idx].items[$item_idx].items[*].id" 2>/dev/null)
+                local nested=$(get_section_nested_items "$item_id")
                 [ -n "$nested" ] && whiptail_process_items "$cat_id" "$nested"
                 ;;
                 
@@ -586,7 +551,6 @@ whiptail_process_items() {
                 ;;
                 
             info-display)
-                # Get info-display content and show it
                 local cat_idx=0
                 local item_idx=0
                 for cid in $(get_setup_categories); do
@@ -605,12 +569,10 @@ whiptail_process_items() {
                 local content=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[$cat_idx].items[$item_idx].content" 2>/dev/null)
                 local class=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[$cat_idx].items[$item_idx].class" 2>/dev/null)
                 
-                # Translate if class exists
                 if [ -n "$class" ] && [ "${class#tr-}" != "$class" ]; then
                     content=$(translate "$class")
                 fi
                 
-                # Show info in whiptail msgbox
                 [ -n "$content" ] && whiptail --msgbox "$content" 10 60
                 ;;
         esac
@@ -714,7 +676,6 @@ whiptail_package_selection() {
     
     selected=$(eval "whiptail --title '$cat_name' --checklist '$cat_desc (Space=toggle):' 20 70 12 $checklist_items 3>&1 1>&2 2>&3")
     
-    # Update selection for this category
     get_category_packages "$cat_id" | while read pkg_id; do
         sed -i "/^${pkg_id}$/d" "$SELECTED_PACKAGES"
     done
@@ -751,8 +712,6 @@ whiptail_review() {
         whiptail --msgbox "Configuration generated:\n\n- $OUTPUT_DIR/postinst\n- $OUTPUT_DIR/setup.sh\n\nReady for ASU server upload!" 12 60
     fi
 }
-
-# ========== SIMPLE FALLBACK UI ==========
 
 simple_main_menu() {
     while true; do
@@ -795,7 +754,6 @@ simple_main_menu() {
     done
 }
 
-# Process items recursively, including sections
 process_category_items() {
     local cat_id="$1"
     local parent_items="$2"
@@ -808,33 +766,13 @@ process_category_items() {
     fi
     
     for item_id in $items; do
-        # Check showWhen condition
         should_show_item "$item_id" || continue
         
         local item_type=$(get_setup_item_type "$item_id")
         
         case "$item_type" in
             section)
-                # Get section's nested items
-                local cat_idx=0
-                local item_idx=0
-                for cid in $(get_setup_categories); do
-                    local citems=$(get_setup_category_items "$cid")
-                    local idx=0
-                    for itm in $citems; do
-                        if [ "$itm" = "$item_id" ]; then
-                            item_idx=$idx
-                            break 2
-                        fi
-                        idx=$((idx+1))
-                    done
-                    cat_idx=$((cat_idx+1))
-                done
-                
-                # Get nested items from section
-                local nested=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[$cat_idx].items[$item_idx].items[*].id" 2>/dev/null)
-                
-                # Process nested items recursively
+                local nested=$(get_section_nested_items "$item_id")
                 [ -n "$nested" ] && process_category_items "$cat_id" "$nested"
                 ;;
                 
@@ -845,11 +783,9 @@ process_category_items() {
                 local placeholder=$(get_setup_item_placeholder "$item_id")
                 local fieldtype=$(get_setup_item_fieldtype "$item_id")
                 
-                # Get current value
                 local current=$(grep "^${variable}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
                 [ -z "$current" ] && current="$default"
                 
-                # Handle API source defaults
                 case "$item_id" in
                     aios-country) [ -z "$current" ] && current="${ISP_COUNTRY:-$default}" ;;
                     aios-timezone) [ -z "$current" ] && current="${AUTO_TIMEZONE:-$default}" ;;
@@ -911,7 +847,6 @@ process_category_items() {
                 ;;
                 
             info-display)
-                # Get the content from the item
                 local cat_idx=0
                 local item_idx=0
                 for cid in $(get_setup_categories); do
@@ -930,7 +865,6 @@ process_category_items() {
                 local content=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[$cat_idx].items[$item_idx].content" 2>/dev/null)
                 local class=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[$cat_idx].items[$item_idx].class" 2>/dev/null)
                 
-                # Translate if class exists
                 if [ -n "$class" ] && [ "${class#tr-}" != "$class" ]; then
                     content=$(translate "$class")
                 fi
@@ -950,12 +884,10 @@ simple_category_config() {
     echo "=== $cat_title ==="
     echo ""
     
-    # Show network information if this is internet-connection category
     if [ "$cat_id" = "internet-connection" ]; then
         simple_show_network_info
     fi
     
-    # Process items with showWhen support
     process_category_items "$cat_id"
     
     echo "Settings saved! Press Enter..."
@@ -1180,8 +1112,6 @@ simple_review() {
     read
 }
 
-# ========== COMMON FUNCTIONS ==========
-
 apply_api_defaults() {
     [ -n "$AUTO_LANGUAGE" ] && ! grep -q "^language=" "$SETUP_VARS" 2>/dev/null && \
         echo "language='$AUTO_LANGUAGE'" >> "$SETUP_VARS"
@@ -1343,8 +1273,6 @@ get_extended_device_info() {
     [ -z "$OPENWRT_VERSION" ] && OPENWRT_VERSION="unknown"
 }
 
-# ========== MAIN ==========
-
 aios_light_main() {
     clear
     echo "========================================"
@@ -1358,7 +1286,6 @@ aios_light_main() {
     
     init
     
-    # FIRST: Get device and ISP information to retrieve AUTO_LANGUAGE
     echo "Detecting device information..."
     get_extended_device_info
     
@@ -1373,13 +1300,11 @@ aios_light_main() {
     [ -n "$AUTO_LANGUAGE" ] && echo "Language: $AUTO_LANGUAGE"
     echo ""
     
-    # SECOND: Download language file based on AUTO_LANGUAGE
     echo "Downloading language file..."
     if ! download_language_json "${AUTO_LANGUAGE:-en}"; then
         echo "Warning: Using English as fallback language"
     fi
     
-    # THIRD: Download setup.json
     echo "Downloading setup.json..."
     if ! download_setup_json; then
         echo "Error: Failed to download setup.json"
@@ -1387,7 +1312,6 @@ aios_light_main() {
         exit 1
     fi
     
-    # FOURTH: Download packages.json
     echo "Downloading packages.json..."
     if ! download_packages; then
         echo "Warning: Failed to download packages.json"
@@ -1400,10 +1324,8 @@ aios_light_main() {
     
     echo ""
     
-    # NOW we can safely call select_ui_mode with translations available
     select_ui_mode
     
-    # Show device information screen first
     if [ "$UI_MODE" = "whiptail" ]; then
         whiptail_device_info
         whiptail_main_menu
