@@ -186,37 +186,30 @@ get_setup_category_items() {
 
 get_setup_item_type() {
     local item_id="$1"
-    echo "[DEBUG] get_setup_item_type called for: $item_id" >> /tmp/debug.log
     
+    # まず通常のレベルで検索
     local result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].type" 2>/dev/null | head -1)
     
+    # 見つからなければネストされたitemsで検索（section内のitems）
     if [ -z "$result" ]; then
         result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].type" 2>/dev/null | head -1)
     fi
     
-    echo "[DEBUG] Item type result: '$result'" >> /tmp/debug.log
     echo "$result"
 }
 
 get_setup_item_label() {
-    local cat_idx=0
-    local item_idx=0
+    local item_id="$1"
     
-    for cat_id in $(get_setup_categories); do
-        local items=$(get_setup_category_items "$cat_id")
-        local idx=0
-        for itm in $items; do
-            if [ "$itm" = "$1" ]; then
-                item_idx=$idx
-                break 2
-            fi
-            idx=$((idx+1))
-        done
-        cat_idx=$((cat_idx+1))
-    done
+    # まず通常のレベルで検索
+    local label=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].label" 2>/dev/null | head -1)
+    local class=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].class" 2>/dev/null | head -1)
     
-    local label=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[$cat_idx].items[$item_idx].label" 2>/dev/null)
-    local class=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[$cat_idx].items[$item_idx].class" 2>/dev/null)
+    # ネストレベルで検索
+    if [ -z "$label" ]; then
+        label=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].label" 2>/dev/null | head -1)
+        class=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].class" 2>/dev/null | head -1)
+    fi
     
     if [ -n "$class" ] && [ "${class#tr-}" != "$class" ]; then
         translate "$class"
@@ -226,7 +219,14 @@ get_setup_item_label() {
 }
 
 get_setup_item_variable() {
-    jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$1'].variable" 2>/dev/null | head -1
+    local item_id="$1"
+    local result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].variable" 2>/dev/null | head -1)
+    
+    if [ -z "$result" ]; then
+        result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].variable" 2>/dev/null | head -1)
+    fi
+    
+    echo "$result"
 }
 
 get_setup_item_default() {
