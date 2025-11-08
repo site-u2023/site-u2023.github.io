@@ -576,7 +576,32 @@ whiptail_process_items() {
                 ;;
                 
             info-display)
-                # Info displays are non-interactive, skip in whiptail flow
+                # Get info-display content and show it
+                local cat_idx=0
+                local item_idx=0
+                for cid in $(get_setup_categories); do
+                    local citems=$(get_setup_category_items "$cid")
+                    local idx=0
+                    for itm in $citems; do
+                        if [ "$itm" = "$item_id" ]; then
+                            item_idx=$idx
+                            break 2
+                        fi
+                        idx=$((idx+1))
+                    done
+                    cat_idx=$((cat_idx+1))
+                done
+                
+                local content=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[$cat_idx].items[$item_idx].content" 2>/dev/null)
+                local class=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[$cat_idx].items[$item_idx].class" 2>/dev/null)
+                
+                # Translate if class exists
+                if [ -n "$class" ] && [ "${class#tr-}" != "$class" ]; then
+                    content=$(translate "$class")
+                fi
+                
+                # Show info in whiptail msgbox
+                [ -n "$content" ] && whiptail --msgbox "$content" 10 60
                 ;;
         esac
     done
@@ -876,7 +901,30 @@ process_category_items() {
                 ;;
                 
             info-display)
-                local content=$(get_setup_item_label "$item_id")
+                # Get the content from the item
+                local cat_idx=0
+                local item_idx=0
+                for cid in $(get_setup_categories); do
+                    local citems=$(get_setup_category_items "$cid")
+                    local idx=0
+                    for itm in $citems; do
+                        if [ "$itm" = "$item_id" ]; then
+                            item_idx=$idx
+                            break 2
+                        fi
+                        idx=$((idx+1))
+                    done
+                    cat_idx=$((cat_idx+1))
+                done
+                
+                local content=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[$cat_idx].items[$item_idx].content" 2>/dev/null)
+                local class=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[$cat_idx].items[$item_idx].class" 2>/dev/null)
+                
+                # Translate if class exists
+                if [ -n "$class" ] && [ "${class#tr-}" != "$class" ]; then
+                    content=$(translate "$class")
+                fi
+                
                 echo "$content"
                 echo ""
                 ;;
