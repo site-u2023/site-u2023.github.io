@@ -700,12 +700,7 @@ whiptail_show_network_info() {
     info="${info}\n${tr_method}: ${DETECTED_CONN_TYPE}\n\n"
     
     if [ "$DETECTED_CONN_TYPE" = "MAP-E" ] && [ -n "$MAPE_BR" ]; then
-        if [ -n "$MAPE_GUA_PREFIX" ]; then
-            info="${info}Type: GUA\n"
-            info="${info}GUA Prefix: $MAPE_GUA_PREFIX\n"
-        else
-            info="${info}Type: PD\n"
-        fi
+        [ -n "$MAPE_GUA_PREFIX" ] && info="${info}GUA Prefix: $MAPE_GUA_PREFIX\n"
         info="${info}${tr_br}: $MAPE_BR\n"
         [ -n "$MAPE_IPV4_PREFIX" ] && info="${info}${tr_ipv4_prefix}: $MAPE_IPV4_PREFIX/$MAPE_IPV4_PREFIXLEN\n"
         [ -n "$MAPE_IPV6_PREFIX" ] && info="${info}${tr_ipv6_prefix}: $MAPE_IPV6_PREFIX/$MAPE_IPV6_PREFIXLEN\n"
@@ -1024,6 +1019,7 @@ simple_show_network_info() {
     echo ""
     
     if [ "$DETECTED_CONN_TYPE" = "MAP-E" ] && [ -n "$MAPE_BR" ]; then
+        [ -n "$MAPE_GUA_PREFIX" ] && echo "GUA Prefix: $MAPE_GUA_PREFIX"
         echo "${tr_br}: $MAPE_BR"
         [ -n "$MAPE_IPV4_PREFIX" ] && echo "${tr_ipv4_prefix}: $MAPE_IPV4_PREFIX/$MAPE_IPV4_PREFIXLEN"
         [ -n "$MAPE_IPV6_PREFIX" ] && echo "${tr_ipv6_prefix}: $MAPE_IPV6_PREFIX/$MAPE_IPV6_PREFIXLEN"
