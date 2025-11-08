@@ -185,7 +185,17 @@ get_setup_category_items() {
 }
 
 get_setup_item_type() {
-    jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$1'].type" 2>/dev/null | head -1
+    local item_id="$1"
+    echo "[DEBUG] get_setup_item_type called for: $item_id" >> /tmp/debug.log
+    
+    local result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].type" 2>/dev/null | head -1)
+    
+    if [ -z "$result" ]; then
+        result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].type" 2>/dev/null | head -1)
+    fi
+    
+    echo "[DEBUG] Item type result: '$result'" >> /tmp/debug.log
+    echo "$result"
 }
 
 get_setup_item_label() {
