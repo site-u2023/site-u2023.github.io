@@ -354,46 +354,68 @@ load_default_packages() {
 
 should_show_item() {
     local item_id="$1"
-    local cat_idx=0
-    local item_idx=0
     
-    for cat_id in $(get_setup_categories); do
-        local items=$(get_setup_category_items "$cat_id")
-        local idx=0
-        for itm in $items; do
-            if [ "$itm" = "$item_id" ]; then
-                item_idx=$idx
-                break 2
-            fi
-            idx=$((idx+1))
-        done
-        cat_idx=$((cat_idx+1))
-    done
+    echo "[DEBUG] should_show_item: checking $item_id" >> /tmp/debug.log
     
-    local show_when=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[$cat_idx].items[$item_idx].showWhen" 2>/dev/null)
+    # まず通常レベルでshowWhenを検索
+    local show_when=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].showWhen" 2>/dev/null | head -1)
     
-    [ -z "$show_when" ] && return 0
+    # ネストレベル（section内のitems）でも検索
+    if [ -z "$show_when" ]; then
+        show_when=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].showWhen" 2>/dev/null | head -1)
+    fi
     
+    echo "[DEBUG] showWhen for $item_id: $show_when" >> /tmp/debug.log
+    
+    # showWhenが設定されていなければ表示
+    [ -z "$show_when" ] && {
+        echo "[DEBUG] No showWhen, showing $item_id" >> /tmp/debug.log
+        return 0
+    }
+    
+    # showWhenのキー（変数名）を取得
     local var_name=$(echo "$show_when" | sed 's/^{"\([^"]*\)".*/\1/')
-    [ -z "$var_name" ] && return 0
+    [ -z "$var_name" ] && {
+        echo "[DEBUG] Failed to parse var_name from showWhen" >> /tmp/debug.log
+        return 0
+    }
     
+    echo "[DEBUG] Checking variable: $var_name" >> /tmp/debug.log
+    
+    # 現在の値を取得
     local current_val=$(grep "^${var_name}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+    echo "[DEBUG] Current value of $var_name: '$current_val'" >> /tmp/debug.log
     
+    # 期待される値を取得（配列の場合）
     local expected=$(jsonfilter -e "@.${var_name}[*]" 2>/dev/null <<EOF
 $show_when
 EOF
 )
     
+    # 配列でない場合（単一の値）
     if [ -z "$expected" ]; then
         expected=$(jsonfilter -e "@.${var_name}" 2>/dev/null <<EOF
 $show_when
 EOF
 )
-        [ "$current_val" = "$expected" ] && return 0
+        echo "[DEBUG] Expected value (single): '$expected'" >> /tmp/debug.log
+        [ "$current_val" = "$expected" ] && {
+            echo "[DEBUG] Match! Showing $item_id" >> /tmp/debug.log
+            return 0
+        }
+        echo "[DEBUG] No match, hiding $item_id" >> /tmp/debug.log
         return 1
     fi
     
-    echo "$expected" | grep -qx "$current_val"
+    # 配列の場合
+    echo "[DEBUG] Expected values (array): $expected" >> /tmp/debug.log
+    echo "$expected" | grep -qx "$current_val" && {
+        echo "[DEBUG] Match in array! Showing $item_id" >> /tmp/debug.log
+        return 0
+    }
+    
+    echo "[DEBUG] No match in array, hiding $item_id" >> /tmp/debug.log
+    return 1
 }
 
 get_section_nested_items() {
