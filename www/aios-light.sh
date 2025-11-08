@@ -1315,6 +1315,67 @@ generate_config_files() {
     chmod +x "$OUTPUT_DIR/setup.sh"
 }
 
+detect_gua_prefix() {
+    local ipv6="$1"
+    
+    [ -z "$ipv6" ] && return 1
+    
+    # setup.jsonからprefix_checkを取得
+    local prefix_check=$(jsonfilter -i "$SETUP_JSON" -e '@.constants.gua_validation.prefix_check' 2>/dev/null)
+    
+    # prefix_check: 2000::/3 の範囲チェック
+    local first_hex=$(echo "$ipv6" | cut -d: -f1)
+    local first_dec=$((0x$first_hex))
+    
+    # 2000::/3 = 0x2000-0x3fff (8192-16383)
+    [ $first_dec -lt 8192 ] || [ $first_dec -ge 16384 ] && return 1
+    
+    # setup.jsonからexclude_cidrsを取得してチェック
+    local exclude_cidrs=$(jsonfilter -i "$SETUP_JSON" -e '@.constants.gua_validation.exclude_cidrs[*]' 2>/dev/null)
+    
+    for cidr in $exclude_cidrs; do
+        # CIDR表記から prefix/length を分離
+        local prefix=$(echo "$cidr" | cut -d/ -f1)
+        local length=$(echo "$cidr" | cut -d/ -f2)
+        
+        # 簡易マッチング（プレフィックス部分の比較）
+        case "$length" in
+            16)
+                local check=$(echo "$prefix" | cut -d: -f1)
+                local ipv6_check=$(echo "$ipv6" | cut -d: -f1)
+                [ "$ipv6_check" = "$check" ] && return 1
+                ;;
+            28)
+                local check=$(echo "$prefix" | cut -d: -f1-2 | sed 's/:$//')
+                local ipv6_check=$(echo "$ipv6" | cut -d: -f1-2 | sed 's/:$//')
+                [ "$ipv6_check" = "$check" ] && {
+                    local third_hex=$(echo "$ipv6" | cut -d: -f2)
+                    local third_dec=$((0x${third_hex:-0}))
+                    local prefix_third_hex=$(echo "$prefix" | cut -d: -f2)
+                    local prefix_third_dec=$((0x${prefix_third_hex:-0}))
+                    local mask_dec=$((prefix_third_dec & 0xfff0))
+                    local ipv6_masked=$((third_dec & 0xfff0))
+                    [ $ipv6_masked -eq $mask_dec ] && return 1
+                }
+                ;;
+            32)
+                local check=$(echo "$prefix" | cut -d: -f1-2)
+                local ipv6_check=$(echo "$ipv6" | cut -d: -f1-2)
+                [ "$ipv6_check" = "$check" ] && return 1
+                ;;
+            48)
+                local check=$(echo "$prefix" | cut -d: -f1-3)
+                local ipv6_check=$(echo "$ipv6" | cut -d: -f1-3)
+                [ "$ipv6_check" = "$check" ] && return 1
+                ;;
+        esac
+    done
+    
+    # GUAと判定
+    echo "$ipv6" | awk -F: '{print $1":"$2":"$3":"$4"::/64"}'
+    return 0
+}
+
 get_extended_device_info() {
     if [ -f /etc/board.json ]; then
         DEVICE_MODEL=$(jsonfilter -i /etc/board.json -e '@.model.name' 2>/dev/null)
@@ -1353,9 +1414,9 @@ get_extended_device_info() {
             MAPE_EALEN=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.mape.eaBitLength' 2>/dev/null)
             MAPE_PSIDLEN=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.mape.psidlen' 2>/dev/null)
             MAPE_PSID_OFFSET=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.mape.psIdOffset' 2>/dev/null)
-            MAPE_GUA_PREFIX=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.mape.guaPrefix' 2>/dev/null)
             
-            echo "DEBUG: MAPE_GUA_PREFIX='$MAPE_GUA_PREFIX'" >> /tmp/debug.log
+            # IPv6アドレスからGUA判定
+            MAPE_GUA_PREFIX=$(detect_gua_prefix "$ISP_IPV6")
             
             DSLITE_AFTR=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.aftr' 2>/dev/null)
             
