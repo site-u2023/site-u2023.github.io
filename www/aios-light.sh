@@ -448,16 +448,11 @@ whiptail_category_config() {
     fi
     
     while true; do
-        local items_count=$(whiptail_process_items "$cat_id" "")
+        whiptail_process_items "$cat_id" ""
         
-        if [ "$items_count" -gt 0 ]; then
-            if whiptail --yesno "Configuration completed!\n\nDo you want to modify any settings?" 10 50; then
-                continue
-            else
-                break
-            fi
+        if whiptail --yesno "Configuration completed!\n\nDo you want to modify any settings?" 10 50; then
+            continue
         else
-            whiptail --msgbox "No configuration items available for this category." 8 50
             break
         fi
     done
