@@ -475,24 +475,50 @@ whiptail_category_config() {
 }
 
 whiptail_show_network_info() {
-    local info="--- Network Information ---\n\n"
-    [ -n "$ISP_NAME" ] && info="${info}ISP: $ISP_NAME\n"
-    [ -n "$ISP_AS" ] && info="${info}AS: $ISP_AS\n"
-    [ -n "$ISP_IPV6" ] && info="${info}IPv6: $ISP_IPV6\n"
-    [ -n "$ISP_REGION" ] && info="${info}Region: $ISP_REGION, $ISP_COUNTRY\n"
+    local tr_auto_detection=$(translate "tr-auto-detection")
+    local tr_method=$(translate "tr-method")
+    local tr_isp=$(translate "tr-isp")
+    local tr_as=$(translate "tr-as")
+    local tr_country=$(translate "tr-country")
+    local tr_notice=$(translate "tr-notice")
+    local tr_dslite_notice=$(translate "tr-dslite-notice1")
+    
+    local info="${tr_auto_detection}: ${DETECTED_CONN_TYPE:-Unknown}\n\n"
+    [ -n "$ISP_NAME" ] && info="${info}${tr_isp}: $ISP_NAME\n"
+    [ -n "$ISP_AS" ] && info="${info}${tr_as}: $ISP_AS\n"
+    [ -n "$ISP_REGION" ] && info="${info}${tr_country}: $ISP_REGION, $ISP_COUNTRY\n"
     
     if [ -n "$DETECTED_CONN_TYPE" ] && [ "$DETECTED_CONN_TYPE" != "Unknown" ]; then
-        info="${info}\nDetected Connection Type: $DETECTED_CONN_TYPE\n\n"
-        info="${info}Would you like to use AUTO detection?\n"
-        info="${info}(Default connection type is set to AUTO)"
+        info="${info}\n${tr_method}: ${DETECTED_CONN_TYPE}\n\n"
         
-        if whiptail --title "Internet Connection" --yesno "$info" 18 70; then
-            # User accepted AUTO detection
+        # Show detected parameters based on connection type
+        if [ "$DETECTED_CONN_TYPE" = "MAP-E" ] && [ -n "$MAPE_BR" ]; then
+            info="${info}BR: $MAPE_BR\n"
+            [ -n "$MAPE_IPV4_PREFIX" ] && info="${info}IPv4: $MAPE_IPV4_PREFIX/$MAPE_IPV4_PREFIXLEN\n"
+            [ -n "$MAPE_IPV6_PREFIX" ] && info="${info}IPv6: $MAPE_IPV6_PREFIX/$MAPE_IPV6_PREFIXLEN\n"
+            [ -n "$MAPE_EALEN" ] && info="${info}EA-len: $MAPE_EALEN\n"
+            [ -n "$MAPE_PSIDLEN" ] && info="${info}PSID-len: $MAPE_PSIDLEN\n"
+        elif [ "$DETECTED_CONN_TYPE" = "DS-Lite" ] && [ -n "$DSLITE_AFTR" ]; then
+            local tr_aftr=$(translate "tr-dslite-aftr-ipv6-address")
+            info="${info}${tr_aftr}: $DSLITE_AFTR\n"
+        fi
+        
+        info="${info}\n${tr_notice}: ${tr_dslite_notice}\n\n"
+        info="${info}$(translate 'tr-auto-detection')を使用しますか？"
+        
+        if whiptail --title "$(translate 'tr-internet-connection')" --yesno "$info" 22 70; then
+            # User accepted AUTO detection - set to auto mode
             sed -i "/^connection_type=/d" "$SETUP_VARS"
             echo "connection_type='auto'" >> "$SETUP_VARS"
+            return 0
+        else
+            # User wants to configure manually
+            return 1
         fi
     else
-        whiptail --title "Internet Connection" --msgbox "$info\nNo connection type detected.\nPlease select manually." 15 70
+        info="${info}\n接続タイプを検出できませんでした。\n手動で選択してください。"
+        whiptail --title "$(translate 'tr-internet-connection')" --msgbox "$info" 15 70
+        return 1
     fi
 }
 
@@ -712,27 +738,56 @@ simple_category_config() {
 }
 
 simple_show_network_info() {
-    echo "--- Network Information ---"
+    local tr_auto_detection=$(translate "tr-auto-detection")
+    local tr_method=$(translate "tr-method")
+    local tr_isp=$(translate "tr-isp")
+    local tr_as=$(translate "tr-as")
+    local tr_country=$(translate "tr-country")
+    local tr_notice=$(translate "tr-notice")
+    local tr_dslite_notice=$(translate "tr-dslite-notice1")
+    
+    echo "=== ${tr_auto_detection} ==="
     echo ""
-    [ -n "$ISP_NAME" ] && echo "ISP: $ISP_NAME"
-    [ -n "$ISP_AS" ] && echo "AS: $ISP_AS"
-    [ -n "$ISP_IPV6" ] && echo "IPv6: $ISP_IPV6"
-    [ -n "$ISP_REGION" ] && echo "Region: $ISP_REGION, $ISP_COUNTRY"
+    [ -n "$ISP_NAME" ] && echo "${tr_isp}: $ISP_NAME"
+    [ -n "$ISP_AS" ] && echo "${tr_as}: $ISP_AS"
+    [ -n "$ISP_REGION" ] && echo "${tr_country}: $ISP_REGION, $ISP_COUNTRY"
     
     if [ -n "$DETECTED_CONN_TYPE" ] && [ "$DETECTED_CONN_TYPE" != "Unknown" ]; then
         echo ""
-        echo "Detected Connection Type: $DETECTED_CONN_TYPE"
+        echo "${tr_method}: $DETECTED_CONN_TYPE"
         echo ""
-        printf "Use AUTO detection? (y/n) [y]: "
+        
+        # Show detected parameters based on connection type
+        if [ "$DETECTED_CONN_TYPE" = "MAP-E" ] && [ -n "$MAPE_BR" ]; then
+            echo "BR: $MAPE_BR"
+            [ -n "$MAPE_IPV4_PREFIX" ] && echo "IPv4: $MAPE_IPV4_PREFIX/$MAPE_IPV4_PREFIXLEN"
+            [ -n "$MAPE_IPV6_PREFIX" ] && echo "IPv6: $MAPE_IPV6_PREFIX/$MAPE_IPV6_PREFIXLEN"
+            [ -n "$MAPE_EALEN" ] && echo "EA-len: $MAPE_EALEN"
+            [ -n "$MAPE_PSIDLEN" ] && echo "PSID-len: $MAPE_PSIDLEN"
+        elif [ "$DETECTED_CONN_TYPE" = "DS-Lite" ] && [ -n "$DSLITE_AFTR" ]; then
+            local tr_aftr=$(translate "tr-dslite-aftr-ipv6-address")
+            echo "${tr_aftr}: $DSLITE_AFTR"
+        fi
+        
+        echo ""
+        echo "${tr_notice}: ${tr_dslite_notice}"
+        echo ""
+        printf "この$(translate 'tr-auto-detection')結果を使用しますか? (y/n) [y]: "
         read use_auto
         
         if [ "$use_auto" != "n" ] && [ "$use_auto" != "N" ]; then
             sed -i "/^connection_type=/d" "$SETUP_VARS"
             echo "connection_type='auto'" >> "$SETUP_VARS"
+            echo ""
+            echo "自動検出を使用します。"
+        else
+            echo ""
+            echo "手動で設定してください。"
         fi
     else
         echo ""
-        echo "No connection type detected. Please select manually."
+        echo "接続タイプを検出できませんでした。"
+        echo "手動で選択してください。"
     fi
     
     echo ""
