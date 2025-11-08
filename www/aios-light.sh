@@ -67,8 +67,14 @@ select_ui_mode() {
         if [ "$HAS_WHIPTAIL" = false ]; then
             echo "$(translate 'tr-ui-installing')"
             if install_package whiptail newt; then
-                echo "$(translate 'tr-ui-install-success')"
-                UI_MODE="whiptail"
+                hash -r
+                if command -v whiptail >/dev/null 2>&1; then
+                    echo "$(translate 'tr-ui-install-success')"
+                    UI_MODE="whiptail"
+                else
+                    echo "$(translate 'tr-ui-install-failed')"
+                    UI_MODE="simple"
+                fi
             else
                 echo "$(translate 'tr-ui-install-failed')"
                 UI_MODE="simple"
