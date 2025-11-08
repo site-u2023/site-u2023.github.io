@@ -453,17 +453,23 @@ whiptail_category_config() {
         fi
     fi
     
-    echo "[DEBUG] Calling whiptail_process_items" >> /tmp/debug.log
+    echo "[DEBUG] First call - processing radio-group" >> /tmp/debug.log
+    whiptail_process_items "$cat_id" ""
+    
+    echo "[DEBUG] SETUP_VARS after first call:" >> /tmp/debug.log
+    cat "$SETUP_VARS" >> /tmp/debug.log 2>&1
+    
+    echo "[DEBUG] Second call - processing sections/fields" >> /tmp/debug.log
     whiptail_process_items "$cat_id" ""
     local processed=$?
     
     echo "[DEBUG] Items processed: $processed" >> /tmp/debug.log
-    echo "[DEBUG] SETUP_VARS contents:" >> /tmp/debug.log
+    echo "[DEBUG] SETUP_VARS after second call:" >> /tmp/debug.log
     cat "$SETUP_VARS" >> /tmp/debug.log 2>&1
     echo "[DEBUG] === whiptail_category_config END ===" >> /tmp/debug.log
     
     if [ $processed -eq 0 ]; then
-        whiptail --msgbox "No configuration items to display." 8 50
+        whiptail --msgbox "Configuration completed!" 8 50
     fi
 }
 
