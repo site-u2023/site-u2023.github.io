@@ -705,7 +705,8 @@ whiptail_device_info() {
     info="${info}Version: $OPENWRT_VERSION\n"
     [ -n "$DEVICE_MEM" ] && info="${info}Memory: $DEVICE_MEM\n"
     [ -n "$DEVICE_CPU" ] && info="${info}CPU: $DEVICE_CPU\n"
-    
+    [ -n "$DEVICE_STORAGE" ] && info="${info}Storage: $DEVICE_STORAGE_USED/$DEVICE_STORAGE (${DEVICE_STORAGE_AVAIL} free)\n"
+    [ -n "$DEVICE_USB" ] && info="${info}USB: $DEVICE_USB\n"    
     whiptail --title "Device Information" --msgbox "$info" 15 70
 }
 
@@ -1342,6 +1343,17 @@ get_extended_device_info() {
     [ -z "$DEVICE_MODEL" ] && DEVICE_MODEL="Unknown Device"
     [ -z "$DEVICE_TARGET" ] && DEVICE_TARGET="unknown/unknown"
     [ -z "$OPENWRT_VERSION" ] && OPENWRT_VERSION="unknown"
+
+    DEVICE_STORAGE=$(df -h / | awk 'NR==2 {print $2}')
+    DEVICE_STORAGE_USED=$(df -h / | awk 'NR==2 {print $3}')
+    DEVICE_STORAGE_AVAIL=$(df -h / | awk 'NR==2 {print $4}')
+    
+    if [ -d /sys/bus/usb/devices ]; then
+        USB_COUNT=$(ls -1 /sys/bus/usb/devices | grep -c "^[0-9]")
+        [ "$USB_COUNT" -gt 0 ] && DEVICE_USB="Yes ($USB_COUNT devices)" || DEVICE_USB="No devices"
+    else
+        DEVICE_USB="Not available"
+    fi    
 }
 
 aios_light_main() {
