@@ -504,6 +504,22 @@ whiptail_category_config() {
     fi
 }
 
+compute_dslite_aftr() {
+    local aftr_type="$1"
+    local area="$2"
+    
+    [ -z "$aftr_type" ] || [ -z "$area" ] && return 1
+    
+    local computed=$(jsonfilter -i "$SETUP_JSON" -e "@.constants.aftr_map.${aftr_type}.${area}" 2>/dev/null)
+    
+    if [ -n "$computed" ]; then
+        echo "$computed"
+        return 0
+    fi
+    
+    return 1
+}
+
 whiptail_process_items() {
     local cat_id="$1"
     local parent_items="$2"
@@ -525,7 +541,6 @@ whiptail_process_items() {
         local item_type=$(get_setup_item_type "$item_id")
         echo "[DEBUG] Item type: $item_type" >> /tmp/debug.log
         
-        # showWhenチェック（すべてのアイテムタイプで実行）
         if ! should_show_item "$item_id"; then
             echo "[DEBUG] Item $item_id hidden by showWhen" >> /tmp/debug.log
             continue
@@ -540,7 +555,6 @@ whiptail_process_items() {
                 
                 echo "[DEBUG] radio-group: var=$variable, default=$default" >> /tmp/debug.log
                 
-                # MAP-E typeの初期値: GUA Prefixがあればgua、なければpd
                 if [ "$item_id" = "mape-type" ]; then
                     if [ -n "$MAPE_GUA_PREFIX" ]; then
                         default="gua"
@@ -610,7 +624,14 @@ whiptail_process_items() {
                     mape-psid-offset) [ -z "$current" ] && current="${MAPE_PSID_OFFSET:-$default}" ;;
                     mape-psidlen) [ -z "$current" ] && current="${MAPE_PSIDLEN:-$default}" ;;
                     mape-gua-prefix) [ -z "$current" ] && current="${MAPE_GUA_PREFIX:-$default}" ;;
-                    dslite-aftr-address) [ -z "$current" ] && current="${DSLITE_AFTR:-$default}" ;;
+                    dslite-aftr-address)
+                        if [ -z "$current" ]; then
+                            local aftr_type=$(grep "^dslite_aftr_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+                            local area=$(grep "^dslite_area=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+                            local computed=$(compute_dslite_aftr "$aftr_type" "$area")
+                            [ -n "$computed" ] && current="$computed" || current="${DSLITE_AFTR:-$default}"
+                        fi
+                        ;;
                 esac
                 
                 if [ "$fieldtype" = "select" ]; then
@@ -629,6 +650,16 @@ whiptail_process_items() {
                         selected_opt=$(echo "$options" | sed -n "${value}p")
                         sed -i "/^${variable}=/d" "$SETUP_VARS"
                         echo "${variable}='${selected_opt}'" >> "$SETUP_VARS"
+                        
+                        if [ "$item_id" = "dslite-aftr-type" ] || [ "$item_id" = "dslite-area" ]; then
+                            local aftr_type=$(grep "^dslite_aftr_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+                            local area=$(grep "^dslite_area=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+                            local computed=$(compute_dslite_aftr "$aftr_type" "$area")
+                            if [ -n "$computed" ]; then
+                                sed -i "/^dslite_aftr_address=/d" "$SETUP_VARS"
+                                echo "dslite_aftr_address='${computed}'" >> "$SETUP_VARS"
+                            fi
+                        fi
                     fi
                 else
                     value=$(whiptail --inputbox "$label:" 10 60 "$current" 3>&1 1>&2 2>&3)
