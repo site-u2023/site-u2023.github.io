@@ -500,7 +500,11 @@ EOF
                     echo "[AUTO] Added package: $pkg_id (condition: ${when_var}=${current_val})" >> /tmp/debug.log
                 fi
             else
-                echo "[DEBUG] No match, not adding $pkg_id" >> /tmp/debug.log
+                # 条件に合わない場合は削除
+                if is_package_selected "$pkg_id"; then
+                    sed -i "/^${pkg_id}$/d" "$SELECTED_PACKAGES"
+                    echo "[AUTO] Removed package: $pkg_id (condition not met: ${when_var}=${current_val})" >> /tmp/debug.log
+                fi
             fi
         fi
         
@@ -686,6 +690,8 @@ whiptail_process_items() {
                     sed -i "/^${variable}=/d" "$SETUP_VARS"
                     echo "${variable}='${selected_opt}'" >> "$SETUP_VARS"
                     echo "[DEBUG] Saved to SETUP_VARS" >> /tmp/debug.log
+                    
+                    auto_add_conditional_packages "$cat_id"
                 fi
                 ;;
             
@@ -749,6 +755,8 @@ whiptail_process_items() {
                         selected_opt=$(echo "$options" | sed -n "${value}p")
                         sed -i "/^${variable}=/d" "$SETUP_VARS"
                         echo "${variable}='${selected_opt}'" >> "$SETUP_VARS"
+
+                        auto_add_conditional_packages "$cat_id"
                         
                         if [ "$item_id" = "dslite-aftr-type" ] || [ "$item_id" = "dslite-area" ]; then
                             local aftr_type=$(grep "^dslite_aftr_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
@@ -1783,6 +1791,22 @@ aios_light_main() {
     load_default_packages
     
     echo ""
+
+    # デフォルト値を設定
+    echo "connection_type='auto'" >> "$SETUP_VARS"
+    echo "wifi_mode='standard'" >> "$SETUP_VARS"
+    echo "net_optimizer='auto'" >> "$SETUP_VARS"
+    echo "enable_dnsmasq='auto'" >> "$SETUP_VARS"
+    
+    # 検出された情報があれば追加
+    if [ "$DETECTED_CONN_TYPE" = "MAP-E" ] && [ -n "$MAPE_GUA_PREFIX" ]; then
+        echo "mape_type='gua'" >> "$SETUP_VARS"
+    fi
+    
+    # 全カテゴリの条件付きパッケージを評価
+    for cat_id in $(get_setup_categories); do
+        auto_add_conditional_packages "$cat_id"
+    done
     
     select_ui_mode
     
