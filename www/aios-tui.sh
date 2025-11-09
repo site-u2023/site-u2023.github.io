@@ -874,9 +874,9 @@ whiptail_package_selection() {
     
     selected=$(eval "whiptail --title '$cat_name' --checklist '$cat_desc (Space=toggle):' 20 70 12 $checklist_items 3>&1 1>&2 2>&3")
     
-    get_category_packages "$cat_id" | while read pkg_id; do
+    while read pkg_id; do
         sed -i "/^${pkg_id}$/d" "$SELECTED_PACKAGES"
-    done
+    done < <(get_category_packages "$cat_id")
     
     for pkg in $selected; do
         pkg=$(echo "$pkg" | tr -d '"')
@@ -894,11 +894,11 @@ simple_main_menu() {
         echo ""
         
         local i=1
-        get_setup_categories | while read cat_id; do
+        while read cat_id; do
             cat_title=$(get_setup_category_title "$cat_id")
             echo "$i) $cat_title"
             i=$((i+1))
-        done
+        done < <(get_setup_categories)
         
         local setup_cat_count=$(get_setup_categories | wc -l)
         local packages_label=$(translate "tr-custom-packages")
@@ -1197,11 +1197,13 @@ simple_package_menu() {
         fi
         
         local i=1
-        echo "$categories" | while read cat_id; do
+        while read cat_id; do
             cat_name=$(get_category_name "$cat_id")
             echo "$i) $cat_name"
             i=$((i+1))
-        done
+        done <<EOF
+        $categories
+        EOF
         
         echo "b) Back"
         echo ""
@@ -1232,7 +1234,7 @@ simple_package_selection() {
         echo ""
         
         local i=1
-        get_category_packages "$cat_id" | while read pkg_id; do
+        while read pkg_id; do
             pkg_name=$(get_package_name "$pkg_id")
             [ -z "$pkg_name" ] && pkg_name="$pkg_id"
             
@@ -1242,7 +1244,7 @@ simple_package_selection() {
                 echo "$i) [ ] $pkg_name"
             fi
             i=$((i+1))
-        done
+        done < <(get_category_packages "$cat_id")
         
         echo ""
         echo "a) All  n) None  b) Back"
