@@ -79,26 +79,20 @@ select_ui_mode() {
     else
         echo "$(translate 'tr-ui-installing')"
         echo "[DEBUG] Installing whiptail..." >> /tmp/debug.log
-        if install_package whiptail newt; then
-            echo "[DEBUG] install_package returned success" >> /tmp/debug.log
-            hash -r
-            echo "[DEBUG] hash -r executed" >> /tmp/debug.log
-            # Re-check after installation
-            if command -v whiptail >/dev/null 2>&1; then
-                echo "$(translate 'tr-ui-install-success')"
-                UI_MODE="whiptail"
-                echo "[DEBUG] whiptail install SUCCESS, UI_MODE=$UI_MODE" >> /tmp/debug.log
-                sleep 1
-            else
-                echo "$(translate 'tr-ui-install-failed')"
-                UI_MODE="simple"
-                echo "[DEBUG] whiptail command not found after install, UI_MODE=$UI_MODE" >> /tmp/debug.log
-                sleep 2
-            fi
+        install_package whiptail
+        echo "[DEBUG] install_package exit code: $?" >> /tmp/debug.log
+        hash -r
+        echo "[DEBUG] hash -r executed" >> /tmp/debug.log
+        # Check if whiptail is now available
+        if command -v whiptail >/dev/null 2>&1; then
+            echo "$(translate 'tr-ui-install-success')"
+            UI_MODE="whiptail"
+            echo "[DEBUG] whiptail install SUCCESS, UI_MODE=$UI_MODE" >> /tmp/debug.log
+            sleep 1
         else
             echo "$(translate 'tr-ui-install-failed')"
             UI_MODE="simple"
-            echo "[DEBUG] install_package returned failure, UI_MODE=$UI_MODE" >> /tmp/debug.log
+            echo "[DEBUG] whiptail command not found after install, UI_MODE=$UI_MODE" >> /tmp/debug.log
             sleep 2
         fi
     fi
