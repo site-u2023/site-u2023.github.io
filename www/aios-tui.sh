@@ -1433,7 +1433,7 @@ review_and_apply() {
                 "$summary\nSelect an option:" 24 78 10 \
                 "1" "View Full Package List" \
                 "2" "View Full Configuration Variables" \
-                "3" "View /tmp/postinst (Package Installation Script)" \
+                "3" "View /tmp/postinst.sh (Package Installation Script)" \
                 "4" "View /tmp/setup.sh (System Configuration Script)" \
                 "5" "Apply Configuration" \
                 "6" "Back to Main Menu" \
@@ -1585,7 +1585,7 @@ review_and_apply() {
                     echo "=== Apply Configuration ==="
                     echo ""
                     echo "This will:"
-                    echo "1. Install packages via /tmp/postinst"
+                    echo "1. Install packages via /tmp/postinst.sh"
                     echo "2. Apply settings via /tmp/setup.sh"
                     echo "3. Optionally reboot"
                     echo ""
@@ -1595,7 +1595,7 @@ review_and_apply() {
                     if [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
                         echo ""
                         echo "Executing postinst..."
-                        sh "$OUTPUT_DIR/postinst"
+                        sh "$OUTPUT_DIR/postinst.sh"
                         echo ""
                         echo "Applying setup..."
                         sh "$OUTPUT_DIR/setup.sh"
