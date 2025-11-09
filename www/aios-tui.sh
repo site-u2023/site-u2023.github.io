@@ -1409,14 +1409,16 @@ review_and_apply() {
                 1)
                     if [ -s "$SELECTED_PACKAGES" ]; then
                         cat "$SELECTED_PACKAGES" | awk '{print "- " $0}' > /tmp/pkg_view.txt
-                        whiptail --title "Package List ($(wc -l < $SELECTED_PACKAGES) packages)" --textbox /tmp/pkg_view.txt 24 78
+                        local pkg_count=$(wc -l < "$SELECTED_PACKAGES")
+                        whiptail --title "Package List ($pkg_count packages)" --textbox /tmp/pkg_view.txt 24 78
                     else
                         whiptail --msgbox "No packages selected" 8 40
                     fi
                     ;;
                 2)
                     if [ -s "$SETUP_VARS" ]; then
-                        whiptail --title "Configuration Variables ($(wc -l < $SETUP_VARS) variables)" --textbox "$SETUP_VARS" 24 78
+                        local var_count=$(wc -l < "$SETUP_VARS")
+                        whiptail --title "Configuration Variables ($var_count variables)" --textbox "$SETUP_VARS" 24 78
                     else
                         whiptail --msgbox "No configuration variables set" 8 40
                     fi
