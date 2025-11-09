@@ -21,6 +21,8 @@ OUTPUT_DIR="/tmp"
 
 TRANSLATION_CACHE="$CONFIG_DIR/translation_cache.txt"
 
+WHIPTAIL_PACKAGES="whiptail libnewt"
+
 PKG_MGR=""
 detect_package_manager() {
     if command -v opkg >/dev/null 2>&1; then
@@ -79,7 +81,7 @@ select_ui_mode() {
     else
         echo "$(translate 'tr-ui-installing')"
         echo "[DEBUG] Installing whiptail..." >> /tmp/debug.log
-        install_package whiptail
+        install_package $WHIPTAIL_PACKAGES
         echo "[DEBUG] install_package exit code: $?" >> /tmp/debug.log
         hash -r
         echo "[DEBUG] hash -r executed" >> /tmp/debug.log
