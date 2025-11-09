@@ -450,19 +450,20 @@ auto_add_conditional_packages() {
     while [ $idx -lt $pkg_count ]; do
         local pkg_id=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$cat_id'].packages[$idx].id" 2>/dev/null)
         
-        local when_var=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$cat_id'].packages[$idx].when" 2>/dev/null | head -1 | sed 's/^{ *"\([^"]*\)".*/\1/')
+        local when_json=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$cat_id'].packages[$idx].when" 2>/dev/null | head -1)
         
-        if [ -n "$when_var" ]; then
+        if [ -n "$when_json" ]; then
+            local when_var=$(echo "$when_json" | sed 's/^{ *"\([^"]*\)".*/\1/')
             local current_val=$(grep "^${when_var}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
             
             local expected=$(jsonfilter -e "@.${when_var}[*]" 2>/dev/null <<EOF
-$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$cat_id'].packages[$idx].when" 2>/dev/null | head -1)
+$when_json
 EOF
 )
 
             if [ -z "$expected" ]; then
                 expected=$(jsonfilter -e "@.${when_var}" 2>/dev/null <<EOF
-$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$cat_id'].packages[$idx].when" 2>/dev/null | head -1)
+$when_json
 EOF
 )
             fi
