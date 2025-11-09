@@ -1201,9 +1201,9 @@ simple_package_menu() {
             cat_name=$(get_category_name "$cat_id")
             echo "$i) $cat_name"
             i=$((i+1))
-        done <<EOF
-        $categories
-        EOF
+done <<EOF
+$categories
+EOF
         
         echo "b) Back"
         echo ""
