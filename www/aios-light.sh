@@ -51,12 +51,17 @@ install_package() {
 }
 
 select_ui_mode() {
+    echo "[DEBUG] $(date): select_ui_mode START" >> /tmp/debug.log
+    
     # Check if whiptail is already installed
     if command -v whiptail >/dev/null 2>&1; then
         UI_MODE="whiptail"
         echo "whiptail detected, using dialog-based interface"
+        echo "[DEBUG] whiptail already installed, UI_MODE=$UI_MODE" >> /tmp/debug.log
         return 0
     fi
+    
+    echo "[DEBUG] whiptail not found, asking user" >> /tmp/debug.log
     
     # whiptail not installed, ask user
     echo "$(translate 'tr-ui-mode-select')"
@@ -66,34 +71,39 @@ select_ui_mode() {
     printf "$(translate 'tr-ui-choice') [1]: "
     read choice
     
+    echo "[DEBUG] User choice: $choice" >> /tmp/debug.log
+    
     if [ "$choice" = "2" ]; then
         UI_MODE="simple"
-        echo "Using simple text mode"
+        echo "[DEBUG] User selected simple mode, UI_MODE=$UI_MODE" >> /tmp/debug.log
     else
         echo "$(translate 'tr-ui-installing')"
+        echo "[DEBUG] Installing whiptail..." >> /tmp/debug.log
         if install_package whiptail newt; then
+            echo "[DEBUG] install_package returned success" >> /tmp/debug.log
             hash -r
+            echo "[DEBUG] hash -r executed" >> /tmp/debug.log
             # Re-check after installation
             if command -v whiptail >/dev/null 2>&1; then
-                echo ""
                 echo "$(translate 'tr-ui-install-success')"
                 UI_MODE="whiptail"
-                echo "DEBUG: UI_MODE set to: $UI_MODE"
-                echo "DEBUG: Final UI_MODE: $UI_MODE"
-                echo ""
-                printf "Press Enter to continue..."
-                read dummy
+                echo "[DEBUG] whiptail install SUCCESS, UI_MODE=$UI_MODE" >> /tmp/debug.log
+                sleep 1
             else
                 echo "$(translate 'tr-ui-install-failed')"
                 UI_MODE="simple"
+                echo "[DEBUG] whiptail command not found after install, UI_MODE=$UI_MODE" >> /tmp/debug.log
                 sleep 2
             fi
         else
             echo "$(translate 'tr-ui-install-failed')"
             UI_MODE="simple"
+            echo "[DEBUG] install_package returned failure, UI_MODE=$UI_MODE" >> /tmp/debug.log
             sleep 2
         fi
     fi
+    
+    echo "[DEBUG] select_ui_mode END, final UI_MODE=$UI_MODE" >> /tmp/debug.log
 }
 
 init() {
