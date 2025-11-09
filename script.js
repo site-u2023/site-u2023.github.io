@@ -97,7 +97,7 @@ const translations = {
         langJa: '日本語',
         // Terminal Explanations
         aiosExplanation: 'メニュー形式スクリプト',
-        aioslightExplanation: 'メニュー形式簡易版スクリプト',
+        aiostuiExplanation: 'TUI形式スクリプト', 
         sshExplanation: 'SSHログイン',
         // iPhone
         termius: 'Termius (SSH)',
@@ -158,7 +158,7 @@ const translations = {
         langJa: '日本語',
         // Terminal Explanations
         aiosExplanation: 'Menu-based script',
-        aioslightExplanation: 'Menu-based simplified script',
+        aiostuiExplanation: 'TUI-based script',
         sshExplanation: 'SSH login',
         // iPhone
         termius: 'Termius (SSH)',
@@ -928,8 +928,8 @@ function updateTerminalExplanation() {
         case 'aios':
             explanationKey = 'aiosExplanation';
             break;
-        case 'aioslight':
-            explanationKey = 'aioslightExplanation';
+        case 'aiostui':
+            explanationKey = 'aiostuiExplanation'; 
             break;
         case 'ssh':
             explanationKey = 'sshExplanation';
