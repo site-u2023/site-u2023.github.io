@@ -75,11 +75,14 @@ select_ui_mode() {
             hash -r
             # Re-check after installation
             if command -v whiptail >/dev/null 2>&1; then
+                echo ""
                 echo "$(translate 'tr-ui-install-success')"
                 UI_MODE="whiptail"
                 echo "DEBUG: UI_MODE set to: $UI_MODE"
-                # Important: Give user time to see success message
-                sleep 2
+                echo "DEBUG: Final UI_MODE: $UI_MODE"
+                echo ""
+                printf "Press Enter to continue..."
+                read dummy
             else
                 echo "$(translate 'tr-ui-install-failed')"
                 UI_MODE="simple"
@@ -91,7 +94,6 @@ select_ui_mode() {
             sleep 2
         fi
     fi
-    echo "DEBUG: Final UI_MODE: $UI_MODE"
 }
 
 init() {
