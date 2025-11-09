@@ -68,6 +68,7 @@ select_ui_mode() {
     
     if [ "$choice" = "2" ]; then
         UI_MODE="simple"
+        echo "Using simple text mode"
     else
         echo "$(translate 'tr-ui-installing')"
         if install_package whiptail newt; then
@@ -76,8 +77,9 @@ select_ui_mode() {
             if command -v whiptail >/dev/null 2>&1; then
                 echo "$(translate 'tr-ui-install-success')"
                 UI_MODE="whiptail"
+                echo "DEBUG: UI_MODE set to: $UI_MODE"
                 # Important: Give user time to see success message
-                sleep 1
+                sleep 2
             else
                 echo "$(translate 'tr-ui-install-failed')"
                 UI_MODE="simple"
@@ -89,6 +91,7 @@ select_ui_mode() {
             sleep 2
         fi
     fi
+    echo "DEBUG: Final UI_MODE: $UI_MODE"
 }
 
 init() {
