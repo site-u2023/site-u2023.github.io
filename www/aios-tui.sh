@@ -1405,16 +1405,6 @@ review_and_apply() {
                 "6" "Back to Main Menu" \
                 3>&1 1>&2 2>&3)
             
-            choice=$(whiptail --title "Review Configuration" --menu \
-                "$summary\nSelect an option:" 24 78 10 \
-                "1" "View Full Package List" \
-                "2" "View Full Configuration Variables" \
-                "3" "View /tmp/postinst (Package Installation Script)" \
-                "4" "View /tmp/setup.sh (System Configuration Script)" \
-                "5" "Apply Configuration" \
-                "6" "Back to Main Menu" \
-                3>&1 1>&2 2>&3)
-            
             echo "[DEBUG] choice='$choice'" >> /tmp/debug.log
             
             case "$choice" in
