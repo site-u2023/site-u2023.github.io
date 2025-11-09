@@ -1422,7 +1422,7 @@ review_and_apply() {
                     if [ -s "$SELECTED_PACKAGES" ]; then
                         cat "$SELECTED_PACKAGES" | sed 's/^/- /' > /tmp/pkg_view.txt
                         local pkg_count=$(wc -l < "$SELECTED_PACKAGES")
-                        whiptail --scrolltext --title "Package List ($pkg_count packages)" --textbox /tmp/pkg_view.txt 24 78 0<&1
+                        whiptail --scrolltext --title "Package List ($pkg_count packages)" --textbox /tmp/pkg_view.txt 24 78
                     else
                         whiptail --msgbox "No packages selected" 8 40
                     fi
@@ -1430,21 +1430,21 @@ review_and_apply() {
                 2)
                     if [ -s "$SETUP_VARS" ]; then
                         local var_count=$(wc -l < "$SETUP_VARS")
-                        whiptail --scrolltext --title "Configuration Variables ($var_count variables)" --textbox "$SETUP_VARS" 24 78 0<&1
+                        whiptail --scrolltext --title "Configuration Variables ($var_count variables)" --textbox "$SETUP_VARS" 24 78
                     else
                         whiptail --msgbox "No configuration variables set" 8 40
                     fi
                     ;;
                 3)
                     if [ -f "$OUTPUT_DIR/postinst" ]; then
-                        whiptail --scrolltext --title "/tmp/postinst" --textbox "$OUTPUT_DIR/postinst" 24 78 0<&1
+                        whiptail --scrolltext --title "/tmp/postinst" --textbox "$OUTPUT_DIR/postinst" 24 78
                     else
                         whiptail --msgbox "postinst file not found" 8 40
                     fi
                     ;;
                 4)
                     if [ -f "$OUTPUT_DIR/setup.sh" ]; then
-                        whiptail --scrolltext --title "/tmp/setup.sh" --textbox "$OUTPUT_DIR/setup.sh" 24 78 0<&1
+                        whiptail --scrolltext --title "/tmp/setup.sh" --textbox "$OUTPUT_DIR/setup.sh" 24 78
                     else
                         whiptail --msgbox "setup.sh file not found" 8 40
                     fi
