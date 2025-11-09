@@ -1407,32 +1407,37 @@ review_and_apply() {
             
             case "$choice" in
                 1)
+                    local pkg_list=""
                     if [ -s "$SELECTED_PACKAGES" ]; then
-                        cat "$SELECTED_PACKAGES" | awk '{print "- " $0}' > /tmp/pkg_view.txt
-                        local pkg_count=$(wc -l < "$SELECTED_PACKAGES")
-                        whiptail --title "Package List ($pkg_count packages)" --textbox /tmp/pkg_view.txt 24 78
+                        while read pkg; do
+                            pkg_list="${pkg_list}- ${pkg}\n"
+                        done < "$SELECTED_PACKAGES"
                     else
-                        whiptail --msgbox "No packages selected" 8 40
+                        pkg_list="(none)"
                     fi
+                    whiptail --scrolltext --title "Package List" --msgbox "$pkg_list" 24 78
                     ;;
                 2)
+                    local var_list=""
                     if [ -s "$SETUP_VARS" ]; then
-                        local var_count=$(wc -l < "$SETUP_VARS")
-                        whiptail --title "Configuration Variables ($var_count variables)" --textbox "$SETUP_VARS" 24 78
+                        while read line; do
+                            var_list="${var_list}${line}\n"
+                        done < "$SETUP_VARS"
                     else
-                        whiptail --msgbox "No configuration variables set" 8 40
+                        var_list="(none)"
                     fi
+                    whiptail --scrolltext --title "Configuration Variables" --msgbox "$var_list" 24 78
                     ;;
                 3)
                     if [ -f "$OUTPUT_DIR/postinst" ]; then
-                        whiptail --title "/tmp/postinst" --textbox "$OUTPUT_DIR/postinst" 24 78
+                        whiptail --scrolltext --title "/tmp/postinst" --msgbox "$(cat $OUTPUT_DIR/postinst)" 24 78
                     else
                         whiptail --msgbox "postinst file not found" 8 40
                     fi
                     ;;
                 4)
                     if [ -f "$OUTPUT_DIR/setup.sh" ]; then
-                        whiptail --title "/tmp/setup.sh" --textbox "$OUTPUT_DIR/setup.sh" 24 78
+                        whiptail --scrolltext --title "/tmp/setup.sh" --msgbox "$(cat $OUTPUT_DIR/setup.sh)" 24 78
                     else
                         whiptail --msgbox "setup.sh file not found" 8 40
                     fi
