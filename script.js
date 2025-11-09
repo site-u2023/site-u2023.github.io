@@ -3,7 +3,6 @@
 // ==================================================
 let currentLanguage = 'en';
 let currentTheme = 'auto';
-
 // デフォルト設定（キャッシュクリア時の復元用）
 const DEFAULT_ADDRESSES = [
     '192.168.1.1',
@@ -14,30 +13,27 @@ const DEFAULT_ADDRESSES = [
     '10.0.0.1',
     '172.16.0.1'
 ];
-
 const DEFAULT_SERVICES = {
     luci: { name: 'LuCI', port: '80', protocol: 'http' },
     ttyd: { name: 'ttyd', port: '7681', protocol: 'http' },
     filebrowser: { name: 'filebrowser', port: '8080', protocol: 'http' },
     adguard: { name: 'AdGuardHome', port: '3000', protocol: 'http' }
 };
-
 const AIOS_URL = 'https://raw.githubusercontent.com/site-u2023/aios/main/aios';
-const AIOS_LIGHT_URL = 'https://raw.githubusercontent.com/site-u2023/site-u2023.github.io/main/www/aios-light.sh';
+const AIOS_TUI_URL = 'https://raw.githubusercontent.com/site-u2023/site-u2023.github.io/main/www/aios-tui.sh';
 const PROXY_URL = 'https://proxy.site-u.workers.dev/proxy?url=';
 const BASE_DIR = '/tmp/aios';
 const AIOS_PATH = `${BASE_DIR}/aios`;
-const AIOS_LIGHT_PATH = `${BASE_DIR}/aios-light.sh`;
+const AIOS_TUI_PATH = `${BASE_DIR}/aios-tui.sh`;
 const SSHCMD_REG_URL = 'https://site-u.pages.dev/build/scripts/sshcmd.reg';
-
 const DEFAULT_TERMINALS = {
   aios: {
     name: 'aios',
     command: `mkdir -p ${BASE_DIR}; wget --no-check-certificate -O ${AIOS_PATH} "${PROXY_URL}${AIOS_URL}" && chmod +x ${AIOS_PATH} && ${AIOS_PATH}`
   },
-  aioslight: {
-    name: 'aios light',
-    command: `mkdir -p ${BASE_DIR} && wget --no-check-certificate -O ${AIOS_LIGHT_PATH} "${PROXY_URL}${AIOS_LIGHT_URL}" && chmod +x ${AIOS_LIGHT_PATH} && ${AIOS_LIGHT_PATH}`
+  aiostui: {
+    name: 'aios-tui',
+    command: `mkdir -p ${BASE_DIR} && wget --no-check-certificate -O ${AIOS_TUI_PATH} "${PROXY_URL}${AIOS_TUI_URL}" && chmod +x ${AIOS_TUI_PATH} && ${AIOS_TUI_PATH}`
   },
   ssh: {
     name: 'SSH',
