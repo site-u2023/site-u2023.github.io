@@ -1312,7 +1312,6 @@ simple_package_selection() {
 }
 
 apply_api_defaults() {
-    # APIから取得した値をデフォルトとして設定（未設定時のみ）
     [ -n "$AUTO_LANGUAGE" ] && ! grep -q "^language=" "$SETUP_VARS" 2>/dev/null && \
         echo "language='$AUTO_LANGUAGE'" >> "$SETUP_VARS"
     
@@ -1325,13 +1324,15 @@ apply_api_defaults() {
     [ -n "$ISP_COUNTRY" ] && ! grep -q "^country=" "$SETUP_VARS" 2>/dev/null && \
         echo "country='$ISP_COUNTRY'" >> "$SETUP_VARS"
     
-    # connection_type='auto' を実際の接続タイプに変換し、値を追加
     if grep -q "^connection_type='auto'" "$SETUP_VARS" 2>/dev/null; then
         if [ "$DETECTED_CONN_TYPE" = "MAP-E" ] && [ -n "$MAPE_BR" ]; then
-            # connection_typeを変更
             sed -i "s/^connection_type='auto'/connection_type='mape'/" "$SETUP_VARS"
             
-            # MAP-E設定を追加（重複チェック付き）
+            # ★ GUAプレフィックスを最初に追加（元ソース）
+            [ -n "$MAPE_GUA_PREFIX" ] && ! grep -q "^mape_gua_prefix=" "$SETUP_VARS" 2>/dev/null && \
+                echo "mape_gua_prefix='$MAPE_GUA_PREFIX'" >> "$SETUP_VARS"
+            
+            # その後、他のMAP-E設定を追加（加工された結果）
             grep -q "^mape_br=" "$SETUP_VARS" 2>/dev/null || \
                 echo "mape_br='$MAPE_BR'" >> "$SETUP_VARS"
             
@@ -1355,10 +1356,6 @@ apply_api_defaults() {
             
             [ -n "$MAPE_PSID_OFFSET" ] && ! grep -q "^mape_psid_offset=" "$SETUP_VARS" 2>/dev/null && \
                 echo "mape_psid_offset='$MAPE_PSID_OFFSET'" >> "$SETUP_VARS"
-            
-            # GUA プレフィックス（検出された場合）
-            [ -n "$MAPE_GUA_PREFIX" ] && ! grep -q "^mape_gua_prefix=" "$SETUP_VARS" 2>/dev/null && \
-                echo "mape_gua_prefix='$MAPE_GUA_PREFIX'" >> "$SETUP_VARS"
             
         elif [ "$DETECTED_CONN_TYPE" = "DS-Lite" ] && [ -n "$DSLITE_AFTR" ]; then
             sed -i "s/^connection_type='auto'/connection_type='dslite'/" "$SETUP_VARS"
