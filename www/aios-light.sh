@@ -1653,30 +1653,25 @@ aios_light_main() {
     
     detect_package_manager
     echo "Package manager: $PKG_MGR"
-    echo ""
     
     init
     
-    echo "Detecting device information..."
+    echo "Fetching API https://auto-config.site-u.workers.dev"
     get_extended_device_info
     
-    echo "Device: $DEVICE_MODEL"
-    [ -n "$DETECTED_CONN_TYPE" ] && [ "$DETECTED_CONN_TYPE" != "Unknown" ] && echo "Detected: $DETECTED_CONN_TYPE"
-    echo ""
-    
-    echo "Downloading language file..."
+    echo "Fetching language: ${AUTO_LANGUAGE:-en}"
     if ! download_language_json "${AUTO_LANGUAGE:-en}"; then
         echo "Warning: Using English as fallback language"
     fi
     
-    echo "Downloading setup.json..."
+    echo "Fetching setup.json"
     if ! download_setup_json; then
         echo "Error: Failed to download setup.json"
         echo "Cannot continue without setup.json"
         exit 1
     fi
     
-    echo "Downloading packages.json..."
+    echo "Fetching packages.json"
     if ! download_packages; then
         echo "Warning: Failed to download packages.json"
         echo "Package selection will not be available."
