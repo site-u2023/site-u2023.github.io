@@ -442,19 +442,34 @@ EOF
 auto_add_conditional_packages() {
     local cat_id="$1"
     
+    echo "[DEBUG] === auto_add_conditional_packages called ===" >> /tmp/debug.log
+    echo "[DEBUG] cat_id=$cat_id" >> /tmp/debug.log
+    
     local pkg_count=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$cat_id'].packages[*]" 2>/dev/null | wc -l)
     
-    [ "$pkg_count" -eq 0 ] && return 0
+    echo "[DEBUG] pkg_count=$pkg_count" >> /tmp/debug.log
+    
+    [ "$pkg_count" -eq 0 ] && {
+        echo "[DEBUG] No packages in category, returning" >> /tmp/debug.log
+        return 0
+    }
     
     local idx=0
     while [ $idx -lt $pkg_count ]; do
+        echo "[DEBUG] Processing package index $idx" >> /tmp/debug.log
+        
         local pkg_id=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$cat_id'].packages[$idx].id" 2>/dev/null)
+        echo "[DEBUG] pkg_id=$pkg_id" >> /tmp/debug.log
         
         local when_json=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$cat_id'].packages[$idx].when" 2>/dev/null | head -1)
+        echo "[DEBUG] when_json=$when_json" >> /tmp/debug.log
         
         if [ -n "$when_json" ]; then
             local when_var=$(echo "$when_json" | sed 's/^{ *"\([^"]*\)".*/\1/')
+            echo "[DEBUG] when_var=$when_var" >> /tmp/debug.log
+            
             local current_val=$(grep "^${when_var}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+            echo "[DEBUG] current_val=$current_val" >> /tmp/debug.log
             
             local expected=$(jsonfilter -e "@.${when_var}[*]" 2>/dev/null <<EOF
 $when_json
@@ -468,11 +483,15 @@ EOF
 )
             fi
             
+            echo "[DEBUG] expected=$expected" >> /tmp/debug.log
+            
             local should_add=0
             if echo "$expected" | grep -qx "$current_val"; then
                 should_add=1
+                echo "[DEBUG] Match found in array!" >> /tmp/debug.log
             elif [ "$expected" = "$current_val" ]; then
                 should_add=1
+                echo "[DEBUG] Match found as single value!" >> /tmp/debug.log
             fi
             
             if [ $should_add -eq 1 ]; then
@@ -480,11 +499,15 @@ EOF
                     echo "$pkg_id" >> "$SELECTED_PACKAGES"
                     echo "[AUTO] Added package: $pkg_id (condition: ${when_var}=${current_val})" >> /tmp/debug.log
                 fi
+            else
+                echo "[DEBUG] No match, not adding $pkg_id" >> /tmp/debug.log
             fi
         fi
         
         idx=$((idx+1))
     done
+    
+    echo "[DEBUG] === auto_add_conditional_packages finished ===" >> /tmp/debug.log
 }
 
 get_section_nested_items() {
@@ -567,13 +590,17 @@ whiptail_category_config() {
     echo "[DEBUG] Items processed: $processed" >> /tmp/debug.log
     echo "[DEBUG] SETUP_VARS after processing:" >> /tmp/debug.log
     cat "$SETUP_VARS" >> /tmp/debug.log 2>&1
-    echo "[DEBUG] === whiptail_category_config END ===" >> /tmp/debug.log
     
     if [ $processed -eq 0 ]; then
         whiptail --msgbox "Configuration completed!" 8 50
     fi
 
+    echo "[DEBUG] About to call auto_add_conditional_packages for $cat_id" >> /tmp/debug.log
     auto_add_conditional_packages "$cat_id"
+    echo "[DEBUG] After auto_add_conditional_packages" >> /tmp/debug.log
+    echo "[DEBUG] Selected packages:" >> /tmp/debug.log
+    cat "$SELECTED_PACKAGES" >> /tmp/debug.log 2>&1
+    echo "[DEBUG] === whiptail_category_config END ===" >> /tmp/debug.log
 }
 
 compute_dslite_aftr() {
