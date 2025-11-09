@@ -1333,23 +1333,27 @@ generate_files() {
         
         if [ -n "$language" ]; then
             echo "# Language packages"
-            echo "PKGS=\"luci-i18n-base-${language} luci-i18n-firewall-${language}\""
-            echo "[ \"\$PKG_MGR\" = \"opkg\" ] && opkg install \$PKGS"
-            echo "[ \"\$PKG_MGR\" = \"apk\" ] && apk add \$PKGS"
+            echo "LANG_PKGS=\"luci-i18n-base-${language} luci-i18n-firewall-${language}\""
+            echo "[ \"\$PKG_MGR\" = \"opkg\" ] && opkg install \$LANG_PKGS"
+            echo "[ \"\$PKG_MGR\" = \"apk\" ] && apk add \$LANG_PKGS"
             echo ""
         fi
-        
+
         if [ -s "$SELECTED_PACKAGES" ]; then
             echo "# Selected packages"
+            echo "PKGS=\"\\"
             cat "$SELECTED_PACKAGES" | while read pkg; do
-                echo "[ \"\$PKG_MGR\" = \"opkg\" ] && opkg install $pkg"
-                echo "[ \"\$PKG_MGR\" = \"apk\" ] && apk add $pkg"
-            done
+                echo "    $pkg \\"
+            done | sed '$ s/ \\$/\"/'
+            echo ""
+            echo "[ \"\$PKG_MGR\" = \"opkg\" ] && opkg install \$PKGS"
+            echo "[ \"\$PKG_MGR\" = \"apk\" ] && apk add \$PKGS"
         fi
+        
         echo ""
         echo "exit 0"
-    } > "$OUTPUT_DIR/postinst"
-    chmod +x "$OUTPUT_DIR/postinst"
+    } > "$OUTPUT_DIR/postinst.sh"
+    chmod +x "$OUTPUT_DIR/postinst.sh"
     
     {
         echo "#!/bin/sh"
