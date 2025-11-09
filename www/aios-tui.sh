@@ -117,7 +117,6 @@ download_language_json() {
     local lang="${1:-en}"
     local lang_url="$BASE_URL/www/langs/custom.${lang}.json"
     
-    echo "Fetching language: ${lang}"
     if ! wget -q -O "$LANG_JSON" "$lang_url"; then
         echo "Warning: Failed to download language file for '${lang}'"
         if [ "$lang" != "en" ]; then
@@ -1579,10 +1578,7 @@ get_extended_device_info() {
         fi
     fi
     
-    echo "Fetching ISP information from $AUTO_CONFIG_URL..."
     if wget -q -O "$AUTO_CONFIG_JSON" "$AUTO_CONFIG_URL" 2>/dev/null; then
-        echo "Successfully downloaded auto-config data"
-        
         if [ -f "$AUTO_CONFIG_JSON" ]; then
             echo "=== AUTO_CONFIG_JSON CONTENT ===" >> /tmp/debug.log
             cat "$AUTO_CONFIG_JSON" >> /tmp/debug.log
