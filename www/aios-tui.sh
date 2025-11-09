@@ -1461,9 +1461,9 @@ review_and_apply() {
                     ;;
                 3)
                     if [ -f "$OUTPUT_DIR/postinst" ]; then
-                        whiptail --scrolltext --title "/tmp/postinst" --textbox "$OUTPUT_DIR/postinst" 24 78
+                        whiptail --scrolltext --title "/tmp/postinst.sh" --textbox "$OUTPUT_DIR/postinst" 24 78
                     else
-                        whiptail --msgbox "postinst file not found" 8 40
+                        whiptail --msgbox "postinst.sh file not found" 8 40
                     fi
                     ;;
                 4)
@@ -1517,7 +1517,7 @@ review_and_apply() {
             echo ""
             echo "1) View Full Package List"
             echo "2) View Full Configuration Variables"
-            echo "3) View /tmp/postinst"
+            echo "3) View /tmp/postinst.sh"
             echo "4) View /tmp/setup.sh"
             echo "5) Apply Configuration"
             echo "b) Back"
@@ -1556,10 +1556,10 @@ review_and_apply() {
                     ;;
                 3)
                     clear
-                    echo "=== /tmp/postinst ==="
+                    echo "=== /tmp/postinst.sh ==="
                     echo ""
-                    if [ -f "$OUTPUT_DIR/postinst" ]; then
-                        cat "$OUTPUT_DIR/postinst"
+                    if [ -f "$OUTPUT_DIR/postinst.sh" ]; then
+                        cat "$OUTPUT_DIR/postinst.sh"
                     else
                         echo "(file not found)"
                     fi
