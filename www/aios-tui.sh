@@ -1798,9 +1798,14 @@ aios_light_main() {
     echo "net_optimizer='auto'" >> "$SETUP_VARS"
     echo "enable_dnsmasq='auto'" >> "$SETUP_VARS"
     
-    # 検出された情報があれば追加
-    if [ "$DETECTED_CONN_TYPE" = "MAP-E" ] && [ -n "$MAPE_GUA_PREFIX" ]; then
-        echo "mape_type='gua'" >> "$SETUP_VARS"
+    if [ "$DETECTED_CONN_TYPE" = "MAP-E" ]; then
+        if [ -n "$MAPE_GUA_PREFIX" ]; then
+            echo "mape_type='gua'" >> "$SETUP_VARS"
+            echo "[DEBUG] Set mape_type=gua with prefix: $MAPE_GUA_PREFIX" >> /tmp/debug.log
+        else
+            echo "mape_type='pd'" >> "$SETUP_VARS"
+            echo "[DEBUG] Set mape_type=pd (no GUA detected)" >> /tmp/debug.log
+        fi
     fi
     
     # 全カテゴリの条件付きパッケージを評価
