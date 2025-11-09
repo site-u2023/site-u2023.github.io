@@ -344,6 +344,10 @@ get_category_desc() {
     jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$1'].description" 2>/dev/null
 }
 
+get_category_hidden() {
+    jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$1'].hidden" 2>/dev/null
+}
+
 get_category_packages() {
     jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$1'].packages[*].id" 2>/dev/null | grep -v '^$'
 }
@@ -439,6 +443,53 @@ EOF
     fi
 }
 
+auto_add_conditional_packages() {
+    local cat_id="$1"
+    
+    local pkg_count=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$cat_id'].packages[*]" 2>/dev/null | wc -l)
+    
+    [ "$pkg_count" -eq 0 ] && return 0
+    
+    local idx=0
+    while [ $idx -lt $pkg_count ]; do
+        local pkg_id=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$cat_id'].packages[$idx].id" 2>/dev/null)
+        
+        local when_var=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$cat_id'].packages[$idx].when" 2>/dev/null | head -1 | sed 's/^{ *"\([^"]*\)".*/\1/')
+        
+        if [ -n "$when_var" ]; then
+            local current_val=$(grep "^${when_var}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+            
+            local expected=$(jsonfilter -e "@.${when_var}[*]" 2>/dev/null <<EOF
+$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$cat_id'].packages[$idx].when" 2>/dev/null | head -1)
+EOF
+)
+
+            if [ -z "$expected" ]; then
+                expected=$(jsonfilter -e "@.${when_var}" 2>/dev/null <<EOF
+$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$cat_id'].packages[$idx].when" 2>/dev/null | head -1)
+EOF
+)
+            fi
+            
+            local should_add=0
+            if echo "$expected" | grep -qx "$current_val"; then
+                should_add=1
+            elif [ "$expected" = "$current_val" ]; then
+                should_add=1
+            fi
+            
+            if [ $should_add -eq 1 ]; then
+                if ! is_package_selected "$pkg_id"; then
+                    echo "$pkg_id" >> "$SELECTED_PACKAGES"
+                    echo "[AUTO] Added package: $pkg_id (condition: ${when_var}=${current_val})" >> /tmp/debug.log
+                fi
+            fi
+        fi
+        
+        idx=$((idx+1))
+    done
+}
+
 get_section_nested_items() {
     local item_id="$1"
     local cat_idx=0
@@ -524,6 +575,8 @@ whiptail_category_config() {
     if [ $processed -eq 0 ]; then
         whiptail --msgbox "Configuration completed!" 8 50
     fi
+
+    auto_add_conditional_packages "$cat_id"
 }
 
 compute_dslite_aftr() {
@@ -785,6 +838,9 @@ whiptail_package_categories() {
     local menu_items="" i=1 cat_id cat_name
     
     while read cat_id; do
+        local is_hidden=$(get_category_hidden "$cat_id")
+        [ "$is_hidden" = "true" ] && continue
+        
         cat_name=$(get_category_name "$cat_id")
         menu_items="$menu_items $i \"$cat_name\""
         i=$((i+1))
@@ -793,7 +849,10 @@ whiptail_package_categories() {
     choice=$(eval "whiptail --title 'Package Categories' --menu 'Select category:' 20 70 12 $menu_items 3>&1 1>&2 2>&3")
     
     if [ -n "$choice" ]; then
-        selected_cat=$(get_categories | sed -n "${choice}p")
+        selected_cat=$(get_categories | while read cat_id; do
+            local is_hidden=$(get_category_hidden "$cat_id")
+            [ "$is_hidden" != "true" ] && echo "$cat_id"
+        done | sed -n "${choice}p")
         whiptail_package_selection "$selected_cat"
     fi
 }
@@ -1043,6 +1102,8 @@ simple_category_config() {
     
     echo "Configuration completed! Press Enter..."
     read
+
+    auto_add_conditional_packages "$cat_id"
 }
 
 simple_show_network_info() {
@@ -1127,7 +1188,11 @@ simple_package_menu() {
         echo "=== Package Categories ==="
         echo ""
         
-        local categories=$(get_categories)
+        local categories=$(get_categories | while read cat_id; do
+            local is_hidden=$(get_category_hidden "$cat_id")
+            [ "$is_hidden" != "true" ] && echo "$cat_id"
+        done)
+        
         if [ -z "$categories" ]; then
             echo "Error: No categories found"
             printf "Press Enter to continue..."
