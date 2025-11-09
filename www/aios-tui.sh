@@ -1674,7 +1674,6 @@ aios_light_main() {
         sleep 2
     fi
     
-    echo "Loading default packages..."
     load_default_packages
     
     echo ""
