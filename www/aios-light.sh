@@ -1660,15 +1660,8 @@ aios_light_main() {
     echo "Detecting device information..."
     get_extended_device_info
     
-    echo ""
     echo "Device: $DEVICE_MODEL"
-    echo "Target: $DEVICE_TARGET"
-    echo "Version: $OPENWRT_VERSION"
-    [ -n "$DEVICE_MEM" ] && echo "Memory: $DEVICE_MEM"
-    [ -n "$DEVICE_CPU" ] && echo "CPU: $DEVICE_CPU"
-    [ -n "$ISP_NAME" ] && echo "ISP: $ISP_NAME ($ISP_AS)"
-    [ -n "$DETECTED_CONN_TYPE" ] && echo "Detected: $DETECTED_CONN_TYPE"
-    [ -n "$AUTO_LANGUAGE" ] && echo "Language: $AUTO_LANGUAGE"
+    [ -n "$DETECTED_CONN_TYPE" ] && [ "$DETECTED_CONN_TYPE" != "Unknown" ] && echo "Detected: $DETECTED_CONN_TYPE"
     echo ""
     
     echo "Downloading language file..."
