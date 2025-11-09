@@ -1415,6 +1415,8 @@ review_and_apply() {
                 "6" "Back to Main Menu" \
                 3>&1 1>&2 2>&3)
             
+            echo "[DEBUG] choice='$choice'" >> /tmp/debug.log
+            
             case "$choice" in
                 1)
                     if [ -s "$SELECTED_PACKAGES" ]; then
