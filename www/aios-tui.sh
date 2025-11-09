@@ -1407,26 +1407,20 @@ review_and_apply() {
             
             case "$choice" in
                 1)
-                    local pkg_list=""
                     if [ -s "$SELECTED_PACKAGES" ]; then
-                        while read pkg; do
-                            pkg_list="${pkg_list}- ${pkg}\n"
-                        done < "$SELECTED_PACKAGES"
+                        local pkg_list=$(cat "$SELECTED_PACKAGES" | sed 's/^/- /')
+                        whiptail --scrolltext --title "Package List" --msgbox "$pkg_list" 24 78
                     else
-                        pkg_list="(none)"
+                        whiptail --msgbox "No packages selected" 8 40
                     fi
-                    whiptail --scrolltext --title "Package List" --msgbox "$pkg_list" 24 78
                     ;;
                 2)
-                    local var_list=""
                     if [ -s "$SETUP_VARS" ]; then
-                        while read line; do
-                            var_list="${var_list}${line}\n"
-                        done < "$SETUP_VARS"
+                        local var_list=$(cat "$SETUP_VARS")
+                        whiptail --scrolltext --title "Configuration Variables" --msgbox "$var_list" 24 78
                     else
-                        var_list="(none)"
+                        whiptail --msgbox "No configuration variables set" 8 40
                     fi
-                    whiptail --scrolltext --title "Configuration Variables" --msgbox "$var_list" 24 78
                     ;;
                 3)
                     if [ -f "$OUTPUT_DIR/postinst" ]; then
