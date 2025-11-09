@@ -53,6 +53,7 @@ install_package() {
 select_ui_mode() {
     echo "[DEBUG] $(date): select_ui_mode START" >> /tmp/debug.log
     
+    # Check if whiptail is already installed
     if command -v whiptail >/dev/null 2>&1; then
         UI_MODE="whiptail"
         echo "whiptail detected, using dialog-based interface"
@@ -62,6 +63,7 @@ select_ui_mode() {
     
     echo "[DEBUG] whiptail not found, asking user" >> /tmp/debug.log
     
+    # whiptail not installed, ask user
     echo "$(translate 'tr-ui-mode-select')"
     echo "1) $(translate 'tr-ui-whiptail')"
     echo "2) $(translate 'tr-ui-simple')"
@@ -81,6 +83,7 @@ select_ui_mode() {
             echo "[DEBUG] install_package returned success" >> /tmp/debug.log
             hash -r
             echo "[DEBUG] hash -r executed" >> /tmp/debug.log
+            # Re-check after installation
             if command -v whiptail >/dev/null 2>&1; then
                 echo "$(translate 'tr-ui-install-success')"
                 UI_MODE="whiptail"
