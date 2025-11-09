@@ -1407,41 +1407,30 @@ review_and_apply() {
             
             case "$choice" in
                 1)
-                    echo "[DEBUG] === View Package List ===" >> /tmp/debug.log
-                    echo "[DEBUG] SELECTED_PACKAGES=$SELECTED_PACKAGES" >> /tmp/debug.log
-                    echo "[DEBUG] File exists: $([ -f "$SELECTED_PACKAGES" ] && echo yes || echo no)" >> /tmp/debug.log
-                    echo "[DEBUG] File has content: $([ -s "$SELECTED_PACKAGES" ] && echo yes || echo no)" >> /tmp/debug.log
                     if [ -s "$SELECTED_PACKAGES" ]; then
-                        echo "[DEBUG] Line count: $(wc -l < $SELECTED_PACKAGES)" >> /tmp/debug.log
-                        echo "[DEBUG] File content:" >> /tmp/debug.log
-                        cat "$SELECTED_PACKAGES" >> /tmp/debug.log
-                        local pkg_text=$(cat "$SELECTED_PACKAGES" | awk '{print "- " $0}')
-                        echo "[DEBUG] Formatted text: $pkg_text" >> /tmp/debug.log
-                        echo "[DEBUG] Calling whiptail..." >> /tmp/debug.log
-                        whiptail --scrolltext --title "Package List ($(wc -l < $SELECTED_PACKAGES) packages)" --msgbox "$pkg_text" 24 78
-                        echo "[DEBUG] Whiptail returned: $?" >> /tmp/debug.log
+                        cat "$SELECTED_PACKAGES" | awk '{print "- " $0}' > /tmp/pkg_view.txt
+                        whiptail --title "Package List ($(wc -l < $SELECTED_PACKAGES) packages)" --textbox /tmp/pkg_view.txt 24 78
                     else
-                        echo "[DEBUG] File is empty or does not exist" >> /tmp/debug.log
                         whiptail --msgbox "No packages selected" 8 40
                     fi
                     ;;
                 2)
                     if [ -s "$SETUP_VARS" ]; then
-                        whiptail --scrolltext --title "Configuration Variables ($(wc -l < $SETUP_VARS) variables)" --msgbox "$(cat $SETUP_VARS)" 24 78
+                        whiptail --title "Configuration Variables ($(wc -l < $SETUP_VARS) variables)" --textbox "$SETUP_VARS" 24 78
                     else
                         whiptail --msgbox "No configuration variables set" 8 40
                     fi
                     ;;
                 3)
                     if [ -f "$OUTPUT_DIR/postinst" ]; then
-                        whiptail --scrolltext --title "/tmp/postinst" --msgbox "$(cat $OUTPUT_DIR/postinst)" 24 78
+                        whiptail --title "/tmp/postinst" --textbox "$OUTPUT_DIR/postinst" 24 78
                     else
                         whiptail --msgbox "postinst file not found" 8 40
                     fi
                     ;;
                 4)
                     if [ -f "$OUTPUT_DIR/setup.sh" ]; then
-                        whiptail --scrolltext --title "/tmp/setup.sh" --msgbox "$(cat $OUTPUT_DIR/setup.sh)" 24 78
+                        whiptail --title "/tmp/setup.sh" --textbox "$OUTPUT_DIR/setup.sh" 24 78
                     else
                         whiptail --msgbox "setup.sh file not found" 8 40
                     fi
