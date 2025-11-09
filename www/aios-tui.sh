@@ -1312,6 +1312,7 @@ simple_package_selection() {
 }
 
 apply_api_defaults() {
+    # 言語・タイムゾーン系は追記のみでOK（未設定時のみ）
     [ -n "$AUTO_LANGUAGE" ] && ! grep -q "^language=" "$SETUP_VARS" 2>/dev/null && \
         echo "language='$AUTO_LANGUAGE'" >> "$SETUP_VARS"
     
@@ -1324,28 +1325,45 @@ apply_api_defaults() {
     [ -n "$ISP_COUNTRY" ] && ! grep -q "^country=" "$SETUP_VARS" 2>/dev/null && \
         echo "country='$ISP_COUNTRY'" >> "$SETUP_VARS"
     
+    # connection_type='auto' の場合のみ、実際の接続タイプに変換
     if grep -q "^connection_type='auto'" "$SETUP_VARS" 2>/dev/null; then
         if [ "$DETECTED_CONN_TYPE" = "MAP-E" ] && [ -n "$MAPE_BR" ]; then
-            sed -i "/^connection_type=/d" "$SETUP_VARS"
-            echo "connection_type='mape'" >> "$SETUP_VARS"
-            echo "mape_br='$MAPE_BR'" >> "$SETUP_VARS"
-            [ -n "$MAPE_IPV4_PREFIX" ] && echo "mape_ipv4_prefix='$MAPE_IPV4_PREFIX'" >> "$SETUP_VARS"
-            [ -n "$MAPE_IPV4_PREFIXLEN" ] && echo "mape_ipv4_prefixlen='$MAPE_IPV4_PREFIXLEN'" >> "$SETUP_VARS"
-            [ -n "$MAPE_IPV6_PREFIX" ] && echo "mape_ipv6_prefix='$MAPE_IPV6_PREFIX'" >> "$SETUP_VARS"
-            [ -n "$MAPE_IPV6_PREFIXLEN" ] && echo "mape_ipv6_prefixlen='$MAPE_IPV6_PREFIXLEN'" >> "$SETUP_VARS"
-            [ -n "$MAPE_EALEN" ] && echo "mape_ealen='$MAPE_EALEN'" >> "$SETUP_VARS"
-            [ -n "$MAPE_PSIDLEN" ] && echo "mape_psidlen='$MAPE_PSIDLEN'" >> "$SETUP_VARS"
-            [ -n "$MAPE_PSID_OFFSET" ] && echo "mape_psid_offset='$MAPE_PSID_OFFSET'" >> "$SETUP_VARS"
+            # 既存のMAP-E設定を全削除
+            sed -i '/^mape_/d' "$SETUP_VARS"
+            
+            # connection_typeのみ変更
+            sed -i "s/^connection_type='auto'/connection_type='mape'/" "$SETUP_VARS"
+            
+            # MAP-E設定を追記（既に whiptail_process_items で設定済みの場合は追記しない）
+            grep -q "^mape_br=" "$SETUP_VARS" 2>/dev/null || echo "mape_br='$MAPE_BR'" >> "$SETUP_VARS"
+            grep -q "^mape_ipv4_prefix=" "$SETUP_VARS" 2>/dev/null || [ -n "$MAPE_IPV4_PREFIX" ] && echo "mape_ipv4_prefix='$MAPE_IPV4_PREFIX'" >> "$SETUP_VARS"
+            grep -q "^mape_ipv4_prefixlen=" "$SETUP_VARS" 2>/dev/null || [ -n "$MAPE_IPV4_PREFIXLEN" ] && echo "mape_ipv4_prefixlen='$MAPE_IPV4_PREFIXLEN'" >> "$SETUP_VARS"
+            grep -q "^mape_ipv6_prefix=" "$SETUP_VARS" 2>/dev/null || [ -n "$MAPE_IPV6_PREFIX" ] && echo "mape_ipv6_prefix='$MAPE_IPV6_PREFIX'" >> "$SETUP_VARS"
+            grep -q "^mape_ipv6_prefixlen=" "$SETUP_VARS" 2>/dev/null || [ -n "$MAPE_IPV6_PREFIXLEN" ] && echo "mape_ipv6_prefixlen='$MAPE_IPV6_PREFIXLEN'" >> "$SETUP_VARS"
+            grep -q "^mape_ealen=" "$SETUP_VARS" 2>/dev/null || [ -n "$MAPE_EALEN" ] && echo "mape_ealen='$MAPE_EALEN'" >> "$SETUP_VARS"
+            grep -q "^mape_psidlen=" "$SETUP_VARS" 2>/dev/null || [ -n "$MAPE_PSIDLEN" ] && echo "mape_psidlen='$MAPE_PSIDLEN'" >> "$SETUP_VARS"
+            grep -q "^mape_psid_offset=" "$SETUP_VARS" 2>/dev/null || [ -n "$MAPE_PSID_OFFSET" ] && echo "mape_psid_offset='$MAPE_PSID_OFFSET'" >> "$SETUP_VARS"
+            
+            # GUA プレフィックスの追加（検出された場合のみ）
+            if [ -n "$MAPE_GUA_PREFIX" ]; then
+                grep -q "^mape_gua_prefix=" "$SETUP_VARS" 2>/dev/null || echo "mape_gua_prefix='$MAPE_GUA_PREFIX'" >> "$SETUP_VARS"
+                grep -q "^mape_type=" "$SETUP_VARS" 2>/dev/null || echo "mape_type='gua'" >> "$SETUP_VARS"
+            fi
+            
         elif [ "$DETECTED_CONN_TYPE" = "DS-Lite" ] && [ -n "$DSLITE_AFTR" ]; then
-            sed -i "/^connection_type=/d" "$SETUP_VARS"
-            echo "connection_type='dslite'" >> "$SETUP_VARS"
-            echo "dslite_aftr_address='$DSLITE_AFTR'" >> "$SETUP_VARS"
+            # 既存のDS-Lite設定を全削除
+            sed -i '/^dslite_/d' "$SETUP_VARS"
+            
+            # connection_typeのみ変更
+            sed -i "s/^connection_type='auto'/connection_type='dslite'/" "$SETUP_VARS"
+            
+            # DS-Lite設定を追記
+            grep -q "^dslite_aftr_address=" "$SETUP_VARS" 2>/dev/null || echo "dslite_aftr_address='$DSLITE_AFTR'" >> "$SETUP_VARS"
         fi
     fi
 }
 
 generate_files() {
-    apply_api_defaults
     
     language=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
     
@@ -1768,6 +1786,8 @@ aios_light_main() {
     
     echo "Fetching API https://auto-config.site-u.workers.dev"
     get_extended_device_info
+
+    apply_api_defaults
     
     echo "Fetching language: ${AUTO_LANGUAGE:-en}"
     if ! download_language_json "${AUTO_LANGUAGE:-en}"; then
