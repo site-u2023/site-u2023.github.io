@@ -601,6 +601,8 @@ whiptail_category_config() {
     echo "[DEBUG] Selected packages:" >> /tmp/debug.log
     cat "$SELECTED_PACKAGES" >> /tmp/debug.log 2>&1
     echo "[DEBUG] === whiptail_category_config END ===" >> /tmp/debug.log
+
+    auto_add_conditional_packages "$cat_id"
 }
 
 compute_dslite_aftr() {
