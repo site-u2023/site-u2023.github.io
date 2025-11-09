@@ -1460,7 +1460,7 @@ review_and_apply() {
                     fi
                     ;;
                 3)
-                    if [ -f "$OUTPUT_DIR/postinst" ]; then
+                    if [ -f "$OUTPUT_DIR/postinst.sh" ]; then
                         whiptail --scrolltext --title "/tmp/postinst.sh" --textbox "$OUTPUT_DIR/postinst" 24 78
                     else
                         whiptail --msgbox "postinst.sh file not found" 8 40
