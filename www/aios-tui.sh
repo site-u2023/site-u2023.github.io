@@ -1420,7 +1420,7 @@ review_and_apply() {
             case "$choice" in
                 1)
                     if [ -s "$SELECTED_PACKAGES" ]; then
-                        cat "$SELECTED_PACKAGES" | sed 's/^/- /' > /tmp/pkg_view.txt
+                        cat "$SELECTED_PACKAGES" | awk '{print "- " $0}' > /tmp/pkg_view.txt
                         local pkg_count=$(wc -l < "$SELECTED_PACKAGES")
                         whiptail --scrolltext --title "Package List ($pkg_count packages)" --textbox /tmp/pkg_view.txt 24 78
                     else
@@ -1448,7 +1448,7 @@ review_and_apply() {
                     else
                         whiptail --msgbox "setup.sh file not found" 8 40
                     fi
-                    ;;
+                    ;;            
                 5)
                     if whiptail --title "Confirm" --yesno "Apply this configuration?\n\nThis will:\n1. Install packages via /tmp/postinst\n2. Apply settings via /tmp/setup.sh\n3. Optionally reboot\n\nContinue?" 15 60; then
                         whiptail --msgbox "Executing package installation..." 8 50
