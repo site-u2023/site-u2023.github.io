@@ -51,9 +51,14 @@ install_package() {
 }
 
 select_ui_mode() {
-    HAS_WHIPTAIL=false
-    command -v whiptail >/dev/null 2>&1 && HAS_WHIPTAIL=true
+    # Check if whiptail is already installed
+    if command -v whiptail >/dev/null 2>&1; then
+        UI_MODE="whiptail"
+        echo "whiptail detected, using dialog-based interface"
+        return 0
+    fi
     
+    # whiptail not installed, ask user
     echo "$(translate 'tr-ui-mode-select')"
     echo "1) $(translate 'tr-ui-whiptail')"
     echo "2) $(translate 'tr-ui-simple')"
@@ -64,23 +69,24 @@ select_ui_mode() {
     if [ "$choice" = "2" ]; then
         UI_MODE="simple"
     else
-        if [ "$HAS_WHIPTAIL" = false ]; then
-            echo "$(translate 'tr-ui-installing')"
-            if install_package whiptail newt; then
-                hash -r
-                if command -v whiptail >/dev/null 2>&1; then
-                    echo "$(translate 'tr-ui-install-success')"
-                    UI_MODE="whiptail"
-                else
-                    echo "$(translate 'tr-ui-install-failed')"
-                    UI_MODE="simple"
-                fi
+        echo "$(translate 'tr-ui-installing')"
+        if install_package whiptail newt; then
+            hash -r
+            # Re-check after installation
+            if command -v whiptail >/dev/null 2>&1; then
+                echo "$(translate 'tr-ui-install-success')"
+                UI_MODE="whiptail"
+                # Important: Give user time to see success message
+                sleep 1
             else
                 echo "$(translate 'tr-ui-install-failed')"
                 UI_MODE="simple"
+                sleep 2
             fi
         else
-            UI_MODE="whiptail"
+            echo "$(translate 'tr-ui-install-failed')"
+            UI_MODE="simple"
+            sleep 2
         fi
     fi
 }
