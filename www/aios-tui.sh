@@ -1410,36 +1410,35 @@ review_and_apply() {
             case "$choice" in
                 1)
                     if [ -s "$SELECTED_PACKAGES" ]; then
-                        local pkg_list=$(cat "$SELECTED_PACKAGES" | sed 's/^/- /')
+                        cat "$SELECTED_PACKAGES" | sed 's/^/- /' > /tmp/pkg_view.txt
                         local pkg_count=$(wc -l < "$SELECTED_PACKAGES")
-                        whiptail --scrolltext --title "Package List ($pkg_count packages)" --msgbox "$pkg_list" 24 78
+                        whiptail --scrolltext --title "Package List ($pkg_count packages)" --textbox /tmp/pkg_view.txt 24 78
                     else
                         whiptail --msgbox "No packages selected" 8 40
                     fi
                     ;;
                 2)
                     if [ -s "$SETUP_VARS" ]; then
-                        local var_list=$(cat "$SETUP_VARS")
                         local var_count=$(wc -l < "$SETUP_VARS")
-                        whiptail --scrolltext --title "Configuration Variables ($var_count variables)" --msgbox "$var_list" 24 78
+                        whiptail --scrolltext --title "Configuration Variables ($var_count variables)" --textbox "$SETUP_VARS" 24 78
                     else
                         whiptail --msgbox "No configuration variables set" 8 40
                     fi
                     ;;
                 3)
                     if [ -f "$OUTPUT_DIR/postinst" ]; then
-                        whiptail --scrolltext --title "/tmp/postinst" --msgbox "$(cat $OUTPUT_DIR/postinst)" 24 78
+                        whiptail --scrolltext --title "/tmp/postinst" --textbox "$OUTPUT_DIR/postinst" 24 78
                     else
                         whiptail --msgbox "postinst file not found" 8 40
                     fi
                     ;;
                 4)
                     if [ -f "$OUTPUT_DIR/setup.sh" ]; then
-                        whiptail --scrolltext --title "/tmp/setup.sh" --msgbox "$(cat $OUTPUT_DIR/setup.sh)" 24 78
+                        whiptail --scrolltext --title "/tmp/setup.sh" --textbox "$OUTPUT_DIR/setup.sh" 24 78
                     else
                         whiptail --msgbox "setup.sh file not found" 8 40
                     fi
-                    ;;        
+                    ;;
                 5)
                     if whiptail --title "Confirm" --yesno "Apply this configuration?\n\nThis will:\n1. Install packages via /tmp/postinst\n2. Apply settings via /tmp/setup.sh\n3. Optionally reboot\n\nContinue?" 15 60; then
                         whiptail --msgbox "Executing package installation..." 8 50
