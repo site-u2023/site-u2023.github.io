@@ -1010,14 +1010,18 @@ whiptail_package_selection() {
     
     selected=$(eval "whiptail --title '$cat_name' --checklist '$cat_desc (Space=toggle):' 20 70 12 $checklist_items 3>&1 1>&2 2>&3")
     
-    while read pkg_id; do
-        sed -i "/^${pkg_id}$/d" "$SELECTED_PACKAGES"
-    done < <(get_category_packages "$cat_id")
+    if [ $? -eq 0 ]; then
+        while read pkg_id; do
+            sed -i "/^${pkg_id}$/d" "$SELECTED_PACKAGES"
+        done < <(get_category_packages "$cat_id")
+        
+        for pkg in $selected; do
+            pkg_clean=$(echo "$pkg" | tr -d '"')
+            echo "$pkg_clean" >> "$SELECTED_PACKAGES"
+        done
+    fi
     
-    for pkg in $selected; do
-        pkg_clean=$(echo "$pkg" | tr -d '"')
-        echo "$pkg_clean" >> "$SELECTED_PACKAGES"
-    done
+    whiptail_package_categories
 }
 
 whiptail_main_menu() {
