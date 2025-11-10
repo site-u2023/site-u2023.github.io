@@ -944,6 +944,23 @@ export default {
       }
     }
 
+    // GUA判定
+    let guaPrefix = null;
+    if (clientIPv6) {
+      guaPrefix = detectGuaPrefix(clientIPv6, {
+        prefix_check: "2000::/3",
+        exclude_cidrs: [
+          "2001:db8::/32",
+          "2002::/16",
+          "2001::/32",
+          "2001:20::/28",
+          "2001:2::/48",
+          "2001:3::/32",
+          "2001:4:112::/48"
+        ]
+      });
+    }
+    
     // AS情報構築
     const isp = cf.asOrganization || null;
     const asn = cf.asn || null;
