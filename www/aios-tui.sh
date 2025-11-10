@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1110.2227"
+VERSION="R7.1111.0105"
 BASE_URL="https://site-u.pages.dev"
 PACKAGES_URL="$BASE_URL/www/packages/packages.json"
 SETUP_JSON_URL="$BASE_URL/www/uci-defaults/setup.json"
@@ -1021,7 +1021,11 @@ whiptail_package_categories() {
         i=$((i+1))
     done < <(get_categories)
     
-    choice=$(eval "whiptail --title 'Package Categories' --menu 'Select category:' 20 70 12 $menu_items 3>&1 1>&2 2>&3")
+    choice=$(eval "whiptail --title 'Package Categories' --cancel-button 'Back' --menu 'Select category:' 20 70 12 $menu_items 3>&1 1>&2 2>&3")
+    
+    if [ $? -ne 0 ]; then
+        return 0
+    fi
     
     if [ -n "$choice" ]; then
         selected_cat=$(get_categories | while read cat_id; do
@@ -1051,7 +1055,7 @@ whiptail_package_selection() {
         checklist_items="$checklist_items \"$pkg_id\" \"$pkg_name\" $status"
     done < <(get_category_packages "$cat_id")
     
-    selected=$(eval "whiptail --title '$cat_name' --checklist '$cat_desc (Space=toggle):' 20 70 12 $checklist_items 3>&1 1>&2 2>&3")
+    selected=$(eval "whiptail --title '$cat_name' --cancel-button 'Back' --checklist '$cat_desc (Space=toggle):' 20 70 12 $checklist_items 3>&1 1>&2 2>&3")
     
     if [ $? -eq 0 ]; then
         while read pkg_id; do
@@ -1084,8 +1088,9 @@ whiptail_main_menu() {
         i=$((i+1))
         menu_items="$menu_items $i \"Exit\""
         
+        # 修正：タイトルを "Main Menu:" に変更、CANCELボタン無し
         choice=$(eval "whiptail --title 'OpenWrt Setup Tool v$VERSION - $DEVICE_MODEL' \
-            --menu 'Select an option:' 20 70 12 $menu_items 3>&1 1>&2 2>&3")
+            --menu 'Main Menu:' 20 70 12 $menu_items 3>&1 1>&2 2>&3")
         
         if [ -z "$choice" ]; then
             exit 0
@@ -1110,6 +1115,7 @@ review_and_apply() {
     
     while true; do
         if [ "$UI_MODE" = "whiptail" ]; then
+            # 修正：--cancel-button "Back" を追加
             choice=$(whiptail --title "Review Configuration" --cancel-button "Back" --menu \
                 "Select an option:" 20 70 12 \
                 "1" "View Device Information" \
