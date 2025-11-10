@@ -1085,15 +1085,11 @@ whiptail_main_menu() {
         menu_items="$menu_items $i \"$packages_label\""
         i=$((i+1))
         menu_items="$menu_items $i \"Review & Generate\""
-        i=$((i+1))
-        menu_items="$menu_items $i \"Exit\""
         
-        # メインメニューでは Cancel ではなく Exit を表示
         choice=$(eval "whiptail --title 'OpenWrt Setup Tool v$VERSION - $DEVICE_MODEL' \
             --ok-button 'Select' --cancel-button 'Exit' \
             --menu 'Main Menu:' 20 70 12 $menu_items 3>&1 1>&2 2>&3")
         
-        # Cancelが押された場合（Exit選択）
         if [ $? -ne 0 ]; then
             exit 0
         fi
