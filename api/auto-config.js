@@ -815,8 +815,9 @@ function getNotice(langCode) {
 
 /**
  * IPv6アドレスがGUA（Global Unicast Address）かどうかを判定
+ * MAP-EやDS-Lite接続は除外し、真のネイティブIPv6のみをGUAとする
  * @param {string} ipv6 - 判定対象のIPv6アドレス
- * @returns {boolean} GUAの場合true
+ * @returns {boolean} ネイティブGUAの場合true
  */
 function isGlobalUnicastAddress(ipv6) {
   if (!ipv6) return false;
@@ -831,6 +832,16 @@ function isGlobalUnicastAddress(ipv6) {
     if (checkIPv6InRangeJS(ipv6, exclude.prefix, exclude.length)) {
       return false;
     }
+  }
+
+  // MAP-Eルールに該当する場合は除外
+  if (checkMapERule(ipv6)) {
+    return false;
+  }
+
+  // DS-Liteルールに該当する場合は除外
+  if (checkDSLiteRule(ipv6)) {
+    return false;
   }
 
   return true;
