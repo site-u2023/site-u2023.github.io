@@ -815,9 +815,8 @@ function getNotice(langCode) {
 
 /**
  * IPv6アドレスがGUA（Global Unicast Address）かどうかを判定
- * MAP-EやDS-Lite接続は除外し、真のネイティブIPv6のみをGUAとする
  * @param {string} ipv6 - 判定対象のIPv6アドレス
- * @returns {boolean} ネイティブGUAの場合true
+ * @returns {boolean} GUAの場合true
  */
 function isGlobalUnicastAddress(ipv6) {
   if (!ipv6) return false;
@@ -834,17 +833,21 @@ function isGlobalUnicastAddress(ipv6) {
     }
   }
 
-  // MAP-Eルールに該当する場合は除外
-  if (checkMapERule(ipv6)) {
-    return false;
-  }
-
-  // DS-Liteルールに該当する場合は除外
-  if (checkDSLiteRule(ipv6)) {
-    return false;
-  }
-
   return true;
+}
+
+/**
+ * MAP-E環境でPD（Prefix Delegation）かどうかを判定
+ * @param {object} mapRule - MAP-Eルール
+ * @returns {boolean} PDの場合true
+ */
+function isMapePrefixDelegation(mapRule) {
+  if (!mapRule || !mapRule.ipv6PrefixLength) return false;
+  
+  // IPv6プレフィックス長が56以下の場合はPD
+  // 一般的に /56 や /60 がPDで使われる
+  const prefixLen = parseInt(mapRule.ipv6PrefixLength, 10);
+  return prefixLen <= 60;
 }
 
 /**
@@ -931,15 +934,15 @@ export default {
       if (!clientIPv4 && ip.includes('.')) clientIPv4 = ip;
     }
 
-    // DS-Lite / MAP-E 判定
-    let aftrRule = null;
+    // MAP-E判定を先に実行
     let mapRule = null;
+    let mapType = null;
 
-    if (clientIPv6) {
-      aftrRule = checkDSLiteRule(clientIPv6);
-      if (!aftrRule) {
-        mapRule = checkMapERule(clientIPv6);
-        if (mapRule) mapRule = enrichMapRule(mapRule);
+    if (clientIPv6 && !aftrRule) {
+      mapRule = checkMapERule(clientIPv6);
+      if (mapRule) {
+        mapRule = enrichMapRule(mapRule);
+        mapType = isMapePrefixDelegation(mapRule) ? 'pd' : 'gua';
       }
     }
 
@@ -971,7 +974,7 @@ export default {
       regionName: cf.region || null,
       region: cf.regionCode || null,
       aftr: aftrRule || null,
-      mape: mapRule || null
+      mape: mapRule ? { ...mapRule, type: mapType } : null
     };
 
     return new Response(
