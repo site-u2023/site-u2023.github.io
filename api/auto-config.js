@@ -648,56 +648,6 @@ function checkIPv6InRangeJS(ipv6, prefixStr, prefixLen) {
 }
 
 /**
- * IPv6アドレスからGUAプレフィックスを判定
- * @param {string} ipv6 - 判定対象のIPv6アドレス
- * @param {object} guaValidation - 判定ルール(prefix_check, exclude_cidrs)
- * @returns {string|null} GUAプレフィックス(/64) または null
- */
-function detectGuaPrefix(ipv6, guaValidation) {
-    if (!ipv6 || !guaValidation) return null;
-
-    const [prefix, bits] = guaValidation.prefix_check.split('/');
-    const addrBin = ipv6ToBinary(ipv6);
-    const prefixBin = ipv6ToBinary(prefix);
-
-    if (addrBin.substring(0, bits) !== prefixBin.substring(0, bits)) {
-        return null;
-    }
-
-    for (const cidr of guaValidation.exclude_cidrs) {
-        const [exPrefix, exBits] = cidr.split('/');
-        const exBin = ipv6ToBinary(exPrefix);
-        if (addrBin.substring(0, exBits) === exBin.substring(0, exBits)) {
-            return null;
-        }
-    }
-
-    const segments = ipv6.split(':');
-    if (segments.length >= 4) {
-        return `${segments[0]}:${segments[1]}:${segments[2]}:${segments[3]}::/64`;
-    }
-    return null;
-}
-
-/**
- * IPv6アドレスをバイナリ文字列に変換
- * @param {string} ipv6 - 変換対象のIPv6アドレス
- * @returns {string} 128ビットのバイナリ文字列
- */
-function ipv6ToBinary(ipv6) {
-    const full = ipv6.split('::').reduce((acc, part, i, arr) => {
-        const segs = part.split(':').filter(Boolean);
-        if (i === 0) {
-            return segs;
-        } else {
-            const missing = 8 - (arr[0].split(':').filter(Boolean).length + segs.length);
-            return acc.concat(Array(missing).fill('0'), segs);
-        }
-    }, []).map(s => s.padStart(4, '0'));
-    return full.map(seg => parseInt(seg, 16).toString(2).padStart(16, '0')).join('');
-}
-
-/**
  * IPv6アドレスから東西判定を行う
  * @param {string} ipv6 - 判定対象のIPv6アドレス
  * @returns {string|null} 'east'/'west'/null
@@ -944,23 +894,6 @@ export default {
       }
     }
 
-    // GUA判定
-    let guaPrefix = null;
-    if (clientIPv6) {
-      guaPrefix = detectGuaPrefix(clientIPv6, {
-        prefix_check: "2000::/3",
-        exclude_cidrs: [
-          "2001:db8::/32",
-          "2002::/16",
-          "2001::/32",
-          "2001:20::/28",
-          "2001:2::/48",
-          "2001:3::/32",
-          "2001:4:112::/48"
-        ]
-      });
-    }
-    
     // AS情報構築
     const isp = cf.asOrganization || null;
     const asn = cf.asn || null;
