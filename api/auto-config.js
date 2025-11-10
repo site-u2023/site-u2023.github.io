@@ -934,15 +934,19 @@ export default {
       if (!clientIPv4 && ip.includes('.')) clientIPv4 = ip;
     }
 
-    // MAP-E判定を先に実行
+    // DS-Lite / MAP-E 判定
+    let aftrRule = null;
     let mapRule = null;
     let mapType = null;
 
-    if (clientIPv6 && !aftrRule) {
-      mapRule = checkMapERule(clientIPv6);
-      if (mapRule) {
-        mapRule = enrichMapRule(mapRule);
-        mapType = isMapePrefixDelegation(mapRule) ? 'pd' : 'gua';
+    if (clientIPv6) {
+      aftrRule = checkDSLiteRule(clientIPv6);
+      if (!aftrRule) {
+        mapRule = checkMapERule(clientIPv6);
+        if (mapRule) {
+          mapRule = enrichMapRule(mapRule);
+          mapType = isMapePrefixDelegation(mapRule) ? 'pd' : 'gua';
+        }
       }
     }
 
