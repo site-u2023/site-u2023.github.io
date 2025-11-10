@@ -277,6 +277,9 @@ apply_api_defaults() {
         
         if grep -q "^connection_type='auto'" "$SETUP_VARS" 2>/dev/null; then
             if [ "$DETECTED_CONN_TYPE" = "MAP-E" ] && [ -n "$MAPE_BR" ]; then
+                [ -n "$MAPE_GUA_PREFIX" ] && ! grep -q "^mape_gua_prefix=" "$SETUP_VARS" 2>/dev/null && \
+                    echo "mape_gua_prefix='$MAPE_GUA_PREFIX'" >> "$SETUP_VARS"
+                
                 [ -n "$MAPE_BR" ] && ! grep -q "^mape_br=" "$SETUP_VARS" 2>/dev/null && \
                     echo "mape_br='$MAPE_BR'" >> "$SETUP_VARS"
                 
