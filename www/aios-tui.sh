@@ -1396,7 +1396,8 @@ aios_light_main() {
     
     init
     
-    echo "Fetching API https://auto-config.site-u.workers.dev"
+    echo "Fetching API ${AUTO_CONFIG_URL}"
+    
     get_extended_device_info
 
     apply_api_defaults
