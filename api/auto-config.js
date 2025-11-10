@@ -92,6 +92,24 @@ const mapRulesData = {
 };
 
 /**
+ * GUA（Global Unicast Address）検証ルール
+ * RFC 4291に基づくグローバルユニキャストアドレスの判定
+ */
+const guaValidation = {
+  prefixCheck: "2000::/3",
+  prefixLength: 3,
+  excludeCidrs: [
+    { prefix: "2001:db8::", length: 32 },   // ドキュメント用
+    { prefix: "2002::", length: 16 },       // 6to4
+    { prefix: "2001::", length: 32 },       // IETF Protocol Assignments
+    { prefix: "2001:20::", length: 28 },    // ORCHIDv2
+    { prefix: "2001:2::", length: 48 },     // Benchmarking
+    { prefix: "2001:3::", length: 32 },     // AMT
+    { prefix: "2001:4:112::", length: 48 }  // AS112-v6
+  ]
+};
+
+/**
  * OpenWrt タイムゾーン文字列マッピング
  * IANAタイムゾーン名 → OpenWrt TZ形式
  */
@@ -796,6 +814,29 @@ function getNotice(langCode) {
 }
 
 /**
+ * IPv6アドレスがGUA（Global Unicast Address）かどうかを判定
+ * @param {string} ipv6 - 判定対象のIPv6アドレス
+ * @returns {boolean} GUAの場合true
+ */
+function isGlobalUnicastAddress(ipv6) {
+  if (!ipv6) return false;
+
+  // 2000::/3の範囲内かチェック
+  if (!checkIPv6InRangeJS(ipv6, guaValidation.prefixCheck.split('/')[0], guaValidation.prefixLength)) {
+    return false;
+  }
+
+  // 除外CIDRに該当しないかチェック
+  for (const exclude of guaValidation.excludeCidrs) {
+    if (checkIPv6InRangeJS(ipv6, exclude.prefix, exclude.length)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+/**
  * リクエストから最適な言語を選択
  * Accept-Languageヘッダーと国コードから判定
  * @param {Request} request - Cloudflare Request
@@ -910,6 +951,7 @@ export default {
       language: lang,
       ipv4: clientIPv4 || null,
       ipv6: clientIPv6 || null,
+      ipv6_is_gua: clientIPv6 ? isGlobalUnicastAddress(clientIPv6) : null,
       country: cf.country || null,
       zonename,
       timezone,
