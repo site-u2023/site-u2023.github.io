@@ -55,7 +55,6 @@ install_package() {
 select_ui_mode() {
     echo "[DEBUG] $(date): select_ui_mode START" >> /tmp/debug.log
     
-    # Check if whiptail is already installed
     if command -v whiptail >/dev/null 2>&1; then
         UI_MODE="whiptail"
         echo "whiptail detected, using dialog-based interface"
@@ -65,7 +64,6 @@ select_ui_mode() {
     
     echo "[DEBUG] whiptail not found, asking user" >> /tmp/debug.log
     
-    # whiptail not installed, ask user
     echo "$(translate 'tr-ui-mode-select')"
     echo "1) $(translate 'tr-ui-whiptail')"
     echo "2) $(translate 'tr-ui-simple')"
@@ -85,7 +83,6 @@ select_ui_mode() {
         echo "[DEBUG] install_package exit code: $?" >> /tmp/debug.log
         hash -r
         echo "[DEBUG] hash -r executed" >> /tmp/debug.log
-        # Check if whiptail is now available
         if command -v whiptail >/dev/null 2>&1; then
             echo "$(translate 'tr-ui-install-success')"
             UI_MODE="whiptail"
@@ -187,6 +184,125 @@ get_device_info() {
     [ -z "$DEVICE_TARGET" ] && DEVICE_TARGET="unknown/unknown"
 }
 
+get_extended_device_info() {
+    get_device_info
+    
+    OPENWRT_VERSION=$(grep 'DISTRIB_RELEASE' /etc/openwrt_release 2>/dev/null | cut -d"'" -f2)
+    
+    if ! wget -q -O "$AUTO_CONFIG_JSON" "$AUTO_CONFIG_URL"; then
+        echo "Warning: Failed to fetch auto-config API"
+        return 1
+    fi
+    
+    AUTO_LANGUAGE=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.language' 2>/dev/null)
+    AUTO_TIMEZONE=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.timezone' 2>/dev/null)
+    AUTO_ZONENAME=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.zonename' 2>/dev/null)
+    AUTO_COUNTRY=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.country' 2>/dev/null)
+    ISP_NAME=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.isp' 2>/dev/null)
+    ISP_AS=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.as' 2>/dev/null)
+    
+    MAPE_BR=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.mape.brIpv6Address' 2>/dev/null)
+    MAPE_EALEN=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.mape.eaBitLength' 2>/dev/null)
+    MAPE_IPV4_PREFIX=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.mape.ipv4Prefix' 2>/dev/null)
+    MAPE_IPV4_PREFIXLEN=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.mape.ipv4PrefixLength' 2>/dev/null)
+    MAPE_IPV6_PREFIX=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.mape.ipv6Prefix' 2>/dev/null)
+    MAPE_IPV6_PREFIXLEN=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.mape.ipv6PrefixLength' 2>/dev/null)
+    MAPE_PSIDLEN=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.mape.psidlen' 2>/dev/null)
+    MAPE_PSID_OFFSET=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.mape.psIdOffset' 2>/dev/null)
+    
+    local user_ipv6=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.ipv6' 2>/dev/null)
+    if [ -n "$user_ipv6" ] && [ -n "$MAPE_IPV6_PREFIX" ]; then
+        MAPE_GUA_PREFIX=$(echo "$user_ipv6" | grep -oE '^[0-9a-f:]+:0:0:0' | head -1)
+        [ -n "$MAPE_GUA_PREFIX" ] && MAPE_GUA_PREFIX="${MAPE_GUA_PREFIX}::/${MAPE_IPV6_PREFIXLEN}"
+    fi
+    
+    DSLITE_AFTR=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.aftr.aftrIpv6Address' 2>/dev/null)
+    
+    if [ -n "$MAPE_BR" ] && [ -n "$MAPE_EALEN" ]; then
+        DETECTED_CONN_TYPE="MAP-E"
+    elif [ -n "$DSLITE_AFTR" ]; then
+        DETECTED_CONN_TYPE="DS-Lite"
+    else
+        DETECTED_CONN_TYPE="Unknown"
+    fi
+    
+    DEVICE_MEM=$(awk '/MemTotal/{printf "%.0f MB", $2/1024}' /proc/meminfo 2>/dev/null)
+    DEVICE_CPU=$(grep -m1 "model name" /proc/cpuinfo | cut -d: -f2 | xargs 2>/dev/null)
+    [ -z "$DEVICE_CPU" ] && DEVICE_CPU=$(grep -m1 "Hardware" /proc/cpuinfo | cut -d: -f2 | xargs 2>/dev/null)
+    
+    [ -z "$DEVICE_MODEL" ] && DEVICE_MODEL="Unknown Device"
+    [ -z "$DEVICE_TARGET" ] && DEVICE_TARGET="unknown/unknown"
+    [ -z "$OPENWRT_VERSION" ] && OPENWRT_VERSION="unknown"
+
+    DEVICE_STORAGE=$(df -h / | awk 'NR==2 {print $2}')
+    DEVICE_STORAGE_USED=$(df -h / | awk 'NR==2 {print $3}')
+    DEVICE_STORAGE_AVAIL=$(df -h / | awk 'NR==2 {print $4}')
+    
+    if [ -d /sys/bus/usb/devices ]; then
+        DEVICE_USB="Available"
+    else
+        DEVICE_USB="Not available"
+    fi
+}
+
+load_default_packages() {
+    if [ ! -f "$SETUP_JSON" ]; then
+        return 1
+    fi
+    
+    jsonfilter -i "$SETUP_JSON" -e '@.categories[*].packages[@.default=true].id' 2>/dev/null | while read pkg; do
+        [ -n "$pkg" ] && echo "$pkg" >> "$SELECTED_PACKAGES"
+    done
+}
+
+apply_api_defaults() {
+    if [ -f "$AUTO_CONFIG_JSON" ]; then
+        grep -q "^language=" "$SETUP_VARS" 2>/dev/null || \
+            echo "language='${AUTO_LANGUAGE:-en}'" >> "$SETUP_VARS"
+        
+        grep -q "^timezone=" "$SETUP_VARS" 2>/dev/null || \
+            echo "timezone='${AUTO_TIMEZONE}'" >> "$SETUP_VARS"
+        
+        grep -q "^zonename=" "$SETUP_VARS" 2>/dev/null || \
+            echo "zonename='${AUTO_ZONENAME}'" >> "$SETUP_VARS"
+        
+        grep -q "^country=" "$SETUP_VARS" 2>/dev/null || \
+            echo "country='${AUTO_COUNTRY}'" >> "$SETUP_VARS"
+        
+        if grep -q "^connection_type='auto'" "$SETUP_VARS" 2>/dev/null; then
+            if [ "$DETECTED_CONN_TYPE" = "MAP-E" ] && [ -n "$MAPE_BR" ]; then
+                [ -n "$MAPE_BR" ] && ! grep -q "^mape_br=" "$SETUP_VARS" 2>/dev/null && \
+                    echo "mape_br='$MAPE_BR'" >> "$SETUP_VARS"
+                
+                [ -n "$MAPE_IPV4_PREFIX" ] && ! grep -q "^mape_ipv4_prefix=" "$SETUP_VARS" 2>/dev/null && \
+                    echo "mape_ipv4_prefix='$MAPE_IPV4_PREFIX'" >> "$SETUP_VARS"
+                
+                [ -n "$MAPE_IPV4_PREFIXLEN" ] && ! grep -q "^mape_ipv4_prefixlen=" "$SETUP_VARS" 2>/dev/null && \
+                    echo "mape_ipv4_prefixlen='$MAPE_IPV4_PREFIXLEN'" >> "$SETUP_VARS"
+                
+                [ -n "$MAPE_IPV6_PREFIX" ] && ! grep -q "^mape_ipv6_prefix=" "$SETUP_VARS" 2>/dev/null && \
+                    echo "mape_ipv6_prefix='$MAPE_IPV6_PREFIX'" >> "$SETUP_VARS"
+                
+                [ -n "$MAPE_IPV6_PREFIXLEN" ] && ! grep -q "^mape_ipv6_prefixlen=" "$SETUP_VARS" 2>/dev/null && \
+                    echo "mape_ipv6_prefixlen='$MAPE_IPV6_PREFIXLEN'" >> "$SETUP_VARS"
+                
+                [ -n "$MAPE_EALEN" ] && ! grep -q "^mape_ealen=" "$SETUP_VARS" 2>/dev/null && \
+                    echo "mape_ealen='$MAPE_EALEN'" >> "$SETUP_VARS"
+                
+                [ -n "$MAPE_PSIDLEN" ] && ! grep -q "^mape_psidlen=" "$SETUP_VARS" 2>/dev/null && \
+                    echo "mape_psidlen='$MAPE_PSIDLEN'" >> "$SETUP_VARS"
+                
+                [ -n "$MAPE_PSID_OFFSET" ] && ! grep -q "^mape_psid_offset=" "$SETUP_VARS" 2>/dev/null && \
+                    echo "mape_psid_offset='$MAPE_PSID_OFFSET'" >> "$SETUP_VARS"
+                
+            elif [ "$DETECTED_CONN_TYPE" = "DS-Lite" ] && [ -n "$DSLITE_AFTR" ]; then
+                grep -q "^dslite_aftr_address=" "$SETUP_VARS" 2>/dev/null || \
+                    echo "dslite_aftr_address='$DSLITE_AFTR'" >> "$SETUP_VARS"
+            fi
+        fi
+    fi
+}
+
 get_setup_categories() {
     jsonfilter -i "$SETUP_JSON" -e '@.categories[*].id' 2>/dev/null | grep -v '^$'
 }
@@ -231,11 +347,6 @@ get_setup_item_label() {
     
     if [ -z "$label" ]; then
         label=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].label" 2>/dev/null | head -1)
-        class=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].class" 2>/dev/null | head -1)
-    fi
-    
-    if [ -z "$label" ]; then
-        label=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].title" 2>/dev/null | head -1)
         [ -z "$class" ] && class=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].class" 2>/dev/null | head -1)
     fi
     
@@ -248,10 +359,10 @@ get_setup_item_label() {
 
 get_setup_item_variable() {
     local item_id="$1"
-    local result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].variable" 2>/dev/null | head -1)
+    local result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].variableName" 2>/dev/null | head -1)
     
     if [ -z "$result" ]; then
-        result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].variable" 2>/dev/null | head -1)
+        result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].variableName" 2>/dev/null | head -1)
     fi
     
     echo "$result"
@@ -268,18 +379,7 @@ get_setup_item_default() {
     echo "$result"
 }
 
-get_setup_item_placeholder() {
-    local item_id="$1"
-    local result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].placeholder" 2>/dev/null | head -1)
-    
-    if [ -z "$result" ]; then
-        result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].placeholder" 2>/dev/null | head -1)
-    fi
-    
-    echo "$result"
-}
-
-get_setup_item_fieldtype() {
+get_setup_item_field_type() {
     local item_id="$1"
     local result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].fieldType" 2>/dev/null | head -1)
     
@@ -337,53 +437,52 @@ get_category_name() {
 }
 
 get_category_desc() {
-    jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$1'].description" 2>/dev/null
+    local desc=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$1'].description" 2>/dev/null)
+    echo "$desc"
 }
 
 get_category_hidden() {
-    jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$1'].hidden" 2>/dev/null
+    local hidden=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$1'].hidden" 2>/dev/null)
+    echo "$hidden"
 }
 
 get_category_packages() {
-    jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$1'].packages[*].id" 2>/dev/null | grep -v '^$'
+    jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$1'].packages[*].id" 2>/dev/null
 }
 
 get_package_name() {
-    jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$1'].name" 2>/dev/null | head -1
-}
-
-get_package_checked() {
-    jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$1'].checked" 2>/dev/null | head -1
+    local pkg_id="$1"
+    local name=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].name" 2>/dev/null | head -1)
+    echo "$name"
 }
 
 is_package_selected() {
-    grep -qx "$1" "$SELECTED_PACKAGES" 2>/dev/null
+    local pkg_id="$1"
+    grep -q "^${pkg_id}$" "$SELECTED_PACKAGES" 2>/dev/null
 }
 
-toggle_package() {
-    if is_package_selected "$1"; then
-        sed -i "/^${1}$/d" "$SELECTED_PACKAGES"
+get_effective_connection_type() {
+    local conn_type=$(grep "^connection_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+    
+    if [ "$conn_type" = "auto" ]; then
+        if [ "$DETECTED_CONN_TYPE" = "MAP-E" ] && [ -n "$MAPE_BR" ]; then
+            echo "mape"
+            return 0
+        elif [ "$DETECTED_CONN_TYPE" = "DS-Lite" ] && [ -n "$DSLITE_AFTR" ]; then
+            echo "dslite"
+            return 0
+        else
+            echo "dhcp"
+            return 0
+        fi
     else
-        echo "$1" >> "$SELECTED_PACKAGES"
+        echo "$conn_type"
+        return 0
     fi
-}
-
-load_default_packages() {
-    local cat_id pkg_id checked
-    get_categories | while read cat_id; do
-        get_category_packages "$cat_id" | while read pkg_id; do
-            checked=$(get_package_checked "$pkg_id")
-            if [ "$checked" = "true" ]; then
-                echo "$pkg_id" >> "$SELECTED_PACKAGES"
-            fi
-        done
-    done
 }
 
 should_show_item() {
     local item_id="$1"
-    
-    echo "[DEBUG] === should_show_item: $item_id ===" >> /tmp/debug.log
     
     local show_when=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].showWhen" 2>/dev/null | head -1)
     
@@ -391,24 +490,11 @@ should_show_item() {
         show_when=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].showWhen" 2>/dev/null | head -1)
     fi
     
-    echo "[DEBUG] showWhen raw: $show_when" >> /tmp/debug.log
+    [ -z "$show_when" ] && return 0
     
-    if [ -z "$show_when" ]; then
-        echo "[DEBUG] No showWhen, returning 0 (show)" >> /tmp/debug.log
-        return 0
-    fi
+    echo "[DEBUG] showWhen for $item_id: $show_when" >> /tmp/debug.log
     
     local var_name=$(echo "$show_when" | sed 's/^{ *"\([^"]*\)".*/\1/')
-    echo "[DEBUG] var_name: $var_name" >> /tmp/debug.log
-    
-    [ -z "$var_name" ] && {
-        echo "[DEBUG] Empty var_name, returning 0 (show)" >> /tmp/debug.log
-        return 0
-    }
-    
-    local current_val=$(grep "^${var_name}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-    echo "[DEBUG] current_val: '$current_val'" >> /tmp/debug.log
-    
     local expected=$(jsonfilter -e "@.${var_name}[*]" 2>/dev/null <<EOF
 $show_when
 EOF
@@ -419,8 +505,20 @@ EOF
 $show_when
 EOF
 )
-        echo "[DEBUG] expected (single): '$expected'" >> /tmp/debug.log
-        if [ "$current_val" = "$expected" ]; then
+    fi
+    
+    local current_val=$(grep "^${var_name}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+    
+    echo "[DEBUG] var_name=$var_name, current=$current_val, expected=$expected" >> /tmp/debug.log
+    
+    if [ -z "$(echo "$expected" | tr -d '\n')" ]; then
+        echo "[DEBUG] No expected value, returning 0 (show)" >> /tmp/debug.log
+        return 0
+    fi
+    
+    if [ "$(echo "$expected" | wc -l)" -eq 1 ] && [ -n "$expected" ]; then
+        echo "[DEBUG] expected (single): $expected" >> /tmp/debug.log
+        if [ "$expected" = "$current_val" ]; then
             echo "[DEBUG] Match! returning 0 (show)" >> /tmp/debug.log
             return 0
         else
@@ -445,6 +543,9 @@ auto_add_conditional_packages() {
     echo "[DEBUG] === auto_add_conditional_packages called ===" >> /tmp/debug.log
     echo "[DEBUG] cat_id=$cat_id" >> /tmp/debug.log
     
+    local effective_conn_type=$(get_effective_connection_type)
+    echo "[DEBUG] Effective connection type: $effective_conn_type" >> /tmp/debug.log
+    
     local pkg_count=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$cat_id'].packages[*]" 2>/dev/null | wc -l)
     
     echo "[DEBUG] pkg_count=$pkg_count" >> /tmp/debug.log
@@ -468,8 +569,14 @@ auto_add_conditional_packages() {
             local when_var=$(echo "$when_json" | sed 's/^{ *"\([^"]*\)".*/\1/')
             echo "[DEBUG] when_var=$when_var" >> /tmp/debug.log
             
-            local current_val=$(grep "^${when_var}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-            echo "[DEBUG] current_val=$current_val" >> /tmp/debug.log
+            local current_val
+            if [ "$when_var" = "connection_type" ]; then
+                current_val="$effective_conn_type"
+                echo "[DEBUG] Using effective connection type: $current_val" >> /tmp/debug.log
+            else
+                current_val=$(grep "^${when_var}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+                echo "[DEBUG] current_val from SETUP_VARS: $current_val" >> /tmp/debug.log
+            fi
             
             local expected=$(jsonfilter -e "@.${when_var}[*]" 2>/dev/null <<EOF
 $when_json
@@ -500,7 +607,6 @@ EOF
                     echo "[AUTO] Added package: $pkg_id (condition: ${when_var}=${current_val})" >> /tmp/debug.log
                 fi
             else
-                # 条件に合わない場合は削除
                 if is_package_selected "$pkg_id"; then
                     sed -i "/^${pkg_id}$/d" "$SELECTED_PACKAGES"
                     echo "[AUTO] Removed package: $pkg_id (condition not met: ${when_var}=${current_val})" >> /tmp/debug.log
@@ -535,78 +641,6 @@ get_section_nested_items() {
     jsonfilter -i "$SETUP_JSON" -e "@.categories[$cat_idx].items[$item_idx].items[*].id" 2>/dev/null
 }
 
-whiptail_main_menu() {
-    while true; do
-        local menu_items="" i=1 cat_id cat_title
-        
-        while read cat_id; do
-            cat_title=$(get_setup_category_title "$cat_id")
-            menu_items="$menu_items $i \"$cat_title\""
-            i=$((i+1))
-        done < <(get_setup_categories)
-        
-        local packages_label=$(translate "tr-custom-packages")
-        menu_items="$menu_items $i \"$packages_label\""
-        i=$((i+1))
-        menu_items="$menu_items $i \"Review & Generate\""
-        i=$((i+1))
-        menu_items="$menu_items $i \"Exit\""
-        
-        choice=$(eval "whiptail --title 'OpenWrt Setup Tool v$VERSION - $DEVICE_MODEL' \
-            --menu 'Select an option:' 20 70 12 $menu_items 3>&1 1>&2 2>&3")
-        
-        if [ -z "$choice" ]; then
-            exit 0
-        fi
-        
-        local setup_cat_count=$(get_setup_categories | wc -l)
-        if [ "$choice" -le "$setup_cat_count" ]; then
-            selected_cat=$(get_setup_categories | sed -n "${choice}p")
-            whiptail_category_config "$selected_cat"
-        elif [ "$choice" -eq "$((setup_cat_count+1))" ]; then
-            whiptail_package_categories
-        elif [ "$choice" -eq "$((setup_cat_count+2))" ]; then
-            review_and_apply
-        else
-            exit 0
-        fi
-    done
-}
-
-whiptail_category_config() {
-    local cat_id="$1"
-    local cat_title=$(get_setup_category_title "$cat_id")
-    
-    echo "[DEBUG] === whiptail_category_config START ===" >> /tmp/debug.log
-    echo "[DEBUG] cat_id=$cat_id, title=$cat_title" >> /tmp/debug.log
-    
-    if [ "$cat_id" = "internet-connection" ]; then
-        if whiptail_show_network_info; then
-            whiptail --msgbox "Auto-configuration applied!" 8 40
-            return 0
-        fi
-    fi
-    
-    echo "[DEBUG] Processing all items" >> /tmp/debug.log
-    whiptail_process_items "$cat_id" ""
-    local processed=$?
-    
-    echo "[DEBUG] Items processed: $processed" >> /tmp/debug.log
-    echo "[DEBUG] SETUP_VARS after processing:" >> /tmp/debug.log
-    cat "$SETUP_VARS" >> /tmp/debug.log 2>&1
-    
-    if [ $processed -eq 0 ]; then
-        whiptail --msgbox "Configuration completed!" 8 50
-    fi
-
-    echo "[DEBUG] About to call auto_add_conditional_packages for $cat_id" >> /tmp/debug.log
-    auto_add_conditional_packages "$cat_id"
-    echo "[DEBUG] After auto_add_conditional_packages" >> /tmp/debug.log
-    echo "[DEBUG] Selected packages:" >> /tmp/debug.log
-    cat "$SELECTED_PACKAGES" >> /tmp/debug.log 2>&1
-    echo "[DEBUG] === whiptail_category_config END ===" >> /tmp/debug.log
-}
-
 compute_dslite_aftr() {
     local aftr_type="$1"
     local area="$2"
@@ -621,6 +655,132 @@ compute_dslite_aftr() {
     fi
     
     return 1
+}
+
+generate_files() {
+    apply_api_defaults
+    
+    language=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+    
+    {
+        echo "#!/bin/sh"
+        echo "# Generated by device-setup.sh v$VERSION"
+        echo "# Device: $DEVICE_MODEL ($DEVICE_TARGET)"
+        echo ""
+        echo "# Detect package manager"
+        echo "if command -v opkg >/dev/null 2>&1; then"
+        echo "    PKG_MGR=opkg"
+        echo "    opkg update"
+        echo "elif command -v apk >/dev/null 2>&1; then"
+        echo "    PKG_MGR=apk"
+        echo "    apk update"
+        echo "else"
+        echo "    echo 'Error: No supported package manager found'"
+        echo "    exit 1"
+        echo "fi"
+        echo ""
+        
+        if [ -n "$language" ]; then
+            echo "# Language packages"
+            echo "LANG_PKGS=\"luci-i18n-base-${language} luci-i18n-firewall-${language}\""
+            echo "[ \"\$PKG_MGR\" = \"opkg\" ] && opkg install \$LANG_PKGS"
+            echo "[ \"\$PKG_MGR\" = \"apk\" ] && apk add \$LANG_PKGS"
+            echo ""
+        fi
+
+        if [ -s "$SELECTED_PACKAGES" ]; then
+            echo "# Selected packages"
+            echo "PKGS=\"\\"
+            cat "$SELECTED_PACKAGES" | while read pkg; do
+                echo "    $pkg \\"
+            done | sed '$ s/ \\$/\"/'
+            echo ""
+            echo "[ \"\$PKG_MGR\" = \"opkg\" ] && opkg install \$PKGS"
+            echo "[ \"\$PKG_MGR\" = \"apk\" ] && apk add \$PKGS"
+        fi
+        
+        echo ""
+        echo "exit 0"
+    } > "$OUTPUT_DIR/postinst.sh"
+    chmod +x "$OUTPUT_DIR/postinst.sh"
+    
+    {
+        echo "#!/bin/sh"
+        echo "# Generated by device-setup.sh v$VERSION"
+        echo "# Device: $DEVICE_MODEL ($DEVICE_TARGET)"
+        echo ""
+        echo "# BEGIN_VARS"
+        if [ -s "$SETUP_VARS" ]; then
+            cat "$SETUP_VARS"
+        fi
+        echo "# END_VARS"
+        echo ""
+        
+        if wget -q -O - "$SETUP_TEMPLATE_URL" | sed '1,/^# END_VARS/d' >> "$OUTPUT_DIR/setup.sh.tmp"; then
+            cat "$OUTPUT_DIR/setup.sh.tmp" >> "$OUTPUT_DIR/setup.sh"
+            rm -f "$OUTPUT_DIR/setup.sh.tmp"
+        else
+            echo "# Failed to download setup template"
+            echo "# Please manually add setup.sh template from:"
+            echo "# $SETUP_TEMPLATE_URL"
+        fi
+    } > "$OUTPUT_DIR/setup.sh"
+    chmod +x "$OUTPUT_DIR/setup.sh"
+}
+
+whiptail_device_info() {
+    local info="Model: $DEVICE_MODEL\n"
+    info="${info}Target: $DEVICE_TARGET\n"
+    info="${info}Version: $OPENWRT_VERSION\n"
+    [ -n "$DEVICE_MEM" ] && info="${info}Memory: $DEVICE_MEM\n"
+    [ -n "$DEVICE_CPU" ] && info="${info}CPU: $DEVICE_CPU\n"
+    [ -n "$DEVICE_STORAGE" ] && info="${info}Storage: $DEVICE_STORAGE_USED/$DEVICE_STORAGE (${DEVICE_STORAGE_AVAIL} free)\n"
+    [ -n "$DEVICE_USB" ] && info="${info}USB: $DEVICE_USB\n"
+    whiptail --title "Device Information" --msgbox "$info" 15 70
+}
+
+whiptail_show_network_info() {
+    local tr_auto_detection=$(translate "tr-auto-detection")
+    local tr_isp=$(translate "tr-isp")
+    local tr_as=$(translate "tr-as")
+    local tr_mape_notice=$(translate "tr-mape-notice1")
+    local tr_dslite_notice=$(translate "tr-dslite-notice1")
+    local tr_aftr=$(translate "tr-dslite-aftr-ipv6-address")
+    
+    if [ -z "$DETECTED_CONN_TYPE" ] || [ "$DETECTED_CONN_TYPE" = "Unknown" ]; then
+        return 1
+    fi
+    
+    local info="${tr_auto_detection}: ${DETECTED_CONN_TYPE}\n\n"
+    [ -n "$ISP_NAME" ] && info="${info}${tr_isp}: $ISP_NAME\n"
+    [ -n "$ISP_AS" ] && info="${info}${tr_as}: $ISP_AS\n"
+    
+    info="${info}\n${tr_mape_notice}\n\n"
+    
+    if [ "$DETECTED_CONN_TYPE" = "MAP-E" ] && [ -n "$MAPE_BR" ]; then
+        [ -n "$MAPE_GUA_PREFIX" ] && info="${info}option ip6prefix_gua $MAPE_GUA_PREFIX\n"
+        info="${info}option peeraddr $MAPE_BR\n"
+        [ -n "$MAPE_IPV4_PREFIX" ] && info="${info}option ipaddr $MAPE_IPV4_PREFIX\n"
+        [ -n "$MAPE_IPV4_PREFIXLEN" ] && info="${info}option ip4prefixlen $MAPE_IPV4_PREFIXLEN\n"
+        [ -n "$MAPE_IPV6_PREFIX" ] && info="${info}option ip6prefix $MAPE_IPV6_PREFIX\n"
+        [ -n "$MAPE_IPV6_PREFIXLEN" ] && info="${info}option ip6prefixlen $MAPE_IPV6_PREFIXLEN\n"
+        [ -n "$MAPE_EALEN" ] && info="${info}option ealen $MAPE_EALEN\n"
+        [ -n "$MAPE_PSIDLEN" ] && info="${info}option psidlen $MAPE_PSIDLEN\n"
+        [ -n "$MAPE_PSID_OFFSET" ] && info="${info}option offset $MAPE_PSID_OFFSET\n"
+    elif [ "$DETECTED_CONN_TYPE" = "DS-Lite" ] && [ -n "$DSLITE_AFTR" ]; then
+        info="${info}option peeraddr $DSLITE_AFTR\n"
+        info="${info}\n${tr_dslite_notice}"
+    fi
+    
+    info="${info}\n\nUse this auto-detected configuration?"
+    
+    if whiptail --title "$(translate 'tr-internet-connection')" --yesno "$info" 22 70; then
+        sed -i "/^connection_type=/d" "$SETUP_VARS"
+        echo "connection_type='auto'" >> "$SETUP_VARS"
+        return 0
+    else
+        return 1
+    fi
 }
 
 whiptail_process_items() {
@@ -705,76 +865,37 @@ whiptail_process_items() {
                 fi
                 ;;
                 
-            field)
+            text)
                 items_processed=$((items_processed + 1))
                 local label=$(get_setup_item_label "$item_id")
                 local variable=$(get_setup_item_variable "$item_id")
                 local default=$(get_setup_item_default "$item_id")
-                local placeholder=$(get_setup_item_placeholder "$item_id")
-                local fieldtype=$(get_setup_item_fieldtype "$item_id")
+                local field_type=$(get_setup_item_field_type "$item_id")
                 
                 local current=$(grep "^${variable}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
                 [ -z "$current" ] && current="$default"
                 
-                case "$item_id" in
-                    aios-country) [ -z "$current" ] && current="${ISP_COUNTRY:-$default}" ;;
-                    aios-timezone) [ -z "$current" ] && current="${AUTO_TIMEZONE:-$default}" ;;
-                    aios-zonename) [ -z "$current" ] && current="${AUTO_ZONENAME:-$default}" ;;
-                    mape-br) [ -z "$current" ] && current="${MAPE_BR:-$default}" ;;
-                    mape-ealen) [ -z "$current" ] && current="${MAPE_EALEN:-$default}" ;;
-                    mape-ipv4-prefix) [ -z "$current" ] && current="${MAPE_IPV4_PREFIX:-$default}" ;;
-                    mape-ipv4-prefixlen) [ -z "$current" ] && current="${MAPE_IPV4_PREFIXLEN:-$default}" ;;
-                    mape-ipv6-prefix) [ -z "$current" ] && current="${MAPE_IPV6_PREFIX:-$default}" ;;
-                    mape-ipv6-prefixlen) [ -z "$current" ] && current="${MAPE_IPV6_PREFIXLEN:-$default}" ;;
-                    mape-psid-offset) [ -z "$current" ] && current="${MAPE_PSID_OFFSET:-$default}" ;;
-                    mape-psidlen) [ -z "$current" ] && current="${MAPE_PSIDLEN:-$default}" ;;
-                    mape-gua-prefix) [ -z "$current" ] && current="${MAPE_GUA_PREFIX:-$default}" ;;
-                    dslite-aftr-address)
-                        if [ -z "$current" ]; then
-                            local aftr_type=$(grep "^dslite_aftr_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-                            local area=$(grep "^dslite_area=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-                            local computed=$(compute_dslite_aftr "$aftr_type" "$area")
-                            [ -n "$computed" ] && current="$computed" || current="${DSLITE_AFTR:-$default}"
-                        fi
-                        ;;
-                esac
-                
-                if [ "$fieldtype" = "select" ]; then
-                    local options=$(get_setup_item_options "$item_id")
-                    local menu_opts=""
-                    local i=1
-                    for opt in $options; do
-                        local opt_label=$(get_setup_item_option_label "$item_id" "$opt")
-                        menu_opts="$menu_opts $i \"$opt_label\""
-                        i=$((i+1))
-                    done
-                    
-                    value=$(eval "whiptail --title 'Setup' --menu '$label:' 18 60 10 $menu_opts 3>&1 1>&2 2>&3")
-                    
-                    if [ $? -eq 0 ] && [ -n "$value" ]; then
-                        selected_opt=$(echo "$options" | sed -n "${value}p")
-                        sed -i "/^${variable}=/d" "$SETUP_VARS"
-                        echo "${variable}='${selected_opt}'" >> "$SETUP_VARS"
-
-                        auto_add_conditional_packages "$cat_id"
+                if [ "$field_type" = "computed" ]; then
+                    if [ "$item_id" = "dslite-aftr-address-computed" ]; then
+                        local aftr_type=$(grep "^dslite_aftr_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+                        local area=$(grep "^dslite_area=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
                         
-                        if [ "$item_id" = "dslite-aftr-type" ] || [ "$item_id" = "dslite-area" ]; then
-                            local aftr_type=$(grep "^dslite_aftr_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-                            local area=$(grep "^dslite_area=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+                        if [ -n "$aftr_type" ] && [ -n "$area" ]; then
                             local computed=$(compute_dslite_aftr "$aftr_type" "$area")
                             if [ -n "$computed" ]; then
-                                sed -i "/^dslite_aftr_address=/d" "$SETUP_VARS"
-                                echo "dslite_aftr_address='${computed}'" >> "$SETUP_VARS"
+                                current="$computed"
+                                sed -i "/^${variable}=/d" "$SETUP_VARS"
+                                echo "${variable}='${computed}'" >> "$SETUP_VARS"
                             fi
                         fi
                     fi
-                else
-                    value=$(whiptail --inputbox "$label:" 10 60 "$current" 3>&1 1>&2 2>&3)
-                    
-                    if [ $? -eq 0 ] && [ -n "$value" ]; then
-                        sed -i "/^${variable}=/d" "$SETUP_VARS"
-                        echo "${variable}='${value}'" >> "$SETUP_VARS"
-                    fi
+                fi
+                
+                value=$(whiptail --title "Setup" --inputbox "$label:" 10 60 "$current" 3>&1 1>&2 2>&3)
+                
+                if [ $? -eq 0 ] && [ -n "$value" ]; then
+                    sed -i "/^${variable}=/d" "$SETUP_VARS"
+                    echo "${variable}='${value}'" >> "$SETUP_VARS"
                 fi
                 ;;
                 
@@ -811,59 +932,38 @@ whiptail_process_items() {
     return $items_processed
 }
 
-whiptail_show_network_info() {
-    local tr_auto_detection=$(translate "tr-auto-detection")
-    local tr_isp=$(translate "tr-isp")
-    local tr_as=$(translate "tr-as")
-    local tr_mape_notice=$(translate "tr-mape-notice1")
-    local tr_dslite_notice=$(translate "tr-dslite-notice1")
-    local tr_aftr=$(translate "tr-dslite-aftr-ipv6-address")
+whiptail_category_config() {
+    local cat_id="$1"
+    local cat_title=$(get_setup_category_title "$cat_id")
     
-    if [ -z "$DETECTED_CONN_TYPE" ] || [ "$DETECTED_CONN_TYPE" = "Unknown" ]; then
-        return 1
+    echo "[DEBUG] === whiptail_category_config START ===" >> /tmp/debug.log
+    echo "[DEBUG] cat_id=$cat_id, title=$cat_title" >> /tmp/debug.log
+    
+    if [ "$cat_id" = "internet-connection" ]; then
+        if whiptail_show_network_info; then
+            whiptail --msgbox "Auto-configuration applied!" 8 40
+            return 0
+        fi
     fi
     
-    local info="${tr_auto_detection}: ${DETECTED_CONN_TYPE}\n\n"
-    [ -n "$ISP_NAME" ] && info="${info}${tr_isp}: $ISP_NAME\n"
-    [ -n "$ISP_AS" ] && info="${info}${tr_as}: $ISP_AS\n"
+    echo "[DEBUG] Processing all items" >> /tmp/debug.log
+    whiptail_process_items "$cat_id" ""
+    local processed=$?
     
-    info="${info}\n${tr_mape_notice}\n\n"
+    echo "[DEBUG] Items processed: $processed" >> /tmp/debug.log
+    echo "[DEBUG] SETUP_VARS after processing:" >> /tmp/debug.log
+    cat "$SETUP_VARS" >> /tmp/debug.log 2>&1
     
-    if [ "$DETECTED_CONN_TYPE" = "MAP-E" ] && [ -n "$MAPE_BR" ]; then
-        [ -n "$MAPE_GUA_PREFIX" ] && info="${info}option ip6prefix_gua $MAPE_GUA_PREFIX\n"
-        info="${info}option peeraddr $MAPE_BR\n"
-        [ -n "$MAPE_IPV4_PREFIX" ] && info="${info}option ipaddr $MAPE_IPV4_PREFIX\n"
-        [ -n "$MAPE_IPV4_PREFIXLEN" ] && info="${info}option ip4prefixlen $MAPE_IPV4_PREFIXLEN\n"
-        [ -n "$MAPE_IPV6_PREFIX" ] && info="${info}option ip6prefix $MAPE_IPV6_PREFIX\n"
-        [ -n "$MAPE_IPV6_PREFIXLEN" ] && info="${info}option ip6prefixlen $MAPE_IPV6_PREFIXLEN\n"
-        [ -n "$MAPE_EALEN" ] && info="${info}option ealen $MAPE_EALEN\n"
-        [ -n "$MAPE_PSIDLEN" ] && info="${info}option psidlen $MAPE_PSIDLEN\n"
-        [ -n "$MAPE_PSID_OFFSET" ] && info="${info}option offset $MAPE_PSID_OFFSET\n"
-    elif [ "$DETECTED_CONN_TYPE" = "DS-Lite" ] && [ -n "$DSLITE_AFTR" ]; then
-        info="${info}option peeraddr $DSLITE_AFTR\n"
-        info="${info}\n${tr_dslite_notice}"
+    if [ $processed -eq 0 ]; then
+        whiptail --msgbox "Configuration completed!" 8 50
     fi
-    
-    info="${info}\n\nUse this auto-detected configuration?"
-    
-    if whiptail --title "$(translate 'tr-internet-connection')" --yesno "$info" 22 70; then
-        sed -i "/^connection_type=/d" "$SETUP_VARS"
-        echo "connection_type='auto'" >> "$SETUP_VARS"
-        return 0
-    else
-        return 1
-    fi
-}
 
-whiptail_device_info() {
-    local info="Model: $DEVICE_MODEL\n"
-    info="${info}Target: $DEVICE_TARGET\n"
-    info="${info}Version: $OPENWRT_VERSION\n"
-    [ -n "$DEVICE_MEM" ] && info="${info}Memory: $DEVICE_MEM\n"
-    [ -n "$DEVICE_CPU" ] && info="${info}CPU: $DEVICE_CPU\n"
-    [ -n "$DEVICE_STORAGE" ] && info="${info}Storage: $DEVICE_STORAGE_USED/$DEVICE_STORAGE (${DEVICE_STORAGE_AVAIL} free)\n"
-    [ -n "$DEVICE_USB" ] && info="${info}USB: $DEVICE_USB\n"
-    whiptail --title "Device Information" --msgbox "$info" 15 70
+    echo "[DEBUG] About to call auto_add_conditional_packages for $cat_id" >> /tmp/debug.log
+    auto_add_conditional_packages "$cat_id"
+    echo "[DEBUG] After auto_add_conditional_packages" >> /tmp/debug.log
+    echo "[DEBUG] Selected packages:" >> /tmp/debug.log
+    cat "$SELECTED_PACKAGES" >> /tmp/debug.log 2>&1
+    echo "[DEBUG] === whiptail_category_config END ===" >> /tmp/debug.log
 }
 
 whiptail_package_categories() {
@@ -915,526 +1015,47 @@ whiptail_package_selection() {
     done < <(get_category_packages "$cat_id")
     
     for pkg in $selected; do
-        pkg=$(echo "$pkg" | tr -d '"')
-        echo "$pkg" >> "$SELECTED_PACKAGES"
+        pkg_clean=$(echo "$pkg" | tr -d '"')
+        echo "$pkg_clean" >> "$SELECTED_PACKAGES"
     done
 }
 
-simple_main_menu() {
+whiptail_main_menu() {
     while true; do
-        clear
-        echo "========================================"
-        echo "  OpenWrt Setup Tool v$VERSION"
-        echo "  Device: $DEVICE_MODEL"
-        echo "========================================"
-        echo ""
+        local menu_items="" i=1 cat_id cat_title
         
-        local i=1
         while read cat_id; do
             cat_title=$(get_setup_category_title "$cat_id")
-            echo "$i) $cat_title"
+            menu_items="$menu_items $i \"$cat_title\""
             i=$((i+1))
         done < <(get_setup_categories)
         
-        local setup_cat_count=$(get_setup_categories | wc -l)
         local packages_label=$(translate "tr-custom-packages")
-        echo "$((setup_cat_count+1))) $packages_label"
-        echo "$((setup_cat_count+2))) Review & Generate"
-        echo "q) Exit"
-        echo ""
-        printf "Choice: "
-        read choice
+        menu_items="$menu_items $i \"$packages_label\""
+        i=$((i+1))
+        menu_items="$menu_items $i \"Review & Generate\""
+        i=$((i+1))
+        menu_items="$menu_items $i \"Exit\""
         
-        case "$choice" in
-            q|Q) exit 0 ;;
-            *)
-                if [ "$choice" -le "$setup_cat_count" ]; then
-                    selected_cat=$(get_setup_categories | sed -n "${choice}p")
-                    simple_category_config "$selected_cat"
-                elif [ "$choice" -eq "$((setup_cat_count+1))" ]; then
-                    simple_package_menu
-                elif [ "$choice" -eq "$((setup_cat_count+2))" ]; then
-                    review_and_apply
-                fi
-                ;;
-        esac
-    done
-}
-
-process_category_items() {
-    local cat_id="$1"
-    local parent_items="$2"
-    
-    local items
-    if [ -z "$parent_items" ]; then
-        items=$(get_setup_category_items "$cat_id")
-    else
-        items="$parent_items"
-    fi
-    
-    for item_id in $items; do
-        should_show_item "$item_id" || continue
+        choice=$(eval "whiptail --title 'OpenWrt Setup Tool v$VERSION - $DEVICE_MODEL' \
+            --menu 'Select an option:' 20 70 12 $menu_items 3>&1 1>&2 2>&3")
         
-        local item_type=$(get_setup_item_type "$item_id")
-        
-        case "$item_type" in
-            section)
-                local nested=$(get_section_nested_items "$item_id")
-                [ -n "$nested" ] && process_category_items "$cat_id" "$nested"
-                ;;
-                
-            field)
-                local label=$(get_setup_item_label "$item_id")
-                local variable=$(get_setup_item_variable "$item_id")
-                local default=$(get_setup_item_default "$item_id")
-                local placeholder=$(get_setup_item_placeholder "$item_id")
-                local fieldtype=$(get_setup_item_fieldtype "$item_id")
-                
-                local current=$(grep "^${variable}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-                [ -z "$current" ] && current="$default"
-                
-                case "$item_id" in
-                    aios-country) [ -z "$current" ] && current="${ISP_COUNTRY:-$default}" ;;
-                    aios-timezone) [ -z "$current" ] && current="${AUTO_TIMEZONE:-$default}" ;;
-                    aios-zonename) [ -z "$current" ] && current="${AUTO_ZONENAME:-$default}" ;;
-                    mape-br) [ -z "$current" ] && current="${MAPE_BR:-$default}" ;;
-                    mape-ealen) [ -z "$current" ] && current="${MAPE_EALEN:-$default}" ;;
-                    mape-ipv4-prefix) [ -z "$current" ] && current="${MAPE_IPV4_PREFIX:-$default}" ;;
-                    mape-ipv4-prefixlen) [ -z "$current" ] && current="${MAPE_IPV4_PREFIXLEN:-$default}" ;;
-                    mape-ipv6-prefix) [ -z "$current" ] && current="${MAPE_IPV6_PREFIX:-$default}" ;;
-                    mape-ipv6-prefixlen) [ -z "$current" ] && current="${MAPE_IPV6_PREFIXLEN:-$default}" ;;
-                    mape-psid-offset) [ -z "$current" ] && current="${MAPE_PSID_OFFSET:-$default}" ;;
-                    mape-psidlen) [ -z "$current" ] && current="${MAPE_PSIDLEN:-$default}" ;;
-                    mape-gua-prefix) [ -z "$current" ] && current="${MAPE_GUA_PREFIX:-$default}" ;;
-                    dslite-aftr-address)
-                        if [ -z "$current" ]; then
-                            local aftr_type=$(grep "^dslite_aftr_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-                            local area=$(grep "^dslite_area=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-                            local computed=$(compute_dslite_aftr "$aftr_type" "$area")
-                            [ -n "$computed" ] && current="$computed" || current="${DSLITE_AFTR:-$default}"
-                        fi
-                        ;;
-                esac
-                
-                if [ "$fieldtype" = "select" ]; then
-                    echo "$label:"
-                    local options=$(get_setup_item_options "$item_id")
-                    local i=1
-                    for opt in $options; do
-                        local opt_label=$(get_setup_item_option_label "$item_id" "$opt")
-                        echo "  $i) $opt_label"
-                        i=$((i+1))
-                    done
-                    printf "Choice: "
-                    read value
-                    if [ -n "$value" ]; then
-                        selected_opt=$(echo "$options" | sed -n "${value}p")
-                        sed -i "/^${variable}=/d" "$SETUP_VARS"
-                        echo "${variable}='${selected_opt}'" >> "$SETUP_VARS"
-                        
-                        if [ "$item_id" = "dslite-aftr-type" ] || [ "$item_id" = "dslite-area" ]; then
-                            local aftr_type=$(grep "^dslite_aftr_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-                            local area=$(grep "^dslite_area=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-                            local computed=$(compute_dslite_aftr "$aftr_type" "$area")
-                            if [ -n "$computed" ]; then
-                                sed -i "/^dslite_aftr_address=/d" "$SETUP_VARS"
-                                echo "dslite_aftr_address='${computed}'" >> "$SETUP_VARS"
-                            fi
-                        fi
-                    fi
-                else
-                    printf "$label [${current:-$placeholder}]: "
-                    read value
-                    [ -z "$value" ] && value="$current"
-                    if [ -n "$value" ]; then
-                        sed -i "/^${variable}=/d" "$SETUP_VARS"
-                        echo "${variable}='${value}'" >> "$SETUP_VARS"
-                    fi
-                fi
-                echo ""
-                ;;
-                
-            radio-group)
-                local label=$(get_setup_item_label "$item_id")
-                local variable=$(get_setup_item_variable "$item_id")
-                local default=$(get_setup_item_default "$item_id")
-                
-                if [ "$item_id" = "mape-type" ]; then
-                    if [ -n "$MAPE_GUA_PREFIX" ]; then
-                        default="gua"
-                    else
-                        default="pd"
-                    fi
-                fi
-                
-                local current=$(grep "^${variable}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-                [ -z "$current" ] && current="$default"
-                
-                echo "$label:"
-                local options=$(get_setup_item_options "$item_id")
-                local i=1
-                for opt in $options; do
-                    local opt_label=$(get_setup_item_option_label "$item_id" "$opt")
-                    echo "  $i) $opt_label"
-                    i=$((i+1))
-                done
-                printf "Choice: "
-                read value
-                if [ -n "$value" ]; then
-                    selected_opt=$(echo "$options" | sed -n "${value}p")
-                    sed -i "/^${variable}=/d" "$SETUP_VARS"
-                    echo "${variable}='${selected_opt}'" >> "$SETUP_VARS"
-                fi
-                echo ""
-                ;;
-                
-            info-display)
-                local cat_idx=0
-                local item_idx=0
-                for cid in $(get_setup_categories); do
-                    local citems=$(get_setup_category_items "$cid")
-                    local idx=0
-                    for itm in $citems; do
-                        if [ "$itm" = "$item_id" ]; then
-                            item_idx=$idx
-                            break 2
-                        fi
-                        idx=$((idx+1))
-                    done
-                    cat_idx=$((cat_idx+1))
-                done
-                
-                local content=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[$cat_idx].items[$item_idx].content" 2>/dev/null)
-                local class=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[$cat_idx].items[$item_idx].class" 2>/dev/null)
-                
-                if [ -n "$class" ] && [ "${class#tr-}" != "$class" ]; then
-                    content=$(translate "$class")
-                fi
-                
-                echo "$content"
-                echo ""
-                ;;
-        esac
-    done
-}
-
-simple_category_config() {
-    local cat_id="$1"
-    local cat_title=$(get_setup_category_title "$cat_id")
-    
-    clear
-    echo "=== $cat_title ==="
-    echo ""
-    
-    if [ "$cat_id" = "internet-connection" ]; then
-        simple_show_network_info
-    fi
-    
-    process_category_items "$cat_id"
-    
-    echo "Configuration completed! Press Enter..."
-    read
-
-    auto_add_conditional_packages "$cat_id"
-}
-
-simple_show_network_info() {
-    local tr_auto_detection=$(translate "tr-auto-detection")
-    local tr_isp=$(translate "tr-isp")
-    local tr_as=$(translate "tr-as")
-    local tr_mape_notice=$(translate "tr-mape-notice1")
-    local tr_dslite_notice=$(translate "tr-dslite-notice1")
-    
-    if [ -z "$DETECTED_CONN_TYPE" ] || [ "$DETECTED_CONN_TYPE" = "Unknown" ]; then
-        return 1
-    fi
-    
-    echo "=== ${tr_auto_detection}: ${DETECTED_CONN_TYPE} ==="
-    echo ""
-    [ -n "$ISP_NAME" ] && echo "${tr_isp}: $ISP_NAME"
-    [ -n "$ISP_AS" ] && echo "${tr_as}: $ISP_AS"
-    echo ""
-    echo "${tr_mape_notice}"
-    echo ""
-    
-    if [ "$DETECTED_CONN_TYPE" = "MAP-E" ] && [ -n "$MAPE_BR" ]; then
-        [ -n "$MAPE_GUA_PREFIX" ] && echo "option ip6prefix_gua $MAPE_GUA_PREFIX"
-        echo "option peeraddr $MAPE_BR"
-        [ -n "$MAPE_IPV4_PREFIX" ] && echo "option ipaddr $MAPE_IPV4_PREFIX"
-        [ -n "$MAPE_IPV4_PREFIXLEN" ] && echo "option ip4prefixlen $MAPE_IPV4_PREFIXLEN"
-        [ -n "$MAPE_IPV6_PREFIX" ] && echo "option ip6prefix $MAPE_IPV6_PREFIX"
-        [ -n "$MAPE_IPV6_PREFIXLEN" ] && echo "option ip6prefixlen $MAPE_IPV6_PREFIXLEN"
-        [ -n "$MAPE_EALEN" ] && echo "option ealen $MAPE_EALEN"
-        [ -n "$MAPE_PSIDLEN" ] && echo "option psidlen $MAPE_PSIDLEN"
-        [ -n "$MAPE_PSID_OFFSET" ] && echo "option offset $MAPE_PSID_OFFSET"
-    elif [ "$DETECTED_CONN_TYPE" = "DS-Lite" ] && [ -n "$DSLITE_AFTR" ]; then
-        echo "option peeraddr $DSLITE_AFTR"
-        echo ""
-        echo "${tr_dslite_notice}"
-    fi
-    
-    echo ""
-    printf "Use ${tr_auto_detection}? (y/n) [y]: "
-    read use_auto
-    
-    if [ "$use_auto" != "n" ] && [ "$use_auto" != "N" ]; then
-        sed -i "/^connection_type=/d" "$SETUP_VARS"
-        echo "connection_type='auto'" >> "$SETUP_VARS"
-    fi
-    
-    echo ""
-    printf "Press Enter to continue..."
-    read
-    clear
-    echo "=== $(get_setup_category_title 'internet-connection') ==="
-    echo ""
-}
-
-simple_device_info() {
-    clear
-    echo "=== Device Information ==="
-    echo ""
-    echo "Model: $DEVICE_MODEL"
-    echo "Target: $DEVICE_TARGET"
-    echo "Version: $OPENWRT_VERSION"
-    [ -n "$DEVICE_MEM" ] && echo "Memory: $DEVICE_MEM"
-    [ -n "$DEVICE_CPU" ] && echo "CPU: $DEVICE_CPU"
-    [ -n "$DEVICE_STORAGE" ] && echo "Storage: $DEVICE_STORAGE_USED/$DEVICE_STORAGE (${DEVICE_STORAGE_AVAIL} free)"
-    [ -n "$DEVICE_USB" ] && echo "USB: $DEVICE_USB"
-    echo ""
-    printf "Press Enter to continue..."
-    read
-}
-
-simple_package_menu() {
-    if [ ! -f "$PACKAGES_JSON" ]; then
-        echo ""
-        echo "Error: packages.json not found!"
-        printf "Press Enter to continue..."
-        read
-        return
-    fi
-    
-    while true; do
-        clear
-        echo "=== Package Categories ==="
-        echo ""
-        
-        local categories=$(get_categories | while read cat_id; do
-            local is_hidden=$(get_category_hidden "$cat_id")
-            [ "$is_hidden" != "true" ] && echo "$cat_id"
-        done)
-        
-        if [ -z "$categories" ]; then
-            echo "Error: No categories found"
-            printf "Press Enter to continue..."
-            read
-            return
+        if [ -z "$choice" ]; then
+            exit 0
         fi
         
-        local i=1
-        while read cat_id; do
-            cat_name=$(get_category_name "$cat_id")
-            echo "$i) $cat_name"
-            i=$((i+1))
-done <<EOF
-$categories
-EOF
-        
-        echo "b) Back"
-        echo ""
-        printf "Choice: "
-        read choice
-        
-        case "$choice" in
-            b|B) return ;;
-            [0-9]*)
-                selected_cat=$(echo "$categories" | sed -n "${choice}p")
-                if [ -n "$selected_cat" ]; then
-                    simple_package_selection "$selected_cat"
-                fi
-                ;;
-        esac
-    done
-}
-
-simple_package_selection() {
-    local cat_id="$1"
-    local cat_name=$(get_category_name "$cat_id")
-    local cat_desc=$(get_category_desc "$cat_id")
-    
-    while true; do
-        clear
-        echo "=== $cat_name ==="
-        echo "$cat_desc"
-        echo ""
-        
-        local i=1
-        while read pkg_id; do
-            pkg_name=$(get_package_name "$pkg_id")
-            [ -z "$pkg_name" ] && pkg_name="$pkg_id"
-            
-            if is_package_selected "$pkg_id"; then
-                echo "$i) [X] $pkg_name"
-            else
-                echo "$i) [ ] $pkg_name"
-            fi
-            i=$((i+1))
-        done < <(get_category_packages "$cat_id")
-        
-        echo ""
-        echo "a) All  n) None  b) Back"
-        printf "Choice (number to toggle): "
-        read choice
-        
-        case "$choice" in
-            b|B) return ;;
-            a|A)
-                get_category_packages "$cat_id" | while read pkg; do
-                    if ! is_package_selected "$pkg"; then
-                        echo "$pkg" >> "$SELECTED_PACKAGES"
-                    fi
-                done
-                ;;
-            n|N)
-                get_category_packages "$cat_id" | while read pkg; do
-                    sed -i "/^${pkg}$/d" "$SELECTED_PACKAGES"
-                done
-                ;;
-            [0-9]*)
-                selected_pkg=$(get_category_packages "$cat_id" | sed -n "${choice}p")
-                if [ -n "$selected_pkg" ]; then
-                    toggle_package "$selected_pkg"
-                fi
-                ;;
-        esac
-    done
-}
-
-apply_api_defaults() {
-    [ -n "$AUTO_LANGUAGE" ] && ! grep -q "^language=" "$SETUP_VARS" 2>/dev/null && \
-        echo "language='$AUTO_LANGUAGE'" >> "$SETUP_VARS"
-    
-    [ -n "$AUTO_TIMEZONE" ] && ! grep -q "^timezone=" "$SETUP_VARS" 2>/dev/null && \
-        echo "timezone='$AUTO_TIMEZONE'" >> "$SETUP_VARS"
-    
-    [ -n "$AUTO_ZONENAME" ] && ! grep -q "^zonename=" "$SETUP_VARS" 2>/dev/null && \
-        echo "zonename='$AUTO_ZONENAME'" >> "$SETUP_VARS"
-    
-    [ -n "$ISP_COUNTRY" ] && ! grep -q "^country=" "$SETUP_VARS" 2>/dev/null && \
-        echo "country='$ISP_COUNTRY'" >> "$SETUP_VARS"
-    
-    if grep -q "^connection_type='auto'" "$SETUP_VARS" 2>/dev/null; then
-        if [ "$DETECTED_CONN_TYPE" = "MAP-E" ] && [ -n "$MAPE_BR" ]; then
-            sed -i "s/^connection_type='auto'/connection_type='mape'/" "$SETUP_VARS"
-            
-            # ★ GUAプレフィックスを最初に追加（元ソース）
-            [ -n "$MAPE_GUA_PREFIX" ] && ! grep -q "^mape_gua_prefix=" "$SETUP_VARS" 2>/dev/null && \
-                echo "mape_gua_prefix='$MAPE_GUA_PREFIX'" >> "$SETUP_VARS"
-            
-            # その後、他のMAP-E設定を追加（加工された結果）
-            grep -q "^mape_br=" "$SETUP_VARS" 2>/dev/null || \
-                echo "mape_br='$MAPE_BR'" >> "$SETUP_VARS"
-            
-            [ -n "$MAPE_IPV4_PREFIX" ] && ! grep -q "^mape_ipv4_prefix=" "$SETUP_VARS" 2>/dev/null && \
-                echo "mape_ipv4_prefix='$MAPE_IPV4_PREFIX'" >> "$SETUP_VARS"
-            
-            [ -n "$MAPE_IPV4_PREFIXLEN" ] && ! grep -q "^mape_ipv4_prefixlen=" "$SETUP_VARS" 2>/dev/null && \
-                echo "mape_ipv4_prefixlen='$MAPE_IPV4_PREFIXLEN'" >> "$SETUP_VARS"
-            
-            [ -n "$MAPE_IPV6_PREFIX" ] && ! grep -q "^mape_ipv6_prefix=" "$SETUP_VARS" 2>/dev/null && \
-                echo "mape_ipv6_prefix='$MAPE_IPV6_PREFIX'" >> "$SETUP_VARS"
-            
-            [ -n "$MAPE_IPV6_PREFIXLEN" ] && ! grep -q "^mape_ipv6_prefixlen=" "$SETUP_VARS" 2>/dev/null && \
-                echo "mape_ipv6_prefixlen='$MAPE_IPV6_PREFIXLEN'" >> "$SETUP_VARS"
-            
-            [ -n "$MAPE_EALEN" ] && ! grep -q "^mape_ealen=" "$SETUP_VARS" 2>/dev/null && \
-                echo "mape_ealen='$MAPE_EALEN'" >> "$SETUP_VARS"
-            
-            [ -n "$MAPE_PSIDLEN" ] && ! grep -q "^mape_psidlen=" "$SETUP_VARS" 2>/dev/null && \
-                echo "mape_psidlen='$MAPE_PSIDLEN'" >> "$SETUP_VARS"
-            
-            [ -n "$MAPE_PSID_OFFSET" ] && ! grep -q "^mape_psid_offset=" "$SETUP_VARS" 2>/dev/null && \
-                echo "mape_psid_offset='$MAPE_PSID_OFFSET'" >> "$SETUP_VARS"
-            
-        elif [ "$DETECTED_CONN_TYPE" = "DS-Lite" ] && [ -n "$DSLITE_AFTR" ]; then
-            sed -i "s/^connection_type='auto'/connection_type='dslite'/" "$SETUP_VARS"
-            
-            grep -q "^dslite_aftr_address=" "$SETUP_VARS" 2>/dev/null || \
-                echo "dslite_aftr_address='$DSLITE_AFTR'" >> "$SETUP_VARS"
-        fi
-    fi
-}
-
-generate_files() {
-    apply_api_defaults
-    
-    language=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-    
-    {
-        echo "#!/bin/sh"
-        echo "# Generated by device-setup.sh v$VERSION"
-        echo "# Device: $DEVICE_MODEL ($DEVICE_TARGET)"
-        echo ""
-        echo "# Detect package manager"
-        echo "if command -v opkg >/dev/null 2>&1; then"
-        echo "    PKG_MGR=opkg"
-        echo "    opkg update"
-        echo "elif command -v apk >/dev/null 2>&1; then"
-        echo "    PKG_MGR=apk"
-        echo "    apk update"
-        echo "else"
-        echo "    echo 'Error: No supported package manager found'"
-        echo "    exit 1"
-        echo "fi"
-        echo ""
-        
-        if [ -n "$language" ]; then
-            echo "# Language packages"
-            echo "LANG_PKGS=\"luci-i18n-base-${language} luci-i18n-firewall-${language}\""
-            echo "[ \"\$PKG_MGR\" = \"opkg\" ] && opkg install \$LANG_PKGS"
-            echo "[ \"\$PKG_MGR\" = \"apk\" ] && apk add \$LANG_PKGS"
-            echo ""
-        fi
-
-        if [ -s "$SELECTED_PACKAGES" ]; then
-            echo "# Selected packages"
-            echo "PKGS=\"\\"
-            cat "$SELECTED_PACKAGES" | while read pkg; do
-                echo "    $pkg \\"
-            done | sed '$ s/ \\$/\"/'
-            echo ""
-            echo "[ \"\$PKG_MGR\" = \"opkg\" ] && opkg install \$PKGS"
-            echo "[ \"\$PKG_MGR\" = \"apk\" ] && apk add \$PKGS"
-        fi
-        
-        echo ""
-        echo "exit 0"
-    } > "$OUTPUT_DIR/postinst.sh"
-    chmod +x "$OUTPUT_DIR/postinst.sh"
-    
-    {
-        echo "#!/bin/sh"
-        echo "# Generated by device-setup.sh v$VERSION"
-        echo "# Device: $DEVICE_MODEL ($DEVICE_TARGET)"
-        echo ""
-        echo "# BEGIN_VARS"
-        if [ -s "$SETUP_VARS" ]; then
-            cat "$SETUP_VARS"
-        fi
-        echo "# END_VARS"
-        echo ""
-        
-        if wget -q -O - "$SETUP_TEMPLATE_URL" | sed '1,/^# END_VARS/d' >> "$OUTPUT_DIR/setup.sh.tmp"; then
-            cat "$OUTPUT_DIR/setup.sh.tmp" >> "$OUTPUT_DIR/setup.sh"
-            rm -f "$OUTPUT_DIR/setup.sh.tmp"
+        local setup_cat_count=$(get_setup_categories | wc -l)
+        if [ "$choice" -le "$setup_cat_count" ]; then
+            selected_cat=$(get_setup_categories | sed -n "${choice}p")
+            whiptail_category_config "$selected_cat"
+        elif [ "$choice" -eq "$((setup_cat_count+1))" ]; then
+            whiptail_package_categories
+        elif [ "$choice" -eq "$((setup_cat_count+2))" ]; then
+            review_and_apply
         else
-            echo "# Failed to download setup template"
-            echo "# Please manually add setup.sh template from:"
-            echo "# $SETUP_TEMPLATE_URL"
+            exit 0
         fi
-    } > "$OUTPUT_DIR/setup.sh"
-    chmod +x "$OUTPUT_DIR/setup.sh"
+    done
 }
 
 review_and_apply() {
@@ -1504,9 +1125,9 @@ review_and_apply() {
                     fi
                     ;;
                 5)
-                    if whiptail --title "Confirm" --yesno "Apply this configuration?\n\nThis will:\n1. Install packages via /tmp/postinst\n2. Apply settings via /tmp/setup.sh\n3. Optionally reboot\n\nContinue?" 15 60; then
+                    if whiptail --title "Confirm" --yesno "Apply this configuration?\n\nThis will:\n1. Install packages via /tmp/postinst.sh\n2. Apply settings via /tmp/setup.sh\n3. Optionally reboot\n\nContinue?" 15 60; then
                         whiptail --msgbox "Executing package installation..." 8 50
-                        sh "$OUTPUT_DIR/postinst"
+                        sh "$OUTPUT_DIR/postinst.sh"
                         whiptail --msgbox "Applying system configuration..." 8 50
                         sh "$OUTPUT_DIR/setup.sh"
                         if whiptail --yesno "Configuration applied successfully!\n\nReboot now?" 10 50; then
@@ -1633,8 +1254,8 @@ review_and_apply() {
                         echo "Configuration applied successfully!"
                         echo ""
                         printf "Reboot now? (y/n): "
-                        read reboot_choice
-                        if [ "$reboot_choice" = "y" ] || [ "$reboot_choice" = "Y" ]; then
+                        read reboot_confirm
+                        if [ "$reboot_confirm" = "y" ] || [ "$reboot_confirm" = "Y" ]; then
                             reboot
                         fi
                         return 0
@@ -1648,132 +1269,70 @@ review_and_apply() {
     fi
 }
 
-detect_gua_prefix() {
-    local ipv6="$1"
-    
-    [ -z "$ipv6" ] && return 1
-    
-    local prefix_check=$(jsonfilter -i "$SETUP_JSON" -e '@.constants.gua_validation.prefix_check' 2>/dev/null)
-    
-    local first_hex=$(echo "$ipv6" | cut -d: -f1)
-    local first_dec=$((0x$first_hex))
-    
-    [ $first_dec -lt 8192 ] || [ $first_dec -ge 16384 ] && return 1
-    
-    local exclude_cidrs=$(jsonfilter -i "$SETUP_JSON" -e '@.constants.gua_validation.exclude_cidrs[*]' 2>/dev/null)
-    
-    for cidr in $exclude_cidrs; do
-        local prefix=$(echo "$cidr" | cut -d/ -f1)
-        local length=$(echo "$cidr" | cut -d/ -f2)
-        
-        case "$length" in
-            16)
-                local check=$(echo "$prefix" | cut -d: -f1)
-                local ipv6_check=$(echo "$ipv6" | cut -d: -f1)
-                [ "$ipv6_check" = "$check" ] && return 1
-                ;;
-            28)
-                local check=$(echo "$prefix" | cut -d: -f1-2 | sed 's/:$//')
-                local ipv6_check=$(echo "$ipv6" | cut -d: -f1-2 | sed 's/:$//')
-                [ "$ipv6_check" = "$check" ] && {
-                    local third_hex=$(echo "$ipv6" | cut -d: -f2)
-                    local third_dec=$((0x${third_hex:-0}))
-                    local prefix_third_hex=$(echo "$prefix" | cut -d: -f2)
-                    local prefix_third_dec=$((0x${prefix_third_hex:-0}))
-                    local mask_dec=$((prefix_third_dec & 0xfff0))
-                    local ipv6_masked=$((third_dec & 0xfff0))
-                    [ $ipv6_masked -eq $mask_dec ] && return 1
-                }
-                ;;
-            32)
-                local check=$(echo "$prefix" | cut -d: -f1-2)
-                local ipv6_check=$(echo "$ipv6" | cut -d: -f1-2)
-                [ "$ipv6_check" = "$check" ] && return 1
-                ;;
-            48)
-                local check=$(echo "$prefix" | cut -d: -f1-3)
-                local ipv6_check=$(echo "$ipv6" | cut -d: -f1-3)
-                [ "$ipv6_check" = "$check" ] && return 1
-                ;;
-        esac
-    done
-    
-    echo "$ipv6" | awk -F: '{print $1":"$2":"$3":"$4"::/64"}'
-    return 0
+simple_device_info() {
+    clear
+    echo "========================================"
+    echo "  Device Information"
+    echo "========================================"
+    echo ""
+    echo "Model:   $DEVICE_MODEL"
+    echo "Target:  $DEVICE_TARGET"
+    echo "Version: $OPENWRT_VERSION"
+    [ -n "$DEVICE_MEM" ] && echo "Memory:  $DEVICE_MEM"
+    [ -n "$DEVICE_CPU" ] && echo "CPU:     $DEVICE_CPU"
+    [ -n "$DEVICE_STORAGE" ] && echo "Storage: $DEVICE_STORAGE_USED/$DEVICE_STORAGE (${DEVICE_STORAGE_AVAIL} free)"
+    [ -n "$DEVICE_USB" ] && echo "USB:     $DEVICE_USB"
+    echo ""
+    printf "Press Enter to continue..."
+    read
 }
 
-get_extended_device_info() {
-    if [ -f /etc/board.json ]; then
-        DEVICE_MODEL=$(jsonfilter -i /etc/board.json -e '@.model.name' 2>/dev/null)
-        DEVICE_ID=$(jsonfilter -i /etc/board.json -e '@.model.id' 2>/dev/null)
+simple_main_menu() {
+    while true; do
+        clear
+        echo "========================================"
+        echo "  OpenWrt Setup Tool v$VERSION"
+        echo "========================================"
+        echo ""
+        echo "Device: $DEVICE_MODEL"
+        echo ""
         
-        if [ -f /etc/openwrt_release ]; then
-            . /etc/openwrt_release
-            DEVICE_TARGET="${DISTRIB_TARGET:-unknown/unknown}"
-            OPENWRT_VERSION="${DISTRIB_RELEASE:-unknown}"
+        local i=1
+        for cat_id in $(get_setup_categories); do
+            cat_title=$(get_setup_category_title "$cat_id")
+            echo "$i) $cat_title"
+            i=$((i+1))
+        done
+        
+        local packages_label=$(translate "tr-custom-packages")
+        echo "$i) $packages_label"
+        i=$((i+1))
+        echo "$i) Review & Generate"
+        i=$((i+1))
+        echo "$i) Exit"
+        
+        echo ""
+        printf "Choice: "
+        read choice
+        
+        if [ -z "$choice" ]; then
+            continue
         fi
-    fi
-    
-    if wget -q -O "$AUTO_CONFIG_JSON" "$AUTO_CONFIG_URL" 2>/dev/null; then
-        if [ -f "$AUTO_CONFIG_JSON" ]; then
-            echo "=== AUTO_CONFIG_JSON CONTENT ===" >> /tmp/debug.log
-            cat "$AUTO_CONFIG_JSON" >> /tmp/debug.log
-            echo "================================" >> /tmp/debug.log
-            
-            ISP_NAME=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.isp' 2>/dev/null)
-            ISP_AS=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.as' 2>/dev/null)
-            ISP_IPV6=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.ipv6' 2>/dev/null)
-            ISP_COUNTRY=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.country' 2>/dev/null)
-            ISP_REGION=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.regionName' 2>/dev/null)
-            AUTO_LANGUAGE=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.language' 2>/dev/null)
-            AUTO_TIMEZONE=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.timezone' 2>/dev/null)
-            AUTO_ZONENAME=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.zonename' 2>/dev/null)
-            
-            MAPE_BR=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.mape.brIpv6Address' 2>/dev/null)
-            MAPE_IPV4_PREFIX=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.mape.ipv4Prefix' 2>/dev/null)
-            MAPE_IPV4_PREFIXLEN=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.mape.ipv4PrefixLength' 2>/dev/null)
-            MAPE_IPV6_PREFIX=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.mape.ipv6Prefix' 2>/dev/null)
-            MAPE_IPV6_PREFIXLEN=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.mape.ipv6PrefixLength' 2>/dev/null)
-            MAPE_EALEN=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.mape.eaBitLength' 2>/dev/null)
-            MAPE_PSIDLEN=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.mape.psidlen' 2>/dev/null)
-            MAPE_PSID_OFFSET=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.mape.psIdOffset' 2>/dev/null)
-            
-            MAPE_GUA_PREFIX=$(detect_gua_prefix "$ISP_IPV6")
-            
-            DSLITE_AFTR=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.aftr' 2>/dev/null)
-            
-            if [ -n "$MAPE_BR" ]; then
-                DETECTED_CONN_TYPE="MAP-E"
-            elif [ -n "$DSLITE_AFTR" ]; then
-                DETECTED_CONN_TYPE="DS-Lite"
-            else
-                DETECTED_CONN_TYPE="Unknown"
-            fi
+        
+        local setup_cat_count=$(get_setup_categories | wc -l)
+        if [ "$choice" -le "$setup_cat_count" ]; then
+            selected_cat=$(get_setup_categories | sed -n "${choice}p")
+            echo "Simple mode: category configuration not yet implemented"
+            sleep 2
+        elif [ "$choice" -eq "$((setup_cat_count+1))" ]; then
+            echo "Simple mode: package selection not yet implemented"
+            sleep 2
+        elif [ "$choice" -eq "$((setup_cat_count+2))" ]; then
+            review_and_apply
         else
-            DETECTED_CONN_TYPE="Unknown"
+            exit 0
         fi
-    else
-        echo "Warning: Failed to download auto-config data"
-        DETECTED_CONN_TYPE="Unknown"
-    fi
-    
-    DEVICE_MEM=$(awk '/MemTotal/{printf "%.0f MB", $2/1024}' /proc/meminfo 2>/dev/null)
-    DEVICE_CPU=$(grep -m1 "model name" /proc/cpuinfo | cut -d: -f2 | xargs 2>/dev/null)
-    [ -z "$DEVICE_CPU" ] && DEVICE_CPU=$(grep -m1 "Hardware" /proc/cpuinfo | cut -d: -f2 | xargs 2>/dev/null)
-    
-    [ -z "$DEVICE_MODEL" ] && DEVICE_MODEL="Unknown Device"
-    [ -z "$DEVICE_TARGET" ] && DEVICE_TARGET="unknown/unknown"
-    [ -z "$OPENWRT_VERSION" ] && OPENWRT_VERSION="unknown"
-
-    DEVICE_STORAGE=$(df -h / | awk 'NR==2 {print $2}')
-    DEVICE_STORAGE_USED=$(df -h / | awk 'NR==2 {print $3}')
-    DEVICE_STORAGE_AVAIL=$(df -h / | awk 'NR==2 {print $4}')
-    
-    if [ -d /sys/bus/usb/devices ]; then
-        DEVICE_USB="Available"
-    else
-        DEVICE_USB="Not available"
-    fi
+    done
 }
 
 aios_light_main() {
@@ -1816,7 +1375,6 @@ aios_light_main() {
     
     echo ""
 
-    # デフォルト値を設定
     echo "connection_type='auto'" >> "$SETUP_VARS"
     echo "wifi_mode='standard'" >> "$SETUP_VARS"
     echo "net_optimizer='auto'" >> "$SETUP_VARS"
@@ -1832,7 +1390,6 @@ aios_light_main() {
         fi
     fi
     
-    # 全カテゴリの条件付きパッケージを評価
     for cat_id in $(get_setup_categories); do
         auto_add_conditional_packages "$cat_id"
     done
