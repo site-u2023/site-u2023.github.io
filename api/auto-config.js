@@ -837,20 +837,6 @@ function isGlobalUnicastAddress(ipv6) {
 }
 
 /**
- * MAP-E環境でPD（Prefix Delegation）かどうかを判定
- * @param {object} mapRule - MAP-Eルール
- * @returns {boolean} PDの場合true
- */
-function isMapePrefixDelegation(mapRule) {
-  if (!mapRule || !mapRule.ipv6PrefixLength) return false;
-  
-  // IPv6プレフィックス長が56以下の場合はPD
-  // 一般的に /56 や /60 がPDで使われる
-  const prefixLen = parseInt(mapRule.ipv6PrefixLength, 10);
-  return prefixLen <= 60;
-}
-
-/**
  * リクエストから最適な言語を選択
  * Accept-Languageヘッダーと国コードから判定
  * @param {Request} request - Cloudflare Request
@@ -937,16 +923,12 @@ export default {
     // DS-Lite / MAP-E 判定
     let aftrRule = null;
     let mapRule = null;
-    let mapType = null;
 
     if (clientIPv6) {
       aftrRule = checkDSLiteRule(clientIPv6);
       if (!aftrRule) {
         mapRule = checkMapERule(clientIPv6);
-        if (mapRule) {
-          mapRule = enrichMapRule(mapRule);
-          mapType = isMapePrefixDelegation(mapRule) ? 'pd' : 'gua';
-        }
+        if (mapRule) mapRule = enrichMapRule(mapRule);
       }
     }
 
@@ -978,7 +960,7 @@ export default {
       regionName: cf.region || null,
       region: cf.regionCode || null,
       aftr: aftrRule || null,
-      mape: mapRule ? { ...mapRule, type: mapType } : null
+      mape: mapRule || null
     };
 
     return new Response(
