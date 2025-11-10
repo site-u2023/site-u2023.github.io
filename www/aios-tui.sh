@@ -1102,8 +1102,6 @@ whiptail_main_menu() {
             whiptail_package_categories
         elif [ "$choice" -eq "$((setup_cat_count+2))" ]; then
             review_and_apply
-        else
-            exit 0
         fi
     done
 }
