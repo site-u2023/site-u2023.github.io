@@ -261,18 +261,9 @@ get_extended_device_info() {
     MAPE_IPV6_PREFIXLEN=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.mape.ipv6PrefixLength' 2>/dev/null)
     MAPE_PSIDLEN=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.mape.psidlen' 2>/dev/null)
     MAPE_PSID_OFFSET=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.mape.psIdOffset' 2>/dev/null)
-
-    local user_ipv6=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.ipv6' 2>/dev/null)
-    if [ -n "$user_ipv6" ]; then
-        MAPE_GUA_PREFIX=$(detect_gua_prefix "$user_ipv6")
-        echo "[DEBUG] GUA detection: user_ipv6=$user_ipv6, MAPE_GUA_PREFIX=$MAPE_GUA_PREFIX" >> /tmp/debug.log
-    fi
     
-    local user_ipv6=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.ipv6' 2>/dev/null)
-    if [ -n "$user_ipv6" ] && [ -n "$MAPE_IPV6_PREFIX" ]; then
-        MAPE_GUA_PREFIX=$(echo "$user_ipv6" | grep -oE '^[0-9a-f:]+:0:0:0' | head -1)
-        [ -n "$MAPE_GUA_PREFIX" ] && MAPE_GUA_PREFIX="${MAPE_GUA_PREFIX}::/${MAPE_IPV6_PREFIXLEN}"
-    fi
+    ISP_IPV6=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.ipv6' 2>/dev/null)
+    MAPE_GUA_PREFIX=$(detect_gua_prefix "$ISP_IPV6")
     
     DSLITE_AFTR=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.aftr.aftrIpv6Address' 2>/dev/null)
     
