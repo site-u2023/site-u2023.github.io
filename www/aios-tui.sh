@@ -1108,8 +1108,8 @@ whiptail_main_menu() {
 review_and_apply() {
     generate_files
     
-    if [ "$UI_MODE" = "whiptail" ]; then
-        while true; do
+    while true; do
+        if [ "$UI_MODE" = "whiptail" ]; then
             choice=$(whiptail --title "Review Configuration" --cancel-button "Back" --menu \
                 "Select an option:" 20 70 12 \
                 "1" "View Device Information" \
@@ -1121,56 +1121,7 @@ review_and_apply() {
                 3>&1 1>&2 2>&3)
             
             [ $? -ne 0 ] && return 0
-            
-            case "$choice" in
-                1)
-                    whiptail_device_info
-                    ;;
-                2)
-                    if [ -s "$SELECTED_PACKAGES" ]; then
-                        cat "$SELECTED_PACKAGES" | sed 's/^/- /' > /tmp/pkg_view.txt
-                        whiptail --scrolltext --title "Package List" --textbox /tmp/pkg_view.txt 24 78
-                    else
-                        whiptail --msgbox "No packages selected" 8 40
-                    fi
-                    ;;
-                3)
-                    if [ -s "$SETUP_VARS" ]; then
-                        whiptail --scrolltext --title "Configuration Variables" --textbox "$SETUP_VARS" 24 78
-                    else
-                        whiptail --msgbox "No configuration variables set" 8 40
-                    fi
-                    ;;
-                4)
-                    if [ -f "$OUTPUT_DIR/postinst.sh" ]; then
-                        whiptail --scrolltext --title "postinst.sh" --textbox "$OUTPUT_DIR/postinst.sh" 24 78
-                    else
-                        whiptail --msgbox "postinst.sh file not found" 8 40
-                    fi
-                    ;;
-                5)
-                    if [ -f "$OUTPUT_DIR/setup.sh" ]; then
-                        whiptail --scrolltext --title "setup.sh" --textbox "$OUTPUT_DIR/setup.sh" 24 78
-                    else
-                        whiptail --msgbox "setup.sh file not found" 8 40
-                    fi
-                    ;;
-                6)
-                    if whiptail --title "Confirm" --yesno "Apply this configuration?\n\nThis will:\n1. Install packages via postinst.sh\n2. Apply settings via setup.sh\n3. Optionally reboot\n\nContinue?" 15 60; then
-                        whiptail --msgbox "Executing package installation..." 8 50
-                        sh "$OUTPUT_DIR/postinst.sh"
-                        whiptail --msgbox "Applying system configuration..." 8 50
-                        sh "$OUTPUT_DIR/setup.sh"
-                        if whiptail --yesno "Configuration applied successfully!\n\nReboot now?" 10 50; then
-                            reboot
-                        fi
-                        return 0
-                    fi
-                    ;;
-            esac
-        done
-    else
-        while true; do
+        else
             clear
             echo "=== Configuration Review ==="
             echo ""
@@ -1185,11 +1136,22 @@ review_and_apply() {
             printf "Choice: "
             read choice
             
-            case "$choice" in
-                1)
-                    simple_device_info
-                    ;;
-                2)
+            [ "$choice" = "b" ] || [ "$choice" = "B" ] && return 0
+        fi
+        
+        case "$choice" in
+            1)
+                [ "$UI_MODE" = "whiptail" ] && whiptail_device_info || simple_device_info
+                ;;
+            2)
+                if [ "$UI_MODE" = "whiptail" ]; then
+                    if [ -s "$SELECTED_PACKAGES" ]; then
+                        cat "$SELECTED_PACKAGES" | sed 's/^/- /' > /tmp/pkg_view.txt
+                        whiptail --scrolltext --title "Package List" --textbox /tmp/pkg_view.txt 24 78
+                    else
+                        whiptail --msgbox "No packages selected" 8 40
+                    fi
+                else
                     clear
                     echo "=== Package List ==="
                     echo ""
@@ -1203,8 +1165,16 @@ review_and_apply() {
                     echo ""
                     printf "Press Enter to continue..."
                     read
-                    ;;
-                3)
+                fi
+                ;;
+            3)
+                if [ "$UI_MODE" = "whiptail" ]; then
+                    if [ -s "$SETUP_VARS" ]; then
+                        whiptail --scrolltext --title "Configuration Variables" --textbox "$SETUP_VARS" 24 78
+                    else
+                        whiptail --msgbox "No configuration variables set" 8 40
+                    fi
+                else
                     clear
                     echo "=== Configuration Variables ==="
                     echo ""
@@ -1216,8 +1186,16 @@ review_and_apply() {
                     echo ""
                     printf "Press Enter to continue..."
                     read
-                    ;;
-                4)
+                fi
+                ;;
+            4)
+                if [ "$UI_MODE" = "whiptail" ]; then
+                    if [ -f "$OUTPUT_DIR/postinst.sh" ]; then
+                        whiptail --scrolltext --title "postinst.sh" --textbox "$OUTPUT_DIR/postinst.sh" 24 78
+                    else
+                        whiptail --msgbox "postinst.sh file not found" 8 40
+                    fi
+                else
                     clear
                     echo "=== postinst.sh ==="
                     echo ""
@@ -1229,8 +1207,16 @@ review_and_apply() {
                     echo ""
                     printf "Press Enter to continue..."
                     read
-                    ;;
-                5)
+                fi
+                ;;
+            5)
+                if [ "$UI_MODE" = "whiptail" ]; then
+                    if [ -f "$OUTPUT_DIR/setup.sh" ]; then
+                        whiptail --scrolltext --title "setup.sh" --textbox "$OUTPUT_DIR/setup.sh" 24 78
+                    else
+                        whiptail --msgbox "setup.sh file not found" 8 40
+                    fi
+                else
                     clear
                     echo "=== setup.sh ==="
                     echo ""
@@ -1242,8 +1228,21 @@ review_and_apply() {
                     echo ""
                     printf "Press Enter to continue..."
                     read
-                    ;;
-                6)
+                fi
+                ;;
+            6)
+                if [ "$UI_MODE" = "whiptail" ]; then
+                    if whiptail --title "Confirm" --yesno "Apply this configuration?\n\nThis will:\n1. Install packages via postinst.sh\n2. Apply settings via setup.sh\n3. Optionally reboot\n\nContinue?" 15 60; then
+                        whiptail --msgbox "Executing package installation..." 8 50
+                        sh "$OUTPUT_DIR/postinst.sh"
+                        whiptail --msgbox "Applying system configuration..." 8 50
+                        sh "$OUTPUT_DIR/setup.sh"
+                        if whiptail --yesno "Configuration applied successfully!\n\nReboot now?" 10 50; then
+                            reboot
+                        fi
+                        return 0
+                    fi
+                else
                     clear
                     echo "=== Apply Configuration ==="
                     echo ""
@@ -1272,13 +1271,10 @@ review_and_apply() {
                         fi
                         return 0
                     fi
-                    ;;
-                b|B)
-                    return 0
-                    ;;
-            esac
-        done
-    fi
+                fi
+                ;;
+        esac
+    done
 }
 
 simple_device_info() {
