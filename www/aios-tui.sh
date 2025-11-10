@@ -1088,13 +1088,10 @@ whiptail_main_menu() {
         i=$((i+1))
         menu_items="$menu_items $i \"Exit\""
         
-        # 修正：タイトルを "Main Menu:" に変更、CANCELボタン無し
         choice=$(eval "whiptail --title 'OpenWrt Setup Tool v$VERSION - $DEVICE_MODEL' \
             --menu 'Main Menu:' 20 70 12 $menu_items 3>&1 1>&2 2>&3")
         
-        if [ -z "$choice" ]; then
-            exit 0
-        fi
+        [ -z "$choice" ] && continue
         
         local setup_cat_count=$(get_setup_categories | wc -l)
         if [ "$choice" -le "$setup_cat_count" ]; then
@@ -1115,7 +1112,6 @@ review_and_apply() {
     
     while true; do
         if [ "$UI_MODE" = "whiptail" ]; then
-            # 修正：--cancel-button "Back" を追加
             choice=$(whiptail --title "Review Configuration" --cancel-button "Back" --menu \
                 "Select an option:" 20 70 12 \
                 "1" "View Device Information" \
