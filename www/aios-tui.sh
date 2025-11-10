@@ -246,12 +246,18 @@ get_extended_device_info() {
 }
 
 load_default_packages() {
-    if [ ! -f "$SETUP_JSON" ]; then
+    if [ ! -f "$PACKAGES_JSON" ]; then
         return 1
     fi
     
-    jsonfilter -i "$SETUP_JSON" -e '@.categories[*].packages[@.default=true].id' 2>/dev/null | while read pkg; do
-        [ -n "$pkg" ] && echo "$pkg" >> "$SELECTED_PACKAGES"
+    local cat_id pkg_id checked
+    get_categories | while read cat_id; do
+        get_category_packages "$cat_id" | while read pkg_id; do
+            checked=$(get_package_checked "$pkg_id")
+            if [ "$checked" = "true" ]; then
+                echo "$pkg_id" >> "$SELECTED_PACKAGES"
+            fi
+        done
     done
 }
 
@@ -454,6 +460,10 @@ get_package_name() {
     local pkg_id="$1"
     local name=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].name" 2>/dev/null | head -1)
     echo "$name"
+}
+
+get_package_checked() {
+    jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$1'].checked" 2>/dev/null | head -1
 }
 
 is_package_selected() {
