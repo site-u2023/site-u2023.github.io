@@ -359,10 +359,10 @@ get_setup_item_label() {
 
 get_setup_item_variable() {
     local item_id="$1"
-    local result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].variableName" 2>/dev/null | head -1)
+    local result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].variable" 2>/dev/null | head -1)
     
     if [ -z "$result" ]; then
-        result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].variableName" 2>/dev/null | head -1)
+        result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].variable" 2>/dev/null | head -1)
     fi
     
     echo "$result"
@@ -865,7 +865,7 @@ whiptail_process_items() {
                 fi
                 ;;
                 
-            text)
+            field)
                 items_processed=$((items_processed + 1))
                 local label=$(get_setup_item_label "$item_id")
                 local variable=$(get_setup_item_variable "$item_id")
@@ -891,11 +891,42 @@ whiptail_process_items() {
                     fi
                 fi
                 
-                value=$(whiptail --title "Setup" --inputbox "$label:" 10 60 "$current" 3>&1 1>&2 2>&3)
-                
-                if [ $? -eq 0 ] && [ -n "$value" ]; then
-                    sed -i "/^${variable}=/d" "$SETUP_VARS"
-                    echo "${variable}='${value}'" >> "$SETUP_VARS"
+                if [ "$field_type" = "select" ]; then
+                    local options=$(get_setup_item_options "$item_id")
+                    local menu_opts=""
+                    local i=1
+                    for opt in $options; do
+                        local opt_label=$(get_setup_item_option_label "$item_id" "$opt")
+                        menu_opts="$menu_opts $i \"$opt_label\""
+                        i=$((i+1))
+                    done
+                    
+                    value=$(eval "whiptail --title 'Setup' --menu '$label:' 18 60 10 $menu_opts 3>&1 1>&2 2>&3")
+                    
+                    if [ $? -eq 0 ] && [ -n "$value" ]; then
+                        selected_opt=$(echo "$options" | sed -n "${value}p")
+                        sed -i "/^${variable}=/d" "$SETUP_VARS"
+                        echo "${variable}='${selected_opt}'" >> "$SETUP_VARS"
+                        
+                        auto_add_conditional_packages "$cat_id"
+                        
+                        if [ "$item_id" = "dslite-aftr-type" ] || [ "$item_id" = "dslite-area" ]; then
+                            local aftr_type=$(grep "^dslite_aftr_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+                            local area=$(grep "^dslite_area=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+                            local computed=$(compute_dslite_aftr "$aftr_type" "$area")
+                            if [ -n "$computed" ]; then
+                                sed -i "/^dslite_aftr_address=/d" "$SETUP_VARS"
+                                echo "dslite_aftr_address='${computed}'" >> "$SETUP_VARS"
+                            fi
+                        fi
+                    fi
+                else
+                    value=$(whiptail --title "Setup" --inputbox "$label:" 10 60 "$current" 3>&1 1>&2 2>&3)
+                    
+                    if [ $? -eq 0 ] && [ -n "$value" ]; then
+                        sed -i "/^${variable}=/d" "$SETUP_VARS"
+                        echo "${variable}='${value}'" >> "$SETUP_VARS"
+                    fi
                 fi
                 ;;
                 
@@ -1011,6 +1042,7 @@ whiptail_package_selection() {
     selected=$(eval "whiptail --title '$cat_name' --checklist '$cat_desc (Space=toggle):' 20 70 12 $checklist_items 3>&1 1>&2 2>&3")
     
     if [ $? -eq 0 ]; then
+        # OKボタンが押された場合のみ、このカテゴリの選択を更新
         while read pkg_id; do
             sed -i "/^${pkg_id}$/d" "$SELECTED_PACKAGES"
         done < <(get_category_packages "$cat_id")
@@ -1020,6 +1052,7 @@ whiptail_package_selection() {
             echo "$pkg_clean" >> "$SELECTED_PACKAGES"
         done
     fi
+    # CANCELの場合は何もせず、既存の選択を保持
     
     whiptail_package_categories
 }
