@@ -1110,69 +1110,53 @@ review_and_apply() {
     
     if [ "$UI_MODE" = "whiptail" ]; then
         while true; do
-            local summary="=== DEVICE ===\nModel: $DEVICE_MODEL\nTarget: $DEVICE_TARGET\n\n"
-            summary="${summary}=== PACKAGES ===\n"
-            if [ -s "$SELECTED_PACKAGES" ]; then
-                local pkg_count=$(wc -l < "$SELECTED_PACKAGES")
-                summary="${summary}Total packages: $pkg_count\n"
-            else
-                summary="${summary}(none)\n"
-            fi
-            
-            summary="${summary}\n=== CONFIGURATION ===\n"
-            if [ -s "$SETUP_VARS" ]; then
-                local var_count=$(wc -l < "$SETUP_VARS")
-                summary="${summary}Total variables: $var_count\n"
-            else
-                summary="${summary}(none)\n"
-            fi
-            
-            choice=$(whiptail --title "Review Configuration" --menu \
-                "$summary\nSelect an option:" 24 78 10 \
-                "1" "View Full Package List" \
-                "2" "View Full Configuration Variables" \
-                "3" "View /tmp/postinst.sh (Package Installation Script)" \
-                "4" "View /tmp/setup.sh (System Configuration Script)" \
-                "5" "Apply Configuration" \
-                "6" "Back to Main Menu" \
+            choice=$(whiptail --title "Review Configuration" --cancel-button "Back" --menu \
+                "Select an option:" 20 70 12 \
+                "1" "View Device Information" \
+                "2" "View Package List" \
+                "3" "View Configuration Variables" \
+                "4" "View postinst.sh" \
+                "5" "View setup.sh" \
+                "6" "Apply Configuration" \
                 3>&1 1>&2 2>&3)
             
-            echo "[DEBUG] choice='$choice'" >> /tmp/debug.log
+            [ $? -ne 0 ] && return 0
             
             case "$choice" in
                 1)
+                    whiptail_device_info
+                    ;;
+                2)
                     if [ -s "$SELECTED_PACKAGES" ]; then
                         cat "$SELECTED_PACKAGES" | sed 's/^/- /' > /tmp/pkg_view.txt
-                        local pkg_count=$(wc -l < "$SELECTED_PACKAGES")
-                        whiptail --scrolltext --title "Package List ($pkg_count packages)" --textbox /tmp/pkg_view.txt 24 78
+                        whiptail --scrolltext --title "Package List" --textbox /tmp/pkg_view.txt 24 78
                     else
                         whiptail --msgbox "No packages selected" 8 40
                     fi
                     ;;
-                2)
+                3)
                     if [ -s "$SETUP_VARS" ]; then
-                        local var_count=$(wc -l < "$SETUP_VARS")
-                        whiptail --scrolltext --title "Configuration Variables ($var_count variables)" --textbox "$SETUP_VARS" 24 78
+                        whiptail --scrolltext --title "Configuration Variables" --textbox "$SETUP_VARS" 24 78
                     else
                         whiptail --msgbox "No configuration variables set" 8 40
                     fi
                     ;;
-                3)
+                4)
                     if [ -f "$OUTPUT_DIR/postinst.sh" ]; then
-                        whiptail --scrolltext --title "/tmp/postinst.sh" --textbox "$OUTPUT_DIR/postinst.sh" 24 78
+                        whiptail --scrolltext --title "postinst.sh" --textbox "$OUTPUT_DIR/postinst.sh" 24 78
                     else
                         whiptail --msgbox "postinst.sh file not found" 8 40
                     fi
                     ;;
-                4)
+                5)
                     if [ -f "$OUTPUT_DIR/setup.sh" ]; then
-                        whiptail --scrolltext --title "/tmp/setup.sh" --textbox "$OUTPUT_DIR/setup.sh" 24 78
+                        whiptail --scrolltext --title "setup.sh" --textbox "$OUTPUT_DIR/setup.sh" 24 78
                     else
                         whiptail --msgbox "setup.sh file not found" 8 40
                     fi
                     ;;
-                5)
-                    if whiptail --title "Confirm" --yesno "Apply this configuration?\n\nThis will:\n1. Install packages via /tmp/postinst.sh\n2. Apply settings via /tmp/setup.sh\n3. Optionally reboot\n\nContinue?" 15 60; then
+                6)
+                    if whiptail --title "Confirm" --yesno "Apply this configuration?\n\nThis will:\n1. Install packages via postinst.sh\n2. Apply settings via setup.sh\n3. Optionally reboot\n\nContinue?" 15 60; then
                         whiptail --msgbox "Executing package installation..." 8 50
                         sh "$OUTPUT_DIR/postinst.sh"
                         whiptail --msgbox "Applying system configuration..." 8 50
@@ -1183,9 +1167,6 @@ review_and_apply() {
                         return 0
                     fi
                     ;;
-                6|"")
-                    return 0
-                    ;;
             esac
         done
     else
@@ -1193,31 +1174,12 @@ review_and_apply() {
             clear
             echo "=== Configuration Review ==="
             echo ""
-            echo "DEVICE:"
-            echo "  Model: $DEVICE_MODEL"
-            echo "  Target: $DEVICE_TARGET"
-            echo ""
-            echo "PACKAGES:"
-            if [ -s "$SELECTED_PACKAGES" ]; then
-                echo "  Total: $(wc -l < $SELECTED_PACKAGES) packages"
-            else
-                echo "  (none)"
-            fi
-            
-            echo ""
-            echo "CONFIGURATION:"
-            if [ -s "$SETUP_VARS" ]; then
-                echo "  Total: $(wc -l < $SETUP_VARS) variables"
-            else
-                echo "  (none)"
-            fi
-            
-            echo ""
-            echo "1) View Full Package List"
-            echo "2) View Full Configuration Variables"
-            echo "3) View /tmp/postinst.sh"
-            echo "4) View /tmp/setup.sh"
-            echo "5) Apply Configuration"
+            echo "1) View Device Information"
+            echo "2) View Package List"
+            echo "3) View Configuration Variables"
+            echo "4) View postinst.sh"
+            echo "5) View setup.sh"
+            echo "6) Apply Configuration"
             echo "b) Back"
             echo ""
             printf "Choice: "
@@ -1225,6 +1187,9 @@ review_and_apply() {
             
             case "$choice" in
                 1)
+                    simple_device_info
+                    ;;
+                2)
                     clear
                     echo "=== Package List ==="
                     echo ""
@@ -1239,7 +1204,7 @@ review_and_apply() {
                     printf "Press Enter to continue..."
                     read
                     ;;
-                2)
+                3)
                     clear
                     echo "=== Configuration Variables ==="
                     echo ""
@@ -1252,9 +1217,9 @@ review_and_apply() {
                     printf "Press Enter to continue..."
                     read
                     ;;
-                3)
+                4)
                     clear
-                    echo "=== /tmp/postinst.sh ==="
+                    echo "=== postinst.sh ==="
                     echo ""
                     if [ -f "$OUTPUT_DIR/postinst.sh" ]; then
                         cat "$OUTPUT_DIR/postinst.sh"
@@ -1265,9 +1230,9 @@ review_and_apply() {
                     printf "Press Enter to continue..."
                     read
                     ;;
-                4)
+                5)
                     clear
-                    echo "=== /tmp/setup.sh ==="
+                    echo "=== setup.sh ==="
                     echo ""
                     if [ -f "$OUTPUT_DIR/setup.sh" ]; then
                         cat "$OUTPUT_DIR/setup.sh"
@@ -1278,13 +1243,13 @@ review_and_apply() {
                     printf "Press Enter to continue..."
                     read
                     ;;
-                5)
+                6)
                     clear
                     echo "=== Apply Configuration ==="
                     echo ""
                     echo "This will:"
-                    echo "1. Install packages via /tmp/postinst.sh"
-                    echo "2. Apply settings via /tmp/setup.sh"
+                    echo "1. Install packages via postinst.sh"
+                    echo "2. Apply settings via setup.sh"
                     echo "3. Optionally reboot"
                     echo ""
                     printf "Continue? (y/n): "
