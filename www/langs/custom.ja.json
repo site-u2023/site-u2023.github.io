@@ -148,5 +148,7 @@
     "tr-ui-choice": "選択",
     "tr-ui-installing": "whiptailをインストール中...",
     "tr-ui-install-success": "whiptailのインストールに成功しました！",
-    "tr-ui-install-failed": "インストール失敗、simpleモードを使用します"    
+    "tr-ui-install-failed": "インストール失敗、simpleモードを使用します" ,   
+    "tr-gua": "GUA",
+    "tr-pd": "PD"
 }
