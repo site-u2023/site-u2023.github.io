@@ -1088,10 +1088,15 @@ whiptail_main_menu() {
         i=$((i+1))
         menu_items="$menu_items $i \"Exit\""
         
+        # メインメニューでは Cancel ではなく Exit を表示
         choice=$(eval "whiptail --title 'OpenWrt Setup Tool v$VERSION - $DEVICE_MODEL' \
+            --ok-button 'Select' --cancel-button 'Exit' \
             --menu 'Main Menu:' 20 70 12 $menu_items 3>&1 1>&2 2>&3")
         
-        [ -z "$choice" ] && continue
+        # Cancelが押された場合（Exit選択）
+        if [ $? -ne 0 ]; then
+            exit 0
+        fi
         
         local setup_cat_count=$(get_setup_categories | wc -l)
         if [ "$choice" -le "$setup_cat_count" ]; then
