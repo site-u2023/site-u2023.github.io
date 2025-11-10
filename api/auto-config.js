@@ -818,7 +818,7 @@ function getNotice(langCode) {
  * @param {string} ipv6 - 判定対象のIPv6アドレス
  * @returns {boolean} GUAの場合true
  */
-function isGlobalUnicastAddress(ipv6) {
+function checkGlobalUnicastAddress(ipv6) {
   if (!ipv6) return false;
 
   // 2000::/3の範囲内かチェック
@@ -951,7 +951,7 @@ export default {
       language: lang,
       ipv4: clientIPv4 || null,
       ipv6: clientIPv6 || null,
-      ipv6_is_gua: clientIPv6 ? isGlobalUnicastAddress(clientIPv6) : null,
+      ipv6_is_gua: clientIPv6 ? checkGlobalUnicastAddress(clientIPv6) : null,
       country: cf.country || null,
       zonename,
       timezone,
