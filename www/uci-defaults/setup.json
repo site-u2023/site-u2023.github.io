@@ -464,9 +464,21 @@
               "ui_variable": "ui_mape_type",
               "default": "gua",
               "options": [
-                {"value": "gua", "label": "GUA", "class": "tr-gua"},
-                {"value": "pd", "label": "PD", "class": "tr-pd"}
+                {"value": "gua", "label": "GUA"},
+                {"value": "pd", "label": "PD"}
               ]
+            },
+            {
+              "type": "field",
+              "id": "mape-gua-prefix",
+              "label": "GUA Prefix",
+              "class": "tr-gua-prefix",
+              "fieldType": "text",
+              "variable": "mape_gua_prefix",
+              "placeholder": "optional for GUA",
+              "description": "IPv6 GUA prefix with /64 suffix",
+              "computeFrom": "generateGuaPrefix",
+              "showWhen": {"mape_type": "gua"}
             },
             {
               "type": "field",
@@ -547,18 +559,6 @@
               "variable": "mape_psidlen",
               "placeholder": "6",
               "apiSource": "mape.psidlen"
-            },
-            {
-              "type": "field",
-              "id": "mape-gua-prefix",
-              "label": "GUA Prefix",
-              "class": "tr-gua-prefix",
-              "fieldType": "text",
-              "variable": "mape_gua_prefix",
-              "placeholder": "optional for GUA",
-              "description": "IPv6 GUA prefix with /64 suffix",
-              "computeFrom": "generateGuaPrefix",
-              "showWhen": {"mape_type": "gua"}
             }
           ]
         },
