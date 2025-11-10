@@ -148,5 +148,7 @@
     "tr-ui-choice": "Choice",
     "tr-ui-installing": "Installing whiptail...",
     "tr-ui-install-success": "whiptail installed successfully!",
-    "tr-ui-install-failed": "Failed to install, using simple mode"  
+    "tr-ui-install-failed": "Failed to install, using simple mode",
+    "tr-gua": "GUA",
+    "tr-pd": "PD"
 }
