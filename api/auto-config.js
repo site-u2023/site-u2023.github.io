@@ -32,25 +32,37 @@ const JURISDICTION_PREFIXES = {
  * IPv6プレフィックスからAFTRタイプを判定
  */
 const dsliteRulesData = {
-  "aftrRules": [
+  aftrRules: [
     {
-      "aftrType": "transix",
-      "ipv6PrefixRanges": [
+      aftrType: "transix",
+      ipv6PrefixRanges: [
         "2404:8e00::/32", "2404:8e01::/32",
         "240b:0010::/32", "240b:0011::/32", "240b:0012::/32"
-      ]
+      ],
+      aftrAddresses: {
+        east: "2404:8e00::feed:100",
+        west: "2404:8e01::feed:100"
+      }
     },
     {
-      "aftrType": "xpass", 
-      "ipv6PrefixRanges": [
+      aftrType: "xpass",
+      ipv6PrefixRanges: [
         "2001:e30:1c1e::/48", "2001:e30:1c1f::/48"
-      ]
+      ],
+      aftrAddresses: {
+        east: "2001:e30:1c1e::1",
+        west: "2001:e30:1c1f::1"
+      }
     },
     {
-      "aftrType": "v6option",
-      "ipv6PrefixRanges": [
+      aftrType: "v6option",
+      ipv6PrefixRanges: [
         "2404:8e00::/32", "2404:8e01::/32"
-      ]
+      ],
+      aftrAddresses: {
+        east: "2404:8e00:feed:100::1",
+        west: "2404:8e01:feed:100::1"
+      }
     }
   ]
 };
@@ -641,7 +653,7 @@ function checkIPv6InRangeJS(ipv6, prefixStr, prefixLen) {
       return false;
     }
 
-    checkedBits += 16;
+    checkedBits += bitsInGroup;
   }
 
   return true;
@@ -682,27 +694,12 @@ function checkDSLiteRule(ipv6) {
     for (const range of rule.ipv6PrefixRanges) {
       const [prefix, lenStr] = range.split('/');
       const len = parseInt(lenStr, 10);
+
       if (checkIPv6InRangeJS(ipv6, prefix, len)) {
         const jurisdiction = determineJurisdiction(ipv6);
-        
-        // AFTRアドレスマッピング
-        const aftrAddresses = {
-          transix: {
-            east: '2404:8e00::feed:100',
-            west: '2404:8e01::feed:100'
-          },
-          xpass: {
-            east: '2001:e30:1c1e::1',
-            west: '2001:e30:1c1f::1'
-          },
-          v6option: {
-            east: '2404:8e00:feed:100::1',
-            west: '2404:8e01:feed:100::1'
-          }
-        };
 
-        const aftrIpv6Address = jurisdiction && aftrAddresses[rule.aftrType]
-          ? aftrAddresses[rule.aftrType][jurisdiction]
+        const aftrIpv6Address = jurisdiction && rule.aftrAddresses
+          ? rule.aftrAddresses[jurisdiction]
           : null;
 
         return {
