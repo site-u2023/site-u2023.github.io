@@ -837,6 +837,20 @@ function checkGlobalUnicastAddress(ipv6) {
 }
 
 /**
+ * IPv6アドレスから/64プレフィックスを抽出
+ * @param {string} ipv6 - IPv6アドレス
+ * @returns {string|null} /64プレフィックス（例：2400:4151:80e2:7500::/64）
+ */
+function extractGUAPrefix(ipv6) {
+  if (!ipv6) return null;
+
+  const parts = ipv6.split(':');
+  if (parts.length < 4) return null;
+
+  return `${parts[0]}:${parts[1]}:${parts[2]}:${parts[3]}::/64`;
+}
+
+/**
  * リクエストから最適な言語を選択
  * Accept-Languageヘッダーと国コードから判定
  * @param {Request} request - Cloudflare Request
@@ -928,7 +942,17 @@ export default {
       aftrRule = checkDSLiteRule(clientIPv6);
       if (!aftrRule) {
         mapRule = checkMapERule(clientIPv6);
-        if (mapRule) mapRule = enrichMapRule(mapRule);
+        if (mapRule) {
+          mapRule = enrichMapRule(mapRule);
+          
+          // MAP-EでGUAの場合、ipv6Prefix_guaを追加
+          if (mapRule && checkGlobalUnicastAddress(clientIPv6)) {
+            const guaPrefix = extractGUAPrefix(clientIPv6);
+            if (guaPrefix) {
+              mapRule.ipv6Prefix_gua = guaPrefix;
+            }
+          }
+        }
       }
     }
 
@@ -951,7 +975,6 @@ export default {
       language: lang,
       ipv4: clientIPv4 || null,
       ipv6: clientIPv6 || null,
-      ipv6_gua: clientIPv6 ? checkGlobalUnicastAddress(clientIPv6) : null,
       country: cf.country || null,
       zonename,
       timezone,
