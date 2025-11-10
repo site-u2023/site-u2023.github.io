@@ -951,7 +951,7 @@ export default {
       language: lang,
       ipv4: clientIPv4 || null,
       ipv6: clientIPv6 || null,
-      ipv6_is_gua: clientIPv6 ? checkGlobalUnicastAddress(clientIPv6) : null,
+      ipv6_gua: clientIPv6 ? checkGlobalUnicastAddress(clientIPv6) : null,
       country: cf.country || null,
       zonename,
       timezone,
