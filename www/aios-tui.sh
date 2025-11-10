@@ -184,58 +184,6 @@ get_device_info() {
     [ -z "$DEVICE_TARGET" ] && DEVICE_TARGET="unknown/unknown"
 }
 
-detect_gua_prefix() {
-    local ipv6="$1"
-    
-    [ -z "$ipv6" ] && return 1
-    
-    local first_hex=$(echo "$ipv6" | cut -d: -f1)
-    local first_dec=$((0x$first_hex))
-    
-    [ $first_dec -lt 8192 ] || [ $first_dec -ge 16384 ] && return 1
-    
-    local exclude_cidrs=$(jsonfilter -i "$SETUP_JSON" -e '@.constants.gua_validation.exclude_cidrs[*]' 2>/dev/null)
-    
-    for cidr in $exclude_cidrs; do
-        local prefix=$(echo "$cidr" | cut -d/ -f1)
-        local length=$(echo "$cidr" | cut -d/ -f2)
-        
-        case "$length" in
-            16)
-                local check=$(echo "$prefix" | cut -d: -f1)
-                local ipv6_check=$(echo "$ipv6" | cut -d: -f1)
-                [ "$ipv6_check" = "$check" ] && return 1
-                ;;
-            28)
-                local check=$(echo "$prefix" | cut -d: -f1-2 | sed 's/:$//')
-                local ipv6_check=$(echo "$ipv6" | cut -d: -f1-2 | sed 's/:$//')
-                [ "$ipv6_check" = "$check" ] && {
-                    local third_hex=$(echo "$ipv6" | cut -d: -f2)
-                    local third_dec=$((0x${third_hex:-0}))
-                    local prefix_third_hex=$(echo "$prefix" | cut -d: -f2)
-                    local prefix_third_dec=$((0x${prefix_third_hex:-0}))
-                    local mask_dec=$((prefix_third_dec & 0xfff0))
-                    local ipv6_masked=$((third_dec & 0xfff0))
-                    [ $ipv6_masked -eq $mask_dec ] && return 1
-                }
-                ;;
-            32)
-                local check=$(echo "$prefix" | cut -d: -f1-2)
-                local ipv6_check=$(echo "$ipv6" | cut -d: -f1-2)
-                [ "$ipv6_check" = "$check" ] && return 1
-                ;;
-            48)
-                local check=$(echo "$prefix" | cut -d: -f1-3)
-                local ipv6_check=$(echo "$ipv6" | cut -d: -f1-3)
-                [ "$ipv6_check" = "$check" ] && return 1
-                ;;
-        esac
-    done
-    
-    echo "$ipv6" | awk -F: '{print $1":"$2":"$3":"$4"::/64"}'
-    return 0
-}
-
 get_extended_device_info() {
     get_device_info
     
@@ -263,7 +211,7 @@ get_extended_device_info() {
     MAPE_PSID_OFFSET=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.mape.psIdOffset' 2>/dev/null)
     
     ISP_IPV6=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.ipv6' 2>/dev/null)
-    MAPE_GUA_PREFIX=$(detect_gua_prefix "$ISP_IPV6")
+    MAPE_GUA_PREFIX=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.mape.ipv6Prefix_gua' 2>/dev/null)
     
     DSLITE_AFTR=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.aftr.aftrIpv6Address' 2>/dev/null)
     
