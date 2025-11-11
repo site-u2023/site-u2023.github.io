@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1111.1818"
+VERSION="R7.1111.2306"
 BASE_URL="https://site-u.pages.dev"
 PACKAGES_URL="$BASE_URL/www/packages/packages.json"
 SETUP_JSON_URL="$BASE_URL/www/uci-defaults/setup.json"
@@ -849,7 +849,6 @@ whiptail_process_items() {
                 local label=$(get_setup_item_label "$item_id")
                 local variable=$(get_setup_item_variable "$item_id")
                 local default=$(get_setup_item_default "$item_id")
-                local breadcrumb="${tr_main_menu} > ${cat_title} > ${label}"
                 
                 echo "[DEBUG] radio-group: var=$variable, default=$default" >> /tmp/debug.log
                 
@@ -877,7 +876,7 @@ whiptail_process_items() {
                     i=$((i+1))
                 done
                 
-                value=$(eval "whiptail --title '$breadcrumb' --ok-button 'Select' --cancel-button 'Back' --menu '$label:' 18 60 10 $menu_opts 3>&1 1>&2 2>&3")
+                value=$(eval "whiptail --title '$breadcrumb' --ok-button 'Select' --cancel-button 'Back' --menu '${label}:' 18 60 10 $menu_opts 3>&1 1>&2 2>&3")
                 exit_code=$?
                 
                 if [ $exit_code -ne 0 ]; then
@@ -911,7 +910,6 @@ whiptail_process_items() {
                 local variable=$(get_setup_item_variable "$item_id")
                 local default=$(get_setup_item_default "$item_id")
                 local field_type=$(get_setup_item_field_type "$item_id")
-                local breadcrumb="${tr_main_menu} > ${cat_title} > ${label}"
                 
                 echo "[DEBUG] field processing: item_id=$item_id" >> /tmp/debug.log
                 echo "[DEBUG] label='$label'" >> /tmp/debug.log
@@ -989,7 +987,7 @@ whiptail_process_items() {
                                 ;;
                             *)
                                 echo "[DEBUG] Unknown source type: $source, showing as inputbox" >> /tmp/debug.log
-                                value=$(whiptail --title "$breadcrumb" --ok-button "Select" --cancel-button "Back" --inputbox "$label:" 10 60 "$current" 3>&1 1>&2 2>&3)
+                                value=$(whiptail --title "$breadcrumb" --ok-button "Select" --cancel-button "Back" --inputbox "${label}:" 10 60 "$current" 3>&1 1>&2 2>&3)
                                 exit_code=$?
                                 
                                 if [ $exit_code -ne 0 ]; then
@@ -1026,7 +1024,7 @@ whiptail_process_items() {
                     
                     echo "[DEBUG] Final menu_opts='$menu_opts'" >> /tmp/debug.log
                     
-                    value=$(eval "whiptail --title '$breadcrumb' --ok-button 'Select' --cancel-button 'Back' --menu '$label:' 18 60 10 $menu_opts 3>&1 1>&2 2>&3")
+                    value=$(eval "whiptail --title '$breadcrumb' --ok-button 'Select' --cancel-button 'Back' --menu '${label}:' 18 60 10 $menu_opts 3>&1 1>&2 2>&3")
                     exit_code=$?
                     
                     echo "[DEBUG] select exit_code=$exit_code, value='$value'" >> /tmp/debug.log
@@ -1057,7 +1055,7 @@ whiptail_process_items() {
                 else
                     echo "[DEBUG] About to show inputbox for '$label'" >> /tmp/debug.log
                     
-                    value=$(whiptail --title "$breadcrumb" --ok-button "Select" --cancel-button "Back" --inputbox "$label:" 10 60 "$current" 3>&1 1>&2 2>&3)
+                    value=$(whiptail --title "$breadcrumb" --ok-button "Select" --cancel-button "Back" --inputbox "${label}:" 10 60 "$current" 3>&1 1>&2 2>&3)
                     exit_code=$?
                     
                     echo "[DEBUG] inputbox exit_code=$exit_code, value='$value'" >> /tmp/debug.log
