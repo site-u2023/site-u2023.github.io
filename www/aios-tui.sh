@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1111.1047"
+VERSION="R7.1111.1049"
 BASE_URL="https://site-u.pages.dev"
 PACKAGES_URL="$BASE_URL/www/packages/packages.json"
 SETUP_JSON_URL="$BASE_URL/www/uci-defaults/setup.json"
@@ -1010,13 +1010,14 @@ whiptail_category_config() {
     local processed=$?
     
     echo "[DEBUG] Items processed: $processed" >> /tmp/debug.log
-    echo "[DEBUG] SETUP_VARS after processing:" >> /tmp/debug.log
-    cat "$SETUP_VARS" >> /tmp/debug.log 2>&1
     
     if [ $processed -eq 1 ]; then
-        echo "[DEBUG] User pressed Back, returning to menu" >> /tmp/debug.log
+        echo "[DEBUG] User cancelled, returning" >> /tmp/debug.log
         return 0
     fi
+    
+    echo "[DEBUG] SETUP_VARS after processing:" >> /tmp/debug.log
+    cat "$SETUP_VARS" >> /tmp/debug.log 2>&1
     
     if [ $processed -eq 0 ]; then
         whiptail --msgbox "Configuration completed!" 8 50
