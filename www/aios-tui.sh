@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1111.1523"
+VERSION="R7.1111.1546"
 BASE_URL="https://site-u.pages.dev"
 PACKAGES_URL="$BASE_URL/www/packages/packages.json"
 SETUP_JSON_URL="$BASE_URL/www/uci-defaults/setup.json"
@@ -1222,10 +1222,10 @@ whiptail_main_menu() {
         local tr_select=$(translate "tr-select")
         local tr_exit=$(translate "tr-exit")
         
-        choice=$(eval "whiptail --title '${VERSION}' \
+        choice=$(eval "whiptail --title '${tr_main_menu}' \
             --ok-button '${tr_select}' \
             --cancel-button '${tr_exit}' \
-            --menu '${tr_main_menu}' 20 70 12 $menu_items 3>&1 1>&2 2>&3")
+            --menu '${VERSION}' 20 70 12 $menu_items 3>&1 1>&2 2>&3")
         
         if [ $? -ne 0 ]; then
             exit 0
@@ -1246,9 +1246,13 @@ whiptail_main_menu() {
 review_and_apply() {
     generate_files
     
+    local tr_main_menu=$(translate "tr-main-menu")
+    local tr_review=$(translate "tr-review-configuration")
+    local breadcrumb="${tr_main_menu} > ${tr_review}"
+    
     while true; do
         if [ "$UI_MODE" = "whiptail" ]; then
-            choice=$(whiptail --title "Review Configuration" --ok-button "Select" --cancel-button "Back" --menu \
+            choice=$(whiptail --title "$breadcrumb" --ok-button "Select" --cancel-button "Back" --menu \
                 "Select an option:" 20 70 12 \
                 "1" "View Device Information" \
                 "2" "View Package List" \
