@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1111.2306"
+VERSION="R7.1111.2313"
 BASE_URL="https://site-u.pages.dev"
 PACKAGES_URL="$BASE_URL/www/packages/packages.json"
 SETUP_JSON_URL="$BASE_URL/www/uci-defaults/setup.json"
@@ -781,7 +781,8 @@ whiptail_show_network_info() {
         return 1
     fi
     
-    local info=": ${DETECTED_CONN_TYPE}\n\n"
+    local tr_auto_detection=$(translate "tr-auto-detection")
+    local info="${tr_auto_detection}: ${DETECTED_CONN_TYPE}\n\n"
     [ -n "$ISP_NAME" ] && info="${info}${tr_isp}: $ISP_NAME\n"
     [ -n "$ISP_AS" ] && info="${info}${tr_as}: $ISP_AS\n"
     
