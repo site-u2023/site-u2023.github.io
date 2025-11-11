@@ -143,6 +143,7 @@
     "tr-feedback-link": "Forum",
 
     "tr-main-menu": "Main Menu",
+    "tr-review-configuration": "Review & Apply Configuration",
     "tr-select": "Select",
     "tr-back": "Back",
     "tr-exit": "Exit",
@@ -150,7 +151,6 @@
     "tr-no": "No",
     "tr-ok": "OK",
     "tr-cancel": "Cancel",
-    "tr-review-configuration": "Review Configuration",
     
     "tr-ui-mode-select": "Select UI mode:",
     "tr-ui-whiptail": "whiptail (dialog-based TUI)",
