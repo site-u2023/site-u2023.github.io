@@ -741,7 +741,7 @@ generate_files() {
 }
 
 whiptail_device_info() {
-    local tr_main_menu=$(translate "tr-tui-main-menu")
+    local tr_device_info=$(translate "tr-tui-view-device-info")
     
     local info="Model: $DEVICE_MODEL\n"
     info="${info}Target: $DEVICE_TARGET\n"
