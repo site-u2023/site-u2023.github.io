@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1111.1507"
+VERSION="R7.1111.1523"
 BASE_URL="https://site-u.pages.dev"
 PACKAGES_URL="$BASE_URL/www/packages/packages.json"
 SETUP_JSON_URL="$BASE_URL/www/uci-defaults/setup.json"
@@ -798,8 +798,9 @@ whiptail_show_network_info() {
 whiptail_process_items() {
     local cat_id="$1"
     local parent_items="$2"
+    local breadcrumb="$3"
     
-    echo "[DEBUG] whiptail_process_items: cat_id=$cat_id" >> /tmp/debug.log
+    echo "[DEBUG] whiptail_process_items: cat_id=$cat_id, breadcrumb=$breadcrumb" >> /tmp/debug.log
     
     local items
     if [ -z "$parent_items" ]; then
@@ -846,6 +847,9 @@ whiptail_process_items() {
                 local options=$(get_setup_item_options "$item_id")
                 echo "[DEBUG] Options: $options" >> /tmp/debug.log
                 
+                local tr_select=$(translate "tr-select")
+                local tr_back=$(translate "tr-back")
+                
                 local menu_opts=""
                 local i=1
                 for opt in $options; do
@@ -854,7 +858,7 @@ whiptail_process_items() {
                     i=$((i+1))
                 done
                 
-                value=$(eval "whiptail --title 'Setup' --ok-button 'Select' --cancel-button 'Back' --menu '$label:' 18 60 10 $menu_opts 3>&1 1>&2 2>&3")
+                value=$(eval "whiptail --title '$breadcrumb' --ok-button '$tr_select' --cancel-button '$tr_back' --menu '$label:' 18 60 10 $menu_opts 3>&1 1>&2 2>&3")
                 exit_code=$?
                 
                 if [ $exit_code -ne 0 ]; then
@@ -877,7 +881,7 @@ whiptail_process_items() {
                 local nested=$(get_section_nested_items "$item_id")
                 if [ -n "$nested" ]; then
                     echo "[DEBUG] Nested items: $nested" >> /tmp/debug.log
-                    whiptail_process_items "$cat_id" "$nested"
+                    whiptail_process_items "$cat_id" "$nested" "$breadcrumb"
                     items_processed=$((items_processed + $?))
                 fi
                 ;;
@@ -953,6 +957,9 @@ whiptail_process_items() {
                     fi
                 fi
                 
+                local tr_select=$(translate "tr-select")
+                local tr_back=$(translate "tr-back")
+                
                 if [ "$field_type" = "select" ]; then
                     local source=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].source" 2>/dev/null | head -1)
                     
@@ -965,7 +972,7 @@ whiptail_process_items() {
                                 ;;
                             *)
                                 echo "[DEBUG] Unknown source type: $source, showing as inputbox" >> /tmp/debug.log
-                                value=$(whiptail --title "Setup" --ok-button "Select" --cancel-button "Back" --inputbox "$label:" 10 60 "$current" 3>&1 1>&2 2>&3)
+                                value=$(whiptail --title "$breadcrumb" --ok-button "$tr_select" --cancel-button "$tr_back" --inputbox "$label:" 10 60 "$current" 3>&1 1>&2 2>&3)
                                 exit_code=$?
                                 
                                 if [ $exit_code -ne 0 ]; then
@@ -1002,7 +1009,7 @@ whiptail_process_items() {
                     
                     echo "[DEBUG] Final menu_opts='$menu_opts'" >> /tmp/debug.log
                     
-                    value=$(eval "whiptail --title 'Setup' --ok-button 'Select' --cancel-button 'Back' --menu '$label:' 18 60 10 $menu_opts 3>&1 1>&2 2>&3")
+                    value=$(eval "whiptail --title '$breadcrumb' --ok-button '$tr_select' --cancel-button '$tr_back' --menu '$label:' 18 60 10 $menu_opts 3>&1 1>&2 2>&3")
                     exit_code=$?
                     
                     echo "[DEBUG] select exit_code=$exit_code, value='$value'" >> /tmp/debug.log
@@ -1033,7 +1040,7 @@ whiptail_process_items() {
                 else
                     echo "[DEBUG] About to show inputbox for '$label'" >> /tmp/debug.log
                     
-                    value=$(whiptail --title "Setup" --ok-button "Select" --cancel-button "Back" --inputbox "$label:" 10 60 "$current" 3>&1 1>&2 2>&3)
+                    value=$(whiptail --title "$breadcrumb" --ok-button "$tr_select" --cancel-button "$tr_back" --inputbox "$label:" 10 60 "$current" 3>&1 1>&2 2>&3)
                     exit_code=$?
                     
                     echo "[DEBUG] inputbox exit_code=$exit_code, value='$value'" >> /tmp/debug.log
@@ -1096,7 +1103,7 @@ whiptail_category_config() {
     local tr_no=$(translate "tr-no")
     
     echo "[DEBUG] === whiptail_category_config START ===" >> /tmp/debug.log
-    echo "[DEBUG] cat_id=$cat_id, title=$cat_title" >> /tmp/debug.log
+    echo "[DEBUG] cat_id=$cat_id, title=$cat_title, breadcrumb=$breadcrumb" >> /tmp/debug.log
     
     if [ "$cat_id" = "internet-connection" ]; then
         if whiptail_show_network_info; then
@@ -1107,7 +1114,7 @@ whiptail_category_config() {
     fi
     
     echo "[DEBUG] Processing all items" >> /tmp/debug.log
-    whiptail_process_items "$cat_id" ""
+    whiptail_process_items "$cat_id" "" "$breadcrumb"
     local processed=$?
     
     echo "[DEBUG] Items processed: $processed" >> /tmp/debug.log
