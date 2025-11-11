@@ -142,6 +142,15 @@
 
     "tr-feedback-link": "Forum",
 
+    "tr-main-menu": "Main Menu",
+    "tr-select": "Select",
+    "tr-back": "Back",
+    "tr-exit": "Exit",
+    "tr-yes": "Yes",
+    "tr-no": "No",
+    "tr-ok": "OK",
+    "tr-cancel": "Cancel",
+    
     "tr-ui-mode-select": "Select UI mode:",
     "tr-ui-whiptail": "whiptail (dialog-based TUI)",
     "tr-ui-simple": "simple (list-based TUI)",
