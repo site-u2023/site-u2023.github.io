@@ -1087,6 +1087,13 @@ whiptail_process_items() {
 whiptail_category_config() {
     local cat_id="$1"
     local cat_title=$(get_setup_category_title "$cat_id")
+    local tr_main_menu=$(translate "tr-main-menu")
+    local breadcrumb="${tr_main_menu} > ${cat_title}"
+
+    local tr_select=$(translate "tr-select")
+    local tr_back=$(translate "tr-back")
+    local tr_yes=$(translate "tr-yes")
+    local tr_no=$(translate "tr-no")
     
     echo "[DEBUG] === whiptail_category_config START ===" >> /tmp/debug.log
     echo "[DEBUG] cat_id=$cat_id, title=$cat_title" >> /tmp/debug.log
@@ -1200,11 +1207,18 @@ whiptail_main_menu() {
         local packages_label=$(translate "tr-custom-packages")
         menu_items="$menu_items $i \"$packages_label\""
         i=$((i+1))
-        menu_items="$menu_items $i \"Review & Generate\""
         
-        choice=$(eval "whiptail --title 'OpenWrt Setup Tool v$VERSION - $DEVICE_MODEL' \
-            --ok-button 'Select' --cancel-button 'Exit' \
-            --menu 'Main Menu:' 20 70 12 $menu_items 3>&1 1>&2 2>&3")
+        local review_label=$(translate "tr-review-configuration")
+        menu_items="$menu_items $i \"$review_label\""
+        
+        local tr_main_menu=$(translate "tr-main-menu")
+        local tr_select=$(translate "tr-select")
+        local tr_exit=$(translate "tr-exit")
+        
+        choice=$(eval "whiptail --title '${VERSION}' \
+            --ok-button '${tr_select}' \
+            --cancel-button '${tr_exit}' \
+            --menu '${tr_main_menu}' 20 70 12 $menu_items 3>&1 1>&2 2>&3")
         
         if [ $? -ne 0 ]; then
             exit 0
