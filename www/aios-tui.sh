@@ -1232,7 +1232,7 @@ whiptail_main_menu() {
         i=$((i+1))
         menu_items="$menu_items $i \"$(translate 'tr-tui-review-configuration')\""
         
-        choice=$(eval "whiptail --title 'OpenWrt Setup Tool v$VERSION - $DEVICE_MODEL' \
+        choice=$(eval "whiptail --title '$VERSION' \
             --ok-button '$(translate 'tr-tui-select')' --cancel-button '$(translate 'tr-tui-exit')' \
             --menu '$tr_main_menu:' 20 70 12 $menu_items 3>&1 1>&2 2>&3")
         
