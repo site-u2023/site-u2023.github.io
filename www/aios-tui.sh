@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1111.0139"
+VERSION="R7.1111.0954"
 BASE_URL="https://site-u.pages.dev"
 PACKAGES_URL="$BASE_URL/www/packages/packages.json"
 SETUP_JSON_URL="$BASE_URL/www/uci-defaults/setup.json"
@@ -748,7 +748,7 @@ whiptail_device_info() {
     [ -n "$DEVICE_CPU" ] && info="${info}CPU: $DEVICE_CPU\n"
     [ -n "$DEVICE_STORAGE" ] && info="${info}Storage: $DEVICE_STORAGE_USED/$DEVICE_STORAGE (${DEVICE_STORAGE_AVAIL} free)\n"
     [ -n "$DEVICE_USB" ] && info="${info}USB: $DEVICE_USB\n"
-    whiptail --title "Device Information" --msgbox "$info" 15 70
+    whiptail --title "Device Information" --ok-button "Select" --msgbox "$info" 15 70
 }
 
 whiptail_show_network_info() {
@@ -786,7 +786,7 @@ whiptail_show_network_info() {
     
     info="${info}\n\nUse this auto-detected configuration?"
     
-    if whiptail --title "$(translate 'tr-internet-connection')" --yesno "$info" 22 70; then
+    if whiptail --title "$(translate 'tr-internet-connection')" --ok-button "Select" --cancel-button "Back" --yesno "$info" 22 70; then
         sed -i "/^connection_type=/d" "$SETUP_VARS"
         echo "connection_type='auto'" >> "$SETUP_VARS"
         return 0
@@ -854,7 +854,7 @@ whiptail_process_items() {
                     i=$((i+1))
                 done
                 
-                value=$(eval "whiptail --title 'Setup' --menu '$label:' 18 60 10 $menu_opts 3>&1 1>&2 2>&3")
+                value=$(eval "whiptail --title 'Setup' --ok-button 'Select' --cancel-button 'Back' --menu '$label:' 18 60 10 $menu_opts 3>&1 1>&2 2>&3")
                 
                 if [ $? -eq 0 ] && [ -n "$value" ]; then
                     selected_opt=$(echo "$options" | sed -n "${value}p")
@@ -913,7 +913,7 @@ whiptail_process_items() {
                         i=$((i+1))
                     done
                     
-                    value=$(eval "whiptail --title 'Setup' --menu '$label:' 18 60 10 $menu_opts 3>&1 1>&2 2>&3")
+                    value=$(eval "whiptail --title 'Setup' --ok-button 'Select' --cancel-button 'Back' --menu '$label:' 18 60 10 $menu_opts 3>&1 1>&2 2>&3")
                     
                     if [ $? -eq 0 ] && [ -n "$value" ]; then
                         selected_opt=$(echo "$options" | sed -n "${value}p")
@@ -933,7 +933,7 @@ whiptail_process_items() {
                         fi
                     fi
                 else
-                    value=$(whiptail --title "Setup" --inputbox "$label:" 10 60 "$current" 3>&1 1>&2 2>&3)
+                    value=$(whiptail --title "Setup" --ok-button "Select" --cancel-button "Back" --inputbox "$label:" 10 60 "$current" 3>&1 1>&2 2>&3)
                     
                     if [ $? -eq 0 ] && [ -n "$value" ]; then
                         sed -i "/^${variable}=/d" "$SETUP_VARS"
@@ -966,7 +966,7 @@ whiptail_process_items() {
                     content=$(translate "$class")
                 fi
                 
-                [ -n "$content" ] && whiptail --msgbox "$content" 10 60
+                [ -n "$content" ] && whiptail --ok-button "Select" --msgbox "$content" 10 60
                 ;;
         esac
     done
@@ -984,7 +984,7 @@ whiptail_category_config() {
     
     if [ "$cat_id" = "internet-connection" ]; then
         if whiptail_show_network_info; then
-            whiptail --msgbox "Auto-configuration applied!" 8 40
+            whiptail --ok-button "Select" --msgbox "Auto-configuration applied!" 8 40
             return 0
         fi
     fi
@@ -998,7 +998,7 @@ whiptail_category_config() {
     cat "$SETUP_VARS" >> /tmp/debug.log 2>&1
     
     if [ $processed -eq 0 ]; then
-        whiptail --msgbox "Configuration completed!" 8 50
+        whiptail --ok-button "Select" --msgbox "Configuration completed!" 8 50
     fi
 
     echo "[DEBUG] About to call auto_add_conditional_packages for $cat_id" >> /tmp/debug.log
@@ -1021,7 +1021,7 @@ whiptail_package_categories() {
         i=$((i+1))
     done < <(get_categories)
     
-    choice=$(eval "whiptail --title 'Package Categories' --cancel-button 'Back' --menu 'Select category:' 20 70 12 $menu_items 3>&1 1>&2 2>&3")
+    choice=$(eval "whiptail --title 'Package Categories' --ok-button 'Select' --cancel-button 'Back' --menu 'Select category:' 20 70 12 $menu_items 3>&1 1>&2 2>&3")
     
     if [ $? -ne 0 ]; then
         return 0
@@ -1055,7 +1055,7 @@ whiptail_package_selection() {
         checklist_items="$checklist_items \"$pkg_id\" \"$pkg_name\" $status"
     done < <(get_category_packages "$cat_id")
     
-    selected=$(eval "whiptail --title '$cat_name' --cancel-button 'Back' --checklist '$cat_desc (Space=toggle):' 20 70 12 $checklist_items 3>&1 1>&2 2>&3")
+    selected=$(eval "whiptail --title '$cat_name' --ok-button 'Select' --cancel-button 'Back' --checklist '$cat_desc (Space=toggle):' 20 70 12 $checklist_items 3>&1 1>&2 2>&3")
     
     if [ $? -eq 0 ]; then
         while read pkg_id; do
@@ -1111,7 +1111,7 @@ review_and_apply() {
     
     while true; do
         if [ "$UI_MODE" = "whiptail" ]; then
-            choice=$(whiptail --title "Review Configuration" --cancel-button "Back" --menu \
+            choice=$(whiptail --title "Review Configuration" --ok-button "Select" --cancel-button "Back" --menu \
                 "Select an option:" 20 70 12 \
                 "1" "View Device Information" \
                 "2" "View Package List" \
@@ -1148,9 +1148,9 @@ review_and_apply() {
                 if [ "$UI_MODE" = "whiptail" ]; then
                     if [ -s "$SELECTED_PACKAGES" ]; then
                         cat "$SELECTED_PACKAGES" | sed 's/^/- /' > /tmp/pkg_view.txt
-                        whiptail --scrolltext --title "Package List" --textbox /tmp/pkg_view.txt 24 78
+                        whiptail --scrolltext --ok-button "Select" --title "Package List" --textbox /tmp/pkg_view.txt 24 78
                     else
-                        whiptail --msgbox "No packages selected" 8 40
+                        whiptail --ok-button "Select" --msgbox "No packages selected" 8 40
                     fi
                 else
                     clear
@@ -1171,9 +1171,9 @@ review_and_apply() {
             3)
                 if [ "$UI_MODE" = "whiptail" ]; then
                     if [ -s "$SETUP_VARS" ]; then
-                        whiptail --scrolltext --title "Configuration Variables" --textbox "$SETUP_VARS" 24 78
+                        whiptail --scrolltext --ok-button "Select" --title "Configuration Variables" --textbox "$SETUP_VARS" 24 78
                     else
-                        whiptail --msgbox "No configuration variables set" 8 40
+                        whiptail --ok-button "Select" --msgbox "No configuration variables set" 8 40
                     fi
                 else
                     clear
@@ -1192,9 +1192,9 @@ review_and_apply() {
             4)
                 if [ "$UI_MODE" = "whiptail" ]; then
                     if [ -f "$OUTPUT_DIR/postinst.sh" ]; then
-                        whiptail --scrolltext --title "postinst.sh" --textbox "$OUTPUT_DIR/postinst.sh" 24 78
+                        whiptail --scrolltext --ok-button "Select" --title "postinst.sh" --textbox "$OUTPUT_DIR/postinst.sh" 24 78
                     else
-                        whiptail --msgbox "postinst.sh file not found" 8 40
+                        whiptail --ok-button "Select" --msgbox "postinst.sh file not found" 8 40
                     fi
                 else
                     clear
@@ -1213,9 +1213,9 @@ review_and_apply() {
             5)
                 if [ "$UI_MODE" = "whiptail" ]; then
                     if [ -f "$OUTPUT_DIR/setup.sh" ]; then
-                        whiptail --scrolltext --title "setup.sh" --textbox "$OUTPUT_DIR/setup.sh" 24 78
+                        whiptail --scrolltext --ok-button "Select" --title "setup.sh" --textbox "$OUTPUT_DIR/setup.sh" 24 78
                     else
-                        whiptail --msgbox "setup.sh file not found" 8 40
+                        whiptail --ok-button "Select" --msgbox "setup.sh file not found" 8 40
                     fi
                 else
                     clear
@@ -1233,12 +1233,12 @@ review_and_apply() {
                 ;;
             6)
                 if [ "$UI_MODE" = "whiptail" ]; then
-                    if whiptail --title "Confirm" --yesno "Apply this configuration?\n\nThis will:\n1. Install packages via postinst.sh\n2. Apply settings via setup.sh\n3. Optionally reboot\n\nContinue?" 15 60; then
-                        whiptail --msgbox "Executing package installation..." 8 50
+                    if whiptail --ok-button "Select" --cancel-button "Back" --title "Confirm" --yesno "Apply this configuration?\n\nThis will:\n1. Install packages via postinst.sh\n2. Apply settings via setup.sh\n3. Optionally reboot\n\nContinue?" 15 60; then
+                        whiptail --ok-button "Select" --msgbox "Executing package installation..." 8 50
                         sh "$OUTPUT_DIR/postinst.sh"
-                        whiptail --msgbox "Applying system configuration..." 8 50
+                        whiptail --ok-button "Select" --msgbox "Applying system configuration..." 8 50
                         sh "$OUTPUT_DIR/setup.sh"
-                        if whiptail --yesno "Configuration applied successfully!\n\nReboot now?" 10 50; then
+                        if whiptail --ok-button "Select" --cancel-button "Back" --yesno "Configuration applied successfully!\n\nReboot now?" 10 50; then
                             reboot
                         fi
                         return 0
