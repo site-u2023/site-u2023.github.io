@@ -1182,10 +1182,7 @@ whiptail_package_categories() {
 
 whiptail_package_selection() {
     local cat_id="$1"
-    local tr_main_menu=$(translate "tr-tui-main-menu")
-    local tr_custom_packages=$(translate "tr-custom-packages")
     local cat_name=$(get_category_name "$cat_id")
-    local breadcrumb="${tr_main_menu} > ${tr_custom_packages} > ${cat_name}"
     
     local cat_desc=$(get_category_desc "$cat_id")
     local tr_space_toggle=$(translate "tr-tui-space-toggle")
@@ -1204,7 +1201,7 @@ whiptail_package_selection() {
         checklist_items="$checklist_items \"$pkg_id\" \"$pkg_name\" $status"
     done < <(get_category_packages "$cat_id")
     
-    selected=$(eval "whiptail --title '$breadcrumb' --ok-button 'Select' --cancel-button 'Back' --checklist '$cat_desc ($tr_space_toggle):' 20 70 12 $checklist_items 3>&1 1>&2 2>&3")
+    selected=$(eval "whiptail --title '$cat_name' --ok-button 'Select' --cancel-button 'Back' --checklist '$cat_desc ($tr_space_toggle):' 20 70 12 $checklist_items 3>&1 1>&2 2>&3")
     
     if [ $? -eq 0 ]; then
         while read pkg_id; do
