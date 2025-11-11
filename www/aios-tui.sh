@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1111.1049"
+VERSION="R7.1111.1122"
 BASE_URL="https://site-u.pages.dev"
 PACKAGES_URL="$BASE_URL/www/packages/packages.json"
 SETUP_JSON_URL="$BASE_URL/www/uci-defaults/setup.json"
@@ -896,7 +896,44 @@ whiptail_process_items() {
                 echo "[DEBUG] field_type='$field_type'" >> /tmp/debug.log
                 
                 local current=$(grep "^${variable}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-                [ -z "$current" ] && current="$default"
+                
+                if [ -z "$current" ]; then
+                    case "$variable" in
+                        mape_gua_prefix)
+                            current="${MAPE_GUA_PREFIX:-$default}"
+                            ;;
+                        mape_br)
+                            current="${MAPE_BR:-$default}"
+                            ;;
+                        mape_ipv4_prefix)
+                            current="${MAPE_IPV4_PREFIX:-$default}"
+                            ;;
+                        mape_ipv4_prefixlen)
+                            current="${MAPE_IPV4_PREFIXLEN:-$default}"
+                            ;;
+                        mape_ipv6_prefix)
+                            current="${MAPE_IPV6_PREFIX:-$default}"
+                            ;;
+                        mape_ipv6_prefixlen)
+                            current="${MAPE_IPV6_PREFIXLEN:-$default}"
+                            ;;
+                        mape_ealen)
+                            current="${MAPE_EALEN:-$default}"
+                            ;;
+                        mape_psidlen)
+                            current="${MAPE_PSIDLEN:-$default}"
+                            ;;
+                        mape_psid_offset)
+                            current="${MAPE_PSID_OFFSET:-$default}"
+                            ;;
+                        dslite_aftr_address)
+                            current="${DSLITE_AFTR:-$default}"
+                            ;;
+                        *)
+                            current="$default"
+                            ;;
+                    esac
+                fi
                 
                 echo "[DEBUG] current='$current'" >> /tmp/debug.log
                 
@@ -1501,7 +1538,44 @@ simple_process_items() {
                 local field_type=$(get_setup_item_field_type "$item_id")
                 
                 local current=$(grep "^${variable}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-                [ -z "$current" ] && current="$default"
+                
+                if [ -z "$current" ]; then
+                    case "$variable" in
+                        mape_gua_prefix)
+                            current="${MAPE_GUA_PREFIX:-$default}"
+                            ;;
+                        mape_br)
+                            current="${MAPE_BR:-$default}"
+                            ;;
+                        mape_ipv4_prefix)
+                            current="${MAPE_IPV4_PREFIX:-$default}"
+                            ;;
+                        mape_ipv4_prefixlen)
+                            current="${MAPE_IPV4_PREFIXLEN:-$default}"
+                            ;;
+                        mape_ipv6_prefix)
+                            current="${MAPE_IPV6_PREFIX:-$default}"
+                            ;;
+                        mape_ipv6_prefixlen)
+                            current="${MAPE_IPV6_PREFIXLEN:-$default}"
+                            ;;
+                        mape_ealen)
+                            current="${MAPE_EALEN:-$default}"
+                            ;;
+                        mape_psidlen)
+                            current="${MAPE_PSIDLEN:-$default}"
+                            ;;
+                        mape_psid_offset)
+                            current="${MAPE_PSID_OFFSET:-$default}"
+                            ;;
+                        dslite_aftr_address)
+                            current="${DSLITE_AFTR:-$default}"
+                            ;;
+                        *)
+                            current="$default"
+                            ;;
+                    esac
+                fi
                 
                 if [ "$field_type" = "computed" ]; then
                     if [ "$item_id" = "dslite-aftr-address-computed" ]; then
@@ -1523,6 +1597,31 @@ simple_process_items() {
                 fi
                 
                 if [ "$field_type" = "select" ]; then
+                    local source=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].source" 2>/dev/null | head -1)
+                    
+                    if [ -n "$source" ]; then
+                        case "$source" in
+                            "browser-languages")
+                                continue
+                                ;;
+                            *)
+                                echo ""
+                                printf "$label [$current]: "
+                                read value
+                                
+                                if [ -z "$value" ]; then
+                                    value="$current"
+                                fi
+                                
+                                if [ -n "$value" ]; then
+                                    sed -i "/^${variable}=/d" "$SETUP_VARS"
+                                    echo "${variable}='${value}'" >> "$SETUP_VARS"
+                                fi
+                                continue
+                                ;;
+                        esac
+                    fi
+                    
                     local options=$(get_setup_item_options "$item_id")
                     
                     echo ""
