@@ -1151,6 +1151,8 @@ whiptail_category_config() {
 
 whiptail_package_categories() {
     local tr_main_menu=$(translate "tr-tui-main-menu")
+    local tr_custom_packages=$(translate "tr-custom-packages")
+    local breadcrumb="${tr_main_menu} > ${tr_custom_packages}"
     
     local menu_items="" i=1 cat_id cat_name
     
@@ -1163,7 +1165,7 @@ whiptail_package_categories() {
         i=$((i+1))
     done < <(get_categories)
     
-    choice=$(eval "whiptail --title '$tr_main_menu' --ok-button 'Select' --cancel-button 'Back' --menu '$(translate "tr-tui-select-category"):' 20 70 12 $menu_items 3>&1 1>&2 2>&3")
+    choice=$(eval "whiptail --title '$breadcrumb' --ok-button 'Select' --cancel-button 'Back' --menu '$(translate "tr-tui-view-package-list"):' 20 70 12 $menu_items 3>&1 1>&2 2>&3")
     
     if [ $? -ne 0 ]; then
         return 0
