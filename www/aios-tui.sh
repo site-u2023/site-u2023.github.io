@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1111.1626"
+VERSION="R7.1111.1818"
 BASE_URL="https://site-u.pages.dev"
 PACKAGES_URL="$BASE_URL/www/packages/packages.json"
 SETUP_JSON_URL="$BASE_URL/www/uci-defaults/setup.json"
@@ -741,8 +741,18 @@ generate_files() {
 }
 
 whiptail_device_info() {
-    local tr_device_info=$(translate "tr-tui-device-information")
-    whiptail_device_info_titled "$tr_device_info"
+    local tr_main_menu=$(translate "tr-tui-main-menu")
+    local tr_view_device_info=$(translate "tr-tui-view-device-info")
+    local breadcrumb="${tr_main_menu} > ${tr_view_device_info}"
+    
+    local info="Model: $DEVICE_MODEL\n"
+    info="${info}Target: $DEVICE_TARGET\n"
+    info="${info}Version: $OPENWRT_VERSION\n"
+    [ -n "$DEVICE_MEM" ] && info="${info}Memory: $DEVICE_MEM\n"
+    [ -n "$DEVICE_CPU" ] && info="${info}CPU: $DEVICE_CPU\n"
+    [ -n "$DEVICE_STORAGE" ] && info="${info}Storage: $DEVICE_STORAGE_USED/$DEVICE_STORAGE (${DEVICE_STORAGE_AVAIL} free)\n"
+    [ -n "$DEVICE_USB" ] && info="${info}USB: $DEVICE_USB\n"
+    whiptail --title "$breadcrumb" --msgbox "$info" 15 70
 }
 
 whiptail_device_info_titled() {
@@ -759,16 +769,16 @@ whiptail_device_info_titled() {
 }
 
 whiptail_show_network_info() {
+    local tr_main_menu=$(translate "tr-tui-main-menu")
+    local tr_internet_connection=$(translate "tr-internet-connection")
     local tr_auto_detection=$(translate "tr-auto-detection")
+    local breadcrumb="${tr_main_menu} > ${tr_internet_connection} > ${tr_auto_detection}"
+    
     local tr_isp=$(translate "tr-isp")
     local tr_as=$(translate "tr-as")
     local tr_mape_notice=$(translate "tr-mape-notice1")
     local tr_dslite_notice=$(translate "tr-dslite-notice1")
     local tr_aftr=$(translate "tr-dslite-aftr-ipv6-address")
-    local tr_internet_conn=$(translate "tr-internet-connection")
-    local tr_use_auto=$(translate "tr-tui-use-auto-config")
-    local tr_yes=$(translate "tr-tui-yes")
-    local tr_no=$(translate "tr-tui-no")
     
     if [ -z "$DETECTED_CONN_TYPE" ] || [ "$DETECTED_CONN_TYPE" = "Unknown" ]; then
         return 1
@@ -795,9 +805,9 @@ whiptail_show_network_info() {
         info="${info}\n${tr_dslite_notice}"
     fi
     
-    info="${info}\n\n${tr_use_auto}"
+    info="${info}\n\nUse this auto-detected configuration?"
     
-    if whiptail --title "$tr_internet_conn" --yes-button "$tr_yes" --no-button "$tr_no" --yesno "$info" 22 70; then
+    if whiptail --title "$breadcrumb" --yesno "$info" 22 70; then
         sed -i "/^connection_type=/d" "$SETUP_VARS"
         echo "connection_type='auto'" >> "$SETUP_VARS"
         return 0
@@ -809,9 +819,11 @@ whiptail_show_network_info() {
 whiptail_process_items() {
     local cat_id="$1"
     local parent_items="$2"
-    local breadcrumb="$3"
     
-    echo "[DEBUG] whiptail_process_items: cat_id=$cat_id, breadcrumb=$breadcrumb" >> /tmp/debug.log
+    echo "[DEBUG] whiptail_process_items: cat_id=$cat_id" >> /tmp/debug.log
+    
+    local tr_main_menu=$(translate "tr-tui-main-menu")
+    local cat_title=$(get_setup_category_title "$cat_id")
     
     local items
     if [ -z "$parent_items" ]; then
@@ -839,6 +851,7 @@ whiptail_process_items() {
                 local label=$(get_setup_item_label "$item_id")
                 local variable=$(get_setup_item_variable "$item_id")
                 local default=$(get_setup_item_default "$item_id")
+                local breadcrumb="${tr_main_menu} > ${cat_title} > ${label}"
                 
                 echo "[DEBUG] radio-group: var=$variable, default=$default" >> /tmp/debug.log
                 
@@ -858,9 +871,6 @@ whiptail_process_items() {
                 local options=$(get_setup_item_options "$item_id")
                 echo "[DEBUG] Options: $options" >> /tmp/debug.log
                 
-                local tr_select=$(translate "tr-tui-select")
-                local tr_back=$(translate "tr-tui-back")
-                
                 local menu_opts=""
                 local i=1
                 for opt in $options; do
@@ -869,7 +879,7 @@ whiptail_process_items() {
                     i=$((i+1))
                 done
                 
-                value=$(eval "whiptail --title '$breadcrumb' --ok-button '$tr_select' --cancel-button '$tr_back' --menu '$label:' 18 60 10 $menu_opts 3>&1 1>&2 2>&3")
+                value=$(eval "whiptail --title '$breadcrumb' --ok-button 'Select' --cancel-button 'Back' --menu '$label:' 18 60 10 $menu_opts 3>&1 1>&2 2>&3")
                 exit_code=$?
                 
                 if [ $exit_code -ne 0 ]; then
@@ -892,7 +902,7 @@ whiptail_process_items() {
                 local nested=$(get_section_nested_items "$item_id")
                 if [ -n "$nested" ]; then
                     echo "[DEBUG] Nested items: $nested" >> /tmp/debug.log
-                    whiptail_process_items "$cat_id" "$nested" "$breadcrumb"
+                    whiptail_process_items "$cat_id" "$nested"
                     items_processed=$((items_processed + $?))
                 fi
                 ;;
@@ -903,6 +913,7 @@ whiptail_process_items() {
                 local variable=$(get_setup_item_variable "$item_id")
                 local default=$(get_setup_item_default "$item_id")
                 local field_type=$(get_setup_item_field_type "$item_id")
+                local breadcrumb="${tr_main_menu} > ${cat_title} > ${label}"
                 
                 echo "[DEBUG] field processing: item_id=$item_id" >> /tmp/debug.log
                 echo "[DEBUG] label='$label'" >> /tmp/debug.log
@@ -968,9 +979,6 @@ whiptail_process_items() {
                     fi
                 fi
                 
-                local tr_select=$(translate "tr-tui-select")
-                local tr_back=$(translate "tr-tui-back")
-                
                 if [ "$field_type" = "select" ]; then
                     local source=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].source" 2>/dev/null | head -1)
                     
@@ -983,7 +991,7 @@ whiptail_process_items() {
                                 ;;
                             *)
                                 echo "[DEBUG] Unknown source type: $source, showing as inputbox" >> /tmp/debug.log
-                                value=$(whiptail --title "$breadcrumb" --ok-button "$tr_select" --cancel-button "$tr_back" --inputbox "$label:" 10 60 "$current" 3>&1 1>&2 2>&3)
+                                value=$(whiptail --title "$breadcrumb" --ok-button "Select" --cancel-button "Back" --inputbox "$label:" 10 60 "$current" 3>&1 1>&2 2>&3)
                                 exit_code=$?
                                 
                                 if [ $exit_code -ne 0 ]; then
@@ -1020,7 +1028,7 @@ whiptail_process_items() {
                     
                     echo "[DEBUG] Final menu_opts='$menu_opts'" >> /tmp/debug.log
                     
-                    value=$(eval "whiptail --title '$breadcrumb' --ok-button '$tr_select' --cancel-button '$tr_back' --menu '$label:' 18 60 10 $menu_opts 3>&1 1>&2 2>&3")
+                    value=$(eval "whiptail --title '$breadcrumb' --ok-button 'Select' --cancel-button 'Back' --menu '$label:' 18 60 10 $menu_opts 3>&1 1>&2 2>&3")
                     exit_code=$?
                     
                     echo "[DEBUG] select exit_code=$exit_code, value='$value'" >> /tmp/debug.log
@@ -1051,7 +1059,7 @@ whiptail_process_items() {
                 else
                     echo "[DEBUG] About to show inputbox for '$label'" >> /tmp/debug.log
                     
-                    value=$(whiptail --title "$breadcrumb" --ok-button "$tr_select" --cancel-button "$tr_back" --inputbox "$label:" 10 60 "$current" 3>&1 1>&2 2>&3)
+                    value=$(whiptail --title "$breadcrumb" --ok-button "Select" --cancel-button "Back" --inputbox "$label:" 10 60 "$current" 3>&1 1>&2 2>&3)
                     exit_code=$?
                     
                     echo "[DEBUG] inputbox exit_code=$exit_code, value='$value'" >> /tmp/debug.log
@@ -1104,30 +1112,22 @@ whiptail_process_items() {
 
 whiptail_category_config() {
     local cat_id="$1"
-    local cat_title=$(get_setup_category_title "$cat_id")
     local tr_main_menu=$(translate "tr-tui-main-menu")
-    local breadcrumb="${tr_main_menu} > ${cat_title}"
-
-    local tr_select=$(translate "tr-tui-select")
-    local tr_back=$(translate "tr-tui-back")
-    local tr_yes=$(translate "tr-tui-yes")
-    local tr_no=$(translate "tr-tui-no")
-    local tr_ok=$(translate "tr-tui-ok")
+    local cat_title=$(get_setup_category_title "$cat_id")
     
     echo "[DEBUG] === whiptail_category_config START ===" >> /tmp/debug.log
-    echo "[DEBUG] cat_id=$cat_id, title=$cat_title, breadcrumb=$breadcrumb" >> /tmp/debug.log
+    echo "[DEBUG] cat_id=$cat_id, title=$cat_title" >> /tmp/debug.log
     
     if [ "$cat_id" = "internet-connection" ]; then
         if whiptail_show_network_info; then
-            local tr_auto_applied=$(translate "tr-tui-auto-config-applied")
-            whiptail --title "$breadcrumb" --ok-button "$tr_ok" --msgbox "$tr_auto_applied" 8 40
+            whiptail --msgbox "Auto-configuration applied!" 8 40
             auto_add_conditional_packages "$cat_id"
             return 0
         fi
     fi
     
     echo "[DEBUG] Processing all items" >> /tmp/debug.log
-    whiptail_process_items "$cat_id" "" "$breadcrumb"
+    whiptail_process_items "$cat_id" ""
     local processed=$?
     
     echo "[DEBUG] Items processed: $processed" >> /tmp/debug.log
@@ -1153,11 +1153,11 @@ whiptail_category_config() {
 }
 
 whiptail_package_categories() {
+    local tr_main_menu=$(translate "tr-tui-main-menu")
+    local tr_custom_packages=$(translate "tr-custom-packages")
+    local breadcrumb="${tr_main_menu} > ${tr_custom_packages}"
+    
     local menu_items="" i=1 cat_id cat_name
-    local tr_pkg_categories=$(translate "tr-tui-package-categories")
-    local tr_select_category=$(translate "tr-tui-select-category")
-    local tr_select=$(translate "tr-tui-select")
-    local tr_back=$(translate "tr-tui-back")
     
     while read cat_id; do
         local is_hidden=$(get_category_hidden "$cat_id")
@@ -1168,7 +1168,7 @@ whiptail_package_categories() {
         i=$((i+1))
     done < <(get_categories)
     
-    choice=$(eval "whiptail --title '$tr_pkg_categories' --ok-button '$tr_select' --cancel-button '$tr_back' --menu '$tr_select_category' 20 70 12 $menu_items 3>&1 1>&2 2>&3")
+    choice=$(eval "whiptail --title '$breadcrumb' --ok-button 'Select' --cancel-button 'Back' --menu '$(translate "tr-tui-select-category"):' 20 70 12 $menu_items 3>&1 1>&2 2>&3")
     
     if [ $? -ne 0 ]; then
         return 0
@@ -1185,12 +1185,14 @@ whiptail_package_categories() {
 
 whiptail_package_selection() {
     local cat_id="$1"
+    local tr_main_menu=$(translate "tr-tui-main-menu")
+    local tr_custom_packages=$(translate "tr-custom-packages")
     local cat_name=$(get_category_name "$cat_id")
+    local breadcrumb="${tr_main_menu} > ${tr_custom_packages} > ${cat_name}"
+    
     local cat_desc=$(get_category_desc "$cat_id")
-    local checklist_items="" pkg_id pkg_name status
-    local tr_select=$(translate "tr-tui-select")
-    local tr_back=$(translate "tr-tui-back")
     local tr_space_toggle=$(translate "tr-tui-space-toggle")
+    local checklist_items="" pkg_id pkg_name status
     
     while read pkg_id; do
         pkg_name=$(get_package_name "$pkg_id")
@@ -1205,7 +1207,7 @@ whiptail_package_selection() {
         checklist_items="$checklist_items \"$pkg_id\" \"$pkg_name\" $status"
     done < <(get_category_packages "$cat_id")
     
-    selected=$(eval "whiptail --title '$cat_name' --ok-button '$tr_select' --cancel-button '$tr_back' --checklist '$cat_desc ($tr_space_toggle):' 20 70 12 $checklist_items 3>&1 1>&2 2>&3")
+    selected=$(eval "whiptail --title '$breadcrumb' --ok-button 'Select' --cancel-button 'Back' --checklist '$cat_desc ($tr_space_toggle):' 20 70 12 $checklist_items 3>&1 1>&2 2>&3")
     
     if [ $? -eq 0 ]; then
         while read pkg_id; do
@@ -1223,6 +1225,7 @@ whiptail_package_selection() {
 
 whiptail_main_menu() {
     while true; do
+        local tr_main_menu=$(translate "tr-tui-main-menu")
         local menu_items="" i=1 cat_id cat_title
         
         while read cat_id; do
@@ -1234,18 +1237,11 @@ whiptail_main_menu() {
         local packages_label=$(translate "tr-custom-packages")
         menu_items="$menu_items $i \"$packages_label\""
         i=$((i+1))
+        menu_items="$menu_items $i \"$(translate 'tr-tui-review-configuration')\""
         
-        local review_label=$(translate "tr-tui-review-configuration")
-        menu_items="$menu_items $i \"$review_label\""
-        
-        local tr_main_menu=$(translate "tr-tui-main-menu")
-        local tr_select=$(translate "tr-tui-select")
-        local tr_exit=$(translate "tr-tui-exit")
-        
-        choice=$(eval "whiptail --title '${tr_main_menu}' \
-            --ok-button '${tr_select}' \
-            --cancel-button '${tr_exit}' \
-            --menu '${VERSION}' 20 70 12 $menu_items 3>&1 1>&2 2>&3")
+        choice=$(eval "whiptail --title 'OpenWrt Setup Tool v$VERSION - $DEVICE_MODEL' \
+            --ok-button '$(translate 'tr-tui-select')' --cancel-button '$(translate 'tr-tui-exit')' \
+            --menu '$tr_main_menu:' 20 70 12 $menu_items 3>&1 1>&2 2>&3")
         
         if [ $? -ne 0 ]; then
             exit 0
@@ -1268,42 +1264,33 @@ review_and_apply() {
     
     local tr_main_menu=$(translate "tr-tui-main-menu")
     local tr_review=$(translate "tr-tui-review-configuration")
-    local breadcrumb="${tr_main_menu} > ${tr_review}"
-    local tr_select=$(translate "tr-tui-select")
-    local tr_back=$(translate "tr-tui-back")
-    local tr_ok=$(translate "tr-tui-ok")
     
     while true; do
         if [ "$UI_MODE" = "whiptail" ]; then
-            local tr_view_device=$(translate "tr-tui-view-device-info")
-            local tr_view_packages=$(translate "tr-tui-view-package-list")
-            local tr_view_vars=$(translate "tr-tui-view-config-vars")
-            local tr_view_postinst=$(translate "tr-tui-view-postinst")
-            local tr_view_setup=$(translate "tr-tui-view-setup")
-            local tr_apply=$(translate "tr-tui-apply-config")
+            local breadcrumb="${tr_main_menu} > ${tr_review}"
             
-            choice=$(whiptail --title "$breadcrumb" --ok-button "$tr_select" --cancel-button "$tr_back" --menu \
-                "$tr_review" 20 70 12 \
-                "1" "$tr_view_device" \
-                "2" "$tr_view_packages" \
-                "3" "$tr_view_vars" \
-                "4" "$tr_view_postinst" \
-                "5" "$tr_view_setup" \
-                "6" "$tr_apply" \
+            choice=$(whiptail --title "$breadcrumb" --ok-button "$(translate 'tr-tui-select')" --cancel-button "$(translate 'tr-tui-back')" --menu \
+                "$(translate 'tr-tui-select'):" 20 70 12 \
+                "1" "$(translate 'tr-tui-view-device-info')" \
+                "2" "$(translate 'tr-tui-view-package-list')" \
+                "3" "$(translate 'tr-tui-view-config-vars')" \
+                "4" "$(translate 'tr-tui-view-postinst')" \
+                "5" "$(translate 'tr-tui-view-setup')" \
+                "6" "$(translate 'tr-tui-apply-confirm' | head -1)" \
                 3>&1 1>&2 2>&3)
             
             [ $? -ne 0 ] && return 0
         else
             clear
-            echo "=== Configuration Review ==="
+            echo "=== $(translate 'tr-tui-review-configuration') ==="
             echo ""
-            echo "1) View Device Information"
-            echo "2) View Package List"
-            echo "3) View Configuration Variables"
-            echo "4) View postinst.sh"
-            echo "5) View setup.sh"
-            echo "6) Apply Configuration"
-            echo "b) Back"
+            echo "1) $(translate 'tr-tui-view-device-info')"
+            echo "2) $(translate 'tr-tui-view-package-list')"
+            echo "3) $(translate 'tr-tui-view-config-vars')"
+            echo "4) $(translate 'tr-tui-view-postinst')"
+            echo "5) $(translate 'tr-tui-view-setup')"
+            echo "6) $(translate 'tr-tui-apply-confirm' | head -1)"
+            echo "b) $(translate 'tr-tui-back')"
             echo ""
             printf "Choice: "
             read choice
@@ -1313,33 +1300,27 @@ review_and_apply() {
         
         case "$choice" in
             1)
-                if [ "$UI_MODE" = "whiptail" ]; then
-                    local tr_device_info=$(translate "tr-tui-device-information")
-                    whiptail_device_info_titled "$tr_device_info"
-                else
-                    simple_device_info
-                fi
+                [ "$UI_MODE" = "whiptail" ] && whiptail_device_info || simple_device_info
                 ;;
             2)
                 if [ "$UI_MODE" = "whiptail" ]; then
-                    local tr_pkg_list=$(translate "tr-tui-package-list")
-                    local tr_no_packages=$(translate "tr-tui-no-packages")
+                    local pkg_breadcrumb="${tr_main_menu} > ${tr_review} > $(translate 'tr-tui-view-package-list')"
                     if [ -s "$SELECTED_PACKAGES" ]; then
                         cat "$SELECTED_PACKAGES" | sed 's/^/- /' > /tmp/pkg_view.txt
-                        whiptail --scrolltext --title "$tr_pkg_list" --ok-button "$tr_ok" --textbox /tmp/pkg_view.txt 24 78
+                        whiptail --scrolltext --title "$pkg_breadcrumb" --textbox /tmp/pkg_view.txt 24 78
                     else
-                        whiptail --title "$tr_pkg_list" --ok-button "$tr_ok" --msgbox "$tr_no_packages" 8 40
+                        whiptail --title "$pkg_breadcrumb" --msgbox "$(translate 'tr-tui-no-packages')" 8 40
                     fi
                 else
                     clear
-                    echo "=== Package List ==="
+                    echo "=== $(translate 'tr-tui-view-package-list') ==="
                     echo ""
                     if [ -s "$SELECTED_PACKAGES" ]; then
                         cat "$SELECTED_PACKAGES" | while read pkg; do
                             echo "  - $pkg"
                         done
                     else
-                        echo "  (none)"
+                        echo "  $(translate 'tr-tui-no-packages')"
                     fi
                     echo ""
                     printf "Press Enter to continue..."
@@ -1348,21 +1329,20 @@ review_and_apply() {
                 ;;
             3)
                 if [ "$UI_MODE" = "whiptail" ]; then
-                    local tr_config_vars=$(translate "tr-tui-config-vars")
-                    local tr_no_vars=$(translate "tr-tui-no-config-vars")
+                    local vars_breadcrumb="${tr_main_menu} > ${tr_review} > $(translate 'tr-tui-view-config-vars')"
                     if [ -s "$SETUP_VARS" ]; then
-                        whiptail --scrolltext --title "$tr_config_vars" --ok-button "$tr_ok" --textbox "$SETUP_VARS" 24 78
+                        whiptail --scrolltext --title "$vars_breadcrumb" --textbox "$SETUP_VARS" 24 78
                     else
-                        whiptail --title "$tr_config_vars" --ok-button "$tr_ok" --msgbox "$tr_no_vars" 8 40
+                        whiptail --title "$vars_breadcrumb" --msgbox "$(translate 'tr-tui-no-config-vars')" 8 40
                     fi
                 else
                     clear
-                    echo "=== Configuration Variables ==="
+                    echo "=== $(translate 'tr-tui-view-config-vars') ==="
                     echo ""
                     if [ -s "$SETUP_VARS" ]; then
                         cat "$SETUP_VARS"
                     else
-                        echo "  (none)"
+                        echo "  $(translate 'tr-tui-no-config-vars')"
                     fi
                     echo ""
                     printf "Press Enter to continue..."
@@ -1371,20 +1351,20 @@ review_and_apply() {
                 ;;
             4)
                 if [ "$UI_MODE" = "whiptail" ]; then
-                    local tr_postinst_not_found=$(translate "tr-tui-postinst-not-found")
+                    local postinst_breadcrumb="${tr_main_menu} > ${tr_review} > $(translate 'tr-tui-view-postinst')"
                     if [ -f "$OUTPUT_DIR/postinst.sh" ]; then
-                        whiptail --scrolltext --title "postinst.sh" --ok-button "$tr_ok" --textbox "$OUTPUT_DIR/postinst.sh" 24 78
+                        whiptail --scrolltext --title "$postinst_breadcrumb" --textbox "$OUTPUT_DIR/postinst.sh" 24 78
                     else
-                        whiptail --title "postinst.sh" --ok-button "$tr_ok" --msgbox "$tr_postinst_not_found" 8 40
+                        whiptail --title "$postinst_breadcrumb" --msgbox "$(translate 'tr-tui-postinst-not-found')" 8 40
                     fi
                 else
                     clear
-                    echo "=== postinst.sh ==="
+                    echo "=== $(translate 'tr-tui-view-postinst') ==="
                     echo ""
                     if [ -f "$OUTPUT_DIR/postinst.sh" ]; then
                         cat "$OUTPUT_DIR/postinst.sh"
                     else
-                        echo "(file not found)"
+                        echo "$(translate 'tr-tui-postinst-not-found')"
                     fi
                     echo ""
                     printf "Press Enter to continue..."
@@ -1393,20 +1373,20 @@ review_and_apply() {
                 ;;
             5)
                 if [ "$UI_MODE" = "whiptail" ]; then
-                    local tr_setup_not_found=$(translate "tr-tui-setup-not-found")
+                    local setup_breadcrumb="${tr_main_menu} > ${tr_review} > $(translate 'tr-tui-view-setup')"
                     if [ -f "$OUTPUT_DIR/setup.sh" ]; then
-                        whiptail --scrolltext --title "setup.sh" --ok-button "$tr_ok" --textbox "$OUTPUT_DIR/setup.sh" 24 78
+                        whiptail --scrolltext --title "$setup_breadcrumb" --textbox "$OUTPUT_DIR/setup.sh" 24 78
                     else
-                        whiptail --title "setup.sh" --ok-button "$tr_ok" --msgbox "$tr_setup_not_found" 8 40
+                        whiptail --title "$setup_breadcrumb" --msgbox "$(translate 'tr-tui-setup-not-found')" 8 40
                     fi
                 else
                     clear
-                    echo "=== setup.sh ==="
+                    echo "=== $(translate 'tr-tui-view-setup') ==="
                     echo ""
                     if [ -f "$OUTPUT_DIR/setup.sh" ]; then
                         cat "$OUTPUT_DIR/setup.sh"
                     else
-                        echo "(file not found)"
+                        echo "$(translate 'tr-tui-setup-not-found')"
                     fi
                     echo ""
                     printf "Press Enter to continue..."
@@ -1414,49 +1394,39 @@ review_and_apply() {
                 fi
                 ;;
             6)
-                local tr_yes=$(translate "tr-tui-yes")
-                local tr_no=$(translate "tr-tui-no")
                 if [ "$UI_MODE" = "whiptail" ]; then
-                    local tr_apply_confirm=$(translate "tr-tui-apply-confirm")
-                    local tr_installing=$(translate "tr-tui-installing-packages")
-                    local tr_applying=$(translate "tr-tui-applying-config")
-                    local tr_applied=$(translate "tr-tui-config-applied")
-                    
-                    if whiptail --title "$breadcrumb" --yes-button "$tr_yes" --no-button "$tr_no" --yesno "$tr_apply_confirm" 15 60; then
-                        whiptail --title "$breadcrumb" --ok-button "$tr_ok" --msgbox "$tr_installing" 8 50
+                    if whiptail --title "$breadcrumb" --yesno "$(translate 'tr-tui-apply-confirm')" 15 60; then
+                        whiptail --title "$breadcrumb" --msgbox "$(translate 'tr-tui-installing-packages')" 8 50
                         sh "$OUTPUT_DIR/postinst.sh"
-                        whiptail --title "$breadcrumb" --ok-button "$tr_ok" --msgbox "$tr_applying" 8 50
+                        whiptail --title "$breadcrumb" --msgbox "$(translate 'tr-tui-applying-config')" 8 50
                         sh "$OUTPUT_DIR/setup.sh"
-                        if whiptail --title "$breadcrumb" --yes-button "$tr_yes" --no-button "$tr_no" --yesno "$tr_applied" 10 50; then
+                        if whiptail --title "$breadcrumb" --yesno "$(translate 'tr-tui-config-applied')" 10 50; then
                             reboot
                         fi
                         return 0
                     fi
                 else
                     clear
-                    echo "=== Apply Configuration ==="
+                    echo "=== $(translate 'tr-tui-apply-confirm' | head -1) ==="
                     echo ""
-                    echo "This will:"
-                    echo "1. Install packages via postinst.sh"
-                    echo "2. Apply settings via setup.sh"
-                    echo "3. Optionally reboot"
+                    echo "$(translate 'tr-tui-apply-confirm')"
                     echo ""
-                    printf "Continue? (y/n): "
+                    printf "$(translate 'tr-tui-yes')/$(translate 'tr-tui-no'): "
                     read confirm
                     
-                    if [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
+                    if [ "$confirm" = "$(translate 'tr-tui-yes')" ] || [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
                         echo ""
-                        echo "Executing postinst..."
+                        echo "$(translate 'tr-tui-installing-packages')"
                         sh "$OUTPUT_DIR/postinst.sh"
                         echo ""
-                        echo "Applying setup..."
+                        echo "$(translate 'tr-tui-applying-config')"
                         sh "$OUTPUT_DIR/setup.sh"
                         echo ""
-                        echo "Configuration applied successfully!"
+                        echo "$(translate 'tr-tui-config-applied')"
                         echo ""
-                        printf "Reboot now? (y/n): "
+                        printf "$(translate 'tr-tui-yes')/$(translate 'tr-tui-no'): "
                         read reboot_confirm
-                        if [ "$reboot_confirm" = "y" ] || [ "$reboot_confirm" = "Y" ]; then
+                        if [ "$reboot_confirm" = "$(translate 'tr-tui-yes')" ] || [ "$reboot_confirm" = "y" ] || [ "$reboot_confirm" = "Y" ]; then
                             reboot
                         fi
                         return 0
@@ -1470,7 +1440,7 @@ review_and_apply() {
 simple_device_info() {
     clear
     echo "========================================"
-    echo "  Device Information"
+    echo "  $(translate 'tr-tui-view-device-info')"
     echo "========================================"
     echo ""
     echo "Model:   $DEVICE_MODEL"
@@ -1488,7 +1458,7 @@ simple_device_info() {
 simple_show_network_info() {
     clear
     echo "========================================"
-    echo "  Auto-detected Network Configuration"
+    echo "  $(translate 'tr-auto-detection')"
     echo "========================================"
     echo ""
     
@@ -1500,9 +1470,13 @@ simple_show_network_info() {
         return 1
     fi
     
-    echo "Connection Type: $DETECTED_CONN_TYPE"
-    [ -n "$ISP_NAME" ] && echo "ISP: $ISP_NAME"
-    [ -n "$ISP_AS" ] && echo "AS: $ISP_AS"
+    local tr_connection_type=$(translate "tr-connection-type")
+    local tr_isp=$(translate "tr-isp")
+    local tr_as=$(translate "tr-as")
+    
+    echo "${tr_connection_type}: $DETECTED_CONN_TYPE"
+    [ -n "$ISP_NAME" ] && echo "${tr_isp}: $ISP_NAME"
+    [ -n "$ISP_AS" ] && echo "${tr_as}: $ISP_AS"
     echo ""
     
     if [ "$DETECTED_CONN_TYPE" = "MAP-E" ] && [ -n "$MAPE_BR" ]; then
@@ -1522,10 +1496,10 @@ simple_show_network_info() {
     fi
     
     echo ""
-    printf "Use this auto-detected configuration? (y/n): "
+    printf "$(translate 'tr-tui-use-auto-config') ($(translate 'tr-tui-yes')/$(translate 'tr-tui-no')): "
     read confirm
     
-    if [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
+    if [ "$confirm" = "$(translate 'tr-tui-yes')" ] || [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
         sed -i "/^connection_type=/d" "$SETUP_VARS"
         echo "connection_type='auto'" >> "$SETUP_VARS"
         return 0
@@ -1584,7 +1558,7 @@ simple_process_items() {
                     i=$((i+1))
                 done
                 
-                printf "Choice [Enter=keep current]: "
+                printf "$(translate 'tr-tui-choice') [Enter=keep current]: "
                 read choice
                 
                 if [ -n "$choice" ]; then
@@ -1710,7 +1684,7 @@ simple_process_items() {
                         i=$((i+1))
                     done
                     
-                    printf "Choice [Enter=keep current]: "
+                    printf "$(translate 'tr-tui-choice') [Enter=keep current]: "
                     read choice
                     
                     if [ -n "$choice" ]; then
@@ -1791,7 +1765,7 @@ simple_category_config() {
     if [ "$cat_id" = "internet-connection" ]; then
         if simple_show_network_info; then
             echo ""
-            echo "Auto-configuration applied!"
+            echo "$(translate 'tr-tui-auto-config-applied')"
             sleep 2
             return 0
         fi
@@ -1811,7 +1785,7 @@ simple_package_categories() {
     while true; do
         clear
         echo "========================================"
-        echo "  Package Categories"
+        echo "  $(translate 'tr-custom-packages')"
         echo "========================================"
         echo ""
         
@@ -1825,9 +1799,9 @@ simple_package_categories() {
             i=$((i+1))
         done
         
-        echo "b) Back"
+        echo "b) $(translate 'tr-tui-back')"
         echo ""
-        printf "Choice: "
+        printf "$(translate 'tr-tui-choice'): "
         read choice
         
         if [ "$choice" = "b" ] || [ "$choice" = "B" ]; then
@@ -1854,7 +1828,7 @@ simple_package_selection() {
     
     clear
     echo "========================================"
-    echo "  $cat_name"
+    echo "  $(translate 'tr-custom-packages') > $cat_name"
     echo "========================================"
     echo ""
     echo "$cat_desc"
@@ -1883,7 +1857,7 @@ simple_package_selection() {
     done
     
     echo ""
-    printf "Choice: "
+    printf "$(translate 'tr-tui-choice'): "
     read choice
     
     if [ "$choice" = "b" ] || [ "$choice" = "B" ]; then
@@ -1924,14 +1898,14 @@ simple_main_menu() {
         echo "$i) $packages_label"
         local packages_choice=$i
         i=$((i+1))
-        echo "$i) Review & Generate"
+        echo "$i) $(translate 'tr-tui-review-configuration')"
         local review_choice=$i
         i=$((i+1))
-        echo "$i) Exit"
+        echo "$i) $(translate 'tr-tui-exit')"
         local exit_choice=$i
         
         echo ""
-        printf "Choice: "
+        printf "$(translate 'tr-tui-choice'): "
         read choice
         
         if [ -z "$choice" ]; then
