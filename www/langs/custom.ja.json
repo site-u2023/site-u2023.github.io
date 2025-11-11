@@ -142,15 +142,15 @@
 
     "tr-feedback-link": "フォーラム",
 
-    "tr-main-menu": "メインメニュー",
+    "tr-tui-main-menu": "メインメニュー",
     "tr-tui-review-configuration": "設定の確認と適用",
-    "tr-select": "選択",
-    "tr-back": "戻る",
-    "tr-exit": "終了",
-    "tr-yes": "はい",
-    "tr-no": "いいえ",
-    "tr-ok": "OK",
-    "tr-cancel": "キャンセル",
+    "tr-tui-select": "選択",
+    "tr-tui-back": "戻る",
+    "tr-tui-exit": "終了",
+    "tr-tui-yes": "はい",
+    "tr-tui-no": "いいえ",
+    "tr-tui-ok": "OK",
+    "tr-tui-cancel": "キャンセル",
     
     "tr-tui-view-device-info": "デバイス情報を表示",
     "tr-tui-view-package-list": "パッケージ一覧を表示",
@@ -183,6 +183,6 @@
     "tr-tui-ui-installing": "whiptailをインストール中...",
     "tr-tui-ui-install-success": "whiptailのインストールに成功しました！",
     "tr-tui-ui-install-failed": "インストール失敗、simpleモードを使用します",   
-    "tr-gua": "GUA",
-    "tr-pd": "PD"
+    "tr-tui-gua": "GUA",
+    "tr-tui-pd": "PD"
 }
