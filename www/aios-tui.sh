@@ -750,7 +750,7 @@ whiptail_device_info() {
     [ -n "$DEVICE_CPU" ] && info="${info}CPU: $DEVICE_CPU\n"
     [ -n "$DEVICE_STORAGE" ] && info="${info}Storage: $DEVICE_STORAGE_USED/$DEVICE_STORAGE (${DEVICE_STORAGE_AVAIL} free)\n"
     [ -n "$DEVICE_USB" ] && info="${info}USB: $DEVICE_USB\n"
-    whiptail --title "$tr_main_menu" --msgbox "$info" 15 70
+    whiptail --title "$tr_device_info" --msgbox "$info" 15 70
 }
 
 whiptail_device_info_titled() {
