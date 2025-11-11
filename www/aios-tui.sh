@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1111.1018"
+VERSION="R7.1111.1031"
 BASE_URL="https://site-u.pages.dev"
 PACKAGES_URL="$BASE_URL/www/packages/packages.json"
 SETUP_JSON_URL="$BASE_URL/www/uci-defaults/setup.json"
@@ -855,8 +855,13 @@ whiptail_process_items() {
                 done
                 
                 value=$(eval "whiptail --title 'Setup' --ok-button 'Select' --cancel-button 'Back' --menu '$label:' 18 60 10 $menu_opts 3>&1 1>&2 2>&3")
+                exit_code=$?
                 
-                if [ $? -eq 0 ] && [ -n "$value" ]; then
+                if [ $exit_code -ne 0 ]; then
+                    return 1
+                fi
+                
+                if [ -n "$value" ]; then
                     selected_opt=$(echo "$options" | sed -n "${value}p")
                     echo "[DEBUG] Selected: $selected_opt" >> /tmp/debug.log
                     sed -i "/^${variable}=/d" "$SETUP_VARS"
@@ -914,8 +919,13 @@ whiptail_process_items() {
                     done
                     
                     value=$(eval "whiptail --title 'Setup' --ok-button 'Select' --cancel-button 'Back' --menu '$label:' 18 60 10 $menu_opts 3>&1 1>&2 2>&3")
+                    exit_code=$?
                     
-                    if [ $? -eq 0 ] && [ -n "$value" ]; then
+                    if [ $exit_code -ne 0 ]; then
+                        return 1
+                    fi
+                    
+                    if [ -n "$value" ]; then
                         selected_opt=$(echo "$options" | sed -n "${value}p")
                         sed -i "/^${variable}=/d" "$SETUP_VARS"
                         echo "${variable}='${selected_opt}'" >> "$SETUP_VARS"
@@ -934,12 +944,15 @@ whiptail_process_items() {
                     fi
                 else
                     value=$(whiptail --title "Setup" --ok-button "Select" --cancel-button "Back" --inputbox "$label:" 10 60 "$current" 3>&1 1>&2 2>&3)
+                    exit_code=$?
                     
-                    if [ $? -eq 0 ]; then
-                        if [ -n "$value" ]; then
-                            sed -i "/^${variable}=/d" "$SETUP_VARS"
-                            echo "${variable}='${value}'" >> "$SETUP_VARS"
-                        fi
+                    if [ $exit_code -ne 0 ]; then
+                        return 1
+                    fi
+                    
+                    if [ -n "$value" ]; then
+                        sed -i "/^${variable}=/d" "$SETUP_VARS"
+                        echo "${variable}='${value}'" >> "$SETUP_VARS"
                     fi
                 fi
                 ;;
