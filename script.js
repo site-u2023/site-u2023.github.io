@@ -952,7 +952,7 @@ function updateTerminalExplanation() {
     explanationText.setAttribute('data-i18n', explanationKey);
     
     if (link) {
-        explanationText.innerHTML = `${text} (<a href="${link}" target="_blank" rel="noopener noreferrer" style="color: inherit; text-decoration: underline;">GitHub</a>)`;
+        explanationText.innerHTML = `${text}<br><a href="${link}" target="_blank" rel="noopener noreferrer" style="color: inherit; text-decoration: underline;">${link}</a>`;
     } else {
         explanationText.textContent = text;
     }
