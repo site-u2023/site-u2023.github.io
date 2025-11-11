@@ -97,7 +97,9 @@ const translations = {
         langJa: '日本語',
         // Terminal Explanations
         aiosExplanation: 'メニュー形式スクリプト',
-        aiostuiExplanation: 'TUI形式スクリプト', 
+        aiosExplanationLink: 'https://github.com/site-u2023/aios/blob/main/aios',
+        aiostuiExplanation: 'TUI形式スクリプト',
+        aiostuiExplanationLink: 'https://github.com/site-u2023/site-u2023.github.io/blob/main/www/aios-tui.sh',
         sshExplanation: 'SSHログイン',
         // iPhone
         termius: 'Termius (SSH)',
@@ -158,7 +160,9 @@ const translations = {
         langJa: '日本語',
         // Terminal Explanations
         aiosExplanation: 'Menu-based script',
+        aiosExplanationLink: 'https://github.com/site-u2023/aios/blob/main/aios',
         aiostuiExplanation: 'TUI-based script',
+        aiostuiExplanationLink: 'https://github.com/site-u2023/site-u2023.github.io/blob/main/www/aios-tui.sh',
         sshExplanation: 'SSH login',
         // iPhone
         termius: 'Termius (SSH)',
@@ -923,23 +927,35 @@ function updateTerminalExplanation() {
     
     const selectedType = terminalSelector.value || currentSelectedTerminal;
     
-    let explanationKey;
+    let explanationKey, linkKey;
     switch(selectedType) {
         case 'aios':
             explanationKey = 'aiosExplanation';
+            linkKey = 'aiosExplanationLink';
             break;
         case 'aiostui':
-            explanationKey = 'aiostuiExplanation'; 
+            explanationKey = 'aiostuiExplanation';
+            linkKey = 'aiostuiExplanationLink';
             break;
         case 'ssh':
             explanationKey = 'sshExplanation';
+            linkKey = null;
             break;
         default:
             explanationKey = 'aiosExplanation';
+            linkKey = 'aiosExplanationLink';
     }
     
+    const text = getText(explanationKey);
+    const link = linkKey ? getText(linkKey) : null;
+    
     explanationText.setAttribute('data-i18n', explanationKey);
-    explanationText.textContent = getText(explanationKey);
+    
+    if (link) {
+        explanationText.innerHTML = `${text} (<a href="${link}" target="_blank" rel="noopener noreferrer" style="color: inherit; text-decoration: underline;">GitHub</a>)`;
+    } else {
+        explanationText.textContent = text;
+    }
 }
 
 // ==================================================
