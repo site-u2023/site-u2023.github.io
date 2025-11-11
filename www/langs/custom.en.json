@@ -142,14 +142,14 @@
 
     "tr-feedback-link": "Forum",
 
-    "tr-main-menu": "Main Menu",
-    "tr-select": "Select",
-    "tr-back": "Back",
-    "tr-exit": "Exit",
-    "tr-yes": "Yes",
-    "tr-no": "No",
-    "tr-ok": "OK",
-    "tr-cancel": "Cancel",
+    "tr-tui-main-menu": "Main Menu",
+    "tr-tui-select": "Select",
+    "tr-tui-back": "Back",
+    "tr-tui-exit": "Exit",
+    "tr-tui-yes": "Yes",
+    "tr-tui-no": "No",
+    "tr-tui-ok": "OK",
+    "tr-tui-cancel": "Cancel",
     
     "tr-tui-review-configuration": "Review & Apply Configuration",
     "tr-tui-view-device-info": "View Device Information",
@@ -182,6 +182,6 @@
     "tr-tui-ui-installing": "Installing whiptail...",
     "tr-tui-ui-install-success": "whiptail installed successfully!",
     "tr-tui-ui-install-failed": "Failed to install, using simple mode",
-    "tr-gua": "GUA",
-    "tr-pd": "PD"
+    "tr-tui-gua": "GUA",
+    "tr-tui-pd": "PD"
 }
