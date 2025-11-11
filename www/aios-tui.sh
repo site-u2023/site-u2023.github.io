@@ -177,7 +177,10 @@ download_packages() {
 get_device_info() {
     if [ -f /etc/board.json ]; then
         DEVICE_MODEL=$(jsonfilter -i /etc/board.json -e '@.model.name' 2>/dev/null)
-        DEVICE_TARGET=$(jsonfilter -i /etc/board.json -e '@.target' 2>/dev/null)
+    fi
+    
+    if [ -f /etc/openwrt_release ]; then
+        DEVICE_TARGET=$(grep 'DISTRIB_TARGET' /etc/openwrt_release 2>/dev/null | cut -d"'" -f2)
     fi
     
     [ -z "$DEVICE_MODEL" ] && DEVICE_MODEL="Unknown"
