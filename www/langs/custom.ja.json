@@ -150,6 +150,7 @@
     "tr-no": "いいえ",
     "tr-ok": "OK",
     "tr-cancel": "キャンセル",
+    "tr-review-configuration": "設定確認",
     
     "tr-ui-mode-select": "UIモードを選択:",
     "tr-ui-whiptail": "whiptail (ダイアログベースTUI)",
