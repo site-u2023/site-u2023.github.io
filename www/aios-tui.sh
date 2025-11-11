@@ -917,24 +917,56 @@ whiptail_process_items() {
                 fi
                 
                 if [ "$field_type" = "select" ]; then
+                    local source=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].source" 2>/dev/null | head -1)
+                    
+                    if [ -n "$source" ]; then
+                        echo "[DEBUG] Field uses dynamic source: $source" >> /tmp/debug.log
+                        
+                        case "$source" in
+                            "browser-languages")
+                                echo "[DEBUG] Skipping browser-languages field (already set: $current)" >> /tmp/debug.log
+                                ;;
+                            *)
+                                echo "[DEBUG] Unknown source type: $source, showing as inputbox" >> /tmp/debug.log
+                                value=$(whiptail --title "Setup" --ok-button "Select" --cancel-button "Back" --inputbox "$label:" 10 60 "$current" 3>&1 1>&2 2>&3)
+                                exit_code=$?
+                                
+                                if [ $exit_code -ne 0 ]; then
+                                    return 1
+                                fi
+                                
+                                if [ -n "$value" ]; then
+                                    sed -i "/^${variable}=/d" "$SETUP_VARS"
+                                    echo "${variable}='${value}'" >> "$SETUP_VARS"
+                                fi
+                                ;;
+                        esac
+                        continue
+                    fi
+                    
                     local options=$(get_setup_item_options "$item_id")
+                    
+                    echo "[DEBUG] Raw options output: '$options'" >> /tmp/debug.log
+                    
+                    if [ -z "$options" ]; then
+                        echo "[DEBUG] ERROR: No options found for $item_id, skipping" >> /tmp/debug.log
+                        whiptail --msgbox "Error: No options available for $label" 8 60
+                        continue
+                    fi
+                    
                     local menu_opts=""
                     local i=1
                     for opt in $options; do
                         local opt_label=$(get_setup_item_option_label "$item_id" "$opt")
+                        echo "[DEBUG] Option $i: value='$opt', label='$opt_label'" >> /tmp/debug.log
                         menu_opts="$menu_opts $i \"$opt_label\""
                         i=$((i+1))
                     done
                     
-                    echo "[DEBUG] About to show select menu with menu_opts='$menu_opts'" >> /tmp/debug.log
+                    echo "[DEBUG] Final menu_opts='$menu_opts'" >> /tmp/debug.log
                     
-                    local temp_result="/tmp/whiptail_result_$$"
-                    rm -f "$temp_result"
-                    
-                    echo "$menu_opts" | xargs whiptail --title 'Setup' --ok-button 'Select' --cancel-button 'Back' --menu "$label:" 18 60 10 3>&1 1>&2 2>&3 > "$temp_result"
+                    value=$(eval "whiptail --title 'Setup' --ok-button 'Select' --cancel-button 'Back' --menu '$label:' 18 60 10 $menu_opts 3>&1 1>&2 2>&3")
                     exit_code=$?
-                    value=$(cat "$temp_result" 2>/dev/null)
-                    rm -f "$temp_result"
                     
                     echo "[DEBUG] select exit_code=$exit_code, value='$value'" >> /tmp/debug.log
                     
@@ -964,13 +996,8 @@ whiptail_process_items() {
                 else
                     echo "[DEBUG] About to show inputbox for '$label'" >> /tmp/debug.log
                     
-                    local temp_result="/tmp/whiptail_input_$$"
-                    rm -f "$temp_result"
-                    
-                    whiptail --title "Setup" --ok-button "Select" --cancel-button "Back" --inputbox "$label:" 10 60 "$current" 3>&1 1>&2 2>&3 > "$temp_result"
+                    value=$(whiptail --title "Setup" --ok-button "Select" --cancel-button "Back" --inputbox "$label:" 10 60 "$current" 3>&1 1>&2 2>&3)
                     exit_code=$?
-                    value=$(cat "$temp_result" 2>/dev/null)
-                    rm -f "$temp_result"
                     
                     echo "[DEBUG] inputbox exit_code=$exit_code, value='$value'" >> /tmp/debug.log
                     
