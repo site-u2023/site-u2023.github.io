@@ -781,7 +781,7 @@ whiptail_show_network_info() {
         return 1
     fi
     
-    local info="${tr_auto_detection}: ${DETECTED_CONN_TYPE}\n\n"
+    local info=": ${DETECTED_CONN_TYPE}\n\n"
     [ -n "$ISP_NAME" ] && info="${info}${tr_isp}: $ISP_NAME\n"
     [ -n "$ISP_AS" ] && info="${info}${tr_as}: $ISP_AS\n"
     
@@ -821,6 +821,7 @@ whiptail_process_items() {
     
     local tr_main_menu=$(translate "tr-tui-main-menu")
     local cat_title=$(get_setup_category_title "$cat_id")
+    local breadcrumb="${tr_main_menu} > ${cat_title}"
     
     local items
     if [ -z "$parent_items" ]; then
