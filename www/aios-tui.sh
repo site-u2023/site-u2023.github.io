@@ -926,18 +926,26 @@ whiptail_process_items() {
                         i=$((i+1))
                     done
                     
-                    echo "[DEBUG] About to show select menu" >> /tmp/debug.log
-                    value=$(eval "whiptail --title 'Setup' --ok-button 'Select' --cancel-button 'Back' --menu '$label:' 18 60 10 $menu_opts 3>&1 1>&2 2>&3")
-                    exit_code=$?
+                    echo "[DEBUG] About to show select menu with menu_opts='$menu_opts'" >> /tmp/debug.log
                     
-                    echo "[DEBUG] select exit_code=$exit_code" >> /tmp/debug.log
+                    local temp_result="/tmp/whiptail_result_$$"
+                    rm -f "$temp_result"
+                    
+                    echo "$menu_opts" | xargs whiptail --title 'Setup' --ok-button 'Select' --cancel-button 'Back' --menu "$label:" 18 60 10 3>&1 1>&2 2>&3 > "$temp_result"
+                    exit_code=$?
+                    value=$(cat "$temp_result" 2>/dev/null)
+                    rm -f "$temp_result"
+                    
+                    echo "[DEBUG] select exit_code=$exit_code, value='$value'" >> /tmp/debug.log
                     
                     if [ $exit_code -ne 0 ]; then
+                        echo "[DEBUG] User cancelled or error in select" >> /tmp/debug.log
                         return 1
                     fi
                     
                     if [ -n "$value" ]; then
                         selected_opt=$(echo "$options" | sed -n "${value}p")
+                        echo "[DEBUG] selected_opt='$selected_opt'" >> /tmp/debug.log
                         sed -i "/^${variable}=/d" "$SETUP_VARS"
                         echo "${variable}='${selected_opt}'" >> "$SETUP_VARS"
                         
@@ -954,19 +962,27 @@ whiptail_process_items() {
                         fi
                     fi
                 else
-                    echo "[DEBUG] About to show inputbox" >> /tmp/debug.log
-                    value=$(whiptail --title "Setup" --ok-button "Select" --cancel-button "Back" --inputbox "$label:" 10 60 "$current" 3>&1 1>&2 2>&3)
+                    echo "[DEBUG] About to show inputbox for '$label'" >> /tmp/debug.log
+                    
+                    local temp_result="/tmp/whiptail_input_$$"
+                    rm -f "$temp_result"
+                    
+                    whiptail --title "Setup" --ok-button "Select" --cancel-button "Back" --inputbox "$label:" 10 60 "$current" 3>&1 1>&2 2>&3 > "$temp_result"
                     exit_code=$?
+                    value=$(cat "$temp_result" 2>/dev/null)
+                    rm -f "$temp_result"
                     
                     echo "[DEBUG] inputbox exit_code=$exit_code, value='$value'" >> /tmp/debug.log
                     
                     if [ $exit_code -ne 0 ]; then
+                        echo "[DEBUG] User cancelled or error in inputbox" >> /tmp/debug.log
                         return 1
                     fi
                     
                     if [ -n "$value" ]; then
                         sed -i "/^${variable}=/d" "$SETUP_VARS"
                         echo "${variable}='${value}'" >> "$SETUP_VARS"
+                        echo "[DEBUG] Saved ${variable}='${value}'" >> /tmp/debug.log
                     fi
                 fi
                 ;;
