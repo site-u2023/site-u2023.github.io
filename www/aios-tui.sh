@@ -226,8 +226,6 @@ get_extended_device_info() {
     DEVICE_MEM=$(awk '/MemTotal/{printf "%.0f MB", $2/1024}' /proc/meminfo 2>/dev/null)
     DEVICE_CPU=$(grep -m1 "model name" /proc/cpuinfo | cut -d: -f2 | xargs 2>/dev/null)
     [ -z "$DEVICE_CPU" ] && DEVICE_CPU=$(grep -m1 "Hardware" /proc/cpuinfo | cut -d: -f2 | xargs 2>/dev/null)
-    
-    [ -z "$OPENWRT_VERSION" ] && OPENWRT_VERSION="unknown"
 
     DEVICE_STORAGE=$(df -h / | awk 'NR==2 {print $2}')
     DEVICE_STORAGE_USED=$(df -h / | awk 'NR==2 {print $3}')
