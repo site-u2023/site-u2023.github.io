@@ -142,6 +142,15 @@
 
     "tr-feedback-link": "フォーラム",
 
+    "tr-main-menu": "メインメニュー",
+    "tr-select": "選択",
+    "tr-back": "戻る",
+    "tr-exit": "終了",
+    "tr-yes": "はい",
+    "tr-no": "いいえ",
+    "tr-ok": "OK",
+    "tr-cancel": "キャンセル"
+    
     "tr-ui-mode-select": "UIモードを選択:",
     "tr-ui-whiptail": "whiptail (ダイアログベースTUI)",
     "tr-ui-simple": "simple (リストベースTUI)",
