@@ -889,8 +889,16 @@ whiptail_process_items() {
                 local default=$(get_setup_item_default "$item_id")
                 local field_type=$(get_setup_item_field_type "$item_id")
                 
+                echo "[DEBUG] field processing: item_id=$item_id" >> /tmp/debug.log
+                echo "[DEBUG] label='$label'" >> /tmp/debug.log
+                echo "[DEBUG] variable='$variable'" >> /tmp/debug.log
+                echo "[DEBUG] default='$default'" >> /tmp/debug.log
+                echo "[DEBUG] field_type='$field_type'" >> /tmp/debug.log
+                
                 local current=$(grep "^${variable}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
                 [ -z "$current" ] && current="$default"
+                
+                echo "[DEBUG] current='$current'" >> /tmp/debug.log
                 
                 if [ "$field_type" = "computed" ]; then
                     if [ "$item_id" = "dslite-aftr-address-computed" ]; then
@@ -918,8 +926,11 @@ whiptail_process_items() {
                         i=$((i+1))
                     done
                     
+                    echo "[DEBUG] About to show select menu" >> /tmp/debug.log
                     value=$(eval "whiptail --title 'Setup' --ok-button 'Select' --cancel-button 'Back' --menu '$label:' 18 60 10 $menu_opts 3>&1 1>&2 2>&3")
                     exit_code=$?
+                    
+                    echo "[DEBUG] select exit_code=$exit_code" >> /tmp/debug.log
                     
                     if [ $exit_code -ne 0 ]; then
                         return 1
@@ -943,8 +954,11 @@ whiptail_process_items() {
                         fi
                     fi
                 else
+                    echo "[DEBUG] About to show inputbox" >> /tmp/debug.log
                     value=$(whiptail --title "Setup" --ok-button "Select" --cancel-button "Back" --inputbox "$label:" 10 60 "$current" 3>&1 1>&2 2>&3)
                     exit_code=$?
+                    
+                    echo "[DEBUG] inputbox exit_code=$exit_code, value='$value'" >> /tmp/debug.log
                     
                     if [ $exit_code -ne 0 ]; then
                         return 1
