@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1111.1131"
+VERSION="R7.1111.1141"
 BASE_URL="https://site-u.pages.dev"
 PACKAGES_URL="$BASE_URL/www/packages/packages.json"
 SETUP_JSON_URL="$BASE_URL/www/uci-defaults/setup.json"
@@ -632,7 +632,7 @@ EOF
     echo "[DEBUG] === auto_add_conditional_packages finished ===" >> /tmp/debug.log
 }
 
-get_section_nested_items() {
+NG_get_section_nested_items() {
     local item_id="$1"
     local cat_idx=0
     local item_idx=0
@@ -651,6 +651,18 @@ get_section_nested_items() {
     done
     
     jsonfilter -i "$SETUP_JSON" -e "@.categories[$cat_idx].items[$item_idx].items[*].id" 2>/dev/null
+}
+
+get_section_nested_items() {
+    local item_id="$1"
+    
+    local result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].items[*].id" 2>/dev/null | head -1)
+
+    if [ -z "$result" ]; then
+        result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].items[*].id" 2>/dev/null | head -1)
+    fi
+    
+    echo "$result"
 }
 
 compute_dslite_aftr() {
