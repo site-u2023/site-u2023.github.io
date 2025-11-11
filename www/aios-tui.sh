@@ -227,8 +227,6 @@ get_extended_device_info() {
     DEVICE_CPU=$(grep -m1 "model name" /proc/cpuinfo | cut -d: -f2 | xargs 2>/dev/null)
     [ -z "$DEVICE_CPU" ] && DEVICE_CPU=$(grep -m1 "Hardware" /proc/cpuinfo | cut -d: -f2 | xargs 2>/dev/null)
     
-    [ -z "$DEVICE_MODEL" ] && DEVICE_MODEL="Unknown Device"
-    [ -z "$DEVICE_TARGET" ] && DEVICE_TARGET="unknown/unknown"
     [ -z "$OPENWRT_VERSION" ] && OPENWRT_VERSION="unknown"
 
     DEVICE_STORAGE=$(df -h / | awk 'NR==2 {print $2}')
