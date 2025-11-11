@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1111.1546"
+VERSION="R7.1111.1600"
 BASE_URL="https://site-u.pages.dev"
 PACKAGES_URL="$BASE_URL/www/packages/packages.json"
 SETUP_JSON_URL="$BASE_URL/www/uci-defaults/setup.json"
@@ -741,6 +741,13 @@ generate_files() {
 }
 
 whiptail_device_info() {
+    local tr_device_info=$(translate "tr-device-information")
+    whiptail_device_info_titled "$tr_device_info"
+}
+
+whiptail_device_info_titled() {
+    local title="$1"
+    local tr_ok=$(translate "tr-ok")
     local info="Model: $DEVICE_MODEL\n"
     info="${info}Target: $DEVICE_TARGET\n"
     info="${info}Version: $OPENWRT_VERSION\n"
@@ -748,7 +755,7 @@ whiptail_device_info() {
     [ -n "$DEVICE_CPU" ] && info="${info}CPU: $DEVICE_CPU\n"
     [ -n "$DEVICE_STORAGE" ] && info="${info}Storage: $DEVICE_STORAGE_USED/$DEVICE_STORAGE (${DEVICE_STORAGE_AVAIL} free)\n"
     [ -n "$DEVICE_USB" ] && info="${info}USB: $DEVICE_USB\n"
-    whiptail --title "Device Information" --msgbox "$info" 15 70
+    whiptail --title "$title" --ok-button "$tr_ok" --msgbox "$info" 15 70
 }
 
 whiptail_show_network_info() {
@@ -758,6 +765,10 @@ whiptail_show_network_info() {
     local tr_mape_notice=$(translate "tr-mape-notice1")
     local tr_dslite_notice=$(translate "tr-dslite-notice1")
     local tr_aftr=$(translate "tr-dslite-aftr-ipv6-address")
+    local tr_internet_conn=$(translate "tr-internet-connection")
+    local tr_use_auto=$(translate "tr-use-auto-config")
+    local tr_yes=$(translate "tr-yes")
+    local tr_no=$(translate "tr-no")
     
     if [ -z "$DETECTED_CONN_TYPE" ] || [ "$DETECTED_CONN_TYPE" = "Unknown" ]; then
         return 1
@@ -784,9 +795,9 @@ whiptail_show_network_info() {
         info="${info}\n${tr_dslite_notice}"
     fi
     
-    info="${info}\n\nUse this auto-detected configuration?"
+    info="${info}\n\n${tr_use_auto}"
     
-    if whiptail --title "$(translate 'tr-internet-connection')" --yesno "$info" 22 70; then
+    if whiptail --title "$tr_internet_conn" --yes-button "$tr_yes" --no-button "$tr_no" --yesno "$info" 22 70; then
         sed -i "/^connection_type=/d" "$SETUP_VARS"
         echo "connection_type='auto'" >> "$SETUP_VARS"
         return 0
@@ -1101,13 +1112,15 @@ whiptail_category_config() {
     local tr_back=$(translate "tr-back")
     local tr_yes=$(translate "tr-yes")
     local tr_no=$(translate "tr-no")
+    local tr_ok=$(translate "tr-ok")
     
     echo "[DEBUG] === whiptail_category_config START ===" >> /tmp/debug.log
     echo "[DEBUG] cat_id=$cat_id, title=$cat_title, breadcrumb=$breadcrumb" >> /tmp/debug.log
     
     if [ "$cat_id" = "internet-connection" ]; then
         if whiptail_show_network_info; then
-            whiptail --msgbox "Auto-configuration applied!" 8 40
+            local tr_auto_applied=$(translate "tr-auto-config-applied")
+            whiptail --title "$breadcrumb" --ok-button "$tr_ok" --msgbox "$tr_auto_applied" 8 40
             auto_add_conditional_packages "$cat_id"
             return 0
         fi
@@ -1249,17 +1262,28 @@ review_and_apply() {
     local tr_main_menu=$(translate "tr-main-menu")
     local tr_review=$(translate "tr-review-configuration")
     local breadcrumb="${tr_main_menu} > ${tr_review}"
+    local tr_select=$(translate "tr-select")
+    local tr_back=$(translate "tr-back")
+    local tr_select_option=$(translate "tr-select-option")
+    local tr_ok=$(translate "tr-ok")
     
     while true; do
         if [ "$UI_MODE" = "whiptail" ]; then
-            choice=$(whiptail --title "$breadcrumb" --ok-button "Select" --cancel-button "Back" --menu \
-                "Select an option:" 20 70 12 \
-                "1" "View Device Information" \
-                "2" "View Package List" \
-                "3" "View Configuration Variables" \
-                "4" "View postinst.sh" \
-                "5" "View setup.sh" \
-                "6" "Apply Configuration" \
+            local tr_view_device=$(translate "tr-view-device-info")
+            local tr_view_packages=$(translate "tr-view-package-list")
+            local tr_view_vars=$(translate "tr-view-config-vars")
+            local tr_view_postinst=$(translate "tr-view-postinst")
+            local tr_view_setup=$(translate "tr-view-setup")
+            local tr_apply=$(translate "tr-apply-config")
+            
+            choice=$(whiptail --title "$breadcrumb" --ok-button "$tr_select" --cancel-button "$tr_back" --menu \
+                "$tr_select_option" 20 70 12 \
+                "1" "$tr_view_device" \
+                "2" "$tr_view_packages" \
+                "3" "$tr_view_vars" \
+                "4" "$tr_view_postinst" \
+                "5" "$tr_view_setup" \
+                "6" "$tr_apply" \
                 3>&1 1>&2 2>&3)
             
             [ $? -ne 0 ] && return 0
@@ -1283,15 +1307,22 @@ review_and_apply() {
         
         case "$choice" in
             1)
-                [ "$UI_MODE" = "whiptail" ] && whiptail_device_info || simple_device_info
+                if [ "$UI_MODE" = "whiptail" ]; then
+                    local tr_device_info=$(translate "tr-device-information")
+                    whiptail_device_info_titled "$tr_device_info"
+                else
+                    simple_device_info
+                fi
                 ;;
             2)
                 if [ "$UI_MODE" = "whiptail" ]; then
+                    local tr_pkg_list=$(translate "tr-package-list")
+                    local tr_no_packages=$(translate "tr-no-packages")
                     if [ -s "$SELECTED_PACKAGES" ]; then
                         cat "$SELECTED_PACKAGES" | sed 's/^/- /' > /tmp/pkg_view.txt
-                        whiptail --scrolltext --title "Package List" --textbox /tmp/pkg_view.txt 24 78
+                        whiptail --scrolltext --title "$tr_pkg_list" --ok-button "$tr_ok" --textbox /tmp/pkg_view.txt 24 78
                     else
-                        whiptail --msgbox "No packages selected" 8 40
+                        whiptail --title "$tr_pkg_list" --ok-button "$tr_ok" --msgbox "$tr_no_packages" 8 40
                     fi
                 else
                     clear
@@ -1311,10 +1342,12 @@ review_and_apply() {
                 ;;
             3)
                 if [ "$UI_MODE" = "whiptail" ]; then
+                    local tr_config_vars=$(translate "tr-config-vars")
+                    local tr_no_vars=$(translate "tr-no-config-vars")
                     if [ -s "$SETUP_VARS" ]; then
-                        whiptail --scrolltext --title "Configuration Variables" --textbox "$SETUP_VARS" 24 78
+                        whiptail --scrolltext --title "$tr_config_vars" --ok-button "$tr_ok" --textbox "$SETUP_VARS" 24 78
                     else
-                        whiptail --msgbox "No configuration variables set" 8 40
+                        whiptail --title "$tr_config_vars" --ok-button "$tr_ok" --msgbox "$tr_no_vars" 8 40
                     fi
                 else
                     clear
@@ -1332,10 +1365,11 @@ review_and_apply() {
                 ;;
             4)
                 if [ "$UI_MODE" = "whiptail" ]; then
+                    local tr_postinst_not_found=$(translate "tr-postinst-not-found")
                     if [ -f "$OUTPUT_DIR/postinst.sh" ]; then
-                        whiptail --scrolltext --title "postinst.sh" --textbox "$OUTPUT_DIR/postinst.sh" 24 78
+                        whiptail --scrolltext --title "postinst.sh" --ok-button "$tr_ok" --textbox "$OUTPUT_DIR/postinst.sh" 24 78
                     else
-                        whiptail --msgbox "postinst.sh file not found" 8 40
+                        whiptail --title "postinst.sh" --ok-button "$tr_ok" --msgbox "$tr_postinst_not_found" 8 40
                     fi
                 else
                     clear
@@ -1353,10 +1387,11 @@ review_and_apply() {
                 ;;
             5)
                 if [ "$UI_MODE" = "whiptail" ]; then
+                    local tr_setup_not_found=$(translate "tr-setup-not-found")
                     if [ -f "$OUTPUT_DIR/setup.sh" ]; then
-                        whiptail --scrolltext --title "setup.sh" --textbox "$OUTPUT_DIR/setup.sh" 24 78
+                        whiptail --scrolltext --title "setup.sh" --ok-button "$tr_ok" --textbox "$OUTPUT_DIR/setup.sh" 24 78
                     else
-                        whiptail --msgbox "setup.sh file not found" 8 40
+                        whiptail --title "setup.sh" --ok-button "$tr_ok" --msgbox "$tr_setup_not_found" 8 40
                     fi
                 else
                     clear
@@ -1373,13 +1408,20 @@ review_and_apply() {
                 fi
                 ;;
             6)
+                local tr_yes=$(translate "tr-yes")
+                local tr_no=$(translate "tr-no")
                 if [ "$UI_MODE" = "whiptail" ]; then
-                    if whiptail --yesno "Apply this configuration?\n\nThis will:\n1. Install packages via postinst.sh\n2. Apply settings via setup.sh\n3. Optionally reboot\n\nContinue?" 15 60; then
-                        whiptail --msgbox "Executing package installation..." 8 50
+                    local tr_apply_confirm=$(translate "tr-apply-confirm")
+                    local tr_installing=$(translate "tr-installing-packages")
+                    local tr_applying=$(translate "tr-applying-config")
+                    local tr_applied=$(translate "tr-config-applied")
+                    
+                    if whiptail --title "$breadcrumb" --yes-button "$tr_yes" --no-button "$tr_no" --yesno "$tr_apply_confirm" 15 60; then
+                        whiptail --title "$breadcrumb" --ok-button "$tr_ok" --msgbox "$tr_installing" 8 50
                         sh "$OUTPUT_DIR/postinst.sh"
-                        whiptail --msgbox "Applying system configuration..." 8 50
+                        whiptail --title "$breadcrumb" --ok-button "$tr_ok" --msgbox "$tr_applying" 8 50
                         sh "$OUTPUT_DIR/setup.sh"
-                        if whiptail --yesno "Configuration applied successfully!\n\nReboot now?" 10 50; then
+                        if whiptail --title "$breadcrumb" --yes-button "$tr_yes" --no-button "$tr_no" --yesno "$tr_applied" 10 50; then
                             reboot
                         fi
                         return 0
