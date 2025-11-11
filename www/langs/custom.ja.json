@@ -149,7 +149,7 @@
     "tr-yes": "はい",
     "tr-no": "いいえ",
     "tr-ok": "OK",
-    "tr-cancel": "キャンセル"
+    "tr-cancel": "キャンセル",
     
     "tr-ui-mode-select": "UIモードを選択:",
     "tr-ui-whiptail": "whiptail (ダイアログベースTUI)",
