@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1111.1600"
+VERSION="R7.1111.1608"
 BASE_URL="https://site-u.pages.dev"
 PACKAGES_URL="$BASE_URL/www/packages/packages.json"
 SETUP_JSON_URL="$BASE_URL/www/uci-defaults/setup.json"
@@ -1154,6 +1154,10 @@ whiptail_category_config() {
 
 whiptail_package_categories() {
     local menu_items="" i=1 cat_id cat_name
+    local tr_pkg_categories=$(translate "tr-package-categories")
+    local tr_select_category=$(translate "tr-select-category")
+    local tr_select=$(translate "tr-select")
+    local tr_back=$(translate "tr-back")
     
     while read cat_id; do
         local is_hidden=$(get_category_hidden "$cat_id")
@@ -1164,7 +1168,7 @@ whiptail_package_categories() {
         i=$((i+1))
     done < <(get_categories)
     
-    choice=$(eval "whiptail --title 'Package Categories' --ok-button 'Select' --cancel-button 'Back' --menu 'Select category:' 20 70 12 $menu_items 3>&1 1>&2 2>&3")
+    choice=$(eval "whiptail --title '$tr_pkg_categories' --ok-button '$tr_select' --cancel-button '$tr_back' --menu '$tr_select_category' 20 70 12 $menu_items 3>&1 1>&2 2>&3")
     
     if [ $? -ne 0 ]; then
         return 0
@@ -1184,6 +1188,9 @@ whiptail_package_selection() {
     local cat_name=$(get_category_name "$cat_id")
     local cat_desc=$(get_category_desc "$cat_id")
     local checklist_items="" pkg_id pkg_name status
+    local tr_select=$(translate "tr-select")
+    local tr_back=$(translate "tr-back")
+    local tr_space_toggle=$(translate "tr-space-toggle")
     
     while read pkg_id; do
         pkg_name=$(get_package_name "$pkg_id")
@@ -1198,7 +1205,7 @@ whiptail_package_selection() {
         checklist_items="$checklist_items \"$pkg_id\" \"$pkg_name\" $status"
     done < <(get_category_packages "$cat_id")
     
-    selected=$(eval "whiptail --title '$cat_name' --ok-button 'Select' --cancel-button 'Back' --checklist '$cat_desc (Space=toggle):' 20 70 12 $checklist_items 3>&1 1>&2 2>&3")
+    selected=$(eval "whiptail --title '$cat_name' --ok-button '$tr_select' --cancel-button '$tr_back' --checklist '$cat_desc ($tr_space_toggle):' 20 70 12 $checklist_items 3>&1 1>&2 2>&3")
     
     if [ $? -eq 0 ]; then
         while read pkg_id; do
@@ -1264,7 +1271,6 @@ review_and_apply() {
     local breadcrumb="${tr_main_menu} > ${tr_review}"
     local tr_select=$(translate "tr-select")
     local tr_back=$(translate "tr-back")
-    local tr_select_option=$(translate "tr-select-option")
     local tr_ok=$(translate "tr-ok")
     
     while true; do
@@ -1277,7 +1283,7 @@ review_and_apply() {
             local tr_apply=$(translate "tr-apply-config")
             
             choice=$(whiptail --title "$breadcrumb" --ok-button "$tr_select" --cancel-button "$tr_back" --menu \
-                "$tr_select_option" 20 70 12 \
+                "$tr_review" 20 70 12 \
                 "1" "$tr_view_device" \
                 "2" "$tr_view_packages" \
                 "3" "$tr_view_vars" \
