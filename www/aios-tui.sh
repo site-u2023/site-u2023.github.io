@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1111.1007"
+VERSION="R7.1111.1018"
 BASE_URL="https://site-u.pages.dev"
 PACKAGES_URL="$BASE_URL/www/packages/packages.json"
 SETUP_JSON_URL="$BASE_URL/www/uci-defaults/setup.json"
@@ -935,9 +935,11 @@ whiptail_process_items() {
                 else
                     value=$(whiptail --title "Setup" --ok-button "Select" --cancel-button "Back" --inputbox "$label:" 10 60 "$current" 3>&1 1>&2 2>&3)
                     
-                    if [ $? -eq 0 ] && [ -n "$value" ]; then
-                        sed -i "/^${variable}=/d" "$SETUP_VARS"
-                        echo "${variable}='${value}'" >> "$SETUP_VARS"
+                    if [ $? -eq 0 ]; then
+                        if [ -n "$value" ]; then
+                            sed -i "/^${variable}=/d" "$SETUP_VARS"
+                            echo "${variable}='${value}'" >> "$SETUP_VARS"
+                        fi
                     fi
                 fi
                 ;;
@@ -1484,6 +1486,10 @@ simple_process_items() {
                     echo ""
                     printf "$label [$current]: "
                     read value
+                    
+                    if [ -z "$value" ]; then
+                        value="$current"
+                    fi
                     
                     if [ -n "$value" ]; then
                         sed -i "/^${variable}=/d" "$SETUP_VARS"
