@@ -152,7 +152,6 @@
     "tr-ok": "OK",
     "tr-cancel": "Cancel",
     
-    "tr-select-option": "Select an option:",
     "tr-view-device-info": "View Device Information",
     "tr-view-package-list": "View Package List",
     "tr-view-config-vars": "View Configuration Variables",
@@ -172,6 +171,10 @@
     "tr-config-applied": "Configuration applied successfully!\n\nReboot now?",
     "tr-auto-config-applied": "Auto-configuration applied!",
     "tr-use-auto-config": "Use this auto-detected configuration?",
+    
+    "tr-package-categories": "Package Categories",
+    "tr-select-category": "Select category:",
+    "tr-space-toggle": "Space=toggle",
     
     "tr-ui-mode-select": "Select UI mode:",
     "tr-ui-whiptail": "whiptail (dialog-based TUI)",
