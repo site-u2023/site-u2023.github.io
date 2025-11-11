@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1111.1615"
+VERSION="R7.1111.1626"
 BASE_URL="https://site-u.pages.dev"
 PACKAGES_URL="$BASE_URL/www/packages/packages.json"
 SETUP_JSON_URL="$BASE_URL/www/uci-defaults/setup.json"
@@ -747,7 +747,7 @@ whiptail_device_info() {
 
 whiptail_device_info_titled() {
     local title="$1"
-    local tr_ok=$(translate "tr-ok")
+    local tr_ok=$(translate "tr-tui-ok")
     local info="Model: $DEVICE_MODEL\n"
     info="${info}Target: $DEVICE_TARGET\n"
     info="${info}Version: $OPENWRT_VERSION\n"
@@ -767,8 +767,8 @@ whiptail_show_network_info() {
     local tr_aftr=$(translate "tr-dslite-aftr-ipv6-address")
     local tr_internet_conn=$(translate "tr-internet-connection")
     local tr_use_auto=$(translate "tr-tui-use-auto-config")
-    local tr_yes=$(translate "tr-yes")
-    local tr_no=$(translate "tr-no")
+    local tr_yes=$(translate "tr-tui-yes")
+    local tr_no=$(translate "tr-tui-no")
     
     if [ -z "$DETECTED_CONN_TYPE" ] || [ "$DETECTED_CONN_TYPE" = "Unknown" ]; then
         return 1
@@ -858,8 +858,8 @@ whiptail_process_items() {
                 local options=$(get_setup_item_options "$item_id")
                 echo "[DEBUG] Options: $options" >> /tmp/debug.log
                 
-                local tr_select=$(translate "tr-select")
-                local tr_back=$(translate "tr-back")
+                local tr_select=$(translate "tr-tui-select")
+                local tr_back=$(translate "tr-tui-back")
                 
                 local menu_opts=""
                 local i=1
@@ -968,8 +968,8 @@ whiptail_process_items() {
                     fi
                 fi
                 
-                local tr_select=$(translate "tr-select")
-                local tr_back=$(translate "tr-back")
+                local tr_select=$(translate "tr-tui-select")
+                local tr_back=$(translate "tr-tui-back")
                 
                 if [ "$field_type" = "select" ]; then
                     local source=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].source" 2>/dev/null | head -1)
@@ -1105,14 +1105,14 @@ whiptail_process_items() {
 whiptail_category_config() {
     local cat_id="$1"
     local cat_title=$(get_setup_category_title "$cat_id")
-    local tr_main_menu=$(translate "tr-main-menu")
+    local tr_main_menu=$(translate "tr-tui-main-menu")
     local breadcrumb="${tr_main_menu} > ${cat_title}"
 
-    local tr_select=$(translate "tr-select")
-    local tr_back=$(translate "tr-back")
-    local tr_yes=$(translate "tr-yes")
-    local tr_no=$(translate "tr-no")
-    local tr_ok=$(translate "tr-ok")
+    local tr_select=$(translate "tr-tui-select")
+    local tr_back=$(translate "tr-tui-back")
+    local tr_yes=$(translate "tr-tui-yes")
+    local tr_no=$(translate "tr-tui-no")
+    local tr_ok=$(translate "tr-tui-ok")
     
     echo "[DEBUG] === whiptail_category_config START ===" >> /tmp/debug.log
     echo "[DEBUG] cat_id=$cat_id, title=$cat_title, breadcrumb=$breadcrumb" >> /tmp/debug.log
@@ -1156,8 +1156,8 @@ whiptail_package_categories() {
     local menu_items="" i=1 cat_id cat_name
     local tr_pkg_categories=$(translate "tr-tui-package-categories")
     local tr_select_category=$(translate "tr-tui-select-category")
-    local tr_select=$(translate "tr-select")
-    local tr_back=$(translate "tr-back")
+    local tr_select=$(translate "tr-tui-select")
+    local tr_back=$(translate "tr-tui-back")
     
     while read cat_id; do
         local is_hidden=$(get_category_hidden "$cat_id")
@@ -1188,8 +1188,8 @@ whiptail_package_selection() {
     local cat_name=$(get_category_name "$cat_id")
     local cat_desc=$(get_category_desc "$cat_id")
     local checklist_items="" pkg_id pkg_name status
-    local tr_select=$(translate "tr-select")
-    local tr_back=$(translate "tr-back")
+    local tr_select=$(translate "tr-tui-select")
+    local tr_back=$(translate "tr-tui-back")
     local tr_space_toggle=$(translate "tr-tui-space-toggle")
     
     while read pkg_id; do
@@ -1238,9 +1238,9 @@ whiptail_main_menu() {
         local review_label=$(translate "tr-tui-review-configuration")
         menu_items="$menu_items $i \"$review_label\""
         
-        local tr_main_menu=$(translate "tr-main-menu")
-        local tr_select=$(translate "tr-select")
-        local tr_exit=$(translate "tr-exit")
+        local tr_main_menu=$(translate "tr-tui-main-menu")
+        local tr_select=$(translate "tr-tui-select")
+        local tr_exit=$(translate "tr-tui-exit")
         
         choice=$(eval "whiptail --title '${tr_main_menu}' \
             --ok-button '${tr_select}' \
@@ -1266,12 +1266,12 @@ whiptail_main_menu() {
 review_and_apply() {
     generate_files
     
-    local tr_main_menu=$(translate "tr-main-menu")
+    local tr_main_menu=$(translate "tr-tui-main-menu")
     local tr_review=$(translate "tr-tui-review-configuration")
     local breadcrumb="${tr_main_menu} > ${tr_review}"
-    local tr_select=$(translate "tr-select")
-    local tr_back=$(translate "tr-back")
-    local tr_ok=$(translate "tr-ok")
+    local tr_select=$(translate "tr-tui-select")
+    local tr_back=$(translate "tr-tui-back")
+    local tr_ok=$(translate "tr-tui-ok")
     
     while true; do
         if [ "$UI_MODE" = "whiptail" ]; then
@@ -1414,8 +1414,8 @@ review_and_apply() {
                 fi
                 ;;
             6)
-                local tr_yes=$(translate "tr-yes")
-                local tr_no=$(translate "tr-no")
+                local tr_yes=$(translate "tr-tui-yes")
+                local tr_no=$(translate "tr-tui-no")
                 if [ "$UI_MODE" = "whiptail" ]; then
                     local tr_apply_confirm=$(translate "tr-tui-apply-confirm")
                     local tr_installing=$(translate "tr-tui-installing-packages")
