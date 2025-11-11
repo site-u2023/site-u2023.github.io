@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1111.1608"
+VERSION="R7.1111.1615"
 BASE_URL="https://site-u.pages.dev"
 PACKAGES_URL="$BASE_URL/www/packages/packages.json"
 SETUP_JSON_URL="$BASE_URL/www/uci-defaults/setup.json"
@@ -64,11 +64,11 @@ select_ui_mode() {
     
     echo "[DEBUG] whiptail not found, asking user" >> /tmp/debug.log
     
-    echo "$(translate 'tr-ui-mode-select')"
-    echo "1) $(translate 'tr-ui-whiptail')"
-    echo "2) $(translate 'tr-ui-simple')"
+    echo "$(translate 'tr-tui-ui-mode-select')"
+    echo "1) $(translate 'tr-tui-ui-whiptail')"
+    echo "2) $(translate 'tr-tui-ui-simple')"
     
-    printf "$(translate 'tr-ui-choice') [1]: "
+    printf "$(translate 'tr-tui-ui-choice') [1]: "
     read choice
     
     echo "[DEBUG] User choice: $choice" >> /tmp/debug.log
@@ -77,19 +77,19 @@ select_ui_mode() {
         UI_MODE="simple"
         echo "[DEBUG] User selected simple mode, UI_MODE=$UI_MODE" >> /tmp/debug.log
     else
-        echo "$(translate 'tr-ui-installing')"
+        echo "$(translate 'tr-tui-ui-installing')"
         echo "[DEBUG] Installing whiptail..." >> /tmp/debug.log
         install_package $WHIPTAIL_PACKAGES
         echo "[DEBUG] install_package exit code: $?" >> /tmp/debug.log
         hash -r
         echo "[DEBUG] hash -r executed" >> /tmp/debug.log
         if command -v whiptail >/dev/null 2>&1; then
-            echo "$(translate 'tr-ui-install-success')"
+            echo "$(translate 'tr-tui-ui-install-success')"
             UI_MODE="whiptail"
             echo "[DEBUG] whiptail install SUCCESS, UI_MODE=$UI_MODE" >> /tmp/debug.log
             sleep 1
         else
-            echo "$(translate 'tr-ui-install-failed')"
+            echo "$(translate 'tr-tui-ui-install-failed')"
             UI_MODE="simple"
             echo "[DEBUG] whiptail command not found after install, UI_MODE=$UI_MODE" >> /tmp/debug.log
             sleep 2
@@ -741,7 +741,7 @@ generate_files() {
 }
 
 whiptail_device_info() {
-    local tr_device_info=$(translate "tr-device-information")
+    local tr_device_info=$(translate "tr-tui-device-information")
     whiptail_device_info_titled "$tr_device_info"
 }
 
@@ -766,7 +766,7 @@ whiptail_show_network_info() {
     local tr_dslite_notice=$(translate "tr-dslite-notice1")
     local tr_aftr=$(translate "tr-dslite-aftr-ipv6-address")
     local tr_internet_conn=$(translate "tr-internet-connection")
-    local tr_use_auto=$(translate "tr-use-auto-config")
+    local tr_use_auto=$(translate "tr-tui-use-auto-config")
     local tr_yes=$(translate "tr-yes")
     local tr_no=$(translate "tr-no")
     
@@ -1119,7 +1119,7 @@ whiptail_category_config() {
     
     if [ "$cat_id" = "internet-connection" ]; then
         if whiptail_show_network_info; then
-            local tr_auto_applied=$(translate "tr-auto-config-applied")
+            local tr_auto_applied=$(translate "tr-tui-auto-config-applied")
             whiptail --title "$breadcrumb" --ok-button "$tr_ok" --msgbox "$tr_auto_applied" 8 40
             auto_add_conditional_packages "$cat_id"
             return 0
@@ -1154,8 +1154,8 @@ whiptail_category_config() {
 
 whiptail_package_categories() {
     local menu_items="" i=1 cat_id cat_name
-    local tr_pkg_categories=$(translate "tr-package-categories")
-    local tr_select_category=$(translate "tr-select-category")
+    local tr_pkg_categories=$(translate "tr-tui-package-categories")
+    local tr_select_category=$(translate "tr-tui-select-category")
     local tr_select=$(translate "tr-select")
     local tr_back=$(translate "tr-back")
     
@@ -1190,7 +1190,7 @@ whiptail_package_selection() {
     local checklist_items="" pkg_id pkg_name status
     local tr_select=$(translate "tr-select")
     local tr_back=$(translate "tr-back")
-    local tr_space_toggle=$(translate "tr-space-toggle")
+    local tr_space_toggle=$(translate "tr-tui-space-toggle")
     
     while read pkg_id; do
         pkg_name=$(get_package_name "$pkg_id")
@@ -1235,7 +1235,7 @@ whiptail_main_menu() {
         menu_items="$menu_items $i \"$packages_label\""
         i=$((i+1))
         
-        local review_label=$(translate "tr-review-configuration")
+        local review_label=$(translate "tr-tui-review-configuration")
         menu_items="$menu_items $i \"$review_label\""
         
         local tr_main_menu=$(translate "tr-main-menu")
@@ -1267,7 +1267,7 @@ review_and_apply() {
     generate_files
     
     local tr_main_menu=$(translate "tr-main-menu")
-    local tr_review=$(translate "tr-review-configuration")
+    local tr_review=$(translate "tr-tui-review-configuration")
     local breadcrumb="${tr_main_menu} > ${tr_review}"
     local tr_select=$(translate "tr-select")
     local tr_back=$(translate "tr-back")
@@ -1275,12 +1275,12 @@ review_and_apply() {
     
     while true; do
         if [ "$UI_MODE" = "whiptail" ]; then
-            local tr_view_device=$(translate "tr-view-device-info")
-            local tr_view_packages=$(translate "tr-view-package-list")
-            local tr_view_vars=$(translate "tr-view-config-vars")
-            local tr_view_postinst=$(translate "tr-view-postinst")
-            local tr_view_setup=$(translate "tr-view-setup")
-            local tr_apply=$(translate "tr-apply-config")
+            local tr_view_device=$(translate "tr-tui-view-device-info")
+            local tr_view_packages=$(translate "tr-tui-view-package-list")
+            local tr_view_vars=$(translate "tr-tui-view-config-vars")
+            local tr_view_postinst=$(translate "tr-tui-view-postinst")
+            local tr_view_setup=$(translate "tr-tui-view-setup")
+            local tr_apply=$(translate "tr-tui-apply-config")
             
             choice=$(whiptail --title "$breadcrumb" --ok-button "$tr_select" --cancel-button "$tr_back" --menu \
                 "$tr_review" 20 70 12 \
@@ -1314,7 +1314,7 @@ review_and_apply() {
         case "$choice" in
             1)
                 if [ "$UI_MODE" = "whiptail" ]; then
-                    local tr_device_info=$(translate "tr-device-information")
+                    local tr_device_info=$(translate "tr-tui-device-information")
                     whiptail_device_info_titled "$tr_device_info"
                 else
                     simple_device_info
@@ -1322,8 +1322,8 @@ review_and_apply() {
                 ;;
             2)
                 if [ "$UI_MODE" = "whiptail" ]; then
-                    local tr_pkg_list=$(translate "tr-package-list")
-                    local tr_no_packages=$(translate "tr-no-packages")
+                    local tr_pkg_list=$(translate "tr-tui-package-list")
+                    local tr_no_packages=$(translate "tr-tui-no-packages")
                     if [ -s "$SELECTED_PACKAGES" ]; then
                         cat "$SELECTED_PACKAGES" | sed 's/^/- /' > /tmp/pkg_view.txt
                         whiptail --scrolltext --title "$tr_pkg_list" --ok-button "$tr_ok" --textbox /tmp/pkg_view.txt 24 78
@@ -1348,8 +1348,8 @@ review_and_apply() {
                 ;;
             3)
                 if [ "$UI_MODE" = "whiptail" ]; then
-                    local tr_config_vars=$(translate "tr-config-vars")
-                    local tr_no_vars=$(translate "tr-no-config-vars")
+                    local tr_config_vars=$(translate "tr-tui-config-vars")
+                    local tr_no_vars=$(translate "tr-tui-no-config-vars")
                     if [ -s "$SETUP_VARS" ]; then
                         whiptail --scrolltext --title "$tr_config_vars" --ok-button "$tr_ok" --textbox "$SETUP_VARS" 24 78
                     else
@@ -1371,7 +1371,7 @@ review_and_apply() {
                 ;;
             4)
                 if [ "$UI_MODE" = "whiptail" ]; then
-                    local tr_postinst_not_found=$(translate "tr-postinst-not-found")
+                    local tr_postinst_not_found=$(translate "tr-tui-postinst-not-found")
                     if [ -f "$OUTPUT_DIR/postinst.sh" ]; then
                         whiptail --scrolltext --title "postinst.sh" --ok-button "$tr_ok" --textbox "$OUTPUT_DIR/postinst.sh" 24 78
                     else
@@ -1393,7 +1393,7 @@ review_and_apply() {
                 ;;
             5)
                 if [ "$UI_MODE" = "whiptail" ]; then
-                    local tr_setup_not_found=$(translate "tr-setup-not-found")
+                    local tr_setup_not_found=$(translate "tr-tui-setup-not-found")
                     if [ -f "$OUTPUT_DIR/setup.sh" ]; then
                         whiptail --scrolltext --title "setup.sh" --ok-button "$tr_ok" --textbox "$OUTPUT_DIR/setup.sh" 24 78
                     else
@@ -1417,10 +1417,10 @@ review_and_apply() {
                 local tr_yes=$(translate "tr-yes")
                 local tr_no=$(translate "tr-no")
                 if [ "$UI_MODE" = "whiptail" ]; then
-                    local tr_apply_confirm=$(translate "tr-apply-confirm")
-                    local tr_installing=$(translate "tr-installing-packages")
-                    local tr_applying=$(translate "tr-applying-config")
-                    local tr_applied=$(translate "tr-config-applied")
+                    local tr_apply_confirm=$(translate "tr-tui-apply-confirm")
+                    local tr_installing=$(translate "tr-tui-installing-packages")
+                    local tr_applying=$(translate "tr-tui-applying-config")
+                    local tr_applied=$(translate "tr-tui-config-applied")
                     
                     if whiptail --title "$breadcrumb" --yes-button "$tr_yes" --no-button "$tr_no" --yesno "$tr_apply_confirm" 15 60; then
                         whiptail --title "$breadcrumb" --ok-button "$tr_ok" --msgbox "$tr_installing" 8 50
