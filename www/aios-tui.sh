@@ -766,12 +766,15 @@ whiptail_device_info_titled() {
 }
 
 whiptail_show_network_info() {
+    local tr_main_menu=$(translate "tr-tui-main-menu")
     local tr_internet_connection=$(translate "tr-internet-connection")
+    local breadcrumb="${tr_main_menu} > ${tr_internet_connection}"
     
     local tr_isp=$(translate "tr-isp")
     local tr_as=$(translate "tr-as")
     local tr_mape_notice=$(translate "tr-mape-notice1")
     local tr_dslite_notice=$(translate "tr-dslite-notice1")
+    local tr_aftr=$(translate "tr-dslite-aftr-ipv6-address")
     
     if [ -z "$DETECTED_CONN_TYPE" ] || [ "$DETECTED_CONN_TYPE" = "Unknown" ]; then
         return 1
@@ -801,7 +804,7 @@ whiptail_show_network_info() {
     
     info="${info}\n\nUse this auto-detected configuration?"
     
-    if whiptail --title "$tr_internet_connection" --yesno "$info" 22 70; then
+    if whiptail --title "$breadcrumb" --yesno "$info" 22 70; then
         sed -i "/^connection_type=/d" "$SETUP_VARS"
         echo "connection_type='auto'" >> "$SETUP_VARS"
         return 0
@@ -818,6 +821,7 @@ whiptail_process_items() {
     
     local tr_main_menu=$(translate "tr-tui-main-menu")
     local cat_title=$(get_setup_category_title "$cat_id")
+    local breadcrumb="${tr_main_menu} > ${cat_title}"
     
     local items
     if [ -z "$parent_items" ]; then
@@ -872,7 +876,7 @@ whiptail_process_items() {
                     i=$((i+1))
                 done
                 
-                value=$(eval "whiptail --title '$cat_title' --ok-button 'Select' --cancel-button 'Back' --menu '${label}:' 18 60 10 $menu_opts 3>&1 1>&2 2>&3")
+                value=$(eval "whiptail --title '$breadcrumb' --ok-button 'Select' --cancel-button 'Back' --menu '${label}:' 18 60 10 $menu_opts 3>&1 1>&2 2>&3")
                 exit_code=$?
                 
                 if [ $exit_code -ne 0 ]; then
@@ -983,7 +987,7 @@ whiptail_process_items() {
                                 ;;
                             *)
                                 echo "[DEBUG] Unknown source type: $source, showing as inputbox" >> /tmp/debug.log
-                                value=$(whiptail --title "$cat_title" --ok-button "Select" --cancel-button "Back" --inputbox "${label}:" 10 60 "$current" 3>&1 1>&2 2>&3)
+                                value=$(whiptail --title "$breadcrumb" --ok-button "Select" --cancel-button "Back" --inputbox "${label}:" 10 60 "$current" 3>&1 1>&2 2>&3)
                                 exit_code=$?
                                 
                                 if [ $exit_code -ne 0 ]; then
@@ -1020,7 +1024,7 @@ whiptail_process_items() {
                     
                     echo "[DEBUG] Final menu_opts='$menu_opts'" >> /tmp/debug.log
                     
-                    value=$(eval "whiptail --title '$cat_title' --ok-button 'Select' --cancel-button 'Back' --menu '${label}:' 18 60 10 $menu_opts 3>&1 1>&2 2>&3")
+                    value=$(eval "whiptail --title '$breadcrumb' --ok-button 'Select' --cancel-button 'Back' --menu '${label}:' 18 60 10 $menu_opts 3>&1 1>&2 2>&3")
                     exit_code=$?
                     
                     echo "[DEBUG] select exit_code=$exit_code, value='$value'" >> /tmp/debug.log
@@ -1051,7 +1055,7 @@ whiptail_process_items() {
                 else
                     echo "[DEBUG] About to show inputbox for '$label'" >> /tmp/debug.log
                     
-                    value=$(whiptail --title "$cat_title" --ok-button "Select" --cancel-button "Back" --inputbox "${label}:" 10 60 "$current" 3>&1 1>&2 2>&3)
+                    value=$(whiptail --title "$breadcrumb" --ok-button "Select" --cancel-button "Back" --inputbox "${label}:" 10 60 "$current" 3>&1 1>&2 2>&3)
                     exit_code=$?
                     
                     echo "[DEBUG] inputbox exit_code=$exit_code, value='$value'" >> /tmp/debug.log
