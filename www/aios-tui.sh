@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1111.1031"
+VERSION="R7.1111.1030"
 BASE_URL="https://site-u.pages.dev"
 PACKAGES_URL="$BASE_URL/www/packages/packages.json"
 SETUP_JSON_URL="$BASE_URL/www/uci-defaults/setup.json"
@@ -1718,9 +1718,9 @@ simple_main_menu() {
 
 aios_light_main() {
     clear
-    echo "========================================"
+    echo "=================================================="
     echo "  OpenWrt Device Setup Tool v$VERSION"
-    echo "========================================"
+    echo "=================================================="
     echo ""
     
     detect_package_manager
