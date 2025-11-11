@@ -742,8 +742,6 @@ generate_files() {
 
 whiptail_device_info() {
     local tr_main_menu=$(translate "tr-tui-main-menu")
-    local tr_view_device_info=$(translate "tr-tui-view-device-info")
-    local breadcrumb="${tr_main_menu} > ${tr_view_device_info}"
     
     local info="Model: $DEVICE_MODEL\n"
     info="${info}Target: $DEVICE_TARGET\n"
@@ -752,7 +750,7 @@ whiptail_device_info() {
     [ -n "$DEVICE_CPU" ] && info="${info}CPU: $DEVICE_CPU\n"
     [ -n "$DEVICE_STORAGE" ] && info="${info}Storage: $DEVICE_STORAGE_USED/$DEVICE_STORAGE (${DEVICE_STORAGE_AVAIL} free)\n"
     [ -n "$DEVICE_USB" ] && info="${info}USB: $DEVICE_USB\n"
-    whiptail --title "$breadcrumb" --msgbox "$info" 15 70
+    whiptail --title "$tr_main_menu" --msgbox "$info" 15 70
 }
 
 whiptail_device_info_titled() {
@@ -771,8 +769,7 @@ whiptail_device_info_titled() {
 whiptail_show_network_info() {
     local tr_main_menu=$(translate "tr-tui-main-menu")
     local tr_internet_connection=$(translate "tr-internet-connection")
-    local tr_auto_detection=$(translate "tr-auto-detection")
-    local breadcrumb="${tr_main_menu} > ${tr_internet_connection} > ${tr_auto_detection}"
+    local breadcrumb="${tr_main_menu} > ${tr_internet_connection}"
     
     local tr_isp=$(translate "tr-isp")
     local tr_as=$(translate "tr-as")
@@ -1154,8 +1151,6 @@ whiptail_category_config() {
 
 whiptail_package_categories() {
     local tr_main_menu=$(translate "tr-tui-main-menu")
-    local tr_custom_packages=$(translate "tr-custom-packages")
-    local breadcrumb="${tr_main_menu} > ${tr_custom_packages}"
     
     local menu_items="" i=1 cat_id cat_name
     
@@ -1168,7 +1163,7 @@ whiptail_package_categories() {
         i=$((i+1))
     done < <(get_categories)
     
-    choice=$(eval "whiptail --title '$breadcrumb' --ok-button 'Select' --cancel-button 'Back' --menu '$(translate "tr-tui-select-category"):' 20 70 12 $menu_items 3>&1 1>&2 2>&3")
+    choice=$(eval "whiptail --title '$tr_main_menu' --ok-button 'Select' --cancel-button 'Back' --menu '$(translate "tr-tui-select-category"):' 20 70 12 $menu_items 3>&1 1>&2 2>&3")
     
     if [ $? -ne 0 ]; then
         return 0
@@ -1186,9 +1181,7 @@ whiptail_package_categories() {
 whiptail_package_selection() {
     local cat_id="$1"
     local tr_main_menu=$(translate "tr-tui-main-menu")
-    local tr_custom_packages=$(translate "tr-custom-packages")
     local cat_name=$(get_category_name "$cat_id")
-    local breadcrumb="${tr_main_menu} > ${tr_custom_packages} > ${cat_name}"
     
     local cat_desc=$(get_category_desc "$cat_id")
     local tr_space_toggle=$(translate "tr-tui-space-toggle")
@@ -1207,7 +1200,7 @@ whiptail_package_selection() {
         checklist_items="$checklist_items \"$pkg_id\" \"$pkg_name\" $status"
     done < <(get_category_packages "$cat_id")
     
-    selected=$(eval "whiptail --title '$breadcrumb' --ok-button 'Select' --cancel-button 'Back' --checklist '$cat_desc ($tr_space_toggle):' 20 70 12 $checklist_items 3>&1 1>&2 2>&3")
+    selected=$(eval "whiptail --title '$tr_main_menu' --ok-button 'Select' --cancel-button 'Back' --checklist '$cat_desc ($tr_space_toggle):' 20 70 12 $checklist_items 3>&1 1>&2 2>&3")
     
     if [ $? -eq 0 ]; then
         while read pkg_id; do
