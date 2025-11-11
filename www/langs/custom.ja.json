@@ -143,6 +143,7 @@
     "tr-feedback-link": "フォーラム",
 
     "tr-main-menu": "メインメニュー",
+    "tr-review-configuration": "設定の確認と適用",
     "tr-select": "選択",
     "tr-back": "戻る",
     "tr-exit": "終了",
@@ -150,7 +151,6 @@
     "tr-no": "いいえ",
     "tr-ok": "OK",
     "tr-cancel": "キャンセル",
-    "tr-review-configuration": "設定確認",
     
     "tr-ui-mode-select": "UIモードを選択:",
     "tr-ui-whiptail": "whiptail (ダイアログベースTUI)",
