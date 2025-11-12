@@ -153,7 +153,7 @@
     "tr-tui-choice": "Choix",
     
     "tr-tui-view-device-info": "Afficher les Informations de l'Appareil",
-    "tr-tui-view-package-list": "Afficher la Liste des Paquets",
+    "tr-tui-view-package-list": "Voir les paquets configurés",
     "tr-tui-view-config-vars": "Afficher les Variables de Configuration",
     "tr-tui-view-postinst": "Afficher postinst.sh",
     "tr-tui-view-setup": "Afficher setup.sh",
