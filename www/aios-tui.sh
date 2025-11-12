@@ -778,12 +778,12 @@ whiptail_show_network_info() {
     local tr_dslite_notice=$(translate "tr-dslite-notice1")
     local tr_ok=$(translate "tr-tui-ok")
     
-    local tr_auto_detection=$(translate "tr-auto-detection")
-    local info="${tr_auto_detection}: ${DETECTED_CONN_TYPE}\n\n"
-    [ -n "$ISP_NAME" ] && info="${info}${tr_isp}: $ISP_NAME\n"
-    [ -n "$ISP_AS" ] && info="${info}${tr_as}: $ISP_AS\n"
-    
     if [ "$DETECTED_CONN_TYPE" = "MAP-E" ] && [ -n "$MAPE_BR" ]; then
+        local tr_auto_detection=$(translate "tr-auto-detection")
+        local info="${tr_auto_detection}: MAP-E\n\n"
+        [ -n "$ISP_NAME" ] && info="${info}${tr_isp}: $ISP_NAME\n"
+        [ -n "$ISP_AS" ] && info="${info}${tr_as}: $ISP_AS\n"
+        
         info="${info}\n${tr_mape_notice}\n\n"
         [ -n "$MAPE_GUA_PREFIX" ] && info="${info}option ip6prefix_gua $MAPE_GUA_PREFIX\n"
         info="${info}option peeraddr $MAPE_BR\n"
@@ -806,6 +806,11 @@ whiptail_show_network_info() {
         fi
         
     elif [ "$DETECTED_CONN_TYPE" = "DS-Lite" ] && [ -n "$DSLITE_AFTR" ]; then
+        local tr_auto_detection=$(translate "tr-auto-detection")
+        local info="${tr_auto_detection}: DS-Lite\n\n"
+        [ -n "$ISP_NAME" ] && info="${info}${tr_isp}: $ISP_NAME\n"
+        [ -n "$ISP_AS" ] && info="${info}${tr_as}: $ISP_AS\n"
+        
         info="${info}\n${tr_dslite_notice}\n\n"
         info="${info}option peeraddr $DSLITE_AFTR\n"
         
@@ -820,6 +825,13 @@ whiptail_show_network_info() {
         fi
         
     else
+        local tr_isp_info=$(translate "tr-isp-info")
+        local tr_manual_config=$(translate "tr-manual-config-required")
+        local info="${tr_isp_info}\n\n"
+        [ -n "$ISP_NAME" ] && info="${info}${tr_isp}: $ISP_NAME\n"
+        [ -n "$ISP_AS" ] && info="${info}${tr_as}: $ISP_AS\n"
+        info="${info}\n${tr_manual_config}"
+        
         whiptail --title "$breadcrumb" --ok-button "$tr_ok" --msgbox "$info" $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH
         return 1
     fi
