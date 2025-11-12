@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1112.1908"
+VERSION="R7.1112.1922"
 
 # ============================================
 # UI Configuration Variables
@@ -1579,13 +1579,11 @@ review_and_apply() {
                     local tr_apply=$(translate 'tr-tui-apply')
                     local breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$tr_apply")
                     
-                    local confirm_msg="$(translate 'tr-tui-apply-confirm-title')
-
-$(translate 'tr-tui-apply-confirm-step1')
+                    local confirm_msg="$(translate 'tr-tui-apply-confirm-step1')
 $(translate 'tr-tui-apply-confirm-step2')
 $(translate 'tr-tui-apply-confirm-step3')
 
-$(translate 'tr-tui-apply-confirm-question')"
+実行しますか？"
                     
                     if show_yesno "$breadcrumb" "$confirm_msg"; then
                         show_msgbox "$breadcrumb" "$(translate 'tr-tui-installing-packages')"
@@ -1606,13 +1604,11 @@ $(translate 'tr-tui-reboot-question')"
                     clear
                     echo "=== $(translate 'tr-tui-apply') ==="
                     echo ""
-                    echo "$(translate 'tr-tui-apply-confirm-title')"
                     echo "$(translate 'tr-tui-apply-confirm-step1')"
                     echo "$(translate 'tr-tui-apply-confirm-step2')"
+                    echo "$(translate 'tr-tui-apply-confirm-step3')"
                     echo ""
-                    echo "$(translate 'tr-tui-apply-confirm-note')"
-                    echo ""
-                    echo "$(translate 'tr-tui-apply-confirm-question')"
+                    echo "実行しますか？"
                     echo ""
                     printf "$(translate 'tr-tui-yes')/$(translate 'tr-tui-no'): "
                     read confirm
