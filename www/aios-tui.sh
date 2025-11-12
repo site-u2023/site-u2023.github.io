@@ -3,7 +3,8 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1112.1056"
+VERSION="R7.1112.1103"
+
 BASE_URL="https://site-u.pages.dev"
 PACKAGES_URL="$BASE_URL/www/packages/packages.json"
 SETUP_JSON_URL="$BASE_URL/www/uci-defaults/setup.json"
@@ -1402,8 +1403,12 @@ review_and_apply() {
                 ;;
             6)
                 if [ "$UI_MODE" = "whiptail" ]; then
-                    local confirm_msg=$(echo -e "$(translate 'tr-tui-apply-confirm')")
-                    if whiptail --title "$breadcrumb" --yes-button "$(translate 'tr-tui-yes')" --no-button "$(translate 'tr-tui-no')" --yesno "$confirm_msg" 18 70; then
+                    local apply_title=$(translate 'tr-tui-apply')
+                    local confirm_text=$(translate 'tr-tui-apply-confirm')
+                    local confirm_msg="${apply_title}:
+
+${confirm_text}"
+                    if whiptail --title "$breadcrumb" --yes-button "$(translate 'tr-tui-yes')" --no-button "$(translate 'tr-tui-no')" --yesno "$confirm_msg" 20 78; then
                         whiptail --title "$breadcrumb" --msgbox "$(translate 'tr-tui-installing-packages')" 8 50
                         sh "$OUTPUT_DIR/postinst.sh"
                         whiptail --title "$breadcrumb" --msgbox "$(translate 'tr-tui-applying-config')" 8 50
