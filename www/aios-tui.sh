@@ -804,7 +804,7 @@ whiptail_show_network_info() {
     
     info="${info}\n\nUse this auto-detected configuration?"
     
-    if whiptail --title "$breadcrumb" --yesno "$info" 22 70; then
+    if whiptail --title "$breadcrumb" --yes-button "$(translate 'tr-tui-yes')" --no-button "$(translate 'tr-tui-no')" --yesno "$info" 22 70; then
         sed -i "/^connection_type=/d" "$SETUP_VARS"
         echo "connection_type='auto'" >> "$SETUP_VARS"
         return 0
