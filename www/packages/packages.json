@@ -287,6 +287,16 @@
         {
           "id": "netdata",
           "name": "netdata"
+        },
+        {
+          "id": "whiptail",
+          "name": "whiptail",
+          "dependencies": ["libnewt"]
+        },
+        {
+          "id": "libnewt",
+          "name": "libnewt",
+          "hidden": true
         }
       ]
     },
