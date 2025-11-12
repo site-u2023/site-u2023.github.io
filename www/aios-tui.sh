@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1112.2308"
+VERSION="R7.1112.2318"
 
 # ============================================
 # UI Configuration Variables
@@ -206,7 +206,7 @@ install_package() {
 select_ui_mode() {
     echo "[DEBUG] $(date): select_ui_mode START" >> /tmp/debug.log
     
-    if command -v whiptail >/dev/null 2>&1; then
+    if command -v whiptail >/dev/null 2>&1 && command -v fold >/dev/null 2>&1; then
         UI_MODE="whiptail"
         echo "whiptail detected, using dialog-based interface"
         echo "[DEBUG] whiptail already installed, UI_MODE=$UI_MODE" >> /tmp/debug.log
@@ -230,11 +230,9 @@ select_ui_mode() {
     else
         echo "$(translate 'tr-tui-ui-installing')"
         echo "[DEBUG] Installing whiptail..." >> /tmp/debug.log
-        install_package $WHIPTAIL_PACKAGES
-        echo "[DEBUG] install_package exit code: $?" >> /tmp/debug.log
-        hash -r
-        echo "[DEBUG] hash -r executed" >> /tmp/debug.log
-        if command -v whiptail >/dev/null 2>&1; then
+        if install_package $WHIPTAIL_PACKAGES; then
+            echo "[DEBUG] install_package SUCCESS" >> /tmp/debug.log
+            hash -r
             echo "$(translate 'tr-tui-ui-install-success')"
             UI_MODE="whiptail"
             echo "[DEBUG] whiptail install SUCCESS, UI_MODE=$UI_MODE" >> /tmp/debug.log
@@ -242,7 +240,7 @@ select_ui_mode() {
         else
             echo "$(translate 'tr-tui-ui-install-failed')"
             UI_MODE="simple"
-            echo "[DEBUG] whiptail command not found after install, UI_MODE=$UI_MODE" >> /tmp/debug.log
+            echo "[DEBUG] install_package FAILED, UI_MODE=$UI_MODE" >> /tmp/debug.log
             sleep 2
         fi
     fi
