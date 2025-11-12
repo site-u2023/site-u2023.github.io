@@ -153,7 +153,7 @@
     "tr-tui-choice": "選擇",
     
     "tr-tui-view-device-info": "檢視裝置資訊",
-    "tr-tui-view-package-list": "檢視套件清單",
+    "tr-tui-view-package-list": "檢視已設定套件",
     "tr-tui-view-config-vars": "檢視配置變數",
     "tr-tui-view-postinst": "檢視 postinst.sh",
     "tr-tui-view-setup": "檢視 setup.sh",
