@@ -162,7 +162,7 @@
     "tr-tui-no-config-vars": "設定変数がありません",
     "tr-tui-postinst-not-found": "postinst.shファイルが見つかりません",
     "tr-tui-setup-not-found": "setup.shファイルが見つかりません",
-    "tr-tui-apply-confirm": "この設定を適用しますか？\n\n以下を実行します：\n1. postinst.shでパッケージをインストール\n2. setup.shで設定を適用\n3. 必要に応じて再起動\n\n続行しますか？",
+    "tr-tui-apply-confirm": "以下を実行します：\n1. postinst.shでパッケージをインストール\n2. setup.shで設定を適用\n3. 必要に応じて再起動\n\n続行しますか？",
     "tr-tui-installing-packages": "パッケージをインストール中...",
     "tr-tui-applying-config": "システム設定を適用中...",
     "tr-tui-config-applied": "設定の適用が完了しました！\n\n今すぐ再起動しますか？",
