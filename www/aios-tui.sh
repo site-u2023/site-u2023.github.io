@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1112.1039"
+VERSION="R7.1112.1045"
 BASE_URL="https://site-u.pages.dev"
 PACKAGES_URL="$BASE_URL/www/packages/packages.json"
 SETUP_JSON_URL="$BASE_URL/www/uci-defaults/setup.json"
@@ -1305,7 +1305,7 @@ review_and_apply() {
             2)
                 if [ "$UI_MODE" = "whiptail" ]; then
                     if [ -s "$SELECTED_PACKAGES" ]; then
-                        echo "=== $(translate 'tr-tui-view-package-list') ===" > /tmp/pkg_view.txt
+                        echo "$(translate 'tr-tui-view-package-list'):" > /tmp/pkg_view.txt
                         echo "" >> /tmp/pkg_view.txt
                         cat "$SELECTED_PACKAGES" | sed 's/^/  - /' >> /tmp/pkg_view.txt
                         whiptail --scrolltext --title "$breadcrumb" --textbox /tmp/pkg_view.txt 24 78
@@ -1331,7 +1331,7 @@ review_and_apply() {
             3)
                 if [ "$UI_MODE" = "whiptail" ]; then
                     if [ -s "$SETUP_VARS" ]; then
-                        echo "=== $(translate 'tr-tui-view-config-vars') ===" > /tmp/vars_view.txt
+                        echo "$(translate 'tr-tui-view-config-vars'):" > /tmp/vars_view.txt
                         echo "" >> /tmp/vars_view.txt
                         cat "$SETUP_VARS" >> /tmp/vars_view.txt
                         whiptail --scrolltext --title "$breadcrumb" --textbox /tmp/vars_view.txt 24 78
@@ -1355,7 +1355,7 @@ review_and_apply() {
             4)
                 if [ "$UI_MODE" = "whiptail" ]; then
                     if [ -f "$OUTPUT_DIR/postinst.sh" ]; then
-                        echo "=== $(translate 'tr-tui-view-postinst') ===" > /tmp/postinst_view.txt
+                        echo "postinst.sh:" > /tmp/postinst_view.txt
                         echo "" >> /tmp/postinst_view.txt
                         cat "$OUTPUT_DIR/postinst.sh" >> /tmp/postinst_view.txt
                         whiptail --scrolltext --title "$breadcrumb" --textbox /tmp/postinst_view.txt 24 78
@@ -1379,7 +1379,7 @@ review_and_apply() {
             5)
                 if [ "$UI_MODE" = "whiptail" ]; then
                     if [ -f "$OUTPUT_DIR/setup.sh" ]; then
-                        echo "=== $(translate 'tr-tui-view-setup') ===" > /tmp/setup_view.txt
+                        echo "setup.sh:" > /tmp/setup_view.txt
                         echo "" >> /tmp/setup_view.txt
                         cat "$OUTPUT_DIR/setup.sh" >> /tmp/setup_view.txt
                         whiptail --scrolltext --title "$breadcrumb" --textbox /tmp/setup_view.txt 24 78
