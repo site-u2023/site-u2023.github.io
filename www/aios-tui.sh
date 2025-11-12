@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1112.1114"
+VERSION="R7.1112.1148"
 WHIPTAIL_HEIGHT=0
 WHIPTAIL_WIDTH=0
 BASE_URL="https://site-u.pages.dev"
@@ -804,7 +804,7 @@ whiptail_show_network_info() {
         info="${info}\n${tr_dslite_notice}"
     fi
     
-    info="${info}\n\nUse this auto-detected configuration?"
+    info="${info}\n\n$(translate 'tr-tui-use-auto-config')"
     
     if whiptail --title "$breadcrumb" --yes-button "$(translate 'tr-tui-yes')" --no-button "$(translate 'tr-tui-no')" --yesno "$info" $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH; then
         sed -i "/^connection_type=/d" "$SETUP_VARS"
@@ -1405,9 +1405,11 @@ review_and_apply() {
             6)
                 if [ "$UI_MODE" = "whiptail" ]; then
                     local apply_title=$(translate 'tr-tui-apply')
-                    local confirm_text=$(translate 'tr-tui-apply-confirm')
+                    local confirm_text=$(translate 'tr-tui-apply-confirm' | sed 's/\\n/\n/g')
                     
-                    local confirm_msg=$(printf "%s:\n\n%s" "$apply_title" "$(echo "$confirm_text" | sed 's/\\n/\n/g')")
+                    local confirm_msg="${apply_title}:
+
+${confirm_text}"
                     
                     if whiptail --title "$breadcrumb" --yes-button "$(translate 'tr-tui-yes')" --no-button "$(translate 'tr-tui-no')" --yesno "$confirm_msg" $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH; then
                         whiptail --title "$breadcrumb" --msgbox "$(translate 'tr-tui-installing-packages')" $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH
