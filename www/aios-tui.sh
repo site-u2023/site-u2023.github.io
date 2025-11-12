@@ -161,22 +161,19 @@ detect_package_manager() {
 }
 
 install_package() {
-    case "$PKG_MGR" in
-        opkg)
-            opkg update >/dev/null 2>&1
-            opkg install "$@"
-            return $?
-            ;;
-        apk)
-            apk update >/dev/null 2>&1
-            apk add "$@"
-            return $?
-            ;;
-        *)
+    for pkg in "$@"; do
+        if [ "$PKG_MGR" = "opkg" ]; then
+            opkg list-installed | grep -q "^${pkg} " && continue
+            opkg update && opkg install "$pkg" || return 1
+        elif [ "$PKG_MGR" = "apk" ]; then
+            apk info -e "$pkg" >/dev/null 2>&1 && continue
+            apk update && apk add "$pkg" || return 1
+        else
             echo "Cannot install packages: no package manager"
             return 1
-            ;;
-    esac
+        fi
+    done
+    return 0
 }
 
 # ============================================
