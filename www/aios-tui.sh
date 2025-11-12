@@ -38,7 +38,7 @@ SETUP_VARS="$CONFIG_DIR/setup_vars.sh"
 OUTPUT_DIR="/tmp"
 
 TRANSLATION_CACHE="$CONFIG_DIR/translation_cache.txt"
-WHIPTAIL_PACKAGES="whiptail libnewt"
+WHIPTAIL_PACKAGES="whiptail libnewt coreutils-fold"
 
 PKG_MGR=""
 
