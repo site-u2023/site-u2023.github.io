@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1112.2343"
+VERSION="R7.1113.0011"
 
 # ============================================
 # UI Configuration Variables
@@ -1541,7 +1541,7 @@ review_and_apply() {
                         echo "  $(translate 'tr-tui-no-packages')"
                     fi
                     echo ""
-                    echo "$(translate 'tr-tui-press-enter')"
+                    echo "$(translate 'tr-tui-ok')"
                     read
                 fi
                 ;;
@@ -1568,7 +1568,7 @@ review_and_apply() {
                         echo "  $(translate 'tr-tui-no-config-vars')"
                     fi
                     echo ""
-                    echo "$(translate 'tr-tui-press-enter')"
+                    echo "$(translate 'tr-tui-ok')"
                     read
                 fi
                 ;;
@@ -1595,7 +1595,7 @@ review_and_apply() {
                         echo "$(translate 'tr-tui-postinst-not-found')"
                     fi
                     echo ""
-                    echo "$(translate 'tr-tui-press-enter')"
+                    echo "$(translate 'tr-tui-ok')"
                     read
                 fi
                 ;;
@@ -1622,7 +1622,7 @@ review_and_apply() {
                         echo "$(translate 'tr-tui-setup-not-found')"
                     fi
                     echo ""
-                    echo "$(translate 'tr-tui-press-enter')"
+                    echo "$(translate 'tr-tui-ok')"
                     read
                 fi
                 ;;
