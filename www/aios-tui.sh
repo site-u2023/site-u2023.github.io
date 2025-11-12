@@ -1404,19 +1404,24 @@ review_and_apply() {
                 ;;
             6)
                 if [ "$UI_MODE" = "whiptail" ]; then
-                    local apply_title=$(translate 'tr-tui-apply')
-                    local confirm_text=$(translate 'tr-tui-apply-confirm' | sed 's/\\n/\n/g')
-                    
-                    local confirm_msg="${apply_title}:
+                    if whiptail --title "$breadcrumb" --yes-button "$(translate 'tr-tui-yes')" --no-button "$(translate 'tr-tui-no')" --yesno \
+"$(translate 'tr-tui-apply-confirm-title')
 
-${confirm_text}"
-                    
-                    if whiptail --title "$breadcrumb" --yes-button "$(translate 'tr-tui-yes')" --no-button "$(translate 'tr-tui-no')" --yesno "$confirm_msg" $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH; then
+$(translate 'tr-tui-apply-confirm-step1')
+$(translate 'tr-tui-apply-confirm-step2')
+
+$(translate 'tr-tui-apply-confirm-note')
+
+$(translate 'tr-tui-apply-confirm-question')" $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH; then
                         whiptail --title "$breadcrumb" --msgbox "$(translate 'tr-tui-installing-packages')" $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH
                         sh "$OUTPUT_DIR/postinst.sh"
                         whiptail --title "$breadcrumb" --msgbox "$(translate 'tr-tui-applying-config')" $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH
                         sh "$OUTPUT_DIR/setup.sh"
-                        if whiptail --title "$breadcrumb" --yes-button "$(translate 'tr-tui-yes')" --no-button "$(translate 'tr-tui-no')" --yesno "$(translate 'tr-tui-config-applied')" $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH; then
+                        
+                        if whiptail --title "$breadcrumb" --yes-button "$(translate 'tr-tui-yes')" --no-button "$(translate 'tr-tui-no')" --yesno \
+"$(translate 'tr-tui-config-applied')
+
+$(translate 'tr-tui-reboot-question')" $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH; then
                             reboot
                         fi
                         return 0
@@ -1425,7 +1430,13 @@ ${confirm_text}"
                     clear
                     echo "=== $(translate 'tr-tui-apply') ==="
                     echo ""
-                    printf "%s\n" "$(translate 'tr-tui-apply-confirm' | sed 's/\\n/\n/g')"
+                    echo "$(translate 'tr-tui-apply-confirm-title')"
+                    echo "$(translate 'tr-tui-apply-confirm-step1')"
+                    echo "$(translate 'tr-tui-apply-confirm-step2')"
+                    echo ""
+                    echo "$(translate 'tr-tui-apply-confirm-note')"
+                    echo ""
+                    echo "$(translate 'tr-tui-apply-confirm-question')"
                     echo ""
                     printf "$(translate 'tr-tui-yes')/$(translate 'tr-tui-no'): "
                     read confirm
@@ -1439,6 +1450,8 @@ ${confirm_text}"
                         sh "$OUTPUT_DIR/setup.sh"
                         echo ""
                         echo "$(translate 'tr-tui-config-applied')"
+                        echo ""
+                        echo "$(translate 'tr-tui-reboot-question')"
                         echo ""
                         printf "$(translate 'tr-tui-yes')/$(translate 'tr-tui-no'): "
                         read reboot_confirm
