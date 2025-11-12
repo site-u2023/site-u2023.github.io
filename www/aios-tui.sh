@@ -10,6 +10,7 @@ VERSION="R7.1112.1922"
 # ============================================
 WHIPTAIL_HEIGHT=0
 WHIPTAIL_WIDTH=78
+WHIPTAIL_FOLD_WIDTH=$((WHIPTAIL_WIDTH - 2))
 BREADCRUMB_SEP=" > "
 DEFAULT_BTN_SELECT="tr-tui-select"
 DEFAULT_BTN_BACK="tr-tui-back"
@@ -109,12 +110,25 @@ show_checklist() {
     eval "whiptail --title '$breadcrumb' --ok-button '$ok_btn' --cancel-button '$cancel_btn' --checklist '$prompt' $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH 12 $@ 3>&1 1>&2 2>&3"
 }
 
-show_textbox() {
+XX_show_textbox() {
     local breadcrumb="$1"
     local file="$2"
     local ok_btn="${3:-$(translate "$DEFAULT_BTN_OK")}"
     
     whiptail --scrolltext --title "$breadcrumb" --ok-button "$ok_btn" --textbox "$file" $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH
+}
+
+show_textbox() {
+    local breadcrumb="$1"
+    local file="$2"
+    local ok_btn="${3:-$(translate "$DEFAULT_BTN_OK")}"
+    
+    local temp_file="/tmp/textbox_wrapped.txt"
+    fold -s -w $WHIPTAIL_FOLD_WIDTH "$file" > "$temp_file"
+    
+    whiptail --scrolltext --title "$breadcrumb" --ok-button "$ok_btn" --textbox "$temp_file" $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH
+    
+    rm -f "$temp_file"
 }
 
 # ============================================
