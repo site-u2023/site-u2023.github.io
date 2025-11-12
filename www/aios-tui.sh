@@ -4,6 +4,8 @@
 # Supports: whiptail (TUI) with fallback to simple menu
 
 VERSION="R7.1112.1114"
+WHIPTAIL_HEIGHT=0
+WHIPTAIL_WIDTH=0
 BASE_URL="https://site-u.pages.dev"
 PACKAGES_URL="$BASE_URL/www/packages/packages.json"
 SETUP_JSON_URL="$BASE_URL/www/uci-defaults/setup.json"
