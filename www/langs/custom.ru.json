@@ -153,7 +153,7 @@
     "tr-tui-choice": "Выбор",
     
     "tr-tui-view-device-info": "Просмотр информации об устройстве",
-    "tr-tui-view-package-list": "Просмотр списка пакетов",
+    "tr-tui-view-package-list": "Просмотр настроенных пакетов",
     "tr-tui-view-config-vars": "Просмотр переменных конфигурации",
     "tr-tui-view-postinst": "Просмотр postinst.sh",
     "tr-tui-view-setup": "Просмотр setup.sh",
