@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1112.1732"
+VERSION="R7.1112.1747"
 WHIPTAIL_HEIGHT=0
 WHIPTAIL_WIDTH=78
 BASE_URL="https://site-u.pages.dev"
@@ -893,6 +893,12 @@ whiptail_process_items() {
                 echo "[DEBUG] Current value: $current" >> /tmp/debug.log
                 
                 local options=$(get_setup_item_options "$item_id")
+                
+                if [ "$variable" = "connection_type" ] && [ "$DETECTED_CONN_TYPE" = "Unknown" ]; then
+                    options=$(echo "$options" | grep -v "^auto$")
+                    echo "[DEBUG] Removed 'auto' option due to Unknown connection type" >> /tmp/debug.log
+                fi
+                
                 echo "[DEBUG] Options: $options" >> /tmp/debug.log
                 
                 local menu_opts=""
