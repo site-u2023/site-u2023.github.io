@@ -164,24 +164,19 @@ install_package() {
     case "$PKG_MGR" in
         opkg)
             opkg update >/dev/null 2>&1
-            if ! opkg install "$@" 2>&1 | tee -a /tmp/install.log; then
-                echo "Package installation failed"
-                return 1
-            fi
+            opkg install "$@"
+            return $?
             ;;
         apk)
             apk update >/dev/null 2>&1
-            if ! apk add "$@" 2>&1 | tee -a /tmp/install.log; then
-                echo "Package installation failed"
-                return 1
-            fi
+            apk add "$@"
+            return $?
             ;;
         *)
             echo "Cannot install packages: no package manager"
             return 1
             ;;
     esac
-    return 0
 }
 
 # ============================================
