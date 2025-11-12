@@ -162,39 +162,36 @@ detect_package_manager() {
 
 install_package() {
     local missing_pkgs=""
-    local list_cmd=""
-    local install_cmd=""
-    local update_cmd=""
+    local pkg
 
-    case "$PKG_MGR" in
-        opkg)
-            list_cmd="opkg list-installed"
-            update_cmd="opkg update"
-            install_cmd="opkg install"
-            ;;
-        apk)
-            list_cmd="apk info -e"
-            update_cmd="apk update"
-            install_cmd="apk add"
-            ;;
-        *)
-            echo "Cannot install packages: no supported package manager"
-            return 1
-            ;;
-    esac
+    if [ "$PKG_MGR" = "opkg" ]; then
+        for pkg in "$@"; do
+            if ! opkg list-installed | grep -q "^${pkg}[[:space:]]*-"; then
+                missing_pkgs="$missing_pkgs $pkg"
+            fi
+        done
 
-    for pkg in "$@"; do
-        if [ "$PKG_MGR" = "opkg" ]; then
-            $list_cmd | grep -q "^${pkg}[[:space:]]*-" || missing_pkgs="$missing_pkgs $pkg"
-        elif [ "$PKG_MGR" = "apk" ]; then
-            $list_cmd "$pkg" >/dev/null 2>&1 || missing_pkgs="$missing_pkgs $pkg"
-        fi
-    done
+        [ -z "$missing_pkgs" ] && return 0
 
-    [ -z "$missing_pkgs" ] && return 0
+        opkg update
+        opkg install $missing_pkgs || return 1
 
-    $update_cmd
-    $install_cmd $missing_pkgs || return 1
+    elif [ "$PKG_MGR" = "apk" ]; then
+        for pkg in "$@"; do
+            if ! apk info -e "$pkg" >/dev/null 2>&1; then
+                missing_pkgs="$missing_pkgs $pkg"
+            fi
+        done
+
+        [ -z "$missing_pkgs" ] && return 0
+
+        apk update
+        apk add $missing_pkgs || return 1
+
+    else
+        echo "Cannot install packages: no supported package manager"
+        return 1
+    fi
 
     return 0
 }
