@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1112.1029"
+VERSION="R7.1112.1039"
 BASE_URL="https://site-u.pages.dev"
 PACKAGES_URL="$BASE_URL/www/packages/packages.json"
 SETUP_JSON_URL="$BASE_URL/www/uci-defaults/setup.json"
@@ -1304,12 +1304,13 @@ review_and_apply() {
                 ;;
             2)
                 if [ "$UI_MODE" = "whiptail" ]; then
-                    local pkg_breadcrumb="${tr_main_menu} > ${tr_review} > $(translate 'tr-tui-view-package-list')"
                     if [ -s "$SELECTED_PACKAGES" ]; then
-                        cat "$SELECTED_PACKAGES" | sed 's/^/- /' > /tmp/pkg_view.txt
-                        whiptail --scrolltext --title "$pkg_breadcrumb" --textbox /tmp/pkg_view.txt 24 78
+                        echo "=== $(translate 'tr-tui-view-package-list') ===" > /tmp/pkg_view.txt
+                        echo "" >> /tmp/pkg_view.txt
+                        cat "$SELECTED_PACKAGES" | sed 's/^/  - /' >> /tmp/pkg_view.txt
+                        whiptail --scrolltext --title "$breadcrumb" --textbox /tmp/pkg_view.txt 24 78
                     else
-                        whiptail --title "$pkg_breadcrumb" --msgbox "$(translate 'tr-tui-no-packages')" 8 40
+                        whiptail --title "$breadcrumb" --msgbox "$(translate 'tr-tui-no-packages')" 8 40
                     fi
                 else
                     clear
@@ -1329,11 +1330,13 @@ review_and_apply() {
                 ;;
             3)
                 if [ "$UI_MODE" = "whiptail" ]; then
-                    local vars_breadcrumb="${tr_main_menu} > ${tr_review} > $(translate 'tr-tui-view-config-vars')"
                     if [ -s "$SETUP_VARS" ]; then
-                        whiptail --scrolltext --title "$vars_breadcrumb" --textbox "$SETUP_VARS" 24 78
+                        echo "=== $(translate 'tr-tui-view-config-vars') ===" > /tmp/vars_view.txt
+                        echo "" >> /tmp/vars_view.txt
+                        cat "$SETUP_VARS" >> /tmp/vars_view.txt
+                        whiptail --scrolltext --title "$breadcrumb" --textbox /tmp/vars_view.txt 24 78
                     else
-                        whiptail --title "$vars_breadcrumb" --msgbox "$(translate 'tr-tui-no-config-vars')" 8 40
+                        whiptail --title "$breadcrumb" --msgbox "$(translate 'tr-tui-no-config-vars')" 8 40
                     fi
                 else
                     clear
@@ -1351,11 +1354,13 @@ review_and_apply() {
                 ;;
             4)
                 if [ "$UI_MODE" = "whiptail" ]; then
-                    local postinst_breadcrumb="${tr_main_menu} > ${tr_review} > $(translate 'tr-tui-view-postinst')"
                     if [ -f "$OUTPUT_DIR/postinst.sh" ]; then
-                        whiptail --scrolltext --title "$postinst_breadcrumb" --textbox "$OUTPUT_DIR/postinst.sh" 24 78
+                        echo "=== $(translate 'tr-tui-view-postinst') ===" > /tmp/postinst_view.txt
+                        echo "" >> /tmp/postinst_view.txt
+                        cat "$OUTPUT_DIR/postinst.sh" >> /tmp/postinst_view.txt
+                        whiptail --scrolltext --title "$breadcrumb" --textbox /tmp/postinst_view.txt 24 78
                     else
-                        whiptail --title "$postinst_breadcrumb" --msgbox "$(translate 'tr-tui-postinst-not-found')" 8 40
+                        whiptail --title "$breadcrumb" --msgbox "$(translate 'tr-tui-postinst-not-found')" 8 40
                     fi
                 else
                     clear
@@ -1373,11 +1378,13 @@ review_and_apply() {
                 ;;
             5)
                 if [ "$UI_MODE" = "whiptail" ]; then
-                    local setup_breadcrumb="${tr_main_menu} > ${tr_review} > $(translate 'tr-tui-view-setup')"
                     if [ -f "$OUTPUT_DIR/setup.sh" ]; then
-                        whiptail --scrolltext --title "$setup_breadcrumb" --textbox "$OUTPUT_DIR/setup.sh" 24 78
+                        echo "=== $(translate 'tr-tui-view-setup') ===" > /tmp/setup_view.txt
+                        echo "" >> /tmp/setup_view.txt
+                        cat "$OUTPUT_DIR/setup.sh" >> /tmp/setup_view.txt
+                        whiptail --scrolltext --title "$breadcrumb" --textbox /tmp/setup_view.txt 24 78
                     else
-                        whiptail --title "$setup_breadcrumb" --msgbox "$(translate 'tr-tui-setup-not-found')" 8 40
+                        whiptail --title "$breadcrumb" --msgbox "$(translate 'tr-tui-setup-not-found')" 8 40
                     fi
                 else
                     clear
@@ -1395,12 +1402,12 @@ review_and_apply() {
                 ;;
             6)
                 if [ "$UI_MODE" = "whiptail" ]; then
-                    if whiptail --title "$breadcrumb" --yesno "$(translate 'tr-tui-apply-confirm')" 15 60; then
+                    if whiptail --title "$breadcrumb" --yes-button "$(translate 'tr-tui-yes')" --no-button "$(translate 'tr-tui-no')" --yesno "$(translate 'tr-tui-apply-confirm')" 15 60; then
                         whiptail --title "$breadcrumb" --msgbox "$(translate 'tr-tui-installing-packages')" 8 50
                         sh "$OUTPUT_DIR/postinst.sh"
                         whiptail --title "$breadcrumb" --msgbox "$(translate 'tr-tui-applying-config')" 8 50
                         sh "$OUTPUT_DIR/setup.sh"
-                        if whiptail --title "$breadcrumb" --yesno "$(translate 'tr-tui-config-applied')" 10 50; then
+                        if whiptail --title "$breadcrumb" --yes-button "$(translate 'tr-tui-yes')" --no-button "$(translate 'tr-tui-no')" --yesno "$(translate 'tr-tui-config-applied')" 10 50; then
                             reboot
                         fi
                         return 0
