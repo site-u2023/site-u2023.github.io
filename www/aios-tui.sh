@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1112.1843"
+VERSION="R7.1112.1908"
 
 # ============================================
 # UI Configuration Variables
@@ -1337,7 +1337,7 @@ whiptail_package_categories() {
         i=$((i+1))
     done < <(get_categories)
     
-    choice=$(show_menu "$breadcrumb" "$(translate 'tr-tui-view-package-list'):" "" "" $menu_items)
+    choice=$(show_menu "$breadcrumb" "" "" "" $menu_items)
     
     if [ $? -ne 0 ]; then
         return 0
@@ -1377,7 +1377,7 @@ whiptail_package_selection() {
         checklist_items="$checklist_items \"$pkg_id\" \"$pkg_name\" $status"
     done < <(get_category_packages "$cat_id")
     
-    selected=$(show_checklist "$breadcrumb" "$cat_name ($tr_space_toggle):" "" "" $checklist_items)
+    selected=$(show_checklist "$breadcrumb" "($tr_space_toggle)" "" "" $checklist_items)
     
     if [ $? -eq 0 ]; then
         while read pkg_id; do
@@ -1409,7 +1409,7 @@ whiptail_main_menu() {
         i=$((i+1))
         menu_items="$menu_items $i \"$(translate 'tr-tui-review-configuration')\""
         
-        choice=$(show_menu "$VERSION" "${tr_main_menu}:" "$(translate 'tr-tui-select')" "$(translate 'tr-tui-exit')" $menu_items)
+        choice=$(show_menu "$VERSION" "" "$(translate 'tr-tui-select')" "$(translate 'tr-tui-exit')" $menu_items)
         
         if [ $? -ne 0 ]; then
             exit 0
@@ -1437,7 +1437,7 @@ review_and_apply() {
         if [ "$UI_MODE" = "whiptail" ]; then
             local breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review")
             
-            choice=$(show_menu "$breadcrumb" "$(translate 'tr-tui-select'):" "" "" \
+            choice=$(show_menu "$breadcrumb" "" "" "" \
                 "1" "$(translate 'tr-tui-view-device-info')" \
                 "2" "$(translate 'tr-tui-view-package-list')" \
                 "3" "$(translate 'tr-tui-view-config-vars')" \
@@ -1478,9 +1478,7 @@ review_and_apply() {
                     local breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$tr_pkg_list")
                     
                     if [ -s "$SELECTED_PACKAGES" ]; then
-                        echo "$tr_pkg_list:" > /tmp/pkg_view.txt
-                        echo "" >> /tmp/pkg_view.txt
-                        cat "$SELECTED_PACKAGES" | sed 's/^/  - /' >> /tmp/pkg_view.txt
+                        cat "$SELECTED_PACKAGES" | sed 's/^/  - /' > /tmp/pkg_view.txt
                         show_textbox "$breadcrumb" "/tmp/pkg_view.txt"
                     else
                         show_msgbox "$breadcrumb" "$(translate 'tr-tui-no-packages')"
@@ -1507,9 +1505,7 @@ review_and_apply() {
                     local breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$tr_config_vars")
                     
                     if [ -s "$SETUP_VARS" ]; then
-                        echo "$tr_config_vars:" > /tmp/vars_view.txt
-                        echo "" >> /tmp/vars_view.txt
-                        cat "$SETUP_VARS" >> /tmp/vars_view.txt
+                        cat "$SETUP_VARS" > /tmp/vars_view.txt
                         show_textbox "$breadcrumb" "/tmp/vars_view.txt"
                     else
                         show_msgbox "$breadcrumb" "$(translate 'tr-tui-no-config-vars')"
@@ -1534,9 +1530,7 @@ review_and_apply() {
                     local breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$tr_postinst")
                     
                     if [ -f "$OUTPUT_DIR/postinst.sh" ]; then
-                        echo "postinst.sh:" > /tmp/postinst_view.txt
-                        echo "" >> /tmp/postinst_view.txt
-                        cat "$OUTPUT_DIR/postinst.sh" >> /tmp/postinst_view.txt
+                        cat "$OUTPUT_DIR/postinst.sh" > /tmp/postinst_view.txt
                         show_textbox "$breadcrumb" "/tmp/postinst_view.txt"
                     else
                         show_msgbox "$breadcrumb" "$(translate 'tr-tui-postinst-not-found')"
@@ -1561,9 +1555,7 @@ review_and_apply() {
                     local breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$tr_setup")
                     
                     if [ -f "$OUTPUT_DIR/setup.sh" ]; then
-                        echo "setup.sh:" > /tmp/setup_view.txt
-                        echo "" >> /tmp/setup_view.txt
-                        cat "$OUTPUT_DIR/setup.sh" >> /tmp/setup_view.txt
+                        cat "$OUTPUT_DIR/setup.sh" > /tmp/setup_view.txt
                         show_textbox "$breadcrumb" "/tmp/setup_view.txt"
                     else
                         show_msgbox "$breadcrumb" "$(translate 'tr-tui-setup-not-found')"
