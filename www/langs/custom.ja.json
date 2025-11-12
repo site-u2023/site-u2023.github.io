@@ -150,6 +150,9 @@
     "tr-tui-no": "いいえ",
     "tr-tui-ok": "OK",
     "tr-tui-cancel": "キャンセル",
+
+    "tr-isp-info": "ISP情報:",
+    "tr-manual-config-required": "手動で接続設定を行ってください。",
     
     "tr-tui-view-device-info": "デバイス情報",
     "tr-tui-view-package-list": "設定パッケージ",
