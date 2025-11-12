@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1112.1103"
+VERSION="R7.1112.1109"
 
 BASE_URL="https://site-u.pages.dev"
 PACKAGES_URL="$BASE_URL/www/packages/packages.json"
@@ -1404,7 +1404,7 @@ review_and_apply() {
             6)
                 if [ "$UI_MODE" = "whiptail" ]; then
                     local apply_title=$(translate 'tr-tui-apply')
-                    local confirm_text=$(translate 'tr-tui-apply-confirm')
+                    local confirm_text=$(translate 'tr-tui-apply-confirm' | sed 's/\\n/\n/g')
                     local confirm_msg="${apply_title}:
 
 ${confirm_text}"
@@ -1422,7 +1422,8 @@ ${confirm_text}"
                     clear
                     echo "=== $(translate 'tr-tui-apply') ==="
                     echo ""
-                    echo "$(translate 'tr-tui-apply-confirm')"
+                    local confirm_simple=$(translate 'tr-tui-apply-confirm' | sed 's/\\n/\n/g')
+                    echo -e "$confirm_simple"
                     echo ""
                     printf "$(translate 'tr-tui-yes')/$(translate 'tr-tui-no'): "
                     read confirm
