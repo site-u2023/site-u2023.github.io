@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1112.1148"
+VERSION="R7.1112.1707"
 WHIPTAIL_HEIGHT=0
 WHIPTAIL_WIDTH=78
 BASE_URL="https://site-u.pages.dev"
@@ -778,9 +778,9 @@ whiptail_show_network_info() {
     local tr_dslite_notice=$(translate "tr-dslite-notice1")
     local tr_aftr=$(translate "tr-dslite-aftr-ipv6-address")
     
-    if [ -z "$DETECTED_CONN_TYPE" ] || [ "$DETECTED_CONN_TYPE" = "Unknown" ]; then
-        return 1
-    fi
+    # if [ -z "$DETECTED_CONN_TYPE" ] || [ "$DETECTED_CONN_TYPE" = "Unknown" ]; then
+    #     return 1
+    # fi
     
     local tr_auto_detection=$(translate "tr-auto-detection")
     local info="${tr_auto_detection}: ${DETECTED_CONN_TYPE}\n\n"
