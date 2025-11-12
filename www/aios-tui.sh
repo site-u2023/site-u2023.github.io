@@ -825,8 +825,8 @@ whiptail_show_network_info() {
         fi
         
     else
-        local tr_isp_info=$(translate "tr-isp-info")
-        local tr_manual_config=$(translate "tr-manual-config-required")
+        local tr_isp_info=$(translate "tr-tui-isp-info")
+        local tr_manual_config=$(translate "tr-tui-manual-config-required")
         local info="${tr_isp_info}\n\n"
         [ -n "$ISP_NAME" ] && info="${info}${tr_isp}: $ISP_NAME\n"
         [ -n "$ISP_AS" ] && info="${info}${tr_as}: $ISP_AS\n"
