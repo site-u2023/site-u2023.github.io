@@ -153,7 +153,7 @@
     "tr-tui-choice": "选择",
     
     "tr-tui-view-device-info": "查看设备信息",
-    "tr-tui-view-package-list": "查看软件包列表",
+    "tr-tui-view-package-list": "查看已配置软件包",
     "tr-tui-view-config-vars": "查看配置变量",
     "tr-tui-view-postinst": "查看 postinst.sh",
     "tr-tui-view-setup": "查看 setup.sh",
