@@ -152,8 +152,8 @@
     "tr-tui-cancel": "Cancel",
     "tr-tui-choice": "Choice",
 
-    "tr-isp-info": "ISP Information:",
-    "tr-manual-config-required": "Please configure connection settings manually.",
+    "tr-tui-isp-info": "ISP Information:",
+    "tr-tui-manual-config-required": "Please configure connection settings manually.",
     
     "tr-tui-view-device-info": "View Device Information",
     "tr-tui-view-package-list": "View Configured Packages",
