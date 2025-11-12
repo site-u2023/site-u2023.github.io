@@ -1409,8 +1409,7 @@ review_and_apply() {
 
 $(translate 'tr-tui-apply-confirm-step1')
 $(translate 'tr-tui-apply-confirm-step2')
-
-$(translate 'tr-tui-apply-confirm-note')
+$(translate 'tr-tui-apply-confirm-step3')
 
 $(translate 'tr-tui-apply-confirm-question')" $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH; then
                         whiptail --title "$breadcrumb" --msgbox "$(translate 'tr-tui-installing-packages')" $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH
