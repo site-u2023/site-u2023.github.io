@@ -1583,7 +1583,7 @@ review_and_apply() {
 $(translate 'tr-tui-apply-confirm-step2')
 $(translate 'tr-tui-apply-confirm-step3')
 
-実行しますか？"
+$(translate 'tr-tui-apply-confirm-question')"
                     
                     if show_yesno "$breadcrumb" "$confirm_msg"; then
                         show_msgbox "$breadcrumb" "$(translate 'tr-tui-installing-packages')"
