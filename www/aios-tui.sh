@@ -2086,7 +2086,7 @@ simple_main_menu() {
     while true; do
         clear
         echo "========================================"
-        echo "  OpenWrt Setup Tool v$VERSION"
+        echo "  aios tui Vr.$VERSION"
         echo "========================================"
         echo ""
         echo "Device: $DEVICE_MODEL"
@@ -2138,7 +2138,7 @@ simple_main_menu() {
 aios_light_main() {
     clear
     echo "==========================================="
-    echo "  OpenWrt Device Setup Tool v$VERSION"
+    echo "  aios tui Vr.$VERSION"
     echo "==========================================="
     echo ""
     
