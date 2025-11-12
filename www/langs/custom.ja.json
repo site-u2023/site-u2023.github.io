@@ -162,7 +162,6 @@
     "tr-tui-no-config-vars": "設定変数がありません",
     "tr-tui-postinst-not-found": "postinst.shファイルが見つかりません",
     "tr-tui-setup-not-found": "setup.shファイルが見つかりません",
-    "tr-tui-apply-confirm-title": "以下を実行します：",
     "tr-tui-apply-confirm-step1": "1. postinst.shでパッケージをインストール",
     "tr-tui-apply-confirm-step2": "2. setup.shで設定を適用",
     "tr-tui-apply-confirm-step3": "3. 再起動（確認有）",
