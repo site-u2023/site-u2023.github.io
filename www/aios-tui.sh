@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1112.1707"
+VERSION="R7.1112.17010"
 WHIPTAIL_HEIGHT=0
 WHIPTAIL_WIDTH=78
 BASE_URL="https://site-u.pages.dev"
@@ -776,20 +776,15 @@ whiptail_show_network_info() {
     local tr_as=$(translate "tr-as")
     local tr_mape_notice=$(translate "tr-mape-notice1")
     local tr_dslite_notice=$(translate "tr-dslite-notice1")
-    local tr_aftr=$(translate "tr-dslite-aftr-ipv6-address")
-    
-    # if [ -z "$DETECTED_CONN_TYPE" ] || [ "$DETECTED_CONN_TYPE" = "Unknown" ]; then
-    #     return 1
-    # fi
+    local tr_ok=$(translate "tr-tui-ok")
     
     local tr_auto_detection=$(translate "tr-auto-detection")
     local info="${tr_auto_detection}: ${DETECTED_CONN_TYPE}\n\n"
     [ -n "$ISP_NAME" ] && info="${info}${tr_isp}: $ISP_NAME\n"
     [ -n "$ISP_AS" ] && info="${info}${tr_as}: $ISP_AS\n"
     
-    info="${info}\n${tr_mape_notice}\n\n"
-    
     if [ "$DETECTED_CONN_TYPE" = "MAP-E" ] && [ -n "$MAPE_BR" ]; then
+        info="${info}\n${tr_mape_notice}\n\n"
         [ -n "$MAPE_GUA_PREFIX" ] && info="${info}option ip6prefix_gua $MAPE_GUA_PREFIX\n"
         info="${info}option peeraddr $MAPE_BR\n"
         [ -n "$MAPE_IPV4_PREFIX" ] && info="${info}option ipaddr $MAPE_IPV4_PREFIX\n"
@@ -799,18 +794,33 @@ whiptail_show_network_info() {
         [ -n "$MAPE_EALEN" ] && info="${info}option ealen $MAPE_EALEN\n"
         [ -n "$MAPE_PSIDLEN" ] && info="${info}option psidlen $MAPE_PSIDLEN\n"
         [ -n "$MAPE_PSID_OFFSET" ] && info="${info}option offset $MAPE_PSID_OFFSET\n"
+        
+        info="${info}\n\n$(translate 'tr-tui-use-auto-config')"
+        
+        if whiptail --title "$breadcrumb" --yes-button "$(translate 'tr-tui-yes')" --no-button "$(translate 'tr-tui-no')" --yesno "$info" $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH; then
+            sed -i "/^connection_type=/d" "$SETUP_VARS"
+            echo "connection_type='auto'" >> "$SETUP_VARS"
+            return 0
+        else
+            return 1
+        fi
+        
     elif [ "$DETECTED_CONN_TYPE" = "DS-Lite" ] && [ -n "$DSLITE_AFTR" ]; then
+        info="${info}\n${tr_dslite_notice}\n\n"
         info="${info}option peeraddr $DSLITE_AFTR\n"
-        info="${info}\n${tr_dslite_notice}"
-    fi
-    
-    info="${info}\n\n$(translate 'tr-tui-use-auto-config')"
-    
-    if whiptail --title "$breadcrumb" --yes-button "$(translate 'tr-tui-yes')" --no-button "$(translate 'tr-tui-no')" --yesno "$info" $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH; then
-        sed -i "/^connection_type=/d" "$SETUP_VARS"
-        echo "connection_type='auto'" >> "$SETUP_VARS"
-        return 0
+        
+        info="${info}\n\n$(translate 'tr-tui-use-auto-config')"
+        
+        if whiptail --title "$breadcrumb" --yes-button "$(translate 'tr-tui-yes')" --no-button "$(translate 'tr-tui-no')" --yesno "$info" $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH; then
+            sed -i "/^connection_type=/d" "$SETUP_VARS"
+            echo "connection_type='auto'" >> "$SETUP_VARS"
+            return 0
+        else
+            return 1
+        fi
+        
     else
+        whiptail --title "$breadcrumb" --ok-button "$tr_ok" --msgbox "$info" $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH
         return 1
     fi
 }
