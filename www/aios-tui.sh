@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1112.2234"
+VERSION="R7.1112.2308"
 
 # ============================================
 # UI Configuration Variables
@@ -162,36 +162,39 @@ detect_package_manager() {
 
 install_package() {
     local missing_pkgs=""
-    local pkg
+    local list_cmd=""
+    local install_cmd=""
+    local update_cmd=""
 
-    if [ "$PKG_MGR" = "opkg" ]; then
-        for pkg in "$@"; do
-            if ! opkg list-installed | grep -q "^${pkg}[[:space:]]*-"; then
-                missing_pkgs="$missing_pkgs $pkg"
-            fi
-        done
+    case "$PKG_MGR" in
+        opkg)
+            list_cmd="opkg list-installed"
+            update_cmd="opkg update"
+            install_cmd="opkg install"
+            ;;
+        apk)
+            list_cmd="apk info -e"
+            update_cmd="apk update"
+            install_cmd="apk add"
+            ;;
+        *)
+            echo "Cannot install packages: no supported package manager"
+            return 1
+            ;;
+    esac
 
-        [ -z "$missing_pkgs" ] && return 0
+    for pkg in "$@"; do
+        if [ "$PKG_MGR" = "opkg" ]; then
+            $list_cmd | grep -q "^${pkg}[[:space:]]*-" || missing_pkgs="$missing_pkgs $pkg"
+        elif [ "$PKG_MGR" = "apk" ]; then
+            $list_cmd "$pkg" >/dev/null 2>&1 || missing_pkgs="$missing_pkgs $pkg"
+        fi
+    done
 
-        opkg update
-        opkg install $missing_pkgs || return 1
+    [ -z "$missing_pkgs" ] && return 0
 
-    elif [ "$PKG_MGR" = "apk" ]; then
-        for pkg in "$@"; do
-            if ! apk info -e "$pkg" >/dev/null 2>&1; then
-                missing_pkgs="$missing_pkgs $pkg"
-            fi
-        done
-
-        [ -z "$missing_pkgs" ] && return 0
-
-        apk update
-        apk add $missing_pkgs || return 1
-
-    else
-        echo "Cannot install packages: no supported package manager"
-        return 1
-    fi
+    $update_cmd
+    $install_cmd $missing_pkgs || return 1
 
     return 0
 }
@@ -227,25 +230,19 @@ select_ui_mode() {
     else
         echo "$(translate 'tr-tui-ui-installing')"
         echo "[DEBUG] Installing whiptail..." >> /tmp/debug.log
-        if install_package $WHIPTAIL_PACKAGES; then
-            echo "[DEBUG] install_package SUCCESS" >> /tmp/debug.log
-            hash -r
-            echo "[DEBUG] hash -r executed" >> /tmp/debug.log
-            if command -v whiptail >/dev/null 2>&1; then
-                echo "$(translate 'tr-tui-ui-install-success')"
-                UI_MODE="whiptail"
-                echo "[DEBUG] whiptail install SUCCESS, UI_MODE=$UI_MODE" >> /tmp/debug.log
-                sleep 1
-            else
-                echo "$(translate 'tr-tui-ui-install-failed')"
-                UI_MODE="simple"
-                echo "[DEBUG] whiptail command not found after install, UI_MODE=$UI_MODE" >> /tmp/debug.log
-                sleep 2
-            fi
+        install_package $WHIPTAIL_PACKAGES
+        echo "[DEBUG] install_package exit code: $?" >> /tmp/debug.log
+        hash -r
+        echo "[DEBUG] hash -r executed" >> /tmp/debug.log
+        if command -v whiptail >/dev/null 2>&1; then
+            echo "$(translate 'tr-tui-ui-install-success')"
+            UI_MODE="whiptail"
+            echo "[DEBUG] whiptail install SUCCESS, UI_MODE=$UI_MODE" >> /tmp/debug.log
+            sleep 1
         else
             echo "$(translate 'tr-tui-ui-install-failed')"
             UI_MODE="simple"
-            echo "[DEBUG] install_package FAILED, UI_MODE=$UI_MODE" >> /tmp/debug.log
+            echo "[DEBUG] whiptail command not found after install, UI_MODE=$UI_MODE" >> /tmp/debug.log
             sleep 2
         fi
     fi
