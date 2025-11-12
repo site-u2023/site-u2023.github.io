@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1112.1051"
+VERSION="R7.1112.1056"
 BASE_URL="https://site-u.pages.dev"
 PACKAGES_URL="$BASE_URL/www/packages/packages.json"
 SETUP_JSON_URL="$BASE_URL/www/uci-defaults/setup.json"
@@ -1276,7 +1276,7 @@ review_and_apply() {
                 "3" "$(translate 'tr-tui-view-config-vars')" \
                 "4" "$(translate 'tr-tui-view-postinst')" \
                 "5" "$(translate 'tr-tui-view-setup')" \
-                "6" "$(translate 'tr-tui-apply-confirm' | head -1)" \
+                "6" "$(translate 'tr-tui-apply')" \
                 3>&1 1>&2 2>&3)
             
             [ $? -ne 0 ] && return 0
@@ -1289,7 +1289,7 @@ review_and_apply() {
             echo "3) $(translate 'tr-tui-view-config-vars')"
             echo "4) $(translate 'tr-tui-view-postinst')"
             echo "5) $(translate 'tr-tui-view-setup')"
-            echo "6) $(translate 'tr-tui-apply-confirm' | head -1)"
+            echo "6) $(translate 'tr-tui-apply')"
             echo "b) $(translate 'tr-tui-back')"
             echo ""
             printf "Choice: "
@@ -1403,7 +1403,7 @@ review_and_apply() {
             6)
                 if [ "$UI_MODE" = "whiptail" ]; then
                     local confirm_msg=$(echo -e "$(translate 'tr-tui-apply-confirm')")
-                    if whiptail --title "$breadcrumb" --yes-button "$(translate 'tr-tui-yes')" --no-button "$(translate 'tr-tui-no')" --yesno "$confirm_msg" 15 60; then
+                    if whiptail --title "$breadcrumb" --yes-button "$(translate 'tr-tui-yes')" --no-button "$(translate 'tr-tui-no')" --yesno "$confirm_msg" 18 70; then
                         whiptail --title "$breadcrumb" --msgbox "$(translate 'tr-tui-installing-packages')" 8 50
                         sh "$OUTPUT_DIR/postinst.sh"
                         whiptail --title "$breadcrumb" --msgbox "$(translate 'tr-tui-applying-config')" 8 50
@@ -1415,7 +1415,7 @@ review_and_apply() {
                     fi
                 else
                     clear
-                    echo "=== $(translate 'tr-tui-apply-confirm' | head -1) ==="
+                    echo "=== $(translate 'tr-tui-apply') ==="
                     echo ""
                     echo "$(translate 'tr-tui-apply-confirm')"
                     echo ""
