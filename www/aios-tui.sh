@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1112.2318"
+VERSION="R7.1112.2343"
 
 # ============================================
 # UI Configuration Variables
@@ -41,6 +41,7 @@ TRANSLATION_CACHE="$CONFIG_DIR/translation_cache.txt"
 WHIPTAIL_PACKAGES="whiptail libnewt coreutils-fold"
 
 PKG_MGR=""
+MISSING_WHIPTAIL_PKGS=""
 
 # ============================================
 # Common UI Template Functions
@@ -160,42 +161,35 @@ detect_package_manager() {
     fi
 }
 
-install_package() {
-    local missing_pkgs=""
-    local list_cmd=""
-    local install_cmd=""
-    local update_cmd=""
+check_packages_installed() {
+    MISSING_WHIPTAIL_PKGS=""
+    
+    for pkg in "$@"; do
+        if [ "$PKG_MGR" = "opkg" ]; then
+            opkg list-installed | grep -q "^${pkg}[[:space:]]*-" || MISSING_WHIPTAIL_PKGS="$MISSING_WHIPTAIL_PKGS $pkg"
+        elif [ "$PKG_MGR" = "apk" ]; then
+            apk info -e "$pkg" >/dev/null 2>&1 || MISSING_WHIPTAIL_PKGS="$MISSING_WHIPTAIL_PKGS $pkg"
+        fi
+    done
+    
+    [ -z "$MISSING_WHIPTAIL_PKGS" ]
+}
 
+install_package() {
     case "$PKG_MGR" in
         opkg)
-            list_cmd="opkg list-installed"
-            update_cmd="opkg update"
-            install_cmd="opkg install"
+            opkg update
+            opkg install "$@" || return 1
             ;;
         apk)
-            list_cmd="apk info -e"
-            update_cmd="apk update"
-            install_cmd="apk add"
+            apk update
+            apk add "$@" || return 1
             ;;
         *)
             echo "Cannot install packages: no supported package manager"
             return 1
             ;;
     esac
-
-    for pkg in "$@"; do
-        if [ "$PKG_MGR" = "opkg" ]; then
-            $list_cmd | grep -q "^${pkg}[[:space:]]*-" || missing_pkgs="$missing_pkgs $pkg"
-        elif [ "$PKG_MGR" = "apk" ]; then
-            $list_cmd "$pkg" >/dev/null 2>&1 || missing_pkgs="$missing_pkgs $pkg"
-        fi
-    done
-
-    [ -z "$missing_pkgs" ] && return 0
-
-    $update_cmd
-    $install_cmd $missing_pkgs || return 1
-
     return 0
 }
 
@@ -206,7 +200,7 @@ install_package() {
 select_ui_mode() {
     echo "[DEBUG] $(date): select_ui_mode START" >> /tmp/debug.log
     
-    if command -v whiptail >/dev/null 2>&1 && command -v fold >/dev/null 2>&1; then
+    if check_packages_installed $WHIPTAIL_PACKAGES; then
         UI_MODE="whiptail"
         echo "whiptail detected, using dialog-based interface"
         echo "[DEBUG] whiptail already installed, UI_MODE=$UI_MODE" >> /tmp/debug.log
@@ -229,18 +223,18 @@ select_ui_mode() {
         echo "[DEBUG] User selected simple mode, UI_MODE=$UI_MODE" >> /tmp/debug.log
     else
         echo "$(translate 'tr-tui-ui-installing')"
-        echo "[DEBUG] Installing whiptail..." >> /tmp/debug.log
-        if install_package $WHIPTAIL_PACKAGES; then
-            echo "[DEBUG] install_package SUCCESS" >> /tmp/debug.log
+        echo "[DEBUG] Installing: $MISSING_WHIPTAIL_PKGS" >> /tmp/debug.log
+        
+        if install_package $MISSING_WHIPTAIL_PKGS; then
             hash -r
             echo "$(translate 'tr-tui-ui-install-success')"
             UI_MODE="whiptail"
-            echo "[DEBUG] whiptail install SUCCESS, UI_MODE=$UI_MODE" >> /tmp/debug.log
+            echo "[DEBUG] install SUCCESS, UI_MODE=$UI_MODE" >> /tmp/debug.log
             sleep 1
         else
             echo "$(translate 'tr-tui-ui-install-failed')"
             UI_MODE="simple"
-            echo "[DEBUG] install_package FAILED, UI_MODE=$UI_MODE" >> /tmp/debug.log
+            echo "[DEBUG] install FAILED, UI_MODE=$UI_MODE" >> /tmp/debug.log
             sleep 2
         fi
     fi
