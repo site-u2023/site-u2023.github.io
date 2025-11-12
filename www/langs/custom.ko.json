@@ -153,7 +153,7 @@
     "tr-tui-choice": "선택",
     
     "tr-tui-view-device-info": "장치 정보 보기",
-    "tr-tui-view-package-list": "패키지 목록 보기",
+    "tr-tui-view-package-list": "구성된 패키지 보기",
     "tr-tui-view-config-vars": "구성 변수 보기",
     "tr-tui-view-postinst": "postinst.sh 보기",
     "tr-tui-view-setup": "setup.sh 보기",
