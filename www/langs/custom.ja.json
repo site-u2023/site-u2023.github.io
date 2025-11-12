@@ -157,6 +157,7 @@
     "tr-tui-view-postinst": "postinst.sh",
     "tr-tui-view-setup": "setup.sh",
     "tr-tui-review-configuration": "設定確認と適用",
+    "tr-tui-apply": "設定適用",
     "tr-tui-no-packages": "パッケージが選択されていません",
     "tr-tui-no-config-vars": "設定変数がありません",
     "tr-tui-postinst-not-found": "postinst.shファイルが見つかりません",
