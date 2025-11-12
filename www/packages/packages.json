@@ -287,16 +287,6 @@
         {
           "id": "netdata",
           "name": "netdata"
-        },
-        {
-          "id": "whiptail",
-          "name": "whiptail",
-          "dependencies": ["libnewt"]
-        },
-        {
-          "id": "libnewt",
-          "name": "libnewt",
-          "hidden": true
         }
       ]
     },
@@ -406,7 +396,17 @@
         {
           "id": "logrotate",
           "name": "logrotate"
-        }   
+        },
+        {
+          "id": "whiptail",
+          "name": "whiptail",
+          "dependencies": ["libnewt"]
+        },
+        {
+          "id": "libnewt",
+          "name": "libnewt",
+          "hidden": true
+        }
       ]
     },
     {
