@@ -5,7 +5,7 @@
 
 VERSION="R7.1112.1148"
 WHIPTAIL_HEIGHT=0
-WHIPTAIL_WIDTH=0
+WHIPTAIL_WIDTH=78
 BASE_URL="https://site-u.pages.dev"
 PACKAGES_URL="$BASE_URL/www/packages/packages.json"
 SETUP_JSON_URL="$BASE_URL/www/uci-defaults/setup.json"
