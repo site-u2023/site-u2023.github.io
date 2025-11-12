@@ -153,7 +153,7 @@
     "tr-tui-choice": "Pilihan",
     
     "tr-tui-view-device-info": "Lihat Informasi Perangkat",
-    "tr-tui-view-package-list": "Lihat Daftar Paket",
+    "tr-tui-view-package-list": "Lihat Paket Terkonfigurasi",
     "tr-tui-view-config-vars": "Lihat Variabel Konfigurasi",
     "tr-tui-view-postinst": "Lihat postinst.sh",
     "tr-tui-view-setup": "Lihat setup.sh",
