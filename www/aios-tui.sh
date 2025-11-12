@@ -3,8 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1112.1109"
-
+VERSION="R7.1112.1114"
 BASE_URL="https://site-u.pages.dev"
 PACKAGES_URL="$BASE_URL/www/packages/packages.json"
 SETUP_JSON_URL="$BASE_URL/www/uci-defaults/setup.json"
@@ -750,7 +749,7 @@ whiptail_device_info() {
     [ -n "$DEVICE_CPU" ] && info="${info}CPU: $DEVICE_CPU\n"
     [ -n "$DEVICE_STORAGE" ] && info="${info}Storage: $DEVICE_STORAGE_USED/$DEVICE_STORAGE (${DEVICE_STORAGE_AVAIL} free)\n"
     [ -n "$DEVICE_USB" ] && info="${info}USB: $DEVICE_USB\n"
-    whiptail --title "$tr_device_info" --msgbox "$info" 15 70
+    whiptail --title "$tr_device_info" --msgbox "$info" $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH
 }
 
 whiptail_device_info_titled() {
@@ -763,7 +762,7 @@ whiptail_device_info_titled() {
     [ -n "$DEVICE_CPU" ] && info="${info}CPU: $DEVICE_CPU\n"
     [ -n "$DEVICE_STORAGE" ] && info="${info}Storage: $DEVICE_STORAGE_USED/$DEVICE_STORAGE (${DEVICE_STORAGE_AVAIL} free)\n"
     [ -n "$DEVICE_USB" ] && info="${info}USB: $DEVICE_USB\n"
-    whiptail --title "$title" --ok-button "$tr_ok" --msgbox "$info" 15 70
+    whiptail --title "$title" --ok-button "$tr_ok" --msgbox "$info" $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH
 }
 
 whiptail_show_network_info() {
@@ -805,7 +804,7 @@ whiptail_show_network_info() {
     
     info="${info}\n\nUse this auto-detected configuration?"
     
-    if whiptail --title "$breadcrumb" --yes-button "$(translate 'tr-tui-yes')" --no-button "$(translate 'tr-tui-no')" --yesno "$info" 22 70; then
+    if whiptail --title "$breadcrumb" --yes-button "$(translate 'tr-tui-yes')" --no-button "$(translate 'tr-tui-no')" --yesno "$info" $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH; then
         sed -i "/^connection_type=/d" "$SETUP_VARS"
         echo "connection_type='auto'" >> "$SETUP_VARS"
         return 0
@@ -880,7 +879,7 @@ whiptail_process_items() {
                     i=$((i+1))
                 done
                 
-                value=$(eval "whiptail --title '$breadcrumb' --ok-button '$tr_select' --cancel-button '$tr_back' --menu '${label}:' 18 60 10 $menu_opts 3>&1 1>&2 2>&3")
+                value=$(eval "whiptail --title '$breadcrumb' --ok-button '$tr_select' --cancel-button '$tr_back' --menu '${label}:' $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH 10 $menu_opts 3>&1 1>&2 2>&3")
                 exit_code=$?
                 
                 if [ $exit_code -ne 0 ]; then
@@ -991,7 +990,7 @@ whiptail_process_items() {
                                 ;;
                             *)
                                 echo "[DEBUG] Unknown source type: $source, showing as inputbox" >> /tmp/debug.log
-                                value=$(whiptail --title "$breadcrumb" --ok-button "$tr_select" --cancel-button "$tr_back" --inputbox "${label}:" 10 60 "$current" 3>&1 1>&2 2>&3)
+                                value=$(whiptail --title "$breadcrumb" --ok-button "$tr_select" --cancel-button "$tr_back" --inputbox "${label}:" $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH "$current" 3>&1 1>&2 2>&3)
                                 exit_code=$?
                                 
                                 if [ $exit_code -ne 0 ]; then
@@ -1013,7 +1012,7 @@ whiptail_process_items() {
                     
                     if [ -z "$options" ]; then
                         echo "[DEBUG] ERROR: No options found for $item_id, skipping" >> /tmp/debug.log
-                        whiptail --msgbox "Error: No options available for $label" 8 60
+                        whiptail --msgbox "Error: No options available for $label" $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH
                         continue
                     fi
                     
@@ -1028,7 +1027,7 @@ whiptail_process_items() {
                     
                     echo "[DEBUG] Final menu_opts='$menu_opts'" >> /tmp/debug.log
                     
-                    value=$(eval "whiptail --title '$breadcrumb' --ok-button '$tr_select' --cancel-button '$tr_back' --menu '${label}:' 18 60 10 $menu_opts 3>&1 1>&2 2>&3")
+                    value=$(eval "whiptail --title '$breadcrumb' --ok-button '$tr_select' --cancel-button '$tr_back' --menu '${label}:' $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH 10 $menu_opts 3>&1 1>&2 2>&3")
                     exit_code=$?
                     
                     echo "[DEBUG] select exit_code=$exit_code, value='$value'" >> /tmp/debug.log
@@ -1059,7 +1058,7 @@ whiptail_process_items() {
                 else
                     echo "[DEBUG] About to show inputbox for '$label'" >> /tmp/debug.log
                     
-                    value=$(whiptail --title "$breadcrumb" --ok-button "$tr_select" --cancel-button "$tr_back" --inputbox "${label}:" 10 60 "$current" 3>&1 1>&2 2>&3)
+                    value=$(whiptail --title "$breadcrumb" --ok-button "$tr_select" --cancel-button "$tr_back" --inputbox "${label}:" $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH "$current" 3>&1 1>&2 2>&3)
                     exit_code=$?
                     
                     echo "[DEBUG] inputbox exit_code=$exit_code, value='$value'" >> /tmp/debug.log
@@ -1101,7 +1100,7 @@ whiptail_process_items() {
                     content=$(translate "$class")
                 fi
                 
-                [ -n "$content" ] && whiptail --msgbox "$content" 10 60
+                [ -n "$content" ] && whiptail --msgbox "$content" $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH
                 ;;
         esac
     done
@@ -1120,7 +1119,7 @@ whiptail_category_config() {
     
     if [ "$cat_id" = "internet-connection" ]; then
         if whiptail_show_network_info; then
-            whiptail --msgbox "Auto-configuration applied!" 8 40
+            whiptail --msgbox "Auto-configuration applied!" $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH
             auto_add_conditional_packages "$cat_id"
             return 0
         fi
@@ -1141,7 +1140,7 @@ whiptail_category_config() {
     cat "$SETUP_VARS" >> /tmp/debug.log 2>&1
     
     if [ $processed -eq 0 ]; then
-        whiptail --msgbox "Configuration completed!" 8 50
+        whiptail --msgbox "Configuration completed!" $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH
     fi
 
     echo "[DEBUG] About to call auto_add_conditional_packages for $cat_id" >> /tmp/debug.log
@@ -1168,7 +1167,7 @@ whiptail_package_categories() {
         i=$((i+1))
     done < <(get_categories)
     
-    choice=$(eval "whiptail --title '$breadcrumb' --ok-button '$(translate 'tr-tui-select')' --cancel-button '$(translate 'tr-tui-back')' --menu '$(translate "tr-tui-view-package-list"):' 20 70 12 $menu_items 3>&1 1>&2 2>&3")
+    choice=$(eval "whiptail --title '$breadcrumb' --ok-button '$(translate 'tr-tui-select')' --cancel-button '$(translate 'tr-tui-back')' --menu '$(translate "tr-tui-view-package-list"):' $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH 12 $menu_items 3>&1 1>&2 2>&3")
     
     if [ $? -ne 0 ]; then
         return 0
@@ -1208,7 +1207,7 @@ whiptail_package_selection() {
         checklist_items="$checklist_items \"$pkg_id\" \"$pkg_name\" $status"
     done < <(get_category_packages "$cat_id")
     
-    selected=$(eval "whiptail --title '$breadcrumb' --ok-button '$(translate 'tr-tui-select')' --cancel-button '$(translate 'tr-tui-back')' --checklist '$cat_name ($tr_space_toggle):' 20 70 12 $checklist_items 3>&1 1>&2 2>&3")
+    selected=$(eval "whiptail --title '$breadcrumb' --ok-button '$(translate 'tr-tui-select')' --cancel-button '$(translate 'tr-tui-back')' --checklist '$cat_name ($tr_space_toggle):' $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH 12 $checklist_items 3>&1 1>&2 2>&3")
     
     if [ $? -eq 0 ]; then
         while read pkg_id; do
@@ -1242,7 +1241,7 @@ whiptail_main_menu() {
         
         choice=$(eval "whiptail --title '$VERSION' \
             --ok-button '$(translate 'tr-tui-select')' --cancel-button '$(translate 'tr-tui-exit')' \
-            --menu '$tr_main_menu:' 20 70 12 $menu_items 3>&1 1>&2 2>&3")
+            --menu '$tr_main_menu:' $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH 12 $menu_items 3>&1 1>&2 2>&3")
         
         if [ $? -ne 0 ]; then
             exit 0
@@ -1271,7 +1270,7 @@ review_and_apply() {
             local breadcrumb="${tr_main_menu} > ${tr_review}"
             
             choice=$(whiptail --title "$breadcrumb" --ok-button "$(translate 'tr-tui-select')" --cancel-button "$(translate 'tr-tui-back')" --menu \
-                "$(translate 'tr-tui-select'):" 20 70 12 \
+                "$(translate 'tr-tui-select'):" $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH 12 \
                 "1" "$(translate 'tr-tui-view-device-info')" \
                 "2" "$(translate 'tr-tui-view-package-list')" \
                 "3" "$(translate 'tr-tui-view-config-vars')" \
@@ -1309,9 +1308,9 @@ review_and_apply() {
                         echo "$(translate 'tr-tui-view-package-list'):" > /tmp/pkg_view.txt
                         echo "" >> /tmp/pkg_view.txt
                         cat "$SELECTED_PACKAGES" | sed 's/^/  - /' >> /tmp/pkg_view.txt
-                        whiptail --scrolltext --title "$breadcrumb" --textbox /tmp/pkg_view.txt 24 78
+                        whiptail --scrolltext --title "$breadcrumb" --textbox /tmp/pkg_view.txt $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH
                     else
-                        whiptail --title "$breadcrumb" --msgbox "$(translate 'tr-tui-no-packages')" 8 40
+                        whiptail --title "$breadcrumb" --msgbox "$(translate 'tr-tui-no-packages')" $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH
                     fi
                 else
                     clear
@@ -1335,9 +1334,9 @@ review_and_apply() {
                         echo "$(translate 'tr-tui-view-config-vars'):" > /tmp/vars_view.txt
                         echo "" >> /tmp/vars_view.txt
                         cat "$SETUP_VARS" >> /tmp/vars_view.txt
-                        whiptail --scrolltext --title "$breadcrumb" --textbox /tmp/vars_view.txt 24 78
+                        whiptail --scrolltext --title "$breadcrumb" --textbox /tmp/vars_view.txt $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH
                     else
-                        whiptail --title "$breadcrumb" --msgbox "$(translate 'tr-tui-no-config-vars')" 8 40
+                        whiptail --title "$breadcrumb" --msgbox "$(translate 'tr-tui-no-config-vars')" $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH
                     fi
                 else
                     clear
@@ -1359,9 +1358,9 @@ review_and_apply() {
                         echo "postinst.sh:" > /tmp/postinst_view.txt
                         echo "" >> /tmp/postinst_view.txt
                         cat "$OUTPUT_DIR/postinst.sh" >> /tmp/postinst_view.txt
-                        whiptail --scrolltext --title "$breadcrumb" --textbox /tmp/postinst_view.txt 24 78
+                        whiptail --scrolltext --title "$breadcrumb" --textbox /tmp/postinst_view.txt $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH
                     else
-                        whiptail --title "$breadcrumb" --msgbox "$(translate 'tr-tui-postinst-not-found')" 8 40
+                        whiptail --title "$breadcrumb" --msgbox "$(translate 'tr-tui-postinst-not-found')" $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH
                     fi
                 else
                     clear
@@ -1383,9 +1382,9 @@ review_and_apply() {
                         echo "setup.sh:" > /tmp/setup_view.txt
                         echo "" >> /tmp/setup_view.txt
                         cat "$OUTPUT_DIR/setup.sh" >> /tmp/setup_view.txt
-                        whiptail --scrolltext --title "$breadcrumb" --textbox /tmp/setup_view.txt 24 78
+                        whiptail --scrolltext --title "$breadcrumb" --textbox /tmp/setup_view.txt $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH
                     else
-                        whiptail --title "$breadcrumb" --msgbox "$(translate 'tr-tui-setup-not-found')" 8 40
+                        whiptail --title "$breadcrumb" --msgbox "$(translate 'tr-tui-setup-not-found')" $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH
                     fi
                 else
                     clear
@@ -1404,16 +1403,16 @@ review_and_apply() {
             6)
                 if [ "$UI_MODE" = "whiptail" ]; then
                     local apply_title=$(translate 'tr-tui-apply')
-                    local confirm_text=$(translate 'tr-tui-apply-confirm' | sed 's/\\n/\n/g')
-                    local confirm_msg="${apply_title}:
-
-${confirm_text}"
-                    if whiptail --title "$breadcrumb" --yes-button "$(translate 'tr-tui-yes')" --no-button "$(translate 'tr-tui-no')" --yesno "$confirm_msg" 20 78; then
-                        whiptail --title "$breadcrumb" --msgbox "$(translate 'tr-tui-installing-packages')" 8 50
+                    local confirm_text=$(translate 'tr-tui-apply-confirm')
+                    
+                    local confirm_msg=$(printf "%s:\n\n%s" "$apply_title" "$(echo "$confirm_text" | sed 's/\\n/\n/g')")
+                    
+                    if whiptail --title "$breadcrumb" --yes-button "$(translate 'tr-tui-yes')" --no-button "$(translate 'tr-tui-no')" --yesno "$confirm_msg" $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH; then
+                        whiptail --title "$breadcrumb" --msgbox "$(translate 'tr-tui-installing-packages')" $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH
                         sh "$OUTPUT_DIR/postinst.sh"
-                        whiptail --title "$breadcrumb" --msgbox "$(translate 'tr-tui-applying-config')" 8 50
+                        whiptail --title "$breadcrumb" --msgbox "$(translate 'tr-tui-applying-config')" $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH
                         sh "$OUTPUT_DIR/setup.sh"
-                        if whiptail --title "$breadcrumb" --yes-button "$(translate 'tr-tui-yes')" --no-button "$(translate 'tr-tui-no')" --yesno "$(translate 'tr-tui-config-applied')" 10 50; then
+                        if whiptail --title "$breadcrumb" --yes-button "$(translate 'tr-tui-yes')" --no-button "$(translate 'tr-tui-no')" --yesno "$(translate 'tr-tui-config-applied')" $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH; then
                             reboot
                         fi
                         return 0
@@ -1422,8 +1421,7 @@ ${confirm_text}"
                     clear
                     echo "=== $(translate 'tr-tui-apply') ==="
                     echo ""
-                    local confirm_simple=$(translate 'tr-tui-apply-confirm' | sed 's/\\n/\n/g')
-                    echo -e "$confirm_simple"
+                    printf "%s\n" "$(translate 'tr-tui-apply-confirm' | sed 's/\\n/\n/g')"
                     echo ""
                     printf "$(translate 'tr-tui-yes')/$(translate 'tr-tui-no'): "
                     read confirm
