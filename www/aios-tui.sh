@@ -185,7 +185,7 @@ install_package() {
 
     for pkg in "$@"; do
         if [ "$PKG_MGR" = "opkg" ]; then
-            $list_cmd | grep -q "^${pkg} " || missing_pkgs="$missing_pkgs $pkg"
+            $list_cmd | grep -q "^${pkg}[[:space:]]*-" || missing_pkgs="$missing_pkgs $pkg"
         elif [ "$PKG_MGR" = "apk" ]; then
             $list_cmd "$pkg" >/dev/null 2>&1 || missing_pkgs="$missing_pkgs $pkg"
         fi
