@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1111.2313"
+VERSION="R7.1112.1023"
 BASE_URL="https://site-u.pages.dev"
 PACKAGES_URL="$BASE_URL/www/packages/packages.json"
 SETUP_JSON_URL="$BASE_URL/www/uci-defaults/setup.json"
@@ -1164,7 +1164,7 @@ whiptail_package_categories() {
         i=$((i+1))
     done < <(get_categories)
     
-    choice=$(eval "whiptail --title '$breadcrumb' --ok-button 'Select' --cancel-button 'Back' --menu '$(translate "tr-tui-view-package-list"):' 20 70 12 $menu_items 3>&1 1>&2 2>&3")
+    choice=$(eval "whiptail --title '$breadcrumb' --ok-button '$(translate 'tr-tui-select')' --cancel-button '$(translate 'tr-tui-back')' --menu '$(translate "tr-tui-view-package-list"):' 20 70 12 $menu_items 3>&1 1>&2 2>&3")
     
     if [ $? -ne 0 ]; then
         return 0
@@ -1183,6 +1183,10 @@ whiptail_package_selection() {
     local cat_id="$1"
     local cat_name=$(get_category_name "$cat_id")
     
+    local tr_main_menu=$(translate "tr-tui-main-menu")
+    local tr_custom_packages=$(translate "tr-custom-packages")
+    local breadcrumb="${tr_main_menu} > ${tr_custom_packages}"
+    
     local cat_desc=$(get_category_desc "$cat_id")
     local tr_space_toggle=$(translate "tr-tui-space-toggle")
     local checklist_items="" pkg_id pkg_name status
@@ -1200,7 +1204,7 @@ whiptail_package_selection() {
         checklist_items="$checklist_items \"$pkg_id\" \"$pkg_name\" $status"
     done < <(get_category_packages "$cat_id")
     
-    selected=$(eval "whiptail --title '$cat_name' --ok-button 'Select' --cancel-button 'Back' --checklist '$cat_desc ($tr_space_toggle):' 20 70 12 $checklist_items 3>&1 1>&2 2>&3")
+    selected=$(eval "whiptail --title '$breadcrumb' --ok-button '$(translate 'tr-tui-select')' --cancel-button '$(translate 'tr-tui-back')' --checklist '$cat_name ($tr_space_toggle):' 20 70 12 $checklist_items 3>&1 1>&2 2>&3")
     
     if [ $? -eq 0 ]; then
         while read pkg_id; do
