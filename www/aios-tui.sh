@@ -1785,7 +1785,7 @@ simple_process_items() {
                     i=$((i+1))
                 done
                 
-                printf "$(translate 'tr-tui-choice') [Enter=keep current]: "
+                printf "$(translate 'tr-tui-ui-choice') [Enter=keep current]: "
                 read choice
                 
                 if [ -n "$choice" ]; then
@@ -1911,7 +1911,7 @@ simple_process_items() {
                         i=$((i+1))
                     done
                     
-                    printf "$(translate 'tr-tui-choice') [Enter=keep current]: "
+                    printf "$(translate 'tr-tui-ui-choice') [Enter=keep current]: "
                     read choice
                     
                     if [ -n "$choice" ]; then
@@ -2028,7 +2028,7 @@ simple_package_categories() {
         
         echo "b) $(translate 'tr-tui-back')"
         echo ""
-        printf "$(translate 'tr-tui-choice'): "
+        printf "$(translate 'tr-tui-ui-choice'): "
         read choice
         
         if [ "$choice" = "b" ] || [ "$choice" = "B" ]; then
@@ -2084,7 +2084,7 @@ simple_package_selection() {
     done
     
     echo ""
-    printf "$(translate 'tr-tui-choice'): "
+    printf "$(translate 'tr-tui-ui-choice'): "
     read choice
     
     if [ "$choice" = "b" ] || [ "$choice" = "B" ]; then
@@ -2132,7 +2132,7 @@ simple_main_menu() {
         local exit_choice=$i
         
         echo ""
-        printf "$(translate 'tr-tui-choice'): "
+        printf "$(translate 'tr-tui-ui-choice'): "
         read choice
         
         if [ -z "$choice" ]; then
