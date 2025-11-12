@@ -166,7 +166,7 @@
     "tr-tui-apply-confirm-step1": "1. postinst.shでパッケージをインストール",
     "tr-tui-apply-confirm-step2": "2. setup.shで設定を適用",
     "tr-tui-apply-confirm-step3": "3. 再起動（確認有）",
-    "tr-tui-apply-confirm-question": "今すぐ実行しますか？",
+    "tr-tui-apply-confirm-question": "実行しますか？",
     "tr-tui-installing-packages": "パッケージをインストール中",
     "tr-tui-applying-config": "システム設定を適用中",
     "tr-tui-config-applied": "設定の適用が完了しました！",
