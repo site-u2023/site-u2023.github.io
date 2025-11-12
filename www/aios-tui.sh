@@ -1458,7 +1458,7 @@ review_and_apply() {
             echo "6) $(translate 'tr-tui-apply')"
             echo "b) $(translate 'tr-tui-back')"
             echo ""
-            printf "Choice: "
+            printf "$(translate 'tr-tui-ui-choice'): "
             read choice
             
             [ "$choice" = "b" ] || [ "$choice" = "B" ] && return 0
