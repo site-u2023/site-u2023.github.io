@@ -1489,13 +1489,21 @@ review_and_apply() {
             
             [ $? -ne 0 ] && return 0
         else
-            choice=$(simple_show_menu "$(translate 'tr-tui-review-configuration')" \
-                "$(translate 'tr-tui-view-device-info')" \
-                "$(translate 'tr-tui-view-package-list')" \
-                "$(translate 'tr-tui-view-config-vars')" \
-                "$(translate 'tr-tui-view-postinst')" \
-                "$(translate 'tr-tui-view-setup')" \
-                "$(translate 'tr-tui-apply')")
+            clear
+            echo "========================================"
+            echo "  $(translate 'tr-tui-review-configuration')"
+            echo "========================================"
+            echo ""
+            echo "1) $(translate 'tr-tui-view-device-info')"
+            echo "2) $(translate 'tr-tui-view-package-list')"
+            echo "3) $(translate 'tr-tui-view-config-vars')"
+            echo "4) $(translate 'tr-tui-view-postinst')"
+            echo "5) $(translate 'tr-tui-view-setup')"
+            echo "6) $(translate 'tr-tui-apply')"
+            echo "b) $(translate 'tr-tui-back')"
+            echo ""
+            printf "$(translate 'tr-tui-ui-choice'): "
+            read choice
             
             [ "$choice" = "b" ] || [ "$choice" = "B" ] && return 0
         fi
@@ -1521,7 +1529,9 @@ review_and_apply() {
                     fi
                 else
                     clear
-                    echo "=== $(translate 'tr-tui-view-package-list') ==="
+                    echo "========================================"
+                    echo "  $(translate 'tr-tui-view-package-list')"
+                    echo "========================================"
                     echo ""
                     if [ -s "$SELECTED_PACKAGES" ]; then
                         cat "$SELECTED_PACKAGES" | while read pkg; do
@@ -1531,7 +1541,7 @@ review_and_apply() {
                         echo "  $(translate 'tr-tui-no-packages')"
                     fi
                     echo ""
-                    printf "Press Enter to continue..."
+                    echo "$(translate 'tr-tui-press-enter')"
                     read
                 fi
                 ;;
@@ -1548,7 +1558,9 @@ review_and_apply() {
                     fi
                 else
                     clear
-                    echo "=== $(translate 'tr-tui-view-config-vars') ==="
+                    echo "========================================"
+                    echo "  $(translate 'tr-tui-view-config-vars')"
+                    echo "========================================"
                     echo ""
                     if [ -s "$SETUP_VARS" ]; then
                         cat "$SETUP_VARS"
@@ -1556,7 +1568,7 @@ review_and_apply() {
                         echo "  $(translate 'tr-tui-no-config-vars')"
                     fi
                     echo ""
-                    printf "Press Enter to continue..."
+                    echo "$(translate 'tr-tui-press-enter')"
                     read
                 fi
                 ;;
@@ -1573,7 +1585,9 @@ review_and_apply() {
                     fi
                 else
                     clear
-                    echo "=== $(translate 'tr-tui-view-postinst') ==="
+                    echo "========================================"
+                    echo "  $(translate 'tr-tui-view-postinst')"
+                    echo "========================================"
                     echo ""
                     if [ -f "$OUTPUT_DIR/postinst.sh" ]; then
                         cat "$OUTPUT_DIR/postinst.sh"
@@ -1581,7 +1595,7 @@ review_and_apply() {
                         echo "$(translate 'tr-tui-postinst-not-found')"
                     fi
                     echo ""
-                    printf "Press Enter to continue..."
+                    echo "$(translate 'tr-tui-press-enter')"
                     read
                 fi
                 ;;
@@ -1598,7 +1612,9 @@ review_and_apply() {
                     fi
                 else
                     clear
-                    echo "=== $(translate 'tr-tui-view-setup') ==="
+                    echo "========================================"
+                    echo "  $(translate 'tr-tui-view-setup')"
+                    echo "========================================"
                     echo ""
                     if [ -f "$OUTPUT_DIR/setup.sh" ]; then
                         cat "$OUTPUT_DIR/setup.sh"
@@ -1606,7 +1622,7 @@ review_and_apply() {
                         echo "$(translate 'tr-tui-setup-not-found')"
                     fi
                     echo ""
-                    printf "Press Enter to continue..."
+                    echo "$(translate 'tr-tui-press-enter')"
                     read
                 fi
                 ;;
@@ -1619,7 +1635,7 @@ review_and_apply() {
 $(translate 'tr-tui-apply-confirm-step2')
 $(translate 'tr-tui-apply-confirm-step3')
 
-実行しますか？"
+$(translate 'tr-tui-apply-confirm-question')"
                     
                     if show_yesno "$breadcrumb" "$confirm_msg"; then
                         show_msgbox "$breadcrumb" "$(translate 'tr-tui-installing-packages')"
@@ -1638,18 +1654,20 @@ $(translate 'tr-tui-reboot-question')"
                     fi
                 else
                     clear
-                    echo "=== $(translate 'tr-tui-apply') ==="
+                    echo "========================================"
+                    echo "  $(translate 'tr-tui-apply')"
+                    echo "========================================"
                     echo ""
                     echo "$(translate 'tr-tui-apply-confirm-step1')"
                     echo "$(translate 'tr-tui-apply-confirm-step2')"
                     echo "$(translate 'tr-tui-apply-confirm-step3')"
                     echo ""
-                    echo "実行しますか？"
+                    echo "$(translate 'tr-tui-apply-confirm-question')"
                     echo ""
                     printf "$(translate 'tr-tui-yes')/$(translate 'tr-tui-no'): "
                     read confirm
                     
-                    if [ "$confirm" = "$(translate 'tr-tui-yes')" ] || [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
+                    if [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
                         echo ""
                         echo "$(translate 'tr-tui-installing-packages')"
                         sh "$OUTPUT_DIR/postinst.sh"
@@ -1659,11 +1677,9 @@ $(translate 'tr-tui-reboot-question')"
                         echo ""
                         echo "$(translate 'tr-tui-config-applied')"
                         echo ""
-                        echo "$(translate 'tr-tui-reboot-question')"
-                        echo ""
-                        printf "$(translate 'tr-tui-yes')/$(translate 'tr-tui-no'): "
+                        printf "$(translate 'tr-tui-reboot-question') (y/n): "
                         read reboot_confirm
-                        if [ "$reboot_confirm" = "$(translate 'tr-tui-yes')" ] || [ "$reboot_confirm" = "y" ] || [ "$reboot_confirm" = "Y" ]; then
+                        if [ "$reboot_confirm" = "y" ] || [ "$reboot_confirm" = "Y" ]; then
                             reboot
                         fi
                         return 0
