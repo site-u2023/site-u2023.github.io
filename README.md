@@ -447,3 +447,6 @@ https://github.com/openwrt/asu
 API
 - https://sysupgrade.openwrt.org/docs
 - https://sysupgrade.openwrt.org/redoc
+
+# Qiita
+[OpenWrt キッティング ファームウェア ビルド](https://qiita.com/site_u/items/4211dd57aa6e2a4a4e06)
