@@ -597,6 +597,10 @@
           "when": {"connection_type": ["mape", "auto"]}
         },
         {
+          "id": "coreutils-sha1sum",
+          "when": {"connection_type": ["mape", "auto"]}
+        },
+        {
           "id": "ds-lite",
           "when": {"connection_type": ["dslite", "auto"]}
         }
