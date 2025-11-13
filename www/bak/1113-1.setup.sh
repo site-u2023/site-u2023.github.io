@@ -198,7 +198,7 @@ firewall_wan() {
     [ -n "${mape_gua_prefix}" ] && SET ${MAPE6}.ip6prefix="${mape_gua_prefix}"
     MAP_SH="/lib/netifd/proto/map.sh"   
     EXPECTED_HASH="7f0682eeaf2dd7e048ff1ad1dbcc5b913ceb8de4"
-    ACTUAL_HASH=$(md5sum "$MAP_SH" | awk '{print $1}')
+    ACTUAL_HASH=$(sha1sum "$MAP_SH" | awk '{print $1}')
     if [ "$ACTUAL_HASH" = "$EXPECTED_HASH" ]; then
     cp "$MAP_SH" "$MAP_SH".bak
     sed -i '1a # github.com/fakemanhk/openwrt-jp-ipoe\nDONT_SNAT_TO="0"' "$MAP_SH"
