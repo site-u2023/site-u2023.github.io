@@ -45,13 +45,15 @@ E([
     
 G1([
 **User Device**
-・Flashed and MAP-E
+Flash
+・Post-Install
+・UCI-defaults
 ])
     
 G2([
 **User Device**
-・Installation
-・Configuration
+Install
+Config
 ])
     
     A --> B
