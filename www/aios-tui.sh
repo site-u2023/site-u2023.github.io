@@ -254,7 +254,11 @@ init() {
     : > /tmp/debug.log
     rm -f "$LANG_JSON"
     
-    echo "[DEBUG] $(date): Init complete" >> /tmp/debug.log
+    rm -f "$SETUP_JSON"
+    rm -f "$PACKAGES_JSON"
+    rm -f "$AUTO_CONFIG_JSON"
+    
+    echo "[DEBUG] $(date): Init complete, cache cleared" >> /tmp/debug.log
 }
 
 # ============================================
@@ -308,16 +312,18 @@ translate() {
 # ============================================
 
 download_setup_json() {
-    echo "Downloading setup.json..."
-    if ! wget -q -O "$SETUP_JSON" "${SETUP_JSON_URL}?t=$(date +%s)"; then
-        echo "Failed to download setup.json"
-        return 1
+    if [ ! -f "$SETUP_JSON" ]; then
+        echo "Downloading setup.json"
+        if ! wget -q -O "$SETUP_JSON" "${SETUP_JSON_URL}?t=$(date +%s)"; then
+            echo "Failed to download setup.json"
+            return 1
+        fi
     fi
     return 0
 }
 
 download_packages() {
-    echo "Downloading packages.json..."
+    echo "Downloading packages.json"
     if ! wget -q -O "$PACKAGES_JSON" "${PACKAGES_URL}?t=$(date +%s)"; then
         echo "Failed to download"
         return 1
