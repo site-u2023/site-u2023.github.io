@@ -308,23 +308,19 @@ translate() {
 # ============================================
 
 download_setup_json() {
-    if [ ! -f "$SETUP_JSON" ]; then
-        echo "Downloading setup.json..."
-        if ! wget -q -O "$SETUP_JSON" "$SETUP_JSON_URL"; then
-            echo "Failed to download setup.json"
-            return 1
-        fi
+    echo "Downloading setup.json..."
+    if ! wget -q -O "$SETUP_JSON" "${SETUP_JSON_URL}?t=$(date +%s)"; then
+        echo "Failed to download setup.json"
+        return 1
     fi
     return 0
 }
 
 download_packages() {
-    if [ ! -f "$PACKAGES_JSON" ]; then
-        echo "Downloading packages.json..."
-        if ! wget -q -O "$PACKAGES_JSON" "$PACKAGES_URL"; then
-            echo "Failed to download"
-            return 1
-        fi
+    echo "Downloading packages.json..."
+    if ! wget -q -O "$PACKAGES_JSON" "${PACKAGES_URL}?t=$(date +%s)"; then
+        echo "Failed to download"
+        return 1
     fi
     return 0
 }
