@@ -197,6 +197,9 @@ firewall_wan() {
     firewall_wan "${MAPE}" "${MAPE6}"
     [ -n "${mape_gua_prefix}" ] && SET ${MAPE6}.ip6prefix="${mape_gua_prefix}"
     MAP_SH="/lib/netifd/proto/map.sh"   
+    EXPECTED_HASH="7f0682eeaf2dd7e048ff1ad1dbcc5b913ceb8de4"
+    ACTUAL_HASH=$(sha1sum "$MAP_SH" | awk '{print $1}')
+    if [ "$ACTUAL_HASH" = "$EXPECTED_HASH" ]; then
     cp "$MAP_SH" "$MAP_SH".bak
     sed -i '1a # github.com/fakemanhk/openwrt-jp-ipoe\nDONT_SNAT_TO="0"' "$MAP_SH"
     sed -i 's/mtu:-1280/mtu:-1460/g' "$MAP_SH"
@@ -230,6 +233,7 @@ firewall_wan() {
 \t\t\tnft add rule inet mape srcnat ip protocol $proto oifname "map-$cfg" counter packets 0 bytes 0 snat ip to $(eval "echo \\$RULE_${k}_IPV4ADDR") : numgen inc mod $portcount map { $allports }\
 \t    done\
 \t  fi' "$MAP_SH"
+fi
 }
 [ "${connection_type}" = "ap" ] && [ -n "${ap_ip_address}" ] && {
     disable_wan
