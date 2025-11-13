@@ -1,8 +1,8 @@
 {
     "tr-custom-packages": "インストールされたパッケージ",
     "tr-custom-defaults": "初回起動時に実行されるスクリプト (uci-defaults)",
-    "tr-postinst": "Postinst(パッケージインストールスクリプト)",
-    "tr-uci": "UCI-defaults(ブート設定スクリプト)",
+    "tr-postinst": "Post-Install (パッケージインストールスクリプト)",
+    "tr-uci": "UCI-defaults (ブート設定スクリプト)",
     "tr-package-search": "パッケージ検索",
     "tr-add-commands": "コマンド追加",
     "tr-base-size": "ベース",
