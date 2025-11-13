@@ -1,9 +1,449 @@
-# Script file landing page
+# OpenWrt Kitting Firmware Build
 
-### OpenWrt A Beginner's Notebook
+Japanese article
 
-https://site-u.pages.dev/
+![OpenWrt_icon.png](https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/3412833/00cb7976-bf5f-1c85-4544-6cbbc043b497.png)
 
-### OpenWrt Custom Firmware Selector
+### Known Issues
+Firmware Selector:
+　uci-defaults (setup.sh): 20KB limit
+　※ Restriction target: ASU's `defaults` field
 
-https://site-u.pages.dev/www/
+SNAPSHOT builds:
+　Weekends (Friday to Sunday) are replacement timing, so builds are better done at the beginning of the week
+
+# Flash & Install System
+
+### System Configuration Diagram
+```mermaid
+graph TB
+A([
+**Landing Page**
+])
+    
+B([
+**Kitting Tool**
+GUI Version
+])
+C([
+**Console Tool**
+TUI Version
+])
+    
+D([
+**Network Auto-Config API**
+])
+    
+F([
+**Shared Resources**
+
+])
+    
+E([
+**Official ASU Server**
+])
+    
+G1([
+**User Device**
+・Flashed and MAP-E
+])
+    
+G2([
+**User Device**
+・Installation
+・Configuration
+])
+    
+    A --> B
+    A --> C
+    B --> D
+    C --> D
+    D --> F
+    D --> F
+    F --> E
+    E --> G1
+    F --> G2
+    
+    style A fill:#90caf9,color:#000
+    style B fill:#90caf9,color:#000
+    style C fill:#90caf9,color:#000
+    style D fill:#90caf9,color:#000
+    style E fill:#ffccbc,color:#000
+    style F fill:#90caf9,color:#000
+    style G1 fill:#c5e1a5,color:#000
+    style G2 fill:#c5e1a5,color:#000
+```
+
+### Landing Page (Portal Site)
+[site-u.pages.dev/](https://site-u.pages.dev/)
+
+![Landing Page.png](https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/3412833/92a74952-ef71-4f95-ae47-6dec9585028f.png)
+
+- Setup
+Terminal > Protocol Handler Registration > Download > Install (double-click)
+※Windows: Terminal links become available by registering in the registry
+
+- Removal
+[delete.reg](https://github.com/site-u2023/site-u2023.github.io/blob/main/file/delete.reg) > Download raw file (Download) > Install (double-click)
+
+### Kitting Tool (Builder)
+[site-u.pages.dev/www/](https://site-u.pages.dev/www/)
+
+![Kitting Tool.png](https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/3412833/c0a81a9a-03b9-4f6b-827a-b9ac54a5e289.png)
+
+| Feature Comparison | Official Builder | Custom Builder |
+|---------|-------------|-----------------|
+| **Basic Features** |
+| Device Search | ○ | ○ |
+| Version Selection | ○ | ○ |
+| Package Addition | Manual input | Preset + Manual input |
+| Initial Boot Settings Addition | Manual input | Auto-generated + Manual edit |
+| Country Code Auto-setting | × | ○ |
+| Language Code Auto-setting | × | ○ |
+| Timezone Auto-setting | × | ○ |
+| Zone Name Auto-setting | × | ○ |
+| ISP Auto-detection | × | ○ |
+| **Japan-Specific Features** |
+| DS-Lite Auto-configuration | × | Network Auto-Config API Integration |
+| MAP-E Auto-configuration | × | Network Auto-Config API Integration |
+| map.sh Patch Application | × | Nichiban countermeasure |
+| **Advanced Features** |
+| Settings Import/Export | × | Text format |
+| ASU Server Health Check | × | Real-time display |
+| **Bug Fixes** |
+| IPv4 Address Change | × | SNAPSHOT supported |
+| **Technical Specifications** |
+| uci-defaults Size Limit | 20KB | 13KB implementation/20KB |
+| API Server | ASU Official | ASU Official + Custom API |
+| Hosting | OpenWrt Official | Cloudflare Pages |
+| Open Source | GitHub Public | GitHub Public |
+
+### Console Tool
+[aios TUI Version (whiptail) β Version](https://github.com/site-u2023/site-u2023.github.io/blob/main/www/aios-tui.sh)
+
+![aios-tui.png](https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/3412833/3a05ca3f-8cf8-4a25-954b-10815e502383.png)
+```sh
+mkdir -p /tmp/aios && wget -O /tmp/aios/aios-tui.sh "https://raw.githubusercontent.com/site-u2023/site-u2023.github.io/refs/heads/main/www/aios-tui.sh" && chmod +x /tmp/aios/aios-tui.sh && /tmp/aios/aios-tui.sh
+```
+
+<details><summary>Old Version</summary>
+
+### Qiita
+[aios (all in one scripts)](https://qiita.com/site_u/items/bd331296ce535ed7a69e)
+[config software](https://qiita.com/site_u/items/c6a50aa6dea965b5a774)
+
+### GitHub
+[site-u2023.github.io](https://github.com/site-u2023/site-u2023.github.io)
+[site-u2023.github.io/www](https://github.com/site-u2023/site-u2023.github.io/tree/main/www)
+
+---
+</details>
+
+### Network Auto-Config API
+[auto-config.site-u.workers.dev/](https://auto-config.site-u.workers.dev/)
+　
+[auto-config.js (DB section partially omitted)](https://github.com/site-u2023/site-u2023.github.io/blob/main/api/auto-config.js)
+
+### Shared Resources
+- [packages.json Description](https://github.com/site-u2023/site-u2023.github.io/blob/main/www/packages.json.js.md)
+[packages.json](https://github.com/site-u2023/site-u2023.github.io/blob/main/www/packages/packages.json)
+
+- [setup.json](https://github.com/site-u2023/site-u2023.github.io/blob/main/www/uci-defaults/setup.json)
+
+
+- [setup.sh Description](https://github.com/site-u2023/site-u2023.github.io/blob/main/www/setup.sh.ja.md)
+[setup.sh](https://github.com/site-u2023/site-u2023.github.io/blob/main/www/uci-defaults/setup.sh)
+
+- Translation Keys
+[custom.**.json](https://github.com/site-u2023/site-u2023.github.io/tree/main/www/langs)
+
+### Official ASU Server
+[sysupgrade.openwrt.org/overview](https://sysupgrade.openwrt.org/overview)
+- Online: Normal response (blank screen)
+- Offline: No response
+
+# Samples
+
+### For Console Configuration
+<details><summary>json</summary>
+
+```sh
+#!/bin/sh
+cat > "/tmp/openwrt-network-auto-config.sh" << 'SCRIPT_END'
+#!/bin/sh
+set -eu
+API_RESPONSE="$(wget -qO- https://auto-config.site-u.workers.dev/)"
+echo "NOTICE=$(echo "$API_RESPONSE" | jsonfilter -e '@.notice')"
+echo "LANGUAGE=$(echo "$API_RESPONSE" | jsonfilter -e '@.language')"
+echo "IPV4=$(echo "$API_RESPONSE" | jsonfilter -e '@.ipv4')"
+echo "IPV6=$(echo "$API_RESPONSE" | jsonfilter -e '@.ipv6')"
+echo "COUNTRY=$(echo "$API_RESPONSE" | jsonfilter -e '@.country')"
+echo "TIMEZONE=$(echo "$API_RESPONSE" | jsonfilter -e '@.timezone')"
+echo "ZONENAME=$(echo "$API_RESPONSE" | jsonfilter -e '@.zonename')"
+echo "ISP=$(echo "$API_RESPONSE" | jsonfilter -e '@.isp')"
+echo "AS=$(echo "$API_RESPONSE" | jsonfilter -e '@.as')"
+echo "REGION_NAME=$(echo "$API_RESPONSE" | jsonfilter -e '@.regionName')"
+echo "REGION_CODE=$(echo "$API_RESPONSE" | jsonfilter -e '@.region')"
+echo "AFTR_TYPE=$(echo "$API_RESPONSE" | jsonfilter -e '@.aftr.aftrType')"
+echo "AFTR_JURISDICTION=$(echo "$API_RESPONSE" | jsonfilter -e '@.aftr.jurisdiction')"
+echo "AFTR_IPV6=$(echo "$API_RESPONSE" | jsonfilter -e '@.aftr.aftrIpv6Address')"
+echo "MAPE_BR_IPV6=$(echo "$API_RESPONSE" | jsonfilter -e '@.mape.brIpv6Address')"
+echo "MAPE_EA_BITS=$(echo "$API_RESPONSE" | jsonfilter -e '@.mape.eaBitLength')"
+echo "MAPE_IPV4_PREFIX=$(echo "$API_RESPONSE" | jsonfilter -e '@.mape.ipv4Prefix')"
+echo "MAPE_IPV4_PLEN=$(echo "$API_RESPONSE" | jsonfilter -e '@.mape.ipv4PrefixLength')"
+echo "MAPE_IPV6_PREFIX=$(echo "$API_RESPONSE" | jsonfilter -e '@.mape.ipv6Prefix')"
+echo "MAPE_IPV6_PLEN=$(echo "$API_RESPONSE" | jsonfilter -e '@.mape.ipv6PrefixLength')"
+echo "MAPE_PSID_OFFSET=$(echo "$API_RESPONSE" | jsonfilter -e '@.mape.psIdOffset')"
+echo "MAPE_PSIDLEN=$(echo "$API_RESPONSE" | jsonfilter -e '@.mape.psidlen')"
+echo "MAPE_IPV6_PREFIX_GUA=$(echo "$API_RESPONSE" | jsonfilter -e '@.mape.ipv6Prefix_gua')"
+SCRIPT_END
+sh "/tmp/openwrt-network-auto-config.sh"
+```
+
+---
+</details>
+
+<details><summary>MAP-E</summary>
+
+```sh
+#!/bin/sh
+set -e
+
+# Package installation
+PKGS="map coreutils-sha1sum"
+if command -v opkg >/dev/null 2>&1; then
+    opkg update
+    opkg install $PKGS
+fi
+if command -v apk >/dev/null 2>&1; then
+    apk update
+    apk add $PKGS
+fi
+
+# Variable definition
+WAN="$(uci -q get network.wan.device || echo wan)"
+MAPE="mape"
+MAPE6="mape6"
+
+# Retrieve MAP-E information from API
+API_RESPONSE=$(wget -qO- https://auto-config.site-u.workers.dev/)
+mape_br=$(echo "$API_RESPONSE" | jsonfilter -e '@.mape.brIpv6Address')
+mape_ipv4_prefix=$(echo "$API_RESPONSE" | jsonfilter -e '@.mape.ipv4Prefix')
+mape_ipv4_prefixlen=$(echo "$API_RESPONSE" | jsonfilter -e '@.mape.ipv4PrefixLength')
+mape_ipv6_prefix=$(echo "$API_RESPONSE" | jsonfilter -e '@.mape.ipv6Prefix')
+mape_ipv6_prefixlen=$(echo "$API_RESPONSE" | jsonfilter -e '@.mape.ipv6PrefixLength')
+mape_ealen=$(echo "$API_RESPONSE" | jsonfilter -e '@.mape.eaBitLength')
+mape_psidlen=$(echo "$API_RESPONSE" | jsonfilter -e '@.mape.psidlen')
+mape_psid_offset=$(echo "$API_RESPONSE" | jsonfilter -e '@.mape.psIdOffset')
+mape_gua_prefix=$(echo "$API_RESPONSE" | jsonfilter -e '@.mape.ipv6Prefix_gua')
+
+# Network configuration
+uci batch <<EOF
+set network.wan.disabled='1'
+set network.wan.auto='0'
+set network.wan6.disabled='1'
+set network.wan6.auto='0'
+set network.${MAPE6}=interface
+set network.${MAPE6}.proto='dhcpv6'
+set network.${MAPE6}.device='${WAN}'
+set network.${MAPE6}.reqaddress='try'
+set network.${MAPE6}.reqprefix='auto'
+set network.${MAPE}=interface
+set network.${MAPE}.proto='map'
+set network.${MAPE}.maptype='map-e'
+set network.${MAPE}.peeraddr='${mape_br}'
+set network.${MAPE}.ipaddr='${mape_ipv4_prefix}'
+set network.${MAPE}.ip4prefixlen='${mape_ipv4_prefixlen}'
+set network.${MAPE}.ip6prefix='${mape_ipv6_prefix}'
+set network.${MAPE}.ip6prefixlen='${mape_ipv6_prefixlen}'
+set network.${MAPE}.ealen='${mape_ealen}'
+set network.${MAPE}.psidlen='${mape_psidlen}'
+set network.${MAPE}.offset='${mape_psid_offset}'
+set network.${MAPE}.mtu='1460'
+set network.${MAPE}.encaplimit='ignore'
+set network.${MAPE}.legacymap='1'
+set network.${MAPE}.tunlink='${MAPE6}'
+EOF
+
+# Configure only if GUA prefix exists
+if [ -n "${mape_gua_prefix}" ]; then
+    uci -q set network.${MAPE6}.ip6prefix="${mape_gua_prefix}"
+fi
+
+uci commit network
+
+# DHCP configuration
+uci batch <<EOF
+set dhcp.${MAPE6}=dhcp
+set dhcp.${MAPE6}.interface='${MAPE6}'
+set dhcp.${MAPE6}.master='1'
+set dhcp.${MAPE6}.ra='relay'
+set dhcp.${MAPE6}.dhcpv6='relay'
+set dhcp.${MAPE6}.ndp='relay'
+set dhcp.${MAPE6}.ignore='1'
+set dhcp.lan.ra='relay'
+set dhcp.lan.dhcpv6='relay'
+set dhcp.lan.ndp='relay'
+set dhcp.lan.force='1'
+commit dhcp
+EOF
+
+# Firewall configuration
+uci batch <<EOF
+del_list firewall.@zone[1].network='wan'
+del_list firewall.@zone[1].network='wan6'
+add_list firewall.@zone[1].network='${MAPE}'
+add_list firewall.@zone[1].network='${MAPE6}'
+set firewall.@zone[1].masq='1'
+set firewall.@zone[1].mtu_fix='1'
+commit firewall
+EOF
+
+# map.sh modification
+MAP_SH="/lib/netifd/proto/map.sh"  
+EXPECTED_HASH="7f0682eeaf2dd7e048ff1ad1dbcc5b913ceb8de4"
+ACTUAL_HASH=$(sha1sum "$MAP_SH" | awk '{print $1}')
+if [ "$ACTUAL_HASH" = "$EXPECTED_HASH" ]; then
+cp "$MAP_SH" "$MAP_SH.bak"
+sed -i '1a # github.com/fakemanhk/openwrt-jp-ipoe\nDONT_SNAT_TO="0"' "$MAP_SH"
+sed -i 's/mtu:-1280/mtu:-1460/g' "$MAP_SH"
+sed -i '137,158d' "$MAP_SH"
+sed -i '136a\
+\t  if [ -z "$(eval "echo \\$RULE_${k}_PORTSETS")" ]; then\
+\t    json_add_object ""\
+\t      json_add_string type nat\
+\t      json_add_string target SNAT\
+\t      json_add_string family inet\
+\t      json_add_string snat_ip $(eval "echo \\$RULE_${k}_IPV4ADDR")\
+\t    json_close_object\
+\t  else\
+\t    local portcount=0\
+\t    local allports=""\
+\t    for portset in $(eval "echo \\$RULE_${k}_PORTSETS"); do\
+\t\tlocal startport=$(echo $portset | cut -d"-" -f1)\
+\t\tlocal endport=$(echo $portset | cut -d"-" -f2)\
+\t\tfor x in $(seq $startport $endport); do\
+\t\t\tif ! echo "$DONT_SNAT_TO" | tr " " "\\n" | grep -qw $x; then\
+\t\t\t\tallports="$allports $portcount : $x , "\
+\t\t\t\tportcount=`expr $portcount + 1`\
+\t\t\tfi\
+\t\tdone\
+\t    done\
+\t\tallports=${allports%??}\
+\t    nft add table inet mape\
+\t    nft add chain inet mape srcnat {type nat hook postrouting priority 0\\; policy accept\\; }\
+\t\tlocal counter=0\
+\t    for proto in icmp tcp udp; do\
+\t\t\tnft add rule inet mape srcnat ip protocol $proto oifname "map-$cfg" counter packets 0 bytes 0 snat ip to $(eval "echo \\$RULE_${k}_IPV4ADDR") : numgen inc mod $portcount map { $allports }\
+\t    done\
+\t  fi' "$MAP_SH"
+fi
+
+echo "MAP-E and map.sh configuration completed"
+echo "Press any key to reboot"
+read dummy
+reboot
+```
+
+---
+</details>
+
+<details><summary>DS-Lite</summary>
+
+```sh
+#!/bin/sh
+set -e
+
+# Package installation
+PKGS="ds-lite"
+if command -v opkg >/dev/null 2>&1; then
+    opkg update
+    opkg install $PKGS
+fi
+if command -v apk >/dev/null 2>&1; then
+    apk update
+    apk add $PKGS
+fi
+
+# Variable definition
+WAN="$(uci -q get network.wan.device || echo wan)"
+DSL="dsl"
+DSL6="dsl6"
+
+# Retrieve DS-Lite AFTR information from API
+API_RESPONSE=$(wget -qO- https://auto-config.site-u.workers.dev/)
+dslite_aftr_address=$(echo "$API_RESPONSE" | jsonfilter -e '@.aftr.aftrIpv6Address')
+
+# Network configuration
+uci batch <<EOF
+set network.wan.disabled='1'
+set network.wan.auto='0'
+set network.wan6.disabled='1'
+set network.wan6.auto='0'
+set network.${DSL6}=interface
+set network.${DSL6}.proto='dhcpv6'
+set network.${DSL6}.device='${WAN}'
+set network.${DSL6}.reqaddress='try'
+set network.${DSL6}.reqprefix='auto'
+set network.${DSL}=interface
+set network.${DSL}.proto='dslite'
+set network.${DSL}.peeraddr='${dslite_aftr_address}'
+set network.${DSL}.tunlink='${DSL6}'
+set network.${DSL}.mtu='1460'
+set network.${DSL}.encaplimit='ignore'
+commit network
+EOF
+
+# DHCP configuration
+uci batch <<EOF
+set dhcp.${DSL6}=dhcp
+set dhcp.${DSL6}.interface='${DSL6}'
+set dhcp.${DSL6}.master='1'
+set dhcp.${DSL6}.ra='relay'
+set dhcp.${DSL6}.dhcpv6='relay'
+set dhcp.${DSL6}.ndp='relay'
+set dhcp.${DSL6}.ignore='1'
+set dhcp.lan.ra='relay'
+set dhcp.lan.dhcpv6='relay'
+set dhcp.lan.ndp='relay'
+set dhcp.lan.force='1'
+commit dhcp
+EOF
+
+# Firewall configuration
+uci batch <<EOF
+del_list firewall.@zone[1].network='wan'
+del_list firewall.@zone[1].network='wan6'
+add_list firewall.@zone[1].network='${DSL}'
+add_list firewall.@zone[1].network='${DSL6}'
+set firewall.@zone[1].masq='1'
+set firewall.@zone[1].mtu_fix='1'
+commit firewall
+EOF
+
+echo "DS-Lite configuration completed"
+echo "Press any key to reboot"
+read dummy
+reboot
+```
+
+---
+</details>
+
+# Official
+
+### Table of Hardware: Full details
+https://openwrt.org/toh/views/toh_extended_all
+https://openwrt.org/toh.json
+ 
+### firmware-selector-openwrt-org
+
+https://github.com/openwrt/firmware-selector-openwrt-org
+
+### Attendedsysupgrade Server (GSoC 2017)
+
+https://github.com/openwrt/asu
+
+API
+- https://sysupgrade.openwrt.org/docs
+- https://sysupgrade.openwrt.org/redoc
