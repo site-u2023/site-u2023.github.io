@@ -623,6 +623,12 @@
           "description": "MAP-E support package"
         },
         {
+            "id": "coreutils-sha1sum",
+            "name": "coreutils-sha1sum",
+            "hidden": true,
+            "description": "SHA1 checksum utility for MAP-E"
+        },
+        {
           "id": "ds-lite", 
           "name": "ds-lite",
           "hidden": true,
