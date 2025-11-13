@@ -88,7 +88,7 @@ Terminal > Protocol Handler Registration > Download > Install (double-click)
 - Removal
 [delete.reg](https://github.com/site-u2023/site-u2023.github.io/blob/main/file/delete.reg) > Download raw file (Download) > Install (double-click)
 
-### Kitting Tool (Builder)
+### Kitting Tool (Custom Builder)
 [site-u.pages.dev/www/](https://site-u.pages.dev/www/)
 
 ![Kitting Tool.png](https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/3412833/c0a81a9a-03b9-4f6b-827a-b9ac54a5e289.png)
