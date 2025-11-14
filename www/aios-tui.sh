@@ -100,10 +100,12 @@ actbutton=white,red
 listbox=white,blue
 actlistbox=white,red
 checkbox=black,lightgray
-actcheckbox=white,red
+actcheckbox=white,blue
 entry=white,blue
 actentry=white,blue
 label=black,lightgray
+sellistbox=black,cyan
+actsellistbox=white,red
 '
 
 # ============================================
