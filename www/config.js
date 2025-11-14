@@ -2,8 +2,9 @@
 var config = {
   // Show help text for images
   show_help: true,
+  
   base_url: "https://site-u.pages.dev",
-  base_url_for_shell: "https://site-u.pages.dev/www",
+  base_path: "www",
   
   // Versions list (optional if provided by .versions.json)
   // 最新バージョンに更新
@@ -37,16 +38,12 @@ var config = {
   information_path: "auto-config/information.json",
   // Package database URL
   packages_db_path: "post-install/post-install.json",
-  packages_db_path_shell: "www/post-install/post-install.json",
   // setup.sh database URL
   setup_db_path: "uci-defaults/setup.json",
-  setup_db_path_shell: "www/uci-defaults/setup.json",
   // setup.sh template URL
   setup_template_path: "uci-defaults/setup.sh",
-  setup_template_path_shell: "www/uci-defaults/setup.sh",
   // Language file path template
   language_path_template: "langs/custom.{lang}.json",
-  language_path_template_shell: "www/langs/custom.{lang}.json",
   
   // LuCI OPKG 検索エンドポイント
   // https://downloads.openwrt.org/releases/24.10.2/packages/aarch64_cortex-a53/packages/Packages
