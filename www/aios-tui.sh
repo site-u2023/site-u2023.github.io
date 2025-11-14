@@ -89,25 +89,7 @@ DEFAULT_BTN_NO="tr-tui-no"
 # ============================================
 # 利用可能色: black, red, green, brown, blue, magenta, cyan, lightgray, gray, brightred, brightgreen, yellow, brightblue, brightmagenta, brightcyan, white
 
-NEWT_COLORS='
-root=white,blue
-window=black,lightgray
-border=black,lightgray
-textbox=black,lightgray
-button=black,lightgray
-compactbutton=black,lightgray
-listbox=black,lightgray
-actlistbox=white,red
-actsellistbox=white,red
-checkbox=black,lightgray
-actcheckbox=white,red
-entry=black,lightgray
-label=black,lightgray
-title=red,lightgray
-roottext=white,blue
-emptyscale=,lightgray
-fullscale=,red
-'
+NEWT_COLORS=''
 
 # ============================================
 # Common UI Template Functions
