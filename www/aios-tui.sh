@@ -3,15 +3,15 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1114.1030"
+VERSION="R7.1114.1038"
 
 # ============================================
 # Configuration Management
 # ============================================
 
 CONFIG_DIR="/tmp/device-setup"
+BOOTSTRAP_URL="https://site-u.pages.dev"
 
-# グローバル変数（config.jsから読み込む）
 BASE_URL=""
 AUTO_CONFIG_API_URL=""
 PACKAGES_DB_PATH=""
@@ -23,10 +23,8 @@ PACKAGES_URL=""
 SETUP_JSON_URL=""
 SETUP_TEMPLATE_URL=""
 
-# config.jsから設定を読み込む
 load_config_from_js() {
     local CONFIG_JS="$CONFIG_DIR/config.js"
-    local BOOTSTRAP_URL="https://site-u.pages.dev"  # 初回ダウンロード用
     
     if [ ! -f "$CONFIG_JS" ]; then
         wget -q -O "$CONFIG_JS" "${BOOTSTRAP_URL}/config.js?t=$(date +%s)" || {
@@ -35,7 +33,6 @@ load_config_from_js() {
         }
     fi
     
-    # config.jsから値を読み込み
     BASE_URL=$(grep 'base_url:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
     AUTO_CONFIG_API_URL=$(grep 'auto_config_api_url:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
     
@@ -44,7 +41,6 @@ load_config_from_js() {
     SETUP_TEMPLATE_PATH=$(grep 'setup_template_path:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
     LANGUAGE_PATH_TEMPLATE=$(grep 'language_path_template:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
     
-    # フルURLを構築
     PACKAGES_URL="${BASE_URL}/${PACKAGES_DB_PATH}"
     SETUP_JSON_URL="${BASE_URL}/${SETUP_DB_PATH}"
     SETUP_TEMPLATE_URL="${BASE_URL}/${SETUP_TEMPLATE_PATH}"
