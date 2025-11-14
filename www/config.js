@@ -4,6 +4,8 @@ var config = {
   // Show help text for images
   show_help: true,
 
+  base_url: "https://site-u.pages.dev",
+  
   // Versions list (optional if provided by .versions.json)
   // 最新バージョンに更新
   // versions: ["24.10.0", "23.05.5"],
