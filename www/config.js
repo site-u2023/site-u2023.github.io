@@ -41,8 +41,10 @@ var config = {
   setup_db_path: "uci-defaults/setup.json",
   // setup.sh template URL
   setup_template_path: "uci-defaults/setup.sh",
+  setup_template_path_shell: "www/uci-defaults/setup.sh",
   // Language file path template
   language_path_template: "langs/custom.{lang}.json",
+  language_path_template_shell: "www/langs/custom.{lang}.json",
   
   // LuCI OPKG 検索エンドポイント
   // https://downloads.openwrt.org/releases/24.10.2/packages/aarch64_cortex-a53/packages/Packages
