@@ -23,7 +23,7 @@ DEFAULT_BTN_NO="tr-tui-no"
 # URL and Path Configuration
 # ============================================
 BASE_URL="https://site-u.pages.dev"
-PACKAGES_URL="$BASE_URL/www/packages/packages.json"
+PACKAGES_URL="$BASE_URL/post-install/post-install.json"
 SETUP_JSON_URL="$BASE_URL/www/uci-defaults/setup.json"
 SETUP_TEMPLATE_URL="$BASE_URL/www/uci-defaults/setup.sh"
 AUTO_CONFIG_URL="https://auto-config.site-u.workers.dev/"
