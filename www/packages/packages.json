@@ -573,6 +573,10 @@
         {
           "id": "luci-app-transmission",
           "name": "luci-app-transmission"
+        },
+        {
+          "id": "syncthing",
+          "name": "syncthing"
         }
       ]
     },
