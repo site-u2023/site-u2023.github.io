@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1114.1403"
+VERSION="R7.1114.1437"
 
 # ============================================
 # Configuration Management
@@ -94,7 +94,7 @@ root=white,blue
 window=black,lightgray
 border=black,lightgray
 textbox=black,lightgray
-button=black,
+button=white,red
 actbutton=white,red
 compactbutton=black,
 listbox=black,lightgray
