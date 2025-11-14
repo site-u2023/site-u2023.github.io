@@ -33,7 +33,7 @@ load_config_from_js() {
         }
     fi
     
-    BASE_URL=$(grep 'base_url_for_shell:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
+    BASE_URL=$(grep 'base_url:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
     AUTO_CONFIG_API_URL=$(grep 'auto_config_api_url:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
     
     PACKAGES_DB_PATH=$(grep 'packages_db_path:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
