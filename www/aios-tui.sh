@@ -284,6 +284,32 @@ select_ui_mode() {
 }
 
 # ============================================
+# Whiptail Color Configuration
+# ============================================
+
+setup_whiptail_colors() {
+    export NEWT_COLORS='
+root=,blue
+window=cyan,blue
+border=cyan,blue
+textbox=cyan,blue
+button=black,cyan
+compactbutton=cyan,blue
+listbox=cyan,blue
+actlistbox=black,cyan
+actsellistbox=black,cyan
+checkbox=cyan,blue
+actcheckbox=black,cyan
+entry=cyan,blue
+label=cyan,blue
+title=cyan,blue
+roottext=cyan,blue
+emptyscale=,blue
+fullscale=,cyan
+'
+}
+
+# ============================================
 # Initialization
 # ============================================
 
@@ -294,6 +320,8 @@ init() {
         echo "Fatal: Cannot load configuration"
         exit 1
     }
+
+    setup_whiptail_colors
     
     : > "$SELECTED_PACKAGES"
     : > "$SETUP_VARS"
