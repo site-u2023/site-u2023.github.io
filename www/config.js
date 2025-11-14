@@ -1,21 +1,16 @@
 /* exported config */
-
 var config = {
   // Show help text for images
   show_help: true,
-
   base_url: "https://site-u.pages.dev",
   
   // Versions list (optional if provided by .versions.json)
   // 最新バージョンに更新
   // versions: ["24.10.0", "23.05.5"],
-
   // Pre-selected version (optional if provided by .versions.json)
   // default_version: "24.10.0",
-
   // Image download URL (e.g. "https://downloads.openwrt.org")
   image_url: "https://downloads.openwrt.org",
-
   // Insert snapshot versions (optional)
   // show_snapshots: false,
   show_snapshots: true,
@@ -31,7 +26,6 @@ var config = {
   
   // asu_url: "https://sysupgrade.openwrt.org?_=" + Date.now(),
   asu_extra_packages: ["luci"],
-
   // 最小サポートバージョン（任意）
   min_version: "22.03.0",
   
@@ -40,12 +34,14 @@ var config = {
   
   // UCI-defaults setup.sh URL
   information_path: "auto-config/information.json",
-
   // Package database URL
   packages_db_path: "post-install/post-install.json",
-
   // setup.sh database URL
   setup_db_path: "uci-defaults/setup.json",
+  // setup.sh template URL
+  setup_template_path: "www/uci-defaults/setup.sh",
+  // Language file path template
+  language_path_template: "www/langs/custom.{lang}.json",
   
   // LuCI OPKG 検索エンドポイント
   // https://downloads.openwrt.org/releases/24.10.2/packages/aarch64_cortex-a53/packages/Packages
@@ -54,7 +50,6 @@ var config = {
   // LuCI APK 検索エンドポイント
   // https://downloads.openwrt.org/snapshots/packages/aarch64_cortex-a53/packages/index.json
   apk_search_url: "https://downloads.openwrt.org/snapshots/packages/{arch}/{feed}/index.json",
-
   // kmods 検索エンドポイント（OPKG用: リリース版）
   // 例: https://downloads.openwrt.org/releases/24.10.2/targets/mediatek/filogic/kmods/5.15.137-1-xxxxxxxx/Packages
   kmods_opkg_index_url:  "https://downloads.openwrt.org/releases/{version}/targets/{vendor}/{subtarget}/kmods/",
@@ -64,27 +59,23 @@ var config = {
   // 例: https://downloads.openwrt.org/snapshots/targets/mediatek/filogic/kmods/5.15.137-1-xxxxxxxx/index.json
   kmods_apk_index_url:   "https://downloads.openwrt.org/snapshots/targets/{vendor}/{subtarget}/kmods/",
   kmods_apk_search_url:  "https://downloads.openwrt.org/snapshots/targets/{vendor}/{subtarget}/kmods/{kmod}/index.json", 
-
   // デバイス情報
   device_info_url: "https://openwrt.org/toh.json",
   
   // デバイス言語
   device_language: "",
     
-  // フォールバック言語（重要！）
+  // フォールバック言語
   fallback_language: "en"
 };
-
 // Language
 current_language = "en";
-
 // OFSリンク
 const custom_ofs_version = "site-u2023.github.io"; 
 const custom_ofs_link    = "https://github.com/site-u2023/site-u2023.github.io";
 // フィードバックリンク
 const custom_feedback_text = "Forum";
 const custom_feedback_link = "https://forum.openwrt.org/t/builder-custom-firmware-selector-openwrt-org";
-
 // カスタム機能の自動読み込み
 (function() {
   // custom.jsを動的に読み込み
