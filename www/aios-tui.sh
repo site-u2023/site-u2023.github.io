@@ -38,8 +38,8 @@ load_config_from_js() {
     
     PACKAGES_DB_PATH=$(grep 'packages_db_path:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
     SETUP_DB_PATH=$(grep 'setup_db_path:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
-    SETUP_TEMPLATE_PATH=$(grep 'setup_template_path:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
-    LANGUAGE_PATH_TEMPLATE=$(grep 'language_path_template:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
+    SETUP_TEMPLATE_PATH=$(grep 'setup_template_path_shell:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
+    LANGUAGE_PATH_TEMPLATE=$(grep 'language_path_template_shell:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
     
     PACKAGES_URL="${BASE_URL}/${PACKAGES_DB_PATH}"
     SETUP_JSON_URL="${BASE_URL}/${SETUP_DB_PATH}"
