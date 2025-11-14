@@ -90,8 +90,23 @@ DEFAULT_BTN_NO="tr-tui-no"
 # 利用可能色: black, red, green, brown, blue, magenta, cyan, lightgray, gray, brightred, brightgreen, yellow, brightblue, brightmagenta, brightcyan, white
 
 NEWT_COLORS='
-title=magenta,
-checkbox=brightblue,
+root=,blue
+window=black,lightgray
+border=black,lightgray
+textbox=black,lightgray
+button=black,cyan
+compactbutton=black,lightgray
+listbox=black,lightgray
+actlistbox=white,blue
+actsellistbox=white,blue
+checkbox=black,lightgray
+actcheckbox=lightgray,blue
+entry=black,lightgray
+label=blue,lightgray
+title=blue,lightgray
+roottext=,blue
+emptyscale=,lightgray
+fullscale=,cyan
 '
 
 # ============================================
