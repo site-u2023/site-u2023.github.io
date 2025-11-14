@@ -1785,7 +1785,7 @@ function loadUciDefaultsTemplate() {
 
     fetch(templatePath + '?t=' + Date.now())
         .then(r => { 
-            if (!r.ok) throw new Error(`Failed to load setup.sh: ${r.statusText}`); 
+            if (!r.ok) throw new Error(`Failed to load setup.sh: ${r.statusText}`);
             return r.text(); 
         })
         .then(text => {
