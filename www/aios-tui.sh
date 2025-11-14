@@ -54,20 +54,6 @@ load_config_from_js() {
 }
 
 # ============================================
-# UI Configuration Variables
-# ============================================
-WHIPTAIL_HEIGHT=0
-WHIPTAIL_WIDTH=78
-WHIPTAIL_FOLD_WIDTH=$((WHIPTAIL_WIDTH - 2))
-BREADCRUMB_SEP=" > "
-DEFAULT_BTN_SELECT="tr-tui-select"
-DEFAULT_BTN_BACK="tr-tui-back"
-DEFAULT_BTN_OK="tr-tui-ok"
-DEFAULT_BTN_CANCEL="tr-tui-cancel"
-DEFAULT_BTN_YES="tr-tui-yes"
-DEFAULT_BTN_NO="tr-tui-no"
-
-# ============================================
 # URL and Path Configuration
 # ============================================
 CONFIG_DIR="/tmp/device-setup"
@@ -83,6 +69,46 @@ TRANSLATION_CACHE="$CONFIG_DIR/translation_cache.txt"
 
 PKG_MGR=""
 MISSING_WHIPTAIL_PKGS=""
+
+# ============================================
+# UI Configuration Variables
+# ============================================
+WHIPTAIL_HEIGHT=0
+WHIPTAIL_WIDTH=78
+WHIPTAIL_FOLD_WIDTH=$((WHIPTAIL_WIDTH - 2))
+BREADCRUMB_SEP=" > "
+DEFAULT_BTN_SELECT="tr-tui-select"
+DEFAULT_BTN_BACK="tr-tui-back"
+DEFAULT_BTN_OK="tr-tui-ok"
+DEFAULT_BTN_CANCEL="tr-tui-cancel"
+DEFAULT_BTN_YES="tr-tui-yes"
+DEFAULT_BTN_NO="tr-tui-no"
+
+# ============================================
+# Whiptail Color Configuration
+# ============================================
+
+setup_whiptail_colors() {
+    export NEWT_COLORS='
+root=,black
+window=,black
+border=white,black
+textbox=white,black
+button=black,white
+compactbutton=white,black
+listbox=white,black
+actlistbox=black,white
+actsellistbox=black,white
+checkbox=white,black
+actcheckbox=black,white
+entry=white,black
+label=white,black
+title=white,black
+roottext=white,black
+emptyscale=,black
+fullscale=,white
+'
+}
 
 # ============================================
 # Common UI Template Functions
@@ -281,32 +307,6 @@ select_ui_mode() {
     fi
     
     echo "[DEBUG] select_ui_mode END, final UI_MODE=$UI_MODE" >> /tmp/debug.log
-}
-
-# ============================================
-# Whiptail Color Configuration
-# ============================================
-
-setup_whiptail_colors() {
-    export NEWT_COLORS='
-root=,black
-window=,black
-border=white,black
-textbox=white,black
-button=black,white
-compactbutton=white,black
-listbox=white,black
-actlistbox=black,white
-actsellistbox=black,white
-checkbox=white,black
-actcheckbox=black,white
-entry=white,black
-label=white,black
-title=white,black
-roottext=white,black
-emptyscale=,black
-fullscale=,white
-'
 }
 
 # ============================================
