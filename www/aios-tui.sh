@@ -10,7 +10,7 @@ VERSION="R7.1114.1038"
 # ============================================
 
 CONFIG_DIR="/tmp/device-setup"
-BOOTSTRAP_URL="https://site-u.pages.dev"
+BOOTSTRAP_URL="https://site-u.pages.dev/www"
 
 BASE_URL=""
 AUTO_CONFIG_API_URL=""
