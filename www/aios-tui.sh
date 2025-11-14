@@ -87,28 +87,48 @@ DEFAULT_BTN_NO="tr-tui-no"
 # ============================================
 # Whiptail Color Configuration
 # ============================================
+# 利用可能な色: black, red, green, yellow, blue, magenta, cyan, white
 
-setup_whiptail_colors() {
-    export NEWT_COLORS='
-root=,black
-window=,black
-border=white,black
-textbox=white,black
-button=black,white
-compactbutton=white,black
-listbox=white,black
-actlistbox=black,white
-actsellistbox=black,white
-checkbox=white,black
-actcheckbox=black,white
-entry=white,black
-label=white,black
-title=white,black
-roottext=white,black
-emptyscale=,black
-fullscale=,white
+NEWT_COLORS='
+root=,blue
+window=cyan,blue
+border=cyan,blue
+textbox=cyan,blue
+button=black,cyan
+compactbutton=cyan,blue
+listbox=cyan,blue
+actlistbox=black,cyan
+actsellistbox=black,cyan
+checkbox=cyan,blue
+actcheckbox=black,cyan
+entry=cyan,blue
+label=cyan,blue
+title=cyan,blue
+roottext=cyan,blue
+emptyscale=,blue
+fullscale=,cyan
 '
-}
+
+# カスタム色例（白黒）
+# NEWT_COLORS='
+# root=,black
+# window=,black
+# border=white,black
+# textbox=white,black
+# button=black,white
+# compactbutton=white,black
+# listbox=white,black
+# actlistbox=black,white
+# actsellistbox=black,white
+# checkbox=white,black
+# actcheckbox=black,white
+# entry=white,black
+# label=white,black
+# title=white,black
+# roottext=white,black
+# emptyscale=,black
+# fullscale=,white
+# '
 
 # ============================================
 # Common UI Template Functions
@@ -321,7 +341,7 @@ init() {
         exit 1
     }
 
-    setup_whiptail_colors
+    export NEWT_COLORS
     
     : > "$SELECTED_PACKAGES"
     : > "$SETUP_VARS"
