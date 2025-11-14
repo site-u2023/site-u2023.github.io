@@ -1758,7 +1758,7 @@ function updateUciDefaultsFileSize(text) {
 
 function loadUciDefaultsTemplate() {
     const textarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
-    const templatePath = 'uci-defaults/setup.sh';
+    const templatePath = config.setup_template_path;
     
     if (!textarea) {
         console.error('UCI-defaults textarea not found');
@@ -2144,7 +2144,7 @@ async function loadCustomTranslations(lang) {
         lang = current_language || (navigator.language || config.fallback_language).split('-')[0];
     }
     
-    const customLangFile = `langs/custom.${lang}.json`;
+    const customLangFile = config.language_path_template.replace('{lang}', lang);
     try {
         const resp = await fetch(customLangFile, { cache: 'no-store' });
 
