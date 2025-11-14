@@ -87,48 +87,30 @@ DEFAULT_BTN_NO="tr-tui-no"
 # ============================================
 # Whiptail Color Configuration
 # ============================================
-# 利用可能な色: black, red, green, yellow, blue, magenta, cyan, white
+# 利用可能色: black, red, green, brown, blue, magenta, cyan, lightgray, gray, brightred, brightgreen, yellow, brightblue, brightmagenta, brightcyan, white
 
 NEWT_COLORS='
-root=white,blue
-window=black,lightgray
+root=white,gray
+window=white,lightgray
 border=black,lightgray
+shadow=white,black
+button=black,green
+actbutton=black,red
+compactbutton=black,
+title=black,
+roottext=black,magenta
 textbox=black,lightgray
-button=black,white
-compactbutton=black,lightgray
-listbox=black,lightgray
-actlistbox=white,red
-actsellistbox=white,red
+acttextbox=gray,white
+entry=lightgray,gray
+disentry=gray,lightgray
 checkbox=black,lightgray
-actcheckbox=white,red
-entry=black,lightgray
-label=black,lightgray
-title=black,lightgray
-roottext=white,blue
-emptyscale=,lightgray
+actcheckbox=black,green
+emptyscale=,black
 fullscale=,red
+listbox=black,lightgray
+actlistbox=lightgray,gray
+actsellistbox=black,green
 '
-
-# カスタム色例（白黒）
-# NEWT_COLORS='
-# root=,black
-# window=,black
-# border=white,black
-# textbox=white,black
-# button=black,white
-# compactbutton=white,black
-# listbox=white,black
-# actlistbox=black,white
-# actsellistbox=black,white
-# checkbox=white,black
-# actcheckbox=black,white
-# entry=white,black
-# label=white,black
-# title=white,black
-# roottext=white,black
-# emptyscale=,black
-# fullscale=,white
-# '
 
 # ============================================
 # Common UI Template Functions
