@@ -3,7 +3,6 @@ var config = {
   // Show help text for images
   show_help: true,
   base_url: "https://site-u.pages.dev",
-  base_url_for_shell: "https://site-u.pages.dev/www",
   
   // Versions list (optional if provided by .versions.json)
   // 最新バージョンに更新
