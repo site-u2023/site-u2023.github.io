@@ -40,7 +40,7 @@ var config = {
   information_path: "auto-config/information.json",
 
   // Package database URL
-  packages_db_path: "packages/packages.json",
+  packages_db_path: "post-install/post-install.json",
 
   // setup.sh database URL
   setup_db_path: "uci-defaults/setup.json",
