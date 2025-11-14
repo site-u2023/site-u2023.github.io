@@ -289,23 +289,23 @@ select_ui_mode() {
 
 setup_whiptail_colors() {
     export NEWT_COLORS='
-root=,blue
-window=cyan,blue
-border=cyan,blue
-textbox=cyan,blue
-button=black,cyan
-compactbutton=cyan,blue
-listbox=cyan,blue
-actlistbox=black,cyan
-actsellistbox=black,cyan
-checkbox=cyan,blue
-actcheckbox=black,cyan
-entry=cyan,blue
-label=cyan,blue
-title=cyan,blue
-roottext=cyan,blue
-emptyscale=,blue
-fullscale=,cyan
+root=,black
+window=,black
+border=white,black
+textbox=white,black
+button=black,white
+compactbutton=white,black
+listbox=white,black
+actlistbox=black,white
+actsellistbox=black,white
+checkbox=white,black
+actcheckbox=black,white
+entry=white,black
+label=white,black
+title=white,black
+roottext=white,black
+emptyscale=,black
+fullscale=,white
 '
 }
 
@@ -321,7 +321,7 @@ init() {
         exit 1
     }
 
-    # setup_whiptail_colors
+    setup_whiptail_colors
     
     : > "$SELECTED_PACKAGES"
     : > "$SETUP_VARS"
