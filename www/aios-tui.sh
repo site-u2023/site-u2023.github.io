@@ -321,7 +321,7 @@ init() {
         exit 1
     }
 
-    setup_whiptail_colors
+    # setup_whiptail_colors
     
     : > "$SELECTED_PACKAGES"
     : > "$SETUP_VARS"
