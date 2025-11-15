@@ -14,6 +14,8 @@
     
     "tr-import-settings": "Importieren",
     "tr-export-settings": "Exportieren",
+
+    "tr-custom-build-label": "Benutzerdefinierter Build (Inoffiziell)",
     
     "tr-asu-status-checking": "Überprüfen...",
     "tr-asu-status-online": "Online",
