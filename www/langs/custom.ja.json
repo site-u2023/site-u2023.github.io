@@ -14,6 +14,8 @@
     
     "tr-import-settings": "インポート",
     "tr-export-settings": "エクスポート",
+
+    "tr-custom-build-label": "カスタムビルド（公式ではありません）",
     
     "tr-asu-status-checking": "確認中...",
     "tr-asu-status-online": "オンライン",
