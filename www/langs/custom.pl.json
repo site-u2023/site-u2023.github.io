@@ -14,6 +14,8 @@
     
     "tr-import-settings": "Importuj",
     "tr-export-settings": "Eksportuj",
+
+    "tr-custom-build-label": "Niestandardowa kompilacja (Nieoficjalna)",
     
     "tr-asu-status-checking": "Sprawdzanie...",
     "tr-asu-status-online": "Online",
