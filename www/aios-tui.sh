@@ -1464,8 +1464,9 @@ whiptail_package_selection() {
     
     local cat_desc=$(get_category_desc "$cat_id")
     local tr_space_toggle=$(translate "tr-tui-space-toggle")
-    local checklist_items="" pkg_id pkg_name status
+    local checklist_items="" pkg_id pkg_name status idx
     
+    idx=1
     while read pkg_id; do
         pkg_name=$(get_package_name "$pkg_id")
         [ -z "$pkg_name" ] && pkg_name="$pkg_id"
@@ -1476,7 +1477,8 @@ whiptail_package_selection() {
             status="OFF"
         fi
         
-        checklist_items="$checklist_items \"$pkg_id\" \"$pkg_name\" $status"
+        checklist_items="$checklist_items \"$idx\" \"$pkg_name\" $status"
+        idx=$((idx+1))
     done < <(get_category_packages "$cat_id")
     
     selected=$(show_checklist "$breadcrumb" "($tr_space_toggle)" "" "" $checklist_items)
@@ -1486,9 +1488,10 @@ whiptail_package_selection() {
             sed -i "/^${pkg_id}$/d" "$SELECTED_PACKAGES"
         done < <(get_category_packages "$cat_id")
         
-        for pkg in $selected; do
-            pkg_clean=$(echo "$pkg" | tr -d '"')
-            echo "$pkg_clean" >> "$SELECTED_PACKAGES"
+        for idx_str in $selected; do
+            idx_clean=$(echo "$idx_str" | tr -d '"')
+            pkg_id=$(get_category_packages "$cat_id" | sed -n "${idx_clean}p")
+            [ -n "$pkg_id" ] && echo "$pkg_id" >> "$SELECTED_PACKAGES"
         done
     fi
     
