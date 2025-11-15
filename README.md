@@ -108,7 +108,7 @@ Terminal > Protocol Handler Registration > Download > Install (double-click)
 | **Japan-Specific Features** |
 | DS-Lite Auto-configuration | × | Network Auto-Config API Integration |
 | MAP-E Auto-configuration | × | Network Auto-Config API Integration |
-| map.sh Patch Application | × | Nichiban countermeasure |
+| map.sh Patch Application | × | Nichiban (SNAT) countermeasure |
 | **Advanced Features** |
 | Settings Import/Export | × | Text format |
 | ASU Server Health Check | × | Real-time display |
