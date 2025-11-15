@@ -14,6 +14,8 @@
     
     "tr-import-settings": "导入",
     "tr-export-settings": "导出",
+
+    "tr-custom-build-label": "自定义构建（非官方）",
     
     "tr-asu-status-checking": "检查中...",
     "tr-asu-status-online": "在线",
