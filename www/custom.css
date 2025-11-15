@@ -75,7 +75,7 @@
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  gap: 1em;
+  gap: 0.5em;
 }
 
 /* ASU Status Display */
@@ -83,7 +83,7 @@
   display: flex;
   align-items: center;
   gap: 0.5em;
-  margin-right: auto;
+  margin-right: 0.5em;
   padding: 0.5em 1em;
   background-color: rgba(0, 0, 0, 0.2);
   border-radius: 0.25em;
