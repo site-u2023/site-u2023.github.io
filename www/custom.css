@@ -79,25 +79,12 @@
   flex-wrap: wrap;
 }
 
-.settings-bar-left {
-  display: flex;
-  align-items: center;
-  gap: 1em;
-  flex-wrap: wrap;
-}
-
-.settings-bar-right {
-  display: flex;
-  align-items: center;
-  gap: 1em;
-  margin-left: auto;
-}
-
 /* ASU Status Display */
 .asu-status {
   display: flex;
   align-items: center;
   gap: 0.5em;
+  margin-right: auto;
   padding: 0.5em 1em;
   background-color: rgba(0, 0, 0, 0.2);
   border-radius: 0.25em;
@@ -129,29 +116,6 @@
 
 .status-error {
   color: #ff6b6b;
-}
-
-/* Custom Build Badge */
-.custom-build-badge {
-  display: flex;
-  align-items: center;
-  gap: 0.5em;
-  padding: 0.5em 1em;
-  background-color: rgba(255, 107, 53, 0.2);
-  border: 1px solid rgba(255, 107, 53, 0.5);
-  border-radius: 0.25em;
-  font-size: 0.9em;
-}
-
-.custom-build-badge .badge-icon {
-  font-size: 1.1em;
-  line-height: 1;
-}
-
-.custom-build-badge .badge-text {
-  font-weight: 500;
-  color: #fff;
-  white-space: nowrap;
 }
 
 .settings-btn {
@@ -187,11 +151,6 @@
     background-color: rgba(0, 0, 0, 0.4);
   }
   
-  .custom-build-badge {
-    background-color: rgba(255, 107, 53, 0.3);
-    border-color: rgba(255, 107, 53, 0.6);
-  }
-  
   .settings-btn {
     background-color: #0080b3;
   }
@@ -206,29 +165,14 @@
   .settings-bar-content {
     padding: 0.5em 1%;
     gap: 0.5em;
-    flex-direction: column;
-  }
-  
-  .settings-bar-left {
-    width: 100%;
-    flex-direction: column;
-    gap: 0.5em;
-  }
-  
-  .settings-bar-right {
-    width: 100%;
-    margin-left: 0;
-    justify-content: stretch;
+    flex-wrap: wrap;
   }
   
   .asu-status {
     width: 100%;
     justify-content: center;
-  }
-  
-  .custom-build-badge {
-    width: 100%;
-    justify-content: center;
+    margin-right: 0;
+    margin-bottom: 0.5em;
   }
   
   .settings-btn {
@@ -727,7 +671,7 @@ details summary::-webkit-details-marker {
   color: var(--owrt-blue);
 }
 
-/* ===== 汎用ツールチップ(Package & Setup 共通) ===== */
+/* ===== 汎用ツールチップ（Package & Setup 共通） ===== */
 .tooltip {
   position: absolute;
   bottom: 100%;
