@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ja">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,27 +10,23 @@
     <div id="settings-bar-template" style="display: none;">
         <div id="settings-bar">
             <div class="settings-bar-content">
-                <div class="settings-bar-left">
-                    <div id="asu-status-container" class="asu-status">
-                        <span id="asu-status-indicator" class="status-indicator status-checking">●</span>
-                        <span id="asu-status-text" class="status-text tr-asu-status-checking">Checking...</span>
-                    </div>
-                    
-                    <!-- カスタムビルド表示 -->
-                    <div id="custom-build-badge" class="custom-build-badge">
-                        <span class="badge-icon">🔧</span>
-                        <span class="badge-text tr-custom-build-label">Custom Build (Unofficial)</span>
-                    </div>
+                <div id="asu-status-container" class="asu-status">
+                    <span id="asu-status-indicator" class="status-indicator status-checking">●</span>
+                    <span id="asu-status-text" class="status-text tr-asu-status-checking">Checking...</span>
                 </div>
                 
-                <div class="settings-bar-right">
-                    <button id="import-settings-btn" class="settings-btn" title="Import Settings">
-                        📥 <span class="tr-import-settings">Import</span>
-                    </button>
-                    <button id="export-settings-btn" class="settings-btn" title="Export Settings">
-                        📤 <span class="tr-export-settings">Export</span>
-                    </button>
+                <!-- カスタムビルド表示 -->
+                <div id="custom-build-badge" class="custom-build-badge">
+                    <span class="badge-icon">🔧</span>
+                    <span class="badge-text tr-custom-build-label">Custom Build (Unofficial)</span>
                 </div>
+                
+                <button id="import-settings-btn" class="settings-btn" title="Import Settings">
+                    📥 <span class="tr-import-settings">Import</span>
+                </button>
+                <button id="export-settings-btn" class="settings-btn" title="Export Settings">
+                    📤 <span class="tr-export-settings">Export</span>
+                </button>
             </div>
         </div>
         <input type="file" id="import-file-input" accept=".txt,.ini" style="display: none;">
