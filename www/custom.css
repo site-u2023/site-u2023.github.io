@@ -174,24 +174,15 @@
 @media (min-resolution: 400dpi), (max-width: 600px), (pointer: coarse) {
   .settings-bar-content {
     padding: 0.5em 1%;
-    flex-wrap: wrap;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5em;
   }
   
   .left-section {
-    width: 100%;
-    flex-wrap: wrap;
-    justify-content: center;
-    margin-bottom: 0.5em;
-  }
-  
-  .asu-status {
-    width: 100%;
-    justify-content: center;
-  }
-  
-  #custom-build-badge {
-    width: 100%;
-    justify-content: center;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5em;
   }
   
   .right-section {
