@@ -73,9 +73,21 @@
 .settings-bar-content {
   padding: 0.5em 2%;
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.left-section {
+  display: flex;
   align-items: center;
   gap: 0.5em;
+}
+
+.right-section {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  margin-left: auto;
 }
 
 /* ASU Status Display */
@@ -83,15 +95,10 @@
   display: flex;
   align-items: center;
   gap: 0.5em;
-  margin-right: 0.5em;
   padding: 0.5em 1em;
   background-color: rgba(0, 0, 0, 0.2);
   border-radius: 0.25em;
   font-size: 0.9em;
-}
-
-#custom-build-badge {
-  margin-right: auto;
 }
 
 .status-indicator {
