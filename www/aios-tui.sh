@@ -1454,7 +1454,7 @@ whiptail_package_categories() {
     fi
 }
 
-whiptail_package_selection() {
+XXX_whiptail_package_selection() {
     local cat_id="$1"
     local cat_name=$(get_category_name "$cat_id")
     
@@ -1478,6 +1478,54 @@ whiptail_package_selection() {
         fi
         
         checklist_items="$checklist_items \"$idx\" \"$pkg_name\" $status"
+        idx=$((idx+1))
+    done < <(get_category_packages "$cat_id")
+    
+    selected=$(show_checklist "$breadcrumb" "($tr_space_toggle)" "" "" $checklist_items)
+    
+    if [ $? -eq 0 ]; then
+        while read pkg_id; do
+            sed -i "/^${pkg_id}$/d" "$SELECTED_PACKAGES"
+        done < <(get_category_packages "$cat_id")
+        
+        for idx_str in $selected; do
+            idx_clean=$(echo "$idx_str" | tr -d '"')
+            pkg_id=$(get_category_packages "$cat_id" | sed -n "${idx_clean}p")
+            [ -n "$pkg_id" ] && echo "$pkg_id" >> "$SELECTED_PACKAGES"
+        done
+    fi
+    
+    whiptail_package_categories
+}
+
+whiptail_package_selection() {
+    local cat_id="$1"
+    local cat_name=$(get_category_name "$cat_id")
+    
+    local tr_main_menu=$(translate "tr-tui-main-menu")
+    local tr_custom_packages=$(translate "tr-custom-packages")
+    local breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_custom_packages" "$cat_name")
+    
+    local cat_desc=$(get_category_desc "$cat_id")
+    local tr_space_toggle=$(translate "tr-tui-space-toggle")
+    local checklist_items="" pkg_id pkg_name status idx
+    
+    local padding_width=$((WHIPTAIL_WIDTH - 18))
+    
+    idx=1
+    while read pkg_id; do
+        pkg_name=$(get_package_name "$pkg_id")
+        [ -z "$pkg_name" ] && pkg_name="$pkg_id"
+        
+        local padded_name=$(printf "%-${padding_width}s" "$pkg_name")
+        
+        if is_package_selected "$pkg_id"; then
+            status="ON"
+        else
+            status="OFF"
+        fi
+        
+        checklist_items="$checklist_items \"$idx\" \"$padded_name\" $status"
         idx=$((idx+1))
     done < <(get_category_packages "$cat_id")
     
