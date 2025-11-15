@@ -14,6 +14,8 @@
     
     "tr-import-settings": "Импорт",
     "tr-export-settings": "Экспорт",
+
+    "tr-custom-build-label": "Пользовательская сборка (Неофициальная)",
     
     "tr-asu-status-checking": "Проверка...",
     "tr-asu-status-online": "В сети",
