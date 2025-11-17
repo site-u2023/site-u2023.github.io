@@ -1350,8 +1350,7 @@ whiptail_category_config() {
             if [ "$conn_type" = "auto" ]; then
                 continue
             elif [ "$conn_type" = "dhcp" ]; then
-                local dhcp_label=$(get_setup_item_option_label "connection-type" "dhcp")
-                show_msgbox "$breadcrumb" "${dhcp_label}:\n\nDHCP"
+                show_msgbox "$breadcrumb" "$(translate 'tr-dhcp'):\n\nDHCP"
             fi
         fi
         
