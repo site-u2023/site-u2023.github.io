@@ -957,6 +957,13 @@ whiptail_show_network_info() {
             
             return 0
         else
+            if [ -n "$MAPE_BR" ] && [ -n "$MAPE_EALEN" ]; then
+                DETECTED_CONN_TYPE="MAP-E"
+            elif [ -n "$DSLITE_AFTR" ]; then
+                DETECTED_CONN_TYPE="DS-Lite"
+            else
+                DETECTED_CONN_TYPE="Unknown"
+            fi
             return 1
         fi
         
@@ -977,6 +984,13 @@ whiptail_show_network_info() {
             echo "dslite_aftr_address='$DSLITE_AFTR'" >> "$SETUP_VARS"
             return 0
         else
+            if [ -n "$MAPE_BR" ] && [ -n "$MAPE_EALEN" ]; then
+                DETECTED_CONN_TYPE="MAP-E"
+            elif [ -n "$DSLITE_AFTR" ]; then
+                DETECTED_CONN_TYPE="DS-Lite"
+            else
+                DETECTED_CONN_TYPE="Unknown"
+            fi
             return 1
         fi
         
