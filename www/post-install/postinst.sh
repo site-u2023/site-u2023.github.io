@@ -7,11 +7,11 @@
 if command -v opkg >/dev/null 2>&1; then
     PKG_MGR=opkg
     echo "Detected package manager: opkg"
-    opkg update
+    opkg update >/dev/null 2>&1
 elif command -v apk >/dev/null 2>&1; then
     PKG_MGR=apk
     echo "Detected package manager: apk"
-    apk update
+    apk update >/dev/null 2>&1
 else
     echo "Error: No supported package manager found (opkg or apk)"
     exit 1
@@ -21,9 +21,9 @@ fi
 if [ -n "$PACKAGES" ]; then
     echo "Installing packages: $PACKAGES"
     if [ "$PKG_MGR" = "opkg" ]; then
-        opkg install $PACKAGES
+        opkg install $PACKAGES >/dev/null 2>&1
     elif [ "$PKG_MGR" = "apk" ]; then
-        apk add $PACKAGES
+        apk add $PACKAGES >/dev/null 2>&1
     fi
 else
     echo "No packages to install"
