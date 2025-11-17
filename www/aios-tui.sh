@@ -494,15 +494,10 @@ apply_api_defaults() {
             echo "country='${AUTO_COUNTRY}'" >> "$SETUP_VARS"
         
         local language=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-        if [ -n "$language" ] && [ "$language" != "en" ]; then
-            if [ -f "$SETUP_JSON" ]; then
-                jsonfilter -i "$SETUP_JSON" -e '@.constants.language_prefixes_release[*]' 2>/dev/null | while read prefix; do
-                    local pkg="${prefix}${language}"
-                    if ! grep -qx "$pkg" "$SELECTED_PACKAGES" 2>/dev/null; then
-                        echo "$pkg" >> "$SELECTED_PACKAGES"
-                    fi
-                done
-            fi
+        if [ -n "$language" ] && [ "$language" != "en" ] && [ -f "$SETUP_JSON" ]; then
+            while IFS= read -r prefix; do
+                [ -n "$prefix" ] && echo "${prefix}${language}" >> "$SELECTED_PACKAGES"
+            done < <(jsonfilter -i "$SETUP_JSON" -e '@.constants.language_prefixes_release[*]' 2>/dev/null)
         fi
         
         if grep -q "^connection_type='auto'" "$SETUP_VARS" 2>/dev/null; then
