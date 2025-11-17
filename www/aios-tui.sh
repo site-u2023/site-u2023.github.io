@@ -60,7 +60,7 @@ load_config_from_js() {
 # URL and Path Configuration
 # ============================================
 CONFIG_DIR="/tmp/device-setup"
-PACKAGES_JSON="$CONFIG_DIR/packages.json"
+PACKAGES_JSON="$CONFIG_DIR/postinst.json"
 SETUP_JSON="$CONFIG_DIR/setup.json"
 AUTO_CONFIG_JSON="$CONFIG_DIR/auto_config.json"
 LANG_JSON="$CONFIG_DIR/lang.json"
@@ -914,13 +914,13 @@ generate_files() {
     
     language=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
     
-    # Download packages.sh template
+    # Download postinst.sh template
     if ! wget -q -O "$OUTPUT_DIR/postinst.sh.tmp" "${POSTINST_TEMPLATE_URL}?t=$(date +%s)"; then
-        echo "Error: Failed to download packages.sh template"
+        echo "Error: Failed to download postinst.sh template"
         return 1
     fi
     
-    # Generate variable definitions for packages.sh
+    # Generate variable definitions for postinst.sh
     var_defs=""
     
     if [ -n "$language" ]; then
@@ -932,7 +932,7 @@ generate_files() {
         var_defs="${var_defs}PACKAGES=\"${pkgs}\"\n"
     fi
     
-    # Insert variables into packages.sh template
+    # Insert variables into postinst.sh template
     sed "/^# BEGIN_VARIABLE_DEFINITIONS/a\\
 $var_defs" "$OUTPUT_DIR/postinst.sh.tmp" | sed '/^# BEGIN_VARIABLE_DEFINITIONS/,/^# END_VARIABLE_DEFINITIONS/{/^# BEGIN_VARIABLE_DEFINITIONS/!{/^# END_VARIABLE_DEFINITIONS/!d;}}' > "$OUTPUT_DIR/postinst.sh"
     
