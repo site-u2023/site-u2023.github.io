@@ -1428,10 +1428,16 @@ whiptail_package_selection() {
     local tr_space_toggle=$(translate "tr-tui-space-toggle")
     local checklist_items="" pkg_id pkg_name status idx
     
+    local item_width=$((WHIPTAIL_WIDTH - 15))
+    
     idx=1
     while read pkg_id; do
         pkg_name=$(get_package_name "$pkg_id")
         [ -z "$pkg_name" ] && pkg_name="$pkg_id"
+        
+        if [ ${#pkg_name} -gt $item_width ]; then
+            pkg_name=$(echo "$pkg_name" | cut -c1-$item_width)
+        fi
         
         if is_package_selected "$pkg_id"; then
             status="ON"
