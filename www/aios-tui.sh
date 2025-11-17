@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1117.1611"
+VERSION="R7.1117.1618"
 
 # ============================================
 # Configuration Management
@@ -201,14 +201,6 @@ simple_show_menu() {
 select_ui_mode() {
     echo "[DEBUG] $(date): select_ui_mode START" >> /tmp/debug.log
     
-    if check_packages_installed $WHIPTAIL_PACKAGES; then
-        UI_MODE="whiptail"
-        echo "[DEBUG] whiptail already installed, UI_MODE=$UI_MODE" >> /tmp/debug.log
-        return 0
-    fi
-    
-    echo "[DEBUG] whiptail not found, asking user" >> /tmp/debug.log
-    
     echo "$(translate 'tr-tui-ui-mode-select')"
     echo "1) $(translate 'tr-tui-ui-whiptail')"
     echo "2) $(translate 'tr-tui-ui-simple')"
@@ -219,7 +211,9 @@ select_ui_mode() {
     if [ "$choice" = "2" ]; then
         UI_MODE="simple"
     else
-        echo "whiptail" > "$SELECTED_PACKAGES"
+        # WHIPTAIL_PACKAGESの全パッケージをpostinst.shに渡す
+        echo "$WHIPTAIL_PACKAGES" | tr ' ' '\n' > "$SELECTED_PACKAGES"
+        generate_files
         sh "$OUTPUT_DIR/postinst.sh"
         UI_MODE="whiptail"
     fi
