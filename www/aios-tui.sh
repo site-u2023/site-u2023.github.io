@@ -1299,7 +1299,10 @@ whiptail_category_config() {
     echo "[DEBUG] cat_id=$cat_id, title=$cat_title" >> /tmp/debug.log
     
     if [ "$cat_id" = "internet-connection" ]; then
-        whiptail_show_network_info
+        if whiptail_show_network_info; then
+            auto_add_conditional_packages "$cat_id"
+            return 0
+        fi
     fi
     
     echo "[DEBUG] Processing all items" >> /tmp/debug.log
@@ -1315,11 +1318,6 @@ whiptail_category_config() {
     
     echo "[DEBUG] SETUP_VARS after processing:" >> /tmp/debug.log
     cat "$SETUP_VARS" >> /tmp/debug.log 2>&1
-    
-    if [ $processed -eq 0 ]; then
-        local breadcrumb=$(build_breadcrumb "$tr_main_menu" "$cat_title")
-        show_msgbox "$breadcrumb" "Configuration completed!"
-    fi
 
     echo "[DEBUG] About to call auto_add_conditional_packages for $cat_id" >> /tmp/debug.log
     auto_add_conditional_packages "$cat_id"
