@@ -72,6 +72,7 @@ TRANSLATION_CACHE="$CONFIG_DIR/translation_cache.txt"
 
 PKG_MGR=""
 MISSING_WHIPTAIL_PKGS=""
+WHIPTAIL_PACKAGES="whiptail"
 
 # ============================================
 # UI Configuration Variables
@@ -255,7 +256,6 @@ select_ui_mode() {
     
     if check_packages_installed $WHIPTAIL_PACKAGES; then
         UI_MODE="whiptail"
-        echo "whiptail detected, using dialog-based interface"
         echo "[DEBUG] whiptail already installed, UI_MODE=$UI_MODE" >> /tmp/debug.log
         return 0
     fi
@@ -374,7 +374,7 @@ translate() {
 
 download_setup_json() {
     if [ ! -f "$SETUP_JSON" ]; then
-        echo "Downloading setup.json"
+        echo "$(translate 'tr-loading')"
         if ! wget -q -O "$SETUP_JSON" "${SETUP_JSON_URL}?t=$(date +%s)"; then
             echo "Failed to download setup.json"
             return 1
@@ -384,7 +384,7 @@ download_setup_json() {
 }
 
 download_packages() {
-    echo "Downloading packages.json"
+    echo "$(translate 'tr-loading')"
     if ! wget -q -O "$PACKAGES_JSON" "${PACKAGES_URL}?t=$(date +%s)"; then
         echo "Failed to download"
         return 1
@@ -2244,11 +2244,9 @@ aios_light_main() {
     echo ""
     
     detect_package_manager
-    echo "Package manager: $PKG_MGR"
+    echo "$(translate 'tr-tui-detecting-package-manager'): $PKG_MGR"
     
     init
-    
-    echo "Fetching API ${AUTO_CONFIG_URL}"
     
     get_extended_device_info
 
