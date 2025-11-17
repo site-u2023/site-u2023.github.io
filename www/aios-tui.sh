@@ -198,18 +198,17 @@ simple_show_menu() {
 # UI Mode Selection
 # ============================================
 
+check_packages_installed() {
+    for pkg in $WHIPTAIL_PACKAGES; do
+        if ! opkg list-installed 2>/dev/null | grep -q "^${pkg} "; then
+            return 1
+        fi
+    done
+    return 0
+}
+
 select_ui_mode() {
-    echo "[DEBUG] $(date): select_ui_mode START" >> /tmp/debug.log
-    
-    echo "$WHIPTAIL_PACKAGES" | tr ' ' '\n' > "$SELECTED_PACKAGES"
-    generate_files
-    
-    MISSING_PKGS=$(sh -c '
-        PACKAGES="'"$WHIPTAIL_PACKAGES"'"
-        echo "$MISSING_PKGS"
-    ')
-    
-    if [ -z "$MISSING_PKGS" ]; then
+    if check_packages_installed; then
         UI_MODE="whiptail"
         return 0
     fi
@@ -224,6 +223,8 @@ select_ui_mode() {
     if [ "$choice" = "2" ]; then
         UI_MODE="simple"
     else
+        echo "$WHIPTAIL_PACKAGES" | tr ' ' '\n' > "$SELECTED_PACKAGES"
+        generate_files
         sh "$OUTPUT_DIR/postinst.sh"
         UI_MODE="whiptail"
     fi
