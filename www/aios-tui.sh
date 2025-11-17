@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1117.1449"
+VERSION="R7.1117.1454"
 
 # ============================================
 # Configuration Management
@@ -372,7 +372,6 @@ translate() {
 
 download_setup_json() {
     if [ ! -f "$SETUP_JSON" ]; then
-        echo "Downloading setup.json"
         if ! wget -q -O "$SETUP_JSON" "${SETUP_JSON_URL}?t=$(date +%s)"; then
             echo "Failed to download setup.json"
             return 1
@@ -382,7 +381,6 @@ download_setup_json() {
 }
 
 download_packages() {
-    echo "Downloading setup.json"
     if ! wget -q -O "$PACKAGES_JSON" "${PACKAGES_URL}?t=$(date +%s)"; then
         echo "Failed to download"
         return 1
