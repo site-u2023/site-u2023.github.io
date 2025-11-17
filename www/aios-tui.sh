@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1114.1514"
+VERSION="R7.1117.1421"
 
 # ============================================
 # Configuration Management
@@ -59,7 +59,6 @@ load_config_from_js() {
 # ============================================
 # URL and Path Configuration
 # ============================================
-CONFIG_DIR="/tmp/device-setup"
 PACKAGES_JSON="$CONFIG_DIR/postinst.json"
 SETUP_JSON="$CONFIG_DIR/setup.json"
 AUTO_CONFIG_JSON="$CONFIG_DIR/auto_config.json"
