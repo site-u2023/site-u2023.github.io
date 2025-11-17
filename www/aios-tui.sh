@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1117.2045"
+VERSION="R7.1117.2050"
 
 # ============================================
 # Configuration Management
@@ -1003,12 +1003,15 @@ whiptail_show_network_info() {
 whiptail_process_items() {
     local cat_id="$1"
     local parent_items="$2"
+    local breadcrumb="$3"
     
     echo "[DEBUG] whiptail_process_items: cat_id=$cat_id" >> /tmp/debug.log
     
-    local tr_main_menu=$(translate "tr-tui-main-menu")
-    local cat_title=$(get_setup_category_title "$cat_id")
-    local breadcrumb=$(build_breadcrumb "$tr_main_menu" "$cat_title")
+    if [ -z "$breadcrumb" ]; then
+        local tr_main_menu=$(translate "tr-tui-main-menu")
+        local cat_title=$(get_setup_category_title "$cat_id")
+        breadcrumb=$(build_breadcrumb "$tr_main_menu" "$cat_title")
+    fi
     
     local items
     if [ -z "$parent_items" ]; then
@@ -1330,7 +1333,7 @@ whiptail_category_config() {
         fi
         
         echo "[DEBUG] Processing all items" >> /tmp/debug.log
-        whiptail_process_items "$cat_id" ""
+        whiptail_process_items "$cat_id" "" "$breadcrumb"
         local processed=$?
         
         echo "[DEBUG] Items processed: $processed" >> /tmp/debug.log
