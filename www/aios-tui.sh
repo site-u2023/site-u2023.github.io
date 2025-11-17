@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1117.1947"
+VERSION="R7.1117.2003"
 
 # ============================================
 # Configuration Management
@@ -1309,6 +1309,12 @@ show_auto_detection_if_available() {
 
 whiptail_category_config() {
     local cat_id="$1"
+    local tr_main_menu=$(translate "tr-tui-main-menu")
+    local cat_title=$(get_setup_category_title "$cat_id")
+    local breadcrumb=$(build_breadcrumb "$tr_main_menu" "$cat_title")
+    
+    echo "[DEBUG] === whiptail_category_config START ===" >> /tmp/debug.log
+    echo "[DEBUG] cat_id=$cat_id, title=$cat_title" >> /tmp/debug.log
     
     while true; do
         if [ "$cat_id" = "internet-connection" ]; then
@@ -1317,14 +1323,35 @@ whiptail_category_config() {
             fi
         fi
         
+        echo "[DEBUG] Processing all items" >> /tmp/debug.log
         whiptail_process_items "$cat_id" ""
+        local processed=$?
         
-        local conn_type=$(grep "^connection_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-        if [ "$cat_id" = "internet-connection" ] && [ "$conn_type" = "auto" ]; then
-            continue
+        echo "[DEBUG] Items processed: $processed" >> /tmp/debug.log
+        
+        if [ $processed -eq 1 ]; then
+            echo "[DEBUG] User cancelled, returning" >> /tmp/debug.log
+            return 0
         fi
         
+        local conn_type=$(grep "^connection_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+        if [ "$cat_id" = "internet-connection" ]; then
+            if [ "$conn_type" = "auto" ]; then
+                continue
+            elif [ "$conn_type" = "dhcp" ]; then
+                show_msgbox "$breadcrumb" "DHCP"
+            fi
+        fi
+        
+        echo "[DEBUG] SETUP_VARS after processing:" >> /tmp/debug.log
+        cat "$SETUP_VARS" >> /tmp/debug.log 2>&1
+
+        echo "[DEBUG] About to call auto_add_conditional_packages for $cat_id" >> /tmp/debug.log
         auto_add_conditional_packages "$cat_id"
+        echo "[DEBUG] After auto_add_conditional_packages" >> /tmp/debug.log
+        echo "[DEBUG] Selected packages:" >> /tmp/debug.log
+        cat "$SELECTED_PACKAGES" >> /tmp/debug.log 2>&1
+        echo "[DEBUG] === whiptail_category_config END ===" >> /tmp/debug.log
         break
     done
 }
