@@ -2230,7 +2230,6 @@ aios_light_main() {
     
     if [ "$UI_MODE" = "whiptail" ]; then
         whiptail_device_info
-        show_auto_detection_if_available
         whiptail_main_menu
     else
         simple_device_info
