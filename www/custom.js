@@ -424,7 +424,7 @@ window.updateImages = function(version, mobj) {
 // ==================== setup.json処理 ====================
 async function loadSetupConfig() {
     try {
-        const url = config?.setup_db_path || 'uci-defaults/setup.json';
+        const url = config.setup_db_path;
         const response = await fetch(url + '?t=' + Date.now());
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         
@@ -3161,7 +3161,7 @@ async function fetchToHData() {
 // ==================== パッケージデータベース ====================
 async function loadPackageDatabase() {
     try {
-        const url = config?.packages_db_path || 'packages/packages.json';
+        const url = config.packages_db_path;
         const response = await fetch(url);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         state.packages.json = await response.json();
