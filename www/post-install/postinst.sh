@@ -11,8 +11,6 @@ else
     exit 1
 fi
 
-echo "Detected package manager: $PKG_MGR"
-
 MISSING_PKGS=""
 for pkg in $PACKAGES; do
     if [ "$PKG_MGR" = "opkg" ]; then
@@ -27,8 +25,6 @@ for pkg in $PACKAGES; do
 done
 
 if [ -n "$MISSING_PKGS" ]; then
-    echo "Installing missing packages:$MISSING_PKGS"
-    
     if [ "$PKG_MGR" = "opkg" ]; then
         opkg update
         opkg install $MISSING_PKGS
@@ -36,10 +32,6 @@ if [ -n "$MISSING_PKGS" ]; then
         apk update
         apk add $MISSING_PKGS
     fi
-    
-    echo "Package installation completed"
-else
-    echo "All packages are already installed"
 fi
 
 exit 0
