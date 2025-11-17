@@ -941,6 +941,10 @@ whiptail_show_network_info() {
         info="${info}\n\n$(translate 'tr-tui-use-auto-config')"
         
         if show_yesno "$breadcrumb" "$info"; then
+            echo "[DEBUG] Writing MAP-E params..." >> /tmp/debug.log
+            echo "[DEBUG] MAPE_BR=$MAPE_BR" >> /tmp/debug.log
+            echo "[DEBUG] MAPE_GUA_PREFIX=$MAPE_GUA_PREFIX" >> /tmp/debug.log
+            
             sed -i "/^connection_type=/d" "$SETUP_VARS"
             echo "connection_type='auto'" >> "$SETUP_VARS"
             
@@ -953,6 +957,9 @@ whiptail_show_network_info() {
             [ -n "$MAPE_EALEN" ] && echo "mape_ealen='$MAPE_EALEN'" >> "$SETUP_VARS"
             [ -n "$MAPE_PSIDLEN" ] && echo "mape_psidlen='$MAPE_PSIDLEN'" >> "$SETUP_VARS"
             [ -n "$MAPE_PSID_OFFSET" ] && echo "mape_psid_offset='$MAPE_PSID_OFFSET'" >> "$SETUP_VARS"
+            
+            echo "[DEBUG] SETUP_VARS after write:" >> /tmp/debug.log
+            cat "$SETUP_VARS" >> /tmp/debug.log
         fi
         
     elif [ "$DETECTED_CONN_TYPE" = "DS-Lite" ] && [ -n "$DSLITE_AFTR" ]; then
