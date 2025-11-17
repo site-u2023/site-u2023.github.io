@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1117.1648"
+VERSION="R7.1117.1658"
 
 # ============================================
 # Configuration Management
@@ -2106,7 +2106,7 @@ simple_main_menu() {
     while true; do
         clear
         echo "========================================"
-        echo "  OpenWrt Setup Tool v$VERSION"
+        echo "  aios-tui Vr.$VERSION"
         echo "========================================"
         echo ""
         echo "Device: $DEVICE_MODEL"
@@ -2158,17 +2158,13 @@ simple_main_menu() {
 aios_light_main() {
     clear
     echo "==========================================="
-    echo "  OpenWrt Device Setup Tool v$VERSION"
+    echo "  aios-tui Vr.$VERSION"
     echo "==========================================="
     echo ""
-    
-    echo "Package manager: $PKG_MGR"
     
     init
     
     get_extended_device_info
-
-    apply_api_defaults
     
     echo "Fetching language: ${AUTO_LANGUAGE:-en}"
     if ! download_language_json "${AUTO_LANGUAGE:-en}"; then
@@ -2207,6 +2203,8 @@ aios_light_main() {
             echo "[DEBUG] Set mape_type=pd (no GUA detected)" >> /tmp/debug.log
         fi
     fi
+    
+    apply_api_defaults
     
     for cat_id in $(get_setup_categories); do
         auto_add_conditional_packages "$cat_id"
