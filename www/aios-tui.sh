@@ -195,6 +195,11 @@ simple_show_menu() {
     echo "$choice"
 }
 
+trim_message() {
+    local msg="$1"
+    echo "$$ msg" | sed '/^ $$/N;/^\n$/D' | awk 'BEGIN{RS="";ORS="\n\n"}1' | sed '$$ s/\n $$//' | head -c -1
+}
+
 # ============================================
 # UI Mode Selection
 # ============================================
@@ -944,7 +949,9 @@ whiptail_show_network_info() {
         [ -n "$MAPE_PSIDLEN" ] && info="${info}option psidlen $MAPE_PSIDLEN\n"
         [ -n "$MAPE_PSID_OFFSET" ] && info="${info}option offset $MAPE_PSID_OFFSET\n"
         
-        info="${info}\n$(translate 'tr-tui-use-auto-config')"
+        info="${info}\n\n$(translate 'tr-tui-use-auto-config')"
+        
+        info=$(trim_message "$info")
         
         if show_yesno "$breadcrumb" "$info"; then
             sed -i "/^connection_type=/d" "$SETUP_VARS"
@@ -1350,7 +1357,9 @@ whiptail_category_config() {
             if [ "$conn_type" = "auto" ]; then
                 continue
             elif [ "$conn_type" = "dhcp" ]; then
-                show_msgbox "$breadcrumb" "$(translate 'tr-dhcp'):\nDHCP"
+                local dhcp_msg="$(translate 'tr-dhcp'):\nDHCP\n"
+                dhcp_msg=$(trim_message "$dhcp_msg")
+                show_msgbox "$breadcrumb" "$dhcp_msg"
             fi
         fi
         
