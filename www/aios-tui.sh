@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1117.1511"
+VERSION="R7.1117.1513"
 
 # ============================================
 # Configuration Management
@@ -916,7 +916,7 @@ generate_files() {
         return 1
     fi
     
-    # Generate variable definitions and insert into postinst.sh
+    # Generate postinst.sh
     {
         sed -n '1,/^# BEGIN_VARIABLE_DEFINITIONS/p' "$OUTPUT_DIR/postinst.sh.tmp"
         
@@ -949,7 +949,7 @@ generate_files() {
         echo ""
         
         if wget -q -O - "$SETUP_TEMPLATE_URL" | sed '1,/^# END_VARS/d' >> "$OUTPUT_DIR/setup.sh.tmp"; then
-            cat "$OUTPUT_DIR/setup.sh.tmp" >> "$OUTPUT_DIR/setup.sh"
+            cat "$OUTPUT_DIR/setup.sh.tmp"
             rm -f "$OUTPUT_DIR/setup.sh.tmp"
         else
             echo "# Failed to download setup template"
@@ -957,6 +957,7 @@ generate_files() {
             echo "# $SETUP_TEMPLATE_URL"
         fi
     } > "$OUTPUT_DIR/setup.sh"
+    
     chmod +x "$OUTPUT_DIR/setup.sh"
 }
 
