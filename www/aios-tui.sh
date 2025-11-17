@@ -147,7 +147,10 @@ show_msgbox() {
     local message="$2"
     local ok_btn="${3:-$(translate "$DEFAULT_BTN_OK")}"
     
-    whiptail --title "$breadcrumb" --ok-button "$ok_btn" --msgbox "$message" $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH
+    local lines=$(echo -e "$message" | wc -l)
+    local height=$((lines + 7))
+    
+    whiptail --title "$breadcrumb" --ok-button "$ok_btn" --msgbox "$message" $height $WHIPTAIL_WIDTH
 }
 
 show_checklist() {
