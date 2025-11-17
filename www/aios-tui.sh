@@ -929,7 +929,7 @@ whiptail_show_network_info() {
     
     if [ "$DETECTED_CONN_TYPE" = "mape" ] && [ -n "$MAPE_BR" ]; then
         local tr_auto_detection=$(translate "tr-auto-detection")
-        local info="${tr_auto_detection}: MAP-E\n"
+        local info="${tr_auto_detection}: MAP-E\n\n"
         [ -n "$ISP_NAME" ] && info="${info}${tr_isp}: $ISP_NAME\n"
         [ -n "$ISP_AS" ] && info="${info}${tr_as}: $ISP_AS\n"
         
