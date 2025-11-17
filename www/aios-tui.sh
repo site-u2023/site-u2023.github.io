@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1117.1658"
+VERSION="R7.1117.1716"
 
 # ============================================
 # Configuration Management
@@ -2162,9 +2162,11 @@ aios_light_main() {
     echo "  aios-tui Vr.$VERSION"
     echo "==========================================="
     echo ""
-    
+
+    echo "Fetching config.js"
     init
-    
+
+    echo "Fetching auto-config API"
     get_extended_device_info
     
     echo "Fetching language: ${AUTO_LANGUAGE:-en}"
