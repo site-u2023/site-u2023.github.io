@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1117.1810"
+VERSION="R7.1117.1848"
 
 # ============================================
 # Configuration Management
@@ -343,6 +343,16 @@ get_device_info() {
     [ -z "$DEVICE_TARGET" ] && DEVICE_TARGET="unknown/unknown"
 }
 
+reset_detected_conn_type() {
+    if [ -n "$MAPE_BR" ] && [ -n "$MAPE_EALEN" ]; then
+        DETECTED_CONN_TYPE="mape"
+    elif [ -n "$DSLITE_AFTR" ]; then
+        DETECTED_CONN_TYPE="dslite"
+    else
+        DETECTED_CONN_TYPE="unknown"
+    fi
+}
+
 get_extended_device_info() {
     get_device_info
     
@@ -374,13 +384,7 @@ get_extended_device_info() {
     
     DSLITE_AFTR=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.aftr.aftrIpv6Address' 2>/dev/null)
     
-    if [ -n "$MAPE_BR" ] && [ -n "$MAPE_EALEN" ]; then
-        DETECTED_CONN_TYPE="MAP-E"
-    elif [ -n "$DSLITE_AFTR" ]; then
-        DETECTED_CONN_TYPE="DS-Lite"
-    else
-        DETECTED_CONN_TYPE="Unknown"
-    fi
+    reset_detected_conn_type
     
     DEVICE_MEM=$(awk '/MemTotal/{printf "%.0f MB", $2/1024}' /proc/meminfo 2>/dev/null)
     DEVICE_CPU=$(grep -m1 "model name" /proc/cpuinfo | cut -d: -f2 | xargs 2>/dev/null)
@@ -439,7 +443,7 @@ apply_api_defaults() {
         fi
         
         if grep -q "^connection_type='auto'" "$SETUP_VARS" 2>/dev/null; then
-            if [ "$DETECTED_CONN_TYPE" = "MAP-E" ] && [ -n "$MAPE_BR" ]; then
+            if [ "$DETECTED_CONN_TYPE" = "mape" ] && [ -n "$MAPE_BR" ]; then
                 sed -i "s/^connection_type='auto'/connection_type='mape'/" "$SETUP_VARS"
                 
                 [ -n "$MAPE_GUA_PREFIX" ] && ! grep -q "^mape_gua_prefix=" "$SETUP_VARS" 2>/dev/null && \
@@ -469,7 +473,7 @@ apply_api_defaults() {
                 [ -n "$MAPE_PSID_OFFSET" ] && ! grep -q "^mape_psid_offset=" "$SETUP_VARS" 2>/dev/null && \
                     echo "mape_psid_offset='$MAPE_PSID_OFFSET'" >> "$SETUP_VARS"
                 
-            elif [ "$DETECTED_CONN_TYPE" = "DS-Lite" ] && [ -n "$DSLITE_AFTR" ]; then
+            elif [ "$DETECTED_CONN_TYPE" = "dslite" ] && [ -n "$DSLITE_AFTR" ]; then
                 grep -q "^dslite_aftr_address=" "$SETUP_VARS" 2>/dev/null || \
                     echo "dslite_aftr_address='$DSLITE_AFTR'" >> "$SETUP_VARS"
             fi
@@ -655,10 +659,10 @@ get_effective_connection_type() {
     local conn_type=$(grep "^connection_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
     
     if [ "$conn_type" = "auto" ]; then
-        if [ "$DETECTED_CONN_TYPE" = "MAP-E" ] && [ -n "$MAPE_BR" ]; then
+        if [ "$DETECTED_CONN_TYPE" = "mape" ] && [ -n "$MAPE_BR" ]; then
             echo "mape"
             return 0
-        elif [ "$DETECTED_CONN_TYPE" = "DS-Lite" ] && [ -n "$DSLITE_AFTR" ]; then
+        elif [ "$DETECTED_CONN_TYPE" = "dslite" ] && [ -n "$DSLITE_AFTR" ]; then
             echo "dslite"
             return 0
         else
@@ -922,7 +926,7 @@ whiptail_show_network_info() {
     local tr_mape_notice=$(translate "tr-mape-notice1")
     local tr_dslite_notice=$(translate "tr-dslite-notice1")
     
-    if [ "$DETECTED_CONN_TYPE" = "MAP-E" ] && [ -n "$MAPE_BR" ]; then
+    if [ "$DETECTED_CONN_TYPE" = "mape" ] && [ -n "$MAPE_BR" ]; then
         local tr_auto_detection=$(translate "tr-auto-detection")
         local info="${tr_auto_detection}: MAP-E\n\n"
         [ -n "$ISP_NAME" ] && info="${info}${tr_isp}: $ISP_NAME\n"
@@ -958,16 +962,10 @@ whiptail_show_network_info() {
             return 0
         else
             if [ -n "$MAPE_BR" ] && [ -n "$MAPE_EALEN" ]; then
-                DETECTED_CONN_TYPE="MAP-E"
-            elif [ -n "$DSLITE_AFTR" ]; then
-                DETECTED_CONN_TYPE="DS-Lite"
-            else
-                DETECTED_CONN_TYPE="Unknown"
-            fi
             return 1
         fi
         
-    elif [ "$DETECTED_CONN_TYPE" = "DS-Lite" ] && [ -n "$DSLITE_AFTR" ]; then
+    elif [ "$DETECTED_CONN_TYPE" = "dslite" ] && [ -n "$DSLITE_AFTR" ]; then
         local tr_auto_detection=$(translate "tr-auto-detection")
         local info="${tr_auto_detection}: DS-Lite\n\n"
         [ -n "$ISP_NAME" ] && info="${info}${tr_isp}: $ISP_NAME\n"
@@ -985,12 +983,6 @@ whiptail_show_network_info() {
             return 0
         else
             if [ -n "$MAPE_BR" ] && [ -n "$MAPE_EALEN" ]; then
-                DETECTED_CONN_TYPE="MAP-E"
-            elif [ -n "$DSLITE_AFTR" ]; then
-                DETECTED_CONN_TYPE="DS-Lite"
-            else
-                DETECTED_CONN_TYPE="Unknown"
-            fi
             return 1
         fi
         
@@ -1061,7 +1053,7 @@ whiptail_process_items() {
                 
                 local options=$(get_setup_item_options "$item_id")
                 
-                if [ "$variable" = "connection_type" ] && [ "$DETECTED_CONN_TYPE" = "Unknown" ]; then
+                if [ "$variable" = "connection_type" ] && [ "$DETECTED_CONN_TYPE" = "unknown" ]; then
                     options=$(echo "$options" | grep -v "^auto$")
                     echo "[DEBUG] Removed 'auto' option due to Unknown connection type" >> /tmp/debug.log
                 fi
@@ -1707,7 +1699,7 @@ simple_show_network_info() {
     echo "========================================"
     echo ""
     
-    if [ -z "$DETECTED_CONN_TYPE" ] || [ "$DETECTED_CONN_TYPE" = "Unknown" ]; then
+    if [ -z "$DETECTED_CONN_TYPE" ] || [ "$DETECTED_CONN_TYPE" = "unknown" ]; then
         echo "No configuration detected."
         echo ""
         printf "Press Enter to continue..."
@@ -1724,7 +1716,7 @@ simple_show_network_info() {
     [ -n "$ISP_AS" ] && echo "${tr_as}: $ISP_AS"
     echo ""
     
-    if [ "$DETECTED_CONN_TYPE" = "MAP-E" ] && [ -n "$MAPE_BR" ]; then
+    if [ "$DETECTED_CONN_TYPE" = "mape" ] && [ -n "$MAPE_BR" ]; then
         echo "MAP-E Configuration:"
         [ -n "$MAPE_GUA_PREFIX" ] && echo "  option ip6prefix_gua $MAPE_GUA_PREFIX"
         echo "  option peeraddr $MAPE_BR"
@@ -1735,7 +1727,7 @@ simple_show_network_info() {
         [ -n "$MAPE_EALEN" ] && echo "  option ealen $MAPE_EALEN"
         [ -n "$MAPE_PSIDLEN" ] && echo "  option psidlen $MAPE_PSIDLEN"
         [ -n "$MAPE_PSID_OFFSET" ] && echo "  option offset $MAPE_PSID_OFFSET"
-    elif [ "$DETECTED_CONN_TYPE" = "DS-Lite" ] && [ -n "$DSLITE_AFTR" ]; then
+    elif [ "$DETECTED_CONN_TYPE" = "dslite" ] && [ -n "$DSLITE_AFTR" ]; then
         echo "DS-Lite Configuration:"
         echo "  option peeraddr $DSLITE_AFTR"
     fi
@@ -2216,7 +2208,7 @@ aios_light_main() {
     echo "net_optimizer='auto'" >> "$SETUP_VARS"
     echo "enable_dnsmasq='auto'" >> "$SETUP_VARS"
     
-    if [ "$DETECTED_CONN_TYPE" = "MAP-E" ]; then
+    if [ "$DETECTED_CONN_TYPE" = "mape" ]; then
         if [ -n "$MAPE_GUA_PREFIX" ]; then
             echo "mape_type='gua'" >> "$SETUP_VARS"
             echo "[DEBUG] Set mape_type=gua with prefix: $MAPE_GUA_PREFIX" >> /tmp/debug.log
