@@ -37,9 +37,9 @@ var config = {
   // UCI-defaults setup.sh URL
   information_path: "auto-config/information.json",
   // packages.sh database URL
-  packages_db_path: "post-install/packages.json",
+  packages_db_path: "post-install/postinst.json",
   // packages.sh template URL
-  postinst_template_path: "post-install/packages.sh",
+  postinst_template_path: "post-install/postinst.sh",
   // setup.sh database URL
   setup_db_path: "uci-defaults/setup.json",
   // setup.sh template URL
