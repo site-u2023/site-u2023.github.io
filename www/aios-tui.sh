@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1117.2319"
+VERSION="R7.1117.2322"
 
 # ============================================
 # Configuration Management
@@ -148,7 +148,7 @@ show_msgbox() {
     local ok_btn="${3:-$(translate "$DEFAULT_BTN_OK")}"
     
     local lines=$(echo -e "$message" | wc -l)
-    local height=$((lines + 5))
+    local height=$((lines + 6))
     
     whiptail --title "$breadcrumb" --ok-button "$ok_btn" --msgbox "$message" $height $WHIPTAIL_WIDTH
 }
