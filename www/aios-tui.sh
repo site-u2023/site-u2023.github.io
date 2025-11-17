@@ -380,7 +380,7 @@ download_setup_json() {
     return 0
 }
 
-download_packages() {
+download_postinst_json() {
     if ! wget -q -O "$PACKAGES_JSON" "${PACKAGES_URL}?t=$(date +%s)"; then
         echo "Failed to download"
         return 1
@@ -2260,9 +2260,9 @@ aios_light_main() {
         exit 1
     fi
     
-    echo "Fetching packages.json"
-    if ! download_packages; then
-        echo "Warning: Failed to download packages.json"
+    echo "Fetching postinst.json"
+    if ! download_postinst_json; then
+        echo "Warning: Failed to download postinst.json"
         echo "Package selection will not be available."
         sleep 2
     fi
