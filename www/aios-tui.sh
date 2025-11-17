@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1117.1546"
+VERSION="R7.1117.1604
 
 # ============================================
 # Configuration Management
@@ -67,10 +67,6 @@ SETUP_VARS="$CONFIG_DIR/setup_vars.sh"
 OUTPUT_DIR="/tmp"
 
 TRANSLATION_CACHE="$CONFIG_DIR/translation_cache.txt"
-
-PKG_MGR=""
-MISSING_WHIPTAIL_PKGS=""
-WHIPTAIL_PACKAGES="whiptail"
 
 # ============================================
 # UI Configuration Variables
@@ -199,53 +195,6 @@ simple_show_menu() {
 }
 
 # ============================================
-# Package Manager Detection
-# ============================================
-
-detect_package_manager() {
-    if command -v opkg >/dev/null 2>&1; then
-        PKG_MGR="opkg"
-    elif command -v apk >/dev/null 2>&1; then
-        PKG_MGR="apk"
-    else
-        echo "Warning: No supported package manager found"
-        PKG_MGR="none"
-    fi
-}
-
-check_packages_installed() {
-    MISSING_WHIPTAIL_PKGS=""
-    
-    for pkg in "$@"; do
-        if [ "$PKG_MGR" = "opkg" ]; then
-            opkg list-installed | grep -q "^${pkg}[[:space:]]*-" || MISSING_WHIPTAIL_PKGS="$MISSING_WHIPTAIL_PKGS $pkg"
-        elif [ "$PKG_MGR" = "apk" ]; then
-            apk info -e "$pkg" >/dev/null 2>&1 || MISSING_WHIPTAIL_PKGS="$MISSING_WHIPTAIL_PKGS $pkg"
-        fi
-    done
-    
-    [ -z "$MISSING_WHIPTAIL_PKGS" ]
-}
-
-install_package() {
-    case "$PKG_MGR" in
-        opkg)
-            opkg update
-            opkg install "$@" || return 1
-            ;;
-        apk)
-            apk update
-            apk add "$@" || return 1
-            ;;
-        *)
-            echo "Cannot install packages: no supported package manager"
-            return 1
-            ;;
-    esac
-    return 0
-}
-
-# ============================================
 # UI Mode Selection
 # ============================================
 
@@ -267,30 +216,13 @@ select_ui_mode() {
     printf "$(translate 'tr-tui-ui-choice') [1]: "
     read choice
     
-    echo "[DEBUG] User choice: $choice" >> /tmp/debug.log
-    
     if [ "$choice" = "2" ]; then
         UI_MODE="simple"
-        echo "[DEBUG] User selected simple mode, UI_MODE=$UI_MODE" >> /tmp/debug.log
     else
-        echo "$(translate 'tr-tui-ui-installing')"
-        echo "[DEBUG] Installing: $MISSING_WHIPTAIL_PKGS" >> /tmp/debug.log
-        
-        if install_package $MISSING_WHIPTAIL_PKGS; then
-            hash -r
-            echo "$(translate 'tr-tui-ui-install-success')"
-            UI_MODE="whiptail"
-            echo "[DEBUG] install SUCCESS, UI_MODE=$UI_MODE" >> /tmp/debug.log
-            sleep 1
-        else
-            echo "$(translate 'tr-tui-ui-install-failed')"
-            UI_MODE="simple"
-            echo "[DEBUG] install FAILED, UI_MODE=$UI_MODE" >> /tmp/debug.log
-            sleep 2
-        fi
+        echo "whiptail" > "$SELECTED_PACKAGES"
+        sh "$OUTPUT_DIR/postinst.sh"
+        UI_MODE="whiptail"
     fi
-    
-    echo "[DEBUG] select_ui_mode END, final UI_MODE=$UI_MODE" >> /tmp/debug.log
 }
 
 # ============================================
@@ -2220,7 +2152,6 @@ aios_light_main() {
     echo "==========================================="
     echo ""
     
-    detect_package_manager
     echo "Package manager: $PKG_MGR"
     
     init
