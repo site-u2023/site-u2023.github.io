@@ -1080,13 +1080,7 @@ whiptail_process_items() {
                     echo "[DEBUG] Selected: $selected_opt" >> /tmp/debug.log
                     sed -i "/^${variable}=/d" "$SETUP_VARS"
                     echo "${variable}='${selected_opt}'" >> "$SETUP_VARS"
-                    echo "[DEBUG] Saved to SETUP_VARS" >> /tmp/debug.log
-                    
-                    # connection_typeで「auto」が選択されたら自動検出画面を表示
-                    if [ "$variable" = "connection_type" ] && [ "$selected_opt" = "auto" ]; then
-                        whiptail_show_network_info || true
-                    fi
-                    
+                    echo "[DEBUG] Saved to SETUP_VARS" >> /tmp/debug.log     
                     auto_add_conditional_packages "$cat_id"
                 fi
                 ;;
@@ -1303,21 +1297,28 @@ whiptail_process_items() {
     return $items_processed
 }
 
+show_auto_detection_if_available() {
+    if [ "$DETECTED_CONN_TYPE" != "unknown" ] && [ -n "$DETECTED_CONN_TYPE" ]; then
+        if whiptail_show_network_info; then
+            auto_add_conditional_packages "internet-connection"
+            return 0
+        fi
+    fi
+    return 1
+}
+
 whiptail_category_config() {
     local cat_id="$1"
     local tr_main_menu=$(translate "tr-tui-main-menu")
     local cat_title=$(get_setup_category_title "$cat_id")
-    
-    echo "[DEBUG] === whiptail_category_config START ===" >> /tmp/debug.log
-    echo "[DEBUG] cat_id=$cat_id, title=$cat_title" >> /tmp/debug.log
-    
+
     if [ "$cat_id" = "internet-connection" ]; then
-        if whiptail_show_network_info; then
-            auto_add_conditional_packages "$cat_id"
-            return 0
+        if show_auto_detection_if_available; then
         fi
     fi
     
+    echo "[DEBUG] === whiptail_category_config START ===" >> /tmp/debug.log
+    echo "[DEBUG] cat_id=$cat_id, title=$cat_title" >> /tmp/debug.log 
     echo "[DEBUG] Processing all items" >> /tmp/debug.log
     whiptail_process_items "$cat_id" ""
     local processed=$?
@@ -2228,6 +2229,7 @@ aios_light_main() {
     
     if [ "$UI_MODE" = "whiptail" ]; then
         whiptail_device_info
+        show_auto_detection_if_available
         whiptail_main_menu
     else
         simple_device_info
