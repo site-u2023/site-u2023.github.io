@@ -36,19 +36,15 @@ load_config_from_js() {
     BASE_URL=$(grep -E '(base_url|base_path):' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/' | tr '\n' '/' | sed 's/\/$//')
     AUTO_CONFIG_API_URL=$(grep 'auto_config_api_url:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
     PACKAGES_DB_PATH=$(grep 'packages_db_path:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
+    POSTINST_TEMPLATE_PATH=$(grep 'postinst_template_path:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
     SETUP_DB_PATH=$(grep 'setup_db_path:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
     SETUP_TEMPLATE_PATH=$(grep 'setup_template_path:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
     LANGUAGE_PATH_TEMPLATE=$(grep 'language_path_template:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
     
     PACKAGES_URL="${BASE_URL}/${PACKAGES_DB_PATH}"
+    POSTINST_TEMPLATE_URL="${BASE_URL}/${POSTINST_TEMPLATE_PATH}"
     SETUP_JSON_URL="${BASE_URL}/${SETUP_DB_PATH}"
     SETUP_TEMPLATE_URL="${BASE_URL}/${SETUP_TEMPLATE_PATH}"
-    
-    echo "[DEBUG] Config loaded: BASE_URL=$BASE_URL" >> /tmp/debug.log
-    echo "[DEBUG] PACKAGES_URL=$PACKAGES_URL" >> /tmp/debug.log
-    echo "[DEBUG] SETUP_JSON_URL=$SETUP_JSON_URL" >> /tmp/debug.log
-    echo "[DEBUG] SETUP_TEMPLATE_URL=$SETUP_TEMPLATE_URL" >> /tmp/debug.log
-    echo "[DEBUG] AUTO_CONFIG_API_URL=$AUTO_CONFIG_API_URL" >> /tmp/debug.log
     
     return 0
 }
