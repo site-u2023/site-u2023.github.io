@@ -3,12 +3,11 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1117.1438"
+VERSION="R7.1117.1449"
 
 # ============================================
 # Configuration Management
 # ============================================
-
 CONFIG_DIR="/tmp/device-setup"
 BOOTSTRAP_URL="https://site-u.pages.dev/www"
 
