@@ -1076,6 +1076,11 @@ whiptail_process_items() {
                     echo "${variable}='${selected_opt}'" >> "$SETUP_VARS"
                     echo "[DEBUG] Saved to SETUP_VARS" >> /tmp/debug.log
                     
+                    # connection_typeで「auto」が選択されたら自動検出画面を表示
+                    if [ "$variable" = "connection_type" ] && [ "$selected_opt" = "auto" ]; then
+                        whiptail_show_network_info
+                    fi
+                    
                     auto_add_conditional_packages "$cat_id"
                 fi
                 ;;
