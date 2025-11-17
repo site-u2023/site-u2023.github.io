@@ -46,6 +46,13 @@ load_config_from_js() {
     SETUP_JSON_URL="${BASE_URL}/${SETUP_DB_PATH}"
     SETUP_TEMPLATE_URL="${BASE_URL}/${SETUP_TEMPLATE_PATH}"
     
+    echo "[DEBUG] Config loaded: BASE_URL=$BASE_URL" >> /tmp/debug.log
+    echo "[DEBUG] PACKAGES_URL=$PACKAGES_URL" >> /tmp/debug.log
+    echo "[DEBUG] POSTINST_TEMPLATE_URL=$POSTINST_TEMPLATE_URL" >> /tmp/debug.log
+    echo "[DEBUG] SETUP_JSON_URL=$SETUP_JSON_URL" >> /tmp/debug.log
+    echo "[DEBUG] SETUP_TEMPLATE_URL=$SETUP_TEMPLATE_URL" >> /tmp/debug.log
+    echo "[DEBUG] AUTO_CONFIG_API_URL=$AUTO_CONFIG_API_URL" >> /tmp/debug.log
+    
     return 0
 }
 
