@@ -373,6 +373,7 @@ translate() {
 
 download_setup_json() {
     if [ ! -f "$SETUP_JSON" ]; then
+        echo "Downloading setup.json"
         if ! wget -q -O "$SETUP_JSON" "${SETUP_JSON_URL}?t=$(date +%s)"; then
             echo "Failed to download setup.json"
             return 1
@@ -382,7 +383,7 @@ download_setup_json() {
 }
 
 download_packages() {
-    echo "$(translate 'tr-loading')"
+    echo "Downloading setup.json"
     if ! wget -q -O "$PACKAGES_JSON" "${PACKAGES_URL}?t=$(date +%s)"; then
         echo "Failed to download"
         return 1
