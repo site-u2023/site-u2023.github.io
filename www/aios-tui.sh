@@ -1003,9 +1003,17 @@ whiptail_show_network_info() {
 whiptail_process_items() {
     local cat_id="$1"
     local parent_items="$2"
-    local breadcrumb="$3"
     
     echo "[DEBUG] whiptail_process_items: cat_id=$cat_id" >> /tmp/debug.log
+    
+    local tr_main_menu=$(translate "tr-tui-main-menu")
+    local cat_title=$(get_setup_category_title "$cat_id")
+    local breadcrumb=$(build_breadcrumb "$tr_main_menu" "$cat_title")
+    
+    if [ "$cat_id" = "internet-connection" ]; then
+        local conn_type_label=$(get_setup_item_label "connection-type")
+        breadcrumb=$(build_breadcrumb "$tr_main_menu" "$cat_title" "$conn_type_label")
+    fi
     
     local items
     if [ -z "$parent_items" ]; then
