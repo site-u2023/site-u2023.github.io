@@ -3,31 +3,32 @@
 # BEGIN_VARIABLE_DEFINITIONS
 # END_VARIABLE_DEFINITIONS
 
-# Detect package manager (opkg or apk)
 if command -v opkg >/dev/null 2>&1; then
-    PKG_MGR=opkg
-    echo "Detected package manager: opkg"
-    opkg update >/dev/null 2>&1
+    PKG_MGR="opkg"
 elif command -v apk >/dev/null 2>&1; then
-    PKG_MGR=apk
-    echo "Detected package manager: apk"
-    apk update >/dev/null 2>&1
+    PKG_MGR="apk"
 else
-    echo "Error: No supported package manager found (opkg or apk)"
+    echo "Error: No supported package manager found"
     exit 1
 fi
 
-# Install packages
-if [ -n "$PACKAGES" ]; then
-    echo "Installing packages: $PACKAGES"
+MISSING_PKGS=""
+for pkg in $PACKAGES; do
     if [ "$PKG_MGR" = "opkg" ]; then
-        opkg install $PACKAGES >/dev/null 2>&1
+        opkg list-installed | grep -q "^${pkg}[[:space:]]*-" || MISSING_PKGS="$MISSING_PKGS $pkg"
     elif [ "$PKG_MGR" = "apk" ]; then
-        apk add $PACKAGES >/dev/null 2>&1
+        apk info -e "$pkg" >/dev/null 2>&1 || MISSING_PKGS="$MISSING_PKGS $pkg"
     fi
-else
-    echo "No packages to install"
+done
+
+if [ -n "$MISSING_PKGS" ]; then
+    if [ "$PKG_MGR" = "opkg" ]; then
+        opkg update >/dev/null 2>&1
+        opkg install $MISSING_PKGS >/dev/null 2>&1
+    elif [ "$PKG_MGR" = "apk" ]; then
+        apk update >/dev/null 2>&1
+        apk add $MISSING_PKGS >/dev/null 2>&1
+    fi
 fi
 
-echo "Package installation completed"
 exit 0
