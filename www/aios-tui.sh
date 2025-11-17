@@ -919,7 +919,8 @@ whiptail_device_info_titled() {
 whiptail_show_network_info() {
     local tr_main_menu=$(translate "tr-tui-main-menu")
     local tr_internet_connection=$(translate "tr-internet-connection")
-    local breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_internet_connection")
+    local conn_type_label=$(get_setup_item_label "connection-type")
+    local breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_internet_connection" "$conn_type_label")
     
     local tr_isp=$(translate "tr-isp")
     local tr_as=$(translate "tr-as")
@@ -1313,6 +1314,11 @@ whiptail_category_config() {
     local cat_title=$(get_setup_category_title "$cat_id")
     local breadcrumb=$(build_breadcrumb "$tr_main_menu" "$cat_title")
     
+    if [ "$cat_id" = "internet-connection" ]; then
+        local conn_type_label=$(get_setup_item_label "connection-type")
+        breadcrumb=$(build_breadcrumb "$tr_main_menu" "$cat_title" "$conn_type_label")
+    fi
+    
     echo "[DEBUG] === whiptail_category_config START ===" >> /tmp/debug.log
     echo "[DEBUG] cat_id=$cat_id, title=$cat_title" >> /tmp/debug.log
     
@@ -1339,14 +1345,12 @@ whiptail_category_config() {
             if [ "$conn_type" = "auto" ]; then
                 continue
             elif [ "$conn_type" = "dhcp" ]; then
-                local dhcp_breadcrumb=$(build_breadcrumb "$tr_main_menu" "$cat_title" "DHCP:")
-                show_msgbox "$dhcp_breadcrumb" ""
+                show_msgbox "$breadcrumb" "DHCP:"
             fi
         fi
         
         echo "[DEBUG] SETUP_VARS after processing:" >> /tmp/debug.log
         cat "$SETUP_VARS" >> /tmp/debug.log 2>&1
-
         echo "[DEBUG] About to call auto_add_conditional_packages for $cat_id" >> /tmp/debug.log
         auto_add_conditional_packages "$cat_id"
         echo "[DEBUG] After auto_add_conditional_packages" >> /tmp/debug.log
