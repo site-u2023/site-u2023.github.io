@@ -1314,6 +1314,7 @@ whiptail_category_config() {
 
     if [ "$cat_id" = "internet-connection" ]; then
         if show_auto_detection_if_available; then
+            return 0    
         fi
     fi
     
