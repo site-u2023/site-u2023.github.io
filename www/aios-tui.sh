@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1117.2059"
+VERSION="R7.1117.2108"
 
 # ============================================
 # Configuration Management
@@ -1350,7 +1350,8 @@ whiptail_category_config() {
             if [ "$conn_type" = "auto" ]; then
                 continue
             elif [ "$conn_type" = "dhcp" ]; then
-                show_msgbox "$breadcrumb" "DHCP:"
+                local dhcp_label=$(get_setup_item_option_label "connection-type" "dhcp")
+                show_msgbox "$breadcrumb" "${dhcp_label}:\n\nDHCP"
             fi
         fi
         
