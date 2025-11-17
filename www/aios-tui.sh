@@ -1078,7 +1078,7 @@ whiptail_process_items() {
                     
                     # connection_typeで「auto」が選択されたら自動検出画面を表示
                     if [ "$variable" = "connection_type" ] && [ "$selected_opt" = "auto" ]; then
-                        whiptail_show_network_info
+                        whiptail_show_network_info || true
                     fi
                     
                     auto_add_conditional_packages "$cat_id"
