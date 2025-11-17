@@ -1,4 +1,4 @@
-# packages.json 解説
+# postinst.json 解説
 
 ## 基本システム機能
 
