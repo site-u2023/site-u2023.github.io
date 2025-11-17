@@ -201,6 +201,19 @@ simple_show_menu() {
 select_ui_mode() {
     echo "[DEBUG] $(date): select_ui_mode START" >> /tmp/debug.log
     
+    echo "$WHIPTAIL_PACKAGES" | tr ' ' '\n' > "$SELECTED_PACKAGES"
+    generate_files
+    
+    MISSING_PKGS=$(sh -c '
+        PACKAGES="'"$WHIPTAIL_PACKAGES"'"
+        echo "$MISSING_PKGS"
+    ')
+    
+    if [ -z "$MISSING_PKGS" ]; then
+        UI_MODE="whiptail"
+        return 0
+    fi
+    
     echo "$(translate 'tr-tui-ui-mode-select')"
     echo "1) $(translate 'tr-tui-ui-whiptail')"
     echo "2) $(translate 'tr-tui-ui-simple')"
@@ -211,9 +224,6 @@ select_ui_mode() {
     if [ "$choice" = "2" ]; then
         UI_MODE="simple"
     else
-        # WHIPTAIL_PACKAGESの全パッケージをpostinst.shに渡す
-        echo "$WHIPTAIL_PACKAGES" | tr ' ' '\n' > "$SELECTED_PACKAGES"
-        generate_files
         sh "$OUTPUT_DIR/postinst.sh"
         UI_MODE="whiptail"
     fi
