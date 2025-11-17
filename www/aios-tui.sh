@@ -1007,12 +1007,6 @@ whiptail_process_items() {
     
     echo "[DEBUG] whiptail_process_items: cat_id=$cat_id" >> /tmp/debug.log
     
-    if [ -z "$breadcrumb" ]; then
-        local tr_main_menu=$(translate "tr-tui-main-menu")
-        local cat_title=$(get_setup_category_title "$cat_id")
-        breadcrumb=$(build_breadcrumb "$tr_main_menu" "$cat_title")
-    fi
-    
     local items
     if [ -z "$parent_items" ]; then
         items=$(get_setup_category_items "$cat_id")
@@ -1094,7 +1088,7 @@ whiptail_process_items() {
                 local nested=$(get_section_nested_items "$item_id")
                 if [ -n "$nested" ]; then
                     echo "[DEBUG] Nested items: $nested" >> /tmp/debug.log
-                    whiptail_process_items "$cat_id" "$nested"
+                    whiptail_process_items "$cat_id" "$nested" "$breadcrumb"
                     items_processed=$((items_processed + $?))
                 fi
                 ;;
