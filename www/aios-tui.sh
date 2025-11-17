@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1117.1618"
+VERSION="R7.1117.1638"
 
 # ============================================
 # Configuration Management
@@ -943,9 +943,6 @@ whiptail_show_network_info() {
         if show_yesno "$breadcrumb" "$info"; then
             sed -i "/^connection_type=/d" "$SETUP_VARS"
             echo "connection_type='auto'" >> "$SETUP_VARS"
-            return 0
-        else
-            return 1
         fi
         
     elif [ "$DETECTED_CONN_TYPE" = "DS-Lite" ] && [ -n "$DSLITE_AFTR" ]; then
@@ -962,9 +959,6 @@ whiptail_show_network_info() {
         if show_yesno "$breadcrumb" "$info"; then
             sed -i "/^connection_type=/d" "$SETUP_VARS"
             echo "connection_type='auto'" >> "$SETUP_VARS"
-            return 0
-        else
-            return 1
         fi
         
     else
@@ -976,7 +970,6 @@ whiptail_show_network_info() {
         info="${info}\n${tr_manual_config}"
         
         show_msgbox "$breadcrumb" "$info"
-        return 1
     fi
 }
 
@@ -1288,12 +1281,7 @@ whiptail_category_config() {
     echo "[DEBUG] cat_id=$cat_id, title=$cat_title" >> /tmp/debug.log
     
     if [ "$cat_id" = "internet-connection" ]; then
-        if whiptail_show_network_info; then
-            local breadcrumb=$(build_breadcrumb "$tr_main_menu" "$cat_title")
-            show_msgbox "$breadcrumb" "Auto-configuration applied!"
-            auto_add_conditional_packages "$cat_id"
-            return 0
-        fi
+        whiptail_show_network_info
     fi
     
     echo "[DEBUG] Processing all items" >> /tmp/debug.log
