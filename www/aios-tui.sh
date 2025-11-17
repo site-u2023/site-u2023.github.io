@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1117.1848"
+VERSION="R7.1117.1905"
 
 # ============================================
 # Configuration Management
@@ -961,7 +961,7 @@ whiptail_show_network_info() {
             
             return 0
         else
-            if [ -n "$MAPE_BR" ] && [ -n "$MAPE_EALEN" ]; then
+            reset_detected_conn_type
             return 1
         fi
         
@@ -982,7 +982,7 @@ whiptail_show_network_info() {
             echo "dslite_aftr_address='$DSLITE_AFTR'" >> "$SETUP_VARS"
             return 0
         else
-            if [ -n "$MAPE_BR" ] && [ -n "$MAPE_EALEN" ]; then
+            reset_detected_conn_type
             return 1
         fi
         
