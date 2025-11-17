@@ -495,10 +495,14 @@ apply_api_defaults() {
         
         local language=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
         if [ -n "$language" ] && [ "$language" != "en" ]; then
-            local prefixes=$(jsonfilter -i "$SETUP_JSON" -e '@.constants.language_prefixes_release[*]' 2>/dev/null)
-            for prefix in $prefixes; do
-                echo "${prefix}${language}" >> "$SELECTED_PACKAGES"
-            done
+            if [ -f "$SETUP_JSON" ]; then
+                jsonfilter -i "$SETUP_JSON" -e '@.constants.language_prefixes_release[*]' 2>/dev/null | while read prefix; do
+                    local pkg="${prefix}${language}"
+                    if ! grep -qx "$pkg" "$SELECTED_PACKAGES" 2>/dev/null; then
+                        echo "$pkg" >> "$SELECTED_PACKAGES"
+                    fi
+                done
+            fi
         fi
         
         if grep -q "^connection_type='auto'" "$SETUP_VARS" 2>/dev/null; then
