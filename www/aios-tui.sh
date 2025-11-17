@@ -1350,7 +1350,7 @@ whiptail_category_config() {
             if [ "$conn_type" = "auto" ]; then
                 continue
             elif [ "$conn_type" = "dhcp" ]; then
-                show_msgbox "$breadcrumb" "$(translate 'tr-dhcp'):\n\nDHCP"
+                show_menu "$breadcrumb" "$(translate 'tr-dhcp'):" "" "" "1" "DHCP"
             fi
         fi
         
