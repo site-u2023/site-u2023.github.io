@@ -373,7 +373,6 @@ translate() {
 
 download_setup_json() {
     if [ ! -f "$SETUP_JSON" ]; then
-        echo "$(translate 'tr-loading')"
         if ! wget -q -O "$SETUP_JSON" "${SETUP_JSON_URL}?t=$(date +%s)"; then
             echo "Failed to download setup.json"
             return 1
@@ -2243,7 +2242,7 @@ aios_light_main() {
     echo ""
     
     detect_package_manager
-    echo "$(translate 'tr-tui-detecting-package-manager'): $PKG_MGR"
+    echo "Package manager: $PKG_MGR"
     
     init
     
