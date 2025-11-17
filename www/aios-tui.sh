@@ -929,11 +929,11 @@ whiptail_show_network_info() {
     
     if [ "$DETECTED_CONN_TYPE" = "mape" ] && [ -n "$MAPE_BR" ]; then
         local tr_auto_detection=$(translate "tr-auto-detection")
-        local info="${tr_auto_detection}: MAP-E\n\n"
+        local info="${tr_auto_detection}: MAP-E\n"
         [ -n "$ISP_NAME" ] && info="${info}${tr_isp}: $ISP_NAME\n"
         [ -n "$ISP_AS" ] && info="${info}${tr_as}: $ISP_AS\n"
         
-        info="${info}\n${tr_mape_notice}\n\n"
+        info="${info}\n${tr_mape_notice}\n"
         [ -n "$MAPE_GUA_PREFIX" ] && info="${info}option ip6prefix_gua $MAPE_GUA_PREFIX\n"
         info="${info}option peeraddr $MAPE_BR\n"
         [ -n "$MAPE_IPV4_PREFIX" ] && info="${info}option ipaddr $MAPE_IPV4_PREFIX\n"
@@ -944,7 +944,7 @@ whiptail_show_network_info() {
         [ -n "$MAPE_PSIDLEN" ] && info="${info}option psidlen $MAPE_PSIDLEN\n"
         [ -n "$MAPE_PSID_OFFSET" ] && info="${info}option offset $MAPE_PSID_OFFSET\n"
         
-        info="${info}\n\n$(translate 'tr-tui-use-auto-config')"
+        info="${info}\n$(translate 'tr-tui-use-auto-config')"
         
         if show_yesno "$breadcrumb" "$info"; then
             sed -i "/^connection_type=/d" "$SETUP_VARS"
@@ -1350,7 +1350,7 @@ whiptail_category_config() {
             if [ "$conn_type" = "auto" ]; then
                 continue
             elif [ "$conn_type" = "dhcp" ]; then
-                show_msgbox "$breadcrumb" "$(translate 'tr-dhcp'):\n\nDHCP"
+                show_msgbox "$breadcrumb" "$(translate 'tr-dhcp'):\nDHCP"
             fi
         fi
         
