@@ -1,5 +1,4 @@
 #!/bin/sh
-
 # BEGIN_VARIABLE_DEFINITIONS
 # END_VARIABLE_DEFINITIONS
 
@@ -12,23 +11,35 @@ else
     exit 1
 fi
 
+echo "Detected package manager: $PKG_MGR"
+
 MISSING_PKGS=""
 for pkg in $PACKAGES; do
     if [ "$PKG_MGR" = "opkg" ]; then
-        opkg list-installed | grep -q "^${pkg}[[:space:]]*-" || MISSING_PKGS="$MISSING_PKGS $pkg"
+        if ! opkg list-installed | grep -q "^${pkg} "; then
+            MISSING_PKGS="$MISSING_PKGS $pkg"
+        fi
     elif [ "$PKG_MGR" = "apk" ]; then
-        apk info -e "$pkg" >/dev/null 2>&1 || MISSING_PKGS="$MISSING_PKGS $pkg"
+        if ! apk info -e "$pkg" >/dev/null 2>&1; then
+            MISSING_PKGS="$MISSING_PKGS $pkg"
+        fi
     fi
 done
 
 if [ -n "$MISSING_PKGS" ]; then
+    echo "Installing missing packages:$MISSING_PKGS"
+    
     if [ "$PKG_MGR" = "opkg" ]; then
-        opkg update >/dev/null 2>&1
-        opkg install $MISSING_PKGS >/dev/null 2>&1
+        opkg update
+        opkg install $MISSING_PKGS
     elif [ "$PKG_MGR" = "apk" ]; then
-        apk update >/dev/null 2>&1
-        apk add $MISSING_PKGS >/dev/null 2>&1
+        apk update
+        apk add $MISSING_PKGS
     fi
+    
+    echo "Package installation completed"
+else
+    echo "All packages are already installed"
 fi
 
 exit 0
