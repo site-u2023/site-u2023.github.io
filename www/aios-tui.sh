@@ -71,6 +71,7 @@ TRANSLATION_CACHE="$CONFIG_DIR/translation_cache.txt"
 # ============================================
 # UI Configuration Variables
 # ============================================
+WHIPTAIL_PACKAGES="whiptail"
 WHIPTAIL_HEIGHT=0
 WHIPTAIL_WIDTH=78
 WHIPTAIL_FOLD_WIDTH=$((WHIPTAIL_WIDTH - 2))
