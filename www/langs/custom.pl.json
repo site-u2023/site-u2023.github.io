@@ -186,5 +186,8 @@
     "tr-tui-ui-install-success": "whiptail zainstalowany pomyślnie!",
     "tr-tui-ui-install-failed": "Instalacja nie powiodła się, używanie trybu prostego",
     "tr-tui-gua": "GUA",
-    "tr-tui-pd": "PD"
+    "tr-tui-pd": "PD",
+
+    "tr-tui-custom-feeds": "Niestandardowe kanały",
+    "tr-tui-feed-gspotx2f": "Repozytorium gSpotx2f"
 }
