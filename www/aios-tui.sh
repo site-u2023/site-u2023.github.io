@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1118.1502"
+VERSION="R7.1118.1523"
 
 # ============================================
 # Configuration Management
@@ -1744,10 +1744,12 @@ review_and_apply() {
             choice=$(show_menu "$breadcrumb" "" "" "" \
                 "1" "$(translate 'tr-tui-view-device-info')" \
                 "2" "$(translate 'tr-tui-view-package-list')" \
-                "3" "$(translate 'tr-tui-view-config-vars')" \
-                "4" "$(translate 'tr-tui-view-postinst')" \
-                "5" "$(translate 'tr-tui-view-setup')" \
-                "6" "$(translate 'tr-tui-apply')")
+                "3" "$(translate 'tr-tui-view-custom-packages')" \
+                "4" "$(translate 'tr-tui-view-config-vars')" \
+                "5" "$(translate 'tr-tui-view-postinst')" \
+                "6" "$(translate 'tr-tui-view-customfeeds')" \
+                "7" "$(translate 'tr-tui-view-setup')" \
+                "8" "$(translate 'tr-tui-apply')")
             
             [ $? -ne 0 ] && return 0
         else
