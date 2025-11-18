@@ -1771,7 +1771,7 @@ review_and_apply() {
             
             [ "$choice" = "b" ] || [ "$choice" = "B" ] && return 0
         fi
-        
+
         case "$choice" in
             1)
                 if [ "$UI_MODE" = "whiptail" ]; then
@@ -1811,6 +1811,56 @@ review_and_apply() {
                 ;;
             3)
                 if [ "$UI_MODE" = "whiptail" ]; then
+                    local tr_custom_packages=$(translate 'tr-tui-view-custom-packages')
+                    local breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$tr_custom_packages")
+                    
+                    if [ -f "$CUSTOMFEEDS_JSON" ]; then
+                        local cat_id=$(get_customfeed_categories | head -1)
+                        if [ -n "$cat_id" ]; then
+                            local custom_list="/tmp/custom_pkg_view.txt"
+                            : > "$custom_list"
+                            get_category_packages "$cat_id" | while read pkg_id; do
+                                if is_package_selected "$pkg_id"; then
+                                    local pkg_name=$(get_package_name "$pkg_id")
+                                    echo "  - ${pkg_name:-$pkg_id}" >> "$custom_list"
+                                fi
+                            done
+                            
+                            if [ -s "$custom_list" ]; then
+                                show_textbox "$breadcrumb" "$custom_list"
+                            else
+                                show_msgbox "$breadcrumb" "No custom packages selected"
+                            fi
+                        else
+                            show_msgbox "$breadcrumb" "No custom feeds available"
+                        fi
+                    else
+                        show_msgbox "$breadcrumb" "Custom feeds not loaded"
+                    fi
+                else
+                    clear
+                    echo "========================================"
+                    echo "  $(translate 'tr-tui-view-custom-packages')"
+                    echo "========================================"
+                    echo ""
+                    if [ -f "$CUSTOMFEEDS_JSON" ]; then
+                        local cat_id=$(get_customfeed_categories | head -1)
+                        if [ -n "$cat_id" ]; then
+                            get_category_packages "$cat_id" | while read pkg_id; do
+                                if is_package_selected "$pkg_id"; then
+                                    local pkg_name=$(get_package_name "$pkg_id")
+                                    echo "  - ${pkg_name:-$pkg_id}"
+                                fi
+                            done
+                        fi
+                    fi
+                    echo ""
+                    echo "$(translate 'tr-tui-ok')"
+                    read
+                fi
+                ;;
+            4)
+                if [ "$UI_MODE" = "whiptail" ]; then
                     local tr_config_vars=$(translate 'tr-tui-view-config-vars')
                     local breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$tr_config_vars")
                     
@@ -1836,7 +1886,7 @@ review_and_apply() {
                     read
                 fi
                 ;;
-            4)
+            5)
                 if [ "$UI_MODE" = "whiptail" ]; then
                     local tr_postinst=$(translate 'tr-tui-view-postinst')
                     local breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$tr_postinst")
@@ -1863,7 +1913,34 @@ review_and_apply() {
                     read
                 fi
                 ;;
-            5)
+            6)
+                if [ "$UI_MODE" = "whiptail" ]; then
+                    local tr_customfeeds=$(translate 'tr-tui-view-customfeeds')
+                    local breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$tr_customfeeds")
+                    
+                    if [ -f "$OUTPUT_DIR/customfeeds.sh" ]; then
+                        cat "$OUTPUT_DIR/customfeeds.sh" > /tmp/customfeeds_view.txt
+                        show_textbox "$breadcrumb" "/tmp/customfeeds_view.txt"
+                    else
+                        show_msgbox "$breadcrumb" "customfeeds.sh not found"
+                    fi
+                else
+                    clear
+                    echo "========================================"
+                    echo "  $(translate 'tr-tui-view-customfeeds')"
+                    echo "========================================"
+                    echo ""
+                    if [ -f "$OUTPUT_DIR/customfeeds.sh" ]; then
+                        cat "$OUTPUT_DIR/customfeeds.sh"
+                    else
+                        echo "customfeeds.sh not found"
+                    fi
+                    echo ""
+                    echo "$(translate 'tr-tui-ok')"
+                    read
+                fi
+                ;;
+            7)
                 if [ "$UI_MODE" = "whiptail" ]; then
                     local tr_setup=$(translate 'tr-tui-view-setup')
                     local breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$tr_setup")
@@ -1890,7 +1967,7 @@ review_and_apply() {
                     read
                 fi
                 ;;
-            6)
+            8)
                 if [ "$UI_MODE" = "whiptail" ]; then
                     local tr_apply=$(translate 'tr-tui-apply')
                     local breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$tr_apply")
@@ -1928,6 +2005,7 @@ $(translate 'tr-tui-reboot-question')"
                     echo "$(translate 'tr-tui-apply-confirm-step1')"
                     echo "$(translate 'tr-tui-apply-confirm-step2')"
                     echo "$(translate 'tr-tui-apply-confirm-step3')"
+                    echo "$(translate 'tr-tui-apply-confirm-step4')"
                     echo ""
                     echo "$(translate 'tr-tui-apply-confirm-question')"
                     echo ""
@@ -1938,6 +2016,7 @@ $(translate 'tr-tui-reboot-question')"
                         echo ""
                         echo "$(translate 'tr-tui-installing-packages')"
                         sh "$OUTPUT_DIR/postinst.sh"
+                        echo "$(translate 'tr-tui-installing-custom-packages')"
                         sh "$OUTPUT_DIR/customfeeds.sh"
                         echo ""
                         echo "$(translate 'tr-tui-applying-config')"
@@ -1954,7 +2033,7 @@ $(translate 'tr-tui-reboot-question')"
                     fi
                 fi
                 ;;
-        esac
+        esac  
     done
 }
 
