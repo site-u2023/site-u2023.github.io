@@ -2534,6 +2534,7 @@ aios_light_main() {
     fi
 
     echo "Script finished."
+    echo ""
 }
 
 aios_light_main
