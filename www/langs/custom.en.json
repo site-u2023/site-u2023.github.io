@@ -192,7 +192,5 @@
     "tr-tui-manual-config-required": "Please configure connection settings manually.",
 
     "tr-tui-custom-feeds": "Custom Feeds",
-    "tr-tui-feed-gspotx2f": "gSpotx2f Repository",
-
-    "tr-tui-exit-message-en": "Script finished."
+    "tr-tui-feed-gspotx2f": "gSpotx2f Repository"
 }
