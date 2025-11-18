@@ -68,6 +68,8 @@ OUTPUT_DIR="/tmp"
 
 TRANSLATION_CACHE="$CONFIG_DIR/translation_cache.txt"
 
+CUSTOMFEEDS_JSON="$CONFIG_DIR/customfeeds.json"
+CUSTOMFEEDS_TEMPLATE_URL="${BASE_URL}/${CUSTOMFEEDS_TEMPLATE_PATH}"
 # ============================================
 # UI Configuration Variables
 # ============================================
