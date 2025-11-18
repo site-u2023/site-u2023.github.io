@@ -1117,22 +1117,23 @@ generate_files() {
                 fi
             done < <(get_category_packages "$cat_id")
             
+            local customfeed_packages=""
             if [ -s "$temp_custom_pkg" ]; then
-                local customfeed_packages=$(cat "$temp_custom_pkg" | tr '\n' ' ' | sed 's/ $//')
-                
-                {
-                    wget -q -O - "$CUSTOMFEEDS_TEMPLATE_URL" | sed -n '1,/^# BEGIN_VARIABLE_DEFINITIONS/p'
-                    
-                    echo "PACKAGES=\"${customfeed_packages}\""
-                    echo "API_URL=\"${api_url}\""
-                    echo "DOWNLOAD_BASE_URL=\"${download_url}\""
-                    echo "RUN_OPKG_UPDATE=\"0\""
-                    
-                    wget -q -O - "$CUSTOMFEEDS_TEMPLATE_URL" | sed -n '/^# END_VARIABLE_DEFINITIONS/,$p'
-                } > "$CONFIG_DIR/customfeeds.sh"
-                
-                chmod +x "$CONFIG_DIR/customfeeds.sh"
+                customfeed_packages=$(cat "$temp_custom_pkg" | tr '\n' ' ' | sed 's/ $//')
             fi
+            
+            {
+                wget -q -O - "$CUSTOMFEEDS_TEMPLATE_URL" | sed -n '1,/^# BEGIN_VARIABLE_DEFINITIONS/p'
+                
+                echo "PACKAGES=\"${customfeed_packages}\""
+                echo "API_URL=\"${api_url}\""
+                echo "DOWNLOAD_BASE_URL=\"${download_url}\""
+                echo "RUN_OPKG_UPDATE=\"0\""
+                
+                wget -q -O - "$CUSTOMFEEDS_TEMPLATE_URL" | sed -n '/^# END_VARIABLE_DEFINITIONS/,$p'
+            } > "$CONFIG_DIR/customfeeds.sh"
+            
+            chmod +x "$CONFIG_DIR/customfeeds.sh"
             
             rm -f "$temp_custom_pkg"
         fi
@@ -1846,20 +1847,16 @@ review_and_apply() {
                     local tr_custom_packages=$(translate 'tr-tui-view-custom-packages')
                     local breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$tr_custom_packages")
                     
-                    if [ -s "$SELECTED_CUSTOM_PACKAGES" ]; then
-                        local custom_list="$CONFIG_DIR/custom_pkg_view.txt"
-                        : > "$custom_list"
-                        
-                        while IFS= read -r pkg_id; do
-                            [ -z "$pkg_id" ] && continue
-                            local pkg_name=$(get_package_name "$pkg_id")
-                            echo "  - ${pkg_name}" >> "$custom_list"
-                        done < "$SELECTED_CUSTOM_PACKAGES"
-                        
-                        show_textbox "$breadcrumb" "$custom_list"
-                    else
-                        show_msgbox "$breadcrumb" "No custom packages selected"
-                    fi
+                    local custom_list="$CONFIG_DIR/custom_pkg_view.txt"
+                    : > "$custom_list"
+                    
+                    while IFS= read -r pkg_id; do
+                        [ -z "$pkg_id" ] && continue
+                        local pkg_name=$(get_package_name "$pkg_id")
+                        echo "  - ${pkg_name}" >> "$custom_list"
+                    done < "$SELECTED_CUSTOM_PACKAGES"
+                    
+                    show_textbox "$breadcrumb" "$custom_list"
                 else
                     clear
                     echo "========================================"
@@ -1939,12 +1936,8 @@ review_and_apply() {
                     local tr_customfeeds=$(translate 'tr-tui-view-customfeeds')
                     local breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$tr_customfeeds")
                     
-                    if [ -f "$CONFIG_DIR/customfeeds.sh" ]; then
-                        cat "$CONFIG_DIR/customfeeds.sh" > $CONFIG_DIR//customfeeds_view.txt
-                        show_textbox "$breadcrumb" "$CONFIG_DIR//customfeeds_view.txt"
-                    else
-                        show_msgbox "$breadcrumb" "customfeeds.sh not found"
-                    fi
+                    cat "$CONFIG_DIR/customfeeds.sh" > $CONFIG_DIR//customfeeds_view.txt
+                    show_textbox "$breadcrumb" "$CONFIG_DIR//customfeeds_view.txt"
                 else
                     clear
                     echo "========================================"
