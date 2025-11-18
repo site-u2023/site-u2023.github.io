@@ -1114,12 +1114,7 @@ generate_files() {
                 [ -z "$pkg_id" ] && continue
                 if grep -q "^${pkg_id}$" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
                     local pattern=$(get_customfeed_package_pattern "$pkg_id")
-                    local exclude=$(get_customfeed_package_exclude "$pkg_id")
-                    local enable=$(get_customfeed_package_enable_service "$pkg_id")
-                    local restart=$(get_customfeed_package_restart_service "$pkg_id")
-                    
-                    local entry="${pattern} ${exclude:-_none_} ${pkg_id} ${enable:-_none_} ${restart:-_none_}"
-                    echo "${entry}" >> "$temp_custom_pkg"
+                    echo "${pattern}" >> "$temp_custom_pkg"
                 fi
             done < <(get_category_packages "$cat_id")
             
