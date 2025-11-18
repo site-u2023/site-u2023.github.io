@@ -156,8 +156,10 @@
     
     "tr-tui-view-device-info": "View Device Information",
     "tr-tui-view-package-list": "View Configured Packages",
+    "tr-tui-view-custom-packages": "View custom packages",
     "tr-tui-view-config-vars": "View Configuration Variables",
     "tr-tui-view-postinst": "View postinst.sh",
+    "tr-tui-view-customfeeds": "customfeeds.sh",
     "tr-tui-view-setup": "View setup.sh",
     "tr-tui-review-configuration": "Review & Apply Configuration",
     "tr-tui-apply": "Apply Configuration",
