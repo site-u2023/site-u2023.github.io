@@ -126,7 +126,7 @@ show_menu() {
     local cancel_btn="${4:-$(translate "$DEFAULT_BTN_BACK")}"
     shift 4
     
-    eval "whiptail --title '$breadcrumb' --ok-button '$ok_btn' --cancel-button '$cancel_btn' --menu '$prompt' $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH 12 $@ 3>&1 1>&2 2>&3"
+    eval "whiptail --title '$breadcrumb' --ok-button '$ok_btn' --cancel-button '$cancel_btn' --menu '$prompt' $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH 0 $@ 3>&1 1>&2 2>&3"
 }
 
 show_inputbox() {
@@ -179,7 +179,7 @@ show_checklist() {
     local cancel_btn="${4:-$(translate "$DEFAULT_BTN_BACK")}"
     shift 4
     
-    eval "whiptail --title '$breadcrumb' --ok-button '$ok_btn' --cancel-button '$cancel_btn' --checklist '$prompt' $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH 12 $@ 3>&1 1>&2 2>&3"
+    eval "whiptail --title '$breadcrumb' --ok-button '$ok_btn' --cancel-button '$cancel_btn' --checklist '$prompt' $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH 0 $@ 3>&1 1>&2 2>&3"
 }
 
 show_textbox() {
