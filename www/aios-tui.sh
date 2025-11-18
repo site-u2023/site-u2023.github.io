@@ -78,9 +78,8 @@ CUSTOMFEEDS_TEMPLATE_URL="${BASE_URL}/${CUSTOMFEEDS_TEMPLATE_PATH}"
 # UI Configuration Variables
 # ============================================
 WHIPTAIL_PACKAGES="whiptail"
-WHIPTAIL_HEIGHT=0
-WHIPTAIL_WIDTH=78
-WHIPTAIL_FOLD_WIDTH=$((WHIPTAIL_WIDTH - 2))
+WHIPTAIL_HEIGHT=$(($(tput lines 2>/dev/null || echo 24) - 6))
+WHIPTAIL_WIDTH=$(($(tput cols 2>/dev/null || echo 80) - 2))
 BREADCRUMB_SEP=" > "
 DEFAULT_BTN_SELECT="tr-tui-select"
 DEFAULT_BTN_BACK="tr-tui-back"
@@ -175,7 +174,7 @@ show_textbox() {
     local ok_btn="${3:-$(translate "$DEFAULT_BTN_OK")}"
     
     local temp_file="$CONFIG_DIR/textbox_wrapped.txt"
-    fold -s -w $WHIPTAIL_FOLD_WIDTH "$file" > "$temp_file"
+    fold -s -w $WHIPTAIL_WIDTH "$file" > "$temp_file"
     
     whiptail --scrolltext --title "$breadcrumb" --ok-button "$ok_btn" --textbox "$temp_file" $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH
     
