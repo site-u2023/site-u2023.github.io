@@ -40,17 +40,7 @@ fi
 
 # Process each package in PACKAGES variable
 # Format: "pattern:exclude:filename:enable_service:restart_service"
-echo "$PACKAGES" | tr ' ' '\n' | while read -r line; do
-    [ -z "$line" ] && continue
-    set -- $line
-    pattern="$1"
-    exclude="$2"
-    filename="$3"
-    enable_service="$4"
-    restart_service="$5"
-    [ "$exclude" = "_none_" ] && exclude=""
-    [ "$enable_service" = "_none_" ] && enable_service=""
-    [ "$restart_service" = "_none_" ] && restart_service=""
+echo "$PACKAGES" | tr ' ' '\n' | while read -r pattern; do
     [ -z "$pattern" ] && continue
     
     echo ""
