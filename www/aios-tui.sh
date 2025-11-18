@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1118.1933"
+VERSION="R7.1118.1946"
 
 # ============================================
 # Configuration Management
@@ -1863,16 +1863,20 @@ review_and_apply() {
                     local tr_custom_packages=$(translate 'tr-tui-view-custom-packages')
                     local breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$tr_custom_packages")
                     
-                    local custom_list="$CONFIG_DIR/custom_pkg_view.txt"
-                    : > "$custom_list"
-                    
-                    while IFS= read -r pkg_id; do
-                        [ -z "$pkg_id" ] && continue
-                        local pkg_name=$(get_package_name "$pkg_id")
-                        echo "  - ${pkg_name}" >> "$custom_list"
-                    done < "$SELECTED_CUSTOM_PACKAGES"
-                    
-                    show_textbox "$breadcrumb" "$custom_list"
+                    if [ -s "$SELECTED_CUSTOM_PACKAGES" ]; then
+                        local custom_list="$CONFIG_DIR/custom_pkg_view.txt"
+                        : > "$custom_list"
+                        
+                        while IFS= read -r pkg_id; do
+                            [ -z "$pkg_id" ] && continue
+                            local pkg_name=$(get_package_name "$pkg_id")
+                            echo "  - ${pkg_name}" >> "$custom_list"
+                        done < "$SELECTED_CUSTOM_PACKAGES"
+                        
+                        show_textbox "$breadcrumb" "$custom_list"
+                    else
+                        show_msgbox "$breadcrumb" "$(translate 'tr-tui-no-packages')"
+                    fi
                 else
                     clear
                     echo "========================================"
@@ -1925,12 +1929,8 @@ review_and_apply() {
                     local tr_postinst=$(translate 'tr-tui-view-postinst')
                     local breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$tr_postinst")
                     
-                    if [ -f "$CONFIG_DIR/postinst.sh" ]; then
-                        cat "$CONFIG_DIR/postinst.sh" > $CONFIG_DIR//postinst_view.txt
-                        show_textbox "$breadcrumb" "$CONFIG_DIR//postinst_view.txt"
-                    else
-                        show_msgbox "$breadcrumb" "$(translate 'tr-tui-postinst-not-found')"
-                    fi
+                    cat "$CONFIG_DIR/postinst.sh" > $CONFIG_DIR//postinst_view.txt
+                    show_textbox "$breadcrumb" "$CONFIG_DIR//postinst_view.txt"
                 else
                     clear
                     echo "========================================"
@@ -1975,12 +1975,8 @@ review_and_apply() {
                     local tr_setup=$(translate 'tr-tui-view-setup')
                     local breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$tr_setup")
                     
-                    if [ -f "$CONFIG_DIR/setup.sh" ]; then
-                        cat "$CONFIG_DIR/setup.sh" > $CONFIG_DIR//setup_view.txt
-                        show_textbox "$breadcrumb" "$CONFIG_DIR//setup_view.txt"
-                    else
-                        show_msgbox "$breadcrumb" "$(translate 'tr-tui-setup-not-found')"
-                    fi
+                    cat "$CONFIG_DIR/setup.sh" > $CONFIG_DIR//setup_view.txt
+                    show_textbox "$breadcrumb" "$CONFIG_DIR//setup_view.txt"
                 else
                     clear
                     echo "========================================"
