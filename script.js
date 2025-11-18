@@ -34,7 +34,7 @@ const DEFAULT_TERMINALS = {
   },
   aiostui: {
     name: 'aios-tui (β)',
-    command: `export CONFIG_DIR="${BASE_DIR_TUI}" && mkdir -p "$CONFIG_DIR" && wget --no-check-certificate -O "$CONFIG_DIR/aios-tui.sh" "${PROXY_URL}${AIOS_TUI_URL}" && chmod +x "$CONFIG_DIR/aios-tui.sh" && sh "$CONFIG_DIR/aios-tui.sh"`
+    command: `mkdir -p ${BASE_DIR_TUI} && wget --no-check-certificate -O ${AIOS_TUI_PATH} "${PROXY_URL}${AIOS_TUI_URL}" && chmod +x ${AIOS_TUI_PATH} && ${AIOS_TUI_PATH}`
   },
   ssh: {
     name: 'SSH',
