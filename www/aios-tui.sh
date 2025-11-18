@@ -8,7 +8,7 @@ VERSION="R7.1118.1200"
 # ============================================
 # Configuration Management
 # ============================================
-CONFIG_DIR="/tmp/aios"
+CONFIG_DIR="/tmp/aiost"
 BOOTSTRAP_URL="https://site-u.pages.dev/www"
 
 BASE_URL=""
@@ -309,6 +309,9 @@ install_package() {
 # ============================================
 
 init() {
+    local script_name=$(basename "$0")
+    pkill -f "$script_name" 2>/dev/null
+    rm -rf "$CONFIG_DIR"
     mkdir -p "$CONFIG_DIR"
 
     load_config_from_js || {
