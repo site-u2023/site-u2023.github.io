@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1118.1603"
+VERSION="R7.1118.1613"
 
 # ============================================
 # Configuration Management
@@ -163,6 +163,17 @@ show_textbox() {
     whiptail --scrolltext --title "$breadcrumb" --ok-button "$ok_btn" --textbox "$temp_file" $height $WHIPTAIL_WIDTH
     
     rm -f "$temp_file"
+}
+
+show_msgbox() {
+    local breadcrumb="$1"
+    local message="$2"
+    local ok_btn="${3:-$(translate "$DEFAULT_BTN_OK")}"
+    
+    local lines=$(echo -e "$message" | wc -l)
+    local height=$((lines + 7))
+    
+    whiptail --title "$breadcrumb" --ok-button "$ok_btn" --msgbox "$message" $height $WHIPTAIL_WIDTH
 }
 
 show_checklist() {
@@ -1807,7 +1818,7 @@ review_and_apply() {
                     local breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$tr_pkg_list")
                     
                     if [ -s "$SELECTED_PACKAGES" ]; then
-                        cat "$SELECTED_PACKAGES" | sed 's/^/  - /' > $CONFIG_DIR//pkg_view.txt
+                        cat "$SELECTED_PACKAGES" | sed 's/^/  - /' > $CONFIG_DIR/pkg_view.txt
                         show_textbox "$breadcrumb" "$CONFIG_DIR//pkg_view.txt"
                     else
                         show_msgbox "$breadcrumb" "$(translate 'tr-tui-no-packages')"
@@ -1836,7 +1847,7 @@ review_and_apply() {
                     local breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$tr_custom_packages")
                     
                     if [ -s "$SELECTED_CUSTOM_PACKAGES" ]; then
-                        local custom_list="$CONFIG_DIR//custom_pkg_view.txt"
+                        local custom_list="$CONFIG_DIR/custom_pkg_view.txt"
                         : > "$custom_list"
                         
                         cat "$SELECTED_CUSTOM_PACKAGES" | while read pkg_id; do
