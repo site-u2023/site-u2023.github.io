@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1118.1532"
+VERSION="R7.1118.1545"
 
 # ============================================
 # Configuration Management
@@ -66,6 +66,7 @@ SETUP_JSON="$CONFIG_DIR/setup.json"
 AUTO_CONFIG_JSON="$CONFIG_DIR/auto_config.json"
 LANG_JSON="$CONFIG_DIR/lang.json"
 SELECTED_PACKAGES="$CONFIG_DIR/selected_packages.txt"
+SELECTED_CUSTOM_PACKAGES="$CONFIG_DIR/selected_custom_packages.txt"
 SETUP_VARS="$CONFIG_DIR/setup_vars.sh"
 OUTPUT_DIR="/tmp"
 
@@ -322,6 +323,7 @@ init() {
     export NEWT_COLORS
     
     : > "$SELECTED_PACKAGES"
+    : > "$SELECTED_CUSTOM_PACKAGES"
     : > "$SETUP_VARS"
     : > "$TRANSLATION_CACHE"
     : > /tmp/debug.log
@@ -741,7 +743,13 @@ get_package_checked() {
 
 is_package_selected() {
     local pkg_id="$1"
-    grep -q "^${pkg_id}$" "$SELECTED_PACKAGES" 2>/dev/null
+    local caller="${2:-normal}"
+    
+    if [ "$caller" = "custom_feeds" ]; then
+        grep -q "^${pkg_id}$" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null
+    else
+        grep -q "^${pkg_id}$" "$SELECTED_PACKAGES" 2>/dev/null
+    fi
 }
 
 # ============================================
@@ -1087,7 +1095,7 @@ generate_files() {
             
             local customfeed_packages=""
             get_category_packages "$cat_id" | while read -r pkg_id; do
-                if is_package_selected "$pkg_id"; then
+                if grep -q "^${pkg_id}$" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then  # ← 修正
                     local pattern=$(get_customfeed_package_pattern "$pkg_id")
                     local exclude=$(get_customfeed_package_exclude "$pkg_id")
                     local enable=$(get_customfeed_package_enable_service "$pkg_id")
@@ -1652,7 +1660,7 @@ whiptail_package_selection() {
         pkg_name=$(get_package_name "$pkg_id")
         [ -z "$pkg_name" ] && pkg_name="$pkg_id"
         
-        if is_package_selected "$pkg_id"; then
+        if is_package_selected "$pkg_id" "$caller"; then
             status="ON"
         else
             status="OFF"
@@ -1665,14 +1673,21 @@ whiptail_package_selection() {
     selected=$(show_checklist "$breadcrumb" "($tr_space_toggle)" "" "" $checklist_items)
     
     if [ $? -eq 0 ]; then
+        local target_file
+        if [ "$caller" = "custom_feeds" ]; then
+            target_file="$SELECTED_CUSTOM_PACKAGES"
+        else
+            target_file="$SELECTED_PACKAGES"
+        fi
+        
         while read pkg_id; do
-            sed -i "/^${pkg_id}$/d" "$SELECTED_PACKAGES"
+            sed -i "/^${pkg_id}$/d" "$target_file"
         done < <(get_category_packages "$cat_id")
         
         for idx_str in $selected; do
             idx_clean=$(echo "$idx_str" | tr -d '"')
             pkg_id=$(get_category_packages "$cat_id" | sed -n "${idx_clean}p")
-            [ -n "$pkg_id" ] && echo "$pkg_id" >> "$SELECTED_PACKAGES"
+            [ -n "$pkg_id" ] && echo "$pkg_id" >> "$target_file"
         done
     fi
     
@@ -1814,28 +1829,18 @@ review_and_apply() {
                     local tr_custom_packages=$(translate 'tr-tui-view-custom-packages')
                     local breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$tr_custom_packages")
                     
-                    if [ -f "$CUSTOMFEEDS_JSON" ]; then
-                        local cat_id=$(get_customfeed_categories | head -1)
-                        if [ -n "$cat_id" ]; then
-                            local custom_list="/tmp/custom_pkg_view.txt"
-                            : > "$custom_list"
-                            
-                            get_category_packages "$cat_id" | while read pkg_id; do
-                                if is_package_selected "$pkg_id"; then
-                                    echo "  - ${pkg_id}" >> "$custom_list"
-                                fi
-                            done
-                            
-                            if [ -s "$custom_list" ]; then
-                                show_textbox "$breadcrumb" "$custom_list"
-                            else
-                                show_msgbox "$breadcrumb" "No custom packages selected"
-                            fi
-                        else
-                            show_msgbox "$breadcrumb" "No custom feeds available"
-                        fi
+                    if [ -s "$SELECTED_CUSTOM_PACKAGES" ]; then
+                        local custom_list="/tmp/custom_pkg_view.txt"
+                        : > "$custom_list"
+                        
+                        cat "$SELECTED_CUSTOM_PACKAGES" | while read pkg_id; do
+                            local pkg_name=$(get_package_name "$pkg_id")
+                            echo "  - ${pkg_name}" >> "$custom_list"
+                        done
+                        
+                        show_textbox "$breadcrumb" "$custom_list"
                     else
-                        show_msgbox "$breadcrumb" "Custom feeds not loaded"
+                        show_msgbox "$breadcrumb" "No custom packages selected"
                     fi
                 else
                     clear
@@ -1843,15 +1848,11 @@ review_and_apply() {
                     echo "  $(translate 'tr-tui-view-custom-packages')"
                     echo "========================================"
                     echo ""
-                    if [ -f "$CUSTOMFEEDS_JSON" ]; then
-                        local cat_id=$(get_customfeed_categories | head -1)
-                        if [ -n "$cat_id" ]; then
-                            get_category_packages "$cat_id" | while read pkg_id; do
-                                if is_package_selected "$pkg_id"; then
-                                    echo "  - ${pkg_id}"
-                                fi
-                            done
-                        fi
+                    if [ -s "$SELECTED_CUSTOM_PACKAGES" ]; then
+                        cat "$SELECTED_CUSTOM_PACKAGES" | while read pkg_id; do
+                            local pkg_name=$(get_package_name "$pkg_id")
+                            echo "  - ${pkg_name}"
+                        done
                     fi
                     echo ""
                     echo "$(translate 'tr-tui-ok')"
