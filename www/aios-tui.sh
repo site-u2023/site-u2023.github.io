@@ -148,15 +148,21 @@ show_yesno() {
     whiptail --title "$breadcrumb" --yes-button "$yes_btn" --no-button "$no_btn" --yesno "$message" $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH
 }
 
-show_msgbox() {
+show_textbox() {
     local breadcrumb="$1"
-    local message="$2"
+    local file="$2"
     local ok_btn="${3:-$(translate "$DEFAULT_BTN_OK")}"
     
-    local lines=$(echo -e "$message" | wc -l)
-    local height=$((lines + 6))
+    local temp_file="/tmp/textbox_wrapped.txt"
+    fold -s -w $WHIPTAIL_FOLD_WIDTH "$file" > "$temp_file"
     
-    whiptail --title "$breadcrumb" --ok-button "$ok_btn" --msgbox "$message" $height $WHIPTAIL_WIDTH
+    local lines=$(cat "$temp_file" | wc -l)
+    local height=$((lines + 7))
+    [ $height -lt 10 ] && height=10
+    
+    whiptail --scrolltext --title "$breadcrumb" --ok-button "$ok_btn" --textbox "$temp_file" $height $WHIPTAIL_WIDTH
+    
+    rm -f "$temp_file"
 }
 
 show_checklist() {
