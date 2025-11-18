@@ -81,6 +81,7 @@ WHIPTAIL_PACKAGES="whiptail"
 WHIPTAIL_HEIGHT=0
 WHIPTAIL_WIDTH=78
 WHIPTAIL_FOLD_WIDTH=$((WHIPTAIL_WIDTH - 2))
+WHIPTAIL_TEXTBOX_HEIGHT=$(($(tput lines 2>/dev/null || echo 24) - 6))
 BREADCRUMB_SEP=" > "
 DEFAULT_BTN_SELECT="tr-tui-select"
 DEFAULT_BTN_BACK="tr-tui-back"
@@ -153,10 +154,10 @@ show_textbox() {
     local file="$2"
     local ok_btn="${3:-$(translate "$DEFAULT_BTN_OK")}"
     
-    local temp_file="$CONFIG_DIR/textbox_wrapped.txt"
+    local temp_file="$CONFIG_DIR//textbox_wrapped.txt"
     fold -s -w $WHIPTAIL_FOLD_WIDTH "$file" > "$temp_file"
     
-    whiptail --scrolltext --title "$breadcrumb" --ok-button "$ok_btn" --textbox "$temp_file" 0 $WHIPTAIL_WIDTH
+    whiptail --scrolltext --title "$breadcrumb" --ok-button "$ok_btn" --textbox "$temp_file" 20 $WHIPTAIL_WIDTH
     
     rm -f "$temp_file"
 }
@@ -190,7 +191,7 @@ show_textbox() {
     local temp_file="$CONFIG_DIR//textbox_wrapped.txt"
     fold -s -w $WHIPTAIL_FOLD_WIDTH "$file" > "$temp_file"
     
-    whiptail --scrolltext --title "$breadcrumb" --ok-button "$ok_btn" --textbox "$temp_file" $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH
+    whiptail --scrolltext --title "$breadcrumb" --ok-button "$ok_btn" --textbox "$temp_file" $WHIPTAIL_TEXTBOX_HEIGHT $WHIPTAIL_WIDTH
     
     rm -f "$temp_file"
 }
