@@ -1716,7 +1716,7 @@ whiptail_main_menu() {
         choice=$(show_menu "$VERSION" "" "$(translate 'tr-tui-select')" "$(translate 'tr-tui-exit')" $menu_items)
         
         if [ $? -ne 0 ]; then
-            exit 0
+            return 0
         fi
         
         local setup_cat_count=$(get_setup_categories | wc -l)
@@ -2454,7 +2454,7 @@ simple_main_menu() {
         elif [ "$choice" -eq "$review_choice" ]; then
             review_and_apply
         elif [ "$choice" -eq "$exit_choice" ]; then
-            exit 0
+            return 0
         fi
     done
 }
