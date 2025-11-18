@@ -1,84 +1,89 @@
 {
-  "name": "gSpotx2f Repository",
-  "class": "tr-feed-gspotx2f",
-  "description": "Community packages from gSpotx2f",
-  "api_base": "https://api.github.com/repos/gSpotx2f/packages-openwrt/contents/current",
-  "download_base": "https://raw.githubusercontent.com/gSpotx2f/packages-openwrt/master/current",
-  "packages": [
+  "categories": [
     {
-      "id": "luci-app-log-viewer",
-      "pattern": "luci-app-log-viewer",
-      "exclude": "",
-      "name": "Log Viewer",
-      "class": "tr-pkg-log-viewer",
-      "description": "System log viewer for LuCI"
-    },
-    {
-      "id": "luci-app-cpu-status",
-      "pattern": "luci-app-cpu-status",
-      "exclude": "luci-app-cpu-status-mini",
-      "name": "CPU Status",
-      "class": "tr-pkg-cpu-status",
-      "description": "CPU status monitor"
-    },
-    {
-      "id": "luci-app-cpu-perf",
-      "pattern": "luci-app-cpu-perf",
-      "exclude": "",
-      "name": "CPU Performance",
-      "class": "tr-pkg-cpu-perf",
-      "description": "CPU performance monitor"
-    },
-    {
-      "id": "luci-app-temp-status",
-      "pattern": "luci-app-temp-status",
-      "exclude": "",
-      "name": "Temperature Status",
-      "class": "tr-pkg-temp-status",
-      "description": "System temperature monitor"
-    },
-    {
-      "id": "luci-app-disks-info",
-      "pattern": "luci-app-disks-info",
-      "exclude": "",
-      "name": "Disks Info",
-      "class": "tr-pkg-disks-info",
-      "description": "Disk information display"
-    },
-    {
-      "id": "internet-detector",
-      "pattern": "internet-detector_",
-      "exclude": "",
-      "name": "Internet Detector (Base)",
-      "class": "tr-pkg-inet-detector",
-      "description": "Internet connection monitoring daemon",
-      "enable_service": "internet-detector"
-    },
-    {
-      "id": "luci-app-internet-detector",
-      "pattern": "luci-app-internet-detector",
-      "exclude": "",
-      "name": "Internet Detector (UI)",
-      "class": "tr-pkg-inet-detector-ui",
-      "description": "LuCI interface for Internet Detector"
-    },
-    {
-      "id": "internet-detector-mod-modem",
-      "pattern": "internet-detector-mod-modem",
-      "exclude": "",
-      "name": "Internet Detector (Modem Module)",
-      "class": "tr-pkg-inet-detector-modem",
-      "description": "Modem restart module",
-      "restart_service": "internet-detector"
-    },
-    {
-      "id": "internet-detector-mod-email",
-      "pattern": "internet-detector-mod-email",
-      "exclude": "",
-      "name": "Internet Detector (Email Module)",
-      "class": "tr-pkg-inet-detector-email",
-      "description": "Email notification module",
-      "restart_service": "internet-detector"
+      "id": "custom-feeds-gspotx2f",
+      "name": "gSpotx2f Repository",
+      "class": "tr-feed-gspotx2f",
+      "description": "Community packages from gSpotx2f",
+      "api_base": "https://api.github.com/repos/gSpotx2f/packages-openwrt/contents/current",
+      "download_base": "https://raw.githubusercontent.com/gSpotx2f/packages-openwrt/master/current",
+      "packages": [
+        {
+          "id": "luci-app-log-viewer",
+          "pattern": "luci-app-log-viewer",
+          "exclude": "",
+          "name": "Log Viewer",
+          "class": "tr-pkg-log-viewer",
+          "description": "System log viewer for LuCI"
+        },
+        {
+          "id": "luci-app-cpu-status",
+          "pattern": "luci-app-cpu-status",
+          "exclude": "luci-app-cpu-status-mini",
+          "name": "CPU Status",
+          "class": "tr-pkg-cpu-status",
+          "description": "CPU status monitor"
+        },
+        {
+          "id": "luci-app-cpu-perf",
+          "pattern": "luci-app-cpu-perf",
+          "exclude": "",
+          "name": "CPU Performance",
+          "class": "tr-pkg-cpu-perf",
+          "description": "CPU performance monitor"
+        },
+        {
+          "id": "luci-app-temp-status",
+          "pattern": "luci-app-temp-status",
+          "exclude": "",
+          "name": "Temperature Status",
+          "class": "tr-pkg-temp-status",
+          "description": "System temperature monitor"
+        },
+        {
+          "id": "luci-app-disks-info",
+          "pattern": "luci-app-disks-info",
+          "exclude": "",
+          "name": "Disks Info",
+          "class": "tr-pkg-disks-info",
+          "description": "Disk information display"
+        },
+        {
+          "id": "internet-detector",
+          "pattern": "internet-detector_",
+          "exclude": "",
+          "name": "Internet Detector (Base)",
+          "class": "tr-pkg-inet-detector",
+          "description": "Internet connection monitoring daemon",
+          "enable_service": "internet-detector"
+        },
+        {
+          "id": "luci-app-internet-detector",
+          "pattern": "luci-app-internet-detector",
+          "exclude": "",
+          "name": "Internet Detector (UI)",
+          "class": "tr-pkg-inet-detector-ui",
+          "description": "LuCI interface for Internet Detector"
+        },
+        {
+          "id": "internet-detector-mod-modem",
+          "pattern": "internet-detector-mod-modem",
+          "exclude": "",
+          "name": "Internet Detector (Modem Module)",
+          "class": "tr-pkg-inet-detector-modem",
+          "description": "Modem restart module",
+          "restart_service": "internet-detector"
+        },
+        {
+          "id": "internet-detector-mod-email",
+          "pattern": "internet-detector-mod-email",
+          "exclude": "",
+          "name": "Internet Detector (Email Module)",
+          "class": "tr-pkg-inet-detector-email",
+          "description": "Email notification module",
+          "restart_service": "internet-detector"
+        }
+      ]
     }
   ]
 }
