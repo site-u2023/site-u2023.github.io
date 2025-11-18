@@ -2395,7 +2395,7 @@ aios_light_main() {
     echo "Fetching config.js"
     init
 
-    echo "Fetching package manager: $PKG_MGR"
+    echo "Detecting package manager: $PKG_MGR"
     detect_package_manager
     
     echo "Fetching auto-config API"
