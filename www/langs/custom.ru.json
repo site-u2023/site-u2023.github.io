@@ -186,5 +186,8 @@
     "tr-tui-ui-install-success": "whiptail успешно установлен!",
     "tr-tui-ui-install-failed": "Не удалось установить, используется простой режим",
     "tr-tui-gua": "GUA",
-    "tr-tui-pd": "PD"
+    "tr-tui-pd": "PD",
+
+    "tr-tui-custom-feeds": "Пользовательские каналы",
+    "tr-tui-feed-gspotx2f": "Репозиторий gSpotx2f"
 }
