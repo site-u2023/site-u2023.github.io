@@ -23,17 +23,18 @@ const AIOS_URL = 'https://raw.githubusercontent.com/site-u2023/aios/main/aios';
 const AIOS_TUI_URL = 'https://raw.githubusercontent.com/site-u2023/site-u2023.github.io/main/www/aios-tui.sh';
 const PROXY_URL = 'https://proxy.site-u.workers.dev/proxy?url=';
 const BASE_DIR = '/tmp/aios';
+const BASE_DIR_TUI = '/tmp/aiost';
 const AIOS_PATH = `${BASE_DIR}/aios`;
-const AIOS_TUI_PATH = `${BASE_DIR}/aios-tui.sh`;
+const AIOS_TUI_PATH = `${BASE_DIR_TUI}/aios-tui.sh`;
 const SSHCMD_REG_URL = 'https://site-u.pages.dev/build/scripts/sshcmd.reg';
 const DEFAULT_TERMINALS = {
   aios: {
     name: 'aios',
-    command: `mkdir -p ${BASE_DIR}; wget --no-check-certificate -O ${AIOS_PATH} "${PROXY_URL}${AIOS_URL}" && chmod +x ${AIOS_PATH} && ${AIOS_PATH}`
+    command: `mkdir -p ${BASE_DIR} && wget --no-check-certificate -O ${AIOS_PATH} "${PROXY_URL}${AIOS_URL}" && chmod +x ${AIOS_PATH} && ${AIOS_PATH}`
   },
   aiostui: {
-    name: 'aios-tui',
-    command: `mkdir -p ${BASE_DIR} && wget --no-check-certificate -O ${AIOS_TUI_PATH} "${PROXY_URL}${AIOS_TUI_URL}" && chmod +x ${AIOS_TUI_PATH} && ${AIOS_TUI_PATH}`
+    name: 'aios-tui (β)',
+    command: `export CONFIG_DIR="${BASE_DIR_TUI}" && mkdir -p "$CONFIG_DIR" && wget --no-check-certificate -O "$CONFIG_DIR/aios-tui.sh" "${PROXY_URL}${AIOS_TUI_URL}" && chmod +x "$CONFIG_DIR/aios-tui.sh" && sh "$CONFIG_DIR/aios-tui.sh"`
   },
   ssh: {
     name: 'SSH',
