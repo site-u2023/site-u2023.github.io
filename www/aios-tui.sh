@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1118.1726"
+VERSION="R7.1118.1804"
 
 # ============================================
 # Configuration Management
@@ -69,7 +69,6 @@ LANG_JSON="$CONFIG_DIR/lang.json"
 SELECTED_PACKAGES="$CONFIG_DIR/selected_packages.txt"
 SELECTED_CUSTOM_PACKAGES="$CONFIG_DIR/selected_custom_packages.txt"
 SETUP_VARS="$CONFIG_DIR/setup_vars.sh"
-OUTPUT_DIR="/tmp"
 
 TRANSLATION_CACHE="$CONFIG_DIR/translation_cache.txt"
 
@@ -267,7 +266,7 @@ select_ui_mode() {
     else
         echo "$WHIPTAIL_PACKAGES" | tr ' ' '\n' > "$SELECTED_PACKAGES"
         generate_files
-        sh "$OUTPUT_DIR/postinst.sh"
+        sh "$CONFIG_DIR/postinst.sh"
         UI_MODE="whiptail"
     fi
 }
@@ -1084,9 +1083,9 @@ generate_files() {
         fi
         
         wget -q -O - "$POSTINST_TEMPLATE_URL" | sed -n '/^# END_VARIABLE_DEFINITIONS/,$p'
-    } > "$OUTPUT_DIR/postinst.sh"
+    } > "$CONFIG_DIR/postinst.sh"
     
-    chmod +x "$OUTPUT_DIR/postinst.sh"
+    chmod +x "$CONFIG_DIR/postinst.sh"
     
     {
         wget -q -O - "$SETUP_TEMPLATE_URL" | sed -n '1,/^# BEGIN_VARS/p'
@@ -1096,9 +1095,9 @@ generate_files() {
         fi
         
         wget -q -O - "$SETUP_TEMPLATE_URL" | sed -n '/^# END_VARS/,$p'
-    } > "$OUTPUT_DIR/setup.sh"
+    } > "$CONFIG_DIR/setup.sh"
     
-    chmod +x "$OUTPUT_DIR/setup.sh"
+    chmod +x "$CONFIG_DIR/setup.sh"
     
     if [ -f "$CUSTOMFEEDS_JSON" ]; then
         local cat_id=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e '@.categories[0].id' 2>/dev/null)
@@ -1130,9 +1129,9 @@ generate_files() {
                     echo "RUN_OPKG_UPDATE=\"0\""
                     
                     wget -q -O - "$CUSTOMFEEDS_TEMPLATE_URL" | sed -n '/^# END_VARIABLE_DEFINITIONS/,$p'
-                } > "$OUTPUT_DIR/customfeeds.sh"
+                } > "$CONFIG_DIR/customfeeds.sh"
                 
-                chmod +x "$OUTPUT_DIR/customfeeds.sh"
+                chmod +x "$CONFIG_DIR/customfeeds.sh"
             fi
             
             rm -f "$temp_custom_pkg"
@@ -1913,8 +1912,8 @@ review_and_apply() {
                     local tr_postinst=$(translate 'tr-tui-view-postinst')
                     local breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$tr_postinst")
                     
-                    if [ -f "$OUTPUT_DIR/postinst.sh" ]; then
-                        cat "$OUTPUT_DIR/postinst.sh" > $CONFIG_DIR//postinst_view.txt
+                    if [ -f "$CONFIG_DIR/postinst.sh" ]; then
+                        cat "$CONFIG_DIR/postinst.sh" > $CONFIG_DIR//postinst_view.txt
                         show_textbox "$breadcrumb" "$CONFIG_DIR//postinst_view.txt"
                     else
                         show_msgbox "$breadcrumb" "$(translate 'tr-tui-postinst-not-found')"
@@ -1925,8 +1924,8 @@ review_and_apply() {
                     echo "  $(translate 'tr-tui-view-postinst')"
                     echo "========================================"
                     echo ""
-                    if [ -f "$OUTPUT_DIR/postinst.sh" ]; then
-                        cat "$OUTPUT_DIR/postinst.sh"
+                    if [ -f "$CONFIG_DIR/postinst.sh" ]; then
+                        cat "$CONFIG_DIR/postinst.sh"
                     else
                         echo "$(translate 'tr-tui-postinst-not-found')"
                     fi
@@ -1940,8 +1939,8 @@ review_and_apply() {
                     local tr_customfeeds=$(translate 'tr-tui-view-customfeeds')
                     local breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$tr_customfeeds")
                     
-                    if [ -f "$OUTPUT_DIR/customfeeds.sh" ]; then
-                        cat "$OUTPUT_DIR/customfeeds.sh" > $CONFIG_DIR//customfeeds_view.txt
+                    if [ -f "$CONFIG_DIR/customfeeds.sh" ]; then
+                        cat "$CONFIG_DIR/customfeeds.sh" > $CONFIG_DIR//customfeeds_view.txt
                         show_textbox "$breadcrumb" "$CONFIG_DIR//customfeeds_view.txt"
                     else
                         show_msgbox "$breadcrumb" "customfeeds.sh not found"
@@ -1952,8 +1951,8 @@ review_and_apply() {
                     echo "  $(translate 'tr-tui-view-customfeeds')"
                     echo "========================================"
                     echo ""
-                    if [ -f "$OUTPUT_DIR/customfeeds.sh" ]; then
-                        cat "$OUTPUT_DIR/customfeeds.sh"
+                    if [ -f "$CONFIG_DIR/customfeeds.sh" ]; then
+                        cat "$CONFIG_DIR/customfeeds.sh"
                     else
                         echo "customfeeds.sh not found"
                     fi
@@ -1967,8 +1966,8 @@ review_and_apply() {
                     local tr_setup=$(translate 'tr-tui-view-setup')
                     local breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$tr_setup")
                     
-                    if [ -f "$OUTPUT_DIR/setup.sh" ]; then
-                        cat "$OUTPUT_DIR/setup.sh" > $CONFIG_DIR//setup_view.txt
+                    if [ -f "$CONFIG_DIR/setup.sh" ]; then
+                        cat "$CONFIG_DIR/setup.sh" > $CONFIG_DIR//setup_view.txt
                         show_textbox "$breadcrumb" "$CONFIG_DIR//setup_view.txt"
                     else
                         show_msgbox "$breadcrumb" "$(translate 'tr-tui-setup-not-found')"
@@ -1979,8 +1978,8 @@ review_and_apply() {
                     echo "  $(translate 'tr-tui-view-setup')"
                     echo "========================================"
                     echo ""
-                    if [ -f "$OUTPUT_DIR/setup.sh" ]; then
-                        cat "$OUTPUT_DIR/setup.sh"
+                    if [ -f "$CONFIG_DIR/setup.sh" ]; then
+                        cat "$CONFIG_DIR/setup.sh"
                     else
                         echo "$(translate 'tr-tui-setup-not-found')"
                     fi
@@ -2003,11 +2002,11 @@ $(translate 'tr-tui-apply-confirm-question')"
                     
                     if show_yesno "$breadcrumb" "$confirm_msg"; then
                         show_msgbox "$breadcrumb" "$(translate 'tr-tui-installing-packages')"
-                        sh "$OUTPUT_DIR/postinst.sh"
+                        sh "$CONFIG_DIR/postinst.sh"
                         show_msgbox "$breadcrumb" "$(translate 'tr-tui-installing-custom-packages')"
-                        sh "$OUTPUT_DIR/customfeeds.sh"
+                        sh "$CONFIG_DIR/customfeeds.sh"
                         show_msgbox "$breadcrumb" "$(translate 'tr-tui-applying-config')"
-                        sh "$OUTPUT_DIR/setup.sh"
+                        sh "$CONFIG_DIR/setup.sh"
                         
                         local reboot_msg="$(translate 'tr-tui-config-applied')
 
@@ -2037,12 +2036,12 @@ $(translate 'tr-tui-reboot-question')"
                     if [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
                         echo ""
                         echo "$(translate 'tr-tui-installing-packages')"
-                        sh "$OUTPUT_DIR/postinst.sh"
+                        sh "$CONFIG_DIR/postinst.sh"
                         echo "$(translate 'tr-tui-installing-custom-packages')"
-                        sh "$OUTPUT_DIR/customfeeds.sh"
+                        sh "$CONFIG_DIR/customfeeds.sh"
                         echo ""
                         echo "$(translate 'tr-tui-applying-config')"
-                        sh "$OUTPUT_DIR/setup.sh"
+                        sh "$CONFIG_DIR/setup.sh"
                         echo ""
                         echo "$(translate 'tr-tui-config-applied')"
                         echo ""
