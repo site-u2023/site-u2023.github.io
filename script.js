@@ -30,11 +30,11 @@ const SSHCMD_REG_URL = 'https://site-u.pages.dev/build/scripts/sshcmd.reg';
 const DEFAULT_TERMINALS = {
   aios: {
     name: 'aios',
-    command: `mkdir -p ${BASE_DIR} && wget --no-check-certificate -O ${AIOS_PATH} "${PROXY_URL}${AIOS_URL}" && chmod +x ${AIOS_PATH} && ${AIOS_PATH}`
+    command: `mkdir -p ${BASE_DIR}; wget --no-check-certificate -O ${AIOS_PATH} "${PROXY_URL}${AIOS_URL}" && chmod +x ${AIOS_PATH} && ${AIOS_PATH}`
   },
   aiostui: {
     name: 'aios-tui (β)',
-    command: `mkdir -p ${BASE_DIR_TUI} && wget --no-check-certificate -O ${AIOS_TUI_PATH} "${PROXY_URL}${AIOS_TUI_URL}" && chmod +x ${AIOS_TUI_PATH} && ${AIOS_TUI_PATH}`
+    command: `mkdir -p ${BASE_DIR_TUI}; wget --no-check-certificate -O ${AIOS_TUI_PATH} "${PROXY_URL}${AIOS_TUI_URL}" && chmod +x ${AIOS_TUI_PATH} && ${AIOS_TUI_PATH}`
   },
   ssh: {
     name: 'SSH',
