@@ -1896,12 +1896,14 @@ review_and_apply() {
                     local confirm_msg="$(translate 'tr-tui-apply-confirm-step1')
 $(translate 'tr-tui-apply-confirm-step2')
 $(translate 'tr-tui-apply-confirm-step3')
+$(translate 'tr-tui-apply-confirm-step4')
 
 $(translate 'tr-tui-apply-confirm-question')"
                     
                     if show_yesno "$breadcrumb" "$confirm_msg"; then
                         show_msgbox "$breadcrumb" "$(translate 'tr-tui-installing-packages')"
                         sh "$OUTPUT_DIR/postinst.sh"
+                        show_msgbox "$breadcrumb" "$(translate 'tr-tui-installing-custom-packages')"
                         sh "$OUTPUT_DIR/customfeeds.sh"
                         show_msgbox "$breadcrumb" "$(translate 'tr-tui-applying-config')"
                         sh "$OUTPUT_DIR/setup.sh"
