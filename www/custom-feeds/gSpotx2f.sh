@@ -3,7 +3,8 @@
 # BEGIN_VARIABLE_DEFINITIONS
 # END_VARIABLE_DEFINITIONS
 
-TMP_DIR="/tmp"
+BASE_TMP_DIR="/tmp"
+CONFIG_DIR="$BASE_TMP_DIR/aiost"
 
 # OpenWrt version check
 OPENWRT_RELEASE=$(grep 'DISTRIB_RELEASE' /etc/openwrt_release 2>/dev/null | cut -d"'" -f2 | cut -c 1-2)
