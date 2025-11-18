@@ -186,5 +186,8 @@
     "tr-tui-ui-install-success": "whiptail đã được cài đặt thành công!",
     "tr-tui-ui-install-failed": "Cài đặt thất bại, sử dụng chế độ đơn giản",
     "tr-tui-gua": "GUA",
-    "tr-tui-pd": "PD"
+    "tr-tui-pd": "PD",
+
+    "tr-tui-custom-feeds": "Nguồn tùy chỉnh",
+    "tr-tui-feed-gspotx2f": "Kho gSpotx2f"
 }
