@@ -8,7 +8,8 @@ VERSION="R7.1118.1613"
 # ============================================
 # Configuration Management
 # ============================================
-CONFIG_DIR="$CONFIG_DIR//aiost"
+BASE_TMP_DIR="/tmp"
+CONFIG_DIR="$BASE_TMP_DIR/aiost"
 BOOTSTRAP_URL="https://site-u.pages.dev/www"
 
 BASE_URL=""
