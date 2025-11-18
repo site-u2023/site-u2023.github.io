@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1118.0949"
+VERSION="R7.1118.1103"
 
 # ============================================
 # Configuration Management
@@ -682,8 +682,14 @@ get_categories() {
 }
 
 get_category_name() {
-    local name=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$1'].name" 2>/dev/null)
-    local class=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$1'].class" 2>/dev/null)
+    local cat_id="$1"
+    local name=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$cat_id'].name" 2>/dev/null)
+    local class=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$cat_id'].class" 2>/dev/null)
+    
+    if [ -z "$name" ]; then
+        name=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$cat_id'].name" 2>/dev/null)
+        class=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$cat_id'].class" 2>/dev/null)
+    fi
     
     if [ -n "$class" ] && [ "${class#tr-}" != "$class" ]; then
         translate "$class"
@@ -693,32 +699,96 @@ get_category_name() {
 }
 
 get_category_desc() {
-    local desc=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$1'].description" 2>/dev/null)
+    local cat_id="$1"
+    local desc=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$cat_id'].description" 2>/dev/null)
+    [ -z "$desc" ] && desc=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$cat_id'].description" 2>/dev/null)
     echo "$desc"
 }
 
 get_category_hidden() {
-    local hidden=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$1'].hidden" 2>/dev/null)
+    local cat_id="$1"
+    jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$cat_id']" 2>/dev/null | grep -q . && echo "false" && return
+    local hidden=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$cat_id'].hidden" 2>/dev/null)
     echo "$hidden"
 }
 
 get_category_packages() {
-    jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$1'].packages[*].id" 2>/dev/null
+    local cat_id="$1"
+    local pkgs=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$cat_id'].packages[*].id" 2>/dev/null)
+    [ -z "$pkgs" ] && pkgs=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$cat_id'].packages[*].id" 2>/dev/null)
+    echo "$pkgs"
 }
 
 get_package_name() {
     local pkg_id="$1"
-    local name=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].name" 2>/dev/null | head -1)
+    local name=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].name" 2>/dev/null | head -1)
+    [ -z "$name" ] && name=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].name" 2>/dev/null | head -1)
     echo "$name"
 }
 
 get_package_checked() {
-    jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$1'].checked" 2>/dev/null | head -1
+    local pkg_id="$1"
+    local checked=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].checked" 2>/dev/null | head -1)
+    [ -z "$checked" ] && checked=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].checked" 2>/dev/null | head -1)
+    echo "$checked"
 }
 
 is_package_selected() {
     local pkg_id="$1"
     grep -q "^${pkg_id}$" "$SELECTED_PACKAGES" 2>/dev/null
+}
+
+# ============================================
+# Custom Feeds Management
+# ============================================
+
+download_customfeeds_json() {
+    if [ ! -f "$CUSTOMFEEDS_JSON" ]; then
+        local feeds_url="${BASE_URL}/${CUSTOMFEEDS_DB_PATH}"
+        if ! wget -q -O "$CUSTOMFEEDS_JSON" "${feeds_url}?t=$(date +%s)"; then
+            echo "Failed to download customfeeds.json"
+            return 1
+        fi
+    fi
+    return 0
+}
+
+get_customfeed_package_pattern() {
+    jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[*].packages[@.id='$1'].pattern" 2>/dev/null | head -1
+}
+
+get_customfeed_package_exclude() {
+    jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[*].packages[@.id='$1'].exclude" 2>/dev/null | head -1
+}
+
+get_customfeed_package_enable_service() {
+    jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[*].packages[@.id='$1'].enable_service" 2>/dev/null | head -1
+}
+
+get_customfeed_package_restart_service() {
+    jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[*].packages[@.id='$1'].restart_service" 2>/dev/null | head -1
+}
+
+get_customfeed_api_base() {
+    jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$1'].api_base" 2>/dev/null
+}
+
+get_customfeed_download_base() {
+    jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$1'].download_base" 2>/dev/null
+}
+
+whiptail_custom_feeds_selection() {
+    [ "$PKG_MGR" != "opkg" ] && return 0
+    download_customfeeds_json || return 0
+    local cat_id=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e '@.categories[0].id' 2>/dev/null)
+    [ -n "$cat_id" ] && whiptail_package_selection "$cat_id"
+}
+
+simple_custom_feeds_selection() {
+    [ "$PKG_MGR" != "opkg" ] && return 0
+    download_customfeeds_json || return 0
+    local cat_id=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e '@.categories[0].id' 2>/dev/null)
+    [ -n "$cat_id" ] && simple_package_selection "$cat_id"
 }
 
 # ============================================
