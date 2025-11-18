@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1118.2010"
+VERSION="R7.1118.2027"
 
 # ============================================
 # Configuration Management
@@ -174,7 +174,7 @@ show_textbox() {
     local file="$2"
     local ok_btn="${3:-$(translate "$DEFAULT_BTN_OK")}"
     
-    local temp_file="$CONFIG_DIR/d$CONFIG_DIR/textbox_wrapped.txtebug.log"
+    local temp_file="$CONFIG_DIR/textbox_wrapped.txt"
     fold -s -w $WHIPTAIL_FOLD_WIDTH "$file" > "$temp_file"
     
     whiptail --scrolltext --title "$breadcrumb" --ok-button "$ok_btn" --textbox "$temp_file" $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH
