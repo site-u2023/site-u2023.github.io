@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1118.1325"
+VERSION="R7.1118.1403"
 
 # ============================================
 # Configuration Management
@@ -1097,20 +1097,18 @@ generate_files() {
                 fi
             done
             
-            if [ -n "$customfeed_packages" ]; then
-                {
-                    wget -q -O - "$CUSTOMFEEDS_TEMPLATE_URL" | sed -n '1,/^# BEGIN_VARIABLE_DEFINITIONS/p'
-                    
-                    echo "PACKAGES=\"${customfeed_packages}\""
-                    echo "API_URL=\"${api_url}\""
-                    echo "DOWNLOAD_BASE_URL=\"${download_url}\""
-                    echo "RUN_OPKG_UPDATE=\"0\""
-                    
-                    wget -q -O - "$CUSTOMFEEDS_TEMPLATE_URL" | sed -n '/^# END_VARIABLE_DEFINITIONS/,$p'
-                } > "$OUTPUT_DIR/customfeeds.sh"
+            {
+                wget -q -O - "$CUSTOMFEEDS_TEMPLATE_URL" | sed -n '1,/^# BEGIN_VARIABLE_DEFINITIONS/p'
                 
-                chmod +x "$OUTPUT_DIR/customfeeds.sh"
-            fi
+                echo "PACKAGES=\"${customfeed_packages}\""
+                echo "API_URL=\"${api_url}\""
+                echo "DOWNLOAD_BASE_URL=\"${download_url}\""
+                echo "RUN_OPKG_UPDATE=\"0\""
+                
+                wget -q -O - "$CUSTOMFEEDS_TEMPLATE_URL" | sed -n '/^# END_VARIABLE_DEFINITIONS/,$p'
+            } > "$OUTPUT_DIR/customfeeds.sh"
+            
+            chmod +x "$OUTPUT_DIR/customfeeds.sh"
         fi
     fi
 }
