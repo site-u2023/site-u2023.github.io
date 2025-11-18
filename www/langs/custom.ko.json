@@ -186,5 +186,8 @@
     "tr-tui-ui-install-success": "whiptail이 성공적으로 설치되었습니다!",
     "tr-tui-ui-install-failed": "설치 실패, 간단한 모드를 사용합니다",
     "tr-tui-gua": "GUA",
-    "tr-tui-pd": "PD"
+    "tr-tui-pd": "PD",
+
+    "tr-tui-custom-feeds": "커스텀 피드",
+    "tr-tui-feed-gspotx2f": "gSpotx2f 저장소"
 }
