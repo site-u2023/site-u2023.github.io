@@ -8,7 +8,7 @@ VERSION="R7.1118.1131"
 # ============================================
 # Configuration Management
 # ============================================
-CONFIG_DIR="/tmp/device-setup"
+CONFIG_DIR="/tmp/aios"
 BOOTSTRAP_URL="https://site-u.pages.dev/www"
 
 BASE_URL=""
