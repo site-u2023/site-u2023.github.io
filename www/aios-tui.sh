@@ -2533,10 +2533,7 @@ aios_light_main() {
         simple_main_menu
     fi
 
-    echo ""
-    echo "=========================================="
-    echo "  $(translate 'tr-tui-exit-message')"
-    echo "=========================================="
+    echo "Script finished."
 }
 
 aios_light_main
