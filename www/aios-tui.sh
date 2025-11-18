@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1118.1147"
+VERSION="R7.1118.1200"
 
 # ============================================
 # Configuration Management
@@ -798,7 +798,7 @@ whiptail_custom_feeds_selection() {
         return 0
     fi
     
-    whiptail_package_selection "$cat_id"
+    whiptail_package_selection "$cat_id" "custom_feeds"
 }
 
 simple_custom_feeds_selection() {
@@ -1628,11 +1628,19 @@ whiptail_package_categories() {
 
 whiptail_package_selection() {
     local cat_id="$1"
+    local caller="${2:-normal}"
     local cat_name=$(get_category_name "$cat_id")
     
     local tr_main_menu=$(translate "tr-tui-main-menu")
-    local tr_custom_packages=$(translate "tr-custom-packages")
-    local breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_custom_packages" "$cat_name")
+    
+    local breadcrumb
+    if [ "$caller" = "custom_feeds" ]; then
+        local tr_custom_feeds=$(translate "tr-custom-feeds")
+        breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_custom_feeds" "$cat_name")
+    else
+        local tr_custom_packages=$(translate "tr-custom-packages")
+        breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_custom_packages" "$cat_name")
+    fi
     
     local cat_desc=$(get_category_desc "$cat_id")
     local tr_space_toggle=$(translate "tr-tui-space-toggle")
@@ -1667,7 +1675,11 @@ whiptail_package_selection() {
         done
     fi
     
-    whiptail_package_categories
+    if [ "$caller" = "custom_feeds" ]; then
+        return 0
+    else
+        whiptail_package_categories
+    fi
 }
 
 whiptail_main_menu() {
