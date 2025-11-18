@@ -439,6 +439,7 @@ get_extended_device_info() {
     
     if ! wget -q -O "$AUTO_CONFIG_JSON" "$AUTO_CONFIG_API_URL"; then
         echo "Warning: Failed to fetch auto-config API"
+        echo "https://www.cloudflarestatus.com/"
         return 1
     fi
     
