@@ -1819,10 +1819,10 @@ review_and_apply() {
                         if [ -n "$cat_id" ]; then
                             local custom_list="/tmp/custom_pkg_view.txt"
                             : > "$custom_list"
+                            
                             get_category_packages "$cat_id" | while read pkg_id; do
                                 if is_package_selected "$pkg_id"; then
-                                    local pkg_name=$(get_package_name "$pkg_id")
-                                    echo "  - ${pkg_name:-$pkg_id}" >> "$custom_list"
+                                    echo "  - ${pkg_id}" >> "$custom_list"
                                 fi
                             done
                             
@@ -1848,8 +1848,7 @@ review_and_apply() {
                         if [ -n "$cat_id" ]; then
                             get_category_packages "$cat_id" | while read pkg_id; do
                                 if is_package_selected "$pkg_id"; then
-                                    local pkg_name=$(get_package_name "$pkg_id")
-                                    echo "  - ${pkg_name:-$pkg_id}"
+                                    echo "  - ${pkg_id}"
                                 fi
                             done
                         fi
