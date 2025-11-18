@@ -79,7 +79,9 @@ CUSTOMFEEDS_TEMPLATE_URL="${BASE_URL}/${CUSTOMFEEDS_TEMPLATE_PATH}"
 # ============================================
 WHIPTAIL_PACKAGES="whiptail"
 WHIPTAIL_HEIGHT=$(($(tput lines 2>/dev/null || echo 24) - 6))
+WHIPTAIL_HEIGHT=$((WHIPTAIL_HEIGHT < 18 ? 18 : WHIPTAIL_HEIGHT))
 WHIPTAIL_WIDTH=$(($(tput cols 2>/dev/null || echo 80) - 2))
+WHIPTAIL_WIDTH=$((WHIPTAIL_WIDTH < 78 ? 78 : WHIPTAIL_WIDTH))
 BREADCRUMB_SEP=" > "
 DEFAULT_BTN_SELECT="tr-tui-select"
 DEFAULT_BTN_BACK="tr-tui-back"
