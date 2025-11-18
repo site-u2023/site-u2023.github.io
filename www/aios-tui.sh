@@ -1021,7 +1021,6 @@ compute_dslite_aftr() {
 # File Generation
 # ============================================
 generate_files() {
-    # Generate postinst.sh
     {
         wget -q -O - "$POSTINST_TEMPLATE_URL" | sed -n '1,/^# BEGIN_VARIABLE_DEFINITIONS/p'
         
@@ -1035,7 +1034,6 @@ generate_files() {
     
     chmod +x "$OUTPUT_DIR/postinst.sh"
     
-    # Generate setup.sh
     {
         wget -q -O - "$SETUP_TEMPLATE_URL" | sed -n '1,/^# BEGIN_VARS/p'
         
@@ -1047,6 +1045,42 @@ generate_files() {
     } > "$OUTPUT_DIR/setup.sh"
     
     chmod +x "$OUTPUT_DIR/setup.sh"
+    
+    if [ -f "$CUSTOMFEEDS_JSON" ]; then
+        local cat_id=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e '@.categories[0].id' 2>/dev/null)
+        
+        if [ -n "$cat_id" ]; then
+            local api_url=$(get_customfeed_api_base "$cat_id")
+            local download_url=$(get_customfeed_download_base "$cat_id")
+            
+            local customfeed_packages=""
+            get_category_packages "$cat_id" | while read -r pkg_id; do
+                if is_package_selected "$pkg_id"; then
+                    local pattern=$(get_customfeed_package_pattern "$pkg_id")
+                    local exclude=$(get_customfeed_package_exclude "$pkg_id")
+                    local enable=$(get_customfeed_package_enable_service "$pkg_id")
+                    local restart=$(get_customfeed_package_restart_service "$pkg_id")
+                    
+                    customfeed_packages="${customfeed_packages} ${pattern}:${exclude}:${pkg_id}:${enable}:${restart}"
+                fi
+            done
+            
+            if [ -n "$customfeed_packages" ]; then
+                {
+                    wget -q -O - "$CUSTOMFEEDS_TEMPLATE_URL" | sed -n '1,/^# BEGIN_VARIABLE_DEFINITIONS/p'
+                    
+                    echo "PACKAGES=\"${customfeed_packages}\""
+                    echo "API_URL=\"${api_url}\""
+                    echo "DOWNLOAD_BASE_URL=\"${download_url}\""
+                    echo "RUN_OPKG_UPDATE=\"0\""
+                    
+                    wget -q -O - "$CUSTOMFEEDS_TEMPLATE_URL" | sed -n '/^# END_VARIABLE_DEFINITIONS/,$p'
+                } > "$OUTPUT_DIR/customfeeds.sh"
+                
+                chmod +x "$OUTPUT_DIR/customfeeds.sh"
+            fi
+        fi
+    fi
 }
 
 # ============================================
