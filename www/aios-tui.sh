@@ -39,11 +39,14 @@ load_config_from_js() {
     SETUP_DB_PATH=$(grep 'setup_db_path:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
     SETUP_TEMPLATE_PATH=$(grep 'setup_template_path:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
     LANGUAGE_PATH_TEMPLATE=$(grep 'language_path_template:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
-    
+    CUSTOMFEEDS_DB_PATH=$(grep 'customfeeds_db_path:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
+    CUSTOMFEEDS_TEMPLATE_PATH=$(grep 'customfeeds_template_path:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
+
     PACKAGES_URL="${BASE_URL}/${PACKAGES_DB_PATH}"
     POSTINST_TEMPLATE_URL="${BASE_URL}/${POSTINST_TEMPLATE_PATH}"
     SETUP_JSON_URL="${BASE_URL}/${SETUP_DB_PATH}"
     SETUP_TEMPLATE_URL="${BASE_URL}/${SETUP_TEMPLATE_PATH}"
+    CUSTOMFEEDS_TEMPLATE_URL="${BASE_URL}/${CUSTOMFEEDS_TEMPLATE_PATH}"
     
     echo "[DEBUG] Config loaded: BASE_URL=$BASE_URL" >> /tmp/debug.log
     echo "[DEBUG] PACKAGES_URL=$PACKAGES_URL" >> /tmp/debug.log
