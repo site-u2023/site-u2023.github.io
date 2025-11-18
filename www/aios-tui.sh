@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1118.1613"
+VERSION="R7.1118.1619"
 
 # ============================================
 # Configuration Management
@@ -157,11 +157,7 @@ show_textbox() {
     local temp_file="$CONFIG_DIR/textbox_wrapped.txt"
     fold -s -w $WHIPTAIL_FOLD_WIDTH "$file" > "$temp_file"
     
-    local lines=$(cat "$temp_file" | wc -l)
-    local height=$((lines + 7))
-    [ $height -lt 10 ] && height=10
-    
-    whiptail --scrolltext --title "$breadcrumb" --ok-button "$ok_btn" --textbox "$temp_file" $height $WHIPTAIL_WIDTH
+    whiptail --scrolltext --title "$breadcrumb" --ok-button "$ok_btn" --textbox "$temp_file" 0 $WHIPTAIL_WIDTH
     
     rm -f "$temp_file"
 }
@@ -1112,8 +1108,8 @@ generate_files() {
             local download_url=$(get_customfeed_download_base "$cat_id")
             
             local customfeed_packages=""
-            get_category_packages "$cat_id" | while read -r pkg_id; do
-                if grep -q "^${pkg_id}$" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then  # ← 修正
+            while read -r pkg_id; do
+                if grep -q "^${pkg_id}$" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
                     local pattern=$(get_customfeed_package_pattern "$pkg_id")
                     local exclude=$(get_customfeed_package_exclude "$pkg_id")
                     local enable=$(get_customfeed_package_enable_service "$pkg_id")
@@ -1121,7 +1117,7 @@ generate_files() {
                     
                     customfeed_packages="${customfeed_packages} ${pattern}:${exclude}:${pkg_id}:${enable}:${restart}"
                 fi
-            done
+            done < <(get_category_packages "$cat_id")
             
             {
                 wget -q -O - "$CUSTOMFEEDS_TEMPLATE_URL" | sed -n '1,/^# BEGIN_VARIABLE_DEFINITIONS/p'
