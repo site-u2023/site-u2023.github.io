@@ -148,19 +148,6 @@ show_yesno() {
     whiptail --title "$breadcrumb" --yes-button "$yes_btn" --no-button "$no_btn" --yesno "$message" $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH
 }
 
-show_textbox() {
-    local breadcrumb="$1"
-    local file="$2"
-    local ok_btn="${3:-$(translate "$DEFAULT_BTN_OK")}"
-    
-    local temp_file="$CONFIG_DIR/d$CONFIG_DIR/textbox_wrapped.txtebug.log"
-    fold -s -w $WHIPTAIL_FOLD_WIDTH "$file" > "$temp_file"
-    
-    whiptail --scrolltext --title "$breadcrumb" --ok-button "$ok_btn" --textbox "$temp_file" 20 $WHIPTAIL_WIDTH
-    
-    rm -f "$temp_file"
-}
-
 show_msgbox() {
     local breadcrumb="$1"
     local message="$2"
