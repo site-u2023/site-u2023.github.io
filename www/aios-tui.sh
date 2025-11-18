@@ -2550,7 +2550,7 @@ simple_main_menu() {
 # Main Entry Point
 # ============================================
 
-aios_light_main() {
+aios_tui_main() {
     clear
     echo "==========================================="
     echo "  aios-tui Vr.$VERSION"
@@ -2624,4 +2624,4 @@ aios_light_main() {
     echo ""
 }
 
-aios_light_main
+aios_tui_main
