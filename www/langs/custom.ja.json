@@ -169,7 +169,7 @@
     "tr-tui-apply-confirm-step3": "3. 再起動（確認有）",
     "tr-tui-apply-confirm-question": "実行しますか？",
     "tr-tui-installing-packages": "パッケージをインストール中",
-    "tr-tui-installing-custom-packages": "カスタムフィードパッケージをインストール中"
+    "tr-tui-installing-custom-packages": "カスタムフィードパッケージをインストール中",
     "tr-tui-applying-config": "システム設定を適用中",
     "tr-tui-config-applied": "設定の適用が完了しました！",
     "tr-tui-auto-config-applied": "自動設定を適用しました！",
