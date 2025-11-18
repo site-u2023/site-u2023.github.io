@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1118.1717"
+VERSION="R7.1118.1726"
 
 # ============================================
 # Configuration Management
@@ -1107,7 +1107,9 @@ generate_files() {
             local api_url=$(get_customfeed_api_base "$cat_id")
             local download_url=$(get_customfeed_download_base "$cat_id")
             
-            local customfeed_packages=""
+            local temp_custom_pkg="$CONFIG_DIR/temp_custom_packages.txt"
+            : > "$temp_custom_pkg"
+            
             while IFS= read -r pkg_id; do
                 [ -z "$pkg_id" ] && continue
                 if grep -q "^${pkg_id}$" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
@@ -1116,11 +1118,13 @@ generate_files() {
                     local enable=$(get_customfeed_package_enable_service "$pkg_id")
                     local restart=$(get_customfeed_package_restart_service "$pkg_id")
                     
-                    [ -z "$customfeed_packages" ] && customfeed_packages="${pattern}:${exclude}:${pkg_id}:${enable}:${restart}" || customfeed_packages="${customfeed_packages} ${pattern}:${exclude}:${pkg_id}:${enable}:${restart}"
+                    echo "${pattern}:${exclude}:${pkg_id}:${enable}:${restart}" >> "$temp_custom_pkg"
                 fi
             done < <(get_category_packages "$cat_id")
             
-            if [ -n "$customfeed_packages" ]; then
+            if [ -s "$temp_custom_pkg" ]; then
+                local customfeed_packages=$(cat "$temp_custom_pkg" | tr '\n' ' ' | sed 's/ $//')
+                
                 {
                     wget -q -O - "$CUSTOMFEEDS_TEMPLATE_URL" | sed -n '1,/^# BEGIN_VARIABLE_DEFINITIONS/p'
                     
@@ -1134,6 +1138,8 @@ generate_files() {
                 
                 chmod +x "$OUTPUT_DIR/customfeeds.sh"
             fi
+            
+            rm -f "$temp_custom_pkg"
         fi
     fi
 }
