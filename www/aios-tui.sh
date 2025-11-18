@@ -2392,14 +2392,14 @@ aios_light_main() {
     echo "==========================================="
     echo ""
 
-    echo "Fetching config.js"
     init
-
-    echo "Detecting package manager: $PKG_MGR"
-    detect_package_manager
+    echo "Fetching config.js"
     
-    echo "Fetching auto-config API"
+    detect_package_manager
+    echo "Detecting package manager: $PKG_MGR"
+    
     get_extended_device_info
+    echo "Fetching auto-config API"
     
     echo "Fetching language: ${AUTO_LANGUAGE:-en}"
     if ! download_language_json "${AUTO_LANGUAGE:-en}"; then
