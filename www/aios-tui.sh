@@ -785,10 +785,36 @@ whiptail_custom_feeds_selection() {
 }
 
 simple_custom_feeds_selection() {
-    [ "$PKG_MGR" != "opkg" ] && return 0
-    download_customfeeds_json || return 0
-    local cat_id=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e '@.categories[0].id' 2>/dev/null)
-    [ -n "$cat_id" ] && simple_package_selection "$cat_id"
+    if [ "$PKG_MGR" != "opkg" ]; then
+        clear
+        echo "========================================"
+        echo "  $(translate 'tr-custom-feeds')"
+        echo "========================================"
+        echo ""
+        echo "Custom feeds are only available for OPKG"
+        echo ""
+        printf "Press Enter to continue..."
+        read
+        return 0
+    fi
+    
+    download_customfeeds_json || {
+        clear
+        echo "========================================"
+        echo "  $(translate 'tr-custom-feeds')"
+        echo "========================================"
+        echo ""
+        echo "Failed to load custom feeds"
+        echo ""
+        printf "Press Enter to continue..."
+        read
+        return 0
+    }
+    
+    local cat_id=$(get_customfeed_categories | head -1)
+    [ -z "$cat_id" ] && return 0
+    
+    simple_package_selection "$cat_id"
 }
 
 # ============================================
