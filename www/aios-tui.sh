@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1118.1626"
+VERSION="R7.1118.1717"
 
 # ============================================
 # Configuration Management
@@ -1108,29 +1108,32 @@ generate_files() {
             local download_url=$(get_customfeed_download_base "$cat_id")
             
             local customfeed_packages=""
-            while read -r pkg_id; do
+            while IFS= read -r pkg_id; do
+                [ -z "$pkg_id" ] && continue
                 if grep -q "^${pkg_id}$" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
                     local pattern=$(get_customfeed_package_pattern "$pkg_id")
                     local exclude=$(get_customfeed_package_exclude "$pkg_id")
                     local enable=$(get_customfeed_package_enable_service "$pkg_id")
                     local restart=$(get_customfeed_package_restart_service "$pkg_id")
                     
-                    customfeed_packages="${customfeed_packages}${pattern}:${exclude}:${pkg_id}:${enable}:${restart} "
+                    [ -z "$customfeed_packages" ] && customfeed_packages="${pattern}:${exclude}:${pkg_id}:${enable}:${restart}" || customfeed_packages="${customfeed_packages} ${pattern}:${exclude}:${pkg_id}:${enable}:${restart}"
                 fi
             done < <(get_category_packages "$cat_id")
             
-            {
-                wget -q -O - "$CUSTOMFEEDS_TEMPLATE_URL" | sed -n '1,/^# BEGIN_VARIABLE_DEFINITIONS/p'
+            if [ -n "$customfeed_packages" ]; then
+                {
+                    wget -q -O - "$CUSTOMFEEDS_TEMPLATE_URL" | sed -n '1,/^# BEGIN_VARIABLE_DEFINITIONS/p'
+                    
+                    echo "PACKAGES=\"${customfeed_packages}\""
+                    echo "API_URL=\"${api_url}\""
+                    echo "DOWNLOAD_BASE_URL=\"${download_url}\""
+                    echo "RUN_OPKG_UPDATE=\"0\""
+                    
+                    wget -q -O - "$CUSTOMFEEDS_TEMPLATE_URL" | sed -n '/^# END_VARIABLE_DEFINITIONS/,$p'
+                } > "$OUTPUT_DIR/customfeeds.sh"
                 
-                echo "PACKAGES=\"${customfeed_packages}\""
-                echo "API_URL=\"${api_url}\""
-                echo "DOWNLOAD_BASE_URL=\"${download_url}\""
-                echo "RUN_OPKG_UPDATE=\"0\""
-                
-                wget -q -O - "$CUSTOMFEEDS_TEMPLATE_URL" | sed -n '/^# END_VARIABLE_DEFINITIONS/,$p'
-            } > "$OUTPUT_DIR/customfeeds.sh"
-            
-            chmod +x "$OUTPUT_DIR/customfeeds.sh"
+                chmod +x "$OUTPUT_DIR/customfeeds.sh"
+            fi
         fi
     fi
 }
@@ -1672,7 +1675,6 @@ whiptail_package_selection() {
     idx=1
     while read pkg_id; do
         pkg_name=$(get_package_name "$pkg_id")
-        [ -z "$pkg_name" ] && pkg_name="$pkg_id"
         
         if is_package_selected "$pkg_id" "$caller"; then
             status="ON"
@@ -1847,10 +1849,11 @@ review_and_apply() {
                         local custom_list="$CONFIG_DIR/custom_pkg_view.txt"
                         : > "$custom_list"
                         
-                        cat "$SELECTED_CUSTOM_PACKAGES" | while read pkg_id; do
+                        while IFS= read -r pkg_id; do
+                            [ -z "$pkg_id" ] && continue
                             local pkg_name=$(get_package_name "$pkg_id")
                             echo "  - ${pkg_name}" >> "$custom_list"
-                        done
+                        done < "$SELECTED_CUSTOM_PACKAGES"
                         
                         show_textbox "$breadcrumb" "$custom_list"
                     else
@@ -1863,10 +1866,13 @@ review_and_apply() {
                     echo "========================================"
                     echo ""
                     if [ -s "$SELECTED_CUSTOM_PACKAGES" ]; then
-                        cat "$SELECTED_CUSTOM_PACKAGES" | while read pkg_id; do
+                        while IFS= read -r pkg_id; do
+                            [ -z "$pkg_id" ] && continue
                             local pkg_name=$(get_package_name "$pkg_id")
                             echo "  - ${pkg_name}"
-                        done
+                        done < "$SELECTED_CUSTOM_PACKAGES"
+                    else
+                        echo "  No custom packages selected"
                     fi
                     echo ""
                     echo "$(translate 'tr-tui-ok')"
@@ -2454,7 +2460,6 @@ simple_package_selection() {
     
     get_category_packages "$cat_id" | while read pkg_id; do
         local pkg_name=$(get_package_name "$pkg_id")
-        [ -z "$pkg_name" ] && pkg_name="$pkg_id"
         
         if is_package_selected "$pkg_id"; then
             echo "[X] $pkg_name"
@@ -2469,7 +2474,6 @@ simple_package_selection() {
     local i=1
     get_category_packages "$cat_id" | while read pkg_id; do
         local pkg_name=$(get_package_name "$pkg_id")
-        [ -z "$pkg_name" ] && pkg_name="$pkg_id"
         echo "$i) $pkg_name"
         i=$((i+1))
     done
