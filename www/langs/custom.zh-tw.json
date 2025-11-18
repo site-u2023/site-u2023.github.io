@@ -186,5 +186,8 @@
     "tr-tui-ui-install-success": "whiptail 安裝成功！",
     "tr-tui-ui-install-failed": "安裝失敗，使用簡單模式",
     "tr-tui-gua": "GUA",
-    "tr-tui-pd": "PD"
+    "tr-tui-pd": "PD",
+
+    "tr-tui-custom-feeds": "自訂來源",
+    "tr-tui-feed-gspotx2f": "gSpotx2f 儲存庫"
 }
