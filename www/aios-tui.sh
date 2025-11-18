@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1117.2322"
+VERSION="R7.1118.0939"
 
 # ============================================
 # Configuration Management
@@ -202,13 +202,31 @@ simple_show_menu() {
 # UI Mode Selection
 # ============================================
 
-check_packages_installed() {
-    for pkg in $WHIPTAIL_PACKAGES; do
-        if ! opkg list-installed 2>/dev/null | grep -q "^${pkg} "; then
-            return 1
+select_ui_mode() {
+    if check_packages_installed $WHIPTAIL_PACKAGES; then
+        UI_MODE="whiptail"
+        return 0
+    fi
+    
+    echo "$(translate 'tr-tui-ui-mode-select')"
+    echo "1) $(translate 'tr-tui-ui-whiptail')"
+    echo "2) $(translate 'tr-tui-ui-simple')"
+    
+    printf "$(translate 'tr-tui-ui-choice') [1]: "
+    read choice
+    
+    if [ "$choice" = "2" ]; then
+        UI_MODE="simple"
+    else
+        echo "$(translate 'tr-tui-ui-installing')"
+        if install_package $WHIPTAIL_PACKAGES; then
+            echo "$(translate 'tr-tui-ui-install-success')"
+            UI_MODE="whiptail"
+        else
+            echo "$(translate 'tr-tui-ui-install-failed')"
+            UI_MODE="simple"
         fi
-    done
-    return 0
+    fi
 }
 
 select_ui_mode() {
@@ -232,6 +250,53 @@ select_ui_mode() {
         sh "$OUTPUT_DIR/postinst.sh"
         UI_MODE="whiptail"
     fi
+}
+
+# ============================================
+# Package Manager Detection
+# ============================================
+
+detect_package_manager() {
+    if command -v opkg >/dev/null 2>&1; then
+        PKG_MGR="opkg"
+    elif command -v apk >/dev/null 2>&1; then
+        PKG_MGR="apk"
+    else
+        echo "Warning: No supported package manager found"
+        PKG_MGR="none"
+    fi
+}
+
+check_packages_installed() {
+    MISSING_WHIPTAIL_PKGS=""
+    
+    for pkg in "$@"; do
+        if [ "$PKG_MGR" = "opkg" ]; then
+            opkg list-installed | grep -q "^${pkg}[[:space:]]*-" || MISSING_WHIPTAIL_PKGS="$MISSING_WHIPTAIL_PKGS $pkg"
+        elif [ "$PKG_MGR" = "apk" ]; then
+            apk info -e "$pkg" >/dev/null 2>&1 || MISSING_WHIPTAIL_PKGS="$MISSING_WHIPTAIL_PKGS $pkg"
+        fi
+    done
+    
+    [ -z "$MISSING_WHIPTAIL_PKGS" ]
+}
+
+install_package() {
+    case "$PKG_MGR" in
+        opkg)
+            opkg update
+            opkg install "$@" || return 1
+            ;;
+        apk)
+            apk update
+            apk add "$@" || return 1
+            ;;
+        *)
+            echo "Cannot install packages: no supported package manager"
+            return 1
+            ;;
+    esac
+    return 0
 }
 
 # ============================================
@@ -1457,8 +1522,20 @@ whiptail_main_menu() {
         
         local packages_label=$(translate "tr-custom-packages")
         menu_items="$menu_items $i \"$packages_label\""
+        local packages_choice=$i
         i=$((i+1))
+        
+        local custom_feeds_choice=0
+        if [ "$PKG_MGR" = "opkg" ]; then
+            local custom_feeds_label=$(translate "tr-custom-feeds")
+            [ -z "$custom_feeds_label" ] || [ "$custom_feeds_label" = "tr-custom-feeds" ] && custom_feeds_label="Custom Feeds"
+            menu_items="$menu_items $i \"$custom_feeds_label\""
+            custom_feeds_choice=$i
+            i=$((i+1))
+        fi
+        
         menu_items="$menu_items $i \"$(translate 'tr-tui-review-configuration')\""
+        local review_choice=$i
         
         choice=$(show_menu "$VERSION" "" "$(translate 'tr-tui-select')" "$(translate 'tr-tui-exit')" $menu_items)
         
@@ -1470,9 +1547,11 @@ whiptail_main_menu() {
         if [ "$choice" -le "$setup_cat_count" ]; then
             selected_cat=$(get_setup_categories | sed -n "${choice}p")
             whiptail_category_config "$selected_cat"
-        elif [ "$choice" -eq "$((setup_cat_count+1))" ]; then
+        elif [ "$choice" -eq "$packages_choice" ]; then
             whiptail_package_categories
-        elif [ "$choice" -eq "$((setup_cat_count+2))" ]; then
+        elif [ "$custom_feeds_choice" -gt 0 ] && [ "$choice" -eq "$custom_feeds_choice" ]; then
+            whiptail_custom_feeds_selection
+        elif [ "$choice" -eq "$review_choice" ]; then
             review_and_apply
         fi
     done
@@ -2164,6 +2243,16 @@ simple_main_menu() {
         echo "$i) $packages_label"
         local packages_choice=$i
         i=$((i+1))
+        
+        local custom_feeds_choice=0
+        if [ "$PKG_MGR" = "opkg" ]; then
+            local custom_feeds_label=$(translate "tr-custom-feeds")
+            [ -z "$custom_feeds_label" ] || [ "$custom_feeds_label" = "tr-custom-feeds" ] && custom_feeds_label="Custom Feeds"
+            echo "$i) $custom_feeds_label"
+            custom_feeds_choice=$i
+            i=$((i+1))
+        fi
+        
         echo "$i) $(translate 'tr-tui-review-configuration')"
         local review_choice=$i
         i=$((i+1))
@@ -2184,6 +2273,8 @@ simple_main_menu() {
             simple_category_config "$selected_cat"
         elif [ "$choice" -eq "$packages_choice" ]; then
             simple_package_categories
+        elif [ "$custom_feeds_choice" -gt 0 ] && [ "$choice" -eq "$custom_feeds_choice" ]; then
+            simple_custom_feeds_selection
         elif [ "$choice" -eq "$review_choice" ]; then
             review_and_apply
         elif [ "$choice" -eq "$exit_choice" ]; then
@@ -2206,6 +2297,10 @@ aios_light_main() {
     echo "Fetching config.js"
     init
 
+    echo "Fetching package manager detection"
+    detect_package_manager
+    echo "Package manager: $PKG_MGR"
+    
     echo "Fetching auto-config API"
     get_extended_device_info
     
