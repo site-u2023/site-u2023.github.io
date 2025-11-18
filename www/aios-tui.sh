@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1118.1619"
+VERSION="R7.1118.1626"
 
 # ============================================
 # Configuration Management
@@ -1115,7 +1115,7 @@ generate_files() {
                     local enable=$(get_customfeed_package_enable_service "$pkg_id")
                     local restart=$(get_customfeed_package_restart_service "$pkg_id")
                     
-                    customfeed_packages="${customfeed_packages} ${pattern}:${exclude}:${pkg_id}:${enable}:${restart}"
+                    customfeed_packages="${customfeed_packages}${pattern}:${exclude}:${pkg_id}:${enable}:${restart} "
                 fi
             done < <(get_category_packages "$cat_id")
             
