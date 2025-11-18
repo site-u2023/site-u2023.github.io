@@ -792,7 +792,7 @@ whiptail_custom_feeds_selection() {
     
     if [ -z "$cat_id" ]; then
         local tr_main_menu=$(translate "tr-tui-main-menu")
-        local tr_custom_feeds=$(translate "tr-custom-feeds")
+        local tr_custom_feeds=$(translate "tr-tui-custom-feeds")
         local breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_custom_feeds")
         show_msgbox "$breadcrumb" "No custom feeds available"
         return 0
@@ -805,7 +805,7 @@ simple_custom_feeds_selection() {
     if [ "$PKG_MGR" != "opkg" ]; then
         clear
         echo "========================================"
-        echo "  $(translate 'tr-custom-feeds')"
+        echo "  $(translate 'tr-tui-custom-feeds')"
         echo "========================================"
         echo ""
         echo "Custom feeds are only available for OPKG"
@@ -818,7 +818,7 @@ simple_custom_feeds_selection() {
     download_customfeeds_json || {
         clear
         echo "========================================"
-        echo "  $(translate 'tr-custom-feeds')"
+        echo "  $(translate 'tr-tui-custom-feeds')"
         echo "========================================"
         echo ""
         echo "Failed to load custom feeds"
@@ -833,7 +833,7 @@ simple_custom_feeds_selection() {
     if [ -z "$cat_id" ]; then
         clear
         echo "========================================"
-        echo "  $(translate 'tr-custom-feeds')"
+        echo "  $(translate 'tr-tui-custom-feeds')"
         echo "========================================"
         echo ""
         echo "No custom feeds available"
@@ -1635,7 +1635,7 @@ whiptail_package_selection() {
     
     local breadcrumb
     if [ "$caller" = "custom_feeds" ]; then
-        local tr_custom_feeds=$(translate "tr-custom-feeds")
+        local tr_custom_feeds=$(translate "tr-tui-custom-feeds")
         breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_custom_feeds" "$cat_name")
     else
         local tr_custom_packages=$(translate "tr-custom-packages")
@@ -1700,8 +1700,8 @@ whiptail_main_menu() {
         
         local custom_feeds_choice=0
         if [ "$PKG_MGR" = "opkg" ]; then
-            local custom_feeds_label=$(translate "tr-custom-feeds")
-            [ -z "$custom_feeds_label" ] || [ "$custom_feeds_label" = "tr-custom-feeds" ] && custom_feeds_label="Custom Feeds"
+            local custom_feeds_label=$(translate "tr-tui-custom-feeds")
+            [ -z "$custom_feeds_label" ] || [ "$custom_feeds_label" = "tr-tui-custom-feeds" ] && custom_feeds_label="Custom Feeds"
             menu_items="$menu_items $i \"$custom_feeds_label\""
             custom_feeds_choice=$i
             i=$((i+1))
@@ -2419,8 +2419,8 @@ simple_main_menu() {
         
         local custom_feeds_choice=0
         if [ "$PKG_MGR" = "opkg" ]; then
-            local custom_feeds_label=$(translate "tr-custom-feeds")
-            [ -z "$custom_feeds_label" ] || [ "$custom_feeds_label" = "tr-custom-feeds" ] && custom_feeds_label="Custom Feeds"
+            local custom_feeds_label=$(translate "tr-tui-custom-feeds")
+            [ -z "$custom_feeds_label" ] || [ "$custom_feeds_label" = "tr-tui-custom-feeds" ] && custom_feeds_label="Custom Feeds"
             echo "$i) $custom_feeds_label"
             custom_feeds_choice=$i
             i=$((i+1))
