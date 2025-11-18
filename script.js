@@ -34,7 +34,7 @@ const DEFAULT_TERMINALS = {
   },
   aiostui: {
     name: 'aios-tui (β)',
-    command: `mkdir -p ${BASE_DIR_TUI}; wget --no-check-certificate -O ${AIOS_TUI_PATH} "${PROXY_URL}${AIOS_TUI_URL}" && chmod +x ${AIOS_TUI_PATH} && ${AIOS_TUI_PATH}`
+    command: `mkdir -p ${BASE_DIR_TUI}; wget --no-check-certificate -O ${AIOS_TUI_PATH} "https://site-u.pages.dev/www/aios-tui.sh" && chmod +x ${AIOS_TUI_PATH} && ${AIOS_TUI_PATH}`
   },
   ssh: {
     name: 'SSH',
@@ -100,7 +100,7 @@ const translations = {
         aiosExplanation: 'メニュー形式スクリプト',
         aiosExplanationLink: 'https://github.com/site-u2023/aios/blob/main/aios',
         aiostuiExplanation: 'TUI形式スクリプト',
-        aiostuiExplanationLink: 'https://github.com/site-u2023/site-u2023.github.io/blob/main/www/aios-tui.sh',
+        aiostuiExplanationLink: 'https://site-u.pages.dev/www/aios-tui.sh',
         sshExplanation: 'SSHログイン',
         // iPhone
         termius: 'Termius (SSH)',
@@ -163,7 +163,7 @@ const translations = {
         aiosExplanation: 'Menu-based script',
         aiosExplanationLink: 'https://github.com/site-u2023/aios/blob/main/aios',
         aiostuiExplanation: 'TUI-based script',
-        aiostuiExplanationLink: 'https://github.com/site-u2023/site-u2023.github.io/blob/main/www/aios-tui.sh',
+        aiostuiExplanationLink: 'https://site-u.pages.dev/www/aios-tui.sh',
         sshExplanation: 'SSH login',
         // iPhone
         termius: 'Termius (SSH)',
