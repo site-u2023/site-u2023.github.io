@@ -155,8 +155,10 @@
     
     "tr-tui-view-device-info": "デバイス情報",
     "tr-tui-view-package-list": "設定パッケージ",
+    "tr-tui-view-custom-packages": "設定カスタムパッケージ",
     "tr-tui-view-config-vars": "設定変数",
     "tr-tui-view-postinst": "postinst.sh",
+    "tr-tui-view-customfeeds": "customfeeds.sh",
     "tr-tui-view-setup": "setup.sh",
     "tr-tui-review-configuration": "設定確認と適用",
     "tr-tui-apply": "設定適用",
