@@ -24,7 +24,7 @@ AP6="ap6"
 NAS="openwrt"
 MNT="/mnt/sda"
 MEM=$(awk '/MemTotal/{print int($2/1024)}' /proc/meminfo)
-exec >/tmp/setup.log 2>&1
+exec >/tmp/aios-setup.log 2>&1
 disable_wan() {
     local SEC=network
     SET wan.disabled='1'
