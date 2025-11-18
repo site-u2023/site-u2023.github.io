@@ -81,7 +81,6 @@ WHIPTAIL_PACKAGES="whiptail"
 WHIPTAIL_HEIGHT=0
 WHIPTAIL_WIDTH=78
 WHIPTAIL_FOLD_WIDTH=$((WHIPTAIL_WIDTH - 2))
-WHIPTAIL_TEXTBOX_HEIGHT=$(($(tput lines 2>/dev/null || echo 24) - 6))
 BREADCRUMB_SEP=" > "
 DEFAULT_BTN_SELECT="tr-tui-select"
 DEFAULT_BTN_BACK="tr-tui-back"
@@ -191,7 +190,7 @@ show_textbox() {
     local temp_file="$CONFIG_DIR//textbox_wrapped.txt"
     fold -s -w $WHIPTAIL_FOLD_WIDTH "$file" > "$temp_file"
     
-    whiptail --scrolltext --title "$breadcrumb" --ok-button "$ok_btn" --textbox "$temp_file" $WHIPTAIL_TEXTBOX_HEIGHT $WHIPTAIL_WIDTH
+    whiptail --scrolltext --title "$breadcrumb" --ok-button "$ok_btn" --textbox "$temp_file" $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH
     
     rm -f "$temp_file"
 }
@@ -1865,16 +1864,8 @@ review_and_apply() {
                     local breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$tr_custom_packages")
                     
                     if [ -s "$SELECTED_CUSTOM_PACKAGES" ]; then
-                        local custom_list="$CONFIG_DIR/custom_pkg_view.txt"
-                        : > "$custom_list"
-                        
-                        while IFS= read -r pkg_id; do
-                            [ -z "$pkg_id" ] && continue
-                            local pkg_name=$(get_package_name "$pkg_id")
-                            echo "  - ${pkg_name}" >> "$custom_list"
-                        done < "$SELECTED_CUSTOM_PACKAGES"
-                        
-                        show_textbox "$breadcrumb" "$custom_list"
+                        cat "$SELECTED_CUSTOM_PACKAGES" | sed 's/^/  - /' > "$CONFIG_DIR/custom_pkg_view.txt"
+                        show_textbox "$breadcrumb" "$CONFIG_DIR/custom_pkg_view.txt"
                     else
                         show_msgbox "$breadcrumb" "$(translate 'tr-tui-no-packages')"
                     fi
