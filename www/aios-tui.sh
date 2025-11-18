@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1118.1854"
+VERSION="R7.1118.1933"
 
 # ============================================
 # Configuration Management
@@ -812,17 +812,33 @@ whiptail_custom_feeds_selection() {
     [ "$PKG_MGR" != "opkg" ] && return 0
     download_customfeeds_json || return 0
     
-    local cat_id=$(get_customfeed_categories | head -1)
+    local tr_main_menu=$(translate "tr-tui-main-menu")
+    local tr_custom_feeds=$(translate "tr-tui-custom-feeds")
+    local breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_custom_feeds")
     
-    if [ -z "$cat_id" ]; then
-        local tr_main_menu=$(translate "tr-tui-main-menu")
-        local tr_custom_feeds=$(translate "tr-tui-custom-feeds")
-        local breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_custom_feeds")
+    local menu_items="" i=1 cat_id cat_name
+    
+    while read cat_id; do
+        cat_name=$(get_category_name "$cat_id")
+        menu_items="$menu_items $i \"$cat_name\""
+        i=$((i+1))
+    done < <(get_customfeed_categories)
+    
+    if [ -z "$menu_items" ]; then
         show_msgbox "$breadcrumb" "No custom feeds available"
         return 0
     fi
     
-    whiptail_package_selection "$cat_id" "custom_feeds"
+    choice=$(show_menu "$breadcrumb" "" "" "" $menu_items)
+    
+    if [ $? -ne 0 ]; then
+        return 0
+    fi
+    
+    if [ -n "$choice" ]; then
+        selected_cat=$(get_customfeed_categories | sed -n "${choice}p")
+        whiptail_package_selection "$selected_cat" "custom_feeds"
+    fi
 }
 
 simple_custom_feeds_selection() {
