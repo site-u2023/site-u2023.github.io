@@ -170,6 +170,7 @@
     "tr-tui-apply-confirm-step3": "3. Reboot (with confirmation)",
     "tr-tui-apply-confirm-question": "Execute?",
     "tr-tui-installing-packages": "Installing packages",
+    "tr-tui-installing-custom-packages": "Installing custom packages",
     "tr-tui-applying-config": "Applying system configuration",
     "tr-tui-config-applied": "Configuration applied successfully!",
     "tr-tui-reboot-question": "Reboot now?",
