@@ -169,7 +169,7 @@
     "tr-tui-apply-confirm-step1": "1. パッケージインストール (postinst.sh)",
     "tr-tui-apply-confirm-step2": "2. カスタムパッケージインストール (customfeeds.sh)",
     "tr-tui-apply-confirm-step3": "3. 設定適用 (setup.sh)",
-    "tr-tui-apply-confirm-step3": "4. 再起動（確認あり）",
+    "tr-tui-apply-confirm-step4": "4. 再起動（確認あり）",
     "tr-tui-apply-confirm-question": "実行しますか？",
     "tr-tui-installing-packages": "パッケージをインストール中",
     "tr-tui-installing-custom-packages": "カスタムフィードパッケージをインストール中",
