@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1118.1125"
+VERSION="R7.1118.1131"
 
 # ============================================
 # Configuration Management
@@ -756,6 +756,10 @@ download_customfeeds_json() {
     return 0
 }
 
+get_customfeed_categories() {
+    jsonfilter -i "$CUSTOMFEEDS_JSON" -e '@.categories[*].id' 2>/dev/null | grep -v '^$'
+}
+
 get_customfeed_package_pattern() {
     jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[*].packages[@.id='$1'].pattern" 2>/dev/null | head -1
 }
@@ -783,8 +787,18 @@ get_customfeed_download_base() {
 whiptail_custom_feeds_selection() {
     [ "$PKG_MGR" != "opkg" ] && return 0
     download_customfeeds_json || return 0
-    local cat_id=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e '@.categories[0].id' 2>/dev/null)
-    [ -n "$cat_id" ] && whiptail_package_selection "$cat_id"
+    
+    local cat_id=$(get_customfeed_categories | head -1)
+    
+    if [ -z "$cat_id" ]; then
+        local tr_main_menu=$(translate "tr-tui-main-menu")
+        local tr_custom_feeds=$(translate "tr-custom-feeds")
+        local breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_custom_feeds")
+        show_msgbox "$breadcrumb" "No custom feeds available"
+        return 0
+    fi
+    
+    whiptail_package_selection "$cat_id"
 }
 
 simple_custom_feeds_selection() {
@@ -815,7 +829,19 @@ simple_custom_feeds_selection() {
     }
     
     local cat_id=$(get_customfeed_categories | head -1)
-    [ -z "$cat_id" ] && return 0
+    
+    if [ -z "$cat_id" ]; then
+        clear
+        echo "========================================"
+        echo "  $(translate 'tr-custom-feeds')"
+        echo "========================================"
+        echo ""
+        echo "No custom feeds available"
+        echo ""
+        printf "Press Enter to continue..."
+        read
+        return 0
+    fi
     
     simple_package_selection "$cat_id"
 }
