@@ -2532,6 +2532,11 @@ aios_light_main() {
         simple_device_info
         simple_main_menu
     fi
+
+    echo ""
+    echo "=========================================="
+    echo "  $(translate 'tr-tui-exit-message')"
+    echo "=========================================="
 }
 
 aios_light_main
