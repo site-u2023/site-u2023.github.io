@@ -316,7 +316,7 @@ init() {
 
     load_config_from_js || {
         echo "Fatal: Cannot load configuration"
-        exit 1
+        return 1
     }
 
     export NEWT_COLORS
@@ -2488,7 +2488,7 @@ aios_light_main() {
     if ! download_setup_json; then
         echo "Error: Failed to download setup.json"
         echo "Cannot continue without setup.json"
-        exit 1
+        return 1
     fi
     
     echo "Fetching postinst.json"
