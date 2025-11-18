@@ -3,7 +3,7 @@
     {
       "id": "custom-feeds-gspotx2f",
       "name": "gSpotx2f Repository",
-      "class": "tr-feed-gspotx2f",
+      "class": "tr-tui-feed-gspotx2f",
       "description": "Community packages from gSpotx2f",
       "api_base": "https://api.github.com/repos/gSpotx2f/packages-openwrt/contents/current",
       "download_base": "https://raw.githubusercontent.com/gSpotx2f/packages-openwrt/master/current",
