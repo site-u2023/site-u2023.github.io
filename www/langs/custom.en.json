@@ -144,7 +144,7 @@
 
     "tr-feedback-link": "Forum",
 
-    "tr-tui-packages": "Packages",
+    "tr-tui-packages": "Install Packages",
     "tr-tui-main-menu": "Main Menu",
     "tr-tui-select": "Select",
     "tr-tui-back": "Back",
@@ -169,7 +169,7 @@
     "tr-tui-postinst-not-found": "postinst.sh file not found",
     "tr-tui-setup-not-found": "setup.sh file not found",
     "tr-tui-apply-confirm-step1": "1. Install packages (postinst.sh)",
-    "tr-tui-apply-confirm-step2": "2. Install custom packages (customfeeds.sh)",
+    "tr-tui-apply-confirm-step2": "2. Install custom feed packages (customfeeds.sh)",
     "tr-tui-apply-confirm-step3": "3. Apply configuration (setup.sh)",
     "tr-tui-apply-confirm-step4": "4. Reboot (confirmation required)",
     "tr-tui-apply-confirm-question": "Execute?",
@@ -196,7 +196,7 @@
     "tr-tui-isp-info": "ISP Information:",
     "tr-tui-manual-config-required": "Please configure connection settings manually.",
 
-    "tr-tui-custom-feeds": "Custom Feed Packages",
+    "tr-tui-custom-feeds": "Install Custom Feed Packages",
     "tr-tui-feed-gspotx2f": "gSpotx2f Repository",
     "tr-tui-feed-jerrykuku": "jerrykuku Repository"   
 }
