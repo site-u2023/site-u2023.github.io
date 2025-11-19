@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1119.2124"
+VERSION="R7.1119.2324"
 
 # Configuration Management
 
@@ -1275,7 +1275,6 @@ whiptail_process_items() {
             local nested=$(get_section_nested_items "$item_id")
             for child_id in $nested; do
                 whiptail_process_items "$cat_id" "$child_id" "$item_breadcrumb"
-                [ $? -ne 0 ] && return 1
             done
             ;;
             
@@ -1319,7 +1318,8 @@ whiptail_process_items() {
             exit_code=$?
             
             if [ $exit_code -ne 0 ]; then
-                return 1
+                echo "[DEBUG] Radio-group cancelled, keeping current value" >> $CONFIG_DIR/debug.log
+                return 0
             fi
             
             if [ -n "$value" ]; then
@@ -1456,8 +1456,8 @@ whiptail_process_items() {
                 echo "[DEBUG] select exit_code=$exit_code, value='$value'" >> $CONFIG_DIR/debug.log
                 
                 if [ $exit_code -ne 0 ]; then
-                    echo "[DEBUG] User cancelled or error in select" >> $CONFIG_DIR/debug.log
-                    return 1
+                    echo "[DEBUG] Select cancelled, keeping current value" >> $CONFIG_DIR/debug.log
+                    return 0
                 fi
                 
                 if [ -n "$value" ]; then
@@ -1487,8 +1487,8 @@ whiptail_process_items() {
                 echo "[DEBUG] inputbox exit_code=$exit_code, value='$value'" >> $CONFIG_DIR/debug.log
                 
                 if [ $exit_code -ne 0 ]; then
-                    echo "[DEBUG] User cancelled or error in inputbox" >> $CONFIG_DIR/debug.log
-                    return 1
+                    echo "[DEBUG] Inputbox cancelled, keeping current value" >> $CONFIG_DIR/debug.log
+                    return 0
                 fi
                 
                 if [ -n "$value" ]; then
@@ -1558,8 +1558,6 @@ whiptail_category_config() {
             sed -i "/^language=/d" "$SETUP_VARS"
             echo "language='${value}'" >> "$SETUP_VARS"
             update_language_packages
-        else
-            return 0
         fi
     fi
     
@@ -1580,7 +1578,6 @@ whiptail_category_config() {
             if [ "$item_type" = "radio-group" ]; then
                 found_radio=1
                 whiptail_process_items "$cat_id" "$item_id" "$base_breadcrumb"
-                [ $? -ne 0 ] && return 0
                 
                 local radio_label=$(get_setup_item_label "$item_id")
                 radio_breadcrumb="${base_breadcrumb}${BREADCRUMB_SEP}${radio_label}"
@@ -1609,7 +1606,6 @@ whiptail_category_config() {
                 fi
             else
                 whiptail_process_items "$cat_id" "$item_id" "$radio_breadcrumb"
-                [ $? -ne 0 ] && break
             fi
         done
         
