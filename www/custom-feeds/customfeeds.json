@@ -75,6 +75,30 @@
           "restart_service": "internet-detector"
         }
       ]
+    },
+    {
+      "id": "custom-feeds-jerrykuku",
+      "name": "jerrykuku Repository",
+      "class": "tr-tui-feed-jerrykuku",
+      "description": "Argon theme and related packages from jerrykuku",
+      "api_base": "https://api.github.com/repos/jerrykuku/luci-theme-argon/releases/latest",
+      "download_base": "https://github.com/jerrykuku/luci-theme-argon/releases/download",
+      "packages": [
+        {
+          "id": "luci-theme-argon",
+          "pattern": "luci-theme-argon_",
+          "exclude": "",
+          "name": "luci-theme-argon",
+          "description": "A brand new Argon theme for LuCI"
+        },
+        {
+          "id": "luci-app-argon-config",
+          "pattern": "luci-app-argon-config_",
+          "exclude": "",
+          "name": "luci-app-argon-config",
+          "description": "Argon theme configuration app"
+        }
+      ]
     }
   ]
 }
