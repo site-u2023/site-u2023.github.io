@@ -3,11 +3,11 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1119.1508"
+VERSION="R7.1119.1519"
 
-# ============================================
+
 # Configuration Management
-# ============================================
+
 BASE_TMP_DIR="/tmp"
 CONFIG_DIR="$BASE_TMP_DIR/aiost"
 BOOTSTRAP_URL="https://site-u.pages.dev/www"
@@ -60,9 +60,9 @@ load_config_from_js() {
     return 0
 }
 
-# ============================================
+
 # URL and Path Configuration
-# ============================================
+
 PACKAGES_JSON="$CONFIG_DIR/postinst.json"
 SETUP_JSON="$CONFIG_DIR/setup.json"
 AUTO_CONFIG_JSON="$CONFIG_DIR/auto_config.json"
@@ -75,9 +75,9 @@ TRANSLATION_CACHE="$CONFIG_DIR/translation_cache.txt"
 
 CUSTOMFEEDS_JSON="$CONFIG_DIR/customfeeds.json"
 
-# ============================================
+
 # UI Configuration Variables
-# ============================================
+
 WHIPTAIL_PACKAGES="whiptail"
 WHIPTAIL_HEIGHT="0"
 WHIPTAIL_WIDTH="78"
@@ -89,18 +89,18 @@ DEFAULT_BTN_CANCEL="tr-tui-cancel"
 DEFAULT_BTN_YES="tr-tui-yes"
 DEFAULT_BTN_NO="tr-tui-no"
 
-# ============================================
+
 # Whiptail Color Configuration
-# ============================================
+
 # 利用可能色: black, red, green, brown, blue, magenta, cyan, lightgray, gray, brightred, brightgreen, yellow, brightblue, brightmagenta, brightcyan, white
 
 NEWT_COLORS='
 title=black,lightgray
 '
 
-# ============================================
+
 # Common UI Template Functions
-# ============================================
+
 
 build_breadcrumb() {
     local result=""
@@ -204,9 +204,9 @@ simple_show_menu() {
     echo "$choice"
 }
 
-# ============================================
+
 # UI Mode Selection
-# ============================================
+
 
 select_ui_mode() {
     if check_packages_installed $WHIPTAIL_PACKAGES; then
@@ -231,9 +231,9 @@ select_ui_mode() {
     fi
 }
 
-# ============================================
+
 # Package Manager Detection
-# ============================================
+
 
 detect_package_manager() {
     if command -v opkg >/dev/null 2>&1; then
@@ -278,9 +278,9 @@ install_package() {
     return 0
 }
 
-# ============================================
+
 # Initialization
-# ============================================
+
 
 init() {
     local script_name=$(basename "$0")
@@ -309,9 +309,9 @@ init() {
     echo "[DEBUG] $(date): Init complete, cache cleared" >> $CONFIG_DIR/debug.log
 }
 
-# ============================================
+
 # Language and Translation
-# ============================================
+
 
 download_language_json() {
     local lang="${1:-en}"
@@ -355,9 +355,9 @@ translate() {
     return 1
 }
 
-# ============================================
+
 # File Downloads
-# ============================================
+
 
 download_setup_json() {
     if [ ! -f "$SETUP_JSON" ]; then
@@ -377,9 +377,9 @@ download_postinst_json() {
     return 0
 }
 
-# ============================================
+
 # Device Information
-# ============================================
+
 
 get_device_info() {
     if [ -f /etc/board.json ]; then
@@ -453,9 +453,9 @@ get_extended_device_info() {
     fi
 }
 
-# ============================================
+
 # Package Management
-# ============================================
+
 
 load_default_packages() {
     if [ ! -f "$PACKAGES_JSON" ]; then
@@ -533,9 +533,9 @@ apply_api_defaults() {
     fi
 }
 
-# ============================================
+
 # Setup JSON Accessors
-# ============================================
+
 
 get_setup_categories() {
     jsonfilter -i "$SETUP_JSON" -e '@.categories[*].id' 2>/dev/null | grep -v '^$'
@@ -655,9 +655,9 @@ get_setup_item_option_label() {
     fi
 }
 
-# ============================================
+
 # Package JSON Accessors
-# ============================================
+
 
 get_categories() {
     jsonfilter -i "$PACKAGES_JSON" -e '@.categories[*].id' 2>/dev/null | grep -v '^$'
@@ -726,9 +726,9 @@ is_package_selected() {
     fi
 }
 
-# ============================================
+
 # Custom Feeds Management
-# ============================================
+
 
 download_customfeeds_json() {
     if [ ! -f "$CUSTOMFEEDS_JSON" ]; then
@@ -858,9 +858,9 @@ simple_custom_feeds_selection() {
     simple_package_selection "$cat_id"
 }
 
-# ============================================
+
 # Connection Type and Conditional Logic
-# ============================================
+
 
 get_effective_connection_type() {
     local conn_type=$(grep "^connection_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
@@ -1058,12 +1058,11 @@ compute_dslite_aftr() {
     return 1
 }
 
-# ============================================
+
 # File Generation
-# ============================================
+
 
 generate_files() {
-    # postinst.sh の生成
     {
         wget -q -O - "$POSTINST_TEMPLATE_URL" | sed -n '1,/^# BEGIN_VARIABLE_DEFINITIONS/p'
         
@@ -1079,7 +1078,6 @@ generate_files() {
     
     chmod +x "$CONFIG_DIR/postinst.sh"
     
-    # setup.sh の生成
     {
         wget -q -O - "$SETUP_TEMPLATE_URL" | sed -n '1,/^# BEGIN_VARS/p'
         
@@ -1092,9 +1090,7 @@ generate_files() {
     
     chmod +x "$CONFIG_DIR/setup.sh"
     
-    # customfeeds.sh の生成（全リポジトリ分）
     if [ -f "$CUSTOMFEEDS_JSON" ]; then
-        # 各リポジトリごとにスクリプトを生成
         get_customfeed_categories | while read cat_id; do
             local template_url=$(get_customfeed_template_url "$cat_id")
             
@@ -1106,7 +1102,6 @@ generate_files() {
             local api_url=$(get_customfeed_api_base "$cat_id")
             local download_url=$(get_customfeed_download_base "$cat_id")
             
-            # このリポジトリで選択されたパッケージを抽出
             local temp_pkg_file="$CONFIG_DIR/temp_${cat_id}.txt"
             : > "$temp_pkg_file"
             
@@ -1122,7 +1117,6 @@ generate_files() {
                 selected_pkgs=$(cat "$temp_pkg_file" | tr '\n' ' ' | sed 's/ $//')
             fi
             
-            # スクリプト生成
             {
                 wget -q -O - "$template_url" | sed -n '1,/^# BEGIN_VARIABLE_DEFINITIONS/p'
                 
@@ -1138,7 +1132,6 @@ generate_files() {
             rm -f "$temp_pkg_file"
         done
     else
-        # customfeeds.json がない場合は空のスクリプト
         {
             echo "#!/bin/sh"
             echo "# No custom feeds configured"
@@ -1148,9 +1141,9 @@ generate_files() {
     fi
 }
 
-# ============================================
+
 # Whiptail UI Functions
-# ============================================
+
 
 whiptail_device_info() {
     local tr_main_menu=$(translate "tr-tui-main-menu")
@@ -1168,7 +1161,6 @@ whiptail_device_info() {
     show_msgbox "$breadcrumb" "$info"
 }
 
-# Custom title version of device info display (for future extensions)
 whiptail_device_info_titled() {
     local title="$1"
     local info="Model: $DEVICE_MODEL\n"
@@ -1289,284 +1281,227 @@ whiptail_process_items() {
     fi
     
     echo "[DEBUG] Items to process: $items" >> $CONFIG_DIR/debug.log
-    local items_processed=0
     
-    for item_id in $items; do
-        echo "[DEBUG] Processing item: $item_id" >> $CONFIG_DIR/debug.log
-        local item_type=$(get_setup_item_type "$item_id")
-        echo "[DEBUG] Item type: $item_type" >> $CONFIG_DIR/debug.log
+    while true; do
+        local all_completed=1
         
-        if ! should_show_item "$item_id"; then
-            echo "[DEBUG] Item $item_id hidden by showWhen" >> $CONFIG_DIR/debug.log
-            continue
-        fi
-        
-        case "$item_type" in
-            radio-group)
-                items_processed=$((items_processed + 1))
-                local label=$(get_setup_item_label "$item_id")
-                local variable=$(get_setup_item_variable "$item_id")
-                local default=$(get_setup_item_default "$item_id")
-                
-                echo "[DEBUG] radio-group: var=$variable, default=$default" >> $CONFIG_DIR/debug.log
-                
-                if [ "$item_id" = "mape-type" ]; then
-                    if [ -n "$MAPE_GUA_PREFIX" ]; then
-                        default="gua"
-                    else
-                        default="pd"
-                    fi
-                fi
-                
-                local current=$(grep "^${variable}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-                [ -z "$current" ] && current="$default"
-                
-                echo "[DEBUG] Current value: $current" >> $CONFIG_DIR/debug.log
-                
-                local options=$(get_setup_item_options "$item_id")
-                
-                if [ "$variable" = "connection_type" ] && [ "$DETECTED_CONN_TYPE" = "unknown" ]; then
-                    options=$(echo "$options" | grep -v "^auto$")
-                    echo "[DEBUG] Removed 'auto' option due to Unknown connection type" >> $CONFIG_DIR/debug.log
-                fi
-                
-                echo "[DEBUG] Options: $options" >> $CONFIG_DIR/debug.log
-                
-                local menu_opts=""
-                local i=1
-                for opt in $options; do
-                    local opt_label=$(get_setup_item_option_label "$item_id" "$opt")
-                    menu_opts="$menu_opts $i \"$opt_label\""
-                    i=$((i+1))
-                done
-                
-                value=$(show_menu "$breadcrumb" "${label}:" "" "" $menu_opts)
-                exit_code=$?
-                
-                if [ $exit_code -ne 0 ]; then
-                    return 1
-                fi
-                
-                if [ -n "$value" ]; then
-                    selected_opt=$(echo "$options" | sed -n "${value}p")
-                    echo "[DEBUG] Selected: $selected_opt" >> $CONFIG_DIR/debug.log
-                    sed -i "/^${variable}=/d" "$SETUP_VARS"
-                    echo "${variable}='${selected_opt}'" >> "$SETUP_VARS"
-                    echo "[DEBUG] Saved to SETUP_VARS" >> $CONFIG_DIR/debug.log     
-                    auto_add_conditional_packages "$cat_id"
-                fi
-                ;;
+        for item_id in $items; do
+            echo "[DEBUG] Processing item: $item_id" >> $CONFIG_DIR/debug.log
+            local item_type=$(get_setup_item_type "$item_id")
+            echo "[DEBUG] Item type: $item_type" >> $CONFIG_DIR/debug.log
             
-            section)
-                echo "[DEBUG] Processing section: $item_id" >> $CONFIG_DIR/debug.log
-                local nested=$(get_section_nested_items "$item_id")
-                if [ -n "$nested" ]; then
-                    echo "[DEBUG] Nested items: $nested" >> $CONFIG_DIR/debug.log
-                    whiptail_process_items "$cat_id" "$nested" "$breadcrumb"
-                    items_processed=$((items_processed + $?))
-                fi
-                ;;
-                
-            field)
-                items_processed=$((items_processed + 1))
-                local label=$(get_setup_item_label "$item_id")
-                local variable=$(get_setup_item_variable "$item_id")
-                local default=$(get_setup_item_default "$item_id")
-                local field_type=$(get_setup_item_field_type "$item_id")
-                
-                echo "[DEBUG] field processing: item_id=$item_id" >> $CONFIG_DIR/debug.log
-                echo "[DEBUG] label='$label'" >> $CONFIG_DIR/debug.log
-                echo "[DEBUG] variable='$variable'" >> $CONFIG_DIR/debug.log
-                echo "[DEBUG] default='$default'" >> $CONFIG_DIR/debug.log
-                echo "[DEBUG] field_type='$field_type'" >> $CONFIG_DIR/debug.log
-                
-                local current=$(grep "^${variable}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-                
-                if [ -z "$current" ]; then
-                    case "$variable" in
-                        mape_gua_prefix)
-                            current="${MAPE_GUA_PREFIX:-$default}"
-                            ;;
-                        mape_br)
-                            current="${MAPE_BR:-$default}"
-                            ;;
-                        mape_ipv4_prefix)
-                            current="${MAPE_IPV4_PREFIX:-$default}"
-                            ;;
-                        mape_ipv4_prefixlen)
-                            current="${MAPE_IPV4_PREFIXLEN:-$default}"
-                            ;;
-                        mape_ipv6_prefix)
-                            current="${MAPE_IPV6_PREFIX:-$default}"
-                            ;;
-                        mape_ipv6_prefixlen)
-                            current="${MAPE_IPV6_PREFIXLEN:-$default}"
-                            ;;
-                        mape_ealen)
-                            current="${MAPE_EALEN:-$default}"
-                            ;;
-                        mape_psidlen)
-                            current="${MAPE_PSIDLEN:-$default}"
-                            ;;
-                        mape_psid_offset)
-                            current="${MAPE_PSID_OFFSET:-$default}"
-                            ;;
-                        dslite_aftr_address)
-                            current="${DSLITE_AFTR:-$default}"
-                            ;;
-                        *)
-                            current="$default"
-                            ;;
-                    esac
-                fi
-                
-                echo "[DEBUG] current='$current'" >> $CONFIG_DIR/debug.log
-                
-                if [ "$field_type" = "computed" ]; then
-                    if [ "$item_id" = "dslite-aftr-address-computed" ]; then
-                        local aftr_type=$(grep "^dslite_aftr_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-                        local area=$(grep "^dslite_area=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-                        
-                        if [ -n "$aftr_type" ] && [ -n "$area" ]; then
-                            local computed=$(compute_dslite_aftr "$aftr_type" "$area")
-                            if [ -n "$computed" ]; then
-                                current="$computed"
-                                sed -i "/^${variable}=/d" "$SETUP_VARS"
-                                echo "${variable}='${computed}'" >> "$SETUP_VARS"
-                            fi
+            if ! should_show_item "$item_id"; then
+                echo "[DEBUG] Item $item_id hidden by showWhen" >> $CONFIG_DIR/debug.log
+                continue
+            fi
+            
+            case "$item_type" in
+                radio-group)
+                    local label=$(get_setup_item_label "$item_id")
+                    local variable=$(get_setup_item_variable "$item_id")
+                    local default=$(get_setup_item_default "$item_id")
+                    
+                    if [ "$item_id" = "mape-type" ]; then
+                        if [ -n "$MAPE_GUA_PREFIX" ]; then
+                            default="gua"
+                        else
+                            default="pd"
                         fi
                     fi
-                fi
-                
-                if [ "$field_type" = "select" ]; then
-                    local source=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].source" 2>/dev/null | head -1)
                     
-                    if [ -n "$source" ]; then
-                        echo "[DEBUG] Field uses dynamic source: $source" >> $CONFIG_DIR/debug.log
-                        
-                        case "$source" in
-                            "browser-languages")
-                                echo "[DEBUG] Skipping browser-languages field (already set: $current)" >> $CONFIG_DIR/debug.log
-                                ;;
-                            *)
-                                echo "[DEBUG] Unknown source type: $source, showing as inputbox" >> $CONFIG_DIR/debug.log
-                                value=$(show_inputbox "$breadcrumb" "${label}:" "$current")
-                                exit_code=$?
-                                
-                                if [ $exit_code -ne 0 ]; then
-                                    return 1
-                                fi
-                                
-                                if [ -n "$value" ]; then
-                                    sed -i "/^${variable}=/d" "$SETUP_VARS"
-                                    echo "${variable}='${value}'" >> "$SETUP_VARS"
-                                fi
-                                ;;
-                        esac
-                        continue
-                    fi
+                    local current=$(grep "^${variable}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+                    [ -z "$current" ] && current="$default"
                     
                     local options=$(get_setup_item_options "$item_id")
                     
-                    echo "[DEBUG] Raw options output: '$options'" >> $CONFIG_DIR/debug.log
-                    
-                    if [ -z "$options" ]; then
-                        echo "[DEBUG] ERROR: No options found for $item_id, skipping" >> $CONFIG_DIR/debug.log
-                        show_msgbox "$breadcrumb" "Error: No options available for $label"
-                        continue
+                    if [ "$variable" = "connection_type" ] && [ "$DETECTED_CONN_TYPE" = "unknown" ]; then
+                        options=$(echo "$options" | grep -v "^auto$")
                     fi
                     
                     local menu_opts=""
                     local i=1
                     for opt in $options; do
                         local opt_label=$(get_setup_item_option_label "$item_id" "$opt")
-                        echo "[DEBUG] Option $i: value='$opt', label='$opt_label'" >> $CONFIG_DIR/debug.log
                         menu_opts="$menu_opts $i \"$opt_label\""
                         i=$((i+1))
                     done
                     
-                    echo "[DEBUG] Final menu_opts='$menu_opts'" >> $CONFIG_DIR/debug.log
-                    
                     value=$(show_menu "$breadcrumb" "${label}:" "" "" $menu_opts)
-                    exit_code=$?
                     
-                    echo "[DEBUG] select exit_code=$exit_code, value='$value'" >> $CONFIG_DIR/debug.log
-                    
-                    if [ $exit_code -ne 0 ]; then
-                        echo "[DEBUG] User cancelled or error in select" >> $CONFIG_DIR/debug.log
+                    if [ $? -ne 0 ]; then
                         return 1
                     fi
                     
                     if [ -n "$value" ]; then
                         selected_opt=$(echo "$options" | sed -n "${value}p")
-                        echo "[DEBUG] selected_opt='$selected_opt'" >> $CONFIG_DIR/debug.log
                         sed -i "/^${variable}=/d" "$SETUP_VARS"
                         echo "${variable}='${selected_opt}'" >> "$SETUP_VARS"
-                        
                         auto_add_conditional_packages "$cat_id"
-                        
-                        if [ "$item_id" = "dslite-aftr-type" ] || [ "$item_id" = "dslite-area" ]; then
+                        all_completed=0
+                        break
+                    fi
+                    ;;
+                
+                section)
+                    local nested=$(get_section_nested_items "$item_id")
+                    if [ -n "$nested" ]; then
+                        whiptail_process_items "$cat_id" "$nested" "$breadcrumb"
+                        if [ $? -ne 0 ]; then
+                            all_completed=0
+                            break
+                        fi
+                    fi
+                    ;;
+                    
+                field)
+                    local label=$(get_setup_item_label "$item_id")
+                    local variable=$(get_setup_item_variable "$item_id")
+                    local default=$(get_setup_item_default "$item_id")
+                    local field_type=$(get_setup_item_field_type "$item_id")
+                    
+                    local current=$(grep "^${variable}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+                    
+                    if [ -z "$current" ]; then
+                        case "$variable" in
+                            mape_gua_prefix) current="${MAPE_GUA_PREFIX:-$default}" ;;
+                            mape_br) current="${MAPE_BR:-$default}" ;;
+                            mape_ipv4_prefix) current="${MAPE_IPV4_PREFIX:-$default}" ;;
+                            mape_ipv4_prefixlen) current="${MAPE_IPV4_PREFIXLEN:-$default}" ;;
+                            mape_ipv6_prefix) current="${MAPE_IPV6_PREFIX:-$default}" ;;
+                            mape_ipv6_prefixlen) current="${MAPE_IPV6_PREFIXLEN:-$default}" ;;
+                            mape_ealen) current="${MAPE_EALEN:-$default}" ;;
+                            mape_psidlen) current="${MAPE_PSIDLEN:-$default}" ;;
+                            mape_psid_offset) current="${MAPE_PSID_OFFSET:-$default}" ;;
+                            dslite_aftr_address) current="${DSLITE_AFTR:-$default}" ;;
+                            *) current="$default" ;;
+                        esac
+                    fi
+                    
+                    if [ "$field_type" = "computed" ]; then
+                        if [ "$item_id" = "dslite-aftr-address-computed" ]; then
                             local aftr_type=$(grep "^dslite_aftr_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
                             local area=$(grep "^dslite_area=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-                            local computed=$(compute_dslite_aftr "$aftr_type" "$area")
-                            if [ -n "$computed" ]; then
-                                sed -i "/^dslite_aftr_address=/d" "$SETUP_VARS"
-                                echo "dslite_aftr_address='${computed}'" >> "$SETUP_VARS"
+                            
+                            if [ -n "$aftr_type" ] && [ -n "$area" ]; then
+                                local computed=$(compute_dslite_aftr "$aftr_type" "$area")
+                                if [ -n "$computed" ]; then
+                                    current="$computed"
+                                    sed -i "/^${variable}=/d" "$SETUP_VARS"
+                                    echo "${variable}='${computed}'" >> "$SETUP_VARS"
+                                fi
                             fi
                         fi
                     fi
-                else
-                    echo "[DEBUG] About to show inputbox for '$label'" >> $CONFIG_DIR/debug.log
                     
-                    value=$(show_inputbox "$breadcrumb" "${label}:" "$current")
-                    exit_code=$?
-                    
-                    echo "[DEBUG] inputbox exit_code=$exit_code, value='$value'" >> $CONFIG_DIR/debug.log
-                    
-                    if [ $exit_code -ne 0 ]; then
-                        echo "[DEBUG] User cancelled or error in inputbox" >> $CONFIG_DIR/debug.log
-                        return 1
-                    fi
-                    
-                    if [ -n "$value" ]; then
-                        sed -i "/^${variable}=/d" "$SETUP_VARS"
-                        echo "${variable}='${value}'" >> "$SETUP_VARS"
-                        echo "[DEBUG] Saved ${variable}='${value}'" >> $CONFIG_DIR/debug.log
-                    fi
-                fi
-                ;;
-                
-            info-display)
-                items_processed=$((items_processed + 1))
-                local cat_idx=0
-                local item_idx=0
-                for cid in $(get_setup_categories); do
-                    local citems=$(get_setup_category_items "$cid")
-                    local idx=0
-                    for itm in $citems; do
-                        if [ "$itm" = "$item_id" ]; then
-                            item_idx=$idx
-                            break 2
+                    if [ "$field_type" = "select" ]; then
+                        local source=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].source" 2>/dev/null | head -1)
+                        
+                        if [ -n "$source" ]; then
+                            case "$source" in
+                                "browser-languages")
+                                    continue
+                                    ;;
+                                *)
+                                    value=$(show_inputbox "$breadcrumb" "${label}:" "$current")
+                                    
+                                    if [ $? -ne 0 ]; then
+                                        all_completed=0
+                                        break
+                                    fi
+                                    
+                                    if [ -n "$value" ]; then
+                                        sed -i "/^${variable}=/d" "$SETUP_VARS"
+                                        echo "${variable}='${value}'" >> "$SETUP_VARS"
+                                    fi
+                                    continue
+                                    ;;
+                            esac
                         fi
-                        idx=$((idx+1))
+                        
+                        local options=$(get_setup_item_options "$item_id")
+                        
+                        if [ -z "$options" ]; then
+                            show_msgbox "$breadcrumb" "Error: No options available for $label"
+                            continue
+                        fi
+                        
+                        local menu_opts=""
+                        local i=1
+                        for opt in $options; do
+                            local opt_label=$(get_setup_item_option_label "$item_id" "$opt")
+                            menu_opts="$menu_opts $i \"$opt_label\""
+                            i=$((i+1))
+                        done
+                        
+                        value=$(show_menu "$breadcrumb" "${label}:" "" "" $menu_opts)
+                        
+                        if [ $? -ne 0 ]; then
+                            all_completed=0
+                            break
+                        fi
+                        
+                        if [ -n "$value" ]; then
+                            selected_opt=$(echo "$options" | sed -n "${value}p")
+                            sed -i "/^${variable}=/d" "$SETUP_VARS"
+                            echo "${variable}='${selected_opt}'" >> "$SETUP_VARS"
+                            auto_add_conditional_packages "$cat_id"
+                            
+                            if [ "$item_id" = "dslite-aftr-type" ] || [ "$item_id" = "dslite-area" ]; then
+                                local aftr_type=$(grep "^dslite_aftr_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+                                local area=$(grep "^dslite_area=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+                                local computed=$(compute_dslite_aftr "$aftr_type" "$area")
+                                if [ -n "$computed" ]; then
+                                    sed -i "/^dslite_aftr_address=/d" "$SETUP_VARS"
+                                    echo "dslite_aftr_address='${computed}'" >> "$SETUP_VARS"
+                                fi
+                            fi
+                        fi
+                    else
+                        value=$(show_inputbox "$breadcrumb" "${label}:" "$current")
+                        
+                        if [ $? -ne 0 ]; then
+                            all_completed=0
+                            break
+                        fi
+                        
+                        if [ -n "$value" ]; then
+                            sed -i "/^${variable}=/d" "$SETUP_VARS"
+                            echo "${variable}='${value}'" >> "$SETUP_VARS"
+                        fi
+                    fi
+                    ;;
+                    
+                info-display)
+                    local cat_idx=0 item_idx=0
+                    for cid in $(get_setup_categories); do
+                        local citems=$(get_setup_category_items "$cid")
+                        local idx=0
+                        for itm in $citems; do
+                            if [ "$itm" = "$item_id" ]; then
+                                item_idx=$idx
+                                break 2
+                            fi
+                            idx=$((idx+1))
+                        done
+                        cat_idx=$((cat_idx+1))
                     done
-                    cat_idx=$((cat_idx+1))
-                done
-                
-                local content=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[$cat_idx].items[$item_idx].content" 2>/dev/null)
-                local class=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[$cat_idx].items[$item_idx].class" 2>/dev/null)
-                
-                if [ -n "$class" ] && [ "${class#tr-}" != "$class" ]; then
-                    content=$(translate "$class")
-                fi
-                
-                [ -n "$content" ] && show_msgbox "$breadcrumb" "$content"
-                ;;
-        esac
+                    
+                    local content=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[$cat_idx].items[$item_idx].content" 2>/dev/null)
+                    local class=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[$cat_idx].items[$item_idx].class" 2>/dev/null)
+                    
+                    if [ -n "$class" ] && [ "${class#tr-}" != "$class" ]; then
+                        content=$(translate "$class")
+                    fi
+                    
+                    [ -n "$content" ] && show_msgbox "$breadcrumb" "$content"
+                    ;;
+            esac
+        done
+        
+        [ $all_completed -eq 1 ] && break
     done
     
-    echo "[DEBUG] Total items processed: $items_processed" >> $CONFIG_DIR/debug.log
-    return $items_processed
+    return 0
 }
 
 show_auto_detection_if_available() {
@@ -1607,7 +1542,7 @@ whiptail_category_config() {
         echo "[DEBUG] Items processed: $processed" >> $CONFIG_DIR/debug.log
         
         if [ $processed -eq 1 ]; then
-            echo "[DEBUG] User cancelled, returning" >> $CONFIG_DIR/debug.log
+            echo "[DEBUG] User cancelled, returning to main menu" >> $CONFIG_DIR/debug.log
             return 0
         fi
         
@@ -1897,7 +1832,6 @@ review_and_apply() {
             
             [ $? -ne 0 ] && return 0
         else
-            # simple mode の場合
             clear
             echo "========================================"
             echo "  $(translate 'tr-tui-review-configuration')"
@@ -2014,7 +1948,6 @@ review_and_apply() {
                 fi
                 ;;
             6)
-                # カスタムフィードスクリプト選択（入力側と同じ構造）
                 if [ "$UI_MODE" = "whiptail" ]; then
                     whiptail_view_customfeeds
                 else
@@ -2045,7 +1978,6 @@ review_and_apply() {
                 fi
                 ;;
             8)
-                # Apply configuration
                 if [ "$UI_MODE" = "whiptail" ]; then
                     local tr_apply=$(translate 'tr-tui-apply')
                     local breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$tr_apply")
@@ -2062,7 +1994,6 @@ $(translate 'tr-tui-apply-confirm-question')"
                         sh "$CONFIG_DIR/postinst.sh"
                         
                         show_msgbox "$breadcrumb" "$(translate 'tr-tui-installing-custom-packages')"
-                        # 全カスタムフィードスクリプトを実行
                         for script in "$CONFIG_DIR"/customfeeds-*.sh; do
                             [ -f "$script" ] && sh "$script"
                         done
@@ -2124,9 +2055,9 @@ $(translate 'tr-tui-reboot-question')"
     done
 }
 
-# ============================================
+
 # Simple Mode UI Functions
-# ============================================
+
 
 simple_device_info() {
     clear
@@ -2740,9 +2671,9 @@ simple_main_menu() {
     done
 }
 
-# ============================================
+
 # Main Entry Point
-# ============================================
+
 
 aios_tui_main() {
     clear
