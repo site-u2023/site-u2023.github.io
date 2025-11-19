@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1120.0000"
+VERSION="R7.1119.2341"
 
 # Configuration Management
 
@@ -1319,7 +1319,8 @@ whiptail_process_items() {
             local value=$(show_menu "$item_breadcrumb" "" "" "" $menu_opts)
             exit_code=$?
             
-            if [ $exit_code -eq 1 ] || [ $exit_code -eq 255 ]; then
+            # キャンセル時は処理を中断してメインメニューへ戻る
+            if [ $exit_code -ne 0 ]; then
                 echo "[DEBUG] Radio-group cancelled, returning to previous menu" >> $CONFIG_DIR/debug.log
                 return 1
             fi
@@ -1457,6 +1458,7 @@ whiptail_process_items() {
                 
                 echo "[DEBUG] select exit_code=$exit_code, value='$value'" >> $CONFIG_DIR/debug.log
                 
+                # キャンセル時は処理を中断してメインメニューへ戻る
                 if [ $exit_code -ne 0 ]; then
                     echo "[DEBUG] Select cancelled, returning to previous menu" >> $CONFIG_DIR/debug.log
                     return 1
@@ -1488,7 +1490,8 @@ whiptail_process_items() {
                 
                 echo "[DEBUG] inputbox exit_code=$exit_code, value='$value'" >> $CONFIG_DIR/debug.log
                 
-                if [ $exit_code -eq 1 ] || [ $exit_code -eq 255 ]; then
+                # キャンセル時は処理を中断してメインメニューへ戻る
+                if [ $exit_code -ne 0 ]; then
                     echo "[DEBUG] Inputbox cancelled, returning to previous menu" >> $CONFIG_DIR/debug.log
                     return 1
                 fi
@@ -1569,6 +1572,7 @@ whiptail_category_config() {
     fi
     
     if [ "$cat_id" = "internet-connection" ]; then
+        # 自動検出をスキップしても設定は継続
         if show_auto_detection_if_available; then
             auto_add_conditional_packages "$cat_id"
             return 0
@@ -1584,8 +1588,9 @@ whiptail_category_config() {
             
             if [ "$item_type" = "radio-group" ]; then
                 found_radio=1
+                # radio-group のキャンセルは処理を中断
                 whiptail_process_items "$cat_id" "$item_id" "$base_breadcrumb"
-                if [ $? -eq 1 ] || [ $? -eq 255 ]; then
+                if [ $? -ne 0 ]; then
                     return 0
                 fi
                 
@@ -1615,8 +1620,9 @@ whiptail_category_config() {
                     fi
                 fi
             else
+                # 各フィールドのキャンセルは処理を中断
                 whiptail_process_items "$cat_id" "$item_id" "$radio_breadcrumb"
-                if [ $? -eq 1 ] || [ $? -eq 255 ]; then
+                if [ $? -ne 0 ]; then
                     return 0
                 fi
             fi
