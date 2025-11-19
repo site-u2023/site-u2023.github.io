@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1119.1519"
+VERSION="R7.1119.1543"
 
 # Configuration Management
 
@@ -1571,8 +1571,8 @@ whiptail_category_config() {
         
         echo "[DEBUG] Items processed: $processed" >> $CONFIG_DIR/debug.log
         
-        if [ $processed -eq 1 ]; then
-            echo "[DEBUG] User cancelled, returning to main menu" >> $CONFIG_DIR/debug.log
+        if [ $processed -ne 0 ]; then
+            echo "[DEBUG] User cancelled, returning to category selection" >> $CONFIG_DIR/debug.log
             return 0
         fi
         
