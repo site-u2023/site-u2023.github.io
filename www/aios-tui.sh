@@ -1528,18 +1528,27 @@ whiptail_category_config() {
         fi
     fi
     
-    local current_breadcrumb="$base_breadcrumb"
-    
-    for item_id in $(get_setup_category_items "$cat_id"); do
-        local item_type=$(get_setup_item_type "$item_id")
+    while true; do
+        local found_radio=0
+        local radio_breadcrumb="$base_breadcrumb"
         
-        if [ "$item_type" = "radio-group" ]; then
-            local radio_label=$(get_setup_item_label "$item_id")
-            current_breadcrumb="${base_breadcrumb}${BREADCRUMB_SEP}${radio_label}"
-        fi
+        for item_id in $(get_setup_category_items "$cat_id"); do
+            local item_type=$(get_setup_item_type "$item_id")
+            
+            if [ "$item_type" = "radio-group" ]; then
+                found_radio=1
+                whiptail_process_items "$cat_id" "$item_id" "$base_breadcrumb"
+                [ $? -ne 0 ] && return 0
+                
+                local radio_label=$(get_setup_item_label "$item_id")
+                radio_breadcrumb="${base_breadcrumb}${BREADCRUMB_SEP}${radio_label}"
+            else
+                whiptail_process_items "$cat_id" "$item_id" "$radio_breadcrumb"
+                [ $? -ne 0 ] && break
+            fi
+        done
         
-        whiptail_process_items "$cat_id" "$item_id" "$current_breadcrumb"
-        [ $? -ne 0 ] && return 0
+        [ $found_radio -eq 0 ] && break
     done
     
     auto_add_conditional_packages "$cat_id"
