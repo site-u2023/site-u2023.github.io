@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1119.1422"
+VERSION="R7.1118.2027"
 
 # ============================================
 # Configuration Management
@@ -79,10 +79,10 @@ CUSTOMFEEDS_JSON="$CONFIG_DIR/customfeeds.json"
 # UI Configuration Variables
 # ============================================
 WHIPTAIL_PACKAGES="whiptail"
-WHIPTAIL_HEIGHT=0
-MIN_HEIGHT=10
-WHIPTAIL_WIDTH=78
-
+WHIPTAIL_HEIGHT=$(($(tput lines 2>/dev/null || echo 24) - 6))
+WHIPTAIL_HEIGHT=$((WHIPTAIL_HEIGHT < 18 ? 18 : WHIPTAIL_HEIGHT))
+WHIPTAIL_WIDTH=$(($(tput cols 2>/dev/null || echo 80) - 2))
+WHIPTAIL_WIDTH=$((WHIPTAIL_WIDTH < 78 ? 78 : WHIPTAIL_WIDTH))
 BREADCRUMB_SEP=" > "
 DEFAULT_BTN_SELECT="tr-tui-select"
 DEFAULT_BTN_BACK="tr-tui-back"
@@ -104,21 +104,6 @@ title=black,lightgray
 # Common UI Template Functions
 # ============================================
 
-calculate_height() {
-    local content="$1"
-    local lines=$(echo -e "$content" | wc -l)
-    local height=$((lines + 7))
-    [ $height -lt $MIN_HEIGHT ] && height=$MIN_HEIGHT
-    echo $height
-}
-
-calculate_menu_height() {
-    local item_count="$1"
-    local height=$((item_count + 7))
-    [ $height -lt $MIN_HEIGHT ] && height=$MIN_HEIGHT
-    echo $height
-}
-
 build_breadcrumb() {
     local result=""
     local first=1
@@ -136,37 +121,6 @@ build_breadcrumb() {
     echo "$result"
 }
 
-show_inputbox() {
-    local breadcrumb="$1"
-    local prompt="$2"
-    local default="$3"
-    local ok_btn="${4:-$(translate "$DEFAULT_BTN_SELECT")}"
-    local cancel_btn="${5:-$(translate "$DEFAULT_BTN_BACK")}"
-
-    whiptail --title "$breadcrumb" --ok-button "$ok_btn" --cancel-button "$cancel_btn" --inputbox "$prompt" $height $WHIPTAIL_WIDTH "$default" 3>&1 1>&2 2>&3
-}
-
-show_yesno() {
-    local breadcrumb="$1"
-    local message="$2"
-    local yes_btn="${3:-$(translate "$DEFAULT_BTN_YES")}"
-    local no_btn="${4:-$(translate "$DEFAULT_BTN_NO")}"
-    
-    local height=$(calculate_height "$message")
-    
-    whiptail --title "$breadcrumb" --yes-button "$yes_btn" --no-button "$no_btn" --yesno "$message" $height $WHIPTAIL_WIDTH
-}
-
-show_msgbox() {
-    local breadcrumb="$1"
-    local message="$2"
-    local ok_btn="${3:-$(translate "$DEFAULT_BTN_OK")}"
-    
-    local height=$(calculate_height "$message")
-    
-    whiptail --title "$breadcrumb" --ok-button "$ok_btn" --msgbox "$message" $height $WHIPTAIL_WIDTH
-}
-
 show_menu() {
     local breadcrumb="$1"
     local prompt="$2"
@@ -177,6 +131,36 @@ show_menu() {
     eval "whiptail --title '$breadcrumb' --ok-button '$ok_btn' --cancel-button '$cancel_btn' --menu '$prompt' $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH 0 $@ 3>&1 1>&2 2>&3"
 }
 
+show_inputbox() {
+    local breadcrumb="$1"
+    local prompt="$2"
+    local default="$3"
+    local ok_btn="${4:-$(translate "$DEFAULT_BTN_SELECT")}"
+    local cancel_btn="${5:-$(translate "$DEFAULT_BTN_BACK")}"
+    
+    whiptail --title "$breadcrumb" --ok-button "$ok_btn" --cancel-button "$cancel_btn" --inputbox "$prompt" $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH "$default" 3>&1 1>&2 2>&3
+}
+
+show_yesno() {
+    local breadcrumb="$1"
+    local message="$2"
+    local yes_btn="${3:-$(translate "$DEFAULT_BTN_YES")}"
+    local no_btn="${4:-$(translate "$DEFAULT_BTN_NO")}"
+    
+    whiptail --title "$breadcrumb" --yes-button "$yes_btn" --no-button "$no_btn" --yesno "$message" $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH
+}
+
+show_msgbox() {
+    local breadcrumb="$1"
+    local message="$2"
+    local ok_btn="${3:-$(translate "$DEFAULT_BTN_OK")}"
+    
+    local lines=$(echo -e "$message" | wc -l)
+    local height=$((lines + 7))
+    
+    whiptail --title "$breadcrumb" --ok-button "$ok_btn" --msgbox "$message" $height $WHIPTAIL_WIDTH
+}
+
 show_checklist() {
     local breadcrumb="$1"
     local prompt="$2"
@@ -184,10 +168,7 @@ show_checklist() {
     local cancel_btn="${4:-$(translate "$DEFAULT_BTN_BACK")}"
     shift 4
     
-    local item_count=$(($# / 3))
-    local height=$(calculate_menu_height $item_count)
-    
-    eval "whiptail --title '$breadcrumb' --ok-button '$ok_btn' --cancel-button '$cancel_btn' --checklist '$prompt' $height $WHIPTAIL_WIDTH 0 $@ 3>&1 1>&2 2>&3"
+    eval "whiptail --title '$breadcrumb' --ok-button '$ok_btn' --cancel-button '$cancel_btn' --checklist '$prompt' $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH 0 $@ 3>&1 1>&2 2>&3"
 }
 
 show_textbox() {
@@ -198,7 +179,7 @@ show_textbox() {
     local temp_file="$CONFIG_DIR/textbox_wrapped.txt"
     fold -s -w $WHIPTAIL_WIDTH "$file" > "$temp_file"
     
-    whiptail --scrolltext --title "$breadcrumb" --ok-button "$ok_btn" --textbox "$temp_file" $height $WHIPTAIL_WIDTH
+    whiptail --scrolltext --title "$breadcrumb" --ok-button "$ok_btn" --textbox "$temp_file" $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH
     
     rm -f "$temp_file"
 }
@@ -245,6 +226,33 @@ select_ui_mode() {
     if [ "$choice" = "2" ]; then
         UI_MODE="simple"
     else
+        echo "$(translate 'tr-tui-ui-installing')"
+        if install_package $WHIPTAIL_PACKAGES; then
+            echo "$(translate 'tr-tui-ui-install-success')"
+            UI_MODE="whiptail"
+        else
+            echo "$(translate 'tr-tui-ui-install-failed')"
+            UI_MODE="simple"
+        fi
+    fi
+}
+
+select_ui_mode() {
+    if check_packages_installed; then
+        UI_MODE="whiptail"
+        return 0
+    fi
+    
+    echo "$(translate 'tr-tui-ui-mode-select')"
+    echo "1) $(translate 'tr-tui-ui-whiptail')"
+    echo "2) $(translate 'tr-tui-ui-simple')"
+    
+    printf "$(translate 'tr-tui-ui-choice') [1]: "
+    read choice
+    
+    if [ "$choice" = "2" ]; then
+        UI_MODE="simple"
+    else
         echo "$WHIPTAIL_PACKAGES" | tr ' ' '\n' > "$SELECTED_PACKAGES"
         generate_files
         sh "$CONFIG_DIR/postinst.sh"
@@ -270,7 +278,7 @@ detect_package_manager() {
 check_packages_installed() {
     MISSING_WHIPTAIL_PKGS=""
     
-    for pkg in $@; do
+    for pkg in "$@"; do
         if [ "$PKG_MGR" = "opkg" ]; then
             opkg list-installed | grep -q "^${pkg}[[:space:]]*-" || MISSING_WHIPTAIL_PKGS="$MISSING_WHIPTAIL_PKGS $pkg"
         elif [ "$PKG_MGR" = "apk" ]; then
@@ -822,7 +830,7 @@ whiptail_custom_feeds_selection() {
         return 0
     fi
     
-    choice=$(show_menu "$breadcrumb" " " "" "" $menu_items)
+    choice=$(show_menu "$breadcrumb" "" "" "" $menu_items)
     
     if [ $? -ne 0 ]; then
         return 0
@@ -1668,7 +1676,7 @@ whiptail_package_categories() {
         i=$((i+1))
     done < <(get_categories)
     
-    choice=$(show_menu "$breadcrumb" " " "" "" $menu_items)
+    choice=$(show_menu "$breadcrumb" "" "" "" $menu_items)
     
     if [ $? -ne 0 ]; then
         return 0
@@ -1746,105 +1754,46 @@ whiptail_package_selection() {
 }
 
 whiptail_view_customfeeds() {
-    while true; do
-        local tr_main_menu=$(translate "tr-tui-main-menu")
-        local tr_review=$(translate "tr-tui-review-configuration")
-        local tr_customfeeds=$(translate "tr-tui-view-customfeeds")
-        local breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$tr_customfeeds")
+    local tr_main_menu=$(translate "tr-tui-main-menu")
+    local tr_review=$(translate "tr-tui-review-configuration")
+    local tr_customfeeds=$(translate "tr-tui-view-customfeeds")
+    local breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$tr_customfeeds")
+    
+    if [ ! -f "$CUSTOMFEEDS_JSON" ]; then
+        show_msgbox "$breadcrumb" "No custom feeds available"
+        return 0
+    fi
+    
+    local menu_items="" i=1 cat_id cat_name
+    
+    while read cat_id; do
+        cat_name=$(get_category_name "$cat_id")
+        menu_items="$menu_items $i \"$cat_name\""
+        i=$((i+1))
+    done < <(get_customfeed_categories)
+    
+    if [ -z "$menu_items" ]; then
+        show_msgbox "$breadcrumb" "No custom feeds available"
+        return 0
+    fi
+    
+    choice=$(show_menu "$breadcrumb" "" "" "" $menu_items)
+    
+    if [ $? -ne 0 ]; then
+        return 0
+    fi
+    
+    if [ -n "$choice" ]; then
+        selected_cat=$(get_customfeed_categories | sed -n "${choice}p")
+        local script_file="$CONFIG_DIR/customfeeds-${selected_cat}.sh"
         
-        if [ ! -f "$CUSTOMFEEDS_JSON" ]; then
-            show_msgbox "$breadcrumb" "No custom feeds available"
-            return 0
+        if [ -f "$script_file" ]; then
+            cat "$script_file" > "$CONFIG_DIR/customfeeds_view.txt"
+            show_textbox "$breadcrumb" "$CONFIG_DIR/customfeeds_view.txt"
+        else
+            show_msgbox "$breadcrumb" "Script not found: customfeeds-${selected_cat}.sh"
         fi
-        
-        local menu_items="" i=1 cat_id cat_name
-        
-        while read cat_id; do
-            cat_name=$(get_category_name "$cat_id")
-            menu_items="$menu_items $i \"$cat_name\""
-            i=$((i+1))
-        done < <(get_customfeed_categories)
-        
-        if [ -z "$menu_items" ]; then
-            show_msgbox "$breadcrumb" "No custom feeds available"
-            return 0
-        fi
-        
-        choice=$(show_menu "$breadcrumb" "Select feed:" "" "" $menu_items)
-        
-        if [ $? -ne 0 ]; then
-            return 0
-        fi
-        
-        if [ -n "$choice" ]; then
-            selected_cat=$(get_customfeed_categories | sed -n "${choice}p")
-            local script_file="$CONFIG_DIR/customfeeds-${selected_cat}.sh"
-            
-            if [ -f "$script_file" ]; then
-                cat "$script_file" > "$CONFIG_DIR/customfeeds_view.txt"
-                show_textbox "$breadcrumb" "$CONFIG_DIR/customfeeds_view.txt"
-            else
-                show_msgbox "$breadcrumb" "Script not found: customfeeds-${selected_cat}.sh"
-            fi
-        fi
-    done
-}
-
-whiptail_view_selected_custom_packages() {
-    while true; do
-        local tr_main_menu=$(translate "tr-tui-main-menu")
-        local tr_review=$(translate "tr-tui-review-configuration")
-        local tr_custom_packages=$(translate "tr-tui-view-custom-packages")
-        local breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$tr_custom_packages")
-        
-        if [ ! -f "$CUSTOMFEEDS_JSON" ]; then
-            show_msgbox "$breadcrumb" "No custom feeds available"
-            return 0
-        fi
-        
-        local menu_items="" i=1 cat_id cat_name
-        
-        while read cat_id; do
-            cat_name=$(get_category_name "$cat_id")
-            menu_items="$menu_items $i \"$cat_name\""
-            i=$((i+1))
-        done < <(get_customfeed_categories)
-        
-        if [ -z "$menu_items" ]; then
-            show_msgbox "$breadcrumb" "No custom feed categories available"
-            return 0
-        fi
-        
-        choice=$(show_menu "$breadcrumb" "Select category:" "" "" $menu_items)
-        
-        if [ $? -ne 0 ]; then
-            return 0
-        fi
-        
-        if [ -n "$choice" ]; then
-            selected_cat=$(get_customfeed_categories | sed -n "${choice}p")
-            local cat_name=$(get_category_name "$selected_cat")
-            local breadcrumb2=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$tr_custom_packages" "$cat_name")
-            
-            local temp_view="$CONFIG_DIR/selected_custom_pkg_view.txt"
-            : > "$temp_view"
-            
-            while read pkg_id; do
-                if grep -q "^${pkg_id}$" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
-                    local pkg_name=$(get_package_name "$pkg_id")
-                    echo "  - ${pkg_name}"
-                fi
-            done < <(get_category_packages "$selected_cat") > "$temp_view"
-            
-            if [ -s "$temp_view" ]; then
-                show_textbox "$breadcrumb2" "$temp_view"
-            else
-                show_msgbox "$breadcrumb2" "$(translate 'tr-tui-no-packages')"
-            fi
-            
-            rm -f "$temp_view"
-        fi
-    done
+    fi
 }
 
 whiptail_main_menu() {
@@ -1905,7 +1854,7 @@ review_and_apply() {
         if [ "$UI_MODE" = "whiptail" ]; then
             local breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review")
             
-            choice=$(show_menu "$breadcrumb" " " "" "" \
+            choice=$(show_menu "$breadcrumb" "" "" "" \
                 "1" "$(translate 'tr-tui-view-device-info')" \
                 "2" "$(translate 'tr-tui-view-package-list')" \
                 "3" "$(translate 'tr-tui-view-custom-packages')" \
@@ -1978,9 +1927,33 @@ review_and_apply() {
                 ;;
             3)
                 if [ "$UI_MODE" = "whiptail" ]; then
-                    whiptail_view_selected_custom_packages
+                    local tr_custom_packages=$(translate 'tr-tui-view-custom-packages')
+                    local breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$tr_custom_packages")
+                    
+                    if [ -s "$SELECTED_CUSTOM_PACKAGES" ]; then
+                        cat "$SELECTED_CUSTOM_PACKAGES" | sed 's/^/  - /' > "$CONFIG_DIR/custom_pkg_view.txt"
+                        show_textbox "$breadcrumb" "$CONFIG_DIR/custom_pkg_view.txt"
+                    else
+                        show_msgbox "$breadcrumb" "$(translate 'tr-tui-no-packages')"
+                    fi
                 else
-                    simple_view_selected_custom_packages
+                    clear
+                    echo "========================================"
+                    echo "  $(translate 'tr-tui-view-custom-packages')"
+                    echo "========================================"
+                    echo ""
+                    if [ -s "$SELECTED_CUSTOM_PACKAGES" ]; then
+                        while IFS= read -r pkg_id; do
+                            [ -z "$pkg_id" ] && continue
+                            local pkg_name=$(get_package_name "$pkg_id")
+                            echo "  - ${pkg_name}"
+                        done < "$SELECTED_CUSTOM_PACKAGES"
+                    else
+                        echo "  No custom packages selected"
+                    fi
+                    echo ""
+                    echo "$(translate 'tr-tui-ok')"
+                    read
                 fi
                 ;;
             4)
@@ -2632,71 +2605,6 @@ simple_view_customfeeds() {
         else
             echo "Script not found"
         fi
-        
-        echo ""
-        printf "Press Enter to continue..."
-        read
-    fi
-}
-
-simple_view_selected_custom_packages() {
-    clear
-    echo "========================================"
-    echo "  $(translate 'tr-tui-view-custom-packages')"
-    echo "========================================"
-    echo ""
-    
-    if [ ! -f "$CUSTOMFEEDS_JSON" ]; then
-        echo "No custom feeds available"
-        echo ""
-        printf "Press Enter to continue..."
-        read
-        return 0
-    fi
-    
-    local i=1
-    get_customfeed_categories | while read cat_id; do
-        local cat_name=$(get_category_name "$cat_id")
-        echo "$i) $cat_name"
-        i=$((i+1))
-    done
-    
-    echo "b) $(translate 'tr-tui-back')"
-    echo ""
-    printf "$(translate 'tr-tui-ui-choice'): "
-    read choice
-    
-    if [ "$choice" = "b" ] || [ "$choice" = "B" ]; then
-        return 0
-    fi
-    
-    if [ -n "$choice" ]; then
-        selected_cat=$(get_customfeed_categories | sed -n "${choice}p")
-        local cat_name=$(get_category_name "$selected_cat")
-        
-        clear
-        echo "========================================"
-        echo "  ${cat_name}"
-        echo "========================================"
-        echo ""
-        
-        local temp_output="$CONFIG_DIR/simple_custom_pkg_view.txt"
-        : > "$temp_output"
-        
-        while read pkg_id; do
-            if grep -q "^${pkg_id}$" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
-                local pkg_name=$(get_package_name "$pkg_id")
-                echo "  - ${pkg_name}"
-            fi
-        done < <(get_category_packages "$selected_cat") > "$temp_output"
-        
-        if [ -s "$temp_output" ]; then
-            cat "$temp_output"
-        else
-            echo "  $(translate 'tr-tui-no-packages')"
-        fi
-        
-        rm -f "$temp_output"
         
         echo ""
         printf "Press Enter to continue..."
