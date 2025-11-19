@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1119.1152"
+VERSION="R7.1119.1155"
 
 # ============================================
 # Configuration Management
@@ -202,7 +202,7 @@ show_checklist() {
     local item_count=$(($# / 3))
     local height=$(calculate_menu_height $item_count)
     
-    eval "whiptail --title '$breadcrumb' --ok-button '$ok_btn' --cancel-button '$cancel_btn' --checklist '$prompt' $height $WHIPTAIL_WIDTH $item_count $@ 3>&1 1>&2 2>&3"
+    eval "whiptail --title '$breadcrumb' --ok-button '$ok_btn' --cancel-button '$cancel_btn' --checklist '$prompt' $height $WHIPTAIL_WIDTH 0 $@ 3>&1 1>&2 2>&3"
 }
 
 show_textbox() {
