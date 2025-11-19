@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1119.1737"
+VERSION="R7.1119.1741"
 
 # Configuration Management
 
@@ -1556,7 +1556,7 @@ whiptail_category_config() {
                     fi
                     
                     if [ "$conn_type" = "dhcp" ]; then
-                        local dhcp_content="DHCP configuration will be applied automatically. No additional settings required."
+                        local dhcp_content="DHCP configuration will be applied automatically.\nNo additional settings required."
                         local tr_dhcp=$(translate "tr-dhcp-information")
                         if [ -n "$tr_dhcp" ] && [ "$tr_dhcp" != "tr-dhcp-information" ]; then
                             dhcp_content="$tr_dhcp"
