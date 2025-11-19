@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1119.1414"
+VERSION="R7.1119.1422"
 
 # ============================================
 # Configuration Management
@@ -231,33 +231,6 @@ simple_show_menu() {
 
 select_ui_mode() {
     if check_packages_installed $WHIPTAIL_PACKAGES; then
-        UI_MODE="whiptail"
-        return 0
-    fi
-    
-    echo "$(translate 'tr-tui-ui-mode-select')"
-    echo "1) $(translate 'tr-tui-ui-whiptail')"
-    echo "2) $(translate 'tr-tui-ui-simple')"
-    
-    printf "$(translate 'tr-tui-ui-choice') [1]: "
-    read choice
-    
-    if [ "$choice" = "2" ]; then
-        UI_MODE="simple"
-    else
-        echo "$(translate 'tr-tui-ui-installing')"
-        if install_package $WHIPTAIL_PACKAGES; then
-            echo "$(translate 'tr-tui-ui-install-success')"
-            UI_MODE="whiptail"
-        else
-            echo "$(translate 'tr-tui-ui-install-failed')"
-            UI_MODE="simple"
-        fi
-    fi
-}
-
-select_ui_mode() {
-    if check_packages_installed; then
         UI_MODE="whiptail"
         return 0
     fi
