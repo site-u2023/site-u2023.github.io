@@ -79,10 +79,8 @@ CUSTOMFEEDS_JSON="$CONFIG_DIR/customfeeds.json"
 # UI Configuration Variables
 # ============================================
 WHIPTAIL_PACKAGES="whiptail"
-WHIPTAIL_HEIGHT=$(($(tput lines 2>/dev/null || echo 24) - 6))
-WHIPTAIL_HEIGHT=$((WHIPTAIL_HEIGHT < 18 ? 18 : WHIPTAIL_HEIGHT))
-WHIPTAIL_WIDTH=$(($(tput cols 2>/dev/null || echo 80) - 2))
-WHIPTAIL_WIDTH=$((WHIPTAIL_WIDTH < 78 ? 78 : WHIPTAIL_WIDTH))
+WHIPTAIL_HEIGHT="0"
+WHIPTAIL_WIDTH="78"
 BREADCRUMB_SEP=" > "
 DEFAULT_BTN_SELECT="tr-tui-select"
 DEFAULT_BTN_BACK="tr-tui-back"
