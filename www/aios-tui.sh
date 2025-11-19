@@ -74,6 +74,7 @@ SETUP_VARS="$CONFIG_DIR/setup_vars.sh"
 TRANSLATION_CACHE="$CONFIG_DIR/translation_cache.txt"
 
 CUSTOMFEEDS_JSON="$CONFIG_DIR/customfeeds.json"
+
 # ============================================
 # UI Configuration Variables
 # ============================================
