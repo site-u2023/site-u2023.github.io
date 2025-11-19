@@ -78,10 +78,10 @@ CUSTOMFEEDS_JSON="$CONFIG_DIR/customfeeds.json"
 # UI Configuration Variables
 # ============================================
 WHIPTAIL_PACKAGES="whiptail"
-WHIPTAIL_HEIGHT=$(($(tput lines 2>/dev/null || echo 24) - 6))
-WHIPTAIL_HEIGHT=$((WHIPTAIL_HEIGHT < 18 ? 18 : WHIPTAIL_HEIGHT))
-WHIPTAIL_WIDTH=$(($(tput cols 2>/dev/null || echo 80) - 2))
-WHIPTAIL_WIDTH=$((WHIPTAIL_WIDTH < 78 ? 78 : WHIPTAIL_WIDTH))
+WHIPTAIL_HEIGHT=0
+MIN_HEIGHT=10
+WHIPTAIL_WIDTH=78
+
 BREADCRUMB_SEP=" > "
 DEFAULT_BTN_SELECT="tr-tui-select"
 DEFAULT_BTN_BACK="tr-tui-back"
@@ -102,6 +102,15 @@ title=black,lightgray
 # ============================================
 # Common UI Template Functions
 # ============================================
+
+calculate_height() {
+    local message="$1"
+    local lines=$(echo -e "$message" | wc -l)
+    local height=$((lines + 7))
+    [ $height -lt $MIN_HEIGHT ] && height=$MIN_HEIGHT
+    [ $WHIPTAIL_HEIGHT -gt 0 ] && [ $height -gt $WHIPTAIL_HEIGHT ] && height=$WHIPTAIL_HEIGHT
+    echo $height
+}
 
 build_breadcrumb() {
     local result=""
@@ -146,7 +155,9 @@ show_yesno() {
     local yes_btn="${3:-$(translate "$DEFAULT_BTN_YES")}"
     local no_btn="${4:-$(translate "$DEFAULT_BTN_NO")}"
     
-    whiptail --title "$breadcrumb" --yes-button "$yes_btn" --no-button "$no_btn" --yesno "$message" $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH
+    local height=$(calculate_height "$message")
+    
+    whiptail --title "$breadcrumb" --yes-button "$yes_btn" --no-button "$no_btn" --yesno "$message" $height $WHIPTAIL_WIDTH
 }
 
 show_msgbox() {
@@ -154,8 +165,7 @@ show_msgbox() {
     local message="$2"
     local ok_btn="${3:-$(translate "$DEFAULT_BTN_OK")}"
     
-    local lines=$(echo -e "$message" | wc -l)
-    local height=$((lines + 7))
+    local height=$(calculate_height "$message")
     
     whiptail --title "$breadcrumb" --ok-button "$ok_btn" --msgbox "$message" $height $WHIPTAIL_WIDTH
 }
