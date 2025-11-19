@@ -108,7 +108,6 @@ calculate_height() {
     local lines=$(echo -e "$content" | wc -l)
     local height=$((lines + 7))
     [ $height -lt $MIN_HEIGHT ] && height=$MIN_HEIGHT
-    [ $WHIPTAIL_HEIGHT -gt 0 ] && [ $height -gt $WHIPTAIL_HEIGHT ] && height=$WHIPTAIL_HEIGHT
     echo $height
 }
 
@@ -116,9 +115,9 @@ calculate_menu_height() {
     local item_count="$1"
     local height=$((item_count + 7))
     [ $height -lt $MIN_HEIGHT ] && height=$MIN_HEIGHT
-    [ $WHIPTAIL_HEIGHT -gt 0 ] && [ $height -gt $WHIPTAIL_HEIGHT ] && height=$WHIPTAIL_HEIGHT
     echo $height
 }
+
 build_breadcrumb() {
     local result=""
     local first=1
