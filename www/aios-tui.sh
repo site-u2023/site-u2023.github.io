@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1119.1158"
+VERSION="R7.1119.1209"
 
 # ============================================
 # Configuration Management
@@ -142,8 +142,8 @@ show_inputbox() {
     local default="$3"
     local ok_btn="${4:-$(translate "$DEFAULT_BTN_SELECT")}"
     local cancel_btn="${5:-$(translate "$DEFAULT_BTN_BACK")}"
-    
-    whiptail --title "$breadcrumb" --ok-button "$ok_btn" --cancel-button "$cancel_btn" --inputbox "$prompt" $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH "$default" 3>&1 1>&2 2>&3
+
+    whiptail --title "$breadcrumb" --ok-button "$ok_btn" --cancel-button "$cancel_btn" --inputbox "$prompt" $height $WHIPTAIL_WIDTH "$default" 3>&1 1>&2 2>&3
 }
 
 show_yesno() {
