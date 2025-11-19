@@ -9,7 +9,7 @@ VERSION="R7.1119.1519"
 
 BASE_TMP_DIR="/tmp"
 CONFIG_DIR="$BASE_TMP_DIR/aiost"
-BOOTSTRAP_URL="https://site-u.pages.dev/www
+BOOTSTRAP_URL="https://site-u.pages.dev/www"
 
 BASE_URL=""
 AUTO_CONFIG_API_URL=""
