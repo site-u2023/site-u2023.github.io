@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1119.1359"
+VERSION="R7.1119.1414"
 
 # ============================================
 # Configuration Management
@@ -1856,12 +1856,12 @@ whiptail_view_selected_custom_packages() {
             local temp_view="$CONFIG_DIR/selected_custom_pkg_view.txt"
             : > "$temp_view"
             
-            get_category_packages "$selected_cat" | while read pkg_id; do
+            while read pkg_id; do
                 if grep -q "^${pkg_id}$" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
                     local pkg_name=$(get_package_name "$pkg_id")
                     echo "  - ${pkg_name}"
                 fi
-            done > "$temp_view"
+            done < <(get_category_packages "$selected_cat") > "$temp_view"
             
             if [ -s "$temp_view" ]; then
                 show_textbox "$breadcrumb2" "$temp_view"
@@ -2707,18 +2707,23 @@ simple_view_selected_custom_packages() {
         echo "========================================"
         echo ""
         
-        local has_packages=0
-        get_category_packages "$selected_cat" | while read pkg_id; do
+        local temp_output="$CONFIG_DIR/simple_custom_pkg_view.txt"
+        : > "$temp_output"
+        
+        while read pkg_id; do
             if grep -q "^${pkg_id}$" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
                 local pkg_name=$(get_package_name "$pkg_id")
                 echo "  - ${pkg_name}"
-                has_packages=1
             fi
-        done
+        done < <(get_category_packages "$selected_cat") > "$temp_output"
         
-        if [ $has_packages -eq 0 ]; then
+        if [ -s "$temp_output" ]; then
+            cat "$temp_output"
+        else
             echo "  $(translate 'tr-tui-no-packages')"
         fi
+        
+        rm -f "$temp_output"
         
         echo ""
         printf "Press Enter to continue..."
