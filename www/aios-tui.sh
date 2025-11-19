@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1119.1917"
+VERSION="R7.1119.2100"
 
 # Configuration Management
 
@@ -13,16 +13,18 @@ BOOTSTRAP_URL="https://site-u.pages.dev/www"
 
 BASE_URL=""
 AUTO_CONFIG_API_URL=""
+PACKAGES_URL=""
+SETUP_JSON_URL=""
+SETUP_TEMPLATE_URL=""
+POSTINST_TEMPLATE_URL=""
+CUSTOMFEEDS_JSON_URL=""
+
 PACKAGES_DB_PATH=""
 SETUP_DB_PATH=""
 SETUP_TEMPLATE_PATH=""
 LANGUAGE_PATH_TEMPLATE=""
-
-PACKAGES_URL=""
-SETUP_JSON_URL=""
-SETUP_TEMPLATE_URL=""
-
 CUSTOMFEEDS_DB_PATH=""
+POSTINST_TEMPLATE_PATH=""
 
 load_config_from_js() {
     local CONFIG_JS="$CONFIG_DIR/config.js"
@@ -47,6 +49,7 @@ load_config_from_js() {
     POSTINST_TEMPLATE_URL="${BASE_URL}/${POSTINST_TEMPLATE_PATH}"
     SETUP_JSON_URL="${BASE_URL}/${SETUP_DB_PATH}"
     SETUP_TEMPLATE_URL="${BASE_URL}/${SETUP_TEMPLATE_PATH}"
+    CUSTOMFEEDS_JSON_URL="${BASE_URL}/${CUSTOMFEEDS_DB_PATH}"
     
     echo "[DEBUG] Config loaded: BASE_URL=$BASE_URL" >> $CONFIG_DIR/debug.log
     echo "[DEBUG] PACKAGES_URL=$PACKAGES_URL" >> $CONFIG_DIR/debug.log
@@ -55,6 +58,7 @@ load_config_from_js() {
     echo "[DEBUG] SETUP_TEMPLATE_URL=$SETUP_TEMPLATE_URL" >> $CONFIG_DIR/debug.log
     echo "[DEBUG] AUTO_CONFIG_API_URL=$AUTO_CONFIG_API_URL" >> $CONFIG_DIR/debug.log
     echo "[DEBUG] CUSTOMFEEDS_DB_PATH=$CUSTOMFEEDS_DB_PATH" >> $CONFIG_DIR/debug.log
+    echo "[DEBUG] CUSTOMFEEDS_JSON_URL=$CUSTOMFEEDS_JSON_URL" >> $CONFIG_DIR/debug.log
     
     return 0
 }
@@ -721,8 +725,7 @@ is_package_selected() {
 
 download_customfeeds_json() {
     if [ ! -f "$CUSTOMFEEDS_JSON" ]; then
-        local feeds_url="${BASE_URL}/${CUSTOMFEEDS_DB_PATH}"
-        if ! wget -q -O "$CUSTOMFEEDS_JSON" "${feeds_url}?t=$(date +%s)"; then
+        if ! wget -q -O "$CUSTOMFEEDS_JSON" "${CUSTOMFEEDS_JSON_URL}?t=$(date +%s)"; then
             echo "Failed to download customfeeds.json"
             return 1
         fi
