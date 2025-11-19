@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1119.1646"
+VERSION="R7.1119.1702"
 
 # Configuration Management
 
@@ -1528,21 +1528,22 @@ whiptail_category_config() {
         fi
     fi
     
-    while true; do
-        local radio_label=$(get_setup_item_label "connection-type")
-        local radio_breadcrumb="${base_breadcrumb}${BREADCRUMB_SEP}${radio_label}"
+    local current_breadcrumb="$base_breadcrumb"
+    
+    for item_id in $(get_setup_category_items "$cat_id"); do
+        local item_type=$(get_setup_item_type "$item_id")
         
-        whiptail_process_items "$cat_id" "connection-type" "$base_breadcrumb"
+        if [ "$item_type" = "radio-group" ]; then
+            local radio_label=$(get_setup_item_label "$item_id")
+            current_breadcrumb="${base_breadcrumb}${BREADCRUMB_SEP}${radio_label}"
+        fi
+        
+        whiptail_process_items "$cat_id" "$item_id" "$current_breadcrumb"
         [ $? -ne 0 ] && return 0
-        
-        for item_id in $(get_setup_category_items "$cat_id"); do
-            local item_type=$(get_setup_item_type "$item_id")
-            [ "$item_type" = "radio-group" ] && continue
-            
-            whiptail_process_items "$cat_id" "$item_id" "$radio_breadcrumb"
-            [ $? -ne 0 ] && break
-        done
     done
+    
+    auto_add_conditional_packages "$cat_id"
+    return 0
 }
 
 whiptail_package_categories() {
