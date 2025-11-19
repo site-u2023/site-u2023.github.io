@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1119.1842"
+VERSION="R7.1119.1858"
 
 # Configuration Management
 
@@ -1401,51 +1401,24 @@ whiptail_process_items() {
                     
                     case "$source" in
                         "browser-languages")
-                            local device_lang=$(uci -q get system.@system[0].language)
-                            
-                            if [ -z "$device_lang" ] || [ "$device_lang" = "auto" ]; then
-                                device_lang="$current"
-                            fi
-                            
-                            local available_langs=$(jsonfilter -i "$SETUP_JSON" -e '@.constants.available_languages[*]' 2>/dev/null)
-                            
-                            local menu_opts=""
-                            local i=1
-                            for lang in $available_langs; do
-                                menu_opts="$menu_opts $i \"$lang\""
-                                i=$((i+1))
-                            done
-                            
-                            value=$(show_menu "$item_breadcrumb" "" "" "" $menu_opts)
-                            exit_code=$?
-                            
-                            if [ $exit_code -ne 0 ]; then
-                                return 1
-                            fi
-                            
-                            if [ -n "$value" ]; then
-                                selected_lang=$(echo "$available_langs" | awk "{print \$$value}")
-                                sed -i "/^${variable}=/d" "$SETUP_VARS"
-                                echo "${variable}='${selected_lang}'" >> "$SETUP_VARS"
-                            fi
-                            return 0
+                            continue
                             ;;
                         *)
-                            echo "[DEBUG] Unknown source type: $source, showing as inputbox" >> $CONFIG_DIR/debug.log
-                            value=$(show_inputbox "$item_breadcrumb" "" "$current")
-                            exit_code=$?
+                            echo ""
+                            printf "$label [$current]: "
+                            read value
                             
-                            if [ $exit_code -ne 0 ]; then
-                                return 1
+                            if [ -z "$value" ]; then
+                                value="$current"
                             fi
                             
                             if [ -n "$value" ]; then
                                 sed -i "/^${variable}=/d" "$SETUP_VARS"
                                 echo "${variable}='${value}'" >> "$SETUP_VARS"
                             fi
-                            return 0
                             ;;
                     esac
+                    continue
                 fi
                 
                 local options=$(get_setup_item_options "$item_id")
