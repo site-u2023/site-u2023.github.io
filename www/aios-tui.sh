@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1119.1858"
+VERSION="R7.1119.1917"
 
 # Configuration Management
 
@@ -1536,6 +1536,24 @@ whiptail_category_config() {
     local tr_main_menu=$(translate "tr-tui-main-menu")
     local cat_title=$(get_setup_category_title "$cat_id")
     local base_breadcrumb=$(build_breadcrumb "$tr_main_menu" "$cat_title")
+
+    if [ "$cat_id" = "basic-config" ]; then
+        local tr_language=$(translate "tr-language")
+        local lang_breadcrumb="${base_breadcrumb}${BREADCRUMB_SEP}${tr_language}"
+        
+        local current_lang=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+        [ -z "$current_lang" ] && current_lang="${AUTO_LANGUAGE:-en}"
+        
+        value=$(show_inputbox "$lang_breadcrumb" "" "$current_lang")
+        
+        if [ $? -eq 0 ] && [ -n "$value" ]; then
+            sed -i "/^language=/d" "$SETUP_VARS"
+            echo "language='${value}'" >> "$SETUP_VARS"
+            update_language_packages
+        else
+            return 0
+        fi
+    fi
     
     if [ "$cat_id" = "internet-connection" ]; then
         if show_auto_detection_if_available; then
@@ -2406,6 +2424,28 @@ simple_category_config() {
     echo "========================================"
     echo "  $cat_title"
     echo "========================================"
+    
+    if [ "$cat_id" = "basic-config" ]; then
+        local tr_language=$(translate "tr-language")
+        [ -z "$tr_language" ] || [ "$tr_language" = "tr-language" ] && tr_language="Language"
+        
+        local current_lang=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+        [ -z "$current_lang" ] && current_lang="${AUTO_LANGUAGE:-en}"
+        
+        echo ""
+        printf "$tr_language [$current_lang]: "
+        read value
+        
+        if [ -z "$value" ]; then
+            value="$current_lang"
+        fi
+        
+        if [ -n "$value" ]; then
+            sed -i "/^language=/d" "$SETUP_VARS"
+            echo "language='${value}'" >> "$SETUP_VARS"
+            update_language_packages
+        fi
+    fi
     
     if [ "$cat_id" = "internet-connection" ]; then
         if simple_show_network_info; then
