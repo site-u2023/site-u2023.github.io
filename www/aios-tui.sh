@@ -24,8 +24,6 @@ SETUP_JSON_URL=""
 SETUP_TEMPLATE_URL=""
 
 CUSTOMFEEDS_DB_PATH=""
-CUSTOMFEEDS_GSPOTX2F_PATH=""
-CUSTOMFEEDS_JERRYKUKU_PATH=""
 
 load_config_from_js() {
     local CONFIG_JS="$CONFIG_DIR/config.js"
@@ -45,8 +43,6 @@ load_config_from_js() {
     SETUP_TEMPLATE_PATH=$(grep 'setup_template_path:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
     LANGUAGE_PATH_TEMPLATE=$(grep 'language_path_template:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
     CUSTOMFEEDS_DB_PATH=$(grep 'customfeeds_db_path:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
-    CUSTOMFEEDS_GSPOTX2F_PATH=$(grep 'customfeeds_gspotx2f:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
-    CUSTOMFEEDS_JERRYKUKU_PATH=$(grep 'customfeeds_jerrykuku:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
 
     PACKAGES_URL="${BASE_URL}/${PACKAGES_DB_PATH}"
     POSTINST_TEMPLATE_URL="${BASE_URL}/${POSTINST_TEMPLATE_PATH}"
@@ -60,8 +56,6 @@ load_config_from_js() {
     echo "[DEBUG] SETUP_TEMPLATE_URL=$SETUP_TEMPLATE_URL" >> $CONFIG_DIR/debug.log
     echo "[DEBUG] AUTO_CONFIG_API_URL=$AUTO_CONFIG_API_URL" >> $CONFIG_DIR/debug.log
     echo "[DEBUG] CUSTOMFEEDS_DB_PATH=$CUSTOMFEEDS_DB_PATH" >> $CONFIG_DIR/debug.log
-    echo "[DEBUG] CUSTOMFEEDS_GSPOTX2F_PATH=$CUSTOMFEEDS_GSPOTX2F_PATH" >> $CONFIG_DIR/debug.log
-    echo "[DEBUG] CUSTOMFEEDS_JERRYKUKU_PATH=$CUSTOMFEEDS_JERRYKUKU_PATH" >> $CONFIG_DIR/debug.log
     
     return 0
 }
@@ -803,19 +797,15 @@ get_customfeed_download_base() {
     jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$1'].download_base" 2>/dev/null
 }
 
+get_customfeed_template_path() {
+    local cat_id="$1"
+    jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$cat_id'].template_path" 2>/dev/null
+}
+
 get_customfeed_template_url() {
     local cat_id="$1"
-    case "$cat_id" in
-        custom-feeds-gspotx2f)
-            echo "${BASE_URL}/${CUSTOMFEEDS_GSPOTX2F_PATH}"
-            ;;
-        custom-feeds-jerrykuku)
-            echo "${BASE_URL}/${CUSTOMFEEDS_JERRYKUKU_PATH}"
-            ;;
-        *)
-            echo ""
-            ;;
-    esac
+    local template_path=$(get_customfeed_template_path "$cat_id")
+    [ -n "$template_path" ] && echo "${BASE_URL}/${template_path}"
 }
 
 whiptail_custom_feeds_selection() {
