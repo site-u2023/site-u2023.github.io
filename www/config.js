@@ -49,9 +49,10 @@ var config = {
   
   // Custom feeds database URL
   customfeeds_db_path: "custom-feeds/customfeeds.json",
-  // Custom feeds template URL (gSpotx2f)
-  customfeeds_template_path: "custom-feeds/gSpotx2f.sh",
-  
+  // Custom feeds template URL
+  customfeeds_gspotx2f: "custom-feeds/gSpotx2f.sh",
+  customfeeds_jerrykuku: "custom-feeds/jerrykuku.sh"
+    
   // LuCI OPKG 検索エンドポイント
   // https://downloads.openwrt.org/releases/24.10.2/packages/aarch64_cortex-a53/packages/Packages
   opkg_search_url: "https://downloads.openwrt.org/releases/{version}/packages/{arch}/{feed}/Packages",
