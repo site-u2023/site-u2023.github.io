@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1119.1249"
+VERSION="R7.1119.1255"
 
 # ============================================
 # Configuration Management
@@ -1802,7 +1802,7 @@ whiptail_view_customfeeds() {
         return 0
     fi
     
-    choice=$(show_menu "$breadcrumb" "" "" "" $menu_items)
+    choice=$(show_menu "$breadcrumb" "Select feed:" "" "" $menu_items)
     
     if [ $? -ne 0 ]; then
         return 0
