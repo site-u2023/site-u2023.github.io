@@ -270,7 +270,7 @@ detect_package_manager() {
 check_packages_installed() {
     MISSING_WHIPTAIL_PKGS=""
     
-    for pkg in "$@"; do
+    for pkg in $@; do
         if [ "$PKG_MGR" = "opkg" ]; then
             opkg list-installed | grep -q "^${pkg}[[:space:]]*-" || MISSING_WHIPTAIL_PKGS="$MISSING_WHIPTAIL_PKGS $pkg"
         elif [ "$PKG_MGR" = "apk" ]; then
