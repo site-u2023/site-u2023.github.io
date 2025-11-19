@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1119.1702"
+VERSION="R7.1119.1728"
 
 # Configuration Management
 
@@ -1542,6 +1542,17 @@ whiptail_category_config() {
                 
                 local radio_label=$(get_setup_item_label "$item_id")
                 radio_breadcrumb="${base_breadcrumb}${BREADCRUMB_SEP}${radio_label}"
+
+                if [ "$item_id" = "connection-type" ] && [ "$cat_id" = "internet-connection" ]; then
+                    local conn_type=$(grep "^connection_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+                    if [ "$conn_type" = "auto" ]; then
+                        if whiptail_show_network_info; then
+                            auto_add_conditional_packages "$cat_id"
+                            return 0
+                        fi
+                        continue
+                    fi
+                fi
             else
                 whiptail_process_items "$cat_id" "$item_id" "$radio_breadcrumb"
                 [ $? -ne 0 ] && break
