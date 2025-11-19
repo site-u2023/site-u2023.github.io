@@ -1985,6 +1985,7 @@ review_and_apply() {
                 else
                     simple_view_selected_custom_packages
                 fi
+                ;;
                 else
                     clear
                     echo "========================================"
