@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1119.1601"
+VERSION="R7.1119.1604"
 
 # Configuration Management
 
@@ -1255,6 +1255,7 @@ whiptail_process_items() {
             
         radio-group)
             local label=$(get_setup_item_label "$item_id")
+            local item_breadcrumb="${breadcrumb}${BREADCRUMB_SEP}${label}"
             local variable=$(get_setup_item_variable "$item_id")
             local default=$(get_setup_item_default "$item_id")
             
@@ -1290,7 +1291,7 @@ whiptail_process_items() {
                 i=$((i+1))
             done
             
-            value=$(show_menu "$breadcrumb" "${label}:" "" "" $menu_opts)
+            value=$(show_menu "$item_breadcrumb" "" "" "" $menu_opts)
             exit_code=$?
             
             if [ $exit_code -ne 0 ]; then
@@ -1309,6 +1310,7 @@ whiptail_process_items() {
             
         field)
             local label=$(get_setup_item_label "$item_id")
+            local item_breadcrumb="${breadcrumb}${BREADCRUMB_SEP}${label}"
             local variable=$(get_setup_item_variable "$item_id")
             local default=$(get_setup_item_default "$item_id")
             local field_type=$(get_setup_item_field_type "$item_id")
@@ -1390,7 +1392,7 @@ whiptail_process_items() {
                             ;;
                         *)
                             echo "[DEBUG] Unknown source type: $source, showing as inputbox" >> $CONFIG_DIR/debug.log
-                            value=$(show_inputbox "$breadcrumb" "${label}:" "$current")
+                            value=$(show_inputbox "$item_breadcrumb" "" "$current")
                             exit_code=$?
                             
                             if [ $exit_code -ne 0 ]; then
@@ -1412,7 +1414,7 @@ whiptail_process_items() {
                 
                 if [ -z "$options" ]; then
                     echo "[DEBUG] ERROR: No options found for $item_id, skipping" >> $CONFIG_DIR/debug.log
-                    show_msgbox "$breadcrumb" "Error: No options available for $label"
+                    show_msgbox "$item_breadcrumb" "Error: No options available for $label"
                     return 0
                 fi
                 
@@ -1427,7 +1429,7 @@ whiptail_process_items() {
                 
                 echo "[DEBUG] Final menu_opts='$menu_opts'" >> $CONFIG_DIR/debug.log
                 
-                value=$(show_menu "$breadcrumb" "${label}:" "" "" $menu_opts)
+                value=$(show_menu "$item_breadcrumb" "" "" "" $menu_opts)
                 exit_code=$?
                 
                 echo "[DEBUG] select exit_code=$exit_code, value='$value'" >> $CONFIG_DIR/debug.log
@@ -1458,7 +1460,7 @@ whiptail_process_items() {
             else
                 echo "[DEBUG] About to show inputbox for '$label'" >> $CONFIG_DIR/debug.log
                 
-                value=$(show_inputbox "$breadcrumb" "${label}:" "$current")
+                value=$(show_inputbox "$item_breadcrumb" "" "$current")
                 exit_code=$?
                 
                 echo "[DEBUG] inputbox exit_code=$exit_code, value='$value'" >> $CONFIG_DIR/debug.log
