@@ -1316,7 +1316,7 @@ whiptail_process_items() {
                 i=$((i+1))
             done
             
-            local value=$(show_menu "$item_breadcrumb" "" "" "" $menu_opts)
+            value=$(show_menu "$item_breadcrumb" "" "" "" $menu_opts)
             exit_code=$?
             
             # キャンセル時は処理を中断してメインメニューへ戻る
@@ -1326,7 +1326,7 @@ whiptail_process_items() {
             fi
             
             if [ -n "$value" ]; then
-                local selected_opt=$(echo "$options" | sed -n "${value}p")
+                selected_opt=$(echo "$options" | sed -n "${value}p")
                 echo "[DEBUG] Selected: $selected_opt" >> $CONFIG_DIR/debug.log
                 sed -i "/^${variable}=/d" "$SETUP_VARS"
                 echo "${variable}='${selected_opt}'" >> "$SETUP_VARS"
@@ -1453,7 +1453,7 @@ whiptail_process_items() {
                 
                 echo "[DEBUG] Final menu_opts='$menu_opts'" >> $CONFIG_DIR/debug.log
                 
-                local value=$(show_menu "$item_breadcrumb" "" "" "" $menu_opts)
+                value=$(show_menu "$item_breadcrumb" "" "" "" $menu_opts)
                 exit_code=$?
                 
                 echo "[DEBUG] select exit_code=$exit_code, value='$value'" >> $CONFIG_DIR/debug.log
@@ -1465,7 +1465,7 @@ whiptail_process_items() {
                 fi
                 
                 if [ -n "$value" ]; then
-                    local selected_opt=$(echo "$options" | sed -n "${value}p")
+                    selected_opt=$(echo "$options" | sed -n "${value}p")
                     echo "[DEBUG] selected_opt='$selected_opt'" >> $CONFIG_DIR/debug.log
                     sed -i "/^${variable}=/d" "$SETUP_VARS"
                     echo "${variable}='${selected_opt}'" >> "$SETUP_VARS"
@@ -1485,7 +1485,7 @@ whiptail_process_items() {
             else
                 echo "[DEBUG] About to show inputbox for '$item_label'" >> $CONFIG_DIR/debug.log
                 
-                local value=$(show_inputbox "$item_breadcrumb" "" "$current")
+                value=$(show_inputbox "$item_breadcrumb" "" "$current")
                 exit_code=$?
                 
                 echo "[DEBUG] inputbox exit_code=$exit_code, value='$value'" >> $CONFIG_DIR/debug.log
@@ -1557,7 +1557,7 @@ whiptail_category_config() {
         local current_lang=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
         [ -z "$current_lang" ] && current_lang="${AUTO_LANGUAGE:-en}"
         
-        local value=$(show_inputbox "$lang_breadcrumb" "" "$current_lang")
+        value=$(show_inputbox "$lang_breadcrumb" "" "$current_lang")
         
         # キャンセル時は処理を中断してメインメニューへ戻る
         if [ $? -ne 0 ]; then
@@ -2248,7 +2248,7 @@ simple_process_items() {
                 read choice
                 
                 if [ -n "$choice" ]; then
-                    local selected_opt=$(echo "$options" | sed -n "${choice}p")
+                    selected_opt=$(echo "$options" | sed -n "${choice}p")
                     if [ -n "$selected_opt" ]; then
                         sed -i "/^${variable}=/d" "$SETUP_VARS"
                         echo "${variable}='${selected_opt}'" >> "$SETUP_VARS"
@@ -2374,7 +2374,7 @@ simple_process_items() {
                     read choice
                     
                     if [ -n "$choice" ]; then
-                        local selected_opt=$(echo "$options" | sed -n "${choice}p")
+                        selected_opt=$(echo "$options" | sed -n "${choice}p")
                         if [ -n "$selected_opt" ]; then
                             sed -i "/^${variable}=/d" "$SETUP_VARS"
                             echo "${variable}='${selected_opt}'" >> "$SETUP_VARS"
@@ -2460,7 +2460,7 @@ simple_category_config() {
         read value
         
         if [ -z "$value" ]; then
-            local value="$current_lang"
+            value="$current_lang"
         fi
         
         if [ -n "$value" ]; then
