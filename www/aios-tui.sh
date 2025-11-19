@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1119.2100"
+VERSION="R7.1119.2124"
 
 # Configuration Management
 
@@ -296,6 +296,11 @@ init() {
     rm -f "$SETUP_JSON"
     rm -f "$PACKAGES_JSON"
     rm -f "$AUTO_CONFIG_JSON"
+
+    rm -f "$PACKAGES_DB"
+    rm -f "$SETUP_DB"
+    rm -f "$CUSTOMFEEDS_DB"
+    rm -f "$DEVICE_INFO_JSON"
     
     echo "[DEBUG] $(date): Init complete, cache cleared" >> $CONFIG_DIR/debug.log
 }
