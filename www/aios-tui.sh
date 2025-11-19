@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1119.2324"
+VERSION="R7.1119.2341"
 
 # Configuration Management
 
@@ -1275,6 +1275,8 @@ whiptail_process_items() {
             local nested=$(get_section_nested_items "$item_id")
             for child_id in $nested; do
                 whiptail_process_items "$cat_id" "$child_id" "$item_breadcrumb"
+                # セクション内の項目でキャンセルされた場合は処理を中断
+                [ $? -ne 0 ] && return 1
             done
             ;;
             
@@ -1317,9 +1319,10 @@ whiptail_process_items() {
             value=$(show_menu "$item_breadcrumb" "" "" "" $menu_opts)
             exit_code=$?
             
+            # キャンセル時は処理を中断してメインメニューへ戻る
             if [ $exit_code -ne 0 ]; then
-                echo "[DEBUG] Radio-group cancelled, keeping current value" >> $CONFIG_DIR/debug.log
-                return 0
+                echo "[DEBUG] Radio-group cancelled, returning to previous menu" >> $CONFIG_DIR/debug.log
+                return 1
             fi
             
             if [ -n "$value" ]; then
@@ -1455,9 +1458,10 @@ whiptail_process_items() {
                 
                 echo "[DEBUG] select exit_code=$exit_code, value='$value'" >> $CONFIG_DIR/debug.log
                 
+                # キャンセル時は処理を中断してメインメニューへ戻る
                 if [ $exit_code -ne 0 ]; then
-                    echo "[DEBUG] Select cancelled, keeping current value" >> $CONFIG_DIR/debug.log
-                    return 0
+                    echo "[DEBUG] Select cancelled, returning to previous menu" >> $CONFIG_DIR/debug.log
+                    return 1
                 fi
                 
                 if [ -n "$value" ]; then
@@ -1486,9 +1490,10 @@ whiptail_process_items() {
                 
                 echo "[DEBUG] inputbox exit_code=$exit_code, value='$value'" >> $CONFIG_DIR/debug.log
                 
+                # キャンセル時は処理を中断してメインメニューへ戻る
                 if [ $exit_code -ne 0 ]; then
-                    echo "[DEBUG] Inputbox cancelled, keeping current value" >> $CONFIG_DIR/debug.log
-                    return 0
+                    echo "[DEBUG] Inputbox cancelled, returning to previous menu" >> $CONFIG_DIR/debug.log
+                    return 1
                 fi
                 
                 if [ -n "$value" ]; then
@@ -1554,7 +1559,12 @@ whiptail_category_config() {
         
         value=$(show_inputbox "$lang_breadcrumb" "" "$current_lang")
         
-        if [ $? -eq 0 ] && [ -n "$value" ]; then
+        # キャンセル時は処理を中断してメインメニューへ戻る
+        if [ $? -ne 0 ]; then
+            return 0
+        fi
+        
+        if [ -n "$value" ]; then
             sed -i "/^language=/d" "$SETUP_VARS"
             echo "language='${value}'" >> "$SETUP_VARS"
             update_language_packages
@@ -1562,6 +1572,7 @@ whiptail_category_config() {
     fi
     
     if [ "$cat_id" = "internet-connection" ]; then
+        # 自動検出をスキップしても設定は継続
         if show_auto_detection_if_available; then
             auto_add_conditional_packages "$cat_id"
             return 0
@@ -1577,7 +1588,11 @@ whiptail_category_config() {
             
             if [ "$item_type" = "radio-group" ]; then
                 found_radio=1
+                # radio-group のキャンセルは処理を中断
                 whiptail_process_items "$cat_id" "$item_id" "$base_breadcrumb"
+                if [ $? -ne 0 ]; then
+                    return 0
+                fi
                 
                 local radio_label=$(get_setup_item_label "$item_id")
                 radio_breadcrumb="${base_breadcrumb}${BREADCRUMB_SEP}${radio_label}"
@@ -1605,7 +1620,11 @@ whiptail_category_config() {
                     fi
                 fi
             else
+                # 各フィールドのキャンセルは処理を中断
                 whiptail_process_items "$cat_id" "$item_id" "$radio_breadcrumb"
+                if [ $? -ne 0 ]; then
+                    return 0
+                fi
             fi
         done
         
