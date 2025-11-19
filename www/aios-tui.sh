@@ -174,7 +174,18 @@ show_menu() {
     local cancel_btn="${4:-$(translate "$DEFAULT_BTN_BACK")}"
     shift 4
     
-    eval "whiptail --title '$breadcrumb' --ok-button '$ok_btn' --cancel-button '$cancel_btn' --menu '$prompt' $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH 0 $@ 3>&1 1>&2 2>&3"
+    echo "[DEBUG] show_menu: breadcrumb='$breadcrumb'" >> $CONFIG_DIR/debug.log
+    echo "[DEBUG] show_menu: prompt='$prompt'" >> $CONFIG_DIR/debug.log
+    echo "[DEBUG] show_menu: ok_btn='$ok_btn'" >> $CONFIG_DIR/debug.log
+    echo "[DEBUG] show_menu: cancel_btn='$cancel_btn'" >> $CONFIG_DIR/debug.log
+    echo "[DEBUG] show_menu: remaining args count: $#" >> $CONFIG_DIR/debug.log
+    echo "[DEBUG] show_menu: remaining args: $@" >> $CONFIG_DIR/debug.log
+    echo "[DEBUG] show_menu: WHIPTAIL_HEIGHT=$WHIPTAIL_HEIGHT, WIDTH=$WHIPTAIL_WIDTH" >> $CONFIG_DIR/debug.log
+    
+    local cmd="whiptail --title '$breadcrumb' --ok-button '$ok_btn' --cancel-button '$cancel_btn' --menu '$prompt' $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH 0 $@ 3>&1 1>&2 2>&3"
+    echo "[DEBUG] show_menu: command to eval: $cmd" >> $CONFIG_DIR/debug.log
+    
+    eval "$cmd"
 }
 
 show_checklist() {
