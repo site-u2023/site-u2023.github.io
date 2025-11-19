@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1119.1244"
+VERSION="R7.1119.1249"
 
 # ============================================
 # Configuration Management
@@ -174,12 +174,13 @@ show_menu() {
     local cancel_btn="${4:-$(translate "$DEFAULT_BTN_BACK")}"
     shift 4
     
-    [ -z "$prompt" ] && prompt=" "
+    [ -z "$prompt" ] && prompt="Select an option:"
     
-    local item_count=$(($# / 2))
-    local height=$(calculate_menu_height $item_count)
+    echo "[DEBUG] show_menu called with $# items" >> $CONFIG_DIR/debug.log
+    echo "[DEBUG] prompt='$prompt'" >> $CONFIG_DIR/debug.log
+    echo "[DEBUG] remaining args: $@" >> $CONFIG_DIR/debug.log
     
-    eval "whiptail --title '$breadcrumb' --ok-button '$ok_btn' --cancel-button '$cancel_btn' --menu '$prompt' $height $WHIPTAIL_WIDTH 0 $@ 3>&1 1>&2 2>&3"
+    eval "whiptail --title '$breadcrumb' --ok-button '$ok_btn' --cancel-button '$cancel_btn' --menu '$prompt' $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH 0 $@ 3>&1 1>&2 2>&3"
 }
 
 show_checklist() {
@@ -1839,12 +1840,15 @@ whiptail_view_selected_custom_packages() {
         i=$((i+1))
     done < <(get_customfeed_categories)
     
+    # デバッグ追加
+    echo "[DEBUG] whiptail_view_selected_custom_packages: menu_items='$menu_items'" >> $CONFIG_DIR/debug.log
+    
     if [ -z "$menu_items" ]; then
         show_msgbox "$breadcrumb" "No custom feed categories available"
         return 0
     fi
     
-    choice=$(show_menu "$breadcrumb" "Select category:" "" "" $menu_items)
+    choice=$(eval "show_menu \"$breadcrumb\" \"Select category:\" \"\" \"\" $menu_items")
     
     if [ $? -ne 0 ]; then
         return 0
