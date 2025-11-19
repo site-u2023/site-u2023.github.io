@@ -201,7 +201,7 @@ show_textbox() {
     local temp_file="$CONFIG_DIR/textbox_wrapped.txt"
     fold -s -w $WHIPTAIL_WIDTH "$file" > "$temp_file"
     
-    whiptail --scrolltext --title "$breadcrumb" --ok-button "$ok_btn" --textbox "$temp_file" $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH
+    whiptail --scrolltext --title "$breadcrumb" --ok-button "$ok_btn" --textbox "$temp_file" $height $WHIPTAIL_WIDTH
     
     rm -f "$temp_file"
 }
