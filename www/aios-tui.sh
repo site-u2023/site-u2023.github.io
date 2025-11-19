@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1119.1255"
+VERSION="R7.1119.1257"
 
 # ============================================
 # Configuration Management
@@ -180,7 +180,13 @@ show_menu() {
     echo "[DEBUG] prompt='$prompt'" >> $CONFIG_DIR/debug.log
     echo "[DEBUG] remaining args: $@" >> $CONFIG_DIR/debug.log
     
-    eval "whiptail --title '$breadcrumb' --ok-button '$ok_btn' --cancel-button '$cancel_btn' --menu '$prompt' $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH 0 $@ 3>&1 1>&2 2>&3"
+    whiptail --title "$breadcrumb" \
+             --ok-button "$ok_btn" \
+             --cancel-button "$cancel_btn" \
+             --menu "$prompt" \
+             $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH 0 \
+             "$@" \
+             3>&1 1>&2 2>&3
 }
 
 show_checklist() {
