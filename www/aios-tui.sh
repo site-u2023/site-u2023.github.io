@@ -184,12 +184,12 @@ simple_show_menu() {
     shift
     
     clear
-    echo "=== $title ==="
+    echo "=== $title ===" | fold -s -w 78
     echo ""
     
     local i=1
     while [ $# -gt 0 ]; do
-        echo "$i) $1"
+        echo "$i) $1" | fold -s -w 76
         shift
         i=$((i+1))
     done
