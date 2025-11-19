@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1119.1155"
+VERSION="R7.1119.1158"
 
 # ============================================
 # Configuration Management
@@ -135,19 +135,6 @@ build_breadcrumb() {
     echo "$result"
 }
 
-show_menu() {
-    local breadcrumb="$1"
-    local prompt="$2"
-    local ok_btn="${3:-$(translate "$DEFAULT_BTN_SELECT")}"
-    local cancel_btn="${4:-$(translate "$DEFAULT_BTN_BACK")}"
-    shift 4
-    
-    local item_count=$(($# / 2))
-    local height=$(calculate_menu_height $item_count)
-    
-    eval "whiptail --title '$breadcrumb' --ok-button '$ok_btn' --cancel-button '$cancel_btn' --menu '$prompt' $height $WHIPTAIL_WIDTH $item_count $@ 3>&1 1>&2 2>&3"
-}
-
 show_inputbox() {
     local breadcrumb="$1"
     local prompt="$2"
@@ -189,7 +176,7 @@ show_menu() {
     local item_count=$(($# / 2))
     local height=$(calculate_menu_height $item_count)
     
-    eval "whiptail --title '$breadcrumb' --ok-button '$ok_btn' --cancel-button '$cancel_btn' --menu '$prompt' $height $WHIPTAIL_WIDTH $item_count $@ 3>&1 1>&2 2>&3"
+    eval "whiptail --title '$breadcrumb' --ok-button '$ok_btn' --cancel-button '$cancel_btn' --menu '$prompt' $height $WHIPTAIL_WIDTH 0 $@ 3>&1 1>&2 2>&3"
 }
 
 show_checklist() {
