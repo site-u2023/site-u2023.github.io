@@ -144,7 +144,7 @@
 
     "tr-feedback-link": "フォーラム",
 
-    "tr-tui-packages": "パッケージ",
+    "tr-tui-packages": "パッケージインストール",
     "tr-tui-main-menu": "メインメニュー",
     "tr-tui-select": "選択",
     "tr-tui-back": "戻る",
@@ -168,7 +168,7 @@
     "tr-tui-postinst-not-found": "postinst.shファイルが見つかりません",
     "tr-tui-setup-not-found": "setup.shファイルが見つかりません",
     "tr-tui-apply-confirm-step1": "1. パッケージインストール (postinst.sh)",
-    "tr-tui-apply-confirm-step2": "2. カスタムパッケージインストール (customfeeds.sh)",
+    "tr-tui-apply-confirm-step2": "2. カスタムフィードパッケージインストール (customfeeds.sh)",
     "tr-tui-apply-confirm-step3": "3. 設定適用 (setup.sh)",
     "tr-tui-apply-confirm-step4": "4. 再起動（確認あり）",
     "tr-tui-apply-confirm-question": "実行しますか？",
@@ -194,7 +194,7 @@
     "tr-tui-isp-info": "ISP情報:",
     "tr-tui-manual-config-required": "手動で接続設定を行ってください。",
     
-    "tr-tui-custom-feeds": "カスタムフィードパッケージ",
+    "tr-tui-custom-feeds": "カスタムフィードパッケージインストール",
     "tr-tui-feed-gspotx2f": "gSpotx2fリポジトリ",
     "tr-tui-feed-jerrykuku": "jerrykukuリポジトリ"
 }
