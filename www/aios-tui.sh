@@ -1840,15 +1840,12 @@ whiptail_view_selected_custom_packages() {
         i=$((i+1))
     done < <(get_customfeed_categories)
     
-    # デバッグ追加
-    echo "[DEBUG] whiptail_view_selected_custom_packages: menu_items='$menu_items'" >> $CONFIG_DIR/debug.log
-    
     if [ -z "$menu_items" ]; then
         show_msgbox "$breadcrumb" "No custom feed categories available"
         return 0
     fi
     
-    choice=$(eval "show_menu \"$breadcrumb\" \"Select category:\" \"\" \"\" $menu_items")
+    choice=$(show_menu "$breadcrumb" "Select category:" "" "" $menu_items)
     
     if [ $? -ne 0 ]; then
         return 0
