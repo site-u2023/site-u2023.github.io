@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1119.1813"
+VERSION="R7.1119.1824"
 
 # Configuration Management
 
@@ -517,12 +517,12 @@ update_language_packages() {
     
     local prefixes=$(jsonfilter -i "$SETUP_JSON" -e '@.constants.language_prefixes_release[*]' 2>/dev/null)
     
-    echo "$prefixes" | while IFS= read -r prefix; do
+    for prefix in $prefixes; do
         sed -i "/^${prefix}/d" "$SELECTED_PACKAGES"
     done
     
     if [ -n "$new_lang" ] && [ "$new_lang" != "en" ]; then
-        echo "$prefixes" | while IFS= read -r prefix; do
+        for prefix in $prefixes; do
             echo "${prefix}${new_lang}" >> "$SELECTED_PACKAGES"
         done
     fi
