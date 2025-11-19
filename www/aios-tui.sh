@@ -146,7 +146,7 @@ show_menu() {
     local item_count=$(($# / 2))
     local height=$(calculate_menu_height $item_count)
     
-    eval "whiptail --title '$breadcrumb' --ok-button '$ok_btn' --cancel-button '$cancel_btn' --menu '$prompt' $height $WHIPTAIL_WIDTH 0 $@ 3>&1 1>&2 2>&3"
+    eval "whiptail --title '$breadcrumb' --ok-button '$ok_btn' --cancel-button '$cancel_btn' --menu '$prompt' $height $WHIPTAIL_WIDTH $item_count $@ 3>&1 1>&2 2>&3"
 }
 
 show_inputbox() {
@@ -180,6 +180,19 @@ show_msgbox() {
     whiptail --title "$breadcrumb" --ok-button "$ok_btn" --msgbox "$message" $height $WHIPTAIL_WIDTH
 }
 
+show_menu() {
+    local breadcrumb="$1"
+    local prompt="$2"
+    local ok_btn="${3:-$(translate "$DEFAULT_BTN_SELECT")}"
+    local cancel_btn="${4:-$(translate "$DEFAULT_BTN_BACK")}"
+    shift 4
+    
+    local item_count=$(($# / 2))
+    local height=$(calculate_menu_height $item_count)
+    
+    eval "whiptail --title '$breadcrumb' --ok-button '$ok_btn' --cancel-button '$cancel_btn' --menu '$prompt' $height $WHIPTAIL_WIDTH $item_count $@ 3>&1 1>&2 2>&3"
+}
+
 show_checklist() {
     local breadcrumb="$1"
     local prompt="$2"
@@ -190,7 +203,7 @@ show_checklist() {
     local item_count=$(($# / 3))
     local height=$(calculate_menu_height $item_count)
     
-    eval "whiptail --title '$breadcrumb' --ok-button '$ok_btn' --cancel-button '$cancel_btn' --checklist '$prompt' $height $WHIPTAIL_WIDTH 0 $@ 3>&1 1>&2 2>&3"
+    eval "whiptail --title '$breadcrumb' --ok-button '$ok_btn' --cancel-button '$cancel_btn' --checklist '$prompt' $height $WHIPTAIL_WIDTH $item_count $@ 3>&1 1>&2 2>&3"
 }
 
 show_textbox() {
