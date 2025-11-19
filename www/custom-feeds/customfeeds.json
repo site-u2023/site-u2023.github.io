@@ -5,6 +5,7 @@
       "name": "gSpotx2f Repository",
       "class": "tr-tui-feed-gspotx2f",
       "description": "Community packages from gSpotx2f",
+      "template_path": "custom-feeds/gSpotx2f.sh",
       "api_base": "https://api.github.com/repos/gSpotx2f/packages-openwrt/contents/current",
       "download_base": "https://raw.githubusercontent.com/gSpotx2f/packages-openwrt/master/current",
       "packages": [
@@ -81,6 +82,7 @@
       "name": "jerrykuku Repository",
       "class": "tr-tui-feed-jerrykuku",
       "description": "Argon theme and related packages from jerrykuku",
+      "template_path": "custom-feeds/jerrykuku.sh",
       "api_base": "https://api.github.com/repos/jerrykuku/luci-theme-argon/releases/latest",
       "download_base": "https://github.com/jerrykuku/luci-theme-argon/releases/download",
       "packages": [
