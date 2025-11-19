@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1119.1611"
+VERSION="R7.1119.1632"
 
 # Configuration Management
 
@@ -1521,9 +1521,6 @@ whiptail_category_config() {
     local cat_title=$(get_setup_category_title "$cat_id")
     local base_breadcrumb=$(build_breadcrumb "$tr_main_menu" "$cat_title")
     
-    echo "[DEBUG] === whiptail_category_config START ===" >> $CONFIG_DIR/debug.log
-    echo "[DEBUG] cat_id=$cat_id, title=$cat_title" >> $CONFIG_DIR/debug.log
-    
     if [ "$cat_id" = "internet-connection" ]; then
         if show_auto_detection_if_available; then
             auto_add_conditional_packages "$cat_id"
@@ -1531,28 +1528,23 @@ whiptail_category_config() {
         fi
     fi
     
-    echo "[DEBUG] Processing all items" >> $CONFIG_DIR/debug.log
+    local current_breadcrumb="$base_breadcrumb"
     
     for item_id in $(get_setup_category_items "$cat_id"); do
-        whiptail_process_items "$cat_id" "$item_id" "$base_breadcrumb"
-        local result=$?
+        local item_type=$(get_setup_item_type "$item_id")
         
-        if [ $result -ne 0 ]; then
-            echo "[DEBUG] User cancelled at item $item_id, returning to main menu" >> $CONFIG_DIR/debug.log
-            return 0
+        # radio-groupの場合、パンくずを更新
+        if [ "$item_type" = "radio-group" ]; then
+            local radio_label=$(get_setup_item_label "$item_id")
+            current_breadcrumb="${base_breadcrumb}${BREADCRUMB_SEP}${radio_label}"
         fi
+        
+        whiptail_process_items "$cat_id" "$item_id" "$current_breadcrumb"
+        
+        [ $? -ne 0 ] && return 0
     done
     
-    echo "[DEBUG] All items processed successfully" >> $CONFIG_DIR/debug.log
-    echo "[DEBUG] SETUP_VARS after processing:" >> $CONFIG_DIR/debug.log
-    cat "$SETUP_VARS" >> $CONFIG_DIR/debug.log 2>&1
-    echo "[DEBUG] About to call auto_add_conditional_packages for $cat_id" >> $CONFIG_DIR/debug.log
     auto_add_conditional_packages "$cat_id"
-    echo "[DEBUG] After auto_add_conditional_packages" >> $CONFIG_DIR/debug.log
-    echo "[DEBUG] Selected packages:" >> $CONFIG_DIR/debug.log
-    cat "$SELECTED_PACKAGES" >> $CONFIG_DIR/debug.log 2>&1
-    echo "[DEBUG] === whiptail_category_config END ===" >> $CONFIG_DIR/debug.log
-    
     return 0
 }
 
