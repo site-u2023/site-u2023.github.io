@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1119.0945"
+VERSION="R7.1119.1027"
 
 # ============================================
 # Configuration Management
@@ -1795,6 +1795,61 @@ whiptail_view_customfeeds() {
     fi
 }
 
+whiptail_view_selected_custom_packages() {
+    local tr_main_menu=$(translate "tr-tui-main-menu")
+    local tr_review=$(translate "tr-tui-review-configuration")
+    local tr_custom_packages=$(translate "tr-tui-view-custom-packages")
+    local breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$tr_custom_packages")
+    
+    if [ ! -f "$CUSTOMFEEDS_JSON" ]; then
+        show_msgbox "$breadcrumb" "No custom feeds available"
+        return 0
+    fi
+    
+    local menu_items="" i=1 cat_id cat_name
+    
+    while read cat_id; do
+        cat_name=$(get_category_name "$cat_id")
+        menu_items="$menu_items $i \"$cat_name\""
+        i=$((i+1))
+    done < <(get_customfeed_categories)
+    
+    if [ -z "$menu_items" ]; then
+        show_msgbox "$breadcrumb" "No custom feeds available"
+        return 0
+    fi
+    
+    choice=$(show_menu "$breadcrumb" "" "" "" $menu_items)
+    
+    if [ $? -ne 0 ]; then
+        return 0
+    fi
+    
+    if [ -n "$choice" ]; then
+        selected_cat=$(get_customfeed_categories | sed -n "${choice}p")
+        local cat_name=$(get_category_name "$selected_cat")
+        local breadcrumb2=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$tr_custom_packages" "$cat_name")
+        
+        local temp_view="$CONFIG_DIR/selected_custom_pkg_view.txt"
+        : > "$temp_view"
+        
+        get_category_packages "$selected_cat" | while read pkg_id; do
+            if grep -q "^${pkg_id}$" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
+                local pkg_name=$(get_package_name "$pkg_id")
+                echo "  - ${pkg_name}"
+            fi
+        done > "$temp_view"
+        
+        if [ -s "$temp_view" ]; then
+            show_textbox "$breadcrumb2" "$temp_view"
+        else
+            show_msgbox "$breadcrumb2" "$(translate 'tr-tui-no-packages')"
+        fi
+        
+        rm -f "$temp_view"
+    fi
+}
+
 whiptail_main_menu() {
     while true; do
         local tr_main_menu=$(translate "tr-tui-main-menu")
@@ -1926,15 +1981,10 @@ review_and_apply() {
                 ;;
             3)
                 if [ "$UI_MODE" = "whiptail" ]; then
-                    local tr_custom_packages=$(translate 'tr-tui-view-custom-packages')
-                    local breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$tr_custom_packages")
-                    
-                    if [ -s "$SELECTED_CUSTOM_PACKAGES" ]; then
-                        cat "$SELECTED_CUSTOM_PACKAGES" | sed 's/^/  - /' > "$CONFIG_DIR/custom_pkg_view.txt"
-                        show_textbox "$breadcrumb" "$CONFIG_DIR/custom_pkg_view.txt"
-                    else
-                        show_msgbox "$breadcrumb" "$(translate 'tr-tui-no-packages')"
-                    fi
+                    whiptail_view_selected_custom_packages
+                else
+                    simple_view_selected_custom_packages
+                fi
                 else
                     clear
                     echo "========================================"
@@ -2603,6 +2653,66 @@ simple_view_customfeeds() {
             cat "$script_file"
         else
             echo "Script not found"
+        fi
+        
+        echo ""
+        printf "Press Enter to continue..."
+        read
+    fi
+}
+
+simple_view_selected_custom_packages() {
+    clear
+    echo "========================================"
+    echo "  $(translate 'tr-tui-view-custom-packages')"
+    echo "========================================"
+    echo ""
+    
+    if [ ! -f "$CUSTOMFEEDS_JSON" ]; then
+        echo "No custom feeds available"
+        echo ""
+        printf "Press Enter to continue..."
+        read
+        return 0
+    fi
+    
+    local i=1
+    get_customfeed_categories | while read cat_id; do
+        local cat_name=$(get_category_name "$cat_id")
+        echo "$i) $cat_name"
+        i=$((i+1))
+    done
+    
+    echo "b) $(translate 'tr-tui-back')"
+    echo ""
+    printf "$(translate 'tr-tui-ui-choice'): "
+    read choice
+    
+    if [ "$choice" = "b" ] || [ "$choice" = "B" ]; then
+        return 0
+    fi
+    
+    if [ -n "$choice" ]; then
+        selected_cat=$(get_customfeed_categories | sed -n "${choice}p")
+        local cat_name=$(get_category_name "$selected_cat")
+        
+        clear
+        echo "========================================"
+        echo "  ${cat_name}"
+        echo "========================================"
+        echo ""
+        
+        local has_packages=0
+        get_category_packages "$selected_cat" | while read pkg_id; do
+            if grep -q "^${pkg_id}$" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
+                local pkg_name=$(get_package_name "$pkg_id")
+                echo "  - ${pkg_name}"
+                has_packages=1
+            fi
+        done
+        
+        if [ $has_packages -eq 0 ]; then
+            echo "  $(translate 'tr-tui-no-packages')"
         fi
         
         echo ""
