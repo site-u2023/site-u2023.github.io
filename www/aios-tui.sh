@@ -179,14 +179,12 @@ show_menu() {
     echo "[DEBUG] show_menu called with $# items" >> $CONFIG_DIR/debug.log
     echo "[DEBUG] prompt='$prompt'" >> $CONFIG_DIR/debug.log
     echo "[DEBUG] remaining args: $@" >> $CONFIG_DIR/debug.log
+    echo "[DEBUG] About to eval whiptail" >> $CONFIG_DIR/debug.log
     
-    whiptail --title "$breadcrumb" \
-             --ok-button "$ok_btn" \
-             --cancel-button "$cancel_btn" \
-             --menu "$prompt" \
-             $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH 0 \
-             "$@" \
-             3>&1 1>&2 2>&3
+    local cmd="whiptail --title \"$breadcrumb\" --ok-button \"$ok_btn\" --cancel-button \"$cancel_btn\" --menu \"$prompt\" $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH 0 $@ 3>&1 1>&2 2>&3"
+    echo "[DEBUG] eval command: $cmd" >> $CONFIG_DIR/debug.log
+    
+    eval "$cmd"
 }
 
 show_checklist() {
