@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1119.1047"
+VERSION="R7.1119.1142"
 
 # ============================================
 # Configuration Management
