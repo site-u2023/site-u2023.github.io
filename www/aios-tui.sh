@@ -512,6 +512,22 @@ apply_api_defaults() {
     fi
 }
 
+update_language_packages() {
+    local new_lang=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+    
+    local prefixes=$(jsonfilter -i "$SETUP_JSON" -e '@.constants.language_prefixes_release[*]' 2>/dev/null)
+    
+    while IFS= read -r prefix; do
+        sed -i "/^${prefix}/d" "$SELECTED_PACKAGES"
+    done <<< "$prefixes"
+    
+    if [ -n "$new_lang" ] && [ "$new_lang" != "en" ]; then
+        while IFS= read -r prefix; do
+            echo "${prefix}${new_lang}" >> "$SELECTED_PACKAGES"
+        done <<< "$prefixes"
+    fi
+}
+
 # Setup JSON Accessors
 
 get_setup_categories() {
@@ -1576,6 +1592,9 @@ whiptail_category_config() {
     done
     
     auto_add_conditional_packages "$cat_id"
+    
+    [ "$cat_id" = "basic-config" ] && update_language_packages
+    
     return 0
 }
 
