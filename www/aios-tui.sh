@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1118.2027"
+VERSION="R7.1119.0937"
 
 # ============================================
 # Configuration Management
@@ -1079,12 +1079,15 @@ compute_dslite_aftr() {
 # File Generation
 # ============================================
 generate_files() {
+    # postinst.sh の生成
     {
         wget -q -O - "$POSTINST_TEMPLATE_URL" | sed -n '1,/^# BEGIN_VARIABLE_DEFINITIONS/p'
         
         if [ -s "$SELECTED_PACKAGES" ]; then
             pkgs=$(cat "$SELECTED_PACKAGES" | tr '\n' ' ' | sed 's/ $//')
             echo "PACKAGES=\"${pkgs}\""
+        else
+            echo "PACKAGES=\"\""
         fi
         
         wget -q -O - "$POSTINST_TEMPLATE_URL" | sed -n '/^# END_VARIABLE_DEFINITIONS/,$p'
@@ -1092,6 +1095,7 @@ generate_files() {
     
     chmod +x "$CONFIG_DIR/postinst.sh"
     
+    # setup.sh の生成
     {
         wget -q -O - "$SETUP_TEMPLATE_URL" | sed -n '1,/^# BEGIN_VARS/p'
         
@@ -1104,45 +1108,36 @@ generate_files() {
     
     chmod +x "$CONFIG_DIR/setup.sh"
     
-    if [ -f "$CUSTOMFEEDS_JSON" ]; then
-        local cat_id=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e '@.categories[0].id' 2>/dev/null)
+    # customfeeds.sh の生成（他の2つと全く同じロジック）
+    {
+        wget -q -O - "$CUSTOMFEEDS_TEMPLATE_URL" | sed -n '1,/^# BEGIN_VARIABLE_DEFINITIONS/p'
         
-        if [ -n "$cat_id" ]; then
-            local api_url=$(get_customfeed_api_base "$cat_id")
-            local download_url=$(get_customfeed_download_base "$cat_id")
-            
-            local temp_custom_pkg="$CONFIG_DIR/temp_custom_packages.txt"
-            : > "$temp_custom_pkg"
-            
-            while IFS= read -r pkg_id; do
-                [ -z "$pkg_id" ] && continue
-                if grep -q "^${pkg_id}$" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
-                    local pattern=$(get_customfeed_package_pattern "$pkg_id")
-                    echo "${pattern}" >> "$temp_custom_pkg"
-                fi
-            done < <(get_category_packages "$cat_id")
-            
-            local customfeed_packages=""
-            if [ -s "$temp_custom_pkg" ]; then
-                customfeed_packages=$(cat "$temp_custom_pkg" | tr '\n' ' ' | sed 's/ $//')
-            fi
-            
-            {
-                wget -q -O - "$CUSTOMFEEDS_TEMPLATE_URL" | sed -n '1,/^# BEGIN_VARIABLE_DEFINITIONS/p'
-                
-                echo "PACKAGES=\"${customfeed_packages}\""
-                echo "API_URL=\"${api_url}\""
-                echo "DOWNLOAD_BASE_URL=\"${download_url}\""
-                echo "RUN_OPKG_UPDATE=\"0\""
-                
-                wget -q -O - "$CUSTOMFEEDS_TEMPLATE_URL" | sed -n '/^# END_VARIABLE_DEFINITIONS/,$p'
-            } > "$CONFIG_DIR/customfeeds.sh"
-            
-            chmod +x "$CONFIG_DIR/customfeeds.sh"
-            
-            rm -f "$temp_custom_pkg"
+        if [ -s "$SELECTED_CUSTOM_PACKAGES" ]; then
+            pkgs=$(cat "$SELECTED_CUSTOM_PACKAGES" | tr '\n' ' ' | sed 's/ $//')
+            echo "PACKAGES=\"${pkgs}\""
+        else
+            echo "PACKAGES=\"\""
         fi
-    fi
+        
+        # API_URL と DOWNLOAD_BASE_URL は customfeeds.json から取得（取得できなければ空）
+        local api_url=""
+        local download_url=""
+        if [ -f "$CUSTOMFEEDS_JSON" ]; then
+            local cat_id=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e '@.categories[0].id' 2>/dev/null)
+            if [ -n "$cat_id" ]; then
+                api_url=$(get_customfeed_api_base "$cat_id")
+                download_url=$(get_customfeed_download_base "$cat_id")
+            fi
+        fi
+        
+        echo "API_URL=\"${api_url}\""
+        echo "DOWNLOAD_BASE_URL=\"${download_url}\""
+        echo "RUN_OPKG_UPDATE=\"0\""
+        
+        wget -q -O - "$CUSTOMFEEDS_TEMPLATE_URL" | sed -n '/^# END_VARIABLE_DEFINITIONS/,$p'
+    } > "$CONFIG_DIR/customfeeds.sh"
+    
+    chmod +x "$CONFIG_DIR/customfeeds.sh"
 }
 
 # ============================================
