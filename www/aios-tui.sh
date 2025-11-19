@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1119.0937"
+VERSION="R7.1119.0945"
 
 # ============================================
 # Configuration Management
@@ -1079,7 +1079,6 @@ compute_dslite_aftr() {
 # File Generation
 # ============================================
 generate_files() {
-    # postinst.sh の生成
     {
         wget -q -O - "$POSTINST_TEMPLATE_URL" | sed -n '1,/^# BEGIN_VARIABLE_DEFINITIONS/p'
         
@@ -1095,7 +1094,6 @@ generate_files() {
     
     chmod +x "$CONFIG_DIR/postinst.sh"
     
-    # setup.sh の生成
     {
         wget -q -O - "$SETUP_TEMPLATE_URL" | sed -n '1,/^# BEGIN_VARS/p'
         
@@ -1107,37 +1105,46 @@ generate_files() {
     } > "$CONFIG_DIR/setup.sh"
     
     chmod +x "$CONFIG_DIR/setup.sh"
-    
-    # customfeeds.sh の生成（他の2つと全く同じロジック）
-    {
-        wget -q -O - "$CUSTOMFEEDS_TEMPLATE_URL" | sed -n '1,/^# BEGIN_VARIABLE_DEFINITIONS/p'
-        
-        if [ -s "$SELECTED_CUSTOM_PACKAGES" ]; then
-            pkgs=$(cat "$SELECTED_CUSTOM_PACKAGES" | tr '\n' ' ' | sed 's/ $//')
-            echo "PACKAGES=\"${pkgs}\""
-        else
-            echo "PACKAGES=\"\""
-        fi
-        
-        # API_URL と DOWNLOAD_BASE_URL は customfeeds.json から取得（取得できなければ空）
-        local api_url=""
-        local download_url=""
-        if [ -f "$CUSTOMFEEDS_JSON" ]; then
-            local cat_id=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e '@.categories[0].id' 2>/dev/null)
-            if [ -n "$cat_id" ]; then
-                api_url=$(get_customfeed_api_base "$cat_id")
-                download_url=$(get_customfeed_download_base "$cat_id")
+    ）
+    if [ -f "$CUSTOMFEEDS_JSON" ]; then
+        get_customfeed_categories | while read cat_id; do
+            local api_url=$(get_customfeed_api_base "$cat_id")
+            local download_url=$(get_customfeed_download_base "$cat_id")
+            
+            local selected_pkgs=""
+            get_category_packages "$cat_id" | while read pkg_id; do
+                if grep -q "^${pkg_id}$" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
+                    local pattern=$(get_customfeed_package_pattern "$pkg_id")
+                    echo "$pattern"
+                fi
+            done > "$CONFIG_DIR/temp_${cat_id}.txt"
+            
+            if [ -s "$CONFIG_DIR/temp_${cat_id}.txt" ]; then
+                selected_pkgs=$(cat "$CONFIG_DIR/temp_${cat_id}.txt" | tr '\n' ' ' | sed 's/ $//')
             fi
-        fi
-        
-        echo "API_URL=\"${api_url}\""
-        echo "DOWNLOAD_BASE_URL=\"${download_url}\""
-        echo "RUN_OPKG_UPDATE=\"0\""
-        
-        wget -q -O - "$CUSTOMFEEDS_TEMPLATE_URL" | sed -n '/^# END_VARIABLE_DEFINITIONS/,$p'
-    } > "$CONFIG_DIR/customfeeds.sh"
-    
-    chmod +x "$CONFIG_DIR/customfeeds.sh"
+            
+            {
+                wget -q -O - "$CUSTOMFEEDS_TEMPLATE_URL" | sed -n '1,/^# BEGIN_VARIABLE_DEFINITIONS/p'
+                
+                echo "PACKAGES=\"${selected_pkgs}\""
+                echo "API_URL=\"${api_url}\""
+                echo "DOWNLOAD_BASE_URL=\"${download_url}\""
+                echo "RUN_OPKG_UPDATE=\"0\""
+                
+                wget -q -O - "$CUSTOMFEEDS_TEMPLATE_URL" | sed -n '/^# END_VARIABLE_DEFINITIONS/,$p'
+            } > "$CONFIG_DIR/customfeeds-${cat_id}.sh"
+            
+            chmod +x "$CONFIG_DIR/customfeeds-${cat_id}.sh"
+            rm -f "$CONFIG_DIR/temp_${cat_id}.txt"
+        done
+    else
+        {
+            echo "#!/bin/sh"
+            echo "# No custom feeds configured"
+            echo "exit 0"
+        } > "$CONFIG_DIR/customfeeds-none.sh"
+        chmod +x "$CONFIG_DIR/customfeeds-none.sh"
+    fi
 }
 
 # ============================================
@@ -1716,6 +1723,49 @@ whiptail_package_selection() {
     fi
 }
 
+whiptail_view_customfeeds() {
+    local tr_main_menu=$(translate "tr-tui-main-menu")
+    local tr_review=$(translate "tr-tui-review-configuration")
+    local tr_customfeeds=$(translate "tr-tui-view-customfeeds")
+    local breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$tr_customfeeds")
+    
+    if [ ! -f "$CUSTOMFEEDS_JSON" ]; then
+        show_msgbox "$breadcrumb" "No custom feeds available"
+        return 0
+    fi
+    
+    local menu_items="" i=1 cat_id cat_name
+    
+    while read cat_id; do
+        cat_name=$(get_category_name "$cat_id")
+        menu_items="$menu_items $i \"$cat_name\""
+        i=$((i+1))
+    done < <(get_customfeed_categories)
+    
+    if [ -z "$menu_items" ]; then
+        show_msgbox "$breadcrumb" "No custom feeds available"
+        return 0
+    fi
+    
+    choice=$(show_menu "$breadcrumb" "" "" "" $menu_items)
+    
+    if [ $? -ne 0 ]; then
+        return 0
+    fi
+    
+    if [ -n "$choice" ]; then
+        selected_cat=$(get_customfeed_categories | sed -n "${choice}p")
+        local script_file="$CONFIG_DIR/customfeeds-${selected_cat}.sh"
+        
+        if [ -f "$script_file" ]; then
+            cat "$script_file" > "$CONFIG_DIR/customfeeds_view.txt"
+            show_textbox "$breadcrumb" "$CONFIG_DIR/customfeeds_view.txt"
+        else
+            show_msgbox "$breadcrumb" "Script not found: customfeeds-${selected_cat}.sh"
+        fi
+    fi
+}
+
 whiptail_main_menu() {
     while true; do
         local tr_main_menu=$(translate "tr-tui-main-menu")
@@ -1786,6 +1836,7 @@ review_and_apply() {
             
             [ $? -ne 0 ] && return 0
         else
+            # simple mode の場合
             clear
             echo "========================================"
             echo "  $(translate 'tr-tui-review-configuration')"
@@ -1793,10 +1844,12 @@ review_and_apply() {
             echo ""
             echo "1) $(translate 'tr-tui-view-device-info')"
             echo "2) $(translate 'tr-tui-view-package-list')"
-            echo "3) $(translate 'tr-tui-view-config-vars')"
-            echo "4) $(translate 'tr-tui-view-postinst')"
-            echo "5) $(translate 'tr-tui-view-setup')"
-            echo "6) $(translate 'tr-tui-apply')"
+            echo "3) $(translate 'tr-tui-view-custom-packages')"
+            echo "4) $(translate 'tr-tui-view-config-vars')"
+            echo "5) $(translate 'tr-tui-view-postinst')"
+            echo "6) $(translate 'tr-tui-view-customfeeds')"
+            echo "7) $(translate 'tr-tui-view-setup')"
+            echo "8) $(translate 'tr-tui-apply')"
             echo "b) $(translate 'tr-tui-back')"
             echo ""
             printf "$(translate 'tr-tui-ui-choice'): "
@@ -1924,26 +1977,11 @@ review_and_apply() {
                 fi
                 ;;
             6)
+                # カスタムフィードスクリプト選択（入力側と同じ構造）
                 if [ "$UI_MODE" = "whiptail" ]; then
-                    local tr_customfeeds=$(translate 'tr-tui-view-customfeeds')
-                    local breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$tr_customfeeds")
-                    
-                    cat "$CONFIG_DIR/customfeeds.sh" > $CONFIG_DIR/customfeeds_view.txt
-                    show_textbox "$breadcrumb" "$CONFIG_DIR/customfeeds_view.txt"
+                    whiptail_view_customfeeds
                 else
-                    clear
-                    echo "========================================"
-                    echo "  $(translate 'tr-tui-view-customfeeds')"
-                    echo "========================================"
-                    echo ""
-                    if [ -f "$CONFIG_DIR/customfeeds.sh" ]; then
-                        cat "$CONFIG_DIR/customfeeds.sh"
-                    else
-                        echo "customfeeds.sh not found"
-                    fi
-                    echo ""
-                    echo "$(translate 'tr-tui-ok')"
-                    read
+                    simple_view_customfeeds
                 fi
                 ;;
             7)
@@ -1970,6 +2008,7 @@ review_and_apply() {
                 fi
                 ;;
             8)
+                # Apply configuration
                 if [ "$UI_MODE" = "whiptail" ]; then
                     local tr_apply=$(translate 'tr-tui-apply')
                     local breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$tr_apply")
@@ -1984,8 +2023,13 @@ $(translate 'tr-tui-apply-confirm-question')"
                     if show_yesno "$breadcrumb" "$confirm_msg"; then
                         show_msgbox "$breadcrumb" "$(translate 'tr-tui-installing-packages')"
                         sh "$CONFIG_DIR/postinst.sh"
+                        
                         show_msgbox "$breadcrumb" "$(translate 'tr-tui-installing-custom-packages')"
-                        sh "$CONFIG_DIR/customfeeds.sh"
+                        # 全カスタムフィードスクリプトを実行
+                        for script in "$CONFIG_DIR"/customfeeds-*.sh; do
+                            [ -f "$script" ] && sh "$script"
+                        done
+                        
                         show_msgbox "$breadcrumb" "$(translate 'tr-tui-applying-config')"
                         sh "$CONFIG_DIR/setup.sh"
                         
@@ -2018,8 +2062,12 @@ $(translate 'tr-tui-reboot-question')"
                         echo ""
                         echo "$(translate 'tr-tui-installing-packages')"
                         sh "$CONFIG_DIR/postinst.sh"
+                        
                         echo "$(translate 'tr-tui-installing-custom-packages')"
-                        sh "$CONFIG_DIR/customfeeds.sh"
+                        for script in "$CONFIG_DIR"/customfeeds-*.sh; do
+                            [ -f "$script" ] && sh "$script"
+                        done
+                        
                         echo ""
                         echo "$(translate 'tr-tui-applying-config')"
                         sh "$CONFIG_DIR/setup.sh"
@@ -2478,6 +2526,59 @@ simple_package_selection() {
             fi
             simple_package_selection "$cat_id"
         fi
+    fi
+}
+
+simple_view_customfeeds() {
+    clear
+    echo "========================================"
+    echo "  $(translate 'tr-tui-view-customfeeds')"
+    echo "========================================"
+    echo ""
+    
+    if [ ! -f "$CUSTOMFEEDS_JSON" ]; then
+        echo "No custom feeds available"
+        echo ""
+        printf "Press Enter to continue..."
+        read
+        return 0
+    fi
+    
+    local i=1
+    get_customfeed_categories | while read cat_id; do
+        local cat_name=$(get_category_name "$cat_id")
+        echo "$i) $cat_name"
+        i=$((i+1))
+    done
+    
+    echo "b) $(translate 'tr-tui-back')"
+    echo ""
+    printf "$(translate 'tr-tui-ui-choice'): "
+    read choice
+    
+    if [ "$choice" = "b" ] || [ "$choice" = "B" ]; then
+        return 0
+    fi
+    
+    if [ -n "$choice" ]; then
+        selected_cat=$(get_customfeed_categories | sed -n "${choice}p")
+        local script_file="$CONFIG_DIR/customfeeds-${selected_cat}.sh"
+        
+        clear
+        echo "========================================"
+        echo "  customfeeds-${selected_cat}.sh"
+        echo "========================================"
+        echo ""
+        
+        if [ -f "$script_file" ]; then
+            cat "$script_file"
+        else
+            echo "Script not found"
+        fi
+        
+        echo ""
+        printf "Press Enter to continue..."
+        read
     fi
 }
 
