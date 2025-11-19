@@ -782,7 +782,7 @@ whiptail_custom_feeds_selection() {
     
     if [ -n "$choice" ]; then
         selected_cat=$(get_customfeed_categories | sed -n "${choice}p")
-        whiptail_package_selection "$selected_cat" "custom_feeds"
+        whiptail_package_selection "$selected_cat" "custom_feeds" "$breadcrumb"
     fi
 }
 
@@ -1572,25 +1572,17 @@ whiptail_package_categories() {
             local is_hidden=$(get_category_hidden "$cat_id")
             [ "$is_hidden" != "true" ] && echo "$cat_id"
         done | sed -n "${choice}p")
-        whiptail_package_selection "$selected_cat"
+        whiptail_package_selection "$selected_cat" "normal" "$breadcrumb"
     fi
 }
 
 whiptail_package_selection() {
     local cat_id="$1"
     local caller="${2:-normal}"
+    local parent_breadcrumb="$3"
     local cat_name=$(get_category_name "$cat_id")
     
-    local tr_main_menu=$(translate "tr-tui-main-menu")
-    
-    local breadcrumb
-    if [ "$caller" = "custom_feeds" ]; then
-        local tr_custom_feeds=$(translate "tr-tui-custom-feeds")
-        breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_custom_feeds" "$cat_name")
-    else
-        local tr_custom_packages=$(translate "tr-custom-packages")
-        breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_custom_packages" "$cat_name")
-    fi
+    local breadcrumb="${parent_breadcrumb}${BREADCRUMB_SEP}${cat_name}"
     
     local cat_desc=$(get_category_desc "$cat_id")
     local tr_space_toggle=$(translate "tr-tui-space-toggle")
@@ -1672,7 +1664,7 @@ whiptail_view_selected_custom_packages() {
         if [ -n "$choice" ]; then
             selected_cat=$(get_customfeed_categories | sed -n "${choice}p")
             local cat_name=$(get_category_name "$selected_cat")
-            local breadcrumb2=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$tr_custom_packages" "$cat_name")
+            local cat_breadcrumb="${breadcrumb}${BREADCRUMB_SEP}${cat_name}"
             
             local temp_view="$CONFIG_DIR/selected_custom_pkg_view.txt"
             : > "$temp_view"
@@ -1685,9 +1677,9 @@ whiptail_view_selected_custom_packages() {
             done > "$temp_view"
             
             if [ -s "$temp_view" ]; then
-                show_textbox "$breadcrumb2" "$temp_view"
+                show_textbox "$cat_breadcrumb" "$temp_view"
             else
-                show_msgbox "$breadcrumb2" "$(translate 'tr-tui-no-packages')"
+                show_msgbox "$cat_breadcrumb" "$(translate 'tr-tui-no-packages')"
             fi
             
             rm -f "$temp_view"
@@ -1728,13 +1720,16 @@ whiptail_view_customfeeds() {
         
         if [ -n "$choice" ]; then
             selected_cat=$(get_customfeed_categories | sed -n "${choice}p")
+            local cat_name=$(get_category_name "$selected_cat")
+            local cat_breadcrumb="${breadcrumb}${BREADCRUMB_SEP}${cat_name}"
+            
             local script_file="$CONFIG_DIR/customfeeds-${selected_cat}.sh"
             
             if [ -f "$script_file" ]; then
                 cat "$script_file" > "$CONFIG_DIR/customfeeds_view.txt"
-                show_textbox "$breadcrumb" "$CONFIG_DIR/customfeeds_view.txt"
+                show_textbox "$cat_breadcrumb" "$CONFIG_DIR/customfeeds_view.txt"
             else
-                show_msgbox "$breadcrumb" "Script not found: customfeeds-${selected_cat}.sh"
+                show_msgbox "$cat_breadcrumb" "Script not found: customfeeds-${selected_cat}.sh"
             fi
         fi
     done
