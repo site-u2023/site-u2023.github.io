@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1119.1604"
+VERSION="R7.1119.1611"
 
 # Configuration Management
 
@@ -1240,22 +1240,21 @@ whiptail_process_items() {
     local item_type=$(get_setup_item_type "$item_id")
     echo "[DEBUG] Item type: $item_type" >> $CONFIG_DIR/debug.log
     
+    local item_label=$(get_setup_item_label "$item_id")
+    local item_breadcrumb="${breadcrumb}${BREADCRUMB_SEP}${item_label}"
+    
     case "$item_type" in
         section)
             echo "[DEBUG] Processing section: $item_id" >> $CONFIG_DIR/debug.log
-            local section_label=$(get_setup_item_label "$item_id")
-            local new_breadcrumb="${breadcrumb}${BREADCRUMB_SEP}${section_label}"
             
             local nested=$(get_section_nested_items "$item_id")
             for child_id in $nested; do
-                whiptail_process_items "$cat_id" "$child_id" "$new_breadcrumb"
+                whiptail_process_items "$cat_id" "$child_id" "$item_breadcrumb"
                 [ $? -ne 0 ] && return 1
             done
             ;;
             
         radio-group)
-            local label=$(get_setup_item_label "$item_id")
-            local item_breadcrumb="${breadcrumb}${BREADCRUMB_SEP}${label}"
             local variable=$(get_setup_item_variable "$item_id")
             local default=$(get_setup_item_default "$item_id")
             
@@ -1309,14 +1308,12 @@ whiptail_process_items() {
             ;;
             
         field)
-            local label=$(get_setup_item_label "$item_id")
-            local item_breadcrumb="${breadcrumb}${BREADCRUMB_SEP}${label}"
             local variable=$(get_setup_item_variable "$item_id")
             local default=$(get_setup_item_default "$item_id")
             local field_type=$(get_setup_item_field_type "$item_id")
             
             echo "[DEBUG] field processing: item_id=$item_id" >> $CONFIG_DIR/debug.log
-            echo "[DEBUG] label='$label'" >> $CONFIG_DIR/debug.log
+            echo "[DEBUG] label='$item_label'" >> $CONFIG_DIR/debug.log
             echo "[DEBUG] variable='$variable'" >> $CONFIG_DIR/debug.log
             echo "[DEBUG] default='$default'" >> $CONFIG_DIR/debug.log
             echo "[DEBUG] field_type='$field_type'" >> $CONFIG_DIR/debug.log
@@ -1414,7 +1411,7 @@ whiptail_process_items() {
                 
                 if [ -z "$options" ]; then
                     echo "[DEBUG] ERROR: No options found for $item_id, skipping" >> $CONFIG_DIR/debug.log
-                    show_msgbox "$item_breadcrumb" "Error: No options available for $label"
+                    show_msgbox "$item_breadcrumb" "Error: No options available for $item_label"
                     return 0
                 fi
                 
@@ -1458,7 +1455,7 @@ whiptail_process_items() {
                     fi
                 fi
             else
-                echo "[DEBUG] About to show inputbox for '$label'" >> $CONFIG_DIR/debug.log
+                echo "[DEBUG] About to show inputbox for '$item_label'" >> $CONFIG_DIR/debug.log
                 
                 value=$(show_inputbox "$item_breadcrumb" "" "$current")
                 exit_code=$?
