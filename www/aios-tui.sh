@@ -1142,6 +1142,7 @@ whiptail_device_info_titled() {
 }
 
 whiptail_show_network_info() {
+    local custom_breadcrumb="$1"
     local tr_main_menu=$(translate "tr-tui-main-menu")
     local tr_internet_connection=$(translate "tr-internet-connection")
     local conn_type_label=$(get_setup_item_label "connection-type")
@@ -1542,11 +1543,11 @@ whiptail_category_config() {
                 
                 local radio_label=$(get_setup_item_label "$item_id")
                 radio_breadcrumb="${base_breadcrumb}${BREADCRUMB_SEP}${radio_label}"
-
+                
                 if [ "$item_id" = "connection-type" ] && [ "$cat_id" = "internet-connection" ]; then
                     local conn_type=$(grep "^connection_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
                     if [ "$conn_type" = "auto" ]; then
-                        if whiptail_show_network_info; then
+                        if whiptail_show_network_info "$radio_breadcrumb"; then
                             auto_add_conditional_packages "$cat_id"
                             return 0
                         fi
