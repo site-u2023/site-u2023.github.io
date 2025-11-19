@@ -104,14 +104,21 @@ title=black,lightgray
 # ============================================
 
 calculate_height() {
-    local message="$1"
-    local lines=$(echo -e "$message" | wc -l)
+    local content="$1"
+    local lines=$(echo -e "$content" | wc -l)
     local height=$((lines + 7))
     [ $height -lt $MIN_HEIGHT ] && height=$MIN_HEIGHT
     [ $WHIPTAIL_HEIGHT -gt 0 ] && [ $height -gt $WHIPTAIL_HEIGHT ] && height=$WHIPTAIL_HEIGHT
     echo $height
 }
 
+calculate_menu_height() {
+    local item_count="$1"
+    local height=$((item_count + 7))
+    [ $height -lt $MIN_HEIGHT ] && height=$MIN_HEIGHT
+    [ $WHIPTAIL_HEIGHT -gt 0 ] && [ $height -gt $WHIPTAIL_HEIGHT ] && height=$WHIPTAIL_HEIGHT
+    echo $height
+}
 build_breadcrumb() {
     local result=""
     local first=1
@@ -136,7 +143,10 @@ show_menu() {
     local cancel_btn="${4:-$(translate "$DEFAULT_BTN_BACK")}"
     shift 4
     
-    eval "whiptail --title '$breadcrumb' --ok-button '$ok_btn' --cancel-button '$cancel_btn' --menu '$prompt' $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH 0 $@ 3>&1 1>&2 2>&3"
+    local item_count=$(($# / 2))
+    local height=$(calculate_menu_height $item_count)
+    
+    eval "whiptail --title '$breadcrumb' --ok-button '$ok_btn' --cancel-button '$cancel_btn' --menu '$prompt' $height $WHIPTAIL_WIDTH 0 $@ 3>&1 1>&2 2>&3"
 }
 
 show_inputbox() {
@@ -177,7 +187,10 @@ show_checklist() {
     local cancel_btn="${4:-$(translate "$DEFAULT_BTN_BACK")}"
     shift 4
     
-    eval "whiptail --title '$breadcrumb' --ok-button '$ok_btn' --cancel-button '$cancel_btn' --checklist '$prompt' $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH 0 $@ 3>&1 1>&2 2>&3"
+    local item_count=$(($# / 3))
+    local height=$(calculate_menu_height $item_count)
+    
+    eval "whiptail --title '$breadcrumb' --ok-button '$ok_btn' --cancel-button '$cancel_btn' --checklist '$prompt' $height $WHIPTAIL_WIDTH 0 $@ 3>&1 1>&2 2>&3"
 }
 
 show_textbox() {
