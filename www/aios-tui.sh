@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1119.1027"
+VERSION="R7.1119.1047"
 
 # ============================================
 # Configuration Management
@@ -1984,26 +1984,6 @@ review_and_apply() {
                     whiptail_view_selected_custom_packages
                 else
                     simple_view_selected_custom_packages
-                fi
-                ;;
-                else
-                    clear
-                    echo "========================================"
-                    echo "  $(translate 'tr-tui-view-custom-packages')"
-                    echo "========================================"
-                    echo ""
-                    if [ -s "$SELECTED_CUSTOM_PACKAGES" ]; then
-                        while IFS= read -r pkg_id; do
-                            [ -z "$pkg_id" ] && continue
-                            local pkg_name=$(get_package_name "$pkg_id")
-                            echo "  - ${pkg_name}"
-                        done < "$SELECTED_CUSTOM_PACKAGES"
-                    else
-                        echo "  No custom packages selected"
-                    fi
-                    echo ""
-                    echo "$(translate 'tr-tui-ok')"
-                    read
                 fi
                 ;;
             4)
