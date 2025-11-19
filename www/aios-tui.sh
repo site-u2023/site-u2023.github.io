@@ -1520,7 +1520,7 @@ whiptail_category_config() {
     local cat_id="$1"
     local tr_main_menu=$(translate "tr-tui-main-menu")
     local cat_title=$(get_setup_category_title "$cat_id")
-    local breadcrumb=$(build_breadcrumb "$tr_main_menu" "$cat_title")
+    local base_breadcrumb=$(build_breadcrumb "$tr_main_menu" "$cat_title")
     
     echo "[DEBUG] === whiptail_category_config START ===" >> $CONFIG_DIR/debug.log
     echo "[DEBUG] cat_id=$cat_id, title=$cat_title" >> $CONFIG_DIR/debug.log
@@ -1535,7 +1535,7 @@ whiptail_category_config() {
     echo "[DEBUG] Processing all items" >> $CONFIG_DIR/debug.log
     
     for item_id in $(get_setup_category_items "$cat_id"); do
-        whiptail_process_items "$cat_id" "$item_id" "$breadcrumb"
+        whiptail_process_items "$cat_id" "$item_id" "$base_breadcrumb"
         local result=$?
         
         if [ $result -ne 0 ]; then
