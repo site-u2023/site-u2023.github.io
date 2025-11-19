@@ -517,14 +517,14 @@ update_language_packages() {
     
     local prefixes=$(jsonfilter -i "$SETUP_JSON" -e '@.constants.language_prefixes_release[*]' 2>/dev/null)
     
-    while IFS= read -r prefix; do
+    echo "$prefixes" | while IFS= read -r prefix; do
         sed -i "/^${prefix}/d" "$SELECTED_PACKAGES"
-    done <<< "$prefixes"
+    done
     
     if [ -n "$new_lang" ] && [ "$new_lang" != "en" ]; then
-        while IFS= read -r prefix; do
+        echo "$prefixes" | while IFS= read -r prefix; do
             echo "${prefix}${new_lang}" >> "$SELECTED_PACKAGES"
-        done <<< "$prefixes"
+        done
     fi
 }
 
