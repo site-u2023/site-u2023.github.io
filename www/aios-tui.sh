@@ -5,7 +5,6 @@
 
 VERSION="R7.1119.1519"
 
-
 # Configuration Management
 
 BASE_TMP_DIR="/tmp"
@@ -60,7 +59,6 @@ load_config_from_js() {
     return 0
 }
 
-
 # URL and Path Configuration
 
 PACKAGES_JSON="$CONFIG_DIR/postinst.json"
@@ -75,7 +73,6 @@ TRANSLATION_CACHE="$CONFIG_DIR/translation_cache.txt"
 
 CUSTOMFEEDS_JSON="$CONFIG_DIR/customfeeds.json"
 
-
 # UI Configuration Variables
 
 WHIPTAIL_PACKAGES="whiptail"
@@ -89,7 +86,6 @@ DEFAULT_BTN_CANCEL="tr-tui-cancel"
 DEFAULT_BTN_YES="tr-tui-yes"
 DEFAULT_BTN_NO="tr-tui-no"
 
-
 # Whiptail Color Configuration
 
 # 利用可能色: black, red, green, brown, blue, magenta, cyan, lightgray, gray, brightred, brightgreen, yellow, brightblue, brightmagenta, brightcyan, white
@@ -97,10 +93,7 @@ DEFAULT_BTN_NO="tr-tui-no"
 NEWT_COLORS='
 title=black,lightgray
 '
-
-
 # Common UI Template Functions
-
 
 build_breadcrumb() {
     local result=""
@@ -204,9 +197,7 @@ simple_show_menu() {
     echo "$choice"
 }
 
-
 # UI Mode Selection
-
 
 select_ui_mode() {
     if check_packages_installed $WHIPTAIL_PACKAGES; then
@@ -231,9 +222,7 @@ select_ui_mode() {
     fi
 }
 
-
 # Package Manager Detection
-
 
 detect_package_manager() {
     if command -v opkg >/dev/null 2>&1; then
@@ -278,9 +267,7 @@ install_package() {
     return 0
 }
 
-
 # Initialization
-
 
 init() {
     local script_name=$(basename "$0")
@@ -309,9 +296,7 @@ init() {
     echo "[DEBUG] $(date): Init complete, cache cleared" >> $CONFIG_DIR/debug.log
 }
 
-
 # Language and Translation
-
 
 download_language_json() {
     local lang="${1:-en}"
@@ -355,9 +340,7 @@ translate() {
     return 1
 }
 
-
 # File Downloads
-
 
 download_setup_json() {
     if [ ! -f "$SETUP_JSON" ]; then
@@ -377,9 +360,7 @@ download_postinst_json() {
     return 0
 }
 
-
 # Device Information
-
 
 get_device_info() {
     if [ -f /etc/board.json ]; then
@@ -453,9 +434,7 @@ get_extended_device_info() {
     fi
 }
 
-
 # Package Management
-
 
 load_default_packages() {
     if [ ! -f "$PACKAGES_JSON" ]; then
@@ -533,9 +512,7 @@ apply_api_defaults() {
     fi
 }
 
-
 # Setup JSON Accessors
-
 
 get_setup_categories() {
     jsonfilter -i "$SETUP_JSON" -e '@.categories[*].id' 2>/dev/null | grep -v '^$'
@@ -655,9 +632,7 @@ get_setup_item_option_label() {
     fi
 }
 
-
 # Package JSON Accessors
-
 
 get_categories() {
     jsonfilter -i "$PACKAGES_JSON" -e '@.categories[*].id' 2>/dev/null | grep -v '^$'
@@ -726,9 +701,7 @@ is_package_selected() {
     fi
 }
 
-
 # Custom Feeds Management
-
 
 download_customfeeds_json() {
     if [ ! -f "$CUSTOMFEEDS_JSON" ]; then
@@ -858,9 +831,7 @@ simple_custom_feeds_selection() {
     simple_package_selection "$cat_id"
 }
 
-
 # Connection Type and Conditional Logic
-
 
 get_effective_connection_type() {
     local conn_type=$(grep "^connection_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
@@ -1058,9 +1029,7 @@ compute_dslite_aftr() {
     return 1
 }
 
-
 # File Generation
-
 
 generate_files() {
     {
@@ -1141,9 +1110,7 @@ generate_files() {
     fi
 }
 
-
 # Whiptail UI Functions
-
 
 whiptail_device_info() {
     local tr_main_menu=$(translate "tr-tui-main-menu")
@@ -2055,9 +2022,7 @@ $(translate 'tr-tui-reboot-question')"
     done
 }
 
-
 # Simple Mode UI Functions
-
 
 simple_device_info() {
     clear
@@ -2671,9 +2636,7 @@ simple_main_menu() {
     done
 }
 
-
 # Main Entry Point
-
 
 aios_tui_main() {
     clear
