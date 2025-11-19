@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1119.1800"
+VERSION="R7.1119.1813"
 
 # Configuration Management
 
@@ -1600,7 +1600,7 @@ whiptail_category_config() {
 
 whiptail_package_categories() {
     local tr_main_menu=$(translate "tr-tui-main-menu")
-    local tr_custom_packages=$(translate "tr-tui-custom-packages")
+    local tr_custom_packages=$(translate "tr-tui-packages")
     local breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_custom_packages")
     
     local menu_items="" i=1 cat_id cat_name
@@ -1799,7 +1799,7 @@ whiptail_main_menu() {
             i=$((i+1))
         done < <(get_setup_categories)
         
-        local packages_label=$(translate "tr-tui-custom-packages")
+        local packages_label=$(translate "tr-tui-packages")
         menu_items="$menu_items $i \"$packages_label\""
         local packages_choice=$i
         i=$((i+1))
@@ -2431,7 +2431,7 @@ simple_package_categories() {
     while true; do
         clear
         echo "========================================"
-        echo "  $(translate 'tr-tui-custom-packages')"
+        echo "  $(translate 'tr-tui-packages')"
         echo "========================================"
         echo ""
         
@@ -2474,7 +2474,7 @@ simple_package_selection() {
     
     clear
     echo "========================================"
-    echo "  $(translate 'tr-tui-custom-packages') > $cat_name"
+    echo "  $(translate 'tr-tui-packages') > $cat_name"
     echo "========================================"
     echo ""
     echo "$cat_desc"
@@ -2651,7 +2651,7 @@ simple_main_menu() {
             i=$((i+1))
         done
         
-        local packages_label=$(translate "tr-tui-custom-packages")
+        local packages_label=$(translate "tr-tui-packages")
         echo "$i) $packages_label"
         local packages_choice=$i
         i=$((i+1))
