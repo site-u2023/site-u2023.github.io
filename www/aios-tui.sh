@@ -23,6 +23,10 @@ PACKAGES_URL=""
 SETUP_JSON_URL=""
 SETUP_TEMPLATE_URL=""
 
+CUSTOMFEEDS_DB_PATH=""
+CUSTOMFEEDS_GSPOTX2F_PATH=""
+CUSTOMFEEDS_JERRYKUKU_PATH=""
+
 load_config_from_js() {
     local CONFIG_JS="$CONFIG_DIR/config.js"
     
@@ -41,13 +45,13 @@ load_config_from_js() {
     SETUP_TEMPLATE_PATH=$(grep 'setup_template_path:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
     LANGUAGE_PATH_TEMPLATE=$(grep 'language_path_template:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
     CUSTOMFEEDS_DB_PATH=$(grep 'customfeeds_db_path:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
-    CUSTOMFEEDS_TEMPLATE_PATH=$(grep 'customfeeds_template_path:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
+    CUSTOMFEEDS_GSPOTX2F_PATH=$(grep 'customfeeds_gspotx2f:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
+    CUSTOMFEEDS_JERRYKUKU_PATH=$(grep 'customfeeds_jerrykuku:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
 
     PACKAGES_URL="${BASE_URL}/${PACKAGES_DB_PATH}"
     POSTINST_TEMPLATE_URL="${BASE_URL}/${POSTINST_TEMPLATE_PATH}"
     SETUP_JSON_URL="${BASE_URL}/${SETUP_DB_PATH}"
     SETUP_TEMPLATE_URL="${BASE_URL}/${SETUP_TEMPLATE_PATH}"
-    CUSTOMFEEDS_TEMPLATE_URL="${BASE_URL}/${CUSTOMFEEDS_TEMPLATE_PATH}"
     
     echo "[DEBUG] Config loaded: BASE_URL=$BASE_URL" >> $CONFIG_DIR/debug.log
     echo "[DEBUG] PACKAGES_URL=$PACKAGES_URL" >> $CONFIG_DIR/debug.log
@@ -55,6 +59,9 @@ load_config_from_js() {
     echo "[DEBUG] SETUP_JSON_URL=$SETUP_JSON_URL" >> $CONFIG_DIR/debug.log
     echo "[DEBUG] SETUP_TEMPLATE_URL=$SETUP_TEMPLATE_URL" >> $CONFIG_DIR/debug.log
     echo "[DEBUG] AUTO_CONFIG_API_URL=$AUTO_CONFIG_API_URL" >> $CONFIG_DIR/debug.log
+    echo "[DEBUG] CUSTOMFEEDS_DB_PATH=$CUSTOMFEEDS_DB_PATH" >> $CONFIG_DIR/debug.log
+    echo "[DEBUG] CUSTOMFEEDS_GSPOTX2F_PATH=$CUSTOMFEEDS_GSPOTX2F_PATH" >> $CONFIG_DIR/debug.log
+    echo "[DEBUG] CUSTOMFEEDS_JERRYKUKU_PATH=$CUSTOMFEEDS_JERRYKUKU_PATH" >> $CONFIG_DIR/debug.log
     
     return 0
 }
@@ -73,7 +80,6 @@ SETUP_VARS="$CONFIG_DIR/setup_vars.sh"
 TRANSLATION_CACHE="$CONFIG_DIR/translation_cache.txt"
 
 CUSTOMFEEDS_JSON="$CONFIG_DIR/customfeeds.json"
-CUSTOMFEEDS_TEMPLATE_URL="${BASE_URL}/${CUSTOMFEEDS_TEMPLATE_PATH}"
 # ============================================
 # UI Configuration Variables
 # ============================================
@@ -797,6 +803,21 @@ get_customfeed_download_base() {
     jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$1'].download_base" 2>/dev/null
 }
 
+get_customfeed_template_url() {
+    local cat_id="$1"
+    case "$cat_id" in
+        custom-feeds-gspotx2f)
+            echo "${BASE_URL}/${CUSTOMFEEDS_GSPOTX2F_PATH}"
+            ;;
+        custom-feeds-jerrykuku)
+            echo "${BASE_URL}/${CUSTOMFEEDS_JERRYKUKU_PATH}"
+            ;;
+        *)
+            echo ""
+            ;;
+    esac
+}
+
 whiptail_custom_feeds_selection() {
     [ "$PKG_MGR" != "opkg" ] && return 0
     download_customfeeds_json || return 0
@@ -1078,7 +1099,9 @@ compute_dslite_aftr() {
 # ============================================
 # File Generation
 # ============================================
+
 generate_files() {
+    # postinst.sh の生成
     {
         wget -q -O - "$POSTINST_TEMPLATE_URL" | sed -n '1,/^# BEGIN_VARIABLE_DEFINITIONS/p'
         
@@ -1094,6 +1117,7 @@ generate_files() {
     
     chmod +x "$CONFIG_DIR/postinst.sh"
     
+    # setup.sh の生成
     {
         wget -q -O - "$SETUP_TEMPLATE_URL" | sed -n '1,/^# BEGIN_VARS/p'
         
@@ -1105,39 +1129,54 @@ generate_files() {
     } > "$CONFIG_DIR/setup.sh"
     
     chmod +x "$CONFIG_DIR/setup.sh"
-    ）
+    
+    # customfeeds.sh の生成（全リポジトリ分）
     if [ -f "$CUSTOMFEEDS_JSON" ]; then
+        # 各リポジトリごとにスクリプトを生成
         get_customfeed_categories | while read cat_id; do
+            local template_url=$(get_customfeed_template_url "$cat_id")
+            
+            if [ -z "$template_url" ]; then
+                echo "[WARN] No template URL found for: $cat_id" >> $CONFIG_DIR/debug.log
+                continue
+            fi
+            
             local api_url=$(get_customfeed_api_base "$cat_id")
             local download_url=$(get_customfeed_download_base "$cat_id")
             
-            local selected_pkgs=""
+            # このリポジトリで選択されたパッケージを抽出
+            local temp_pkg_file="$CONFIG_DIR/temp_${cat_id}.txt"
+            : > "$temp_pkg_file"
+            
             get_category_packages "$cat_id" | while read pkg_id; do
                 if grep -q "^${pkg_id}$" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
                     local pattern=$(get_customfeed_package_pattern "$pkg_id")
                     echo "$pattern"
                 fi
-            done > "$CONFIG_DIR/temp_${cat_id}.txt"
+            done > "$temp_pkg_file"
             
-            if [ -s "$CONFIG_DIR/temp_${cat_id}.txt" ]; then
-                selected_pkgs=$(cat "$CONFIG_DIR/temp_${cat_id}.txt" | tr '\n' ' ' | sed 's/ $//')
+            local selected_pkgs=""
+            if [ -s "$temp_pkg_file" ]; then
+                selected_pkgs=$(cat "$temp_pkg_file" | tr '\n' ' ' | sed 's/ $//')
             fi
             
+            # スクリプト生成
             {
-                wget -q -O - "$CUSTOMFEEDS_TEMPLATE_URL" | sed -n '1,/^# BEGIN_VARIABLE_DEFINITIONS/p'
+                wget -q -O - "$template_url" | sed -n '1,/^# BEGIN_VARIABLE_DEFINITIONS/p'
                 
                 echo "PACKAGES=\"${selected_pkgs}\""
                 echo "API_URL=\"${api_url}\""
                 echo "DOWNLOAD_BASE_URL=\"${download_url}\""
                 echo "RUN_OPKG_UPDATE=\"0\""
                 
-                wget -q -O - "$CUSTOMFEEDS_TEMPLATE_URL" | sed -n '/^# END_VARIABLE_DEFINITIONS/,$p'
+                wget -q -O - "$template_url" | sed -n '/^# END_VARIABLE_DEFINITIONS/,$p'
             } > "$CONFIG_DIR/customfeeds-${cat_id}.sh"
             
             chmod +x "$CONFIG_DIR/customfeeds-${cat_id}.sh"
-            rm -f "$CONFIG_DIR/temp_${cat_id}.txt"
+            rm -f "$temp_pkg_file"
         done
     else
+        # customfeeds.json がない場合は空のスクリプト
         {
             echo "#!/bin/sh"
             echo "# No custom feeds configured"
