@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1119.1350"
+VERSION="R7.1119.1359"
 
 # ============================================
 # Configuration Management
@@ -174,18 +174,7 @@ show_menu() {
     local cancel_btn="${4:-$(translate "$DEFAULT_BTN_BACK")}"
     shift 4
     
-    echo "[DEBUG] show_menu: breadcrumb='$breadcrumb'" >> $CONFIG_DIR/debug.log
-    echo "[DEBUG] show_menu: prompt='$prompt'" >> $CONFIG_DIR/debug.log
-    echo "[DEBUG] show_menu: ok_btn='$ok_btn'" >> $CONFIG_DIR/debug.log
-    echo "[DEBUG] show_menu: cancel_btn='$cancel_btn'" >> $CONFIG_DIR/debug.log
-    echo "[DEBUG] show_menu: remaining args count: $#" >> $CONFIG_DIR/debug.log
-    echo "[DEBUG] show_menu: remaining args: $@" >> $CONFIG_DIR/debug.log
-    echo "[DEBUG] show_menu: WHIPTAIL_HEIGHT=$WHIPTAIL_HEIGHT, WIDTH=$WHIPTAIL_WIDTH" >> $CONFIG_DIR/debug.log
-    
-    local cmd="whiptail --title '$breadcrumb' --ok-button '$ok_btn' --cancel-button '$cancel_btn' --menu '$prompt' $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH 0 $@ 3>&1 1>&2 2>&3"
-    echo "[DEBUG] show_menu: command to eval: $cmd" >> $CONFIG_DIR/debug.log
-    
-    eval "$cmd"
+    eval "whiptail --title '$breadcrumb' --ok-button '$ok_btn' --cancel-button '$cancel_btn' --menu '$prompt' $WHIPTAIL_HEIGHT $WHIPTAIL_WIDTH 0 $@ 3>&1 1>&2 2>&3"
 }
 
 show_checklist() {
@@ -860,7 +849,7 @@ whiptail_custom_feeds_selection() {
         return 0
     fi
     
-    choice=$(show_menu "$breadcrumb" "" "" "" $menu_items)
+    choice=$(show_menu "$breadcrumb" " " "" "" $menu_items)
     
     if [ $? -ne 0 ]; then
         return 0
@@ -1706,7 +1695,7 @@ whiptail_package_categories() {
         i=$((i+1))
     done < <(get_categories)
     
-    choice=$(show_menu "$breadcrumb" "" "" "" $menu_items)
+    choice=$(show_menu "$breadcrumb" " " "" "" $menu_items)
     
     if [ $? -ne 0 ]; then
         return 0
@@ -1943,7 +1932,7 @@ review_and_apply() {
         if [ "$UI_MODE" = "whiptail" ]; then
             local breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review")
             
-            choice=$(show_menu "$breadcrumb" "" "" "" \
+            choice=$(show_menu "$breadcrumb" " " "" "" \
                 "1" "$(translate 'tr-tui-view-device-info')" \
                 "2" "$(translate 'tr-tui-view-package-list')" \
                 "3" "$(translate 'tr-tui-view-custom-packages')" \
