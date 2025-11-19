@@ -144,6 +144,7 @@
 
     "tr-feedback-link": "Forum",
 
+    "tr-tui-packages": "Packages",
     "tr-tui-main-menu": "Main Menu",
     "tr-tui-select": "Select",
     "tr-tui-back": "Back",
@@ -195,7 +196,7 @@
     "tr-tui-isp-info": "ISP Information:",
     "tr-tui-manual-config-required": "Please configure connection settings manually.",
 
-    "tr-tui-custom-feeds": "Custom Feeds",
+    "tr-tui-custom-feeds": "Custom Feed Packages",
     "tr-tui-feed-gspotx2f": "gSpotx2f Repository",
     "tr-tui-feed-jerrykuku": "jerrykuku Repository"   
 }
