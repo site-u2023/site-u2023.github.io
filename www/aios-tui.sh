@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1119.1233"
+VERSION="R7.1119.1244"
 
 # ============================================
 # Configuration Management
@@ -173,6 +173,8 @@ show_menu() {
     local ok_btn="${3:-$(translate "$DEFAULT_BTN_SELECT")}"
     local cancel_btn="${4:-$(translate "$DEFAULT_BTN_BACK")}"
     shift 4
+    
+    [ -z "$prompt" ] && prompt=" "
     
     local item_count=$(($# / 2))
     local height=$(calculate_menu_height $item_count)
@@ -1838,11 +1840,11 @@ whiptail_view_selected_custom_packages() {
     done < <(get_customfeed_categories)
     
     if [ -z "$menu_items" ]; then
-        show_msgbox "$breadcrumb" "No custom feeds available"
+        show_msgbox "$breadcrumb" "No custom feed categories available"
         return 0
     fi
     
-    choice=$(show_menu "$breadcrumb" "" "" "" $menu_items)
+    choice=$(show_menu "$breadcrumb" "Select category:" "" "" $menu_items)
     
     if [ $? -ne 0 ]; then
         return 0
