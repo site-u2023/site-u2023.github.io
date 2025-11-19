@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Supports: whiptail (TUI) with fallback to simple menu
 
-VERSION="R7.1119.1728"
+VERSION="R7.1119.1737"
 
 # Configuration Management
 
@@ -1546,12 +1546,24 @@ whiptail_category_config() {
                 
                 if [ "$item_id" = "connection-type" ] && [ "$cat_id" = "internet-connection" ]; then
                     local conn_type=$(grep "^connection_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+                    
                     if [ "$conn_type" = "auto" ]; then
                         if whiptail_show_network_info "$radio_breadcrumb"; then
                             auto_add_conditional_packages "$cat_id"
                             return 0
                         fi
                         continue
+                    fi
+                    
+                    if [ "$conn_type" = "dhcp" ]; then
+                        local dhcp_content="DHCP configuration will be applied automatically. No additional settings required."
+                        local tr_dhcp=$(translate "tr-dhcp-information")
+                        if [ -n "$tr_dhcp" ] && [ "$tr_dhcp" != "tr-dhcp-information" ]; then
+                            dhcp_content="$tr_dhcp"
+                        fi
+                        show_msgbox "$radio_breadcrumb" "$dhcp_content"
+                        auto_add_conditional_packages "$cat_id"
+                        return 0
                     fi
                 fi
             else
