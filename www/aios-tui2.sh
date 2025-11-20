@@ -849,7 +849,7 @@ EOF
     fi
     
     if [ "$(echo "$expected" | wc -l)" -eq 1 ] && [ -n "$expected" ]; then
-        echo "[DEBUG] expected (single): $expected" >> $CONFIG_DIR/debug.log
+        echo "[DEBUG] expected single: $expected" >> $CONFIG_DIR/debug.log
         if [ "$expected" = "$current_val" ]; then
             echo "[DEBUG] Match! returning 0 (show)" >> $CONFIG_DIR/debug.log
             return 0
