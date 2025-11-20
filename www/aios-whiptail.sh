@@ -4,7 +4,7 @@
 # OpenWrt Device Setup Tool - whiptail TUI Module
 # This file contains whiptail-specific UI functions
 
-VERSION="R7.1120.1223"
+VERSION="R7.1120.1250"
 
 NEWT_COLORS='
 title=black,lightgray
@@ -107,7 +107,7 @@ EOF
     
     if [ -n "$choice" ]; then
         selected_cat=$(get_customfeed_categories | sed -n "${choice}p")
-        whiptail_package_selection "$selected_cat" "custom_feeds" "$breadcrumb"
+        package_selection "$selected_cat" "custom_feeds" "$breadcrumb"
     fi
 }
 
@@ -572,7 +572,7 @@ process_items() {
     local variable default current options menu_opts i opt opt_label value exit_code selected_opt
     local field_type source aftr_type area computed cat_idx item_idx cid citems idx itm content class
     
-    echo "[DEBUG] whiptail_process_items: cat_id=$cat_id, item_id=$item_id" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG] process_items: cat_id=$cat_id, item_id=$item_id" >> "$CONFIG_DIR/debug.log"
     
     if ! should_show_item "$item_id"; then
         echo "[DEBUG] Item $item_id hidden by showWhen" >> "$CONFIG_DIR/debug.log"
@@ -591,7 +591,7 @@ process_items() {
             
             nested=$(get_section_nested_items "$item_id")
             for child_id in $nested; do
-                if ! whiptail_process_items "$cat_id" "$child_id" "$item_breadcrumb"; then
+                if ! process_items "$cat_id" "$child_id" "$item_breadcrumb"; then
                     return 1
                 fi
             done
@@ -904,7 +904,7 @@ category_config() {
             
             if [ "$item_type" = "radio-group" ]; then
                 found_radio=1
-                if ! whiptail_process_items "$cat_id" "$item_id" "$base_breadcrumb"; then
+                if ! process_items "$cat_id" "$item_id" "$base_breadcrumb"; then
                     return 0
                 fi
                 
@@ -934,7 +934,7 @@ category_config() {
                     fi
                 fi
             else
-                if ! whiptail_process_items "$cat_id" "$item_id" "$radio_breadcrumb"; then
+                if ! process_items "$cat_id" "$item_id" "$radio_breadcrumb"; then
                     return 0
                 fi
             fi
@@ -983,7 +983,7 @@ EOF
             is_hidden=$(get_category_hidden "$cat_id")
             [ "$is_hidden" != "true" ] && echo "$cat_id"
         done | sed -n "${choice}p")
-        whiptail_package_selection "$selected_cat" "normal" "$breadcrumb"
+        package_selection "$selected_cat" "normal" "$breadcrumb"
     fi
 }
 
@@ -1041,7 +1041,7 @@ EOF2
     if [ "$caller" = "custom_feeds" ]; then
         custom_feeds_selection
     else
-        whiptail_package_categories
+        package_categories
     fi
 }
 
@@ -1207,9 +1207,9 @@ EOF
         setup_cat_count=$(get_setup_categories | wc -l)
         if [ "$choice" -le "$setup_cat_count" ]; then
             selected_cat=$(get_setup_categories | sed -n "${choice}p")
-            whiptail_category_config "$selected_cat"
+            category_config "$selected_cat"
         elif [ "$choice" -eq "$packages_choice" ]; then
-            whiptail_package_categories
+            package_categories
         elif [ "$custom_feeds_choice" -gt 0 ] && [ "$choice" -eq "$custom_feeds_choice" ]; then
             custom_feeds_selection
         elif [ "$choice" -eq "$review_choice" ]; then
