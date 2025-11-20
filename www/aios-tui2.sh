@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1120.1100"
+VERSION="R7.1120.1114"
 BASE_TMP_DIR="/tmp"
 CONFIG_DIR="$BASE_TMP_DIR/aiost"
 BOOTSTRAP_URL="https://site-u.pages.dev/www"
@@ -42,12 +42,17 @@ load_config_from_js() {
     LANGUAGE_PATH_TEMPLATE=$(grep 'language_path_template:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
     CUSTOMFEEDS_DB_PATH=$(grep 'customfeeds_db_path:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
 
+    WHIPTAIL_UI_PATH=$(grep 'whiptail_ui_path:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
+    SIMPLE_UI_PATH=$(grep 'simple_ui_path:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
+
     PACKAGES_URL="${BASE_URL}/${PACKAGES_DB_PATH}"
     POSTINST_TEMPLATE_URL="${BASE_URL}/${POSTINST_TEMPLATE_PATH}"
     SETUP_JSON_URL="${BASE_URL}/${SETUP_DB_PATH}"
     SETUP_TEMPLATE_URL="${BASE_URL}/${SETUP_TEMPLATE_PATH}"
     CUSTOMFEEDS_JSON_URL="${BASE_URL}/${CUSTOMFEEDS_DB_PATH}"
-    
+
+    WHIPTAIL_UI_URL="${BASE_URL}/${WHIPTAIL_UI_PATH}"
+    SIMPLE_UI_URL="${BASE_URL}/${SIMPLE_UI_PATH}"
     {
         echo "[DEBUG] Config loaded: BASE_URL=$BASE_URL"
         echo "[DEBUG] PACKAGES_URL=$PACKAGES_URL"
@@ -121,8 +126,17 @@ select_ui_mode() {
     local has_whiptail=0
     local has_simple=0
     
-    [ -f "./aios-whiptail.sh" ] && has_whiptail=1
-    [ -f "./aios-simple.sh" ] && has_simple=1
+    if [ -n "$WHIPTAIL_UI_URL" ]; then
+        if wget -q -O "$CONFIG_DIR/aios-whiptail.sh" "$WHIPTAIL_UI_URL"; then
+            has_whiptail=1
+        fi
+    fi
+    
+    if [ -n "$SIMPLE_UI_URL" ]; then
+        if wget -q -O "$CONFIG_DIR/aios-simple.sh" "$SIMPLE_UI_URL"; then
+            has_simple=1
+        fi
+    fi
     
     if [ $has_whiptail -eq 0 ] && [ $has_simple -eq 0 ]; then
         echo "Error: No UI module found"
@@ -149,11 +163,11 @@ select_ui_mode() {
     if [ "$choice" = "2" ]; then
         UI_MODE="simple"
     else
-        if check_packages_installed $UI_PACKAGES; then
+        if check_packages_installed $WHIPTAIL_PACKAGES; then
             UI_MODE="whiptail"
         else
             echo "$(translate 'tr-tui-ui-installing')"
-            if install_package $UI_PACKAGES; then
+            if install_package $WHIPTAIL_PACKAGES; then
                 echo "$(translate 'tr-tui-ui-install-success')"
                 UI_MODE="whiptail"
             else
@@ -1139,10 +1153,10 @@ aios_tui_main() {
     
     # Load and execute UI module
     if [ "$UI_MODE" = "whiptail" ]; then
-        . ./aios-whiptail.sh
+        . "$CONFIG_DIR/aios-whiptail.sh"
         aios_whiptail_main
     else
-        . ./aios-simple.sh
+        . "$CONFIG_DIR/aios-simple.sh"
         aios_simple_main
     fi
 
