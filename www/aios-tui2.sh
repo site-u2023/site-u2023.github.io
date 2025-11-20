@@ -3,7 +3,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1120.1043"
+VERSION="R7.1120.1051"
 BASE_TMP_DIR="/tmp"
 CONFIG_DIR="$BASE_TMP_DIR/aiost"
 BOOTSTRAP_URL="https://site-u.pages.dev/www"
@@ -90,8 +90,6 @@ DEFAULT_BTN_YES="tr-tui-yes"
 DEFAULT_BTN_NO="tr-tui-no"
 
 # Whiptail Color Configuration
-
-# 利用可能色: black, red, green, brown, blue, magenta, cyan, lightgray, gray, brightred, brightgreen, yellow, brightblue, brightmagenta, brightcyan, white
 
 NEWT_COLORS='
 title=black,lightgray
@@ -251,7 +249,7 @@ download_language_json() {
     local lang_url="${BASE_URL}/$(echo "$LANGUAGE_PATH_TEMPLATE" | sed "s/{lang}/${lang}/")"
     
     if ! wget -q -O "$LANG_JSON" "$lang_url"; then
-        echo "Warning: Failed to download language file for '${lang}'"
+        echo "Warning: Failed to download language file for ${lang}"
         if [ "$lang" != "en" ]; then
             echo "Attempting fallback to English..."
             lang_url="$BASE_URL/www/langs/custom.en.json"
@@ -659,9 +657,9 @@ is_package_selected() {
     local caller="${2:-normal}"
     
     if [ "$caller" = "custom_feeds" ]; then
-        grep -q "^${pkg_id}$" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null
+        grep -q "^${pkg_id}\$" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null
     else
-        grep -q "^${pkg_id}$" "$SELECTED_PACKAGES" 2>/dev/null
+        grep -q "^${pkg_id}\$" "$SELECTED_PACKAGES" 2>/dev/null
     fi
 }
 
@@ -753,7 +751,7 @@ simple_custom_feeds_selection() {
     if [ "$PKG_MGR" != "opkg" ]; then
         clear
         echo "========================================"
-        echo "  $(translate 'tr-tui-custom-feeds')"
+        echo "  Custom Feeds"
         echo "========================================"
         echo ""
         echo "Custom feeds are only available for OPKG"
@@ -766,7 +764,7 @@ simple_custom_feeds_selection() {
     download_customfeeds_json || {
         clear
         echo "========================================"
-        echo "  $(translate 'tr-tui-custom-feeds')"
+        echo "  Custom Feeds"
         echo "========================================"
         echo ""
         echo "Failed to load custom feeds"
@@ -781,7 +779,7 @@ simple_custom_feeds_selection() {
     if [ -z "$cat_id" ]; then
         clear
         echo "========================================"
-        echo "  $(translate 'tr-tui-custom-feeds')"
+        echo "  Custom Feeds"
         echo "========================================"
         echo ""
         echo "No custom feeds available"
@@ -943,7 +941,7 @@ EOF
                 fi
             else
                 if is_package_selected "$pkg_id"; then
-                    sed -i "/^${pkg_id}$/d" "$SELECTED_PACKAGES"
+                    sed -i "/^${pkg_id}\$/d" "$SELECTED_PACKAGES"
                     echo "[AUTO] Removed package: $pkg_id condition not met: ${when_var}=${current_val}" >> "$CONFIG_DIR/debug.log"
                 fi
             fi
@@ -1038,7 +1036,7 @@ generate_files() {
             : > "$temp_pkg_file"
             
             get_category_packages "$cat_id" | while read pkg_id; do
-                if grep -q "^${pkg_id}$" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
+                if grep -q "^${pkg_id}\$" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
                     local pattern=$(get_customfeed_package_pattern "$pkg_id")
                     echo "$pattern"
                 fi
