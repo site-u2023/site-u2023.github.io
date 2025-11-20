@@ -266,7 +266,6 @@ fi
 }
 [ -n "${enable_ttyd}" ] && {
     local SEC=ttyd
-    SET @ttyd[0].ipv6='1'
     SET @ttyd[0].command='/bin/login -f root'
 }
 [ -n "${enable_irqbalance}" ] && {
