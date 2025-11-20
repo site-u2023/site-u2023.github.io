@@ -1,8 +1,9 @@
 #!/bin/sh
 # OpenWrt Device Setup Tool - whiptail TUI Module
 # This file contains whiptail-specific UI functions
-
 # Whiptail Color Configuration
+
+VERSION="R7.1120.1126"
 
 NEWT_COLORS='
 title=black,lightgray
@@ -1179,21 +1180,32 @@ review_and_apply() {
     local tr_review=$(translate "tr-tui-review-configuration")
     
     while true; do
-            local breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review")
-            
-            choice=$(show_menu "$breadcrumb" "" "" "" \
-                "1" "$(translate 'tr-tui-view-device-info')" \
-                "2" "$(translate 'tr-tui-view-package-list')" \
-                "3" "$(translate 'tr-tui-view-custom-packages')" \
-                "4" "$(translate 'tr-tui-view-config-vars')" \
-                "5" "$(translate 'tr-tui-view-postinst')" \
-                "6" "$(translate 'tr-tui-view-customfeeds')" \
-                "7" "$(translate 'tr-tui-view-setup')" \
-                "8" "$(translate 'tr-tui-apply')")
-            
-            [ $? -ne 0 ] && return 0
-
-# Whiptail Main Entry Point
+        local breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review")
+        
+        choice=$(show_menu "$breadcrumb" "" "" "" \
+            "1" "$(translate 'tr-tui-view-device-info')" \
+            "2" "$(translate 'tr-tui-view-package-list')" \
+            "3" "$(translate 'tr-tui-view-custom-packages')" \
+            "4" "$(translate 'tr-tui-view-config-vars')" \
+            "5" "$(translate 'tr-tui-view-postinst')" \
+            "6" "$(translate 'tr-tui-view-customfeeds')" \
+            "7" "$(translate 'tr-tui-view-setup')" \
+            "8" "$(translate 'tr-tui-apply')")
+        
+        [ $? -ne 0 ] && return 0
+        
+        case "$choice" in
+            1) device_info_titled "$breadcrumb" ;;
+            2) show_textbox "$breadcrumb" "$SELECTED_PACKAGES" ;;
+            3) view_selected_custom_packages ;;
+            4) show_textbox "$breadcrumb" "$SETUP_VARS" ;;
+            5) show_textbox "$breadcrumb" "$CONFIG_DIR/postinst.sh" ;;
+            6) view_customfeeds ;;
+            7) show_textbox "$breadcrumb" "$CONFIG_DIR/setup.sh" ;;
+            8) return 0 ;;
+        esac
+    done
+}
 
 aios_whiptail_main() {
     export NEWT_COLORS
