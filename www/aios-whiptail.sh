@@ -1,4 +1,6 @@
 #!/bin/sh
+# shellcheck shell=ash
+# shellcheck disable=SC3043
 # OpenWrt Device Setup Tool - whiptail TUI Module
 # This file contains whiptail-specific UI functions
 
@@ -103,8 +105,7 @@ EOF
     
     choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"\" \"\" $menu_items")
     
-    # 直接チェック
-    if [ $? -ne 0 ]; then
+    if ! [ $? -eq 0 ]; then
         return 0
     fi
     
@@ -639,7 +640,7 @@ process_items() {
             value=$(eval "show_menu \"\$item_breadcrumb\" \"\" \"\" \"\" $menu_opts")
             exit_code=$?
             
-            if [ "$exit_code" -ne 0 ]; then
+            if ! [ "$exit_code" -eq 0 ]; then
                 echo "[DEBUG] Radio-group cancelled, returning to previous menu" >> "$CONFIG_DIR/debug.log"
                 return 1
             fi
@@ -777,7 +778,7 @@ process_items() {
                 
                 echo "[DEBUG] select exit_code=$exit_code, value='$value'" >> "$CONFIG_DIR/debug.log"
                 
-                if [ "$exit_code" -ne 0 ]; then
+                if ! [ "$exit_code" -eq 0 ]; then
                     echo "[DEBUG] Select cancelled, returning to previous menu" >> "$CONFIG_DIR/debug.log"
                     return 1
                 fi
@@ -808,7 +809,7 @@ process_items() {
                 
                 echo "[DEBUG] inputbox exit_code=$exit_code, value='$value'" >> "$CONFIG_DIR/debug.log"
                 
-                if [ "$exit_code" -ne 0 ]; then
+                if ! [ "$exit_code" -eq 0 ]; then
                     echo "[DEBUG] Inputbox cancelled, returning to previous menu" >> "$CONFIG_DIR/debug.log"
                     return 1
                 fi
@@ -880,7 +881,7 @@ category_config() {
         
         value=$(show_inputbox "$lang_breadcrumb" "" "$current_lang")
         
-        if [ $? -ne 0 ]; then
+        if ! [ $? -eq 0 ]; then
             return 0
         fi
         
@@ -977,7 +978,7 @@ EOF
     
     choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"\" \"\" $menu_items")
     
-    if [ $? -ne 0 ]; then
+    if ! [ $? -eq 0 ]; then
         return 0
     fi
     
@@ -994,14 +995,13 @@ package_selection() {
     local cat_id="$1"
     local caller="${2:-normal}"
     local parent_breadcrumb="$3"
-    local cat_name breadcrumb tr_space_toggle checklist_items
+    local cat_name breadcrumb checklist_items
     local pkg_id pkg_name status idx selected target_file idx_str idx_clean
     
     cat_name=$(get_category_name "$cat_id")
     
     breadcrumb="${parent_breadcrumb}${BREADCRUMB_SEP}${cat_name}"
     
-    tr_space_toggle=$(translate "tr-tui-space-toggle")
     checklist_items=""
     
     idx=1
@@ -1020,7 +1020,7 @@ package_selection() {
 $(get_category_packages "$cat_id")
 EOF
     
-    selected=$(eval "show_checklist \"\$breadcrumb\" \"(\$tr_space_toggle)\" \"\" \"\" $checklist_items")
+    selected=$(eval "show_checklist \"\$breadcrumb\" \"($(translate 'tr-tui-space-toggle'))\" \"\" \"\" $checklist_items")
     
     if [ $? -eq 0 ]; then
         if [ "$caller" = "custom_feeds" ]; then
@@ -1082,7 +1082,7 @@ EOF
         
         choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"\" \"\" $menu_items")
         
-        if [ $? -ne 0 ]; then
+        if ! [ $? -eq 0 ]; then
             return 0
         fi
         
@@ -1147,7 +1147,7 @@ EOF
         
         choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"\" \"\" $menu_items")
         
-        if [ $? -ne 0 ]; then
+        if ! [ $? -eq 0 ]; then
             return 0
         fi
         
@@ -1204,7 +1204,7 @@ EOF
         
         choice=$(eval "show_menu \"\$VERSION\" \"\" \"\$(translate 'tr-tui-select')\" \"\$(translate 'tr-tui-exit')\" $menu_items")
         
-        if [ $? -ne 0 ]; then
+        if ! [ $? -eq 0 ]; then
             return 0
         fi
         
@@ -1243,7 +1243,7 @@ review_and_apply() {
             "7" "$(translate 'tr-tui-view-setup')" \
             "8" "$(translate 'tr-tui-apply')")
         
-        if [ $? -ne 0 ]; then
+        if ! [ $? -eq 0 ]; then
             return 0
         fi
         
