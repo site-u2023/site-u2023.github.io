@@ -2,45 +2,46 @@
 # OpenWrt Device Setup Tool - whiptail TUI Module
 # This file contains whiptail-specific UI functions
 
-VERSION="R7.1120.1155"
+VERSION="R7.1120.1205"
 
 NEWT_COLORS='
 title=black,lightgray
 '
 
 show_menu() {
-    breadcrumb="$1"
-    prompt="$2"
-    ok_btn="${3:-$(translate "$DEFAULT_BTN_SELECT")}"
-    cancel_btn="${4:-$(translate "$DEFAULT_BTN_BACK")}"
+    local breadcrumb="$1"
+    local prompt="$2"
+    local ok_btn="${3:-$(translate "$DEFAULT_BTN_SELECT")}"
+    local cancel_btn="${4:-$(translate "$DEFAULT_BTN_BACK")}"
     shift 4
     
     eval "whiptail --title '$breadcrumb' --ok-button '$ok_btn' --cancel-button '$cancel_btn' --menu '$prompt' \"$UI_HEIGHT\" \"$UI_WIDTH\" 0 \"\$@\" 3>&1 1>&2 2>&3"
 }
 
 show_inputbox() {
-    breadcrumb="$1"
-    prompt="$2"
-    default="$3"
-    ok_btn="${4:-$(translate "$DEFAULT_BTN_SELECT")}"
-    cancel_btn="${5:-$(translate "$DEFAULT_BTN_BACK")}"
+    local breadcrumb="$1"
+    local prompt="$2"
+    local default="$3"
+    local ok_btn="${4:-$(translate "$DEFAULT_BTN_SELECT")}"
+    local cancel_btn="${5:-$(translate "$DEFAULT_BTN_BACK")}"
     
     whiptail --title "$breadcrumb" --ok-button "$ok_btn" --cancel-button "$cancel_btn" --inputbox "$prompt" "$UI_HEIGHT" "$UI_WIDTH" "$default" 3>&1 1>&2 2>&3
 }
 
 show_yesno() {
-    breadcrumb="$1"
-    message="$2"
-    yes_btn="${3:-$(translate "$DEFAULT_BTN_YES")}"
-    no_btn="${4:-$(translate "$DEFAULT_BTN_NO")}"
+    local breadcrumb="$1"
+    local message="$2"
+    local yes_btn="${3:-$(translate "$DEFAULT_BTN_YES")}"
+    local no_btn="${4:-$(translate "$DEFAULT_BTN_NO")}"
     
     whiptail --title "$breadcrumb" --yes-button "$yes_btn" --no-button "$no_btn" --yesno "$message" "$UI_HEIGHT" "$UI_WIDTH"
 }
 
 show_msgbox() {
-    breadcrumb="$1"
-    message="$2"
-    ok_btn="${3:-$(translate "$DEFAULT_BTN_OK")}"
+    local breadcrumb="$1"
+    local message="$2"
+    local ok_btn="${3:-$(translate "$DEFAULT_BTN_OK")}"
+    local lines height
     
     lines=$(printf '%b\n' "$message" | wc -l)
     height=$((lines + 7))
@@ -49,21 +50,21 @@ show_msgbox() {
 }
 
 show_checklist() {
-    breadcrumb="$1"
-    prompt="$2"
-    ok_btn="${3:-$(translate "$DEFAULT_BTN_SELECT")}"
-    cancel_btn="${4:-$(translate "$DEFAULT_BTN_BACK")}"
+    local breadcrumb="$1"
+    local prompt="$2"
+    local ok_btn="${3:-$(translate "$DEFAULT_BTN_SELECT")}"
+    local cancel_btn="${4:-$(translate "$DEFAULT_BTN_BACK")}"
     shift 4
     
     eval "whiptail --title '$breadcrumb' --ok-button '$ok_btn' --cancel-button '$cancel_btn' --checklist '$prompt' \"$UI_HEIGHT\" \"$UI_WIDTH\" 0 \"\$@\" 3>&1 1>&2 2>&3"
 }
 
 show_textbox() {
-    breadcrumb="$1"
-    file="$2"
-    ok_btn="${3:-$(translate "$DEFAULT_BTN_OK")}"
+    local breadcrumb="$1"
+    local file="$2"
+    local ok_btn="${3:-$(translate "$DEFAULT_BTN_OK")}"
+    local temp_file="$CONFIG_DIR/textbox_wrapped.txt"
     
-    temp_file="$CONFIG_DIR/textbox_wrapped.txt"
     fold -s -w "$UI_WIDTH" "$file" > "$temp_file"
     
     whiptail --scrolltext --title "$breadcrumb" --ok-button "$ok_btn" --textbox "$temp_file" "$UI_HEIGHT" "$UI_WIDTH"
@@ -76,20 +77,24 @@ custom_feeds_selection() {
     [ "$PKG_MGR" != "opkg" ] && return 0
     download_customfeeds_json || return 0
     
+    local tr_main_menu tr_custom_feeds breadcrumb
+    local menu_items i cat_id cat_name choice selected_cat
+    
     tr_main_menu=$(translate "tr-tui-main-menu")
     tr_custom_feeds=$(translate "tr-tui-custom-feeds")
     breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_custom_feeds")
     
     menu_items="" 
-    i=1 
-    cat_id="" 
-    cat_name=""
+    i=1
     
-    get_customfeed_categories | while read -r cat_id; do
+    # パイプラインを避けてサブシェル問題を回避
+    while read -r cat_id; do
         cat_name=$(get_category_name "$cat_id")
         menu_items="$menu_items $i \"$cat_name\""
         i=$((i+1))
-    done
+    done <<EOF
+$(get_customfeed_categories)
+EOF
     
     if [ -z "$menu_items" ]; then
         show_msgbox "$breadcrumb" "No custom feeds available"
@@ -98,6 +103,7 @@ custom_feeds_selection() {
     
     choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"\" \"\" $menu_items")
     
+    # 直接チェック
     if [ $? -ne 0 ]; then
         return 0
     fi
@@ -109,6 +115,8 @@ custom_feeds_selection() {
 }
 
 simple_custom_feeds_selection() {
+    local cat_id
+    
     if [ "$PKG_MGR" != "opkg" ]; then
         clear
         echo "========================================"
@@ -118,7 +126,7 @@ simple_custom_feeds_selection() {
         echo "Custom feeds are only available for OPKG"
         echo ""
         printf "Press Enter to continue..."
-        read -r dummy
+        read -r _
         return 0
     fi
     
@@ -131,7 +139,7 @@ simple_custom_feeds_selection() {
         echo "Failed to load custom feeds"
         echo ""
         printf "Press Enter to continue..."
-        read -r dummy
+        read -r _
         return 0
     fi
     
@@ -146,7 +154,7 @@ simple_custom_feeds_selection() {
         echo "No custom feeds available"
         echo ""
         printf "Press Enter to continue..."
-        read -r dummy
+        read -r _
         return 0
     fi
     
@@ -154,6 +162,7 @@ simple_custom_feeds_selection() {
 }
 
 get_effective_connection_type() {
+    local conn_type
     conn_type=$(grep "^connection_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
     
     if [ "$conn_type" = "auto" ]; then
@@ -174,7 +183,8 @@ get_effective_connection_type() {
 }
 
 should_show_item() {
-    item_id="$1"
+    local item_id="$1"
+    local show_when var_name expected current_val
     
     show_when=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].showWhen" 2>/dev/null | head -1)
     
@@ -230,7 +240,8 @@ EOF
 }
 
 auto_add_conditional_packages() {
-    cat_id="$1"
+    local cat_id="$1"
+    local effective_conn_type pkg_count idx pkg_id when_json when_var current_val expected should_add
     
     echo "[DEBUG] === auto_add_conditional_packages called ===" >> "$CONFIG_DIR/debug.log"
     echo "[DEBUG] cat_id=$cat_id" >> "$CONFIG_DIR/debug.log"
@@ -312,9 +323,10 @@ EOF
 }
 
 get_section_nested_items() {
-    item_id="$1"
-    cat_idx=0
-    item_idx=0
+    local item_id="$1"
+    local cat_idx=0
+    local item_idx=0
+    local cat_id items idx itm
     
     for cat_id in $(get_setup_categories); do
         items=$(get_setup_category_items "$cat_id")
@@ -333,8 +345,9 @@ get_section_nested_items() {
 }
 
 compute_dslite_aftr() {
-    aftr_type="$1"
-    area="$2"
+    local aftr_type="$1"
+    local area="$2"
+    local computed
     
     [ -z "$aftr_type" ] || [ -z "$area" ] && return 1
     
@@ -349,6 +362,8 @@ compute_dslite_aftr() {
 }
 
 generate_files() {
+    local pkgs selected_pkgs cat_id template_url api_url download_url temp_pkg_file pkg_id pattern
+    
     {
         wget -q -O - "$POSTINST_TEMPLATE_URL" | sed -n '1,/^# BEGIN_VARIABLE_DEFINITIONS/p'
         
@@ -377,7 +392,7 @@ generate_files() {
     chmod +x "$CONFIG_DIR/setup.sh"
     
     if [ -f "$CUSTOMFEEDS_JSON" ]; then
-        get_customfeed_categories | while read -r cat_id; do
+        while read -r cat_id; do
             template_url=$(get_customfeed_template_url "$cat_id")
             
             if [ -z "$template_url" ]; then
@@ -391,12 +406,14 @@ generate_files() {
             temp_pkg_file="$CONFIG_DIR/temp_${cat_id}.txt"
             : > "$temp_pkg_file"
             
-            get_category_packages "$cat_id" | while read -r pkg_id; do
+            while read -r pkg_id; do
                 if grep -q "^${pkg_id}$" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
                     pattern=$(get_customfeed_package_pattern "$pkg_id")
                     echo "$pattern"
                 fi
-            done > "$temp_pkg_file"
+            done <<EOF2 > "$temp_pkg_file"
+$(get_category_packages "$cat_id")
+EOF2
             
             selected_pkgs=""
             if [ -s "$temp_pkg_file" ]; then
@@ -416,7 +433,9 @@ generate_files() {
             
             chmod +x "$CONFIG_DIR/customfeeds-${cat_id}.sh"
             rm -f "$temp_pkg_file"
-        done
+        done <<EOF3
+$(get_customfeed_categories)
+EOF3
     else
         {
             echo "#!/bin/sh"
@@ -428,6 +447,8 @@ generate_files() {
 }
 
 device_info() {
+    local tr_main_menu tr_device_info breadcrumb info
+    
     tr_main_menu=$(translate "tr-tui-main-menu")
     tr_device_info=$(translate "tr-tui-view-device-info")
     breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_device_info")
@@ -444,7 +465,9 @@ device_info() {
 }
 
 device_info_titled() {
-    title="$1"
+    local title="$1"
+    local info
+    
     info="Model: $DEVICE_MODEL\n"
     info="${info}Target: $DEVICE_TARGET\n"
     info="${info}Version: $OPENWRT_VERSION\n"
@@ -457,6 +480,9 @@ device_info_titled() {
 }
 
 show_network_info() {
+    local tr_main_menu tr_internet_connection conn_type_label breadcrumb
+    local tr_isp tr_as tr_mape_notice tr_dslite_notice tr_auto_detection info
+    
     tr_main_menu=$(translate "tr-tui-main-menu")
     tr_internet_connection=$(translate "tr-internet-connection")
     conn_type_label=$(get_setup_item_label "connection-type")
@@ -528,6 +554,7 @@ show_network_info() {
         fi
         
     else
+        local tr_isp_info tr_manual_config
         tr_isp_info=$(translate "tr-tui-isp-info")
         tr_manual_config=$(translate "tr-tui-manual-config-required")
         info="${tr_isp_info}\n\n"
@@ -541,9 +568,12 @@ show_network_info() {
 }
 
 process_items() {
-    cat_id="$1"
-    item_id="$2"
-    breadcrumb="$3"
+    local cat_id="$1"
+    local item_id="$2"
+    local breadcrumb="$3"
+    local item_type item_label item_breadcrumb nested child_id
+    local variable default current options menu_opts i opt opt_label value exit_code selected_opt
+    local field_type source aftr_type area computed cat_idx item_idx cid citems idx itm content class
     
     echo "[DEBUG] whiptail_process_items: cat_id=$cat_id, item_id=$item_id" >> "$CONFIG_DIR/debug.log"
     
@@ -832,7 +862,11 @@ show_auto_detection_if_available() {
 }
 
 category_config() {
-    cat_id="$1"
+    local cat_id="$1"
+    local tr_main_menu cat_title base_breadcrumb
+    local tr_language lang_breadcrumb current_lang value
+    local found_radio radio_breadcrumb item_id item_type radio_label conn_type dhcp_content tr_dhcp
+    
     tr_main_menu=$(translate "tr-tui-main-menu")
     cat_title=$(get_setup_category_title "$cat_id")
     base_breadcrumb=$(build_breadcrumb "$tr_main_menu" "$cat_title")
@@ -920,23 +954,26 @@ category_config() {
 }
 
 package_categories() {
+    local tr_main_menu tr_custom_packages breadcrumb
+    local menu_items i cat_id cat_name choice selected_cat is_hidden
+    
     tr_main_menu=$(translate "tr-tui-main-menu")
     tr_custom_packages=$(translate "tr-tui-packages")
     breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_custom_packages")
     
     menu_items="" 
-    i=1 
-    cat_id="" 
-    cat_name=""
+    i=1
     
-    get_categories | while read -r cat_id; do
+    while read -r cat_id; do
         is_hidden=$(get_category_hidden "$cat_id")
         [ "$is_hidden" = "true" ] && continue
         
         cat_name=$(get_category_name "$cat_id")
         menu_items="$menu_items $i \"$cat_name\""
         i=$((i+1))
-    done
+    done <<EOF
+$(get_categories)
+EOF
     
     choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"\" \"\" $menu_items")
     
@@ -954,22 +991,21 @@ package_categories() {
 }
 
 package_selection() {
-    cat_id="$1"
-    caller="${2:-normal}"
-    parent_breadcrumb="$3"
+    local cat_id="$1"
+    local caller="${2:-normal}"
+    local parent_breadcrumb="$3"
+    local cat_name breadcrumb tr_space_toggle checklist_items
+    local pkg_id pkg_name status idx selected target_file idx_str idx_clean
+    
     cat_name=$(get_category_name "$cat_id")
     
     breadcrumb="${parent_breadcrumb}${BREADCRUMB_SEP}${cat_name}"
     
     tr_space_toggle=$(translate "tr-tui-space-toggle")
-    checklist_items="" 
-    pkg_id="" 
-    pkg_name="" 
-    status="" 
-    idx=""
+    checklist_items=""
     
     idx=1
-    get_category_packages "$cat_id" | while read -r pkg_id; do
+    while read -r pkg_id; do
         pkg_name=$(get_package_name "$pkg_id")
         
         if is_package_selected "$pkg_id" "$caller"; then
@@ -980,7 +1016,9 @@ package_selection() {
         
         checklist_items="$checklist_items \"$idx\" \"$pkg_name\" $status"
         idx=$((idx+1))
-    done
+    done <<EOF
+$(get_category_packages "$cat_id")
+EOF
     
     selected=$(eval "show_checklist \"\$breadcrumb\" \"(\$tr_space_toggle)\" \"\" \"\" $checklist_items")
     
@@ -991,9 +1029,11 @@ package_selection() {
             target_file="$SELECTED_PACKAGES"
         fi
         
-        get_category_packages "$cat_id" | while read -r pkg_id; do
+        while read -r pkg_id; do
             sed -i "/^${pkg_id}$/d" "$target_file"
-        done
+        done <<EOF2
+$(get_category_packages "$cat_id")
+EOF2
         
         for idx_str in $selected; do
             idx_clean=$(echo "$idx_str" | tr -d '"')
@@ -1010,6 +1050,9 @@ package_selection() {
 }
 
 view_selected_custom_packages() {
+    local tr_main_menu tr_review tr_custom_packages breadcrumb
+    local menu_items i cat_id cat_name choice selected_cat cat_breadcrumb temp_view pkg_id pkg_name
+    
     tr_main_menu=$(translate "tr-tui-main-menu")
     tr_review=$(translate "tr-tui-review-configuration")
     tr_custom_packages=$(translate "tr-tui-view-custom-packages")
@@ -1022,15 +1065,15 @@ view_selected_custom_packages() {
     
     while true; do
         menu_items="" 
-        i=1 
-        cat_id="" 
-        cat_name=""
+        i=1
         
-        get_customfeed_categories | while read -r cat_id; do
+        while read -r cat_id; do
             cat_name=$(get_category_name "$cat_id")
             menu_items="$menu_items $i \"$cat_name\""
             i=$((i+1))
-        done
+        done <<EOF
+$(get_customfeed_categories)
+EOF
         
         if [ -z "$menu_items" ]; then
             show_msgbox "$breadcrumb" "No custom feeds available"
@@ -1051,12 +1094,14 @@ view_selected_custom_packages() {
             temp_view="$CONFIG_DIR/selected_custom_pkg_view.txt"
             : > "$temp_view"
             
-            get_category_packages "$selected_cat" | while read -r pkg_id; do
+            while read -r pkg_id; do
                 if grep -q "^${pkg_id}$" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
                     pkg_name=$(get_package_name "$pkg_id")
                     echo "  - ${pkg_name}"
                 fi
-            done > "$temp_view"
+            done <<EOF2 > "$temp_view"
+$(get_category_packages "$selected_cat")
+EOF2
             
             if [ -s "$temp_view" ]; then
                 show_textbox "$cat_breadcrumb" "$temp_view"
@@ -1070,6 +1115,9 @@ view_selected_custom_packages() {
 }
 
 view_customfeeds() {
+    local tr_main_menu tr_review tr_customfeeds breadcrumb
+    local menu_items i cat_id cat_name choice selected_cat cat_breadcrumb script_file
+    
     tr_main_menu=$(translate "tr-tui-main-menu")
     tr_review=$(translate "tr-tui-review-configuration")
     tr_customfeeds=$(translate "tr-tui-view-customfeeds")
@@ -1082,15 +1130,15 @@ view_customfeeds() {
     
     while true; do
         menu_items="" 
-        i=1 
-        cat_id="" 
-        cat_name=""
+        i=1
         
-        get_customfeed_categories | while read -r cat_id; do
+        while read -r cat_id; do
             cat_name=$(get_category_name "$cat_id")
             menu_items="$menu_items $i \"$cat_name\""
             i=$((i+1))
-        done
+        done <<EOF
+$(get_customfeed_categories)
+EOF
         
         if [ -z "$menu_items" ]; then
             show_msgbox "$breadcrumb" "No custom feeds available"
@@ -1121,18 +1169,21 @@ view_customfeeds() {
 }
 
 main_menu() {
+    local tr_main_menu menu_items i cat_id cat_title packages_label packages_choice
+    local custom_feeds_choice custom_feeds_label review_choice choice setup_cat_count selected_cat
+    
     while true; do
         tr_main_menu=$(translate "tr-tui-main-menu")
         menu_items="" 
-        i=1 
-        cat_id="" 
-        cat_title=""
+        i=1
         
-        get_setup_categories | while read -r cat_id; do
+        while read -r cat_id; do
             cat_title=$(get_setup_category_title "$cat_id")
             menu_items="$menu_items $i \"$cat_title\""
             i=$((i+1))
-        done
+        done <<EOF
+$(get_setup_categories)
+EOF
         
         packages_label=$(translate "tr-tui-packages")
         menu_items="$menu_items $i \"$packages_label\""
@@ -1172,6 +1223,8 @@ main_menu() {
 }
 
 review_and_apply() {
+    local tr_main_menu tr_review breadcrumb choice
+    
     generate_files
     
     tr_main_menu=$(translate "tr-tui-main-menu")
