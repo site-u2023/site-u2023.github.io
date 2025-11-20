@@ -844,7 +844,7 @@ EOF
     echo "[DEBUG] var_name=$var_name, current=$current_val, expected=$expected" >> $CONFIG_DIR/debug.log
     
     if [ -z "$(echo "$expected" | tr -d '\n')" ]; then
-        echo "[DEBUG] No expected value, returning 0 (show)" >> $CONFIG_DIR/debug.log
+        echo "[DEBUG] No expected value, returning 0 show" >> $CONFIG_DIR/debug.log
         return 0
     fi
     
