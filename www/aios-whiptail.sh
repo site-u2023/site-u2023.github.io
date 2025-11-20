@@ -1,10 +1,10 @@
 #!/bin/sh
 # shellcheck shell=ash
-# shellcheck disable=SC3043
+# shellcheck disable=SC3043,SC2034
 # OpenWrt Device Setup Tool - whiptail TUI Module
 # This file contains whiptail-specific UI functions
 
-VERSION="R7.1120.1205"
+VERSION="R7.1120.1223"
 
 NEWT_COLORS='
 title=black,lightgray
@@ -103,11 +103,7 @@ EOF
         return 0
     fi
     
-    choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"\" \"\" $menu_items")
-    
-    if ! [ $? -eq 0 ]; then
-        return 0
-    fi
+    choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"\" \"\" $menu_items") || return 0
     
     if [ -n "$choice" ]; then
         selected_cat=$(get_customfeed_categories | sed -n "${choice}p")
