@@ -49,7 +49,11 @@ var config = {
   
   // Custom feeds database URL
   customfeeds_db_path: "custom-feeds/customfeeds.json",
-    
+
+  // UI modules paths
+  whiptail_ui_path: "www/aios-whiptail.sh",
+  simple_ui_path: "www/aios-simple.sh",
+  
   // LuCI OPKG 検索エンドポイント
   // https://downloads.openwrt.org/releases/24.10.2/packages/aarch64_cortex-a53/packages/Packages
   opkg_search_url: "https://downloads.openwrt.org/releases/{version}/packages/{arch}/{feed}/Packages",
