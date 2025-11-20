@@ -5,7 +5,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1120.1114"
+VERSION="R7.1120.1247"
 BASE_TMP_DIR="/tmp"
 CONFIG_DIR="$BASE_TMP_DIR/aiost"
 BOOTSTRAP_URL="https://site-u.pages.dev/www"
@@ -759,7 +759,7 @@ whiptail_custom_feeds_selection() {
     
     if [ -n "$choice" ]; then
         selected_cat=$(get_customfeed_categories | sed -n "${choice}p")
-        whiptail_package_selection "$selected_cat" "custom_feeds" "$breadcrumb"
+        package_selection "$selected_cat" "custom_feeds" "$breadcrumb"
     fi
 }
 
