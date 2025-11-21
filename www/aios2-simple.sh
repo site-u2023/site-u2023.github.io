@@ -4,7 +4,7 @@
 # OpenWrt Device Setup Tool - simple TEXT Module
 # This file contains simple text-based UI functions
 
-VERSION="R7.1121.1249"
+VERSION="R7.1121.1721"
 
 show_menu() {
     local title="$1"
@@ -28,9 +28,6 @@ show_menu() {
     echo "$choice"
 }
 
-# UI Mode Selection
-
-
 custom_feeds_selection() {
     if [ "$PKG_MGR" != "opkg" ]; then
         clear
@@ -40,7 +37,7 @@ custom_feeds_selection() {
         echo ""
         echo "Custom feeds are only available for OPKG"
         echo ""
-        printf "$(translate 'tr-tui-ok')"
+        printf "$(translate 'tr-tui-ok'): "
         read
         return 0
     fi
@@ -53,7 +50,7 @@ custom_feeds_selection() {
         echo ""
         echo "Failed to load custom feeds"
         echo ""
-        printf "$(translate 'tr-tui-ok')"
+        printf "$(translate 'tr-tui-ok'): "
         read
         return 0
     }
@@ -68,7 +65,7 @@ custom_feeds_selection() {
         echo ""
         echo "No custom feeds available"
         echo ""
-        printf "$(translate 'tr-tui-ok')"
+        printf "$(translate 'tr-tui-ok'): "
         read
         return 0
     fi
@@ -109,6 +106,7 @@ review_and_apply() {
                 echo "  $(get_review_item_label $choice)"
                 echo "========================================"
                 [ -f "$file" ] && cat "$file"
+                printf "$(translate 'tr-tui-ok'): "
                 read
                 ;;
             view_selected_custom_packages|view_customfeeds)
@@ -158,8 +156,6 @@ review_and_apply() {
     done
 }
 
-# Simple Mode UI Functions
-
 device_info() {
     clear
     echo "========================================"
@@ -174,7 +170,7 @@ device_info() {
     [ -n "$DEVICE_STORAGE" ] && echo "Storage: $DEVICE_STORAGE_USED/$DEVICE_STORAGE (${DEVICE_STORAGE_AVAIL} free)"
     [ -n "$DEVICE_USB" ] && echo "USB:     $DEVICE_USB"
     echo ""
-    printf "$(translate 'tr-tui-ok')"
+    printf "$(translate 'tr-tui-ok'): "
     read
 }
 
@@ -188,7 +184,7 @@ show_network_info() {
     if [ -z "$DETECTED_CONN_TYPE" ] || [ "$DETECTED_CONN_TYPE" = "unknown" ]; then
         echo "No configuration detected."
         echo ""
-        printf "$(translate 'tr-tui-ok')"
+        printf "$(translate 'tr-tui-ok'): "
         read
         return 1
     fi
@@ -522,7 +518,7 @@ category_config() {
     
     echo ""
     echo "Configuration completed!"
-    printf "$(translate 'tr-tui-ok')"
+    printf "$(translate 'tr-tui-ok'): "
     read
 }
 
@@ -630,7 +626,7 @@ view_customfeeds() {
     if [ ! -f "$CUSTOMFEEDS_JSON" ]; then
         echo "No custom feeds available"
         echo ""
-        printf "$(translate 'tr-tui-ok')"
+        printf "$(translate 'tr-tui-ok'): "
         read
         return 0
     fi
@@ -668,7 +664,7 @@ view_customfeeds() {
         fi
         
         echo ""
-        printf "Press Enter to continue..."
+        printf "$(translate 'tr-tui-ok'): "
         read
     fi
 }
@@ -683,7 +679,7 @@ view_selected_custom_packages() {
     if [ ! -f "$CUSTOMFEEDS_JSON" ]; then
         echo "No custom feeds available"
         echo ""
-        printf "$(translate 'tr-tui-ok')"
+        printf "$(translate 'tr-tui-ok'): "
         read
         return 0
     fi
@@ -728,7 +724,7 @@ view_selected_custom_packages() {
         fi
         
         echo ""
-        printf "$(translate 'tr-tui-ok')"
+        printf "$(translate 'tr-tui-ok'): "
         read
     fi
 }
@@ -793,11 +789,6 @@ main_menu() {
         fi
     done
 }
-
-# Main Entry Point
-
-
-# Simple Main Entry Point
 
 aios2_simple_main() {
     device_info
