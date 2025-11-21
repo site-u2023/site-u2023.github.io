@@ -1088,9 +1088,8 @@ aios2_main() {
     
     echo "Fetching essential files in parallel"
     
-    TIME_START=$(date +%s.%N 2>/dev/null || date +%s)
+    TIME_START=$(cut -d' ' -f1 /proc/uptime)
     
-    # setup.json を並列でDL
     (
         if ! download_setup_json; then
             echo "Error: Failed to download setup.json" >&2
@@ -1144,15 +1143,9 @@ aios2_main() {
     wait $CUSTOMFEEDS_PID
     wait $TEMPLATES_PID
     
-    TIME_END=$(date +%s.%N 2>/dev/null || date +%s)
+    TIME_END=$(cut -d' ' -f1 /proc/uptime)
     
-    if command -v bc >/dev/null 2>&1; then
-        ELAPSED_TIME=$(echo "$TIME_END - $TIME_START" | bc)
-    elif command -v awk >/dev/null 2>&1; then
-        ELAPSED_TIME=$(awk "BEGIN {printf \"%.3f\", $TIME_END - $TIME_START}")
-    else
-        ELAPSED_TIME=$((${TIME_END%.*} - ${TIME_START%.*}))
-    fi
+    ELAPSED_TIME=$(awk "BEGIN {printf \"%.2f\", $TIME_END - $TIME_START}")i
     
     echo ""
     echo "INFO: Parallel download finished in ${ELAPSED_TIME} seconds."
