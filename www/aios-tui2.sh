@@ -91,8 +91,6 @@ CUSTOMFEEDS_JSON="$CONFIG_DIR/customfeeds.json"
 # Package Dependencies
 WHIPTAIL_PACKAGES="whiptail"
 
-WHIPTAIL_HEIGHT="0"
-
 # UI Configuration Variables
 UI_HEIGHT="0"
 UI_WIDTH="78"
