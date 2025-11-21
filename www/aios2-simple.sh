@@ -23,7 +23,7 @@ show_menu() {
     
     echo "b) $(translate 'tr-tui-back')"
     echo ""
-    printf "$(translate 'tr-tui-ui-choice'): "
+    printf "%s" "$(translate 'tr-tui-ui-choice'): "
     read -r choice
     echo "$choice"
 }
@@ -96,13 +96,13 @@ review_and_apply() {
         done
         
         echo "b) $(translate 'tr-tui-back')"
-        printf "$(translate 'tr-tui-ui-choice'): "
+        printf "%s" "$(translate 'tr-tui-ui-choice'): "
         read -r choice
         
         [ "$choice" = "b" ] && return 0
         
         local action
-        action=$(get_review_item_action $choice)
+        action=$(get_review_item_action "$choice")
         
         case "$action" in
             device_info) 
@@ -135,8 +135,8 @@ review_and_apply() {
                 echo ""
                 echo "$(translate 'tr-tui-apply-confirm-question')"
                 echo ""
-                printf "$(translate 'tr-tui-yes')/$(translate 'tr-tui-no'): "
-                read confirm
+                printf "%s" "$(translate 'tr-tui-yes')/$(translate 'tr-tui-no'): "
+                read -r confirm
                 
                 if [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
                     echo ""
@@ -154,7 +154,7 @@ review_and_apply() {
                     echo ""
                     echo "$(translate 'tr-tui-config-applied')"
                     echo ""
-                    printf "$(translate 'tr-tui-reboot-question') (y/n): "
+                    printf "%s" "$(translate 'tr-tui-reboot-question') (y/n): "
                     read reboot_confirm
                     if [ "$reboot_confirm" = "y" ] || [ "$reboot_confirm" = "Y" ]; then
                         reboot
@@ -228,8 +228,8 @@ show_network_info() {
     fi
     
     echo ""
-    printf "$(translate 'tr-tui-use-auto-config') ($(translate 'tr-tui-yes')/$(translate 'tr-tui-no')): "
-    read confirm
+    printf "%s" "$(translate 'tr-tui-use-auto-config') ($(translate 'tr-tui-yes')/$(translate 'tr-tui-no')): "
+    read -r confirm
     
     if [ "$confirm" = "$(translate 'tr-tui-yes')" ] || [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
         sed -i "/^connection_type=/d" "$SETUP_VARS"
@@ -297,7 +297,7 @@ process_items() {
                     i=$((i+1))
                 done
                 
-                printf "$(translate 'tr-tui-ui-choice') [Enter=keep current]: "
+                printf "%s" "$(translate 'tr-tui-ui-choice') [Enter=keep current]: "
                 read -r choice
                 
                 if [ -n "$choice" ]; then
@@ -435,7 +435,7 @@ process_items() {
                         i=$((i+1))
                     done
                     
-                    printf "$(translate 'tr-tui-ui-choice') [Enter=keep current]: "
+                    printf "%s" "$(translate 'tr-tui-ui-choice') [Enter=keep current]: "
                     read -r choice
                     
                     if [ -n "$choice" ]; then
@@ -585,7 +585,7 @@ package_categories() {
         
         echo "b) $(translate 'tr-tui-back')"
         echo ""
-        printf "$(translate 'tr-tui-ui-choice'): "
+        printf "%s" "$(translate 'tr-tui-ui-choice'): "
         read -r choice
         
         if [ "$choice" = "b" ] || [ "$choice" = "B" ]; then
@@ -652,7 +652,7 @@ package_selection() {
     done
     
     echo ""
-    printf "$(translate 'tr-tui-ui-choice'): "
+    printf "%s" "$(translate 'tr-tui-ui-choice'): "
     read -r choice
     
     if [ "$choice" = "b" ] || [ "$choice" = "B" ]; then
@@ -716,7 +716,7 @@ view_customfeeds() {
     
     echo "b) $(translate 'tr-tui-back')"
     echo ""
-    printf "$(translate 'tr-tui-ui-choice'): "
+    printf "%s" "$(translate 'tr-tui-ui-choice'): "
     read -r choice
     
     if [ "$choice" = "b" ] || [ "$choice" = "B" ]; then
@@ -777,7 +777,7 @@ view_selected_custom_packages() {
     
     echo "b) $(translate 'tr-tui-back')"
     echo ""
-    printf "$(translate 'tr-tui-ui-choice'): "
+    printf "%s" "$(translate 'tr-tui-ui-choice'): "
     read -r choice
     
     if [ "$choice" = "b" ] || [ "$choice" = "B" ]; then
@@ -858,7 +858,7 @@ main_menu() {
         local exit_choice=$i
         
         echo ""
-        printf "$(translate 'tr-tui-ui-choice'): "
+        printf "%s" "$(translate 'tr-tui-ui-choice'): "
         read -r choice
         
         if [ -z "$choice" ]; then
