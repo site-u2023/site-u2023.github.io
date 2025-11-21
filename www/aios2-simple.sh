@@ -24,7 +24,7 @@ show_menu() {
     echo "b) $(translate 'tr-tui-back')"
     echo ""
     printf "$(translate 'tr-tui-ui-choice'): "
-    read choice
+    read -r choice
     echo "$choice"
 }
 
@@ -39,7 +39,7 @@ show_msgbox() {
     echo ""
     echo "$message"
     echo ""
-    printf "$(translate 'tr-tui-ok'): "
+    printf "%s: " "$(translate 'tr-tui-ok')"
     read
 }
 
@@ -91,12 +91,12 @@ review_and_apply() {
         echo ""
         
         for i in $(get_review_items); do
-            echo "$i) $(get_review_item_label $i)"
+            echo "$i) $(get_review_item_label "$i")"
         done
         
         echo "b) $(translate 'tr-tui-back')"
         printf "$(translate 'tr-tui-ui-choice'): "
-        read choice
+        read -r choice
         
         [ "$choice" = "b" ] && return 0
         
@@ -113,7 +113,7 @@ review_and_apply() {
                 echo "  $(get_review_item_label $choice)"
                 echo "========================================"
                 [ -f "$file" ] && cat "$file"
-                printf "$(translate 'tr-tui-ok'): "
+                printf "%s: " "$(translate 'tr-tui-ok')"
                 read
                 ;;
             view_selected_custom_packages|view_customfeeds)
@@ -288,7 +288,7 @@ process_items() {
                 done
                 
                 printf "$(translate 'tr-tui-ui-choice') [Enter=keep current]: "
-                read choice
+                read -r choice
                 
                 if [ -n "$choice" ]; then
                     selected_opt=$(echo "$options" | sed -n "${choice}p")
@@ -414,7 +414,7 @@ process_items() {
                     done
                     
                     printf "$(translate 'tr-tui-ui-choice') [Enter=keep current]: "
-                    read choice
+                    read -r choice
                     
                     if [ -n "$choice" ]; then
                         selected_opt=$(echo "$options" | sed -n "${choice}p")
@@ -528,7 +528,7 @@ category_config() {
     
     echo ""
     echo "Configuration completed!"
-    printf "$(translate 'tr-tui-ok'): "
+    printf "%s: " "$(translate 'tr-tui-ok')"
     read
 }
 
@@ -553,7 +553,7 @@ package_categories() {
         echo "b) $(translate 'tr-tui-back')"
         echo ""
         printf "$(translate 'tr-tui-ui-choice'): "
-        read choice
+        read -r choice
         
         if [ "$choice" = "b" ] || [ "$choice" = "B" ]; then
             return 0
@@ -615,7 +615,7 @@ package_selection() {
     
     echo ""
     printf "$(translate 'tr-tui-ui-choice'): "
-    read choice
+    read -r choice
     
     if [ "$choice" = "b" ] || [ "$choice" = "B" ]; then
         return 0
@@ -678,7 +678,7 @@ view_customfeeds() {
     echo "b) $(translate 'tr-tui-back')"
     echo ""
     printf "$(translate 'tr-tui-ui-choice'): "
-    read choice
+    read -r choice
     
     if [ "$choice" = "b" ] || [ "$choice" = "B" ]; then
         return 0
@@ -698,8 +698,8 @@ view_customfeeds() {
             echo ""
             cat "$script_file"
             echo ""
-            printf "$(translate 'tr-tui-ok'): "
-            read
+            printf "%s: " "$(translate 'tr-tui-ok')"
+            read -r _
         else
             show_msgbox "$cat_breadcrumb" "Script not found"
         fi
@@ -737,7 +737,7 @@ view_selected_custom_packages() {
     echo "b) $(translate 'tr-tui-back')"
     echo ""
     printf "$(translate 'tr-tui-ui-choice'): "
-    read choice
+    read -r choice
     
     if [ "$choice" = "b" ] || [ "$choice" = "B" ]; then
         return 0
@@ -772,8 +772,8 @@ view_selected_custom_packages() {
         fi
         
         echo ""
-        printf "$(translate 'tr-tui-ok'): "
-        read
+        printf "%s: " "$(translate 'tr-tui-ok')"
+        read -r _
         
         view_selected_custom_packages
     fi
@@ -814,7 +814,7 @@ main_menu() {
         
         echo ""
         printf "$(translate 'tr-tui-ui-choice'): "
-        read choice
+        read -r choice
         
         if [ -z "$choice" ]; then
             continue
