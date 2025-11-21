@@ -8,6 +8,10 @@ VERSION="R7.1121.2233"
 UI_WIDTH="78"
 UI_HEIGHT="0"
 
+# Return code definitions for hierarchical navigation
+# 0: Stay in current section/context
+# 1: Go back one level (to parent section/category)
+# 2: Return to main menu
 RETURN_STAY=0
 RETURN_BACK=1
 RETURN_MAIN=2
