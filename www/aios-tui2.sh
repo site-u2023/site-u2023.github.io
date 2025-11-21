@@ -1129,8 +1129,6 @@ aios_tui_main() {
     fi
     
     load_default_packages
-    
-    echo ""
 
     echo "connection_type='auto'" >> "$SETUP_VARS"
     echo "wifi_mode='standard'" >> "$SETUP_VARS"
@@ -1155,6 +1153,8 @@ aios_tui_main() {
 
     echo "Fetching UI modules"
     select_ui_mode
+
+    echo ""
     
     # Load and execute UI module
     if [ "$UI_MODE" = "whiptail" ]; then
