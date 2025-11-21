@@ -3,10 +3,14 @@
 # OpenWrt Device Setup Tool - whiptail TUI Module
 # This file contains whiptail-specific UI functions
 
-VERSION="R7.1121.1829"
+VERSION="R7.1121.2233"
 
 UI_WIDTH="78"
 UI_HEIGHT="0"
+
+RETURN_STAY=0
+RETURN_BACK=1
+RETURN_MAIN=2
 
 DEFAULT_BTN_SELECT="tr-tui-select"
 DEFAULT_BTN_BACK="tr-tui-back"
