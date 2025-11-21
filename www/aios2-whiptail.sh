@@ -4,7 +4,7 @@
 # OpenWrt Device Setup Tool - whiptail TUI Module
 # This file contains whiptail-specific UI functions
 
-VERSION="R7.1121.1332"
+VERSION="R7.1121.1351"
 
 NEWT_COLORS='
 title=black,lightgray
@@ -811,44 +811,38 @@ view_customfeeds() {
         return 0
     fi
     
-    while true; do
-        menu_items="" 
-        i=1
-        
-        while read -r cat_id; do
-            cat_name=$(get_category_name "$cat_id")
-            menu_items="$menu_items $i \"$cat_name\""
-            i=$((i+1))
-        done <<EOF
+    menu_items="" 
+    i=1
+    
+    while read -r cat_id; do
+        cat_name=$(get_category_name "$cat_id")
+        menu_items="$menu_items $i \"$cat_name\""
+        i=$((i+1))
+    done <<EOF
 $(get_customfeed_categories)
 EOF
+    
+    if [ -z "$menu_items" ]; then
+        show_msgbox "$breadcrumb" "No custom feeds available"
+        return 0
+    fi
+    
+    choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"\" \"\" $menu_items") || return 0
+    
+    if [ -n "$choice" ]; then
+        selected_cat=$(get_customfeed_categories | sed -n "${choice}p")
+        cat_name=$(get_category_name "$selected_cat")
+        cat_breadcrumb="${breadcrumb}${BREADCRUMB_SEP}${cat_name}"
         
-        if [ -z "$menu_items" ]; then
-            show_msgbox "$breadcrumb" "No custom feeds available"
-            return 0
+        script_file="$CONFIG_DIR/customfeeds-${selected_cat}.sh"
+        
+        if [ -f "$script_file" ]; then
+            cat "$script_file" > "$CONFIG_DIR/customfeeds_view.txt"
+            show_textbox "$cat_breadcrumb" "$CONFIG_DIR/customfeeds_view.txt"
+        else
+            show_msgbox "$cat_breadcrumb" "Script not found: customfeeds-${selected_cat}.sh"
         fi
-        
-        choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"\" \"\" $menu_items")
-        
-        if ! [ $? -eq 0 ]; then
-            return 0
-        fi
-        
-        if [ -n "$choice" ]; then
-            selected_cat=$(get_customfeed_categories | sed -n "${choice}p")
-            cat_name=$(get_category_name "$selected_cat")
-            cat_breadcrumb="${breadcrumb}${BREADCRUMB_SEP}${cat_name}"
-            
-            script_file="$CONFIG_DIR/customfeeds-${selected_cat}.sh"
-            
-            if [ -f "$script_file" ]; then
-                cat "$script_file" > "$CONFIG_DIR/customfeeds_view.txt"
-                show_textbox "$cat_breadcrumb" "$CONFIG_DIR/customfeeds_view.txt"
-            else
-                show_msgbox "$cat_breadcrumb" "Script not found: customfeeds-${selected_cat}.sh"
-            fi
-        fi
-    done
+    fi
 }
 
 main_menu() {
