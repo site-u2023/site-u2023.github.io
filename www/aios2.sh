@@ -142,7 +142,7 @@ select_ui_mode() {
     echo "1) $(translate 'tr-tui-ui-whiptail')"
     echo "2) $(translate 'tr-tui-ui-simple')"
     
-    printf "$(translate 'tr-tui-ui-choice') [1]: "
+    printf "%s" "$(translate 'tr-tui-ui-choice') [1]: "
     read choice
     
     if [ "$choice" = "2" ]; then
