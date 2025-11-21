@@ -1,4 +1,5 @@
 #!/bin/sh
+
 # OpenWrt Device Setup Tool - simple TEXT Module
 # This file contains simple text-based UI functions
 
