@@ -102,26 +102,6 @@ DEFAULT_BTN_CANCEL="tr-tui-cancel"
 DEFAULT_BTN_YES="tr-tui-yes"
 DEFAULT_BTN_NO="tr-tui-no"
 
-# Common UI Template Functions
-
-build_breadcrumb() {
-    local result=""
-    local first=1
-    
-    for level in "$@"; do
-        [ -z "$level" ] && continue
-        if [ $first -eq 1 ]; then
-            result="$level"
-            first=0
-        else
-            result="${result}${BREADCRUMB_SEP}${level}"
-        fi
-    done
-    
-    echo "$result"
-}
-
-
 # UI Mode Selection
 
 select_ui_mode() {
