@@ -965,7 +965,8 @@ review_and_apply() {
     while true; do
         menu_items=""
         for i in $review_items; do
-            menu_items="$menu_items $i \"$(get_review_item_label $i)\""
+            menu_items="$menu_items $i \"$(get_review_item_label "$i")\""
+
         done
         
         choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"\" \"\" $menu_items")
@@ -974,14 +975,14 @@ review_and_apply() {
             return 0
         fi
         
-        action=$(get_review_item_action $choice)
+        action=$(get_review_item_action "$choice")
         
         case "$action" in
             device_info)
                 device_info_titled "$breadcrumb"
                 ;;
             textbox)
-                file=$(get_review_item_file $choice)
+                file=$(get_review_item_file "$choice")
                 [ -f "$file" ] && show_textbox "$breadcrumb" "$file"
                 ;;
             view_selected_custom_packages|view_customfeeds)
