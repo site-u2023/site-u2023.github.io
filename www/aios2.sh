@@ -5,7 +5,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1121.1244"
+VERSION="R7.1121.1214"
 BASE_TMP_DIR="/tmp"
 CONFIG_DIR="$BASE_TMP_DIR/aios2"
 BOOTSTRAP_URL="https://site-u.pages.dev/www"
@@ -1067,6 +1067,11 @@ aios2_main() {
         echo "Review menu may not be available."
     fi
 
+    echo "Fetching customfeeds.json"
+    if ! download_customfeeds_json; then
+        echo "Warning: Failed to download customfeeds.json"
+    fi
+    
     load_default_packages
 
     echo "connection_type='auto'" >> "$SETUP_VARS"
