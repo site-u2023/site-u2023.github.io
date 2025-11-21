@@ -1194,8 +1194,10 @@ aios2_main() {
 
     echo "Fetching UI modules"
     select_ui_mode
-
     echo ""
+
+    . "$CONFIG_DIR/aios2-${UI_MODE}.sh"
+    aios2_${UI_MODE}_main
 }
 
 aios2_main
