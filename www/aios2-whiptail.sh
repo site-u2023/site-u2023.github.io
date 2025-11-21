@@ -10,6 +10,23 @@ NEWT_COLORS='
 title=black,lightgray
 '
 
+build_breadcrumb() {
+    local result=""
+    local first=1
+    
+    for level in "$@"; do
+        [ -z "$level" ] && continue
+        if [ $first -eq 1 ]; then
+            result="$level"
+            first=0
+        else
+            result="${result}${BREADCRUMB_SEP}${level}"
+        fi
+    done
+    
+    echo "$result"
+}
+
 show_menu() {
     local breadcrumb="$1"
     local prompt="$2"
