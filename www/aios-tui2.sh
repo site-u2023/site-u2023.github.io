@@ -1149,7 +1149,8 @@ aios_tui_main() {
     for cat_id in $(get_setup_categories); do
         auto_add_conditional_packages "$cat_id"
     done
-    
+
+    echo "Fetching UI modules"
     select_ui_mode
     
     # Load and execute UI module
