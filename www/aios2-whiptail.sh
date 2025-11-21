@@ -3,7 +3,7 @@
 # OpenWrt Device Setup Tool - whiptail TUI Module
 # This file contains whiptail-specific UI functions
 
-VERSION="R7.1122.0101"
+VERSION="R7.1122.0115"
 
 UI_WIDTH="78"
 UI_HEIGHT="0"
@@ -355,23 +355,26 @@ process_items() {
         section)
             echo "[DEBUG] Processing section: $item_id" >> "$CONFIG_DIR/debug.log"
             
-            nested=$(get_section_nested_items "$item_id")
-            for child_id in $nested; do
-                local ret
-                process_items "$cat_id" "$child_id" "$item_breadcrumb" "section"
+            else
+                process_items "$cat_id" "$item_id" "$radio_breadcrumb"
                 ret=$?
+                
                 case $ret in
                     $RETURN_STAY)
                         continue
                         ;;
                     $RETURN_BACK)
-                        continue
+                        if [ "$found_radio" -eq 1 ]; then
+                            break
+                        else
+                            return $RETURN_BACK
+                        fi
                         ;;
                     $RETURN_MAIN)
                         return $RETURN_MAIN
                         ;;
                 esac
-            done
+            fi
             return $RETURN_STAY
             ;;
             
