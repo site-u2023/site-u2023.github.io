@@ -5,7 +5,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1121.0943"
+VERSION="R7.1121.0957"
 BASE_TMP_DIR="/tmp"
 CONFIG_DIR="$BASE_TMP_DIR/aiost"
 BOOTSTRAP_URL="https://site-u.pages.dev/www"
