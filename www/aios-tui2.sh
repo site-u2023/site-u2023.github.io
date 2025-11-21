@@ -5,7 +5,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1121.1058"
+VERSION="R7.1121.1112"
 BASE_TMP_DIR="/tmp"
 CONFIG_DIR="$BASE_TMP_DIR/aiost"
 BOOTSTRAP_URL="https://site-u.pages.dev/www"
@@ -733,7 +733,8 @@ get_customfeed_template_url() {
 # Connection Type and Conditional Logic
 
 get_effective_connection_type() {
-    local conn_type=$(grep "^connection_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+    local conn_type
+    conn_type=$(grep "^connection_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
     
     if [ "$conn_type" = "auto" ]; then
         if [ "$DETECTED_CONN_TYPE" = "mape" ] && [ -n "$MAPE_BR" ]; then
@@ -754,8 +755,9 @@ get_effective_connection_type() {
 
 should_show_item() {
     local item_id="$1"
+    local show_when var_name expected current_val
     
-    local show_when=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].showWhen" 2>/dev/null | head -1)
+    show_when=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].showWhen" 2>/dev/null | head -1)
     
     if [ -z "$show_when" ]; then
         show_when=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].showWhen" 2>/dev/null | head -1)
@@ -765,8 +767,8 @@ should_show_item() {
     
     echo "[DEBUG] showWhen for $item_id: $show_when" >> "$CONFIG_DIR/debug.log"
     
-    local var_name=$(echo "$show_when" | sed 's/^{ *"\([^"]*\)".*/\1/')
-    local expected=$(jsonfilter -e "@.${var_name}[*]" 2>/dev/null <<EOF
+    var_name=$(echo "$show_when" | sed 's/^{ *"\([^"]*\)".*/\1/')
+    expected=$(jsonfilter -e "@.${var_name}[*]" 2>/dev/null <<EOF
 $show_when
 EOF
 )
@@ -778,69 +780,69 @@ EOF
 )
     fi
     
-    local current_val=$(grep "^${var_name}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+    current_val=$(grep "^${var_name}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
     
     echo "[DEBUG] var_name=$var_name, current=$current_val, expected=$expected" >> "$CONFIG_DIR/debug.log"
     
     if [ -z "$(echo "$expected" | tr -d '\n')" ]; then
-        echo "[DEBUG] No expected value, returning 0 show" >> "$CONFIG_DIR/debug.log"
+        echo "[DEBUG] No expected value, returning 0 (show)" >> "$CONFIG_DIR/debug.log"
         return 0
     fi
     
     if [ "$(echo "$expected" | wc -l)" -eq 1 ] && [ -n "$expected" ]; then
-        echo "[DEBUG] expected single: $expected" >> "$CONFIG_DIR/debug.log"
+        echo "[DEBUG] expected (single): $expected" >> "$CONFIG_DIR/debug.log"
         if [ "$expected" = "$current_val" ]; then
-            echo "[DEBUG] Match! returning 0 show" >> "$CONFIG_DIR/debug.log"
+            echo "[DEBUG] Match! returning 0 (show)" >> "$CONFIG_DIR/debug.log"
             return 0
         else
-            echo "[DEBUG] No match, returning 1 hide" >> "$CONFIG_DIR/debug.log"
+            echo "[DEBUG] No match, returning 1 (hide)" >> "$CONFIG_DIR/debug.log"
             return 1
         fi
     fi
     
-    echo "[DEBUG] expected array: $expected" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG] expected (array): $expected" >> "$CONFIG_DIR/debug.log"
     if echo "$expected" | grep -qx "$current_val"; then
-        echo "[DEBUG] Match in array! returning 0 show" >> "$CONFIG_DIR/debug.log"
+        echo "[DEBUG] Match in array! returning 0 (show)" >> "$CONFIG_DIR/debug.log"
         return 0
     else
-        echo "[DEBUG] No match in array, returning 1 hide" >> "$CONFIG_DIR/debug.log"
+        echo "[DEBUG] No match in array, returning 1 (hide)" >> "$CONFIG_DIR/debug.log"
         return 1
     fi
 }
 
 auto_add_conditional_packages() {
     local cat_id="$1"
+    local effective_conn_type pkg_count idx pkg_id when_json when_var current_val expected should_add
     
     echo "[DEBUG] === auto_add_conditional_packages called ===" >> "$CONFIG_DIR/debug.log"
     echo "[DEBUG] cat_id=$cat_id" >> "$CONFIG_DIR/debug.log"
     
-    local effective_conn_type=$(get_effective_connection_type)
+    effective_conn_type=$(get_effective_connection_type)
     echo "[DEBUG] Effective connection type: $effective_conn_type" >> "$CONFIG_DIR/debug.log"
     
-    local pkg_count=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$cat_id'].packages[*]" 2>/dev/null | wc -l)
+    pkg_count=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$cat_id'].packages[*]" 2>/dev/null | wc -l)
     
     echo "[DEBUG] pkg_count=$pkg_count" >> "$CONFIG_DIR/debug.log"
     
-    [ "$pkg_count" -eq 0 ] && {
+    if [ "$pkg_count" -eq 0 ]; then
         echo "[DEBUG] No packages in category, returning" >> "$CONFIG_DIR/debug.log"
         return 0
-    }
+    fi
     
-    local idx=0
-    while [ $idx -lt $pkg_count ]; do
+    idx=0
+    while [ "$idx" -lt "$pkg_count" ]; do
         echo "[DEBUG] Processing package index $idx" >> "$CONFIG_DIR/debug.log"
         
-        local pkg_id=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$cat_id'].packages[$idx].id" 2>/dev/null)
+        pkg_id=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$cat_id'].packages[$idx].id" 2>/dev/null)
         echo "[DEBUG] pkg_id=$pkg_id" >> "$CONFIG_DIR/debug.log"
         
-        local when_json=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$cat_id'].packages[$idx].when" 2>/dev/null | head -1)
+        when_json=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$cat_id'].packages[$idx].when" 2>/dev/null | head -1)
         echo "[DEBUG] when_json=$when_json" >> "$CONFIG_DIR/debug.log"
         
         if [ -n "$when_json" ]; then
-            local when_var=$(echo "$when_json" | sed 's/^{ *"\([^"]*\)".*/\1/')
+            when_var=$(echo "$when_json" | sed 's/^{ *"\([^"]*\)".*/\1/')
             echo "[DEBUG] when_var=$when_var" >> "$CONFIG_DIR/debug.log"
             
-            local current_val
             if [ "$when_var" = "connection_type" ]; then
                 current_val="$effective_conn_type"
                 echo "[DEBUG] Using effective connection type: $current_val" >> "$CONFIG_DIR/debug.log"
@@ -849,7 +851,7 @@ auto_add_conditional_packages() {
                 echo "[DEBUG] current_val from SETUP_VARS: $current_val" >> "$CONFIG_DIR/debug.log"
             fi
             
-            local expected=$(jsonfilter -e "@.${when_var}[*]" 2>/dev/null <<EOF
+            expected=$(jsonfilter -e "@.${when_var}[*]" 2>/dev/null <<EOF
 $when_json
 EOF
 )
@@ -863,7 +865,7 @@ EOF
             
             echo "[DEBUG] expected=$expected" >> "$CONFIG_DIR/debug.log"
             
-            local should_add=0
+            should_add=0
             if echo "$expected" | grep -qx "$current_val"; then
                 should_add=1
                 echo "[DEBUG] Match found in array!" >> "$CONFIG_DIR/debug.log"
@@ -872,15 +874,15 @@ EOF
                 echo "[DEBUG] Match found as single value!" >> "$CONFIG_DIR/debug.log"
             fi
             
-            if [ $should_add -eq 1 ]; then
+            if [ "$should_add" -eq 1 ]; then
                 if ! is_package_selected "$pkg_id"; then
                     echo "$pkg_id" >> "$SELECTED_PACKAGES"
-                    echo "[AUTO] Added package: $pkg_id condition: ${when_var}=${current_val}" >> "$CONFIG_DIR/debug.log"
+                    echo "[AUTO] Added package: $pkg_id (condition: ${when_var}=${current_val})" >> "$CONFIG_DIR/debug.log"
                 fi
             else
                 if is_package_selected "$pkg_id"; then
-                    sed -i "/^${pkg_id}\$/d" "$SELECTED_PACKAGES"
-                    echo "[AUTO] Removed package: $pkg_id condition not met: ${when_var}=${current_val}" >> "$CONFIG_DIR/debug.log"
+                    sed -i "/^${pkg_id}$/d" "$SELECTED_PACKAGES"
+                    echo "[AUTO] Removed package: $pkg_id (condition not met: ${when_var}=${current_val})" >> "$CONFIG_DIR/debug.log"
                 fi
             fi
         fi
@@ -895,10 +897,11 @@ get_section_nested_items() {
     local item_id="$1"
     local cat_idx=0
     local item_idx=0
+    local cat_id items idx itm
     
     for cat_id in $(get_setup_categories); do
-        local items=$(get_setup_category_items "$cat_id")
-        local idx=0
+        items=$(get_setup_category_items "$cat_id")
+        idx=0
         for itm in $items; do
             if [ "$itm" = "$item_id" ]; then
                 item_idx=$idx
@@ -915,10 +918,11 @@ get_section_nested_items() {
 compute_dslite_aftr() {
     local aftr_type="$1"
     local area="$2"
+    local computed
     
     [ -z "$aftr_type" ] || [ -z "$area" ] && return 1
     
-    local computed=$(jsonfilter -i "$SETUP_JSON" -e "@.constants.aftr_map.${aftr_type}.${area}" 2>/dev/null)
+    computed=$(jsonfilter -i "$SETUP_JSON" -e "@.constants.aftr_map.${aftr_type}.${area}" 2>/dev/null)
     
     if [ -n "$computed" ]; then
         echo "$computed"
@@ -932,6 +936,7 @@ compute_dslite_aftr() {
 
 generate_files() {
     local cache_buster="?t=$(date +%s)"
+    local pkgs selected_pkgs cat_id template_url api_url download_url temp_pkg_file pkg_id pattern
     
     {
         wget -q -O - "${POSTINST_TEMPLATE_URL}${cache_buster}" | sed -n '1,/^# BEGIN_VARIABLE_DEFINITIONS/p'
@@ -961,28 +966,30 @@ generate_files() {
     chmod +x "$CONFIG_DIR/setup.sh"
     
     if [ -f "$CUSTOMFEEDS_JSON" ]; then
-        get_customfeed_categories | while read cat_id; do
-            local template_url=$(get_customfeed_template_url "$cat_id")
+        while read -r cat_id; do
+            template_url=$(get_customfeed_template_url "$cat_id")
             
             if [ -z "$template_url" ]; then
                 echo "[WARN] No template URL found for: $cat_id" >> "$CONFIG_DIR/debug.log"
                 continue
             fi
             
-            local api_url=$(get_customfeed_api_base "$cat_id")
-            local download_url=$(get_customfeed_download_base "$cat_id")
+            api_url=$(get_customfeed_api_base "$cat_id")
+            download_url=$(get_customfeed_download_base "$cat_id")
             
-            local temp_pkg_file="$CONFIG_DIR/temp_${cat_id}.txt"
+            temp_pkg_file="$CONFIG_DIR/temp_${cat_id}.txt"
             : > "$temp_pkg_file"
             
-            get_category_packages "$cat_id" | while read pkg_id; do
-                if grep -q "^${pkg_id}\$" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
-                    local pattern=$(get_customfeed_package_pattern "$pkg_id")
+            while read -r pkg_id; do
+                if grep -q "^${pkg_id}$" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
+                    pattern=$(get_customfeed_package_pattern "$pkg_id")
                     echo "$pattern"
                 fi
-            done > "$temp_pkg_file"
+            done <<EOF2 > "$temp_pkg_file"
+$(get_category_packages "$cat_id")
+EOF2
             
-            local selected_pkgs=""
+            selected_pkgs=""
             if [ -s "$temp_pkg_file" ]; then
                 selected_pkgs=$(cat "$temp_pkg_file" | tr '\n' ' ' | sed 's/ $//')
             fi
@@ -1000,7 +1007,9 @@ generate_files() {
             
             chmod +x "$CONFIG_DIR/customfeeds-${cat_id}.sh"
             rm -f "$temp_pkg_file"
-        done
+        done <<EOF3
+$(get_customfeed_categories)
+EOF3
     else
         {
             echo "#!/bin/sh"
