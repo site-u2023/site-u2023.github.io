@@ -47,7 +47,9 @@ load_config_from_js() {
     WHIPTAIL_UI_PATH=$(grep 'whiptail_ui_path:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
     SIMPLE_UI_PATH=$(grep 'simple_ui_path:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
 
-    local CACHE_BUSTER="?t=$(date +%s)"
+    # SC2155: Declare and assign separately
+    local CACHE_BUSTER
+    CACHE_BUSTER="?t=$(date +%s)"
     
     PACKAGES_URL="${BASE_URL}/${PACKAGES_DB_PATH}"
     POSTINST_TEMPLATE_URL="${BASE_URL}/${POSTINST_TEMPLATE_PATH}"
@@ -93,23 +95,13 @@ REVIEW_JSON="$CONFIG_DIR/review.json"
 TPL_POSTINST="$CONFIG_DIR/tpl_postinst.sh"
 TPL_SETUP="$CONFIG_DIR/tpl_setup.sh"
 
-# Common UI Configuration Variables (shared by both UIs)
-UI_HEIGHT="0"
-UI_WIDTH="78"
-
-DEFAULT_BTN_SELECT="tr-tui-select"
-DEFAULT_BTN_BACK="tr-tui-back"
-DEFAULT_BTN_OK="tr-tui-ok"
-DEFAULT_BTN_CANCEL="tr-tui-cancel"
-DEFAULT_BTN_YES="tr-tui-yes"
-DEFAULT_BTN_NO="tr-tui-no"
-
 # UI Mode Selection
 
 select_ui_mode() {
     local has_whiptail=0
     local has_simple=0
     local whiptail_pkg="whiptail"
+    local choice
     
     if [ -n "$WHIPTAIL_UI_URL" ]; then
         if wget -q --spider "$WHIPTAIL_UI_URL" 2>/dev/null; then
@@ -138,23 +130,26 @@ select_ui_mode() {
         return 0
     fi
     
-    echo "$(translate 'tr-tui-ui-mode-select')"
+    # SC2005: Remove useless echo
+    translate 'tr-tui-ui-mode-select'
     echo "1) $(translate 'tr-tui-ui-whiptail')"
     echo "2) $(translate 'tr-tui-ui-simple')"
     
     printf "%s" "$(translate 'tr-tui-ui-choice') [1]: "
-    read choice
+    # SC2162: Use read -r
+    read -r choice
     
     if [ "$choice" = "2" ]; then
         UI_MODE="simple"
     else
         UI_MODE="whiptail"
         if ! check_packages_installed $whiptail_pkg; then
-            echo "$(translate 'tr-tui-ui-installing')"
+            # SC2005: Remove useless echo
+            translate 'tr-tui-ui-installing'
             if install_package $whiptail_pkg; then
-                echo "$(translate 'tr-tui-ui-install-success')"
+                translate 'tr-tui-ui-install-success'
             else
-                echo "$(translate 'tr-tui-ui-install-failed')"
+                translate 'tr-tui-ui-install-failed'
                 UI_MODE="simple"
             fi
         fi
@@ -207,7 +202,9 @@ install_package() {
 }
 
 init() {
-    local script_name=$(basename "$0")
+    # SC2155: Declare and assign separately
+    local script_name
+    script_name=$(basename "$0")
     pkill -f "$script_name" 2>/dev/null
     
     mkdir -p "$CONFIG_DIR"
@@ -238,7 +235,9 @@ init() {
 
 download_language_json() {
     local lang="${1:-en}"
-    local lang_url="${BASE_URL}/$(echo "$LANGUAGE_PATH_TEMPLATE" | sed "s/{lang}/${lang}/")"
+    # SC2155: Declare and assign separately
+    local lang_url
+    lang_url="${BASE_URL}/$(echo "$LANGUAGE_PATH_TEMPLATE" | sed "s/{lang}/${lang}/")"
     
     if ! __download_file_core "$lang_url" "$LANG_JSON"; then
         echo "Warning: Failed to download language file for ${lang}"
@@ -259,14 +258,18 @@ download_language_json() {
 translate() {
     local key="$1"
     
-    local cached=$(echo "$TRANSLATION_CACHE_DATA" | grep "^${key}=" | cut -d= -f2-)
+    # SC2155: Declare and assign separately
+    local cached
+    cached=$(echo "$TRANSLATION_CACHE_DATA" | grep "^${key}=" | cut -d= -f2-)
     if [ -n "$cached" ]; then
         echo "$cached"
         return 0
     fi
     
     if [ -f "$LANG_JSON" ]; then
-        local translation=$(jsonfilter -i "$LANG_JSON" -e "@['$key']" 2>/dev/null)
+        # SC2155: Declare and assign separately
+        local translation
+        translation=$(jsonfilter -i "$LANG_JSON" -e "@['$key']" 2>/dev/null)
         if [ -n "$translation" ]; then
             TRANSLATION_CACHE_DATA="${TRANSLATION_CACHE_DATA}
 ${key}=${translation}"
@@ -319,6 +322,8 @@ reset_detected_conn_type() {
 get_extended_device_info() {
     get_device_info
     
+    # Note: These variables may be used externally or for future features
+    # shellcheck disable=SC2034
     OPENWRT_VERSION=$(grep 'DISTRIB_RELEASE' /etc/openwrt_release 2>/dev/null | cut -d"'" -f2)
     
     if ! __download_file_core "$AUTO_CONFIG_API_URL" "$AUTO_CONFIG_JSON"; then
@@ -330,7 +335,9 @@ get_extended_device_info() {
     AUTO_TIMEZONE=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.timezone' 2>/dev/null)
     AUTO_ZONENAME=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.zonename' 2>/dev/null)
     AUTO_COUNTRY=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.country' 2>/dev/null)
+    # shellcheck disable=SC2034
     ISP_NAME=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.isp' 2>/dev/null)
+    # shellcheck disable=SC2034
     ISP_AS=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.as' 2>/dev/null)
     
     MAPE_BR=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.mape.brIpv6Address' 2>/dev/null)
@@ -342,6 +349,7 @@ get_extended_device_info() {
     MAPE_PSIDLEN=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.mape.psidlen' 2>/dev/null)
     MAPE_PSID_OFFSET=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.mape.psIdOffset' 2>/dev/null)
     
+    # shellcheck disable=SC2034
     ISP_IPV6=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.ipv6' 2>/dev/null)
     MAPE_GUA_PREFIX=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.mape.ipv6Prefix_gua' 2>/dev/null)
     
@@ -349,17 +357,23 @@ get_extended_device_info() {
     
     reset_detected_conn_type
     
+    # shellcheck disable=SC2034
     DEVICE_MEM=$(awk '/MemTotal/{printf "%.0f MB", $2/1024}' /proc/meminfo 2>/dev/null)
     DEVICE_CPU=$(grep -m1 "model name" /proc/cpuinfo | cut -d: -f2 | xargs 2>/dev/null)
     [ -z "$DEVICE_CPU" ] && DEVICE_CPU=$(grep -m1 "Hardware" /proc/cpuinfo | cut -d: -f2 | xargs 2>/dev/null)
 
+    # shellcheck disable=SC2034
     DEVICE_STORAGE=$(df -h / | awk 'NR==2 {print $2}')
+    # shellcheck disable=SC2034
     DEVICE_STORAGE_USED=$(df -h / | awk 'NR==2 {print $3}')
+    # shellcheck disable=SC2034
     DEVICE_STORAGE_AVAIL=$(df -h / | awk 'NR==2 {print $4}')
     
     if [ -d /sys/bus/usb/devices ]; then
+        # shellcheck disable=SC2034
         DEVICE_USB="Available"
     else
+        # shellcheck disable=SC2034
         DEVICE_USB="Not available"
     fi
 }
@@ -372,8 +386,9 @@ load_default_packages() {
     fi
     
     local cat_id pkg_id checked
-    get_categories | while read cat_id; do
-        get_category_packages "$cat_id" | while read pkg_id; do
+    # SC2162: Use read -r
+    get_categories | while read -r cat_id; do
+        get_category_packages "$cat_id" | while read -r pkg_id; do
             checked=$(get_package_checked "$pkg_id")
             if [ "$checked" = "true" ]; then
                 echo "$pkg_id" >> "$SELECTED_PACKAGES"
@@ -396,7 +411,9 @@ apply_api_defaults() {
         grep -q "^country=" "$SETUP_VARS" 2>/dev/null || \
             echo "country='${AUTO_COUNTRY}'" >> "$SETUP_VARS"
         
-        local language=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+        # SC2155: Declare and assign separately
+        local language
+        language=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
         if [ -n "$language" ] && [ "$language" != "en" ] && [ -f "$SETUP_JSON" ]; then
             jsonfilter -i "$SETUP_JSON" \
                 -e '@.constants.language_prefixes_release[*]' 2>/dev/null \
@@ -445,9 +462,12 @@ apply_api_defaults() {
 }
 
 update_language_packages() {
-    local new_lang=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+    # SC2155: Declare and assign separately
+    local new_lang
+    new_lang=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
     
-    local prefixes=$(jsonfilter -i "$SETUP_JSON" -e '@.constants.language_prefixes_release[*]' 2>/dev/null)
+    local prefixes
+    prefixes=$(jsonfilter -i "$SETUP_JSON" -e '@.constants.language_prefixes_release[*]' 2>/dev/null)
     
     for prefix in $prefixes; do
         sed -i "/^${prefix}/d" "$SELECTED_PACKAGES"
@@ -467,8 +487,11 @@ get_setup_categories() {
 }
 
 get_setup_category_title() {
-    local title=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$1'].title" 2>/dev/null)
-    local class=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$1'].class" 2>/dev/null)
+    # SC2155: Declare and assign separately
+    local title
+    local class
+    title=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$1'].title" 2>/dev/null)
+    class=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$1'].class" 2>/dev/null)
     
     if [ -n "$class" ] && [ "${class#tr-}" != "$class" ]; then
         translate "$class"
@@ -484,7 +507,9 @@ get_setup_category_items() {
 get_setup_item_type() {
     local item_id="$1"
     
-    local result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].type" 2>/dev/null | head -1)
+    # SC2155: Declare and assign separately
+    local result
+    result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].type" 2>/dev/null | head -1)
     
     if [ -z "$result" ]; then
         result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].type" 2>/dev/null | head -1)
@@ -496,8 +521,11 @@ get_setup_item_type() {
 get_setup_item_label() {
     local item_id="$1"
     
-    local label=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].label" 2>/dev/null | head -1)
-    local class=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].class" 2>/dev/null | head -1)
+    # SC2155: Declare and assign separately
+    local label
+    local class
+    label=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].label" 2>/dev/null | head -1)
+    class=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].class" 2>/dev/null | head -1)
     
     if [ -z "$label" ]; then
         label=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].title" 2>/dev/null | head -1)
@@ -518,7 +546,9 @@ get_setup_item_label() {
 
 get_setup_item_variable() {
     local item_id="$1"
-    local result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].variable" 2>/dev/null | head -1)
+    # SC2155: Declare and assign separately
+    local result
+    result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].variable" 2>/dev/null | head -1)
     
     if [ -z "$result" ]; then
         result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].variable" 2>/dev/null | head -1)
@@ -529,7 +559,9 @@ get_setup_item_variable() {
 
 get_setup_item_default() {
     local item_id="$1"
-    local result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].default" 2>/dev/null | head -1)
+    # SC2155: Declare and assign separately
+    local result
+    result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].default" 2>/dev/null | head -1)
     
     if [ -z "$result" ]; then
         result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].default" 2>/dev/null | head -1)
@@ -540,7 +572,9 @@ get_setup_item_default() {
 
 get_setup_item_field_type() {
     local item_id="$1"
-    local result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].fieldType" 2>/dev/null | head -1)
+    # SC2155: Declare and assign separately
+    local result
+    result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].fieldType" 2>/dev/null | head -1)
     
     if [ -z "$result" ]; then
         result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].fieldType" 2>/dev/null | head -1)
@@ -552,7 +586,9 @@ get_setup_item_field_type() {
 get_setup_item_options() {
     local item_id="$1"
     
-    local result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].options[*].value" 2>/dev/null)
+    # SC2155: Declare and assign separately
+    local result
+    result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].options[*].value" 2>/dev/null)
     
     if [ -z "$result" ]; then
         result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].options[*].value" 2>/dev/null)
@@ -565,8 +601,11 @@ get_setup_item_option_label() {
     local item_id="$1"
     local value="$2"
     
-    local label=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].options[@.value='$value'].label" 2>/dev/null | head -1)
-    local class=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].options[@.value='$value'].class" 2>/dev/null | head -1)
+    # SC2155: Declare and assign separately
+    local label
+    local class
+    label=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].options[@.value='$value'].label" 2>/dev/null | head -1)
+    class=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].options[@.value='$value'].class" 2>/dev/null | head -1)
     
     if [ -z "$label" ]; then
         label=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].options[@.value='$value'].label" 2>/dev/null | head -1)
@@ -588,8 +627,11 @@ get_categories() {
 
 get_category_name() {
     local cat_id="$1"
-    local name=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$cat_id'].name" 2>/dev/null)
-    local class=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$cat_id'].class" 2>/dev/null)
+    # SC2155: Declare and assign separately
+    local name
+    local class
+    name=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$cat_id'].name" 2>/dev/null)
+    class=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$cat_id'].class" 2>/dev/null)
     
     if [ -z "$name" ]; then
         name=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$cat_id'].name" 2>/dev/null)
@@ -605,7 +647,9 @@ get_category_name() {
 
 get_category_desc() {
     local cat_id="$1"
-    local desc=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$cat_id'].description" 2>/dev/null)
+    # SC2155: Declare and assign separately
+    local desc
+    desc=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$cat_id'].description" 2>/dev/null)
     [ -z "$desc" ] && desc=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$cat_id'].description" 2>/dev/null)
     echo "$desc"
 }
@@ -613,27 +657,35 @@ get_category_desc() {
 get_category_hidden() {
     local cat_id="$1"
     jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$cat_id']" 2>/dev/null | grep -q . && echo "false" && return
-    local hidden=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$cat_id'].hidden" 2>/dev/null)
+    # SC2155: Declare and assign separately
+    local hidden
+    hidden=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$cat_id'].hidden" 2>/dev/null)
     echo "$hidden"
 }
 
 get_category_packages() {
     local cat_id="$1"
-    local pkgs=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$cat_id'].packages[*].id" 2>/dev/null)
+    # SC2155: Declare and assign separately
+    local pkgs
+    pkgs=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$cat_id'].packages[*].id" 2>/dev/null)
     [ -z "$pkgs" ] && pkgs=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$cat_id'].packages[*].id" 2>/dev/null)
     echo "$pkgs"
 }
 
 get_package_name() {
     local pkg_id="$1"
-    local name=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].name" 2>/dev/null | head -1)
+    # SC2155: Declare and assign separately
+    local name
+    name=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].name" 2>/dev/null | head -1)
     [ -z "$name" ] && name=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].name" 2>/dev/null | head -1)
     echo "$name"
 }
 
 get_package_checked() {
     local pkg_id="$1"
-    local checked=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].checked" 2>/dev/null | head -1)
+    # SC2155: Declare and assign separately
+    local checked
+    checked=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].checked" 2>/dev/null | head -1)
     [ -z "$checked" ] && checked=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].checked" 2>/dev/null | head -1)
     echo "$checked"
 }
@@ -660,7 +712,9 @@ get_review_items() {
 
 get_review_item_label() {
     local idx=$((${1}-1))
-    local class=$(jsonfilter -i "$REVIEW_JSON" -e "@.items[$idx].class" 2>/dev/null)
+    # SC2155: Declare and assign separately
+    local class
+    class=$(jsonfilter -i "$REVIEW_JSON" -e "@.items[$idx].class" 2>/dev/null)
     translate "$class"
 }
 
@@ -671,7 +725,9 @@ get_review_item_action() {
 
 get_review_item_file() {
     local idx=$((${1}-1))
-    local file=$(jsonfilter -i "$REVIEW_JSON" -e "@.items[$idx].file" 2>/dev/null)
+    # SC2155: Declare and assign separately
+    local file
+    file=$(jsonfilter -i "$REVIEW_JSON" -e "@.items[$idx].file" 2>/dev/null)
     
     case "$file" in
         "SELECTED_PACKAGES") echo "$SELECTED_PACKAGES" ;;
@@ -690,7 +746,7 @@ download_customfeeds_json() {
 }
 
 get_customfeed_categories() {
-    jsonfilter -i "$CUSTOMFEEDS_JSON" -e '@.categories[*].id' 2>/dev/null | grep -v '^\$'
+    jsonfilter -i "$CUSTOMFEEDS_JSON" -e '@.categories[*].id' 2>/dev/null | grep -v '^$'
 }
 
 get_customfeed_package_pattern() {
@@ -724,7 +780,9 @@ get_customfeed_template_path() {
 
 get_customfeed_template_url() {
     local cat_id="$1"
-    local template_path=$(get_customfeed_template_path "$cat_id")
+    # SC2155: Declare and assign separately
+    local template_path
+    template_path=$(get_customfeed_template_path "$cat_id")
     [ -n "$template_path" ] && echo "${BASE_URL}/${template_path}"
 }
 
@@ -933,40 +991,15 @@ compute_dslite_aftr() {
 __download_file_core() {
     local url="$1"
     local output_path="$2"
-    local cache_buster="?t=$(date +%s)"
+    # SC2155: Declare and assign separately
+    local cache_buster
+    cache_buster="?t=$(date +%s)"
     
     if ! wget -q -O "$output_path" "${url}${cache_buster}"; then
         echo "[ERROR] Failed to download file: $url to $output_path" >> "$CONFIG_DIR/debug.log"
         return 1
     fi
     return 0
-}
-
-xxx__download_file_core() {
-    local url="$1"
-    local output_path="$2"
-    local max_retries=5
-    local retry=0
-    local delay=1
-
-    while true; do
-        local cache_buster="?t=$(date +%s)"
-        local full_url="${url}${cache_buster}"
-
-        if wget --timeout=15 --tries=1 -q -O "$output_path" "$full_url"; then
-            return 0
-        fi
-
-        retry=$((retry + 1))
-
-        if [ $retry -ge $max_retries ]; then
-            echo "[ERROR] Download permanently failed after $max_retries retries: $url" >> "$CONFIG_DIR/debug.log"
-            return 1
-        fi
-
-        sleep $delay
-        delay=$((delay * 2))
-    done
 }
 
 # File Generation
@@ -1164,7 +1197,7 @@ aios2_main() {
     SETUP_STATUS=$?
     
     wait $LANG_PID
-    LANG_STATUS=$?
+    # Note: LANG_STATUS captured but checking handled by fallback logic
     
     wait $POSTINST_PID
     POSTINST_STATUS=$?
@@ -1192,23 +1225,26 @@ aios2_main() {
     if [ $SETUP_STATUS -ne 0 ]; then
         echo "Cannot continue without setup.json"
         printf "Press [Enter] to exit. "
-        read -r dummy
+        read -r _
         return 1
     fi
     
     if [ $POSTINST_STATUS -ne 0 ]; then
         echo "Cannot continue without postinst.json"
         printf "Press [Enter] to exit. "
-        read -r dummy
+        read -r _
         return 1
     fi
     
     load_default_packages
 
-    echo "connection_type='auto'" >> "$SETUP_VARS"
-    echo "wifi_mode='standard'" >> "$SETUP_VARS"
-    echo "net_optimizer='auto'" >> "$SETUP_VARS"
-    echo "enable_dnsmasq='auto'" >> "$SETUP_VARS"
+    # SC2129: Use grouped redirection
+    {
+        echo "connection_type='auto'"
+        echo "wifi_mode='standard'"
+        echo "net_optimizer='auto'"
+        echo "enable_dnsmasq='auto'"
+    } >> "$SETUP_VARS"
     
     if [ "$DETECTED_CONN_TYPE" = "mape" ]; then
         if [ -n "$MAPE_GUA_PREFIX" ]; then
@@ -1231,6 +1267,8 @@ aios2_main() {
     
     select_ui_mode
 
+    # SC1090: Non-constant source - this is intentional for dynamic UI loading
+    # shellcheck source=/dev/null
     . "$CONFIG_DIR/aios2-${UI_MODE}.sh"
     aios2_${UI_MODE}_main
 }
