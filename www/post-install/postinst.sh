@@ -1,4 +1,5 @@
 #!/bin/sh
+# shellcheck shell=sh
 # BEGIN_VARIABLE_DEFINITIONS
 # END_VARIABLE_DEFINITIONS
 
@@ -27,10 +28,10 @@ done
 if [ -n "$MISSING_PKGS" ]; then
     if [ "$PKG_MGR" = "opkg" ]; then
         opkg update
-        opkg install $MISSING_PKGS
+        opkg install "$MISSING_PKGS"
     elif [ "$PKG_MGR" = "apk" ]; then
         apk update
-        apk add $MISSING_PKGS
+        apk add "$MISSING_PKGS"
     fi
 fi
 
