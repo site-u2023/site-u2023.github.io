@@ -10,6 +10,8 @@ NEWT_COLORS='
 title=black,lightgray
 '
 
+BREADCRUMB_SEP=" > "
+
 build_breadcrumb() {
     local result=""
     local first=1
