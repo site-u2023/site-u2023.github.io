@@ -797,7 +797,7 @@ main_menu() {
     while true; do
         clear
         echo "========================================"
-        echo "  aios-tui Vr.$VERSION"
+        echo "  aios2 Vr.$VERSION"
         echo "========================================"
         echo ""
         echo "Device: $DEVICE_MODEL"
@@ -859,7 +859,7 @@ main_menu() {
 
 # Simple Main Entry Point
 
-aios_simple_main() {
+aios2_simple_main() {
     device_info
     main_menu
 }
