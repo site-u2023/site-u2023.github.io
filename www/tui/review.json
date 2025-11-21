@@ -1,154 +1,53 @@
 {
   "version": "1.0.0",
-  "description": "Review and Apply configuration menu structure",
-  
-  "menu": {
-    "id": "review-and-apply",
-    "title": "Review Configuration",
-    "class": "tr-tui-review-configuration",
-    "breadcrumb_base": ["tr-tui-main-menu", "tr-tui-review-configuration"],
-    
-    "items": [
-      {
-        "id": "view-device-info",
-        "type": "view",
-        "label": "View Device Information",
-        "class": "tr-tui-view-device-info",
-        "action": "device_info",
-        "display_type": "device_info"
-      },
-      {
-        "id": "view-package-list",
-        "type": "view",
-        "label": "View Package List",
-        "class": "tr-tui-view-package-list",
-        "action": "show_file",
-        "file": "$SELECTED_PACKAGES",
-        "empty_message": "tr-tui-no-packages"
-      },
-      {
-        "id": "view-custom-packages",
-        "type": "view",
-        "label": "View Custom Packages",
-        "class": "tr-tui-view-custom-packages",
-        "action": "view_selected_custom_packages",
-        "display_type": "custom_packages"
-      },
-      {
-        "id": "view-config-vars",
-        "type": "view",
-        "label": "View Configuration Variables",
-        "class": "tr-tui-view-config-vars",
-        "action": "show_file",
-        "file": "$SETUP_VARS",
-        "empty_message": "tr-tui-no-config-vars"
-      },
-      {
-        "id": "view-postinst",
-        "type": "view",
-        "label": "View Package Installation Script",
-        "class": "tr-tui-view-postinst",
-        "action": "show_file",
-        "file": "$CONFIG_DIR/postinst.sh",
-        "not_found_message": "tr-tui-postinst-not-found"
-      },
-      {
-        "id": "view-customfeeds",
-        "type": "view",
-        "label": "View Custom Feeds Scripts",
-        "class": "tr-tui-view-customfeeds",
-        "action": "view_customfeeds",
-        "display_type": "customfeeds"
-      },
-      {
-        "id": "view-setup",
-        "type": "view",
-        "label": "View Setup Script",
-        "class": "tr-tui-view-setup",
-        "action": "show_file",
-        "file": "$CONFIG_DIR/setup.sh",
-        "not_found_message": "tr-tui-setup-not-found"
-      },
-      {
-        "id": "apply-configuration",
-        "type": "action",
-        "label": "Apply Configuration",
-        "class": "tr-tui-apply",
-        "action": "apply_config",
-        "confirm": true,
-        "confirm_messages": [
-          "tr-tui-apply-confirm-step1",
-          "tr-tui-apply-confirm-step2",
-          "tr-tui-apply-confirm-step3",
-          "tr-tui-apply-confirm-step4"
-        ],
-        "confirm_question": "tr-tui-apply-confirm-question",
-        "steps": [
-          {
-            "type": "execute_script",
-            "script": "$CONFIG_DIR/postinst.sh",
-            "message": "tr-tui-installing-packages"
-          },
-          {
-            "type": "execute_pattern",
-            "pattern": "$CONFIG_DIR/customfeeds-*.sh",
-            "message": "tr-tui-installing-custom-packages"
-          },
-          {
-            "type": "execute_script",
-            "script": "$CONFIG_DIR/setup.sh",
-            "message": "tr-tui-applying-config"
-          }
-        ],
-        "success_message": "tr-tui-config-applied",
-        "reboot_prompt": {
-          "message": "tr-tui-reboot-question",
-          "action": "reboot"
-        }
-      }
-    ]
-  },
-  
-  "ui_config": {
-    "whiptail": {
-      "height": 0,
-      "width": 78,
-      "menu_height": 0,
-      "ok_button": "tr-tui-select",
-      "cancel_button": "tr-tui-back"
+  "items": [
+    {
+      "id": "1",
+      "class": "tr-tui-view-device-info",
+      "action": "device_info"
     },
-    "simple": {
-      "width": 78,
-      "separator": "========================================",
-      "prompt": "tr-tui-ui-choice",
-      "back_option": "b"
-    }
-  },
-  
-  "constants": {
-    "view_actions": {
-      "device_info": {
-        "function": "device_info_titled",
-        "format": "msgbox"
-      },
-      "show_file": {
-        "function": "show_textbox",
-        "format": "textbox"
-      },
-      "view_selected_custom_packages": {
-        "function": "view_selected_custom_packages",
-        "format": "custom"
-      },
-      "view_customfeeds": {
-        "function": "view_customfeeds",
-        "format": "custom"
-      }
+    {
+      "id": "2",
+      "class": "tr-tui-view-package-list",
+      "action": "textbox",
+      "file": "SELECTED_PACKAGES",
+      "empty_class": "tr-tui-no-packages"
     },
-    "file_variables": {
-      "$SELECTED_PACKAGES": "SELECTED_PACKAGES",
-      "$SELECTED_CUSTOM_PACKAGES": "SELECTED_CUSTOM_PACKAGES",
-      "$SETUP_VARS": "SETUP_VARS",
-      "$CONFIG_DIR": "CONFIG_DIR"
+    {
+      "id": "3",
+      "class": "tr-tui-view-custom-packages",
+      "action": "view_selected_custom_packages"
+    },
+    {
+      "id": "4",
+      "class": "tr-tui-view-config-vars",
+      "action": "textbox",
+      "file": "SETUP_VARS",
+      "empty_class": "tr-tui-no-config-vars"
+    },
+    {
+      "id": "5",
+      "class": "tr-tui-view-postinst",
+      "action": "textbox",
+      "file": "postinst.sh",
+      "notfound_class": "tr-tui-postinst-not-found"
+    },
+    {
+      "id": "6",
+      "class": "tr-tui-view-customfeeds",
+      "action": "view_customfeeds"
+    },
+    {
+      "id": "7",
+      "class": "tr-tui-view-setup",
+      "action": "textbox",
+      "file": "setup.sh",
+      "notfound_class": "tr-tui-setup-not-found"
+    },
+    {
+      "id": "8",
+      "class": "tr-tui-apply",
+      "action": "apply"
     }
-  }
+  ]
 }
