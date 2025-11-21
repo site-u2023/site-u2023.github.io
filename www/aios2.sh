@@ -27,7 +27,7 @@ TRANSLATION_CACHE_DATA=""
 
 print_banner_unicode() {
     printf "\n"
-    printf       "\033[37m                                          2⃣\033[0m\n"
+    printf       "\033[37m                                          ➋\033[0m\n"
     printf       "\033[35m               ██ █\033[0m\n"
     printf       "\033[34m     ████      ███       ████      █████\033[0m\n"
     printf       "\033[32m        ██      ██      ██  ██    ██\033[0m\n"
