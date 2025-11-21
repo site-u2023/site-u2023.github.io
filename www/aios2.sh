@@ -5,9 +5,9 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1121.1112"
+VERSION="R7.1121.1151"
 BASE_TMP_DIR="/tmp"
-CONFIG_DIR="$BASE_TMP_DIR/aiost"
+CONFIG_DIR="$BASE_TMP_DIR/aios2"
 BOOTSTRAP_URL="https://site-u.pages.dev/www"
 
 BASE_URL=""
@@ -135,13 +135,13 @@ select_ui_mode() {
     
     if [ -n "$WHIPTAIL_UI_URL" ]; then
         if wget -q --spider "$WHIPTAIL_UI_URL" 2>/dev/null; then
-            wget -q -O "$CONFIG_DIR/aios-whiptail.sh" "$WHIPTAIL_UI_URL" && has_whiptail=1
+            wget -q -O "$CONFIG_DIR/aios2-whiptail.sh" "$WHIPTAIL_UI_URL" && has_whiptail=1
         fi
     fi
     
     if [ -n "$SIMPLE_UI_URL" ]; then
         if wget -q --spider "$SIMPLE_UI_URL" 2>/dev/null; then
-            wget -q -O "$CONFIG_DIR/aios-simple.sh" "$SIMPLE_UI_URL" && has_simple=1
+            wget -q -O "$CONFIG_DIR/aios2-simple.sh" "$SIMPLE_UI_URL" && has_simple=1
         fi
     fi
     
@@ -1024,10 +1024,10 @@ EOF3
 
 # Main Entry Point
 
-aios_tui_main() {
+aios2_main() {
     clear
     echo "==========================================="
-    echo "  aios-tui Vr.$VERSION"
+    echo "  aios2 Vr.$VERSION"
     echo "==========================================="
     echo ""
 
@@ -1089,15 +1089,15 @@ aios_tui_main() {
     
     # Load and execute UI module
     if [ "$UI_MODE" = "whiptail" ]; then
-        . "$CONFIG_DIR/aios-whiptail.sh"
-        aios_whiptail_main
+        . "$CONFIG_DIR/aios2-whiptail.sh"
+        aios2_whiptail_main
     else
-        . "$CONFIG_DIR/aios-simple.sh"
-        aios_simple_main
+        . "$CONFIG_DIR/aios2-simple.sh"
+        aios2_simple_main
     fi
 
     echo "Script finished."
     echo ""
 }
 
-aios_tui_main
+aios2_main
