@@ -323,7 +323,6 @@ get_extended_device_info() {
     
     if ! __download_file_core "$AUTO_CONFIG_API_URL" "$AUTO_CONFIG_JSON"; then
         echo "Warning: Failed to fetch auto-config API"
-        echo "https://www.cloudflarestatus.com/"
         return 1
     fi
     
@@ -929,7 +928,7 @@ compute_dslite_aftr() {
     return 1
 }
 
-xxx__download_file_core() {
+__download_file_core() {
     local url="$1"
     local output_path="$2"
     local cache_buster="?t=$(date +%s)"
@@ -941,7 +940,7 @@ xxx__download_file_core() {
     return 0
 }
 
-__download_file_core() {
+xxx__download_file_core() {
     local url="$1"
     local output_path="$2"
     local max_retries=5
@@ -1181,6 +1180,12 @@ aios2_main() {
     echo "INFO: Parallel download finished in ${ELAPSED_TIME} seconds."
     echo "INFO: Language detected: ${AUTO_LANGUAGE:-en}"
     echo ""
+
+    if [ ! -s "$AUTO_CONFIG_JSON" ] || ! grep -q '"language"' "$AUTO_CONFIG_JSON" 2>/dev/null; then
+        echo "Warning: Failed to fetch auto-config API"
+        echo "   https://www.cloudflarestatus.com/"
+        echo ""
+    fi
     
     if [ $SETUP_STATUS -ne 0 ]; then
         echo "Cannot continue without setup.json"
