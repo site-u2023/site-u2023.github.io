@@ -4,7 +4,7 @@
 # OpenWrt Device Setup Tool - simple TEXT Module
 # This file contains simple text-based UI functions
 
-VERSION="R7.1121.1735"
+VERSION="R7.1121.1621"
 
 show_menu() {
     local title="$1"
@@ -43,17 +43,27 @@ show_msgbox() {
     read
 }
 
+# Package Compatibility Check for Custom Feeds
+
+package_compatible() {
+    local pkg_id="$1"
+    local pkg_managers
+    
+    pkg_managers=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].packageManager[*]" 2>/dev/null)
+    
+    [ -z "$pkg_managers" ] && return 0
+    
+    echo "$pkg_managers" | grep -q "^${PKG_MGR}$" && return 0
+    
+    return 1
+}
+
 custom_feeds_selection() {
     local tr_main_menu tr_custom_feeds breadcrumb
     
     tr_main_menu=$(translate "tr-tui-main-menu")
     tr_custom_feeds=$(translate "tr-tui-custom-feeds")
     breadcrumb="${tr_main_menu} > ${tr_custom_feeds}"
-    
-    if [ "$PKG_MGR" != "opkg" ]; then
-        show_msgbox "$breadcrumb" "Custom feeds are only available for OPKG"
-        return 0
-    fi
     
     download_customfeeds_json || {
         show_msgbox "$breadcrumb" "Failed to load custom feeds"
@@ -576,6 +586,10 @@ package_selection() {
     echo ""
     
     get_category_packages "$cat_id" | while read pkg_id; do
+        if ! package_compatible "$pkg_id"; then
+            continue
+        fi
+        
         local pkg_name=$(get_package_name "$pkg_id")
         
         if is_package_selected "$pkg_id"; then
@@ -590,6 +604,10 @@ package_selection() {
     
     local i=1
     get_category_packages "$cat_id" | while read pkg_id; do
+        if ! package_compatible "$pkg_id"; then
+            continue
+        fi
+        
         local pkg_name=$(get_package_name "$pkg_id")
         echo "$i) $pkg_name"
         i=$((i+1))
@@ -604,15 +622,30 @@ package_selection() {
     fi
     
     if [ -n "$choice" ]; then
-        local pkg_id=$(get_category_packages "$cat_id" | sed -n "${choice}p")
-        if [ -n "$pkg_id" ]; then
-            if is_package_selected "$pkg_id"; then
-                sed -i "/^${pkg_id}$/d" "$SELECTED_PACKAGES"
-            else
-                echo "$pkg_id" >> "$SELECTED_PACKAGES"
+        local selected_idx=1
+        local found_pkg=""
+        
+        get_category_packages "$cat_id" | while read pkg_id; do
+            if ! package_compatible "$pkg_id"; then
+                continue
             fi
-            package_selection "$cat_id"
+            
+            if [ "$selected_idx" -eq "$choice" ]; then
+                found_pkg="$pkg_id"
+                break
+            fi
+            selected_idx=$((selected_idx+1))
+        done
+        
+        if [ -n "$found_pkg" ]; then
+            if is_package_selected "$found_pkg"; then
+                sed -i "/^${found_pkg}$/d" "$SELECTED_PACKAGES"
+            else
+                echo "$found_pkg" >> "$SELECTED_PACKAGES"
+            fi
         fi
+        
+        package_selection "$cat_id"
     fi
 }
 
@@ -723,6 +756,10 @@ view_selected_custom_packages() {
         
         local has_packages=0
         get_category_packages "$selected_cat" | while read pkg_id; do
+            if ! package_compatible "$pkg_id"; then
+                continue
+            fi
+            
             if grep -q "^${pkg_id}$" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
                 local pkg_name=$(get_package_name "$pkg_id")
                 echo "  - ${pkg_name}"
@@ -764,14 +801,10 @@ main_menu() {
         local packages_choice=$i
         i=$((i+1))
         
-        local custom_feeds_choice=0
-        if [ "$PKG_MGR" = "opkg" ]; then
-            local custom_feeds_label=$(translate "tr-tui-custom-feeds")
-            [ -z "$custom_feeds_label" ] || [ "$custom_feeds_label" = "tr-tui-custom-feeds" ] && custom_feeds_label="Custom Feeds"
-            echo "$i) $custom_feeds_label"
-            custom_feeds_choice=$i
-            i=$((i+1))
-        fi
+        local custom_feeds_label=$(translate "tr-tui-custom-feeds")
+        echo "$i) $custom_feeds_label"
+        local custom_feeds_choice=$i
+        i=$((i+1))
         
         echo "$i) $(translate 'tr-tui-review-configuration')"
         local review_choice=$i
@@ -793,7 +826,7 @@ main_menu() {
             category_config "$selected_cat"
         elif [ "$choice" -eq "$packages_choice" ]; then
             package_categories
-        elif [ "$custom_feeds_choice" -gt 0 ] && [ "$choice" -eq "$custom_feeds_choice" ]; then
+        elif [ "$choice" -eq "$custom_feeds_choice" ]; then
             custom_feeds_selection
         elif [ "$choice" -eq "$review_choice" ]; then
             review_and_apply
