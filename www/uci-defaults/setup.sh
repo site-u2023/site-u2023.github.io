@@ -1,14 +1,15 @@
 #!/bin/sh
+# shellcheck shell=sh 
 # BEGIN_VARS
 # END_VARS
 enable_notes="1"
 enable_ntp="1"
 enable_log="1"
 enable_diag="1"
-SET() { uci -q set "${SEC}${SEC:+.}$@"; }
-DEL() { uci -q delete "${SEC}${SEC:+.}$@"; }
-ADDLIST() { uci add_list "${SEC}${SEC:+.}$@"; }
-DELLIST() { uci del_list "${SEC}${SEC:+.}$@"; }
+SET() { uci -q set "${SEC}${SEC:+.}$*"; }
+DEL() { uci -q delete "${SEC}${SEC:+.}$*"; }
+ADDLIST() { uci add_list "${SEC}${SEC:+.}$*"; }
+DELLIST() { uci del_list "${SEC}${SEC:+.}$*"; }
 DATE="$(date '+%Y-%m-%d %H:%M')"
 LAN="$(uci -q get network.lan.device || echo lan)"
 WAN="$(uci -q get network.wan.device || echo wan)"
