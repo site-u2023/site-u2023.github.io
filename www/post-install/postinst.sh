@@ -1,5 +1,6 @@
 #!/bin/sh
 # shellcheck shell=sh
+
 # BEGIN_VARIABLE_DEFINITIONS
 # END_VARIABLE_DEFINITIONS
 
