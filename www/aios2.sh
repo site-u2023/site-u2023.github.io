@@ -1113,9 +1113,7 @@ aios2_main() {
         echo "Warning: Using English as fallback language"
     fi
 
-    # 🔸 計測開始 (ミリ秒対応) 🔸
-    # date +%s.%N (小数秒)が使えない環境のために、|| date +%sでフォールバック
-    TIME_START=$(date +%s.%N 2>/dev/null || date +%s)
+    TIME_START=$(ubus call system info 2>/dev/null | jsonfilter -e '@.uptime' 2>/dev/null || date +%s)
     
     echo "Fetching postinst.json (critical) and others in parallel"
     
@@ -1152,12 +1150,12 @@ aios2_main() {
     wait $CUSTOMFEEDS_PID
     wait $TEMPLATES_PID
 
-    TIME_END=$(date +%s.%N 2>/dev/null || date +%s)
-    
-    ELAPSED_TIME_MS=$(echo "$TIME_END $TIME_START" | awk '{printf "%.3f", $1 - $2}')
+    TIME_END=$(ubus call system info 2>/dev/null | jsonfilter -e '@.uptime' 2>/dev/null || date +%s)
     
     echo ""
-    echo "INFO: Parallel download block finished in ${ELAPSED_TIME_MS:-$((TIME_END - TIME_START))} seconds."
+    ELAPSED_TIME=$(echo "$TIME_END $TIME_START" | awk '{printf "%.3f", $1 - $2}' 2>/dev/null)
+    
+    echo "INFO: Parallel download block finished in ${ELAPSED_TIME} seconds."
     echo ""
     
     if [ $POSTINST_STATUS -ne 0 ]; then
@@ -1179,7 +1177,6 @@ aios2_main() {
             echo "[DEBUG] Set mape_type=gua with prefix: $MAPE_GUA_PREFIX" >> "$CONFIG_DIR/debug.log"
         else
             echo "mape_type='pd'" >> "$SETUP_VARS"
-            echo "loaded_config['mape_type'] = 'pd'"
             echo "[DEBUG] Set mape_type=pd no GUA detected" >> "$CONFIG_DIR/debug.log"
         fi
     fi
@@ -1193,17 +1190,6 @@ aios2_main() {
     echo "Fetching UI modules"
     select_ui_mode
 
-    echo ""
-    
-    if [ "$UI_MODE" = "whiptail" ]; then
-        . "$CONFIG_DIR/aios2-whiptail.sh"
-        aios2_whiptail_main
-    else
-        . "$CONFIG_DIR/aios2-simple.sh"
-        aios2_simple_main
-    fi
-
-    echo "Script finished."
     echo ""
 }
 
