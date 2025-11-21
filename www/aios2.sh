@@ -33,6 +33,7 @@ print_banner_unicode() {
     printf "\033[33m     █████      ██      ██  ██     █████\033[0m\n"
     printf "\033[38;5;208m    ██  ██      ██      ██  ██         ██\033[0m\n"
     printf "\033[31m     █████     ████      ████     ██████\033[0m\n"
+    printf "     Vr.$VERSION\n"
     printf "\n"
 }
 
@@ -1120,9 +1121,6 @@ EOF3
 aios2_main() {
     clear
     print_banner_unicode
-    
-    echo "    Vr.$VERSION"
-    echo ""
     
     init
     echo "Fetching config.js"
