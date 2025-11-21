@@ -50,6 +50,9 @@ var config = {
   // Custom feeds database URL
   customfeeds_db_path: "custom-feeds/customfeeds.json",
 
+  // Review menu configuration
+  review_json_path: "review.json",
+
   // UI modules paths
   whiptail_ui_path: "aios2-whiptail.sh",
   simple_ui_path: "aios2-simple.sh",
