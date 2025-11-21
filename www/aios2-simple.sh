@@ -110,10 +110,10 @@ review_and_apply() {
                 ;;
             textbox)
                 local file
-                file=$(get_review_item_file $choice)
+                file=$(get_review_item_file "$choice")
                 clear
                 echo "========================================"
-                echo "  $(get_review_item_label $choice)"
+                echo "  $(get_review_item_label "$choice")"
                 echo "========================================"
                 [ -f "$file" ] && cat "$file"
                 printf "%s: " "$(translate 'tr-tui-ok')"
@@ -574,7 +574,7 @@ package_categories() {
         echo ""
         
         local i=1
-        get_categories | while read cat_id; do
+        get_categories | while read -r cat_id; do
             local is_hidden
             is_hidden=$(get_category_hidden "$cat_id")
             [ "$is_hidden" = "true" ] && continue
@@ -595,7 +595,7 @@ package_categories() {
         fi
         
         if [ -n "$choice" ]; then
-            selected_cat=$(get_categories | while read cat_id; do
+            selected_cat=$(get_categories | while read -r cat_id; do
                 local is_hidden
                 is_hidden=$(get_category_hidden "$cat_id")
                 [ "$is_hidden" != "true" ] && echo "$cat_id"
@@ -623,7 +623,7 @@ package_selection() {
     echo "$cat_desc"
     echo ""
     
-    get_category_packages "$cat_id" | while read pkg_id; do
+    get_category_packages "$cat_id" | while read -r pkg_id; do
         if ! package_compatible "$pkg_id"; then
             continue
         fi
@@ -642,7 +642,7 @@ package_selection() {
     echo "Enter package number to toggle (or 'b' to go back):"
     
     local i=1
-    get_category_packages "$cat_id" | while read pkg_id; do
+    get_category_packages "$cat_id" | while read -r pkg_id; do
         if ! package_compatible "$pkg_id"; then
             continue
         fi
@@ -665,18 +665,22 @@ package_selection() {
         local selected_idx=1
         local found_pkg=""
         
-        get_category_packages "$cat_id" | while read pkg_id; do
+        found_pkg=""
+        selected_idx=1
+        while read -r pkg_id; do
             if ! package_compatible "$pkg_id"; then
                 continue
             fi
-            
+           
             if [ "$selected_idx" -eq "$choice" ]; then
                 found_pkg="$pkg_id"
                 break
             fi
             selected_idx=$((selected_idx+1))
-        done
-        
+        done <<EOF
+$(get_category_packages "$cat_id")
+EOF
+
         if [ -n "$found_pkg" ]; then
             if is_package_selected "$found_pkg"; then
                 sed -i "/^${found_pkg}$/d" "$SELECTED_PACKAGES"
@@ -709,7 +713,7 @@ view_customfeeds() {
     echo ""
     
     local i=1
-    get_customfeed_categories | while read cat_id; do
+    get_customfeed_categories | while read -r cat_id; do
         local cat_name
         cat_name=$(get_category_name "$cat_id")
         echo "$i) $cat_name"
@@ -770,7 +774,7 @@ view_selected_custom_packages() {
     echo ""
     
     local i=1
-    get_customfeed_categories | while read cat_id; do
+    get_customfeed_categories | while read -r cat_id; do
         local cat_name
         cat_name=$(get_category_name "$cat_id")
         echo "$i) $cat_name"
@@ -799,20 +803,23 @@ view_selected_custom_packages() {
         echo ""
         
         local has_packages=0
-        get_category_packages "$selected_cat" | while read pkg_id; do
+        has_packages=0
+        while read -r pkg_id; do
             if ! package_compatible "$pkg_id"; then
                 continue
             fi
-            
+           
             if grep -q "^${pkg_id}$" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
                 local pkg_name
                 pkg_name=$(get_package_name "$pkg_id")
-                echo "  - ${pkg_name}"
+                echo " - ${pkg_name}"
                 has_packages=1
             fi
-        done
-        
-        if [ $has_packages -eq 0 ]; then
+        done <<EOF
+$(get_category_packages "$selected_cat")
+EOF
+
+        if [ "$has_packages" -eq 0 ]; then
             echo "  $(translate 'tr-tui-no-packages')"
         fi
         
