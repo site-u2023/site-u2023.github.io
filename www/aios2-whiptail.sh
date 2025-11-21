@@ -1,4 +1,5 @@
 #!/bin/sh
+
 # shellcheck shell=ash
 # shellcheck disable=SC3043,SC2034
 # OpenWrt Device Setup Tool - whiptail TUI Module
