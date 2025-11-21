@@ -318,9 +318,9 @@ get_extended_device_info() {
     get_device_info
     
     OPENWRT_VERSION=$(grep 'DISTRIB_RELEASE' /etc/openwrt_release 2>/dev/null | cut -d"'" -f2)
-x20x20 x20x20x20x20
-x20x20 x20x20 if ! __download_file_core "$AUTO_CONFIG_API_URL" "$AUTO_CONFIG_JSON"; then
-x20x20 x20x20 x20x20 x20x20 echo "Warning: Failed to fetch auto-config API"
+    
+    if ! __download_file_core "$AUTO_CONFIG_API_URL" "$AUTO_CONFIG_JSON"; then
+        echo "Warning: Failed to fetch auto-config API"
         echo "https://www.cloudflarestatus.com/"
         return 1
     fi
