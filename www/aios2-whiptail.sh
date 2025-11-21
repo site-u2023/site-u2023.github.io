@@ -932,7 +932,14 @@ review_and_apply() {
                 $action
                 ;;
             apply)
-                if show_yesno "$breadcrumb" "$(translate 'tr-tui-apply-confirm-question')"; then
+                local confirm_msg="$(translate 'tr-tui-apply-confirm-step1')
+$(translate 'tr-tui-apply-confirm-step2')
+$(translate 'tr-tui-apply-confirm-step3')
+$(translate 'tr-tui-apply-confirm-step4')
+
+$(translate 'tr-tui-apply-confirm-question')"
+                
+                if show_yesno "$breadcrumb" "$confirm_msg"; then
                     sh "$CONFIG_DIR/postinst.sh" > "$CONFIG_DIR/apply.log" 2>&1
                     
                     for script in "$CONFIG_DIR"/customfeeds-*.sh; do
