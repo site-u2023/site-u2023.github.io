@@ -3,7 +3,7 @@
 # OpenWrt Device Setup Tool - whiptail TUI Module
 # This file contains whiptail-specific UI functions
 
-VERSION="R7.1122.0034
+VERSION="R7.1122.0044"
 
 UI_WIDTH="78"
 UI_HEIGHT="0"
@@ -52,7 +52,7 @@ show_menu() {
     local cancel_btn="${4:-$(translate "$DEFAULT_BTN_BACK")}"
     shift 4
     
-    eval "whiptail --title '$breadcrumb' --ok-button '$ok_btn' --cancel-button '$cancel_btn' --menu '$prompt' \"$UI_HEIGHT\" \"$UI_WIDTH\" 0 \"\$@\" 3>&1 1>&2 2>&3"
+    eval "whiptail --title \"$breadcrumb\" --ok-button \"$ok_btn\" --cancel-button \"$cancel_btn\" --menu \"$prompt\" \"$UI_HEIGHT\" \"$UI_WIDTH\" 0 \"\$@\" 3>&1 1>&2 2>&3"
 }
 
 show_inputbox() {
@@ -93,7 +93,7 @@ show_checklist() {
     local cancel_btn="${4:-$(translate "$DEFAULT_BTN_BACK")}"
     shift 4
     
-    eval "whiptail --title '$breadcrumb' --ok-button '$ok_btn' --cancel-button '$cancel_btn' --checklist '$prompt' \"$UI_HEIGHT\" \"$UI_WIDTH\" 0 \"\$@\" 3>&1 1>&2 2>&3"
+    eval "whiptail --title \"$breadcrumb\" --ok-button \"$ok_btn\" --cancel-button \"$cancel_btn\" --checklist \"$prompt\" \"$UI_HEIGHT\" \"$UI_WIDTH\" 0 \"\$@\" 3>&1 1>&2 2>&3"
 }
 
 show_textbox() {
@@ -119,7 +119,7 @@ package_compatible() {
     
     [ -z "$pkg_managers" ] && return 0
     
-    echo "$pkg_managers" | grep -q "^${PKG_MGR}$" && return 0
+    echo "$pkg_managers" | grep -q "^${PKG_MGR}\$" && return 0
     
     return 1
 }
@@ -168,13 +168,20 @@ device_info() {
     tr_device_info=$(translate "tr-tui-view-device-info")
     breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_device_info")
     
-    info="Model: $DEVICE_MODEL\n"
-    info="${info}Target: $DEVICE_TARGET\n"
-    info="${info}Version: $OPENWRT_VERSION\n"
-    [ -n "$DEVICE_MEM" ] && info="${info}Memory: $DEVICE_MEM\n"
-    [ -n "$DEVICE_CPU" ] && info="${info}CPU: $DEVICE_CPU\n"
-    [ -n "$DEVICE_STORAGE" ] && info="${info}Storage: $DEVICE_STORAGE_USED/$DEVICE_STORAGE (${DEVICE_STORAGE_AVAIL} free)\n"
-    [ -n "$DEVICE_USB" ] && info="${info}USB: $DEVICE_USB\n"
+    info="Model: $DEVICE_MODEL
+"
+    info="${info}Target: $DEVICE_TARGET
+"
+    info="${info}Version: $OPENWRT_VERSION
+"
+    [ -n "$DEVICE_MEM" ] && info="${info}Memory: $DEVICE_MEM
+"
+    [ -n "$DEVICE_CPU" ] && info="${info}CPU: $DEVICE_CPU
+"
+    [ -n "$DEVICE_STORAGE" ] && info="${info}Storage: $DEVICE_STORAGE_USED/$DEVICE_STORAGE (${DEVICE_STORAGE_AVAIL} free)
+"
+    [ -n "$DEVICE_USB" ] && info="${info}USB: $DEVICE_USB
+"
     
     show_msgbox "$breadcrumb" "$info"
 }
@@ -183,13 +190,20 @@ device_info_titled() {
     local title="$1"
     local info
     
-    info="Model: $DEVICE_MODEL\n"
-    info="${info}Target: $DEVICE_TARGET\n"
-    info="${info}Version: $OPENWRT_VERSION\n"
-    [ -n "$DEVICE_MEM" ] && info="${info}Memory: $DEVICE_MEM\n"
-    [ -n "$DEVICE_CPU" ] && info="${info}CPU: $DEVICE_CPU\n"
-    [ -n "$DEVICE_STORAGE" ] && info="${info}Storage: $DEVICE_STORAGE_USED/$DEVICE_STORAGE (${DEVICE_STORAGE_AVAIL} free)\n"
-    [ -n "$DEVICE_USB" ] && info="${info}USB: $DEVICE_USB\n"
+    info="Model: $DEVICE_MODEL
+"
+    info="${info}Target: $DEVICE_TARGET
+"
+    info="${info}Version: $OPENWRT_VERSION
+"
+    [ -n "$DEVICE_MEM" ] && info="${info}Memory: $DEVICE_MEM
+"
+    [ -n "$DEVICE_CPU" ] && info="${info}CPU: $DEVICE_CPU
+"
+    [ -n "$DEVICE_STORAGE" ] && info="${info}Storage: $DEVICE_STORAGE_USED/$DEVICE_STORAGE (${DEVICE_STORAGE_AVAIL} free)
+"
+    [ -n "$DEVICE_USB" ] && info="${info}USB: $DEVICE_USB
+"
     
     show_msgbox "$title" "$info"
 }
@@ -210,22 +224,40 @@ show_network_info() {
     
     if [ "$DETECTED_CONN_TYPE" = "mape" ] && [ -n "$MAPE_BR" ]; then
         tr_auto_detection=$(translate "tr-auto-detection")
-        info="${tr_auto_detection}: MAP-E\n\n"
-        [ -n "$ISP_NAME" ] && info="${info}${tr_isp}: $ISP_NAME\n"
-        [ -n "$ISP_AS" ] && info="${info}${tr_as}: $ISP_AS\n"
+        info="${tr_auto_detection}: MAP-E
+
+"
+        [ -n "$ISP_NAME" ] && info="${info}${tr_isp}: $ISP_NAME
+"
+        [ -n "$ISP_AS" ] && info="${info}${tr_as}: $ISP_AS
+"
         
-        info="${info}\n${tr_mape_notice}\n\n"
-        [ -n "$MAPE_GUA_PREFIX" ] && info="${info}option ip6prefix_gua $MAPE_GUA_PREFIX\n"
-        info="${info}option peeraddr $MAPE_BR\n"
-        [ -n "$MAPE_IPV4_PREFIX" ] && info="${info}option ipaddr $MAPE_IPV4_PREFIX\n"
-        [ -n "$MAPE_IPV4_PREFIXLEN" ] && info="${info}option ip4prefixlen $MAPE_IPV4_PREFIXLEN\n"
-        [ -n "$MAPE_IPV6_PREFIX" ] && info="${info}option ip6prefix $MAPE_IPV6_PREFIX\n"
-        [ -n "$MAPE_IPV6_PREFIXLEN" ] && info="${info}option ip6prefixlen $MAPE_IPV6_PREFIXLEN\n"
-        [ -n "$MAPE_EALEN" ] && info="${info}option ealen $MAPE_EALEN\n"
-        [ -n "$MAPE_PSIDLEN" ] && info="${info}option psidlen $MAPE_PSIDLEN\n"
-        [ -n "$MAPE_PSID_OFFSET" ] && info="${info}option offset $MAPE_PSID_OFFSET\n"
+        info="${info}
+${tr_mape_notice}
+
+"
+        [ -n "$MAPE_GUA_PREFIX" ] && info="${info}option ip6prefix_gua $MAPE_GUA_PREFIX
+"
+        info="${info}option peeraddr $MAPE_BR
+"
+        [ -n "$MAPE_IPV4_PREFIX" ] && info="${info}option ipaddr $MAPE_IPV4_PREFIX
+"
+        [ -n "$MAPE_IPV4_PREFIXLEN" ] && info="${info}option ip4prefixlen $MAPE_IPV4_PREFIXLEN
+"
+        [ -n "$MAPE_IPV6_PREFIX" ] && info="${info}option ip6prefix $MAPE_IPV6_PREFIX
+"
+        [ -n "$MAPE_IPV6_PREFIXLEN" ] && info="${info}option ip6prefixlen $MAPE_IPV6_PREFIXLEN
+"
+        [ -n "$MAPE_EALEN" ] && info="${info}option ealen $MAPE_EALEN
+"
+        [ -n "$MAPE_PSIDLEN" ] && info="${info}option psidlen $MAPE_PSIDLEN
+"
+        [ -n "$MAPE_PSID_OFFSET" ] && info="${info}option offset $MAPE_PSID_OFFSET
+"
         
-        info="${info}\n\n$(translate 'tr-tui-use-auto-config')"
+        info="${info}
+
+$(translate 'tr-tui-use-auto-config')"
         
         if show_yesno "$breadcrumb" "$info"; then
             sed -i "/^connection_type=/d" "$SETUP_VARS"
@@ -249,14 +281,24 @@ show_network_info() {
         
     elif [ "$DETECTED_CONN_TYPE" = "dslite" ] && [ -n "$DSLITE_AFTR" ]; then
         tr_auto_detection=$(translate "tr-auto-detection")
-        info="${tr_auto_detection}: DS-Lite\n\n"
-        [ -n "$ISP_NAME" ] && info="${info}${tr_isp}: $ISP_NAME\n"
-        [ -n "$ISP_AS" ] && info="${info}${tr_as}: $ISP_AS\n"
+        info="${tr_auto_detection}: DS-Lite
+
+"
+        [ -n "$ISP_NAME" ] && info="${info}${tr_isp}: $ISP_NAME
+"
+        [ -n "$ISP_AS" ] && info="${info}${tr_as}: $ISP_AS
+"
         
-        info="${info}\n${tr_dslite_notice}\n\n"
-        info="${info}option peeraddr $DSLITE_AFTR\n"
+        info="${info}
+${tr_dslite_notice}
+
+"
+        info="${info}option peeraddr $DSLITE_AFTR
+"
         
-        info="${info}\n\n$(translate 'tr-tui-use-auto-config')"
+        info="${info}
+
+$(translate 'tr-tui-use-auto-config')"
         
         if show_yesno "$breadcrumb" "$info"; then
             sed -i "/^connection_type=/d" "$SETUP_VARS"
@@ -272,10 +314,15 @@ show_network_info() {
         local tr_isp_info tr_manual_config
         tr_isp_info=$(translate "tr-tui-isp-info")
         tr_manual_config=$(translate "tr-tui-manual-config-required")
-        info="${tr_isp_info}\n\n"
-        [ -n "$ISP_NAME" ] && info="${info}${tr_isp}: $ISP_NAME\n"
-        [ -n "$ISP_AS" ] && info="${info}${tr_as}: $ISP_AS\n"
-        info="${info}\n${tr_manual_config}"
+        info="${tr_isp_info}
+
+"
+        [ -n "$ISP_NAME" ] && info="${info}${tr_isp}: $ISP_NAME
+"
+        [ -n "$ISP_AS" ] && info="${info}${tr_as}: $ISP_AS
+"
+        info="${info}
+${tr_manual_config}"
         
         show_msgbox "$breadcrumb" "$info"
         return 1
@@ -349,7 +396,7 @@ process_items() {
             options=$(get_setup_item_options "$item_id")
             
             if [ "$variable" = "connection_type" ] && [ "$DETECTED_CONN_TYPE" = "unknown" ]; then
-                options=$(echo "$options" | grep -v "^auto$")
+                options=$(echo "$options" | grep -v "^auto\$")
                 echo "[DEBUG] Removed 'auto' option due to Unknown connection type" >> "$CONFIG_DIR/debug.log"
             fi
             
@@ -667,7 +714,8 @@ category_config() {
                     fi
                     
                     if [ "$conn_type" = "dhcp" ]; then
-                        dhcp_content="DHCP configuration will be applied automatically.\nNo additional settings required."
+                        dhcp_content="DHCP configuration will be applied automatically.
+No additional settings required."
                         tr_dhcp=$(translate "tr-dhcp-information")
                         if [ -n "$tr_dhcp" ] && [ "$tr_dhcp" != "tr-dhcp-information" ]; then
                             dhcp_content="$tr_dhcp"
@@ -805,7 +853,7 @@ EOF
         fi
         
         while read -r pkg_id; do
-            sed -i "/^${pkg_id}$/d" "$target_file"
+            sed -i "/^${pkg_id}\$/d" "$target_file"
         done <<EOF2
 $packages
 EOF2
@@ -877,7 +925,7 @@ EOF
                     continue
                 fi
                 
-                if grep -q "^${pkg_id}$" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
+                if grep -q "^${pkg_id}\$" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
                     pkg_name=$(get_package_name "$pkg_id")
                     echo "  - ${pkg_name}"
                 fi
