@@ -1,5 +1,5 @@
 #!/bin/sh
-# shellcheck shell=sh 
+# shellcheck shell=sh disable=SC2034,SC3043
 # BEGIN_VARS
 # END_VARS
 enable_notes="1"
