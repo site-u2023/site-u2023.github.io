@@ -933,26 +933,15 @@ review_and_apply() {
                 ;;
             apply)
                 if show_yesno "$breadcrumb" "$(translate 'tr-tui-apply-confirm-question')"; then
-                    clear
+                    sh "$CONFIG_DIR/postinst.sh" > "$CONFIG_DIR/apply.log" 2>&1
                     
-                    echo "$(translate 'tr-tui-installing-packages')"
-                    sh "$CONFIG_DIR/postinst.sh"
-                    
-                    echo ""
-                    echo "$(translate 'tr-tui-installing-custom-packages')"
                     for script in "$CONFIG_DIR"/customfeeds-*.sh; do
-                        [ -f "$script" ] && sh "$script"
+                        [ -f "$script" ] && sh "$script" >> "$CONFIG_DIR/apply.log" 2>&1
                     done
                     
-                    echo ""
-                    echo "$(translate 'tr-tui-applying-config')"
-                    sh "$CONFIG_DIR/setup.sh"
+                    sh "$CONFIG_DIR/setup.sh" >> "$CONFIG_DIR/apply.log" 2>&1
                     
-                    echo ""
-                    echo "$(translate 'tr-tui-config-applied')"
-                    echo ""
-                    printf "Press Enter to continue..."
-                    read
+                    show_msgbox "$breadcrumb" "$(translate 'tr-tui-config-applied')"
                     
                     if show_yesno "$breadcrumb" "$(translate 'tr-tui-reboot-question')"; then
                         reboot
