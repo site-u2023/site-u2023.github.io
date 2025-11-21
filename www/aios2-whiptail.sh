@@ -1,6 +1,5 @@
 #!/bin/sh
-# shellcheck shell=sh
-# shellcheck disable=SC3043,SC2034
+# shellcheck shell=sh disable=SC2034,SC3043
 # OpenWrt Device Setup Tool - whiptail TUI Module
 # This file contains whiptail-specific UI functions
 
