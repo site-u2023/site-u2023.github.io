@@ -4,7 +4,7 @@
 # OpenWrt Device Setup Tool - whiptail TUI Module
 # This file contains whiptail-specific UI functions
 
-VERSION="R7.1121.1251"
+VERSION="R7.1121.1332"
 
 NEWT_COLORS='
 title=black,lightgray
@@ -916,7 +916,11 @@ review_and_apply() {
             menu_items="$menu_items $i \"$(get_review_item_label $i)\""
         done
         
-        local choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"\" \"\" $menu_items") || return 0
+        local choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"\" \"\" $menu_items")
+        
+        if ! [ $? -eq 0 ]; then
+            return 0
+        fi
         
         local action=$(get_review_item_action $choice)
         
@@ -941,15 +945,11 @@ $(translate 'tr-tui-apply-confirm-question')"
                 
                 if show_yesno "$breadcrumb" "$confirm_msg"; then
                     sh "$CONFIG_DIR/postinst.sh" > "$CONFIG_DIR/apply.log" 2>&1
-                    
                     for script in "$CONFIG_DIR"/customfeeds-*.sh; do
                         [ -f "$script" ] && sh "$script" >> "$CONFIG_DIR/apply.log" 2>&1
                     done
-                    
                     sh "$CONFIG_DIR/setup.sh" >> "$CONFIG_DIR/apply.log" 2>&1
-                    
                     show_msgbox "$breadcrumb" "$(translate 'tr-tui-config-applied')"
-                    
                     if show_yesno "$breadcrumb" "$(translate 'tr-tui-reboot-question')"; then
                         reboot
                     fi
