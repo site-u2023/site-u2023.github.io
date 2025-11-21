@@ -490,7 +490,7 @@ process_items() {
                 
                 if ! [ "$exit_code" -eq 0 ]; then
                     echo "[DEBUG] Select cancelled, returning to previous menu" >> "$CONFIG_DIR/debug.log"
-                    return 0
+                    return 1
                 fi
                 
                 if [ -n "$value" ]; then
@@ -521,7 +521,7 @@ process_items() {
                 
                 if ! [ "$exit_code" -eq 0 ]; then
                     echo "[DEBUG] Inputbox cancelled, returning to previous menu" >> "$CONFIG_DIR/debug.log"
-                    return 0
+                    return 1
                 fi
                 
                 if [ -n "$value" ]; then
