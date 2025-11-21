@@ -1098,6 +1098,8 @@ aios2_main() {
         return 1
     fi
 
+    TIME_START=$(date +%s)
+    
     echo "Fetching postinst.json (critical) and others in parallel"
     
     (
@@ -1133,6 +1135,11 @@ aios2_main() {
     wait $CUSTOMFEEDS_PID
     wait $TEMPLATES_PID
 
+    TIME_END=$(date +%s)
+    echo ""
+    echo "INFO: Parallel download block finished in $((TIME_END - TIME_START)) seconds."
+    echo ""
+    
     if [ $POSTINST_STATUS -ne 0 ]; then
         printf "Press [Enter] to exit the script. "
         read -r dummy
