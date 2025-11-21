@@ -2,7 +2,7 @@
 # OpenWrt Device Setup Tool - simple TEXT Module
 # This file contains simple text-based UI functions
 
-VERSION="R7.1121.1123"
+VERSION="R7.1121.1249"
 
 show_menu() {
     local title="$1"
@@ -97,7 +97,9 @@ review_and_apply() {
         local action=$(get_review_item_action $choice)
         
         case "$action" in
-            device_info) device_info ;;
+            device_info) 
+                device_info 
+                ;;
             textbox)
                 local file=$(get_review_item_file $choice)
                 clear
@@ -111,7 +113,44 @@ review_and_apply() {
                 $action
                 ;;
             apply)
-                # 既存のapply処理
+                clear
+                echo "========================================"
+                echo "  $(translate 'tr-tui-apply')"
+                echo "========================================"
+                echo ""
+                echo "$(translate 'tr-tui-apply-confirm-step1')"
+                echo "$(translate 'tr-tui-apply-confirm-step2')"
+                echo "$(translate 'tr-tui-apply-confirm-step3')"
+                echo "$(translate 'tr-tui-apply-confirm-step4')"
+                echo ""
+                echo "$(translate 'tr-tui-apply-confirm-question')"
+                echo ""
+                printf "$(translate 'tr-tui-yes')/$(translate 'tr-tui-no'): "
+                read confirm
+                
+                if [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
+                    echo ""
+                    echo "$(translate 'tr-tui-installing-packages')"
+                    sh "$CONFIG_DIR/postinst.sh"
+                    
+                    echo "$(translate 'tr-tui-installing-custom-packages')"
+                    for script in "$CONFIG_DIR"/customfeeds-*.sh; do
+                        [ -f "$script" ] && sh "$script"
+                    done
+                    
+                    echo ""
+                    echo "$(translate 'tr-tui-applying-config')"
+                    sh "$CONFIG_DIR/setup.sh"
+                    echo ""
+                    echo "$(translate 'tr-tui-config-applied')"
+                    echo ""
+                    printf "$(translate 'tr-tui-reboot-question') (y/n): "
+                    read reboot_confirm
+                    if [ "$reboot_confirm" = "y" ] || [ "$reboot_confirm" = "Y" ]; then
+                        reboot
+                    fi
+                    return 0
+                fi
                 ;;
         esac
     done
