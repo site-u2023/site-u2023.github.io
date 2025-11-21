@@ -47,14 +47,17 @@ load_config_from_js() {
     WHIPTAIL_UI_PATH=$(grep 'whiptail_ui_path:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
     SIMPLE_UI_PATH=$(grep 'simple_ui_path:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
 
+    local CACHE_BUSTER="?t=$(date +%s)"
+    
     PACKAGES_URL="${BASE_URL}/${PACKAGES_DB_PATH}"
     POSTINST_TEMPLATE_URL="${BASE_URL}/${POSTINST_TEMPLATE_PATH}"
     SETUP_JSON_URL="${BASE_URL}/${SETUP_DB_PATH}"
     SETUP_TEMPLATE_URL="${BASE_URL}/${SETUP_TEMPLATE_PATH}"
     CUSTOMFEEDS_JSON_URL="${BASE_URL}/${CUSTOMFEEDS_DB_PATH}"
 
-    WHIPTAIL_UI_URL="${BASE_URL}/${WHIPTAIL_UI_PATH}"
-    SIMPLE_UI_URL="${BASE_URL}/${SIMPLE_UI_PATH}"
+    WHIPTAIL_UI_URL="${BASE_URL}/${WHIPTAIL_UI_PATH}${CACHE_BUSTER}"
+    SIMPLE_UI_URL="${BASE_URL}/${SIMPLE_UI_PATH}${CACHE_BUSTER}"
+    
     {
         echo "[DEBUG] Config loaded: BASE_URL=$BASE_URL"
         echo "[DEBUG] PACKAGES_URL=$PACKAGES_URL"
@@ -64,6 +67,8 @@ load_config_from_js() {
         echo "[DEBUG] AUTO_CONFIG_API_URL=$AUTO_CONFIG_API_URL"
         echo "[DEBUG] CUSTOMFEEDS_DB_PATH=$CUSTOMFEEDS_DB_PATH"
         echo "[DEBUG] CUSTOMFEEDS_JSON_URL=$CUSTOMFEEDS_JSON_URL"
+        echo "[DEBUG] WHIPTAIL_UI_URL=$WHIPTAIL_UI_URL"
+        echo "[DEBUG] SIMPLE_UI_URL=$SIMPLE_UI_URL"
     } >> "$CONFIG_DIR/debug.log"
     
     return 0
