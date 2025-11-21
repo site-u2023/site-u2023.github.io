@@ -276,33 +276,30 @@ install_package() {
 init() {
     local script_name=$(basename "$0")
     pkill -f "$script_name" 2>/dev/null
-    rm -rf "$CONFIG_DIR"
+    
     mkdir -p "$CONFIG_DIR"
-
+    
+    rm -f "$CONFIG_DIR"/*.json
+    rm -f "$CONFIG_DIR"/*.txt
+    rm -f "$CONFIG_DIR"/*.log
+    rm -f "$CONFIG_DIR"/customfeeds-*.sh
+    rm -f "$CONFIG_DIR"/postinst.sh
+    rm -f "$CONFIG_DIR"/setup.sh
+    
     load_config_from_js || {
         echo "Fatal: Cannot load configuration"
         return 1
     }
-
+    
     export NEWT_COLORS
     
     : > "$SELECTED_PACKAGES"
     : > "$SELECTED_CUSTOM_PACKAGES"
     : > "$SETUP_VARS"
     : > "$TRANSLATION_CACHE"
-    : > $CONFIG_DIR/debug.log
-    rm -f "$LANG_JSON"
+    : > "$CONFIG_DIR/debug.log"
     
-    rm -f "$SETUP_JSON"
-    rm -f "$PACKAGES_JSON"
-    rm -f "$AUTO_CONFIG_JSON"
-
-    rm -f "$PACKAGES_DB"
-    rm -f "$SETUP_DB"
-    rm -f "$CUSTOMFEEDS_DB"
-    rm -f "$DEVICE_INFO_JSON"
-    
-    echo "[DEBUG] $(date): Init complete, cache cleared" >> $CONFIG_DIR/debug.log
+    echo "[DEBUG] $(date): Init complete, cache cleared" >> "$CONFIG_DIR/debug.log"
 }
 
 # Language and Translation
