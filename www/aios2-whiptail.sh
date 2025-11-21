@@ -3,7 +3,7 @@
 # OpenWrt Device Setup Tool - whiptail TUI Module
 # This file contains whiptail-specific UI functions
 
-VERSION="R7.1122.0115"
+VERSION="R7.1122.0142"
 
 UI_WIDTH="78"
 UI_HEIGHT="0"
@@ -101,10 +101,18 @@ show_textbox() {
     local file="$2"
     local ok_btn="${3:-$(translate "$DEFAULT_BTN_OK")}"
     local temp_file="$CONFIG_DIR/textbox_wrapped.txt"
+    local lines content
     
     fold -s -w "$UI_WIDTH" "$file" > "$temp_file"
-    
-    whiptail --scrolltext --title "$breadcrumb" --ok-button "$ok_btn" --textbox "$temp_file" "$UI_HEIGHT" "$UI_WIDTH"
+
+    lines=$(wc -l < "$temp_file")
+
+    if [ "$lines" -le 20 ]; then
+        content=$(cat "$temp_file")
+        show_msgbox "$breadcrumb" "$content" "$ok_btn"
+    else
+        whiptail --scrolltext --title "$breadcrumb" --ok-button "$ok_btn" --textbox "$temp_file" "$UI_HEIGHT" "$UI_WIDTH"
+    fi
     
     rm -f "$temp_file"
 }
