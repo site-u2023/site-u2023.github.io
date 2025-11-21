@@ -1,14 +1,14 @@
 #!/bin/sh
+# shellcheck shell=ash
 
 # BEGIN_VARIABLE_DEFINITIONS
 # END_VARIABLE_DEFINITIONS
 
-BASE_TMP_DIR="/tmp"
-CONFIG_DIR="$BASE_TMP_DIR/aiost"
+BASE_CONFIG_DIR="/tmp"
+CONFIG_DIR="$BASE_CONFIG_DIR/aios2"
 
 # OpenWrt version check
 OPENWRT_RELEASE=$(grep 'DISTRIB_RELEASE' /etc/openwrt_release 2>/dev/null | cut -d"'" -f2 | cut -c 1-2)
-
 if [ -z "$OPENWRT_RELEASE" ]; then
     echo "[ERROR] Unable to detect OpenWrt version"
     exit 1
@@ -25,68 +25,63 @@ else
 fi
 
 # Run opkg update if requested
-if [ "$RUN_OPKG_UPDATE" = "1" ]; then
+[ "$RUN_OPKG_UPDATE" = "1" ] && {
     echo "Running opkg update..."
     opkg update
-fi
+}
 
 echo ""
 echo "Fetching package information from: ${API_URL}"
-RESPONSE=$(wget --no-check-certificate -q -O - "$API_URL")
-
-if [ -z "$RESPONSE" ]; then
+RESPONSE=$(wget --no-check-certificate -q -O - "$API_URL") || {
     echo "[ERROR] Failed to fetch package list from API"
     exit 1
-fi
+}
+[ -z "$RESPONSE" ] && { echo "[ERROR] Empty response from API"; exit 1; }
 
 # Process each package in PACKAGES variable
 # Format: "pattern:exclude:filename:enable_service:restart_service"
-echo "$PACKAGES" | tr ' ' '\n' | while read -r pattern; do
+echo "$PACKAGES" | tr ' ' '\n' | while IFS=':' read -r pattern exclude filename enable_service restart_service; do
     [ -z "$pattern" ] && continue
-    
+
     echo ""
-    echo "Processing package: ${pattern}"
-    
+    echo "Processing package pattern: ${pattern}"
+
     # Find package in API response
     if [ -n "$exclude" ]; then
-        PACKAGE_NAME=$(echo "$RESPONSE" | jsonfilter -e '@[*].name' | grep "${pattern}.*\.ipk" | grep -v "${exclude}" | head -n1)
+        PACKAGE_NAME=$(echo "$RESPONSE" | jsonfilter -e '@[*].name' | grep "${pattern}.*\.ipk" | grep -v "$exclude" | head -n1)
     else
         PACKAGE_NAME=$(echo "$RESPONSE" | jsonfilter -e '@[*].name' | grep "${pattern}.*\.ipk" | head -n1)
     fi
-    
-    if [ -z "$PACKAGE_NAME" ]; then
+
+    [ -z "$PACKAGE_NAME" ] && {
         echo "[ERROR] Package not found: ${pattern}"
         continue
-    fi
-    
+    }
+
     echo "Found: ${PACKAGE_NAME}"
-    
+
     # Download package
-    wget --no-check-certificate -O "${TMP_DIR}/${filename}.ipk" "${DOWNLOAD_BASE_URL}/${PACKAGE_NAME}"
-    
-    if [ $? -eq 0 ]; then
-        # Install package
-        opkg install "${TMP_DIR}/${filename}.ipk"
-        rm "${TMP_DIR}/${filename}.ipk"
+    if wget --no-check-certificate -O "${CONFIG_DIR}/${filename}.ipk" "${DOWNLOAD_BASE_URL}/${PACKAGE_NAME}"; then
+        opkg install "${CONFIG_DIR}/${filename}.ipk" && rm -f "${CONFIG_DIR}/${filename}.ipk"
         echo "Installation completed: ${PACKAGE_NAME}"
-        
-        # Enable service if requested
+
+        # Enable & start service
         if [ -n "$enable_service" ]; then
-            echo "Enabling service: ${enable_service}"
-            /etc/init.d/${enable_service} enable
-            /etc/init.d/${enable_service} start
+            echo "Enabling and starting service: ${enable_service}"
+            /etc/init.d/"${enable_service}" enable
+            /etc/init.d/"${enable_service}" start
         fi
-        
-        # Restart service if requested
+
+        # Restart service
         if [ -n "$restart_service" ]; then
             echo "Restarting service: ${restart_service}"
-            /etc/init.d/${restart_service} restart
+            /etc/init.d/"${restart_service}" restart
         fi
     else
         echo "[ERROR] Download failed: ${PACKAGE_NAME}"
-        continue
     fi
 done
 
 echo ""
 echo "All packages processed."
+exit 0
