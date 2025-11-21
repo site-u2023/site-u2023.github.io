@@ -5,7 +5,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1121.1521"
+VERSION="R7.1121.1530"
 BASE_TMP_DIR="/tmp"
 CONFIG_DIR="$BASE_TMP_DIR/aios2"
 BOOTSTRAP_URL="https://site-u.pages.dev/www"
@@ -1076,7 +1076,7 @@ aios2_main() {
     echo "  aios2 Vr.$VERSION"
     echo "==========================================="
     echo ""
-
+    
     init
     echo "Fetching config.js"
     
@@ -1097,30 +1097,47 @@ aios2_main() {
         echo "Cannot continue without setup.json"
         return 1
     fi
+
+    echo "Fetching postinst.json (critical) and others in parallel..."
     
-    echo "Fetching postinst.json"
-    if ! download_postinst_json; then
-        echo "ERROR: Failed to download postinst.json."
-        echo "FATAL: Package selection is unavailable. The script will now exit." 
+    (
+        if ! download_postinst_json; then
+            echo "ERROR: Failed to download postinst.json." >&2
+            echo "FATAL: Package selection is unavailable. The script will now exit." >&2
+            exit 1
+        fi
+    ) &
+    POSTINST_PID=$!
+
+    (
+        if ! download_review_json; then
+            echo "Warning: Failed to download review.json (Review menu may not be available)"
+        fi
+    ) &
+    REVIEW_PID=$!
+
+    (
+        if ! download_customfeeds_json; then
+            echo "Warning: Failed to download customfeeds.json"
+        fi
+    ) &
+    CUSTOMFEEDS_PID=$!
+    
+    prefetch_templates &
+    TEMPLATES_PID=$!
+    
+    wait $POSTINST_PID
+    POSTINST_STATUS=$?
+    
+    wait $REVIEW_PID
+    wait $CUSTOMFEEDS_PID
+    wait $TEMPLATES_PID
+
+    if [ $POSTINST_STATUS -ne 0 ]; then
         printf "Press [Enter] to exit the script. "
         read -r dummy
-        
         exit 1
     fi
-
-    echo "Fetching review.json"
-    if ! download_review_json; then
-        echo "Warning: Failed to download review.json"
-        echo "Review menu may not be available."
-    fi
-
-    echo "Fetching customfeeds.json"
-    if ! download_customfeeds_json; then
-        echo "Warning: Failed to download customfeeds.json"
-    fi
-
-    echo "Fetching templates"
-    prefetch_templates
     
     load_default_packages
 
