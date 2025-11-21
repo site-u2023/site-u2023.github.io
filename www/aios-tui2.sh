@@ -5,7 +5,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1120.1247"
+VERSION="R7.1121.0943"
 BASE_TMP_DIR="/tmp"
 CONFIG_DIR="$BASE_TMP_DIR/aiost"
 BOOTSTRAP_URL="https://site-u.pages.dev/www"
@@ -129,14 +129,14 @@ select_ui_mode() {
     local has_simple=0
     
     if [ -n "$WHIPTAIL_UI_URL" ]; then
-        if wget -q -O "$CONFIG_DIR/aios-whiptail.sh" "$WHIPTAIL_UI_URL"; then
-            has_whiptail=1
+        if wget -q --spider "$WHIPTAIL_UI_URL" 2>/dev/null; then
+            wget -q -O "$CONFIG_DIR/aios-whiptail.sh" "$WHIPTAIL_UI_URL" && has_whiptail=1
         fi
     fi
     
     if [ -n "$SIMPLE_UI_URL" ]; then
-        if wget -q -O "$CONFIG_DIR/aios-simple.sh" "$SIMPLE_UI_URL"; then
-            has_simple=1
+        if wget -q --spider "$SIMPLE_UI_URL" 2>/dev/null; then
+            wget -q -O "$CONFIG_DIR/aios-simple.sh" "$SIMPLE_UI_URL" && has_simple=1
         fi
     fi
     
@@ -165,13 +165,11 @@ select_ui_mode() {
     if [ "$choice" = "2" ]; then
         UI_MODE="simple"
     else
-        if check_packages_installed $WHIPTAIL_PACKAGES; then
-            UI_MODE="whiptail"
-        else
+        UI_MODE="whiptail"
+        if ! check_packages_installed $WHIPTAIL_PACKAGES; then
             echo "$(translate 'tr-tui-ui-installing')"
             if install_package $WHIPTAIL_PACKAGES; then
                 echo "$(translate 'tr-tui-ui-install-success')"
-                UI_MODE="whiptail"
             else
                 echo "$(translate 'tr-tui-ui-install-failed')"
                 UI_MODE="simple"
