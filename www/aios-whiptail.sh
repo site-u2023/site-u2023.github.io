@@ -111,53 +111,6 @@ EOF
     fi
 }
 
-simple_custom_feeds_selection() {
-    local cat_id
-    
-    if [ "$PKG_MGR" != "opkg" ]; then
-        clear
-        echo "========================================"
-        echo "  $(translate 'tr-tui-custom-feeds')"
-        echo "========================================"
-        echo ""
-        echo "Custom feeds are only available for OPKG"
-        echo ""
-        printf "Press Enter to continue..."
-        read -r _
-        return 0
-    fi
-    
-    if ! download_customfeeds_json; then
-        clear
-        echo "========================================"
-        echo "  $(translate 'tr-tui-custom-feeds')"
-        echo "========================================"
-        echo ""
-        echo "Failed to load custom feeds"
-        echo ""
-        printf "Press Enter to continue..."
-        read -r _
-        return 0
-    fi
-    
-    cat_id=$(get_customfeed_categories | head -1)
-    
-    if [ -z "$cat_id" ]; then
-        clear
-        echo "========================================"
-        echo "  $(translate 'tr-tui-custom-feeds')"
-        echo "========================================"
-        echo ""
-        echo "No custom feeds available"
-        echo ""
-        printf "Press Enter to continue..."
-        read -r _
-        return 0
-    fi
-    
-    simple_package_selection "$cat_id"
-}
-
 device_info() {
     local tr_main_menu tr_device_info breadcrumb info
     
