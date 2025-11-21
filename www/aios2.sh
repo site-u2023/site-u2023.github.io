@@ -25,6 +25,17 @@ CUSTOMFEEDS_DB_PATH=""
 POSTINST_TEMPLATE_PATH=""
 TRANSLATION_CACHE_DATA=""
 
+print_banner_unicode() {
+    printf "\n"
+    printf "%s\n" "$(color magenta "               ██ █")"
+    printf "%s\n" "$(color blue    "     ████      ███       ████      █████")"
+    printf "%s\n" "$(color green   "        ██      ██      ██  ██    ██")"
+    printf "%s\n" "$(color yellow  "     █████      ██      ██  ██     █████")"
+    printf "%s\n" "$(color orange  "    ██  ██      ██      ██  ██         ██")"
+    printf "%s\n" "$(color red     "     █████     ████      ████     ██████")"
+    printf "\n"
+}
+
 load_config_from_js() {
     local CONFIG_JS="$CONFIG_DIR/config.js"
     
@@ -1107,6 +1118,8 @@ EOF3
 # Main Entry Point
 
 aios2_main() {
+    print_banner_unicode
+    
     clear
     echo "==========================================="
     echo "  aios2 Vr.$VERSION"
