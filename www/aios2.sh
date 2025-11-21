@@ -5,7 +5,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1121.1555"
+VERSION="R7.1121.1608"
 BASE_TMP_DIR="/tmp"
 CONFIG_DIR="$BASE_TMP_DIR/aios2"
 BOOTSTRAP_URL="https://site-u.pages.dev/www"
@@ -27,7 +27,7 @@ POSTINST_TEMPLATE_PATH=""
 
 load_config_from_js() {
     local CONFIG_JS="$CONFIG_DIR/config.js"
-    x20x20 x20x20x20x20
+    
     __download_file_core "${BOOTSTRAP_URL}/config.js" "$CONFIG_JS" || {
         echo "Error: Failed to download config.js"
         return 1
@@ -1083,13 +1083,14 @@ aios2_main() {
     detect_package_manager
     echo "Detecting package manager: $PKG_MGR"
     
-    echo "Fetching essential files in parallel..."
+    echo "Fetching auto-config (for language detection)"
+    get_extended_device_info
     
-    (
-        get_extended_device_info
-    ) &
-    AUTO_CONFIG_PID=$!
+    echo "Fetching essential files in parallel"
     
+    TIME_START=$(date +%s.%N 2>/dev/null || date +%s)
+    
+    # setup.json を並列でDL
     (
         if ! download_setup_json; then
             echo "Error: Failed to download setup.json" >&2
@@ -1098,44 +1099,31 @@ aios2_main() {
     ) &
     SETUP_PID=$!
     
-    wait $AUTO_CONFIG_PID
-    AUTO_CONFIG_STATUS=$?
-    wait $SETUP_PID
-    SETUP_STATUS=$?
-
-    if [ $SETUP_STATUS -ne 0 ]; then
-        echo "Cannot continue without setup.json"
-        return 1
-    fi
-    
-    echo "Fetching language: ${AUTO_LANGUAGE:-en}"
-    if ! download_language_json "${AUTO_LANGUAGE:-en}"; then
-        echo "Warning: Using English as fallback language"
-    fi
-
-    TIME_START=$(ubus call system info 2>/dev/null | jsonfilter -e '@.uptime' 2>/dev/null || date +%s)
-    
-    echo "Fetching postinst.json (critical) and others in parallel"
+    (
+        if ! download_language_json "${AUTO_LANGUAGE:-en}"; then
+            echo "Warning: Using English as fallback language" >&2
+        fi
+    ) &
+    LANG_PID=$!
     
     (
         if ! download_postinst_json; then
             echo "ERROR: Failed to download postinst.json." >&2
-            echo "FATAL: Package selection is unavailable. The script will now exit." >&2
             exit 1
         fi
     ) &
     POSTINST_PID=$!
-
+    
     (
         if ! download_review_json; then
-            echo "Warning: Failed to download review.json (Review menu may not be available)"
+            echo "Warning: Failed to download review.json" >&2
         fi
     ) &
     REVIEW_PID=$!
-
+    
     (
         if ! download_customfeeds_json; then
-            echo "Warning: Failed to download customfeeds.json"
+            echo "Warning: Failed to download customfeeds.json" >&2
         fi
     ) &
     CUSTOMFEEDS_PID=$!
@@ -1143,25 +1131,46 @@ aios2_main() {
     prefetch_templates &
     TEMPLATES_PID=$!
     
+    wait $SETUP_PID
+    SETUP_STATUS=$?
+    
+    wait $LANG_PID
+    LANG_STATUS=$?
+    
     wait $POSTINST_PID
     POSTINST_STATUS=$?
     
     wait $REVIEW_PID
     wait $CUSTOMFEEDS_PID
     wait $TEMPLATES_PID
-
-    TIME_END=$(ubus call system info 2>/dev/null | jsonfilter -e '@.uptime' 2>/dev/null || date +%s)
+    
+    TIME_END=$(date +%s.%N 2>/dev/null || date +%s)
+    
+    if command -v bc >/dev/null 2>&1; then
+        ELAPSED_TIME=$(echo "$TIME_END - $TIME_START" | bc)
+    elif command -v awk >/dev/null 2>&1; then
+        ELAPSED_TIME=$(awk "BEGIN {printf \"%.3f\", $TIME_END - $TIME_START}")
+    else
+        ELAPSED_TIME=$((${TIME_END%.*} - ${TIME_START%.*}))
+    fi
     
     echo ""
-    ELAPSED_TIME=$(echo "$TIME_END $TIME_START" | awk '{printf "%.3f", $1 - $2}' 2>/dev/null)
-    
-    echo "INFO: Parallel download block finished in ${ELAPSED_TIME} seconds."
+    echo "INFO: Parallel download finished in ${ELAPSED_TIME} seconds."
+    echo "INFO: Language detected: ${AUTO_LANGUAGE:-en}"
     echo ""
+    
+    if [ $SETUP_STATUS -ne 0 ]; then
+        echo "Cannot continue without setup.json"
+        printf "Press [Enter] to exit. "
+        read -r dummy
+        return 1
+    fi
     
     if [ $POSTINST_STATUS -ne 0 ]; then
-        printf "Press [Enter] to exit the script. "
+        echo "Cannot continue without postinst.json"
+        printf "Press [Enter] to exit. "
         read -r dummy
-        exit 1
+        return 1
     fi
     
     load_default_packages
