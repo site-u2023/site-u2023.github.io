@@ -1121,9 +1121,7 @@ aios2_main() {
     clear
     print_banner_unicode
     
-    echo "==========================================="
-    echo "  Vr.$VERSION"
-    echo "==========================================="
+    echo "    Vr.$VERSION"
     echo ""
     
     init
