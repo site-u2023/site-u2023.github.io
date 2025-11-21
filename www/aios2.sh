@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1122.1016"
+VERSION="R7.1122.0109"
 BASE_TMP_DIR="/tmp"
 CONFIG_DIR="$BASE_TMP_DIR/aios2"
 BOOTSTRAP_URL="https://site-u.pages.dev/www"
@@ -1118,11 +1118,11 @@ EOF3
 # Main Entry Point
 
 aios2_main() {
+    clear
     print_banner_unicode
     
-    clear
     echo "==========================================="
-    echo "  aios2 Vr.$VERSION"
+    echo "  Vr.$VERSION"
     echo "==========================================="
     echo ""
     
