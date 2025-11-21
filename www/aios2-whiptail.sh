@@ -6,6 +6,15 @@
 
 VERSION="R7.1121.1829"
 
+UI_WIDTH="78"
+UI_HEIGHT="0"
+
+DEFAULT_BTN_SELECT="tr-tui-select"
+DEFAULT_BTN_BACK="tr-tui-back"
+DEFAULT_BTN_YES="tr-tui-yes"
+DEFAULT_BTN_NO="tr-tui-no"
+DEFAULT_BTN_OK="tr-tui-ok"
+
 NEWT_COLORS='
 title=black,lightgray
 '
