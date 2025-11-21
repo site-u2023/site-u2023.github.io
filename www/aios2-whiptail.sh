@@ -12,9 +12,9 @@ UI_HEIGHT="0"
 # 0: Stay in current section/context
 # 1: Go back one level (to parent section/category)
 # 2: Return to main menu
-RETURN_STAY=0
-RETURN_BACK=1
-RETURN_MAIN=2
+RETURN_STAY="0"
+RETURN_BACK="1"
+RETURN_MAIN="2"
 
 DEFAULT_BTN_SELECT="tr-tui-select"
 DEFAULT_BTN_BACK="tr-tui-back"
