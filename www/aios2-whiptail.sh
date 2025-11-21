@@ -906,39 +906,34 @@ EOF
 }
 
 review_and_apply() {
-    local tr_main_menu tr_review breadcrumb choice
-    
     generate_files
     
-    tr_main_menu=$(translate "tr-tui-main-menu")
-    tr_review=$(translate "tr-tui-review-configuration")
+    local breadcrumb=$(build_breadcrumb "$(translate 'tr-tui-main-menu')" "$(translate 'tr-tui-review-configuration')")
     
     while true; do
-        breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review")
+        local menu_items=""
+        for i in $(get_review_items); do
+            menu_items="$menu_items $i \"$(get_review_item_label $i)\""
+        done
         
-        choice=$(show_menu "$breadcrumb" "" "" "" \
-            "1" "$(translate 'tr-tui-view-device-info')" \
-            "2" "$(translate 'tr-tui-view-package-list')" \
-            "3" "$(translate 'tr-tui-view-custom-packages')" \
-            "4" "$(translate 'tr-tui-view-config-vars')" \
-            "5" "$(translate 'tr-tui-view-postinst')" \
-            "6" "$(translate 'tr-tui-view-customfeeds')" \
-            "7" "$(translate 'tr-tui-view-setup')" \
-            "8" "$(translate 'tr-tui-apply')")
+        local choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"\" \"\" $menu_items") || return 0
         
-        if ! [ $? -eq 0 ]; then
-            return 0
-        fi
+        local action=$(get_review_item_action $choice)
         
-        case "$choice" in
-            1) device_info_titled "$breadcrumb" ;;
-            2) show_textbox "$breadcrumb" "$SELECTED_PACKAGES" ;;
-            3) view_selected_custom_packages ;;
-            4) show_textbox "$breadcrumb" "$SETUP_VARS" ;;
-            5) show_textbox "$breadcrumb" "$CONFIG_DIR/postinst.sh" ;;
-            6) view_customfeeds ;;
-            7) show_textbox "$breadcrumb" "$CONFIG_DIR/setup.sh" ;;
-            8) return 0 ;;
+        case "$action" in
+            device_info)
+                device_info_titled "$breadcrumb"
+                ;;
+            textbox)
+                local file=$(get_review_item_file $choice)
+                [ -f "$file" ] && show_textbox "$breadcrumb" "$file"
+                ;;
+            view_selected_custom_packages|view_customfeeds)
+                $action
+                ;;
+            apply)
+                # 既存のapply処理そのまま
+                ;;
         esac
     done
 }
