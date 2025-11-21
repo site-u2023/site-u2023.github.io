@@ -1,13 +1,12 @@
 #!/bin/sh
+# shellcheck shell=sh
 
 # BEGIN_VARIABLE_DEFINITIONS
 # END_VARIABLE_DEFINITIONS
 
-BASE_TMP_DIR="/tmp"
-CONFIG_DIR="$BASE_TMP_DIR/aiost"
-TMP_DIR="$BASE_TMP_DIR"
+BASE_DIR="/tmp"
+CONFIG_DIR="$BASE_DIR/aios2"
 
-# OpenWrt version check
 OPENWRT_RELEASE=$(grep 'DISTRIB_RELEASE' /etc/openwrt_release 2>/dev/null | cut -d"'" -f2 | cut -c 1-2)
 
 if [ -z "$OPENWRT_RELEASE" ]; then
@@ -15,7 +14,6 @@ if [ -z "$OPENWRT_RELEASE" ]; then
     exit 1
 fi
 
-# Check if version is SNAPSHOT or >= 19
 if [ "$OPENWRT_RELEASE" = "SN" ]; then
     echo "OpenWrt version: SNAPSHOT [OK]"
 elif [ "$OPENWRT_RELEASE" -ge 19 ] 2>/dev/null; then
@@ -25,7 +23,6 @@ else
     exit 1
 fi
 
-# Run opkg update if requested
 if [ "$RUN_OPKG_UPDATE" = "1" ]; then
     echo "Running opkg update..."
     opkg update
@@ -40,7 +37,6 @@ if [ -z "$RESPONSE" ]; then
     exit 1
 fi
 
-# Extract tag name (version) from release
 TAG_NAME=$(echo "$RESPONSE" | jsonfilter -e '@.tag_name' 2>/dev/null)
 
 if [ -z "$TAG_NAME" ]; then
@@ -50,14 +46,12 @@ fi
 
 echo "Latest release version: ${TAG_NAME}"
 
-# Process each package in PACKAGES variable
 echo "$PACKAGES" | tr ' ' '\n' | while read -r pattern; do
     [ -z "$pattern" ] && continue
     
     echo ""
     echo "Processing package: ${pattern}"
     
-    # Find package in release assets
     PACKAGE_NAME=$(echo "$RESPONSE" | jsonfilter -e '@.assets[*].name' | grep "${pattern}.*\.ipk" | head -n1)
     
     if [ -z "$PACKAGE_NAME" ]; then
@@ -67,16 +61,14 @@ echo "$PACKAGES" | tr ' ' '\n' | while read -r pattern; do
     
     echo "Found: ${PACKAGE_NAME}"
     
-    # Construct download URL
     DOWNLOAD_URL="${DOWNLOAD_BASE_URL}/${TAG_NAME}/${PACKAGE_NAME}"
     
-    # Download package
-    wget --no-check-certificate -O "${TMP_DIR}/${PACKAGE_NAME}" "${DOWNLOAD_URL}"
+    wget --no-check-certificate -O "${CONFIG_DIR}/${PACKAGE_NAME}" "${DOWNLOAD_URL}"
     
     if [ $? -eq 0 ]; then
         # Install package
-        opkg install "${TMP_DIR}/${PACKAGE_NAME}"
-        rm "${TMP_DIR}/${PACKAGE_NAME}"
+        opkg install "${CONFIG_DIR}/${PACKAGE_NAME}"
+        rm "${CONFIG_DIR}/${PACKAGE_NAME}"
         echo "Installation completed: ${PACKAGE_NAME}"
     else
         echo "[ERROR] Download failed: ${PACKAGE_NAME}"
