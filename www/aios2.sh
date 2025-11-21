@@ -1098,7 +1098,7 @@ aios2_main() {
         return 1
     fi
 
-    echo "Fetching postinst.json (critical) and others in parallel..."
+    echo "Fetching postinst.json (critical) and others in parallel"
     
     (
         if ! download_postinst_json; then
