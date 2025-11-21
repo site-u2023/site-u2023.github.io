@@ -1148,7 +1148,7 @@ aios2_main() {
     TIME_END=$(cut -d' ' -f1 /proc/uptime)
     echo "[DEBUG] TIME_START='$TIME_START' TIME_END='$TIME_END'" >> "$CONFIG_DIR/debug.log"
     
-    ELAPSED_TIME=$(awk "BEGIN {printf \"%.2f\", $TIME_END - $TIME_START}")i
+    ELAPSED_TIME=$(awk "BEGIN {printf \"%.2f\", $TIME_END - $TIME_START}")
     
     echo ""
     echo "INFO: Parallel download finished in ${ELAPSED_TIME} seconds."
