@@ -929,7 +929,7 @@ compute_dslite_aftr() {
     return 1
 }
 
-__download_file_core() {
+XX__download_file_core() {
     local url="$1"
     local output_path="$2"
     local cache_buster="?t=$(date +%s)"
@@ -939,6 +939,35 @@ __download_file_core() {
         return 1
     fi
     return 0
+}
+
+__download_file_core() {
+    local url="$1"
+    local output_path="$2"
+    local max_retries=5
+    local retry=0
+    local delay=1
+    local cache_buster="?t=$(date +%s)"
+    local full_url="${url}${cache_buster}"
+
+    while [ $retry -le $max_retries ]; do
+        if wget --timeout=15 --tries=1 -q -O "$output_path" "$full_url" 2>>"$CONFIG_DIR/debug.log"; then
+            echo "[INFO] Download success: $url → $output_path" >> "$CONFIG_DIR/debug.log"
+            return 0
+        fi
+
+        retry=$((retry + 1))
+        if [ $retry -le $max_retries ]; then
+            echo "[WARN] Download failed (attempt $retry/$max_retries): $url" >> "$CONFIG_DIR/debug.log"
+            sleep $delay
+            delay=$((delay * 2))
+            cache_buster="?t=$(date +%s)"
+            full_url="${url}${cache_buster}"
+        fi
+    done
+
+    echo "[ERROR] Download permanently failed after $max_retries retries: $url" >> "$CONFIG_DIR/debug.log"
+    return 1
 }
 
 # File Generation
