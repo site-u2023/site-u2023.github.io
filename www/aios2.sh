@@ -5,7 +5,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1121.1214"
+VERSION="R7.1121.1426"
 BASE_TMP_DIR="/tmp"
 CONFIG_DIR="$BASE_TMP_DIR/aios2"
 BOOTSTRAP_URL="https://site-u.pages.dev/www"
@@ -88,6 +88,9 @@ SETUP_VARS="$CONFIG_DIR/setup_vars.sh"
 TRANSLATION_CACHE="$CONFIG_DIR/translation_cache.txt"
 CUSTOMFEEDS_JSON="$CONFIG_DIR/customfeeds.json"
 REVIEW_JSON="$CONFIG_DIR/review.json"
+
+TPL_POSTINST="$CONFIG_DIR/tpl_postinst.sh"
+TPL_SETUP="$CONFIG_DIR/tpl_setup.sh"
 
 # Common UI Configuration Variables (shared by both UIs)
 UI_HEIGHT="0"
@@ -938,46 +941,72 @@ compute_dslite_aftr() {
 
 # File Generation
 
-generate_files() {
+fetch_cached_template() {
+    local url="$1"
+    local output_path="$2"
     local cache_buster="?t=$(date +%s)"
+    
+    if [ -f "$output_path" ] && [ -s "$output_path" ]; then
+        return 0
+    fi
+    
+    if ! wget -q -O "$output_path" "${url}${cache_buster}"; then
+        echo "[ERROR] Failed to download template: $url" >> "$CONFIG_DIR/debug.log"
+        return 1
+    fi
+    
+    return 0
+}
+
+generate_files() {
     local pkgs selected_pkgs cat_id template_url api_url download_url temp_pkg_file pkg_id pattern
+    local tpl_custom
     
-    {
-        wget -q -O - "${POSTINST_TEMPLATE_URL}${cache_buster}" | sed -n '1,/^# BEGIN_VARIABLE_DEFINITIONS/p'
-        
-        if [ -s "$SELECTED_PACKAGES" ]; then
-            pkgs=$(cat "$SELECTED_PACKAGES" | tr '\n' ' ' | sed 's/ $//')
-            echo "PACKAGES=\"${pkgs}\""
-        else
-            echo "PACKAGES=\"\""
-        fi
-        
-        wget -q -O - "${POSTINST_TEMPLATE_URL}${cache_buster}" | sed -n '/^# END_VARIABLE_DEFINITIONS/,$p'
-    } > "$CONFIG_DIR/postinst.sh"
+    fetch_cached_template "$POSTINST_TEMPLATE_URL" "$TPL_POSTINST"
     
-    chmod +x "$CONFIG_DIR/postinst.sh"
+    if [ -f "$TPL_POSTINST" ]; then
+        {
+            sed -n '1,/^# BEGIN_VARIABLE_DEFINITIONS/p' "$TPL_POSTINST"
+            
+            if [ -s "$SELECTED_PACKAGES" ]; then
+                pkgs=$(cat "$SELECTED_PACKAGES" | tr '\n' ' ' | sed 's/ $//')
+                echo "PACKAGES=\"${pkgs}\""
+            else
+                echo "PACKAGES=\"\""
+            fi
+            
+            sed -n '/^# END_VARIABLE_DEFINITIONS/,$p' "$TPL_POSTINST"
+        } > "$CONFIG_DIR/postinst.sh"
+        chmod +x "$CONFIG_DIR/postinst.sh"
+    fi
     
-    {
-        wget -q -O - "${SETUP_TEMPLATE_URL}${cache_buster}" | sed -n '1,/^# BEGIN_VARS/p'
-        
-        if [ -s "$SETUP_VARS" ]; then
-            cat "$SETUP_VARS"
-        fi
-        
-        wget -q -O - "${SETUP_TEMPLATE_URL}${cache_buster}" | sed -n '/^# END_VARS/,$p'
-    } > "$CONFIG_DIR/setup.sh"
+    fetch_cached_template "$SETUP_TEMPLATE_URL" "$TPL_SETUP"
     
-    chmod +x "$CONFIG_DIR/setup.sh"
+    if [ -f "$TPL_SETUP" ]; then
+        {
+            sed -n '1,/^# BEGIN_VARS/p' "$TPL_SETUP"
+            
+            if [ -s "$SETUP_VARS" ]; then
+                cat "$SETUP_VARS"
+            fi
+            
+            sed -n '/^# END_VARS/,$p' "$TPL_SETUP"
+        } > "$CONFIG_DIR/setup.sh"
+        chmod +x "$CONFIG_DIR/setup.sh"
+    fi
     
     if [ -f "$CUSTOMFEEDS_JSON" ]; then
         while read -r cat_id; do
             template_url=$(get_customfeed_template_url "$cat_id")
             
-            if [ -z "$template_url" ]; then
-                echo "[WARN] No template URL found for: $cat_id" >> "$CONFIG_DIR/debug.log"
-                continue
-            fi
+            [ -z "$template_url" ] && continue
             
+            tpl_custom="$CONFIG_DIR/tpl_custom_${cat_id}.sh"
+            
+            fetch_cached_template "$template_url" "$tpl_custom"
+            
+            [ ! -f "$tpl_custom" ] && continue
+
             api_url=$(get_customfeed_api_base "$cat_id")
             download_url=$(get_customfeed_download_base "$cat_id")
             
@@ -999,14 +1028,14 @@ EOF2
             fi
             
             {
-                wget -q -O - "${template_url}${cache_buster}" | sed -n '1,/^# BEGIN_VARIABLE_DEFINITIONS/p'
+                sed -n '1,/^# BEGIN_VARIABLE_DEFINITIONS/p' "$tpl_custom"
                 
                 echo "PACKAGES=\"${selected_pkgs}\""
                 echo "API_URL=\"${api_url}\""
                 echo "DOWNLOAD_BASE_URL=\"${download_url}\""
                 echo "RUN_OPKG_UPDATE=\"0\""
                 
-                wget -q -O - "${template_url}${cache_buster}" | sed -n '/^# END_VARIABLE_DEFINITIONS/,$p'
+                sed -n '/^# END_VARIABLE_DEFINITIONS/,$p' "$tpl_custom"
             } > "$CONFIG_DIR/customfeeds-${cat_id}.sh"
             
             chmod +x "$CONFIG_DIR/customfeeds-${cat_id}.sh"
