@@ -5,7 +5,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1121.1503"
+VERSION="R7.1121.1521"
 BASE_TMP_DIR="/tmp"
 CONFIG_DIR="$BASE_TMP_DIR/aios2"
 BOOTSTRAP_URL="https://site-u.pages.dev/www"
@@ -27,7 +27,7 @@ POSTINST_TEMPLATE_PATH=""
 
 load_config_from_js() {
     local CONFIG_JS="$CONFIG_DIR/config.js"
-        
+    x20x20 x20x20x20x20
     __download_file_core "${BOOTSTRAP_URL}/config.js" "$CONFIG_JS" || {
         echo "Error: Failed to download config.js"
         return 1
@@ -318,15 +318,15 @@ get_extended_device_info() {
     get_device_info
     
     OPENWRT_VERSION=$(grep 'DISTRIB_RELEASE' /etc/openwrt_release 2>/dev/null | cut -d"'" -f2)
-    
-    if ! __download_file_core "$AUTO_CONFIG_API_URL" "$AUTO_CONFIG_JSON"; then
-        echo "Warning: Failed to fetch auto-config API"
+x20x20 x20x20x20x20
+x20x20 x20x20 if ! __download_file_core "$AUTO_CONFIG_API_URL" "$AUTO_CONFIG_JSON"; then
+x20x20 x20x20 x20x20 x20x20 echo "Warning: Failed to fetch auto-config API"
         echo "https://www.cloudflarestatus.com/"
         return 1
     fi
     
     AUTO_LANGUAGE=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.language' 2>/dev/null)
-    AUTO_TIMEZONE=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.timezone' -e '@.timezone' 2>/dev/null)
+    AUTO_TIMEZONE=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.timezone' 2>/dev/null)
     AUTO_ZONENAME=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.zonename' 2>/dev/null)
     AUTO_COUNTRY=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.country' 2>/dev/null)
     ISP_NAME=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.isp' 2>/dev/null)
