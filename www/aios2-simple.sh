@@ -1,5 +1,6 @@
 #!/bin/sh
-
+# shellcheck shell=ash
+# shellcheck disable=SC3043,SC2034
 # OpenWrt Device Setup Tool - simple TEXT Module
 # This file contains simple text-based UI functions
 
