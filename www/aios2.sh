@@ -5,7 +5,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1121.1151"
+VERSION="R7.1121.1239"
 BASE_TMP_DIR="/tmp"
 CONFIG_DIR="$BASE_TMP_DIR/aios2"
 BOOTSTRAP_URL="https://site-u.pages.dev/www"
@@ -83,10 +83,9 @@ LANG_JSON="$CONFIG_DIR/lang.json"
 SELECTED_PACKAGES="$CONFIG_DIR/selected_packages.txt"
 SELECTED_CUSTOM_PACKAGES="$CONFIG_DIR/selected_custom_packages.txt"
 SETUP_VARS="$CONFIG_DIR/setup_vars.sh"
-
 TRANSLATION_CACHE="$CONFIG_DIR/translation_cache.txt"
-
 CUSTOMFEEDS_JSON="$CONFIG_DIR/customfeeds.json"
+REVIEW_JSON="$CONFIG_DIR/review.json"
 
 # Common UI Configuration Variables (shared by both UIs)
 UI_HEIGHT="0"
@@ -650,6 +649,38 @@ is_package_selected() {
     fi
 }
 
+download_review_json() {
+    wget -q -O "$REVIEW_JSON" "${BASE_URL}/review.json?t=$(date +%s)" || return 1
+}
+
+get_review_items() {
+    jsonfilter -i "$REVIEW_JSON" -e '@.items[*].id' 2>/dev/null
+}
+
+get_review_item_label() {
+    local idx=$((${1}-1))
+    local class=$(jsonfilter -i "$REVIEW_JSON" -e "@.items[$idx].class" 2>/dev/null)
+    translate "$class"
+}
+
+get_review_item_action() {
+    local idx=$((${1}-1))
+    jsonfilter -i "$REVIEW_JSON" -e "@.items[$idx].action" 2>/dev/null
+}
+
+get_review_item_file() {
+    local idx=$((${1}-1))
+    local file=$(jsonfilter -i "$REVIEW_JSON" -e "@.items[$idx].file" 2>/dev/null)
+    
+    case "$file" in
+        "SELECTED_PACKAGES") echo "$SELECTED_PACKAGES" ;;
+        "SETUP_VARS") echo "$SETUP_VARS" ;;
+        "postinst.sh") echo "$CONFIG_DIR/postinst.sh" ;;
+        "setup.sh") echo "$CONFIG_DIR/setup.sh" ;;
+        *) echo "$file" ;;
+    esac
+}
+
 # Custom Feeds Management
 
 download_customfeeds_json() {
@@ -1027,7 +1058,13 @@ aios2_main() {
         echo "Package selection will not be available."
         sleep 2
     fi
-    
+
+    echo "Fetching review.json"
+    if ! download_review_json; then
+        echo "Warning: Failed to download review.json"
+        echo "Review menu may not be available."
+    fi
+
     load_default_packages
 
     echo "connection_type='auto'" >> "$SETUP_VARS"
