@@ -5,7 +5,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1121.1239"
+VERSION="R7.1121.1244"
 BASE_TMP_DIR="/tmp"
 CONFIG_DIR="$BASE_TMP_DIR/aios2"
 BOOTSTRAP_URL="https://site-u.pages.dev/www"
@@ -34,8 +34,6 @@ load_config_from_js() {
     }
 
     BASE_URL=$(grep -E '(base_url|base_path):' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/' | tr '\n' '/' | sed 's/\/$//')
-
-    BASE_URL=$(grep -E '(base_url|base_path):' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/' | tr '\n' '/' | sed 's/\/$//')
     AUTO_CONFIG_API_URL=$(grep 'auto_config_api_url:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
     PACKAGES_DB_PATH=$(grep 'packages_db_path:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
     POSTINST_TEMPLATE_PATH=$(grep 'postinst_template_path:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
@@ -43,6 +41,7 @@ load_config_from_js() {
     SETUP_TEMPLATE_PATH=$(grep 'setup_template_path:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
     LANGUAGE_PATH_TEMPLATE=$(grep 'language_path_template:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
     CUSTOMFEEDS_DB_PATH=$(grep 'customfeeds_db_path:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
+    REVIEW_DB_PATH=$(grep 'review_json_path:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
 
     WHIPTAIL_UI_PATH=$(grep 'whiptail_ui_path:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
     SIMPLE_UI_PATH=$(grep 'simple_ui_path:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
@@ -54,6 +53,7 @@ load_config_from_js() {
     SETUP_JSON_URL="${BASE_URL}/${SETUP_DB_PATH}"
     SETUP_TEMPLATE_URL="${BASE_URL}/${SETUP_TEMPLATE_PATH}"
     CUSTOMFEEDS_JSON_URL="${BASE_URL}/${CUSTOMFEEDS_DB_PATH}"
+    REVIEW_JSON_URL="${BASE_URL}/${REVIEW_DB_PATH}"
 
     WHIPTAIL_UI_URL="${BASE_URL}/${WHIPTAIL_UI_PATH}${CACHE_BUSTER}"
     SIMPLE_UI_URL="${BASE_URL}/${SIMPLE_UI_PATH}${CACHE_BUSTER}"
@@ -67,6 +67,8 @@ load_config_from_js() {
         echo "[DEBUG] AUTO_CONFIG_API_URL=$AUTO_CONFIG_API_URL"
         echo "[DEBUG] CUSTOMFEEDS_DB_PATH=$CUSTOMFEEDS_DB_PATH"
         echo "[DEBUG] CUSTOMFEEDS_JSON_URL=$CUSTOMFEEDS_JSON_URL"
+        echo "[DEBUG] REVIEW_DB_PATH=$REVIEW_DB_PATH"
+        echo "[DEBUG] REVIEW_JSON_URL=$REVIEW_JSON_URL"
         echo "[DEBUG] WHIPTAIL_UI_URL=$WHIPTAIL_UI_URL"
         echo "[DEBUG] SIMPLE_UI_URL=$SIMPLE_UI_URL"
     } >> "$CONFIG_DIR/debug.log"
@@ -650,7 +652,7 @@ is_package_selected() {
 }
 
 download_review_json() {
-    wget -q -O "$REVIEW_JSON" "${BASE_URL}/review.json?t=$(date +%s)" || return 1
+    wget -q -O "$REVIEW_JSON" "${REVIEW_JSON_URL}?t=$(date +%s)" || return 1
 }
 
 get_review_items() {
