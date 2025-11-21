@@ -4,7 +4,7 @@
 # OpenWrt Device Setup Tool - whiptail TUI Module
 # This file contains whiptail-specific UI functions
 
-VERSION="R7.1121.1155"
+VERSION="R7.1121.1251"
 
 NEWT_COLORS='
 title=black,lightgray
@@ -932,7 +932,26 @@ review_and_apply() {
                 $action
                 ;;
             apply)
-                # 既存のapply処理そのまま
+                if show_yesno "$breadcrumb" "$(translate 'tr-tui-apply-confirm-question')"; then
+                    echo "$(translate 'tr-tui-installing-packages')"
+                    sh "$CONFIG_DIR/postinst.sh"
+                    
+                    echo "$(translate 'tr-tui-installing-custom-packages')"
+                    for script in "$CONFIG_DIR"/customfeeds-*.sh; do
+                        [ -f "$script" ] && sh "$script"
+                    done
+                    
+                    echo ""
+                    echo "$(translate 'tr-tui-applying-config')"
+                    sh "$CONFIG_DIR/setup.sh"
+                    echo ""
+                    show_msgbox "$breadcrumb" "$(translate 'tr-tui-config-applied')"
+                    
+                    if show_yesno "$breadcrumb" "$(translate 'tr-tui-reboot-question')"; then
+                        reboot
+                    fi
+                    return 0
+                fi
                 ;;
         esac
     done
