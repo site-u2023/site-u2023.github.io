@@ -88,7 +88,7 @@ TRANSLATION_CACHE="$CONFIG_DIR/translation_cache.txt"
 
 CUSTOMFEEDS_JSON="$CONFIG_DIR/customfeeds.json"
 
-# UI Configuration Variables
+# Common UI Configuration Variables (shared by both UIs)
 UI_HEIGHT="0"
 UI_WIDTH="78"
 
@@ -219,8 +219,6 @@ init() {
         echo "Fatal: Cannot load configuration"
         return 1
     }
-    
-    export NEWT_COLORS
     
     : > "$SELECTED_PACKAGES"
     : > "$SELECTED_CUSTOM_PACKAGES"
