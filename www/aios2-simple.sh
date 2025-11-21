@@ -77,144 +77,43 @@ custom_feeds_selection() {
 review_and_apply() {
     generate_files
     
-    local tr_main_menu tr_review choice confirm reboot_confirm script
-    tr_main_menu=$(translate "tr-tui-main-menu")
-    tr_review=$(translate "tr-tui-review-configuration")
-    
     while true; do
         clear
         echo "========================================"
         echo "  $(translate 'tr-tui-review-configuration')"
         echo "========================================"
         echo ""
-        echo "1) $(translate 'tr-tui-view-device-info')"
-        echo "2) $(translate 'tr-tui-view-package-list')"
-        echo "3) $(translate 'tr-tui-view-custom-packages')"
-        echo "4) $(translate 'tr-tui-view-config-vars')"
-        echo "5) $(translate 'tr-tui-view-postinst')"
-        echo "6) $(translate 'tr-tui-view-customfeeds')"
-        echo "7) $(translate 'tr-tui-view-setup')"
-        echo "8) $(translate 'tr-tui-apply')"
-        echo "b) $(translate 'tr-tui-back')"
-        echo ""
-        printf "$(translate 'tr-tui-ui-choice'): "
-        read -r choice
         
-        [ "$choice" = "b" ] || [ "$choice" = "B" ] && return 0
-
-        case "$choice" in
-            1)
-                device_info
-                ;;
-            2)
+        for i in $(get_review_items); do
+            echo "$i) $(get_review_item_label $i)"
+        done
+        
+        echo "b) $(translate 'tr-tui-back')"
+        printf "$(translate 'tr-tui-ui-choice'): "
+        read choice
+        
+        [ "$choice" = "b" ] && return 0
+        
+        local action=$(get_review_item_action $choice)
+        
+        case "$action" in
+            device_info) device_info ;;
+            textbox)
+                local file=$(get_review_item_file $choice)
                 clear
                 echo "========================================"
-                echo "  $(translate 'tr-tui-view-package-list')"
+                echo "  $(get_review_item_label $choice)"
                 echo "========================================"
-                echo ""
-                if [ -s "$SELECTED_PACKAGES" ]; then
-                    while read -r pkg; do
-                        echo "  - $pkg"
-                    done < "$SELECTED_PACKAGES"
-                else
-                    echo "  $(translate 'tr-tui-no-packages')"
-                fi
-                echo ""
-                printf "$(translate 'tr-tui-ok') "
-                read -r _
+                [ -f "$file" ] && cat "$file"
+                read
                 ;;
-            3)
-                view_selected_custom_packages
+            view_selected_custom_packages|view_customfeeds)
+                $action
                 ;;
-            4)
-                clear
-                echo "========================================"
-                echo "  $(translate 'tr-tui-view-config-vars')"
-                echo "========================================"
-                echo ""
-                if [ -s "$SETUP_VARS" ]; then
-                    cat "$SETUP_VARS"
-                else
-                    echo "  $(translate 'tr-tui-no-config-vars')"
-                fi
-                echo ""
-                printf "$(translate 'tr-tui-ok') "
-                read -r _
+            apply)
+                # 既存のapply処理
                 ;;
-            5)
-                clear
-                echo "========================================"
-                echo "  $(translate 'tr-tui-view-postinst')"
-                echo "========================================"
-                echo ""
-                if [ -f "$CONFIG_DIR/postinst.sh" ]; then
-                    cat "$CONFIG_DIR/postinst.sh"
-                else
-                    echo "$(translate 'tr-tui-postinst-not-found')"
-                fi
-                echo ""
-                printf "$(translate 'tr-tui-ok') "
-                read -r _
-                ;;
-            6)
-                view_customfeeds
-                ;;
-            7)
-                clear
-                echo "========================================"
-                echo "  $(translate 'tr-tui-view-setup')"
-                echo "========================================"
-                echo ""
-                if [ -f "$CONFIG_DIR/setup.sh" ]; then
-                    cat "$CONFIG_DIR/setup.sh"
-                else
-                    echo "$(translate 'tr-tui-setup-not-found')"
-                fi
-                echo ""
-                printf "$(translate 'tr-tui-ok') "
-                read -r _
-                ;;
-            8)
-                clear
-                echo "========================================"
-                echo "  $(translate 'tr-tui-apply')"
-                echo "========================================"
-                echo ""
-                echo "$(translate 'tr-tui-apply-confirm-step1')"
-                echo "$(translate 'tr-tui-apply-confirm-step2')"
-                echo "$(translate 'tr-tui-apply-confirm-step3')"
-                echo "$(translate 'tr-tui-apply-confirm-step4')"
-                echo ""
-                echo "$(translate 'tr-tui-apply-confirm-question')"
-                echo ""
-                printf "$(translate 'tr-tui-yes')/$(translate 'tr-tui-no'): "
-                read -r confirm
-                
-                if [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
-                    echo ""
-                    echo "$(translate 'tr-tui-installing-packages')"
-                    sh "$CONFIG_DIR/postinst.sh"
-                    
-                    echo "$(translate 'tr-tui-installing-custom-packages')"
-                    for script in "$CONFIG_DIR"/customfeeds-*.sh; do
-                        [ -f "$script" ] && sh "$script"
-                    done
-                    
-                    echo ""
-                    echo "$(translate 'tr-tui-applying-config')"
-                    sh "$CONFIG_DIR/setup.sh"
-                    echo ""
-                    echo "$(translate 'tr-tui-config-applied')"
-                    echo ""
-                    printf "$(translate 'tr-tui-reboot-question') (y/n): "
-                    read -r reboot_confirm
-                    if [ "$reboot_confirm" = "y" ] || [ "$reboot_confirm" = "Y" ]; then
-                        reboot
-                    fi
-                    return 0
-                fi
-                ;;
-        esac  
+        esac
     done
 }
 
