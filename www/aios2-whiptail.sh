@@ -3,7 +3,7 @@
 # OpenWrt Device Setup Tool - whiptail TUI Module
 # This file contains whiptail-specific UI functions
 
-VERSION="R7.1122.0044"
+VERSION="R7.1122.0101"
 
 UI_WIDTH="78"
 UI_HEIGHT="0"
@@ -358,7 +358,8 @@ process_items() {
             nested=$(get_section_nested_items "$item_id")
             for child_id in $nested; do
                 local ret
-                ret=$(process_items "$cat_id" "$child_id" "$item_breadcrumb" "section")
+                process_items "$cat_id" "$child_id" "$item_breadcrumb" "section"
+                ret=$?
                 case $ret in
                     $RETURN_STAY)
                         continue
@@ -687,7 +688,8 @@ category_config() {
             if [ "$item_type" = "radio-group" ]; then
                 found_radio=1
                 
-                ret=$(process_items "$cat_id" "$item_id" "$base_breadcrumb")
+                process_items "$cat_id" "$item_id" "$base_breadcrumb"
+                ret=$?
                 case $ret in
                     $RETURN_STAY)
                         ;;
@@ -726,7 +728,8 @@ No additional settings required."
                     fi
                 fi
             else
-                ret=$(process_items "$cat_id" "$item_id" "$radio_breadcrumb")
+                process_items "$cat_id" "$item_id" "$radio_breadcrumb"
+                ret=$?
                 case $ret in
                     $RETURN_STAY)
                         continue
