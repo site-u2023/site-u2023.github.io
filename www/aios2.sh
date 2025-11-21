@@ -958,6 +958,26 @@ fetch_cached_template() {
     return 0
 }
 
+prefetch_templates() {
+    local cat_id template_url tpl_custom
+    
+    fetch_cached_template "$POSTINST_TEMPLATE_URL" "$TPL_POSTINST"
+    fetch_cached_template "$SETUP_TEMPLATE_URL" "$TPL_SETUP"
+    
+    if [ -f "$CUSTOMFEEDS_JSON" ]; then
+        while read -r cat_id; do
+            template_url=$(get_customfeed_template_url "$cat_id")
+            
+            if [ -n "$template_url" ]; then
+                tpl_custom="$CONFIG_DIR/tpl_custom_${cat_id}.sh"
+                fetch_cached_template "$template_url" "$tpl_custom"
+            fi
+        done <<EOF
+$(get_customfeed_categories)
+EOF
+    fi
+}
+
 generate_files() {
     local pkgs selected_pkgs cat_id template_url api_url download_url temp_pkg_file pkg_id pattern
     local tpl_custom
@@ -1100,6 +1120,9 @@ aios2_main() {
     if ! download_customfeeds_json; then
         echo "Warning: Failed to download customfeeds.json"
     fi
+
+    echo "Fetching templates"
+    prefetch_templates
     
     load_default_packages
 
