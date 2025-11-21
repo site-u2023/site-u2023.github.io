@@ -1,5 +1,4 @@
 #!/bin/sh
-
 # shellcheck shell=ash
 # shellcheck disable=SC3043
 # OpenWrt Device Setup Tool - CLI Version
