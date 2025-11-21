@@ -121,11 +121,18 @@ Terminal > Protocol Handler Registration > Download > Install (double-click)
 | Open Source | GitHub Public | GitHub Public |
 
 ### Console Tool
-[aios TUI Version (whiptail) β Version](https://github.com/site-u2023/site-u2023.github.io/blob/main/www/aios-tui.sh)
+[aios2 TUI Version (whiptail)](https://github.com/site-u2023/site-u2023.github.io/blob/main/www/aios2.sh)
 
 ![aios-tui.png](https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/3412833/3a05ca3f-8cf8-4a25-954b-10815e502383.png)
+
+- Cloudflare Pages
 ```sh
-mkdir -p /tmp/aios && wget -O /tmp/aios/aios-tui.sh "https://raw.githubusercontent.com/site-u2023/site-u2023.github.io/refs/heads/main/www/aios-tui.sh" && chmod +x /tmp/aios/aios-tui.sh && /tmp/aios/aios-tui.sh
+mkdir -p /tmp/aios2 && wget --no-check-certificate -O /tmp/aiost/aios2.sh "https://site-u.pages.dev/www/aios2.sh" && chmod +x /tmp/aiost/aios-tui.sh && /tmp/aiost/aios2.sh
+```
+
+- GitHub io
+```sh
+mkdir -p /tmp/aios2; wget --no-check-certificate -O /tmp/aiost/aios2.sh "https://raw.githubusercontent.com/site-u2023/site-u2023.github.io/main/www/aios2.sh"; chmod +x /tmp/aiost/aios2.sh; /tmp/aiost/aios2.sh
 ```
 
 <details><summary>Old Version</summary>
@@ -147,17 +154,24 @@ mkdir -p /tmp/aios && wget -O /tmp/aios/aios-tui.sh "https://raw.githubuserconte
 [auto-config.js (DB section partially omitted)](https://github.com/site-u2023/site-u2023.github.io/blob/main/api/auto-config.js)
 
 ### Shared Resources
-- [packages.json Description](https://github.com/site-u2023/site-u2023.github.io/blob/main/www/packages.json.js.md)
-[packages.json](https://github.com/site-u2023/site-u2023.github.io/blob/main/www/packages/packages.json)
+/www
+[config.js](https://github.com/site-u2023/site-u2023.github.io/blob/main/www/config.js)
 
-- [setup.json](https://github.com/site-u2023/site-u2023.github.io/blob/main/www/uci-defaults/setup.json)
+/post-install
+- [postinst.json](https://github.com/site-u2023/site-u2023.github.io/blob/main/www/post-install/postinst.json): [Explanation](https://github.com/site-u2023/site-u2023.github.io/blob/main/www/postinst.json.js.md)
 
+- [postinst.sh](https://github.com/site-u2023/site-u2023.github.io/blob/main/www/post-install/postinst.sh) (aios2 exclusive)
 
-- [setup.sh Description](https://github.com/site-u2023/site-u2023.github.io/blob/main/www/setup.sh.ja.md)
-[setup.sh](https://github.com/site-u2023/site-u2023.github.io/blob/main/www/uci-defaults/setup.sh)
+/uci-defaults
+- [setup.json](https://github.com/site-u2023/site-u2023.github.io/blob/main/www/uci-defaults/setup.json): [Explanation](https://github.com/site-u2023/site-u2023.github.io/blob/main/www/setup.sh.ja.md)
 
-- Translation Keys
-[custom.**.json](https://github.com/site-u2023/site-u2023.github.io/tree/main/www/langs)
+- [setup.sh](https://github.com/site-u2023/site-u2023.github.io/blob/main/www/uci-defaults/setup.sh)
+
+/tui
+- [review.json](https://github.com/site-u2023/site-u2023.github.io/blob/main/www/tui/review.json) (aios2 exclusive)
+
+/langs
+- [custom.**.json](https://github.com/site-u2023/site-u2023.github.io/tree/main/www/langs)
 
 ### Official ASU Server
 [sysupgrade.openwrt.org/overview](https://sysupgrade.openwrt.org/overview)
