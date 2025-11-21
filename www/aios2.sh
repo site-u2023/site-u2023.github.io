@@ -5,7 +5,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1121.1426"
+VERSION="R7.1121.1447"
 BASE_TMP_DIR="/tmp"
 CONFIG_DIR="$BASE_TMP_DIR/aios2"
 BOOTSTRAP_URL="https://site-u.pages.dev/www"
@@ -290,11 +290,8 @@ download_setup_json() {
 }
 
 download_postinst_json() {
-    if ! wget -q -O "$PACKAGES_JSON" "${PACKAGES_URL}?t=$(date +%s)"; then
-        echo "Failed to download"
-        return 1
-    fi
-    return 0
+    __download_file_core "$PACKAGES_URL" "$PACKAGES_JSON"
+    return $?
 }
 
 # Device Information
@@ -655,7 +652,8 @@ is_package_selected() {
 }
 
 download_review_json() {
-    wget -q -O "$REVIEW_JSON" "${REVIEW_JSON_URL}?t=$(date +%s)" || return 1
+    __download_file_core "$REVIEW_JSON_URL" "$REVIEW_JSON"
+    return $?
 }
 
 get_review_items() {
@@ -689,13 +687,8 @@ get_review_item_file() {
 # Custom Feeds Management
 
 download_customfeeds_json() {
-    if [ ! -f "$CUSTOMFEEDS_JSON" ]; then
-        if ! wget -q -O "$CUSTOMFEEDS_JSON" "${CUSTOMFEEDS_JSON_URL}?t=$(date +%s)"; then
-            echo "Failed to download customfeeds.json"
-            return 1
-        fi
-    fi
-    return 0
+    __download_file_core "$CUSTOMFEEDS_JSON_URL" "$CUSTOMFEEDS_JSON"
+    return $?
 }
 
 get_customfeed_categories() {
@@ -939,23 +932,30 @@ compute_dslite_aftr() {
     return 1
 }
 
+__download_file_core() {
+    local url="$1"
+    local output_path="$2"
+    local cache_buster="?t=$(date +%s)"
+    
+    if ! wget -q -O "$output_path" "${url}${cache_buster}"; then
+        echo "[ERROR] Failed to download file: $url to $output_path" >> "$CONFIG_DIR/debug.log"
+        return 1
+    fi
+    return 0
+}
+
 # File Generation
 
 fetch_cached_template() {
     local url="$1"
     local output_path="$2"
-    local cache_buster="?t=$(date +%s)"
     
     if [ -f "$output_path" ] && [ -s "$output_path" ]; then
         return 0
     fi
     
-    if ! wget -q -O "$output_path" "${url}${cache_buster}"; then
-        echo "[ERROR] Failed to download template: $url" >> "$CONFIG_DIR/debug.log"
-        return 1
-    fi
-    
-    return 0
+    __download_file_core "$url" "$output_path"
+    return $?
 }
 
 prefetch_templates() {
