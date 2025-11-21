@@ -5,7 +5,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1121.1530"
+VERSION="R7.1121.1555"
 BASE_TMP_DIR="/tmp"
 CONFIG_DIR="$BASE_TMP_DIR/aios2"
 BOOTSTRAP_URL="https://site-u.pages.dev/www"
@@ -1083,22 +1083,39 @@ aios2_main() {
     detect_package_manager
     echo "Detecting package manager: $PKG_MGR"
     
-    get_extended_device_info
-    echo "Fetching auto-config API"
+    echo "Fetching essential files in parallel..."
+    
+    (
+        get_extended_device_info
+    ) &
+    AUTO_CONFIG_PID=$!
+    
+    (
+        if ! download_setup_json; then
+            echo "Error: Failed to download setup.json" >&2
+            exit 1
+        fi
+    ) &
+    SETUP_PID=$!
+    
+    wait $AUTO_CONFIG_PID
+    AUTO_CONFIG_STATUS=$?
+    wait $SETUP_PID
+    SETUP_STATUS=$?
+
+    if [ $SETUP_STATUS -ne 0 ]; then
+        echo "Cannot continue without setup.json"
+        return 1
+    fi
     
     echo "Fetching language: ${AUTO_LANGUAGE:-en}"
     if ! download_language_json "${AUTO_LANGUAGE:-en}"; then
         echo "Warning: Using English as fallback language"
     fi
-    
-    echo "Fetching setup.json"
-    if ! download_setup_json; then
-        echo "Error: Failed to download setup.json"
-        echo "Cannot continue without setup.json"
-        return 1
-    fi
 
-    TIME_START=$(date +%s)
+    # 🔸 計測開始 (ミリ秒対応) 🔸
+    # date +%s.%N (小数秒)が使えない環境のために、|| date +%sでフォールバック
+    TIME_START=$(date +%s.%N 2>/dev/null || date +%s)
     
     echo "Fetching postinst.json (critical) and others in parallel"
     
@@ -1135,9 +1152,12 @@ aios2_main() {
     wait $CUSTOMFEEDS_PID
     wait $TEMPLATES_PID
 
-    TIME_END=$(date +%s)
+    TIME_END=$(date +%s.%N 2>/dev/null || date +%s)
+    
+    ELAPSED_TIME_MS=$(echo "$TIME_END $TIME_START" | awk '{printf "%.3f", $1 - $2}')
+    
     echo ""
-    echo "INFO: Parallel download block finished in $((TIME_END - TIME_START)) seconds."
+    echo "INFO: Parallel download block finished in ${ELAPSED_TIME_MS:-$((TIME_END - TIME_START))} seconds."
     echo ""
     
     if [ $POSTINST_STATUS -ne 0 ]; then
@@ -1159,6 +1179,7 @@ aios2_main() {
             echo "[DEBUG] Set mape_type=gua with prefix: $MAPE_GUA_PREFIX" >> "$CONFIG_DIR/debug.log"
         else
             echo "mape_type='pd'" >> "$SETUP_VARS"
+            echo "loaded_config['mape_type'] = 'pd'"
             echo "[DEBUG] Set mape_type=pd no GUA detected" >> "$CONFIG_DIR/debug.log"
         fi
     fi
@@ -1174,7 +1195,6 @@ aios2_main() {
 
     echo ""
     
-    # Load and execute UI module
     if [ "$UI_MODE" = "whiptail" ]; then
         . "$CONFIG_DIR/aios2-whiptail.sh"
         aios2_whiptail_main
