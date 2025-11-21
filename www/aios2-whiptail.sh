@@ -916,7 +916,8 @@ review_and_apply() {
             menu_items="$menu_items $i \"$(get_review_item_label $i)\""
         done
         
-        local choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"\" \"\" $menu_items")
+        local choice
+        choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"\" \"\" $menu_items")
         
         if ! [ $? -eq 0 ]; then
             return 0
