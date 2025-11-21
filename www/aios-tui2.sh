@@ -5,7 +5,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1121.1049"
+VERSION="R7.1121.1058"
 BASE_TMP_DIR="/tmp"
 CONFIG_DIR="$BASE_TMP_DIR/aiost"
 BOOTSTRAP_URL="https://site-u.pages.dev/www"
@@ -88,12 +88,14 @@ TRANSLATION_CACHE="$CONFIG_DIR/translation_cache.txt"
 
 CUSTOMFEEDS_JSON="$CONFIG_DIR/customfeeds.json"
 
-# UI Configuration Variables
-
+# Package Dependencies
 WHIPTAIL_PACKAGES="whiptail"
+
 WHIPTAIL_HEIGHT="0"
 
 # UI Configuration Variables
+UI_HEIGHT="0"
+UI_WIDTH="78"
 
 DEFAULT_BTN_BACK="tr-tui-back"
 DEFAULT_BTN_OK="tr-tui-ok"
