@@ -355,8 +355,10 @@ process_items() {
         section)
             echo "[DEBUG] Processing section: $item_id" >> "$CONFIG_DIR/debug.log"
             
-            else
-                process_items "$cat_id" "$item_id" "$radio_breadcrumb"
+            nested=$(get_section_nested_items "$item_id")
+            for child_id in $nested; do
+                local ret
+                process_items "$cat_id" "$child_id" "$item_breadcrumb" "section"
                 ret=$?
                 
                 case $ret in
@@ -364,17 +366,13 @@ process_items() {
                         continue
                         ;;
                     $RETURN_BACK)
-                        if [ "$found_radio" -eq 1 ]; then
-                            break
-                        else
-                            return $RETURN_BACK
-                        fi
+                        return $RETURN_BACK
                         ;;
                     $RETURN_MAIN)
                         return $RETURN_MAIN
                         ;;
                 esac
-            fi
+            done
             return $RETURN_STAY
             ;;
             
