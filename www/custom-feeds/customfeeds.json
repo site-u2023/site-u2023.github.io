@@ -14,35 +14,45 @@
           "pattern": "luci-app-log-viewer",
           "exclude": "",
           "name": "luci-app-log-viewer",
-          "description": "System log viewer for LuCI"
+          "description": "System log viewer for LuCI",
+          "packageManager": ["opkg"],
+          "dependencies": []
         },
         {
           "id": "luci-app-cpu-status",
           "pattern": "luci-app-cpu-status",
           "exclude": "luci-app-cpu-status-mini",
           "name": "luci-app-cpu-status",
-          "description": "CPU status monitor"
+          "description": "CPU status monitor",
+          "packageManager": ["opkg"],
+          "dependencies": []
         },
         {
           "id": "luci-app-cpu-perf",
           "pattern": "luci-app-cpu-perf",
           "exclude": "",
           "name": "luci-app-cpu-perf",
-          "description": "CPU performance monitor"
+          "description": "CPU performance monitor",
+          "packageManager": ["opkg"],
+          "dependencies": []
         },
         {
           "id": "luci-app-temp-status",
           "pattern": "luci-app-temp-status",
           "exclude": "",
           "name": "luci-app-temp-status",
-          "description": "System temperature monitor"
+          "description": "System temperature monitor",
+          "packageManager": ["opkg"],
+          "dependencies": []
         },
         {
           "id": "luci-app-disks-info",
           "pattern": "luci-app-disks-info",
           "exclude": "",
           "name": "luci-app-disks-info",
-          "description": "Disk information display"
+          "description": "Disk information display",
+          "packageManager": ["opkg"],
+          "dependencies": []
         },
         {
           "id": "internet-detector",
@@ -50,14 +60,18 @@
           "exclude": "",
           "name": "internet-detector",
           "description": "Internet connection monitoring daemon",
-          "enable_service": "internet-detector"
+          "enable_service": "internet-detector",
+          "packageManager": ["opkg"],
+          "dependencies": ["lua", "luaposix", "libuci-lua"]
         },
         {
           "id": "luci-app-internet-detector",
           "pattern": "luci-app-internet-detector",
           "exclude": "",
           "name": "luci-app-internet-detector",
-          "description": "LuCI interface for Internet Detector"
+          "description": "LuCI interface for Internet Detector",
+          "packageManager": ["opkg"],
+          "dependencies": ["internet-detector"]
         },
         {
           "id": "internet-detector-mod-modem",
@@ -65,7 +79,9 @@
           "exclude": "",
           "name": "internet-detector-mod-modem",
           "description": "Modem restart module",
-          "restart_service": "internet-detector"
+          "restart_service": "internet-detector",
+          "packageManager": ["opkg"],
+          "dependencies": ["internet-detector", "modemmanager"]
         },
         {
           "id": "internet-detector-mod-email",
@@ -73,7 +89,9 @@
           "exclude": "",
           "name": "internet-detector-mod-email",
           "description": "Email notification module",
-          "restart_service": "internet-detector"
+          "restart_service": "internet-detector",
+          "packageManager": ["opkg"],
+          "dependencies": ["internet-detector", "mailsend"]
         }
       ]
     },
@@ -91,14 +109,18 @@
           "pattern": "luci-theme-argon_",
           "exclude": "",
           "name": "luci-theme-argon",
-          "description": "A brand new Argon theme for LuCI"
+          "description": "A brand new Argon theme for LuCI",
+          "packageManager": ["opkg"],
+          "dependencies": ["luci-compat", "luci-lib-ipkg"]
         },
         {
           "id": "luci-app-argon-config",
           "pattern": "luci-app-argon-config_",
           "exclude": "",
           "name": "luci-app-argon-config",
-          "description": "Argon theme configuration app"
+          "description": "Argon theme configuration app",
+          "packageManager": ["opkg"],
+          "dependencies": ["luci-theme-argon"]
         }
       ]
     }
