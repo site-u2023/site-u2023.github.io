@@ -3,7 +3,7 @@
 # OpenWrt Device Setup Tool - whiptail TUI Module
 # This file contains whiptail-specific UI functions
 
-VERSION="R7.1121.2233"
+VERSION="R7.11222.0034
 
 UI_WIDTH="78"
 UI_HEIGHT="0"
@@ -286,15 +286,16 @@ process_items() {
     local cat_id="$1"
     local item_id="$2"
     local breadcrumb="$3"
+    local parent_item_type="${4:-}"
     local item_type item_label item_breadcrumb nested child_id
     local variable default current options menu_opts i opt opt_label value exit_code selected_opt
     local field_type source aftr_type area computed cat_idx item_idx cid citems idx itm content class
     
-    echo "[DEBUG] process_items: cat_id=$cat_id, item_id=$item_id" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG] process_items: cat_id=$cat_id, item_id=$item_id, parent_type=$parent_item_type" >> "$CONFIG_DIR/debug.log"
     
     if ! should_show_item "$item_id"; then
         echo "[DEBUG] Item $item_id hidden by showWhen" >> "$CONFIG_DIR/debug.log"
-        return 0
+        return $RETURN_STAY
     fi
     
     item_type=$(get_setup_item_type "$item_id")
@@ -309,10 +310,21 @@ process_items() {
             
             nested=$(get_section_nested_items "$item_id")
             for child_id in $nested; do
-                if ! process_items "$cat_id" "$child_id" "$item_breadcrumb"; then
-                    return 1
-                fi
+                local ret
+                ret=$(process_items "$cat_id" "$child_id" "$item_breadcrumb" "section")
+                case $ret in
+                    $RETURN_STAY)
+                        continue
+                        ;;
+                    $RETURN_BACK)
+                        continue
+                        ;;
+                    $RETURN_MAIN)
+                        return $RETURN_MAIN
+                        ;;
+                esac
             done
+            return $RETURN_STAY
             ;;
             
         radio-group)
@@ -355,8 +367,8 @@ process_items() {
             exit_code=$?
             
             if ! [ "$exit_code" -eq 0 ]; then
-                echo "[DEBUG] Radio-group cancelled, returning to previous menu" >> "$CONFIG_DIR/debug.log"
-                return 1
+                echo "[DEBUG] Radio-group cancelled, returning RETURN_BACK" >> "$CONFIG_DIR/debug.log"
+                return $RETURN_BACK
             fi
             
             if [ -n "$value" ]; then
@@ -367,6 +379,7 @@ process_items() {
                 echo "[DEBUG] Saved to SETUP_VARS" >> "$CONFIG_DIR/debug.log"
                 auto_add_conditional_packages "$cat_id"
             fi
+            return $RETURN_STAY
             ;;
             
         field)
@@ -379,6 +392,7 @@ process_items() {
             echo "[DEBUG] variable='$variable'" >> "$CONFIG_DIR/debug.log"
             echo "[DEBUG] default='$default'" >> "$CONFIG_DIR/debug.log"
             echo "[DEBUG] field_type='$field_type'" >> "$CONFIG_DIR/debug.log"
+            echo "[DEBUG] parent_item_type='$parent_item_type'" >> "$CONFIG_DIR/debug.log"
             
             current=$(grep "^${variable}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
             
@@ -446,7 +460,7 @@ process_items() {
                     
                     case "$source" in
                         "browser-languages")
-                            return 0
+                            return $RETURN_STAY
                             ;;
                         *)
                             echo ""
@@ -463,7 +477,7 @@ process_items() {
                             fi
                             ;;
                     esac
-                    return 0
+                    return $RETURN_STAY
                 fi
                 
                 options=$(get_setup_item_options "$item_id")
@@ -473,7 +487,7 @@ process_items() {
                 if [ -z "$options" ]; then
                     echo "[DEBUG] ERROR: No options found for $item_id, skipping" >> "$CONFIG_DIR/debug.log"
                     show_msgbox "$item_breadcrumb" "Error: No options available for $item_label"
-                    return 0
+                    return $RETURN_STAY
                 fi
                 
                 menu_opts=""
@@ -493,8 +507,8 @@ process_items() {
                 echo "[DEBUG] select exit_code=$exit_code, value='$value'" >> "$CONFIG_DIR/debug.log"
                 
                 if ! [ "$exit_code" -eq 0 ]; then
-                    echo "[DEBUG] Select cancelled, returning to previous menu" >> "$CONFIG_DIR/debug.log"
-                    return 1
+                    echo "[DEBUG] Select cancelled, returning RETURN_BACK" >> "$CONFIG_DIR/debug.log"
+                    return $RETURN_BACK
                 fi
                 
                 if [ -n "$value" ]; then
@@ -524,8 +538,8 @@ process_items() {
                 echo "[DEBUG] inputbox exit_code=$exit_code, value='$value'" >> "$CONFIG_DIR/debug.log"
                 
                 if ! [ "$exit_code" -eq 0 ]; then
-                    echo "[DEBUG] Inputbox cancelled, returning to previous menu" >> "$CONFIG_DIR/debug.log"
-                    return 1
+                    echo "[DEBUG] Inputbox cancelled, returning RETURN_BACK" >> "$CONFIG_DIR/debug.log"
+                    return $RETURN_BACK
                 fi
                 
                 if [ -n "$value" ]; then
@@ -534,6 +548,7 @@ process_items() {
                     echo "[DEBUG] Saved ${variable}='${value}'" >> "$CONFIG_DIR/debug.log"
                 fi
             fi
+            return $RETURN_STAY
             ;;
             
         info-display)
@@ -560,10 +575,11 @@ process_items() {
             fi
             
             [ -n "$content" ] && show_msgbox "$breadcrumb" "$content"
+            return $RETURN_STAY
             ;;
     esac
     
-    return 0
+    return $RETURN_STAY
 }
 
 show_auto_detection_if_available() {
@@ -581,6 +597,7 @@ category_config() {
     local tr_main_menu cat_title base_breadcrumb
     local tr_language lang_breadcrumb current_lang value
     local found_radio radio_breadcrumb item_id item_type radio_label conn_type dhcp_content tr_dhcp
+    local ret
     
     tr_main_menu=$(translate "tr-tui-main-menu")
     cat_title=$(get_setup_category_title "$cat_id")
@@ -596,7 +613,7 @@ category_config() {
         value=$(show_inputbox "$lang_breadcrumb" "" "$current_lang")
         
         if ! [ $? -eq 0 ]; then
-            return 0
+            return $RETURN_BACK
         fi
         
         if [ -n "$value" ]; then
@@ -609,7 +626,7 @@ category_config() {
     if [ "$cat_id" = "internet-connection" ]; then
         if show_auto_detection_if_available; then
             auto_add_conditional_packages "$cat_id"
-            return 0
+            return $RETURN_STAY
         fi
     fi
     
@@ -622,9 +639,18 @@ category_config() {
             
             if [ "$item_type" = "radio-group" ]; then
                 found_radio=1
-                if ! process_items "$cat_id" "$item_id" "$base_breadcrumb"; then
-                    return 0
-                fi
+                
+                ret=$(process_items "$cat_id" "$item_id" "$base_breadcrumb")
+                case $ret in
+                    $RETURN_STAY)
+                        ;;
+                    $RETURN_BACK)
+                        return $RETURN_BACK
+                        ;;
+                    $RETURN_MAIN)
+                        return $RETURN_MAIN
+                        ;;
+                esac
                 
                 radio_label=$(get_setup_item_label "$item_id")
                 radio_breadcrumb="${base_breadcrumb}${BREADCRUMB_SEP}${radio_label}"
@@ -635,7 +661,7 @@ category_config() {
                     if [ "$conn_type" = "auto" ]; then
                         if show_network_info "$radio_breadcrumb"; then
                             auto_add_conditional_packages "$cat_id"
-                            return 0
+                            return $RETURN_STAY
                         fi
                         continue
                     fi
@@ -648,24 +674,44 @@ category_config() {
                         fi
                         show_msgbox "$radio_breadcrumb" "$dhcp_content"
                         auto_add_conditional_packages "$cat_id"
-                        return 0
+                        return $RETURN_STAY
                     fi
                 fi
             else
-                if ! process_items "$cat_id" "$item_id" "$radio_breadcrumb"; then
-                    return 0
-                fi
+                ret=$(process_items "$cat_id" "$item_id" "$radio_breadcrumb")
+                case $ret in
+                    $RETURN_STAY)
+                        continue
+                        ;;
+                    $RETURN_BACK)
+                        if [ "$found_radio" -eq 1 ]; then
+                            echo "[DEBUG] Field cancelled, restarting from radio-group" >> "$CONFIG_DIR/debug.log"
+                            break
+                        else
+                            return $RETURN_BACK
+                        fi
+                        ;;
+                    $RETURN_MAIN)
+                        return $RETURN_MAIN
+                        ;;
+                esac
             fi
         done
         
-        [ "$found_radio" -eq 0 ] && break
+        if [ "$found_radio" -eq 0 ]; then
+            break
+        fi
+        
+        if [ "$ret" = "$RETURN_STAY" ]; then
+            break
+        fi
     done
     
     auto_add_conditional_packages "$cat_id"
     
     [ "$cat_id" = "basic-config" ] && update_language_packages
     
-    return 0
+    return $RETURN_STAY
 }
 
 package_categories() {
