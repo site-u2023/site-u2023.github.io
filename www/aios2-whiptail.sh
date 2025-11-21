@@ -4,7 +4,7 @@
 # OpenWrt Device Setup Tool - whiptail TUI Module
 # This file contains whiptail-specific UI functions
 
-VERSION="R7.1121.1123"
+VERSION="R7.1121.1155"
 
 NEWT_COLORS='
 title=black,lightgray
@@ -924,7 +924,7 @@ review_and_apply() {
     done
 }
 
-aios_whiptail_main() {
+aios2_whiptail_main() {
     export NEWT_COLORS
     device_info
     main_menu
