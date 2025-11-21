@@ -929,7 +929,7 @@ compute_dslite_aftr() {
     return 1
 }
 
-XX__download_file_core() {
+__download_file_core() {
     local url="$1"
     local output_path="$2"
     local cache_buster="?t=$(date +%s)"
@@ -941,7 +941,7 @@ XX__download_file_core() {
     return 0
 }
 
-__download_file_core() {
+xxx__download_file_core() {
     local url="$1"
     local output_path="$2"
     local max_retries=5
